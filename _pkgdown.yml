@@ -1,0 +1,40 @@
+url: https://newgraphenvironment.github.io/link/
+
+template:
+  bootstrap: 5
+
+reference:
+  - title: Thresholds
+    desc: Configurable scoring defaults
+    contents:
+      - lnk_thresholds
+
+  - title: Database
+    desc: Connection and utilities
+    contents:
+      - lnk_db_conn
+
+  - title: Overrides
+    desc: Load, validate, and apply correction data
+    contents:
+      - starts_with("lnk_override")
+
+  - title: Matching
+    desc: Link crossing records across data systems
+    contents:
+      - starts_with("lnk_match")
+
+  - title: Scoring
+    desc: Severity classification and custom scoring
+    contents:
+      - starts_with("lnk_score")
+
+  - title: Bridge
+    desc: Produce fresh-compatible break source tables
+    contents:
+      - lnk_break_source
+
+  - title: Habitat
+    desc: Per-crossing upstream habitat rollup
+    contents:
+      - lnk_habitat_upstream

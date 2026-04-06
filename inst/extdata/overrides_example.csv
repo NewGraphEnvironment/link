@@ -1,0 +1,6 @@
+modelled_crossing_id,barrier_result_code,reviewer,review_date,source
+1001,PASSABLE,J. Smith,2025-08-15,imagery review
+1002,BARRIER,J. Smith,2025-08-15,imagery review
+1003,NONE,A. Irvine,2025-09-20,field visit
+1004,PASSABLE,A. Irvine,2025-09-20,field visit
+1005,BARRIER,J. Smith,2025-10-01,imagery review

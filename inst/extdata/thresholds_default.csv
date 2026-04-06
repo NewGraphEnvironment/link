@@ -1,0 +1,5 @@
+severity,metric,value
+high,outlet_drop,0.6
+high,slope_length,120
+moderate,outlet_drop,0.3
+moderate,slope_length,60
