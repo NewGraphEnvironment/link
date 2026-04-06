@@ -57,6 +57,14 @@
   DBI::dbQuoteIdentifier(conn, x)
 }
 
+#' Quote a schema-qualified table name for SQL interpolation
+#' @noRd
+.lnk_quote_table <- function(conn, table) {
+  parts <- .lnk_parse_table(table)
+  id <- DBI::Id(schema = parts$schema, table = parts$table)
+  as.character(DBI::dbQuoteIdentifier(conn, id))
+}
+
 #' Build WHERE clause from named list of filters
 #' Column names are validated and quoted. Requires conn for proper SQL quoting.
 #' @noRd
