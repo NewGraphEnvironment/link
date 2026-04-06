@@ -4,31 +4,29 @@
 Build the `link` R package — a connectivity-system-agnostic crossing interpretation layer that scores, overrides, and prioritizes crossings for any network engine, with fresh as the first integration target.
 
 ## Current Phase
-Phase 1
+Phase 3
 
 ## Phases
 
 ### Phase 1: Package Scaffold
-- [ ] Create branch `scaffold-link` from main
-- [ ] `usethis::create_package(".")` + DESCRIPTION fields
-- [ ] `usethis::use_mit_license("New Graph Environment Ltd.")`
-- [ ] `usethis::use_testthat(edition = 3)`
-- [ ] `usethis::use_pkgdown()` + GitHub Action
-- [ ] `usethis::use_directory("dev")` + `dev/dev.R`
-- [ ] `usethis::use_directory("data-raw")` + `data-raw/testdata.R`
-- [ ] `inst/extdata/thresholds_default.csv`
-- [ ] `R/link-package.R` with package-level roxygen
-- [ ] `.lintr` config
-- [ ] Commit: `Scaffold link package` — Relates to #1
-- **Status:** pending
+- [x] Create branch `scaffold-link` from main
+- [x] DESCRIPTION, LICENSE, NAMESPACE, .Rbuildignore, .gitignore
+- [x] testthat (edition 3) + pkgdown + GitHub Action
+- [x] `dev/dev.R` + `data-raw/testdata.R`
+- [x] `inst/extdata/` — thresholds, crossings, overrides CSVs
+- [x] `R/link-package.R` with package-level roxygen
+- [x] `.lintr` config
+- [x] Commit: `Scaffold link package` — Relates to #1
+- **Status:** complete
 
 ### Phase 2: Core Utilities & Thresholds (Issues #3–4)
-- [ ] `lnk_thresholds()` — load/merge configurable scoring defaults (#3)
-- [ ] `lnk_db_conn()` / internal DB helpers (#4)
-- [ ] Tests + examples for each
-- [ ] `devtools::document()`, `lintr::lint_package()`, `devtools::test()`
-- [ ] Commit each function closing its issue
-- **Status:** pending
+- [x] `lnk_thresholds()` — load/merge configurable scoring defaults (#3)
+- [x] `lnk_db_conn()` / internal DB helpers (#4)
+- [x] Tests + examples for each (63 pass + 10 skip-if-no-db)
+- [x] 3-round code check: SQL injection, allowlist, reserved-word quoting, NaN/Inf guards
+- [x] `devtools::document()`, `lintr::lint_package()`, `devtools::test()` — all clean
+- [x] Committed in scaffold (issues close when PR merges)
+- **Status:** complete
 
 ### Phase 3: Override Family (Issues #5–7)
 - [ ] `lnk_override_load()` — read CSV, validate structure, write to DB (#5)
