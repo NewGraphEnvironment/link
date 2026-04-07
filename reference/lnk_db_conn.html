@@ -92,7 +92,7 @@ variables for local PostgreSQL.</p>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>Checks <code>PG_*_SHARE</code> first (the Docker fwapg convention shared with
-<code>fresh::frs_db_conn()</code>), then standard PostgreSQL variables (<code>PGHOST</code>,
+<code><a href="https://newgraphenvironment.github.io/fresh/reference/frs_db_conn.html" class="external-link">fresh::frs_db_conn()</a></code>), then standard PostgreSQL variables (<code>PGHOST</code>,
 etc.). This means <code>lnk_db_conn()</code> works identically to <code>frs_db_conn()</code>
 when both packages connect to the same database.</p>
     </div>

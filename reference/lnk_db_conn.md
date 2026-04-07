@@ -48,9 +48,10 @@ object.
 ## Details
 
 Checks `PG_*_SHARE` first (the Docker fwapg convention shared with
-`fresh::frs_db_conn()`), then standard PostgreSQL variables (`PGHOST`,
-etc.). This means `lnk_db_conn()` works identically to `frs_db_conn()`
-when both packages connect to the same database.
+[`fresh::frs_db_conn()`](https://newgraphenvironment.github.io/fresh/reference/frs_db_conn.html)),
+then standard PostgreSQL variables (`PGHOST`, etc.). This means
+`lnk_db_conn()` works identically to `frs_db_conn()` when both packages
+connect to the same database.
 
 ## Examples
 
