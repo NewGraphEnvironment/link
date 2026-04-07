@@ -64,12 +64,14 @@ Phase 7
 - **Status:** complete
 
 ### Phase 7: Integration & Release
-- [ ] End-to-end vignette with bundled test data
+- [x] Vignette: MORR crossing interpretation (bcfishpass pipeline replica)
+- [x] data-raw/vignette_morr.R — generates .rds from live DB
+- [x] NEWS.md, README
+- [ ] Run vignette_morr.R to generate .rds (needs DB)
 - [ ] `devtools::check()` passes
-- [ ] NEWS.md, README, hex sticker
 - [ ] PR to main: `Relates to NewGraphEnvironment/sred-2025-2026#24`
-- [ ] pkgdown deploy
-- **Status:** pending
+- [ ] pkgdown deploy, hex sticker
+- **Status:** in_progress
 
 ## Key Questions
 1. What test data can we bundle without DB dependency? (small CSV crossings + thresholds)
