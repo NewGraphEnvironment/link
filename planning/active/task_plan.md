@@ -4,7 +4,7 @@
 Build the `link` R package — a connectivity-system-agnostic crossing interpretation layer that scores, overrides, and prioritizes crossings for any network engine, with fresh as the first integration target.
 
 ## Current Phase
-Phase 4
+Phase 5
 
 ## Phases
 
@@ -39,12 +39,13 @@ Phase 4
 - **Status:** complete
 
 ### Phase 4: Match Family (Issues #8–10)
-- [ ] `lnk_match_sources()` — generic multi-source spatial matching (#8)
-- [ ] `lnk_match_pscis()` — PSCIS-to-modelled convenience wrapper (#9)
-- [ ] `lnk_match_moti()` — MOTI chris_culvert_id integration (#10)
-- [ ] Tests + examples for each
-- [ ] Commit each function closing its issue
-- **Status:** pending
+- [x] `lnk_match_sources()` — generic N-way matcher with 1:1 dedup (#8)
+- [x] `lnk_match_pscis()` — PSCIS wrapper with xref CSV priority (#9)
+- [x] `lnk_match_moti()` — MOTI wrapper with 150m tolerance (#10)
+- [x] Tests: 69 pass, 50 skip (DB), 0 fail, 0 lints
+- [x] 3-round code check: many-to-many dedup, where alias isolation
+- [x] Committed: Fixes #8, #9, #10
+- **Status:** complete
 
 ### Phase 5: Score Family (Issues #11–12)
 - [ ] `lnk_score_severity()` — classify by biological impact (#11)
