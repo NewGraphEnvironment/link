@@ -13,6 +13,7 @@
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Crossing Connectivity Interpretation">
 <meta name="description" content="Connectivity-system-agnostic crossing interpretation layer. Scores, overrides, and prioritizes crossings for fish passage using configurable severity thresholds and multi-source data integration. Produces scored crossing tables and break source specs for network segmentation engines. Crossings are features on the network — some break geometry (confirmed barriers), others index for downstream relationship queries (unassessed crossings, observations).">
 <meta property="og:description" content="Connectivity-system-agnostic crossing interpretation layer. Scores, overrides, and prioritizes crossings for fish passage using configurable severity thresholds and multi-source data integration. Produces scored crossing tables and break source specs for network segmentation engines. Crossings are features on the network — some break geometry (confirmed barriers), others index for downstream relationship queries (unassessed crossings, observations).">
+<meta property="og:image" content="https://newgraphenvironment.github.io/link/logo.png">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -35,7 +36,7 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="articles/crossing-interpretation.html">Crossing interpretation for Morice (MORR)</a></li>
+<li><a class="dropdown-item" href="articles/scoring-crossings.html">Scoring crossings for fish passage prioritization</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
@@ -53,8 +54,10 @@
 </nav><div class="container template-home">
 <div class="row">
   <main id="main" class="col-md-9"><div class="section level1">
-<div class="page-header"><h1 id="link-">link <img src="reference/figures/logo.png" align="right" height="139" alt=""><a class="anchor" aria-label="anchor" href="#link-"></a>
-</h1></div>
+<div class="page-header">
+<img src="logo.png" class="logo" alt=""><h1 id="link-">link <a class="anchor" aria-label="anchor" href="#link-"></a>
+</h1>
+</div>
 <p>Crossing connectivity interpretation for fish passage.</p>
 <p>link is the domain layer between raw crossing data and <a href="https://github.com/NewGraphEnvironment/fresh" class="external-link">fresh</a>’s generic network engine. It scores, overrides, and prioritizes crossings using configurable severity thresholds and multi-source data integration.</p>
 <p>Crossings are features on the network. Some break geometry (confirmed barriers fed to fresh as break sources). Others just index for downstream relationship queries (unassessed crossings, observations).</p>
@@ -138,7 +141,7 @@ bcdata (PSCIS assessments)  --&gt;</code></pre>
 <span><span class="co"># Feed to fresh</span></span>
 <span><span class="va">src</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/lnk_break_source.html">lnk_break_source</a></span><span class="op">(</span><span class="va">conn</span>, <span class="st">"working.crossings"</span><span class="op">)</span></span>
 <span><span class="fu">fresh</span><span class="fu">::</span><span class="fu"><a href="https://newgraphenvironment.github.io/fresh/reference/frs_habitat.html" class="external-link">frs_habitat</a></span><span class="op">(</span><span class="va">conn</span>, <span class="st">"MORR"</span>, break_sources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">src</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p>See <code><a href="articles/crossing-interpretation.html">vignette("crossing-interpretation")</a></code> for the full pipeline on the Morice (MORR) watershed group — the same steps scale to any watershed group for provincial coverage.</p>
+<p>See <code><a href="articles/scoring-crossings.html">vignette("scoring-crossings")</a></code> for the full pipeline on the Morice (MORR) watershed group — the same steps scale to any watershed group for provincial coverage.</p>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="links">

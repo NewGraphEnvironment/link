@@ -1,4 +1,4 @@
-# link ![](reference/figures/logo.png)
+# link
 
 Crossing connectivity interpretation for fish passage.
 
@@ -68,6 +68,6 @@ fresh::frs_habitat(conn, "MORR", break_sources = list(src))
 ```
 
 See
-[`vignette("crossing-interpretation")`](https://newgraphenvironment.github.io/link/articles/crossing-interpretation.md)
+[`vignette("scoring-crossings")`](https://newgraphenvironment.github.io/link/articles/scoring-crossings.md)
 for the full pipeline on the Morice (MORR) watershed group — the same
 steps scale to any watershed group for provincial coverage.
