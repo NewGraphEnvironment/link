@@ -40,14 +40,10 @@
 #'
 #' @section Scoring logic (default thresholds):
 #' \tabular{lll}{
-#'   \strong{Severity} \tab \strong{Criteria} \tab
-#'     \strong{Interpretation} \cr
-#'   High \tab outlet_drop >= 0.6m OR slope*length >= 120 \tab
-#'     Impassable at most flows \cr
-#'   Moderate \tab outlet_drop >= 0.3m OR slope*length >= 60 \tab
-#'     Flow-dependent, potentially passable \cr
-#'   Low \tab everything else with a crossing present \tab
-#'     Likely passable for target species
+#'   \strong{Severity} \tab \strong{Criteria} \tab \strong{Interpretation} \cr
+#'   High \tab outlet_drop >= 0.6m OR slope x length >= 120 \tab Impassable at most flows \cr
+#'   Moderate \tab outlet_drop >= 0.3m OR slope x length >= 60 \tab Flow-dependent, potentially passable \cr
+#'   Low \tab everything else with a crossing present \tab Likely passable for target species
 #' }
 #'
 #' @examples
