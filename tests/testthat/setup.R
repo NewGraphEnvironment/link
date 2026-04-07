@@ -14,20 +14,31 @@ test_crossings_csv <- function() {
 }
 
 # Skip helper for DB-dependent tests
+# Tries local Docker fwapg first (writable), then PG_*_SHARE env vars.
+# Also checks write permission — read-only connections skip.
 skip_if_no_db <- function() {
+  # Try local Docker first (fresh/docker setup)
   conn <- tryCatch(
-    DBI::dbConnect(
-      RPostgres::Postgres(),
-      dbname = Sys.getenv("PGDATABASE", "postgis"),
-      host = Sys.getenv("PGHOST", "localhost"),
-      port = as.integer(Sys.getenv("PGPORT", "5432")),
-      user = Sys.getenv("PGUSER", "postgres"),
-      password = Sys.getenv("PGPASSWORD", "")
-    ),
+    DBI::dbConnect(RPostgres::Postgres(),
+                   dbname = "fwapg", host = "localhost", port = 5432L,
+                   user = "postgres", password = "postgres"),
     error = function(e) NULL
   )
+  # Fall back to lnk_db_conn (PG_*_SHARE env vars)
+  if (is.null(conn)) {
+    conn <- tryCatch(lnk_db_conn(), error = function(e) NULL)
+  }
   if (is.null(conn)) {
     testthat::skip("No database connection available")
+  }
+  # Check write permission
+  can_write <- tryCatch({
+    DBI::dbExecute(conn, "CREATE SCHEMA IF NOT EXISTS working")
+    TRUE
+  }, error = function(e) FALSE)
+  if (!can_write) {
+    DBI::dbDisconnect(conn)
+    testthat::skip("Database is read-only (no write permission)")
   }
   withr::defer(DBI::dbDisconnect(conn), envir = parent.frame())
   conn

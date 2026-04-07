@@ -1,29 +1,27 @@
-#' Connect to a PostgreSQL database
+#' Connect to FWA PostgreSQL database
 #'
-#' Thin connection factory with sensible defaults. Reads credentials from
-#' environment variables (`PGUSER`, `PGPASSWORD`, `PGHOST`, `PGPORT`,
-#' `PGDATABASE`) so connections work without hardcoded secrets.
+#' Opens a connection to a PostgreSQL database containing fwapg, bcfishpass,
+#' and bcfishobs. Defaults to the `PG_*_SHARE` environment variables used
+#' by fresh and fpr (Docker-hosted fwapg). Falls back to standard `PG*`
+#' variables for local PostgreSQL.
 #'
-#' @param dbname Database name. Defaults to `PGDATABASE` env var or `"postgis"`.
-#' @param host Host. Defaults to `PGHOST` env var or `"localhost"`.
-#' @param port Port. Defaults to `PGPORT` env var or `5432`.
-#' @param user User. Defaults to `PGUSER` env var or `"postgres"`.
-#' @param password Password. Defaults to `PGPASSWORD` env var or `""`.
+#' @param dbname Database name. Defaults to `PG_DB_SHARE` or `PGDATABASE`.
+#' @param host Host. Defaults to `PG_HOST_SHARE` or `PGHOST`.
+#' @param port Port. Defaults to `PG_PORT_SHARE` or `PGPORT`.
+#' @param user User. Defaults to `PG_USER_SHARE` or `PGUSER`.
+#' @param password Password. Defaults to `PG_PASS_SHARE` or `PGPASSWORD`.
 #'
 #' @return A [DBI::DBIConnection-class] object.
 #'
 #' @details
-#' This is the standard entry point for all `lnk_*` functions that need a
-#' database connection. Pass the returned connection as the first argument
-#' to any function in the package.
-#'
-#' Environment variables follow the PostgreSQL convention (`PGUSER`, etc.)
-#' so they work alongside `psql`, `ogr2ogr`, and other tools that read
-#' the same variables.
+#' Checks `PG_*_SHARE` first (the Docker fwapg convention shared with
+#' [fresh::frs_db_conn()]), then standard PostgreSQL variables (`PGHOST`,
+#' etc.). This means `lnk_db_conn()` works identically to `frs_db_conn()`
+#' when both packages connect to the same database.
 #'
 #' @examples
 #' \dontrun{
-#' # Default connection — reads PGUSER, PGPASSWORD from environment
+#' # Default — reads PG_*_SHARE env vars (Docker fwapg)
 #' conn <- lnk_db_conn()
 #'
 #' # Override for a specific database
@@ -37,11 +35,16 @@
 #' }
 #'
 #' @export
-lnk_db_conn <- function(dbname = Sys.getenv("PGDATABASE", "postgis"),
-                        host = Sys.getenv("PGHOST", "localhost"),
-                        port = as.integer(Sys.getenv("PGPORT", "5432")),
-                        user = Sys.getenv("PGUSER", "postgres"),
-                        password = Sys.getenv("PGPASSWORD", "")) {
+lnk_db_conn <- function(dbname = Sys.getenv("PG_DB_SHARE",
+                                            Sys.getenv("PGDATABASE", "postgis")),
+                        host = Sys.getenv("PG_HOST_SHARE",
+                                          Sys.getenv("PGHOST", "localhost")),
+                        port = as.integer(Sys.getenv("PG_PORT_SHARE",
+                                                     Sys.getenv("PGPORT", "5432"))),
+                        user = Sys.getenv("PG_USER_SHARE",
+                                          Sys.getenv("PGUSER", "postgres")),
+                        password = Sys.getenv("PG_PASS_SHARE",
+                                              Sys.getenv("PGPASSWORD", ""))) {
   DBI::dbConnect(
     RPostgres::Postgres(),
     dbname = dbname,

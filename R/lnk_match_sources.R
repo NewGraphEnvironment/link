@@ -131,13 +131,20 @@ lnk_match_sources <- function(conn,
   qt_to <- .lnk_quote_table(conn, to)
   if (overwrite) {
     .lnk_db_execute(conn, paste("DROP TABLE IF EXISTS", qt_to))
+    .lnk_db_execute(conn, paste0(
+      "CREATE TABLE ", qt_to, " (",
+      "source_a text, id_a text, ",
+      "source_b text, id_b text, ",
+      "distance_m numeric)"
+    ))
+  } else if (!.lnk_table_exists(conn, to)) {
+    .lnk_db_execute(conn, paste0(
+      "CREATE TABLE ", qt_to, " (",
+      "source_a text, id_a text, ",
+      "source_b text, id_b text, ",
+      "distance_m numeric)"
+    ))
   }
-  .lnk_db_execute(conn, paste0(
-    "CREATE TABLE ", qt_to, " (",
-    "source_a text, id_a text, ",
-    "source_b text, id_b text, ",
-    "distance_m numeric)"
-  ))
 
   # Pairwise matching
   pairs <- utils::combn(length(sources), 2, simplify = FALSE)

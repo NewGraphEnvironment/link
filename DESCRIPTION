@@ -20,6 +20,7 @@ Imports:
     RPostgres,
     utils
 Suggests:
+    bcdata,
     bookdown,
     fresh,
     knitr,

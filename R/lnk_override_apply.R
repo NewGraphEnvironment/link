@@ -136,7 +136,7 @@ lnk_override_apply <- function(conn,
   qid <- DBI::dbQuoteIdentifier(conn, col_id)
   set_clauses <- vapply(cols_update, function(col) {
     qcol <- DBI::dbQuoteIdentifier(conn, col)
-    paste0("c.", qcol, " = o.", qcol)
+    paste0(qcol, " = o.", qcol)
   }, character(1))
 
   sql <- paste0(

@@ -127,7 +127,7 @@ test_that("build_where rejects NaN and Inf", {
 test_that("build_where errors on unsupported type", {
   conn <- skip_if_no_db()
   expect_error(
-    link:::.lnk_build_where(conn, list(data = data.frame())),
+    link:::.lnk_build_where(conn, list(data = as.Date("2025-01-01"))),
     "Unsupported filter type"
   )
 })
