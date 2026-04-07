@@ -8,7 +8,10 @@ Authors@R:
 Description: Connectivity-system-agnostic crossing interpretation layer.
     Scores, overrides, and prioritizes crossings for fish passage using
     configurable severity thresholds and multi-source data integration.
-    Produces break source tables for network segmentation engines.
+    Produces scored crossing tables and break source specs for network
+    segmentation engines. Crossings are features on the network — some
+    break geometry (confirmed barriers), others index for downstream
+    relationship queries (unassessed crossings, observations).
 License: MIT + file LICENSE
 URL: https://github.com/NewGraphEnvironment/link,
     https://newgraphenvironment.github.io/link/
@@ -19,6 +22,8 @@ Imports:
     DBI,
     RPostgres,
     utils
+Remotes:
+    NewGraphEnvironment/fresh
 Suggests:
     bcdata,
     bookdown,
