@@ -69,6 +69,6 @@ src <- lnk_break_source(conn, "working.crossings")
 fresh::frs_habitat(conn, "MORR", break_sources = list(src))
 ```
 
-See `vignette("crossing-interpretation")` for the full pipeline on the
-Morice (MORR) watershed group --- the same steps scale to any watershed
-group for provincial coverage.
+See `vignette("scoring-crossings")` for the full pipeline on the Morice
+(MORR) watershed group --- the same steps scale to any watershed group
+for provincial coverage.
