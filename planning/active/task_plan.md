@@ -4,7 +4,7 @@
 Build the `link` R package — a connectivity-system-agnostic crossing interpretation layer that scores, overrides, and prioritizes crossings for any network engine, with fresh as the first integration target.
 
 ## Current Phase
-Phase 5
+Phase 6
 
 ## Phases
 
@@ -48,11 +48,12 @@ Phase 5
 - **Status:** complete
 
 ### Phase 5: Score Family (Issues #11–12)
-- [ ] `lnk_score_severity()` — classify by biological impact (#11)
-- [ ] `lnk_score_custom()` — user-defined scoring rules (#12)
-- [ ] Tests + examples for each
-- [ ] Commit each function closing its issue
-- **Status:** pending
+- [x] `lnk_score_severity()` — threshold-driven, NULL-safe, column-agnostic (#11)
+- [x] `lnk_score_custom()` — weighted rank with primary key join (#12)
+- [x] Tests: 69 pass, 65 skip (DB), 0 fail, 0 lints
+- [x] 2-round code check: threshold SQL guard, ctid->PK, direction validation
+- [x] Committed: Fixes #11, #12
+- **Status:** complete
 
 ### Phase 6: Bridge & Habitat (Issues #13–14)
 - [ ] `lnk_break_source()` — produce fresh-compatible break source list (#13)
