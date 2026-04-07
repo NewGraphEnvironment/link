@@ -4,7 +4,7 @@
 Build the `link` R package — a connectivity-system-agnostic crossing interpretation layer that scores, overrides, and prioritizes crossings for any network engine, with fresh as the first integration target.
 
 ## Current Phase
-Phase 3
+Phase 4
 
 ## Phases
 
@@ -29,13 +29,14 @@ Phase 3
 - **Status:** complete
 
 ### Phase 3: Override Family (Issues #5–7)
-- [ ] `lnk_override_load()` — read CSV, validate structure, write to DB (#5)
-- [ ] `lnk_override_apply()` — join overrides onto crossings table (#6)
-- [ ] `lnk_override_validate()` — check referential integrity (#7)
-- [ ] Tests + examples for each
-- [ ] `devtools::document()`, `lintr::lint_package()`, `devtools::test()`
-- [ ] Commit each function closing its issue
-- **Status:** pending
+- [x] `lnk_override_load()` — two-phase CSV validation + DB write (#5)
+- [x] `lnk_override_apply()` — auto-detect columns, quoted SQL (#6)
+- [x] `lnk_override_validate()` — orphans, duplicates, counts (#7)
+- [x] Tests: 68 pass, 34 skip (DB), 0 fail
+- [x] 3-round code check: SQL injection, partial-load atomicity, empty-CSV guard
+- [x] Examples: load→validate→apply pipeline, verbose output, error cases
+- [x] Committed: Fixes #5, #6, #7
+- **Status:** complete
 
 ### Phase 4: Match Family (Issues #8–10)
 - [ ] `lnk_match_sources()` — generic multi-source spatial matching (#8)
