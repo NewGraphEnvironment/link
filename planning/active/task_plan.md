@@ -4,7 +4,7 @@
 Build the `link` R package — a connectivity-system-agnostic crossing interpretation layer that scores, overrides, and prioritizes crossings for any network engine, with fresh as the first integration target.
 
 ## Current Phase
-Phase 6
+Phase 7
 
 ## Phases
 
@@ -56,11 +56,12 @@ Phase 6
 - **Status:** complete
 
 ### Phase 6: Bridge & Habitat (Issues #13–14)
-- [ ] `lnk_break_source()` — produce fresh-compatible break source list (#13)
-- [ ] `lnk_habitat_upstream()` — per-crossing upstream habitat rollup (#14)
-- [ ] Tests + examples for each
-- [ ] Commit each function closing its issue
-- **Status:** pending
+- [x] `lnk_break_source()` — fresh-compatible break source spec (#13)
+- [x] `lnk_habitat_upstream()` — per-crossing upstream rollup (#14)
+- [x] Tests: 69 pass, 77 skip (DB), 0 fail, 0 lints
+- [x] Code check: clean first round
+- [x] Committed: Fixes #13, #14
+- **Status:** complete
 
 ### Phase 7: Integration & Release
 - [ ] End-to-end vignette with bundled test data
