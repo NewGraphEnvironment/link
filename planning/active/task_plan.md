@@ -4,70 +4,74 @@
 Build the `link` R package — a connectivity-system-agnostic crossing interpretation layer that scores, overrides, and prioritizes crossings for any network engine, with fresh as the first integration target.
 
 ## Current Phase
-Phase 1
+Phase 7
 
 ## Phases
 
 ### Phase 1: Package Scaffold
-- [ ] Create branch `scaffold-link` from main
-- [ ] `usethis::create_package(".")` + DESCRIPTION fields
-- [ ] `usethis::use_mit_license("New Graph Environment Ltd.")`
-- [ ] `usethis::use_testthat(edition = 3)`
-- [ ] `usethis::use_pkgdown()` + GitHub Action
-- [ ] `usethis::use_directory("dev")` + `dev/dev.R`
-- [ ] `usethis::use_directory("data-raw")` + `data-raw/testdata.R`
-- [ ] `inst/extdata/thresholds_default.csv`
-- [ ] `R/link-package.R` with package-level roxygen
-- [ ] `.lintr` config
-- [ ] Commit: `Scaffold link package` — Relates to #1
-- **Status:** pending
+- [x] Create branch `scaffold-link` from main
+- [x] DESCRIPTION, LICENSE, NAMESPACE, .Rbuildignore, .gitignore
+- [x] testthat (edition 3) + pkgdown + GitHub Action
+- [x] `dev/dev.R` + `data-raw/testdata.R`
+- [x] `inst/extdata/` — thresholds, crossings, overrides CSVs
+- [x] `R/link-package.R` with package-level roxygen
+- [x] `.lintr` config
+- [x] Commit: `Scaffold link package` — Relates to #1
+- **Status:** complete
 
 ### Phase 2: Core Utilities & Thresholds (Issues #3–4)
-- [ ] `lnk_thresholds()` — load/merge configurable scoring defaults (#3)
-- [ ] `lnk_db_conn()` / internal DB helpers (#4)
-- [ ] Tests + examples for each
-- [ ] `devtools::document()`, `lintr::lint_package()`, `devtools::test()`
-- [ ] Commit each function closing its issue
-- **Status:** pending
+- [x] `lnk_thresholds()` — load/merge configurable scoring defaults (#3)
+- [x] `lnk_db_conn()` / internal DB helpers (#4)
+- [x] Tests + examples for each (63 pass + 10 skip-if-no-db)
+- [x] 3-round code check: SQL injection, allowlist, reserved-word quoting, NaN/Inf guards
+- [x] `devtools::document()`, `lintr::lint_package()`, `devtools::test()` — all clean
+- [x] Committed in scaffold (issues close when PR merges)
+- **Status:** complete
 
 ### Phase 3: Override Family (Issues #5–7)
-- [ ] `lnk_override_load()` — read CSV, validate structure, write to DB (#5)
-- [ ] `lnk_override_apply()` — join overrides onto crossings table (#6)
-- [ ] `lnk_override_validate()` — check referential integrity (#7)
-- [ ] Tests + examples for each
-- [ ] `devtools::document()`, `lintr::lint_package()`, `devtools::test()`
-- [ ] Commit each function closing its issue
-- **Status:** pending
+- [x] `lnk_override_load()` — two-phase CSV validation + DB write (#5)
+- [x] `lnk_override_apply()` — auto-detect columns, quoted SQL (#6)
+- [x] `lnk_override_validate()` — orphans, duplicates, counts (#7)
+- [x] Tests: 68 pass, 34 skip (DB), 0 fail
+- [x] 3-round code check: SQL injection, partial-load atomicity, empty-CSV guard
+- [x] Examples: load→validate→apply pipeline, verbose output, error cases
+- [x] Committed: Fixes #5, #6, #7
+- **Status:** complete
 
 ### Phase 4: Match Family (Issues #8–10)
-- [ ] `lnk_match_sources()` — generic multi-source spatial matching (#8)
-- [ ] `lnk_match_pscis()` — PSCIS-to-modelled convenience wrapper (#9)
-- [ ] `lnk_match_moti()` — MOTI chris_culvert_id integration (#10)
-- [ ] Tests + examples for each
-- [ ] Commit each function closing its issue
-- **Status:** pending
+- [x] `lnk_match_sources()` — generic N-way matcher with 1:1 dedup (#8)
+- [x] `lnk_match_pscis()` — PSCIS wrapper with xref CSV priority (#9)
+- [x] `lnk_match_moti()` — MOTI wrapper with 150m tolerance (#10)
+- [x] Tests: 69 pass, 50 skip (DB), 0 fail, 0 lints
+- [x] 3-round code check: many-to-many dedup, where alias isolation
+- [x] Committed: Fixes #8, #9, #10
+- **Status:** complete
 
 ### Phase 5: Score Family (Issues #11–12)
-- [ ] `lnk_score_severity()` — classify by biological impact (#11)
-- [ ] `lnk_score_custom()` — user-defined scoring rules (#12)
-- [ ] Tests + examples for each
-- [ ] Commit each function closing its issue
-- **Status:** pending
+- [x] `lnk_score_severity()` — threshold-driven, NULL-safe, column-agnostic (#11)
+- [x] `lnk_score_custom()` — weighted rank with primary key join (#12)
+- [x] Tests: 69 pass, 65 skip (DB), 0 fail, 0 lints
+- [x] 2-round code check: threshold SQL guard, ctid->PK, direction validation
+- [x] Committed: Fixes #11, #12
+- **Status:** complete
 
 ### Phase 6: Bridge & Habitat (Issues #13–14)
-- [ ] `lnk_break_source()` — produce fresh-compatible break source list (#13)
-- [ ] `lnk_habitat_upstream()` — per-crossing upstream habitat rollup (#14)
-- [ ] Tests + examples for each
-- [ ] Commit each function closing its issue
-- **Status:** pending
+- [x] `lnk_break_source()` — fresh-compatible break source spec (#13)
+- [x] `lnk_habitat_upstream()` — per-crossing upstream rollup (#14)
+- [x] Tests: 69 pass, 77 skip (DB), 0 fail, 0 lints
+- [x] Code check: clean first round
+- [x] Committed: Fixes #13, #14
+- **Status:** complete
 
 ### Phase 7: Integration & Release
-- [ ] End-to-end vignette with bundled test data
+- [x] Vignette: MORR crossing interpretation (bcfishpass pipeline replica)
+- [x] data-raw/vignette_morr.R — generates .rds from live DB
+- [x] NEWS.md, README
+- [ ] Run vignette_morr.R to generate .rds (needs DB)
 - [ ] `devtools::check()` passes
-- [ ] NEWS.md, README, hex sticker
 - [ ] PR to main: `Relates to NewGraphEnvironment/sred-2025-2026#24`
-- [ ] pkgdown deploy
-- **Status:** pending
+- [ ] pkgdown deploy, hex sticker
+- **Status:** in_progress
 
 ## Key Questions
 1. What test data can we bundle without DB dependency? (small CSV crossings + thresholds)
