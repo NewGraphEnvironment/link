@@ -1,108 +1,79 @@
-#' Match crossing records across multiple data systems
+#' Match crossing records across data systems
 #'
 #' Link crossing records from different sources using network position
 #' (blue_line_key + downstream_route_measure) within a distance tolerance.
-#' This is the generic matcher — [lnk_match_pscis()] and [lnk_match_moti()]
-#' are convenience wrappers with BC defaults.
+#' Bidirectional 1:1 dedup ensures each record matches at most once on
+#' each side.
 #'
 #' @param conn A [DBI::DBIConnection-class] object.
 #' @param sources List of source specs. Each spec is a named list with:
 #'   \describe{
 #'     \item{table}{(required) Schema-qualified table name.}
 #'     \item{col_id}{(required) The ID column for this source.}
-#'     \item{where}{(optional) Raw SQL filter predicate. Developer API
-#'       only — must not contain user input. Applied within a subquery
-#'       so column names are unambiguous.}
-#'     \item{col_blk}{(optional) Override the network key column for
-#'       this source.}
-#'     \item{col_measure}{(optional) Override the measure column for
-#'       this source.}
+#'     \item{where}{(optional) Raw SQL filter. Developer API only —
+#'       applied within a subquery.}
+#'     \item{col_blk}{(optional) Override network key column.}
+#'     \item{col_measure}{(optional) Override measure column.}
 #'   }
-#' @param col_blk Character. Default network key column name across
-#'   sources. Default `"blue_line_key"`.
-#' @param col_measure Character. Default measure column name across
-#'   sources. Default `"downstream_route_measure"`.
-#' @param distance Numeric. Maximum network distance (metres) for a
-#'   match. Records further apart are not matched.
-#' @param to Character. Output table name for matched pairs.
+#' @param xref_csv Character. Optional path to a CSV of known matches.
+#'   Must have two columns matching the `col_id` of the first two sources.
+#'   Applied first — matched IDs are excluded from spatial matching.
+#' @param col_blk Character. Default network key column.
+#' @param col_measure Character. Default measure column.
+#' @param distance Numeric. Maximum network distance (metres) for a match.
+#' @param to Character. Output table name.
 #' @param overwrite Logical. Overwrite output table if it exists.
-#' @param verbose Logical. Report match counts per source pair.
+#' @param verbose Logical. Report match counts.
 #'
 #' @return The output table name (invisibly). The table contains columns:
 #'   `source_a`, `id_a`, `source_b`, `id_b`, `distance_m`.
 #'
 #' @details
-#' **N-way matching:** not limited to two sources. Three sources produce
-#' three pairwise comparisons. Each pair is matched independently.
+#' **N-way matching:** two or more sources produce pairwise comparisons.
 #'
-#' **Network-first:** matches on linear referencing position
-#' (blue_line_key + downstream_route_measure). Records on the same stream
-#' (same blue_line_key) within `distance` metres are matched.
+#' **1:1 dedup:** two-pass DISTINCT ON keeps only the closest match per
+#' record on both sides. No many-to-many inflation.
 #'
-#' **System-agnostic:** each source declares its own ID column and
-#' optionally its own network position column names. Works for any
-#' jurisdiction's crossing data.
+#' **xref priority:** when `xref_csv` is provided, those known matches
+#' are applied first (distance = 0). Already-matched IDs are excluded
+#' from spatial matching.
 #'
 #' @examples
-#' # --- What matching solves ---
-#' # PSCIS assessments have field measurements (outlet drop, culvert slope).
-#' # Modelled crossings have network position (blue_line_key, measure).
-#' # Matching links the measurements to the network so you can score.
-#'
 #' \dontrun{
 #' conn <- lnk_db_conn()
 #'
-#' # Two-source match: PSCIS assessments to modelled crossings
-#' lnk_match_sources(conn,
+#' # Two-source match
+#' lnk_match(conn,
 #'   sources = list(
 #'     list(table = "whse_fish.pscis_assessment_svw",
 #'          col_id = "stream_crossing_id"),
 #'     list(table = "bcfishpass.modelled_stream_crossings",
 #'          col_id = "modelled_crossing_id")),
 #'   to = "working.matched_crossings")
-#' # Matched 4,231 pairs within 100m on the same stream.
-#' # Source A: whse_fish.pscis_assessment_svw (stream_crossing_id)
-#' # Source B: bcfishpass.modelled_stream_crossings (modelled_crossing_id)
 #'
-#' # Three-way match including MOTI
-#' lnk_match_sources(conn,
+#' # With hand-curated xref corrections
+#' lnk_match(conn,
 #'   sources = list(
-#'     list(table = "whse_fish.pscis_assessment_svw",
-#'          col_id = "stream_crossing_id"),
-#'     list(table = "bcfishpass.modelled_stream_crossings",
-#'          col_id = "modelled_crossing_id"),
-#'     list(table = "working.moti_culverts",
-#'          col_id = "chris_culvert_id")),
-#'   distance = 150,
-#'   to = "working.matched_all")
-#' # Three pairwise comparisons, wider tolerance for MOTI GPS.
-#'
-#' # Filtered match — only assessed crossings in a watershed
-#' lnk_match_sources(conn,
-#'   sources = list(
-#'     list(table = "whse_fish.pscis_assessment_svw",
-#'          col_id = "stream_crossing_id",
-#'          where = "watershed_group_code = 'BULK'"),
-#'     list(table = "bcfishpass.modelled_stream_crossings",
-#'          col_id = "modelled_crossing_id",
-#'          where = "watershed_group_code = 'BULK'")),
-#'   to = "working.matched_bulk")
+#'     list(table = "working.pscis", col_id = "stream_crossing_id"),
+#'     list(table = "working.crossings", col_id = "modelled_crossing_id")),
+#'   xref_csv = "data/overrides/pscis_modelled_xref.csv",
+#'   to = "working.matched")
 #' }
 #'
 #' @export
-lnk_match_sources <- function(conn,
-                              sources,
-                              col_blk = "blue_line_key",
-                              col_measure = "downstream_route_measure",
-                              distance = 100,
-                              to = "working.matched_crossings",
-                              overwrite = TRUE,
-                              verbose = TRUE) {
+lnk_match <- function(conn,
+                       sources,
+                       xref_csv = NULL,
+                       col_blk = "blue_line_key",
+                       col_measure = "downstream_route_measure",
+                       distance = 100,
+                       to = "working.matched_crossings",
+                       overwrite = TRUE,
+                       verbose = TRUE) {
   if (!is.list(sources) || length(sources) < 2) {
     stop("`sources` must be a list of at least 2 source specs.", call. = FALSE)
   }
 
-  # Validate each source spec
   for (i in seq_along(sources)) {
     src <- sources[[i]]
     if (is.null(src$table)) {
@@ -127,8 +98,72 @@ lnk_match_sources <- function(conn,
     stop("`distance` must be a positive finite number.", call. = FALSE)
   }
 
-  # Create output table
   qt_to <- .lnk_quote_table(conn, to)
+
+  # --- Handle xref CSV if provided ---
+  if (!is.null(xref_csv)) {
+    if (!file.exists(xref_csv)) {
+      stop("xref CSV not found: '", xref_csv, "'.", call. = FALSE)
+    }
+
+    xref <- utils::read.csv(xref_csv, stringsAsFactors = FALSE)
+    id_a_col <- sources[[1]]$col_id
+    id_b_col <- sources[[2]]$col_id
+
+    required <- c(id_a_col, id_b_col)
+    missing <- setdiff(required, names(xref))
+    if (length(missing) > 0) {
+      stop(
+        "xref CSV missing required columns: ",
+        paste(missing, collapse = ", "),
+        call. = FALSE
+      )
+    }
+
+    parts <- .lnk_parse_table(to)
+    tbl_id <- DBI::Id(schema = parts$schema, table = parts$table)
+
+    xref_out <- data.frame(
+      source_a = sources[[1]]$table,
+      id_a = as.character(xref[[id_a_col]]),
+      source_b = sources[[2]]$table,
+      id_b = as.character(xref[[id_b_col]]),
+      distance_m = 0,
+      stringsAsFactors = FALSE
+    )
+    DBI::dbWriteTable(conn, tbl_id, xref_out, overwrite = TRUE)
+
+    if (verbose) {
+      message("Applied ", nrow(xref), " known matches from xref CSV")
+    }
+
+    # Exclude already-matched IDs from spatial matching
+    id_a_q <- DBI::dbQuoteIdentifier(conn, id_a_col)
+    id_b_q <- DBI::dbQuoteIdentifier(conn, id_b_col)
+    src_a_exclude <- paste0(
+      id_a_col, "::text NOT IN (SELECT id_a FROM ", qt_to, ")"
+    )
+    src_b_exclude <- paste0(
+      id_b_col, "::text NOT IN (SELECT id_b FROM ", qt_to, ")"
+    )
+
+    # Add where clauses to first two sources
+    sources[[1]]$where <- if (is.null(sources[[1]]$where)) {
+      src_a_exclude
+    } else {
+      paste0("(", sources[[1]]$where, ") AND ", src_a_exclude)
+    }
+    sources[[2]]$where <- if (is.null(sources[[2]]$where)) {
+      src_b_exclude
+    } else {
+      paste0("(", sources[[2]]$where, ") AND ", src_b_exclude)
+    }
+
+    # Spatial match appends to existing xref table
+    overwrite <- FALSE
+  }
+
+  # --- Create output table ---
   if (overwrite) {
     .lnk_db_execute(conn, paste("DROP TABLE IF EXISTS", qt_to))
     .lnk_db_execute(conn, paste0(
@@ -146,7 +181,7 @@ lnk_match_sources <- function(conn,
     ))
   }
 
-  # Pairwise matching
+  # --- Pairwise matching ---
   pairs <- utils::combn(length(sources), 2, simplify = FALSE)
 
   for (pair in pairs) {
@@ -166,9 +201,6 @@ lnk_match_sources <- function(conn,
     label_a <- src_a$table
     label_b <- src_b$table
 
-    # Build source subqueries with WHERE filters isolated to each source.
-    # This prevents column name ambiguity and ensures filters apply to the
-    # correct table. where clauses are raw SQL — developer API only.
     from_a <- qt_a
     if (!is.null(src_a$where)) {
       from_a <- paste0("(SELECT * FROM ", qt_a,
@@ -180,8 +212,6 @@ lnk_match_sources <- function(conn,
                        " WHERE ", src_b$where, ") ")
     }
 
-    # Two-pass dedup: closest match per A, then closest per B.
-    # Ensures 1:1 matching — no record appears more than once on either side.
     qdist <- DBI::dbQuoteLiteral(conn, distance)
     all_matches <- paste0(
       "SELECT ",
@@ -218,7 +248,8 @@ lnk_match_sources <- function(conn,
   }
 
   if (verbose) {
-    n_total <- DBI::dbGetQuery(conn, paste("SELECT count(*) FROM", qt_to))[[1]]
+    n_total <- DBI::dbGetQuery(conn,
+      paste("SELECT count(*) FROM", qt_to))[[1]]
     message("Total matched pairs: ", n_total)
   }
 

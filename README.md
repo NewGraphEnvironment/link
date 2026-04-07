@@ -65,7 +65,7 @@ lnk_override_apply(conn, "working.crossings", "working.fixes")
 lnk_score_severity(conn, "working.crossings")
 
 # Feed to fresh
-src <- lnk_break_source(conn, "working.crossings")
+src <- lnk_source(conn, "working.crossings")
 fresh::frs_habitat(conn, "MORR", break_sources = list(src))
 ```
 

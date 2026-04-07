@@ -52,7 +52,7 @@ conn <- lnk_db_conn()  # reads PG_DB_SHARE, PG_HOST_SHARE, etc.
 - `lnk_db_conn()` — PostgreSQL connection factory. `PG_*_SHARE` then `PG*` env vars.
 
 ### Override family: load → validate → apply
-- `lnk_override_load(conn, csv, to)` — read correction CSVs into DB. Two-phase: validate all CSVs before writing any. Multi-file load. Provenance tracking.
+- `lnk_load(conn, csv, to)` — read correction CSVs into DB. Two-phase: validate all CSVs before writing any. Multi-file load. Provenance tracking.
 - `lnk_override_validate(conn, overrides, crossings)` — find orphans (IDs not in crossings) and duplicates. Non-blocking.
 - `lnk_override_apply(conn, crossings, overrides)` — join overrides onto crossings. Auto-detects update columns. Reports counts.
 
@@ -66,25 +66,25 @@ conn <- lnk_db_conn()  # reads PG_DB_SHARE, PG_HOST_SHARE, etc.
 - `lnk_score_custom(conn, crossings, rules, col_id)` — weighted rank scoring for multi-criteria prioritization. Supports column refs and SQL expressions.
 
 ### Bridge to fresh
-- `lnk_break_source(conn, crossings, label_col, label_map)` — returns `list(table, label_col, label_map)` that plugs directly into `frs_habitat(break_sources = list(...))`. `label_map` translates link severity → fresh access labels (`high → blocked`, `moderate → potential`).
-- `lnk_habitat_upstream(conn, crossings, habitat, cols_sum)` — per-crossing upstream habitat rollup from fresh output. Sums spawning_km, rearing_km (or custom metrics).
+- `lnk_source(conn, crossings, label_col, label_map)` — returns `list(table, label_col, label_map)` that plugs directly into `frs_habitat(break_sources = list(...))`. `label_map` translates link severity → fresh access labels (`high → blocked`, `moderate → potential`).
+- `lnk_aggregate(conn, crossings, habitat, cols_sum)` — per-crossing upstream habitat rollup from fresh output. Sums spawning_km, rearing_km (or custom metrics).
 
 ## Integration with fresh
 
 ```r
 # link scores crossings
-lnk_override_load(conn, csv = "overrides.csv", to = "working.fixes")
+lnk_load(conn, csv = "overrides.csv", to = "working.fixes")
 lnk_override_apply(conn, "working.crossings", "working.fixes")
 lnk_score_severity(conn, "working.crossings")
 
 # link produces break source spec
-src <- lnk_break_source(conn, "working.crossings")
+src <- lnk_source(conn, "working.crossings")
 
 # fresh consumes it — zero translation
 frs_habitat(conn, "MORR", break_sources = list(src))
 
 # link reads fresh output for per-crossing rollup
-lnk_habitat_upstream(conn, "working.crossings", "fresh.streams_habitat")
+lnk_aggregate(conn, "working.crossings", "fresh.streams_habitat")
 ```
 
 The data flows both directions: link → fresh (scored crossings as break sources) and fresh → link (habitat classification for upstream rollup).
@@ -95,9 +95,9 @@ The same steps replicate what bcfishpass does, for any `watershed_group_code`:
 
 1. Load crossings from `fresh::system.file("extdata", "crossings.csv")`, filter to WSG
 2. Load overrides from `bcfishpass/data/` CSVs, filter to WSG
-3. `lnk_override_load()` → `lnk_override_validate()` → `lnk_override_apply()`
+3. `lnk_load()` → `lnk_override_validate()` → `lnk_override_apply()`
 4. Get PSCIS via `bcdata::bcdc_get_data()`, match with `lnk_match_pscis()` (+ xref CSV)
-5. `lnk_score_severity()` → `lnk_break_source()` → `frs_habitat()`
+5. `lnk_score_severity()` → `lnk_source()` → `frs_habitat()`
 
 To run the entire province: loop over watershed groups.
 

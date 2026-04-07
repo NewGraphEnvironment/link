@@ -58,13 +58,13 @@
 #' conn <- lnk_db_conn()
 #'
 #' # Single file — most common case
-#' lnk_override_load(conn,
+#' lnk_load(conn,
 #'   csv  = "data/overrides/modelled_xings_fixes.csv",
 #'   to   = "working.overrides_modelled",
 #'   cols_required = c("barrier_result_code"))
 #'
 #' # Multiple files from different field seasons
-#' lnk_override_load(conn,
+#' lnk_load(conn,
 #'   csv  = c("data/overrides/2024_field.csv",
 #'            "data/overrides/2025_field.csv"),
 #'   to   = "working.overrides_modelled")
@@ -77,15 +77,15 @@
 #' }
 #'
 #' @export
-lnk_override_load <- function(conn,
-                              csv,
+lnk_load <- function(conn,
+                     csv,
                               to,
                               cols_id = "modelled_crossing_id",
                               cols_required = NULL,
                               cols_provenance = c("reviewer",
                                                   "review_date",
                                                   "source"),
-                              overwrite = TRUE) {
+                     overwrite = TRUE) {
   if (!is.character(csv) || length(csv) == 0) {
     stop("`csv` must be a character vector of file paths.", call. = FALSE)
   }

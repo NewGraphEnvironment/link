@@ -1,26 +1,26 @@
-# --- lnk_override_load: CSV validation (no DB needed) ---
+# --- lnk_load: CSV validation (no DB needed) ---
 
 test_that("override_load errors on non-character csv", {
-  expect_error(lnk_override_load(NULL, csv = 42, to = "t"), "character vector")
+  expect_error(lnk_load(NULL, csv = 42, to = "t"), "character vector")
 })
 
 test_that("override_load errors on empty csv vector", {
   expect_error(
-    lnk_override_load(NULL, csv = character(0), to = "t"),
+    lnk_load(NULL, csv = character(0), to = "t"),
     "character vector"
   )
 })
 
 test_that("override_load errors on missing file", {
   expect_error(
-    lnk_override_load(NULL, csv = "/no/such/file.csv", to = "t"),
+    lnk_load(NULL, csv = "/no/such/file.csv", to = "t"),
     "not found"
   )
 })
 
 test_that("override_load errors on multiple missing files", {
   expect_error(
-    lnk_override_load(NULL, csv = c("/no/a.csv", "/no/b.csv"), to = "t"),
+    lnk_load(NULL, csv = c("/no/a.csv", "/no/b.csv"), to = "t"),
     "a\\.csv.*b\\.csv"
   )
 })
@@ -30,12 +30,12 @@ test_that("override_load validates destination table name", {
   on.exit(unlink(tmp))
   writeLines("modelled_crossing_id,barrier_result_code\n1001,BARRIER", tmp)
   expect_error(
-    lnk_override_load(NULL, csv = tmp, to = "bad;table"),
+    lnk_load(NULL, csv = tmp, to = "bad;table"),
     "disallowed"
   )
 })
 
-# --- lnk_override_load: CSV structure validation (DB needed) ---
+# --- lnk_load: CSV structure validation (DB needed) ---
 
 test_that("override_load rejects CSV missing required columns", {
   conn <- skip_if_no_db()
@@ -44,7 +44,7 @@ test_that("override_load rejects CSV missing required columns", {
   writeLines("wrong_id,barrier_result_code\n1001,BARRIER", tmp)
 
   expect_error(
-    lnk_override_load(
+    lnk_load(
       conn, csv = tmp, to = "working.test_overrides",
       cols_id = "modelled_crossing_id"
     ),
@@ -59,7 +59,7 @@ test_that("override_load rejects CSV missing cols_required", {
   writeLines("modelled_crossing_id,other_col\n1001,foo", tmp)
 
   expect_error(
-    lnk_override_load(
+    lnk_load(
       conn, csv = tmp, to = "working.test_overrides",
       cols_required = c("barrier_result_code")
     ),
@@ -74,7 +74,7 @@ test_that("override_load writes to database and returns table name", {
   on.exit(DBI::dbExecute(conn, paste("DROP TABLE IF EXISTS", dest)))
 
   csv_path <- system.file("extdata", "overrides_example.csv", package = "link")
-  result <- lnk_override_load(conn, csv = csv_path, to = dest)
+  result <- lnk_load(conn, csv = csv_path, to = dest)
 
   expect_equal(result, dest)
   n <- DBI::dbGetQuery(conn, paste("SELECT count(*) FROM", dest))[[1]]
@@ -102,7 +102,7 @@ test_that("override_load appends multiple CSVs", {
     "1004,PASSABLE"
   ), tmp2)
 
-  lnk_override_load(conn, csv = c(tmp1, tmp2), to = dest)
+  lnk_load(conn, csv = c(tmp1, tmp2), to = dest)
   n <- DBI::dbGetQuery(conn, paste("SELECT count(*) FROM", dest))[[1]]
   expect_equal(n, 4L)
 })
@@ -120,8 +120,8 @@ test_that("override_load with overwrite=TRUE replaces existing data", {
     "1001,PASSABLE"
   ), tmp)
 
-  lnk_override_load(conn, csv = tmp, to = dest)
-  lnk_override_load(conn, csv = tmp, to = dest, overwrite = TRUE)
+  lnk_load(conn, csv = tmp, to = dest)
+  lnk_load(conn, csv = tmp, to = dest, overwrite = TRUE)
   n <- DBI::dbGetQuery(conn, paste("SELECT count(*) FROM", dest))[[1]]
   expect_equal(n, 1L)
 })
@@ -134,7 +134,7 @@ test_that("override_load errors when all CSVs are empty", {
 
   expect_error(
     suppressWarnings(
-      lnk_override_load(conn, csv = tmp, to = "working.test_ol_empty")
+      lnk_load(conn, csv = tmp, to = "working.test_ol_empty")
     ),
     "empty"
   )
@@ -154,7 +154,7 @@ test_that("override_load notes missing provenance columns", {
   ), tmp)
 
   expect_message(
-    lnk_override_load(conn, csv = tmp, to = dest),
+    lnk_load(conn, csv = tmp, to = dest),
     "provenance columns not found"
   )
 })

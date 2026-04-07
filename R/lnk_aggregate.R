@@ -50,7 +50,7 @@
 #' lnk_score_severity(conn, "working.crossings")
 #'
 #' # Compute upstream habitat from fresh output
-#' lnk_habitat_upstream(conn,
+#' lnk_aggregate(conn,
 #'   crossings = "working.crossings",
 #'   habitat = "fresh.streams_habitat")
 #' # Added spawning_km, rearing_km to working.crossings
@@ -63,7 +63,7 @@
 #' # to find high-severity barriers blocking the most habitat.
 #'
 #' # --- Custom metrics ---
-#' lnk_habitat_upstream(conn,
+#' lnk_aggregate(conn,
 #'   crossings = "working.crossings",
 #'   habitat = "fresh.streams_habitat",
 #'   cols_sum = c(spawning_km = "spawning",
@@ -72,17 +72,17 @@
 #' }
 #'
 #' @export
-lnk_habitat_upstream <- function(conn,
-                                 crossings,
-                                 habitat,
-                                 col_id = "modelled_crossing_id",
-                                 cols_sum = c(spawning_km = "spawning",
-                                              rearing_km = "rearing"),
-                                 col_blk = "blue_line_key",
-                                 col_measure = "downstream_route_measure",
-                                 col_length = "length_metre",
-                                 to = NULL,
-                                 verbose = TRUE) {
+lnk_aggregate <- function(conn,
+                          crossings,
+                        habitat,
+                        col_id = "modelled_crossing_id",
+                        cols_sum = c(spawning_km = "spawning",
+                                     rearing_km = "rearing"),
+                          col_blk = "blue_line_key",
+                        col_measure = "downstream_route_measure",
+                        col_length = "length_metre",
+                        to = NULL,
+                        verbose = TRUE) {
   .lnk_validate_identifier(crossings, "crossings table")
   .lnk_validate_identifier(habitat, "habitat table")
   .lnk_validate_identifier(col_id, "col_id")

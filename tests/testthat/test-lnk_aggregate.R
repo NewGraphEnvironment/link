@@ -49,7 +49,7 @@ hab_tbl <- "working.test_hab_hab"
 test_that("habitat_upstream errors on missing tables", {
   conn <- skip_if_no_db()
   expect_error(
-    lnk_habitat_upstream(conn, "working.nonexistent", hab_tbl),
+    lnk_aggregate(conn, "working.nonexistent", hab_tbl),
     "not found"
   )
 })
@@ -60,7 +60,7 @@ test_that("habitat_upstream errors on bad cols_sum", {
   on.exit(teardown_habitat_tables(conn))
 
   expect_error(
-    lnk_habitat_upstream(conn, cross_tbl, hab_tbl, cols_sum = c("x")),
+    lnk_aggregate(conn, cross_tbl, hab_tbl, cols_sum = c("x")),
     "named character"
   )
 })
@@ -72,7 +72,7 @@ test_that("habitat_upstream computes upstream sums", {
   setup_habitat_tables(conn)
   on.exit(teardown_habitat_tables(conn))
 
-  lnk_habitat_upstream(conn, cross_tbl, hab_tbl, verbose = FALSE)
+  lnk_aggregate(conn, cross_tbl, hab_tbl, verbose = FALSE)
 
   r <- DBI::dbGetQuery(conn, paste(
     "SELECT * FROM", cross_tbl, "ORDER BY modelled_crossing_id"
@@ -102,7 +102,7 @@ test_that("habitat_upstream writes to new table", {
   setup_habitat_tables(conn)
   on.exit(teardown_habitat_tables(conn))
 
-  result <- lnk_habitat_upstream(
+  result <- lnk_aggregate(
     conn, cross_tbl, hab_tbl,
     to = "working.test_hab_copy", verbose = FALSE
   )
@@ -121,7 +121,7 @@ test_that("habitat_upstream verbose reports stats", {
   on.exit(teardown_habitat_tables(conn))
 
   expect_message(
-    lnk_habitat_upstream(conn, cross_tbl, hab_tbl, verbose = TRUE),
+    lnk_aggregate(conn, cross_tbl, hab_tbl, verbose = TRUE),
     "spawning_km"
   )
 })

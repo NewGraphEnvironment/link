@@ -41,7 +41,7 @@
 #' lnk_score_severity(conn, "working.crossings")
 #'
 #' # Step 2: Produce break source
-#' src <- lnk_break_source(conn, "working.crossings")
+#' src <- lnk_source(conn, "working.crossings")
 #' # Returns:
 #' # list(table = "working.crossings",
 #' #      label_col = "severity",
@@ -59,23 +59,23 @@
 #'
 #' # --- Custom label_map for a conservative project ---
 #' # Only treat high-severity as blocked
-#' src_strict <- lnk_break_source(conn, "working.crossings",
+#' src_strict <- lnk_source(conn, "working.crossings",
 #'   label_map = c(high = "blocked"))
 #'
 #' # --- Static label for all crossings ---
-#' src_all <- lnk_break_source(conn, "working.crossings",
+#' src_all <- lnk_source(conn, "working.crossings",
 #'   label = "potential", label_col = NULL)
 #' # Every crossing is a potential barrier — no severity differentiation.
 #' }
 #'
 #' @export
-lnk_break_source <- function(conn,
-                             crossings,
-                             label = NULL,
-                             label_col = "severity",
-                             label_map = c(high = "blocked",
-                                           moderate = "potential"),
-                             where = NULL) {
+lnk_source <- function(conn,
+                       crossings,
+                       label = NULL,
+                       label_col = "severity",
+                       label_map = c(high = "blocked",
+                                     moderate = "potential"),
+                       where = NULL) {
   .lnk_validate_identifier(crossings, "crossings table")
 
   if (!.lnk_table_exists(conn, crossings)) {
