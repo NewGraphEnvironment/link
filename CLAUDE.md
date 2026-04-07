@@ -7,29 +7,108 @@ Crossing connectivity interpretation for fish passage. The domain layer between 
 **Repository:** NewGraphEnvironment/link
 **Primary Language:** R
 **Prefix:** `lnk_`
+**Branch:** `scaffold-link` (PR #15 → main)
 
 ## Architecture
 
 ```
-raw crossing data → link (interpret, score, override) → fresh (segment, classify, aggregate)
+bcfishpass CSVs (overrides)  ─┐
+fresh CSV (crossings)        ─┤→ link (interpret, score) → break_source spec → fresh
+bcdata (PSCIS assessments)   ─┘
 ```
 
-- **Override management** — load/apply correction CSVs for modelled crossings, PSCIS barrier status, GPS/mapping error xrefs
-- **Crossing source integration** — match records across PSCIS, modelled crossings, MOTI chris_culvert_id, CABD dams
-- **Severity scoring** — classify crossings by biological impact (high/moderate/low) using actual measurements, not just barrier_result
-- **Life-stage context** — adult spawner access > juvenile rearing > general connectivity
-- **Output for fresh** — produce break_source-compatible tables
+link is connectivity-system agnostic. Column names are configurable parameters with BC/PSCIS defaults. The same functions work for any jurisdiction's crossing data.
 
-## Dependencies
+## Data Sources (no DB required for core pipeline)
 
-- **Runtime:** DBI, RPostgres, fresh
-- **Data:** Override CSVs, PSCIS assessments, modelled crossings, MOTI culvert inventory
-- **Database:** PostgreSQL with fwapg (via fresh connection)
+| Data | Source | How |
+|------|--------|-----|
+| Crossings (province-wide) | `fresh::system.file("extdata", "crossings.csv")` | 533k rows, all WSGs |
+| Override CSVs | `bcfishpass/data/` directory | Filter by `watershed_group_code` |
+| PSCIS assessments | `bcdata::bcdc_get_data("7ecfafa6-...")` | BC Data Catalogue API |
+| Habitat thresholds | `fresh::system.file("extdata", "parameters_habitat_thresholds.csv")` | Species-specific |
+
+### Override CSVs from bcfishpass
+
+| File | Purpose | Key columns |
+|------|---------|-------------|
+| `user_modelled_crossing_fixes.csv` | Imagery/field corrections (21k rows) | `modelled_crossing_id`, `structure`, `watershed_group_code` |
+| `user_pscis_barrier_status.csv` | Expert barrier status overrides (1.3k rows) | `stream_crossing_id`, `user_barrier_status` |
+| `pscis_modelledcrossings_streams_xref.csv` | GPS error corrections (3.6k rows) | `stream_crossing_id`, `modelled_crossing_id` |
+| `user_barriers_definite.csv` | User-identified barriers (227 rows) | `blue_line_key`, `downstream_route_measure` |
+
+## Database Connection
+
+Uses `PG_*_SHARE` env vars (Docker fwapg, same as `frs_db_conn()`) with fallback to standard `PG*` vars. DB is needed for match/score/habitat functions that operate via SQL. The override loading and validation can work with any PostgreSQL.
+
+```r
+conn <- lnk_db_conn()  # reads PG_DB_SHARE, PG_HOST_SHARE, etc.
+```
+
+## Exported Functions (12)
+
+### Core
+- `lnk_thresholds(csv, high, moderate, low)` — configurable severity thresholds. Ships BC defaults. CSV or inline override. Feeds into `lnk_score_severity()`.
+- `lnk_db_conn()` — PostgreSQL connection factory. `PG_*_SHARE` then `PG*` env vars.
+
+### Override family: load → validate → apply
+- `lnk_override_load(conn, csv, to)` — read correction CSVs into DB. Two-phase: validate all CSVs before writing any. Multi-file load. Provenance tracking.
+- `lnk_override_validate(conn, overrides, crossings)` — find orphans (IDs not in crossings) and duplicates. Non-blocking.
+- `lnk_override_apply(conn, crossings, overrides)` — join overrides onto crossings. Auto-detects update columns. Reports counts.
+
+### Match family
+- `lnk_match_sources(conn, sources, distance)` — generic N-way matcher on `blue_line_key` + `downstream_route_measure`. Bidirectional 1:1 dedup (closest match wins both directions). Where filters isolated in subqueries.
+- `lnk_match_pscis(conn, crossings, pscis, xref_csv)` — PSCIS-to-modelled wrapper. xref CSV applied first (hand-curated GPS corrections), then spatial matching.
+- `lnk_match_moti(conn, crossings, moti)` — MOTI chris_culvert_id wrapper. 150m tolerance (road-centreline GPS).
+
+### Score family
+- `lnk_score_severity(conn, crossings, thresholds)` — classify by biological impact (high/moderate/low). Threshold-driven, NULL-safe, column-agnostic. All threshold values validated as finite numeric before SQL.
+- `lnk_score_custom(conn, crossings, rules, col_id)` — weighted rank scoring for multi-criteria prioritization. Supports column refs and SQL expressions.
+
+### Bridge to fresh
+- `lnk_break_source(conn, crossings, label_col, label_map)` — returns `list(table, label_col, label_map)` that plugs directly into `frs_habitat(break_sources = list(...))`. `label_map` translates link severity → fresh access labels (`high → blocked`, `moderate → potential`).
+- `lnk_habitat_upstream(conn, crossings, habitat, cols_sum)` — per-crossing upstream habitat rollup from fresh output. Sums spawning_km, rearing_km (or custom metrics).
+
+## Integration with fresh
+
+```r
+# link scores crossings
+lnk_override_load(conn, csv = "overrides.csv", to = "working.fixes")
+lnk_override_apply(conn, "working.crossings", "working.fixes")
+lnk_score_severity(conn, "working.crossings")
+
+# link produces break source spec
+src <- lnk_break_source(conn, "working.crossings")
+
+# fresh consumes it — zero translation
+frs_habitat(conn, "MORR", break_sources = list(src))
+
+# link reads fresh output for per-crossing rollup
+lnk_habitat_upstream(conn, "working.crossings", "fresh.streams_habitat")
+```
+
+The data flows both directions: link → fresh (scored crossings as break sources) and fresh → link (habitat classification for upstream rollup).
+
+## Pipeline for any watershed group
+
+The same steps replicate what bcfishpass does, for any `watershed_group_code`:
+
+1. Load crossings from `fresh::system.file("extdata", "crossings.csv")`, filter to WSG
+2. Load overrides from `bcfishpass/data/` CSVs, filter to WSG
+3. `lnk_override_load()` → `lnk_override_validate()` → `lnk_override_apply()`
+4. Get PSCIS via `bcdata::bcdc_get_data()`, match with `lnk_match_pscis()` (+ xref CSV)
+5. `lnk_score_severity()` → `lnk_break_source()` → `frs_habitat()`
+
+To run the entire province: loop over watershed groups.
+
+## SRED
+
+Relates to NewGraphEnvironment/sred-2025-2026#24 — crossing connectivity interpretation package.
 
 ## Open Issues
 
-- #1 — Package scope: crossing connectivity interpretation (function surface, override management, severity scoring)
-- #2 — Build fish passage connectivity literature RAG store (ragnar search store at data/rag/)
+- #1 — Package scope (closed by scaffold PR #15)
+- #2 — Build fish passage connectivity literature RAG store
 
 <!-- BEGIN SOUL CONVENTIONS — DO NOT EDIT BELOW THIS LINE -->
 
