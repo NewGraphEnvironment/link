@@ -1,54 +1,57 @@
 # Task Plan: ADMS End-to-End Habitat Connectivity
 
 ## Goal
-Run link + fresh pipeline for ADMS, compare per-crossing upstream habitat km against bcfishpass reference. Validate the pipeline produces correct results.
+Validate link + fresh pipeline against bcfishpass reference using sub-basin
+iteration for fast development cycles.
 
 ## Current Phase
-Phase 2
+Phase 3 — fixing differences
 
 ## Phases
 
 ### Phase 1: Consolidate function surface (#17)
-- [x] 12 functions → 8 (lnk_load, lnk_override, lnk_match, lnk_thresholds, lnk_score, lnk_source, lnk_aggregate, lnk_db_conn)
+- [x] 12 functions → 8
 - [x] 121 tests pass, committed on adms-comparison branch
 - **Status:** complete
 
 ### Phase 2: Write and run compare_adms.R (#16)
-- [ ] Write `data-raw/compare_adms.R`
-- [ ] Step 1: lnk_load + lnk_override — prepare ADMS crossings on local Docker DB
-- [ ] Step 2: fresh::frs_habitat("ADMS") — segment + classify with bcfishpass params
-- [ ] Step 3: lnk_aggregate — roll up habitat per crossing from fresh output
-- [ ] Step 4: Query tunnel DB for bcfishpass reference
-- [ ] Step 5: Compare on aggregated_crossings_id, report differences
-- [ ] Document results in findings.md
-- **Status:** pending
+- [x] Write `data-raw/compare_adms.R` with sub-basin iteration (5s cycles)
+- [x] fresh#96: frs_habitat accepts any AOI (merged)
+- [x] Falls included as blocked break sources
+- [x] Crossings break geometry only (gradient_0), don't block access
+- [x] Document results in findings.md
+- **Status:** complete — BT rearing within 3%, others need work
 
 ### Phase 3: Fix differences
-- [ ] Investigate any crossings with >10% difference
-- [ ] Fix parameter or logic issues
-- [ ] Re-run until totals within 5%
-- **Status:** pending
+- [x] BT rearing: -2.7% ✓ (validates core pipeline)
+- [ ] BT spawning: +13.8% — segmentation boundary effects + spawn_gradient_min
+- [ ] CO spawning: +37.8% — rearing not linked to spawning spatially
+- [ ] CO rearing: +34.6% — same cause as CO spawning
+- [ ] Fix "accessible" label blocking in fresh (frs_access_label_filter)
+- [ ] Investigate rearing-downstream-of-spawning requirement
+- **Status:** in progress
 
 ### Phase 4: Tests and cleanup
 - [ ] Consolidated tests for lnk_match, lnk_override, lnk_score
 - [ ] Code-check, PR to main
 - **Status:** pending
 
-## What we compare
-| Column | bcfishpass ref (126 crossings) |
-|--------|-------------------------------|
-| bt_spawning_km | 2,227 km |
-| bt_rearing_km | 3,792 km |
-| co_spawning_km | 1,852 km |
-| co_rearing_km | 2,105 km |
+## Sub-basin test target
+wscode: `100.190442.999098.995997.058910.432966`
+- 385 fresh segments, 293 bcfishpass segments
+- 74 crossings, 0 falls in sub-basin
+- 5 second iteration cycles
 
-## Success criteria
-- Correlation > 0.99 per crossing
-- Total km within 5%
-- Any >10% per-crossing difference investigated
+## Architecture (confirmed from bcfishpass source)
+- bcfishpass gates habitat on **natural** access (gradient barriers + falls)
+- Crossings are anthropogenic — break geometry but don't block access
+- Species use different access arrays:
+  - BT: `barriers_bt_dnstr` (25% gradient)
+  - CO: `barriers_ch_cm_co_pk_sk_dnstr` (15% gradient)
+- Rearing requires spatial connection to spawning (cluster analysis)
+- ADMS uses model = "cw" (channel width, not MAD)
 
-## Critical facts
-- bcfishpass breaks at ALL crossings (not just barriers)
-- barrier_status affects access classification, not segmentation
-- spawn_gradient_min = 0 to match bcfishpass
-- ADMS species: BT and CO (model = "cw")
+## Key issues for fresh
+1. "accessible" label treated as blocking (frs_access_label_filter bug)
+2. MAD not used in classification (matters for mad-model WSGs)
+3. Rearing not spatially linked to spawning (inflates CO rearing)
