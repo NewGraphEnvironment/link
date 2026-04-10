@@ -90,6 +90,35 @@ Three phases, sequential. See link#18 for full detail.
 - fresh#118 fixed: min_length default changed from 100 to 0 (was dropping short barriers)
 - Sub-basin: 137 gradient_15 barriers (fresh) vs 241 (bcfishpass) — closer but not exact. At full ADMS: 5,571 vs ~7,127 (bcfishpass). Need to verify if the remaining gap is from the min_length change or other differences.
 
+## bcfishobs integration (2026-04-10)
+
+### Upstream status
+- smnorris/bcfishobs `main` branch: completely restructured from our `master`
+- No more Makefile — replaced by `load_supporting_data.sh` + `process.sh`
+- Source data now from **parquet on NRS object storage** (`nrs.objectstore.gov.bc.ca`) via ogr2ogr `/vsicurl/` — no more bcdata WFS download
+- Single `sql/process.sql` — consolidated all numbered SQL files into one transaction
+- Output table: `bcfishobs.observations` (not the old view `fiss_fish_obsrvtn_events_vw`)
+- DB migrations: `db/v0.2.0.sql` through `db/v0.3.2.sql`
+- Requires: pgcrypto extension, whse_fish schema (species_cd, wdic_waterbodies), fwapg
+
+### How bcfishpass uses observations
+- Observations upgrade access from "unknown" to "known accessible" per species
+- `load_streams_access.sql`: if species observed upstream of a barrier, access = 2 (confirmed)
+- This means segments behind barriers with fish observations are still classified as accessible
+- BT rears above barriers — many populations have been resident since post-glacial (10k years)
+
+### Decision: use bcfishobs as-is
+- bcfishobs does the hard work of snapping observations to FWA (lake/wetland + stream matching)
+- fresh already has `frs_fish_obs()` that queries the output table
+- Clean boundary: bcfishobs (snap to network) -> bcfishobs.observations -> fresh reads it
+- Avoids re-implementing tested snapping logic in fresh
+- NGE fish data and e-fishing densities are a separate concern (link#20) — load as additional sources later
+
+### db_newgraph integration
+- `db_newgraph/jobs/bcfishobs` script: clones smnorris/bcfishobs, runs make, dumps to S3 as FlatGeobuf
+- GHA workflow `bcfishpass.yaml` runs bcfishobs as part of the bcfishpass rebuild pipeline
+- Same pattern for local Docker: run process.sh with DATABASE_URL pointing to fwapg
+
 ## fresh issues filed (from this comparison)
 - #96 ✓ — AOI support
 - #98 ✓ — gate + label_block
