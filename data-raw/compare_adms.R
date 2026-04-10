@@ -17,8 +17,8 @@
 
 wsg <- "ADMS"
 # Set to a wscode prefix for fast sub-basin iteration, or NULL for full ADMS
-sub_basin <- "100.190442.999098.995997.058910.432966"
-# sub_basin <- NULL
+# sub_basin <- "100.190442.999098.995997.058910.432966"
+sub_basin <- NULL
 bcfishpass_data <- "~/Projects/repo/bcfishpass/data"
 
 # bcfishpass v0.5.0 classifies these species for ADMS (verified from
@@ -189,10 +189,13 @@ crossings_spec <- list(
   table = "working.adms_crossings",
   label_col = "barrier_status",
   label_map = c(
-    "BARRIER" = "blocked",
+    # bcfishpass natural access = gradient barriers + falls ONLY.
+    # Crossing barrier_status does NOT block natural access — crossings only
+    # break geometry. All labels here are non-blocking.
+    "BARRIER" = "barrier",
     "POTENTIAL" = "potential",
     "PASSABLE" = "passable",
-    "UNKNOWN" = "potential"
+    "UNKNOWN" = "unknown"
   )
 )
 
@@ -246,18 +249,8 @@ elapsed <- (proc.time() - t0)["elapsed"]
 message("frs_habitat completed in ", round(elapsed, 1), " seconds")
 print(result)
 
-# Apply rearing-spawning connectivity
-# (CO, CH, SK have cluster_rearing = TRUE in params_fresh)
-message("\n--- Applying frs_cluster ---")
-t0 <- proc.time()
-fresh::frs_cluster(conn,
-  table = "fresh.streams",
-  habitat = "fresh.streams_habitat",
-  species = species_compare,
-  verbose = TRUE
-)
-elapsed <- (proc.time() - t0)["elapsed"]
-message("frs_cluster completed in ", round(elapsed, 1), " seconds")
+# frs_habitat (>= 0.12.3) runs frs_cluster internally via .frs_connectivity_checks()
+# No need to call frs_cluster separately — would double-remove rearing segments.
 
 # ===========================================================================
 # Step 5: Compare

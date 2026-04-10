@@ -37,28 +37,43 @@
 
 CH spawning: **exact**. CH rearing: **exact**. CO spawning: **exact**. All within 5%.
 
-### Full ADMS — massive undercount (BUG)
+### Full ADMS — current results (fresh 0.12.3 + fixes)
 
-| Species | Habitat | fresh | bcfishpass | diff |
-|---------|---------|-------|-----------|------|
-| BT | spawning | 25.52 | 361.71 | -92.9% |
-| BT | rearing | 31.85 | 674.19 | -95.3% |
-| CH | spawning | 21.00 | 277.61 | -92.4% |
-| CO | spawning | 21.62 | 310.98 | -93.0% |
-| SK | spawning | 12.79 | 85.70 | -85.1% |
+| Species | Habitat | fresh | bcfishpass | diff | Notes |
+|---------|---------|-------|-----------|------|-------|
+| BT | spawning | 314.69 | 361.71 | -13.0% | Channel width data gap |
+| BT | rearing | 616.38 | 674.19 | -8.6% | Close |
+| CH | spawning | 221.28 | 277.61 | -20.3% | Channel width data gap |
+| CH | rearing | 244.35 | 308.23 | -20.7% | + cluster connectivity |
+| CO | spawning | 250.85 | 310.98 | -19.3% | Channel width data gap |
+| CO | rearing | 269.20 | 351.19 | -23.3% | + cluster connectivity |
+| SK | spawning | 194.70 | 85.70 | +127.2% | fresh#120 missing |
+| SK | rearing | 132.14 | 229.85 | -42.5% | Lake area difference |
 
-bcfishpass: 5,262 of 15,764 segments BT-accessible (33%)
-fresh: 1,288 of 30,327 segments BT-accessible (4.2%)
+BT accessible: 6,837 of 30,327 (22.5%)
+CH/CO/SK accessible: 3,572 of 30,327 (11.8%)
 
-Access gating is far too aggressive at full WSG scale. Sub-basin validates the classification logic; full WSG breaks the access model.
+### Fixes applied (session 2026-04-10)
 
-### Hypotheses for full-ADMS access undercount
+1. **BARRIER label fix** — changed label_map from `"BARRIER" = "blocked"` to `"BARRIER" = "barrier"`. bcfishpass natural access = gradient + falls only; crossing barrier_status does NOT block natural access. This fixed the ~93% undercount.
 
-1. **min_length=0 generating too many short gradient barriers** — fresh#118 set min_length default to 0. This might create thousands of spurious barrier points from DEM noise at single vertices, each blocking everything upstream. bcfishpass's island detection in `gradient_barriers_load.sql` may implicitly filter short islands differently. Investigate: how many of the 5,571 gradient_1500 barriers are from single-vertex noise vs sustained steep sections?
+2. **River polygon rearing** — bcfishpass rearing SQL includes `waterbody_type = 'R'` as an OR with edge_type filter. Edge_type 1250/1350/1450 segments in river polygons get rearing. Added `rear_river` rule to all species with stream rearing. Added ~150 km CH rearing, ~150 km CO rearing.
 
-2. **Crossing barrier_status labels blocking access** — label_map maps BARRIER→"blocked". In the sub-basin there were 0 BARRIER crossings (all POTENTIAL/PASSABLE). At full ADMS there are 39 BARRIER crossings. If fresh treats "blocked" crossings as access barriers (via label_block), they'd block everything upstream — but bcfishpass does NOT use crossing barrier_status for natural access (only gradient + falls). Check if the 39 BARRIER crossings are being treated as natural access barriers by fresh when they shouldn't be.
+3. **Double clustering fix** — fresh 0.12.3 runs frs_cluster internally in frs_habitat. Removed external frs_cluster call from compare_adms.R to avoid double-removal of disconnected rearing.
 
-3. **Both effects compounding** — too many gradient barriers + BARRIER crossings both blocking access → cascading undercount.
+4. **CSV-driven YAML generation** — both build_bcfishpass_rules_yaml.R and build_habitat_rules_yaml.R now read from parameters_habitat_dimensions.csv. bcfishpass builder applies known deviations via override list.
+
+### Remaining gaps explained
+
+1. **Channel width data gap (-13 to -20% on spawning)** — Docker fwapg has MODELLED widths only; bcfishpass tunnel has FIELD_MEASUREMENT updates. More segments have cw data in bcfishpass → more pass threshold checks.
+
+2. **Cluster connectivity (-20-23% on CH/CO rearing)** — frs_cluster may remove more disconnected rearing than bcfishpass's 3-phase approach. bcfishpass has Phase 2 (downstream of spawning, no distance cap) and Phase 3 (upstream, 10km cap). frs_cluster uses ST_ClusterDBSCAN which may handle bridge gradients differently.
+
+3. **SK spawning +127%** — fresh#120 not implemented. bcfishpass limits SK spawning to within 3km of a rearing lake >= 200 ha.
+
+4. **SK rearing -42.5%** — lake area calculation differences. bcfishpass may count lake segments differently.
+
+5. **bcfishobs not loaded** — observations upgrade access in bcfishpass. Not yet available on Docker.
 
 ## Architecture findings
 

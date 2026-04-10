@@ -1,6 +1,6 @@
 # Generated from inst/extdata/parameters_habitat_dimensions.csv
 # DO NOT EDIT — edit the CSV and re-run data-raw/build_habitat_rules_yaml.R
-# Generated: 2026-04-09
+# Generated: 2026-04-10
 #
 # Each species has spawn and rear rule lists. A segment qualifies as
 # spawning/rearing if ANY rule matches (rules joined by OR; predicates

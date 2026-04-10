@@ -25,28 +25,28 @@ Validate link + fresh pipeline against bcfishpass v0.5.0 reference for ADMS (BT,
 - [x] Sub-basin: CH spawn exact, CO spawn exact, all within 5%
 - **Status:** complete
 
-### Phase 3: Full ADMS access bug
+### Phase 3: Full ADMS comparison
 - [x] Run full ADMS — confirmed ~93% undercount across all species
-- [ ] **Hypothesis 2 (BARRIER crossings)**: Change label_map for BARRIER from "blocked" to non-blocking, rerun
-  - Sub-basin had 0 BARRIER crossings (why it worked). Full ADMS has 39.
-  - bcfishpass natural access = gradient + falls only. Crossing barrier_status does NOT block natural access.
-  - This is the simpler fix — test first.
-- [ ] **Hypothesis 1 (DEM noise barriers)**: Analyze gradient barrier distribution
-  - fresh#118 set min_length=0. Single noisy DEM vertices at >15% create spurious barriers.
-  - Count single-vertex vs sustained barriers. Compare against bcfishpass barrier counts.
-- [ ] Rerun full ADMS with fix(es), validate within 5%
-- **Status:** blocked on hypothesis testing
+- [x] **BARRIER label fix**: Changed label_map from "blocked" to "barrier" — fixed ~93% undercount
+- [x] **River polygon rearing**: Added waterbody_type=R rule — fixed CH/CO rearing (-65% → -21%)
+- [x] **Double clustering**: Removed external frs_cluster call (fresh 0.12.3 does it internally)
+- [x] **CSV-driven YAML**: Rewrote both builders to read from dimensions CSV (#22)
+- [ ] Remaining gap: -13 to -23% (channel width data, cluster connectivity)
+- [ ] fresh#120: SK spawning lake proximity (explains +127%)
+- **Status:** BT within 13%, CH/CO within 23%. Remaining gaps are data/config, not bugs.
 
 ### Phase 4: bcfishobs observations
 - [x] Sync bcfishobs fork with smnorris upstream (NGE fork on `main` branch)
-- [ ] Run DB migrations (v0.2.0 through v0.3.2) — needs pgcrypto extension
+- [x] Run DB migrations (v0.2.0 through v0.3.2) — pgcrypto + whse_fish schema created
+- [ ] Install bcdata in uv venv (blocked on rtj#66 — portable Python env plan)
+- [ ] `bcdata bc2pg -e -c 1 whse_fish.fiss_fish_obsrvtn_pnt_sp` (empty table for schema)
 - [ ] Run load_supporting_data.sh (species_cd + wdic_waterbodies)
 - [ ] Run process.sh (pulls parquet from NRS, snaps to FWA, builds bcfishobs.observations)
 - [ ] Verify bcfishobs.observations table has ADMS data
 - [ ] Determine how observations affect access in compare_adms.R
   - bcfishpass uses observations to upgrade access (unknown -> known accessible)
   - fresh#69: observation-based break validation design
-- **Status:** bcfishobs fork synced, DB setup in progress
+- **Status:** DB migrations done, blocked on bcdata install (rtj#66)
 
 ### Phase 5: SK spawning + lake proximity
 - [ ] fresh#120: SK spawning requires connected rearing lake >= 200 ha within 3km
