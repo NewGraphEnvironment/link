@@ -22,7 +22,9 @@ BT:
     - 2000
     - 2300
   - waterbody_type: R
-    thresholds: false
+    channel_width:
+    - 0.0
+    - 9999.0
   rear:
   - []
 CH:
@@ -33,7 +35,9 @@ CH:
     - 2000
     - 2300
   - waterbody_type: R
-    thresholds: false
+    channel_width:
+    - 0.0
+    - 9999.0
   rear:
   - edge_types_explicit:
     - 1000
@@ -48,7 +52,9 @@ CM:
     - 2000
     - 2300
   - waterbody_type: R
-    thresholds: false
+    channel_width:
+    - 0.0
+    - 9999.0
   rear: []
 CO:
   spawn:
@@ -58,7 +64,9 @@ CO:
     - 2000
     - 2300
   - waterbody_type: R
-    thresholds: false
+    channel_width:
+    - 0.0
+    - 9999.0
   rear:
   - edge_types_explicit:
     - 1000
@@ -77,7 +85,9 @@ PK:
     - 2000
     - 2300
   - waterbody_type: R
-    thresholds: false
+    channel_width:
+    - 0.0
+    - 9999.0
   rear: []
 SK:
   spawn:
@@ -87,7 +97,9 @@ SK:
     - 2000
     - 2300
   - waterbody_type: R
-    thresholds: false
+    channel_width:
+    - 0.0
+    - 9999.0
   rear:
   - waterbody_type: L
     lake_ha_min: 200.0
@@ -99,7 +111,9 @@ ST:
     - 2000
     - 2300
   - waterbody_type: R
-    thresholds: false
+    channel_width:
+    - 0.0
+    - 9999.0
   rear:
   - edge_types_explicit:
     - 1000
@@ -114,7 +128,9 @@ WCT:
     - 2000
     - 2300
   - waterbody_type: R
-    thresholds: false
+    channel_width:
+    - 0.0
+    - 9999.0
   rear:
   - edge_types_explicit:
     - 1000

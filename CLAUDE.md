@@ -148,10 +148,12 @@ To run the entire province: loop over watershed groups. Or pass any AOI with `sp
 
 ## Open Issues
 
-- #1 — Package scope (closed by scaffold PR #15)
-- #2 — Build fish passage connectivity literature RAG store
-- #16 — ADMS end-to-end comparison (in progress)
-- #17 — Function consolidation 12→8 (done)
+- #16 — ADMS end-to-end comparison (sub-basin validated, full WSG has access bug)
+- #18 — Configurable rearing-spawning connectivity
+- #19 — Habitat eligibility override CSV (edge_types + feature_codes)
+- #20 — Literature/observation evidence for habitat departures
+- #21 — GSDD and thermal energy as intrinsic potential variables
+- #22 — CSV→YAML build script
 - #18 — Configurable rearing-spawning connectivity
 - #19 — Habitat eligibility override CSV (edge_types + feature_codes)
 - #20 — Literature/observation evidence for habitat departures

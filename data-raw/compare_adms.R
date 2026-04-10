@@ -16,7 +16,9 @@
 #   source("data-raw/compare_adms.R")
 
 wsg <- "ADMS"
+# Set to a wscode prefix for fast sub-basin iteration, or NULL for full ADMS
 sub_basin <- "100.190442.999098.995997.058910.432966"
+# sub_basin <- NULL
 bcfishpass_data <- "~/Projects/repo/bcfishpass/data"
 
 # bcfishpass v0.5.0 classifies these species for ADMS (verified from
@@ -94,16 +96,23 @@ DBI::dbExecute(conn, "
     AND c.localcode_ltree IS NULL
 ")
 
-# Filter to sub-basin
+# Filter to sub-basin (or use all ADMS)
 DBI::dbExecute(conn, "DROP TABLE IF EXISTS working.adms_crossings")
-DBI::dbExecute(conn, sprintf("
-  CREATE TABLE working.adms_crossings AS
-  SELECT * FROM working.adms_crossings_all
-  WHERE wscode_ltree <@ '%s'::ltree
-", sub_basin))
+if (!is.null(sub_basin)) {
+  DBI::dbExecute(conn, sprintf("
+    CREATE TABLE working.adms_crossings AS
+    SELECT * FROM working.adms_crossings_all
+    WHERE wscode_ltree <@ '%s'::ltree
+  ", sub_basin))
+} else {
+  DBI::dbExecute(conn, "
+    CREATE TABLE working.adms_crossings AS
+    SELECT * FROM working.adms_crossings_all
+  ")
+}
 
 n_sub <- DBI::dbGetQuery(conn, "SELECT count(*) FROM working.adms_crossings")[[1]]
-message("  Sub-basin crossings: ", n_sub)
+message("  Crossings: ", n_sub)
 
 # ===========================================================================
 # Step 3: Apply bcfishpass overrides
@@ -206,7 +215,11 @@ rules_path <- "inst/extdata/parameters_habitat_rules_bcfishpass.yaml"
 params_fresh_path <- "inst/extdata/parameters_fresh_bcfishpass.csv"
 params_fresh_df <- read.csv(params_fresh_path, stringsAsFactors = FALSE)
 
-aoi_where <- sprintf("wscode_ltree <@ '%s'::ltree", sub_basin)
+aoi_where <- if (!is.null(sub_basin)) {
+  sprintf("wscode_ltree <@ '%s'::ltree", sub_basin)
+} else {
+  NULL  # full WSG — frs_habitat uses wsg param
+}
 
 # Drop stale tables
 DBI::dbExecute(conn, "DROP TABLE IF EXISTS fresh.streams CASCADE")
@@ -272,6 +285,11 @@ message("\nOurs (fresh 0.12.0):")
 print(ours, row.names = FALSE)
 
 # bcfishpass reference — per-species habitat_linear_* tables
+sub_filter <- if (!is.null(sub_basin)) {
+  sprintf("AND s.wscode_ltree <@ '%s'::ltree", sub_basin)
+} else {
+  ""
+}
 ref_query <- "
   SELECT '%s' AS species_code,
     round(SUM(CASE WHEN h.spawning THEN s.length_metre ELSE 0 END)::numeric / 1000.0, 2) AS spawning_km,
@@ -280,10 +298,10 @@ ref_query <- "
   FROM bcfishpass.streams s
   JOIN bcfishpass.habitat_linear_%s h ON s.segmented_stream_id = h.segmented_stream_id
   WHERE s.watershed_group_code = 'ADMS'
-    AND s.wscode_ltree <@ '%s'::ltree"
+    %s"
 
 ref_list <- lapply(species_compare, function(sp) {
-  DBI::dbGetQuery(conn_ref, sprintf(ref_query, sp, tolower(sp), sub_basin))
+  DBI::dbGetQuery(conn_ref, sprintf(ref_query, sp, tolower(sp), sub_filter))
 })
 ref <- do.call(rbind, ref_list)
 message("\nbcfishpass v0.5.0 reference:")
@@ -319,8 +337,8 @@ print(comparison, row.names = FALSE)
 n_seg_ours <- DBI::dbGetQuery(conn, "SELECT count(*) FROM fresh.streams")[[1]]
 n_seg_ref <- DBI::dbGetQuery(conn_ref, sprintf("
   SELECT count(*) FROM bcfishpass.streams
-  WHERE watershed_group_code = 'ADMS' AND wscode_ltree <@ '%s'::ltree
-", sub_basin))[[1]]
+  WHERE watershed_group_code = 'ADMS' %s
+", sub_filter))[[1]]
 message("\nSegments: ours=", n_seg_ours, " ref=", n_seg_ref)
 
 within_5pct <- all(abs(comparison$diff_pct[!is.na(comparison$diff_pct)]) < 5)

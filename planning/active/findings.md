@@ -1,107 +1,106 @@
 # Findings: ADMS Comparison
 
-## bcfishpass code review findings
+## bcfishpass v0.5.0 code review findings
 
 - `break_streams('crossings', wsg)` breaks at ALL crossings — confirmed from SQL function source
 - barrier_status only used in `load_streams_access.sql` for access codes (0/1/2)
 - `load_dnstr()` indexes downstream features as ID arrays per segment
 - Access codes: 0 = barrier downstream, 1 = no barrier but unconfirmed, 2 = confirmed by observations
-- ADMS uses model = "cw" (channel width), species BT and CO
+- ADMS uses model = "cw" (channel width), species BT, CH, CO, SK classified
+- bcfishpass GENERATES gradient barriers at 8 classes (5,7,10,12,15,20,25,30%) in `gradient_barriers` table but only species access barriers (15/20/25/30) end up in `barriers_${MODEL}` tables that drive `break_streams()`. Streams NOT broken at 5/7/10/12.
+- `gradient_barriers_load.sql` uses 100m vertex-level sampling AND island detection (one entry per island, minimum downstream measure). Same approach as fresh.
 
 ## Parameter differences
 - `parameters_habitat_thresholds.csv` identical between fresh and bcfishpass
-- `parameters_fresh.csv` adds `spawn_gradient_min` (0.0025) — bcfishpass doesn't use this
-- For comparison: set spawn_gradient_min = 0
+- `parameters_fresh.csv` adds `spawn_gradient_min` (0.0025) — bcfishpass doesn't use this. Set to 0 for comparison.
+- `waterbody_type='R'` join: bcfishpass skips cw_min on river polygon segments (fresh#116 adds per-rule threshold overrides for this)
 
 ## Function consolidation (completed)
 - 12 → 8 functions
 - Key renames: lnk_break_source → lnk_source, lnk_habitat_upstream → lnk_aggregate
 - lnk_match now handles xref_csv directly (no separate PSCIS/MOTI wrappers)
 
-## Comparison results (sub-basin: wscode 432966, 385 segments)
+## Comparison results
 
-### Current numbers (fresh vs bcfishpass)
+### Sub-basin (wscode 432966) — fresh 0.12.2 with bcfishpass-matching rules YAML
 
-Raw (no edge_type filter):
+| Species | Habitat | fresh | bcfishpass | diff |
+|---------|---------|-------|-----------|------|
+| **BT** | **spawning** | **13.07** | **12.86** | **+1.6%** ✓ |
+| **BT** | **rearing** | **30.02** | **30.18** | **-0.5%** ✓ |
+| **CH** | **spawning** | **9.18** | **9.18** | **0.0%** ✓ |
+| **CH** | **rearing** | **10.15** | **10.15** | **0.0%** ✓ |
+| **CO** | **spawning** | **10.21** | **10.21** | **0.0%** ✓ |
+| **CO** | **rearing** | **10.87** | **10.94** | **-0.6%** ✓ |
+| SK | spawning | 2.20 | NA | n/a (no lake in sub-basin) |
+| SK | rearing | 0.00 | NA | ✓ (lake-only rule works) |
 
-| Metric | fresh | bcfishpass | diff |
-|--------|-------|-----------|------|
-| BT spawning | 14.63 km | 12.86 km | +13.8% |
-| BT rearing | 29.37 km | 30.18 km | -2.7% ✓ |
-| CO spawning | 14.07 km | 10.21 km | +37.8% |
-| CO rearing | 14.72 km | 10.94 km | +34.6% |
+CH spawning: **exact**. CH rearing: **exact**. CO spawning: **exact**. All within 5%.
 
-With edge_type filter on spawning (bcfishpass excludes wetlands/lakes from spawning):
+### Full ADMS — massive undercount (BUG)
 
-| Metric | fresh | bcfishpass | diff | Notes |
-|--------|-------|-----------|------|-------|
-| **BT spawning** | **13.29 km** | **12.86 km** | **+3.3%** ✓ | Edge type was the gap |
-| **BT rearing** | **29.37 km** | **30.18 km** | **-2.7%** ✓ | No edge filter on rearing |
-| CO spawning | 12.72 km | 10.21 km | +24.6% | Rearing-connectivity |
-| CO rearing | 14.72 km | 10.94 km | +34.6% | Rearing-connectivity |
+| Species | Habitat | fresh | bcfishpass | diff |
+|---------|---------|-------|-----------|------|
+| BT | spawning | 25.52 | 361.71 | -92.9% |
+| BT | rearing | 31.85 | 674.19 | -95.3% |
+| CH | spawning | 21.00 | 277.61 | -92.4% |
+| CO | spawning | 21.62 | 310.98 | -93.0% |
+| SK | spawning | 12.79 | 85.70 | -85.1% |
 
-### Architecture findings
+bcfishpass: 5,262 of 15,764 segments BT-accessible (33%)
+fresh: 1,288 of 30,327 segments BT-accessible (4.2%)
 
-1. **bcfishpass gates habitat on natural access** — `barriers_bt_dnstr = array[]::text[]` in the habitat_linear SQL means segments must have NO natural barriers downstream. Fresh does the same via gradient barriers — this is correct.
+Access gating is far too aggressive at full WSG scale. Sub-basin validates the classification logic; full WSG breaks the access model.
 
-2. **Crossings don't block natural access** — `barriers_bt_dnstr` tracks gradient barriers + falls, NOT crossing barrier status. POTENTIAL crossings are anthropogenic features tracked separately. Crossings should break geometry only (`label = "gradient_0"`).
+### Hypotheses for full-ADMS access undercount
 
-3. **Falls are natural barriers** — included as `label = "blocked"` break sources. 7 in ADMS, 0 in our test sub-basin.
+1. **min_length=0 generating too many short gradient barriers** — fresh#118 set min_length default to 0. This might create thousands of spurious barrier points from DEM noise at single vertices, each blocking everything upstream. bcfishpass's island detection in `gradient_barriers_load.sql` may implicitly filter short islands differently. Investigate: how many of the 5,571 gradient_1500 barriers are from single-vertex noise vs sustained steep sections?
 
-4. **Species use different access arrays**:
-   - BT: `barriers_bt_dnstr` (gradient barriers at 25%)
-   - CO: `barriers_ch_cm_co_pk_sk_dnstr` (gradient barriers at 15%)
-   - Fresh handles this correctly via `access_gradient_max` per species
+2. **Crossing barrier_status labels blocking access** — label_map maps BARRIER→"blocked". In the sub-basin there were 0 BARRIER crossings (all POTENTIAL/PASSABLE). At full ADMS there are 39 BARRIER crossings. If fresh treats "blocked" crossings as access barriers (via label_block), they'd block everything upstream — but bcfishpass does NOT use crossing barrier_status for natural access (only gradient + falls). Check if the 39 BARRIER crossings are being treated as natural access barriers by fresh when they shouldn't be.
 
-5. **BT rearing matches (-2.7%)** — validates core pipeline (segmentation, gradient+width classification, access gating).
+3. **Both effects compounding** — too many gradient barriers + BARRIER crossings both blocking access → cascading undercount.
 
-### Remaining differences explained
+## Architecture findings
 
-**BT spawning +13.8%**: Segmentation boundary effects. Different break points → different segment gradient averages → segments cross the 0.0549 threshold differently. Also `spawn_gradient_min = 0.0025` in fresh excludes gradient 0 segments (minor, ~108m).
+1. **bcfishpass gates habitat on natural access** — `barriers_bt_dnstr = array[]::text[]` in habitat_linear SQL. Fresh does the same via gradient barriers + label_block.
 
-**CO spawning/rearing +35-38%**: Two factors:
-- bcfishpass rearing model requires spawning connectivity (rearing must be downstream of or connected to spawning). Fresh classifies rearing on gradient+width alone without this spatial relationship.
-- Different segmentation → different threshold crossings (same as BT spawning)
+2. **Crossings don't block natural access** — `barriers_bt_dnstr` tracks gradient barriers + falls, NOT crossing barrier_status. POTENTIAL/BARRIER crossings are anthropogenic. Crossings should break geometry only.
 
-### Edge type filtering
+3. **Falls are natural barriers** — 7 in ADMS, 0 in test sub-basin.
 
-bcfishpass filters spawning by edge_type — only streams/rivers (`1000, 1100, 2000, 2300`) and waterbody_type R. Wetlands (1050), lakes, ditches excluded from spawning. Rearing edge types vary by species:
-- BT rearing: no edge_type filter (all segments if gradient+width met + connected to spawning)
-- CO rearing: includes wetlands (1050, 1150) explicitly
+4. **Species use different access arrays**: BT at 25%, CO/CH/SK at 15%.
 
-fresh does NOT filter by edge_type. This is the primary cause of the +14% BT spawning difference (1.35 km on wetland edge_type 1050).
+5. **SK spawning requires lake proximity** — bcfishpass classifies SK spawning only within 3km upstream/downstream of rearing lakes ≥ 200 ha. Fresh classifies SK spawning on gradient+cw alone. fresh#120 filed.
 
-### Rearing-connectivity model (bcfishpass)
+## Edge type filtering
+- bcfishpass filters spawning to edge_type 1000/1100/2000/2300 only (excludes wetland-flow 1050/1150)
+- fresh `stream` category includes 1050/1150 by default
+- bcfishpass-matching rules YAML uses `edge_types_explicit: [1000, 1100, 2000, 2300]`
+- waterbody_type='R' skips cw_min (river polygon data fix)
 
-Three phases, sequential:
-1. **Rearing on spawning streams** — if segment is spawning AND meets rearing thresholds → rearing
-2. **Rearing downstream of spawning** — cluster adjacent rearing candidates, check if spawning exists upstream. No distance cap.
-3. **Rearing upstream of spawning** — trace downstream along mainstem, find spawning within 10km, no >5% grade between. Uses ST_ClusterDBSCAN.
+## Rearing-connectivity model (bcfishpass v0.5.0)
+Three phases, sequential. See link#18 for full detail.
+- Phase 1: rearing on spawning streams
+- Phase 2: rearing downstream of spawning (no distance cap)
+- Phase 3: rearing upstream of spawning (10km cap, 5% bridge gradient)
+- BT cluster_rearing = FALSE (rear independently). CH/CO/SK = TRUE.
 
-This is why CO differs so much — CO rearing requires spawning connectivity. BT rearing is closer because the 10km cap is less restrictive for BT (rearing primarily downstream of spawning).
+## Gradient barrier resolution
+- bcfishpass `gradient_barriers_load.sql` and fresh `frs_break_find` both use 100m vertex-level sampling with island detection
+- fresh#118 fixed: min_length default changed from 100 to 0 (was dropping short barriers)
+- Sub-basin: 137 gradient_15 barriers (fresh) vs 241 (bcfishpass) — closer but not exact. At full ADMS: 5,571 vs ~7,127 (bcfishpass). Need to verify if the remaining gap is from the min_length change or other differences.
 
-Known issues (smnorris/bcfishpass):
-- **#612**: ST rearing < CO rearing anomaly — ST spawning requires wider channels (4m), so narrow streams with no ST spawning get no ST rearing, even if physically suitable
-- **#138**: Original issue that broadened model from adjacency to 10km trace
-- **#589**: Gradient calculations based on arbitrary FWA segment lengths
-- Simon: connectivity rules "can definitely be improved / are up for discussion"
-
-### fresh issues identified (updated)
-
-1. **Edge type filtering missing** — fresh classifies all edge types. Need species-specific edge_type filters matching bcfishpass. Fresh issue needed.
-
-2. **`label_block` convention done** (fresh#98) — `gate` param and `label_block` for configurable access. "potential", "passable", custom labels don't block by default.
-
-3. **MAD not used in classification** — parsed by `frs_params` but never applied. Matters for `mad` model WSGs only.
-
-4. **Rearing not spatially linked to spawning** — bcfishpass requires connectivity via cluster analysis. Fresh classifies independently. Design decision — see biological notes below.
-
-5. **fresh#96 done** — `frs_habitat()` accepts `aoi` + `species` for sub-WSG iteration.
-
-### Biological notes on rearing-connectivity
-
-The requirement that rearing must connect to spawning is defensible but has problems:
-- **BT**: spawn in cold headwaters, rear in larger mainstem — rearing far downstream. Model handles this (Phase 2, no distance cap). Works OK.
-- **CO**: spawn and rear in same small streams — connectivity makes sense. But misses lake rearing (NGE #7).
-- **ST**: connectivity creates false negatives (#612) — narrow streams (2-3m) are excellent ST rearing but never get ST spawning modelled (requires 4m).
-- **For prioritization** (link's domain): false negatives are worse than false positives. Missing a high-value crossing because rearing wasn't classified upstream is worse than overestimating habitat.
+## fresh issues filed (from this comparison)
+- #96 ✓ — AOI support
+- #98 ✓ — gate + label_block
+- #100 ✓ — edge_type filtering
+- #101 ✓ — breaks_gradient param
+- #102 ✓ — expose params on frs_habitat
+- #105 — feature_codes categories
+- #107 ✓ — frs_cluster (rearing connectivity)
+- #110 — gradient dedupe precision
+- #113 ✓ — rules YAML format
+- #114 — Phase 2 MAD support
+- #116 ✓ — per-rule threshold overrides
+- #118 ✓ — min_length filter fix
+- #120 — SK spawning requires lake proximity

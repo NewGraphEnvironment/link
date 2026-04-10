@@ -38,11 +38,10 @@ spawn_stream <- list(
 )
 spawn_river <- list(
   waterbody_type = "R",
-  thresholds = FALSE
-  # bcfishpass skips cw_min for R segments. Ideally we'd skip only cw_min
-  # and keep gradient, but fresh 0.12.0 doesn't support per-threshold
-  # granularity (fresh#116). thresholds=false skips both — near-zero
-  # practical impact since river polygons are low-gradient.
+  # bcfishpass skips cw_min for R segments but still checks gradient.
+  # fresh 0.12.1 supports per-rule threshold overrides (fresh#116):
+  # set channel_width to [0, 9999] to skip the minimum, inherit gradient.
+  channel_width = c(0, 9999)
 )
 
 # --- Species rules ---
