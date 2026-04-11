@@ -51,8 +51,33 @@
 - DB migration in progress — needs pgcrypto extension on Docker fwapg
 - Decision: use bcfishobs as-is (don't reimplement snapping in fresh)
 
+## Session: 2026-04-10 to 2026-04-11
+
+### Phase 3: Full ADMS comparison (major progress)
+- BARRIER label fix: "blocked" → "barrier" (crossings don't block natural access)
+- River polygon rearing: waterbody_type=R rule added (~150km CH/CO missing)
+- Double clustering: removed external frs_cluster (fresh 0.12.3 does it internally)
+- CSV-driven YAML: rewrote both builders to read from dimensions CSV (closes #22)
+- Commit: 589df81
+
+### Phase 4: bcfishobs (complete)
+- Homebrew libpq installed (psql on PATH)
+- MacPorts removed, Homebrew GDAL 3.12.3 with Parquet driver installed (rtj#65)
+- bcfishobs setup.sh: removed fragile idempotency checks, fixed MultiPoint geometry
+- Clean build: 372,420 observations (matches tunnel 372,418), 592 in ADMS
+- Commit on bcfishobs nge-setup branch
+
+### Issues updated with prompts
+- fresh#69: observation-based access override with bcfishpass thresholds (BT>=1, CH/CO>=5, date/buffer filters)
+- fresh#90: override CSVs moving to link with weekly sync from bcfishpass
+- fresh#124: gradient_recompute parameter
+- rtj#65: updated with Parquet blocker, GDAL consolidation plan
+
+### Current comparison (fresh 0.12.3)
+BT -8.6% rearing, CH -20.7%, CO -23.3%. Remaining gap: gradient_recompute + observations.
+
 ### Next
-- Complete bcfishobs DB setup (migrations + load_supporting_data.sh + process.sh)
-- Test hypothesis 2 for access bug (BARRIER label change)
-- Test hypothesis 1 if needed (DEM noise barriers)
-- Rerun full ADMS with fix(es)
+- fresh#124: gradient_recompute=FALSE should close spawning gap
+- fresh#69: wire bcfishobs observations into access model
+- fresh#120: SK lake proximity
+- Phase 6: tests, cleanup, PR to main
