@@ -1,18 +1,8 @@
-# bcfishpass v0.5.0 matching rules
-# Generated from inst/extdata/parameters_habitat_dimensions.csv
-# DO NOT EDIT — edit the CSV and re-run data-raw/build_bcfishpass_rules_yaml.R
-# Generated: 2026-04-10
+# Generated from parameters_habitat_dimensions_bcfishpass.csv
+# Generated: 2026-04-11
+# Edge types: explicit
 #
-# These rules replicate bcfishpass v0.5.0 habitat_linear SQL.
-# For NGE saner defaults, use parameters_habitat_rules.yaml instead.
-#
-# Key bcfishpass conventions replicated here:
-#   - Spawning only on edge_type 1000/1100/2000/2300 (excludes 1050/1150)
-#   - waterbody_type=R segments skip channel_width_min (channel_width: [0, 9999])
-#   - Wetland-flow 1050/1150 rearing only for species with rear_wetland=yes
-#   - BT rearing has no edge_type filter (empty rule)
-#   - SK/KO rearing is lake-only (from rear_lake_only=yes in CSV)
-#   - CM/PK have no freshwater rearing (from rear_no_fw=yes in CSV)
+# DO NOT EDIT — edit the CSV and re-run lnk_rules_build()
 
 BT:
   spawn:
@@ -27,15 +17,6 @@ BT:
     - 9999.0
   rear:
   - []
-  - waterbody_type: R
-    channel_width:
-    - 0.0
-    - 9999.0
-  - edge_types_explicit:
-    - 1050
-    - 1150
-    thresholds: false
-  - waterbody_type: L
 CH:
   spawn:
   - edge_types_explicit:
@@ -142,63 +123,6 @@ ST:
     - 0.0
     - 9999.0
 WCT:
-  spawn:
-  - edge_types_explicit:
-    - 1000
-    - 1100
-    - 2000
-    - 2300
-  - waterbody_type: R
-    channel_width:
-    - 0.0
-    - 9999.0
-  rear:
-  - edge_types_explicit:
-    - 1000
-    - 1100
-    - 2000
-    - 2300
-  - waterbody_type: R
-    channel_width:
-    - 0.0
-    - 9999.0
-KO:
-  spawn:
-  - edge_types_explicit:
-    - 1000
-    - 1100
-    - 2000
-    - 2300
-  - waterbody_type: R
-    channel_width:
-    - 0.0
-    - 9999.0
-  - waterbody_type: L
-  rear:
-  - waterbody_type: L
-    lake_ha_min: 200
-RB:
-  spawn:
-  - edge_types_explicit:
-    - 1000
-    - 1100
-    - 2000
-    - 2300
-  - waterbody_type: R
-    channel_width:
-    - 0.0
-    - 9999.0
-  rear:
-  - edge_types_explicit:
-    - 1000
-    - 1100
-    - 2000
-    - 2300
-  - waterbody_type: R
-    channel_width:
-    - 0.0
-    - 9999.0
-GR:
   spawn:
   - edge_types_explicit:
     - 1000

@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Skill(planning-with-files)"
+      "Skill(planning-with-files)",
+      "mcp__db-local__pg_read_query",
+      "Read(//Users/airvine/Projects/repo/bcfishpass/db/v0.5.0/sql/tables/**)",
+      "Read(//Users/airvine/Projects/repo/bcfishpass/**)",
+      "Bash(python3 -c \"import json,sys; print\\(json.load\\(sys.stdin\\)['body']\\)\")"
     ]
   }
 }
