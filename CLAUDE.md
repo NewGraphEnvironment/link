@@ -45,7 +45,7 @@ Uses `PG_*_SHARE` env vars (Docker fwapg, same as `frs_db_conn()`) with fallback
 conn <- lnk_db_conn()  # reads PG_DB_SHARE, PG_HOST_SHARE, etc.
 ```
 
-## Exported Functions (8)
+## Exported Functions (10)
 
 ### Core
 - `lnk_thresholds(csv, high, moderate, low)` — configurable severity thresholds. Ships BC defaults. CSV or inline override. Feeds into `lnk_score()`.
@@ -60,6 +60,12 @@ conn <- lnk_db_conn()  # reads PG_DB_SHARE, PG_HOST_SHARE, etc.
 
 ### Score family
 - `lnk_score(conn, crossings, method)` — `method = "severity"` for biological impact classification (high/moderate/low). `method = "rank"` for weighted multi-criteria prioritization. Threshold-driven, NULL-safe, column-agnostic.
+
+### Rules family
+- `lnk_rules_build(csv, to, edge_types)` — transforms a species habitat dimensions CSV into the rules YAML format consumed by `frs_habitat()`. Two CSVs: NGE defaults (`parameters_habitat_dimensions.csv`) and bcfishpass comparison (`parameters_habitat_dimensions_bcfishpass.csv`).
+
+### Barrier overrides
+- `lnk_barrier_overrides(conn, barriers, observations, habitat, params, to)` — processes fish observations and habitat confirmations into a barrier skip list for fresh. Counts observations upstream of each barrier via `fwa_upstream()` SQL, applies per-species thresholds, unions with habitat confirmations. Output: `(blue_line_key, downstream_route_measure, species_code)` table that fresh skips during access gating.
 
 ### Bridge to fresh
 - `lnk_source(conn, crossings, label_col, label_map)` — returns `list(table, label_col, label_map)` that plugs directly into `frs_habitat(break_sources = list(...))`. `label_map` translates link severity → fresh access labels (`high → blocked`, `moderate → potential`).
@@ -148,16 +154,14 @@ To run the entire province: loop over watershed groups. Or pass any AOI with `sp
 
 ## Open Issues
 
-- #16 — ADMS end-to-end comparison (sub-basin validated, full WSG has access bug)
+- #16 — ADMS comparison (BT/CH/CO within 5%, SK spawning pending fresh#133)
 - #18 — Configurable rearing-spawning connectivity
 - #19 — Habitat eligibility override CSV (edge_types + feature_codes)
 - #20 — Literature/observation evidence for habitat departures
 - #21 — GSDD and thermal energy as intrinsic potential variables
-- #22 — CSV→YAML build script
-- #18 — Configurable rearing-spawning connectivity
-- #19 — Habitat eligibility override CSV (edge_types + feature_codes)
-- #20 — Literature/observation evidence for habitat departures
-- #21 — GSDD and thermal energy as intrinsic potential variables
+- #23 — CH stream order exception QA
+- #24 — lnk_stamp (model params for report appendix)
+- #29 — SK spawning cluster divergence (blocked on fresh#133)
 
 ## SRED
 
