@@ -121,7 +121,8 @@ DBI::dbExecute(conn, "DROP TABLE IF EXISTS working.streams_blk")
 DBI::dbExecute(conn, sprintf("
   CREATE TABLE working.streams_blk AS
   SELECT DISTINCT blue_line_key FROM whse_basemapping.fwa_stream_networks_sp
-  WHERE watershed_group_code = '%s'", wsg))
+  WHERE watershed_group_code = '%s'
+    AND edge_type != 6010", wsg))
 fresh::frs_break_find(conn, "working.streams_blk",
   attribute = "gradient",
   classes = c("1500" = 0.15, "2000" = 0.20, "2500" = 0.25, "3000" = 0.30),
