@@ -221,54 +221,32 @@ params_fresh_df <- read.csv(params_fresh_path, stringsAsFactors = FALSE)
 aoi_where <- if (!is.null(sub_basin)) {
   sprintf("wscode_ltree <@ '%s'::ltree", sub_basin)
 } else {
-  NULL  # full WSG — frs_habitat uses wsg param
+  NULL  # full WSG
 }
 
 # Drop stale tables
 DBI::dbExecute(conn, "DROP TABLE IF EXISTS fresh.streams CASCADE")
 DBI::dbExecute(conn, "DROP TABLE IF EXISTS fresh.streams_habitat CASCADE")
 
-# Step 4a: Pre-compute all natural barriers for override processing
-message("\n--- Pre-computing natural barriers ---")
-DBI::dbExecute(conn, "DROP TABLE IF EXISTS working.streams_tmp")
-DBI::dbExecute(conn, sprintf("
-  CREATE TABLE working.streams_tmp AS
-  SELECT DISTINCT blue_line_key FROM whse_basemapping.fwa_stream_networks_sp
-  WHERE watershed_group_code = '%s' %s",
-  wsg, if (!is.null(aoi_where)) paste("AND", aoi_where) else ""))
-fresh::frs_break_find(conn, "working.streams_tmp",
-  attribute = "gradient",
-  classes = c("1500" = 0.15, "2000" = 0.20, "2500" = 0.25, "3000" = 0.30),
-  to = "working.gradient_barriers_raw")
+# Step 4a: Pass 1 — run fresh WITHOUT overrides to build breaks table
+message("\n--- Pass 1: frs_habitat (builds breaks + segments) ---")
+t0 <- proc.time()
+fresh::frs_habitat(conn,
+  wsg = wsg,
+  aoi = aoi_where,
+  species = species_compare,
+  to_streams = "fresh.streams",
+  to_habitat = "fresh.streams_habitat",
+  break_sources = list(crossings_spec, falls_spec),
+  breaks_gradient = c(0.15, 0.20, 0.25, 0.30),
+  rules = rules_path,
+  params_fresh = params_fresh_df,
+  verbose = TRUE
+)
+message("Pass 1: ", round((proc.time() - t0)["elapsed"], 1), " seconds")
 
-# Build enriched barriers table with ltree (needed for fwa_upstream in overrides)
-DBI::dbExecute(conn, "DROP TABLE IF EXISTS working.natural_barriers")
-DBI::dbExecute(conn, "
-  CREATE TABLE working.natural_barriers AS
-  SELECT g.blue_line_key, g.downstream_route_measure, g.label,
-    s.wscode_ltree, s.localcode_ltree
-  FROM working.gradient_barriers_raw g
-  JOIN whse_basemapping.fwa_stream_networks_sp s
-    ON g.blue_line_key = s.blue_line_key
-    AND g.downstream_route_measure >= s.downstream_route_measure
-    AND g.downstream_route_measure < s.upstream_route_measure")
-# Add falls
-DBI::dbExecute(conn, "
-  INSERT INTO working.natural_barriers (blue_line_key, downstream_route_measure, label, wscode_ltree, localcode_ltree)
-  SELECT f.blue_line_key, f.downstream_route_measure, 'blocked',
-    s.wscode_ltree, s.localcode_ltree
-  FROM working.adms_falls f
-  JOIN whse_basemapping.fwa_stream_networks_sp s
-    ON f.blue_line_key = s.blue_line_key
-    AND f.downstream_route_measure >= s.downstream_route_measure
-    AND f.downstream_route_measure < s.upstream_route_measure")
-n_barriers <- DBI::dbGetQuery(conn, "SELECT count(*) FROM working.natural_barriers")[[1]]
-# Round measures to integer to match fresh 0.12.9 measure_precision=0
-DBI::dbExecute(conn, "UPDATE working.natural_barriers SET downstream_route_measure = round(downstream_route_measure)")
-message("  Natural barriers: ", n_barriers, " (measures rounded to match fresh)")
-
-# Step 4b: Build barrier overrides
-message("\n--- Building barrier overrides (lnk_barrier_overrides) ---")
+# Step 4b: Build barrier overrides from breaks table
+message("\n--- Building barrier overrides ---")
 link::lnk_load(conn,
   csv = "~/Projects/repo/bcfishpass/data/user_habitat_classification.csv",
   to = "working.user_habitat_classification",
@@ -276,13 +254,14 @@ link::lnk_load(conn,
   cols_required = c("species_code", "upstream_route_measure", "habitat_ind"))
 devtools::load_all()
 lnk_barrier_overrides(conn,
-  barriers = "working.natural_barriers",
+  barriers = "fresh.streams_breaks",
   observations = "bcfishobs.observations",
   habitat = "working.user_habitat_classification",
   params = params_fresh_df,
   to = "working.barrier_overrides")
 
-# Step 4c: Run fresh with barrier overrides
+# Step 4c: Pass 2 — re-run with overrides
+message("\n--- Pass 2: frs_habitat (with barrier overrides) ---")
 t0 <- proc.time()
 result <- fresh::frs_habitat(conn,
   wsg = wsg,
@@ -294,7 +273,6 @@ result <- fresh::frs_habitat(conn,
   breaks_gradient = c(0.15, 0.20, 0.25, 0.30),
   rules = rules_path,
   params_fresh = params_fresh_df,
-  gradient_recompute = FALSE,
   barrier_overrides = "working.barrier_overrides",
   verbose = TRUE
 )
