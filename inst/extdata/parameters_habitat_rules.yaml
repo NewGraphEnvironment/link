@@ -1,20 +1,8 @@
-# Generated from inst/extdata/parameters_habitat_dimensions.csv
-# DO NOT EDIT — edit the CSV and re-run data-raw/build_habitat_rules_yaml.R
-# Generated: 2026-04-10
+# Generated from parameters_habitat_dimensions.csv
+# Generated: 2026-04-11
+# Edge types: categories
 #
-# Each species has spawn and rear rule lists. A segment qualifies as
-# spawning/rearing if ANY rule matches (rules joined by OR; predicates
-# within a rule joined by AND).
-#
-# Rules inherit gradient/channel_width thresholds from
-# parameters_habitat_thresholds.csv unless `thresholds: false` is set.
-#
-# Predicates:
-#   edge_types: list of fresh categories (stream, canal, river, lake, wetland)
-#   edge_types_explicit: list of integer FWA edge_type codes
-#   waterbody_type: 'L' (lake), 'R' (river polygon), 'W' (wetland)
-#   lake_ha_min: minimum lake area for waterbody_type=L rules
-#   thresholds: false  — skip CSV threshold inheritance for this rule
+# DO NOT EDIT — edit the CSV and re-run lnk_rules_build()
 
 BT:
   spawn:
@@ -27,9 +15,7 @@ BT:
     - stream
     - canal
   - waterbody_type: R
-  - edge_types_explicit:
-    - 1050
-    - 1150
+  - edge_types: wetland
     thresholds: false
   - waterbody_type: L
 CH:
@@ -43,9 +29,7 @@ CH:
     - stream
     - canal
   - waterbody_type: R
-  - edge_types_explicit:
-    - 1050
-    - 1150
+  - edge_types: wetland
     thresholds: false
   - waterbody_type: L
 CM:
@@ -66,9 +50,7 @@ CO:
     - stream
     - canal
   - waterbody_type: R
-  - edge_types_explicit:
-    - 1050
-    - 1150
+  - edge_types: wetland
     thresholds: false
   - waterbody_type: L
 PK:
@@ -99,9 +81,7 @@ ST:
     - stream
     - canal
   - waterbody_type: R
-  - edge_types_explicit:
-    - 1050
-    - 1150
+  - edge_types: wetland
     thresholds: false
   - waterbody_type: L
 WCT:
@@ -115,9 +95,7 @@ WCT:
     - stream
     - canal
   - waterbody_type: R
-  - edge_types_explicit:
-    - 1050
-    - 1150
+  - edge_types: wetland
     thresholds: false
   - waterbody_type: L
 KO:
@@ -141,9 +119,7 @@ RB:
     - stream
     - canal
   - waterbody_type: R
-  - edge_types_explicit:
-    - 1050
-    - 1150
+  - edge_types: wetland
     thresholds: false
   - waterbody_type: L
 GR:
