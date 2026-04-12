@@ -10,11 +10,17 @@ BT:
     - stream
     - canal
   - waterbody_type: R
+    channel_width:
+    - 0.0
+    - 9999.0
   rear:
   - edge_types:
     - stream
     - canal
   - waterbody_type: R
+    channel_width:
+    - 0.0
+    - 9999.0
   - edge_types: wetland
     thresholds: false
   - waterbody_type: L
@@ -24,11 +30,17 @@ CH:
     - stream
     - canal
   - waterbody_type: R
+    channel_width:
+    - 0.0
+    - 9999.0
   rear:
   - edge_types:
     - stream
     - canal
   - waterbody_type: R
+    channel_width:
+    - 0.0
+    - 9999.0
   - edge_types: wetland
     thresholds: false
   - waterbody_type: L
@@ -38,6 +50,9 @@ CM:
     - stream
     - canal
   - waterbody_type: R
+    channel_width:
+    - 0.0
+    - 9999.0
   rear: []
 CO:
   spawn:
@@ -45,11 +60,17 @@ CO:
     - stream
     - canal
   - waterbody_type: R
+    channel_width:
+    - 0.0
+    - 9999.0
   rear:
   - edge_types:
     - stream
     - canal
   - waterbody_type: R
+    channel_width:
+    - 0.0
+    - 9999.0
   - edge_types: wetland
     thresholds: false
   - waterbody_type: L
@@ -59,6 +80,9 @@ PK:
     - stream
     - canal
   - waterbody_type: R
+    channel_width:
+    - 0.0
+    - 9999.0
   rear: []
 SK:
   spawn:
@@ -68,6 +92,9 @@ SK:
     requires_connected: rearing
     connected_distance_max: 3000.0
   - waterbody_type: R
+    channel_width:
+    - 0.0
+    - 9999.0
     requires_connected: rearing
     connected_distance_max: 3000.0
   - waterbody_type: L
@@ -82,11 +109,17 @@ ST:
     - stream
     - canal
   - waterbody_type: R
+    channel_width:
+    - 0.0
+    - 9999.0
   rear:
   - edge_types:
     - stream
     - canal
   - waterbody_type: R
+    channel_width:
+    - 0.0
+    - 9999.0
   - edge_types: wetland
     thresholds: false
   - waterbody_type: L
@@ -96,11 +129,17 @@ WCT:
     - stream
     - canal
   - waterbody_type: R
+    channel_width:
+    - 0.0
+    - 9999.0
   rear:
   - edge_types:
     - stream
     - canal
   - waterbody_type: R
+    channel_width:
+    - 0.0
+    - 9999.0
   - edge_types: wetland
     thresholds: false
   - waterbody_type: L
@@ -112,6 +151,9 @@ KO:
     requires_connected: rearing
     connected_distance_max: 3000.0
   - waterbody_type: R
+    channel_width:
+    - 0.0
+    - 9999.0
     requires_connected: rearing
     connected_distance_max: 3000.0
   - waterbody_type: L
@@ -126,11 +168,17 @@ RB:
     - stream
     - canal
   - waterbody_type: R
+    channel_width:
+    - 0.0
+    - 9999.0
   rear:
   - edge_types:
     - stream
     - canal
   - waterbody_type: R
+    channel_width:
+    - 0.0
+    - 9999.0
   - edge_types: wetland
     thresholds: false
   - waterbody_type: L
@@ -140,10 +188,16 @@ GR:
     - stream
     - canal
   - waterbody_type: R
+    channel_width:
+    - 0.0
+    - 9999.0
   rear:
   - edge_types:
     - stream
     - canal
   - waterbody_type: R
+    channel_width:
+    - 0.0
+    - 9999.0
   - waterbody_type: L
 
