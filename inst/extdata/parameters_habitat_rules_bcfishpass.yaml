@@ -1,5 +1,5 @@
 # Generated from parameters_habitat_dimensions_bcfishpass.csv
-# Generated: 2026-04-11
+# Generated: 2026-04-12
 # Edge types: explicit
 #
 # DO NOT EDIT — edit the CSV and re-run lnk_rules_build()
@@ -102,7 +102,6 @@ SK:
     requires_connected: rearing
   rear:
   - waterbody_type: L
-    thresholds: false
     lake_ha_min: 200
 ST:
   spawn:

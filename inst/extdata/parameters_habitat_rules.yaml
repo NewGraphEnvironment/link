@@ -1,5 +1,5 @@
 # Generated from parameters_habitat_dimensions.csv
-# Generated: 2026-04-11
+# Generated: 2026-04-12
 # Edge types: categories
 #
 # DO NOT EDIT — edit the CSV and re-run lnk_rules_build()
@@ -18,7 +18,6 @@ BT:
   - edge_types: wetland
     thresholds: false
   - waterbody_type: L
-    thresholds: false
 CH:
   spawn:
   - edge_types:
@@ -33,7 +32,6 @@ CH:
   - edge_types: wetland
     thresholds: false
   - waterbody_type: L
-    thresholds: false
 CM:
   spawn:
   - edge_types:
@@ -55,7 +53,6 @@ CO:
   - edge_types: wetland
     thresholds: false
   - waterbody_type: L
-    thresholds: false
 PK:
   spawn:
   - edge_types:
@@ -75,7 +72,6 @@ SK:
     requires_connected: rearing
   rear:
   - waterbody_type: L
-    thresholds: false
     lake_ha_min: 200
 ST:
   spawn:
@@ -91,7 +87,6 @@ ST:
   - edge_types: wetland
     thresholds: false
   - waterbody_type: L
-    thresholds: false
 WCT:
   spawn:
   - edge_types:
@@ -106,7 +101,6 @@ WCT:
   - edge_types: wetland
     thresholds: false
   - waterbody_type: L
-    thresholds: false
 KO:
   spawn:
   - edge_types:
@@ -119,7 +113,6 @@ KO:
     requires_connected: rearing
   rear:
   - waterbody_type: L
-    thresholds: false
     lake_ha_min: 200
 RB:
   spawn:
@@ -135,7 +128,6 @@ RB:
   - edge_types: wetland
     thresholds: false
   - waterbody_type: L
-    thresholds: false
 GR:
   spawn:
   - edge_types:
@@ -148,5 +140,4 @@ GR:
     - canal
   - waterbody_type: R
   - waterbody_type: L
-    thresholds: false
 
