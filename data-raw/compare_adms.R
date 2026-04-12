@@ -243,6 +243,10 @@ result <- fresh::frs_habitat(conn,
   rules = rules_path,
   # bcfishpass doesn't use spawn_gradient_min — set to 0
   params_fresh = params_fresh_df,
+  # Match bcfishpass: inherit parent gradient, don't recompute from DEM vertices
+  gradient_recompute = FALSE,
+  # Observations upgrade access per species (fresh#69)
+  observations = "bcfishobs.observations",
   verbose = TRUE
 )
 elapsed <- (proc.time() - t0)["elapsed"]
