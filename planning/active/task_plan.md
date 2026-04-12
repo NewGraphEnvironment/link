@@ -18,7 +18,10 @@ Close the +54% SK spawning gap between fresh 0.12.6 and bcfishpass v0.5.0.
 ### Phase 3: Fix
 - [x] Filed fresh#133 (connected_distance_max predicate)
 - [x] Removed thresholds: false workaround (fresh#131 handles it natively in 0.12.7)
-- [x] SK rearing +0.2%. SK spawning +54% blocked on fresh#133.
+- [x] SK rearing +0.2%. SK spawning +54% → +32% with distance cap (fresh 0.12.9)
+- [x] Added spawn_connected_distance_max column to CSVs, lnk_rules_build emits it
+- [x] Rounded barrier measures to match fresh measure_precision=0
+- [ ] SK spawning +32% remaining: upstream extent not capped by spatial proximity to lake
 - [x] Code-check, commit with checkboxes
 
 ## Versions

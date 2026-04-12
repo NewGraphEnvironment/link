@@ -82,6 +82,8 @@ lnk_rules_build <- function(csv,
   # Optional: requires_connected columns (value is the habitat type, not yes/no)
   has_spawn_rc <- "spawn_requires_connected" %in% names(dimensions)
   has_rear_rc <- "rear_requires_connected" %in% names(dimensions)
+  has_spawn_cdm <- "spawn_connected_distance_max" %in% names(dimensions)
+  has_rear_cdm <- "rear_connected_distance_max" %in% names(dimensions)
 
   # --- Edge type helpers ---
   stream_edges <- if (edge_types == "categories") {
@@ -117,21 +119,26 @@ lnk_rules_build <- function(csv,
     if (is.na(spawn_rc)) spawn_rc <- ""
     rear_rc <- if (has_rear_rc) trimws(as.character(d$rear_requires_connected)) else ""
     if (is.na(rear_rc)) rear_rc <- ""
+    spawn_cdm <- if (has_spawn_cdm) as.numeric(d$spawn_connected_distance_max) else NA_real_
+    rear_cdm <- if (has_rear_cdm) as.numeric(d$rear_connected_distance_max) else NA_real_
 
-    # Helper: annotate rule with requires_connected if non-empty
-    add_rc <- function(rule, rc_value) {
-      if (nchar(rc_value) > 0) rule$requires_connected <- rc_value
+    # Helper: annotate rule with requires_connected and optional distance max
+    add_rc <- function(rule, rc_value, cdm_value = NA_real_) {
+      if (nchar(rc_value) > 0) {
+        rule$requires_connected <- rc_value
+        if (!is.na(cdm_value)) rule$connected_distance_max <- cdm_value
+      }
       rule
     }
 
     # --- Spawning ---
     if (d$spawn_stream) {
-      spawn_rules[[length(spawn_rules) + 1]] <- add_rc(stream_edges, spawn_rc)
-      spawn_rules[[length(spawn_rules) + 1]] <- add_rc(river_rule, spawn_rc)
+      spawn_rules[[length(spawn_rules) + 1]] <- add_rc(stream_edges, spawn_rc, spawn_cdm)
+      spawn_rules[[length(spawn_rules) + 1]] <- add_rc(river_rule, spawn_rc, spawn_cdm)
     }
     if (d$spawn_lake) {
       spawn_rules[[length(spawn_rules) + 1]] <- add_rc(
-        list(waterbody_type = "L"), spawn_rc)
+        list(waterbody_type = "L"), spawn_rc, spawn_cdm)
     }
 
     # --- Rearing (precedence: no_fw > lake_only > additive) ---
@@ -142,21 +149,21 @@ lnk_rules_build <- function(csv,
       if (!is.na(th$rear_lake_ha_min)) {
         lake_rule$lake_ha_min <- th$rear_lake_ha_min
       }
-      rear_rules[[1]] <- add_rc(lake_rule, rear_rc)
+      rear_rules[[1]] <- add_rc(lake_rule, rear_rc, rear_cdm)
     } else {
       if (has_all_edges && d$rear_all_edges) {
-        rear_rules[[length(rear_rules) + 1]] <- add_rc(list(), rear_rc)
+        rear_rules[[length(rear_rules) + 1]] <- add_rc(list(), rear_rc, rear_cdm)
       } else if (d$rear_stream) {
-        rear_rules[[length(rear_rules) + 1]] <- add_rc(stream_edges, rear_rc)
-        rear_rules[[length(rear_rules) + 1]] <- add_rc(river_rule, rear_rc)
+        rear_rules[[length(rear_rules) + 1]] <- add_rc(stream_edges, rear_rc, rear_cdm)
+        rear_rules[[length(rear_rules) + 1]] <- add_rc(river_rule, rear_rc, rear_cdm)
       }
       if (d$rear_wetland) {
         if (edge_types == "categories") {
           rear_rules[[length(rear_rules) + 1]] <- add_rc(list(
-            edge_types = c("wetland"), thresholds = FALSE), rear_rc)
+            edge_types = c("wetland"), thresholds = FALSE), rear_rc, rear_cdm)
         } else {
           rear_rules[[length(rear_rules) + 1]] <- add_rc(list(
-            edge_types_explicit = c(1050L, 1150L), thresholds = FALSE), rear_rc)
+            edge_types_explicit = c(1050L, 1150L), thresholds = FALSE), rear_rc, rear_cdm)
         }
       }
       if (d$rear_lake) {
@@ -164,7 +171,7 @@ lnk_rules_build <- function(csv,
         if (!is.na(th$rear_lake_ha_min)) {
           lake_rule$lake_ha_min <- th$rear_lake_ha_min
         }
-        rear_rules[[length(rear_rules) + 1]] <- add_rc(lake_rule, rear_rc)
+        rear_rules[[length(rear_rules) + 1]] <- add_rc(lake_rule, rear_rc, rear_cdm)
       }
     }
 

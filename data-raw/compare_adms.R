@@ -263,7 +263,9 @@ DBI::dbExecute(conn, "
     AND f.downstream_route_measure >= s.downstream_route_measure
     AND f.downstream_route_measure < s.upstream_route_measure")
 n_barriers <- DBI::dbGetQuery(conn, "SELECT count(*) FROM working.natural_barriers")[[1]]
-message("  Natural barriers: ", n_barriers)
+# Round measures to integer to match fresh 0.12.9 measure_precision=0
+DBI::dbExecute(conn, "UPDATE working.natural_barriers SET downstream_route_measure = round(downstream_route_measure)")
+message("  Natural barriers: ", n_barriers, " (measures rounded to match fresh)")
 
 # Step 4b: Build barrier overrides
 message("\n--- Building barrier overrides (lnk_barrier_overrides) ---")
