@@ -79,7 +79,7 @@ lnk_override <- function(conn,
     orphan_sql <- paste0(
       "SELECT o.", qid,
       " FROM ", qt_over, " o",
-      " LEFT JOIN ", qt_cross, " c ON o.", qid, " = c.", qid,
+      " LEFT JOIN ", qt_cross, " c ON o.", qid, "::text = c.", qid, "::text",
       " WHERE c.", qid, " IS NULL"
     )
     orphan_ids <- DBI::dbGetQuery(conn, orphan_sql)[[1]]
@@ -153,7 +153,7 @@ lnk_override <- function(conn,
     "UPDATE ", qt_cross, " c SET ",
     paste(set_clauses, collapse = ", "),
     " FROM ", qt_over, " o",
-    " WHERE c.", qid, " = o.", qid
+    " WHERE c.", qid, "::text = o.", qid, "::text"
   )
 
   n_updated <- .lnk_db_execute(conn, sql)
