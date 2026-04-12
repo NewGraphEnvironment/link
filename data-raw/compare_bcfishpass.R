@@ -15,8 +15,8 @@
 # ===========================================================================
 # CONFIG — change these for different WSGs
 # ===========================================================================
-wsg <- "ADMS"
-species_compare <- c("BT", "CH", "CO", "SK")
+wsg <- "BULK"
+species_compare <- c("BT", "CH", "CO", "ST")
 bcfishpass_data <- "~/Projects/repo/bcfishpass/data"
 rules_path <- "inst/extdata/parameters_habitat_rules_bcfishpass.yaml"
 params_fresh_path <- "inst/extdata/parameters_fresh_bcfishpass.csv"
