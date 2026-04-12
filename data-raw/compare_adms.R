@@ -218,10 +218,12 @@ rules_path <- "inst/extdata/parameters_habitat_rules_bcfishpass.yaml"
 params_fresh_path <- "inst/extdata/parameters_fresh_bcfishpass.csv"
 params_fresh_df <- read.csv(params_fresh_path, stringsAsFactors = FALSE)
 
+# Match bcfishpass: exclude subsurface flow (6010) and placeholder streams (999)
+bcfp_stream_filter <- "edge_type != 6010"
 aoi_where <- if (!is.null(sub_basin)) {
-  sprintf("wscode_ltree <@ '%s'::ltree", sub_basin)
+  sprintf("wscode_ltree <@ '%s'::ltree AND %s", sub_basin, bcfp_stream_filter)
 } else {
-  NULL  # full WSG
+  bcfp_stream_filter
 }
 
 # Drop stale tables
