@@ -138,7 +138,7 @@ lnk_rules_build <- function(csv,
     if (d$rear_no_fw) {
       rear_rules <- list()
     } else if (d$rear_lake_only) {
-      lake_rule <- list(waterbody_type = "L", thresholds = FALSE)
+      lake_rule <- list(waterbody_type = "L")
       if (!is.na(th$rear_lake_ha_min)) {
         lake_rule$lake_ha_min <- th$rear_lake_ha_min
       }
@@ -160,7 +160,7 @@ lnk_rules_build <- function(csv,
         }
       }
       if (d$rear_lake) {
-        lake_rule <- list(waterbody_type = "L", thresholds = FALSE)
+        lake_rule <- list(waterbody_type = "L")
         if (!is.na(th$rear_lake_ha_min)) {
           lake_rule$lake_ha_min <- th$rear_lake_ha_min
         }
