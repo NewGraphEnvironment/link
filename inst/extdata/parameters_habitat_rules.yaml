@@ -65,8 +65,11 @@ SK:
   - edge_types:
     - stream
     - canal
+    requires_connected: rearing
   - waterbody_type: R
+    requires_connected: rearing
   - waterbody_type: L
+    requires_connected: rearing
   rear:
   - waterbody_type: L
     lake_ha_min: 200
@@ -103,8 +106,11 @@ KO:
   - edge_types:
     - stream
     - canal
+    requires_connected: rearing
   - waterbody_type: R
+    requires_connected: rearing
   - waterbody_type: L
+    requires_connected: rearing
   rear:
   - waterbody_type: L
     lake_ha_min: 200

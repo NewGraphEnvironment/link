@@ -94,10 +94,12 @@ SK:
     - 1100
     - 2000
     - 2300
+    requires_connected: rearing
   - waterbody_type: R
     channel_width:
     - 0.0
     - 9999.0
+    requires_connected: rearing
   rear:
   - waterbody_type: L
     lake_ha_min: 200
