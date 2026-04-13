@@ -111,8 +111,10 @@ Barrier counts per class (ADMS, fresh with 8 classes):
 - The bias is always positive (fresh classifies MORE habitat) which supports this: finer segmentation creates more small segments that individually pass thresholds
 
 ### How to verify
-- Run bcfishpass on the same Docker DB and compare segment-for-segment
-- Or: implement sequential breaking in fresh to match bcfishpass exactly
+- Run sequential breaking in fresh: base → gradient barriers → crossings → falls (each step on current geometry)
+- Blocked on fresh#149 (frs_break_apply crashes when break lands on existing segment boundary — needs 1m guard matching bcfishpass break_streams)
+- bcfishpass skips breaks within 1m of segment endpoints. fresh doesn't — produces Point geometry error.
+- Also found: 4,148 gradient_3000 barriers at unique positions not in fresh's breaks table (lost during dedup). Sequential breaking would include all positions.
 
 ## SK spawning (+34-94%)
 

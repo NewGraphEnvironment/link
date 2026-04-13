@@ -15,8 +15,8 @@
 # ===========================================================================
 # CONFIG — change these for different WSGs
 # ===========================================================================
-wsg <- "BULK"
-species_compare <- c("BT", "CH", "CO", "ST")
+wsg <- "ADMS"
+species_compare <- c("BT", "CH", "CO", "SK")
 bcfishpass_data <- "~/Projects/repo/bcfishpass/data"
 rules_path <- "inst/extdata/parameters_habitat_rules_bcfishpass.yaml"
 params_fresh_path <- "inst/extdata/parameters_fresh_bcfishpass.csv"
@@ -169,11 +169,22 @@ lnk_barrier_overrides(conn,
   to = "working.barrier_overrides")
 
 # ===========================================================================
-# Step 6: Run fresh
+# Step 6: Run fresh — single detection, single truth
 # ===========================================================================
 message("\n=== Step 6: Run fresh ===")
 DBI::dbExecute(conn, "DROP TABLE IF EXISTS fresh.streams CASCADE")
 DBI::dbExecute(conn, "DROP TABLE IF EXISTS fresh.streams_habitat CASCADE")
+
+# Add gradient_NNNN label to pre-computed barriers for access gating
+DBI::dbExecute(conn, "ALTER TABLE working.gradient_barriers_raw ADD COLUMN IF NOT EXISTS label_access text")
+DBI::dbExecute(conn, "UPDATE working.gradient_barriers_raw SET label_access = 'gradient_' || lpad(gradient_class::text, 4, '0')")
+
+# Pass pre-computed barriers as a break source — ONE detection, used for BOTH
+# overrides (step 5) AND segmentation (step 6). No internal gradient detection.
+gradient_spec <- list(
+  table = "working.gradient_barriers_raw",
+  label_col = "label_access"
+)
 
 t0 <- proc.time()
 result <- fresh::frs_habitat(conn,
@@ -181,8 +192,8 @@ result <- fresh::frs_habitat(conn,
   species = species_compare,
   to_streams = "fresh.streams",
   to_habitat = "fresh.streams_habitat",
-  break_sources = list(crossings_spec, falls_spec),
-  breaks_gradient = c(0.15, 0.20, 0.25, 0.30),
+  break_sources = list(crossings_spec, falls_spec, gradient_spec),
+  breaks_gradient = numeric(0),  # disable internal — we supply barriers
   rules = rules_path,
   params_fresh = params_fresh_df,
   barrier_overrides = "working.barrier_overrides",
