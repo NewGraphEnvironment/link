@@ -137,13 +137,16 @@ lnk_barrier_overrides <- function(conn,
 
     overrides_found <- 0L
 
-    # Control table WHERE clause (shared by both observation and habitat overrides)
+    # Control table: any matching control row prevents the override.
+    # barrier_ind is used separately in barrier loading (true = keep, false = remove).
+    # Here we only care about presence — if a control row exists for this barrier
+    # position, observations/habitat don't override it.
     ctrl_where <- if (!is.null(control)) {
       sprintf(
         "LEFT JOIN %s c
            ON b.blue_line_key = c.blue_line_key
-           AND abs(b.downstream_route_measure - c.downstream_route_measure) < 1
-           AND c.barrier_ind::boolean = true", control)
+           AND abs(b.downstream_route_measure - c.downstream_route_measure) < 1",
+        control)
     } else {
       ""
     }

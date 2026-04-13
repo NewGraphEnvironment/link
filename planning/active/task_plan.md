@@ -10,9 +10,9 @@ ADMS: all within 5% (best: CH +0.5%). BULK: most within 5%, SK spawning -39.9% (
 - [x] user_barriers_definite — break source + access barrier
 - [x] observation_exclusions — filter obs before breaking
 - [x] user_crossings_misc — extra crossings
-- [ ] user_barriers_definite_control — reverted, apply at barrier table build step not override step
-- [ ] CABD CSVs (cabd_blkey_xref, cabd_exclusions, cabd_passability_status_updates, cabd_additions) — dam/falls corrections
-- [ ] pscis_modelledcrossings_streams_xref — GPS corrections via lnk_match
+- [ ] user_barriers_definite_control — deferred to lnk_habitat. bcfishpass applies at per-model barrier table build (barriers_gradient.sql, model_access_*.sql), not during override. Needs per-model architecture.
+- [ ] CABD CSVs — require cabd schema (dams/waterfalls from Canadian Aquatic Barriers Database). Not loaded on Docker. Falls come from fresh::falls.csv instead. Deferred until CABD is loaded or falls source is aligned.
+- [ ] pscis_modelledcrossings_streams_xref — GPS corrections. Affects crossing-to-stream assignment via lnk_match, not break positions. Matters for lnk_aggregate (per-crossing rollup), not habitat km totals.
 
 ## Phase 2: Performance + correctness
 - [x] WSG filter on breaks table (61k → 27k)

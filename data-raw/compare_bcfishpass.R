@@ -162,6 +162,24 @@ message("  User definite barriers: ", nrow(definite))
 # ===========================================================================
 message("\n=== Step 5: Barrier overrides ===")
 
+# Load barrier definite control — used in two places:
+# 1. Remove passable barriers (barrier_ind=false) from gradient detection
+# 2. Prevent overrides on controlled barriers (any control row blocks override)
+definite_ctrl <- read.csv(file.path(bcfishpass_data, "user_barriers_definite_control.csv"),
+  stringsAsFactors = FALSE)
+definite_ctrl_wsg <- definite_ctrl[definite_ctrl$watershed_group_code == wsg, ]
+if (nrow(definite_ctrl_wsg) > 0) {
+  ctrl_csv <- tempfile(fileext = ".csv")
+  write.csv(definite_ctrl_wsg, ctrl_csv, row.names = FALSE)
+  lnk_load(conn, csv = ctrl_csv, to = "working.barriers_definite_control",
+    cols_id = "blue_line_key", cols_required = c("downstream_route_measure", "barrier_ind"))
+  unlink(ctrl_csv)
+  ctrl_table <- "working.barriers_definite_control"
+} else {
+  ctrl_table <- NULL
+}
+message("  Barrier definite controls: ", nrow(definite_ctrl_wsg))
+
 # Pre-compute gradient barriers
 DBI::dbExecute(conn, "DROP TABLE IF EXISTS working.streams_blk")
 DBI::dbExecute(conn, sprintf("
@@ -173,6 +191,20 @@ fresh::frs_break_find(conn, "working.streams_blk",
   attribute = "gradient",
   classes = c("1500" = 0.15, "2000" = 0.20, "2500" = 0.25, "3000" = 0.30),
   to = "working.gradient_barriers_raw")
+
+# Remove gradient barriers where control says barrier_ind = false (passable)
+# bcfishpass does this in barriers_gradient.sql: WHERE (p.barrier_ind IS NULL or p.barrier_ind is true)
+if (nrow(definite_ctrl_wsg) > 0) {
+  n_pre <- DBI::dbGetQuery(conn, "SELECT count(*) FROM working.gradient_barriers_raw")[[1]]
+  DBI::dbExecute(conn, "
+    DELETE FROM working.gradient_barriers_raw g
+    USING working.barriers_definite_control c
+    WHERE g.blue_line_key = c.blue_line_key
+      AND abs(g.downstream_route_measure - c.downstream_route_measure) < 1
+      AND c.barrier_ind::boolean = false")
+  n_post <- DBI::dbGetQuery(conn, "SELECT count(*) FROM working.gradient_barriers_raw")[[1]]
+  message("  Control passable removals: ", n_pre - n_post)
+}
 
 # Enrich with ltree for fwa_upstream joins (needed for both overrides and minimal filter)
 DBI::dbExecute(conn, "ALTER TABLE working.gradient_barriers_raw ADD COLUMN IF NOT EXISTS wscode_ltree ltree")
@@ -225,28 +257,12 @@ link::lnk_load(conn,
   cols_id = "blue_line_key",
   cols_required = c("species_code", "upstream_route_measure", "habitat_ind"))
 
-# Load barrier definite control (prevents overriding known-real barriers)
-definite_ctrl <- read.csv(file.path(bcfishpass_data, "user_barriers_definite_control.csv"),
-  stringsAsFactors = FALSE)
-definite_ctrl_wsg <- definite_ctrl[definite_ctrl$watershed_group_code == wsg, ]
-if (nrow(definite_ctrl_wsg) > 0) {
-  ctrl_csv <- tempfile(fileext = ".csv")
-  write.csv(definite_ctrl_wsg, ctrl_csv, row.names = FALSE)
-  lnk_load(conn, csv = ctrl_csv, to = "working.barriers_definite_control",
-    cols_id = "blue_line_key", cols_required = c("downstream_route_measure", "barrier_ind"))
-  unlink(ctrl_csv)
-  ctrl_table <- "working.barriers_definite_control"
-} else {
-  ctrl_table <- NULL
-}
-message("  Barrier definite controls: ", nrow(definite_ctrl_wsg))
-
 # Compute overrides
 lnk_barrier_overrides(conn,
   barriers = "working.natural_barriers",
   observations = "bcfishobs.observations",
   habitat = "working.user_habitat_classification",
-  # control = ctrl_table,  # TODO: causes -13% regression, needs investigation
+  # control = ctrl_table,  # deferred to lnk_habitat — bcfishpass applies at per-model barrier build, not override
   params = params_fresh_df,
   to = "working.barrier_overrides")
 
