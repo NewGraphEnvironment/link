@@ -20,3 +20,15 @@ ADMS +2.6% but BULK -39.9%. The two-phase algorithm (downstream trace + upstream
 
 ## Break source data alignment
 All break positions pre-computed — no snapping during pipeline. Observations filtered by wsg_species_presence (592 → 179 unique positions, bcfishpass 178). Habitat endpoints use both DRM and URM (143 vs 145). observation_exclusions: 1 SK data_error in ADMS, no impact.
+
+## CABD CSVs require external data
+The 4 CABD CSVs (additions, blkey_xref, exclusions, passability_updates) groom `cabd.dams` and `cabd.waterfalls` tables. These come from the Canadian Aquatic Barriers Database loaded by bcfishpass. Our falls come from `fresh::falls.csv` (fwapg `fwa_localize`). Without CABD schema loaded, the CSVs are inoperable. Need to align falls data source or load CABD.
+
+## Groom tables before pipeline, don't add switches inside engine
+The user_barriers_definite_control regression taught: apply filters at the right level. bcfishpass uses the control table at barrier table BUILD (barriers_gradient.sql) and observation counting (model_access_*.sql), not during override computation. Applying it via LEFT JOIN in lnk_barrier_overrides was wrong level — caused -13% regression from 6 fewer overrides on major tributaries. Proper fix: lnk_habitat builds per-model barrier tables (grooming), then passes clean tables to fresh (engine).
+
+## Pipeline performance hierarchy
+1. Indexes on ltree columns — 35x speedup (228s → 6.6s classification)
+2. WSG filter on breaks table — prevents cross-WSG bloat (61k → 27k)
+3. Pre-computed downstream barrier index — not yet implemented, biggest remaining opportunity
+4. UNLOGGED working tables — not yet tested, estimated 2-3x for bulk inserts
