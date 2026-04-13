@@ -15,11 +15,29 @@
 # ===========================================================================
 # CONFIG — change these for different WSGs
 # ===========================================================================
+devtools::load_all()
 wsg <- "ADMS"
-species_compare <- c("BT", "CH", "CO", "SK")
-bcfishpass_data <- "~/Projects/repo/bcfishpass/data"
-rules_path <- "inst/extdata/parameters_habitat_rules_bcfishpass.yaml"
-params_fresh_path <- "inst/extdata/parameters_fresh_bcfishpass.csv"
+# Sub-basin AOI for fast iteration (NULL = full WSG)
+aoi <- NULL
+# aoi <- "wscode_ltree <@ '400.431358'::ltree"  # ~300 segments, fast
+bcfishpass_data <- system.file("extdata", "bcfishpass", package = "link")
+rules_path <- system.file("extdata", "parameters_habitat_rules_bcfishpass.yaml", package = "link")
+params_fresh_path <- system.file("extdata", "parameters_fresh_bcfishpass.csv", package = "link")
+
+# Species from wsg_species_presence — same source bcfishpass uses
+wsg_spp <- read.csv(system.file("extdata", "wsg_species_presence.csv", package = "fresh"),
+  stringsAsFactors = FALSE)
+wsg_row <- wsg_spp[wsg_spp$watershed_group_code == wsg, ]
+spp_cols <- c("bt","ch","cm","co","ct","dv","pk","rb","sk","st","wct")
+species_compare <- toupper(spp_cols[vapply(spp_cols, function(x)
+  identical(wsg_row[[x]], "t"), logical(1))])
+# Species to model: from habitat dimensions CSV (defines which species this config covers)
+# Intersect with WSG species presence to get species for this specific watershed
+dims <- read.csv(system.file("extdata", "parameters_habitat_dimensions_bcfishpass.csv",
+  package = "link"), stringsAsFactors = FALSE)
+species_compare <- intersect(unique(dims$species), species_compare)
+params_fresh_df <- read.csv(params_fresh_path, stringsAsFactors = FALSE)
+message("Species for ", wsg, ": ", paste(species_compare, collapse = ", "))
 
 # ===========================================================================
 # Step 1: Connect
@@ -111,6 +129,20 @@ DBI::dbWriteTable(conn, DBI::Id(schema = "working", table = "falls"),
 falls_spec <- list(table = "working.falls", label = "blocked")
 message("  Falls: ", nrow(falls))
 
+# User-identified definite barriers (always block, all species)
+definite_all <- read.csv(file.path(bcfishpass_data, "user_barriers_definite.csv"),
+  stringsAsFactors = FALSE)
+definite <- definite_all[definite_all$watershed_group_code == wsg, ]
+if (nrow(definite) > 0) {
+  DBI::dbWriteTable(conn, DBI::Id(schema = "working", table = "barriers_definite"),
+    definite, overwrite = TRUE)
+} else {
+  DBI::dbExecute(conn, "DROP TABLE IF EXISTS working.barriers_definite")
+  DBI::dbExecute(conn, "CREATE TABLE working.barriers_definite (
+    blue_line_key integer, downstream_route_measure double precision)")
+}
+message("  User definite barriers: ", nrow(definite))
+
 # ===========================================================================
 # Step 5: Pre-compute barriers + overrides
 # ===========================================================================
@@ -128,7 +160,18 @@ fresh::frs_break_find(conn, "working.streams_blk",
   classes = c("1500" = 0.15, "2000" = 0.20, "2500" = 0.25, "3000" = 0.30),
   to = "working.gradient_barriers_raw")
 
-# Enrich with ltree + round measures
+# Enrich with ltree for fwa_upstream joins (needed for both overrides and minimal filter)
+DBI::dbExecute(conn, "ALTER TABLE working.gradient_barriers_raw ADD COLUMN IF NOT EXISTS wscode_ltree ltree")
+DBI::dbExecute(conn, "ALTER TABLE working.gradient_barriers_raw ADD COLUMN IF NOT EXISTS localcode_ltree ltree")
+DBI::dbExecute(conn, "
+  UPDATE working.gradient_barriers_raw g
+  SET wscode_ltree = s.wscode_ltree, localcode_ltree = s.localcode_ltree
+  FROM whse_basemapping.fwa_stream_networks_sp s
+  WHERE g.blue_line_key = s.blue_line_key
+    AND g.downstream_route_measure >= s.downstream_route_measure
+    AND g.downstream_route_measure < s.upstream_route_measure")
+
+# Build natural_barriers (FULL set) for barrier overrides BEFORE removing non-minimal
 DBI::dbExecute(conn, "DROP TABLE IF EXISTS working.natural_barriers")
 DBI::dbExecute(conn, "
   CREATE TABLE working.natural_barriers AS
@@ -148,6 +191,16 @@ DBI::dbExecute(conn, "
     ON f.blue_line_key = s.blue_line_key
     AND f.downstream_route_measure >= s.downstream_route_measure
     AND f.downstream_route_measure < s.upstream_route_measure")
+# User definite barriers — always block (like falls)
+DBI::dbExecute(conn, "
+  INSERT INTO working.natural_barriers
+  SELECT d.blue_line_key, round(d.downstream_route_measure), 'blocked',
+    s.wscode_ltree, s.localcode_ltree
+  FROM working.barriers_definite d
+  JOIN whse_basemapping.fwa_stream_networks_sp s
+    ON d.blue_line_key = s.blue_line_key
+    AND d.downstream_route_measure >= s.downstream_route_measure
+    AND d.downstream_route_measure < s.upstream_route_measure")
 n_barriers <- DBI::dbGetQuery(conn, "SELECT count(*) FROM working.natural_barriers")[[1]]
 message("  Natural barriers: ", n_barriers)
 
@@ -158,54 +211,285 @@ link::lnk_load(conn,
   cols_id = "blue_line_key",
   cols_required = c("species_code", "upstream_route_measure", "habitat_ind"))
 
+# Load barrier definite control (prevents overriding known-real barriers)
+definite_ctrl <- read.csv(file.path(bcfishpass_data, "user_barriers_definite_control.csv"),
+  stringsAsFactors = FALSE)
+definite_ctrl_wsg <- definite_ctrl[definite_ctrl$watershed_group_code == wsg, ]
+if (nrow(definite_ctrl_wsg) > 0) {
+  ctrl_csv <- tempfile(fileext = ".csv")
+  write.csv(definite_ctrl_wsg, ctrl_csv, row.names = FALSE)
+  lnk_load(conn, csv = ctrl_csv, to = "working.barriers_definite_control",
+    cols_id = "blue_line_key", cols_required = c("downstream_route_measure", "barrier_ind"))
+  unlink(ctrl_csv)
+  ctrl_table <- "working.barriers_definite_control"
+} else {
+  ctrl_table <- NULL
+}
+message("  Barrier definite controls: ", nrow(definite_ctrl_wsg))
+
 # Compute overrides
-params_fresh_df <- read.csv(params_fresh_path, stringsAsFactors = FALSE)
-devtools::load_all()
 lnk_barrier_overrides(conn,
   barriers = "working.natural_barriers",
   observations = "bcfishobs.observations",
   habitat = "working.user_habitat_classification",
+  # control = ctrl_table,  # TODO: causes -13% regression, needs investigation
   params = params_fresh_df,
   to = "working.barrier_overrides")
 
 # ===========================================================================
-# Step 6: Run fresh — single detection, single truth
+# Step 5b: Remove non-minimal barriers from break source
 # ===========================================================================
-message("\n=== Step 6: Run fresh ===")
+# bcfishpass keeps only the most-downstream barrier per accessible path.
+# A barrier is non-minimal if another barrier in the same table is downstream.
+# This dramatically reduces break positions (e.g., 27k -> 665 for salmon in ADMS).
+# The natural_barriers table (for overrides) retains the full set.
+message("\n=== Step 5b: Remove non-minimal barriers ===")
+DBI::dbExecute(conn, "CREATE INDEX IF NOT EXISTS gbr_blk_idx ON working.gradient_barriers_raw (blue_line_key)")
+DBI::dbExecute(conn, "CREATE INDEX IF NOT EXISTS gbr_ws_gidx ON working.gradient_barriers_raw USING gist (wscode_ltree)")
+DBI::dbExecute(conn, "CREATE INDEX IF NOT EXISTS gbr_ws_bidx ON working.gradient_barriers_raw USING btree (wscode_ltree)")
+DBI::dbExecute(conn, "CREATE INDEX IF NOT EXISTS gbr_lc_gidx ON working.gradient_barriers_raw USING gist (localcode_ltree)")
+DBI::dbExecute(conn, "CREATE INDEX IF NOT EXISTS gbr_lc_bidx ON working.gradient_barriers_raw USING btree (localcode_ltree)")
+
+n_before <- DBI::dbGetQuery(conn, "SELECT count(*) FROM working.gradient_barriers_raw")[[1]]
+DBI::dbExecute(conn, "
+  DELETE FROM working.gradient_barriers_raw a
+  WHERE EXISTS (
+    SELECT 1 FROM working.gradient_barriers_raw b
+    WHERE b.ctid != a.ctid
+      AND fwa_upstream(
+        b.blue_line_key, b.downstream_route_measure,
+        b.wscode_ltree, b.localcode_ltree,
+        a.blue_line_key, a.downstream_route_measure,
+        a.wscode_ltree, a.localcode_ltree,
+        false, 1)
+  )")
+n_after <- DBI::dbGetQuery(conn, "SELECT count(*) FROM working.gradient_barriers_raw")[[1]]
+message("  Non-minimal removed: ", n_before - n_after, " (", n_before, " -> ", n_after, ")")
+
+# ===========================================================================
+# Step 6: Load base segments + sequential breaking
+# ===========================================================================
+message("\n=== Step 6: Sequential breaking ===")
 DBI::dbExecute(conn, "DROP TABLE IF EXISTS fresh.streams CASCADE")
 DBI::dbExecute(conn, "DROP TABLE IF EXISTS fresh.streams_habitat CASCADE")
 
-# Add gradient_NNNN label to pre-computed barriers for access gating
+# Load base segments with bcfishpass filters + optional AOI
+aoi_filter <- if (!is.null(aoi)) paste0("\n    AND ", aoi) else ""
+DBI::dbExecute(conn, sprintf("
+  CREATE TABLE fresh.streams AS
+  SELECT *
+  FROM whse_basemapping.fwa_stream_networks_sp
+  WHERE watershed_group_code = '%s'
+    AND localcode_ltree IS NOT NULL
+    AND edge_type != 6010
+    AND wscode_ltree <@ '999'::ltree IS FALSE%s
+", wsg, aoi_filter))
+# Note: bcfishpass excludes LFIDs 832498864, 832474945 (bad data removed from FWA post-20240830)
+
+# Channel width (same as frs_network_segment)
+fresh::frs_col_join(conn, "fresh.streams",
+  from = "fwa_stream_networks_channel_width",
+  cols = c("channel_width", "channel_width_source"),
+  by = "linear_feature_id")
+
+# GENERATED columns for gradient/measures/length
+fresh::frs_col_generate(conn, "fresh.streams")
+
+# Unique id_segment
+DBI::dbExecute(conn, "ALTER TABLE fresh.streams ADD COLUMN id_segment integer")
+DBI::dbExecute(conn, "
+  WITH numbered AS (
+    SELECT ctid, row_number() OVER (ORDER BY blue_line_key, downstream_route_measure) AS rn
+    FROM fresh.streams
+  )
+  UPDATE fresh.streams s SET id_segment = numbered.rn
+  FROM numbered WHERE s.ctid = numbered.ctid")
+DBI::dbExecute(conn, "CREATE UNIQUE INDEX ON fresh.streams (id_segment)")
+
+n_base <- DBI::dbGetQuery(conn, "SELECT count(*) FROM fresh.streams")[[1]]
+message("  Base segments: ", n_base)
+
+# Add gradient_NNNN label for access gating
 DBI::dbExecute(conn, "ALTER TABLE working.gradient_barriers_raw ADD COLUMN IF NOT EXISTS label_access text")
 DBI::dbExecute(conn, "UPDATE working.gradient_barriers_raw SET label_access = 'gradient_' || lpad(gradient_class::text, 4, '0')")
 
-# Pass pre-computed barriers as a break source — ONE detection, used for BOTH
-# overrides (step 5) AND segmentation (step 6). No internal gradient detection.
-gradient_spec <- list(
-  table = "working.gradient_barriers_raw",
-  label_col = "label_access"
+# Observation break positions — filter to species present in WSG + exclude data errors
+obs_species <- toupper(spp_cols[vapply(spp_cols, function(x)
+  identical(wsg_row[[x]], "t"), logical(1))])
+if ("CT" %in% obs_species) obs_species <- c(obs_species, "CCT", "ACT", "CT/RB")
+obs_species_sql <- paste0("'", obs_species, "'", collapse = ", ")
+
+# Load observation exclusions (data errors + release excludes)
+obs_excl <- read.csv(file.path(bcfishpass_data, "observation_exclusions.csv"),
+  stringsAsFactors = FALSE)
+obs_excl_keys <- obs_excl$fish_observation_point_id[
+  obs_excl$data_error %in% c(TRUE, "t") | obs_excl$release_exclude %in% c(TRUE, "t")]
+if (length(obs_excl_keys) > 0) {
+  DBI::dbWriteTable(conn, DBI::Id(schema = "working", table = "obs_exclusions"),
+    data.frame(fish_observation_point_id = obs_excl_keys), overwrite = TRUE)
+  excl_filter <- "AND o.fish_observation_point_id NOT IN (SELECT fish_observation_point_id FROM working.obs_exclusions)"
+} else {
+  excl_filter <- ""
+}
+
+DBI::dbExecute(conn, "DROP TABLE IF EXISTS working.observations_breaks")
+DBI::dbExecute(conn, sprintf("
+  CREATE TABLE working.observations_breaks AS
+  SELECT DISTINCT o.blue_line_key, round(o.downstream_route_measure) AS downstream_route_measure
+  FROM bcfishobs.observations o
+  WHERE o.watershed_group_code = '%s'
+    AND o.species_code IN (%s) %s", wsg, obs_species_sql, excl_filter))
+n_obs <- DBI::dbGetQuery(conn, "SELECT count(*) FROM working.observations_breaks")[[1]]
+message("  Observation breaks: ", n_obs)
+
+# Habitat classification endpoints — bcfishpass breaks at BOTH downstream AND
+# upstream measures per record (user_habitat_classification_endpoints.sql)
+DBI::dbExecute(conn, "DROP TABLE IF EXISTS working.habitat_endpoints")
+DBI::dbExecute(conn, sprintf("
+  CREATE TABLE working.habitat_endpoints AS
+  SELECT DISTINCT blue_line_key, round(downstream_route_measure) AS downstream_route_measure
+  FROM working.user_habitat_classification
+  WHERE watershed_group_code = '%s'
+  UNION
+  SELECT DISTINCT blue_line_key, round(upstream_route_measure) AS downstream_route_measure
+  FROM working.user_habitat_classification
+  WHERE watershed_group_code = '%s'", wsg, wsg))
+n_hab <- DBI::dbGetQuery(conn, "SELECT count(*) FROM working.habitat_endpoints")[[1]]
+message("  Habitat endpoints: ", n_hab)
+
+# Crossings break positions
+DBI::dbExecute(conn, "DROP TABLE IF EXISTS working.crossings_breaks")
+DBI::dbExecute(conn, "
+  CREATE TABLE working.crossings_breaks AS
+  SELECT blue_line_key, round(downstream_route_measure) AS downstream_route_measure
+  FROM working.crossings")
+
+# Helper: reassign unique id_segment after each break round
+reassign_id <- function(conn) {
+  DBI::dbExecute(conn, "DROP INDEX IF EXISTS fresh.streams_id_segment_idx")
+  DBI::dbExecute(conn, "
+    WITH numbered AS (
+      SELECT ctid, row_number() OVER (ORDER BY blue_line_key, downstream_route_measure) AS rn
+      FROM fresh.streams
+    )
+    UPDATE fresh.streams s SET id_segment = numbered.rn
+    FROM numbered WHERE s.ctid = numbered.ctid")
+  DBI::dbExecute(conn, "CREATE UNIQUE INDEX streams_id_segment_idx ON fresh.streams (id_segment)")
+}
+
+# Sequential breaking — bcfishpass order
+break_sources <- list(
+  list(name = "observations",            table = "working.observations_breaks"),
+  list(name = "gradient_barriers",       table = "working.gradient_barriers_raw"),
+  list(name = "barriers_definite",       table = "working.barriers_definite"),
+  list(name = "habitat_endpoints",       table = "working.habitat_endpoints"),
+  list(name = "crossings",              table = "working.crossings_breaks")
 )
 
+for (src in break_sources) {
+  n_before <- DBI::dbGetQuery(conn, "SELECT count(*) FROM fresh.streams")[[1]]
+  fresh::frs_break_apply(conn,
+    table = "fresh.streams",
+    breaks = src$table,
+    segment_id = "id_segment",
+    measure_precision = 0L)
+  n_after <- DBI::dbGetQuery(conn, "SELECT count(*) FROM fresh.streams")[[1]]
+  message(sprintf("  After %-25s: %s segments (+%s)", src$name, n_after, n_after - n_before))
+  reassign_id(conn)
+}
+
+# Index for classification
+DBI::dbExecute(conn, "CREATE INDEX ON fresh.streams (blue_line_key)")
+DBI::dbExecute(conn, "CREATE INDEX ON fresh.streams USING gist (geom)")
+
+# Build breaks table for access gating (frs_habitat_classify needs this)
+# Access gating needs ALL gradient barriers (not just minimal).
+# Minimal is for segmentation only — every gradient still blocks access.
+# Re-detect full set since gradient_barriers_raw was modified in-place.
+fresh::frs_break_find(conn, "working.streams_blk",
+  attribute = "gradient",
+  classes = c("1500" = 0.15, "2000" = 0.20, "2500" = 0.25, "3000" = 0.30),
+  to = "working.gradient_barriers_access")
+
+DBI::dbExecute(conn, "DROP TABLE IF EXISTS fresh.streams_breaks")
+DBI::dbExecute(conn, "
+  CREATE TABLE fresh.streams_breaks AS
+  SELECT g.blue_line_key, round(g.downstream_route_measure) AS downstream_route_measure,
+    'gradient_' || lpad(g.gradient_class::text, 4, '0') AS label,
+    s.wscode_ltree, s.localcode_ltree
+  FROM working.gradient_barriers_access g
+  JOIN whse_basemapping.fwa_stream_networks_sp s
+    ON g.blue_line_key = s.blue_line_key
+    AND g.downstream_route_measure >= s.downstream_route_measure
+    AND g.downstream_route_measure < s.upstream_route_measure
+  UNION ALL
+  SELECT f.blue_line_key, round(f.downstream_route_measure), 'blocked',
+    s.wscode_ltree, s.localcode_ltree
+  FROM working.falls f
+  JOIN whse_basemapping.fwa_stream_networks_sp s
+    ON f.blue_line_key = s.blue_line_key
+    AND f.downstream_route_measure >= s.downstream_route_measure
+    AND f.downstream_route_measure < s.upstream_route_measure
+  UNION ALL
+  SELECT d.blue_line_key, round(d.downstream_route_measure), 'blocked',
+    s.wscode_ltree, s.localcode_ltree
+  FROM working.barriers_definite d
+  JOIN whse_basemapping.fwa_stream_networks_sp s
+    ON d.blue_line_key = s.blue_line_key
+    AND d.downstream_route_measure >= s.downstream_route_measure
+    AND d.downstream_route_measure < s.upstream_route_measure
+  UNION ALL
+  SELECT c.blue_line_key, round(c.downstream_route_measure),
+    CASE c.barrier_status
+      WHEN 'BARRIER' THEN 'barrier'
+      WHEN 'POTENTIAL' THEN 'potential'
+      WHEN 'PASSABLE' THEN 'passable'
+      ELSE 'unknown'
+    END,
+    s.wscode_ltree, s.localcode_ltree
+  FROM working.crossings c
+  JOIN whse_basemapping.fwa_stream_networks_sp s
+    ON c.blue_line_key = s.blue_line_key
+    AND c.downstream_route_measure >= s.downstream_route_measure
+    AND c.downstream_route_measure < s.upstream_route_measure")
+DBI::dbExecute(conn, "CREATE INDEX ON fresh.streams_breaks (blue_line_key, downstream_route_measure)")
+
+# ===========================================================================
+# Step 7: Classify habitat
+# ===========================================================================
+message("\n=== Step 7: Classify habitat ===")
 t0 <- proc.time()
-result <- fresh::frs_habitat(conn,
-  wsg = wsg,
+fresh::frs_habitat_classify(conn,
+  table = "fresh.streams",
+  to = "fresh.streams_habitat",
   species = species_compare,
-  to_streams = "fresh.streams",
-  to_habitat = "fresh.streams_habitat",
-  break_sources = list(crossings_spec, falls_spec, gradient_spec),
-  breaks_gradient = numeric(0),  # disable internal — we supply barriers
-  rules = rules_path,
+  params = fresh::frs_params(
+    csv = system.file("extdata", "parameters_habitat_thresholds.csv", package = "fresh"),
+    rules_yaml = rules_path),
   params_fresh = params_fresh_df,
+  gate = TRUE,
+  label_block = "blocked",
   barrier_overrides = "working.barrier_overrides",
-  verbose = TRUE
-)
+  verbose = TRUE)
 elapsed <- (proc.time() - t0)["elapsed"]
-message("frs_habitat completed in ", round(elapsed, 1), " seconds")
+message("  Classification completed in ", round(elapsed, 1), " seconds")
+
+# Rearing-spawning connectivity (frs_cluster) — same as frs_habitat runs internally
+params_obj <- fresh::frs_params(
+  csv = system.file("extdata", "parameters_habitat_thresholds.csv", package = "fresh"),
+  rules_yaml = rules_path)
+fresh:::`.frs_run_connectivity`(conn,
+  table = "fresh.streams",
+  habitat = "fresh.streams_habitat",
+  species = species_compare,
+  params = params_obj,
+  params_fresh = params_fresh_df,
+  verbose = TRUE)
 
 # ===========================================================================
-# Step 7: Compare
+# Step 8: Compare
 # ===========================================================================
-message("\n=== Step 7: Compare ===")
+message("\n=== Step 8: Compare ===")
 
 ours <- DBI::dbGetQuery(conn, sprintf("
   SELECT h.species_code,
@@ -216,6 +500,7 @@ ours <- DBI::dbGetQuery(conn, sprintf("
   GROUP BY h.species_code ORDER BY h.species_code",
   paste0("'", species_compare, "'", collapse = ", ")))
 
+ref_aoi <- if (!is.null(aoi)) paste0(" AND ", gsub("wscode_ltree", "s.wscode_ltree", aoi)) else ""
 ref_list <- lapply(species_compare, function(sp) {
   DBI::dbGetQuery(conn_ref, sprintf("
     SELECT '%s' AS species_code,
@@ -223,7 +508,7 @@ ref_list <- lapply(species_compare, function(sp) {
       round(SUM(CASE WHEN h.rearing THEN s.length_metre ELSE 0 END)::numeric / 1000, 2) AS rearing_km
     FROM bcfishpass.streams s
     JOIN bcfishpass.habitat_linear_%s h ON s.segmented_stream_id = h.segmented_stream_id
-    WHERE s.watershed_group_code = '%s'", sp, tolower(sp), wsg))
+    WHERE s.watershed_group_code = '%s'%s", sp, tolower(sp), wsg, ref_aoi))
 })
 ref <- do.call(rbind, ref_list)
 

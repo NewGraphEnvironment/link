@@ -143,7 +143,7 @@ lnk_barrier_overrides <- function(conn,
         "LEFT JOIN %s c
            ON b.blue_line_key = c.blue_line_key
            AND abs(b.downstream_route_measure - c.downstream_route_measure) < 1
-           AND c.barrier_ind = true", control)
+           AND c.barrier_ind::boolean = true", control)
     } else {
       ""
     }

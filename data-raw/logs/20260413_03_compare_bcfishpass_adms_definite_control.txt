@@ -1,0 +1,142 @@
+ℹ Loading link
+Species for ADMS: BT, CH, CO, SK
+=== Step 1: Connect ===
+NOTICE:  schema "working" already exists, skipping
+
+[1] 0
+NOTICE:  schema "fresh" already exists, skipping
+
+[1] 0
+
+=== Step 2: Load crossings ===
+  Crossings: 3597
+
+=== Step 3: Apply overrides ===
+Note: provenance columns not found in CSV (this is OK): reviewer
+
+Barrier status:
+ barrier_status    n
+      POTENTIAL 3485
+       PASSABLE   68
+        BARRIER   39
+        UNKNOWN    5
+
+=== Step 4: Break sources ===
+  Falls: 7
+[1] 0
+  User definite barriers: 0
+
+=== Step 5: Barrier overrides ===
+[1] 0
+[1] 4207
+[1] 0
+[1] 0
+[1] 27427
+[1] 0
+[1] 27440
+[1] 7
+[1] 0
+  Natural barriers: 27447
+Note: provenance columns not found in CSV (this is OK): reviewer
+Note: provenance columns not found in CSV (this is OK): reviewer
+  Barrier definite controls: 2
+  BT: 45 barriers overridden
+  CH: 10 barriers overridden
+  CM: 10 barriers overridden
+  CO: 10 barriers overridden
+  CT: 0 barriers overridden
+  DV: 0 barriers overridden
+  PK: 10 barriers overridden
+  RB: 0 barriers overridden
+  SK: 10 barriers overridden
+  ST: 0 barriers overridden
+  WCT: 0 barriers overridden
+Total barrier overrides: 95 in working.barrier_overrides
+
+=== Step 5b: Remove non-minimal barriers ===
+[1] 0
+[1] 0
+[1] 0
+[1] 0
+[1] 0
+[1] 26766
+  Non-minimal removed: 26766 (27443 -> 677)
+
+=== Step 6: Sequential breaking ===
+[1] 0
+[1] 0
+[1] 10458
+[1] 0
+[1] 10458
+[1] 0
+  Base segments: 10458
+[1] 0
+[1] 677
+[1] 0
+[1] 179
+  Observation breaks: 179
+[1] 0
+[1] 143
+  Habitat endpoints: 143
+[1] 0
+[1] 3597
+  After observations             : 10623 segments (+165)
+  After gradient_barriers        : 11009 segments (+386)
+  After barriers_definite        : 11009 segments (+0)
+  After habitat_endpoints        : 11125 segments (+116)
+  After crossings                : 14707 segments (+3582)
+[1] 0
+[1] 0
+[1] 0
+[1] 31045
+[1] 0
+
+=== Step 7: Classify habitat ===
+NOTICE:  table "streams_acc_015" does not exist, skipping
+
+  Access 15%%: 2533 accessible (28.6s)
+NOTICE:  table "streams_acc_025" does not exist, skipping
+
+  Access 25%%: 4288 accessible (53.8s)
+NOTICE:  table "streams_acc_025_ovr_bt" does not exist, skipping
+
+  BT: 54.2s (4348 accessible, 1203 spawning, 2046 rearing)
+NOTICE:  table "streams_acc_015_ovr_ch" does not exist, skipping
+
+  CH: 29.5s (2611 accessible, 875 spawning, 1060 rearing)
+NOTICE:  table "streams_acc_015_ovr_co" does not exist, skipping
+
+  CO: 29.6s (2611 accessible, 1020 spawning, 1173 rearing)
+NOTICE:  table "streams_acc_015_ovr_sk" does not exist, skipping
+
+  SK: 29.8s (2611 accessible, 783 spawning, 360 rearing)
+  Classification completed in 225.6 seconds
+NOTICE:  table "frs_clusters_ch" does not exist, skipping
+
+  CH: 52 disconnected removed (1008 rearing remaining, 5.3s)
+NOTICE:  table "frs_clusters_co" does not exist, skipping
+
+  CO: 43 disconnected removed (1130 rearing remaining, 5.7s)
+NOTICE:  table "frs_clusters_sk" does not exist, skipping
+
+  SK: 0 disconnected removed (360 rearing remaining, 0.4s)
+NOTICE:  table "frs_qual_spawn_sk" does not exist, skipping
+
+  SK: connected spawning 783 -> 333
+
+=== Step 8: Compare ===
+
+--- Comparison (ADMS) ---
+ species  habitat   ours    ref diff_pct
+      BT spawning 311.28 361.71    -13.9
+      BT  rearing 603.49 674.19    -10.5
+      CH spawning 230.83 277.61    -16.9
+      CH  rearing 259.15 308.23    -15.9
+      CO spawning 262.31 310.98    -15.7
+      CO  rearing 284.29 351.19    -19.0
+      SK spawning  87.94  85.70      2.6
+      SK  rearing 229.85 229.85      0.0
+
+All within 5%: FALSE
+
+Done.

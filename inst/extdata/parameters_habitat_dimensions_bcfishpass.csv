@@ -4,6 +4,6 @@ CH,no,yes,no,no,no,yes,no,no,yes,,,,,"bcfishpass v0.5.0: no wetland or lake rear
 CM,no,yes,no,no,yes,no,no,no,yes,,,,,"bcfishpass v0.5.0: no freshwater rearing."
 CO,no,yes,no,no,no,yes,yes,no,yes,,,,,"bcfishpass v0.5.0: wetland-flow carve-out (1050/1150 no thresholds). No lake rearing."
 PK,no,yes,no,no,yes,no,no,no,yes,,,,,"bcfishpass v0.5.0: no freshwater rearing."
-SK,no,yes,yes,yes,no,no,no,no,yes,rearing,3000,,,"bcfishpass v0.5.0: no lake spawning. Lake-only rearing (200 ha min). Spawning within 3km of rearing lake."
+SK,no,yes,yes,yes,no,no,no,no,yes,rearing,3000,,,"bcfishpass v0.5.0: no lake spawning. Lake-only rearing (200 ha min). Spawning within 3km downstream of rearing lake."
 ST,no,yes,no,no,no,yes,no,no,yes,,,,,"bcfishpass v0.5.0: no wetland or lake rearing."
 WCT,no,yes,no,no,no,yes,no,no,yes,,,,,"bcfishpass v0.5.0: no wetland or lake rearing."
