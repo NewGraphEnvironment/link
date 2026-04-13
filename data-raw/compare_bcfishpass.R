@@ -15,8 +15,9 @@
 # ===========================================================================
 # CONFIG — change these for different WSGs
 # ===========================================================================
+t_start <- proc.time()
 devtools::load_all()
-wsg <- "ADMS"
+wsg <- if (length(commandArgs(TRUE)) > 0) commandArgs(TRUE)[1] else "ADMS"
 # Sub-basin AOI for fast iteration (NULL = full WSG)
 aoi <- NULL
 # aoi <- "wscode_ltree <@ '400.431358'::ltree"  # ~300 segments, fast
@@ -63,6 +64,19 @@ crossings$aggregated_crossings_id <- as.character(crossings$aggregated_crossings
 DBI::dbWriteTable(conn, DBI::Id(schema = "working", table = "crossings"),
   crossings, overwrite = TRUE)
 message("  Crossings: ", nrow(crossings))
+
+# Misc crossings (weirs, unassessed culverts, flood control)
+misc_all <- read.csv(file.path(bcfishpass_data, "user_crossings_misc.csv"),
+  stringsAsFactors = FALSE)
+misc <- misc_all[misc_all$watershed_group_code == wsg, ]
+if (nrow(misc) > 0) {
+  misc$aggregated_crossings_id <- as.character(misc$user_crossing_misc_id + 1200000000L)
+  # Align columns with crossings table, fill missing with NA
+  for (col in setdiff(names(crossings), names(misc))) misc[[col]] <- NA
+  DBI::dbWriteTable(conn, DBI::Id(schema = "working", table = "crossings"),
+    misc[, names(crossings)], append = TRUE)
+}
+message("  Misc crossings: ", nrow(misc))
 
 # ===========================================================================
 # Step 3: Apply bcfishpass overrides
@@ -398,9 +412,8 @@ for (src in break_sources) {
   reassign_id(conn)
 }
 
-# Index for classification
-DBI::dbExecute(conn, "CREATE INDEX ON fresh.streams (blue_line_key)")
-DBI::dbExecute(conn, "CREATE INDEX ON fresh.streams USING gist (geom)")
+# Index both tables for fwa_upstream performance in access gating
+fresh:::.frs_index_working(conn, "fresh.streams")
 
 # Build breaks table for access gating (frs_habitat_classify needs this)
 # Access gating needs ALL gradient barriers (not just minimal).
@@ -411,8 +424,9 @@ fresh::frs_break_find(conn, "working.streams_blk",
   classes = c("1500" = 0.15, "2000" = 0.20, "2500" = 0.25, "3000" = 0.30),
   to = "working.gradient_barriers_access")
 
+# Filter breaks to WSG — access gating is O(segments × breaks), must be tight
 DBI::dbExecute(conn, "DROP TABLE IF EXISTS fresh.streams_breaks")
-DBI::dbExecute(conn, "
+DBI::dbExecute(conn, sprintf("
   CREATE TABLE fresh.streams_breaks AS
   SELECT g.blue_line_key, round(g.downstream_route_measure) AS downstream_route_measure,
     'gradient_' || lpad(g.gradient_class::text, 4, '0') AS label,
@@ -422,6 +436,7 @@ DBI::dbExecute(conn, "
     ON g.blue_line_key = s.blue_line_key
     AND g.downstream_route_measure >= s.downstream_route_measure
     AND g.downstream_route_measure < s.upstream_route_measure
+  WHERE s.watershed_group_code = '%s'
   UNION ALL
   SELECT f.blue_line_key, round(f.downstream_route_measure), 'blocked',
     s.wscode_ltree, s.localcode_ltree
@@ -430,6 +445,7 @@ DBI::dbExecute(conn, "
     ON f.blue_line_key = s.blue_line_key
     AND f.downstream_route_measure >= s.downstream_route_measure
     AND f.downstream_route_measure < s.upstream_route_measure
+  WHERE s.watershed_group_code = '%s'
   UNION ALL
   SELECT d.blue_line_key, round(d.downstream_route_measure), 'blocked',
     s.wscode_ltree, s.localcode_ltree
@@ -438,6 +454,7 @@ DBI::dbExecute(conn, "
     ON d.blue_line_key = s.blue_line_key
     AND d.downstream_route_measure >= s.downstream_route_measure
     AND d.downstream_route_measure < s.upstream_route_measure
+  WHERE s.watershed_group_code = '%s'
   UNION ALL
   SELECT c.blue_line_key, round(c.downstream_route_measure),
     CASE c.barrier_status
@@ -451,8 +468,9 @@ DBI::dbExecute(conn, "
   JOIN whse_basemapping.fwa_stream_networks_sp s
     ON c.blue_line_key = s.blue_line_key
     AND c.downstream_route_measure >= s.downstream_route_measure
-    AND c.downstream_route_measure < s.upstream_route_measure")
-DBI::dbExecute(conn, "CREATE INDEX ON fresh.streams_breaks (blue_line_key, downstream_route_measure)")
+    AND c.downstream_route_measure < s.upstream_route_measure
+  WHERE s.watershed_group_code = '%s'", wsg, wsg, wsg, wsg))
+fresh:::.frs_index_working(conn, "fresh.streams_breaks")
 
 # ===========================================================================
 # Step 7: Classify habitat
@@ -502,13 +520,19 @@ ours <- DBI::dbGetQuery(conn, sprintf("
 
 ref_aoi <- if (!is.null(aoi)) paste0(" AND ", gsub("wscode_ltree", "s.wscode_ltree", aoi)) else ""
 ref_list <- lapply(species_compare, function(sp) {
+  # Check if rearing column exists for this species (CM/PK have spawning only)
+  ref_cols <- DBI::dbGetQuery(conn_ref, sprintf(
+    "SELECT column_name FROM information_schema.columns
+     WHERE table_schema = 'bcfishpass' AND table_name = 'habitat_linear_%s'", tolower(sp)))
+  has_rearing <- "rearing" %in% ref_cols$column_name
+  rear_expr <- if (has_rearing) "CASE WHEN h.rearing THEN s.length_metre ELSE 0 END" else "0"
   DBI::dbGetQuery(conn_ref, sprintf("
     SELECT '%s' AS species_code,
       round(SUM(CASE WHEN h.spawning THEN s.length_metre ELSE 0 END)::numeric / 1000, 2) AS spawning_km,
-      round(SUM(CASE WHEN h.rearing THEN s.length_metre ELSE 0 END)::numeric / 1000, 2) AS rearing_km
+      round(SUM(%s)::numeric / 1000, 2) AS rearing_km
     FROM bcfishpass.streams s
     JOIN bcfishpass.habitat_linear_%s h ON s.segmented_stream_id = h.segmented_stream_id
-    WHERE s.watershed_group_code = '%s'%s", sp, tolower(sp), wsg, ref_aoi))
+    WHERE s.watershed_group_code = '%s'%s", sp, rear_expr, tolower(sp), wsg, ref_aoi))
 })
 ref <- do.call(rbind, ref_list)
 
@@ -532,4 +556,5 @@ message("\nAll within 5%: ", all(abs(comparison$diff_pct[!is.na(comparison$diff_
 
 DBI::dbDisconnect(conn_ref)
 DBI::dbDisconnect(conn)
-message("\nDone.")
+elapsed_total <- round((proc.time() - t_start)["elapsed"], 1)
+message("\nDone. Total: ", elapsed_total, " seconds")
