@@ -141,7 +141,14 @@ Segment comparison: 646 ours-only segments (224 km) vs 36 bcfishpass-only (8.6 k
 
 Fix: set BT `cluster_rearing = TRUE`. **Result: BT rearing BULK +7.0% → +1.3%, ELKR +7.1% → +1.7%, BABL +2.8% → +0.4%, ADMS +2.6% → -0.3%.** All within 5%.
 
-### CH rearing +6.0% BULK, +6.1% BABL
-`cluster_rearing` already TRUE. frs_cluster removes disconnected rearing but we still have ~6% more. Likely the three-phase rearing architecture difference — bcfishpass finds rearing only in specific directions from spawning (on-spawning, downstream within 10km + 5% gradient bridge, upstream). Our frs_cluster uses a simpler spatial connectivity check.
+### CH rearing +6.0% BULK, +6.1% BABL — CONFIRMED: frs_cluster more permissive
+Segment comparison: 442 ours-only (103 km) vs 26 bcfishpass-only (8.5 km). Breakdown:
+- 14.6 km from stream order exception (we add rearing, bcfishpass doesn't at this stage)
+- 46.7 km on BLKs with CH spawning — should be "on-spawning rearing" in bcfishpass but isn't classified
+- 41.6 km on BLKs WITHOUT CH spawning — our frs_cluster considers connected, bcfishpass three-phase doesn't reach
+
+Our frs_cluster connects rearing to spawning via network proximity (upstream/downstream within bridge_gradient + bridge_distance). bcfishpass three-phase is more restrictive: on-spawning only (Phase 1), then downstream clusters connected to spawning (Phase 2), then upstream clusters within 10km + 5% gradient bridge (Phase 3).
+
+Not a CSV bug — architectural difference. Closing requires replicating three-phase rearing in fresh, or accepting +6% as the cost of simpler connectivity. The 14.6 km stream order exception should be removed from the comparison since bcfishpass also applies it (just at a different pipeline stage).
 
 ### CO spawning: +4.8% BABL — borderline
