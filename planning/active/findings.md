@@ -50,7 +50,9 @@ Segment-level comparison: 13 bcfishpass-only segments (7.26 km), 9 ours-only (2.
 
 This is a boundary effect at the 3km distance cap. The bcfishpass-only segments on BLK 360846413 are 3.0-3.4 km from the rearing lake outlet (our outlet DRM 9718, segments start at DRM 6362). Different segment boundaries resolve the cumulative distance slightly differently — some segments fall just inside 3km in bcfishpass but just outside in our system.
 
-Not a bug — a boundary effect from different segmentation. The fresh#147 implementation is architecturally correct (same phases, same SQL functions). The 5 km net difference is the resolution limit.
+**Root cause found:** fresh Phase 1 partitions the downstream distance by `blue_line_key` (line 1392: `PARTITION BY lo.blue_line_key`). bcfishpass partitions by `waterbody_key` (the rearing lake). When the downstream trace crosses a confluence (BLK A → BLK B), fresh resets the cumulative distance to zero at BLK B. bcfishpass keeps accumulating under the same waterbody_key partition. So fresh's 3km cap is effectively "3km on the outlet BLK" while bcfishpass's is "3km total downstream distance including through confluences."
+
+Fix: change the partition in fresh from `lo.blue_line_key` to a lake identifier (waterbody_key or a generated outlet ID).
 
 The ST/WCT observation_species fix improved SK from -39.9% to -22.6% by opening access at barriers that previously blocked salmon-accessible habitat.
 
