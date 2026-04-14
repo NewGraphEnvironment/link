@@ -31,11 +31,19 @@ Exact match on all WSGs (0.0%).
 
 ## Confirmed: what doesn't match
 
-### ST spawning -22% (BABL)
-Thresholds match exactly. Access matches. Rules match. Cause unknown. Needs segment-level comparison against tunnel.
+### ST spawning/rearing -22%/-25% (BABL) — ROOT CAUSE FOUND
+Segment-level comparison: 223 bcfishpass-only ST spawning segments. 382 of 383 overlapping segments are **inaccessible in our system**. The falls at BLK 360886207 DRM 4127 blocks them. Overridden for BT/CH/CM/CO/PK/SK but NOT for ST.
 
-### ST rearing -25% (BABL)
-Stream order exception tested (+3 points, -28% → -25%). Not the main cause. Three-phase rearing and waterbody filter differences hypothesized but NOT verified. Needs segment-level comparison.
+Cause: `observation_species` in `parameters_fresh_bcfishpass.csv` was `"ST"` (only ST obs counted). bcfishpass `model_access_st.sql` counts ALL salmon + steelhead: `'CH','CM','CO','PK','SK','ST'` with threshold >= 5 post-1990. Zero ST obs upstream but salmon obs exist → barrier stays for ST in our system but gets removed in bcfishpass.
+
+Fix: changed `observation_species` for ST from `"ST"` to `"CH;CM;CO;PK;SK;ST"`.
+
+**Result: ST spawning -22.0% → +3.8%, ST rearing -25.4% → +2.4%.** One CSV cell.
+
+### WCT observation override missing
+bcfishpass `model_access_wct.sql` uses WCT-only observations with threshold = 1 (any WCT obs removes barrier). Our CSV had `observation_threshold = NA` (no override). Fixed to threshold = 1, species = WCT.
+
+**Result: WCT spawning -3.4% → +4.0%, WCT rearing -4.2% → +3.0%.** 685 barriers overridden on ELKR.
 
 ### SK spawning -14% to -40% (BULK, BABL)
 fresh#147 algorithm. Two-phase downstream trace + upstream lake proximity. Works on ADMS (+2.6%) but diverges on larger WSGs with complex lake geometry. Reopened fresh#147.
@@ -60,6 +68,17 @@ Stream order exception closed 1 point on rearing. Same unknown cause as ST but l
 
 ### bcfishpass access_st checks SK instead of ST
 `load_streams_access.sql` line 120: `'SK' = any(obsrvtn_species_codes_upstr)` should be `'ST'`. Copy-paste from SK block. Filed NewGraphEnvironment/bcfishpass#9, referenced in link#33. Does not affect access blocking, only the access code label (1 vs 2).
+
+## Methodology lessons
+
+### Segment-level comparison finds root causes in minutes
+Guessing from SQL differences wasted hours — tested per-model non-minimal, label_block, stream order exception, three-phase rearing. None were the cause. Dumping bcfishpass segments to a local table, diffing by spatial overlap, and checking accessibility on mismatches found the real cause (wrong observation_species) in one query chain. Do this first next time.
+
+### One CSV cell can account for -22%
+The ST gap was entirely from `observation_species = "ST"` instead of `"CH;CM;CO;PK;SK;ST"` in `parameters_fresh_bcfishpass.csv`. Always verify per-species params against the actual bcfishpass SQL before guessing at architectural causes.
+
+### Read the per-model SQL, don't assume symmetry
+Each bcfishpass model_access_*.sql has different observation species lists and thresholds. BT counts all salmon+steelhead (threshold 1). Salmon counts salmon only (threshold 5, post-1990). ST counts all salmon+steelhead (threshold 5, post-1990). WCT counts WCT only (threshold 1, any date). Don't assume they're all the same.
 
 ## Unverified hypotheses
 
@@ -92,7 +111,7 @@ Applied to BT, CH, CO, ST, WCT in bcfishpass. Tested as post-classification UPDA
 | PK | spawn | — | +2.7% | — | — |
 | SK | spawn | +2.6% | -39.9% | -13.6% | — |
 | SK | rear | +0.0% | +0.0% | +0.0% | — |
-| ST | spawn | — | — | -22.0% | — |
-| ST | rear | — | — | -25.4% | — |
-| WCT | spawn | — | — | — | -3.4% |
-| WCT | rear | — | — | — | -4.2% |
+| ST | spawn | — | — | +3.8% | — |
+| ST | rear | — | — | +2.4% | — |
+| WCT | spawn | — | — | — | +4.0% |
+| WCT | rear | — | — | — | +3.0% |

@@ -10,14 +10,21 @@ Identify and close the ST -22% spawning / -25% rearing gap on BABL, WCT -4% on E
 - Root cause NOT confirmed. Hypotheses tested and eliminated. Need segment-level comparison.
 
 ## Phase 1: Segment-level ST comparison on BABL
-- [ ] Query tunnel: all ST spawning segments in BABL with key attributes (gradient, channel_width, edge_type, waterbody_type, stream_order)
-- [ ] Query local: same for our classification
-- [ ] Diff: which segments does bcfishpass classify as ST spawning that we don't? And vice versa.
-- [ ] For mismatches: check gradient, channel_width, edge_type, waterbody_type on each — find the predicate that differs
-- [ ] Same for rearing
+- [x] Query tunnel: bcfishpass ST segments → bcfishpass_ref.st_babl (2,334 rows with geometry)
+- [x] Query local: our ST classification → bcfishpass_ref.st_babl_ours (31,580 rows)
+- [x] Diff: 223 bcfishpass-only spawning segments (87.9 km), 688 bcfishpass-only rearing (277.7 km)
+- [x] For mismatches: 382/383 are inaccessible in our system. Falls at BLK 360886207 blocks them.
+- [x] Root cause: observation_species for ST was "ST" only. bcfishpass counts all salmon+steelhead.
+- [x] Fix: one CSV cell. ST spawning -22% → +3.8%, ST rearing -25% → +2.4%.
 
-## Phase 2: Fix based on evidence
-- [ ] TBD after Phase 1 findings
+## Phase 2: WCT + ELKR verification
+- [ ] Run ELKR with WCT observation override fix
+- [ ] Run BULK with ST fix
+
+## Phase 3: SK spawning segment-level comparison
+- [ ] Same approach: dump bcfishpass SK spawning segments for BULK/BABL
+- [ ] Diff against ours
+- [ ] Identify whether it's access, classification, or cluster algorithm
 
 ## Tested and eliminated
 - Per-model non-minimal barrier removal (no effect)

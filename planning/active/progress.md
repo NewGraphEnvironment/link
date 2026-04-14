@@ -11,4 +11,13 @@
 - Found three-phase rearing pattern — not verified as cause
 - Read all 8 load_habitat_linear_*.sql files for cross-species comparison
 - **Key lesson: stop guessing from SQL differences, compare segments directly against tunnel**
-- Commits: 88e5af4, pending stream order commit
+- Commits: 88e5af4, 67b67b6, 7b5e888
+
+## Session 2026-04-14
+- Segment-level ST comparison: loaded bcfishpass_ref.st_babl + diff tables for QGIS
+- Found 382/383 bcfishpass-only segments are inaccessible in our system
+- Traced to falls at BLK 360886207 not overridden for ST
+- Root cause: observation_species = "ST" should be "CH;CM;CO;PK;SK;ST"
+- Fix: one CSV cell. ST spawning -22% → +3.8%, rearing -25% → +2.4%
+- Also fixed WCT: added observation_threshold=1, species=WCT (not yet tested)
+- **Key lesson: segment-level comparison finds root causes in minutes, guessing from SQL wastes hours**
