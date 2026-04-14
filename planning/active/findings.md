@@ -149,6 +149,14 @@ Segment comparison: 442 ours-only (103 km) vs 26 bcfishpass-only (8.5 km). Break
 
 Our frs_cluster connects rearing to spawning via network proximity (upstream/downstream within bridge_gradient + bridge_distance). bcfishpass three-phase is more restrictive: on-spawning only (Phase 1), then downstream clusters connected to spawning (Phase 2), then upstream clusters within 10km + 5% gradient bridge (Phase 3).
 
-Not a CSV bug — architectural difference. Closing requires replicating three-phase rearing in fresh, or accepting +6% as the cost of simpler connectivity. The 14.6 km stream order exception should be removed from the comparison since bcfishpass also applies it (just at a different pipeline stage).
+**Root cause confirmed:** frs_cluster checks network proximity (is rearing upstream/downstream of spawning within bridge_distance?). bcfishpass Phase 3 traces downstream from each rearing cluster and STOPS at the first >5% gradient — rearing above a steep section doesn't count even if spawning exists below.
+
+97 of 180 same-BLK CH ours-only segments have a >5% gradient between them and the nearest downstream spawning. bcfishpass excludes them; frs_cluster includes them.
+
+This is a real difference in how connectivity is evaluated. frs_cluster checks "is there spawning within range?" bcfishpass checks "can fish get from this rearing to the spawning without crossing a gradient barrier?" The 5% gradient bridge in frs_cluster is applied to the cluster boundary, not to every segment along the path.
+
+This applies to ALL species with cluster_rearing — BT (57 km excess), CH (103 km), CO (39 km), ST (91 km). The excess is proportional to how many rearing segments sit above steep sections.
+
+Fix: frs_cluster needs path-based gradient checking, not just proximity. When tracing from rearing to spawning, accumulate gradient and stop at the first segment exceeding bridge_gradient. This matches bcfishpass Phase 3.
 
 ### CO spawning: +4.8% BABL — borderline
