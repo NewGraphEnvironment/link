@@ -165,4 +165,13 @@ This applies to ALL species with cluster_rearing — BT (57 km excess), CH (103 
 
 Fix: frs_cluster needs path-based gradient checking, not just proximity. When tracing from rearing to spawning, accumulate gradient and stop at the first segment exceeding bridge_gradient. This matches bcfishpass Phase 3.
 
+### fresh#153 regression: BT rearing -87.9% on ADMS
+The upstream path gradient check in frs_cluster is fundamentally broken. `FWA_Upstream` returns ALL upstream segments (4,770 for one cluster) including tributaries. `row_number` ordered by wscode sorts tributaries before mainstem continuation. A >5% gradient on a distant tributary gets a lower row_number than the adjacent spawning segment on the mainstem, blocking the connection.
+
+Example: segment 15319 (rearing) has spawning at segment 15320 — adjacent, 123m, zero gradient. But `FWA_Upstream` finds 3,217 steep segments across all upstream tributaries. The wscode ordering places some tributary segments between the rearing and the mainstem spawning.
+
+bcfishpass only traces DOWNSTREAM for path gradient (linear, no branching). Upstream uses simple boolean `FWA_Upstream` without path constraints. The upstream check can't do path gradient because the network branches upstream.
+
+Fix: upstream check should use boolean `FWA_Upstream` (exists/not exists) without path gradient. Only the downstream check can apply segment-by-segment gradient constraints because the trace is linear.
+
 ### CO spawning: +4.8% BABL — borderline
