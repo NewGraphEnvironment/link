@@ -1,72 +1,98 @@
 # Findings
 
-## bcfishpass access model does NOT use anthropogenic barriers
+## Confirmed: what matches bcfishpass
 
-`load_streams_access.sql` computes `access_bt`, `access_ch`, etc. from `barriers_bt_dnstr`, `barriers_ch_cm_co_pk_sk_dnstr` — natural barriers only. `barriers_anthropogenic_dnstr` is recorded but never checked in the access columns. Crossings do NOT block habitat access.
+### Base segments
+`localcode_ltree IS NOT NULL`, `edge_type != 6010`, `wscode_ltree <@ '999' IS FALSE`. 10,458 segments on ADMS — exact match.
 
-Our `label_block = "blocked"` is correct. Testing `label_block = c("blocked", "barrier", "potential")` caused -52% across all species — confirmed crossings should not block.
+### Gradient barrier detection
+50,063 barriers across 8 classes, matching to 3/50,063. Island grouping, vertex extraction, 100m lookahead — identical algorithm.
 
-## bcfishpass access_st has a bug
+### Non-minimal barrier removal
+`fwa_upstream` self-join deletes barriers with another barrier downstream. ADMS: 27,443 → 677. Without this: +149% segments.
 
-Line 120 of `load_streams_access.sql`:
-```sql
-when b.barriers_st_dnstr is null and 'SK' = any(obsrvtn_species_codes_upstr) then 2
-```
-Checks for SK observations for ST access. Should be 'ST'. Copy-paste from the SK block.
+### Sequential breaking
+Observations → gradient barriers → habitat endpoints → crossings. GENERATED columns recompute. 1m guard. Matches bcfishpass `break_streams()`.
 
-## Stream order exception for rearing (root cause of ST/WCT gap)
+### Access model
+bcfishpass uses ONLY natural barriers for access (`barriers_bt_dnstr`, `barriers_ch_cm_co_pk_sk_dnstr`, etc.). Anthropogenic barriers (crossings) are recorded but do NOT block access. Our `label_block = "blocked"` is correct. Tested `label_block = c("blocked", "barrier", "potential")` — caused -52% across all species.
 
-bcfishpass `load_habitat_linear_st.sql` lines 99-101:
-```sql
-(cw.channel_width >= t.rear_channel_width_min OR
- (s.stream_order_parent >= 5 AND s.stream_order = 1))
-```
+### Channel width
+Synced from tunnel (75,736 field measurements). Tightened results ~0.5%.
 
-First-order streams with parent order >= 5 bypass the rearing channel width minimum. This captures small tributaries of large rivers — below the cw threshold by measurement but biologically used for rearing.
+### Observation filtering
+Species filtered by `wsg_species_presence.csv`. CT remaps (CCT, ACT, CT/RB). 179 vs 178 unique positions on ADMS.
 
-Applied in: `load_habitat_linear_bt.sql`, `load_habitat_linear_ch.sql`, `load_habitat_linear_co.sql`, `load_habitat_linear_st.sql`, `load_habitat_linear_wct.sql`.
+### Habitat endpoints
+Both `downstream_route_measure` and `upstream_route_measure` as break positions. 143 vs 145 on ADMS.
 
-NOT in our rules YAML — the rules system has no way to express stream order predicates.
+### SK rearing
+Exact match on all WSGs (0.0%).
 
-This likely accounts for the ST -22% rearing gap (small tributaries excluded) and contributes to BT +6.5% (we classify MORE because we don't have this exception working correctly — wait, we'd classify LESS without the exception... need to check direction).
+## Confirmed: what doesn't match
 
-## Rearing waterbody filter difference
+### ST spawning -22% (BABL)
+Thresholds match exactly. Access matches. Rules match. Cause unknown. Needs segment-level comparison against tunnel.
 
-bcfishpass rearing (ST lines 88-91):
-```sql
-wb.waterbody_type = 'R' OR (wb.waterbody_type IS NULL OR s.edge_type IN (1000,1100,2000,2300))
-```
+### ST rearing -25% (BABL)
+Stream order exception tested (+3 points, -28% → -25%). Not the main cause. Three-phase rearing and waterbody filter differences hypothesized but NOT verified. Needs segment-level comparison.
 
-NULL waterbody_type included regardless of edge_type (the OR makes it permissive).
+### SK spawning -14% to -40% (BULK, BABL)
+fresh#147 algorithm. Two-phase downstream trace + upstream lake proximity. Works on ADMS (+2.6%) but diverges on larger WSGs with complex lake geometry. Reopened fresh#147.
 
-bcfishpass spawning (ST lines 51-53):
-```sql
-wb.waterbody_type = 'R' OR (wb.waterbody_type IS NULL AND s.edge_type IN (1000,1100,2000,2300))
-```
+### BT rearing +5.4% to +7.1% (BULK, ELKR)
+Slightly over. Stream order exception added more segments (+7.1% on ELKR). May be from segment boundary differences or classification predicates we're applying that bcfishpass doesn't.
 
-AND vs OR — spawning is restrictive, rearing is permissive for NULL waterbody.
+### WCT -3.4% spawning, -4.2% rearing (ELKR)
+Stream order exception closed 1 point on rearing. Same unknown cause as ST but less severe.
 
-Need to verify our rules YAML produces the same filter logic.
+## Tested and eliminated as ST/WCT cause
 
-## Three-phase rearing in bcfishpass
+| Hypothesis | Test | Result |
+|-----------|------|--------|
+| Per-model non-minimal removal | Built bt/salmon/st/wct barrier tables, removed non-minimal within each | No change on ST/WCT |
+| Crossings blocking access | `label_block = c("blocked", "barrier", "potential")` | -52% all species, wrong |
+| Stream order rearing bypass | Post-classification UPDATE for stream_order=1, parent>=5 | +3 points ST rearing, not main cause |
+| Gradient/channel_width thresholds | Compared params_obj vs tunnel parameters_habitat_thresholds | Exact match |
+| Access gating mechanism | Compared access counts | Close (12,728 vs 11,673 ST accessible on BABL) |
 
-ST rearing runs in 3 phases:
-1. **On spawning streams** (lines 68-112): segments that are spawning AND meet rearing thresholds
-2. **Downstream of spawning** (lines 119-205): cluster rearing segments, find clusters downstream of spawning via fwa_upstream, keep connected clusters
-3. **Upstream of spawning** (lines 213-360): cluster rearing segments, trace downstream to find nearest spawning within 10km with 5% gradient bridge, keep clusters connected to spawning
+## Bugs found
 
-Our `frs_cluster` does a single pass. The three-phase approach may classify more rearing by finding clusters in both directions from spawning.
+### bcfishpass access_st checks SK instead of ST
+`load_streams_access.sql` line 120: `'SK' = any(obsrvtn_species_codes_upstr)` should be `'ST'`. Copy-paste from SK block. Filed NewGraphEnvironment/bcfishpass#9, referenced in link#33. Does not affect access blocking, only the access code label (1 vs 2).
 
-## Per-model non-minimal: correct but not the ST cause
+## Unverified hypotheses
 
-Implemented per-model barrier tables (bt: 25/30, salmon: 15-30, st: 20-30, wct: 20-30). No effect on ST or WCT numbers. The gap is classification, not segmentation or access.
+### Rearing waterbody filter OR vs AND
+bcfishpass rearing: `wb.waterbody_type = 'R' OR (wb.waterbody_type IS NULL OR edge_type IN (...))` — permissive, includes NULL waterbody.
+bcfishpass spawning: `wb.waterbody_type = 'R' OR (wb.waterbody_type IS NULL AND edge_type IN (...))` — restrictive.
+Not verified whether our rules produce the same SQL. Could add rearing segments on non-standard edge types.
 
-## Per-model barrier counts (BABL)
+### Three-phase rearing
+bcfishpass rearing runs 3 phases for BT/CH/CO/ST/WCT:
+1. On spawning streams (spawning AND rearing thresholds, no connectivity)
+2. Downstream of spawning (cluster + fwa_upstream trace)
+3. Upstream of spawning (cluster + fwa_downstream trace, 10km, 5% gradient bridge)
 
-| Model | Before | After minimal |
-|-------|--------|--------------|
-| bt | 5,090 | 678 |
-| ch_cm_co_pk_sk | 17,314 | 1,075 |
-| st | 9,982 | 879 |
-| wct | 9,982 | 879 |
-| Union | — | 2,267 |
+Our frs_cluster does a single pass removing disconnected rearing. Not verified whether the three-phase approach classifies more rearing.
+
+### Stream order exception across species
+Applied to BT, CH, CO, ST, WCT in bcfishpass. Tested as post-classification UPDATE. Adds segments but not enough to explain gaps. CM, PK, SK do not have the exception. CM/PK have spawning only (no rearing model).
+
+## Results summary (with stream order exception)
+
+| Species | Metric | ADMS | BULK | BABL | ELKR |
+|---------|--------|------|------|------|------|
+| BT | spawn | +1.8% | +3.3% | +4.1% | +3.4% |
+| BT | rear | +2.6% | +5.4% | +2.8% | +7.1% |
+| CH | spawn | +0.5% | +2.4% | +3.8% | — |
+| CH | rear | +2.1% | +4.8% | +6.1% | — |
+| CO | spawn | +1.6% | +3.4% | +4.8% | — |
+| CO | rear | -1.0% | +0.0% | +0.0% | — |
+| PK | spawn | — | +2.7% | — | — |
+| SK | spawn | +2.6% | -39.9% | -13.6% | — |
+| SK | rear | +0.0% | +0.0% | +0.0% | — |
+| ST | spawn | — | — | -22.0% | — |
+| ST | rear | — | — | -25.4% | — |
+| WCT | spawn | — | — | — | -3.4% |
+| WCT | rear | — | — | — | -4.2% |
