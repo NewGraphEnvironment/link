@@ -45,8 +45,10 @@ bcfishpass `model_access_wct.sql` uses WCT-only observations with threshold = 1 
 
 **Result: WCT spawning -3.4% → +4.0%, WCT rearing -4.2% → +3.0%.** 685 barriers overridden on ELKR.
 
-### SK spawning -14% to -40% (BULK, BABL)
-fresh#147 algorithm. Two-phase downstream trace + upstream lake proximity. Works on ADMS (+2.6%) but diverges on larger WSGs with complex lake geometry. Reopened fresh#147.
+### SK spawning -22.6% (BULK, after ST/WCT fix)
+Segment-level comparison: 13 bcfishpass-only segments (7.26 km), 9 ours-only (2.16 km). All bcfishpass-only segments are accessible in our system — it's not access. They're on 3 BLKs near rearing lakes (edge_type 1050/1200 wetland/lake + 1000 stream), low gradient, good channel width. The downstream trace from rearing lakes in bcfishpass reaches these segments but our `frs_connected_spawning` doesn't. 
+
+This is the fresh#147 algorithm divergence — small (5 km net) and specific to SK lake-proximity spawning. The ST/WCT observation_species fix improved SK from -39.9% to -22.6% by opening access at barriers that previously blocked salmon-accessible habitat.
 
 ### BT rearing +5.4% to +7.1% (BULK, ELKR)
 Slightly over. Stream order exception added more segments (+7.1% on ELKR). May be from segment boundary differences or classification predicates we're applying that bcfishpass doesn't.
