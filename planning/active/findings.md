@@ -60,7 +60,9 @@ Example: waterbody_key 329064462 spans 10 BLKs. Fresh picks BLK 360504780 DRM 0 
 
 bcfishpass applies spawning thresholds INSIDE the downstream trace CTE (`load_habitat_linear_sk.sql` lines 100-114 — checks gradient, channel_width, access within the CASE statement). Fresh applies thresholds via `frs_habitat_classify` BEFORE connected_waterbody runs, and the subtractive filter only KEEPS segments already flagged as spawning.
 
-Fix: Phase 1 of `.frs_connected_waterbody` should INSERT segments that meet spawning thresholds directly (like bcfishpass), not just trace and rely on the pre-existing spawning flag. Or: the subtractive step should ADD spawning for segments in the trace that meet thresholds, not just keep existing ones.
+**Proven additive fix:** After subtractive step, ADD spawning for segments in the downstream trace that meet permissive connected rules (gradient <= 0.05, no cw min, no edge_type filter, accessible). Result: 63 → 71 segments, 22.04 → 24.22 km (bcfishpass 24.38 km). From -9.6% to -0.7%.
+
+The `spawn_connected` rules in the YAML define the permissive thresholds for the trace zone. Direction = downstream. The additive step applies these after the standard subtractive filter. Generalizable to any species + waterbody type.
 
 The ST/WCT observation_species fix improved SK from -39.9% to -22.6% by opening access at barriers that previously blocked salmon-accessible habitat.
 
