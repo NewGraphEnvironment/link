@@ -1,0 +1,175 @@
+ℹ Loading link
+Species for BABL: BT, CH, CO, SK, ST
+=== Step 1: Connect ===
+NOTICE:  schema "working" already exists, skipping
+
+[1] 0
+NOTICE:  schema "fresh" already exists, skipping
+
+[1] 0
+
+=== Step 2: Load crossings ===
+  Crossings: 4506
+  Misc crossings: 0
+
+=== Step 3: Apply overrides ===
+Note: provenance columns not found in CSV (this is OK): reviewer
+
+Barrier status:
+ barrier_status    n
+      POTENTIAL 4317
+       PASSABLE  154
+        BARRIER   35
+
+=== Step 4: Break sources ===
+  Falls: 95
+[1] 0
+  User definite barriers: 0
+
+=== Step 5: Barrier overrides ===
+Note: provenance columns not found in CSV (this is OK): reviewer
+  Barrier definite controls: 8
+[1] 0
+[1] 7479
+  Control passable removals: 0
+[1] 0
+[1] 0
+[1] 17210
+[1] 0
+[1] 17217
+[1] 95
+[1] 0
+  Natural barriers: 17312
+Note: provenance columns not found in CSV (this is OK): reviewer
+  BT: 27 barriers overridden
+  CH: 15 barriers overridden
+  CM: 15 barriers overridden
+  CO: 15 barriers overridden
+  CT: 0 barriers overridden
+  DV: 0 barriers overridden
+  PK: 15 barriers overridden
+  RB: 0 barriers overridden
+  SK: 15 barriers overridden
+  ST: 0 barriers overridden
+  WCT: 0 barriers overridden
+Total barrier overrides: 102 in working.barrier_overrides
+
+=== Step 5b: Per-model non-minimal barriers ===
+[1] 0
+[1] 0
+[1] 0
+[1] 0
+[1] 0
+  bt                  : 5090 -> 678 minimal
+  ch_cm_co_pk_sk      : 17314 -> 1075 minimal
+  st                  : 9982 -> 879 minimal
+  wct                 : 9982 -> 879 minimal
+[1] 0
+[1] 2267
+  Union of minimal positions: 2267
+
+=== Step 6: Sequential breaking ===
+[1] 0
+[1] 0
+[1] 24179
+[1] 0
+[1] 24179
+[1] 0
+  Base segments: 24179
+[1] 0
+[1] 17219
+[1] 0
+[1] 914
+  Observation breaks: 914
+[1] 0
+[1] 175
+  Habitat endpoints: 175
+[1] 0
+[1] 4506
+  After observations             : 25058 segments (+879)
+  After gradient_barriers        : 26977 segments (+1919)
+  After barriers_definite        : 26977 segments (+0)
+  After habitat_endpoints        : 27118 segments (+141)
+  After crossings                : 31580 segments (+4462)
+NOTICE:  relation "streams_id_segment_idx" already exists, skipping
+
+[1] 0
+[1] 0
+[1] 21820
+
+=== Step 7: Classify habitat ===
+NOTICE:  relation "streams_blk_idx" already exists, skipping
+
+NOTICE:  relation "streams_blk_drm_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_lfid_idx" already exists, skipping
+
+NOTICE:  relation "streams_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_id_segment_idx" already exists, skipping
+
+NOTICE:  table "streams_acc_015" does not exist, skipping
+
+  Access 15%%: 5525 accessible (0.8s)
+NOTICE:  table "streams_acc_02" does not exist, skipping
+
+  Access 20%%: 6246 accessible (0.8s)
+NOTICE:  table "streams_acc_025" does not exist, skipping
+
+  Access 25%%: 6853 accessible (2.2s)
+NOTICE:  table "streams_acc_025_ovr_bt" does not exist, skipping
+
+  BT: 2.6s (6992 accessible, 1089 spawning, 2992 rearing)
+NOTICE:  table "streams_acc_015_ovr_ch" does not exist, skipping
+
+  CH: 1.1s (5627 accessible, 607 spawning, 1204 rearing)
+NOTICE:  table "streams_acc_015_ovr_co" does not exist, skipping
+
+  CO: 1.1s (5627 accessible, 1053 spawning, 2051 rearing)
+NOTICE:  table "streams_acc_015_ovr_sk" does not exist, skipping
+
+  SK: 1.2s (5627 accessible, 701 spawning, 1050 rearing)
+  ST: 0.2s (6246 accessible, 579 spawning, 1335 rearing)
+  Classification completed in 11.5 seconds
+NOTICE:  table "frs_clusters_ch" does not exist, skipping
+
+  CH: 265 disconnected removed (939 rearing remaining, 11.4s)
+NOTICE:  table "frs_clusters_co" does not exist, skipping
+
+  CO: 218 disconnected removed (1833 rearing remaining, 12.6s)
+NOTICE:  table "frs_clusters_sk" does not exist, skipping
+
+  SK: 0 disconnected removed (1050 rearing remaining, 0.2s)
+NOTICE:  table "frs_qual_spawn_sk" does not exist, skipping
+
+  SK: connected spawning 701 -> 138
+NOTICE:  table "frs_clusters_st" does not exist, skipping
+
+  ST: 323 disconnected removed (1012 rearing remaining, 11.7s)
+
+=== Step 8: Compare ===
+
+--- Comparison (BABL) ---
+ species  habitat    ours     ref diff_pct
+      BT spawning  426.07  890.16    -52.1
+      BT  rearing 1221.37 2351.08    -48.1
+      CH spawning  229.32  348.82    -34.3
+      CH  rearing  354.20  717.66    -50.6
+      CO spawning  411.55  805.15    -48.9
+      CO  rearing  566.45 1289.90    -56.1
+      SK spawning   42.63   59.27    -28.1
+      SK  rearing  832.98  941.63    -11.5
+      ST spawning  214.53  349.30    -38.6
+      ST  rearing  389.21  924.29    -57.9
+
+All within 5%: FALSE
+
+Done. Total: 103.9 seconds
