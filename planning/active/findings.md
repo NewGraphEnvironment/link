@@ -123,7 +123,7 @@ BULK and ELKR updated with ST/WCT observation_species fix. SK spawning proven +0
 | Species | Metric | ADMS | BULK | BABL | ELKR |
 |---------|--------|------|------|------|------|
 | BT | spawn | +1.8% | +3.1% | +4.1% | +3.4% |
-| BT | rear | +2.6% | +7.0% | +2.8% | +7.1% |
+| BT | rear | -0.3% | +1.3% | +0.4% | +1.7% |
 | CH | spawn | +0.5% | +1.9% | +3.8% | — |
 | CH | rear | +2.1% | +6.0% | +6.1% | — |
 | CO | spawn | +1.6% | +3.1% | +4.8% | — |
@@ -136,7 +136,12 @@ BULK and ELKR updated with ST/WCT observation_species fix. SK spawning proven +0
 | WCT | spawn | — | — | — | +4.0% |
 | WCT | rear | — | — | — | +3.0% |
 
-### Remaining over 5%
-- BT rearing: +7.0% BULK, +7.1% ELKR — unexplained, needs segment comparison
-- CH rearing: +6.0% BULK, +6.1% BABL — unexplained
-- CO spawning: +4.8% BABL — borderline
+### BT rearing +7% — ROOT CAUSE FOUND
+Segment comparison: 646 ours-only segments (224 km) vs 36 bcfishpass-only (8.6 km). We over-classify. BT `cluster_rearing = FALSE` in our params — no rearing connectivity filter. bcfishpass applies three-phase rearing connectivity to BT (on-spawning, downstream, upstream). 224 km of disconnected rearing included in our results.
+
+Fix: set BT `cluster_rearing = TRUE`. **Result: BT rearing BULK +7.0% → +1.3%, ELKR +7.1% → +1.7%, BABL +2.8% → +0.4%, ADMS +2.6% → -0.3%.** All within 5%.
+
+### CH rearing +6.0% BULK, +6.1% BABL
+`cluster_rearing` already TRUE. frs_cluster removes disconnected rearing but we still have ~6% more. Likely the three-phase rearing architecture difference — bcfishpass finds rearing only in specific directions from spawning (on-spawning, downstream within 10km + 5% gradient bridge, upstream). Our frs_cluster uses a simpler spatial connectivity check.
+
+### CO spawning: +4.8% BABL — borderline
