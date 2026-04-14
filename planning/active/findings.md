@@ -92,6 +92,12 @@ The ST gap was entirely from `observation_species = "ST"` instead of `"CH;CM;CO;
 ### Read the per-model SQL, don't assume symmetry
 Each bcfishpass model_access_*.sql has different observation species lists and thresholds. BT counts all salmon+steelhead (threshold 1). Salmon counts salmon only (threshold 5, post-1990). ST counts all salmon+steelhead (threshold 5, post-1990). WCT counts WCT only (threshold 1, any date). Don't assume they're all the same.
 
+### Network topology ordering matters for spatial queries
+`ORDER BY downstream_route_measure` picks an arbitrary segment with the smallest measure on any BLK. `ORDER BY wscode_ltree, localcode_ltree, downstream_route_measure` picks the actual network-topological position. For lake outlets spanning multiple BLKs, these give completely different results. DRM is a measure within a BLK — it says nothing about where that BLK sits in the network. wscode is the network position. Any DISTINCT ON query that needs "the most downstream point" must use wscode ordering, not DRM.
+
+### Prove before filing
+We guessed three times at the SK cause (per-model non-minimal, label_block, boundary effect) and filed/commented on fresh#147 prematurely. Each guess wasted time and muddied the issue. The segment comparison found the real cause (wrong outlet ordering) in minutes. The proof query (24.41 vs 24.38 km) took one SQL statement. Always prove with data before attributing a cause.
+
 ## Unverified hypotheses
 
 ### Rearing waterbody filter OR vs AND
