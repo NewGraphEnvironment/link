@@ -1,0 +1,150 @@
+ℹ Loading link
+Species for BULK: BT, CH, CO, PK, SK, ST
+=== Step 1: Connect ===
+NOTICE:  schema "working" already exists, skipping
+
+[1] 0
+NOTICE:  schema "fresh" already exists, skipping
+
+[1] 0
+
+=== Step 2: Load crossings ===
+  Crossings: 5568
+  Misc crossings: 0
+
+=== Step 3: Apply overrides ===
+Note: provenance columns not found in CSV (this is OK): reviewer
+Note: provenance columns not found in CSV (this is OK): reviewer, source
+Override validation: working.pscis_fixes vs working.crossings
+  Total overrides:  580
+  Valid (matched):  514
+  Orphans:          66  <-- not found in crossings
+  Duplicates:       0
+Updated 514 of 5568 rows (barrier_status)
+
+Barrier status:
+ barrier_status    n
+      POTENTIAL 3958
+        BARRIER  940
+       PASSABLE  626
+        UNKNOWN   44
+
+=== Step 4: Break sources ===
+  Falls: 37
+  User definite barriers: 87
+
+=== Step 5: Barrier overrides ===
+[1] 0
+[1] 11657
+[1] 0
+[1] 0
+[1] 55975
+[1] 0
+[1] 55991
+[1] 37
+[1] 87
+  Natural barriers: 56115
+Note: provenance columns not found in CSV (this is OK): reviewer
+Note: provenance columns not found in CSV (this is OK): reviewer
+  Barrier definite controls: 4
+  BT: 32 barriers overridden
+  CH: 1 barriers overridden
+  CM: 1 barriers overridden
+  CO: 1 barriers overridden
+  CT: 0 barriers overridden
+  DV: 0 barriers overridden
+  PK: 1 barriers overridden
+  RB: 0 barriers overridden
+  SK: 1 barriers overridden
+  ST: 2 barriers overridden
+  WCT: 0 barriers overridden
+Total barrier overrides: 39 in working.barrier_overrides
+
+=== Step 5b: Remove non-minimal barriers ===
+[1] 0
+[1] 0
+[1] 0
+[1] 0
+[1] 0
+[1] 52686
+  Non-minimal removed: 52686 (55985 -> 3299)
+
+=== Step 6: Sequential breaking ===
+[1] 0
+[1] 0
+[1] 30046
+[1] 0
+[1] 30046
+[1] 0
+  Base segments: 30046
+[1] 0
+[1] 3299
+[1] 0
+[1] 1186
+  Observation breaks: 1186
+[1] 0
+[1] 392
+  Habitat endpoints: 392
+[1] 0
+[1] 5568
+  After observations             : 31184 segments (+1138)
+  After gradient_barriers        : 33134 segments (+1950)
+  After barriers_definite        : 33220 segments (+86)
+  After habitat_endpoints        : 33425 segments (+205)
+  After crossings                : 38832 segments (+5407)
+[1] 0
+[1] 0
+[1] 0
+[1] 61683
+[1] 0
+
+=== Step 7: Classify habitat ===
+NOTICE:  table "streams_acc_015" does not exist, skipping
+
+  Access 15%%: 16525 accessible (183.2s)
+NOTICE:  table "streams_acc_02" does not exist, skipping
+
+  Access 20%%: 21291 accessible (249.5s)
+NOTICE:  table "streams_acc_025" does not exist, skipping
+
+  Access 25%%: 24187 accessible (280.9s)
+NOTICE:  table "streams_acc_025_ovr_bt" does not exist, skipping
+
+  BT: 282.6s (25244 accessible, 5708 spawning, 9865 rearing)
+NOTICE:  table "streams_acc_015_ovr_ch" does not exist, skipping
+
+  CH: 177.3s (16771 accessible, 3916 spawning, 6065 rearing)
+NOTICE:  table "streams_acc_015_ovr_co" does not exist, skipping
+
+  CO: 178.2s (16771 accessible, 5426 spawning, 7477 rearing)
+NOTICE:  table "streams_acc_015_ovr_pk" does not exist, skipping
+
+  PK: 181.2s (16771 accessible, 5596 spawning, 0 rearing)
+NOTICE:  table "streams_acc_015_ovr_sk" does not exist, skipping
+
+  SK: 181.7s (16771 accessible, 3726 spawning, 139 rearing)
+NOTICE:  table "streams_acc_02_ovr_st" does not exist, skipping
+
+  ST: 253.4s (22240 accessible, 3985 spawning, 7461 rearing)
+  Classification completed in 1969 seconds
+NOTICE:  table "frs_clusters_ch" does not exist, skipping
+
+  CH: 627 disconnected removed (5438 rearing remaining, 27.5s)
+NOTICE:  table "frs_clusters_co" does not exist, skipping
+
+  CO: 413 disconnected removed (7064 rearing remaining, 34.1s)
+NOTICE:  table "frs_clusters_sk" does not exist, skipping
+
+  SK: 0 disconnected removed (139 rearing remaining, 0.6s)
+NOTICE:  table "frs_qual_spawn_sk" does not exist, skipping
+
+  SK: connected spawning 3726 -> 56
+NOTICE:  table "frs_clusters_st" does not exist, skipping
+
+  ST: 856 disconnected removed (6605 rearing remaining, 28.3s)
+
+=== Step 8: Compare ===
+Error: Failed to prepare query : ERROR:  column h.rearing does not exist
+LINE 4:       round(SUM(CASE WHEN h.rearing THEN s.length_metre ELSE...
+                                  ^
+Execution halted

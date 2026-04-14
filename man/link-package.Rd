@@ -6,7 +6,9 @@
 \alias{link-package}
 \title{link: Crossing Connectivity Interpretation}
 \description{
-Connectivity-system-agnostic crossing interpretation layer. Scores, overrides, and prioritizes crossings for fish passage using configurable severity thresholds and multi-source data integration. Produces break source tables for network segmentation engines.
+\if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
+
+Connectivity-system-agnostic crossing interpretation layer. Scores, overrides, and prioritizes crossings for fish passage using configurable severity thresholds and multi-source data integration. Produces scored crossing tables and break source specs for network segmentation engines. Crossings are features on the network — some break geometry (confirmed barriers), others index for downstream relationship queries (unassessed crossings, observations).
 }
 \seealso{
 Useful links:

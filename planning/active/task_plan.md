@@ -1,100 +1,39 @@
-# Task Plan: link R Package Scaffold & Function Build
+# Task Plan: bcfishpass comparison — wire remaining CSVs + lnk_habitat (#16)
 
 ## Goal
-Build the `link` R package — a connectivity-system-agnostic crossing interpretation layer that scores, overrides, and prioritizes crossings for any network engine, with fresh as the first integration target.
+Close the remaining +1-3% gap, wire all bcfishpass CSVs, establish `lnk_habitat(config = "bcfishpass")` as province-wide reproducible pipeline.
 
-## Current Phase
-Phase 7
+## Status
+ADMS: all within 5% (best: CH +0.5%). BULK: most within 5%, SK spawning -39.9% (fresh#147).
 
-## Phases
+## Phase 1: Wire remaining CSVs (compare_bcfishpass.R)
+- [x] user_barriers_definite — break source + access barrier
+- [x] observation_exclusions — filter obs before breaking
+- [x] user_crossings_misc — extra crossings
+- [ ] user_barriers_definite_control — deferred to lnk_habitat. bcfishpass applies at per-model barrier table build (barriers_gradient.sql, model_access_*.sql), not during override. Needs per-model architecture.
+- [ ] CABD CSVs — require cabd schema (dams/waterfalls from Canadian Aquatic Barriers Database). Not loaded on Docker. Falls come from fresh::falls.csv instead. Deferred until CABD is loaded or falls source is aligned.
+- [ ] pscis_modelledcrossings_streams_xref — GPS corrections. Affects crossing-to-stream assignment via lnk_match, not break positions. Matters for lnk_aggregate (per-crossing rollup), not habitat km totals.
 
-### Phase 1: Package Scaffold
-- [x] Create branch `scaffold-link` from main
-- [x] DESCRIPTION, LICENSE, NAMESPACE, .Rbuildignore, .gitignore
-- [x] testthat (edition 3) + pkgdown + GitHub Action
-- [x] `dev/dev.R` + `data-raw/testdata.R`
-- [x] `inst/extdata/` — thresholds, crossings, overrides CSVs
-- [x] `R/link-package.R` with package-level roxygen
-- [x] `.lintr` config
-- [x] Commit: `Scaffold link package` — Relates to #1
-- **Status:** complete
+## Phase 2: Performance + correctness
+- [x] WSG filter on breaks table (61k → 27k)
+- [x] .frs_index_working on input tables (35x classification speedup, fresh#150 merged in 0.13.4)
+- [x] Test on 4 WSGs: ADMS, BULK, BABL, ELKR
+- [x] Root cause of ST/WCT/BT gaps: per-model non-minimal removal needed (#31)
+- [x] Document user_barriers_definite_control: applies at per-model barrier build, deferred to #31
 
-### Phase 2: Core Utilities & Thresholds (Issues #3–4)
-- [x] `lnk_thresholds()` — load/merge configurable scoring defaults (#3)
-- [x] `lnk_db_conn()` / internal DB helpers (#4)
-- [x] Tests + examples for each (63 pass + 10 skip-if-no-db)
-- [x] 3-round code check: SQL injection, allowlist, reserved-word quoting, NaN/Inf guards
-- [x] `devtools::document()`, `lintr::lint_package()`, `devtools::test()` — all clean
-- [x] Committed in scaffold (issues close when PR merges)
-- **Status:** complete
+## Phase 3: lnk_habitat function
+- [ ] Design config system (named bundles in inst/extdata/configs/)
+- [ ] lnk_habitat(conn, wsg, config) wrapping full DAG
+- [ ] lnk_stamp() provenance recording
+- [ ] GitHub Action for bcfishpass CSV sync
 
-### Phase 3: Override Family (Issues #5–7)
-- [x] `lnk_override_load()` — two-phase CSV validation + DB write (#5)
-- [x] `lnk_override_apply()` — auto-detect columns, quoted SQL (#6)
-- [x] `lnk_override_validate()` — orphans, duplicates, counts (#7)
-- [x] Tests: 68 pass, 34 skip (DB), 0 fail
-- [x] 3-round code check: SQL injection, partial-load atomicity, empty-CSV guard
-- [x] Examples: load→validate→apply pipeline, verbose output, error cases
-- [x] Committed: Fixes #5, #6, #7
-- **Status:** complete
+## Phase 4: Fresh issues (parallel terminal)
+- [ ] fresh#150 — frs_habitat_classify index input tables
+- [ ] fresh#147 — SK spawning BULK regression
+- [ ] frs_break_minimal — extract non-minimal removal to function
+- [ ] GENERATED id_segment in frs_col_generate
+- [ ] .frs_index_working IF NOT EXISTS
 
-### Phase 4: Match Family (Issues #8–10)
-- [x] `lnk_match_sources()` — generic N-way matcher with 1:1 dedup (#8)
-- [x] `lnk_match_pscis()` — PSCIS wrapper with xref CSV priority (#9)
-- [x] `lnk_match_moti()` — MOTI wrapper with 150m tolerance (#10)
-- [x] Tests: 69 pass, 50 skip (DB), 0 fail, 0 lints
-- [x] 3-round code check: many-to-many dedup, where alias isolation
-- [x] Committed: Fixes #8, #9, #10
-- **Status:** complete
-
-### Phase 5: Score Family (Issues #11–12)
-- [x] `lnk_score_severity()` — threshold-driven, NULL-safe, column-agnostic (#11)
-- [x] `lnk_score_custom()` — weighted rank with primary key join (#12)
-- [x] Tests: 69 pass, 65 skip (DB), 0 fail, 0 lints
-- [x] 2-round code check: threshold SQL guard, ctid->PK, direction validation
-- [x] Committed: Fixes #11, #12
-- **Status:** complete
-
-### Phase 6: Bridge & Habitat (Issues #13–14)
-- [x] `lnk_break_source()` — fresh-compatible break source spec (#13)
-- [x] `lnk_habitat_upstream()` — per-crossing upstream rollup (#14)
-- [x] Tests: 69 pass, 77 skip (DB), 0 fail, 0 lints
-- [x] Code check: clean first round
-- [x] Committed: Fixes #13, #14
-- **Status:** complete
-
-### Phase 7: Integration & Release
-- [x] Vignette: MORR crossing interpretation (bcfishpass pipeline replica)
-- [x] data-raw/vignette_morr.R — generates .rds from live DB
-- [x] NEWS.md, README
-- [ ] Run vignette_morr.R to generate .rds (needs DB)
-- [ ] `devtools::check()` passes
-- [ ] PR to main: `Relates to NewGraphEnvironment/sred-2025-2026#24`
-- [ ] pkgdown deploy, hex sticker
-- **Status:** in_progress
-
-## Key Questions
-1. What test data can we bundle without DB dependency? (small CSV crossings + thresholds)
-2. Which functions need DB for examples vs can use local data?
-3. Should `lnk_match_sources()` use spatial distance or network measure distance?
-
-## Decisions Made
-| Decision | Rationale |
-|----------|-----------|
-| `lnk_` prefix | Autocomplete discoverability, consistent with fresh `frs_` pattern |
-| System-agnostic column params | BC/PSCIS names as defaults, but any jurisdiction can swap |
-| CSV thresholds pattern | Matches `frs_params()` — users understand the pattern |
-| One function, one file | Convention: `R/lnk_score_severity.R` → `tests/testthat/test-lnk_score_severity.R` |
-| Override CSVs with provenance cols | Tens of thousands of hand-reviewed crossings need audit trail |
-| `lnk_break_source()` returns list | Direct input to `frs_habitat(break_sources = ...)` — zero friction bridge |
-
-## Errors Encountered
-| Error | Attempt | Resolution |
-|-------|---------|------------|
-|       | 1       |            |
-
-## Notes
-- Branch: `scaffold-link`, all commits close function issues with `Fixes #N`
-- PR closes with `Relates to NewGraphEnvironment/sred-2025-2026#24`
-- Every exported function gets runnable examples with bundled test data
-- Examples show WHY the function is useful, HOW it integrates, WHAT it produces
+## Versions
+- fresh: 0.13.3, bcfishpass: v0.5.0 (CSVs synced 2026-04-13 @ e485fe4), link: 0.1.0
+- fwapg: Docker (FWA 20240830, channel_width synced from tunnel 2026-04-13)

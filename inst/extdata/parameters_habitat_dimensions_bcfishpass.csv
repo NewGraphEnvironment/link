@@ -1,0 +1,9 @@
+species,spawn_lake,spawn_stream,rear_lake,rear_lake_only,rear_no_fw,rear_stream,rear_wetland,rear_all_edges,river_skip_cw_min,spawn_requires_connected,spawn_connected_distance_max,rear_requires_connected,rear_connected_distance_max,notes
+BT,no,yes,no,no,no,yes,no,yes,yes,,,,,"bcfishpass v0.5.0: rear_all_edges=yes means no edge_type filter for rearing."
+CH,no,yes,no,no,no,yes,no,no,yes,,,,,"bcfishpass v0.5.0: no wetland or lake rearing. Stream order exception not captured in rules."
+CM,no,yes,no,no,yes,no,no,no,yes,,,,,"bcfishpass v0.5.0: no freshwater rearing."
+CO,no,yes,no,no,no,yes,yes,no,yes,,,,,"bcfishpass v0.5.0: wetland-flow carve-out (1050/1150 no thresholds). No lake rearing."
+PK,no,yes,no,no,yes,no,no,no,yes,,,,,"bcfishpass v0.5.0: no freshwater rearing."
+SK,no,yes,yes,yes,no,no,no,no,yes,rearing,3000,,,"bcfishpass v0.5.0: no lake spawning. Lake-only rearing (200 ha min). Spawning within 3km downstream of rearing lake."
+ST,no,yes,no,no,no,yes,no,no,yes,,,,,"bcfishpass v0.5.0: no wetland or lake rearing."
+WCT,no,yes,no,no,no,yes,no,no,yes,,,,,"bcfishpass v0.5.0: no wetland or lake rearing."

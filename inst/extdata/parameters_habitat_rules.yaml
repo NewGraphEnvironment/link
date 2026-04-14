@@ -1,0 +1,203 @@
+# Generated from parameters_habitat_dimensions.csv
+# Generated: 2026-04-12
+# Edge types: categories
+#
+# DO NOT EDIT — edit the CSV and re-run lnk_rules_build()
+
+BT:
+  spawn:
+  - edge_types:
+    - stream
+    - canal
+  - waterbody_type: R
+    channel_width:
+    - 0.0
+    - 9999.0
+  rear:
+  - edge_types:
+    - stream
+    - canal
+  - waterbody_type: R
+    channel_width:
+    - 0.0
+    - 9999.0
+  - edge_types: wetland
+    thresholds: false
+  - waterbody_type: L
+CH:
+  spawn:
+  - edge_types:
+    - stream
+    - canal
+  - waterbody_type: R
+    channel_width:
+    - 0.0
+    - 9999.0
+  rear:
+  - edge_types:
+    - stream
+    - canal
+  - waterbody_type: R
+    channel_width:
+    - 0.0
+    - 9999.0
+  - edge_types: wetland
+    thresholds: false
+  - waterbody_type: L
+CM:
+  spawn:
+  - edge_types:
+    - stream
+    - canal
+  - waterbody_type: R
+    channel_width:
+    - 0.0
+    - 9999.0
+  rear: []
+CO:
+  spawn:
+  - edge_types:
+    - stream
+    - canal
+  - waterbody_type: R
+    channel_width:
+    - 0.0
+    - 9999.0
+  rear:
+  - edge_types:
+    - stream
+    - canal
+  - waterbody_type: R
+    channel_width:
+    - 0.0
+    - 9999.0
+  - edge_types: wetland
+    thresholds: false
+  - waterbody_type: L
+PK:
+  spawn:
+  - edge_types:
+    - stream
+    - canal
+  - waterbody_type: R
+    channel_width:
+    - 0.0
+    - 9999.0
+  rear: []
+SK:
+  spawn:
+  - edge_types:
+    - stream
+    - canal
+    requires_connected: rearing
+    connected_distance_max: 3000.0
+  - waterbody_type: R
+    channel_width:
+    - 0.0
+    - 9999.0
+    requires_connected: rearing
+    connected_distance_max: 3000.0
+  - waterbody_type: L
+    requires_connected: rearing
+    connected_distance_max: 3000.0
+  rear:
+  - waterbody_type: L
+    lake_ha_min: 200
+ST:
+  spawn:
+  - edge_types:
+    - stream
+    - canal
+  - waterbody_type: R
+    channel_width:
+    - 0.0
+    - 9999.0
+  rear:
+  - edge_types:
+    - stream
+    - canal
+  - waterbody_type: R
+    channel_width:
+    - 0.0
+    - 9999.0
+  - edge_types: wetland
+    thresholds: false
+  - waterbody_type: L
+WCT:
+  spawn:
+  - edge_types:
+    - stream
+    - canal
+  - waterbody_type: R
+    channel_width:
+    - 0.0
+    - 9999.0
+  rear:
+  - edge_types:
+    - stream
+    - canal
+  - waterbody_type: R
+    channel_width:
+    - 0.0
+    - 9999.0
+  - edge_types: wetland
+    thresholds: false
+  - waterbody_type: L
+KO:
+  spawn:
+  - edge_types:
+    - stream
+    - canal
+    requires_connected: rearing
+    connected_distance_max: 3000.0
+  - waterbody_type: R
+    channel_width:
+    - 0.0
+    - 9999.0
+    requires_connected: rearing
+    connected_distance_max: 3000.0
+  - waterbody_type: L
+    requires_connected: rearing
+    connected_distance_max: 3000.0
+  rear:
+  - waterbody_type: L
+    lake_ha_min: 200
+RB:
+  spawn:
+  - edge_types:
+    - stream
+    - canal
+  - waterbody_type: R
+    channel_width:
+    - 0.0
+    - 9999.0
+  rear:
+  - edge_types:
+    - stream
+    - canal
+  - waterbody_type: R
+    channel_width:
+    - 0.0
+    - 9999.0
+  - edge_types: wetland
+    thresholds: false
+  - waterbody_type: L
+GR:
+  spawn:
+  - edge_types:
+    - stream
+    - canal
+  - waterbody_type: R
+    channel_width:
+    - 0.0
+    - 9999.0
+  rear:
+  - edge_types:
+    - stream
+    - canal
+  - waterbody_type: R
+    channel_width:
+    - 0.0
+    - 9999.0
+  - waterbody_type: L
+

@@ -1,50 +1,34 @@
-# Findings & Decisions
+# Findings
 
-## Requirements
-- Connectivity-system agnostic — BC/PSCIS defaults but not hardcoded
-- Function families with autocomplete-friendly naming: `lnk_override_*`, `lnk_match_*`, `lnk_score_*`, `lnk_break_*`, `lnk_habitat_*`
-- Configurable column names and thresholds via params with sane defaults
-- Override CSVs with provenance tracking
-- Bridge to fresh via `break_sources` interface
-- Examples on every exported function — show integration, results, usefulness
-- SRED tracking: commits close issues, PR references sred-2025-2026#24
+## Non-minimal barrier removal
+Single biggest factor in segment count. bcfishpass deletes barriers that have another barrier downstream (same model table). fwa_upstream self-join. 27,443 → 677 for ADMS. Without: +149% segments. With: -1.3%.
 
-## Research Findings
+## Base segment filters
+fresh loaded 1,062 extra segments missing `localcode_ltree IS NOT NULL`. Adding bcfishpass filters closed base segment count to exact match (10,458).
 
-### fresh API surface (from exploration)
-- 35 exported `frs_*` functions
-- `frs_habitat()` is the main orchestrator — takes `break_sources` as list of specs
-- `break_sources` spec: `list(table, where, label, label_col, label_map)`
-- `frs_params()` loads thresholds from CSV or DB — returns named list by species code
-- `frs_classify()` has three modes: ranges, breaks, overrides (table-based joins)
-- Override mechanism: joins on `blue_line_key + downstream_route_measure` — exact match
-- No CSV override loader in fresh — that's link's job
-- Generated columns auto-recompute gradient/measures after geometry splits
+## Index performance
+.frs_index_working not called on manually-built tables. Missing ltree gist indexes caused 30,000x slower access gating (nested seq scans). Classification: 228s → 6.6s on ADMS. Filed fresh#150.
 
-### SRED issue #24
-- Technological uncertainty: species-specific swimming performance → crossing-specific passability scores
-- MOTI integration gap: chris_culvert_id not linked in provincial systems
-- Moving beyond binary BARRIER/PASSABLE to severity-based metrics
-- Adult spawner vs juvenile thresholds — current provincial criteria are juvenile-only
+## user_barriers_definite_control regression
+Applying control table via LEFT JOIN in lnk_barrier_overrides caused -13% regression on ADMS. bcfishpass applies this at barrier table BUILD step (model_access_bt.sql), not during override computation. The control prevents barriers from being removed from per-model tables — it's a filter on which barriers enter the model, not on which overrides apply. Needs architectural rethink.
 
-### Open issues
-- #1 — Package scope (architecture, function surface, dependencies)
-- #2 — Literature RAG store (ragnar search, separate workstream)
+## Channel width data
+Local Docker had 32,376 field measurements vs tunnel 75,736. Synced from tunnel via pg_dump. Tightened results by ~0.5% across species.
 
-## Technical Decisions
-| Decision | Rationale |
-|----------|-----------|
-| Column params with defaults | `col_drop = "outlet_drop"` — BC users get zero-config, others swap names |
-| `lnk_thresholds()` returns named list | Same pattern as `frs_params()` — ecosystem consistency |
-| Override load validates structure | Catch bad CSVs early, not at scoring time |
-| Provenance cols optional | `reviewer`, `review_date`, `source` — tracked when present, not required |
-| `lnk_break_source()` returns list not table | Direct input to `frs_habitat(break_sources = list(...))` |
-| `lnk_match_sources()` is generic | Any table with ID + network position participates — not PSCIS-specific |
-| Severity levels: high/moderate/low | Biological impact framing, not infrastructure condition |
+## SK spawning BULK regression  
+ADMS +2.6% but BULK -39.9%. The two-phase algorithm (downstream trace + upstream lake proximity with ST_ClusterDBSCAN + st_dwithin to lake polygon) diverges with complex multi-lake geometry. Reopened fresh#147.
 
-## Resources
-- fresh package: `~/Projects/repo/fresh/`
-- fresh break_sources interface: `R/frs_habitat.R` lines 62–341
-- fresh params pattern: `R/frs_params.R` lines 51–89
-- SRED issue: NewGraphEnvironment/sred-2025-2026#24
-- R package conventions: `soul/conventions/r-packages.md`
+## Break source data alignment
+All break positions pre-computed — no snapping during pipeline. Observations filtered by wsg_species_presence (592 → 179 unique positions, bcfishpass 178). Habitat endpoints use both DRM and URM (143 vs 145). observation_exclusions: 1 SK data_error in ADMS, no impact.
+
+## CABD CSVs require external data
+The 4 CABD CSVs (additions, blkey_xref, exclusions, passability_updates) groom `cabd.dams` and `cabd.waterfalls` tables. These come from the Canadian Aquatic Barriers Database loaded by bcfishpass. Our falls come from `fresh::falls.csv` (fwapg `fwa_localize`). Without CABD schema loaded, the CSVs are inoperable. Need to align falls data source or load CABD.
+
+## Groom tables before pipeline, don't add switches inside engine
+The user_barriers_definite_control regression taught: apply filters at the right level. bcfishpass uses the control table at barrier table BUILD (barriers_gradient.sql) and observation counting (model_access_*.sql), not during override computation. Applying it via LEFT JOIN in lnk_barrier_overrides was wrong level — caused -13% regression from 6 fewer overrides on major tributaries. Proper fix: lnk_habitat builds per-model barrier tables (grooming), then passes clean tables to fresh (engine).
+
+## Pipeline performance hierarchy
+1. Indexes on ltree columns — 35x speedup (228s → 6.6s classification)
+2. WSG filter on breaks table — prevents cross-WSG bloat (61k → 27k)
+3. Pre-computed downstream barrier index — not yet implemented, biggest remaining opportunity
+4. UNLOGGED working tables — not yet tested, estimated 2-3x for bulk inserts
