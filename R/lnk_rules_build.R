@@ -175,7 +175,38 @@ lnk_rules_build <- function(csv,
       }
     }
 
-    species_rules[[sp]] <- list(spawn = spawn_rules, rear = rear_rules)
+    # --- spawn_connected (permissive rules for waterbody-adjacent spawning) ---
+    spawn_conn <- NULL
+    if ("spawn_connected_direction" %in% names(d) &&
+        !is.na(d$spawn_connected_direction) &&
+        nchar(trimws(d$spawn_connected_direction)) > 0) {
+      spawn_conn <- list(
+        direction = trimws(d$spawn_connected_direction))
+      # waterbody_type from spawn_requires_connected target's rearing rules
+      # (SK requires_connected = rearing, rearing is waterbody_type L → L)
+      rear_wb <- NULL
+      for (rr in rear_rules) {
+        if (!is.null(rr[["waterbody_type"]])) { rear_wb <- rr[["waterbody_type"]]; break }
+      }
+      if (!is.null(rear_wb)) spawn_conn$waterbody_type <- rear_wb
+      if ("spawn_connected_gradient_max" %in% names(d) && !is.na(d$spawn_connected_gradient_max))
+        spawn_conn$gradient_max <- as.numeric(d$spawn_connected_gradient_max)
+      if ("spawn_connected_cw_min" %in% names(d) && !is.na(d$spawn_connected_cw_min))
+        spawn_conn$channel_width_min <- as.numeric(d$spawn_connected_cw_min)
+      if ("spawn_connected_distance_max" %in% names(d) && !is.na(d$spawn_connected_distance_max))
+        spawn_conn$distance_max <- as.numeric(d$spawn_connected_distance_max)
+      # bridge_gradient = gradient_max (the trace stops at this gradient)
+      spawn_conn$bridge_gradient <- spawn_conn$gradient_max
+      # edge_types: null = no filter, otherwise parse semicolon-separated
+      if ("spawn_connected_edge_types" %in% names(d) && !is.na(d$spawn_connected_edge_types) &&
+          nchar(trimws(d$spawn_connected_edge_types)) > 0) {
+        spawn_conn$edge_types <- as.integer(strsplit(trimws(d$spawn_connected_edge_types), ";")[[1]])
+      }
+    }
+
+    sp_entry <- list(spawn = spawn_rules, rear = rear_rules)
+    if (!is.null(spawn_conn)) sp_entry$spawn_connected <- spawn_conn
+    species_rules[[sp]] <- sp_entry
   }
 
   # --- Write YAML ---
