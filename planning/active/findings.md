@@ -110,20 +110,27 @@ Our frs_cluster does a single pass removing disconnected rearing. Not verified w
 ### Stream order exception across species
 Applied to BT, CH, CO, ST, WCT in bcfishpass. Tested as post-classification UPDATE. Adds segments but not enough to explain gaps. CM, PK, SK do not have the exception. CM/PK have spawning only (no rearing model).
 
-## Results summary (with stream order exception)
+## Results summary (latest: ST/WCT obs fix + stream order exception)
+
+BULK and ELKR updated with ST/WCT observation_species fix. SK spawning proven +0.1% with outlet ordering fix (not yet in fresh).
 
 | Species | Metric | ADMS | BULK | BABL | ELKR |
 |---------|--------|------|------|------|------|
-| BT | spawn | +1.8% | +3.3% | +4.1% | +3.4% |
-| BT | rear | +2.6% | +5.4% | +2.8% | +7.1% |
-| CH | spawn | +0.5% | +2.4% | +3.8% | — |
-| CH | rear | +2.1% | +4.8% | +6.1% | — |
-| CO | spawn | +1.6% | +3.4% | +4.8% | — |
-| CO | rear | -1.0% | +0.0% | +0.0% | — |
-| PK | spawn | — | +2.7% | — | — |
+| BT | spawn | +1.8% | +3.1% | +4.1% | +3.4% |
+| BT | rear | +2.6% | +7.0% | +2.8% | +7.1% |
+| CH | spawn | +0.5% | +1.9% | +3.8% | — |
+| CH | rear | +2.1% | +6.0% | +6.1% | — |
+| CO | spawn | +1.6% | +3.1% | +4.8% | — |
+| CO | rear | -1.0% | +0.9% | +0.0% | — |
+| PK | spawn | — | +2.3% | — | — |
 | SK | spawn | +2.6% | -22.6% (proven +0.1% with fix) | -13.6% | — |
 | SK | rear | +0.0% | +0.0% | +0.0% | — |
-| ST | spawn | — | — | +3.8% | — |
-| ST | rear | — | — | +2.4% | — |
+| ST | spawn | — | +1.9% | +3.8% | — |
+| ST | rear | — | +3.6% | +2.4% | — |
 | WCT | spawn | — | — | — | +4.0% |
 | WCT | rear | — | — | — | +3.0% |
+
+### Remaining over 5%
+- BT rearing: +7.0% BULK, +7.1% ELKR — unexplained, needs segment comparison
+- CH rearing: +6.0% BULK, +6.1% BABL — unexplained
+- CO spawning: +4.8% BABL — borderline
