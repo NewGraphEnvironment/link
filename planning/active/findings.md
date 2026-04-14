@@ -1,34 +1,72 @@
 # Findings
 
-## Non-minimal barrier removal
-Single biggest factor in segment count. bcfishpass deletes barriers that have another barrier downstream (same model table). fwa_upstream self-join. 27,443 → 677 for ADMS. Without: +149% segments. With: -1.3%.
+## bcfishpass access model does NOT use anthropogenic barriers
 
-## Base segment filters
-fresh loaded 1,062 extra segments missing `localcode_ltree IS NOT NULL`. Adding bcfishpass filters closed base segment count to exact match (10,458).
+`load_streams_access.sql` computes `access_bt`, `access_ch`, etc. from `barriers_bt_dnstr`, `barriers_ch_cm_co_pk_sk_dnstr` — natural barriers only. `barriers_anthropogenic_dnstr` is recorded but never checked in the access columns. Crossings do NOT block habitat access.
 
-## Index performance
-.frs_index_working not called on manually-built tables. Missing ltree gist indexes caused 30,000x slower access gating (nested seq scans). Classification: 228s → 6.6s on ADMS. Filed fresh#150.
+Our `label_block = "blocked"` is correct. Testing `label_block = c("blocked", "barrier", "potential")` caused -52% across all species — confirmed crossings should not block.
 
-## user_barriers_definite_control regression
-Applying control table via LEFT JOIN in lnk_barrier_overrides caused -13% regression on ADMS. bcfishpass applies this at barrier table BUILD step (model_access_bt.sql), not during override computation. The control prevents barriers from being removed from per-model tables — it's a filter on which barriers enter the model, not on which overrides apply. Needs architectural rethink.
+## bcfishpass access_st has a bug
 
-## Channel width data
-Local Docker had 32,376 field measurements vs tunnel 75,736. Synced from tunnel via pg_dump. Tightened results by ~0.5% across species.
+Line 120 of `load_streams_access.sql`:
+```sql
+when b.barriers_st_dnstr is null and 'SK' = any(obsrvtn_species_codes_upstr) then 2
+```
+Checks for SK observations for ST access. Should be 'ST'. Copy-paste from the SK block.
 
-## SK spawning BULK regression  
-ADMS +2.6% but BULK -39.9%. The two-phase algorithm (downstream trace + upstream lake proximity with ST_ClusterDBSCAN + st_dwithin to lake polygon) diverges with complex multi-lake geometry. Reopened fresh#147.
+## Stream order exception for rearing (root cause of ST/WCT gap)
 
-## Break source data alignment
-All break positions pre-computed — no snapping during pipeline. Observations filtered by wsg_species_presence (592 → 179 unique positions, bcfishpass 178). Habitat endpoints use both DRM and URM (143 vs 145). observation_exclusions: 1 SK data_error in ADMS, no impact.
+bcfishpass `load_habitat_linear_st.sql` lines 99-101:
+```sql
+(cw.channel_width >= t.rear_channel_width_min OR
+ (s.stream_order_parent >= 5 AND s.stream_order = 1))
+```
 
-## CABD CSVs require external data
-The 4 CABD CSVs (additions, blkey_xref, exclusions, passability_updates) groom `cabd.dams` and `cabd.waterfalls` tables. These come from the Canadian Aquatic Barriers Database loaded by bcfishpass. Our falls come from `fresh::falls.csv` (fwapg `fwa_localize`). Without CABD schema loaded, the CSVs are inoperable. Need to align falls data source or load CABD.
+First-order streams with parent order >= 5 bypass the rearing channel width minimum. This captures small tributaries of large rivers — below the cw threshold by measurement but biologically used for rearing.
 
-## Groom tables before pipeline, don't add switches inside engine
-The user_barriers_definite_control regression taught: apply filters at the right level. bcfishpass uses the control table at barrier table BUILD (barriers_gradient.sql) and observation counting (model_access_*.sql), not during override computation. Applying it via LEFT JOIN in lnk_barrier_overrides was wrong level — caused -13% regression from 6 fewer overrides on major tributaries. Proper fix: lnk_habitat builds per-model barrier tables (grooming), then passes clean tables to fresh (engine).
+Applied in: `load_habitat_linear_bt.sql`, `load_habitat_linear_ch.sql`, `load_habitat_linear_co.sql`, `load_habitat_linear_st.sql`, `load_habitat_linear_wct.sql`.
 
-## Pipeline performance hierarchy
-1. Indexes on ltree columns — 35x speedup (228s → 6.6s classification)
-2. WSG filter on breaks table — prevents cross-WSG bloat (61k → 27k)
-3. Pre-computed downstream barrier index — not yet implemented, biggest remaining opportunity
-4. UNLOGGED working tables — not yet tested, estimated 2-3x for bulk inserts
+NOT in our rules YAML — the rules system has no way to express stream order predicates.
+
+This likely accounts for the ST -22% rearing gap (small tributaries excluded) and contributes to BT +6.5% (we classify MORE because we don't have this exception working correctly — wait, we'd classify LESS without the exception... need to check direction).
+
+## Rearing waterbody filter difference
+
+bcfishpass rearing (ST lines 88-91):
+```sql
+wb.waterbody_type = 'R' OR (wb.waterbody_type IS NULL OR s.edge_type IN (1000,1100,2000,2300))
+```
+
+NULL waterbody_type included regardless of edge_type (the OR makes it permissive).
+
+bcfishpass spawning (ST lines 51-53):
+```sql
+wb.waterbody_type = 'R' OR (wb.waterbody_type IS NULL AND s.edge_type IN (1000,1100,2000,2300))
+```
+
+AND vs OR — spawning is restrictive, rearing is permissive for NULL waterbody.
+
+Need to verify our rules YAML produces the same filter logic.
+
+## Three-phase rearing in bcfishpass
+
+ST rearing runs in 3 phases:
+1. **On spawning streams** (lines 68-112): segments that are spawning AND meet rearing thresholds
+2. **Downstream of spawning** (lines 119-205): cluster rearing segments, find clusters downstream of spawning via fwa_upstream, keep connected clusters
+3. **Upstream of spawning** (lines 213-360): cluster rearing segments, trace downstream to find nearest spawning within 10km with 5% gradient bridge, keep clusters connected to spawning
+
+Our `frs_cluster` does a single pass. The three-phase approach may classify more rearing by finding clusters in both directions from spawning.
+
+## Per-model non-minimal: correct but not the ST cause
+
+Implemented per-model barrier tables (bt: 25/30, salmon: 15-30, st: 20-30, wct: 20-30). No effect on ST or WCT numbers. The gap is classification, not segmentation or access.
+
+## Per-model barrier counts (BABL)
+
+| Model | Before | After minimal |
+|-------|--------|--------------|
+| bt | 5,090 | 678 |
+| ch_cm_co_pk_sk | 17,314 | 1,075 |
+| st | 9,982 | 879 |
+| wct | 9,982 | 879 |
+| Union | — | 2,267 |
