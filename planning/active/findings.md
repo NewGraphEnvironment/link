@@ -54,9 +54,13 @@ This is a boundary effect at the 3km distance cap. The bcfishpass-only segments 
 
 Example: waterbody_key 329064462 spans 10 BLKs. Fresh picks BLK 360504780 DRM 0 (wrong tributary). bcfishpass picks BLK 360846413 DRM 9718 (actual outlet). Downstream trace from the wrong outlet misses 7+ km of spawning habitat.
 
-**Proven:** Correcting the outlet ordering and partitioning by waterbody_key: SK spawning BULK 18.88 km → 24.41 km (bcfishpass 24.38 km). From -22.6% to +0.1%.
+**Outlet ordering fix (PR #152):** Corrected and merged in fresh 0.13.5. The outlet ordering and partition are now correct.
 
-Fix: fresh#147 line 1385 change `ORDER BY s2.waterbody_key, s2.downstream_route_measure ASC` to `ORDER BY s2.waterbody_key, s2.wscode_ltree, s2.localcode_ltree, s2.downstream_route_measure`. Also change Phase 1 partition from `lo.blue_line_key` to `lo.waterbody_key`.
+**Remaining -9.6% (BULK):** 9 segments in the downstream trace that don't meet spawning classification thresholds (3 are edge_type 1050 wetland, 3 have cw < 2.0, 1 has gradient > 0.025). The subtractive filter correctly excludes them.
+
+bcfishpass applies spawning thresholds INSIDE the downstream trace CTE (`load_habitat_linear_sk.sql` lines 100-114 — checks gradient, channel_width, access within the CASE statement). Fresh applies thresholds via `frs_habitat_classify` BEFORE connected_waterbody runs, and the subtractive filter only KEEPS segments already flagged as spawning.
+
+Fix: Phase 1 of `.frs_connected_waterbody` should INSERT segments that meet spawning thresholds directly (like bcfishpass), not just trace and rely on the pre-existing spawning flag. Or: the subtractive step should ADD spawning for segments in the trace that meet thresholds, not just keep existing ones.
 
 The ST/WCT observation_species fix improved SK from -39.9% to -22.6% by opening access at barriers that previously blocked salmon-accessible habitat.
 
