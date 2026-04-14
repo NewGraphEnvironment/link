@@ -428,7 +428,8 @@ for (src in break_sources) {
   reassign_id(conn)
 }
 
-# Index both tables for fwa_upstream performance in access gating
+# Index streams table (frs_habitat_classify now auto-indexes in 0.13.4 but
+# we also need indexes for the sequential breaking step)
 fresh:::.frs_index_working(conn, "fresh.streams")
 
 # Build breaks table for access gating (frs_habitat_classify needs this)
@@ -486,7 +487,7 @@ DBI::dbExecute(conn, sprintf("
     AND c.downstream_route_measure >= s.downstream_route_measure
     AND c.downstream_route_measure < s.upstream_route_measure
   WHERE s.watershed_group_code = '%s'", wsg, wsg, wsg, wsg))
-fresh:::.frs_index_working(conn, "fresh.streams_breaks")
+# breaks table indexed automatically by frs_habitat_classify (fresh 0.13.4+)
 
 # ===========================================================================
 # Step 7: Classify habitat

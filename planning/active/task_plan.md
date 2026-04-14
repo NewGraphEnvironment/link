@@ -16,10 +16,10 @@ ADMS: all within 5% (best: CH +0.5%). BULK: most within 5%, SK spawning -39.9% (
 
 ## Phase 2: Performance + correctness
 - [x] WSG filter on breaks table (61k → 27k)
-- [x] .frs_index_working on input tables (35x classification speedup, fresh#150)
-- [ ] Test on 3+ WSGs (ADMS, BULK, BABL) and log results
-- [ ] Investigate BT rearing +5.4% on BULK
-- [ ] Document user_barriers_definite_control correct application point
+- [x] .frs_index_working on input tables (35x classification speedup, fresh#150 merged in 0.13.4)
+- [x] Test on 4 WSGs: ADMS, BULK, BABL, ELKR
+- [x] Root cause of ST/WCT/BT gaps: per-model non-minimal removal needed (#31)
+- [x] Document user_barriers_definite_control: applies at per-model barrier build, deferred to #31
 
 ## Phase 3: lnk_habitat function
 - [ ] Design config system (named bundles in inst/extdata/configs/)
