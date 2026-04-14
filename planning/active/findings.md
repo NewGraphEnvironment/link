@@ -50,9 +50,13 @@ Segment-level comparison: 13 bcfishpass-only segments (7.26 km), 9 ours-only (2.
 
 This is a boundary effect at the 3km distance cap. The bcfishpass-only segments on BLK 360846413 are 3.0-3.4 km from the rearing lake outlet (our outlet DRM 9718, segments start at DRM 6362). Different segment boundaries resolve the cumulative distance slightly differently — some segments fall just inside 3km in bcfishpass but just outside in our system.
 
-**Root cause found:** fresh Phase 1 partitions the downstream distance by `blue_line_key` (line 1392: `PARTITION BY lo.blue_line_key`). bcfishpass partitions by `waterbody_key` (the rearing lake). When the downstream trace crosses a confluence (BLK A → BLK B), fresh resets the cumulative distance to zero at BLK B. bcfishpass keeps accumulating under the same waterbody_key partition. So fresh's 3km cap is effectively "3km on the outlet BLK" while bcfishpass's is "3km total downstream distance including through confluences."
+**Root cause found and proven:** `.frs_connected_spawning` line 1385 picks lake outlets with `ORDER BY s2.downstream_route_measure ASC`. bcfishpass uses `ORDER BY s.waterbody_key, s.wscode_ltree, s.localcode_ltree, s.downstream_route_measure`. DRM ordering picks an arbitrary segment on any BLK with the smallest measure. wscode ordering picks the actual network-topological outlet.
 
-Fix: change the partition in fresh from `lo.blue_line_key` to a lake identifier (waterbody_key or a generated outlet ID).
+Example: waterbody_key 329064462 spans 10 BLKs. Fresh picks BLK 360504780 DRM 0 (wrong tributary). bcfishpass picks BLK 360846413 DRM 9718 (actual outlet). Downstream trace from the wrong outlet misses 7+ km of spawning habitat.
+
+**Proven:** Correcting the outlet ordering and partitioning by waterbody_key: SK spawning BULK 18.88 km → 24.41 km (bcfishpass 24.38 km). From -22.6% to +0.1%.
+
+Fix: fresh#147 line 1385 change `ORDER BY s2.waterbody_key, s2.downstream_route_measure ASC` to `ORDER BY s2.waterbody_key, s2.wscode_ltree, s2.localcode_ltree, s2.downstream_route_measure`. Also change Phase 1 partition from `lo.blue_line_key` to `lo.waterbody_key`.
 
 The ST/WCT observation_species fix improved SK from -39.9% to -22.6% by opening access at barriers that previously blocked salmon-accessible habitat.
 
@@ -117,7 +121,7 @@ Applied to BT, CH, CO, ST, WCT in bcfishpass. Tested as post-classification UPDA
 | CO | spawn | +1.6% | +3.4% | +4.8% | — |
 | CO | rear | -1.0% | +0.0% | +0.0% | — |
 | PK | spawn | — | +2.7% | — | — |
-| SK | spawn | +2.6% | -39.9% | -13.6% | — |
+| SK | spawn | +2.6% | -22.6% (proven +0.1% with fix) | -13.6% | — |
 | SK | rear | +0.0% | +0.0% | +0.0% | — |
 | ST | spawn | — | — | +3.8% | — |
 | ST | rear | — | — | +2.4% | — |

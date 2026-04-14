@@ -21,3 +21,6 @@
 - Fix: one CSV cell. ST spawning -22% → +3.8%, rearing -25% → +2.4%
 - Also fixed WCT: added observation_threshold=1, species=WCT (not yet tested)
 - **Key lesson: segment-level comparison finds root causes in minutes, guessing from SQL wastes hours**
+- SK spawning: traced to wrong lake outlet ordering in frs_connected_spawning line 1385
+  ORDER BY downstream_route_measure picks wrong BLK. bcfishpass uses wscode_ltree ordering.
+  Proven: corrected query gives 24.41 km vs bcfishpass 24.38 km (+0.1%)
