@@ -147,7 +147,7 @@ Segment comparison: 646 ours-only segments (224 km) vs 36 bcfishpass-only (8.6 k
 
 Fix: set BT `cluster_rearing = TRUE`. **Result: BT rearing BULK +7.0% → +1.3%, ELKR +7.1% → +1.7%, BABL +2.8% → +0.4%, ADMS +2.6% → -0.3%.** All within 5%.
 
-### CH rearing +6.0% BULK, +6.1% BABL — CONFIRMED: frs_cluster more permissive
+### CH rearing +6.0% BULK, +6.1% BABL — frs_cluster upstream boolean too permissive
 Segment comparison: 442 ours-only (103 km) vs 26 bcfishpass-only (8.5 km). Breakdown:
 - 14.6 km from stream order exception (we add rearing, bcfishpass doesn't at this stage)
 - 46.7 km on BLKs with CH spawning — should be "on-spawning rearing" in bcfishpass but isn't classified
@@ -161,9 +161,15 @@ Our frs_cluster connects rearing to spawning via network proximity (upstream/dow
 
 This is a real difference in how connectivity is evaluated. frs_cluster checks "is there spawning within range?" bcfishpass checks "can fish get from this rearing to the spawning without crossing a gradient barrier?" The 5% gradient bridge in frs_cluster is applied to the cluster boundary, not to every segment along the path.
 
-This applies to ALL species with cluster_rearing — BT (57 km excess), CH (103 km), CO (39 km), ST (91 km). The excess is proportional to how many rearing segments sit above steep sections.
+This applies to ALL species with cluster_rearing. The excess is from the upstream boolean check keeping rearing that the downstream path gradient would reject.
 
-Fix: frs_cluster needs path-based gradient checking, not just proximity. When tracing from rearing to spawning, accumulate gradient and stop at the first segment exceeding bridge_gradient. This matches bcfishpass Phase 3.
+Tested `direction = "downstream"`: -93% BT rearing. Too restrictive — loses bcfishpass Phase 2 (rearing downstream of spawning). `direction = "both"` is correct for coverage but the upstream boolean is too permissive.
+
+bcfishpass Phase 3 traces DOWNSTREAM from each rearing cluster to find spawning — linear, path gradient works. Our `frs_cluster_downstream` does the same. But `direction = "both"` combines it with upstream boolean, which overrides downstream rejections.
+
+Not a CSV fix. Needs architectural change: `_both` should require downstream path gradient pass, not OR with upstream boolean. Or: fresh implements bcfishpass-style three-phase rearing (on-spawning, downstream-of-spawning, upstream-of-spawning-traced-downstream). Filed as fresh#153.
+
+Accepted at +6% for now. Only affects CH rearing consistently. Other species within 5%.
 
 ### fresh#153 regression: BT rearing -87.9% on ADMS
 The upstream path gradient check in frs_cluster is fundamentally broken. `FWA_Upstream` returns ALL upstream segments (4,770 for one cluster) including tributaries. `row_number` ordered by wscode sorts tributaries before mainstem continuation. A >5% gradient on a distant tributary gets a lower row_number than the adjacent spawning segment on the mainstem, blocking the connection.
