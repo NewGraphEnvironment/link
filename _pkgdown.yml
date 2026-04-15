@@ -14,10 +14,25 @@ reference:
     contents:
       - lnk_db_conn
 
+  - title: Loading
+    desc: Load and validate CSV data into database
+    contents:
+      - lnk_load
+
   - title: Overrides
-    desc: Load, validate, and apply correction data
+    desc: Validate and apply correction data
     contents:
       - starts_with("lnk_override")
+
+  - title: Barrier Overrides
+    desc: Build species-specific barrier skip lists from observations and habitat confirmations
+    contents:
+      - lnk_barrier_overrides
+
+  - title: Rules
+    desc: Build habitat rules YAML from dimensions CSV
+    contents:
+      - lnk_rules_build
 
   - title: Matching
     desc: Link crossing records across data systems
