@@ -43,6 +43,90 @@ All species within 5% on all 4 WSGs. Three-phase cluster, no stream order bypass
 | BT | +3.4% | +0.2% |
 | WCT | +4.0% | +2.5% |
 
+## DAG
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      Config CSVs                                │
+│  crossings.csv · falls.csv · override CSVs · habitat confirms   │
+│  parameters_fresh · parameters_habitat_dimensions · rules YAML  │
+│  wsg_species_presence · observation_exclusions                  │
+└───────┬──────────┬──────────────┬──────────────┬────────────────┘
+        │          │              │              │
+        ▼          ▼              │              │
+  ┌───────────────────────┐      │              │
+  │ lnk_load + lnk_override│     │              │
+  │ Load crossings, apply  │      │              │
+  │ modelled fixes + PSCIS │      │              │
+  │ overrides              │      │              │
+  └───────────┬────────────┘      │              │
+              │                   │              │
+              │    ┌──────────────┘              │
+              │    ▼                             │
+              │  ┌────────────────────────┐      │
+              │  │ frs_break_find         │      │
+              │  │ Gradient barriers on   │      │
+              │  │ raw FWA (4 classes)    │      │
+              │  └──────────┬─────────────┘      │
+              │             │                    │
+              │             ▼                    │
+              │  ┌────────────────────────┐      │
+              │  │ lnk_barrier_overrides  │◄─────┘
+              │  │ Observations + habitat │
+              │  │ confirms → skip list   │
+              │  └──────────┬─────────────┘
+              │             │
+              │             ▼
+              │  ┌────────────────────────┐
+              │  │ Non-minimal removal    │
+              │  │ fwa_upstream self-join │
+              │  │ 27,443 → 677 (ADMS)   │
+              │  └──────────┬─────────────┘
+              │             │
+              ▼             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ Load base segments                                              │
+│ Raw FWA + filters + channel_width + stream_order_parent         │
+│ frs_col_generate (GENERATED gradient/measures/length)           │
+└──────────────────────────┬──────────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ Sequential breaking (frs_break_apply × 4)                       │
+│ 1. Observations        2. Gradient barriers (minimal)           │
+│ 3. Habitat endpoints   4. Crossings                             │
+│ GENERATED columns recompute · 1m guard · id_segment reassigned  │
+└──────────────────────────┬──────────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ Build breaks table for access gating                            │
+│ FULL gradient barriers + falls + crossings (WSG-filtered)       │
+└──────────────────────────┬──────────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ frs_habitat_classify                                            │
+│ Rules YAML + thresholds · access gating + barrier overrides     │
+│ Per-species: gradient · channel_width · edge_type · waterbody   │
+└──────────────────────────┬──────────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ frs_cluster (three-phase)                                       │
+│ Phase 1: on-spawning rearing always valid                       │
+│ Phase 2: upstream boolean (rearing below spawning)              │
+│ Phase 3: FWA_Downstream mainstem trace (rearing above spawning) │
+└──────────────────────────┬──────────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ frs_connected_waterbody (SK)                                    │
+│ Subtractive: remove spawning not near rearing lake              │
+│ Additive: spawn_connected thresholds in downstream trace zone   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
 ## Pipeline
 
 ### 1. Detect gradient barriers on raw FWA
