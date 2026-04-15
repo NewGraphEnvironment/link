@@ -96,7 +96,7 @@ corrections:
 conn <- lnk_db_conn()
 
 # Load --- validates CSV structure before writing to DB
-lnk_override_load(conn,
+lnk_load(conn,
   csv  = "user_modelled_crossing_fixes_morr.csv",
   to   = "working.morr_modelled_fixes",
   cols_id = "modelled_crossing_id",
@@ -217,7 +217,7 @@ passable culverts.
 
 ## Handing off to fresh
 
-[`lnk_break_source()`](https://newgraphenvironment.github.io/link/reference/lnk_break_source.md)
+[`lnk_source()`](https://newgraphenvironment.github.io/link/reference/lnk_source.md)
 produces the spec that plugs directly into
 [fresh](https://newgraphenvironment.github.io/fresh/)’s `frs_habitat()`.
 Link’s severity labels translate to fresh’s access labels via
@@ -239,13 +239,13 @@ str(morr_spec)
 ```
 
 ``` r
-src <- lnk_break_source(conn, "working.morr_crossings")
+src <- lnk_source(conn, "working.morr_crossings")
 
 # The handoff --- fresh takes it from here
 fresh::frs_habitat(conn, "MORR", break_sources = list(src))
 
 # After fresh classifies habitat, link can roll up per crossing
-lnk_habitat_upstream(conn, "working.morr_crossings",
+lnk_aggregate(conn, "working.morr_crossings",
   "fresh.streams_habitat")
 ```
 
@@ -265,6 +265,6 @@ for (wsg in wsgs) {
   # 2. Load and apply overrides (filtered to WSG)
   # 3. Fetch PSCIS from bcdata, match with lnk_match_pscis()
   # 4. lnk_score_severity()
-  # 5. lnk_break_source() -> frs_habitat()
+  # 5. lnk_source() -> frs_habitat()
 }
 ```

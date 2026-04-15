@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -147,7 +147,7 @@ corrections:</p>
 <code class="sourceCode R"><span><span class="va">conn</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/lnk_db_conn.html">lnk_db_conn</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Load --- validates CSV structure before writing to DB</span></span>
-<span><span class="fu"><a href="../reference/lnk_override_load.html">lnk_override_load</a></span><span class="op">(</span><span class="va">conn</span>,</span>
+<span><span class="fu"><a href="../reference/lnk_load.html">lnk_load</a></span><span class="op">(</span><span class="va">conn</span>,</span>
 <span>  csv  <span class="op">=</span> <span class="st">"user_modelled_crossing_fixes_morr.csv"</span>,</span>
 <span>  to   <span class="op">=</span> <span class="st">"working.morr_modelled_fixes"</span>,</span>
 <span>  cols_id <span class="op">=</span> <span class="st">"modelled_crossing_id"</span>,</span>
@@ -155,12 +155,12 @@ corrections:</p>
 <span>  cols_provenance <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"reviewer_name"</span>, <span class="st">"review_date"</span>, <span class="st">"source"</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Validate --- find orphans and duplicates</span></span>
-<span><span class="fu"><a href="../reference/lnk_override_validate.html">lnk_override_validate</a></span><span class="op">(</span><span class="va">conn</span>,</span>
+<span><span class="fu">lnk_override_validate</span><span class="op">(</span><span class="va">conn</span>,</span>
 <span>  overrides <span class="op">=</span> <span class="st">"working.morr_modelled_fixes"</span>,</span>
 <span>  crossings <span class="op">=</span> <span class="st">"working.morr_crossings"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Apply --- auto-detects which columns to update</span></span>
-<span><span class="fu"><a href="../reference/lnk_override_apply.html">lnk_override_apply</a></span><span class="op">(</span><span class="va">conn</span>,</span>
+<span><span class="fu">lnk_override_apply</span><span class="op">(</span><span class="va">conn</span>,</span>
 <span>  crossings <span class="op">=</span> <span class="st">"working.morr_crossings"</span>,</span>
 <span>  overrides <span class="op">=</span> <span class="st">"working.morr_modelled_fixes"</span><span class="op">)</span></span></code></pre></div>
 </div>
@@ -184,7 +184,7 @@ scoring uses real data.</p>
 <p>The 8 xref corrections are hand-curated GPS error fixes from field
 work. These take priority over spatial matching.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/lnk_match_pscis.html">lnk_match_pscis</a></span><span class="op">(</span><span class="va">conn</span>,</span>
+<code class="sourceCode R"><span><span class="fu">lnk_match_pscis</span><span class="op">(</span><span class="va">conn</span>,</span>
 <span>  crossings <span class="op">=</span> <span class="st">"working.morr_crossings"</span>,</span>
 <span>  pscis     <span class="op">=</span> <span class="st">"working.morr_pscis"</span>,</span>
 <span>  xref_csv  <span class="op">=</span> <span class="st">"pscis_modelledcrossings_streams_xref_morr.csv"</span>,</span>
@@ -242,7 +242,7 @@ by imagery review.</p>
 </tbody>
 </table>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/lnk_score_severity.html">lnk_score_severity</a></span><span class="op">(</span><span class="va">conn</span>, <span class="st">"working.morr_crossings"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu">lnk_score_severity</span><span class="op">(</span><span class="va">conn</span>, <span class="st">"working.morr_crossings"</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">morr_dist</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span></span>
 <span>  <span class="st">"testdata"</span>, <span class="st">"morr_severity_dist.rds"</span>, package <span class="op">=</span> <span class="st">"link"</span><span class="op">)</span><span class="op">)</span></span>
@@ -278,8 +278,8 @@ from impassable drops to likely passable culverts.</p>
 <div class="section level2">
 <h2 id="handing-off-to-fresh">Handing off to fresh<a class="anchor" aria-label="anchor" href="#handing-off-to-fresh"></a>
 </h2>
-<p><code><a href="../reference/lnk_break_source.html">lnk_break_source()</a></code> produces the spec that plugs directly
-into <a href="https://newgraphenvironment.github.io/fresh/" class="external-link">fresh</a>’s
+<p><code><a href="../reference/lnk_source.html">lnk_source()</a></code> produces the spec that plugs directly into
+<a href="https://newgraphenvironment.github.io/fresh/" class="external-link">fresh</a>’s
 <code>frs_habitat()</code>. Link’s severity labels translate to fresh’s
 access labels via <code>label_map</code>:</p>
 <ul>
@@ -300,13 +300,13 @@ barrier, breaks geometry)</li>
 <span><span class="co">#&gt;  $ label_map: Named chr [1:2] "blocked" "potential"</span></span>
 <span><span class="co">#&gt;   ..- attr(*, "names")= chr [1:2] "high" "moderate"</span></span></code></pre></div>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">src</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/lnk_break_source.html">lnk_break_source</a></span><span class="op">(</span><span class="va">conn</span>, <span class="st">"working.morr_crossings"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">src</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/lnk_source.html">lnk_source</a></span><span class="op">(</span><span class="va">conn</span>, <span class="st">"working.morr_crossings"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># The handoff --- fresh takes it from here</span></span>
 <span><span class="fu">fresh</span><span class="fu">::</span><span class="fu"><a href="https://newgraphenvironment.github.io/fresh/reference/frs_habitat.html" class="external-link">frs_habitat</a></span><span class="op">(</span><span class="va">conn</span>, <span class="st">"MORR"</span>, break_sources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">src</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># After fresh classifies habitat, link can roll up per crossing</span></span>
-<span><span class="fu"><a href="../reference/lnk_habitat_upstream.html">lnk_habitat_upstream</a></span><span class="op">(</span><span class="va">conn</span>, <span class="st">"working.morr_crossings"</span>,</span>
+<span><span class="fu"><a href="../reference/lnk_aggregate.html">lnk_aggregate</a></span><span class="op">(</span><span class="va">conn</span>, <span class="st">"working.morr_crossings"</span>,</span>
 <span>  <span class="st">"fresh.streams_habitat"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
@@ -325,7 +325,7 @@ filtering. The crossings CSV from fresh covers the entire province.</p>
 <span>  <span class="co"># 2. Load and apply overrides (filtered to WSG)</span></span>
 <span>  <span class="co"># 3. Fetch PSCIS from bcdata, match with lnk_match_pscis()</span></span>
 <span>  <span class="co"># 4. lnk_score_severity()</span></span>
-<span>  <span class="co"># 5. lnk_break_source() -&gt; frs_habitat()</span></span>
+<span>  <span class="co"># 5. lnk_source() -&gt; frs_habitat()</span></span>
 <span><span class="op">}</span></span></code></pre></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

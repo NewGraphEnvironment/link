@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -67,9 +67,9 @@
         </dt>
         <dd>Connect to FWA PostgreSQL database</dd>
       </dl></div><div class="section level2">
-      <h2 id="overrides">Overrides<a class="anchor" aria-label="anchor" href="#overrides"></a></h2>
+      <h2 id="loading">Loading<a class="anchor" aria-label="anchor" href="#loading"></a></h2>
 
-      <div class="section-desc"><p>Load, validate, and apply correction data</p></div>
+      <div class="section-desc"><p>Load and validate CSV data into database</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -78,24 +78,58 @@
 
       <dl><dt>
 
-          <code><a href="lnk_override_apply.html">lnk_override_apply()</a></code>
-
-        </dt>
-        <dd>Apply overrides to a crossings table</dd>
-
-        <dt>
-
-          <code><a href="lnk_override_load.html">lnk_override_load()</a></code>
+          <code><a href="lnk_load.html">lnk_load()</a></code>
 
         </dt>
         <dd>Load override CSVs into a database table</dd>
+      </dl></div><div class="section level2">
+      <h2 id="overrides">Overrides<a class="anchor" aria-label="anchor" href="#overrides"></a></h2>
 
-        <dt>
+      <div class="section-desc"><p>Validate and apply correction data</p></div>
 
-          <code><a href="lnk_override_validate.html">lnk_override_validate()</a></code>
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="lnk_override.html">lnk_override()</a></code>
 
         </dt>
-        <dd>Validate override referential integrity</dd>
+        <dd>Validate and apply overrides to a table</dd>
+      </dl></div><div class="section level2">
+      <h2 id="barrier-overrides">Barrier Overrides<a class="anchor" aria-label="anchor" href="#barrier-overrides"></a></h2>
+
+      <div class="section-desc"><p>Build species-specific barrier skip lists from observations and habitat confirmations</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="lnk_barrier_overrides.html">lnk_barrier_overrides()</a></code>
+
+        </dt>
+        <dd>Build barrier override list from evidence sources</dd>
+      </dl></div><div class="section level2">
+      <h2 id="rules">Rules<a class="anchor" aria-label="anchor" href="#rules"></a></h2>
+
+      <div class="section-desc"><p>Build habitat rules YAML from dimensions CSV</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="lnk_rules_build.html">lnk_rules_build()</a></code>
+
+        </dt>
+        <dd>Build habitat eligibility rules YAML from dimensions CSV</dd>
       </dl></div><div class="section level2">
       <h2 id="matching">Matching<a class="anchor" aria-label="anchor" href="#matching"></a></h2>
 
@@ -108,24 +142,10 @@
 
       <dl><dt>
 
-          <code><a href="lnk_match_moti.html">lnk_match_moti()</a></code>
+          <code><a href="lnk_match.html">lnk_match()</a></code>
 
         </dt>
-        <dd>Match MOTI culverts to crossings</dd>
-
-        <dt>
-
-          <code><a href="lnk_match_pscis.html">lnk_match_pscis()</a></code>
-
-        </dt>
-        <dd>Match PSCIS assessments to modelled crossings</dd>
-
-        <dt>
-
-          <code><a href="lnk_match_sources.html">lnk_match_sources()</a></code>
-
-        </dt>
-        <dd>Match crossing records across multiple data systems</dd>
+        <dd>Match crossing records across data systems</dd>
       </dl></div><div class="section level2">
       <h2 id="scoring">Scoring<a class="anchor" aria-label="anchor" href="#scoring"></a></h2>
 
@@ -138,17 +158,10 @@
 
       <dl><dt>
 
-          <code><a href="lnk_score_custom.html">lnk_score_custom()</a></code>
+          <code><a href="lnk_score.html">lnk_score()</a></code>
 
         </dt>
-        <dd>Apply user-defined scoring rules</dd>
-
-        <dt>
-
-          <code><a href="lnk_score_severity.html">lnk_score_severity()</a></code>
-
-        </dt>
-        <dd>Classify crossings by biological impact severity</dd>
+        <dd>Score crossings</dd>
       </dl></div><div class="section level2">
       <h2 id="bridge">Bridge<a class="anchor" aria-label="anchor" href="#bridge"></a></h2>
 
@@ -161,7 +174,7 @@
 
       <dl><dt>
 
-          <code><a href="lnk_break_source.html">lnk_break_source()</a></code>
+          <code><a href="lnk_source.html">lnk_source()</a></code>
 
         </dt>
         <dd>Produce a fresh-compatible break source list</dd>
@@ -177,7 +190,7 @@
 
       <dl><dt>
 
-          <code><a href="lnk_habitat_upstream.html">lnk_habitat_upstream()</a></code>
+          <code><a href="lnk_aggregate.html">lnk_aggregate()</a></code>
 
         </dt>
         <dd>Compute upstream habitat per crossing</dd>

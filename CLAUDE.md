@@ -7,7 +7,8 @@ overrides, and prioritization.
 ## Repository Context
 
 **Repository:** NewGraphEnvironment/link **Primary Language:** R
-**Prefix:** `lnk_` **Branch:** `scaffold-link` (PR \#15 → main)
+**Prefix:** `lnk_` **Branch:** `adms-comparison` (comparison work →
+main)
 
 ## Architecture
 
@@ -48,79 +49,143 @@ work with any PostgreSQL.
 conn <- lnk_db_conn()  # reads PG_DB_SHARE, PG_HOST_SHARE, etc.
 ```
 
-## Exported Functions (12)
+## Exported Functions (10)
 
 ### Core
 
 - `lnk_thresholds(csv, high, moderate, low)` — configurable severity
   thresholds. Ships BC defaults. CSV or inline override. Feeds into
-  [`lnk_score_severity()`](https://newgraphenvironment.github.io/link/reference/lnk_score_severity.md).
+  [`lnk_score()`](https://newgraphenvironment.github.io/link/reference/lnk_score.md).
 - [`lnk_db_conn()`](https://newgraphenvironment.github.io/link/reference/lnk_db_conn.md)
   — PostgreSQL connection factory. `PG_*_SHARE` then `PG*` env vars.
 
 ### Override family: load → validate → apply
 
-- `lnk_override_load(conn, csv, to)` — read correction CSVs into DB.
-  Two-phase: validate all CSVs before writing any. Multi-file load.
-  Provenance tracking.
-- `lnk_override_validate(conn, overrides, crossings)` — find orphans
-  (IDs not in crossings) and duplicates. Non-blocking.
-- `lnk_override_apply(conn, crossings, overrides)` — join overrides onto
-  crossings. Auto-detects update columns. Reports counts.
+- `lnk_load(conn, csv, to)` — read correction CSVs into DB. Two-phase:
+  validate all CSVs before writing any. Multi-file load. Provenance
+  tracking.
+- `lnk_override(conn, crossings, overrides)` — find orphans (IDs not in
+  crossings) and duplicates. Non-blocking.
 
 ### Match family
 
-- `lnk_match_sources(conn, sources, distance)` — generic N-way matcher
-  on `blue_line_key` + `downstream_route_measure`. Bidirectional 1:1
-  dedup (closest match wins both directions). Where filters isolated in
-  subqueries.
-- `lnk_match_pscis(conn, crossings, pscis, xref_csv)` —
-  PSCIS-to-modelled wrapper. xref CSV applied first (hand-curated GPS
-  corrections), then spatial matching.
-- `lnk_match_moti(conn, crossings, moti)` — MOTI chris_culvert_id
-  wrapper. 150m tolerance (road-centreline GPS).
+- `lnk_match(conn, sources, distance)` — generic N-way matcher on
+  `blue_line_key` + `downstream_route_measure`. Bidirectional 1:1 dedup
+  (closest match wins both directions). Where filters isolated in
+  subqueries. Optional `xref_csv` for hand-curated GPS corrections.
 
 ### Score family
 
-- `lnk_score_severity(conn, crossings, thresholds)` — classify by
-  biological impact (high/moderate/low). Threshold-driven, NULL-safe,
-  column-agnostic. All threshold values validated as finite numeric
-  before SQL.
-- `lnk_score_custom(conn, crossings, rules, col_id)` — weighted rank
-  scoring for multi-criteria prioritization. Supports column refs and
-  SQL expressions.
+- `lnk_score(conn, crossings, method)` — `method = "severity"` for
+  biological impact classification (high/moderate/low).
+  `method = "rank"` for weighted multi-criteria prioritization.
+  Threshold-driven, NULL-safe, column-agnostic.
+
+### Rules family
+
+- `lnk_rules_build(csv, to, edge_types)` — transforms a species habitat
+  dimensions CSV into the rules YAML format consumed by `frs_habitat()`.
+  Two CSVs: NGE defaults (`parameters_habitat_dimensions.csv`) and
+  bcfishpass comparison
+  (`parameters_habitat_dimensions_bcfishpass.csv`).
+
+### Barrier overrides
+
+- `lnk_barrier_overrides(conn, barriers, observations, habitat, params, to)`
+  — processes fish observations and habitat confirmations into a barrier
+  skip list for fresh. Counts observations upstream of each barrier via
+  `fwa_upstream()` SQL, applies per-species thresholds, unions with
+  habitat confirmations. Output:
+  `(blue_line_key, downstream_route_measure, species_code)` table that
+  fresh skips during access gating.
 
 ### Bridge to fresh
 
-- `lnk_break_source(conn, crossings, label_col, label_map)` — returns
+- `lnk_source(conn, crossings, label_col, label_map)` — returns
   `list(table, label_col, label_map)` that plugs directly into
   `frs_habitat(break_sources = list(...))`. `label_map` translates link
   severity → fresh access labels (`high → blocked`,
   `moderate → potential`).
-- `lnk_habitat_upstream(conn, crossings, habitat, cols_sum)` —
-  per-crossing upstream habitat rollup from fresh output. Sums
-  spawning_km, rearing_km (or custom metrics).
+- `lnk_aggregate(conn, crossings, habitat, cols_sum)` — per-crossing
+  upstream habitat rollup from fresh output. Sums spawning_km,
+  rearing_km (or custom metrics).
 
 ## Integration with fresh
 
 ``` r
 # link scores crossings
-lnk_override_load(conn, csv = "overrides.csv", to = "working.fixes")
-lnk_override_apply(conn, "working.crossings", "working.fixes")
-lnk_score_severity(conn, "working.crossings")
+lnk_load(conn, csv = "overrides.csv", to = "working.fixes")
+lnk_override(conn, "working.crossings", "working.fixes")
+lnk_score(conn, "working.crossings")
 
 # link produces break source spec
-src <- lnk_break_source(conn, "working.crossings")
+src <- lnk_source(conn, "working.crossings")
 
 # fresh consumes it — zero translation
 frs_habitat(conn, "MORR", break_sources = list(src))
 
 # link reads fresh output for per-crossing rollup
-lnk_habitat_upstream(conn, "working.crossings", "fresh.streams_habitat")
+lnk_aggregate(conn, "working.crossings", "fresh.streams_habitat")
 ```
 
 The data flows both directions: link → fresh (scored crossings as break
 sources) and fresh → link (habitat classification for upstream rollup).
+
+## fresh Break Source Label Convention
+
+When link produces a break source via
+[`lnk_source()`](https://newgraphenvironment.github.io/link/reference/lnk_source.md),
+the label values control how fresh treats each point:
+
+| Label                                            | What fresh does                                                                                 |
+|--------------------------------------------------|-------------------------------------------------------------------------------------------------|
+| `"blocked"`                                      | Always blocks access (all species)                                                              |
+| `"gradient_15"`                                  | Blocks species with access threshold ≤ 15% (CO, CH, SK) but not BT (25%)                        |
+| `"potential"`                                    | Does NOT block by default. Only blocks if user passes `label_block = c("blocked", "potential")` |
+| Anything else (`"passable"`, `"bridge"`, custom) | Never blocks                                                                                    |
+
+### `label_block` parameter
+
+`frs_habitat()` and `frs_habitat_classify()` accept `label_block`
+(default `"blocked"`). This controls which break labels restrict access:
+
+``` r
+# link scores crossings with severity labels
+src <- lnk_source(conn, "working.crossings",
+  label_col = "severity",
+  label_map = c("high" = "blocked", "moderate" = "potential"))
+
+# Conservative: both high and moderate block
+frs_habitat(conn, "BULK",
+  break_sources = list(src),
+  label_block = c("blocked", "potential"))
+
+# Aggressive: only high blocks
+frs_habitat(conn, "BULK",
+  break_sources = list(src),
+  label_block = "blocked")
+```
+
+### `gate` parameter
+
+`gate = FALSE` skips accessibility entirely — classifies all segments by
+gradient/channel width alone. Useful for total habitat potential before
+considering barriers.
+[`lnk_aggregate()`](https://newgraphenvironment.github.io/link/reference/lnk_aggregate.md)
+can compare gated vs ungated to show how much habitat each crossing
+blocks.
+
+### Any AOI
+
+`frs_habitat()` accepts any spatial extent — not just WSG codes:
+
+``` r
+frs_habitat(conn,
+  aoi = "wscode_ltree <@ '100.190442'::ltree",
+  species = c("BT", "CO"),
+  label = "richfield",
+  break_sources = list(src))
+```
 
 ## Pipeline for any watershed group
 
@@ -130,32 +195,40 @@ The same steps replicate what bcfishpass does, for any
 1.  Load crossings from
     `fresh::system.file("extdata", "crossings.csv")`, filter to WSG
 2.  Load overrides from `bcfishpass/data/` CSVs, filter to WSG
-3.  [`lnk_override_load()`](https://newgraphenvironment.github.io/link/reference/lnk_override_load.md)
+3.  [`lnk_load()`](https://newgraphenvironment.github.io/link/reference/lnk_load.md)
     →
-    [`lnk_override_validate()`](https://newgraphenvironment.github.io/link/reference/lnk_override_validate.md)
-    →
-    [`lnk_override_apply()`](https://newgraphenvironment.github.io/link/reference/lnk_override_apply.md)
+    [`lnk_override()`](https://newgraphenvironment.github.io/link/reference/lnk_override.md)
+    (validate + apply)
 4.  Get PSCIS via
     [`bcdata::bcdc_get_data()`](https://bcgov.github.io/bcdata/reference/bcdc_get_data.html),
     match with
-    [`lnk_match_pscis()`](https://newgraphenvironment.github.io/link/reference/lnk_match_pscis.md)
+    [`lnk_match()`](https://newgraphenvironment.github.io/link/reference/lnk_match.md)
     (+ xref CSV)
-5.  [`lnk_score_severity()`](https://newgraphenvironment.github.io/link/reference/lnk_score_severity.md)
+5.  [`lnk_score()`](https://newgraphenvironment.github.io/link/reference/lnk_score.md)
     →
-    [`lnk_break_source()`](https://newgraphenvironment.github.io/link/reference/lnk_break_source.md)
+    [`lnk_source()`](https://newgraphenvironment.github.io/link/reference/lnk_source.md)
     → `frs_habitat()`
+6.  Falls as `list(table = "working.falls", label = "blocked")`
 
-To run the entire province: loop over watershed groups.
+To run the entire province: loop over watershed groups. Or pass any AOI
+with `species` for sub-basin work.
+
+## Open Issues
+
+- \#16 — ADMS comparison (BT/CH/CO within 5%, SK spawning pending
+  fresh#133)
+- \#18 — Configurable rearing-spawning connectivity
+- \#19 — Habitat eligibility override CSV (edge_types + feature_codes)
+- \#20 — Literature/observation evidence for habitat departures
+- \#21 — GSDD and thermal energy as intrinsic potential variables
+- \#23 — CH stream order exception QA
+- \#24 — lnk_stamp (model params for report appendix)
+- \#29 — SK spawning cluster divergence (blocked on fresh#133)
 
 ## SRED
 
 Relates to NewGraphEnvironment/sred-2025-2026#24 — crossing connectivity
 interpretation package.
-
-## Open Issues
-
-- \#1 — Package scope (closed by scaffold PR \#15)
-- \#2 — Build fish passage connectivity literature RAG store
 
 # Agent Teams
 
@@ -904,13 +977,13 @@ Environment repositories.
 Five repos form the governance and operations layer across all New Graph
 Environment work:
 
-| Repo                                                      | Purpose                                                       | Analogy     |
-|-----------------------------------------------------------|---------------------------------------------------------------|-------------|
-| [compass](https://github.com/NewGraphEnvironment/compass) | Ethics, values, guiding principles                            | The “why”   |
-| [soul](https://github.com/NewGraphEnvironment/soul)       | Standards, skills, conventions for LLM agents                 | The “how”   |
-| [compost](https://github.com/NewGraphEnvironment/compost) | Communications templates, email workflows, contact management | The “who”   |
-| [awshak](https://github.com/NewGraphEnvironment/awshak)   | Infrastructure as Code, deployment                            | The “where” |
-| [gq](https://github.com/NewGraphEnvironment/gq)           | Cartographic style management across QGIS, tmap, leaflet, web | The “look”  |
+| Repo                                                                | Purpose                                                       | Analogy     |
+|---------------------------------------------------------------------|---------------------------------------------------------------|-------------|
+| [compass](https://github.com/NewGraphEnvironment/compass)           | Ethics, values, guiding principles                            | The “why”   |
+| [soul](https://github.com/NewGraphEnvironment/soul)                 | Standards, skills, conventions for LLM agents                 | The “how”   |
+| [compost](https://github.com/NewGraphEnvironment/compost)           | Communications templates, email workflows, contact management | The “who”   |
+| [rtj](https://github.com/NewGraphEnvironment/rtj) (formerly awshak) | Infrastructure as Code, deployment                            | The “where” |
+| [gq](https://github.com/NewGraphEnvironment/gq)                     | Cartographic style management across QGIS, tmap, leaflet, web | The “look”  |
 
 **Adaptive management:** Conventions evolve from real project work, not
 theory. When a pattern is learned or refined during project work,
@@ -1057,6 +1130,115 @@ Scripts and logs live together: `scripts/<module>/logs/`
 | Fish passage field/reporting              | **Fish Passage 2025 (#6)**            |
 | Restoration planning                      | **Aquatic Restoration Planning (#5)** |
 | QGIS, Mergin, field forms                 | **Collaborative GIS (#3)**            |
+
+# Planning Conventions
+
+How Claude manages structured planning for complex tasks using
+planning-with-files (PWF).
+
+## When to Plan
+
+Use PWF when a task has multiple phases, requires research, or involves
+more than ~5 tool calls. Triggers: - User says “let’s plan this”, “plan
+mode”, “use planning”, or invokes `/planning-init` - Complex issue work
+begins (multi-step, uncertain approach) - Claude judges the task
+warrants structured tracking
+
+Skip planning for single-file edits, quick fixes, or tasks with obvious
+next steps.
+
+## The Workflow
+
+1.  **Explore first** — Enter plan mode (read-only). Read code, trace
+    paths, understand the problem before proposing anything.
+2.  **Plan to files** — Write the plan into 3 files in
+    `planning/active/`:
+    - `task_plan.md` — Phases with checkbox tasks
+    - `findings.md` — Research, discoveries, technical analysis
+    - `progress.md` — Session log with timestamps and commit refs
+3.  **Commit the plan** — Commit the planning files before starting
+    implementation. This is the baseline.
+4.  **Work in atomic commits** — Each commit bundles code changes WITH
+    checkbox updates in the planning files. The diff shows both what was
+    done and the checkbox marking it done.
+5.  **Code check before commit** — Run `/code-check` on staged diffs
+    before committing. Don’t mark a task done until the diff passes
+    review.
+6.  **Archive when complete** — Move `planning/active/` to
+    `planning/archive/` via `/planning-archive`. Write a README.md in
+    the archive directory with a one-paragraph outcome summary and
+    closing commit/PR ref — future sessions scan these to catch up fast.
+
+## Atomic Commits (Critical)
+
+Every commit that completes a planned task MUST include: - The
+code/script changes - The checkbox update in `task_plan.md` (`- [ ]` -\>
+`- [x]`) - A progress entry in `progress.md` if meaningful
+
+This creates a git audit trail where `git log -- planning/` tells the
+full story. Each commit is self-documenting — you can backtrack with git
+and understand everything that happened.
+
+## File Formats
+
+### task_plan.md
+
+Phases with checkboxes. This is the core tracking file.
+
+``` markdown
+# Task Plan
+
+## Phase 1: [Name]
+- [ ] Task description
+- [ ] Another task
+
+## Phase 2: [Name]
+- [ ] Task description
+```
+
+Mark tasks done as they’re completed: `- [x] Task description`
+
+### findings.md
+
+Append-only research log. Discoveries, technical analysis, things
+learned.
+
+``` markdown
+# Findings
+
+## [Topic]
+[What was found, with source/date]
+```
+
+### progress.md
+
+Session entries with commit references.
+
+``` markdown
+# Progress
+
+## Session YYYY-MM-DD
+- Completed: [items]
+- Commits: [refs]
+- Next: [items]
+```
+
+## Directory Structure
+
+    planning/
+      active/          <- Current work (3 PWF files)
+      archive/         <- Completed issues
+        YYYY-MM-issue-N-slug/
+
+If `planning/` doesn’t exist in the repo, run `/planning-init` first.
+
+## Skills
+
+| Skill               | When to use                                        |
+|---------------------|----------------------------------------------------|
+| `/planning-init`    | First time in a repo — creates directory structure |
+| `/planning-update`  | Mid-session — sync checkboxes and progress         |
+| `/planning-archive` | Issue complete — archive and create fresh active/  |
 
 # R Package Development Conventions
 
