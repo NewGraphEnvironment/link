@@ -580,51 +580,6 @@ fresh:::`.frs_run_connectivity`(conn,
   verbose = TRUE)
 
 # ===========================================================================
-# Step 7b: Stream order exception for rearing
-# ===========================================================================
-# bcfishpass: first-order streams with parent order >= 5 bypass rearing cw minimum.
-# Applied to BT, CH, CO, ST, WCT. Post-classification adjustment since the rules
-# YAML can't express this yet. Adds rearing = TRUE for segments that:
-#   - are accessible (already in habitat table with accessible = TRUE)
-#   - meet rearing gradient threshold
-#   - have stream_order = 1 AND stream_order_parent >= 5
-#   - are on streams/rivers (not lakes/wetlands)
-#   - were NOT already classified as rearing (excluded by cw minimum)
-message("\n=== Step 7b: Stream order rearing exception ===")
-# bcfishpass: first-order streams with parent order >= 5 bypass rearing cw minimum.
-# Conditions (from load_habitat_linear_st.sql lines 84-110):
-#   - accessible (no natural barriers downstream for this species)
-#   - gradient <= rear_gradient_max
-#   - waterbody filter: river polygon OR no waterbody record OR stream edge type
-#     (excludes lakes/wetlands which have waterbody records)
-#   - channel_width <= rear_channel_width_max (max still applies)
-#   - stream_order = 1 AND stream_order_parent >= 5 (the bypass)
-soe_species <- intersect(species_compare, c("BT", "CH", "CO", "ST", "WCT"))
-for (sp in soe_species) {
-  ps <- params_obj[[sp]]
-  rear_grad <- ps$rear_gradient_max
-  rear_cw_max <- ps$rear_channel_width_max
-  if (is.null(rear_grad) || is.null(rear_cw_max)) next
-  n_added <- DBI::dbExecute(conn, sprintf("
-    UPDATE fresh.streams_habitat h
-    SET rearing = TRUE
-    FROM fresh.streams s
-    LEFT JOIN whse_basemapping.fwa_waterbodies wb ON s.waterbody_key = wb.waterbody_key
-    WHERE h.id_segment = s.id_segment
-      AND h.species_code = '%s'
-      AND h.accessible = TRUE
-      AND h.rearing IS NOT TRUE
-      AND s.gradient <= %s
-      AND (wb.waterbody_type = 'R'
-           OR wb.waterbody_type IS NULL
-           OR s.edge_type IN (1000, 1100, 2000, 2300))
-      AND s.channel_width <= %s
-      AND s.stream_order = 1
-      AND s.stream_order_parent >= 5", sp, rear_grad, rear_cw_max))
-  if (n_added > 0) message("  ", sp, ": ", n_added, " segments added by stream order exception")
-}
-
-# ===========================================================================
 # Step 8: Compare
 # ===========================================================================
 message("\n=== Step 8: Compare ===")

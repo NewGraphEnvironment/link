@@ -1,0 +1,200 @@
+ℹ Loading link
+Species for BULK: BT, CH, CO, PK, SK, ST
+=== Step 1: Connect ===
+NOTICE:  schema "working" already exists, skipping
+
+[1] 0
+NOTICE:  schema "fresh" already exists, skipping
+
+[1] 0
+
+=== Step 2: Load crossings ===
+  Crossings: 5568
+  Misc crossings: 0
+
+=== Step 3: Apply overrides ===
+Note: provenance columns not found in CSV (this is OK): reviewer
+Note: provenance columns not found in CSV (this is OK): reviewer, source
+Override validation: working.pscis_fixes vs working.crossings
+  Total overrides:  580
+  Valid (matched):  514
+  Orphans:          66  <-- not found in crossings
+  Duplicates:       0
+Updated 514 of 5568 rows (barrier_status)
+
+Barrier status:
+ barrier_status    n
+      POTENTIAL 3958
+        BARRIER  940
+       PASSABLE  626
+        UNKNOWN   44
+
+=== Step 4: Break sources ===
+  Falls: 37
+  User definite barriers: 87
+
+=== Step 5: Barrier overrides ===
+Note: provenance columns not found in CSV (this is OK): reviewer
+  Barrier definite controls: 4
+[1] 0
+[1] 11657
+  Control passable removals: 0
+[1] 0
+[1] 0
+[1] 55975
+[1] 0
+[1] 55991
+[1] 37
+[1] 87
+  Natural barriers: 56115
+Note: provenance columns not found in CSV (this is OK): reviewer
+  BT: 32 barriers overridden
+  CH: 1 barriers overridden
+  CM: 1 barriers overridden
+  CO: 1 barriers overridden
+  CT: 0 barriers overridden
+  DV: 0 barriers overridden
+  PK: 1 barriers overridden
+  RB: 0 barriers overridden
+  SK: 1 barriers overridden
+  ST: 2 barriers overridden
+  WCT: 0 barriers overridden
+Total barrier overrides: 39 in working.barrier_overrides
+
+=== Step 5b: Per-model non-minimal barriers ===
+[1] 0
+[1] 0
+[1] 0
+[1] 0
+[1] 0
+  bt                  : 23965 -> 3431 minimal
+  ch_cm_co_pk_sk      : 56022 -> 3018 minimal
+  st                  : 39583 -> 3315 minimal
+  wct                 : 39583 -> 3315 minimal
+[1] 0
+[1] 7841
+  Union of minimal positions: 7841
+
+=== Step 6: Sequential breaking ===
+[1] 0
+[1] 0
+[1] 30046
+[1] 0
+[1] 30046
+[1] 0
+  Base segments: 30046
+[1] 0
+[1] 55985
+[1] 0
+[1] 1186
+  Observation breaks: 1186
+[1] 0
+[1] 392
+  Habitat endpoints: 392
+[1] 0
+[1] 5568
+  After observations             : 31184 segments (+1138)
+  After gradient_barriers        : 37160 segments (+5976)
+  After barriers_definite        : 37246 segments (+86)
+  After habitat_endpoints        : 37451 segments (+205)
+  After crossings                : 42842 segments (+5391)
+NOTICE:  relation "streams_id_segment_idx" already exists, skipping
+
+[1] 0
+[1] 0
+[1] 61683
+
+=== Step 7: Classify habitat ===
+NOTICE:  relation "streams_blk_idx" already exists, skipping
+
+NOTICE:  relation "streams_blk_drm_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_lfid_idx" already exists, skipping
+
+NOTICE:  relation "streams_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_id_segment_idx" already exists, skipping
+
+NOTICE:  table "streams_acc_015" does not exist, skipping
+
+  Access 15%%: 16525 accessible (1.8s)
+NOTICE:  table "streams_acc_02" does not exist, skipping
+
+  Access 20%%: 21291 accessible (2s)
+NOTICE:  table "streams_acc_025" does not exist, skipping
+
+  Access 25%%: 26023 accessible (8.1s)
+NOTICE:  table "streams_acc_025_ovr_bt" does not exist, skipping
+
+  BT: 8.5s (26985 accessible, 5719 spawning, 9970 rearing)
+NOTICE:  table "streams_acc_015_ovr_ch" does not exist, skipping
+
+  CH: 2s (16772 accessible, 3914 spawning, 6061 rearing)
+NOTICE:  table "streams_acc_015_ovr_co" does not exist, skipping
+
+  CO: 2s (16772 accessible, 5422 spawning, 7473 rearing)
+NOTICE:  table "streams_acc_015_ovr_pk" does not exist, skipping
+
+  PK: 2s (16772 accessible, 5592 spawning, 0 rearing)
+NOTICE:  table "streams_acc_015_ovr_sk" does not exist, skipping
+
+  SK: 2.2s (16772 accessible, 3727 spawning, 139 rearing)
+NOTICE:  table "streams_acc_02_ovr_st" does not exist, skipping
+
+  ST: 2.4s (22146 accessible, 3985 spawning, 7505 rearing)
+  Classification completed in 35.3 seconds
+NOTICE:  table "frs_clusters_bt" does not exist, skipping
+
+  BT: 615 disconnected removed (9355 rearing remaining, 15.9s)
+NOTICE:  table "frs_clusters_ch" does not exist, skipping
+
+  CH: 706 disconnected removed (5355 rearing remaining, 9.8s)
+NOTICE:  table "frs_clusters_co" does not exist, skipping
+
+  CO: 386 disconnected removed (7087 rearing remaining, 11.6s)
+NOTICE:  table "frs_clusters_sk" does not exist, skipping
+
+  SK: 0 disconnected removed (139 rearing remaining, 0.2s)
+NOTICE:  table "frs_qual_spawn_sk" does not exist, skipping
+
+NOTICE:  table "frs_trace_lfid_sk" does not exist, skipping
+
+  SK: connected waterbody 3727 -> 71
+NOTICE:  table "frs_clusters_st" does not exist, skipping
+
+  ST: 958 disconnected removed (6547 rearing remaining, 13.2s)
+
+=== Step 7b: Stream order rearing exception ===
+  BT: 214 segments added by stream order exception
+  CH: 93 segments added by stream order exception
+  CO: 85 segments added by stream order exception
+  ST: 154 segments added by stream order exception
+
+=== Step 8: Compare ===
+
+--- Comparison (BULK) ---
+ species  habitat    ours     ref diff_pct
+      BT spawning 1904.46 1847.96      3.1
+      BT  rearing 3063.81 3062.85      0.0
+      CH spawning 1277.05 1252.85      1.9
+      CH  rearing 1812.71 1739.82      4.2
+      CO spawning 1822.93 1768.26      3.1
+      CO  rearing 2256.29 2221.69      1.6
+      PK spawning 1893.25 1849.99      2.3
+      PK  rearing    0.00    0.00       NA
+      SK spawning   24.22   24.38     -0.7
+      SK  rearing   64.56   64.56      0.0
+      ST spawning 1304.35 1279.87      1.9
+      ST  rearing 2296.04 2247.54      2.2
+
+All within 5%: TRUE
+
+Done. Total: 181.8 seconds

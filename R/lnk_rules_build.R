@@ -79,6 +79,12 @@ lnk_rules_build <- function(csv,
       tolower(trimws(dimensions$rear_all_edges)) == "yes"
   }
 
+  has_soe <- "rear_stream_order_bypass" %in% names(dimensions)
+  if (has_soe) {
+    dimensions$rear_stream_order_bypass <-
+      tolower(trimws(dimensions$rear_stream_order_bypass)) == "yes"
+  }
+
   # Optional: requires_connected columns (value is the habitat type, not yes/no)
   has_spawn_rc <- "spawn_requires_connected" %in% names(dimensions)
   has_rear_rc <- "rear_requires_connected" %in% names(dimensions)
@@ -151,11 +157,25 @@ lnk_rules_build <- function(csv,
       }
       rear_rules[[1]] <- add_rc(lake_rule, rear_rc, rear_cdm)
     } else {
+      # Stream order bypass: first-order streams with parent order >= 5
+      # bypass rearing channel_width_min
+      soe_bypass <- if (has_soe && d$rear_stream_order_bypass) {
+        list(stream_order = 1L, stream_order_parent_min = 5L)
+      } else {
+        NULL
+      }
+
       if (has_all_edges && d$rear_all_edges) {
-        rear_rules[[length(rear_rules) + 1]] <- add_rc(list(), rear_rc, rear_cdm)
+        rule <- list()
+        if (!is.null(soe_bypass)) rule$channel_width_min_bypass <- soe_bypass
+        rear_rules[[length(rear_rules) + 1]] <- add_rc(rule, rear_rc, rear_cdm)
       } else if (d$rear_stream) {
-        rear_rules[[length(rear_rules) + 1]] <- add_rc(stream_edges, rear_rc, rear_cdm)
-        rear_rules[[length(rear_rules) + 1]] <- add_rc(river_rule, rear_rc, rear_cdm)
+        stream_rule <- stream_edges
+        if (!is.null(soe_bypass)) stream_rule$channel_width_min_bypass <- soe_bypass
+        rear_rules[[length(rear_rules) + 1]] <- add_rc(stream_rule, rear_rc, rear_cdm)
+        river_rule_r <- river_rule
+        if (!is.null(soe_bypass)) river_rule_r$channel_width_min_bypass <- soe_bypass
+        rear_rules[[length(rear_rules) + 1]] <- add_rc(river_rule_r, rear_rc, rear_cdm)
       }
       if (d$rear_wetland) {
         if (edge_types == "categories") {
