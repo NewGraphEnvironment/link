@@ -1,16 +1,26 @@
 # Progress
 
-## Session 2026-04-12/13
-- Discovered non-minimal barrier removal as root cause of segment count gap (149% → 1.3%)
-- Discovered base segment filters (localcode_ltree IS NOT NULL)
-- Built sequential breaking pipeline matching bcfishpass order
-- Proved all species within 5% on ADMS
-- Synced bcfishpass CSVs to link/inst/extdata/bcfishpass/
-- Synced channel_width from tunnel (75,736 field measurements)
-- Synced bcfishpass fork: main = upstream mirror, newgraph = our branch
-- Wired: user_barriers_definite, observation_exclusions, user_crossings_misc
-- Reverted: user_barriers_definite_control (regression, wrong application point)
-- Found missing indexes → 35x classification speedup, filed fresh#150
-- Reopened fresh#147 for BULK SK spawning -39.9%
-- Species now resolved dynamically from parameters_habitat_dimensions_bcfishpass.csv + wsg_species_presence.csv
-- Commits: a4a52aa, 9d0c871
+## Session 2026-04-13 (continued)
+- Tested per-model non-minimal on BABL, ELKR, ADMS — no effect on ST/WCT
+- Tested label_block with crossings — -52% regression, confirmed crossings don't block in bcfishpass
+- Read load_streams_access.sql: access uses ONLY natural barriers, NOT anthropogenic
+- Found bcfishpass access_st bug: checks 'SK' instead of 'ST' (filed bcfishpass#9, link#33)
+- Read load_habitat_linear_st.sql line by line
+- Found stream order exception: tested, +3 points on ST rearing, not the main cause
+- Found rearing waterbody filter OR vs AND — not verified as cause
+- Found three-phase rearing pattern — not verified as cause
+- Read all 8 load_habitat_linear_*.sql files for cross-species comparison
+- **Key lesson: stop guessing from SQL differences, compare segments directly against tunnel**
+- Commits: 88e5af4, 67b67b6, 7b5e888
+
+## Session 2026-04-14
+- Segment-level ST comparison: loaded bcfishpass_ref.st_babl + diff tables for QGIS
+- Found 382/383 bcfishpass-only segments are inaccessible in our system
+- Traced to falls at BLK 360886207 not overridden for ST
+- Root cause: observation_species = "ST" should be "CH;CM;CO;PK;SK;ST"
+- Fix: one CSV cell. ST spawning -22% → +3.8%, rearing -25% → +2.4%
+- Also fixed WCT: added observation_threshold=1, species=WCT (not yet tested)
+- **Key lesson: segment-level comparison finds root causes in minutes, guessing from SQL wastes hours**
+- SK spawning: traced to wrong lake outlet ordering in frs_connected_spawning line 1385
+  ORDER BY downstream_route_measure picks wrong BLK. bcfishpass uses wscode_ltree ordering.
+  Proven: corrected query gives 24.41 km vs bcfishpass 24.38 km (+0.1%)

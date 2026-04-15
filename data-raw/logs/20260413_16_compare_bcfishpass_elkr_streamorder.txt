@@ -1,0 +1,158 @@
+ℹ Loading link
+Species for ELKR: BT, WCT
+=== Step 1: Connect ===
+NOTICE:  schema "working" already exists, skipping
+
+[1] 0
+NOTICE:  schema "fresh" already exists, skipping
+
+[1] 0
+
+=== Step 2: Load crossings ===
+  Crossings: 7305
+  Misc crossings: 1
+
+=== Step 3: Apply overrides ===
+Note: provenance columns not found in CSV (this is OK): reviewer
+Note: provenance columns not found in CSV (this is OK): reviewer, source
+Override validation: working.pscis_fixes vs working.crossings
+  Total overrides:  324
+  Valid (matched):  288
+  Orphans:          36  <-- not found in crossings
+  Duplicates:       0
+Updated 288 of 7306 rows (barrier_status)
+
+Barrier status:
+ barrier_status    n
+      POTENTIAL 6563
+       PASSABLE  408
+        BARRIER  325
+        UNKNOWN   10
+
+=== Step 4: Break sources ===
+  Falls: 41
+  User definite barriers: 7
+
+=== Step 5: Barrier overrides ===
+  Barrier definite controls: 0
+[1] 0
+[1] 10389
+[1] 0
+[1] 0
+[1] 58420
+[1] 0
+[1] 58442
+[1] 41
+[1] 7
+  Natural barriers: 58490
+Note: provenance columns not found in CSV (this is OK): reviewer
+  BT: 30 barriers overridden
+  CH: 0 barriers overridden
+  CM: 0 barriers overridden
+  CO: 0 barriers overridden
+  CT: 0 barriers overridden
+  DV: 0 barriers overridden
+  PK: 0 barriers overridden
+  RB: 0 barriers overridden
+  SK: 0 barriers overridden
+  ST: 0 barriers overridden
+  WCT: 126 barriers overridden
+Total barrier overrides: 156 in working.barrier_overrides
+
+=== Step 5b: Per-model non-minimal barriers ===
+[1] 0
+[1] 0
+[1] 0
+[1] 0
+[1] 0
+  bt                  : 28220 -> 4304 minimal
+  ch_cm_co_pk_sk      : 58478 -> 3213 minimal
+  st                  : 43486 -> 3885 minimal
+  wct                 : 43486 -> 3885 minimal
+WARNING:  could not truncate file "base/16384/65788051": Input/output error
+
+[1] 0
+[1] 9046
+  Union of minimal positions: 9046
+
+=== Step 6: Sequential breaking ===
+[1] 0
+[1] 0
+[1] 23627
+[1] 0
+[1] 23627
+[1] 0
+  Base segments: 23627
+[1] 0
+[1] 58437
+[1] 0
+[1] 1925
+  Observation breaks: 1925
+[1] 0
+[1] 250
+  Habitat endpoints: 250
+[1] 0
+[1] 7306
+  After observations             : 25489 segments (+1862)
+  After gradient_barriers        : 32276 segments (+6787)
+  After barriers_definite        : 32281 segments (+5)
+  After habitat_endpoints        : 32335 segments (+54)
+  After crossings                : 39437 segments (+7102)
+NOTICE:  relation "streams_id_segment_idx" already exists, skipping
+
+[1] 0
+[1] 0
+[1] 65803
+
+=== Step 7: Classify habitat ===
+NOTICE:  relation "streams_blk_idx" already exists, skipping
+
+NOTICE:  relation "streams_blk_drm_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_lfid_idx" already exists, skipping
+
+NOTICE:  relation "streams_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_id_segment_idx" already exists, skipping
+
+NOTICE:  table "streams_acc_02" does not exist, skipping
+
+  Access 20%%: 14479 accessible (1.5s)
+NOTICE:  table "streams_acc_025" does not exist, skipping
+
+  Access 25%%: 18651 accessible (7.1s)
+NOTICE:  table "streams_acc_025_ovr_bt" does not exist, skipping
+
+  BT: 7.5s (21621 accessible, 6179 spawning, 8900 rearing)
+NOTICE:  table "streams_acc_02_ovr_wct" does not exist, skipping
+
+  WCT: 1.9s (16624 accessible, 5970 spawning, 7456 rearing)
+  Classification completed in 22.1 seconds
+NOTICE:  table "frs_clusters_wct" does not exist, skipping
+
+  WCT: 332 disconnected removed (7124 rearing remaining, 18.7s)
+
+=== Step 7b: Stream order rearing exception ===
+  BT: 78 segments added by stream order exception
+  WCT: 75 segments added by stream order exception
+
+=== Step 8: Compare ===
+
+--- Comparison (ELKR) ---
+ species  habitat    ours     ref diff_pct
+      BT spawning 1549.07 1498.02      3.4
+      BT  rearing 2254.65 2104.67      7.1
+     WCT spawning 1486.76 1538.55     -3.4
+     WCT  rearing 1809.52 1888.91     -4.2
+
+All within 5%: FALSE
+
+Done. Total: 150.7 seconds

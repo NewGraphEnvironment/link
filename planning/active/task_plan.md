@@ -1,39 +1,41 @@
-# Task Plan: bcfishpass comparison — wire remaining CSVs + lnk_habitat (#16)
+# Task Plan: ST/WCT classification gap (#31)
 
 ## Goal
-Close the remaining +1-3% gap, wire all bcfishpass CSVs, establish `lnk_habitat(config = "bcfishpass")` as province-wide reproducible pipeline.
+Identify and close the ST -22% spawning / -25% rearing gap on BABL, WCT -4% on ELKR.
 
 ## Status
-ADMS: all within 5% (best: CH +0.5%). BULK: most within 5%, SK spawning -39.9% (fresh#147).
+- Per-model non-minimal: tested, no effect on ST/WCT
+- label_block with crossings: tested, -52% regression (crossings don't block in bcfishpass)
+- Stream order exception: tested, closed 3 points on ST rearing (-28% → -25%)
+- Root cause NOT confirmed. Hypotheses tested and eliminated. Need segment-level comparison.
 
-## Phase 1: Wire remaining CSVs (compare_bcfishpass.R)
-- [x] user_barriers_definite — break source + access barrier
-- [x] observation_exclusions — filter obs before breaking
-- [x] user_crossings_misc — extra crossings
-- [ ] user_barriers_definite_control — deferred to lnk_habitat. bcfishpass applies at per-model barrier table build (barriers_gradient.sql, model_access_*.sql), not during override. Needs per-model architecture.
-- [ ] CABD CSVs — require cabd schema (dams/waterfalls from Canadian Aquatic Barriers Database). Not loaded on Docker. Falls come from fresh::falls.csv instead. Deferred until CABD is loaded or falls source is aligned.
-- [ ] pscis_modelledcrossings_streams_xref — GPS corrections. Affects crossing-to-stream assignment via lnk_match, not break positions. Matters for lnk_aggregate (per-crossing rollup), not habitat km totals.
+## Phase 1: Segment-level ST comparison on BABL
+- [x] Query tunnel: bcfishpass ST segments → bcfishpass_ref.st_babl (2,334 rows with geometry)
+- [x] Query local: our ST classification → bcfishpass_ref.st_babl_ours (31,580 rows)
+- [x] Diff: 223 bcfishpass-only spawning segments (87.9 km), 688 bcfishpass-only rearing (277.7 km)
+- [x] For mismatches: 382/383 are inaccessible in our system. Falls at BLK 360886207 blocks them.
+- [x] Root cause: observation_species for ST was "ST" only. bcfishpass counts all salmon+steelhead.
+- [x] Fix: one CSV cell. ST spawning -22% → +3.8%, ST rearing -25% → +2.4%.
 
-## Phase 2: Performance + correctness
-- [x] WSG filter on breaks table (61k → 27k)
-- [x] .frs_index_working on input tables (35x classification speedup, fresh#150 merged in 0.13.4)
-- [x] Test on 4 WSGs: ADMS, BULK, BABL, ELKR
-- [x] Root cause of ST/WCT/BT gaps: per-model non-minimal removal needed (#31)
-- [x] Document user_barriers_definite_control: applies at per-model barrier build, deferred to #31
+## Phase 2: WCT + ELKR verification
+- [ ] Run ELKR with WCT observation override fix
+- [ ] Run BULK with ST fix
 
-## Phase 3: lnk_habitat function
-- [ ] Design config system (named bundles in inst/extdata/configs/)
-- [ ] lnk_habitat(conn, wsg, config) wrapping full DAG
-- [ ] lnk_stamp() provenance recording
-- [ ] GitHub Action for bcfishpass CSV sync
+## Phase 3: SK spawning segment-level comparison
+- [ ] Same approach: dump bcfishpass SK spawning segments for BULK/BABL
+- [ ] Diff against ours
+- [ ] Identify whether it's access, classification, or cluster algorithm
 
-## Phase 4: Fresh issues (parallel terminal)
-- [ ] fresh#150 — frs_habitat_classify index input tables
-- [ ] fresh#147 — SK spawning BULK regression
-- [ ] frs_break_minimal — extract non-minimal removal to function
-- [ ] GENERATED id_segment in frs_col_generate
-- [ ] .frs_index_working IF NOT EXISTS
+## Tested and eliminated
+- Per-model non-minimal barrier removal (no effect)
+- label_block with crossings (-52%, crossings don't block access in bcfishpass)
+- Stream order exception (3 points, not the main cause)
+- Thresholds (spawn_gradient_max, rear_gradient_max, channel_width ranges — all match exactly)
+- Access gating (bcfishpass uses only natural barriers, same as us)
+
+## Filed
+- NewGraphEnvironment/bcfishpass#9 — access_st checks 'SK' instead of 'ST' (copy-paste bug)
+- NewGraphEnvironment/link#33 — reference to bcfishpass#9
 
 ## Versions
-- fresh: 0.13.3, bcfishpass: v0.5.0 (CSVs synced 2026-04-13 @ e485fe4), link: 0.1.0
-- fwapg: Docker (FWA 20240830, channel_width synced from tunnel 2026-04-13)
+- fresh: 0.13.4, bcfishpass: v0.5.0, link: 0.1.0

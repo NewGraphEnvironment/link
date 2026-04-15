@@ -267,34 +267,86 @@ lnk_barrier_overrides(conn,
   to = "working.barrier_overrides")
 
 # ===========================================================================
-# Step 5b: Remove non-minimal barriers from break source
+# Step 5b: Per-model non-minimal barrier removal
 # ===========================================================================
-# bcfishpass keeps only the most-downstream barrier per accessible path.
-# A barrier is non-minimal if another barrier in the same table is downstream.
-# This dramatically reduces break positions (e.g., 27k -> 665 for salmon in ADMS).
-# The natural_barriers table (for overrides) retains the full set.
-message("\n=== Step 5b: Remove non-minimal barriers ===")
+# bcfishpass builds separate barrier tables per species group, each with
+# different gradient classes. Non-minimal removal runs within each model.
+# The union of all per-model minimal sets becomes the segmentation breaks.
+message("\n=== Step 5b: Per-model non-minimal barriers ===")
+
+# Index the enriched barriers for fwa_upstream
 DBI::dbExecute(conn, "CREATE INDEX IF NOT EXISTS gbr_blk_idx ON working.gradient_barriers_raw (blue_line_key)")
 DBI::dbExecute(conn, "CREATE INDEX IF NOT EXISTS gbr_ws_gidx ON working.gradient_barriers_raw USING gist (wscode_ltree)")
 DBI::dbExecute(conn, "CREATE INDEX IF NOT EXISTS gbr_ws_bidx ON working.gradient_barriers_raw USING btree (wscode_ltree)")
 DBI::dbExecute(conn, "CREATE INDEX IF NOT EXISTS gbr_lc_gidx ON working.gradient_barriers_raw USING gist (localcode_ltree)")
 DBI::dbExecute(conn, "CREATE INDEX IF NOT EXISTS gbr_lc_bidx ON working.gradient_barriers_raw USING btree (localcode_ltree)")
 
-n_before <- DBI::dbGetQuery(conn, "SELECT count(*) FROM working.gradient_barriers_raw")[[1]]
-DBI::dbExecute(conn, "
-  DELETE FROM working.gradient_barriers_raw a
-  WHERE EXISTS (
-    SELECT 1 FROM working.gradient_barriers_raw b
-    WHERE b.ctid != a.ctid
-      AND fwa_upstream(
-        b.blue_line_key, b.downstream_route_measure,
-        b.wscode_ltree, b.localcode_ltree,
-        a.blue_line_key, a.downstream_route_measure,
-        a.wscode_ltree, a.localcode_ltree,
-        false, 1)
-  )")
-n_after <- DBI::dbGetQuery(conn, "SELECT count(*) FROM working.gradient_barriers_raw")[[1]]
-message("  Non-minimal removed: ", n_before - n_after, " (", n_before, " -> ", n_after, ")")
+# Per-model gradient classes (matching bcfishpass model_access_*.sql)
+models <- list(
+  bt              = c(2500, 3000),
+  ch_cm_co_pk_sk  = c(1500, 2000, 2500, 3000),
+  st              = c(2000, 2500, 3000),
+  wct             = c(2000, 2500, 3000)
+)
+
+# Build per-model barrier tables, remove non-minimal within each, collect minimal positions
+all_minimal <- character(0)
+for (model_name in names(models)) {
+  classes <- models[[model_name]]
+  class_filter <- paste(classes, collapse = ", ")
+  model_tbl <- paste0("working.barriers_", model_name)
+
+  # Create model table: gradient barriers + falls + definite barriers
+  DBI::dbExecute(conn, sprintf("DROP TABLE IF EXISTS %s", model_tbl))
+  DBI::dbExecute(conn, sprintf("
+    CREATE TABLE %s AS
+    SELECT blue_line_key, downstream_route_measure, wscode_ltree, localcode_ltree
+    FROM working.gradient_barriers_raw
+    WHERE gradient_class IN (%s)
+    UNION ALL
+    SELECT f.blue_line_key, f.downstream_route_measure,
+      s.wscode_ltree, s.localcode_ltree
+    FROM working.falls f
+    JOIN whse_basemapping.fwa_stream_networks_sp s
+      ON f.blue_line_key = s.blue_line_key
+      AND f.downstream_route_measure >= s.downstream_route_measure
+      AND f.downstream_route_measure < s.upstream_route_measure
+    WHERE s.watershed_group_code = '%s'", model_tbl, class_filter, wsg))
+
+  # Index for non-minimal removal
+  DBI::dbExecute(conn, sprintf("CREATE INDEX ON %s (blue_line_key)", model_tbl))
+  DBI::dbExecute(conn, sprintf("CREATE INDEX ON %s USING gist (wscode_ltree)", model_tbl))
+  DBI::dbExecute(conn, sprintf("CREATE INDEX ON %s USING btree (wscode_ltree)", model_tbl))
+  DBI::dbExecute(conn, sprintf("CREATE INDEX ON %s USING gist (localcode_ltree)", model_tbl))
+  DBI::dbExecute(conn, sprintf("CREATE INDEX ON %s USING btree (localcode_ltree)", model_tbl))
+
+  n_pre <- DBI::dbGetQuery(conn, sprintf("SELECT count(*) FROM %s", model_tbl))[[1]]
+  DBI::dbExecute(conn, sprintf("
+    DELETE FROM %s a
+    WHERE EXISTS (
+      SELECT 1 FROM %s b
+      WHERE b.ctid != a.ctid
+        AND fwa_upstream(
+          b.blue_line_key, b.downstream_route_measure,
+          b.wscode_ltree, b.localcode_ltree,
+          a.blue_line_key, a.downstream_route_measure,
+          a.wscode_ltree, a.localcode_ltree,
+          false, 1)
+    )", model_tbl, model_tbl))
+  n_post <- DBI::dbGetQuery(conn, sprintf("SELECT count(*) FROM %s", model_tbl))[[1]]
+  message(sprintf("  %-20s: %s -> %s minimal", model_name, n_pre, n_post))
+  all_minimal <- c(all_minimal, model_tbl)
+}
+
+# Union all per-model minimal positions into one table for segmentation
+DBI::dbExecute(conn, "DROP TABLE IF EXISTS working.gradient_barriers_minimal")
+union_sql <- paste(sprintf(
+  "SELECT DISTINCT blue_line_key, downstream_route_measure FROM %s", all_minimal),
+  collapse = " UNION ")
+DBI::dbExecute(conn, sprintf(
+  "CREATE TABLE working.gradient_barriers_minimal AS %s", union_sql))
+n_union <- DBI::dbGetQuery(conn, "SELECT count(*) FROM working.gradient_barriers_minimal")[[1]]
+message("  Union of minimal positions: ", n_union)
 
 # ===========================================================================
 # Step 6: Load base segments + sequential breaking
@@ -321,6 +373,12 @@ fresh::frs_col_join(conn, "fresh.streams",
   from = "fwa_stream_networks_channel_width",
   cols = c("channel_width", "channel_width_source"),
   by = "linear_feature_id")
+
+# Stream order parent (for rearing channel width bypass)
+fresh::frs_col_join(conn, "fresh.streams",
+  from = "fwa_stream_networks_order_parent",
+  cols = "stream_order_parent",
+  by = "blue_line_key")
 
 # GENERATED columns for gradient/measures/length
 fresh::frs_col_generate(conn, "fresh.streams")
@@ -410,7 +468,7 @@ reassign_id <- function(conn) {
 # Sequential breaking — bcfishpass order
 break_sources <- list(
   list(name = "observations",            table = "working.observations_breaks"),
-  list(name = "gradient_barriers",       table = "working.gradient_barriers_raw"),
+  list(name = "gradient_barriers",       table = "working.gradient_barriers_minimal"),
   list(name = "barriers_definite",       table = "working.barriers_definite"),
   list(name = "habitat_endpoints",       table = "working.habitat_endpoints"),
   list(name = "crossings",              table = "working.crossings_breaks")
@@ -503,7 +561,7 @@ fresh::frs_habitat_classify(conn,
     rules_yaml = rules_path),
   params_fresh = params_fresh_df,
   gate = TRUE,
-  label_block = "blocked",
+  label_block = "blocked",  # crossings need anthropogenic barrier overrides before they can block
   barrier_overrides = "working.barrier_overrides",
   verbose = TRUE)
 elapsed <- (proc.time() - t0)["elapsed"]
@@ -520,6 +578,51 @@ fresh:::`.frs_run_connectivity`(conn,
   params = params_obj,
   params_fresh = params_fresh_df,
   verbose = TRUE)
+
+# ===========================================================================
+# Step 7b: Stream order exception for rearing
+# ===========================================================================
+# bcfishpass: first-order streams with parent order >= 5 bypass rearing cw minimum.
+# Applied to BT, CH, CO, ST, WCT. Post-classification adjustment since the rules
+# YAML can't express this yet. Adds rearing = TRUE for segments that:
+#   - are accessible (already in habitat table with accessible = TRUE)
+#   - meet rearing gradient threshold
+#   - have stream_order = 1 AND stream_order_parent >= 5
+#   - are on streams/rivers (not lakes/wetlands)
+#   - were NOT already classified as rearing (excluded by cw minimum)
+message("\n=== Step 7b: Stream order rearing exception ===")
+# bcfishpass: first-order streams with parent order >= 5 bypass rearing cw minimum.
+# Conditions (from load_habitat_linear_st.sql lines 84-110):
+#   - accessible (no natural barriers downstream for this species)
+#   - gradient <= rear_gradient_max
+#   - waterbody filter: river polygon OR no waterbody record OR stream edge type
+#     (excludes lakes/wetlands which have waterbody records)
+#   - channel_width <= rear_channel_width_max (max still applies)
+#   - stream_order = 1 AND stream_order_parent >= 5 (the bypass)
+soe_species <- intersect(species_compare, c("BT", "CH", "CO", "ST", "WCT"))
+for (sp in soe_species) {
+  ps <- params_obj[[sp]]
+  rear_grad <- ps$rear_gradient_max
+  rear_cw_max <- ps$rear_channel_width_max
+  if (is.null(rear_grad) || is.null(rear_cw_max)) next
+  n_added <- DBI::dbExecute(conn, sprintf("
+    UPDATE fresh.streams_habitat h
+    SET rearing = TRUE
+    FROM fresh.streams s
+    LEFT JOIN whse_basemapping.fwa_waterbodies wb ON s.waterbody_key = wb.waterbody_key
+    WHERE h.id_segment = s.id_segment
+      AND h.species_code = '%s'
+      AND h.accessible = TRUE
+      AND h.rearing IS NOT TRUE
+      AND s.gradient <= %s
+      AND (wb.waterbody_type = 'R'
+           OR wb.waterbody_type IS NULL
+           OR s.edge_type IN (1000, 1100, 2000, 2300))
+      AND s.channel_width <= %s
+      AND s.stream_order = 1
+      AND s.stream_order_parent >= 5", sp, rear_grad, rear_cw_max))
+  if (n_added > 0) message("  ", sp, ": ", n_added, " segments added by stream order exception")
+}
 
 # ===========================================================================
 # Step 8: Compare
