@@ -17,16 +17,18 @@ Unblocks `_targets.R` (link#38).
 
 ## Phase 2: Loader function
 
-- [ ] Write `R/lnk_config.R` — the loader, returns `lnk_config` S3 list
-- [ ] Implement manifest validation (missing files, wrong keys, bad CSVs)
-- [ ] Define the return list slot names and types
-- [ ] Runnable example showing inspection of the loaded object
+- [x] Write `R/lnk_config.R` — the loader, returns `lnk_config` S3 list
+- [x] Implement manifest validation (missing files, wrong keys, bad CSVs)
+- [x] Define the return list slot names and types
+- [x] Runnable example showing inspection of the loaded object
+- [x] Add `yaml` to DESCRIPTION Imports
+- [x] Move `%||%` helper into `R/utils.R`
 
 ## Phase 3: Tests
 
-- [ ] Unit tests: identifier validation, missing manifest, missing referenced file, invalid yaml, missing column in a CSV
-- [ ] Integration tests: load `"bcfishpass"` via name, via path, return shape checks
-- [ ] Full test suite green
+- [x] Unit tests: identifier validation, missing manifest, missing referenced file, missing required keys, missing required files entries
+- [x] Integration tests: load `"bcfishpass"` via name, via path, return shape checks, print method
+- [x] Full test suite green (146 / 146 passing)
 
 ## Phase 4: Seed default variant
 

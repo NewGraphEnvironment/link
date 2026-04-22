@@ -4,6 +4,11 @@ template:
   bootstrap: 5
 
 reference:
+  - title: Configs
+    desc: Load a pipeline config bundle (rules, parameters, overrides)
+    contents:
+      - lnk_config
+
   - title: Thresholds
     desc: Configurable scoring defaults
     contents:
