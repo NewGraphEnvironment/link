@@ -45,4 +45,8 @@ lnk_pipeline_setup(conn, "working_bulk", overwrite = TRUE)
 DBI::dbDisconnect(conn)
 }
 }
+\seealso{
+Other pipeline: 
+\code{\link{lnk_pipeline_load}()}
+}
 \concept{pipeline}

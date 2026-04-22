@@ -19,7 +19,7 @@ Helpers (`lnk_habitat_*`) go in `R/` as exported package functions — generic b
 Break the 635-line script into small named functions (one per pipeline phase). Canonical signature `(conn, aoi, cfg, schema)` — `aoi` follows fresh convention (accepts a WSG code today; extends to ltree filters, sf polygons, mapsheets later). `setup` is the only outlier: `(conn, schema, overwrite)`.
 
 - [x] `R/lnk_pipeline_setup.R` — create working schema, ensure `fresh` schema
-- [ ] `R/lnk_pipeline_load.R` — crossings + overrides + barrier skip list (wraps `lnk_load`, `lnk_override`, `lnk_barrier_overrides`)
+- [x] `R/lnk_pipeline_load.R` — crossings + modelled fixes + PSCIS status overrides. Falls, definite barriers, observation exclusions, habitat classification moved to `prepare` (load stays focused on anthropogenic crossings)
 - [ ] `R/lnk_pipeline_prepare.R` — gradient barriers + non-minimal reduction (`frs_barriers_minimal`) + base segments load
 - [ ] `R/lnk_pipeline_break.R` — sequential `frs_break_apply` over break sources in config-defined order
 - [ ] `R/lnk_pipeline_classify.R` — `frs_habitat_classify` with rules YAML
