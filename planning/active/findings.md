@@ -1,183 +1,89 @@
-# Findings
-
-## Confirmed: what matches bcfishpass
-
-### Base segments
-`localcode_ltree IS NOT NULL`, `edge_type != 6010`, `wscode_ltree <@ '999' IS FALSE`. 10,458 segments on ADMS — exact match.
-
-### Gradient barrier detection
-50,063 barriers across 8 classes, matching to 3/50,063. Island grouping, vertex extraction, 100m lookahead — identical algorithm.
-
-### Non-minimal barrier removal
-`fwa_upstream` self-join deletes barriers with another barrier downstream. ADMS: 27,443 → 677. Without this: +149% segments.
-
-### Sequential breaking
-Observations → gradient barriers → habitat endpoints → crossings. GENERATED columns recompute. 1m guard. Matches bcfishpass `break_streams()`.
-
-### Access model
-bcfishpass uses ONLY natural barriers for access (`barriers_bt_dnstr`, `barriers_ch_cm_co_pk_sk_dnstr`, etc.). Anthropogenic barriers (crossings) are recorded but do NOT block access. Our `label_block = "blocked"` is correct. Tested `label_block = c("blocked", "barrier", "potential")` — caused -52% across all species.
-
-### Channel width
-Synced from tunnel (75,736 field measurements). Tightened results ~0.5%.
-
-### Observation filtering
-Species filtered by `wsg_species_presence.csv`. CT remaps (CCT, ACT, CT/RB). 179 vs 178 unique positions on ADMS.
-
-### Habitat endpoints
-Both `downstream_route_measure` and `upstream_route_measure` as break positions. 143 vs 145 on ADMS.
-
-### SK rearing
-Exact match on all WSGs (0.0%).
-
-## Confirmed: what doesn't match
-
-### ST spawning/rearing -22%/-25% (BABL) — ROOT CAUSE FOUND
-Segment-level comparison: 223 bcfishpass-only ST spawning segments. 382 of 383 overlapping segments are **inaccessible in our system**. The falls at BLK 360886207 DRM 4127 blocks them. Overridden for BT/CH/CM/CO/PK/SK but NOT for ST.
-
-Cause: `observation_species` in `parameters_fresh_bcfishpass.csv` was `"ST"` (only ST obs counted). bcfishpass `model_access_st.sql` counts ALL salmon + steelhead: `'CH','CM','CO','PK','SK','ST'` with threshold >= 5 post-1990. Zero ST obs upstream but salmon obs exist → barrier stays for ST in our system but gets removed in bcfishpass.
-
-Fix: changed `observation_species` for ST from `"ST"` to `"CH;CM;CO;PK;SK;ST"`.
-
-**Result: ST spawning -22.0% → +3.8%, ST rearing -25.4% → +2.4%.** One CSV cell.
-
-### WCT observation override missing
-bcfishpass `model_access_wct.sql` uses WCT-only observations with threshold = 1 (any WCT obs removes barrier). Our CSV had `observation_threshold = NA` (no override). Fixed to threshold = 1, species = WCT.
-
-**Result: WCT spawning -3.4% → +4.0%, WCT rearing -4.2% → +3.0%.** 685 barriers overridden on ELKR.
-
-### SK spawning -22.6% (BULK, after ST/WCT fix)
-Segment-level comparison: 13 bcfishpass-only segments (7.26 km), 9 ours-only (2.16 km). All bcfishpass-only segments are accessible in our system — it's not access. They're on 3 BLKs near rearing lakes (edge_type 1050/1200 wetland/lake + 1000 stream), low gradient, good channel width. The downstream trace from rearing lakes in bcfishpass reaches these segments but our `frs_connected_spawning` doesn't. 
-
-This is a boundary effect at the 3km distance cap. The bcfishpass-only segments on BLK 360846413 are 3.0-3.4 km from the rearing lake outlet (our outlet DRM 9718, segments start at DRM 6362). Different segment boundaries resolve the cumulative distance slightly differently — some segments fall just inside 3km in bcfishpass but just outside in our system.
-
-**Root cause found and proven:** `.frs_connected_spawning` line 1385 picks lake outlets with `ORDER BY s2.downstream_route_measure ASC`. bcfishpass uses `ORDER BY s.waterbody_key, s.wscode_ltree, s.localcode_ltree, s.downstream_route_measure`. DRM ordering picks an arbitrary segment on any BLK with the smallest measure. wscode ordering picks the actual network-topological outlet.
-
-Example: waterbody_key 329064462 spans 10 BLKs. Fresh picks BLK 360504780 DRM 0 (wrong tributary). bcfishpass picks BLK 360846413 DRM 9718 (actual outlet). Downstream trace from the wrong outlet misses 7+ km of spawning habitat.
-
-**Outlet ordering fix (PR #152):** Corrected and merged in fresh 0.13.5. The outlet ordering and partition are now correct.
-
-**Remaining -9.6% (BULK):** 9 segments in the downstream trace that don't meet spawning classification thresholds (3 are edge_type 1050 wetland, 3 have cw < 2.0, 1 has gradient > 0.025). The subtractive filter correctly excludes them.
-
-bcfishpass applies spawning thresholds INSIDE the downstream trace CTE (`load_habitat_linear_sk.sql` lines 100-114 — checks gradient, channel_width, access within the CASE statement). Fresh applies thresholds via `frs_habitat_classify` BEFORE connected_waterbody runs, and the subtractive filter only KEEPS segments already flagged as spawning.
-
-**Proven additive fix:** After subtractive step, ADD spawning for segments in the downstream trace that meet permissive connected rules (gradient <= 0.05, no cw min, no edge_type filter, accessible). Result: 63 → 71 segments, 22.04 → 24.22 km (bcfishpass 24.38 km). From -9.6% to -0.7%.
-
-The `spawn_connected` rules in the YAML define the permissive thresholds for the trace zone. Direction = downstream. The additive step applies these after the standard subtractive filter. Generalizable to any species + waterbody type.
-
-The ST/WCT observation_species fix improved SK from -39.9% to -22.6% by opening access at barriers that previously blocked salmon-accessible habitat.
-
-### BT rearing +5.4% to +7.1% (BULK, ELKR)
-Slightly over. Stream order exception added more segments (+7.1% on ELKR). May be from segment boundary differences or classification predicates we're applying that bcfishpass doesn't.
-
-### WCT -3.4% spawning, -4.2% rearing (ELKR)
-Stream order exception closed 1 point on rearing. Same unknown cause as ST but less severe.
-
-## Tested and eliminated as ST/WCT cause
-
-| Hypothesis | Test | Result |
-|-----------|------|--------|
-| Per-model non-minimal removal | Built bt/salmon/st/wct barrier tables, removed non-minimal within each | No change on ST/WCT |
-| Crossings blocking access | `label_block = c("blocked", "barrier", "potential")` | -52% all species, wrong |
-| Stream order rearing bypass | Post-classification UPDATE for stream_order=1, parent>=5 | +3 points ST rearing, not main cause |
-| Gradient/channel_width thresholds | Compared params_obj vs tunnel parameters_habitat_thresholds | Exact match |
-| Access gating mechanism | Compared access counts | Close (12,728 vs 11,673 ST accessible on BABL) |
-
-## Bugs found
-
-### bcfishpass access_st checks SK instead of ST
-`load_streams_access.sql` line 120: `'SK' = any(obsrvtn_species_codes_upstr)` should be `'ST'`. Copy-paste from SK block. Filed NewGraphEnvironment/bcfishpass#9, referenced in link#33. Does not affect access blocking, only the access code label (1 vs 2).
-
-## Methodology lessons
-
-### Segment-level comparison finds root causes in minutes
-Guessing from SQL differences wasted hours — tested per-model non-minimal, label_block, stream order exception, three-phase rearing. None were the cause. Dumping bcfishpass segments to a local table, diffing by spatial overlap, and checking accessibility on mismatches found the real cause (wrong observation_species) in one query chain. Do this first next time.
-
-### One CSV cell can account for -22%
-The ST gap was entirely from `observation_species = "ST"` instead of `"CH;CM;CO;PK;SK;ST"` in `parameters_fresh_bcfishpass.csv`. Always verify per-species params against the actual bcfishpass SQL before guessing at architectural causes.
-
-### Read the per-model SQL, don't assume symmetry
-Each bcfishpass model_access_*.sql has different observation species lists and thresholds. BT counts all salmon+steelhead (threshold 1). Salmon counts salmon only (threshold 5, post-1990). ST counts all salmon+steelhead (threshold 5, post-1990). WCT counts WCT only (threshold 1, any date). Don't assume they're all the same.
-
-### Network topology ordering matters for spatial queries
-`ORDER BY downstream_route_measure` picks an arbitrary segment with the smallest measure on any BLK. `ORDER BY wscode_ltree, localcode_ltree, downstream_route_measure` picks the actual network-topological position. For lake outlets spanning multiple BLKs, these give completely different results. DRM is a measure within a BLK — it says nothing about where that BLK sits in the network. wscode is the network position. Any DISTINCT ON query that needs "the most downstream point" must use wscode ordering, not DRM.
-
-### Prove before filing
-We guessed three times at the SK cause (per-model non-minimal, label_block, boundary effect) and filed/commented on fresh#147 prematurely. Each guess wasted time and muddied the issue. The segment comparison found the real cause (wrong outlet ordering) in minutes. The proof query (24.41 vs 24.38 km) took one SQL statement. Always prove with data before attributing a cause.
-
-## Unverified hypotheses
-
-### Rearing waterbody filter OR vs AND
-bcfishpass rearing: `wb.waterbody_type = 'R' OR (wb.waterbody_type IS NULL OR edge_type IN (...))` — permissive, includes NULL waterbody.
-bcfishpass spawning: `wb.waterbody_type = 'R' OR (wb.waterbody_type IS NULL AND edge_type IN (...))` — restrictive.
-Not verified whether our rules produce the same SQL. Could add rearing segments on non-standard edge types.
-
-### Three-phase rearing
-bcfishpass rearing runs 3 phases for BT/CH/CO/ST/WCT:
-1. On spawning streams (spawning AND rearing thresholds, no connectivity)
-2. Downstream of spawning (cluster + fwa_upstream trace)
-3. Upstream of spawning (cluster + fwa_downstream trace, 10km, 5% gradient bridge)
-
-Our frs_cluster does a single pass removing disconnected rearing. Not verified whether the three-phase approach classifies more rearing.
-
-### Stream order exception across species
-Applied to BT, CH, CO, ST, WCT in bcfishpass. Tested as post-classification UPDATE. Adds segments but not enough to explain gaps. CM, PK, SK do not have the exception. CM/PK have spawning only (no rearing model).
-
-## Results summary (latest: ST/WCT obs fix + stream order exception)
-
-BULK and ELKR updated with ST/WCT observation_species fix. SK spawning proven +0.1% with outlet ordering fix (not yet in fresh).
-
-| Species | Metric | ADMS | BULK | BABL | ELKR |
-|---------|--------|------|------|------|------|
-| BT | spawn | +1.8% | +3.1% | +4.1% | +3.4% |
-| BT | rear | -0.3% | +1.3% | +0.4% | +1.7% |
-| CH | spawn | +0.5% | +1.9% | +3.8% | — |
-| CH | rear | +2.1% | +6.0% | +6.1% | — |
-| CO | spawn | +1.6% | +3.1% | +4.8% | — |
-| CO | rear | -1.0% | +0.9% | +0.0% | — |
-| PK | spawn | — | +2.3% | — | — |
-| SK | spawn | +2.6% | -22.6% (proven +0.1% with fix) | -13.6% | — |
-| SK | rear | +0.0% | +0.0% | +0.0% | — |
-| ST | spawn | — | +1.9% | +3.8% | — |
-| ST | rear | — | +3.6% | +2.4% | — |
-| WCT | spawn | — | — | — | +4.0% |
-| WCT | rear | — | — | — | +3.0% |
-
-### BT rearing +7% — ROOT CAUSE FOUND
-Segment comparison: 646 ours-only segments (224 km) vs 36 bcfishpass-only (8.6 km). We over-classify. BT `cluster_rearing = FALSE` in our params — no rearing connectivity filter. bcfishpass applies three-phase rearing connectivity to BT (on-spawning, downstream, upstream). 224 km of disconnected rearing included in our results.
-
-Fix: set BT `cluster_rearing = TRUE`. **Result: BT rearing BULK +7.0% → +1.3%, ELKR +7.1% → +1.7%, BABL +2.8% → +0.4%, ADMS +2.6% → -0.3%.** All within 5%.
-
-### CH rearing +6.0% BULK, +6.1% BABL — frs_cluster upstream boolean too permissive
-Segment comparison: 442 ours-only (103 km) vs 26 bcfishpass-only (8.5 km). Breakdown:
-- 14.6 km from stream order exception (we add rearing, bcfishpass doesn't at this stage)
-- 46.7 km on BLKs with CH spawning — should be "on-spawning rearing" in bcfishpass but isn't classified
-- 41.6 km on BLKs WITHOUT CH spawning — our frs_cluster considers connected, bcfishpass three-phase doesn't reach
-
-Our frs_cluster connects rearing to spawning via network proximity (upstream/downstream within bridge_gradient + bridge_distance). bcfishpass three-phase is more restrictive: on-spawning only (Phase 1), then downstream clusters connected to spawning (Phase 2), then upstream clusters within 10km + 5% gradient bridge (Phase 3).
-
-**Root cause confirmed:** frs_cluster checks network proximity (is rearing upstream/downstream of spawning within bridge_distance?). bcfishpass Phase 3 traces downstream from each rearing cluster and STOPS at the first >5% gradient — rearing above a steep section doesn't count even if spawning exists below.
-
-97 of 180 same-BLK CH ours-only segments have a >5% gradient between them and the nearest downstream spawning. bcfishpass excludes them; frs_cluster includes them.
-
-This is a real difference in how connectivity is evaluated. frs_cluster checks "is there spawning within range?" bcfishpass checks "can fish get from this rearing to the spawning without crossing a gradient barrier?" The 5% gradient bridge in frs_cluster is applied to the cluster boundary, not to every segment along the path.
-
-This applies to ALL species with cluster_rearing. The excess is from the upstream boolean check keeping rearing that the downstream path gradient would reject.
-
-Tested `direction = "downstream"`: -93% BT rearing. Too restrictive — loses bcfishpass Phase 2 (rearing downstream of spawning). `direction = "both"` is correct for coverage but the upstream boolean is too permissive.
-
-bcfishpass Phase 3 traces DOWNSTREAM from each rearing cluster to find spawning — linear, path gradient works. Our `frs_cluster_downstream` does the same. But `direction = "both"` combines it with upstream boolean, which overrides downstream rejections.
-
-Not a CSV fix. Needs architectural change: `_both` should require downstream path gradient pass, not OR with upstream boolean. Or: fresh implements bcfishpass-style three-phase rearing (on-spawning, downstream-of-spawning, upstream-of-spawning-traced-downstream). Filed as fresh#153.
-
-Accepted at +6% for now. Only affects CH rearing consistently. Other species within 5%.
-
-### fresh#153 regression: BT rearing -87.9% on ADMS
-The upstream path gradient check in frs_cluster is fundamentally broken. `FWA_Upstream` returns ALL upstream segments (4,770 for one cluster) including tributaries. `row_number` ordered by wscode sorts tributaries before mainstem continuation. A >5% gradient on a distant tributary gets a lower row_number than the adjacent spawning segment on the mainstem, blocking the connection.
-
-Example: segment 15319 (rearing) has spawning at segment 15320 — adjacent, 123m, zero gradient. But `FWA_Upstream` finds 3,217 steep segments across all upstream tributaries. The wscode ordering places some tributary segments between the rearing and the mainstem spawning.
-
-bcfishpass only traces DOWNSTREAM for path gradient (linear, no branching). Upstream uses simple boolean `FWA_Upstream` without path constraints. The upstream check can't do path gradient because the network branches upstream.
-
-Fix: upstream check should use boolean `FWA_Upstream` (exists/not exists) without path gradient. Only the downstream check can apply segment-by-segment gradient constraints because the trace is linear.
-
-### CO spawning: +4.8% BABL — borderline
+# Findings: lnk_config (#37)
+
+## Current state of config data
+
+Scattered across the repo:
+
+- `inst/extdata/parameters_habitat_rules_bcfishpass.yaml` — built rules YAML
+- `inst/extdata/parameters_habitat_dimensions_bcfishpass.csv` — source of rules YAML
+- `inst/extdata/parameters_fresh_bcfishpass.csv` — spawn_gradient_min etc. overrides
+- `inst/extdata/wsg_species_presence.csv` — species per watershed group
+- `inst/extdata/observation_exclusions.csv` — obs IDs to skip
+- Override CSVs — referenced from `data-raw/compare_bcfishpass.R` but live in bcfishpass/data (external)
+- Break order, cluster params, spawn_connected rules — hardcoded in `compare_bcfishpass.R`
+
+## Decision: directory-per-config with manifest
+
+Each variant = `inst/extdata/configs/<name>/` with `config.yaml` manifest pointing at all files.
+
+Benefits:
+- Portable — user can drop a directory anywhere, pass absolute path to `lnk_config()`
+- One place to look — no more hunting across `inst/extdata/` roots
+- Per-variant README — each bundle documents its intent
+
+## Return shape (from issue #37)
+
+```r
+list(
+  name              = "bcfishpass",
+  dir               = "<path to config dir>",
+  rules_yaml        = "<path to rules.yaml>",
+  dimensions_csv    = "<path to dimensions.csv>",
+  parameters_fresh  = tibble(...),
+  wsg_species       = tibble(...),
+  observation_excl  = tibble(...),
+  overrides         = list(
+    modelled_fixes       = tibble(...),
+    pscis_barrier_status = tibble(...),
+    pscis_xref           = tibble(...),
+    barriers_definite    = tibble(...)
+  ),
+  break_order       = c("observations", "gradient_minimal", "habitat_endpoints", "crossings"),
+  cluster_params    = list(three_phase = TRUE, distance_cap = ...),
+  spawn_connected   = list(SK = list(gradient_max = 0.05, ...))
+)
+```
+
+Keys: `name`, `dir`, `rules_yaml`, `dimensions_csv` stay as paths (rules YAML is consumed by `frs_habitat_classify()` as a path, no reason to parse it here). Other CSVs load eagerly into tibbles.
+
+## Manifest schema (first draft)
+
+```yaml
+# inst/extdata/configs/bcfishpass/config.yaml
+name: bcfishpass
+description: |
+  Validation config — reproduces bcfishpass output exactly for regression.
+  Do not modify without running the full comparison suite.
+files:
+  rules_yaml: rules.yaml
+  dimensions_csv: dimensions.csv
+  parameters_fresh: parameters_fresh.csv
+  wsg_species: wsg_species_presence.csv
+  observation_exclusions: observation_exclusions.csv
+overrides:
+  modelled_fixes: overrides/user_modelled_crossing_fixes.csv
+  pscis_barrier_status: overrides/user_pscis_barrier_status.csv
+  pscis_xref: overrides/pscis_modelledcrossings_streams_xref.csv
+  barriers_definite: overrides/user_barriers_definite.csv
+pipeline:
+  break_order: [observations, gradient_minimal, habitat_endpoints, crossings]
+  cluster:
+    three_phase: true
+  spawn_connected:
+    SK:
+      gradient_max: 0.05
+      distance_max: ...
+```
+
+All file paths in the manifest are relative to the config dir.
+
+## Not in scope for #37
+
+- Actually running the pipeline (that's `_targets.R`, link#38)
+- Populating `default/` with real departures from bcfishpass (intermittent streams etc. — #19, #20, #21)
+- Per-WSG overrides (AOI-agnostic; pipeline handles per-WSG)
+
+## Cross-refs
+
+- rtj/docs/distributed-fwapg.md — targets will use the `$schema_working` convention `working_<wsg>`; `lnk_config` is AOI-agnostic, schema naming is the pipeline's job
+- `fresh` package — consumers of `lnk_config` (`frs_habitat_classify`, etc.) are already wired for the file paths/tibbles this returns
