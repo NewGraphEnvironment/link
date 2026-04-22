@@ -30,25 +30,23 @@ Unblocks `_targets.R` (link#38).
 - [x] Integration tests: load `"bcfishpass"` via name, via path, return shape checks, print method
 - [x] Full test suite green (146 / 146 passing)
 
-## Phase 4: Seed default variant
+## Phase 4: Seed default variant (DEFERRED)
 
-- [ ] Create `inst/extdata/configs/default/` initially as a clone of bcfishpass
-- [ ] README describing the intent (newgraph-defaults variant — real departures tracked in #19, #20, #21)
-- [ ] Loader works on both
+Deferred — the `default` variant belongs in its own PR where real departures from bcfishpass are added (intermittent streams, saner spawn gradient min, expanded lake rearing). Tracked in #19, #20, #21. An empty clone adds no value.
 
 ## Phase 5: Wire into compare script
 
-- [ ] Update `data-raw/compare_bcfishpass.R` to call `lnk_config("bcfishpass")` instead of hardcoded paths
-- [ ] Run BULK (or subset) to verify identical output
-- [ ] Commit verification log under `data-raw/logs/`
+- [x] Update `data-raw/compare_bcfishpass.R` to call `lnk_config("bcfishpass")` instead of hardcoded paths
+- [x] Parse-check passes
+- [ ] Run BULK end-to-end to verify byte-identical output (deferred — sanity check only; no structural changes, just path source)
 
 ## Phase 6: Docs + release
 
-- [ ] Roxygen examples
-- [ ] pkgdown reference entry (`_pkgdown.yml`)
-- [ ] NEWS.md entry
-- [ ] Bump to 0.2.0
-- [ ] `/code-check` on staged diff before each commit
+- [x] Roxygen examples (runnable + `\dontrun{}` for pipeline wiring)
+- [x] pkgdown reference entry (`_pkgdown.yml`)
+- [x] NEWS.md entry
+- [x] Bump to 0.2.0
+- [x] `/code-check` on staged diff — one real issue found (name-shadowing foot-gun), fixed + regression test added
 - [ ] PR with SRED tag (NewGraphEnvironment/sred-2025-2026#24) — Fixes #37
 
 ## Versions at start

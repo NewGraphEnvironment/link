@@ -21,10 +21,10 @@ wsg <- if (length(commandArgs(TRUE)) > 0) commandArgs(TRUE)[1] else "ADMS"
 # Sub-basin AOI for fast iteration (NULL = full WSG)
 aoi <- NULL
 # aoi <- "wscode_ltree <@ '400.431358'::ltree"  # ~300 segments, fast
-config_dir <- system.file("extdata", "configs", "bcfishpass", package = "link")
-bcfishpass_data <- file.path(config_dir, "overrides")
-rules_path <- file.path(config_dir, "rules.yaml")
-params_fresh_path <- file.path(config_dir, "parameters_fresh.csv")
+cfg <- link::lnk_config("bcfishpass")
+bcfishpass_data <- file.path(cfg$dir, "overrides")
+rules_path <- cfg$rules_yaml
+params_fresh_df <- cfg$parameters_fresh
 
 # Species from wsg_species_presence — same source bcfishpass uses
 wsg_spp <- read.csv(system.file("extdata", "wsg_species_presence.csv", package = "fresh"),
@@ -35,10 +35,8 @@ species_compare <- toupper(spp_cols[vapply(spp_cols, function(x)
   identical(wsg_row[[x]], "t"), logical(1))])
 # Species to model: from habitat dimensions CSV (defines which species this config covers)
 # Intersect with WSG species presence to get species for this specific watershed
-dims <- read.csv(file.path(config_dir, "dimensions.csv"),
-  stringsAsFactors = FALSE)
+dims <- read.csv(cfg$dimensions_csv, stringsAsFactors = FALSE)
 species_compare <- intersect(unique(dims$species), species_compare)
-params_fresh_df <- read.csv(params_fresh_path, stringsAsFactors = FALSE)
 message("Species for ", wsg, ": ", paste(species_compare, collapse = ", "))
 
 # ===========================================================================

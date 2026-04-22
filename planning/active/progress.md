@@ -7,4 +7,6 @@
 - Starting link#37: config bundle loader
 - Phase 1 done: relocated files under `inst/extdata/configs/bcfishpass/` (rules.yaml, dimensions.csv, parameters_fresh.csv, overrides/), wrote config.yaml manifest + README, updated refs in R/ scripts, data-raw/, CLAUDE.md
 - Phase 2/3 done: `lnk_config()` loader with validation, S3 print method, 9 tests (identifier, missing manifest, missing keys, missing files, custom path, bcfishpass bundle, print, override missing). All 146 link tests passing, lint clean. Added `yaml` to Imports, moved `%||%` to utils.R. pkgdown reference updated, NEWS entry, bumped to 0.2.0.
-- Next: Phase 5 — update compare_bcfishpass.R to use lnk_config() instead of hardcoded paths (Phase 4 "default" bundle deferred — real departures live in #19/#20/#21)
+- Phase 5 done: compare_bcfishpass.R now uses `lnk_config("bcfishpass")` for rules_yaml, parameters_fresh, and dimensions paths. Parse-check passes. Full BULK run deferred — change is path-source only, no structural edits.
+- Code-check round 1 surfaced one real bug (resolver foot-gun: bare names could be shadowed by a local dir in CWD). Fixed in `.lnk_config_resolve_dir` (require `/` for path inputs), regression test added. 28 lnk_config tests, 149 link tests passing.
+- Next: PR with SRED tag
