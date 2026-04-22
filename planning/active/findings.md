@@ -26,7 +26,13 @@ From `rtj/docs/distributed-fwapg.md` (cross-referenced; byte-identical fwapg res
 ## Design decisions
 
 ### Per-phase helpers, not one wrapper
-Six `lnk_habitat_*.R` functions, one per DAG phase. Each is a clear unit; each can be targeted independently.
+Six `lnk_pipeline_*.R` functions, one per DAG phase. Each is a clear unit; each can be targeted independently. Phase names read as verbs: setup → load → prepare → break → classify → connect.
+
+### `aoi` not `wsg` for the partition param
+`wsg` hardcodes the bcfishpass WSG partition scheme. Fresh already uses `aoi` as the generic spatial filter (accepts WSG code, ltree, sf polygon). Link helpers inherit this convention. Today `aoi = "BULK"` works the same as the old `wsg = "BULK"`; tomorrow it extends to mapsheets, HUC basins, custom polygons.
+
+### Prefix is `lnk_pipeline_*`
+Not `lnk_habitat_*` — only one of six phases (classify) is actually about habitat. The others are setup, loading, network prep, segmenting, connectivity. `lnk_pipeline_*` reads as "these are pipeline building blocks."
 
 ### Static branching (`tar_map`) vs dynamic (`pattern = map(wsg)`)
 Use `tar_map`. Static branching produces named targets (`comparison_BULK`, `comparison_ADMS`) — debuggable, inspectable, diffable. Dynamic branching hides per-element names behind indices — harder to trace.

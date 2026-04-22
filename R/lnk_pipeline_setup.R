@@ -1,14 +1,14 @@
-#' Set Up the Working Schema for a Habitat Pipeline Run
+#' Set Up the Working Schema for a Pipeline Run
 #'
 #' Creates the per-run working schema and ensures the `fresh` output
-#' schema exists. Every downstream pipeline helper (`lnk_habitat_*`)
+#' schema exists. Every downstream pipeline helper (`lnk_pipeline_*`)
 #' assumes these schemas are in place.
 #'
-#' When running multiple watershed groups in parallel on the same host,
-#' each run uses its own namespaced working schema (e.g.
-#' `working_bulk`, `working_adms`) so the runs do not collide. The
-#' canonical `_targets.R` call is
-#' `lnk_habitat_setup_schema(conn, paste0("working_", tolower(wsg)))`.
+#' When running multiple AOIs (watershed groups, mapsheets, sub-basins)
+#' in parallel on the same host, each run uses its own namespaced
+#' working schema so the runs do not collide. The caller decides the
+#' schema name — a typical WSG-based choice is
+#' `paste0("working_", tolower(aoi))`.
 #'
 #' @param conn A [DBI::DBIConnection-class] object (localhost fwapg,
 #'   typically from [lnk_db_conn()]).
@@ -20,7 +20,7 @@
 #'
 #' @return `conn` invisibly, for pipe chaining.
 #'
-#' @family habitat pipeline
+#' @family pipeline
 #'
 #' @export
 #'
@@ -28,16 +28,16 @@
 #' \dontrun{
 #' conn <- lnk_db_conn()
 #'
-#' # Single-WSG run, canonical per-WSG schema
-#' lnk_habitat_setup_schema(conn, "working_bulk")
+#' # Single-AOI run, canonical per-WSG schema
+#' lnk_pipeline_setup(conn, "working_bulk")
 #'
 #' # Fresh start: wipe any prior state first
-#' lnk_habitat_setup_schema(conn, "working_bulk", overwrite = TRUE)
+#' lnk_pipeline_setup(conn, "working_bulk", overwrite = TRUE)
 #'
 #' DBI::dbDisconnect(conn)
 #' }
-lnk_habitat_setup_schema <- function(conn, schema = "working",
-                                      overwrite = FALSE) {
+lnk_pipeline_setup <- function(conn, schema = "working",
+                                overwrite = FALSE) {
   .lnk_validate_identifier(schema, "schema")
 
   if (overwrite) {

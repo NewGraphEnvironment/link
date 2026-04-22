@@ -1,19 +1,19 @@
 # -- identifier validation ---------------------------------------------------
 
-test_that("lnk_habitat_setup_schema rejects invalid schema names", {
+test_that("lnk_pipeline_setup rejects invalid schema names", {
   expect_error(
-    lnk_habitat_setup_schema("mock-conn", schema = "bad;name"),
+    lnk_pipeline_setup("mock-conn", schema = "bad;name"),
     "schema"
   )
   expect_error(
-    lnk_habitat_setup_schema("mock-conn", schema = ""),
+    lnk_pipeline_setup("mock-conn", schema = ""),
     "schema"
   )
 })
 
 # -- SQL shape (mocked) ------------------------------------------------------
 
-test_that("lnk_habitat_setup_schema creates working and fresh schemas", {
+test_that("lnk_pipeline_setup creates working and fresh schemas", {
   captured <- character(0)
   local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) {
@@ -21,7 +21,7 @@ test_that("lnk_habitat_setup_schema creates working and fresh schemas", {
       invisible(NULL)
     }
   )
-  lnk_habitat_setup_schema("mock-conn", schema = "working_bulk")
+  lnk_pipeline_setup("mock-conn", schema = "working_bulk")
 
   joined <- paste(captured, collapse = "\n")
   expect_match(joined, "CREATE SCHEMA IF NOT EXISTS working_bulk")
@@ -29,7 +29,7 @@ test_that("lnk_habitat_setup_schema creates working and fresh schemas", {
   expect_false(any(grepl("DROP SCHEMA", captured)))
 })
 
-test_that("lnk_habitat_setup_schema drops schema CASCADE when overwrite is TRUE", {
+test_that("lnk_pipeline_setup drops schema CASCADE when overwrite is TRUE", {
   captured <- character(0)
   local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) {
@@ -37,7 +37,7 @@ test_that("lnk_habitat_setup_schema drops schema CASCADE when overwrite is TRUE"
       invisible(NULL)
     }
   )
-  lnk_habitat_setup_schema("mock-conn",
+  lnk_pipeline_setup("mock-conn",
     schema = "working_bulk", overwrite = TRUE)
 
   joined <- paste(captured, collapse = "\n")
