@@ -1,57 +1,78 @@
-# Task Plan: lnk_config() config bundle loader (#37)
+# Task Plan: _targets.R pipeline (#38)
 
 ## Goal
 
-Create a config abstraction so pipeline variants (bcfishpass validation, newgraph defaults, min-spawn, channel-type-first breaking) stop being copy-paste script forks. Each variant = a directory under `inst/extdata/configs/<name>/` bundled with rules YAML, dimensions CSV, parameters, wsg_species_presence, observation_exclusions, and override CSVs. `lnk_config(name_or_path)` loads the bundle into one list object.
+Replace the 635-line `data-raw/compare_bcfishpass.R` script with a targets-driven pipeline that:
+- Runs each DAG node as a `tar_target()` — inspectable, cacheable, skippable
+- Parallelizes across watershed groups via `tar_map(wsg = c(...))`
+- Regenerates the research doc DAG from `tar_mermaid()`
+- Single-host on M4 first; distributed swap to `crew_controller_group(local=M4, cluster=M1)` is a follow-up after rtj Phase 4
 
-Unblocks `_targets.R` (link#38).
+Uses `lnk_config("bcfishpass")` (shipped in 0.2.0) and `frs_barriers_minimal()` (fresh 0.14.0).
 
-## Phase 1: Directory layout + move existing files
+## Phase 1: Extract helpers from compare_bcfishpass.R
 
-- [x] Design `config.yaml` manifest schema (which files go where, required vs optional)
-- [x] Create `inst/extdata/configs/bcfishpass/` directory
-- [x] Move existing bcfishpass files into it (rules, dimensions, parameters_fresh, wsg_species, observation_exclusions, overrides)
-- [x] Write `inst/extdata/configs/bcfishpass/config.yaml` manifest
-- [x] Write `inst/extdata/configs/bcfishpass/README.md` describing the variant
-- [x] Verify no broken references — grep for old paths across the repo (R scripts, data-raw, CLAUDE.md)
+Break the 635-line script into small named functions (one per pipeline phase). Each takes `(conn, wsg, cfg, schema)` and writes to the worker's localhost DB.
 
-## Phase 2: Loader function
+- [ ] `R/lnk_habitat_setup_schema.R` — create `working_<wsg>` schema, ensure `fresh` schema
+- [ ] `R/lnk_habitat_load_inputs.R` — crossings + overrides + barrier skip list (wraps `lnk_load`, `lnk_override`, `lnk_barrier_overrides`)
+- [ ] `R/lnk_habitat_build_network.R` — gradient barriers + non-minimal reduction (`frs_barriers_minimal`) + base segments load
+- [ ] `R/lnk_habitat_break_segments.R` — sequential `frs_break_apply` over break sources in config-defined order
+- [ ] `R/lnk_habitat_classify.R` — `frs_habitat_classify` with rules YAML
+- [ ] `R/lnk_habitat_cluster.R` — `frs_cluster` + `frs_connected_waterbody`
+- [ ] Each helper has a roxygen docstring, `@noRd` for internal or `@export` if useful standalone
+- [ ] Unit tests where behavior can be stubbed (most are integration-heavy; live DB tests with `skip_if_not(.lnk_db_available(), ...)`)
 
-- [x] Write `R/lnk_config.R` — the loader, returns `lnk_config` S3 list
-- [x] Implement manifest validation (missing files, wrong keys, bad CSVs)
-- [x] Define the return list slot names and types
-- [x] Runnable example showing inspection of the loaded object
-- [x] Add `yaml` to DESCRIPTION Imports
-- [x] Move `%||%` helper into `R/utils.R`
+## Phase 2: Per-WSG target function
 
-## Phase 3: Tests
+- [ ] `R/compare_bcfishpass_wsg.R` — wraps phases, returns small tibble (wsg × species × habitat_type × km × diff_pct)
+- [ ] Pulls comparison diff against `bcfishpass.*` reference tables on localhost
+- [ ] Returns ~10 rows per WSG — KB-scale only, no geometry
+- [ ] Cleans up own schema on exit (namespacing `working_<wsg>` per rtj contract)
 
-- [x] Unit tests: identifier validation, missing manifest, missing referenced file, missing required keys, missing required files entries
-- [x] Integration tests: load `"bcfishpass"` via name, via path, return shape checks, print method
-- [x] Full test suite green (146 / 146 passing)
+## Phase 3: _targets.R orchestrator
 
-## Phase 4: Seed default variant (DEFERRED)
+- [ ] `_targets.R` at repo root with single-host `crew_controller_local()`
+- [ ] `tar_target(cfg, lnk_config("bcfishpass"))` — load config once
+- [ ] `tar_map(values = tibble(wsg = c("ADMS", "BULK", "BABL", "ELKR")))` — per-WSG branch
+- [ ] `tar_target(rollup, ...)` — bind all WSG tibbles
+- [ ] `tar_target(dag_mermaid, writeLines(tar_mermaid(...), ...))` — regenerate research doc DAG
+- [ ] `targets` + `crew` + `tibble` + `dplyr` added to DESCRIPTION Suggests (not Imports — these are pipeline-dev deps, not user-facing)
 
-Deferred — the `default` variant belongs in its own PR where real departures from bcfishpass are added (intermittent streams, saner spawn gradient min, expanded lake rearing). Tracked in #19, #20, #21. An empty clone adds no value.
+## Phase 4: Verify identical output
 
-## Phase 5: Wire into compare script
+- [ ] `tar_make()` runs all 4 WSGs on M4 localhost
+- [ ] Rollup tibble numbers match the research doc (every species within 5%)
+- [ ] Log the run under `data-raw/logs/YYYYMMDD_NN_tar_make-first-run.txt`
 
-- [x] Update `data-raw/compare_bcfishpass.R` to call `lnk_config("bcfishpass")` instead of hardcoded paths
-- [x] Parse-check passes
-- [ ] Run BULK end-to-end to verify byte-identical output (deferred — sanity check only; no structural changes, just path source)
+## Phase 5: Regenerate research doc DAG
 
-## Phase 6: Docs + release
+- [ ] Write `tar_mermaid()` output into `research/bcfishpass_comparison.md` DAG section
+- [ ] Keep the glossary + classDef color-coding for human readability
+- [ ] Verify it still renders cleanly in VS Code preview + GitHub
 
-- [x] Roxygen examples (runnable + `\dontrun{}` for pipeline wiring)
-- [x] pkgdown reference entry (`_pkgdown.yml`)
-- [x] NEWS.md entry
-- [x] Bump to 0.2.0
-- [x] `/code-check` on staged diff — one real issue found (name-shadowing foot-gun), fixed + regression test added
-- [ ] PR with SRED tag (NewGraphEnvironment/sred-2025-2026#24) — Fixes #37
+## Phase 6: Retire compare_bcfishpass.R
+
+- [ ] Delete `data-raw/compare_bcfishpass.R` once verified (git history preserves)
+- [ ] `data-raw/compare_adms.R` — probably also retires, check for uniqueness
+- [ ] Update CLAUDE.md pipeline section — targets not script
+
+## Phase 7: Docs + release
+
+- [ ] Vignette: "Running the comparison pipeline" — `tar_make()`, DAG inspection, rollup
+- [ ] `NEWS.md` entry
+- [ ] Bump to 0.3.0
+- [ ] `/code-check` on staged diffs before each commit
+- [ ] PR with SRED tag (NewGraphEnvironment/sred-2025-2026#24) — Fixes #38
+
+## Follow-up (out of scope for this PR)
+
+- Distributed execution — swap `crew_controller_local()` for `crew_controller_group(local=M4, cluster=M1)` after rtj Phase 4 passes the M4→M1 SSH exec check
+- `configs/default/` variant wired into a second `_targets.R` or CLI arg — tracked via #19/#20/#21 biological decisions
 
 ## Versions at start
 
-- fresh: 0.14.0 (just merged — adds frs_barriers_minimal)
-- link: main (0.1.0, target 0.2.0)
+- fresh: 0.14.0
+- link: main (0.2.0, target 0.3.0)
 - bcfishpass: ea3c5d8
 - fwapg: Docker (FWA 20240830)

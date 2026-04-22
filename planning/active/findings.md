@@ -1,89 +1,72 @@
-# Findings: lnk_config (#37)
+# Findings: _targets.R pipeline (#38)
 
-## Current state of config data
+## Why targets (and not a monolithic lnk_habitat)
 
-Scattered across the repo:
+Earlier session considered a big `lnk_habitat(conn, aoi, config)` wrapper that orchestrates the whole pipeline. Rejected:
 
-- `inst/extdata/parameters_habitat_rules_bcfishpass.yaml` — built rules YAML
-- `inst/extdata/parameters_habitat_dimensions_bcfishpass.csv` — source of rules YAML
-- `inst/extdata/parameters_fresh_bcfishpass.csv` — spawn_gradient_min etc. overrides
-- `inst/extdata/wsg_species_presence.csv` — species per watershed group
-- `inst/extdata/observation_exclusions.csv` — obs IDs to skip
-- Override CSVs — referenced from `data-raw/compare_bcfishpass.R` but live in bcfishpass/data (external)
-- Break order, cluster params, spawn_connected rules — hardcoded in `compare_bcfishpass.R`
+- Hides the DAG that rtj is trying to parallelize
+- Duplicates what `tar_make()` already provides (caching, skipping, parallelism)
+- Turns pipeline variants into if/else branches inside one function rather than separate target graphs
+- Every DAG node collapsed to one black-box call — inspection, debugging, partial reruns all harder
 
-## Decision: directory-per-config with manifest
+Targets solves these natively. `_targets.R` IS the pipeline definition. Each target is a named node. `tar_make()` runs, `tar_visnetwork()` / `tar_mermaid()` visualize, `tar_skip` inherits cache invalidation, parallelism via crew controllers.
 
-Each variant = `inst/extdata/configs/<name>/` with `config.yaml` manifest pointing at all files.
+link still owns interpretation helpers (the `R/lnk_habitat_*.R` phase functions). Those are called BY targets, not instead of it.
 
-Benefits:
-- Portable — user can drop a directory anywhere, pass absolute path to `lnk_config()`
-- One place to look — no more hunting across `inst/extdata/` roots
-- Per-variant README — each bundle documents its intent
+## Architectural constraints from rtj
 
-## Return shape (from issue #37)
+From `rtj/docs/distributed-fwapg.md` (cross-referenced; byte-identical fwapg restored on M1 as of 2026-04-22):
 
+1. **localhost DB per worker** — every worker creates its own `lnk_db_conn()` to localhost. No remote DB chatter over tailnet (latency blows up on hundreds of `dbGetQuery` calls).
+2. **Small returns from `map()` targets** — KB-scale data frames only. No geometry, no raster, no wkb shipped over SSH. Our `compare_bcfishpass_wsg()` returns ~10 rows per WSG.
+3. **M1 is optional** — `crew_controller_group` handles graceful degradation. Target graph has no M1 awareness.
+4. **WSG is the parallelization unit** — ~220 WSGs province-wide, naturally independent. We start with 4 (ADMS, BULK, BABL, ELKR).
+5. **Schema namespacing** — `working_<wsg>` per rtj contract. Prevents parallel workers on the same host from colliding on `working.*`.
+
+## Design decisions
+
+### Per-phase helpers, not one wrapper
+Six `lnk_habitat_*.R` functions, one per DAG phase. Each is a clear unit; each can be targeted independently.
+
+### Static branching (`tar_map`) vs dynamic (`pattern = map(wsg)`)
+Use `tar_map`. Static branching produces named targets (`comparison_BULK`, `comparison_ADMS`) — debuggable, inspectable, diffable. Dynamic branching hides per-element names behind indices — harder to trace.
+
+### Targets in `Suggests`, not `Imports`
+Pipeline-dev dependency, not user-facing. Users who want to run the comparison can `install.packages(c("targets", "crew"))` on demand. `link` itself stays minimal.
+
+### Regenerate the research doc DAG
+`tar_mermaid()` output replaces the hand-written Mermaid in `research/bcfishpass_comparison.md`. Single source of truth. Keep the glossary and `classDef` color-coding — those are human decoration, not pipeline structure.
+
+### `compare_bcfishpass_wsg()` return shape
 ```r
-list(
-  name              = "bcfishpass",
-  dir               = "<path to config dir>",
-  rules_yaml        = "<path to rules.yaml>",
-  dimensions_csv    = "<path to dimensions.csv>",
-  parameters_fresh  = tibble(...),
-  wsg_species       = tibble(...),
-  observation_excl  = tibble(...),
-  overrides         = list(
-    modelled_fixes       = tibble(...),
-    pscis_barrier_status = tibble(...),
-    pscis_xref           = tibble(...),
-    barriers_definite    = tibble(...)
-  ),
-  break_order       = c("observations", "gradient_minimal", "habitat_endpoints", "crossings"),
-  cluster_params    = list(three_phase = TRUE, distance_cap = ...),
-  spawn_connected   = list(SK = list(gradient_max = 0.05, ...))
+tibble::tibble(
+  wsg = "BULK",
+  species = "BT",
+  habitat_type = c("spawning", "rearing"),
+  link_km = c(34.2, 71.8),
+  bcfishpass_km = c(33.1, 73.4),
+  diff_pct = c(+3.3, -2.2)
 )
 ```
+Pulls from fresh's `streams_habitat` table joined against `bcfishpass.streams_habitat_linear_*` reference tables. Both live on the worker's localhost DB (byte-identical dumps on M4 and M1 per rtj).
 
-Keys: `name`, `dir`, `rules_yaml`, `dimensions_csv` stay as paths (rules YAML is consumed by `frs_habitat_classify()` as a path, no reason to parse it here). Other CSVs load eagerly into tibbles.
+## Unknowns to resolve during implementation
 
-## Manifest schema (first draft)
+- How cleanly does `frs_habitat_classify()` accept a `working_<wsg>` schema? Does it assume `working.*`? If so, we need a `working_schema` arg in fresh. If `lnk_habitat_classify` writes to a schema name that fresh doesn't know about, classification may fail.
+- Per-WSG schema cleanup contract — `on.exit(DROP SCHEMA working_<wsg> CASCADE)` inside `compare_bcfishpass_wsg()`, or let the next run drop + recreate?
+- Does `frs_break_apply()` need to know the schema for the streams table, or does the input table name carry it?
 
-```yaml
-# inst/extdata/configs/bcfishpass/config.yaml
-name: bcfishpass
-description: |
-  Validation config — reproduces bcfishpass output exactly for regression.
-  Do not modify without running the full comparison suite.
-files:
-  rules_yaml: rules.yaml
-  dimensions_csv: dimensions.csv
-  parameters_fresh: parameters_fresh.csv
-  wsg_species: wsg_species_presence.csv
-  observation_exclusions: observation_exclusions.csv
-overrides:
-  modelled_fixes: overrides/user_modelled_crossing_fixes.csv
-  pscis_barrier_status: overrides/user_pscis_barrier_status.csv
-  pscis_xref: overrides/pscis_modelledcrossings_streams_xref.csv
-  barriers_definite: overrides/user_barriers_definite.csv
-pipeline:
-  break_order: [observations, gradient_minimal, habitat_endpoints, crossings]
-  cluster:
-    three_phase: true
-  spawn_connected:
-    SK:
-      gradient_max: 0.05
-      distance_max: ...
-```
-
-All file paths in the manifest are relative to the config dir.
-
-## Not in scope for #37
-
-- Actually running the pipeline (that's `_targets.R`, link#38)
-- Populating `default/` with real departures from bcfishpass (intermittent streams etc. — #19, #20, #21)
-- Per-WSG overrides (AOI-agnostic; pipeline handles per-WSG)
+Document findings as discovered.
 
 ## Cross-refs
 
-- rtj/docs/distributed-fwapg.md — targets will use the `$schema_working` convention `working_<wsg>`; `lnk_config` is AOI-agnostic, schema naming is the pipeline's job
-- `fresh` package — consumers of `lnk_config` (`frs_habitat_classify`, etc.) are already wired for the file paths/tibbles this returns
+- rtj/docs/distributed-fwapg.md — architectural source of truth
+- fresh 0.14.0 — `frs_barriers_minimal()` is prerequisite for `lnk_habitat_build_network`
+- link 0.2.0 — `lnk_config()` feeds all phases
+
+## Versions
+
+- fresh: 0.14.0
+- link: main (0.2.0 → 0.3.0)
+- bcfishpass: ea3c5d8
+- fwapg: Docker (FWA 20240830)
