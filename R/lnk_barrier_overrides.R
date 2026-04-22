@@ -31,7 +31,7 @@
 #' @param params Data frame with per-species parameters. Must have columns:
 #'   `species_code`, `observation_threshold`, `observation_date_min`,
 #'   `observation_buffer_m`, `observation_species`. See
-#'   `parameters_fresh_bcfishpass.csv` for format.
+#'   `configs/bcfishpass/parameters_fresh.csv` for format.
 #' @param cols_index Character vector. Column names to index on the
 #'   barriers table for `fwa_upstream()` performance. Indexes are created
 #'   `IF NOT EXISTS`. Default `c("blue_line_key", "wscode_ltree",
@@ -45,8 +45,8 @@
 #' \dontrun{
 #' conn <- lnk_db_conn()
 #'
-#' params <- read.csv(system.file("extdata",
-#'   "parameters_fresh_bcfishpass.csv", package = "link"))
+#' params <- read.csv(system.file("extdata", "configs", "bcfishpass",
+#'   "parameters_fresh.csv", package = "link"))
 #'
 #' lnk_barrier_overrides(conn,
 #'   barriers = "fresh.streams_breaks",

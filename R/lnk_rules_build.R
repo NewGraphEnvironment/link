@@ -27,10 +27,11 @@
 #'   to = "inst/extdata/parameters_habitat_rules.yaml"
 #' )
 #'
-#' # bcfishpass v0.5.0 comparison
+#' # bcfishpass comparison variant
 #' lnk_rules_build(
-#'   csv = system.file("extdata", "parameters_habitat_dimensions_bcfishpass.csv", package = "link"),
-#'   to = "inst/extdata/parameters_habitat_rules_bcfishpass.yaml",
+#'   csv = system.file("extdata", "configs", "bcfishpass", "dimensions.csv",
+#'                     package = "link"),
+#'   to = "inst/extdata/configs/bcfishpass/rules.yaml",
 #'   edge_types = "explicit"
 #' )
 #' }

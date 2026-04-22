@@ -8,12 +8,12 @@ Unblocks `_targets.R` (link#38).
 
 ## Phase 1: Directory layout + move existing files
 
-- [ ] Design `config.yaml` manifest schema (which files go where, required vs optional)
-- [ ] Create `inst/extdata/configs/bcfishpass/` directory
-- [ ] Move existing bcfishpass files into it (rules, dimensions, parameters_fresh, wsg_species, observation_exclusions, overrides)
-- [ ] Write `inst/extdata/configs/bcfishpass/config.yaml` manifest
-- [ ] Write `inst/extdata/configs/bcfishpass/README.md` describing the variant
-- [ ] Verify no broken references — grep for old paths across the repo
+- [x] Design `config.yaml` manifest schema (which files go where, required vs optional)
+- [x] Create `inst/extdata/configs/bcfishpass/` directory
+- [x] Move existing bcfishpass files into it (rules, dimensions, parameters_fresh, wsg_species, observation_exclusions, overrides)
+- [x] Write `inst/extdata/configs/bcfishpass/config.yaml` manifest
+- [x] Write `inst/extdata/configs/bcfishpass/README.md` describing the variant
+- [x] Verify no broken references — grep for old paths across the repo (R scripts, data-raw, CLAUDE.md)
 
 ## Phase 2: Loader function
 

@@ -62,7 +62,7 @@ conn <- lnk_db_conn()  # reads PG_DB_SHARE, PG_HOST_SHARE, etc.
 - `lnk_score(conn, crossings, method)` — `method = "severity"` for biological impact classification (high/moderate/low). `method = "rank"` for weighted multi-criteria prioritization. Threshold-driven, NULL-safe, column-agnostic.
 
 ### Rules family
-- `lnk_rules_build(csv, to, edge_types)` — transforms a species habitat dimensions CSV into the rules YAML format consumed by `frs_habitat()`. Two CSVs: NGE defaults (`parameters_habitat_dimensions.csv`) and bcfishpass comparison (`parameters_habitat_dimensions_bcfishpass.csv`).
+- `lnk_rules_build(csv, to, edge_types)` — transforms a species habitat dimensions CSV into the rules YAML format consumed by `frs_habitat()`. Two CSVs: newgraph defaults (`inst/extdata/parameters_habitat_dimensions.csv`) and bcfishpass comparison variant (`inst/extdata/configs/bcfishpass/dimensions.csv`).
 
 ### Barrier overrides
 - `lnk_barrier_overrides(conn, barriers, observations, habitat, params, to)` — processes fish observations and habitat confirmations into a barrier skip list for fresh. Counts observations upstream of each barrier via `fwa_upstream()` SQL, applies per-species thresholds, unions with habitat confirmations. Output: `(blue_line_key, downstream_route_measure, species_code)` table that fresh skips during access gating.
