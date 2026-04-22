@@ -67,7 +67,7 @@ lnk_barrier_overrides(
   Data frame with per-species parameters. Must have columns:
   `species_code`, `observation_threshold`, `observation_date_min`,
   `observation_buffer_m`, `observation_species`. See
-  `parameters_fresh_bcfishpass.csv` for format.
+  `configs/bcfishpass/parameters_fresh.csv` for format.
 
 - cols_index:
 
@@ -100,8 +100,8 @@ output as a simple skip list via `barrier_overrides`.
 if (FALSE) { # \dontrun{
 conn <- lnk_db_conn()
 
-params <- read.csv(system.file("extdata",
-  "parameters_fresh_bcfishpass.csv", package = "link"))
+params <- read.csv(system.file("extdata", "configs", "bcfishpass",
+  "parameters_fresh.csv", package = "link"))
 
 lnk_barrier_overrides(conn,
   barriers = "fresh.streams_breaks",

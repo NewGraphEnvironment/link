@@ -1,5 +1,12 @@
 # Package index
 
+## Configs
+
+Load a pipeline config bundle (rules, parameters, overrides)
+
+- [`lnk_config()`](https://newgraphenvironment.github.io/link/reference/lnk_config.md)
+  : Load a Pipeline Config Bundle
+
 ## Thresholds
 
 Configurable scoring defaults

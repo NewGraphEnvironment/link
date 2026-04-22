@@ -85,9 +85,9 @@ conn <- lnk_db_conn()  # reads PG_DB_SHARE, PG_HOST_SHARE, etc.
 
 - `lnk_rules_build(csv, to, edge_types)` — transforms a species habitat
   dimensions CSV into the rules YAML format consumed by `frs_habitat()`.
-  Two CSVs: NGE defaults (`parameters_habitat_dimensions.csv`) and
-  bcfishpass comparison
-  (`parameters_habitat_dimensions_bcfishpass.csv`).
+  Two CSVs: newgraph defaults
+  (`inst/extdata/parameters_habitat_dimensions.csv`) and bcfishpass
+  comparison variant (`inst/extdata/configs/bcfishpass/dimensions.csv`).
 
 ### Barrier overrides
 
