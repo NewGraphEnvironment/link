@@ -9,6 +9,11 @@ reference:
     contents:
       - lnk_config
 
+  - title: Pipeline phases
+    desc: Composable per-AOI habitat classification building blocks. Call in order for a full run.
+    contents:
+      - starts_with("lnk_pipeline_")
+
   - title: Thresholds
     desc: Configurable scoring defaults
     contents:
