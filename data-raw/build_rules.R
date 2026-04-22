@@ -6,15 +6,15 @@
 # Usage:
 #   source("data-raw/build_rules.R")
 
-# NGE defaults (categories: stream, canal, wetland)
+# newgraph defaults (categories: stream, canal, wetland)
 link::lnk_rules_build(
   csv = "inst/extdata/parameters_habitat_dimensions.csv",
   to = "inst/extdata/parameters_habitat_rules.yaml"
 )
 
-# bcfishpass v0.5.0 comparison (explicit edge_type integers)
+# bcfishpass comparison variant (explicit edge_type integers)
 link::lnk_rules_build(
-  csv = "inst/extdata/parameters_habitat_dimensions_bcfishpass.csv",
-  to = "inst/extdata/parameters_habitat_rules_bcfishpass.yaml",
+  csv = "inst/extdata/configs/bcfishpass/dimensions.csv",
+  to = "inst/extdata/configs/bcfishpass/rules.yaml",
   edge_types = "explicit"
 )

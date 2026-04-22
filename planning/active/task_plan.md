@@ -1,41 +1,57 @@
-# Task Plan: ST/WCT classification gap (#31)
+# Task Plan: lnk_config() config bundle loader (#37)
 
 ## Goal
-Identify and close the ST -22% spawning / -25% rearing gap on BABL, WCT -4% on ELKR.
 
-## Status
-- Per-model non-minimal: tested, no effect on ST/WCT
-- label_block with crossings: tested, -52% regression (crossings don't block in bcfishpass)
-- Stream order exception: tested, closed 3 points on ST rearing (-28% → -25%)
-- Root cause NOT confirmed. Hypotheses tested and eliminated. Need segment-level comparison.
+Create a config abstraction so pipeline variants (bcfishpass validation, newgraph defaults, min-spawn, channel-type-first breaking) stop being copy-paste script forks. Each variant = a directory under `inst/extdata/configs/<name>/` bundled with rules YAML, dimensions CSV, parameters, wsg_species_presence, observation_exclusions, and override CSVs. `lnk_config(name_or_path)` loads the bundle into one list object.
 
-## Phase 1: Segment-level ST comparison on BABL
-- [x] Query tunnel: bcfishpass ST segments → bcfishpass_ref.st_babl (2,334 rows with geometry)
-- [x] Query local: our ST classification → bcfishpass_ref.st_babl_ours (31,580 rows)
-- [x] Diff: 223 bcfishpass-only spawning segments (87.9 km), 688 bcfishpass-only rearing (277.7 km)
-- [x] For mismatches: 382/383 are inaccessible in our system. Falls at BLK 360886207 blocks them.
-- [x] Root cause: observation_species for ST was "ST" only. bcfishpass counts all salmon+steelhead.
-- [x] Fix: one CSV cell. ST spawning -22% → +3.8%, ST rearing -25% → +2.4%.
+Unblocks `_targets.R` (link#38).
 
-## Phase 2: WCT + ELKR verification
-- [ ] Run ELKR with WCT observation override fix
-- [ ] Run BULK with ST fix
+## Phase 1: Directory layout + move existing files
 
-## Phase 3: SK spawning segment-level comparison
-- [ ] Same approach: dump bcfishpass SK spawning segments for BULK/BABL
-- [ ] Diff against ours
-- [ ] Identify whether it's access, classification, or cluster algorithm
+- [x] Design `config.yaml` manifest schema (which files go where, required vs optional)
+- [x] Create `inst/extdata/configs/bcfishpass/` directory
+- [x] Move existing bcfishpass files into it (rules, dimensions, parameters_fresh, wsg_species, observation_exclusions, overrides)
+- [x] Write `inst/extdata/configs/bcfishpass/config.yaml` manifest
+- [x] Write `inst/extdata/configs/bcfishpass/README.md` describing the variant
+- [x] Verify no broken references — grep for old paths across the repo (R scripts, data-raw, CLAUDE.md)
 
-## Tested and eliminated
-- Per-model non-minimal barrier removal (no effect)
-- label_block with crossings (-52%, crossings don't block access in bcfishpass)
-- Stream order exception (3 points, not the main cause)
-- Thresholds (spawn_gradient_max, rear_gradient_max, channel_width ranges — all match exactly)
-- Access gating (bcfishpass uses only natural barriers, same as us)
+## Phase 2: Loader function
 
-## Filed
-- NewGraphEnvironment/bcfishpass#9 — access_st checks 'SK' instead of 'ST' (copy-paste bug)
-- NewGraphEnvironment/link#33 — reference to bcfishpass#9
+- [x] Write `R/lnk_config.R` — the loader, returns `lnk_config` S3 list
+- [x] Implement manifest validation (missing files, wrong keys, bad CSVs)
+- [x] Define the return list slot names and types
+- [x] Runnable example showing inspection of the loaded object
+- [x] Add `yaml` to DESCRIPTION Imports
+- [x] Move `%||%` helper into `R/utils.R`
 
-## Versions
-- fresh: 0.13.4, bcfishpass: v0.5.0, link: 0.1.0
+## Phase 3: Tests
+
+- [x] Unit tests: identifier validation, missing manifest, missing referenced file, missing required keys, missing required files entries
+- [x] Integration tests: load `"bcfishpass"` via name, via path, return shape checks, print method
+- [x] Full test suite green (146 / 146 passing)
+
+## Phase 4: Seed default variant (DEFERRED)
+
+Deferred — the `default` variant belongs in its own PR where real departures from bcfishpass are added (intermittent streams, saner spawn gradient min, expanded lake rearing). Tracked in #19, #20, #21. An empty clone adds no value.
+
+## Phase 5: Wire into compare script
+
+- [x] Update `data-raw/compare_bcfishpass.R` to call `lnk_config("bcfishpass")` instead of hardcoded paths
+- [x] Parse-check passes
+- [ ] Run BULK end-to-end to verify byte-identical output (deferred — sanity check only; no structural changes, just path source)
+
+## Phase 6: Docs + release
+
+- [x] Roxygen examples (runnable + `\dontrun{}` for pipeline wiring)
+- [x] pkgdown reference entry (`_pkgdown.yml`)
+- [x] NEWS.md entry
+- [x] Bump to 0.2.0
+- [x] `/code-check` on staged diff — one real issue found (name-shadowing foot-gun), fixed + regression test added
+- [ ] PR with SRED tag (NewGraphEnvironment/sred-2025-2026#24) — Fixes #37
+
+## Versions at start
+
+- fresh: 0.14.0 (just merged — adds frs_barriers_minimal)
+- link: main (0.1.0, target 0.2.0)
+- bcfishpass: ea3c5d8
+- fwapg: Docker (FWA 20240830)

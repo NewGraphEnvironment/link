@@ -1,6 +1,10 @@
 # Internal utilities — not exported
 # These are the building blocks every lnk_* function uses.
 
+#' Null-coalescing operator
+#' @noRd
+`%||%` <- function(x, y) if (is.null(x)) y else x # nolint: object_name_linter.
+
 #' Execute SQL statement with error context
 #' @noRd
 .lnk_db_execute <- function(conn, sql) {

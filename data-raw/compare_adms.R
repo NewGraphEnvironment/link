@@ -214,8 +214,8 @@ falls_spec <- list(
 )
 
 # bcfishpass-matching params
-rules_path <- "inst/extdata/parameters_habitat_rules_bcfishpass.yaml"
-params_fresh_path <- "inst/extdata/parameters_fresh_bcfishpass.csv"
+rules_path <- "inst/extdata/configs/bcfishpass/rules.yaml"
+params_fresh_path <- "inst/extdata/configs/bcfishpass/parameters_fresh.csv"
 params_fresh_df <- read.csv(params_fresh_path, stringsAsFactors = FALSE)
 
 # Match bcfishpass: exclude subsurface flow (6010) and placeholder streams (999)

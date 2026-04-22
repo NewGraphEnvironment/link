@@ -46,7 +46,7 @@ be overridden.}
 \item{params}{Data frame with per-species parameters. Must have columns:
 \code{species_code}, \code{observation_threshold}, \code{observation_date_min},
 \code{observation_buffer_m}, \code{observation_species}. See
-\code{parameters_fresh_bcfishpass.csv} for format.}
+\code{configs/bcfishpass/parameters_fresh.csv} for format.}
 
 \item{cols_index}{Character vector. Column names to index on the
 barriers table for \code{fwa_upstream()} performance. Indexes are created
@@ -74,8 +74,8 @@ output as a simple skip list via \code{barrier_overrides}.
 \dontrun{
 conn <- lnk_db_conn()
 
-params <- read.csv(system.file("extdata",
-  "parameters_fresh_bcfishpass.csv", package = "link"))
+params <- read.csv(system.file("extdata", "configs", "bcfishpass",
+  "parameters_fresh.csv", package = "link"))
 
 lnk_barrier_overrides(conn,
   barriers = "fresh.streams_breaks",
