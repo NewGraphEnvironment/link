@@ -56,6 +56,24 @@ tibble::tibble(
 ```
 Pulls from fresh's `streams_habitat` table joined against `bcfishpass.streams_habitat_linear_*` reference tables. Both live on the worker's localhost DB (byte-identical dumps on M4 and M1 per rtj).
 
+## PR 2 design constraint: `fresh.streams` is not per-AOI
+
+`lnk_pipeline_prepare` writes base segments to `fresh.streams`, matching the legacy compare script. Fresh's downstream functions (`frs_break_apply`, `frs_habitat_classify`, `frs_cluster`) assume that table path. Every pipeline run does `DROP TABLE IF EXISTS fresh.streams CASCADE` before rebuilding, so two parallel AOI runs on the same host would overwrite each other's segments and race the `streams_habitat` output.
+
+This is tolerable for single-host single-run today — it breaks the parallel `tar_map(wsg = ...)` + `crew_controller_local(workers = 2)` design. Three ways to handle in PR 2:
+
+1. `crew_controller_local(workers = 1)` — serialize runs on each host. Simplest, defeats half the parallelism gain.
+2. Per-AOI fresh table names — patch fresh to accept a `streams_table` parameter across break/classify/cluster, or write into `<schema>.streams` and follow all downstream fresh calls with that. Substantial fresh work.
+3. Separate database per worker — overkill.
+
+Leaning toward option 1 for the initial PR 2, with option 2 as a fresh follow-up. Document explicitly.
+
+## Other accepted fragilities (from code-check on `prepare`)
+
+- `id_segment` assignment in `prep_network` uses `row_number() OVER (ORDER BY blue_line_key, downstream_route_measure)`. Ties produce arbitrary ordering across runs. Faithful to compare script; ties are rare on FWA in practice.
+- `natural_barriers` re-joins gradient barriers to FWA instead of using the already-enriched ltree columns from `gradient_barriers_raw`. Silent drop if an enrichment UPDATE left NULL ltree. Faithful to compare script; hasn't hit in 4 WSGs of real data.
+- Per-model gradient class sets (bt, ch_cm_co_pk_sk, st, wct) are hardcoded in `prep_minimal`. TODO in-code to move into `cfg$pipeline$gradient_models` so variants can swap them.
+
 ## Unknowns to resolve during implementation
 
 - How cleanly does `frs_habitat_classify()` accept a `working_<wsg>` schema? Does it assume `working.*`? If so, we need a `working_schema` arg in fresh. If `lnk_habitat_classify` writes to a schema name that fresh doesn't know about, classification may fail.

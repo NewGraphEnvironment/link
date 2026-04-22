@@ -20,7 +20,7 @@ Break the 635-line script into small named functions (one per pipeline phase). C
 
 - [x] `R/lnk_pipeline_setup.R` — create working schema, ensure `fresh` schema
 - [x] `R/lnk_pipeline_load.R` — crossings + modelled fixes + PSCIS status overrides. Falls, definite barriers, observation exclusions, habitat classification moved to `prepare` (load stays focused on anthropogenic crossings)
-- [ ] `R/lnk_pipeline_prepare.R` — gradient barriers + non-minimal reduction (`frs_barriers_minimal`) + base segments load
+- [x] `R/lnk_pipeline_prepare.R` — loads falls + definite + control + habitat confirms; detects gradient barriers (`frs_break_find`) with control pruning + ltree enrichment; builds natural_barriers; computes barrier overrides via `lnk_barrier_overrides`; per-model non-minimal reduction via `frs_barriers_minimal` (fresh 0.14.0); loads fresh.streams with channel_width + stream_order_parent + GENERATED cols + id_segment. Six internal `@noRd` sub-helpers
 - [ ] `R/lnk_pipeline_break.R` — sequential `frs_break_apply` over break sources in config-defined order
 - [ ] `R/lnk_pipeline_classify.R` — `frs_habitat_classify` with rules YAML
 - [ ] `R/lnk_pipeline_connect.R` — `frs_cluster` + `frs_connected_waterbody`

@@ -72,6 +72,7 @@ DBI::dbDisconnect(conn)
 }
 \seealso{
 Other pipeline: 
+\code{\link{lnk_pipeline_prepare}()},
 \code{\link{lnk_pipeline_setup}()}
 }
 \concept{pipeline}
