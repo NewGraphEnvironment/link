@@ -98,13 +98,13 @@ lnk_pipeline_classify <- function(conn, aoi, cfg, schema,
 
 #' Resolve the species list for an AOI
 #'
-#' Intersect `cfg$parameters_fresh$species_code` (species the config
-#' models) with the species present in the AOI (from
-#' `cfg$wsg_species`). Falls back to the parameters_fresh set if
+#' Intersect the species the config's rules YAML classifies
+#' (`cfg$species`, parsed at load time) with the species present in
+#' the AOI (from `cfg$wsg_species`). Falls back to `cfg$species` if
 #' wsg_species is missing.
 #' @noRd
 .lnk_pipeline_classify_species <- function(cfg, aoi) {
-  configured <- unique(cfg$parameters_fresh$species_code)
+  configured <- cfg$species %||% unique(cfg$parameters_fresh$species_code)
 
   wsg_sp <- cfg$wsg_species
   if (is.null(wsg_sp)) return(configured)

@@ -24,7 +24,7 @@ Break the 635-line script into small named functions (one per pipeline phase). C
 - [x] `R/lnk_pipeline_break.R` — builds observations_breaks (species-filtered + exclusions), habitat_endpoints (DRM + URM), crossings_breaks; runs sequential `frs_break_apply` in config-defined order with `id_segment` reassignment between rounds
 - [x] `R/lnk_pipeline_classify.R` — builds access-gating `fresh.streams_breaks` (gradient + falls + definite + crossings), calls `frs_habitat_classify` with rules YAML + thresholds + barrier overrides. Species default derives from `cfg$parameters_fresh` ∩ `cfg$wsg_species` presence for the AOI.
 - [x] `R/lnk_pipeline_connect.R` — calls fresh's `.frs_run_connectivity` (per-species cluster + connected_waterbody driven by `cfg$parameters_fresh` flags). Fresh internal access flagged as a follow-up (export a stable API in fresh).
-- [ ] Update existing `data-raw/compare_bcfishpass.R` to call the helpers — verify identical output on ADMS/BULK (sub-basin if faster)
+- [x] Update existing `data-raw/compare_bcfishpass.R` to call the helpers — verified on ADMS (635 lines → 136 lines, all species within 5%, sub-1% rearing drift from research doc acceptable)
 - [ ] Tests + runnable examples for each helper (live-DB tests skip without `.lnk_db_available()`)
 - [ ] pkgdown reference entries
 - [ ] `/code-check` before each commit

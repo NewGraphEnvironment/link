@@ -1,0 +1,96 @@
+ℹ Loading link
+Watershed group: ADMS
+Working schema:  working_adms
+
+=== setup ===
+NOTICE:  schema "fresh" already exists, skipping
+
+
+=== load ===
+
+=== prepare ===
+NOTICE:  table "barriers_definite" does not exist, skipping
+
+NOTICE:  table "streams_blk" does not exist, skipping
+
+NOTICE:  table "gradient_barriers_raw" does not exist, skipping
+
+NOTICE:  table "natural_barriers" does not exist, skipping
+
+NOTICE:  table "barrier_overrides" does not exist, skipping
+
+NOTICE:  table "barriers_bt" does not exist, skipping
+
+NOTICE:  table "barriers_bt_min" does not exist, skipping
+
+NOTICE:  table "barriers_ch_cm_co_pk_sk" does not exist, skipping
+
+NOTICE:  table "barriers_ch_cm_co_pk_sk_min" does not exist, skipping
+
+NOTICE:  table "barriers_st" does not exist, skipping
+
+NOTICE:  table "barriers_st_min" does not exist, skipping
+
+NOTICE:  table "barriers_wct" does not exist, skipping
+
+NOTICE:  table "barriers_wct_min" does not exist, skipping
+
+NOTICE:  table "gradient_barriers_minimal" does not exist, skipping
+
+
+=== break ===
+NOTICE:  table "observations_breaks" does not exist, skipping
+
+NOTICE:  table "habitat_endpoints" does not exist, skipping
+
+NOTICE:  table "crossings_breaks" does not exist, skipping
+
+
+=== classify ===
+NOTICE:  relation "streams_id_segment_idx" already exists, skipping
+
+NOTICE:  table "streams_acc_015" does not exist, skipping
+
+NOTICE:  table "streams_acc_025" does not exist, skipping
+
+NOTICE:  table "streams_acc_025_ovr_bt" does not exist, skipping
+
+NOTICE:  table "streams_acc_015_ovr_ch" does not exist, skipping
+
+NOTICE:  table "streams_acc_015_ovr_co" does not exist, skipping
+
+NOTICE:  table "streams_acc_015_ovr_sk" does not exist, skipping
+
+  classification: 9.8s
+
+=== connect ===
+NOTICE:  table "frs_clusters_bt" does not exist, skipping
+
+NOTICE:  table "frs_clusters_ch" does not exist, skipping
+
+NOTICE:  table "frs_clusters_co" does not exist, skipping
+
+NOTICE:  table "frs_clusters_sk" does not exist, skipping
+
+NOTICE:  table "frs_qual_spawn_sk" does not exist, skipping
+
+NOTICE:  table "frs_trace_lfid_sk" does not exist, skipping
+
+
+=== compare ===
+Species: BT, CH, CO, SK
+
+--- Comparison (ADMS) ---
+ species  habitat   ours    ref diff_pct
+      BT spawning 368.13 361.71      1.8
+      BT  rearing 666.96 674.19     -1.1
+      CH spawning 278.92 277.61      0.5
+      CH  rearing 315.42 308.23      2.3
+      CO spawning 316.08 310.98      1.6
+      CO  rearing 351.01 351.19     -0.1
+      SK spawning  88.83  85.70      3.7
+      SK  rearing 229.85 229.85      0.0
+
+All within 5%: TRUE
+
+Done. Total: 65.5 seconds
