@@ -22,8 +22,8 @@ Break the 635-line script into small named functions (one per pipeline phase). C
 - [x] `R/lnk_pipeline_load.R` — crossings + modelled fixes + PSCIS status overrides. Falls, definite barriers, observation exclusions, habitat classification moved to `prepare` (load stays focused on anthropogenic crossings)
 - [x] `R/lnk_pipeline_prepare.R` — loads falls + definite + control + habitat confirms; detects gradient barriers (`frs_break_find`) with control pruning + ltree enrichment; builds natural_barriers; computes barrier overrides via `lnk_barrier_overrides`; per-model non-minimal reduction via `frs_barriers_minimal` (fresh 0.14.0); loads fresh.streams with channel_width + stream_order_parent + GENERATED cols + id_segment. Six internal `@noRd` sub-helpers
 - [x] `R/lnk_pipeline_break.R` — builds observations_breaks (species-filtered + exclusions), habitat_endpoints (DRM + URM), crossings_breaks; runs sequential `frs_break_apply` in config-defined order with `id_segment` reassignment between rounds
-- [ ] `R/lnk_pipeline_classify.R` — `frs_habitat_classify` with rules YAML
-- [ ] `R/lnk_pipeline_connect.R` — `frs_cluster` + `frs_connected_waterbody`
+- [x] `R/lnk_pipeline_classify.R` — builds access-gating `fresh.streams_breaks` (gradient + falls + definite + crossings), calls `frs_habitat_classify` with rules YAML + thresholds + barrier overrides. Species default derives from `cfg$parameters_fresh` ∩ `cfg$wsg_species` presence for the AOI.
+- [x] `R/lnk_pipeline_connect.R` — calls fresh's `.frs_run_connectivity` (per-species cluster + connected_waterbody driven by `cfg$parameters_fresh` flags). Fresh internal access flagged as a follow-up (export a stable API in fresh).
 - [ ] Update existing `data-raw/compare_bcfishpass.R` to call the helpers — verify identical output on ADMS/BULK (sub-basin if faster)
 - [ ] Tests + runnable examples for each helper (live-DB tests skip without `.lnk_db_available()`)
 - [ ] pkgdown reference entries

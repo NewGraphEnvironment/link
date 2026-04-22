@@ -48,6 +48,8 @@ DBI::dbDisconnect(conn)
 \seealso{
 Other pipeline: 
 \code{\link{lnk_pipeline_break}()},
+\code{\link{lnk_pipeline_classify}()},
+\code{\link{lnk_pipeline_connect}()},
 \code{\link{lnk_pipeline_load}()},
 \code{\link{lnk_pipeline_prepare}()}
 }
