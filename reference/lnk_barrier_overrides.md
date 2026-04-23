@@ -60,14 +60,24 @@ lnk_barrier_overrides(
 
   Character or `NULL`. Schema-qualified table of barrier controls with
   columns: `blue_line_key`, `downstream_route_measure`, `barrier_ind`.
-  Barriers in this table with `barrier_ind = TRUE` cannot be overridden.
+  Barriers in this table with `barrier_ind = TRUE` cannot be overridden
+  **by observations** — but only for species where
+  `params$observation_control_apply` is TRUE. Resident species routinely
+  inhabit reaches upstream of anadromous-blocking falls (post-glacial
+  connectivity, no ocean-return requirement), so their observations
+  still count unless this flag says otherwise. Habitat confirmations
+  (`habitat` argument) are higher-trust than observations — they bypass
+  the control table entirely, for all species.
 
 - params:
 
   Data frame with per-species parameters. Must have columns:
   `species_code`, `observation_threshold`, `observation_date_min`,
-  `observation_buffer_m`, `observation_species`. See
-  `configs/bcfishpass/parameters_fresh.csv` for format.
+  `observation_buffer_m`, `observation_species`. Optional column
+  `observation_control_apply` (logical) — when TRUE, the `control` table
+  blocks overrides for this species; when FALSE/NA/missing, the species
+  ignores control. Bcfishpass defaults: TRUE for CH/CM/CO/PK/SK/ST,
+  FALSE for BT/WCT. See `configs/bcfishpass/parameters_fresh.csv`.
 
 - cols_index:
 

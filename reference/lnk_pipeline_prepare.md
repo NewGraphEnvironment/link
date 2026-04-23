@@ -63,9 +63,11 @@ lnk_pipeline_prepare(
   pruned against the control table, enriched with `wscode_ltree` and
   `localcode_ltree` for `fwa_upstream()` joins
 
-- A natural-barriers table (gradient + falls + definite) used by
+- A natural-barriers table (gradient + falls) used by
   [`lnk_barrier_overrides()`](https://newgraphenvironment.github.io/link/reference/lnk_barrier_overrides.md)
-  to compute the per-species skip list
+  to compute the per-species skip list. User-definite barriers are
+  intentionally excluded here and consumed by later phases directly —
+  bcfishpass parity.
 
 - Per-model barrier tables reduced to the minimal downstream-most set
   via

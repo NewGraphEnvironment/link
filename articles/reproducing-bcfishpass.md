@@ -114,10 +114,14 @@ where the decision can change:
   (mirrored at
   [`inst/extdata/configs/bcfishpass/overrides/user_barriers_definite.csv`](https://github.com/NewGraphEnvironment/link/blob/main/inst/extdata/configs/bcfishpass/overrides/user_barriers_definite.csv)).
   Each row specifies `blue_line_key` and `downstream_route_measure` for
-  a barrier that always blocks access. Treated the same as falls —
-  always-blocking, always a break position, eligible for per-species
-  override via `lnk_barrier_overrides` when enough upstream observations
-  clear the threshold.
+  a barrier that always blocks access — reviewer-added positions
+  covering EXCLUSION zones and MISC barriers the model doesn’t detect
+  from gradient / falls / subsurface detection. These are always-
+  blocking, always a break position, and **never eligible for
+  observation-based override** — matches bcfishpass’s
+  `model_access_*.sql`, which appends `barriers_user_definite`
+  post-filter via `UNION ALL` so upstream observations and habitat
+  confirmations never re-open them.
 
 - **Habitat classification endpoints** — manual spawning / rearing
   delineations from bcfishpass’s
@@ -231,13 +235,13 @@ knitr::kable(.pivot(rollup, "spawning"),
 
 | species | ADMS | BULK | BABL | ELKR | DEAD |
 |:--------|-----:|-----:|-----:|-----:|-----:|
-| BT      |  1.8 |  3.1 |  4.1 |  3.4 |  2.1 |
+| BT      |  1.8 |  3.1 |  4.1 |  2.8 |  2.1 |
 | CH      |  0.5 |  1.9 |  3.8 |    — |  1.4 |
 | CO      |  1.6 |  3.1 |  4.8 |    — |  1.3 |
 | PK      |    — |  2.3 |    — |    — |  1.1 |
 | SK      |  3.7 | -0.7 | -2.8 |    — |    — |
 | ST      |    — |  1.9 |  3.8 |    — |  1.3 |
-| WCT     |    — |    — |    — |  4.0 |    — |
+| WCT     |    — |    — |    — |  2.6 |    — |
 
 Spawning parity (% diff vs bcfishpass)
 
@@ -250,13 +254,13 @@ knitr::kable(.pivot(rollup, "rearing"),
 
 | species | ADMS | BULK | BABL | ELKR | DEAD |
 |:--------|-----:|-----:|-----:|-----:|-----:|
-| BT      | -1.1 | -2.2 | -1.9 | -0.7 | -0.2 |
+| BT      | -1.1 | -2.2 | -1.9 | -1.2 | -0.2 |
 | CH      |  2.3 |  2.6 |  2.1 |    — |  1.4 |
 | CO      | -0.1 |  0.4 |  0.8 |    — | -0.3 |
 | PK      |    — |    — |    — |    — |    — |
 | SK      |  0.0 |  0.0 |  0.0 |    — |    — |
 | ST      |    — | -0.1 | -1.3 |    — |  0.0 |
-| WCT     |    — |    — |    — |  1.6 |    — |
+| WCT     |    — |    — |    — |  0.3 |    — |
 
 Rearing parity (% diff vs bcfishpass)
 

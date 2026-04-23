@@ -11,7 +11,7 @@ classify, connect) consume:"><meta property="og:image" content="https://newgraph
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -101,8 +101,10 @@ habitat confirmation CSVs from the config bundle</p></li>
 <code><a href="https://newgraphenvironment.github.io/fresh/reference/frs_break_find.html" class="external-link">fresh::frs_break_find()</a></code>, pruned against the control table,
 enriched with <code>wscode_ltree</code> and <code>localcode_ltree</code> for
 <code>fwa_upstream()</code> joins</p></li>
-<li><p>A natural-barriers table (gradient + falls + definite) used by
-<code><a href="lnk_barrier_overrides.html">lnk_barrier_overrides()</a></code> to compute the per-species skip list</p></li>
+<li><p>A natural-barriers table (gradient + falls) used by
+<code><a href="lnk_barrier_overrides.html">lnk_barrier_overrides()</a></code> to compute the per-species skip list.
+User-definite barriers are intentionally excluded here and
+consumed by later phases directly — bcfishpass parity.</p></li>
 <li><p>Per-model barrier tables reduced to the minimal downstream-most
 set via <code><a href="https://newgraphenvironment.github.io/fresh/reference/frs_barriers_minimal.html" class="external-link">fresh::frs_barriers_minimal()</a></code>, then unioned into
 <code>gradient_barriers_minimal</code> for segmentation</p></li>

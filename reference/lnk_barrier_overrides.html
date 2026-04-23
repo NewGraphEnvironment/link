@@ -13,7 +13,7 @@ whether evidence exists upstream of each barrier."><meta property="og:image" con
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -104,14 +104,23 @@ observations are removed before counting.</p></dd>
 <dd><p>Character or <code>NULL</code>. Schema-qualified table of barrier
 controls with columns: <code>blue_line_key</code>, <code>downstream_route_measure</code>,
 <code>barrier_ind</code>. Barriers in this table with <code>barrier_ind = TRUE</code> cannot
-be overridden.</p></dd>
+be overridden <strong>by observations</strong> — but only for species where
+<code>params$observation_control_apply</code> is TRUE. Resident species routinely
+inhabit reaches upstream of anadromous-blocking falls (post-glacial
+connectivity, no ocean-return requirement), so their observations still
+count unless this flag says otherwise. Habitat confirmations
+(<code>habitat</code> argument) are higher-trust than observations — they bypass
+the control table entirely, for all species.</p></dd>
 
 
 <dt id="arg-params">params<a class="anchor" aria-label="anchor" href="#arg-params"></a></dt>
 <dd><p>Data frame with per-species parameters. Must have columns:
 <code>species_code</code>, <code>observation_threshold</code>, <code>observation_date_min</code>,
-<code>observation_buffer_m</code>, <code>observation_species</code>. See
-<code>configs/bcfishpass/parameters_fresh.csv</code> for format.</p></dd>
+<code>observation_buffer_m</code>, <code>observation_species</code>. Optional column
+<code>observation_control_apply</code> (logical) — when TRUE, the <code>control</code> table
+blocks overrides for this species; when FALSE/NA/missing, the species
+ignores control. Bcfishpass defaults: TRUE for CH/CM/CO/PK/SK/ST,
+FALSE for BT/WCT. See <code>configs/bcfishpass/parameters_fresh.csv</code>.</p></dd>
 
 
 <dt id="arg-cols-index">cols_index<a class="anchor" aria-label="anchor" href="#arg-cols-index"></a></dt>

@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -36,6 +36,14 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.7.0" id="link-070">link 0.7.0<a class="anchor" aria-label="anchor" href="#link-070"></a></h2>
+<p><code>user_barriers_definite</code> no longer eligible for observation-based override (<a href="https://github.com/NewGraphEnvironment/link/issues/48" class="external-link">#48</a>).</p>
+<ul><li>
+<code>.lnk_pipeline_prep_natural()</code> previously unioned <code>barriers_definite</code> into <code>natural_barriers</code>, which <code><a href="../reference/lnk_barrier_overrides.html">lnk_barrier_overrides()</a></code> iterates over. Net effect: the 227 reviewer-added user-definite positions (EXCLUSION zones, MISC detections the model misses) could be re-opened by observations clearing the species threshold. Confirmed active on ELKR pre-fix — 4 override rows at Erickson Creek exclusion and Spillway MISC positions that bcfishpass keeps as permanent barriers.</li>
+<li>bcfishpass’s <code>model_access_*.sql</code> builds the barriers CTE from gradient + falls + subsurfaceflow only and appends <code>barriers_user_definite</code> post-filter via <code>UNION ALL</code>. Observations and habitat filters never see user-definite rows, so they’re never overridable. link now matches this shape: <code>natural_barriers</code> is gradient + falls only; <code>barriers_definite</code> stays consumed separately as a break source in <code><a href="../reference/lnk_pipeline_break.html">lnk_pipeline_break()</a></code> and as a direct <code>UNION ALL</code> entry into <code>fresh.streams_breaks</code> via <code><a href="../reference/lnk_pipeline_classify.html">lnk_pipeline_classify()</a></code>.</li>
+<li>ELKR rollup shifts toward bcfishpass: BT spawning +3.4% → +2.8%, WCT spawning +4.0% → +2.6%, WCT rearing +1.6% → +0.3%. Other four WSGs unchanged (ADMS/BABL/DEAD have empty <code>barriers_definite</code>; BULK has 87 rows but no observation-threshold matches to any of them).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.0" id="link-060">link 0.6.0<a class="anchor" aria-label="anchor" href="#link-060"></a></h2>
 <p>Honour <code>user_barriers_definite_control.csv</code> at the observation-override step.</p>
