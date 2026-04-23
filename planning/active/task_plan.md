@@ -24,6 +24,18 @@ Bit-identical-across-reruns reproducibility preserved. Rollup direction expected
 - [x] `devtools::test()` green: 271 PASS.
 - [x] `/code-check` surfaced the asymmetric-gating bug — fixed and re-verified before commit.
 
+## Phase 2a: Per-species control gate (observation_control_apply)
+
+Post-Phase-2 `tar_make()` drifted 11–22pp *away* from bcfishpass on ADMS/BABL because bcfishpass applies the control filter per-species (CH/CM/CO/PK/SK and ST only), while my implementation applied it across all species. Residents (BT, WCT) inhabit reaches upstream of anadromous-blocking falls — their observations should still override.
+
+- [x] Add `observation_control_apply` column to `inst/extdata/configs/bcfishpass/parameters_fresh.csv`. TRUE for CH/CM/CO/PK/SK/ST; FALSE for BT/WCT; NA for CT/DV/RB.
+- [x] `lnk_barrier_overrides()` gates the NOT EXISTS clause per-species on `params$observation_control_apply[i]`. Missing column or NA ⇒ no filter (resident default).
+- [x] Updated `@param control` / `@param params` roxygen to document the gate.
+- [x] Extended `.stub_params()` in `test-lnk_barrier_overrides.R` with optional `control_apply`. Three new tests: FALSE ⇒ no clause, NA ⇒ no clause, mixed-species params ⇒ per-species gating.
+- [x] `devtools::test()`: 279 PASS.
+- [x] Amend issue #44 body with Phase 2a scope and biological rationale.
+- [x] `/code-check` before commit — two rounds, both Clean.
+
 ## Phase 3: End-to-end verification
 
 - [ ] `pak::local_install()` to pick up the pipeline changes

@@ -27,11 +27,18 @@
 #' @param control Character or `NULL`. Schema-qualified table of barrier
 #'   controls with columns: `blue_line_key`, `downstream_route_measure`,
 #'   `barrier_ind`. Barriers in this table with `barrier_ind = TRUE` cannot
-#'   be overridden.
+#'   be overridden — but only for species where
+#'   `params$observation_control_apply` is TRUE. Resident species routinely
+#'   inhabit reaches upstream of anadromous-blocking falls (post-glacial
+#'   connectivity, no ocean-return requirement), so their observations still
+#'   count unless this flag says otherwise.
 #' @param params Data frame with per-species parameters. Must have columns:
 #'   `species_code`, `observation_threshold`, `observation_date_min`,
-#'   `observation_buffer_m`, `observation_species`. See
-#'   `configs/bcfishpass/parameters_fresh.csv` for format.
+#'   `observation_buffer_m`, `observation_species`. Optional column
+#'   `observation_control_apply` (logical) — when TRUE, the `control` table
+#'   blocks overrides for this species; when FALSE/NA/missing, the species
+#'   ignores control. Bcfishpass defaults: TRUE for CH/CM/CO/PK/SK/ST,
+#'   FALSE for BT/WCT. See `configs/bcfishpass/parameters_fresh.csv`.
 #' @param cols_index Character vector. Column names to index on the
 #'   barriers table for `fwa_upstream()` performance. Indexes are created
 #'   `IF NOT EXISTS`. Default `c("blue_line_key", "wscode_ltree",
@@ -135,6 +142,14 @@ lnk_barrier_overrides <- function(conn,
     obs_sp_list <- if (is.na(obs_sp_str)) sp else trimws(strsplit(obs_sp_str, ";")[[1]])
     obs_sp_sql <- paste0("'", obs_sp_list, "'", collapse = ", ")
 
+    # Species-level opt-in for the control filter. bcfishpass applies control
+    # only in the anadromous access models (CH/CM/CO/PK/SK, ST) — residents
+    # (BT, WCT) and sub-CT species routinely live upstream of anadromous
+    # barriers (post-glacial headwater connectivity, no ocean-return
+    # requirement), so their observations should still override.
+    ctrl_apply_col <- species_to_process$observation_control_apply[i]
+    ctrl_apply <- isTRUE(as.logical(ctrl_apply_col))
+
     overrides_found <- 0L
 
     # Control table: a matching control row with barrier_ind = TRUE
@@ -143,9 +158,9 @@ lnk_barrier_overrides <- function(conn,
     # when at least one TRUE control row matches (mixed TRUE/FALSE within
     # the 1 m tolerance resolves to "blocked"), and the outer GROUP BY /
     # HAVING count(...) aggregation does not get row-multiplied by a join
-    # to control.
+    # to control. Gated per-species by `observation_control_apply`.
     ctrl_where <- ""
-    ctrl_filter <- if (!is.null(control)) {
+    ctrl_filter <- if (!is.null(control) && ctrl_apply) {
       sprintf(
         "AND NOT EXISTS (
            SELECT 1 FROM %s c
