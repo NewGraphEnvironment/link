@@ -1,5 +1,42 @@
 # Changelog
 
+## link 0.6.0
+
+Honour `user_barriers_definite_control.csv` at the observation-override
+step.
+
+- [`lnk_barrier_overrides()`](https://newgraphenvironment.github.io/link/reference/lnk_barrier_overrides.md)
+  now excludes observations upstream of control-flagged positions from
+  counting toward the override threshold, matching bcfishpass’s access
+  SQL. Previously controlled positions (concrete dams, long impassable
+  falls, diversions) could be re-opened by upstream historical
+  observations
+  ([\#44](https://github.com/NewGraphEnvironment/link/issues/44)).
+- Gated per-species by a new `observation_control_apply` column in
+  `parameters_fresh.csv` — TRUE for CH/CM/CO/PK/SK/ST; FALSE for BT/WCT;
+  NA for CT/DV/RB. Residents routinely inhabit reaches upstream of
+  anadromous-blocking falls (post-glacial headwater connectivity, no
+  ocean-return requirement), so their observations still override.
+  Matches bcfishpass’s per-model application.
+- Habitat-confirmation override path intentionally bypasses the control
+  table — expert-confirmed habitat is higher-trust than observations,
+  and bcfishpass’s `hab_upstr` CTE has no control join either.
+- `.lnk_pipeline_prep_overrides` now passes the control table to
+  [`lnk_barrier_overrides()`](https://newgraphenvironment.github.io/link/reference/lnk_barrier_overrides.md)
+  when the config manifest declares `barriers_definite_control`.
+  Manifest key is the contract; no DB probe.
+- `.lnk_pipeline_prep_load_aux` now always creates a schema-valid
+  (possibly empty) `barriers_definite_control` table when the manifest
+  declares the key — fixes an asymmetric gating bug that would have
+  raised “relation does not exist” on AOIs with zero control rows.
+- End-to-end validation WSG: DEAD (Deadman River) added to
+  `data-raw/_targets.R`. It has a single `barrier_ind = TRUE` control
+  row at FALLS (356361749, 45743) with six anadromous observations
+  upstream and zero habitat coverage — the unique combination that
+  actively exercises the filter. All four prior WSGs
+  (ADMS/BULK/BABL/ELKR) were rescued by either the observation threshold
+  or habitat path, making them parity checks rather than filter tests.
+
 ## link 0.5.0
 
 Documentation and narrative for the targets pipeline.

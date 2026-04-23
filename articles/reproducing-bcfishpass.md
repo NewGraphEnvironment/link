@@ -13,6 +13,27 @@ to run it, and how the output compares to bcfishpass reference tables.
 Full per-phase pipeline detail lives in
 [`research/bcfishpass_comparison.md`](https://github.com/NewGraphEnvironment/link/blob/main/research/bcfishpass_comparison.md).
 
+## Prerequisites
+
+The pipeline reads from a PostgreSQL database with
+[fwapg](https://github.com/smnorris/fwapg) loaded. fwapg is the
+processed form of the BC Freshwater Atlas — it adds `wscode_ltree` and
+`localcode_ltree` columns to the stream-network tables (PostgreSQL
+`ltree` types encoding watershed topology) and provides the SQL
+functions the pipeline uses to traverse the network:
+[`fwa_upstream`](https://github.com/smnorris/fwapg/blob/main/sql/functions/FWA_Upstream.sql),
+[`fwa_downstream`](https://github.com/smnorris/fwapg/blob/main/sql/functions/FWA_Downstream.sql),
+[`fwa_watershedatmeasure`](https://github.com/smnorris/fwapg/blob/main/sql/functions/FWA_WatershedAtMeasure.sql),
+and others. See fwapg’s repository for installation.
+
+[bcfishobs](https://github.com/smnorris/bcfishobs) is optional but
+recommended — it populates `bcfishobs.observations`, the table that
+drives per-species overrides of natural barriers below.
+
+The comparison layer in the map at the end of this vignette reads from a
+read-only tunnel to the bcfishpass reference database. That is a
+validation convenience, not a requirement for running link.
+
 ## How the bcfishpass configuration works
 
 The rollup measures **intrinsic habitat potential conditioned on
@@ -26,7 +47,7 @@ is both intrinsically suitable *and* accessible — accessibility and
 intrinsic potential are separable in general, and a fuller treatment
 would report both.
 
-    FWA streams (raw)
+    FWA stream network (via fwapg, ltree-enriched)
         │
         │   gradient thresholds detect barriers @ 15 / 20 / 25 / 30 %
         ▼
@@ -58,16 +79,19 @@ segment is one classification unit. Breaks therefore fall at positions
 where the decision can change:
 
 - **Observations.** bcfishpass’s per-species access models flip a
-  natural-barrier reach to accessible when the count of fish
-  observations on the upstream flow path meets a threshold. Thresholds
-  and species filters vary per model (see the SQL under
+  natural-barrier reach (gradient barrier, falls, or user-definite
+  barrier) to accessible when the count of upstream fish observations
+  meets a threshold. Thresholds and species filters vary per model (see
+  the SQL under
   [`model/access/`](https://github.com/smnorris/bcfishpass/tree/ea3c5d8/model)).
   Per-species parameters used by link live in the bundled `"bcfishpass"`
   config’s
   [`parameters_fresh.csv`](https://github.com/NewGraphEnvironment/link/blob/main/inst/extdata/configs/bcfishpass/parameters_fresh.csv)
   (`observation_threshold`, `observation_date_min`,
-  `observation_buffer_m`, `observation_species`). For BULK (bcfishpass
-  commit `ea3c5d8`):
+  `observation_buffer_m`, `observation_species`). Override counting is
+  done in SQL via
+  [`fwa_upstream`](https://github.com/smnorris/fwapg/blob/main/sql/functions/FWA_Upstream.sql)
+  by `lnk_barrier_overrides`. For BULK (bcfishpass commit `ea3c5d8`):
 
   - BT — ≥ 1 observation of BT, CH, CM, CO, PK, SK, or ST; any date
   - CH / CM / CO / PK / SK — ≥ 5 observations in that salmon set, on or
@@ -83,6 +107,17 @@ where the decision can change:
   [`fresh::frs_barriers_minimal()`](https://newgraphenvironment.github.io/fresh/reference/frs_barriers_minimal.html))
   so segmentation doesn’t split reaches that would end up in the same
   access state.
+
+- **User-identified definite barriers** — positions listed in
+  bcfishpass’s
+  [`user_barriers_definite.csv`](https://github.com/smnorris/bcfishpass/blob/ea3c5d8/data/user_barriers_definite.csv)
+  (mirrored at
+  [`inst/extdata/configs/bcfishpass/overrides/user_barriers_definite.csv`](https://github.com/NewGraphEnvironment/link/blob/main/inst/extdata/configs/bcfishpass/overrides/user_barriers_definite.csv)).
+  Each row specifies `blue_line_key` and `downstream_route_measure` for
+  a barrier that always blocks access. Treated the same as falls —
+  always-blocking, always a break position, eligible for per-species
+  override via `lnk_barrier_overrides` when enough upstream observations
+  clear the threshold.
 
 - **Habitat classification endpoints** — manual spawning / rearing
   delineations from bcfishpass’s
@@ -145,20 +180,23 @@ library(targets)
 # `_targets.R` lives in data-raw/; run from that directory.
 setwd("data-raw")
 
-tar_make()                  # 4 WSGs, serial
+tar_make()                  # 5 WSGs, serial
 rollup <- tar_read(rollup)  # per-WSG × species × habitat tibble
 ```
 
 [`tar_make()`](https://docs.ropensci.org/targets/reference/tar_make.html)
 runs
 [`compare_bcfishpass_wsg()`](https://github.com/NewGraphEnvironment/link/blob/main/data-raw/compare_bcfishpass_wsg.R)
-once each for Adams (ADMS), Bulkley (BULK), Babine (BABL), and Elk
-(ELKR), binding the per-WSG tibbles into one rollup. Each call exercises
-the six `lnk_pipeline_*` phases. All four are run so the rollup spans
-the species assemblages and watershed structures used in bcfishpass
-validation — BT with CH, CO, SK on ADMS; PK and ST added on BULK and
-BABL; BT with WCT on ELKR. Method agreement across this spread is
-stronger evidence than agreement on a single WSG.
+once each for Adams (ADMS), Bulkley (BULK), Babine (BABL), Elk (ELKR),
+and Deadman (DEAD), binding the per-WSG tibbles into one rollup. Each
+call exercises the six `lnk_pipeline_*` phases. ADMS/BULK/ BABL/ELKR
+span the species assemblages used in bcfishpass validation — BT with CH,
+CO, SK on ADMS; PK and ST added on BULK and BABL; BT with WCT on ELKR.
+DEAD is an end-to-end test for the `barriers_definite_control` wiring:
+it has a single `barrier_ind = TRUE` control row with enough anadromous
+observations upstream to exercise the filter, which the other four WSGs
+don’t. Method agreement across this spread is stronger evidence than
+agreement on a single WSG.
 
 ## The rollup
 
@@ -179,7 +217,8 @@ rollup <- readRDS(system.file("extdata", "vignette-data", "rollup.rds",
   w <- stats::reshape(x, idvar = "species", timevar = "wsg",
                        direction = "wide", v.names = "diff_pct")
   names(w)[-1] <- sub("diff_pct\\.", "", names(w)[-1])
-  cols <- intersect(c("species", "ADMS", "BULK", "BABL", "ELKR"), names(w))
+  cols <- intersect(c("species", "ADMS", "BULK", "BABL", "ELKR", "DEAD"),
+    names(w))
   w <- w[order(w$species), cols]
   row.names(w) <- NULL
   w
@@ -190,15 +229,15 @@ knitr::kable(.pivot(rollup, "spawning"),
   caption = "Spawning parity (% diff vs bcfishpass)")
 ```
 
-| species | ADMS | BULK | BABL | ELKR |
-|:--------|-----:|-----:|-----:|-----:|
-| BT      |  1.8 |  3.1 |  4.1 |  3.4 |
-| CH      |  0.5 |  1.9 |  3.8 |    — |
-| CO      |  1.6 |  3.1 |  4.8 |    — |
-| PK      |    — |  2.3 |    — |    — |
-| SK      |  3.7 | -0.7 | -2.8 |    — |
-| ST      |    — |  1.9 |  3.8 |    — |
-| WCT     |    — |    — |    — |  4.0 |
+| species | ADMS | BULK | BABL | ELKR | DEAD |
+|:--------|-----:|-----:|-----:|-----:|-----:|
+| BT      |  1.8 |  3.1 |  4.1 |  3.4 |  2.1 |
+| CH      |  0.5 |  1.9 |  3.8 |    — |  1.4 |
+| CO      |  1.6 |  3.1 |  4.8 |    — |  1.3 |
+| PK      |    — |  2.3 |    — |    — |  1.1 |
+| SK      |  3.7 | -0.7 | -2.8 |    — |    — |
+| ST      |    — |  1.9 |  3.8 |    — |  1.3 |
+| WCT     |    — |    — |    — |  4.0 |    — |
 
 Spawning parity (% diff vs bcfishpass)
 
@@ -209,15 +248,15 @@ knitr::kable(.pivot(rollup, "rearing"),
   caption = "Rearing parity (% diff vs bcfishpass)")
 ```
 
-| species | ADMS | BULK | BABL | ELKR |
-|:--------|-----:|-----:|-----:|-----:|
-| BT      | -1.1 | -2.2 | -1.9 | -0.7 |
-| CH      |  2.3 |  2.6 |  2.1 |    — |
-| CO      | -0.1 |  0.4 |  0.8 |    — |
-| PK      |    — |    — |    — |    — |
-| SK      |  0.0 |  0.0 |  0.0 |    — |
-| ST      |    — | -0.1 | -1.3 |    — |
-| WCT     |    — |    — |    — |  1.6 |
+| species | ADMS | BULK | BABL | ELKR | DEAD |
+|:--------|-----:|-----:|-----:|-----:|-----:|
+| BT      | -1.1 | -2.2 | -1.9 | -0.7 | -0.2 |
+| CH      |  2.3 |  2.6 |  2.1 |    — |  1.4 |
+| CO      | -0.1 |  0.4 |  0.8 |    — | -0.3 |
+| PK      |    — |    — |    — |    — |    — |
+| SK      |  0.0 |  0.0 |  0.0 |    — |    — |
+| ST      |    — | -0.1 | -1.3 |    — |  0.0 |
+| WCT     |    — |    — |    — |  1.6 |    — |
 
 Rearing parity (% diff vs bcfishpass)
 

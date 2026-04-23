@@ -119,13 +119,13 @@ head(cfg$parameters_fresh)
 #> 4                     5           1990-01-01                   20
 #> 5                    NA                 <NA>                   NA
 #> 6                    NA                 <NA>                   NA
-#>    observation_species
-#> 1 BT;CH;CO;SK;PK;CM;ST
-#> 2       CH;CM;CO;PK;SK
-#> 3       CH;CM;CO;PK;SK
-#> 4       CH;CM;CO;PK;SK
-#> 5                 <NA>
-#> 6                 <NA>
+#>    observation_species observation_control_apply
+#> 1 BT;CH;CO;SK;PK;CM;ST                     FALSE
+#> 2       CH;CM;CO;PK;SK                      TRUE
+#> 3       CH;CM;CO;PK;SK                      TRUE
+#> 4       CH;CM;CO;PK;SK                      TRUE
+#> 5                 <NA>                        NA
+#> 6                 <NA>                        NA
 names(cfg$overrides)
 #> [1] "modelled_fixes"            "pscis_barrier_status"     
 #> [3] "pscis_xref"                "barriers_definite"        

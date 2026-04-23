@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -36,6 +36,19 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.0" id="link-060">link 0.6.0<a class="anchor" aria-label="anchor" href="#link-060"></a></h2>
+<p>Honour <code>user_barriers_definite_control.csv</code> at the observation-override step.</p>
+<ul><li>
+<code><a href="../reference/lnk_barrier_overrides.html">lnk_barrier_overrides()</a></code> now excludes observations upstream of control-flagged positions from counting toward the override threshold, matching bcfishpass’s access SQL. Previously controlled positions (concrete dams, long impassable falls, diversions) could be re-opened by upstream historical observations (<a href="https://github.com/NewGraphEnvironment/link/issues/44" class="external-link">#44</a>).</li>
+<li>Gated per-species by a new <code>observation_control_apply</code> column in <code>parameters_fresh.csv</code> — TRUE for CH/CM/CO/PK/SK/ST; FALSE for BT/WCT; NA for CT/DV/RB. Residents routinely inhabit reaches upstream of anadromous-blocking falls (post-glacial headwater connectivity, no ocean-return requirement), so their observations still override. Matches bcfishpass’s per-model application.</li>
+<li>Habitat-confirmation override path intentionally bypasses the control table — expert-confirmed habitat is higher-trust than observations, and bcfishpass’s <code>hab_upstr</code> CTE has no control join either.</li>
+<li>
+<code>.lnk_pipeline_prep_overrides</code> now passes the control table to <code><a href="../reference/lnk_barrier_overrides.html">lnk_barrier_overrides()</a></code> when the config manifest declares <code>barriers_definite_control</code>. Manifest key is the contract; no DB probe.</li>
+<li>
+<code>.lnk_pipeline_prep_load_aux</code> now always creates a schema-valid (possibly empty) <code>barriers_definite_control</code> table when the manifest declares the key — fixes an asymmetric gating bug that would have raised “relation does not exist” on AOIs with zero control rows.</li>
+<li>End-to-end validation WSG: DEAD (Deadman River) added to <code>data-raw/_targets.R</code>. It has a single <code>barrier_ind = TRUE</code> control row at FALLS (356361749, 45743) with six anadromous observations upstream and zero habitat coverage — the unique combination that actively exercises the filter. All four prior WSGs (ADMS/BULK/BABL/ELKR) were rescued by either the observation threshold or habitat path, making them parity checks rather than filter tests.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.5.0" id="link-050">link 0.5.0<a class="anchor" aria-label="anchor" href="#link-050"></a></h2>
 <p>Documentation and narrative for the targets pipeline.</p>
