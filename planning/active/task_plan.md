@@ -36,13 +36,35 @@ Post-Phase-2 `tar_make()` drifted 11–22pp *away* from bcfishpass on ADMS/BABL 
 - [x] Amend issue #44 body with Phase 2a scope and biological rationale.
 - [x] `/code-check` before commit — two rounds, both Clean.
 
+## Phase 2b: Ungate habitat override path from control
+
+Phase 2a species-gating fixed BT/WCT drift but CH/CM/CO/PK/SK/ST still dropped 11–22pp on ADMS/BABL. Root cause: my `ctrl_filter` was applied to BOTH the observation and habitat paths of `lnk_barrier_overrides()`. bcfishpass's `hab_upstr` CTE has no control join at all — expert-confirmed habitat is higher-trust than the control designation and bypasses the filter.
+
+- [x] Removed `ctrl_where` / `ctrl_filter` from the habitat INSERT in `lnk_barrier_overrides()`. Observation path unchanged.
+- [x] Updated roxygen: control parameter now notes it applies only to observations; habitat bypasses.
+- [x] Flipped the existing "control filter applies to habitat too" test to assert the opposite (bcfishpass parity). `devtools::test()` 279 PASS.
+- [x] Committed (6f3bc46).
+- [x] `tar_make()` — Phase 2b rollup numerically identical to pre-fix baseline on all 34 rows, all 4 WSGs within 5% of bcfishpass reference.
+
+## Phase 2c: Add DEAD as the filter's end-to-end test WSG
+
+Discovered post-Phase 2b: none of ADMS/BULK/BABL/ELKR actually exercises the new control filter end-to-end. All 6 TRUE control rows across these WSGs are rescued by either the observation threshold (obs < 5) or the habitat path (classification upstream). That's why post-fix == pre-fix — correct, but information-less.
+
+Province-wide hunt for TRUE control rows with ≥ threshold observations upstream AND zero habitat coverage turned up 4 candidates: CAMB (11 obs), DEAD (6), LFRA (16, but too large), SALM (7). Picked **DEAD** (Deadman River) — smallest runtime, 6 obs just above CH threshold, single TRUE control row at FALLS (356361749, 45743). bcfishpass reference keeps this fall in `barriers_ch_cm_co_pk_sk` (control worked); pre-fix link would have overridden via observations.
+
+- [x] Added DEAD to `data-raw/_targets.R` wsgs vector.
+- [ ] `tar_make()` incremental — builds `comparison_DEAD` + new rollup (ADMS/BULK/BABL/ELKR cached from Phase 2b run).
+- [ ] Verify DEAD's diff_pct on CH/CO/SK/ST is small (post-fix link ≈ bcfishpass — filter working).
+- [ ] Verify the specific fall at (356361749, 45743) is NOT in `working_dead.barrier_overrides` for CH/CM/CO/PK/SK/ST (filter blocked the override).
+
 ## Phase 3: End-to-end verification
 
-- [ ] `pak::local_install()` to pick up the pipeline changes
-- [ ] First run: `cd data-raw && Rscript -e 'targets::tar_destroy(ask = FALSE); targets::tar_make()'` → log under `data-raw/logs/20260423_01_tar_make_post_44.txt`
-- [ ] Inspect new rollup; compare to pre-change baseline (run 12 from 2026-04-22). Direction must be toward bcfishpass on WSGs with controlled `barrier_ind = TRUE` rows.
-- [ ] Reproducibility run: immediately re-run `tar_make()` → `data-raw/logs/20260423_02_tar_make_repro.txt`. Rollup must be bit-identical.
-- [ ] `digest::digest()` on the two rollup tibbles → same hash
+- [x] `pak::local_install()` to pick up pipeline changes.
+- [x] First post-fix run: `20260423_02_tar_make_phase2a.txt`, `20260423_03_tar_make_phase2b.txt`.
+- [x] Inspect rollup against pre-change baseline — matches exactly on 4 WSGs (filter moot on those; DEAD being added to exercise it).
+- [ ] Reproducibility run (Phase 2b state): `20260423_04_tar_make_repro.txt` in progress. Rollup must be bit-identical to Phase 2b.
+- [ ] `digest::digest()` on two Phase 2b rollup tibbles → same hash.
+- [ ] Post-DEAD reproducibility: two consecutive `tar_make()` runs with DEAD present produce bit-identical 5-WSG rollups.
 
 ## Phase 4: Artifact updates
 
