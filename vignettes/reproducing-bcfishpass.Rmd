@@ -15,6 +15,7 @@ knitr::opts_chunk$set(
   fig.height = 6,
   dpi = 72
 )
+options(knitr.kable.NA = "—")
 library(link)
 ```
 
@@ -172,9 +173,13 @@ rollup <- tar_read(rollup)  # per-WSG × species × habitat tibble
 
 `tar_make()` runs
 [`compare_bcfishpass_wsg()`](https://github.com/NewGraphEnvironment/link/blob/main/data-raw/compare_bcfishpass_wsg.R)
-once per watershed group — ADMS, BULK, BABL, ELKR — and binds the
-per-WSG tibbles into one rollup. Each call exercises the six
-`lnk_pipeline_*` phases.
+once each for Adams (ADMS), Bulkley (BULK), Babine (BABL), and Elk
+(ELKR), binding the per-WSG tibbles into one rollup. Each call
+exercises the six `lnk_pipeline_*` phases. All four are run so the
+rollup spans the species assemblages and watershed structures used
+in bcfishpass validation — BT with CH, CO, SK on ADMS; PK and ST
+added on BULK and BABL; BT with WCT on ELKR. Method agreement across
+this spread is stronger evidence than agreement on a single WSG.
 
 ## The rollup
 
@@ -183,24 +188,37 @@ rollup <- readRDS(system.file("extdata", "vignette-data", "rollup.rds",
                                package = "link"))
 ```
 
-```{r rollup-summary}
-summary(rollup$diff_pct)
-cat("Within 5%: ",
-    all(abs(rollup$diff_pct[!is.na(rollup$diff_pct)]) < 5))
+`link_km` and `bcfishpass_km` are kilometres classified as habitat
+(spawning or rearing, conditioned on natural accessibility) per
+species × watershed group. `diff_pct = (link_km − bcfishpass_km) /
+bcfishpass_km × 100`.
+
+```{r rollup-pivot, results = "asis"}
+.pivot <- function(rollup, which_habitat) {
+  x <- rollup[rollup$habitat_type == which_habitat,
+              c("species", "wsg", "diff_pct")]
+  w <- stats::reshape(x, idvar = "species", timevar = "wsg",
+                       direction = "wide", v.names = "diff_pct")
+  names(w)[-1] <- sub("diff_pct\\.", "", names(w)[-1])
+  cols <- intersect(c("species", "ADMS", "BULK", "BABL", "ELKR"), names(w))
+  w <- w[order(w$species), cols]
+  row.names(w) <- NULL
+  w
+}
+
+knitr::kable(.pivot(rollup, "spawning"),
+  digits = 1,
+  caption = "Spawning parity (% diff vs bcfishpass)")
+
+knitr::kable(.pivot(rollup, "rearing"),
+  digits = 1,
+  caption = "Rearing parity (% diff vs bcfishpass)")
 ```
 
-Columns:
-
-- `link_km` — kilometres classified as habitat (spawning or rearing,
-  conditioned on accessibility) per species × watershed group
-- `bcfishpass_km` — kilometres from bcfishpass reference
-  `habitat_linear_*` tables
-- `diff_pct` — `(link_km − bcfishpass_km) / bcfishpass_km × 100`
-
-Observed differences come from the stream-order bypass omission
-(notable on BT rearing in BULK) and from segmentation-boundary rounding
-where per-segment attributes fall near rule thresholds. Numeric detail
-is in
+Observed differences come from the stream-order bypass omission —
+visible as the uniformly negative BT rearing column — and from
+segmentation-boundary rounding where per-segment attributes fall near
+rule thresholds. Numeric detail is in
 [`research/bcfishpass_comparison.md`](https://github.com/NewGraphEnvironment/link/blob/main/research/bcfishpass_comparison.md).
 
 ## Comparison map — Neexdzii Kwa (Upper Bulkley)
