@@ -113,9 +113,20 @@ where the decision can change:
   are placed at both measures so the marked reach is its own segment.
 
 - **Crossings** — road, rail, and utility crossings carrying
-  `barrier_status` of `PASSABLE`, `POTENTIAL`, or `BARRIER`. Their
-  per-segment status is applied but does not alter the natural-access
-  model.
+  `barrier_status` of `PASSABLE`, `POTENTIAL`, `BARRIER`, or
+  `UNKNOWN`. Each crossing at a distinct position gets its own
+  segment boundary so habitat upstream of each can be attributed
+  to it.
+
+Natural accessibility — gradient barriers, falls, and user-definite
+barriers — is the only gate in this configuration. Crossings are
+segmentation boundaries here, not access blockers: a segment upstream
+of a `BARRIER`-status crossing stays classified on its intrinsic rule
+match, so rollup kilometres are not reduced by crossings. A
+different composition (same pipeline, `label_block = c("blocked",
+"barrier")`) answers the distinct question of what habitat would be
+accessible if anthropogenic barriers were fixed — worth a separate
+rollup.
 
 ### Where classification comes from
 
@@ -161,15 +172,9 @@ rollup <- tar_read(rollup)  # per-WSG × species × habitat tibble
 
 `tar_make()` runs
 [`compare_bcfishpass_wsg()`](https://github.com/NewGraphEnvironment/link/blob/main/data-raw/compare_bcfishpass_wsg.R)
-once per watershed group (ADMS, BULK, BABL, ELKR). Each call
-exercises the six `lnk_pipeline_*` phases and returns a small tibble.
-
-```
-lnk_config("bcfishpass") ─┬─► comparison_ADMS ─┐
-                          ├─► comparison_BULK ─┤
-                          ├─► comparison_BABL ─┼─► rollup (34 rows)
-                          └─► comparison_ELKR ─┘
-```
+once per watershed group — ADMS, BULK, BABL, ELKR — and binds the
+per-WSG tibbles into one rollup. Each call exercises the six
+`lnk_pipeline_*` phases.
 
 ## The rollup
 
@@ -242,7 +247,8 @@ if (requireNamespace("mapgl", quietly = TRUE)) {
       "Neexdzii Kwa (Upper Bulkley) · modelled chinook habitat",
       values = pal_values,
       colors = pal_colors,
-      type = "categorical"
+      type = "categorical",
+      position = "top-right"
     ) |>
     mapgl::add_layers_control(
       collapsible = TRUE,
