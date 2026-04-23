@@ -5,6 +5,15 @@
 #' @noRd
 `%||%` <- function(x, y) if (is.null(x)) y else x # nolint: object_name_linter.
 
+#' Quote a literal string for SQL (doubles single-quotes)
+#' @noRd
+.lnk_quote_literal <- function(x) {
+  if (!is.character(x) || length(x) != 1L) {
+    stop("x must be a single string", call. = FALSE)
+  }
+  paste0("'", gsub("'", "''", x, fixed = TRUE), "'")
+}
+
 #' Execute SQL statement with error context
 #' @noRd
 .lnk_db_execute <- function(conn, sql) {

@@ -22,6 +22,7 @@ pipeline:
   break_order:
     - observations
     - gradient_minimal
+    - barriers_definite
     - habitat_endpoints
     - crossings
   cluster:

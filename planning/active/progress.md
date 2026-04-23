@@ -1,12 +1,21 @@
 # Progress
 
 ## Session 2026-04-22
-- Archived prior PWF (bcfishpass comparison — all 4 WSGs within 5%, shipped fresh 0.13.5–0.13.8)
-- fresh#160 shipped: `frs_barriers_minimal()` extracts non-minimal removal into fresh 0.14.0 (merged)
-- Filed link#37 (lnk_config) + link#38 (_targets.R pipeline); closed link#36 (targets supersedes CSV DAG)
-- Starting link#37: config bundle loader
-- Phase 1 done: relocated files under `inst/extdata/configs/bcfishpass/` (rules.yaml, dimensions.csv, parameters_fresh.csv, overrides/), wrote config.yaml manifest + README, updated refs in R/ scripts, data-raw/, CLAUDE.md
-- Phase 2/3 done: `lnk_config()` loader with validation, S3 print method, 9 tests (identifier, missing manifest, missing keys, missing files, custom path, bcfishpass bundle, print, override missing). All 146 link tests passing, lint clean. Added `yaml` to Imports, moved `%||%` to utils.R. pkgdown reference updated, NEWS entry, bumped to 0.2.0.
-- Phase 5 done: compare_bcfishpass.R now uses `lnk_config("bcfishpass")` for rules_yaml, parameters_fresh, and dimensions paths. Parse-check passes. Full BULK run deferred — change is path-source only, no structural edits.
-- Code-check round 1 surfaced one real bug (resolver foot-gun: bare names could be shadowed by a local dir in CWD). Fixed in `.lnk_config_resolve_dir` (require `/` for path inputs), regression test added. 28 lnk_config tests, 149 link tests passing.
-- Next: PR with SRED tag
+
+- Archived lnk_config PWF (shipped as link 0.2.0 via PR #39)
+- Starting link#38: `_targets.R` pipeline
+- Dependencies cleared: fresh 0.14.0 (frs_barriers_minimal) and link 0.2.0 (lnk_config) are on main
+- rtj data parity on M4 + M1 confirmed; R install on M1 (Phase 3) still pending but not blocking — single-host first
+- Issue #38 updated with package-vs-pipeline split (helpers in `R/`, `_targets.R` + comparison in `data-raw/`)
+- PR 1 Phase 1.1 done: `lnk_pipeline_setup()` (originally `lnk_habitat_setup_schema`, renamed before building more). Mocked tests for SQL shape + identifier validation (8 passing). Live DB test intentionally skipped — CREATE SCHEMA semantics are Postgres's, not ours to test.
+- Naming decision: prefix is `lnk_pipeline_*` (not `lnk_habitat_*` — only 1 of 6 phases is actually about habitat). Phase names read as verbs: setup → load → prepare → break → classify → connect.
+- Param decision: canonical `(conn, aoi, cfg, schema)`. `aoi` follows fresh convention — accepts a WSG code today; extends to ltree filters, sf polygons, mapsheets later. `setup` is the only outlier: `(conn, schema, overwrite)`.
+- PR 1 Phase 1.2 done: `lnk_pipeline_load()` — loads crossings + misc crossings + applies modelled fixes (NONE/OBS → PASSABLE) + PSCIS barrier status overrides. Split into three internal `@noRd` helpers for readability. Cleaner scope than the original "load_inputs" plan: falls, definite barriers, observation exclusions, and habitat classification moved to `prepare` where they're actually consumed. 12 tests (4 input validation + 4 fixes SQL/branching + 1 apply_pscis branching + 3 structure). 169 link tests total.
+- PR 1 Phase 1.3 done: `lnk_pipeline_prepare()` — thin orchestrator over 6 internal sub-helpers (prep_load_aux, prep_gradient, prep_natural, prep_overrides, prep_minimal, prep_network). First real consumer of `frs_barriers_minimal()` from fresh 0.14.0. `.lnk_quote_literal()` added to utils.R for safe SQL literal interpolation. 31 new tests (input validation + SQL shape + 4 model minimal reductions + union). Full link suite at 200 passing.
+- Code-check found one genuine architectural concern for PR 2: `fresh.streams` is a shared schema, parallel WSG runs on one host would collide. Noted in findings.md with three mitigation options (leaning toward `workers = 1` for initial PR 2).
+- PR 1 Phase 1.4 done: `lnk_pipeline_break()` — builds observations_breaks (species-filtered via `cfg$wsg_species` + data-error exclusions), habitat_endpoints (DRM + URM union), crossings_breaks, then sequential `frs_break_apply` respecting `cfg$pipeline$break_order` with `id_segment` reassignment between rounds. Four internal `@noRd` sub-helpers. 13 new tests (input validation + obs species derivation incl. CT expansion + SQL shape per branch + break_order honored). Full link suite at 229 passing.
+- PR 1 Phase 1.5/1.6 done: `lnk_pipeline_classify()` + `lnk_pipeline_connect()` — classify builds `fresh.streams_breaks` (gradient FULL + falls + definite + crossings, WSG-filtered) then calls `frs_habitat_classify()` with rules YAML + barrier overrides. Connect wraps fresh's `.frs_run_connectivity` for per-species cluster + connected_waterbody. Both auto-derive species from `cfg$parameters_fresh` ∩ `cfg$wsg_species` presence for the AOI; both accept explicit `species =` override. 22 tests covering input validation, species derivation, access-gating breaks SQL shape, no-species error. Full link suite at 251 passing.
+- **All six pipeline helpers complete.**
+- PR 1 Phase 1.7 done: compare_bcfishpass.R rewritten from 635 lines to 136 lines using the six helpers. ADMS run 67s end-to-end, all species within 5%, spawning values identical to research doc, rearing within ~1% (acceptable ordering variance from id_segment tie-breaking).
+- Fix along the way: added `cfg$species` (parsed from rules YAML at load) so `lnk_pipeline_classify_species` intersects against rules species (8) instead of parameters_fresh species (11). parameters_fresh has CT/DV/RB which bcfishpass doesn't model. Also added `barriers_definite` to `config.yaml` `break_order` (was missing).
+- PR 1 ready to close. Remaining: NEWS/DESCRIPTION bump, final `/code-check`, PR with SRED tag.

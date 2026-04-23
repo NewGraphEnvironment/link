@@ -127,11 +127,15 @@ lnk_config <- function(name_or_path) {
     utils::read.csv(p, stringsAsFactors = FALSE)
   })
 
+  rules_yaml_path <- resolve_required("rules_yaml")
+  rules_species <- names(yaml::read_yaml(rules_yaml_path))
+
   out <- list(
     name = manifest$name,
     dir = dir,
-    rules_yaml = resolve_required("rules_yaml"),
+    rules_yaml = rules_yaml_path,
     dimensions_csv = resolve_required("dimensions_csv"),
+    species = rules_species,
     parameters_fresh = utils::read.csv(resolve_required("parameters_fresh"),
                                        stringsAsFactors = FALSE),
     habitat_classification = read_csv_optional("habitat_classification"),
