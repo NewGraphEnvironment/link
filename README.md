@@ -86,6 +86,29 @@ fresh::frs_habitat(conn, "MORR",
 lnk_aggregate(conn, "working.crossings", "fresh.streams_habitat")
 ```
 
+## Full pipeline (reproducing bcfishpass)
+
+The primitives above assemble into a six-phase pipeline that reproduces
+bcfishpass's freshwater habitat classification for any watershed group.
+A config bundle declares the manifest of rules, parameters, and override
+CSVs that drive a run.
+
+```r
+cfg <- lnk_config("bcfishpass")
+
+lnk_pipeline_setup(conn, schema = "working_bulk", overwrite = TRUE)
+lnk_pipeline_load(conn,    aoi = "BULK", cfg = cfg, schema = "working_bulk")
+lnk_pipeline_prepare(conn, aoi = "BULK", cfg = cfg, schema = "working_bulk")
+lnk_pipeline_break(conn,   aoi = "BULK", cfg = cfg, schema = "working_bulk")
+lnk_pipeline_classify(conn, aoi = "BULK", cfg = cfg, schema = "working_bulk")
+lnk_pipeline_connect(conn, aoi = "BULK", cfg = cfg, schema = "working_bulk")
+```
+
+`data-raw/_targets.R` wraps this over five validated WSGs (ADMS, BULK,
+BABL, ELKR, DEAD) with `targets` for caching and reproducibility. See
+the [Reproducing bcfishpass](https://newgraphenvironment.github.io/link/articles/reproducing-bcfishpass.html)
+vignette for the full story.
+
 ## Ecosystem
 
 | Package | Role |
