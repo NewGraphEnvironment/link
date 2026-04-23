@@ -31,6 +31,27 @@ to run it, and how the output compares to bcfishpass reference tables.
 Full per-phase pipeline detail lives in
 [`research/bcfishpass_comparison.md`](https://github.com/NewGraphEnvironment/link/blob/main/research/bcfishpass_comparison.md).
 
+## Prerequisites
+
+The pipeline reads from a PostgreSQL database with
+[fwapg](https://github.com/smnorris/fwapg) loaded. fwapg is the
+processed form of the BC Freshwater Atlas — it adds `wscode_ltree`
+and `localcode_ltree` columns to the stream-network tables (PostgreSQL
+`ltree` types encoding watershed topology) and provides the SQL
+functions the pipeline uses to traverse the network:
+[`fwa_upstream`](https://github.com/smnorris/fwapg/blob/main/sql/functions/FWA_Upstream.sql),
+[`fwa_downstream`](https://github.com/smnorris/fwapg/blob/main/sql/functions/FWA_Downstream.sql),
+[`fwa_watershedatmeasure`](https://github.com/smnorris/fwapg/blob/main/sql/functions/FWA_WatershedAtMeasure.sql),
+and others. See fwapg's repository for installation.
+
+[bcfishobs](https://github.com/smnorris/bcfishobs) is optional but
+recommended — it populates `bcfishobs.observations`, the table that
+drives per-species overrides of natural barriers below.
+
+The comparison layer in the map at the end of this vignette reads
+from a read-only tunnel to the bcfishpass reference database. That is
+a validation convenience, not a requirement for running link.
+
 ## How the bcfishpass configuration works
 
 The rollup measures **intrinsic habitat potential conditioned on
@@ -45,7 +66,7 @@ suitable *and* accessible — accessibility and intrinsic potential
 are separable in general, and a fuller treatment would report both.
 
 ```
-FWA streams (raw)
+FWA stream network (via fwapg, ltree-enriched)
     │
     │   gradient thresholds detect barriers @ 15 / 20 / 25 / 30 %
     ▼
@@ -78,16 +99,19 @@ segment is one classification unit. Breaks therefore fall at positions
 where the decision can change:
 
 - **Observations.** bcfishpass's per-species access models flip a
-  natural-barrier reach to accessible when the count of fish
-  observations on the upstream flow path meets a threshold. Thresholds
-  and species filters vary per model (see the SQL under
+  natural-barrier reach (gradient barrier, falls, or user-definite
+  barrier) to accessible when the count of upstream fish
+  observations meets a threshold. Thresholds and species filters
+  vary per model (see the SQL under
   [`model/access/`](https://github.com/smnorris/bcfishpass/tree/ea3c5d8/model)).
   Per-species parameters used by link live in the bundled
   `"bcfishpass"` config's
   [`parameters_fresh.csv`](https://github.com/NewGraphEnvironment/link/blob/main/inst/extdata/configs/bcfishpass/parameters_fresh.csv)
   (`observation_threshold`, `observation_date_min`,
-  `observation_buffer_m`, `observation_species`). For BULK (bcfishpass
-  commit `ea3c5d8`):
+  `observation_buffer_m`, `observation_species`). Override counting
+  is done in SQL via
+  [`fwa_upstream`](https://github.com/smnorris/fwapg/blob/main/sql/functions/FWA_Upstream.sql)
+  by `lnk_barrier_overrides`. For BULK (bcfishpass commit `ea3c5d8`):
 
     - BT — ≥ 1 observation of BT, CH, CM, CO, PK, SK, or ST; any date
     - CH / CM / CO / PK / SK — ≥ 5 observations in that salmon set,
@@ -103,6 +127,17 @@ where the decision can change:
   [`fresh::frs_barriers_minimal()`](https://newgraphenvironment.github.io/fresh/reference/frs_barriers_minimal.html))
   so segmentation doesn't split reaches that would end up in the
   same access state.
+
+- **User-identified definite barriers** — positions listed in
+  bcfishpass's
+  [`user_barriers_definite.csv`](https://github.com/smnorris/bcfishpass/blob/ea3c5d8/data/user_barriers_definite.csv)
+  (mirrored at
+  [`inst/extdata/configs/bcfishpass/overrides/user_barriers_definite.csv`](https://github.com/NewGraphEnvironment/link/blob/main/inst/extdata/configs/bcfishpass/overrides/user_barriers_definite.csv)).
+  Each row specifies `blue_line_key` and `downstream_route_measure`
+  for a barrier that always blocks access. Treated the same as falls
+  — always-blocking, always a break position, eligible for
+  per-species override via `lnk_barrier_overrides` when enough
+  upstream observations clear the threshold.
 
 - **Habitat classification endpoints** — manual spawning / rearing
   delineations from bcfishpass's
