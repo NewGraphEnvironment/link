@@ -1,9 +1,9 @@
 # Progress
 
-## Session 2026-04-23 — #48 kickoff
+## Session 2026-04-23 — #46 kickoff
 
-- PR #47 merged (link 0.6.0, squash `8eda3fb`). Local main rebased onto origin/main; b330672 dropped as empty (already in squash).
-- Branched `48-user-barriers-definite-bypass` off main.
-- Archived #44 PWF under `planning/archive/2026-04-23-barriers-definite-control/` with README.
-- Pre-flight diagnostic (findings.md): ELKR has 4 user-definite override matches that need fixing; other 4 WSGs are empty for barriers_definite. ELKR is the active test case.
-- Next: Phase 1 — modify `.lnk_pipeline_prep_natural()` and `.lnk_pipeline_prep_minimal()` per Shape A in findings.md.
+- PR #49 merged as link 0.7.0 (squash `5cbd75d`). Tag `v0.7.0` pushed.
+- Archived #48 PWF under `planning/archive/2026-04-23-user-barriers-definite-bypass/`.
+- Branched `46-manifest-driven-probes` off main.
+- Scope: replace two `information_schema.tables` probes with direct `cfg$...` checks. Pure refactor, no behavior change, rollup must be bit-identical to post-#48 (`50908d234e2131fc0842dc3ab653ae78`).
+- Next: Phase 1 code — add `cfg` to `.lnk_pipeline_prep_gradient()` signature + manifest check, replace probe in `.lnk_pipeline_prep_overrides()` with manifest check.

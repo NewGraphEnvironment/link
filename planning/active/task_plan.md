@@ -1,48 +1,33 @@
-# Task Plan: user_barriers_definite should bypass override (#48)
+# Task Plan: Migrate pipeline probes to manifest-driven gating (#46)
 
 ## Goal
 
-Match bcfishpass's architecture for `user_barriers_definite` rows: they must be appended to each per-model barrier table **post-filter** — always blocking, never eligible for observation override. Same-family fix as #44 but different mechanism.
+Replace two `information_schema.tables` probes with direct manifest-key checks. Pure refactor, no behavior change — rollup must remain bit-identical to the post-#48 baseline (`50908d234e2131fc0842dc3ab653ae78`).
 
-Pre-fix defect on ELKR confirmed: 4 override rows at user-definite positions (Erickson Creek exclusion, 2× Spillway MISC) that bcfishpass would keep as blockers.
+## Phase 1: Code
 
-## Phase 1: Code change (simpler than initially planned)
-
-Investigation showed `barriers_definite` is already wired as a break source in `lnk_pipeline_break` (sequential `frs_break_apply`) and into `fresh.streams_breaks` in `lnk_pipeline_classify` (access-gating barrier table). User-definite positions already end up as segment boundaries AND as blocking barriers at classification — bcfishpass parity on those two surfaces.
-
-The only defect is `.lnk_pipeline_prep_natural()` UNIONing `barriers_definite` into `natural_barriers`. `natural_barriers` is passed to `lnk_barrier_overrides()` which generates per-species override (skip) rows for any barrier with threshold observations upstream. That's what lets user-definite positions be re-opened.
-
-Only `natural_barriers` caller outside prep_natural is `.lnk_pipeline_prep_overrides()` (confirmed via grep). Safe to drop the definite UNION without touching prep_minimal.
-
-- [x] `.lnk_pipeline_prep_natural()` — drop the `INSERT INTO natural_barriers SELECT ... FROM barriers_definite` block. `natural_barriers` becomes gradient + falls only. Inline NOTE comment explains the bcfishpass parity reasoning.
-- [ ] Update tests in `test-lnk_pipeline_prepare.R` — the existing `prep_natural unions gradient + falls + definite` assertion needs to drop the "definite" clause.
+- [ ] `.lnk_pipeline_prep_gradient()` — add `cfg` to signature. Replace the `information_schema.tables` probe for `barriers_definite_control` with `!is.null(cfg$overrides$barriers_definite_control)`. Update the caller (`lnk_pipeline_prepare()`) to pass `cfg`.
+- [ ] `.lnk_pipeline_prep_overrides()` — already receives `cfg`. Replace the `information_schema.tables` probe for `user_habitat_classification` with `!is.null(cfg$habitat_classification)`.
+- [ ] Update mocked tests in `test-lnk_pipeline_prepare.R`. The existing tests mock `dbGetQuery` to fake the probe result — swap those for `cfg` stubs with / without the relevant manifest keys.
 
 ## Phase 2: Verification
 
-- [ ] `devtools::test()` — all green.
-- [ ] `pak::local_install()` and `cd data-raw && tar_destroy + tar_make`.
-- [ ] Query `working_elkr.barrier_overrides` joined to `working_elkr.barriers_definite` — should be empty (pre-fix: 4 matches).
-- [ ] ELKR rollup should shift toward bcfishpass: link BT/WCT spawning currently +3.4% / +4.0%; expected to DECREASE (closer to 0) since upstream habitat at Erickson and Spillway positions now correctly blocked.
-- [ ] Reproducibility: two consecutive `tar_destroy + tar_make` produce bit-identical 46-row rollups.
+- [ ] `devtools::test()` — 279 PASS retained.
+- [ ] `pak::local_install()` + `cd data-raw && tar_destroy + tar_make`.
+- [ ] `digest::digest()` on rollup vs `50908d234e2131fc0842dc3ab653ae78` — **must match** (behavior is unchanged).
+- [ ] If digest differs: stop and root-cause. A mismatch means the refactor has unintentionally changed behavior.
 
-## Phase 3: Artifacts
+## Phase 3: Ship
 
-- [ ] Regenerate vignette artifacts via `data-raw/vignette_reproducing_bcfishpass.R`.
-- [ ] Correct vignette text: user-definite barriers bullet no longer says "eligible for per-species override". Say they always block, are appended post-filter (bcfishpass parity).
-- [ ] `research/bcfishpass_comparison.md` — new row in "Key fixes" table; update ELKR parity table with post-fix numbers; short paragraph describing the fix.
-- [ ] `NEWS.md` 0.7.0 entry.
-- [ ] `DESCRIPTION` 0.6.0 → 0.7.0.
-
-## Phase 4: Ship
-
-- [ ] `/code-check` on staged diff — 2 rounds minimum.
-- [ ] Commit atomically (code + tests, then verification, then artifacts).
-- [ ] Push branch.
-- [ ] Open PR with SRED tag (`Relates to NewGraphEnvironment/sred-2025-2026#24`), link to #48, note closing of #48.
+- [ ] `/code-check` on staged diff.
+- [ ] No version bump (pure refactor, no behavior change).
+- [ ] No NEWS entry (or a terse internal-architecture note — reader opinion).
+- [ ] Commit atomically.
+- [ ] PR with SRED tag (`Relates to NewGraphEnvironment/sred-2025-2026#24`). `Fixes #46`.
 
 ## Versions at start
 
 - fresh: 0.14.0
-- link: main (0.6.0, target 0.7.0)
+- link: main (0.7.0)
 - bcfishpass: ea3c5d8
 - fwapg: Docker (FWA 20240830)
