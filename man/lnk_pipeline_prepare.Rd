@@ -92,6 +92,7 @@ Other pipeline:
 \code{\link{lnk_pipeline_classify}()},
 \code{\link{lnk_pipeline_connect}()},
 \code{\link{lnk_pipeline_load}()},
-\code{\link{lnk_pipeline_setup}()}
+\code{\link{lnk_pipeline_setup}()},
+\code{\link{lnk_pipeline_species}()}
 }
 \concept{pipeline}

@@ -68,7 +68,7 @@ lnk_pipeline_classify <- function(conn, aoi, cfg, schema,
     stop("thresholds_csv not found: ", thresholds_csv, call. = FALSE)
   }
 
-  species <- species %||% .lnk_pipeline_classify_species(cfg, aoi)
+  species <- species %||% lnk_pipeline_species(cfg, aoi)
   if (length(species) == 0L) {
     stop("No species resolved for AOI '", aoi, "'. Either pass `species` ",
          "explicitly or ensure cfg$parameters_fresh and cfg$wsg_species ",
@@ -93,32 +93,6 @@ lnk_pipeline_classify <- function(conn, aoi, cfg, schema,
     verbose = FALSE)
 
   invisible(conn)
-}
-
-
-#' Resolve the species list for an AOI
-#'
-#' Intersect the species the config's rules YAML classifies
-#' (`cfg$species`, parsed at load time) with the species present in
-#' the AOI (from `cfg$wsg_species`). Falls back to `cfg$species` if
-#' wsg_species is missing.
-#' @noRd
-.lnk_pipeline_classify_species <- function(cfg, aoi) {
-  configured <- cfg$species %||% unique(cfg$parameters_fresh$species_code)
-
-  wsg_sp <- cfg$wsg_species
-  if (is.null(wsg_sp)) return(configured)
-
-  row <- wsg_sp[wsg_sp$watershed_group_code == aoi, ]
-  if (nrow(row) == 0) return(character(0))
-
-  spp_cols <- c("bt", "ch", "cm", "co", "ct", "dv",
-                "pk", "rb", "sk", "st", "wct")
-  present <- vapply(spp_cols,
-    function(x) identical(row[[x]], "t"), logical(1))
-  aoi_species <- toupper(spp_cols[present])
-
-  intersect(configured, aoi_species)
 }
 
 

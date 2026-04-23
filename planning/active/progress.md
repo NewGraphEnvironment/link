@@ -19,3 +19,18 @@
 - PR 1 Phase 1.7 done: compare_bcfishpass.R rewritten from 635 lines to 136 lines using the six helpers. ADMS run 67s end-to-end, all species within 5%, spawning values identical to research doc, rearing within ~1% (acceptable ordering variance from id_segment tie-breaking).
 - Fix along the way: added `cfg$species` (parsed from rules YAML at load) so `lnk_pipeline_classify_species` intersects against rules species (8) instead of parameters_fresh species (11). parameters_fresh has CT/DV/RB which bcfishpass doesn't model. Also added `barriers_definite` to `config.yaml` `break_order` (was missing).
 - PR 1 ready to close. Remaining: NEWS/DESCRIPTION bump, final `/code-check`, PR with SRED tag.
+- PR 1 MERGED as link 0.3.0 (PR #41). Branch deleted.
+
+## PR 2 kickoff
+
+- Branched `38-targets-pipeline-pr2` off main.
+- Wrote `data-raw/compare_bcfishpass_wsg(wsg, config)` — wraps the six phase helpers for one WSG, returns a small tibble (wsg × species × habitat_type × link_km × bcfishpass_km × diff_pct). KB-scale return — no geometry, ships cleanly over SSH when distributed.
+- Wrote `data-raw/_targets.R` — `tar_map(wsg = 4 WSGs)` over the per-WSG target, `crew_controller_local(workers = 1)`, rollup target binds all four tibbles. Serial because `fresh.streams` is a shared schema across workers on the same host (findings.md).
+- Added `targets` / `crew` / `tibble` / `dplyr` to DESCRIPTION Suggests.
+- Drift lesson from PR 1 → Issue #40 filed (CSV provenance + runtime stamps). Scope expands `lnk_stamp` (#24) into the lineage source.
+- Next: `/code-check` on PR 2 staged diff, then `tar_make()` end-to-end, commit stamped verification log.
+- Reframing (per user): the correctness bar is **bit-identical output from the same inputs**, not "within 5% of bcfishpass." The 5% comparison is parity diagnostics only. Saved to memory (`feedback_reproducibility.md`) + CLAUDE.md. Research-doc drift from earlier today (BT rearing -0.7 → -1.1) is env-state drift, not pipeline non-determinism — to be traceable once stamps/lineage ship (#40).
+- tar_make end-to-end done. Three successive runs (10, 11, 12) produced bit-identical 34-row rollup tibbles — reproducibility proven. Wall clock ~8m 30s per run (serial).
+- Promoted `.lnk_pipeline_classify_species` → exported `lnk_pipeline_species(cfg, aoi)` to remove duplication with the data-raw inline helper. Tests moved to `test-lnk_pipeline_species.R`. classify + connect internals updated. Compare wrapper uses `link::lnk_pipeline_species()`.
+- Code-check surfaced a real connection leak (second `dbConnect` could throw before `on.exit` registered) and SQL quoting inconsistency on species list. Both fixed; 12th run confirms numbers unchanged.
+- DESCRIPTION bumped to 0.4.0. NEWS entry captures the reproducibility + parity distinction. Committing and pushing PR 2 next.

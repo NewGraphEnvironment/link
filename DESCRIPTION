@@ -1,6 +1,6 @@
 Package: link
 Title: Crossing Connectivity Interpretation
-Version: 0.3.0
+Version: 0.4.0
 Authors@R:
     person("Allan", "Irvine", , "airvine@newgraphenvironment.com",
            role = c("aut", "cre"),
@@ -28,12 +28,16 @@ Remotes:
 Suggests:
     bcdata,
     bookdown,
+    dplyr,
     fresh,
     knitr,
     lintr,
     mockery,
     rmarkdown,
+    tarchetypes,
+    targets,
     testthat (>= 3.0.0),
+    tibble,
     withr
 Config/testthat/edition: 3
 Encoding: UTF-8

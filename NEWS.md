@@ -1,3 +1,12 @@
+# link 0.4.0
+
+Targets-driven comparison pipeline for all four validated watershed groups.
+
+- Add `data-raw/_targets.R` — `tar_map(wsg = c("ADMS", "BULK", "BABL", "ELKR"))` over a per-AOI target function, synchronous execution, `dplyr::bind_rows` rollup. `fresh.streams` is a shared schema so single-host parallelism would collide — runs serially today; distributed runs (M4 + M1) are a follow-up alongside a fresh upstream change for per-AOI output paths ([#38](https://github.com/NewGraphEnvironment/link/issues/38))
+- Add `data-raw/compare_bcfishpass_wsg(wsg, config)` — per-AOI target function. Wraps the six `lnk_pipeline_*` phases, diffs the output against `bcfishpass.habitat_linear_*` reference on the tunnel DB, returns a ~10-row tibble (`wsg × species × habitat_type × link_km × bcfishpass_km × diff_pct`). KB-scale — safe to ship over SSH.
+- Promote `.lnk_pipeline_classify_species` to an exported `lnk_pipeline_species(cfg, aoi)` — canonical public API for "species this config classifies in this AOI." Used by `lnk_pipeline_classify` and `lnk_pipeline_connect` internally and by the targets per-AOI function externally. Removes the duplicate private helper that was briefly inlined in `data-raw/`.
+- End-to-end verification (`data-raw/logs/20260422_11_tar_make_final.txt`) — 4 WSGs / 34 rows produced over 8.5 minutes wall clock (serial). **Reproducibility:** consecutive `tar_make()` invocations on the same DB state produce bit-identical rollup tibbles. **Parity to bcfishpass (informational):** all 34 `diff_pct` values within 5% of reference; research-doc drift (BT rearing: -0.7 → -1.1 pp) traces to env state between 2026-04-15 and today, not to pipeline non-determinism.
+
 # link 0.3.0
 
 Pipeline phase helpers extract the bcfishpass comparison orchestration into composable building blocks. The 635-line `data-raw/compare_bcfishpass.R` is now 136 lines of sequenced helper calls.
