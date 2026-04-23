@@ -1,0 +1,191 @@
+---
+title: "Reproducing bcfishpass with link + fresh"
+output: bookdown::html_vignette2
+vignette: >
+  %\VignetteIndexEntry{Reproducing bcfishpass with link + fresh}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment  = "#>",
+  fig.width = 8,
+  fig.height = 6,
+  dpi = 72
+)
+library(link)
+```
+
+## Why this vignette
+
+[bcfishpass](https://github.com/smnorris/bcfishpass) is the reference
+model for freshwater habitat classification and fish passage
+prioritization in British Columbia. link + [fresh](https://newgraphenvironment.github.io/fresh/)
+together give you a configurable, reproducible R-side pipeline that
+can reproduce bcfishpass's habitat classification — and, with a
+different config bundle, run the same machinery with different
+interpretation choices.
+
+This vignette walks through the `"bcfishpass"` config: load the
+bundle, run the pipeline across four watershed groups, inspect the
+rollup, and visualize one result. The goal is **bit-identical output
+from the same inputs** — parity against bcfishpass reference tables
+is an informational comparison, not the correctness bar.
+
+## The three-line entrypoint
+
+Every run of the comparison pipeline follows this shape:
+
+```{r entrypoint, eval = FALSE}
+library(link)
+library(targets)
+
+# `_targets.R` lives in data-raw/ — run from that directory
+# or use targets::tar_config_set(script = "data-raw/_targets.R").
+setwd("data-raw")
+
+tar_make()                  # ~8.5 min serial, 4 WSGs
+rollup <- tar_read(rollup)  # tibble of per-WSG / per-species diffs
+```
+
+`tar_make()` runs `compare_bcfishpass_wsg()` once per watershed group
+(ADMS, BULK, BABL, ELKR). Each call exercises the six
+`lnk_pipeline_*` phases — setup, load, prepare, break, classify,
+connect — then queries the bcfishpass reference tables on a read-only
+tunnel DB and returns a ~10-row tibble.
+
+## The targets graph
+
+Inside each per-WSG target, the pipeline looks like this:
+
+```
+lnk_config("bcfishpass") ─┬─► comparison_ADMS ─┐
+                          ├─► comparison_BULK ─┤
+                          ├─► comparison_BABL ─┼─► rollup (34 rows)
+                          └─► comparison_ELKR ─┘
+```
+
+See `research/bcfishpass_comparison.md` in the repo for:
+
+- the full per-phase pipeline DAG (setup → load → prepare → break →
+  classify → connect, with data inputs) rendered as Mermaid
+- a colour-coded targets orchestration diagram
+- per-species / per-watershed-group parity numbers
+- documented gaps and the interpretation decisions that drive them
+
+## The rollup
+
+The rollup binds every per-WSG tibble into one 34-row frame.
+
+```{r load-rollup}
+rollup_path <- system.file("extdata", "vignette-data", "rollup.rds",
+                            package = "link")
+rollup <- readRDS(rollup_path)
+rollup
+```
+
+Interpretation:
+
+- `link_km` — kilometres our pipeline classified as habitat
+  (spawning or rearing) per species × watershed group
+- `bcfishpass_km` — kilometres from bcfishpass's reference
+  `habitat_linear_*` tables
+- `diff_pct` — informational: `(link_km − bcfishpass_km) / bcfishpass_km × 100`
+
+All 34 rows fall within 5% of the bcfishpass reference. Perfect
+agreement would be `diff_pct = 0`; modest differences arise from
+segmentation boundary choices, rounding in `downstream_route_measure`,
+and deliberate interpretation differences baked into the bcfishpass
+config's rules YAML.
+
+```{r rollup-summary}
+summary(rollup$diff_pct)
+cat("Within 5%: ", all(abs(rollup$diff_pct[!is.na(rollup$diff_pct)]) < 5))
+```
+
+## What a result looks like
+
+Numbers on a table give you the aggregate — a map tells you where the
+habitat is. Below is BULK's chinook (CH) habitat, filtered to segments
+classified as spawning, rearing, or both.
+
+```{r load-bulk-ch, message = FALSE}
+bulk_ch_path <- system.file("extdata", "vignette-data", "bulk_ch.rds",
+                             package = "link")
+bulk_ch <- readRDS(bulk_ch_path)
+bulk_ch
+```
+
+```{r map-bulk-ch, message = FALSE, warning = FALSE}
+if (requireNamespace("mapgl", quietly = TRUE)) {
+  mapgl::maplibre(
+    bounds = sf::st_bbox(bulk_ch),
+    style = mapgl::carto_style("positron")
+  ) |>
+    mapgl::add_line_layer(
+      id = "bulk_ch",
+      source = bulk_ch,
+      line_color = mapgl::match_expr(
+        "habitat",
+        values = c("spawning only",
+                    "rearing only",
+                    "spawning + rearing"),
+        stops  = c("#e31a1c", "#1f78b4", "#6a3d9a"),
+        default = "#999999"
+      ),
+      line_width = 2
+    ) |>
+    mapgl::add_legend(
+      "BULK · chinook habitat",
+      values = c("spawning only",
+                  "rearing only",
+                  "spawning + rearing"),
+      colors = c("#e31a1c", "#1f78b4", "#6a3d9a"),
+      type = "categorical"
+    )
+} else {
+  message("Install `mapgl` (pak::pak('mapgl')) to render this map.")
+}
+```
+
+Rearing dominates the network (CH juveniles use mainstems
+extensively); spawning is more focused — low gradient, appropriate
+channel width. Where the two overlap, the segment supports both life
+stages.
+
+## Reproducibility
+
+The pipeline is **deterministic**. Two `tar_make()` invocations on
+the same fwapg + bcfishobs state produce bit-identical rollups. If
+you observe drift between runs with the same inputs, that is a bug.
+
+If input data shifts (a fresh `channel_width` sync, new observations
+loaded into `bcfishobs`, a bcfishpass reference refresh), outputs
+will correctly differ. The lineage tooling tracked in
+[link#40](https://github.com/NewGraphEnvironment/link/issues/40) will
+make every output traceable to exactly the inputs that produced it.
+
+## Where newgraph's own interpretation lives
+
+This vignette runs the `"bcfishpass"` config — reproduces bcfishpass
+behavior exactly, for validation. A companion `"default"` config
+bundle is scaffolded at `inst/extdata/configs/default/` and will
+carry newgraph's own interpretation choices (intermittent streams
+included for rearing, sharper spawn gradient minimums, expanded lake
+rearing rules). The biology behind those departures is tracked in
+[link#19](https://github.com/NewGraphEnvironment/link/issues/19),
+[#20](https://github.com/NewGraphEnvironment/link/issues/20),
+[#21](https://github.com/NewGraphEnvironment/link/issues/21); a
+second vignette will compare the two configs side by side once those
+land.
+
+## Further reading
+
+- `research/bcfishpass_comparison.md` — per-phase pipeline DAG,
+  remaining gaps, break sources, key fixes
+- `?lnk_pipeline_setup` etc. — reference for each phase helper
+- `?lnk_config` — config bundle structure
+- `data-raw/_targets.R` — pipeline definition
+- `data-raw/compare_bcfishpass_wsg.R` — per-AOI target function
