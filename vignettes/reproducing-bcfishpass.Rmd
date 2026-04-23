@@ -202,18 +202,21 @@ library(targets)
 # `_targets.R` lives in data-raw/; run from that directory.
 setwd("data-raw")
 
-tar_make()                  # 4 WSGs, serial
+tar_make()                  # 5 WSGs, serial
 rollup <- tar_read(rollup)  # per-WSG × species × habitat tibble
 ```
 
 `tar_make()` runs
 [`compare_bcfishpass_wsg()`](https://github.com/NewGraphEnvironment/link/blob/main/data-raw/compare_bcfishpass_wsg.R)
-once each for Adams (ADMS), Bulkley (BULK), Babine (BABL), and Elk
-(ELKR), binding the per-WSG tibbles into one rollup. Each call
-exercises the six `lnk_pipeline_*` phases. All four are run so the
-rollup spans the species assemblages and watershed structures used
-in bcfishpass validation — BT with CH, CO, SK on ADMS; PK and ST
-added on BULK and BABL; BT with WCT on ELKR. Method agreement across
+once each for Adams (ADMS), Bulkley (BULK), Babine (BABL), Elk
+(ELKR), and Deadman (DEAD), binding the per-WSG tibbles into one
+rollup. Each call exercises the six `lnk_pipeline_*` phases. ADMS/BULK/
+BABL/ELKR span the species assemblages used in bcfishpass validation —
+BT with CH, CO, SK on ADMS; PK and ST added on BULK and BABL; BT with
+WCT on ELKR. DEAD is an end-to-end test for the
+`barriers_definite_control` wiring: it has a single `barrier_ind = TRUE`
+control row with enough anadromous observations upstream to exercise
+the filter, which the other four WSGs don't. Method agreement across
 this spread is stronger evidence than agreement on a single WSG.
 
 ## The rollup
@@ -235,7 +238,8 @@ bcfishpass_km × 100`.
   w <- stats::reshape(x, idvar = "species", timevar = "wsg",
                        direction = "wide", v.names = "diff_pct")
   names(w)[-1] <- sub("diff_pct\\.", "", names(w)[-1])
-  cols <- intersect(c("species", "ADMS", "BULK", "BABL", "ELKR"), names(w))
+  cols <- intersect(c("species", "ADMS", "BULK", "BABL", "ELKR", "DEAD"),
+    names(w))
   w <- w[order(w$species), cols]
   row.names(w) <- NULL
   w
