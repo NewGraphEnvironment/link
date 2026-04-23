@@ -220,9 +220,13 @@ bypass. Numeric impact and the reasoning are in <a href="https://github.com/NewG
 <span><span class="fu"><a href="https://docs.ropensci.org/targets/reference/tar_make.html" class="external-link">tar_make</a></span><span class="op">(</span><span class="op">)</span>                  <span class="co"># 4 WSGs, serial</span></span>
 <span><span class="va">rollup</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://docs.ropensci.org/targets/reference/tar_read.html" class="external-link">tar_read</a></span><span class="op">(</span><span class="va">rollup</span><span class="op">)</span>  <span class="co"># per-WSG × species × habitat tibble</span></span></code></pre></div>
 <p><code><a href="https://docs.ropensci.org/targets/reference/tar_make.html" class="external-link">tar_make()</a></code> runs <a href="https://github.com/NewGraphEnvironment/link/blob/main/data-raw/compare_bcfishpass_wsg.R" class="external-link"><code>compare_bcfishpass_wsg()</code></a>
-once per watershed group — ADMS, BULK, BABL, ELKR — and binds the
-per-WSG tibbles into one rollup. Each call exercises the six
-<code>lnk_pipeline_*</code> phases.</p>
+once each for Adams (ADMS), Bulkley (BULK), Babine (BABL), and Elk
+(ELKR), binding the per-WSG tibbles into one rollup. Each call exercises
+the six <code>lnk_pipeline_*</code> phases. All four are run so the
+rollup spans the species assemblages and watershed structures used in
+bcfishpass validation — BT with CH, CO, SK on ADMS; PK and ST added on
+BULK and BABL; BT with WCT on ELKR. Method agreement across this spread
+is stronger evidence than agreement on a single WSG.</p>
 </div>
 <div class="section level2">
 <h2 id="the-rollup">The rollup<a class="anchor" aria-label="anchor" href="#the-rollup"></a>
@@ -230,31 +234,157 @@ per-WSG tibbles into one rollup. Each call exercises the six
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">rollup</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"vignette-data"</span>, <span class="st">"rollup.rds"</span>,</span>
 <span>                               package <span class="op">=</span> <span class="st">"link"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p><code>link_km</code> and <code>bcfishpass_km</code> are kilometres
+classified as habitat (spawning or rearing, conditioned on natural
+accessibility) per species × watershed group.
+<code>diff_pct = (link_km − bcfishpass_km) / bcfishpass_km × 100</code>.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">rollup</span><span class="op">$</span><span class="va">diff_pct</span><span class="op">)</span></span>
-<span><span class="co">#&gt;    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's </span></span>
-<span><span class="co">#&gt;  -2.800  -0.100   1.600   1.294   3.100   4.800       1</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Within 5%: "</span>,</span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">rollup</span><span class="op">$</span><span class="va">diff_pct</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">rollup</span><span class="op">$</span><span class="va">diff_pct</span><span class="op">)</span><span class="op">]</span><span class="op">)</span> <span class="op">&lt;</span> <span class="fl">5</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Within 5%:  TRUE</span></span></code></pre></div>
-<p>Columns:</p>
-<ul>
-<li>
-<code>link_km</code> — kilometres classified as habitat (spawning or
-rearing, conditioned on accessibility) per species × watershed
-group</li>
-<li>
-<code>bcfishpass_km</code> — kilometres from bcfishpass reference
-<code>habitat_linear_*</code> tables</li>
-<li>
-<code>diff_pct</code> —
-<code>(link_km − bcfishpass_km) / bcfishpass_km × 100</code>
-</li>
-</ul>
-<p>Observed differences come from the stream-order bypass omission
-(notable on BT rearing in BULK) and from segmentation-boundary rounding
-where per-segment attributes fall near rule thresholds. Numeric detail
-is in <a href="https://github.com/NewGraphEnvironment/link/blob/main/research/bcfishpass_comparison.md" class="external-link"><code>research/bcfishpass_comparison.md</code></a>.</p>
+<code class="sourceCode R"><span><span class="va">.pivot</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">rollup</span>, <span class="va">which_habitat</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">x</span> <span class="op">&lt;-</span> <span class="va">rollup</span><span class="op">[</span><span class="va">rollup</span><span class="op">$</span><span class="va">habitat_type</span> <span class="op">==</span> <span class="va">which_habitat</span>,</span>
+<span>              <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"species"</span>, <span class="st">"wsg"</span>, <span class="st">"diff_pct"</span><span class="op">)</span><span class="op">]</span></span>
+<span>  <span class="va">w</span> <span class="op">&lt;-</span> <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/reshape.html" class="external-link">reshape</a></span><span class="op">(</span><span class="va">x</span>, idvar <span class="op">=</span> <span class="st">"species"</span>, timevar <span class="op">=</span> <span class="st">"wsg"</span>,</span>
+<span>                       direction <span class="op">=</span> <span class="st">"wide"</span>, v.names <span class="op">=</span> <span class="st">"diff_pct"</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">w</span><span class="op">)</span><span class="op">[</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">sub</a></span><span class="op">(</span><span class="st">"diff_pct\\."</span>, <span class="st">""</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">w</span><span class="op">)</span><span class="op">[</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span></span>
+<span>  <span class="va">cols</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sets.html" class="external-link">intersect</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"species"</span>, <span class="st">"ADMS"</span>, <span class="st">"BULK"</span>, <span class="st">"BABL"</span>, <span class="st">"ELKR"</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">w</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="va">w</span> <span class="op">&lt;-</span> <span class="va">w</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="va">w</span><span class="op">$</span><span class="va">species</span><span class="op">)</span>, <span class="va">cols</span><span class="op">]</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/row.names.html" class="external-link">row.names</a></span><span class="op">(</span><span class="va">w</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="cn">NULL</span></span>
+<span>  <span class="va">w</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">.pivot</span><span class="op">(</span><span class="va">rollup</span>, <span class="st">"spawning"</span><span class="op">)</span>,</span>
+<span>  digits <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  caption <span class="op">=</span> <span class="st">"Spawning parity (% diff vs bcfishpass)"</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<caption>Spawning parity (% diff vs bcfishpass)</caption>
+<thead><tr class="header">
+<th align="left">species</th>
+<th align="right">ADMS</th>
+<th align="right">BULK</th>
+<th align="right">BABL</th>
+<th align="right">ELKR</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">BT</td>
+<td align="right">1.8</td>
+<td align="right">3.1</td>
+<td align="right">4.1</td>
+<td align="right">3.4</td>
+</tr>
+<tr class="even">
+<td align="left">CH</td>
+<td align="right">0.5</td>
+<td align="right">1.9</td>
+<td align="right">3.8</td>
+<td align="right">—</td>
+</tr>
+<tr class="odd">
+<td align="left">CO</td>
+<td align="right">1.6</td>
+<td align="right">3.1</td>
+<td align="right">4.8</td>
+<td align="right">—</td>
+</tr>
+<tr class="even">
+<td align="left">PK</td>
+<td align="right">—</td>
+<td align="right">2.3</td>
+<td align="right">—</td>
+<td align="right">—</td>
+</tr>
+<tr class="odd">
+<td align="left">SK</td>
+<td align="right">3.7</td>
+<td align="right">-0.7</td>
+<td align="right">-2.8</td>
+<td align="right">—</td>
+</tr>
+<tr class="even">
+<td align="left">ST</td>
+<td align="right">—</td>
+<td align="right">1.9</td>
+<td align="right">3.8</td>
+<td align="right">—</td>
+</tr>
+<tr class="odd">
+<td align="left">WCT</td>
+<td align="right">—</td>
+<td align="right">—</td>
+<td align="right">—</td>
+<td align="right">4.0</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">.pivot</span><span class="op">(</span><span class="va">rollup</span>, <span class="st">"rearing"</span><span class="op">)</span>,</span>
+<span>  digits <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  caption <span class="op">=</span> <span class="st">"Rearing parity (% diff vs bcfishpass)"</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<caption>Rearing parity (% diff vs bcfishpass)</caption>
+<thead><tr class="header">
+<th align="left">species</th>
+<th align="right">ADMS</th>
+<th align="right">BULK</th>
+<th align="right">BABL</th>
+<th align="right">ELKR</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">BT</td>
+<td align="right">-1.1</td>
+<td align="right">-2.2</td>
+<td align="right">-1.9</td>
+<td align="right">-0.7</td>
+</tr>
+<tr class="even">
+<td align="left">CH</td>
+<td align="right">2.3</td>
+<td align="right">2.6</td>
+<td align="right">2.1</td>
+<td align="right">—</td>
+</tr>
+<tr class="odd">
+<td align="left">CO</td>
+<td align="right">-0.1</td>
+<td align="right">0.4</td>
+<td align="right">0.8</td>
+<td align="right">—</td>
+</tr>
+<tr class="even">
+<td align="left">PK</td>
+<td align="right">—</td>
+<td align="right">—</td>
+<td align="right">—</td>
+<td align="right">—</td>
+</tr>
+<tr class="odd">
+<td align="left">SK</td>
+<td align="right">0.0</td>
+<td align="right">0.0</td>
+<td align="right">0.0</td>
+<td align="right">—</td>
+</tr>
+<tr class="even">
+<td align="left">ST</td>
+<td align="right">—</td>
+<td align="right">-0.1</td>
+<td align="right">-1.3</td>
+<td align="right">—</td>
+</tr>
+<tr class="odd">
+<td align="left">WCT</td>
+<td align="right">—</td>
+<td align="right">—</td>
+<td align="right">—</td>
+<td align="right">1.6</td>
+</tr>
+</tbody>
+</table>
+<p>Observed differences come from the stream-order bypass omission —
+visible as the uniformly negative BT rearing column — and from
+segmentation-boundary rounding where per-segment attributes fall near
+rule thresholds. Numeric detail is in <a href="https://github.com/NewGraphEnvironment/link/blob/main/research/bcfishpass_comparison.md" class="external-link"><code>research/bcfishpass_comparison.md</code></a>.</p>
 </div>
 <div class="section level2">
 <h2 id="comparison-map-neexdzii-kwa-upper-bulkley">Comparison map — Neexdzii Kwa (Upper Bulkley)<a class="anchor" aria-label="anchor" href="#comparison-map-neexdzii-kwa-upper-bulkley"></a>
@@ -266,7 +396,7 @@ the BULK watershed group, so the BULK rollup above aggregates this area
 along with the rest of the Bulkley.</p>
 <p>The link pipeline layer is visible by default; toggle on the
 bcfishpass reference layer to compare.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sub_ch</span>      <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"vignette-data"</span>,</span>
 <span>                                    <span class="st">"sub_ch.rds"</span>, package <span class="op">=</span> <span class="st">"link"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">sub_ch_bcfp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"vignette-data"</span>,</span>
