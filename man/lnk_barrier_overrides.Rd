@@ -41,12 +41,21 @@ observations are removed before counting.}
 \item{control}{Character or \code{NULL}. Schema-qualified table of barrier
 controls with columns: \code{blue_line_key}, \code{downstream_route_measure},
 \code{barrier_ind}. Barriers in this table with \code{barrier_ind = TRUE} cannot
-be overridden.}
+be overridden \strong{by observations} — but only for species where
+\code{params$observation_control_apply} is TRUE. Resident species routinely
+inhabit reaches upstream of anadromous-blocking falls (post-glacial
+connectivity, no ocean-return requirement), so their observations still
+count unless this flag says otherwise. Habitat confirmations
+(\code{habitat} argument) are higher-trust than observations — they bypass
+the control table entirely, for all species.}
 
 \item{params}{Data frame with per-species parameters. Must have columns:
 \code{species_code}, \code{observation_threshold}, \code{observation_date_min},
-\code{observation_buffer_m}, \code{observation_species}. See
-\code{configs/bcfishpass/parameters_fresh.csv} for format.}
+\code{observation_buffer_m}, \code{observation_species}. Optional column
+\code{observation_control_apply} (logical) — when TRUE, the \code{control} table
+blocks overrides for this species; when FALSE/NA/missing, the species
+ignores control. Bcfishpass defaults: TRUE for CH/CM/CO/PK/SK/ST,
+FALSE for BT/WCT. See \code{configs/bcfishpass/parameters_fresh.csv}.}
 
 \item{cols_index}{Character vector. Column names to index on the
 barriers table for \code{fwa_upstream()} performance. Indexes are created

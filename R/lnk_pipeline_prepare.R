@@ -11,8 +11,10 @@
 #'   [fresh::frs_break_find()], pruned against the control table,
 #'   enriched with `wscode_ltree` and `localcode_ltree` for
 #'   `fwa_upstream()` joins
-#' - A natural-barriers table (gradient + falls + definite) used by
-#'   `lnk_barrier_overrides()` to compute the per-species skip list
+#' - A natural-barriers table (gradient + falls) used by
+#'   `lnk_barrier_overrides()` to compute the per-species skip list.
+#'   User-definite barriers are intentionally excluded here and
+#'   consumed by later phases directly — bcfishpass parity.
 #' - Per-model barrier tables reduced to the minimal downstream-most
 #'   set via [fresh::frs_barriers_minimal()], then unioned into
 #'   `gradient_barriers_minimal` for segmentation
@@ -214,7 +216,7 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, schema,
 }
 
 
-#' Build natural-barriers table (gradient + falls + definite) with ltree
+#' Build natural-barriers table (gradient + falls) with ltree
 #' @noRd
 .lnk_pipeline_prep_natural <- function(conn, schema) {
   .lnk_db_execute(conn, sprintf(
@@ -240,16 +242,15 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, schema,
        AND f.downstream_route_measure >= s.downstream_route_measure
        AND f.downstream_route_measure < s.upstream_route_measure",
     schema, schema))
-  .lnk_db_execute(conn, sprintf(
-    "INSERT INTO %s.natural_barriers
-     SELECT d.blue_line_key, round(d.downstream_route_measure),
-            'blocked', s.wscode_ltree, s.localcode_ltree
-     FROM %s.barriers_definite d
-     JOIN whse_basemapping.fwa_stream_networks_sp s
-       ON d.blue_line_key = s.blue_line_key
-       AND d.downstream_route_measure >= s.downstream_route_measure
-       AND d.downstream_route_measure < s.upstream_route_measure",
-    schema, schema))
+  # NOTE: `barriers_definite` is NOT unioned into `natural_barriers`.
+  # bcfishpass appends user-definite post-filter in
+  # `model_access_*.sql`, so upstream observations and habitat never
+  # re-open them. link mirrors this by consuming `barriers_definite`
+  # separately:
+  #   - `lnk_pipeline_break()` applies it as its own sequential break
+  #     source (so segmentation still places a boundary there)
+  #   - `lnk_pipeline_classify()` UNION ALLs it directly into
+  #     `fresh.streams_breaks` (so it blocks access gating)
 
   invisible(NULL)
 }

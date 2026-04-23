@@ -1,60 +1,61 @@
-# Findings: Wire barriers_definite_control (#44)
+# Findings — #48 (user_barriers_definite bypass)
 
-## Where the gap lives
+## Pre-fix defect on ELKR (2026-04-23, via post-#47 tar_make state)
 
-Three places where `"barriers_definite_control"` is referenced in link today:
+Query: `SELECT * FROM working_<wsg>.barrier_overrides bo INNER JOIN working_<wsg>.barriers_definite bd ON bd.blue_line_key = bo.blue_line_key AND abs(bd.downstream_route_measure - bo.downstream_route_measure) < 1` across 5 WSGs:
 
-1. **`R/lnk_pipeline_prepare.R` → `.lnk_pipeline_prep_load_aux`** — loads the per-AOI filtered CSV rows into `<schema>.barriers_definite_control` when `cfg$overrides$barriers_definite_control` is non-NULL. Already correct.
-2. **`R/lnk_pipeline_prepare.R` → `.lnk_pipeline_prep_gradient`** — `information_schema` probe for the table, then `DELETE FROM gradient_barriers_raw g USING barriers_definite_control c WHERE ... c.barrier_ind::boolean = false`. Already correct. Removes **passable** positions from gradient set before minimal reduction.
-3. **`R/lnk_pipeline_prepare.R` → `.lnk_pipeline_prep_overrides`** — does NOT pass `control` to `lnk_barrier_overrides`. This is the gap. `lnk_barrier_overrides` accepts a `control` parameter but is called without one from this site.
+- ADMS: 0 rows in barriers_definite → no matches possible
+- BULK: 87 rows in barriers_definite, 0 matches in barrier_overrides
+- BABL: 0 rows in barriers_definite → no matches possible
+- ELKR: 7 rows in barriers_definite, **4 matches** in barrier_overrides
+- DEAD: 0 rows in barriers_definite → no matches possible
 
-## Latent bug in lnk_barrier_overrides control filter
+ELKR matches:
 
-Read `R/lnk_barrier_overrides.R` lines 140–153. The implementation:
+| Species | Position | Type | Name |
+|---------|----------|------|------|
+| BT | (356549622, 42) | EXCLUSION | Erickson Creek exclusion (mining impacts per CSV note) |
+| WCT | (356549622, 42) | EXCLUSION | Erickson Creek exclusion |
+| WCT | (356553439, 574) | MISC | Spillway |
+| WCT | (356560765, 2935) | MISC | Spillway |
 
-```r
-ctrl_where <- sprintf("LEFT JOIN %s c ON b.blue_line_key = c.blue_line_key
-  AND abs(b.downstream_route_measure - c.downstream_route_measure) < 1", control)
-ctrl_filter <- "AND c.blue_line_key IS NULL"
+These are user-definite positions that link's pipeline treats as overridable. Post-fix they should stay as permanent blockers (matching bcfishpass). Current ELKR rollup: BT spawn +3.4% / rear -0.7%; WCT spawn +4.0% / rear +1.6%. Fixing this should bring spawning numbers down toward 0.
+
+## Architecture comparison
+
+**bcfishpass** — `model_access_*.sql`:
+
+```sql
+barriers CTE = gradient + falls + subsurfaceflow    -- NO user_definite
+... (observation filter, habitat filter, control filter all operate on barriers CTE)
+barriers_filtered as (... where n_obs < threshold and h.species_codes is null)
+INSERT INTO barriers_<model>
+  SELECT * FROM barriers_filtered
+  UNION ALL
+  SELECT * FROM bcfishpass.barriers_user_definite WHERE wsg = :wsg   -- appended post-filter
 ```
 
-Filter treats ANY control row as blocking override — including `barrier_ind = FALSE` rows. Docstring (lines 27–30) says only `barrier_ind = TRUE` rows block.
+**link today** — `.lnk_pipeline_prep_natural()`:
 
-In practice on bcfishpass input this is masked because `.lnk_pipeline_prep_gradient`'s upstream DELETE removes `barrier_ind = FALSE` positions from `gradient_barriers_raw` before they reach the override step. But falls and user-definite positions are not pruned by control at load time — they stay in `natural_barriers`. If a control row with `barrier_ind = FALSE` exists for a fall or definite-barrier position, the current filter blocks observation overrides on it. Should not block.
+```r
+CREATE TABLE natural_barriers FROM gradient_barriers_raw     -- base
+INSERT INTO natural_barriers SELECT FROM falls               -- + falls
+INSERT INTO natural_barriers SELECT FROM barriers_definite   -- + user-definite (WRONG — subjects to override)
+```
 
-Fix: `"AND (c.blue_line_key IS NULL OR c.barrier_ind::boolean = false)"`.
+Then `.lnk_pipeline_prep_overrides()` passes `natural_barriers` to `lnk_barrier_overrides()`, which emits per-species override rows for any barrier meeting threshold — including user-definite.
 
-## Manifest-driven gating decision
+## Shape A (chosen)
 
-`.lnk_pipeline_prep_overrides` could probe `information_schema.tables` to discover whether the control table exists (same pattern used there for habitat). Decided against: the manifest key is the direct contract. If `cfg$overrides$barriers_definite_control` is non-NULL the load step wrote the table; if it's NULL no table exists. Manifest gate, not DB probe.
+1. Drop the `INSERT INTO natural_barriers SELECT FROM barriers_definite` block in `.lnk_pipeline_prep_natural()`.
+2. In `.lnk_pipeline_prep_minimal()`, after `frs_barriers_minimal()` emits each per-model reduced table, append `barriers_definite` rows (already WSG-filtered at load time) via `INSERT ... SELECT ... ON CONFLICT DO NOTHING`. Also append to the union that produces `gradient_barriers_minimal` so segmentation breaks include user-definite.
 
-Scope discipline: the existing `information_schema` probe for the habitat table in the same function, and the similar probe in `.lnk_pipeline_prep_gradient` for the control table, work correctly today. Leaving them alone in this PR; filing a follow-up issue for consistency. Using the manifest as the contract is well preferred across the package.
+## natural_barriers callers
 
-## Tests that need to exist
+Grep confirms `natural_barriers` only referenced in:
 
-- `tests/testthat/test-lnk_barrier_overrides.R` does not exist. Creating new.
-- `tests/testthat/test-lnk_pipeline_prepare.R` exists — extending with prep_overrides control pass-through tests.
+- `.lnk_pipeline_prep_natural()` (builds)
+- `.lnk_pipeline_prep_overrides()` (passes to `lnk_barrier_overrides()`)
+- `.lnk_pipeline_prep_minimal()` (reads into `frs_barriers_minimal()`)
 
-## No `information_schema` probe in the new code
-
-`.lnk_pipeline_prep_overrides`'s new control guard reads `cfg$overrides$barriers_definite_control` directly. That field is populated by `lnk_config()` when the manifest declares the key. No DB round-trip needed.
-
-## Expected rollup direction
-
-Running the pipeline pre-fix vs post-fix on bcfishpass config:
-
-- WSGs with `user_barriers_definite_control.csv` rows having `barrier_ind = TRUE` and upstream observations at those positions → rollup `link_km` shrinks for affected species (positions that were wrongly overridden are no longer overridden). Moves toward bcfishpass reference.
-- WSGs with no such rows → rollup unchanged.
-
-Magnitude: unknown. Control-TRUE rows on the four validated WSGs are uncommon, so likely small. Direction matters more than magnitude.
-
-## Reproducibility
-
-The change is a deterministic additional filter clause on a `LEFT JOIN`. No new randomness, no schedule-dependent behaviour. Two back-to-back `tar_make()` runs must produce bit-identical rollups. Will verify with `digest::digest()`.
-
-## Cross-refs
-
-- Plan file: `/Users/airvine/.claude/plans/stateful-hopping-feather.md`
-- Issue: link#44
-- Parallel cleanup issue (separate PR): link#45 (gradient classes)
-- Follow-up to file at end of this PR: "Migrate remaining pipeline probes to manifest-driven gating"
+Shape A is safe — no external consumers.

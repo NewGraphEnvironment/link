@@ -105,7 +105,12 @@ test_that(".lnk_pipeline_prep_gradient prunes by control when control table exis
 
 # -- prep_natural SQL shape -------------------------------------------------
 
-test_that(".lnk_pipeline_prep_natural unions gradient + falls + definite", {
+test_that(".lnk_pipeline_prep_natural unions gradient + falls only (no definite)", {
+  # barriers_definite is intentionally NOT unioned into natural_barriers —
+  # bcfishpass appends user-definite post-filter in each model_access_*.sql,
+  # so observations/habitat never override them. lnk_pipeline_break handles
+  # them as a separate break source; lnk_pipeline_classify emits them into
+  # fresh.streams_breaks directly.
   captured <- character(0)
   local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) {
@@ -120,7 +125,7 @@ test_that(".lnk_pipeline_prep_natural unions gradient + falls + definite", {
   expect_match(joined, "CREATE TABLE w_bulk.natural_barriers")
   expect_match(joined, "FROM w_bulk.gradient_barriers_raw g")
   expect_match(joined, "FROM w_bulk.falls f")
-  expect_match(joined, "FROM w_bulk.barriers_definite d")
+  expect_no_match(joined, "FROM w_bulk\\.barriers_definite\\b")
   expect_match(joined, "'blocked'")
 })
 
