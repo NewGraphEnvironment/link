@@ -42,7 +42,7 @@
 <p>Crossing connectivity interpretation for fish passage. The domain layer between raw crossing data and fresh’s generic network engine — scoring, overrides, and prioritization.</p>
 <div class="section level2">
 <h2 id="repository-context">Repository Context<a class="anchor" aria-label="anchor" href="#repository-context"></a></h2>
-<p><strong>Repository:</strong> NewGraphEnvironment/link <strong>Primary Language:</strong> R <strong>Prefix:</strong> <code>lnk_</code> <strong>Branch:</strong> <code>adms-comparison</code> (comparison work → main)</p>
+<p><strong>Repository:</strong> NewGraphEnvironment/link <strong>Primary Language:</strong> R <strong>Prefix:</strong> <code>lnk_</code> <strong>Branch:</strong> <code>main</code> (v0.7.0 as of 2026-04-23)</p>
 </div>
 <div class="section level2">
 <h2 id="architecture">Architecture<a class="anchor" aria-label="anchor" href="#architecture"></a></h2>
@@ -104,13 +104,15 @@ bcdata (PSCIS assessments)   ─┘</code></pre>
 <code class="sourceCode R"><span><span class="va">conn</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/lnk_db_conn.html">lnk_db_conn</a></span><span class="op">(</span><span class="op">)</span>  <span class="co"># reads PG_DB_SHARE, PG_HOST_SHARE, etc.</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="exported-functions-10">Exported Functions (10)<a class="anchor" aria-label="anchor" href="#exported-functions-10"></a></h2>
+<h2 id="exported-functions-18">Exported Functions (18)<a class="anchor" aria-label="anchor" href="#exported-functions-18"></a></h2>
 <div class="section level3">
 <h3 id="core">Core<a class="anchor" aria-label="anchor" href="#core"></a></h3>
 <ul><li>
 <code>lnk_thresholds(csv, high, moderate, low)</code> — configurable severity thresholds. Ships BC defaults. CSV or inline override. Feeds into <code><a href="reference/lnk_score.html">lnk_score()</a></code>.</li>
 <li>
 <code><a href="reference/lnk_db_conn.html">lnk_db_conn()</a></code> — PostgreSQL connection factory. <code>PG_*_SHARE</code> then <code>PG*</code> env vars.</li>
+<li>
+<code>lnk_config(name_or_path)</code> — load a config bundle (rules YAML, dimensions CSV, parameters_fresh, overrides, pipeline knobs) as one list object. Ships with <code>"bcfishpass"</code> variant; custom variants via <code>inst/extdata/configs/&lt;name&gt;/config.yaml</code> manifest. Config manifest is the declarative contract for which capabilities a pipeline variant activates (override keys, habitat classification, pipeline knobs).</li>
 </ul></div>
 <div class="section level3">
 <h3 id="override-family-load--validate--apply">Override family: load → validate → apply<a class="anchor" aria-label="anchor" href="#override-family-load--validate--apply"></a></h3>
@@ -137,8 +139,12 @@ bcdata (PSCIS assessments)   ─┘</code></pre>
 <div class="section level3">
 <h3 id="barrier-overrides">Barrier overrides<a class="anchor" aria-label="anchor" href="#barrier-overrides"></a></h3>
 <ul><li>
-<code>lnk_barrier_overrides(conn, barriers, observations, habitat, params, to)</code> — processes fish observations and habitat confirmations into a barrier skip list for fresh. Counts observations upstream of each barrier via <code>fwa_upstream()</code> SQL, applies per-species thresholds, unions with habitat confirmations. Output: <code>(blue_line_key, downstream_route_measure, species_code)</code> table that fresh skips during access gating.</li>
+<code>lnk_barrier_overrides(conn, barriers, observations, habitat, exclusions, control, params, to)</code> — processes fish observations and habitat confirmations into a barrier skip list for fresh. Counts observations upstream of each barrier via <code>fwa_upstream()</code> SQL, applies per-species thresholds, unions with habitat confirmations. Control table (<code>barriers_definite_control</code> with <code>barrier_ind = TRUE</code> rows) blocks override of flagged positions — gated per-species by <code>params$observation_control_apply</code> so residents (BT, WCT) can still override anadromous-blocking falls. Habitat path bypasses control entirely (expert-confirmed habitat is higher-trust than observations). Output: <code>(blue_line_key, downstream_route_measure, species_code)</code> table that fresh skips during access gating.</li>
 </ul></div>
+<div class="section level3">
+<h3 id="pipeline-helpers">Pipeline helpers<a class="anchor" aria-label="anchor" href="#pipeline-helpers"></a></h3>
+<p>Six-phase bcfishpass-reproducing pipeline, driven by <code><a href="reference/lnk_config.html">lnk_config()</a></code>: - <code>lnk_pipeline_setup(conn, schema, overwrite)</code> — create per-run working schema. - <code>lnk_pipeline_load(conn, aoi, cfg, schema)</code> — crossings + modelled fixes + PSCIS status overrides. - <code>lnk_pipeline_prepare(conn, aoi, cfg, schema)</code> — falls, definite + control, habitat confirms, gradient barriers, <code>natural_barriers</code>, barrier overrides, per-model minimal reduction, base segments. Uses manifest-key gating on <code>cfg$overrides$barriers_definite_control</code> and <code>cfg$habitat_classification</code> (no DB probes). - <code>lnk_pipeline_break(conn, aoi, cfg, schema)</code> — sequential <code>frs_break_apply</code> in config-defined order: observations → gradient minimal → <strong>barriers_definite (separate break source)</strong> → habitat endpoints → crossings. - <code>lnk_pipeline_classify(conn, aoi, cfg, schema)</code> — assembles <code>fresh.streams_breaks</code> (gradient FULL + falls + <strong>barriers_definite</strong> + crossings, WSG-filtered) and runs <code>frs_habitat_classify()</code>. <code>barriers_definite</code> enters here directly because bcfishpass appends user-definite post-filter (not via observation override). - <code>lnk_pipeline_connect(conn, aoi, cfg, schema)</code> — per-species cluster + connected_waterbody. - <code>lnk_pipeline_species(cfg, aoi)</code> — canonical helper for “species this config classifies in this AOI” (intersects <code>cfg$parameters_fresh</code> with <code>cfg$wsg_species</code> presence).</p>
+</div>
 <div class="section level3">
 <h3 id="bridge-to-fresh">Bridge to fresh<a class="anchor" aria-label="anchor" href="#bridge-to-fresh"></a></h3>
 <ul><li>
@@ -232,14 +238,23 @@ bcdata (PSCIS assessments)   ─┘</code></pre>
 </div>
 <div class="section level2">
 <h2 id="open-issues">Open Issues<a class="anchor" aria-label="anchor" href="#open-issues"></a></h2>
-<ul><li>#16 — ADMS comparison (BT/CH/CO within 5%, SK spawning pending fresh#133)</li>
-<li>#18 — Configurable rearing-spawning connectivity</li>
+<ul><li>#18 — Configurable rearing-spawning connectivity</li>
 <li>#19 — Habitat eligibility override CSV (edge_types + feature_codes)</li>
 <li>#20 — Literature/observation evidence for habitat departures</li>
 <li>#21 — GSDD and thermal energy as intrinsic potential variables</li>
 <li>#23 — CH stream order exception QA</li>
 <li>#24 — lnk_stamp (model params for report appendix)</li>
 <li>#29 — SK spawning cluster divergence (blocked on fresh#133)</li>
+<li>#40 — Config provenance / run stamps (tracks input versions)</li>
+<li>#45 — Gradient classes cleanup (derive from <code>cfg$parameters_fresh$access_gradient_max</code>)</li>
+</ul></div>
+<div class="section level2">
+<h2 id="recently-closed">Recently closed<a class="anchor" aria-label="anchor" href="#recently-closed"></a></h2>
+<ul><li>#16 — ADMS comparison (all species within 5% on all 4 parity WSGs; tagged via PRs #41/#42/#43 for targets-driven reproducibility)</li>
+<li>#38 — <code>_targets.R</code> pipeline → PRs #41/#42/#43 (v0.3.0/v0.4.0/v0.5.0)</li>
+<li>#44 — <code>barriers_definite_control</code> override wiring → PR #47 (v0.6.0)</li>
+<li>#46 — Manifest-driven pipeline probes → PR #50 (v0.7.0 refactor, no bump)</li>
+<li>#48 — <code>user_barriers_definite</code> not eligible for observation override → PR #49 (v0.7.0)</li>
 </ul></div>
 <div class="section level2">
 <h2 id="correctness-bar-exact-reproduction">Correctness bar: exact reproduction<a class="anchor" aria-label="anchor" href="#correctness-bar-exact-reproduction"></a></h2>
