@@ -163,6 +163,14 @@ To run the entire province: loop over watershed groups. Or pass any AOI with `sp
 - #24 — lnk_stamp (model params for report appendix)
 - #29 — SK spawning cluster divergence (blocked on fresh#133)
 
+## Correctness bar: exact reproduction
+
+The habitat classification pipeline is validated by **exact reproduction of runs**, not by "within 5% of bcfishpass." Same fwapg DB state + same bcfishobs DB state + same config bundle → byte-identical rollup tibble, every time. Any variation between two runs with identical inputs is a defect to root-cause, not to rationalize as "ordering variance."
+
+Comparisons to bcfishpass (including the per-WSG `diff_pct` column in the rollup) are parity diagnostics — informative, not pass/fail. A bit-identical run that drifts from bcfishpass reference is acceptable; a reproducibility failure with the same inputs is not.
+
+When inputs change (fwapg refresh, bcfishobs update, channel_width sync), outputs will correctly differ. That's what the stamp/lineage work (#40) makes explainable — so any observed drift can be traced back to which input moved.
+
 ## SRED
 
 Relates to NewGraphEnvironment/sred-2025-2026#24 — crossing connectivity interpretation package.

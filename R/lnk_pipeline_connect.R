@@ -77,7 +77,7 @@ lnk_pipeline_connect <- function(conn, aoi, cfg, schema,
     stop("thresholds_csv not found: ", thresholds_csv, call. = FALSE)
   }
 
-  species <- species %||% .lnk_pipeline_classify_species(cfg, aoi)
+  species <- species %||% lnk_pipeline_species(cfg, aoi)
   if (length(species) == 0L) {
     stop("No species resolved for AOI '", aoi, "'. Either pass `species` ",
          "explicitly or ensure cfg$parameters_fresh and cfg$wsg_species ",

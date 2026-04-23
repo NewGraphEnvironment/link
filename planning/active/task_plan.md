@@ -32,13 +32,15 @@ Break the 635-line script into small named functions (one per pipeline phase). C
 
 ## PR 2: Add _targets.R + per-partition target fn
 
-- [ ] `data-raw/compare_bcfishpass_wsg.R` — wraps pipeline phases for one WSG, returns ~10-row tibble (wsg × species × habitat_type × km × diff_pct). Name keeps `wsg` because this specific pipeline IS per-WSG (bcfishpass reference is partitioned that way). The generic pipeline helpers it calls are AOI-abstract.
-- [ ] Pulls comparison diff against `bcfishpass.*` reference tables on localhost
-- [ ] `data-raw/_targets.R` with static `tar_map(wsg = c(...))` over 4 WSGs + `crew_controller_local()`
-- [ ] `targets` + `crew` + `tibble` + `dplyr` → DESCRIPTION Suggests (not Imports)
-- [ ] Run `tar_make()` — verify numbers match research doc (all species within 5%)
-- [ ] Log the run under `data-raw/logs/YYYYMMDD_NN_tar_make-first-run.txt`
-- [ ] `/code-check` before each commit
+- [x] `data-raw/compare_bcfishpass_wsg.R` — wraps pipeline phases for one WSG, returns ~10-row tibble (wsg × species × habitat_type × link_km × bcfishpass_km × diff_pct). Creates own conn + conn_ref with fail-early on missing `PG_PASS_SHARE`, registers on.exit cleanup per-conn (no leak on second conn failure), cleans up on exit. Defensive drop of `fresh.streams*` at entry.
+- [x] Pulls comparison diff against `bcfishpass.habitat_linear_*` reference over tunnel. All interpolated strings go through `DBI::dbQuoteLiteral`.
+- [x] `data-raw/_targets.R` with static `tar_map(wsg = c("ADMS","BULK","BABL","ELKR"))` + synchronous execution (crew removed after the controller hung on dispatched-but-never-complete behavior; shared `fresh.streams` prevents parallel anyway).
+- [x] `targets` + `tarchetypes` + `tibble` + `dplyr` → DESCRIPTION Suggests (crew dropped).
+- [x] **Promote `.lnk_pipeline_classify_species` → exported `lnk_pipeline_species(cfg, aoi)`** — canonical public helper for "species this config classifies in this AOI". Used by classify + connect internally and by data-raw externally. Removes both the duplicated private helper and the inlined `.wsg_species_present` from data-raw.
+- [x] Run `tar_make()` end-to-end on all 4 WSGs. Rollup = 34 rows, all within 5% of bcfishpass. Reproducibility check: runs 10 + 11 produced bit-identical rollup tibbles.
+- [x] Log the run under `data-raw/logs/20260422_10_tar_make_from_dataraw.txt` + `20260422_11_tar_make_final.txt` (plus `20260422_12_*` post-fix re-verify).
+- [x] `/code-check` before commit — found a real conn leak (second dbConnect could throw before on.exit registered) and a SQL quoting inconsistency on species; both fixed and re-verified.
+- [x] **Correctness framing** — reframed verification from "within 5% of bcfishpass" to "bit-identical across repeated runs". Added section to CLAUDE.md + memory entry. Confirmed across three runs (10, 11, 12) — all 34 rollup rows identical.
 - [ ] PR 2: SRED tag — Relates to #38
 
 ## PR 3: Retire old script + regenerate DAG
