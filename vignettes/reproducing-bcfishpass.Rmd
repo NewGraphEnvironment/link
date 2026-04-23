@@ -28,15 +28,117 @@ can reproduce bcfishpass's habitat classification — and, with a
 different config bundle, run the same machinery with different
 interpretation choices.
 
-This vignette walks through the `"bcfishpass"` config: load the
-bundle, run the pipeline across four watershed groups, inspect the
-rollup, and visualize one result. The goal is **bit-identical output
-from the same inputs** — parity against bcfishpass reference tables
-is an informational comparison, not the correctness bar.
+This vignette walks through the `"bcfishpass"` config: the story of
+what the pipeline does to an FWA stream network, how to run it, what
+comes out the other side, and where the bundled config deliberately
+departs from bcfishpass.
+
+## How bcfishpass works under the hood
+
+The question the pipeline answers is, for every segment of the
+Freshwater Atlas stream network: **can this species reach this
+segment, and is it suitable as spawning or rearing habitat?** The
+answer for one segment × one species is a pair of booleans. The work
+is producing those booleans for ~50,000 segments per watershed group
+and a dozen species.
+
+```
+FWA streams (raw)
+    │
+    │   thresholds detect gradient barriers @ 15 / 20 / 25 / 30 %
+    ▼
+gradient barriers ─── falls ─── user-identified definite barriers
+    │
+    │   observations override natural barriers upstream of evidence
+    ▼
+access model per species  (which reaches are reachable for BT, CH, CO, ...)
+    │
+    │   break positions = fish observations + minimal gradient barriers
+    │                     + expert-confirmed habitat endpoints + crossings
+    ▼
+segmented streams (every segment ends where a classification decision changes)
+    │
+    │   per-species rules from the rules YAML:
+    │     edge type • waterbody type • channel width • gradient
+    ▼
+classify  (spawning ?  rearing ? per species per segment)
+    │
+    │   connectivity — rearing requires reach from spawning;
+    │                   SK spawning requires a reachable rearing lake
+    ▼
+streams_habitat  (per-species spawning / rearing booleans on every segment)
+```
+
+### Where breaks go and why
+
+A break is a point on the stream where one segment ends and the next
+begins. A segment is a unit of classification — one segment, one
+answer per species. So breaks go wherever the answer could change:
+
+- **Fish observations.** A confirmed observation upstream of a
+  gradient barrier means the barrier can't actually be a barrier for
+  that species — the pipeline flips the access label on that reach
+  from "blocked" to "passable."
+- **Minimal gradient barriers.** On a flow path with multiple
+  gradient barriers, only the downstream-most one matters for access
+  — everything upstream of it is already blocked by it. The pipeline
+  reduces to this minimal set per species-class so the segmentation
+  doesn't fragment reaches that were going to end up in the same
+  access state anyway.
+- **Expert-confirmed habitat endpoints.** Where a human review has
+  marked a specific reach boundary as habitat / non-habitat, the
+  pipeline breaks on both ends so the marked reach is its own
+  segment.
+- **Crossings.** Road and rail crossings are potential barriers, and
+  their `barrier_status` (PASSABLE / POTENTIAL / BARRIER) is applied
+  per-segment.
+
+### Where classification comes from
+
+Once the network is segmented, each segment is checked against the
+per-species rules in the config's rules YAML:
+
+```r
+rules_path <- system.file("extdata", "configs", "bcfishpass",
+                           "rules.yaml", package = "link")
+cat(readLines(rules_path, n = 30), sep = "\n")
+```
+
+Each top-level key is a species. `spawn:` and `rear:` are lists of
+alternative match conditions — a segment is classified as spawning
+(or rearing) if any one condition matches. Conditions combine
+`edge_types_explicit` (1000 / 1100 streams, 2000 / 2300 rivers),
+`waterbody_type` (`R` river polygon, `L` lake), `channel_width`
+ranges, and gradient bounds. A species can also flag `rear_lake`,
+`rear_lake_only`, or `rear_no_fw` to special-case its rearing
+strategy. The `dimensions.csv` alongside the YAML is the
+human-editable source — `lnk_rules_build()` regenerates the YAML
+from it.
+
+### Where link + fresh deliberately depart
+
+bcfishpass applies a stream-order bypass on the rearing
+channel-width minimum for BT, CH, CO, ST, and WCT: a first-order
+stream whose parent is order ≥ 5 is allowed to count as rearing
+even if its measured channel width is below the per-species minimum.
+The biology is that small tributaries of major rivers can still
+support juvenile rearing despite narrow measured widths — a
+reasonable move.
+
+The link pipeline does not currently apply this rule. The bypass is
+awkward to compose with the clustering step — applying it before
+clustering inflates rearing along tributaries that have no
+connectivity to spawning, and applying it after clustering adds
+segments without the connectivity check. We're working on a
+biologically cleaner alternative that restricts the bypass to direct
+first-order children of large-order streams within a distance cap
+from the tributary mouth, which we'll wire into a future config
+variant. In the current bundled `"bcfishpass"` config the practical
+consequence is a 68 km shortfall in BT rearing on BULK — the −2.2 %
+entry you'll see in the rollup below. Every other species / WSG
+combination agrees with the reference within about 5 %.
 
 ## The three-line entrypoint
-
-Every run of the comparison pipeline follows this shape:
 
 ```{r entrypoint, eval = FALSE}
 library(link)
@@ -54,11 +156,9 @@ rollup <- tar_read(rollup)  # tibble of per-WSG / per-species diffs
 (ADMS, BULK, BABL, ELKR). Each call exercises the six
 `lnk_pipeline_*` phases — setup, load, prepare, break, classify,
 connect — then queries the bcfishpass reference tables on a read-only
-tunnel DB and returns a ~10-row tibble.
+tunnel DB and returns a small tibble.
 
 ## The targets graph
-
-Inside each per-WSG target, the pipeline looks like this:
 
 ```
 lnk_config("bcfishpass") ─┬─► comparison_ADMS ─┐
@@ -67,58 +167,46 @@ lnk_config("bcfishpass") ─┬─► comparison_ADMS ─┐
                           └─► comparison_ELKR ─┘
 ```
 
-See `research/bcfishpass_comparison.md` in the repo for:
-
-- the full per-phase pipeline DAG (setup → load → prepare → break →
-  classify → connect, with data inputs) rendered as Mermaid
-- a colour-coded targets orchestration diagram
-- per-species / per-watershed-group parity numbers
-- documented gaps and the interpretation decisions that drive them
+See `research/bcfishpass_comparison.md` in the repo for the per-phase
+pipeline DAG rendered as Mermaid plus a colour-coded targets
+orchestration view.
 
 ## The rollup
-
-The rollup binds every per-WSG tibble into one 34-row frame.
 
 ```{r load-rollup}
 rollup_path <- system.file("extdata", "vignette-data", "rollup.rds",
                             package = "link")
 rollup <- readRDS(rollup_path)
-rollup
 ```
 
-Interpretation:
+```{r rollup-summary}
+summary(rollup$diff_pct)
+cat("Within 5%: ",
+    all(abs(rollup$diff_pct[!is.na(rollup$diff_pct)]) < 5))
+```
 
 - `link_km` — kilometres our pipeline classified as habitat
   (spawning or rearing) per species × watershed group
 - `bcfishpass_km` — kilometres from bcfishpass's reference
   `habitat_linear_*` tables
-- `diff_pct` — informational: `(link_km − bcfishpass_km) / bcfishpass_km × 100`
+- `diff_pct` — `(link_km − bcfishpass_km) / bcfishpass_km × 100`
 
-All 34 rows fall within 5% of the bcfishpass reference. Perfect
-agreement would be `diff_pct = 0`; modest differences arise from
-segmentation boundary choices, rounding in `downstream_route_measure`,
-and deliberate interpretation differences baked into the bcfishpass
-config's rules YAML.
-
-```{r rollup-summary}
-summary(rollup$diff_pct)
-cat("Within 5%: ", all(abs(rollup$diff_pct[!is.na(rollup$diff_pct)]) < 5))
-```
+Modest differences arise from segmentation boundary choices, rounding
+in `downstream_route_measure`, the stream-order bypass discussed
+above, and deliberate interpretation differences baked into the
+bcfishpass rules YAML.
 
 ## What a result looks like
 
 Numbers on a table give you the aggregate — a map tells you where the
-habitat is. Below is BULK's chinook (CH) habitat, filtered to segments
-classified as spawning, rearing, or both.
+habitat is. Below is BULK chinook habitat, rendered from the same
+`fresh.streams_habitat` table the rollup aggregates.
 
-```{r load-bulk-ch, message = FALSE}
+```{r map-bulk-ch, message = FALSE, warning = FALSE}
 bulk_ch_path <- system.file("extdata", "vignette-data", "bulk_ch.rds",
                              package = "link")
 bulk_ch <- readRDS(bulk_ch_path)
-bulk_ch
-```
 
-```{r map-bulk-ch, message = FALSE, warning = FALSE}
 if (requireNamespace("mapgl", quietly = TRUE)) {
   mapgl::maplibre(
     bounds = sf::st_bbox(bulk_ch),
@@ -150,42 +238,29 @@ if (requireNamespace("mapgl", quietly = TRUE)) {
 }
 ```
 
-Rearing dominates the network (CH juveniles use mainstems
-extensively); spawning is more focused — low gradient, appropriate
-channel width. Where the two overlap, the segment supports both life
+Rearing dominates the network — CH juveniles use mainstems
+extensively. Spawning is more focused — low gradient, appropriate
+channel width. Where the two overlap the segment supports both life
 stages.
 
 ## Reproducibility
 
-The pipeline is **deterministic**. Two `tar_make()` invocations on
-the same fwapg + bcfishobs state produce bit-identical rollups. If
-you observe drift between runs with the same inputs, that is a bug.
-
-If input data shifts (a fresh `channel_width` sync, new observations
-loaded into `bcfishobs`, a bcfishpass reference refresh), outputs
-will correctly differ. The lineage tooling tracked in
-[link#40](https://github.com/NewGraphEnvironment/link/issues/40) will
-make every output traceable to exactly the inputs that produced it.
-
-## Where newgraph's own interpretation lives
-
-This vignette runs the `"bcfishpass"` config — reproduces bcfishpass
-behavior exactly, for validation. A companion `"default"` config
-bundle is scaffolded at `inst/extdata/configs/default/` and will
-carry newgraph's own interpretation choices (intermittent streams
-included for rearing, sharper spawn gradient minimums, expanded lake
-rearing rules). The biology behind those departures is tracked in
-[link#19](https://github.com/NewGraphEnvironment/link/issues/19),
-[#20](https://github.com/NewGraphEnvironment/link/issues/20),
-[#21](https://github.com/NewGraphEnvironment/link/issues/21); a
-second vignette will compare the two configs side by side once those
-land.
+The pipeline is deterministic. Two `tar_make()` invocations on the
+same fwapg + bcfishobs state produce bit-identical rollups. If you
+observe drift between runs with the same inputs, that's a bug. When
+input data shifts — a fresh `channel_width` sync, new observations
+loaded into `bcfishobs`, a bcfishpass reference refresh — outputs
+will correctly differ.
 
 ## Further reading
 
 - `research/bcfishpass_comparison.md` — per-phase pipeline DAG,
-  remaining gaps, break sources, key fixes
+  documented gaps, break sources, key fixes
 - `?lnk_pipeline_setup` etc. — reference for each phase helper
 - `?lnk_config` — config bundle structure
+- `inst/extdata/configs/bcfishpass/rules.yaml` — per-species
+  classification rules for this variant
+- `inst/extdata/configs/bcfishpass/dimensions.csv` — human-editable
+  source of the rules YAML
 - `data-raw/_targets.R` — pipeline definition
 - `data-raw/compare_bcfishpass_wsg.R` — per-AOI target function
