@@ -29,6 +29,25 @@ message("Watershed group: ", wsg)
 message("Working schema:  ", schema)
 
 # ---------------------------------------------------------------------------
+# Stamp — env state for log reproducibility (link#24 will drive this)
+# ---------------------------------------------------------------------------
+.stamp_git <- function(repo) {
+  tryCatch(
+    system2("git", c("-C", repo, "rev-parse", "--short", "HEAD"),
+            stdout = TRUE, stderr = FALSE),
+    error = function(e) "unknown"
+  )
+}
+link_repo <- tryCatch(find.package("link"), error = function(e) NA)
+link_sha <- .stamp_git(link_repo)
+fresh_ver <- as.character(tryCatch(packageVersion("fresh"),
+                                    error = function(e) "not-installed"))
+message("--- stamp ---")
+message("link:    ", as.character(packageVersion("link")), " @ ", link_sha)
+message("fresh:   ", fresh_ver)
+message("date:    ", format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z"))
+
+# ---------------------------------------------------------------------------
 # Connections
 # ---------------------------------------------------------------------------
 conn <- DBI::dbConnect(RPostgres::Postgres(),
@@ -40,6 +59,17 @@ on.exit({
   DBI::dbDisconnect(conn)
   DBI::dbDisconnect(conn_ref)
 }, add = TRUE)
+
+# DB state stamps
+bcfishobs_rows <- DBI::dbGetQuery(conn, sprintf(
+  "SELECT count(*) AS n FROM bcfishobs.observations
+   WHERE watershed_group_code = '%s'", wsg))$n
+ref_rows <- DBI::dbGetQuery(conn_ref, sprintf(
+  "SELECT count(*) AS n FROM bcfishpass.streams
+   WHERE watershed_group_code = '%s'", wsg))$n
+message("bcfishobs observations for ", wsg, ": ", bcfishobs_rows)
+message("bcfishpass.streams for ", wsg, ": ", ref_rows)
+message("-------------")
 
 # ---------------------------------------------------------------------------
 # Pipeline
