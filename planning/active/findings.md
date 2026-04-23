@@ -1,61 +1,71 @@
-# Findings — #48 (user_barriers_definite bypass)
+# Findings — #46 (manifest-driven probes refactor)
 
-## Pre-fix defect on ELKR (2026-04-23, via post-#47 tar_make state)
+## Probe locations
 
-Query: `SELECT * FROM working_<wsg>.barrier_overrides bo INNER JOIN working_<wsg>.barriers_definite bd ON bd.blue_line_key = bo.blue_line_key AND abs(bd.downstream_route_measure - bo.downstream_route_measure) < 1` across 5 WSGs:
-
-- ADMS: 0 rows in barriers_definite → no matches possible
-- BULK: 87 rows in barriers_definite, 0 matches in barrier_overrides
-- BABL: 0 rows in barriers_definite → no matches possible
-- ELKR: 7 rows in barriers_definite, **4 matches** in barrier_overrides
-- DEAD: 0 rows in barriers_definite → no matches possible
-
-ELKR matches:
-
-| Species | Position | Type | Name |
-|---------|----------|------|------|
-| BT | (356549622, 42) | EXCLUSION | Erickson Creek exclusion (mining impacts per CSV note) |
-| WCT | (356549622, 42) | EXCLUSION | Erickson Creek exclusion |
-| WCT | (356553439, 574) | MISC | Spillway |
-| WCT | (356560765, 2935) | MISC | Spillway |
-
-These are user-definite positions that link's pipeline treats as overridable. Post-fix they should stay as permanent blockers (matching bcfishpass). Current ELKR rollup: BT spawn +3.4% / rear -0.7%; WCT spawn +4.0% / rear +1.6%. Fixing this should bring spawning numbers down toward 0.
-
-## Architecture comparison
-
-**bcfishpass** — `model_access_*.sql`:
-
-```sql
-barriers CTE = gradient + falls + subsurfaceflow    -- NO user_definite
-... (observation filter, habitat filter, control filter all operate on barriers CTE)
-barriers_filtered as (... where n_obs < threshold and h.species_codes is null)
-INSERT INTO barriers_<model>
-  SELECT * FROM barriers_filtered
-  UNION ALL
-  SELECT * FROM bcfishpass.barriers_user_definite WHERE wsg = :wsg   -- appended post-filter
-```
-
-**link today** — `.lnk_pipeline_prep_natural()`:
+**`.lnk_pipeline_prep_gradient()`** (R/lnk_pipeline_prepare.R, around line 180):
 
 ```r
-CREATE TABLE natural_barriers FROM gradient_barriers_raw     -- base
-INSERT INTO natural_barriers SELECT FROM falls               -- + falls
-INSERT INTO natural_barriers SELECT FROM barriers_definite   -- + user-definite (WRONG — subjects to override)
+ctrl_exists <- DBI::dbGetQuery(conn, sprintf(
+  "SELECT 1 FROM information_schema.tables
+   WHERE table_schema = %s AND table_name = 'barriers_definite_control'",
+  .lnk_quote_literal(schema)))
+if (nrow(ctrl_exists) > 0) {
+  .lnk_db_execute(conn, sprintf(
+    "DELETE FROM %s.gradient_barriers_raw g
+     USING %s.barriers_definite_control c ...", schema, schema))
+}
 ```
 
-Then `.lnk_pipeline_prep_overrides()` passes `natural_barriers` to `lnk_barrier_overrides()`, which emits per-species override rows for any barrier meeting threshold — including user-definite.
+Target:
 
-## Shape A (chosen)
+```r
+if (!is.null(cfg$overrides$barriers_definite_control)) {
+  .lnk_db_execute(conn, sprintf(
+    "DELETE FROM %s.gradient_barriers_raw g
+     USING %s.barriers_definite_control c ...", schema, schema))
+}
+```
 
-1. Drop the `INSERT INTO natural_barriers SELECT FROM barriers_definite` block in `.lnk_pipeline_prep_natural()`.
-2. In `.lnk_pipeline_prep_minimal()`, after `frs_barriers_minimal()` emits each per-model reduced table, append `barriers_definite` rows (already WSG-filtered at load time) via `INSERT ... SELECT ... ON CONFLICT DO NOTHING`. Also append to the union that produces `gradient_barriers_minimal` so segmentation breaks include user-definite.
+Signature change: `.lnk_pipeline_prep_gradient(conn, aoi, schema)` → `(conn, aoi, cfg, schema)`.
 
-## natural_barriers callers
+**`.lnk_pipeline_prep_overrides()`** (R/lnk_pipeline_prepare.R, around line 260):
 
-Grep confirms `natural_barriers` only referenced in:
+```r
+habitat_tbl <- paste0(schema, ".user_habitat_classification")
+habitat_exists <- DBI::dbGetQuery(conn, sprintf(
+  "SELECT 1 FROM information_schema.tables
+   WHERE table_schema = %s AND table_name = 'user_habitat_classification'",
+  .lnk_quote_literal(schema)))
+habitat_arg <- if (nrow(habitat_exists) > 0) habitat_tbl else NULL
+```
 
-- `.lnk_pipeline_prep_natural()` (builds)
-- `.lnk_pipeline_prep_overrides()` (passes to `lnk_barrier_overrides()`)
-- `.lnk_pipeline_prep_minimal()` (reads into `frs_barriers_minimal()`)
+Target:
 
-Shape A is safe — no external consumers.
+```r
+habitat_arg <- if (!is.null(cfg$habitat_classification)) {
+  paste0(schema, ".user_habitat_classification")
+} else {
+  NULL
+}
+```
+
+No signature change — `cfg` is already passed in.
+
+## Why manifest-driven is better
+
+The probes work because `.lnk_pipeline_prep_load_aux()` writes the table exactly when the manifest declares it. But that chain is indirect — it relies on the load step's empty-table policy being correct. The asymmetric-gating bug fixed in #44 was rooted in this exact seam (manifest declared the key but load wrote nothing when the AOI had zero rows, causing a downstream probe to skip what the manifest intended).
+
+Reading `cfg$overrides$barriers_definite_control` directly makes the capability activation locally readable — no DB state dependency, no empty-table edge cases.
+
+## Expected rollup behavior
+
+Both probes currently return the same answer the manifest would give on the `bcfishpass` config bundle:
+
+- `working_<wsg>.barriers_definite_control` exists iff manifest has `overrides.barriers_definite_control`
+- `working_<wsg>.user_habitat_classification` exists iff manifest has `habitat_classification`
+
+So the refactor MUST produce a bit-identical rollup. Post-#48 baseline digest: `50908d234e2131fc0842dc3ab653ae78` (46 rows).
+
+If the digest diverges, likely candidates:
+- Some AOI in the manifest has the key but the load step writes an empty table (Phase 2 of #44 established this for `barriers_definite_control`; same pattern may or may not apply to `user_habitat_classification`). In that case pre-refactor the probe would see the empty table and pass; post-refactor the manifest check would pass too, and the downstream join would hit the empty table — same result.
+- An unrelated WSG with the manifest-key absent but a stale table left over from a prior run. Unlikely given tar_destroy before each tar_make.

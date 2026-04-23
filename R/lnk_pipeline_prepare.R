@@ -81,7 +81,7 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, schema,
   }
 
   .lnk_pipeline_prep_load_aux(conn, aoi, cfg, schema)
-  .lnk_pipeline_prep_gradient(conn, aoi, schema)
+  .lnk_pipeline_prep_gradient(conn, aoi, cfg, schema)
   .lnk_pipeline_prep_natural(conn, schema)
   .lnk_pipeline_prep_overrides(conn, cfg, schema, observations)
   .lnk_pipeline_prep_minimal(conn, aoi, schema)
@@ -152,11 +152,30 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, schema,
   }
 
   # --- Expert habitat confirmations (for barrier skip list) ---
+  # Mirrors the `barriers_definite_control` pattern above — whenever the
+  # manifest declares `habitat_classification`, write a schema-valid
+  # table (populated or empty). `.lnk_pipeline_prep_overrides()` gates on
+  # the manifest key directly; creating an empty stub here keeps that
+  # gate safe for edge-case manifests that declare a header-only CSV.
   hab_df <- cfg$habitat_classification
-  if (!is.null(hab_df) && nrow(hab_df) > 0) {
-    DBI::dbWriteTable(conn,
-      DBI::Id(schema = schema, table = "user_habitat_classification"),
-      hab_df, overwrite = TRUE)
+  if (!is.null(hab_df)) {
+    if (nrow(hab_df) > 0) {
+      DBI::dbWriteTable(conn,
+        DBI::Id(schema = schema, table = "user_habitat_classification"),
+        hab_df, overwrite = TRUE)
+    } else {
+      .lnk_db_execute(conn, sprintf(
+        "DROP TABLE IF EXISTS %s.user_habitat_classification", schema))
+      .lnk_db_execute(conn, sprintf(
+        "CREATE TABLE %s.user_habitat_classification (
+           blue_line_key integer,
+           downstream_route_measure double precision,
+           upstream_route_measure double precision,
+           watershed_group_code text,
+           species_code text,
+           habitat_type text,
+           habitat_ind text)", schema))
+    }
   }
 
   invisible(NULL)
@@ -165,7 +184,7 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, schema,
 
 #' Detect gradient barriers, prune by control, enrich with ltree
 #' @noRd
-.lnk_pipeline_prep_gradient <- function(conn, aoi, schema) {
+.lnk_pipeline_prep_gradient <- function(conn, aoi, cfg, schema) {
   .lnk_db_execute(conn, sprintf(
     "DROP TABLE IF EXISTS %s.streams_blk", schema))
   .lnk_db_execute(conn, sprintf(
@@ -182,12 +201,13 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, schema,
                  "2500" = 0.25, "3000" = 0.30),
     to = paste0(schema, ".gradient_barriers_raw"))
 
-  # Prune passable controls
-  ctrl_exists <- DBI::dbGetQuery(conn, sprintf(
-    "SELECT 1 FROM information_schema.tables
-     WHERE table_schema = %s AND table_name = 'barriers_definite_control'",
-    .lnk_quote_literal(schema)))
-  if (nrow(ctrl_exists) > 0) {
+  # Prune passable controls. Manifest-driven gate — the config key is the
+  # direct contract for whether control semantics are active. Previously
+  # this probed information_schema for the table name; that worked because
+  # .lnk_pipeline_prep_load_aux() writes the table exactly when the
+  # manifest declares the key, but the indirection made an empty-table
+  # edge case easier to miss (see #44 asymmetric-gating fix).
+  if (!is.null(cfg$overrides$barriers_definite_control)) {
     .lnk_db_execute(conn, sprintf(
       "DELETE FROM %s.gradient_barriers_raw g
        USING %s.barriers_definite_control c
@@ -259,12 +279,15 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, schema,
 #' Compute barrier overrides via lnk_barrier_overrides
 #' @noRd
 .lnk_pipeline_prep_overrides <- function(conn, cfg, schema, observations) {
-  habitat_tbl <- paste0(schema, ".user_habitat_classification")
-  habitat_exists <- DBI::dbGetQuery(conn, sprintf(
-    "SELECT 1 FROM information_schema.tables
-     WHERE table_schema = %s AND table_name = 'user_habitat_classification'",
-    .lnk_quote_literal(schema)))
-  habitat_arg <- if (nrow(habitat_exists) > 0) habitat_tbl else NULL
+  # Manifest-driven gate. `.lnk_pipeline_prep_load_aux` writes
+  # `<schema>.user_habitat_classification` exactly when the manifest
+  # declares `habitat_classification`, so the config field is the direct
+  # contract. Consistent with the `barriers_definite_control` gate below.
+  habitat_arg <- if (!is.null(cfg$habitat_classification)) {
+    paste0(schema, ".user_habitat_classification")
+  } else {
+    NULL
+  }
 
   # Manifest-driven gating. `.lnk_pipeline_prep_load_aux` writes
   # `<schema>.barriers_definite_control` exactly when this manifest key
