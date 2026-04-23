@@ -45,8 +45,10 @@ habitat confirmation CSVs from the config bundle
 \code{\link[fresh:frs_break_find]{fresh::frs_break_find()}}, pruned against the control table,
 enriched with \code{wscode_ltree} and \code{localcode_ltree} for
 \code{fwa_upstream()} joins
-\item A natural-barriers table (gradient + falls + definite) used by
-\code{lnk_barrier_overrides()} to compute the per-species skip list
+\item A natural-barriers table (gradient + falls) used by
+\code{lnk_barrier_overrides()} to compute the per-species skip list.
+User-definite barriers are intentionally excluded here and
+consumed by later phases directly — bcfishpass parity.
 \item Per-model barrier tables reduced to the minimal downstream-most
 set via \code{\link[fresh:frs_barriers_minimal]{fresh::frs_barriers_minimal()}}, then unioned into
 \code{gradient_barriers_minimal} for segmentation
