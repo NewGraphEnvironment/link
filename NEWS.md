@@ -1,3 +1,11 @@
+# link 0.7.0
+
+`user_barriers_definite` no longer eligible for observation-based override ([#48](https://github.com/NewGraphEnvironment/link/issues/48)).
+
+- `.lnk_pipeline_prep_natural()` previously unioned `barriers_definite` into `natural_barriers`, which `lnk_barrier_overrides()` iterates over. Net effect: the 227 reviewer-added user-definite positions (EXCLUSION zones, MISC detections the model misses) could be re-opened by observations clearing the species threshold. Confirmed active on ELKR pre-fix — 4 override rows at Erickson Creek exclusion and Spillway MISC positions that bcfishpass keeps as permanent barriers.
+- bcfishpass's `model_access_*.sql` builds the barriers CTE from gradient + falls + subsurfaceflow only and appends `barriers_user_definite` post-filter via `UNION ALL`. Observations and habitat filters never see user-definite rows, so they're never overridable. link now matches this shape: `natural_barriers` is gradient + falls only; `barriers_definite` stays consumed separately as a break source in `lnk_pipeline_break()` and as a direct `UNION ALL` entry into `fresh.streams_breaks` via `lnk_pipeline_classify()`.
+- ELKR rollup shifts toward bcfishpass: BT spawning +3.4% → +2.8%, WCT spawning +4.0% → +2.6%, WCT rearing +1.6% → +0.3%. Other four WSGs unchanged (ADMS/BABL/DEAD have empty `barriers_definite`; BULK has 87 rows but no observation-threshold matches to any of them).
+
 # link 0.6.0
 
 Honour `user_barriers_definite_control.csv` at the observation-override step.

@@ -44,8 +44,10 @@ All species within 5% of bcfishpass reference. Pipeline runs serially in ~8.5 mi
 
 | Species | Spawning | Rearing |
 |---------|----------|---------|
-| BT | +3.4% | -0.7% |
-| WCT | +4.0% | +1.6% |
+| BT | +2.8% | -1.2% |
+| WCT | +2.6% | +0.3% |
+
+Updated 2026-04-23 (#48) — #48 removed `barriers_definite` from `natural_barriers`, which stopped observation-based override of user-definite positions (Erickson Creek exclusion + 2 Spillway MISC entries). Those four positions now correctly block upstream habitat, bringing link toward bcfishpass. Pre-#48 numbers: BT +3.4% / -0.7%, WCT +4.0% / +1.6%.
 
 ### DEAD
 
@@ -146,6 +148,7 @@ Composite steps in the DAG that aren't a single function call:
 | Three-phase cluster | CH +6% → +2.6% | fresh code (0.13.8) |
 | Index input tables | 228s → 6.6s classification | fresh code (0.13.4) |
 | Wire `barriers_definite_control` into override step, per-species, observation-path only | DEAD CH/CO/PK/ST +1.1 to +1.4% (moot on ADMS/BULK/BABL/ELKR) | link code (0.6.0) |
+| Drop `barriers_definite` from `natural_barriers` (not eligible for observation override) | ELKR BT spawn +3.4% → +2.8%, WCT spawn +4.0% → +2.6%, WCT rear +1.6% → +0.3% | link code (0.7.0) |
 
 ### barriers_definite_control wiring (#44)
 
@@ -156,6 +159,14 @@ bcfishpass pairs `user_barriers_definite.csv` with a control table that flags po
 3. **Habitat path untouched.** Expert-confirmed habitat is higher-trust than observations; it bypasses the control table, consistent with bcfishpass's `hab_upstr` CTE which has no control join.
 
 End-to-end validation on DEAD (added specifically for this reason — see section above). Numerical impact on the four original WSGs is zero because every TRUE control row is already rescued by the observation threshold or the habitat path; the filter is correctly wired but inactive on those WSGs.
+
+### user_barriers_definite bypass (#48)
+
+Same-family fix as #44, different mechanism. bcfishpass's `model_access_*.sql` builds its barriers CTE from gradient + falls + subsurfaceflow only; `barriers_user_definite` is appended post-filter via `UNION ALL`, so upstream observations and habitat confirmations never re-open user-definite positions. link's `.lnk_pipeline_prep_natural()` was unioning `barriers_definite` into `natural_barriers`, which `lnk_barrier_overrides()` iterates over — the 227 reviewer-added user-definite rows (EXCLUSION zones, MISC-type barriers) became eligible for observation override.
+
+Active defect on ELKR pre-fix: 4 rows in `working_elkr.barrier_overrides` matched `working_elkr.barriers_definite` positions — Erickson Creek exclusion (mining impacts) and two Spillway MISC entries. Post-fix: 0 matches on all 5 WSGs, and ELKR rollup shifts toward bcfishpass on BT/WCT spawning and rearing (see per-WSG table above). Other four WSGs unchanged: ADMS/BABL/DEAD have empty `barriers_definite`; BULK has 87 rows but none have observation counts clearing threshold.
+
+Fix is a single edit to `.lnk_pipeline_prep_natural()` — drop the `INSERT INTO natural_barriers SELECT ... FROM barriers_definite` block. `barriers_definite` stays consumed separately: `lnk_pipeline_break()` applies it as a sequential break source (segmentation boundary); `lnk_pipeline_classify()` UNION ALLs it directly into `fresh.streams_breaks` (access-gating barrier set). Both surfaces are unchanged.
 
 ## Remaining gaps
 

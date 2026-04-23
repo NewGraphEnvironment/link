@@ -134,10 +134,13 @@ where the decision can change:
   (mirrored at
   [`inst/extdata/configs/bcfishpass/overrides/user_barriers_definite.csv`](https://github.com/NewGraphEnvironment/link/blob/main/inst/extdata/configs/bcfishpass/overrides/user_barriers_definite.csv)).
   Each row specifies `blue_line_key` and `downstream_route_measure`
-  for a barrier that always blocks access. Treated the same as falls
-  — always-blocking, always a break position, eligible for
-  per-species override via `lnk_barrier_overrides` when enough
-  upstream observations clear the threshold.
+  for a barrier that always blocks access — reviewer-added positions
+  covering EXCLUSION zones and MISC barriers the model doesn't detect
+  from gradient / falls / subsurface detection. These are always-
+  blocking, always a break position, and **never eligible for
+  observation-based override** — matches bcfishpass's `model_access_*.sql`,
+  which appends `barriers_user_definite` post-filter via `UNION ALL` so
+  upstream observations and habitat confirmations never re-open them.
 
 - **Habitat classification endpoints** — manual spawning / rearing
   delineations from bcfishpass's

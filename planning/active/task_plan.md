@@ -6,12 +6,16 @@ Match bcfishpass's architecture for `user_barriers_definite` rows: they must be 
 
 Pre-fix defect on ELKR confirmed: 4 override rows at user-definite positions (Erickson Creek exclusion, 2× Spillway MISC) that bcfishpass would keep as blockers.
 
-## Phase 1: Code change (Shape A from #48)
+## Phase 1: Code change (simpler than initially planned)
 
-- [ ] `.lnk_pipeline_prep_natural()` — drop the `INSERT INTO natural_barriers SELECT ... FROM barriers_definite` block. `natural_barriers` becomes gradient + falls only.
-- [ ] `.lnk_pipeline_prep_minimal()` — after `frs_barriers_minimal()` runs for each per-model barrier table (`barriers_bt`, `barriers_ch_cm_co_pk_sk`, `barriers_st`, `barriers_wct`), append rows from `<schema>.barriers_definite` (already WSG-filtered at load time) into each, de-duped via `ON CONFLICT DO NOTHING`. Also append to `gradient_barriers_minimal` union so segmentation breaks still include them.
-- [ ] Check callers of `natural_barriers` outside `.lnk_pipeline_prep_overrides()` and `.lnk_pipeline_prep_minimal()` — if other callers depend on the definite union, Shape A breaks them. (From a quick grep: `natural_barriers` is only referenced in prep_natural, prep_overrides, and prep_minimal.)
-- [ ] Update tests in `test-lnk_pipeline_prepare.R` — remove "natural_barriers unions definite" assertion; add "per-model barrier tables include definite" assertion.
+Investigation showed `barriers_definite` is already wired as a break source in `lnk_pipeline_break` (sequential `frs_break_apply`) and into `fresh.streams_breaks` in `lnk_pipeline_classify` (access-gating barrier table). User-definite positions already end up as segment boundaries AND as blocking barriers at classification — bcfishpass parity on those two surfaces.
+
+The only defect is `.lnk_pipeline_prep_natural()` UNIONing `barriers_definite` into `natural_barriers`. `natural_barriers` is passed to `lnk_barrier_overrides()` which generates per-species override (skip) rows for any barrier with threshold observations upstream. That's what lets user-definite positions be re-opened.
+
+Only `natural_barriers` caller outside prep_natural is `.lnk_pipeline_prep_overrides()` (confirmed via grep). Safe to drop the definite UNION without touching prep_minimal.
+
+- [x] `.lnk_pipeline_prep_natural()` — drop the `INSERT INTO natural_barriers SELECT ... FROM barriers_definite` block. `natural_barriers` becomes gradient + falls only. Inline NOTE comment explains the bcfishpass parity reasoning.
+- [ ] Update tests in `test-lnk_pipeline_prepare.R` — the existing `prep_natural unions gradient + falls + definite` assertion needs to drop the "definite" clause.
 
 ## Phase 2: Verification
 
