@@ -18,17 +18,11 @@ Bit-identical-across-reruns reproducibility preserved. Rollup direction expected
 
 ## Phase 2: Wire control through .lnk_pipeline_prep_overrides
 
-- [ ] Update `R/lnk_pipeline_prepare.R` `.lnk_pipeline_prep_overrides`:
-  - Compute `control_arg <- if (!is.null(cfg$overrides$barriers_definite_control)) paste0(schema, ".barriers_definite_control") else NULL`
-  - Pass to `lnk_barrier_overrides(..., control = control_arg, ...)`
-  - **Manifest-driven** — not `information_schema` probe. `cfg$overrides$barriers_definite_control` is the contract.
-- [ ] Add test to `tests/testthat/test-lnk_pipeline_prepare.R`:
-  - `.lnk_pipeline_prep_overrides` with `cfg$overrides$barriers_definite_control` non-NULL → call carries `control = "<schema>.barriers_definite_control"`
-  - `cfg$overrides$barriers_definite_control` NULL → call carries `control = NULL`
-- [ ] `devtools::test(filter = "lnk_pipeline_prepare")` green
-- [ ] Full `devtools::test()` green
-- [ ] `lintr::lint_package()` — no new lints on changed files
-- [ ] `/code-check` before commit
+- [x] Updated `.lnk_pipeline_prep_overrides` with manifest-gated `control_arg` computation; passes `control = control_arg` to `lnk_barrier_overrides`.
+- [x] Fixed asymmetric gating — `.lnk_pipeline_prep_load_aux` now always creates a schema-valid (possibly empty) `<schema>.barriers_definite_control` table when the manifest declares the key, even if the AOI has zero control rows. Mirrors the `barriers_definite` pattern above. Lets `.lnk_pipeline_prep_overrides` gate on the manifest without worrying about the per-AOI row count.
+- [x] Two new `.lnk_pipeline_prep_overrides` tests in `test-lnk_pipeline_prepare.R` — manifest present → `control = "<schema>.barriers_definite_control"`; manifest absent → `control = NULL`.
+- [x] `devtools::test()` green: 271 PASS.
+- [x] `/code-check` surfaced the asymmetric-gating bug — fixed and re-verified before commit.
 
 ## Phase 3: End-to-end verification
 
