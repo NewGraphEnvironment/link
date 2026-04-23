@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,14 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.4.0" id="link-040">link 0.4.0<a class="anchor" aria-label="anchor" href="#link-040"></a></h2>
+<p>Targets-driven comparison pipeline for all four validated watershed groups.</p>
+<ul><li>Add <code>data-raw/_targets.R</code> — <code>tar_map(wsg = c("ADMS", "BULK", "BABL", "ELKR"))</code> over a per-AOI target function, synchronous execution, <code><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">dplyr::bind_rows</a></code> rollup. <code>fresh.streams</code> is a shared schema so single-host parallelism would collide — runs serially today; distributed runs (M4 + M1) are a follow-up alongside a fresh upstream change for per-AOI output paths (<a href="https://github.com/NewGraphEnvironment/link/issues/38" class="external-link">#38</a>)</li>
+<li>Add <code>data-raw/compare_bcfishpass_wsg(wsg, config)</code> — per-AOI target function. Wraps the six <code>lnk_pipeline_*</code> phases, diffs the output against <code>bcfishpass.habitat_linear_*</code> reference on the tunnel DB, returns a ~10-row tibble (<code>wsg × species × habitat_type × link_km × bcfishpass_km × diff_pct</code>). KB-scale — safe to ship over SSH.</li>
+<li>Promote <code>.lnk_pipeline_classify_species</code> to an exported <code>lnk_pipeline_species(cfg, aoi)</code> — canonical public API for “species this config classifies in this AOI.” Used by <code>lnk_pipeline_classify</code> and <code>lnk_pipeline_connect</code> internally and by the targets per-AOI function externally. Removes the duplicate private helper that was briefly inlined in <code>data-raw/</code>.</li>
+<li>End-to-end verification (<code>data-raw/logs/20260422_11_tar_make_final.txt</code>) — 4 WSGs / 34 rows produced over 8.5 minutes wall clock (serial). <strong>Reproducibility:</strong> consecutive <code>tar_make()</code> invocations on the same DB state produce bit-identical rollup tibbles. <strong>Parity to bcfishpass (informational):</strong> all 34 <code>diff_pct</code> values within 5% of reference; research-doc drift (BT rearing: -0.7 → -1.1 pp) traces to env state between 2026-04-15 and today, not to pipeline non-determinism.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.3.0" id="link-030">link 0.3.0<a class="anchor" aria-label="anchor" href="#link-030"></a></h2>
 <p>Pipeline phase helpers extract the bcfishpass comparison orchestration into composable building blocks. The 635-line <code>data-raw/compare_bcfishpass.R</code> is now 136 lines of sequenced helper calls.</p>

@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -240,6 +240,12 @@ bcdata (PSCIS assessments)   ─┘</code></pre>
 <li>#24 — lnk_stamp (model params for report appendix)</li>
 <li>#29 — SK spawning cluster divergence (blocked on fresh#133)</li>
 </ul></div>
+<div class="section level2">
+<h2 id="correctness-bar-exact-reproduction">Correctness bar: exact reproduction<a class="anchor" aria-label="anchor" href="#correctness-bar-exact-reproduction"></a></h2>
+<p>The habitat classification pipeline is validated by <strong>exact reproduction of runs</strong>, not by “within 5% of bcfishpass.” Same fwapg DB state + same bcfishobs DB state + same config bundle → byte-identical rollup tibble, every time. Any variation between two runs with identical inputs is a defect to root-cause, not to rationalize as “ordering variance.”</p>
+<p>Comparisons to bcfishpass (including the per-WSG <code>diff_pct</code> column in the rollup) are parity diagnostics — informative, not pass/fail. A bit-identical run that drifts from bcfishpass reference is acceptable; a reproducibility failure with the same inputs is not.</p>
+<p>When inputs change (fwapg refresh, bcfishobs update, channel_width sync), outputs will correctly differ. That’s what the stamp/lineage work (#40) makes explainable — so any observed drift can be traced back to which input moved.</p>
+</div>
 <div class="section level2">
 <h2 id="sred">SRED<a class="anchor" aria-label="anchor" href="#sred"></a></h2>
 <p>Relates to NewGraphEnvironment/sred-2025-2026#24 — crossing connectivity interpretation package.</p>

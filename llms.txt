@@ -127,6 +127,8 @@ for a full run.
   : Prepare the Network and Barrier Inputs for a Pipeline Run
 - [`lnk_pipeline_setup()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_setup.md)
   : Set Up the Working Schema for a Pipeline Run
+- [`lnk_pipeline_species()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_species.md)
+  : Resolve the Species Set for an AOI
 
 ## Thresholds
 
