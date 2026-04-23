@@ -241,7 +241,7 @@ bcfishpass_km × 100`.
   w <- stats::reshape(x, idvar = "species", timevar = "wsg",
                        direction = "wide", v.names = "diff_pct")
   names(w)[-1] <- sub("diff_pct\\.", "", names(w)[-1])
-  cols <- intersect(c("species", "ADMS", "BULK", "BABL", "ELKR", "DEAD"),
+  cols <- intersect(c("species", "ADMS", "BULK", "BABL", "ELKR"),
     names(w))
   w <- w[order(w$species), cols]
   row.names(w) <- NULL
@@ -256,6 +256,13 @@ knitr::kable(.pivot(rollup, "rearing"),
   digits = 1,
   caption = "Rearing parity (% diff vs bcfishpass)")
 ```
+
+The tables cover ADMS / BULK / BABL / ELKR — the four parity
+watershed groups. DEAD (Deadman River) is also run by `tar_make()`
+but is reported separately in
+[`research/bcfishpass_comparison.md`](https://github.com/NewGraphEnvironment/link/blob/main/research/bcfishpass_comparison.md);
+it was added as a targeted end-to-end test for the
+`barriers_definite_control` filter rather than a parity measurement.
 
 Observed differences come from the stream-order bypass omission —
 visible as the uniformly negative BT rearing column — and from
