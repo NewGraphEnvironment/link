@@ -137,20 +137,26 @@ lnk_barrier_overrides <- function(conn,
 
     overrides_found <- 0L
 
-    # Control table: any matching control row prevents the override.
-    # barrier_ind is used separately in barrier loading (true = keep, false = remove).
-    # Here we only care about presence — if a control row exists for this barrier
-    # position, observations/habitat don't override it.
-    ctrl_where <- if (!is.null(control)) {
+    # Control table: a matching control row with barrier_ind = TRUE
+    # blocks the override. `NOT EXISTS` (rather than a LEFT JOIN + filter)
+    # keeps two things right in one shot — the barrier is blocked only
+    # when at least one TRUE control row matches (mixed TRUE/FALSE within
+    # the 1 m tolerance resolves to "blocked"), and the outer GROUP BY /
+    # HAVING count(...) aggregation does not get row-multiplied by a join
+    # to control.
+    ctrl_where <- ""
+    ctrl_filter <- if (!is.null(control)) {
       sprintf(
-        "LEFT JOIN %s c
-           ON b.blue_line_key = c.blue_line_key
-           AND abs(b.downstream_route_measure - c.downstream_route_measure) < 1",
+        "AND NOT EXISTS (
+           SELECT 1 FROM %s c
+           WHERE c.blue_line_key = b.blue_line_key
+             AND abs(b.downstream_route_measure - c.downstream_route_measure) < 1
+             AND c.barrier_ind::boolean = true
+         )",
         control)
     } else {
       ""
     }
-    ctrl_filter <- if (!is.null(control)) "AND c.blue_line_key IS NULL" else ""
 
     # --- Observation-based overrides (JOIN pattern, not correlated subquery) ---
     if (!is.null(observations) && threshold > 0) {

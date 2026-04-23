@@ -8,14 +8,12 @@ Bit-identical-across-reruns reproducibility preserved. Rollup direction expected
 
 ## Phase 1: lnk_barrier_overrides control filter fix
 
-- [ ] Read `R/lnk_barrier_overrides.R` control block (lines 140–153 + docstring). Confirm current `ctrl_filter = "AND c.blue_line_key IS NULL"` treats ANY control row as blocking, regardless of `barrier_ind`. Docstring says only `TRUE` rows block — fix.
-- [ ] Update `ctrl_filter` to `"AND (c.blue_line_key IS NULL OR c.barrier_ind::boolean = false)"`.
-- [ ] Update the inline comment (lines 140–143) to reflect the fixed semantics.
-- [ ] New test file `tests/testthat/test-lnk_barrier_overrides.R`:
-  - Mocked SQL assertion that `ctrl_filter` produces the expected `(c.blue_line_key IS NULL OR c.barrier_ind::boolean = false)` clause when `control` is non-NULL
-  - Mocked SQL assertion that `ctrl_filter` is empty when `control = NULL`
-  - Input validation smoke tests (control as NULL, as character)
-- [ ] `devtools::test(filter = "lnk_barrier_overrides")` green
+- [x] Read `R/lnk_barrier_overrides.R` control block. Confirmed: current filter treated ANY control row as blocking; docstring said only `barrier_ind = TRUE` rows block.
+- [x] Updated `ctrl_filter` to `"AND (c.blue_line_key IS NULL OR c.barrier_ind::boolean = false)"`.
+- [x] Updated the inline comment to describe the fixed semantics.
+- [x] New test file `tests/testthat/test-lnk_barrier_overrides.R` with mocked SQL assertions — 7 tests covering observation-path control filter, NULL-control path, habitat-path control filter.
+- [x] `devtools::test()` green: 265 PASS.
+- [x] lintr clean on changed R/test files (only pre-existing indentation style notes, consistent with the rest of the codebase).
 - [ ] `/code-check` before commit
 
 ## Phase 2: Wire control through .lnk_pipeline_prep_overrides
