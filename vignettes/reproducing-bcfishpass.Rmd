@@ -18,147 +18,151 @@ knitr::opts_chunk$set(
 library(link)
 ```
 
-## Why this vignette
-
 [bcfishpass](https://github.com/smnorris/bcfishpass) is the reference
 model for freshwater habitat classification and fish passage
 prioritization in British Columbia. link + [fresh](https://newgraphenvironment.github.io/fresh/)
-together give you a configurable, reproducible R-side pipeline that
-can reproduce bcfishpass's habitat classification — and, with a
-different config bundle, run the same machinery with different
-interpretation choices.
+provide a configurable, reproducible R-side pipeline. The bundled
+`"bcfishpass"` config reproduces bcfishpass's classification method.
+Other configs can express other methods; the package is method-agnostic.
 
-This vignette walks through the `"bcfishpass"` config: the story of
-what the pipeline does to an FWA stream network, how to run it, what
-comes out the other side, and where the bundled config deliberately
-departs from bcfishpass.
+This vignette walks through what the bcfishpass configuration does, how
+to run it, and how the output compares to bcfishpass reference tables.
+Full per-phase pipeline detail lives in
+[`research/bcfishpass_comparison.md`](https://github.com/NewGraphEnvironment/link/blob/main/research/bcfishpass_comparison.md).
 
-## How bcfishpass works under the hood
+## How the bcfishpass configuration works
 
-The question the pipeline answers is, for every segment of the
-Freshwater Atlas stream network: **can this species reach this
-segment, and is it suitable as spawning or rearing habitat?** The
-answer for one segment × one species is a pair of booleans. The work
-is producing those booleans for ~50,000 segments per watershed group
-and a dozen species.
+The rollup measures **intrinsic habitat potential conditioned on
+accessibility**. Intrinsic potential is a segment's fit to
+per-species habitat rules (edge type, waterbody, channel width,
+gradient). Accessibility is whether fish can reach the segment
+without crossing a blocking natural barrier. bcfishpass records
+intrinsic classification on every segment, together with labels that
+name the downstream obstacles blocking it. The rollup in this
+vignette aggregates only the subset that is both intrinsically
+suitable *and* accessible — accessibility and intrinsic potential
+are separable in general, and a fuller treatment would report both.
 
 ```
 FWA streams (raw)
     │
-    │   thresholds detect gradient barriers @ 15 / 20 / 25 / 30 %
+    │   gradient thresholds detect barriers @ 15 / 20 / 25 / 30 %
     ▼
 gradient barriers ─── falls ─── user-identified definite barriers
     │
-    │   observations override natural barriers upstream of evidence
+    │   observations override natural barriers per access model
     ▼
-access model per species  (which reaches are reachable for BT, CH, CO, ...)
+access model per species
     │
-    │   break positions = fish observations + minimal gradient barriers
-    │                     + expert-confirmed habitat endpoints + crossings
+    │   break positions = observations + minimal gradient barriers
+    │                     + habitat classification endpoints + crossings
     ▼
-segmented streams (every segment ends where a classification decision changes)
+segmented streams (every segment ends where a rule decision can change)
     │
-    │   per-species rules from the rules YAML:
+    │   per-species rules from rules.yaml
     │     edge type • waterbody type • channel width • gradient
     ▼
-classify  (spawning ?  rearing ? per species per segment)
+classify (spawning ? rearing ? per species per segment)
     │
-    │   connectivity — rearing requires reach from spawning;
-    │                   SK spawning requires a reachable rearing lake
+    │   frs_cluster for rearing-spawning connectivity;
+    │   connected-waterbody rules for SK
     ▼
-streams_habitat  (per-species spawning / rearing booleans on every segment)
+streams_habitat (per-species spawning / rearing booleans per segment)
 ```
 
-### Where breaks go and why
+### Where breaks go, and why
 
-A break is a point on the stream where one segment ends and the next
-begins. A segment is a unit of classification — one segment, one
-answer per species. So breaks go wherever the answer could change:
+A break is a point where one segment ends and the next begins. Every
+segment is one classification unit. Breaks therefore fall at positions
+where the decision can change:
 
-- **Fish observations.** A confirmed observation upstream of a
-  gradient barrier means the barrier can't actually be a barrier for
-  that species — the pipeline flips the access label on that reach
-  from "blocked" to "passable."
-- **Minimal gradient barriers.** On a flow path with multiple
-  gradient barriers, only the downstream-most one matters for access
-  — everything upstream of it is already blocked by it. The pipeline
-  reduces to this minimal set per species-class so the segmentation
-  doesn't fragment reaches that were going to end up in the same
-  access state anyway.
-- **Expert-confirmed habitat endpoints.** Where a human review has
-  marked a specific reach boundary as habitat / non-habitat, the
-  pipeline breaks on both ends so the marked reach is its own
-  segment.
-- **Crossings.** Road and rail crossings are potential barriers, and
-  their `barrier_status` (PASSABLE / POTENTIAL / BARRIER) is applied
-  per-segment.
+- **Observations.** bcfishpass's per-species access models flip a
+  natural-barrier reach to accessible when the count of fish
+  observations on the upstream flow path meets a threshold. Thresholds
+  and species filters vary per model (see the SQL under
+  [`model/access/`](https://github.com/smnorris/bcfishpass/tree/ea3c5d8/model)).
+  Per-species parameters used by link live in the bundled
+  `"bcfishpass"` config's
+  [`parameters_fresh.csv`](https://github.com/NewGraphEnvironment/link/blob/main/inst/extdata/configs/bcfishpass/parameters_fresh.csv)
+  (`observation_threshold`, `observation_date_min`,
+  `observation_buffer_m`, `observation_species`). For BULK (bcfishpass
+  commit `ea3c5d8`):
+
+    - BT — ≥ 1 observation of BT, CH, CM, CO, PK, SK, or ST; any date
+    - CH / CM / CO / PK / SK — ≥ 5 observations in that salmon set,
+      on or after 1990-01-01
+    - ST — ≥ 5 observations of CH, CM, CO, PK, SK, or ST, on or
+      after 1990-01-01
+    - WCT — ≥ 1 observation of WCT; any date
+
+- **Minimal gradient barriers.** On any flow path with multiple
+  gradient barriers, only the downstream-most matters for access —
+  everything upstream is already blocked by it. The pipeline reduces
+  to the minimal set per species-class (via
+  [`fresh::frs_barriers_minimal()`](https://newgraphenvironment.github.io/fresh/reference/frs_barriers_minimal.html))
+  so segmentation doesn't split reaches that would end up in the
+  same access state.
+
+- **Habitat classification endpoints** — manual spawning / rearing
+  delineations from bcfishpass's
+  [`user_habitat_classification.csv`](https://github.com/smnorris/bcfishpass/blob/ea3c5d8/data/user_habitat_classification.csv)
+  (mirrored at
+  [`inst/extdata/configs/bcfishpass/overrides/user_habitat_classification.csv`](https://github.com/NewGraphEnvironment/link/blob/main/inst/extdata/configs/bcfishpass/overrides/user_habitat_classification.csv)).
+  Each row records `blue_line_key`, `downstream_route_measure`,
+  `upstream_route_measure`, `species_code`, and `habitat_ind`. Breaks
+  are placed at both measures so the marked reach is its own segment.
+
+- **Crossings** — road, rail, and utility crossings carrying
+  `barrier_status` of `PASSABLE`, `POTENTIAL`, or `BARRIER`. Their
+  per-segment status is applied but does not alter the natural-access
+  model.
 
 ### Where classification comes from
 
-Once the network is segmented, each segment is checked against the
-per-species rules in the config's rules YAML:
+Once segmented, each segment is checked against the per-species rules
+in
+[`rules.yaml`](https://github.com/NewGraphEnvironment/link/blob/main/inst/extdata/configs/bcfishpass/rules.yaml).
+The YAML is generated from
+[`dimensions.csv`](https://github.com/NewGraphEnvironment/link/blob/main/inst/extdata/configs/bcfishpass/dimensions.csv)
+via `lnk_rules_build()`.
 
-```r
-rules_path <- system.file("extdata", "configs", "bcfishpass",
-                           "rules.yaml", package = "link")
-cat(readLines(rules_path, n = 30), sep = "\n")
-```
+Top-level keys are species codes. `spawn:` and `rear:` are lists of
+alternative match conditions — any match marks the segment. Conditions
+combine:
 
-Each top-level key is a species. `spawn:` and `rear:` are lists of
-alternative match conditions — a segment is classified as spawning
-(or rearing) if any one condition matches. Conditions combine
-`edge_types_explicit` (1000 / 1100 streams, 2000 / 2300 rivers),
-`waterbody_type` (`R` river polygon, `L` lake), `channel_width`
-ranges, and gradient bounds. A species can also flag `rear_lake`,
-`rear_lake_only`, or `rear_no_fw` to special-case its rearing
-strategy. The `dimensions.csv` alongside the YAML is the
-human-editable source — `lnk_rules_build()` regenerates the YAML
-from it.
+- `edge_types_explicit` — FWA `edge_type` integer codes (1000 / 1100
+  stream, 2000 / 2300 river, 1050 / 1150 wetland, 1200 lake).
+  Membership is a per-species decision recorded in the rules file.
+- `waterbody_type` — `R` river polygon, `L` lake.
+- `channel_width` — `[min, max]` metres.
+- Gradient bounds for spawning and rearing (via `parameters_fresh.csv`
+  and fresh's thresholds CSV).
 
-### Where link + fresh deliberately depart
+### Stream-order bypass — not applied in this config
 
-bcfishpass applies a stream-order bypass on the rearing
-channel-width minimum for BT, CH, CO, ST, and WCT: a first-order
-stream whose parent is order ≥ 5 is allowed to count as rearing
-even if its measured channel width is below the per-species minimum.
-The biology is that small tributaries of major rivers can still
-support juvenile rearing despite narrow measured widths — a
-reasonable move.
+bcfishpass applies a rearing-side bypass on the channel-width minimum
+for BT / CH / CO / ST / WCT when a first-order stream's parent is
+order ≥ 5. The bundled `"bcfishpass"` config does not apply that
+bypass. Numeric impact and the reasoning are in
+[`research/bcfishpass_comparison.md`](https://github.com/NewGraphEnvironment/link/blob/main/research/bcfishpass_comparison.md).
 
-The link pipeline does not currently apply this rule. The bypass is
-awkward to compose with the clustering step — applying it before
-clustering inflates rearing along tributaries that have no
-connectivity to spawning, and applying it after clustering adds
-segments without the connectivity check. We're working on a
-biologically cleaner alternative that restricts the bypass to direct
-first-order children of large-order streams within a distance cap
-from the tributary mouth, which we'll wire into a future config
-variant. In the current bundled `"bcfishpass"` config the practical
-consequence is a 68 km shortfall in BT rearing on BULK — the −2.2 %
-entry you'll see in the rollup below. Every other species / WSG
-combination agrees with the reference within about 5 %.
-
-## The three-line entrypoint
+## Running the pipeline
 
 ```{r entrypoint, eval = FALSE}
 library(link)
 library(targets)
 
-# `_targets.R` lives in data-raw/ — run from that directory
-# or use targets::tar_config_set(script = "data-raw/_targets.R").
+# `_targets.R` lives in data-raw/; run from that directory.
 setwd("data-raw")
 
-tar_make()                  # ~8.5 min serial, 4 WSGs
-rollup <- tar_read(rollup)  # tibble of per-WSG / per-species diffs
+tar_make()                  # 4 WSGs, serial
+rollup <- tar_read(rollup)  # per-WSG × species × habitat tibble
 ```
 
-`tar_make()` runs `compare_bcfishpass_wsg()` once per watershed group
-(ADMS, BULK, BABL, ELKR). Each call exercises the six
-`lnk_pipeline_*` phases — setup, load, prepare, break, classify,
-connect — then queries the bcfishpass reference tables on a read-only
-tunnel DB and returns a small tibble.
-
-## The targets graph
+`tar_make()` runs
+[`compare_bcfishpass_wsg()`](https://github.com/NewGraphEnvironment/link/blob/main/data-raw/compare_bcfishpass_wsg.R)
+once per watershed group (ADMS, BULK, BABL, ELKR). Each call
+exercises the six `lnk_pipeline_*` phases and returns a small tibble.
 
 ```
 lnk_config("bcfishpass") ─┬─► comparison_ADMS ─┐
@@ -167,16 +171,11 @@ lnk_config("bcfishpass") ─┬─► comparison_ADMS ─┐
                           └─► comparison_ELKR ─┘
 ```
 
-See `research/bcfishpass_comparison.md` in the repo for the per-phase
-pipeline DAG rendered as Mermaid plus a colour-coded targets
-orchestration view.
-
 ## The rollup
 
 ```{r load-rollup}
-rollup_path <- system.file("extdata", "vignette-data", "rollup.rds",
-                            package = "link")
-rollup <- readRDS(rollup_path)
+rollup <- readRDS(system.file("extdata", "vignette-data", "rollup.rds",
+                               package = "link"))
 ```
 
 ```{r rollup-summary}
@@ -185,82 +184,95 @@ cat("Within 5%: ",
     all(abs(rollup$diff_pct[!is.na(rollup$diff_pct)]) < 5))
 ```
 
-- `link_km` — kilometres our pipeline classified as habitat
-  (spawning or rearing) per species × watershed group
-- `bcfishpass_km` — kilometres from bcfishpass's reference
+Columns:
+
+- `link_km` — kilometres classified as habitat (spawning or rearing,
+  conditioned on accessibility) per species × watershed group
+- `bcfishpass_km` — kilometres from bcfishpass reference
   `habitat_linear_*` tables
 - `diff_pct` — `(link_km − bcfishpass_km) / bcfishpass_km × 100`
 
-Modest differences arise from segmentation boundary choices, rounding
-in `downstream_route_measure`, the stream-order bypass discussed
-above, and deliberate interpretation differences baked into the
-bcfishpass rules YAML.
+Observed differences come from the stream-order bypass omission
+(notable on BT rearing in BULK) and from segmentation-boundary rounding
+where per-segment attributes fall near rule thresholds. Numeric detail
+is in
+[`research/bcfishpass_comparison.md`](https://github.com/NewGraphEnvironment/link/blob/main/research/bcfishpass_comparison.md).
 
-## What a result looks like
+## Comparison map — Neexdzii Kwa (Upper Bulkley)
 
-Numbers on a table give you the aggregate — a map tells you where the
-habitat is. Below is BULK chinook habitat, rendered from the same
-`fresh.streams_habitat` table the rollup aggregates.
+The watershed upstream of the Neexdzii Kwa / Wetzin Kwa (Bulkley /
+Morice) confluence, built via `FWA_WatershedAtMeasure(360873822,
+166030.4)`. Sits inside the BULK watershed group, so the BULK rollup
+above aggregates this area along with the rest of the Bulkley.
 
-```{r map-bulk-ch, message = FALSE, warning = FALSE}
-bulk_ch_path <- system.file("extdata", "vignette-data", "bulk_ch.rds",
-                             package = "link")
-bulk_ch <- readRDS(bulk_ch_path)
+The link pipeline layer is visible by default; toggle on the
+bcfishpass reference layer to compare.
+
+```{r map-sub-ch, message = FALSE, warning = FALSE}
+sub_ch      <- readRDS(system.file("extdata", "vignette-data",
+                                    "sub_ch.rds", package = "link"))
+sub_ch_bcfp <- readRDS(system.file("extdata", "vignette-data",
+                                    "sub_ch_bcfp.rds", package = "link"))
 
 if (requireNamespace("mapgl", quietly = TRUE)) {
+  pal_values <- c("spawning only", "rearing only", "spawning + rearing")
+  pal_colors <- c("#e31a1c", "#1f78b4", "#6a3d9a")
+
   mapgl::maplibre(
-    bounds = sf::st_bbox(bulk_ch),
+    bounds = sf::st_bbox(sub_ch),
     style = mapgl::carto_style("positron")
   ) |>
     mapgl::add_line_layer(
-      id = "bulk_ch",
-      source = bulk_ch,
-      line_color = mapgl::match_expr(
-        "habitat",
-        values = c("spawning only",
-                    "rearing only",
-                    "spawning + rearing"),
-        stops  = c("#e31a1c", "#1f78b4", "#6a3d9a"),
-        default = "#999999"
-      ),
+      id = "bcfishpass",
+      source = sub_ch_bcfp,
+      line_color = mapgl::match_expr("habitat",
+        values = pal_values, stops = pal_colors, default = "#999999"),
+      line_width = 3,
+      line_opacity = 0.6,
+      visibility = "none"
+    ) |>
+    mapgl::add_line_layer(
+      id = "link",
+      source = sub_ch,
+      line_color = mapgl::match_expr("habitat",
+        values = pal_values, stops = pal_colors, default = "#999999"),
       line_width = 2
     ) |>
     mapgl::add_legend(
-      "BULK · chinook habitat",
-      values = c("spawning only",
-                  "rearing only",
-                  "spawning + rearing"),
-      colors = c("#e31a1c", "#1f78b4", "#6a3d9a"),
+      "Neexdzii Kwa (Upper Bulkley) · modelled chinook habitat",
+      values = pal_values,
+      colors = pal_colors,
       type = "categorical"
+    ) |>
+    mapgl::add_layers_control(
+      collapsible = TRUE,
+      position    = "top-left"
     )
 } else {
   message("Install `mapgl` (pak::pak('mapgl')) to render this map.")
 }
 ```
 
-Rearing dominates the network — CH juveniles use mainstems
-extensively. Spawning is more focused — low gradient, appropriate
-channel width. Where the two overlap the segment supports both life
-stages.
-
 ## Reproducibility
 
 The pipeline is deterministic. Two `tar_make()` invocations on the
-same fwapg + bcfishobs state produce bit-identical rollups. If you
-observe drift between runs with the same inputs, that's a bug. When
-input data shifts — a fresh `channel_width` sync, new observations
-loaded into `bcfishobs`, a bcfishpass reference refresh — outputs
-will correctly differ.
+same fwapg + bcfishobs state produce bit-identical rollups. When
+input data shifts — a `channel_width` sync, new observations loaded
+into `bcfishobs`, a bcfishpass reference refresh — outputs will
+correctly differ.
 
 ## Further reading
 
-- `research/bcfishpass_comparison.md` — per-phase pipeline DAG,
-  documented gaps, break sources, key fixes
-- `?lnk_pipeline_setup` etc. — reference for each phase helper
+- [`research/bcfishpass_comparison.md`](https://github.com/NewGraphEnvironment/link/blob/main/research/bcfishpass_comparison.md)
+  — per-phase pipeline DAG, parity numbers, documented gaps
+- `?lnk_pipeline_setup` / `?lnk_pipeline_load` / `?lnk_pipeline_prepare`
+  / `?lnk_pipeline_break` / `?lnk_pipeline_classify` /
+  `?lnk_pipeline_connect` — phase helper reference
 - `?lnk_config` — config bundle structure
-- `inst/extdata/configs/bcfishpass/rules.yaml` — per-species
-  classification rules for this variant
-- `inst/extdata/configs/bcfishpass/dimensions.csv` — human-editable
-  source of the rules YAML
-- `data-raw/_targets.R` — pipeline definition
-- `data-raw/compare_bcfishpass_wsg.R` — per-AOI target function
+- [`inst/extdata/configs/bcfishpass/`](https://github.com/NewGraphEnvironment/link/tree/main/inst/extdata/configs/bcfishpass)
+  — bundled config (rules YAML, dimensions CSV, per-species
+  parameters, overrides)
+- [`data-raw/_targets.R`](https://github.com/NewGraphEnvironment/link/blob/main/data-raw/_targets.R)
+  — pipeline definition
+- [`data-raw/compare_bcfishpass_wsg.R`](https://github.com/NewGraphEnvironment/link/blob/main/data-raw/compare_bcfishpass_wsg.R)
+  — per-AOI target function
