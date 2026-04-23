@@ -94,7 +94,10 @@ test_that("lnk_barrier_overrides omits ctrl_filter when control is NULL", {
   expect_no_match(joined, "c\\.barrier_ind::boolean")
 })
 
-test_that("lnk_barrier_overrides control filter applies to habitat overrides too", {
+test_that("habitat override path is NOT gated by control (bcfishpass parity)", {
+  # bcfishpass's hab_upstr CTE has no control join. Expert-confirmed
+  # habitat is higher-trust than observations; the control table does not
+  # block it. Any drift here would silently under-override bcfishpass.
   captured <- character(0)
   local_mocked_bindings(
     dbExecute = function(conn, sql, ...) {
@@ -127,15 +130,13 @@ test_that("lnk_barrier_overrides control filter applies to habitat overrides too
     verbose = FALSE
   )
 
-  joined <- paste(captured, collapse = "\n")
-  expect_match(joined, "AND NOT EXISTS", fixed = TRUE)
-  expect_match(joined,
-    "FROM working.barriers_definite_control c", fixed = TRUE)
-  expect_match(joined, "c.barrier_ind::boolean = true", fixed = TRUE)
-  # habitat-only path uses habitat-specific SQL (confirm we're in that
-  # branch by checking for the habitat join pattern)
-  expect_match(joined,
-    "working.user_habitat_classification h", fixed = TRUE)
+  habitat_sql <- captured[grepl("working.user_habitat_classification h",
+    captured, fixed = TRUE)]
+  expect_true(length(habitat_sql) >= 1)
+  habitat_joined <- paste(habitat_sql, collapse = "\n")
+  expect_no_match(habitat_joined, "NOT EXISTS")
+  expect_no_match(habitat_joined, "barriers_definite_control")
+  expect_no_match(habitat_joined, "c\\.barrier_ind::boolean")
 })
 
 # -- per-species control gate (observation_control_apply) --------------------

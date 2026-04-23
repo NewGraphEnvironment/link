@@ -27,11 +27,13 @@
 #' @param control Character or `NULL`. Schema-qualified table of barrier
 #'   controls with columns: `blue_line_key`, `downstream_route_measure`,
 #'   `barrier_ind`. Barriers in this table with `barrier_ind = TRUE` cannot
-#'   be overridden — but only for species where
+#'   be overridden **by observations** — but only for species where
 #'   `params$observation_control_apply` is TRUE. Resident species routinely
 #'   inhabit reaches upstream of anadromous-blocking falls (post-glacial
 #'   connectivity, no ocean-return requirement), so their observations still
-#'   count unless this flag says otherwise.
+#'   count unless this flag says otherwise. Habitat confirmations
+#'   (`habitat` argument) are higher-trust than observations — they bypass
+#'   the control table entirely, for all species.
 #' @param params Data frame with per-species parameters. Must have columns:
 #'   `species_code`, `observation_threshold`, `observation_date_min`,
 #'   `observation_buffer_m`, `observation_species`. Optional column
@@ -213,6 +215,11 @@ lnk_barrier_overrides <- function(conn,
     }
 
     # --- Habitat confirmation overrides (any confirmed habitat upstream) ---
+    # Control filter intentionally NOT applied here. Expert-confirmed
+    # habitat is a higher-trust signal than the control table — by the
+    # time a reviewer has marked habitat as confirmed upstream of a
+    # position, they have already considered the barrier's passability.
+    # bcfishpass does the same: `hab_upstr` CTE has no control join.
     if (!is.null(habitat)) {
       sql <- sprintf(
         "INSERT INTO %s (blue_line_key, downstream_route_measure, species_code)
@@ -225,18 +232,15 @@ lnk_barrier_overrides <- function(conn,
            ON s.blue_line_key = h.blue_line_key
            AND round(h.upstream_route_measure::numeric) >= round(s.downstream_route_measure::numeric)
            AND round(h.upstream_route_measure::numeric) <= round(s.upstream_route_measure::numeric)
-         %s
          WHERE whse_basemapping.fwa_upstream(
            b.blue_line_key, b.downstream_route_measure,
            b.wscode_ltree, b.localcode_ltree,
            h.blue_line_key, h.upstream_route_measure,
            s.wscode_ltree, s.localcode_ltree,
            false, 200)
-         %s
          ON CONFLICT DO NOTHING",
         to, sp,
-        barriers, habitat, obs_sp_sql,
-        ctrl_where, ctrl_filter)
+        barriers, habitat, obs_sp_sql)
 
       n <- DBI::dbExecute(conn, sql)
       overrides_found <- overrides_found + n
