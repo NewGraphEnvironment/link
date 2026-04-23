@@ -1,3 +1,12 @@
+# link 0.5.0
+
+Documentation and narrative for the targets pipeline.
+
+- New vignette: "Reproducing bcfishpass with link + fresh" — three-line entrypoint, rollup interpretation, BULK chinook habitat map (mapgl), reproducibility framing. Data-prep script at `data-raw/vignette_reproducing_bcfishpass.R` generates `inst/extdata/vignette-data/{rollup,bulk_ch}.rds` from a real run; vignette loads the `.rds` so pkgdown builds don't need fwapg access. Follows the CLAUDE.md convention for vignettes that need external resources ([#38](https://github.com/NewGraphEnvironment/link/issues/38))
+- Research doc (`research/bcfishpass_comparison.md`) updated with bit-identical rollup numbers from 2026-04-22 and a new "Targets orchestration" section showing how `_targets.R` composes the per-WSG runs.
+- `mapgl`, `sf` added to DESCRIPTION Suggests.
+- Retired `data-raw/compare_bcfishpass.R` — `data-raw/_targets.R` + `data-raw/compare_bcfishpass_wsg.R` supersede it. Git history preserves the prior form.
+
 # link 0.4.0
 
 Targets-driven comparison pipeline for all four validated watershed groups.

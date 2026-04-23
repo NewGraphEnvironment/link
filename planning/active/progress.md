@@ -34,3 +34,14 @@
 - Promoted `.lnk_pipeline_classify_species` → exported `lnk_pipeline_species(cfg, aoi)` to remove duplication with the data-raw inline helper. Tests moved to `test-lnk_pipeline_species.R`. classify + connect internals updated. Compare wrapper uses `link::lnk_pipeline_species()`.
 - Code-check surfaced a real connection leak (second `dbConnect` could throw before `on.exit` registered) and SQL quoting inconsistency on species list. Both fixed; 12th run confirms numbers unchanged.
 - DESCRIPTION bumped to 0.4.0. NEWS entry captures the reproducibility + parity distinction. Committing and pushing PR 2 next.
+- PR 2 MERGED as link 0.4.0 (PR #42). Branch deleted.
+
+## PR 3 kickoff
+
+- Branched `38-targets-pipeline-pr3` off main.
+- `tar_mermaid()` reviewed — output is hashed-ID graph unsuitable as a research-doc DAG. Kept the hand-written pipeline DAG and added a clean "Targets orchestration" Mermaid beside it.
+- Research doc results table refreshed with run 12 numbers (2026-04-22), correctness-bar section added at top.
+- Vignette `reproducing-bcfishpass.Rmd` written — three-line entrypoint, rollup table, BULK CH habitat mapgl map. Pre-computes artifacts via `data-raw/vignette_reproducing_bcfishpass.R` → `inst/extdata/vignette-data/{rollup,bulk_ch}.rds`. Rendered clean on local test.
+- Retired `data-raw/compare_bcfishpass.R`; `_targets.R` + `compare_bcfishpass_wsg.R` supersede it.
+- DESCRIPTION bumped to 0.5.0; mapgl + sf added to Suggests.
+- Next: `/code-check` on staged diff, commit, push, PR with SRED tag.

@@ -1,6 +1,6 @@
 Package: link
 Title: Crossing Connectivity Interpretation
-Version: 0.4.0
+Version: 0.5.0
 Authors@R:
     person("Allan", "Irvine", , "airvine@newgraphenvironment.com",
            role = c("aut", "cre"),
@@ -32,8 +32,10 @@ Suggests:
     fresh,
     knitr,
     lintr,
+    mapgl,
     mockery,
     rmarkdown,
+    sf,
     tarchetypes,
     targets,
     testthat (>= 3.0.0),

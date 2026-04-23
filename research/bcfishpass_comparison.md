@@ -1,18 +1,22 @@
 # bcfishpass Comparison
 
-fresh 0.13.8 + link vs bcfishpass (tunnel v0.7.12+, CSVs synced @ ea3c5d8).
+fresh 0.14.0 + link 0.4.0 vs bcfishpass (reference `habitat_linear_*` tables on tunnel, bcfishpass ea3c5d8, fwapg 20240830).
 
-## Results (2026-04-15)
+## Correctness bar
 
-All species within 5% on all 4 WSGs. Three-phase cluster, no stream order bypass.
+**Bit-identical output from the same inputs.** Three consecutive `tar_make()` runs on 2026-04-22 produced the exact same 34-row rollup tibble (`data-raw/logs/20260422_{10,11,12}_*.txt`). Parity to bcfishpass (the `diff_pct` column in the rollup) is an informational diagnostic, not the pass/fail standard.
+
+## Results (2026-04-22, rollup from `tar_make()`)
+
+All species within 5% of bcfishpass reference. Pipeline runs serially in ~8.5 min wall clock.
 
 ### ADMS
 
 | Species | Spawning | Rearing |
 |---------|----------|---------|
-| BT | +1.8% | -0.7% |
-| CH | +0.5% | +2.5% |
-| CO | +1.6% | +0.1% |
+| BT | +1.8% | -1.1% |
+| CH | +0.5% | +2.3% |
+| CO | +1.6% | -0.1% |
 | SK | +3.7% | +0.0% |
 
 ### BULK
@@ -30,18 +34,18 @@ All species within 5% on all 4 WSGs. Three-phase cluster, no stream order bypass
 
 | Species | Spawning | Rearing |
 |---------|----------|---------|
-| BT | +4.1% | -0.6% |
-| CH | +3.8% | +3.6% |
-| CO | +4.8% | +1.6% |
+| BT | +4.1% | -1.9% |
+| CH | +3.8% | +2.1% |
+| CO | +4.8% | +0.8% |
 | SK | -2.8% | +0.0% |
-| ST | +3.8% | +1.9% |
+| ST | +3.8% | -1.3% |
 
 ### ELKR
 
 | Species | Spawning | Rearing |
 |---------|----------|---------|
-| BT | +3.4% | +0.2% |
-| WCT | +4.0% | +2.5% |
+| BT | +3.4% | -0.7% |
+| WCT | +4.0% | +1.6% |
 
 ## DAG
 
@@ -78,6 +82,34 @@ flowchart TD
 ```
 
 Blue = `fresh` functions. Orange = `lnk_` functions. Grey = composite operations (multiple function calls bundled into one step).
+
+## Targets orchestration
+
+`data-raw/_targets.R` runs the pipeline DAG above once per watershed group and rolls the results up:
+
+```mermaid
+flowchart LR
+    cfg["lnk_config('bcfishpass')<br/>(loaded once)"]
+
+    cfg --> ADMS["compare_bcfishpass_wsg<br/>ADMS"]
+    cfg --> BULK["compare_bcfishpass_wsg<br/>BULK"]
+    cfg --> BABL["compare_bcfishpass_wsg<br/>BABL"]
+    cfg --> ELKR["compare_bcfishpass_wsg<br/>ELKR"]
+
+    ADMS --> rollup["rollup<br/>34 rows · wsg × species × habitat_type × km × diff_pct"]
+    BULK --> rollup
+    BABL --> rollup
+    ELKR --> rollup
+
+    classDef root fill:#eef,stroke:#336;
+    classDef wsg  fill:#efe,stroke:#363;
+    classDef sink fill:#fee,stroke:#633;
+    class cfg root
+    class ADMS,BULK,BABL,ELKR wsg
+    class rollup sink
+```
+
+Runs serially (`fresh.streams` is a shared output schema; parallel workers would race). Distributed M4+M1 execution via `crew.cluster` is deferred until fresh supports a per-AOI output path — see `planning/active/findings.md` and `rtj/docs/distributed-fwapg.md`.
 
 ## Pipeline operations
 

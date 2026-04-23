@@ -43,15 +43,16 @@ Break the 635-line script into small named functions (one per pipeline phase). C
 - [x] **Correctness framing** — reframed verification from "within 5% of bcfishpass" to "bit-identical across repeated runs". Added section to CLAUDE.md + memory entry. Confirmed across three runs (10, 11, 12) — all 34 rollup rows identical.
 - [ ] PR 2: SRED tag — Relates to #38
 
-## PR 3: Retire old script + regenerate DAG
+## PR 3: Retire old script + research doc refresh + vignette
 
-- [ ] Wire `tar_mermaid()` output into `research/bcfishpass_comparison.md` DAG section (keep glossary + classDef)
-- [ ] Delete `data-raw/compare_bcfishpass.R` (git history preserves)
-- [ ] Delete `data-raw/compare_adms.R` if redundant
-- [ ] Vignette: "Running the comparison pipeline" — `tar_make()`, DAG inspection, rollup
-- [ ] Update CLAUDE.md pipeline section — targets-based, not script-based
-- [ ] NEWS entry + bump to 0.3.0
-- [ ] `/code-check` before each commit
+- [x] `tar_mermaid()` reviewed — output is hashed-ID orchestration graph, poor replacement for the hand-written pipeline-phase DAG. Kept the pipeline DAG in `research/bcfishpass_comparison.md`; added a small "Targets orchestration" Mermaid showing cfg → 4 WSGs → rollup.
+- [x] Research doc refreshed with 2026-04-22 rollup numbers (was 2026-04-15) + reproducibility framing at top.
+- [x] Delete `data-raw/compare_bcfishpass.R` — superseded by `_targets.R` + `compare_bcfishpass_wsg.R`. Git history preserves.
+- [x] Vignette `vignettes/reproducing-bcfishpass.Rmd` — narrative, three-line entrypoint, rollup table, BULK CH habitat mapgl map, reproducibility note, pointers to future default-variant vignette.
+- [x] `data-raw/vignette_reproducing_bcfishpass.R` — pre-computes `rollup.rds` + `bulk_ch.rds` into `inst/extdata/vignette-data/` so the vignette doesn't hit the DB at build time. CLAUDE.md vignette convention.
+- [x] `mapgl`, `sf` added to DESCRIPTION Suggests.
+- [x] NEWS entry + bump to 0.5.0.
+- [ ] `/code-check` before commit
 - [ ] PR 3: SRED tag — Fixes #38
 
 ## Follow-up (out of scope)
