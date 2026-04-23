@@ -1,0 +1,297 @@
++ cfg dispatched
+✔ cfg completed [265ms, 296.48 kB]
++ comparison_BABL dispatched
+NOTICE:  schema "fresh" already exists, skipping
+
+NOTICE:  table "barriers_definite" does not exist, skipping
+
+NOTICE:  table "streams_blk" does not exist, skipping
+
+NOTICE:  table "gradient_barriers_raw" does not exist, skipping
+
+NOTICE:  table "natural_barriers" does not exist, skipping
+
+NOTICE:  table "barrier_overrides" does not exist, skipping
+
+NOTICE:  table "barriers_bt" does not exist, skipping
+
+NOTICE:  table "barriers_bt_min" does not exist, skipping
+
+NOTICE:  table "barriers_ch_cm_co_pk_sk" does not exist, skipping
+
+NOTICE:  table "barriers_ch_cm_co_pk_sk_min" does not exist, skipping
+
+NOTICE:  table "barriers_st" does not exist, skipping
+
+NOTICE:  table "barriers_st_min" does not exist, skipping
+
+NOTICE:  table "barriers_wct" does not exist, skipping
+
+NOTICE:  table "barriers_wct_min" does not exist, skipping
+
+NOTICE:  table "gradient_barriers_minimal" does not exist, skipping
+
+NOTICE:  table "streams" does not exist, skipping
+
+NOTICE:  table "streams_habitat" does not exist, skipping
+
+NOTICE:  table "observations_breaks" does not exist, skipping
+
+NOTICE:  table "habitat_endpoints" does not exist, skipping
+
+NOTICE:  table "crossings_breaks" does not exist, skipping
+
+NOTICE:  table "streams_breaks" does not exist, skipping
+
+NOTICE:  relation "streams_id_segment_idx" already exists, skipping
+
+NOTICE:  table "streams_acc_015" does not exist, skipping
+
+NOTICE:  table "streams_acc_02" does not exist, skipping
+
+NOTICE:  table "streams_acc_025" does not exist, skipping
+
+NOTICE:  table "streams_acc_025_ovr_bt" does not exist, skipping
+
+NOTICE:  table "streams_acc_015_ovr_ch" does not exist, skipping
+
+NOTICE:  table "streams_acc_015_ovr_co" does not exist, skipping
+
+NOTICE:  table "streams_acc_015_ovr_sk" does not exist, skipping
+
+NOTICE:  table "streams_acc_02_ovr_st" does not exist, skipping
+
+NOTICE:  table "frs_clusters_bt" does not exist, skipping
+
+NOTICE:  table "frs_clusters_ch" does not exist, skipping
+
+NOTICE:  table "frs_clusters_co" does not exist, skipping
+
+NOTICE:  table "frs_clusters_sk" does not exist, skipping
+
+NOTICE:  table "frs_qual_spawn_sk" does not exist, skipping
+
+NOTICE:  table "frs_trace_lfid_sk" does not exist, skipping
+
+NOTICE:  table "frs_clusters_st" does not exist, skipping
+
+✔ comparison_BABL completed [1m 44.9s, 416 B]
++ comparison_ELKR dispatched
+NOTICE:  schema "fresh" already exists, skipping
+
+Override validation: working_elkr.pscis_fixes vs working_elkr.crossings
+  Total overrides:  324
+  Valid (matched):  288
+  Orphans:          36  <-- not found in crossings
+  Duplicates:       0
+Updated 288 of 7306 rows (barrier_status)
+NOTICE:  table "barriers_definite_control" does not exist, skipping
+
+NOTICE:  table "streams_blk" does not exist, skipping
+
+NOTICE:  table "gradient_barriers_raw" does not exist, skipping
+
+NOTICE:  table "natural_barriers" does not exist, skipping
+
+NOTICE:  table "barrier_overrides" does not exist, skipping
+
+NOTICE:  table "barriers_bt" does not exist, skipping
+
+NOTICE:  table "barriers_bt_min" does not exist, skipping
+
+NOTICE:  table "barriers_ch_cm_co_pk_sk" does not exist, skipping
+
+NOTICE:  table "barriers_ch_cm_co_pk_sk_min" does not exist, skipping
+
+NOTICE:  table "barriers_st" does not exist, skipping
+
+NOTICE:  table "barriers_st_min" does not exist, skipping
+
+NOTICE:  table "barriers_wct" does not exist, skipping
+
+NOTICE:  table "barriers_wct_min" does not exist, skipping
+
+NOTICE:  table "gradient_barriers_minimal" does not exist, skipping
+
+NOTICE:  table "streams" does not exist, skipping
+
+NOTICE:  table "streams_habitat" does not exist, skipping
+
+NOTICE:  table "observations_breaks" does not exist, skipping
+
+NOTICE:  table "habitat_endpoints" does not exist, skipping
+
+NOTICE:  table "crossings_breaks" does not exist, skipping
+
+NOTICE:  table "streams_breaks" does not exist, skipping
+
+NOTICE:  relation "streams_id_segment_idx" already exists, skipping
+
+NOTICE:  table "streams_acc_02" does not exist, skipping
+
+NOTICE:  table "streams_acc_025" does not exist, skipping
+
+NOTICE:  table "streams_acc_025_ovr_bt" does not exist, skipping
+
+NOTICE:  table "streams_acc_02_ovr_wct" does not exist, skipping
+
+NOTICE:  table "frs_clusters_bt" does not exist, skipping
+
+NOTICE:  table "frs_clusters_wct" does not exist, skipping
+
+✔ comparison_ELKR completed [2m 27.2s, 319 B]
++ comparison_BULK dispatched
+NOTICE:  schema "fresh" already exists, skipping
+
+Override validation: working_bulk.pscis_fixes vs working_bulk.crossings
+  Total overrides:  580
+  Valid (matched):  514
+  Orphans:          66  <-- not found in crossings
+  Duplicates:       0
+Updated 514 of 5568 rows (barrier_status)
+NOTICE:  table "streams_blk" does not exist, skipping
+
+NOTICE:  table "gradient_barriers_raw" does not exist, skipping
+
+NOTICE:  table "natural_barriers" does not exist, skipping
+
+NOTICE:  table "barrier_overrides" does not exist, skipping
+
+NOTICE:  table "barriers_bt" does not exist, skipping
+
+NOTICE:  table "barriers_bt_min" does not exist, skipping
+
+NOTICE:  table "barriers_ch_cm_co_pk_sk" does not exist, skipping
+
+NOTICE:  table "barriers_ch_cm_co_pk_sk_min" does not exist, skipping
+
+NOTICE:  table "barriers_st" does not exist, skipping
+
+NOTICE:  table "barriers_st_min" does not exist, skipping
+
+NOTICE:  table "barriers_wct" does not exist, skipping
+
+NOTICE:  table "barriers_wct_min" does not exist, skipping
+
+NOTICE:  table "gradient_barriers_minimal" does not exist, skipping
+
+NOTICE:  table "streams" does not exist, skipping
+
+NOTICE:  table "streams_habitat" does not exist, skipping
+
+NOTICE:  table "observations_breaks" does not exist, skipping
+
+NOTICE:  table "habitat_endpoints" does not exist, skipping
+
+NOTICE:  table "crossings_breaks" does not exist, skipping
+
+NOTICE:  table "streams_breaks" does not exist, skipping
+
+NOTICE:  relation "streams_id_segment_idx" already exists, skipping
+
+NOTICE:  table "streams_acc_015" does not exist, skipping
+
+NOTICE:  table "streams_acc_02" does not exist, skipping
+
+NOTICE:  table "streams_acc_025" does not exist, skipping
+
+NOTICE:  table "streams_acc_025_ovr_bt" does not exist, skipping
+
+NOTICE:  table "streams_acc_015_ovr_ch" does not exist, skipping
+
+NOTICE:  table "streams_acc_015_ovr_co" does not exist, skipping
+
+NOTICE:  table "streams_acc_015_ovr_pk" does not exist, skipping
+
+NOTICE:  table "streams_acc_015_ovr_sk" does not exist, skipping
+
+NOTICE:  table "streams_acc_02_ovr_st" does not exist, skipping
+
+NOTICE:  table "frs_clusters_bt" does not exist, skipping
+
+NOTICE:  table "frs_clusters_ch" does not exist, skipping
+
+NOTICE:  table "frs_clusters_co" does not exist, skipping
+
+NOTICE:  table "frs_clusters_sk" does not exist, skipping
+
+NOTICE:  table "frs_qual_spawn_sk" does not exist, skipping
+
+NOTICE:  table "frs_trace_lfid_sk" does not exist, skipping
+
+NOTICE:  table "frs_clusters_st" does not exist, skipping
+
+✔ comparison_BULK completed [2m 56.7s, 438 B]
++ comparison_ADMS dispatched
+NOTICE:  schema "fresh" already exists, skipping
+
+NOTICE:  table "barriers_definite" does not exist, skipping
+
+NOTICE:  table "streams_blk" does not exist, skipping
+
+NOTICE:  table "gradient_barriers_raw" does not exist, skipping
+
+NOTICE:  table "natural_barriers" does not exist, skipping
+
+NOTICE:  table "barrier_overrides" does not exist, skipping
+
+NOTICE:  table "barriers_bt" does not exist, skipping
+
+NOTICE:  table "barriers_bt_min" does not exist, skipping
+
+NOTICE:  table "barriers_ch_cm_co_pk_sk" does not exist, skipping
+
+NOTICE:  table "barriers_ch_cm_co_pk_sk_min" does not exist, skipping
+
+NOTICE:  table "barriers_st" does not exist, skipping
+
+NOTICE:  table "barriers_st_min" does not exist, skipping
+
+NOTICE:  table "barriers_wct" does not exist, skipping
+
+NOTICE:  table "barriers_wct_min" does not exist, skipping
+
+NOTICE:  table "gradient_barriers_minimal" does not exist, skipping
+
+NOTICE:  table "streams" does not exist, skipping
+
+NOTICE:  table "streams_habitat" does not exist, skipping
+
+NOTICE:  table "observations_breaks" does not exist, skipping
+
+NOTICE:  table "habitat_endpoints" does not exist, skipping
+
+NOTICE:  table "crossings_breaks" does not exist, skipping
+
+NOTICE:  table "streams_breaks" does not exist, skipping
+
+NOTICE:  relation "streams_id_segment_idx" already exists, skipping
+
+NOTICE:  table "streams_acc_015" does not exist, skipping
+
+NOTICE:  table "streams_acc_025" does not exist, skipping
+
+NOTICE:  table "streams_acc_025_ovr_bt" does not exist, skipping
+
+NOTICE:  table "streams_acc_015_ovr_ch" does not exist, skipping
+
+NOTICE:  table "streams_acc_015_ovr_co" does not exist, skipping
+
+NOTICE:  table "streams_acc_015_ovr_sk" does not exist, skipping
+
+NOTICE:  table "frs_clusters_bt" does not exist, skipping
+
+NOTICE:  table "frs_clusters_ch" does not exist, skipping
+
+NOTICE:  table "frs_clusters_co" does not exist, skipping
+
+NOTICE:  table "frs_clusters_sk" does not exist, skipping
+
+NOTICE:  table "frs_qual_spawn_sk" does not exist, skipping
+
+NOTICE:  table "frs_trace_lfid_sk" does not exist, skipping
+
+✔ comparison_ADMS completed [1m 9s, 379 B]
++ rollup dispatched
+✔ rollup completed [1ms, 751 B]
+✔ ended pipeline [8m 18.4s, 6 completed, 0 skipped]

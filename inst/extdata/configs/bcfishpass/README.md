@@ -1,6 +1,6 @@
 # bcfishpass config
 
-Reproduces bcfishpass output exactly for regression. All 4 watershed groups (ADMS, BULK, BABL, ELKR) are within 5% of bcfishpass when this config drives the pipeline.
+Reproduces bcfishpass output exactly for regression. All five watershed groups (ADMS, BULK, BABL, ELKR, DEAD) are within 5% of bcfishpass when this config drives the pipeline. ADMS/BULK/BABL/ELKR are the numerical-parity set; DEAD is the end-to-end test for the `barriers_definite_control` override filter (see `research/bcfishpass_comparison.md`).
 
 ## What is in here
 

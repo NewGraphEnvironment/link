@@ -125,7 +125,12 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, schema,
          downstream_route_measure double precision)", schema))
   }
 
-  # --- Barriers-definite control (per-WSG, used to prune gradient barriers) ---
+  # --- Barriers-definite control (per-WSG, used to prune gradient barriers
+  # AND to lock positions against observation-based overrides). Mirror the
+  # barriers_definite pattern above — whenever the manifest declares the
+  # key, ensure a schema-valid table exists even if this AOI has zero rows,
+  # so downstream steps can gate on the manifest field rather than probing
+  # the DB.
   ctrl_all <- cfg$overrides$barriers_definite_control
   if (!is.null(ctrl_all)) {
     ctrl <- ctrl_all[ctrl_all$watershed_group_code == aoi, ]
@@ -133,6 +138,14 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, schema,
       DBI::dbWriteTable(conn,
         DBI::Id(schema = schema, table = "barriers_definite_control"),
         ctrl, overwrite = TRUE)
+    } else {
+      .lnk_db_execute(conn, sprintf(
+        "DROP TABLE IF EXISTS %s.barriers_definite_control", schema))
+      .lnk_db_execute(conn, sprintf(
+        "CREATE TABLE %s.barriers_definite_control (
+           blue_line_key integer,
+           downstream_route_measure double precision,
+           barrier_ind text)", schema))
     }
   }
 
@@ -252,10 +265,21 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, schema,
     .lnk_quote_literal(schema)))
   habitat_arg <- if (nrow(habitat_exists) > 0) habitat_tbl else NULL
 
+  # Manifest-driven gating. `.lnk_pipeline_prep_load_aux` writes
+  # `<schema>.barriers_definite_control` exactly when this manifest key
+  # is declared on the config bundle, so the config field itself is the
+  # direct contract for whether control is in play — no DB probe needed.
+  control_arg <- if (!is.null(cfg$overrides$barriers_definite_control)) {
+    paste0(schema, ".barriers_definite_control")
+  } else {
+    NULL
+  }
+
   lnk_barrier_overrides(conn,
     barriers = paste0(schema, ".natural_barriers"),
     observations = observations,
     habitat = habitat_arg,
+    control = control_arg,
     params = cfg$parameters_fresh,
     to = paste0(schema, ".barrier_overrides"),
     verbose = FALSE)

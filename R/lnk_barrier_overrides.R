@@ -27,11 +27,20 @@
 #' @param control Character or `NULL`. Schema-qualified table of barrier
 #'   controls with columns: `blue_line_key`, `downstream_route_measure`,
 #'   `barrier_ind`. Barriers in this table with `barrier_ind = TRUE` cannot
-#'   be overridden.
+#'   be overridden **by observations** — but only for species where
+#'   `params$observation_control_apply` is TRUE. Resident species routinely
+#'   inhabit reaches upstream of anadromous-blocking falls (post-glacial
+#'   connectivity, no ocean-return requirement), so their observations still
+#'   count unless this flag says otherwise. Habitat confirmations
+#'   (`habitat` argument) are higher-trust than observations — they bypass
+#'   the control table entirely, for all species.
 #' @param params Data frame with per-species parameters. Must have columns:
 #'   `species_code`, `observation_threshold`, `observation_date_min`,
-#'   `observation_buffer_m`, `observation_species`. See
-#'   `configs/bcfishpass/parameters_fresh.csv` for format.
+#'   `observation_buffer_m`, `observation_species`. Optional column
+#'   `observation_control_apply` (logical) — when TRUE, the `control` table
+#'   blocks overrides for this species; when FALSE/NA/missing, the species
+#'   ignores control. Bcfishpass defaults: TRUE for CH/CM/CO/PK/SK/ST,
+#'   FALSE for BT/WCT. See `configs/bcfishpass/parameters_fresh.csv`.
 #' @param cols_index Character vector. Column names to index on the
 #'   barriers table for `fwa_upstream()` performance. Indexes are created
 #'   `IF NOT EXISTS`. Default `c("blue_line_key", "wscode_ltree",
@@ -135,22 +144,36 @@ lnk_barrier_overrides <- function(conn,
     obs_sp_list <- if (is.na(obs_sp_str)) sp else trimws(strsplit(obs_sp_str, ";")[[1]])
     obs_sp_sql <- paste0("'", obs_sp_list, "'", collapse = ", ")
 
+    # Species-level opt-in for the control filter. bcfishpass applies control
+    # only in the anadromous access models (CH/CM/CO/PK/SK, ST) — residents
+    # (BT, WCT) and sub-CT species routinely live upstream of anadromous
+    # barriers (post-glacial headwater connectivity, no ocean-return
+    # requirement), so their observations should still override.
+    ctrl_apply_col <- species_to_process$observation_control_apply[i]
+    ctrl_apply <- isTRUE(as.logical(ctrl_apply_col))
+
     overrides_found <- 0L
 
-    # Control table: any matching control row prevents the override.
-    # barrier_ind is used separately in barrier loading (true = keep, false = remove).
-    # Here we only care about presence — if a control row exists for this barrier
-    # position, observations/habitat don't override it.
-    ctrl_where <- if (!is.null(control)) {
+    # Control table: a matching control row with barrier_ind = TRUE
+    # blocks the override. `NOT EXISTS` (rather than a LEFT JOIN + filter)
+    # keeps two things right in one shot — the barrier is blocked only
+    # when at least one TRUE control row matches (mixed TRUE/FALSE within
+    # the 1 m tolerance resolves to "blocked"), and the outer GROUP BY /
+    # HAVING count(...) aggregation does not get row-multiplied by a join
+    # to control. Gated per-species by `observation_control_apply`.
+    ctrl_where <- ""
+    ctrl_filter <- if (!is.null(control) && ctrl_apply) {
       sprintf(
-        "LEFT JOIN %s c
-           ON b.blue_line_key = c.blue_line_key
-           AND abs(b.downstream_route_measure - c.downstream_route_measure) < 1",
+        "AND NOT EXISTS (
+           SELECT 1 FROM %s c
+           WHERE c.blue_line_key = b.blue_line_key
+             AND abs(b.downstream_route_measure - c.downstream_route_measure) < 1
+             AND c.barrier_ind::boolean = true
+         )",
         control)
     } else {
       ""
     }
-    ctrl_filter <- if (!is.null(control)) "AND c.blue_line_key IS NULL" else ""
 
     # --- Observation-based overrides (JOIN pattern, not correlated subquery) ---
     if (!is.null(observations) && threshold > 0) {
@@ -192,6 +215,11 @@ lnk_barrier_overrides <- function(conn,
     }
 
     # --- Habitat confirmation overrides (any confirmed habitat upstream) ---
+    # Control filter intentionally NOT applied here. Expert-confirmed
+    # habitat is a higher-trust signal than the control table — by the
+    # time a reviewer has marked habitat as confirmed upstream of a
+    # position, they have already considered the barrier's passability.
+    # bcfishpass does the same: `hab_upstr` CTE has no control join.
     if (!is.null(habitat)) {
       sql <- sprintf(
         "INSERT INTO %s (blue_line_key, downstream_route_measure, species_code)
@@ -204,18 +232,15 @@ lnk_barrier_overrides <- function(conn,
            ON s.blue_line_key = h.blue_line_key
            AND round(h.upstream_route_measure::numeric) >= round(s.downstream_route_measure::numeric)
            AND round(h.upstream_route_measure::numeric) <= round(s.upstream_route_measure::numeric)
-         %s
          WHERE whse_basemapping.fwa_upstream(
            b.blue_line_key, b.downstream_route_measure,
            b.wscode_ltree, b.localcode_ltree,
            h.blue_line_key, h.upstream_route_measure,
            s.wscode_ltree, s.localcode_ltree,
            false, 200)
-         %s
          ON CONFLICT DO NOTHING",
         to, sp,
-        barriers, habitat, obs_sp_sql,
-        ctrl_where, ctrl_filter)
+        barriers, habitat, obs_sp_sql)
 
       n <- DBI::dbExecute(conn, sql)
       overrides_found <- overrides_found + n

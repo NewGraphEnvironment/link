@@ -187,3 +187,78 @@ test_that(".lnk_pipeline_prep_network loads fresh.streams with FWA filters", {
   expect_match(joined, "wscode_ltree <@ '999'::ltree IS FALSE")
   expect_match(joined, "ADD COLUMN id_segment integer")
 })
+
+# -- prep_overrides control pass-through (manifest-driven) -------------------
+
+test_that(".lnk_pipeline_prep_overrides passes control when manifest declares it", {
+  cfg_stub <- structure(list(
+    parameters_fresh = data.frame(
+      species_code = "BT",
+      observation_threshold = 1L,
+      observation_date_min = "2000-01-01",
+      observation_buffer_m = 20,
+      observation_species = "BT",
+      stringsAsFactors = FALSE
+    ),
+    overrides = list(
+      barriers_definite_control = data.frame(
+        blue_line_key = 360873822L,
+        downstream_route_measure = 1000,
+        barrier_ind = "t",
+        stringsAsFactors = FALSE
+      )
+    )
+  ), class = c("lnk_config", "list"))
+
+  captured <- list()
+  local_mocked_bindings(
+    lnk_barrier_overrides = function(conn, ...) {
+      captured[["args"]] <<- list(...)
+      invisible(NULL)
+    }
+  )
+  local_mocked_bindings(
+    dbGetQuery = function(conn, sql, ...) {
+      data.frame()                   # no habitat table
+    },
+    .package = "DBI"
+  )
+
+  .lnk_pipeline_prep_overrides("mock-conn", cfg = cfg_stub,
+    schema = "working_bulk", observations = "bcfishobs.observations")
+
+  expect_equal(captured$args$control, "working_bulk.barriers_definite_control")
+})
+
+test_that(".lnk_pipeline_prep_overrides passes control = NULL when manifest omits it", {
+  cfg_stub <- structure(list(
+    parameters_fresh = data.frame(
+      species_code = "BT",
+      observation_threshold = 1L,
+      observation_date_min = "2000-01-01",
+      observation_buffer_m = 20,
+      observation_species = "BT",
+      stringsAsFactors = FALSE
+    ),
+    overrides = list()                # no barriers_definite_control key
+  ), class = c("lnk_config", "list"))
+
+  captured <- list()
+  local_mocked_bindings(
+    lnk_barrier_overrides = function(conn, ...) {
+      captured[["args"]] <<- list(...)
+      invisible(NULL)
+    }
+  )
+  local_mocked_bindings(
+    dbGetQuery = function(conn, sql, ...) {
+      data.frame()
+    },
+    .package = "DBI"
+  )
+
+  .lnk_pipeline_prep_overrides("mock-conn", cfg = cfg_stub,
+    schema = "working_bulk", observations = "bcfishobs.observations")
+
+  expect_null(captured$args$control)
+})

@@ -1,73 +1,92 @@
-# Task Plan: _targets.R pipeline (#38)
+# Task Plan: Wire barriers_definite_control into lnk_barrier_overrides (#44)
 
 ## Goal
 
-Replace the 635-line `data-raw/compare_bcfishpass.R` script with a targets-driven pipeline that:
-- Runs each DAG node as a `tar_target()` — inspectable, cacheable, skippable
-- Parallelizes across watershed groups via `tar_map(wsg = c(...))`
-- Regenerates the research doc DAG from `tar_mermaid()`
-- Single-host on M4 first; distributed swap to `crew_controller_group(local=M4, cluster=M1)` is a follow-up after rtj Phase 4
+Honour `user_barriers_definite_control.csv`'s `barrier_ind = TRUE` rows at the observation-override step. Positions marked as non-overridable (known fish-blocking dams, long impassable falls, diversions) must never be re-opened by historical upstream observations. Matches bcfishpass's per-species access SQL.
 
-Uses `lnk_config("bcfishpass")` (shipped in 0.2.0) and `frs_barriers_minimal()` (fresh 0.14.0).
+Bit-identical-across-reruns reproducibility preserved. Rollup direction expected: toward bcfishpass reference, not away.
 
-## Package vs pipeline split
+## Phase 1: lnk_barrier_overrides control filter fix
 
-Helpers (`lnk_habitat_*`) go in `R/` as exported package functions — generic building blocks any caller can compose. `_targets.R` + `compare_bcfishpass_wsg()` go in `data-raw/` — this specific comparison pipeline, not part of the installed package. `data-raw/` is the canonical R-package home for "code that USES this package to produce outputs."
-
-## PR 1: Extract helpers to R/lnk_pipeline_*.R
-
-Break the 635-line script into small named functions (one per pipeline phase). Canonical signature `(conn, aoi, cfg, schema)` — `aoi` follows fresh convention (accepts a WSG code today; extends to ltree filters, sf polygons, mapsheets later). `setup` is the only outlier: `(conn, schema, overwrite)`.
-
-- [x] `R/lnk_pipeline_setup.R` — create working schema, ensure `fresh` schema
-- [x] `R/lnk_pipeline_load.R` — crossings + modelled fixes + PSCIS status overrides. Falls, definite barriers, observation exclusions, habitat classification moved to `prepare` (load stays focused on anthropogenic crossings)
-- [x] `R/lnk_pipeline_prepare.R` — loads falls + definite + control + habitat confirms; detects gradient barriers (`frs_break_find`) with control pruning + ltree enrichment; builds natural_barriers; computes barrier overrides via `lnk_barrier_overrides`; per-model non-minimal reduction via `frs_barriers_minimal` (fresh 0.14.0); loads fresh.streams with channel_width + stream_order_parent + GENERATED cols + id_segment. Six internal `@noRd` sub-helpers
-- [x] `R/lnk_pipeline_break.R` — builds observations_breaks (species-filtered + exclusions), habitat_endpoints (DRM + URM), crossings_breaks; runs sequential `frs_break_apply` in config-defined order with `id_segment` reassignment between rounds
-- [x] `R/lnk_pipeline_classify.R` — builds access-gating `fresh.streams_breaks` (gradient + falls + definite + crossings), calls `frs_habitat_classify` with rules YAML + thresholds + barrier overrides. Species default derives from `cfg$parameters_fresh` ∩ `cfg$wsg_species` presence for the AOI.
-- [x] `R/lnk_pipeline_connect.R` — calls fresh's `.frs_run_connectivity` (per-species cluster + connected_waterbody driven by `cfg$parameters_fresh` flags). Fresh internal access flagged as a follow-up (export a stable API in fresh).
-- [x] Update existing `data-raw/compare_bcfishpass.R` to call the helpers — verified on ADMS (635 lines → 136 lines, all species within 5%, sub-1% rearing drift from research doc acceptable)
-- [ ] Tests + runnable examples for each helper (live-DB tests skip without `.lnk_db_available()`)
-- [ ] pkgdown reference entries
-- [ ] `/code-check` before each commit
-- [ ] PR 1: SRED tag (NewGraphEnvironment/sred-2025-2026#24) — Relates to #38
-
-## PR 2: Add _targets.R + per-partition target fn
-
-- [x] `data-raw/compare_bcfishpass_wsg.R` — wraps pipeline phases for one WSG, returns ~10-row tibble (wsg × species × habitat_type × link_km × bcfishpass_km × diff_pct). Creates own conn + conn_ref with fail-early on missing `PG_PASS_SHARE`, registers on.exit cleanup per-conn (no leak on second conn failure), cleans up on exit. Defensive drop of `fresh.streams*` at entry.
-- [x] Pulls comparison diff against `bcfishpass.habitat_linear_*` reference over tunnel. All interpolated strings go through `DBI::dbQuoteLiteral`.
-- [x] `data-raw/_targets.R` with static `tar_map(wsg = c("ADMS","BULK","BABL","ELKR"))` + synchronous execution (crew removed after the controller hung on dispatched-but-never-complete behavior; shared `fresh.streams` prevents parallel anyway).
-- [x] `targets` + `tarchetypes` + `tibble` + `dplyr` → DESCRIPTION Suggests (crew dropped).
-- [x] **Promote `.lnk_pipeline_classify_species` → exported `lnk_pipeline_species(cfg, aoi)`** — canonical public helper for "species this config classifies in this AOI". Used by classify + connect internally and by data-raw externally. Removes both the duplicated private helper and the inlined `.wsg_species_present` from data-raw.
-- [x] Run `tar_make()` end-to-end on all 4 WSGs. Rollup = 34 rows, all within 5% of bcfishpass. Reproducibility check: runs 10 + 11 produced bit-identical rollup tibbles.
-- [x] Log the run under `data-raw/logs/20260422_10_tar_make_from_dataraw.txt` + `20260422_11_tar_make_final.txt` (plus `20260422_12_*` post-fix re-verify).
-- [x] `/code-check` before commit — found a real conn leak (second dbConnect could throw before on.exit registered) and a SQL quoting inconsistency on species; both fixed and re-verified.
-- [x] **Correctness framing** — reframed verification from "within 5% of bcfishpass" to "bit-identical across repeated runs". Added section to CLAUDE.md + memory entry. Confirmed across three runs (10, 11, 12) — all 34 rollup rows identical.
-- [ ] PR 2: SRED tag — Relates to #38
-
-## PR 3: Retire old script + research doc refresh + vignette
-
-- [x] `tar_mermaid()` reviewed — output is hashed-ID orchestration graph, poor replacement for the hand-written pipeline-phase DAG. Kept the pipeline DAG in `research/bcfishpass_comparison.md`; added a small "Targets orchestration" Mermaid showing cfg → 4 WSGs → rollup.
-- [x] Research doc refreshed with 2026-04-22 rollup numbers (was 2026-04-15) + reproducibility framing at top.
-- [x] Delete `data-raw/compare_bcfishpass.R` — superseded by `_targets.R` + `compare_bcfishpass_wsg.R`. Git history preserves.
-- [x] Vignette `vignettes/reproducing-bcfishpass.Rmd` — narrative, three-line entrypoint, rollup table, BULK CH habitat mapgl map, reproducibility note, pointers to future default-variant vignette.
-- [x] `data-raw/vignette_reproducing_bcfishpass.R` — pre-computes `rollup.rds` + `bulk_ch.rds` into `inst/extdata/vignette-data/` so the vignette doesn't hit the DB at build time. CLAUDE.md vignette convention.
-- [x] `mapgl`, `sf` added to DESCRIPTION Suggests.
-- [x] NEWS entry + bump to 0.5.0.
+- [x] Read `R/lnk_barrier_overrides.R` control block. Confirmed: current filter treated ANY control row as blocking; docstring said only `barrier_ind = TRUE` rows block.
+- [x] Updated `ctrl_filter` to `"AND (c.blue_line_key IS NULL OR c.barrier_ind::boolean = false)"`.
+- [x] Updated the inline comment to describe the fixed semantics.
+- [x] New test file `tests/testthat/test-lnk_barrier_overrides.R` with mocked SQL assertions — 7 tests covering observation-path control filter, NULL-control path, habitat-path control filter.
+- [x] `devtools::test()` green: 265 PASS.
+- [x] lintr clean on changed R/test files (only pre-existing indentation style notes, consistent with the rest of the codebase).
 - [ ] `/code-check` before commit
-- [ ] PR 3: SRED tag — Fixes #38
 
-## Follow-up (out of scope)
+## Phase 2: Wire control through .lnk_pipeline_prep_overrides
 
-- Distributed execution — swap `crew_controller_local()` for `crew_controller_group(local=M4, cluster=M1)` after rtj Phase 4 passes the M4→M1 SSH exec check
-- `configs/default/` variant wired into a second `_targets.R` or CLI arg — tracked via #19/#20/#21 biological decisions
+- [x] Updated `.lnk_pipeline_prep_overrides` with manifest-gated `control_arg` computation; passes `control = control_arg` to `lnk_barrier_overrides`.
+- [x] Fixed asymmetric gating — `.lnk_pipeline_prep_load_aux` now always creates a schema-valid (possibly empty) `<schema>.barriers_definite_control` table when the manifest declares the key, even if the AOI has zero control rows. Mirrors the `barriers_definite` pattern above. Lets `.lnk_pipeline_prep_overrides` gate on the manifest without worrying about the per-AOI row count.
+- [x] Two new `.lnk_pipeline_prep_overrides` tests in `test-lnk_pipeline_prepare.R` — manifest present → `control = "<schema>.barriers_definite_control"`; manifest absent → `control = NULL`.
+- [x] `devtools::test()` green: 271 PASS.
+- [x] `/code-check` surfaced the asymmetric-gating bug — fixed and re-verified before commit.
 
-## Follow-up (out of scope for this PR)
+## Phase 2a: Per-species control gate (observation_control_apply)
 
-- Distributed execution — swap `crew_controller_local()` for `crew_controller_group(local=M4, cluster=M1)` after rtj Phase 4 passes the M4→M1 SSH exec check
-- `configs/default/` variant wired into a second `_targets.R` or CLI arg — tracked via #19/#20/#21 biological decisions
+Post-Phase-2 `tar_make()` drifted 11–22pp *away* from bcfishpass on ADMS/BABL because bcfishpass applies the control filter per-species (CH/CM/CO/PK/SK and ST only), while my implementation applied it across all species. Residents (BT, WCT) inhabit reaches upstream of anadromous-blocking falls — their observations should still override.
+
+- [x] Add `observation_control_apply` column to `inst/extdata/configs/bcfishpass/parameters_fresh.csv`. TRUE for CH/CM/CO/PK/SK/ST; FALSE for BT/WCT; NA for CT/DV/RB.
+- [x] `lnk_barrier_overrides()` gates the NOT EXISTS clause per-species on `params$observation_control_apply[i]`. Missing column or NA ⇒ no filter (resident default).
+- [x] Updated `@param control` / `@param params` roxygen to document the gate.
+- [x] Extended `.stub_params()` in `test-lnk_barrier_overrides.R` with optional `control_apply`. Three new tests: FALSE ⇒ no clause, NA ⇒ no clause, mixed-species params ⇒ per-species gating.
+- [x] `devtools::test()`: 279 PASS.
+- [x] Amend issue #44 body with Phase 2a scope and biological rationale.
+- [x] `/code-check` before commit — two rounds, both Clean.
+
+## Phase 2b: Ungate habitat override path from control
+
+Phase 2a species-gating fixed BT/WCT drift but CH/CM/CO/PK/SK/ST still dropped 11–22pp on ADMS/BABL. Root cause: my `ctrl_filter` was applied to BOTH the observation and habitat paths of `lnk_barrier_overrides()`. bcfishpass's `hab_upstr` CTE has no control join at all — expert-confirmed habitat is higher-trust than the control designation and bypasses the filter.
+
+- [x] Removed `ctrl_where` / `ctrl_filter` from the habitat INSERT in `lnk_barrier_overrides()`. Observation path unchanged.
+- [x] Updated roxygen: control parameter now notes it applies only to observations; habitat bypasses.
+- [x] Flipped the existing "control filter applies to habitat too" test to assert the opposite (bcfishpass parity). `devtools::test()` 279 PASS.
+- [x] Committed (6f3bc46).
+- [x] `tar_make()` — Phase 2b rollup numerically identical to pre-fix baseline on all 34 rows, all 4 WSGs within 5% of bcfishpass reference.
+
+## Phase 2c: Add DEAD as the filter's end-to-end test WSG
+
+Discovered post-Phase 2b: none of ADMS/BULK/BABL/ELKR actually exercises the new control filter end-to-end. All 6 TRUE control rows across these WSGs are rescued by either the observation threshold (obs < 5) or the habitat path (classification upstream). That's why post-fix == pre-fix — correct, but information-less.
+
+Province-wide hunt for TRUE control rows with ≥ threshold observations upstream AND zero habitat coverage turned up 4 candidates: CAMB (11 obs), DEAD (6), LFRA (16, but too large), SALM (7). Picked **DEAD** (Deadman River) — smallest runtime, 6 obs just above CH threshold, single TRUE control row at FALLS (356361749, 45743). bcfishpass reference keeps this fall in `barriers_ch_cm_co_pk_sk` (control worked); pre-fix link would have overridden via observations.
+
+- [x] Added DEAD to `data-raw/_targets.R` wsgs vector.
+- [ ] `tar_make()` incremental — builds `comparison_DEAD` + new rollup (ADMS/BULK/BABL/ELKR cached from Phase 2b run).
+- [ ] Verify DEAD's diff_pct on CH/CO/SK/ST is small (post-fix link ≈ bcfishpass — filter working).
+- [ ] Verify the specific fall at (356361749, 45743) is NOT in `working_dead.barrier_overrides` for CH/CM/CO/PK/SK/ST (filter blocked the override).
+
+## Phase 3: End-to-end verification
+
+- [x] `pak::local_install()` to pick up pipeline changes.
+- [x] First post-fix run: `20260423_02_tar_make_phase2a.txt`, `20260423_03_tar_make_phase2b.txt`.
+- [x] Inspect rollup against pre-change baseline — matches exactly on 4 WSGs (filter moot on those; DEAD being added to exercise it).
+- [ ] Reproducibility run (Phase 2b state): `20260423_04_tar_make_repro.txt` in progress. Rollup must be bit-identical to Phase 2b.
+- [ ] `digest::digest()` on two Phase 2b rollup tibbles → same hash.
+- [ ] Post-DEAD reproducibility: two consecutive `tar_make()` runs with DEAD present produce bit-identical 5-WSG rollups.
+
+## Phase 4: Artifact updates
+
+- [ ] Regenerate vignette data: `Rscript data-raw/vignette_reproducing_bcfishpass.R`. Produces new `rollup.rds` + `sub_ch.rds` + `sub_ch_bcfp.rds`.
+- [ ] Render vignette locally to verify pivot tables + map update cleanly
+- [ ] Update `research/bcfishpass_comparison.md`:
+  - Four per-WSG parity tables with new numbers
+  - Short paragraph under "Key fixes during comparison" documenting the control wiring + numeric direction
+- [ ] `NEWS.md` 0.6.0 entry: "Honour `user_barriers_definite_control.csv` at the observation-override step. Previously controlled positions could be re-opened by upstream observations; now they can't."
+- [ ] `DESCRIPTION` version bump 0.5.0 → 0.6.0
+
+## Phase 5: Ship
+
+- [ ] `/code-check` on full staged diff
+- [ ] Commit atomically per the plan's commit layout
+- [ ] Push branch
+- [ ] Open PR with SRED tag `Relates to NewGraphEnvironment/sred-2025-2026#24`
+- [ ] **File follow-up issue** (before closing PR 44): "Migrate remaining pipeline probes to manifest-driven gating". See `/Users/airvine/.claude/plans/stateful-hopping-feather.md` for scope.
 
 ## Versions at start
 
 - fresh: 0.14.0
-- link: main (0.2.0, target 0.3.0)
+- link: main (0.5.0, target 0.6.0)
 - bcfishpass: ea3c5d8
 - fwapg: Docker (FWA 20240830)

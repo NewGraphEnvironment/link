@@ -47,6 +47,18 @@ All species within 5% of bcfishpass reference. Pipeline runs serially in ~8.5 mi
 | BT | +3.4% | -0.7% |
 | WCT | +4.0% | +1.6% |
 
+### DEAD
+
+Added 2026-04-23 (#44) as the end-to-end test for `barriers_definite_control`. DEAD has a single `barrier_ind = TRUE` control row at FALLS (356361749, 45743) with six anadromous observations upstream in the CH/CM/CO/PK/SK pool and zero habitat-classification coverage — the unique combination that actively exercises the filter. Pre-fix link would have overridden the fall (six observations exceed the threshold of five; habitat-path coverage absent); post-fix link correctly blocks the override for anadromous species and matches bcfishpass, which keeps the fall in `barriers_ch_cm_co_pk_sk` post-override. BT is allowed to override the fall because `observation_control_apply = FALSE` for BT — mirrors bcfishpass's `model_access_bt.sql` which has no control join.
+
+| Species | Spawning | Rearing |
+|---------|----------|---------|
+| BT | +2.1% | -0.2% |
+| CH | +1.4% | +1.4% |
+| CO | +1.3% | -0.3% |
+| PK | +1.1% | N/A |
+| ST | +1.3% | +0.0% |
+
 ## DAG
 
 ```mermaid
@@ -95,17 +107,19 @@ flowchart LR
     cfg --> BULK["compare_bcfishpass_wsg<br/>BULK"]
     cfg --> BABL["compare_bcfishpass_wsg<br/>BABL"]
     cfg --> ELKR["compare_bcfishpass_wsg<br/>ELKR"]
+    cfg --> DEAD["compare_bcfishpass_wsg<br/>DEAD"]
 
-    ADMS --> rollup["rollup<br/>34 rows · wsg × species × habitat_type × km × diff_pct"]
+    ADMS --> rollup["rollup<br/>46 rows · wsg × species × habitat_type × km × diff_pct"]
     BULK --> rollup
     BABL --> rollup
     ELKR --> rollup
+    DEAD --> rollup
 
     classDef root fill:#eef,stroke:#336;
     classDef wsg  fill:#efe,stroke:#363;
     classDef sink fill:#fee,stroke:#633;
     class cfg root
-    class ADMS,BULK,BABL,ELKR wsg
+    class ADMS,BULK,BABL,ELKR,DEAD wsg
     class rollup sink
 ```
 
@@ -131,6 +145,17 @@ Composite steps in the DAG that aren't a single function call:
 | SK spawn_connected additive step | -9.6% → -0.7% | fresh code (0.13.6) |
 | Three-phase cluster | CH +6% → +2.6% | fresh code (0.13.8) |
 | Index input tables | 228s → 6.6s classification | fresh code (0.13.4) |
+| Wire `barriers_definite_control` into override step, per-species, observation-path only | DEAD CH/CO/PK/ST +1.1 to +1.4% (moot on ADMS/BULK/BABL/ELKR) | link code (0.6.0) |
+
+### barriers_definite_control wiring (#44)
+
+bcfishpass pairs `user_barriers_definite.csv` with a control table that flags positions as non-overridable (`barrier_ind = TRUE`) — known fish-blocking dams, long impassable falls, diversions. Historical observations upstream should not re-open these barriers. link's override step was not honouring this table. Three fixes land together in 0.6.0:
+
+1. **Observation-path filter.** `lnk_barrier_overrides()` excludes observations from counting toward the override threshold when the barrier position has a matching TRUE control row. Uses `NOT EXISTS` rather than a LEFT JOIN so the outer `HAVING count(...) >= threshold` aggregation is not row-multiplied.
+2. **Per-species application.** New column `observation_control_apply` in `parameters_fresh.csv` (TRUE for CH/CM/CO/PK/SK/ST; FALSE for BT/WCT) gates the filter. Residents inhabit reaches upstream of anadromous-blocking falls routinely (post-glacial headwater connectivity), so their observations still override. Matches bcfishpass's per-model SQL — `model_access_bt.sql` has no control join; `model_access_ch_cm_co_pk_sk.sql` and `model_access_st.sql` do.
+3. **Habitat path untouched.** Expert-confirmed habitat is higher-trust than observations; it bypasses the control table, consistent with bcfishpass's `hab_upstr` CTE which has no control join.
+
+End-to-end validation on DEAD (added specifically for this reason — see section above). Numerical impact on the four original WSGs is zero because every TRUE control row is already rescued by the observation threshold or the habitat path; the filter is correctly wired but inactive on those WSGs.
 
 ## Remaining gaps
 
