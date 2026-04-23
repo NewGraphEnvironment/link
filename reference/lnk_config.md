@@ -131,8 +131,8 @@ names(cfg$overrides)
 #> [3] "pscis_xref"                "barriers_definite"        
 #> [5] "barriers_definite_control" "crossings_misc"           
 cfg$pipeline$break_order
-#> [1] "observations"      "gradient_minimal"  "habitat_endpoints"
-#> [4] "crossings"        
+#> [1] "observations"      "gradient_minimal"  "barriers_definite"
+#> [4] "habitat_endpoints" "crossings"        
 
 if (FALSE) { # \dontrun{
 # Custom config: point at any directory containing config.yaml

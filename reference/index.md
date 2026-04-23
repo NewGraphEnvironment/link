@@ -7,6 +7,24 @@ Load a pipeline config bundle (rules, parameters, overrides)
 - [`lnk_config()`](https://newgraphenvironment.github.io/link/reference/lnk_config.md)
   : Load a Pipeline Config Bundle
 
+## Pipeline phases
+
+Composable per-AOI habitat classification building blocks. Call in order
+for a full run.
+
+- [`lnk_pipeline_break()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_break.md)
+  : Segment the Stream Network at Configured Break Positions
+- [`lnk_pipeline_classify()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_classify.md)
+  : Classify Stream Segments into Habitat per Species
+- [`lnk_pipeline_connect()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_connect.md)
+  : Apply Rearing-Spawning and Waterbody Connectivity
+- [`lnk_pipeline_load()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_load.md)
+  : Load Crossings and Apply Crossing-Level Overrides
+- [`lnk_pipeline_prepare()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_prepare.md)
+  : Prepare the Network and Barrier Inputs for a Pipeline Run
+- [`lnk_pipeline_setup()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_setup.md)
+  : Set Up the Working Schema for a Pipeline Run
+
 ## Thresholds
 
 Configurable scoring defaults
