@@ -1,5 +1,27 @@
 # Changelog
 
+## link 0.5.0
+
+Documentation and narrative for the targets pipeline.
+
+- New vignette: “Reproducing bcfishpass with link + fresh” — three-line
+  entrypoint, rollup interpretation, BULK chinook habitat map (mapgl),
+  reproducibility framing. Data-prep script at
+  `data-raw/vignette_reproducing_bcfishpass.R` generates
+  `inst/extdata/vignette-data/{rollup,bulk_ch}.rds` from a real run;
+  vignette loads the `.rds` so pkgdown builds don’t need fwapg access.
+  Follows the CLAUDE.md convention for vignettes that need external
+  resources
+  ([\#38](https://github.com/NewGraphEnvironment/link/issues/38))
+- Research doc (`research/bcfishpass_comparison.md`) updated with
+  bit-identical rollup numbers from 2026-04-22 and a new “Targets
+  orchestration” section showing how `_targets.R` composes the per-WSG
+  runs.
+- `mapgl`, `sf` added to DESCRIPTION Suggests.
+- Retired `data-raw/compare_bcfishpass.R` — `data-raw/_targets.R` +
+  `data-raw/compare_bcfishpass_wsg.R` supersede it. Git history
+  preserves the prior form.
+
 ## link 0.4.0
 
 Targets-driven comparison pipeline for all four validated watershed
@@ -28,11 +50,13 @@ groups.
 - End-to-end verification
   (`data-raw/logs/20260422_11_tar_make_final.txt`) — 4 WSGs / 34 rows
   produced over 8.5 minutes wall clock (serial). **Reproducibility:**
-  consecutive `tar_make()` invocations on the same DB state produce
-  bit-identical rollup tibbles. **Parity to bcfishpass
-  (informational):** all 34 `diff_pct` values within 5% of reference;
-  research-doc drift (BT rearing: -0.7 → -1.1 pp) traces to env state
-  between 2026-04-15 and today, not to pipeline non-determinism.
+  consecutive
+  [`tar_make()`](https://docs.ropensci.org/targets/reference/tar_make.html)
+  invocations on the same DB state produce bit-identical rollup tibbles.
+  **Parity to bcfishpass (informational):** all 34 `diff_pct` values
+  within 5% of reference; research-doc drift (BT rearing: -0.7 → -1.1
+  pp) traces to env state between 2026-04-15 and today, not to pipeline
+  non-determinism.
 
 ## link 0.3.0
 

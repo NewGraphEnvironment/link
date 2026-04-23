@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -18,7 +18,8 @@
       <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/scoring-crossings.html">Scoring crossings for fish passage prioritization</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/reproducing-bcfishpass.html">Reproducing bcfishpass with link + fresh</a></li>
+    <li><a class="dropdown-item" href="../articles/scoring-crossings.html">Scoring crossings for fish passage prioritization</a></li>
   </ul></li>
 <li class="active nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -36,12 +37,21 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.5.0" id="link-050">link 0.5.0<a class="anchor" aria-label="anchor" href="#link-050"></a></h2>
+<p>Documentation and narrative for the targets pipeline.</p>
+<ul><li>New vignette: “Reproducing bcfishpass with link + fresh” — three-line entrypoint, rollup interpretation, BULK chinook habitat map (mapgl), reproducibility framing. Data-prep script at <code>data-raw/vignette_reproducing_bcfishpass.R</code> generates <code>inst/extdata/vignette-data/{rollup,bulk_ch}.rds</code> from a real run; vignette loads the <code>.rds</code> so pkgdown builds don’t need fwapg access. Follows the CLAUDE.md convention for vignettes that need external resources (<a href="https://github.com/NewGraphEnvironment/link/issues/38" class="external-link">#38</a>)</li>
+<li>Research doc (<code>research/bcfishpass_comparison.md</code>) updated with bit-identical rollup numbers from 2026-04-22 and a new “Targets orchestration” section showing how <code>_targets.R</code> composes the per-WSG runs.</li>
+<li>
+<code>mapgl</code>, <code>sf</code> added to DESCRIPTION Suggests.</li>
+<li>Retired <code>data-raw/compare_bcfishpass.R</code> — <code>data-raw/_targets.R</code> + <code>data-raw/compare_bcfishpass_wsg.R</code> supersede it. Git history preserves the prior form.</li>
+</ul></div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.4.0" id="link-040">link 0.4.0<a class="anchor" aria-label="anchor" href="#link-040"></a></h2>
 <p>Targets-driven comparison pipeline for all four validated watershed groups.</p>
 <ul><li>Add <code>data-raw/_targets.R</code> — <code>tar_map(wsg = c("ADMS", "BULK", "BABL", "ELKR"))</code> over a per-AOI target function, synchronous execution, <code><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">dplyr::bind_rows</a></code> rollup. <code>fresh.streams</code> is a shared schema so single-host parallelism would collide — runs serially today; distributed runs (M4 + M1) are a follow-up alongside a fresh upstream change for per-AOI output paths (<a href="https://github.com/NewGraphEnvironment/link/issues/38" class="external-link">#38</a>)</li>
 <li>Add <code>data-raw/compare_bcfishpass_wsg(wsg, config)</code> — per-AOI target function. Wraps the six <code>lnk_pipeline_*</code> phases, diffs the output against <code>bcfishpass.habitat_linear_*</code> reference on the tunnel DB, returns a ~10-row tibble (<code>wsg × species × habitat_type × link_km × bcfishpass_km × diff_pct</code>). KB-scale — safe to ship over SSH.</li>
 <li>Promote <code>.lnk_pipeline_classify_species</code> to an exported <code>lnk_pipeline_species(cfg, aoi)</code> — canonical public API for “species this config classifies in this AOI.” Used by <code>lnk_pipeline_classify</code> and <code>lnk_pipeline_connect</code> internally and by the targets per-AOI function externally. Removes the duplicate private helper that was briefly inlined in <code>data-raw/</code>.</li>
-<li>End-to-end verification (<code>data-raw/logs/20260422_11_tar_make_final.txt</code>) — 4 WSGs / 34 rows produced over 8.5 minutes wall clock (serial). <strong>Reproducibility:</strong> consecutive <code>tar_make()</code> invocations on the same DB state produce bit-identical rollup tibbles. <strong>Parity to bcfishpass (informational):</strong> all 34 <code>diff_pct</code> values within 5% of reference; research-doc drift (BT rearing: -0.7 → -1.1 pp) traces to env state between 2026-04-15 and today, not to pipeline non-determinism.</li>
+<li>End-to-end verification (<code>data-raw/logs/20260422_11_tar_make_final.txt</code>) — 4 WSGs / 34 rows produced over 8.5 minutes wall clock (serial). <strong>Reproducibility:</strong> consecutive <code><a href="https://docs.ropensci.org/targets/reference/tar_make.html" class="external-link">tar_make()</a></code> invocations on the same DB state produce bit-identical rollup tibbles. <strong>Parity to bcfishpass (informational):</strong> all 34 <code>diff_pct</code> values within 5% of reference; research-doc drift (BT rearing: -0.7 → -1.1 pp) traces to env state between 2026-04-15 and today, not to pipeline non-determinism.</li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.3.0" id="link-030">link 0.3.0<a class="anchor" aria-label="anchor" href="#link-030"></a></h2>
