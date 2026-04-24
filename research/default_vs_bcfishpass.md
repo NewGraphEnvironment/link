@@ -58,7 +58,12 @@ Rationale: literature supports lake rearing for more species than bcfishpass's S
 
 ### 3. Intermittent streams included
 
-bcfishpass excludes intermittent streams from rearing sets. Default includes them — seasonal use by CO juveniles documented in FWCP and interior BC literature. [TODO: edge-type mechanism in the rules YAML + citations.]
+bcfishpass excludes intermittent streams; default includes them. Two reasons:
+
+1. FWA's intermittent flag is unreliable — 20+ years of field work consistently finds productive fish-bearing reaches classified as intermittent in FWA.
+2. Documented seasonal use by CO juveniles and other species.
+
+[TODO: edge-type mechanism in the rules YAML + citations.]
 
 ### 4. Spawn gradient minimum 0 → 0.0025
 
