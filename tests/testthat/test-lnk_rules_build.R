@@ -185,23 +185,19 @@ test_that("rear_wetland=no emits no waterbody_type: W rule", {
 
 # -- Regression: non-numeric ha_min ------------------------------------------
 
-test_that("non-numeric rear_wetland_ha_min coerces to NA and emits no threshold", {
+test_that("non-numeric rear_wetland_ha_min falls through: W rule without threshold", {
+  # No wetland fallback exists in fresh thresholds, so garbage silently
+  # falls through to "no threshold" (same outcome as blank/NA input).
   dims <- tibble::tribble(
     ~species, ~spawn_lake, ~spawn_stream, ~rear_lake, ~rear_lake_only,
     ~rear_no_fw, ~rear_stream, ~rear_wetland, ~rear_all_edges,
     ~river_skip_cw_min, ~rear_wetland_ha_min,
     "BT", "no", "yes", "no", "no", "no", "yes", "yes", "no", "yes", "not_a_number"
   )
-
   out <- withr::local_tempfile(fileext = ".yaml")
   csv <- withr::local_tempfile(fileext = ".csv")
   utils::write.csv(dims, csv, row.names = FALSE)
-
-  # expect the coercion warning but no error
-  expect_warning(
-    lnk_rules_build(csv, out, edge_types = "categories"),
-    "NAs introduced by coercion"
-  )
+  lnk_rules_build(csv, out, edge_types = "categories")
 
   bt_w <- find_wb_rule(get_rear_rules(out, "BT"), "W")
   expect_false(is.null(bt_w))
@@ -392,10 +388,31 @@ test_that("rear_lake_only=yes produces exactly one L rule, no stream/river/wetla
   rear <- yaml::read_yaml(out)$SK$rear
   expect_length(rear, 1)
   expect_equal(rear[[1]]$waterbody_type, "L")
-  # No stream / river / wetland rules even though rear_stream/rear_wetland=yes
+  # Fresh thresholds fallback: SK has rear_lake_ha_min = 200 in
+  # fresh's parameters_habitat_thresholds.csv — dimensions column is
+  # absent here so the fresh value must come through.
+  expect_equal(rear[[1]]$lake_ha_min, 200)
   for (r in rear) {
-    expect_null(r$edge_types)
+    expect_null(r[["edge_types"]])
   }
+})
+
+test_that("non-numeric rear_lake_ha_min falls through to fresh thresholds fallback", {
+  # dimensions has garbage in rear_lake_ha_min; fresh has 200 for SK.
+  # The resolver should ignore the garbage and use the fresh fallback.
+  dims <- tibble::tribble(
+    ~species, ~spawn_lake, ~spawn_stream, ~rear_lake, ~rear_lake_only,
+    ~rear_no_fw, ~rear_stream, ~rear_wetland, ~rear_all_edges,
+    ~river_skip_cw_min, ~rear_lake_ha_min,
+    "SK", "no", "yes", "yes", "yes", "no", "no", "no", "no", "yes", "garbage"
+  )
+  out <- withr::local_tempfile(fileext = ".yaml")
+  csv <- withr::local_tempfile(fileext = ".csv")
+  utils::write.csv(dims, csv, row.names = FALSE)
+  lnk_rules_build(csv, out, edge_types = "categories")
+
+  rear <- yaml::read_yaml(out)$SK$rear
+  expect_equal(rear[[1]]$lake_ha_min, 200)
 })
 
 test_that("rear_all_edges=yes skips per-edge-type rules", {

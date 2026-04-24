@@ -82,6 +82,14 @@ compare_bcfishpass_wsg <- function(wsg, config) {
   #   wetland centerline. The existing `rearing_km` total double-counts
   #   lake/wetland centerlines when combined with the `_ha` columns;
   #   these slices make it easy to subtract back out downstream.
+  # Note: 1050 / 1150 are "stream main/secondary flow through wetland"
+  # and are in the `stream` edge-type category per fresh::frs_edge_types.
+  # They contribute to rearing_stream_km, not rearing_wetland_centerline_km.
+  # Wetland centerline here means only edge_type 1700 (wetland shoreline).
+  # Lake / wetland / stream slices are mutually exclusive; the 4 slices
+  # (stream, lake-centerline, wetland-centerline, and the implicit
+  # "other" — construction/connector/river-polygon interior) sum to
+  # rearing_km.
   et_stream_sql  <- "(1000, 1050, 1100, 1150, 2000, 2100, 2300)"
   et_lake_sql    <- "(1500, 1525)"
   et_wetland_sql <- "(1700)"
@@ -117,7 +125,21 @@ compare_bcfishpass_wsg <- function(wsg, config) {
   # wetland_rearing_ha: same against fwa_wetlands_poly.
   # DISTINCT on waterbody_key avoids double-counting lakes with multiple
   # centerline segments.
+  # Requires fresh >= 0.17.1 (lake_rearing / wetland_rearing columns in
+  # fresh.streams_habitat). DESCRIPTION pins the version at load time,
+  # but if someone runs this against a legacy schema the SQL below
+  # errors with a clear "column does not exist" message; catch early.
   # -------------------------------------------------------------------------
+  hab_cols <- DBI::dbGetQuery(conn, "
+    SELECT column_name FROM information_schema.columns
+    WHERE table_schema = 'fresh' AND table_name = 'streams_habitat'")$column_name
+  need <- c("lake_rearing", "wetland_rearing")
+  missing <- setdiff(need, hab_cols)
+  if (length(missing) > 0) {
+    stop(sprintf(
+      "fresh.streams_habitat is missing required columns: %s. Requires fresh >= 0.17.1.",
+      paste(missing, collapse = ", ")), call. = FALSE)
+  }
   ours_lake_ha <- DBI::dbGetQuery(conn, sprintf("
     SELECT species_code, round(SUM(area_ha)::numeric, 2) AS lake_rearing_ha
     FROM (
