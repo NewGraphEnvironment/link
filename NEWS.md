@@ -1,3 +1,13 @@
+# link 0.8.0
+
+Default NewGraph habitat-classification config bundle ships alongside the bcfishpass reproduction bundle ([#51](https://github.com/NewGraphEnvironment/link/issues/51)).
+
+- New `inst/extdata/configs/default/` bundle — intentional methodological departures from bcfishpass: intermittent streams included in rearing, wetland rearing added for resident species, lake rearing extended beyond SK/KO, `river_skip_cw_min = yes`, spawn gradient floor 0.0025. Bundle is loadable via `link::lnk_config("default")`.
+- `data-raw/compare_bcfishpass_wsg()` now emits a compound rollup — 4 rows per species × WSG × config: `spawning` / `rearing` in km, `lake_rearing` / `wetland_rearing` in ha. Reference side joins `habitat_linear_<sp>` to `fwa_{lakes,wetlands}_poly` on `waterbody_key` (option b-amended) so both sides use the same area methodology. Per-WSG per-species comparison table now has separate columns for linear vs polygon habitat — no multiplier conflation.
+- `data-raw/_targets.R` runs both bundles side-by-side across all 5 validation WSGs (ADMS, BULK, BABL, ELKR, DEAD) — 10 targets, unified rollup tibble with a `config` identity column.
+- New research doc `research/default_vs_bcfishpass.md` — methodology comparison, per-WSG per-species results, and observations. Notably: `lake_rearing_ha` / `wetland_rearing_ha` are identical across bundles — the fresh classifier gates on channel-width alone and ignores the `rear_lake` / `rear_wetland` flags from `dimensions.csv`. Follow-up filed at [fresh#165](https://github.com/NewGraphEnvironment/fresh/issues/165). SK spawning inflates under default because the `spawn_connected` rule is not yet carried through (blocked on fresh#133).
+- Requires `fresh >= 0.16.0` for the `wetland_rearing` column in `fresh.streams_habitat`.
+
 # link 0.7.0
 
 `user_barriers_definite` no longer eligible for observation-based override ([#48](https://github.com/NewGraphEnvironment/link/issues/48)).

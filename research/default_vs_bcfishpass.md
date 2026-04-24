@@ -217,8 +217,8 @@ the downstream `lake_rearing` / `wetland_rearing` booleans in
 a rearing channel-width range gets lake/wetland rearing — regardless of the
 dimensions.csv flag.
 
-This is a gap in fresh, not link. Follow-up filed as fresh#TODO (add after
-this note lands).
+This is a gap in fresh, not link. Follow-up filed as
+[fresh#165](https://github.com/NewGraphEnvironment/fresh/issues/165).
 
 ### 2. Linear km inflates under `default` across all species and WSGs
 
