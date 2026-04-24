@@ -65,9 +65,9 @@ bcfishpass excludes intermittent streams; default includes them. Two reasons:
 
 [TODO: edge-type mechanism in the rules YAML + citations.]
 
-### 4. Spawn gradient minimum 0 → 0.0025
+### 4. Spawn gradient minimum — deferred
 
-bcfishpass: no minimum spawn gradient (zero). Default: `spawn_gradient_min = 0.0025` excludes depositional reaches too flat for gravel retention. Arbitrary-ish cutoff; to be refined. [TODO: substrate literature.]
+default currently ships with `spawn_gradient_min = 0` (same as bcfishpass). A non-zero floor was tested at 0.0025 and over-pruned observation-validated spawning reaches (see follow-ups §9). The principle — exclude flat depositional reaches too flat for gravel retention — is defensible; the implementation needs calibration. Deferred to a follow-up.
 
 ### 5. River-polygon channel-width threshold skipped
 
@@ -78,29 +78,30 @@ bcfishpass: no minimum spawn gradient (zero). Default: `spawn_gradient_min = 0.0
 Numbers populate from `tar_read(rollup)` after the first clean `tar_destroy + tar_make()`. Table format: one block per WSG, rows = species × habitat_type, columns = bcfishpass bundle value / default bundle value / diff (default − bcfishpass) with unit suffix.
 
 
+
 ### ADMS
 
 | Species | Habitat | bcfishpass | default | Δ | Unit |
 |---|---|---:|---:|---:|---|
 | BT | lake_rearing | 14301.43 | 14301.43 | +0 | ha |
-| BT | rearing | 666.96 | 771.71 | +104.75 | km |
-| BT | spawning | 368.13 | 292.46 | -75.67 | km |
+| BT | rearing | 666.96 | 775.34 | +108.38 | km |
+| BT | spawning | 368.13 | 397.17 | +29.04 | km |
 | BT | wetland_rearing | 933.87 | 933.87 | +0 | ha |
 | CH | lake_rearing | 14114.65 | 14114.65 | +0 | ha |
-| CH | rearing | 315.42 | 587.53 | +272.11 | km |
-| CH | spawning | 278.92 | 201.25 | -77.67 | km |
+| CH | rearing | 315.42 | 588.11 | +272.69 | km |
+| CH | spawning | 278.92 | 295.4 | +16.48 | km |
 | CH | wetland_rearing | 817.06 | 817.06 | +0 | ha |
 | CO | lake_rearing | 14114.65 | 14114.65 | +0 | ha |
-| CO | rearing | 351.01 | 595.96 | +244.95 | km |
-| CO | spawning | 316.08 | 237.83 | -78.25 | km |
+| CO | rearing | 351.01 | 596.37 | +245.36 | km |
+| CO | spawning | 316.08 | 338.67 | +22.59 | km |
 | CO | wetland_rearing | 817.06 | 817.06 | +0 | ha |
 | RB | lake_rearing | NA | 14167.24 | NA | ha |
 | RB | rearing | NA | 672.94 | NA | km |
-| RB | spawning | NA | 239.68 | NA | km |
+| RB | spawning | NA | 331.35 | NA | km |
 | RB | wetland_rearing | NA | 839.42 | NA | ha |
 | SK | lake_rearing | 14114.65 | 14114.65 | +0 | ha |
 | SK | rearing | 229.85 | 229.85 | +0 | km |
-| SK | spawning | 88.83 | 2.32 | -86.51 | km |
+| SK | spawning | 88.83 | 93.28 | +4.45 | km |
 | SK | wetland_rearing | 817.06 | 817.06 | +0 | ha |
 
 ### BULK
@@ -108,32 +109,32 @@ Numbers populate from `tar_read(rollup)` after the first clean `tar_destroy + ta
 | Species | Habitat | bcfishpass | default | Δ | Unit |
 |---|---|---:|---:|---:|---|
 | BT | lake_rearing | 4738.56 | 4738.56 | +0 | ha |
-| BT | rearing | 2994.99 | 3107.45 | +112.46 | km |
-| BT | spawning | 1904.46 | 1674.43 | -230.03 | km |
+| BT | rearing | 2994.99 | 3111.08 | +116.09 | km |
+| BT | spawning | 1904.46 | 2069.15 | +164.69 | km |
 | BT | wetland_rearing | 5935.42 | 5935.42 | +0 | ha |
 | CH | lake_rearing | 4307.58 | 4307.58 | +0 | ha |
-| CH | rearing | 1785.52 | 2160.05 | +374.53 | km |
-| CH | spawning | 1277.05 | 1023.11 | -253.94 | km |
+| CH | rearing | 1785.52 | 2160.61 | +375.09 | km |
+| CH | spawning | 1277.05 | 1357.11 | +80.06 | km |
 | CH | wetland_rearing | 5571.02 | 5571.02 | +0 | ha |
 | CO | lake_rearing | 4307.58 | 4307.58 | +0 | ha |
-| CO | rearing | 2230.39 | 2383.06 | +152.67 | km |
-| CO | spawning | 1822.93 | 1586.45 | -236.48 | km |
+| CO | rearing | 2230.39 | 2383.31 | +152.92 | km |
+| CO | spawning | 1822.93 | 1976.53 | +153.6 | km |
 | CO | wetland_rearing | 5571.02 | 5571.02 | +0 | ha |
 | PK | lake_rearing | 0 | 0 | +0 | ha |
 | PK | rearing | 0 | 0 | +0 | km |
-| PK | spawning | 1893.25 | 1654 | -239.25 | km |
+| PK | spawning | 1893.25 | 2040.41 | +147.16 | km |
 | PK | wetland_rearing | 0 | 0 | +0 | ha |
 | RB | lake_rearing | NA | 4390.77 | NA | ha |
 | RB | rearing | NA | 3036.17 | NA | km |
-| RB | spawning | NA | 1616.43 | NA | km |
+| RB | spawning | NA | 2007.67 | NA | km |
 | RB | wetland_rearing | NA | 5779.23 | NA | ha |
 | SK | lake_rearing | 4307.58 | 4307.58 | +0 | ha |
 | SK | rearing | 64.56 | 64.56 | +0 | km |
-| SK | spawning | 24.22 | 17.01 | -7.21 | km |
+| SK | spawning | 24.22 | 42.12 | +17.9 | km |
 | SK | wetland_rearing | 5571.02 | 5571.02 | +0 | ha |
 | ST | lake_rearing | 4688.67 | 4688.67 | +0 | ha |
-| ST | rearing | 2244.75 | 2725.21 | +480.46 | km |
-| ST | spawning | 1304.35 | 1050.58 | -253.77 | km |
+| ST | rearing | 2244.75 | 2725.91 | +481.16 | km |
+| ST | spawning | 1304.35 | 1385 | +80.65 | km |
 | ST | wetland_rearing | 5843.86 | 5843.86 | +0 | ha |
 
 ### BABL
@@ -141,28 +142,28 @@ Numbers populate from `tar_read(rollup)` after the first clean `tar_destroy + ta
 | Species | Habitat | bcfishpass | default | Δ | Unit |
 |---|---|---:|---:|---:|---|
 | BT | lake_rearing | 56585.4 | 56585.4 | +0 | ha |
-| BT | rearing | 2306.49 | 2836.6 | +530.11 | km |
-| BT | spawning | 926.76 | 966.12 | +39.36 | km |
+| BT | rearing | 2306.49 | 2846.56 | +540.07 | km |
+| BT | spawning | 926.76 | 1154.55 | +227.79 | km |
 | BT | wetland_rearing | 6183.73 | 6183.73 | +0 | ha |
 | CH | lake_rearing | 54581.41 | 54581.41 | +0 | ha |
-| CH | rearing | 732.52 | 2086.51 | +1353.99 | km |
-| CH | spawning | 362.12 | 367.76 | +5.64 | km |
+| CH | rearing | 732.52 | 2088.21 | +1355.69 | km |
+| CH | spawning | 362.12 | 497.69 | +135.57 | km |
 | CH | wetland_rearing | 5796.4 | 5796.4 | +0 | ha |
 | CO | lake_rearing | 54581.41 | 54581.41 | +0 | ha |
-| CO | rearing | 1300.11 | 2329.66 | +1029.55 | km |
-| CO | spawning | 843.52 | 877.18 | +33.66 | km |
+| CO | rearing | 1300.11 | 2333.43 | +1033.32 | km |
+| CO | spawning | 843.52 | 1057.39 | +213.87 | km |
 | CO | wetland_rearing | 5796.4 | 5796.4 | +0 | ha |
 | RB | lake_rearing | NA | 50469.82 | NA | ha |
 | RB | rearing | NA | 2247.76 | NA | km |
-| RB | spawning | NA | 722.39 | NA | km |
+| RB | spawning | NA | 856.84 | NA | km |
 | RB | wetland_rearing | NA | 4455.39 | NA | ha |
 | SK | lake_rearing | 54581.41 | 54581.41 | +0 | ha |
 | SK | rearing | 941.63 | 941.63 | +0 | km |
-| SK | spawning | 57.63 | 31.53 | -26.1 | km |
+| SK | spawning | 57.63 | 150.93 | +93.3 | km |
 | SK | wetland_rearing | 5796.4 | 5796.4 | +0 | ha |
 | ST | lake_rearing | 54709.03 | 54709.03 | +0 | ha |
-| ST | rearing | 912 | 2468.75 | +1556.75 | km |
-| ST | spawning | 362.59 | 368.24 | +5.65 | km |
+| ST | rearing | 912 | 2470.45 | +1558.45 | km |
+| ST | spawning | 362.59 | 498.29 | +135.7 | km |
 | ST | wetland_rearing | 5965.21 | 5965.21 | +0 | ha |
 
 ### ELKR
@@ -170,16 +171,16 @@ Numbers populate from `tar_read(rollup)` after the first clean `tar_destroy + ta
 | Species | Habitat | bcfishpass | default | Δ | Unit |
 |---|---|---:|---:|---:|---|
 | BT | lake_rearing | 654.23 | 654.23 | +0 | ha |
-| BT | rearing | 2079.01 | 2095.64 | +16.63 | km |
-| BT | spawning | 1538.96 | 1385.69 | -153.27 | km |
+| BT | rearing | 2079.01 | 2102.13 | +23.12 | km |
+| BT | spawning | 1538.96 | 1590.16 | +51.2 | km |
 | BT | wetland_rearing | 1019.72 | 1019.72 | +0 | ha |
 | RB | lake_rearing | NA | 588.73 | NA | ha |
 | RB | rearing | NA | 1826.56 | NA | km |
-| RB | spawning | NA | 1222.14 | NA | km |
+| RB | spawning | NA | 1407.91 | NA | km |
 | RB | wetland_rearing | NA | 954.44 | NA | ha |
 | WCT | lake_rearing | 703.01 | 703.01 | +0 | ha |
-| WCT | rearing | 1895.09 | 2003.18 | +108.09 | km |
-| WCT | spawning | 1578.84 | 1424.51 | -154.33 | km |
+| WCT | rearing | 1895.09 | 2007.12 | +112.03 | km |
+| WCT | spawning | 1578.84 | 1630.78 | +51.94 | km |
 | WCT | wetland_rearing | 1039.64 | 1039.64 | +0 | ha |
 
 ### DEAD
@@ -188,23 +189,23 @@ Numbers populate from `tar_read(rollup)` after the first clean `tar_destroy + ta
 |---|---|---:|---:|---:|---|
 | BT | lake_rearing | 638.92 | 638.92 | +0 | ha |
 | BT | rearing | 291.07 | 312.43 | +21.36 | km |
-| BT | spawning | 163.7 | 166.11 | +2.41 | km |
+| BT | spawning | 163.7 | 194.28 | +30.58 | km |
 | BT | wetland_rearing | 524.09 | 524.09 | +0 | ha |
 | CH | lake_rearing | 188.36 | 188.36 | +0 | ha |
 | CH | rearing | 129.69 | 157.06 | +27.37 | km |
-| CH | spawning | 110.55 | 105.94 | -4.61 | km |
+| CH | spawning | 110.55 | 122.49 | +11.94 | km |
 | CH | wetland_rearing | 284.51 | 284.51 | +0 | ha |
 | CO | lake_rearing | 188.36 | 188.36 | +0 | ha |
 | CO | rearing | 164.68 | 172.54 | +7.86 | km |
-| CO | spawning | 130.74 | 126.67 | -4.07 | km |
+| CO | spawning | 130.74 | 146.63 | +15.89 | km |
 | CO | wetland_rearing | 284.51 | 284.51 | +0 | ha |
 | PK | lake_rearing | 0 | 0 | +0 | ha |
 | PK | rearing | 0 | 0 | +0 | km |
-| PK | spawning | 131.92 | 127.12 | -4.8 | km |
+| PK | spawning | 131.92 | 146.94 | +15.02 | km |
 | PK | wetland_rearing | 0 | 0 | +0 | ha |
 | RB | lake_rearing | NA | 324.84 | NA | ha |
 | RB | rearing | NA | 259.35 | NA | km |
-| RB | spawning | NA | 135.07 | NA | km |
+| RB | spawning | NA | 157.12 | NA | km |
 | RB | wetland_rearing | NA | 334.55 | NA | ha |
 | SK | lake_rearing | 188.36 | 188.36 | +0 | ha |
 | SK | rearing | 0 | 0 | +0 | km |
@@ -212,7 +213,7 @@ Numbers populate from `tar_read(rollup)` after the first clean `tar_destroy + ta
 | SK | wetland_rearing | 284.51 | 284.51 | +0 | ha |
 | ST | lake_rearing | 324.38 | 324.38 | +0 | ha |
 | ST | rearing | 151.83 | 207.24 | +55.41 | km |
-| ST | spawning | 115.5 | 111.73 | -3.77 | km |
+| ST | spawning | 115.5 | 128.87 | +13.37 | km |
 | ST | wetland_rearing | 326.4 | 326.4 | +0 | ha |
 
 ## Observations / surprises to investigate
@@ -315,27 +316,20 @@ NOT propagate its `spawning` / `rearing` flags into
 
 Splitting `streams_habitat_linear.spawning_sk` into model (1, 2) vs known
 (3) and spatially intersecting with link's default output gives four
-semantic buckets. BABL SK, pre- and post-gradient-floor:
+semantic buckets (BABL SK, shipping state — no gradient floor):
 
-| bucket | pre-floor km | post-floor km | Δ |
-|---|---:|---:|---:|
-| `high_conf` — default ∩ bcfp-model | 58.1 | 29.3 | -28.8 |
-| `default_catches_known` — default ∩ bcfp-known, NOT in bcfp-model | **13.2** | **0** | **-13.2** (regression) |
-| `csv_only` — bcfp-known, default misses | 60.2 | 71.6 | +11.4 |
-| `default_over` — default only, no bcfp source | 79.6 | 2.24 | -77.4 |
+| bucket | km | segments | interpretation |
+|---|---:|---:|---|
+| `high_conf` — default ∩ bcfp-model | 58.1 | 197 | rule systems converge (highest confidence) |
+| `default_catches_known` — default ∩ bcfp-known, NOT in bcfp-model | 13.2 | 34 | our rules independently arrive at what bcfp needs observations for |
+| `csv_only` — bcfp-known, default misses | 60.2 | 238 | gap: known habitat our rules can't reach |
+| `default_over` — default only, no bcfp source | 79.6 | 229 | potential over-prediction (or unsurveyed habitat) |
 
-**The gradient floor cut noise AND signal.** Pre-floor, 13 km of our
-default spawning organically matched bcfp's CSV-curated known spawning
-(positive validation of the rule set). Post-floor, that bucket is zero —
-every segment where our model independently caught known spawning got
-excluded by the 0.0025 cut. Meanwhile 77 km of `default_over` dropped to
-2 km, which IS a win.
-
-Net: the floor is over-aggressive. It's correct to exclude flat-gradient
-reaches with no gravel retention, but 0.0025 km/m is pruning reaches
-bcfp's observations actively confirm as spawning habitat. Worth
-revisiting — candidates: lower floor to 0.001, exempt lake-outlet
-reaches, or make the floor per-species.
+`default_catches_known` at 13 km out of ~60 km of bcfp-known-only suggests
+our default rules recover a meaningful minority of observation-curated
+spawning without needing the CSV overlay. Most of `default_over`
+(79.6 km) is flat-gradient or wetland-flow reaches — candidates for the
+gradient-floor refinement in §9.
 
 Interactive map: `data-raw/maps/sk_spawning_BABL_sources.html`.
 
@@ -380,39 +374,55 @@ Potential mitigation:
 
 Scope for a separate investigation; tracked as a follow-up to be filed.
 
-### 9. Applying `spawn_gradient_min = 0.0025` to default parameters_fresh
+## Follow-up: spawn gradient minimum design
 
-Originally claimed in the "Departures from bcfishpass" section (§4)
-but never applied to the CSV. Set to 0.0025 for all 11 default species
-in commit `3b1e8e3`. Full 5-WSG rerun (digest
-`e491f4d321527b8e939020b7e988d71c`) shows the floor is more aggressive
-than anticipated:
+Tried `spawn_gradient_min = 0.0025` for all default species. Full 5-WSG
+rerun showed the blanket floor over-prunes observation-validated
+spawning: ADMS SK dropped 88.83 → 2.32 km (Adams River outlet is
+iconic spawning but measures 0 gradient), BULK spawning lost 230–255 km
+per species in braided floodplains, and the BABL `default_catches_known`
+bucket in §6 collapsed from 13 km to 0 (every segment where our model
+organically matched bcfp's CSV-curated known spawning got excluded).
 
-- **ADMS SK spawning: 88.83 → 2.32 km** (-97%). Adams River is the
-  iconic SK spawning locus; its lake-outlet reaches are mostly 0
-  gradient by measurement but gravel-bearing by deposition. Biologically
-  wrong at this extreme.
-- **BULK spawning dropped 230–255 km across BT/CH/CO/PK/ST.** Heavily
-  braided floodplain with many flat river-polygon reaches now excluded.
-- **ELKR BT/WCT spawning −154 km each.** Same braided-reach pattern.
-- **BABL relatively stable** (SK −26, BT/CH/CO/ST near zero). Large-river
-  reaches mostly above-floor.
+Reverted to 0 for shipping; a calibrated floor belongs in a follow-up.
 
-Per observation §6, the floor excluded all `default_catches_known`
-segments in BABL (13 km regression) along with `default_over` segments
-(77 km improvement). Net interpretation: 0.0025 is too high as a
-blanket floor. Candidates:
+Candidates worth testing:
 
-1. Lower the floor to 0.001 (keep flat-gradient=0 exclusion, rescue
-   depositional spawning).
-2. Apply only when gradient is non-zero (exempt measurement/data
-   artefacts).
-3. Per-species floors (keep SK looser because outlet spawning is
-   depositional; keep BT/CH tighter).
-4. Edge-type specific: exempt lake-outlet reaches (edge_types adjacent
-   to waterbody_type = L).
+1. **Lower threshold (0.001 or 0.0005).** Keeps the "measurement = 0"
+   exclusion but rescues low-gradient depositional spawning.
+2. **Only exclude `gradient = 0`.** Many zero values are measurement
+   artefacts on very short segments, not true flat reaches. Excluding
+   only the exact zeros (`gradient > 0`) separates data gaps from flat
+   hydrology.
+3. **Per-species floors.** SK/CH/CO lake-outlet spawning is
+   depositional by nature — keep their floor lower or zero. BT/ST in
+   headwater/intermountain systems expect steeper gravel, so a stricter
+   floor is biologically supported.
+4. **Edge-type exemption.** Lake-outlet reaches (stream segments
+   downstream of `waterbody_type = L`) have gravel supplied by lake
+   sorting — exempt from the floor even when the segment gradient is
+   near zero.
 
-To be refined in a follow-up, not this PR.
+**Related: FWA segment-length averaging.** FWA stream segments vary from
+tens of metres to >2 km. A long segment's `gradient` attribute is
+averaged over the whole segment — a 2 km reach with average gradient
+0.001 can contain 300–500 m sub-reaches above any sensible floor.
+bcfishpass pre-segments at finer granularity; our segments follow
+natural break points (barriers, crossings, obs, waterbody boundaries).
+Worth testing:
+
+- **Re-segment streams at fixed intervals (300–500 m).** Recompute
+  per-sub-segment gradient from the DEM, reclassify, compare. Would
+  reveal how much of the `csv_only` 60 km in BABL SK is an averaging
+  artefact vs a real connectivity gap.
+- **Store a per-segment gradient profile.** Classify against max or a
+  high-percentile gradient rather than the mean; keeps the spatial
+  break structure intact while capturing sub-segment variability.
+
+Any gradient floor calibration should be evaluated against the four
+buckets in §6 on the sources map — not just the rollup km — since the
+floor's job is to trade `default_over` reduction against
+`default_catches_known` preservation.
 
 ## Versions
 
