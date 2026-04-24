@@ -265,6 +265,117 @@ models RB (rainbow trout resident form) across all five WSGs via the
 `default` dimensions CSV. Numbers are comparable to BT/ST rearing/spawning
 in the same WSGs, which is the right order of magnitude.
 
+### 5. Our compare reference (`habitat_linear_sk.spawning`) is model-only; bcfishpass published output stitches in known habitat
+
+`bcfishpass.habitat_linear_<sp>` is a boolean table capturing bcfishpass's
+RULE-BASED (model) classification. `bcfishpass.streams_habitat_linear`
+carries a per-species integer column (e.g. `spawning_sk`) that layers
+model + known habitat:
+
+- `spawning_sk = 1` or `2` — model classification
+- `spawning_sk = 3` — known habitat, sourced from
+  `bcfishpass.streams_habitat_known` (via `user_habitat_classification.csv`)
+
+BABL SK spawning example:
+
+| reference | km | meaning |
+|---|---:|---|
+| `habitat_linear_sk.spawning = TRUE` (boolean, model-only) | 59.3 | what our compare function queries today |
+| `streams_habitat_linear.spawning_sk > 0` (model + known) | 132 | what users see on `db_newgraph` / QGIS |
+
+Shass Creek at the top of Babine (BLK 360886269) is the canonical example:
+3.87 km published as `spawning_sk = 3` (known habitat), 0 km in
+`habitat_linear_sk.spawning` (model misses it — intermittent reaches), and
+0 km in link's bcfishpass-bundle reproduction.
+
+**Implication:** link's pipeline loads `user_habitat_classification.csv`
+and uses it for network break points and barrier overrides, but does
+NOT propagate its `spawning` / `rearing` flags into
+`fresh.streams_habitat`. Follow-up filed as
+[link#55](https://github.com/NewGraphEnvironment/link/issues/55).
+
+### 6. Three-way overlap: where our model catches what bcfp needs the CSV for
+
+Splitting `streams_habitat_linear.spawning_sk` into model (1, 2) vs known
+(3) and spatially intersecting with link's default output gives four
+semantic buckets (BABL SK, pre-gradient-floor):
+
+| bucket | km | segments | interpretation |
+|---|---:|---:|---|
+| `high_conf` — default ∩ bcfp-model | 58.1 | 197 | rule systems converge (highest confidence) |
+| `default_catches_known` — default ∩ bcfp-known, NOT in bcfp-model | 13.2 | 34 | our rules independently arrive at what bcfp needs observations for |
+| `csv_only` — bcfp-known, default misses | 60.2 | 238 | gap: known habitat our rules can't reach |
+| `default_over` — default only, no bcfp source | 79.6 | 229 | potential over-prediction (or unsurveyed habitat) |
+
+`default_catches_known` at 13 km out of ~60 km of bcfp-known-only suggests
+our default rules recover a meaningful minority of observation-curated
+spawning — more than zero, less than half. Most of `default_over`
+(79.6 km) is driven by the pre-floor inclusion of flat reaches and
+wetland-flow streams; the gradient floor is expected to drop this
+substantially.
+
+Interactive map: `data-raw/maps/sk_spawning_BABL_sources.html`
+(regenerated post-run).
+
+### 7. Residual `csv_only` — gradient vs connectivity gap
+
+Decomposing the 60.2 km of `csv_only` (bcfp-known, default misses) by
+gradient bin:
+
+| gradient bin | km | n |
+|---|---:|---:|
+| [0, 0.0025) | 10.1 | 81 |
+| [0.0025, 0.005) | 2.93 | 8 |
+| [0.005, 0.01) | 4.86 | 16 |
+| [0.01, 0.05) | 33.0 | 100 |
+| [0.05+) | 9.29 | 33 |
+
+About 10 km sits below the `spawn_gradient_min = 0.0025` floor — which
+the floor correctly excludes post-fix (bcfp's CSV overrides gradient for
+known gravel-deposit reaches). The remaining ~50 km has above-floor
+gradient and mostly edge_type 1000 (stream-main, 48 km). These are
+spawning reaches bcfp confirms via observation that default's
+rule-based connectivity doesn't reach — likely tributaries upstream of
+reaches our model treats as disconnected. Recovering these requires
+[link#55](https://github.com/NewGraphEnvironment/link/issues/55)
+(ingest known-habitat CSV), not a rule-set tightening.
+
+### 8. Segment-length averaging may mask sub-reach gradient eligibility
+
+`csv_only` segment lengths (BABL SK): median 92 m, mean 253 m,
+max 2932 m. A long segment carries a single `gradient` attribute
+computed as the average over the segment — a 2 km segment with average
+gradient 0.001 might include a 400 m sub-reach above the spawn floor
+that is masked by the average. bcfishpass segments at finer granularity
+(~100 m regular intervals), so its averaging error is smaller.
+
+Potential mitigation:
+
+1. Break segments at gradient inflection points in fresh's segmentation.
+2. Break at regular distance intervals (100 m / 250 m) matching bcfishpass.
+3. Store an auxiliary gradient profile and classify against max (or some
+   percentile) rather than mean.
+
+Scope for a separate investigation; tracked as a follow-up to be filed.
+
+### 9. Applying `spawn_gradient_min = 0.0025` to default parameters_fresh
+
+Originally claimed in the "Departures from bcfishpass" section (§4)
+but never applied to the CSV. Set to 0.0025 for all 11 default species
+in commit `3b1e8e3`. Pre-flight on BABL dropped SK spawning from
+151 km → 31.5 km (below bcfp's 59.3 km model-only reference), mostly
+by excluding 191 segments at `gradient = 0` (flat lake-adjacent /
+river-polygon / missing-data reaches, 41.9 km).
+
+The post-floor default is now STRICTER than the bcfishpass model on
+SK. This is expected given the floor is above bcfishpass's implicit
+zero. Interpretation: bcfishpass treats the gradient=0 segments as
+spawning when the rest of the rules permit; default excludes them on
+biological grounds (no gravel retention). The CSV-layered bcfishpass
+published total (132 km) still outpaces default because many of those
+known-spawning reaches are reachable only via
+`user_habitat_classification` — see §7.
+
 ## Versions
 
 - fresh: 0.16.0
