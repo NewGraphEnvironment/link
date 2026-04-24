@@ -8,6 +8,20 @@
 # Return is KB-scale only — safe to ship over SSH for distributed runs.
 # Heavy tables (fresh.streams, working_<wsg>.*) stay on the worker's
 # local fwapg.
+#
+# Compound rollup shape (#51) — one row per (wsg, species, habitat_type):
+#
+#   wsg            — watershed group code
+#   species        — species code
+#   habitat_type   — one of spawning, rearing, lake_rearing, wetland_rearing
+#   unit           — km (linear, for spawning + rearing) or ha (area, for
+#                    lake_rearing + wetland_rearing)
+#   link_value     — link's value in that unit
+#   bcfishpass_value — bcfishpass reference value, same unit
+#   diff_pct       — 100 * (link - bcfishpass) / bcfishpass, NA when ref is 0
+#
+# rearing_km includes lake + wetland centerline length today — see
+# research/default_vs_bcfishpass.md for the decision + revisit note.
 
 compare_bcfishpass_wsg <- function(wsg, config) {
   stopifnot(
@@ -35,9 +49,6 @@ compare_bcfishpass_wsg <- function(wsg, config) {
   on.exit(try(DBI::dbDisconnect(conn_ref), silent = TRUE), add = TRUE)
 
   # Defensive reset of shared-schema outputs from any prior partial run.
-  # Matches the findings.md note: fresh.streams is a shared schema;
-  # targets sequences WSGs via workers = 1, but an errored run can leave
-  # half-built state that would make the next target's ours-query wrong.
   DBI::dbExecute(conn,
     "DROP TABLE IF EXISTS fresh.streams, fresh.streams_habitat,
      fresh.streams_breaks CASCADE")
@@ -53,7 +64,11 @@ compare_bcfishpass_wsg <- function(wsg, config) {
   link::lnk_pipeline_connect(conn, aoi = wsg, cfg = config, schema = schema)
 
   # -------------------------------------------------------------------------
-  # Compare against bcfishpass reference
+  # Link-side linear rollup (spawning_km + rearing_km per species)
+  # rearing_km includes lake + wetland centerline length today. That choice
+  # is documented in research/default_vs_bcfishpass.md as a known
+  # double-count (linear-km and polygon-ha both credit the same lake);
+  # revisit once we compare against bcfishpass's WCRP multiplier approach.
   # -------------------------------------------------------------------------
   species <- link::lnk_pipeline_species(config, wsg)
 
@@ -62,7 +77,7 @@ compare_bcfishpass_wsg <- function(wsg, config) {
       function(s) as.character(DBI::dbQuoteLiteral(conn, s)),
       character(1)),
     collapse = ", ")
-  ours <- DBI::dbGetQuery(conn, sprintf("
+  ours_km <- DBI::dbGetQuery(conn, sprintf("
     SELECT h.species_code,
       round(SUM(CASE WHEN h.spawning THEN s.length_metre ELSE 0 END)::numeric
         / 1000, 2) AS spawning_km,
@@ -76,6 +91,54 @@ compare_bcfishpass_wsg <- function(wsg, config) {
     DBI::dbQuoteLiteral(conn, wsg),
     species_sql))
 
+  # -------------------------------------------------------------------------
+  # Link-side polygon-area rollup
+  # lake_rearing_ha: sum of DISTINCT fwa_lakes_poly.area_ha where segments
+  #   in the WSG are flagged lake_rearing = TRUE for the species.
+  # wetland_rearing_ha: same against fwa_wetlands_poly.
+  # DISTINCT on waterbody_key avoids double-counting lakes with multiple
+  # centerline segments.
+  # -------------------------------------------------------------------------
+  ours_lake_ha <- DBI::dbGetQuery(conn, sprintf("
+    SELECT species_code, round(SUM(area_ha)::numeric, 2) AS lake_rearing_ha
+    FROM (
+      SELECT DISTINCT h.species_code, l.waterbody_key, l.area_ha
+      FROM fresh.streams s
+      JOIN fresh.streams_habitat h ON s.id_segment = h.id_segment
+      JOIN whse_basemapping.fwa_lakes_poly l
+        ON l.waterbody_key = s.waterbody_key
+      WHERE s.watershed_group_code = %s
+        AND h.species_code IN (%s)
+        AND h.lake_rearing = TRUE
+    ) sub
+    GROUP BY species_code",
+    DBI::dbQuoteLiteral(conn, wsg),
+    species_sql))
+
+  ours_wetland_ha <- DBI::dbGetQuery(conn, sprintf("
+    SELECT species_code, round(SUM(area_ha)::numeric, 2) AS wetland_rearing_ha
+    FROM (
+      SELECT DISTINCT h.species_code, w.waterbody_key, w.area_ha
+      FROM fresh.streams s
+      JOIN fresh.streams_habitat h ON s.id_segment = h.id_segment
+      JOIN whse_basemapping.fwa_wetlands_poly w
+        ON w.waterbody_key = s.waterbody_key
+      WHERE s.watershed_group_code = %s
+        AND h.species_code IN (%s)
+        AND h.wetland_rearing = TRUE
+    ) sub
+    GROUP BY species_code",
+    DBI::dbQuoteLiteral(conn, wsg),
+    species_sql))
+
+  # -------------------------------------------------------------------------
+  # Bcfishpass-side rollup (option b-amended: same methodology both sides
+  # applied to bcfishpass.habitat_linear_<sp>, joined to the same fwa_*
+  # polygon tables). Bcfishpass's per-segment classification doesn't
+  # distinguish lake_rearing / wetland_rearing — it has a single rearing
+  # boolean. We derive the _ha columns by filtering to segments that join
+  # to fwa_lakes_poly / fwa_wetlands_poly on waterbody_key.
+  # -------------------------------------------------------------------------
   ref_list <- lapply(species, function(sp) {
     ref_cols <- DBI::dbGetQuery(conn_ref, sprintf(
       "SELECT column_name FROM information_schema.columns
@@ -87,7 +150,9 @@ compare_bcfishpass_wsg <- function(wsg, config) {
     } else {
       "0"
     }
-    DBI::dbGetQuery(conn_ref, sprintf("
+
+    # Linear km
+    km_row <- DBI::dbGetQuery(conn_ref, sprintf("
       SELECT %s AS species_code,
         round(SUM(CASE WHEN h.spawning THEN s.length_metre ELSE 0 END)::numeric
           / 1000, 2) AS spawning_km,
@@ -100,35 +165,103 @@ compare_bcfishpass_wsg <- function(wsg, config) {
       rear_expr,
       tolower(sp),
       DBI::dbQuoteLiteral(conn_ref, wsg)))
+
+    # Lake area — same DISTINCT waterbody_key pattern as link side.
+    # If the species has no rearing column, lake_rearing_ha = 0.
+    lake_ha <- if (has_rear) {
+      DBI::dbGetQuery(conn_ref, sprintf("
+        SELECT round(COALESCE(SUM(area_ha), 0)::numeric, 2) AS lake_rearing_ha
+        FROM (
+          SELECT DISTINCT l.waterbody_key, l.area_ha
+          FROM bcfishpass.streams s
+          JOIN bcfishpass.habitat_linear_%s h
+            ON s.segmented_stream_id = h.segmented_stream_id
+          JOIN whse_basemapping.fwa_lakes_poly l
+            ON l.waterbody_key = s.waterbody_key
+          WHERE s.watershed_group_code = %s
+            AND h.rearing = TRUE
+        ) sub",
+        tolower(sp),
+        DBI::dbQuoteLiteral(conn_ref, wsg)))
+    } else {
+      data.frame(lake_rearing_ha = 0)
+    }
+
+    wetland_ha <- if (has_rear) {
+      DBI::dbGetQuery(conn_ref, sprintf("
+        SELECT round(COALESCE(SUM(area_ha), 0)::numeric, 2) AS wetland_rearing_ha
+        FROM (
+          SELECT DISTINCT w.waterbody_key, w.area_ha
+          FROM bcfishpass.streams s
+          JOIN bcfishpass.habitat_linear_%s h
+            ON s.segmented_stream_id = h.segmented_stream_id
+          JOIN whse_basemapping.fwa_wetlands_poly w
+            ON w.waterbody_key = s.waterbody_key
+          WHERE s.watershed_group_code = %s
+            AND h.rearing = TRUE
+        ) sub",
+        tolower(sp),
+        DBI::dbQuoteLiteral(conn_ref, wsg)))
+    } else {
+      data.frame(wetland_rearing_ha = 0)
+    }
+
+    cbind(km_row, lake_ha, wetland_ha)
   })
   ref <- do.call(rbind, ref_list)
 
   # -------------------------------------------------------------------------
-  # Return: ~2 rows per species (spawning + rearing) as a small tibble
+  # Assemble long-format output — 4 rows per species.
   # -------------------------------------------------------------------------
+  habitat_types <- c("spawning", "rearing", "lake_rearing", "wetland_rearing")
+  units <- c(spawning = "km", rearing = "km",
+             lake_rearing = "ha", wetland_rearing = "ha")
+  col_suffix <- c(spawning = "spawning_km", rearing = "rearing_km",
+                  lake_rearing = "lake_rearing_ha",
+                  wetland_rearing = "wetland_rearing_ha")
+
   n_species <- length(species)
-  sp_col  <- rep(species, each = 2)
-  hab_col <- rep(c("spawning", "rearing"), n_species)
+  n_rows <- n_species * length(habitat_types)
+  sp_col  <- rep(species, each = length(habitat_types))
+  hab_col <- rep(habitat_types, n_species)
+  unit_col <- units[hab_col]
+
   out <- tibble::tibble(
-    wsg           = wsg,
-    species       = sp_col,
-    habitat_type  = hab_col,
-    link_km       = NA_real_,
-    bcfishpass_km = NA_real_,
-    diff_pct      = NA_real_
+    wsg              = wsg,
+    species          = sp_col,
+    habitat_type     = hab_col,
+    unit             = unit_col,
+    link_value       = NA_real_,
+    bcfishpass_value = NA_real_,
+    diff_pct         = NA_real_
   )
+
+  link_sources <- list(
+    spawning        = ours_km,
+    rearing         = ours_km,
+    lake_rearing    = ours_lake_ha,
+    wetland_rearing = ours_wetland_ha
+  )
+
   for (i in seq_len(nrow(out))) {
     sp  <- out$species[i]
     hab <- out$habitat_type[i]
-    ours_row <- ours[ours$species_code == sp, ]
-    ref_row  <- ref[ref$species_code  == sp, ]
-    out$link_km[i] <-
-      if (nrow(ours_row) > 0) ours_row[[paste0(hab, "_km")]] else 0
-    out$bcfishpass_km[i] <-
-      if (nrow(ref_row) > 0) ref_row[[paste0(hab, "_km")]] else 0
+    col <- col_suffix[hab]
+
+    ours_tab <- link_sources[[hab]]
+    ours_row <- ours_tab[ours_tab$species_code == sp, , drop = FALSE]
+    out$link_value[i] <-
+      if (nrow(ours_row) > 0) ours_row[[col]] else 0
+
+    ref_row <- ref[ref$species_code == sp, , drop = FALSE]
+    out$bcfishpass_value[i] <-
+      if (nrow(ref_row) > 0 && col %in% names(ref_row)) ref_row[[col]] else 0
   }
-  out$diff_pct <- ifelse(out$bcfishpass_km == 0, NA_real_,
-    round(100 * (out$link_km - out$bcfishpass_km) / out$bcfishpass_km, 1))
+  out$diff_pct <- ifelse(
+    is.na(out$bcfishpass_value) | out$bcfishpass_value == 0,
+    NA_real_,
+    round(100 * (out$link_value - out$bcfishpass_value) /
+          out$bcfishpass_value, 1))
 
   out
 }
