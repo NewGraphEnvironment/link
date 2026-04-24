@@ -95,164 +95,181 @@ Numbers populate from `tar_read(rollup)` after the first clean `tar_destroy + ta
 
 
 
+
 ### ADMS
 
 | Species | Habitat | bcfishpass | default | Δ | Unit |
 |---|---|---:|---:|---:|---|
-| BT | lake_rearing | 14301.43 | 14301.43 | +0 | ha |
-| BT | rearing | 666.96 | 775.34 | +108.38 | km |
 | BT | spawning | 368.13 | 397.17 | +29.04 | km |
-| BT | wetland_rearing | 933.87 | 933.87 | +0 | ha |
-| CH | lake_rearing | 14114.65 | 14114.65 | +0 | ha |
-| CH | rearing | 315.42 | 588.11 | +272.69 | km |
+| BT | rearing | 666.96 | 765.34 | +98.38 | km |
+| BT | lake_rearing | 0 | 14259.74 | +14259.7 | ha |
+| BT | wetland_rearing | 0 | 0 | +0 | ha |
 | CH | spawning | 278.92 | 295.4 | +16.48 | km |
-| CH | wetland_rearing | 817.06 | 817.06 | +0 | ha |
-| CO | lake_rearing | 14114.65 | 14114.65 | +0 | ha |
-| CO | rearing | 351.01 | 596.37 | +245.36 | km |
+| CH | rearing | 315.42 | 573.31 | +257.89 | km |
+| CH | lake_rearing | 0 | 13936.94 | +13936.9 | ha |
+| CH | wetland_rearing | 0 | 0 | +0 | ha |
 | CO | spawning | 316.08 | 338.67 | +22.59 | km |
-| CO | wetland_rearing | 817.06 | 817.06 | +0 | ha |
-| RB | lake_rearing | NA | 14167.24 | NA | ha |
-| RB | rearing | NA | 672.94 | NA | km |
+| CO | rearing | 351.01 | 591.41 | +240.4 | km |
+| CO | lake_rearing | 0 | 14105.71 | +14105.7 | ha |
+| CO | wetland_rearing | 0 | 0 | +0 | ha |
 | RB | spawning | NA | 331.35 | NA | km |
-| RB | wetland_rearing | NA | 839.42 | NA | ha |
-| SK | lake_rearing | 14114.65 | 14114.65 | +0 | ha |
-| SK | rearing | 229.85 | 229.85 | +0 | km |
+| RB | rearing | NA | 660.19 | NA | km |
+| RB | lake_rearing | NA | 14128.54 | NA | ha |
+| RB | wetland_rearing | NA | 0 | NA | ha |
 | SK | spawning | 88.83 | 93.28 | +4.45 | km |
-| SK | wetland_rearing | 817.06 | 817.06 | +0 | ha |
+| SK | rearing | 229.85 | 229.85 | +0 | km |
+| SK | lake_rearing | 13820.05 | 13820.05 | +0 | ha |
+| SK | wetland_rearing | 0 | 0 | +0 | ha |
 
 ### BULK
 
 | Species | Habitat | bcfishpass | default | Δ | Unit |
 |---|---|---:|---:|---:|---|
-| BT | lake_rearing | 4738.56 | 4738.56 | +0 | ha |
-| BT | rearing | 2994.99 | 3111.08 | +116.09 | km |
 | BT | spawning | 1904.46 | 2069.15 | +164.69 | km |
-| BT | wetland_rearing | 5935.42 | 5935.42 | +0 | ha |
-| CH | lake_rearing | 4307.58 | 4307.58 | +0 | ha |
-| CH | rearing | 1785.52 | 2160.61 | +375.09 | km |
+| BT | rearing | 2994.99 | 3039.36 | +44.37 | km |
+| BT | lake_rearing | 0 | 4448.63 | +4448.63 | ha |
+| BT | wetland_rearing | 0 | 0 | +0 | ha |
 | CH | spawning | 1277.05 | 1357.11 | +80.06 | km |
-| CH | wetland_rearing | 5571.02 | 5571.02 | +0 | ha |
-| CO | lake_rearing | 4307.58 | 4307.58 | +0 | ha |
-| CO | rearing | 2230.39 | 2383.31 | +152.92 | km |
+| CH | rearing | 1785.52 | 2044.52 | +259 | km |
+| CH | lake_rearing | 0 | 2871.94 | +2871.94 | ha |
+| CH | wetland_rearing | 0 | 0 | +0 | ha |
 | CO | spawning | 1822.93 | 1976.53 | +153.6 | km |
-| CO | wetland_rearing | 5571.02 | 5571.02 | +0 | ha |
-| PK | lake_rearing | 0 | 0 | +0 | ha |
-| PK | rearing | 0 | 0 | +0 | km |
+| CO | rearing | 2230.39 | 2345.06 | +114.67 | km |
+| CO | lake_rearing | 0 | 4213.19 | +4213.19 | ha |
+| CO | wetland_rearing | 0 | 0 | +0 | ha |
 | PK | spawning | 1893.25 | 2040.41 | +147.16 | km |
+| PK | rearing | 0 | 0 | +0 | km |
+| PK | lake_rearing | 0 | 0 | +0 | ha |
 | PK | wetland_rearing | 0 | 0 | +0 | ha |
-| RB | lake_rearing | NA | 4390.77 | NA | ha |
-| RB | rearing | NA | 3036.17 | NA | km |
 | RB | spawning | NA | 2007.67 | NA | km |
-| RB | wetland_rearing | NA | 5779.23 | NA | ha |
-| SK | lake_rearing | 4307.58 | 4307.58 | +0 | ha |
-| SK | rearing | 64.56 | 64.56 | +0 | km |
+| RB | rearing | NA | 2947.23 | NA | km |
+| RB | lake_rearing | NA | 4119.16 | NA | ha |
+| RB | wetland_rearing | NA | 0 | NA | ha |
 | SK | spawning | 24.22 | 42.12 | +17.9 | km |
-| SK | wetland_rearing | 5571.02 | 5571.02 | +0 | ha |
-| ST | lake_rearing | 4688.67 | 4688.67 | +0 | ha |
-| ST | rearing | 2244.75 | 2725.91 | +481.16 | km |
+| SK | rearing | 64.56 | 64.56 | +0 | km |
+| SK | lake_rearing | 2098.76 | 2098.76 | +0 | ha |
+| SK | wetland_rearing | 0 | 0 | +0 | ha |
 | ST | spawning | 1304.35 | 1385 | +80.65 | km |
-| ST | wetland_rearing | 5843.86 | 5843.86 | +0 | ha |
+| ST | rearing | 2244.75 | 2569.81 | +325.06 | km |
+| ST | lake_rearing | 0 | 3548.97 | +3548.97 | ha |
+| ST | wetland_rearing | 0 | 0 | +0 | ha |
 
 ### BABL
 
 | Species | Habitat | bcfishpass | default | Δ | Unit |
 |---|---|---:|---:|---:|---|
-| BT | lake_rearing | 56585.4 | 56585.4 | +0 | ha |
-| BT | rearing | 2306.49 | 2846.56 | +540.07 | km |
 | BT | spawning | 926.76 | 1154.55 | +227.79 | km |
-| BT | wetland_rearing | 6183.73 | 6183.73 | +0 | ha |
-| CH | lake_rearing | 54581.41 | 54581.41 | +0 | ha |
-| CH | rearing | 732.52 | 2088.21 | +1355.69 | km |
+| BT | rearing | 2306.49 | 2771.69 | +465.2 | km |
+| BT | lake_rearing | 0 | 56308.82 | +56308.8 | ha |
+| BT | wetland_rearing | 0 | 0 | +0 | ha |
 | CH | spawning | 362.12 | 497.69 | +135.57 | km |
-| CH | wetland_rearing | 5796.4 | 5796.4 | +0 | ha |
-| CO | lake_rearing | 54581.41 | 54581.41 | +0 | ha |
-| CO | rearing | 1300.11 | 2333.43 | +1033.32 | km |
+| CH | rearing | 732.52 | 1961.98 | +1229.46 | km |
+| CH | lake_rearing | 0 | 52765.57 | +52765.6 | ha |
+| CH | wetland_rearing | 0 | 0 | +0 | ha |
 | CO | spawning | 843.52 | 1057.39 | +213.87 | km |
-| CO | wetland_rearing | 5796.4 | 5796.4 | +0 | ha |
-| RB | lake_rearing | NA | 50469.82 | NA | ha |
-| RB | rearing | NA | 2247.76 | NA | km |
+| CO | rearing | 1300.11 | 2303.68 | +1003.57 | km |
+| CO | lake_rearing | 0 | 54507.85 | +54507.8 | ha |
+| CO | wetland_rearing | 0 | 0 | +0 | ha |
 | RB | spawning | NA | 856.84 | NA | km |
-| RB | wetland_rearing | NA | 4455.39 | NA | ha |
-| SK | lake_rearing | 54581.41 | 54581.41 | +0 | ha |
-| SK | rearing | 941.63 | 941.63 | +0 | km |
+| RB | rearing | NA | 2181.8 | NA | km |
+| RB | lake_rearing | NA | 50256.96 | NA | ha |
+| RB | wetland_rearing | NA | 0 | NA | ha |
 | SK | spawning | 57.63 | 150.93 | +93.3 | km |
-| SK | wetland_rearing | 5796.4 | 5796.4 | +0 | ha |
-| ST | lake_rearing | 54709.03 | 54709.03 | +0 | ha |
-| ST | rearing | 912 | 2470.45 | +1558.45 | km |
+| SK | rearing | 941.63 | 941.63 | +0 | km |
+| SK | lake_rearing | 52449.98 | 52449.98 | +0 | ha |
+| SK | wetland_rearing | 0 | 0 | +0 | ha |
 | ST | spawning | 362.59 | 498.29 | +135.7 | km |
-| ST | wetland_rearing | 5965.21 | 5965.21 | +0 | ha |
+| ST | rearing | 912 | 2303.55 | +1391.55 | km |
+| ST | lake_rearing | 0 | 53454.87 | +53454.9 | ha |
+| ST | wetland_rearing | 0 | 0 | +0 | ha |
 
 ### ELKR
 
 | Species | Habitat | bcfishpass | default | Δ | Unit |
 |---|---|---:|---:|---:|---|
-| BT | lake_rearing | 654.23 | 654.23 | +0 | ha |
-| BT | rearing | 2079.01 | 2102.13 | +23.12 | km |
 | BT | spawning | 1538.96 | 1590.16 | +51.2 | km |
-| BT | wetland_rearing | 1019.72 | 1019.72 | +0 | ha |
-| RB | lake_rearing | NA | 588.73 | NA | ha |
-| RB | rearing | NA | 1826.56 | NA | km |
+| BT | rearing | 2079.01 | 2078.57 | -0.44 | km |
+| BT | lake_rearing | 0 | 537.41 | +537.41 | ha |
+| BT | wetland_rearing | 0 | 0 | +0 | ha |
 | RB | spawning | NA | 1407.91 | NA | km |
-| RB | wetland_rearing | NA | 954.44 | NA | ha |
-| WCT | lake_rearing | 703.01 | 703.01 | +0 | ha |
-| WCT | rearing | 1895.09 | 2007.12 | +112.03 | km |
+| RB | rearing | NA | 1799.87 | NA | km |
+| RB | lake_rearing | NA | 493.99 | NA | ha |
+| RB | wetland_rearing | NA | 0 | NA | ha |
 | WCT | spawning | 1578.84 | 1630.78 | +51.94 | km |
-| WCT | wetland_rearing | 1039.64 | 1039.64 | +0 | ha |
+| WCT | rearing | 1895.09 | 1985 | +89.91 | km |
+| WCT | lake_rearing | 0 | 561.98 | +561.98 | ha |
+| WCT | wetland_rearing | 0 | 0 | +0 | ha |
 
 ### DEAD
 
 | Species | Habitat | bcfishpass | default | Δ | Unit |
 |---|---|---:|---:|---:|---|
-| BT | lake_rearing | 638.92 | 638.92 | +0 | ha |
-| BT | rearing | 291.07 | 312.43 | +21.36 | km |
 | BT | spawning | 163.7 | 194.28 | +30.58 | km |
-| BT | wetland_rearing | 524.09 | 524.09 | +0 | ha |
-| CH | lake_rearing | 188.36 | 188.36 | +0 | ha |
-| CH | rearing | 129.69 | 157.06 | +27.37 | km |
+| BT | rearing | 291.07 | 285.78 | -5.29 | km |
+| BT | lake_rearing | 0 | 536.97 | +536.97 | ha |
+| BT | wetland_rearing | 0 | 0 | +0 | ha |
 | CH | spawning | 110.55 | 122.49 | +11.94 | km |
-| CH | wetland_rearing | 284.51 | 284.51 | +0 | ha |
-| CO | lake_rearing | 188.36 | 188.36 | +0 | ha |
-| CO | rearing | 164.68 | 172.54 | +7.86 | km |
+| CH | rearing | 129.69 | 150.04 | +20.35 | km |
+| CH | lake_rearing | 0 | 108.34 | +108.34 | ha |
+| CH | wetland_rearing | 0 | 0 | +0 | ha |
 | CO | spawning | 130.74 | 146.63 | +15.89 | km |
-| CO | wetland_rearing | 284.51 | 284.51 | +0 | ha |
-| PK | lake_rearing | 0 | 0 | +0 | ha |
-| PK | rearing | 0 | 0 | +0 | km |
+| CO | rearing | 164.68 | 168.75 | +4.07 | km |
+| CO | lake_rearing | 0 | 176.92 | +176.92 | ha |
+| CO | wetland_rearing | 0 | 0 | +0 | ha |
 | PK | spawning | 131.92 | 146.94 | +15.02 | km |
+| PK | rearing | 0 | 0 | +0 | km |
+| PK | lake_rearing | 0 | 0 | +0 | ha |
 | PK | wetland_rearing | 0 | 0 | +0 | ha |
-| RB | lake_rearing | NA | 324.84 | NA | ha |
-| RB | rearing | NA | 259.35 | NA | km |
 | RB | spawning | NA | 157.12 | NA | km |
-| RB | wetland_rearing | NA | 334.55 | NA | ha |
-| SK | lake_rearing | 188.36 | 188.36 | +0 | ha |
-| SK | rearing | 0 | 0 | +0 | km |
+| RB | rearing | NA | 228.2 | NA | km |
+| RB | lake_rearing | NA | 258.99 | NA | ha |
+| RB | wetland_rearing | NA | 0 | NA | ha |
 | SK | spawning | 0 | 0 | +0 | km |
-| SK | wetland_rearing | 284.51 | 284.51 | +0 | ha |
-| ST | lake_rearing | 324.38 | 324.38 | +0 | ha |
-| ST | rearing | 151.83 | 207.24 | +55.41 | km |
+| SK | rearing | 0 | 0 | +0 | km |
+| SK | lake_rearing | 0 | 0 | +0 | ha |
+| SK | wetland_rearing | 0 | 0 | +0 | ha |
 | ST | spawning | 115.5 | 128.87 | +13.37 | km |
-| ST | wetland_rearing | 326.4 | 326.4 | +0 | ha |
+| ST | rearing | 151.83 | 179.27 | +27.44 | km |
+| ST | lake_rearing | 0 | 206.71 | +206.71 | ha |
+| ST | wetland_rearing | 0 | 0 | +0 | ha |
 
 ## Observations / surprises to investigate
 
-### 1. `lake_rearing_ha` and `wetland_rearing_ha` are identical across configs
+### 1. Lake rearing differentiates; wetland rearing still uniform at zero
 
-Every row of the rollup shows Δ = 0 on the two area columns — for every species,
-every WSG, both configs return the same number. This was not expected. The
-`default` bundle's `dimensions.csv` flags `rear_lake=yes` and `rear_wetland=yes`
-for species that bcfishpass doesn't (BT, ST, WCT for lake; BT/CO/ST/WCT for
-wetland), and `lnk_rules_build()` writes those flags into `rules.yaml`. Yet
-the downstream `lake_rearing` / `wetland_rearing` booleans in
-`fresh.streams_habitat` come out the same for both configs.
+**Fixed for lakes ([fresh#165](https://github.com/NewGraphEnvironment/fresh/issues/165) →
+v0.17.0).** `frs_habitat_classify()` now honours the `waterbody_type: L`
+rule in the rules YAML and applies optional `lake_ha_min`. After
+rerunning with fresh 0.17.0 + per-species `rear_lake_ha_min` in
+`configs/default/dimensions.csv`, `lake_rearing_ha` differentiates as
+intended:
 
-**Root cause:** `fresh::frs_habitat_classify()` gates `lake_rearing` and
-`wetland_rearing` on `params_sp$ranges$rear$channel_width` alone (the
-`_cond` SQL checks edge_type + channel_width range). It does not consult the
-`rear_lake` / `rear_wetland` flags from the rules YAML. Any species that has
-a rearing channel-width range gets lake/wetland rearing — regardless of the
-dimensions.csv flag.
+- bcfishpass bundle: `lake_rearing_ha = 0` for BT/CH/CO/ST/WCT (no rear
+  L rule) and matches default only for SK (both declare L with 200 ha).
+- default bundle: each species reflects its threshold — CO (2 ha),
+  BT/WCT/RB/CT/DV (10 ha), GR (40 ha), ST (60 ha), CH (100 ha),
+  SK/KO (200 ha).
 
-This is a gap in fresh, not link. Follow-up filed as
-[fresh#165](https://github.com/NewGraphEnvironment/fresh/issues/165).
+**Wetlands still uniformly zero.** `lnk_rules_build()` emits wetland
+rearing as an `edge_types: wetland` rule with `thresholds: FALSE`, which
+correctly adds wetland-flow stream segments (edge_types 1050/1150 for
+the `stream` category, 1700 for shoreline) to the `rearing = TRUE`
+total — but does NOT set the `wetland_rearing` flag fresh 0.17.0 uses
+to drive `wetland_rearing_ha`. That flag now requires a
+`waterbody_type: W` rule, which the current emitter doesn't produce.
+
+Two fixes possible in follow-up:
+
+1. Extend `lnk_rules_build()` to emit an additional
+   `waterbody_type: W` rule (with optional `wetland_ha_min`) when
+   `rear_wetland = yes`. Consistent with the L pattern.
+2. Extend `.frs_find_waterbody_rule()` to also recognize `edge_types:
+   wetland` as a wetland rule. Less clean, conflates edge-type rules
+   with waterbody rules.
+
+Option 1 preferred. Tracked as part of §7 follow-ups. Meanwhile the
+rearing km column correctly includes wetland-flow segments (default's
+intent), just without a separate ha rollup to quantify wetland polygons.
 
 ### 2. Linear km inflates under `default` across all species and WSGs
 
