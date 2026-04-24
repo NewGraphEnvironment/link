@@ -77,17 +77,36 @@ compare_bcfishpass_wsg <- function(wsg, config) {
       function(s) as.character(DBI::dbQuoteLiteral(conn, s)),
       character(1)),
     collapse = ", ")
+  # Edge-type slices for the rearing decomposition:
+  # - stream-like (stream + canal categories) vs lake centerline vs
+  #   wetland centerline. The existing `rearing_km` total double-counts
+  #   lake/wetland centerlines when combined with the `_ha` columns;
+  #   these slices make it easy to subtract back out downstream.
+  et_stream_sql  <- "(1000, 1050, 1100, 1150, 2000, 2100, 2300)"
+  et_lake_sql    <- "(1500, 1525)"
+  et_wetland_sql <- "(1700)"
+
   ours_km <- DBI::dbGetQuery(conn, sprintf("
     SELECT h.species_code,
       round(SUM(CASE WHEN h.spawning THEN s.length_metre ELSE 0 END)::numeric
         / 1000, 2) AS spawning_km,
-      round(SUM(CASE WHEN h.rearing THEN s.length_metre ELSE 0 END)::numeric
-        / 1000, 2) AS rearing_km
+      round(SUM(CASE WHEN h.rearing  THEN s.length_metre ELSE 0 END)::numeric
+        / 1000, 2) AS rearing_km,
+      round(SUM(CASE WHEN h.rearing AND s.edge_type IN %s
+                     THEN s.length_metre ELSE 0 END)::numeric / 1000, 2)
+        AS rearing_stream_km,
+      round(SUM(CASE WHEN h.rearing AND s.edge_type IN %s
+                     THEN s.length_metre ELSE 0 END)::numeric / 1000, 2)
+        AS rearing_lake_centerline_km,
+      round(SUM(CASE WHEN h.rearing AND s.edge_type IN %s
+                     THEN s.length_metre ELSE 0 END)::numeric / 1000, 2)
+        AS rearing_wetland_centerline_km
     FROM fresh.streams s JOIN fresh.streams_habitat h
       ON s.id_segment = h.id_segment
     WHERE s.watershed_group_code = %s
       AND h.species_code IN (%s)
     GROUP BY h.species_code ORDER BY h.species_code",
+    et_stream_sql, et_lake_sql, et_wetland_sql,
     DBI::dbQuoteLiteral(conn, wsg),
     species_sql))
 
@@ -159,22 +178,40 @@ compare_bcfishpass_wsg <- function(wsg, config) {
     # so species present in link's config but absent in bcfishpass get
     # 0 for both sides of the diff (our number still populates via the
     # link-side query; this is just the reference side).
+    slice_expr <- function(edge_in) {
+      if (has_rear) {
+        sprintf("CASE WHEN h.rearing AND s.edge_type IN %s THEN s.length_metre ELSE 0 END",
+                edge_in)
+      } else {
+        "0"
+      }
+    }
+
     km_row <- if (has_table) {
       DBI::dbGetQuery(conn_ref, sprintf("
         SELECT %s AS species_code,
           round(SUM(CASE WHEN h.spawning THEN s.length_metre ELSE 0 END)::numeric
             / 1000, 2) AS spawning_km,
-          round(SUM(%s)::numeric / 1000, 2) AS rearing_km
+          round(SUM(%s)::numeric / 1000, 2) AS rearing_km,
+          round(SUM(%s)::numeric / 1000, 2) AS rearing_stream_km,
+          round(SUM(%s)::numeric / 1000, 2) AS rearing_lake_centerline_km,
+          round(SUM(%s)::numeric / 1000, 2) AS rearing_wetland_centerline_km
         FROM bcfishpass.streams s
         JOIN bcfishpass.habitat_linear_%s h
           ON s.segmented_stream_id = h.segmented_stream_id
         WHERE s.watershed_group_code = %s",
         DBI::dbQuoteLiteral(conn_ref, sp),
         rear_expr,
+        slice_expr(et_stream_sql),
+        slice_expr(et_lake_sql),
+        slice_expr(et_wetland_sql),
         tolower(sp),
         DBI::dbQuoteLiteral(conn_ref, wsg)))
     } else {
-      data.frame(species_code = sp, spawning_km = 0, rearing_km = 0)
+      data.frame(species_code = sp, spawning_km = 0, rearing_km = 0,
+                 rearing_stream_km = 0,
+                 rearing_lake_centerline_km = 0,
+                 rearing_wetland_centerline_km = 0)
     }
 
     # Lake area — same DISTINCT waterbody_key pattern as link side.
@@ -224,12 +261,25 @@ compare_bcfishpass_wsg <- function(wsg, config) {
   # -------------------------------------------------------------------------
   # Assemble long-format output — 4 rows per species.
   # -------------------------------------------------------------------------
-  habitat_types <- c("spawning", "rearing", "lake_rearing", "wetland_rearing")
-  units <- c(spawning = "km", rearing = "km",
-             lake_rearing = "ha", wetland_rearing = "ha")
-  col_suffix <- c(spawning = "spawning_km", rearing = "rearing_km",
-                  lake_rearing = "lake_rearing_ha",
-                  wetland_rearing = "wetland_rearing_ha")
+  habitat_types <- c(
+    "spawning", "rearing", "lake_rearing", "wetland_rearing",
+    "rearing_stream", "rearing_lake_centerline", "rearing_wetland_centerline"
+  )
+  units <- c(
+    spawning = "km", rearing = "km",
+    lake_rearing = "ha", wetland_rearing = "ha",
+    rearing_stream = "km",
+    rearing_lake_centerline = "km",
+    rearing_wetland_centerline = "km"
+  )
+  col_suffix <- c(
+    spawning = "spawning_km", rearing = "rearing_km",
+    lake_rearing = "lake_rearing_ha",
+    wetland_rearing = "wetland_rearing_ha",
+    rearing_stream = "rearing_stream_km",
+    rearing_lake_centerline = "rearing_lake_centerline_km",
+    rearing_wetland_centerline = "rearing_wetland_centerline_km"
+  )
 
   n_species <- length(species)
   n_rows <- n_species * length(habitat_types)
@@ -248,10 +298,13 @@ compare_bcfishpass_wsg <- function(wsg, config) {
   )
 
   link_sources <- list(
-    spawning        = ours_km,
-    rearing         = ours_km,
-    lake_rearing    = ours_lake_ha,
-    wetland_rearing = ours_wetland_ha
+    spawning                   = ours_km,
+    rearing                    = ours_km,
+    lake_rearing               = ours_lake_ha,
+    wetland_rearing            = ours_wetland_ha,
+    rearing_stream             = ours_km,
+    rearing_lake_centerline    = ours_km,
+    rearing_wetland_centerline = ours_km
   )
 
   for (i in seq_len(nrow(out))) {
