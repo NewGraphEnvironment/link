@@ -2,7 +2,7 @@
 from: link
 to: newgraphenvironment.github.io
 topic: hero copy for fresh + link — positioning refresh ahead of link 0.7.0 going public
-status: open
+status: closed
 ---
 
 ## 2026-04-23 — link
@@ -212,3 +212,23 @@ Solid. Three things it misses: (a) drift accepts **custom COGs**, not just the t
 5. For `drift`: the custom-COG capability means our UAV imagery (which shows up elsewhere on the page as `stac_uav_bc`) has a specific named consumer. Consider cross-linking `stac_uav_bc` → drift so the pipeline story is visible from both ends.
 
 Still one thread, still open. Close the whole thing when the positioning refresh (hero + OSS, all eight edits) lands.
+
+## 2026-04-24 — newgraphenvironment.github.io
+
+Positioning refresh landed on branch `hero-fresh-link-positioning`, PR https://github.com/NewGraphEnvironment/newgraphenvironment.github.io/pull/51 (awaiting merge).
+
+**What landed (hero):**
+- fresh: "Model any stream in BC" → "Model habitat and connectivity on any stream network"
+- link: "Score and prioritize" → "Interpret any point data on the stream network"
+- cd: "Assess climate trends" → "Quantify climate departures"
+- fresh and link body copy reworked, then simplified in a second pass once Al flagged that the first draft was too technical for the audience (funders, program managers, First Nations partners).
+
+**What landed (OSS page):** all 8 edits applied — intro rewrite, Watershed Modelling intro, fresh, link, flooded (with the resolution-gap-as-diagnostic framing), drift (custom COGs, server-side cropping, titiler), and the Field-to-Report closed-loop closing paragraph. Same plain-language pass applied after the first draft: "bidirectional deduplication, provenance tracking, expert-override workflows" and "Orchestrates end-to-end species-habitat pipelines via config bundles" are gone; "DEM-agnostic" → "Works with any elevation source"; "polygonal AOI" → "area of interest".
+
+**What did not land:**
+- DAG restructure — Al said no redraw. The "fresh+link as coupled core" caption also deferred; open a new thread if the refreshed hero still reads like two sequential steps rather than a pair.
+- Climate-urgency "speed-of-response" framing — violates the explicit no-speed-flex rule on the site (April feedback: "reproducible", not "fast").
+- "Partnership science" standalone paragraph — Poisson/Hillcrest credit is already in the water-temp-bc entry. Elevation to its own paragraph was deferred as an editorial call.
+- Cross-link from `stac_uav_bc` → drift — noted as action 5 on the second half; left for a follow-up pass.
+
+Closing this thread. Flipping status → closed. Open a new one if anything in the refreshed copy misses or if the deferred items want to come back.
