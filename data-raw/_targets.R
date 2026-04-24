@@ -1,10 +1,26 @@
 # data-raw/_targets.R
 #
-# Pipeline definition for the bcfishpass comparison. Orchestrates the
-# six lnk_pipeline_* phase helpers across five watershed groups and
-# rolls up the per-WSG diff tibbles into one aggregate. ADMS/BULK/BABL/
-# ELKR are the numerical-parity WSGs; DEAD (added 2026-04-23 with #44)
-# is the end-to-end test for the `barriers_definite_control` filter.
+# Pipeline definition for the bcfishpass + default comparison.
+# Orchestrates the six lnk_pipeline_* phase helpers across five
+# watershed groups for BOTH config bundles and rolls up the per-WSG
+# diff tibbles into one compound rollup (rearing_km + lake/wetland ha
+# per species per config).
+#
+# WSGs:
+#   ADMS / BULK / BABL / ELKR — numerical-parity WSGs.
+#   DEAD (added 2026-04-23 with #44) — end-to-end test for the
+#     `barriers_definite_control` filter.
+#
+# Configs:
+#   bcfishpass — validation config, reproduces bcfishpass exactly.
+#   default    — NewGraph default, departures from bcfishpass documented
+#                in research/default_vs_bcfishpass.md (intermittent
+#                streams, wetland rearing, expanded lake rearing,
+#                river-polygon cw_min skip, spawn gradient min 0.0025).
+#
+# Rollup shape: `config`, `wsg`, `species`, `habitat_type`
+# ({spawning, rearing, lake_rearing, wetland_rearing}), `unit`
+# ({km, ha}), `link_value`, `bcfishpass_value`, `diff_pct`.
 #
 # Run from the link repo root:
 #   Rscript -e 'targets::tar_config_set(script = "data-raw/_targets.R",
@@ -13,56 +29,61 @@
 # Or from data-raw/:
 #   cd data-raw && Rscript -e 'targets::tar_make()'
 #
-# Visualize the DAG:
-#   Rscript -e 'targets::tar_config_set(script = "data-raw/_targets.R",
-#                                        store  = "data-raw/_targets");
-#                targets::tar_visnetwork()'
-#
-# Single-host constraint: `fresh.streams` is a shared schema, so parallel
-# workers on one host would race their base-segments builds. Controller
-# serializes with workers = 1. Distributed runs (M4 + M1 via
-# crew.cluster) are a follow-up once a fresh-side per-AOI output path
-# is supported (see link planning/active/findings.md).
+# Single-host constraint: `fresh.streams` is a shared schema, so
+# parallel workers on one host would race their base-segments builds.
+# Controller serializes with workers = 1. Distributed runs (M4 + M1 via
+# crew.cluster) are a follow-up once link#53 lands (per-AOI fresh
+# streams path). See planning/active/findings.md.
 
 library(targets)
 library(tarchetypes)
 
 source("compare_bcfishpass_wsg.R")
 
-# Synchronous execution (no crew controller). `fresh.streams` is a shared
-# schema — parallel workers on one host would race their base-segments
-# builds — so we serialize. Distributed runs (M4 + M1 via
-# crew_controller_group) will reintroduce crew once fresh supports a
-# per-AOI output path. See planning/active/findings.md.
 tar_option_set(
   packages = c("link", "fresh", "DBI", "RPostgres", "tibble", "dplyr")
 )
 
-# DEAD (Deadman River) is the end-to-end test for the control filter.
-# It has one `barrier_ind = TRUE` control row with 6 observations upstream
-# in the CH/CM/CO/PK/SK pool and zero habitat-classification coverage —
-# the unique combination that actively exercises the filter. The other
-# four WSGs are numerical-parity checks; their TRUE control rows are
-# all rescued by the habitat path or sit below the observation threshold.
 wsgs <- c("ADMS", "BULK", "BABL", "ELKR", "DEAD")
 
 list(
-  tar_target(cfg, link::lnk_config("bcfishpass")),
+  # --- Config bundles ---
+  tar_target(cfg_bcfishpass, link::lnk_config("bcfishpass")),
+  tar_target(cfg_default,    link::lnk_config("default")),
 
+  # --- Per-WSG comparison: bcfishpass ---
   tar_map(
     values = tibble::tibble(wsg = wsgs),
     tar_target(
-      comparison,
-      compare_bcfishpass_wsg(wsg = wsg, config = cfg)
+      comparison_bcfishpass,
+      compare_bcfishpass_wsg(wsg = wsg, config = cfg_bcfishpass)
     )
   ),
 
+  # --- Per-WSG comparison: default ---
+  tar_map(
+    values = tibble::tibble(wsg = wsgs),
+    tar_target(
+      comparison_default,
+      compare_bcfishpass_wsg(wsg = wsg, config = cfg_default)
+    )
+  ),
+
+  # --- Unified rollup with config identity ---
   tar_target(
     rollup,
     dplyr::bind_rows(
-      comparison_ADMS, comparison_BULK,
-      comparison_BABL, comparison_ELKR,
-      comparison_DEAD
+      bcfishpass = dplyr::bind_rows(
+        comparison_bcfishpass_ADMS, comparison_bcfishpass_BULK,
+        comparison_bcfishpass_BABL, comparison_bcfishpass_ELKR,
+        comparison_bcfishpass_DEAD
+      ),
+      default = dplyr::bind_rows(
+        comparison_default_ADMS, comparison_default_BULK,
+        comparison_default_BABL, comparison_default_ELKR,
+        comparison_default_DEAD
+      ),
+      .id = "config"
     )
   )
 )
