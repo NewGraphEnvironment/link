@@ -23,6 +23,7 @@ BT:
     - 9999.0
   - edge_types: wetland
     thresholds: false
+  - waterbody_type: W
   - waterbody_type: L
 CH:
   spawn:
@@ -43,6 +44,7 @@ CH:
     - 9999.0
   - edge_types: wetland
     thresholds: false
+  - waterbody_type: W
   - waterbody_type: L
 CM:
   spawn:
@@ -73,6 +75,7 @@ CO:
     - 9999.0
   - edge_types: wetland
     thresholds: false
+  - waterbody_type: W
   - waterbody_type: L
 PK:
   spawn:
@@ -122,6 +125,7 @@ ST:
     - 9999.0
   - edge_types: wetland
     thresholds: false
+  - waterbody_type: W
   - waterbody_type: L
 WCT:
   spawn:
@@ -142,6 +146,7 @@ WCT:
     - 9999.0
   - edge_types: wetland
     thresholds: false
+  - waterbody_type: W
   - waterbody_type: L
 KO:
   spawn:
@@ -181,6 +186,7 @@ RB:
     - 9999.0
   - edge_types: wetland
     thresholds: false
+  - waterbody_type: W
   - waterbody_type: L
 GR:
   spawn:

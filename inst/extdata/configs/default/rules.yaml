@@ -23,6 +23,8 @@ BT:
     - 9999.0
   - edge_types: wetland
     thresholds: false
+  - waterbody_type: W
+    wetland_ha_min: 1.0
   - waterbody_type: L
     lake_ha_min: 10.0
 CH:
@@ -44,6 +46,8 @@ CH:
     - 9999.0
   - edge_types: wetland
     thresholds: false
+  - waterbody_type: W
+    wetland_ha_min: 1.0
   - waterbody_type: L
     lake_ha_min: 100.0
 CM:
@@ -75,6 +79,8 @@ CO:
     - 9999.0
   - edge_types: wetland
     thresholds: false
+  - waterbody_type: W
+    wetland_ha_min: 0.5
   - waterbody_type: L
     lake_ha_min: 2.0
 PK:
@@ -129,6 +135,8 @@ ST:
     - 9999.0
   - edge_types: wetland
     thresholds: false
+  - waterbody_type: W
+    wetland_ha_min: 1.0
   - waterbody_type: L
     lake_ha_min: 60.0
 WCT:
@@ -150,6 +158,8 @@ WCT:
     - 9999.0
   - edge_types: wetland
     thresholds: false
+  - waterbody_type: W
+    wetland_ha_min: 1.0
   - waterbody_type: L
     lake_ha_min: 10.0
 KO:
@@ -194,6 +204,8 @@ RB:
     - 9999.0
   - edge_types: wetland
     thresholds: false
+  - waterbody_type: W
+    wetland_ha_min: 1.0
   - waterbody_type: L
     lake_ha_min: 10.0
 GR:

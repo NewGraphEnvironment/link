@@ -75,6 +75,7 @@ CO:
     - 1050
     - 1150
     thresholds: false
+  - waterbody_type: W
 PK:
   spawn:
   - edge_types_explicit:
