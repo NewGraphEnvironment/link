@@ -144,6 +144,9 @@ compare_bcfishpass_wsg <- function(wsg, config) {
       "SELECT column_name FROM information_schema.columns
        WHERE table_schema = 'bcfishpass'
          AND table_name = 'habitat_linear_%s'", tolower(sp)))
+    # has_table: does bcfishpass.habitat_linear_<sp> exist at all?
+    # has_rear:  if it exists, does it carry a `rearing` column?
+    has_table <- nrow(ref_cols) > 0
     has_rear <- "rearing" %in% ref_cols$column_name
     rear_expr <- if (has_rear) {
       "CASE WHEN h.rearing THEN s.length_metre ELSE 0 END"
@@ -151,24 +154,32 @@ compare_bcfishpass_wsg <- function(wsg, config) {
       "0"
     }
 
-    # Linear km
-    km_row <- DBI::dbGetQuery(conn_ref, sprintf("
-      SELECT %s AS species_code,
-        round(SUM(CASE WHEN h.spawning THEN s.length_metre ELSE 0 END)::numeric
-          / 1000, 2) AS spawning_km,
-        round(SUM(%s)::numeric / 1000, 2) AS rearing_km
-      FROM bcfishpass.streams s
-      JOIN bcfishpass.habitat_linear_%s h
-        ON s.segmented_stream_id = h.segmented_stream_id
-      WHERE s.watershed_group_code = %s",
-      DBI::dbQuoteLiteral(conn_ref, sp),
-      rear_expr,
-      tolower(sp),
-      DBI::dbQuoteLiteral(conn_ref, wsg)))
+    # Linear km — gate the whole query on table existence. Bcfishpass
+    # doesn't model every species (e.g. RB has no habitat_linear_rb),
+    # so species present in link's config but absent in bcfishpass get
+    # 0 for both sides of the diff (our number still populates via the
+    # link-side query; this is just the reference side).
+    km_row <- if (has_table) {
+      DBI::dbGetQuery(conn_ref, sprintf("
+        SELECT %s AS species_code,
+          round(SUM(CASE WHEN h.spawning THEN s.length_metre ELSE 0 END)::numeric
+            / 1000, 2) AS spawning_km,
+          round(SUM(%s)::numeric / 1000, 2) AS rearing_km
+        FROM bcfishpass.streams s
+        JOIN bcfishpass.habitat_linear_%s h
+          ON s.segmented_stream_id = h.segmented_stream_id
+        WHERE s.watershed_group_code = %s",
+        DBI::dbQuoteLiteral(conn_ref, sp),
+        rear_expr,
+        tolower(sp),
+        DBI::dbQuoteLiteral(conn_ref, wsg)))
+    } else {
+      data.frame(species_code = sp, spawning_km = 0, rearing_km = 0)
+    }
 
     # Lake area — same DISTINCT waterbody_key pattern as link side.
-    # If the species has no rearing column, lake_rearing_ha = 0.
-    lake_ha <- if (has_rear) {
+    # Zero if table or rearing column is missing.
+    lake_ha <- if (has_table && has_rear) {
       DBI::dbGetQuery(conn_ref, sprintf("
         SELECT round(COALESCE(SUM(area_ha), 0)::numeric, 2) AS lake_rearing_ha
         FROM (
@@ -187,7 +198,7 @@ compare_bcfishpass_wsg <- function(wsg, config) {
       data.frame(lake_rearing_ha = 0)
     }
 
-    wetland_ha <- if (has_rear) {
+    wetland_ha <- if (has_table && has_rear) {
       DBI::dbGetQuery(conn_ref, sprintf("
         SELECT round(COALESCE(SUM(area_ha), 0)::numeric, 2) AS wetland_rearing_ha
         FROM (
