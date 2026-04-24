@@ -14,6 +14,7 @@ Suggested addition to the worker-machine R bootstrap (wherever kdot manages R pa
 ### Known test-time deps for fresh + link
 
 - `mockery` — used by test mocks (`mockery::stub()` patterns) in fresh's test-frs_extract.R and possibly others. Pure R, small, CRAN.
+- `tarchetypes` — required by link's `data-raw/_targets.R` (`tar_map()` specifically). Manifests as "there is no package called 'tarchetypes'" when running `link-tarmake-*` workloads. CRAN, small.
 
 ### Broader pattern
 
