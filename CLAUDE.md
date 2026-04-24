@@ -191,6 +191,14 @@ Comparisons to bcfishpass (including the per-WSG `diff_pct` column in the rollup
 
 When inputs change (fwapg refresh, bcfishobs update, channel_width sync), outputs will correctly differ. That's what the stamp/lineage work (#40) makes explainable — so any observed drift can be traced back to which input moved.
 
+## Config change workflow
+
+When changing a `configs/<name>/dimensions.csv` or any file that feeds `lnk_rules_build()`:
+
+1. **Regenerate + diff rules.yaml before running anything.** `Rscript data-raw/build_rules.R` then `git diff inst/extdata/configs/<name>/rules.yaml`. Confirm the diff matches intent — e.g., toggling `spawn_lake=no` for SK should remove the `waterbody_type: L` rule under `SK.spawn`. Catching an unintended rule here costs seconds; catching it after a 20-min tar_make costs 20 min.
+2. **Pre-flight on one WSG, not five.** After reinstalling the package (`pak::local_install(upgrade = FALSE, ask = FALSE)` or equivalent), run the single-WSG workload (`link-tarmake-single <WSG>`) on the smallest WSG impacted by the change before the full `link-tarmake-5wsg`. ADMS is smallest, BULK largest per `workloads.csv` — pick whichever is small AND exercises the affected species.
+3. **DB-side sanity as shortcut.** When the fix's effect is measurable (e.g., "SK spawning km should drop because lake shoreline edges no longer count"), a direct query on `fresh.streams_habitat` grouped by `edge_type` can confirm direction of change in ~30s without any tar_make.
+
 ## SRED
 
 Relates to NewGraphEnvironment/sred-2025-2026#24 — crossing connectivity interpretation package.
