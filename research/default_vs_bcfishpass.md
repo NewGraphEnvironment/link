@@ -27,19 +27,30 @@ The default bundle encodes these deliberate method differences:
 
 ### 1. Lake rearing extended beyond SK/KO
 
-| Species | bcfishpass `rear_lake_ha_min` | default `rear_lake` |
-|---|---|---|
-| BT | NA (no lake rearing) | yes |
-| CH | 100 | yes (unchanged) |
-| CM | NA | no (unchanged) |
-| CO | 40 | yes (unchanged) |
-| KO | 200 | yes (unchanged) |
-| PK | NA | no (unchanged) |
-| SK | 200 | yes |
-| ST | 60 | yes (unchanged) |
-| WCT | 40 | yes (unchanged) |
+Two signals on bcfishpass's side need separating:
 
-Rationale: literature supports lake rearing for more species than bcfishpass's SK/KO-only treatment of area-based rearing. [TODO: citations for BT lake rearing — Babine/Quesnel/Kootenay/Stuart populations; SK lake rearing in smaller systems without the 200 ha threshold; ST lake-rearing documentation.]
+- **`configs/bcfishpass/dimensions.csv`** — classifies the species as lake-rearing at all (`rear_lake: yes/no`).
+- **`fresh::parameters_habitat_thresholds$rear_lake_ha_min`** — the minimum lake area threshold applied when `rear_lake = yes`.
+
+bcfishpass (as reproduced by link's bcfishpass bundle) classifies only SK as lake-rearing via `rear_lake_only = yes`. KO is lake-rearing in bcfishpass's upstream config but not modelled in the WSGs we're comparing. The `rear_lake_ha_min` column in `parameters_habitat_thresholds.csv` has 200 for SK + KO and NA for everyone else — confirming that other species aren't gated by a lake-area floor because they aren't classified as lake-rearing in the first place.
+
+| Species | bcfishpass `rear_lake` | bcfishpass `rear_lake_ha_min` | default `rear_lake` |
+|---|---|---|---|
+| BT | no | NA | **yes** |
+| CH | no | NA | **yes** |
+| CM | no | NA | no (unchanged) |
+| CO | no | NA | **yes** |
+| CT | — | NA | yes (new species) |
+| DV | — | NA | yes (new species) |
+| GR | — | NA | yes (new species) |
+| KO | yes (rear_lake_only) | 200 | yes (unchanged) |
+| PK | no | NA | no (unchanged) |
+| RB | — | NA | yes (new species) |
+| SK | yes (rear_lake_only) | 200 | yes (unchanged) |
+| ST | no | NA | **yes** |
+| WCT | no | NA | **yes** |
+
+Rationale: literature supports lake rearing for more species than bcfishpass's SK/KO-only treatment. [TODO: citations for BT lake rearing — Babine/Quesnel/Kootenay/Stuart populations; ST lake-rearing documentation; CT/DV/RB resident-form lake use.]
 
 ### 2. Wetland rearing added
 
