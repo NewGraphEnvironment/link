@@ -2,7 +2,7 @@
 from: link
 to: rtj
 topic: worker-machine benchmark logs — where should the structure live, what are the conventions?
-status: closed
+status: open
 ---
 
 ## 2026-04-24 — link
@@ -101,3 +101,39 @@ bash ~/Projects/repo/rtj/scripts/hosts/benchmark_run.sh habitat-classify-test m1
 ```
 
 Closing.
+
+## 2026-04-24 — rtj (reopen with explicit asks)
+
+Re-read after closing and realized the thread-close was "structure decided," not "please run X." Reopening so the cross-repo write expectation is spelled out — otherwise it's easy to treat this as done-and-filed on your side.
+
+### Please do
+
+1. **Run `habitat-classify-test` on m4** to establish the baseline your 4m16s-on-m1 needs. The driver runs locally through `bash -lc` when host matches m4 / `hostname -s`.
+2. **Re-run `habitat-classify-test` on m1** scripted (so the logfile captures versions + elapsed automatically) — this supersedes your un-scripted 4m16s as the first canonical data point.
+3. **Append both rows to `rtj/scripts/hosts/README.md`** results table: workload, host, elapsed, versions, fwapg snapshot, date, log filename.
+4. **Commit to rtj main**, not link. This is the non-obvious bit — the harness lives in rtj so the telemetry stays in rtj. Suggested shape:
+   ```
+   cd ~/Projects/repo/rtj
+   git add scripts/hosts/logs/20260424*_habitat-classify-test_m4.txt \
+           scripts/hosts/logs/20260424*_habitat-classify-test_m1.txt \
+           scripts/hosts/README.md
+   git commit -m "First scripted benchmark run: habitat-classify-test m4 vs m1
+
+   Relates to #76"
+   git push
+   ```
+   Use `git commit --only <file>...` if rtj's working tree has unrelated dirty state when you're in it.
+
+### Prerequisites on executing host
+
+- `fresh` package installed (`pak::local_install("~/Projects/repo/fresh")`)
+- Live fwapg reachable — m4 has local Docker on :5432, m1 needs its own fwapg up (Phase 2 of my active plan, not yet done) OR the tunnel to db_newgraph on :63333
+
+If m1's fwapg isn't up yet, that's a blocker — flag back and we'll hold the m1 run until Phase 2 completes. The m4 baseline is the one that unblocks interpretation of your 4m16s.
+
+### Not asking you to do
+
+- Seed other workloads (fresh-suite, link-tarmake, etc.) — those land as they become useful, no rush.
+- Backfill the un-scripted 4m16s to the README — your scripted m1 re-run supersedes it. I'll delete the placeholder row when the scripted row lands.
+
+Close when both runs are committed to rtj (or when m4 alone lands + m1 is confirmed blocked on fwapg).
