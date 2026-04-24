@@ -169,10 +169,46 @@ As noted in the hero proposal, there's room on this page to name what climate ur
 
 > Because the tools are composable, open, and scripted, a Nation or stewardship organisation can re-run a full watershed pipeline under new climate scalars — a shifted flow regime, a warmer GSDD, a changed precipitation distribution — and see where accessible habitat contracts, where thermal refugia persist, where barriers that mattered yesterday matter differently tomorrow. Not tomorrow's consulting contract — today's analysis.
 
+### OSS page: flooded + drift
+
+After re-reading the flooded and drift READMEs (v0.2.1 and v0.2.2 respectively), their current OSS-page entries are accurate but miss the strongest positioning points each repo already makes for itself.
+
+**7. flooded entry** (line ~49)
+
+Current:
+
+> Delineate functional floodplains from DEMs and stream networks using the Valley Confinement Algorithm. Identify where floodplains are intact, confined, or disconnected — the areas where rivers do geomorphic work including sediment storage, nutrient exchange, and riparian recruitment.
+
+This is fine but buries the most interesting thing flooded does. From flooded's own README:
+
+> `flooded` is DEM-agnostic — any source works. But resolution changes what you can see. At 25 m (e.g. the provincial TRIM DEM), the floodplain appears as one continuous surface. At 1 m lidar, anthropogenic features emerge: roads, railway grades, dykes, and agricultural fill that sit above the flood surface and block lateral connectivity.
+>
+> The gap between coarse and fine results is a diagnostic: it shows **what is preventing floodplain from functioning** and **where to act** — removing fill, breaching dykes, or installing crossings to reconnect floodplain.
+
+That's a restoration-targeting tool, not just a delineation tool. Proposed rewrite:
+
+> Delineate functional floodplains from any DEM + stream network using the Valley Confinement Algorithm — slope thresholding, cost-distance analysis, and flood-surface modelling with a bankfull regression. DEM-agnostic: bring your own source, from provincial TRIM to 1 m LiDAR from our STAC DEM catalogue.
+>
+> The resolution gap is itself a diagnostic. Coarse DEMs show the floodplain surface; fine DEMs expose the roads, rail grades, dykes, and agricultural fill that sit above that surface and block lateral connectivity. Comparing the two shows **what is preventing floodplain from functioning, and where to act** — fill removal, dyke breaches, crossing installations.
+
+**8. drift entry** (line ~66)
+
+Current:
+
+> Fetch satellite-derived land cover data from STAC catalogs and track what's changing inside floodplains over time. Multi-year analysis from Esri IO LULC and ESA WorldCover. Integrates with flooded to focus change detection on the ecologically relevant floodplain extent.
+
+Solid. Three things it misses: (a) drift accepts **custom COGs**, not just the two free global sources — so NGE's own UAV-derived classifications via `stac_uav_bc` can drive change detection at sub-metre resolution; (b) **gdalcubes** for server-side STAC cropping — orders of magnitude faster than full-tile `/vsicurl/` download; (c) interactive tile serving via titiler. Proposed rewrite:
+
+> Fetch classified land cover rasters from STAC catalogs (Esri IO LULC, ESA WorldCover, or your own COGs), apply class labels and colours, and summarise area change over time. Works at global satellite resolution (10 m IO LULC) or NGE's own sub-metre UAV classifications via our `stac_uav_bc` catalogue.
+>
+> Queries are server-side via `gdalcubes` — crop before download, not after. On province-scale AOIs that's orders of magnitude faster than traditional tile-fetch workflows. Serves tiles through `titiler` for on-the-fly visualisation of massive rasters without local pre-processing. Pair with flooded for within-floodplain analysis, use on its own for any polygonal AOI.
+
 ### Actions for website claude
 
-1. Apply (or adapt) the six page-level edits above.
+1. Apply (or adapt) the eight page-level edits above.
 2. Decide where the climate-urgency paragraph lands (OSS page closer, Problem section, or its own callout).
 3. Consider whether the "Field-to-Report" closed-loop framing would land better with a small figure/diagram — we have a sketch in the earlier section of this comms file that could seed it.
+4. For `flooded`: consider whether the restoration-targeting framing is strong enough to earn its own section or callout later. The "resolution gap is a diagnostic" idea is a distinctive value proposition that gets lost in a six-line entry.
+5. For `drift`: the custom-COG capability means our UAV imagery (which shows up elsewhere on the page as `stac_uav_bc`) has a specific named consumer. Consider cross-linking `stac_uav_bc` → drift so the pipeline story is visible from both ends.
 
-Still one thread, still open. Close the whole thing when the positioning refresh (hero + OSS) lands.
+Still one thread, still open. Close the whole thing when the positioning refresh (hero + OSS, all eight edits) lands.
