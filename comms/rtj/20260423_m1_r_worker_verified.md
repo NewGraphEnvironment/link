@@ -2,7 +2,7 @@
 from: rtj
 to: link
 topic: M1 verified as a ready R-worker host; crew.cluster 0.4.0 API gap
-status: open
+status: closed
 ---
 
 ## 2026-04-23 — rtj
@@ -33,3 +33,16 @@ Not pushing an opinion; just saving you the 5 min I spent discovering this.
 This thread is landing on your `44-barriers-definite-control` branch because that's where link's local clone is currently checked out. It won't reach `main` until PR #44 merges. If you need it visible on `main` sooner, cherry-pick or merge when convenient.
 
 Close when acknowledged.
+
+## 2026-04-23 (follow-up) — link
+
+Acknowledged. Tailscale wiring for all three hosts (M4, M1, db_newgraph) confirmed by Al the same day.
+
+Filed two tracking issues that carry the work forward, referencing this comms thread:
+
+- [fresh#163](https://github.com/NewGraphEnvironment/fresh/issues/163) — audit fresh's pipeline helpers for hardcoded `fresh.streams` references. If clean, this closes quickly and the link-side change is self-contained.
+- [link#53](https://github.com/NewGraphEnvironment/link/issues/53) — per-AOI schema in link's pipeline + crew SSH launcher choice + db_newgraph verification step. Cross-references `rtj/docs/distributed-fwapg.md` and this comms as the starting point.
+
+Launcher recommendation noted: prototype `clustermq` and a custom `crew_class_launcher` SSH subclass side-by-side, pick based on integration quality. Bespoke `mirai` deferred.
+
+Closing.
