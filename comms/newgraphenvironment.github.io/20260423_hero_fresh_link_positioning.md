@@ -110,3 +110,69 @@ Close this thread when the website copy lands (or is explicitly rejected).
 - link 0.7.0 NEWS + DESCRIPTION reflect the current capability set.
 - Ecosystem table in link's README (current `main`) has the updated descriptions.
 - fresh 0.15.0 README has a new "Using with link" section with the same integration-point language.
+
+---
+
+## 2026-04-23 (follow-up) — link
+
+Same thread, extending to the [Our Work / Open Source Software](https://www.newgraphenvironment.com/project/open_source_software/) page at `content/project/open_source_software/index.md`. The hero changes above need to land on that page too, plus a few page-specific edits.
+
+### Page-level things to change
+
+**1. "Watershed Modelling" section intro** (line ~13)
+
+Current:
+
+> Composable tools for understanding watersheds — habitat classification, barrier prioritization, floodplain delineation, land cover change, historic condition, and climate trends. Built on the Freshwater Atlas and **designed to work alongside provincial connectivity models.**
+
+The bolded tail is the bcfishpass-hedging I think we should retire. fresh + link now produce provincial-scale habitat and connectivity inventories in their own right (bcfishpass parity is a validation result, not a dependency). Proposed:
+
+> Composable tools for understanding watersheds — per-species habitat classification, connectivity modelling, barrier interpretation, floodplain delineation, land cover change, historic condition, and climate trends. Built on the Freshwater Atlas, portable to any stream network.
+
+**2. fresh entry** (line ~19)
+
+Current entry is actually solid — already says "any species or question on any stream network." One tightening: the last sentence is long and buries the claim. Split and lead with capability:
+
+> A composable stream network modelling engine. Segment networks at break points, classify per-species habitat against any network-joinable scalar (gradient, channel width, temperature, discharge, GSDD, climate departures), cluster for connectivity, and aggregate upstream or downstream with parallel workers.
+>
+> Running on BC's Freshwater Atlas today, designed for any ltree-enabled stream network — provincial atlases, LiDAR-derived networks from our STAC DEM catalogue, or other jurisdictions.
+
+**3. link entry** (line ~35)
+
+Current entry is OK but still leads with "Match, score, and interpret any point data" which reads narrower than the current role. It also doesn't mention the pipeline helpers + config bundle system. Proposed:
+
+> The interpretation layer. Load, match, and score any point data on the stream network — fish-passage barriers, observations, eDNA detections, fisheries density samples, thermal loggers, water quality stations, traditional use locations — with bidirectional dedup, provenance tracking, and expert-override workflows.
+>
+> Orchestrates end-to-end species-habitat pipelines via config bundles: one bundle per method or jurisdiction. Ships with BC fish-passage defaults; swap the bundle to express alternative methods, add new species, or move to another jurisdiction. Produces the break sources and per-species override skip-lists that drive fresh's engine, and reads fresh output back for per-point upstream habitat rollup.
+
+**4. water-temp-bc entry** (line ~125) — no change to the entry itself, it's one of the strongest on the page because it names Poisson + Hillcrest integrations with fresh/link explicitly. Consider elevating this pattern: a short **"Partnership science"** paragraph that makes explicit this is how the ecosystem extends (Poisson SSN, Hillcrest CW regression, and other partner models feed attributes into fresh; we collaborate on methods, they contribute models, fresh+link carry them into reproducible provincial-scale pipelines).
+
+**5. "Field-to-Report Workflows" section** (line ~147)
+
+Current text mentions eDNA and benthic invertebrate forms in passing. Worth strengthening the connection: the data these forms collect become **point inputs to link**, which interprets them on the network. Proposed addition after the list of forms:
+
+> Collected data lands back in the same pipeline it came from — fish passage assessments feed `link`'s barrier interpretation layer; eDNA detections and benthic samples join the network as point attributes; habitat confirmations become overrides on `fresh`'s classification. Field-to-network-to-report, closed loop.
+
+**6. Opening paragraph**
+
+Current:
+
+> Our data, analytical tools, and methods are publicly available on GitHub — built in R, Python, SQL, shell, OpenTofu, and GitHub Actions. We work in the open wherever transparency improves science. The packages highlighted here are designed to work together — **network analysis feeds floodplain delineation, historic imagery feeds change detection, and field data flows through to published reports.**
+
+The bolded summary mis-states the architecture slightly: field data doesn't "flow through to reports" in a linear way — it feeds into link, which interprets it, which feeds fresh, which feeds the downstream analyses. Reports are a rendering of the synthesis, not the terminus of a one-way flow. Suggestion:
+
+> ...designed to work together — point data (observations, eDNA, field surveys) + network-joinable scalars (temperature, channel width, climate) feed fresh + link's modelling core, which in turn feeds floodplain delineation, land cover change detection, and climate analysis, all rendered as interactive reports and print-ready PDFs.
+
+### Climate-urgency framing
+
+As noted in the hero proposal, there's room on this page to name what climate urgency means for these tools. Suggested insertion as a closing paragraph at the very end or as a sidebar:
+
+> Because the tools are composable, open, and scripted, a Nation or stewardship organisation can re-run a full watershed pipeline under new climate scalars — a shifted flow regime, a warmer GSDD, a changed precipitation distribution — and see where accessible habitat contracts, where thermal refugia persist, where barriers that mattered yesterday matter differently tomorrow. Not tomorrow's consulting contract — today's analysis.
+
+### Actions for website claude
+
+1. Apply (or adapt) the six page-level edits above.
+2. Decide where the climate-urgency paragraph lands (OSS page closer, Problem section, or its own callout).
+3. Consider whether the "Field-to-Report" closed-loop framing would land better with a small figure/diagram — we have a sketch in the earlier section of this comms file that could seed it.
+
+Still one thread, still open. Close the whole thing when the positioning refresh (hero + OSS) lands.
