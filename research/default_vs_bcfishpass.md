@@ -34,23 +34,39 @@ Two signals on bcfishpass's side need separating:
 
 bcfishpass (as reproduced by link's bcfishpass bundle) classifies only SK as lake-rearing via `rear_lake_only = yes`. KO is lake-rearing in bcfishpass's upstream config but not modelled in the WSGs we're comparing. The `rear_lake_ha_min` column in `parameters_habitat_thresholds.csv` has 200 for SK + KO and NA for everyone else — confirming that other species aren't gated by a lake-area floor because they aren't classified as lake-rearing in the first place.
 
-| Species | bcfishpass `rear_lake` | bcfishpass `rear_lake_ha_min` | default `rear_lake` |
-|---|---|---|---|
-| BT | no | NA | **yes** |
-| CH | no | NA | **yes** |
-| CM | no | NA | no (unchanged) |
-| CO | no | NA | **yes** |
-| CT | — | NA | yes (new species) |
-| DV | — | NA | yes (new species) |
-| GR | — | NA | yes (new species) |
-| KO | yes (rear_lake_only) | 200 | yes (unchanged) |
-| PK | no | NA | no (unchanged) |
-| RB | — | NA | yes (new species) |
-| SK | yes (rear_lake_only) | 200 | yes (unchanged) |
-| ST | no | NA | **yes** |
-| WCT | no | NA | **yes** |
+| Species | bcfishpass `rear_lake` | bcfishpass `rear_lake_ha_min` | default `rear_lake` | default `rear_lake_ha_min` |
+|---|---|---|---|---:|
+| BT | no | NA | **yes** | 10 |
+| CH | no | NA | **yes** | 100 |
+| CM | no | NA | no (unchanged) | — |
+| CO | no | NA | **yes** | 2 |
+| CT | — | NA | yes (new species) | 10 |
+| DV | — | NA | yes (new species) | 10 |
+| GR | — | NA | yes (new species) | 40 |
+| KO | yes (rear_lake_only) | 200 | yes (unchanged) | 200 |
+| PK | no | NA | no (unchanged) | — |
+| RB | — | NA | yes (new species) | 10 |
+| SK | yes (rear_lake_only) | 200 | yes (unchanged) | 200 |
+| ST | no | NA | **yes** | 60 |
+| WCT | no | NA | **yes** | 10 |
 
-Rationale: literature supports lake rearing for more species than bcfishpass's SK/KO-only treatment. [TODO: citations for BT lake rearing — Babine/Quesnel/Kootenay/Stuart populations; ST lake-rearing documentation; CT/DV/RB resident-form lake use.]
+Default ships its own `rear_lake_ha_min` per species via a new column in
+`configs/default/dimensions.csv`. `lnk_rules_build()` prefers that column
+over the shared `fresh::parameters_habitat_thresholds$rear_lake_ha_min`
+when present — keeps bcfishpass bundle at its 200 ha threshold for SK/KO
+while letting default express species-specific biology:
+
+- CO at 2 ha — uses small lakes and ponds extensively for overwintering.
+- BT/WCT/RB/CT/DV at 10 ha — resident / sub-adult rearing in modest lakes.
+- GR at 40 ha — northern populations tend toward larger systems.
+- ST at 60 ha — ocean-typed; smaller lakes less likely.
+- CH at 100 ha — Cultus / Pitt / Stave class systems.
+
+Rationale: literature supports lake rearing for more species than
+bcfishpass's SK/KO-only treatment. [TODO: citations for BT lake rearing
+— Babine/Quesnel/Kootenay/Stuart populations; ST lake-rearing
+documentation; CT/DV/RB resident-form lake use; exact ha thresholds
+per population to be refined with regional literature.]
 
 ### 2. Wetland rearing added
 

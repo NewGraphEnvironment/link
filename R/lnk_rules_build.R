@@ -92,6 +92,9 @@ lnk_rules_build <- function(csv,
   has_spawn_cdm <- "spawn_connected_distance_max" %in% names(dimensions)
   has_rear_cdm <- "rear_connected_distance_max" %in% names(dimensions)
 
+  # Optional: rear_lake_ha_min in dimensions overrides the shared thresholds CSV
+  has_rlhm <- "rear_lake_ha_min" %in% names(dimensions)
+
   # --- Edge type helpers ---
   stream_edges <- if (edge_types == "categories") {
     list(edge_types = c("stream", "canal"))
@@ -153,9 +156,15 @@ lnk_rules_build <- function(csv,
       rear_rules <- list()
     } else if (d$rear_lake_only) {
       lake_rule <- list(waterbody_type = "L")
-      if (!is.na(th$rear_lake_ha_min)) {
-        lake_rule$lake_ha_min <- th$rear_lake_ha_min
+      rlhm <- if (has_rlhm && !is.na(d$rear_lake_ha_min) &&
+                  nchar(trimws(as.character(d$rear_lake_ha_min))) > 0) {
+        as.numeric(d$rear_lake_ha_min)
+      } else if (!is.na(th$rear_lake_ha_min)) {
+        th$rear_lake_ha_min
+      } else {
+        NA_real_
       }
+      if (!is.na(rlhm)) lake_rule$lake_ha_min <- rlhm
       rear_rules[[1]] <- add_rc(lake_rule, rear_rc, rear_cdm)
     } else {
       # Stream order bypass: first-order streams with parent order >= 5
@@ -189,9 +198,15 @@ lnk_rules_build <- function(csv,
       }
       if (d$rear_lake) {
         lake_rule <- list(waterbody_type = "L")
-        if (!is.na(th$rear_lake_ha_min)) {
-          lake_rule$lake_ha_min <- th$rear_lake_ha_min
+        rlhm <- if (has_rlhm && !is.na(d$rear_lake_ha_min) &&
+                    nchar(trimws(as.character(d$rear_lake_ha_min))) > 0) {
+          as.numeric(d$rear_lake_ha_min)
+        } else if (!is.na(th$rear_lake_ha_min)) {
+          th$rear_lake_ha_min
+        } else {
+          NA_real_
         }
+        if (!is.na(rlhm)) lake_rule$lake_ha_min <- rlhm
         rear_rules[[length(rear_rules) + 1]] <- add_rc(lake_rule, rear_rc, rear_cdm)
       }
     }

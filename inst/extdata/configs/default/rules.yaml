@@ -24,6 +24,7 @@ BT:
   - edge_types: wetland
     thresholds: false
   - waterbody_type: L
+    lake_ha_min: 10.0
 CH:
   spawn:
   - edge_types:
@@ -44,6 +45,7 @@ CH:
   - edge_types: wetland
     thresholds: false
   - waterbody_type: L
+    lake_ha_min: 100.0
 CM:
   spawn:
   - edge_types:
@@ -74,6 +76,7 @@ CO:
   - edge_types: wetland
     thresholds: false
   - waterbody_type: L
+    lake_ha_min: 2.0
 PK:
   spawn:
   - edge_types:
@@ -99,7 +102,7 @@ SK:
     connected_distance_max: 3000.0
   rear:
   - waterbody_type: L
-    lake_ha_min: 200
+    lake_ha_min: 200.0
   spawn_connected:
     direction: downstream
     waterbody_type: L
@@ -127,6 +130,7 @@ ST:
   - edge_types: wetland
     thresholds: false
   - waterbody_type: L
+    lake_ha_min: 60.0
 WCT:
   spawn:
   - edge_types:
@@ -147,6 +151,7 @@ WCT:
   - edge_types: wetland
     thresholds: false
   - waterbody_type: L
+    lake_ha_min: 10.0
 KO:
   spawn:
   - edge_types:
@@ -162,7 +167,7 @@ KO:
     connected_distance_max: 3000.0
   rear:
   - waterbody_type: L
-    lake_ha_min: 200
+    lake_ha_min: 200.0
   spawn_connected:
     direction: downstream
     waterbody_type: L
@@ -190,6 +195,7 @@ RB:
   - edge_types: wetland
     thresholds: false
   - waterbody_type: L
+    lake_ha_min: 10.0
 GR:
   spawn:
   - edge_types:
@@ -208,4 +214,5 @@ GR:
     - 0.0
     - 9999.0
   - waterbody_type: L
+    lake_ha_min: 40.0
 
