@@ -103,6 +103,13 @@ SK:
   rear:
   - waterbody_type: L
     lake_ha_min: 200
+  spawn_connected:
+    direction: downstream
+    waterbody_type: L
+    gradient_max: 0.05
+    channel_width_min: 0.0
+    distance_max: 3000.0
+    bridge_gradient: 0.05
 ST:
   spawn:
   - edge_types:
@@ -162,6 +169,13 @@ KO:
   rear:
   - waterbody_type: L
     lake_ha_min: 200
+  spawn_connected:
+    direction: downstream
+    waterbody_type: L
+    gradient_max: 0.05
+    channel_width_min: 0.0
+    distance_max: 3000.0
+    bridge_gradient: 0.05
 RB:
   spawn:
   - edge_types:
