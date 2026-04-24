@@ -387,12 +387,12 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, schema,
     .lnk_quote_literal(aoi)))
 
   fresh::frs_col_join(conn, "fresh.streams",
-    from = "fwa_stream_networks_channel_width",
+    from = "whse_basemapping.fwa_stream_networks_channel_width",
     cols = c("channel_width", "channel_width_source"),
     by = "linear_feature_id")
 
   fresh::frs_col_join(conn, "fresh.streams",
-    from = "fwa_stream_networks_order_parent",
+    from = "whse_basemapping.fwa_stream_networks_order_parent",
     cols = "stream_order_parent",
     by = "blue_line_key")
 
