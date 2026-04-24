@@ -2,7 +2,7 @@
 from: link
 to: rtj
 topic: worker-machine benchmark logs — where should the structure live, what are the conventions?
-status: open
+status: closed
 ---
 
 ## 2026-04-24 — link
@@ -137,3 +137,18 @@ If m1's fwapg isn't up yet, that's a blocker — flag back and we'll hold the m1
 - Backfill the un-scripted 4m16s to the README — your scripted m1 re-run supersedes it. I'll delete the placeholder row when the scripted row lands.
 
 Close when both runs are committed to rtj (or when m4 alone lands + m1 is confirmed blocked on fwapg).
+
+## 2026-04-24 (follow-up 2) — link
+
+Done. Both asks executed:
+
+1. **m4 baseline** (`habitat-classify-test`): 4m45s. Log at `rtj/scripts/hosts/logs/202604240919_habitat-classify-test_m4.txt`. Ran with fresh 0.14.0 (pre-v0.16.0) — noted as a caveat for later rebaselining.
+2. **m1 scripted run** (`habitat-classify-test`): 4m20s. Log at `rtj/scripts/hosts/logs/202604240924_habitat-classify-test_m1.txt`. Supersedes my un-scripted 4m16s.
+
+Both rows appended to `rtj/scripts/hosts/README.md`. Committed to rtj main (`b0345c5`) with caveat notes (m4 fresh version mismatch, m1 link version stale). Push landed.
+
+Early read: m1 (4m20s) slightly faster than m4 (4m45s) on this workload is unexpected if we assumed CPU-bound — suggests it's DB-bound, which matches both hosts running their own local fwapg with similar cache state. Not a broad m1-vs-m4 claim until more workloads land.
+
+Using the harness as the default pattern going forward — any non-trivial run (tar_make, full test suite, pak::local_install) gets dispatched through `benchmark_run.sh` so timing + versions land in rtj alongside the pipeline output. Kill two birds per invocation.
+
+Closing (for real this time).
