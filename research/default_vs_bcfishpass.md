@@ -299,24 +299,29 @@ NOT propagate its `spawning` / `rearing` flags into
 
 Splitting `streams_habitat_linear.spawning_sk` into model (1, 2) vs known
 (3) and spatially intersecting with link's default output gives four
-semantic buckets (BABL SK, pre-gradient-floor):
+semantic buckets. BABL SK, pre- and post-gradient-floor:
 
-| bucket | km | segments | interpretation |
-|---|---:|---:|---|
-| `high_conf` — default ∩ bcfp-model | 58.1 | 197 | rule systems converge (highest confidence) |
-| `default_catches_known` — default ∩ bcfp-known, NOT in bcfp-model | 13.2 | 34 | our rules independently arrive at what bcfp needs observations for |
-| `csv_only` — bcfp-known, default misses | 60.2 | 238 | gap: known habitat our rules can't reach |
-| `default_over` — default only, no bcfp source | 79.6 | 229 | potential over-prediction (or unsurveyed habitat) |
+| bucket | pre-floor km | post-floor km | Δ |
+|---|---:|---:|---:|
+| `high_conf` — default ∩ bcfp-model | 58.1 | 29.3 | -28.8 |
+| `default_catches_known` — default ∩ bcfp-known, NOT in bcfp-model | **13.2** | **0** | **-13.2** (regression) |
+| `csv_only` — bcfp-known, default misses | 60.2 | 71.6 | +11.4 |
+| `default_over` — default only, no bcfp source | 79.6 | 2.24 | -77.4 |
 
-`default_catches_known` at 13 km out of ~60 km of bcfp-known-only suggests
-our default rules recover a meaningful minority of observation-curated
-spawning — more than zero, less than half. Most of `default_over`
-(79.6 km) is driven by the pre-floor inclusion of flat reaches and
-wetland-flow streams; the gradient floor is expected to drop this
-substantially.
+**The gradient floor cut noise AND signal.** Pre-floor, 13 km of our
+default spawning organically matched bcfp's CSV-curated known spawning
+(positive validation of the rule set). Post-floor, that bucket is zero —
+every segment where our model independently caught known spawning got
+excluded by the 0.0025 cut. Meanwhile 77 km of `default_over` dropped to
+2 km, which IS a win.
 
-Interactive map: `data-raw/maps/sk_spawning_BABL_sources.html`
-(regenerated post-run).
+Net: the floor is over-aggressive. It's correct to exclude flat-gradient
+reaches with no gravel retention, but 0.0025 km/m is pruning reaches
+bcfp's observations actively confirm as spawning habitat. Worth
+revisiting — candidates: lower floor to 0.001, exempt lake-outlet
+reaches, or make the floor per-species.
+
+Interactive map: `data-raw/maps/sk_spawning_BABL_sources.html`.
 
 ### 7. Residual `csv_only` — gradient vs connectivity gap
 
@@ -363,19 +368,35 @@ Scope for a separate investigation; tracked as a follow-up to be filed.
 
 Originally claimed in the "Departures from bcfishpass" section (§4)
 but never applied to the CSV. Set to 0.0025 for all 11 default species
-in commit `3b1e8e3`. Pre-flight on BABL dropped SK spawning from
-151 km → 31.5 km (below bcfp's 59.3 km model-only reference), mostly
-by excluding 191 segments at `gradient = 0` (flat lake-adjacent /
-river-polygon / missing-data reaches, 41.9 km).
+in commit `3b1e8e3`. Full 5-WSG rerun (digest
+`e491f4d321527b8e939020b7e988d71c`) shows the floor is more aggressive
+than anticipated:
 
-The post-floor default is now STRICTER than the bcfishpass model on
-SK. This is expected given the floor is above bcfishpass's implicit
-zero. Interpretation: bcfishpass treats the gradient=0 segments as
-spawning when the rest of the rules permit; default excludes them on
-biological grounds (no gravel retention). The CSV-layered bcfishpass
-published total (132 km) still outpaces default because many of those
-known-spawning reaches are reachable only via
-`user_habitat_classification` — see §7.
+- **ADMS SK spawning: 88.83 → 2.32 km** (-97%). Adams River is the
+  iconic SK spawning locus; its lake-outlet reaches are mostly 0
+  gradient by measurement but gravel-bearing by deposition. Biologically
+  wrong at this extreme.
+- **BULK spawning dropped 230–255 km across BT/CH/CO/PK/ST.** Heavily
+  braided floodplain with many flat river-polygon reaches now excluded.
+- **ELKR BT/WCT spawning −154 km each.** Same braided-reach pattern.
+- **BABL relatively stable** (SK −26, BT/CH/CO/ST near zero). Large-river
+  reaches mostly above-floor.
+
+Per observation §6, the floor excluded all `default_catches_known`
+segments in BABL (13 km regression) along with `default_over` segments
+(77 km improvement). Net interpretation: 0.0025 is too high as a
+blanket floor. Candidates:
+
+1. Lower the floor to 0.001 (keep flat-gradient=0 exclusion, rescue
+   depositional spawning).
+2. Apply only when gradient is non-zero (exempt measurement/data
+   artefacts).
+3. Per-species floors (keep SK looser because outlet spawning is
+   depositional; keep BT/CH tighter).
+4. Edge-type specific: exempt lake-outlet reaches (edge_types adjacent
+   to waterbody_type = L).
+
+To be refined in a follow-up, not this PR.
 
 ## Versions
 
