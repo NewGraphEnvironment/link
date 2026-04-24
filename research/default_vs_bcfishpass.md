@@ -65,25 +65,25 @@ Numbers populate from `tar_read(rollup)` after the first clean `tar_destroy + ta
 
 | Species | Habitat | bcfishpass | default | Δ | Unit |
 |---|---|---:|---:|---:|---|
-| BT | lake_rearing | 14301.4 | 14301.4 | +0 | ha |
+| BT | lake_rearing | 14301.43 | 14301.43 | +0 | ha |
 | BT | rearing | 666.96 | 775.34 | +108.38 | km |
 | BT | spawning | 368.13 | 397.17 | +29.04 | km |
 | BT | wetland_rearing | 933.87 | 933.87 | +0 | ha |
-| CH | lake_rearing | 14114.6 | 14114.6 | +0 | ha |
+| CH | lake_rearing | 14114.65 | 14114.65 | +0 | ha |
 | CH | rearing | 315.42 | 588.11 | +272.69 | km |
 | CH | spawning | 278.92 | 295.4 | +16.48 | km |
 | CH | wetland_rearing | 817.06 | 817.06 | +0 | ha |
-| CO | lake_rearing | 14114.6 | 14114.6 | +0 | ha |
+| CO | lake_rearing | 14114.65 | 14114.65 | +0 | ha |
 | CO | rearing | 351.01 | 596.37 | +245.36 | km |
 | CO | spawning | 316.08 | 338.67 | +22.59 | km |
 | CO | wetland_rearing | 817.06 | 817.06 | +0 | ha |
-| RB | lake_rearing | NA | 14167.2 | NA | ha |
+| RB | lake_rearing | NA | 14167.24 | NA | ha |
 | RB | rearing | NA | 672.94 | NA | km |
 | RB | spawning | NA | 331.35 | NA | km |
 | RB | wetland_rearing | NA | 839.42 | NA | ha |
-| SK | lake_rearing | 14114.6 | 14114.6 | +0 | ha |
+| SK | lake_rearing | 14114.65 | 14114.65 | +0 | ha |
 | SK | rearing | 229.85 | 229.85 | +0 | km |
-| SK | spawning | 88.83 | 332.01 | +243.18 | km |
+| SK | spawning | 88.83 | 93.28 | +4.45 | km |
 | SK | wetland_rearing | 817.06 | 817.06 | +0 | ha |
 
 ### BULK
@@ -112,7 +112,7 @@ Numbers populate from `tar_read(rollup)` after the first clean `tar_destroy + ta
 | RB | wetland_rearing | NA | 5779.23 | NA | ha |
 | SK | lake_rearing | 4307.58 | 4307.58 | +0 | ha |
 | SK | rearing | 64.56 | 64.56 | +0 | km |
-| SK | spawning | 24.22 | 106.79 | +82.57 | km |
+| SK | spawning | 24.22 | 42.12 | +17.9 | km |
 | SK | wetland_rearing | 5571.02 | 5571.02 | +0 | ha |
 | ST | lake_rearing | 4688.67 | 4688.67 | +0 | ha |
 | ST | rearing | 2244.75 | 2725.91 | +481.16 | km |
@@ -127,23 +127,23 @@ Numbers populate from `tar_read(rollup)` after the first clean `tar_destroy + ta
 | BT | rearing | 2306.49 | 2846.56 | +540.07 | km |
 | BT | spawning | 926.76 | 1154.55 | +227.79 | km |
 | BT | wetland_rearing | 6183.73 | 6183.73 | +0 | ha |
-| CH | lake_rearing | 54581.4 | 54581.4 | +0 | ha |
+| CH | lake_rearing | 54581.41 | 54581.41 | +0 | ha |
 | CH | rearing | 732.52 | 2088.21 | +1355.69 | km |
 | CH | spawning | 362.12 | 497.69 | +135.57 | km |
 | CH | wetland_rearing | 5796.4 | 5796.4 | +0 | ha |
-| CO | lake_rearing | 54581.4 | 54581.4 | +0 | ha |
+| CO | lake_rearing | 54581.41 | 54581.41 | +0 | ha |
 | CO | rearing | 1300.11 | 2333.43 | +1033.32 | km |
 | CO | spawning | 843.52 | 1057.39 | +213.87 | km |
 | CO | wetland_rearing | 5796.4 | 5796.4 | +0 | ha |
-| RB | lake_rearing | NA | 50469.8 | NA | ha |
+| RB | lake_rearing | NA | 50469.82 | NA | ha |
 | RB | rearing | NA | 2247.76 | NA | km |
 | RB | spawning | NA | 856.84 | NA | km |
 | RB | wetland_rearing | NA | 4455.39 | NA | ha |
-| SK | lake_rearing | 54581.4 | 54581.4 | +0 | ha |
+| SK | lake_rearing | 54581.41 | 54581.41 | +0 | ha |
 | SK | rearing | 941.63 | 941.63 | +0 | km |
-| SK | spawning | 57.63 | 1128.03 | +1070.4 | km |
+| SK | spawning | 57.63 | 150.93 | +93.3 | km |
 | SK | wetland_rearing | 5796.4 | 5796.4 | +0 | ha |
-| ST | lake_rearing | 54709 | 54709 | +0 | ha |
+| ST | lake_rearing | 54709.03 | 54709.03 | +0 | ha |
 | ST | rearing | 912 | 2470.45 | +1558.45 | km |
 | ST | spawning | 362.59 | 498.29 | +135.7 | km |
 | ST | wetland_rearing | 5965.21 | 5965.21 | +0 | ha |
@@ -230,20 +230,33 @@ intermittent/river-polygon additions dominate). Magnitudes vary by WSG — in
 BABL, CH rearing inflates by 1356 km (+185%), reflecting a large base
 network with lots of intermittent contribution; in DEAD it's 27 km (+21%).
 
-### 3. SK spawning inflates dramatically
+### 3. SK spawning — connectivity now honoured
 
-Sockeye spawning km jump under `default` in every WSG that has SK
-(ADMS +243 km, BULK +83 km, BABL +1070 km). Under bcfishpass, SK spawning
-is restricted to lake-connected reaches via `spawn_connected` (only reaches
-with downstream access to a rearing lake count). The `default` rules YAML
-currently does not carry this connectivity rule through — all
-gradient-passable reaches get flagged for SK spawning, not just the
-lake-connected subset. BABL is the extreme case because SK spawning is
-already heavily restricted there on the bcfishpass side (58 km baseline).
+Two bugs in the initial `default` bundle caused SK spawning to inflate
+10–20× over bcfishpass. Both fixed in this PR:
 
-This is a known gap in the default bundle — the `spawn_connected` rule
-needs to be expressed in `dimensions.csv` and emitted by `lnk_rules_build()`.
-Blocked on `fresh#133`, same as the ADMS SK cluster.
+1. **Missing `spawn_connected` YAML block.** `configs/default/dimensions.csv`
+   was missing five columns (`rear_stream_order_bypass`,
+   `spawn_connected_direction`, `spawn_connected_gradient_max`,
+   `spawn_connected_cw_min`, `spawn_connected_edge_types`) that
+   `lnk_rules_build()` needs to emit the permissive-spawn
+   `spawn_connected:` block. Without it, fresh's `.frs_connected_waterbody()`
+   had no permissive fallback.
+2. **`spawn_lake=yes` for SK + KO.** The original default flagged lake
+   spawning for sockeye. `lnk_rules_build()` emitted a `waterbody_type: L`
+   spawn rule, which credited entire lake centerlines (Babine Lake alone
+   is 177 km) as SK spawning habitat within the 3 km connected-distance
+   cap. Set to `no` to match bcfishpass convention — stream-spawning
+   sockeye only.
+
+Post-fix SK spawning deltas shrink to the order of the network-level
+departures: ADMS +4 km, BULK +18 km, BABL +93 km, DEAD +0 km. Residual
+lift in BABL traces to intermittent streams and river-polygon reaches
+newly counted under `default`, not to missing connectivity logic.
+
+Beach-spawning sockeye populations (Babine, Shuswap) exist as a distinct
+phenotype but aren't modelled in the SK category — they would need their
+own dimensions row.
 
 ### 4. RB is newly modeled under `default`
 
