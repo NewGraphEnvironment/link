@@ -1,4 +1,4 @@
-# Generated from parameters_habitat_dimensions.csv
+# Generated from dimensions.csv
 # Generated: 2026-04-24
 # Edge types: categories
 #
@@ -24,7 +24,9 @@ BT:
   - edge_types: wetland
     thresholds: false
   - waterbody_type: W
+    wetland_ha_min: 1.0
   - waterbody_type: L
+    lake_ha_min: 10.0
 CH:
   spawn:
   - edge_types:
@@ -45,7 +47,9 @@ CH:
   - edge_types: wetland
     thresholds: false
   - waterbody_type: W
+    wetland_ha_min: 1.0
   - waterbody_type: L
+    lake_ha_min: 100.0
 CM:
   spawn:
   - edge_types:
@@ -76,7 +80,9 @@ CO:
   - edge_types: wetland
     thresholds: false
   - waterbody_type: W
+    wetland_ha_min: 0.5
   - waterbody_type: L
+    lake_ha_min: 2.0
 PK:
   spawn:
   - edge_types:
@@ -100,12 +106,16 @@ SK:
     - 9999.0
     requires_connected: rearing
     connected_distance_max: 3000.0
-  - waterbody_type: L
-    requires_connected: rearing
-    connected_distance_max: 3000.0
   rear:
   - waterbody_type: L
-    lake_ha_min: 200
+    lake_ha_min: 200.0
+  spawn_connected:
+    direction: downstream
+    waterbody_type: L
+    gradient_max: 0.05
+    channel_width_min: 0.0
+    distance_max: 3000.0
+    bridge_gradient: 0.05
 ST:
   spawn:
   - edge_types:
@@ -126,7 +136,9 @@ ST:
   - edge_types: wetland
     thresholds: false
   - waterbody_type: W
+    wetland_ha_min: 1.0
   - waterbody_type: L
+    lake_ha_min: 60.0
 WCT:
   spawn:
   - edge_types:
@@ -147,7 +159,9 @@ WCT:
   - edge_types: wetland
     thresholds: false
   - waterbody_type: W
+    wetland_ha_min: 1.0
   - waterbody_type: L
+    lake_ha_min: 10.0
 KO:
   spawn:
   - edge_types:
@@ -161,12 +175,16 @@ KO:
     - 9999.0
     requires_connected: rearing
     connected_distance_max: 3000.0
-  - waterbody_type: L
-    requires_connected: rearing
-    connected_distance_max: 3000.0
   rear:
   - waterbody_type: L
-    lake_ha_min: 200
+    lake_ha_min: 200.0
+  spawn_connected:
+    direction: downstream
+    waterbody_type: L
+    gradient_max: 0.05
+    channel_width_min: 0.0
+    distance_max: 3000.0
+    bridge_gradient: 0.05
 RB:
   spawn:
   - edge_types:
@@ -187,7 +205,9 @@ RB:
   - edge_types: wetland
     thresholds: false
   - waterbody_type: W
+    wetland_ha_min: 1.0
   - waterbody_type: L
+    lake_ha_min: 10.0
 GR:
   spawn:
   - edge_types:
@@ -206,4 +226,5 @@ GR:
     - 0.0
     - 9999.0
   - waterbody_type: L
+    lake_ha_min: 40.0
 

@@ -14,6 +14,19 @@ Suggested addition to the worker-machine R bootstrap (wherever kdot manages R pa
 ### Known test-time deps for fresh + link
 
 - `mockery` — used by test mocks (`mockery::stub()` patterns) in fresh's test-frs_extract.R and possibly others. Pure R, small, CRAN.
+- `tarchetypes` — required by link's `data-raw/_targets.R` (`tar_map()` specifically). Manifests as "there is no package called 'tarchetypes'" when running `link-tarmake-*` workloads. CRAN, small.
+
+### fwapg Postgres search_path
+
+Worker-machine fwapg instances need `whse_basemapping` in the database search_path. M4 ships this already (`public, whse_basemapping, usgs, hydrosheds`); M1's Docker-initialised fwapg shipped with only `"$user", public, topology, tiger`. Fresh + link code pass bare `fwa_upstream(...)` and `fwa_stream_networks_*` references (fwapg-convention), which fail on hosts without the schema in search_path.
+
+One-time fix applied on M1 today:
+
+```sql
+ALTER DATABASE fwapg SET search_path = public, whse_basemapping, usgs, hydrosheds;
+```
+
+Should land in whatever script stands up fwapg (probably the compute-node bootstrap rtj is planning — `macos_compute.sh` / `cloud-init-compute.yaml` per rtj README).
 
 ### Broader pattern
 

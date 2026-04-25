@@ -92,6 +92,10 @@ lnk_rules_build <- function(csv,
   has_spawn_cdm <- "spawn_connected_distance_max" %in% names(dimensions)
   has_rear_cdm <- "rear_connected_distance_max" %in% names(dimensions)
 
+  # Optional: rear_lake_ha_min in dimensions overrides the shared thresholds CSV
+  has_rlhm <- "rear_lake_ha_min" %in% names(dimensions)
+  has_rwhm <- "rear_wetland_ha_min" %in% names(dimensions)
+
   # --- Edge type helpers ---
   stream_edges <- if (edge_types == "categories") {
     list(edge_types = c("stream", "canal"))
@@ -148,14 +152,29 @@ lnk_rules_build <- function(csv,
         list(waterbody_type = "L"), spawn_rc, spawn_cdm)
     }
 
+    # Resolve ha_min with dimensions-override + fresh-thresholds fallback.
+    # Dimensions value wins ONLY when present AND numeric — non-numeric
+    # garbage falls through to the fallback rather than silently
+    # disabling it.
+    resolve_ha_min <- function(dim_val, fresh_val) {
+      if (!is.null(dim_val) && !is.na(dim_val) &&
+          nchar(trimws(as.character(dim_val))) > 0) {
+        n <- suppressWarnings(as.numeric(dim_val))
+        if (!is.na(n)) return(n)
+      }
+      if (!is.null(fresh_val) && !is.na(fresh_val)) return(fresh_val)
+      NA_real_
+    }
+
     # --- Rearing (precedence: no_fw > lake_only > additive) ---
     if (d$rear_no_fw) {
       rear_rules <- list()
     } else if (d$rear_lake_only) {
       lake_rule <- list(waterbody_type = "L")
-      if (!is.na(th$rear_lake_ha_min)) {
-        lake_rule$lake_ha_min <- th$rear_lake_ha_min
-      }
+      rlhm <- resolve_ha_min(
+        if (has_rlhm) d$rear_lake_ha_min else NULL,
+        th$rear_lake_ha_min)
+      if (!is.na(rlhm)) lake_rule$lake_ha_min <- rlhm
       rear_rules[[1]] <- add_rc(lake_rule, rear_rc, rear_cdm)
     } else {
       # Stream order bypass: first-order streams with parent order >= 5
@@ -179,6 +198,8 @@ lnk_rules_build <- function(csv,
         rear_rules[[length(rear_rules) + 1]] <- add_rc(river_rule_r, rear_rc, rear_cdm)
       }
       if (d$rear_wetland) {
+        # Edge-type rule: include wetland-flow streams / shoreline segments
+        # in the `rearing` flag (rearing km total).
         if (edge_types == "categories") {
           rear_rules[[length(rear_rules) + 1]] <- add_rc(list(
             edge_types = c("wetland"), thresholds = FALSE), rear_rc, rear_cdm)
@@ -186,12 +207,24 @@ lnk_rules_build <- function(csv,
           rear_rules[[length(rear_rules) + 1]] <- add_rc(list(
             edge_types_explicit = c(1050L, 1150L), thresholds = FALSE), rear_rc, rear_cdm)
         }
+        # Waterbody rule: sets the separate `wetland_rearing` flag in
+        # fresh.streams_habitat so polygon-area rollups (ha) can be
+        # computed. Mirrors the L pattern below. Optional ha_min sourced
+        # from the per-config dimensions CSV (fresh thresholds CSV has no
+        # wetland column, so no fallback to pass).
+        wetland_rule <- list(waterbody_type = "W")
+        rwhm <- resolve_ha_min(
+          if (has_rwhm) d$rear_wetland_ha_min else NULL,
+          NA_real_)
+        if (!is.na(rwhm)) wetland_rule$wetland_ha_min <- rwhm
+        rear_rules[[length(rear_rules) + 1]] <- add_rc(wetland_rule, rear_rc, rear_cdm)
       }
       if (d$rear_lake) {
         lake_rule <- list(waterbody_type = "L")
-        if (!is.na(th$rear_lake_ha_min)) {
-          lake_rule$lake_ha_min <- th$rear_lake_ha_min
-        }
+        rlhm <- resolve_ha_min(
+          if (has_rlhm) d$rear_lake_ha_min else NULL,
+          th$rear_lake_ha_min)
+        if (!is.na(rlhm)) lake_rule$lake_ha_min <- rlhm
         rear_rules[[length(rear_rules) + 1]] <- add_rc(lake_rule, rear_rc, rear_cdm)
       }
     }

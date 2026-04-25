@@ -8,3 +8,8 @@ inst/doc
 
 # targets pipeline cache (data-raw/_targets.R)
 data-raw/_targets/
+
+# Map renders and pulled sf artifacts (SK investigation etc.)
+data-raw/maps/data/
+data-raw/maps/*.html
+data-raw/maps/*_files/

@@ -1,6 +1,6 @@
 Package: link
 Title: Crossing Connectivity Interpretation
-Version: 0.7.0
+Version: 0.8.0
 Authors@R:
     person("Allan", "Irvine", , "airvine@newgraphenvironment.com",
            role = c("aut", "cre"),
@@ -29,7 +29,7 @@ Suggests:
     bcdata,
     bookdown,
     dplyr,
-    fresh,
+    fresh (>= 0.17.1),
     knitr,
     lintr,
     mapgl,
