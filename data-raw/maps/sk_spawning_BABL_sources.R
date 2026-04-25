@@ -18,7 +18,8 @@ sk_default <- if (file.exists(postfloor_rds)) {
 } else {
   message("using pre-floor default sf (rerun to refresh after 5-WSG tar_make)")
   readRDS(file.path(d, "sk_babl_default.rds"))
-} |> st_transform(4326) |> st_zm()
+}
+sk_default <- sk_default |> st_zm() |> st_transform(4326)
 
 bcfp <- readRDS(file.path(d, "sk_babl_bcfp_split.rds")) |>
   st_transform(4326) |> st_zm()
