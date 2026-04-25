@@ -281,7 +281,9 @@ compare_bcfishpass_wsg <- function(wsg, config) {
   ref <- do.call(rbind, ref_list)
 
   # -------------------------------------------------------------------------
-  # Assemble long-format output — 4 rows per species.
+  # Assemble long-format output — 7 rows per species: 4 originals
+  # (spawning, rearing, lake_rearing, wetland_rearing) plus 3 rearing
+  # edge-type slices (stream, lake_centerline, wetland_centerline).
   # -------------------------------------------------------------------------
   habitat_types <- c(
     "spawning", "rearing", "lake_rearing", "wetland_rearing",

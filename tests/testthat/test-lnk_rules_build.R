@@ -428,11 +428,14 @@ test_that("rear_all_edges=yes skips per-edge-type rules", {
   lnk_rules_build(csv, out, edge_types = "categories")
 
   rear <- yaml::read_yaml(out)$BT$rear
-  # rear_all_edges gives one empty rule (all edge types accepted)
-  # No explicit edge_types / edge_types_explicit set
+  # rear_all_edges gives exactly ONE empty rule (all edge types
+  # accepted). Confirm the rule is present, has no edge filter, and
+  # nothing else (no waterbody_type, no edge_types_explicit) snuck in.
+  expect_length(rear, 1)
   first <- rear[[1]]
-  expect_null(first$edge_types)
-  expect_null(first$edge_types_explicit)
+  expect_null(first[["edge_types"]])
+  expect_null(first[["edge_types_explicit"]])
+  expect_null(first[["waterbody_type"]])
 })
 
 # -- River polygon rule + river_skip_cw_min -----------------------------------
@@ -469,11 +472,11 @@ test_that("river_skip_cw_min=no or missing omits the 0-9999 override", {
 
   rear <- yaml::read_yaml(out)$BT$rear
   river_r <- find_wb_rule(rear, "R")
-  # When river_skip_cw_min is FALSE/no, the 0-9999 override is NOT emitted;
-  # the rule either has no channel_width override or is absent.
-  if (!is.null(river_r)) {
-    expect_false(identical(river_r$channel_width, c(0, 9999)))
-  }
+  # Invariant: rear_stream=yes always emits an R rule (the river
+  # polygon rule). Assert presence first; then assert that without
+  # river_skip_cw_min the 0-9999 channel_width override is NOT used.
+  expect_false(is.null(river_r))
+  expect_false(identical(river_r[["channel_width"]], c(0, 9999)))
 })
 
 # -- Species skipping ---------------------------------------------------------
