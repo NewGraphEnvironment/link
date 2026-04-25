@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -262,6 +262,16 @@ bcdata (PSCIS assessments)   ─┘</code></pre>
 <p>Comparisons to bcfishpass (including the per-WSG <code>diff_pct</code> column in the rollup) are parity diagnostics — informative, not pass/fail. A bit-identical run that drifts from bcfishpass reference is acceptable; a reproducibility failure with the same inputs is not.</p>
 <p>When inputs change (fwapg refresh, bcfishobs update, channel_width sync), outputs will correctly differ. That’s what the stamp/lineage work (#40) makes explainable — so any observed drift can be traced back to which input moved.</p>
 </div>
+<div class="section level2">
+<h2 id="config-change-workflow">Config change workflow<a class="anchor" aria-label="anchor" href="#config-change-workflow"></a></h2>
+<p>When changing a <code>configs/&lt;name&gt;/dimensions.csv</code> or any file that feeds <code><a href="reference/lnk_rules_build.html">lnk_rules_build()</a></code>:</p>
+<ol style="list-style-type: decimal"><li>
+<strong>Regenerate + diff rules.yaml before running anything.</strong> <code>Rscript data-raw/build_rules.R</code> then <code>git diff inst/extdata/configs/&lt;name&gt;/rules.yaml</code>. Confirm the diff matches intent — e.g., toggling <code>spawn_lake=no</code> for SK should remove the <code>waterbody_type: L</code> rule under <code>SK.spawn</code>. Catching an unintended rule here costs seconds; catching it after a 20-min tar_make costs 20 min.</li>
+<li>
+<strong>Pre-flight on one WSG, not five.</strong> After reinstalling the package (<code>pak::local_install(upgrade = FALSE, ask = FALSE)</code> or equivalent), run the single-WSG workload (<code>link-tarmake-single &lt;WSG&gt;</code>) on the smallest WSG impacted by the change before the full <code>link-tarmake-5wsg</code>. ADMS is smallest, BULK largest per <code>workloads.csv</code> — pick whichever is small AND exercises the affected species. <strong>Always report the pre-flight result framed as departures from bcfishpass reference, not just raw link numbers.</strong> Small config changes (new threshold, edge-type tweak) should land within ~±20% of bcfp values; &gt;50% departure is a flag; &gt;100% or a 10× swing is “investigate before rerun” — bcfishpass is mature and its numbers are a reasonable sanity baseline. The four <code>sources</code> buckets from <code>§6</code> of the research doc are better signal than the scalar rollup delta — run them on the pre-flight WSG too.</li>
+<li>
+<strong>DB-side sanity as shortcut.</strong> When the fix’s effect is measurable (e.g., “SK spawning km should drop because lake shoreline edges no longer count”), a direct query on <code>fresh.streams_habitat</code> grouped by <code>edge_type</code> can confirm direction of change in ~30s without any tar_make.</li>
+</ol></div>
 <div class="section level2">
 <h2 id="sred">SRED<a class="anchor" aria-label="anchor" href="#sred"></a></h2>
 <p>Relates to NewGraphEnvironment/sred-2025-2026#24 — crossing connectivity interpretation package.</p>

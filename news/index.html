@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -36,6 +36,23 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.8.0" id="link-080">link 0.8.0<a class="anchor" aria-label="anchor" href="#link-080"></a></h2>
+<p>Default NewGraph habitat-classification config bundle ships alongside the bcfishpass reproduction bundle (<a href="https://github.com/NewGraphEnvironment/link/issues/51" class="external-link">#51</a>).</p>
+<ul><li>New <code>inst/extdata/configs/default/</code> bundle — intentional methodological departures from bcfishpass: intermittent streams included in rearing, wetland rearing added for resident species, lake rearing extended to species beyond SK/KO with per-species <code>rear_lake_ha_min</code> thresholds, <code>river_skip_cw_min = yes</code>. Loadable via <code>link::lnk_config("default")</code>.</li>
+<li>Per-species <code>rear_lake_ha_min</code> via a new column in <code>configs/default/dimensions.csv</code>. <code><a href="../reference/lnk_rules_build.html">lnk_rules_build()</a></code> prefers that value over the shared <code>fresh::parameters_habitat_thresholds</code> default when present, keeping bcfishpass bundle at its 200 ha threshold for SK/KO while letting default express species-specific biology (CO 2 ha, BT/WCT/RB/CT/DV 10 ha, GR 40 ha, ST 60 ha, CH 100 ha, SK/KO 200 ha). Non-numeric entries in the dimensions CSV fall through to the fresh fallback rather than silently disabling it.</li>
+<li>Per-species <code>rear_wetland_ha_min</code> via a new column in <code>configs/default/dimensions.csv</code>. <code><a href="../reference/lnk_rules_build.html">lnk_rules_build()</a></code> now emits both <code>edge_types: wetland</code> (for rearing km) AND <code>waterbody_type: W</code> (drives <code>wetland_rearing_ha</code> rollup) rules when <code>rear_wetland = yes</code>. Thresholds: CO 0.5 ha (beaver complexes), BT/CH/CT/DV/RB/ST/WCT 1 ha.</li>
+<li>SK + KO spawn_connected block — added five columns to <code>configs/default/dimensions.csv</code> (<code>rear_stream_order_bypass</code>, <code>spawn_connected_direction</code>, <code>spawn_connected_gradient_max</code>, <code>spawn_connected_cw_min</code>, <code>spawn_connected_edge_types</code>) so <code><a href="../reference/lnk_rules_build.html">lnk_rules_build()</a></code> emits the <code>spawn_connected:</code> block with <code>direction: downstream</code> for lake-obligate species. <code>spawn_lake = no</code> for SK/KO to prevent lake-centerline inflation (Babine Lake alone is 177 km).</li>
+<li>
+<code>data-raw/compare_bcfishpass_wsg()</code> emits a compound rollup with 7 rows per species × WSG × config: <code>spawning</code>/<code>rearing</code> km, <code>lake_rearing</code>/<code>wetland_rearing</code> ha, plus three edge-type slice rows (<code>rearing_stream</code>, <code>rearing_lake_centerline</code>, <code>rearing_wetland_centerline</code>) for decomposing the rearing total. Reference side uses the same <code>habitat_linear_&lt;sp&gt;</code> + <code>fwa_{lakes,wetlands}_poly</code> methodology as link, so both sides are apples-to-apples.</li>
+<li>
+<code>data-raw/_targets.R</code> runs both bundles side-by-side across all 5 validation WSGs (ADMS, BULK, BABL, ELKR, DEAD) — 10 comparison targets, unified rollup with a <code>config</code> identity column. Rollup digest <code>e3eaf5f62df44d6713bfed32cd08fc5d</code> (357 rows) on M1 with fresh 0.17.1.</li>
+<li>New research doc <code>research/default_vs_bcfishpass.md</code> — methodology comparison, per-WSG per-species results, 9 observations covering the debugging journey (SK spawning over-inflation root causes, bcfishpass known-habitat overlay via <code>streams_habitat_known</code>, gradient-floor calibration, segment-averaging risk).</li>
+<li>Three companion maps (<code>data-raw/maps/sk_spawning_BABL*.R</code>) — mapgl overlays of SK spawning BABL comparing bundle-vs-bundle and default-vs-bcfishpass-published (model + known); per-layer toggle, popups with <code>id_segment</code> / <code>segmented_stream_id</code> / plain-language edge_type / gradient / length.</li>
+<li>Requires <code>fresh &gt;= 0.17.1</code> for <code>waterbody_type: L/W</code> rear-rule honouring + <code>lake_ha_min</code> / <code>wetland_ha_min</code> thresholds.</li>
+<li>
+<code>tests/testthat/test-lnk_rules_build.R</code> — new suite with 56 tests covering lake + wetland rule emission (per-config ha_min, fresh fallback, rear_lake=no / rear_wetland=no), spawn rules (stream+canal vs explicit codes, spawn_lake, spawn_requires_connected, spawn_connected block), rear precedence (no_fw, lake_only, all_edges), river polygon + river_skip_cw_min, species skipping, rear_stream_order_bypass, non-numeric ha_min fallthrough.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.7.0" id="link-070">link 0.7.0<a class="anchor" aria-label="anchor" href="#link-070"></a></h2>
 <p><code>user_barriers_definite</code> no longer eligible for observation-based override (<a href="https://github.com/NewGraphEnvironment/link/issues/48" class="external-link">#48</a>).</p>
