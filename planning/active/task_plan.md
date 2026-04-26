@@ -36,12 +36,12 @@ edges are `1050/1150` (stream-thru-wetland), which DO match the categorical
 
 ## Phases
 
-- [ ] Phase 1 — PWF baseline (task_plan, findings, progress)
-- [ ] Phase 2 — Switch `data-raw/build_rules.R` to `edge_types = "explicit"` for default
-- [ ] Phase 3 — Regenerate `inst/extdata/parameters_habitat_rules.yaml` and `inst/extdata/configs/default/rules.yaml`
-- [ ] Phase 4 — Verify YAML diff: confirm no `1050/1150/2100` in spawn or rear-stream rules; confirm `1050/1150` still present in dedicated wetland-rear rule
-- [ ] Phase 5 — Existing test for explicit mode covers this (`test-lnk_rules_build.R:270`); add a default-config-specific test that asserts default rules.yaml has no `1050/1150/2100` in spawn predicates
-- [ ] Phase 6 — Full devtools::test() suite
+- [x] Phase 1 — PWF baseline (task_plan, findings, progress)
+- [x] Phase 2 — Switch `data-raw/build_rules.R` to `edge_types = "explicit"` for default
+- [x] Phase 3 — Regenerate `inst/extdata/parameters_habitat_rules.yaml` and `inst/extdata/configs/default/rules.yaml`
+- [x] Phase 4 — Verify YAML diff: confirm no `1050/1150/2100` in spawn or rear-stream rules; confirm `1050/1150` still present in dedicated wetland-rear rule
+- [x] Phase 5 — Existing test for explicit mode covers this (`test-lnk_rules_build.R:270`); add a default-config-specific test that asserts default rules.yaml has no `1050/1150/2100` in spawn predicates
+- [x] Phase 6 — Full devtools::test() suite
 - [ ] Phase 7 — Sync m1; ADMS preflight (BT, CH, CO, SK should all decrease — by how much depends on `1050` prevalence)
 - [ ] Phase 8 — Full 5-WSG rerun via rtj harness if ADMS preflight is sane
 - [ ] Phase 9 — Refresh research doc per-WSG tables; expected pattern: spawning down across species in WSGs with significant `1050` km
