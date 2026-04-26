@@ -81,6 +81,18 @@ lnk_pipeline_classify <- function(conn, aoi, cfg, schema,
     csv = thresholds_csv,
     rules_yaml = cfg$rules_yaml)
 
+  # Optional known-habitat overlay: when the manifest declares
+  # `user_habitat_classification`, the table was loaded into
+  # `<schema>.user_habitat_classification` by .lnk_pipeline_prep_load_aux.
+  # fresh::frs_habitat_classify(known = ...) then calls
+  # frs_habitat_overlay() as a post-step, ORing in TRUE flags from the
+  # bcfishpass-style {habitat}_{species_lower} columns.
+  known_arg <- if (!is.null(cfg$overrides$user_habitat_classification)) {
+    paste0(schema, ".user_habitat_classification")
+  } else {
+    NULL
+  }
+
   fresh::frs_habitat_classify(conn,
     table = "fresh.streams",
     to = "fresh.streams_habitat",
@@ -90,6 +102,7 @@ lnk_pipeline_classify <- function(conn, aoi, cfg, schema,
     gate = TRUE,
     label_block = "blocked",
     barrier_overrides = paste0(schema, ".barrier_overrides"),
+    known = known_arg,
     verbose = FALSE)
 
   invisible(conn)
