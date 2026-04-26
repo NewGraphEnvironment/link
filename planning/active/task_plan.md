@@ -42,12 +42,12 @@ edges are `1050/1150` (stream-thru-wetland), which DO match the categorical
 - [x] Phase 4 — Verify YAML diff: confirm no `1050/1150/2100` in spawn or rear-stream rules; confirm `1050/1150` still present in dedicated wetland-rear rule
 - [x] Phase 5 — Existing test for explicit mode covers this (`test-lnk_rules_build.R:270`); add a default-config-specific test that asserts default rules.yaml has no `1050/1150/2100` in spawn predicates
 - [x] Phase 6 — Full devtools::test() suite
-- [ ] Phase 7 — Sync m1; ADMS preflight (BT, CH, CO, SK should all decrease — by how much depends on `1050` prevalence)
-- [ ] Phase 8 — Full 5-WSG rerun via rtj harness if ADMS preflight is sane
-- [ ] Phase 9 — Refresh research doc per-WSG tables; expected pattern: spawning down across species in WSGs with significant `1050` km
-- [ ] Phase 10 — Update research doc §3 ("Intermittent streams included") and §2 (wetland rearing) to clarify the spawn-vs-rear distinction and document that `1050/1150` no longer enter the spawn flag, but DO still enter the wetland_rearing flag via the dedicated rule
-- [ ] Phase 11 — `/code-check` on staged diff
-- [ ] Phase 12 — NEWS entry + version bump 0.9.0 → 0.10.0
+- [x] Phase 7 — ADMS preflight on M1 (local Docker fwapg, fresh 0.21.0): BT spawn 397→368 (-7.3%), CH 296→279 (-5.6%), CO 340→318 (-6.3%), SK 98→94 (-4.5%), RB 331→311 (-6%); rearing essentially unchanged for `rear_wetland=yes` species
+- [x] Phase 8 — Full 5-WSG rerun (18m 25s, 11 targets): spawning Δ = 0 km vs bcfishpass bundle on every parity species/WSG (default and bcfishpass bundles now emit structurally identical spawn predicates)
+- [x] Phase 9 — Refreshed all per-WSG tables in research doc with v0.10.0 numbers
+- [x] Phase 10 — Updated §2 (wetland rearing) and §3 (intermittent streams) prose for spawn-vs-rear distinction + caveat on §6 BABL SK source-bucket analysis (pre-v0.10.0 numbers)
+- [x] Phase 11 — `/code-check` on staged diff: Clean round 1, skipped remaining
+- [x] Phase 12 — NEWS 0.10.0 + DESCRIPTION 0.9.0→0.10.0
 - [ ] Phase 13 — PR
 
 ## Critical files

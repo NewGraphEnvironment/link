@@ -30,3 +30,21 @@
 - Full suite: 360 PASS, 0 FAIL, 1 pre-existing WARN
   (`test-lnk_pipeline_break.R:214` mocked-bindings — unrelated)
 - Next: Phase 7 — ADMS preflight on m1.
+
+### Phase 7-12 done in one session
+- ADMS preflight (M1, fresh 0.21.0, local Docker fwapg + tunnel
+  bcfishpass): BT 397→368 km, CH 296→279, CO 340→318, SK 98→94,
+  RB 331→311. All decreases 4-7%. Rearing flag preserved for
+  `rear_wetland=yes` species. Sane.
+- Full 5-WSG run: 18m 25s, 11 targets completed (2 skipped from preflight).
+  Rollup digest TBD. Key finding: spawning Δ between bundles is now 0 km
+  on every parity species × WSG. Rearing departures persist (intermittent
+  streams + wetland_rearing additions).
+- Refreshed all per-WSG tables in `research/default_vs_bcfishpass.md`
+  (§Results — ADMS, BULK, BABL, ELKR, DEAD).
+- Rewrote observation §2 to reflect spawning alignment (rearing-only
+  inflation now); §3 updated with v0.10.0 narrative; §6 caveat note
+  added (BABL SK source-bucket analysis is pre-v0.10.0).
+- `/code-check` clean round 1.
+- NEWS 0.10.0 + DESCRIPTION bump committed in branch state.
+- Next: stage + commit research/NEWS/DESCRIPTION; open PR.

@@ -70,7 +70,18 @@ per population to be refined with regional literature.]
 
 ### 2. Wetland rearing added
 
-`rear_wetland = yes` in default dimensions CSV for BT, CO, CT, DV, GR, RB, SK, ST, WCT. Bcfishpass doesn't flag wetland-rearing at the segment-classification level. Wetland reaches (edge_type 1050/1150) support juvenile CO specifically (side channels, beaver complexes) and sub-adult rearing for resident species. [TODO: citations.]
+`rear_wetland = yes` in default dimensions CSV for BT, CO, CT, DV, GR, RB, SK, ST, WCT. Bcfishpass doesn't flag wetland-rearing at the segment-classification level. Stream-through-wetland reaches (edge_type 1050/1150) support juvenile CO specifically (side channels, beaver complexes) and sub-adult rearing for resident species. [TODO: citations.]
+
+**Spawn-vs-rear distinction (v0.10.0):** as of v0.10.0 the default config
+emits explicit FWA edge_type codes `[1000, 1100, 2000, 2300]` for spawn
+and rear-stream rules — `1050/1150` (stream-thru-wetland) and `2100`
+(rare double-line canal) are dropped. Wetland-flow segments DO still
+flag `wetland_rearing` because the dedicated wetland-rearing rule
+emits `edge_types_explicit: [1050, 1150]` separately, with
+`thresholds: false`. Net: a `1050` segment for a `rear_wetland = yes`
+species is `wetland_rearing = TRUE` AND `rearing = TRUE` (via the
+`rearing = rear_stream OR wetland_rearing OR rear_lake` aggregate),
+but `spawning = FALSE`.
 
 ### 3. Intermittent streams included
 
@@ -78,6 +89,13 @@ bcfishpass excludes intermittent streams; default includes them. Two reasons:
 
 1. FWA's intermittent flag is unreliable — 20+ years of field work consistently finds productive fish-bearing reaches classified as intermittent in FWA.
 2. Documented seasonal use by CO juveniles and other species.
+
+The "intermittent" flag is independent from the `edge_type` integers — a
+segment's edge_type tells you whether it flows as a stream, a canal, a
+lake centerline, etc. The intermittent attribute is a separate field on
+`fwa_stream_networks_sp.fwa_watershed_code`. So the §2 v0.10.0 change
+(dropping `1050/1150` from spawn) is orthogonal to "default includes
+intermittent streams".
 
 [TODO: edge-type mechanism in the rules YAML + citations.]
 
@@ -102,23 +120,23 @@ Numbers populate from `tar_read(rollup)` after the first clean `tar_destroy + ta
 
 | Species | Habitat | bcfishpass | default | Δ | Unit |
 |---|---|---:|---:|---:|---|
-| BT | spawning | 368.13 | 397.17 | +29.04 | km |
-| BT | rearing | 666.96 | 786.43 | +119.47 | km |
+| BT | spawning | 368.13 | 368.13 | +0 | km |
+| BT | rearing | 666.96 | 785.64 | +118.68 | km |
 | BT | lake_rearing | 0 | 14259.74 | +14259.7 | ha |
 | BT | wetland_rearing | 0 | 926.32 | +926.32 | ha |
-| CH | spawning | 279.01 | 295.5 | +16.49 | km |
+| CH | spawning | 279.01 | 279.01 | +0 | km |
 | CH | rearing | 315.42 | 590.26 | +274.84 | km |
 | CH | lake_rearing | 0 | 13936.94 | +13936.9 | ha |
 | CH | wetland_rearing | 0 | 812 | +812 | ha |
-| CO | spawning | 317.73 | 339.54 | +21.81 | km |
-| CO | rearing | 363 | 608.76 | +245.76 | km |
+| CO | spawning | 317.73 | 317.73 | +0 | km |
+| CO | rearing | 363 | 608.21 | +245.21 | km |
 | CO | lake_rearing | 0 | 14105.71 | +14105.7 | ha |
 | CO | wetland_rearing | 817.06 | 816.71 | -0.35 | ha |
-| RB | spawning | NA | 331.35 | NA | km |
+| RB | spawning | NA | 310.61 | NA | km |
 | RB | rearing | NA | 690.41 | NA | km |
 | RB | lake_rearing | NA | 14128.54 | NA | ha |
 | RB | wetland_rearing | NA | 834.85 | NA | ha |
-| SK | spawning | 93.97 | 98.42 | +4.45 | km |
+| SK | spawning | 93.97 | 93.97 | +0 | km |
 | SK | rearing | 229.85 | 229.85 | +0 | km |
 | SK | lake_rearing | 13820.05 | 13820.05 | +0 | ha |
 | SK | wetland_rearing | 0 | 0 | +0 | ha |
@@ -127,32 +145,32 @@ Numbers populate from `tar_read(rollup)` after the first clean `tar_destroy + ta
 
 | Species | Habitat | bcfishpass | default | Δ | Unit |
 |---|---|---:|---:|---:|---|
-| BT | spawning | 1904.46 | 2069.15 | +164.69 | km |
-| BT | rearing | 2994.99 | 3215.08 | +220.09 | km |
+| BT | spawning | 1904.46 | 1904.46 | +0 | km |
+| BT | rearing | 2994.99 | 3202.79 | +207.8 | km |
 | BT | lake_rearing | 0 | 4448.63 | +4448.63 | ha |
 | BT | wetland_rearing | 0 | 5901.49 | +5901.49 | ha |
-| CH | spawning | 1277.27 | 1357.33 | +80.06 | km |
-| CH | rearing | 1785.52 | 2174.69 | +389.17 | km |
+| CH | spawning | 1277.27 | 1277.27 | +0 | km |
+| CH | rearing | 1785.52 | 2165.26 | +379.74 | km |
 | CH | lake_rearing | 0 | 2871.94 | +2871.94 | ha |
 | CH | wetland_rearing | 0 | 5546.32 | +5546.32 | ha |
-| CO | spawning | 1840.24 | 1983.98 | +143.74 | km |
-| CO | rearing | 2335.5 | 2506.71 | +171.21 | km |
+| CO | spawning | 1840.24 | 1840.24 | +0 | km |
+| CO | rearing | 2335.5 | 2501.41 | +165.91 | km |
 | CO | lake_rearing | 0 | 4213.19 | +4213.19 | ha |
 | CO | wetland_rearing | 5571.02 | 5567 | -4.02 | ha |
-| PK | spawning | 1895.42 | 2040.45 | +145.03 | km |
+| PK | spawning | 1895.42 | 1895.42 | +0 | km |
 | PK | rearing | 0 | 0 | +0 | km |
 | PK | lake_rearing | 0 | 0 | +0 | ha |
 | PK | wetland_rearing | 0 | 0 | +0 | ha |
-| RB | spawning | NA | 2007.67 | NA | km |
+| RB | spawning | NA | 1850.07 | NA | km |
 | RB | rearing | NA | 3259.23 | NA | km |
 | RB | lake_rearing | NA | 4119.16 | NA | ha |
 | RB | wetland_rearing | NA | 5748.55 | NA | ha |
-| SK | spawning | 25.02 | 42.93 | +17.91 | km |
+| SK | spawning | 25.02 | 25.02 | +0 | km |
 | SK | rearing | 64.56 | 64.56 | +0 | km |
 | SK | lake_rearing | 2098.76 | 2098.76 | +0 | ha |
 | SK | wetland_rearing | 0 | 0 | +0 | ha |
-| ST | spawning | 1308.73 | 1386 | +77.27 | km |
-| ST | rearing | 2244.75 | 2717.62 | +472.87 | km |
+| ST | spawning | 1308.73 | 1308.73 | +0 | km |
+| ST | rearing | 2244.75 | 2708.2 | +463.45 | km |
 | ST | lake_rearing | 0 | 3548.97 | +3548.97 | ha |
 | ST | wetland_rearing | 0 | 5814.03 | +5814.03 | ha |
 
@@ -160,28 +178,28 @@ Numbers populate from `tar_read(rollup)` after the first clean `tar_destroy + ta
 
 | Species | Habitat | bcfishpass | default | Δ | Unit |
 |---|---|---:|---:|---:|---|
-| BT | spawning | 926.76 | 1154.55 | +227.79 | km |
-| BT | rearing | 2306.49 | 3016.58 | +710.09 | km |
+| BT | spawning | 926.76 | 926.76 | +0 | km |
+| BT | rearing | 2306.49 | 3006.76 | +700.27 | km |
 | BT | lake_rearing | 0 | 56308.82 | +56308.8 | ha |
 | BT | wetland_rearing | 0 | 6119.08 | +6119.08 | ha |
-| CH | spawning | 362.35 | 497.92 | +135.57 | km |
-| CH | rearing | 748.39 | 2134.5 | +1386.11 | km |
+| CH | spawning | 362.35 | 362.35 | +0 | km |
+| CH | rearing | 748.39 | 2124.79 | +1376.4 | km |
 | CH | lake_rearing | 0 | 52765.57 | +52765.6 | ha |
 | CH | wetland_rearing | 0 | 5741.8 | +5741.8 | ha |
-| CO | spawning | 843.83 | 1057.7 | +213.87 | km |
-| CO | rearing | 1439.76 | 2528.11 | +1088.35 | km |
+| CO | spawning | 843.83 | 843.83 | +0 | km |
+| CO | rearing | 1439.76 | 2515.49 | +1075.73 | km |
 | CO | lake_rearing | 0 | 54507.85 | +54507.8 | ha |
 | CO | wetland_rearing | 5796.4 | 5786.74 | -9.66 | ha |
-| RB | spawning | NA | 856.84 | NA | km |
-| RB | rearing | NA | 2470.23 | NA | km |
+| RB | spawning | NA | 696.15 | NA | km |
+| RB | rearing | NA | 2471.88 | NA | km |
 | RB | lake_rearing | NA | 50256.96 | NA | ha |
 | RB | wetland_rearing | NA | 4408.58 | NA | ha |
-| SK | spawning | 85.24 | 178.33 | +93.09 | km |
+| SK | spawning | 85.24 | 85.24 | +0 | km |
 | SK | rearing | 941.63 | 941.63 | +0 | km |
 | SK | lake_rearing | 52449.98 | 52449.98 | +0 | ha |
 | SK | wetland_rearing | 0 | 0 | +0 | ha |
-| ST | spawning | 362.97 | 498.67 | +135.7 | km |
-| ST | rearing | 930.03 | 2477.83 | +1547.8 | km |
+| ST | spawning | 362.97 | 362.97 | +0 | km |
+| ST | rearing | 930.03 | 2468.12 | +1538.09 | km |
 | ST | lake_rearing | 0 | 53454.87 | +53454.9 | ha |
 | ST | wetland_rearing | 0 | 5906.92 | +5906.92 | ha |
 
@@ -189,16 +207,16 @@ Numbers populate from `tar_read(rollup)` after the first clean `tar_destroy + ta
 
 | Species | Habitat | bcfishpass | default | Δ | Unit |
 |---|---|---:|---:|---:|---|
-| BT | spawning | 1538.96 | 1590.16 | +51.2 | km |
-| BT | rearing | 2079.01 | 2106.79 | +27.78 | km |
+| BT | spawning | 1538.96 | 1538.96 | +0 | km |
+| BT | rearing | 2079.01 | 2104.87 | +25.86 | km |
 | BT | lake_rearing | 0 | 537.41 | +537.41 | ha |
 | BT | wetland_rearing | 0 | 1013.55 | +1013.55 | ha |
-| RB | spawning | NA | 1407.91 | NA | km |
+| RB | spawning | NA | 1359.63 | NA | km |
 | RB | rearing | NA | 1842.73 | NA | km |
 | RB | lake_rearing | NA | 493.99 | NA | ha |
 | RB | wetland_rearing | NA | 948.75 | NA | ha |
-| WCT | spawning | 1597.05 | 1648.76 | +51.71 | km |
-| WCT | rearing | 1918.51 | 2036.33 | +117.82 | km |
+| WCT | spawning | 1597.05 | 1597.05 | +0 | km |
+| WCT | rearing | 1918.51 | 2032.37 | +113.86 | km |
 | WCT | lake_rearing | 0 | 561.98 | +561.98 | ha |
 | WCT | wetland_rearing | 0 | 1030.3 | +1030.3 | ha |
 
@@ -206,23 +224,23 @@ Numbers populate from `tar_read(rollup)` after the first clean `tar_destroy + ta
 
 | Species | Habitat | bcfishpass | default | Δ | Unit |
 |---|---|---:|---:|---:|---|
-| BT | spawning | 163.7 | 194.28 | +30.58 | km |
-| BT | rearing | 291.07 | 314.24 | +23.17 | km |
+| BT | spawning | 163.7 | 163.7 | +0 | km |
+| BT | rearing | 291.07 | 314.15 | +23.08 | km |
 | BT | lake_rearing | 0 | 536.97 | +536.97 | ha |
 | BT | wetland_rearing | 0 | 507.46 | +507.46 | ha |
-| CH | spawning | 110.55 | 122.5 | +11.95 | km |
+| CH | spawning | 110.55 | 110.55 | +0 | km |
 | CH | rearing | 129.69 | 160.6 | +30.91 | km |
 | CH | lake_rearing | 0 | 108.34 | +108.34 | ha |
 | CH | wetland_rearing | 0 | 274.2 | +274.2 | ha |
-| CO | spawning | 130.75 | 146.64 | +15.89 | km |
+| CO | spawning | 130.75 | 130.75 | +0 | km |
 | CO | rearing | 171.98 | 180.32 | +8.34 | km |
 | CO | lake_rearing | 0 | 176.92 | +176.92 | ha |
 | CO | wetland_rearing | 284.51 | 282.6 | -1.91 | ha |
-| PK | spawning | 131.92 | 146.94 | +15.02 | km |
+| PK | spawning | 131.92 | 131.92 | +0 | km |
 | PK | rearing | 0 | 0 | +0 | km |
 | PK | lake_rearing | 0 | 0 | +0 | ha |
 | PK | wetland_rearing | 0 | 0 | +0 | ha |
-| RB | spawning | NA | 157.12 | NA | km |
+| RB | spawning | NA | 137.96 | NA | km |
 | RB | rearing | NA | 291.45 | NA | km |
 | RB | lake_rearing | NA | 258.99 | NA | ha |
 | RB | wetland_rearing | NA | 322.92 | NA | ha |
@@ -269,20 +287,26 @@ Post-fix differentiation:
   (CO at 0.5 ha, others at 1 ha). ADMS example: CO 816.71 ha
   (bit-identical to bcfishpass-bundle 817.06 ha, same rule).
 
-### 2. Linear km inflates under `default` across all species and WSGs
+### 2. Linear km inflates under `default` across all species and WSGs (rearing only — spawning aligned in v0.10.0)
 
-The `rearing` and `spawning` km columns are consistently higher under
-`default`. This is the intended behaviour of the four departures documented
-above: intermittent streams included, `river_skip_cw_min = yes`, and
-spawn gradient floor raised to 0.0025 (which removes some reaches but the
-intermittent/river-polygon additions dominate). Magnitudes vary by WSG — in
-BABL, CH rearing inflates by 1356 km (+185%), reflecting a large base
-network with lots of intermittent contribution; in DEAD it's 27 km (+21%).
+The `rearing` km column is consistently higher under `default` due to
+the deliberate departures (intermittent streams included, `river_skip_cw_min = yes`,
+expanded `rear_wetland`). Magnitudes vary by WSG — in BABL, CH rearing
+inflates by 1376 km (+184%), reflecting a large base network with lots
+of intermittent contribution; in DEAD it's 31 km (+24%).
+
+**Spawning is now identical between bundles** as of v0.10.0. With both
+bundles emitting `edge_types_explicit: [1000, 1100, 2000, 2300]` and
+sharing the same `spawn_lake = no` / `spawn_connected` / connectivity
+gating per species, the spawn predicates are structurally equivalent.
+Spawning Δ = 0 km for every species × WSG combination on the parity
+bundles (BT/CH/CO/PK/SK/ST/WCT). RB is newly modelled under default —
+no bcfishpass reference to compare against, so the column is NA.
 
 ### 3. SK spawning — connectivity now honoured
 
 Two bugs in the initial `default` bundle caused SK spawning to inflate
-10–20× over bcfishpass. Both fixed in this PR:
+10–20× over bcfishpass. Both fixed in earlier PRs:
 
 1. **Missing `spawn_connected` YAML block.** `configs/default/dimensions.csv`
    was missing five columns (`rear_stream_order_bypass`,
@@ -298,10 +322,12 @@ Two bugs in the initial `default` bundle caused SK spawning to inflate
    cap. Set to `no` to match bcfishpass convention — stream-spawning
    sockeye only.
 
-Post-fix SK spawning deltas shrink to the order of the network-level
-departures: ADMS +4 km, BULK +18 km, BABL +93 km, DEAD +0 km. Residual
-lift in BABL traces to intermittent streams and river-polygon reaches
-newly counted under `default`, not to missing connectivity logic.
+Post-fix (v0.10.0) SK spawning deltas are 0 km on every parity WSG
+because the bundles emit identical spawn predicates. Pre-v0.10.0 the
+residual deltas (ADMS +4 km, BULK +18 km, BABL +93 km, DEAD +0 km)
+traced to default's looser categorical edge-types (`[stream, canal]`
+including 1050/1150 stream-thru-wetland) — eliminated when default
+switched to `edge_types = "explicit"`.
 
 Beach-spawning sockeye populations (Babine, Shuswap) exist as a distinct
 phenotype but aren't modelled in the SK category — they would need their
@@ -347,7 +373,16 @@ NOT propagate its `spawning` / `rearing` flags into
 
 Splitting `streams_habitat_linear.spawning_sk` into model (1, 2) vs known
 (3) and spatially intersecting with link's default output gives four
-semantic buckets (BABL SK, shipping state — no gradient floor):
+semantic buckets (BABL SK, shipping state — no gradient floor).
+
+> **Note on numbers below**: this analysis was run before v0.10.0 (when default
+> still used categorical `[stream, canal]` edge types, including stream-
+> thru-wetland 1050/1150). With v0.10.0's tightening, `default_over` is
+> expected to shrink because we no longer credit 1050/1150 as default
+> spawning. `default_catches_known` and `csv_only` should be roughly
+> stable. A re-run of the BABL SK source-bucket analysis is filed as a
+> follow-up.
+
 
 | bucket | km | segments | interpretation |
 |---|---:|---:|---|
@@ -457,8 +492,8 @@ floor's job is to trade `default_over` reduction against
 
 ## Versions
 
-- fresh: 0.16.0
-- link: 0.7.0 → target 0.8.0 at PR merge
+- fresh: 0.21.0
+- link: 0.9.0 → target 0.10.0 at PR merge
 - bcfishpass: ea3c5d8
 - fwapg: Docker (FWA 20240830)
 
