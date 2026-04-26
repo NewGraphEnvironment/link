@@ -1,56 +1,44 @@
-# Task Plan: configs/default/ + compound rollup (#51)
+# Task: Call frs_habitat_overlay from lnk_pipeline_classify (link#55)
+
+fresh v0.19.0 ships `frs_habitat_overlay()` (renamed from `frs_habitat_known`) plus a `known = NULL` parameter on `frs_habitat_classify()` that calls overlay automatically. link's pipeline already loads `user_habitat_classification.csv` into `<schema>.user_habitat_classification` via `lnk_pipeline_prepare()` — we just need to pass that table to fresh.
 
 ## Goal
 
-Ship a runnable NGE default habitat-classification config bundle, distinct from the bcfishpass reference. Prove the config-swap architecture works end-to-end, surface per-WSG comparison numbers between default + bcfishpass, produce research visuals and rollup tables. Prerequisite fresh PR (#164) shipped as fresh 0.16.0 — `wetland_rearing` boolean column now in `streams_habitat` output.
+Wire `<schema>.user_habitat_classification` into the `frs_habitat_classify()` call inside `lnk_pipeline_classify()` via the new `known` arg. Result: link's pipeline output now matches bcfishpass's `streams_habitat_linear.spawning_sk > 0` (model + known) instead of just `habitat_linear_sk.spawning` (model-only).
 
-Resolved design decisions (from comms thread discussion):
-- Option B rollup: separate columns for `rearing_km`, `lake_rearing_ha`, `wetland_rearing_ha`. No multiplier.
-- New `wetland_rearing` column on `streams_habitat` (shipped in fresh 0.16.0).
-- Species lake-rearing list is already in `inst/extdata/parameters_habitat_dimensions.csv`.
-- Polygon-area aggregation uses existing `frs_aggregate()` — no fresh extension needed.
+Closes the ~60 km BABL SK csv_only gap documented in `research/default_vs_bcfishpass.md` §6/§7.
 
-## Phase 1: config bundle scaffolding
+## Phases
 
-- [ ] `DESCRIPTION` — pin `fresh (>= 0.16.0)` under Imports.
-- [ ] `inst/extdata/configs/default/config.yaml` — manifest mirroring the bcfishpass variant's shape, pointing at the default-specific CSVs and shared override mirror.
-- [ ] `inst/extdata/configs/default/dimensions.csv` — copy of existing `inst/extdata/parameters_habitat_dimensions.csv` (already encodes the newgraph deltas: rear_lake=yes, rear_wetland=yes, river_skip_cw_min=yes for BT, etc.).
-- [ ] `inst/extdata/configs/default/parameters_fresh.csv` — start as copy of bcfishpass variant; annotate deltas if any emerge during testing.
-- [ ] `inst/extdata/configs/default/rules.yaml` — generate via `lnk_rules_build()` from the default dimensions.csv.
-- [ ] `inst/extdata/configs/default/overrides/` — either symlink or copy the bcfishpass mirror (shared physical barriers / modelled fixes / PSCIS overrides are jurisdiction data, not method choice).
-- [ ] Verify: `lnk_config("default")` loads cleanly; fields match bcfishpass variant shape.
+- [ ] Phase 1 — PWF baseline
+- [ ] Phase 2 — Bump link DESCRIPTION → fresh (>= 0.19.0)
+- [ ] Phase 3 — Install fresh 0.19.0 on m4 + m1
+- [ ] Phase 4 — Wire `known = paste0(schema, ".user_habitat_classification")` into the `frs_habitat_classify()` call inside `R/lnk_pipeline_classify.R`. Gate on table existence (matches the pattern already in `lnk_pipeline_prepare`).
+- [ ] Phase 5 — Pre-flight ADMS (single WSG, both bundles). Verify Shass Creek now shows as SK spawning under bcfishpass bundle. Frame against bcfp departures.
+- [ ] Phase 6 — Full 5-WSG rerun via rtj harness. Verify BABL SK spawning under bcfishpass bundle rises from ~57.6 km toward ~132 km.
+- [ ] Phase 7 — Refresh research doc per-WSG tables + observation §6
+- [ ] Phase 8 — NEWS entry + version bump → 0.9.0
+- [ ] Phase 9 — Mocked unit tests on the wiring
+- [ ] Phase 10 — `/code-check` on the diff
+- [ ] Phase 11 — Full link suite via rtj harness
+- [ ] Phase 12 — PR, fix link#55
 
-## Phase 2: compound rollup
+## Critical files
 
-- [ ] `lnk_aggregate()` extended to produce the three-column rollup — `rearing_km` (stream segments), `lake_rearing_ha`, `wetland_rearing_ha`. Polygon-area calls use `frs_aggregate()` with `fwa_lakes_poly` + `fwa_wetlands_poly` as feature tables.
-- [ ] Decide whether to exclude lake/wetland centerline segments from `rearing_km` (to avoid double-counting once area is in its own column). Research doc captures the decision and rationale.
-- [ ] Update `compare_bcfishpass_wsg()` to return the compound rollup — bcfishpass comparison is per-column, not single `diff_pct`.
+- `R/lnk_pipeline_classify.R`
+- `DESCRIPTION`
+- `NEWS.md`
+- `research/default_vs_bcfishpass.md`
 
-## Phase 3: targets pipeline
+## Acceptance
 
-- [ ] `data-raw/_targets.R` — extend with `comparison_default_<wsg>` targets mirroring the bcfishpass ones, using `lnk_config("default")`.
-- [ ] Rollup target gains bundle identity — either long format (`config`, `wsg`, `species`, `habitat_type`, ...) or per-config rollup with a suffix.
-- [ ] Bit-identical reproducibility across consecutive runs per config.
+- ADMS preflight: bcfishpass-bundle SK spawning rises from 88.83 → ~132 km. Shass Creek shows non-zero spawning km.
+- 5-WSG rerun completes clean (~20 min).
+- Research doc tables refreshed.
+- `default_catches_known` bucket non-zero in §6.
 
-## Phase 4: research doc + artifacts
+## Risks
 
-- [ ] `research/default_vs_bcfishpass.md` — per-WSG per-species per-column comparison, biological rationale paragraph per departure.
-- [ ] Visuals for the research doc: per-WSG pivot of rearing_km / lake_rearing_ha / wetland_rearing_ha, highlighted where default > bcfishpass vs default < bcfishpass.
-- [ ] Vignette updates — `reproducing-bcfishpass.Rmd` might need a sibling or a note pointing at default config once shipped.
-
-## Phase 5: ship
-
-- [ ] NEWS entry for 0.8.0.
-- [ ] DESCRIPTION bump 0.7.0 → 0.8.0.
-- [ ] `/code-check` on staged diff.
-- [ ] PR with SRED tag.
-
-## Dispatch strategy
-
-Run heavy work on M1 (targets, local_install, vignette regen) so M4 stays free for interactive work. Always sync M1 (`git pull` + `pak::local_install()`) before dispatching.
-
-## Versions at start
-
-- fresh: 0.16.0 (just shipped)
-- link: 0.7.0 → 0.8.0 target
-- bcfishpass: ea3c5d8 (reference config)
+- **Reproducibility regression** vs v3-v6 expected (the whole point — outputs change).
+- **Performance:** ~40 UPDATEs per WSG (9-11 species × 4 habitat types). Should be fast.
+- **Schema column mismatch:** `user_habitat_classification` loaded by link must have `(blue_line_key, downstream_route_measure)` for the default `by` join key.
