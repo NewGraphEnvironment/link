@@ -48,6 +48,12 @@ compare_bcfishpass_wsg <- function(wsg, config) {
     password = tunnel_pass)
   on.exit(try(DBI::dbDisconnect(conn_ref), silent = TRUE), add = TRUE)
 
+  # Stamp the run before doing any work — captures config provenance,
+  # software versions, and DB snapshot counts so two runs on the same
+  # state can be diffed for what changed.
+  stamp <- link::lnk_stamp(config, conn = conn, aoi = wsg)
+  message(format(stamp, "markdown"))
+
   # Defensive reset of shared-schema outputs from any prior partial run.
   DBI::dbExecute(conn,
     "DROP TABLE IF EXISTS fresh.streams, fresh.streams_habitat,

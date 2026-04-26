@@ -26,16 +26,16 @@ Two layers, one PR:
 
 ## Phases
 
-- [ ] Phase 1 — PWF baseline (task_plan, findings, progress)
-- [ ] Phase 2 — `provenance:` block in `inst/extdata/configs/bcfishpass/config.yaml` and `inst/extdata/configs/default/config.yaml`. Backfill bcfishpass with `ea3c5d8` SHA (synced 2026-04-13). Each tracked file gets `source` / `upstream_sha` / `synced` / `checksum` keys; rules.yaml additionally records `generated_from` / `generated_by` / `generator_sha`
-- [ ] Phase 3 — Extend `lnk_config()`: parse `provenance:` block, expose as `cfg$provenance`. Update `print.lnk_config()` to show count of provenanced files. Add doc.
-- [ ] Phase 4 — `lnk_config_verify(cfg, strict = FALSE)` — recompute sha256 of every provenanced file, return tibble of `(file, expected, observed, drift)`. `strict = TRUE` errors on drift; default warns.
-- [ ] Phase 5 — `lnk_stamp(cfg, conn = NULL, aoi = NULL, ...)` — new function. Returns `lnk_stamp` S3 list with: provenance (merge of cfg$provenance + computed checksums), software versions (`packageVersion("link")`, `packageVersion("fresh")`, `Sys.getenv("LINK_GIT_SHA")` fallback to `system("git rev-parse HEAD")`), DB snapshots (when `conn` non-NULL: `bcfishobs.observations` row count, `whse_basemapping.fwa_stream_networks_sp` row count, configurable via param), AOI + start_time + end_time (caller fills end_time post-run), and a list slot for caller-provided result tibble. Plus `as.markdown.lnk_stamp()` rendering for #24.
-- [ ] Phase 6 — Tests: `test-lnk_config.R` provenance parsing + verify, `test-lnk_stamp.R` shape + markdown render. No DB needed; mock conn for snapshot calls.
-- [ ] Phase 7 — Wire `lnk_stamp()` into the head of `data-raw/compare_bcfishpass_wsg.R` log output. Each verification log starts with a stamp dump.
-- [ ] Phase 8 — `/code-check` on staged diff
-- [ ] Phase 9 — Full devtools::test() suite
-- [ ] Phase 10 — NEWS entry + version bump 0.10.0 → 0.11.0
+- [x] Phase 1 — PWF baseline (task_plan, findings, progress)
+- [x] Phase 2 — `provenance:` block in both bundle configs (12 files each, sha256 checksums)
+- [x] Phase 3 — `lnk_config()` parses provenance, exposes `cfg$provenance`, print shows count
+- [x] Phase 4 — `lnk_config_verify(cfg, strict)` returns drift tibble (5 columns), warns/errors on drift
+- [x] Phase 5 — `lnk_stamp(cfg, conn, aoi, db_snapshot)` + `lnk_stamp_finish()` + `format.lnk_stamp()` markdown/text + `print.lnk_stamp()`. 3-tier git-sha fallback (env → .git → NA). DB snapshot scoped to bcfishobs + fwa_streams row counts.
+- [x] Phase 6 — 93 new tests covering provenance parsing, drift detection, stamp shape, markdown render, finalization. Bundled configs assert drift = 0 in shipped state.
+- [x] Phase 7 — Wired `lnk_stamp()` into `compare_bcfishpass_wsg.R` head — markdown dump precedes pipeline phases
+- [x] Phase 8 — `/code-check` round 1: 1 fragile finding (`.lnk_read_git_head` could crash on empty `.git/HEAD`); fixed
+- [x] Phase 9 — Full suite: 453 PASS, 0 FAIL, 1 pre-existing WARN
+- [x] Phase 10 — NEWS 0.11.0 entry + DESCRIPTION 0.10.0 → 0.11.0
 - [ ] Phase 11 — PR
 
 ## Critical files
