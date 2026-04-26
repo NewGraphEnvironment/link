@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -36,6 +36,14 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.0" id="link-090">link 0.9.0<a class="anchor" aria-label="anchor" href="#link-090"></a></h2>
+<p><code><a href="../reference/lnk_pipeline_classify.html">lnk_pipeline_classify()</a></code> now overlays known habitat from <code>user_habitat_classification.csv</code> onto <code>fresh.streams_habitat</code> after rule-based classification. Closes <a href="https://github.com/NewGraphEnvironment/link/issues/55" class="external-link">#55</a>.</p>
+<ul><li>After <code>frs_habitat_classify()</code> finishes, calls <code>frs_habitat_overlay()</code> (fresh ≥ 0.21.0) when the manifest declares <code>habitat_classification</code>. Loaded long-format table is overlaid via a 3-way bridge join through <code>fresh.streams</code> (range containment on <code>[drm, urm]</code>).</li>
+<li>Closes the gap surfaced in research doc §5/§7: bcfishpass’s published <code>streams_habitat_linear.spawning_sk &gt; 0</code> blends model + observation-curated knowns; link’s pipeline previously only emitted the model side.</li>
+<li>5-WSG rerun (digest <code>0f00c713</code>) shows BABL SK spawning under bcfishpass bundle rises from 57.6 → 85.2 km (+27.6 km from overlay). ADMS SK +5.14 km, BULK SK +0.8 km. Default bundle similar magnitudes.</li>
+<li>Requires fresh ≥ 0.21.0 (overlay rename + bridge support; see fresh#175).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.8.0" id="link-080">link 0.8.0<a class="anchor" aria-label="anchor" href="#link-080"></a></h2>
 <p>Default NewGraph habitat-classification config bundle ships alongside the bcfishpass reproduction bundle (<a href="https://github.com/NewGraphEnvironment/link/issues/51" class="external-link">#51</a>).</p>
