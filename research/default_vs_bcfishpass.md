@@ -97,6 +97,7 @@ Numbers populate from `tar_read(rollup)` after the first clean `tar_destroy + ta
 
 
 
+
 ### ADMS
 
 | Species | Habitat | bcfishpass | default | Δ | Unit |
@@ -105,11 +106,11 @@ Numbers populate from `tar_read(rollup)` after the first clean `tar_destroy + ta
 | BT | rearing | 666.96 | 786.43 | +119.47 | km |
 | BT | lake_rearing | 0 | 14259.74 | +14259.7 | ha |
 | BT | wetland_rearing | 0 | 926.32 | +926.32 | ha |
-| CH | spawning | 278.92 | 295.4 | +16.48 | km |
+| CH | spawning | 279.01 | 295.5 | +16.49 | km |
 | CH | rearing | 315.42 | 590.26 | +274.84 | km |
 | CH | lake_rearing | 0 | 13936.94 | +13936.9 | ha |
 | CH | wetland_rearing | 0 | 812 | +812 | ha |
-| CO | spawning | 316.08 | 338.67 | +22.59 | km |
+| CO | spawning | 317.73 | 339.54 | +21.81 | km |
 | CO | rearing | 363 | 608.76 | +245.76 | km |
 | CO | lake_rearing | 0 | 14105.71 | +14105.7 | ha |
 | CO | wetland_rearing | 817.06 | 816.71 | -0.35 | ha |
@@ -117,7 +118,7 @@ Numbers populate from `tar_read(rollup)` after the first clean `tar_destroy + ta
 | RB | rearing | NA | 690.41 | NA | km |
 | RB | lake_rearing | NA | 14128.54 | NA | ha |
 | RB | wetland_rearing | NA | 834.85 | NA | ha |
-| SK | spawning | 88.83 | 93.28 | +4.45 | km |
+| SK | spawning | 93.97 | 98.42 | +4.45 | km |
 | SK | rearing | 229.85 | 229.85 | +0 | km |
 | SK | lake_rearing | 13820.05 | 13820.05 | +0 | ha |
 | SK | wetland_rearing | 0 | 0 | +0 | ha |
@@ -130,15 +131,15 @@ Numbers populate from `tar_read(rollup)` after the first clean `tar_destroy + ta
 | BT | rearing | 2994.99 | 3215.08 | +220.09 | km |
 | BT | lake_rearing | 0 | 4448.63 | +4448.63 | ha |
 | BT | wetland_rearing | 0 | 5901.49 | +5901.49 | ha |
-| CH | spawning | 1277.05 | 1357.11 | +80.06 | km |
+| CH | spawning | 1277.27 | 1357.33 | +80.06 | km |
 | CH | rearing | 1785.52 | 2174.69 | +389.17 | km |
 | CH | lake_rearing | 0 | 2871.94 | +2871.94 | ha |
 | CH | wetland_rearing | 0 | 5546.32 | +5546.32 | ha |
-| CO | spawning | 1822.93 | 1976.53 | +153.6 | km |
-| CO | rearing | 2335.29 | 2506.71 | +171.42 | km |
+| CO | spawning | 1840.24 | 1983.98 | +143.74 | km |
+| CO | rearing | 2335.5 | 2506.71 | +171.21 | km |
 | CO | lake_rearing | 0 | 4213.19 | +4213.19 | ha |
 | CO | wetland_rearing | 5571.02 | 5567 | -4.02 | ha |
-| PK | spawning | 1893.25 | 2040.41 | +147.16 | km |
+| PK | spawning | 1895.42 | 2040.45 | +145.03 | km |
 | PK | rearing | 0 | 0 | +0 | km |
 | PK | lake_rearing | 0 | 0 | +0 | ha |
 | PK | wetland_rearing | 0 | 0 | +0 | ha |
@@ -146,11 +147,11 @@ Numbers populate from `tar_read(rollup)` after the first clean `tar_destroy + ta
 | RB | rearing | NA | 3259.23 | NA | km |
 | RB | lake_rearing | NA | 4119.16 | NA | ha |
 | RB | wetland_rearing | NA | 5748.55 | NA | ha |
-| SK | spawning | 24.22 | 42.12 | +17.9 | km |
+| SK | spawning | 25.02 | 42.93 | +17.91 | km |
 | SK | rearing | 64.56 | 64.56 | +0 | km |
 | SK | lake_rearing | 2098.76 | 2098.76 | +0 | ha |
 | SK | wetland_rearing | 0 | 0 | +0 | ha |
-| ST | spawning | 1304.35 | 1385 | +80.65 | km |
+| ST | spawning | 1308.73 | 1386 | +77.27 | km |
 | ST | rearing | 2244.75 | 2717.62 | +472.87 | km |
 | ST | lake_rearing | 0 | 3548.97 | +3548.97 | ha |
 | ST | wetland_rearing | 0 | 5814.03 | +5814.03 | ha |
@@ -163,24 +164,24 @@ Numbers populate from `tar_read(rollup)` after the first clean `tar_destroy + ta
 | BT | rearing | 2306.49 | 3016.58 | +710.09 | km |
 | BT | lake_rearing | 0 | 56308.82 | +56308.8 | ha |
 | BT | wetland_rearing | 0 | 6119.08 | +6119.08 | ha |
-| CH | spawning | 362.12 | 497.69 | +135.57 | km |
-| CH | rearing | 732.52 | 2133.35 | +1400.83 | km |
+| CH | spawning | 362.35 | 497.92 | +135.57 | km |
+| CH | rearing | 748.39 | 2134.5 | +1386.11 | km |
 | CH | lake_rearing | 0 | 52765.57 | +52765.6 | ha |
 | CH | wetland_rearing | 0 | 5741.8 | +5741.8 | ha |
-| CO | spawning | 843.52 | 1057.39 | +213.87 | km |
-| CO | rearing | 1436.72 | 2528.07 | +1091.35 | km |
+| CO | spawning | 843.83 | 1057.7 | +213.87 | km |
+| CO | rearing | 1439.76 | 2528.11 | +1088.35 | km |
 | CO | lake_rearing | 0 | 54507.85 | +54507.8 | ha |
 | CO | wetland_rearing | 5796.4 | 5786.74 | -9.66 | ha |
 | RB | spawning | NA | 856.84 | NA | km |
 | RB | rearing | NA | 2470.23 | NA | km |
 | RB | lake_rearing | NA | 50256.96 | NA | ha |
 | RB | wetland_rearing | NA | 4408.58 | NA | ha |
-| SK | spawning | 57.63 | 150.93 | +93.3 | km |
+| SK | spawning | 85.24 | 178.33 | +93.09 | km |
 | SK | rearing | 941.63 | 941.63 | +0 | km |
 | SK | lake_rearing | 52449.98 | 52449.98 | +0 | ha |
 | SK | wetland_rearing | 0 | 0 | +0 | ha |
-| ST | spawning | 362.59 | 498.29 | +135.7 | km |
-| ST | rearing | 912 | 2475.98 | +1563.98 | km |
+| ST | spawning | 362.97 | 498.67 | +135.7 | km |
+| ST | rearing | 930.03 | 2477.83 | +1547.8 | km |
 | ST | lake_rearing | 0 | 53454.87 | +53454.9 | ha |
 | ST | wetland_rearing | 0 | 5906.92 | +5906.92 | ha |
 
@@ -196,8 +197,8 @@ Numbers populate from `tar_read(rollup)` after the first clean `tar_destroy + ta
 | RB | rearing | NA | 1842.73 | NA | km |
 | RB | lake_rearing | NA | 493.99 | NA | ha |
 | RB | wetland_rearing | NA | 948.75 | NA | ha |
-| WCT | spawning | 1578.84 | 1630.78 | +51.94 | km |
-| WCT | rearing | 1895.09 | 2014.28 | +119.19 | km |
+| WCT | spawning | 1597.05 | 1648.76 | +51.71 | km |
+| WCT | rearing | 1918.51 | 2036.33 | +117.82 | km |
 | WCT | lake_rearing | 0 | 561.98 | +561.98 | ha |
 | WCT | wetland_rearing | 0 | 1030.3 | +1030.3 | ha |
 
@@ -209,11 +210,11 @@ Numbers populate from `tar_read(rollup)` after the first clean `tar_destroy + ta
 | BT | rearing | 291.07 | 314.24 | +23.17 | km |
 | BT | lake_rearing | 0 | 536.97 | +536.97 | ha |
 | BT | wetland_rearing | 0 | 507.46 | +507.46 | ha |
-| CH | spawning | 110.55 | 122.49 | +11.94 | km |
+| CH | spawning | 110.55 | 122.5 | +11.95 | km |
 | CH | rearing | 129.69 | 160.6 | +30.91 | km |
 | CH | lake_rearing | 0 | 108.34 | +108.34 | ha |
 | CH | wetland_rearing | 0 | 274.2 | +274.2 | ha |
-| CO | spawning | 130.74 | 146.63 | +15.89 | km |
+| CO | spawning | 130.75 | 146.64 | +15.89 | km |
 | CO | rearing | 171.98 | 180.32 | +8.34 | km |
 | CO | lake_rearing | 0 | 176.92 | +176.92 | ha |
 | CO | wetland_rearing | 284.51 | 282.6 | -1.91 | ha |
@@ -229,7 +230,7 @@ Numbers populate from `tar_read(rollup)` after the first clean `tar_destroy + ta
 | SK | rearing | 0 | 0 | +0 | km |
 | SK | lake_rearing | 0 | 0 | +0 | ha |
 | SK | wetland_rearing | 0 | 0 | +0 | ha |
-| ST | spawning | 115.5 | 128.87 | +13.37 | km |
+| ST | spawning | 115.51 | 128.88 | +13.37 | km |
 | ST | rearing | 151.83 | 190.64 | +38.81 | km |
 | ST | lake_rearing | 0 | 206.71 | +206.71 | ha |
 | ST | wetland_rearing | 0 | 314.76 | +314.76 | ha |

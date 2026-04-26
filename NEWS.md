@@ -1,3 +1,12 @@
+# link 0.9.0
+
+`lnk_pipeline_classify()` now overlays known habitat from `user_habitat_classification.csv` onto `fresh.streams_habitat` after rule-based classification. Closes [#55](https://github.com/NewGraphEnvironment/link/issues/55).
+
+- After `frs_habitat_classify()` finishes, calls `frs_habitat_overlay()` (fresh ≥ 0.21.0) when the manifest declares `habitat_classification`. Loaded long-format table is overlaid via a 3-way bridge join through `fresh.streams` (range containment on `[drm, urm]`).
+- Closes the gap surfaced in research doc §5/§7: bcfishpass's published `streams_habitat_linear.spawning_sk > 0` blends model + observation-curated knowns; link's pipeline previously only emitted the model side.
+- 5-WSG rerun (digest `0f00c713`) shows BABL SK spawning under bcfishpass bundle rises from 57.6 → 85.2 km (+27.6 km from overlay). ADMS SK +5.14 km, BULK SK +0.8 km. Default bundle similar magnitudes.
+- Requires fresh ≥ 0.21.0 (overlay rename + bridge support; see fresh#175).
+
 # link 0.8.0
 
 Default NewGraph habitat-classification config bundle ships alongside the bcfishpass reproduction bundle ([#51](https://github.com/NewGraphEnvironment/link/issues/51)).
