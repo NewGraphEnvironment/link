@@ -1,56 +1,70 @@
 # Generated from parameters_habitat_dimensions.csv
-# Generated: 2026-04-24
-# Edge types: categories
+# Generated: 2026-04-26
+# Edge types: explicit
 #
 # DO NOT EDIT — edit the CSV and re-run lnk_rules_build()
 
 BT:
   spawn:
-  - edge_types:
-    - stream
-    - canal
+  - edge_types_explicit:
+    - 1000
+    - 1100
+    - 2000
+    - 2300
   - waterbody_type: R
     channel_width:
     - 0.0
     - 9999.0
   rear:
-  - edge_types:
-    - stream
-    - canal
+  - edge_types_explicit:
+    - 1000
+    - 1100
+    - 2000
+    - 2300
   - waterbody_type: R
     channel_width:
     - 0.0
     - 9999.0
-  - edge_types: wetland
+  - edge_types_explicit:
+    - 1050
+    - 1150
     thresholds: false
   - waterbody_type: W
   - waterbody_type: L
 CH:
   spawn:
-  - edge_types:
-    - stream
-    - canal
+  - edge_types_explicit:
+    - 1000
+    - 1100
+    - 2000
+    - 2300
   - waterbody_type: R
     channel_width:
     - 0.0
     - 9999.0
   rear:
-  - edge_types:
-    - stream
-    - canal
+  - edge_types_explicit:
+    - 1000
+    - 1100
+    - 2000
+    - 2300
   - waterbody_type: R
     channel_width:
     - 0.0
     - 9999.0
-  - edge_types: wetland
+  - edge_types_explicit:
+    - 1050
+    - 1150
     thresholds: false
   - waterbody_type: W
   - waterbody_type: L
 CM:
   spawn:
-  - edge_types:
-    - stream
-    - canal
+  - edge_types_explicit:
+    - 1000
+    - 1100
+    - 2000
+    - 2300
   - waterbody_type: R
     channel_width:
     - 0.0
@@ -58,30 +72,38 @@ CM:
   rear: []
 CO:
   spawn:
-  - edge_types:
-    - stream
-    - canal
+  - edge_types_explicit:
+    - 1000
+    - 1100
+    - 2000
+    - 2300
   - waterbody_type: R
     channel_width:
     - 0.0
     - 9999.0
   rear:
-  - edge_types:
-    - stream
-    - canal
+  - edge_types_explicit:
+    - 1000
+    - 1100
+    - 2000
+    - 2300
   - waterbody_type: R
     channel_width:
     - 0.0
     - 9999.0
-  - edge_types: wetland
+  - edge_types_explicit:
+    - 1050
+    - 1150
     thresholds: false
   - waterbody_type: W
   - waterbody_type: L
 PK:
   spawn:
-  - edge_types:
-    - stream
-    - canal
+  - edge_types_explicit:
+    - 1000
+    - 1100
+    - 2000
+    - 2300
   - waterbody_type: R
     channel_width:
     - 0.0
@@ -89,9 +111,11 @@ PK:
   rear: []
 SK:
   spawn:
-  - edge_types:
-    - stream
-    - canal
+  - edge_types_explicit:
+    - 1000
+    - 1100
+    - 2000
+    - 2300
     requires_connected: rearing
     connected_distance_max: 3000.0
   - waterbody_type: R
@@ -108,51 +132,65 @@ SK:
     lake_ha_min: 200
 ST:
   spawn:
-  - edge_types:
-    - stream
-    - canal
+  - edge_types_explicit:
+    - 1000
+    - 1100
+    - 2000
+    - 2300
   - waterbody_type: R
     channel_width:
     - 0.0
     - 9999.0
   rear:
-  - edge_types:
-    - stream
-    - canal
+  - edge_types_explicit:
+    - 1000
+    - 1100
+    - 2000
+    - 2300
   - waterbody_type: R
     channel_width:
     - 0.0
     - 9999.0
-  - edge_types: wetland
+  - edge_types_explicit:
+    - 1050
+    - 1150
     thresholds: false
   - waterbody_type: W
   - waterbody_type: L
 WCT:
   spawn:
-  - edge_types:
-    - stream
-    - canal
+  - edge_types_explicit:
+    - 1000
+    - 1100
+    - 2000
+    - 2300
   - waterbody_type: R
     channel_width:
     - 0.0
     - 9999.0
   rear:
-  - edge_types:
-    - stream
-    - canal
+  - edge_types_explicit:
+    - 1000
+    - 1100
+    - 2000
+    - 2300
   - waterbody_type: R
     channel_width:
     - 0.0
     - 9999.0
-  - edge_types: wetland
+  - edge_types_explicit:
+    - 1050
+    - 1150
     thresholds: false
   - waterbody_type: W
   - waterbody_type: L
 KO:
   spawn:
-  - edge_types:
-    - stream
-    - canal
+  - edge_types_explicit:
+    - 1000
+    - 1100
+    - 2000
+    - 2300
     requires_connected: rearing
     connected_distance_max: 3000.0
   - waterbody_type: R
@@ -169,38 +207,48 @@ KO:
     lake_ha_min: 200
 RB:
   spawn:
-  - edge_types:
-    - stream
-    - canal
+  - edge_types_explicit:
+    - 1000
+    - 1100
+    - 2000
+    - 2300
   - waterbody_type: R
     channel_width:
     - 0.0
     - 9999.0
   rear:
-  - edge_types:
-    - stream
-    - canal
+  - edge_types_explicit:
+    - 1000
+    - 1100
+    - 2000
+    - 2300
   - waterbody_type: R
     channel_width:
     - 0.0
     - 9999.0
-  - edge_types: wetland
+  - edge_types_explicit:
+    - 1050
+    - 1150
     thresholds: false
   - waterbody_type: W
   - waterbody_type: L
 GR:
   spawn:
-  - edge_types:
-    - stream
-    - canal
+  - edge_types_explicit:
+    - 1000
+    - 1100
+    - 2000
+    - 2300
   - waterbody_type: R
     channel_width:
     - 0.0
     - 9999.0
   rear:
-  - edge_types:
-    - stream
-    - canal
+  - edge_types_explicit:
+    - 1000
+    - 1100
+    - 2000
+    - 2300
   - waterbody_type: R
     channel_width:
     - 0.0

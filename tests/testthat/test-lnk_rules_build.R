@@ -520,3 +520,59 @@ test_that("rear_stream_order_bypass=yes attaches channel_width_min_bypass to str
   expect_equal(stream_rule$channel_width_min_bypass$stream_order, 1)
   expect_equal(stream_rule$channel_width_min_bypass$stream_order_parent_min, 5)
 })
+
+# -- shipped default config: regression guard against re-introducing
+#    1050 / 1150 / 2100 into spawn or rear-stream predicates ---------------
+
+test_that("default config rules.yaml has no 1050/1150/2100 in spawn or rear-stream predicates", {
+  yaml_path <- system.file("extdata", "configs", "default", "rules.yaml",
+                           package = "link")
+  skip_if(yaml_path == "", "default rules.yaml not installed")
+  rules <- yaml::read_yaml(yaml_path)
+  forbidden <- c(1050L, 1150L, 2100L)
+  for (sp in names(rules)) {
+    spawn <- rules[[sp]]$spawn %||% list()
+    for (r in spawn) {
+      codes <- r[["edge_types_explicit"]]
+      if (!is.null(codes)) {
+        expect_true(length(intersect(as.integer(codes), forbidden)) == 0L,
+          info = sprintf("%s spawn rule contains forbidden code", sp))
+      }
+    }
+    # Rear-stream rule is the predicate-bearing rule. The dedicated
+    # wetland_rearing rule has `thresholds: false` and IS allowed to
+    # carry 1050/1150 (its sole purpose). Check only rules that act as
+    # predicates (no `thresholds: false`).
+    rear <- rules[[sp]]$rear %||% list()
+    for (r in rear) {
+      codes <- r[["edge_types_explicit"]]
+      thr <- r[["thresholds"]]
+      is_wetland_rule <- !is.null(thr) && isFALSE(thr)
+      if (!is.null(codes) && !is_wetland_rule) {
+        expect_true(length(intersect(as.integer(codes), forbidden)) == 0L,
+          info = sprintf("%s rear stream-predicate rule contains forbidden code", sp))
+      }
+    }
+  }
+})
+
+test_that("default config rules.yaml retains 1050/1150 in dedicated wetland-rear rule", {
+  yaml_path <- system.file("extdata", "configs", "default", "rules.yaml",
+                           package = "link")
+  skip_if(yaml_path == "", "default rules.yaml not installed")
+  rules <- yaml::read_yaml(yaml_path)
+  # BT has rear_wetland = yes — wetland-rear rule must be present
+  rear <- rules$BT$rear
+  wetland_rule <- NULL
+  for (r in rear) {
+    if (!is.null(r[["edge_types_explicit"]]) &&
+        !is.null(r[["thresholds"]]) && isFALSE(r[["thresholds"]])) {
+      wetland_rule <- r
+      break
+    }
+  }
+  expect_false(is.null(wetland_rule),
+               info = "BT rear should include dedicated wetland rule")
+  expect_setequal(as.integer(wetland_rule[["edge_types_explicit"]]),
+                  c(1050L, 1150L))
+})

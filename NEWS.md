@@ -1,3 +1,13 @@
+# link 0.10.0
+
+Default config bundle now uses explicit FWA `edge_type` codes for spawn and rear-stream predicates, matching bcfishpass's 20-year-validated convention.
+
+- `data-raw/build_rules.R`: switched both default rule-builder calls (`inst/extdata/parameters_habitat_rules.yaml` and `inst/extdata/configs/default/rules.yaml`) from `edge_types = "categories"` to `edge_types = "explicit"`. Predicates now emit `edge_types_explicit: [1000, 1100, 2000, 2300]` in place of `edge_types: [stream, canal]` (which expanded to `1000/1050/1100/1150` + `2000/2100/2300`).
+- Drops `1050/1150` (stream-thru-wetland) and `2100` (rare double-line canal) from spawn AND rear-stream rules. The dedicated wetland-rearing rule (`edge_types_explicit: [1050, 1150]` with `thresholds: false`) is unchanged — `wetland_rearing` flag still captures stream-thru-wetland segments for species with `rear_wetland = yes`. Net `rearing` flag (= `rear_stream OR wetland_rearing OR rear_lake`) is preserved for those species; species with `rear_wetland = no` (GR, KO) lose `1050/1150` from both spawn AND rearing.
+- ADMS preflight (M1, fresh 0.21.0): default-bundle spawning km drops 4-7% across all spawning species (BT 397→368, CH 296→279, CO 340→318, SK 98→94, RB 331→311). Rearing km essentially unchanged for `rear_wetland = yes` species. Full per-WSG numbers in `research/default_vs_bcfishpass.md`.
+- Default and bcfishpass bundles now emit structurally aligned spawn predicates — confirms bcfishpass's edge-type convention is what link ships by default.
+- `tests/testthat/test-lnk_rules_build.R`: regression tests added — default rules.yaml has no `1050/1150/2100` in spawn or rear-stream predicates; the dedicated wetland-rear rule still carries `[1050, 1150]`.
+
 # link 0.9.0
 
 `lnk_pipeline_classify()` now overlays known habitat from `user_habitat_classification.csv` onto `fresh.streams_habitat` after rule-based classification. Closes [#55](https://github.com/NewGraphEnvironment/link/issues/55).
