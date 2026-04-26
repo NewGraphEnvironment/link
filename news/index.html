@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.10.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -36,6 +36,17 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.10.0" id="link-0100">link 0.10.0<a class="anchor" aria-label="anchor" href="#link-0100"></a></h2>
+<p>Default config bundle now uses explicit FWA <code>edge_type</code> codes for spawn and rear-stream predicates, matching bcfishpass’s 20-year-validated convention.</p>
+<ul><li>
+<code>data-raw/build_rules.R</code>: switched both default rule-builder calls (<code>inst/extdata/parameters_habitat_rules.yaml</code> and <code>inst/extdata/configs/default/rules.yaml</code>) from <code>edge_types = "categories"</code> to <code>edge_types = "explicit"</code>. Predicates now emit <code>edge_types_explicit: [1000, 1100, 2000, 2300]</code> in place of <code>edge_types: [stream, canal]</code> (which expanded to <code>1000/1050/1100/1150</code> + <code>2000/2100/2300</code>).</li>
+<li>Drops <code>1050/1150</code> (stream-thru-wetland) and <code>2100</code> (rare double-line canal) from spawn AND rear-stream rules. The dedicated wetland-rearing rule (<code>edge_types_explicit: [1050, 1150]</code> with <code>thresholds: false</code>) is unchanged — <code>wetland_rearing</code> flag still captures stream-thru-wetland segments for species with <code>rear_wetland = yes</code>. Net <code>rearing</code> flag (= <code>rear_stream OR wetland_rearing OR rear_lake</code>) is preserved for those species; species with <code>rear_wetland = no</code> (GR, KO) lose <code>1050/1150</code> from both spawn AND rearing.</li>
+<li>ADMS preflight (M1, fresh 0.21.0): default-bundle spawning km drops 4-7% across all spawning species (BT 397→368, CH 296→279, CO 340→318, SK 98→94, RB 331→311). Rearing km essentially unchanged for <code>rear_wetland = yes</code> species. Full per-WSG numbers in <code>research/default_vs_bcfishpass.md</code>.</li>
+<li>Default and bcfishpass bundles now emit structurally aligned spawn predicates — confirms bcfishpass’s edge-type convention is what link ships by default.</li>
+<li>
+<code>tests/testthat/test-lnk_rules_build.R</code>: regression tests added — default rules.yaml has no <code>1050/1150/2100</code> in spawn or rear-stream predicates; the dedicated wetland-rear rule still carries <code>[1050, 1150]</code>.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.0" id="link-090">link 0.9.0<a class="anchor" aria-label="anchor" href="#link-090"></a></h2>
 <p><code><a href="../reference/lnk_pipeline_classify.html">lnk_pipeline_classify()</a></code> now overlays known habitat from <code>user_habitat_classification.csv</code> onto <code>fresh.streams_habitat</code> after rule-based classification. Closes <a href="https://github.com/NewGraphEnvironment/link/issues/55" class="external-link">#55</a>.</p>
