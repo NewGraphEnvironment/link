@@ -1,3 +1,12 @@
+# link 0.11.2
+
+bcfishpass vignette pulled out of pkgdown until tighter.
+
+- `vignettes/reproducing-bcfishpass.Rmd` → `dev/habitat-bcfishpass.Rmd.draft`. Same pattern as scoring-crossings — out of build path, preserved for resumption when content lands clean.
+- Content updates applied before move: title now "Modelling spawning and rearing habitat using bcfishpass defaults"; new scope paragraph describing what bcfishpass covers beyond linear classification; entrypoint replaced with explicit `lnk_pipeline_*` calls (was `tar_make()`); map section clarifies linear classification covers spawning/rearing/lake_rearing/wetland_rearing per species.
+- `README.md`: "Full pipeline (reproducing bcfishpass)" → "Full pipeline (linear habitat classification)"; broken pkgdown vignette link removed.
+- Open follow-ups: rollup-query retarget to `streams_habitat_linear` for apples-to-apples post-overlay comparison; range-containment relaxation in `fresh::frs_habitat_overlay`.
+
 # link 0.11.1
 
 Vignette cleanup.
