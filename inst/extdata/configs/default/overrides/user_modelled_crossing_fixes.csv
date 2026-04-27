@@ -20282,8 +20282,8 @@ modelled_crossing_id,structure,watershed_group_code,reviewer_name,review_date,so
 1804442,NONE,BULK,KK,2022-03-24,Bing/Google/ESRI imagery,no visible road
 1804441,NONE,BULK,KK,2022-03-24,Bing/Google/ESRI imagery,no visible road
 1803940,OBS,BULK,KK,2022-03-24,Bing/Google/ESRI imagery,to check - probable bridge
-1803835,OBS,BULK,KK,2022-03-24,Bing/Google/ESRI imagery,to check - probable bridge
-1803834,OBS,BULK,KK,2022-03-24,Bing/Google/ESRI imagery,to check - possible bridge
+1803835,NONE,BULK,MC,2026-04-23,Tracking table QA/QC,
+1803834,NONE,BULK,MC,2026-04-23,Tracking table QA/QC,
 1803795,OBS,BULK,KK,2022-03-24,Bing/Google/ESRI imagery,to check - probable bridge
 24744153,NONE,KISP,KK,2022-03-24,Bing/Google/ESRI imagery,no visible road
 24744152,NONE,KISP,KK,2022-03-24,Bing/Google/ESRI imagery,no visible road
@@ -20335,7 +20335,7 @@ modelled_crossing_id,structure,watershed_group_code,reviewer_name,review_date,so
 14000258,NONE,MORR,KK,2022-03-28,Bing/Google/ESRI imagery,no visible road
 14001634,NONE,MORR,KK,2022-03-28,Bing/Google/ESRI imagery,no visible road
 14000257,NONE,MORR,KK,2022-03-28,Bing/Google/ESRI imagery,no visible road
-1802044,NONE,BULK,KK,2022-03-28,Bing/Google/ESRI imagery,
+1802044,PASSABLE,BULK,MC,2026-04-23,Tracking table QA/QC,
 14001738,NONE,MORR,KK,2022-03-28,Bing/Google/ESRI imagery,no visible road
 14000178,NONE,MORR,KK,2022-03-28,Bing/Google/ESRI imagery,no visible road
 14001681,NONE,MORR,KK,2022-03-28,Bing/Google/ESRI imagery,no visible road
@@ -21600,7 +21600,7 @@ modelled_crossing_id,structure,watershed_group_code,reviewer_name,review_date,so
 24742716,OBS,STUR,LB,2026-03-30,imagery review,CWF WCRP QA/QC
 20001201,OBS,TAKL,LB,2026-03-30,imagery review,CWF WCRP QA/QC
 19401338,NONE,STUR,LB,2026-03-31,Barrier assessment,"deactivated road, no structure"
-19400335,NONE,STUR,LB,2026-03-31,Barrier assessment,Likely was a culvert when road active. No structure - flooded out on both sides and large wetland. 
+19400335,NONE,STUR,LB,2026-03-31,Barrier assessment,Likely was a culvert when road active. No structure - flooded out on both sides and large wetland.
 4603285,NONE,ELKR,MC,2026-04-01,imagery review,CWF WCRP QA/QC
 4602197,NONE,ELKR,MC,2026-04-01,imagery review,CWF WCRP QA/QC
 4600378,FORD,ELKR,MC,2026-04-01,imagery review,CWF WCRP QA/QC
@@ -21651,3 +21651,24 @@ modelled_crossing_id,structure,watershed_group_code,reviewer_name,review_date,so
 3504354,NONE,COTR,MC,2026-04-08,imagery review,Washed out/removed bridge
 3502457,NONE,COTR,MC,2026-04-08,imagery review,
 24000091,NONE,USKE,LB,2026-04-08,Satellite imagery,this feature does not exist.
+1000387,NONE,BELA,LB,2026-04-16,Biologist Review,Verified to not exist in field
+1000140,NONE,BELA,LB,2026-04-16,Biologist Review,Verified to not exist in field
+1000216,NONE,BELA,LB,2026-04-16,Biologist Review,Duplicate of 203333/1001000187 (confirmed in field to be a single structure)
+1000024,NONE,BELA,LB,2026-04-16,Biologist Review,No stream or structure found in field
+1000027,NONE,BELA,LB,2026-04-16,Biologist Review,No stream or structure found in field
+1000302,NONE,BELA,LB,2026-04-16,Biologist Review,No stream or structure found in field
+1000175,NONE,BELA,LB,2026-04-16,Biologist Review,No stream or structure found in field
+24742407,NONE,BELA,LB,2026-04-16,Biologist Review,Stream has rerouted past all historic structures and is passable
+1000479,NONE,BELA,LB,2026-04-16,Biologist Review,Stream has rerouted past all historic structures and is passable
+1000475,NONE,BELA,LB,2026-04-16,Biologist Review,Stream has rerouted past all historic structures and is passable
+400065,NONE,ATNA,LB,2026-04-16,Biologist Review,Road and structure visibly do not exist on Bing maps
+4606284,FORD,ELKR,MC,2026-04-16,Imagery Review,Passable Ford
+4601915,NONE,ELKR,MC,2026-04-16,Assessment comment,
+11304291,NONE,LNIC,LB,2026-04-21,PSCIS assessment,Burned out bridge collapsed but not causing fish passage issues
+11303791,NONE,LNIC,LB,2026-04-21,PSCIS assessment,Crossing does not exist
+11304154,NONE,LNIC,LB,2026-04-21,PSCIS assessment,"No structure, washed out in 2021 flood"
+24734942,NONE,ELKR,MC,2026-04-22,imagery review,
+1802859,NONE,BULK,MC,2026-04-23,Tracking table QA/QC,
+1804239,NONE,BULK,MC,2026-04-23,Tracking table QA/QC,
+1806259,NONE,BULK,MC,2026-04-23,Tracking table QA/QC,
+1801813,NONE,BULK,MC,2026-04-23,Tracking table QA/QC,
