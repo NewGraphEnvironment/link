@@ -8,6 +8,13 @@ reference:
     desc: Load a pipeline config bundle (rules, parameters, overrides)
     contents:
       - lnk_config
+      - lnk_config_verify
+
+  - title: Run stamps
+    desc: Capture provenance + software versions + DB snapshots for run-to-run drift attribution
+    contents:
+      - lnk_stamp
+      - lnk_stamp_finish
 
   - title: Pipeline phases
     desc: Composable per-AOI habitat classification building blocks. Call in order for a full run.
