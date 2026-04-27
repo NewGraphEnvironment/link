@@ -67,6 +67,11 @@ would report both.
         ▼
     classify (spawning ? rearing ? per species per segment)
         │
+        │   user_habitat_classification overlay flips reviewer-confirmed
+        │   reaches to TRUE regardless of rule predicate
+        ▼
+    classify + overlay
+        │
         │   frs_cluster for rearing-spawning connectivity;
         │   connected-waterbody rules for SK
         ▼
@@ -167,6 +172,29 @@ combine:
 - Gradient bounds for spawning and rearing (via `parameters_fresh.csv`
   and fresh’s thresholds CSV).
 
+### Known-habitat overlay
+
+After the rule-based pass,
+[`lnk_pipeline_classify()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_classify.md)
+calls
+[`fresh::frs_habitat_overlay()`](https://newgraphenvironment.github.io/fresh/reference/frs_habitat_overlay.html)
+to layer reviewer-curated habitat on top of the model output. The
+overlay reads the same
+[`user_habitat_classification.csv`](https://github.com/smnorris/bcfishpass/blob/ea3c5d8/data/user_habitat_classification.csv)
+that bcfishpass uses to populate its `streams_habitat_known` table: each
+row is a
+`(blue_line_key, drm, urm, species_code, habitat_type, habitat_ind)`
+tuple flipping segments inside the range to TRUE, regardless of the rule
+predicate. fresh ≥ 0.21.0 does the join via a 3-way bridge through
+`fresh.streams` for range containment.
+
+The result mirrors bcfishpass’s published
+`streams_habitat_linear.spawning_<sp>` integer column — model
+classifications (1 / 2) plus known-habitat overrides (3) — rather than
+the model-only `habitat_linear_<sp>` boolean. The overlay is opt-in per
+config: only bundles whose manifest declares `habitat_classification:`
+invoke it. The bundled `"bcfishpass"` and `"default"` configs both do.
+
 ### Stream-order bypass — not applied in this config
 
 bcfishpass applies a rearing-side bypass on the channel-width minimum
@@ -231,17 +259,28 @@ rollup <- readRDS(system.file("extdata", "vignette-data", "rollup.rds",
 knitr::kable(.pivot(rollup, "spawning"),
   digits = 1,
   caption = "Spawning parity (% diff vs bcfishpass)")
+#> Warning in reshapeWide(data, idvar = idvar, timevar = timevar, varying =
+#> varying, : multiple rows match for wsg=ADMS: first taken
+#> Warning in reshapeWide(data, idvar = idvar, timevar = timevar, varying =
+#> varying, : multiple rows match for wsg=BULK: first taken
+#> Warning in reshapeWide(data, idvar = idvar, timevar = timevar, varying =
+#> varying, : multiple rows match for wsg=BABL: first taken
+#> Warning in reshapeWide(data, idvar = idvar, timevar = timevar, varying =
+#> varying, : multiple rows match for wsg=ELKR: first taken
+#> Warning in reshapeWide(data, idvar = idvar, timevar = timevar, varying =
+#> varying, : multiple rows match for wsg=DEAD: first taken
 ```
 
 | species | ADMS | BULK | BABL | ELKR | DEAD |
 |:--------|-----:|-----:|-----:|-----:|-----:|
 | BT      |  1.8 |  3.1 |  4.1 |  2.8 |  2.1 |
-| CH      |  0.5 |  1.9 |  3.8 |    — |  1.4 |
-| CO      |  1.6 |  3.1 |  4.8 |    — |  1.3 |
-| PK      |    — |  2.3 |    — |    — |  1.1 |
-| SK      |  3.7 | -0.7 | -2.8 |    — |    — |
-| ST      |    — |  1.9 |  3.8 |    — |  1.3 |
-| WCT     |    — |    — |    — |  2.6 |    — |
+| CH      |  0.5 |  1.9 |  3.9 |    — |  1.4 |
+| CO      |  2.2 |  4.1 |  4.8 |    — |  1.3 |
+| PK      |    — |  2.5 |    — |    — |  1.1 |
+| RB      |    — |    — |    — |    — |    — |
+| SK      |  9.6 |  2.6 | 43.8 |    — |    — |
+| ST      |    — |  2.3 |  3.9 |    — |  1.3 |
+| WCT     |    — |    — |    — |  3.8 |    — |
 
 Spawning parity (% diff vs bcfishpass)
 
@@ -250,24 +289,42 @@ Spawning parity (% diff vs bcfishpass)
 knitr::kable(.pivot(rollup, "rearing"),
   digits = 1,
   caption = "Rearing parity (% diff vs bcfishpass)")
+#> Warning in reshapeWide(data, idvar = idvar, timevar = timevar, varying =
+#> varying, : multiple rows match for wsg=ADMS: first taken
+#> Warning in reshapeWide(data, idvar = idvar, timevar = timevar, varying =
+#> varying, : multiple rows match for wsg=BULK: first taken
+#> Warning in reshapeWide(data, idvar = idvar, timevar = timevar, varying =
+#> varying, : multiple rows match for wsg=BABL: first taken
+#> Warning in reshapeWide(data, idvar = idvar, timevar = timevar, varying =
+#> varying, : multiple rows match for wsg=ELKR: first taken
+#> Warning in reshapeWide(data, idvar = idvar, timevar = timevar, varying =
+#> varying, : multiple rows match for wsg=DEAD: first taken
 ```
 
 | species | ADMS | BULK | BABL | ELKR | DEAD |
 |:--------|-----:|-----:|-----:|-----:|-----:|
 | BT      | -1.1 | -2.2 | -1.9 | -1.2 | -0.2 |
-| CH      |  2.3 |  2.6 |  2.1 |    — |  1.4 |
-| CO      | -0.1 |  0.4 |  0.8 |    — | -0.3 |
+| CH      |  2.3 |  2.6 |  4.3 |    — |  1.4 |
+| CO      |  3.4 |  5.1 | 11.6 |    — |  4.1 |
 | PK      |    — |    — |    — |    — |    — |
+| RB      |    — |    — |    — |    — |    — |
 | SK      |  0.0 |  0.0 |  0.0 |    — |    — |
-| ST      |    — | -0.1 | -1.3 |    — |  0.0 |
-| WCT     |    — |    — |    — |  0.3 |    — |
+| ST      |    — | -0.1 |  0.6 |    — |  0.0 |
+| WCT     |    — |    — |    — |  1.5 |    — |
 
 Rearing parity (% diff vs bcfishpass)
 
 Observed differences come from the stream-order bypass omission —
 visible as the uniformly negative BT rearing column — and from
 segmentation-boundary rounding where per-segment attributes fall near
-rule thresholds. Numeric detail is in
+rule thresholds. The rollup’s bcfishpass side reads the model-only
+`habitat_linear_<sp>` boolean tables; link’s side includes the
+known-habitat overlay (the [overlay step](#known-habitat-overlay)), so
+WSGs where reviewer-curated `user_habitat_classification.csv`
+contributes meaningful km will show link slightly larger — most visibly
+BABL SK spawning. The map section below uses the published
+`streams_habitat_linear` integer table (model + known) on the bcfishpass
+side so the layers shown are apples-to-apples. Numeric detail is in
 [`research/bcfishpass_comparison.md`](https://github.com/NewGraphEnvironment/link/blob/main/research/bcfishpass_comparison.md).
 
 ## Comparison map — Neexdzii Kwa (Upper Bulkley)

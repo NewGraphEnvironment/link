@@ -1,5 +1,61 @@
 # Changelog
 
+## link 0.11.1
+
+Vignette cleanup.
+
+- `vignettes/scoring-crossings.Rmd` moved to
+  `dev/scoring-crossings.Rmd.draft` — out of build path until the
+  scoring methodology lands.
+- `vignettes/reproducing-bcfishpass.Rmd` updated for the v0.9.0 overlay:
+  added overlay step to the pipeline DAG, new “Known-habitat overlay”
+  subsection, clarified rollup vs. map comparison.
+- `data-raw/vignette_reproducing_bcfishpass.R`: bcfishpass-side map
+  query reads `streams_habitat_linear` (model + known) instead of
+  `habitat_linear_ch` (model-only) for apples-to-apples comparison with
+  link’s post-overlay output.
+- Regenerated bundled snapshots
+  (`inst/extdata/vignette-data/{rollup,sub_ch,sub_ch_bcfp}.rds`) from
+  v0.10.0 + overlay state.
+
+## link 0.11.0
+
+Config-bundle provenance + run stamps — closes the drift attribution
+loop. Pipeline outputs that shift between runs on the same DB state can
+now be traced back to which input changed. Closes
+[\#40](https://github.com/NewGraphEnvironment/link/issues/40);
+supersedes the narrower scope of
+[\#24](https://github.com/NewGraphEnvironment/link/issues/24).
+
+- `inst/extdata/configs/{bcfishpass,default}/config.yaml` carry
+  `provenance:` blocks with sha256 checksums for every tracked file.
+  Externally sourced files (bcfishpass overrides) record `source` URL +
+  `upstream_sha` (`ea3c5d8`, synced 2026-04-13) + `path` within source
+  repo. Generated files (`rules.yaml`) record `generated_from` +
+  `generated_by` + `generator_sha`. Hand-authored files record link’s
+  git sha at edit time.
+- [`lnk_config()`](https://newgraphenvironment.github.io/link/reference/lnk_config.md)
+  exposes parsed provenance as `cfg$provenance` (named list, one entry
+  per tracked file). `print(cfg)` shows the count of tracked files.
+- New `lnk_config_verify(cfg, strict)` recomputes sha256 for every
+  provenanced file and returns a tibble
+  `(file, expected, observed, drift, missing)`. Default warns on drift;
+  `strict = TRUE` errors. `digest` added to Suggests.
+- New `lnk_stamp(cfg, conn, aoi, db_snapshot)` returns an `lnk_stamp` S3
+  list capturing the full set of inputs at run time: cfg provenance with
+  current observed checksums, software versions and git SHAs (link,
+  fresh, R), DB snapshot row counts (`bcfishobs.observations`,
+  `whse_basemapping.fwa_stream_networks_sp`) when conn is provided,
+  AOI + start_time. `lnk_stamp_finish(stamp, result, end_time)`
+  finalizes; `format(stamp, "markdown")` renders for report appendix or
+  run-log dump.
+- `data-raw/compare_bcfishpass_wsg.R` now emits a stamp markdown at the
+  head of every WSG run, captured into `data-raw/logs/*.txt` via the
+  standard stderr redirect.
+- Tests: 93 new — provenance parsing, drift detection (clean / mutated /
+  missing / strict), bundled-config drift = 0 invariants, stamp shape +
+  markdown rendering + finalization + db-snapshot opt-out.
+
 ## link 0.10.0
 
 Default config bundle now uses explicit FWA `edge_type` codes for spawn

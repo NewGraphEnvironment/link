@@ -133,6 +133,18 @@ Load a pipeline config bundle (rules, parameters, overrides)
 
 - [`lnk_config()`](https://newgraphenvironment.github.io/link/reference/lnk_config.md)
   : Load a Pipeline Config Bundle
+- [`lnk_config_verify()`](https://newgraphenvironment.github.io/link/reference/lnk_config_verify.md)
+  : Verify Config Bundle File Checksums
+
+## Run stamps
+
+Capture provenance + software versions + DB snapshots for run-to-run
+drift attribution
+
+- [`lnk_stamp()`](https://newgraphenvironment.github.io/link/reference/lnk_stamp.md)
+  : Capture a Pipeline Run Stamp
+- [`lnk_stamp_finish()`](https://newgraphenvironment.github.io/link/reference/lnk_stamp_finish.md)
+  : Finalize an in-progress run stamp
 
 ## Pipeline phases
 
@@ -231,5 +243,3 @@ Per-crossing upstream habitat rollup
 
 - [Reproducing bcfishpass with link +
   fresh](https://newgraphenvironment.github.io/link/articles/reproducing-bcfishpass.md):
-- [Scoring crossings for fish passage
-  prioritization](https://newgraphenvironment.github.io/link/articles/scoring-crossings.md):

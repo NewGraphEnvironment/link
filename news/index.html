@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.10.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.11.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -19,7 +19,6 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/reproducing-bcfishpass.html">Reproducing bcfishpass with link + fresh</a></li>
-    <li><a class="dropdown-item" href="../articles/scoring-crossings.html">Scoring crossings for fish passage prioritization</a></li>
   </ul></li>
 <li class="active nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -36,6 +35,30 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.11.1" id="link-0111">link 0.11.1<a class="anchor" aria-label="anchor" href="#link-0111"></a></h2>
+<p>Vignette cleanup.</p>
+<ul><li>
+<code>vignettes/scoring-crossings.Rmd</code> moved to <code>dev/scoring-crossings.Rmd.draft</code> — out of build path until the scoring methodology lands.</li>
+<li>
+<code>vignettes/reproducing-bcfishpass.Rmd</code> updated for the v0.9.0 overlay: added overlay step to the pipeline DAG, new “Known-habitat overlay” subsection, clarified rollup vs. map comparison.</li>
+<li>
+<code>data-raw/vignette_reproducing_bcfishpass.R</code>: bcfishpass-side map query reads <code>streams_habitat_linear</code> (model + known) instead of <code>habitat_linear_ch</code> (model-only) for apples-to-apples comparison with link’s post-overlay output.</li>
+<li>Regenerated bundled snapshots (<code>inst/extdata/vignette-data/{rollup,sub_ch,sub_ch_bcfp}.rds</code>) from v0.10.0 + overlay state.</li>
+</ul></div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.11.0" id="link-0110">link 0.11.0<a class="anchor" aria-label="anchor" href="#link-0110"></a></h2>
+<p>Config-bundle provenance + run stamps — closes the drift attribution loop. Pipeline outputs that shift between runs on the same DB state can now be traced back to which input changed. Closes <a href="https://github.com/NewGraphEnvironment/link/issues/40" class="external-link">#40</a>; supersedes the narrower scope of <a href="https://github.com/NewGraphEnvironment/link/issues/24" class="external-link">#24</a>.</p>
+<ul><li>
+<code>inst/extdata/configs/{bcfishpass,default}/config.yaml</code> carry <code>provenance:</code> blocks with sha256 checksums for every tracked file. Externally sourced files (bcfishpass overrides) record <code>source</code> URL + <code>upstream_sha</code> (<code>ea3c5d8</code>, synced 2026-04-13) + <code>path</code> within source repo. Generated files (<code>rules.yaml</code>) record <code>generated_from</code> + <code>generated_by</code> + <code>generator_sha</code>. Hand-authored files record link’s git sha at edit time.</li>
+<li>
+<code><a href="../reference/lnk_config.html">lnk_config()</a></code> exposes parsed provenance as <code>cfg$provenance</code> (named list, one entry per tracked file). <code>print(cfg)</code> shows the count of tracked files.</li>
+<li>New <code>lnk_config_verify(cfg, strict)</code> recomputes sha256 for every provenanced file and returns a tibble <code>(file, expected, observed, drift, missing)</code>. Default warns on drift; <code>strict = TRUE</code> errors. <code>digest</code> added to Suggests.</li>
+<li>New <code>lnk_stamp(cfg, conn, aoi, db_snapshot)</code> returns an <code>lnk_stamp</code> S3 list capturing the full set of inputs at run time: cfg provenance with current observed checksums, software versions and git SHAs (link, fresh, R), DB snapshot row counts (<code>bcfishobs.observations</code>, <code>whse_basemapping.fwa_stream_networks_sp</code>) when conn is provided, AOI + start_time. <code>lnk_stamp_finish(stamp, result, end_time)</code> finalizes; <code>format(stamp, "markdown")</code> renders for report appendix or run-log dump.</li>
+<li>
+<code>data-raw/compare_bcfishpass_wsg.R</code> now emits a stamp markdown at the head of every WSG run, captured into <code>data-raw/logs/*.txt</code> via the standard stderr redirect.</li>
+<li>Tests: 93 new — provenance parsing, drift detection (clean / mutated / missing / strict), bundled-config drift = 0 invariants, stamp shape + markdown rendering + finalization + db-snapshot opt-out.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.10.0" id="link-0100">link 0.10.0<a class="anchor" aria-label="anchor" href="#link-0100"></a></h2>
 <p>Default config bundle now uses explicit FWA <code>edge_type</code> codes for spawn and rear-stream predicates, matching bcfishpass’s 20-year-validated convention.</p>

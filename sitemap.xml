@@ -5,7 +5,6 @@
 <url><loc>https://newgraphenvironment.github.io/link/LICENSE.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/articles/index.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/articles/reproducing-bcfishpass.html</loc></url>
-<url><loc>https://newgraphenvironment.github.io/link/articles/scoring-crossings.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/authors.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/index.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/news/index.html</loc></url>
@@ -14,6 +13,7 @@
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_aggregate.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_barrier_overrides.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_config.html</loc></url>
+<url><loc>https://newgraphenvironment.github.io/link/reference/lnk_config_verify.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_db_conn.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_load.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_match.html</loc></url>
@@ -28,6 +28,8 @@
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_rules_build.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_score.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_source.html</loc></url>
+<url><loc>https://newgraphenvironment.github.io/link/reference/lnk_stamp.html</loc></url>
+<url><loc>https://newgraphenvironment.github.io/link/reference/lnk_stamp_finish.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_thresholds.html</loc></url>
 </urlset>
 

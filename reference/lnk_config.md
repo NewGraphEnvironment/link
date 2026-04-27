@@ -51,6 +51,15 @@ An `lnk_config` S3 list with these slots:
 - `pipeline` — named list of pipeline knobs from the manifest
   (`break_order`, `cluster`, `spawn_connected`)
 
+- `provenance` — named list of per-file provenance metadata parsed from
+  the manifest's `provenance:` block (or `NULL` when the bundle does not
+  declare it). Each entry is keyed by the file's path relative to `dir`
+  and carries metadata fields such as `source`, `upstream_sha`,
+  `synced`, `checksum`, plus generator-specific keys (`generated_from`,
+  `generated_by`, `generator_sha`) for files produced by tooling. Drift
+  detection against the recorded checksums is in
+  [`lnk_config_verify()`](https://newgraphenvironment.github.io/link/reference/lnk_config_verify.md).
+
 ## Details
 
 A config bundle is a directory under `inst/extdata/configs/<name>/` (for
