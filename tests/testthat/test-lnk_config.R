@@ -154,3 +154,43 @@ test_that("lnk_config errors when an override file is missing", {
   expect_error(lnk_config(tmp),
     "overrides.*references missing file")
 })
+
+# -- provenance parsing ------------------------------------------------------
+
+test_that("bundled bcfishpass config exposes a provenance block", {
+  cfg <- lnk_config("bcfishpass")
+  expect_type(cfg$provenance, "list")
+  expect_gt(length(cfg$provenance), 0L)
+  # Each entry is a named list with at minimum `checksum`
+  for (entry in cfg$provenance) {
+    expect_true("checksum" %in% names(entry))
+    expect_match(entry$checksum, "^sha256:[0-9a-f]{64}$")
+  }
+})
+
+test_that("bundled default config exposes a provenance block", {
+  cfg <- lnk_config("default")
+  expect_type(cfg$provenance, "list")
+  expect_gt(length(cfg$provenance), 0L)
+})
+
+test_that("cfg$provenance is NULL when manifest omits the block", {
+  tmp <- withr::local_tempdir()
+  file.create(file.path(tmp, "rules.yaml"))
+  write.csv(data.frame(a = 1), file.path(tmp, "dims.csv"), row.names = FALSE)
+  write.csv(data.frame(a = 1), file.path(tmp, "params.csv"),
+    row.names = FALSE)
+  yaml::write_yaml(
+    list(
+      name = "x",
+      files = list(
+        rules_yaml = "rules.yaml",
+        dimensions_csv = "dims.csv",
+        parameters_fresh = "params.csv"
+      )
+    ),
+    file.path(tmp, "config.yaml")
+  )
+  cfg <- lnk_config(tmp)
+  expect_null(cfg$provenance)
+})

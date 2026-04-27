@@ -41,6 +41,14 @@
 #'     listed in the manifest
 #'   - `pipeline` — named list of pipeline knobs from the manifest
 #'     (`break_order`, `cluster`, `spawn_connected`)
+#'   - `provenance` — named list of per-file provenance metadata parsed
+#'     from the manifest's `provenance:` block (or `NULL` when the
+#'     bundle does not declare it). Each entry is keyed by the file's
+#'     path relative to `dir` and carries metadata fields such as
+#'     `source`, `upstream_sha`, `synced`, `checksum`, plus
+#'     generator-specific keys (`generated_from`, `generated_by`,
+#'     `generator_sha`) for files produced by tooling. Drift detection
+#'     against the recorded checksums is in [lnk_config_verify()].
 #'
 #' @export
 #'
@@ -142,7 +150,8 @@ lnk_config <- function(name_or_path) {
     observation_exclusions = read_csv_optional("observation_exclusions"),
     wsg_species = read_csv_optional("wsg_species"),
     overrides = overrides,
-    pipeline = manifest$pipeline %||% list()
+    pipeline = manifest$pipeline %||% list(),
+    provenance = manifest$provenance
   )
   class(out) <- c("lnk_config", "list")
   out
@@ -162,6 +171,9 @@ print.lnk_config <- function(x, ...) {
   if (length(x$pipeline) > 0L) {
     cat("  pipeline:  ", paste(names(x$pipeline), collapse = ", "),
         "\n", sep = "")
+  }
+  if (!is.null(x$provenance)) {
+    cat("  provenance:", length(x$provenance), "files tracked\n", sep = " ")
   }
   invisible(x)
 }

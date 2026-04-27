@@ -32,6 +32,14 @@ skip (or \code{NULL})
 listed in the manifest
 \item \code{pipeline} — named list of pipeline knobs from the manifest
 (\code{break_order}, \code{cluster}, \code{spawn_connected})
+\item \code{provenance} — named list of per-file provenance metadata parsed
+from the manifest's \verb{provenance:} block (or \code{NULL} when the
+bundle does not declare it). Each entry is keyed by the file's
+path relative to \code{dir} and carries metadata fields such as
+\code{source}, \code{upstream_sha}, \code{synced}, \code{checksum}, plus
+generator-specific keys (\code{generated_from}, \code{generated_by},
+\code{generator_sha}) for files produced by tooling. Drift detection
+against the recorded checksums is in \code{\link[=lnk_config_verify]{lnk_config_verify()}}.
 }
 }
 \description{

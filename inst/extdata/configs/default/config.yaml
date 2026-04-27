@@ -36,3 +36,76 @@ pipeline:
   spawn_connected:
     SK:
       gradient_max: 0.05
+
+# Per-file provenance for drift detection. See
+# inst/extdata/configs/bcfishpass/config.yaml for documentation. Default
+# bundle shares most overrides with bcfishpass (same checksums); only
+# rules.yaml and dimensions.csv differ between bundles.
+provenance:
+  rules.yaml:
+    generated_from: dimensions.csv
+    generated_by: lnk_rules_build
+    generator_sha: 8f1890564b9148573535a679f2e5563aebe74207
+    checksum: sha256:fd8f3dc7ff072381289acfab86d125ab85302cdb66968e633ec539fa03de2e4b
+  dimensions.csv:
+    source: link (hand-authored)
+    upstream_sha: 8f1890564b9148573535a679f2e5563aebe74207
+    synced: 2026-04-26
+    checksum: sha256:6f510fa767cbdb9bb29778d475570c84b3c5c295d65ef1f56cde9f931dc5a760
+  parameters_fresh.csv:
+    source: link (hand-authored)
+    upstream_sha: 8f1890564b9148573535a679f2e5563aebe74207
+    synced: 2026-04-26
+    checksum: sha256:1cc4c33c729d37a40672540dfb92f4f7dadf50653bd4f211a485c9d51722088f
+  overrides/user_habitat_classification.csv:
+    source: https://github.com/smnorris/bcfishpass
+    path: data/user_habitat_classification.csv
+    upstream_sha: ea3c5d8
+    synced: 2026-04-13
+    checksum: sha256:7aac63df754e69230020bda393bb16af8c019268b53b6c7fb66befa7b2019aae
+  overrides/observation_exclusions.csv:
+    source: link (hand-authored)
+    upstream_sha: 8f1890564b9148573535a679f2e5563aebe74207
+    synced: 2026-04-26
+    checksum: sha256:ad901c57ca42e71e4affffd6e583045a2ce423f15088c211c9c2f72976f5d36a
+  overrides/wsg_species_presence.csv:
+    source: link (hand-authored)
+    upstream_sha: 8f1890564b9148573535a679f2e5563aebe74207
+    synced: 2026-04-26
+    checksum: sha256:3c3dc66d1b9b299d91e73d6edcccb56cc827641be494e26981ed580ff51e15ec
+  overrides/user_modelled_crossing_fixes.csv:
+    source: https://github.com/smnorris/bcfishpass
+    path: data/user_modelled_crossing_fixes.csv
+    upstream_sha: ea3c5d8
+    synced: 2026-04-13
+    checksum: sha256:a5e6bb3eec3502fd8afda8978a9b5be2e17a76b98db6fa5f634bf0dbb1a3ac58
+  overrides/user_pscis_barrier_status.csv:
+    source: https://github.com/smnorris/bcfishpass
+    path: data/user_pscis_barrier_status.csv
+    upstream_sha: ea3c5d8
+    synced: 2026-04-13
+    checksum: sha256:ee85435e6653fb3978af39ef62958df36300ff7d6c95941a88cce05fd0ad34fd
+  overrides/pscis_modelledcrossings_streams_xref.csv:
+    source: https://github.com/smnorris/bcfishpass
+    path: data/pscis_modelledcrossings_streams_xref.csv
+    upstream_sha: ea3c5d8
+    synced: 2026-04-13
+    checksum: sha256:bf612791b751ed453995ab630548345f894d50e32a1b14d9b5dbb63e0c62f760
+  overrides/user_barriers_definite.csv:
+    source: https://github.com/smnorris/bcfishpass
+    path: data/user_barriers_definite.csv
+    upstream_sha: ea3c5d8
+    synced: 2026-04-13
+    checksum: sha256:56c66cddf279a1c2b0c0be1fc9ba9c758dc93d4ad820e0bf2c5caf4ecce05fb6
+  overrides/user_barriers_definite_control.csv:
+    source: https://github.com/smnorris/bcfishpass
+    path: data/user_barriers_definite_control.csv
+    upstream_sha: ea3c5d8
+    synced: 2026-04-13
+    checksum: sha256:8f34e2c006733e0f06248a90dc0b8abe4719880590f497581f80fe5f62fde203
+  overrides/user_crossings_misc.csv:
+    source: https://github.com/smnorris/bcfishpass
+    path: data/user_crossings_misc.csv
+    upstream_sha: ea3c5d8
+    synced: 2026-04-13
+    checksum: sha256:febc7c31a0a716492cbef59748d3b1a717e84f877993710bc2b47e8d304edf2e
