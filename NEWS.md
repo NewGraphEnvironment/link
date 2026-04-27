@@ -1,3 +1,12 @@
+# link 0.11.1
+
+Vignette cleanup.
+
+- `vignettes/scoring-crossings.Rmd` moved to `dev/scoring-crossings.Rmd.draft` — out of build path until the scoring methodology lands.
+- `vignettes/reproducing-bcfishpass.Rmd` updated for the v0.9.0 overlay: added overlay step to the pipeline DAG, new "Known-habitat overlay" subsection, clarified rollup vs. map comparison.
+- `data-raw/vignette_reproducing_bcfishpass.R`: bcfishpass-side map query reads `streams_habitat_linear` (model + known) instead of `habitat_linear_ch` (model-only) for apples-to-apples comparison with link's post-overlay output.
+- Regenerated bundled snapshots (`inst/extdata/vignette-data/{rollup,sub_ch,sub_ch_bcfp}.rds`) from v0.10.0 + overlay state.
+
 # link 0.11.0
 
 Config-bundle provenance + run stamps — closes the drift attribution loop. Pipeline outputs that shift between runs on the same DB state can now be traced back to which input changed. Closes [#40](https://github.com/NewGraphEnvironment/link/issues/40); supersedes the narrower scope of [#24](https://github.com/NewGraphEnvironment/link/issues/24).
