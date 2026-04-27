@@ -86,12 +86,15 @@ fresh::frs_habitat(conn, "MORR",
 lnk_aggregate(conn, "working.crossings", "fresh.streams_habitat")
 ```
 
-## Full pipeline (reproducing bcfishpass)
+## Full pipeline (linear habitat classification)
 
-The primitives above assemble into a six-phase pipeline that reproduces
-bcfishpass's freshwater habitat classification for any watershed group.
-A config bundle declares the manifest of rules, parameters, and override
-CSVs that drive a run.
+The primitives above assemble into a six-phase pipeline that classifies
+spawning + rearing habitat per segment for any watershed group. A
+config bundle declares the manifest of rules, parameters, and override
+CSVs that drive a run; the bundled `"bcfishpass"` config expresses
+bcfishpass's classification slice (spawning + rearing predicates,
+natural-barrier modelling, observation-based access overrides) as a
+self-contained input.
 
 ```r
 cfg <- lnk_config("bcfishpass")
@@ -105,9 +108,10 @@ lnk_pipeline_connect(conn, aoi = "BULK", cfg = cfg, schema = "working_bulk")
 ```
 
 `data-raw/_targets.R` wraps this over five validated WSGs (ADMS, BULK,
-BABL, ELKR, DEAD) with `targets` for caching and reproducibility. See
-the [Reproducing bcfishpass](https://newgraphenvironment.github.io/link/articles/reproducing-bcfishpass.html)
-vignette for the full story.
+BABL, ELKR, DEAD) with `targets` for caching and cross-WSG regression.
+A vignette walking through the bundled bcfishpass config is in
+preparation; meanwhile the per-phase detail lives in
+[`research/bcfishpass_comparison.md`](https://github.com/NewGraphEnvironment/link/blob/main/research/bcfishpass_comparison.md).
 
 ## Ecosystem
 
