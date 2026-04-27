@@ -179,61 +179,68 @@ compare_bcfishpass_wsg <- function(wsg, config) {
     species_sql))
 
   # -------------------------------------------------------------------------
-  # Bcfishpass-side rollup (option b-amended: same methodology both sides
-  # applied to bcfishpass.habitat_linear_<sp>, joined to the same fwa_*
-  # polygon tables). Bcfishpass's per-segment classification doesn't
-  # distinguish lake_rearing / wetland_rearing — it has a single rearing
-  # boolean. We derive the _ha columns by filtering to segments that join
-  # to fwa_lakes_poly / fwa_wetlands_poly on waterbody_key.
+  # Bcfishpass-side rollup. Reads `bcfishpass.streams_habitat_linear` —
+  # the published integer-column table where `spawning_<sp>` and
+  # `rearing_<sp>` take values 1 / 2 (model-only) or 3 (known habitat).
+  # Filtering on `> 0` includes both, which is apples-to-apples with
+  # link's `fresh.streams_habitat` after the v0.9.0 overlay.
+  #
+  # Bcfishpass's per-segment classification doesn't distinguish
+  # lake_rearing / wetland_rearing — single rearing boolean per species.
+  # We derive the _ha columns by filtering to segments that join to
+  # fwa_lakes_poly / fwa_wetlands_poly on waterbody_key.
   # -------------------------------------------------------------------------
+  ref_cols_all <- DBI::dbGetQuery(conn_ref,
+    "SELECT column_name FROM information_schema.columns
+     WHERE table_schema = 'bcfishpass'
+       AND table_name = 'streams_habitat_linear'")$column_name
+
   ref_list <- lapply(species, function(sp) {
-    ref_cols <- DBI::dbGetQuery(conn_ref, sprintf(
-      "SELECT column_name FROM information_schema.columns
-       WHERE table_schema = 'bcfishpass'
-         AND table_name = 'habitat_linear_%s'", tolower(sp)))
-    # has_table: does bcfishpass.habitat_linear_<sp> exist at all?
-    # has_rear:  if it exists, does it carry a `rearing` column?
-    has_table <- nrow(ref_cols) > 0
-    has_rear <- "rearing" %in% ref_cols$column_name
-    rear_expr <- if (has_rear) {
-      "CASE WHEN h.rearing THEN s.length_metre ELSE 0 END"
+    spawn_col <- paste0("spawning_", tolower(sp))
+    rear_col  <- paste0("rearing_",  tolower(sp))
+    has_spawn <- spawn_col %in% ref_cols_all
+    has_rear  <- rear_col  %in% ref_cols_all
+
+    spawn_expr <- if (has_spawn) {
+      sprintf("CASE WHEN h.%s > 0 THEN s.length_metre ELSE 0 END", spawn_col)
     } else {
       "0"
     }
-
-    # Linear km — gate the whole query on table existence. Bcfishpass
-    # doesn't model every species (e.g. RB has no habitat_linear_rb),
-    # so species present in link's config but absent in bcfishpass get
-    # 0 for both sides of the diff (our number still populates via the
-    # link-side query; this is just the reference side).
+    rear_expr <- if (has_rear) {
+      sprintf("CASE WHEN h.%s > 0 THEN s.length_metre ELSE 0 END", rear_col)
+    } else {
+      "0"
+    }
     slice_expr <- function(edge_in) {
       if (has_rear) {
-        sprintf("CASE WHEN h.rearing AND s.edge_type IN %s THEN s.length_metre ELSE 0 END",
-                edge_in)
+        sprintf("CASE WHEN h.%s > 0 AND s.edge_type IN %s THEN s.length_metre ELSE 0 END",
+                rear_col, edge_in)
       } else {
         "0"
       }
     }
 
-    km_row <- if (has_table) {
+    # Linear km — when neither spawn nor rear column exists for this
+    # species (RB, CT, DV, KO, GR aren't in bcfishpass), short-circuit
+    # to zeros. The link-side query still produces values for them.
+    km_row <- if (has_spawn || has_rear) {
       DBI::dbGetQuery(conn_ref, sprintf("
         SELECT %s AS species_code,
-          round(SUM(CASE WHEN h.spawning THEN s.length_metre ELSE 0 END)::numeric
-            / 1000, 2) AS spawning_km,
+          round(SUM(%s)::numeric / 1000, 2) AS spawning_km,
           round(SUM(%s)::numeric / 1000, 2) AS rearing_km,
           round(SUM(%s)::numeric / 1000, 2) AS rearing_stream_km,
           round(SUM(%s)::numeric / 1000, 2) AS rearing_lake_centerline_km,
           round(SUM(%s)::numeric / 1000, 2) AS rearing_wetland_centerline_km
         FROM bcfishpass.streams s
-        JOIN bcfishpass.habitat_linear_%s h
+        JOIN bcfishpass.streams_habitat_linear h
           ON s.segmented_stream_id = h.segmented_stream_id
         WHERE s.watershed_group_code = %s",
         DBI::dbQuoteLiteral(conn_ref, sp),
+        spawn_expr,
         rear_expr,
         slice_expr(et_stream_sql),
         slice_expr(et_lake_sql),
         slice_expr(et_wetland_sql),
-        tolower(sp),
         DBI::dbQuoteLiteral(conn_ref, wsg)))
     } else {
       data.frame(species_code = sp, spawning_km = 0, rearing_km = 0,
@@ -242,42 +249,42 @@ compare_bcfishpass_wsg <- function(wsg, config) {
                  rearing_wetland_centerline_km = 0)
     }
 
-    # Lake area — same DISTINCT waterbody_key pattern as link side.
-    # Zero if table or rearing column is missing.
-    lake_ha <- if (has_table && has_rear) {
+    # Lake area — DISTINCT waterbody_key pattern as link side.
+    # Zero if rearing column is missing.
+    lake_ha <- if (has_rear) {
       DBI::dbGetQuery(conn_ref, sprintf("
         SELECT round(COALESCE(SUM(area_ha), 0)::numeric, 2) AS lake_rearing_ha
         FROM (
           SELECT DISTINCT l.waterbody_key, l.area_ha
           FROM bcfishpass.streams s
-          JOIN bcfishpass.habitat_linear_%s h
+          JOIN bcfishpass.streams_habitat_linear h
             ON s.segmented_stream_id = h.segmented_stream_id
           JOIN whse_basemapping.fwa_lakes_poly l
             ON l.waterbody_key = s.waterbody_key
           WHERE s.watershed_group_code = %s
-            AND h.rearing = TRUE
+            AND h.%s > 0
         ) sub",
-        tolower(sp),
-        DBI::dbQuoteLiteral(conn_ref, wsg)))
+        DBI::dbQuoteLiteral(conn_ref, wsg),
+        rear_col))
     } else {
       data.frame(lake_rearing_ha = 0)
     }
 
-    wetland_ha <- if (has_table && has_rear) {
+    wetland_ha <- if (has_rear) {
       DBI::dbGetQuery(conn_ref, sprintf("
         SELECT round(COALESCE(SUM(area_ha), 0)::numeric, 2) AS wetland_rearing_ha
         FROM (
           SELECT DISTINCT w.waterbody_key, w.area_ha
           FROM bcfishpass.streams s
-          JOIN bcfishpass.habitat_linear_%s h
+          JOIN bcfishpass.streams_habitat_linear h
             ON s.segmented_stream_id = h.segmented_stream_id
           JOIN whse_basemapping.fwa_wetlands_poly w
             ON w.waterbody_key = s.waterbody_key
           WHERE s.watershed_group_code = %s
-            AND h.rearing = TRUE
+            AND h.%s > 0
         ) sub",
-        tolower(sp),
-        DBI::dbQuoteLiteral(conn_ref, wsg)))
+        DBI::dbQuoteLiteral(conn_ref, wsg),
+        rear_col))
     } else {
       data.frame(wetland_rearing_ha = 0)
     }
