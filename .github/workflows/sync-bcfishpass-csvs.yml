@@ -1,10 +1,18 @@
 # Daily sync of bcfishpass-sourced override CSVs. Diffs each
-# bcfishpass-sourced file against the recorded provenance checksum
-# and, when upstream has moved, opens a PR with new content + updated
-# provenance blocks AND immediately auto-merges it. The PR exists for
-# discoverability (searchable history, easy revert) — review is not
-# expected since CSVs are upstream-curated and provenance checksums
-# verify byte equivalence with upstream.
+# bcfishpass-sourced file against the recorded provenance byte +
+# shape checksums.
+#
+# Drift kinds:
+#   - byte  — file content changed but column structure didn't.
+#             Auto-PR opens AND auto-merges. Discoverability via the
+#             PR list; review is not expected (CSVs are upstream-
+#             curated and shape stayed the same).
+#   - shape — column rename / add / remove / reshape. Auto-PR opens
+#             with `schema-drift` label, NOT auto-merged. Workflow
+#             exits non-zero so the Actions tab shows red. Coordinated
+#             review across link / fresh / crate is required before
+#             merging — see link#64.
+#   - none  — no drift, exit clean.
 #
 # Cadence rationale: April 2026 sample showed 1-3 CSV-touching upstream
 # PRs per active weekday; daily diffs produce per-PR-traceable sync
@@ -51,19 +59,34 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: Rscript data-raw/sync_bcfishpass_csvs.R
 
-      - name: Open + auto-merge PR if any drift
+      - name: Open PR (auto-merge byte drift; halt on shape drift)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
+          DRIFT_KIND="$(cat /tmp/sync_drift_kind 2>/dev/null || echo none)"
+          echo "Drift kind: $DRIFT_KIND"
+          case "$DRIFT_KIND" in
+            none)
+              echo "No drift — exit clean"
+              exit 0
+              ;;
+            byte|shape)
+              # fallthrough to PR creation
+              ;;
+            *)
+              echo "Unknown drift kind: '$DRIFT_KIND' — failing loud"
+              exit 1
+              ;;
+          esac
+
           if [[ -z "$(git status --porcelain)" ]]; then
-            echo "No drift — nothing to commit"
-            exit 0
+            echo "Drift kind reported $DRIFT_KIND but working tree clean — bug"
+            exit 1
           fi
+
           DATESTAMP="$(date -u +%Y%m%d)"
           BRANCH="csv-sync/${DATESTAMP}"
-          # Same-day re-run (workflow_dispatch + an existing branch) —
-          # append RUN_ID to keep branch names unique.
           if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
             BRANCH="csv-sync/${DATESTAMP}-${GITHUB_RUN_ID}"
           fi
@@ -71,16 +94,42 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -b "$BRANCH"
           git add inst/extdata/configs/
-          git commit -m "csv-sync: pull bcfishpass overrides ${DATESTAMP}"
+          if [[ "$DRIFT_KIND" == "shape" ]]; then
+            git commit -m "csv-sync: SHAPE DRIFT — pull bcfishpass overrides ${DATESTAMP}"
+          else
+            git commit -m "csv-sync: pull bcfishpass overrides ${DATESTAMP}"
+          fi
           git push -u origin "$BRANCH"
+
           BODY_FILE=/tmp/sync_summary.md
           if [[ ! -f "$BODY_FILE" ]]; then
             echo "Auto-generated CSV sync." > "$BODY_FILE"
           fi
-          PR_URL=$(gh pr create \
-            --base main \
-            --head "$BRANCH" \
-            --title "csv-sync: pull bcfishpass overrides ${DATESTAMP}" \
-            --body-file "$BODY_FILE")
-          echo "Created PR: $PR_URL"
-          gh pr merge "$PR_URL" --merge --delete-branch
+
+          if [[ "$DRIFT_KIND" == "shape" ]]; then
+            # Ensure label exists; ignore "already exists" error.
+            gh label create schema-drift \
+              --color B60205 \
+              --description "Upstream CSV shape changed (column rename / add / remove / reshape) — coordinated link/fresh/crate review needed before merging" \
+              || true
+            PR_URL=$(gh pr create \
+              --base main \
+              --head "$BRANCH" \
+              --title "csv-sync: SHAPE DRIFT — pull bcfishpass overrides ${DATESTAMP}" \
+              --body-file "$BODY_FILE" \
+              --label schema-drift)
+            echo "Created shape-drift PR (NOT auto-merged): $PR_URL"
+            # Fail loud so the Actions tab shows red and someone notices.
+            exit 2
+          else
+            PR_URL=$(gh pr create \
+              --base main \
+              --head "$BRANCH" \
+              --title "csv-sync: pull bcfishpass overrides ${DATESTAMP}" \
+              --body-file "$BODY_FILE")
+            echo "Created byte-drift PR: $PR_URL"
+            # `--auto` queues the merge if branch protection adds
+            # required checks later (e.g., R-CMD-check). Today no
+            # required checks → behaves identically to immediate merge.
+            gh pr merge "$PR_URL" --merge --auto --delete-branch
+          fi

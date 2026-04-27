@@ -1,6 +1,6 @@
 Package: link
 Title: Crossing Connectivity Interpretation
-Version: 0.12.0
+Version: 0.13.0
 Authors@R:
     person("Allan", "Irvine", , "airvine@newgraphenvironment.com",
            role = c("aut", "cre"),
