@@ -1,0 +1,79 @@
+# Nightly Mon-Sat sync of bcfishpass-sourced override CSVs.
+# Runs `data-raw/sync_bcfishpass_csvs.R` which diffs each
+# bcfishpass-sourced file against the recorded provenance checksum.
+# When anything changed, opens a PR with the new content + updated
+# provenance blocks. Sundays skipped — bcfishpass churn is near-zero
+# on weekends. Manual run via workflow_dispatch.
+#
+# Cadence rationale: April 2026 sample showed 1-3 CSV-touching upstream
+# PRs per active weekday; nightly diffs produce per-PR-traceable sync
+# PRs vs. weekly batches that mix many upstream changes. See
+# `planning/archive/2026-04-pr-XX-csv-sync-action/findings.md` for the
+# full data + decision log.
+
+name: sync-bcfishpass-csvs
+
+on:
+  schedule:
+    - cron: '0 9 * * 1-6'  # 09:00 UTC Mon-Sat (≈ 1-2am Pacific)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          packages: |
+            any::yaml
+            any::digest
+            any::jsonlite
+
+      - name: Run sync script
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: Rscript data-raw/sync_bcfishpass_csvs.R
+
+      - name: Open PR if any drift
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$(git status --porcelain)" ]]; then
+            echo "No drift — nothing to commit"
+            exit 0
+          fi
+          DATESTAMP="$(date -u +%Y%m%d)"
+          BRANCH="csv-sync/${DATESTAMP}"
+          # If a sync branch from earlier today exists upstream, append run_id
+          # to keep them distinct.
+          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            BRANCH="csv-sync/${DATESTAMP}-${GITHUB_RUN_ID}"
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add inst/extdata/configs/
+          git commit -m "csv-sync: pull bcfishpass overrides ${DATESTAMP}"
+          git push -u origin "$BRANCH"
+          BODY_FILE=/tmp/sync_summary.md
+          if [[ ! -f "$BODY_FILE" ]]; then
+            echo "Auto-generated CSV sync." > "$BODY_FILE"
+          fi
+          gh pr create \
+            --base main \
+            --head "$BRANCH" \
+            --title "csv-sync: pull bcfishpass overrides ${DATESTAMP}" \
+            --body-file "$BODY_FILE"

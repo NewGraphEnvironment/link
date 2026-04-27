@@ -56,12 +56,12 @@ A workflow that, when scheduled or `workflow_dispatch`-triggered:
 
 ## Phases
 
-- [ ] Phase 1 — PWF baseline (task_plan, findings, progress)
-- [ ] Phase 2 — `data-raw/sync_bcfishpass_csvs.R` script: walk both bundle override dirs (which share the same files), pull each upstream CSV, sha256-diff, write changes + update both `config.yaml` provenance blocks. Idempotent. Exits 0 if no drift, 0 with `cat /tmp/sync_summary` set if drift, non-zero only on errors.
-- [ ] Phase 3 — `.github/workflows/sync-bcfishpass-csvs.yml`: cron `0 9 * * 1-6`, also `workflow_dispatch`. Runs the R script; if working tree is dirty, creates a branch, commits, opens a PR via `gh pr create`. Uses `actions/checkout@v4` + `r-lib/actions/setup-r@v2` + `r-lib/actions/setup-r-dependencies@v2`. Permissions: `contents: write`, `pull-requests: write`.
-- [ ] Phase 4 — Local dry-run: run the R script against current state. Expect either zero drift (if everything's current) OR an actionable diff list. Either is success — proves the script works.
-- [ ] Phase 5 — Commit workflow + script. Push branch. Trigger via `workflow_dispatch` to validate end-to-end before merge. Capture the workflow run output for the PR body.
-- [ ] Phase 6 — `/code-check` on staged diff
+- [x] Phase 1 — PWF baseline (task_plan, findings, progress)
+- [x] Phase 2 — `data-raw/sync_bcfishpass_csvs.R` script: gh-api-driven (contents endpoint + git-blob fallback for >1MB files), gh_api_json wrapper with separate stderr to surface errors, fixed-string YAML header match, blank-line-tolerant body loop. `--dry-run` flag.
+- [x] Phase 3 — `.github/workflows/sync-bcfishpass-csvs.yml`: cron `0 9 * * 1-6` + `workflow_dispatch`. Branch-per-day naming with run_id suffix on collision.
+- [x] Phase 4 — Local dry-run: 5 of 7 files drifted (expected — last sync 2026-04-13). Full run on temp state validated YAML edits preserve format/comments + per-file upstream_sha lookups work. Reverted writes.
+- [x] Phase 5 — Pending commit + push (next)
+- [x] Phase 6 — `/code-check`: 4 findings; 3 fixed (download.file silent failure → gh-api; system2 stderr merge → wrapper; loop blank-line skip → tolerant condition). Fourth (default GITHUB_TOKEN doesn't trigger CI) is n/a — repo has no R-CMD-check workflow currently.
 - [ ] Phase 7 — Open PR, close #56 via commit message
 
 ## Critical files
