@@ -103,12 +103,12 @@ stamp <- lnk_stamp(cfg, aoi = "ADMS")
 stamp
 #> <lnk_stamp> bcfishpass
 #>   aoi:        ADMS
-#>   started:    2026-04-27 15:46:47 UTC
+#>   started:    2026-04-27 15:53:29 UTC
 #>   link:       0.11.2
 #>   fresh:      0.21.0
 #>   provenance: 12 files (0 drifted)
 format(stamp, "markdown")
-#> [1] "## Run stamp — bcfishpass\n\n- AOI: `ADMS`\n- Started: 2026-04-27 15:46:47 UTC\n\n### Software\n- link: 0.11.2 (sha NA)\n- fresh: 0.21.0 (sha NA)\n- R: R version 4.6.0 (2026-04-24)\n\n### Config provenance (12 files, 0 drifted)\n\n| file | drift |\n|---|---|\n| `rules.yaml` | no |\n| `dimensions.csv` | no |\n| `parameters_fresh.csv` | no |\n| `overrides/user_habitat_classification.csv` | no |\n| `overrides/observation_exclusions.csv` | no |\n| `overrides/wsg_species_presence.csv` | no |\n| `overrides/user_modelled_crossing_fixes.csv` | no |\n| `overrides/user_pscis_barrier_status.csv` | no |\n| `overrides/pscis_modelledcrossings_streams_xref.csv` | no |\n| `overrides/user_barriers_definite.csv` | no |\n| `overrides/user_barriers_definite_control.csv` | no |\n| `overrides/user_crossings_misc.csv` | no |"
+#> [1] "## Run stamp — bcfishpass\n\n- AOI: `ADMS`\n- Started: 2026-04-27 15:53:29 UTC\n\n### Software\n- link: 0.11.2 (sha NA)\n- fresh: 0.21.0 (sha NA)\n- R: R version 4.6.0 (2026-04-24)\n\n### Config provenance (12 files, 0 drifted)\n\n| file | drift |\n|---|---|\n| `rules.yaml` | no |\n| `dimensions.csv` | no |\n| `parameters_fresh.csv` | no |\n| `overrides/user_habitat_classification.csv` | no |\n| `overrides/observation_exclusions.csv` | no |\n| `overrides/wsg_species_presence.csv` | no |\n| `overrides/user_modelled_crossing_fixes.csv` | no |\n| `overrides/user_pscis_barrier_status.csv` | no |\n| `overrides/pscis_modelledcrossings_streams_xref.csv` | no |\n| `overrides/user_barriers_definite.csv` | no |\n| `overrides/user_barriers_definite_control.csv` | no |\n| `overrides/user_crossings_misc.csv` | no |"
 
 if (FALSE) { # \dontrun{
 # Full workflow with DB and a result
