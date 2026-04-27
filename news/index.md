@@ -297,13 +297,11 @@ groups.
 - End-to-end verification
   (`data-raw/logs/20260422_11_tar_make_final.txt`) — 4 WSGs / 34 rows
   produced over 8.5 minutes wall clock (serial). **Reproducibility:**
-  consecutive
-  [`tar_make()`](https://docs.ropensci.org/targets/reference/tar_make.html)
-  invocations on the same DB state produce bit-identical rollup tibbles.
-  **Parity to bcfishpass (informational):** all 34 `diff_pct` values
-  within 5% of reference; research-doc drift (BT rearing: -0.7 → -1.1
-  pp) traces to env state between 2026-04-15 and today, not to pipeline
-  non-determinism.
+  consecutive `tar_make()` invocations on the same DB state produce
+  bit-identical rollup tibbles. **Parity to bcfishpass
+  (informational):** all 34 `diff_pct` values within 5% of reference;
+  research-doc drift (BT rearing: -0.7 → -1.1 pp) traces to env state
+  between 2026-04-15 and today, not to pipeline non-determinism.
 
 ## link 0.3.0
 
