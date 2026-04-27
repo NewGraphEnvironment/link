@@ -107,19 +107,23 @@ conn_ref <- DBI::dbConnect(RPostgres::Postgres(),
   password = Sys.getenv("PG_PASS_SHARE", ""))
 on.exit(try(DBI::dbDisconnect(conn_ref), silent = TRUE), add = TRUE)
 
+# Read from `streams_habitat_linear` (the integer-column table that
+# blends model + known) rather than `habitat_linear_ch` (model-only),
+# so the comparison is apples-to-apples with link's post-overlay
+# output. spawning_ch / rearing_ch values: 1-2 = model, 3 = known.
 sub_ch_bcfp <- sf::st_read(conn_ref, query = sprintf("
   SELECT
     CASE
-      WHEN h.spawning IS TRUE AND h.rearing IS TRUE THEN 'spawning + rearing'
-      WHEN h.spawning IS TRUE                       THEN 'spawning only'
-      WHEN h.rearing  IS TRUE                       THEN 'rearing only'
+      WHEN h.spawning_ch > 0 AND h.rearing_ch > 0 THEN 'spawning + rearing'
+      WHEN h.spawning_ch > 0                      THEN 'spawning only'
+      WHEN h.rearing_ch  > 0                      THEN 'rearing only'
     END AS habitat,
     ST_SimplifyPreserveTopology(ST_Transform(s.geom, 4326), 0.001) AS geom
   FROM bcfishpass.streams s
-  JOIN bcfishpass.habitat_linear_ch h
+  JOIN bcfishpass.streams_habitat_linear h
     ON s.segmented_stream_id = h.segmented_stream_id
   WHERE ST_Intersects(s.geom, ST_GeomFromText('%s', 3005))
-    AND (h.spawning IS TRUE OR h.rearing IS TRUE)",
+    AND (h.spawning_ch > 0 OR h.rearing_ch > 0)",
   aoi_wkt))
 
 sub_ch_bcfp <- by(sub_ch_bcfp, sub_ch_bcfp$habitat, function(rows) {
