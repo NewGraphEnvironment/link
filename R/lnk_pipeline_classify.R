@@ -94,20 +94,21 @@ lnk_pipeline_classify <- function(conn, aoi, cfg, schema,
 
   # Known-habitat overlay (optional). When the manifest declares
   # `habitat_classification`, the CSV is loaded into
-  # `<schema>.user_habitat_classification` (long-format: one row per
-  # segment x species x habitat_type with `habitat_ind` text).
+  # `<schema>.user_habitat_classification` (canonical shape per
+  # bcfishpass post-2026-04-26: one row per (segment x species) with
+  # `spawning` and `rearing` indicator columns).
   # The target `fresh.streams_habitat` is keyed by `id_segment` only,
   # and the source is keyed by `(blue_line_key, drm)` with range
   # `[drm, urm]` — so we need a 3-way bridge through `fresh.streams`
-  # for range containment. Requires fresh >= 0.21.0.
+  # for range containment. Requires fresh >= 0.22.0.
   if (!is.null(cfg$habitat_classification)) {
     fresh::frs_habitat_overlay(conn,
       from   = paste0(schema, ".user_habitat_classification"),
       to     = "fresh.streams_habitat",
       bridge = "fresh.streams",
       species = species,
-      format = "long",
-      long_value_col = "habitat_ind",
+      species_col = "species_code",
+      habitat_types = c("spawning", "rearing"),
       verbose = FALSE)
   }
 
