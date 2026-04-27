@@ -41,8 +41,12 @@ test_that("lnk_stamp provenance slot is the verify tibble", {
   s <- lnk_stamp(cfg, aoi = "ADMS")
   expect_s3_class(s$provenance, "data.frame")
   expect_named(s$provenance,
-               c("file", "expected", "observed", "drift", "missing"))
-  expect_equal(sum(s$provenance$drift), 0L)
+               c("file",
+                 "byte_expected", "byte_observed", "byte_drift",
+                 "shape_expected", "shape_observed", "shape_drift",
+                 "missing"))
+  expect_equal(sum(s$provenance$byte_drift), 0L)
+  expect_equal(sum(s$provenance$shape_drift), 0L)
 })
 
 test_that("lnk_stamp handles config without provenance block", {

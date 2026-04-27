@@ -160,8 +160,10 @@ print.lnk_stamp <- function(x, ...) {
   cat("  link:       ", x$software$link$version, "\n", sep = "")
   cat("  fresh:      ", x$software$fresh$version, "\n", sep = "")
   if (!is.null(x$provenance)) {
+    n_byte <- sum(x$provenance$byte_drift)
+    n_shape <- sum(x$provenance$shape_drift)
     cat("  provenance: ", nrow(x$provenance), " files (",
-        sum(x$provenance$drift), " drifted)\n", sep = "")
+        n_byte, " byte, ", n_shape, " shape drifted)\n", sep = "")
   }
   if (!is.null(x$db)) {
     cat("  db:         bcfishobs.observations=",
@@ -215,18 +217,20 @@ format.lnk_stamp <- function(x, type = c("markdown", "text"), ...) {
   }
 
   if (!is.null(x$provenance) && nrow(x$provenance) > 0L) {
-    drifted <- sum(x$provenance$drift)
+    n_byte  <- sum(x$provenance$byte_drift)
+    n_shape <- sum(x$provenance$shape_drift)
     lines <- c(lines,
       "",
-      sprintf("### Config provenance (%d files, %d drifted)",
-              nrow(x$provenance), drifted),
+      sprintf("### Config provenance (%d files, %d byte / %d shape drifted)",
+              nrow(x$provenance), n_byte, n_shape),
       "",
-      "| file | drift |",
-      "|---|---|")
+      "| file | byte drift | shape drift |",
+      "|---|---|---|")
     for (i in seq_len(nrow(x$provenance))) {
-      lines <- c(lines, sprintf("| `%s` | %s |",
+      lines <- c(lines, sprintf("| `%s` | %s | %s |",
                                  x$provenance$file[i],
-                                 if (x$provenance$drift[i]) "**yes**" else "no"))
+                                 if (x$provenance$byte_drift[i]) "**yes**" else "no",
+                                 if (x$provenance$shape_drift[i]) "**yes**" else "no"))
     }
   }
   paste(lines, collapse = "\n")

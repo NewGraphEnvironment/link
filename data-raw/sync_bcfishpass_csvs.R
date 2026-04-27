@@ -33,6 +33,7 @@ UPSTREAM_REPO <- "smnorris/bcfishpass"
 BUNDLE_BCFP <- "inst/extdata/configs/bcfishpass"
 BUNDLE_DEF  <- "inst/extdata/configs/default"
 SUMMARY_PATH <- "/tmp/sync_summary.md"
+DRIFT_KIND_PATH <- "/tmp/sync_drift_kind"
 
 stopifnot(file.exists(file.path(BUNDLE_BCFP, "config.yaml")),
           file.exists(file.path(BUNDLE_DEF, "config.yaml")))
@@ -41,6 +42,20 @@ stopifnot(file.exists(file.path(BUNDLE_BCFP, "config.yaml")),
 
 sha256_text <- function(content_bytes) {
   paste0("sha256:", digest::digest(content_bytes,
+                                    algo = "sha256",
+                                    serialize = FALSE))
+}
+
+# Shape fingerprint: sha256 of normalized first line. Catches column
+# rename/add/remove/reshape but not type changes within stable columns.
+# Mirrors `link:::.lnk_shape_fingerprint()` so sync-time and runtime
+# computations agree.
+shape_fingerprint <- function(content_bytes) {
+  text <- rawToChar(content_bytes)
+  first_line <- sub("\n.*$", "", text)
+  if (!nzchar(first_line)) return(NA_character_)
+  normalized <- sub("\\s+$", "", first_line)
+  paste0("sha256:", digest::digest(normalized,
                                     algo = "sha256",
                                     serialize = FALSE))
 }
@@ -111,11 +126,13 @@ gh_api_json <- function(endpoint) {
   jsonlite::fromJSON(paste(out, collapse = "\n"), simplifyVector = FALSE)
 }
 
-# Replace `upstream_sha`, `synced`, `checksum` lines for a specific
-# provenance entry. Walks the YAML as text lines so comments + key
-# ordering are preserved (yaml::write_yaml round-trips lose comments).
+# Replace `upstream_sha`, `synced`, `checksum`, `shape_checksum` lines
+# for a specific provenance entry. Walks the YAML as text lines so
+# comments + key ordering are preserved (yaml::write_yaml round-trips
+# lose comments).
 update_provenance_in_yaml <- function(yaml_path, rel_path,
-                                       new_sha, new_synced, new_checksum) {
+                                       new_sha, new_synced,
+                                       new_checksum, new_shape_checksum) {
   lines <- readLines(yaml_path)
   # Provenance entries are indented 2 spaces under top-level
   # `provenance:` and the file path key has a trailing colon. Match
@@ -142,8 +159,11 @@ update_provenance_in_yaml <- function(yaml_path, rel_path,
       lines[i] <- paste0("    upstream_sha: ", new_sha)
     } else if (grepl("^    synced:", line)) {
       lines[i] <- paste0("    synced: ", new_synced)
-    } else if (grepl("^    checksum:", line)) {
+    } else if (grepl("^    checksum:", line) &&
+               !grepl("^    shape_checksum:", line)) {
       lines[i] <- paste0("    checksum: ", new_checksum)
+    } else if (grepl("^    shape_checksum:", line)) {
+      lines[i] <- paste0("    shape_checksum: ", new_shape_checksum)
     }
     i <- i + 1L
   }
@@ -178,7 +198,8 @@ for (rel in target_files) {
     cat(sprintf("  %s: skipping (no upstream path in provenance)\n", rel))
     next
   }
-  expected <- prov[[rel]]$checksum
+  expected_byte  <- prov[[rel]]$checksum
+  expected_shape <- prov[[rel]]$shape_checksum
   upstream_bytes <- tryCatch(fetch_raw(upstream_rel),
     error = function(e) {
       cat(sprintf("  %s: WARNING fetch failed (%s) — skipping\n",
@@ -186,20 +207,39 @@ for (rel in target_files) {
       NULL
     })
   if (is.null(upstream_bytes)) next
-  observed <- sha256_text(upstream_bytes)
-  if (identical(observed, expected)) {
+  observed_byte  <- sha256_text(upstream_bytes)
+  observed_shape <- shape_fingerprint(upstream_bytes)
+  if (identical(observed_byte, expected_byte)) {
     cat(sprintf("  %s: clean\n", rel))
     next
   }
-  cat(sprintf("  %s: DRIFT — recording change\n", rel))
+  shape_drift <- !is.null(expected_shape) &&
+                  !identical(observed_shape, expected_shape)
+  cat(sprintf("  %s: %s DRIFT — recording change\n",
+              rel, if (shape_drift) "SHAPE" else "byte"))
   changes[[rel]] <- list(
     rel = rel,
     upstream_rel = upstream_rel,
     bytes = upstream_bytes,
-    old_checksum = expected,
-    new_checksum = observed
+    old_checksum  = expected_byte,
+    new_checksum  = observed_byte,
+    old_shape     = expected_shape,
+    new_shape     = observed_shape,
+    shape_drift   = shape_drift
   )
 }
+
+# Determine overall drift kind for the workflow gate.
+drift_kind <- if (length(changes) == 0L) {
+  "none"
+} else if (any(vapply(changes, function(ch) isTRUE(ch$shape_drift),
+                       logical(1)))) {
+  "shape"
+} else {
+  "byte"
+}
+writeLines(drift_kind, DRIFT_KIND_PATH)
+cat(sprintf("Drift kind: %s (-> %s)\n", drift_kind, DRIFT_KIND_PATH))
 
 if (length(changes) == 0L) {
   cat("No drift detected — exit clean\n")
@@ -224,32 +264,52 @@ for (rel in names(changes)) {
   ch <- changes[[rel]]
   for (bundle in c(BUNDLE_BCFP, BUNDLE_DEF)) {
     out_path <- file.path(bundle, rel)
+    # writeBin (NOT writeLines) — preserves bytes verbatim so the
+    # sync-time sha256 of `ch$bytes` matches the runtime sha256 of
+    # the on-disk file (lnk_config_verify hashes by file path).
+    # writeLines on Windows would translate \n -> \r\n and break parity.
     writeBin(ch$bytes, out_path)
     update_provenance_in_yaml(file.path(bundle, "config.yaml"),
       rel_path = rel,
       new_sha = ch$upstream_sha,
       new_synced = today,
-      new_checksum = ch$new_checksum)
+      new_checksum = ch$new_checksum,
+      new_shape_checksum = ch$new_shape)
   }
-  cat(sprintf("  %s: wrote (sha %s)\n", rel, ch$upstream_sha))
+  cat(sprintf("  %s: wrote (sha %s%s)\n",
+              rel, ch$upstream_sha,
+              if (ch$shape_drift) " — SHAPE DRIFT, do NOT auto-merge" else ""))
 }
 
 # --- Markdown summary for PR body ------------------------------------------
 
+any_shape_drift <- any(vapply(changes,
+  function(ch) isTRUE(ch$shape_drift), logical(1)))
 md_lines <- c(
-  sprintf("# CSV sync — %s", today),
+  sprintf("# CSV sync — %s%s", today,
+          if (any_shape_drift) " — SHAPE DRIFT" else ""),
   "",
+  if (any_shape_drift) c(
+    "> :warning: One or more files changed shape (column rename / add /",
+    "> remove / reshape). This PR is **not** auto-merged — the link",
+    "> pipeline and downstream consumers (`fresh::frs_habitat_overlay`,",
+    "> reporting repos, db_newgraph schema views) likely need a",
+    "> coordinated update before merging. See [link#64](https://github.com/NewGraphEnvironment/link/issues/64)",
+    "> + crate's adapter for the recommended workflow.",
+    ""
+  ) else character(0),
   sprintf("Synced %d file(s) from [%s](https://github.com/%s):",
           length(changes), UPSTREAM_REPO, UPSTREAM_REPO),
   "",
-  "| file | upstream_sha | old checksum | new checksum |",
-  "|---|---|---|---|"
+  "| file | upstream_sha | drift | old byte | new byte |",
+  "|---|---|---|---|---|"
 )
 for (rel in names(changes)) {
   ch <- changes[[rel]]
   md_lines <- c(md_lines,
-    sprintf("| `%s` | `%s` | `%s` | `%s` |",
+    sprintf("| `%s` | `%s` | %s | `%s` | `%s` |",
             rel, ch$upstream_sha,
+            if (ch$shape_drift) "**shape**" else "byte",
             substr(ch$old_checksum, 1, 14),
             substr(ch$new_checksum, 1, 14)))
 }

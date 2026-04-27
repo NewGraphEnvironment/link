@@ -2,26 +2,32 @@
 % Please edit documentation in R/lnk_config_verify.R
 \name{lnk_config_verify}
 \alias{lnk_config_verify}
-\title{Verify Config Bundle File Checksums}
+\title{Verify Config Bundle File Checksums and Shape}
 \usage{
 lnk_config_verify(cfg, strict = FALSE)
 }
 \arguments{
 \item{cfg}{An \code{lnk_config} object from \code{\link[=lnk_config]{lnk_config()}}.}
 
-\item{strict}{Logical. When \code{TRUE}, errors if any file has drifted.
-Default \code{FALSE} warns and returns the tibble for inspection.}
+\item{strict}{Logical. When \code{TRUE}, errors if any file has drifted
+on either axis. Default \code{FALSE} warns and returns the tibble for
+inspection.}
 }
 \value{
 A tibble with columns:
 \itemize{
 \item \code{file} — path relative to \code{cfg$dir}
-\item \code{expected} — checksum recorded in the manifest (sha256 hex)
-\item \code{observed} — checksum recomputed from the current file (sha256
-hex)
-\item \code{drift} — logical, \code{TRUE} when expected != observed
+\item \code{byte_expected} — byte checksum recorded in the manifest
+\item \code{byte_observed} — byte checksum recomputed from the current file
+\item \code{byte_drift} — logical, \code{TRUE} when byte checksums differ
+\item \code{shape_expected} — shape checksum recorded in the manifest, or
+\code{NA} when the manifest has no \code{shape_checksum} field
+\item \code{shape_observed} — shape checksum recomputed from the current
+file's header line
+\item \code{shape_drift} — logical, \code{TRUE} when shape checksums differ
+(and the manifest had a \code{shape_expected} to compare against)
 \item \code{missing} — logical, \code{TRUE} when the file no longer exists on
-disk (observed is \code{NA} in this case)
+disk (observed values are \code{NA})
 }
 
 The tibble carries one row per provenanced file. When the bundle
@@ -29,15 +35,31 @@ has no \verb{provenance:} block (\code{cfg$provenance} is \code{NULL}) returns
 an empty tibble with the same columns.
 }
 \description{
-Recomputes sha256 for every file declared in the bundle's
-\verb{provenance:} block and compares against the recorded checksum.
-Returns a tibble of expected vs observed; flags drift.
+Recomputes sha256 byte and shape checksums for every file declared
+in the bundle's \verb{provenance:} block and compares against the
+recorded values. Returns a tibble of expected vs observed; flags
+drift on each axis separately.
 }
 \details{
-Use this at run time to detect silent drift — a file that was edited
-without re-recording its checksum, or an external CSV that was
-re-synced under the same path. Drift between two pipeline runs on
-the same DB state with the same package versions almost always
+\strong{Byte drift} (\code{byte_drift}) — file content changed (rows
+added/edited/removed, or whole-file re-shape). Detected via sha256
+of the full file. Catches every kind of change but doesn't tell you
+WHAT kind.
+
+\strong{Shape drift} (\code{shape_drift}) — file's \emph{header} changed (column
+added / renamed / removed / reshaped). Detected via sha256 of the
+first line of the file (whitespace-normalized). A pure-value
+change (rows added with no column change) shows \code{byte_drift = TRUE}
+but \code{shape_drift = FALSE}. A column rename shows both TRUE.
+Header-only fingerprint catches the dominant failure mode (column
+structure change); type changes within stable columns are not
+detected — they require value-level inspection that's out of scope
+here.
+
+Use this at run time to detect silent drift — a file that was
+edited without re-recording its checksum, or an external CSV that
+was re-synced under the same path. Drift between two pipeline runs
+on the same DB state with the same package versions almost always
 traces back to a config-file edit; \code{lnk_config_verify()} is the
 fastest way to localize the change.
 }
@@ -47,7 +69,7 @@ verify <- lnk_config_verify(cfg)
 verify
 
 \dontrun{
-# In a verification log: error if anything drifted
+# In a verification log: error on either drift kind
 lnk_config_verify(cfg, strict = TRUE)
 }
 }
