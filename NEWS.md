@@ -1,3 +1,11 @@
+# link 0.12.0
+
+Pick up `fresh 0.22.0` overlay simplification — caller-side update for the canonical-shape contract.
+
+- `lnk_pipeline_classify()` now calls `frs_habitat_overlay()` with `species_col = "species_code"` + `habitat_types = c("spawning", "rearing")` instead of `format = "long"` + `long_value_col = "habitat_ind"`. Matches the shape bcfishpass's `user_habitat_classification.csv` adopted on 2026-04-26 (row-per-(segment × species), per-habitat indicator columns). Three-line caller-side diff; no link API change.
+- `Suggests: fresh (>= 0.22.0)`. Coordinates with [fresh#177](https://github.com/NewGraphEnvironment/fresh/issues/177).
+- Pipeline runs again. The vignette stays in `dev/` until link#64 (sync workflow shape fingerprint) and link#65 (`lnk_load_overrides()` via `crate::crt_ingest()`) land.
+
 # link 0.11.2
 
 bcfishpass vignette pulled out of pkgdown until tighter.
