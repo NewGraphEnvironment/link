@@ -1,8 +1,8 @@
 ---
-title: "Reproducing bcfishpass with link + fresh"
+title: "Modelling spawning and rearing habitat using bcfishpass defaults"
 output: bookdown::html_vignette2
 vignette: >
-  %\VignetteIndexEntry{Reproducing bcfishpass with link + fresh}
+  %\VignetteIndexEntry{Modelling spawning and rearing habitat using bcfishpass defaults}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -19,12 +19,22 @@ options(knitr.kable.NA = "—")
 library(link)
 ```
 
-[bcfishpass](https://github.com/smnorris/bcfishpass) is the reference
-model for freshwater habitat classification and fish passage
-prioritization in British Columbia. link + [fresh](https://newgraphenvironment.github.io/fresh/)
-provide a configurable, reproducible R-side pipeline. The bundled
-`"bcfishpass"` config reproduces bcfishpass's classification method.
-Other configs can express other methods; the package is method-agnostic.
+[bcfishpass](https://github.com/smnorris/bcfishpass) is a province-wide
+modelling framework for British Columbia. Its scope is broader than
+linear habitat classification — PSCIS road and rail crossing
+assessment, fish passage barrier identification, watershed
+connectivity analysis, and restoration prioritization (Watershed
+Connectivity Restoration Plans). This vignette covers only the
+per-segment linear habitat classification slice — the layer that
+feeds the others.
+
+The bundled `"bcfishpass"` config in link expresses the per-segment
+linear habitat classification (spawning + rearing), natural-barrier
+modelling (gradient, falls, user-identified definite barriers), and
+observation-based access overrides of bcfishpass as a self-contained
+input bundle. The broader bcfishpass scope — PSCIS crossing
+assessment, WCRP, restoration prioritization — is bcfishpass-side and
+out of link's scope.
 
 This vignette walks through what the bcfishpass configuration does, how
 to run it, and how the output compares to bcfishpass reference tables.
@@ -224,29 +234,37 @@ bypass. Numeric impact and the reasoning are in
 
 ## Running the pipeline
 
+The user-facing entry point is six `lnk_pipeline_*` phase calls
+driven by an `lnk_config()` bundle. Each phase writes to a working
+schema in PostgreSQL; the final `fresh.streams_habitat` table holds
+per-segment booleans for `spawning`, `rearing`, `lake_rearing`, and
+`wetland_rearing`, per species.
+
 ```{r entrypoint, eval = FALSE}
 library(link)
-library(targets)
+library(DBI)
 
-# `_targets.R` lives in data-raw/; run from that directory.
-setwd("data-raw")
+conn   <- lnk_db_conn()
+cfg    <- lnk_config("bcfishpass")
+schema <- "working_bulk"
 
-tar_make()                  # 5 WSGs, serial
-rollup <- tar_read(rollup)  # per-WSG × species × habitat tibble
+lnk_pipeline_setup(   conn,                  schema, overwrite = TRUE)
+lnk_pipeline_load(    conn, aoi = "BULK", cfg = cfg, schema)
+lnk_pipeline_prepare( conn, aoi = "BULK", cfg = cfg, schema)
+lnk_pipeline_break(   conn, aoi = "BULK", cfg = cfg, schema)
+lnk_pipeline_classify(conn, aoi = "BULK", cfg = cfg, schema)
+lnk_pipeline_connect( conn, aoi = "BULK", cfg = cfg, schema)
 ```
 
-`tar_make()` runs
-[`compare_bcfishpass_wsg()`](https://github.com/NewGraphEnvironment/link/blob/main/data-raw/compare_bcfishpass_wsg.R)
-once each for Adams (ADMS), Bulkley (BULK), Babine (BABL), Elk
-(ELKR), and Deadman (DEAD), binding the per-WSG tibbles into one
-rollup. Each call exercises the six `lnk_pipeline_*` phases. ADMS/BULK/
-BABL/ELKR span the species assemblages used in bcfishpass validation —
-BT with CH, CO, SK on ADMS; PK and ST added on BULK and BABL; BT with
-WCT on ELKR. DEAD is an end-to-end test for the
-`barriers_definite_control` wiring: it has a single `barrier_ind = TRUE`
-control row with enough anadromous observations upstream to exercise
-the filter, which the other four WSGs don't. Method agreement across
-this spread is stronger evidence than agreement on a single WSG.
+Run the same six phases per AOI to build a province-wide picture, or
+plug them into a `targets` pipeline as
+[`data-raw/_targets.R`](https://github.com/NewGraphEnvironment/link/blob/main/data-raw/_targets.R)
+does for cross-WSG regression — Adams (ADMS), Bulkley (BULK), Babine
+(BABL), Elk (ELKR), and Deadman (DEAD), binding per-WSG tibbles into
+one rollup. ADMS/BULK/BABL/ELKR span the species assemblages used in
+bcfishpass validation; DEAD exercises the `barriers_definite_control`
+filter. Method agreement across that spread is stronger evidence than
+agreement on a single WSG.
 
 ## The rollup
 
@@ -303,6 +321,13 @@ The watershed upstream of the Neexdzii Kwa / Wetzin Kwa (Bulkley /
 Morice) confluence, built via `FWA_WatershedAtMeasure(360873822,
 166030.4)`. Sits inside the BULK watershed group, so the BULK rollup
 above aggregates this area along with the rest of the Bulkley.
+
+The pipeline produces per-segment linear classification across
+`spawning`, `rearing`, `lake_rearing`, and `wetland_rearing` for every
+species in the bundle. The map below visualizes the spawning/rearing
+slice for chinook (CH) — the simplest cut available; per-species ha
+rollups, lake/wetland decomposition, and other species are also in
+`fresh.streams_habitat`.
 
 The link pipeline layer is visible by default; toggle on the
 bcfishpass reference layer to compare.
