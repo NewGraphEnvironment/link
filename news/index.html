@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.11.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.12.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,6 +31,15 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.12.0" id="link-0120">link 0.12.0<a class="anchor" aria-label="anchor" href="#link-0120"></a></h2>
+<p>Pick up <code>fresh 0.22.0</code> overlay simplification — caller-side update for the canonical-shape contract.</p>
+<ul><li>
+<code><a href="../reference/lnk_pipeline_classify.html">lnk_pipeline_classify()</a></code> now calls <code>frs_habitat_overlay()</code> with <code>species_col = "species_code"</code> + <code>habitat_types = c("spawning", "rearing")</code> instead of <code>format = "long"</code> + <code>long_value_col = "habitat_ind"</code>. Matches the shape bcfishpass’s <code>user_habitat_classification.csv</code> adopted on 2026-04-26 (row-per-(segment × species), per-habitat indicator columns). Three-line caller-side diff; no link API change.</li>
+<li>
+<code>Suggests: fresh (&gt;= 0.22.0)</code>. Coordinates with <a href="https://github.com/NewGraphEnvironment/fresh/issues/177" class="external-link">fresh#177</a>.</li>
+<li>Pipeline runs again. The vignette stays in <code>dev/</code> until link#64 (sync workflow shape fingerprint) and link#65 (<code>lnk_load_overrides()</code> via <code>crate::crt_ingest()</code>) land.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.11.2" id="link-0112">link 0.11.2<a class="anchor" aria-label="anchor" href="#link-0112"></a></h2>
 <p>bcfishpass vignette pulled out of pkgdown until tighter.</p>
