@@ -109,9 +109,9 @@ lnk_pipeline_connect(conn, aoi = "BULK", cfg = cfg, schema = "working_bulk")
 
 `data-raw/_targets.R` wraps this over five validated WSGs (ADMS, BULK,
 BABL, ELKR, DEAD) with `targets` for caching and cross-WSG regression.
-A vignette walking through the bundled bcfishpass config is in
-preparation; meanwhile the per-phase detail lives in
-[`research/bcfishpass_comparison.md`](https://github.com/NewGraphEnvironment/link/blob/main/research/bcfishpass_comparison.md).
+The [`Modelling spawning and rearing habitat using bcfishpass defaults`](https://newgraphenvironment.github.io/link/articles/habitat-bcfishpass.html)
+vignette walks through the bundled bcfishpass config; per-phase detail
+lives in [`research/bcfishpass_comparison.md`](https://github.com/NewGraphEnvironment/link/blob/main/research/bcfishpass_comparison.md).
 
 ## Ecosystem
 

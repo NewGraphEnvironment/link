@@ -1,0 +1,12 @@
++ cfg_bcfishpass dispatched
+✔ cfg_bcfishpass completed [222ms, 296.48 kB]
++ cfg_default dispatched
+✔ cfg_default completed [39ms, 296.49 kB]
++ comparison_bcfishpass_ELKR dispatched
+✖ comparison_bcfishpass_ELKR errored
+✖ errored pipeline [1.7s, 2 completed, 0 skipped]
+Error:
+! Error in tar_make():
+  'lnk_stamp' is not an exported object from 'namespace:link'
+  See https://books.ropensci.org/targets/debugging.html
+Execution halted
