@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.11.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.11.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,6 +31,16 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.11.2" id="link-0112">link 0.11.2<a class="anchor" aria-label="anchor" href="#link-0112"></a></h2>
+<p>bcfishpass vignette pulled out of pkgdown until tighter.</p>
+<ul><li>
+<code>vignettes/reproducing-bcfishpass.Rmd</code> → <code>dev/habitat-bcfishpass.Rmd.draft</code>. Same pattern as scoring-crossings — out of build path, preserved for resumption when content lands clean.</li>
+<li>Content updates applied before move: title now “Modelling spawning and rearing habitat using bcfishpass defaults”; new scope paragraph describing what bcfishpass covers beyond linear classification; entrypoint replaced with explicit <code>lnk_pipeline_*</code> calls (was <code>tar_make()</code>); map section clarifies linear classification covers spawning/rearing/lake_rearing/wetland_rearing per species.</li>
+<li>
+<code>README.md</code>: “Full pipeline (reproducing bcfishpass)” → “Full pipeline (linear habitat classification)”; broken pkgdown vignette link removed.</li>
+<li>Open follow-ups: rollup-query retarget to <code>streams_habitat_linear</code> for apples-to-apples post-overlay comparison; range-containment relaxation in <code><a href="https://newgraphenvironment.github.io/fresh/reference/frs_habitat_overlay.html" class="external-link">fresh::frs_habitat_overlay</a></code>.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.11.1" id="link-0111">link 0.11.1<a class="anchor" aria-label="anchor" href="#link-0111"></a></h2>
 <p>Vignette cleanup.</p>
