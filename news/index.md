@@ -1,5 +1,49 @@
 # Changelog
 
+## link 0.13.0
+
+Shape fingerprint + halt auto-merge on shape drift
+([\#64](https://github.com/NewGraphEnvironment/link/issues/64)).
+
+`data-raw/sync_bcfishpass_csvs.R` and the daily
+`sync-bcfishpass-csvs.yml` cron previously compared each
+bcfishpass-sourced CSV against a recorded sha256 byte checksum and
+auto-merged any drift. That worked for value drift (rows added/edited)
+but was blind to shape drift — bcfishpass’s 2026-04-26 long→wide reshape
+(with column type change) passed straight through and broke link’s
+pipeline downstream. This release adds a separate **shape fingerprint**
+alongside the byte checksum; the workflow auto-merges byte-only drift as
+before but halts shape drift for coordinated review.
+
+- New `shape_checksum` field in the `provenance:` block of each bundle’s
+  `config.yaml`. Computed as sha256 of the file’s first line
+  (whitespace-normalized). Catches column rename / add / remove /
+  reshape — the dominant failure mode. Type changes within stable
+  columns are out of scope (rarer; can extend later if needed).
+- `data-raw/sync_bcfishpass_csvs.R` computes shape fingerprint at sync
+  time, classifies each file’s drift as `byte` or `shape`, writes the
+  overall drift kind to `/tmp/sync_drift_kind` for the workflow to
+  consume.
+- `.github/workflows/sync-bcfishpass-csvs.yml` reads the drift kind.
+  Byte-only drift → auto-PR + auto-merge as today. Shape drift → auto-PR
+  opens with `schema-drift` label, NOT auto-merged, workflow exits
+  non-zero (red on Actions tab) so the change is visible. Coordinated
+  review across link / fresh / crate is required before merging.
+- [`lnk_config_verify()`](https://newgraphenvironment.github.io/link/reference/lnk_config_verify.md)
+  extended with `shape_drift` column. **Breaking** (pre-1.0): old single
+  `drift` column renamed to `byte_drift`; existing tibble shape now
+  `(file, byte_expected, byte_observed, byte_drift, shape_expected, shape_observed, shape_drift, missing)`.
+- [`lnk_stamp()`](https://newgraphenvironment.github.io/link/reference/lnk_stamp.md)
+  markdown rendering surfaces both byte and shape drift counts in the
+  provenance summary.
+- 15 new tests (468 total, was 453) — `.lnk_shape_fingerprint()`
+  helper + shape-drift detection + missing-file handling +
+  backward-compat path for bundles without `shape_checksum:` field.
+
+Coordinates with crate’s adapter pattern (link#65, crate#2) — when shape
+drift fires, crate’s normalize handler is the right place to absorb the
+upstream change before link’s pipeline sees it.
+
 ## link 0.12.0
 
 Pick up `fresh 0.22.0` overlay simplification — caller-side update for

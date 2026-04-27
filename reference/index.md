@@ -7,7 +7,7 @@ Load a pipeline config bundle (rules, parameters, overrides)
 - [`lnk_config()`](https://newgraphenvironment.github.io/link/reference/lnk_config.md)
   : Load a Pipeline Config Bundle
 - [`lnk_config_verify()`](https://newgraphenvironment.github.io/link/reference/lnk_config_verify.md)
-  : Verify Config Bundle File Checksums
+  : Verify Config Bundle File Checksums and Shape
 
 ## Run stamps
 

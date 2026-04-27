@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.12.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.13.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,6 +31,22 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.13.0" id="link-0130">link 0.13.0<a class="anchor" aria-label="anchor" href="#link-0130"></a></h2>
+<p>Shape fingerprint + halt auto-merge on shape drift (<a href="https://github.com/NewGraphEnvironment/link/issues/64" class="external-link">#64</a>).</p>
+<p><code>data-raw/sync_bcfishpass_csvs.R</code> and the daily <code>sync-bcfishpass-csvs.yml</code> cron previously compared each bcfishpass-sourced CSV against a recorded sha256 byte checksum and auto-merged any drift. That worked for value drift (rows added/edited) but was blind to shape drift — bcfishpass’s 2026-04-26 long→wide reshape (with column type change) passed straight through and broke link’s pipeline downstream. This release adds a separate <strong>shape fingerprint</strong> alongside the byte checksum; the workflow auto-merges byte-only drift as before but halts shape drift for coordinated review.</p>
+<ul><li>New <code>shape_checksum</code> field in the <code>provenance:</code> block of each bundle’s <code>config.yaml</code>. Computed as sha256 of the file’s first line (whitespace-normalized). Catches column rename / add / remove / reshape — the dominant failure mode. Type changes within stable columns are out of scope (rarer; can extend later if needed).</li>
+<li>
+<code>data-raw/sync_bcfishpass_csvs.R</code> computes shape fingerprint at sync time, classifies each file’s drift as <code>byte</code> or <code>shape</code>, writes the overall drift kind to <code>/tmp/sync_drift_kind</code> for the workflow to consume.</li>
+<li>
+<code>.github/workflows/sync-bcfishpass-csvs.yml</code> reads the drift kind. Byte-only drift → auto-PR + auto-merge as today. Shape drift → auto-PR opens with <code>schema-drift</code> label, NOT auto-merged, workflow exits non-zero (red on Actions tab) so the change is visible. Coordinated review across link / fresh / crate is required before merging.</li>
+<li>
+<code><a href="../reference/lnk_config_verify.html">lnk_config_verify()</a></code> extended with <code>shape_drift</code> column. <strong>Breaking</strong> (pre-1.0): old single <code>drift</code> column renamed to <code>byte_drift</code>; existing tibble shape now <code>(file, byte_expected, byte_observed, byte_drift, shape_expected, shape_observed, shape_drift, missing)</code>.</li>
+<li>
+<code><a href="../reference/lnk_stamp.html">lnk_stamp()</a></code> markdown rendering surfaces both byte and shape drift counts in the provenance summary.</li>
+<li>15 new tests (468 total, was 453) — <code>.lnk_shape_fingerprint()</code> helper + shape-drift detection + missing-file handling + backward-compat path for bundles without <code>shape_checksum:</code> field.</li>
+</ul><p>Coordinates with crate’s adapter pattern (link#65, crate#2) — when shape drift fires, crate’s normalize handler is the right place to absorb the upstream change before link’s pipeline sees it.</p>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.12.0" id="link-0120">link 0.12.0<a class="anchor" aria-label="anchor" href="#link-0120"></a></h2>
 <p>Pick up <code>fresh 0.22.0</code> overlay simplification — caller-side update for the canonical-shape contract.</p>
