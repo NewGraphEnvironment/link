@@ -22,7 +22,6 @@ BT:
     - 1100
     - 2000
     - 2300
-    in_waterbody: true
   - waterbody_type: R
     channel_width:
     - 0.0
@@ -59,7 +58,6 @@ CH:
     - 1100
     - 2000
     - 2300
-    in_waterbody: true
   - waterbody_type: R
     channel_width:
     - 0.0
@@ -109,7 +107,6 @@ CO:
     - 1100
     - 2000
     - 2300
-    in_waterbody: true
   - waterbody_type: R
     channel_width:
     - 0.0
@@ -185,7 +182,6 @@ ST:
     - 1100
     - 2000
     - 2300
-    in_waterbody: true
   - waterbody_type: R
     channel_width:
     - 0.0
@@ -222,7 +218,6 @@ WCT:
     - 1100
     - 2000
     - 2300
-    in_waterbody: true
   - waterbody_type: R
     channel_width:
     - 0.0
@@ -285,7 +280,6 @@ RB:
     - 1100
     - 2000
     - 2300
-    in_waterbody: true
   - waterbody_type: R
     channel_width:
     - 0.0
@@ -322,7 +316,6 @@ GR:
     - 1100
     - 2000
     - 2300
-    in_waterbody: true
   - waterbody_type: R
     channel_width:
     - 0.0

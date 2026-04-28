@@ -1,0 +1,331 @@
+[use_case_1] building config
+Skipping CT: no thresholds in fresh CSV
+Skipping DV: no thresholds in fresh CSV
+Wrote /var/folders/mg/h910y2c54fsc99qj74dyrjph0000gn/T//RtmpgfPlyc/rfdemo_132aa394ebd1c/rules.yaml (11 species, explicit edge types)
+[use_case_1] running BABL pipeline
+## Run stamp — default
+
+- AOI: `BABL`
+- Started: 2026-04-28 07:48:59 PDT
+
+### Software
+- link: 0.15.0 (sha NA)
+- fresh: 0.24.0 (sha NA)
+- R: R version 4.5.2 (2025-10-31)
+
+### Database snapshot
+- bcfishobs.observations: 372,420
+- whse_basemapping.fwa_stream_networks_sp: 4,907,441
+
+### Config provenance (12 files, 0 byte / 0 shape drifted)
+
+| file | byte drift | shape drift |
+|---|---|---|
+| `rules.yaml` | no | no |
+| `dimensions.csv` | no | no |
+| `parameters_fresh.csv` | no | no |
+| `overrides/user_habitat_classification.csv` | no | no |
+| `overrides/observation_exclusions.csv` | no | no |
+| `overrides/wsg_species_presence.csv` | no | no |
+| `overrides/user_modelled_crossing_fixes.csv` | no | no |
+| `overrides/user_pscis_barrier_status.csv` | no | no |
+| `overrides/pscis_modelledcrossings_streams_xref.csv` | no | no |
+| `overrides/user_barriers_definite.csv` | no | no |
+| `overrides/user_barriers_definite_control.csv` | no | no |
+| `overrides/user_crossings_misc.csv` | no | no |
+NOTICE:  schema "fresh" already exists, skipping
+
+NOTICE:  table "barriers_definite" does not exist, skipping
+
+NOTICE:  table "streams_blk" does not exist, skipping
+
+NOTICE:  table "gradient_barriers_raw" does not exist, skipping
+
+NOTICE:  table "natural_barriers" does not exist, skipping
+
+NOTICE:  table "barrier_overrides" does not exist, skipping
+
+NOTICE:  table "barriers_bt" does not exist, skipping
+
+NOTICE:  table "barriers_bt_min" does not exist, skipping
+
+NOTICE:  table "barriers_ch_cm_co_pk_sk" does not exist, skipping
+
+NOTICE:  table "barriers_ch_cm_co_pk_sk_min" does not exist, skipping
+
+NOTICE:  table "barriers_st" does not exist, skipping
+
+NOTICE:  table "barriers_st_min" does not exist, skipping
+
+NOTICE:  table "barriers_wct" does not exist, skipping
+
+NOTICE:  table "barriers_wct_min" does not exist, skipping
+
+NOTICE:  table "gradient_barriers_minimal" does not exist, skipping
+
+NOTICE:  table "streams" does not exist, skipping
+
+NOTICE:  table "streams_habitat" does not exist, skipping
+
+NOTICE:  table "observations_breaks" does not exist, skipping
+
+NOTICE:  table "habitat_endpoints" does not exist, skipping
+
+NOTICE:  table "crossings_breaks" does not exist, skipping
+
+NOTICE:  table "streams_breaks" does not exist, skipping
+
+NOTICE:  relation "streams_id_segment_idx" already exists, skipping
+
+NOTICE:  table "streams_acc_015" does not exist, skipping
+
+NOTICE:  table "streams_acc_02" does not exist, skipping
+
+NOTICE:  table "streams_acc_025" does not exist, skipping
+
+NOTICE:  table "streams_acc_025_ovr_bt" does not exist, skipping
+
+NOTICE:  table "streams_acc_015_ovr_ch" does not exist, skipping
+
+NOTICE:  table "streams_acc_015_ovr_co" does not exist, skipping
+
+NOTICE:  table "streams_acc_015_ovr_sk" does not exist, skipping
+
+NOTICE:  table "streams_acc_02_ovr_st" does not exist, skipping
+
+NOTICE:  table "frs_clusters_bt" does not exist, skipping
+
+NOTICE:  table "frs_clusters_ch" does not exist, skipping
+
+NOTICE:  table "frs_clusters_co" does not exist, skipping
+
+NOTICE:  table "frs_clusters_sk" does not exist, skipping
+
+NOTICE:  table "frs_qual_spawn_sk" does not exist, skipping
+
+NOTICE:  table "frs_trace_lfid_sk" does not exist, skipping
+
+NOTICE:  table "frs_clusters_st" does not exist, skipping
+
+[use_case_1] elapsed 127.0s
+[use_case_2] building config
+Skipping CT: no thresholds in fresh CSV
+Skipping DV: no thresholds in fresh CSV
+Wrote /var/folders/mg/h910y2c54fsc99qj74dyrjph0000gn/T//RtmpgfPlyc/rfdemo_132aa606196a8/rules.yaml (11 species, explicit edge types)
+[use_case_2] running BABL pipeline
+## Run stamp — default
+
+- AOI: `BABL`
+- Started: 2026-04-28 07:51:06 PDT
+
+### Software
+- link: 0.15.0 (sha NA)
+- fresh: 0.24.0 (sha NA)
+- R: R version 4.5.2 (2025-10-31)
+
+### Database snapshot
+- bcfishobs.observations: 372,420
+- whse_basemapping.fwa_stream_networks_sp: 4,907,441
+
+### Config provenance (12 files, 0 byte / 0 shape drifted)
+
+| file | byte drift | shape drift |
+|---|---|---|
+| `rules.yaml` | no | no |
+| `dimensions.csv` | no | no |
+| `parameters_fresh.csv` | no | no |
+| `overrides/user_habitat_classification.csv` | no | no |
+| `overrides/observation_exclusions.csv` | no | no |
+| `overrides/wsg_species_presence.csv` | no | no |
+| `overrides/user_modelled_crossing_fixes.csv` | no | no |
+| `overrides/user_pscis_barrier_status.csv` | no | no |
+| `overrides/pscis_modelledcrossings_streams_xref.csv` | no | no |
+| `overrides/user_barriers_definite.csv` | no | no |
+| `overrides/user_barriers_definite_control.csv` | no | no |
+| `overrides/user_crossings_misc.csv` | no | no |
+NOTICE:  schema "fresh" already exists, skipping
+
+NOTICE:  table "barriers_definite" does not exist, skipping
+
+NOTICE:  table "streams_blk" does not exist, skipping
+
+NOTICE:  table "gradient_barriers_raw" does not exist, skipping
+
+NOTICE:  table "natural_barriers" does not exist, skipping
+
+NOTICE:  table "barrier_overrides" does not exist, skipping
+
+NOTICE:  table "barriers_bt" does not exist, skipping
+
+NOTICE:  table "barriers_bt_min" does not exist, skipping
+
+NOTICE:  table "barriers_ch_cm_co_pk_sk" does not exist, skipping
+
+NOTICE:  table "barriers_ch_cm_co_pk_sk_min" does not exist, skipping
+
+NOTICE:  table "barriers_st" does not exist, skipping
+
+NOTICE:  table "barriers_st_min" does not exist, skipping
+
+NOTICE:  table "barriers_wct" does not exist, skipping
+
+NOTICE:  table "barriers_wct_min" does not exist, skipping
+
+NOTICE:  table "gradient_barriers_minimal" does not exist, skipping
+
+NOTICE:  table "streams" does not exist, skipping
+
+NOTICE:  table "streams_habitat" does not exist, skipping
+
+NOTICE:  table "observations_breaks" does not exist, skipping
+
+NOTICE:  table "habitat_endpoints" does not exist, skipping
+
+NOTICE:  table "crossings_breaks" does not exist, skipping
+
+NOTICE:  table "streams_breaks" does not exist, skipping
+
+NOTICE:  relation "streams_id_segment_idx" already exists, skipping
+
+NOTICE:  table "streams_acc_015" does not exist, skipping
+
+NOTICE:  table "streams_acc_02" does not exist, skipping
+
+NOTICE:  table "streams_acc_025" does not exist, skipping
+
+NOTICE:  table "streams_acc_025_ovr_bt" does not exist, skipping
+
+NOTICE:  table "streams_acc_015_ovr_ch" does not exist, skipping
+
+NOTICE:  table "streams_acc_015_ovr_co" does not exist, skipping
+
+NOTICE:  table "streams_acc_015_ovr_sk" does not exist, skipping
+
+NOTICE:  table "streams_acc_02_ovr_st" does not exist, skipping
+
+NOTICE:  table "frs_clusters_bt" does not exist, skipping
+
+NOTICE:  table "frs_clusters_ch" does not exist, skipping
+
+NOTICE:  table "frs_clusters_co" does not exist, skipping
+
+NOTICE:  table "frs_clusters_sk" does not exist, skipping
+
+NOTICE:  table "frs_qual_spawn_sk" does not exist, skipping
+
+NOTICE:  table "frs_trace_lfid_sk" does not exist, skipping
+
+NOTICE:  table "frs_clusters_st" does not exist, skipping
+
+[use_case_2] elapsed 119.7s
+[bcfishpass] building config
+Skipping CT: no thresholds in fresh CSV
+Skipping DV: no thresholds in fresh CSV
+Wrote /var/folders/mg/h910y2c54fsc99qj74dyrjph0000gn/T//RtmpgfPlyc/rfdemo_132aa26ea2107/rules.yaml (11 species, explicit edge types)
+[bcfishpass] running BABL pipeline
+## Run stamp — default
+
+- AOI: `BABL`
+- Started: 2026-04-28 07:53:06 PDT
+
+### Software
+- link: 0.15.0 (sha NA)
+- fresh: 0.24.0 (sha NA)
+- R: R version 4.5.2 (2025-10-31)
+
+### Database snapshot
+- bcfishobs.observations: 372,420
+- whse_basemapping.fwa_stream_networks_sp: 4,907,441
+
+### Config provenance (12 files, 0 byte / 0 shape drifted)
+
+| file | byte drift | shape drift |
+|---|---|---|
+| `rules.yaml` | no | no |
+| `dimensions.csv` | no | no |
+| `parameters_fresh.csv` | no | no |
+| `overrides/user_habitat_classification.csv` | no | no |
+| `overrides/observation_exclusions.csv` | no | no |
+| `overrides/wsg_species_presence.csv` | no | no |
+| `overrides/user_modelled_crossing_fixes.csv` | no | no |
+| `overrides/user_pscis_barrier_status.csv` | no | no |
+| `overrides/pscis_modelledcrossings_streams_xref.csv` | no | no |
+| `overrides/user_barriers_definite.csv` | no | no |
+| `overrides/user_barriers_definite_control.csv` | no | no |
+| `overrides/user_crossings_misc.csv` | no | no |
+NOTICE:  schema "fresh" already exists, skipping
+
+NOTICE:  table "barriers_definite" does not exist, skipping
+
+NOTICE:  table "streams_blk" does not exist, skipping
+
+NOTICE:  table "gradient_barriers_raw" does not exist, skipping
+
+NOTICE:  table "natural_barriers" does not exist, skipping
+
+NOTICE:  table "barrier_overrides" does not exist, skipping
+
+NOTICE:  table "barriers_bt" does not exist, skipping
+
+NOTICE:  table "barriers_bt_min" does not exist, skipping
+
+NOTICE:  table "barriers_ch_cm_co_pk_sk" does not exist, skipping
+
+NOTICE:  table "barriers_ch_cm_co_pk_sk_min" does not exist, skipping
+
+NOTICE:  table "barriers_st" does not exist, skipping
+
+NOTICE:  table "barriers_st_min" does not exist, skipping
+
+NOTICE:  table "barriers_wct" does not exist, skipping
+
+NOTICE:  table "barriers_wct_min" does not exist, skipping
+
+NOTICE:  table "gradient_barriers_minimal" does not exist, skipping
+
+NOTICE:  table "streams" does not exist, skipping
+
+NOTICE:  table "streams_habitat" does not exist, skipping
+
+NOTICE:  table "observations_breaks" does not exist, skipping
+
+NOTICE:  table "habitat_endpoints" does not exist, skipping
+
+NOTICE:  table "crossings_breaks" does not exist, skipping
+
+NOTICE:  table "streams_breaks" does not exist, skipping
+
+NOTICE:  relation "streams_id_segment_idx" already exists, skipping
+
+NOTICE:  table "streams_acc_015" does not exist, skipping
+
+NOTICE:  table "streams_acc_02" does not exist, skipping
+
+NOTICE:  table "streams_acc_025" does not exist, skipping
+
+NOTICE:  table "streams_acc_025_ovr_bt" does not exist, skipping
+
+NOTICE:  table "streams_acc_015_ovr_ch" does not exist, skipping
+
+NOTICE:  table "streams_acc_015_ovr_co" does not exist, skipping
+
+NOTICE:  table "streams_acc_015_ovr_sk" does not exist, skipping
+
+NOTICE:  table "streams_acc_02_ovr_st" does not exist, skipping
+
+NOTICE:  table "frs_clusters_bt" does not exist, skipping
+
+NOTICE:  table "frs_clusters_ch" does not exist, skipping
+
+NOTICE:  table "frs_clusters_co" does not exist, skipping
+
+NOTICE:  table "frs_clusters_sk" does not exist, skipping
+
+NOTICE:  table "frs_qual_spawn_sk" does not exist, skipping
+
+NOTICE:  table "frs_trace_lfid_sk" does not exist, skipping
+
+NOTICE:  table "frs_clusters_st" does not exist, skipping
+
+[bcfishpass] elapsed 122.6s
+Wrote research/rule_flexibility_data.rds
