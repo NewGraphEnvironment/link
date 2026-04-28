@@ -2,5 +2,5 @@
 
 ### All vignettes
 
-- [Reproducing bcfishpass with link +
-  fresh](https://newgraphenvironment.github.io/link/articles/reproducing-bcfishpass.md):
+- [Modelling spawning and rearing habitat using bcfishpass
+  defaults](https://newgraphenvironment.github.io/link/articles/habitat-bcfishpass.md):

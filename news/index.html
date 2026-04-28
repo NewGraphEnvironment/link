@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.16.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.17.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -16,6 +16,10 @@
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/habitat-bcfishpass.html">Modelling spawning and rearing habitat using bcfishpass defaults</a></li>
+  </ul></li>
 <li class="active nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
@@ -31,6 +35,16 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.17.0" id="link-0170">link 0.17.0<a class="anchor" aria-label="anchor" href="#link-0170"></a></h2>
+<p>Ship the <code>Modelling spawning and rearing habitat using bcfishpass defaults</code> vignette (<a href="https://github.com/NewGraphEnvironment/link/blob/main/vignettes/habitat-bcfishpass.Rmd" class="external-link"><code>vignettes/habitat-bcfishpass.Rmd</code></a>) on top of the post-phase-3 codebase. Regenerated bundled artifacts (<code>inst/extdata/vignette-data/{rollup, sub_ch, sub_ch_bcfp}.rds</code>) reflect the corrected emit semantics and tighter parity.</p>
+<p><strong>bcfishpass-bundle parity (5 WSGs × 5 species, spawn + rear):</strong></p>
+<ul><li>42 of 42 non-NA rows within ±5%</li>
+<li>35 of 42 within ±2%</li>
+<li>median 1.1%; max 5.0%</li>
+</ul><p>Tighter than v0.13.1’s 100% within ±5% / median 1.5% claim because phase 1’s emit-semantics fix landed in main, and the regenerated rollup reflects it. Spawning rows that previously sat at +3-5% (BT/CH/CO/ST across multiple WSGs) are now at +0-2%.</p>
+<p>The vignette text claim updated to match the new numbers. Cuts the v0.13.1 vignette’s residual-deltas paragraph that mentioned overlay-range-containment and stream-order-bypass — those were pre-phase-3 artifacts; with rule emission corrected, residual deltas are mostly segmentation-boundary rounding plus the documented stream-order bypass.</p>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.16.0" id="link-0160">link 0.16.0<a class="anchor" aria-label="anchor" href="#link-0160"></a></h2>
 <p>Phase 3 of <a href="https://github.com/NewGraphEnvironment/link/issues/69" class="external-link">#69</a> — proof artifact + emit-semantics fix.</p>

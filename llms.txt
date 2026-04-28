@@ -240,3 +240,9 @@ Per-crossing upstream habitat rollup
 - [`lnk_aggregate()`](https://newgraphenvironment.github.io/link/reference/lnk_aggregate.md)
   : Compute upstream habitat per crossing
 
+# Articles
+
+### All vignettes
+
+- [Modelling spawning and rearing habitat using bcfishpass
+  defaults](https://newgraphenvironment.github.io/link/articles/habitat-bcfishpass.md):
