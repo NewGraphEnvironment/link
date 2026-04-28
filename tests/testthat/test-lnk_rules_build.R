@@ -378,7 +378,11 @@ test_that("spawn_stream_in_waterbody=no emits in_waterbody:false on stream rule"
   expect_equal(rear_stream$in_waterbody, FALSE)
 })
 
-test_that("rear_stream_in_waterbody=yes emits in_waterbody:true (default-bundle pattern)", {
+test_that("rear_stream_in_waterbody=yes omits the field (rule matches in + out of polygons)", {
+  # `yes` is the permissive default: no `in_waterbody` filter on the
+  # stream rule so it matches segments inside AND outside polygons.
+  # The opposite extreme (in_waterbody:true = inside polygons only)
+  # has no biological use case for stream rules and is not emitted.
   dims <- tibble::tribble(
     ~species, ~spawn_lake, ~spawn_stream, ~spawn_stream_in_waterbody,
     ~rear_lake, ~rear_lake_only, ~rear_no_fw, ~rear_stream,
@@ -395,7 +399,7 @@ test_that("rear_stream_in_waterbody=yes emits in_waterbody:true (default-bundle 
   spawn_stream <- rules$spawn[[1]]
   expect_equal(spawn_stream$in_waterbody, FALSE)
   rear_stream <- rules$rear[[1]]
-  expect_equal(rear_stream$in_waterbody, TRUE)
+  expect_null(rear_stream$in_waterbody)
 })
 
 test_that("absent in_waterbody columns omit the field (backward-compat)", {
@@ -461,7 +465,11 @@ test_that("bcfishpass bundle: every stream-edge rule carries in_waterbody:false"
   }
 })
 
-test_that("default bundle: rear stream rule carries in_waterbody:true", {
+test_that("default bundle: rear stream rule omits in_waterbody (matches in+out of polygons)", {
+  # Default bundle ships rear_stream_in_waterbody=yes for permissive
+  # rearing; spawn_stream_in_waterbody=no for biology. Spawn-stream
+  # rules should carry in_waterbody:false; rear-stream rules omit
+  # the field (no filter, matches polygon-mainlines too).
   csv <- system.file("extdata", "configs", "default", "dimensions.csv",
                      package = "link", mustWork = TRUE)
   out <- withr::local_tempfile(fileext = ".yaml")
@@ -480,7 +488,7 @@ test_that("default bundle: rear stream rule carries in_waterbody:true", {
       is_stream_edge <- !is.null(rr$edge_types_explicit) &&
         all(c(1000L, 1100L, 2000L, 2300L) %in% rr$edge_types_explicit)
       if (is_stream_edge) {
-        expect_equal(rr$in_waterbody, TRUE, info = paste0(sp, " rear"))
+        expect_null(rr$in_waterbody, info = paste0(sp, " rear"))
       }
     }
   }

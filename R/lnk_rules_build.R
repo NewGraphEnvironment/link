@@ -111,14 +111,17 @@ lnk_rules_build <- function(csv,
 
   # Per-species control over whether stream-edge spawn / rear rules
   # match segments INSIDE waterbody polygons (where waterbody_key is
-  # non-null). When the column is `yes`, the emitted rule carries
-  # `in_waterbody: true` (matches polygon-mainlines too — today's
-  # permissive default-bundle behaviour for rearing). When `no`, the
-  # rule carries `in_waterbody: false` (stream rule restricted to
-  # outside-polygon segments — the partition that pairs cleanly with
-  # the polygon rules `waterbody_type: R/L/W`). When the column is
-  # absent the field is omitted, preserving the unconstrained
-  # pre-`in_waterbody` behaviour of older fixtures.
+  # non-null). The column is yes/no:
+  #   yes   → emit no `in_waterbody` field; rule matches segments
+  #           inside AND outside polygons (today's permissive
+  #           default — polygon-mainlines count too).
+  #   no    → emit `in_waterbody: false`; rule matches outside
+  #           polygons only (strict partition that pairs cleanly
+  #           with the polygon rules `waterbody_type: R/L/W`).
+  #   absent → no field; same as yes (backward compat).
+  # The third semantic state in the grammar (`in_waterbody: true` =
+  # inside polygons only) has no biological use case for stream
+  # rules and is not emitted by lnk_rules_build.
   has_ssiw <- "spawn_stream_in_waterbody" %in% names(dimensions)
   if (has_ssiw) {
     dimensions$spawn_stream_in_waterbody <-
@@ -194,15 +197,17 @@ lnk_rules_build <- function(csv,
       rule
     }
 
-    # Helper: stamp `in_waterbody: <bool>` onto a stream-edge rule when
-    # the per-species column is present. Only applied to the main
-    # stream-edge rule (the [1000, 1100, 2000, 2300] family) — not to
-    # the river polygon rule (waterbody_type: R already implies
+    # Helper: stamp `in_waterbody: false` onto a stream-edge rule when
+    # the per-species column says `no` (strict partition). When the
+    # column is `yes` or absent, emit no field — rule matches both
+    # inside and outside polygons. Only applied to the main stream-
+    # edge rule (the [1000, 1100, 2000, 2300] family) — not to the
+    # river polygon rule (waterbody_type: R already implies
     # IS NOT NULL) and not to the 1050/1150 wetland-flow carve-out
     # (those edges are by-definition through wetlands).
     add_iw <- function(rule, in_wb_logical_or_na) {
-      if (!is.na(in_wb_logical_or_na)) {
-        rule$in_waterbody <- in_wb_logical_or_na
+      if (!is.na(in_wb_logical_or_na) && !isTRUE(in_wb_logical_or_na)) {
+        rule$in_waterbody <- FALSE
       }
       rule
     }

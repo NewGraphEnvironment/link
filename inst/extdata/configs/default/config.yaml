@@ -41,7 +41,7 @@ provenance:
     generated_from: dimensions.csv
     generated_by: lnk_rules_build
     generator_sha: 8f1890564b9148573535a679f2e5563aebe74207
-    checksum: sha256:9839a7b569387faad46b59ac063e813e205b41b3a5ddc45067eed3eedaac0ab9
+    checksum: sha256:d96e317bfef73c24f0e9094b777226da9defd80a46edc6453c755a55afef18fe
     shape_checksum: sha256:4fec0f2db7523d71ba7542e0d52217c91d9bab5b55d714b689f614380f5c2eb9
   dimensions.csv:
     source: link (hand-authored)
