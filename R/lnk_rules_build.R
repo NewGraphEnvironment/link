@@ -96,6 +96,19 @@ lnk_rules_build <- function(csv,
   has_rlhm <- "rear_lake_ha_min" %in% names(dimensions)
   has_rwhm <- "rear_wetland_ha_min" %in% names(dimensions)
 
+  # Optional: rear_wetland_polygon — gate emission of the W waterbody rule
+  # (which sets the `wetland_rearing` flag from fwa_wetlands_poly polygons).
+  # When the flag is absent or yes, both the 1050/1150 stream-flow carve-out
+  # AND the W polygon rule are emitted (legacy behavior). When set to no,
+  # only the carve-out is emitted — matches bcfishpass's per-species access
+  # SQL which uses the carve-out but not a wetland-polygon predicate. The
+  # bcfishpass bundle sets this no for CO; default bundle leaves it yes.
+  has_rwp <- "rear_wetland_polygon" %in% names(dimensions)
+  if (has_rwp) {
+    dimensions$rear_wetland_polygon <-
+      tolower(trimws(dimensions$rear_wetland_polygon)) == "yes"
+  }
+
   # --- Edge type helpers ---
   stream_edges <- if (edge_types == "categories") {
     list(edge_types = c("stream", "canal"))
@@ -209,15 +222,20 @@ lnk_rules_build <- function(csv,
         }
         # Waterbody rule: sets the separate `wetland_rearing` flag in
         # fresh.streams_habitat so polygon-area rollups (ha) can be
-        # computed. Mirrors the L pattern below. Optional ha_min sourced
-        # from the per-config dimensions CSV (fresh thresholds CSV has no
-        # wetland column, so no fallback to pass).
-        wetland_rule <- list(waterbody_type = "W")
-        rwhm <- resolve_ha_min(
-          if (has_rwhm) d$rear_wetland_ha_min else NULL,
-          NA_real_)
-        if (!is.na(rwhm)) wetland_rule$wetland_ha_min <- rwhm
-        rear_rules[[length(rear_rules) + 1]] <- add_rc(wetland_rule, rear_rc, rear_cdm)
+        # computed. Mirrors the L pattern below. Gated on
+        # rear_wetland_polygon (default yes when column absent).
+        # bcfishpass bundle sets this no for CO so the rule output
+        # matches bcfishpass's per-species access SQL (which has the
+        # 1050/1150 carve-out but no wetland-polygon predicate).
+        emit_polygon <- !has_rwp || isTRUE(d$rear_wetland_polygon)
+        if (emit_polygon) {
+          wetland_rule <- list(waterbody_type = "W")
+          rwhm <- resolve_ha_min(
+            if (has_rwhm) d$rear_wetland_ha_min else NULL,
+            NA_real_)
+          if (!is.na(rwhm)) wetland_rule$wetland_ha_min <- rwhm
+          rear_rules[[length(rear_rules) + 1]] <- add_rc(wetland_rule, rear_rc, rear_cdm)
+        }
       }
       if (d$rear_lake) {
         lake_rule <- list(waterbody_type = "L")

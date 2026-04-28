@@ -19,6 +19,14 @@ overrides:
   barriers_definite_control: overrides/user_barriers_definite_control.csv
   crossings_misc: overrides/user_crossings_misc.csv
 pipeline:
+  # bcfishpass produces `habitat_linear_<sp>` from rule classification
+  # alone; the known-habitat overlay (post-2026-04-26 CSV with
+  # spawning/rearing flags) is bcfishpass's separate post step that
+  # blends into `streams_habitat_linear`. The bcfishpass bundle
+  # reproduces the rule layer only — overlay disabled here so output
+  # matches `habitat_linear_<sp>` directly. The `default` bundle is
+  # NewGraph methodology and keeps overlay enabled.
+  apply_habitat_overlay: false
   break_order:
     - observations
     - gradient_minimal
@@ -41,14 +49,14 @@ provenance:
     generated_from: dimensions.csv
     generated_by: lnk_rules_build
     generator_sha: 8f1890564b9148573535a679f2e5563aebe74207
-    checksum: sha256:b4a693cf204c2ee23f1672521f051c32c805e2417858eaf24661c1e354daf6b7
+    checksum: sha256:8d7c4ae3dace756f680be7ffc4c6205d43928b65ea6abf14ee6dbe8d2e2e20ae
     shape_checksum: sha256:4fec0f2db7523d71ba7542e0d52217c91d9bab5b55d714b689f614380f5c2eb9
   dimensions.csv:
     source: link (hand-authored)
     upstream_sha: 8f1890564b9148573535a679f2e5563aebe74207
     synced: 2026-04-26
-    checksum: sha256:650ab993d23fba8b88cdbbb43030d8f6595b320bb20044db88aaff951cc8a15d
-    shape_checksum: sha256:8809a1067d9721c56b585bed71e0e4800c9bcf01c5daac8908b5c89a052d47d2
+    checksum: sha256:354215a4bdfea9c72a3c4f08a808129524ebc36c4317624ae8c2c7cb1242823d
+    shape_checksum: sha256:ec702eb5e185a2e3260036440670fed90861597ed7fcf33157d03cd964b9da1c
   parameters_fresh.csv:
     source: link (hand-authored)
     upstream_sha: 8f1890564b9148573535a679f2e5563aebe74207

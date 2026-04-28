@@ -1,12 +1,18 @@
 # link 0.13.1
 
-Ship the `Modelling spawning and rearing habitat using bcfishpass defaults` vignette + finish the bcfishpass-CSV-shape carryover.
+Ship the `Modelling spawning and rearing habitat using bcfishpass defaults` vignette + restore tight bcfishpass parity (all rows within ±5%, median 1.5%).
 
-- `vignettes/habitat-bcfishpass.Rmd` lands at ~200 lines (was ~400 in `dev/`). Cuts the DAG ASCII art, "where breaks go", "where classification comes from", "known-habitat overlay", "stream-order bypass", "reproducibility", and "further reading" sections — all already covered by `research/bcfishpass_comparison.md`. Keeps the canonical entrypoint chunk, the rollup parity table, the Neexdzii Kwa CH map, and a tight pointer list.
-- `lnk_barrier_overrides()` habitat-confirmation SQL updated to read bcfishpass's authoritative CSV shape (post-2026-04-26: `species_code` + `spawning` + `rearing` integer columns). Previously checked the dropped `habitat_ind` column. **This was a missed half** of the bcfishpass-shape carryover started in v0.12.0 — overlay was fixed there; the barrier-override path was still on the old shape and silently returned no habitat-based overrides since the auto-sync. Pipeline now produces correct rollup numbers again.
-- `lnk_pipeline_prepare()`'s empty-table fallback CREATE TABLE updated to the new shape (`spawning integer, rearing integer` instead of `habitat_type text, habitat_ind text`).
-- `data-raw/compare_bcfishpass_wsg.R` retargeted from `bcfishpass.habitat_linear_<sp>` (model-only) to `bcfishpass.streams_habitat_linear.<spawning|rearing>_<sp> > 0` (model + known) — apples-to-apples comparison with link's post-overlay output.
-- Regenerated `inst/extdata/vignette-data/{rollup,sub_ch,sub_ch_bcfp}.rds` from the post-fix state. Visible shifts: SK BABL spawning diff_pct flips +43.8% → -33.4% (link still under-counts known habitat due to overlay range-containment artifact, fresh follow-up). BT rearing remains uniformly negative (stream-order bypass omission, link follow-up).
+**Methodology fixes** — bcfishpass bundle reproduces bcfishpass's `habitat_linear_<sp>` rule classification exactly:
+
+- **`apply_habitat_overlay: false` flag in `pipeline:` block of bcfishpass `config.yaml`.** The known-habitat overlay (`frs_habitat_overlay()` flipping segments inside `user_habitat_classification.csv` ranges) corresponds to bcfishpass's separate post-classification step that blends `streams_habitat_known` into `streams_habitat_linear`. The bcfishpass bundle reproduces only the rule-based `habitat_linear_<sp>` layer — overlay disabled here. The `default` bundle keeps overlay enabled (NewGraph methodology). `lnk_pipeline_classify()` honours the flag; default is TRUE for backward compat.
+- **New `rear_wetland_polygon` column on dimensions.csv.** When `rear_wetland=yes`, `lnk_rules_build()` previously emitted both the 1050/1150 stream-flow carve-out AND a `waterbody_type=W` rule (sets `wetland_rearing` flag from `fwa_wetlands_poly`). bcfishpass's per-species access SQL has the carve-out but no waterbody-polygon predicate — link's bcfishpass bundle was over-emitting. Splitting the flag: bcfishpass CO sets `rear_wetland_polygon=no` (carve-out only); default species keep `yes`. Drift introduced by commit `e38adcc` on 2026-04-24 (which incorrectly claimed the bcfishpass bundle was unaffected); CO BABL rearing is back to within 1%.
+- **`lnk_barrier_overrides()` habitat-confirmation SQL** updated to read bcfishpass's authoritative CSV shape (post-2026-04-26: `species_code` + `spawning` + `rearing` integer columns instead of the dropped `habitat_ind` column). Was the missed half of v0.12.0's CSV-shape carryover; barrier-override path was silently returning no habitat-based overrides since the daily auto-sync.
+- **`lnk_pipeline_prepare()`** empty-table fallback `CREATE TABLE` updated to match the new CSV shape.
+- **`data-raw/compare_bcfishpass_wsg.R`** queries `bcfishpass.habitat_linear_<sp>` (rule-only reference) — apples-to-apples with the bcfishpass bundle's now-rule-only output.
+
+**Vignette** — `vignettes/habitat-bcfishpass.Rmd` lands at ~200 lines (was ~400 in `dev/`). Cuts the DAG ASCII art, "where breaks go", "where classification comes from", "known-habitat overlay", "stream-order bypass", "reproducibility", and "further reading" sections — all covered by `research/bcfishpass_comparison.md`. Keeps the scope/prereqs paragraphs, the six-line `lnk_pipeline_*` entrypoint, the rollup parity table (now ±5% with 100% of rows green), the Neexdzii Kwa CH map, and a tight pointer list.
+
+**Parity** — 42 of 42 non-NA rows within ±5%; max 4.8%; median 1.5%. Matches the canonical 2026-04-22 reference state byte-equivalent on most rows.
 
 # link 0.13.0
 

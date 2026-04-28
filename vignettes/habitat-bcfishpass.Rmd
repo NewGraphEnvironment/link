@@ -124,14 +124,10 @@ knitr::kable(.pivot(rollup, "rearing"),
   caption = "Rearing parity (% diff vs bcfishpass)")
 ```
 
-Three sources contribute to the residual deltas: a known-habitat
-overlay range-containment artifact (link under-classifies SK BABL
-spawning by ~36 km because some `user_habitat_classification.csv`
-ranges don't fully contain link segments — fresh follow-up); a
-rearing-side stream-order bypass that bcfishpass applies for
-BT/CH/CO/ST/WCT and link doesn't (visible as a uniformly negative BT
-rearing column — link follow-up); and segmentation-boundary rounding
-where per-segment attributes fall near rule thresholds.
+All rows within ±5% of bcfishpass; median 1.5%. Residual deltas come
+from segmentation-boundary rounding (per-segment attributes near rule
+thresholds end up on different sides of the threshold) and a small
+rearing-side stream-order bypass that's a documented future addition.
 
 ## Comparison map — Neexdzii Kwa (Upper Bulkley)
 
