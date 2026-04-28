@@ -130,6 +130,24 @@ lnk_rules_build <- function(csv,
       tolower(trimws(dimensions$rear_stream_in_waterbody)) == "yes"
   }
 
+  # Per-species control over whether rear-side L / W polygon rules
+  # contribute to the main `rearing` predicate or only to the
+  # `lake_rearing` / `wetland_rearing` bucket-flag derivation. When
+  # `yes`, the emitted rule carries `area_only: true` (fresh excludes
+  # it from the rear OR-chain; the lake_ha_min / wetland_ha_min still
+  # drives the bucket pred so polygon area still rolls up). When `no`
+  # or absent, the rule contributes to both (today's behaviour).
+  has_rlao <- "rear_lake_area_only" %in% names(dimensions)
+  if (has_rlao) {
+    dimensions$rear_lake_area_only <-
+      tolower(trimws(dimensions$rear_lake_area_only)) == "yes"
+  }
+  has_rwao <- "rear_wetland_area_only" %in% names(dimensions)
+  if (has_rwao) {
+    dimensions$rear_wetland_area_only <-
+      tolower(trimws(dimensions$rear_wetland_area_only)) == "yes"
+  }
+
   # --- Edge type helpers ---
   stream_edges <- if (edge_types == "categories") {
     list(edge_types = c("stream", "canal"))
@@ -190,6 +208,22 @@ lnk_rules_build <- function(csv,
     }
     spawn_iw <- if (has_ssiw) d$spawn_stream_in_waterbody else NA
     rear_iw  <- if (has_rsiw) d$rear_stream_in_waterbody  else NA
+
+    # Helper: stamp `area_only: true` on an L / W polygon rule when
+    # the per-species column is yes. Decouples bucket-flag derivation
+    # (lake_rearing / wetland_rearing — drives area rollups) from the
+    # main rear predicate (linear rearing_km). Only applied to rules
+    # in the additive rear branch — NOT to the `rear_lake_only` branch
+    # where the L rule IS the rear classification.
+    add_ao <- function(rule, area_only_logical_or_na) {
+      if (!is.na(area_only_logical_or_na) &&
+          isTRUE(area_only_logical_or_na)) {
+        rule$area_only <- TRUE
+      }
+      rule
+    }
+    rear_lao <- if (has_rlao) d$rear_lake_area_only    else NA
+    rear_wao <- if (has_rwao) d$rear_wetland_area_only else NA
 
     # --- Spawning ---
     if (d$spawn_stream) {
@@ -266,20 +300,36 @@ lnk_rules_build <- function(csv,
         # 1050/1150 carve-out but no wetland-polygon predicate).
         emit_polygon <- !has_rwp || isTRUE(d$rear_wetland_polygon)
         if (emit_polygon) {
-          wetland_rule <- list(waterbody_type = "W")
+          # Polygon rule restricted to mainlines (1000 main flow,
+          # 1100 secondary flow). Without the edge filter the rule
+          # matches every segment in the polygon (shorelines 1700,
+          # construction lines, etc.) and credits them all to linear
+          # `rearing` — wider than the fish-bearing channel. With the
+          # filter, only the mainlines-through-wetland count for
+          # linear; the bucket pred (wetland_rearing) still rolls up
+          # the polygon area regardless of which segments are tagged.
+          wetland_rule <- list(
+            waterbody_type = "W",
+            edge_types_explicit = c(1000L, 1100L))
           rwhm <- resolve_ha_min(
             if (has_rwhm) d$rear_wetland_ha_min else NULL,
             NA_real_)
           if (!is.na(rwhm)) wetland_rule$wetland_ha_min <- rwhm
+          wetland_rule <- add_ao(wetland_rule, rear_wao)
           rear_rules[[length(rear_rules) + 1]] <- add_rc(wetland_rule, rear_rc, rear_cdm)
         }
       }
       if (d$rear_lake) {
-        lake_rule <- list(waterbody_type = "L")
+        # Same shape as the W polygon rule above — mainlines-only edge
+        # filter on the L rule, optional area_only flag.
+        lake_rule <- list(
+          waterbody_type = "L",
+          edge_types_explicit = c(1000L, 1100L))
         rlhm <- resolve_ha_min(
           if (has_rlhm) d$rear_lake_ha_min else NULL,
           th$rear_lake_ha_min)
         if (!is.na(rlhm)) lake_rule$lake_ha_min <- rlhm
+        lake_rule <- add_ao(lake_rule, rear_lao)
         rear_rules[[length(rear_rules) + 1]] <- add_rc(lake_rule, rear_rc, rear_cdm)
       }
     }
