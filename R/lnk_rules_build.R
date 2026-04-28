@@ -96,6 +96,40 @@ lnk_rules_build <- function(csv,
   has_rlhm <- "rear_lake_ha_min" %in% names(dimensions)
   has_rwhm <- "rear_wetland_ha_min" %in% names(dimensions)
 
+  # Optional: rear_wetland_polygon — gate emission of the W waterbody rule
+  # (which sets the `wetland_rearing` flag from fwa_wetlands_poly polygons).
+  # When the flag is absent or yes, both the 1050/1150 stream-flow carve-out
+  # AND the W polygon rule are emitted (legacy behavior). When set to no,
+  # only the carve-out is emitted — matches bcfishpass's per-species access
+  # SQL which uses the carve-out but not a wetland-polygon predicate. The
+  # bcfishpass bundle sets this no for CO; default bundle leaves it yes.
+  has_rwp <- "rear_wetland_polygon" %in% names(dimensions)
+  if (has_rwp) {
+    dimensions$rear_wetland_polygon <-
+      tolower(trimws(dimensions$rear_wetland_polygon)) == "yes"
+  }
+
+  # Per-species control over whether stream-edge spawn / rear rules
+  # match segments INSIDE waterbody polygons (where waterbody_key is
+  # non-null). When the column is `yes`, the emitted rule carries
+  # `in_waterbody: true` (matches polygon-mainlines too — today's
+  # permissive default-bundle behaviour for rearing). When `no`, the
+  # rule carries `in_waterbody: false` (stream rule restricted to
+  # outside-polygon segments — the partition that pairs cleanly with
+  # the polygon rules `waterbody_type: R/L/W`). When the column is
+  # absent the field is omitted, preserving the unconstrained
+  # pre-`in_waterbody` behaviour of older fixtures.
+  has_ssiw <- "spawn_stream_in_waterbody" %in% names(dimensions)
+  if (has_ssiw) {
+    dimensions$spawn_stream_in_waterbody <-
+      tolower(trimws(dimensions$spawn_stream_in_waterbody)) == "yes"
+  }
+  has_rsiw <- "rear_stream_in_waterbody" %in% names(dimensions)
+  if (has_rsiw) {
+    dimensions$rear_stream_in_waterbody <-
+      tolower(trimws(dimensions$rear_stream_in_waterbody)) == "yes"
+  }
+
   # --- Edge type helpers ---
   stream_edges <- if (edge_types == "categories") {
     list(edge_types = c("stream", "canal"))
@@ -142,9 +176,25 @@ lnk_rules_build <- function(csv,
       rule
     }
 
+    # Helper: stamp `in_waterbody: <bool>` onto a stream-edge rule when
+    # the per-species column is present. Only applied to the main
+    # stream-edge rule (the [1000, 1100, 2000, 2300] family) — not to
+    # the river polygon rule (waterbody_type: R already implies
+    # IS NOT NULL) and not to the 1050/1150 wetland-flow carve-out
+    # (those edges are by-definition through wetlands).
+    add_iw <- function(rule, in_wb_logical_or_na) {
+      if (!is.na(in_wb_logical_or_na)) {
+        rule$in_waterbody <- in_wb_logical_or_na
+      }
+      rule
+    }
+    spawn_iw <- if (has_ssiw) d$spawn_stream_in_waterbody else NA
+    rear_iw  <- if (has_rsiw) d$rear_stream_in_waterbody  else NA
+
     # --- Spawning ---
     if (d$spawn_stream) {
-      spawn_rules[[length(spawn_rules) + 1]] <- add_rc(stream_edges, spawn_rc, spawn_cdm)
+      spawn_rules[[length(spawn_rules) + 1]] <-
+        add_rc(add_iw(stream_edges, spawn_iw), spawn_rc, spawn_cdm)
       spawn_rules[[length(spawn_rules) + 1]] <- add_rc(river_rule, spawn_rc, spawn_cdm)
     }
     if (d$spawn_lake) {
@@ -190,7 +240,7 @@ lnk_rules_build <- function(csv,
         if (!is.null(soe_bypass)) rule$channel_width_min_bypass <- soe_bypass
         rear_rules[[length(rear_rules) + 1]] <- add_rc(rule, rear_rc, rear_cdm)
       } else if (d$rear_stream) {
-        stream_rule <- stream_edges
+        stream_rule <- add_iw(stream_edges, rear_iw)
         if (!is.null(soe_bypass)) stream_rule$channel_width_min_bypass <- soe_bypass
         rear_rules[[length(rear_rules) + 1]] <- add_rc(stream_rule, rear_rc, rear_cdm)
         river_rule_r <- river_rule
@@ -209,15 +259,20 @@ lnk_rules_build <- function(csv,
         }
         # Waterbody rule: sets the separate `wetland_rearing` flag in
         # fresh.streams_habitat so polygon-area rollups (ha) can be
-        # computed. Mirrors the L pattern below. Optional ha_min sourced
-        # from the per-config dimensions CSV (fresh thresholds CSV has no
-        # wetland column, so no fallback to pass).
-        wetland_rule <- list(waterbody_type = "W")
-        rwhm <- resolve_ha_min(
-          if (has_rwhm) d$rear_wetland_ha_min else NULL,
-          NA_real_)
-        if (!is.na(rwhm)) wetland_rule$wetland_ha_min <- rwhm
-        rear_rules[[length(rear_rules) + 1]] <- add_rc(wetland_rule, rear_rc, rear_cdm)
+        # computed. Mirrors the L pattern below. Gated on
+        # rear_wetland_polygon (default yes when column absent).
+        # bcfishpass bundle sets this no for CO so the rule output
+        # matches bcfishpass's per-species access SQL (which has the
+        # 1050/1150 carve-out but no wetland-polygon predicate).
+        emit_polygon <- !has_rwp || isTRUE(d$rear_wetland_polygon)
+        if (emit_polygon) {
+          wetland_rule <- list(waterbody_type = "W")
+          rwhm <- resolve_ha_min(
+            if (has_rwhm) d$rear_wetland_ha_min else NULL,
+            NA_real_)
+          if (!is.na(rwhm)) wetland_rule$wetland_ha_min <- rwhm
+          rear_rules[[length(rear_rules) + 1]] <- add_rc(wetland_rule, rear_rc, rear_cdm)
+        }
       }
       if (d$rear_lake) {
         lake_rule <- list(waterbody_type = "L")

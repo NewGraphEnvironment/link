@@ -92,16 +92,24 @@ lnk_pipeline_classify <- function(conn, aoi, cfg, schema,
     barrier_overrides = paste0(schema, ".barrier_overrides"),
     verbose = FALSE)
 
-  # Known-habitat overlay (optional). When the manifest declares
-  # `habitat_classification`, the CSV is loaded into
-  # `<schema>.user_habitat_classification` (canonical shape per
-  # bcfishpass post-2026-04-26: one row per (segment x species) with
-  # `spawning` and `rearing` indicator columns).
-  # The target `fresh.streams_habitat` is keyed by `id_segment` only,
-  # and the source is keyed by `(blue_line_key, drm)` with range
-  # `[drm, urm]` — so we need a 3-way bridge through `fresh.streams`
-  # for range containment. Requires fresh >= 0.22.0.
-  if (!is.null(cfg$habitat_classification)) {
+  # Known-habitat overlay (optional). Two gates must both be open:
+  #
+  #   1. The manifest declares `files.habitat_classification` (CSV is
+  #      loaded into `<schema>.user_habitat_classification` by the
+  #      prepare phase), AND
+  #   2. The manifest's `pipeline.apply_habitat_overlay` is not FALSE
+  #      (default TRUE; bcfishpass bundle sets FALSE so its output
+  #      reproduces bcfishpass's rule-based `habitat_linear_<sp>`,
+  #      not the `streams_habitat_linear` post-blend).
+  #
+  # Source CSV is canonical shape (post-2026-04-26 bcfishpass): one row
+  # per (segment x species) with `spawning` and `rearing` indicator
+  # columns. The target `fresh.streams_habitat` is keyed by
+  # `id_segment` only, and the source is keyed by `(blue_line_key,
+  # drm)` with range `[drm, urm]` — so we need a 3-way bridge through
+  # `fresh.streams` for range containment. Requires fresh >= 0.22.0.
+  apply_overlay <- isTRUE(cfg$pipeline$apply_habitat_overlay %||% TRUE)
+  if (!is.null(cfg$habitat_classification) && apply_overlay) {
     fresh::frs_habitat_overlay(conn,
       from   = paste0(schema, ".user_habitat_classification"),
       to     = "fresh.streams_habitat",

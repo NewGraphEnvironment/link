@@ -1,5 +1,5 @@
 # Generated from dimensions.csv
-# Generated: 2026-04-26
+# Generated: 2026-04-28
 # Edge types: explicit
 #
 # DO NOT EDIT — edit the CSV and re-run lnk_rules_build()
@@ -11,6 +11,7 @@ BT:
     - 1100
     - 2000
     - 2300
+    in_waterbody: false
   - waterbody_type: R
     channel_width:
     - 0.0
@@ -24,6 +25,7 @@ CH:
     - 1100
     - 2000
     - 2300
+    in_waterbody: false
   - waterbody_type: R
     channel_width:
     - 0.0
@@ -34,6 +36,7 @@ CH:
     - 1100
     - 2000
     - 2300
+    in_waterbody: false
   - waterbody_type: R
     channel_width:
     - 0.0
@@ -45,6 +48,7 @@ CM:
     - 1100
     - 2000
     - 2300
+    in_waterbody: false
   - waterbody_type: R
     channel_width:
     - 0.0
@@ -57,6 +61,7 @@ CO:
     - 1100
     - 2000
     - 2300
+    in_waterbody: false
   - waterbody_type: R
     channel_width:
     - 0.0
@@ -67,6 +72,7 @@ CO:
     - 1100
     - 2000
     - 2300
+    in_waterbody: false
   - waterbody_type: R
     channel_width:
     - 0.0
@@ -75,7 +81,6 @@ CO:
     - 1050
     - 1150
     thresholds: false
-  - waterbody_type: W
 PK:
   spawn:
   - edge_types_explicit:
@@ -83,6 +88,7 @@ PK:
     - 1100
     - 2000
     - 2300
+    in_waterbody: false
   - waterbody_type: R
     channel_width:
     - 0.0
@@ -95,6 +101,7 @@ SK:
     - 1100
     - 2000
     - 2300
+    in_waterbody: false
     requires_connected: rearing
     connected_distance_max: 3000.0
   - waterbody_type: R
@@ -120,6 +127,7 @@ ST:
     - 1100
     - 2000
     - 2300
+    in_waterbody: false
   - waterbody_type: R
     channel_width:
     - 0.0
@@ -130,6 +138,7 @@ ST:
     - 1100
     - 2000
     - 2300
+    in_waterbody: false
   - waterbody_type: R
     channel_width:
     - 0.0
@@ -141,6 +150,7 @@ WCT:
     - 1100
     - 2000
     - 2300
+    in_waterbody: false
   - waterbody_type: R
     channel_width:
     - 0.0
@@ -151,6 +161,7 @@ WCT:
     - 1100
     - 2000
     - 2300
+    in_waterbody: false
   - waterbody_type: R
     channel_width:
     - 0.0
