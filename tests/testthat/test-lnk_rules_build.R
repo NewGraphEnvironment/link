@@ -268,12 +268,12 @@ test_that("rear_wetland_polygon column absent: W rule emits (backward compat)", 
 
 # -- Default bundle smoke test ------------------------------------------------
 
-test_that("bundled default config does NOT emit W rule (polygon=no for all species)", {
-  # The default bundle ships with rear_wetland_polygon=no for all
-  # rear_wetland=yes species per the 2026-04-27 methodology revision
-  # (W rule was an over-count: fish-bearing channel, not the wetland
-  # polygon footprint). The 1050/1150 stream-flow carve-out still
-  # emits where rear_wetland=yes.
+test_that("bundled default config emits W rule with mainlines edge filter for rear_wetland=yes species", {
+  # Default bundle (link#69 phase 2) ships use case 1: rear_wetland_polygon=yes
+  # for rear_wetland=yes species, with the mainlines-only edge filter
+  # `edge_types_explicit: [1000, 1100]` so polygon shorelines/banks
+  # don't credit linear `rearing`. The W rule still drives wetland_rearing
+  # bucket flag for area rollups.
   csv <- system.file("extdata", "configs", "default", "dimensions.csv",
                      package = "link", mustWork = TRUE)
   out <- withr::local_tempfile(fileext = ".yaml")
@@ -289,10 +289,15 @@ test_that("bundled default config does NOT emit W rule (polygon=no for all speci
       invokeRestart("muffleMessage")
     })
 
+  dims <- utils::read.csv(csv, stringsAsFactors = FALSE)
+  wetland_yes <- dims$species[
+    tolower(trimws(dims$rear_wetland)) == "yes" &
+    !dims$species %in% skipped]
   r <- yaml::read_yaml(out)
-  for (sp in setdiff(names(r), skipped)) {
+  for (sp in wetland_yes) {
     w <- find_wb_rule(r[[sp]]$rear, "W")
-    expect_null(w, info = paste0("unexpected W rule for ", sp))
+    expect_false(is.null(w))
+    expect_setequal(as.integer(w$edge_types_explicit), c(1000L, 1100L))
   }
 })
 
@@ -477,6 +482,117 @@ test_that("default bundle: rear stream rule carries in_waterbody:true", {
       if (is_stream_edge) {
         expect_equal(rr$in_waterbody, TRUE, info = paste0(sp, " rear"))
       }
+    }
+  }
+})
+
+# -- area_only emission + polygon mainlines filter (link#69 phase 2) ----------
+
+test_that("rear_lake_area_only=yes emits area_only:true on L rule", {
+  dims <- tibble::tribble(
+    ~species, ~spawn_lake, ~spawn_stream, ~rear_lake, ~rear_lake_only,
+    ~rear_lake_area_only, ~rear_no_fw, ~rear_stream, ~rear_wetland,
+    ~rear_all_edges, ~river_skip_cw_min,
+    "BT", "no", "yes", "yes", "no", "yes", "no", "yes", "no", "no", "yes"
+  )
+  out <- withr::local_tempfile(fileext = ".yaml")
+  csv <- withr::local_tempfile(fileext = ".csv")
+  utils::write.csv(dims, csv, row.names = FALSE)
+  lnk_rules_build(csv, out, edge_types = "explicit")
+
+  l <- find_wb_rule(get_rear_rules(out, "BT"), "L")
+  expect_false(is.null(l))
+  expect_true(isTRUE(l$area_only))
+})
+
+test_that("rear_wetland_area_only=yes emits area_only:true on W rule", {
+  dims <- tibble::tribble(
+    ~species, ~spawn_lake, ~spawn_stream, ~rear_lake, ~rear_lake_only,
+    ~rear_no_fw, ~rear_stream, ~rear_wetland, ~rear_wetland_polygon,
+    ~rear_wetland_area_only, ~rear_all_edges, ~river_skip_cw_min,
+    "BT", "no", "yes", "no", "no", "no", "yes", "yes", "yes", "yes", "no", "yes"
+  )
+  out <- withr::local_tempfile(fileext = ".yaml")
+  csv <- withr::local_tempfile(fileext = ".csv")
+  utils::write.csv(dims, csv, row.names = FALSE)
+  lnk_rules_build(csv, out, edge_types = "explicit")
+
+  w <- find_wb_rule(get_rear_rules(out, "BT"), "W")
+  expect_false(is.null(w))
+  expect_true(isTRUE(w$area_only))
+})
+
+test_that("absent area_only column omits the field (backward-compat)", {
+  dims <- tibble::tribble(
+    ~species, ~spawn_lake, ~spawn_stream, ~rear_lake, ~rear_lake_only,
+    ~rear_no_fw, ~rear_stream, ~rear_wetland, ~rear_all_edges,
+    ~river_skip_cw_min,
+    "BT", "no", "yes", "yes", "no", "no", "yes", "no", "no", "yes"
+  )
+  out <- withr::local_tempfile(fileext = ".yaml")
+  csv <- withr::local_tempfile(fileext = ".csv")
+  utils::write.csv(dims, csv, row.names = FALSE)
+  lnk_rules_build(csv, out, edge_types = "explicit")
+
+  l <- find_wb_rule(get_rear_rules(out, "BT"), "L")
+  expect_false(is.null(l))
+  expect_null(l$area_only)
+})
+
+test_that("L / W polygon rules carry edge_types_explicit: [1000, 1100] filter", {
+  dims <- tibble::tribble(
+    ~species, ~spawn_lake, ~spawn_stream, ~rear_lake, ~rear_lake_only,
+    ~rear_no_fw, ~rear_stream, ~rear_wetland, ~rear_wetland_polygon,
+    ~rear_all_edges, ~river_skip_cw_min,
+    "BT", "no", "yes", "yes", "no", "no", "yes", "yes", "yes", "no", "yes"
+  )
+  out <- withr::local_tempfile(fileext = ".yaml")
+  csv <- withr::local_tempfile(fileext = ".csv")
+  utils::write.csv(dims, csv, row.names = FALSE)
+  lnk_rules_build(csv, out, edge_types = "explicit")
+
+  l <- find_wb_rule(get_rear_rules(out, "BT"), "L")
+  expect_setequal(as.integer(l$edge_types_explicit), c(1000L, 1100L))
+  w <- find_wb_rule(get_rear_rules(out, "BT"), "W")
+  expect_setequal(as.integer(w$edge_types_explicit), c(1000L, 1100L))
+})
+
+test_that("rear_lake_only branch L rule does NOT carry edge filter or area_only", {
+  # SK / KO: L rule is the rear classification, must keep matching the
+  # whole lake polygon (mainlines + shorelines) without an edge filter.
+  dims <- tibble::tribble(
+    ~species, ~spawn_lake, ~spawn_stream, ~rear_lake, ~rear_lake_only,
+    ~rear_lake_area_only, ~rear_no_fw, ~rear_stream, ~rear_wetland,
+    ~rear_all_edges, ~river_skip_cw_min,
+    "SK", "no", "yes", "yes", "yes", "yes", "no", "no", "no", "no", "yes"
+  )
+  out <- withr::local_tempfile(fileext = ".yaml")
+  csv <- withr::local_tempfile(fileext = ".csv")
+  utils::write.csv(dims, csv, row.names = FALSE)
+  lnk_rules_build(csv, out, edge_types = "explicit")
+
+  l <- find_wb_rule(get_rear_rules(out, "SK"), "L")
+  expect_false(is.null(l))
+  expect_null(l$edge_types_explicit)
+  expect_null(l$area_only)
+})
+
+test_that("default bundle: rear_lake non-lake-only species carry edge_types filter", {
+  csv <- system.file("extdata", "configs", "default", "dimensions.csv",
+                     package = "link", mustWork = TRUE)
+  out <- withr::local_tempfile(fileext = ".yaml")
+  suppressMessages(lnk_rules_build(csv, out, edge_types = "explicit"))
+  r <- yaml::read_yaml(out)
+
+  # SK and KO are rear_lake_only — exempt.
+  for (sp in setdiff(names(r), c("SK", "KO"))) {
+    l <- find_wb_rule(r[[sp]]$rear, "L")
+    if (!is.null(l)) {
+      expect_setequal(as.integer(l$edge_types_explicit), c(1000L, 1100L))
+    }
+    w <- find_wb_rule(r[[sp]]$rear, "W")
+    if (!is.null(w)) {
+      expect_setequal(as.integer(w$edge_types_explicit), c(1000L, 1100L))
     }
   }
 })

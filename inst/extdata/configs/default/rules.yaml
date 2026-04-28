@@ -31,7 +31,15 @@ BT:
     - 1050
     - 1150
     thresholds: false
+  - waterbody_type: W
+    edge_types_explicit:
+    - 1000
+    - 1100
+    wetland_ha_min: 1.0
   - waterbody_type: L
+    edge_types_explicit:
+    - 1000
+    - 1100
     lake_ha_min: 10.0
 CH:
   spawn:
@@ -60,7 +68,15 @@ CH:
     - 1050
     - 1150
     thresholds: false
+  - waterbody_type: W
+    edge_types_explicit:
+    - 1000
+    - 1100
+    wetland_ha_min: 1.0
   - waterbody_type: L
+    edge_types_explicit:
+    - 1000
+    - 1100
     lake_ha_min: 100.0
 CM:
   spawn:
@@ -102,7 +118,15 @@ CO:
     - 1050
     - 1150
     thresholds: false
+  - waterbody_type: W
+    edge_types_explicit:
+    - 1000
+    - 1100
+    wetland_ha_min: 0.5
   - waterbody_type: L
+    edge_types_explicit:
+    - 1000
+    - 1100
     lake_ha_min: 2.0
 PK:
   spawn:
@@ -170,7 +194,15 @@ ST:
     - 1050
     - 1150
     thresholds: false
+  - waterbody_type: W
+    edge_types_explicit:
+    - 1000
+    - 1100
+    wetland_ha_min: 1.0
   - waterbody_type: L
+    edge_types_explicit:
+    - 1000
+    - 1100
     lake_ha_min: 60.0
 WCT:
   spawn:
@@ -199,7 +231,15 @@ WCT:
     - 1050
     - 1150
     thresholds: false
+  - waterbody_type: W
+    edge_types_explicit:
+    - 1000
+    - 1100
+    wetland_ha_min: 1.0
   - waterbody_type: L
+    edge_types_explicit:
+    - 1000
+    - 1100
     lake_ha_min: 10.0
 KO:
   spawn:
@@ -254,7 +294,15 @@ RB:
     - 1050
     - 1150
     thresholds: false
+  - waterbody_type: W
+    edge_types_explicit:
+    - 1000
+    - 1100
+    wetland_ha_min: 1.0
   - waterbody_type: L
+    edge_types_explicit:
+    - 1000
+    - 1100
     lake_ha_min: 10.0
 GR:
   spawn:
@@ -280,5 +328,8 @@ GR:
     - 0.0
     - 9999.0
   - waterbody_type: L
+    edge_types_explicit:
+    - 1000
+    - 1100
     lake_ha_min: 40.0
 
