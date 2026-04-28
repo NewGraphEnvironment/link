@@ -1107,7 +1107,7 @@ bundled test data (committed to `inst/testdata/`) - Hosted on pkgdown so
 users can read it without installing
 
 **Output format:** Use
-[`bookdown::html_vignette2`](https://rdrr.io/pkg/bookdown/man/html_document2.html)
+[`bookdown::html_vignette2`](https://pkgs.rstudio.com/bookdown/reference/html_document2.html)
 (not
 [`rmarkdown::html_vignette`](https://pkgs.rstudio.com/rmarkdown/reference/html_vignette.html))
 for figure numbering and cross-references. Requires `bookdown` in

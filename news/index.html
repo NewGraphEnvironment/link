@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.15.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,6 +31,23 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.15.0" id="link-0150">link 0.15.0<a class="anchor" aria-label="anchor" href="#link-0150"></a></h2>
+<p>Phase 2 of <a href="https://github.com/NewGraphEnvironment/link/issues/69" class="external-link">#69</a>. Adds dimensions-driven <code>area_only</code> emission + polygon-rule mainlines edge filter. Default bundle now ships use case 1 (linear includes mainlines through L/W polygons; area rolls up via bucket flags) with the new edge filter restricting polygon-rule contributions to mainlines only (1000/1100). bcfishpass bundle output unchanged.</p>
+<p><strong>New per-species columns</strong> in <code>dimensions.csv</code>:</p>
+<ul><li>
+<code>rear_lake_area_only</code> — yes/no — emit <code>area_only: true</code> on the L polygon rule. When <code>yes</code>, fresh derives the <code>lake_rearing</code> bucket flag from the rule but excludes it from the main <code>rear</code> predicate (linear). When <code>no</code> or absent, the rule contributes to both (today’s behaviour). Both bundles ship <code>no</code> for all species — default ships use case 1; bcfishpass ships parity-with-bcfp.</li>
+<li>
+<code>rear_wetland_area_only</code> — yes/no — same shape on the W polygon rule. Both bundles ship <code>no</code> for all species.</li>
+</ul><p><strong>Polygon-rule edge filter</strong> (<code>edge_types_explicit: [1000, 1100]</code> on L/W rules in the additive rear branch):</p>
+<ul><li>Restricts the L/W polygon rule’s match to mainlines (single-line main flow + secondary flow) when emitted under <code>rear_lake: yes</code> or <code>rear_wetland: yes</code> + <code>rear_wetland_polygon: yes</code>. Without the filter, polygon rules matched every segment in the polygon (shorelines 1700, banks 1800, island edges, construction lines), all crediting linear <code>rearing</code>. The bucket pred (<code>lake_rearing</code> / <code>wetland_rearing</code>) is unaffected — area still rolls up the polygon’s full area as long as any tagged segment exists in it.</li>
+<li>The <code>rear_lake_only</code> branch (SK / KO) is intentionally <strong>not</strong> filtered — the L rule there IS the rear classification, must continue matching the whole lake polygon.</li>
+</ul><p><strong>Default bundle methodology shift</strong> — use case 1: linear km includes mainlines through wetlands and lakes, with area rollups (<code>lake_rearing_ha</code>, <code>wetland_rearing_ha</code>) populating from the polygon footprint. <code>rear_wetland_polygon</code> flipped from <code>no</code> (v0.14.0) back to <code>yes</code> for rear_wetland=yes species. The 2026-04-27 cut to <code>no</code> was the right call given the v0.14.0 grammar (no edge filter; W rule would over-emit), but with the mainlines edge filter shipped here, polygon-mainlines are the right thing to count for linear AND area.</p>
+<p><strong>Required:</strong> fresh ≥ 0.24.0 (<a href="https://github.com/NewGraphEnvironment/fresh/issues/182" class="external-link">#182</a>, <a href="https://github.com/NewGraphEnvironment/fresh/pull/184" class="external-link">fresh#184</a>) — <code>area_only</code> predicate decouples bucket-flag derivation from the main rear predicate.</p>
+<p><strong>Tests</strong> — <code>test-lnk_rules_build.R</code> 130 PASS (was 124 in 0.14.0): 6 new tests covering area_only emission per the columns + polygon-edge-types filter present on L/W rules (additive branch only) + rear_lake_only branch left untouched. Full suite 554 PASS / 0 FAIL.</p>
+<p><strong>BABL parity (bcfishpass bundle):</strong> unchanged from 0.14.0 — 8 of 10 rows within ±2%, 10 of 10 within ±5%. The new knobs are inert when set to today’s defaults, so bcfp bundle output is byte-identical to v0.14.0.</p>
+<p><strong>Coordinates with</strong> <a href="https://github.com/NewGraphEnvironment/link/issues/69" class="external-link">#69 phase 3</a> — <code>research/rule_flexibility.md</code> proof artifact runs BABL × CO under three configs (use case 1, use case 2, bcfishpass) by swapping only <code>dimensions.csv</code> cells, with <code>rules.yaml</code> diffs side-by-side.</p>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.14.0" id="link-0140">link 0.14.0<a class="anchor" aria-label="anchor" href="#link-0140"></a></h2>
 <p>Dimensions-driven <code>in_waterbody</code> + bcfishpass-bundle methodology fixes that bring 5-species BABL parity to ±5% (8 of 10 rows within ±2%) on the bcfishpass bundle. The methodology dials are now visible in <code>dimensions.csv</code> cells per species — no buried emission rules.</p>

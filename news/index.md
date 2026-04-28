@@ -1,5 +1,71 @@
 # Changelog
 
+## link 0.15.0
+
+Phase 2 of
+[\#69](https://github.com/NewGraphEnvironment/link/issues/69). Adds
+dimensions-driven `area_only` emission + polygon-rule mainlines edge
+filter. Default bundle now ships use case 1 (linear includes mainlines
+through L/W polygons; area rolls up via bucket flags) with the new edge
+filter restricting polygon-rule contributions to mainlines only
+(1000/1100). bcfishpass bundle output unchanged.
+
+**New per-species columns** in `dimensions.csv`:
+
+- `rear_lake_area_only` — yes/no — emit `area_only: true` on the L
+  polygon rule. When `yes`, fresh derives the `lake_rearing` bucket flag
+  from the rule but excludes it from the main `rear` predicate (linear).
+  When `no` or absent, the rule contributes to both (today’s behaviour).
+  Both bundles ship `no` for all species — default ships use case 1;
+  bcfishpass ships parity-with-bcfp.
+- `rear_wetland_area_only` — yes/no — same shape on the W polygon rule.
+  Both bundles ship `no` for all species.
+
+**Polygon-rule edge filter** (`edge_types_explicit: [1000, 1100]` on L/W
+rules in the additive rear branch):
+
+- Restricts the L/W polygon rule’s match to mainlines (single-line main
+  flow + secondary flow) when emitted under `rear_lake: yes` or
+  `rear_wetland: yes` + `rear_wetland_polygon: yes`. Without the filter,
+  polygon rules matched every segment in the polygon (shorelines 1700,
+  banks 1800, island edges, construction lines), all crediting linear
+  `rearing`. The bucket pred (`lake_rearing` / `wetland_rearing`) is
+  unaffected — area still rolls up the polygon’s full area as long as
+  any tagged segment exists in it.
+- The `rear_lake_only` branch (SK / KO) is intentionally **not**
+  filtered — the L rule there IS the rear classification, must continue
+  matching the whole lake polygon.
+
+**Default bundle methodology shift** — use case 1: linear km includes
+mainlines through wetlands and lakes, with area rollups
+(`lake_rearing_ha`, `wetland_rearing_ha`) populating from the polygon
+footprint. `rear_wetland_polygon` flipped from `no` (v0.14.0) back to
+`yes` for rear_wetland=yes species. The 2026-04-27 cut to `no` was the
+right call given the v0.14.0 grammar (no edge filter; W rule would
+over-emit), but with the mainlines edge filter shipped here,
+polygon-mainlines are the right thing to count for linear AND area.
+
+**Required:** fresh ≥ 0.24.0
+([\#182](https://github.com/NewGraphEnvironment/fresh/issues/182),
+[fresh#184](https://github.com/NewGraphEnvironment/fresh/pull/184)) —
+`area_only` predicate decouples bucket-flag derivation from the main
+rear predicate.
+
+**Tests** — `test-lnk_rules_build.R` 130 PASS (was 124 in 0.14.0): 6 new
+tests covering area_only emission per the columns + polygon-edge-types
+filter present on L/W rules (additive branch only) + rear_lake_only
+branch left untouched. Full suite 554 PASS / 0 FAIL.
+
+**BABL parity (bcfishpass bundle):** unchanged from 0.14.0 — 8 of 10
+rows within ±2%, 10 of 10 within ±5%. The new knobs are inert when set
+to today’s defaults, so bcfp bundle output is byte-identical to v0.14.0.
+
+**Coordinates with** [\#69 phase
+3](https://github.com/NewGraphEnvironment/link/issues/69) —
+`research/rule_flexibility.md` proof artifact runs BABL × CO under three
+configs (use case 1, use case 2, bcfishpass) by swapping only
+`dimensions.csv` cells, with `rules.yaml` diffs side-by-side.
+
 ## link 0.14.0
 
 Dimensions-driven `in_waterbody` + bcfishpass-bundle methodology fixes
