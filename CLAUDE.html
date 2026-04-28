@@ -41,7 +41,7 @@
 <p>Crossing connectivity interpretation for fish passage. The domain layer between raw crossing data and fresh’s generic network engine — scoring, overrides, and prioritization.</p>
 <div class="section level2">
 <h2 id="repository-context">Repository Context<a class="anchor" aria-label="anchor" href="#repository-context"></a></h2>
-<p><strong>Repository:</strong> NewGraphEnvironment/link <strong>Primary Language:</strong> R <strong>Prefix:</strong> <code>lnk_</code> <strong>Branch:</strong> <code>main</code> (v0.7.0 as of 2026-04-23)</p>
+<p><strong>Repository:</strong> NewGraphEnvironment/link <strong>Primary Language:</strong> R <strong>Prefix:</strong> <code>lnk_</code> <strong>Branch:</strong> <code>main</code> (v0.17.0 as of 2026-04-28)</p>
 </div>
 <div class="section level2">
 <h2 id="architecture">Architecture<a class="anchor" aria-label="anchor" href="#architecture"></a></h2>
@@ -241,15 +241,18 @@ bcdata (PSCIS assessments)   ─┘</code></pre>
 <li>#19 — Habitat eligibility override CSV (edge_types + feature_codes)</li>
 <li>#20 — Literature/observation evidence for habitat departures</li>
 <li>#21 — GSDD and thermal energy as intrinsic potential variables</li>
-<li>#23 — CH stream order exception QA</li>
 <li>#24 — lnk_stamp (model params for report appendix)</li>
 <li>#29 — SK spawning cluster divergence (blocked on fresh#133)</li>
 <li>#40 — Config provenance / run stamps (tracks input versions)</li>
 <li>#45 — Gradient classes cleanup (derive from <code>cfg$parameters_fresh$access_gradient_max</code>)</li>
+<li>#75 — <code>dimensions_columns.csv</code> as source-of-truth: auto-gen README + <code><a href="reference/lnk_rules_build.html">lnk_rules_build()</a></code> validation (CSV seeded in v0.17.0)</li>
 </ul></div>
 <div class="section level2">
 <h2 id="recently-closed">Recently closed<a class="anchor" aria-label="anchor" href="#recently-closed"></a></h2>
-<ul><li>#16 — ADMS comparison (all species within 5% on all 4 parity WSGs; tagged via PRs #41/#42/#43 for targets-driven reproducibility)</li>
+<ul><li>#69 — Dimensions-driven <code>in_waterbody</code> + <code>area_only</code> emission with proof artifact → PRs #71 (phase 1, v0.14.0), #72 (phase 2, v0.15.0), #73 (phase 3 + emit-fix, v0.16.0). bcfishpass-bundle BABL parity: 42/42 within ±5%, 35/42 within ±2%, median 1.1%, max 5.0%.</li>
+<li>#68 — Vignette ship → superseded by #74 (v0.17.0); ships <code>vignettes/habitat-bcfishpass.Rmd</code> with per-segment popups, fullscreen, dimensions seed dictionary.</li>
+<li>#23 — CH spawning stream order exception QA — closed as not-a-bug (premise was a misread of bcfishpass spawning bypass: it uses <code>waterbody_key IS NOT NULL</code>, NOT <code>stream_order_parent</code>. Stream-order bypass exists in CH <strong>rearing</strong> only, tracked in fresh#158).</li>
+<li>#16 — ADMS comparison (all species within 5% on all 4 parity WSGs; tagged via PRs #41/#42/#43 for targets-driven reproducibility)</li>
 <li>#38 — <code>_targets.R</code> pipeline → PRs #41/#42/#43 (v0.3.0/v0.4.0/v0.5.0)</li>
 <li>#44 — <code>barriers_definite_control</code> override wiring → PR #47 (v0.6.0)</li>
 <li>#46 — Manifest-driven pipeline probes → PR #50 (v0.7.0 refactor, no bump)</li>
