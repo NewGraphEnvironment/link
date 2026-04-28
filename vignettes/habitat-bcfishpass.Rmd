@@ -218,7 +218,5 @@ if (requireNamespace("mapgl", quietly = TRUE)) {
 - [`inst/extdata/configs/dimensions_columns.csv`](https://github.com/NewGraphEnvironment/link/blob/main/inst/extdata/configs/dimensions_columns.csv)
   — column dictionary for `dimensions.csv` (every per-species knob
   documented: type, group, default, what it emits in `rules.yaml`,
-  related fresh issue). Seed for [link#75](https://github.com/NewGraphEnvironment/link/issues/75)
-  which will turn this CSV into the source of truth for an
-  auto-generated README + `lnk_rules_build()` validation.
+  related fresh issue).
 - `?lnk_config`, `?lnk_pipeline_setup` and family — function reference
