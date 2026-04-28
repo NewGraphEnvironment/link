@@ -7,7 +7,7 @@ Crossing connectivity interpretation for fish passage. The domain layer between 
 **Repository:** NewGraphEnvironment/link
 **Primary Language:** R
 **Prefix:** `lnk_`
-**Branch:** `main` (v0.7.0 as of 2026-04-23)
+**Branch:** `main` (v0.17.0 as of 2026-04-28)
 
 ## Architecture
 
@@ -169,14 +169,17 @@ To run the entire province: loop over watershed groups. Or pass any AOI with `sp
 - #19 — Habitat eligibility override CSV (edge_types + feature_codes)
 - #20 — Literature/observation evidence for habitat departures
 - #21 — GSDD and thermal energy as intrinsic potential variables
-- #23 — CH stream order exception QA
 - #24 — lnk_stamp (model params for report appendix)
 - #29 — SK spawning cluster divergence (blocked on fresh#133)
 - #40 — Config provenance / run stamps (tracks input versions)
 - #45 — Gradient classes cleanup (derive from `cfg$parameters_fresh$access_gradient_max`)
+- #75 — `dimensions_columns.csv` as source-of-truth: auto-gen README + `lnk_rules_build()` validation (CSV seeded in v0.17.0)
 
 ## Recently closed
 
+- #69 — Dimensions-driven `in_waterbody` + `area_only` emission with proof artifact → PRs #71 (phase 1, v0.14.0), #72 (phase 2, v0.15.0), #73 (phase 3 + emit-fix, v0.16.0). bcfishpass-bundle BABL parity: 42/42 within ±5%, 35/42 within ±2%, median 1.1%, max 5.0%.
+- #68 — Vignette ship → superseded by #74 (v0.17.0); ships `vignettes/habitat-bcfishpass.Rmd` with per-segment popups, fullscreen, dimensions seed dictionary.
+- #23 — CH spawning stream order exception QA — closed as not-a-bug (premise was a misread of bcfishpass spawning bypass: it uses `waterbody_key IS NOT NULL`, NOT `stream_order_parent`. Stream-order bypass exists in CH **rearing** only, tracked in fresh#158).
 - #16 — ADMS comparison (all species within 5% on all 4 parity WSGs; tagged via PRs #41/#42/#43 for targets-driven reproducibility)
 - #38 — `_targets.R` pipeline → PRs #41/#42/#43 (v0.3.0/v0.4.0/v0.5.0)
 - #44 — `barriers_definite_control` override wiring → PR #47 (v0.6.0)
