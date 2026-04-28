@@ -173,8 +173,8 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, schema,
            upstream_route_measure double precision,
            watershed_group_code text,
            species_code text,
-           habitat_type text,
-           habitat_ind text)", schema))
+           spawning integer,
+           rearing integer)", schema))
     }
   }
 

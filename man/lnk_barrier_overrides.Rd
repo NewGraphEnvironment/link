@@ -30,8 +30,12 @@ observations with columns: \code{species_code}, \code{blue_line_key},
 Typically \code{bcfishobs.observations}.}
 
 \item{habitat}{Character or \code{NULL}. Schema-qualified table of confirmed
-habitat with columns: \code{species_code}, \code{blue_line_key},
-\code{upstream_route_measure}, \code{habitat_ind}. Any confirmed habitat upstream
+habitat in canonical shape (post-2026-04-26 bcfishpass): one row
+per (segment x species) with columns \code{species_code},
+\code{blue_line_key}, \code{downstream_route_measure},
+\code{upstream_route_measure}, plus per-habitat-type indicator columns
+\code{spawning} and \code{rearing} (integer 1 / NULL or text \code{'t'}/\code{'true'}).
+Any confirmed habitat (spawning or rearing flagged) upstream
 of a barrier removes it (threshold = 1).}
 
 \item{exclusions}{Character or \code{NULL}. Schema-qualified table of

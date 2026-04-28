@@ -18,8 +18,12 @@
 #'   `downstream_route_measure`, `wscode`, `localcode`, `observation_date`.
 #'   Typically `bcfishobs.observations`.
 #' @param habitat Character or `NULL`. Schema-qualified table of confirmed
-#'   habitat with columns: `species_code`, `blue_line_key`,
-#'   `upstream_route_measure`, `habitat_ind`. Any confirmed habitat upstream
+#'   habitat in canonical shape (post-2026-04-26 bcfishpass): one row
+#'   per (segment x species) with columns `species_code`,
+#'   `blue_line_key`, `downstream_route_measure`,
+#'   `upstream_route_measure`, plus per-habitat-type indicator columns
+#'   `spawning` and `rearing` (integer 1 / NULL or text `'t'`/`'true'`).
+#'   Any confirmed habitat (spawning or rearing flagged) upstream
 #'   of a barrier removes it (threshold = 1).
 #' @param exclusions Character or `NULL`. Schema-qualified table of
 #'   observation exclusions with column `fish_observation_point_id`. Flagged
@@ -221,12 +225,18 @@ lnk_barrier_overrides <- function(conn,
     # position, they have already considered the barrier's passability.
     # bcfishpass does the same: `hab_upstr` CTE has no control join.
     if (!is.null(habitat)) {
+      # Bcfishpass `user_habitat_classification.csv` shape (post-2026-04-26):
+      # one row per (segment x species) with `spawning` and `rearing`
+      # integer indicator columns. Any truthy indicator flags the row as
+      # habitat-confirmed; `lower(trim(::text))` accepts integer 1, text
+      # 'true'/'t'/'1', boolean.
       sql <- sprintf(
         "INSERT INTO %s (blue_line_key, downstream_route_measure, species_code)
          SELECT DISTINCT b.blue_line_key, b.downstream_route_measure, '%s'
          FROM %s b
          INNER JOIN %s h
-           ON h.habitat_ind::boolean = true
+           ON (lower(trim(h.spawning::text)) IN ('true', 't', '1') OR
+               lower(trim(h.rearing::text))  IN ('true', 't', '1'))
            AND h.species_code IN (%s)
          INNER JOIN whse_basemapping.fwa_stream_networks_sp s
            ON s.blue_line_key = h.blue_line_key

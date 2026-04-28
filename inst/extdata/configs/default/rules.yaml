@@ -1,5 +1,5 @@
 # Generated from dimensions.csv
-# Generated: 2026-04-26
+# Generated: 2026-04-28
 # Edge types: explicit
 #
 # DO NOT EDIT — edit the CSV and re-run lnk_rules_build()
@@ -11,6 +11,7 @@ BT:
     - 1100
     - 2000
     - 2300
+    in_waterbody: false
   - waterbody_type: R
     channel_width:
     - 0.0
@@ -21,6 +22,7 @@ BT:
     - 1100
     - 2000
     - 2300
+    in_waterbody: true
   - waterbody_type: R
     channel_width:
     - 0.0
@@ -29,8 +31,6 @@ BT:
     - 1050
     - 1150
     thresholds: false
-  - waterbody_type: W
-    wetland_ha_min: 1.0
   - waterbody_type: L
     lake_ha_min: 10.0
 CH:
@@ -40,6 +40,7 @@ CH:
     - 1100
     - 2000
     - 2300
+    in_waterbody: false
   - waterbody_type: R
     channel_width:
     - 0.0
@@ -50,6 +51,7 @@ CH:
     - 1100
     - 2000
     - 2300
+    in_waterbody: true
   - waterbody_type: R
     channel_width:
     - 0.0
@@ -58,8 +60,6 @@ CH:
     - 1050
     - 1150
     thresholds: false
-  - waterbody_type: W
-    wetland_ha_min: 1.0
   - waterbody_type: L
     lake_ha_min: 100.0
 CM:
@@ -69,6 +69,7 @@ CM:
     - 1100
     - 2000
     - 2300
+    in_waterbody: false
   - waterbody_type: R
     channel_width:
     - 0.0
@@ -81,6 +82,7 @@ CO:
     - 1100
     - 2000
     - 2300
+    in_waterbody: false
   - waterbody_type: R
     channel_width:
     - 0.0
@@ -91,6 +93,7 @@ CO:
     - 1100
     - 2000
     - 2300
+    in_waterbody: true
   - waterbody_type: R
     channel_width:
     - 0.0
@@ -99,8 +102,6 @@ CO:
     - 1050
     - 1150
     thresholds: false
-  - waterbody_type: W
-    wetland_ha_min: 0.5
   - waterbody_type: L
     lake_ha_min: 2.0
 PK:
@@ -110,6 +111,7 @@ PK:
     - 1100
     - 2000
     - 2300
+    in_waterbody: false
   - waterbody_type: R
     channel_width:
     - 0.0
@@ -122,6 +124,7 @@ SK:
     - 1100
     - 2000
     - 2300
+    in_waterbody: false
     requires_connected: rearing
     connected_distance_max: 3000.0
   - waterbody_type: R
@@ -147,6 +150,7 @@ ST:
     - 1100
     - 2000
     - 2300
+    in_waterbody: false
   - waterbody_type: R
     channel_width:
     - 0.0
@@ -157,6 +161,7 @@ ST:
     - 1100
     - 2000
     - 2300
+    in_waterbody: true
   - waterbody_type: R
     channel_width:
     - 0.0
@@ -165,8 +170,6 @@ ST:
     - 1050
     - 1150
     thresholds: false
-  - waterbody_type: W
-    wetland_ha_min: 1.0
   - waterbody_type: L
     lake_ha_min: 60.0
 WCT:
@@ -176,6 +179,7 @@ WCT:
     - 1100
     - 2000
     - 2300
+    in_waterbody: false
   - waterbody_type: R
     channel_width:
     - 0.0
@@ -186,6 +190,7 @@ WCT:
     - 1100
     - 2000
     - 2300
+    in_waterbody: true
   - waterbody_type: R
     channel_width:
     - 0.0
@@ -194,8 +199,6 @@ WCT:
     - 1050
     - 1150
     thresholds: false
-  - waterbody_type: W
-    wetland_ha_min: 1.0
   - waterbody_type: L
     lake_ha_min: 10.0
 KO:
@@ -205,6 +208,7 @@ KO:
     - 1100
     - 2000
     - 2300
+    in_waterbody: false
     requires_connected: rearing
     connected_distance_max: 3000.0
   - waterbody_type: R
@@ -230,6 +234,7 @@ RB:
     - 1100
     - 2000
     - 2300
+    in_waterbody: false
   - waterbody_type: R
     channel_width:
     - 0.0
@@ -240,6 +245,7 @@ RB:
     - 1100
     - 2000
     - 2300
+    in_waterbody: true
   - waterbody_type: R
     channel_width:
     - 0.0
@@ -248,8 +254,6 @@ RB:
     - 1050
     - 1150
     thresholds: false
-  - waterbody_type: W
-    wetland_ha_min: 1.0
   - waterbody_type: L
     lake_ha_min: 10.0
 GR:
@@ -259,6 +263,7 @@ GR:
     - 1100
     - 2000
     - 2300
+    in_waterbody: false
   - waterbody_type: R
     channel_width:
     - 0.0
@@ -269,6 +274,7 @@ GR:
     - 1100
     - 2000
     - 2300
+    in_waterbody: true
   - waterbody_type: R
     channel_width:
     - 0.0
