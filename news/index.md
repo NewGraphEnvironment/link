@@ -1,5 +1,83 @@
 # Changelog
 
+## link 0.14.0
+
+Dimensions-driven `in_waterbody` + bcfishpass-bundle methodology fixes
+that bring 5-species BABL parity to ±5% (8 of 10 rows within ±2%) on the
+bcfishpass bundle. The methodology dials are now visible in
+`dimensions.csv` cells per species — no buried emission rules.
+
+**New per-species columns** ([\#69 phase
+1](https://github.com/NewGraphEnvironment/link/issues/69)):
+
+- `spawn_stream_in_waterbody` — yes/no — emit `in_waterbody: <bool>` on
+  the stream-spawn rule. `no` excludes polygon-mainlines from spawn
+  classification (the partition that pairs with `waterbody_type: R/L/W`
+  polygon rules); `yes` is permissive and matches polygon-mainlines too.
+  Both bundles ship with `no` for all species (biology — spawning
+  happens in stream channels).
+- `rear_stream_in_waterbody` — yes/no — same shape on the stream-rear
+  rule. bcfishpass bundle ships `no` (strict partition matches
+  bcfishpass’s per-species access SQL); default bundle ships `yes`
+  (NewGraph permissive — counts polygon-mainlines as `rearing` for
+  species with `rear_lake: yes` etc., orthogonal to area rollups).
+- `rear_wetland_polygon` — yes/no — gate emission of the
+  `waterbody_type: W` polygon rule. When `no`, only the 1050/1150
+  wetland-flow carve-out emits; when `yes` (or absent), the W polygon
+  rule emits too (sets the `wetland_rearing` flag for area rollups).
+  Both bundles ship `no` for all species — segments inside an FWA
+  wetland polygon are wider than the fish-bearing channel and shouldn’t
+  count as rearing habitat.
+
+**Methodology fixes carried in from earlier branch work** (previously
+held in `vignette-ship`):
+
+- **`apply_habitat_overlay: false` flag in `pipeline:` block of
+  bcfishpass `config.yaml`.** Comparison-scope choice, not a behavioural
+  claim about bcfishpass. bcfishpass ships both layers:
+  `habitat_linear_<sp>` (per-species rule output) and
+  `streams_habitat_linear` (rule + known-habitat overlay blended). The
+  bcfishpass bundle disables `frs_habitat_overlay()` so its output is
+  rule-only and compares apples-to-apples against bcfishpass’s own rule
+  layer (`habitat_linear_<sp>`). Comparing the rule slices in isolation
+  keeps rule-emission drift from hiding behind known-habitat overlay
+  drift; overlay parity is a separate question to revisit once rule
+  parity is locked. Default bundle keeps overlay enabled (NewGraph
+  methodology produces the blended output by default).
+- **[`lnk_barrier_overrides()`](https://newgraphenvironment.github.io/link/reference/lnk_barrier_overrides.md)
+  habitat-confirmation SQL** updated for bcfishpass’s authoritative CSV
+  shape (post-2026-04-26: `species_code` + `spawning` + `rearing`
+  integer columns instead of the dropped `habitat_ind` column).
+- **[`lnk_pipeline_prepare()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_prepare.md)**
+  empty-table fallback `CREATE TABLE` matches the new CSV shape.
+
+**Required:** fresh ≥ 0.23.1
+([\#180](https://github.com/NewGraphEnvironment/fresh/issues/180),
+[fresh#181](https://github.com/NewGraphEnvironment/fresh/pull/181),
+[fresh#183](https://github.com/NewGraphEnvironment/fresh/pull/183)) —
+adds the `in_waterbody` predicate to the rule grammar plus the validator
+hotfix.
+
+**Tests** — `test-lnk_rules_build.R` 124 PASS (was 86): 6 new tests for
+`in_waterbody` emission across permutations + bundle-level smoke tests;
+4 new tests for `rear_wetland_polygon` (yes/no/absent backward-compat).
+Full suite 516 PASS / 0 FAIL.
+
+**BABL parity (bcfishpass bundle):** 8 of 10 spawning+rearing rows
+within ±2%; max 5.0%; max spawning drift 1.5% (was 4.8%). The remaining
+±2-5% drift is a follow-up — phase 2 will add the `area_only` predicate
+([fresh#182](https://github.com/NewGraphEnvironment/fresh/issues/182))
+and `edge_types_explicit: [1000, 1100]` filter on polygon rules to
+support the use case 2 pattern (mainlines excluded from linear, area
+still rolls up).
+
+**Coordinates with** [\#69 phase
+2](https://github.com/NewGraphEnvironment/link/issues/69) — adds
+`rear_lake_area_only` / `rear_wetland_area_only` columns once fresh#182
+lands. Phase 3 ships the proof artifact (`research/rule_flexibility.md`)
+running BABL × CO under three configs (use case 1, use case 2,
+bcfishpass) by swapping only `dimensions.csv` cells.
+
 ## link 0.13.0
 
 Shape fingerprint + halt auto-merge on shape drift

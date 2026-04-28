@@ -13,7 +13,7 @@ whether evidence exists upstream of each barrier."><meta property="og:image" con
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.13.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -84,8 +84,12 @@ Typically <code>bcfishobs.observations</code>.</p></dd>
 
 <dt id="arg-habitat">habitat<a class="anchor" aria-label="anchor" href="#arg-habitat"></a></dt>
 <dd><p>Character or <code>NULL</code>. Schema-qualified table of confirmed
-habitat with columns: <code>species_code</code>, <code>blue_line_key</code>,
-<code>upstream_route_measure</code>, <code>habitat_ind</code>. Any confirmed habitat upstream
+habitat in canonical shape (post-2026-04-26 bcfishpass): one row
+per (segment x species) with columns <code>species_code</code>,
+<code>blue_line_key</code>, <code>downstream_route_measure</code>,
+<code>upstream_route_measure</code>, plus per-habitat-type indicator columns
+<code>spawning</code> and <code>rearing</code> (integer 1 / NULL or text <code>'t'</code>/<code>'true'</code>).
+Any confirmed habitat (spawning or rearing flagged) upstream
 of a barrier removes it (threshold = 1).</p></dd>
 
 

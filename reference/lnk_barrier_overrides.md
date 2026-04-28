@@ -45,10 +45,13 @@ lnk_barrier_overrides(
 
 - habitat:
 
-  Character or `NULL`. Schema-qualified table of confirmed habitat with
-  columns: `species_code`, `blue_line_key`, `upstream_route_measure`,
-  `habitat_ind`. Any confirmed habitat upstream of a barrier removes it
-  (threshold = 1).
+  Character or `NULL`. Schema-qualified table of confirmed habitat in
+  canonical shape (post-2026-04-26 bcfishpass): one row per (segment x
+  species) with columns `species_code`, `blue_line_key`,
+  `downstream_route_measure`, `upstream_route_measure`, plus
+  per-habitat-type indicator columns `spawning` and `rearing` (integer 1
+  / NULL or text `'t'`/`'true'`). Any confirmed habitat (spawning or
+  rearing flagged) upstream of a barrier removes it (threshold = 1).
 
 - exclusions:
 

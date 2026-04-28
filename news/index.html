@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.13.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,6 +31,28 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.14.0" id="link-0140">link 0.14.0<a class="anchor" aria-label="anchor" href="#link-0140"></a></h2>
+<p>Dimensions-driven <code>in_waterbody</code> + bcfishpass-bundle methodology fixes that bring 5-species BABL parity to ±5% (8 of 10 rows within ±2%) on the bcfishpass bundle. The methodology dials are now visible in <code>dimensions.csv</code> cells per species — no buried emission rules.</p>
+<p><strong>New per-species columns</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/69" class="external-link">#69 phase 1</a>):</p>
+<ul><li>
+<code>spawn_stream_in_waterbody</code> — yes/no — emit <code>in_waterbody: &lt;bool&gt;</code> on the stream-spawn rule. <code>no</code> excludes polygon-mainlines from spawn classification (the partition that pairs with <code>waterbody_type: R/L/W</code> polygon rules); <code>yes</code> is permissive and matches polygon-mainlines too. Both bundles ship with <code>no</code> for all species (biology — spawning happens in stream channels).</li>
+<li>
+<code>rear_stream_in_waterbody</code> — yes/no — same shape on the stream-rear rule. bcfishpass bundle ships <code>no</code> (strict partition matches bcfishpass’s per-species access SQL); default bundle ships <code>yes</code> (NewGraph permissive — counts polygon-mainlines as <code>rearing</code> for species with <code>rear_lake: yes</code> etc., orthogonal to area rollups).</li>
+<li>
+<code>rear_wetland_polygon</code> — yes/no — gate emission of the <code>waterbody_type: W</code> polygon rule. When <code>no</code>, only the 1050/1150 wetland-flow carve-out emits; when <code>yes</code> (or absent), the W polygon rule emits too (sets the <code>wetland_rearing</code> flag for area rollups). Both bundles ship <code>no</code> for all species — segments inside an FWA wetland polygon are wider than the fish-bearing channel and shouldn’t count as rearing habitat.</li>
+</ul><p><strong>Methodology fixes carried in from earlier branch work</strong> (previously held in <code>vignette-ship</code>):</p>
+<ul><li>
+<strong><code>apply_habitat_overlay: false</code> flag in <code>pipeline:</code> block of bcfishpass <code>config.yaml</code>.</strong> Comparison-scope choice, not a behavioural claim about bcfishpass. bcfishpass ships both layers: <code>habitat_linear_&lt;sp&gt;</code> (per-species rule output) and <code>streams_habitat_linear</code> (rule + known-habitat overlay blended). The bcfishpass bundle disables <code>frs_habitat_overlay()</code> so its output is rule-only and compares apples-to-apples against bcfishpass’s own rule layer (<code>habitat_linear_&lt;sp&gt;</code>). Comparing the rule slices in isolation keeps rule-emission drift from hiding behind known-habitat overlay drift; overlay parity is a separate question to revisit once rule parity is locked. Default bundle keeps overlay enabled (NewGraph methodology produces the blended output by default).</li>
+<li>
+<strong><code><a href="../reference/lnk_barrier_overrides.html">lnk_barrier_overrides()</a></code> habitat-confirmation SQL</strong> updated for bcfishpass’s authoritative CSV shape (post-2026-04-26: <code>species_code</code> + <code>spawning</code> + <code>rearing</code> integer columns instead of the dropped <code>habitat_ind</code> column).</li>
+<li>
+<strong><code><a href="../reference/lnk_pipeline_prepare.html">lnk_pipeline_prepare()</a></code></strong> empty-table fallback <code>CREATE TABLE</code> matches the new CSV shape.</li>
+</ul><p><strong>Required:</strong> fresh ≥ 0.23.1 (<a href="https://github.com/NewGraphEnvironment/fresh/issues/180" class="external-link">#180</a>, <a href="https://github.com/NewGraphEnvironment/fresh/pull/181" class="external-link">fresh#181</a>, <a href="https://github.com/NewGraphEnvironment/fresh/pull/183" class="external-link">fresh#183</a>) — adds the <code>in_waterbody</code> predicate to the rule grammar plus the validator hotfix.</p>
+<p><strong>Tests</strong> — <code>test-lnk_rules_build.R</code> 124 PASS (was 86): 6 new tests for <code>in_waterbody</code> emission across permutations + bundle-level smoke tests; 4 new tests for <code>rear_wetland_polygon</code> (yes/no/absent backward-compat). Full suite 516 PASS / 0 FAIL.</p>
+<p><strong>BABL parity (bcfishpass bundle):</strong> 8 of 10 spawning+rearing rows within ±2%; max 5.0%; max spawning drift 1.5% (was 4.8%). The remaining ±2-5% drift is a follow-up — phase 2 will add the <code>area_only</code> predicate (<a href="https://github.com/NewGraphEnvironment/fresh/issues/182" class="external-link">fresh#182</a>) and <code>edge_types_explicit: [1000, 1100]</code> filter on polygon rules to support the use case 2 pattern (mainlines excluded from linear, area still rolls up).</p>
+<p><strong>Coordinates with</strong> <a href="https://github.com/NewGraphEnvironment/link/issues/69" class="external-link">#69 phase 2</a> — adds <code>rear_lake_area_only</code> / <code>rear_wetland_area_only</code> columns once fresh#182 lands. Phase 3 ships the proof artifact (<code>research/rule_flexibility.md</code>) running BABL × CO under three configs (use case 1, use case 2, bcfishpass) by swapping only <code>dimensions.csv</code> cells.</p>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.13.0" id="link-0130">link 0.13.0<a class="anchor" aria-label="anchor" href="#link-0130"></a></h2>
 <p>Shape fingerprint + halt auto-merge on shape drift (<a href="https://github.com/NewGraphEnvironment/link/issues/64" class="external-link">#64</a>).</p>
