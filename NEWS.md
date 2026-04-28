@@ -10,7 +10,7 @@ Dimensions-driven `in_waterbody` + bcfishpass-bundle methodology fixes that brin
 
 **Methodology fixes carried in from earlier branch work** (previously held in `vignette-ship`):
 
-- **`apply_habitat_overlay: false` flag in `pipeline:` block of bcfishpass `config.yaml`.** The known-habitat overlay (`frs_habitat_overlay()` flipping segments inside `user_habitat_classification.csv` ranges) corresponds to bcfishpass's separate post-classification step that blends `streams_habitat_known` into `streams_habitat_linear`. The bcfishpass bundle reproduces only the rule-based `habitat_linear_<sp>` layer — overlay disabled here. Default bundle keeps overlay enabled.
+- **`apply_habitat_overlay: false` flag in `pipeline:` block of bcfishpass `config.yaml`.** Comparison-scope choice, not a behavioural claim about bcfishpass. bcfishpass ships both layers: `habitat_linear_<sp>` (per-species rule output) and `streams_habitat_linear` (rule + known-habitat overlay blended). The bcfishpass bundle disables `frs_habitat_overlay()` so its output is rule-only and compares apples-to-apples against bcfishpass's own rule layer (`habitat_linear_<sp>`). Comparing the rule slices in isolation keeps rule-emission drift from hiding behind known-habitat overlay drift; overlay parity is a separate question to revisit once rule parity is locked. Default bundle keeps overlay enabled (NewGraph methodology produces the blended output by default).
 - **`lnk_barrier_overrides()` habitat-confirmation SQL** updated for bcfishpass's authoritative CSV shape (post-2026-04-26: `species_code` + `spawning` + `rearing` integer columns instead of the dropped `habitat_ind` column).
 - **`lnk_pipeline_prepare()`** empty-table fallback `CREATE TABLE` matches the new CSV shape.
 
