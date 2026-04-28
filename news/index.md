@@ -1,5 +1,63 @@
 # Changelog
 
+## link 0.16.0
+
+Phase 3 of [\#69](https://github.com/NewGraphEnvironment/link/issues/69)
+— proof artifact + emit-semantics fix.
+
+**Proof artifact:** new `research/rule_flexibility.md` runs BABL × CO
+under three configs (use case 1, use case 2, bcfishpass) by swapping
+only `dimensions.csv` cells, with `rules.yaml` diffs side-by-side.
+Reproducible via `data-raw/rule_flexibility_demo.R` +
+`data-raw/rule_flexibility_render.R`. Demonstrates that every
+methodology dial is a CSV cell, no buried emission rules. The numbers
+prove the matrix:
+
+- Use case 1 (default bundle): rearing 1388.90 km, lake_rearing 54507.85
+  ha, wetland_rearing 5786.74 ha. Counts polygon-mainlines as linear AND
+  rolls up polygon area.
+- Use case 2: rearing 1271.02 km, same area rollups. Excludes
+  polygon-mainlines from linear via `in_waterbody: false` +
+  `area_only: true` on L/W; areas still bucket via the polygon rules.
+- bcfishpass bundle: rearing 1271.02 km, no area rollup (no L/W polygon
+  rules at all). Functionally identical rear predicate to use case 2
+  because `area_only: true` makes the L/W rules contribute to bucket
+  flags only.
+
+**Emit-semantics fix in
+[`lnk_rules_build()`](https://newgraphenvironment.github.io/link/reference/lnk_rules_build.md)**
+(under [\#69](https://github.com/NewGraphEnvironment/link/issues/69)
+phase 1 banner — corrects a bug introduced in 0.14.0):
+
+Previous behaviour: `rear_stream_in_waterbody: yes` emitted
+`in_waterbody: true` on the stream rule. fresh interprets that as “match
+segments inside polygons ONLY,” the opposite of the column’s intent
+(“include polygon-mainlines too”). The default bundle’s permissive rear
+was effectively only matching in-polygon segments — broken since 0.14.0
+but never visible because the bcfishpass bundle (which set `no` for all
+species) was the only side tested for parity.
+
+Corrected emit:
+
+- `yes` (or absent): omit the `in_waterbody` field. Rule matches
+  segments inside AND outside polygons (today’s permissive default —
+  polygon-mainlines count too).
+- `no`: emit `in_waterbody: false`. Rule matches outside polygons only
+  (strict partition).
+
+The third grammar state (`in_waterbody: true` = inside polygons only)
+has no biological use case for stream rules and is no longer emitted by
+[`lnk_rules_build()`](https://newgraphenvironment.github.io/link/reference/lnk_rules_build.md).
+
+**bcfishpass bundle output unchanged:** the bundle ships
+`rear_stream_in_waterbody: no` for all species, so the fixed emit
+produces byte-identical rules.yaml to 0.15.0. Default bundle output
+changes (now actually permissive — pass-through stream rule).
+
+Tests updated (3 cases): `yes` (or absent) omits the field; `no` emits
+`in_waterbody: false`; default bundle smoke tests assert the rear stream
+rule has no `in_waterbody` field.
+
 ## link 0.15.0
 
 Phase 2 of

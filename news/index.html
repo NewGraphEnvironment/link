@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.15.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.16.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,6 +31,24 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.16.0" id="link-0160">link 0.16.0<a class="anchor" aria-label="anchor" href="#link-0160"></a></h2>
+<p>Phase 3 of <a href="https://github.com/NewGraphEnvironment/link/issues/69" class="external-link">#69</a> — proof artifact + emit-semantics fix.</p>
+<p><strong>Proof artifact:</strong> new <code>research/rule_flexibility.md</code> runs BABL × CO under three configs (use case 1, use case 2, bcfishpass) by swapping only <code>dimensions.csv</code> cells, with <code>rules.yaml</code> diffs side-by-side. Reproducible via <code>data-raw/rule_flexibility_demo.R</code> + <code>data-raw/rule_flexibility_render.R</code>. Demonstrates that every methodology dial is a CSV cell, no buried emission rules. The numbers prove the matrix:</p>
+<ul><li>Use case 1 (default bundle): rearing 1388.90 km, lake_rearing 54507.85 ha, wetland_rearing 5786.74 ha. Counts polygon-mainlines as linear AND rolls up polygon area.</li>
+<li>Use case 2: rearing 1271.02 km, same area rollups. Excludes polygon-mainlines from linear via <code>in_waterbody: false</code> + <code>area_only: true</code> on L/W; areas still bucket via the polygon rules.</li>
+<li>bcfishpass bundle: rearing 1271.02 km, no area rollup (no L/W polygon rules at all). Functionally identical rear predicate to use case 2 because <code>area_only: true</code> makes the L/W rules contribute to bucket flags only.</li>
+</ul><p><strong>Emit-semantics fix in <code><a href="../reference/lnk_rules_build.html">lnk_rules_build()</a></code></strong> (under <a href="https://github.com/NewGraphEnvironment/link/issues/69" class="external-link">#69</a> phase 1 banner — corrects a bug introduced in 0.14.0):</p>
+<p>Previous behaviour: <code>rear_stream_in_waterbody: yes</code> emitted <code>in_waterbody: true</code> on the stream rule. fresh interprets that as “match segments inside polygons ONLY,” the opposite of the column’s intent (“include polygon-mainlines too”). The default bundle’s permissive rear was effectively only matching in-polygon segments — broken since 0.14.0 but never visible because the bcfishpass bundle (which set <code>no</code> for all species) was the only side tested for parity.</p>
+<p>Corrected emit:</p>
+<ul><li>
+<code>yes</code> (or absent): omit the <code>in_waterbody</code> field. Rule matches segments inside AND outside polygons (today’s permissive default — polygon-mainlines count too).</li>
+<li>
+<code>no</code>: emit <code>in_waterbody: false</code>. Rule matches outside polygons only (strict partition).</li>
+</ul><p>The third grammar state (<code>in_waterbody: true</code> = inside polygons only) has no biological use case for stream rules and is no longer emitted by <code><a href="../reference/lnk_rules_build.html">lnk_rules_build()</a></code>.</p>
+<p><strong>bcfishpass bundle output unchanged:</strong> the bundle ships <code>rear_stream_in_waterbody: no</code> for all species, so the fixed emit produces byte-identical rules.yaml to 0.15.0. Default bundle output changes (now actually permissive — pass-through stream rule).</p>
+<p>Tests updated (3 cases): <code>yes</code> (or absent) omits the field; <code>no</code> emits <code>in_waterbody: false</code>; default bundle smoke tests assert the rear stream rule has no <code>in_waterbody</code> field.</p>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.15.0" id="link-0150">link 0.15.0<a class="anchor" aria-label="anchor" href="#link-0150"></a></h2>
 <p>Phase 2 of <a href="https://github.com/NewGraphEnvironment/link/issues/69" class="external-link">#69</a>. Adds dimensions-driven <code>area_only</code> emission + polygon-rule mainlines edge filter. Default bundle now ships use case 1 (linear includes mainlines through L/W polygons; area rolls up via bucket flags) with the new edge filter restricting polygon-rule contributions to mainlines only (1000/1100). bcfishpass bundle output unchanged.</p>
