@@ -204,19 +204,83 @@ test_that("non-numeric rear_wetland_ha_min falls through: W rule without thresho
   expect_null(bt_w$wetland_ha_min)
 })
 
+# -- rear_wetland_polygon flag ------------------------------------------------
+
+test_that("rear_wetland_polygon=no suppresses W rule emission", {
+  # Per-species column added 2026-04-27 to split the wetland-flow
+  # 1050/1150 carve-out from the W-polygon rule. When polygon=no, only
+  # the carve-out emits; when polygon=yes (or column absent), both emit.
+  dims <- tibble::tribble(
+    ~species, ~spawn_lake, ~spawn_stream, ~rear_lake, ~rear_lake_only,
+    ~rear_no_fw, ~rear_stream, ~rear_wetland, ~rear_wetland_polygon,
+    ~rear_all_edges, ~river_skip_cw_min,
+    "BT", "no", "yes", "no", "no", "no", "yes", "yes", "no", "no", "yes"
+  )
+  out <- withr::local_tempfile(fileext = ".yaml")
+  csv <- withr::local_tempfile(fileext = ".csv")
+  utils::write.csv(dims, csv, row.names = FALSE)
+  lnk_rules_build(csv, out, edge_types = "categories")
+
+  bt_w <- find_wb_rule(get_rear_rules(out, "BT"), "W")
+  expect_null(bt_w)  # polygon=no → no W rule
+  # but the 1050/1150 carve-out IS still emitted (rear_wetland=yes)
+  carve <- Filter(function(r) {
+    et <- r[["edge_types"]] %||% r[["edge_types_explicit"]]
+    !is.null(et) && (identical(et, "wetland") ||
+                      all(c(1050, 1150) %in% et))
+  }, get_rear_rules(out, "BT"))
+  expect_length(carve, 1L)
+})
+
+test_that("rear_wetland_polygon=yes preserves W rule emission", {
+  dims <- tibble::tribble(
+    ~species, ~spawn_lake, ~spawn_stream, ~rear_lake, ~rear_lake_only,
+    ~rear_no_fw, ~rear_stream, ~rear_wetland, ~rear_wetland_polygon,
+    ~rear_all_edges, ~river_skip_cw_min,
+    "BT", "no", "yes", "no", "no", "no", "yes", "yes", "yes", "no", "yes"
+  )
+  out <- withr::local_tempfile(fileext = ".yaml")
+  csv <- withr::local_tempfile(fileext = ".csv")
+  utils::write.csv(dims, csv, row.names = FALSE)
+  lnk_rules_build(csv, out, edge_types = "categories")
+
+  bt_w <- find_wb_rule(get_rear_rules(out, "BT"), "W")
+  expect_false(is.null(bt_w))
+})
+
+test_that("rear_wetland_polygon column absent: W rule emits (backward compat)", {
+  # Older fixtures without the column should preserve pre-2026-04-27
+  # behaviour where rear_wetland=yes implied both rules.
+  dims <- tibble::tribble(
+    ~species, ~spawn_lake, ~spawn_stream, ~rear_lake, ~rear_lake_only,
+    ~rear_no_fw, ~rear_stream, ~rear_wetland, ~rear_all_edges,
+    ~river_skip_cw_min,
+    "BT", "no", "yes", "no", "no", "no", "yes", "yes", "no", "yes"
+  )
+  out <- withr::local_tempfile(fileext = ".yaml")
+  csv <- withr::local_tempfile(fileext = ".csv")
+  utils::write.csv(dims, csv, row.names = FALSE)
+  lnk_rules_build(csv, out, edge_types = "categories")
+
+  bt_w <- find_wb_rule(get_rear_rules(out, "BT"), "W")
+  expect_false(is.null(bt_w))
+})
+
 # -- Default bundle smoke test ------------------------------------------------
 
-test_that("configs/default/dimensions.csv emits W rule for rear_wetland=yes species that have fresh thresholds", {
+test_that("bundled default config does NOT emit W rule (polygon=no for all species)", {
+  # The default bundle ships with rear_wetland_polygon=no for all
+  # rear_wetland=yes species per the 2026-04-27 methodology revision
+  # (W rule was an over-count: fish-bearing channel, not the wetland
+  # polygon footprint). The 1050/1150 stream-flow carve-out still
+  # emits where rear_wetland=yes.
   csv <- system.file("extdata", "configs", "default", "dimensions.csv",
                      package = "link", mustWork = TRUE)
   out <- withr::local_tempfile(fileext = ".yaml")
 
-  # lnk_rules_build emits a message for species dropped because fresh's
-  # parameters_habitat_thresholds.csv has no row for them. Capture
-  # those so the smoke test only checks species actually in rules.yaml.
   skipped <- character(0)
   withCallingHandlers(
-    lnk_rules_build(csv, out, edge_types = "categories"),
+    lnk_rules_build(csv, out, edge_types = "explicit"),
     message = function(m) {
       if (grepl("^Skipping ", conditionMessage(m))) {
         skipped <<- c(skipped, sub("Skipping ([A-Z]+):.*", "\\1",
@@ -226,15 +290,9 @@ test_that("configs/default/dimensions.csv emits W rule for rear_wetland=yes spec
     })
 
   r <- yaml::read_yaml(out)
-  dims <- utils::read.csv(csv, stringsAsFactors = FALSE)
-  wetland_spp <- setdiff(
-    dims$species[tolower(trimws(dims$rear_wetland)) == "yes"],
-    skipped)
-  expect_gt(length(wetland_spp), 0)
-
-  for (sp in wetland_spp) {
+  for (sp in setdiff(names(r), skipped)) {
     w <- find_wb_rule(r[[sp]]$rear, "W")
-    expect_false(is.null(w), info = paste0("missing W rule for ", sp))
+    expect_null(w, info = paste0("unexpected W rule for ", sp))
   }
 })
 

@@ -19,21 +19,15 @@ options(knitr.kable.NA = "—")
 library(link)
 ```
 
-[bcfishpass](https://github.com/smnorris/bcfishpass) is a province-wide
-modelling framework for British Columbia. Beyond linear habitat
-classification it covers PSCIS road and rail crossing assessment, fish
-passage barrier identification, watershed connectivity analysis, and
-restoration prioritization (Watershed Connectivity Restoration Plans).
-This vignette covers only the per-segment linear habitat classification
-slice — the layer that feeds the others.
+This vignette documents link's reproduction of
+[bcfishpass](https://github.com/smnorris/bcfishpass)'s linear habitat
+classification — per-segment spawning and rearing booleans, conditioned
+on natural accessibility — for the species present in five British
+Columbia watershed groups (ADMS, BULK, BABL, ELKR, DEAD).
 
-The bundled `"bcfishpass"` config in link expresses bcfishpass's linear
-habitat classification (spawning + rearing), natural-barrier modelling
-(gradient, falls, user-identified definite barriers), and observation-
-based access overrides as a self-contained input bundle. The broader
-bcfishpass scope is bcfishpass-side and out of link's scope.
-
-Per-phase pipeline detail and methodology departures live in
+The bundled `"bcfishpass"` config encodes bcfishpass's per-species
+rules and override CSVs as a self-contained input. Per-phase pipeline
+detail lives in
 [`research/bcfishpass_comparison.md`](https://github.com/NewGraphEnvironment/link/blob/main/research/bcfishpass_comparison.md).
 
 ## Prerequisites

@@ -46,13 +46,13 @@ provenance:
     generated_from: dimensions.csv
     generated_by: lnk_rules_build
     generator_sha: 8f1890564b9148573535a679f2e5563aebe74207
-    checksum: sha256:c1d13984f79fcd71879a5140a06787710384edf41794f6332bbf88ccb0a62bdb
+    checksum: sha256:e4dc39abfa5d4f2901dc371c40168ea9add507ca7e8b71bc6606f739bfb25231
     shape_checksum: sha256:4fec0f2db7523d71ba7542e0d52217c91d9bab5b55d714b689f614380f5c2eb9
   dimensions.csv:
     source: link (hand-authored)
     upstream_sha: 8f1890564b9148573535a679f2e5563aebe74207
     synced: 2026-04-26
-    checksum: sha256:268b0d32cbfd0c3e411cb346ceeb6ec5a5563b426c664110cb0c7363cb06d525
+    checksum: sha256:f59c51d0d96eab2f6dde7330a2a0c386336332629f3c5d673abe4a17177a824e
     shape_checksum: sha256:06d539fefc124d8ec91a1dda26aad00fdeaf9d7aeaa7fe5fb58012e263ac9d44
   parameters_fresh.csv:
     source: link (hand-authored)
