@@ -63,6 +63,11 @@ DBI::dbExecute(conn, sprintf(
 
 sub_ch <- sf::st_read(conn, query = "
   SELECT
+    s.id_segment,
+    s.blue_line_key,
+    round(s.downstream_route_measure::numeric, 1) AS downstream_route_measure,
+    round(s.length_metre::numeric, 1) AS length_metre,
+    s.gnis_name,
     CASE
       WHEN h.spawning IS TRUE AND h.rearing IS TRUE THEN 'spawning + rearing'
       WHEN h.spawning IS TRUE                       THEN 'spawning only'
@@ -78,17 +83,11 @@ sub_ch <- sf::st_read(conn, query = "
     AND (h.spawning IS TRUE OR h.rearing IS TRUE)
 ")
 
-sub_ch <- by(sub_ch, sub_ch$habitat, function(rows) {
-  sf::st_sf(
-    habitat = rows$habitat[1],
-    geom = sf::st_union(sf::st_geometry(rows))
-  )
-})
-sub_ch <- do.call(rbind, sub_ch)
-rownames(sub_ch) <- NULL
-
+# Per-segment features preserved (not dissolved) so the vignette map
+# can attach a popup with id_segment / blue_line_key / drm / gnis_name
+# for QA and segment-level inspection.
 saveRDS(sub_ch, file.path(out_dir, "sub_ch.rds"))
-message("sub_ch (link): ", nrow(sub_ch), " dissolved features -> ",
+message("sub_ch (link): ", nrow(sub_ch), " segments -> ",
   file.path(out_dir, "sub_ch.rds"))
 message("  size: ",
   round(file.info(file.path(out_dir, "sub_ch.rds"))$size / 1024, 1),
@@ -113,6 +112,11 @@ on.exit(try(DBI::dbDisconnect(conn_ref), silent = TRUE), add = TRUE)
 # output. spawning_ch / rearing_ch values: 1-2 = model, 3 = known.
 sub_ch_bcfp <- sf::st_read(conn_ref, query = sprintf("
   SELECT
+    s.segmented_stream_id,
+    s.blue_line_key,
+    round(s.downstream_route_measure::numeric, 1) AS downstream_route_measure,
+    round(s.length_metre::numeric, 1) AS length_metre,
+    s.gnis_name,
     CASE
       WHEN h.spawning_ch > 0 AND h.rearing_ch > 0 THEN 'spawning + rearing'
       WHEN h.spawning_ch > 0                      THEN 'spawning only'
@@ -126,18 +130,9 @@ sub_ch_bcfp <- sf::st_read(conn_ref, query = sprintf("
     AND (h.spawning_ch > 0 OR h.rearing_ch > 0)",
   aoi_wkt))
 
-sub_ch_bcfp <- by(sub_ch_bcfp, sub_ch_bcfp$habitat, function(rows) {
-  sf::st_sf(
-    habitat = rows$habitat[1],
-    geom = sf::st_union(sf::st_geometry(rows))
-  )
-})
-sub_ch_bcfp <- do.call(rbind, sub_ch_bcfp)
-rownames(sub_ch_bcfp) <- NULL
-
 saveRDS(sub_ch_bcfp, file.path(out_dir, "sub_ch_bcfp.rds"))
 message("sub_ch_bcfp (bcfishpass): ", nrow(sub_ch_bcfp),
-  " dissolved features -> ",
+  " segments -> ",
   file.path(out_dir, "sub_ch_bcfp.rds"))
 message("  size: ",
   round(file.info(file.path(out_dir, "sub_ch_bcfp.rds"))$size / 1024, 1),
