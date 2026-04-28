@@ -25,9 +25,9 @@ classification — per-segment spawning and rearing booleans, conditioned
 on natural accessibility — for the species present in five British
 Columbia watershed groups (ADMS, BULK, BABL, ELKR, DEAD).
 
-The bundled `"bcfishpass"` config encodes bcfishpass's per-species
-rules and override CSVs as a self-contained input. Per-phase pipeline
-detail lives in
+The bundled [`"bcfishpass"`](https://github.com/NewGraphEnvironment/link/tree/main/inst/extdata/configs/bcfishpass)
+config encodes bcfishpass's per-species rules and override CSVs as a
+self-contained input. Per-phase pipeline detail lives in
 [`research/bcfishpass_comparison.md`](https://github.com/NewGraphEnvironment/link/blob/main/research/bcfishpass_comparison.md).
 
 ## Prerequisites
@@ -38,12 +38,12 @@ Required:
   loaded — `wscode_ltree` / `localcode_ltree` columns on the FWA stream
   network plus the `fwa_upstream` / `fwa_downstream` /
   `fwa_watershedatmeasure` SQL functions the pipeline uses.
-
-Recommended:
-
 - [bcfishobs](https://github.com/smnorris/bcfishobs) populating
-  `bcfishobs.observations` so the access model can override natural
-  barriers per species.
+  `bcfishobs.observations`. The bcfishpass bundle's `break_order`
+  starts with `observations`, and `lnk_barrier_overrides` uses
+  observations to skip natural barriers where fish have been recorded
+  upstream. Without it, segmentation and access both diverge from
+  bcfishpass and the parity claim doesn't hold.
 
 Optional (for the comparison map at the bottom of this vignette only):
 
@@ -139,8 +139,30 @@ sub_ch_bcfp <- readRDS(system.file("extdata", "vignette-data",
                                     "sub_ch_bcfp.rds", package = "link"))
 
 if (requireNamespace("mapgl", quietly = TRUE)) {
-  pal_values <- c("spawning only", "rearing only", "spawning + rearing")
-  pal_colors <- c("#e31a1c", "#1f78b4", "#6a3d9a")
+  # No spawning-only CH segments occur in the Neexdzii Kwa AOI
+  # (CH spawning lives on segments that also support rearing here).
+  # Drop the unused legend entry — spawning-only segments would still
+  # render as grey defaults via `match_expr` if any appeared.
+  pal_values <- c("rearing only", "spawning + rearing")
+  pal_colors <- c("#1f78b4", "#6a3d9a")
+
+  # mapgl::add_line_layer's popup argument takes a column name. Pre-
+  # build a per-segment HTML string in `popup_html` on each side; the
+  # rendered map shows that column's value when a segment is clicked.
+  # The IDs let a reader QA either side of the comparison by segment.
+  fmt_popup <- function(d, header, id_col) {
+    paste0(
+      "<b>", header, "</b><br>",
+      id_col, ": ", d[[id_col]], "<br>",
+      "blue_line_key: ", d$blue_line_key, "<br>",
+      "downstream_route_measure: ", d$downstream_route_measure, "<br>",
+      "length_metre: ", d$length_metre, "<br>",
+      "gnis_name: ", ifelse(is.na(d$gnis_name), "—", d$gnis_name), "<br>",
+      "habitat: ", d$habitat)
+  }
+  sub_ch$popup_html      <- fmt_popup(sub_ch, "link", "id_segment")
+  sub_ch_bcfp$popup_html <- fmt_popup(sub_ch_bcfp, "bcfishpass",
+                                      "segmented_stream_id")
 
   mapgl::maplibre(
     bounds = sf::st_bbox(sub_ch),
@@ -153,14 +175,16 @@ if (requireNamespace("mapgl", quietly = TRUE)) {
         values = pal_values, stops = pal_colors, default = "#999999"),
       line_width = 3,
       line_opacity = 0.6,
-      visibility = "none"
+      visibility = "none",
+      popup = "popup_html"
     ) |>
     mapgl::add_line_layer(
       id = "link",
       source = sub_ch,
       line_color = mapgl::match_expr("habitat",
         values = pal_values, stops = pal_colors, default = "#999999"),
-      line_width = 2
+      line_width = 2,
+      popup = "popup_html"
     ) |>
     mapgl::add_legend(
       "Neexdzii Kwa (Upper Bulkley) · modelled chinook habitat",
@@ -172,7 +196,8 @@ if (requireNamespace("mapgl", quietly = TRUE)) {
     mapgl::add_layers_control(
       collapsible = TRUE,
       position    = "top-left"
-    )
+    ) |>
+    mapgl::add_fullscreen_control(position = "top-right")
 } else {
   message("Install `mapgl` (pak::pak('mapgl')) to render this map.")
 }
@@ -184,7 +209,16 @@ if (requireNamespace("mapgl", quietly = TRUE)) {
   — per-phase pipeline DAG, where breaks go, where classification
   comes from, known-habitat overlay, stream-order bypass, parity
   numbers
+- [`research/rule_flexibility.md`](https://github.com/NewGraphEnvironment/link/blob/main/research/rule_flexibility.md)
+  — proof artifact: BABL × CO under three configs (use case 1, use
+  case 2, bcfishpass) by swapping only `dimensions.csv` cells
 - [`inst/extdata/configs/bcfishpass/`](https://github.com/NewGraphEnvironment/link/tree/main/inst/extdata/configs/bcfishpass)
   — bundled config (rules YAML, dimensions CSV, per-species
   parameters, overrides)
+- [`inst/extdata/configs/dimensions_columns.csv`](https://github.com/NewGraphEnvironment/link/blob/main/inst/extdata/configs/dimensions_columns.csv)
+  — column dictionary for `dimensions.csv` (every per-species knob
+  documented: type, group, default, what it emits in `rules.yaml`,
+  related fresh issue). Seed for [link#75](https://github.com/NewGraphEnvironment/link/issues/75)
+  which will turn this CSV into the source of truth for an
+  auto-generated README + `lnk_rules_build()` validation.
 - `?lnk_config`, `?lnk_pipeline_setup` and family — function reference
