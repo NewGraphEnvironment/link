@@ -58,9 +58,9 @@ provenance:
   overrides/user_habitat_classification.csv:
     source: https://github.com/smnorris/bcfishpass
     path: data/user_habitat_classification.csv
-    upstream_sha: 40c4a0a
-    synced: 2026-04-27
-    checksum: sha256:c605a8aa61b127f3525562e24ae3ab8f26cd62c1e3e556edf5b8c564c735b830
+    upstream_sha: 4879bba
+    synced: 2026-04-28
+    checksum: sha256:cc6aff6448e940613913c2d9dd847db72d6bfb63db8b50ad3293c76ef17c5740
     shape_checksum: sha256:35604598f352c0cc958e8330e80627ec65154e4eaba9dbba8cac92c8516706a0
   overrides/observation_exclusions.csv:
     source: link (hand-authored)
