@@ -1,3 +1,17 @@
+# link 0.17.0
+
+Ship the `Modelling spawning and rearing habitat using bcfishpass defaults` vignette ([`vignettes/habitat-bcfishpass.Rmd`](https://github.com/NewGraphEnvironment/link/blob/main/vignettes/habitat-bcfishpass.Rmd)) on top of the post-phase-3 codebase. Regenerated bundled artifacts (`inst/extdata/vignette-data/{rollup, sub_ch, sub_ch_bcfp}.rds`) reflect the corrected emit semantics and tighter parity.
+
+**bcfishpass-bundle parity (5 WSGs × 5 species, spawn + rear):**
+
+- 42 of 42 non-NA rows within ±5%
+- 35 of 42 within ±2%
+- median 1.1%; max 5.0%
+
+Tighter than v0.13.1's 100% within ±5% / median 1.5% claim because phase 1's emit-semantics fix landed in main, and the regenerated rollup reflects it. Spawning rows that previously sat at +3-5% (BT/CH/CO/ST across multiple WSGs) are now at +0-2%.
+
+The vignette text claim updated to match the new numbers. Cuts the v0.13.1 vignette's residual-deltas paragraph that mentioned overlay-range-containment and stream-order-bypass — those were pre-phase-3 artifacts; with rule emission corrected, residual deltas are mostly segmentation-boundary rounding plus the documented stream-order bypass.
+
 # link 0.16.0
 
 Phase 3 of [#69](https://github.com/NewGraphEnvironment/link/issues/69) — proof artifact + emit-semantics fix.
