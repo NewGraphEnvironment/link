@@ -5,9 +5,10 @@ template:
 
 reference:
   - title: Configs
-    desc: Load a pipeline config bundle (rules, parameters, overrides)
+    desc: Load a pipeline config bundle (manifest) and materialize its data files
     contents:
       - lnk_config
+      - lnk_load_overrides
       - lnk_config_verify
 
   - title: Run stamps
