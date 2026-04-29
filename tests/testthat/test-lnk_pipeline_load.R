@@ -2,18 +2,21 @@
 
 test_that("lnk_pipeline_load rejects invalid aoi", {
   cfg <- lnk_config("bcfishpass")
+  loaded <- list()
 
   expect_error(
-    lnk_pipeline_load("mock-conn", aoi = NULL, cfg = cfg, schema = "working"),
+    lnk_pipeline_load("mock-conn", aoi = NULL, cfg = cfg, loaded = loaded,
+                       schema = "working"),
     "aoi must be a single non-empty string"
   )
   expect_error(
-    lnk_pipeline_load("mock-conn", aoi = "", cfg = cfg, schema = "working"),
+    lnk_pipeline_load("mock-conn", aoi = "", cfg = cfg, loaded = loaded,
+                       schema = "working"),
     "aoi must be a single non-empty string"
   )
   expect_error(
     lnk_pipeline_load("mock-conn", aoi = c("BULK", "ADMS"),
-                       cfg = cfg, schema = "working"),
+                       cfg = cfg, loaded = loaded, schema = "working"),
     "aoi must be a single non-empty string"
   )
 })
@@ -21,9 +24,18 @@ test_that("lnk_pipeline_load rejects invalid aoi", {
 test_that("lnk_pipeline_load rejects non-lnk_config cfg", {
   expect_error(
     lnk_pipeline_load("mock-conn", aoi = "BULK",
-                       cfg = list(name = "bcfishpass"),
+                       cfg = list(name = "bcfishpass"), loaded = list(),
                        schema = "working"),
     "cfg must be an lnk_config object"
+  )
+})
+
+test_that("lnk_pipeline_load rejects non-list loaded", {
+  cfg <- lnk_config("bcfishpass")
+  expect_error(
+    lnk_pipeline_load("mock-conn", aoi = "BULK", cfg = cfg,
+                       loaded = "not-a-list", schema = "working"),
+    "loaded must be a named list"
   )
 })
 
@@ -31,7 +43,7 @@ test_that("lnk_pipeline_load rejects invalid schema", {
   cfg <- lnk_config("bcfishpass")
   expect_error(
     lnk_pipeline_load("mock-conn", aoi = "BULK", cfg = cfg,
-                       schema = "bad;name"),
+                       loaded = list(), schema = "bad;name"),
     "schema"
   )
 })
@@ -39,17 +51,14 @@ test_that("lnk_pipeline_load rejects invalid schema", {
 # -- apply_fixes SQL shape (mocked) -----------------------------------------
 
 test_that(".lnk_pipeline_apply_fixes generates PASSABLE update SQL", {
-  # Minimal stub — one fix row for the target AOI
-  cfg_stub <- structure(list(
-    overrides = list(
-      modelled_fixes = data.frame(
-        watershed_group_code = "BULK",
-        modelled_crossing_id = 123L,
-        structure = "NONE",
-        stringsAsFactors = FALSE
-      )
+  loaded_stub <- list(
+    user_modelled_crossing_fixes = data.frame(
+      watershed_group_code = "BULK",
+      modelled_crossing_id = 123L,
+      structure = "NONE",
+      stringsAsFactors = FALSE
     )
-  ), class = c("lnk_config", "list"))
+  )
 
   captured <- character(0)
   local_mocked_bindings(
@@ -58,13 +67,12 @@ test_that(".lnk_pipeline_apply_fixes generates PASSABLE update SQL", {
       invisible(NULL)
     }
   )
-  # dbWriteTable lives in DBI — mock it to a no-op for this shape test
   local_mocked_bindings(
     dbWriteTable = function(...) invisible(NULL),
     .package = "DBI"
   )
 
-  .lnk_pipeline_apply_fixes("mock-conn", aoi = "BULK", cfg = cfg_stub,
+  .lnk_pipeline_apply_fixes("mock-conn", aoi = "BULK", loaded = loaded_stub,
                              schema = "working_bulk")
 
   joined <- paste(captured, collapse = "\n")
@@ -75,16 +83,14 @@ test_that(".lnk_pipeline_apply_fixes generates PASSABLE update SQL", {
 })
 
 test_that(".lnk_pipeline_apply_fixes is a no-op when no fixes match AOI", {
-  cfg_stub <- structure(list(
-    overrides = list(
-      modelled_fixes = data.frame(
-        watershed_group_code = "ADMS",      # different WSG
-        modelled_crossing_id = 123L,
-        structure = "NONE",
-        stringsAsFactors = FALSE
-      )
+  loaded_stub <- list(
+    user_modelled_crossing_fixes = data.frame(
+      watershed_group_code = "ADMS",      # different WSG
+      modelled_crossing_id = 123L,
+      structure = "NONE",
+      stringsAsFactors = FALSE
     )
-  ), class = c("lnk_config", "list"))
+  )
 
   captured <- character(0)
   local_mocked_bindings(
@@ -100,16 +106,14 @@ test_that(".lnk_pipeline_apply_fixes is a no-op when no fixes match AOI", {
     .package = "DBI"
   )
 
-  .lnk_pipeline_apply_fixes("mock-conn", aoi = "BULK", cfg = cfg_stub,
+  .lnk_pipeline_apply_fixes("mock-conn", aoi = "BULK", loaded = loaded_stub,
                              schema = "working_bulk")
 
   expect_length(captured, 0L)
 })
 
-test_that(".lnk_pipeline_apply_fixes is a no-op when no fixes in config", {
-  cfg_stub <- structure(list(
-    overrides = list()   # no modelled_fixes at all
-  ), class = c("lnk_config", "list"))
+test_that(".lnk_pipeline_apply_fixes is a no-op when no fixes loaded", {
+  loaded_stub <- list()
 
   captured <- character(0)
   local_mocked_bindings(
@@ -119,7 +123,7 @@ test_that(".lnk_pipeline_apply_fixes is a no-op when no fixes in config", {
     }
   )
 
-  .lnk_pipeline_apply_fixes("mock-conn", aoi = "BULK", cfg = cfg_stub,
+  .lnk_pipeline_apply_fixes("mock-conn", aoi = "BULK", loaded = loaded_stub,
                              schema = "working_bulk")
 
   expect_length(captured, 0L)
@@ -128,16 +132,14 @@ test_that(".lnk_pipeline_apply_fixes is a no-op when no fixes in config", {
 # -- apply_pscis branching --------------------------------------------------
 
 test_that(".lnk_pipeline_apply_pscis is a no-op when no PSCIS fixes match", {
-  cfg_stub <- structure(list(
-    overrides = list(
-      pscis_barrier_status = data.frame(
-        watershed_group_code = "ADMS",      # different WSG
-        stream_crossing_id = 456L,
-        user_barrier_status = "BARRIER",
-        stringsAsFactors = FALSE
-      )
+  loaded_stub <- list(
+    user_pscis_barrier_status = data.frame(
+      watershed_group_code = "ADMS",      # different WSG
+      stream_crossing_id = 456L,
+      user_barrier_status = "BARRIER",
+      stringsAsFactors = FALSE
     )
-  ), class = c("lnk_config", "list"))
+  )
 
   override_calls <- 0L
   local_mocked_bindings(
@@ -147,7 +149,7 @@ test_that(".lnk_pipeline_apply_pscis is a no-op when no PSCIS fixes match", {
     }
   )
 
-  .lnk_pipeline_apply_pscis("mock-conn", aoi = "BULK", cfg = cfg_stub,
+  .lnk_pipeline_apply_pscis("mock-conn", aoi = "BULK", loaded = loaded_stub,
                               schema = "working_bulk")
 
   expect_equal(override_calls, 0L)

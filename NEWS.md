@@ -1,3 +1,35 @@
+# link 0.18.0
+
+Closes [#65](https://github.com/NewGraphEnvironment/link/issues/65). Decompose the config bundle into a manifest layer and a data-ingest layer, and route registered files through [crate](https://github.com/NewGraphEnvironment/crate) for source-agnostic canonicalization.
+
+**`lnk_config()` is now manifest-only.** It reads `config.yaml` and returns paths, file declarations, pipeline knobs, and provenance — no parsed CSVs. Cheap to call. `lnk_config_verify()` and `lnk_stamp()` no longer pay for CSV parsing they don't need.
+
+**New: `lnk_load_overrides(cfg)`** materializes the data files declared in `cfg$files` and returns a named list of canonical-shape tibbles. Entries with `source` + `canonical_schema` declarations dispatch through `crate::crt_ingest()` (currently `bcfp/user_habitat_classification`); others fall through to local reads dispatched on path extension. New source families plug in by config edit alone — no link R code change.
+
+**New `config.yaml` schema.** Top-level `rules:` and `dimensions:` paths replace `files.rules_yaml` / `files.dimensions_csv` (format follows from the path's extension, not the key name). The previous `files:` and `overrides:` maps merge into one flat `files:` map keyed by filename stem (e.g. `user_barriers_definite`, `pscis_modelledcrossings_streams_xref`). Each entry carries `path:` and optionally `source:` and `canonical_schema:`. Configs may declare `extends:` to inherit from another config; child entries override same-key parent entries.
+
+**Pipeline phase signatures gain `loaded`.** Every `lnk_pipeline_*` phase that reads a data table now takes `cfg` and `loaded` together. Callers (the bundled targets pipeline, project scripts) call `lnk_load_overrides(cfg)` once and thread the result through phases. `cfg$overrides$X` and `cfg$habitat_classification` access points become `loaded$X`. See `data-raw/_targets.R` and `data-raw/compare_bcfishpass_wsg.R` for the pattern.
+
+**Verification.** `tar_make()` on 5 WSGs × 2 configs reproduces the v0.17.0 baseline rollup bit-identically (sha256 `a82de9928809b9751213e08916c476b4ee3f99286bc9ea2dc53f9659eeb92097`). Refactor introduces no behaviour change.
+
+**Migration**
+
+| Old | New |
+|---|---|
+| `cfg$rules_yaml` | `cfg$rules` |
+| `cfg$dimensions_csv` | `cfg$dimensions` |
+| `cfg$parameters_fresh` (data frame) | `loaded$parameters_fresh` |
+| `cfg$habitat_classification` | `loaded$user_habitat_classification` |
+| `cfg$observation_exclusions` | `loaded$observation_exclusions` |
+| `cfg$wsg_species` | `loaded$wsg_species_presence` |
+| `cfg$overrides$X` | `loaded$X` (e.g. `loaded$user_barriers_definite`) |
+
+**Out of scope (follow-up issues):**
+
+- crate schemas for the other 9 bcfp-sourced files (one issue per file as canonical-shape decisions concretize). Today they fall through to plain CSV read.
+- `nge` / `local` source families (when project-experimental configs need them).
+- Type-aware variant matching in crate (planned crate v0.1.x roadmap).
+
 # link 0.17.0
 
 Ship the `Modelling spawning and rearing habitat using bcfishpass defaults` vignette ([`vignettes/habitat-bcfishpass.Rmd`](https://github.com/NewGraphEnvironment/link/blob/main/vignettes/habitat-bcfishpass.Rmd)) on top of the post-phase-3 codebase. Regenerated bundled artifacts (`inst/extdata/vignette-data/{rollup, sub_ch, sub_ch_bcfp}.rds`) reflect the corrected emit semantics and tighter parity.

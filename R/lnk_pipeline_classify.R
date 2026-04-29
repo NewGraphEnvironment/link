@@ -22,10 +22,14 @@
 #' @param aoi Character. Watershed group code (today; extends to other
 #'   spatial filters later).
 #' @param cfg An `lnk_config` object from [lnk_config()].
+#' @param loaded Named list of tibbles from [lnk_load_overrides()].
+#'   Carries `parameters_fresh`, `user_habitat_classification`, and
+#'   `wsg_species_presence`.
 #' @param schema Character. Working schema name.
 #' @param species Character vector. Species codes to classify. Default
-#'   derives from `cfg$parameters_fresh$species_code` intersected with
-#'   the species present in the AOI (via `cfg$wsg_species`).
+#'   derives from `loaded$parameters_fresh$species_code` intersected
+#'   with the species present in the AOI (via
+#'   `loaded$wsg_species_presence`).
 #' @param thresholds_csv Path to the habitat thresholds CSV. Default
 #'   uses the copy shipped with fresh.
 #'
@@ -37,19 +41,20 @@
 #'
 #' @examples
 #' \dontrun{
-#' conn <- lnk_db_conn()
-#' cfg  <- lnk_config("bcfishpass")
+#' conn   <- lnk_db_conn()
+#' cfg    <- lnk_config("bcfishpass")
+#' loaded <- lnk_load_overrides(cfg)
 #' schema <- "working_bulk"
 #'
 #' lnk_pipeline_setup(conn, schema)
-#' lnk_pipeline_load(conn, "BULK", cfg, schema)
-#' lnk_pipeline_prepare(conn, "BULK", cfg, schema)
-#' lnk_pipeline_break(conn, "BULK", cfg, schema)
-#' lnk_pipeline_classify(conn, "BULK", cfg, schema)
+#' lnk_pipeline_load(conn, "BULK", cfg, loaded, schema)
+#' lnk_pipeline_prepare(conn, "BULK", cfg, loaded, schema)
+#' lnk_pipeline_break(conn, "BULK", cfg, loaded, schema)
+#' lnk_pipeline_classify(conn, "BULK", cfg, loaded, schema)
 #'
 #' DBI::dbDisconnect(conn)
 #' }
-lnk_pipeline_classify <- function(conn, aoi, cfg, schema,
+lnk_pipeline_classify <- function(conn, aoi, cfg, loaded, schema,
                                    species = NULL,
                                    thresholds_csv = system.file(
                                      "extdata",
@@ -64,29 +69,33 @@ lnk_pipeline_classify <- function(conn, aoi, cfg, schema,
     stop("cfg must be an lnk_config object (from lnk_config())",
          call. = FALSE)
   }
+  if (!is.list(loaded)) {
+    stop("loaded must be a named list (from lnk_load_overrides())",
+         call. = FALSE)
+  }
   if (!nzchar(thresholds_csv) || !file.exists(thresholds_csv)) {
     stop("thresholds_csv not found: ", thresholds_csv, call. = FALSE)
   }
 
-  species <- species %||% lnk_pipeline_species(cfg, aoi)
+  species <- species %||% lnk_pipeline_species(cfg, loaded, aoi)
   if (length(species) == 0L) {
     stop("No species resolved for AOI '", aoi, "'. Either pass `species` ",
-         "explicitly or ensure cfg$parameters_fresh and cfg$wsg_species ",
-         "cover this AOI.", call. = FALSE)
+         "explicitly or ensure loaded$parameters_fresh and ",
+         "loaded$wsg_species_presence cover this AOI.", call. = FALSE)
   }
 
   .lnk_pipeline_classify_build_breaks(conn, aoi, schema)
 
   params <- fresh::frs_params(
     csv = thresholds_csv,
-    rules_yaml = cfg$rules_yaml)
+    rules_yaml = cfg$rules)
 
   fresh::frs_habitat_classify(conn,
     table = "fresh.streams",
     to = "fresh.streams_habitat",
     species = species,
     params = params,
-    params_fresh = cfg$parameters_fresh,
+    params_fresh = loaded$parameters_fresh,
     gate = TRUE,
     label_block = "blocked",
     barrier_overrides = paste0(schema, ".barrier_overrides"),
@@ -94,8 +103,8 @@ lnk_pipeline_classify <- function(conn, aoi, cfg, schema,
 
   # Known-habitat overlay (optional). Two gates must both be open:
   #
-  #   1. The manifest declares `files.habitat_classification` (CSV is
-  #      loaded into `<schema>.user_habitat_classification` by the
+  #   1. The manifest declares `files.user_habitat_classification` (CSV
+  #      is loaded into `<schema>.user_habitat_classification` by the
   #      prepare phase), AND
   #   2. The manifest's `pipeline.apply_habitat_overlay` is not FALSE
   #      (default TRUE; bcfishpass bundle sets FALSE so its output
@@ -109,7 +118,7 @@ lnk_pipeline_classify <- function(conn, aoi, cfg, schema,
   # drm)` with range `[drm, urm]` — so we need a 3-way bridge through
   # `fresh.streams` for range containment. Requires fresh >= 0.22.0.
   apply_overlay <- isTRUE(cfg$pipeline$apply_habitat_overlay %||% TRUE)
-  if (!is.null(cfg$habitat_classification) && apply_overlay) {
+  if (!is.null(loaded$user_habitat_classification) && apply_overlay) {
     fresh::frs_habitat_overlay(conn,
       from   = paste0(schema, ".user_habitat_classification"),
       to     = "fresh.streams_habitat",

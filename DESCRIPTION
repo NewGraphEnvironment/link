@@ -1,6 +1,6 @@
 Package: link
 Title: Crossing Connectivity Interpretation
-Version: 0.17.0
+Version: 0.18.0
 Authors@R:
     person("Allan", "Irvine", , "airvine@newgraphenvironment.com",
            role = c("aut", "cre"),
@@ -19,11 +19,15 @@ BugReports: https://github.com/NewGraphEnvironment/link/issues
 Depends:
     R (>= 4.1)
 Imports:
+    crate (>= 0.0.2),
     DBI,
     RPostgres,
+    tibble,
+    tools,
     utils,
     yaml
 Remotes:
+    NewGraphEnvironment/crate,
     NewGraphEnvironment/fresh
 Suggests:
     bcdata,
@@ -40,7 +44,6 @@ Suggests:
     tarchetypes,
     targets,
     testthat (>= 3.0.0),
-    tibble,
     withr
 Config/testthat/edition: 3
 Config/Needs/website: mapgl, sf

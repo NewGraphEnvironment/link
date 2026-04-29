@@ -54,6 +54,10 @@ compare_bcfishpass_wsg <- function(wsg, config) {
   stamp <- link::lnk_stamp(config, conn = conn, aoi = wsg)
   message(format(stamp, "markdown"))
 
+  # Materialize the data files declared in the manifest. One call,
+  # threaded through every pipeline phase.
+  loaded <- link::lnk_load_overrides(config)
+
   # Defensive reset of shared-schema outputs from any prior partial run.
   DBI::dbExecute(conn,
     "DROP TABLE IF EXISTS fresh.streams, fresh.streams_habitat,
@@ -63,11 +67,16 @@ compare_bcfishpass_wsg <- function(wsg, config) {
   # Pipeline
   # -------------------------------------------------------------------------
   link::lnk_pipeline_setup(conn, schema, overwrite = TRUE)
-  link::lnk_pipeline_load(conn, aoi = wsg, cfg = config, schema = schema)
-  link::lnk_pipeline_prepare(conn, aoi = wsg, cfg = config, schema = schema)
-  link::lnk_pipeline_break(conn, aoi = wsg, cfg = config, schema = schema)
-  link::lnk_pipeline_classify(conn, aoi = wsg, cfg = config, schema = schema)
-  link::lnk_pipeline_connect(conn, aoi = wsg, cfg = config, schema = schema)
+  link::lnk_pipeline_load(conn, aoi = wsg, cfg = config,
+    loaded = loaded, schema = schema)
+  link::lnk_pipeline_prepare(conn, aoi = wsg, cfg = config,
+    loaded = loaded, schema = schema)
+  link::lnk_pipeline_break(conn, aoi = wsg, cfg = config,
+    loaded = loaded, schema = schema)
+  link::lnk_pipeline_classify(conn, aoi = wsg, cfg = config,
+    loaded = loaded, schema = schema)
+  link::lnk_pipeline_connect(conn, aoi = wsg, cfg = config,
+    loaded = loaded, schema = schema)
 
   # -------------------------------------------------------------------------
   # Link-side linear rollup (spawning_km + rearing_km per species)
@@ -76,7 +85,7 @@ compare_bcfishpass_wsg <- function(wsg, config) {
   # double-count (linear-km and polygon-ha both credit the same lake);
   # revisit once we compare against bcfishpass's WCRP multiplier approach.
   # -------------------------------------------------------------------------
-  species <- link::lnk_pipeline_species(config, wsg)
+  species <- link::lnk_pipeline_species(config, loaded, wsg)
 
   species_sql <- paste(
     vapply(species,

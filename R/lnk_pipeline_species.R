@@ -11,17 +11,20 @@
 #'
 #'   - `cfg$species` — species the rules YAML classifies (parsed at
 #'     `lnk_config()` load time)
-#'   - species flagged present for `aoi` in `cfg$wsg_species` — the
-#'     wide-form presence table where each species column (`bt`, `ch`,
-#'     `cm`, ...) holds `"t"` for present and `"f"` for absent
+#'   - species flagged present for `aoi` in `loaded$wsg_species_presence`
+#'     — the wide-form presence table where each species column (`bt`,
+#'     `ch`, `cm`, ...) holds `"t"` for present and `"f"` for absent
 #'
-#' When `cfg$wsg_species` is not populated the function returns
-#' `cfg$species` unfiltered. When the AOI is not found in the table
-#' the function returns `character(0)`.
+#' When `loaded$wsg_species_presence` is not populated the function
+#' returns `cfg$species` unfiltered. When the AOI is not found in the
+#' table the function returns `character(0)`.
 #'
 #' @param cfg An `lnk_config` object from [lnk_config()].
+#' @param loaded Named list of tibbles from [lnk_load_overrides()].
+#'   Carries `parameters_fresh` and `wsg_species_presence`.
 #' @param aoi Character. AOI identifier — today a watershed group code
-#'   (e.g. `"BULK"`) matched against `cfg$wsg_species$watershed_group_code`.
+#'   (e.g. `"BULK"`) matched against
+#'   `loaded$wsg_species_presence$watershed_group_code`.
 #'
 #' @return Character vector of species codes. Empty when neither
 #'   config nor AOI carries species.
@@ -31,21 +34,27 @@
 #' @export
 #'
 #' @examples
-#' cfg <- lnk_config("bcfishpass")
-#' lnk_pipeline_species(cfg, "BULK")
-#' lnk_pipeline_species(cfg, "ADMS")
-lnk_pipeline_species <- function(cfg, aoi) {
+#' cfg    <- lnk_config("bcfishpass")
+#' loaded <- lnk_load_overrides(cfg)
+#' lnk_pipeline_species(cfg, loaded, "BULK")
+#' lnk_pipeline_species(cfg, loaded, "ADMS")
+lnk_pipeline_species <- function(cfg, loaded, aoi) {
   if (!inherits(cfg, "lnk_config")) {
     stop("cfg must be an lnk_config object (from lnk_config())",
+         call. = FALSE)
+  }
+  if (!is.list(loaded)) {
+    stop("loaded must be a named list (from lnk_load_overrides())",
          call. = FALSE)
   }
   if (!is.character(aoi) || length(aoi) != 1L || !nzchar(aoi)) {
     stop("aoi must be a single non-empty string", call. = FALSE)
   }
 
-  configured <- cfg$species %||% unique(cfg$parameters_fresh$species_code)
+  configured <- cfg$species %||%
+    unique(loaded$parameters_fresh$species_code)
 
-  wsg_sp <- cfg$wsg_species
+  wsg_sp <- loaded$wsg_species_presence
   if (is.null(wsg_sp)) return(configured)
 
   row <- wsg_sp[wsg_sp$watershed_group_code == aoi, ]

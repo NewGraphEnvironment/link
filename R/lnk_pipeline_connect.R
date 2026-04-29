@@ -4,7 +4,7 @@
 #' the connectivity logic that `frs_habitat()` executes internally —
 #' rearing-spawning clustering via [fresh::frs_cluster()] and
 #' connected-waterbody rules via `fresh:::.frs_connected_waterbody()`
-#' — configured by per-species flags in `cfg$parameters_fresh`:
+#' — configured by per-species flags in `loaded$parameters_fresh`:
 #'
 #'   - `cluster_rearing` — enables three-phase rearing-spawning
 #'     clustering for the species
@@ -30,6 +30,8 @@
 #'   phase — connectivity operates on the classified table which is
 #'   already AOI-scoped).
 #' @param cfg An `lnk_config` object from [lnk_config()].
+#' @param loaded Named list of tibbles from [lnk_load_overrides()].
+#'   Carries `parameters_fresh` and `wsg_species_presence`.
 #' @param schema Character. Working schema name (kept for signature
 #'   consistency; connectivity reads `fresh.streams_habitat` directly).
 #' @param species Character vector. Species to run connectivity for.
@@ -45,20 +47,21 @@
 #'
 #' @examples
 #' \dontrun{
-#' conn <- lnk_db_conn()
-#' cfg  <- lnk_config("bcfishpass")
+#' conn   <- lnk_db_conn()
+#' cfg    <- lnk_config("bcfishpass")
+#' loaded <- lnk_load_overrides(cfg)
 #' schema <- "working_bulk"
 #'
 #' lnk_pipeline_setup(conn, schema)
-#' lnk_pipeline_load(conn, "BULK", cfg, schema)
-#' lnk_pipeline_prepare(conn, "BULK", cfg, schema)
-#' lnk_pipeline_break(conn, "BULK", cfg, schema)
-#' lnk_pipeline_classify(conn, "BULK", cfg, schema)
-#' lnk_pipeline_connect(conn, "BULK", cfg, schema)
+#' lnk_pipeline_load(conn, "BULK", cfg, loaded, schema)
+#' lnk_pipeline_prepare(conn, "BULK", cfg, loaded, schema)
+#' lnk_pipeline_break(conn, "BULK", cfg, loaded, schema)
+#' lnk_pipeline_classify(conn, "BULK", cfg, loaded, schema)
+#' lnk_pipeline_connect(conn, "BULK", cfg, loaded, schema)
 #'
 #' DBI::dbDisconnect(conn)
 #' }
-lnk_pipeline_connect <- function(conn, aoi, cfg, schema,
+lnk_pipeline_connect <- function(conn, aoi, cfg, loaded, schema,
                                   species = NULL,
                                   thresholds_csv = system.file(
                                     "extdata",
@@ -73,20 +76,24 @@ lnk_pipeline_connect <- function(conn, aoi, cfg, schema,
     stop("cfg must be an lnk_config object (from lnk_config())",
          call. = FALSE)
   }
+  if (!is.list(loaded)) {
+    stop("loaded must be a named list (from lnk_load_overrides())",
+         call. = FALSE)
+  }
   if (!nzchar(thresholds_csv) || !file.exists(thresholds_csv)) {
     stop("thresholds_csv not found: ", thresholds_csv, call. = FALSE)
   }
 
-  species <- species %||% lnk_pipeline_species(cfg, aoi)
+  species <- species %||% lnk_pipeline_species(cfg, loaded, aoi)
   if (length(species) == 0L) {
     stop("No species resolved for AOI '", aoi, "'. Either pass `species` ",
-         "explicitly or ensure cfg$parameters_fresh and cfg$wsg_species ",
-         "cover this AOI.", call. = FALSE)
+         "explicitly or ensure loaded$parameters_fresh and ",
+         "loaded$wsg_species_presence cover this AOI.", call. = FALSE)
   }
 
   params <- fresh::frs_params(
     csv = thresholds_csv,
-    rules_yaml = cfg$rules_yaml)
+    rules_yaml = cfg$rules)
 
   # Fresh's connectivity orchestrator is not exported. Accessing the
   # internal name here keeps behavior bit-identical to the legacy
@@ -97,7 +104,7 @@ lnk_pipeline_connect <- function(conn, aoi, cfg, schema,
     habitat = "fresh.streams_habitat",
     species = species,
     params = params,
-    params_fresh = cfg$parameters_fresh,
+    params_fresh = loaded$parameters_fresh,
     verbose = FALSE)
 
   invisible(conn)

@@ -4,7 +4,7 @@
 \alias{lnk_pipeline_load}
 \title{Load Crossings and Apply Crossing-Level Overrides}
 \usage{
-lnk_pipeline_load(conn, aoi, cfg, schema)
+lnk_pipeline_load(conn, aoi, cfg, loaded, schema)
 }
 \arguments{
 \item{conn}{A \link[DBI:DBIConnection-class]{DBI::DBIConnection} object (localhost fwapg,
@@ -16,6 +16,11 @@ CSVs means polygon / ltree AOIs are not yet supported here; those
 will come as a follow-up.}
 
 \item{cfg}{An \code{lnk_config} object from \code{\link[=lnk_config]{lnk_config()}}.}
+
+\item{loaded}{Named list of tibbles from \code{\link[=lnk_load_overrides]{lnk_load_overrides()}}.
+Carries the override CSVs (\code{user_crossings_misc},
+\code{user_modelled_crossing_fixes}, \code{user_pscis_barrier_status}) this
+phase needs.}
 
 \item{schema}{Character. Working schema name (validated). Must
 already exist — call \code{\link[=lnk_pipeline_setup]{lnk_pipeline_setup()}} first.}
@@ -56,12 +61,14 @@ when the config bundle has fixes matching this AOI)
 }
 \examples{
 \dontrun{
-conn <- lnk_db_conn()
-cfg  <- lnk_config("bcfishpass")
+conn   <- lnk_db_conn()
+cfg    <- lnk_config("bcfishpass")
+loaded <- lnk_load_overrides(cfg)
 
 schema <- "working_bulk"
 lnk_pipeline_setup(conn, schema)
-lnk_pipeline_load(conn, aoi = "BULK", cfg = cfg, schema = schema)
+lnk_pipeline_load(conn, aoi = "BULK", cfg = cfg, loaded = loaded,
+                  schema = schema)
 
 # Inspect the result
 DBI::dbGetQuery(conn, sprintf(

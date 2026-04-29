@@ -7,7 +7,7 @@ Crossing connectivity interpretation for fish passage. The domain layer between 
 **Repository:** NewGraphEnvironment/link
 **Primary Language:** R
 **Prefix:** `lnk_`
-**Branch:** `main` (v0.17.0 as of 2026-04-28)
+**Branch:** `main` (v0.18.0 as of 2026-04-29)
 
 ## Architecture
 
@@ -50,7 +50,8 @@ conn <- lnk_db_conn()  # reads PG_DB_SHARE, PG_HOST_SHARE, etc.
 ### Core
 - `lnk_thresholds(csv, high, moderate, low)` — configurable severity thresholds. Ships BC defaults. CSV or inline override. Feeds into `lnk_score()`.
 - `lnk_db_conn()` — PostgreSQL connection factory. `PG_*_SHARE` then `PG*` env vars.
-- `lnk_config(name_or_path)` — load a config bundle (rules YAML, dimensions CSV, parameters_fresh, overrides, pipeline knobs) as one list object. Ships with `"bcfishpass"` variant; custom variants via `inst/extdata/configs/<name>/config.yaml` manifest. Config manifest is the declarative contract for which capabilities a pipeline variant activates (override keys, habitat classification, pipeline knobs).
+- `lnk_config(name_or_path)` — load a config **manifest**: paths (`cfg$rules`, `cfg$dimensions`), file declarations (`cfg$files`), pipeline knobs (`cfg$pipeline`), provenance metadata. **Manifest-only — no parsed CSVs.** Cheap to call. Configs may declare `extends:` to inherit from another config. Ships with `"bcfishpass"` and `"default"` variants under `inst/extdata/configs/<name>/`.
+- `lnk_load_overrides(cfg)` — materialize the data files declared in `cfg$files`. Returns named list of canonical-shape tibbles. Entries with `source` + `canonical_schema` dispatch through `crate::crt_ingest()`; others fall through to local reads dispatched on path extension. Adding a new source family is a config edit + crate registration — no link R code change.
 
 ### Override family: load → validate → apply
 - `lnk_load(conn, csv, to)` — read correction CSVs into DB. Two-phase: validate all CSVs before writing any. Multi-file load. Provenance tracking.
@@ -69,14 +70,14 @@ conn <- lnk_db_conn()  # reads PG_DB_SHARE, PG_HOST_SHARE, etc.
 - `lnk_barrier_overrides(conn, barriers, observations, habitat, exclusions, control, params, to)` — processes fish observations and habitat confirmations into a barrier skip list for fresh. Counts observations upstream of each barrier via `fwa_upstream()` SQL, applies per-species thresholds, unions with habitat confirmations. Control table (`barriers_definite_control` with `barrier_ind = TRUE` rows) blocks override of flagged positions — gated per-species by `params$observation_control_apply` so residents (BT, WCT) can still override anadromous-blocking falls. Habitat path bypasses control entirely (expert-confirmed habitat is higher-trust than observations). Output: `(blue_line_key, downstream_route_measure, species_code)` table that fresh skips during access gating.
 
 ### Pipeline helpers
-Six-phase bcfishpass-reproducing pipeline, driven by `lnk_config()`:
+Six-phase bcfishpass-reproducing pipeline, driven by `lnk_config()` + `lnk_load_overrides()`. Every phase that reads a data table takes both `cfg` (manifest) and `loaded` (the named list from `lnk_load_overrides()`). Callers materialize once and thread `loaded` through.
 - `lnk_pipeline_setup(conn, schema, overwrite)` — create per-run working schema.
-- `lnk_pipeline_load(conn, aoi, cfg, schema)` — crossings + modelled fixes + PSCIS status overrides.
-- `lnk_pipeline_prepare(conn, aoi, cfg, schema)` — falls, definite + control, habitat confirms, gradient barriers, `natural_barriers`, barrier overrides, per-model minimal reduction, base segments. Uses manifest-key gating on `cfg$overrides$barriers_definite_control` and `cfg$habitat_classification` (no DB probes).
-- `lnk_pipeline_break(conn, aoi, cfg, schema)` — sequential `frs_break_apply` in config-defined order: observations → gradient minimal → **barriers_definite (separate break source)** → habitat endpoints → crossings.
-- `lnk_pipeline_classify(conn, aoi, cfg, schema)` — assembles `fresh.streams_breaks` (gradient FULL + falls + **barriers_definite** + crossings, WSG-filtered) and runs `frs_habitat_classify()`. `barriers_definite` enters here directly because bcfishpass appends user-definite post-filter (not via observation override).
-- `lnk_pipeline_connect(conn, aoi, cfg, schema)` — per-species cluster + connected_waterbody.
-- `lnk_pipeline_species(cfg, aoi)` — canonical helper for "species this config classifies in this AOI" (intersects `cfg$parameters_fresh` with `cfg$wsg_species` presence).
+- `lnk_pipeline_load(conn, aoi, cfg, loaded, schema)` — crossings + modelled fixes + PSCIS status overrides. Reads `loaded$user_modelled_crossing_fixes`, `loaded$user_pscis_barrier_status`, `loaded$user_crossings_misc`.
+- `lnk_pipeline_prepare(conn, aoi, cfg, loaded, schema)` — falls, definite + control, habitat confirms, gradient barriers, `natural_barriers`, barrier overrides, per-model minimal reduction, base segments. Manifest-key gating via `loaded$user_barriers_definite_control` and `loaded$user_habitat_classification` (no DB probes).
+- `lnk_pipeline_break(conn, aoi, cfg, loaded, schema)` — sequential `frs_break_apply` in config-defined order: observations → gradient minimal → **barriers_definite (separate break source)** → habitat endpoints → crossings.
+- `lnk_pipeline_classify(conn, aoi, cfg, loaded, schema)` — assembles `fresh.streams_breaks` (gradient FULL + falls + **barriers_definite** + crossings, WSG-filtered) and runs `frs_habitat_classify()`. `barriers_definite` enters here directly because bcfishpass appends user-definite post-filter (not via observation override).
+- `lnk_pipeline_connect(conn, aoi, cfg, loaded, schema)` — per-species cluster + connected_waterbody.
+- `lnk_pipeline_species(cfg, loaded, aoi)` — canonical helper for "species this config classifies in this AOI" (intersects `cfg$species` with `loaded$wsg_species_presence` presence; falls back to `loaded$parameters_fresh$species_code` when `cfg$species` is missing).
 
 ### Bridge to fresh
 - `lnk_source(conn, crossings, label_col, label_map)` — returns `list(table, label_col, label_map)` that plugs directly into `frs_habitat(break_sources = list(...))`. `label_map` translates link severity → fresh access labels (`high → blocked`, `moderate → potential`).
@@ -172,10 +173,14 @@ To run the entire province: loop over watershed groups. Or pass any AOI with `sp
 - #24 — lnk_stamp (model params for report appendix)
 - #29 — SK spawning cluster divergence (blocked on fresh#133)
 - #40 — Config provenance / run stamps (tracks input versions)
-- #45 — Gradient classes cleanup (derive from `cfg$parameters_fresh$access_gradient_max`)
+- #45 — Gradient classes cleanup (derive from `loaded$parameters_fresh$access_gradient_max`)
 - #75 — `dimensions_columns.csv` as source-of-truth: auto-gen README + `lnk_rules_build()` validation (CSV seeded in v0.17.0)
 
 ## Recently closed
+
+- #65 — `lnk_load_overrides(config)` + manifest/data split → v0.18.0. Decomposed `lnk_config()` into manifest-only loader and new `lnk_load_overrides()` ingest with crate dispatch. Single PR, single bump. Config schema flattened into one `files:` map keyed by filename stem; `rules:` and `dimensions:` paths moved top-level (no format suffix). Pipeline phases take `loaded` alongside `cfg`. Bit-identical rollup vs v0.17.0 baseline.
+
+## Older closed
 
 - #69 — Dimensions-driven `in_waterbody` + `area_only` emission with proof artifact → PRs #71 (phase 1, v0.14.0), #72 (phase 2, v0.15.0), #73 (phase 3 + emit-fix, v0.16.0). bcfishpass-bundle BABL parity: 42/42 within ±5%, 35/42 within ±2%, median 1.1%, max 5.0%.
 - #68 — Vignette ship → superseded by #74 (v0.17.0); ships `vignettes/habitat-bcfishpass.Rmd` with per-segment popups, fullscreen, dimensions seed dictionary.

@@ -58,11 +58,9 @@ test_that("lnk_stamp handles config without provenance block", {
   yaml::write_yaml(
     list(
       name = "x",
-      files = list(
-        rules_yaml = "rules.yaml",
-        dimensions_csv = "dims.csv",
-        parameters_fresh = "params.csv"
-      )
+      rules = "rules.yaml",
+      dimensions = "dims.csv",
+      files = list(parameters_fresh = list(path = "params.csv"))
     ),
     file.path(tmp, "config.yaml")
   )

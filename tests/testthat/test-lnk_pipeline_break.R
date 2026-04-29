@@ -3,54 +3,59 @@
 test_that("lnk_pipeline_break rejects invalid inputs", {
   cfg <- lnk_config("bcfishpass")
   expect_error(
-    lnk_pipeline_break("mock", aoi = NULL, cfg = cfg, schema = "w"),
+    lnk_pipeline_break("mock", aoi = NULL, cfg = cfg, loaded = list(),
+                        schema = "w"),
     "aoi must be a single non-empty string"
   )
   expect_error(
-    lnk_pipeline_break("mock", aoi = "BULK", cfg = list(), schema = "w"),
+    lnk_pipeline_break("mock", aoi = "BULK", cfg = list(), loaded = list(),
+                        schema = "w"),
     "cfg must be an lnk_config object"
   )
   expect_error(
     lnk_pipeline_break("mock", aoi = "BULK", cfg = cfg,
+                        loaded = "not-a-list", schema = "w"),
+    "loaded must be a named list"
+  )
+  expect_error(
+    lnk_pipeline_break("mock", aoi = "BULK", cfg = cfg, loaded = list(),
                         schema = "bad;name"),
     "schema"
   )
   expect_error(
-    lnk_pipeline_break("mock", aoi = "BULK", cfg = cfg,
-                        schema = "w",
-                        observations = "bad;name"),
+    lnk_pipeline_break("mock", aoi = "BULK", cfg = cfg, loaded = list(),
+                        schema = "w", observations = "bad;name"),
     "observations"
   )
 })
 
 # -- observation species derivation ------------------------------------------
 
-test_that(".lnk_pipeline_break_obs_species handles missing wsg_species", {
-  cfg_stub <- structure(list(wsg_species = NULL),
-    class = c("lnk_config", "list"))
-  expect_equal(.lnk_pipeline_break_obs_species(cfg_stub, "BULK"),
+test_that(".lnk_pipeline_break_obs_species handles missing wsg_species_presence", {
+  loaded_stub <- list(wsg_species_presence = NULL)
+  expect_equal(.lnk_pipeline_break_obs_species(loaded_stub, "BULK"),
                character(0))
 })
 
 test_that(".lnk_pipeline_break_obs_species handles AOI not in table", {
-  cfg_stub <- structure(list(wsg_species = data.frame(
+  loaded_stub <- list(wsg_species_presence = data.frame(
     watershed_group_code = "ADMS",
     bt = "t", ch = "f", cm = "f", co = "f", ct = "f", dv = "f",
     pk = "f", rb = "f", sk = "f", st = "f", wct = "f",
     stringsAsFactors = FALSE
-  )), class = c("lnk_config", "list"))
-  expect_equal(.lnk_pipeline_break_obs_species(cfg_stub, "BULK"),
+  ))
+  expect_equal(.lnk_pipeline_break_obs_species(loaded_stub, "BULK"),
                character(0))
 })
 
 test_that(".lnk_pipeline_break_obs_species expands CT to CT/CCT/ACT/CT\\RB", {
-  cfg_stub <- structure(list(wsg_species = data.frame(
+  loaded_stub <- list(wsg_species_presence = data.frame(
     watershed_group_code = "ELKR",
     bt = "t", ch = "f", cm = "f", co = "f", ct = "t", dv = "f",
     pk = "f", rb = "f", sk = "f", st = "f", wct = "t",
     stringsAsFactors = FALSE
-  )), class = c("lnk_config", "list"))
-  out <- .lnk_pipeline_break_obs_species(cfg_stub, "ELKR")
+  ))
+  out <- .lnk_pipeline_break_obs_species(loaded_stub, "ELKR")
   expect_true("BT" %in% out)
   expect_true("CT" %in% out)
   expect_true("CCT" %in% out)
@@ -63,15 +68,15 @@ test_that(".lnk_pipeline_break_obs_species expands CT to CT/CCT/ACT/CT\\RB", {
 # -- break_obs SQL shape -----------------------------------------------------
 
 test_that(".lnk_pipeline_break_obs writes AOI-scoped observations_breaks", {
-  cfg_stub <- structure(list(
-    wsg_species = data.frame(
+  loaded_stub <- list(
+    wsg_species_presence = data.frame(
       watershed_group_code = "BULK",
       bt = "t", ch = "t", cm = "f", co = "f", ct = "f", dv = "f",
       pk = "f", rb = "f", sk = "f", st = "f", wct = "f",
       stringsAsFactors = FALSE
     ),
     observation_exclusions = NULL
-  ), class = c("lnk_config", "list"))
+  )
 
   captured <- character(0)
   local_mocked_bindings(
@@ -85,7 +90,7 @@ test_that(".lnk_pipeline_break_obs writes AOI-scoped observations_breaks", {
     .package = "DBI"
   )
 
-  .lnk_pipeline_break_obs("mock", aoi = "BULK", cfg = cfg_stub,
+  .lnk_pipeline_break_obs("mock", aoi = "BULK", loaded = loaded_stub,
                            schema = "w_bulk",
                            observations = "bcfishobs.observations")
 
@@ -94,13 +99,12 @@ test_that(".lnk_pipeline_break_obs writes AOI-scoped observations_breaks", {
   expect_match(joined, "FROM bcfishobs.observations o")
   expect_match(joined, "o.watershed_group_code = 'BULK'")
   expect_match(joined, "'BT', 'CH'")
-  # No exclusion filter when no exclusions in config
   expect_no_match(joined, "obs_exclusions")
 })
 
 test_that(".lnk_pipeline_break_obs applies exclusions when present", {
-  cfg_stub <- structure(list(
-    wsg_species = data.frame(
+  loaded_stub <- list(
+    wsg_species_presence = data.frame(
       watershed_group_code = "BULK",
       bt = "t", ch = "f", cm = "f", co = "f", ct = "f", dv = "f",
       pk = "f", rb = "f", sk = "f", st = "f", wct = "f",
@@ -112,7 +116,7 @@ test_that(".lnk_pipeline_break_obs applies exclusions when present", {
       release_exclude = c(FALSE, TRUE, FALSE),
       stringsAsFactors = FALSE
     )
-  ), class = c("lnk_config", "list"))
+  )
 
   captured <- character(0)
   written <- list()
@@ -130,11 +134,10 @@ test_that(".lnk_pipeline_break_obs applies exclusions when present", {
     .package = "DBI"
   )
 
-  .lnk_pipeline_break_obs("mock", aoi = "BULK", cfg = cfg_stub,
+  .lnk_pipeline_break_obs("mock", aoi = "BULK", loaded = loaded_stub,
                            schema = "w_bulk",
                            observations = "bcfishobs.observations")
 
-  # Two rows excluded (ids 1 + 2); id 3 not an exclusion
   expect_length(written, 1L)
   expect_equal(nrow(written[[1]]$value), 2L)
   expect_setequal(written[[1]]$value$fish_observation_point_id, c(1L, 2L))
@@ -163,7 +166,7 @@ test_that(".lnk_pipeline_break_habitat_endpoints creates empty table when habita
 
   joined <- paste(captured, collapse = "\n")
   expect_match(joined, "CREATE TABLE w_bulk.habitat_endpoints")
-  expect_no_match(joined, "SELECT DISTINCT")    # empty table path
+  expect_no_match(joined, "SELECT DISTINCT")
 })
 
 test_that(".lnk_pipeline_break_habitat_endpoints unions DRM + URM when habitat exists", {
@@ -192,15 +195,17 @@ test_that(".lnk_pipeline_break_habitat_endpoints unions DRM + URM when habitat e
 
 test_that("lnk_pipeline_break honors the config break_order", {
   cfg_stub <- structure(list(
-    wsg_species = data.frame(
+    pipeline = list(break_order = c("crossings", "observations"))
+  ), class = c("lnk_config", "list"))
+  loaded_stub <- list(
+    wsg_species_presence = data.frame(
       watershed_group_code = "BULK",
       bt = "t", ch = "f", cm = "f", co = "f", ct = "f", dv = "f",
       pk = "f", rb = "f", sk = "f", st = "f", wct = "f",
       stringsAsFactors = FALSE
     ),
-    observation_exclusions = NULL,
-    pipeline = list(break_order = c("crossings", "observations"))
-  ), class = c("lnk_config", "list"))
+    observation_exclusions = NULL
+  )
 
   called_tables <- character(0)
   local_mocked_bindings(
@@ -220,7 +225,7 @@ test_that("lnk_pipeline_break honors the config break_order", {
   )
 
   lnk_pipeline_break("mock", aoi = "BULK", cfg = cfg_stub,
-                      schema = "w_bulk",
+                      loaded = loaded_stub, schema = "w_bulk",
                       observations = "bcfishobs.observations")
 
   expect_equal(called_tables, c(
@@ -231,15 +236,17 @@ test_that("lnk_pipeline_break honors the config break_order", {
 
 test_that("lnk_pipeline_break errors on unknown break source name", {
   cfg_stub <- structure(list(
-    wsg_species = data.frame(
+    pipeline = list(break_order = c("observations", "what_is_this"))
+  ), class = c("lnk_config", "list"))
+  loaded_stub <- list(
+    wsg_species_presence = data.frame(
       watershed_group_code = "BULK",
       bt = "t", ch = "f", cm = "f", co = "f", ct = "f", dv = "f",
       pk = "f", rb = "f", sk = "f", st = "f", wct = "f",
       stringsAsFactors = FALSE
     ),
-    observation_exclusions = NULL,
-    pipeline = list(break_order = c("observations", "what_is_this"))
-  ), class = c("lnk_config", "list"))
+    observation_exclusions = NULL
+  )
 
   local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) invisible(NULL)
@@ -256,7 +263,7 @@ test_that("lnk_pipeline_break errors on unknown break source name", {
 
   expect_error(
     lnk_pipeline_break("mock", aoi = "BULK", cfg = cfg_stub,
-                        schema = "w_bulk",
+                        loaded = loaded_stub, schema = "w_bulk",
                         observations = "bcfishobs.observations"),
     "Unknown break source.*what_is_this"
   )

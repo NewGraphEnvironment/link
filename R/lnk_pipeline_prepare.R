@@ -39,6 +39,9 @@
 #' @param aoi Character. Watershed group code today; extends to ltree
 #'   filters / sf polygons later (same AOI abstraction fresh uses).
 #' @param cfg An `lnk_config` object from [lnk_config()].
+#' @param loaded Named list of tibbles from [lnk_load_overrides()].
+#'   Carries `user_barriers_definite`, `user_barriers_definite_control`,
+#'   `user_habitat_classification`, and `parameters_fresh`.
 #' @param schema Character. Working schema name (must already exist —
 #'   call [lnk_pipeline_setup()] first).
 #' @param observations Character. Schema-qualified observations table
@@ -54,20 +57,21 @@
 #'
 #' @examples
 #' \dontrun{
-#' conn <- lnk_db_conn()
-#' cfg  <- lnk_config("bcfishpass")
+#' conn   <- lnk_db_conn()
+#' cfg    <- lnk_config("bcfishpass")
+#' loaded <- lnk_load_overrides(cfg)
 #' schema <- "working_bulk"
 #'
 #' lnk_pipeline_setup(conn, schema)
-#' lnk_pipeline_load(conn, "BULK", cfg, schema)
-#' lnk_pipeline_prepare(conn, "BULK", cfg, schema)
+#' lnk_pipeline_load(conn, "BULK", cfg, loaded, schema)
+#' lnk_pipeline_prepare(conn, "BULK", cfg, loaded, schema)
 #'
 #' DBI::dbGetQuery(conn, sprintf(
 #'   "SELECT count(*) FROM %s.gradient_barriers_minimal", schema))
 #'
 #' DBI::dbDisconnect(conn)
 #' }
-lnk_pipeline_prepare <- function(conn, aoi, cfg, schema,
+lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
                                  observations = "bcfishobs.observations") {
   .lnk_validate_identifier(schema, "schema")
   .lnk_validate_identifier(observations, "observations table")
@@ -79,11 +83,15 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, schema,
     stop("cfg must be an lnk_config object (from lnk_config())",
          call. = FALSE)
   }
+  if (!is.list(loaded)) {
+    stop("loaded must be a named list (from lnk_load_overrides())",
+         call. = FALSE)
+  }
 
-  .lnk_pipeline_prep_load_aux(conn, aoi, cfg, schema)
-  .lnk_pipeline_prep_gradient(conn, aoi, cfg, schema)
+  .lnk_pipeline_prep_load_aux(conn, aoi, loaded, schema)
+  .lnk_pipeline_prep_gradient(conn, aoi, loaded, schema)
   .lnk_pipeline_prep_natural(conn, schema)
-  .lnk_pipeline_prep_overrides(conn, cfg, schema, observations)
+  .lnk_pipeline_prep_overrides(conn, loaded, schema, observations)
   .lnk_pipeline_prep_minimal(conn, aoi, schema)
   .lnk_pipeline_prep_network(conn, aoi, schema)
 
@@ -93,7 +101,7 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, schema,
 
 #' Load auxiliary data: falls, definite barriers, control, habitat confirms
 #' @noRd
-.lnk_pipeline_prep_load_aux <- function(conn, aoi, cfg, schema) {
+.lnk_pipeline_prep_load_aux <- function(conn, aoi, loaded, schema) {
   # --- Falls (from fresh) ---
   falls_path <- system.file("extdata", "falls.csv", package = "fresh")
   if (!nzchar(falls_path)) {
@@ -107,7 +115,7 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, schema,
     falls, overwrite = TRUE)
 
   # --- User definite barriers ---
-  definite_all <- cfg$overrides$barriers_definite
+  definite_all <- loaded$user_barriers_definite
   if (!is.null(definite_all)) {
     definite <- definite_all[definite_all$watershed_group_code == aoi, ]
   } else {
@@ -133,7 +141,7 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, schema,
   # key, ensure a schema-valid table exists even if this AOI has zero rows,
   # so downstream steps can gate on the manifest field rather than probing
   # the DB.
-  ctrl_all <- cfg$overrides$barriers_definite_control
+  ctrl_all <- loaded$user_barriers_definite_control
   if (!is.null(ctrl_all)) {
     ctrl <- ctrl_all[ctrl_all$watershed_group_code == aoi, ]
     if (nrow(ctrl) > 0) {
@@ -152,12 +160,13 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, schema,
   }
 
   # --- Expert habitat confirmations (for barrier skip list) ---
-  # Mirrors the `barriers_definite_control` pattern above — whenever the
-  # manifest declares `habitat_classification`, write a schema-valid
-  # table (populated or empty). `.lnk_pipeline_prep_overrides()` gates on
-  # the manifest key directly; creating an empty stub here keeps that
-  # gate safe for edge-case manifests that declare a header-only CSV.
-  hab_df <- cfg$habitat_classification
+  # Mirrors the `user_barriers_definite_control` pattern above — whenever
+  # the manifest declares `user_habitat_classification`, write a
+  # schema-valid table (populated or empty).
+  # `.lnk_pipeline_prep_overrides()` gates on the manifest key directly;
+  # creating an empty stub here keeps that gate safe for edge-case
+  # manifests that declare a header-only CSV.
+  hab_df <- loaded$user_habitat_classification
   if (!is.null(hab_df)) {
     if (nrow(hab_df) > 0) {
       DBI::dbWriteTable(conn,
@@ -184,7 +193,7 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, schema,
 
 #' Detect gradient barriers, prune by control, enrich with ltree
 #' @noRd
-.lnk_pipeline_prep_gradient <- function(conn, aoi, cfg, schema) {
+.lnk_pipeline_prep_gradient <- function(conn, aoi, loaded, schema) {
   .lnk_db_execute(conn, sprintf(
     "DROP TABLE IF EXISTS %s.streams_blk", schema))
   .lnk_db_execute(conn, sprintf(
@@ -201,13 +210,13 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, schema,
                  "2500" = 0.25, "3000" = 0.30),
     to = paste0(schema, ".gradient_barriers_raw"))
 
-  # Prune passable controls. Manifest-driven gate — the config key is the
-  # direct contract for whether control semantics are active. Previously
-  # this probed information_schema for the table name; that worked because
-  # .lnk_pipeline_prep_load_aux() writes the table exactly when the
-  # manifest declares the key, but the indirection made an empty-table
-  # edge case easier to miss (see #44 asymmetric-gating fix).
-  if (!is.null(cfg$overrides$barriers_definite_control)) {
+  # Prune passable controls. Manifest-driven gate — the loaded entry is
+  # the direct contract for whether control semantics are active.
+  # Previously this probed information_schema for the table name; that
+  # worked because .lnk_pipeline_prep_load_aux() writes the table exactly
+  # when the manifest declares the key, but the indirection made an
+  # empty-table edge case easier to miss (see #44 asymmetric-gating fix).
+  if (!is.null(loaded$user_barriers_definite_control)) {
     .lnk_db_execute(conn, sprintf(
       "DELETE FROM %s.gradient_barriers_raw g
        USING %s.barriers_definite_control c
@@ -278,12 +287,13 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, schema,
 
 #' Compute barrier overrides via lnk_barrier_overrides
 #' @noRd
-.lnk_pipeline_prep_overrides <- function(conn, cfg, schema, observations) {
+.lnk_pipeline_prep_overrides <- function(conn, loaded, schema, observations) {
   # Manifest-driven gate. `.lnk_pipeline_prep_load_aux` writes
   # `<schema>.user_habitat_classification` exactly when the manifest
-  # declares `habitat_classification`, so the config field is the direct
-  # contract. Consistent with the `barriers_definite_control` gate below.
-  habitat_arg <- if (!is.null(cfg$habitat_classification)) {
+  # declares `user_habitat_classification`, so the loaded entry is the
+  # direct contract. Consistent with the
+  # `user_barriers_definite_control` gate below.
+  habitat_arg <- if (!is.null(loaded$user_habitat_classification)) {
     paste0(schema, ".user_habitat_classification")
   } else {
     NULL
@@ -291,9 +301,9 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, schema,
 
   # Manifest-driven gating. `.lnk_pipeline_prep_load_aux` writes
   # `<schema>.barriers_definite_control` exactly when this manifest key
-  # is declared on the config bundle, so the config field itself is the
+  # is declared on the config bundle, so the loaded entry itself is the
   # direct contract for whether control is in play — no DB probe needed.
-  control_arg <- if (!is.null(cfg$overrides$barriers_definite_control)) {
+  control_arg <- if (!is.null(loaded$user_barriers_definite_control)) {
     paste0(schema, ".barriers_definite_control")
   } else {
     NULL
@@ -304,7 +314,7 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, schema,
     observations = observations,
     habitat = habitat_arg,
     control = control_arg,
-    params = cfg$parameters_fresh,
+    params = loaded$parameters_fresh,
     to = paste0(schema, ".barrier_overrides"),
     verbose = FALSE)
 
