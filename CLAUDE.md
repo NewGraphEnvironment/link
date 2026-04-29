@@ -1,13 +1,13 @@
 # link
 
-Crossing connectivity interpretation for fish passage. The domain layer between raw crossing data and fresh's generic network engine — scoring, overrides, and prioritization.
+Habitat and connectivity interpretation for stream networks — link field and modelled inputs onto the network as per-segment classifications via `fresh`. The domain interpretation + pipeline-orchestration layer over `fresh`'s generic network engine.
 
 ## Repository Context
 
 **Repository:** NewGraphEnvironment/link
 **Primary Language:** R
 **Prefix:** `lnk_`
-**Branch:** `main` (v0.18.0 as of 2026-04-29)
+**Branch:** `main` (v0.18.1 as of 2026-04-29)
 
 ## Architecture
 
@@ -172,13 +172,21 @@ To run the entire province: loop over watershed groups. Or pass any AOI with `sp
 - #21 — GSDD and thermal energy as intrinsic potential variables
 - #24 — lnk_stamp (model params for report appendix)
 - #29 — SK spawning cluster divergence (blocked on fresh#133)
-- #40 — Config provenance / run stamps (tracks input versions)
+- #33 — Cross-ref note: bcfishpass access_st checks SK instead of ST (bcfishpass#9)
+- #34 — Update doc version references (bcfishpass current, not v0.5.0)
 - #45 — Gradient classes cleanup (derive from `loaded$parameters_fresh$access_gradient_max`)
+- #52 — Channel-class break positions vs gradient thresholds (research)
+- #53 — Distribute tar_make across M4 + M1 + db_newgraph
 - #75 — `dimensions_columns.csv` as source-of-truth: auto-gen README + `lnk_rules_build()` validation (CSV seeded in v0.17.0)
 
 ## Recently closed
 
-- #65 — `lnk_load_overrides(config)` + manifest/data split → v0.18.0. Decomposed `lnk_config()` into manifest-only loader and new `lnk_load_overrides()` ingest with crate dispatch. Single PR, single bump. Config schema flattened into one `files:` map keyed by filename stem; `rules:` and `dimensions:` paths moved top-level (no format suffix). Pipeline phases take `loaded` alongside `cfg`. Bit-identical rollup vs v0.17.0 baseline.
+- README refresh (PR #81) — rewrote around manifest configs + methodology-as-data narrative. Five-line demo, real BT-row comparison from `dimensions.csv`, `extends:` example, single pkgdown ref link, no per-section function lists. Acknowledgements + License kept verbatim.
+- `_pkgdown.yml` cleanup (post-v0.18.1) — dropped manual `reference:` index. With `lnk_*` naming convention doing thematic grouping naturally, the index was duplicate work that broke CI on v0.18.1 release. Now auto-generated; per-function `@title`/`@description` carry the card view.
+- #78 → v0.18.1 — Attribution for redistributed upstream data + Title/Description refresh. NOTICE.md, LICENSE-bcfishpass, per-bundle `overrides/README.md` pointers, README Acknowledgements, `Authors@R [ctb]` for Simon Norris. New Title: "Habitat and Connectivity Interpretation for Stream Networks". Description mirrors README's "fresh answers / link answers" framing.
+- #76 — Enabled `allow_auto_merge` on the repo so the daily csv-sync workflow's byte-drift PRs auto-merge cleanly. Validated by PR #77 landing unattended.
+- #65 → v0.18.0 — `lnk_load_overrides(config)` + manifest/data split. Decomposed `lnk_config()` into manifest-only loader and new `lnk_load_overrides()` ingest with crate dispatch. Single PR, single bump. Config schema flattened into one `files:` map keyed by filename stem; `rules:` and `dimensions:` paths moved top-level (no format suffix). Pipeline phases take `loaded` alongside `cfg`. Bit-identical rollup vs v0.17.0 baseline. Companion crate v0.0.2 release added Convention C `crt_*` prefix family + schema-driven type enforcement (`crt_schema_apply`, `crt_schema_validate`, `crt_schema_read`).
+- #1 — Original v0.6-era scope issue closed as superseded by the package's evolution.
 
 ## Older closed
 

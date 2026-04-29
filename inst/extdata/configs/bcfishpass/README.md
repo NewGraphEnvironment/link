@@ -10,7 +10,9 @@ Reproduces bcfishpass output exactly for regression. All five watershed groups (
 | `rules.yaml` | Built rules YAML (consumed by `frs_habitat_classify()`). Regenerate from `dimensions.csv` via `lnk_rules_build()` |
 | `dimensions.csv` | Source of `rules.yaml` — species × habitat biology encoded for bcfishpass-match |
 | `parameters_fresh.csv` | Per-species fresh overrides (spawn_gradient_min, observation_threshold, etc.) |
-| `overrides/` | Synced from `smnorris/bcfishpass/data/` — expert-curated corrections + confirmed habitat + observation exclusions |
+| `overrides/` | Synced from `smnorris/bcfishpass/data/` — expert-curated corrections + confirmed habitat + observation exclusions. Redistributed under `LICENSE-bcfishpass` at the repo root. |
+
+The bundle is consumed via `lnk_config("bcfishpass")` (manifest only — paths + provenance) and `lnk_load_overrides(cfg)` (canonical-shape tibbles). `user_habitat_classification` routes through `crate::crt_ingest()` for variant-stable ingest; the rest fall through to local CSV reads.
 
 ## What NOT to do here
 
@@ -33,4 +35,3 @@ See `data-raw/build_rules.R` for the canonical invocation.
 ## See also
 
 - `research/bcfishpass_comparison.md` — pipeline DAG and per-WSG results
-- [link#37](https://github.com/NewGraphEnvironment/link/issues/37) — `lnk_config` loader that consumes `config.yaml`

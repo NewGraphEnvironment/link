@@ -23,7 +23,9 @@ Not in this config:
 | `rules.yaml` | Built rules YAML (consumed by `frs_habitat_classify()`). Regenerate from `dimensions.csv` via `lnk_rules_build()` |
 | `dimensions.csv` | Source of `rules.yaml` — species × habitat biology encoded for NewGraph defaults. Source of truth is `inst/extdata/parameters_habitat_dimensions.csv` (copied in here on bundle assembly) |
 | `parameters_fresh.csv` | Per-species fresh overrides (spawn_gradient_min, observation_threshold, etc.) |
-| `overrides/` | Shared jurisdiction data — same barrier corrections, PSCIS status overrides, observation exclusions, habitat confirmations as the bcfishpass variant. These are BC-specific facts, not method choices. |
+| `overrides/` | Shared jurisdiction data — same barrier corrections, PSCIS status overrides, observation exclusions, habitat confirmations as the bcfishpass variant. These are BC-specific facts, not method choices. Redistributed under `LICENSE-bcfishpass` at the repo root. |
+
+The bundle is consumed via `lnk_config("default")` + `lnk_load_overrides(cfg)`. Project-experimental configs can declare `extends: default` to inherit this bundle and override specific entries (e.g. point a project's `user_barriers_definite` at a project-local CSV).
 
 ## What NOT to do here
 
@@ -47,4 +49,3 @@ See `data-raw/build_rules.R` for the canonical invocation (both variants regener
 
 - `research/default_vs_bcfishpass.md` — per-WSG comparison + biological rationale
 - `research/bcfishpass_comparison.md` — bcfishpass variant DAG + results
-- [link#51](https://github.com/NewGraphEnvironment/link/issues/51) — this bundle's tracking issue
