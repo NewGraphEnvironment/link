@@ -22,5 +22,10 @@ Useful links:
 \author{
 \strong{Maintainer}: Allan Irvine \email{airvine@newgraphenvironment.com} (\href{https://orcid.org/0009-0003-7697-6064}{ORCID})
 
+Other contributors:
+\itemize{
+  \item Simon Norris [contributor]
+}
+
 }
 \keyword{internal}
