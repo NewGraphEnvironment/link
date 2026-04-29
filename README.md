@@ -1,15 +1,11 @@
 # link <img src="man/figures/logo.png" align="right" height="139" alt="" />
 
-Connect features to stream networks and interpret what they mean.
+Habitat and connectivity interpretation for stream networks — link
+field and modelled inputs onto the network as per-segment
+classifications via [`fresh`](https://github.com/NewGraphEnvironment/fresh).
 
-link is the interpretation layer between point features on a network
-and [fresh](https://github.com/NewGraphEnvironment/fresh)'s generic
-modelling engine. It loads, validates, matches, scores, and overrides
-features — crossings, observations, barriers, habitat confirmations —
-then produces the specs that fresh consumes.
-
-fresh answers "what is the habitat on this network?" link answers
-"what do these features mean for this network?"
+`fresh` answers _what is the habitat on this network?_ —
+`link` answers _what do these features mean for this network?_
 
 ## Installation
 
@@ -17,114 +13,119 @@ fresh answers "what is the habitat on this network?" link answers
 pak::pak("NewGraphEnvironment/link")
 ```
 
-## What it does
-
-```
-override CSVs    --\
-crossing data    ----> link (load, match, score, interpret) --> break sources --> fresh
-fish observations --/                                       --> barrier overrides -->
-habitat confirms -/
-```
-
-1. **Load and validate** — read correction CSVs into the database with
-   provenance tracking and referential integrity checks
-2. **Match** — link features from different sources (PSCIS assessments,
-   modelled crossings, culvert inventories) using network position with
-   bidirectional deduplication
-3. **Override** — apply hand-reviewed corrections accumulated across field
-   seasons, flag orphans and duplicates
-4. **Score** — classify features by biological impact (severity) or
-   weighted multi-criteria ranking (prioritization)
-5. **Interpret barriers** — process observations and habitat confirmations
-   into per-species barrier skip lists using `fwa_upstream()` network
-   topology
-6. **Bridge to fresh** — produce break source specs and barrier override
-   tables that plug directly into `frs_habitat()`
-
-## Data sources
-
-No database required for loading and validation. DB needed for match,
-score, and barrier override functions (SQL via fwapg).
-
-| Data | Source |
-|------|--------|
-| Crossings (province-wide) | `fresh::system.file("extdata", "crossings.csv")` |
-| PSCIS assessments | `bcdata::bcdc_get_data("7ecfafa6-...")` |
-| Override CSVs | `inst/extdata/` (synced from bcfishpass/data) |
-| Habitat thresholds | `fresh::system.file("extdata", "parameters_habitat_thresholds.csv")` |
-| Species presence per WSG | `fresh::system.file("extdata", "wsg_species_presence.csv")` |
-
-## Quick start
+## Five-line demo
 
 ```r
 library(link)
 
-conn <- lnk_db_conn()
+cfg    <- lnk_config("default")           # or "bcfishpass" / a path to your own bundle
+loaded <- lnk_load_overrides(cfg)         # canonical-shape tibbles via `crate`
+conn   <- lnk_db_conn()
+schema <- "working_bulk"
 
-# Load crossings, apply corrections
-lnk_load(conn, csv = "overrides.csv", to = "working.fixes")
-lnk_override(conn, "working.crossings", "working.fixes")
-
-# Score severity
-lnk_score(conn, "working.crossings", method = "severity")
-
-# Build barrier override list from observations + habitat confirmations
-lnk_barrier_overrides(conn,
-  barriers = "working.natural_barriers",
-  observations = "bcfishobs.observations",
-  habitat = "working.user_habitat_classification",
-  params = params_fresh,
-  to = "working.barrier_overrides")
-
-# Bridge to fresh
-src <- lnk_source(conn, "working.crossings")
-fresh::frs_habitat(conn, "MORR",
-  break_sources = list(src),
-  barrier_overrides = "working.barrier_overrides")
-
-# Per-crossing upstream habitat rollup
-lnk_aggregate(conn, "working.crossings", "fresh.streams_habitat")
+lnk_pipeline_setup(conn, schema, overwrite = TRUE)
+lnk_pipeline_load(conn,     "BULK", cfg, loaded, schema)
+lnk_pipeline_prepare(conn,  "BULK", cfg, loaded, schema)
+lnk_pipeline_break(conn,    "BULK", cfg, loaded, schema)
+lnk_pipeline_classify(conn, "BULK", cfg, loaded, schema)
+lnk_pipeline_connect(conn,  "BULK", cfg, loaded, schema)
 ```
 
-## Full pipeline (linear habitat classification)
+Six phase calls, manifest-driven — same shape regardless of
+methodology variant. For multi-AOI or multi-config orchestration see
+[`data-raw/_targets.R`](data-raw/_targets.R).
 
-The primitives above assemble into a six-phase pipeline that classifies
-spawning + rearing habitat per segment for any watershed group. A
-config bundle declares the manifest of rules, parameters, and override
-CSVs that drive a run; the bundled `"bcfishpass"` config expresses
-bcfishpass's classification slice (spawning + rearing predicates,
-natural-barrier modelling, observation-based access overrides) as a
-self-contained input.
+## What you get
 
-```r
-cfg <- lnk_config("bcfishpass")
+Per-segment classifications keyed by `(id_segment, species_code)` in
+`fresh.streams_habitat`:
 
-lnk_pipeline_setup(conn, schema = "working_bulk", overwrite = TRUE)
-lnk_pipeline_load(conn,    aoi = "BULK", cfg = cfg, schema = "working_bulk")
-lnk_pipeline_prepare(conn, aoi = "BULK", cfg = cfg, schema = "working_bulk")
-lnk_pipeline_break(conn,   aoi = "BULK", cfg = cfg, schema = "working_bulk")
-lnk_pipeline_classify(conn, aoi = "BULK", cfg = cfg, schema = "working_bulk")
-lnk_pipeline_connect(conn, aoi = "BULK", cfg = cfg, schema = "working_bulk")
+- `spawning`, `rearing` — boolean: does this segment meet the rule
+  predicates for that species?
+- `lake_rearing`, `wetland_rearing` — boolean: same, broken out by
+  waterbody type
+- Connectivity-aware variants populated by `lnk_pipeline_connect`
+  (rearing-spawning clustering, connected-waterbody rules)
+
+That table joined to `fresh.streams` (the network) gives you per-WSG,
+per-AOI, or per-crossing rollups — kilometres of accessible spawning
+or rearing, hectares of lake habitat, decomposition of accessible
+versus blocked.
+
+## Methodology is data, not code
+
+Each config bundle (under `inst/extdata/configs/<name>/`) is a
+manifest plus a few CSVs. The interesting one is `dimensions.csv` —
+one row per species, one column per methodology dial. `lnk_rules_build()`
+emits a `rules.yaml` that `fresh` consumes. Flip a cell, regenerate, run.
+
+Bcfishpass-bundle BT row (parity reproduction):
+
+```
+species  rear_stream  rear_stream_in_waterbody  rear_wetland  rear_lake
+BT       yes          no                         no            no
 ```
 
-`data-raw/_targets.R` wraps this over five validated WSGs (ADMS, BULK,
-BABL, ELKR, DEAD) with `targets` for caching and cross-WSG regression.
-A vignette walking through the bundled bcfishpass config is in
-preparation; meanwhile the per-phase detail lives in
-[`research/bcfishpass_comparison.md`](https://github.com/NewGraphEnvironment/link/blob/main/research/bcfishpass_comparison.md).
+Default-bundle BT row (NewGraph methodology — adds wetland and
+small-lake rearing per BT literature):
+
+```
+species  rear_stream  rear_stream_in_waterbody  rear_wetland  rear_lake
+BT       yes          yes                        yes           yes
+```
+
+Same code, different `rules.yaml`, different output. Config-as-data
+means custom variants (project-specific overrides, regional methodology,
+scenario configs) are author-once + run, not fork-the-package.
+
+`extends:` lets a config inherit another and override specific
+entries, so a project repo's bundle can be ten lines on top of
+`default`:
+
+```yaml
+name: skeena_2026
+extends: default
+files:
+  user_barriers_definite:
+    path: data/skeena/barriers_definite_v3.csv
+```
+
+## Configurable inputs
+
+A config bundle's `files:` map declares what data the pipeline reads.
+Each entry resolves to a canonical-shape tibble via `lnk_load_overrides()`:
+
+- **Internal** — `parameters_fresh.csv` (per-species `fresh` knobs),
+  `observation_exclusions.csv`, `wsg_species_presence.csv`
+- **bcfishpass-sourced overrides** (redistributed under
+  [`LICENSE-bcfishpass`](LICENSE-bcfishpass)) —
+  `user_habitat_classification`, `user_barriers_definite`,
+  `user_modelled_crossing_fixes`, `user_pscis_barrier_status`,
+  `pscis_modelledcrossings_streams_xref`, `user_crossings_misc`,
+  `user_barriers_definite_control`
+- **Crate-canonicalized** — entries with `source` + `canonical_schema`
+  route through [`crate::crt_ingest()`](https://github.com/NewGraphEnvironment/crate)
+  for shape-stable ingest across upstream variants. New source families
+  plug in by config edit alone — no `link` R code change.
+
+Provenance for every file (upstream commit SHA, sync date, byte +
+shape checksums) is recorded in the bundle's `config.yaml` under
+`provenance:` and verified on demand by `lnk_config_verify()`.
+
+## Function reference
+
+Full reference at
+[newgraphenvironment.github.io/link](https://newgraphenvironment.github.io/link/).
 
 ## Ecosystem
 
 | Package | Role |
 |---------|------|
 | [fresh](https://github.com/NewGraphEnvironment/fresh) | Stream network modelling engine — segment, classify, cluster |
-| **link** | Feature interpretation — load, match, score, override (this package) |
+| **link** | Feature interpretation + pipeline orchestration (this package) |
+| [crate](https://github.com/NewGraphEnvironment/crate) | Source-agnostic data ingest with canonical-shape contracts |
 | [flooded](https://github.com/NewGraphEnvironment/flooded) | Delineate floodplain extents from DEMs and stream networks |
 | [drift](https://github.com/NewGraphEnvironment/drift) | Track land cover change within floodplains over time |
-
-fresh models habitat on the network. link connects features to the
-network and interprets them. They change for different reasons and can
-each be used independently.
 
 ## Acknowledgements
 
