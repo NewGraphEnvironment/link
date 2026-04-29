@@ -8,6 +8,7 @@ lnk_pipeline_break(
   conn,
   aoi,
   cfg,
+  loaded,
   schema,
   observations = "bcfishobs.observations"
 )
@@ -19,6 +20,9 @@ lnk_pipeline_break(
 spatial filters later).}
 
 \item{cfg}{An \code{lnk_config} object from \code{\link[=lnk_config]{lnk_config()}}.}
+
+\item{loaded}{Named list of tibbles from \code{\link[=lnk_load_overrides]{lnk_load_overrides()}}.
+Carries \code{observation_exclusions} and \code{wsg_species_presence}.}
 
 \item{schema}{Character. Working schema name.}
 
@@ -56,14 +60,15 @@ each break source position, reassigns \code{id_segment}
 }
 \examples{
 \dontrun{
-conn <- lnk_db_conn()
-cfg  <- lnk_config("bcfishpass")
+conn   <- lnk_db_conn()
+cfg    <- lnk_config("bcfishpass")
+loaded <- lnk_load_overrides(cfg)
 schema <- "working_bulk"
 
 lnk_pipeline_setup(conn, schema)
-lnk_pipeline_load(conn, "BULK", cfg, schema)
-lnk_pipeline_prepare(conn, "BULK", cfg, schema)
-lnk_pipeline_break(conn, "BULK", cfg, schema)
+lnk_pipeline_load(conn, "BULK", cfg, loaded, schema)
+lnk_pipeline_prepare(conn, "BULK", cfg, loaded, schema)
+lnk_pipeline_break(conn, "BULK", cfg, loaded, schema)
 
 DBI::dbGetQuery(conn,
   "SELECT count(*) FROM fresh.streams")

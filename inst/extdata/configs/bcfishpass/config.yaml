@@ -4,20 +4,46 @@ description: |
   Used as the reference against which newgraph defaults and other pipeline
   variants are compared. Do not modify without running the full comparison
   suite across ADMS, BULK, BABL, ELKR.
+
+# Non-tabular pipeline inputs (paths only)
+rules: rules.yaml
+dimensions: dimensions.csv
+
+# Tabular data files. Loaded by lnk_load_overrides(cfg)$<key>.
+# Entries with `source` + `canonical_schema` dispatch through crate::crt_ingest();
+# others fall through to extension-based local read.
 files:
-  rules_yaml: rules.yaml
-  dimensions_csv: dimensions.csv
-  parameters_fresh: parameters_fresh.csv
-  habitat_classification: overrides/user_habitat_classification.csv
-  observation_exclusions: overrides/observation_exclusions.csv
-  wsg_species: overrides/wsg_species_presence.csv
-overrides:
-  modelled_fixes: overrides/user_modelled_crossing_fixes.csv
-  pscis_barrier_status: overrides/user_pscis_barrier_status.csv
-  pscis_xref: overrides/pscis_modelledcrossings_streams_xref.csv
-  barriers_definite: overrides/user_barriers_definite.csv
-  barriers_definite_control: overrides/user_barriers_definite_control.csv
-  crossings_misc: overrides/user_crossings_misc.csv
+  parameters_fresh:
+    path: parameters_fresh.csv
+  user_habitat_classification:
+    source: bcfp
+    path: overrides/user_habitat_classification.csv
+    canonical_schema: bcfp/user_habitat_classification
+  observation_exclusions:
+    path: overrides/observation_exclusions.csv
+  wsg_species_presence:
+    path: overrides/wsg_species_presence.csv
+  user_modelled_crossing_fixes:
+    source: bcfp
+    path: overrides/user_modelled_crossing_fixes.csv
+  user_pscis_barrier_status:
+    source: bcfp
+    path: overrides/user_pscis_barrier_status.csv
+  pscis_modelledcrossings_streams_xref:
+    source: bcfp
+    path: overrides/pscis_modelledcrossings_streams_xref.csv
+  user_barriers_definite:
+    source: bcfp
+    path: overrides/user_barriers_definite.csv
+  user_barriers_definite_control:
+    source: bcfp
+    path: overrides/user_barriers_definite_control.csv
+  user_crossings_misc:
+    source: bcfp
+    path: overrides/user_crossings_misc.csv
+
+extends: ~
+
 pipeline:
   apply_habitat_overlay: no
   break_order:
@@ -31,6 +57,7 @@ pipeline:
   spawn_connected:
     SK:
       gradient_max: 0.05
+
 provenance:
   rules.yaml:
     generated_from: dimensions.csv
@@ -54,7 +81,7 @@ provenance:
     source: https://github.com/smnorris/bcfishpass
     path: data/user_habitat_classification.csv
     upstream_sha: 4879bba
-    synced: 2026-04-29
+    synced: '2026-04-29'
     checksum: sha256:cc6aff6448e940613913c2d9dd847db72d6bfb63db8b50ad3293c76ef17c5740
     shape_checksum: sha256:35604598f352c0cc958e8330e80627ec65154e4eaba9dbba8cac92c8516706a0
   overrides/observation_exclusions.csv:

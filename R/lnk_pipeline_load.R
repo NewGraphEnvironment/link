@@ -32,6 +32,10 @@
 #'   CSVs means polygon / ltree AOIs are not yet supported here; those
 #'   will come as a follow-up.
 #' @param cfg An `lnk_config` object from [lnk_config()].
+#' @param loaded Named list of tibbles from [lnk_load_overrides()].
+#'   Carries the override CSVs (`user_crossings_misc`,
+#'   `user_modelled_crossing_fixes`, `user_pscis_barrier_status`) this
+#'   phase needs.
 #' @param schema Character. Working schema name (validated). Must
 #'   already exist — call [lnk_pipeline_setup()] first.
 #'
@@ -43,12 +47,14 @@
 #'
 #' @examples
 #' \dontrun{
-#' conn <- lnk_db_conn()
-#' cfg  <- lnk_config("bcfishpass")
+#' conn   <- lnk_db_conn()
+#' cfg    <- lnk_config("bcfishpass")
+#' loaded <- lnk_load_overrides(cfg)
 #'
 #' schema <- "working_bulk"
 #' lnk_pipeline_setup(conn, schema)
-#' lnk_pipeline_load(conn, aoi = "BULK", cfg = cfg, schema = schema)
+#' lnk_pipeline_load(conn, aoi = "BULK", cfg = cfg, loaded = loaded,
+#'                   schema = schema)
 #'
 #' # Inspect the result
 #' DBI::dbGetQuery(conn, sprintf(
@@ -56,7 +62,7 @@
 #'
 #' DBI::dbDisconnect(conn)
 #' }
-lnk_pipeline_load <- function(conn, aoi, cfg, schema) {
+lnk_pipeline_load <- function(conn, aoi, cfg, loaded, schema) {
   .lnk_validate_identifier(schema, "schema")
   if (!is.character(aoi) || length(aoi) != 1L || !nzchar(aoi)) {
     stop("aoi must be a single non-empty string (watershed group code)",
@@ -66,10 +72,14 @@ lnk_pipeline_load <- function(conn, aoi, cfg, schema) {
     stop("cfg must be an lnk_config object (from lnk_config())",
          call. = FALSE)
   }
+  if (!is.list(loaded)) {
+    stop("loaded must be a named list (from lnk_load_overrides())",
+         call. = FALSE)
+  }
 
-  crossings <- .lnk_pipeline_load_crossings(conn, aoi, cfg, schema)
-  .lnk_pipeline_apply_fixes(conn, aoi, cfg, schema, crossings)
-  .lnk_pipeline_apply_pscis(conn, aoi, cfg, schema)
+  crossings <- .lnk_pipeline_load_crossings(conn, aoi, loaded, schema)
+  .lnk_pipeline_apply_fixes(conn, aoi, loaded, schema, crossings)
+  .lnk_pipeline_apply_pscis(conn, aoi, loaded, schema)
 
   invisible(conn)
 }
@@ -77,7 +87,7 @@ lnk_pipeline_load <- function(conn, aoi, cfg, schema) {
 
 #' Load base + misc crossings into the working schema
 #' @noRd
-.lnk_pipeline_load_crossings <- function(conn, aoi, cfg, schema) {
+.lnk_pipeline_load_crossings <- function(conn, aoi, loaded, schema) {
   crossings_path <- system.file("extdata", "crossings.csv",
                                  package = "fresh")
   if (!nzchar(crossings_path)) {
@@ -97,7 +107,7 @@ lnk_pipeline_load <- function(conn, aoi, cfg, schema) {
   # Append misc crossings (weirs, unassessed culverts, flood control).
   # Misc IDs are offset into a distinct range so they don't collide with
   # the modelled crossings table.
-  misc_all <- cfg$overrides$crossings_misc
+  misc_all <- loaded$user_crossings_misc
   if (!is.null(misc_all) && nrow(misc_all) > 0) {
     misc <- misc_all[misc_all$watershed_group_code == aoi, ]
     if (nrow(misc) > 0) {
@@ -116,8 +126,8 @@ lnk_pipeline_load <- function(conn, aoi, cfg, schema) {
 
 #' Apply modelled crossing fixes: NONE/OBS → PASSABLE
 #' @noRd
-.lnk_pipeline_apply_fixes <- function(conn, aoi, cfg, schema, crossings) {
-  fixes_all <- cfg$overrides$modelled_fixes
+.lnk_pipeline_apply_fixes <- function(conn, aoi, loaded, schema, crossings) {
+  fixes_all <- loaded$user_modelled_crossing_fixes
   if (is.null(fixes_all) || nrow(fixes_all) == 0) return(invisible(NULL))
 
   fixes <- fixes_all[fixes_all$watershed_group_code == aoi, ]
@@ -145,8 +155,8 @@ lnk_pipeline_load <- function(conn, aoi, cfg, schema) {
 
 #' Apply PSCIS barrier status overrides
 #' @noRd
-.lnk_pipeline_apply_pscis <- function(conn, aoi, cfg, schema) {
-  pscis_all <- cfg$overrides$pscis_barrier_status
+.lnk_pipeline_apply_pscis <- function(conn, aoi, loaded, schema) {
+  pscis_all <- loaded$user_pscis_barrier_status
   if (is.null(pscis_all) || nrow(pscis_all) == 0) return(invisible(NULL))
 
   pscis <- pscis_all[pscis_all$watershed_group_code == aoi, ]

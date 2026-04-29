@@ -26,6 +26,8 @@
 #' @param aoi Character. Watershed group code (today; extends to other
 #'   spatial filters later).
 #' @param cfg An `lnk_config` object from [lnk_config()].
+#' @param loaded Named list of tibbles from [lnk_load_overrides()].
+#'   Carries `observation_exclusions` and `wsg_species_presence`.
 #' @param schema Character. Working schema name.
 #' @param observations Character. Schema-qualified observations table
 #'   (default `"bcfishobs.observations"`).
@@ -38,21 +40,22 @@
 #'
 #' @examples
 #' \dontrun{
-#' conn <- lnk_db_conn()
-#' cfg  <- lnk_config("bcfishpass")
+#' conn   <- lnk_db_conn()
+#' cfg    <- lnk_config("bcfishpass")
+#' loaded <- lnk_load_overrides(cfg)
 #' schema <- "working_bulk"
 #'
 #' lnk_pipeline_setup(conn, schema)
-#' lnk_pipeline_load(conn, "BULK", cfg, schema)
-#' lnk_pipeline_prepare(conn, "BULK", cfg, schema)
-#' lnk_pipeline_break(conn, "BULK", cfg, schema)
+#' lnk_pipeline_load(conn, "BULK", cfg, loaded, schema)
+#' lnk_pipeline_prepare(conn, "BULK", cfg, loaded, schema)
+#' lnk_pipeline_break(conn, "BULK", cfg, loaded, schema)
 #'
 #' DBI::dbGetQuery(conn,
 #'   "SELECT count(*) FROM fresh.streams")
 #'
 #' DBI::dbDisconnect(conn)
 #' }
-lnk_pipeline_break <- function(conn, aoi, cfg, schema,
+lnk_pipeline_break <- function(conn, aoi, cfg, loaded, schema,
                                 observations = "bcfishobs.observations") {
   .lnk_validate_identifier(schema, "schema")
   .lnk_validate_identifier(observations, "observations table")
@@ -64,8 +67,12 @@ lnk_pipeline_break <- function(conn, aoi, cfg, schema,
     stop("cfg must be an lnk_config object (from lnk_config())",
          call. = FALSE)
   }
+  if (!is.list(loaded)) {
+    stop("loaded must be a named list (from lnk_load_overrides())",
+         call. = FALSE)
+  }
 
-  .lnk_pipeline_break_obs(conn, aoi, cfg, schema, observations)
+  .lnk_pipeline_break_obs(conn, aoi, loaded, schema, observations)
   .lnk_pipeline_break_habitat_endpoints(conn, aoi, schema)
   .lnk_pipeline_break_crossings(conn, schema)
 
@@ -101,8 +108,8 @@ lnk_pipeline_break <- function(conn, aoi, cfg, schema,
 
 #' Build observations_breaks with species filter and data-error exclusions
 #' @noRd
-.lnk_pipeline_break_obs <- function(conn, aoi, cfg, schema, observations) {
-  obs_species <- .lnk_pipeline_break_obs_species(cfg, aoi)
+.lnk_pipeline_break_obs <- function(conn, aoi, loaded, schema, observations) {
+  obs_species <- .lnk_pipeline_break_obs_species(loaded, aoi)
   if (length(obs_species) == 0L) {
     obs_species_sql <- "NULL"
   } else {
@@ -113,7 +120,7 @@ lnk_pipeline_break <- function(conn, aoi, cfg, schema,
 
   # Observation exclusions: data errors + release excludes
   excl_filter <- ""
-  excl_df <- cfg$observation_exclusions
+  excl_df <- loaded$observation_exclusions
   if (!is.null(excl_df) && nrow(excl_df) > 0) {
     is_excl <- excl_df$data_error %in% c(TRUE, "t") |
                excl_df$release_exclude %in% c(TRUE, "t")
@@ -149,8 +156,8 @@ lnk_pipeline_break <- function(conn, aoi, cfg, schema,
 #' Derive the list of observation species codes for an AOI
 #' from the wsg_species_presence table.
 #' @noRd
-.lnk_pipeline_break_obs_species <- function(cfg, aoi) {
-  wsg_sp <- cfg$wsg_species
+.lnk_pipeline_break_obs_species <- function(loaded, aoi) {
+  wsg_sp <- loaded$wsg_species_presence
   if (is.null(wsg_sp)) return(character(0))
   row <- wsg_sp[wsg_sp$watershed_group_code == aoi, ]
   if (nrow(row) == 0) return(character(0))

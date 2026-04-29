@@ -8,6 +8,7 @@ lnk_pipeline_classify(
   conn,
   aoi,
   cfg,
+  loaded,
   schema,
   species = NULL,
   thresholds_csv = system.file("extdata", "parameters_habitat_thresholds.csv", package =
@@ -22,11 +23,16 @@ spatial filters later).}
 
 \item{cfg}{An \code{lnk_config} object from \code{\link[=lnk_config]{lnk_config()}}.}
 
+\item{loaded}{Named list of tibbles from \code{\link[=lnk_load_overrides]{lnk_load_overrides()}}.
+Carries \code{parameters_fresh}, \code{user_habitat_classification}, and
+\code{wsg_species_presence}.}
+
 \item{schema}{Character. Working schema name.}
 
 \item{species}{Character vector. Species codes to classify. Default
-derives from \code{cfg$parameters_fresh$species_code} intersected with
-the species present in the AOI (via \code{cfg$wsg_species}).}
+derives from \code{loaded$parameters_fresh$species_code} intersected
+with the species present in the AOI (via
+\code{loaded$wsg_species_presence}).}
 
 \item{thresholds_csv}{Path to the habitat thresholds CSV. Default
 uses the copy shipped with fresh.}
@@ -58,15 +64,16 @@ Writes to:
 }
 \examples{
 \dontrun{
-conn <- lnk_db_conn()
-cfg  <- lnk_config("bcfishpass")
+conn   <- lnk_db_conn()
+cfg    <- lnk_config("bcfishpass")
+loaded <- lnk_load_overrides(cfg)
 schema <- "working_bulk"
 
 lnk_pipeline_setup(conn, schema)
-lnk_pipeline_load(conn, "BULK", cfg, schema)
-lnk_pipeline_prepare(conn, "BULK", cfg, schema)
-lnk_pipeline_break(conn, "BULK", cfg, schema)
-lnk_pipeline_classify(conn, "BULK", cfg, schema)
+lnk_pipeline_load(conn, "BULK", cfg, loaded, schema)
+lnk_pipeline_prepare(conn, "BULK", cfg, loaded, schema)
+lnk_pipeline_break(conn, "BULK", cfg, loaded, schema)
+lnk_pipeline_classify(conn, "BULK", cfg, loaded, schema)
 
 DBI::dbDisconnect(conn)
 }

@@ -8,6 +8,7 @@ lnk_pipeline_connect(
   conn,
   aoi,
   cfg,
+  loaded,
   schema,
   species = NULL,
   thresholds_csv = system.file("extdata", "parameters_habitat_thresholds.csv", package =
@@ -23,6 +24,9 @@ phase — connectivity operates on the classified table which is
 already AOI-scoped).}
 
 \item{cfg}{An \code{lnk_config} object from \code{\link[=lnk_config]{lnk_config()}}.}
+
+\item{loaded}{Named list of tibbles from \code{\link[=lnk_load_overrides]{lnk_load_overrides()}}.
+Carries \code{parameters_fresh} and \code{wsg_species_presence}.}
 
 \item{schema}{Character. Working schema name (kept for signature
 consistency; connectivity reads \code{fresh.streams_habitat} directly).}
@@ -41,7 +45,7 @@ Sixth and final phase of the habitat classification pipeline. Runs
 the connectivity logic that \code{frs_habitat()} executes internally —
 rearing-spawning clustering via \code{\link[fresh:frs_cluster]{fresh::frs_cluster()}} and
 connected-waterbody rules via \code{fresh:::.frs_connected_waterbody()}
-— configured by per-species flags in \code{cfg$parameters_fresh}:
+— configured by per-species flags in \code{loaded$parameters_fresh}:
 }
 \details{
 \itemize{
@@ -66,16 +70,17 @@ internal name, so future renames in fresh affect one file here.
 }
 \examples{
 \dontrun{
-conn <- lnk_db_conn()
-cfg  <- lnk_config("bcfishpass")
+conn   <- lnk_db_conn()
+cfg    <- lnk_config("bcfishpass")
+loaded <- lnk_load_overrides(cfg)
 schema <- "working_bulk"
 
 lnk_pipeline_setup(conn, schema)
-lnk_pipeline_load(conn, "BULK", cfg, schema)
-lnk_pipeline_prepare(conn, "BULK", cfg, schema)
-lnk_pipeline_break(conn, "BULK", cfg, schema)
-lnk_pipeline_classify(conn, "BULK", cfg, schema)
-lnk_pipeline_connect(conn, "BULK", cfg, schema)
+lnk_pipeline_load(conn, "BULK", cfg, loaded, schema)
+lnk_pipeline_prepare(conn, "BULK", cfg, loaded, schema)
+lnk_pipeline_break(conn, "BULK", cfg, loaded, schema)
+lnk_pipeline_classify(conn, "BULK", cfg, loaded, schema)
+lnk_pipeline_connect(conn, "BULK", cfg, loaded, schema)
 
 DBI::dbDisconnect(conn)
 }

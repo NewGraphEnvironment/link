@@ -2,7 +2,7 @@
 % Please edit documentation in R/lnk_config.R
 \name{lnk_config}
 \alias{lnk_config}
-\title{Load a Pipeline Config Bundle}
+\title{Load a Pipeline Config Bundle (Manifest)}
 \usage{
 lnk_config(name_or_path)
 }
@@ -14,71 +14,71 @@ directory. Bundled names resolve to \code{system.file("extdata", "configs", name
 \value{
 An \code{lnk_config} S3 list with these slots:
 \itemize{
-\item \code{name} — config name (from \code{name_or_path} or the manifest)
+\item \code{name} — config name from the manifest
 \item \code{dir} — absolute path to the config directory
-\item \code{rules_yaml} — absolute path to the rules YAML (consumed by
+\item \code{description} — manifest's free-text description (or \code{NULL})
+\item \code{rules} — absolute path to the rules YAML (consumed by
 \code{fresh::frs_habitat_classify()})
-\item \code{dimensions_csv} — absolute path to the dimensions CSV (source
-of \code{rules_yaml} via \code{lnk_rules_build()})
-\item \code{parameters_fresh} — data frame of per-species fresh overrides
-\item \code{habitat_classification} — data frame of expert-confirmed
-habitat endpoints (or \code{NULL} if the manifest does not reference
-one)
-\item \code{observation_exclusions} — data frame of observation IDs to
-skip (or \code{NULL})
-\item \code{wsg_species} — data frame of species per watershed group (or
-\code{NULL})
-\item \code{overrides} — named list of data frames, one per override CSV
-listed in the manifest
-\item \code{pipeline} — named list of pipeline knobs from the manifest
-(\code{break_order}, \code{cluster}, \code{spawn_connected})
-\item \code{provenance} — named list of per-file provenance metadata parsed
-from the manifest's \verb{provenance:} block (or \code{NULL} when the
-bundle does not declare it). Each entry is keyed by the file's
-path relative to \code{dir} and carries metadata fields such as
-\code{source}, \code{upstream_sha}, \code{synced}, \code{checksum}, plus
-generator-specific keys (\code{generated_from}, \code{generated_by},
-\code{generator_sha}) for files produced by tooling. Drift detection
-against the recorded checksums is in \code{\link[=lnk_config_verify]{lnk_config_verify()}}.
+\item \code{dimensions} — absolute path to the dimensions CSV (input to
+\code{\link[=lnk_rules_build]{lnk_rules_build()}})
+\item \code{species} — character vector of species the rules YAML
+classifies (parsed from \code{rules.yaml} top-level keys)
+\item \code{files} — named list of file declarations. Each entry is a list
+with \code{path} (resolved absolute path) and optionally \code{source}
+(free-text provenance label) and \code{canonical_schema}
+(\code{"<source>/<file_name>"} — keys into crate's registry to
+dispatch ingest via \code{\link[crate:crt_ingest]{crate::crt_ingest()}})
+\item \code{pipeline} — named list of pipeline knobs
+(\code{apply_habitat_overlay}, \code{break_order}, \code{cluster},
+\code{spawn_connected})
+\item \code{provenance} — named list of per-file provenance metadata,
+keyed by file path relative to \code{dir}. Drift detection against
+these checksums lives in \code{\link[=lnk_config_verify]{lnk_config_verify()}}.
+\item \code{extends} — character or \code{NULL}, the parent config name/path
+this manifest declared (post-resolution; not used by callers
+beyond audit)
 }
 }
 \description{
 Reads a config bundle manifest (\code{config.yaml}) and returns a single
-list object containing everything a pipeline needs to classify
-habitat for a given interpretation variant — rules YAML, parameters,
-overrides, observation exclusions, habitat confirmations, and
-pipeline knobs (break order, cluster params, spawn_connected rules).
+list object describing what a pipeline variant does — paths, file
+declarations, pipeline knobs, provenance — but \strong{no parsed data}.
 }
 \details{
+Tabular data (override CSVs, habitat classifications, parameters)
+is loaded by \code{\link[=lnk_load_overrides]{lnk_load_overrides()}}, which dispatches each declared
+file through \code{\link[crate:crt_ingest]{crate::crt_ingest()}} for source-registered entries
+and falls through to local reads otherwise. This split keeps
+\code{lnk_config()} cheap to call (no CSV parsing) and lets
+provenance-only consumers like \code{\link[=lnk_config_verify]{lnk_config_verify()}} and
+\code{\link[=lnk_stamp]{lnk_stamp()}} work without touching data.
+
 A config bundle is a directory under \verb{inst/extdata/configs/<name>/}
 (for bundled variants) or an arbitrary directory path (for custom
 variants) containing \code{config.yaml} plus the files the manifest
 references. All file paths in the manifest are resolved relative to
 the bundle directory.
 
-The returned list is the single object passed around the pipeline
-(e.g. into \verb{_targets.R}), so pipeline variants become a config
-authoring exercise, not a code fork.
+Configs may declare \verb{extends: <parent>} to inherit from another
+config. The parent is resolved (recursively, if it also extends)
+and merged shallowly: child entries override parent entries with
+the same key in \verb{files:}, \verb{pipeline:}, and \verb{provenance:}; top-level
+scalars (\code{description}, \code{rules}, \code{dimensions}) override directly.
 }
 \examples{
-# Load the bundled bcfishpass variant
 cfg <- lnk_config("bcfishpass")
-
-# Inspect
 cfg$name
-cfg$dir
-file.exists(cfg$rules_yaml)
-head(cfg$parameters_fresh)
-names(cfg$overrides)
+cfg$rules
+names(cfg$files)
+cfg$files$user_habitat_classification
 cfg$pipeline$break_order
 
 \dontrun{
 # Custom config: point at any directory containing config.yaml
 my_cfg <- lnk_config("/path/to/my/variant")
 
-# Feed into the pipeline
-fresh::frs_habitat_classify(conn, ...,
-  rules = cfg$rules_yaml,
-  params = cfg$parameters_fresh)
+# Materialize the data tables declared in the manifest
+loaded <- lnk_load_overrides(my_cfg)
+loaded$user_habitat_classification
 }
 }

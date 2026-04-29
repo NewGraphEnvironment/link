@@ -4,13 +4,17 @@
 \alias{lnk_pipeline_species}
 \title{Resolve the Species Set for an AOI}
 \usage{
-lnk_pipeline_species(cfg, aoi)
+lnk_pipeline_species(cfg, loaded, aoi)
 }
 \arguments{
 \item{cfg}{An \code{lnk_config} object from \code{\link[=lnk_config]{lnk_config()}}.}
 
+\item{loaded}{Named list of tibbles from \code{\link[=lnk_load_overrides]{lnk_load_overrides()}}.
+Carries \code{parameters_fresh} and \code{wsg_species_presence}.}
+
 \item{aoi}{Character. AOI identifier — today a watershed group code
-(e.g. \code{"BULK"}) matched against \code{cfg$wsg_species$watershed_group_code}.}
+(e.g. \code{"BULK"}) matched against
+\code{loaded$wsg_species_presence$watershed_group_code}.}
 }
 \value{
 Character vector of species codes. Empty when neither
@@ -29,19 +33,20 @@ The returned set is the intersection of:
 \itemize{
 \item \code{cfg$species} — species the rules YAML classifies (parsed at
 \code{lnk_config()} load time)
-\item species flagged present for \code{aoi} in \code{cfg$wsg_species} — the
-wide-form presence table where each species column (\code{bt}, \code{ch},
-\code{cm}, ...) holds \code{"t"} for present and \code{"f"} for absent
+\item species flagged present for \code{aoi} in \code{loaded$wsg_species_presence}
+— the wide-form presence table where each species column (\code{bt},
+\code{ch}, \code{cm}, ...) holds \code{"t"} for present and \code{"f"} for absent
 }
 
-When \code{cfg$wsg_species} is not populated the function returns
-\code{cfg$species} unfiltered. When the AOI is not found in the table
-the function returns \code{character(0)}.
+When \code{loaded$wsg_species_presence} is not populated the function
+returns \code{cfg$species} unfiltered. When the AOI is not found in the
+table the function returns \code{character(0)}.
 }
 \examples{
-cfg <- lnk_config("bcfishpass")
-lnk_pipeline_species(cfg, "BULK")
-lnk_pipeline_species(cfg, "ADMS")
+cfg    <- lnk_config("bcfishpass")
+loaded <- lnk_load_overrides(cfg)
+lnk_pipeline_species(cfg, loaded, "BULK")
+lnk_pipeline_species(cfg, loaded, "ADMS")
 }
 \seealso{
 Other pipeline: 

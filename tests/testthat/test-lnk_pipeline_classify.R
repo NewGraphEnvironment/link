@@ -3,22 +3,28 @@
 test_that("lnk_pipeline_classify rejects invalid inputs", {
   cfg <- lnk_config("bcfishpass")
   expect_error(
-    lnk_pipeline_classify("mock", aoi = NULL, cfg = cfg, schema = "w"),
+    lnk_pipeline_classify("mock", aoi = NULL, cfg = cfg,
+                           loaded = list(), schema = "w"),
     "aoi must be a single non-empty string"
   )
   expect_error(
     lnk_pipeline_classify("mock", aoi = "BULK",
-                           cfg = list(), schema = "w"),
+                           cfg = list(), loaded = list(), schema = "w"),
     "cfg must be an lnk_config object"
   )
   expect_error(
     lnk_pipeline_classify("mock", aoi = "BULK", cfg = cfg,
-                           schema = "bad;name"),
+                           loaded = "not-a-list", schema = "w"),
+    "loaded must be a named list"
+  )
+  expect_error(
+    lnk_pipeline_classify("mock", aoi = "BULK", cfg = cfg,
+                           loaded = list(), schema = "bad;name"),
     "schema"
   )
   expect_error(
     lnk_pipeline_classify("mock", aoi = "BULK", cfg = cfg,
-                           schema = "w",
+                           loaded = list(), schema = "w",
                            thresholds_csv = "/no/such/file.csv"),
     "thresholds_csv not found"
   )

@@ -3,11 +3,13 @@
 test_that("lnk_pipeline_prepare rejects invalid aoi", {
   cfg <- lnk_config("bcfishpass")
   expect_error(
-    lnk_pipeline_prepare("mock-conn", aoi = NULL, cfg = cfg, schema = "w"),
+    lnk_pipeline_prepare("mock-conn", aoi = NULL, cfg = cfg,
+                          loaded = list(), schema = "w"),
     "aoi must be a single non-empty string"
   )
   expect_error(
-    lnk_pipeline_prepare("mock-conn", aoi = "", cfg = cfg, schema = "w"),
+    lnk_pipeline_prepare("mock-conn", aoi = "", cfg = cfg,
+                          loaded = list(), schema = "w"),
     "aoi must be a single non-empty string"
   )
 })
@@ -15,8 +17,17 @@ test_that("lnk_pipeline_prepare rejects invalid aoi", {
 test_that("lnk_pipeline_prepare rejects non-lnk_config cfg", {
   expect_error(
     lnk_pipeline_prepare("mock-conn", aoi = "BULK",
-                          cfg = list(), schema = "w"),
+                          cfg = list(), loaded = list(), schema = "w"),
     "cfg must be an lnk_config object"
+  )
+})
+
+test_that("lnk_pipeline_prepare rejects non-list loaded", {
+  cfg <- lnk_config("bcfishpass")
+  expect_error(
+    lnk_pipeline_prepare("mock-conn", aoi = "BULK", cfg = cfg,
+                          loaded = "not-a-list", schema = "w"),
+    "loaded must be a named list"
   )
 })
 
@@ -24,12 +35,12 @@ test_that("lnk_pipeline_prepare rejects invalid schema and observations", {
   cfg <- lnk_config("bcfishpass")
   expect_error(
     lnk_pipeline_prepare("mock-conn", aoi = "BULK", cfg = cfg,
-                          schema = "bad;name"),
+                          loaded = list(), schema = "bad;name"),
     "schema"
   )
   expect_error(
     lnk_pipeline_prepare("mock-conn", aoi = "BULK", cfg = cfg,
-                          schema = "working",
+                          loaded = list(), schema = "working",
                           observations = "bad;name"),
     "observations"
   )
@@ -46,19 +57,16 @@ test_that(".lnk_quote_literal doubles single-quotes", {
 
 # -- prep_gradient SQL shape (mocked) ---------------------------------------
 
-.cfg_no_control <- structure(list(overrides = list()),
-  class = c("lnk_config", "list"))
-.cfg_with_control <- structure(list(
-  overrides = list(
-    barriers_definite_control = data.frame(
-      blue_line_key = 1L,
-      downstream_route_measure = 1,
-      barrier_ind = "t",
-      watershed_group_code = "ADMS",
-      stringsAsFactors = FALSE
-    )
+.loaded_no_control <- list()
+.loaded_with_control <- list(
+  user_barriers_definite_control = data.frame(
+    blue_line_key = 1L,
+    downstream_route_measure = 1,
+    barrier_ind = "t",
+    watershed_group_code = "ADMS",
+    stringsAsFactors = FALSE
   )
-), class = c("lnk_config", "list"))
+)
 
 test_that(".lnk_pipeline_prep_gradient quotes aoi safely in the streams_blk query", {
   captured <- character(0)
@@ -74,14 +82,13 @@ test_that(".lnk_pipeline_prep_gradient quotes aoi safely in the streams_blk quer
   )
 
   .lnk_pipeline_prep_gradient("mock-conn", aoi = "BULK",
-    cfg = .cfg_no_control, schema = "w")
+    loaded = .loaded_no_control, schema = "w")
 
   joined <- paste(captured, collapse = "\n")
   expect_match(joined, "CREATE TABLE w.streams_blk")
   expect_match(joined, "watershed_group_code = 'BULK'")
   expect_match(joined, "edge_type != 6010")
   expect_match(joined, "ADD COLUMN IF NOT EXISTS wscode_ltree ltree")
-  # Without the manifest key, no control-prune DELETE is emitted.
   expect_no_match(joined, "DELETE FROM w.gradient_barriers_raw")
 })
 
@@ -99,7 +106,7 @@ test_that(".lnk_pipeline_prep_gradient prunes when manifest declares control", {
   )
 
   .lnk_pipeline_prep_gradient("mock-conn", aoi = "ADMS",
-    cfg = .cfg_with_control, schema = "w_adms")
+    loaded = .loaded_with_control, schema = "w_adms")
 
   joined <- paste(captured, collapse = "\n")
   expect_match(joined, "DELETE FROM w_adms.gradient_barriers_raw g")
@@ -110,11 +117,6 @@ test_that(".lnk_pipeline_prep_gradient prunes when manifest declares control", {
 # -- prep_natural SQL shape -------------------------------------------------
 
 test_that(".lnk_pipeline_prep_natural unions gradient + falls only (no definite)", {
-  # barriers_definite is intentionally NOT unioned into natural_barriers —
-  # bcfishpass appends user-definite post-filter in each model_access_*.sql,
-  # so observations/habitat never override them. lnk_pipeline_break handles
-  # them as a separate break source; lnk_pipeline_classify emits them into
-  # fresh.streams_breaks directly.
   captured <- character(0)
   local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) {
@@ -155,7 +157,6 @@ test_that(".lnk_pipeline_prep_minimal builds 4 per-model tables and unions them"
 
   .lnk_pipeline_prep_minimal("mock-conn", aoi = "BULK", schema = "w_bulk")
 
-  # Four per-model reductions
   expect_length(minimal_calls, 4L)
   from_tables <- vapply(minimal_calls, `[[`, character(1), "from")
   table_names <- sub("^[^.]+\\.", "", from_tables)
@@ -163,7 +164,6 @@ test_that(".lnk_pipeline_prep_minimal builds 4 per-model tables and unions them"
     c("barriers_bt", "barriers_ch_cm_co_pk_sk",
       "barriers_st", "barriers_wct"))
 
-  # Union step creates gradient_barriers_minimal
   joined <- paste(captured, collapse = "\n")
   expect_match(joined,
     "CREATE TABLE w_bulk.gradient_barriers_minimal AS")
@@ -200,7 +200,7 @@ test_that(".lnk_pipeline_prep_network loads fresh.streams with FWA filters", {
 # -- prep_overrides control pass-through (manifest-driven) -------------------
 
 test_that(".lnk_pipeline_prep_overrides passes control when manifest declares it", {
-  cfg_stub <- structure(list(
+  loaded_stub <- list(
     parameters_fresh = data.frame(
       species_code = "BT",
       observation_threshold = 1L,
@@ -209,15 +209,13 @@ test_that(".lnk_pipeline_prep_overrides passes control when manifest declares it
       observation_species = "BT",
       stringsAsFactors = FALSE
     ),
-    overrides = list(
-      barriers_definite_control = data.frame(
-        blue_line_key = 360873822L,
-        downstream_route_measure = 1000,
-        barrier_ind = "t",
-        stringsAsFactors = FALSE
-      )
+    user_barriers_definite_control = data.frame(
+      blue_line_key = 360873822L,
+      downstream_route_measure = 1000,
+      barrier_ind = "t",
+      stringsAsFactors = FALSE
     )
-  ), class = c("lnk_config", "list"))
+  )
 
   captured <- list()
   local_mocked_bindings(
@@ -227,14 +225,14 @@ test_that(".lnk_pipeline_prep_overrides passes control when manifest declares it
     }
   )
 
-  .lnk_pipeline_prep_overrides("mock-conn", cfg = cfg_stub,
+  .lnk_pipeline_prep_overrides("mock-conn", loaded = loaded_stub,
     schema = "working_bulk", observations = "bcfishobs.observations")
 
   expect_equal(captured$args$control, "working_bulk.barriers_definite_control")
 })
 
 test_that(".lnk_pipeline_prep_overrides passes control = NULL when manifest omits it", {
-  cfg_stub <- structure(list(
+  loaded_stub <- list(
     parameters_fresh = data.frame(
       species_code = "BT",
       observation_threshold = 1L,
@@ -242,9 +240,8 @@ test_that(".lnk_pipeline_prep_overrides passes control = NULL when manifest omit
       observation_buffer_m = 20,
       observation_species = "BT",
       stringsAsFactors = FALSE
-    ),
-    overrides = list()                # no barriers_definite_control key
-  ), class = c("lnk_config", "list"))
+    )
+  )
 
   captured <- list()
   local_mocked_bindings(
@@ -254,7 +251,7 @@ test_that(".lnk_pipeline_prep_overrides passes control = NULL when manifest omit
     }
   )
 
-  .lnk_pipeline_prep_overrides("mock-conn", cfg = cfg_stub,
+  .lnk_pipeline_prep_overrides("mock-conn", loaded = loaded_stub,
     schema = "working_bulk", observations = "bcfishobs.observations")
 
   expect_null(captured$args$control)
@@ -263,7 +260,7 @@ test_that(".lnk_pipeline_prep_overrides passes control = NULL when manifest omit
 # -- prep_overrides habitat pass-through (manifest-driven) -------------------
 
 test_that(".lnk_pipeline_prep_overrides passes habitat when manifest declares it", {
-  cfg_stub <- structure(list(
+  loaded_stub <- list(
     parameters_fresh = data.frame(
       species_code = "BT",
       observation_threshold = 1L,
@@ -272,13 +269,12 @@ test_that(".lnk_pipeline_prep_overrides passes habitat when manifest declares it
       observation_species = "BT",
       stringsAsFactors = FALSE
     ),
-    overrides = list(),
-    habitat_classification = data.frame(
+    user_habitat_classification = data.frame(
       blue_line_key = 1L,
       species_code = "BT",
       stringsAsFactors = FALSE
     )
-  ), class = c("lnk_config", "list"))
+  )
 
   captured <- list()
   local_mocked_bindings(
@@ -288,7 +284,7 @@ test_that(".lnk_pipeline_prep_overrides passes habitat when manifest declares it
     }
   )
 
-  .lnk_pipeline_prep_overrides("mock-conn", cfg = cfg_stub,
+  .lnk_pipeline_prep_overrides("mock-conn", loaded = loaded_stub,
     schema = "working_bulk", observations = "bcfishobs.observations")
 
   expect_equal(captured$args$habitat,
@@ -296,7 +292,7 @@ test_that(".lnk_pipeline_prep_overrides passes habitat when manifest declares it
 })
 
 test_that(".lnk_pipeline_prep_overrides passes habitat = NULL when manifest omits it", {
-  cfg_stub <- structure(list(
+  loaded_stub <- list(
     parameters_fresh = data.frame(
       species_code = "BT",
       observation_threshold = 1L,
@@ -304,9 +300,8 @@ test_that(".lnk_pipeline_prep_overrides passes habitat = NULL when manifest omit
       observation_buffer_m = 20,
       observation_species = "BT",
       stringsAsFactors = FALSE
-    ),
-    overrides = list()
-  ), class = c("lnk_config", "list"))
+    )
+  )
 
   captured <- list()
   local_mocked_bindings(
@@ -316,7 +311,7 @@ test_that(".lnk_pipeline_prep_overrides passes habitat = NULL when manifest omit
     }
   )
 
-  .lnk_pipeline_prep_overrides("mock-conn", cfg = cfg_stub,
+  .lnk_pipeline_prep_overrides("mock-conn", loaded = loaded_stub,
     schema = "working_bulk", observations = "bcfishobs.observations")
 
   expect_null(captured$args$habitat)

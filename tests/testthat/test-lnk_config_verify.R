@@ -27,10 +27,10 @@ skip_if_no_digest <- function() {
   yaml::write_yaml(
     list(
       name = "x",
+      rules = "rules.yaml",
+      dimensions = "dims.csv",
       files = list(
-        rules_yaml = "rules.yaml",
-        dimensions_csv = "dims.csv",
-        parameters_fresh = "params.csv"
+        parameters_fresh = list(path = "params.csv")
       ),
       provenance = list(
         rules.yaml = list(
@@ -127,10 +127,10 @@ test_that("provenance without shape_checksum: shape_drift stays FALSE", {
   yaml::write_yaml(
     list(
       name = "x",
+      rules = "rules.yaml",
+      dimensions = "dims.csv",
       files = list(
-        rules_yaml = "rules.yaml",
-        dimensions_csv = "dims.csv",
-        parameters_fresh = "params.csv"
+        parameters_fresh = list(path = "params.csv")
       ),
       provenance = list(
         rules.yaml = list(
@@ -157,11 +157,9 @@ test_that("returns empty tibble when no provenance block", {
   yaml::write_yaml(
     list(
       name = "x",
-      files = list(
-        rules_yaml = "rules.yaml",
-        dimensions_csv = "dims.csv",
-        parameters_fresh = "params.csv"
-      )
+      rules = "rules.yaml",
+      dimensions = "dims.csv",
+      files = list(parameters_fresh = list(path = "params.csv"))
     ),
     file.path(tmp, "config.yaml")
   )
