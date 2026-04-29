@@ -58,9 +58,8 @@
 <img src="logo.png" class="logo" alt=""><h1 id="link-">link <a class="anchor" aria-label="anchor" href="#link-"></a>
 </h1>
 </div>
-<p>Connect features to stream networks and interpret what they mean.</p>
-<p>link is the interpretation layer between point features on a network and <a href="https://github.com/NewGraphEnvironment/fresh" class="external-link">fresh</a>’s generic modelling engine. It loads, validates, matches, scores, and overrides features — crossings, observations, barriers, habitat confirmations — then produces the specs that fresh consumes.</p>
-<p>fresh answers “what is the habitat on this network?” link answers “what do these features mean for this network?”</p>
+<p>Habitat and connectivity interpretation for stream networks — link field and modelled inputs onto the network as per-segment classifications via <a href="https://github.com/NewGraphEnvironment/fresh" class="external-link"><code>fresh</code></a>.</p>
+<p><code>fresh</code> answers <em>what is the habitat on this network?</em> — <code>link</code> answers <em>what do these features mean for this network?</em></p>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
@@ -68,112 +67,75 @@
 <code class="sourceCode R"><span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"NewGraphEnvironment/link"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="what-it-does">What it does<a class="anchor" aria-label="anchor" href="#what-it-does"></a>
+<h2 id="five-line-demo">Five-line demo<a class="anchor" aria-label="anchor" href="#five-line-demo"></a>
 </h2>
-<pre><code>override CSVs    --\
-crossing data    ----&gt; link (load, match, score, interpret) --&gt; break sources --&gt; fresh
-fish observations --/                                       --&gt; barrier overrides --&gt;
-habitat confirms -/</code></pre>
-<ol style="list-style-type: decimal">
-<li>
-<strong>Load and validate</strong> — read correction CSVs into the database with provenance tracking and referential integrity checks</li>
-<li>
-<strong>Match</strong> — link features from different sources (PSCIS assessments, modelled crossings, culvert inventories) using network position with bidirectional deduplication</li>
-<li>
-<strong>Override</strong> — apply hand-reviewed corrections accumulated across field seasons, flag orphans and duplicates</li>
-<li>
-<strong>Score</strong> — classify features by biological impact (severity) or weighted multi-criteria ranking (prioritization)</li>
-<li>
-<strong>Interpret barriers</strong> — process observations and habitat confirmations into per-species barrier skip lists using <code>fwa_upstream()</code> network topology</li>
-<li>
-<strong>Bridge to fresh</strong> — produce break source specs and barrier override tables that plug directly into <code>frs_habitat()</code>
-</li>
-</ol>
-</div>
-<div class="section level2">
-<h2 id="data-sources">Data sources<a class="anchor" aria-label="anchor" href="#data-sources"></a>
-</h2>
-<p>No database required for loading and validation. DB needed for match, score, and barrier override functions (SQL via fwapg).</p>
-<table class="table">
-<colgroup>
-<col width="42%">
-<col width="57%">
-</colgroup>
-<thead><tr class="header">
-<th>Data</th>
-<th>Source</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td>Crossings (province-wide)</td>
-<td><code>fresh::system.file("extdata", "crossings.csv")</code></td>
-</tr>
-<tr class="even">
-<td>PSCIS assessments</td>
-<td><code>bcdata::bcdc_get_data("7ecfafa6-...")</code></td>
-</tr>
-<tr class="odd">
-<td>Override CSVs</td>
-<td>
-<code>inst/extdata/</code> (synced from bcfishpass/data)</td>
-</tr>
-<tr class="even">
-<td>Habitat thresholds</td>
-<td><code>fresh::system.file("extdata", "parameters_habitat_thresholds.csv")</code></td>
-</tr>
-<tr class="odd">
-<td>Species presence per WSG</td>
-<td><code>fresh::system.file("extdata", "wsg_species_presence.csv")</code></td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="section level2">
-<h2 id="quick-start">Quick start<a class="anchor" aria-label="anchor" href="#quick-start"></a>
-</h2>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/NewGraphEnvironment/link" class="external-link">link</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">conn</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/lnk_db_conn.html">lnk_db_conn</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">cfg</span>    <span class="op">&lt;-</span> <span class="fu"><a href="reference/lnk_config.html">lnk_config</a></span><span class="op">(</span><span class="st">"default"</span><span class="op">)</span>           <span class="co"># or "bcfishpass" / a path to your own bundle</span></span>
+<span><span class="va">loaded</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/lnk_load_overrides.html">lnk_load_overrides</a></span><span class="op">(</span><span class="va">cfg</span><span class="op">)</span>         <span class="co"># canonical-shape tibbles via `crate`</span></span>
+<span><span class="va">conn</span>   <span class="op">&lt;-</span> <span class="fu"><a href="reference/lnk_db_conn.html">lnk_db_conn</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">schema</span> <span class="op">&lt;-</span> <span class="st">"working_bulk"</span></span>
 <span></span>
-<span><span class="co"># Load crossings, apply corrections</span></span>
-<span><span class="fu"><a href="reference/lnk_load.html">lnk_load</a></span><span class="op">(</span><span class="va">conn</span>, csv <span class="op">=</span> <span class="st">"overrides.csv"</span>, to <span class="op">=</span> <span class="st">"working.fixes"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="reference/lnk_override.html">lnk_override</a></span><span class="op">(</span><span class="va">conn</span>, <span class="st">"working.crossings"</span>, <span class="st">"working.fixes"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Score severity</span></span>
-<span><span class="fu"><a href="reference/lnk_score.html">lnk_score</a></span><span class="op">(</span><span class="va">conn</span>, <span class="st">"working.crossings"</span>, method <span class="op">=</span> <span class="st">"severity"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Build barrier override list from observations + habitat confirmations</span></span>
-<span><span class="fu"><a href="reference/lnk_barrier_overrides.html">lnk_barrier_overrides</a></span><span class="op">(</span><span class="va">conn</span>,</span>
-<span>  barriers <span class="op">=</span> <span class="st">"working.natural_barriers"</span>,</span>
-<span>  observations <span class="op">=</span> <span class="st">"bcfishobs.observations"</span>,</span>
-<span>  habitat <span class="op">=</span> <span class="st">"working.user_habitat_classification"</span>,</span>
-<span>  params <span class="op">=</span> <span class="va">params_fresh</span>,</span>
-<span>  to <span class="op">=</span> <span class="st">"working.barrier_overrides"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Bridge to fresh</span></span>
-<span><span class="va">src</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/lnk_source.html">lnk_source</a></span><span class="op">(</span><span class="va">conn</span>, <span class="st">"working.crossings"</span><span class="op">)</span></span>
-<span><span class="fu">fresh</span><span class="fu">::</span><span class="fu"><a href="https://newgraphenvironment.github.io/fresh/reference/frs_habitat.html" class="external-link">frs_habitat</a></span><span class="op">(</span><span class="va">conn</span>, <span class="st">"MORR"</span>,</span>
-<span>  break_sources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">src</span><span class="op">)</span>,</span>
-<span>  barrier_overrides <span class="op">=</span> <span class="st">"working.barrier_overrides"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Per-crossing upstream habitat rollup</span></span>
-<span><span class="fu"><a href="reference/lnk_aggregate.html">lnk_aggregate</a></span><span class="op">(</span><span class="va">conn</span>, <span class="st">"working.crossings"</span>, <span class="st">"fresh.streams_habitat"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="reference/lnk_pipeline_setup.html">lnk_pipeline_setup</a></span><span class="op">(</span><span class="va">conn</span>, <span class="va">schema</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/lnk_pipeline_load.html">lnk_pipeline_load</a></span><span class="op">(</span><span class="va">conn</span>,     <span class="st">"BULK"</span>, <span class="va">cfg</span>, <span class="va">loaded</span>, <span class="va">schema</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/lnk_pipeline_prepare.html">lnk_pipeline_prepare</a></span><span class="op">(</span><span class="va">conn</span>,  <span class="st">"BULK"</span>, <span class="va">cfg</span>, <span class="va">loaded</span>, <span class="va">schema</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/lnk_pipeline_break.html">lnk_pipeline_break</a></span><span class="op">(</span><span class="va">conn</span>,    <span class="st">"BULK"</span>, <span class="va">cfg</span>, <span class="va">loaded</span>, <span class="va">schema</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/lnk_pipeline_classify.html">lnk_pipeline_classify</a></span><span class="op">(</span><span class="va">conn</span>, <span class="st">"BULK"</span>, <span class="va">cfg</span>, <span class="va">loaded</span>, <span class="va">schema</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/lnk_pipeline_connect.html">lnk_pipeline_connect</a></span><span class="op">(</span><span class="va">conn</span>,  <span class="st">"BULK"</span>, <span class="va">cfg</span>, <span class="va">loaded</span>, <span class="va">schema</span><span class="op">)</span></span></code></pre></div>
+<p>Six phase calls, manifest-driven — same shape regardless of methodology variant. For multi-AOI or multi-config orchestration see <a href="data-raw/_targets.R"><code>data-raw/_targets.R</code></a>.</p>
 </div>
 <div class="section level2">
-<h2 id="full-pipeline-linear-habitat-classification">Full pipeline (linear habitat classification)<a class="anchor" aria-label="anchor" href="#full-pipeline-linear-habitat-classification"></a>
+<h2 id="what-you-get">What you get<a class="anchor" aria-label="anchor" href="#what-you-get"></a>
 </h2>
-<p>The primitives above assemble into a six-phase pipeline that classifies spawning + rearing habitat per segment for any watershed group. A config bundle declares the manifest of rules, parameters, and override CSVs that drive a run; the bundled <code>"bcfishpass"</code> config expresses bcfishpass’s classification slice (spawning + rearing predicates, natural-barrier modelling, observation-based access overrides) as a self-contained input.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">cfg</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/lnk_config.html">lnk_config</a></span><span class="op">(</span><span class="st">"bcfishpass"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="reference/lnk_pipeline_setup.html">lnk_pipeline_setup</a></span><span class="op">(</span><span class="va">conn</span>, schema <span class="op">=</span> <span class="st">"working_bulk"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="reference/lnk_pipeline_load.html">lnk_pipeline_load</a></span><span class="op">(</span><span class="va">conn</span>,    aoi <span class="op">=</span> <span class="st">"BULK"</span>, cfg <span class="op">=</span> <span class="va">cfg</span>, schema <span class="op">=</span> <span class="st">"working_bulk"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="reference/lnk_pipeline_prepare.html">lnk_pipeline_prepare</a></span><span class="op">(</span><span class="va">conn</span>, aoi <span class="op">=</span> <span class="st">"BULK"</span>, cfg <span class="op">=</span> <span class="va">cfg</span>, schema <span class="op">=</span> <span class="st">"working_bulk"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="reference/lnk_pipeline_break.html">lnk_pipeline_break</a></span><span class="op">(</span><span class="va">conn</span>,   aoi <span class="op">=</span> <span class="st">"BULK"</span>, cfg <span class="op">=</span> <span class="va">cfg</span>, schema <span class="op">=</span> <span class="st">"working_bulk"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="reference/lnk_pipeline_classify.html">lnk_pipeline_classify</a></span><span class="op">(</span><span class="va">conn</span>, aoi <span class="op">=</span> <span class="st">"BULK"</span>, cfg <span class="op">=</span> <span class="va">cfg</span>, schema <span class="op">=</span> <span class="st">"working_bulk"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="reference/lnk_pipeline_connect.html">lnk_pipeline_connect</a></span><span class="op">(</span><span class="va">conn</span>, aoi <span class="op">=</span> <span class="st">"BULK"</span>, cfg <span class="op">=</span> <span class="va">cfg</span>, schema <span class="op">=</span> <span class="st">"working_bulk"</span><span class="op">)</span></span></code></pre></div>
-<p><code>data-raw/_targets.R</code> wraps this over five validated WSGs (ADMS, BULK, BABL, ELKR, DEAD) with <code>targets</code> for caching and cross-WSG regression. A vignette walking through the bundled bcfishpass config is in preparation; meanwhile the per-phase detail lives in <a href="https://github.com/NewGraphEnvironment/link/blob/main/research/bcfishpass_comparison.md" class="external-link"><code>research/bcfishpass_comparison.md</code></a>.</p>
+<p>Per-segment classifications keyed by <code>(id_segment, species_code)</code> in <code>fresh.streams_habitat</code>:</p>
+<ul>
+<li>
+<code>spawning</code>, <code>rearing</code> — boolean: does this segment meet the rule predicates for that species?</li>
+<li>
+<code>lake_rearing</code>, <code>wetland_rearing</code> — boolean: same, broken out by waterbody type</li>
+<li>Connectivity-aware variants populated by <code>lnk_pipeline_connect</code> (rearing-spawning clustering, connected-waterbody rules)</li>
+</ul>
+<p>That table joined to <code>fresh.streams</code> (the network) gives you per-WSG, per-AOI, or per-crossing rollups — kilometres of accessible spawning or rearing, hectares of lake habitat, decomposition of accessible versus blocked.</p>
+</div>
+<div class="section level2">
+<h2 id="methodology-is-data-not-code">Methodology is data, not code<a class="anchor" aria-label="anchor" href="#methodology-is-data-not-code"></a>
+</h2>
+<p>Each config bundle (under <code>inst/extdata/configs/&lt;name&gt;/</code>) is a manifest plus a few CSVs. The interesting one is <code>dimensions.csv</code> — one row per species, one column per methodology dial. <code><a href="reference/lnk_rules_build.html">lnk_rules_build()</a></code> emits a <code>rules.yaml</code> that <code>fresh</code> consumes. Flip a cell, regenerate, run.</p>
+<p>Bcfishpass-bundle BT row (parity reproduction):</p>
+<pre><code>species  rear_stream  rear_stream_in_waterbody  rear_wetland  rear_lake
+BT       yes          no                         no            no</code></pre>
+<p>Default-bundle BT row (NewGraph methodology — adds wetland and small-lake rearing per BT literature):</p>
+<pre><code>species  rear_stream  rear_stream_in_waterbody  rear_wetland  rear_lake
+BT       yes          yes                        yes           yes</code></pre>
+<p>Same code, different <code>rules.yaml</code>, different output. Config-as-data means custom variants (project-specific overrides, regional methodology, scenario configs) are author-once + run, not fork-the-package.</p>
+<p><code>extends:</code> lets a config inherit another and override specific entries, so a project repo’s bundle can be ten lines on top of <code>default</code>:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="fu">name</span><span class="kw">:</span><span class="at"> skeena_2026</span></span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="fu">extends</span><span class="kw">:</span><span class="at"> default</span></span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="fu">files</span><span class="kw">:</span></span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="at">  </span><span class="fu">user_barriers_definite</span><span class="kw">:</span></span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a><span class="at">    </span><span class="fu">path</span><span class="kw">:</span><span class="at"> data/skeena/barriers_definite_v3.csv</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="configurable-inputs">Configurable inputs<a class="anchor" aria-label="anchor" href="#configurable-inputs"></a>
+</h2>
+<p>A config bundle’s <code>files:</code> map declares what data the pipeline reads. Each entry resolves to a canonical-shape tibble via <code><a href="reference/lnk_load_overrides.html">lnk_load_overrides()</a></code>:</p>
+<ul>
+<li>
+<strong>Internal</strong> — <code>parameters_fresh.csv</code> (per-species <code>fresh</code> knobs), <code>observation_exclusions.csv</code>, <code>wsg_species_presence.csv</code>
+</li>
+<li>
+<strong>bcfishpass-sourced overrides</strong> (redistributed under <a href="LICENSE-bcfishpass"><code>LICENSE-bcfishpass</code></a>) — <code>user_habitat_classification</code>, <code>user_barriers_definite</code>, <code>user_modelled_crossing_fixes</code>, <code>user_pscis_barrier_status</code>, <code>pscis_modelledcrossings_streams_xref</code>, <code>user_crossings_misc</code>, <code>user_barriers_definite_control</code>
+</li>
+<li>
+<strong>Crate-canonicalized</strong> — entries with <code>source</code> + <code>canonical_schema</code> route through <a href="https://github.com/NewGraphEnvironment/crate" class="external-link"><code>crate::crt_ingest()</code></a> for shape-stable ingest across upstream variants. New source families plug in by config edit alone — no <code>link</code> R code change.</li>
+</ul>
+<p>Provenance for every file (upstream commit SHA, sync date, byte + shape checksums) is recorded in the bundle’s <code>config.yaml</code> under <code>provenance:</code> and verified on demand by <code><a href="reference/lnk_config_verify.html">lnk_config_verify()</a></code>.</p>
+</div>
+<div class="section level2">
+<h2 id="function-reference">Function reference<a class="anchor" aria-label="anchor" href="#function-reference"></a>
+</h2>
+<p>Full reference at <a href="https://newgraphenvironment.github.io/link/">newgraphenvironment.github.io/link</a>.</p>
 </div>
 <div class="section level2">
 <h2 id="ecosystem">Ecosystem<a class="anchor" aria-label="anchor" href="#ecosystem"></a>
@@ -194,19 +156,22 @@ habitat confirms -/</code></pre>
 </tr>
 <tr class="even">
 <td><strong>link</strong></td>
-<td>Feature interpretation — load, match, score, override (this package)</td>
+<td>Feature interpretation + pipeline orchestration (this package)</td>
 </tr>
 <tr class="odd">
+<td><a href="https://github.com/NewGraphEnvironment/crate" class="external-link">crate</a></td>
+<td>Source-agnostic data ingest with canonical-shape contracts</td>
+</tr>
+<tr class="even">
 <td><a href="https://github.com/NewGraphEnvironment/flooded" class="external-link">flooded</a></td>
 <td>Delineate floodplain extents from DEMs and stream networks</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><a href="https://github.com/NewGraphEnvironment/drift" class="external-link">drift</a></td>
 <td>Track land cover change within floodplains over time</td>
 </tr>
 </tbody>
 </table>
-<p>fresh models habitat on the network. link connects features to the network and interprets them. They change for different reasons and can each be used independently.</p>
 </div>
 <div class="section level2">
 <h2 id="acknowledgements">Acknowledgements<a class="anchor" aria-label="anchor" href="#acknowledgements"></a>
