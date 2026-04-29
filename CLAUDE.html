@@ -38,10 +38,10 @@
 
 <div id="link" class="section level1">
 
-<p>Crossing connectivity interpretation for fish passage. The domain layer between raw crossing data and fresh’s generic network engine — scoring, overrides, and prioritization.</p>
+<p>Habitat and connectivity interpretation for stream networks — link field and modelled inputs onto the network as per-segment classifications via <code>fresh</code>. The domain interpretation + pipeline-orchestration layer over <code>fresh</code>’s generic network engine.</p>
 <div class="section level2">
 <h2 id="repository-context">Repository Context<a class="anchor" aria-label="anchor" href="#repository-context"></a></h2>
-<p><strong>Repository:</strong> NewGraphEnvironment/link <strong>Primary Language:</strong> R <strong>Prefix:</strong> <code>lnk_</code> <strong>Branch:</strong> <code>main</code> (v0.18.0 as of 2026-04-29)</p>
+<p><strong>Repository:</strong> NewGraphEnvironment/link <strong>Primary Language:</strong> R <strong>Prefix:</strong> <code>lnk_</code> <strong>Branch:</strong> <code>main</code> (v0.18.1 as of 2026-04-29)</p>
 </div>
 <div class="section level2">
 <h2 id="architecture">Architecture<a class="anchor" aria-label="anchor" href="#architecture"></a></h2>
@@ -245,13 +245,22 @@ bcdata (PSCIS assessments)   ─┘</code></pre>
 <li>#21 — GSDD and thermal energy as intrinsic potential variables</li>
 <li>#24 — lnk_stamp (model params for report appendix)</li>
 <li>#29 — SK spawning cluster divergence (blocked on fresh#133)</li>
-<li>#40 — Config provenance / run stamps (tracks input versions)</li>
+<li>#33 — Cross-ref note: bcfishpass access_st checks SK instead of ST (bcfishpass#9)</li>
+<li>#34 — Update doc version references (bcfishpass current, not v0.5.0)</li>
 <li>#45 — Gradient classes cleanup (derive from <code>loaded$parameters_fresh$access_gradient_max</code>)</li>
+<li>#52 — Channel-class break positions vs gradient thresholds (research)</li>
+<li>#53 — Distribute tar_make across M4 + M1 + db_newgraph</li>
 <li>#75 — <code>dimensions_columns.csv</code> as source-of-truth: auto-gen README + <code><a href="reference/lnk_rules_build.html">lnk_rules_build()</a></code> validation (CSV seeded in v0.17.0)</li>
 </ul></div>
 <div class="section level2">
 <h2 id="recently-closed">Recently closed<a class="anchor" aria-label="anchor" href="#recently-closed"></a></h2>
-<ul><li>#65 — <code>lnk_load_overrides(config)</code> + manifest/data split → v0.18.0. Decomposed <code><a href="reference/lnk_config.html">lnk_config()</a></code> into manifest-only loader and new <code><a href="reference/lnk_load_overrides.html">lnk_load_overrides()</a></code> ingest with crate dispatch. Single PR, single bump. Config schema flattened into one <code>files:</code> map keyed by filename stem; <code>rules:</code> and <code>dimensions:</code> paths moved top-level (no format suffix). Pipeline phases take <code>loaded</code> alongside <code>cfg</code>. Bit-identical rollup vs v0.17.0 baseline.</li>
+<ul><li>README refresh (PR #81) — rewrote around manifest configs + methodology-as-data narrative. Five-line demo, real BT-row comparison from <code>dimensions.csv</code>, <code>extends:</code> example, single pkgdown ref link, no per-section function lists. Acknowledgements + License kept verbatim.</li>
+<li>
+<code>_pkgdown.yml</code> cleanup (post-v0.18.1) — dropped manual <code>reference:</code> index. With <code>lnk_*</code> naming convention doing thematic grouping naturally, the index was duplicate work that broke CI on v0.18.1 release. Now auto-generated; per-function <code>@title</code>/<code>@description</code> carry the card view.</li>
+<li>#78 → v0.18.1 — Attribution for redistributed upstream data + Title/Description refresh. NOTICE.md, LICENSE-bcfishpass, per-bundle <code>overrides/README.md</code> pointers, README Acknowledgements, <code>Authors@R [ctb]</code> for Simon Norris. New Title: “Habitat and Connectivity Interpretation for Stream Networks”. Description mirrors README’s “fresh answers / link answers” framing.</li>
+<li>#76 — Enabled <code>allow_auto_merge</code> on the repo so the daily csv-sync workflow’s byte-drift PRs auto-merge cleanly. Validated by PR #77 landing unattended.</li>
+<li>#65 → v0.18.0 — <code>lnk_load_overrides(config)</code> + manifest/data split. Decomposed <code><a href="reference/lnk_config.html">lnk_config()</a></code> into manifest-only loader and new <code><a href="reference/lnk_load_overrides.html">lnk_load_overrides()</a></code> ingest with crate dispatch. Single PR, single bump. Config schema flattened into one <code>files:</code> map keyed by filename stem; <code>rules:</code> and <code>dimensions:</code> paths moved top-level (no format suffix). Pipeline phases take <code>loaded</code> alongside <code>cfg</code>. Bit-identical rollup vs v0.17.0 baseline. Companion crate v0.0.2 release added Convention C <code>crt_*</code> prefix family + schema-driven type enforcement (<code>crt_schema_apply</code>, <code>crt_schema_validate</code>, <code>crt_schema_read</code>).</li>
+<li>#1 — Original v0.6-era scope issue closed as superseded by the package’s evolution.</li>
 </ul></div>
 <div class="section level2">
 <h2 id="older-closed">Older closed<a class="anchor" aria-label="anchor" href="#older-closed"></a></h2>
