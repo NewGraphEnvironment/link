@@ -35,9 +35,9 @@
     </div>
 
     <div class="section level2">
-      <h2 id="configs">Configs<a class="anchor" aria-label="anchor" href="#configs"></a></h2>
+      <h2 id="all-functions">All functions<a class="anchor" aria-label="anchor" href="#all-functions"></a></h2>
 
-      <div class="section-desc"><p>Load a pipeline config bundle (manifest) and materialize its data files</p></div>
+
 
       <dl></dl></div><div class="section level2">
 
@@ -46,10 +46,45 @@
 
       <dl><dt>
 
+          <code><a href="lnk_aggregate.html">lnk_aggregate()</a></code>
+
+        </dt>
+        <dd>Compute upstream habitat per crossing</dd>
+
+        <dt>
+
+          <code><a href="lnk_barrier_overrides.html">lnk_barrier_overrides()</a></code>
+
+        </dt>
+        <dd>Build barrier override list from evidence sources</dd>
+
+        <dt>
+
           <code><a href="lnk_config.html">lnk_config()</a></code>
 
         </dt>
         <dd>Load a Pipeline Config Bundle (Manifest)</dd>
+
+        <dt>
+
+          <code><a href="lnk_config_verify.html">lnk_config_verify()</a></code>
+
+        </dt>
+        <dd>Verify Config Bundle File Checksums and Shape</dd>
+
+        <dt>
+
+          <code><a href="lnk_db_conn.html">lnk_db_conn()</a></code>
+
+        </dt>
+        <dd>Connect to FWA PostgreSQL database</dd>
+
+        <dt>
+
+          <code><a href="lnk_load.html">lnk_load()</a></code>
+
+        </dt>
+        <dd>Load override CSVs into a database table</dd>
 
         <dt>
 
@@ -60,44 +95,19 @@
 
         <dt>
 
-          <code><a href="lnk_config_verify.html">lnk_config_verify()</a></code>
+          <code><a href="lnk_match.html">lnk_match()</a></code>
 
         </dt>
-        <dd>Verify Config Bundle File Checksums and Shape</dd>
-      </dl></div><div class="section level2">
-      <h2 id="run-stamps">Run stamps<a class="anchor" aria-label="anchor" href="#run-stamps"></a></h2>
-
-      <div class="section-desc"><p>Capture provenance + software versions + DB snapshots for run-to-run drift attribution</p></div>
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="lnk_stamp.html">lnk_stamp()</a></code>
-
-        </dt>
-        <dd>Capture a Pipeline Run Stamp</dd>
+        <dd>Match crossing records across data systems</dd>
 
         <dt>
 
-          <code><a href="lnk_stamp_finish.html">lnk_stamp_finish()</a></code>
+          <code><a href="lnk_override.html">lnk_override()</a></code>
 
         </dt>
-        <dd>Finalize an in-progress run stamp</dd>
-      </dl></div><div class="section level2">
-      <h2 id="pipeline-phases">Pipeline phases<a class="anchor" aria-label="anchor" href="#pipeline-phases"></a></h2>
+        <dd>Validate and apply overrides to a table</dd>
 
-      <div class="section-desc"><p>Composable per-AOI habitat classification building blocks. Call in order for a full run.</p></div>
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
+        <dt>
 
           <code><a href="lnk_pipeline_break.html">lnk_pipeline_break()</a></code>
 
@@ -145,169 +155,50 @@
 
         </dt>
         <dd>Resolve the Species Set for an AOI</dd>
-      </dl></div><div class="section level2">
-      <h2 id="thresholds">Thresholds<a class="anchor" aria-label="anchor" href="#thresholds"></a></h2>
 
-      <div class="section-desc"><p>Configurable scoring defaults</p></div>
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="lnk_thresholds.html">lnk_thresholds()</a></code>
-
-        </dt>
-        <dd>Load configurable severity scoring thresholds</dd>
-      </dl></div><div class="section level2">
-      <h2 id="database">Database<a class="anchor" aria-label="anchor" href="#database"></a></h2>
-
-      <div class="section-desc"><p>Connection and utilities</p></div>
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="lnk_db_conn.html">lnk_db_conn()</a></code>
-
-        </dt>
-        <dd>Connect to FWA PostgreSQL database</dd>
-      </dl></div><div class="section level2">
-      <h2 id="loading">Loading<a class="anchor" aria-label="anchor" href="#loading"></a></h2>
-
-      <div class="section-desc"><p>Load and validate CSV data into database</p></div>
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="lnk_load.html">lnk_load()</a></code>
-
-        </dt>
-        <dd>Load override CSVs into a database table</dd>
-      </dl></div><div class="section level2">
-      <h2 id="overrides">Overrides<a class="anchor" aria-label="anchor" href="#overrides"></a></h2>
-
-      <div class="section-desc"><p>Validate and apply correction data</p></div>
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="lnk_override.html">lnk_override()</a></code>
-
-        </dt>
-        <dd>Validate and apply overrides to a table</dd>
-      </dl></div><div class="section level2">
-      <h2 id="barrier-overrides">Barrier Overrides<a class="anchor" aria-label="anchor" href="#barrier-overrides"></a></h2>
-
-      <div class="section-desc"><p>Build species-specific barrier skip lists from observations and habitat confirmations</p></div>
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="lnk_barrier_overrides.html">lnk_barrier_overrides()</a></code>
-
-        </dt>
-        <dd>Build barrier override list from evidence sources</dd>
-      </dl></div><div class="section level2">
-      <h2 id="rules">Rules<a class="anchor" aria-label="anchor" href="#rules"></a></h2>
-
-      <div class="section-desc"><p>Build habitat rules YAML from dimensions CSV</p></div>
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
+        <dt>
 
           <code><a href="lnk_rules_build.html">lnk_rules_build()</a></code>
 
         </dt>
         <dd>Build habitat eligibility rules YAML from dimensions CSV</dd>
-      </dl></div><div class="section level2">
-      <h2 id="matching">Matching<a class="anchor" aria-label="anchor" href="#matching"></a></h2>
 
-      <div class="section-desc"><p>Link crossing records across data systems</p></div>
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="lnk_match.html">lnk_match()</a></code>
-
-        </dt>
-        <dd>Match crossing records across data systems</dd>
-      </dl></div><div class="section level2">
-      <h2 id="scoring">Scoring<a class="anchor" aria-label="anchor" href="#scoring"></a></h2>
-
-      <div class="section-desc"><p>Severity classification and custom scoring</p></div>
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
+        <dt>
 
           <code><a href="lnk_score.html">lnk_score()</a></code>
 
         </dt>
         <dd>Score crossings</dd>
-      </dl></div><div class="section level2">
-      <h2 id="bridge">Bridge<a class="anchor" aria-label="anchor" href="#bridge"></a></h2>
 
-      <div class="section-desc"><p>Produce fresh-compatible break source tables</p></div>
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
+        <dt>
 
           <code><a href="lnk_source.html">lnk_source()</a></code>
 
         </dt>
         <dd>Produce a fresh-compatible break source list</dd>
-      </dl></div><div class="section level2">
-      <h2 id="habitat">Habitat<a class="anchor" aria-label="anchor" href="#habitat"></a></h2>
 
-      <div class="section-desc"><p>Per-crossing upstream habitat rollup</p></div>
+        <dt>
 
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="lnk_aggregate.html">lnk_aggregate()</a></code>
+          <code><a href="lnk_stamp.html">lnk_stamp()</a></code>
 
         </dt>
-        <dd>Compute upstream habitat per crossing</dd>
+        <dd>Capture a Pipeline Run Stamp</dd>
+
+        <dt>
+
+          <code><a href="lnk_stamp_finish.html">lnk_stamp_finish()</a></code>
+
+        </dt>
+        <dd>Finalize an in-progress run stamp</dd>
+
+        <dt>
+
+          <code><a href="lnk_thresholds.html">lnk_thresholds()</a></code>
+
+        </dt>
+        <dd>Load configurable severity scoring thresholds</dd>
       </dl></div>
-  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
-    </nav></aside></div>
+  </main></div>
 
 
     <footer><div class="pkgdown-footer-left">
