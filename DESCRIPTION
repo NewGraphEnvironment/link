@@ -1,6 +1,6 @@
 Package: link
 Title: Habitat and Connectivity Interpretation for Stream Networks
-Version: 0.18.0
+Version: 0.18.1
 Authors@R: c(
     person("Allan", "Irvine", , "airvine@newgraphenvironment.com",
            role = c("aut", "cre"),

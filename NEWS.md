@@ -1,3 +1,17 @@
+# link 0.18.1
+
+Closes [#78](https://github.com/NewGraphEnvironment/link/issues/78). Adds attribution for redistributed upstream data and refreshes the package Title + Description to reflect the package's current scope.
+
+- `LICENSE-bcfishpass` at root — verbatim copy of upstream `smnorris/bcfishpass` LICENSE governing the redistributed override CSVs
+- `NOTICE.md` at root — source/license table, names redistributed files
+- `inst/extdata/configs/{bcfishpass,default}/overrides/README.md` — pointer files reachable via `system.file()`
+- `README.md` "Acknowledgements" section above License
+- `Authors@R` — Simon Norris added as `[ctb]`
+- `Title` — `Habitat and Connectivity Interpretation for Stream Networks` (was the v0.6-era `Crossing Connectivity Interpretation`)
+- `Description` — refactored to mirror the README's "fresh answers what the habitat is, link answers what the features mean for the network" framing; names the three habitat axes (intrinsic potential, accessibility under connectivity, per-feature rollups)
+
+CITATION file and mirror to NewGraphEnvironment/crate (which also ships bcfishpass fixtures via crt_ingest examples) deferred — to be filed as their own work.
+
 # link 0.18.0
 
 Closes [#65](https://github.com/NewGraphEnvironment/link/issues/65). Decompose the config bundle into a manifest layer and a data-ingest layer, and route registered files through [crate](https://github.com/NewGraphEnvironment/crate) for source-agnostic canonicalization.
