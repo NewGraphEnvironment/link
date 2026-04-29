@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.17.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.18.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -41,7 +41,7 @@
 <p>Crossing connectivity interpretation for fish passage. The domain layer between raw crossing data and fresh’s generic network engine — scoring, overrides, and prioritization.</p>
 <div class="section level2">
 <h2 id="repository-context">Repository Context<a class="anchor" aria-label="anchor" href="#repository-context"></a></h2>
-<p><strong>Repository:</strong> NewGraphEnvironment/link <strong>Primary Language:</strong> R <strong>Prefix:</strong> <code>lnk_</code> <strong>Branch:</strong> <code>main</code> (v0.17.0 as of 2026-04-28)</p>
+<p><strong>Repository:</strong> NewGraphEnvironment/link <strong>Primary Language:</strong> R <strong>Prefix:</strong> <code>lnk_</code> <strong>Branch:</strong> <code>main</code> (v0.18.0 as of 2026-04-29)</p>
 </div>
 <div class="section level2">
 <h2 id="architecture">Architecture<a class="anchor" aria-label="anchor" href="#architecture"></a></h2>
@@ -111,7 +111,9 @@ bcdata (PSCIS assessments)   ─┘</code></pre>
 <li>
 <code><a href="reference/lnk_db_conn.html">lnk_db_conn()</a></code> — PostgreSQL connection factory. <code>PG_*_SHARE</code> then <code>PG*</code> env vars.</li>
 <li>
-<code>lnk_config(name_or_path)</code> — load a config bundle (rules YAML, dimensions CSV, parameters_fresh, overrides, pipeline knobs) as one list object. Ships with <code>"bcfishpass"</code> variant; custom variants via <code>inst/extdata/configs/&lt;name&gt;/config.yaml</code> manifest. Config manifest is the declarative contract for which capabilities a pipeline variant activates (override keys, habitat classification, pipeline knobs).</li>
+<code>lnk_config(name_or_path)</code> — load a config <strong>manifest</strong>: paths (<code>cfg$rules</code>, <code>cfg$dimensions</code>), file declarations (<code>cfg$files</code>), pipeline knobs (<code>cfg$pipeline</code>), provenance metadata. <strong>Manifest-only — no parsed CSVs.</strong> Cheap to call. Configs may declare <code>extends:</code> to inherit from another config. Ships with <code>"bcfishpass"</code> and <code>"default"</code> variants under <code>inst/extdata/configs/&lt;name&gt;/</code>.</li>
+<li>
+<code>lnk_load_overrides(cfg)</code> — materialize the data files declared in <code>cfg$files</code>. Returns named list of canonical-shape tibbles. Entries with <code>source</code> + <code>canonical_schema</code> dispatch through <code><a href="https://newgraphenvironment.github.io/crate/reference/crt_ingest.html" class="external-link">crate::crt_ingest()</a></code>; others fall through to local reads dispatched on path extension. Adding a new source family is a config edit + crate registration — no link R code change.</li>
 </ul></div>
 <div class="section level3">
 <h3 id="override-family-load--validate--apply">Override family: load → validate → apply<a class="anchor" aria-label="anchor" href="#override-family-load--validate--apply"></a></h3>
@@ -142,7 +144,7 @@ bcdata (PSCIS assessments)   ─┘</code></pre>
 </ul></div>
 <div class="section level3">
 <h3 id="pipeline-helpers">Pipeline helpers<a class="anchor" aria-label="anchor" href="#pipeline-helpers"></a></h3>
-<p>Six-phase bcfishpass-reproducing pipeline, driven by <code><a href="reference/lnk_config.html">lnk_config()</a></code>: - <code>lnk_pipeline_setup(conn, schema, overwrite)</code> — create per-run working schema. - <code>lnk_pipeline_load(conn, aoi, cfg, schema)</code> — crossings + modelled fixes + PSCIS status overrides. - <code>lnk_pipeline_prepare(conn, aoi, cfg, schema)</code> — falls, definite + control, habitat confirms, gradient barriers, <code>natural_barriers</code>, barrier overrides, per-model minimal reduction, base segments. Uses manifest-key gating on <code>cfg$overrides$barriers_definite_control</code> and <code>cfg$habitat_classification</code> (no DB probes). - <code>lnk_pipeline_break(conn, aoi, cfg, schema)</code> — sequential <code>frs_break_apply</code> in config-defined order: observations → gradient minimal → <strong>barriers_definite (separate break source)</strong> → habitat endpoints → crossings. - <code>lnk_pipeline_classify(conn, aoi, cfg, schema)</code> — assembles <code>fresh.streams_breaks</code> (gradient FULL + falls + <strong>barriers_definite</strong> + crossings, WSG-filtered) and runs <code>frs_habitat_classify()</code>. <code>barriers_definite</code> enters here directly because bcfishpass appends user-definite post-filter (not via observation override). - <code>lnk_pipeline_connect(conn, aoi, cfg, schema)</code> — per-species cluster + connected_waterbody. - <code>lnk_pipeline_species(cfg, aoi)</code> — canonical helper for “species this config classifies in this AOI” (intersects <code>cfg$parameters_fresh</code> with <code>cfg$wsg_species</code> presence).</p>
+<p>Six-phase bcfishpass-reproducing pipeline, driven by <code><a href="reference/lnk_config.html">lnk_config()</a></code> + <code><a href="reference/lnk_load_overrides.html">lnk_load_overrides()</a></code>. Every phase that reads a data table takes both <code>cfg</code> (manifest) and <code>loaded</code> (the named list from <code><a href="reference/lnk_load_overrides.html">lnk_load_overrides()</a></code>). Callers materialize once and thread <code>loaded</code> through. - <code>lnk_pipeline_setup(conn, schema, overwrite)</code> — create per-run working schema. - <code>lnk_pipeline_load(conn, aoi, cfg, loaded, schema)</code> — crossings + modelled fixes + PSCIS status overrides. Reads <code>loaded$user_modelled_crossing_fixes</code>, <code>loaded$user_pscis_barrier_status</code>, <code>loaded$user_crossings_misc</code>. - <code>lnk_pipeline_prepare(conn, aoi, cfg, loaded, schema)</code> — falls, definite + control, habitat confirms, gradient barriers, <code>natural_barriers</code>, barrier overrides, per-model minimal reduction, base segments. Manifest-key gating via <code>loaded$user_barriers_definite_control</code> and <code>loaded$user_habitat_classification</code> (no DB probes). - <code>lnk_pipeline_break(conn, aoi, cfg, loaded, schema)</code> — sequential <code>frs_break_apply</code> in config-defined order: observations → gradient minimal → <strong>barriers_definite (separate break source)</strong> → habitat endpoints → crossings. - <code>lnk_pipeline_classify(conn, aoi, cfg, loaded, schema)</code> — assembles <code>fresh.streams_breaks</code> (gradient FULL + falls + <strong>barriers_definite</strong> + crossings, WSG-filtered) and runs <code>frs_habitat_classify()</code>. <code>barriers_definite</code> enters here directly because bcfishpass appends user-definite post-filter (not via observation override). - <code>lnk_pipeline_connect(conn, aoi, cfg, loaded, schema)</code> — per-species cluster + connected_waterbody. - <code>lnk_pipeline_species(cfg, loaded, aoi)</code> — canonical helper for “species this config classifies in this AOI” (intersects <code>cfg$species</code> with <code>loaded$wsg_species_presence</code> presence; falls back to <code>loaded$parameters_fresh$species_code</code> when <code>cfg$species</code> is missing).</p>
 </div>
 <div class="section level3">
 <h3 id="bridge-to-fresh">Bridge to fresh<a class="anchor" aria-label="anchor" href="#bridge-to-fresh"></a></h3>
@@ -244,11 +246,15 @@ bcdata (PSCIS assessments)   ─┘</code></pre>
 <li>#24 — lnk_stamp (model params for report appendix)</li>
 <li>#29 — SK spawning cluster divergence (blocked on fresh#133)</li>
 <li>#40 — Config provenance / run stamps (tracks input versions)</li>
-<li>#45 — Gradient classes cleanup (derive from <code>cfg$parameters_fresh$access_gradient_max</code>)</li>
+<li>#45 — Gradient classes cleanup (derive from <code>loaded$parameters_fresh$access_gradient_max</code>)</li>
 <li>#75 — <code>dimensions_columns.csv</code> as source-of-truth: auto-gen README + <code><a href="reference/lnk_rules_build.html">lnk_rules_build()</a></code> validation (CSV seeded in v0.17.0)</li>
 </ul></div>
 <div class="section level2">
 <h2 id="recently-closed">Recently closed<a class="anchor" aria-label="anchor" href="#recently-closed"></a></h2>
+<ul><li>#65 — <code>lnk_load_overrides(config)</code> + manifest/data split → v0.18.0. Decomposed <code><a href="reference/lnk_config.html">lnk_config()</a></code> into manifest-only loader and new <code><a href="reference/lnk_load_overrides.html">lnk_load_overrides()</a></code> ingest with crate dispatch. Single PR, single bump. Config schema flattened into one <code>files:</code> map keyed by filename stem; <code>rules:</code> and <code>dimensions:</code> paths moved top-level (no format suffix). Pipeline phases take <code>loaded</code> alongside <code>cfg</code>. Bit-identical rollup vs v0.17.0 baseline.</li>
+</ul></div>
+<div class="section level2">
+<h2 id="older-closed">Older closed<a class="anchor" aria-label="anchor" href="#older-closed"></a></h2>
 <ul><li>#69 — Dimensions-driven <code>in_waterbody</code> + <code>area_only</code> emission with proof artifact → PRs #71 (phase 1, v0.14.0), #72 (phase 2, v0.15.0), #73 (phase 3 + emit-fix, v0.16.0). bcfishpass-bundle BABL parity: 42/42 within ±5%, 35/42 within ±2%, median 1.1%, max 5.0%.</li>
 <li>#68 — Vignette ship → superseded by #74 (v0.17.0); ships <code>vignettes/habitat-bcfishpass.Rmd</code> with per-segment popups, fullscreen, dimensions seed dictionary.</li>
 <li>#23 — CH spawning stream order exception QA — closed as not-a-bug (premise was a misread of bcfishpass spawning bypass: it uses <code>waterbody_key IS NOT NULL</code>, NOT <code>stream_order_parent</code>. Stream-order bypass exists in CH <strong>rearing</strong> only, tracked in fresh#158).</li>

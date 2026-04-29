@@ -15,6 +15,7 @@ lnk_pipeline_break(
   conn,
   aoi,
   cfg,
+  loaded,
   schema,
   observations = "bcfishobs.observations"
 )
@@ -37,6 +38,12 @@ lnk_pipeline_break(
 
   An `lnk_config` object from
   [`lnk_config()`](https://newgraphenvironment.github.io/link/reference/lnk_config.md).
+
+- loaded:
+
+  Named list of tibbles from
+  [`lnk_load_overrides()`](https://newgraphenvironment.github.io/link/reference/lnk_load_overrides.md).
+  Carries `observation_exclusions` and `wsg_species_presence`.
 
 - schema:
 
@@ -86,14 +93,15 @@ Other pipeline:
 
 ``` r
 if (FALSE) { # \dontrun{
-conn <- lnk_db_conn()
-cfg  <- lnk_config("bcfishpass")
+conn   <- lnk_db_conn()
+cfg    <- lnk_config("bcfishpass")
+loaded <- lnk_load_overrides(cfg)
 schema <- "working_bulk"
 
 lnk_pipeline_setup(conn, schema)
-lnk_pipeline_load(conn, "BULK", cfg, schema)
-lnk_pipeline_prepare(conn, "BULK", cfg, schema)
-lnk_pipeline_break(conn, "BULK", cfg, schema)
+lnk_pipeline_load(conn, "BULK", cfg, loaded, schema)
+lnk_pipeline_prepare(conn, "BULK", cfg, loaded, schema)
+lnk_pipeline_break(conn, "BULK", cfg, loaded, schema)
 
 DBI::dbGetQuery(conn,
   "SELECT count(*) FROM fresh.streams")

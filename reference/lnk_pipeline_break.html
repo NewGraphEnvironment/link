@@ -17,7 +17,7 @@ reassigned so downstream rounds see contiguous integer IDs."><meta property="og:
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.17.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.18.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -61,6 +61,7 @@ reassigned so downstream rounds see contiguous integer IDs.</p>
 <span>  <span class="va">conn</span>,</span>
 <span>  <span class="va">aoi</span>,</span>
 <span>  <span class="va">cfg</span>,</span>
+<span>  <span class="va">loaded</span>,</span>
 <span>  <span class="va">schema</span>,</span>
 <span>  observations <span class="op">=</span> <span class="st">"bcfishobs.observations"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -81,6 +82,11 @@ spatial filters later).</p></dd>
 
 <dt id="arg-cfg">cfg<a class="anchor" aria-label="anchor" href="#arg-cfg"></a></dt>
 <dd><p>An <code>lnk_config</code> object from <code><a href="lnk_config.html">lnk_config()</a></code>.</p></dd>
+
+
+<dt id="arg-loaded">loaded<a class="anchor" aria-label="anchor" href="#arg-loaded"></a></dt>
+<dd><p>Named list of tibbles from <code><a href="lnk_load_overrides.html">lnk_load_overrides()</a></code>.
+Carries <code>observation_exclusions</code> and <code>wsg_species_presence</code>.</p></dd>
 
 
 <dt id="arg-schema">schema<a class="anchor" aria-label="anchor" href="#arg-schema"></a></dt>
@@ -125,14 +131,15 @@ each break source position, reassigns <code>id_segment</code></p></li>
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
-<span class="r-in"><span><span class="va">conn</span> <span class="op">&lt;-</span> <span class="fu"><a href="lnk_db_conn.html">lnk_db_conn</a></span><span class="op">(</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">cfg</span>  <span class="op">&lt;-</span> <span class="fu"><a href="lnk_config.html">lnk_config</a></span><span class="op">(</span><span class="st">"bcfishpass"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">conn</span>   <span class="op">&lt;-</span> <span class="fu"><a href="lnk_db_conn.html">lnk_db_conn</a></span><span class="op">(</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">cfg</span>    <span class="op">&lt;-</span> <span class="fu"><a href="lnk_config.html">lnk_config</a></span><span class="op">(</span><span class="st">"bcfishpass"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">loaded</span> <span class="op">&lt;-</span> <span class="fu"><a href="lnk_load_overrides.html">lnk_load_overrides</a></span><span class="op">(</span><span class="va">cfg</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">schema</span> <span class="op">&lt;-</span> <span class="st">"working_bulk"</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu"><a href="lnk_pipeline_setup.html">lnk_pipeline_setup</a></span><span class="op">(</span><span class="va">conn</span>, <span class="va">schema</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="lnk_pipeline_load.html">lnk_pipeline_load</a></span><span class="op">(</span><span class="va">conn</span>, <span class="st">"BULK"</span>, <span class="va">cfg</span>, <span class="va">schema</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="lnk_pipeline_prepare.html">lnk_pipeline_prepare</a></span><span class="op">(</span><span class="va">conn</span>, <span class="st">"BULK"</span>, <span class="va">cfg</span>, <span class="va">schema</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu">lnk_pipeline_break</span><span class="op">(</span><span class="va">conn</span>, <span class="st">"BULK"</span>, <span class="va">cfg</span>, <span class="va">schema</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="lnk_pipeline_load.html">lnk_pipeline_load</a></span><span class="op">(</span><span class="va">conn</span>, <span class="st">"BULK"</span>, <span class="va">cfg</span>, <span class="va">loaded</span>, <span class="va">schema</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="lnk_pipeline_prepare.html">lnk_pipeline_prepare</a></span><span class="op">(</span><span class="va">conn</span>, <span class="st">"BULK"</span>, <span class="va">cfg</span>, <span class="va">loaded</span>, <span class="va">schema</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">lnk_pipeline_break</span><span class="op">(</span><span class="va">conn</span>, <span class="st">"BULK"</span>, <span class="va">cfg</span>, <span class="va">loaded</span>, <span class="va">schema</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu">DBI</span><span class="fu">::</span><span class="fu"><a href="https://dbi.r-dbi.org/reference/dbGetQuery.html" class="external-link">dbGetQuery</a></span><span class="op">(</span><span class="va">conn</span>,</span></span>
 <span class="r-in"><span>  <span class="st">"SELECT count(*) FROM fresh.streams"</span><span class="op">)</span></span></span>

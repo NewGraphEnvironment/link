@@ -3,11 +3,11 @@
 the connectivity logic that frs_habitat() executes internally —
 rearing-spawning clustering via fresh::frs_cluster() and
 connected-waterbody rules via fresh:::.frs_connected_waterbody()
-— configured by per-species flags in cfg$parameters_fresh:"><meta property="og:description" content="Sixth and final phase of the habitat classification pipeline. Runs
+— configured by per-species flags in loaded$parameters_fresh:"><meta property="og:description" content="Sixth and final phase of the habitat classification pipeline. Runs
 the connectivity logic that frs_habitat() executes internally —
 rearing-spawning clustering via fresh::frs_cluster() and
 connected-waterbody rules via fresh:::.frs_connected_waterbody()
-— configured by per-species flags in cfg$parameters_fresh:"><meta property="og:image" content="https://newgraphenvironment.github.io/link/logo.png"></head><body>
+— configured by per-species flags in loaded$parameters_fresh:"><meta property="og:image" content="https://newgraphenvironment.github.io/link/logo.png"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -15,7 +15,7 @@ connected-waterbody rules via fresh:::.frs_connected_waterbody()
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.17.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.18.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -49,7 +49,7 @@ connected-waterbody rules via fresh:::.frs_connected_waterbody()
 the connectivity logic that <code>frs_habitat()</code> executes internally —
 rearing-spawning clustering via <code><a href="https://newgraphenvironment.github.io/fresh/reference/frs_cluster.html" class="external-link">fresh::frs_cluster()</a></code> and
 connected-waterbody rules via <code>fresh:::.frs_connected_waterbody()</code>
-— configured by per-species flags in <code>cfg$parameters_fresh</code>:</p>
+— configured by per-species flags in <code>loaded$parameters_fresh</code>:</p>
     </div>
 
     <div class="section level2">
@@ -58,6 +58,7 @@ connected-waterbody rules via <code>fresh:::.frs_connected_waterbody()</code>
 <span>  <span class="va">conn</span>,</span>
 <span>  <span class="va">aoi</span>,</span>
 <span>  <span class="va">cfg</span>,</span>
+<span>  <span class="va">loaded</span>,</span>
 <span>  <span class="va">schema</span>,</span>
 <span>  species <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  thresholds_csv <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"parameters_habitat_thresholds.csv"</span>, package <span class="op">=</span></span>
@@ -82,6 +83,11 @@ already AOI-scoped).</p></dd>
 
 <dt id="arg-cfg">cfg<a class="anchor" aria-label="anchor" href="#arg-cfg"></a></dt>
 <dd><p>An <code>lnk_config</code> object from <code><a href="lnk_config.html">lnk_config()</a></code>.</p></dd>
+
+
+<dt id="arg-loaded">loaded<a class="anchor" aria-label="anchor" href="#arg-loaded"></a></dt>
+<dd><p>Named list of tibbles from <code><a href="lnk_load_overrides.html">lnk_load_overrides()</a></code>.
+Carries <code>parameters_fresh</code> and <code>wsg_species_presence</code>.</p></dd>
 
 
 <dt id="arg-schema">schema<a class="anchor" aria-label="anchor" href="#arg-schema"></a></dt>
@@ -136,16 +142,17 @@ internal name, so future renames in fresh affect one file here.</p>
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
-<span class="r-in"><span><span class="va">conn</span> <span class="op">&lt;-</span> <span class="fu"><a href="lnk_db_conn.html">lnk_db_conn</a></span><span class="op">(</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">cfg</span>  <span class="op">&lt;-</span> <span class="fu"><a href="lnk_config.html">lnk_config</a></span><span class="op">(</span><span class="st">"bcfishpass"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">conn</span>   <span class="op">&lt;-</span> <span class="fu"><a href="lnk_db_conn.html">lnk_db_conn</a></span><span class="op">(</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">cfg</span>    <span class="op">&lt;-</span> <span class="fu"><a href="lnk_config.html">lnk_config</a></span><span class="op">(</span><span class="st">"bcfishpass"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">loaded</span> <span class="op">&lt;-</span> <span class="fu"><a href="lnk_load_overrides.html">lnk_load_overrides</a></span><span class="op">(</span><span class="va">cfg</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">schema</span> <span class="op">&lt;-</span> <span class="st">"working_bulk"</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu"><a href="lnk_pipeline_setup.html">lnk_pipeline_setup</a></span><span class="op">(</span><span class="va">conn</span>, <span class="va">schema</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="lnk_pipeline_load.html">lnk_pipeline_load</a></span><span class="op">(</span><span class="va">conn</span>, <span class="st">"BULK"</span>, <span class="va">cfg</span>, <span class="va">schema</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="lnk_pipeline_prepare.html">lnk_pipeline_prepare</a></span><span class="op">(</span><span class="va">conn</span>, <span class="st">"BULK"</span>, <span class="va">cfg</span>, <span class="va">schema</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="lnk_pipeline_break.html">lnk_pipeline_break</a></span><span class="op">(</span><span class="va">conn</span>, <span class="st">"BULK"</span>, <span class="va">cfg</span>, <span class="va">schema</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="lnk_pipeline_classify.html">lnk_pipeline_classify</a></span><span class="op">(</span><span class="va">conn</span>, <span class="st">"BULK"</span>, <span class="va">cfg</span>, <span class="va">schema</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu">lnk_pipeline_connect</span><span class="op">(</span><span class="va">conn</span>, <span class="st">"BULK"</span>, <span class="va">cfg</span>, <span class="va">schema</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="lnk_pipeline_load.html">lnk_pipeline_load</a></span><span class="op">(</span><span class="va">conn</span>, <span class="st">"BULK"</span>, <span class="va">cfg</span>, <span class="va">loaded</span>, <span class="va">schema</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="lnk_pipeline_prepare.html">lnk_pipeline_prepare</a></span><span class="op">(</span><span class="va">conn</span>, <span class="st">"BULK"</span>, <span class="va">cfg</span>, <span class="va">loaded</span>, <span class="va">schema</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="lnk_pipeline_break.html">lnk_pipeline_break</a></span><span class="op">(</span><span class="va">conn</span>, <span class="st">"BULK"</span>, <span class="va">cfg</span>, <span class="va">loaded</span>, <span class="va">schema</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="lnk_pipeline_classify.html">lnk_pipeline_classify</a></span><span class="op">(</span><span class="va">conn</span>, <span class="st">"BULK"</span>, <span class="va">cfg</span>, <span class="va">loaded</span>, <span class="va">schema</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">lnk_pipeline_connect</span><span class="op">(</span><span class="va">conn</span>, <span class="st">"BULK"</span>, <span class="va">cfg</span>, <span class="va">loaded</span>, <span class="va">schema</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu">DBI</span><span class="fu">::</span><span class="fu"><a href="https://dbi.r-dbi.org/reference/dbDisconnect.html" class="external-link">dbDisconnect</a></span><span class="op">(</span><span class="va">conn</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>

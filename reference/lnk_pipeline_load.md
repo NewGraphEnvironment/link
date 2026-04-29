@@ -7,7 +7,7 @@ crossing-level override types from the config bundle:
 ## Usage
 
 ``` r
-lnk_pipeline_load(conn, aoi, cfg, schema)
+lnk_pipeline_load(conn, aoi, cfg, loaded, schema)
 ```
 
 ## Arguments
@@ -30,6 +30,14 @@ lnk_pipeline_load(conn, aoi, cfg, schema)
 
   An `lnk_config` object from
   [`lnk_config()`](https://newgraphenvironment.github.io/link/reference/lnk_config.md).
+
+- loaded:
+
+  Named list of tibbles from
+  [`lnk_load_overrides()`](https://newgraphenvironment.github.io/link/reference/lnk_load_overrides.md).
+  Carries the override CSVs (`user_crossings_misc`,
+  `user_modelled_crossing_fixes`, `user_pscis_barrier_status`) this
+  phase needs.
 
 - schema:
 
@@ -83,12 +91,14 @@ Other pipeline:
 
 ``` r
 if (FALSE) { # \dontrun{
-conn <- lnk_db_conn()
-cfg  <- lnk_config("bcfishpass")
+conn   <- lnk_db_conn()
+cfg    <- lnk_config("bcfishpass")
+loaded <- lnk_load_overrides(cfg)
 
 schema <- "working_bulk"
 lnk_pipeline_setup(conn, schema)
-lnk_pipeline_load(conn, aoi = "BULK", cfg = cfg, schema = schema)
+lnk_pipeline_load(conn, aoi = "BULK", cfg = cfg, loaded = loaded,
+                  schema = schema)
 
 # Inspect the result
 DBI::dbGetQuery(conn, sprintf(

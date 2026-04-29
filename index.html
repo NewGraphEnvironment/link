@@ -5,14 +5,14 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Crossing Connectivity Interpretation • link</title>
+<title>Habitat and Connectivity Interpretation for Stream Networks • link</title>
 <script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Crossing Connectivity Interpretation">
-<meta name="description" content="Connectivity-system-agnostic crossing interpretation layer. Scores, overrides, and prioritizes crossings for fish passage using configurable severity thresholds and multi-source data integration. Produces scored crossing tables and break source specs for network segmentation engines. Crossings are features on the network — some break geometry (confirmed barriers), others index for downstream relationship queries (unassessed crossings, observations).">
-<meta property="og:description" content="Connectivity-system-agnostic crossing interpretation layer. Scores, overrides, and prioritizes crossings for fish passage using configurable severity thresholds and multi-source data integration. Produces scored crossing tables and break source specs for network segmentation engines. Crossings are features on the network — some break geometry (confirmed barriers), others index for downstream relationship queries (unassessed crossings, observations).">
+<script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Habitat and Connectivity Interpretation for Stream Networks">
+<meta name="description" content="Domain interpretation layer over stream network models. Connects point features — crossings, observations, barriers, habitat confirmations — to the network and interprets what they mean for habitat: intrinsic potential, accessibility under network connectivity, per-feature rollups. Pairs with fresh, the network modelling engine; fresh answers what the habitat is, link answers what the features mean for the network. Pipelines are driven by manifest config bundles so methodology choices are data, not code, and reproducible across runs.">
+<meta property="og:description" content="Domain interpretation layer over stream network models. Connects point features — crossings, observations, barriers, habitat confirmations — to the network and interprets what they mean for habitat: intrinsic potential, accessibility under network connectivity, per-feature rollups. Pairs with fresh, the network modelling engine; fresh answers what the habitat is, link answers what the features mean for the network. Pipelines are driven by manifest config bundles so methodology choices are data, not code, and reproducible across runs.">
 <meta property="og:image" content="https://newgraphenvironment.github.io/link/logo.png">
 </head>
 <body>
@@ -23,7 +23,7 @@
 
     <a class="navbar-brand me-2" href="index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.17.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.18.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -209,9 +209,52 @@ habitat confirms -/</code></pre>
 <p>fresh models habitat on the network. link connects features to the network and interprets them. They change for different reasons and can each be used independently.</p>
 </div>
 <div class="section level2">
+<h2 id="acknowledgements">Acknowledgements<a class="anchor" aria-label="anchor" href="#acknowledgements"></a>
+</h2>
+<p><code>link</code> builds on upstream work by <a href="https://github.com/smnorris" class="external-link">smnorris</a>:</p>
+<table class="table">
+<colgroup>
+<col width="33%">
+<col width="33%">
+<col width="33%">
+</colgroup>
+<thead><tr class="header">
+<th>Source</th>
+<th>License</th>
+<th>How <code>link</code> uses it</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td><a href="https://github.com/smnorris/fwapg" class="external-link">smnorris/fwapg</a></td>
+<td>MIT</td>
+<td>Runtime SQL access to BC’s Freshwater Atlas</td>
+</tr>
+<tr class="even">
+<td><a href="https://github.com/smnorris/bcfishobs" class="external-link">smnorris/bcfishobs</a></td>
+<td>Apache 2.0</td>
+<td>Runtime read of fish observation data</td>
+</tr>
+<tr class="odd">
+<td>
+<a href="https://github.com/smnorris/bcfishpass" class="external-link">smnorris/bcfishpass</a> (software)</td>
+<td>Apache 2.0</td>
+<td>Reference for habitat-classification parity</td>
+</tr>
+<tr class="even">
+<td>
+<a href="https://github.com/smnorris/bcfishpass" class="external-link">smnorris/bcfishpass</a> (data)</td>
+<td>ODbL</td>
+<td>Redistributed override CSVs in <code>inst/extdata/configs/*/overrides/</code>
+</td>
+</tr>
+</tbody>
+</table>
+<p>See <a href="NOTICE.html"><code>NOTICE.md</code></a> for the full attribution and <a href="LICENSE-bcfishpass"><code>LICENSE-bcfishpass</code></a> for the verbatim upstream license governing the redistributed data.</p>
+</div>
+<div class="section level2">
 <h2 id="license">License<a class="anchor" aria-label="anchor" href="#license"></a>
 </h2>
-<p>MIT</p>
+<p>MIT (see <a href="LICENSE"><code>LICENSE</code></a>). Applies to <code>link</code>’s own code; redistributed data carries its own license — see Acknowledgements above and <code>NOTICE.md</code>.</p>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="links">
@@ -243,6 +286,7 @@ habitat confirms -/</code></pre>
 <h2 data-toc-skip>Developers</h2>
 <ul class="list-unstyled">
 <li>Allan Irvine <br><small class="roles"> Author, maintainer </small> <a href="https://orcid.org/0009-0003-7697-6064" target="orcid.widget" aria-label="ORCID" class="external-link"><span class="fab fa-orcid orcid" aria-hidden="true"></span></a>  </li>
+<li><a href="authors.html">More about authors...</a></li>
 </ul>
 </div>
 

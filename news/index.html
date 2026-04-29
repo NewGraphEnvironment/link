@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.17.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.18.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,60 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.18.1" id="link-0181">link 0.18.1<a class="anchor" aria-label="anchor" href="#link-0181"></a></h2>
+<p>Closes <a href="https://github.com/NewGraphEnvironment/link/issues/78" class="external-link">#78</a>. Adds attribution for redistributed upstream data and refreshes the package Title + Description to reflect the package’s current scope.</p>
+<ul><li>
+<code>LICENSE-bcfishpass</code> at root — verbatim copy of upstream <code>smnorris/bcfishpass</code> LICENSE governing the redistributed override CSVs</li>
+<li>
+<code>NOTICE.md</code> at root — source/license table, names redistributed files</li>
+<li>
+<code>inst/extdata/configs/{bcfishpass,default}/overrides/README.md</code> — pointer files reachable via <code><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file()</a></code>
+</li>
+<li>
+<code>README.md</code> “Acknowledgements” section above License</li>
+<li>
+<code>Authors@R</code> — Simon Norris added as <code>[ctb]</code>
+</li>
+<li>
+<code>Title</code> — <code>Habitat and Connectivity Interpretation for Stream Networks</code> (was the v0.6-era <code>Crossing Connectivity Interpretation</code>)</li>
+<li>
+<code>Description</code> — refactored to mirror the README’s “fresh answers what the habitat is, link answers what the features mean for the network” framing; names the three habitat axes (intrinsic potential, accessibility under connectivity, per-feature rollups)</li>
+</ul><p>CITATION file and mirror to NewGraphEnvironment/crate (which also ships bcfishpass fixtures via crt_ingest examples) deferred — to be filed as their own work.</p>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.18.0" id="link-0180">link 0.18.0<a class="anchor" aria-label="anchor" href="#link-0180"></a></h2>
+<p>Closes <a href="https://github.com/NewGraphEnvironment/link/issues/65" class="external-link">#65</a>. Decompose the config bundle into a manifest layer and a data-ingest layer, and route registered files through <a href="https://github.com/NewGraphEnvironment/crate" class="external-link">crate</a> for source-agnostic canonicalization.</p>
+<p><strong><code><a href="../reference/lnk_config.html">lnk_config()</a></code> is now manifest-only.</strong> It reads <code>config.yaml</code> and returns paths, file declarations, pipeline knobs, and provenance — no parsed CSVs. Cheap to call. <code><a href="../reference/lnk_config_verify.html">lnk_config_verify()</a></code> and <code><a href="../reference/lnk_stamp.html">lnk_stamp()</a></code> no longer pay for CSV parsing they don’t need.</p>
+<p><strong>New: <code>lnk_load_overrides(cfg)</code></strong> materializes the data files declared in <code>cfg$files</code> and returns a named list of canonical-shape tibbles. Entries with <code>source</code> + <code>canonical_schema</code> declarations dispatch through <code><a href="https://newgraphenvironment.github.io/crate/reference/crt_ingest.html" class="external-link">crate::crt_ingest()</a></code> (currently <code>bcfp/user_habitat_classification</code>); others fall through to local reads dispatched on path extension. New source families plug in by config edit alone — no link R code change.</p>
+<p><strong>New <code>config.yaml</code> schema.</strong> Top-level <code>rules:</code> and <code>dimensions:</code> paths replace <code>files.rules_yaml</code> / <code>files.dimensions_csv</code> (format follows from the path’s extension, not the key name). The previous <code>files:</code> and <code>overrides:</code> maps merge into one flat <code>files:</code> map keyed by filename stem (e.g. <code>user_barriers_definite</code>, <code>pscis_modelledcrossings_streams_xref</code>). Each entry carries <code>path:</code> and optionally <code>source:</code> and <code>canonical_schema:</code>. Configs may declare <code>extends:</code> to inherit from another config; child entries override same-key parent entries.</p>
+<p><strong>Pipeline phase signatures gain <code>loaded</code>.</strong> Every <code>lnk_pipeline_*</code> phase that reads a data table now takes <code>cfg</code> and <code>loaded</code> together. Callers (the bundled targets pipeline, project scripts) call <code>lnk_load_overrides(cfg)</code> once and thread the result through phases. <code>cfg$overrides$X</code> and <code>cfg$habitat_classification</code> access points become <code>loaded$X</code>. See <code>data-raw/_targets.R</code> and <code>data-raw/compare_bcfishpass_wsg.R</code> for the pattern.</p>
+<p><strong>Verification.</strong> <code>tar_make()</code> on 5 WSGs × 2 configs reproduces the v0.17.0 baseline rollup bit-identically (sha256 <code>a82de9928809b9751213e08916c476b4ee3f99286bc9ea2dc53f9659eeb92097</code>). Refactor introduces no behaviour change.</p>
+<p><strong>Migration</strong></p>
+<table class="table"><colgroup><col width="50%"><col width="50%"></colgroup><thead><tr class="header"><th>Old</th>
+<th>New</th>
+</tr></thead><tbody><tr class="odd"><td><code>cfg$rules_yaml</code></td>
+<td><code>cfg$rules</code></td>
+</tr><tr class="even"><td><code>cfg$dimensions_csv</code></td>
+<td><code>cfg$dimensions</code></td>
+</tr><tr class="odd"><td>
+<code>cfg$parameters_fresh</code> (data frame)</td>
+<td><code>loaded$parameters_fresh</code></td>
+</tr><tr class="even"><td><code>cfg$habitat_classification</code></td>
+<td><code>loaded$user_habitat_classification</code></td>
+</tr><tr class="odd"><td><code>cfg$observation_exclusions</code></td>
+<td><code>loaded$observation_exclusions</code></td>
+</tr><tr class="even"><td><code>cfg$wsg_species</code></td>
+<td><code>loaded$wsg_species_presence</code></td>
+</tr><tr class="odd"><td><code>cfg$overrides$X</code></td>
+<td>
+<code>loaded$X</code> (e.g. <code>loaded$user_barriers_definite</code>)</td>
+</tr></tbody></table><p><strong>Out of scope (follow-up issues):</strong></p>
+<ul><li>crate schemas for the other 9 bcfp-sourced files (one issue per file as canonical-shape decisions concretize). Today they fall through to plain CSV read.</li>
+<li>
+<code>nge</code> / <code>local</code> source families (when project-experimental configs need them).</li>
+<li>Type-aware variant matching in crate (planned crate v0.1.x roadmap).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.17.0" id="link-0170">link 0.17.0<a class="anchor" aria-label="anchor" href="#link-0170"></a></h2>
 <p>Ship the <code>Modelling spawning and rearing habitat using bcfishpass defaults</code> vignette (<a href="https://github.com/NewGraphEnvironment/link/blob/main/vignettes/habitat-bcfishpass.Rmd" class="external-link"><code>vignettes/habitat-bcfishpass.Rmd</code></a>) on top of the post-phase-3 codebase. Regenerated bundled artifacts (<code>inst/extdata/vignette-data/{rollup, sub_ch, sub_ch_bcfp}.rds</code>) reflect the corrected emit semantics and tighter parity.</p>
@@ -125,7 +179,7 @@
 <code><a href="../reference/lnk_pipeline_classify.html">lnk_pipeline_classify()</a></code> now calls <code>frs_habitat_overlay()</code> with <code>species_col = "species_code"</code> + <code>habitat_types = c("spawning", "rearing")</code> instead of <code>format = "long"</code> + <code>long_value_col = "habitat_ind"</code>. Matches the shape bcfishpass’s <code>user_habitat_classification.csv</code> adopted on 2026-04-26 (row-per-(segment × species), per-habitat indicator columns). Three-line caller-side diff; no link API change.</li>
 <li>
 <code>Suggests: fresh (&gt;= 0.22.0)</code>. Coordinates with <a href="https://github.com/NewGraphEnvironment/fresh/issues/177" class="external-link">fresh#177</a>.</li>
-<li>Pipeline runs again. The vignette stays in <code>dev/</code> until link#64 (sync workflow shape fingerprint) and link#65 (<code>lnk_load_overrides()</code> via <code>crate::crt_ingest()</code>) land.</li>
+<li>Pipeline runs again. The vignette stays in <code>dev/</code> until link#64 (sync workflow shape fingerprint) and link#65 (<code><a href="../reference/lnk_load_overrides.html">lnk_load_overrides()</a></code> via <code><a href="https://newgraphenvironment.github.io/crate/reference/crt_ingest.html" class="external-link">crate::crt_ingest()</a></code>) land.</li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.11.2" id="link-0112">link 0.11.2<a class="anchor" aria-label="anchor" href="#link-0112"></a></h2>

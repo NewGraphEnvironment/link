@@ -5,7 +5,7 @@ connectivity logic that `frs_habitat()` executes internally —
 rearing-spawning clustering via
 [`fresh::frs_cluster()`](https://newgraphenvironment.github.io/fresh/reference/frs_cluster.html)
 and connected-waterbody rules via `fresh:::.frs_connected_waterbody()` —
-configured by per-species flags in `cfg$parameters_fresh`:
+configured by per-species flags in `loaded$parameters_fresh`:
 
 ## Usage
 
@@ -14,6 +14,7 @@ lnk_pipeline_connect(
   conn,
   aoi,
   cfg,
+  loaded,
   schema,
   species = NULL,
   thresholds_csv = system.file("extdata", "parameters_habitat_thresholds.csv", package =
@@ -39,6 +40,12 @@ lnk_pipeline_connect(
 
   An `lnk_config` object from
   [`lnk_config()`](https://newgraphenvironment.github.io/link/reference/lnk_config.md).
+
+- loaded:
+
+  Named list of tibbles from
+  [`lnk_load_overrides()`](https://newgraphenvironment.github.io/link/reference/lnk_load_overrides.md).
+  Carries `parameters_fresh` and `wsg_species_presence`.
 
 - schema:
 
@@ -95,16 +102,17 @@ Other pipeline:
 
 ``` r
 if (FALSE) { # \dontrun{
-conn <- lnk_db_conn()
-cfg  <- lnk_config("bcfishpass")
+conn   <- lnk_db_conn()
+cfg    <- lnk_config("bcfishpass")
+loaded <- lnk_load_overrides(cfg)
 schema <- "working_bulk"
 
 lnk_pipeline_setup(conn, schema)
-lnk_pipeline_load(conn, "BULK", cfg, schema)
-lnk_pipeline_prepare(conn, "BULK", cfg, schema)
-lnk_pipeline_break(conn, "BULK", cfg, schema)
-lnk_pipeline_classify(conn, "BULK", cfg, schema)
-lnk_pipeline_connect(conn, "BULK", cfg, schema)
+lnk_pipeline_load(conn, "BULK", cfg, loaded, schema)
+lnk_pipeline_prepare(conn, "BULK", cfg, loaded, schema)
+lnk_pipeline_break(conn, "BULK", cfg, loaded, schema)
+lnk_pipeline_classify(conn, "BULK", cfg, loaded, schema)
+lnk_pipeline_connect(conn, "BULK", cfg, loaded, schema)
 
 DBI::dbDisconnect(conn)
 } # }

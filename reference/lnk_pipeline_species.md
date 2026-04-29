@@ -13,7 +13,7 @@ for these species).
 ## Usage
 
 ``` r
-lnk_pipeline_species(cfg, aoi)
+lnk_pipeline_species(cfg, loaded, aoi)
 ```
 
 ## Arguments
@@ -23,10 +23,17 @@ lnk_pipeline_species(cfg, aoi)
   An `lnk_config` object from
   [`lnk_config()`](https://newgraphenvironment.github.io/link/reference/lnk_config.md).
 
+- loaded:
+
+  Named list of tibbles from
+  [`lnk_load_overrides()`](https://newgraphenvironment.github.io/link/reference/lnk_load_overrides.md).
+  Carries `parameters_fresh` and `wsg_species_presence`.
+
 - aoi:
 
   Character. AOI identifier — today a watershed group code (e.g.
-  `"BULK"`) matched against `cfg$wsg_species$watershed_group_code`.
+  `"BULK"`) matched against
+  `loaded$wsg_species_presence$watershed_group_code`.
 
 ## Value
 
@@ -41,11 +48,11 @@ The returned set is the intersection of:
   [`lnk_config()`](https://newgraphenvironment.github.io/link/reference/lnk_config.md)
   load time)
 
-- species flagged present for `aoi` in `cfg$wsg_species` — the wide-form
-  presence table where each species column (`bt`, `ch`, `cm`, ...) holds
-  `"t"` for present and `"f"` for absent
+- species flagged present for `aoi` in `loaded$wsg_species_presence` —
+  the wide-form presence table where each species column (`bt`, `ch`,
+  `cm`, ...) holds `"t"` for present and `"f"` for absent
 
-When `cfg$wsg_species` is not populated the function returns
+When `loaded$wsg_species_presence` is not populated the function returns
 `cfg$species` unfiltered. When the AOI is not found in the table the
 function returns `character(0)`.
 
@@ -62,9 +69,10 @@ Other pipeline:
 ## Examples
 
 ``` r
-cfg <- lnk_config("bcfishpass")
-lnk_pipeline_species(cfg, "BULK")
+cfg    <- lnk_config("bcfishpass")
+loaded <- lnk_load_overrides(cfg)
+lnk_pipeline_species(cfg, loaded, "BULK")
 #> [1] "BT" "CH" "CO" "PK" "SK" "ST"
-lnk_pipeline_species(cfg, "ADMS")
+lnk_pipeline_species(cfg, loaded, "ADMS")
 #> [1] "BT" "CH" "CO" "SK"
 ```

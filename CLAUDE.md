@@ -7,7 +7,7 @@ overrides, and prioritization.
 ## Repository Context
 
 **Repository:** NewGraphEnvironment/link **Primary Language:** R
-**Prefix:** `lnk_` **Branch:** `main` (v0.17.0 as of 2026-04-28)
+**Prefix:** `lnk_` **Branch:** `main` (v0.18.0 as of 2026-04-29)
 
 ## Architecture
 
@@ -57,12 +57,19 @@ conn <- lnk_db_conn()  # reads PG_DB_SHARE, PG_HOST_SHARE, etc.
   [`lnk_score()`](https://newgraphenvironment.github.io/link/reference/lnk_score.md).
 - [`lnk_db_conn()`](https://newgraphenvironment.github.io/link/reference/lnk_db_conn.md)
   — PostgreSQL connection factory. `PG_*_SHARE` then `PG*` env vars.
-- `lnk_config(name_or_path)` — load a config bundle (rules YAML,
-  dimensions CSV, parameters_fresh, overrides, pipeline knobs) as one
-  list object. Ships with `"bcfishpass"` variant; custom variants via
-  `inst/extdata/configs/<name>/config.yaml` manifest. Config manifest is
-  the declarative contract for which capabilities a pipeline variant
-  activates (override keys, habitat classification, pipeline knobs).
+- `lnk_config(name_or_path)` — load a config **manifest**: paths
+  (`cfg$rules`, `cfg$dimensions`), file declarations (`cfg$files`),
+  pipeline knobs (`cfg$pipeline`), provenance metadata. **Manifest-only
+  — no parsed CSVs.** Cheap to call. Configs may declare `extends:` to
+  inherit from another config. Ships with `"bcfishpass"` and `"default"`
+  variants under `inst/extdata/configs/<name>/`.
+- `lnk_load_overrides(cfg)` — materialize the data files declared in
+  `cfg$files`. Returns named list of canonical-shape tibbles. Entries
+  with `source` + `canonical_schema` dispatch through
+  [`crate::crt_ingest()`](https://newgraphenvironment.github.io/crate/reference/crt_ingest.html);
+  others fall through to local reads dispatched on path extension.
+  Adding a new source family is a config edit + crate registration — no
+  link R code change.
 
 ### Override family: load → validate → apply
 
@@ -112,28 +119,38 @@ conn <- lnk_db_conn()  # reads PG_DB_SHARE, PG_HOST_SHARE, etc.
 ### Pipeline helpers
 
 Six-phase bcfishpass-reproducing pipeline, driven by
-[`lnk_config()`](https://newgraphenvironment.github.io/link/reference/lnk_config.md): -
+[`lnk_config()`](https://newgraphenvironment.github.io/link/reference/lnk_config.md) +
+[`lnk_load_overrides()`](https://newgraphenvironment.github.io/link/reference/lnk_load_overrides.md).
+Every phase that reads a data table takes both `cfg` (manifest) and
+`loaded` (the named list from
+[`lnk_load_overrides()`](https://newgraphenvironment.github.io/link/reference/lnk_load_overrides.md)).
+Callers materialize once and thread `loaded` through. -
 `lnk_pipeline_setup(conn, schema, overwrite)` — create per-run working
-schema. - `lnk_pipeline_load(conn, aoi, cfg, schema)` — crossings +
-modelled fixes + PSCIS status overrides. -
-`lnk_pipeline_prepare(conn, aoi, cfg, schema)` — falls, definite +
-control, habitat confirms, gradient barriers, `natural_barriers`,
-barrier overrides, per-model minimal reduction, base segments. Uses
-manifest-key gating on `cfg$overrides$barriers_definite_control` and
-`cfg$habitat_classification` (no DB probes). -
-`lnk_pipeline_break(conn, aoi, cfg, schema)` — sequential
+schema. - `lnk_pipeline_load(conn, aoi, cfg, loaded, schema)` —
+crossings + modelled fixes + PSCIS status overrides. Reads
+`loaded$user_modelled_crossing_fixes`,
+`loaded$user_pscis_barrier_status`, `loaded$user_crossings_misc`. -
+`lnk_pipeline_prepare(conn, aoi, cfg, loaded, schema)` — falls,
+definite + control, habitat confirms, gradient barriers,
+`natural_barriers`, barrier overrides, per-model minimal reduction, base
+segments. Manifest-key gating via
+`loaded$user_barriers_definite_control` and
+`loaded$user_habitat_classification` (no DB probes). -
+`lnk_pipeline_break(conn, aoi, cfg, loaded, schema)` — sequential
 `frs_break_apply` in config-defined order: observations → gradient
 minimal → **barriers_definite (separate break source)** → habitat
-endpoints → crossings. - `lnk_pipeline_classify(conn, aoi, cfg, schema)`
-— assembles `fresh.streams_breaks` (gradient FULL + falls +
-**barriers_definite** + crossings, WSG-filtered) and runs
-`frs_habitat_classify()`. `barriers_definite` enters here directly
-because bcfishpass appends user-definite post-filter (not via
-observation override). - `lnk_pipeline_connect(conn, aoi, cfg, schema)`
-— per-species cluster + connected_waterbody. -
-`lnk_pipeline_species(cfg, aoi)` — canonical helper for “species this
-config classifies in this AOI” (intersects `cfg$parameters_fresh` with
-`cfg$wsg_species` presence).
+endpoints → crossings. -
+`lnk_pipeline_classify(conn, aoi, cfg, loaded, schema)` — assembles
+`fresh.streams_breaks` (gradient FULL + falls + **barriers_definite** +
+crossings, WSG-filtered) and runs `frs_habitat_classify()`.
+`barriers_definite` enters here directly because bcfishpass appends
+user-definite post-filter (not via observation override). -
+`lnk_pipeline_connect(conn, aoi, cfg, loaded, schema)` — per-species
+cluster + connected_waterbody. -
+`lnk_pipeline_species(cfg, loaded, aoi)` — canonical helper for “species
+this config classifies in this AOI” (intersects `cfg$species` with
+`loaded$wsg_species_presence` presence; falls back to
+`loaded$parameters_fresh$species_code` when `cfg$species` is missing).
 
 ### Bridge to fresh
 
@@ -259,12 +276,25 @@ with `species` for sub-basin work.
 - \#29 — SK spawning cluster divergence (blocked on fresh#133)
 - \#40 — Config provenance / run stamps (tracks input versions)
 - \#45 — Gradient classes cleanup (derive from
-  `cfg$parameters_fresh$access_gradient_max`)
+  `loaded$parameters_fresh$access_gradient_max`)
 - \#75 — `dimensions_columns.csv` as source-of-truth: auto-gen README +
   [`lnk_rules_build()`](https://newgraphenvironment.github.io/link/reference/lnk_rules_build.md)
   validation (CSV seeded in v0.17.0)
 
 ## Recently closed
+
+- \#65 — `lnk_load_overrides(config)` + manifest/data split → v0.18.0.
+  Decomposed
+  [`lnk_config()`](https://newgraphenvironment.github.io/link/reference/lnk_config.md)
+  into manifest-only loader and new
+  [`lnk_load_overrides()`](https://newgraphenvironment.github.io/link/reference/lnk_load_overrides.md)
+  ingest with crate dispatch. Single PR, single bump. Config schema
+  flattened into one `files:` map keyed by filename stem; `rules:` and
+  `dimensions:` paths moved top-level (no format suffix). Pipeline
+  phases take `loaded` alongside `cfg`. Bit-identical rollup vs v0.17.0
+  baseline.
+
+## Older closed
 
 - \#69 — Dimensions-driven `in_waterbody` + `area_only` emission with
   proof artifact → PRs \#71 (phase 1, v0.14.0), \#72 (phase 2, v0.15.0),

@@ -1,5 +1,101 @@
 # Changelog
 
+## link 0.18.1
+
+Closes [\#78](https://github.com/NewGraphEnvironment/link/issues/78).
+Adds attribution for redistributed upstream data and refreshes the
+package Title + Description to reflect the package’s current scope.
+
+- `LICENSE-bcfishpass` at root — verbatim copy of upstream
+  `smnorris/bcfishpass` LICENSE governing the redistributed override
+  CSVs
+- `NOTICE.md` at root — source/license table, names redistributed files
+- `inst/extdata/configs/{bcfishpass,default}/overrides/README.md` —
+  pointer files reachable via
+  [`system.file()`](https://rdrr.io/r/base/system.file.html)
+- `README.md` “Acknowledgements” section above License
+- `Authors@R` — Simon Norris added as `[ctb]`
+- `Title` —
+  `Habitat and Connectivity Interpretation for Stream Networks` (was the
+  v0.6-era `Crossing Connectivity Interpretation`)
+- `Description` — refactored to mirror the README’s “fresh answers what
+  the habitat is, link answers what the features mean for the network”
+  framing; names the three habitat axes (intrinsic potential,
+  accessibility under connectivity, per-feature rollups)
+
+CITATION file and mirror to NewGraphEnvironment/crate (which also ships
+bcfishpass fixtures via crt_ingest examples) deferred — to be filed as
+their own work.
+
+## link 0.18.0
+
+Closes [\#65](https://github.com/NewGraphEnvironment/link/issues/65).
+Decompose the config bundle into a manifest layer and a data-ingest
+layer, and route registered files through
+[crate](https://github.com/NewGraphEnvironment/crate) for
+source-agnostic canonicalization.
+
+**[`lnk_config()`](https://newgraphenvironment.github.io/link/reference/lnk_config.md)
+is now manifest-only.** It reads `config.yaml` and returns paths, file
+declarations, pipeline knobs, and provenance — no parsed CSVs. Cheap to
+call.
+[`lnk_config_verify()`](https://newgraphenvironment.github.io/link/reference/lnk_config_verify.md)
+and
+[`lnk_stamp()`](https://newgraphenvironment.github.io/link/reference/lnk_stamp.md)
+no longer pay for CSV parsing they don’t need.
+
+**New: `lnk_load_overrides(cfg)`** materializes the data files declared
+in `cfg$files` and returns a named list of canonical-shape tibbles.
+Entries with `source` + `canonical_schema` declarations dispatch through
+[`crate::crt_ingest()`](https://newgraphenvironment.github.io/crate/reference/crt_ingest.html)
+(currently `bcfp/user_habitat_classification`); others fall through to
+local reads dispatched on path extension. New source families plug in by
+config edit alone — no link R code change.
+
+**New `config.yaml` schema.** Top-level `rules:` and `dimensions:` paths
+replace `files.rules_yaml` / `files.dimensions_csv` (format follows from
+the path’s extension, not the key name). The previous `files:` and
+`overrides:` maps merge into one flat `files:` map keyed by filename
+stem (e.g. `user_barriers_definite`,
+`pscis_modelledcrossings_streams_xref`). Each entry carries `path:` and
+optionally `source:` and `canonical_schema:`. Configs may declare
+`extends:` to inherit from another config; child entries override
+same-key parent entries.
+
+**Pipeline phase signatures gain `loaded`.** Every `lnk_pipeline_*`
+phase that reads a data table now takes `cfg` and `loaded` together.
+Callers (the bundled targets pipeline, project scripts) call
+`lnk_load_overrides(cfg)` once and thread the result through phases.
+`cfg$overrides$X` and `cfg$habitat_classification` access points become
+`loaded$X`. See `data-raw/_targets.R` and
+`data-raw/compare_bcfishpass_wsg.R` for the pattern.
+
+**Verification.** `tar_make()` on 5 WSGs × 2 configs reproduces the
+v0.17.0 baseline rollup bit-identically (sha256
+`a82de9928809b9751213e08916c476b4ee3f99286bc9ea2dc53f9659eeb92097`).
+Refactor introduces no behaviour change.
+
+**Migration**
+
+| Old                                 | New                                               |
+|-------------------------------------|---------------------------------------------------|
+| `cfg$rules_yaml`                    | `cfg$rules`                                       |
+| `cfg$dimensions_csv`                | `cfg$dimensions`                                  |
+| `cfg$parameters_fresh` (data frame) | `loaded$parameters_fresh`                         |
+| `cfg$habitat_classification`        | `loaded$user_habitat_classification`              |
+| `cfg$observation_exclusions`        | `loaded$observation_exclusions`                   |
+| `cfg$wsg_species`                   | `loaded$wsg_species_presence`                     |
+| `cfg$overrides$X`                   | `loaded$X` (e.g. `loaded$user_barriers_definite`) |
+
+**Out of scope (follow-up issues):**
+
+- crate schemas for the other 9 bcfp-sourced files (one issue per file
+  as canonical-shape decisions concretize). Today they fall through to
+  plain CSV read.
+- `nge` / `local` source families (when project-experimental configs
+  need them).
+- Type-aware variant matching in crate (planned crate v0.1.x roadmap).
+
 ## link 0.17.0
 
 Ship the
@@ -290,8 +386,11 @@ the canonical-shape contract.
 - `Suggests: fresh (>= 0.22.0)`. Coordinates with
   [fresh#177](https://github.com/NewGraphEnvironment/fresh/issues/177).
 - Pipeline runs again. The vignette stays in `dev/` until link#64 (sync
-  workflow shape fingerprint) and link#65 (`lnk_load_overrides()` via
-  `crate::crt_ingest()`) land.
+  workflow shape fingerprint) and link#65
+  ([`lnk_load_overrides()`](https://newgraphenvironment.github.io/link/reference/lnk_load_overrides.md)
+  via
+  [`crate::crt_ingest()`](https://newgraphenvironment.github.io/crate/reference/crt_ingest.html))
+  land.
 
 ## link 0.11.2
 

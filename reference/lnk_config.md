@@ -1,10 +1,8 @@
-# Load a Pipeline Config Bundle
+# Load a Pipeline Config Bundle (Manifest)
 
 Reads a config bundle manifest (`config.yaml`) and returns a single list
-object containing everything a pipeline needs to classify habitat for a
-given interpretation variant — rules YAML, parameters, overrides,
-observation exclusions, habitat confirmations, and pipeline knobs (break
-order, cluster params, spawn_connected rules).
+object describing what a pipeline variant does — paths, file
+declarations, pipeline knobs, provenance — but **no parsed data**.
 
 ## Usage
 
@@ -24,43 +22,52 @@ lnk_config(name_or_path)
 
 An `lnk_config` S3 list with these slots:
 
-- `name` — config name (from `name_or_path` or the manifest)
+- `name` — config name from the manifest
 
 - `dir` — absolute path to the config directory
 
-- `rules_yaml` — absolute path to the rules YAML (consumed by
+- `description` — manifest's free-text description (or `NULL`)
+
+- `rules` — absolute path to the rules YAML (consumed by
   [`fresh::frs_habitat_classify()`](https://newgraphenvironment.github.io/fresh/reference/frs_habitat_classify.html))
 
-- `dimensions_csv` — absolute path to the dimensions CSV (source of
-  `rules_yaml` via
+- `dimensions` — absolute path to the dimensions CSV (input to
   [`lnk_rules_build()`](https://newgraphenvironment.github.io/link/reference/lnk_rules_build.md))
 
-- `parameters_fresh` — data frame of per-species fresh overrides
+- `species` — character vector of species the rules YAML classifies
+  (parsed from `rules.yaml` top-level keys)
 
-- `habitat_classification` — data frame of expert-confirmed habitat
-  endpoints (or `NULL` if the manifest does not reference one)
+- `files` — named list of file declarations. Each entry is a list with
+  `path` (resolved absolute path) and optionally `source` (free-text
+  provenance label) and `canonical_schema` (`"<source>/<file_name>"` —
+  keys into crate's registry to dispatch ingest via
+  [`crate::crt_ingest()`](https://newgraphenvironment.github.io/crate/reference/crt_ingest.html))
 
-- `observation_exclusions` — data frame of observation IDs to skip (or
-  `NULL`)
+- `pipeline` — named list of pipeline knobs (`apply_habitat_overlay`,
+  `break_order`, `cluster`, `spawn_connected`)
 
-- `wsg_species` — data frame of species per watershed group (or `NULL`)
-
-- `overrides` — named list of data frames, one per override CSV listed
-  in the manifest
-
-- `pipeline` — named list of pipeline knobs from the manifest
-  (`break_order`, `cluster`, `spawn_connected`)
-
-- `provenance` — named list of per-file provenance metadata parsed from
-  the manifest's `provenance:` block (or `NULL` when the bundle does not
-  declare it). Each entry is keyed by the file's path relative to `dir`
-  and carries metadata fields such as `source`, `upstream_sha`,
-  `synced`, `checksum`, plus generator-specific keys (`generated_from`,
-  `generated_by`, `generator_sha`) for files produced by tooling. Drift
-  detection against the recorded checksums is in
+- `provenance` — named list of per-file provenance metadata, keyed by
+  file path relative to `dir`. Drift detection against these checksums
+  lives in
   [`lnk_config_verify()`](https://newgraphenvironment.github.io/link/reference/lnk_config_verify.md).
 
+- `extends` — character or `NULL`, the parent config name/path this
+  manifest declared (post-resolution; not used by callers beyond audit)
+
 ## Details
+
+Tabular data (override CSVs, habitat classifications, parameters) is
+loaded by
+[`lnk_load_overrides()`](https://newgraphenvironment.github.io/link/reference/lnk_load_overrides.md),
+which dispatches each declared file through
+[`crate::crt_ingest()`](https://newgraphenvironment.github.io/crate/reference/crt_ingest.html)
+for source-registered entries and falls through to local reads
+otherwise. This split keeps `lnk_config()` cheap to call (no CSV
+parsing) and lets provenance-only consumers like
+[`lnk_config_verify()`](https://newgraphenvironment.github.io/link/reference/lnk_config_verify.md)
+and
+[`lnk_stamp()`](https://newgraphenvironment.github.io/link/reference/lnk_stamp.md)
+work without touching data.
 
 A config bundle is a directory under `inst/extdata/configs/<name>/` (for
 bundled variants) or an arbitrary directory path (for custom variants)
@@ -68,77 +75,41 @@ containing `config.yaml` plus the files the manifest references. All
 file paths in the manifest are resolved relative to the bundle
 directory.
 
-The returned list is the single object passed around the pipeline (e.g.
-into `_targets.R`), so pipeline variants become a config authoring
-exercise, not a code fork.
+Configs may declare `extends: <parent>` to inherit from another config.
+The parent is resolved (recursively, if it also extends) and merged
+shallowly: child entries override parent entries with the same key in
+`files:`, `pipeline:`, and `provenance:`; top-level scalars
+(`description`, `rules`, `dimensions`) override directly.
 
 ## Examples
 
 ``` r
-# Load the bundled bcfishpass variant
 cfg <- lnk_config("bcfishpass")
-
-# Inspect
 cfg$name
 #> [1] "bcfishpass"
-cfg$dir
-#> [1] "/home/runner/work/_temp/Library/link/extdata/configs/bcfishpass"
-file.exists(cfg$rules_yaml)
-#> [1] TRUE
-head(cfg$parameters_fresh)
-#>   species_code access_gradient_max spawn_gradient_min rear_gradient_min
-#> 1           BT                0.25                  0                 0
-#> 2           CH                0.15                  0                 0
-#> 3           CM                0.15                  0                 0
-#> 4           CO                0.15                  0                 0
-#> 5           CT                0.25                  0                 0
-#> 6           DV                0.25                  0                 0
-#>   cluster_rearing cluster_direction cluster_bridge_gradient
-#> 1            TRUE              both                    0.05
-#> 2            TRUE              both                    0.05
-#> 3           FALSE                                        NA
-#> 4            TRUE              both                    0.05
-#> 5           FALSE                                        NA
-#> 6           FALSE                                        NA
-#>   cluster_bridge_distance cluster_confluence_m cluster_spawning
-#> 1                   10000                   10            FALSE
-#> 2                   10000                   10            FALSE
-#> 3                      NA                   NA            FALSE
-#> 4                   10000                   10            FALSE
-#> 5                      NA                   NA            FALSE
-#> 6                      NA                   NA            FALSE
-#>   cluster_spawn_direction cluster_spawn_bridge_gradient
-#> 1                                                    NA
-#> 2                                                    NA
-#> 3                                                    NA
-#> 4                                                    NA
-#> 5                                                    NA
-#> 6                                                    NA
-#>   cluster_spawn_bridge_distance cluster_spawn_confluence_m
-#> 1                            NA                         NA
-#> 2                            NA                         NA
-#> 3                            NA                         NA
-#> 4                            NA                         NA
-#> 5                            NA                         NA
-#> 6                            NA                         NA
-#>   observation_threshold observation_date_min observation_buffer_m
-#> 1                     1           1990-01-01                   20
-#> 2                     5           1990-01-01                   20
-#> 3                     5           1990-01-01                   20
-#> 4                     5           1990-01-01                   20
-#> 5                    NA                 <NA>                   NA
-#> 6                    NA                 <NA>                   NA
-#>    observation_species observation_control_apply
-#> 1 BT;CH;CO;SK;PK;CM;ST                     FALSE
-#> 2       CH;CM;CO;PK;SK                      TRUE
-#> 3       CH;CM;CO;PK;SK                      TRUE
-#> 4       CH;CM;CO;PK;SK                      TRUE
-#> 5                 <NA>                        NA
-#> 6                 <NA>                        NA
-names(cfg$overrides)
-#> [1] "modelled_fixes"            "pscis_barrier_status"     
-#> [3] "pscis_xref"                "barriers_definite"        
-#> [5] "barriers_definite_control" "crossings_misc"           
+cfg$rules
+#> [1] "/home/runner/work/_temp/Library/link/extdata/configs/bcfishpass/rules.yaml"
+names(cfg$files)
+#>  [1] "parameters_fresh"                    
+#>  [2] "user_habitat_classification"         
+#>  [3] "observation_exclusions"              
+#>  [4] "wsg_species_presence"                
+#>  [5] "user_modelled_crossing_fixes"        
+#>  [6] "user_pscis_barrier_status"           
+#>  [7] "pscis_modelledcrossings_streams_xref"
+#>  [8] "user_barriers_definite"              
+#>  [9] "user_barriers_definite_control"      
+#> [10] "user_crossings_misc"                 
+cfg$files$user_habitat_classification
+#> $source
+#> [1] "bcfp"
+#> 
+#> $path
+#> [1] "/home/runner/work/_temp/Library/link/extdata/configs/bcfishpass/overrides/user_habitat_classification.csv"
+#> 
+#> $canonical_schema
+#> [1] "bcfp/user_habitat_classification"
+#> 
 cfg$pipeline$break_order
 #> [1] "observations"      "gradient_minimal"  "barriers_definite"
 #> [4] "habitat_endpoints" "crossings"        
@@ -147,9 +118,8 @@ if (FALSE) { # \dontrun{
 # Custom config: point at any directory containing config.yaml
 my_cfg <- lnk_config("/path/to/my/variant")
 
-# Feed into the pipeline
-fresh::frs_habitat_classify(conn, ...,
-  rules = cfg$rules_yaml,
-  params = cfg$parameters_fresh)
+# Materialize the data tables declared in the manifest
+loaded <- lnk_load_overrides(my_cfg)
+loaded$user_habitat_classification
 } # }
 ```

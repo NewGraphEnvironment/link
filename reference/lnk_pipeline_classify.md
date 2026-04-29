@@ -13,6 +13,7 @@ lnk_pipeline_classify(
   conn,
   aoi,
   cfg,
+  loaded,
   schema,
   species = NULL,
   thresholds_csv = system.file("extdata", "parameters_habitat_thresholds.csv", package =
@@ -38,6 +39,13 @@ lnk_pipeline_classify(
   An `lnk_config` object from
   [`lnk_config()`](https://newgraphenvironment.github.io/link/reference/lnk_config.md).
 
+- loaded:
+
+  Named list of tibbles from
+  [`lnk_load_overrides()`](https://newgraphenvironment.github.io/link/reference/lnk_load_overrides.md).
+  Carries `parameters_fresh`, `user_habitat_classification`, and
+  `wsg_species_presence`.
+
 - schema:
 
   Character. Working schema name.
@@ -45,8 +53,8 @@ lnk_pipeline_classify(
 - species:
 
   Character vector. Species codes to classify. Default derives from
-  `cfg$parameters_fresh$species_code` intersected with the species
-  present in the AOI (via `cfg$wsg_species`).
+  `loaded$parameters_fresh$species_code` intersected with the species
+  present in the AOI (via `loaded$wsg_species_presence`).
 
 - thresholds_csv:
 
@@ -86,15 +94,16 @@ Other pipeline:
 
 ``` r
 if (FALSE) { # \dontrun{
-conn <- lnk_db_conn()
-cfg  <- lnk_config("bcfishpass")
+conn   <- lnk_db_conn()
+cfg    <- lnk_config("bcfishpass")
+loaded <- lnk_load_overrides(cfg)
 schema <- "working_bulk"
 
 lnk_pipeline_setup(conn, schema)
-lnk_pipeline_load(conn, "BULK", cfg, schema)
-lnk_pipeline_prepare(conn, "BULK", cfg, schema)
-lnk_pipeline_break(conn, "BULK", cfg, schema)
-lnk_pipeline_classify(conn, "BULK", cfg, schema)
+lnk_pipeline_load(conn, "BULK", cfg, loaded, schema)
+lnk_pipeline_prepare(conn, "BULK", cfg, loaded, schema)
+lnk_pipeline_break(conn, "BULK", cfg, loaded, schema)
+lnk_pipeline_classify(conn, "BULK", cfg, loaded, schema)
 
 DBI::dbDisconnect(conn)
 } # }

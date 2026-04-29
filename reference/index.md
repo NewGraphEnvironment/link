@@ -2,10 +2,12 @@
 
 ## Configs
 
-Load a pipeline config bundle (rules, parameters, overrides)
+Load a pipeline config bundle (manifest) and materialize its data files
 
 - [`lnk_config()`](https://newgraphenvironment.github.io/link/reference/lnk_config.md)
-  : Load a Pipeline Config Bundle
+  : Load a Pipeline Config Bundle (Manifest)
+- [`lnk_load_overrides()`](https://newgraphenvironment.github.io/link/reference/lnk_load_overrides.md)
+  : Materialize the Tabular Data Files Declared in a Config Bundle
 - [`lnk_config_verify()`](https://newgraphenvironment.github.io/link/reference/lnk_config_verify.md)
   : Verify Config Bundle File Checksums and Shape
 

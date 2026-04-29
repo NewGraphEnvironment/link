@@ -124,6 +124,26 @@ fresh models habitat on the network. link connects features to the
 network and interprets them. They change for different reasons and can
 each be used independently.
 
+## Acknowledgements
+
+`link` builds on upstream work by
+[smnorris](https://github.com/smnorris):
+
+| Source                                                                   | License    | How `link` uses it                                                 |
+|--------------------------------------------------------------------------|------------|--------------------------------------------------------------------|
+| [smnorris/fwapg](https://github.com/smnorris/fwapg)                      | MIT        | Runtime SQL access to BC’s Freshwater Atlas                        |
+| [smnorris/bcfishobs](https://github.com/smnorris/bcfishobs)              | Apache 2.0 | Runtime read of fish observation data                              |
+| [smnorris/bcfishpass](https://github.com/smnorris/bcfishpass) (software) | Apache 2.0 | Reference for habitat-classification parity                        |
+| [smnorris/bcfishpass](https://github.com/smnorris/bcfishpass) (data)     | ODbL       | Redistributed override CSVs in `inst/extdata/configs/*/overrides/` |
+
+See [`NOTICE.md`](https://newgraphenvironment.github.io/link/NOTICE.md)
+for the full attribution and
+[`LICENSE-bcfishpass`](https://newgraphenvironment.github.io/link/LICENSE-bcfishpass)
+for the verbatim upstream license governing the redistributed data.
+
 ## License
 
-MIT
+MIT (see
+[`LICENSE`](https://newgraphenvironment.github.io/link/LICENSE)).
+Applies to `link`’s own code; redistributed data carries its own license
+— see Acknowledgements above and `NOTICE.md`.
