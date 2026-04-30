@@ -84,6 +84,7 @@ lnk_pipeline_break <- function(conn, aoi, cfg, loaded, schema,
     observations      = paste0(schema, ".observations_breaks"),
     gradient_minimal  = paste0(schema, ".gradient_barriers_minimal"),
     barriers_definite = paste0(schema, ".barriers_definite"),
+    subsurfaceflow    = paste0(schema, ".barriers_subsurfaceflow"),
     habitat_endpoints = paste0(schema, ".habitat_endpoints"),
     crossings         = paste0(schema, ".crossings_breaks")
   )

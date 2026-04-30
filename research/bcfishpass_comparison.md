@@ -20,6 +20,142 @@ Confirmed mechanism on stream `blue_line_key = 359569193` in NATR: bcfishpass cu
 
 Vignette pulled, README and DESCRIPTION reframed as experimental. Code work tracked in issues #N (subsurfaceflow), #N (CABD wiring) — TBD.
 
+### Subsurfaceflow fix — 10-WSG validation
+
+NATR BT, bcfishpass-config, with `subsurfaceflow` added to `pipeline.break_order`:
+
+| metric | pre-fix | post-fix | bcfishpass ref |
+|---|---|---|---|
+| BT spawning_km | 1719 (+15.2%) | 1514 (+1.5%) | 1492 |
+| BT rearing_km | 3469 (+13.0%) | 3053 (-0.6%) | 3071 |
+| BT rearing_stream_km | 2830 (+13.8%) | 2458 (-1.1%) | 2486 |
+
+Specific verification: stream `blue_line_key 359569193` cuts BT rearing at DRM 16,465.98 m post-fix (16.56 km rearing on this stream); bcfishpass cuts at DRM 16,466 (16.47 km). Match to within rounding precision.
+
+Full 10-WSG `tar_make()` (`data-raw/logs/20260429_02_tar_make_subsurf.txt`, 40m18s) per-WSG diff_pct summary across spawning + rearing + rearing_stream:
+
+| WSG | min | max | median | rows >5% |
+|---|---|---|---|---|
+| ADMS | -3.9 | +1.1 | 0.0 | 0 |
+| BABL | -5.3 | +1.3 | -2.0 | 2 |
+| BULK | -4.1 | +0.8 | -0.6 | 0 |
+| DEAD | -1.4 | +1.0 | 0.0 | 0 |
+| ELKR | -3.2 | +1.8 | -1.1 | 0 |
+| KISP | -3.1 | +42.3 | +0.05 | 1 |
+| KOTL | -4.0 | -0.2 | -1.9 | 0 |
+| MORR | -9.3 | +1.3 | 0.0 | 4 |
+| NATR | -1.1 | +1.5 | -0.6 | 0 |
+| PARS | -3.1 | +0.8 | -2.1 | 0 |
+
+Wins:
+- NATR collapsed from biggest outlier (+13–15% on multiple BT rows) to median -0.6%, max abs 1.5%.
+- Original parity WSGs (ADMS, BULK, BABL, ELKR, DEAD) — no meaningful regression.
+
+Remaining outliers (7 rows >5% departure):
+
+| wsg | species | metric | link | bcfp | diff_pct |
+|---|---|---|---|---|---|
+| KISP | SK | spawning | 10.2 | 7.14 | +42.3 |
+| MORR | SK | spawning | 48.8 | 53.8 | -9.3 |
+| MORR | ST | rearing_stream | 806 | 874 | -7.8 |
+| MORR | ST | rearing | 1110 | 1176 | -5.6 |
+| BABL | ST | rearing_stream | 853 | 901 | -5.3 |
+| BABL | ST | rearing | 877 | 924 | -5.2 |
+| MORR | CO | rearing_stream | 880 | 929 | -5.2 |
+
+Pattern: 6 of 7 are direction `link < bcfishpass` (link under-credits) — opposite of what subsurfaceflow caused. Different mechanism. KISP SK (+42.3%) is the only over-credit but tiny absolute (3 km of stream). Concentration on MORR + ST suggests methodology dimension we haven't matched, possibly around `barriers_st`-specific gradient classes or `streams_habitat_known` overlay interactions. Investigate as a separate slice; not in subsurfaceflow's scope.
+
+Implementation: `.lnk_pipeline_prep_subsurfaceflow` mirrors bcfishpass's `barriers_subsurfaceflow.sql` exactly — same FWA filter, same `user_barriers_definite_control` LEFT JOIN guard. Inclusion is opt-in via `cfg$pipeline$break_order` containing `subsurfaceflow`. Bcfishpass-bundle config opts in; default-bundle does not.
+
+## How bcfishpass classifies segments — natural vs anthropogenic tiers
+
+bcfishpass maintains **two separate access tiers** per segment and the distinction is load-bearing for what link should be reproducing.
+
+### Tier 1 — natural access
+
+Per-species natural-barrier set, stored as a downstream-feature array on each segment in `bcfishpass.streams_access`:
+
+| Column | Source barriers |
+|---|---|
+| `barriers_bt_dnstr` | gradient (≤25%) + falls + subsurfaceflow + user_definite (BT) |
+| `barriers_ch_cm_co_pk_sk_dnstr` | gradient (≤15%) + falls + subsurfaceflow + user_definite (salmon) |
+| `barriers_ct_dv_rb_dnstr` | gradient (≤25%) + falls + subsurfaceflow + user_definite (CT/DV/RB) |
+| `barriers_st_dnstr` | gradient (≤20%) + falls + subsurfaceflow + user_definite (ST) |
+| `barriers_wct_dnstr` | gradient + falls + subsurfaceflow + user_definite (WCT) |
+
+Built by `model/01_access/01_model_access_natural.sh` → `model_access_<species>.sql` UNIONs the source tables and minimal-reduces.
+
+`bcfishpass.habitat_linear_<species>` (the rule-based per-species modelled habitat — what link's parity comparison reads as the reference) gates spawning / rearing on `barriers_<species>_dnstr = array[]::text[]` — i.e. **NATURAL access only**. No dams, no PSCIS.
+
+### Tier 2 — anthropogenic access
+
+Built by `model/01_access/02_model_access_anthropogenic.sh`. Three overlapping classes derived from the unified `bcfishpass.crossings` table, each filtered to `barrier_status IN ('BARRIER', 'POTENTIAL') AND blue_line_key = watershed_key`:
+
+| Class | Filter | Source CSV / table |
+|---|---|---|
+| `barriers_anthropogenic` | (no extra filter — all crossings that are barriers/potential) | unified crossings table |
+| `barriers_dams` | `dam_id IS NOT NULL` | CABD `cabd.dams` + `cabd_*` edits |
+| `barriers_dams_hydro` | `dam_id IS NOT NULL AND dam_use = 'Hydroelectricity'` | same |
+| `barriers_pscis` | `stream_crossing_id IS NOT NULL` | PSCIS BC Data Catalogue + `user_pscis_barrier_status.csv` |
+
+Per-segment downstream arrays in `streams_access`: `barriers_anthropogenic_dnstr`, `barriers_dams_dnstr`, `barriers_dams_hydro_dnstr`, `barriers_pscis_dnstr`. Plus boolean flags `dam_dnstr_ind`, `dam_hydro_dnstr_ind`, `remediated_dnstr_ind`. **These do NOT feed `habitat_linear_<sp>`.** They're consumed by crossings reports, dam-impact rollups, and the WCRP tracking layer.
+
+### Per-species access integer code
+
+`streams_access.access_<species>` is a single integer summarising natural-tier accessibility AND observation evidence:
+
+| Code | Meaning |
+|---|---|
+| `-9` | species not present in this WSG (per `wsg_species_presence`) |
+| `0` | inaccessible — natural barrier downstream |
+| `1` | potentially accessible — no natural barrier downstream, no upstream observation (modelled only) |
+| `2` | observed accessible — no natural barrier downstream and fish observed upstream of this segment |
+
+`POTENTIAL` crossings are treated equivalently to `BARRIER` crossings in the anthropogenic-access calculation — but again, this does not affect `habitat_linear_<sp>`.
+
+### Per-segment habitat status code
+
+`streams_habitat_linear.<species>_spawning|rearing` blends the rule-based model with the known/observed overlay:
+
+| Code | Meaning |
+|---|---|
+| `-1` | known non-habitat (operator says no) |
+| `-4` / `-5` | special exclusion classes (release flags) |
+| `0` | neither modelled nor observed |
+| `1` | modelled only (rule-based, gated on natural access) |
+| `2` | modelled + observed |
+| `3` | observed only, not modelled |
+
+Link's `frs_habitat_overlay` reproduces the model+observed blend. The parity comparison so far has been against `habitat_linear_<sp>` (modelled tier), not `streams_habitat_linear` (blended tier).
+
+### Implication for the dams work
+
+Adding dams + PSCIS to link does **not** change `habitat_linear_<sp>` parity numbers, because that table only uses natural barriers. Dams work is a new feature surface for anth-access reports + dam-impact analyses — different downstream consumers, parallel to habitat_linear, not blocking parity.
+
+If we want a per-segment "potentially accessible to species X" integer code in link analogous to bcfishpass's `access_<sp>` (-9 / 0 / 1 / 2), that's a separate fresh-side concern — fresh's `streams_habitat` already encodes accessibility per segment in the `accessible` column, but the integer-code semantic with the observation-presence dimension is new territory.
+
+## Dams design — much smaller than expected
+
+Initial plan was: ingest the four CABD CSVs (`cabd_additions`, `cabd_exclusions`, `cabd_blkey_xref`, `cabd_passability_status_updates`) into link, source `cabd.dams` separately, replicate bcfishpass's `load_dams.sql`. Reading the actual bcfishpass code shows this is the wrong path.
+
+The simpler picture:
+
+- bcfishpass's `barriers_dams` is `SELECT … FROM bcfishpass.crossings WHERE dam_id IS NOT NULL AND barrier_status IN ('BARRIER','POTENTIAL') AND blue_line_key = watershed_key` (`model/01_access/sql/barriers_dams.sql`).
+- `bcfishpass.crossings` is the unified CABD-edited table — built by bcfishpass with all four CABD edit CSVs already applied.
+- `fresh::system.file("extdata", "crossings.csv")` is regenerated from `bcfishpass.crossings` via `fresh/data-raw/bcfishpass_crossings.R`. **CABD edits flow through that source automatically** — nothing for link to ingest.
+- Today fresh's CSV projects only 10 columns; the columns we need (`dam_id`, `stream_crossing_id`, `dam_use`, `wscode_ltree`, `localcode_ltree`, `crossing_feature_type`) are dropped at SELECT time. They exist upstream.
+
+Implication: the dams work splits cleanly into two patches:
+
+1. **fresh side** — expand the `SELECT` in `data-raw/bcfishpass_crossings.R` to include `dam_id`, `stream_crossing_id`, `crossing_feature_type`, `dam_use`, `wscode_ltree`, `localcode_ltree`. Regenerate `inst/extdata/crossings.csv`. One-line SELECT change + a regenerate run.
+2. **link side** — once fresh ships the expanded CSV, add `barriers_dams` (and optionally `barriers_pscis` / `barriers_anthropogenic`) as opt-in break sources following the same pattern just landed for subsurfaceflow:
+   - `.lnk_pipeline_prep_dams(conn, schema)` materializes `<schema>.barriers_dams` from `<schema>.crossings WHERE dam_id IS NOT NULL AND barrier_status IN ('BARRIER','POTENTIAL') AND blue_line_key = watershed_key`.
+   - `source_tables[["dams"]] <- paste0(schema, ".barriers_dams")` in `lnk_pipeline_break.R`.
+   - Conditional UNION ALL in `lnk_pipeline_classify_build_breaks` (label `'blocked'`).
+   - `dams` added to `pipeline.break_order` in any config that opts in.
+
+**Reminder of the tier distinction**: dams are anthropogenic — adding them to a config does NOT change `habitat_linear_<sp>` parity numbers (those are natural-tier only). Dams add a new analytical layer for "what's blocked by dams downstream" reports, dam-impact rollups, and any custom config that wants dam-aware accessibility. The bcfishpass-bundle config should NOT add `dams` to break_order, because doing so would diverge from `habitat_linear_<sp>`'s natural-only access semantic.
+
 ## Correctness bar (historical, retracted)
 
 **Bit-identical output from the same inputs.** Three consecutive `tar_make()` runs on 2026-04-22 produced the exact same 34-row rollup tibble (`data-raw/logs/20260422_{10,11,12}_*.txt`). Parity to bcfishpass (the `diff_pct` column in the rollup) was framed as an informational diagnostic. The 2026-04-29 expansion shows the rollup-level diff_pct is in fact reading real defects, not just methodology. Treat the section below as historical, not as current state.

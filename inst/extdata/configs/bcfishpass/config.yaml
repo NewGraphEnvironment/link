@@ -50,6 +50,7 @@ pipeline:
   - observations
   - gradient_minimal
   - barriers_definite
+  - subsurfaceflow
   - habitat_endpoints
   - crossings
   cluster:

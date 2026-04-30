@@ -84,7 +84,9 @@ lnk_pipeline_classify <- function(conn, aoi, cfg, loaded, schema,
          "loaded$wsg_species_presence cover this AOI.", call. = FALSE)
   }
 
-  .lnk_pipeline_classify_build_breaks(conn, aoi, schema)
+  .lnk_pipeline_classify_build_breaks(conn, aoi, schema,
+    include_subsurfaceflow = "subsurfaceflow" %in%
+      (cfg$pipeline$break_order %||% character()))
 
   params <- fresh::frs_params(
     csv = thresholds_csv,
@@ -141,7 +143,20 @@ lnk_pipeline_classify <- function(conn, aoi, cfg, loaded, schema,
 #' access gating needs every barrier to block access, not just the
 #' minimal segmentation set.
 #' @noRd
-.lnk_pipeline_classify_build_breaks <- function(conn, aoi, schema) {
+.lnk_pipeline_classify_build_breaks <- function(conn, aoi, schema,
+                                                 include_subsurfaceflow = FALSE) {
+  subsurf_union <- if (include_subsurfaceflow) {
+    sprintf(
+      "UNION ALL
+       SELECT b.blue_line_key, round(b.downstream_route_measure),
+              'blocked', b.wscode_ltree, b.localcode_ltree
+       FROM %s.barriers_subsurfaceflow b
+       WHERE b.wscode_ltree IS NOT NULL",
+      schema)
+  } else {
+    ""
+  }
+
   .lnk_db_execute(conn, "DROP TABLE IF EXISTS fresh.streams_breaks")
   .lnk_db_execute(conn, sprintf(
     "CREATE TABLE fresh.streams_breaks AS
@@ -187,11 +202,13 @@ lnk_pipeline_classify <- function(conn, aoi, cfg, loaded, schema,
        ON c.blue_line_key = s.blue_line_key
        AND c.downstream_route_measure >= s.downstream_route_measure
        AND c.downstream_route_measure < s.upstream_route_measure
-     WHERE s.watershed_group_code = %s",
+     WHERE s.watershed_group_code = %s
+     %s",
     schema, .lnk_quote_literal(aoi),
     schema, .lnk_quote_literal(aoi),
     schema, .lnk_quote_literal(aoi),
-    schema, .lnk_quote_literal(aoi)))
+    schema, .lnk_quote_literal(aoi),
+    subsurf_union))
 
   invisible(NULL)
 }
