@@ -79,6 +79,9 @@ the change.
 ``` r
 cfg <- lnk_config("bcfishpass")
 verify <- lnk_config_verify(cfg)
+#> Warning: Config bundle 'bcfishpass' has 2 file(s) drifted from recorded checksum:
+#>   - rules.yaml (byte drift)
+#>   - dimensions.csv (byte drift)
 verify
 #>                                                  file
 #> 1                                          rules.yaml
@@ -107,8 +110,8 @@ verify
 #> 11 sha256:8f34e2c006733e0f06248a90dc0b8abe4719880590f497581f80fe5f62fde203
 #> 12 sha256:19fa9f1322f78e0b2025aed509b7ac1402b7f99876e7b9e6404b22cce5491d5e
 #>                                                              byte_observed
-#> 1  sha256:93a49f4071140a307b7cb8f2c3d580e8edbd08fa337e398ace47cabccc4eb00a
-#> 2  sha256:a623ac2ae551b2f150b8015a7fd17d76bcd6c81db60e30ec18f6e412b23baaa9
+#> 1  sha256:e9280e87762d62c86a0e162d34fadf691ece3cc1bce43f95827b477cb6eeacf6
+#> 2  sha256:c3be82f14ee368b3af4048747054677f55edd330aa648783a9b1ab5b88986c36
 #> 3  sha256:1cc4c33c729d37a40672540dfb92f4f7dadf50653bd4f211a485c9d51722088f
 #> 4  sha256:cc6aff6448e940613913c2d9dd847db72d6bfb63db8b50ad3293c76ef17c5740
 #> 5  sha256:ad901c57ca42e71e4affffd6e583045a2ce423f15088c211c9c2f72976f5d36a
@@ -120,8 +123,8 @@ verify
 #> 11 sha256:8f34e2c006733e0f06248a90dc0b8abe4719880590f497581f80fe5f62fde203
 #> 12 sha256:19fa9f1322f78e0b2025aed509b7ac1402b7f99876e7b9e6404b22cce5491d5e
 #>    byte_drift
-#> 1       FALSE
-#> 2       FALSE
+#> 1        TRUE
+#> 2        TRUE
 #> 3       FALSE
 #> 4       FALSE
 #> 5       FALSE

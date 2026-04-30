@@ -109,6 +109,9 @@ fastest way to localize the change.</p>
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">cfg</span> <span class="op">&lt;-</span> <span class="fu"><a href="lnk_config.html">lnk_config</a></span><span class="op">(</span><span class="st">"bcfishpass"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">verify</span> <span class="op">&lt;-</span> <span class="fu">lnk_config_verify</span><span class="op">(</span><span class="va">cfg</span><span class="op">)</span></span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Config bundle 'bcfishpass' has 2 file(s) drifted from recorded checksum:</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   - rules.yaml (byte drift)</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   - dimensions.csv (byte drift)</span>
 <span class="r-in"><span><span class="va">verify</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                                                  file</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1                                          rules.yaml</span>
@@ -137,8 +140,8 @@ fastest way to localize the change.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 11 sha256:8f34e2c006733e0f06248a90dc0b8abe4719880590f497581f80fe5f62fde203</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 12 sha256:19fa9f1322f78e0b2025aed509b7ac1402b7f99876e7b9e6404b22cce5491d5e</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                                                              byte_observed</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1  sha256:93a49f4071140a307b7cb8f2c3d580e8edbd08fa337e398ace47cabccc4eb00a</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2  sha256:a623ac2ae551b2f150b8015a7fd17d76bcd6c81db60e30ec18f6e412b23baaa9</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1  sha256:e9280e87762d62c86a0e162d34fadf691ece3cc1bce43f95827b477cb6eeacf6</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2  sha256:c3be82f14ee368b3af4048747054677f55edd330aa648783a9b1ab5b88986c36</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 3  sha256:1cc4c33c729d37a40672540dfb92f4f7dadf50653bd4f211a485c9d51722088f</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 4  sha256:cc6aff6448e940613913c2d9dd847db72d6bfb63db8b50ad3293c76ef17c5740</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 5  sha256:ad901c57ca42e71e4affffd6e583045a2ce423f15088c211c9c2f72976f5d36a</span>
@@ -150,8 +153,8 @@ fastest way to localize the change.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 11 sha256:8f34e2c006733e0f06248a90dc0b8abe4719880590f497581f80fe5f62fde203</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 12 sha256:19fa9f1322f78e0b2025aed509b7ac1402b7f99876e7b9e6404b22cce5491d5e</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    byte_drift</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1       FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2       FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1        TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2        TRUE</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 3       FALSE</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 4       FALSE</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 5       FALSE</span>
