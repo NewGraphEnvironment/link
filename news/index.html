@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.18.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.19.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,6 +31,32 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.19.0" id="link-0190">link 0.19.0<a class="anchor" aria-label="anchor" href="#link-0190"></a></h2>
+<p>Closes <a href="https://github.com/NewGraphEnvironment/link/pull/82" class="external-link">#82</a>. Subsurface-flow access barriers + parity claim retraction.</p>
+<p><strong>Subsurface-flow as opt-in access barrier</strong>. Closes the largest single gap surfaced when expanding the bcfishpass-config rollup from 5 to 10 watershed groups: NATR BT spawning +15.2% → +1.5%, NATR BT rearing +13.0% → -0.6% (10-WSG <code>tar_make</code> log: <code>data-raw/logs/20260429_02_tar_make_subsurf.txt</code>).</p>
+<ul><li>New <code>.lnk_pipeline_prep_subsurfaceflow()</code> materialises <code>&lt;schema&gt;.barriers_subsurfaceflow</code> from <code>whse_basemapping.fwa_stream_networks_sp</code> filtered to <code>edge_type IN (1410, 1425)</code>. Honours <code>user_barriers_definite_control</code>. Mirrors bcfishpass <code>model/01_access/sql/barriers_subsurfaceflow.sql</code> exactly.</li>
+<li>New <code>subsurfaceflow</code> entry in <code>lnk_pipeline_break.R</code> <code>source_tables</code> map; conditional UNION ALL in <code>lnk_pipeline_classify_build_breaks</code> so the new break source emits <code>'blocked'</code> into <code>fresh.streams_breaks</code> when the config opts in.</li>
+<li>Inclusion is gated on <code>cfg$pipeline$break_order</code> containing <code>'subsurfaceflow'</code> at every site (prepare, break, classify). Configs control the toggle, not code.</li>
+<li>
+<code>inst/extdata/configs/bcfishpass/config.yaml</code> opts in (parity with bcfishpass). <code>inst/extdata/configs/default/config.yaml</code> does not opt in (NewGraph methodology decision pending).</li>
+<li>
+<code><a href="../reference/lnk_pipeline_break.html">?lnk_pipeline_break</a></code> gains a <code>## Break sources</code> table covering every valid <code>break_order</code> entry — source table, role, classify-phase label. Both bundled <code>config.yaml</code> files carry an inline comment listing the available entries with one-line semantics so future-readers see the toggle without leaving the config file.</li>
+</ul><p><strong>Parity claim retraction</strong>. Earlier framing (“all species within 5%”, “exact reproduction”) held only on a small set of pre-selected WSGs. The 10-WSG rollup surfaced systematic gaps. Vignette pulled, README and DESCRIPTION reframed as experimental.</p>
+<ul><li>
+<code>vignettes/habitat-bcfishpass.Rmd</code> removed; bundled vignette data in <code>inst/extdata/vignette-data/</code> removed.</li>
+<li>
+<code>README.md</code> rewritten as one-liner (“Experimental package — breaking all the time and loving the learning curve”) plus install + license.</li>
+<li>
+<code>DESCRIPTION</code> Title and Description reframed; <code>bookdown</code>, <code>knitr</code>, <code>mapgl</code>, <code>rmarkdown</code> dropped from Suggests; <code>VignetteBuilder</code> removed.</li>
+<li>
+<code>data-raw/_targets.R</code> extended to 10 WSGs (PARS, MORR, KISP, KOTL, NATR added).</li>
+<li>
+<code>research/bcfishpass_comparison.md</code> retraction at top with the diagnosis tables and the natural-vs-anthropogenic two-tier classification reference; historical content preserved below.</li>
+<li>
+<code>CLAUDE.md</code> Status block flags remaining gaps.</li>
+</ul><p><strong>Remaining departures</strong> (per <code>research/bcfishpass_comparison.md</code>): 7 of 210 spawning/rearing/rearing_stream rows &gt;5%, six of seven <code>link &lt; bcfishpass</code>. Concentrated on MORR ST (cluster connectivity), MORR SK and KISP SK (new geographies for the existing fresh#147 SK lake-proximity logic). Tracked separately; not in this release.</p>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.18.1" id="link-0181">link 0.18.1<a class="anchor" aria-label="anchor" href="#link-0181"></a></h2>
 <p>Closes <a href="https://github.com/NewGraphEnvironment/link/issues/78" class="external-link">#78</a>. Adds attribution for redistributed upstream data and refreshes the package Title + Description to reflect the package’s current scope.</p>

@@ -13,13 +13,13 @@ Source:
 [`DESCRIPTION`](https://github.com/NewGraphEnvironment/link/blob/main/DESCRIPTION)
 
 Irvine A (2026). *link: Stream Network Habitat Interpretation
-(Experimental)*. R package version 0.18.1,
+(Experimental)*. R package version 0.19.0,
 <https://github.com/NewGraphEnvironment/link>.
 
     @Manual{,
       title = {link: Stream Network Habitat Interpretation (Experimental)},
       author = {Allan Irvine},
       year = {2026},
-      note = {R package version 0.18.1},
+      note = {R package version 0.19.0},
       url = {https://github.com/NewGraphEnvironment/link},
     }
