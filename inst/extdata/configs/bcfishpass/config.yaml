@@ -106,16 +106,16 @@ provenance:
   overrides/user_pscis_barrier_status.csv:
     source: https://github.com/smnorris/bcfishpass
     path: data/user_pscis_barrier_status.csv
-    upstream_sha: e48d713
-    synced: '2026-04-27'
-    checksum: sha256:9b4929f882ac46e5632bdbe3c587421be42ac31c0005cd2b7e4d1028fa2a47ac
+    upstream_sha: a1bf95f
+    synced: 2026-04-30
+    checksum: sha256:dcc3ae2bc21370310bebce14fe394438843949b32338c7d4ea445867224479cf
     shape_checksum: sha256:fb611fc77ebbe15429826d7acfe57d487118d7815dea9b2ad5a3f94f03a487e8
   overrides/pscis_modelledcrossings_streams_xref.csv:
     source: https://github.com/smnorris/bcfishpass
     path: data/pscis_modelledcrossings_streams_xref.csv
-    upstream_sha: 40c4a0a
-    synced: '2026-04-27'
-    checksum: sha256:f76470febe3a4d26e13ada144b594c2571033fa00676b7622f3c628fed21206f
+    upstream_sha: a1bf95f
+    synced: 2026-04-30
+    checksum: sha256:cc990df40b7dd647024e5cd6d000d1ac63e37e85bf2f6bf199cd17be5bd2a639
     shape_checksum: sha256:c2cebcc7398ddd12d0803eefafbe219f3551e6948051f18d89d7984130c1589d
   overrides/user_barriers_definite.csv:
     source: https://github.com/smnorris/bcfishpass
