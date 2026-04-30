@@ -1,13 +1,9 @@
-# link: Habitat and Connectivity Interpretation for Stream Networks
+# link: Stream Network Habitat Interpretation (Experimental)
 
-Domain interpretation layer over stream network models. Connects point
-features — crossings, observations, barriers, habitat confirmations — to
-the network and interprets what they mean for habitat: intrinsic
-potential, accessibility under network connectivity, per-feature
-rollups. Pairs with 'fresh', the network modelling engine; 'fresh'
-answers what the habitat is, 'link' answers what the features mean for
-the network. Pipelines are driven by manifest config bundles so
-methodology choices are data, not code, and reproducible across runs.
+Experimental tooling for interpreting field and modelled inputs as
+per-segment habitat classifications on stream networks. Pairs with
+'fresh'. Under active development; APIs and outputs change without
+notice.
 
 ## See also
 
