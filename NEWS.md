@@ -1,13 +1,25 @@
-# link (development)
+# link 0.19.0
 
-Pull the parity claim. Expanding the bcfishpass-config comparison from 5 to 10 watershed groups (`data-raw/logs/20260429_01_tar_make_10wsg.txt`) surfaced material departures (NATR BT spawning +15.2%, NATR BT rearing +13.0%, KISP SK spawning +42%) that earlier WSGs masked. Root cause: link is missing barrier classes that bcfishpass uses — subsurface-flow (`edge_type 1410/1425`) and CABD-sourced dams; CABD edits to falls (additions / exclusions / blkey_xref / passability_status_updates) are also not applied. See `research/bcfishpass_comparison.md` for the diagnosis.
+Closes [#82](https://github.com/NewGraphEnvironment/link/pull/82). Subsurface-flow access barriers + parity claim retraction.
 
-- `vignettes/habitat-bcfishpass.Rmd` removed — the parity narrative no longer holds. Bundled vignette data in `inst/extdata/vignette-data/` removed alongside.
-- `README.md` rewritten as one-liner ("Experimental package — breaking all the time and loving the learning curve") plus install + license. Five-line demo, methodology-as-data narrative, ecosystem table, function reference link removed.
-- `DESCRIPTION` Title and Description reframed as experimental; `bookdown`, `knitr`, `mapgl`, `rmarkdown` dropped from Suggests, `VignetteBuilder` removed.
-- `data-raw/_targets.R` extended to 10 WSGs (PARS, MORR, KISP, KOTL, NATR added) so the rollup reflects broader geographic coverage.
-- `research/bcfishpass_comparison.md` retraction at top; historical content preserved below.
-- `CLAUDE.md` Status block flags the gap; older parity-claim entries annotated with the retraction.
+**Subsurface-flow as opt-in access barrier**. Closes the largest single gap surfaced when expanding the bcfishpass-config rollup from 5 to 10 watershed groups: NATR BT spawning +15.2% → +1.5%, NATR BT rearing +13.0% → -0.6% (10-WSG `tar_make` log: `data-raw/logs/20260429_02_tar_make_subsurf.txt`).
+
+- New `.lnk_pipeline_prep_subsurfaceflow()` materialises `<schema>.barriers_subsurfaceflow` from `whse_basemapping.fwa_stream_networks_sp` filtered to `edge_type IN (1410, 1425)`. Honours `user_barriers_definite_control`. Mirrors bcfishpass `model/01_access/sql/barriers_subsurfaceflow.sql` exactly.
+- New `subsurfaceflow` entry in `lnk_pipeline_break.R` `source_tables` map; conditional UNION ALL in `lnk_pipeline_classify_build_breaks` so the new break source emits `'blocked'` into `fresh.streams_breaks` when the config opts in.
+- Inclusion is gated on `cfg$pipeline$break_order` containing `'subsurfaceflow'` at every site (prepare, break, classify). Configs control the toggle, not code.
+- `inst/extdata/configs/bcfishpass/config.yaml` opts in (parity with bcfishpass). `inst/extdata/configs/default/config.yaml` does not opt in (NewGraph methodology decision pending).
+- `?lnk_pipeline_break` gains a `## Break sources` table covering every valid `break_order` entry — source table, role, classify-phase label. Both bundled `config.yaml` files carry an inline comment listing the available entries with one-line semantics so future-readers see the toggle without leaving the config file.
+
+**Parity claim retraction**. Earlier framing ("all species within 5%", "exact reproduction") held only on a small set of pre-selected WSGs. The 10-WSG rollup surfaced systematic gaps. Vignette pulled, README and DESCRIPTION reframed as experimental.
+
+- `vignettes/habitat-bcfishpass.Rmd` removed; bundled vignette data in `inst/extdata/vignette-data/` removed.
+- `README.md` rewritten as one-liner ("Experimental package — breaking all the time and loving the learning curve") plus install + license.
+- `DESCRIPTION` Title and Description reframed; `bookdown`, `knitr`, `mapgl`, `rmarkdown` dropped from Suggests; `VignetteBuilder` removed.
+- `data-raw/_targets.R` extended to 10 WSGs (PARS, MORR, KISP, KOTL, NATR added).
+- `research/bcfishpass_comparison.md` retraction at top with the diagnosis tables and the natural-vs-anthropogenic two-tier classification reference; historical content preserved below.
+- `CLAUDE.md` Status block flags remaining gaps.
+
+**Remaining departures** (per `research/bcfishpass_comparison.md`): 7 of 210 spawning/rearing/rearing_stream rows >5%, six of seven `link < bcfishpass`. Concentrated on MORR ST (cluster connectivity), MORR SK and KISP SK (new geographies for the existing fresh#147 SK lake-proximity logic). Tracked separately; not in this release.
 
 # link 0.18.1
 
