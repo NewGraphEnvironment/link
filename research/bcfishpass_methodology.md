@@ -2,6 +2,38 @@
 
 Living doc capturing bcfishpass's per-species classification logic, link's matching dimensions, and methodology choices we've made (or deferred). Cross-links: `research/bcfishpass_comparison.md` (rollup history + bug fixes), `research/dimensions_audit.md` (per-column audit), open issues, and merged PRs.
 
+## Reading the rollup
+
+Every `tar_make()` produces a rollup tibble with one row per `(config, wsg, species, habitat_type)`. Two `config` values are interleaved:
+
+| `config` filter | meaning | use |
+|---|---|---|
+| `config == "bcfishpass"` | link's bcfishpass-bundle output, compared against bcfp's `habitat_linear_<sp>` | **parity test** — we want `diff_pct ≈ 0`. Material >5% rows are bugs to investigate. |
+| `config == "default"` | link's default-bundle output (NewGraph methodology), compared against bcfp's `habitat_linear_<sp>` | **methodology comparison** — `diff_pct` is intentional; magnitude reveals how much more / less habitat NewGraph methodology credits relative to bcfp. Findings for ecologist review, not bugs. |
+
+Helpful slices saved per run to `data-raw/logs/`:
+
+- `<date>_<n>_rollup_full.csv` — all rows (parity + methodology + edge-type slices)
+- `<date>_<n>_parity_only.csv` — `config == "bcfishpass"` rows for parity reading
+- `<date>_<n>_methodology_default_vs_bcfp.csv` — `config == "default"` rows for methodology audit
+
+When discussing "parity gap": always cite the parity-only slice. When discussing "departure of NewGraph methodology from bcfp": cite the methodology slice.
+
+## Rollup query asymmetry on `lake_rearing` / `wetland_rearing` (known)
+
+The `lake_rearing_ha` and `wetland_rearing_ha` rollup metrics have asymmetric filter logic on each side:
+
+| side | filter |
+|---|---|
+| link | `h.lake_rearing IS TRUE` (dedicated boolean — only set when `rear_lake = yes` in dimensions) |
+| bcfp | `h.rearing IS TRUE` joined to `fwa_lakes_poly` on `s.waterbody_key` |
+
+For species/configs where link's `rear_lake = no` (e.g. all of bcfp-bundle except SK), link's `h.lake_rearing` column is FALSE everywhere → 0 ha → diff_pct = -100% against bcfp's "rearing-and-in-lake-poly" computation. These -100% rows are not parity defects — they reflect link's intentional lack of lake_rearing flagging when the species' methodology doesn't credit lake habitat as rearing.
+
+Same asymmetry on `wetland_rearing_ha`. When reviewing parity, **filter out `habitat_type IN ('lake_rearing','wetland_rearing')` for species/configs where the dimension is `no`**; or treat them as informational only.
+
+This could be cleaned up by changing the bcfp-side rollup query to apply the same per-species methodology gate. Tracked as a follow-up; not blocking parity work.
+
 ## Per-species rear-rule waterbody filter (verified 2026-04-30)
 
 Read directly from `bcfishpass/model/02_habitat_linear/sql/load_habitat_linear_<sp>.sql`, "REARING ON SPAWNING STREAMS" INSERT.

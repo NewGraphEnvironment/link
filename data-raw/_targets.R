@@ -11,8 +11,13 @@
 #   DEAD (added 2026-04-23 with #44) — end-to-end test for the
 #     `barriers_definite_control` filter.
 #   PARS / MORR / KISP / KOTL / NATR (added 2026-04-29) — geographic
-#     sanity check before moving to new work; broadens parity coverage
-#     across northern/interior watersheds.
+#     sanity check; broadens parity coverage across northern/interior
+#     watersheds.
+#   HORS / LFRA / VICT / LILL / HARR (added 2026-04-30) — second-pass
+#     breadth check after fresh#186/#187 + dimensions.csv flips.
+#     LFRA is the Lower Fraser (anadromous-heavy). HARR has Harrison
+#     Lake — large multi-lake topology, tests fresh#190 mechanism.
+#     VICT brings coastal/island coverage. HORS, LILL fill out interior.
 #
 # Configs:
 #   bcfishpass — validation config, reproduces bcfishpass exactly.
@@ -48,7 +53,8 @@ tar_option_set(
 )
 
 wsgs <- c("ADMS", "BULK", "BABL", "ELKR", "DEAD",
-          "PARS", "MORR", "KISP", "KOTL", "NATR")
+          "PARS", "MORR", "KISP", "KOTL", "NATR",
+          "HORS", "LFRA", "VICT", "LILL", "HARR")
 
 list(
   # --- Config bundles ---
@@ -83,7 +89,10 @@ list(
         comparison_bcfishpass_DEAD,
         comparison_bcfishpass_PARS, comparison_bcfishpass_MORR,
         comparison_bcfishpass_KISP, comparison_bcfishpass_KOTL,
-        comparison_bcfishpass_NATR
+        comparison_bcfishpass_NATR,
+        comparison_bcfishpass_HORS, comparison_bcfishpass_LFRA,
+        comparison_bcfishpass_VICT, comparison_bcfishpass_LILL,
+        comparison_bcfishpass_HARR
       ),
       default = dplyr::bind_rows(
         comparison_default_ADMS, comparison_default_BULK,
@@ -91,7 +100,10 @@ list(
         comparison_default_DEAD,
         comparison_default_PARS, comparison_default_MORR,
         comparison_default_KISP, comparison_default_KOTL,
-        comparison_default_NATR
+        comparison_default_NATR,
+        comparison_default_HORS, comparison_default_LFRA,
+        comparison_default_VICT, comparison_default_LILL,
+        comparison_default_HARR
       ),
       .id = "config"
     )
