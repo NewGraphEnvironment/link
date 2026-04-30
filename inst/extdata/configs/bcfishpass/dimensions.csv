@@ -2,8 +2,8 @@ species,spawn_lake,spawn_stream,spawn_stream_in_waterbody,rear_lake,rear_lake_on
 BT,no,yes,no,no,no,no,no,yes,no,no,no,no,yes,yes,no,,,,,,,,,bcfishpass: rear_all_edges=yes means no edge_type filter for rearing.
 CH,no,yes,no,no,no,no,no,yes,no,no,no,no,no,yes,no,,,,,,,,,bcfishpass: stream order bypass handled in compare script Step 7b.
 CM,no,yes,no,no,no,no,yes,no,no,no,no,no,no,yes,no,,,,,,,,,bcfishpass: no freshwater rearing.
-CO,no,yes,no,no,no,no,no,yes,no,yes,no,no,no,yes,no,,,,,,,,,bcfishpass: wetland-flow carve-out (1050/1150 no thresholds); polygon=no excludes the W-polygon rule.
+CO,no,yes,no,no,no,no,no,yes,yes,yes,no,no,no,yes,no,,,,,,,,,bcfishpass: wetland-flow carve-out (1050/1150 no thresholds); polygon=no excludes the W-polygon rule.
 PK,no,yes,no,no,no,no,yes,no,no,no,no,no,no,yes,no,,,,,,,,,bcfishpass: no freshwater rearing.
 SK,no,yes,no,yes,yes,no,no,no,no,no,no,no,no,yes,no,rearing,3000,downstream,0.05,0,,,,bcfishpass: lake-only rearing. Spawning within 3km ds of rearing lake.
-ST,no,yes,no,no,no,no,no,yes,no,no,no,no,no,yes,no,,,,,,,,,bcfishpass: stream order bypass handled in compare script Step 7b.
+ST,no,yes,no,no,no,no,no,yes,yes,no,no,no,no,yes,no,,,,,,,,,bcfishpass: stream order bypass handled in compare script Step 7b.
 WCT,no,yes,no,no,no,no,no,yes,no,no,no,no,no,yes,no,,,,,,,,,bcfishpass: stream order bypass handled in compare script Step 7b.

@@ -66,12 +66,17 @@ lnk_map_compare <- function(wsg, species, habitat,
     if (file.exists(rds)) readRDS(rds) else { x <- fn(); saveRDS(x, rds); x }
   }
 
+  # Aliasing the side-specific id columns to seg_id so popup label is uniform.
+  # link: id_segment is per-pipeline-run (not stable across reruns).
+  # bcfp: segmented_stream_id is the canonical bcfp segment id.
+
   bcfp_axis <- cached(
     file.path(cache_d, sprintf("%s_%s_bcfp_%s.rds", wsg, species, habitat)),
     function() {
       c <- conn_ref(); on.exit(DBI::dbDisconnect(c))
       sf::st_read(c, query = sprintf("
-        SELECT s.segmented_stream_id, s.blue_line_key, s.downstream_route_measure,
+        SELECT s.segmented_stream_id::text AS seg_id,
+               s.blue_line_key, s.downstream_route_measure,
                s.gnis_name, s.edge_type, s.length_metre, s.gradient,
                s.stream_order, s.geom
         FROM bcfishpass.streams s
@@ -88,7 +93,8 @@ lnk_map_compare <- function(wsg, species, habitat,
       c <- conn_ref(); on.exit(DBI::dbDisconnect(c))
       other <- if (habitat == "rearing") "spawning" else "rearing"
       sf::st_read(c, query = sprintf("
-        SELECT s.segmented_stream_id, s.blue_line_key, s.downstream_route_measure,
+        SELECT s.segmented_stream_id::text AS seg_id,
+               s.blue_line_key, s.downstream_route_measure,
                s.gnis_name, s.edge_type, s.length_metre, s.gradient,
                s.stream_order, s.geom
         FROM bcfishpass.streams s
@@ -103,7 +109,8 @@ lnk_map_compare <- function(wsg, species, habitat,
     function() {
       c <- conn_local(); on.exit(DBI::dbDisconnect(c))
       sf::st_read(c, query = sprintf("
-        SELECT s.id_segment, s.blue_line_key, s.downstream_route_measure,
+        SELECT s.id_segment::text AS seg_id,
+               s.blue_line_key, s.downstream_route_measure,
                s.edge_type, s.length_metre, s.gradient, s.stream_order, s.geom
         FROM fresh.streams s
         JOIN fresh.streams_habitat h
@@ -119,7 +126,8 @@ lnk_map_compare <- function(wsg, species, habitat,
       c <- conn_local(); on.exit(DBI::dbDisconnect(c))
       other <- if (habitat == "rearing") "spawning" else "rearing"
       sf::st_read(c, query = sprintf("
-        SELECT s.id_segment, s.blue_line_key, s.downstream_route_measure,
+        SELECT s.id_segment::text AS seg_id,
+               s.blue_line_key, s.downstream_route_measure,
                s.edge_type, s.length_metre, s.gradient, s.stream_order, s.geom
         FROM fresh.streams s
         JOIN fresh.streams_habitat h
@@ -184,7 +192,8 @@ lnk_map_compare <- function(wsg, species, habitat,
     df |>
       dplyr::left_join(et_lookup, by = "edge_type") |>
       dplyr::mutate(label = paste0(
-        side, " | blkey ", blue_line_key,
+        side, " | seg_id ", seg_id,
+        " | blkey ", blue_line_key,
         " | DRM ", round(downstream_route_measure),
         " | edge ", edge_type, " (", edge_desc, ")",
         " | grad ", formatC(gradient, format = "f", digits = 4),
