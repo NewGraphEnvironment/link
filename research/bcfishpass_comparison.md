@@ -2,9 +2,27 @@
 
 fresh 0.14.0 + link 0.4.0 vs bcfishpass (reference `habitat_linear_*` tables on tunnel, bcfishpass ea3c5d8, fwapg 20240830).
 
-## Correctness bar
+## 2026-04-29 — parity claim retracted
 
-**Bit-identical output from the same inputs.** Three consecutive `tar_make()` runs on 2026-04-22 produced the exact same 34-row rollup tibble (`data-raw/logs/20260422_{10,11,12}_*.txt`). Parity to bcfishpass (the `diff_pct` column in the rollup) is an informational diagnostic, not the pass/fail standard.
+Earlier framing ("all species within 5%", "exact reproduction") held only on a small set of pre-selected WSGs (ADMS, BABL, BULK, ELKR, DEAD) where the missing barrier classes happened not to bite. Expanding the comparison to PARS, MORR, KISP, KOTL, NATR (`data-raw/logs/20260429_01_tar_make_10wsg.txt`) surfaced material departures — NATR BT spawning +15.2%, NATR BT rearing +13.0%, KISP SK spawning +42% — that are not methodology choices.
+
+Root cause: link's bcfishpass-config bundle is missing barrier classes that bcfishpass's pipeline uses.
+
+| Class | bcfishpass source | link source | Status |
+|---|---|---|---|
+| Subsurface flow | `whse_basemapping.fwa_stream_networks_sp` where `edge_type IN (1410, 1425)` honoured as access barrier | not modelled | gap |
+| Falls | `cabd.waterfalls` + four CABD edit CSVs (`cabd_additions`, `cabd_exclusions`, `cabd_blkey_xref`, `cabd_passability_status_updates`) | `fresh::falls.csv` (static, no CABD edits) | partial |
+| Dams | `cabd.dams` + same four CABD edit CSVs, `passability_status_code = 1` → barrier | not modelled | gap |
+| Gradient | derived | derived (`gradient_minimal`) | OK |
+| User definite | `user_barriers_definite.csv` | same | OK |
+
+Confirmed mechanism on stream `blue_line_key = 359569193` in NATR: bcfishpass cuts BT rearing at DRM 16,466 m at a `SUBSURFACEFLOW` barrier. Link extends rearing 94 km further upstream. NATR has the highest proportional subsurface burden of any tested WSG (7.6% of `barriers_bt`); the parity WSGs sit at ≤3.8%.
+
+Vignette pulled, README and DESCRIPTION reframed as experimental. Code work tracked in issues #N (subsurfaceflow), #N (CABD wiring) — TBD.
+
+## Correctness bar (historical, retracted)
+
+**Bit-identical output from the same inputs.** Three consecutive `tar_make()` runs on 2026-04-22 produced the exact same 34-row rollup tibble (`data-raw/logs/20260422_{10,11,12}_*.txt`). Parity to bcfishpass (the `diff_pct` column in the rollup) was framed as an informational diagnostic. The 2026-04-29 expansion shows the rollup-level diff_pct is in fact reading real defects, not just methodology. Treat the section below as historical, not as current state.
 
 ## Results (2026-04-22, rollup from `tar_make()`)
 

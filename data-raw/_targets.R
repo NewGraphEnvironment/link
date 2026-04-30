@@ -1,15 +1,18 @@
 # data-raw/_targets.R
 #
 # Pipeline definition for the bcfishpass + default comparison.
-# Orchestrates the six lnk_pipeline_* phase helpers across five
+# Orchestrates the six lnk_pipeline_* phase helpers across ten
 # watershed groups for BOTH config bundles and rolls up the per-WSG
 # diff tibbles into one compound rollup (rearing_km + lake/wetland ha
 # per species per config).
 #
 # WSGs:
-#   ADMS / BULK / BABL / ELKR — numerical-parity WSGs.
+#   ADMS / BULK / BABL / ELKR — original numerical-parity WSGs.
 #   DEAD (added 2026-04-23 with #44) — end-to-end test for the
 #     `barriers_definite_control` filter.
+#   PARS / MORR / KISP / KOTL / NATR (added 2026-04-29) — geographic
+#     sanity check before moving to new work; broadens parity coverage
+#     across northern/interior watersheds.
 #
 # Configs:
 #   bcfishpass — validation config, reproduces bcfishpass exactly.
@@ -44,7 +47,8 @@ tar_option_set(
   packages = c("link", "fresh", "DBI", "RPostgres", "tibble", "dplyr")
 )
 
-wsgs <- c("ADMS", "BULK", "BABL", "ELKR", "DEAD")
+wsgs <- c("ADMS", "BULK", "BABL", "ELKR", "DEAD",
+          "PARS", "MORR", "KISP", "KOTL", "NATR")
 
 list(
   # --- Config bundles ---
@@ -76,12 +80,18 @@ list(
       bcfishpass = dplyr::bind_rows(
         comparison_bcfishpass_ADMS, comparison_bcfishpass_BULK,
         comparison_bcfishpass_BABL, comparison_bcfishpass_ELKR,
-        comparison_bcfishpass_DEAD
+        comparison_bcfishpass_DEAD,
+        comparison_bcfishpass_PARS, comparison_bcfishpass_MORR,
+        comparison_bcfishpass_KISP, comparison_bcfishpass_KOTL,
+        comparison_bcfishpass_NATR
       ),
       default = dplyr::bind_rows(
         comparison_default_ADMS, comparison_default_BULK,
         comparison_default_BABL, comparison_default_ELKR,
-        comparison_default_DEAD
+        comparison_default_DEAD,
+        comparison_default_PARS, comparison_default_MORR,
+        comparison_default_KISP, comparison_default_KOTL,
+        comparison_default_NATR
       ),
       .id = "config"
     )

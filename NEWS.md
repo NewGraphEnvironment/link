@@ -1,3 +1,14 @@
+# link (development)
+
+Pull the parity claim. Expanding the bcfishpass-config comparison from 5 to 10 watershed groups (`data-raw/logs/20260429_01_tar_make_10wsg.txt`) surfaced material departures (NATR BT spawning +15.2%, NATR BT rearing +13.0%, KISP SK spawning +42%) that earlier WSGs masked. Root cause: link is missing barrier classes that bcfishpass uses — subsurface-flow (`edge_type 1410/1425`) and CABD-sourced dams; CABD edits to falls (additions / exclusions / blkey_xref / passability_status_updates) are also not applied. See `research/bcfishpass_comparison.md` for the diagnosis.
+
+- `vignettes/habitat-bcfishpass.Rmd` removed — the parity narrative no longer holds. Bundled vignette data in `inst/extdata/vignette-data/` removed alongside.
+- `README.md` rewritten as one-liner ("Experimental package — breaking all the time and loving the learning curve") plus install + license. Five-line demo, methodology-as-data narrative, ecosystem table, function reference link removed.
+- `DESCRIPTION` Title and Description reframed as experimental; `bookdown`, `knitr`, `mapgl`, `rmarkdown` dropped from Suggests, `VignetteBuilder` removed.
+- `data-raw/_targets.R` extended to 10 WSGs (PARS, MORR, KISP, KOTL, NATR added) so the rollup reflects broader geographic coverage.
+- `research/bcfishpass_comparison.md` retraction at top; historical content preserved below.
+- `CLAUDE.md` Status block flags the gap; older parity-claim entries annotated with the retraction.
+
 # link 0.18.1
 
 Closes [#78](https://github.com/NewGraphEnvironment/link/issues/78). Adds attribution for redistributed upstream data and refreshes the package Title + Description to reflect the package's current scope.
