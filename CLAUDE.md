@@ -1,14 +1,26 @@
 # link
 
-Habitat and connectivity interpretation for stream networks — link field
-and modelled inputs onto the network as per-segment classifications via
-`fresh`. The domain interpretation + pipeline-orchestration layer over
-`fresh`’s generic network engine.
+Experimental package — breaking all the time and loving the learning
+curve. Stream-network habitat-classification tooling layered over
+`fresh`. Under active development; APIs and outputs change without
+notice.
 
 ## Repository Context
 
 **Repository:** NewGraphEnvironment/link **Primary Language:** R
 **Prefix:** `lnk_` **Branch:** `main` (v0.18.1 as of 2026-04-29)
+
+## Status (2026-04-29)
+
+Not at parity with bcfishpass despite earlier “exact reproduction”
+framing. The bcfishpass-config bundle is missing barrier classes that
+bcfishpass uses: subsurface-flow (edge_type 1410/1425) is not modelled
+at all; falls are sourced from a static CSV in `fresh` rather than
+`cabd.waterfalls` + the four CABD edit CSVs (additions / exclusions /
+blkey_xref / passability_status_updates); dams are not modelled at all.
+Per-WSG diff_pct in the rollup reflects these gaps, not just methodology
+choice. Closing the gaps is the active work — issue \#N (TBD) tracks
+subsurfaceflow + CABD wiring.
 
 ## Architecture
 
@@ -323,19 +335,18 @@ with `species` for sub-basin work.
 
 ## Older closed
 
-- \#69 — Dimensions-driven `in_waterbody` + `area_only` emission with
-  proof artifact → PRs \#71 (phase 1, v0.14.0), \#72 (phase 2, v0.15.0),
-  \#73 (phase 3 + emit-fix, v0.16.0). bcfishpass-bundle BABL parity:
-  42/42 within ±5%, 35/42 within ±2%, median 1.1%, max 5.0%.
-- \#68 — Vignette ship → superseded by \#74 (v0.17.0); ships
-  `vignettes/habitat-bcfishpass.Rmd` with per-segment popups,
-  fullscreen, dimensions seed dictionary.
+- \#69 — Dimensions-driven `in_waterbody` + `area_only` emission → PRs
+  \#71/#72/#73 (v0.14.0–v0.16.0).
+- \#68 — Vignette ship — superseded by \#74 (v0.17.0). Vignette removed
+  2026-04-29 once parity claim was retracted.
 - \#23 — CH spawning stream order exception QA — closed as not-a-bug
   (premise was a misread of bcfishpass spawning bypass: it uses
   `waterbody_key IS NOT NULL`, NOT `stream_order_parent`. Stream-order
   bypass exists in CH **rearing** only, tracked in fresh#158).
-- \#16 — ADMS comparison (all species within 5% on all 4 parity WSGs;
-  tagged via PRs \#41/#42/#43 for targets-driven reproducibility)
+- \#16 — ADMS comparison (tagged via PRs \#41/#42/#43 for targets-driven
+  reproducibility). Note: the “within 5%” framing was on a small set of
+  pre-selected WSGs and missed barrier-class gaps surfaced in
+  2026-04-29.
 - \#38 — `_targets.R` pipeline → PRs \#41/#42/#43 (v0.3.0/v0.4.0/v0.5.0)
 - \#44 — `barriers_definite_control` override wiring → PR \#47 (v0.6.0)
 - \#46 — Manifest-driven pipeline probes → PR \#50 (v0.7.0 refactor, no

@@ -12,12 +12,12 @@
 Source:
 [`DESCRIPTION`](https://github.com/NewGraphEnvironment/link/blob/main/DESCRIPTION)
 
-Irvine A (2026). *link: Habitat and Connectivity Interpretation for
-Stream Networks*. R package version 0.18.1,
+Irvine A (2026). *link: Stream Network Habitat Interpretation
+(Experimental)*. R package version 0.18.1,
 <https://github.com/NewGraphEnvironment/link>.
 
     @Manual{,
-      title = {link: Habitat and Connectivity Interpretation for Stream Networks},
+      title = {link: Stream Network Habitat Interpretation (Experimental)},
       author = {Allan Irvine},
       year = {2026},
       note = {R package version 0.18.1},

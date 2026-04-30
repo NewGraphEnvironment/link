@@ -16,10 +16,6 @@
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="reference/index.html">Reference</a></li>
-<li class="nav-item dropdown">
-  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="articles/habitat-bcfishpass.html">Modelling spawning and rearing habitat using bcfishpass defaults</a></li>
-  </ul></li>
 <li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="search.json"></form></li>
@@ -38,10 +34,14 @@
 
 <div id="link" class="section level1">
 
-<p>Habitat and connectivity interpretation for stream networks — link field and modelled inputs onto the network as per-segment classifications via <code>fresh</code>. The domain interpretation + pipeline-orchestration layer over <code>fresh</code>’s generic network engine.</p>
+<p>Experimental package — breaking all the time and loving the learning curve. Stream-network habitat-classification tooling layered over <code>fresh</code>. Under active development; APIs and outputs change without notice.</p>
 <div class="section level2">
 <h2 id="repository-context">Repository Context<a class="anchor" aria-label="anchor" href="#repository-context"></a></h2>
 <p><strong>Repository:</strong> NewGraphEnvironment/link <strong>Primary Language:</strong> R <strong>Prefix:</strong> <code>lnk_</code> <strong>Branch:</strong> <code>main</code> (v0.18.1 as of 2026-04-29)</p>
+</div>
+<div class="section level2">
+<h2 id="status-2026-04-29">Status (2026-04-29)<a class="anchor" aria-label="anchor" href="#status-2026-04-29"></a></h2>
+<p>Not at parity with bcfishpass despite earlier “exact reproduction” framing. The bcfishpass-config bundle is missing barrier classes that bcfishpass uses: subsurface-flow (edge_type 1410/1425) is not modelled at all; falls are sourced from a static CSV in <code>fresh</code> rather than <code>cabd.waterfalls</code> + the four CABD edit CSVs (additions / exclusions / blkey_xref / passability_status_updates); dams are not modelled at all. Per-WSG diff_pct in the rollup reflects these gaps, not just methodology choice. Closing the gaps is the active work — issue #N (TBD) tracks subsurfaceflow + CABD wiring.</p>
 </div>
 <div class="section level2">
 <h2 id="architecture">Architecture<a class="anchor" aria-label="anchor" href="#architecture"></a></h2>
@@ -264,10 +264,10 @@ bcdata (PSCIS assessments)   ─┘</code></pre>
 </ul></div>
 <div class="section level2">
 <h2 id="older-closed">Older closed<a class="anchor" aria-label="anchor" href="#older-closed"></a></h2>
-<ul><li>#69 — Dimensions-driven <code>in_waterbody</code> + <code>area_only</code> emission with proof artifact → PRs #71 (phase 1, v0.14.0), #72 (phase 2, v0.15.0), #73 (phase 3 + emit-fix, v0.16.0). bcfishpass-bundle BABL parity: 42/42 within ±5%, 35/42 within ±2%, median 1.1%, max 5.0%.</li>
-<li>#68 — Vignette ship → superseded by #74 (v0.17.0); ships <code>vignettes/habitat-bcfishpass.Rmd</code> with per-segment popups, fullscreen, dimensions seed dictionary.</li>
+<ul><li>#69 — Dimensions-driven <code>in_waterbody</code> + <code>area_only</code> emission → PRs #71/#72/#73 (v0.14.0–v0.16.0).</li>
+<li>#68 — Vignette ship — superseded by #74 (v0.17.0). Vignette removed 2026-04-29 once parity claim was retracted.</li>
 <li>#23 — CH spawning stream order exception QA — closed as not-a-bug (premise was a misread of bcfishpass spawning bypass: it uses <code>waterbody_key IS NOT NULL</code>, NOT <code>stream_order_parent</code>. Stream-order bypass exists in CH <strong>rearing</strong> only, tracked in fresh#158).</li>
-<li>#16 — ADMS comparison (all species within 5% on all 4 parity WSGs; tagged via PRs #41/#42/#43 for targets-driven reproducibility)</li>
+<li>#16 — ADMS comparison (tagged via PRs #41/#42/#43 for targets-driven reproducibility). Note: the “within 5%” framing was on a small set of pre-selected WSGs and missed barrier-class gaps surfaced in 2026-04-29.</li>
 <li>#38 — <code>_targets.R</code> pipeline → PRs #41/#42/#43 (v0.3.0/v0.4.0/v0.5.0)</li>
 <li>#44 — <code>barriers_definite_control</code> override wiring → PR #47 (v0.6.0)</li>
 <li>#46 — Manifest-driven pipeline probes → PR #50 (v0.7.0 refactor, no bump)</li>
