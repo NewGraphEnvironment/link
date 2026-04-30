@@ -87,11 +87,28 @@ Deferred until we can verify the predicate behaviour in a focused test. Open iss
 
 Out of 210 spawning/rearing/rearing_stream rows × 2 configs:
 
-| wsg | species | metric | link | bcfp | diff_pct | next step |
+| wsg | species | metric | link | bcfp | diff_pct | status |
 |---|---|---|---|---|---|---|
-| BULK | SK | spawning | 27.1 | 24.4 | +11.0 | small absolute (2.7 km); investigate but not blocker |
+| BULK | SK | spawning | 27.1 | 24.4 | +11.0 | **parked** — see "Known parked departures" below |
 
 **One row.** Down from 7 outliers >5% before this work cycle.
+
+## Known parked departures
+
+### BULK SK spawning multi-lake topology — fresh#190
+
+Single-stream over-credit on `blue_line_key 360846413` (link 6.38 km vs bcfp 3.70 km, 2.68 km extra). Stream has TWO qualifying SK rearing lakes (Elwin 287.9 ha at DRM 9,718–12,896 + Day Lake 316.8 ha at DRM 15,924+) on the same drainage. bcfp's upstream-spawning logic (`load_habitat_linear_sk.sql` lines 137–253) and fresh's `.frs_connected_waterbody` Phase 2 (`R/frs_habitat.R:1494–1540`) are structurally identical (same DBSCAN cluster + 2m lake-polygon proximity check), but produce different segment sets on this specific topology.
+
+Three hypotheses (not pinned down):
+1. Spawn-eligible input set differs at the cluster-input step
+2. DBSCAN cluster spans both lakes and the union geometry touches one qualifying polygon, dragging in segments bcfp would have isolated to a separate non-touching cluster
+3. Polygon-edge precision in the 2m `ST_DWithin` check
+
+**Why parked**: 2.68 km absolute on one stream out of 27.06 km of BULK SK spawning. SK spawning is exact or near-exact on every other tested WSG (KISP 0.0%, MORR +1.8%, ADMS +1.1%, BABL -3.8%). Topology is unusual — most drainages don't have two ≥200 ha rearing lakes 6 km apart on the same blue_line_key.
+
+**When to revisit**: if running the rollup on more WSGs surfaces similar +10% SK spawning bumps with multi-lake topologies, mechanism is general enough to pursue. Otherwise stays parked. See fresh#190 for full diagnostic detail.
+
+Map artifact: `data-raw/maps/BULK_SK_spawning_compare.html` (gitignored locally; reproducible via `data-raw/maps/sk_spawning_BULK.R`).
 
 ## Reading order for new contributors
 
