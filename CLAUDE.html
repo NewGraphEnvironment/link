@@ -52,44 +52,44 @@ bcdata (PSCIS assessments)   ─┘</code></pre>
 </div>
 <div class="section level2">
 <h2 id="data-sources-no-db-required-for-core-pipeline">Data Sources (no DB required for core pipeline)<a class="anchor" aria-label="anchor" href="#data-sources-no-db-required-for-core-pipeline"></a></h2>
-<table class="table"><colgroup><col width="31%"><col width="42%"><col width="26%"></colgroup><thead><tr class="header"><th>Data</th>
+<table class="table"><colgroup><col width="31%"><col width="42%"><col width="26%"></colgroup><thead><tr><th>Data</th>
 <th>Source</th>
 <th>How</th>
-</tr></thead><tbody><tr class="odd"><td>Crossings (province-wide)</td>
+</tr></thead><tbody><tr><td>Crossings (province-wide)</td>
 <td><code>fresh::system.file("extdata", "crossings.csv")</code></td>
 <td>533k rows, all WSGs</td>
-</tr><tr class="even"><td>Override CSVs</td>
+</tr><tr><td>Override CSVs</td>
 <td>
 <code>bcfishpass/data/</code> directory</td>
 <td>Filter by <code>watershed_group_code</code>
 </td>
-</tr><tr class="odd"><td>PSCIS assessments</td>
+</tr><tr><td>PSCIS assessments</td>
 <td><code>bcdata::bcdc_get_data("7ecfafa6-...")</code></td>
 <td>BC Data Catalogue API</td>
-</tr><tr class="even"><td>Habitat thresholds</td>
+</tr><tr><td>Habitat thresholds</td>
 <td><code>fresh::system.file("extdata", "parameters_habitat_thresholds.csv")</code></td>
 <td>Species-specific</td>
 </tr></tbody></table><div class="section level3">
 <h3 id="override-csvs-from-bcfishpass">Override CSVs from bcfishpass<a class="anchor" aria-label="anchor" href="#override-csvs-from-bcfishpass"></a></h3>
-<table class="table"><colgroup><col width="21%"><col width="32%"><col width="46%"></colgroup><thead><tr class="header"><th>File</th>
+<table class="table"><colgroup><col width="21%"><col width="32%"><col width="46%"></colgroup><thead><tr><th>File</th>
 <th>Purpose</th>
 <th>Key columns</th>
-</tr></thead><tbody><tr class="odd"><td><code>user_modelled_crossing_fixes.csv</code></td>
+</tr></thead><tbody><tr><td><code>user_modelled_crossing_fixes.csv</code></td>
 <td>Imagery/field corrections (21k rows)</td>
 <td>
 <code>modelled_crossing_id</code>, <code>structure</code>, <code>watershed_group_code</code>
 </td>
-</tr><tr class="even"><td><code>user_pscis_barrier_status.csv</code></td>
+</tr><tr><td><code>user_pscis_barrier_status.csv</code></td>
 <td>Expert barrier status overrides (1.3k rows)</td>
 <td>
 <code>stream_crossing_id</code>, <code>user_barrier_status</code>
 </td>
-</tr><tr class="odd"><td><code>pscis_modelledcrossings_streams_xref.csv</code></td>
+</tr><tr><td><code>pscis_modelledcrossings_streams_xref.csv</code></td>
 <td>GPS error corrections (3.6k rows)</td>
 <td>
 <code>stream_crossing_id</code>, <code>modelled_crossing_id</code>
 </td>
-</tr><tr class="even"><td><code>user_barriers_definite.csv</code></td>
+</tr><tr><td><code>user_barriers_definite.csv</code></td>
 <td>User-identified barriers (227 rows)</td>
 <td>
 <code>blue_line_key</code>, <code>downstream_route_measure</code>
@@ -175,16 +175,16 @@ bcdata (PSCIS assessments)   ─┘</code></pre>
 <div class="section level2">
 <h2 id="fresh-break-source-label-convention">fresh Break Source Label Convention<a class="anchor" aria-label="anchor" href="#fresh-break-source-label-convention"></a></h2>
 <p>When link produces a break source via <code><a href="reference/lnk_source.html">lnk_source()</a></code>, the label values control how fresh treats each point:</p>
-<table class="table"><colgroup><col width="30%"><col width="69%"></colgroup><thead><tr class="header"><th>Label</th>
+<table class="table"><colgroup><col width="30%"><col width="69%"></colgroup><thead><tr><th>Label</th>
 <th>What fresh does</th>
-</tr></thead><tbody><tr class="odd"><td><code>"blocked"</code></td>
+</tr></thead><tbody><tr><td><code>"blocked"</code></td>
 <td>Always blocks access (all species)</td>
-</tr><tr class="even"><td><code>"gradient_15"</code></td>
+</tr><tr><td><code>"gradient_15"</code></td>
 <td>Blocks species with access threshold ≤ 15% (CO, CH, SK) but not BT (25%)</td>
-</tr><tr class="odd"><td><code>"potential"</code></td>
+</tr><tr><td><code>"potential"</code></td>
 <td>Does NOT block by default. Only blocks if user passes <code>label_block = c("blocked", "potential")</code>
 </td>
-</tr><tr class="even"><td>Anything else (<code>"passable"</code>, <code>"bridge"</code>, custom)</td>
+</tr><tr><td>Anything else (<code>"passable"</code>, <code>"bridge"</code>, custom)</td>
 <td>Never blocks</td>
 </tr></tbody></table><div class="section level3">
 <h3 id="label_block-parameter">
@@ -306,16 +306,16 @@ bcdata (PSCIS assessments)   ─┘</code></pre>
 <p><strong>Core pattern:</strong> <code>reg$layers$lake</code>, <code>reg$layers$road</code>, <code>reg$layers$bec_zone</code>, etc.</p>
 <div class="section level3">
 <h3 id="translators">Translators<a class="anchor" aria-label="anchor" href="#translators"></a></h3>
-<table class="table"><colgroup><col width="21%"><col width="34%"><col width="44%"></colgroup><thead><tr class="header"><th>Target</th>
+<table class="table"><colgroup><col width="21%"><col width="34%"><col width="44%"></colgroup><thead><tr><th>Target</th>
 <th>Simple layer</th>
 <th>Classified layer</th>
-</tr></thead><tbody><tr class="odd"><td>tmap</td>
+</tr></thead><tbody><tr><td>tmap</td>
 <td>
 <code>gq_tmap_style(layer)</code> → <code>do.call(tm_polygons, ...)</code>
 </td>
 <td>
 <code>gq_tmap_classes(layer)</code> → field, values, labels</td>
-</tr><tr class="even"><td>mapgl</td>
+</tr><tr><td>mapgl</td>
 <td>
 <code>gq_mapgl_style(layer)</code> → paint properties</td>
 <td>
@@ -331,18 +331,18 @@ bcdata (PSCIS assessments)   ─┘</code></pre>
 </div>
 <div class="section level2">
 <h2 id="map-targets">Map Targets<a class="anchor" aria-label="anchor" href="#map-targets"></a></h2>
-<table class="table"><colgroup><col width="40%"><col width="30%"><col width="30%"></colgroup><thead><tr class="header"><th>Output</th>
+<table class="table"><colgroup><col width="40%"><col width="30%"><col width="30%"></colgroup><thead><tr><th>Output</th>
 <th>Tool</th>
 <th>When</th>
-</tr></thead><tbody><tr class="odd"><td>PDF / print figures</td>
+</tr></thead><tbody><tr><td>PDF / print figures</td>
 <td>
 <code>tmap</code> v4</td>
 <td>Bookdown PDF, static reports</td>
-</tr><tr class="even"><td>Interactive HTML</td>
+</tr><tr><td>Interactive HTML</td>
 <td>
 <code>mapgl</code> (MapLibre GL)</td>
 <td>Bookdown gitbook, memos, web pages</td>
-</tr><tr class="odd"><td>QGIS project</td>
+</tr><tr><td>QGIS project</td>
 <td>Native QML</td>
 <td>Field work, Mergin Maps</td>
 </tr></tbody></table></div>
@@ -635,23 +635,23 @@ bcdata (PSCIS assessments)   ─┘</code></pre>
 <div class="section level2">
 <h2 id="ecosystem-overview">Ecosystem Overview<a class="anchor" aria-label="anchor" href="#ecosystem-overview"></a></h2>
 <p>Five repos form the governance and operations layer across all New Graph Environment work:</p>
-<table class="table"><colgroup><col width="25%"><col width="37%"><col width="37%"></colgroup><thead><tr class="header"><th>Repo</th>
+<table class="table"><colgroup><col width="25%"><col width="37%"><col width="37%"></colgroup><thead><tr><th>Repo</th>
 <th>Purpose</th>
 <th>Analogy</th>
-</tr></thead><tbody><tr class="odd"><td><a href="https://github.com/NewGraphEnvironment/compass" class="external-link">compass</a></td>
+</tr></thead><tbody><tr><td><a href="https://github.com/NewGraphEnvironment/compass" class="external-link">compass</a></td>
 <td>Ethics, values, guiding principles</td>
 <td>The “why”</td>
-</tr><tr class="even"><td><a href="https://github.com/NewGraphEnvironment/soul" class="external-link">soul</a></td>
+</tr><tr><td><a href="https://github.com/NewGraphEnvironment/soul" class="external-link">soul</a></td>
 <td>Standards, skills, conventions for LLM agents</td>
 <td>The “how”</td>
-</tr><tr class="odd"><td><a href="https://github.com/NewGraphEnvironment/compost" class="external-link">compost</a></td>
+</tr><tr><td><a href="https://github.com/NewGraphEnvironment/compost" class="external-link">compost</a></td>
 <td>Communications templates, email workflows, contact management</td>
 <td>The “who”</td>
-</tr><tr class="even"><td>
+</tr><tr><td>
 <a href="https://github.com/NewGraphEnvironment/rtj" class="external-link">rtj</a> (formerly awshak)</td>
 <td>Infrastructure as Code, deployment</td>
 <td>The “where”</td>
-</tr><tr class="odd"><td><a href="https://github.com/NewGraphEnvironment/gq" class="external-link">gq</a></td>
+</tr><tr><td><a href="https://github.com/NewGraphEnvironment/gq" class="external-link">gq</a></td>
 <td>Cartographic style management across QGIS, tmap, leaflet, web</td>
 <td>The “look”</td>
 </tr></tbody></table><p><strong>Adaptive management:</strong> Conventions evolve from real project work, not theory. When a pattern is learned or refined during project work, propagate it back to soul so all projects benefit. The <code>/claude-md-init</code> skill builds each project’s <code>CLAUDE.md</code> from soul conventions.</p>
@@ -753,19 +753,19 @@ Co-Authored-By: Claude Opus 4.6 &lt;noreply@anthropic.com&gt;</code></pre>
 <div class="section level2">
 <h2 id="naming-conventions">Naming Conventions<a class="anchor" aria-label="anchor" href="#naming-conventions"></a></h2>
 <p><strong>Pattern: <code>noun_verb-detail</code></strong> – noun first, verb second across all naming:</p>
-<table class="table"><thead><tr class="header"><th>What</th>
+<table class="table"><thead><tr><th>What</th>
 <th>Example</th>
-</tr></thead><tbody><tr class="odd"><td>Skills</td>
+</tr></thead><tbody><tr><td>Skills</td>
 <td>
 <code>claude-md-init</code>, <code>gh-issue-create</code>, <code>planning-update</code>
 </td>
-</tr><tr class="even"><td>Scripts</td>
+</tr><tr><td>Scripts</td>
 <td>
 <code>stac_register-baseline.sh</code>, <code>stac_register-pypgstac.sh</code>
 </td>
-</tr><tr class="odd"><td>Logs</td>
+</tr><tr><td>Logs</td>
 <td><code>20260209_stac_register-baseline_stac-dem-bc.txt</code></td>
-</tr><tr class="even"><td>Log format</td>
+</tr><tr><td>Log format</td>
 <td><code>yyyymmdd_noun_verb-detail_target.ext</code></td>
 </tr></tbody></table><p>Scripts and logs live together: <code>scripts/&lt;module&gt;/logs/</code></p>
 </div>
@@ -776,17 +776,17 @@ Co-Authored-By: Claude Opus 4.6 &lt;noreply@anthropic.com&gt;</code></pre>
 <li>
 <strong>Milestones</strong> = iteration boundaries (only for release/claim prep)</li>
 <li>Don’t double-track unless there’s a reason</li>
-</ul><table class="table"><colgroup><col width="50%"><col width="50%"></colgroup><thead><tr class="header"><th>Content</th>
+</ul><table class="table"><colgroup><col width="50%"><col width="50%"></colgroup><thead><tr><th>Content</th>
 <th>Project</th>
-</tr></thead><tbody><tr class="odd"><td>R&amp;D, experiments, SRED-related</td>
+</tr></thead><tbody><tr><td>R&amp;D, experiments, SRED-related</td>
 <td><strong>SRED R&amp;D Tracking (#8)</strong></td>
-</tr><tr class="even"><td>Data storage, sqlite, postgres, pipelines</td>
+</tr><tr><td>Data storage, sqlite, postgres, pipelines</td>
 <td><strong>Data Architecture (#9)</strong></td>
-</tr><tr class="odd"><td>Fish passage field/reporting</td>
+</tr><tr><td>Fish passage field/reporting</td>
 <td><strong>Fish Passage 2025 (#6)</strong></td>
-</tr><tr class="even"><td>Restoration planning</td>
+</tr><tr><td>Restoration planning</td>
 <td><strong>Aquatic Restoration Planning (#5)</strong></td>
-</tr><tr class="odd"><td>QGIS, Mergin, field forms</td>
+</tr><tr><td>QGIS, Mergin, field forms</td>
 <td><strong>Collaborative GIS (#3)</strong></td>
 </tr></tbody></table></div>
 </div>
@@ -869,13 +869,13 @@ Co-Authored-By: Claude Opus 4.6 &lt;noreply@anthropic.com&gt;</code></pre>
 </div>
 <div class="section level2">
 <h2 id="skills">Skills<a class="anchor" aria-label="anchor" href="#skills"></a></h2>
-<table class="table"><colgroup><col width="35%"><col width="65%"></colgroup><thead><tr class="header"><th>Skill</th>
+<table class="table"><colgroup><col width="35%"><col width="65%"></colgroup><thead><tr><th>Skill</th>
 <th>When to use</th>
-</tr></thead><tbody><tr class="odd"><td><code>/planning-init</code></td>
+</tr></thead><tbody><tr><td><code>/planning-init</code></td>
 <td>First time in a repo — creates directory structure</td>
-</tr><tr class="even"><td><code>/planning-update</code></td>
+</tr><tr><td><code>/planning-update</code></td>
 <td>Mid-session — sync checkboxes and progress</td>
-</tr><tr class="odd"><td><code>/planning-archive</code></td>
+</tr><tr><td><code>/planning-archive</code></td>
 <td>Issue complete — archive and create fresh active/</td>
 </tr></tbody></table></div>
 </div>
@@ -937,7 +937,7 @@ Co-Authored-By: Claude Opus 4.6 &lt;noreply@anthropic.com&gt;</code></pre>
 <div class="section level3">
 <h3 id="vignettes">Vignettes<a class="anchor" aria-label="anchor" href="#vignettes"></a></h3>
 <p>At least one vignette showing the full pipeline on real data: - Demonstrates the package solving an actual problem end-to-end - Uses bundled test data (committed to <code>inst/testdata/</code>) - Hosted on pkgdown so users can read it without installing</p>
-<p><strong>Output format:</strong> Use <code><a href="https://pkgs.rstudio.com/bookdown/reference/html_document2.html" class="external-link">bookdown::html_vignette2</a></code> (not <code><a href="https://pkgs.rstudio.com/rmarkdown/reference/html_vignette.html" class="external-link">rmarkdown::html_vignette</a></code>) for figure numbering and cross-references. Requires <code>bookdown</code> in Suggests and chunks must have <code>fig.cap</code> for numbered figures. Cross-reference with <code>Figure \@ref(fig:chunk-name)</code>.</p>
+<p><strong>Output format:</strong> Use <code>bookdown::html_vignette2</code> (not <code><a href="https://pkgs.rstudio.com/rmarkdown/reference/html_vignette.html" class="external-link">rmarkdown::html_vignette</a></code>) for figure numbering and cross-references. Requires <code>bookdown</code> in Suggests and chunks must have <code>fig.cap</code> for numbered figures. Cross-reference with <code>Figure \@ref(fig:chunk-name)</code>.</p>
 <p><strong>Vignettes that need external resources (DB, API, STAC):</strong> Do NOT use the <code>.Rmd.orig</code> pre-knit pattern — it breaks <code>bookdown</code> figure numbering because knitr evaluates chunks during pre-knit and emits <code>![](path)</code> markdown that bookdown can’t number.</p>
 <p>Instead, separate data generation from presentation: 1. <code>data-raw/vignette_data.R</code> — runs the queries, saves results as <code>.rds</code> to <code>inst/testdata/</code> (or <code>inst/vignette-data/</code>) 2. Vignette loads <code>.rds</code> files, all chunks run live during pkgdown build 3. Note at top of vignette: “Data generated by <code>data-raw/script.R</code>” 4. bookdown controls all chunks — figure numbers, cross-refs work</p>
 <p>This is the same pattern as test data: <code>data-raw/</code> documents how the data was produced, committed artifacts make vignettes reproducible without the external resource.</p>
@@ -1047,16 +1047,16 @@ Co-Authored-By: Claude Opus 4.6 &lt;noreply@anthropic.com&gt;</code></pre>
 <div class="section level2">
 <h2 id="tool-routing">Tool Routing<a class="anchor" aria-label="anchor" href="#tool-routing"></a></h2>
 <p>Three tools, different purposes. Use the right one.</p>
-<table class="table"><colgroup><col width="35%"><col width="35%"><col width="29%"></colgroup><thead><tr class="header"><th>Need</th>
+<table class="table"><colgroup><col width="35%"><col width="35%"><col width="29%"></colgroup><thead><tr><th>Need</th>
 <th>Tool</th>
 <th>Why</th>
-</tr></thead><tbody><tr class="odd"><td>Search by keyword, read metadata/fulltext, semantic search</td>
+</tr></thead><tbody><tr><td>Search by keyword, read metadata/fulltext, semantic search</td>
 <td><strong>MCP <code>zotero_*</code> tools</strong></td>
 <td>pyzotero, works with Zotero item keys</td>
-</tr><tr class="even"><td>Look up by citation key (e.g., <code>irvine2020ParsnipRiver</code>)</td>
+</tr><tr><td>Look up by citation key (e.g., <code>irvine2020ParsnipRiver</code>)</td>
 <td><strong><code>/zotero-lookup</code> skill</strong></td>
 <td>Citation keys are a BBT feature — pyzotero can’t resolve them</td>
-</tr><tr class="odd"><td>Create items, attach PDFs, deduplicate</td>
+</tr><tr><td>Create items, attach PDFs, deduplicate</td>
 <td><strong><code>/zotero-api</code> skill</strong></td>
 <td>Connector API for writes, JS console for attachments</td>
 </tr></tbody></table><p><strong>Citation keys vs item keys:</strong> Citation keys (like <code>irvine2020ParsnipRiver</code>) come from Better BibTeX. Item keys (like <code>K7WALMSY</code>) are native Zotero. The MCP works with item keys. <code>/zotero-lookup</code> bridges citation keys to item data.</p>

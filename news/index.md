@@ -77,15 +77,15 @@ Refactor introduces no behaviour change.
 
 **Migration**
 
-| Old                                 | New                                               |
-|-------------------------------------|---------------------------------------------------|
-| `cfg$rules_yaml`                    | `cfg$rules`                                       |
-| `cfg$dimensions_csv`                | `cfg$dimensions`                                  |
-| `cfg$parameters_fresh` (data frame) | `loaded$parameters_fresh`                         |
-| `cfg$habitat_classification`        | `loaded$user_habitat_classification`              |
-| `cfg$observation_exclusions`        | `loaded$observation_exclusions`                   |
-| `cfg$wsg_species`                   | `loaded$wsg_species_presence`                     |
-| `cfg$overrides$X`                   | `loaded$X` (e.g. `loaded$user_barriers_definite`) |
+| Old | New |
+|----|----|
+| `cfg$rules_yaml` | `cfg$rules` |
+| `cfg$dimensions_csv` | `cfg$dimensions` |
+| `cfg$parameters_fresh` (data frame) | `loaded$parameters_fresh` |
+| `cfg$habitat_classification` | `loaded$user_habitat_classification` |
+| `cfg$observation_exclusions` | `loaded$observation_exclusions` |
+| `cfg$wsg_species` | `loaded$wsg_species_presence` |
+| `cfg$overrides$X` | `loaded$X` (e.g. `loaded$user_barriers_definite`) |
 
 **Out of scope (follow-up issues):**
 

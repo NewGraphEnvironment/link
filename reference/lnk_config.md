@@ -112,7 +112,7 @@ cfg$files$user_habitat_classification
 #> 
 cfg$pipeline$break_order
 #> [1] "observations"      "gradient_minimal"  "barriers_definite"
-#> [4] "habitat_endpoints" "crossings"        
+#> [4] "subsurfaceflow"    "habitat_endpoints" "crossings"        
 
 if (FALSE) { # \dontrun{
 # Custom config: point at any directory containing config.yaml

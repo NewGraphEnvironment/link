@@ -34,21 +34,21 @@ jurisdiction’s crossing data.
 
 ## Data Sources (no DB required for core pipeline)
 
-| Data                      | Source                                                               | How                              |
-|---------------------------|----------------------------------------------------------------------|----------------------------------|
-| Crossings (province-wide) | `fresh::system.file("extdata", "crossings.csv")`                     | 533k rows, all WSGs              |
-| Override CSVs             | `bcfishpass/data/` directory                                         | Filter by `watershed_group_code` |
-| PSCIS assessments         | `bcdata::bcdc_get_data("7ecfafa6-...")`                              | BC Data Catalogue API            |
-| Habitat thresholds        | `fresh::system.file("extdata", "parameters_habitat_thresholds.csv")` | Species-specific                 |
+| Data | Source | How |
+|----|----|----|
+| Crossings (province-wide) | `fresh::system.file("extdata", "crossings.csv")` | 533k rows, all WSGs |
+| Override CSVs | `bcfishpass/data/` directory | Filter by `watershed_group_code` |
+| PSCIS assessments | `bcdata::bcdc_get_data("7ecfafa6-...")` | BC Data Catalogue API |
+| Habitat thresholds | `fresh::system.file("extdata", "parameters_habitat_thresholds.csv")` | Species-specific |
 
 ### Override CSVs from bcfishpass
 
-| File                                       | Purpose                                     | Key columns                                                 |
-|--------------------------------------------|---------------------------------------------|-------------------------------------------------------------|
-| `user_modelled_crossing_fixes.csv`         | Imagery/field corrections (21k rows)        | `modelled_crossing_id`, `structure`, `watershed_group_code` |
-| `user_pscis_barrier_status.csv`            | Expert barrier status overrides (1.3k rows) | `stream_crossing_id`, `user_barrier_status`                 |
-| `pscis_modelledcrossings_streams_xref.csv` | GPS error corrections (3.6k rows)           | `stream_crossing_id`, `modelled_crossing_id`                |
-| `user_barriers_definite.csv`               | User-identified barriers (227 rows)         | `blue_line_key`, `downstream_route_measure`                 |
+| File | Purpose | Key columns |
+|----|----|----|
+| `user_modelled_crossing_fixes.csv` | Imagery/field corrections (21k rows) | `modelled_crossing_id`, `structure`, `watershed_group_code` |
+| `user_pscis_barrier_status.csv` | Expert barrier status overrides (1.3k rows) | `stream_crossing_id`, `user_barrier_status` |
+| `pscis_modelledcrossings_streams_xref.csv` | GPS error corrections (3.6k rows) | `stream_crossing_id`, `modelled_crossing_id` |
+| `user_barriers_definite.csv` | User-identified barriers (227 rows) | `blue_line_key`, `downstream_route_measure` |
 
 ## Database Connection
 
@@ -58,6 +58,7 @@ functions that operate via SQL. The override loading and validation can
 work with any PostgreSQL.
 
 ``` r
+
 conn <- lnk_db_conn()  # reads PG_DB_SHARE, PG_HOST_SHARE, etc.
 ```
 
@@ -179,6 +180,7 @@ this config classifies in this AOI” (intersects `cfg$species` with
 ## Integration with fresh
 
 ``` r
+
 # link scores crossings
 lnk_load(conn, csv = "overrides.csv", to = "working.fixes")
 lnk_override(conn, "working.crossings", "working.fixes")
@@ -203,12 +205,12 @@ When link produces a break source via
 [`lnk_source()`](https://newgraphenvironment.github.io/link/reference/lnk_source.md),
 the label values control how fresh treats each point:
 
-| Label                                            | What fresh does                                                                                 |
-|--------------------------------------------------|-------------------------------------------------------------------------------------------------|
-| `"blocked"`                                      | Always blocks access (all species)                                                              |
-| `"gradient_15"`                                  | Blocks species with access threshold ≤ 15% (CO, CH, SK) but not BT (25%)                        |
-| `"potential"`                                    | Does NOT block by default. Only blocks if user passes `label_block = c("blocked", "potential")` |
-| Anything else (`"passable"`, `"bridge"`, custom) | Never blocks                                                                                    |
+| Label | What fresh does |
+|----|----|
+| `"blocked"` | Always blocks access (all species) |
+| `"gradient_15"` | Blocks species with access threshold ≤ 15% (CO, CH, SK) but not BT (25%) |
+| `"potential"` | Does NOT block by default. Only blocks if user passes `label_block = c("blocked", "potential")` |
+| Anything else (`"passable"`, `"bridge"`, custom) | Never blocks |
 
 ### `label_block` parameter
 
@@ -216,6 +218,7 @@ the label values control how fresh treats each point:
 (default `"blocked"`). This controls which break labels restrict access:
 
 ``` r
+
 # link scores crossings with severity labels
 src <- lnk_source(conn, "working.crossings",
   label_col = "severity",
@@ -246,6 +249,7 @@ blocks.
 `frs_habitat()` accepts any spatial extent — not just WSG codes:
 
 ``` r
+
 frs_habitat(conn,
   aoi = "wscode_ltree <@ '100.190442'::ltree",
   species = c("BT", "CO"),
@@ -417,6 +421,7 @@ Use the `gq` package for all shared layer symbology. Never hardcode hex
 color values when a registry style exists.
 
 ``` r
+
 library(gq)
 reg <- gq_reg_main()  # load once per script — 51+ layers
 ```
@@ -426,10 +431,10 @@ reg <- gq_reg_main()  # load once per script — 51+ layers
 
 ### Translators
 
-| Target | Simple layer                                         | Classified layer                                 |
-|--------|------------------------------------------------------|--------------------------------------------------|
-| tmap   | `gq_tmap_style(layer)` → `do.call(tm_polygons, ...)` | `gq_tmap_classes(layer)` → field, values, labels |
-| mapgl  | `gq_mapgl_style(layer)` → paint properties           | `gq_mapgl_classes(layer)` → match expression     |
+| Target | Simple layer | Classified layer |
+|----|----|----|
+| tmap | `gq_tmap_style(layer)` → `do.call(tm_polygons, ...)` | `gq_tmap_classes(layer)` → field, values, labels |
+| mapgl | `gq_mapgl_style(layer)` → paint properties | `gq_mapgl_classes(layer)` → match expression |
 
 ### Custom styles
 
@@ -437,6 +442,7 @@ For project-specific layers not in the main registry, use a hand-curated
 CSV and merge:
 
 ``` r
+
 reg <- gq_reg_merge(gq_reg_main(), gq_reg_read_csv("path/to/custom.csv"))
 ```
 
@@ -444,11 +450,11 @@ Install: `pak::pak("NewGraphEnvironment/gq")`
 
 ## Map Targets
 
-| Output              | Tool                  | When                               |
-|---------------------|-----------------------|------------------------------------|
-| PDF / print figures | `tmap` v4             | Bookdown PDF, static reports       |
-| Interactive HTML    | `mapgl` (MapLibre GL) | Bookdown gitbook, memos, web pages |
-| QGIS project        | Native QML            | Field work, Mergin Maps            |
+| Output | Tool | When |
+|----|----|----|
+| PDF / print figures | `tmap` v4 | Bookdown PDF, static reports |
+| Interactive HTML | `mapgl` (MapLibre GL) | Bookdown gitbook, memos, web pages |
+| QGIS project | Native QML | Field work, Mergin Maps |
 
 ## Key Rules
 
@@ -499,6 +505,7 @@ inside them over time.
 **Pipeline:**
 
 ``` r
+
 # 1. Delineate floodplain AOI (flooded)
 valleys <- flooded::fl_valley_confine(dem, streams)
 
@@ -802,13 +809,13 @@ Environment repositories.
 Five repos form the governance and operations layer across all New Graph
 Environment work:
 
-| Repo                                                                | Purpose                                                       | Analogy     |
-|---------------------------------------------------------------------|---------------------------------------------------------------|-------------|
-| [compass](https://github.com/NewGraphEnvironment/compass)           | Ethics, values, guiding principles                            | The “why”   |
-| [soul](https://github.com/NewGraphEnvironment/soul)                 | Standards, skills, conventions for LLM agents                 | The “how”   |
-| [compost](https://github.com/NewGraphEnvironment/compost)           | Communications templates, email workflows, contact management | The “who”   |
-| [rtj](https://github.com/NewGraphEnvironment/rtj) (formerly awshak) | Infrastructure as Code, deployment                            | The “where” |
-| [gq](https://github.com/NewGraphEnvironment/gq)                     | Cartographic style management across QGIS, tmap, leaflet, web | The “look”  |
+| Repo | Purpose | Analogy |
+|----|----|----|
+| [compass](https://github.com/NewGraphEnvironment/compass) | Ethics, values, guiding principles | The “why” |
+| [soul](https://github.com/NewGraphEnvironment/soul) | Standards, skills, conventions for LLM agents | The “how” |
+| [compost](https://github.com/NewGraphEnvironment/compost) | Communications templates, email workflows, contact management | The “who” |
+| [rtj](https://github.com/NewGraphEnvironment/rtj) (formerly awshak) | Infrastructure as Code, deployment | The “where” |
+| [gq](https://github.com/NewGraphEnvironment/gq) | Cartographic style management across QGIS, tmap, leaflet, web | The “look” |
 
 **Adaptive management:** Conventions evolve from real project work, not
 theory. When a pattern is learned or refined during project work,
@@ -964,13 +971,13 @@ Scripts and logs live together: `scripts/<module>/logs/`
 - **Milestones** = iteration boundaries (only for release/claim prep)
 - Don’t double-track unless there’s a reason
 
-| Content                                   | Project                               |
-|-------------------------------------------|---------------------------------------|
-| R&D, experiments, SRED-related            | **SRED R&D Tracking (#8)**            |
-| Data storage, sqlite, postgres, pipelines | **Data Architecture (#9)**            |
-| Fish passage field/reporting              | **Fish Passage 2025 (#6)**            |
-| Restoration planning                      | **Aquatic Restoration Planning (#5)** |
-| QGIS, Mergin, field forms                 | **Collaborative GIS (#3)**            |
+| Content | Project |
+|----|----|
+| R&D, experiments, SRED-related | **SRED R&D Tracking (#8)** |
+| Data storage, sqlite, postgres, pipelines | **Data Architecture (#9)** |
+| Fish passage field/reporting | **Fish Passage 2025 (#6)** |
+| Restoration planning | **Aquatic Restoration Planning (#5)** |
+| QGIS, Mergin, field forms | **Collaborative GIS (#3)** |
 
 # Planning Conventions
 
@@ -1187,9 +1194,7 @@ Demonstrates the package solving an actual problem end-to-end - Uses
 bundled test data (committed to `inst/testdata/`) - Hosted on pkgdown so
 users can read it without installing
 
-**Output format:** Use
-[`bookdown::html_vignette2`](https://pkgs.rstudio.com/bookdown/reference/html_document2.html)
-(not
+**Output format:** Use `bookdown::html_vignette2` (not
 [`rmarkdown::html_vignette`](https://pkgs.rstudio.com/rmarkdown/reference/html_vignette.html))
 for figure numbering and cross-references. Requires `bookdown` in
 Suggests and chunks must have `fig.cap` for numbered figures.
@@ -1237,6 +1242,7 @@ be worth fixing.
 ### Recommended .lintr config
 
 ``` r
+
 linters: linters_with_defaults(
     line_length_linter(120),
     object_name_linter(styles = c("snake_case", "dotted.case")),
@@ -1343,11 +1349,11 @@ at New Graph Environment.
 
 Three tools, different purposes. Use the right one.
 
-| Need                                                       | Tool                       | Why                                                           |
-|------------------------------------------------------------|----------------------------|---------------------------------------------------------------|
-| Search by keyword, read metadata/fulltext, semantic search | **MCP `zotero_*` tools**   | pyzotero, works with Zotero item keys                         |
-| Look up by citation key (e.g., `irvine2020ParsnipRiver`)   | **`/zotero-lookup` skill** | Citation keys are a BBT feature — pyzotero can’t resolve them |
-| Create items, attach PDFs, deduplicate                     | **`/zotero-api` skill**    | Connector API for writes, JS console for attachments          |
+| Need | Tool | Why |
+|----|----|----|
+| Search by keyword, read metadata/fulltext, semantic search | **MCP `zotero_*` tools** | pyzotero, works with Zotero item keys |
+| Look up by citation key (e.g., `irvine2020ParsnipRiver`) | **`/zotero-lookup` skill** | Citation keys are a BBT feature — pyzotero can’t resolve them |
+| Create items, attach PDFs, deduplicate | **`/zotero-api` skill** | Connector API for writes, JS console for attachments |
 
 **Citation keys vs item keys:** Citation keys (like
 `irvine2020ParsnipRiver`) come from Better BibTeX. Item keys (like
@@ -1428,6 +1434,7 @@ Zotero → rebuild report → bibliography updates.
 This is set globally in `~/.Rprofile`:
 
 ``` r
+
 # default library — NewGraphEnvironment group (libraryID 9, group 4733734)
 options(rbbt.default.library_id = 9)
 ```

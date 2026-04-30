@@ -61,22 +61,22 @@
 <p><strong>Pipeline phase signatures gain <code>loaded</code>.</strong> Every <code>lnk_pipeline_*</code> phase that reads a data table now takes <code>cfg</code> and <code>loaded</code> together. Callers (the bundled targets pipeline, project scripts) call <code>lnk_load_overrides(cfg)</code> once and thread the result through phases. <code>cfg$overrides$X</code> and <code>cfg$habitat_classification</code> access points become <code>loaded$X</code>. See <code>data-raw/_targets.R</code> and <code>data-raw/compare_bcfishpass_wsg.R</code> for the pattern.</p>
 <p><strong>Verification.</strong> <code>tar_make()</code> on 5 WSGs × 2 configs reproduces the v0.17.0 baseline rollup bit-identically (sha256 <code>a82de9928809b9751213e08916c476b4ee3f99286bc9ea2dc53f9659eeb92097</code>). Refactor introduces no behaviour change.</p>
 <p><strong>Migration</strong></p>
-<table class="table"><colgroup><col width="50%"><col width="50%"></colgroup><thead><tr class="header"><th>Old</th>
+<table class="table"><colgroup><col width="50%"><col width="50%"></colgroup><thead><tr><th>Old</th>
 <th>New</th>
-</tr></thead><tbody><tr class="odd"><td><code>cfg$rules_yaml</code></td>
+</tr></thead><tbody><tr><td><code>cfg$rules_yaml</code></td>
 <td><code>cfg$rules</code></td>
-</tr><tr class="even"><td><code>cfg$dimensions_csv</code></td>
+</tr><tr><td><code>cfg$dimensions_csv</code></td>
 <td><code>cfg$dimensions</code></td>
-</tr><tr class="odd"><td>
+</tr><tr><td>
 <code>cfg$parameters_fresh</code> (data frame)</td>
 <td><code>loaded$parameters_fresh</code></td>
-</tr><tr class="even"><td><code>cfg$habitat_classification</code></td>
+</tr><tr><td><code>cfg$habitat_classification</code></td>
 <td><code>loaded$user_habitat_classification</code></td>
-</tr><tr class="odd"><td><code>cfg$observation_exclusions</code></td>
+</tr><tr><td><code>cfg$observation_exclusions</code></td>
 <td><code>loaded$observation_exclusions</code></td>
-</tr><tr class="even"><td><code>cfg$wsg_species</code></td>
+</tr><tr><td><code>cfg$wsg_species</code></td>
 <td><code>loaded$wsg_species_presence</code></td>
-</tr><tr class="odd"><td><code>cfg$overrides$X</code></td>
+</tr><tr><td><code>cfg$overrides$X</code></td>
 <td>
 <code>loaded$X</code> (e.g. <code>loaded$user_barriers_definite</code>)</td>
 </tr></tbody></table><p><strong>Out of scope (follow-up issues):</strong></p>

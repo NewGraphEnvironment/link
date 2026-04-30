@@ -6,12 +6,12 @@ projects.
 
 ## Upstream sources
 
-| Source                                                                   | License                  | How `link` uses it                                                            |
-|--------------------------------------------------------------------------|--------------------------|-------------------------------------------------------------------------------|
-| [smnorris/fwapg](https://github.com/smnorris/fwapg)                      | MIT                      | Runtime SQL access to BC’s Freshwater Atlas. Not redistributed.               |
-| [smnorris/bcfishobs](https://github.com/smnorris/bcfishobs)              | Apache 2.0               | Runtime read of fish observation data (via tunnel DB). Not redistributed.     |
-| [smnorris/bcfishpass](https://github.com/smnorris/bcfishpass) (software) | Apache 2.0               | Reference for habitat-classification parity. Not redistributed.               |
-| [smnorris/bcfishpass](https://github.com/smnorris/bcfishpass) (data)     | ODbL + DATABASE CONTENTS | **Redistributed** — the override CSVs in `inst/extdata/configs/*/overrides/`. |
+| Source | License | How `link` uses it |
+|----|----|----|
+| [smnorris/fwapg](https://github.com/smnorris/fwapg) | MIT | Runtime SQL access to BC’s Freshwater Atlas. Not redistributed. |
+| [smnorris/bcfishobs](https://github.com/smnorris/bcfishobs) | Apache 2.0 | Runtime read of fish observation data (via tunnel DB). Not redistributed. |
+| [smnorris/bcfishpass](https://github.com/smnorris/bcfishpass) (software) | Apache 2.0 | Reference for habitat-classification parity. Not redistributed. |
+| [smnorris/bcfishpass](https://github.com/smnorris/bcfishpass) (data) | ODbL + DATABASE CONTENTS | **Redistributed** — the override CSVs in `inst/extdata/configs/*/overrides/`. |
 
 ## Redistributed data
 

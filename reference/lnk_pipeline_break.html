@@ -104,7 +104,14 @@ Carries <code>observation_exclusions</code> and <code>wsg_species_presence</code
 observations → gradient_minimal → barriers_definite →
 habitat_endpoints → crossings. This order is encoded in the bundled
 bcfishpass config (<code>cfg$pipeline$break_order</code>) and is the default
-when the config does not specify one.</p>
+when the config does not specify one.</p><div class="section">
+<h3 id="break-sources">Break sources<a class="anchor" aria-label="anchor" href="#break-sources"></a></h3>
+
+
+<p>Valid entries for <code>cfg$pipeline$break_order</code>. Omit an entry to skip
+both segmentation and access-gating from that source.</p><table class="table table"><tr><td>name</td><td>source table</td><td>role</td><td>classify label</td></tr><tr><td><code>observations</code></td><td><code>&lt;schema&gt;.observations_breaks</code></td><td>fish observations from <code>bcfishobs.observations</code>, WSG- and species-filtered, exclusions applied</td><td>(informational; not a barrier)</td></tr><tr><td><code>gradient_minimal</code></td><td><code>&lt;schema&gt;.gradient_barriers_minimal</code></td><td>minimal-reduced gradient barriers (per-model 15/20/25/30%)</td><td>classify uses the FULL set with <code>gradient_&lt;NNNN&gt;</code> labels</td></tr><tr><td><code>barriers_definite</code></td><td><code>&lt;schema&gt;.barriers_definite</code></td><td><code>user_barriers_definite.csv</code> for the AOI</td><td><code>blocked</code></td></tr><tr><td><code>subsurfaceflow</code></td><td><code>&lt;schema&gt;.barriers_subsurfaceflow</code></td><td>FWA <code>edge_type IN (1410, 1425)</code> start points; honours <code>user_barriers_definite_control</code>. Opt-in (only built when listed)</td><td><code>blocked</code></td></tr><tr><td><code>habitat_endpoints</code></td><td><code>&lt;schema&gt;.habitat_endpoints</code></td><td>DRM and URM from <code>user_habitat_classification.csv</code></td><td>(segmentation only; not a barrier)</td></tr><tr><td><code>crossings</code></td><td><code>&lt;schema&gt;.crossings_breaks</code></td><td>PSCIS + modelled crossings (any <code>barrier_status</code>)</td><td>classify maps <code>barrier_status</code> → <code>barrier</code>/<code>potential</code>/<code>passable</code></td></tr></table><p>Bcfishpass-bundle config opts in to <code>subsurfaceflow</code> for parity with
+bcfishpass natural access. Default-bundle leaves it off pending a
+NewGraph methodology decision.</p>
 <p>Writes to (under the caller's working schema unless noted):</p><ul><li><p><code>&lt;schema&gt;.observations_breaks</code> — WSG- and species-filtered
 observation positions, data-error exclusions applied</p></li>
 <li><p><code>&lt;schema&gt;.habitat_endpoints</code> — both DRM and URM from the habitat
@@ -113,6 +120,8 @@ classification table (matches bcfishpass convention)</p></li>
 <li><p>Mutates <code>fresh.streams</code> in place — adds segment boundaries at
 each break source position, reassigns <code>id_segment</code></p></li>
 </ul></div>
+
+    </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p>Other pipeline:

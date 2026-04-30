@@ -6,6 +6,7 @@ curve.
 ## Installation
 
 ``` r
+
 pak::pak("NewGraphEnvironment/link")
 ```
 
