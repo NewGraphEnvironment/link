@@ -92,7 +92,7 @@ Traced one `link_only` segment (`blkey 360704379, DRM 1058, edge 1000, grad 0.05
 
 **bcfishpass behavior** (no phase-1 exclusion): cluster_min stays at Nado DRM 3687 (the lowest-wscode segment in cluster). DRM 3687 ≥ 10 → confluence boost doesn't fire. Path-2 strict-upstream check finds no spawning above DRM 3687 → fails. Path-3 fails on bridge gradient. Cluster correctly denied.
 
-**Ecologically**: bcfp is right. >12% gradient at the trib mouth blocks anadromous ST from reaching the trib. Fresh's phase-1+confluence-boost interaction credits the trib incorrectly.
+**Ecologically**: bcfp is right. The 5% bridge-gradient threshold is a juvenile-movement constraint, not an adult-access threshold — small fish (fry, juveniles) cannot overcome the velocities of segments steeper than ~5%. Adult ST DO reach the trib via the species access threshold (20%); the question is whether emerging fry can move between downstream spawning and the rearing-eligible reaches. With a 12.58% segment at the trib mouth, fry can't traverse to use the upstream rearing — so the trib's rearing-eligible segments aren't usable habitat. Fresh's phase-1 + confluence-boost interaction credits them incorrectly.
 
 This pattern likely accounts for most of the 49 km MORR ST `bcfp_only` gap (and similar gaps on BABL ST). Each high-gradient confluence above downstream spawning produces the same artifact when a trib has rearing-eligible segments above it.
 
