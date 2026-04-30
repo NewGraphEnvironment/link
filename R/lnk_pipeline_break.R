@@ -13,6 +13,24 @@
 #' bcfishpass config (`cfg$pipeline$break_order`) and is the default
 #' when the config does not specify one.
 #'
+#' ## Break sources
+#'
+#' Valid entries for `cfg$pipeline$break_order`. Omit an entry to skip
+#' both segmentation and access-gating from that source.
+#'
+#' | name | source table | role | classify label |
+#' |---|---|---|---|
+#' | `observations` | `<schema>.observations_breaks` | fish observations from `bcfishobs.observations`, WSG- and species-filtered, exclusions applied | (informational; not a barrier) |
+#' | `gradient_minimal` | `<schema>.gradient_barriers_minimal` | minimal-reduced gradient barriers (per-model 15/20/25/30%) | classify uses the FULL set with `gradient_<NNNN>` labels |
+#' | `barriers_definite` | `<schema>.barriers_definite` | `user_barriers_definite.csv` for the AOI | `blocked` |
+#' | `subsurfaceflow` | `<schema>.barriers_subsurfaceflow` | FWA `edge_type IN (1410, 1425)` start points; honours `user_barriers_definite_control`. Opt-in (only built when listed) | `blocked` |
+#' | `habitat_endpoints` | `<schema>.habitat_endpoints` | DRM and URM from `user_habitat_classification.csv` | (segmentation only; not a barrier) |
+#' | `crossings` | `<schema>.crossings_breaks` | PSCIS + modelled crossings (any `barrier_status`) | classify maps `barrier_status` → `barrier`/`potential`/`passable` |
+#'
+#' Bcfishpass-bundle config opts in to `subsurfaceflow` for parity with
+#' bcfishpass natural access. Default-bundle leaves it off pending a
+#' NewGraph methodology decision.
+#'
 #' Writes to (under the caller's working schema unless noted):
 #'   - `<schema>.observations_breaks` — WSG- and species-filtered
 #'     observation positions, data-error exclusions applied
@@ -80,6 +98,12 @@ lnk_pipeline_break <- function(conn, aoi, cfg, loaded, schema,
     "observations", "gradient_minimal",
     "barriers_definite", "habitat_endpoints", "crossings"
   )
+  # Source table for each valid break_order entry. To add a new break
+  # source: register it here, ensure the table is materialized in the
+  # appropriate prepare/break helper (gated on the entry being in
+  # break_order so opt-out remains zero-cost), and document the entry in
+  # this function's roxygen `## Break sources` section + the per-bundle
+  # config.yaml comment.
   source_tables <- list(
     observations      = paste0(schema, ".observations_breaks"),
     gradient_minimal  = paste0(schema, ".gradient_barriers_minimal"),

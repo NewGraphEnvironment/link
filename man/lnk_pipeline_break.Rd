@@ -46,6 +46,23 @@ observations → gradient_minimal → barriers_definite →
 habitat_endpoints → crossings. This order is encoded in the bundled
 bcfishpass config (\code{cfg$pipeline$break_order}) and is the default
 when the config does not specify one.
+\subsection{Break sources}{
+
+Valid entries for \code{cfg$pipeline$break_order}. Omit an entry to skip
+both segmentation and access-gating from that source.\tabular{llll}{
+   name \tab source table \tab role \tab classify label \cr
+   \code{observations} \tab \verb{<schema>.observations_breaks} \tab fish observations from \code{bcfishobs.observations}, WSG- and species-filtered, exclusions applied \tab (informational; not a barrier) \cr
+   \code{gradient_minimal} \tab \verb{<schema>.gradient_barriers_minimal} \tab minimal-reduced gradient barriers (per-model 15/20/25/30\%) \tab classify uses the FULL set with \verb{gradient_<NNNN>} labels \cr
+   \code{barriers_definite} \tab \verb{<schema>.barriers_definite} \tab \code{user_barriers_definite.csv} for the AOI \tab \code{blocked} \cr
+   \code{subsurfaceflow} \tab \verb{<schema>.barriers_subsurfaceflow} \tab FWA \verb{edge_type IN (1410, 1425)} start points; honours \code{user_barriers_definite_control}. Opt-in (only built when listed) \tab \code{blocked} \cr
+   \code{habitat_endpoints} \tab \verb{<schema>.habitat_endpoints} \tab DRM and URM from \code{user_habitat_classification.csv} \tab (segmentation only; not a barrier) \cr
+   \code{crossings} \tab \verb{<schema>.crossings_breaks} \tab PSCIS + modelled crossings (any \code{barrier_status}) \tab classify maps \code{barrier_status} → \code{barrier}/\code{potential}/\code{passable} \cr
+}
+
+
+Bcfishpass-bundle config opts in to \code{subsurfaceflow} for parity with
+bcfishpass natural access. Default-bundle leaves it off pending a
+NewGraph methodology decision.
 
 Writes to (under the caller's working schema unless noted):
 \itemize{
@@ -56,6 +73,7 @@ classification table (matches bcfishpass convention)
 \item \verb{<schema>.crossings_breaks} — crossing positions
 \item Mutates \code{fresh.streams} in place — adds segment boundaries at
 each break source position, reassigns \code{id_segment}
+}
 }
 }
 \examples{
