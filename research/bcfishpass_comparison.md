@@ -65,6 +65,43 @@ Remaining outliers (7 rows >5% departure):
 
 Pattern: 6 of 7 are direction `link < bcfishpass` (link under-credits) — opposite of what subsurfaceflow caused. Different mechanism. KISP SK (+42.3%) is the only over-credit but tiny absolute (3 km of stream). Concentration on MORR + ST suggests methodology dimension we haven't matched, possibly around `barriers_st`-specific gradient classes or `streams_habitat_known` overlay interactions. Investigate as a separate slice; not in subsurfaceflow's scope.
 
+### 2026-04-30 — segment-level diff on MORR ST: phase-1 exclusion + confluence boost interaction
+
+Traced one `link_only` segment (`blkey 360704379, DRM 1058, edge 1000, grad 0.0587, order 1, 1822 m`) in MORR ST. Both DBs show identical FWA inputs (channel_width 1.51, parent_order 2, edge_type 1000). bcfp does NOT credit; link does.
+
+**Setup**: bcfp's path-3 cluster check on cluster 502 (containing the trib + Nado Creek segments). The trib drains into Nado Creek at the confluence; **Nado Creek DRM 3679 has gradient 0.1258 (>12%)** — a real bridge-gradient barrier between the trib confluence and downstream spawning at Nado DRM 3605 / DRM 3180 / etc.
+
+**bcfp's path-3** correctly invalidates cluster 502:
+
+| step | segment | gradient | role |
+|---|---|---|---|
+| cluster_min | Nado DRM 3687 | 0.0152 | self, excluded from trace (`fwa_downstream(self, self) = FALSE` confirmed) |
+| trace rn=1 | Nado DRM 3679 | **0.1258** | first ≥5% gradient → `nearest_5pct.row_number = 1` |
+| trace rn=2 | Nado DRM 3605 | 0.0137 | first spawning → `nearest_spawn.row_number = 2` |
+
+`nearest_5pct (1) > nearest_spawn (2)` is FALSE → cluster invalidated. Replicated bcfp's path-3 SQL on production DB and confirmed `valid_rearing` returns 0 rows for cluster 502.
+
+**fresh's `.frs_cluster_both` does have the same row_number comparison** in phase-3 (`fresh/R/frs_cluster.R:524–539`) — structurally identical to bcfp. So why does fresh credit?
+
+**Root cause**: **Phase-1 exclusion shifts cluster_min into the confluence-boost zone**.
+
+- Fresh's phase-1 (`frs_cluster.R:414–425`) excludes segments where both `label_cluster` and `label_connect` are TRUE on the same segment. Nado DRM 3687 has both spawning=TRUE and rearing=TRUE → excluded from clustering.
+- After exclusion, the trib's 2 segments form their own sub-cluster (DBSCAN re-clusters because DRM 3687 was the spatial bridge). cluster_min = **trib DRM 0**.
+- Phase-2 confluence boost (`frs_cluster.R:468–473`) activates when cluster_min DRM < `confluence_m` (default 10 m). 0 < 10 → boost fires.
+- The boost calls `FWA_Upstream(subpath(trib_ws, 0, -1), trib_ws, st.wscode, st.localcode)` — looking for spawning upstream of the parent's wscode. **Finds Nado DRM 3687** (the very segment phase-1 excluded) → cluster validated via phase-2.
+
+**bcfishpass behavior** (no phase-1 exclusion): cluster_min stays at Nado DRM 3687 (the lowest-wscode segment in cluster). DRM 3687 ≥ 10 → confluence boost doesn't fire. Path-2 strict-upstream check finds no spawning above DRM 3687 → fails. Path-3 fails on bridge gradient. Cluster correctly denied.
+
+**Ecologically**: bcfp is right. >12% gradient at the trib mouth blocks anadromous ST from reaching the trib. Fresh's phase-1+confluence-boost interaction credits the trib incorrectly.
+
+This pattern likely accounts for most of the 49 km MORR ST `bcfp_only` gap (and similar gaps on BABL ST). Each high-gradient confluence above downstream spawning produces the same artifact when a trib has rearing-eligible segments above it.
+
+**Where to fix**: in fresh — `.frs_cluster_both` should not let phase-1 exclusion validate clusters that bridge_gradient would otherwise deny. Two candidate fixes:
+1. Phase-1 exclusion only affects the FINAL `UPDATE` (don't strip rearing on phase-1 segments) but does NOT change cluster boundaries for phase-2/3 testing. This restores cluster_min to its pre-exclusion location.
+2. Phase-2's confluence boost should also apply a bridge_gradient check on the path between cluster_min and the spawning candidate it found via the boost.
+
+Option 1 is structurally cleaner. Option 2 is more general. Either would close the MORR ST gap.
+
 Implementation: `.lnk_pipeline_prep_subsurfaceflow` mirrors bcfishpass's `barriers_subsurfaceflow.sql` exactly — same FWA filter, same `user_barriers_definite_control` LEFT JOIN guard. Inclusion is opt-in via `cfg$pipeline$break_order` containing `subsurfaceflow`. Bcfishpass-bundle config opts in; default-bundle does not.
 
 ## How bcfishpass classifies segments — natural vs anthropogenic tiers
