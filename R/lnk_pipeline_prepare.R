@@ -92,6 +92,9 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
   .lnk_pipeline_prep_gradient(conn, aoi, loaded, schema)
   .lnk_pipeline_prep_natural(conn, schema)
   .lnk_pipeline_prep_overrides(conn, loaded, schema, observations)
+  if ("subsurfaceflow" %in% (cfg$pipeline$break_order %||% character())) {
+    .lnk_pipeline_prep_subsurfaceflow(conn, aoi, loaded, schema)
+  }
   .lnk_pipeline_prep_minimal(conn, aoi, schema)
   .lnk_pipeline_prep_network(conn, aoi, schema)
 
@@ -280,6 +283,53 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
   #     source (so segmentation still places a boundary there)
   #   - `lnk_pipeline_classify()` UNION ALLs it directly into
   #     `fresh.streams_breaks` (so it blocks access gating)
+
+  invisible(NULL)
+}
+
+
+#' Materialize subsurface-flow barriers from FWA (opt-in).
+#'
+#' Mirrors bcfishpass's `model/01_access/sql/barriers_subsurfaceflow.sql`.
+#' Source: `whse_basemapping.fwa_stream_networks_sp` filtered to
+#' `edge_type IN (1410, 1425)` (FWA subsurface-flow edge types) on
+#' main blue lines. Honours `<schema>.barriers_definite_control` —
+#' a control row with `barrier_ind = FALSE` skips the subsurface
+#' barrier (operator override).
+#'
+#' Only built when `cfg$pipeline$break_order` includes
+#' `"subsurfaceflow"` (call site in `lnk_pipeline_prepare`). Configs
+#' that don't list it skip this step entirely.
+#' @noRd
+.lnk_pipeline_prep_subsurfaceflow <- function(conn, aoi, loaded, schema) {
+  ctrl_join <- ""
+  ctrl_filter <- ""
+  if (!is.null(loaded$user_barriers_definite_control)) {
+    ctrl_join <- sprintf(
+      "LEFT OUTER JOIN %s.barriers_definite_control c
+         ON s.blue_line_key = c.blue_line_key
+         AND abs(s.downstream_route_measure - c.downstream_route_measure) < 1",
+      schema)
+    ctrl_filter <- "AND (c.barrier_ind IS NULL OR c.barrier_ind::boolean IS TRUE)"
+  }
+
+  .lnk_db_execute(conn, sprintf(
+    "DROP TABLE IF EXISTS %s.barriers_subsurfaceflow", schema))
+  .lnk_db_execute(conn, sprintf(
+    "CREATE TABLE %s.barriers_subsurfaceflow AS
+     SELECT s.blue_line_key,
+            round(s.downstream_route_measure) AS downstream_route_measure,
+            s.wscode_ltree,
+            s.localcode_ltree
+     FROM whse_basemapping.fwa_stream_networks_sp s
+     %s
+     WHERE s.watershed_group_code = %s
+       AND s.edge_type IN (1410, 1425)
+       AND s.local_watershed_code IS NOT NULL
+       AND s.blue_line_key = s.watershed_key
+       AND s.fwa_watershed_code NOT LIKE '999%%'
+       %s",
+    schema, ctrl_join, .lnk_quote_literal(aoi), ctrl_filter))
 
   invisible(NULL)
 }

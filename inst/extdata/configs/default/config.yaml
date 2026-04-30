@@ -51,6 +51,16 @@ files:
 extends: ~
 
 pipeline:
+  # break_order — sources of segment break positions, applied in the order
+  # listed. Available entries (see ?lnk_pipeline_break):
+  #   observations       — fish observations from bcfishobs.observations
+  #   gradient_minimal   — minimal-reduced gradient barriers
+  #   barriers_definite  — user_barriers_definite.csv
+  #   subsurfaceflow     — FWA edge_type 1410/1425 (opt-in; bcfishpass parity)
+  #   habitat_endpoints  — DRM/URM from user_habitat_classification
+  #   crossings          — PSCIS + modelled crossings
+  # default-bundle leaves subsurfaceflow OFF — NewGraph methodology decision
+  # pending. Add the entry to opt in.
   break_order:
   - observations
   - gradient_minimal
