@@ -292,7 +292,7 @@ test_that(".lnk_pipeline_prep_overrides passes control when manifest declares it
   )
 
   .lnk_pipeline_prep_overrides("mock-conn", loaded = loaded_stub,
-    schema = "working_bulk", observations = "bcfishobs.observations")
+    schema = "working_bulk")
 
   expect_equal(captured$args$control, "working_bulk.barriers_definite_control")
 })
@@ -318,7 +318,7 @@ test_that(".lnk_pipeline_prep_overrides passes control = NULL when manifest omit
   )
 
   .lnk_pipeline_prep_overrides("mock-conn", loaded = loaded_stub,
-    schema = "working_bulk", observations = "bcfishobs.observations")
+    schema = "working_bulk")
 
   expect_null(captured$args$control)
 })
@@ -351,7 +351,7 @@ test_that(".lnk_pipeline_prep_overrides passes habitat when manifest declares it
   )
 
   .lnk_pipeline_prep_overrides("mock-conn", loaded = loaded_stub,
-    schema = "working_bulk", observations = "bcfishobs.observations")
+    schema = "working_bulk")
 
   expect_equal(captured$args$habitat,
     "working_bulk.user_habitat_classification")
@@ -378,7 +378,147 @@ test_that(".lnk_pipeline_prep_overrides passes habitat = NULL when manifest omit
   )
 
   .lnk_pipeline_prep_overrides("mock-conn", loaded = loaded_stub,
-    schema = "working_bulk", observations = "bcfishobs.observations")
+    schema = "working_bulk")
 
   expect_null(captured$args$habitat)
+})
+
+
+# =====================================================================
+# .lnk_pipeline_prep_observations — link#92 per-AOI filtered observations
+# =====================================================================
+#
+# Mirrors bcfp's `model/01_access/sql/load_observations.sql`:
+#   - INNER filter to WSG's species set (loaded$wsg_species_presence)
+#   - LEFT JOIN observation_exclusions, drop data_error/release_exclude rows
+#     (keyed on observation_key)
+# Result: <schema>.observations, consumed by prep_overrides + break_obs.
+
+test_that(".lnk_pipeline_prep_observations builds species-filtered table", {
+  captured <- character(0)
+  local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) {
+      captured <<- c(captured, sql); invisible(NULL)
+    }
+  )
+
+  loaded <- list(
+    wsg_species_presence = data.frame(
+      watershed_group_code = "BULK",
+      bt = "t", ch = "t", cm = "f", co = "f", ct = "f", dv = "f",
+      pk = "f", rb = "f", sk = "f", st = "f", wct = "f",
+      stringsAsFactors = FALSE
+    ),
+    observation_exclusions = NULL
+  )
+  .lnk_pipeline_prep_observations("mock", aoi = "BULK", loaded = loaded,
+    schema = "w_bulk", observations = "bcfishobs.observations")
+
+  joined <- paste(captured, collapse = "\n")
+  expect_match(joined, "DROP TABLE IF EXISTS w_bulk\\.observations\\b")
+  expect_match(joined, "CREATE TABLE w_bulk\\.observations AS")
+  expect_match(joined, "FROM bcfishobs\\.observations o")
+  expect_match(joined, "o\\.watershed_group_code = 'BULK'")
+  expect_match(joined, "o\\.species_code IN \\('BT', 'CH'\\)")
+  # No exclusions clause when the loaded list has none
+  expect_no_match(joined, "observation_key NOT IN")
+})
+
+test_that(".lnk_pipeline_prep_observations applies QA exclusions on observation_key", {
+  captured <- character(0)
+  local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) {
+      captured <<- c(captured, sql); invisible(NULL)
+    }
+  )
+
+  loaded <- list(
+    wsg_species_presence = data.frame(
+      watershed_group_code = "BULK",
+      bt = "t", ch = "f", cm = "f", co = "f", ct = "f", dv = "f",
+      pk = "f", rb = "f", sk = "f", st = "f", wct = "f",
+      stringsAsFactors = FALSE
+    ),
+    observation_exclusions = data.frame(
+      observation_key  = c("aaa", "bbb", "ccc", "ddd"),
+      data_error       = c(TRUE,  FALSE, FALSE, FALSE),
+      release_exclude  = c(FALSE, TRUE,  FALSE, FALSE),
+      release_include  = c(FALSE, FALSE, FALSE, FALSE),
+      stringsAsFactors = FALSE
+    )
+  )
+  .lnk_pipeline_prep_observations("mock", aoi = "BULK", loaded = loaded,
+    schema = "w_bulk", observations = "bcfishobs.observations")
+
+  joined <- paste(captured, collapse = "\n")
+  # Filter clause keyed on observation_key (NOT fish_observation_point_id) —
+  # this is the link#92 fix. CSV column matches bcfishpass schema exactly.
+  expect_match(joined, "AND o\\.observation_key NOT IN")
+  # Only the 2 truly-excluded keys (data_error TRUE or release_exclude TRUE)
+  # appear; the 2 kept keys do NOT
+  expect_match(joined, "'aaa'")
+  expect_match(joined, "'bbb'")
+  expect_no_match(joined, "'ccc'")
+  expect_no_match(joined, "'ddd'")
+})
+
+test_that(".lnk_pipeline_prep_observations expands CT to CT/CCT/ACT/CT/RB", {
+  captured <- character(0)
+  local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) {
+      captured <<- c(captured, sql); invisible(NULL)
+    }
+  )
+
+  loaded <- list(
+    wsg_species_presence = data.frame(
+      watershed_group_code = "ELKR",
+      bt = "f", ch = "f", cm = "f", co = "f", ct = "t", dv = "f",
+      pk = "f", rb = "f", sk = "f", st = "f", wct = "t",
+      stringsAsFactors = FALSE
+    ),
+    observation_exclusions = NULL
+  )
+  .lnk_pipeline_prep_observations("mock", aoi = "ELKR", loaded = loaded,
+    schema = "w_elkr", observations = "bcfishobs.observations")
+
+  joined <- paste(captured, collapse = "\n")
+  # CT alias remap mirrors bcfishpass species_code_remap (CCT/ACT/CT/RB → CT)
+  for (sp in c("CT", "CCT", "ACT", "CT/RB", "WCT")) {
+    expect_match(joined, sprintf("'%s'", sp))
+  }
+})
+
+test_that(".lnk_pipeline_prep_observations builds empty table when no species present", {
+  captured <- character(0)
+  local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) {
+      captured <<- c(captured, sql); invisible(NULL)
+    }
+  )
+
+  loaded <- list(
+    wsg_species_presence = data.frame(
+      watershed_group_code = "XXXX",
+      bt = "f", ch = "f", cm = "f", co = "f", ct = "f", dv = "f",
+      pk = "f", rb = "f", sk = "f", st = "f", wct = "f",
+      stringsAsFactors = FALSE
+    ),
+    observation_exclusions = NULL
+  )
+  .lnk_pipeline_prep_observations("mock", aoi = "XXXX", loaded = loaded,
+    schema = "w_x", observations = "bcfishobs.observations")
+
+  joined <- paste(captured, collapse = "\n")
+  expect_match(joined, "WHERE FALSE")
+  expect_no_match(joined, "watershed_group_code = 'XXXX'")
+})
+
+test_that(".lnk_pipeline_prep_observations errors when wsg_species_presence missing", {
+  expect_error(
+    .lnk_pipeline_prep_observations("mock", aoi = "BULK",
+      loaded = list(wsg_species_presence = NULL),
+      schema = "w_bulk", observations = "bcfishobs.observations"),
+    "wsg_species_presence not present"
+  )
 })

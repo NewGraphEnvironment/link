@@ -131,48 +131,23 @@ lnk_pipeline_break <- function(conn, aoi, cfg, loaded, schema,
 }
 
 
-#' Build observations_breaks with species filter and data-error exclusions
+#' Build observations_breaks from the per-AOI filtered observations table
+#'
+#' Reads from `<schema>.observations`, materialized by
+#' `.lnk_pipeline_prep_observations()`. That helper already applies the
+#' WSG species-presence filter and the QA exclusions (mirrors bcfp's
+#' `bcfishpass.observations` build), so this step is now a simple
+#' `SELECT DISTINCT blue_line_key, drm` on the pre-filtered table.
 #' @noRd
 .lnk_pipeline_break_obs <- function(conn, aoi, loaded, schema, observations) {
-  obs_species <- .lnk_pipeline_break_obs_species(loaded, aoi)
-  if (length(obs_species) == 0L) {
-    obs_species_sql <- "NULL"
-  } else {
-    obs_species_sql <- paste0(
-      vapply(obs_species, .lnk_quote_literal, character(1)),
-      collapse = ", ")
-  }
-
-  # Observation exclusions: data errors + release excludes
-  excl_filter <- ""
-  excl_df <- loaded$observation_exclusions
-  if (!is.null(excl_df) && nrow(excl_df) > 0) {
-    is_excl <- excl_df$data_error %in% c(TRUE, "t") |
-               excl_df$release_exclude %in% c(TRUE, "t")
-    keys <- excl_df$fish_observation_point_id[is_excl]
-    if (length(keys) > 0) {
-      DBI::dbWriteTable(conn,
-        DBI::Id(schema = schema, table = "obs_exclusions"),
-        data.frame(fish_observation_point_id = keys),
-        overwrite = TRUE)
-      excl_filter <- sprintf(
-        "AND o.fish_observation_point_id NOT IN
-          (SELECT fish_observation_point_id FROM %s.obs_exclusions)",
-        schema)
-    }
-  }
-
   .lnk_db_execute(conn, sprintf(
     "DROP TABLE IF EXISTS %s.observations_breaks", schema))
   .lnk_db_execute(conn, sprintf(
     "CREATE TABLE %s.observations_breaks AS
-     SELECT DISTINCT o.blue_line_key,
-            round(o.downstream_route_measure) AS downstream_route_measure
-     FROM %s o
-     WHERE o.watershed_group_code = %s
-       AND o.species_code IN (%s) %s",
-    schema, observations, .lnk_quote_literal(aoi),
-    obs_species_sql, excl_filter))
+     SELECT DISTINCT blue_line_key,
+            round(downstream_route_measure) AS downstream_route_measure
+     FROM %s.observations",
+    schema, schema))
 
   invisible(NULL)
 }

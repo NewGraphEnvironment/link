@@ -66,18 +66,12 @@ test_that(".lnk_pipeline_break_obs_species expands CT to CT/CCT/ACT/CT\\RB", {
 })
 
 # -- break_obs SQL shape -----------------------------------------------------
+# Post-link#92 simplification: prep_observations builds <schema>.observations
+# with the WSG species-presence + exclusions filters applied. break_obs is now
+# a thin reader from that pre-filtered table — no obs_exclusions temp table
+# write, no inline species/exclusion SQL.
 
-test_that(".lnk_pipeline_break_obs writes AOI-scoped observations_breaks", {
-  loaded_stub <- list(
-    wsg_species_presence = data.frame(
-      watershed_group_code = "BULK",
-      bt = "t", ch = "t", cm = "f", co = "f", ct = "f", dv = "f",
-      pk = "f", rb = "f", sk = "f", st = "f", wct = "f",
-      stringsAsFactors = FALSE
-    ),
-    observation_exclusions = NULL
-  )
-
+test_that(".lnk_pipeline_break_obs reads from <schema>.observations (link#92)", {
   captured <- character(0)
   local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) {
@@ -85,65 +79,23 @@ test_that(".lnk_pipeline_break_obs writes AOI-scoped observations_breaks", {
       invisible(NULL)
     }
   )
-  local_mocked_bindings(
-    dbWriteTable = function(...) invisible(NULL),
-    .package = "DBI"
-  )
 
-  .lnk_pipeline_break_obs("mock", aoi = "BULK", loaded = loaded_stub,
+  .lnk_pipeline_break_obs("mock", aoi = "BULK", loaded = list(),
                            schema = "w_bulk",
                            observations = "bcfishobs.observations")
 
   joined <- paste(captured, collapse = "\n")
+  expect_match(joined, "DROP TABLE IF EXISTS w_bulk.observations_breaks")
   expect_match(joined, "CREATE TABLE w_bulk.observations_breaks")
-  expect_match(joined, "FROM bcfishobs.observations o")
-  expect_match(joined, "o.watershed_group_code = 'BULK'")
-  expect_match(joined, "'BT', 'CH'")
+  # Reads from the pre-filtered <schema>.observations table, NOT raw bcfishobs
+  expect_match(joined, "FROM w_bulk.observations\\b")
+  expect_no_match(joined, "FROM bcfishobs\\.observations")
+  # Species filter, watershed_group filter, and exclusions all moved upstream
+  # to prep_observations — must not appear in this step's SQL.
+  expect_no_match(joined, "watershed_group_code")
+  expect_no_match(joined, "species_code IN")
   expect_no_match(joined, "obs_exclusions")
-})
-
-test_that(".lnk_pipeline_break_obs applies exclusions when present", {
-  loaded_stub <- list(
-    wsg_species_presence = data.frame(
-      watershed_group_code = "BULK",
-      bt = "t", ch = "f", cm = "f", co = "f", ct = "f", dv = "f",
-      pk = "f", rb = "f", sk = "f", st = "f", wct = "f",
-      stringsAsFactors = FALSE
-    ),
-    observation_exclusions = data.frame(
-      fish_observation_point_id = c(1L, 2L, 3L),
-      data_error = c(TRUE, FALSE, FALSE),
-      release_exclude = c(FALSE, TRUE, FALSE),
-      stringsAsFactors = FALSE
-    )
-  )
-
-  captured <- character(0)
-  written <- list()
-  local_mocked_bindings(
-    .lnk_db_execute = function(conn, sql) {
-      captured <<- c(captured, sql)
-      invisible(NULL)
-    }
-  )
-  local_mocked_bindings(
-    dbWriteTable = function(conn, name, value, ...) {
-      written[[length(written) + 1]] <<- list(name = name, value = value)
-      invisible(NULL)
-    },
-    .package = "DBI"
-  )
-
-  .lnk_pipeline_break_obs("mock", aoi = "BULK", loaded = loaded_stub,
-                           schema = "w_bulk",
-                           observations = "bcfishobs.observations")
-
-  expect_length(written, 1L)
-  expect_equal(nrow(written[[1]]$value), 2L)
-  expect_setequal(written[[1]]$value$fish_observation_point_id, c(1L, 2L))
-
-  joined <- paste(captured, collapse = "\n")
-  expect_match(joined, "NOT IN\\s*\\(SELECT fish_observation_point_id FROM w_bulk.obs_exclusions\\)")
+  expect_no_match(joined, "observation_key NOT IN")
 })
 
 # -- habitat endpoints -------------------------------------------------------

@@ -39,7 +39,7 @@ Any confirmed habitat (spawning or rearing flagged) upstream
 of a barrier removes it (threshold = 1).}
 
 \item{exclusions}{Character or \code{NULL}. Schema-qualified table of
-observation exclusions with column \code{fish_observation_point_id}. Flagged
+observation exclusions with column \code{observation_key}. Flagged
 observations are removed before counting.}
 
 \item{control}{Character or \code{NULL}. Schema-qualified table of barrier
