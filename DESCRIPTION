@@ -31,7 +31,7 @@ Suggests:
     bcdata,
     digest,
     dplyr,
-    fresh (>= 0.25.0),
+    fresh (>= 0.26.0),
     lintr,
     mockery,
     sf,
