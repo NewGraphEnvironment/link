@@ -94,7 +94,10 @@ Writes to (under the caller's working schema unless noted):
 
 - `<schema>.gradient_barriers_raw` (with ltree)
 
-- `<schema>.natural_barriers`
+- `<schema>.natural_barriers` (gradient + falls + opt-in subsurfaceflow)
+
+- `<schema>.barriers_subsurfaceflow` (only when subsurfaceflow opted in
+  via `cfg$pipeline$break_order`)
 
 - `<schema>.barrier_overrides`
 

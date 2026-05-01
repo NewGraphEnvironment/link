@@ -117,7 +117,9 @@ channel width, stream order parent, GENERATED gradient / measures
 <code>&lt;schema&gt;.barriers_definite_control</code>,
 <code>&lt;schema&gt;.user_habitat_classification</code></p></li>
 <li><p><code>&lt;schema&gt;.gradient_barriers_raw</code> (with ltree)</p></li>
-<li><p><code>&lt;schema&gt;.natural_barriers</code></p></li>
+<li><p><code>&lt;schema&gt;.natural_barriers</code> (gradient + falls + opt-in subsurfaceflow)</p></li>
+<li><p><code>&lt;schema&gt;.barriers_subsurfaceflow</code> (only when subsurfaceflow opted in
+via <code>cfg$pipeline$break_order</code>)</p></li>
 <li><p><code>&lt;schema&gt;.barrier_overrides</code></p></li>
 <li><p><code>&lt;schema&gt;.barriers_&lt;model&gt;</code> + <code>&lt;schema&gt;.barriers_&lt;model&gt;_min</code>
 per-model pre/post minimal reduction</p></li>
