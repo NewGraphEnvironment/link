@@ -51,9 +51,20 @@ Methodology decision pending. Don't merge link `96-frs-order-child-wire`. Don't 
 - Inspect the calibration on a wider WSG sample (BABL or LFRA next, per fresh#158)
 - Decide to ship `bypass=no` defaults and keep the infrastructure parametric
 
+### Adjacent finding surfaced this session — [link#96](https://github.com/NewGraphEnvironment/link/issues/96)
+
+While inspecting the HORS BT map, identified a separate bug: `falls` is documented in `lnk_pipeline_break.R:10-13` as part of bcfp's break order but is **not in the implementation's `source_tables` list or `break_order` default**. Result: the FWA stream network is never broken at fall positions. Where two falls sit close together (e.g. HORS BLK 356357296 at DRMs 67524 + 67565, 41m apart), only the one coinciding with another break source (gradient_min, observations) gets segmented. The other fall is invisible to segmentation, producing segments that span the fall and incorrectly classify the upper portion as accessible.
+
+Confirmed pattern on Horsefly River (BT, link-only credit on segment 12671 spanning 1447m through fall #2). Issue filed with full trace evidence at link#96. Not part of `frs_order_child` work — separate, simpler fix (one entry in source_tables + one entry in break_order default + bundle config update).
+
+**Tackle on this branch (96-frs-order-child-wire) before unparking the bypass work.** The fix is small enough that it can land here without expanding scope; the test is re-running HORS BT and confirming 12671 splits at 67565 and the upper portion becomes inaccessible. After confirmation, update `research/bcfishpass_comparison.md` to reflect.
+
 ### Next session quick-start
 
 1. Read this file
 2. Read `findings.md`
 3. Read fresh#158 issue body (canonical design)
-4. Decide: ship default-on (BABL inspection first) or default-off (commit infra without enabling)
+4. Apply link#96 fix on this branch first (falls in break_order)
+5. Re-run HORS BT to verify 12671 splits at the fall
+6. Update `research/bcfishpass_comparison.md`
+7. THEN decide on the bypass methodology question
