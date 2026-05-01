@@ -116,7 +116,14 @@ test_that(".lnk_pipeline_prep_gradient prunes when manifest declares control", {
 
 # -- prep_natural SQL shape -------------------------------------------------
 
-test_that(".lnk_pipeline_prep_natural unions gradient + falls only (no definite)", {
+# Helper: minimal cfg-like object for mocking. The real cfg is built by
+# lnk_config(), which reads YAML — too heavy for these unit tests.
+.fake_cfg <- function(break_order = NULL) {
+  structure(list(pipeline = list(break_order = break_order)),
+            class = "lnk_config")
+}
+
+test_that(".lnk_pipeline_prep_natural unions gradient + falls when subsurfaceflow opted out", {
   captured <- character(0)
   local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) {
@@ -125,7 +132,10 @@ test_that(".lnk_pipeline_prep_natural unions gradient + falls only (no definite)
     }
   )
 
-  .lnk_pipeline_prep_natural("mock-conn", schema = "w_bulk")
+  cfg <- .fake_cfg(break_order = c("observations", "gradient_minimal",
+    "barriers_definite", "habitat_endpoints", "crossings"))
+  .lnk_pipeline_prep_natural("mock-conn", aoi = "BULK", cfg = cfg,
+    loaded = list(), schema = "w_bulk")
 
   joined <- paste(captured, collapse = "\n")
   expect_match(joined, "CREATE TABLE w_bulk.natural_barriers")
@@ -133,6 +143,62 @@ test_that(".lnk_pipeline_prep_natural unions gradient + falls only (no definite)
   expect_match(joined, "FROM w_bulk.falls f")
   expect_no_match(joined, "FROM w_bulk\\.barriers_definite\\b")
   expect_match(joined, "'blocked'")
+  # Subsurfaceflow code path must not fire when not opted in
+  expect_no_match(joined, "barriers_subsurfaceflow")
+  expect_no_match(joined, "edge_type IN \\(1410, 1425\\)")
+})
+
+test_that(".lnk_pipeline_prep_natural unions subsurfaceflow into natural_barriers when opted in", {
+  captured <- character(0)
+  local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) {
+      captured <<- c(captured, sql)
+      invisible(NULL)
+    }
+  )
+
+  cfg <- .fake_cfg(break_order = c("observations", "gradient_minimal",
+    "barriers_definite", "subsurfaceflow", "habitat_endpoints", "crossings"))
+  .lnk_pipeline_prep_natural("mock-conn", aoi = "HARR", cfg = cfg,
+    loaded = list(), schema = "w_harr")
+
+  joined <- paste(captured, collapse = "\n")
+  # Builds the subsurfaceflow table from FWA
+  expect_match(joined, "CREATE TABLE w_harr.barriers_subsurfaceflow")
+  expect_match(joined, "edge_type IN \\(1410, 1425\\)")
+  # AND appends those positions to natural_barriers so lnk_barrier_overrides
+  # sees them — this is the link#88 fix. Match per-statement (not on the
+  # newline-joined blob): a single emitted SQL string must contain both the
+  # INSERT target and the SELECT source. A cross-statement regex on the
+  # joined blob would false-positive on the falls INSERT plus a downstream
+  # CREATE TABLE that names barriers_subsurfaceflow.
+  has_fix_insert <- any(
+    grepl("INSERT INTO w_harr\\.natural_barriers", captured) &
+    grepl("FROM w_harr\\.barriers_subsurfaceflow", captured))
+  expect_true(has_fix_insert,
+    info = "expected one captured SQL with INSERT INTO natural_barriers ... FROM barriers_subsurfaceflow")
+})
+
+test_that(".lnk_pipeline_prep_natural honours barriers_definite_control on subsurfaceflow", {
+  captured <- character(0)
+  local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) {
+      captured <<- c(captured, sql)
+      invisible(NULL)
+    }
+  )
+
+  cfg <- .fake_cfg(break_order = c("subsurfaceflow"))
+  loaded <- list(user_barriers_definite_control = data.frame(
+    blue_line_key = 1L, downstream_route_measure = 0,
+    barrier_ind = "true"))
+  .lnk_pipeline_prep_natural("mock-conn", aoi = "HARR", cfg = cfg,
+    loaded = loaded, schema = "w_harr")
+
+  joined <- paste(captured, collapse = "\n")
+  expect_match(joined, "LEFT OUTER JOIN w_harr.barriers_definite_control c")
+  expect_match(joined,
+    "c.barrier_ind IS NULL OR c.barrier_ind::boolean IS TRUE")
 })
 
 # -- prep_minimal structure --------------------------------------------------

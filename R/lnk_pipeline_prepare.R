@@ -27,7 +27,9 @@
 #'     `<schema>.barriers_definite_control`,
 #'     `<schema>.user_habitat_classification`
 #'   - `<schema>.gradient_barriers_raw` (with ltree)
-#'   - `<schema>.natural_barriers`
+#'   - `<schema>.natural_barriers` (gradient + falls + opt-in subsurfaceflow)
+#'   - `<schema>.barriers_subsurfaceflow` (only when subsurfaceflow opted in
+#'     via `cfg$pipeline$break_order`)
 #'   - `<schema>.barrier_overrides`
 #'   - `<schema>.barriers_<model>` + `<schema>.barriers_<model>_min`
 #'     per-model pre/post minimal reduction
@@ -90,11 +92,8 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
 
   .lnk_pipeline_prep_load_aux(conn, aoi, loaded, schema)
   .lnk_pipeline_prep_gradient(conn, aoi, loaded, schema)
-  .lnk_pipeline_prep_natural(conn, schema)
+  .lnk_pipeline_prep_natural(conn, aoi, cfg, loaded, schema)
   .lnk_pipeline_prep_overrides(conn, loaded, schema, observations)
-  if ("subsurfaceflow" %in% (cfg$pipeline$break_order %||% character())) {
-    .lnk_pipeline_prep_subsurfaceflow(conn, aoi, loaded, schema)
-  }
   .lnk_pipeline_prep_minimal(conn, aoi, schema)
   .lnk_pipeline_prep_network(conn, aoi, schema)
 
@@ -248,9 +247,35 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
 }
 
 
-#' Build natural-barriers table (gradient + falls) with ltree
+#' Build natural-barriers table (gradient + falls + opt-in subsurfaceflow)
+#'
+#' Mirrors bcfishpass's per-species barrier union in
+#' `model/01_access/sql/model_access_bt.sql` and
+#' `model_access_ch_cm_co_pk_sk.sql`: the natural-barrier set those
+#' models filter through `obs_upstr` / `hab_upstr` is gradient + falls +
+#' subsurfaceflow. `lnk_barrier_overrides()` consumes
+#' `<schema>.natural_barriers` to compute the per-species skip list, so
+#' every position that should be liftable by observations or habitat
+#' must land here.
+#'
+#' Subsurfaceflow is opt-in: built only when `cfg$pipeline$break_order`
+#' includes `"subsurfaceflow"`. The bcfishpass bundle opts in for
+#' parity; the default bundle leaves it out (no
+#' `<schema>.barriers_subsurfaceflow` table, no rows in
+#' `natural_barriers`, no `streams_breaks` rows downstream — zero
+#' behaviour). Subsurfaceflow honours `barriers_definite_control` —
+#' a control row with `barrier_ind = FALSE` skips the position
+#' (operator override). Source: `whse_basemapping.fwa_stream_networks_sp`
+#' filtered to `edge_type IN (1410, 1425)` on main blue lines.
+#'
+#' `barriers_definite` is intentionally NOT unioned in here.
+#' bcfishpass appends user-definite post-filter in `model_access_*.sql`,
+#' so upstream observations and habitat never re-open them. link
+#' mirrors this by consuming `barriers_definite` separately in
+#' `lnk_pipeline_break()` (segmentation) and `lnk_pipeline_classify()`
+#' (access gating).
 #' @noRd
-.lnk_pipeline_prep_natural <- function(conn, schema) {
+.lnk_pipeline_prep_natural <- function(conn, aoi, cfg, loaded, schema) {
   .lnk_db_execute(conn, sprintf(
     "DROP TABLE IF EXISTS %s.natural_barriers", schema))
   .lnk_db_execute(conn, sprintf(
@@ -274,34 +299,16 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
        AND f.downstream_route_measure >= s.downstream_route_measure
        AND f.downstream_route_measure < s.upstream_route_measure",
     schema, schema))
-  # NOTE: `barriers_definite` is NOT unioned into `natural_barriers`.
-  # bcfishpass appends user-definite post-filter in
-  # `model_access_*.sql`, so upstream observations and habitat never
-  # re-open them. link mirrors this by consuming `barriers_definite`
-  # separately:
-  #   - `lnk_pipeline_break()` applies it as its own sequential break
-  #     source (so segmentation still places a boundary there)
-  #   - `lnk_pipeline_classify()` UNION ALLs it directly into
-  #     `fresh.streams_breaks` (so it blocks access gating)
 
-  invisible(NULL)
-}
+  if (!"subsurfaceflow" %in% (cfg$pipeline$break_order %||% character())) {
+    return(invisible(NULL))
+  }
 
-
-#' Materialize subsurface-flow barriers from FWA (opt-in).
-#'
-#' Mirrors bcfishpass's `model/01_access/sql/barriers_subsurfaceflow.sql`.
-#' Source: `whse_basemapping.fwa_stream_networks_sp` filtered to
-#' `edge_type IN (1410, 1425)` (FWA subsurface-flow edge types) on
-#' main blue lines. Honours `<schema>.barriers_definite_control` —
-#' a control row with `barrier_ind = FALSE` skips the subsurface
-#' barrier (operator override).
-#'
-#' Only built when `cfg$pipeline$break_order` includes
-#' `"subsurfaceflow"` (call site in `lnk_pipeline_prepare`). Configs
-#' that don't list it skip this step entirely.
-#' @noRd
-.lnk_pipeline_prep_subsurfaceflow <- function(conn, aoi, loaded, schema) {
+  # Subsurfaceflow positions feed both `natural_barriers` (for the
+  # per-species lift via lnk_barrier_overrides) and a standalone
+  # `<schema>.barriers_subsurfaceflow` table that lnk_pipeline_break()
+  # uses as a segmentation break source and lnk_pipeline_classify()
+  # unions into fresh.streams_breaks.
   ctrl_join <- ""
   ctrl_filter <- ""
   if (!is.null(loaded$user_barriers_definite_control)) {
@@ -330,6 +337,15 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
        AND s.fwa_watershed_code NOT LIKE '999%%'
        %s",
     schema, ctrl_join, .lnk_quote_literal(aoi), ctrl_filter))
+
+  .lnk_db_execute(conn, sprintf(
+    "INSERT INTO %s.natural_barriers
+       (blue_line_key, downstream_route_measure, label,
+        wscode_ltree, localcode_ltree)
+     SELECT blue_line_key, downstream_route_measure,
+            'blocked', wscode_ltree, localcode_ltree
+     FROM %s.barriers_subsurfaceflow",
+    schema, schema))
 
   invisible(NULL)
 }

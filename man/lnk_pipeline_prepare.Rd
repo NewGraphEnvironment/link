@@ -68,7 +68,9 @@ Writes to (under the caller's working schema unless noted):
 \verb{<schema>.barriers_definite_control},
 \verb{<schema>.user_habitat_classification}
 \item \verb{<schema>.gradient_barriers_raw} (with ltree)
-\item \verb{<schema>.natural_barriers}
+\item \verb{<schema>.natural_barriers} (gradient + falls + opt-in subsurfaceflow)
+\item \verb{<schema>.barriers_subsurfaceflow} (only when subsurfaceflow opted in
+via \code{cfg$pipeline$break_order})
 \item \verb{<schema>.barrier_overrides}
 \item \verb{<schema>.barriers_<model>} + \verb{<schema>.barriers_<model>_min}
 per-model pre/post minimal reduction
