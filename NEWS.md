@@ -1,3 +1,11 @@
+# link 0.21.0
+
+Closes [#87](https://github.com/NewGraphEnvironment/link/pull/94). Default-bundle SK upstream-spawn now credits any spawn-eligible segment upstream of and accessible from a qualifying rearing waterbody, dropping bcfishpass's restrictive cluster + lake-adjacency gate. bcfishpass-bundle SK keeps the gate (parity preserved).
+
+- New `spawn_connected_lake_adjacent` column on both `dimensions.csv` schemas. SK row: `yes` (bcfishpass) / `no` (default). Empty for non-SK species — inherits fresh's `TRUE` default.
+- `lnk_rules_build` emits `<sp>.spawn_connected.lake_adjacent` when the dimension is non-empty. Older rules.yaml files without the key remain valid.
+- Bumps fresh dep to `>= 0.26.0` (knob lives there).
+
 # link 0.20.1
 
 Closes [#92](https://github.com/NewGraphEnvironment/link/pull/93). Per-AOI observations filter mirrors bcfp's `wsg_species_presence` + `observation_key` exclusions.
