@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.19.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.20.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,6 +31,18 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.20.0" id="link-0200">link 0.20.0<a class="anchor" aria-label="anchor" href="#link-0200"></a></h2>
+<p>Closes <a href="https://github.com/NewGraphEnvironment/link/pull/89" class="external-link">#88</a>. Subsurfaceflow folded into the natural-barrier set so per-species observation/habitat upstream lift fires on it.</p>
+<ul><li>
+<code>.lnk_pipeline_prep_natural()</code> now builds the full bcfishpass natural-barrier union (gradient + falls + opt-in subsurfaceflow). Subsurfaceflow positions land in <code>&lt;schema&gt;.natural_barriers</code>, which <code><a href="../reference/lnk_barrier_overrides.html">lnk_barrier_overrides()</a></code> consumes — so per-species observation/habitat upstream lift applies to subsurfaceflow exactly as it does to falls and gradient.</li>
+<li>
+<code>.lnk_pipeline_prep_subsurfaceflow()</code> deleted; its body absorbed into <code>prep_natural</code>. Six prep helpers → five.</li>
+<li>Default-bundle off-switch unchanged: omit <code>subsurfaceflow</code> from <code>cfg$pipeline$break_order</code> and the entire code path skips. Verified bit-identical default rollup (0 of 581 rows changed).</li>
+<li>bcfishpass-bundle parity: HARR CH/CO/ST rearing_stream gaps closed from -14.8/-13.3/-11.6% to within ±0.32%. LFRA CH/CO/ST closed to within ±0.6%. HARR blkey 356286055 BT credits 6.509 km (was 0).</li>
+<li>Reproducibility: two consecutive 15-WSG <code>tar_make</code> runs produced byte-identical rollup (<code>digest::digest(link_value)</code> matches across runs).</li>
+<li>HORS rearing_stream gap (~7% on BT/CH/CO) is unchanged by this fix — separate mechanism, follow-up.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.19.0" id="link-0190">link 0.19.0<a class="anchor" aria-label="anchor" href="#link-0190"></a></h2>
 <p>Closes <a href="https://github.com/NewGraphEnvironment/link/pull/82" class="external-link">#82</a>. Subsurface-flow access barriers + parity claim retraction.</p>
