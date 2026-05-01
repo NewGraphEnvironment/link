@@ -1,37 +1,36 @@
-# Task Plan — link#88: Fold subsurfaceflow into natural barriers
+# Task Plan — link 96-frs-order-child wire-up (parked)
 
-## Phase 1: Setup
-- [x] File link#88 with diagnosis + proposed fix
-- [x] Branch `88-fold-subsurfaceflow-natural` from main
-- [x] PWF baseline (task_plan, findings, progress)
+Branch: `96-frs-order-child-wire` (local, not pushed)
+Canonical design doc: [fresh#158](https://github.com/NewGraphEnvironment/fresh/issues/158) — read its issue body for the full decision record. Predecessor [fresh#156](https://github.com/NewGraphEnvironment/fresh/issues/156) closed in favor of #158. Spawning-side misread: [link#23](https://github.com/NewGraphEnvironment/link/issues/23) (closed not-a-bug 2026-04-28).
 
-## Phase 2: Code change
-- [x] Extend `.lnk_pipeline_prep_natural(conn, aoi, cfg, loaded, schema)` to absorb subsurfaceflow body, gated on `"subsurfaceflow" %in% cfg$pipeline$break_order`
-- [x] Append subsurfaceflow rows to `<schema>.natural_barriers` (label `blocked`)
-- [x] Delete `.lnk_pipeline_prep_subsurfaceflow` helper
-- [x] Remove conditional call from `lnk_pipeline_prepare()`
-- [x] `devtools::document()` — refresh roxygen for prep_natural
+## Phase 1 — fresh ships (DONE)
 
-## Phase 3: Tests
-- [x] `tests/testthat/test-lnk_pipeline_prepare.R`: subsurfaceflow opted in → INSERT into natural_barriers fires (per-statement assertion)
-- [x] Same file: subsurfaceflow not opted in → no subsurfaceflow code path runs
-- [x] Same file: subsurfaceflow honours barriers_definite_control
-- [x] `devtools::test(filter = "lnk_pipeline_prepare")` clean (44/44 PASS)
+- [x] fresh 0.27.1 — validator allows `channel_width_min_bypass` predicate (PR #194)
+- [x] fresh 0.27.3 — `frs_order_child` derives `stream_order_max` per BLK via CTE (PR #196). 0.27.2 was a false-start patch superseded by 0.27.3.
+- [x] fresh 0.27.4 — validator allows `distance_max` key inside the bypass block (PR #197)
 
-## Phase 4: Code-check
-- [x] `/code-check` on staged diff — 3 rounds. Round 3 caught fragile cross-statement regex; tightened to per-statement `any(grepl & grepl)`. Final clean.
+## Phase 2 — link wiring (DONE, parked uncommitted)
 
-## Phase 5: Verification
-- [x] HARR single-WSG pre-flight `tar_make` — `data-raw/logs/20260430_11_preflight_harr_link88.txt`
-- [x] blkey 356286055 BT rearing credits **6.509 km** (was 0)
-- [x] Full 15-WSG `tar_make` — `data-raw/logs/20260430_12_tar_make_15wsg_link88.txt` (53m 2.2s, 33/33 targets)
-- [x] HARR CH/CO/ST rearing_stream closed to ±0.32% (BT residual -4.2%, separate mechanism noted)
-- [x] LFRA CH/CO/ST closed to ±0.6% (BT residual -3.75%)
-- [x] HORS unchanged (-7.68% BT) — different mechanism, follow-up issue
-- [x] Default-bundle rollup bit-identical (0 of 581 link_value rows changed)
-- [x] Reproducibility: second `tar_make` byte-identical (`link_value` digest `5a641892b82604259b0ba168ea093661` matches across runs; 0 of 1057 rows differ)
+- [x] `dimensions.csv`: 3 new columns (`rear_stream_order_bypass`, `rear_stream_order_parent_min`, `rear_stream_order_distance_max`) — both bundles
+- [x] `lnk_rules_build`: emits all three into `channel_width_min_bypass:` block
+- [x] `lnk_pipeline_classify`: reads block, calls `fresh::frs_order_child(parent_order_min, child_order_min/max, distance_max)`
+- [x] Tests added in `test-lnk_rules_build.R` for the new columns
 
-## Phase 6: Ship
-- [x] Atomic commits with PWF checkbox flips
-- [ ] PR with `Fixes #88` and `Relates to NewGraphEnvironment/sred-2025-2026#24`
-- [ ] Archive PWF after merge
+## Phase 3 — single-WSG calibration (DONE)
+
+- [x] HORS BT preflight at `bypass=yes, parent=5, child=1, dmax=300`: link 394 km / bcfp 396 km on `rearing_stream`
+- [x] Five iteration snapshots saved as HTML in `data-raw/maps/HORS_BT_rearing_AFTER_*.html`
+
+## Phase 4 — parked
+
+Methodology decision pending. fresh#158 design intent: link is **not** chasing bcfp parity for `frs_order_child` — it's a link primitive expressing the biology of *"small streams plugging into big rivers support rearing despite low estimated CW"*, with parametric flex (`stream_order_max`, `distance_max`). HORS calibration result is numerical proximity by accident; methodology is divergent from bcfp by design.
+
+- [ ] Decide whether to ship as link methodology default or keep `rear_stream_order_bypass=no` until a wider sample (BABL inspection per fresh#158) informs the call
+- [ ] If shipping default-on: 15-WSG `tar_make` to confirm calibration generalizes (or doesn't)
+- [ ] If shipping default-off: keep the wire-up infrastructure but bundle CSVs ship `bypass=no`
+
+## Notes for next session
+
+- Don't re-derive `stream_order_max` / `distance_max` rationale — fresh#158 issue body has it
+- Don't re-derive bcfp parity gap — bcfp's bypass also lacks `stream_order_max` filter, and runs *inside* its 3 connectivity-aware phases (rearing-on-spawning / DS-of-spawn cluster / US-of-spawn cluster). Our `frs_order_child` runs post-cluster, post-classify; it's an additive primitive, not a parity replicator. fresh#158 documents this trade-off.
+- The `dmax=300` HORS calibration is exploratory, not a final value

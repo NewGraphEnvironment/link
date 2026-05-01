@@ -1,3 +1,19 @@
+# link 0.22.0
+
+Wires `fresh::frs_order_child` into the pipeline as link methodology — small streams plugging directly into large rivers can be credited as rearing despite low/missing FWA channel-width estimates. Closes [fresh#158](https://github.com/NewGraphEnvironment/fresh/issues/158) on the link side.
+
+- Four new per-species columns in `dimensions.csv` (both bundles), all opt-in via `rear_stream_order_bypass: yes/no`:
+  - `rear_stream_order_parent_min` — min order at the trib BLK's mouth confluence (default 5, matches bcfp)
+  - `rear_stream_order_child_min` — lower bound on segment's own stream_order (default 1)
+  - `rear_stream_order_child_max` — upper bound on segment's own stream_order (default 1)
+  - `rear_stream_order_distance_max` — cap (m) on distance from trib mouth (empty = no cap)
+- `lnk_rules_build` emits the values into a `channel_width_min_bypass:` block on the rear stream-edge rule. `lnk_pipeline_classify` reads the block and calls `frs_order_child` per species post-classification, gated on `rear_stream_order_bypass`.
+- Both bundles ship `bypass: no` for all species — infrastructure is parametric and tested but disabled by default. Re-enable per species via `dimensions.csv`. The 4-WSG regression (HARR / HORS / LFRA / BABL) is byte-identical to the pre-#96 baseline with bypass=off, confirming the wiring is purely additive when disabled.
+- Updates `inst/extdata/configs/dimensions_columns.csv` xref doc with all four new columns and refreshes the `rear_stream_order_bypass` entry (was stale — said "currently inert").
+- Bumps fresh dep to `>= 0.27.5` for the renamed bypass YAML schema (`stream_order` → `stream_order_min` + `stream_order_max`).
+
+Related: [link#23](https://github.com/NewGraphEnvironment/link/issues/23) (CH spawning misread, closed not-a-bug). PWF for the wire-up at `planning/active/`.
+
 # link 0.21.0
 
 Closes [#87](https://github.com/NewGraphEnvironment/link/pull/94). Default-bundle SK upstream-spawn now credits any spawn-eligible segment upstream of and accessible from a qualifying rearing waterbody, dropping bcfishpass's restrictive cluster + lake-adjacency gate. bcfishpass-bundle SK keeps the gate (parity preserved).

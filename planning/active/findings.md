@@ -1,75 +1,46 @@
-# Findings — link#88
+# Findings — link `frs_order_child` wire-up
 
-## Diagnosis (2026-04-30)
+## Summary
 
-### Single-stream trace: HARR blkey 356286055
+`frs_order_child` is a link methodology primitive, not a bcfp parity replicator. The HORS BT pre-flight result (link 394 km / bcfp 396 km on `rearing_stream`, −0.5%) at `bypass=yes, parent=5, child=1, dmax=300` is numerical proximity by accident — bcfp's bypass operates inside 3 connectivity-aware rearing phases (Phase 1: rearing-on-spawn, Phase 2: cluster-DS-of-spawn, Phase 3: cluster-US-of-spawn-with-no->5%-grade-between), and does NOT use a `stream_order_max` filter. Our function runs post-cluster, post-classify, with `stream_order_max` for direct-child semantics and `distance_max` as a biology-tuning cap. Different design, different semantics.
 
-- link `fresh.streams_habitat`: 21 segments, all `rearing=FALSE` for BT, all `accessible=FALSE` for BT
-- bcfp `streams_access`: `access_bt = 1` on every segment, `barriers_bt_dnstr = {}` (zero natural BT barriers)
-- bcfp `barriers_anthropogenic_dnstr`: 2 entries (DAM at 356282804 DRM 739, ROAD/DEMOGRAPHIC at 356282804 DRM 658) — both flagged in `barriers_remediations` (REMEDIATED)
-- Two **subsurfaceflow** points downstream on 356282804 (DRMs 265, 279) in `barriers_subsurfaceflow`
-- 55 anadromous obs (CH/CM/CO) upstream of (356282804, 265) — clears bcfp's threshold (1 for BT, 5 for anadromous)
-- bcfp lifts both subsurfaceflow points → `barriers_bt` and `barriers_ch_cm_co_pk_sk` empty in this drainage → BT/CH/CO credit upstream
+## Biology hook (the why)
 
-### Why link doesn't lift
+The FWA-derived `channel_width` estimate is unreliable on small (1st-order) streams because the MAP (mean annual precipitation) signal isn't carried cleanly on those reaches. When such a small stream plugs directly into a large river, fish *do* use the lower reach for rearing despite the low/missing CW estimate — flow, temperature, cool-water mixing at confluence, backwater habitat all support juvenile use. `frs_order_child` is the parametric primitive expressing this biology.
 
-`lnk_pipeline_prepare()` build order (current):
+## Design decisions (verbatim from fresh#158, anchored here for next session)
 
-1. `prep_load_aux` → falls, definite, control, habitat
-2. `prep_gradient` → gradient_barriers_raw (pruned, ltree-enriched)
-3. **`prep_natural` → `<schema>.natural_barriers` = gradient + falls** ← subsurfaceflow NOT here
-4. `prep_overrides` → calls `lnk_barrier_overrides(barriers = natural_barriers)` → per-species skip list
-5. **`prep_subsurfaceflow`** (opt-in) → `<schema>.barriers_subsurfaceflow` ← runs AFTER overrides
+- **`stream_order = stream_order_max` (per BLK)** — bypass only applies on the mouth-side reach of a BLK, where the BLK's order is at its maximum. Excludes order-1 headwater portions of multi-order BLKs (e.g., a named creek that grows to order 3 at its mouth). Documented as direct-child semantics. **bcfp does NOT use this filter** — our function is structurally tighter on multi-order BLKs by design.
+- **`distance_max`** — caps the bypass to the lower N metres of each direct-trib BLK. Whole-segment overshoot is the documented default (Option A in fresh#158). Lets users tune "how far into the trib does the parent-river effect extend" — a biology question, not a parity question.
+- **Post-cluster, post-classify placement** — intentional. fresh#158: *"can add segments that frs_cluster removed because they had no connected spawning. For some species this is correct (rear-only species), for others it might over-classify. Mitigation: the accessible guard limits over-reach to accessible network only; the parametric parent_order_min / child_order_min / distance_max lets users tune."* fresh#156 was closed in favor of this approach because the alternative (apply during classify) inflates rearing counts pre-cluster.
 
-`lnk_pipeline_classify_build_breaks()` then UNIONs `barriers_subsurfaceflow` directly into `fresh.streams_breaks` with label `blocked`. Since the override skip list never saw it, `frs_habitat_classify(barrier_overrides = ...)` cannot lift it. All species get blocked at the subsurfaceflow position.
+## HORS BT pre-flight progression (this session, 2026-05-01)
 
-### bcfishpass natural barrier construction (per-species)
+| Iteration | Predicate | link | bcfp | diff_pct |
+|---|---|---|---|---|
+| Pre-#158 (no bypass) | — | 366 | 396 | −7.68% |
+| 0.27.2 (broken predicate, removed `stream_order_max`) | parent≥5, order=1, no `so_max` filter | 491 | 396 | +23.9% |
+| 0.27.3 (`stream_order_max` via CTE) | + `s.stream_order = s.stream_order_max` | 451 | 396 | +13.9% |
+| 0.27.4 + dmax=300 | + `downstream_route_measure ≤ 300` | 394 | 396 | −0.5% |
 
-`model/01_access/sql/model_access_bt.sql` — `barriers_bt`:
+Map snapshots in `data-raw/maps/HORS_BT_rearing_AFTER_*.html`.
 
-- gradient_25 + gradient_30 + falls + **subsurfaceflow** + user_definite
-- LIFT: any obs upstream (BT/CH/CM/CO/PK/SK/ST), or any habitat upstream
-- user_definite always retained
+The `dmax=300` calibration is exploratory — the 4-iteration trail above shows that the apparent parity at 0.5% under is **not the result of methodology alignment** but a numerical balance: under-credit on long-trib reaches (we cap at 300m, bcfp credits the whole trib up to gradient/access limits) compensates for over-credit on cluster-disconnected segments (we run post-cluster without the bcfp Phase-3 `>5%-grade-between` gradient gate).
 
-`model/01_access/sql/model_access_ch_cm_co_pk_sk.sql` — `barriers_ch_cm_co_pk_sk`:
+## Segment-level evidence
 
-- gradient_15/20/25/30 + falls + **subsurfaceflow** + user_definite
-- LIFT: ≥5 anadromous obs upstream (post-1990), or any habitat upstream
-- `user_barriers_definite_control.barrier_ind = TRUE` blocks the obs lift; habitat lift unaffected
-- user_definite always retained
+- **BLK 356322947, DRM 3000–4500 (HORS BT):** bcfp credits 5 segments (3223, 3341, 3440, 3542, 4054) as rearing — passes gradient ≤ 0.1049, no DS barriers, `stream_order_max=2` per bcfp's stored column. Our `frs_order_child` predicate excludes them all because `stream_order=1, stream_order_max=2` fails our `s.stream_order = s.stream_order_max` filter. Demonstrates structural divergence from bcfp on multi-order BLKs.
+- **BLK 356353593 (Divan Creek), DRM 6009+:** bcfp credits DRM 6009 + 6095 (gradients 0.009 and 0.078, both under 0.1049). Drops DRM 7280 (gradient 0.1008 — under cap, channel_width 1.77 ≥ cw_min 1.5) because Phase 3 cluster trace is blocked by the >5%-grade segment at DRM 7112 between 7280 and downstream spawn. Demonstrates that bcfp's bypass is gated by cluster connectivity to spawn, which we don't replicate.
 
-bcfp's `barriers_anthropogenic` (PSCIS, dams, road crossings) is **NOT** in the per-species barrier set. It's tracked separately for downstream-of-crossing accountability. Anthropogenic barriers don't gate species access in bcfp's habitat sums.
+## What we are *not* doing
 
-### Design diagnosis
+- **Not adding gradient ceiling to `frs_order_child`.** bcfp's bypass-eligible segments must pass `gradient ≤ rear_gradient_max`, but link's `frs_order_child` is meant to be additive on `accessible = TRUE` segments regardless of gradient. The `accessible` guard already filters access-blocked segments via the link pipeline's barrier-aware accessibility; gradient-driven exclusion would be a parity-driven addition that contradicts the function's "additive primitive" design.
+- **Not adding cluster-aware filtering.** The post-cluster placement is intentional; mitigation is `parent_order_min` / `child_order_min/max` / `distance_max`. If callers want cluster-aware behaviour they can run `frs_order_child` *before* `frs_cluster` instead of after.
+- **Not pursuing bcfp parity for this primitive.** fresh#158 was explicit: link's default-bundle should ship parametric defaults tuned from BABL inspection, not a bcfp clone.
 
-`.lnk_pipeline_prep_subsurfaceflow` was added in PR #82 as its own helper. Treated subsurfaceflow as a parallel concept needing a parallel pipeline phase. But subsurfaceflow is just **a third row in the same union** that `prep_natural` already builds for gradient + falls. The wiring miss: subsurfaceflow's positions never reached `natural_barriers`, so the per-species lift skipped it entirely.
+## Links
 
-`prep_natural` is the right home — bcfp's source of truth confirms gradient + falls + subsurfaceflow is *the* natural-barrier union per species.
-
-### Where it surfaces (15-WSG rollup, parity)
-
-| WSG  | sp | metric          | link | bcfp | diff_pct |
-|------|----|-----------------|------|------|---------:|
-| HARR | CH | rearing_stream  | 118  | 139  | -14.8 |
-| HARR | CO | rearing_stream  | 134  | 155  | -13.3 |
-| HARR | ST | rearing_stream  | 157  | 177  | -11.6 |
-| HARR | BT | rearing_stream  | 292  | 326  | -10.4 |
-| HORS | BT | rearing_stream  | 366  | 396  |  -7.7 |
-| LFRA | BT | rearing_stream  | 1020 | 1103 |  -7.5 |
-| LFRA | BT | rearing         | 1670 | 1800 |  -7.2 |
-| HORS | CH | rearing_stream  | 167  | 179  |  -6.8 |
-
-LILL/VICT unaffected — sparse subsurfaceflow + sparse fish observations above what does exist.
-
-## What is NOT involved
-
-- #83 (anthropogenic dam design): the dam at DRM 739 and road at DRM 658 carry `barrier`/`potential` labels in `fresh.streams_breaks`. Default `label_block = "blocked"` means they don't gate. Not the cause.
-- `barriers_definite`: intentionally separate per bcfp — never lifted via obs/hab. Link mirrors that.
-- `barriers_remediations`: bcfp tracks for downstream reporting only; doesn't gate access.
-
-## Versions at diagnosis
-
-- link 0.19.0 (commit e4e7a6e)
-- fresh 0.25.0
-- bcfishpass 440bc1e (2026-04-28)
-- fwapg local Docker (port 5432)
+- [fresh#158](https://github.com/NewGraphEnvironment/fresh/issues/158) — design doc (canonical)
+- [fresh#156](https://github.com/NewGraphEnvironment/fresh/issues/156) — predecessor, closed in favor of #158
+- [link#23](https://github.com/NewGraphEnvironment/link/issues/23) — CH spawning misread, closed not-a-bug
+- [research/bcfishpass_comparison.md](../../research/bcfishpass_comparison.md) — pre-#158 68 km gap evidence

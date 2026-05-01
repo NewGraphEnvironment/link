@@ -868,6 +868,74 @@ test_that("default config rules.yaml has no 1050/1150/2100 in spawn or rear-stre
   }
 })
 
+test_that("rear_stream_order_parent_min column drives bypass threshold", {
+  # Default 5L when bypass=yes and column absent; explicit value when present.
+  base <- list(species = "BT", spawn_lake = "no", spawn_stream = "yes",
+               rear_lake = "no", rear_lake_only = "no", rear_no_fw = "no",
+               rear_stream = "yes", rear_wetland = "no",
+               rear_stream_order_bypass = "yes")
+
+  # No column → default 5
+  csv <- withr::local_tempfile(fileext = ".csv")
+  out <- withr::local_tempfile(fileext = ".yaml")
+  utils::write.csv(as.data.frame(base, stringsAsFactors = FALSE), csv,
+                   row.names = FALSE)
+  suppressMessages(lnk_rules_build(csv, out, edge_types = "explicit"))
+  rules <- yaml::read_yaml(out)
+  bp <- NULL
+  for (rr in rules$BT$rear) {
+    if (!is.null(rr$channel_width_min_bypass)) { bp <- rr$channel_width_min_bypass; break }
+  }
+  expect_false(is.null(bp))
+  expect_equal(bp$stream_order, 1L)
+  expect_equal(bp$stream_order_parent_min, 5L)
+
+  # Column present, explicit value 7
+  with7 <- c(base, list(rear_stream_order_parent_min = "7"))
+  csv2 <- withr::local_tempfile(fileext = ".csv")
+  out2 <- withr::local_tempfile(fileext = ".yaml")
+  utils::write.csv(as.data.frame(with7, stringsAsFactors = FALSE), csv2,
+                   row.names = FALSE)
+  suppressMessages(lnk_rules_build(csv2, out2, edge_types = "explicit"))
+  rules2 <- yaml::read_yaml(out2)
+  bp2 <- NULL
+  for (rr in rules2$BT$rear) {
+    if (!is.null(rr$channel_width_min_bypass)) { bp2 <- rr$channel_width_min_bypass; break }
+  }
+  expect_equal(bp2$stream_order_parent_min, 7L)
+
+  # Column present but empty → default 5
+  with_empty <- c(base, list(rear_stream_order_parent_min = ""))
+  csv3 <- withr::local_tempfile(fileext = ".csv")
+  out3 <- withr::local_tempfile(fileext = ".yaml")
+  utils::write.csv(as.data.frame(with_empty, stringsAsFactors = FALSE), csv3,
+                   row.names = FALSE)
+  suppressMessages(lnk_rules_build(csv3, out3, edge_types = "explicit"))
+  rules3 <- yaml::read_yaml(out3)
+  bp3 <- NULL
+  for (rr in rules3$BT$rear) {
+    if (!is.null(rr$channel_width_min_bypass)) { bp3 <- rr$channel_width_min_bypass; break }
+  }
+  expect_equal(bp3$stream_order_parent_min, 5L)
+})
+
+test_that("rear_stream_order_parent_min has no effect when bypass=no", {
+  base <- list(species = "BT", spawn_lake = "no", spawn_stream = "yes",
+               rear_lake = "no", rear_lake_only = "no", rear_no_fw = "no",
+               rear_stream = "yes", rear_wetland = "no",
+               rear_stream_order_bypass = "no",
+               rear_stream_order_parent_min = "7")
+  csv <- withr::local_tempfile(fileext = ".csv")
+  out <- withr::local_tempfile(fileext = ".yaml")
+  utils::write.csv(as.data.frame(base, stringsAsFactors = FALSE), csv,
+                   row.names = FALSE)
+  suppressMessages(lnk_rules_build(csv, out, edge_types = "explicit"))
+  rules <- yaml::read_yaml(out)
+  for (rr in rules$BT$rear) {
+    expect_null(rr$channel_width_min_bypass)
+  }
+})
+
 test_that("default config rules.yaml retains 1050/1150 in dedicated wetland-rear rule", {
   yaml_path <- system.file("extdata", "configs", "default", "rules.yaml",
                            package = "link")

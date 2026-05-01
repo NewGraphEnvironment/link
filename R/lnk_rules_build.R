@@ -86,6 +86,22 @@ lnk_rules_build <- function(csv,
       tolower(trimws(dimensions$rear_stream_order_bypass)) == "yes"
   }
 
+  # Optional: per-species `stream_order_parent_min` for the bypass.
+  # Default 5L matches bcfishpass's hard-coded predicate; the column lets
+  # callers tune the threshold without editing the rules YAML by hand.
+  has_sopm <- "rear_stream_order_parent_min" %in% names(dimensions)
+
+  # Optional: per-species child-order range for the bypass. Both default to
+  # 1L (matches bcfp). `_min` and `_max` map to fresh's frs_order_child
+  # `child_order_min` and `child_order_max` arguments.
+  has_csmin <- "rear_stream_order_child_min" %in% names(dimensions)
+  has_csmax <- "rear_stream_order_child_max" %in% names(dimensions)
+
+  # Optional: per-species `distance_max` for the bypass — caps the bypass
+  # to the lower N metres of each direct-trib BLK (segment's
+  # downstream_route_measure <= distance_max). Empty → no cap (whole BLK).
+  has_sodm <- "rear_stream_order_distance_max" %in% names(dimensions)
+
   # Optional: requires_connected columns (value is the habitat type, not yes/no)
   has_spawn_rc <- "spawn_requires_connected" %in% names(dimensions)
   has_rear_rc <- "rear_requires_connected" %in% names(dimensions)
@@ -266,10 +282,35 @@ lnk_rules_build <- function(csv,
       if (!is.na(rlhm)) lake_rule$lake_ha_min <- rlhm
       rear_rules[[1]] <- add_rc(lake_rule, rear_rc, rear_cdm)
     } else {
-      # Stream order bypass: first-order streams with parent order >= 5
-      # bypass rearing channel_width_min
+      # Stream order bypass: first-order streams with parent order
+      # >= stream_order_parent_min bypass rearing channel_width_min.
+      # Threshold defaults to 5L (bcfishpass parity); per-species
+      # `rear_stream_order_parent_min` column overrides when present
+      # and numeric.
       soe_bypass <- if (has_soe && d$rear_stream_order_bypass) {
-        list(stream_order = 1L, stream_order_parent_min = 5L)
+        # Helper: read a positive integer column with default fallback
+        read_pos_int <- function(raw, default) {
+          if (is.null(raw) || is.na(raw) ||
+              nchar(trimws(as.character(raw))) == 0L) return(default)
+          n <- suppressWarnings(as.integer(raw))
+          if (is.na(n) || n < 1L) return(default)
+          n
+        }
+        pom    <- read_pos_int(if (has_sopm)  d$rear_stream_order_parent_min else NULL, 5L)
+        cs_min <- read_pos_int(if (has_csmin) d$rear_stream_order_child_min  else NULL, 1L)
+        cs_max <- read_pos_int(if (has_csmax) d$rear_stream_order_child_max  else NULL, 1L)
+        out <- list(stream_order_min = cs_min,
+                    stream_order_max = cs_max,
+                    stream_order_parent_min = pom)
+        if (has_sodm) {
+          raw_dm <- d$rear_stream_order_distance_max
+          if (!is.null(raw_dm) && !is.na(raw_dm) &&
+              nchar(trimws(as.character(raw_dm))) > 0) {
+            dm <- suppressWarnings(as.numeric(raw_dm))
+            if (!is.na(dm) && dm > 0) out$distance_max <- dm
+          }
+        }
+        out
       } else {
         NULL
       }
