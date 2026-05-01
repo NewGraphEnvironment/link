@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.20.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.21.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,6 +31,14 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.21.0" id="link-0210">link 0.21.0<a class="anchor" aria-label="anchor" href="#link-0210"></a></h2>
+<p>Closes <a href="https://github.com/NewGraphEnvironment/link/pull/94" class="external-link">#87</a>. Default-bundle SK upstream-spawn now credits any spawn-eligible segment upstream of and accessible from a qualifying rearing waterbody, dropping bcfishpass’s restrictive cluster + lake-adjacency gate. bcfishpass-bundle SK keeps the gate (parity preserved).</p>
+<ul><li>New <code>spawn_connected_lake_adjacent</code> column on both <code>dimensions.csv</code> schemas. SK row: <code>yes</code> (bcfishpass) / <code>no</code> (default). Empty for non-SK species — inherits fresh’s <code>TRUE</code> default.</li>
+<li>
+<code>lnk_rules_build</code> emits <code>&lt;sp&gt;.spawn_connected.lake_adjacent</code> when the dimension is non-empty. Older rules.yaml files without the key remain valid.</li>
+<li>Bumps fresh dep to <code>&gt;= 0.26.0</code> (knob lives there).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.20.1" id="link-0201">link 0.20.1<a class="anchor" aria-label="anchor" href="#link-0201"></a></h2>
 <p>Closes <a href="https://github.com/NewGraphEnvironment/link/pull/93" class="external-link">#92</a>. Per-AOI observations filter mirrors bcfp’s <code>wsg_species_presence</code> + <code>observation_key</code> exclusions.</p>
