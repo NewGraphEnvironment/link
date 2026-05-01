@@ -1,0 +1,21 @@
+=== link#90 post-fix BASELINE 15-WSG run ===
+Thu Apr 30 20:40:54 PDT 2026
+
+=== HARDWARE ===
+Apple M4 Max
+physical cores: 16
+logical cores:  16
+memory GB:      128.0
+
+=== VERSIONS ===
+link:       0.20.0
+fresh:      0.25.0
+bcfishpass: 440bc1e (2026-04-28)
+main HEAD:  7210baf Drop BT 1990 observation date filter for parity with bcfp
+
+=== WSGS (15) ===
+wsgs <- c("ADMS", "BULK", "BABL", "ELKR", "DEAD",
+          "PARS", "MORR", "KISP", "KOTL", "NATR",
+          "HORS", "LFRA", "VICT", "LILL", "HARR")
+
+list(
