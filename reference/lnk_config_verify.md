@@ -81,7 +81,7 @@ cfg <- lnk_config("bcfishpass")
 verify <- lnk_config_verify(cfg)
 #> Warning: Config bundle 'bcfishpass' has 3 file(s) drifted from recorded checksum:
 #>   - rules.yaml (byte drift)
-#>   - dimensions.csv (byte drift)
+#>   - dimensions.csv (byte + shape drift)
 #>   - parameters_fresh.csv (byte drift)
 verify
 #>                                                  file
@@ -111,8 +111,8 @@ verify
 #> 11 sha256:8f34e2c006733e0f06248a90dc0b8abe4719880590f497581f80fe5f62fde203
 #> 12 sha256:19fa9f1322f78e0b2025aed509b7ac1402b7f99876e7b9e6404b22cce5491d5e
 #>                                                              byte_observed
-#> 1  sha256:e9280e87762d62c86a0e162d34fadf691ece3cc1bce43f95827b477cb6eeacf6
-#> 2  sha256:c3be82f14ee368b3af4048747054677f55edd330aa648783a9b1ab5b88986c36
+#> 1  sha256:0ca482819e7ff619cfe067765fc86ac91ed63142a39bf44266a03d92b590748d
+#> 2  sha256:d9a21b2ff8e8218132a1a520eba2d8259246a64766febada9a4feda7157821af
 #> 3  sha256:a877ec23b0e0853514d545fbd8b8f218718382dc44a72377ffcc45526e63984e
 #> 4  sha256:cc6aff6448e940613913c2d9dd847db72d6bfb63db8b50ad3293c76ef17c5740
 #> 5  sha256:ad901c57ca42e71e4affffd6e583045a2ce423f15088c211c9c2f72976f5d36a
@@ -151,7 +151,7 @@ verify
 #> 12 sha256:463bc63156786be38c39d5479bfe07ce7b593e1174ecba6f7d9e5ac52c2c6bfd
 #>                                                             shape_observed
 #> 1  sha256:4fec0f2db7523d71ba7542e0d52217c91d9bab5b55d714b689f614380f5c2eb9
-#> 2  sha256:a33cd8cff1c4a101534c255738931dd0821d114f6a3855797cf6bae622179c5e
+#> 2  sha256:b571ab69d2a891380728d3233e3a932801cf611bf7cf08ba864401fae43e3162
 #> 3  sha256:52dcadd062f584fa7e7828d580fbf6f3dd44261d6a6d37e7b831aa0e0b9be2d3
 #> 4  sha256:35604598f352c0cc958e8330e80627ec65154e4eaba9dbba8cac92c8516706a0
 #> 5  sha256:c0c0c5a6e478bae9d98c0251870fb73ef12ec5033de08589bad08ed03be02a31
@@ -164,7 +164,7 @@ verify
 #> 12 sha256:463bc63156786be38c39d5479bfe07ce7b593e1174ecba6f7d9e5ac52c2c6bfd
 #>    shape_drift missing
 #> 1        FALSE   FALSE
-#> 2        FALSE   FALSE
+#> 2         TRUE   FALSE
 #> 3        FALSE   FALSE
 #> 4        FALSE   FALSE
 #> 5        FALSE   FALSE
