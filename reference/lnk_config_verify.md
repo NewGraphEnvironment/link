@@ -79,9 +79,10 @@ the change.
 ``` r
 cfg <- lnk_config("bcfishpass")
 verify <- lnk_config_verify(cfg)
-#> Warning: Config bundle 'bcfishpass' has 2 file(s) drifted from recorded checksum:
+#> Warning: Config bundle 'bcfishpass' has 3 file(s) drifted from recorded checksum:
 #>   - rules.yaml (byte drift)
 #>   - dimensions.csv (byte drift)
+#>   - parameters_fresh.csv (byte drift)
 verify
 #>                                                  file
 #> 1                                          rules.yaml
@@ -112,7 +113,7 @@ verify
 #>                                                              byte_observed
 #> 1  sha256:e9280e87762d62c86a0e162d34fadf691ece3cc1bce43f95827b477cb6eeacf6
 #> 2  sha256:c3be82f14ee368b3af4048747054677f55edd330aa648783a9b1ab5b88986c36
-#> 3  sha256:1cc4c33c729d37a40672540dfb92f4f7dadf50653bd4f211a485c9d51722088f
+#> 3  sha256:a877ec23b0e0853514d545fbd8b8f218718382dc44a72377ffcc45526e63984e
 #> 4  sha256:cc6aff6448e940613913c2d9dd847db72d6bfb63db8b50ad3293c76ef17c5740
 #> 5  sha256:ad901c57ca42e71e4affffd6e583045a2ce423f15088c211c9c2f72976f5d36a
 #> 6  sha256:3c3dc66d1b9b299d91e73d6edcccb56cc827641be494e26981ed580ff51e15ec
@@ -125,7 +126,7 @@ verify
 #>    byte_drift
 #> 1        TRUE
 #> 2        TRUE
-#> 3       FALSE
+#> 3        TRUE
 #> 4       FALSE
 #> 5       FALSE
 #> 6       FALSE
