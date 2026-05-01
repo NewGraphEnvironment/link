@@ -26,7 +26,7 @@
 #'   Any confirmed habitat (spawning or rearing flagged) upstream
 #'   of a barrier removes it (threshold = 1).
 #' @param exclusions Character or `NULL`. Schema-qualified table of
-#'   observation exclusions with column `fish_observation_point_id`. Flagged
+#'   observation exclusions with column `observation_key`. Flagged
 #'   observations are removed before counting.
 #' @param control Character or `NULL`. Schema-qualified table of barrier
 #'   controls with columns: `blue_line_key`, `downstream_route_measure`,
@@ -183,7 +183,7 @@ lnk_barrier_overrides <- function(conn,
     if (!is.null(observations) && threshold > 0) {
       excl_where <- if (!is.null(exclusions)) {
         sprintf(
-          "AND o.fish_observation_point_id NOT IN (SELECT fish_observation_point_id FROM %s)",
+          "AND o.observation_key NOT IN (SELECT observation_key FROM %s)",
           exclusions)
       } else {
         ""

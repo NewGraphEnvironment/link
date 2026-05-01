@@ -91,9 +91,10 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
   }
 
   .lnk_pipeline_prep_load_aux(conn, aoi, loaded, schema)
+  .lnk_pipeline_prep_observations(conn, aoi, loaded, schema, observations)
   .lnk_pipeline_prep_gradient(conn, aoi, loaded, schema)
   .lnk_pipeline_prep_natural(conn, aoi, cfg, loaded, schema)
-  .lnk_pipeline_prep_overrides(conn, loaded, schema, observations)
+  .lnk_pipeline_prep_overrides(conn, loaded, schema)
   .lnk_pipeline_prep_minimal(conn, aoi, schema)
   .lnk_pipeline_prep_network(conn, aoi, schema)
 
@@ -188,6 +189,81 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
            rearing integer)", schema))
     }
   }
+
+  invisible(NULL)
+}
+
+
+#' Build per-AOI filtered observations table.
+#'
+#' Mirrors bcfishpass `model/01_access/sql/load_observations.sql`:
+#' filters `bcfishobs.observations` by (a) AOI's species set from
+#' `loaded$wsg_species_presence` (only observations of species marked
+#' present in the WSG count) and (b) `loaded$observation_exclusions`
+#' (rows with `data_error = TRUE` or `release_exclude = TRUE` removed,
+#' keyed on `observation_key`). Result: `<schema>.observations`,
+#' consumed by `prep_overrides` and `lnk_pipeline_break`'s observation
+#' break-source step.
+#'
+#' Without this filter, link's barrier-override lift counts QA-flagged
+#' observations and observations of species not present in the WSG —
+#' lifting natural barriers that bcfishpass correctly retains. Surfaced
+#' in TWAC BT over-credit (link#92): a 1987 ST observation upstream of
+#' the outlet falls lifts the fall in link but bcfishpass excludes it
+#' because TWAC has no ST in `wsg_species_presence`.
+#'
+#' bcfishobs records cutthroat as CT/CCT/ACT/CT/RB; when CT is in the
+#' WSG's species set, all four codes are admitted (matches bcfp's
+#' `species_code_remap` CTE).
+#' @noRd
+.lnk_pipeline_prep_observations <- function(conn, aoi, loaded, schema,
+                                            observations = "bcfishobs.observations") {
+  .lnk_validate_identifier(observations, "observations table")
+
+  if (is.null(loaded$wsg_species_presence)) {
+    stop("loaded$wsg_species_presence not present — required for the ",
+         "per-AOI observations filter (mirrors bcfishpass parity)",
+         call. = FALSE)
+  }
+  sp <- .lnk_pipeline_break_obs_species(loaded, aoi)
+
+  .lnk_db_execute(conn, sprintf(
+    "DROP TABLE IF EXISTS %s.observations", schema))
+
+  if (length(sp) == 0) {
+    # No species marked present — empty table mirroring source schema
+    .lnk_db_execute(conn, sprintf(
+      "CREATE TABLE %s.observations AS
+       SELECT * FROM %s WHERE FALSE", schema, observations))
+    return(invisible(NULL))
+  }
+
+  sp_sql <- paste0(
+    vapply(sp, .lnk_quote_literal, character(1)),
+    collapse = ", ")
+
+  excl_filter <- ""
+  excl_df <- loaded$observation_exclusions
+  if (!is.null(excl_df) && nrow(excl_df) > 0) {
+    is_excl <- excl_df$data_error %in% c(TRUE, "t") |
+               excl_df$release_exclude %in% c(TRUE, "t")
+    keys <- excl_df$observation_key[is_excl]
+    if (length(keys) > 0) {
+      keys_sql <- paste0(
+        vapply(keys, .lnk_quote_literal, character(1)),
+        collapse = ", ")
+      excl_filter <- sprintf(
+        "AND o.observation_key NOT IN (%s)", keys_sql)
+    }
+  }
+
+  .lnk_db_execute(conn, sprintf(
+    "CREATE TABLE %s.observations AS
+     SELECT * FROM %s o
+     WHERE o.watershed_group_code = %s
+       AND o.species_code IN (%s)
+       %s",
+    schema, observations, .lnk_quote_literal(aoi), sp_sql, excl_filter))
 
   invisible(NULL)
 }
@@ -353,7 +429,7 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
 
 #' Compute barrier overrides via lnk_barrier_overrides
 #' @noRd
-.lnk_pipeline_prep_overrides <- function(conn, loaded, schema, observations) {
+.lnk_pipeline_prep_overrides <- function(conn, loaded, schema) {
   # Manifest-driven gate. `.lnk_pipeline_prep_load_aux` writes
   # `<schema>.user_habitat_classification` exactly when the manifest
   # declares `user_habitat_classification`, so the loaded entry is the
@@ -375,9 +451,13 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
     NULL
   }
 
+  # Use <schema>.observations (filtered per-AOI by `prep_observations`)
+  # rather than raw bcfishobs.observations. Mirrors bcfishpass's
+  # bcfishpass.observations build (species-presence + exclusions
+  # already applied). See link#92.
   lnk_barrier_overrides(conn,
     barriers = paste0(schema, ".natural_barriers"),
-    observations = observations,
+    observations = paste0(schema, ".observations"),
     habitat = habitat_arg,
     control = control_arg,
     params = loaded$parameters_fresh,
