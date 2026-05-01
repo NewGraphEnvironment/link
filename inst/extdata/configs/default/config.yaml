@@ -95,9 +95,9 @@ provenance:
   overrides/user_habitat_classification.csv:
     source: https://github.com/smnorris/bcfishpass
     path: data/user_habitat_classification.csv
-    upstream_sha: 4879bba
-    synced: '2026-04-29'
-    checksum: sha256:cc6aff6448e940613913c2d9dd847db72d6bfb63db8b50ad3293c76ef17c5740
+    upstream_sha: 235a964
+    synced: 2026-05-01
+    checksum: sha256:525a8b6d11fd96d672d5ebae9c96a62ad9b42643c61f81a507873228d51047b0
     shape_checksum: sha256:35604598f352c0cc958e8330e80627ec65154e4eaba9dbba8cac92c8516706a0
   overrides/observation_exclusions.csv:
     source: link (hand-authored)
@@ -114,23 +114,23 @@ provenance:
   overrides/user_modelled_crossing_fixes.csv:
     source: https://github.com/smnorris/bcfishpass
     path: data/user_modelled_crossing_fixes.csv
-    upstream_sha: 1c7a436
-    synced: '2026-04-27'
-    checksum: sha256:0c0e97f8f0d4c834837631f68f10aa8fc8f502cad954fd266fe41d4e1f214d10
+    upstream_sha: 235a964
+    synced: 2026-05-01
+    checksum: sha256:156d62d4143f29a98b0e5fc7c17907b4a2b1b0826152150b364a411e18c7bc96
     shape_checksum: sha256:acbddab3bd06ac4790eb129201198e614c1d4c08b83cd18ee94e4cdfafa09ab2
   overrides/user_pscis_barrier_status.csv:
     source: https://github.com/smnorris/bcfishpass
     path: data/user_pscis_barrier_status.csv
-    upstream_sha: e48d713
-    synced: '2026-04-27'
-    checksum: sha256:9b4929f882ac46e5632bdbe3c587421be42ac31c0005cd2b7e4d1028fa2a47ac
+    upstream_sha: a1bf95f
+    synced: 2026-05-01
+    checksum: sha256:dcc3ae2bc21370310bebce14fe394438843949b32338c7d4ea445867224479cf
     shape_checksum: sha256:fb611fc77ebbe15429826d7acfe57d487118d7815dea9b2ad5a3f94f03a487e8
   overrides/pscis_modelledcrossings_streams_xref.csv:
     source: https://github.com/smnorris/bcfishpass
     path: data/pscis_modelledcrossings_streams_xref.csv
-    upstream_sha: 40c4a0a
-    synced: '2026-04-27'
-    checksum: sha256:f76470febe3a4d26e13ada144b594c2571033fa00676b7622f3c628fed21206f
+    upstream_sha: a1bf95f
+    synced: 2026-05-01
+    checksum: sha256:cc990df40b7dd647024e5cd6d000d1ac63e37e85bf2f6bf199cd17be5bd2a639
     shape_checksum: sha256:c2cebcc7398ddd12d0803eefafbe219f3551e6948051f18d89d7984130c1589d
   overrides/user_barriers_definite.csv:
     source: https://github.com/smnorris/bcfishpass
