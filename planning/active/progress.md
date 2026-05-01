@@ -7,5 +7,8 @@
 - Confirmed default-bundle off-switch is preserved verbatim (omit `subsurfaceflow` from `cfg$pipeline$break_order`).
 - Filed link#88 with diagnosis + proposed fix.
 - Branch `88-fold-subsurfaceflow-natural` from main.
-- PWF baseline.
-- Next: code change in `R/lnk_pipeline_prepare.R`.
+- PWF baseline (commit 4bd9ca0).
+- Code change: extended `.lnk_pipeline_prep_natural` signature `(conn, aoi, cfg, loaded, schema)`; absorbed subsurfaceflow body, gated on `cfg$pipeline$break_order`; deleted standalone `.lnk_pipeline_prep_subsurfaceflow`; pruned conditional call from `lnk_pipeline_prepare()`. `devtools::document()` clean.
+- Tests: 3 new test cases in `tests/testthat/test-lnk_pipeline_prepare.R` — opted-out, opted-in (per-statement assertion that link#88 fix INSERT fires), control-table honoured. 44/44 pass.
+- Code-check: 3 rounds. Rounds 1–2 clean. Round 3 caught a fragile cross-statement regex in the test; replaced with per-statement `any(grepl & grepl)`. Sanity-verified the assertion catches the regression.
+- Pre-flight: HARR single-WSG `compare_bcfishpass_wsg(wsg = "HARR", config = lnk_config("bcfishpass"))` running.
