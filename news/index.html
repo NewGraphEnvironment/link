@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.21.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.22.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,6 +31,26 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.22.0" id="link-0220">link 0.22.0<a class="anchor" aria-label="anchor" href="#link-0220"></a></h2>
+<p>Wires <code><a href="https://newgraphenvironment.github.io/fresh/reference/frs_order_child.html" class="external-link">fresh::frs_order_child</a></code> into the pipeline as link methodology — small streams plugging directly into large rivers can be credited as rearing despite low/missing FWA channel-width estimates. Closes <a href="https://github.com/NewGraphEnvironment/fresh/issues/158" class="external-link">fresh#158</a> on the link side.</p>
+<ul><li>Four new per-species columns in <code>dimensions.csv</code> (both bundles), all opt-in via <code>rear_stream_order_bypass: yes/no</code>:
+<ul><li>
+<code>rear_stream_order_parent_min</code> — min order at the trib BLK’s mouth confluence (default 5, matches bcfp)</li>
+<li>
+<code>rear_stream_order_child_min</code> — lower bound on segment’s own stream_order (default 1)</li>
+<li>
+<code>rear_stream_order_child_max</code> — upper bound on segment’s own stream_order (default 1)</li>
+<li>
+<code>rear_stream_order_distance_max</code> — cap (m) on distance from trib mouth (empty = no cap)</li>
+</ul></li>
+<li>
+<code>lnk_rules_build</code> emits the values into a <code>channel_width_min_bypass:</code> block on the rear stream-edge rule. <code>lnk_pipeline_classify</code> reads the block and calls <code>frs_order_child</code> per species post-classification, gated on <code>rear_stream_order_bypass</code>.</li>
+<li>Both bundles ship <code>bypass: no</code> for all species — infrastructure is parametric and tested but disabled by default. Re-enable per species via <code>dimensions.csv</code>. The 4-WSG regression (HARR / HORS / LFRA / BABL) is byte-identical to the pre-#96 baseline with bypass=off, confirming the wiring is purely additive when disabled.</li>
+<li>Updates <code>inst/extdata/configs/dimensions_columns.csv</code> xref doc with all four new columns and refreshes the <code>rear_stream_order_bypass</code> entry (was stale — said “currently inert”).</li>
+<li>Bumps fresh dep to <code>&gt;= 0.27.5</code> for the renamed bypass YAML schema (<code>stream_order</code> → <code>stream_order_min</code> + <code>stream_order_max</code>).</li>
+</ul><p>Related: <a href="https://github.com/NewGraphEnvironment/link/issues/23" class="external-link">link#23</a> (CH spawning misread, closed not-a-bug). PWF for the wire-up at <code>planning/active/</code>.</p>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.21.0" id="link-0210">link 0.21.0<a class="anchor" aria-label="anchor" href="#link-0210"></a></h2>
 <p>Closes <a href="https://github.com/NewGraphEnvironment/link/pull/94" class="external-link">#87</a>. Default-bundle SK upstream-spawn now credits any spawn-eligible segment upstream of and accessible from a qualifying rearing waterbody, dropping bcfishpass’s restrictive cluster + lake-adjacency gate. bcfishpass-bundle SK keeps the gate (parity preserved).</p>
