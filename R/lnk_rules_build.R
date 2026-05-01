@@ -366,6 +366,18 @@ lnk_rules_build <- function(csv,
           nchar(trimws(d$spawn_connected_edge_types)) > 0) {
         spawn_conn$edge_types <- as.integer(strsplit(trimws(d$spawn_connected_edge_types), ";")[[1]])
       }
+      # lake_adjacent: TRUE/FALSE per fresh#191. Default at fresh side is TRUE
+      # (bcfp parity — Phase 2 cluster + lake-adjacency gate fires). Setting
+      # FALSE relaxes the cluster gate, crediting any spawn-eligible segment
+      # upstream of and accessible from the qualifying rearing waterbody.
+      # Only emit when the dimension is non-empty so older rules.yaml files
+      # without the key remain valid.
+      if ("spawn_connected_lake_adjacent" %in% names(d) &&
+          !is.na(d$spawn_connected_lake_adjacent) &&
+          nchar(trimws(d$spawn_connected_lake_adjacent)) > 0) {
+        spawn_conn$lake_adjacent <-
+          tolower(trimws(d$spawn_connected_lake_adjacent)) == "yes"
+      }
     }
 
     sp_entry <- list(spawn = spawn_rules, rear = rear_rules)

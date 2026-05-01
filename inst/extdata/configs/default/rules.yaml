@@ -1,5 +1,5 @@
 # Generated from dimensions.csv
-# Generated: 2026-04-30
+# Generated: 2026-05-01
 # Edge types: explicit
 #
 # DO NOT EDIT — edit the CSV and re-run lnk_rules_build()
@@ -164,6 +164,7 @@ SK:
     channel_width_min: 0.0
     distance_max: 3000.0
     bridge_gradient: 0.05
+    lake_adjacent: false
 ST:
   spawn:
   - edge_types_explicit:
