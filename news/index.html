@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.20.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.20.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,6 +31,14 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.20.1" id="link-0201">link 0.20.1<a class="anchor" aria-label="anchor" href="#link-0201"></a></h2>
+<p>Closes <a href="https://github.com/NewGraphEnvironment/link/pull/93" class="external-link">#92</a>. Per-AOI observations filter mirrors bcfp’s <code>wsg_species_presence</code> + <code>observation_key</code> exclusions.</p>
+<ul><li>New <code>.lnk_pipeline_prep_observations()</code> builds <code>&lt;schema&gt;.observations</code> per AOI, mirroring bcfp’s <code>model/01_access/sql/load_observations.sql</code>. Filters <code>bcfishobs.observations</code> by the WSG’s species set (only species marked present count) and applies QA exclusions (<code>data_error</code> / <code>release_exclude</code> rows removed, keyed on <code>observation_key</code> — was <code>fish_observation_point_id</code>, never present in the CSV; the empty intersect silently dropped all 1,182 exclusions).</li>
+<li>Downstream consumers updated: <code>prep_overrides</code> reads <code>&lt;schema&gt;.observations</code> (no longer takes <code>observations</code> param); <code>lnk_pipeline_break_obs</code> simplified to a thin reader; <code>lnk_barrier_overrides</code> uses <code>observation_key</code>.</li>
+<li>TWAC pre-flight: BT spawning/rearing/rearing_stream collapsed from +21–30% over-credit to 0.0% across the board. 15-WSG <code>tar_make</code>: HARR + LFRA BT tightened toward parity (LFRA BT rearing_stream -3.75% → -0.93%; HARR BT rearing_stream -4.19% → -1.29%); other 13 WSGs unchanged. HORS BT stays -7.68% (fresh#158 stream-order bypass — distinct mechanism).</li>
+<li>Default bundle also tightens (6 rows on HARR/LFRA BT) — methodology correctness improvement, not a regression.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.20.0" id="link-0200">link 0.20.0<a class="anchor" aria-label="anchor" href="#link-0200"></a></h2>
 <p>Closes <a href="https://github.com/NewGraphEnvironment/link/pull/89" class="external-link">#88</a>. Subsurfaceflow folded into the natural-barrier set so per-species observation/habitat upstream lift fires on it.</p>

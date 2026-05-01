@@ -1,5 +1,31 @@
 # Changelog
 
+## link 0.20.1
+
+Closes [\#92](https://github.com/NewGraphEnvironment/link/pull/93).
+Per-AOI observations filter mirrors bcfp’s `wsg_species_presence` +
+`observation_key` exclusions.
+
+- New `.lnk_pipeline_prep_observations()` builds `<schema>.observations`
+  per AOI, mirroring bcfp’s `model/01_access/sql/load_observations.sql`.
+  Filters `bcfishobs.observations` by the WSG’s species set (only
+  species marked present count) and applies QA exclusions (`data_error`
+  / `release_exclude` rows removed, keyed on `observation_key` — was
+  `fish_observation_point_id`, never present in the CSV; the empty
+  intersect silently dropped all 1,182 exclusions).
+- Downstream consumers updated: `prep_overrides` reads
+  `<schema>.observations` (no longer takes `observations` param);
+  `lnk_pipeline_break_obs` simplified to a thin reader;
+  `lnk_barrier_overrides` uses `observation_key`.
+- TWAC pre-flight: BT spawning/rearing/rearing_stream collapsed from
+  +21–30% over-credit to 0.0% across the board. 15-WSG `tar_make`:
+  HARR + LFRA BT tightened toward parity (LFRA BT rearing_stream -3.75%
+  → -0.93%; HARR BT rearing_stream -4.19% → -1.29%); other 13 WSGs
+  unchanged. HORS BT stays -7.68% (fresh#158 stream-order bypass —
+  distinct mechanism).
+- Default bundle also tightens (6 rows on HARR/LFRA BT) — methodology
+  correctness improvement, not a regression.
+
 ## link 0.20.0
 
 Closes [\#88](https://github.com/NewGraphEnvironment/link/pull/89).
