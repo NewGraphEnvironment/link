@@ -1,3 +1,14 @@
+# link 0.20.0
+
+Closes [#88](https://github.com/NewGraphEnvironment/link/pull/89). Subsurfaceflow folded into the natural-barrier set so per-species observation/habitat upstream lift fires on it.
+
+- `.lnk_pipeline_prep_natural()` now builds the full bcfishpass natural-barrier union (gradient + falls + opt-in subsurfaceflow). Subsurfaceflow positions land in `<schema>.natural_barriers`, which `lnk_barrier_overrides()` consumes — so per-species observation/habitat upstream lift applies to subsurfaceflow exactly as it does to falls and gradient.
+- `.lnk_pipeline_prep_subsurfaceflow()` deleted; its body absorbed into `prep_natural`. Six prep helpers → five.
+- Default-bundle off-switch unchanged: omit `subsurfaceflow` from `cfg$pipeline$break_order` and the entire code path skips. Verified bit-identical default rollup (0 of 581 rows changed).
+- bcfishpass-bundle parity: HARR CH/CO/ST rearing_stream gaps closed from -14.8/-13.3/-11.6% to within ±0.32%. LFRA CH/CO/ST closed to within ±0.6%. HARR blkey 356286055 BT credits 6.509 km (was 0).
+- Reproducibility: two consecutive 15-WSG `tar_make` runs produced byte-identical rollup (`digest::digest(link_value)` matches across runs).
+- HORS rearing_stream gap (~7% on BT/CH/CO) is unchanged by this fix — separate mechanism, follow-up.
+
 # link 0.19.0
 
 Closes [#82](https://github.com/NewGraphEnvironment/link/pull/82). Subsurface-flow access barriers + parity claim retraction.
