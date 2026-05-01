@@ -11,4 +11,7 @@
 - Code change: extended `.lnk_pipeline_prep_natural` signature `(conn, aoi, cfg, loaded, schema)`; absorbed subsurfaceflow body, gated on `cfg$pipeline$break_order`; deleted standalone `.lnk_pipeline_prep_subsurfaceflow`; pruned conditional call from `lnk_pipeline_prepare()`. `devtools::document()` clean.
 - Tests: 3 new test cases in `tests/testthat/test-lnk_pipeline_prepare.R` — opted-out, opted-in (per-statement assertion that link#88 fix INSERT fires), control-table honoured. 44/44 pass.
 - Code-check: 3 rounds. Rounds 1–2 clean. Round 3 caught a fragile cross-statement regex in the test; replaced with per-statement `any(grepl & grepl)`. Sanity-verified the assertion catches the regression.
-- Pre-flight: HARR single-WSG `compare_bcfishpass_wsg(wsg = "HARR", config = lnk_config("bcfishpass"))` running.
+- Pre-flight: HARR single-WSG `compare_bcfishpass_wsg(wsg = "HARR", config = lnk_config("bcfishpass"))` 89.5 s. blkey 356286055 BT credits 6.509 km (was 0). HARR BT diffs collapsed: rearing_stream -10.4% → -4.19%, rearing -1.84%, spawning -1.6%.
+- 15-WSG `tar_make` (53m 2s, 33/33). Parity dramatic on HARR (CH/CO/ST <0.32%; BT residual -4.19%) and LFRA (CH/CO/ST <0.6%; BT residual -3.75%). HORS unchanged (-7.68% rearing_stream BT) — different mechanism, follow-up needed. Default-bundle bit-identical (0 of 581 rows changed).
+- Reproducibility re-run (52m 55s, 33/33). 0 of 1057 link_value rows differ; digest match (`5a641892b82604259b0ba168ea093661`). ✓
+- Code commit `a21a8f8`. PWF + verification logs commit. Ready for PR.

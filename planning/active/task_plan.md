@@ -29,9 +29,9 @@
 - [x] LFRA CH/CO/ST closed to ±0.6% (BT residual -3.75%)
 - [x] HORS unchanged (-7.68% BT) — different mechanism, follow-up issue
 - [x] Default-bundle rollup bit-identical (0 of 581 link_value rows changed)
-- [ ] Reproducibility: second `tar_make` byte-identical to first (running)
+- [x] Reproducibility: second `tar_make` byte-identical (`link_value` digest `5a641892b82604259b0ba168ea093661` matches across runs; 0 of 1057 rows differ)
 
 ## Phase 6: Ship
-- [ ] Atomic commits with PWF checkbox flips
+- [x] Atomic commits with PWF checkbox flips
 - [ ] PR with `Fixes #88` and `Relates to NewGraphEnvironment/sred-2025-2026#24`
 - [ ] Archive PWF after merge
