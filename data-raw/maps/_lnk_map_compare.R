@@ -63,7 +63,17 @@ lnk_map_compare <- function(wsg, species, habitat,
   # ---- pull (cached) ------------------------------------------------------
 
   cached <- function(rds, fn) {
-    if (file.exists(rds)) readRDS(rds) else { x <- fn(); saveRDS(x, rds); x }
+    if (file.exists(rds)) {
+      x <- readRDS(rds)
+      # Guard: refetch if the cache was written when the source returned 0
+      # rows (CRS = NA). The pipeline often overwrites fresh.streams between
+      # map renders for different WSGs, leaving stale 0-row caches behind.
+      if (inherits(x, "sf") && nrow(x) == 0L && is.na(sf::st_crs(x)$input)) {
+        x <- fn(); saveRDS(x, rds)
+      }
+      return(x)
+    }
+    x <- fn(); saveRDS(x, rds); x
   }
 
   # Aliasing the side-specific id columns to seg_id so popup label is uniform.

@@ -6,11 +6,11 @@
 
 ## Phase 1: Fix the implementation drift
 
-- [ ] Add `falls = paste0(schema, ".falls")` to `source_tables` in `R/lnk_pipeline_break.R`
-- [ ] Add `"falls"` to the `break_order` default vector in same file (between `gradient_minimal` and `barriers_definite` per the doc comment ordering)
-- [ ] Add `"falls"` to `cfg$pipeline$break_order` in `inst/extdata/configs/bcfishpass/config.yaml`
-- [ ] Add `"falls"` to `cfg$pipeline$break_order` in `inst/extdata/configs/default/config.yaml`
-- [ ] Update the doc comment + `## Break sources` table in `R/lnk_pipeline_break.R` if needed (the comment lists falls but the table may omit the entry)
+- [x] Add `falls = paste0(schema, ".falls")` to `source_tables` in `R/lnk_pipeline_break.R`
+- [x] Add `"falls"` to the `break_order` default vector in same file (between `gradient_minimal` and `barriers_definite` per the doc comment ordering)
+- [x] Add `"falls"` to `cfg$pipeline$break_order` in `inst/extdata/configs/bcfishpass/config.yaml`
+- [x] Add `"falls"` to `cfg$pipeline$break_order` in `inst/extdata/configs/default/config.yaml`
+- [x] Update the doc comment + `## Break sources` table in `R/lnk_pipeline_break.R` (falls row added to the table; observations→gradient_minimal→falls→... ordering reflected in module docstring)
 
 ## Phase 2: Tests
 
@@ -19,11 +19,11 @@
 
 ## Phase 3: HORS verification (the issue's evidence case)
 
-- [ ] Re-install link locally
-- [ ] Run HORS preflight (`Rscript /tmp/preflight_hors.R`)
-- [ ] Query `fresh.streams` on BLK 356357296 around DRMs 67000–68000 → confirm a new segment break at DRM 67565
-- [ ] Query `fresh.streams_habitat` on the upper-fall segment → confirm `accessible = FALSE` (gets the natural-barrier treatment from `prep_natural`'s falls + `barrier_overrides`)
-- [ ] Re-render HORS BT compare map (`bt_rearing_HORS.R`) — segment 12671's upper portion should leave the `link_only` rearing layer
+- [x] Re-install link locally
+- [x] Run HORS preflight — log at `data-raw/logs/20260501_27_preflight_hors_falls_break.txt`. Total `rearing_stream` unchanged (366 km — affected segment is edge_type 1250, excluded from this metric); broader `rearing` total dropped 1.43 km
+- [x] Query `fresh.streams` on BLK 356357296 — segment break landed at DRM 67565 (new segment 12678 starts there with `accessible=FALSE`, length 1429m); old segment 12671 (1447m straddling fall #2) is gone
+- [x] Verify upper-fall segment `accessible = FALSE` — yes, 12678 + all upstream segments inaccessible
+- [x] Re-render HORS BT map — saved at `data-raw/maps/HORS_BT_rearing_AFTER_falls_break.html`. Map cache helper hardened against stale 0-row caches in `_lnk_map_compare.R`
 
 ## Phase 4: 4-WSG regression
 

@@ -8,7 +8,7 @@
 #' reassigned so downstream rounds see contiguous integer IDs.
 #'
 #' The break-source order matters. bcfishpass processes:
-#' observations → gradient_minimal → barriers_definite →
+#' observations → gradient_minimal → falls → barriers_definite →
 #' habitat_endpoints → crossings. This order is encoded in the bundled
 #' bcfishpass config (`cfg$pipeline$break_order`) and is the default
 #' when the config does not specify one.
@@ -22,6 +22,7 @@
 #' |---|---|---|---|
 #' | `observations` | `<schema>.observations_breaks` | fish observations from `bcfishobs.observations`, WSG- and species-filtered, exclusions applied | (informational; not a barrier) |
 #' | `gradient_minimal` | `<schema>.gradient_barriers_minimal` | minimal-reduced gradient barriers (per-model 15/20/25/30%) | classify uses the FULL set with `gradient_<NNNN>` labels |
+#' | `falls` | `<schema>.falls` | natural waterfalls from `whse_basemapping.fwa_obstacles_sp` (loaded by `prep_load_aux`); each fall is its own barrier (NOT minimal-reduced) | `blocked` |
 #' | `barriers_definite` | `<schema>.barriers_definite` | `user_barriers_definite.csv` for the AOI | `blocked` |
 #' | `subsurfaceflow` | `<schema>.barriers_subsurfaceflow` | FWA `edge_type IN (1410, 1425)` start points; honours `user_barriers_definite_control`. Opt-in (only built when listed) | `blocked` |
 #' | `habitat_endpoints` | `<schema>.habitat_endpoints` | DRM and URM from `user_habitat_classification.csv` | (segmentation only; not a barrier) |
@@ -95,7 +96,7 @@ lnk_pipeline_break <- function(conn, aoi, cfg, loaded, schema,
   .lnk_pipeline_break_crossings(conn, schema)
 
   break_order <- cfg$pipeline$break_order %||% c(
-    "observations", "gradient_minimal",
+    "observations", "gradient_minimal", "falls",
     "barriers_definite", "habitat_endpoints", "crossings"
   )
   # Source table for each valid break_order entry. To add a new break
@@ -107,6 +108,7 @@ lnk_pipeline_break <- function(conn, aoi, cfg, loaded, schema,
   source_tables <- list(
     observations      = paste0(schema, ".observations_breaks"),
     gradient_minimal  = paste0(schema, ".gradient_barriers_minimal"),
+    falls             = paste0(schema, ".falls"),
     barriers_definite = paste0(schema, ".barriers_definite"),
     subsurfaceflow    = paste0(schema, ".barriers_subsurfaceflow"),
     habitat_endpoints = paste0(schema, ".habitat_endpoints"),
