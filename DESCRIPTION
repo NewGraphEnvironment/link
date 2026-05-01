@@ -1,6 +1,6 @@
 Package: link
 Title: Stream Network Habitat Interpretation (Experimental)
-Version: 0.21.0
+Version: 0.22.0
 Authors@R: c(
     person("Allan", "Irvine", , "airvine@newgraphenvironment.com",
            role = c("aut", "cre"),
@@ -31,7 +31,7 @@ Suggests:
     bcdata,
     digest,
     dplyr,
-    fresh (>= 0.26.0),
+    fresh (>= 0.27.5),
     lintr,
     mockery,
     sf,

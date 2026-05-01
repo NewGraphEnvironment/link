@@ -140,7 +140,10 @@ lnk_map_compare <- function(wsg, species, habitat,
     function() {
       c <- conn_local(); on.exit(DBI::dbDisconnect(c))
       sf::st_read(c, query = sprintf("
-        SELECT linear_feature_id, blue_line_key, edge_type, geom
+        SELECT linear_feature_id, blue_line_key,
+               downstream_route_measure, edge_type,
+               stream_order, gradient,
+               gnis_name, geom
         FROM whse_basemapping.fwa_stream_networks_sp
         WHERE watershed_group_code = '%s'", wsg))
     })
@@ -201,19 +204,23 @@ lnk_map_compare <- function(wsg, species, habitat,
         " | ", round(length_metre), "m"))
   }
 
-  axis_combined <- dplyr::bind_rows(
-    bcfp_axis |> dplyr::filter(category == "bcfp_only") |> mk_label("bcfp-only"),
-    link_axis |> dplyr::filter(category == "link_only") |> mk_label("link-only"),
-    link_axis |> dplyr::filter(category == "both")      |> mk_label("both"))
+  # Split axis layers per category so each is independently toggleable
+  # in the layers control (link_only / bcfp_only / both).
+  axis_bcfp_only <- bcfp_axis |>
+    dplyr::filter(category == "bcfp_only") |> mk_label("bcfp-only")
+  axis_link_only <- link_axis |>
+    dplyr::filter(category == "link_only") |> mk_label("link-only")
+  axis_both <- link_axis |>
+    dplyr::filter(category == "both") |> mk_label("both")
 
   other_label <- if (habitat == "rearing") "spawning" else "rearing"
-  other_combined <- dplyr::bind_rows(
-    bcfp_other |> mk_label(paste("bcfp", other_label)),
-    link_other |> mk_label(paste("link", other_label)))
+  other_bcfp <- bcfp_other |> mk_label(paste("bcfp", other_label))
+  other_link <- link_other |> mk_label(paste("link", other_label))
 
   # ---- bbox: full WSG (let user zoom) ------------------------------------
 
-  fb <- sf::st_bbox(dplyr::bind_rows(bcfp_axis, link_axis, bcfp_other, link_other))
+  fb <- sf::st_bbox(dplyr::bind_rows(
+    axis_bcfp_only, axis_link_only, axis_both, other_bcfp, other_link))
   pad <- 0.02
   dx <- fb["xmax"] - fb["xmin"]; dy <- fb["ymax"] - fb["ymin"]
   view_bbox <- sf::st_bbox(c(
@@ -223,10 +230,11 @@ lnk_map_compare <- function(wsg, species, habitat,
 
   # ---- mapgl --------------------------------------------------------------
 
-  pal_values <- c("bcfp_only", "link_only", "both")
-  pal_colors <- c("#1f78b4",  "#e31a1c",   "#6a3d9a")
-  pal_labels <- c("bcfp only (link missing)", "link only (extra)", "both")
-  other_color <- "#33a02c"
+  col_bcfp_only <- "#1f78b4"
+  col_link_only <- "#e31a1c"
+  col_both      <- "#6a3d9a"
+  col_other_bcfp <- "#33a02c"  # green (bcfp side of "other" habitat context)
+  col_other_link <- "#b15928"  # brown (link side)
 
   legend_title <- sprintf("%s %s %s — link vs bcfishpass",
     wsg, species, habitat)
@@ -237,21 +245,56 @@ lnk_map_compare <- function(wsg, species, habitat,
       fill_color = "#a6cee3", fill_opacity = 0.4, popup = "gnis_name")
 
   if (underlay) {
+    streams_under <- streams_under |>
+      dplyr::mutate(under_label = paste0(
+        "fwa | lfid ", linear_feature_id,
+        " | blkey ", blue_line_key,
+        " | DRM ", round(downstream_route_measure %||% NA),
+        " | edge ", edge_type,
+        " | order ", stream_order,
+        " | grad ", formatC(gradient, format = "f", digits = 4),
+        ifelse(is.na(gnis_name) | gnis_name == "", "", paste0(" | ", gnis_name))))
     m <- m |> mapgl::add_line_layer(
       id = "streams_all", source = streams_under,
-      line_color = "#cccccc", line_width = 0.4, line_opacity = 0.6)
+      line_color = "#cccccc", line_width = 0.4, line_opacity = 0.6,
+      popup = "under_label")
   }
 
-  m <- m |>
-    mapgl::add_line_layer(
-      id = other_label, source = other_combined,
-      line_color = other_color, line_width = 1.5, line_opacity = 0.85,
-      popup = "label") |>
-    mapgl::add_line_layer(
-      id = habitat, source = axis_combined,
-      line_color = mapgl::match_expr("category",
-        values = pal_values, stops = pal_colors, default = "#999999"),
-      line_width = 3, line_opacity = 0.9, popup = "label")
+  # Spawn / rear context layers (the OTHER habitat) — split per side so
+  # the user can isolate "where does bcfp see spawn?" independently of
+  # link's spawn picture.
+  if (nrow(other_bcfp) > 0) {
+    m <- m |> mapgl::add_line_layer(
+      id = sprintf("%s_bcfp", other_label), source = other_bcfp,
+      line_color = col_other_bcfp, line_width = 1.5, line_opacity = 0.85,
+      popup = "label")
+  }
+  if (nrow(other_link) > 0) {
+    m <- m |> mapgl::add_line_layer(
+      id = sprintf("%s_link", other_label), source = other_link,
+      line_color = col_other_link, line_width = 1.5, line_opacity = 0.85,
+      popup = "label")
+  }
+
+  # Axis (target habitat) layers — three independent toggles.
+  if (nrow(axis_both) > 0) {
+    m <- m |> mapgl::add_line_layer(
+      id = sprintf("%s_both", habitat), source = axis_both,
+      line_color = col_both, line_width = 3, line_opacity = 0.9,
+      popup = "label")
+  }
+  if (nrow(axis_bcfp_only) > 0) {
+    m <- m |> mapgl::add_line_layer(
+      id = sprintf("%s_bcfp_only", habitat), source = axis_bcfp_only,
+      line_color = col_bcfp_only, line_width = 3, line_opacity = 0.9,
+      popup = "label")
+  }
+  if (nrow(axis_link_only) > 0) {
+    m <- m |> mapgl::add_line_layer(
+      id = sprintf("%s_link_only", habitat), source = axis_link_only,
+      line_color = col_link_only, line_width = 3, line_opacity = 0.9,
+      popup = "label")
+  }
 
   for (lyr in extra_layers) {
     m <- m |> mapgl::add_line_layer(
@@ -265,8 +308,14 @@ lnk_map_compare <- function(wsg, species, habitat,
   m <- m |>
     mapgl::add_legend(
       legend_title,
-      values = c(pal_labels, paste(other_label, "(either)")),
-      colors = c(pal_colors, other_color),
+      values = c(
+        "bcfp only (link missing)",
+        "link only (extra)",
+        "both",
+        sprintf("%s (bcfp)", other_label),
+        sprintf("%s (link)", other_label)),
+      colors = c(col_bcfp_only, col_link_only, col_both,
+                 col_other_bcfp, col_other_link),
       type = "categorical", position = "top-right") |>
     mapgl::add_layers_control(collapsible = TRUE, position = "top-left")
 

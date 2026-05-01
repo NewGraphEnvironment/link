@@ -131,6 +131,43 @@ lnk_pipeline_classify <- function(conn, aoi, cfg, loaded, schema,
       verbose = FALSE)
   }
 
+  # fresh#158 stream-order bypass: post-classification, credit direct
+  # tributaries of large-order rivers as rearing even when channel
+  # width is below threshold. Mirrors bcfp's hard-coded
+  # `stream_order_parent >= 5 AND stream_order = 1` predicate in
+  # load_habitat_linear_<sp>.sql for BT/CH/CO/ST/WCT.
+  #
+  # Per-species opt-in driven by `dimensions.csv::rear_stream_order_bypass`,
+  # which `lnk_rules_build` propagates into rules.yaml as
+  # `rear[].channel_width_min_bypass = list(stream_order, stream_order_parent_min)`.
+  # We detect that field's presence on any rear rule and call
+  # `frs_order_child` with the embedded parent_order threshold.
+  for (sp in species) {
+    rear_rules <- params[[sp]][["rules"]][["rear"]]
+    bypass <- NULL
+    for (rr in rear_rules) {
+      if (!is.null(rr[["channel_width_min_bypass"]])) {
+        bypass <- rr[["channel_width_min_bypass"]]
+        break
+      }
+    }
+    if (!is.null(bypass)) {
+      pom    <- bypass[["stream_order_parent_min"]] %||% 5L
+      cs_min <- bypass[["stream_order_min"]]
+      cs_max <- bypass[["stream_order_max"]]
+      dmax   <- bypass[["distance_max"]]
+      fresh::frs_order_child(conn,
+        table   = "fresh.streams",
+        habitat = "fresh.streams_habitat",
+        species = sp,
+        parent_order_min = pom,
+        child_order_min = cs_min,
+        child_order_max = cs_max,
+        distance_max = dmax,
+        verbose = FALSE)
+    }
+  }
+
   invisible(conn)
 }
 
