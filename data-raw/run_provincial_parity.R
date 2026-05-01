@@ -26,13 +26,29 @@ source("/Users/airvine/Projects/repo/link/data-raw/compare_bcfishpass_wsg.R")
 cfg    <- lnk_config("bcfishpass")
 loaded <- lnk_load_overrides(cfg)
 
-# Species we model. Any WSG with at least one of these present qualifies.
+# WSG list. Default: every WSG with at least one of our species present.
+# Override via --wsgs <comma-list> for a specific subset (used by the
+# distributed split — link#53 — where each host runs its own bucket).
+args <- commandArgs(trailingOnly = TRUE)
+wsgs_arg <- args[grep("^--wsgs=", args)]
 spp_cols <- c("ch", "cm", "co", "pk", "sk", "st", "bt", "wct", "ct", "dv", "rb")
 wsg_pres <- loaded$wsg_species_presence
 has_spp <- apply(wsg_pres[, spp_cols, drop = FALSE], 1, function(r) {
   any(r %in% c("t", "TRUE", TRUE))
 })
-wsgs <- wsg_pres$watershed_group_code[has_spp]
+default_wsgs <- wsg_pres$watershed_group_code[has_spp]
+
+if (length(wsgs_arg) > 0) {
+  wsgs <- strsplit(sub("^--wsgs=", "", wsgs_arg[1]), ",")[[1]]
+  wsgs <- trimws(wsgs)
+  invalid <- setdiff(wsgs, default_wsgs)
+  if (length(invalid) > 0) {
+    stop("--wsgs contains WSGs not in wsg_species_presence (or with no species we model): ",
+         paste(invalid, collapse = ", "), call. = FALSE)
+  }
+} else {
+  wsgs <- default_wsgs
+}
 
 out_dir <- "/Users/airvine/Projects/repo/link/data-raw/logs/provincial_parity"
 dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
