@@ -56,8 +56,8 @@ lnk_barrier_overrides(
 - exclusions:
 
   Character or `NULL`. Schema-qualified table of observation exclusions
-  with column `fish_observation_point_id`. Flagged observations are
-  removed before counting.
+  with column `observation_key`. Flagged observations are removed before
+  counting.
 
 - control:
 
