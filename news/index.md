@@ -1,5 +1,37 @@
 # Changelog
 
+## link 0.23.0
+
+Closes [\#96](https://github.com/NewGraphEnvironment/link/issues/96).
+`falls` added as a segmentation break source — the FWA stream network is
+now broken at every fall position. Previously the `<schema>.falls` table
+was loaded and used for access gating + obs/habitat lift but **not** for
+segmentation, so close-paired falls (no other break source between them)
+produced segments that spanned the second fall and incorrectly
+classified its upper portion as accessible.
+
+- New entry in `R/lnk_pipeline_break.R`’s `source_tables` and the
+  default `break_order`. Both bundle configs (`bcfishpass`, `default`)
+  opt in via `pipeline.break_order`.
+- Falls are NOT minimal-reduced — each fall is its own barrier (unlike
+  gradient barriers which go through `frs_barriers_minimal`).
+- Closes the implementation drift from the docstring at
+  `R/lnk_pipeline_break.R:10-13` which already documented the bcfp order
+  as
+  `observations → gradient_minimal → falls → barriers_definite → habitat_endpoints → crossings`.
+- 4-WSG regression vs pre-fix baseline (HARR/HORS/LFRA/BABL): all four
+  show small expected reductions (BT ~0.6–1.5 km on HARR/HORS; 7 species
+  × ~0.43 km each on LFRA; 4 species × 0.94–1.59 km each on BABL). All
+  deltas negative — segments above falls correctly become inaccessible.
+  See `research/bcfishpass_comparison.md` § “falls in break_order
+  ([\#96](https://github.com/NewGraphEnvironment/link/issues/96))”.
+- HORS BLK 356357296 evidence case: pre-fix segment 12671 (1447 m
+  straddling the fall at DRM 67565) split into 12677 (17 m below) +
+  12678 (1429 m above, `accessible=FALSE`).
+- Map cache helper `data-raw/maps/_lnk_map_compare.R` hardened — stale
+  0-row caches (left when the pipeline runs for one WSG and the map is
+  rendered for another) now refetch instead of erroring on missing CRS.
+
 ## link 0.22.0
 
 Wires

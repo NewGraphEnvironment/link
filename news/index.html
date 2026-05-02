@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.22.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.23.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,6 +31,16 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.23.0" id="link-0230">link 0.23.0<a class="anchor" aria-label="anchor" href="#link-0230"></a></h2>
+<p>Closes <a href="https://github.com/NewGraphEnvironment/link/issues/96" class="external-link">#96</a>. <code>falls</code> added as a segmentation break source — the FWA stream network is now broken at every fall position. Previously the <code>&lt;schema&gt;.falls</code> table was loaded and used for access gating + obs/habitat lift but <strong>not</strong> for segmentation, so close-paired falls (no other break source between them) produced segments that spanned the second fall and incorrectly classified its upper portion as accessible.</p>
+<ul><li>New entry in <code>R/lnk_pipeline_break.R</code>’s <code>source_tables</code> and the default <code>break_order</code>. Both bundle configs (<code>bcfishpass</code>, <code>default</code>) opt in via <code>pipeline.break_order</code>.</li>
+<li>Falls are NOT minimal-reduced — each fall is its own barrier (unlike gradient barriers which go through <code>frs_barriers_minimal</code>).</li>
+<li>Closes the implementation drift from the docstring at <code>R/lnk_pipeline_break.R:10-13</code> which already documented the bcfp order as <code>observations → gradient_minimal → falls → barriers_definite → habitat_endpoints → crossings</code>.</li>
+<li>4-WSG regression vs pre-fix baseline (HARR/HORS/LFRA/BABL): all four show small expected reductions (BT ~0.6–1.5 km on HARR/HORS; 7 species × ~0.43 km each on LFRA; 4 species × 0.94–1.59 km each on BABL). All deltas negative — segments above falls correctly become inaccessible. See <code>research/bcfishpass_comparison.md</code> § “falls in break_order (<a href="https://github.com/NewGraphEnvironment/link/issues/96" class="external-link">#96</a>)”.</li>
+<li>HORS BLK 356357296 evidence case: pre-fix segment 12671 (1447 m straddling the fall at DRM 67565) split into 12677 (17 m below) + 12678 (1429 m above, <code>accessible=FALSE</code>).</li>
+<li>Map cache helper <code>data-raw/maps/_lnk_map_compare.R</code> hardened — stale 0-row caches (left when the pipeline runs for one WSG and the map is rendered for another) now refetch instead of erroring on missing CRS.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.22.0" id="link-0220">link 0.22.0<a class="anchor" aria-label="anchor" href="#link-0220"></a></h2>
 <p>Wires <code><a href="https://newgraphenvironment.github.io/fresh/reference/frs_order_child.html" class="external-link">fresh::frs_order_child</a></code> into the pipeline as link methodology — small streams plugging directly into large rivers can be credited as rearing despite low/missing FWA channel-width estimates. Closes <a href="https://github.com/NewGraphEnvironment/fresh/issues/158" class="external-link">fresh#158</a> on the link side.</p>
