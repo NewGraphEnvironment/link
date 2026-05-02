@@ -1,46 +1,69 @@
-# Findings — link `frs_order_child` wire-up
+# Findings — Falls not used as segmentation break source (#96)
 
-## Summary
+## Issue context
 
-`frs_order_child` is a link methodology primitive, not a bcfp parity replicator. The HORS BT pre-flight result (link 394 km / bcfp 396 km on `rearing_stream`, −0.5%) at `bypass=yes, parent=5, child=1, dmax=300` is numerical proximity by accident — bcfp's bypass operates inside 3 connectivity-aware rearing phases (Phase 1: rearing-on-spawn, Phase 2: cluster-DS-of-spawn, Phase 3: cluster-US-of-spawn-with-no->5%-grade-between), and does NOT use a `stream_order_max` filter. Our function runs post-cluster, post-classify, with `stream_order_max` for direct-child semantics and `distance_max` as a biology-tuning cap. Different design, different semantics.
+`falls` is not used as a segmentation break source in the pipeline, so the FWA stream network is never broken at fall positions. When a fall sits between FWA-native segment boundaries and no other `break_order` source coincides with it, the resulting `fresh.streams` segment spans across the fall — its upper portion is incorrectly classified as accessible because the segment as a whole has no barrier between it and downstream.
 
-## Biology hook (the why)
+`R/lnk_pipeline_break.R` lines 10–13 already document bcfp's break order as `observations → gradient_minimal → barriers_definite → falls → habitat_endpoints → crossings` (note `falls`). But the `source_tables` list (line ~107) omits `falls`, and the `break_order` default (line ~97) doesn't include it either. Implementation has drifted from the documented intent.
 
-The FWA-derived `channel_width` estimate is unreliable on small (1st-order) streams because the MAP (mean annual precipitation) signal isn't carried cleanly on those reaches. When such a small stream plugs directly into a large river, fish *do* use the lower reach for rearing despite the low/missing CW estimate — flow, temperature, cool-water mixing at confluence, backwater habitat all support juvenile use. `frs_order_child` is the parametric primitive expressing this biology.
+### Evidence — HORS BLK 356357296 (Horsefly River, BT)
 
-## Design decisions (verbatim from fresh#158, anchored here for next session)
+Two falls 41 m apart in `working_hors.falls`:
 
-- **`stream_order = stream_order_max` (per BLK)** — bypass only applies on the mouth-side reach of a BLK, where the BLK's order is at its maximum. Excludes order-1 headwater portions of multi-order BLKs (e.g., a named creek that grows to order 3 at its mouth). Documented as direct-child semantics. **bcfp does NOT use this filter** — our function is structurally tighter on multi-order BLKs by design.
-- **`distance_max`** — caps the bypass to the lower N metres of each direct-trib BLK. Whole-segment overshoot is the documented default (Option A in fresh#158). Lets users tune "how far into the trib does the parent-river effect extend" — a biology question, not a parity question.
-- **Post-cluster, post-classify placement** — intentional. fresh#158: *"can add segments that frs_cluster removed because they had no connected spawning. For some species this is correct (rear-only species), for others it might over-classify. Mitigation: the accessible guard limits over-reach to accessible network only; the parametric parent_order_min / child_order_min / distance_max lets users tune."* fresh#156 was closed in favor of this approach because the alternative (apply during classify) inflates rearing counts pre-cluster.
+| DRM | source coincidence in `working_hors.*` | landed in `fresh.streams`? |
+|---|---|---|
+| 67523.86 | falls + gradient_min (`gradient_min` is in `break_order`) | yes — segment break |
+| 67548 | observations × 3 (`observations` is in `break_order`) | yes — segment break |
+| 67564.98 | falls only | **no — falls not in `break_order`** |
 
-## HORS BT pre-flight progression (this session, 2026-05-01)
+Result: link's segment 12671 spans DRM 67548 → 68995 (1447 m), straddling the second fall. Link reports `accessible = TRUE`, `rearing = TRUE` on the entire segment. bcfp's analogous segment (which DOES break at 67565) carries `barriers_bt_dnstr = {f5270089-…}` for everything above the fall and is correctly inaccessible.
 
-| Iteration | Predicate | link | bcfp | diff_pct |
-|---|---|---|---|---|
-| Pre-#158 (no bypass) | — | 366 | 396 | −7.68% |
-| 0.27.2 (broken predicate, removed `stream_order_max`) | parent≥5, order=1, no `so_max` filter | 491 | 396 | +23.9% |
-| 0.27.3 (`stream_order_max` via CTE) | + `s.stream_order = s.stream_order_max` | 451 | 396 | +13.9% |
-| 0.27.4 + dmax=300 | + `downstream_route_measure ≤ 300` | 394 | 396 | −0.5% |
+bcfp segments at every fall:
 
-Map snapshots in `data-raw/maps/HORS_BT_rearing_AFTER_*.html`.
+```
+356357296.67524  -- below fall #1
+356357296.67548  -- between falls
+356357296.67565  -- above fall #2 → barriers_bt_dnstr non-empty → inaccessible
+356357296.68995
+```
 
-The `dmax=300` calibration is exploratory — the 4-iteration trail above shows that the apparent parity at 0.5% under is **not the result of methodology alignment** but a numerical balance: under-credit on long-trib reaches (we cap at 300m, bcfp credits the whole trib up to gradient/access limits) compensates for over-credit on cluster-disconnected segments (we run post-cluster without the bcfp Phase-3 `>5%-grade-between` gradient gate).
+link segments:
 
-## Segment-level evidence
+```
+12670 (DRM 67524, len 24m)
+12671 (DRM 67548, len 1447m)  ← spans the second fall, wrong
+```
 
-- **BLK 356322947, DRM 3000–4500 (HORS BT):** bcfp credits 5 segments (3223, 3341, 3440, 3542, 4054) as rearing — passes gradient ≤ 0.1049, no DS barriers, `stream_order_max=2` per bcfp's stored column. Our `frs_order_child` predicate excludes them all because `stream_order=1, stream_order_max=2` fails our `s.stream_order = s.stream_order_max` filter. Demonstrates structural divergence from bcfp on multi-order BLKs.
-- **BLK 356353593 (Divan Creek), DRM 6009+:** bcfp credits DRM 6009 + 6095 (gradients 0.009 and 0.078, both under 0.1049). Drops DRM 7280 (gradient 0.1008 — under cap, channel_width 1.77 ≥ cw_min 1.5) because Phase 3 cluster trace is blocked by the >5%-grade segment at DRM 7112 between 7280 and downstream spawn. Demonstrates that bcfp's bypass is gated by cluster connectivity to spawn, which we don't replicate.
+Symptom on the HORS BT comparison map: 12671 shows as `link_only` rearing — link credits 1447 m of mainstem Horsefly River that bcfp correctly excludes.
 
-## What we are *not* doing
+### Fix (per issue)
 
-- **Not adding gradient ceiling to `frs_order_child`.** bcfp's bypass-eligible segments must pass `gradient ≤ rear_gradient_max`, but link's `frs_order_child` is meant to be additive on `accessible = TRUE` segments regardless of gradient. The `accessible` guard already filters access-blocked segments via the link pipeline's barrier-aware accessibility; gradient-driven exclusion would be a parity-driven addition that contradicts the function's "additive primitive" design.
-- **Not adding cluster-aware filtering.** The post-cluster placement is intentional; mitigation is `parent_order_min` / `child_order_min/max` / `distance_max`. If callers want cluster-aware behaviour they can run `frs_order_child` *before* `frs_cluster` instead of after.
-- **Not pursuing bcfp parity for this primitive.** fresh#158 was explicit: link's default-bundle should ship parametric defaults tuned from BABL inspection, not a bcfp clone.
+```r
+# R/lnk_pipeline_break.R
 
-## Links
+source_tables <- list(
+  observations      = paste0(schema, ".observations_breaks"),
+  gradient_minimal  = paste0(schema, ".gradient_barriers_minimal"),
+  falls             = paste0(schema, ".falls"),                 # NEW
+  barriers_definite = paste0(schema, ".barriers_definite"),
+  subsurfaceflow    = paste0(schema, ".barriers_subsurfaceflow"),
+  habitat_endpoints = paste0(schema, ".habitat_endpoints"),
+  crossings         = paste0(schema, ".crossings_breaks")
+)
 
-- [fresh#158](https://github.com/NewGraphEnvironment/fresh/issues/158) — design doc (canonical)
-- [fresh#156](https://github.com/NewGraphEnvironment/fresh/issues/156) — predecessor, closed in favor of #158
-- [link#23](https://github.com/NewGraphEnvironment/link/issues/23) — CH spawning misread, closed not-a-bug
-- [research/bcfishpass_comparison.md](../../research/bcfishpass_comparison.md) — pre-#158 68 km gap evidence
+break_order <- cfg$pipeline$break_order %||% c(
+  "observations", "gradient_minimal",
+  "falls",                                                       # NEW
+  "barriers_definite", "habitat_endpoints", "crossings"
+)
+```
+
+Also add `"falls"` to the bcfp-bundle's `pipeline.break_order` in `inst/extdata/configs/bcfishpass/config.yaml` and the default-bundle equivalent.
+
+`<schema>.falls` table already exists (built by `prep_load_aux`). `frs_break_apply` already accepts a table with `(blue_line_key, downstream_route_measure)`. No new prep work.
+
+## Out of scope (per issue body)
+
+- Per-species barrier overrides for falls — already handled in `prep_natural` for obs/habitat lift.
+- Reduction of falls via `barriers_minimal` — falls should NOT be reduced; each fall is its own barrier.
+- Restoring 12671's link-only credit via `frs_order_child` — different mechanism, parked on the wire-up branch (now archived at `planning/archive/2026-05-fresh158-frs-order-child-wire/`).

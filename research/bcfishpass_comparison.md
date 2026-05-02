@@ -340,6 +340,7 @@ Composite steps in the DAG that aren't a single function call:
 | Index input tables | 228s → 6.6s classification | fresh code (0.13.4) |
 | Wire `barriers_definite_control` into override step, per-species, observation-path only | DEAD CH/CO/PK/ST +1.1 to +1.4% (moot on ADMS/BULK/BABL/ELKR) | link code (0.6.0) |
 | Drop `barriers_definite` from `natural_barriers` (not eligible for observation override) | ELKR BT spawn +3.4% → +2.8%, WCT spawn +4.0% → +2.6%, WCT rear +1.6% → +0.3% | link code (0.7.0) |
+| Add `falls` to segmentation `break_order` (#96) | HARR/HORS BT −0.6 to −1.5 km; LFRA −0.4 km × 7 species; BABL −1 to −1.6 km × 4 species | link code (0.23.0) |
 
 ### barriers_definite_control wiring (#44)
 
@@ -358,6 +359,31 @@ Same-family fix as #44, different mechanism. bcfishpass's `model_access_*.sql` b
 Active defect on ELKR pre-fix: 4 rows in `working_elkr.barrier_overrides` matched `working_elkr.barriers_definite` positions — Erickson Creek exclusion (mining impacts) and two Spillway MISC entries. Post-fix: 0 matches on all 5 WSGs, and ELKR rollup shifts toward bcfishpass on BT/WCT spawning and rearing (see per-WSG table above). Other four WSGs unchanged: ADMS/BABL/DEAD have empty `barriers_definite`; BULK has 87 rows but none have observation counts clearing threshold.
 
 Fix is a single edit to `.lnk_pipeline_prep_natural()` — drop the `INSERT INTO natural_barriers SELECT ... FROM barriers_definite` block. `barriers_definite` stays consumed separately: `lnk_pipeline_break()` applies it as a sequential break source (segmentation boundary); `lnk_pipeline_classify()` UNION ALLs it directly into `fresh.streams_breaks` (access-gating barrier set). Both surfaces are unchanged.
+
+### falls in break_order (#96)
+
+`R/lnk_pipeline_break.R`'s docstring documented the bcfp break order as `observations → gradient_minimal → falls → barriers_definite → habitat_endpoints → crossings`, but the implementation's `source_tables` list and `break_order` default both omitted `falls`. The `<schema>.falls` table was loaded by `prep_load_aux` and consumed by `streams_breaks` for access gating + by `prep_natural` for obs/habitat lift, but **never used as a segmentation break source**. When two falls sat close together with no other break source between them, the resulting `fresh.streams` segment spanned the second fall, leaving its upper portion incorrectly classified as accessible.
+
+Evidence trace from the issue (HORS BLK 356357296, two falls 41 m apart):
+
+| DRM | Source | Landed in `fresh.streams` segments? |
+|---|---|---|
+| 67524 | falls + gradient_min coincide | yes (gradient_min in `break_order`) |
+| 67548 | observations × 3 | yes (observations in `break_order`) |
+| 67565 | falls only | **no — falls not in `break_order`** |
+
+Pre-fix segment 12671 spanned DRM 67548 → 68995 (1447 m, straddling fall #2), `accessible=TRUE` and `rearing=TRUE` end-to-end. Post-fix the segment splits at 67565: 12677 (17 m below fall #2) + 12678 (1429 m above fall #2, `accessible=FALSE`).
+
+Fix: one entry in `source_tables`, one entry in the default `break_order` vector, and `"falls"` added to both bundle configs' `pipeline.break_order`. Falls are NOT minimal-reduced (each fall is its own barrier, unlike gradient barriers which use `frs_barriers_minimal`). 4-WSG regression vs pre-fix baseline:
+
+| WSG | Diff rows | Total km removed | Notes |
+|---|---|---:|---|
+| HARR | 2 | −1.27 | BT only |
+| HORS | 2 | −2.89 | BT only; affected segment is edge_type 1250 (Horsefly River construction line), so `rearing_stream` metric unchanged but broader `rearing` total shifted |
+| LFRA | 14 | ~−6 | 7 species × ~0.43 km each |
+| BABL | 12 | ~−12 | 4 species × 0.94–1.59 km each |
+
+All deltas negative — fix correctly removes segments above falls. Direction is structurally right regardless of whether each removal closes or slightly deepens the bcfp gap (link is now structurally correct; bcfp may classify the same segments differently for unrelated reasons — gradient class boundaries, cluster connectivity, etc.).
 
 ## Remaining gaps
 

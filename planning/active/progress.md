@@ -1,70 +1,18 @@
-# Progress — link `frs_order_child` wire-up
+# Progress — Falls not used as segmentation break source (#96)
 
 ## Session 2026-05-01
 
-### What landed (fresh)
+- Created branch `96-falls-break-order` off `origin/main` (post-link v0.22.0 ship)
+- Archived wire-up PWF (fresh#158 work) to `planning/archive/2026-05-fresh158-frs-order-child-wire/`
+- Scaffolded PWF baseline from issue #96 body
+- Phase 1 applied: `falls` added to `source_tables` + `break_order` default in `R/lnk_pipeline_break.R`; both bundle configs (`bcfishpass`, `default`) opt in. Doc comment + `## Break sources` table reflect the new ordering (`observations → gradient_minimal → falls → barriers_definite → ...`).
+- Phase 3 HORS verified: BLK 356357296 segment 12671 (1447m, was rearing=t) split at DRM 67565 into 12677 (17m below fall #2) + 12678 (1429m above fall #2, `accessible=FALSE`). Total `rearing_stream` unchanged on HORS (affected segment is edge_type 1250 = Horsefly River construction line, excluded from `rearing_stream` metric). Total `rearing` (broader bucket including 1250) dropped 1.43 km.
+- Phase 3 HARR verified: BLK 356361157 (7 falls between DRMs 16634-29797) — all 7 fall positions now have segment breaks. Rollup diff vs pre-#96 baseline: BT `rearing` -0.63 km, BT `rearing_stream` -0.64 km. Other species/metrics unchanged.
+- Map cache helper `_lnk_map_compare.R` hardened — stale 0-row caches (from cross-WSG pipeline overwrites) now refetch instead of erroring on missing CRS.
+- Phase 4 (4-WSG regression) done — log `data-raw/logs/20260501_29_regress_4wsg_falls_break.txt`. All 4 WSGs show small expected reductions; every delta is negative (segments above falls correctly removed). Total impact: HARR/HORS −1 to −3 km, LFRA −6 km across 7 species, BABL −12 km across 4 species. No catastrophic shifts on any single metric.
+- rtj reply read: `cypher` is shipped (DO droplet snapshot 226891154, reserved IP 24.144.70.121, Tailscale node `cypher`, R+link+fresh+postgis pre-baked). 3-host distributed runs (M4 + M1 + cypher) target ~30 min provincial wall (was 4h 55m single-host). Use for the next big build, not this 4-WSG check.
+- Phase 2/5 done: 2 new unit tests in `test-lnk_pipeline_break.R` (wires falls into source_tables, default break_order includes falls); research doc updated with evidence trace + 4-WSG regression table; DESCRIPTION + NEWS bumped 0.22.0 → 0.23.0.
 
-- **fresh 0.27.1** — validator allows `channel_width_min_bypass` predicate (PR #194 merged)
-- **fresh 0.27.2** — false-start patch (removed `stream_order_max` reference based on misread); superseded by 0.27.3
-- **fresh 0.27.3** — `frs_order_child` derives `stream_order_max` per BLK via CTE (PR #196 merged)
-- **fresh 0.27.4** — validator allows `distance_max` key inside `channel_width_min_bypass` block (PR #197 merged)
+## Session 2026-05-02
 
-### What's staged on link `96-frs-order-child-wire` branch (uncommitted)
-
-- 3 new columns in `dimensions.csv` (both bundles): `rear_stream_order_bypass`, `rear_stream_order_parent_min`, `rear_stream_order_distance_max`
-- `lnk_rules_build` emits all three into `channel_width_min_bypass:` block in rules.yaml
-- `lnk_pipeline_classify` reads the block, calls `fresh::frs_order_child` per species
-- Bundle defaults: `bypass=yes, parent=5, dmax=300` for BT/CH/CO/ST/WCT in both bundles
-- New tests in `test-lnk_rules_build.R` for the new columns
-
-### Calibration runs (HORS BT, m4 + local fwapg)
-
-- `data-raw/logs/20260501_15_preflight_hors_post_272.txt` — 0.27.2 broken predicate, +23.9%
-- `data-raw/logs/20260501_17_preflight_hors_post_273.txt` — 0.27.3 with `stream_order_max`, +13.9%
-- `data-raw/logs/20260501_18_preflight_hors_explicit_child.txt` — child=1 explicit (default-equivalent), +13.9%
-- `data-raw/logs/20260501_19_preflight_hors_dmax_300.txt` — dmax=300 added, **−0.5%**
-- `data-raw/logs/20260501_20_preflight_hors_child35_dmax300.txt` — child=3..5 exploratory, returns to −7.7% baseline
-
-### Maps (HTML snapshots in `data-raw/maps/`)
-
-- `HORS_BT_rearing_BEFORE_158.html` — pre-fix baseline
-- `HORS_BT_rearing_AFTER_158.html` — broken predicate state
-- `HORS_BT_rearing_AFTER_273.html` — `stream_order_max` only
-- `HORS_BT_rearing_AFTER_274_dmax300.html` — calibrated (dmax=300)
-- `HORS_BT_rearing_AFTER_274_child35_dmax300.html` — child=3..5 exploration
-
-`_lnk_map_compare.R` was updated to split layers into `rearing_link_only` / `rearing_bcfp_only` / `rearing_both` toggle-able layers (plus `spawning_link` / `spawning_bcfp`).
-
-### What we relitigated this session that we shouldn't have
-
-The fresh#158 issue body already documented:
-- `stream_order_max` is for direct-child semantics
-- `distance_max` is a parametric flex with whole-segment overshoot trade-off
-- Post-cluster placement is intentional
-- bcfp parity is NOT the goal — link's default bundle should tune from BABL inspection
-
-I rediscovered each of these as if they were new findings. fresh#156 (closed in favor of #158) explicitly rejected the "rule-grammar predicate at classify time" approach with the same analysis we re-did. **Lesson saved to memory** — check originating issue bodies first.
-
-### Parked
-
-Methodology decision pending. Don't merge link `96-frs-order-child-wire`. Don't run 15-WSG. Re-pick when there's bandwidth to either:
-- Inspect the calibration on a wider WSG sample (BABL or LFRA next, per fresh#158)
-- Decide to ship `bypass=no` defaults and keep the infrastructure parametric
-
-### Adjacent finding surfaced this session — [link#96](https://github.com/NewGraphEnvironment/link/issues/96)
-
-While inspecting the HORS BT map, identified a separate bug: `falls` is documented in `lnk_pipeline_break.R:10-13` as part of bcfp's break order but is **not in the implementation's `source_tables` list or `break_order` default**. Result: the FWA stream network is never broken at fall positions. Where two falls sit close together (e.g. HORS BLK 356357296 at DRMs 67524 + 67565, 41m apart), only the one coinciding with another break source (gradient_min, observations) gets segmented. The other fall is invisible to segmentation, producing segments that span the fall and incorrectly classify the upper portion as accessible.
-
-Confirmed pattern on Horsefly River (BT, link-only credit on segment 12671 spanning 1447m through fall #2). Issue filed with full trace evidence at link#96. Not part of `frs_order_child` work — separate, simpler fix (one entry in source_tables + one entry in break_order default + bundle config update).
-
-**Tackle on this branch (96-frs-order-child-wire) before unparking the bypass work.** The fix is small enough that it can land here without expanding scope; the test is re-running HORS BT and confirming 12671 splits at 67565 and the upper portion becomes inaccessible. After confirmation, update `research/bcfishpass_comparison.md` to reflect.
-
-### Next session quick-start
-
-1. Read this file
-2. Read `findings.md`
-3. Read fresh#158 issue body (canonical design)
-4. Apply link#96 fix on this branch first (falls in break_order)
-5. Re-run HORS BT to verify 12671 splits at the fall
-6. Update `research/bcfishpass_comparison.md`
-7. THEN decide on the bypass methodology question
+- Continuing from 2026-05-01 — committed Phase 2/5 (tests + doc + bump), opened PR for #96.

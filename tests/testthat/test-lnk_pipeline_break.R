@@ -186,6 +186,103 @@ test_that("lnk_pipeline_break honors the config break_order", {
   ))
 })
 
+test_that("lnk_pipeline_break wires falls into source_tables (link#96)", {
+  # Regression for the documented-but-unimplemented break source. Before
+  # this fix, falls were loaded into <schema>.falls (used by streams_breaks
+  # for access gating + by prep_natural for obs/habitat lift) but were
+  # never used as a SEGMENTATION break source. Where two falls sat close
+  # together (no other break source between them), the resulting fresh.
+  # streams segment spanned across the second fall, leaving its upper
+  # portion incorrectly classified as accessible. See HORS BLK 356357296
+  # in the link#96 issue body for the evidence trace.
+  cfg_stub <- structure(list(
+    pipeline = list(break_order = c("falls", "observations"))
+  ), class = c("lnk_config", "list"))
+  loaded_stub <- list(
+    wsg_species_presence = data.frame(
+      watershed_group_code = "BULK",
+      bt = "t", ch = "f", cm = "f", co = "f", ct = "f", dv = "f",
+      pk = "f", rb = "f", sk = "f", st = "f", wct = "f",
+      stringsAsFactors = FALSE
+    ),
+    observation_exclusions = NULL
+  )
+
+  called_tables <- character(0)
+  local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) invisible(NULL)
+  )
+  local_mocked_bindings(
+    dbWriteTable = function(...) invisible(NULL),
+    dbGetQuery = function(conn, sql, ...) data.frame(),
+    .package = "DBI"
+  )
+  local_mocked_bindings(
+    frs_break_apply = function(conn, table, breaks, ...) {
+      called_tables <<- c(called_tables, breaks)
+      invisible(NULL)
+    },
+    .package = "fresh"
+  )
+
+  lnk_pipeline_break("mock", aoi = "BULK", cfg = cfg_stub,
+                      loaded = loaded_stub, schema = "w_bulk",
+                      observations = "bcfishobs.observations")
+
+  # falls table is hit before observations per cfg break_order
+  expect_equal(called_tables, c(
+    "w_bulk.falls",
+    "w_bulk.observations_breaks"
+  ))
+})
+
+test_that("lnk_pipeline_break default break_order includes falls (link#96)", {
+  # When cfg$pipeline$break_order is NULL, the function falls back to a
+  # default vector. Falls must appear in that default after gradient_minimal
+  # — matches the docstring's documented order: observations →
+  # gradient_minimal → falls → barriers_definite → habitat_endpoints →
+  # crossings.
+  cfg_stub <- structure(list(pipeline = list()), class = c("lnk_config", "list"))
+  loaded_stub <- list(
+    wsg_species_presence = data.frame(
+      watershed_group_code = "BULK",
+      bt = "t", ch = "f", cm = "f", co = "f", ct = "f", dv = "f",
+      pk = "f", rb = "f", sk = "f", st = "f", wct = "f",
+      stringsAsFactors = FALSE
+    ),
+    observation_exclusions = NULL
+  )
+
+  called_tables <- character(0)
+  local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) invisible(NULL)
+  )
+  local_mocked_bindings(
+    dbWriteTable = function(...) invisible(NULL),
+    dbGetQuery = function(conn, sql, ...) data.frame(),
+    .package = "DBI"
+  )
+  local_mocked_bindings(
+    frs_break_apply = function(conn, table, breaks, ...) {
+      called_tables <<- c(called_tables, breaks)
+      invisible(NULL)
+    },
+    .package = "fresh"
+  )
+
+  lnk_pipeline_break("mock", aoi = "BULK", cfg = cfg_stub,
+                      loaded = loaded_stub, schema = "w_bulk",
+                      observations = "bcfishobs.observations")
+
+  # Default order should hit falls between gradient_minimal and barriers_definite
+  expect_true("w_bulk.falls" %in% called_tables)
+  gm_pos <- match("w_bulk.gradient_barriers_minimal", called_tables)
+  fl_pos <- match("w_bulk.falls", called_tables)
+  bd_pos <- match("w_bulk.barriers_definite", called_tables)
+  expect_true(gm_pos < fl_pos)
+  expect_true(fl_pos < bd_pos)
+})
+
 test_that("lnk_pipeline_break errors on unknown break source name", {
   cfg_stub <- structure(list(
     pipeline = list(break_order = c("observations", "what_is_this"))
