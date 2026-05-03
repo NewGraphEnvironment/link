@@ -21,7 +21,9 @@ suppressPackageStartupMessages({
   library(link); library(fresh); library(dplyr); library(DBI); library(RPostgres)
 })
 
-source("/Users/airvine/Projects/repo/link/data-raw/compare_bcfishpass_wsg.R")
+# Relative — script is run from data-raw/, so this works on every host
+# (M4, M1, cypher) without path patching.
+source("compare_bcfishpass_wsg.R")
 
 cfg    <- lnk_config("bcfishpass")
 loaded <- lnk_load_overrides(cfg)
