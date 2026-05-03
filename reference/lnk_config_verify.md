@@ -79,10 +79,11 @@ the change.
 ``` r
 cfg <- lnk_config("bcfishpass")
 verify <- lnk_config_verify(cfg)
-#> Warning: Config bundle 'bcfishpass' has 3 file(s) drifted from recorded checksum:
+#> Warning: Config bundle 'bcfishpass' has 4 file(s) drifted from recorded checksum:
 #>   - rules.yaml (byte drift)
 #>   - dimensions.csv (byte + shape drift)
 #>   - parameters_fresh.csv (byte drift)
+#>   - overrides/wsg_species_presence.csv (byte + shape drift)
 verify
 #>                                                  file
 #> 1                                          rules.yaml
@@ -116,7 +117,7 @@ verify
 #> 3  sha256:a877ec23b0e0853514d545fbd8b8f218718382dc44a72377ffcc45526e63984e
 #> 4  sha256:cc6aff6448e940613913c2d9dd847db72d6bfb63db8b50ad3293c76ef17c5740
 #> 5  sha256:ad901c57ca42e71e4affffd6e583045a2ce423f15088c211c9c2f72976f5d36a
-#> 6  sha256:3c3dc66d1b9b299d91e73d6edcccb56cc827641be494e26981ed580ff51e15ec
+#> 6  sha256:cd42f2dff62cb76f77f4b055436329a74ba44fe1466dec5d7801aa5221360185
 #> 7  sha256:0c0e97f8f0d4c834837631f68f10aa8fc8f502cad954fd266fe41d4e1f214d10
 #> 8  sha256:9b4929f882ac46e5632bdbe3c587421be42ac31c0005cd2b7e4d1028fa2a47ac
 #> 9  sha256:f76470febe3a4d26e13ada144b594c2571033fa00676b7622f3c628fed21206f
@@ -129,7 +130,7 @@ verify
 #> 3        TRUE
 #> 4       FALSE
 #> 5       FALSE
-#> 6       FALSE
+#> 6        TRUE
 #> 7       FALSE
 #> 8       FALSE
 #> 9       FALSE
@@ -155,7 +156,7 @@ verify
 #> 3  sha256:52dcadd062f584fa7e7828d580fbf6f3dd44261d6a6d37e7b831aa0e0b9be2d3
 #> 4  sha256:35604598f352c0cc958e8330e80627ec65154e4eaba9dbba8cac92c8516706a0
 #> 5  sha256:c0c0c5a6e478bae9d98c0251870fb73ef12ec5033de08589bad08ed03be02a31
-#> 6  sha256:161bef58151083d80bd226022a46aed5a35a5acd1526dfc3deac42cb6ae952fc
+#> 6  sha256:1298cae181b9af892584328d635430224297672a4a0eced4a2dd66d15652128c
 #> 7  sha256:acbddab3bd06ac4790eb129201198e614c1d4c08b83cd18ee94e4cdfafa09ab2
 #> 8  sha256:fb611fc77ebbe15429826d7acfe57d487118d7815dea9b2ad5a3f94f03a487e8
 #> 9  sha256:c2cebcc7398ddd12d0803eefafbe219f3551e6948051f18d89d7984130c1589d
@@ -168,7 +169,7 @@ verify
 #> 3        FALSE   FALSE
 #> 4        FALSE   FALSE
 #> 5        FALSE   FALSE
-#> 6        FALSE   FALSE
+#> 6         TRUE   FALSE
 #> 7        FALSE   FALSE
 #> 8        FALSE   FALSE
 #> 9        FALSE   FALSE
