@@ -164,11 +164,7 @@ lnk_pipeline_break <- function(conn, aoi, cfg, loaded, schema,
   row <- wsg_sp[wsg_sp$watershed_group_code == aoi, ]
   if (nrow(row) == 0) return(character(0))
 
-  spp_cols <- c("bt", "ch", "cm", "co", "ct", "dv",
-                "pk", "rb", "sk", "st", "wct")
-  present <- vapply(spp_cols,
-    function(x) identical(row[[x]], "t"), logical(1))
-  sp <- toupper(spp_cols[present])
+  sp <- .lnk_wsg_species_present(row)
 
   # bcfishfobs records cutthroat as CT, CCT, ACT, or CT/RB — all
   # resolve to the same species in wsg_species_presence.

@@ -60,11 +60,5 @@ lnk_pipeline_species <- function(cfg, loaded, aoi) {
   row <- wsg_sp[wsg_sp$watershed_group_code == aoi, ]
   if (nrow(row) == 0) return(character(0))
 
-  spp_cols <- c("bt", "ch", "cm", "co", "ct", "dv",
-                "pk", "rb", "sk", "st", "wct")
-  present <- vapply(spp_cols,
-    function(x) identical(row[[x]], "t"), logical(1))
-  aoi_species <- toupper(spp_cols[present])
-
-  intersect(configured, aoi_species)
+  intersect(configured, .lnk_wsg_species_present(row))
 }
