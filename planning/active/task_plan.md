@@ -16,50 +16,55 @@ The per-species methodology question — "should default-bundle make some dam cl
 - [x] Source path decision: **DB join via tunnel** (consistent with link#102's resolution; cypher / M4 / M1 all have tunnel access per rtj#82)
 - [x] Verify clean separation — fresh's bundled `falls.csv` has no dam-named rows; CABD's `feature_type` column cleanly partitions waterfalls vs dams
 
-## Phase 2: Source pull as a private helper in `lnk_pipeline_prepare.R`
+## Phase 2: Consume bcfp's pre-built `bcfishpass.dams` via tunnel
 
-Follows the precedent set by `prep_subsurfaceflow` in link 0.19.0 — inline SQL helper, NOT a new exported function. The batch-point-snap-to-FWA pattern exists in bcfp 5+ places (load_dams, load_falls, load_subsurfaceflow, crossings, etc.), but a fresh-side primitive is speculative until a second link consumer materializes. Promote to `frs_point_load_snapped()` later if pattern recurs.
+Re-evaluating the source-pull design: bcfp's tunnel DB already has `bcfishpass.dams` post-CABD-pull and post-4-edit-CSVs (refreshed weekly via db_newgraph cron). Replicating bcfp's `load_dams.sql` locally is unnecessary work for the SRED-reporting use case — the data is the same either way. Trade-off: bcfp owns refresh cadence (weekly is fine for reporting; if we ever need bit-identical control, escalate to the load_dams.sql replication path).
 
-- [ ] Add `.lnk_pipeline_prep_dams(conn, cfg, schema, loaded)` private helper in `R/lnk_pipeline_prepare.R`:
-  - CTE 1: `from cabd.dams left outer join cabd_exclusions on cabd_id where exclusions.cabd_id is null`
-  - CTE 2: lateral snap to `fwa_stream_networks_sp` within 65 m, two paths (with-blkey via xref, without-blkey via spatial nearest)
-  - CTE 3: passability override via `coalesce(updates.passability_status_code, cabd.passability_status_code)`; carry `(dam_name_en, height_m, owner, dam_use, operating_status)`
-  - UNION ALL with `cabd_additions where feature_type = 'dams'` (the 4 US placeholders)
-- [ ] Output: `<schema>.dams` with column set `(dam_id, linear_feature_id, blue_line_key, downstream_route_measure, wscode_ltree, localcode_ltree, distance_to_stream, watershed_group_code, dam_name_en, height_m, owner, dam_use, operating_status, passability_status_code, geom)` — mirrors bcfp's table
-- [ ] Helper docstring is explicit: **NOT used in habitat classification** — data lives in the parallel reporting layer
+Consequences of consume-path:
+
+- No bundle redistribution of the 4 CABD edit CSVs (they're applied bcfp-side, we're downstream)
+- No `cabd.dams` source-pull SQL in link
+- `lnk_pipeline_prepare` accepts an optional `conn_tunnel` arg; helper short-circuits when NULL
+
+Tasks:
+
+- [x] Add optional `conn_tunnel = NULL` arg to `lnk_pipeline_prepare(conn, aoi, cfg, loaded, schema, ...)`
+- [x] Add `.lnk_pipeline_prep_dams(conn, conn_tunnel, aoi, schema, loaded)` private helper in `R/lnk_pipeline_prepare.R`. Implementation pivoted to **replicate `load_dams.sql` against `cabd.dams`** rather than consume bcfp's processed `bcfishpass.dams` (architectural parallelism: link sibling-of-bcfp under CABD, not downstream-of-bcfp).
+- [x] Output: `<schema>.dams` mirroring bcfp's table column set
+- [x] Helper docstring is explicit: **NOT used in habitat classification** — data lives in the parallel reporting layer
+- [x] Wire `conn_tunnel` through `compare_bcfishpass_wsg` — pass it down to `lnk_pipeline_prepare`
 
 ## Phase 3: Edit CSV ingestion via lnk_load_overrides
 
-- [ ] Copy the four CSVs from `bcfishpass/data/cabd_*.csv` into `inst/extdata/configs/{bcfishpass,default}/overrides/`
-- [ ] Add entries to both bundles' `config.yaml::files` block (same redistribution pattern as `user_barriers_definite_control.csv`)
-- [ ] `lnk_load_overrides()` reads them; bundle-config-driven
-- [ ] **Note: same 4 CSVs apply to both falls and dams** — they key on `cabd_id` which spans both tables. Falls are already complete (link#102 closed), so this ingestion exists primarily for dams. If a future re-extract of `falls.csv` from CABD is needed, the same edits apply for free.
+- [x] Copy the four CSVs from `bcfishpass/data/cabd_*.csv` into `inst/extdata/configs/{bcfishpass,default}/overrides/`
+- [x] Add entries to both bundles' `config.yaml::files` block (same redistribution pattern as `user_barriers_definite_control.csv`)
+- [x] `lnk_load_overrides()` reads them; bundle-config-driven
 
 ## Phase 4: Pipeline wiring
 
-- [ ] Wire `lnk_dams_load` into `lnk_pipeline_prepare.R::.lnk_pipeline_prep_load_aux()` (or a sibling helper) — gated on the bundle config declaring CABD dams ingestion
-- [ ] Both `bcfishpass` and `default` bundles ingest — the data is methodology-agnostic at the data layer
-- [ ] **Crucially: the dams data does NOT enter `streams_breaks` and does NOT enter the per-species barrier_overrides path**. This is the load-bearing design choice — habitat classification stays dam-blind, matching bcfp.
+- [x] Wire `.lnk_pipeline_prep_dams` into `lnk_pipeline_prepare.R` as the last phase
+- [x] Both `bcfishpass` and `default` bundles ingest — the data is methodology-agnostic at the data layer
+- [x] **Crucially: the dams data does NOT enter `streams_breaks` and does NOT enter the per-species barrier_overrides path**. Verified via grep + dams-ON/OFF byte-identical regression.
 
 ## Phase 5: Tests
 
-- [ ] Unit test in `tests/testthat/test-lnk_dams_load.R` — SQL emission shape (mocked DB, similar pattern to `test-lnk_pipeline_break.R`)
-- [ ] Confirm `devtools::test()` clean
+- [x] Unit tests in `tests/testthat/test-lnk_pipeline_prepare.R` — `prep_dams` short-circuit on NULL conn_tunnel + load_dams.sql SQL shape (mocked DBI)
+- [x] `devtools::test(filter = "lnk_pipeline_prepare")` clean — 78 PASS, 0 FAIL
 
 ## Phase 6: Verification — prove the data lands without affecting habitat
 
-This is the most important phase. The verification gates closing the issue.
+- [x] LFRA preflight — `<schema>.dams` rowcount = 65 (matches bcfp 65), 59 barriers (matches), 15 named (matches)
+- [x] Stave Falls / Alouette / Ruskin / Coquitlam spot-checks — all 15 named LFRA dams match bcfp tunnel byte-for-byte on `(blue_line_key, downstream_route_measure)` within fp precision (Coquitlam DRM differs by ~0.2mm — lateral-snap fp, not content drift)
+- [x] HARR dams-ON / dams-OFF byte-identical rollup — same HEAD, only `conn_tunnel` differs, byte-identical to fp precision. Confirms parallel-data invariant.
+- [x] Architectural isolation proven via `grep -rn "\.dams\b\|\.cabd_"` — only match is a docstring example in `lnk_source.R`. No break/classify/connect phase reads dam-side tables.
 
-- [ ] Run a single WSG (LFRA — Stave / Alouette / Ruskin live there) post-fix
-- [ ] Query `<schema>.dams` post-pipeline; confirm rowcount > 0
-- [ ] Spot-check named dams appear with correct `(blue_line_key, downstream_route_measure)` against bcfp tunnel — Stave / Alouette / Ruskin / Coquitlam at minimum
-- [ ] Run the 4-WSG regression (HARR / HORS / LFRA / BABL) — both bundle rollups must be **byte-identical to pre-fix baseline**. If they shift even by one row, the dams data is leaking into habitat classification — fix that before closing.
-
-The byte-identical regression is the load-bearing test: dams data in, habitat output unchanged, parallel data layer ready for the consumer side.
+The 4-WSG vs cached-baseline regression initially looked like a fail but was contaminated by #96/#97/31b9 drift relative to a May 1 06:48 cache; HARR dams-ON/OFF on current HEAD is the clean #103-only test.
 
 ## Phase 7: Research doc + ship
 
-- [ ] Update `research/bcfishpass_comparison.md` § "Dams design — much smaller than expected" — note the data is now wired, link's habitat output remains dam-blind by design (matches bcfp), reporting consumers can compose dam awareness on top
+- [x] Update `research/bcfishpass_comparison.md` § "Dams design" — replaced the early "fresh-crossings path" framing with the actual landed implementation
+- [x] NEWS.md 0.24.0 entry
+- [x] DESCRIPTION version bump 0.23.0 → 0.24.0
 - [ ] `/code-check` on staged diff
 - [ ] Atomic commits with PWF checkboxes
 - [ ] PR with `Fixes #103`

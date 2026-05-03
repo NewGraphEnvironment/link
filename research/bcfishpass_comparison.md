@@ -171,27 +171,28 @@ Adding dams + PSCIS to link does **not** change `habitat_linear_<sp>` parity num
 
 If we want a per-segment "potentially accessible to species X" integer code in link analogous to bcfishpass's `access_<sp>` (-9 / 0 / 1 / 2), that's a separate fresh-side concern — fresh's `streams_habitat` already encodes accessibility per segment in the `accessible` column, but the integer-code semantic with the observation-presence dimension is new territory.
 
-## Dams design — much smaller than expected
+## Dams design — parallel reporting dimension (link#103)
 
-Initial plan was: ingest the four CABD CSVs (`cabd_additions`, `cabd_exclusions`, `cabd_blkey_xref`, `cabd_passability_status_updates`) into link, source `cabd.dams` separately, replicate bcfishpass's `load_dams.sql`. Reading the actual bcfishpass code shows this is the wrong path.
+Landed in v0.24.0. link replicates bcfishpass's `load_dams.sql` against the `cabd.dams` source over the db_newgraph tunnel and writes `<schema>.dams` mirroring `bcfishpass.dams` column-for-column. The data is **parallel** to habitat classification: `<schema>.dams` is not consumed by any break / classify / connect phase. SRED-relevant report consumers ("what habitat is upstream of Stave / Alouette / Strathcona / John Hart?") can compose dam-aware accessibility on top; habitat output stays dam-blind by design (matches bcfishpass).
 
-The simpler picture:
+Implementation: `.lnk_pipeline_prep_dams(conn, conn_tunnel, aoi, schema, loaded)` runs as the last phase in `lnk_pipeline_prepare`. Three steps mirror `model/01_access/sql/load_dams.sql`:
 
-- bcfishpass's `barriers_dams` is `SELECT … FROM bcfishpass.crossings WHERE dam_id IS NOT NULL AND barrier_status IN ('BARRIER','POTENTIAL') AND blue_line_key = watershed_key` (`model/01_access/sql/barriers_dams.sql`).
-- `bcfishpass.crossings` is the unified CABD-edited table — built by bcfishpass with all four CABD edit CSVs already applied.
-- `fresh::system.file("extdata", "crossings.csv")` is regenerated from `bcfishpass.crossings` via `fresh/data-raw/bcfishpass_crossings.R`. **CABD edits flow through that source automatically** — nothing for link to ingest.
-- Today fresh's CSV projects only 10 columns; the columns we need (`dam_id`, `stream_crossing_id`, `dam_use`, `wscode_ltree`, `localcode_ltree`, `crossing_feature_type`) are dropped at SELECT time. They exist upstream.
+1. Stage the four CABD edit CSVs (`cabd_exclusions`, `cabd_blkey_xref`, `cabd_passability_status_updates`, `cabd_additions`) from `loaded` into `<schema>.cabd_*`. Both `bcfishpass` and `default` bundles ship these CSVs; they're redistributed from `bcfishpass/data/`.
+2. Pull `cabd.dams` from the tunnel as `<schema>.cabd_dams_raw` (raw upstream — NOT `bcfishpass.dams`, the post-edit derivative). This keeps link architecturally parallel to bcfishpass under CABD rather than dependent on bcfishpass's pipeline.
+3. Apply the four edits + lateral snap (≤65 m to `whse_basemapping.fwa_stream_networks_sp`) + UNION ALL with `cabd_additions WHERE feature_type = 'dams'` (US placeholders). Output: `<schema>.dams` with the same `(dam_id, blue_line_key, downstream_route_measure, watershed_group_code, dam_name_en, height_m, owner, dam_use, operating_status, passability_status_code, geom)` shape bcfishpass produces.
 
-Implication: the dams work splits cleanly into two patches:
+Short-circuits to a `DROP TABLE IF EXISTS <schema>.dams` no-op when `conn_tunnel = NULL` — pipeline callers that don't need dam reporting (e.g. CI without tunnel access) opt out at zero cost.
 
-1. **fresh side** — expand the `SELECT` in `data-raw/bcfishpass_crossings.R` to include `dam_id`, `stream_crossing_id`, `crossing_feature_type`, `dam_use`, `wscode_ltree`, `localcode_ltree`. Regenerate `inst/extdata/crossings.csv`. One-line SELECT change + a regenerate run.
-2. **link side** — once fresh ships the expanded CSV, add `barriers_dams` (and optionally `barriers_pscis` / `barriers_anthropogenic`) as opt-in break sources following the same pattern just landed for subsurfaceflow:
-   - `.lnk_pipeline_prep_dams(conn, schema)` materializes `<schema>.barriers_dams` from `<schema>.crossings WHERE dam_id IS NOT NULL AND barrier_status IN ('BARRIER','POTENTIAL') AND blue_line_key = watershed_key`.
-   - `source_tables[["dams"]] <- paste0(schema, ".barriers_dams")` in `lnk_pipeline_break.R`.
-   - Conditional UNION ALL in `lnk_pipeline_classify_build_breaks` (label `'blocked'`).
-   - `dams` added to `pipeline.break_order` in any config that opts in.
+### Verification
 
-**Reminder of the tier distinction**: dams are anthropogenic — adding them to a config does NOT change `habitat_linear_<sp>` parity numbers (those are natural-tier only). Dams add a new analytical layer for "what's blocked by dams downstream" reports, dam-impact rollups, and any custom config that wants dam-aware accessibility. The bcfishpass-bundle config should NOT add `dams` to break_order, because doing so would diverge from `habitat_linear_<sp>`'s natural-only access semantic.
+- **HARR dams-ON / dams-OFF byte-identical rollup** — same HEAD, only `conn_tunnel` differs, rollup is byte-identical to fp precision. Confirms the parallel-data invariant: `prep_dams` cannot affect habitat output. Static analysis backs this — `grep -rn "\.dams\b\|\.cabd_"` across `R/`, `tests/`, and `inst/` returns one match (a docstring example in `lnk_source.R`); no break / classify / connect phase reads dam-side tables.
+- **LFRA named dams match bcfishpass.dams byte-for-byte** — 65 dams / 59 barriers / 15 named, with Stave Falls Dam (26 m), Alouette Dam (22.5 m), Ruskin Dam (59.4 m), Coquitlam Dam (30.5 m), and Northwest Stave / Upper Stave variants all present at identical `(blue_line_key, downstream_route_measure)` to bcfishpass within fp precision (Coquitlam DRM differs by ~0.2 mm — lateral-snap floating-point, not a content drift).
+
+### Out-of-scope (intentionally)
+
+- **Per-species access gating on dams** — link#83 (consumer-side methodology decision: which dam classes block which species in the default bundle). This issue lands the data only.
+- **WCRP / dam-impact report composition** — downstream consumer work, not a link-package concern.
+- **Source independence from the tunnel** — replicating `cabd.dams` into the s3 fwapg dump is filed as a follow-up under rtj. `cabd.dams` is currently tunnel-only; reactivating link#104 (CABD download path) is one alternative.
 
 ## Correctness bar (historical, retracted)
 

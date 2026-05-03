@@ -26,6 +26,24 @@
 
 **Decision:** source via tunnel-DB join (consistent with link#102 resolution). cypher / M4 / M1 all have tunnel access per rtj#82.
 
+### Phase 2 → 7 implementation
+
+- Pivoted Phase 2 design: replicate `load_dams.sql` against `cabd.dams` source rather than consume bcfp's processed `bcfishpass.dams`. Architectural parallelism — link sibling-of-bcfp under CABD, not downstream of bcfp.
+- `.lnk_pipeline_prep_dams(conn, conn_tunnel, aoi, schema, loaded)` runs as final phase in `lnk_pipeline_prepare`. NULL `conn_tunnel` short-circuits to drop. Wired through `compare_bcfishpass_wsg` (default behavior unchanged).
+- 4 CABD edit CSVs redistributed to both bundles' `overrides/`, declared in `config.yaml::files`, ingested via `lnk_load_overrides()`.
+- Tests: 2 new tests in `test-lnk_pipeline_prepare.R` (NULL short-circuit + load_dams.sql SQL shape), 78 PASS / 0 FAIL.
+
+### Verification (Phase 6) — clean #103-only test
+
+- **LFRA preflight** (`logs/20260502_05_preflight_lfra_dams.txt`): 65 dams / 59 barriers / 15 named in `working_lfra.dams`, all 15 named (Stave Falls, Alouette, Ruskin, Coquitlam, Northwest Stave + Upper Stave variants, Cariboo, Sam Hill, Sparrow, Sharpe, Lamont, Cannell, Alam) match `bcfishpass.dams` on tunnel byte-for-byte within fp precision.
+- **HARR dams-ON / dams-OFF** (`logs/20260502_07_dams_isolation_harr.txt`): same HEAD, same code, only `conn_tunnel` differs → rollup byte-identical to fp precision. Proves architectural isolation: prep_dams cannot affect habitat classification.
+- The 4-WSG regression vs cached baseline (`logs/20260502_06_regress_4wsg_dams_post.txt`) surfaced -1km drift across many rows but the cache was from May 1 06:48 — pre-#96/#97/31b9. Drift was unrelated to #103. The HARR ON/OFF test is the clean replacement.
+
+### Phase 7 docs + version
+
+- `research/bcfishpass_comparison.md` § "Dams design — parallel reporting dimension (link#103)" replaces the early fresh-crossings framing with the landed implementation + verification + out-of-scope list.
+- `NEWS.md` 0.24.0 entry; `DESCRIPTION` 0.23.0 → 0.24.0.
+
 ### Next
 
-Phase 2 — implement `lnk_dams_load(conn, schema, ...)` mirroring bcfp's `load_dams.sql`. Output `<schema>.dams` with `(dam_name_en, height_m, owner, dam_use, operating_status, passability_status_code, geom)` column set. Critical: must NOT enter `streams_breaks` or `barrier_overrides` — verified via byte-identical regression in Phase 6.
+`/code-check` on staged diff → atomic commits with PWF checkboxes → PR with `Fixes #103`.
