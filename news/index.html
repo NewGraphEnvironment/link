@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.24.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.25.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,6 +31,13 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.25.0" id="link-0250">link 0.25.0<a class="anchor" aria-label="anchor" href="#link-0250"></a></h2>
+<p>Closes <a href="https://github.com/NewGraphEnvironment/link/issues/106" class="external-link">#106</a>. Drops the hardcoded species-presence column list in <code>lnk_pipeline_species</code> + <code>lnk_pipeline_break</code> — both now derive the column list from the <code>wsg_species_presence.csv</code> header via the new <code>.lnk_wsg_species_present()</code> helper. Adding a new species column propagates to every callsite without a code edit.</p>
+<ul><li>Adds <code>ko</code> (Kokanee) column to both bundles’ <code>wsg_species_presence.csv</code> with sentinel <code>t</code> for PARS, KOTL, NATR, CARP — interim until upstream <code>bcfishpass.wsg_species_presence</code> ships authoritative coverage (NewGraphEnvironment/bcfishpass#12).</li>
+<li>Adds GR + KO species rows to <code>default/parameters_fresh.csv</code> (already in <code>default/dimensions.csv</code> and <code>rules.yaml</code>).</li>
+<li>New tests assert column-propagation for newly-added species and <code>notes</code>-column ignoring.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.24.0" id="link-0240">link 0.24.0<a class="anchor" aria-label="anchor" href="#link-0240"></a></h2>
 <p>Closes <a href="https://github.com/NewGraphEnvironment/link/issues/103" class="external-link">#103</a>. Ingests CABD dams as a parallel reporting dimension. <code>.lnk_pipeline_prep_dams()</code> replicates bcfishpass’s <code>model/01_access/sql/load_dams.sql</code> against the <code>cabd.dams</code> source over the db_newgraph tunnel and writes <code>&lt;schema&gt;.dams</code> mirroring <code>bcfishpass.dams</code> column-for-column. Both <code>bcfishpass</code> and <code>default</code> bundles ingest — the data is methodology-agnostic at the data layer.</p>
