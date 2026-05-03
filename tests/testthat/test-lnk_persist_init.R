@@ -63,7 +63,7 @@ test_that("lnk_persist_init creates schema + streams + per-species habitat table
   expect_match(joined, "CREATE SCHEMA IF NOT EXISTS fresh")
   expect_match(joined, "CREATE TABLE IF NOT EXISTS fresh\\.streams")
   expect_match(joined, "PRIMARY KEY \\(id_segment, watershed_group_code\\)")
-  expect_match(joined, "geom geometry\\(MultiLineString, 3005\\)")
+  expect_match(joined, "geom geometry\\(MultiLineStringZM, 3005\\)")
 
   # GIST index on geom
   expect_match(joined, "CREATE INDEX IF NOT EXISTS streams_geom_idx ON fresh.streams USING GIST")

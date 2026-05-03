@@ -255,7 +255,7 @@ test_that(".lnk_pipeline_prep_network loads fresh.streams with FWA filters", {
   .lnk_pipeline_prep_network("mock-conn", aoi = "BULK", schema = "w_bulk")
 
   joined <- paste(captured, collapse = "\n")
-  expect_match(joined, "CREATE TABLE fresh.streams")
+  expect_match(joined, "CREATE TABLE w_bulk.streams")
   expect_match(joined, "watershed_group_code = 'BULK'")
   expect_match(joined, "localcode_ltree IS NOT NULL")
   expect_match(joined, "edge_type != 6010")

@@ -100,8 +100,8 @@ lnk_pipeline_connect <- function(conn, aoi, cfg, loaded, schema,
   # compare script. Tracked for export in a fresh follow-up.
   run_conn <- getFromNamespace(".frs_run_connectivity", "fresh")
   run_conn(conn,
-    table = "fresh.streams",
-    habitat = "fresh.streams_habitat",
+    table = paste0(schema, ".streams"),
+    habitat = paste0(schema, ".streams_habitat"),
     species = species,
     params = params,
     params_fresh = loaded$parameters_fresh,

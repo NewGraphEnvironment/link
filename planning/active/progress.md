@@ -32,3 +32,29 @@ Phase 1:
 - Reinstalled package; verified both bundles read `cfg$pipeline$schema = "fresh"` correctly.
 
 Next: Phase 2 — rewire all 12+ `fresh.streams` / `fresh.streams_habitat` / `fresh.streams_breaks` literals across `lnk_pipeline_prepare/break/classify/connect` + `compare_bcfishpass_wsg.R` to write to `working_<aoi>.*`. Add `lnk_pipeline_persist()` that pivots long → wide using `cols_habitat` for the SELECT projection. Wire `lnk_persist_init` into `lnk_pipeline_setup`.
+
+## Session 2026-05-03 (cont. cont.) — Phase 2 + 3 + 5 landed
+
+Phase 2 (rewire + persist helper):
+- Replaced all `fresh.streams` / `fresh.streams_habitat` / `fresh.streams_breaks` literals across `lnk_pipeline_prepare/break/classify/connect` + `compare_bcfishpass_wsg.R` with `paste0(schema, ".streams")` style — schema arg already equals `working_<aoi>` per existing convention.
+- `R/lnk_pipeline_persist.R` — DELETE-WHERE-WSG + INSERT for streams + per-species streams_habitat_<sp>. Long→wide pivot: per-species INSERT filters `working_<aoi>.streams_habitat WHERE species_code = '<sp>'` and projects `cols_habitat` (drops species_code). Idempotent via DELETE keys.
+- Decided AGAINST wiring lnk_persist_init into lnk_pipeline_setup (would pollute its 3-arg interface). compare_bcfishpass_wsg.R orchestrator calls both lnk_persist_init + lnk_pipeline_persist directly after lnk_pipeline_connect. Idempotent CREATE TABLE IF NOT EXISTS makes per-WSG init safe.
+
+Phase 3 (test fixes):
+- `test-lnk_pipeline_prepare.R:258` literal `"CREATE TABLE fresh.streams"` → `"CREATE TABLE w_bulk.streams"`.
+- `test-lnk_pipeline_classify.R:50-51` literal `"fresh.streams_breaks"` → `"w_bulk.streams_breaks"`.
+- 4 new tests in `test-lnk_pipeline_persist.R` — SQL emission shape, DELETE+INSERT pair counts, long→wide pivot, custom schema arg.
+
+Phase 1 fixes from real-world test:
+- `cols_streams` initially had bcfp-aspirational columns (`segmented_stream_id`, `mad_m3s`, `upstream_area_ha`, `stream_order_max`) that don't exist in `working_<aoi>.streams`. Aligned to actual 21-col shape.
+- `geom geometry(MultiLineString, 3005)` failed at INSERT — FWA streams have Z dimension. Fixed to `MultiLineStringZ`. Then failed M dimension. Fixed to `MultiLineStringZM` (XYZM — X, Y, elevation, measure).
+
+Phase 5 verification (LRDO end-to-end):
+- Wall: ~120s (similar to pre-rename 120-160s).
+- `fresh.streams` LRDO rows: 20,473 — matches `working_lrdo.streams` exactly.
+- All 5 active species (CM/CO/PK/SK/ST) — `fresh.streams_habitat_<sp>` rows = 20,473 each, match working filtered-by-species.
+- LRDO SK rollup re-derived from persistent JOIN matches baseline byte-for-byte (spawning=14.58 km, rearing=211.13 km, lake_rearing=4,808.66 ha). Phase 5 PASS.
+
+Tests: 710 PASS / 0 FAIL. Reinstalled package, verified end-to-end.
+
+Next: Phase 4 (`data-raw/run_nge.R` decision: refactor or scope-out) → Phase 6 (trifecta 15-WSG verification — does cross-host clobber happen? does the 232-RDS baseline still match?).

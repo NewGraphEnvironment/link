@@ -538,46 +538,53 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
 }
 
 
-#' Load base segments into fresh.streams with joined + generated columns
+#' Load base segments into <schema>.streams with joined + generated columns
+#'
+#' Per-WSG staging in the `working_<wsg>` schema — `lnk_pipeline_persist()`
+#' upserts from here into the persistent `<persist_schema>.streams` after
+#' classify+connect.
 #' @noRd
 .lnk_pipeline_prep_network <- function(conn, aoi, schema) {
-  .lnk_db_execute(conn, "DROP TABLE IF EXISTS fresh.streams CASCADE")
-  .lnk_db_execute(conn, "DROP TABLE IF EXISTS fresh.streams_habitat CASCADE")
+  streams_tbl <- paste0(schema, ".streams")
+  habitat_tbl <- paste0(schema, ".streams_habitat")
+
+  .lnk_db_execute(conn, sprintf("DROP TABLE IF EXISTS %s CASCADE", streams_tbl))
+  .lnk_db_execute(conn, sprintf("DROP TABLE IF EXISTS %s CASCADE", habitat_tbl))
 
   .lnk_db_execute(conn, sprintf(
-    "CREATE TABLE fresh.streams AS
+    "CREATE TABLE %s AS
      SELECT *
      FROM whse_basemapping.fwa_stream_networks_sp
      WHERE watershed_group_code = %s
        AND localcode_ltree IS NOT NULL
        AND edge_type != 6010
        AND wscode_ltree <@ '999'::ltree IS FALSE",
-    .lnk_quote_literal(aoi)))
+    streams_tbl, .lnk_quote_literal(aoi)))
 
-  fresh::frs_col_join(conn, "fresh.streams",
+  fresh::frs_col_join(conn, streams_tbl,
     from = "whse_basemapping.fwa_stream_networks_channel_width",
     cols = c("channel_width", "channel_width_source"),
     by = "linear_feature_id")
 
-  fresh::frs_col_join(conn, "fresh.streams",
+  fresh::frs_col_join(conn, streams_tbl,
     from = "whse_basemapping.fwa_stream_networks_order_parent",
     cols = "stream_order_parent",
     by = "blue_line_key")
 
-  fresh::frs_col_generate(conn, "fresh.streams")
+  fresh::frs_col_generate(conn, streams_tbl)
 
-  .lnk_db_execute(conn,
-    "ALTER TABLE fresh.streams ADD COLUMN id_segment integer")
-  .lnk_db_execute(conn,
+  .lnk_db_execute(conn, sprintf(
+    "ALTER TABLE %s ADD COLUMN id_segment integer", streams_tbl))
+  .lnk_db_execute(conn, sprintf(
     "WITH numbered AS (
        SELECT ctid, row_number() OVER
          (ORDER BY blue_line_key, downstream_route_measure) AS rn
-       FROM fresh.streams
+       FROM %1$s
      )
-     UPDATE fresh.streams s SET id_segment = numbered.rn
-     FROM numbered WHERE s.ctid = numbered.ctid")
-  .lnk_db_execute(conn,
-    "CREATE UNIQUE INDEX ON fresh.streams (id_segment)")
+     UPDATE %1$s s SET id_segment = numbered.rn
+     FROM numbered WHERE s.ctid = numbered.ctid", streams_tbl))
+  .lnk_db_execute(conn, sprintf(
+    "CREATE UNIQUE INDEX ON %s (id_segment)", streams_tbl))
 
   invisible(NULL)
 }

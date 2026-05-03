@@ -93,8 +93,8 @@ lnk_pipeline_classify <- function(conn, aoi, cfg, loaded, schema,
     rules_yaml = cfg$rules)
 
   fresh::frs_habitat_classify(conn,
-    table = "fresh.streams",
-    to = "fresh.streams_habitat",
+    table = paste0(schema, ".streams"),
+    to = paste0(schema, ".streams_habitat"),
     species = species,
     params = params,
     params_fresh = loaded$parameters_fresh,
@@ -123,8 +123,8 @@ lnk_pipeline_classify <- function(conn, aoi, cfg, loaded, schema,
   if (!is.null(loaded$user_habitat_classification) && apply_overlay) {
     fresh::frs_habitat_overlay(conn,
       from   = paste0(schema, ".user_habitat_classification"),
-      to     = "fresh.streams_habitat",
-      bridge = "fresh.streams",
+      to     = paste0(schema, ".streams_habitat"),
+      bridge = paste0(schema, ".streams"),
       species = species,
       species_col = "species_code",
       habitat_types = c("spawning", "rearing"),
@@ -157,8 +157,8 @@ lnk_pipeline_classify <- function(conn, aoi, cfg, loaded, schema,
       cs_max <- bypass[["stream_order_max"]]
       dmax   <- bypass[["distance_max"]]
       fresh::frs_order_child(conn,
-        table   = "fresh.streams",
-        habitat = "fresh.streams_habitat",
+        table   = paste0(schema, ".streams"),
+        habitat = paste0(schema, ".streams_habitat"),
         species = sp,
         parent_order_min = pom,
         child_order_min = cs_min,
@@ -194,9 +194,10 @@ lnk_pipeline_classify <- function(conn, aoi, cfg, loaded, schema,
     ""
   }
 
-  .lnk_db_execute(conn, "DROP TABLE IF EXISTS fresh.streams_breaks")
   .lnk_db_execute(conn, sprintf(
-    "CREATE TABLE fresh.streams_breaks AS
+    "DROP TABLE IF EXISTS %s.streams_breaks", schema))
+  .lnk_db_execute(conn, sprintf(
+    "CREATE TABLE %s.streams_breaks AS
      SELECT g.blue_line_key,
             round(g.downstream_route_measure) AS downstream_route_measure,
             'gradient_' || lpad(g.gradient_class::text, 4, '0') AS label,
@@ -241,6 +242,7 @@ lnk_pipeline_classify <- function(conn, aoi, cfg, loaded, schema,
        AND c.downstream_route_measure < s.upstream_route_measure
      WHERE s.watershed_group_code = %s
      %s",
+    schema,
     schema, .lnk_quote_literal(aoi),
     schema, .lnk_quote_literal(aoi),
     schema, .lnk_quote_literal(aoi),

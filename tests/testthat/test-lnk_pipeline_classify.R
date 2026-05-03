@@ -47,8 +47,8 @@ test_that(".lnk_pipeline_classify_build_breaks unions all four sources", {
                                         schema = "w_bulk")
 
   joined <- paste(captured, collapse = "\n")
-  expect_match(joined, "DROP TABLE IF EXISTS fresh.streams_breaks")
-  expect_match(joined, "CREATE TABLE fresh.streams_breaks")
+  expect_match(joined, "DROP TABLE IF EXISTS w_bulk.streams_breaks")
+  expect_match(joined, "CREATE TABLE w_bulk.streams_breaks")
   expect_match(joined, "FROM w_bulk.gradient_barriers_raw g")
   expect_match(joined, "FROM w_bulk.falls f")
   expect_match(joined, "FROM w_bulk.barriers_definite d")
