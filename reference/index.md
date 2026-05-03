@@ -20,6 +20,8 @@
   : Match crossing records across data systems
 - [`lnk_override()`](https://newgraphenvironment.github.io/link/reference/lnk_override.md)
   : Validate and apply overrides to a table
+- [`lnk_persist_init()`](https://newgraphenvironment.github.io/link/reference/lnk_persist_init.md)
+  : Initialize persistent province-wide habitat tables
 - [`lnk_pipeline_break()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_break.md)
   : Segment the Stream Network at Configured Break Positions
 - [`lnk_pipeline_classify()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_classify.md)
@@ -28,6 +30,8 @@
   : Apply Rearing-Spawning and Waterbody Connectivity
 - [`lnk_pipeline_load()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_load.md)
   : Load Crossings and Apply Crossing-Level Overrides
+- [`lnk_pipeline_persist()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_persist.md)
+  : Persist per-WSG output into the province-wide habitat tables
 - [`lnk_pipeline_prepare()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_prepare.md)
   : Prepare the Network and Barrier Inputs for a Pipeline Run
 - [`lnk_pipeline_setup()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_setup.md)

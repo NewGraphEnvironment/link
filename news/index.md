@@ -1,5 +1,53 @@
 # Changelog
 
+## link 0.26.0
+
+Closes [\#112](https://github.com/NewGraphEnvironment/link/issues/112).
+Per-WSG output now persists into province-wide `<schema>.streams` +
+`<schema>.streams_habitat_<sp>` tables, mirroring bcfp’s
+`bcfishpass.streams` + `bcfishpass.habitat_linear_<sp>` pattern.
+Queryable across WSGs for cartography, intrinsic-potential maps,
+per-crossing rollups, and methodology comparisons — no more re-running
+232 WSGs to look at one.
+
+- New `lnk_persist_init(conn, cfg, species)` — idempotent
+  `CREATE SCHEMA IF NOT EXISTS` + `CREATE TABLE IF NOT EXISTS` for the
+  persistent tables. DDL driven by `cols_streams` (21 columns mirroring
+  bcfp.streams + link’s `id_segment`) and `cols_habitat` (7 columns:
+  id_segment + watershed_group_code + 5 booleans
+  accessible/spawning/rearing/lake_rearing/wetland_rearing).
+  `geom geometry(MultiLineStringZM, 3005)` — FWA streams are XYZM (X, Y,
+  elevation, measure).
+- New `lnk_pipeline_persist(conn, aoi, cfg, species, schema)` —
+  DELETE-WHERE-WSG + INSERT for streams + per-species streams_habitat\_.
+  Long→wide pivot: per-species INSERT filters
+  `working_<aoi>.streams_habitat WHERE species_code = '<sp>'` and
+  projects `cols_habitat` (drops species_code from SELECT). Idempotent
+  re-runs replace cleanly.
+- Pipeline rewire: per-WSG segment-level data (`streams`,
+  `streams_habitat`, `streams_breaks`) now lives in `working_<aoi>` (the
+  per-WSG schema where every other staging table already lived) instead
+  of the previously-shared `fresh` schema. ~12 hardcoded literals
+  updated across `lnk_pipeline_prepare/break/classify/connect` +
+  `compare_bcfishpass_wsg.R`.
+- New `pipeline.schema` config knob (REQUIRED, default `fresh`) —
+  enables side-by-side bundle compare (`schema: fresh_bcfp` vs
+  `schema: fresh_default`), within-host parallelism
+  (`schema: fresh_w1`/`fresh_w2`), branch isolation, centralized vs
+  distributed write target.
+- `compare_bcfishpass_wsg.R` orchestrator now calls `lnk_persist_init` +
+  `lnk_pipeline_persist` after `lnk_pipeline_connect`.
+- Trifecta provincial run end-to-end (M4 + M1 + cypher, ~2h wall,
+  pg_dump consolidation onto M4): **217 WSGs / 5.3M segments**
+  persistently in `fresh.streams`. 5/5 test WSG rollups byte-identical
+  to pre-#112 baseline (LRDO/SETN/ADMS/BULK/HARR on SK spawn+rear+lake).
+- New tests: `test-lnk_persist_init.R` (28),
+  `test-lnk_pipeline_persist.R` (4). Updated 3 stale literal-string
+  assertions in `test-lnk_pipeline_prepare.R` +
+  `test-lnk_pipeline_classify.R`. Full suite: 710 PASS / 0 FAIL.
+- Removed `data-raw/run_nge.R` — superseded by
+  `compare_bcfishpass_wsg(wsg, lnk_config("default"))`.
+
 ## link 0.25.1
 
 Pre-trifecta config homework — catches staleness in the config layer

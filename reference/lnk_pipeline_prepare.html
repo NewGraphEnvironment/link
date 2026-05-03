@@ -11,7 +11,7 @@ classify, connect) consume:"><meta property="og:image" content="https://newgraph
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.25.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.26.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -50,7 +50,8 @@ evidence and network data that downstream phases (<code><a href="https://rdrr.io
 <span>  <span class="va">cfg</span>,</span>
 <span>  <span class="va">loaded</span>,</span>
 <span>  <span class="va">schema</span>,</span>
-<span>  observations <span class="op">=</span> <span class="st">"bcfishobs.observations"</span></span>
+<span>  observations <span class="op">=</span> <span class="st">"bcfishobs.observations"</span>,</span>
+<span>  conn_tunnel <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -87,6 +88,16 @@ call <code><a href="lnk_pipeline_setup.html">lnk_pipeline_setup()</a></code> fir
 used for building barrier overrides. Default
 <code>"bcfishobs.observations"</code> — matches bcfishpass's reference data
 on both M4 and M1 fwapg instances (see <code>rtj/docs/distributed-fwapg.md</code>).</p></dd>
+
+
+<dt id="arg-conn-tunnel">conn_tunnel<a class="anchor" aria-label="anchor" href="#arg-conn-tunnel"></a></dt>
+<dd><p>A <a href="https://dbi.r-dbi.org/reference/DBIConnection-class.html" class="external-link">DBI::DBIConnection</a> object pointed at
+<code>db_newgraph</code> (the tunnel-DB carrying bcfp's pre-built tables).
+Optional. When supplied, <code>&lt;schema&gt;.dams</code> is populated from
+<code>bcfishpass.dams</code> filtered to the AOI — parallel reporting layer
+for downstream consumers, NOT consumed by habitat classification.
+When <code>NULL</code>, any existing <code>&lt;schema&gt;.dams</code> is dropped and the dams
+step is a no-op.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -126,6 +137,9 @@ per-model pre/post minimal reduction</p></li>
 <li><p><code>&lt;schema&gt;.gradient_barriers_minimal</code> (union of minimal positions)</p></li>
 <li><p><code>fresh.streams</code> (base segments — not namespaced by AOI; fresh
 owns its output schema)</p></li>
+<li><p><code>&lt;schema&gt;.dams</code> (only when <code>conn_tunnel</code> is supplied) — pulled
+from <code>bcfishpass.dams</code> filtered to AOI. Parallel reporting layer;
+NOT consumed by habitat classification.</p></li>
 </ul></div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

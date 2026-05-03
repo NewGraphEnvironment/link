@@ -14,7 +14,8 @@ lnk_pipeline_prepare(
   cfg,
   loaded,
   schema,
-  observations = "bcfishobs.observations"
+  observations = "bcfishobs.observations",
+  conn_tunnel = NULL
 )
 ```
 
@@ -55,6 +56,17 @@ lnk_pipeline_prepare(
   barrier overrides. Default `"bcfishobs.observations"` — matches
   bcfishpass's reference data on both M4 and M1 fwapg instances (see
   `rtj/docs/distributed-fwapg.md`).
+
+- conn_tunnel:
+
+  A
+  [DBI::DBIConnection](https://dbi.r-dbi.org/reference/DBIConnection-class.html)
+  object pointed at `db_newgraph` (the tunnel-DB carrying bcfp's
+  pre-built tables). Optional. When supplied, `<schema>.dams` is
+  populated from `bcfishpass.dams` filtered to the AOI — parallel
+  reporting layer for downstream consumers, NOT consumed by habitat
+  classification. When `NULL`, any existing `<schema>.dams` is dropped
+  and the dams step is a no-op.
 
 ## Value
 
@@ -108,6 +120,10 @@ Writes to (under the caller's working schema unless noted):
 
 - `fresh.streams` (base segments — not namespaced by AOI; fresh owns its
   output schema)
+
+- `<schema>.dams` (only when `conn_tunnel` is supplied) — pulled from
+  `bcfishpass.dams` filtered to AOI. Parallel reporting layer; NOT
+  consumed by habitat classification.
 
 ## See also
 

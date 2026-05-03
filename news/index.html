@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.25.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.26.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,6 +31,19 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.26.0" id="link-0260">link 0.26.0<a class="anchor" aria-label="anchor" href="#link-0260"></a></h2>
+<p>Closes <a href="https://github.com/NewGraphEnvironment/link/issues/112" class="external-link">#112</a>. Per-WSG output now persists into province-wide <code>&lt;schema&gt;.streams</code> + <code>&lt;schema&gt;.streams_habitat_&lt;sp&gt;</code> tables, mirroring bcfp’s <code>bcfishpass.streams</code> + <code>bcfishpass.habitat_linear_&lt;sp&gt;</code> pattern. Queryable across WSGs for cartography, intrinsic-potential maps, per-crossing rollups, and methodology comparisons — no more re-running 232 WSGs to look at one.</p>
+<ul><li>New <code>lnk_persist_init(conn, cfg, species)</code> — idempotent <code>CREATE SCHEMA IF NOT EXISTS</code> + <code>CREATE TABLE IF NOT EXISTS</code> for the persistent tables. DDL driven by <code>cols_streams</code> (21 columns mirroring bcfp.streams + link’s <code>id_segment</code>) and <code>cols_habitat</code> (7 columns: id_segment + watershed_group_code + 5 booleans accessible/spawning/rearing/lake_rearing/wetland_rearing). <code>geom geometry(MultiLineStringZM, 3005)</code> — FWA streams are XYZM (X, Y, elevation, measure).</li>
+<li>New <code>lnk_pipeline_persist(conn, aoi, cfg, species, schema)</code> — DELETE-WHERE-WSG + INSERT for streams + per-species streams_habitat_<sp>. Long→wide pivot: per-species INSERT filters <code>working_&lt;aoi&gt;.streams_habitat WHERE species_code = '&lt;sp&gt;'</code> and projects <code>cols_habitat</code> (drops species_code from SELECT). Idempotent re-runs replace cleanly.</sp></li>
+<li>Pipeline rewire: per-WSG segment-level data (<code>streams</code>, <code>streams_habitat</code>, <code>streams_breaks</code>) now lives in <code>working_&lt;aoi&gt;</code> (the per-WSG schema where every other staging table already lived) instead of the previously-shared <code>fresh</code> schema. ~12 hardcoded literals updated across <code>lnk_pipeline_prepare/break/classify/connect</code> + <code>compare_bcfishpass_wsg.R</code>.</li>
+<li>New <code>pipeline.schema</code> config knob (REQUIRED, default <code>fresh</code>) — enables side-by-side bundle compare (<code>schema: fresh_bcfp</code> vs <code>schema: fresh_default</code>), within-host parallelism (<code>schema: fresh_w1</code>/<code>fresh_w2</code>), branch isolation, centralized vs distributed write target.</li>
+<li>
+<code>compare_bcfishpass_wsg.R</code> orchestrator now calls <code>lnk_persist_init</code> + <code>lnk_pipeline_persist</code> after <code>lnk_pipeline_connect</code>.</li>
+<li>Trifecta provincial run end-to-end (M4 + M1 + cypher, ~2h wall, pg_dump consolidation onto M4): <strong>217 WSGs / 5.3M segments</strong> persistently in <code>fresh.streams</code>. 5/5 test WSG rollups byte-identical to pre-#112 baseline (LRDO/SETN/ADMS/BULK/HARR on SK spawn+rear+lake).</li>
+<li>New tests: <code>test-lnk_persist_init.R</code> (28), <code>test-lnk_pipeline_persist.R</code> (4). Updated 3 stale literal-string assertions in <code>test-lnk_pipeline_prepare.R</code> + <code>test-lnk_pipeline_classify.R</code>. Full suite: 710 PASS / 0 FAIL.</li>
+<li>Removed <code>data-raw/run_nge.R</code> — superseded by <code>compare_bcfishpass_wsg(wsg, lnk_config("default"))</code>.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.25.1" id="link-0251">link 0.25.1<a class="anchor" aria-label="anchor" href="#link-0251"></a></h2>
 <p>Pre-trifecta config homework — catches staleness in the config layer before the 3-host distributed run, so we’re not chasing ghosts later.</p>

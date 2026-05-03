@@ -61,8 +61,8 @@ lnk_pipeline_break(
 ## Details
 
 The break-source order matters. bcfishpass processes: observations →
-gradient_minimal → barriers_definite → habitat_endpoints → crossings.
-This order is encoded in the bundled bcfishpass config
+gradient_minimal → falls → barriers_definite → habitat_endpoints →
+crossings. This order is encoded in the bundled bcfishpass config
 (`cfg$pipeline$break_order`) and is the default when the config does not
 specify one.
 
@@ -76,6 +76,7 @@ segmentation and access-gating from that source.
 | name | source table | role | classify label |
 | `observations` | `<schema>.observations_breaks` | fish observations from `bcfishobs.observations`, WSG- and species-filtered, exclusions applied | (informational; not a barrier) |
 | `gradient_minimal` | `<schema>.gradient_barriers_minimal` | minimal-reduced gradient barriers (per-model 15/20/25/30%) | classify uses the FULL set with `gradient_<NNNN>` labels |
+| `falls` | `<schema>.falls` | natural waterfalls from `whse_basemapping.fwa_obstacles_sp` (loaded by `prep_load_aux`); each fall is its own barrier (NOT minimal-reduced) | `blocked` |
 | `barriers_definite` | `<schema>.barriers_definite` | `user_barriers_definite.csv` for the AOI | `blocked` |
 | `subsurfaceflow` | `<schema>.barriers_subsurfaceflow` | FWA `edge_type IN (1410, 1425)` start points; honours `user_barriers_definite_control`. Opt-in (only built when listed) | `blocked` |
 | `habitat_endpoints` | `<schema>.habitat_endpoints` | DRM and URM from `user_habitat_classification.csv` | (segmentation only; not a barrier) |
