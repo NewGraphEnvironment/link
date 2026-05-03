@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.25.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.25.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,6 +31,18 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.25.1" id="link-0251">link 0.25.1<a class="anchor" aria-label="anchor" href="#link-0251"></a></h2>
+<p>Pre-trifecta config homework — catches staleness in the config layer before the 3-host distributed run, so we’re not chasing ghosts later.</p>
+<ul><li>Both bundles’ <code>rules.yaml</code> regenerated via <code><a href="../reference/lnk_rules_build.html">lnk_rules_build()</a></code> (date-stamp diff only — semantically identical to what was committed).</li>
+<li>
+<code>provenance:</code> checksums recomputed in both <code>config.yaml</code> for the 4 files modified across v0.21–v0.25 (rules.yaml, dimensions.csv, parameters_fresh.csv, overrides/wsg_species_presence.csv). <code>lnk_config_verify</code> now reports drifted = 0 / 12 for both bundles.</li>
+<li>Closes <a href="https://github.com/NewGraphEnvironment/link/issues/108" class="external-link">#108</a> — <code>compare_bcfishpass_wsg</code> returns <code>bcfishpass_value = NA</code> (not 0) when bcfp doesn’t model a species. Distinguishes “real measured zero” from “not modelled by bcfp”; <code>diff_pct</code> cleanly resolves to NA. PARS run proves GR / KO / RB classify end-to-end on the default bundle (KO 377 ha lake-rearing, RB 1,839 ha lake + 7,796 ha wetland, GR 1,566 ha lake).</li>
+<li>
+<code>compare_bcfishpass_wsg</code> adds a <code>species</code> filter parameter — pass <code>c("BT","CH",…)</code> to drop GR/KO/RB from the rollup entirely.</li>
+<li>4 stale tests in <code>test-lnk_rules_build.R</code> updated for the <code>stream_order</code> → <code>stream_order_min</code>/<code>stream_order_max</code> rename (fresh#198) and the per-species <code>in_waterbody</code> semantics. Full suite: 668 PASS / 0 FAIL.</li>
+<li>New <code>data-raw/audit_configs.R</code> reports drift across all layers — re-runnable before any trifecta or provincial run.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.25.0" id="link-0250">link 0.25.0<a class="anchor" aria-label="anchor" href="#link-0250"></a></h2>
 <p>Closes <a href="https://github.com/NewGraphEnvironment/link/issues/106" class="external-link">#106</a>. Drops the hardcoded species-presence column list in <code>lnk_pipeline_species</code> + <code>lnk_pipeline_break</code> — both now derive the column list from the <code>wsg_species_presence.csv</code> header via the new <code>.lnk_wsg_species_present()</code> helper. Adding a new species column propagates to every callsite without a code edit.</p>

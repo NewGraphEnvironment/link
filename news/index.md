@@ -1,5 +1,33 @@
 # Changelog
 
+## link 0.25.1
+
+Pre-trifecta config homework — catches staleness in the config layer
+before the 3-host distributed run, so we’re not chasing ghosts later.
+
+- Both bundles’ `rules.yaml` regenerated via
+  [`lnk_rules_build()`](https://newgraphenvironment.github.io/link/reference/lnk_rules_build.md)
+  (date-stamp diff only — semantically identical to what was committed).
+- `provenance:` checksums recomputed in both `config.yaml` for the 4
+  files modified across v0.21–v0.25 (rules.yaml, dimensions.csv,
+  parameters_fresh.csv, overrides/wsg_species_presence.csv).
+  `lnk_config_verify` now reports drifted = 0 / 12 for both bundles.
+- Closes [\#108](https://github.com/NewGraphEnvironment/link/issues/108)
+  — `compare_bcfishpass_wsg` returns `bcfishpass_value = NA` (not 0)
+  when bcfp doesn’t model a species. Distinguishes “real measured zero”
+  from “not modelled by bcfp”; `diff_pct` cleanly resolves to NA. PARS
+  run proves GR / KO / RB classify end-to-end on the default bundle (KO
+  377 ha lake-rearing, RB 1,839 ha lake + 7,796 ha wetland, GR 1,566 ha
+  lake).
+- `compare_bcfishpass_wsg` adds a `species` filter parameter — pass
+  `c("BT","CH",…)` to drop GR/KO/RB from the rollup entirely.
+- 4 stale tests in `test-lnk_rules_build.R` updated for the
+  `stream_order` → `stream_order_min`/`stream_order_max` rename
+  (fresh#198) and the per-species `in_waterbody` semantics. Full suite:
+  668 PASS / 0 FAIL.
+- New `data-raw/audit_configs.R` reports drift across all layers —
+  re-runnable before any trifecta or provincial run.
+
 ## link 0.25.0
 
 Closes [\#106](https://github.com/NewGraphEnvironment/link/issues/106).
