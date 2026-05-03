@@ -120,3 +120,21 @@
   on.exit(DBI::dbClearResult(res))
   DBI::dbColumnInfo(res)$name
 }
+
+
+#' Species codes flagged present in a wsg_species_presence row.
+#'
+#' Treats every column except `watershed_group_code` and `notes` as a
+#' species presence flag. Returns uppercased codes for cells equal to
+#' the literal string `"t"`.
+#'
+#' Driven by the CSV header rather than a hardcoded vector so adding a
+#' new species column (e.g. `ko`) propagates to every callsite without
+#' a code edit. See link#106.
+#' @noRd
+.lnk_wsg_species_present <- function(row) {
+  spp_cols <- setdiff(names(row), c("watershed_group_code", "notes"))
+  present <- vapply(spp_cols,
+    function(x) identical(row[[x]], "t"), logical(1))
+  toupper(spp_cols[present])
+}

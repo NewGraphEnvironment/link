@@ -33,6 +33,41 @@ test_that("lnk_pipeline_species intersects cfg$species with AOI presence", {
                    c("BT", "WCT"))
 })
 
+test_that("lnk_pipeline_species picks up species columns added to the CSV (link#106)", {
+  # Drives the column list from the CSV header — adding a new species
+  # (gr, ko) propagates without a code edit.
+  cfg_stub <- structure(list(
+    species = c("BT", "GR", "KO", "ST")
+  ), class = c("lnk_config", "list"))
+  loaded_stub <- list(
+    wsg_species_presence = data.frame(
+      watershed_group_code = "PARS",
+      bt = "t", ch = "f", cm = "f", co = "f", ct = "f", dv = "f",
+      gr = "t", ko = "t",
+      pk = "f", rb = "f", sk = "f", st = "f", wct = "f",
+      stringsAsFactors = FALSE
+    )
+  )
+  expect_setequal(lnk_pipeline_species(cfg_stub, loaded_stub, "PARS"),
+                   c("BT", "GR", "KO"))
+})
+
+test_that("lnk_pipeline_species ignores notes column", {
+  cfg_stub <- structure(list(
+    species = c("BT")
+  ), class = c("lnk_config", "list"))
+  loaded_stub <- list(
+    wsg_species_presence = data.frame(
+      watershed_group_code = "PARS",
+      bt = "t",
+      notes = "t",  # would falsely register as a species under naive logic
+      stringsAsFactors = FALSE
+    )
+  )
+  expect_setequal(lnk_pipeline_species(cfg_stub, loaded_stub, "PARS"),
+                   c("BT"))
+})
+
 test_that("lnk_pipeline_species returns empty when AOI not in WSG table", {
   cfg_stub <- structure(list(
     species = c("BT", "CH")
