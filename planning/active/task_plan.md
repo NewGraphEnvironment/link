@@ -8,12 +8,13 @@ So this issue is **not a habitat-parity gap** — fixing it will not close any r
 
 The per-species methodology question — "should default-bundle make some dam classes block which species?" — is **separate** and tracked at link#83. This issue is purely about getting the data in. link#83 is the consumer-side question.
 
-## Phase 1: Detective work — confirm the data shape on the bcfp side
+## Phase 1: Detective work — confirm the data shape on the bcfp side ✓
 
-- [ ] Query `cabd.dams` over the tunnel to bcfp — count, top-25 WSGs, verify named dams (Stave / Alouette / Strathcona / John Hart / Coquitlam etc. all present)
-- [ ] Compare to `bcfishpass.dams` (post-edits) — confirm the 4 edit CSVs are correctly applied; what fraction of CABD rows are dropped/modified/added
-- [ ] Decide source path — DB join via tunnel (matches link#102's resolution; see findings.md for context). Document the choice
-- [ ] Check fresh's bundled data: does `falls.csv` accidentally include any dam features? Confirm clean separation
+- [x] Query `cabd.dams` over the tunnel — **2,594 raw rows, 2,478 as barrier (passability_status_code=1)**
+- [x] Compare to `bcfishpass.dams` (post-edits) — **2,559 rows, 2,441 as barrier**. Net delta ≈ 35 (12 exclusions + snap-failures, partially offset by 4 US additions). Edit layer applies cleanly.
+- [x] Verify named dams present in bcfp output — confirmed: John Hart, Ladore Falls, Strathcona (CAMB), Mica (CLRH), Hugh Keenleyside (LARL), Alouette, Coquitlam, Stave Falls, Ruskin (LFRA), Revelstoke (REVL), Jordan Diversion (SANJ), and others. Heights 1.6–243 m, mostly Hydroelectricity. All `passability_status_code=1` (treated as barriers in CABD).
+- [x] Source path decision: **DB join via tunnel** (consistent with link#102's resolution; cypher / M4 / M1 all have tunnel access per rtj#82)
+- [x] Verify clean separation — fresh's bundled `falls.csv` has no dam-named rows; CABD's `feature_type` column cleanly partitions waterfalls vs dams
 
 ## Phase 2: Source pull infrastructure
 
