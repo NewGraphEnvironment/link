@@ -1,0 +1,7 @@
+## Outcome
+
+Per-WSG segment-level habitat data now persists into province-wide `fresh.streams` + `fresh.streams_habitat_<sp>` (one per species, wide-per-species, mirroring bcfp's pattern). Provincial trifecta run (M4 + M1 + cypher, 2h03m wall) + `pg_dump`-based consolidation onto M4 lands **217 WSGs / 5,323,387 segments** queryable in PostGIS. 5/5 spot-check WSGs (LRDO/SETN/ADMS/BULK/HARR) byte-identical to pre-#112 baseline rollups. Per-WSG staging moved to `working_<wsg>` schema; previously-shared `fresh.streams` clobber-on-rerun is gone. New `pipeline.schema` config knob unlocks side-by-side bundle compares + within-host parallelism. New `lnk_persist_init()` + `lnk_pipeline_persist()` helpers driven by `cols_streams` + `cols_habitat` named-vector abstractions (single source of truth shared between DDL and INSERT projection). Bumped to v0.26.0 — minor, new persistence capability.
+
+Notable surprises caught + fixed mid-implementation: (1) initial `cols_streams` had bcfp-aspirational columns (`segmented_stream_id`, `mad_m3s`) that don't exist on link's working table — aligned to actual 21-col shape; (2) FWA stream geoms are XYZM (4D), not 2D — DDL fixed to `geometry(MultiLineStringZM, 3005)`; (3) first provincial attempt was a 6-second no-op due to `run_provincial_parity.R`'s resume-safe cache shadowing the Phase 0 baselines — moved baselines to `data-raw/logs/baseline_pre_112/` (link#110 tracks the cache-key gap).
+
+Closed by: commit `d481f36` / PR #113 / v0.26.0
