@@ -1,3 +1,11 @@
+# link 0.25.0
+
+Closes [#106](https://github.com/NewGraphEnvironment/link/issues/106). Drops the hardcoded species-presence column list in `lnk_pipeline_species` + `lnk_pipeline_break` — both now derive the column list from the `wsg_species_presence.csv` header via the new `.lnk_wsg_species_present()` helper. Adding a new species column propagates to every callsite without a code edit.
+
+- Adds `ko` (Kokanee) column to both bundles' `wsg_species_presence.csv` with sentinel `t` for PARS, KOTL, NATR, CARP — interim until upstream `bcfishpass.wsg_species_presence` ships authoritative coverage (NewGraphEnvironment/bcfishpass#12).
+- Adds GR + KO species rows to `default/parameters_fresh.csv` (already in `default/dimensions.csv` and `rules.yaml`).
+- New tests assert column-propagation for newly-added species and `notes`-column ignoring.
+
 # link 0.24.0
 
 Closes [#103](https://github.com/NewGraphEnvironment/link/issues/103). Ingests CABD dams as a parallel reporting dimension. `.lnk_pipeline_prep_dams()` replicates bcfishpass's `model/01_access/sql/load_dams.sql` against the `cabd.dams` source over the db_newgraph tunnel and writes `<schema>.dams` mirroring `bcfishpass.dams` column-for-column. Both `bcfishpass` and `default` bundles ingest — the data is methodology-agnostic at the data layer.
