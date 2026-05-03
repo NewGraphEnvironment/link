@@ -1,5 +1,38 @@
 # Changelog
 
+## link 0.24.0
+
+Closes [\#103](https://github.com/NewGraphEnvironment/link/issues/103).
+Ingests CABD dams as a parallel reporting dimension.
+`.lnk_pipeline_prep_dams()` replicates bcfishpass’s
+`model/01_access/sql/load_dams.sql` against the `cabd.dams` source over
+the db_newgraph tunnel and writes `<schema>.dams` mirroring
+`bcfishpass.dams` column-for-column. Both `bcfishpass` and `default`
+bundles ingest — the data is methodology-agnostic at the data layer.
+
+- New optional `conn_tunnel = NULL` arg to
+  [`lnk_pipeline_prepare()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_prepare.md).
+  When NULL, `prep_dams` short-circuits to
+  `DROP TABLE IF EXISTS <schema>.dams` — zero-cost opt-out for CI /
+  non-reporting workflows.
+- Four CABD edit CSVs (`cabd_exclusions`, `cabd_blkey_xref`,
+  `cabd_passability_status_updates`, `cabd_additions`) ship in both
+  bundles’ `overrides/` and are loaded through
+  [`lnk_load_overrides()`](https://newgraphenvironment.github.io/link/reference/lnk_load_overrides.md)
+  like any other override.
+- **Habitat output is unchanged.** `<schema>.dams` and `<schema>.cabd_*`
+  are not consumed by any break / classify / connect phase. HARR dams-ON
+  / dams-OFF rollup is byte-identical to fp precision; confirms the
+  parallel-data invariant.
+- LFRA verification: 65 dams / 59 barriers / 15 named, with Stave Falls
+  (26 m), Alouette (22.5 m), Ruskin (59.4 m), Coquitlam (30.5 m),
+  Northwest Stave + Upper Stave variants all present at the same
+  `(blue_line_key, downstream_route_measure)` as `bcfishpass.dams`
+  within fp precision.
+- Per-species methodology — “should some dam classes block which species
+  in the default bundle?” — is intentionally out of scope; tracked at
+  [\#83](https://github.com/NewGraphEnvironment/link/issues/83).
+
 ## link 0.23.0
 
 Closes [\#96](https://github.com/NewGraphEnvironment/link/issues/96).

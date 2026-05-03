@@ -37,6 +37,7 @@ Returned list keys match the entry keys in `cfg$files` exactly
 ``` r
 cfg <- lnk_config("bcfishpass")
 loaded <- lnk_load_overrides(cfg)
+#> Warning: incomplete final line found by readTableHeader on '/home/runner/work/_temp/Library/link/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
 names(loaded)
 #>  [1] "parameters_fresh"                    
 #>  [2] "user_habitat_classification"         
@@ -48,6 +49,10 @@ names(loaded)
 #>  [8] "user_barriers_definite"              
 #>  [9] "user_barriers_definite_control"      
 #> [10] "user_crossings_misc"                 
+#> [11] "cabd_exclusions"                     
+#> [12] "cabd_blkey_xref"                     
+#> [13] "cabd_passability_status_updates"     
+#> [14] "cabd_additions"                      
 head(loaded$user_habitat_classification)
 #> # A tibble: 6 × 11
 #>   blue_line_key downstream_route_measure upstream_route_measure

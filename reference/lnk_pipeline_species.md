@@ -71,6 +71,7 @@ Other pipeline:
 ``` r
 cfg    <- lnk_config("bcfishpass")
 loaded <- lnk_load_overrides(cfg)
+#> Warning: incomplete final line found by readTableHeader on '/home/runner/work/_temp/Library/link/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
 lnk_pipeline_species(cfg, loaded, "BULK")
 #> [1] "BT" "CH" "CO" "PK" "SK" "ST"
 lnk_pipeline_species(cfg, loaded, "ADMS")

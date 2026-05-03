@@ -100,6 +100,10 @@ names(cfg$files)
 #>  [8] "user_barriers_definite"              
 #>  [9] "user_barriers_definite_control"      
 #> [10] "user_crossings_misc"                 
+#> [11] "cabd_exclusions"                     
+#> [12] "cabd_blkey_xref"                     
+#> [13] "cabd_passability_status_updates"     
+#> [14] "cabd_additions"                      
 cfg$files$user_habitat_classification
 #> $source
 #> [1] "bcfp"

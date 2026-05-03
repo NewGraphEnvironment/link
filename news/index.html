@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.23.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.24.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,6 +31,16 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.24.0" id="link-0240">link 0.24.0<a class="anchor" aria-label="anchor" href="#link-0240"></a></h2>
+<p>Closes <a href="https://github.com/NewGraphEnvironment/link/issues/103" class="external-link">#103</a>. Ingests CABD dams as a parallel reporting dimension. <code>.lnk_pipeline_prep_dams()</code> replicates bcfishpass’s <code>model/01_access/sql/load_dams.sql</code> against the <code>cabd.dams</code> source over the db_newgraph tunnel and writes <code>&lt;schema&gt;.dams</code> mirroring <code>bcfishpass.dams</code> column-for-column. Both <code>bcfishpass</code> and <code>default</code> bundles ingest — the data is methodology-agnostic at the data layer.</p>
+<ul><li>New optional <code>conn_tunnel = NULL</code> arg to <code><a href="../reference/lnk_pipeline_prepare.html">lnk_pipeline_prepare()</a></code>. When NULL, <code>prep_dams</code> short-circuits to <code>DROP TABLE IF EXISTS &lt;schema&gt;.dams</code> — zero-cost opt-out for CI / non-reporting workflows.</li>
+<li>Four CABD edit CSVs (<code>cabd_exclusions</code>, <code>cabd_blkey_xref</code>, <code>cabd_passability_status_updates</code>, <code>cabd_additions</code>) ship in both bundles’ <code>overrides/</code> and are loaded through <code><a href="../reference/lnk_load_overrides.html">lnk_load_overrides()</a></code> like any other override.</li>
+<li>
+<strong>Habitat output is unchanged.</strong> <code>&lt;schema&gt;.dams</code> and <code>&lt;schema&gt;.cabd_*</code> are not consumed by any break / classify / connect phase. HARR dams-ON / dams-OFF rollup is byte-identical to fp precision; confirms the parallel-data invariant.</li>
+<li>LFRA verification: 65 dams / 59 barriers / 15 named, with Stave Falls (26 m), Alouette (22.5 m), Ruskin (59.4 m), Coquitlam (30.5 m), Northwest Stave + Upper Stave variants all present at the same <code>(blue_line_key, downstream_route_measure)</code> as <code>bcfishpass.dams</code> within fp precision.</li>
+<li>Per-species methodology — “should some dam classes block which species in the default bundle?” — is intentionally out of scope; tracked at <a href="https://github.com/NewGraphEnvironment/link/issues/83" class="external-link">#83</a>.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.23.0" id="link-0230">link 0.23.0<a class="anchor" aria-label="anchor" href="#link-0230"></a></h2>
 <p>Closes <a href="https://github.com/NewGraphEnvironment/link/issues/96" class="external-link">#96</a>. <code>falls</code> added as a segmentation break source — the FWA stream network is now broken at every fall position. Previously the <code>&lt;schema&gt;.falls</code> table was loaded and used for access gating + obs/habitat lift but <strong>not</strong> for segmentation, so close-paired falls (no other break source between them) produced segments that spanned the second fall and incorrectly classified its upper portion as accessible.</p>
