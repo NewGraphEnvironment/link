@@ -1,63 +1,136 @@
 # Task: Persistent province-wide habitat tables (#112)
 
-`fresh.streams` and `fresh.streams_habitat_<sp>` become persistent + accumulating WSG-by-WSG, mirroring bcfp's `bcfishpass.streams` + `bcfishpass.habitat_linear_<sp>` pattern. Per-WSG staging moves to `working_<wsg>` schema. `pipeline.schema` config knob threaded through.
+`fresh.streams` and `fresh.streams_habitat_<sp>` become persistent + accumulating WSG-by-WSG, mirroring bcfp's `bcfishpass.streams` + `bcfishpass.habitat_linear_<sp>`. Per-WSG staging moves to `working_<wsg>` schema. `pipeline.schema` config knob threaded through.
 
-## Phase 1: Parameterize link's table-name choice
+## Locked design decisions
 
-- [ ] Add `pipeline.schema` field to both `inst/extdata/configs/{bcfishpass,default}/config.yaml`
-- [ ] Add `.lnk_table_names(cfg)` private helper in `R/utils.R` (or new `R/lnk_table_names.R`) — returns named list with `streams` + `streams_habitat(sp)` constructors
-- [ ] Validate cfg contract — add `cfg$pipeline$schema` non-empty check in `lnk_config()` schema validation; error clearly when missing
-- [ ] Tests for `.lnk_table_names()` — both bundles, plus a fake cfg with custom schema
+| | |
+|---|---|
+| Schema value (both bundles) | `fresh` — runs are sequential today; if/when we run bundles side-by-side later, switch to `fresh_bcfp` + `fresh_default` |
+| `lnk_persist_init` call site | `lnk_pipeline_setup()` — every entry point (compare script, run_nge, future scripts) gets it for free |
+| Species list source | `lnk_pipeline_species(cfg, loaded, aoi)` UNION'd across the run's WSGs, OR `unique(loaded$parameters_fresh$species_code)`. **Not** `cfg$species` (doesn't exist in either bundle's config.yaml). |
+| Long→wide pivot | per-species `INSERT … SELECT id_segment, watershed_group_code, accessible, spawning, rearing, lake_rearing, wetland_rearing FROM working_<aoi>.streams_habitat WHERE species_code = '<sp>'` (drop `species_code` column from SELECT) |
+| Consolidation | `pg_dump --schema=fresh -Fc` per host → `pg_restore --data-only --no-owner --schema=fresh` on M4. Idempotent via prior DELETE-WHERE-WSG keyed inserts. (`pg_restore --on-conflict=update` doesn't exist — earlier issue body claim was wrong.) |
+| Cross-host clobber risk | Confirmed safe — M4/M1/cypher each have their own local fwapg :5432. Trifecta writes don't share a DB. |
 
-## Phase 2: Rewire pipeline phases to write to `working_<wsg>` schema
+## Phase 0: Capture baseline before any code changes
 
-- [ ] `lnk_pipeline_prepare.R` — change `fresh.streams` → `working_<aoi>.streams` (uses `schema` arg already threaded)
-- [ ] `lnk_pipeline_break.R` — change `frs_break_apply(table = "fresh.streams")` → `working_<aoi>.streams`
-- [ ] `lnk_pipeline_classify.R` — change `frs_habitat_classify(table = "fresh.streams", to = "fresh.streams_habitat")` → `working_<aoi>.streams` / `working_<aoi>.streams_habitat`
-- [ ] `data-raw/compare_bcfishpass_wsg.R` — top-of-run `DROP TABLE` block targets `working_<aoi>.*` (idempotent re-run)
-- [ ] Existing tests pass — mock SQL emission should resolve to new working_<aoi> names
+Required for Phase 5+ acceptance ("rollup tibbles match pre-rename byte-for-byte").
 
-## Phase 3: Persist helpers
+- [ ] On main, ADMS + LRDO + SETN + BULK + HARR — run `compare_bcfishpass_wsg` for each, save rollup RDS to `data-raw/logs/baseline_pre_112/<wsg>_baseline.rds`
+- [ ] Commit baseline RDSes on main BEFORE branching (so they survive PR rebase)
+- [ ] Note: provincial-parity `data-raw/logs/provincial_parity/*.rds` already captured (2026-05-03, link 0.25.1) — that's the 232-WSG baseline. Don't re-capture.
 
-- [ ] `R/lnk_persist_init.R` — idempotent `CREATE TABLE IF NOT EXISTS <schema>.streams`, `<schema>.streams_habitat_<sp>` (one per species in cfg$species). DDL matches the working table shape.
+## Phase 1: Add `pipeline.schema` + `.lnk_table_names()` + persist_init DDL helper
+
+Atomic land — config, helper, validator, DDL helper all together, so no half-state where the validator fires on bundles missing the field.
+
+- [ ] Add `pipeline.schema: fresh` to both `inst/extdata/configs/{bcfishpass,default}/config.yaml`
+- [ ] Add `.lnk_table_names(cfg)` private helper in `R/utils.R`. Returns named list:
+  ```r
+  list(
+    streams      = paste0(schema, ".streams"),
+    habitat_for  = function(sp) paste0(schema, ".streams_habitat_", tolower(sp))
+  )
+  ```
+  Errors clearly when `cfg$pipeline$schema` is missing/empty.
+- [ ] `R/lnk_persist_init.R` — `lnk_persist_init(conn, cfg, species)`. Idempotent `CREATE TABLE IF NOT EXISTS` for `<schema>.streams` + `<schema>.streams_habitat_<sp>` (one per species). Explicit DDL:
+  - **streams**: `(id_segment integer, watershed_group_code varchar(4), blue_line_key integer, segmented_stream_id bigint, edge_type integer, length_metre double precision, waterbody_key integer, wscode_ltree ltree, localcode_ltree ltree, geom geometry(MultiLineString, 3005), PRIMARY KEY (id_segment, watershed_group_code))`
+  - **streams_habitat_\<sp\>**: `(id_segment integer, watershed_group_code varchar(4), accessible boolean, spawning boolean, rearing boolean, lake_rearing boolean, wetland_rearing boolean, PRIMARY KEY (id_segment, watershed_group_code))`
+  - Index `<schema>.streams.geom` (GIST), `<schema>.streams.watershed_group_code`, `<schema>.streams_habitat_<sp>.watershed_group_code`
+- [ ] `lnk_config_verify` — extend to assert `cfg$pipeline$schema` is non-empty
+- [ ] Tests: `.lnk_table_names()` happy-path + missing-schema error. `lnk_persist_init` mocked SQL emission asserts CREATE for all 8 species (bcfp bundle).
+
+## Phase 2: Rewire pipeline phases to write `working_<aoi>` staging + persist at end
+
+Inventory of every `fresh.streams` / `fresh.streams_habitat` / `fresh.streams_breaks` literal that needs to change:
+
+| File | Lines | Current | New |
+|---|---|---|---|
+| `R/lnk_pipeline_prepare.R` | 544-548 | `DROP/CREATE fresh.streams + DROP fresh.streams_habitat` | `DROP/CREATE working_<aoi>.streams + DROP working_<aoi>.streams_habitat` |
+| `R/lnk_pipeline_prepare.R` | 557, 562 | `frs_col_join("fresh.streams", …)` | `frs_col_join("working_<aoi>.streams", …)` |
+| `R/lnk_pipeline_prepare.R` | `.lnk_pipeline_prep_network()` ~444-580 | 8× `"fresh.streams"` literals | All → `working_<aoi>.streams` |
+| `R/lnk_pipeline_break.R` | 124-127, 233-244 | `frs_break_apply(table = "fresh.streams")` + index `fresh.streams_id_segment_idx` | `working_<aoi>.streams` + `working_<aoi>.streams_id_segment_idx` |
+| `R/lnk_pipeline_classify.R` | 95-97 | `frs_habitat_classify(table = "fresh.streams", to = "fresh.streams_habitat")` | `working_<aoi>.streams` / `working_<aoi>.streams_habitat` |
+| `R/lnk_pipeline_classify.R` | 124-127 (overlay) | `bridge = "fresh.streams"`, `to = "fresh.streams_habitat"` | `working_<aoi>.*` |
+| `R/lnk_pipeline_classify.R` | 160-161 (frs_order_child) | `table = "fresh.streams"`, `habitat = "fresh.streams_habitat"` | `working_<aoi>.*` |
+| `R/lnk_pipeline_classify.R` | 197-199 | `DROP/CREATE fresh.streams_breaks` | `working_<aoi>.streams_breaks` |
+| `R/lnk_pipeline_connect.R` | 103-104 | `.frs_run_connectivity(table = "fresh.streams", habitat = "fresh.streams_habitat")` | `working_<aoi>.*` |
+| `data-raw/compare_bcfishpass_wsg.R` | 62-64 | `DROP TABLE fresh.streams, fresh.streams_habitat, fresh.streams_breaks CASCADE` | `DROP working_<aoi>.streams, working_<aoi>.streams_habitat, working_<aoi>.streams_breaks` |
+| `data-raw/compare_bcfishpass_wsg.R` | ~143, 178-179, 194-195 | rollup queries against `fresh.streams_habitat` | `working_<aoi>.streams_habitat` (long-format, queried before persist) |
+
+Plus the new wiring:
+
 - [ ] `R/lnk_pipeline_persist.R` — `lnk_pipeline_persist(conn, aoi, cfg, species)`:
-   - DELETE-WHERE-WSG + INSERT for `<schema>.streams` from `working_<aoi>.streams`
-   - For each species: DELETE-WHERE-WSG + INSERT for `<schema>.streams_habitat_<sp>` from `working_<aoi>.streams_habitat WHERE species_code = '<sp>'`
-- [ ] Wire `lnk_persist_init` + `lnk_pipeline_persist` into `compare_bcfishpass_wsg.R` (init at top of script, persist at end of pipeline)
-- [ ] Mocked unit tests for SQL emission shape (NULL conn_tunnel-style — no real DB)
+  - `DELETE FROM <schema>.streams WHERE watershed_group_code = '<aoi>'; INSERT INTO <schema>.streams SELECT … FROM working_<aoi>.streams;`
+  - For each `sp` in `species`: `DELETE … WHERE wsg=<aoi>; INSERT INTO <schema>.streams_habitat_<sp> SELECT id_segment, watershed_group_code, accessible, spawning, rearing, lake_rearing, wetland_rearing FROM working_<aoi>.streams_habitat WHERE species_code = '<sp>'`
+- [ ] `R/lnk_pipeline_setup.R` — call `lnk_persist_init(conn, cfg, species)` after creating the per-AOI working schema. Species resolved via `lnk_pipeline_species(cfg, loaded, aoi)`.
+- [ ] `data-raw/compare_bcfishpass_wsg.R` — call `lnk_pipeline_persist()` after the `lnk_pipeline_connect()` call, before computing the per-WSG rollup tibble.
 
-## Phase 4: Single-WSG verification
+## Phase 3: Update tests + roxygen examples
 
-- [ ] LRDO end-to-end: `compare_bcfishpass_wsg("LRDO", lnk_config("bcfishpass"))`
-- [ ] Confirm `fresh.streams` populated for LRDO (segment count matches `working_lrdo.streams`)
-- [ ] Confirm `fresh.streams_habitat_sk` populated (segment count matches `working_lrdo.streams_habitat WHERE species_code = 'SK'`)
-- [ ] Confirm rollup tibble matches PRE-rename baseline byte-for-byte (the rollup math doesn't change)
-
-## Phase 5: Trifecta 15-WSG verification
-
-- [ ] Re-run `data-raw/trifecta_15wsg.sh`
-- [ ] Each host accumulates locally — sanity-query a known WSG on each
-- [ ] No cross-host clobber (M1 + cypher don't touch M4's `fresh.streams`)
-
-## Phase 6: Provincial re-run
-
-- [ ] `data-raw/trifecta_provincial.sh` — same orchestrator, now persists per-WSG
-- [ ] ~2-3h compute on trifecta
-- [ ] Each host has 78/77/77 WSGs in its local `fresh.streams` + 8 `fresh.streams_habitat_<sp>` tables
-
-## Phase 7: Multi-host consolidation
-
-- [ ] `data-raw/consolidate_provincial.sh` (new)
-- [ ] `pg_dump --schema=fresh --table=streams --table=streams_habitat_*` from M1 + cypher
-- [ ] `pg_restore --data-only` on M4 (idempotent — DELETE-WHERE-WSG keys handle re-runs)
-- [ ] M4's `fresh.streams` has 232 WSGs × ~5M segments
-
-## Phase 8: Sanity + ship
-
-- [ ] Sanity-query: SETN + LRDO on master M4 match the prior rollup tibbles within fp precision
+- [ ] `tests/testthat/test-lnk_pipeline_prepare.R` line ~258 — literal `"CREATE TABLE fresh.streams"` → parameterize via test fixture cfg with known schema; assert dynamic table name.
+- [ ] `tests/testthat/test-lnk_pipeline_classify.R` line 50-51 — same pattern, `"fresh.streams_breaks"` → dynamic.
+- [ ] Add tests for `lnk_pipeline_persist` SQL emission shape (mocked DBI):
+  - One DELETE+INSERT pair for `<schema>.streams`
+  - N DELETE+INSERT pairs for `<schema>.streams_habitat_<sp>` (N = species count)
+  - SELECT clauses on the per-species INSERT drop `species_code`
+- [ ] Roxygen example sweep — `R/lnk_aggregate.R`, `R/lnk_barrier_overrides.R`, `R/lnk_pipeline_*` examples that say `fresh.streams` / `fresh.streams_habitat` → update or note as illustrative.
 - [ ] `devtools::test()` clean
 - [ ] `lintr::lint_package()` clean
+
+## Phase 4: data-raw/run_nge.R — update or scope-out
+
+`data-raw/run_nge.R:170-203` has its own `DROP+CREATE` against `fresh.streams` and rollup queries. Two options:
+
+- [ ] **Option A (in-scope, recommended)**: refactor to use the new working-schema pattern + `lnk_pipeline_persist`. ~1h.
+- [ ] **Option B (out-of-scope, deliberate)**: leave as legacy, document at top of file that it doesn't write to persistent `fresh.streams`. Will silently break if someone runs it post-rename.
+
+Pick A unless run_nge is genuinely abandoned. Confirm with user before phase exits.
+
+## Phase 5: Single-WSG verification (LRDO)
+
+- [ ] `Rscript data-raw/compare_bcfishpass_wsg.R` invocation for LRDO post-merge of Phases 0-4
+- [ ] Assertions:
+  - `working_lrdo.streams` rowcount > 0 and equals `<schema>.streams` rowcount filtered to LRDO
+  - For each species in LRDO's set: `working_lrdo.streams_habitat WHERE species_code = '<sp>'` rowcount equals `<schema>.streams_habitat_<sp>` rowcount filtered to LRDO
+  - Rollup tibble matches `data-raw/logs/baseline_pre_112/LRDO_baseline.rds` byte-for-byte (allowing fp tolerance 1e-9)
+- [ ] Also re-run a non-overlapping WSG (e.g. ADMS) — confirm running LRDO didn't clobber ADMS's persisted rows in `<schema>.streams`
+
+## Phase 6: Trifecta 15-WSG verification
+
+- [ ] `bash data-raw/trifecta_15wsg.sh`
+- [ ] Each host accumulates locally — sanity-query a known WSG on each (M4: BULK, M1: BABL, cypher: HARR)
+- [ ] No cross-host clobber (M4's `<schema>.streams` only has M4-bucket WSGs; same for M1, cypher)
+- [ ] All 15 rollup tibbles match the corresponding 2026-05-03 trifecta-15 baseline (`data-raw/logs/202605030429-202605030437_trifecta15_*_bcfishpass_*.rds`)
+
+## Phase 7: Provincial re-run
+
+- [ ] `bash data-raw/trifecta_provincial.sh`
+- [ ] Wall ~2-3h trifecta
+- [ ] Each host: 78/77/77 WSGs persisted in its local `<schema>.streams` + 8 `<schema>.streams_habitat_<sp>` tables
+- [ ] Per-host acceptance: `SELECT count(*), count(DISTINCT watershed_group_code) FROM <schema>.streams` matches expected per-bucket totals
+
+## Phase 8: Multi-host consolidation onto M4
+
+- [ ] **First**: `pg_dump --schema=fresh -Fc -f /tmp/m4_fresh_pre_consolidate_<TS>.dump` on M4 (rollback safety net — if consolidation corrupts state, restore from this)
+- [ ] On M1 + cypher: `pg_dump --schema=fresh -Fc -f /tmp/<host>_fresh.dump`
+- [ ] scp dumps to M4
+- [ ] On M4: for each remote dump, `pg_restore --data-only --no-owner --schema=fresh /tmp/<host>_fresh.dump` — leverages the per-WSG DELETE-WHERE keys (idempotent if some WSGs already present)
+- [ ] Verify: `SELECT count(DISTINCT watershed_group_code) FROM <schema>.streams` = 232
+
+## Phase 9: Sanity-query final state
+
+- [ ] LRDO check: `SELECT count(*) FROM <schema>.streams_habitat_sk WHERE watershed_group_code = 'LRDO' AND lake_rearing` matches the LRDO drilldown's 7 lakes (114+73+50+19+36+14+20 segments ≈ link's 4,808 ha)
+- [ ] SETN check: anadromous spawning rows match link's prior +98% over bcfp
+- [ ] Total `<schema>.streams` row count ≈ 5M (sanity-check against bcfp's `bcfishpass.streams` count)
+- [ ] No row in `<schema>.streams_habitat_<sp>` lacks a matching `<schema>.streams` row (referential integrity)
+
+## Phase 10: Ship
+
+- [ ] NEWS.md entry — 0.26.0 minor (new persistence capability)
+- [ ] DESCRIPTION version 0.25.1 → 0.26.0
 - [ ] `/code-check` on staged diff — 3 rounds clean
-- [ ] NEWS.md entry, DESCRIPTION bump (likely 0.26.0 — minor, new persist capability)
 - [ ] PR with `Fixes #112` + `Relates to NewGraphEnvironment/sred-2025-2026#24`
+- [ ] `/gh-pr-merge` after review
 - [ ] `/planning-archive` after merge
