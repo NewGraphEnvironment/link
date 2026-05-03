@@ -444,7 +444,10 @@ test_that("in_waterbody is NOT applied to the river polygon rule or wetland carv
   expect_null(carve[[1]]$in_waterbody)
 })
 
-test_that("bcfishpass bundle: every stream-edge rule carries in_waterbody:false", {
+test_that("bcfishpass bundle: spawn stream-edge rule carries in_waterbody:false", {
+  # `spawn_stream_in_waterbody` is `no` for every species in the bundle —
+  # spawn rules must filter to channel-line edges only. Rear is per-species
+  # (CO and ST flip to `yes` to admit polygon mainlines), tested separately.
   csv <- system.file("extdata", "configs", "bcfishpass", "dimensions.csv",
                      package = "link", mustWork = TRUE)
   out <- withr::local_tempfile(fileext = ".yaml")
@@ -452,14 +455,12 @@ test_that("bcfishpass bundle: every stream-edge rule carries in_waterbody:false"
   r <- yaml::read_yaml(out)
 
   for (sp in names(r)) {
-    for (rule_set in list(r[[sp]]$spawn, r[[sp]]$rear)) {
-      for (rr in rule_set) {
-        is_stream_edge <- !is.null(rr$edge_types_explicit) &&
-          all(c(1000L, 1100L, 2000L, 2300L) %in% rr$edge_types_explicit)
-        if (is_stream_edge) {
-          expect_equal(rr$in_waterbody, FALSE,
-            info = paste0(sp, ": stream-edge rule expected in_waterbody=FALSE"))
-        }
+    for (rr in r[[sp]]$spawn) {
+      is_stream_edge <- !is.null(rr$edge_types_explicit) &&
+        all(c(1000L, 1100L, 2000L, 2300L) %in% rr$edge_types_explicit)
+      if (is_stream_edge) {
+        expect_equal(rr$in_waterbody, FALSE,
+          info = paste0(sp, ": spawn stream-edge rule expected in_waterbody=FALSE"))
       }
     }
   }
@@ -829,7 +830,8 @@ test_that("rear_stream_order_bypass=yes attaches channel_width_min_bypass to str
   rear <- yaml::read_yaml(out)$ST$rear
   stream_rule <- rear[[1]]  # first rule is the stream/canal edge_types
   expect_false(is.null(stream_rule$channel_width_min_bypass))
-  expect_equal(stream_rule$channel_width_min_bypass$stream_order, 1)
+  expect_equal(stream_rule$channel_width_min_bypass$stream_order_min, 1)
+  expect_equal(stream_rule$channel_width_min_bypass$stream_order_max, 1)
   expect_equal(stream_rule$channel_width_min_bypass$stream_order_parent_min, 5)
 })
 
@@ -887,7 +889,8 @@ test_that("rear_stream_order_parent_min column drives bypass threshold", {
     if (!is.null(rr$channel_width_min_bypass)) { bp <- rr$channel_width_min_bypass; break }
   }
   expect_false(is.null(bp))
-  expect_equal(bp$stream_order, 1L)
+  expect_equal(bp$stream_order_min, 1L)
+  expect_equal(bp$stream_order_max, 1L)
   expect_equal(bp$stream_order_parent_min, 5L)
 
   # Column present, explicit value 7
