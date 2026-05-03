@@ -25,13 +25,26 @@ suppressPackageStartupMessages({
 # (M4, M1, cypher) without path patching.
 source("compare_bcfishpass_wsg.R")
 
-cfg    <- lnk_config("bcfishpass")
+# CLI args:
+#   --wsgs=<comma-list>  Restrict to a WSG subset (distributed split).
+#   --config=<name>      Bundle name (default: "bcfishpass"). Pass "default"
+#                        to run the methodology-variant bundle.
+#   --schema=<name>      Override cfg$pipeline$schema. Lets you write to
+#                        e.g. fresh_default while the bundle config still
+#                        says fresh — useful for side-by-side methodology
+#                        comparisons without bundle-config edits.
+args <- commandArgs(trailingOnly = TRUE)
+
+config_arg <- args[grep("^--config=", args)]
+config_name <- if (length(config_arg) > 0) sub("^--config=", "", config_arg[1]) else "bcfishpass"
+cfg <- lnk_config(config_name)
+
+schema_arg <- args[grep("^--schema=", args)]
+if (length(schema_arg) > 0) {
+  cfg$pipeline$schema <- sub("^--schema=", "", schema_arg[1])
+}
 loaded <- lnk_load_overrides(cfg)
 
-# WSG list. Default: every WSG with at least one of our species present.
-# Override via --wsgs <comma-list> for a specific subset (used by the
-# distributed split — link#53 — where each host runs its own bucket).
-args <- commandArgs(trailingOnly = TRUE)
 wsgs_arg <- args[grep("^--wsgs=", args)]
 spp_cols <- c("ch", "cm", "co", "pk", "sk", "st", "bt", "wct", "ct", "dv", "rb")
 wsg_pres <- loaded$wsg_species_presence
@@ -54,7 +67,13 @@ if (length(wsgs_arg) > 0) {
 
 # Relative to getwd() so the script works on M4, M1, and cypher (which
 # don't share the /Users/airvine/... path). Run from data-raw/.
-out_dir <- file.path(getwd(), "logs", "provincial_parity")
+# RDS dir auto-derived from config name unless overridden via --rds-dir
+# (so bcfishpass-bundle and default-bundle rollups don't clobber each
+# other when run side-by-side).
+rds_dir_arg <- args[grep("^--rds-dir=", args)]
+default_rds_dir <- if (config_name == "bcfishpass") "provincial_parity" else paste0("provincial_", config_name)
+out_dir_name <- if (length(rds_dir_arg) > 0) sub("^--rds-dir=", "", rds_dir_arg[1]) else default_rds_dir
+out_dir <- file.path(getwd(), "logs", out_dir_name)
 dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 
 cat("=== PROVINCIAL PARITY RUN — link 0.20.0 ===\n")

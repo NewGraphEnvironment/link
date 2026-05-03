@@ -1,14 +1,29 @@
 #!/usr/bin/env bash
-# Stage 3 trifecta: provincial parity (~232 WSGs) distributed 3-way.
-# Each host runs `run_provincial_parity.R --wsgs=<bucket>` (resume-safe;
-# skips WSGs whose RDS already exists). Buckets are sequential M4-M1-cy
-# slices so resumes from interruption are clean.
+# Stage 3 trifecta: provincial run distributed 3-way.
+# Each host runs `run_provincial_parity.R --wsgs=<bucket> --config=<bundle> --schema=<schema>`
+# (resume-safe; skips WSGs whose RDS already exists). Buckets are sequential
+# M4-M1-cy slices so resumes from interruption are clean.
+#
+# Usage:
+#   ./trifecta_provincial.sh                                    # bcfishpass bundle → fresh schema
+#   ./trifecta_provincial.sh --config=default --schema=fresh_default  # default bundle → fresh_default
 #
 # Estimated wall: ~2-3 hours. Tee the orchestrator output to
-# data-raw/logs/<TS>_trifecta_provincial_orchestrator.txt as it runs
-# so the summary survives the background-task lifecycle.
+# data-raw/logs/<TS>_trifecta_provincial_orchestrator.txt as it runs.
 
 set -euo pipefail
+
+# Parse args
+CONFIG="bcfishpass"
+SCHEMA=""
+for arg in "$@"; do
+  case "$arg" in
+    --config=*) CONFIG="${arg#--config=}" ;;
+    --schema=*) SCHEMA="${arg#--schema=}" ;;
+  esac
+done
+EXTRA_ARGS="--config=$CONFIG"
+[ -n "$SCHEMA" ] && EXTRA_ARGS="$EXTRA_ARGS --schema=$SCHEMA"
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LOG_DIR="$REPO_ROOT/data-raw/logs"
@@ -74,7 +89,7 @@ for _ in \$(seq 1 10); do
   sleep 0.5
 done
 cd ~/Projects/repo/link/data-raw
-Rscript run_provincial_parity.R "--wsgs=$CY_WSGS"
+Rscript run_provincial_parity.R "--wsgs=$CY_WSGS" $EXTRA_ARGS
 CYPHER_EOF
 chmod +x "$CYPHER_SHELL"
 
@@ -82,13 +97,13 @@ START=$(date +%s)
 
 # m4 (local) — run from data-raw/ so out_dir resolves correctly
 M4_LOG="$LOG_DIR/${TS}_trifecta_provincial_m4.txt"
-( cd "$REPO_ROOT/data-raw" && Rscript run_provincial_parity.R "--wsgs=$M4_WSGS" > "$M4_LOG" 2>&1 ) &
+( cd "$REPO_ROOT/data-raw" && Rscript run_provincial_parity.R "--wsgs=$M4_WSGS" $EXTRA_ARGS > "$M4_LOG" 2>&1 ) &
 M4_PID=$!
 
 # m1 (ssh) — same recipe, remote-side
 M1_LOG="$LOG_DIR/${TS}_trifecta_provincial_m1.txt"
 ( ssh -o ServerAliveInterval=60 -o ServerAliveCountMax=10 m1 \
-    "cd ~/Projects/repo/link/data-raw && Rscript run_provincial_parity.R '--wsgs=$M1_WSGS'" \
+    "cd ~/Projects/repo/link/data-raw && Rscript run_provincial_parity.R '--wsgs=$M1_WSGS' $EXTRA_ARGS" \
     > "$M1_LOG" 2>&1 ) &
 M1_PID=$!
 
