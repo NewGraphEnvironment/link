@@ -522,3 +522,81 @@ test_that(".lnk_pipeline_prep_observations errors when wsg_species_presence miss
     "wsg_species_presence not present"
   )
 })
+
+# -- prep_dams (link#103) ---------------------------------------------------
+
+test_that(".lnk_pipeline_prep_dams short-circuits when conn_tunnel is NULL", {
+  captured <- character(0)
+  local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) {
+      captured <<- c(captured, sql); invisible(NULL)
+    }
+  )
+  .lnk_pipeline_prep_dams("mock", conn_tunnel = NULL, aoi = "HARR",
+    schema = "w_harr", loaded = list())
+  joined <- paste(captured, collapse = "\n")
+  expect_match(joined, "DROP TABLE IF EXISTS w_harr.dams")
+  # No CREATE / cabd staging when opted out
+  expect_no_match(joined, "CREATE TABLE w_harr\\.dams")
+  expect_no_match(joined, "cabd_dams_raw")
+})
+
+test_that(".lnk_pipeline_prep_dams errors clearly when a CABD edit CSV is missing", {
+  expect_error(
+    .lnk_pipeline_prep_dams("mock-conn", conn_tunnel = "mock-tunnel",
+      aoi = "HARR", schema = "w_harr",
+      loaded = list(cabd_exclusions = data.frame(cabd_id = integer(0)))),
+    "missing required CABD edit CSV"
+  )
+})
+
+test_that(".lnk_pipeline_prep_dams emits load_dams.sql shape when conn_tunnel set", {
+  captured_sql <- character(0)
+  captured_writes <- character(0)
+  local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) {
+      captured_sql <<- c(captured_sql, sql); invisible(NULL)
+    }
+  )
+  with_mocked_bindings(
+    {
+      .lnk_pipeline_prep_dams("mock-conn",
+        conn_tunnel = "mock-tunnel", aoi = "HARR", schema = "w_harr",
+        loaded = list(
+          cabd_exclusions = data.frame(cabd_id = integer(0)),
+          cabd_blkey_xref = data.frame(cabd_id = integer(0)),
+          cabd_passability_status_updates = data.frame(cabd_id = integer(0)),
+          cabd_additions = data.frame(cabd_id = integer(0))))
+    },
+    dbGetQuery = function(conn, statement, ...) {
+      data.frame(cabd_id = integer(0), dam_name_en = character(0),
+                 height_m = double(0), owner = character(0),
+                 dam_use = character(0), operating_status = character(0),
+                 passability_status_code = integer(0),
+                 geom_ewkb = list(), stringsAsFactors = FALSE)
+    },
+    dbWriteTable = function(conn, name, value, ...) {
+      captured_writes <<- c(captured_writes, paste0(name@name[["schema"]], ".",
+                                                     name@name[["table"]]))
+      invisible(TRUE)
+    },
+    .package = "DBI"
+  )
+
+  joined <- paste(captured_sql, collapse = "\n")
+  # Stages 4 edit CSVs into the working schema
+  expect_true("w_harr.cabd_exclusions" %in% captured_writes)
+  expect_true("w_harr.cabd_blkey_xref" %in% captured_writes)
+  expect_true("w_harr.cabd_passability_status_updates" %in% captured_writes)
+  expect_true("w_harr.cabd_additions" %in% captured_writes)
+  expect_true("w_harr.cabd_dams_raw" %in% captured_writes)
+  # Replicates load_dams.sql: lateral snap, COALESCE on passability,
+  # exclusions filter, blkey override, US additions UNION
+  expect_match(joined, "CREATE TABLE w_harr\\.dams")
+  expect_match(joined, "LEFT OUTER JOIN w_harr.cabd_exclusions")
+  expect_match(joined, "LEFT OUTER JOIN w_harr.cabd_blkey_xref")
+  expect_match(joined, "LEFT OUTER JOIN w_harr.cabd_passability_status_updates")
+  expect_match(joined, "ST_Distance\\(str.geom, c.geom\\) <= 65")
+  expect_match(joined, "UNION ALL")
+  expect_match(joined, "feature_type = 'dams'")
+})

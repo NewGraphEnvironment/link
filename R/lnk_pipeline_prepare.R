@@ -36,6 +36,9 @@
 #'   - `<schema>.gradient_barriers_minimal` (union of minimal positions)
 #'   - `fresh.streams` (base segments — not namespaced by AOI; fresh
 #'     owns its output schema)
+#'   - `<schema>.dams` (only when `conn_tunnel` is supplied) — pulled
+#'     from `bcfishpass.dams` filtered to AOI. Parallel reporting layer;
+#'     NOT consumed by habitat classification.
 #'
 #' @param conn A [DBI::DBIConnection-class] object.
 #' @param aoi Character. Watershed group code today; extends to ltree
@@ -50,6 +53,13 @@
 #'   used for building barrier overrides. Default
 #'   `"bcfishobs.observations"` — matches bcfishpass's reference data
 #'   on both M4 and M1 fwapg instances (see `rtj/docs/distributed-fwapg.md`).
+#' @param conn_tunnel A [DBI::DBIConnection-class] object pointed at
+#'   `db_newgraph` (the tunnel-DB carrying bcfp's pre-built tables).
+#'   Optional. When supplied, `<schema>.dams` is populated from
+#'   `bcfishpass.dams` filtered to the AOI — parallel reporting layer
+#'   for downstream consumers, NOT consumed by habitat classification.
+#'   When `NULL`, any existing `<schema>.dams` is dropped and the dams
+#'   step is a no-op.
 #'
 #' @return `conn` invisibly, for pipe chaining.
 #'
@@ -74,7 +84,8 @@
 #' DBI::dbDisconnect(conn)
 #' }
 lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
-                                 observations = "bcfishobs.observations") {
+                                 observations = "bcfishobs.observations",
+                                 conn_tunnel = NULL) {
   .lnk_validate_identifier(schema, "schema")
   .lnk_validate_identifier(observations, "observations table")
   if (!is.character(aoi) || length(aoi) != 1L || !nzchar(aoi)) {
@@ -97,6 +108,7 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
   .lnk_pipeline_prep_overrides(conn, loaded, schema)
   .lnk_pipeline_prep_minimal(conn, aoi, schema)
   .lnk_pipeline_prep_network(conn, aoi, schema)
+  .lnk_pipeline_prep_dams(conn, conn_tunnel, aoi, schema, loaded)
 
   invisible(conn)
 }
@@ -566,6 +578,198 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
      FROM numbered WHERE s.ctid = numbered.ctid")
   .lnk_db_execute(conn,
     "CREATE UNIQUE INDEX ON fresh.streams (id_segment)")
+
+  invisible(NULL)
+}
+
+
+#' Materialize <schema>.dams from CABD source + 4 edit CSVs
+#'
+#' Parallel-to-bcfp design: link consumes CABD upstream the same way
+#' bcfp does (`cabd.dams` source + the 4 edit CSVs `cabd_exclusions`,
+#' `cabd_blkey_xref`, `cabd_passability_status_updates`,
+#' `cabd_additions`), applies its own snap + transforms, and writes
+#' the result to a local `<schema>.dams` table. Mirrors
+#' `bcfp/model/01_access/sql/load_dams.sql` line-for-line at the
+#' SQL level.
+#'
+#' The dams table is NOT used by link's habitat classification —
+#' bcfp's per-species access + habitat_linear SQL are dam-blind, and
+#' link mirrors that. The data lives here for downstream consumers
+#' (memo authors, fish-passage planners, dam-impact analyses) who
+#' compose dam awareness with the habitat output.
+#'
+#' Source paths considered:
+#'   - tunnel `cabd.*` on db_newgraph (current default — `conn_tunnel`)
+#'   - public CABD download (future, link#104)
+#'   - cabd in s3 fwapg dump (future rtj follow-up)
+#' All three produce identical local `<schema>.dams`; only the source
+#' connection differs.
+#'
+#' The 4 edit CSVs (`cabd_exclusions`, `cabd_blkey_xref`,
+#' `cabd_passability_status_updates`, `cabd_additions`) ship in the
+#' bundle overrides directory and arrive via `lnk_load_overrides()`.
+#' Each is filtered to the AOI's `feature_type='dams'` rows where
+#' applicable (only `cabd_additions` carries the `feature_type` column).
+#'
+#' Short-circuits when `conn_tunnel` is NULL — drops any existing
+#' `<schema>.dams` and returns. Zero-cost opt-out.
+#' @noRd
+.lnk_pipeline_prep_dams <- function(conn, conn_tunnel, aoi, schema, loaded) {
+  if (is.null(conn_tunnel)) {
+    .lnk_db_execute(conn, sprintf(
+      "DROP TABLE IF EXISTS %s.dams", schema))
+    return(invisible(NULL))
+  }
+
+  # 1. Stage the 4 edit CSVs into <schema> from `loaded`. All four are
+  #    required — the load_dams.sql replication CTE references columns
+  #    from each (`blk.blue_line_key`, `u.passability_status_code`,
+  #    `a.feature_type`, etc.). Both shipped bundles declare them; a
+  #    custom config that opts in to dam reporting must declare them too.
+  cabd_keys <- c("cabd_exclusions", "cabd_blkey_xref",
+                 "cabd_passability_status_updates", "cabd_additions")
+  missing <- cabd_keys[!cabd_keys %in% names(loaded)]
+  if (length(missing) > 0) {
+    stop("conn_tunnel set but `loaded` is missing required CABD edit ",
+         "CSV(s): ", paste(missing, collapse = ", "),
+         ". Declare them in cfg$files or pass conn_tunnel = NULL to ",
+         "skip dam ingestion.", call. = FALSE)
+  }
+  for (key in cabd_keys) {
+    .lnk_db_execute(conn, sprintf(
+      "DROP TABLE IF EXISTS %s.%s", schema, key))
+    DBI::dbWriteTable(conn, DBI::Id(schema = schema, table = key),
+      loaded[[key]], overwrite = TRUE)
+  }
+
+  # 2. Pull `cabd.dams` from tunnel (raw upstream — NOT bcfp's processed output).
+  cabd_dams <- DBI::dbGetQuery(conn_tunnel,
+    "SELECT cabd_id, dam_name_en, height_m, owner, dam_use,
+            operating_status, passability_status_code,
+            ST_AsEWKB(ST_Transform(geom, 3005)) AS geom_ewkb
+     FROM cabd.dams")
+
+  # Stage cabd.dams locally so the lateral snap can run against
+  # local fwa_stream_networks_sp without round-tripping the network.
+  .lnk_db_execute(conn, sprintf(
+    "DROP TABLE IF EXISTS %s.cabd_dams_raw", schema))
+  DBI::dbWriteTable(conn,
+    DBI::Id(schema = schema, table = "cabd_dams_raw"),
+    cabd_dams, overwrite = TRUE)
+
+  # 3. Apply the load_dams.sql logic locally:
+  #    - drop excluded cabd_ids
+  #    - LEFT JOIN blkey_xref to override blue_line_key when set
+  #    - lateral snap to fwa_stream_networks_sp within 65 m
+  #    - LEFT JOIN passability_status_updates for status override
+  #    - UNION ALL with cabd_additions where feature_type='dams' (US placeholders)
+  .lnk_db_execute(conn, sprintf(
+    "DROP TABLE IF EXISTS %1$s.dams", schema))
+  .lnk_db_execute(conn, sprintf(
+    "CREATE TABLE %1$s.dams AS
+     WITH cabd AS (
+       SELECT d.cabd_id::text  AS dam_id,
+              blk.blue_line_key,
+              ST_GeomFromEWKB(d.geom_ewkb) AS geom,
+              d.dam_name_en, d.height_m, d.owner, d.dam_use,
+              d.operating_status,
+              COALESCE(u.passability_status_code,
+                       d.passability_status_code) AS passability_status_code
+       FROM %1$s.cabd_dams_raw d
+       LEFT OUTER JOIN %1$s.cabd_exclusions x ON d.cabd_id = x.cabd_id
+       LEFT OUTER JOIN %1$s.cabd_blkey_xref blk ON d.cabd_id = blk.cabd_id
+       LEFT OUTER JOIN %1$s.cabd_passability_status_updates u
+         ON d.cabd_id = u.cabd_id
+       WHERE x.cabd_id IS NULL
+     ),
+     matched AS (
+       SELECT DISTINCT ON (c.dam_id)
+              c.dam_id,
+              str.linear_feature_id,
+              str.blue_line_key,
+              str.wscode_ltree,
+              str.localcode_ltree,
+              str.watershed_group_code,
+              ST_Distance(str.geom, c.geom) AS distance_to_stream,
+              ST_InterpolatePoint(str.geom, c.geom) AS downstream_route_measure,
+              c.dam_name_en, c.height_m, c.owner, c.dam_use,
+              c.operating_status, c.passability_status_code,
+              str.geom AS line_geom
+       FROM cabd c
+       CROSS JOIN LATERAL (
+         SELECT linear_feature_id, blue_line_key, wscode_ltree, localcode_ltree,
+                watershed_group_code, geom
+         FROM whse_basemapping.fwa_stream_networks_sp str
+         WHERE str.localcode_ltree IS NOT NULL
+           AND NOT str.wscode_ltree <@ '999'::ltree
+           AND (
+             (c.blue_line_key IS NULL)
+             OR (c.blue_line_key = str.blue_line_key)
+           )
+         ORDER BY str.geom <-> c.geom
+         LIMIT 1
+       ) str
+       WHERE ST_Distance(str.geom, c.geom) <= 65
+       ORDER BY c.dam_id, ST_Distance(str.geom, c.geom), str.linear_feature_id
+     ),
+     placed AS (
+       SELECT m.dam_id,
+              m.linear_feature_id,
+              m.blue_line_key,
+              m.downstream_route_measure,
+              m.wscode_ltree,
+              m.localcode_ltree,
+              m.distance_to_stream,
+              m.watershed_group_code,
+              m.dam_name_en, m.height_m, m.owner, m.dam_use,
+              m.operating_status, m.passability_status_code,
+              ((ST_Dump(ST_Force2D(
+                ST_LocateAlong(m.line_geom, m.downstream_route_measure)
+              ))).geom)::geometry(Point, 3005) AS geom
+       FROM matched m
+     ),
+     usa AS (
+       SELECT (row_number() OVER () + 1200000000)::text AS dam_id,
+              s.linear_feature_id,
+              a.blue_line_key,
+              a.downstream_route_measure,
+              s.wscode_ltree,
+              s.localcode_ltree,
+              0::double precision AS distance_to_stream,
+              s.watershed_group_code,
+              a.name AS dam_name_en,
+              NULL::double precision AS height_m,
+              NULL::text AS owner,
+              NULL::text AS dam_use,
+              NULL::text AS operating_status,
+              NULL::integer AS passability_status_code,
+              ((ST_Dump(ST_Force2D(
+                ST_LocateAlong(s.geom, a.downstream_route_measure)
+              ))).geom)::geometry(Point, 3005) AS geom
+       FROM %1$s.cabd_additions a
+       INNER JOIN whse_basemapping.fwa_stream_networks_sp s
+         ON a.blue_line_key = s.blue_line_key
+        AND ROUND(a.downstream_route_measure::numeric)
+              >= ROUND(s.downstream_route_measure::numeric)
+        AND ROUND(a.downstream_route_measure::numeric)
+              <  ROUND(s.upstream_route_measure::numeric)
+       WHERE a.feature_type = 'dams'
+     )
+     SELECT * FROM placed
+     UNION ALL
+     SELECT * FROM usa;",
+    schema))
+
+  # 4. Filter the local <schema>.dams to the AOI (per-WSG locality).
+  .lnk_db_execute(conn, sprintf(
+    "DELETE FROM %s.dams WHERE watershed_group_code <> %s",
+    schema, .lnk_quote_literal(aoi)))
+
+  # 5. Cleanup the cabd_dams_raw stage; keep the 4 edit-CSV tables for
+  #    debugging visibility (they're small).
+  .lnk_db_execute(conn, sprintf(
+    "DROP TABLE %s.cabd_dams_raw", schema))
 
   invisible(NULL)
 }

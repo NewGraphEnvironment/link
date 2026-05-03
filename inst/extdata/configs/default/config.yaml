@@ -47,6 +47,18 @@ files:
   user_crossings_misc:
     source: bcfp
     path: overrides/user_crossings_misc.csv
+  cabd_exclusions:
+    source: bcfp
+    path: overrides/cabd_exclusions.csv
+  cabd_blkey_xref:
+    source: bcfp
+    path: overrides/cabd_blkey_xref.csv
+  cabd_passability_status_updates:
+    source: bcfp
+    path: overrides/cabd_passability_status_updates.csv
+  cabd_additions:
+    source: bcfp
+    path: overrides/cabd_additions.csv
 
 extends: ~
 

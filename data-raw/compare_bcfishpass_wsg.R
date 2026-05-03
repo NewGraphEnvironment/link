@@ -23,11 +23,12 @@
 # rearing_km includes lake + wetland centerline length today — see
 # research/default_vs_bcfishpass.md for the decision + revisit note.
 
-compare_bcfishpass_wsg <- function(wsg, config) {
+compare_bcfishpass_wsg <- function(wsg, config, dams = TRUE) {
   stopifnot(
     is.character(wsg), length(wsg) == 1L, nzchar(wsg),
     grepl("^[A-Z]{3,5}$", wsg),
-    inherits(config, "lnk_config")
+    inherits(config, "lnk_config"),
+    is.logical(dams), length(dams) == 1L
   )
   schema <- paste0("working_", tolower(wsg))
 
@@ -70,7 +71,8 @@ compare_bcfishpass_wsg <- function(wsg, config) {
   link::lnk_pipeline_load(conn, aoi = wsg, cfg = config,
     loaded = loaded, schema = schema)
   link::lnk_pipeline_prepare(conn, aoi = wsg, cfg = config,
-    loaded = loaded, schema = schema)
+    loaded = loaded, schema = schema,
+    conn_tunnel = if (dams) conn_ref else NULL)
   link::lnk_pipeline_break(conn, aoi = wsg, cfg = config,
     loaded = loaded, schema = schema)
   link::lnk_pipeline_classify(conn, aoi = wsg, cfg = config,
