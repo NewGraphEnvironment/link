@@ -23,12 +23,14 @@
 # rearing_km includes lake + wetland centerline length today — see
 # research/default_vs_bcfishpass.md for the decision + revisit note.
 
-compare_bcfishpass_wsg <- function(wsg, config, dams = TRUE) {
+compare_bcfishpass_wsg <- function(wsg, config, dams = TRUE,
+                                   species = NULL) {
   stopifnot(
     is.character(wsg), length(wsg) == 1L, nzchar(wsg),
     grepl("^[A-Z]{3,5}$", wsg),
     inherits(config, "lnk_config"),
-    is.logical(dams), length(dams) == 1L
+    is.logical(dams), length(dams) == 1L,
+    is.null(species) || is.character(species)
   )
   schema <- paste0("working_", tolower(wsg))
 
@@ -87,7 +89,19 @@ compare_bcfishpass_wsg <- function(wsg, config, dams = TRUE) {
   # double-count (linear-km and polygon-ha both credit the same lake);
   # revisit once we compare against bcfishpass's WCRP multiplier approach.
   # -------------------------------------------------------------------------
-  species <- link::lnk_pipeline_species(config, loaded, wsg)
+  # Default species set: link's pipeline-active list intersected with the
+  # AOI's wsg_species_presence flags. Caller can pass `species` to restrict
+  # the rollup further — e.g. `c("BT","CH","CM","CO","PK","SK","ST","WCT")`
+  # to drop GR / KO / RB which bcfp doesn't model (avoids NA-heavy rows
+  # in the comparison table). Species not present in the WSG are silently
+  # dropped (intersect with the active set).
+  active <- link::lnk_pipeline_species(config, loaded, wsg)
+  species <- if (is.null(species)) active else intersect(species, active)
+  if (length(species) == 0L) {
+    stop("no species to roll up in ", wsg, " (active=",
+         paste(active, collapse = ","), ", requested=",
+         paste(species, collapse = ","), ")", call. = FALSE)
+  }
 
   species_sql <- paste(
     vapply(species,
@@ -247,10 +261,15 @@ compare_bcfishpass_wsg <- function(wsg, config, dams = TRUE) {
         tolower(sp),
         DBI::dbQuoteLiteral(conn_ref, wsg)))
     } else {
-      data.frame(species_code = sp, spawning_km = 0, rearing_km = 0,
-                 rearing_stream_km = 0,
-                 rearing_lake_centerline_km = 0,
-                 rearing_wetland_centerline_km = 0)
+      # bcfp doesn't model this species — return NA so diff_pct
+      # cleanly resolves to NA downstream. Distinguishes "0 in bcfp"
+      # (real measured zero) from "not modelled by bcfp at all" (NA).
+      data.frame(species_code = sp,
+                 spawning_km                   = NA_real_,
+                 rearing_km                    = NA_real_,
+                 rearing_stream_km             = NA_real_,
+                 rearing_lake_centerline_km    = NA_real_,
+                 rearing_wetland_centerline_km = NA_real_)
     }
 
     # Lake area — same DISTINCT waterbody_key pattern as link side.
@@ -271,7 +290,9 @@ compare_bcfishpass_wsg <- function(wsg, config, dams = TRUE) {
         tolower(sp),
         DBI::dbQuoteLiteral(conn_ref, wsg)))
     } else {
-      data.frame(lake_rearing_ha = 0)
+      # bcfp doesn't model this species — NA, not 0 (see note above on
+      # km_row fallback for distinguishing real-zero from not-modelled).
+      data.frame(lake_rearing_ha = NA_real_)
     }
 
     wetland_ha <- if (has_table && has_rear) {
@@ -290,7 +311,7 @@ compare_bcfishpass_wsg <- function(wsg, config, dams = TRUE) {
         tolower(sp),
         DBI::dbQuoteLiteral(conn_ref, wsg)))
     } else {
-      data.frame(wetland_rearing_ha = 0)
+      data.frame(wetland_rearing_ha = NA_real_)
     }
 
     cbind(km_row, lake_ha, wetland_ha)
@@ -359,8 +380,11 @@ compare_bcfishpass_wsg <- function(wsg, config, dams = TRUE) {
       if (nrow(ours_row) > 0) ours_row[[col]] else 0
 
     ref_row <- ref[ref$species_code == sp, , drop = FALSE]
+    # NA when bcfp didn't return a row for this species (not modelled),
+    # OR when the column isn't in bcfp's schema (e.g. bcfp's habitat_linear_*
+    # has no `rearing_lake_centerline_km`). Distinct from a real 0 measurement.
     out$bcfishpass_value[i] <-
-      if (nrow(ref_row) > 0 && col %in% names(ref_row)) ref_row[[col]] else 0
+      if (nrow(ref_row) > 0 && col %in% names(ref_row)) ref_row[[col]] else NA_real_
   }
   out$diff_pct <- ifelse(
     is.na(out$bcfishpass_value) | out$bcfishpass_value == 0,

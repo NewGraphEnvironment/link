@@ -1,0 +1,86 @@
+
+==== CONFIG AUDIT (link 0.25.0 ) ====
+
+--- 1. Provenance drift (config.yaml `provenance:` vs current files) ---
+  24 drifted entries across 2 bundles
+# A tibble: 24 × 4
+   bundle     file                                        byte_drift shape_drift
+   <chr>      <chr>                                       <lgl>      <lgl>      
+ 1 bcfishpass rules.yaml                                  TRUE       TRUE       
+ 2 bcfishpass dimensions.csv                              TRUE       TRUE       
+ 3 bcfishpass parameters_fresh.csv                        TRUE       TRUE       
+ 4 bcfishpass overrides/user_habitat_classification.csv   FALSE      TRUE       
+ 5 bcfishpass overrides/observation_exclusions.csv        FALSE      TRUE       
+ 6 bcfishpass overrides/wsg_species_presence.csv          TRUE       TRUE       
+ 7 bcfishpass overrides/user_modelled_crossing_fixes.csv  FALSE      TRUE       
+ 8 bcfishpass overrides/user_pscis_barrier_status.csv     FALSE      TRUE       
+ 9 bcfishpass overrides/pscis_modelledcrossings_streams_… FALSE      TRUE       
+10 bcfishpass overrides/user_barriers_definite.csv        FALSE      TRUE       
+11 bcfishpass overrides/user_barriers_definite_control.c… FALSE      TRUE       
+12 bcfishpass overrides/user_crossings_misc.csv           FALSE      TRUE       
+13 default    rules.yaml                                  TRUE       TRUE       
+14 default    dimensions.csv                              TRUE       TRUE       
+15 default    parameters_fresh.csv                        TRUE       TRUE       
+16 default    overrides/user_habitat_classification.csv   FALSE      TRUE       
+17 default    overrides/observation_exclusions.csv        FALSE      TRUE       
+18 default    overrides/wsg_species_presence.csv          TRUE       TRUE       
+19 default    overrides/user_modelled_crossing_fixes.csv  FALSE      TRUE       
+20 default    overrides/user_pscis_barrier_status.csv     FALSE      TRUE       
+21 default    overrides/pscis_modelledcrossings_streams_… FALSE      TRUE       
+22 default    overrides/user_barriers_definite.csv        FALSE      TRUE       
+23 default    overrides/user_barriers_definite_control.c… FALSE      TRUE       
+24 default    overrides/user_crossings_misc.csv           FALSE      TRUE       
+
+--- 2. rules.yaml regen vs committed ---
+Wrote /var/folders/mg/h910y2c54fsc99qj74dyrjph0000gn/T//RtmpVZ2Qo6/fileb2732c1f738.yaml (8 species, categories edge types)
+  bcfishpass    identical(structure)=FALSE  identical(bytes)=FALSE
+    !! regen differs from committed — committed rules.yaml is stale
+Skipping CT: no thresholds in fresh CSV
+Skipping DV: no thresholds in fresh CSV
+Wrote /var/folders/mg/h910y2c54fsc99qj74dyrjph0000gn/T//RtmpVZ2Qo6/fileb275c4d9790.yaml (11 species, categories edge types)
+  default       identical(structure)=FALSE  identical(bytes)=FALSE
+    !! regen differs from committed — committed rules.yaml is stale
+
+--- 3. Species axis consistency per bundle ---
+
+  bundle: bcfishpass
+    dimensions.csv:           BT CH CM CO PK SK ST WCT
+    parameters_fresh.csv:     BT CH CM CO CT DV PK RB SK ST WCT
+    wsg_species_presence cols:BT CH CM CO CT DV GR KO PK RB SK ST WCT
+    rules.yaml top-level:     BT CH CM CO PK SK ST WCT
+    !! pf ∖ dim: CT, DV, RB
+
+  bundle: default
+    dimensions.csv:           BT CH CM CO CT DV GR KO PK RB SK ST WCT
+    parameters_fresh.csv:     BT CH CM CO CT DV GR KO PK RB SK ST WCT
+    wsg_species_presence cols:BT CH CM CO CT DV GR KO PK RB SK ST WCT
+    rules.yaml top-level:     BT CH CM CO GR KO PK RB SK ST WCT
+    !! dim ∖ yaml: CT, DV
+
+--- 4. Override files on disk vs declared in config.yaml ---
+
+  bundle: bcfishpass
+    on-disk-but-not-declared: dfo_known_sockeye_lakes.csv, user_modelled_crossing_fixes_20240825.csv, wcrp_watersheds.csv
+    !! declared-but-missing: parameters_fresh.csv
+
+  bundle: default
+    on-disk-but-not-declared: dfo_known_sockeye_lakes.csv, user_modelled_crossing_fixes_20240825.csv, wcrp_watersheds.csv
+    !! declared-but-missing: parameters_fresh.csv
+
+--- 5. lnk_load_overrides() smoke per bundle ---
+  bcfishpass: 14 entries loaded — parameters_fresh, user_habitat_classification, observation_exclusions, wsg_species_presence, user_modelled_crossing_fixes, user_pscis_barrier_status, pscis_modelledcrossings_streams_xref, user_barriers_definite, user_barriers_definite_control, user_crossings_misc, cabd_exclusions, cabd_blkey_xref, cabd_passability_status_updates, cabd_additions
+  default: 14 entries loaded — parameters_fresh, user_habitat_classification, observation_exclusions, wsg_species_presence, user_modelled_crossing_fixes, user_pscis_barrier_status, pscis_modelledcrossings_streams_xref, user_barriers_definite, user_barriers_definite_control, user_crossings_misc, cabd_exclusions, cabd_blkey_xref, cabd_passability_status_updates, cabd_additions
+Warning messages:
+1: In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
+2: In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+
+--- 6. Legacy top-level parameters_habitat_* files ---
+  inst/extdata/parameters_habitat_dimensions.csv  (mtime: 2026-04-28)
+  inst/extdata/parameters_habitat_rules.yaml  (mtime: 2026-05-01)
+  Note: these were the pre-bundle predecessors. Per CLAUDE.md they map to
+  the default bundle's dimensions.csv. If they have drifted from the
+  default bundle, they're stale and should be either removed or pinned.
+
+==== AUDIT COMPLETE ====
