@@ -16,17 +16,17 @@ The per-species methodology question — "should default-bundle make some dam cl
 - [x] Source path decision: **DB join via tunnel** (consistent with link#102's resolution; cypher / M4 / M1 all have tunnel access per rtj#82)
 - [x] Verify clean separation — fresh's bundled `falls.csv` has no dam-named rows; CABD's `feature_type` column cleanly partitions waterfalls vs dams
 
-## Phase 2: Source pull infrastructure
+## Phase 2: Source pull as a private helper in `lnk_pipeline_prepare.R`
 
-- [ ] Add new `lnk_dams_load(conn, schema, ...)` function mirroring bcfp's `load_dams.sql`:
-  - Pull `cabd.dams` (filtered/transformed)
-  - LEFT JOIN exclusions (drop)
-  - LEFT JOIN blkey_xref (override snap)
-  - LEFT JOIN passability_status_updates (override status)
-  - UNION ALL with `cabd_additions where feature_type = 'dams'` (the 4 US-side dam placeholders)
-  - Lateral snap to `fwa_stream_networks_sp` within 65 m
-- [ ] Output: `<schema>.dams` table with bcfp's column set (`dam_name_en`, `height_m`, `owner`, `dam_use`, `operating_status`, `passability_status_code`, `geom`)
-- [ ] Documented as **NOT used in habitat classification** — comment in the function source + roxygen note
+Follows the precedent set by `prep_subsurfaceflow` in link 0.19.0 — inline SQL helper, NOT a new exported function. The batch-point-snap-to-FWA pattern exists in bcfp 5+ places (load_dams, load_falls, load_subsurfaceflow, crossings, etc.), but a fresh-side primitive is speculative until a second link consumer materializes. Promote to `frs_point_load_snapped()` later if pattern recurs.
+
+- [ ] Add `.lnk_pipeline_prep_dams(conn, cfg, schema, loaded)` private helper in `R/lnk_pipeline_prepare.R`:
+  - CTE 1: `from cabd.dams left outer join cabd_exclusions on cabd_id where exclusions.cabd_id is null`
+  - CTE 2: lateral snap to `fwa_stream_networks_sp` within 65 m, two paths (with-blkey via xref, without-blkey via spatial nearest)
+  - CTE 3: passability override via `coalesce(updates.passability_status_code, cabd.passability_status_code)`; carry `(dam_name_en, height_m, owner, dam_use, operating_status)`
+  - UNION ALL with `cabd_additions where feature_type = 'dams'` (the 4 US placeholders)
+- [ ] Output: `<schema>.dams` with column set `(dam_id, linear_feature_id, blue_line_key, downstream_route_measure, wscode_ltree, localcode_ltree, distance_to_stream, watershed_group_code, dam_name_en, height_m, owner, dam_use, operating_status, passability_status_code, geom)` — mirrors bcfp's table
+- [ ] Helper docstring is explicit: **NOT used in habitat classification** — data lives in the parallel reporting layer
 
 ## Phase 3: Edit CSV ingestion via lnk_load_overrides
 
