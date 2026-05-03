@@ -57,6 +57,11 @@ files:
 extends: ~
 
 pipeline:
+  # `schema` is the persistent target where lnk_pipeline_persist accumulates
+  # per-WSG output. Per-WSG staging always goes to working_<wsg> regardless.
+  # Required (no default fallback). For side-by-side bundle compares, set
+  # this to per-bundle values (e.g. fresh_bcfp + fresh_default).
+  schema: fresh
   apply_habitat_overlay: no
   # break_order — sources of segment break positions, applied in the order
   # listed. Available entries (see ?lnk_pipeline_break):

@@ -17,29 +17,19 @@
 
 Required for Phase 5+ acceptance ("rollup tibbles match pre-rename byte-for-byte").
 
-- [ ] On main, ADMS + LRDO + SETN + BULK + HARR — run `compare_bcfishpass_wsg` for each, save rollup RDS to `data-raw/logs/baseline_pre_112/<wsg>_baseline.rds`
-- [ ] Commit baseline RDSes on main BEFORE branching (so they survive PR rebase)
-- [ ] Note: provincial-parity `data-raw/logs/provincial_parity/*.rds` already captured (2026-05-03, link 0.25.1) — that's the 232-WSG baseline. Don't re-capture.
+- [x] Phase 0 settled differently: provincial_parity `data-raw/logs/provincial_parity/*.rds` (232 WSGs, link 0.25.1, captured 2026-05-03) IS the baseline — covers far more than the 5 WSGs originally listed. Committed on the issue branch (still survives any PR squash since we'll merge with --squash, all PWF + baseline land together). Path of record: `data-raw/logs/provincial_parity/<wsg>.rds`.
 
 ## Phase 1: Add `pipeline.schema` + `.lnk_table_names()` + persist_init DDL helper
 
 Atomic land — config, helper, validator, DDL helper all together, so no half-state where the validator fires on bundles missing the field.
 
-- [ ] Add `pipeline.schema: fresh` to both `inst/extdata/configs/{bcfishpass,default}/config.yaml`
-- [ ] Add `.lnk_table_names(cfg)` private helper in `R/utils.R`. Returns named list:
-  ```r
-  list(
-    streams      = paste0(schema, ".streams"),
-    habitat_for  = function(sp) paste0(schema, ".streams_habitat_", tolower(sp))
-  )
-  ```
-  Errors clearly when `cfg$pipeline$schema` is missing/empty.
-- [ ] `R/lnk_persist_init.R` — `lnk_persist_init(conn, cfg, species)`. Idempotent `CREATE TABLE IF NOT EXISTS` for `<schema>.streams` + `<schema>.streams_habitat_<sp>` (one per species). Explicit DDL:
-  - **streams**: `(id_segment integer, watershed_group_code varchar(4), blue_line_key integer, segmented_stream_id bigint, edge_type integer, length_metre double precision, waterbody_key integer, wscode_ltree ltree, localcode_ltree ltree, geom geometry(MultiLineString, 3005), PRIMARY KEY (id_segment, watershed_group_code))`
-  - **streams_habitat_\<sp\>**: `(id_segment integer, watershed_group_code varchar(4), accessible boolean, spawning boolean, rearing boolean, lake_rearing boolean, wetland_rearing boolean, PRIMARY KEY (id_segment, watershed_group_code))`
-  - Index `<schema>.streams.geom` (GIST), `<schema>.streams.watershed_group_code`, `<schema>.streams_habitat_<sp>.watershed_group_code`
-- [ ] `lnk_config_verify` — extend to assert `cfg$pipeline$schema` is non-empty
-- [ ] Tests: `.lnk_table_names()` happy-path + missing-schema error. `lnk_persist_init` mocked SQL emission asserts CREATE for all 8 species (bcfp bundle).
+- [x] Add `pipeline.schema: fresh` to both `inst/extdata/configs/{bcfishpass,default}/config.yaml`
+- [x] Add `.lnk_table_names(cfg)` private helper in `R/utils.R`. Returns list with `schema`, `streams`, `habitat_for(sp)` constructor. Errors clearly when `cfg$pipeline$schema` is missing/empty.
+- [x] Add `.lnk_working_schema(aoi)` helper alongside (returns `working_<wsg>` — used by Phase 2).
+- [x] `R/lnk_persist_init.R` — `lnk_persist_init(conn, cfg, species)`. Idempotent CREATE SCHEMA + CREATE TABLE IF NOT EXISTS. DDL driven by `cols_streams` + `cols_habitat` named-vector abstractions (single source of truth shared with `lnk_pipeline_persist`).
+- [x] Validation gate is `.lnk_table_names()` itself — errors clearly when `cfg$pipeline$schema` empty. Skipped extending `lnk_config_verify` since it's drift-detection only; entry-point validation is the gatekeeper.
+- [x] Tests: 28 PASS — `.lnk_table_names` happy-path + missing-schema errors + `habitat_for` species validation; `.lnk_working_schema` happy-path + invalid input; `lnk_persist_init` mocked SQL emission asserts CREATE SCHEMA + CREATE TABLE for streams + per-species habitat tables + GIST index.
+- [x] Full suite: 696 PASS / 0 FAIL — no regressions.
 
 ## Phase 2: Rewire pipeline phases to write `working_<aoi>` staging + persist at end
 

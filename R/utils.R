@@ -138,3 +138,51 @@
     function(x) identical(row[[x]], "t"), logical(1))
   toupper(spp_cols[present])
 }
+
+
+#' Persistent table names derived from `cfg$pipeline$schema`.
+#'
+#' Returns a list with the persistent table name for `streams` and a
+#' constructor function `habitat_for(species)` that returns the
+#' `streams_habitat_<sp>` name for a given species code (lowercased).
+#' Per-WSG staging tables use a separate `working_<wsg>` schema and are
+#' not surfaced here — this helper only exposes the persistent province-
+#' wide targets.
+#'
+#' @noRd
+.lnk_table_names <- function(cfg) {
+  if (!inherits(cfg, "lnk_config")) {
+    stop("cfg must be an lnk_config object", call. = FALSE)
+  }
+  schema <- cfg$pipeline$schema
+  if (!is.character(schema) || length(schema) != 1L || !nzchar(schema)) {
+    stop("cfg$pipeline$schema must be a non-empty string. Add it to ",
+         "the bundle's config.yaml under `pipeline:`. See link#112.",
+         call. = FALSE)
+  }
+  list(
+    schema      = schema,
+    streams     = paste0(schema, ".streams"),
+    habitat_for = function(sp) {
+      if (!is.character(sp) || length(sp) != 1L || !nzchar(sp)) {
+        stop("sp must be a single non-empty species code", call. = FALSE)
+      }
+      paste0(schema, ".streams_habitat_", tolower(sp))
+    }
+  )
+}
+
+
+#' Per-WSG working schema name (`working_<wsg>`).
+#'
+#' Per-WSG staging tables (`working_<wsg>.streams`, `.streams_habitat`,
+#' `.streams_breaks`) live here. Keeps each WSG's run-state isolated so
+#' parallel workers and re-runs don't collide.
+#'
+#' @noRd
+.lnk_working_schema <- function(aoi) {
+  if (!is.character(aoi) || length(aoi) != 1L || !nzchar(aoi)) {
+    stop("aoi must be a single non-empty WSG code", call. = FALSE)
+  }
+  paste0("working_", tolower(aoi))
+}
