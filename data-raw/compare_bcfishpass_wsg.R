@@ -61,10 +61,13 @@ compare_bcfishpass_wsg <- function(wsg, config, dams = TRUE,
   # threaded through every pipeline phase.
   loaded <- link::lnk_load_overrides(config)
 
-  # Defensive reset of shared-schema outputs from any prior partial run.
-  DBI::dbExecute(conn,
-    "DROP TABLE IF EXISTS fresh.streams, fresh.streams_habitat,
-     fresh.streams_breaks CASCADE")
+  # Defensive reset of per-WSG staging from any prior partial run.
+  # Per-WSG segment-level data accumulates into fresh.streams +
+  # fresh.streams_habitat_<sp> via lnk_pipeline_persist; the working_<wsg>
+  # tables are scratch for the current WSG only.
+  DBI::dbExecute(conn, sprintf(
+    "DROP TABLE IF EXISTS %1$s.streams, %1$s.streams_habitat,
+     %1$s.streams_breaks CASCADE", schema))
 
   # -------------------------------------------------------------------------
   # Pipeline
@@ -81,6 +84,18 @@ compare_bcfishpass_wsg <- function(wsg, config, dams = TRUE,
     loaded = loaded, schema = schema)
   link::lnk_pipeline_connect(conn, aoi = wsg, cfg = config,
     loaded = loaded, schema = schema)
+
+  # -------------------------------------------------------------------------
+  # Persist per-WSG output into province-wide fresh.streams +
+  # fresh.streams_habitat_<sp>. Idempotent CREATE on first run, then
+  # DELETE-WHERE-WSG + INSERT on every run. Rollup queries below still
+  # read from <schema>.streams_habitat (the per-WSG staging) so the
+  # comparison tibble reflects this run only — same as before #112.
+  # -------------------------------------------------------------------------
+  active_species <- link::lnk_pipeline_species(config, loaded, wsg)
+  link::lnk_persist_init(conn, config, species = active_species)
+  link::lnk_pipeline_persist(conn, aoi = wsg, cfg = config,
+    species = active_species, schema = schema)
 
   # -------------------------------------------------------------------------
   # Link-side linear rollup (spawning_km + rearing_km per species)
@@ -140,12 +155,13 @@ compare_bcfishpass_wsg <- function(wsg, config, dams = TRUE,
       round(SUM(CASE WHEN h.rearing AND s.edge_type IN %s
                      THEN s.length_metre ELSE 0 END)::numeric / 1000, 2)
         AS rearing_wetland_centerline_km
-    FROM fresh.streams s JOIN fresh.streams_habitat h
+    FROM %s.streams s JOIN %s.streams_habitat h
       ON s.id_segment = h.id_segment
     WHERE s.watershed_group_code = %s
       AND h.species_code IN (%s)
     GROUP BY h.species_code ORDER BY h.species_code",
     et_stream_sql, et_lake_sql, et_wetland_sql,
+    schema, schema,
     DBI::dbQuoteLiteral(conn, wsg),
     species_sql))
 
@@ -161,22 +177,23 @@ compare_bcfishpass_wsg <- function(wsg, config, dams = TRUE,
   # but if someone runs this against a legacy schema the SQL below
   # errors with a clear "column does not exist" message; catch early.
   # -------------------------------------------------------------------------
-  hab_cols <- DBI::dbGetQuery(conn, "
+  hab_cols <- DBI::dbGetQuery(conn, sprintf("
     SELECT column_name FROM information_schema.columns
-    WHERE table_schema = 'fresh' AND table_name = 'streams_habitat'")$column_name
+    WHERE table_schema = %s AND table_name = 'streams_habitat'",
+    DBI::dbQuoteLiteral(conn, schema)))$column_name
   need <- c("lake_rearing", "wetland_rearing")
   missing <- setdiff(need, hab_cols)
   if (length(missing) > 0) {
     stop(sprintf(
-      "fresh.streams_habitat is missing required columns: %s. Requires fresh >= 0.17.1.",
-      paste(missing, collapse = ", ")), call. = FALSE)
+      "%s.streams_habitat is missing required columns: %s. Requires fresh >= 0.17.1.",
+      schema, paste(missing, collapse = ", ")), call. = FALSE)
   }
   ours_lake_ha <- DBI::dbGetQuery(conn, sprintf("
     SELECT species_code, round(SUM(area_ha)::numeric, 2) AS lake_rearing_ha
     FROM (
       SELECT DISTINCT h.species_code, l.waterbody_key, l.area_ha
-      FROM fresh.streams s
-      JOIN fresh.streams_habitat h ON s.id_segment = h.id_segment
+      FROM %s.streams s
+      JOIN %s.streams_habitat h ON s.id_segment = h.id_segment
       JOIN whse_basemapping.fwa_lakes_poly l
         ON l.waterbody_key = s.waterbody_key
       WHERE s.watershed_group_code = %s
@@ -184,6 +201,7 @@ compare_bcfishpass_wsg <- function(wsg, config, dams = TRUE,
         AND h.lake_rearing = TRUE
     ) sub
     GROUP BY species_code",
+    schema, schema,
     DBI::dbQuoteLiteral(conn, wsg),
     species_sql))
 
@@ -191,8 +209,8 @@ compare_bcfishpass_wsg <- function(wsg, config, dams = TRUE,
     SELECT species_code, round(SUM(area_ha)::numeric, 2) AS wetland_rearing_ha
     FROM (
       SELECT DISTINCT h.species_code, w.waterbody_key, w.area_ha
-      FROM fresh.streams s
-      JOIN fresh.streams_habitat h ON s.id_segment = h.id_segment
+      FROM %s.streams s
+      JOIN %s.streams_habitat h ON s.id_segment = h.id_segment
       JOIN whse_basemapping.fwa_wetlands_poly w
         ON w.waterbody_key = s.waterbody_key
       WHERE s.watershed_group_code = %s
@@ -200,6 +218,7 @@ compare_bcfishpass_wsg <- function(wsg, config, dams = TRUE,
         AND h.wetland_rearing = TRUE
     ) sub
     GROUP BY species_code",
+    schema, schema,
     DBI::dbQuoteLiteral(conn, wsg),
     species_sql))
 

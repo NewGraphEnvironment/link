@@ -122,11 +122,11 @@ lnk_pipeline_break <- function(conn, aoi, cfg, loaded, schema,
            call. = FALSE)
     }
     fresh::frs_break_apply(conn,
-      table = "fresh.streams",
+      table = paste0(schema, ".streams"),
       breaks = src_table,
       segment_id = "id_segment",
       measure_precision = 0L)
-    .lnk_pipeline_break_reassign_id(conn)
+    .lnk_pipeline_break_reassign_id(conn, schema)
   }
 
   invisible(conn)
@@ -229,19 +229,21 @@ lnk_pipeline_break <- function(conn, aoi, cfg, loaded, schema,
 
 #' Reassign unique id_segment after a break round
 #' @noRd
-.lnk_pipeline_break_reassign_id <- function(conn) {
-  .lnk_db_execute(conn, "DROP INDEX IF EXISTS fresh.streams_id_segment_idx")
-  .lnk_db_execute(conn,
+.lnk_pipeline_break_reassign_id <- function(conn, schema) {
+  streams_tbl <- paste0(schema, ".streams")
+  .lnk_db_execute(conn, sprintf(
+    "DROP INDEX IF EXISTS %s.streams_id_segment_idx", schema))
+  .lnk_db_execute(conn, sprintf(
     "WITH numbered AS (
        SELECT ctid, row_number() OVER
          (ORDER BY blue_line_key, downstream_route_measure) AS rn
-       FROM fresh.streams
+       FROM %1$s
      )
-     UPDATE fresh.streams s SET id_segment = numbered.rn
-     FROM numbered WHERE s.ctid = numbered.ctid")
-  .lnk_db_execute(conn,
+     UPDATE %1$s s SET id_segment = numbered.rn
+     FROM numbered WHERE s.ctid = numbered.ctid", streams_tbl))
+  .lnk_db_execute(conn, sprintf(
     "CREATE UNIQUE INDEX streams_id_segment_idx
-       ON fresh.streams (id_segment)")
+       ON %s (id_segment)", streams_tbl))
 
   invisible(NULL)
 }

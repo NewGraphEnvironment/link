@@ -10,7 +10,8 @@ lnk_pipeline_prepare(
   cfg,
   loaded,
   schema,
-  observations = "bcfishobs.observations"
+  observations = "bcfishobs.observations",
+  conn_tunnel = NULL
 )
 }
 \arguments{
@@ -32,6 +33,14 @@ call \code{\link[=lnk_pipeline_setup]{lnk_pipeline_setup()}} first).}
 used for building barrier overrides. Default
 \code{"bcfishobs.observations"} — matches bcfishpass's reference data
 on both M4 and M1 fwapg instances (see \code{rtj/docs/distributed-fwapg.md}).}
+
+\item{conn_tunnel}{A \link[DBI:DBIConnection-class]{DBI::DBIConnection} object pointed at
+\code{db_newgraph} (the tunnel-DB carrying bcfp's pre-built tables).
+Optional. When supplied, \verb{<schema>.dams} is populated from
+\code{bcfishpass.dams} filtered to the AOI — parallel reporting layer
+for downstream consumers, NOT consumed by habitat classification.
+When \code{NULL}, any existing \verb{<schema>.dams} is dropped and the dams
+step is a no-op.}
 }
 \value{
 \code{conn} invisibly, for pipe chaining.
@@ -77,6 +86,9 @@ per-model pre/post minimal reduction
 \item \verb{<schema>.gradient_barriers_minimal} (union of minimal positions)
 \item \code{fresh.streams} (base segments — not namespaced by AOI; fresh
 owns its output schema)
+\item \verb{<schema>.dams} (only when \code{conn_tunnel} is supplied) — pulled
+from \code{bcfishpass.dams} filtered to AOI. Parallel reporting layer;
+NOT consumed by habitat classification.
 }
 }
 \examples{
