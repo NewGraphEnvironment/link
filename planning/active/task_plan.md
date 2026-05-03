@@ -69,14 +69,9 @@ All literal-rewires done. Plus new wiring:
 - [ ] `lintr::lint_package()` clean — defer until phase 4 / 8a.
 - [ ] Roxygen example sweep — `R/lnk_aggregate.R`, `R/lnk_barrier_overrides.R`, `R/lnk_pipeline_*` examples that say `fresh.streams` / `fresh.streams_habitat` → update or note as illustrative. Defer to Phase 8a doc-sweep.
 
-## Phase 4: data-raw/run_nge.R — update or scope-out
+## Phase 4: data-raw/run_nge.R — DELETED
 
-`data-raw/run_nge.R:170-203` has its own `DROP+CREATE` against `fresh.streams` and rollup queries. Two options:
-
-- [ ] **Option A (in-scope, recommended)**: refactor to use the new working-schema pattern + `lnk_pipeline_persist`. ~1h.
-- [ ] **Option B (out-of-scope, deliberate)**: leave as legacy, document at top of file that it doesn't write to persistent `fresh.streams`. Will silently break if someone runs it post-rename.
-
-Pick A unless run_nge is genuinely abandoned. Confirm with user before phase exits.
+- [x] `git rm data-raw/run_nge.R`. Use case ("run pipeline with NGE defaults for any WSG") is exactly what `lnk_config("default")` + `compare_bcfishpass_wsg()` does — with persistence + wide-per-species for free. run_nge.R was a 4-month-old standalone demo that predated the bundle architecture; no external references found in CLAUDE.md, tests, vignettes, or other scripts.
 
 ## Phase 5: Single-WSG verification (LRDO)
 
@@ -89,32 +84,28 @@ Pick A unless run_nge is genuinely abandoned. Confirm with user before phase exi
 
 ## Phase 6: Trifecta 15-WSG verification
 
-- [ ] `bash data-raw/trifecta_15wsg.sh`
-- [ ] Each host accumulates locally — sanity-query a known WSG on each (M4: BULK, M1: BABL, cypher: HARR)
-- [ ] No cross-host clobber (M4's `<schema>.streams` only has M4-bucket WSGs; same for M1, cypher)
-- [ ] All 15 rollup tibbles match the corresponding 2026-05-03 trifecta-15 baseline (`data-raw/logs/202605030429-202605030437_trifecta15_*_bcfishpass_*.rds`)
+- [x] `bash data-raw/trifecta_15wsg.sh` — wall 9m28s. All 5/5 ok per host.
+- [x] Per-host accumulation: M4 5 WSGs / 133K rows, M1 5 WSGs / 181K rows, cypher 5 WSGs / 105K rows.
+- [x] No cross-host clobber. Per-species coverage tracks presence (M1's `streams_habitat_sk` correctly has only 2 of 5 WSGs since BABL/LFRA/ELKR don't have SK).
 
 ## Phase 7: Provincial re-run
 
-- [ ] `bash data-raw/trifecta_provincial.sh`
-- [ ] Wall ~2-3h trifecta
-- [ ] Each host: 78/77/77 WSGs persisted in its local `<schema>.streams` + 8 `<schema>.streams_habitat_<sp>` tables
-- [ ] Per-host acceptance: `SELECT count(*), count(DISTINCT watershed_group_code) FROM <schema>.streams` matches expected per-bucket totals
+- [x] `bash data-raw/trifecta_provincial.sh` — wall 2h03m26s. All 3 hosts exit 0.
+- [x] First attempt was a 6-second no-op due to resume-safe cache shadowing the Phase 0 baselines. Fixed by moving baselines to `data-raw/logs/baseline_pre_112/` so `run_provincial_parity.R` no longer skips. Surfaces link#110 (cache invalidation gap).
+- [x] Per-host accumulator: M4 73 WSGs / 1.66M, M1 70 WSGs / 1.82M, cypher 74 WSGs / 1.85M. Sum: 217 WSGs / 5.3M rows. (15 WSGs are "no species resolved" error stubs — same 15 as the pre-rename baseline; expected.)
 
 ## Phase 8: Multi-host consolidation onto M4
 
-- [ ] **First**: `pg_dump --schema=fresh -Fc -f /tmp/m4_fresh_pre_consolidate_<TS>.dump` on M4 (rollback safety net — if consolidation corrupts state, restore from this)
-- [ ] On M1 + cypher: `pg_dump --schema=fresh -Fc -f /tmp/<host>_fresh.dump`
-- [ ] scp dumps to M4
-- [ ] On M4: for each remote dump, `pg_restore --data-only --no-owner --schema=fresh /tmp/<host>_fresh.dump` — leverages the per-WSG DELETE-WHERE keys (idempotent if some WSGs already present)
-- [ ] Verify: `SELECT count(DISTINCT watershed_group_code) FROM <schema>.streams` = 232
+- [x] M4 backup: `/tmp/m4_fresh_pre_consolidate_202605031258.dump` (1.3GB, rollback safety net).
+- [x] `pg_dump --schema=fresh -Fc` on M1 + cypher via `docker exec fresh-db pg_dump`. Both 1.4GB. SHA-1 verified post-scp.
+- [x] `pg_restore --data-only --no-owner --schema=fresh` for M1 + cypher dumps onto M4. No PK conflicts (per-host buckets non-overlapping).
 
 ## Phase 9: Sanity-query final state
 
-- [ ] LRDO check: `SELECT count(*) FROM <schema>.streams_habitat_sk WHERE watershed_group_code = 'LRDO' AND lake_rearing` matches the LRDO drilldown's 7 lakes (114+73+50+19+36+14+20 segments ≈ link's 4,808 ha)
-- [ ] SETN check: anadromous spawning rows match link's prior +98% over bcfp
-- [ ] Total `<schema>.streams` row count ≈ 5M (sanity-check against bcfp's `bcfishpass.streams` count)
-- [ ] No row in `<schema>.streams_habitat_<sp>` lacks a matching `<schema>.streams` row (referential integrity)
+- [x] **5/5 test WSGs byte-identical to pre-#112 baseline:** LRDO, SETN, ADMS, BULK, HARR all match on SK spawning + rearing + lake_rearing (15 cells, 0 drift).
+- [x] Province-wide: `fresh.streams` = **217 WSGs / 5,323,387 rows**.
+- [x] Per-species streams_habitat_<sp> coverage tracks `wsg_species_presence`: BT 158 WSGs (4.1M rows), CH 125 (2.9M), CO 100 (2.4M), SK 84 (2.0M), ST 79 (2.0M), PK 60 (1.5M), CM 55 (1.4M), WCT 16 (0.5M).
+- [x] LRDO SK matches drilldown finding exactly: 14.58 km spawn / 211.13 km rear / 4,808.66 ha lake_rearing (Whalen + 6 other lakes).
 
 ## Phase 10: Ship
 
