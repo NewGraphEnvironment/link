@@ -1,0 +1,41 @@
+============================================
+[trifecta15] dispatch start: 21:27:44
+  m4     → BULK HORS ADMS KISP MORR
+  m1     → BABL LFRA ELKR NATR PARS
+  cypher → HARR VICT LILL KOTL DEAD
+============================================
+============================================
+[trifecta15] elapsed: 9m26s
+  m4     exit=0  log=/Users/airvine/Projects/repo/link/data-raw/logs/202605022127_trifecta15_m4.txt
+  m1     exit=0  log=/Users/airvine/Projects/repo/link/data-raw/logs/202605022127_trifecta15_m1.txt
+  cypher exit=0  log=/Users/airvine/Projects/repo/link/data-raw/logs/202605022127_trifecta15_cypher.txt
+============================================
+
+--- 202605022127_trifecta15_m4.txt (per-WSG walls) ---
+[BULK] 175.3s  42 rows
+[HORS] 57.3s  28 rows
+[ADMS] 73.4s  28 rows
+[KISP] 126.8s  49 rows
+[MORR] 102.6s  42 rows
+host total: 535.3s (5/5 ok)
+
+--- 202605022127_trifecta15_m1.txt (per-WSG walls) ---
+[BABL] 110.0s  35 rows
+[LFRA] 98.5s  49 rows
+[ELKR] 115.5s  14 rows
+[NATR] 45.5s  7 rows
+[PARS] 107.5s  7 rows
+host total: 477.0s (5/5 ok)
+
+--- 202605022127_trifecta15_cypher.txt (per-WSG walls) ---
+[cypher_run] workload: /Users/airvine/Projects/repo/link/data-raw/logs/202605022127_trifecta15_cypher.sh
+[cypher_run] target:   cypher@24.144.70.121
+[cypher_run] remote:   /home/cypher/cypher-workloads/202605022127_trifecta15_cypher-202605022127.sh
+[cypher_run] log:      /Users/airvine/Projects/repo/rtj/scripts/cypher/logs/202605022127_cypher-run_202605022127_trifecta15_cypher.txt
+[cypher_run] elapsed: 9m23s  exit_code: 0
+[cypher_run] log: /Users/airvine/Projects/repo/rtj/scripts/cypher/logs/202605022127_cypher-run_202605022127_trifecta15_cypher.txt
+
+[trifecta15] pulling cypher rollup RDS files
+scp: remote readdir("/home/cypher/cypher-workloads/logs/"): No such file or directory
+scp: /home/cypher/cypher-workloads/logs/*_trifecta15_cypher_bcfishpass_*.rds: No such file or directory
+[trifecta15] pulling m1 rollup RDS files

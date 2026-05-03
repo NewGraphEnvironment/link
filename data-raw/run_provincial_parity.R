@@ -50,7 +50,9 @@ if (length(wsgs_arg) > 0) {
   wsgs <- default_wsgs
 }
 
-out_dir <- "/Users/airvine/Projects/repo/link/data-raw/logs/provincial_parity"
+# Relative to getwd() so the script works on M4, M1, and cypher (which
+# don't share the /Users/airvine/... path). Run from data-raw/.
+out_dir <- file.path(getwd(), "logs", "provincial_parity")
 dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 
 cat("=== PROVINCIAL PARITY RUN — link 0.20.0 ===\n")
