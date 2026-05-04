@@ -540,8 +540,14 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
   # access_gradient_max produce identical filters, so the union into
   # gradient_barriers_minimal is unchanged when parameters_fresh matches
   # bcfishpass conventions.
-  species <- lnk_pipeline_species(cfg, loaded, aoi)
+  # Species set is intentionally NOT filtered by WSG presence here.
+  # gradient_barriers_minimal is consumed as a network break source whose
+  # shape determines segment boundaries downstream — it must be stable
+  # across WSGs that share a config bundle, regardless of which species
+  # happen to be present in the AOI. Presence filtering applies per-
+  # species at classify/connect time, not at break-position time.
   params_fresh <- loaded$parameters_fresh
+  species <- cfg$species %||% unique(params_fresh$species_code)
   models <- list()
   for (sp in species) {
     sp_amax <- params_fresh$access_gradient_max[
