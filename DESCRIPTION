@@ -1,6 +1,6 @@
 Package: link
 Title: Stream Network Habitat Interpretation (Experimental)
-Version: 0.26.0
+Version: 0.27.0
 Authors@R: c(
     person("Allan", "Irvine", , "airvine@newgraphenvironment.com",
            role = c("aut", "cre"),

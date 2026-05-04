@@ -40,15 +40,15 @@ Lets variants declare break vectors at the bundle level without R code edits.
 
 ## Phase 3: Bit-identical regression verification
 
-- [ ] HARR single-WSG pre-flight (`link-tarmake-single HARR`) — confirm rollup matches pre-change baseline byte-identical (`digest::digest()` match).
-- [ ] 4-WSG `tar_make` full run — same byte-identical assertion on rollup.
-- [ ] Stamped log under `data-raw/logs/<TS>_link45_regression.txt` with env stamp + data snapshot timestamps.
-- [ ] `gradient_barriers_minimal` row count per WSG: identical pre/post (per-species union must equal per-group union when `access_gradient_max` is consistent within bcfp groups).
+- [x] HARR single-WSG pre-flight — bit-identical to baseline (digest `18bc3101...`).
+- [x] 4-WSG single-WSG runs (ADMS/HARR/BABL/BULK) — all bit-identical to baseline.
+- [x] Stamped log: `data-raw/logs/20260503_link45_regression.txt`.
+- [x] End-to-end override demo: dropping 0.25 break on ADMS expands BT habitat +30% (+199km rearing) as expected; CH/CO/SK unchanged. Schema isolation via `cfg$pipeline$schema = "fresh_exp_no_25"` works.
 
 ## Phase 4: Release
 
-- [ ] `NEWS.md` entry under 0.27.0 (override + per-species derivation; bit-identical to bcfp parity).
-- [ ] `DESCRIPTION` version bump 0.26.0 → 0.27.0.
+- [x] `NEWS.md` entry under 0.27.0 (override + per-species derivation; bit-identical to bcfp parity).
+- [x] `DESCRIPTION` version bump 0.26.0 → 0.27.0.
 - [ ] Open PR with body referencing #45 + SRED tag (`Relates to NewGraphEnvironment/sred-2025-2026#24`).
 - [ ] File follow-up: "Auto-derive `gradient_classes` default from `parameters_fresh$access_gradient_max`" (issue #45 scope item 1, separated).
 

@@ -1,0 +1,33 @@
+=== link#45 Phase 1+2 bit-identical regression — 2026-05-03 ===
+
+Verifies that exposing classes override + per-species filter derivation
+preserves bit-identical bcfishpass parity when no override is supplied.
+
+Setup:
+- Branch: 45-gradient-classes-derive-from-parameters
+- Commits: 15327ea, f606837, 36d2f5e
+- link DB conn: localhost:5432 fwapg (Docker fresh-db)
+- bcfishpass tunnel: db_newgraph (port 63333)
+- Baselines: data-raw/logs/provincial_parity/<WSG>.rds (provincial run 2026-05-02)
+
+Per-WSG digest comparison (rollup tibble):
+
+  WSG    digest(baseline)                  digest(post-#45)                  identical
+  ADMS   f887d9742780fd2d880b993deccc4c44  f887d9742780fd2d880b993deccc4c44  TRUE
+  HARR   18bc3101e2c3b04f89fd10e8bc7b82aa  18bc3101e2c3b04f89fd10e8bc7b82aa  TRUE
+  BABL   61bc7ad627a2948351b277d3c1093ba0  61bc7ad627a2948351b277d3c1093ba0  TRUE
+  BULK   699bd9ef5af6e9395431dd671b5e5828  699bd9ef5af6e9395431dd671b5e5828  TRUE
+
+End-to-end override demonstration (ADMS, classes drops 0.25 break):
+  exp_classes <- c("1500" = 0.15, "2000" = 0.20)
+  → BT (access_gradient_max=0.25) gets no class >= 0.25 → no per-species barrier table
+  → BT habitat shifts:
+       rearing:        670.88 → 870.00 km   (+199.12, +29.7%)
+       rearing_stream: 365.73 → 539.38 km   (+173.65, +47.5%)
+       spawning:       362.29 → 443.45 km   ( +81.16, +22.4%)
+  → CH/CO/SK habitat unchanged (their 0.15 threshold still finds barriers).
+
+Conclusion:
+  - Default (no override) = bit-identical to bcfp baseline on all 4 WSGs.
+  - Override mechanism functional end-to-end. Schema isolation
+    (cfg$pipeline$schema = "fresh_exp_*") confirmed working.
