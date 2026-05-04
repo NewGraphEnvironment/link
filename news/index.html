@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.28.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.29.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,6 +31,18 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.29.0" id="link-0290">link 0.29.0<a class="anchor" aria-label="anchor" href="#link-0290"></a></h2>
+<p>Closes <a href="https://github.com/NewGraphEnvironment/link/issues/118" class="external-link">#118</a>. DB hygiene to prevent the disk-full incident that crashed cypher’s <code>fresh-db</code> container during the 2026-05-04 <code>default_extrabreaks</code> provincial trifecta. Two-tier orchestrator-level cleanup; no in-package API changes.</p>
+<ul><li>
+<code>compare_bcfishpass_wsg()</code> gains <code>cleanup_working = TRUE</code> parameter — drops <code>working_&lt;aoi&gt;</code> schema after the rollup tibble is built. Default-on; pass <code>FALSE</code> for interactive debug. Saves ~10–15 GB per provincial run on every host (60+ working schemas accumulated otherwise).</li>
+<li>
+<code>consolidate_schema()</code> gains <code>keep_source = FALSE</code> parameter — drops source schema on each remote host after a successful pg_restore. Default-on; rc-guarded (failed restore leaves source for retry); warn-but-don’t-fail on drop rc != 0. Saves ~25–30 GB per consolidated bundle on M1 + cypher.</li>
+<li>
+<code>data-raw/README.md</code> documents per-worker disk capacity: rough footprints (~30 GB single-bundle persistent + 10–15 GB per-WSG scratch + 30–40 GB fwapg base), 60 GB minimum free recommendation, 2026-05-04 cypher incident as cautionary tale.</li>
+<li>Bit-identical bcfp parity by default. ADMS rollup tibble post-cleanup <code><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical()</a></code> to pre-cleanup baseline (RDS file metadata differs but deserialized object is identical).</li>
+<li>Approach: orchestrator-level cleanup, NOT in-package — <code>lnk_pipeline_persist</code> stays scoped to one job; the rollup query reads working schema in long-form AFTER persist returns, so the natural lifecycle owner is the orchestrator script.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.28.0" id="link-0280">link 0.28.0<a class="anchor" aria-label="anchor" href="#link-0280"></a></h2>
 <p>Orphan-class break source — fed-vector experiments now Just Work without a separate knob. When <code>cfg$pipeline$gradient_classes</code> (or the caller’s <code>classes</code> arg) contains thresholds below every modelled species’s <code>access_gradient_max</code>, those positions enter <code>gradient_barriers_minimal</code> as a <code>barriers_orphan</code> table — no per-species filter, no minimal reduction (every detected position splits the network for segmentation precision). Access semantics are unaffected: fresh’s per-species access label filter at classify time rejects any <code>gradient_NNNN</code> label below the species’s threshold, so orphan classes never block any species.</p>
