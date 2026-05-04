@@ -15,7 +15,8 @@ lnk_pipeline_prepare(
   loaded,
   schema,
   observations = "bcfishobs.observations",
-  conn_tunnel = NULL
+  conn_tunnel = NULL,
+  classes = NULL
 )
 ```
 
@@ -67,6 +68,20 @@ lnk_pipeline_prepare(
   reporting layer for downstream consumers, NOT consumed by habitat
   classification. When `NULL`, any existing `<schema>.dams` is dropped
   and the dams step is a no-op.
+
+- classes:
+
+  Optional named numeric vector of gradient class thresholds passed to
+  [`fresh::frs_break_find()`](https://newgraphenvironment.github.io/fresh/reference/frs_break_find.html).
+  Names are the integer-encoded class labels (gradient × 10000,
+  zero-padded to width 4 — e.g. `"1500"` for 0.15); values are the
+  gradient fractions. When `NULL`, falls back to
+  `cfg$pipeline$gradient_classes` if set in the config bundle, otherwise
+  to the bcfishpass default
+  `c("1500" = 0.15, "2000" = 0.20, "2500" = 0.25, "3000" = 0.30)`.
+  Per-species access barrier filters in `prep_minimal` are derived from
+  `loaded$parameters_fresh$access_gradient_max`: a class is a barrier
+  for species `s` when its value is ≥ `s$access_gradient_max`.
 
 ## Value
 
@@ -147,6 +162,10 @@ schema <- "working_bulk"
 lnk_pipeline_setup(conn, schema)
 lnk_pipeline_load(conn, "BULK", cfg, loaded, schema)
 lnk_pipeline_prepare(conn, "BULK", cfg, loaded, schema)
+
+# Override break vector for an experimental scenario:
+lnk_pipeline_prepare(conn, "BULK", cfg, loaded, schema,
+  classes = c("0500" = 0.05, "1000" = 0.10, "1500" = 0.15))
 
 DBI::dbGetQuery(conn, sprintf(
   "SELECT count(*) FROM %s.gradient_barriers_minimal", schema))

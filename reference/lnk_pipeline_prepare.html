@@ -11,7 +11,7 @@ classify, connect) consume:"><meta property="og:image" content="https://newgraph
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.26.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.27.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -51,7 +51,8 @@ evidence and network data that downstream phases (<code><a href="https://rdrr.io
 <span>  <span class="va">loaded</span>,</span>
 <span>  <span class="va">schema</span>,</span>
 <span>  observations <span class="op">=</span> <span class="st">"bcfishobs.observations"</span>,</span>
-<span>  conn_tunnel <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  conn_tunnel <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  classes <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -98,6 +99,19 @@ Optional. When supplied, <code>&lt;schema&gt;.dams</code> is populated from
 for downstream consumers, NOT consumed by habitat classification.
 When <code>NULL</code>, any existing <code>&lt;schema&gt;.dams</code> is dropped and the dams
 step is a no-op.</p></dd>
+
+
+<dt id="arg-classes">classes<a class="anchor" aria-label="anchor" href="#arg-classes"></a></dt>
+<dd><p>Optional named numeric vector of gradient class
+thresholds passed to <code><a href="https://newgraphenvironment.github.io/fresh/reference/frs_break_find.html" class="external-link">fresh::frs_break_find()</a></code>. Names are the
+integer-encoded class labels (gradient × 10000, zero-padded to
+width 4 — e.g. <code>"1500"</code> for 0.15); values are the gradient
+fractions. When <code>NULL</code>, falls back to <code>cfg$pipeline$gradient_classes</code>
+if set in the config bundle, otherwise to the bcfishpass default
+<code>c("1500" = 0.15, "2000" = 0.20, "2500" = 0.25, "3000" = 0.30)</code>.
+Per-species access barrier filters in <code>prep_minimal</code> are derived
+from <code>loaded$parameters_fresh$access_gradient_max</code>: a class is a
+barrier for species <code>s</code> when its value is ≥ <code>s$access_gradient_max</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -163,6 +177,10 @@ NOT consumed by habitat classification.</p></li>
 <span class="r-in"><span><span class="fu"><a href="lnk_pipeline_setup.html">lnk_pipeline_setup</a></span><span class="op">(</span><span class="va">conn</span>, <span class="va">schema</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="lnk_pipeline_load.html">lnk_pipeline_load</a></span><span class="op">(</span><span class="va">conn</span>, <span class="st">"BULK"</span>, <span class="va">cfg</span>, <span class="va">loaded</span>, <span class="va">schema</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">lnk_pipeline_prepare</span><span class="op">(</span><span class="va">conn</span>, <span class="st">"BULK"</span>, <span class="va">cfg</span>, <span class="va">loaded</span>, <span class="va">schema</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Override break vector for an experimental scenario:</span></span></span>
+<span class="r-in"><span><span class="fu">lnk_pipeline_prepare</span><span class="op">(</span><span class="va">conn</span>, <span class="st">"BULK"</span>, <span class="va">cfg</span>, <span class="va">loaded</span>, <span class="va">schema</span>,</span></span>
+<span class="r-in"><span>  classes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"0500"</span> <span class="op">=</span> <span class="fl">0.05</span>, <span class="st">"1000"</span> <span class="op">=</span> <span class="fl">0.10</span>, <span class="st">"1500"</span> <span class="op">=</span> <span class="fl">0.15</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu">DBI</span><span class="fu">::</span><span class="fu"><a href="https://dbi.r-dbi.org/reference/dbGetQuery.html" class="external-link">dbGetQuery</a></span><span class="op">(</span><span class="va">conn</span>, <span class="fu"><a href="https://rdrr.io/r/base/sprintf.html" class="external-link">sprintf</a></span><span class="op">(</span></span></span>
 <span class="r-in"><span>  <span class="st">"SELECT count(*) FROM %s.gradient_barriers_minimal"</span>, <span class="va">schema</span><span class="op">)</span><span class="op">)</span></span></span>

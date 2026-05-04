@@ -1,5 +1,48 @@
 # Changelog
 
+## link 0.27.0
+
+Closes [\#45](https://github.com/NewGraphEnvironment/link/issues/45).
+Two coupled hardcodes in `R/lnk_pipeline_prepare.R` — the bcfishpass
+gradient class break vector and the per-model class filter list — are
+now configurable. Unblocks alternative-methodology experiments that need
+different break thresholds (e.g. breaking the network at the union of
+unique per-species rearing/spawning/access gradient values, or finer
+0.05-step bins) while preserving bit-identical bcfishpass parity by
+default.
+
+- [`lnk_pipeline_prepare()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_prepare.md)
+  gains a `classes` argument — a named numeric vector of gradient class
+  break thresholds. When `NULL`, falls back to
+  `cfg$pipeline$gradient_classes` if set in the bundle, otherwise to the
+  bcfishpass default
+  `c("1500" = 0.15, "2000" = 0.20, "2500" = 0.25, "3000" = 0.30)`.
+  Optional `pipeline.gradient_classes` knob documented (commented-out)
+  in `bcfishpass/config.yaml` and `default/config.yaml`.
+- `.lnk_pipeline_prep_minimal()` replaces the hardcoded per-model
+  `models` list with per-species derivation: for each species in
+  `cfg$species` (with `loaded$parameters_fresh$species_code` fallback),
+  classes whose value is `>= access_gradient_max` form that species’s
+  barrier filter. Per-species barrier tables become `barriers_<sp>`
+  (lowercase species code, validated). Species with NA / zero / missing
+  `access_gradient_max` are skipped.
+- Bit-identical bcfp parity verified on ADMS/HARR/BABL/BULK (same
+  digests as pre-#45 baseline). Override mechanism end-to-end
+  demonstration: dropping the 0.25 break on ADMS expands BT habitat ~30%
+  (<BT@0.25> loses its barrier filter when no class \>= 0.25 exists),
+  CH/CO/SK unchanged.
+- Empty species set (no presence-flagged species + no override) yields a
+  structurally valid empty `gradient_barriers_minimal` table so
+  downstream phases find the expected name. Defensive `sp_amax[1L]`
+  handles the (unlikely) case of duplicate `species_code` rows in
+  `parameters_fresh.csv` — would otherwise trip R 4.3+ length-1
+  enforcement on `||`.
+- 5 new + 2 updated mocked tests (`prep_gradient` classes threading;
+  `prep_minimal` per-species derivation, skip path, custom-vector path;
+  `.lnk_resolve_classes` precedence; YAML→R round-trip through
+  [`lnk_config()`](https://newgraphenvironment.github.io/link/reference/lnk_config.md)).
+  Full suite: 728 PASS / 0 FAIL.
+
 ## link 0.26.0
 
 Closes [\#112](https://github.com/NewGraphEnvironment/link/issues/112).

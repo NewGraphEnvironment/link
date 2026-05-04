@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.26.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.27.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,6 +31,17 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.27.0" id="link-0270">link 0.27.0<a class="anchor" aria-label="anchor" href="#link-0270"></a></h2>
+<p>Closes <a href="https://github.com/NewGraphEnvironment/link/issues/45" class="external-link">#45</a>. Two coupled hardcodes in <code>R/lnk_pipeline_prepare.R</code> — the bcfishpass gradient class break vector and the per-model class filter list — are now configurable. Unblocks alternative-methodology experiments that need different break thresholds (e.g. breaking the network at the union of unique per-species rearing/spawning/access gradient values, or finer 0.05-step bins) while preserving bit-identical bcfishpass parity by default.</p>
+<ul><li>
+<code><a href="../reference/lnk_pipeline_prepare.html">lnk_pipeline_prepare()</a></code> gains a <code>classes</code> argument — a named numeric vector of gradient class break thresholds. When <code>NULL</code>, falls back to <code>cfg$pipeline$gradient_classes</code> if set in the bundle, otherwise to the bcfishpass default <code>c("1500" = 0.15, "2000" = 0.20, "2500" = 0.25, "3000" = 0.30)</code>. Optional <code>pipeline.gradient_classes</code> knob documented (commented-out) in <code>bcfishpass/config.yaml</code> and <code>default/config.yaml</code>.</li>
+<li>
+<code>.lnk_pipeline_prep_minimal()</code> replaces the hardcoded per-model <code>models</code> list with per-species derivation: for each species in <code>cfg$species</code> (with <code>loaded$parameters_fresh$species_code</code> fallback), classes whose value is <code>&gt;= access_gradient_max</code> form that species’s barrier filter. Per-species barrier tables become <code>barriers_&lt;sp&gt;</code> (lowercase species code, validated). Species with NA / zero / missing <code>access_gradient_max</code> are skipped.</li>
+<li>Bit-identical bcfp parity verified on ADMS/HARR/BABL/BULK (same digests as pre-#45 baseline). Override mechanism end-to-end demonstration: dropping the 0.25 break on ADMS expands BT habitat ~30% (<a href="mailto:BT@0.25" class="email">BT@0.25</a> loses its barrier filter when no class &gt;= 0.25 exists), CH/CO/SK unchanged.</li>
+<li>Empty species set (no presence-flagged species + no override) yields a structurally valid empty <code>gradient_barriers_minimal</code> table so downstream phases find the expected name. Defensive <code>sp_amax[1L]</code> handles the (unlikely) case of duplicate <code>species_code</code> rows in <code>parameters_fresh.csv</code> — would otherwise trip R 4.3+ length-1 enforcement on <code>||</code>.</li>
+<li>5 new + 2 updated mocked tests (<code>prep_gradient</code> classes threading; <code>prep_minimal</code> per-species derivation, skip path, custom-vector path; <code>.lnk_resolve_classes</code> precedence; YAML→R round-trip through <code><a href="../reference/lnk_config.html">lnk_config()</a></code>). Full suite: 728 PASS / 0 FAIL.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.26.0" id="link-0260">link 0.26.0<a class="anchor" aria-label="anchor" href="#link-0260"></a></h2>
 <p>Closes <a href="https://github.com/NewGraphEnvironment/link/issues/112" class="external-link">#112</a>. Per-WSG output now persists into province-wide <code>&lt;schema&gt;.streams</code> + <code>&lt;schema&gt;.streams_habitat_&lt;sp&gt;</code> tables, mirroring bcfp’s <code>bcfishpass.streams</code> + <code>bcfishpass.habitat_linear_&lt;sp&gt;</code> pattern. Queryable across WSGs for cartography, intrinsic-potential maps, per-crossing rollups, and methodology comparisons — no more re-running 232 WSGs to look at one.</p>
