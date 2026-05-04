@@ -593,10 +593,47 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
     minimal_tbls <- c(minimal_tbls, min_tbl)
   }
 
-  # Union all per-model minimal positions. Empty species set (no rows
-  # in wsg_species_presence, or all species skipped for NA / zero
-  # access_gradient_max) yields a structurally valid empty table so
-  # downstream phases still find the expected name.
+  # Orphan classes: thresholds in `classes` that fall below every species's
+  # access_gradient_max. No species would access-block on them, so the
+  # per-species loop above filters them out — but a caller passing a
+  # vector with low values (e.g. spawn / rear ceilings) wants those
+  # positions in the break network for segmentation precision. Add a
+  # shared `barriers_orphan` table so they enter `gradient_barriers_minimal`.
+  # Access semantics are unaffected: the per-species access label filter at
+  # classify time (fresh::.frs_access_label_filter) rejects any
+  # `gradient_NNNN` label whose value is below the species's threshold.
+  #
+  # Critically — DO NOT run frs_barriers_minimal on the orphan set. Minimal
+  # reduction keeps only the most-downstream-most blocking position per
+  # flow path; that's correct semantics for ACCESS barriers, but orphans
+  # are segmentation positions only. We want every detected position to
+  # split the network, not just the downstream-most one. Use the raw set
+  # directly as the orphan break table.
+  sp_amax_all <- params_fresh$access_gradient_max[
+    params_fresh$species_code %in% species]
+  sp_amax_all <- sp_amax_all[!is.na(sp_amax_all) & sp_amax_all > 0]
+  if (length(sp_amax_all) > 0L) {
+    orphan_classes <- as.integer(
+      names(classes)[classes < min(sp_amax_all)])
+    if (length(orphan_classes) > 0L) {
+      orphan_tbl <- paste0(schema, ".barriers_orphan")
+      class_filter <- paste(orphan_classes, collapse = ", ")
+      .lnk_db_execute(conn, sprintf("DROP TABLE IF EXISTS %s", orphan_tbl))
+      .lnk_db_execute(conn, sprintf(
+        "CREATE TABLE %s AS
+         SELECT blue_line_key, downstream_route_measure,
+                wscode_ltree, localcode_ltree
+         FROM %s.gradient_barriers_raw
+         WHERE gradient_class IN (%s)",
+        orphan_tbl, schema, class_filter))
+      minimal_tbls <- c(minimal_tbls, orphan_tbl)
+    }
+  }
+
+  # Union all per-model + orphan minimal positions. Empty species set
+  # (no rows in wsg_species_presence, or all species skipped for NA /
+  # zero access_gradient_max) yields a structurally valid empty table
+  # so downstream phases still find the expected name.
   .lnk_db_execute(conn, sprintf(
     "DROP TABLE IF EXISTS %s.gradient_barriers_minimal", schema))
   if (length(minimal_tbls) == 0L) {
