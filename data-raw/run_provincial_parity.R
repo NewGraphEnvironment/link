@@ -84,6 +84,26 @@ cat("Output dir :", out_dir, "\n\n")
 
 t_total <- Sys.time()
 
+# Per-WSG timings CSV (one row appended per WSG completion).
+# Drives data-raw/balance_provincial_buckets.R for future LPT planning;
+# replaces the regex-parse-the-text-log path. Host-tagged via Sys.info()
+# so multi-host trifecta runs produce comparable rows.
+host_id <- Sys.info()[["nodename"]]
+times_csv <- file.path(out_dir, sprintf("%s_per_wsg_times.csv",
+                                        format(Sys.time(), "%Y%m%d_%H%M")))
+write.table(data.frame(wsg = character(), host = character(),
+                       elapsed_s = numeric(), rows = integer(),
+                       status = character(), stringsAsFactors = FALSE),
+            times_csv, sep = ",", row.names = FALSE, col.names = TRUE,
+            quote = FALSE)
+append_time <- function(w, elapsed, rows, status) {
+  write.table(data.frame(wsg = w, host = host_id,
+                         elapsed_s = round(elapsed, 1), rows = rows,
+                         status = status, stringsAsFactors = FALSE),
+              times_csv, sep = ",", row.names = FALSE, col.names = FALSE,
+              quote = FALSE, append = TRUE)
+}
+
 for (w in wsgs) {
   out_rds <- file.path(out_dir, paste0(w, ".rds"))
   if (file.exists(out_rds)) {
@@ -97,6 +117,7 @@ for (w in wsgs) {
     saveRDS(out, out_rds)
     elapsed <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
     cat("done ", round(elapsed, 1), "s, rows ", nrow(out), "\n", sep = "")
+    append_time(w, elapsed, nrow(out), "ok")
   }, error = function(e) {
     elapsed <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
     saveRDS(list(error = conditionMessage(e),
@@ -104,6 +125,7 @@ for (w in wsgs) {
             out_rds)
     cat("ERROR (", round(elapsed, 1), "s): ",
         conditionMessage(e), "\n", sep = "")
+    append_time(w, elapsed, NA_integer_, "error")
   })
 }
 

@@ -361,9 +361,97 @@ test_that(".lnk_pipeline_prep_minimal skips species with NA / zero access_gradie
   .lnk_pipeline_prep_minimal("mock-conn", aoi = "BULK", cfg = cfg,
     loaded = loaded, schema = "w")
 
-  # Only BT yields a barrier table — LK + ZR skipped.
+  # BT yields a barrier table; LK + ZR skipped. Orphan branch doesn't
+  # call frs_barriers_minimal (raw positions used directly), so only
+  # BT's call appears here.
   expect_length(minimal_calls, 1L)
   expect_match(minimal_calls[[1]]$from, "barriers_bt$")
+})
+
+test_that(".lnk_pipeline_prep_minimal adds orphan-class break source when low classes present", {
+  captured <- character(0)
+  local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) {
+      captured <<- c(captured, sql)
+      invisible(NULL)
+    }
+  )
+  minimal_calls <- list()
+  local_mocked_bindings(
+    frs_barriers_minimal = function(conn, from, to, ...) {
+      minimal_calls[[length(minimal_calls) + 1]] <<-
+        list(from = from, to = to)
+      invisible(NULL)
+    },
+    .package = "fresh"
+  )
+
+  cfg <- structure(list(species = c("BT", "CH")), class = "lnk_config")
+  loaded <- list(
+    parameters_fresh = data.frame(
+      species_code = c("BT", "CH"),
+      access_gradient_max = c(0.25, 0.15),
+      stringsAsFactors = FALSE
+    )
+  )
+
+  # Vector contains classes both at and below species access thresholds.
+  # Orphan: 0.05 < min(0.25, 0.15) = 0.15. So 0500 enters as orphan.
+  custom <- c("0500" = 0.05, "1500" = 0.15, "2500" = 0.25)
+  .lnk_pipeline_prep_minimal("mock-conn", aoi = "BULK", cfg = cfg,
+    loaded = loaded, schema = "w", classes = custom)
+
+  # Expected: 2 per-species tables get frs_barriers_minimal calls (BT, CH).
+  # Orphan branch creates barriers_orphan but does NOT call
+  # frs_barriers_minimal on it (raw positions used directly for segmentation).
+  expect_length(minimal_calls, 2L)
+  from_tables <- vapply(minimal_calls, `[[`, character(1), "from")
+  table_names <- sub("^[^.]+\\.", "", from_tables)
+  expect_setequal(table_names, c("barriers_bt", "barriers_ch"))
+
+  # Orphan CREATE TABLE statement still emitted, filtering to class 500
+  orphan_create <- captured[grepl("CREATE TABLE w\\.barriers_orphan\\b", captured)]
+  expect_length(orphan_create, 1L)
+  expect_match(orphan_create, "gradient_class IN \\(500\\)")
+
+  # And barriers_orphan (not orphan_min) appears in the union for
+  # gradient_barriers_minimal.
+  union_sql <- captured[grepl("CREATE TABLE w\\.gradient_barriers_minimal", captured)]
+  expect_length(union_sql, 1L)
+  expect_match(union_sql, "FROM w\\.barriers_orphan\\b")
+})
+
+test_that(".lnk_pipeline_prep_minimal does NOT add orphan branch when no low classes", {
+  local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) invisible(NULL)
+  )
+  minimal_calls <- list()
+  local_mocked_bindings(
+    frs_barriers_minimal = function(conn, from, to, ...) {
+      minimal_calls[[length(minimal_calls) + 1]] <<-
+        list(from = from, to = to)
+      invisible(NULL)
+    },
+    .package = "fresh"
+  )
+
+  cfg <- structure(list(species = c("BT", "CH")), class = "lnk_config")
+  loaded <- list(
+    parameters_fresh = data.frame(
+      species_code = c("BT", "CH"),
+      access_gradient_max = c(0.25, 0.15),
+      stringsAsFactors = FALSE
+    )
+  )
+
+  # bcfp default vector — every class >= 0.15 (CH's threshold). No orphans.
+  .lnk_pipeline_prep_minimal("mock-conn", aoi = "BULK", cfg = cfg,
+    loaded = loaded, schema = "w", classes = .lnk_classes_bcfp)
+
+  from_tables <- vapply(minimal_calls, `[[`, character(1), "from")
+  table_names <- sub("^[^.]+\\.", "", from_tables)
+  expect_false("barriers_orphan" %in% table_names)
+  expect_setequal(table_names, c("barriers_bt", "barriers_ch"))
 })
 
 test_that(".lnk_pipeline_prep_minimal honours custom classes vector", {
