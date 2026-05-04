@@ -1,3 +1,13 @@
+# link 0.29.0
+
+Closes [#118](https://github.com/NewGraphEnvironment/link/issues/118). DB hygiene to prevent the disk-full incident that crashed cypher's `fresh-db` container during the 2026-05-04 `default_extrabreaks` provincial trifecta. Two-tier orchestrator-level cleanup; no in-package API changes.
+
+- `compare_bcfishpass_wsg()` gains `cleanup_working = TRUE` parameter — drops `working_<aoi>` schema after the rollup tibble is built. Default-on; pass `FALSE` for interactive debug. Saves ~10–15 GB per provincial run on every host (60+ working schemas accumulated otherwise).
+- `consolidate_schema()` gains `keep_source = FALSE` parameter — drops source schema on each remote host after a successful pg_restore. Default-on; rc-guarded (failed restore leaves source for retry); warn-but-don't-fail on drop rc != 0. Saves ~25–30 GB per consolidated bundle on M1 + cypher.
+- `data-raw/README.md` documents per-worker disk capacity: rough footprints (~30 GB single-bundle persistent + 10–15 GB per-WSG scratch + 30–40 GB fwapg base), 60 GB minimum free recommendation, 2026-05-04 cypher incident as cautionary tale.
+- Bit-identical bcfp parity by default. ADMS rollup tibble post-cleanup `identical()` to pre-cleanup baseline (RDS file metadata differs but deserialized object is identical).
+- Approach: orchestrator-level cleanup, NOT in-package — `lnk_pipeline_persist` stays scoped to one job; the rollup query reads working schema in long-form AFTER persist returns, so the natural lifecycle owner is the orchestrator script.
+
 # link 0.28.0
 
 Orphan-class break source — fed-vector experiments now Just Work without a separate knob. When `cfg$pipeline$gradient_classes` (or the caller's `classes` arg) contains thresholds below every modelled species's `access_gradient_max`, those positions enter `gradient_barriers_minimal` as a `barriers_orphan` table — no per-species filter, no minimal reduction (every detected position splits the network for segmentation precision). Access semantics are unaffected: fresh's per-species access label filter at classify time rejects any `gradient_NNNN` label below the species's threshold, so orphan classes never block any species.

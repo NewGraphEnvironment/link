@@ -47,13 +47,20 @@
 #' @param dest_conn DBI connection for verification queries + (optional)
 #'   for invoking lnk_db_conn-style auth. Default `link::lnk_db_conn()`.
 #' @param verbose Logical.
+#' @param keep_source Logical. When FALSE (default), drop the source
+#'   schema on each remote host after a successful pg_restore — workers
+#'   are one-shot ETL and the source copy is dead weight once consolidated.
+#'   Pass TRUE to preserve the source for debugging or re-restore. Drop
+#'   is rc-guarded: failed pg_restore leaves source schema in place for
+#'   retry.
 #'
 #' @return Invisibly: list of per-source pg_dump + restore outcomes.
 consolidate_schema <- function(schema,
                                 sources,
                                 backup = TRUE,
                                 dest_conn = link::lnk_db_conn(),
-                                verbose = TRUE) {
+                                verbose = TRUE,
+                                keep_source = FALSE) {
   stopifnot(
     is.character(schema), length(schema) == 1L, nzchar(schema),
     is.list(sources), length(sources) > 0L
@@ -117,6 +124,27 @@ consolidate_schema <- function(schema,
       results[[src$host]] <- list(ok = FALSE, stage = "pg_restore", rc = rc,
                                    local_dump = local_dump)
       next
+    }
+
+    # 5. Drop source schema (rc-guarded — only on successful restore).
+    # Worker hosts are one-shot ETL; once data lives on the destination
+    # it's dead weight on the source. Saves ~25–30 GB per consolidated
+    # bundle on M1 / cypher. Pass keep_source = TRUE to opt out (e.g.
+    # debug, manual re-restore).
+    if (!isTRUE(keep_source)) {
+      drop_cmd <- if (via == "docker") {
+        sprintf("docker exec %s psql -U %s -d %s -c \"DROP SCHEMA %s CASCADE\"",
+          container, pg_user, pg_db, schema)
+      } else {
+        sprintf("PGHOST=localhost PGPORT=5432 PGDATABASE=%s PGUSER=%s PGPASSWORD=postgres psql -c \"DROP SCHEMA %s CASCADE\"",
+          pg_db, pg_user, schema)
+      }
+      log(src$host, " -> DROP SCHEMA ", schema, " CASCADE (post-restore cleanup)")
+      drop_rc <- system(sprintf("ssh '%s' '%s'", src$host, drop_cmd))
+      if (drop_rc != 0L) {
+        log(src$host, " -> WARN: DROP SCHEMA returned rc=", drop_rc,
+            " — restore succeeded, source not cleaned, recoverable")
+      }
     }
 
     results[[src$host]] <- list(ok = TRUE, stage = "complete",

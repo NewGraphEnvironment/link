@@ -90,3 +90,28 @@ Run artifacts land in subdirectories of `data-raw/logs/` keyed by topic:
 
 Reusable helper scripts read from these directories without hardcoded
 filenames where possible (newest-by-mtime wins).
+
+## Disk capacity per worker host
+
+Trifecta workers (M1, cypher) hold short-lived per-WSG scratch + a
+single bundle's persistent schema. Rough footprints on a 232-WSG run:
+
+| Working state | Disk on a worker |
+|---------------|------------------|
+| `working_<wsg>` × 60 (per-WSG scratch) | ~10–15 GB |
+| Single bundle persistent schema (no extras) | ~25 GB |
+| Single bundle persistent schema (extras — 2.8× row count) | ~30 GB |
+| fwapg base data (whse_basemapping, bcfishobs, etc.) | ~30–40 GB |
+| **Recommended free disk per worker (single bundle in flight)** | **60 GB minimum** |
+
+The 2026-05-04 cypher disk-full incident filled a 96 GB droplet with
+3 accumulated bundles + 60 working schemas at once. After the v0.29.0
+hygiene fixes (`compare_bcfishpass_wsg(cleanup_working = TRUE)` drops
+working schemas on completion; `consolidate_schema(keep_source = FALSE)`
+drops source persistent schema after successful pg_restore), a
+single-bundle-in-flight worker holds ~60 GB total — comfortable on the
+existing 96 GB cypher tier.
+
+Per-run footprint is recorded in `data-raw/logs/bcfp_baselines.csv`
+(bcfp build + run label) — cross-reference with `du -sh` on
+`/var/lib/docker/volumes/<vol>/_data` to track actual disk over time.

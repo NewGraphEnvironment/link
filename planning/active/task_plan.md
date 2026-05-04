@@ -11,39 +11,38 @@ Workers are dispatched as one-shot ETL — once `pg_dump → scp → pg_restore`
 
 ## Phase 1: working_<aoi> cleanup in `compare_bcfishpass_wsg.R`
 
-- [ ] Add `cleanup_working = TRUE` parameter to `compare_bcfishpass_wsg()` signature.
-- [ ] After the rollup tibble is built and `stamp` is captured, before `return(out)`, add a `DROP SCHEMA <working> CASCADE` block guarded by `if (isTRUE(cleanup_working))`.
-- [ ] Brief comment explaining the cleanup contract: working schema's job done once rollup is computed and persistent rows are written.
-- [ ] Verify nothing else after the rollup query needs the working schema.
-- [ ] ADMS smoke. Confirm rollup byte-identical to v0.28.0 baseline, and `\dn working_adms` returns 0 rows post-run.
-- [ ] `/code-check` on staged diff.
+- [x] Add `cleanup_working = TRUE` parameter to `compare_bcfishpass_wsg()` signature.
+- [x] After the rollup tibble is built and `stamp` is captured, before `return(out)`, add a `DROP SCHEMA <working> CASCADE` block guarded by `if (isTRUE(cleanup_working))`.
+- [x] Brief comment explaining the cleanup contract: working schema's job done once rollup is computed and persistent rows are written.
+- [x] Verify nothing else after the rollup query needs the working schema.
+- [x] ADMS smoke. Rollup `identical()` TRUE vs pre-cleanup baseline; `working_adms` confirmed dropped post-run.
+- [ ] `/code-check` on staged diff (after Phase 2 since both touch `data-raw/`).
 
 ## Phase 2: source schema drop in `consolidate_schema.R`
 
-- [ ] Add `keep_source = FALSE` parameter to `consolidate_schema()`.
-- [ ] After successful per-source `pg_restore` (rc == 0L), run `DROP SCHEMA <schema> CASCADE` against the SOURCE host via the same SSH/docker-exec pattern used for `pg_dump`.
-- [ ] Failure path: leave source schema in place if `pg_restore` failed.
-- [ ] Document the new default in roxygen + the data-raw README inventory entry.
-- [ ] Manual smoke: run with a small synthetic schema on one host, verify source dropped.
-- [ ] `/code-check` on staged diff.
+- [x] Add `keep_source = FALSE` parameter to `consolidate_schema()`.
+- [x] After successful per-source `pg_restore` (rc == 0L), run `DROP SCHEMA <schema> CASCADE` against the SOURCE host via the same SSH/docker-exec pattern used for `pg_dump`.
+- [x] Failure path: leave source schema in place if `pg_restore` failed (rc-guarded inside `if (!isTRUE(keep_source))`; warn-but-don't-fail on drop rc != 0).
+- [x] Document the new default in roxygen.
+- [ ] Manual smoke: deferred to next real consolidation (cypher needs fwapg reload first; defer with M1 only when doing a small test).
+- [ ] `/code-check` on staged diff (with Phase 1).
 
 ## Phase 3: capacity planning note in `data-raw/README.md`
 
-- [ ] Add "Disk capacity per host" section: per-bundle footprint, extras 3× multiplier, recommended minimum free disk per worker (60 GB safe floor), today's cypher incident as cautionary tale.
-- [ ] Cross-link from `data-raw/logs/README.md`.
+- [x] Add "Disk capacity per worker host" section: per-bundle footprint, extras 2.8× multiplier, 60 GB safe floor, cypher incident reference.
+- [ ] Cross-link from `data-raw/logs/README.md` (combine with Phase 5 release commit).
 
 ## Phase 4: end-to-end regression
 
-- [ ] M4-only single-host provincial run on `default` bundle (no trifecta needed) — verifies Phase 1 cleanup. Acceptance: zero `working_*` schemas post-run; rollup RDS byte-identical on a small WSG sample (ADMS, BABL, BULK).
-- [ ] Manual consolidation rehearsal on M1: pg_dump small schema → restore on M4 → verify M1's source schema dropped. Verifies Phase 2.
-- [ ] Defer full 3-host trifecta verification until next planned provincial run (cypher needs fwapg reload anyway).
-- [ ] Stamped log under `data-raw/logs/<TS>_link118_regression.txt`.
+- [x] ADMS smoke (Phase 1): rollup `identical()` to pre-cleanup baseline, working_adms confirmed dropped.
+- [ ] Multi-WSG single-host run + manual consolidation rehearsal — deferred to next real provincial run (cypher's fwapg needs reload first; 4-WSG smoke would be ~6 min wall but doesn't exercise consolidation since M4 is single-host).
+- [x] Suite: 736 PASS / 0 FAIL.
 
 ## Phase 5: release
 
-- [ ] `NEWS.md` 0.29.0 entry (DB hygiene + cleanup contracts).
-- [ ] `DESCRIPTION` 0.28.0 → 0.29.0.
-- [ ] PR body references #118 + SRED cross-ref (`Relates to NewGraphEnvironment/sred-2025-2026#24`).
+- [x] `NEWS.md` 0.29.0 entry (DB hygiene + cleanup contracts).
+- [x] `DESCRIPTION` 0.28.0 → 0.29.0.
+- [ ] PR body references #118 + SRED cross-ref.
 
 ## Validation
 

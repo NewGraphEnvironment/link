@@ -24,13 +24,15 @@
 # research/default_vs_bcfishpass.md for the decision + revisit note.
 
 compare_bcfishpass_wsg <- function(wsg, config, dams = TRUE,
-                                   species = NULL) {
+                                   species = NULL,
+                                   cleanup_working = TRUE) {
   stopifnot(
     is.character(wsg), length(wsg) == 1L, nzchar(wsg),
     grepl("^[A-Z]{3,5}$", wsg),
     inherits(config, "lnk_config"),
     is.logical(dams), length(dams) == 1L,
-    is.null(species) || is.character(species)
+    is.null(species) || is.character(species),
+    is.logical(cleanup_working), length(cleanup_working) == 1L
   )
   schema <- paste0("working_", tolower(wsg))
 
@@ -410,6 +412,16 @@ compare_bcfishpass_wsg <- function(wsg, config, dams = TRUE,
     NA_real_,
     round(100 * (out$link_value - out$bcfishpass_value) /
           out$bcfishpass_value, 1))
+
+  # Working schema lifecycle ends here. The rollup tibble + persistent-
+  # schema rows (written by lnk_pipeline_persist) are the durable
+  # artifacts. Dropping <schema> CASCADE on a worker host saves ~10–15 GB
+  # per provincial run (60+ working_<wsg> schemas accumulate otherwise).
+  # Pass cleanup_working = FALSE for interactive debug / manual inspection
+  # of the working schema tables.
+  if (isTRUE(cleanup_working)) {
+    DBI::dbExecute(conn, sprintf("DROP SCHEMA %s CASCADE", schema))
+  }
 
   out
 }
