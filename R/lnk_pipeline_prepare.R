@@ -60,6 +60,16 @@
 #'   for downstream consumers, NOT consumed by habitat classification.
 #'   When `NULL`, any existing `<schema>.dams` is dropped and the dams
 #'   step is a no-op.
+#' @param classes Optional named numeric vector of gradient class
+#'   thresholds passed to [fresh::frs_break_find()]. Names are the
+#'   integer-encoded class labels (gradient × 10000, zero-padded to
+#'   width 4 — e.g. `"1500"` for 0.15); values are the gradient
+#'   fractions. When `NULL`, falls back to `cfg$pipeline$gradient_classes`
+#'   if set in the config bundle, otherwise to the bcfishpass default
+#'   `c("1500" = 0.15, "2000" = 0.20, "2500" = 0.25, "3000" = 0.30)`.
+#'   Per-species access barrier filters in `prep_minimal` are derived
+#'   from `loaded$parameters_fresh$access_gradient_max`: a class is a
+#'   barrier for species `s` when its value is ≥ `s$access_gradient_max`.
 #'
 #' @return `conn` invisibly, for pipe chaining.
 #'
@@ -78,6 +88,10 @@
 #' lnk_pipeline_load(conn, "BULK", cfg, loaded, schema)
 #' lnk_pipeline_prepare(conn, "BULK", cfg, loaded, schema)
 #'
+#' # Override break vector for an experimental scenario:
+#' lnk_pipeline_prepare(conn, "BULK", cfg, loaded, schema,
+#'   classes = c("0500" = 0.05, "1000" = 0.10, "1500" = 0.15))
+#'
 #' DBI::dbGetQuery(conn, sprintf(
 #'   "SELECT count(*) FROM %s.gradient_barriers_minimal", schema))
 #'
@@ -85,7 +99,8 @@
 #' }
 lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
                                  observations = "bcfishobs.observations",
-                                 conn_tunnel = NULL) {
+                                 conn_tunnel = NULL,
+                                 classes = NULL) {
   .lnk_validate_identifier(schema, "schema")
   .lnk_validate_identifier(observations, "observations table")
   if (!is.character(aoi) || length(aoi) != 1L || !nzchar(aoi)) {
@@ -101,16 +116,50 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
          call. = FALSE)
   }
 
+  classes <- .lnk_resolve_classes(classes, cfg)
+
   .lnk_pipeline_prep_load_aux(conn, aoi, loaded, schema)
   .lnk_pipeline_prep_observations(conn, aoi, loaded, schema, observations)
-  .lnk_pipeline_prep_gradient(conn, aoi, loaded, schema)
+  .lnk_pipeline_prep_gradient(conn, aoi, loaded, schema, classes)
   .lnk_pipeline_prep_natural(conn, aoi, cfg, loaded, schema)
   .lnk_pipeline_prep_overrides(conn, loaded, schema)
-  .lnk_pipeline_prep_minimal(conn, aoi, schema)
+  .lnk_pipeline_prep_minimal(conn, aoi, cfg, loaded, schema, classes)
   .lnk_pipeline_prep_network(conn, aoi, schema)
   .lnk_pipeline_prep_dams(conn, conn_tunnel, aoi, schema, loaded)
 
   invisible(conn)
+}
+
+
+#' Default gradient class vector — bcfishpass parity
+#'
+#' The historical bcfishpass break thresholds (0.05-step bins from 0.15
+#' to 0.30). Used as the fallback when neither the caller nor the config
+#' bundle supplies a `classes` vector. Exposed as a constant so test
+#' assertions, alternative bundles, and future auto-derive helpers can
+#' reference it.
+#' @noRd
+.lnk_classes_bcfp <- c(
+  "1500" = 0.15,
+  "2000" = 0.20,
+  "2500" = 0.25,
+  "3000" = 0.30
+)
+
+
+#' Resolve gradient class vector through caller arg → config → bcfp default
+#'
+#' YAML bundles encode `pipeline.gradient_classes` as a hash, which yaml::
+#' read_yaml() returns as a named list of scalars. Coerce to named numeric
+#' so downstream comparisons (`classes >= sp_amax`) work on a vector.
+#' @noRd
+.lnk_resolve_classes <- function(classes, cfg) {
+  if (!is.null(classes)) return(classes)
+  cfg_classes <- cfg$pipeline$gradient_classes
+  if (is.null(cfg_classes)) return(.lnk_classes_bcfp)
+  out <- vapply(cfg_classes, as.numeric, numeric(1))
+  names(out) <- names(cfg_classes)
+  out
 }
 
 
@@ -283,7 +332,8 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
 
 #' Detect gradient barriers, prune by control, enrich with ltree
 #' @noRd
-.lnk_pipeline_prep_gradient <- function(conn, aoi, loaded, schema) {
+.lnk_pipeline_prep_gradient <- function(conn, aoi, loaded, schema,
+                                        classes = .lnk_classes_bcfp) {
   .lnk_db_execute(conn, sprintf(
     "DROP TABLE IF EXISTS %s.streams_blk", schema))
   .lnk_db_execute(conn, sprintf(
@@ -296,8 +346,7 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
 
   fresh::frs_break_find(conn, paste0(schema, ".streams_blk"),
     attribute = "gradient",
-    classes = c("1500" = 0.15, "2000" = 0.20,
-                 "2500" = 0.25, "3000" = 0.30),
+    classes = classes,
     to = paste0(schema, ".gradient_barriers_raw"))
 
   # Prune passable controls. Manifest-driven gate — the loaded entry is
@@ -482,21 +531,41 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
 
 #' Per-model non-minimal barrier reduction + union
 #' @noRd
-.lnk_pipeline_prep_minimal <- function(conn, aoi, schema) {
-  # Per-model gradient class sets (matching bcfishpass model_access_*.sql).
-  # TODO (follow-up): move into cfg$pipeline$gradient_models so variants
-  # (min-spawn, channel-type-first) can swap these out.
-  models <- list(
-    bt              = c(2500, 3000),
-    ch_cm_co_pk_sk  = c(1500, 2000, 2500, 3000),
-    st              = c(2000, 2500, 3000),
-    wct             = c(2000, 2500, 3000)
-  )
+.lnk_pipeline_prep_minimal <- function(conn, aoi, cfg, loaded, schema,
+                                       classes = .lnk_classes_bcfp) {
+  # Per-species gradient class filters derived from each species's
+  # access_gradient_max in loaded$parameters_fresh: a class is a barrier
+  # for species `s` when its value is >= s$access_gradient_max. Replaces
+  # the historical hardcoded per-model groupings — species sharing
+  # access_gradient_max produce identical filters, so the union into
+  # gradient_barriers_minimal is unchanged when parameters_fresh matches
+  # bcfishpass conventions.
+  # Species set is intentionally NOT filtered by WSG presence here.
+  # gradient_barriers_minimal is consumed as a network break source whose
+  # shape determines segment boundaries downstream — it must be stable
+  # across WSGs that share a config bundle, regardless of which species
+  # happen to be present in the AOI. Presence filtering applies per-
+  # species at classify/connect time, not at break-position time.
+  params_fresh <- loaded$parameters_fresh
+  species <- cfg$species %||% unique(params_fresh$species_code)
+  models <- list()
+  for (sp in species) {
+    sp_amax <- params_fresh$access_gradient_max[
+      params_fresh$species_code == sp]
+    # Take first row defensively — duplicates in parameters_fresh would
+    # otherwise trip R 4.3+ length-1 enforcement on `||`.
+    sp_amax <- sp_amax[1L]
+    if (length(sp_amax) == 0L || is.na(sp_amax) || sp_amax <= 0) next
+    classes_for_sp <- as.integer(names(classes)[classes >= sp_amax])
+    if (length(classes_for_sp) == 0L) next
+    sp_key <- tolower(sp)
+    .lnk_validate_identifier(sp_key, sprintf("species code %s", sp))
+    models[[sp_key]] <- classes_for_sp
+  }
 
   minimal_tbls <- character(0)
   for (model_name in names(models)) {
-    classes <- models[[model_name]]
-    class_filter <- paste(classes, collapse = ", ")
+    class_filter <- paste(models[[model_name]], collapse = ", ")
     model_tbl <- paste0(schema, ".barriers_", model_name)
     min_tbl <- paste0(model_tbl, "_min")
 
@@ -524,15 +593,26 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
     minimal_tbls <- c(minimal_tbls, min_tbl)
   }
 
-  # Union all per-model minimal positions
+  # Union all per-model minimal positions. Empty species set (no rows
+  # in wsg_species_presence, or all species skipped for NA / zero
+  # access_gradient_max) yields a structurally valid empty table so
+  # downstream phases still find the expected name.
   .lnk_db_execute(conn, sprintf(
     "DROP TABLE IF EXISTS %s.gradient_barriers_minimal", schema))
-  union_sql <- paste(sprintf(
-    "SELECT DISTINCT blue_line_key, downstream_route_measure FROM %s",
-    minimal_tbls), collapse = " UNION ")
-  .lnk_db_execute(conn, sprintf(
-    "CREATE TABLE %s.gradient_barriers_minimal AS %s",
-    schema, union_sql))
+  if (length(minimal_tbls) == 0L) {
+    .lnk_db_execute(conn, sprintf(
+      "CREATE TABLE %s.gradient_barriers_minimal (
+         blue_line_key bigint,
+         downstream_route_measure double precision)",
+      schema))
+  } else {
+    union_sql <- paste(sprintf(
+      "SELECT DISTINCT blue_line_key, downstream_route_measure FROM %s",
+      minimal_tbls), collapse = " UNION ")
+    .lnk_db_execute(conn, sprintf(
+      "CREATE TABLE %s.gradient_barriers_minimal AS %s",
+      schema, union_sql))
+  }
 
   invisible(NULL)
 }
