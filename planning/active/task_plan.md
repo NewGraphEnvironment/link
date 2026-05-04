@@ -14,18 +14,18 @@ Once shipped, the user's experiment ("break the network at the union of unique r
 
 Functional core. Bit-identical bcfp parity preserved by default (no caller passes `classes` → falls back to hardcoded vector).
 
-- [ ] Add `classes = NULL` parameter to `lnk_pipeline_prepare()` signature (R/lnk_pipeline_prepare.R:86). Roxygen `@param classes` documents shape (named numeric vector; integer-encoded labels, gradient fractions).
-- [ ] Add `classes` arg to `.lnk_pipeline_prep_gradient()` signature (line 286). Replace hardcoded vector at lines 299-300 with the parameter.
-- [ ] In `lnk_pipeline_prepare()` body, resolve `classes %||% c("1500"=0.15, "2000"=0.20, "2500"=0.25, "3000"=0.30)` and thread to both `.lnk_pipeline_prep_gradient()` and `.lnk_pipeline_prep_minimal()`.
-- [ ] Add `cfg`, `loaded`, `classes` args to `.lnk_pipeline_prep_minimal()` signature (currently `conn, aoi, schema`).
-- [ ] Replace hardcoded `models` list (lines 489-494) with per-species derivation using `lnk_pipeline_species(cfg, loaded, aoi)` × `loaded$parameters_fresh$access_gradient_max`. Skip species with NA / zero / missing values. Per-species barrier tables become `barriers_<sp>` (e.g. `barriers_bt`, `barriers_ch`, `barriers_co`).
-- [ ] Update `tests/testthat/test-lnk_pipeline_prepare.R` lines 71-93 (`prep_gradient` mock): assert threaded `classes` appears in `frs_break_find` call.
-- [ ] Update `tests/testthat/test-lnk_pipeline_prepare.R` lines 206-237 (`prep_minimal` mock): expectation shifts from "4 per-model tables" to "N per-species tables" (N = species in bcfp config). Verify per-species filter logic (BT@0.25 → c(2500, 3000); CH@0.15 → c(1500, 2000, 2500, 3000)).
-- [ ] Add test for skip path: species with NA / zero `access_gradient_max` produces no barrier table.
-- [ ] `devtools::document()` to refresh man/.
-- [ ] `devtools::test()` clean.
-- [ ] `lintr::lint_package()` clean.
-- [ ] `/code-check` on staged diff.
+- [x] Add `classes = NULL` parameter to `lnk_pipeline_prepare()` signature (R/lnk_pipeline_prepare.R:86). Roxygen `@param classes` documents shape (named numeric vector; integer-encoded labels, gradient fractions).
+- [x] Add `classes` arg to `.lnk_pipeline_prep_gradient()` signature (line 286). Replace hardcoded vector at lines 299-300 with the parameter.
+- [x] In `lnk_pipeline_prepare()` body, resolve `classes %||% c("1500"=0.15, "2000"=0.20, "2500"=0.25, "3000"=0.30)` and thread to both `.lnk_pipeline_prep_gradient()` and `.lnk_pipeline_prep_minimal()`.
+- [x] Add `cfg`, `loaded`, `classes` args to `.lnk_pipeline_prep_minimal()` signature (currently `conn, aoi, schema`).
+- [x] Replace hardcoded `models` list (lines 489-494) with per-species derivation using `lnk_pipeline_species(cfg, loaded, aoi)` × `loaded$parameters_fresh$access_gradient_max`. Skip species with NA / zero / missing values. Per-species barrier tables become `barriers_<sp>` (e.g. `barriers_bt`, `barriers_ch`, `barriers_co`).
+- [x] Update `tests/testthat/test-lnk_pipeline_prepare.R` lines 71-93 (`prep_gradient` mock): assert threaded `classes` appears in `frs_break_find` call.
+- [x] Update `tests/testthat/test-lnk_pipeline_prepare.R` lines 206-237 (`prep_minimal` mock): expectation shifts from "4 per-model tables" to "N per-species tables" (N = species in bcfp config). Verify per-species filter logic (BT@0.25 → c(2500, 3000); CH@0.15 → c(1500, 2000, 2500, 3000)).
+- [x] Add test for skip path: species with NA / zero `access_gradient_max` produces no barrier table.
+- [x] `devtools::document()` to refresh man/.
+- [x] `devtools::test()` clean.
+- [x] `lintr::lint_package()` clean.
+- [x] `/code-check` on staged diff. (3 fragile findings round 1 fixed: empty species → empty table fallback; `sp_amax[1L]` defensive coerce for R 4.3+ length-1 enforcement; `.lnk_validate_identifier` on lowercased species code. Round 2 clean.)
 
 ## Phase 2: Config knob
 

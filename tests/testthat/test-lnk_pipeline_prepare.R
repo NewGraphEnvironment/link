@@ -92,6 +92,45 @@ test_that(".lnk_pipeline_prep_gradient quotes aoi safely in the streams_blk quer
   expect_no_match(joined, "DELETE FROM w.gradient_barriers_raw")
 })
 
+test_that(".lnk_pipeline_prep_gradient threads classes through to frs_break_find", {
+  captured_classes <- NULL
+  local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) invisible(NULL)
+  )
+  local_mocked_bindings(
+    frs_break_find = function(conn, table, attribute, classes, to, ...) {
+      captured_classes <<- classes
+      invisible(NULL)
+    },
+    .package = "fresh"
+  )
+
+  custom <- c("0500" = 0.05, "0800" = 0.08, "1500" = 0.15)
+  .lnk_pipeline_prep_gradient("mock-conn", aoi = "BULK",
+    loaded = .loaded_no_control, schema = "w", classes = custom)
+
+  expect_identical(captured_classes, custom)
+})
+
+test_that(".lnk_resolve_classes prefers caller arg over cfg over bcfp default", {
+  cfg_default <- structure(list(pipeline = list()), class = "lnk_config")
+  cfg_with_classes <- structure(
+    list(pipeline = list(gradient_classes = list(
+      "0500" = 0.05, "1000" = 0.10))),
+    class = "lnk_config"
+  )
+
+  caller <- c("0100" = 0.01)
+  expect_identical(.lnk_resolve_classes(caller, cfg_with_classes), caller)
+
+  resolved <- .lnk_resolve_classes(NULL, cfg_with_classes)
+  expect_equal(unname(resolved), c(0.05, 0.10))
+  expect_identical(names(resolved), c("0500", "1000"))
+
+  expect_identical(.lnk_resolve_classes(NULL, cfg_default),
+                   .lnk_classes_bcfp)
+})
+
 test_that(".lnk_pipeline_prep_gradient prunes when manifest declares control", {
   captured <- character(0)
   local_mocked_bindings(
@@ -203,7 +242,7 @@ test_that(".lnk_pipeline_prep_natural honours barriers_definite_control on subsu
 
 # -- prep_minimal structure --------------------------------------------------
 
-test_that(".lnk_pipeline_prep_minimal builds 4 per-model tables and unions them", {
+test_that(".lnk_pipeline_prep_minimal builds per-species tables from access_gradient_max", {
   captured <- character(0)
   local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) {
@@ -221,19 +260,113 @@ test_that(".lnk_pipeline_prep_minimal builds 4 per-model tables and unions them"
     .package = "fresh"
   )
 
-  .lnk_pipeline_prep_minimal("mock-conn", aoi = "BULK", schema = "w_bulk")
+  cfg <- structure(
+    list(species = c("BT", "CH", "SK", "ST", "WCT")),
+    class = "lnk_config"
+  )
+  loaded <- list(
+    parameters_fresh = data.frame(
+      species_code = c("BT", "CH", "SK", "ST", "WCT"),
+      access_gradient_max = c(0.25, 0.15, 0.15, 0.20, 0.20),
+      stringsAsFactors = FALSE
+    )
+  )
 
-  expect_length(minimal_calls, 4L)
+  .lnk_pipeline_prep_minimal("mock-conn", aoi = "BULK", cfg = cfg,
+    loaded = loaded, schema = "w_bulk")
+
+  # One barrier table per species (BT/CH/SK/ST/WCT)
+  expect_length(minimal_calls, 5L)
   from_tables <- vapply(minimal_calls, `[[`, character(1), "from")
   table_names <- sub("^[^.]+\\.", "", from_tables)
   expect_setequal(table_names,
-    c("barriers_bt", "barriers_ch_cm_co_pk_sk",
+    c("barriers_bt", "barriers_ch", "barriers_sk",
       "barriers_st", "barriers_wct"))
+
+  # BT @ 0.25 → classes 2500, 3000 (only those ≥ 0.25)
+  bt_create <- captured[grepl("CREATE TABLE w_bulk\\.barriers_bt\\b", captured)]
+  expect_length(bt_create, 1L)
+  expect_match(bt_create, "gradient_class IN \\(2500, 3000\\)")
+
+  # CH @ 0.15 → 1500, 2000, 2500, 3000
+  ch_create <- captured[grepl("CREATE TABLE w_bulk\\.barriers_ch\\b", captured)]
+  expect_length(ch_create, 1L)
+  expect_match(ch_create, "gradient_class IN \\(1500, 2000, 2500, 3000\\)")
+
+  # ST @ 0.20 → 2000, 2500, 3000
+  st_create <- captured[grepl("CREATE TABLE w_bulk\\.barriers_st\\b", captured)]
+  expect_length(st_create, 1L)
+  expect_match(st_create, "gradient_class IN \\(2000, 2500, 3000\\)")
 
   joined <- paste(captured, collapse = "\n")
   expect_match(joined,
     "CREATE TABLE w_bulk.gradient_barriers_minimal AS")
   expect_match(joined, "UNION")
+})
+
+test_that(".lnk_pipeline_prep_minimal skips species with NA / zero access_gradient_max", {
+  local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) invisible(NULL)
+  )
+  minimal_calls <- list()
+  local_mocked_bindings(
+    frs_barriers_minimal = function(conn, from, to, ...) {
+      minimal_calls[[length(minimal_calls) + 1]] <<-
+        list(from = from, to = to)
+      invisible(NULL)
+    },
+    .package = "fresh"
+  )
+
+  cfg <- structure(list(species = c("BT", "LK", "ZR")), class = "lnk_config")
+  loaded <- list(
+    parameters_fresh = data.frame(
+      species_code = c("BT", "LK", "ZR"),
+      # LK is lake-only (NA access threshold); ZR has zero.
+      access_gradient_max = c(0.25, NA, 0),
+      stringsAsFactors = FALSE
+    )
+  )
+
+  .lnk_pipeline_prep_minimal("mock-conn", aoi = "BULK", cfg = cfg,
+    loaded = loaded, schema = "w")
+
+  # Only BT yields a barrier table — LK + ZR skipped.
+  expect_length(minimal_calls, 1L)
+  expect_match(minimal_calls[[1]]$from, "barriers_bt$")
+})
+
+test_that(".lnk_pipeline_prep_minimal honours custom classes vector", {
+  captured <- character(0)
+  local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) {
+      captured <<- c(captured, sql)
+      invisible(NULL)
+    }
+  )
+  local_mocked_bindings(
+    frs_barriers_minimal = function(...) invisible(NULL),
+    .package = "fresh"
+  )
+
+  cfg <- structure(list(species = "BT"), class = "lnk_config")
+  loaded <- list(
+    parameters_fresh = data.frame(
+      species_code = "BT",
+      access_gradient_max = 0.10,
+      stringsAsFactors = FALSE
+    )
+  )
+
+  # Custom break vector at 0.05 / 0.08 / 0.10 / 0.15.
+  # BT @ 0.10 → classes ≥ 0.10 are 1000 + 1500.
+  custom <- c("0500" = 0.05, "0800" = 0.08, "1000" = 0.10, "1500" = 0.15)
+  .lnk_pipeline_prep_minimal("mock-conn", aoi = "BULK", cfg = cfg,
+    loaded = loaded, schema = "w", classes = custom)
+
+  bt_create <- captured[grepl("CREATE TABLE w\\.barriers_bt\\b", captured)]
+  expect_length(bt_create, 1L)
+  expect_match(bt_create, "gradient_class IN \\(1000, 1500\\)")
 })
 
 # -- prep_network SQL shape --------------------------------------------------

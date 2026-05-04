@@ -11,7 +11,8 @@ lnk_pipeline_prepare(
   loaded,
   schema,
   observations = "bcfishobs.observations",
-  conn_tunnel = NULL
+  conn_tunnel = NULL,
+  classes = NULL
 )
 }
 \arguments{
@@ -41,6 +42,17 @@ Optional. When supplied, \verb{<schema>.dams} is populated from
 for downstream consumers, NOT consumed by habitat classification.
 When \code{NULL}, any existing \verb{<schema>.dams} is dropped and the dams
 step is a no-op.}
+
+\item{classes}{Optional named numeric vector of gradient class
+thresholds passed to \code{\link[fresh:frs_break_find]{fresh::frs_break_find()}}. Names are the
+integer-encoded class labels (gradient × 10000, zero-padded to
+width 4 — e.g. \code{"1500"} for 0.15); values are the gradient
+fractions. When \code{NULL}, falls back to \code{cfg$pipeline$gradient_classes}
+if set in the config bundle, otherwise to the bcfishpass default
+\code{c("1500" = 0.15, "2000" = 0.20, "2500" = 0.25, "3000" = 0.30)}.
+Per-species access barrier filters in \code{prep_minimal} are derived
+from \code{loaded$parameters_fresh$access_gradient_max}: a class is a
+barrier for species \code{s} when its value is ≥ \code{s$access_gradient_max}.}
 }
 \value{
 \code{conn} invisibly, for pipe chaining.
@@ -101,6 +113,10 @@ schema <- "working_bulk"
 lnk_pipeline_setup(conn, schema)
 lnk_pipeline_load(conn, "BULK", cfg, loaded, schema)
 lnk_pipeline_prepare(conn, "BULK", cfg, loaded, schema)
+
+# Override break vector for an experimental scenario:
+lnk_pipeline_prepare(conn, "BULK", cfg, loaded, schema,
+  classes = c("0500" = 0.05, "1000" = 0.10, "1500" = 0.15))
 
 DBI::dbGetQuery(conn, sprintf(
   "SELECT count(*) FROM \%s.gradient_barriers_minimal", schema))
