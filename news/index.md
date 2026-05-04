@@ -1,5 +1,37 @@
 # Changelog
 
+## link 0.28.0
+
+Orphan-class break source — fed-vector experiments now Just Work without
+a separate knob. When `cfg$pipeline$gradient_classes` (or the caller’s
+`classes` arg) contains thresholds below every modelled species’s
+`access_gradient_max`, those positions enter `gradient_barriers_minimal`
+as a `barriers_orphan` table — no per-species filter, no minimal
+reduction (every detected position splits the network for segmentation
+precision). Access semantics are unaffected: fresh’s per-species access
+label filter at classify time rejects any `gradient_NNNN` label below
+the species’s threshold, so orphan classes never block any species.
+
+- New experimental bundle `inst/extdata/configs/default_extrabreaks/`
+  extends `default` with `pipeline.gradient_classes` set to the union of
+  access (0.15/0.20/0.25) + per-species spawn / rear gradient maxima
+  from fresh’s `parameters_habitat_thresholds.csv` (0.0249–0.1049).
+  Persists to `fresh_default_extrabreaks` schema for side-by-side
+  compare against the `fresh_default` reference.
+- ADMS smoke test on the bundle: BT spawning **+11.2 km (+3.1 %)** vs
+  default-bundle baseline; SK spawning **+13.9 km (+6.4 %)**; RB
+  spawning **+8 km (+2.6 %)**. Rear shifts much smaller (±5 km). Effect
+  is the “ceiling sub-segment” mechanism: when a generally-flat reach is
+  broken at a low spawn/rear gradient threshold, the steep pocket
+  separates and the remaining majority averages to a lower local
+  gradient that newly passes the per-segment spawn predicate.
+- Provincial run:
+  `./trifecta_provincial.sh --config=default_extrabreaks --schema=fresh_default_extrabreaks`
+  (~2.5h wall, same shape as the v0.26.0 default trifecta).
+- Bit-identical to v0.27.0 on bcfp + default config (no orphans — both
+  default vectors live at-or-above each species’s access threshold).
+  Suite: 735 PASS / 0 FAIL.
+
 ## link 0.27.0
 
 Closes [\#45](https://github.com/NewGraphEnvironment/link/issues/45).

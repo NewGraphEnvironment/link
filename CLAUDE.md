@@ -62,6 +62,33 @@ work with any PostgreSQL.
 conn <- lnk_db_conn()  # reads PG_DB_SHARE, PG_HOST_SHARE, etc.
 ```
 
+## bcfishpass tunnel rebuild cadence
+
+The tunnel-side `bcfishpass.*` schema (used as the comparison reference
+in `compare_bcfishpass_wsg.R`) **rebuilds weekly on Tuesdays around
+19:00–23:00 PDT**, fired by `smnorris/db_newgraph`’s scheduled GHA
+workflow. Query the cadence + version with:
+
+``` sql
+-- localhost:63333 / dbname=bcfishpass / user=newgraph
+SELECT model_run_id, date_completed, model_version
+FROM bcfishpass.log
+ORDER BY model_run_id DESC LIMIT 5;
+```
+
+`model_version` format `<tag>-<commits>-g<short-sha>`
+(e.g. `v0.7.14-113-ga7373af`) — the trailing SHA is the exact
+`smnorris/bcfishpass` commit Simon’s rebuild used. That SHA is the
+deterministic ref for matching link’s bundle CSVs to the tunnel’s input
+state — required for apples-to-apples comparison.
+
+CSV-sync workflow goal: bundle CSVs in
+`inst/extdata/configs/bcfishpass/overrides/` should match the tunnel’s
+last-rebuild SHA. Drift between the two means comparison numbers shift
+for input reasons, not methodology reasons. See the [csv-sync rewrite
+plan in
+memory](https://newgraphenvironment.github.io/link/project_csv_sync_rewrite.md).
+
 ## Exported Functions (18)
 
 ### Core

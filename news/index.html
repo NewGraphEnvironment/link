@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.27.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.28.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,6 +31,14 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.28.0" id="link-0280">link 0.28.0<a class="anchor" aria-label="anchor" href="#link-0280"></a></h2>
+<p>Orphan-class break source — fed-vector experiments now Just Work without a separate knob. When <code>cfg$pipeline$gradient_classes</code> (or the caller’s <code>classes</code> arg) contains thresholds below every modelled species’s <code>access_gradient_max</code>, those positions enter <code>gradient_barriers_minimal</code> as a <code>barriers_orphan</code> table — no per-species filter, no minimal reduction (every detected position splits the network for segmentation precision). Access semantics are unaffected: fresh’s per-species access label filter at classify time rejects any <code>gradient_NNNN</code> label below the species’s threshold, so orphan classes never block any species.</p>
+<ul><li>New experimental bundle <code>inst/extdata/configs/default_extrabreaks/</code> extends <code>default</code> with <code>pipeline.gradient_classes</code> set to the union of access (0.15/0.20/0.25) + per-species spawn / rear gradient maxima from fresh’s <code>parameters_habitat_thresholds.csv</code> (0.0249–0.1049). Persists to <code>fresh_default_extrabreaks</code> schema for side-by-side compare against the <code>fresh_default</code> reference.</li>
+<li>ADMS smoke test on the bundle: BT spawning <strong>+11.2 km (+3.1 %)</strong> vs default-bundle baseline; SK spawning <strong>+13.9 km (+6.4 %)</strong>; RB spawning <strong>+8 km (+2.6 %)</strong>. Rear shifts much smaller (±5 km). Effect is the “ceiling sub-segment” mechanism: when a generally-flat reach is broken at a low spawn/rear gradient threshold, the steep pocket separates and the remaining majority averages to a lower local gradient that newly passes the per-segment spawn predicate.</li>
+<li>Provincial run: <code>./trifecta_provincial.sh --config=default_extrabreaks --schema=fresh_default_extrabreaks</code> (~2.5h wall, same shape as the v0.26.0 default trifecta).</li>
+<li>Bit-identical to v0.27.0 on bcfp + default config (no orphans — both default vectors live at-or-above each species’s access threshold). Suite: 735 PASS / 0 FAIL.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.27.0" id="link-0270">link 0.27.0<a class="anchor" aria-label="anchor" href="#link-0270"></a></h2>
 <p>Closes <a href="https://github.com/NewGraphEnvironment/link/issues/45" class="external-link">#45</a>. Two coupled hardcodes in <code>R/lnk_pipeline_prepare.R</code> — the bcfishpass gradient class break vector and the per-model class filter list — are now configurable. Unblocks alternative-methodology experiments that need different break thresholds (e.g. breaking the network at the union of unique per-species rearing/spawning/access gradient values, or finer 0.05-step bins) while preserving bit-identical bcfishpass parity by default.</p>
