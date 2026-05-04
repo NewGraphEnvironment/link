@@ -16,10 +16,16 @@ set -euo pipefail
 # Parse args
 CONFIG="bcfishpass"
 SCHEMA=""
+M4_OVERRIDE=""
+M1_OVERRIDE=""
+CY_OVERRIDE=""
 for arg in "$@"; do
   case "$arg" in
-    --config=*) CONFIG="${arg#--config=}" ;;
-    --schema=*) SCHEMA="${arg#--schema=}" ;;
+    --config=*)     CONFIG="${arg#--config=}" ;;
+    --schema=*)     SCHEMA="${arg#--schema=}" ;;
+    --m4-bucket=*)  M4_OVERRIDE="${arg#--m4-bucket=}" ;;
+    --m1-bucket=*)  M1_OVERRIDE="${arg#--m1-bucket=}" ;;
+    --cy-bucket=*)  CY_OVERRIDE="${arg#--cy-bucket=}" ;;
   esac
 done
 EXTRA_ARGS="--config=$CONFIG"
@@ -57,6 +63,15 @@ SPLIT_OUT=$(Rscript "$SPLIT_R" 2>&1 | grep -E "^(M4|M1|CY)=")
 M4_WSGS=$(echo "$SPLIT_OUT" | awk -F'=' '$1=="M4" {print $2}')
 M1_WSGS=$(echo "$SPLIT_OUT" | awk -F'=' '$1=="M1" {print $2}')
 CY_WSGS=$(echo "$SPLIT_OUT" | awk -F'=' '$1=="CY" {print $2}')
+
+# Override with caller-supplied buckets if all three present (LPT-balanced
+# plan from data-raw/balance_provincial_buckets.R).
+if [ -n "$M4_OVERRIDE" ] && [ -n "$M1_OVERRIDE" ] && [ -n "$CY_OVERRIDE" ]; then
+  M4_WSGS="$M4_OVERRIDE"
+  M1_WSGS="$M1_OVERRIDE"
+  CY_WSGS="$CY_OVERRIDE"
+  echo "[trifecta-provincial] using LPT-balanced override buckets"
+fi
 
 M4_COUNT=$(echo "$M4_WSGS" | tr ',' '\n' | wc -l)
 M1_COUNT=$(echo "$M1_WSGS" | tr ',' '\n' | wc -l)
