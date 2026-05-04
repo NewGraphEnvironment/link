@@ -63,6 +63,20 @@ pipeline:
   # this to per-bundle values (e.g. fresh_bcfp + fresh_default).
   schema: fresh
   apply_habitat_overlay: no
+  # gradient_classes — optional override for the network-break gradient
+  # vector consumed by fresh::frs_break_find via lnk_pipeline_prepare.
+  # Names are integer-encoded class labels (gradient × 10000, zero-padded
+  # to width 4); values are gradient fractions. The bcfishpass-parity
+  # default below is what fires when the key is omitted. Variants that
+  # break at different thresholds (finer 0.05-step bins, per-species
+  # rearing/spawning bounds, channel-class transitions) override here.
+  # Setting this changes only break positions; per-species access
+  # filtering still derives from parameters_fresh.csv$access_gradient_max.
+  # gradient_classes:
+  #   "1500": 0.15
+  #   "2000": 0.20
+  #   "2500": 0.25
+  #   "3000": 0.30
   # break_order — sources of segment break positions, applied in the order
   # listed. Available entries (see ?lnk_pipeline_break):
   #   observations       — fish observations from bcfishobs.observations

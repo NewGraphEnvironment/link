@@ -112,6 +112,36 @@ test_that(".lnk_pipeline_prep_gradient threads classes through to frs_break_find
   expect_identical(captured_classes, custom)
 })
 
+test_that(".lnk_resolve_classes round-trips YAML config knob", {
+  # End-to-end check: write a config bundle with pipeline.gradient_classes,
+  # round-trip through lnk_config(), confirm the named-list-of-scalars
+  # shape that yaml::read_yaml() produces resolves to a named numeric.
+  bundle <- file.path(tempdir(), "test_grad_classes")
+  src <- system.file("extdata/configs/bcfishpass", package = "link")
+  if (!nzchar(src)) skip("link package source configs not installed")
+  unlink(bundle, recursive = TRUE)
+  file.copy(src, dirname(bundle), recursive = TRUE)
+  file.rename(file.path(dirname(bundle), "bcfishpass"), bundle)
+
+  cfg_yaml <- file.path(bundle, "config.yaml")
+  yml <- readLines(cfg_yaml)
+  i <- grep("^  schema: fresh$", yml)[1]
+  yml <- append(yml, c(
+    "  gradient_classes:",
+    "    \"0500\": 0.05",
+    "    \"1500\": 0.15"
+  ), after = i)
+  writeLines(yml, cfg_yaml)
+
+  cfg <- lnk_config(bundle)
+  resolved <- .lnk_resolve_classes(NULL, cfg)
+  expect_type(resolved, "double")
+  expect_identical(names(resolved), c("0500", "1500"))
+  expect_equal(unname(resolved), c(0.05, 0.15))
+
+  unlink(bundle, recursive = TRUE)
+})
+
 test_that(".lnk_resolve_classes prefers caller arg over cfg over bcfp default", {
   cfg_default <- structure(list(pipeline = list()), class = "lnk_config")
   cfg_with_classes <- structure(

@@ -31,12 +31,12 @@ Functional core. Bit-identical bcfp parity preserved by default (no caller passe
 
 Lets variants declare break vectors at the bundle level without R code edits.
 
-- [ ] In `lnk_pipeline_prepare()`, resolution order: `classes %||% cfg$pipeline$gradient_classes %||% <hardcoded bcfp vector>`. Coerce list-from-YAML to named numeric vector (`unlist()` + as.numeric).
-- [ ] Test the resolution order: caller arg wins, then cfg, then fallback.
-- [ ] Test YAML→R coercion round-trip (write a temp config, read it, confirm the named numeric vector shape).
-- [ ] Document the optional knob in `inst/extdata/configs/bcfishpass/config.yaml` (and `default/`) as a commented-out optional with the implicit current value shown explicitly.
-- [ ] `devtools::test()` clean.
-- [ ] `/code-check` on staged diff.
+- [x] In `lnk_pipeline_prepare()`, resolution order: `classes %||% cfg$pipeline$gradient_classes %||% <hardcoded bcfp vector>`. Coerce list-from-YAML to named numeric vector (`unlist()` + as.numeric). (Implemented as `.lnk_resolve_classes()` in Phase 1.)
+- [x] Test the resolution order: caller arg wins, then cfg, then fallback.
+- [x] Test YAML→R coercion round-trip (write a temp config, read it, confirm the named numeric vector shape).
+- [x] Document the optional knob in `inst/extdata/configs/bcfishpass/config.yaml` (and `default/`) as a commented-out optional with the implicit current value shown explicitly.
+- [x] `devtools::test()` clean. (97 PASS)
+- [x] `/code-check` on staged diff.
 
 ## Phase 3: Bit-identical regression verification
 
