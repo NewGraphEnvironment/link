@@ -1,0 +1,4 @@
+run_started_pdt,run_label,link_schema,bcfp_model_run_id,bcfp_model_version,bcfp_date_completed,notes
+2026-05-02 21:00,provincial_parity,fresh,?,?,?,bcfishpass-bundle provincial run; bcfp baseline not recorded at run time (pre-baselines.csv) — model_run_id 120 active 2026-04-28→2026-05-04 covers this run
+2026-05-03 14:23,provincial_default,fresh_default,120,v0.7.14-113-ga7373af,2026-04-28 23:17,default-bundle provincial run; bcfp baseline confirmed via bcfishpass.log query 2026-05-04
+2026-05-04 09:44,provincial_default_extrabreaks,fresh_default_extrabreaks,120,v0.7.14-113-ga7373af,2026-04-28 23:17,default_extrabreaks bundle (orphan-class breaks v0.28.0 branch); bcfp baseline same as 2026-05-03 run; expected to flip to build 121 on Tue 2026-05-05 ~20:00 PDT
