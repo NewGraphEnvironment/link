@@ -35,7 +35,7 @@ Read persistent state, emit comparisons / methodology evidence.
 
 | Script | Purpose |
 |--------|---------|
-| `methodology_delta_query.R` | Compares per-species spawn / rear km between two persistent fresh schemas. Province-wide totals + per-WSG breakdowns + shift breadth. Replaces inline `Rscript -e '…'` SQL — schema-vs-schema deltas are versioned now. Args: `<baseline_schema> <experiment_schema> [species_csv]`. |
+| `query_schema_delta.R` | Compares per-species spawn / rear km between two persistent fresh schemas. Province-wide totals + per-WSG breakdowns + shift breadth. Replaces inline `Rscript -e '…'` SQL — schema-vs-schema deltas are versioned now. Args: `<baseline_schema> <experiment_schema> [species_csv]`. |
 | `compare_adms.R` | One-shot ADMS-only comparison (legacy single-WSG diagnostic). Superseded by `compare_bcfishpass_wsg.R` for parametric reuse. |
 
 ## Data preparation / artifacts
@@ -72,7 +72,7 @@ discoverable without opening the file:
 |--------|-------------|
 | `run_` | Drives a multi-step pipeline run (replaces an inline R block in a runbook). |
 | `compare_` | Compares two outputs / sources side-by-side. |
-| `*_query.R` | Issues SQL against persistent state, no pipeline mutation. |
+| `query_` | Issues SQL against persistent state, no pipeline mutation. |
 | `balance_` / `consolidate_` | Operational helpers around runs (planning, multi-host merging). |
 | `build_` / `make_` / `sync_` / `regen_` | Generates / refreshes a committed artifact (rules, hex, vignette data, provenance). |
 | `audit_` | Recurring drift / consistency check. |

@@ -1,5 +1,8 @@
-# Methodology delta query: compare per-species spawning / rearing km
-# between two persistent fresh schemas.
+# Schema-delta query: compare per-species spawning / rearing km between
+# two persistent fresh schemas. The "methodology delta" interpretation
+# (e.g. default vs default_extrabreaks) is a use-case framing — what
+# the script actually does is query side-by-side state from any two
+# `<schema>.streams` + `<schema>.streams_habitat_<sp>` pairs.
 #
 # Schemas are populated by lnk_pipeline_persist via a provincial trifecta
 # run (see trifecta_provincial.sh). This script reads streams +
@@ -10,14 +13,14 @@
 #   4. Optional: writes the rollups to data-raw/logs/methodology_delta/
 #
 # Usage:
-#   Rscript data-raw/methodology_delta_query.R \
+#   Rscript data-raw/query_schema_delta.R \
 #     <baseline_schema> <experiment_schema> [species_csv]
 #
 # Example (today's run):
-#   Rscript data-raw/methodology_delta_query.R fresh_default fresh_default_extrabreaks
+#   Rscript data-raw/query_schema_delta.R fresh_default fresh_default_extrabreaks
 #
 # Yesterday's SK-only equivalent (kept as reference shape):
-#   Rscript data-raw/methodology_delta_query.R fresh fresh_default sk
+#   Rscript data-raw/query_schema_delta.R fresh fresh_default sk
 
 suppressPackageStartupMessages({
   library(DBI); library(RPostgres); library(dplyr); library(tidyr)
@@ -25,7 +28,7 @@ suppressPackageStartupMessages({
 
 args <- commandArgs(trailingOnly = TRUE)
 if (length(args) < 2) {
-  stop("Usage: Rscript methodology_delta_query.R <baseline_schema> <experiment_schema> [species_csv]")
+  stop("Usage: Rscript query_schema_delta.R <baseline_schema> <experiment_schema> [species_csv]")
 }
 SCHEMA_A <- args[1]   # baseline (e.g. fresh_default)
 SCHEMA_B <- args[2]   # experiment (e.g. fresh_default_extrabreaks)
