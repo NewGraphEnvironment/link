@@ -77,6 +77,8 @@ lnk_pipeline_access <- function(
   )
 
   # 1. Per-species downstream-barrier arrays via fresh's primitive.
+  # bcfishpass.barriers_* tables use the `_ltree`-suffixed code columns
+  # (defaults), so no per-side override needed here.
   dnstr_per_sp <- list()
   for (sp in names(barriers_per_sp)) {
     barriers_tbl <- barriers_per_sp[[sp]]
@@ -96,35 +98,25 @@ lnk_pipeline_access <- function(
     dnstr_per_sp[[sp]] <- df
   }
 
-  # 2. Upstream observations (optional). Returns one row per segment
-  # with array of observation_key values upstream of it. Then a
-  # second-pass query computes the species_code array for the same
-  # observation set — that's what bcfp uses for the access integer code.
-  obs_upstr <- NULL
+  # 2. Upstream observations (optional). One call returns per-segment
+  # arrays of observed species_code. `bcfishpass.observations` uses
+  # the unsuffixed `wscode` / `localcode` columns (vs `_ltree` on
+  # streams), so override the features-side codes. Returns a list-
+  # column of character vectors (fresh#204 v0.29.0+) — the per-species
+  # `observed` boolean is then a clean `%in%` per row.
   obsrvtn_species_per_seg <- NULL
   if (!is.null(observations)) {
-    obs_upstr <- fresh::frs_network_features(
-      conn,
-      segments       = segments,
-      features       = observations,
-      segment_id_col = segment_id_col,
-      feature_id_col = "observation_key",
-      direction      = "upstream",
-      aoi            = aoi,
-      include_equivalents = TRUE
-    )
-    names(obs_upstr)[2] <- "observation_key_upstr"
-
-    # Same shape but emit species_code instead of observation_key.
     obsrvtn_species_per_seg <- fresh::frs_network_features(
       conn,
-      segments       = segments,
-      features       = observations,
-      segment_id_col = segment_id_col,
-      feature_id_col = "species_code",
-      direction      = "upstream",
-      aoi            = aoi,
-      include_equivalents = TRUE
+      segments               = segments,
+      features               = observations,
+      segment_id_col         = segment_id_col,
+      feature_id_col         = "species_code",
+      direction              = "upstream",
+      aoi                    = aoi,
+      include_equivalents    = TRUE,
+      features_wscode_col    = "wscode",
+      features_localcode_col = "localcode"
     )
     names(obsrvtn_species_per_seg)[2] <- "obsrvtn_species_codes_upstr"
   }
@@ -137,33 +129,26 @@ lnk_pipeline_access <- function(
   )
   segments_aoi <- DBI::dbGetQuery(conn, segments_sql)
 
-  # NOTE: fresh's `frs_network_features` returns array columns as
-  # RPostgres-native `pq__text` (Postgres array literals like
-  # `"{a,b,c}"`), not R list-columns. Parsing those into R character
-  # vectors is a fresh follow-up. For this commit we use SET
-  # MEMBERSHIP — the function's INNER-JOIN semantics mean a segment
-  # with zero matches is absent from the result tibble entirely, so
-  # `segment_id %in% dnstr_tibble$segment_id` is sufficient to derive
-  # the integer access code without parsing the arrays themselves.
-
   out <- segments_aoi
   for (sp in names(dnstr_per_sp)) {
     blocked <- out[[segment_id_col]] %in% dnstr_per_sp[[sp]][[segment_id_col]]
     out[[paste0("has_barriers_", sp, "_dnstr")]] <- blocked
   }
-  if (!is.null(obs_upstr)) {
-    out[["has_observation_key_upstr"]] <-
-      out[[segment_id_col]] %in% obs_upstr[[segment_id_col]]
-    # Map segment_id -> the species-codes pq__text string for
-    # later `grepl` checks (avoids parsing the array, just substring-
-    # matches the species code in the literal). Coarse but works for
-    # uppercase 2-3-letter species codes that don't appear inside
-    # other tokens.
-    sp_lookup <- setNames(
-      as.character(obsrvtn_species_per_seg[[2]]),
+
+  # Carry the observations list-column onto `out` so per-species
+  # `%in%` checks work row-wise. Segments with no upstream observations
+  # are absent from the obs tibble (INNER-JOIN semantics) — left-join
+  # leaves their list-column as NULL, which `%in%` treats as logical(0)
+  # falsey → access_<sp> = 1 (modelled accessible).
+  if (!is.null(obsrvtn_species_per_seg)) {
+    obs_lookup <- setNames(
+      obsrvtn_species_per_seg$obsrvtn_species_codes_upstr,
       as.character(obsrvtn_species_per_seg[[segment_id_col]])
     )
-    out[["obsrvtn_species_lit"]] <- unname(sp_lookup[as.character(out[[segment_id_col]])])
+    out$obsrvtn_species_codes_upstr <-
+      obs_lookup[as.character(out[[segment_id_col]])]
+    out$has_observation_key_upstr <-
+      out[[segment_id_col]] %in% obsrvtn_species_per_seg[[segment_id_col]]
   }
 
   # 4. Per-species access integer codes.
@@ -176,12 +161,10 @@ lnk_pipeline_access <- function(
       rep(-9L, nrow(out))
     } else {
       blocked <- out[[paste0("has_barriers_", sp, "_dnstr")]]
-      observed <- if (!is.null(obs_upstr)) {
-        # Substring-match the species code inside the array literal —
-        # `pq__text` looks like `{BT,CO,SK}`. Use regex word-boundary
-        # to avoid matching e.g. "CT" inside "WCT".
-        lit <- out[["obsrvtn_species_lit"]]
-        !is.na(lit) & grepl(sprintf("(^|[\\{,])%s($|[,\\}])", sp_upper), lit)
+      observed <- if (!is.null(obsrvtn_species_per_seg)) {
+        vapply(out$obsrvtn_species_codes_upstr, function(x) {
+          sp_upper %in% x
+        }, logical(1))
       } else {
         rep(FALSE, nrow(out))
       }
@@ -189,11 +172,14 @@ lnk_pipeline_access <- function(
     }
   }
 
-  # 5. Optional persistence. dbWriteTable doesn't natively serialize
-  # R list-columns to Postgres arrays for CREATE-TABLE — first commit
-  # focuses on correctness of access_<sp> integer codes; array
-  # persistence is a follow-up that needs a manual pg_array codec.
-  # Drops list-columns when writing.
+  # 5. Optional persistence. dbWriteTable doesn't natively serialize R
+  # list-columns to Postgres arrays for CREATE-TABLE, so the wide
+  # `streams_access` write keeps scalar per-species columns only
+  # (`has_barriers_<sp>_dnstr`, `access_<sp>`). The barriers_<sp>_dnstr
+  # / observation arrays themselves stay in-memory on the returned
+  # tibble for callers that want them. Persistent array storage is a
+  # downstream improvement (would need a manual pg_array codec via
+  # DBI::sqlInterpolate or a SQL `INSERT ... ARRAY[...]` builder).
   if (!is.null(to)) {
     out_scalar <- out[, !vapply(out, is.list, logical(1)), drop = FALSE]
     schema_table <- strsplit(to, "\\.", fixed = FALSE)[[1]]

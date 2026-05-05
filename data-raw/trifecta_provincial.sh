@@ -16,6 +16,7 @@ set -euo pipefail
 # Parse args
 CONFIG="bcfishpass"
 SCHEMA=""
+RDS_DIR=""
 M4_OVERRIDE=""
 M1_OVERRIDE=""
 CY_OVERRIDE=""
@@ -23,13 +24,15 @@ for arg in "$@"; do
   case "$arg" in
     --config=*)     CONFIG="${arg#--config=}" ;;
     --schema=*)     SCHEMA="${arg#--schema=}" ;;
+    --rds-dir=*)    RDS_DIR="${arg#--rds-dir=}" ;;
     --m4-bucket=*)  M4_OVERRIDE="${arg#--m4-bucket=}" ;;
     --m1-bucket=*)  M1_OVERRIDE="${arg#--m1-bucket=}" ;;
     --cy-bucket=*)  CY_OVERRIDE="${arg#--cy-bucket=}" ;;
   esac
 done
 EXTRA_ARGS="--config=$CONFIG"
-[ -n "$SCHEMA" ] && EXTRA_ARGS="$EXTRA_ARGS --schema=$SCHEMA"
+[ -n "$SCHEMA" ]  && EXTRA_ARGS="$EXTRA_ARGS --schema=$SCHEMA"
+[ -n "$RDS_DIR" ] && EXTRA_ARGS="$EXTRA_ARGS --rds-dir=$RDS_DIR"
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LOG_DIR="$REPO_ROOT/data-raw/logs"
@@ -149,21 +152,34 @@ printf '  m1     exit=%d  log=%s\n' "$M1_EXIT" "$M1_LOG"
 printf '  cypher exit=%d  log=%s\n' "$CY_EXIT" "$CY_LOG"
 echo "============================================"
 
-# Pull cypher's RDS files back to M4
+# Pull cypher's RDS files back to M4. Use tofu-resolved droplet IP so the
+# script survives droplet re-provisioning (the rtj cypher_up.sh assigns a
+# new public IP each time). Mirrors cypher_run.sh's pattern.
+CYPHER_IP=$(cd "$REPO_ROOT/../rtj/env/do/dev/cypher" && tofu output -raw droplet_ip 2>/dev/null || echo "")
 echo
-echo "[trifecta-provincial] pulling cypher RDS files"
-mkdir -p "$REPO_ROOT/data-raw/logs/provincial_parity"
-scp -q "cypher@100.72.81.25:/home/cypher/Projects/repo/link/data-raw/logs/provincial_parity/*.rds" \
-    "$REPO_ROOT/data-raw/logs/provincial_parity/" 2>&1 | tail -3 || true
+if [ -z "$CYPHER_IP" ]; then
+  echo "[trifecta-provincial] WARN: tofu droplet_ip unavailable — skipping cypher pull"
+else
+  echo "[trifecta-provincial] pulling cypher RDS files (cypher@$CYPHER_IP)"
+  RDS_DIR_NAME="provincial_${CONFIG}"
+  [ "$CONFIG" = "bcfishpass" ] && RDS_DIR_NAME="provincial_parity"
+  mkdir -p "$REPO_ROOT/data-raw/logs/$RDS_DIR_NAME"
+  scp -q "cypher@$CYPHER_IP:/home/cypher/Projects/repo/link/data-raw/logs/$RDS_DIR_NAME/*.rds" \
+      "$REPO_ROOT/data-raw/logs/$RDS_DIR_NAME/" 2>&1 | tail -3 || true
+fi
 
-# Pull m1's RDS files back too
+# Pull m1's RDS files back too. Use the same per-bundle RDS_DIR_NAME so
+# default-bundle / default_rearbreaks / etc. land in the right dir.
+M1_RDS_DIR_NAME="provincial_${CONFIG}"
+[ "$CONFIG" = "bcfishpass" ] && M1_RDS_DIR_NAME="provincial_parity"
+mkdir -p "$REPO_ROOT/data-raw/logs/$M1_RDS_DIR_NAME"
 echo "[trifecta-provincial] pulling m1 RDS files"
-scp -q "m1:~/Projects/repo/link/data-raw/logs/provincial_parity/*.rds" \
-    "$REPO_ROOT/data-raw/logs/provincial_parity/" 2>&1 | tail -3 || true
+scp -q "m1:~/Projects/repo/link/data-raw/logs/$M1_RDS_DIR_NAME/*.rds" \
+    "$REPO_ROOT/data-raw/logs/$M1_RDS_DIR_NAME/" 2>&1 | tail -3 || true
 
 # Final inventory
 echo
-TOTAL_RDS=$(ls "$REPO_ROOT/data-raw/logs/provincial_parity/"*.rds 2>/dev/null | wc -l)
+TOTAL_RDS=$(ls "$REPO_ROOT/data-raw/logs/$M1_RDS_DIR_NAME/"*.rds 2>/dev/null | wc -l)
 echo "[trifecta-provincial] local RDS file count: $TOTAL_RDS / $TOTAL"
 
 if [ $M4_EXIT -ne 0 ] || [ $M1_EXIT -ne 0 ] || [ $CY_EXIT -ne 0 ]; then

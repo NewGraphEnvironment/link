@@ -30,13 +30,12 @@ link's existing `severity` (high/moderate/low) + 5-bucket `mapping_code` (INACCE
 - [x] Add `R/lnk_pipeline_access.R`. Returns a tibble keyed by segment_id with per-species `has_barriers_<sp>_dnstr` boolean + per-species `access_<sp>` integer code (-9 / 0 / 1 / 2). Optional `to` arg writes scalar columns via `dbWriteTable`.
 - [x] Live test on bcfp tunnel ADMS BT: `access_bt` distribution **byte-identical to bcfp** when collapsing 1/2 (ours 10500 / 5262 vs ref 10500 / 5262 after collapsing observed-upstream into modelled-accessible).
 - [x] Roxygen + lint clean.
-- [ ] Pending — surfaces fresh#204:
-  - Full 1/2 distinction needs `frs_network_features` to accept non-`_ltree`-suffixed `wscode`/`localcode` column names (bcfp's `observations` table differs from `streams`).
-  - Actual array persistence (so `barriers_<sp>_dnstr` survives as Postgres `text[]`) needs `frs_network_features` to return R list-columns instead of `pq__text` literal strings.
-  - Both blocked on fresh#204 ergonomic upgrades. Today's commit uses set-membership + substring-grepl as workarounds (functional, not pretty).
-- [ ] Multi-species sweep across (BT, CH, CO, SK, ST, WCT, etc.) once fresh#204 lands.
+- [x] fresh#204 SHIPPED as v0.29.0 (PR #205). Per-side wscode/localcode overrides + R list-column return.
+- [x] `lnk_pipeline_access` updated to use the new ergonomics: drops substring-grepl in favor of `%in%`, drops redundant observation_key call, passes `features_wscode_col = "wscode"` for observations.
+- [x] **ADMS BT byte-identical to bcfp** — `streams_access.access_bt` distribution `0/1/2 = 6728 / 3043 / 687`. Full 1/2 distinction now correct.
+- [ ] Multi-species sweep across (BT, CH, CO, SK, ST, WCT, etc.) on ADMS.
 - [ ] Wire into `lnk_pipeline_persist` so `streams_access` accumulates across WSGs alongside `streams_habitat_<sp>`.
-- [ ] Verification: per-species `access_<sp>` distinct distribution on test WSGs within parity tolerance of bcfp tunnel (after fresh#204).
+- [ ] Verification: per-species `access_<sp>` distinct distribution on test WSGs byte-identical to bcfp.
 - [ ] `/code-check` + commit.
 
 ## Phase 3: `streams_mapping_code` derivation (~0.5–1 day)

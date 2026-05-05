@@ -20,3 +20,11 @@
   - Returns `pq__text` literal strings, not R list-columns — callers can't naturally read array contents.
 - Today's `lnk_pipeline_access` uses set-membership + substring-grepl as workarounds. Full 1/2 access-code distinction + actual array persistence both blocked on fresh#204.
 - Next: pause Phase 2 until fresh#204 ships (small follow-up — both gaps are well-scoped). When ready: extend to multi-species, wire into `lnk_pipeline_persist`, sweep on more WSGs.
+
+## Session 2026-05-05 (afternoon resume)
+
+- fresh#204 SHIPPED as v0.29.0 (PR #205, squash `f42e86a`, tag `v0.29.0`). Per-side overrides (`segments_*` / `features_*` wscode/localcode args) + `feature_ids` returns as R list-column of character vectors. Mocked tests 43/0; live ADMS PSCIS parity 1031/1031 byte-identical preserved; new live test covers `bcfishpass.observations` join. M4 reinstalled to fresh 0.29.0.
+- Adjacent infra work surfaced same session: rtj#110 filed (cypher snapshot R libpath workaround for r-lib/pak#658); `link/scripts/update_hosts.sh` written; `data-raw/trifecta_provincial.sh` gained `--rds-dir=` pass-through.
+- `lnk_pipeline_access` updated to drop both workarounds: replaced substring-grepl on `pq__text` with clean `%in%` on the parsed character-vector list-column, dropped the redundant observation_key call (species_code call alone now drives both `has_observation_key_upstr` and per-species `observed`), pass `features_wscode_col = "wscode"` / `features_localcode_col = "localcode"` for `bcfishpass.observations`. lintr clean.
+- **ADMS BT live test: byte-identical to bcfp's `streams_access.access_bt`** distribution on the same WSG — `0 = 6728`, `1 = 3043`, `2 = 687`. Full 1/2 distinction (modelled vs observed) now correct (the earlier "10500 / 5262 mod 1/2 collapse" line above was an artifact of the workaround, not a genuine reference).
+- Next: multi-species sweep (CH, CO, SK, ST, WCT, ...), wire into `lnk_pipeline_persist`, then Phase 3 (`lnk_pipeline_mapping_code`).
