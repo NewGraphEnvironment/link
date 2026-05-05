@@ -78,22 +78,32 @@ lnk_pipeline_access <- function(
 
   # 1. Per-species downstream-barrier arrays via fresh's primitive.
   # bcfishpass.barriers_* tables use the `_ltree`-suffixed code columns
-  # (defaults), so no per-side override needed here.
+  # (defaults), so no per-side override needed here. The bcfp id-column
+  # convention is `<table_name_without_schema>_id` — works uniformly for
+  # per-species tables (`barriers_bt` -> `barriers_bt_id`) and grouped
+  # tables (`barriers_ch_cm_co_pk_sk` -> `barriers_ch_cm_co_pk_sk_id`).
+  # Cache the per-table query so multiple species pointing at the same
+  # grouped table only run the SQL once.
   dnstr_per_sp <- list()
+  dnstr_cache <- list()
   for (sp in names(barriers_per_sp)) {
     barriers_tbl <- barriers_per_sp[[sp]]
-    sp_id_col <- paste0("barriers_", sp, "_id")
+    table_only <- sub("^[^.]+\\.", "", barriers_tbl)
+    sp_id_col <- paste0(table_only, "_id")
 
-    df <- fresh::frs_network_features(
-      conn,
-      segments       = segments,
-      features       = barriers_tbl,
-      segment_id_col = segment_id_col,
-      feature_id_col = sp_id_col,
-      direction      = "downstream",
-      aoi            = aoi,
-      include_equivalents = TRUE
-    )
+    if (is.null(dnstr_cache[[barriers_tbl]])) {
+      dnstr_cache[[barriers_tbl]] <- fresh::frs_network_features(
+        conn,
+        segments       = segments,
+        features       = barriers_tbl,
+        segment_id_col = segment_id_col,
+        feature_id_col = sp_id_col,
+        direction      = "downstream",
+        aoi            = aoi,
+        include_equivalents = TRUE
+      )
+    }
+    df <- dnstr_cache[[barriers_tbl]]
     names(df)[2] <- paste0("barriers_", sp, "_dnstr")
     dnstr_per_sp[[sp]] <- df
   }
