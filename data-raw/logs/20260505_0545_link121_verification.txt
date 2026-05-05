@@ -1,0 +1,28 @@
+=== link#121 tunnel-down sanity test ===
+--- run with bad PG_PASS_SHARE ---
+[bcfp-baseline] stamped: model_run_id=120 host=MacBook-Pro-2.local -> /Users/airvine/Projects/repo/link/data-raw/logs/bcfp_baselines.csv
+
+--- diff (expect: no change) ---
+[1;33mdiff --git a/tmp/bcfp_baselines_pre.csv b/logs/bcfp_baselines.csv[m
+[1;33mindex 97c0973..656b216 100644[m
+[1;33m--- a/tmp/bcfp_baselines_pre.csv[m
+[1;33m+++ b/logs/bcfp_baselines.csv[m
+[1;35m@@ -2,3 +2,4 @@[m [mrun_started_pdt,host,run_label,link_schema,bcfp_model_run_id,bcfp_model_version,[m
+2026-05-02 21:00,m4,provincial_parity,fresh,?,?,?,bcfishpass-bundle provincial run; bcfp baseline not recorded at run time (pre-baselines.csv) — model_run_id 120 active 2026-04-28→2026-05-04 covers this run[m
+2026-05-03 14:23,m4,provincial_default,fresh_default,120,v0.7.14-113-ga7373af,2026-04-28 23:17,default-bundle provincial run; bcfp baseline confirmed via bcfishpass.log query 2026-05-04[m
+2026-05-04 09:44,m4,provincial_default_extrabreaks,fresh_default_extrabreaks,120,v0.7.14-113-ga7373af,2026-04-28 23:17,default_extrabreaks bundle (orphan-class breaks v0.28.0 branch); bcfp baseline same as 2026-05-03 run; expected to flip to build 121 on Tue 2026-05-05 ~20:00 PDT[m
+[32m2026-05-04 22:45,MacBook-Pro-2.local,provincial_default,fresh_default,120,v0.7.14-113-ga7373af,2026-04-28 23:17,auto-stamped at run_provincial_parity.R start[m
+
+--- run with empty PG_PASS_SHARE ---
+[bcfp-baseline] skip: already stamped (host=MacBook-Pro-2.local link_schema=fresh_default model_run_id=120)
+
+--- final diff (expect: no change) ---
+[1;33mdiff --git a/tmp/bcfp_baselines_pre.csv b/logs/bcfp_baselines.csv[m
+[1;33mindex 97c0973..656b216 100644[m
+[1;33m--- a/tmp/bcfp_baselines_pre.csv[m
+[1;33m+++ b/logs/bcfp_baselines.csv[m
+[1;35m@@ -2,3 +2,4 @@[m [mrun_started_pdt,host,run_label,link_schema,bcfp_model_run_id,bcfp_model_version,[m
+2026-05-02 21:00,m4,provincial_parity,fresh,?,?,?,bcfishpass-bundle provincial run; bcfp baseline not recorded at run time (pre-baselines.csv) — model_run_id 120 active 2026-04-28→2026-05-04 covers this run[m
+2026-05-03 14:23,m4,provincial_default,fresh_default,120,v0.7.14-113-ga7373af,2026-04-28 23:17,default-bundle provincial run; bcfp baseline confirmed via bcfishpass.log query 2026-05-04[m
+2026-05-04 09:44,m4,provincial_default_extrabreaks,fresh_default_extrabreaks,120,v0.7.14-113-ga7373af,2026-04-28 23:17,default_extrabreaks bundle (orphan-class breaks v0.28.0 branch); bcfp baseline same as 2026-05-03 run; expected to flip to build 121 on Tue 2026-05-05 ~20:00 PDT[m
+[32m2026-05-04 22:45,MacBook-Pro-2.local,provincial_default,fresh_default,120,v0.7.14-113-ga7373af,2026-04-28 23:17,auto-stamped at run_provincial_parity.R start[m

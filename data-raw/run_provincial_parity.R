@@ -104,6 +104,83 @@ append_time <- function(w, elapsed, rows, status) {
               quote = FALSE, append = TRUE)
 }
 
+# Pin the bcfp comparison reference (model_run_id + version SHA) for this
+# run by appending one row to data-raw/logs/bcfp_baselines.csv. Tuesday
+# weekly bcfishpass.* rebuilds shift the comparison reference; un-stamped
+# runs are ambiguous after the fact.
+#
+# Tunnel precondition: same as compare_bcfishpass_wsg() — port 63333
+# pre-forwarded to db_newgraph and PG_PASS_SHARE set. If the precondition
+# fails the per-WSG comparisons below also fail, so this is not the
+# blocker — warn-and-continue keeps the failure surface where it matters.
+#
+# Idempotent on (host, link_schema, bcfp_model_run_id, run_started_pdt).
+# host alias defaults to LNK_HOST_ALIAS env var (set per host in
+# ~/.Renviron, e.g. LNK_HOST_ALIAS=m4); falls back to Sys.info()[["nodename"]].
+stamp_bcfp_baseline <- function(config_name, link_schema) {
+  csv_path <- file.path(getwd(), "logs", "bcfp_baselines.csv")
+  host <- Sys.getenv("LNK_HOST_ALIAS", Sys.info()[["nodename"]])
+  run_label <- if (config_name == "bcfishpass") "provincial_parity" else paste0("provincial_", config_name)
+  run_started <- format(Sys.time(), "%Y-%m-%d %H:%M")
+
+  tryCatch({
+    tunnel_pass <- Sys.getenv("PG_PASS_SHARE", "")
+    if (!nzchar(tunnel_pass)) {
+      message("[bcfp-baseline] WARN: PG_PASS_SHARE not set, skipping stamp")
+      return(invisible(NULL))
+    }
+    conn_ref <- DBI::dbConnect(RPostgres::Postgres(),
+      host = "localhost", port = 63333, dbname = "bcfishpass",
+      user = Sys.getenv("PG_USER_SHARE", "newgraph"),
+      password = tunnel_pass)
+    on.exit(try(DBI::dbDisconnect(conn_ref), silent = TRUE), add = TRUE)
+
+    bcfp <- DBI::dbGetQuery(conn_ref, "
+      SELECT model_run_id, model_version,
+             to_char(date_completed, 'YYYY-MM-DD HH24:MI') AS date_completed
+      FROM bcfishpass.log
+      ORDER BY model_run_id DESC LIMIT 1")
+    if (nrow(bcfp) == 0L) {
+      message("[bcfp-baseline] WARN: bcfishpass.log empty, skipping stamp")
+      return(invisible(NULL))
+    }
+
+    if (file.exists(csv_path)) {
+      existing <- utils::read.csv(csv_path, stringsAsFactors = FALSE,
+                                   check.names = FALSE)
+      hit <- existing$host == host &
+             existing$link_schema == link_schema &
+             as.character(existing$bcfp_model_run_id) == as.character(bcfp$model_run_id) &
+             existing$run_started_pdt == run_started
+      if (any(hit, na.rm = TRUE)) {
+        cat(sprintf("[bcfp-baseline] skip: already stamped (host=%s link_schema=%s model_run_id=%s)\n",
+                    host, link_schema, bcfp$model_run_id))
+        return(invisible(NULL))
+      }
+    }
+
+    row <- data.frame(
+      run_started_pdt = run_started,
+      host = host,
+      run_label = run_label,
+      link_schema = link_schema,
+      bcfp_model_run_id = bcfp$model_run_id,
+      bcfp_model_version = bcfp$model_version,
+      bcfp_date_completed = bcfp$date_completed,
+      notes = "auto-stamped at run_provincial_parity.R start",
+      stringsAsFactors = FALSE)
+    write.table(row, csv_path, sep = ",", row.names = FALSE,
+                col.names = FALSE, quote = FALSE, append = TRUE)
+    cat(sprintf("[bcfp-baseline] stamped: model_run_id=%s host=%s -> %s\n",
+                bcfp$model_run_id, host, csv_path))
+  }, error = function(e) {
+    message("[bcfp-baseline] WARN: ", conditionMessage(e))
+  })
+  invisible(NULL)
+}
+
+stamp_bcfp_baseline(config_name, cfg$pipeline$schema)
+
 for (w in wsgs) {
   out_rds <- file.path(out_dir, paste0(w, ".rds"))
   if (file.exists(out_rds)) {
