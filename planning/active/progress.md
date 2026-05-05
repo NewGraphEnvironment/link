@@ -13,4 +13,10 @@
 - Plan revised: Phase 1 collapses to consolidate two apply helpers into one canonical `lnk_override`-based path + verify + document (~0.5 day). Phase 2 introduces a `lnk_dnstr_barriers` primitive (the system layer) — `streams_access` becomes thin orchestration over it (the parity layer). Phase 3 (mapping_code) is pure derivation, no new primitive. Total revised: ~4 days (was 4.5–5.5).
 - Memory saved: `feedback_abstract_systems.md`.
 - Phase 1 close-out: dropped the consolidate-the-two-helpers idea (genuinely different semantics — constant remapping vs value-driven; reuse-vs-surface-similarity lesson). Added roxygen note on `lnk_pipeline_load` distinguishing `barrier_status` (bcfp-parity) from `severity` (link's culvert geometry scoring). Phase 1 done.
-- Next: Phase 2 — investigate fresh + link for existing dnstr-trace primitive before designing `lnk_dnstr_*`. Reuse before invent.
+- Phase 2 partial: shipped fresh#201 `frs_network_features()` (v0.28.0) as the canonical primitive — direction-agnostic, public, generic over any FWA-snapped point dataset. ADMS PSCIS parity 1031/1031 byte-identical to bcfp.
+- `lnk_pipeline_access()` composes `frs_network_features` across species into a per-segment `streams_access` wide tibble + optional dest-table write. Live test on ADMS BT: byte-identical access_bt distribution to bcfp (10500 / 5262, modulo 1/2 collapse without observations).
+- Two ergonomic gaps in fresh#201 surfaced during integration — filed as fresh#204:
+  - `wscode_ltree`/`localcode_ltree` hardcoded in SQL — breaks for `bcfishpass.observations` (uses `wscode`/`localcode`).
+  - Returns `pq__text` literal strings, not R list-columns — callers can't naturally read array contents.
+- Today's `lnk_pipeline_access` uses set-membership + substring-grepl as workarounds. Full 1/2 access-code distinction + actual array persistence both blocked on fresh#204.
+- Next: pause Phase 2 until fresh#204 ships (small follow-up — both gaps are well-scoped). When ready: extend to multi-species, wire into `lnk_pipeline_persist`, sweep on more WSGs.

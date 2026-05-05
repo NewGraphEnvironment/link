@@ -20,20 +20,23 @@ link's existing `severity` (high/moderate/low) + 5-bucket `mapping_code` (INACCE
 - [x] Document in roxygen on `lnk_pipeline_load` that `barrier_status` is bcfp-parity (PSCIS field + CSV override), distinct from `severity` (link's culvert-geometry scoring). Both can coexist on the same crossings row.
 - [x] Commit (Phase 1 done).
 
-## Phase 2: `lnk_dnstr_*` primitive + `streams_access` orchestration (~2 days)
+## Phase 2: `lnk_pipeline_access` (in flight, partial)
 
-**Abstract primitive (the system layer)**: given any segments table + any barriers table, return per-segment array of barrier IDs that lie downstream. The PostGIS/wscode-ltree join logic is identical for every (source, species) combo — write it once.
+**Primitive lives in fresh, not link** — investigation found that `bcfishpass.load_dnstr` is the canonical SQL pattern, and the right home for it is fresh's `frs_network_*` family. Shipped as fresh#201 → `frs_network_features()` (v0.28.0). Direction-agnostic (`direction = c("downstream", "upstream")`), generic over any FWA-snapped point dataset. ADMS PSCIS parity: 1031 / 1031 byte-identical to bcfp's `streams_dnstr_barriers`.
 
-**Orchestration (the parity layer)**: compose the primitive across bcfp's (source × species) combinations to produce `<schema>.streams_access` matching bcfp's shape.
+**Orchestration in link**: `lnk_pipeline_access(conn, segments, aoi, ...)` composes `frs_network_features` calls across species + observations into a `streams_access` wide-table tibble + optional dest-table write.
 
-- [ ] Investigate fresh's exports + link's existing pipeline phases for an existing dnstr-trace primitive. If fresh has it, use it. If link has a partial helper, extend rather than re-write.
-- [ ] If neither: add `lnk_dnstr_barriers(conn, segments, barriers, ...)` — small SQL helper. Returns a tibble keyed on `id_segment` with a `barrier_ids` text[] column. No bcfp-specific knowledge.
-- [ ] Add `lnk_pipeline_access(conn, aoi, cfg, loaded, schema)` — pipeline phase that runs after `lnk_pipeline_classify`. Composes `lnk_dnstr_barriers` across the bcfp source set:
-  - per-source: `barriers_pscis_dnstr`, `barriers_anthropogenic_dnstr`, `barriers_dams_dnstr`, `barriers_dams_hydro_dnstr`, `crossings_dnstr`
-  - per-species: `barriers_<sp>_dnstr` (driven by species barrier-filter rules already in the config)
-  - per-species access codes: `access_<sp>` derived via CASE on (wsg_species_presence, dnstr-empty, observation_upstr-empty)
-- [ ] Wire into `lnk_pipeline_persist` so `<schema>.streams_access` accumulates across WSGs alongside `streams_habitat_<sp>`.
-- [ ] Verification: per-species `access_<sp>` distinct distribution on test WSG within parity tolerance of bcfp tunnel.
+- [x] Investigate existing primitives. → fresh#201 `frs_network_features` is the right tool.
+- [x] Add `R/lnk_pipeline_access.R`. Returns a tibble keyed by segment_id with per-species `has_barriers_<sp>_dnstr` boolean + per-species `access_<sp>` integer code (-9 / 0 / 1 / 2). Optional `to` arg writes scalar columns via `dbWriteTable`.
+- [x] Live test on bcfp tunnel ADMS BT: `access_bt` distribution **byte-identical to bcfp** when collapsing 1/2 (ours 10500 / 5262 vs ref 10500 / 5262 after collapsing observed-upstream into modelled-accessible).
+- [x] Roxygen + lint clean.
+- [ ] Pending — surfaces fresh#204:
+  - Full 1/2 distinction needs `frs_network_features` to accept non-`_ltree`-suffixed `wscode`/`localcode` column names (bcfp's `observations` table differs from `streams`).
+  - Actual array persistence (so `barriers_<sp>_dnstr` survives as Postgres `text[]`) needs `frs_network_features` to return R list-columns instead of `pq__text` literal strings.
+  - Both blocked on fresh#204 ergonomic upgrades. Today's commit uses set-membership + substring-grepl as workarounds (functional, not pretty).
+- [ ] Multi-species sweep across (BT, CH, CO, SK, ST, WCT, etc.) once fresh#204 lands.
+- [ ] Wire into `lnk_pipeline_persist` so `streams_access` accumulates across WSGs alongside `streams_habitat_<sp>`.
+- [ ] Verification: per-species `access_<sp>` distinct distribution on test WSGs within parity tolerance of bcfp tunnel (after fresh#204).
 - [ ] `/code-check` + commit.
 
 ## Phase 3: `streams_mapping_code` derivation (~0.5–1 day)
