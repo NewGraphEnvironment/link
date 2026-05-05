@@ -38,9 +38,9 @@ Stamping must happen where comparisons actually occur. The trifecta orchestrator
 
 ## Phase 4: Release
 
-- [ ] `NEWS.md` 0.29.1 entry: "Auto-stamp bcfp comparison baseline in `run_provincial_parity.R`; add `host` column to `bcfp_baselines.csv`".
-- [ ] `DESCRIPTION` 0.29.0 → 0.29.1 (patch bump — orchestration-tooling change, no public R API touched).
-- [ ] PR body: "Closes #121". No SRED tag in issue body; SRED ref goes in PR body only.
+- [x] `NEWS.md` 0.29.1 entry covering the auto-stamp + `host`-column migration.
+- [x] `DESCRIPTION` 0.29.0 → 0.29.1 (patch bump — orchestration-tooling change, no public R API touched).
+- [ ] PR body: "Closes #121". SRED ref goes in PR body only (not in issue body).
 - [ ] `/planning-archive` on PR merge.
 
 ## Validation
