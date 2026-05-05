@@ -1,47 +1,55 @@
-# Task: Auto-stamp bcfp baseline in run_provincial_parity.R (#121)
+# Task: Stream-crossing accessibility labels — bcfishpass parity layer (#124)
 
-`data-raw/logs/bcfp_baselines.csv` records the bcfp comparison baseline (`model_run_id` + SHA) each link comparison was computed against. The CSV's existing rows are compare-flavoured: `(link_schema, bcfp_model_run_id)` pairs. Currently hand-maintained — the goal is auto-stamping.
+link can't reproduce bcfishpass's stream-crossing accessibility vocabulary. We need to add three additive layers (none replacing existing structure) so that:
 
-Stamping must happen where comparisons actually occur. The trifecta orchestrator (`data-raw/trifecta_provincial.sh`) dispatches builds; it does not compare. Comparison happens one layer down inside `run_provincial_parity.R` (per-WSG via `compare_bcfishpass_wsg()`).
+- crossings carry a `barrier_status` ∈ {PASSABLE, POTENTIAL, BARRIER, UNKNOWN} from PSCIS field result + override CSV (mirror of `bcfishpass.crossings.barrier_status`)
+- segments carry a per-species `access_<sp>` ∈ {-9, 0, 1, 2} integer code + per-source downstream-barrier arrays (mirror of `bcfishpass.streams_access`)
+- segments carry a per-species `mapping_code_<sp>` semicolon-token compound `{ACCESS|SPAWN|REAR|""} ; {NONE|DAM|MODELLED|ASSESSED} [;INTERMITTENT]` (mirror of `bcfishpass.streams_mapping_code`)
 
-## Phase 1: CSV schema migration
+link's existing `severity` (high/moderate/low) + 5-bucket `mapping_code` (INACCESSIBLE / SPAWN / SPAWN_NO_REAR / REAR / ACCESSIBLE) are preserved unchanged — they're a separate flexibility layer for project-specific metrics.
 
-- [x] Add `host` column to `data-raw/logs/bcfp_baselines.csv` between `run_started_pdt` and `run_label`. New header order: `run_started_pdt, host, run_label, link_schema, bcfp_model_run_id, bcfp_model_version, bcfp_date_completed, notes`.
-- [x] Backfill the 3 existing rows with `host=m4` (they were single-host M4 runs).
-- [x] Commit as a standalone change so the schema migration is reviewable in isolation.
+## Phase 1: `barrier_status` passthrough on crossings (~1 day)
 
-## Phase 2: Stamp helper + invocation in `run_provincial_parity.R`
+- [ ] Add `lnk_barrier_status(conn, crossings, pscis_overrides)` — returns a tibble with the link-side crossing primary key + `barrier_status` ∈ {PASSABLE, POTENTIAL, BARRIER, UNKNOWN}. CASE mirrors `bcfishpass/model/01_access/sql/load_crossings.sql:66-69`: user_barrier_status if set, else current_barrier_result_code.
+- [ ] Wire into `lnk_pipeline_load` so the working schema's crossings table carries `barrier_status` from the start.
+- [ ] Test against bcfp tunnel: identical (crossing_id, barrier_status) pairs for a sample WSG.
+- [ ] Document distinction from `severity`: barrier_status is bcfp-parity (PSCIS field result + CSV override); severity is link's own scoring of culvert geometry. Both can coexist on the same crossings row.
 
-- [x] Add an inline helper `stamp_bcfp_baseline(config_name, link_schema)` near the top of the script (after args parsed and after the per-WSG-timings CSV setup, before the per-WSG-loop). Single function, same file — no R/ helper, no test file (orchestration scope).
-- [x] Helper logic:
-  - Open DB conn to `localhost:63333` / `bcfishpass` using `Sys.getenv("PG_USER_SHARE", "newgraph")` and `Sys.getenv("PG_PASS_SHARE")`. Pattern matches `compare_bcfishpass_wsg.R:50–53`.
-  - `tryCatch` the entire body — connection failure logs `[bcfp-baseline] WARN: ...` to stderr and returns invisibly. Stamp failure must not block the build.
-  - Query: `SELECT model_run_id, model_version, to_char(date_completed, 'YYYY-MM-DD HH24:MI') AS date_completed FROM bcfishpass.log ORDER BY model_run_id DESC LIMIT 1`.
-  - Compose row fields:
-    - `run_started_pdt` = `format(Sys.time(), "%Y-%m-%d %H:%M")`
-    - `host` = `Sys.getenv("LNK_HOST_ALIAS", Sys.info()[["nodename"]])` — env-var override gives clean shorthand (`m4`/`m1`/`cypher`); nodename fallback when unset
-    - `run_label` = `if (config_name == "bcfishpass") "provincial_parity" else paste0("provincial_", config_name)`
-    - `link_schema` = `cfg$pipeline$schema` (already reflects `--schema=` override applied at lines 42–45)
-    - `notes` = `"auto-stamped at run_provincial_parity.R start"`
-  - Idempotency: read existing CSV; if any row matches `(host, link_schema, bcfp_model_run_id, run_started_pdt)`, skip append and log a `[bcfp-baseline] skip: already stamped` line.
-  - Append row via `write.table(..., append = TRUE, sep = ",", row.names = FALSE, col.names = FALSE, quote = FALSE)` — matches the per-WSG-timings convention at line 103.
-  - `cat("[bcfp-baseline] stamped: model_run_id=<N> host=<H> -> <csv-path>\n")`.
-- [x] Call the helper between the setup banner and the per-WSG `for (w in wsgs)` loop. Single invocation per run.
+## Phase 2: `streams_access` table per schema (~2 days)
 
-## Phase 3: Verification (single-host)
+- [ ] Add `lnk_pipeline_access(conn, aoi, cfg, loaded, schema)` — runs after `lnk_pipeline_classify` returns. Builds `<schema>.streams_access` with bcfp-mirror columns:
+  - `id_segment` (link-side equivalent of bcfp's `segmented_stream_id`)
+  - per-source dnstr arrays: `barriers_pscis_dnstr`, `barriers_anthropogenic_dnstr`, `barriers_dams_dnstr`, `barriers_dams_hydro_dnstr`, `crossings_dnstr`
+  - per-species dnstr arrays: `barriers_bt_dnstr`, `barriers_ch_cm_co_pk_sk_dnstr`, `barriers_ct_dv_rb_dnstr`, `barriers_st_dnstr`, `barriers_wct_dnstr`
+  - per-species access codes: `access_bt`, `access_ch`, … ∈ {-9, 0, 1, 2}
+  - observation arrays: `observation_key_upstr`, `obsrvtn_species_codes_upstr`, `species_codes_dnstr`
+  - indicators: `dam_dnstr_ind`, `dam_hydro_dnstr_ind`, `remediated_dnstr_ind`
+- [ ] SQL implementation: array_agg over downstream barriers for each segment; CASE for access integer code per species. Mirror `model/01_access/sql/load_streams_access.sql`.
+- [ ] Add to `lnk_pipeline_persist` so the table accumulates across WSGs alongside `streams_habitat_<sp>`.
+- [ ] Test: row count + sample-row equality vs bcfp `streams_access` on one WSG.
+- [ ] `/code-check` on staged diff.
 
-- [x] M4-local smoke: stamp helper produced `model_run_id=120, model_version=v0.7.14-113-ga7373af, date_completed=2026-04-28 23:17, host=MacBook-Pro-2.local` (no `LNK_HOST_ALIAS` env var set during test, so nodename fallback was exercised). Row appended cleanly.
-- [x] Idempotency check: second run within the same minute logged `[bcfp-baseline] skip: already stamped (host=MacBook-Pro-2.local link_schema=fresh_default model_run_id=120)`; CSV row count unchanged.
-- [x] Tunnel-down sanity: ran with `Rscript --no-environ` (truly unset `PG_PASS_SHARE`), got `[bcfp-baseline] WARN: PG_PASS_SHARE not set, skipping stamp`; CSV unchanged. Build path would proceed unaffected.
-- [x] Stamped verification logs under `data-raw/logs/20260505_0545_link121_verification.txt` and `data-raw/logs/20260505_0546_link121_verification_tunneldown.txt`.
-- Trifecta verification (3 hosts, one row each) deferred to the next provincial run when M1 docker CLI is updated and cypher is back on tailscale.
+## Phase 3: `streams_mapping_code` table per schema (~1 day)
 
-## Phase 4: Release
+- [ ] Add `lnk_pipeline_mapping_code(conn, aoi, cfg, loaded, schema)` — runs after `lnk_pipeline_access`. Per species, applies the bcfp CASE that combines `access_<sp>`, `spawning_<sp>`, `rearing_<sp>`, the dnstr-source arrays, and the segment's `feature_code` (intermittent flag) into a semicolon-token compound.
+- [ ] Output: `<schema>.streams_mapping_code` with `id_segment` + `mapping_code_<sp>` for each species in `cfg$species`.
+- [ ] Vocabulary documented in roxygen: `{ACCESS|SPAWN|REAR|""} ; {NONE|DAM|MODELLED|ASSESSED} [;INTERMITTENT]`.
+- [ ] Test: distinct value counts of `mapping_code_bt` on one WSG match bcfp's distribution.
+- [ ] `/code-check` on staged diff.
 
-- [x] `NEWS.md` 0.29.1 entry covering the auto-stamp + `host`-column migration.
-- [x] `DESCRIPTION` 0.29.0 → 0.29.1 (patch bump — orchestration-tooling change, no public R API touched).
-- [ ] PR body: "Closes #121". SRED ref goes in PR body only (not in issue body).
-- [ ] `/planning-archive` on PR merge.
+## Phase 4: `build_species_views.R` parity option (~0.5 day)
+
+- [ ] Add an optional flag to `build_species_views.R` that ships a sibling view `streams_<sp>_bcfp_vw` per species, surfacing the bcfp-shaped mapping_code. Existing `streams_<sp>_vw` (5-bucket categories) retained.
+- [ ] Update QGIS symbology hints in the script to cover both views.
+- [ ] No changes to `streams_habitat_<sp>` (boolean accessible stays — it's an input to mapping_code, not a replacement).
+
+## Phase 5: parity validation + release (~1 day)
+
+- [ ] On a test WSG (ADMS), run the full pipeline + the three new phases. Compare row-by-row against `bcfishpass.crossings.barrier_status`, `bcfishpass.streams_access`, `bcfishpass.streams_mapping_code` on the same WSG.
+- [ ] Quantify any departures (expected: small, from methodology differences already documented). Stamp results in `data-raw/logs/<TS>_link124_parity_validation.txt`.
+- [ ] `NEWS.md` 0.30.0 entry — additive new functions, qualifies for minor under R-package conventions.
+- [ ] `DESCRIPTION` 0.29.1 → 0.30.0.
+- [ ] PR body: closes #124, includes parity numbers from Phase 5.
 
 ## Validation
 
