@@ -12,4 +12,5 @@
 - User feedback: build abstract systems, not engineered machines. Reuse `lnk_*` family helpers. Consolidate duplicate code rather than extend it. Hardcode last.
 - Plan revised: Phase 1 collapses to consolidate two apply helpers into one canonical `lnk_override`-based path + verify + document (~0.5 day). Phase 2 introduces a `lnk_dnstr_barriers` primitive (the system layer) — `streams_access` becomes thin orchestration over it (the parity layer). Phase 3 (mapping_code) is pure derivation, no new primitive. Total revised: ~4 days (was 4.5–5.5).
 - Memory saved: `feedback_abstract_systems.md`.
-- Next: start Phase 1 — consolidate `.lnk_pipeline_apply_fixes` to use `lnk_override`.
+- Phase 1 close-out: dropped the consolidate-the-two-helpers idea (genuinely different semantics — constant remapping vs value-driven; reuse-vs-surface-similarity lesson). Added roxygen note on `lnk_pipeline_load` distinguishing `barrier_status` (bcfp-parity) from `severity` (link's culvert geometry scoring). Phase 1 done.
+- Next: Phase 2 — investigate fresh + link for existing dnstr-trace primitive before designing `lnk_dnstr_*`. Reuse before invent.

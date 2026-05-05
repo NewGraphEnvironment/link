@@ -10,16 +10,15 @@ link's existing `severity` (high/moderate/low) + 5-bucket `mapping_code` (INACCE
 
 **Approach restructure (post-exploration)**: build abstract primitives, not bcfp-shaped tables. The bcfp shape becomes one orchestration layer over reusable primitives; future link-specific shapes are different orchestrations over the same primitives. Use existing `lnk_*` families (override / pipeline) and consolidate duplicate code rather than extending it.
 
-## Phase 1: barrier_status — consolidate + verify (~0.5 day)
+## Phase 1: barrier_status — verify + document (DONE)
 
-**Finding from exploration**: `<schema>.crossings.barrier_status` is already populated correctly by `lnk_pipeline_load`. Two private helpers do the override work (`.lnk_pipeline_apply_fixes` + `.lnk_pipeline_apply_pscis`) — same shape (UPDATE crossings.barrier_status from CSV-driven table) but only one uses our canonical `lnk_override`. ADMS parity test: 7/7 distribution buckets match bcfp tunnel; 2-row diff out of 3597.
+**Finding from exploration**: `<schema>.crossings.barrier_status` is already populated correctly by `lnk_pipeline_load` via `.lnk_pipeline_apply_fixes` + `.lnk_pipeline_apply_pscis`. ADMS parity test: 7/7 distribution buckets match bcfp tunnel; 2-row diff out of 3597 (likely bcfp build SHA drift in fresh's bundled CSV).
 
-- [x] Pre-flight verification: ADMS link CSV vs bcfp tunnel `barrier_status` distribution.
-- [ ] Consolidate `.lnk_pipeline_apply_fixes` to use `lnk_override` (drop the inline UPDATE; pass `cols_update = "barrier_status"` with a CSV-driven mapping). Both apply functions then share the same canonical mechanism.
-- [ ] Pick one parametric helper signature `.lnk_apply_barrier_overrides(conn, schema, overrides_df, ...)` to replace both internals. Public surface unchanged — `lnk_pipeline_load` is still the entry point.
-- [ ] Document in roxygen on `lnk_pipeline_load` that `barrier_status` is bcfp-parity (PSCIS field + CSV override), distinct from `severity` (link's culvert-geometry scoring). Both can coexist.
-- [ ] `/code-check` on staged diff.
-- [ ] Commit (Phase 1 done, atomic with checkbox flips in this file).
+**Consolidation idea dropped**: the two apply helpers have genuinely different semantics (constant remapping `SET barrier_status='PASSABLE' WHERE structure IN ('NONE','OBS')` vs value-driven `SET barrier_status = override.user_barrier_status`). Forcing both through `lnk_override` would add complexity, not subtract. Memory-driven lesson: consolidate where there's real reuse, not where there's surface similarity.
+
+- [x] Pre-flight verification: ADMS link CSV vs bcfp tunnel `barrier_status` distribution (7/7 buckets, 2-row drift).
+- [x] Document in roxygen on `lnk_pipeline_load` that `barrier_status` is bcfp-parity (PSCIS field + CSV override), distinct from `severity` (link's culvert-geometry scoring). Both can coexist on the same crossings row.
+- [x] Commit (Phase 1 done).
 
 ## Phase 2: `lnk_dnstr_*` primitive + `streams_access` orchestration (~2 days)
 
