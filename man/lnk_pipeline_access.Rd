@@ -12,6 +12,7 @@ lnk_pipeline_access(
   barriers_per_sp = list(),
   observations = NULL,
   wsg_presence = list(),
+  barrier_sources = list(),
   segment_id_col = "id_segment"
 )
 }
@@ -46,6 +47,14 @@ accessible segment gets \verb{access_<sp> = 1}.}
 \code{aoi}. Sets \verb{access_<sp> = -9} for species marked \code{FALSE}. Default
 empty list assumes all species present (no -9 codes emitted).}
 
+\item{barrier_sources}{Named list. Each name is an arbitrary source
+tag (e.g. \code{"anthropogenic"}, \code{"pscis"}, \code{"dams"}); each value is a
+schema-qualified barriers table for that source. Output gains one
+\verb{has_barriers_<source>_dnstr} boolean column per source. Unlike
+\code{barriers_per_sp}, sources here don't drive the species access
+integer code -- they're the bcfp-shape dnstr indicators consumed
+by \code{lnk_pipeline_mapping_code}. Optional; default empty.}
+
 \item{segment_id_col}{Character. Default \code{"id_segment"}.}
 }
 \value{
@@ -79,6 +88,7 @@ Other pipeline:
 \code{\link{lnk_pipeline_classify}()},
 \code{\link{lnk_pipeline_connect}()},
 \code{\link{lnk_pipeline_load}()},
+\code{\link{lnk_pipeline_mapping_code}()},
 \code{\link{lnk_pipeline_prepare}()},
 \code{\link{lnk_pipeline_setup}()},
 \code{\link{lnk_pipeline_species}()}

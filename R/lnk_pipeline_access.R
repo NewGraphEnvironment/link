@@ -44,6 +44,13 @@
 #'   `barriers_per_sp` keys), `TRUE` when the species is present in
 #'   `aoi`. Sets `access_<sp> = -9` for species marked `FALSE`. Default
 #'   empty list assumes all species present (no -9 codes emitted).
+#' @param barrier_sources Named list. Each name is an arbitrary source
+#'   tag (e.g. `"anthropogenic"`, `"pscis"`, `"dams"`); each value is a
+#'   schema-qualified barriers table for that source. Output gains one
+#'   `has_barriers_<source>_dnstr` boolean column per source. Unlike
+#'   `barriers_per_sp`, sources here don't drive the species access
+#'   integer code -- they're the bcfp-shape dnstr indicators consumed
+#'   by `lnk_pipeline_mapping_code`. Optional; default empty.
 #' @param segment_id_col Character. Default `"id_segment"`.
 #'
 #' @return `conn` invisibly, for piping.
@@ -59,6 +66,7 @@ lnk_pipeline_access <- function(
     barriers_per_sp = list(),
     observations = NULL,
     wsg_presence = list(),
+    barrier_sources = list(),
     segment_id_col = "id_segment") {
 
   stopifnot(
@@ -73,6 +81,7 @@ lnk_pipeline_access <- function(
          length(observations) == 1L &&
          nzchar(observations)),
     is.list(wsg_presence),
+    is.list(barrier_sources),
     is.character(segment_id_col), length(segment_id_col) == 1L
   )
 
@@ -108,6 +117,34 @@ lnk_pipeline_access <- function(
     dnstr_per_sp[[sp]] <- df
   }
 
+  # 1b. Generic per-source dnstr-barrier arrays (bcfp-shape: anthropogenic,
+  # pscis, dams, remediations, ...). Same INNER-JOIN semantics as the
+  # per-species call: a segment with at least one matching source dnstr
+  # appears in the tibble; segments without matches are absent. Reuses
+  # the dnstr_cache so callers passing the same table for both per-sp
+  # and bcfp-source roles only run the SQL once.
+  dnstr_per_source <- list()
+  for (src in names(barrier_sources)) {
+    src_tbl <- barrier_sources[[src]]
+    table_only <- sub("^[^.]+\\.", "", src_tbl)
+    src_id_col <- paste0(table_only, "_id")
+    if (is.null(dnstr_cache[[src_tbl]])) {
+      dnstr_cache[[src_tbl]] <- fresh::frs_network_features(
+        conn,
+        segments       = segments,
+        features       = src_tbl,
+        segment_id_col = segment_id_col,
+        feature_id_col = src_id_col,
+        direction      = "downstream",
+        aoi            = aoi,
+        include_equivalents = TRUE
+      )
+    }
+    df <- dnstr_cache[[src_tbl]]
+    names(df)[2] <- paste0("barriers_", src, "_dnstr")
+    dnstr_per_source[[src]] <- df
+  }
+
   # 2. Upstream observations (optional). One call returns per-segment
   # arrays of observed species_code. `bcfishpass.observations` uses
   # the unsuffixed `wscode` / `localcode` columns (vs `_ltree` on
@@ -139,10 +176,29 @@ lnk_pipeline_access <- function(
   )
   segments_aoi <- DBI::dbGetQuery(conn, segments_sql)
 
+  # When the source barriers table has zero rows for the AOI, the
+  # species has *no data* in this WSG -- mirrors bcfp's NULL-column
+  # semantics for absent-species barriers (e.g. `barriers_st` is empty
+  # in WSGs without ST). Propagate that as `NA` for all segments rather
+  # than `FALSE`, so downstream `lnk_pipeline_mapping_code` can suppress
+  # the per-species CASE (matching bcfp's `barriers_<sp>_dnstr IS NULL`
+  # branch, which yields `mapping_code_<sp> = ""`).
   out <- segments_aoi
   for (sp in names(dnstr_per_sp)) {
-    blocked <- out[[segment_id_col]] %in% dnstr_per_sp[[sp]][[segment_id_col]]
-    out[[paste0("has_barriers_", sp, "_dnstr")]] <- blocked
+    if (nrow(dnstr_per_sp[[sp]]) == 0L) {
+      out[[paste0("has_barriers_", sp, "_dnstr")]] <- NA
+    } else {
+      out[[paste0("has_barriers_", sp, "_dnstr")]] <-
+        out[[segment_id_col]] %in% dnstr_per_sp[[sp]][[segment_id_col]]
+    }
+  }
+  for (src in names(dnstr_per_source)) {
+    if (nrow(dnstr_per_source[[src]]) == 0L) {
+      out[[paste0("has_barriers_", src, "_dnstr")]] <- NA
+    } else {
+      out[[paste0("has_barriers_", src, "_dnstr")]] <-
+        out[[segment_id_col]] %in% dnstr_per_source[[src]][[segment_id_col]]
+    }
   }
 
   # Carry the observations list-column onto `out` so per-species

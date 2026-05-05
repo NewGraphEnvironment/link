@@ -38,14 +38,16 @@ link's existing `severity` (high/moderate/low) + 5-bucket `mapping_code` (INACCE
 - [ ] Verification: per-species `access_<sp>` distinct distribution on test WSGs byte-identical to bcfp.
 - [ ] `/code-check` + commit.
 
-## Phase 3: `streams_mapping_code` derivation (~0.5–1 day)
+## Phase 3: `streams_mapping_code` derivation (DONE — ADMS byte-identical)
 
-**No new primitive needed** — mapping_code is a CASE over the columns `streams_access` (Phase 2) already exposes + the segment's spawning/rearing booleans + edge_type for the INTERMITTENT flag. Pure derivation.
+Slightly more plumbing than the original "pure derivation" framing — needed to extend `lnk_pipeline_access` with a `barrier_sources = list()` arg so it emits `has_barriers_<source>_dnstr` booleans for the bcfp-shape sources (anthropogenic, pscis, dams) that the mapping_code SQL reads.
 
-- [ ] Add `lnk_pipeline_mapping_code(conn, aoi, cfg, loaded, schema)` — runs after `lnk_pipeline_access`. Per species, applies the bcfp CASE that combines `access_<sp>`, `spawning_<sp>`, `rearing_<sp>`, the dnstr-source arrays, and `feature_code` into a semicolon-token compound.
-- [ ] Output: `<schema>.streams_mapping_code` with `id_segment` + `mapping_code_<sp>` for each species in `cfg$species`.
-- [ ] Vocabulary documented in roxygen: `{ACCESS|SPAWN|REAR|""} ; {NONE|DAM|MODELLED|ASSESSED} [;INTERMITTENT]`.
-- [ ] Verification: distinct value counts of `mapping_code_bt` on test WSG within parity tolerance of bcfp.
+- [x] `lnk_pipeline_access` extended with `barrier_sources` arg + auto-NA propagation when a source table has zero rows in the AOI (mirrors bcfp's `barriers_<sp>_dnstr IS NULL` semantics for absent species like ST/WCT in ADMS).
+- [x] Added `lnk_pipeline_mapping_code(access, habitat, feature_code, ...)` — pure derivation (no SQL). Resident vs anadromous flavors of `mapping_code_barrier`, per-species token1 with spawn-only species (CM/PK) handled, INTERMITTENT flag from `feature_code = "GA24850150"`.
+- [x] Vocabulary documented in roxygen: `{ACCESS|SPAWN|REAR|""} ; {NONE|DAM|MODELLED|ASSESSED|REMEDIATED} [;INTERMITTENT]`.
+- [x] **ADMS parity: 15762/15762 byte-identical for all 8 species** (BT, CH, CM, CO, PK, SK, ST, WCT).
+- [ ] Caveat — uses bcfp's pre-computed `dam_dnstr_ind` + `remediated_dnstr_ind` for full BT/WCT parity. Computing those from primitives in link is a Phase 5 polish item — sequence-aware "next downstream barrier IS a dam" logic, not just presence.
+- [ ] Wire as `<schema>.streams_mapping_code` write in `lnk_pipeline_persist`.
 - [ ] `/code-check` + commit.
 
 ## Phase 4: `build_species_views.R` parity sibling view (~0.5 day)
