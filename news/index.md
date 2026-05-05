@@ -1,5 +1,33 @@
 # Changelog
 
+## link 0.29.1
+
+Closes [\#121](https://github.com/NewGraphEnvironment/link/issues/121).
+Auto-stamps the bcfp comparison reference (`model_run_id` + version
+SHA + completion timestamp) into `data-raw/logs/bcfp_baselines.csv` from
+inside `data-raw/run_provincial_parity.R`. Tuesday weekly `bcfishpass.*`
+rebuilds shift the comparison reference; un-stamped runs were ambiguous
+after the fact. Orchestration tooling only — no public R API changes.
+
+- New inline `stamp_bcfp_baseline()` helper in
+  `data-raw/run_provincial_parity.R`, called once per invocation between
+  the per-WSG-timings setup and the WSG loop. Same wiring covers
+  single-host and trifecta-dispatched per-host runs.
+- `data-raw/logs/bcfp_baselines.csv` gains a `host` column between
+  `run_started_pdt` and `run_label`. Three existing rows backfilled to
+  `host=m4` (single-host M4 runs). Trifecta runs now produce three rows
+  per run, one per host, all with the same `bcfp_model_run_id`.
+- Host alias resolves via `LNK_HOST_ALIAS` env var
+  (e.g. `LNK_HOST_ALIAS=m4` in `~/.Renviron`); falls back to
+  `Sys.info()[["nodename"]]` when unset.
+- Tunnel-tolerant: connection failure or unset `PG_PASS_SHARE` logs a
+  warning and the build proceeds (per-WSG comparisons further down would
+  fail too if the tunnel were genuinely broken, so the stamp is not the
+  actual blocker). Idempotent on
+  `(host, link_schema, bcfp_model_run_id, run_started_pdt)` —
+  same-minute re-runs (resume scenarios) skip silently rather than
+  duplicate.
+
 ## link 0.29.0
 
 Closes [\#118](https://github.com/NewGraphEnvironment/link/issues/118).

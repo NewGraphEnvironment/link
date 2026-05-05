@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.29.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.29.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,6 +31,15 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.29.1" id="link-0291">link 0.29.1<a class="anchor" aria-label="anchor" href="#link-0291"></a></h2>
+<p>Closes <a href="https://github.com/NewGraphEnvironment/link/issues/121" class="external-link">#121</a>. Auto-stamps the bcfp comparison reference (<code>model_run_id</code> + version SHA + completion timestamp) into <code>data-raw/logs/bcfp_baselines.csv</code> from inside <code>data-raw/run_provincial_parity.R</code>. Tuesday weekly <code>bcfishpass.*</code> rebuilds shift the comparison reference; un-stamped runs were ambiguous after the fact. Orchestration tooling only — no public R API changes.</p>
+<ul><li>New inline <code>stamp_bcfp_baseline()</code> helper in <code>data-raw/run_provincial_parity.R</code>, called once per invocation between the per-WSG-timings setup and the WSG loop. Same wiring covers single-host and trifecta-dispatched per-host runs.</li>
+<li>
+<code>data-raw/logs/bcfp_baselines.csv</code> gains a <code>host</code> column between <code>run_started_pdt</code> and <code>run_label</code>. Three existing rows backfilled to <code>host=m4</code> (single-host M4 runs). Trifecta runs now produce three rows per run, one per host, all with the same <code>bcfp_model_run_id</code>.</li>
+<li>Host alias resolves via <code>LNK_HOST_ALIAS</code> env var (e.g. <code>LNK_HOST_ALIAS=m4</code> in <code>~/.Renviron</code>); falls back to <code>Sys.info()[["nodename"]]</code> when unset.</li>
+<li>Tunnel-tolerant: connection failure or unset <code>PG_PASS_SHARE</code> logs a warning and the build proceeds (per-WSG comparisons further down would fail too if the tunnel were genuinely broken, so the stamp is not the actual blocker). Idempotent on <code>(host, link_schema, bcfp_model_run_id, run_started_pdt)</code> — same-minute re-runs (resume scenarios) skip silently rather than duplicate.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.29.0" id="link-0290">link 0.29.0<a class="anchor" aria-label="anchor" href="#link-0290"></a></h2>
 <p>Closes <a href="https://github.com/NewGraphEnvironment/link/issues/118" class="external-link">#118</a>. DB hygiene to prevent the disk-full incident that crashed cypher’s <code>fresh-db</code> container during the 2026-05-04 <code>default_extrabreaks</code> provincial trifecta. Two-tier orchestrator-level cleanup; no in-package API changes.</p>
