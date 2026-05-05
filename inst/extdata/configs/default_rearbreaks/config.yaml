@@ -1,0 +1,191 @@
+name: default_rearbreaks
+description: |
+  Experimental variant of the `default` config: adds break positions
+  ONLY at per-species rearing gradient ceilings (no spawn-only maxes).
+  Isolates the rearing-max contribution from the full
+  `default_extrabreaks` set, expecting most of the rear delta
+  (especially CH/ST -11 % rear loss in default_extrabreaks vs default)
+  to reproduce here while spawn shifts stay muted. Use against
+  `fresh_default` and `fresh_default_extrabreaks` to attribute
+  methodology shifts to the rear-max breaks specifically.
+
+# Non-tabular pipeline inputs (paths only)
+rules: rules.yaml
+dimensions: dimensions.csv
+
+# Tabular data files. Loaded by lnk_load_overrides(cfg)$<key>.
+# Entries with `source` + `canonical_schema` dispatch through crate::crt_ingest();
+# others fall through to extension-based local read.
+files:
+  parameters_fresh:
+    path: parameters_fresh.csv
+  user_habitat_classification:
+    source: bcfp
+    path: overrides/user_habitat_classification.csv
+    canonical_schema: bcfp/user_habitat_classification
+  observation_exclusions:
+    path: overrides/observation_exclusions.csv
+  wsg_species_presence:
+    path: overrides/wsg_species_presence.csv
+  user_modelled_crossing_fixes:
+    source: bcfp
+    path: overrides/user_modelled_crossing_fixes.csv
+  user_pscis_barrier_status:
+    source: bcfp
+    path: overrides/user_pscis_barrier_status.csv
+  pscis_modelledcrossings_streams_xref:
+    source: bcfp
+    path: overrides/pscis_modelledcrossings_streams_xref.csv
+  user_barriers_definite:
+    source: bcfp
+    path: overrides/user_barriers_definite.csv
+  user_barriers_definite_control:
+    source: bcfp
+    path: overrides/user_barriers_definite_control.csv
+  user_crossings_misc:
+    source: bcfp
+    path: overrides/user_crossings_misc.csv
+  cabd_exclusions:
+    source: bcfp
+    path: overrides/cabd_exclusions.csv
+  cabd_blkey_xref:
+    source: bcfp
+    path: overrides/cabd_blkey_xref.csv
+  cabd_passability_status_updates:
+    source: bcfp
+    path: overrides/cabd_passability_status_updates.csv
+  cabd_additions:
+    source: bcfp
+    path: overrides/cabd_additions.csv
+
+extends: ~
+
+pipeline:
+  # `schema` is the persistent target where lnk_pipeline_persist accumulates
+  # per-WSG output. Per-WSG staging always goes to working_<wsg> regardless.
+  # Required (no default fallback). For side-by-side bundle compares, set
+  # this to per-bundle values (e.g. fresh_bcfp + fresh_default).
+  schema: fresh_default_rearbreaks
+  # gradient_classes — access breaks (0.15, 0.20, 0.25) plus rear-only
+  # gradient maxima from fresh's parameters_habitat_thresholds.csv
+  # (0.0349, 0.0549, 0.0849, 0.1049). Spawn-only maxes (0.0249, 0.0449,
+  # 0.0649) are deliberately omitted — this bundle isolates the rear-
+  # ceiling contribution from default_extrabreaks. Note: 0.0549 is both
+  # a rear and a spawn max in different species, kept here for the rear
+  # role.
+  # Orphan-class semantics: classes below 0.15 enter
+  # gradient_barriers_minimal via the orphan branch (segmentation only,
+  # no access semantics — fresh's per-species access label filter
+  # rejects gradient_NNNN labels below each species's threshold).
+  gradient_classes:
+    "0349": 0.0349
+    "0549": 0.0549
+    "0849": 0.0849
+    "1049": 0.1049
+    "1500": 0.15
+    "2000": 0.20
+    "2500": 0.25
+  # break_order — sources of segment break positions, applied in the order
+  # listed. Available entries (see ?lnk_pipeline_break):
+  #   observations       — fish observations from bcfishobs.observations
+  #   gradient_minimal   — minimal-reduced gradient barriers
+  #   falls              — natural waterfalls (each fall is its own barrier)
+  #   barriers_definite  — user_barriers_definite.csv
+  #   subsurfaceflow     — FWA edge_type 1410/1425 (opt-in; bcfishpass parity)
+  #   habitat_endpoints  — DRM/URM from user_habitat_classification
+  #   crossings          — PSCIS + modelled crossings
+  # default-bundle leaves subsurfaceflow OFF — NewGraph methodology decision
+  # pending. Add the entry to opt in.
+  break_order:
+  - observations
+  - gradient_minimal
+  - falls
+  - barriers_definite
+  - habitat_endpoints
+  - crossings
+  cluster:
+    three_phase: yes
+  spawn_connected:
+    SK:
+      gradient_max: 0.05
+
+provenance:
+  rules.yaml:
+    generated_from: dimensions.csv
+    generated_by: lnk_rules_build
+    generator_sha: 8f1890564b9148573535a679f2e5563aebe74207
+    checksum: sha256:68380b1d549aee7485281c79b1eb7bd1b6e2ff0fb8dbc079cf56e4bed8e40e8c
+    shape_checksum: sha256:4fec0f2db7523d71ba7542e0d52217c91d9bab5b55d714b689f614380f5c2eb9
+  dimensions.csv:
+    source: link (hand-authored)
+    upstream_sha: 8f1890564b9148573535a679f2e5563aebe74207
+    synced: '2026-04-26'
+    checksum: sha256:a7b40a143d452666ff1a237d2f0d5de91111939de80385f87839854ba8841ca0
+    shape_checksum: sha256:d31463269060dfb5fc11a7ac4a6e0fc5ba44c44b0596e2f088f3b9431f782aab
+  parameters_fresh.csv:
+    source: link (hand-authored)
+    upstream_sha: 8f1890564b9148573535a679f2e5563aebe74207
+    synced: '2026-04-26'
+    checksum: sha256:00e8d1fa342a0a9ca404f7ea11894332868f812a4a1963979aa4750f54ef3ade
+    shape_checksum: sha256:2350b190b48ca5e78b576450b72888d96cc922ffb2c7d4eb976e1fa8504f8ee0
+  overrides/user_habitat_classification.csv:
+    source: https://github.com/smnorris/bcfishpass
+    path: data/user_habitat_classification.csv
+    upstream_sha: 4879bba
+    synced: '2026-04-29'
+    checksum: sha256:cc6aff6448e940613913c2d9dd847db72d6bfb63db8b50ad3293c76ef17c5740
+    shape_checksum: sha256:35604598f352c0cc958e8330e80627ec65154e4eaba9dbba8cac92c8516706a0
+  overrides/observation_exclusions.csv:
+    source: link (hand-authored)
+    upstream_sha: 8f1890564b9148573535a679f2e5563aebe74207
+    synced: '2026-04-26'
+    checksum: sha256:ad901c57ca42e71e4affffd6e583045a2ce423f15088c211c9c2f72976f5d36a
+    shape_checksum: sha256:c0c0c5a6e478bae9d98c0251870fb73ef12ec5033de08589bad08ed03be02a31
+  overrides/wsg_species_presence.csv:
+    source: link (hand-authored)
+    upstream_sha: 8f1890564b9148573535a679f2e5563aebe74207
+    synced: '2026-04-26'
+    checksum: sha256:cd42f2dff62cb76f77f4b055436329a74ba44fe1466dec5d7801aa5221360185
+    shape_checksum: sha256:1298cae181b9af892584328d635430224297672a4a0eced4a2dd66d15652128c
+  overrides/user_modelled_crossing_fixes.csv:
+    source: https://github.com/smnorris/bcfishpass
+    path: data/user_modelled_crossing_fixes.csv
+    upstream_sha: 1c7a436
+    synced: '2026-04-27'
+    checksum: sha256:0c0e97f8f0d4c834837631f68f10aa8fc8f502cad954fd266fe41d4e1f214d10
+    shape_checksum: sha256:acbddab3bd06ac4790eb129201198e614c1d4c08b83cd18ee94e4cdfafa09ab2
+  overrides/user_pscis_barrier_status.csv:
+    source: https://github.com/smnorris/bcfishpass
+    path: data/user_pscis_barrier_status.csv
+    upstream_sha: e48d713
+    synced: '2026-04-27'
+    checksum: sha256:9b4929f882ac46e5632bdbe3c587421be42ac31c0005cd2b7e4d1028fa2a47ac
+    shape_checksum: sha256:fb611fc77ebbe15429826d7acfe57d487118d7815dea9b2ad5a3f94f03a487e8
+  overrides/pscis_modelledcrossings_streams_xref.csv:
+    source: https://github.com/smnorris/bcfishpass
+    path: data/pscis_modelledcrossings_streams_xref.csv
+    upstream_sha: 40c4a0a
+    synced: '2026-04-27'
+    checksum: sha256:f76470febe3a4d26e13ada144b594c2571033fa00676b7622f3c628fed21206f
+    shape_checksum: sha256:c2cebcc7398ddd12d0803eefafbe219f3551e6948051f18d89d7984130c1589d
+  overrides/user_barriers_definite.csv:
+    source: https://github.com/smnorris/bcfishpass
+    path: data/user_barriers_definite.csv
+    upstream_sha: ea3c5d8
+    synced: '2026-04-13'
+    checksum: sha256:56c66cddf279a1c2b0c0be1fc9ba9c758dc93d4ad820e0bf2c5caf4ecce05fb6
+    shape_checksum: sha256:d39b1ef2a8b3fd26974a3138a3f4e9516a65bddd34e9b50ab65c50a0cbfdc9c1
+  overrides/user_barriers_definite_control.csv:
+    source: https://github.com/smnorris/bcfishpass
+    path: data/user_barriers_definite_control.csv
+    upstream_sha: ea3c5d8
+    synced: '2026-04-13'
+    checksum: sha256:8f34e2c006733e0f06248a90dc0b8abe4719880590f497581f80fe5f62fde203
+    shape_checksum: sha256:2a6dd20fd0fe0d9ebc4d54bedafa95054ba3167ac255f98cd2a76dd082800591
+  overrides/user_crossings_misc.csv:
+    source: https://github.com/smnorris/bcfishpass
+    path: data/user_crossings_misc.csv
+    upstream_sha: cb4dd1a
+    synced: '2026-04-27'
+    checksum: sha256:19fa9f1322f78e0b2025aed509b7ac1402b7f99876e7b9e6404b22cce5491d5e
+    shape_checksum: sha256:463bc63156786be38c39d5479bfe07ce7b593e1174ecba6f7d9e5ac52c2c6bfd
