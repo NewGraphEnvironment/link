@@ -8,6 +8,8 @@ lnk_pipeline_mapping_code(
   access,
   habitat,
   feature_code,
+  to = NULL,
+  conn = NULL,
   resident_species = c("bt", "wct"),
   anadromous_species = c("ch", "cm", "co", "pk", "sk", "st"),
   spawn_only_species = c("cm", "pk"),
@@ -31,6 +33,15 @@ Mirrors bcfp's \code{streams_habitat_linear} shape.}
 character vector mapping \code{segment_id} -> \code{feature_code}, or a
 data.frame with \code{segment_id_col} and \code{"feature_code"} columns.
 Used for the \code{INTERMITTENT} flag.}
+
+\item{to}{Character or \code{NULL}. Optional schema-qualified destination
+table. When supplied, the result tibble is written via
+\code{dbWriteTable(overwrite = TRUE)} and the tibble is also returned
+(so callers can chain into \code{lnk_pipeline_persist} / \code{build_species_views.R}).
+Default \code{NULL} returns-only.}
+
+\item{conn}{A \link[DBI:DBIConnection-class]{DBI::DBIConnection}. Required only when \code{to} is
+supplied; ignored otherwise.}
 
 \item{resident_species}{Character. Species using the resident flavor
 of \code{mapping_code_barrier}. Default \code{c("bt", "wct")}.}

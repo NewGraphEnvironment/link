@@ -50,11 +50,12 @@ Slightly more plumbing than the original "pure derivation" framing — needed to
 - [ ] Wire as `<schema>.streams_mapping_code` write in `lnk_pipeline_persist`.
 - [ ] `/code-check` + commit.
 
-## Phase 4: `build_species_views.R` parity sibling view (~0.5 day)
+## Phase 4: `build_species_views.R` parity sibling view (DONE)
 
-- [ ] Add an optional flag to `build_species_views.R` shipping a sibling per species: `streams_<sp>_bcfp_vw` surfacing the bcfp-shape mapping_code. Existing `streams_<sp>_vw` (5-bucket categories) retained unchanged.
-- [ ] Update QGIS symbology hints to cover both views.
-- [ ] No changes to `streams_habitat_<sp>` (boolean accessible stays — input to mapping_code, not a replacement).
+- [x] Added `--bcfp` flag to `build_species_views.R`. When passed AND `<schema>.streams_mapping_code` exists, also emits `streams_<sp>_bcfp_vw` per species. Existing `streams_<sp>_vw` (5-bucket categories) retained unchanged.
+- [x] Updated QGIS symbology hints in the script's footer to cover both views.
+- [x] `lnk_pipeline_mapping_code` gained a `to=` arg (with `conn=`) so callers can write `streams_mapping_code` for the view to consume.
+- [x] No changes to `streams_habitat_<sp>` (boolean accessible stays — input to mapping_code, not a replacement).
 
 ## Phase 5: parity validation + release (~1 day)
 

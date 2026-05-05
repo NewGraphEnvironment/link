@@ -53,6 +53,13 @@
 #'   character vector mapping `segment_id` -> `feature_code`, or a
 #'   data.frame with `segment_id_col` and `"feature_code"` columns.
 #'   Used for the `INTERMITTENT` flag.
+#' @param to Character or `NULL`. Optional schema-qualified destination
+#'   table. When supplied, the result tibble is written via
+#'   `dbWriteTable(overwrite = TRUE)` and the tibble is also returned
+#'   (so callers can chain into `lnk_pipeline_persist` / `build_species_views.R`).
+#'   Default `NULL` returns-only.
+#' @param conn A [DBI::DBIConnection-class]. Required only when `to` is
+#'   supplied; ignored otherwise.
 #' @param resident_species Character. Species using the resident flavor
 #'   of `mapping_code_barrier`. Default `c("bt", "wct")`.
 #' @param anadromous_species Character. Species using the anadromous
@@ -75,6 +82,8 @@ lnk_pipeline_mapping_code <- function(
     access,
     habitat,
     feature_code,
+    to = NULL,
+    conn = NULL,
     resident_species = c("bt", "wct"),
     anadromous_species = c("ch", "cm", "co", "pk", "sk", "st"),
     spawn_only_species = c("cm", "pk"),
@@ -230,6 +239,19 @@ lnk_pipeline_mapping_code <- function(
       },
       character(1)
     )
+  }
+
+  if (!is.null(to)) {
+    if (is.null(conn) || !inherits(conn, "DBIConnection")) {
+      stop("`to` requires a DBI connection in `conn`.", call. = FALSE)
+    }
+    schema_table <- strsplit(to, "\\.", fixed = FALSE)[[1]]
+    target <- if (length(schema_table) == 2L) {
+      DBI::Id(schema = schema_table[1], table = schema_table[2])
+    } else {
+      to
+    }
+    DBI::dbWriteTable(conn, target, out, overwrite = TRUE)
   }
 
   tibble::as_tibble(out)
