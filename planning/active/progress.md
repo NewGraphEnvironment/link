@@ -6,4 +6,5 @@
 - Created branch `121-auto-stamp-bcfp-baseline-in-run-provinci` off main (v0.29.0).
 - Scaffolded PWF baseline (task_plan.md, findings.md, progress.md) with approved phases.
 - Issue #121 body trimmed of the (now-discarded) "revert build-time wiring" item — no commit ever carried that wiring.
-- Next: start Phase 1 (CSV schema migration: add `host` column, backfill 3 rows).
+- Phase 1 complete: `host` column added to `bcfp_baselines.csv`, 3 existing rows backfilled to `m4`, all 4 lines now 8 fields.
+- Next: Phase 2 (stamp helper + invocation in `run_provincial_parity.R`).

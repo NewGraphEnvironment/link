@@ -6,9 +6,9 @@ Stamping must happen where comparisons actually occur. The trifecta orchestrator
 
 ## Phase 1: CSV schema migration
 
-- [ ] Add `host` column to `data-raw/logs/bcfp_baselines.csv` between `run_started_pdt` and `run_label`. New header order: `run_started_pdt, host, run_label, link_schema, bcfp_model_run_id, bcfp_model_version, bcfp_date_completed, notes`.
-- [ ] Backfill the 3 existing rows with `host=m4` (they were single-host M4 runs).
-- [ ] Commit as a standalone change so the schema migration is reviewable in isolation.
+- [x] Add `host` column to `data-raw/logs/bcfp_baselines.csv` between `run_started_pdt` and `run_label`. New header order: `run_started_pdt, host, run_label, link_schema, bcfp_model_run_id, bcfp_model_version, bcfp_date_completed, notes`.
+- [x] Backfill the 3 existing rows with `host=m4` (they were single-host M4 runs).
+- [x] Commit as a standalone change so the schema migration is reviewable in isolation.
 
 ## Phase 2: Stamp helper + invocation in `run_provincial_parity.R`
 
