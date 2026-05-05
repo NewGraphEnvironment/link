@@ -80,10 +80,10 @@ build_view <- function(conn, schema, sp) {
       %s AS species_code,
       CASE
         WHEN h.accessible = false             THEN 'INACCESSIBLE'
-        WHEN h.spawning AND h.rearing         THEN 'BOTH'
-        WHEN h.spawning                       THEN 'SPAWN'
+        WHEN h.spawning AND h.rearing         THEN 'SPAWN'
+        WHEN h.spawning                       THEN 'SPAWN_NO_REAR'
         WHEN h.rearing                        THEN 'REAR'
-        ELSE                                       'NONE'
+        ELSE                                       'ACCESSIBLE'
       END AS mapping_code
     FROM %s s
     LEFT JOIN %s h
@@ -105,4 +105,6 @@ for (sp in species) {
 cat("\nDone. In QGIS, add via Browser → PostgreSQL → fwapg → ",
     SCHEMA, " — drag any streams_<sp>_vw onto the canvas.\n", sep = "")
 cat("Symbology suggestion: categorize by `mapping_code` (5 categories: ",
-    "INACCESSIBLE / BOTH / SPAWN / REAR / NONE).\n", sep = "")
+    "INACCESSIBLE / SPAWN / SPAWN_NO_REAR / REAR / ACCESSIBLE). ",
+    "SPAWN means spawning AND rearing (common case); SPAWN_NO_REAR is the ",
+    "exception (e.g. SK spawn-tribs without lake-rearing access).\n", sep = "")
