@@ -1,0 +1,6 @@
+=== link#121 tunnel-down sanity test (--no-environ) ===
+--- run with --no-environ (PG_PASS_SHARE truly unset) ---
+[bcfp-baseline] WARN: PG_PASS_SHARE not set, skipping stamp
+
+--- diff (expect: no change) ---
+OK: CSV unchanged on tunnel-down

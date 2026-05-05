@@ -55,22 +55,36 @@ build_view <- function(conn, schema, sp) {
   view_name <- sprintf("%s.streams_%s_vw", schema, sp_lower)
   hab_tbl   <- sprintf("%s.streams_habitat_%s", schema, sp_lower)
   streams_tbl <- sprintf("%s.streams", schema)
+  # Synthetic single-column fid for QGIS — views don't have PKs, and
+  # QGIS needs one column to identify features. id_segment alone isn't
+  # globally unique across WSGs, so use a deterministic row_number over
+  # (watershed_group_code, id_segment) which IS jointly unique. Recomputed
+  # at query time; stable as long as underlying tables don't change between
+  # QGIS render passes.
+  # CREATE OR REPLACE is column-shape-locked (can't reorder columns or
+  # rename column 1). DROP first so we can change the schema cleanly
+  # across re-runs that evolve the view definition.
+  DBI::dbExecute(conn, sprintf("DROP VIEW IF EXISTS %s", view_name))
   sql <- sprintf("
-    CREATE OR REPLACE VIEW %s AS
-    SELECT s.*,
-           h.accessible,
-           h.spawning,
-           h.rearing,
-           h.lake_rearing,
-           h.wetland_rearing,
-           %s AS species_code,
-           CASE
-             WHEN h.accessible = false             THEN 'INACCESSIBLE'
-             WHEN h.spawning AND h.rearing         THEN 'BOTH'
-             WHEN h.spawning                       THEN 'SPAWN'
-             WHEN h.rearing                        THEN 'REAR'
-             ELSE                                       'NONE'
-           END AS mapping_code
+    CREATE VIEW %s AS
+    SELECT
+      ROW_NUMBER() OVER (
+        ORDER BY s.watershed_group_code, s.id_segment
+      )::integer AS fid,
+      s.*,
+      h.accessible,
+      h.spawning,
+      h.rearing,
+      h.lake_rearing,
+      h.wetland_rearing,
+      %s AS species_code,
+      CASE
+        WHEN h.accessible = false             THEN 'INACCESSIBLE'
+        WHEN h.spawning AND h.rearing         THEN 'SPAWN'
+        WHEN h.spawning                       THEN 'SPAWN_NO_REAR'
+        WHEN h.rearing                        THEN 'REAR'
+        ELSE                                       'ACCESSIBLE'
+      END AS mapping_code
     FROM %s s
     LEFT JOIN %s h
       ON s.id_segment = h.id_segment
@@ -91,4 +105,6 @@ for (sp in species) {
 cat("\nDone. In QGIS, add via Browser → PostgreSQL → fwapg → ",
     SCHEMA, " — drag any streams_<sp>_vw onto the canvas.\n", sep = "")
 cat("Symbology suggestion: categorize by `mapping_code` (5 categories: ",
-    "INACCESSIBLE / BOTH / SPAWN / REAR / NONE).\n", sep = "")
+    "INACCESSIBLE / SPAWN / SPAWN_NO_REAR / REAR / ACCESSIBLE). ",
+    "SPAWN means spawning AND rearing (common case); SPAWN_NO_REAR is the ",
+    "exception (e.g. SK spawn-tribs without lake-rearing access).\n", sep = "")
