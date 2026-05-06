@@ -45,12 +45,39 @@
 #'   `aoi`. Sets `access_<sp> = -9` for species marked `FALSE`. Default
 #'   empty list assumes all species present (no -9 codes emitted).
 #' @param barrier_sources Named list. Each name is an arbitrary source
-#'   tag (e.g. `"anthropogenic"`, `"pscis"`, `"dams"`); each value is a
-#'   schema-qualified barriers table for that source. Output gains one
-#'   `has_barriers_<source>_dnstr` boolean column per source. Unlike
-#'   `barriers_per_sp`, sources here don't drive the species access
-#'   integer code -- they're the bcfp-shape dnstr indicators consumed
-#'   by `lnk_pipeline_mapping_code`. Optional; default empty.
+#'   tag (e.g. `"anthropogenic"`, `"pscis"`, `"dams"`,
+#'   `"remediations"`); each value is a schema-qualified barriers table
+#'   for that source. Output gains one `has_barriers_<source>_dnstr`
+#'   boolean column per source. Unlike `barriers_per_sp`, sources here
+#'   don't drive the species access integer code -- they're the
+#'   bcfp-shape dnstr indicators consumed by
+#'   [lnk_pipeline_mapping_code()]. Optional; default empty.
+#'
+#'   When both `"anthropogenic"` and `"dams"` are present, the output
+#'   gains a `dam_dnstr_ind` boolean column: TRUE iff the next-
+#'   downstream anthropogenic barrier is also a dam (sequence-aware,
+#'   mirrors bcfp's `array[barriers_anthropogenic_dnstr[1]] &&
+#'   barriers_dams_dnstr` SQL). Required for resident-flavor
+#'   `mapping_code_bt` / `mapping_code_wct` parity with bcfp.
+#'
+#'   When `"remediations"` is present AND `crossings_table` is set,
+#'   the output gains a `remediated_dnstr_ind` boolean column.
+#' @param crossings_table Character or `NULL`. Schema-qualified
+#'   crossings table with `aggregated_crossings_id` and `pscis_status`
+#'   columns (e.g. `"bcfishpass.crossings"`). Used only to compute
+#'   `remediated_dnstr_ind` (TRUE iff the next-downstream remediation
+#'   is a crossing whose `pscis_status IN ('REMEDIATED', 'PASSABLE')`).
+#'
+#'   bcfp's own `streams_access.remediated_dnstr_ind` is currently
+#'   buggy (see smnorris/bcfishpass#690): the JOIN clause
+#'   `pscis_status = 'REMEDIATED' AND pscis_status = 'PASSABLE'` is
+#'   contradictory and always FALSE -- verified against 4.2M rows. link
+#'   computes the bcfp-intended `IN` semantics, so link's mapping_code
+#'   may emit `REMEDIATED` tokens on segments where bcfp's current
+#'   output emits `DAM` / `MODELLED` / `ASSESSED`. PR filed against
+#'   the `NewGraphEnvironment/bcfishpass` fork; once it lands +
+#'   propagates upstream the outputs converge. Default `NULL` skips
+#'   the `remediated_dnstr_ind` column.
 #' @param segment_id_col Character. Default `"id_segment"`.
 #'
 #' @return `conn` invisibly, for piping.
@@ -67,6 +94,7 @@ lnk_pipeline_access <- function(
     observations = NULL,
     wsg_presence = list(),
     barrier_sources = list(),
+    crossings_table = NULL,
     segment_id_col = "id_segment") {
 
   stopifnot(
@@ -82,6 +110,10 @@ lnk_pipeline_access <- function(
          nzchar(observations)),
     is.list(wsg_presence),
     is.list(barrier_sources),
+    is.null(crossings_table) ||
+      (is.character(crossings_table) &&
+         length(crossings_table) == 1L &&
+         nzchar(crossings_table)),
     is.character(segment_id_col), length(segment_id_col) == 1L
   )
 
@@ -198,6 +230,77 @@ lnk_pipeline_access <- function(
     } else {
       out[[paste0("has_barriers_", src, "_dnstr")]] <-
         out[[segment_id_col]] %in% dnstr_per_source[[src]][[segment_id_col]]
+    }
+  }
+
+  # `dam_dnstr_ind`: TRUE iff the *next* downstream anthropogenic barrier
+  # is also a dam. Mirrors bcfp's
+  # `array[barriers_anthropogenic_dnstr[1]] && barriers_dams_dnstr` SQL.
+  # Both source tables populate their primary key from
+  # `crossings.aggregated_crossings_id`, so the IDs returned by
+  # `frs_network_features` are in a shared space — `%in%` works
+  # directly. Without sequence-aware logic the resident-flavor
+  # `mapping_code_bt` over-emits `DAM` where bcfp emits `ASSESSED` on
+  # PSCIS-then-dam stacks.
+  if (all(c("anthropogenic", "dams") %in% names(dnstr_per_source))) {
+    anth_arrs <- dnstr_per_source$anthropogenic[[2]]
+    anth_keys <- as.character(dnstr_per_source$anthropogenic[[segment_id_col]])
+    dam_arrs  <- dnstr_per_source$dams[[2]]
+    dam_keys  <- as.character(dnstr_per_source$dams[[segment_id_col]])
+    out_keys <- as.character(out[[segment_id_col]])
+    anth_idx <- match(out_keys, anth_keys)
+    dam_idx <- match(out_keys, dam_keys)
+    out$dam_dnstr_ind <- vapply(seq_along(out_keys), function(i) {
+      ai <- anth_idx[i]
+      di <- dam_idx[i]
+      if (is.na(ai)) return(FALSE)
+      anth <- as.character(anth_arrs[[ai]])
+      if (length(anth) == 0L || is.na(anth[1])) return(FALSE)
+      if (is.na(di)) return(FALSE)
+      dams <- as.character(dam_arrs[[di]])
+      if (length(dams) == 0L) return(FALSE)
+      anth[1] %in% dams
+    }, logical(1))
+  }
+
+  # `remediated_dnstr_ind`: TRUE iff the next-downstream remediation is
+  # a crossing currently in PASSABLE/REMEDIATED status. Computed per
+  # bcfp's *intended* logic. bcfp's own
+  # `bcfishpass.streams_access.remediated_dnstr_ind` regressed in
+  # smnorris/bcfishpass#690 ("db v070", 2025-09-24) — the JOIN clause
+  # `pscis_status = 'REMEDIATED' AND pscis_status = 'PASSABLE'` is
+  # contradictory and emits FALSE for every row (verified: 4.2M rows).
+  # link computes the bcfp-intended `IN ('REMEDIATED','PASSABLE')`
+  # semantics so resident-flavor mapping_code can correctly emit
+  # REMEDIATED tokens. Once smnorris/bcfishpass merges the upstream
+  # fix this matches bcfp's output again.
+  if ("remediations" %in% names(dnstr_per_source) &&
+        !is.null(crossings_table)) {
+    remed_arrs <- dnstr_per_source$remediations[[2]]
+    remed_keys <- as.character(dnstr_per_source$remediations[[segment_id_col]])
+    out_keys <- as.character(out[[segment_id_col]])
+    remed_idx <- match(out_keys, remed_keys)
+    next_remed <- vapply(seq_along(out_keys), function(i) {
+      ri <- remed_idx[i]
+      if (is.na(ri)) return(NA_character_)
+      arr <- as.character(remed_arrs[[ri]])
+      if (length(arr) == 0L) return(NA_character_)
+      arr[1]
+    }, character(1))
+    needed <- unique(next_remed[!is.na(next_remed)])
+    if (length(needed) == 0L) {
+      out$remediated_dnstr_ind <- FALSE
+    } else {
+      ids_lit <- paste0("'", needed, "'", collapse = ",")
+      sql <- sprintf(
+        "SELECT aggregated_crossings_id::text AS id, pscis_status FROM %s WHERE aggregated_crossings_id::text IN (%s)",
+        crossings_table, ids_lit
+      )
+      lookup <- DBI::dbGetQuery(conn, sql)
+      pass_ids <- as.character(
+        lookup$id[lookup$pscis_status %in% c("REMEDIATED", "PASSABLE")]
+      )
+      out$remediated_dnstr_ind <- !is.na(next_remed) & next_remed %in% pass_ids
     }
   }
 

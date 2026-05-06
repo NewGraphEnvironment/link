@@ -1,0 +1,37 @@
+=== link#135 ADMS parity validation (link computes dam/remediated indicators) ===
+Run started: 2026-05-05 22:51:58 PDT 
+link: 0.30.0   fresh: 0.29.0 
+bcfp: model_run_id=121  date=2026-05-05 20:47:04.990225  version=v0.7.14-125-g6e9cf1c
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+7: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+8: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+9: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+acc has dam_dnstr_ind: TRUE   remediated_dnstr_ind: TRUE 
+
+--- mapping_code parity (NO merge-in of bcfp indicators) ---
+  mapping_code_bt      15733/15763 (99.81%)  diffs: 30 (link emits REMEDIATED token where bcfp says other)
+  mapping_code_ch      15761/15763 (99.99%)  diffs: 2 (link emits REMEDIATED token where bcfp says other)
+  mapping_code_cm      15761/15763 (99.99%)  diffs: 2 (link emits REMEDIATED token where bcfp says other)
+  mapping_code_co      15761/15763 (99.99%)  diffs: 2 (link emits REMEDIATED token where bcfp says other)
+  mapping_code_pk      15761/15763 (99.99%)  diffs: 2 (link emits REMEDIATED token where bcfp says other)
+  mapping_code_sk      15761/15763 (99.99%)  diffs: 2 (link emits REMEDIATED token where bcfp says other)
+  mapping_code_st      15763/15763 (100.00%)
+  mapping_code_wct     15763/15763 (100.00%)
+
+=== END ===

@@ -29,10 +29,10 @@ i.e. take the FIRST element of `barriers_anthropogenic_dnstr` (the next-downstre
 
 **Files**: `R/lnk_pipeline_access.R`
 
-- [ ] Add `dam_dnstr_ind` computation after the existing `dnstr_per_source` loop, gated on both `anthropogenic` and `dams` being present in `barrier_sources`. Per-row: `dam_dnstr_ind = anth_arr[[i]][1] %in% dam_arr[[i]]`. Defensive: empty/NA anth array → FALSE.
-- [ ] Add optional `crossings_table = NULL` arg. When supplied alongside `barrier_sources$remediations`, compute `remediated_dnstr_ind` per the bcfp-intended logic — TRUE iff next-downstream remediation is a crossing with `pscis_status IN ('REMEDIATED', 'PASSABLE')`. Inline comment cross-refs the smnorris#690 regression and link's upstream fix-PR.
-- [ ] Roxygen update on `lnk_pipeline_access`: document both new columns, the `barrier_sources` shape needed, and the `crossings_table` arg. Note the bcfp v0.7.0 divergence on REMEDIATED.
-- [ ] `devtools::document()` + `lintr::lint("R/lnk_pipeline_access.R")` — both clean.
+- [x] Add `dam_dnstr_ind` computation after the existing `dnstr_per_source` loop, gated on both `anthropogenic` and `dams` being present in `barrier_sources`. Per-row: `dam_dnstr_ind = anth_arr[[i]][1] %in% dam_arr[[i]]`. Defensive: empty/NA anth array → FALSE.
+- [x] Add optional `crossings_table = NULL` arg. When supplied alongside `barrier_sources$remediations`, compute `remediated_dnstr_ind` per the bcfp-intended logic — TRUE iff next-downstream remediation is a crossing with `pscis_status IN ('REMEDIATED', 'PASSABLE')`. Inline comment cross-refs the smnorris#690 regression and link's upstream fix-PR.
+- [x] Roxygen update on `lnk_pipeline_access`: document both new columns, the `barrier_sources` shape needed, and the `crossings_table` arg. Note the bcfp v0.7.0 divergence on REMEDIATED.
+- [x] `devtools::document()` + `lintr::lint("R/lnk_pipeline_access.R")` — both clean.
 
 ## Phase 1b: Upstream PR to NewGraphEnvironment/bcfishpass fork
 
