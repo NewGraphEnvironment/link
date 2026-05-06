@@ -1,5 +1,62 @@
 # Changelog
 
+## link 0.30.0
+
+Closes [\#124](https://github.com/NewGraphEnvironment/link/issues/124).
+Reproduces bcfishpass’s three classification surfaces
+(`crossings.barrier_status`, `streams_access`, `streams_mapping_code`)
+as additive layers — link’s existing `severity` and 5-bucket
+`mapping_code` are unchanged.
+
+- **`lnk_pipeline_access(conn, segments, aoi, ...)`** — composes
+  [`fresh::frs_network_features()`](https://github.com/NewGraphEnvironment/fresh/blob/main/R/frs_network_features.R)
+  (fresh 0.29.0+) calls across species + observations into a
+  `streams_access`-shape wide tibble. Per-segment per-species
+  `access_<sp>` integer codes (`-9 / 0 / 1 / 2`) for absent / blocked /
+  modelled / observed. Caches per-table dnstr queries — 5 species
+  pointing at one grouped barriers table run the SQL once. Auto-NA
+  propagation when a barriers source has zero rows in the AOI mirrors
+  bcfp’s `barriers_<sp>_dnstr IS NULL` semantics for absent species.
+- **`lnk_pipeline_mapping_code(access, habitat, feature_code, ...)`** —
+  pure R derivation over the bcfp-shape access columns. Resident-flavor
+  (BT, WCT) vs anadromous-flavor (CH/CM/CO/PK/SK/ST) handling for
+  `mapping_code_barrier`. Spawn-only species (CM, PK) emit only `ACCESS`
+  / `SPAWN` token1 (no REAR per bcfp). `feature_code = "GA24850150"`
+  flags `INTERMITTENT`. Optional `to=` arg writes
+  `<schema>.streams_mapping_code` for downstream views.
+- **ADMS parity validation: 15762 / 15762 byte-identical to
+  `bcfishpass.streams_mapping_code` for all 8 species** (BT, CH, CM, CO,
+  PK, SK, ST, WCT). Per-species `access_<sp>` ≥99% match (1-row totals
+  diff + ~13-row obs/modelled drift attributable to bcfp’s life_stage /
+  activity / point_type observation filters not yet applied in link).
+- **`barrier_status` (Phase 1)** — already populated correctly by
+  `lnk_pipeline_load` via `.lnk_pipeline_apply_fixes` +
+  `.lnk_pipeline_apply_pscis`. Roxygen note added distinguishing
+  `barrier_status` (bcfp-parity, PSCIS-field + CSV override) from
+  `severity` (link’s culvert-geometry scoring). Both can coexist on the
+  same crossings row.
+- **`build_species_views.R --bcfp`** sibling view per species —
+  `streams_<sp>_bcfp_vw` carries the bcfp-shape `mapping_code_<sp>`
+  string for QGIS A/B comparison against the existing `streams_<sp>_vw`
+  (link’s 5-bucket categories). Both views co-exist; symbology hint
+  covers each.
+- **`scripts/update_hosts.sh`** — pak-bug-bypass updater for trifecta
+  hosts. Uses `R CMD INSTALL` from a GitHub source tarball, sidesteps
+  [r-lib/pak#658](https://github.com/r-lib/pak/issues/658) which
+  mis-reports cypher’s permission-denied installs as “empty archive”
+  when the user’s first
+  [`.libPaths()`](https://rdrr.io/r/base/libPaths.html) entry isn’t
+  writable.
+- **`data-raw/trifecta_provincial.sh`** — `--rds-dir=` pass-through arg
+  for recovery runs that need to bypass the resume RDS cache
+  (e.g. running cypher’s bucket on M4 after cypher destroy).
+- Caveat for full BT/WCT parity: `mapping_code_<bt|wct>` uses bcfp’s
+  pre-computed `dam_dnstr_ind` / `remediated_dnstr_ind` via merge-in.
+  Computing those from link primitives requires sequence-aware “next
+  downstream barrier IS a dam” logic — tracked as a follow-up issue.
+  Anadromous species + non-resident BT/WCT in non-overlap WSGs are
+  byte-identical without the merge.
+
 ## link 0.29.1
 
 Closes [\#121](https://github.com/NewGraphEnvironment/link/issues/121).

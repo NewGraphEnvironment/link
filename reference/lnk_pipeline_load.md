@@ -61,6 +61,17 @@ lnk_pipeline_load(conn, aoi, cfg, loaded, schema)
     `user_barrier_status` values replace the modelled `barrier_status`
     for a PSCIS crossing.
 
+The `barrier_status` column on `<schema>.crossings` is the
+bcfishpass-parity label — `{PASSABLE, POTENTIAL, BARRIER, UNKNOWN}` —
+derived from PSCIS field `current_barrier_result_code` plus the override
+CSV. It is distinct from `severity` produced by
+[`lnk_score()`](https://newgraphenvironment.github.io/link/reference/lnk_score.md)
+(link's own culvert-geometry scoring; high / moderate / low). Both can
+coexist on the same crossings row: `barrier_status` for parity
+comparisons against bcfp, `severity` for link-specific metrics and
+break-source label translation via
+[`lnk_source()`](https://newgraphenvironment.github.io/link/reference/lnk_source.md).
+
 Falls, user-identified definite barriers, observation exclusions, and
 habitat classification CSVs are loaded by
 [`lnk_pipeline_prepare()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_prepare.md)
@@ -80,9 +91,11 @@ Writes to these tables under the caller's working schema:
 ## See also
 
 Other pipeline:
+[`lnk_pipeline_access()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_access.md),
 [`lnk_pipeline_break()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_break.md),
 [`lnk_pipeline_classify()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_classify.md),
 [`lnk_pipeline_connect()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_connect.md),
+[`lnk_pipeline_mapping_code()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_mapping_code.md),
 [`lnk_pipeline_prepare()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_prepare.md),
 [`lnk_pipeline_setup()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_setup.md),
 [`lnk_pipeline_species()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_species.md)
