@@ -13,6 +13,15 @@
 #'    `user_barrier_status` values replace the modelled
 #'    `barrier_status` for a PSCIS crossing.
 #'
+#' The `barrier_status` column on `<schema>.crossings` is the
+#' bcfishpass-parity label — `{PASSABLE, POTENTIAL, BARRIER, UNKNOWN}`
+#' — derived from PSCIS field `current_barrier_result_code` plus the
+#' override CSV. It is distinct from `severity` produced by
+#' [lnk_score()] (link's own culvert-geometry scoring; high / moderate
+#' / low). Both can coexist on the same crossings row: `barrier_status`
+#' for parity comparisons against bcfp, `severity` for link-specific
+#' metrics and break-source label translation via [lnk_source()].
+#'
 #' Falls, user-identified definite barriers, observation exclusions,
 #' and habitat classification CSVs are loaded by
 #' [lnk_pipeline_prepare()] where they are consumed, not here.

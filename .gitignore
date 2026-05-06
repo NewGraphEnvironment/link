@@ -13,3 +13,6 @@ data-raw/_targets/
 data-raw/maps/data/
 data-raw/maps/*.html
 data-raw/maps/*_files/
+
+# Track public-visibility marker even though ~/.gitignore excludes .claude/
+!.claude/visibility

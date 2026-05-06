@@ -1,0 +1,44 @@
+=== link#124 ADMS parity validation ===
+Run started: 2026-05-05 16:34:22 PDT 
+link: 0.30.0   fresh: 0.29.0 
+R: R version 4.5.2 (2025-10-31) 
+bcfp: model_run_id=120  date=2026-04-28 23:17:14.622215  version=v0.7.14-113-ga7373af
+
+--- Phase 2: streams_access (multi-species) ---
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+7: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+8: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+  access_bt    15749/15762 (99.92%)
+  access_ch    15757/15762 (99.97%)
+  access_cm    0/15762 (0.00%)
+  access_co    15749/15762 (99.92%)
+  access_pk    0/15762 (0.00%)
+  access_sk    15747/15762 (99.90%)
+  access_st    15762/15762 (100.00%)
+  access_wct   15762/15762 (100.00%)
+
+--- Phase 3: streams_mapping_code ---
+  mapping_code_bt      15762/15762 (100.00%)
+  mapping_code_ch      15762/15762 (100.00%)
+  mapping_code_cm      15762/15762 (100.00%)
+  mapping_code_co      15762/15762 (100.00%)
+  mapping_code_pk      15762/15762 (100.00%)
+  mapping_code_sk      15762/15762 (100.00%)
+  mapping_code_st      15762/15762 (100.00%)
+  mapping_code_wct     15762/15762 (100.00%)
+
+=== END ===

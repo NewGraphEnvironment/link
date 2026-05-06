@@ -45,6 +45,15 @@ observation-only points.
 \code{barrier_status} for a PSCIS crossing.
 }
 
+The \code{barrier_status} column on \verb{<schema>.crossings} is the
+bcfishpass-parity label — \verb{\{PASSABLE, POTENTIAL, BARRIER, UNKNOWN\}}
+— derived from PSCIS field \code{current_barrier_result_code} plus the
+override CSV. It is distinct from \code{severity} produced by
+\code{\link[=lnk_score]{lnk_score()}} (link's own culvert-geometry scoring; high / moderate
+/ low). Both can coexist on the same crossings row: \code{barrier_status}
+for parity comparisons against bcfp, \code{severity} for link-specific
+metrics and break-source label translation via \code{\link[=lnk_source]{lnk_source()}}.
+
 Falls, user-identified definite barriers, observation exclusions,
 and habitat classification CSVs are loaded by
 \code{\link[=lnk_pipeline_prepare]{lnk_pipeline_prepare()}} where they are consumed, not here.
@@ -79,9 +88,11 @@ DBI::dbDisconnect(conn)
 }
 \seealso{
 Other pipeline: 
+\code{\link{lnk_pipeline_access}()},
 \code{\link{lnk_pipeline_break}()},
 \code{\link{lnk_pipeline_classify}()},
 \code{\link{lnk_pipeline_connect}()},
+\code{\link{lnk_pipeline_mapping_code}()},
 \code{\link{lnk_pipeline_prepare}()},
 \code{\link{lnk_pipeline_setup}()},
 \code{\link{lnk_pipeline_species}()}
