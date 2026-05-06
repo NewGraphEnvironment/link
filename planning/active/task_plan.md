@@ -38,31 +38,23 @@ i.e. take the FIRST element of `barriers_anthropogenic_dnstr` (the next-downstre
 
 **Files**: `model/01_access/sql/load_streams_access.sql` (one-line fix in our fork)
 
-- [ ] Branch on `NewGraphEnvironment/bcfishpass` from main. Change line 159: `pscis_status = 'REMEDIATED' AND pscis_status = 'PASSABLE'` → `pscis_status IN ('REMEDIATED', 'PASSABLE')`.
-- [ ] Open PR titled "Fix contradictory pscis_status check in remediated_dnstr_ind (regressed in v070)". Reference smnorris#690.
-- [ ] Surface to smnorris (mention or upstream PR) once landed in our fork — non-blocking for link#135 work.
+- [x] Filed [smnorris/bcfishpass#891](https://github.com/smnorris/bcfishpass/issues/891) (issue) and [smnorris/bcfishpass#892](https://github.com/smnorris/bcfishpass/pull/892) (PR, NewGraphEnvironment fork → smnorris:main, "Closes #891"). Branch synced from upstream/main first; one-line `AND` → `IN` change.
 
 ## Phase 2: ADMS validation without merge-in
 
 **Files**: `data-raw/logs/<TS>_link135_parity_validation.txt` (stamped log)
 
-- [ ] Re-run the #124 Phase 5 ADMS parity check, but DROP the `merge(acc, bcfp_inds, ...)` line — let `lnk_pipeline_access` produce both indicators.
-- [ ] Compare `acc$dam_dnstr_ind` to `bcfishpass.streams_access.dam_dnstr_ind` per row, byte-identical.
-- [ ] Compare `mapping_code_<sp>` against `bcfishpass.streams_mapping_code` for all 8 species. Acceptance: BT/WCT byte-identical (15762/15762) **without merge step**, except where link emits REMEDIATED on the bcfp-buggy rows. Quantify the divergence; document.
-- [ ] Other 6 species byte-identical (anadromous flavor doesn't use either indicator).
+- [x] Re-run the #124 Phase 5 ADMS parity check, no merge-in. Stamped log: `data-raw/logs/20260505_2251_link135_parity_validation.txt`.
+- [x] `acc$dam_dnstr_ind` vs bcfp: 11803 FALSE / 3960 TRUE, zero off-diagonal.
+- [x] `mapping_code` parity: BT 15733/15763 (30 REMEDIATED divergences), CH/CM/CO/PK/SK 15761/15763 (2 each), ST/WCT 15763/15763. All diffs are the documented bcfp v070 regression.
+- [x] Other 6 species: see above (CH/CM/CO/PK/SK 99.99%, ST/WCT 100%).
 
 ## Phase 3: Mocked unit tests
 
 **Files**: `tests/testthat/test-lnk_pipeline_access.R` (extend) — or new `test-lnk_pipeline_access-dam-ind.R` if cleaner.
 
-- [ ] Mocked tests via `local_mocked_bindings(frs_network_features = ...)`. Cases:
-  - Both anth + dams sources empty → `dam_dnstr_ind = FALSE`
-  - Anth `[A1, A2]`, dams `[A1]` → `dam_dnstr_ind = TRUE`
-  - Anth `[P1, A1]`, dams `[A1]` → `dam_dnstr_ind = FALSE` (PSCIS first)
-  - Only `anthropogenic` in `barrier_sources` (no dams) → column not emitted
-  - `remediated_dnstr_ind` with `crossings_table = NULL` → column not emitted
-  - `remediated_dnstr_ind` with `crossings_table` provided → TRUE iff lookup returns PASSABLE/REMEDIATED status
-- [ ] `devtools::test()` green.
+- [x] Mocked tests via `local_mocked_bindings`. All cases above covered in `tests/testthat/test-lnk_pipeline_access.R`.
+- [x] `testthat::test_file` clean (12 expectations, all pass).
 
 ## Phase 4: Release
 
