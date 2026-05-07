@@ -18,9 +18,11 @@
 # Cadence rationale: bcfishpass tunnel rebuilds Tuesdays ~20:00 PDT
 # (smnorris/bcfishpass:ng-prod run finishes 02:55-06:31 UTC Wed across
 # last 6 runs). NewGraphEnvironment/db_newgraph dumps to s3://fresh-bc
-# at 12:00 UTC Wed, ~5.5h past the worst observed completion. This
-# workflow runs at 14:00 UTC Wed = 7 AM PDT, ~2h after the upstream
-# dump. Re-running against the same upstream produces no changes.
+# at 12:00 UTC Wed (= 5 AM PDT), ~5.5h past the worst observed
+# completion. The dump itself completes in ~30 s. This workflow runs
+# at 13:00 UTC Wed (= 6 AM PDT), ~1h after the upstream dump --
+# generous cushion vs. dump duration. Re-running against the same
+# upstream produces no changes.
 #
 # Source flipped from gh api -> s3://fresh-bc on 2026-05-07 (link#117 +
 # NewGraphEnvironment/db_newgraph#4 / PR #5). Eliminates GitHub-API
@@ -35,7 +37,7 @@ name: sync-bcfishpass-csvs
 
 on:
   schedule:
-    - cron: '0 14 * * WED'  # 14:00 UTC Wed = 07:00 PDT, ~2h after upstream dump
+    - cron: '0 13 * * WED'  # 13:00 UTC Wed = 06:00 PDT, ~1h after upstream dump (which itself runs <1 min)
   workflow_dispatch:
 
 permissions:
