@@ -93,6 +93,7 @@ lnk_pipeline_access <- function(
     barriers_per_sp = list(),
     observations = NULL,
     wsg_presence = list(),
+    presence = NULL,
     barrier_sources = list(),
     crossings_table = NULL,
     segment_id_col = "id_segment") {
@@ -109,6 +110,7 @@ lnk_pipeline_access <- function(
          length(observations) == 1L &&
          nzchar(observations)),
     is.list(wsg_presence),
+    is.null(presence) || is.list(presence),
     is.list(barrier_sources),
     is.null(crossings_table) ||
       (is.character(crossings_table) &&
@@ -116,6 +118,19 @@ lnk_pipeline_access <- function(
          nzchar(crossings_table)),
     is.character(segment_id_col), length(segment_id_col) == 1L
   )
+
+  # When `presence` is supplied (an `lnk_presence` object), let it
+  # override the legacy `wsg_presence` arg AND short-circuit the SQL
+  # round-trip for absent species. Saves 1-2 frs_network_features
+  # queries per WSG when species are absent (e.g. salmon in ELKR).
+  if (!is.null(presence)) {
+    wsg_presence <- as.list(setNames(
+      vapply(names(barriers_per_sp),
+             function(s) isTRUE(presence$is_present(s)),
+             logical(1)),
+      names(barriers_per_sp)
+    ))
+  }
 
   # 1. Per-species downstream-barrier arrays via fresh's primitive.
   # bcfishpass.barriers_* tables use the `_ltree`-suffixed code columns
@@ -128,6 +143,11 @@ lnk_pipeline_access <- function(
   dnstr_per_sp <- list()
   dnstr_cache <- list()
   for (sp in names(barriers_per_sp)) {
+    # Skip absent species when presence is supplied -- saves the SQL
+    # round-trip and signals "no data" downstream (mapping_code
+    # short-circuits to "" for these).
+    if (!is.null(presence) && !isTRUE(presence$is_present(sp))) next
+
     barriers_tbl <- barriers_per_sp[[sp]]
     table_only <- sub("^[^.]+\\.", "", barriers_tbl)
     sp_id_col <- paste0(table_only, "_id")
@@ -216,8 +236,12 @@ lnk_pipeline_access <- function(
   # the per-species CASE (matching bcfp's `barriers_<sp>_dnstr IS NULL`
   # branch, which yields `mapping_code_<sp> = ""`).
   out <- segments_aoi
-  for (sp in names(dnstr_per_sp)) {
-    if (nrow(dnstr_per_sp[[sp]]) == 0L) {
+  for (sp in names(barriers_per_sp)) {
+    # Absent species (skipped above) get NA — signals "no data" to
+    # downstream lnk_pipeline_mapping_code which short-circuits to "".
+    if (is.null(dnstr_per_sp[[sp]])) {
+      out[[paste0("has_barriers_", sp, "_dnstr")]] <- NA
+    } else if (nrow(dnstr_per_sp[[sp]]) == 0L) {
       out[[paste0("has_barriers_", sp, "_dnstr")]] <- NA
     } else {
       out[[paste0("has_barriers_", sp, "_dnstr")]] <-

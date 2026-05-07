@@ -10,6 +10,7 @@ lnk_pipeline_mapping_code(
   feature_code,
   to = NULL,
   conn = NULL,
+  presence = NULL,
   resident_species = c("bt", "wct"),
   anadromous_species = c("ch", "cm", "co", "pk", "sk", "st"),
   spawn_only_species = c("cm", "pk"),
@@ -118,6 +119,7 @@ Other pipeline:
 \code{\link{lnk_pipeline_load}()},
 \code{\link{lnk_pipeline_prepare}()},
 \code{\link{lnk_pipeline_setup}()},
-\code{\link{lnk_pipeline_species}()}
+\code{\link{lnk_pipeline_species}()},
+\code{\link{lnk_presence}()}
 }
 \concept{pipeline}
