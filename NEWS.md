@@ -1,12 +1,12 @@
-# link 0.30.1
+# link 0.30.2
 
-Closes [#139](https://github.com/NewGraphEnvironment/link/issues/139). Adds `lnk_presence(wsg_species_presence, aoi, groups = ...)` — structured per-AOI species-presence helper with bcfp species-group expansion (salmon = CH/CM/CO/PK/SK; ct_dv_rb = CT/DV/RB).
+Closes [#135](https://github.com/NewGraphEnvironment/link/issues/135). `lnk_pipeline_access()` now computes `dam_dnstr_ind` and (optionally) `remediated_dnstr_ind` from the same primitives that drive the per-species access codes, eliminating the bcfp-merge-in step needed for full BT/WCT parity in 0.30.0. Both `lnk_pipeline_access()` and `lnk_pipeline_mapping_code()` consume the new `lnk_presence()` helper (v0.30.1) to short-circuit absent species cleanly.
 
-- Returns `$present` / `$absent` / `$is_present(sp)` / `$row` / `$aoi`.
-- Group expansion: a species in a group is present iff any group member is present in the AOI row, mirroring bcfp's `wsg_salmon` / `wsg_ct_dv_rb` JOIN logic in `load_streams_access.sql`.
-- Default `groups` argument ships bcfp's two groupings; pass `list()` to disable.
-- Accepts both character (`"t"`/`""`) and logical column shapes — works against `loaded$wsg_species_presence` (CSV-loaded) or PostgreSQL-loaded boolean rows.
-- Coexists with `lnk_pipeline_species()`, the predecessor that returns the intersection of `cfg$species` and AOI-present species as a plain vector. `lnk_presence()` is the structured / group-aware sibling — neither replaces the other.
+- `dam_dnstr_ind` is sequence-aware: TRUE iff the next-downstream anthropogenic barrier is also a dam. Mirrors bcfp's `array[barriers_anthropogenic_dnstr[1]] && barriers_dams_dnstr` overlap check. Both `barriers_anthropogenic` and `barriers_dams` populate their primary key from `crossings.aggregated_crossings_id`, so the IDs returned by `frs_network_features` are in a shared space and `%in%` works directly. ADMS parity vs `bcfishpass.streams_access.dam_dnstr_ind`: 11803 FALSE / 3960 TRUE, zero off-diagonal differences.
+- `lnk_pipeline_access()` gains an optional `crossings_table = NULL` arg. When supplied alongside `barrier_sources$remediations`, computes `remediated_dnstr_ind` per the bcfp-intended logic — TRUE iff the next-downstream remediation is a crossing where `pscis_status = 'REMEDIATED' AND barrier_status = 'PASSABLE'`.
+- bcfp's own `streams_access.remediated_dnstr_ind` is FALSE for every row in the build due to a 2-year-old contradictory clause in `load_streams_access.sql` (introduced by [smnorris/bcfishpass#339](https://github.com/smnorris/bcfishpass/pull/339) and inlined in v070 by [smnorris/bcfishpass#690](https://github.com/smnorris/bcfishpass/pull/690)). link computes the bcfp-intended dual-column semantics so `mapping_code_<bt|wct>` may emit `REMEDIATED` tokens where bcfp's current output emits `DAM` / `MODELLED` / `ASSESSED`. Upstream fix filed as [smnorris/bcfishpass#891](https://github.com/smnorris/bcfishpass/issues/891) + [smnorris/bcfishpass#892](https://github.com/smnorris/bcfishpass/pull/892).
+- `lnk_pipeline_access()` and `lnk_pipeline_mapping_code()` accept an optional `presence` arg (an `lnk_presence` object). When supplied, absent species short-circuit cleanly: `lnk_pipeline_access` skips the `frs_network_features` query and emits `access_<sp> = -9`; `lnk_pipeline_mapping_code` emits `""`. Eliminates the salmon-group-absent over-emission caught in the multi-WSG sweep on ELKR + HORS.
+- ADMS validation, no bcfp merge-in: `mapping_code_bt` 15733/15763 (30 REMEDIATED divergences, all the bcfp v070 regression), `mapping_code_ch/cm/co/pk/sk` 15761/15763 (2 each), `mapping_code_st/wct` 15763/15763. Stamped logs under `data-raw/logs/<TS>_link135_parity_*.txt`.
 
 # link 0.30.0
 

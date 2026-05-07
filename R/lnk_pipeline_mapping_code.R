@@ -84,6 +84,7 @@ lnk_pipeline_mapping_code <- function(
     feature_code,
     to = NULL,
     conn = NULL,
+    presence = NULL,
     resident_species = c("bt", "wct"),
     anadromous_species = c("ch", "cm", "co", "pk", "sk", "st"),
     spawn_only_species = c("cm", "pk"),
@@ -179,6 +180,17 @@ lnk_pipeline_mapping_code <- function(
 
   all_species <- union(resident_species, anadromous_species)
   for (sp in all_species) {
+    # When `presence` is supplied and the species is absent, emit ""
+    # for every row and skip the per-row token construction. Avoids
+    # the salmon-group-absent over-emission that the multi-WSG sweep
+    # caught in ELKR + HORS (we'd otherwise emit ACCESS;X for segments
+    # with no barriers downstream, even though the species isn't in
+    # the WSG).
+    if (!is.null(presence) && !isTRUE(presence$is_present(sp))) {
+      out[[paste0("mapping_code_", sp)]] <- rep("", length(ids))
+      next
+    }
+
     has_col <- paste0("has_barriers_", sp, "_dnstr")
     has_barriers_raw <- if (has_col %in% names(access)) access[[has_col]] else FALSE
     # When `has_barriers_<sp>_dnstr` is NA for a row, bcfp's

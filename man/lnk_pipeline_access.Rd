@@ -12,7 +12,9 @@ lnk_pipeline_access(
   barriers_per_sp = list(),
   observations = NULL,
   wsg_presence = list(),
+  presence = NULL,
   barrier_sources = list(),
+  crossings_table = NULL,
   segment_id_col = "id_segment"
 )
 }
@@ -48,12 +50,39 @@ accessible segment gets \verb{access_<sp> = 1}.}
 empty list assumes all species present (no -9 codes emitted).}
 
 \item{barrier_sources}{Named list. Each name is an arbitrary source
-tag (e.g. \code{"anthropogenic"}, \code{"pscis"}, \code{"dams"}); each value is a
-schema-qualified barriers table for that source. Output gains one
-\verb{has_barriers_<source>_dnstr} boolean column per source. Unlike
-\code{barriers_per_sp}, sources here don't drive the species access
-integer code -- they're the bcfp-shape dnstr indicators consumed
-by \code{lnk_pipeline_mapping_code}. Optional; default empty.}
+tag (e.g. \code{"anthropogenic"}, \code{"pscis"}, \code{"dams"},
+\code{"remediations"}); each value is a schema-qualified barriers table
+for that source. Output gains one \verb{has_barriers_<source>_dnstr}
+boolean column per source. Unlike \code{barriers_per_sp}, sources here
+don't drive the species access integer code -- they're the
+bcfp-shape dnstr indicators consumed by
+\code{\link[=lnk_pipeline_mapping_code]{lnk_pipeline_mapping_code()}}. Optional; default empty.
+
+When both \code{"anthropogenic"} and \code{"dams"} are present, the output
+gains a \code{dam_dnstr_ind} boolean column: TRUE iff the next-
+downstream anthropogenic barrier is also a dam (sequence-aware,
+mirrors bcfp's \code{array[barriers_anthropogenic_dnstr[1]] && barriers_dams_dnstr} SQL). Required for resident-flavor
+\code{mapping_code_bt} / \code{mapping_code_wct} parity with bcfp.
+
+When \code{"remediations"} is present AND \code{crossings_table} is set,
+the output gains a \code{remediated_dnstr_ind} boolean column.}
+
+\item{crossings_table}{Character or \code{NULL}. Schema-qualified
+crossings table with \code{aggregated_crossings_id} and \code{pscis_status}
+columns (e.g. \code{"bcfishpass.crossings"}). Used only to compute
+\code{remediated_dnstr_ind} (TRUE iff the next-downstream remediation
+is a crossing whose \verb{pscis_status IN ('REMEDIATED', 'PASSABLE')}).
+
+bcfp's own \code{streams_access.remediated_dnstr_ind} is currently
+buggy (see smnorris/bcfishpass#690): the JOIN clause
+\verb{pscis_status = 'REMEDIATED' AND pscis_status = 'PASSABLE'} is
+contradictory and always FALSE -- verified against 4.2M rows. link
+computes the bcfp-intended \code{IN} semantics, so link's mapping_code
+may emit \code{REMEDIATED} tokens on segments where bcfp's current
+output emits \code{DAM} / \code{MODELLED} / \code{ASSESSED}. PR filed against
+the \code{NewGraphEnvironment/bcfishpass} fork; once it lands +
+propagates upstream the outputs converge. Default \code{NULL} skips
+the \code{remediated_dnstr_ind} column.}
 
 \item{segment_id_col}{Character. Default \code{"id_segment"}.}
 }
@@ -91,6 +120,7 @@ Other pipeline:
 \code{\link{lnk_pipeline_mapping_code}()},
 \code{\link{lnk_pipeline_prepare}()},
 \code{\link{lnk_pipeline_setup}()},
-\code{\link{lnk_pipeline_species}()}
+\code{\link{lnk_pipeline_species}()},
+\code{\link{lnk_presence}()}
 }
 \concept{pipeline}
