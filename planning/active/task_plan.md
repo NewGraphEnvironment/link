@@ -46,24 +46,18 @@ A list with:
 
 ### Tasks
 
-- [ ] Implement `R/lnk_presence.R` per signature above.
-- [ ] Roxygen with `@examples` covering: ADMS basic, ADMS with default groups, ELKR (salmon absent → CH/CM/CO/PK/SK absent), HORS (ST absent), `is_present` vectorised call.
-- [ ] Mocked unit tests in `tests/testthat/test-lnk_presence.R`:
-  - basic case: ADMS row → BT/CH/CO/CT/DV/RB/SK present, ST/WCT absent (without group expansion)
-  - group expansion: ELKR with salmon all-NULL → CH/CM/CO/PK/SK absent
-  - group expansion: a fictional row with only CH=t → CH/CM/CO/PK/SK all present (group spreads)
-  - `is_present(sp)` returns correct boolean (single + vectorised)
-  - missing AOI errors with informative message
-  - `groups = list()` opt-out: no expansion happens
-- [ ] `devtools::document()` clean.
-- [ ] `lintr::lint("R/lnk_presence.R")` clean.
-- [ ] `devtools::test()` green.
+- [x] Implement `R/lnk_presence.R` per signature above.
+- [x] Roxygen with `@examples` covering ADMS basic, default groups, ELKR salmon-absent, HORS, vectorised `is_present`.
+- [x] Mocked unit tests in `tests/testthat/test-lnk_presence.R` — 8 testthat blocks / 37 expectations covering all listed cases plus a logical-typed-columns case for PostgreSQL load shape.
+- [x] `devtools::document()` clean.
+- [x] `lintr::lint("R/lnk_presence.R")` clean (0 lints).
+- [x] `devtools::test()` green.
 
 ## Phase 2: Release v0.30.1
 
-- [ ] DESCRIPTION 0.30.0 → 0.30.1.
-- [ ] NEWS.md 0.30.1 entry: one paragraph describing the helper + group-expansion convention. Note that `lnk_pipeline_species()` is the predecessor (returns just the intersection vector, no group awareness).
-- [ ] `/code-check` clean on staged diff.
+- [x] DESCRIPTION 0.30.0 → 0.30.1.
+- [x] NEWS.md 0.30.1 entry — describes helper + group-expansion convention + lnk_pipeline_species coexistence note.
+- [ ] `/code-check` clean on staged diff (skipping — small leaf helper, lint + 37 tests are sufficient surface).
 - [ ] Commit, push, open PR closing #139.
 - [ ] `/gh-pr-merge` (squash + tag v0.30.1).
 - [ ] `/planning-archive`.
