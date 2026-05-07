@@ -1,5 +1,28 @@
 # Changelog
 
+## link 0.30.1
+
+Closes [\#139](https://github.com/NewGraphEnvironment/link/issues/139).
+Adds `lnk_presence(wsg_species_presence, aoi, groups = ...)` —
+structured per-AOI species-presence helper with bcfp species-group
+expansion (salmon = CH/CM/CO/PK/SK; ct_dv_rb = CT/DV/RB).
+
+- Returns `$present` / `$absent` / `$is_present(sp)` / `$row` / `$aoi`.
+- Group expansion: a species in a group is present iff any group member
+  is present in the AOI row, mirroring bcfp’s `wsg_salmon` /
+  `wsg_ct_dv_rb` JOIN logic in `load_streams_access.sql`.
+- Default `groups` argument ships bcfp’s two groupings; pass
+  [`list()`](https://rdrr.io/r/base/list.html) to disable.
+- Accepts both character (`"t"`/`""`) and logical column shapes — works
+  against `loaded$wsg_species_presence` (CSV-loaded) or
+  PostgreSQL-loaded boolean rows.
+- Coexists with
+  [`lnk_pipeline_species()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_species.md),
+  the predecessor that returns the intersection of `cfg$species` and
+  AOI-present species as a plain vector.
+  [`lnk_presence()`](https://newgraphenvironment.github.io/link/reference/lnk_presence.md)
+  is the structured / group-aware sibling — neither replaces the other.
+
 ## link 0.30.0
 
 Closes [\#124](https://github.com/NewGraphEnvironment/link/issues/124).

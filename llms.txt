@@ -62,6 +62,8 @@ Redistributed bcfishpass override data carries its own license — see
   : Set Up the Working Schema for a Pipeline Run
 - [`lnk_pipeline_species()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_species.md)
   : Resolve the Species Set for an AOI
+- [`lnk_presence()`](https://newgraphenvironment.github.io/link/reference/lnk_presence.md)
+  : Per-AOI species presence with bcfp species-group expansion
 - [`lnk_rules_build()`](https://newgraphenvironment.github.io/link/reference/lnk_rules_build.md)
   : Build habitat eligibility rules YAML from dimensions CSV
 - [`lnk_score()`](https://newgraphenvironment.github.io/link/reference/lnk_score.md)

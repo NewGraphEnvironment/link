@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.30.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.30.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,6 +31,15 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.30.1" id="link-0301">link 0.30.1<a class="anchor" aria-label="anchor" href="#link-0301"></a></h2>
+<p>Closes <a href="https://github.com/NewGraphEnvironment/link/issues/139" class="external-link">#139</a>. Adds <code>lnk_presence(wsg_species_presence, aoi, groups = ...)</code> — structured per-AOI species-presence helper with bcfp species-group expansion (salmon = CH/CM/CO/PK/SK; ct_dv_rb = CT/DV/RB).</p>
+<ul><li>Returns <code>$present</code> / <code>$absent</code> / <code>$is_present(sp)</code> / <code>$row</code> / <code>$aoi</code>.</li>
+<li>Group expansion: a species in a group is present iff any group member is present in the AOI row, mirroring bcfp’s <code>wsg_salmon</code> / <code>wsg_ct_dv_rb</code> JOIN logic in <code>load_streams_access.sql</code>.</li>
+<li>Default <code>groups</code> argument ships bcfp’s two groupings; pass <code><a href="https://rdrr.io/r/base/list.html" class="external-link">list()</a></code> to disable.</li>
+<li>Accepts both character (<code>"t"</code>/<code>""</code>) and logical column shapes — works against <code>loaded$wsg_species_presence</code> (CSV-loaded) or PostgreSQL-loaded boolean rows.</li>
+<li>Coexists with <code><a href="../reference/lnk_pipeline_species.html">lnk_pipeline_species()</a></code>, the predecessor that returns the intersection of <code>cfg$species</code> and AOI-present species as a plain vector. <code><a href="../reference/lnk_presence.html">lnk_presence()</a></code> is the structured / group-aware sibling — neither replaces the other.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.30.0" id="link-0300">link 0.30.0<a class="anchor" aria-label="anchor" href="#link-0300"></a></h2>
 <p>Closes <a href="https://github.com/NewGraphEnvironment/link/issues/124" class="external-link">#124</a>. Reproduces bcfishpass’s three classification surfaces (<code>crossings.barrier_status</code>, <code>streams_access</code>, <code>streams_mapping_code</code>) as additive layers — link’s existing <code>severity</code> and 5-bucket <code>mapping_code</code> are unchanged.</p>
