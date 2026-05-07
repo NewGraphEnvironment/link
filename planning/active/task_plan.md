@@ -21,20 +21,20 @@ lnk_baseline_append(log, run_label, link_schema = "n/a", notes = "",
 
 ## Phase 1: Add `lnk_bucket_*` family
 
-- [ ] Implement `lnk_bucket_get(name, prefix, to)`. Uses `httr::GET()`; fails loud on non-2xx. Returns raw vector if `to = NULL`; writes to disk + returns invisible(path) if `to` given.
-- [ ] Implement `lnk_bucket_log(prefix)`. Sugar: `jsonlite::fromJSON(rawToChar(lnk_bucket_get("log.json", prefix)))`. Validates required keys (`model_version`, `date_completed`, `head_sha`).
-- [ ] Roxygen with runnable `@examples` (live S3 hit acceptable since fresh-bc is publicly readable).
-- [ ] Mocked unit tests in `tests/testthat/test-lnk_bucket.R`.
-- [ ] `devtools::document()`, `lintr::lint("R/lnk_bucket_*.R")`, `devtools::test()` clean.
+- [x] Implement `lnk_bucket_get(name, prefix, to)`. Uses `httr::GET()`; fails loud on non-2xx. Returns raw vector if `to = NULL`; writes to disk + returns invisible(path) if `to` given.
+- [x] Implement `lnk_bucket_log(prefix)`. Sugar: `jsonlite::fromJSON(rawToChar(lnk_bucket_get("log.json", prefix)))`. Validates required keys (`model_version`, `date_completed`, `head_sha`).
+- [x] Roxygen with runnable `@examples` (live S3 hit acceptable since fresh-bc is publicly readable).
+- [x] Mocked unit tests in `tests/testthat/test-lnk_bucket.R`.
+- [x] `devtools::document()`, `lintr::lint("R/lnk_bucket_*.R")`, `devtools::test()` clean.
 
 ## Phase 2: Add `lnk_baseline_*` family
 
-- [ ] Implement `lnk_baseline_read(path)`. Returns tibble with column shape validated against expected `cols_baseline` named vector (defined inside the file as the source of truth for ledger columns).
-- [ ] Implement `lnk_baseline_append(log, run_label, link_schema, notes, path)`. Constructs row from `log$model_version`, `log$date_completed`, optional `log$head_sha`. `bcfp_model_run_id` empty when `log` lacks it (Path 2). Stamps `run_started_pdt` via `format(Sys.time(), tz = "America/Vancouver", "%Y-%m-%d %H:%M")`. Stamps `host` via `Sys.info()[["nodename"]]`.
-- [ ] Validate column shape on append — fail loud if ledger header doesn't match `cols_baseline`.
-- [ ] Roxygen with runnable `@examples` using `withr::local_tempfile()`.
-- [ ] Mocked unit tests in `tests/testthat/test-lnk_baseline.R`.
-- [ ] `devtools::document()`, `lintr`, `devtools::test()` clean.
+- [x] Implement `lnk_baseline_read(path)`. Returns tibble with column shape validated against expected `cols_baseline` named vector (defined inside the file as the source of truth for ledger columns).
+- [x] Implement `lnk_baseline_append(log, run_label, link_schema, notes, path)`. Constructs row from `log$model_version`, `log$date_completed`, optional `log$head_sha`. `bcfp_model_run_id` empty when `log` lacks it (Path 2). Stamps `run_started_pdt` via `format(Sys.time(), tz = "America/Vancouver", "%Y-%m-%d %H:%M")`. Stamps `host` via `Sys.info()[["nodename"]]`.
+- [x] Validate column shape on append — fail loud if ledger header doesn't match `cols_baseline`.
+- [x] Roxygen with runnable `@examples` using `withr::local_tempfile()`.
+- [x] Mocked unit tests in `tests/testthat/test-lnk_baseline.R`.
+- [x] `devtools::document()`, `lintr`, `devtools::test()` clean.
 
 ## Phase 3: Refactor `data-raw/sync_bcfishpass_csvs.R` to use new exports
 

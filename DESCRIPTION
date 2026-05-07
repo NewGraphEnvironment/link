@@ -19,6 +19,8 @@ Depends:
 Imports:
     crate (>= 0.0.2),
     DBI,
+    httr,
+    jsonlite,
     RPostgres,
     tibble,
     tools,
