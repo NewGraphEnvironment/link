@@ -1,34 +1,43 @@
-# Daily sync of bcfishpass-sourced override CSVs. Diffs each
-# bcfishpass-sourced file against the recorded provenance byte +
-# shape checksums.
+# Weekly sync of bcfishpass-sourced override CSVs from the NGE-owned
+# bucket s3://fresh-bc/bcfishpass/ (populated by NewGraphEnvironment/db_newgraph
+# weekly Wed 12:00 UTC, pinned to the SHA from the latest successful
+# smnorris/bcfishpass:ng-prod run).
 #
 # Drift kinds:
-#   - byte  — file content changed but column structure didn't.
-#             Auto-PR opens AND auto-merges. Discoverability via the
-#             PR list; review is not expected (CSVs are upstream-
-#             curated and shape stayed the same).
-#   - shape — column rename / add / remove / reshape. Auto-PR opens
-#             with `schema-drift` label, NOT auto-merged. Workflow
-#             exits non-zero so the Actions tab shows red. Coordinated
-#             review across link / fresh / crate is required before
-#             merging — see link#64.
-#   - none  — no drift, exit clean.
+#   byte  -- file content changed but column structure didn't.
+#            Auto-PR opens AND auto-merges. Discoverability via the
+#            PR list; review is not expected (CSVs are upstream-
+#            curated and shape stayed the same).
+#   shape -- column rename / add / remove / reshape OR canonical-schema
+#            validation failure. Auto-PR opens with `schema-drift`
+#            label, NOT auto-merged. Workflow exits non-zero so the
+#            Actions tab shows red. Coordinated review across link /
+#            fresh / crate is required before merging -- see link#64.
+#   none  -- no drift, exit clean.
 #
-# Cadence rationale: April 2026 sample showed 1-3 CSV-touching upstream
-# PRs per active weekday; daily diffs produce per-PR-traceable sync
-# PRs vs. weekly batches that mix many upstream changes. The script is
-# idempotent — re-runs against the same upstream produce no changes.
+# Cadence rationale: bcfishpass tunnel rebuilds Tuesdays ~20:00 PDT
+# (smnorris/bcfishpass:ng-prod run finishes 02:55-06:31 UTC Wed across
+# last 6 runs). NewGraphEnvironment/db_newgraph dumps to s3://fresh-bc
+# at 12:00 UTC Wed (= 5 AM PDT), ~5.5h past the worst observed
+# completion. The dump itself completes in ~30 s. This workflow runs
+# at 13:00 UTC Wed (= 6 AM PDT), ~1h after the upstream dump --
+# generous cushion vs. dump duration. Re-running against the same
+# upstream produces no changes.
+#
+# Source flipped from gh api -> s3://fresh-bc on 2026-05-07 (link#117 +
+# NewGraphEnvironment/db_newgraph#4 / PR #5). Eliminates GitHub-API
+# SHA-walking and pins each sync to the exact rebuild SHA.
 #
 # Caveat: PRs created by GITHUB_TOKEN do not trigger downstream
-# workflows (e.g., a future R-CMD-check). Today none exist, so this
-# is benign. If R-CMD-check is added later, switch to a PAT-backed
-# token or run checks in this workflow before merging.
+# workflows. Today none exist, so this is benign. If R-CMD-check is
+# added later, switch to a PAT-backed token or run checks here before
+# merging.
 
 name: sync-bcfishpass-csvs
 
 on:
   schedule:
-    - cron: '0 9 * * *'  # 09:00 UTC daily (≈ 1-2am Pacific)
+    - cron: '0 13 * * WED'  # 13:00 UTC Wed = 06:00 PDT, ~1h after upstream dump (which itself runs <1 min)
   workflow_dispatch:
 
 permissions:
@@ -47,16 +56,14 @@ jobs:
         with:
           use-public-rspm: true
 
+      # Install link from the local checkout (DESCRIPTION-driven so httr,
+      # jsonlite, crate, yaml, digest, etc. all come along).
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          packages: |
-            any::yaml
-            any::digest
-            any::jsonlite
+          extra-packages: |
+            local::.
 
       - name: Run sync script
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: Rscript data-raw/sync_bcfishpass_csvs.R
 
       - name: Open PR (auto-merge byte drift; halt on shape drift)
@@ -68,20 +75,20 @@ jobs:
           echo "Drift kind: $DRIFT_KIND"
           case "$DRIFT_KIND" in
             none)
-              echo "No drift — exit clean"
+              echo "No drift -- exit clean"
               exit 0
               ;;
             byte|shape)
               # fallthrough to PR creation
               ;;
             *)
-              echo "Unknown drift kind: '$DRIFT_KIND' — failing loud"
+              echo "Unknown drift kind: '$DRIFT_KIND' -- failing loud"
               exit 1
               ;;
           esac
 
           if [[ -z "$(git status --porcelain)" ]]; then
-            echo "Drift kind reported $DRIFT_KIND but working tree clean — bug"
+            echo "Drift kind reported $DRIFT_KIND but working tree clean -- bug"
             exit 1
           fi
 
@@ -93,9 +100,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -b "$BRANCH"
-          git add inst/extdata/configs/
+          git add inst/extdata/configs/ data-raw/logs/bcfp_baselines.csv
           if [[ "$DRIFT_KIND" == "shape" ]]; then
-            git commit -m "csv-sync: SHAPE DRIFT — pull bcfishpass overrides ${DATESTAMP}"
+            git commit -m "csv-sync: SHAPE DRIFT -- pull bcfishpass overrides ${DATESTAMP}"
           else
             git commit -m "csv-sync: pull bcfishpass overrides ${DATESTAMP}"
           fi
@@ -110,12 +117,12 @@ jobs:
             # Ensure label exists; ignore "already exists" error.
             gh label create schema-drift \
               --color B60205 \
-              --description "Upstream CSV shape changed (column rename / add / remove / reshape) — coordinated link/fresh/crate review needed before merging" \
+              --description "Upstream CSV shape changed (column rename / add / remove / reshape) -- coordinated link/fresh/crate review needed before merging" \
               || true
             PR_URL=$(gh pr create \
               --base main \
               --head "$BRANCH" \
-              --title "csv-sync: SHAPE DRIFT — pull bcfishpass overrides ${DATESTAMP}" \
+              --title "csv-sync: SHAPE DRIFT -- pull bcfishpass overrides ${DATESTAMP}" \
               --body-file "$BODY_FILE" \
               --label schema-drift)
             echo "Created shape-drift PR (NOT auto-merged): $PR_URL"
@@ -130,6 +137,6 @@ jobs:
             echo "Created byte-drift PR: $PR_URL"
             # `--auto` queues the merge if branch protection adds
             # required checks later (e.g., R-CMD-check). Today no
-            # required checks → behaves identically to immediate merge.
+            # required checks -> behaves identically to immediate merge.
             gh pr merge "$PR_URL" --merge --auto --delete-branch
           fi
