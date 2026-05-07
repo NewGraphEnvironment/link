@@ -38,27 +38,34 @@ lnk_baseline_append(log, run_label, link_schema = "n/a", notes = "",
 
 ## Phase 3: Refactor `data-raw/sync_bcfishpass_csvs.R` to use new exports
 
-- [ ] Drop helpers: `fetch_raw()`, `upstream_sha_for()`, `gh_api_json()`.
-- [ ] Top of script: `log <- lnk_bucket_log()` once. All provenance entries take `upstream_sha = substr(log$head_sha, 1, 7)`.
-- [ ] Per-file: replace `fetch_raw(rel)` with `lnk_bucket_get(paste0("csvs/", basename(rel)))`.
-- [ ] Keep `is_bcfp_sourced()` filter, `update_provenance_in_yaml()`, `sha256_text()`, `shape_fingerprint()`, `%||%` script-local.
-- [ ] On drift, call `lnk_baseline_append(log, run_label = paste0("csv-sync-", format(Sys.Date(), "%Y%m%d")), notes = paste0("auto-append by csv-sync; head_sha=", substr(log$head_sha, 1, 7)))`.
-- [ ] Update `/tmp/sync_summary.md` template — surface `model_version`, `head_sha`, `date_completed` from log in PR body header.
-- [ ] Update header comment block.
+- [x] Drop helpers: `fetch_raw()`, `upstream_sha_for()`, `gh_api_json()`.
+- [x] Top of script: `log <- lnk_bucket_log()` once. All provenance entries take `upstream_sha = substr(log$head_sha, 1, 7)`.
+- [x] Per-file: replace `fetch_raw(rel)` with `lnk_bucket_get(paste0("csvs/", basename(rel)))`.
+- [x] Keep `is_bcfp_sourced()` filter, `update_provenance_in_yaml()`, `sha256_text()`, `shape_fingerprint()`, `%||%` script-local.
+- [x] On drift, call `lnk_baseline_append(log, run_label = paste0("csv-sync-", format(Sys.Date(), "%Y%m%d")), notes = paste0("auto-append by csv-sync; head_sha=", substr(log$head_sha, 1, 7)))`.
+- [x] Update `/tmp/sync_summary.md` template — surface `model_version`, `head_sha`, `date_completed` from log in PR body header.
+- [x] Update header comment block.
 
 ## Phase 4: crate schema-validate gate
 
-- [ ] For provenance entries with `canonical_schema:` declared, read fetched bytes into a tibble, run `crt_schema_validate(df, crt_schema_read(slug))` wrapped in tryCatch.
-- [ ] On validation failure → escalate `drift_kind` to `"shape"` AND prepend the validation error to `/tmp/sync_summary.md`.
-- [ ] Files without `canonical_schema:` keep current `shape_checksum` first-line-hash check (belt + suspenders).
+- [x] For provenance entries with `canonical_schema:` declared, read fetched bytes into a tibble, run `crt_schema_validate(df, crt_schema_read(slug))` wrapped in tryCatch.
+- [x] On validation failure → escalate `drift_kind` to `"shape"` AND prepend the validation error to `/tmp/sync_summary.md`.
+- [x] Files without `canonical_schema:` keep current `shape_checksum` first-line-hash check (belt + suspenders).
 
 ## Phase 5: Update GHA workflow
 
-- [ ] Cron `'0 9 * * *'` → `'0 14 * * WED'` (Wed 14:00 UTC = 7 AM PDT, ~2h after upstream dump at 12:00 UTC).
-- [ ] Drop `GH_TOKEN` env from sync step (no `gh api`); keep `GITHUB_TOKEN` for PR creation.
-- [ ] Stage `data-raw/logs/bcfp_baselines.csv` alongside `inst/extdata/configs/` in the auto-commit.
-- [ ] Update header comment: weekly cadence rationale, S3 source, NewGraphEnvironment/db_newgraph#4 cross-ref.
-- [ ] Existing byte/shape gate logic stays unchanged.
+- [x] Cron `'0 9 * * *'` → `'0 14 * * WED'` (Wed 14:00 UTC = 7 AM PDT, ~2h after upstream dump at 12:00 UTC).
+- [x] Drop `GH_TOKEN` env from sync step (no `gh api`); keep `GITHUB_TOKEN` for PR creation.
+- [x] Stage `data-raw/logs/bcfp_baselines.csv` alongside `inst/extdata/configs/` in the auto-commit.
+- [x] Install link locally via `local::.` so the script's `library(link)` call resolves.
+- [x] Update header comment: weekly cadence rationale, S3 source, NewGraphEnvironment/db_newgraph#4 cross-ref.
+- [x] Existing byte/shape gate logic stays unchanged.
+
+## Live smoke test (blocked on rtj#114)
+
+- [ ] Once `s3://fresh-bc/bcfishpass/*` is publicly readable (rtj#114 applies bucket policy):
+  - [ ] Local `Rscript -e 'devtools::load_all("."); source("data-raw/sync_bcfishpass_csvs.R")' --dry-run` returns expected drift (bundle was last synced from SHA `4879bba`; bucket is at `6e9cf1c`).
+  - [ ] `gh workflow run sync-bcfishpass-csvs.yml --repo NewGraphEnvironment/link` opens a clean PR.
 
 ## Phase 6: NEWS + DESCRIPTION + open PR
 
