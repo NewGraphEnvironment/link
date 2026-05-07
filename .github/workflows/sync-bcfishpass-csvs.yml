@@ -135,8 +135,9 @@ jobs:
               --title "csv-sync: pull bcfishpass overrides ${DATESTAMP}" \
               --body-file "$BODY_FILE")
             echo "Created byte-drift PR: $PR_URL"
-            # `--auto` queues the merge if branch protection adds
-            # required checks later (e.g., R-CMD-check). Today no
-            # required checks -> behaves identically to immediate merge.
-            gh pr merge "$PR_URL" --merge --auto --delete-branch
+            # Plain `--merge` (no `--auto`): main has no branch protection
+            # rules, so `--auto` errors with "Pull request Branch does not
+            # have required protected branch rules". When/if branch protection
+            # is added, swap to `--auto` so the merge queues against checks.
+            gh pr merge "$PR_URL" --merge --delete-branch
           fi
