@@ -3,3 +3,4 @@ run_started_pdt,host,run_label,link_schema,bcfp_model_run_id,bcfp_model_version,
 2026-05-03 14:23,m4,provincial_default,fresh_default,120,v0.7.14-113-ga7373af,2026-04-28 23:17,default-bundle provincial run; bcfp baseline confirmed via bcfishpass.log query 2026-05-04
 2026-05-04 09:44,m4,provincial_default_extrabreaks,fresh_default_extrabreaks,120,v0.7.14-113-ga7373af,2026-04-28 23:17,default_extrabreaks bundle (orphan-class breaks v0.28.0 branch); bcfp baseline same as 2026-05-03 run; expected to flip to build 121 on Tue 2026-05-05 ~20:00 PDT
 2026-05-04 23:02,MacBook-Pro-2.local,provincial_default_rearbreaks,fresh_default_rearbreaks,120,v0.7.14-113-ga7373af,2026-04-28 23:17,auto-stamped at run_provincial_parity.R start
+2026-05-07 16:10,runnervmeorf1,csv-sync-20260507,n/a,,v0.7.14-125-g6e9cf1c,2026-05-06T04:15:41Z,auto-append by csv-sync; head_sha=6e9cf1c
