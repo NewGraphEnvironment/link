@@ -19,7 +19,9 @@ lnk_pipeline_access(
   barriers_per_sp = list(),
   observations = NULL,
   wsg_presence = list(),
+  presence = NULL,
   barrier_sources = list(),
+  crossings_table = NULL,
   segment_id_col = "id_segment"
 )
 ```
@@ -76,12 +78,42 @@ lnk_pipeline_access(
 - barrier_sources:
 
   Named list. Each name is an arbitrary source tag (e.g.
-  `"anthropogenic"`, `"pscis"`, `"dams"`); each value is a
-  schema-qualified barriers table for that source. Output gains one
+  `"anthropogenic"`, `"pscis"`, `"dams"`, `"remediations"`); each value
+  is a schema-qualified barriers table for that source. Output gains one
   `has_barriers_<source>_dnstr` boolean column per source. Unlike
   `barriers_per_sp`, sources here don't drive the species access integer
   code – they're the bcfp-shape dnstr indicators consumed by
-  `lnk_pipeline_mapping_code`. Optional; default empty.
+  [`lnk_pipeline_mapping_code()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_mapping_code.md).
+  Optional; default empty.
+
+  When both `"anthropogenic"` and `"dams"` are present, the output gains
+  a `dam_dnstr_ind` boolean column: TRUE iff the next- downstream
+  anthropogenic barrier is also a dam (sequence-aware, mirrors bcfp's
+  `array[barriers_anthropogenic_dnstr[1]] && barriers_dams_dnstr` SQL).
+  Required for resident-flavor `mapping_code_bt` / `mapping_code_wct`
+  parity with bcfp.
+
+  When `"remediations"` is present AND `crossings_table` is set, the
+  output gains a `remediated_dnstr_ind` boolean column.
+
+- crossings_table:
+
+  Character or `NULL`. Schema-qualified crossings table with
+  `aggregated_crossings_id` and `pscis_status` columns (e.g.
+  `"bcfishpass.crossings"`). Used only to compute `remediated_dnstr_ind`
+  (TRUE iff the next-downstream remediation is a crossing whose
+  `pscis_status IN ('REMEDIATED', 'PASSABLE')`).
+
+  bcfp's own `streams_access.remediated_dnstr_ind` is currently buggy
+  (see smnorris/bcfishpass#690): the JOIN clause
+  `pscis_status = 'REMEDIATED' AND pscis_status = 'PASSABLE'` is
+  contradictory and always FALSE – verified against 4.2M rows. link
+  computes the bcfp-intended `IN` semantics, so link's mapping_code may
+  emit `REMEDIATED` tokens on segments where bcfp's current output emits
+  `DAM` / `MODELLED` / `ASSESSED`. PR filed against the
+  `NewGraphEnvironment/bcfishpass` fork; once it lands + propagates
+  upstream the outputs converge. Default `NULL` skips the
+  `remediated_dnstr_ind` column.
 
 - segment_id_col:
 
@@ -117,4 +149,5 @@ Other pipeline:
 [`lnk_pipeline_mapping_code()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_mapping_code.md),
 [`lnk_pipeline_prepare()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_prepare.md),
 [`lnk_pipeline_setup()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_setup.md),
-[`lnk_pipeline_species()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_species.md)
+[`lnk_pipeline_species()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_species.md),
+[`lnk_presence()`](https://newgraphenvironment.github.io/link/reference/lnk_presence.md)

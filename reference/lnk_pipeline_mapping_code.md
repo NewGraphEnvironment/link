@@ -14,6 +14,7 @@ lnk_pipeline_mapping_code(
   feature_code,
   to = NULL,
   conn = NULL,
+  presence = NULL,
   resident_species = c("bt", "wct"),
   anadromous_species = c("ch", "cm", "co", "pk", "sk", "st"),
   spawn_only_species = c("cm", "pk"),
@@ -142,4 +143,5 @@ Other pipeline:
 [`lnk_pipeline_load()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_load.md),
 [`lnk_pipeline_prepare()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_prepare.md),
 [`lnk_pipeline_setup()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_setup.md),
-[`lnk_pipeline_species()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_species.md)
+[`lnk_pipeline_species()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_species.md),
+[`lnk_presence()`](https://newgraphenvironment.github.io/link/reference/lnk_presence.md)

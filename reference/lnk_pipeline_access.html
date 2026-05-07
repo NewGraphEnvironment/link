@@ -17,7 +17,7 @@ species integer access_&amp;lt;sp&amp;gt; codes derived via CASE on
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.30.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.30.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -61,7 +61,9 @@ species integer <code>access_&lt;sp&gt;</code> codes derived via CASE on
 <span>  barriers_per_sp <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  observations <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  wsg_presence <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  presence <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  barrier_sources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  crossings_table <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  segment_id_col <span class="op">=</span> <span class="st">"id_segment"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -116,12 +118,38 @@ empty list assumes all species present (no -9 codes emitted).</p></dd>
 
 <dt id="arg-barrier-sources">barrier_sources<a class="anchor" aria-label="anchor" href="#arg-barrier-sources"></a></dt>
 <dd><p>Named list. Each name is an arbitrary source
-tag (e.g. <code>"anthropogenic"</code>, <code>"pscis"</code>, <code>"dams"</code>); each value is a
-schema-qualified barriers table for that source. Output gains one
-<code>has_barriers_&lt;source&gt;_dnstr</code> boolean column per source. Unlike
-<code>barriers_per_sp</code>, sources here don't drive the species access
-integer code – they're the bcfp-shape dnstr indicators consumed
-by <code>lnk_pipeline_mapping_code</code>. Optional; default empty.</p></dd>
+tag (e.g. <code>"anthropogenic"</code>, <code>"pscis"</code>, <code>"dams"</code>,
+<code>"remediations"</code>); each value is a schema-qualified barriers table
+for that source. Output gains one <code>has_barriers_&lt;source&gt;_dnstr</code>
+boolean column per source. Unlike <code>barriers_per_sp</code>, sources here
+don't drive the species access integer code – they're the
+bcfp-shape dnstr indicators consumed by
+<code><a href="lnk_pipeline_mapping_code.html">lnk_pipeline_mapping_code()</a></code>. Optional; default empty.</p>
+<p>When both <code>"anthropogenic"</code> and <code>"dams"</code> are present, the output
+gains a <code>dam_dnstr_ind</code> boolean column: TRUE iff the next-
+downstream anthropogenic barrier is also a dam (sequence-aware,
+mirrors bcfp's <code>array[barriers_anthropogenic_dnstr[1]] &amp;&amp; barriers_dams_dnstr</code> SQL). Required for resident-flavor
+<code>mapping_code_bt</code> / <code>mapping_code_wct</code> parity with bcfp.</p>
+<p>When <code>"remediations"</code> is present AND <code>crossings_table</code> is set,
+the output gains a <code>remediated_dnstr_ind</code> boolean column.</p></dd>
+
+
+<dt id="arg-crossings-table">crossings_table<a class="anchor" aria-label="anchor" href="#arg-crossings-table"></a></dt>
+<dd><p>Character or <code>NULL</code>. Schema-qualified
+crossings table with <code>aggregated_crossings_id</code> and <code>pscis_status</code>
+columns (e.g. <code>"bcfishpass.crossings"</code>). Used only to compute
+<code>remediated_dnstr_ind</code> (TRUE iff the next-downstream remediation
+is a crossing whose <code>pscis_status IN ('REMEDIATED', 'PASSABLE')</code>).</p>
+<p>bcfp's own <code>streams_access.remediated_dnstr_ind</code> is currently
+buggy (see smnorris/bcfishpass#690): the JOIN clause
+<code>pscis_status = 'REMEDIATED' AND pscis_status = 'PASSABLE'</code> is
+contradictory and always FALSE – verified against 4.2M rows. link
+computes the bcfp-intended <code>IN</code> semantics, so link's mapping_code
+may emit <code>REMEDIATED</code> tokens on segments where bcfp's current
+output emits <code>DAM</code> / <code>MODELLED</code> / <code>ASSESSED</code>. PR filed against
+the <code>NewGraphEnvironment/bcfishpass</code> fork; once it lands +
+propagates upstream the outputs converge. Default <code>NULL</code> skips
+the <code>remediated_dnstr_ind</code> column.</p></dd>
 
 
 <dt id="arg-segment-id-col">segment_id_col<a class="anchor" aria-label="anchor" href="#arg-segment-id-col"></a></dt>
@@ -156,7 +184,8 @@ picked up by persist on the next commit).</p>
 <code><a href="lnk_pipeline_mapping_code.html">lnk_pipeline_mapping_code()</a></code>,
 <code><a href="lnk_pipeline_prepare.html">lnk_pipeline_prepare()</a></code>,
 <code><a href="lnk_pipeline_setup.html">lnk_pipeline_setup()</a></code>,
-<code><a href="lnk_pipeline_species.html">lnk_pipeline_species()</a></code></p></div>
+<code><a href="lnk_pipeline_species.html">lnk_pipeline_species()</a></code>,
+<code><a href="lnk_presence.html">lnk_presence()</a></code></p></div>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
