@@ -1,5 +1,43 @@
 # Changelog
 
+## link 0.31.0
+
+Closes [\#117](https://github.com/NewGraphEnvironment/link/issues/117).
+csv-sync flips from GitHub-API SHA-walking to reading from
+`s3://fresh-bc/bcfishpass/` (populated weekly by
+NewGraphEnvironment/db_newgraph). Cadence drops from daily to weekly Wed
+afternoon. Eliminates the 1–7 day drift between bundle CSVs and the
+upstream tunnel rebuild SHA.
+
+Four new exports support csv-sync + downstream parity drivers + future
+multi-build comparison (grayling / rainbow / ko / etc.):
+
+- `lnk_bucket_get(name, prefix, to)` — fetch any artifact from a
+  versioned S3 prefix. Returns raw bytes by default (caller decodes —
+  [`read.csv()`](https://rdrr.io/r/utils/read.table.html),
+  [`jsonlite::fromJSON()`](https://jeroen.r-universe.dev/jsonlite/reference/fromJSON.html),
+  `arrow::read_parquet()`); writes to disk when `to` is supplied.
+  Default prefix is NGE’s bcfp dump. Format-agnostic.
+- `lnk_bucket_log(prefix)` — sugar for the most common read: parses
+  `<prefix>/log.json` into a list with `model_version`,
+  `date_completed`, `head_sha`. Validates required keys.
+- `lnk_baseline_read(path)` — read the run-tracking ledger
+  (`data-raw/logs/bcfp_baselines.csv` by default) as a tibble. Validates
+  `cols_baseline` shape on read.
+- `lnk_baseline_append(log, run_label, ...)` — append a stamped row from
+  a
+  [`lnk_bucket_log()`](https://newgraphenvironment.github.io/link/reference/lnk_bucket_log.md)
+  result. Used by csv-sync to record which build each sync ran against;
+  reusable by parity-run drivers.
+
+`data-raw/sync_bcfishpass_csvs.R` rewritten to consume the new exports;
+integrates a
+[`crate::crt_schema_validate()`](https://newgraphenvironment.github.io/crate/reference/crt_schema_validate.html)
+gate for provenance entries with `canonical_schema:` declared (escalates
+`drift_kind` to `"shape"` on validation failure).
+
+httr + jsonlite added to `Imports`.
+
 ## link 0.30.2
 
 Closes [\#135](https://github.com/NewGraphEnvironment/link/issues/135).

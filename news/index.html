@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.30.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.31.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,6 +31,21 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.31.0" id="link-0310">link 0.31.0<a class="anchor" aria-label="anchor" href="#link-0310"></a></h2>
+<p>Closes <a href="https://github.com/NewGraphEnvironment/link/issues/117" class="external-link">#117</a>. csv-sync flips from GitHub-API SHA-walking to reading from <code>s3://fresh-bc/bcfishpass/</code> (populated weekly by NewGraphEnvironment/db_newgraph). Cadence drops from daily to weekly Wed afternoon. Eliminates the 1–7 day drift between bundle CSVs and the upstream tunnel rebuild SHA.</p>
+<p>Four new exports support csv-sync + downstream parity drivers + future multi-build comparison (grayling / rainbow / ko / etc.):</p>
+<ul><li>
+<code>lnk_bucket_get(name, prefix, to)</code> — fetch any artifact from a versioned S3 prefix. Returns raw bytes by default (caller decodes — <code><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv()</a></code>, <code><a href="https://jeroen.r-universe.dev/jsonlite/reference/fromJSON.html" class="external-link">jsonlite::fromJSON()</a></code>, <code>arrow::read_parquet()</code>); writes to disk when <code>to</code> is supplied. Default prefix is NGE’s bcfp dump. Format-agnostic.</li>
+<li>
+<code>lnk_bucket_log(prefix)</code> — sugar for the most common read: parses <code>&lt;prefix&gt;/log.json</code> into a list with <code>model_version</code>, <code>date_completed</code>, <code>head_sha</code>. Validates required keys.</li>
+<li>
+<code>lnk_baseline_read(path)</code> — read the run-tracking ledger (<code>data-raw/logs/bcfp_baselines.csv</code> by default) as a tibble. Validates <code>cols_baseline</code> shape on read.</li>
+<li>
+<code>lnk_baseline_append(log, run_label, ...)</code> — append a stamped row from a <code><a href="../reference/lnk_bucket_log.html">lnk_bucket_log()</a></code> result. Used by csv-sync to record which build each sync ran against; reusable by parity-run drivers.</li>
+</ul><p><code>data-raw/sync_bcfishpass_csvs.R</code> rewritten to consume the new exports; integrates a <code><a href="https://newgraphenvironment.github.io/crate/reference/crt_schema_validate.html" class="external-link">crate::crt_schema_validate()</a></code> gate for provenance entries with <code>canonical_schema:</code> declared (escalates <code>drift_kind</code> to <code>"shape"</code> on validation failure).</p>
+<p>httr + jsonlite added to <code>Imports</code>.</p>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.30.2" id="link-0302">link 0.30.2<a class="anchor" aria-label="anchor" href="#link-0302"></a></h2>
 <p>Closes <a href="https://github.com/NewGraphEnvironment/link/issues/135" class="external-link">#135</a>. <code><a href="../reference/lnk_pipeline_access.html">lnk_pipeline_access()</a></code> now computes <code>dam_dnstr_ind</code> and (optionally) <code>remediated_dnstr_ind</code> from the same primitives that drive the per-species access codes, eliminating the bcfp-merge-in step needed for full BT/WCT parity in 0.30.0. Both <code><a href="../reference/lnk_pipeline_access.html">lnk_pipeline_access()</a></code> and <code><a href="../reference/lnk_pipeline_mapping_code.html">lnk_pipeline_mapping_code()</a></code> consume the new <code><a href="../reference/lnk_presence.html">lnk_presence()</a></code> helper (v0.30.1) to short-circuit absent species cleanly.</p>
