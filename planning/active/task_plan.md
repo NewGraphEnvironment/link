@@ -69,12 +69,12 @@ lnk_baseline_append(log, run_label, link_schema = "n/a", notes = "",
 
 ## Phase 6: NEWS + DESCRIPTION + open PR
 
-- [ ] DESCRIPTION 0.30.2 → 0.31.0 (minor — 4 new exports).
-- [ ] NEWS.md 0.31.0 entry.
+- [x] DESCRIPTION 0.30.2 → 0.31.0 (minor — 4 new exports).
+- [x] NEWS.md 0.31.0 entry.
 - [ ] `/code-check` clean on staged diff.
 - [ ] `devtools::test()` + `lintr::lint_package()` + `devtools::check()` clean.
-- [ ] Commit, push, open PR closing #117 with SRED tag in PR body.
-- [ ] `/gh-pr-merge` (squash + tag v0.31.0).
+- [ ] Commit, push, open DRAFT PR closing #117 with SRED tag in PR body. Note: live smoke pending NewGraphEnvironment/rtj#114.
+- [ ] After rtj#114 lands: smoke test + mark PR ready + `/gh-pr-merge` (squash + tag v0.31.0).
 
 ## Phase 7: Close 8 stale daily csv-sync PRs as superseded
 
