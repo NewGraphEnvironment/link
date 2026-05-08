@@ -4,28 +4,29 @@ Shell script that loads the primitives `lnk_pipeline_crossings()` (#138) needs, 
 
 ## Phase 1: `data-raw/snapshot_bcfp.sh` shell script
 
-- [ ] Header with prereqs (`PG*` / `~/.pgpass`, `bcdata` Python CLI, `ogr2ogr`, `curl`, `aws` CLI). `set -euxo pipefail`.
-- [ ] Section 1: BCDC PSCIS via `bcdata bc2pg --refresh whse_fish.pscis_*` (4 tables).
-- [ ] Section 2: CABD dams via `ogr2ogr` from CABD GeoJSON API → `cabd.dams`.
-- [ ] Section 3: bchamp `modelled_stream_crossings.gpkg.zip` via `curl` + `ogr2ogr` → `fresh.modelled_stream_crossings`.
-- [ ] Section 4: bchamp `observations.parquet` via `ogr2ogr ... /vsicurl/...` → `bcfishobs.observations`. Mirrors bcfp's `jobs/load_observations`.
-- [ ] Section 5 (optional, gated by `--with-bcfp-views`): Simon's bcfp views from `s3://newgraph` → `fresh.crossings_bcfp` / `fresh.streams_bcfp`.
-- [ ] Section 6: stamp `data-raw/logs/bcfp_baselines.csv` via `Rscript -e 'lnk_baseline_append(lnk_bucket_log(), run_label = "snapshot-<date>", notes = "...")'`.
+- [x] Header with prereqs + `set -euxo pipefail`.
+- [x] Section 1: BCDC PSCIS via `bcdata bc2pg --refresh whse_fish.pscis_*` (4 tables).
+- [x] Section 2: CABD dams via `ogr2ogr` from CABD GeoJSON API → `cabd.dams`.
+- [x] Section 3: bchamp `modelled_stream_crossings.gpkg.zip` via `curl` + `ogr2ogr` → `fresh.modelled_stream_crossings`.
+- [x] Section 4: bchamp `observations.parquet` via `ogr2ogr ... /vsicurl/...` → `bcfishobs.observations`. Mirrors bcfp's `jobs/load_observations`.
+- [x] Section 5 (optional, gated by `--with-bcfp-views`): Simon's bcfp views from `s3://newgraph` → `fresh.crossings_bcfp` / `fresh.streams_bcfp`.
+- [x] Section 6: stamp `data-raw/logs/bcfp_baselines.csv` via `Rscript -e 'lnk_baseline_append(lnk_bucket_log(), ...)'`.
+- [x] `bash -n` syntax check passes.
 
 ## Phase 2: `data-raw/README.md` documentation
 
-- [ ] Document `snapshot_bcfp.sh` purpose + when to run.
-- [ ] Prereqs section (CLI tools + install hints).
-- [ ] Quick-start invocation + expected runtime.
-- [ ] Output schema list.
-- [ ] Pointer to `lnk_pipeline_crossings()` (#138) as the consumer.
+- [x] Added `## Bootstrap` section (placed before existing `## Pipeline drivers`).
+- [x] Prereqs section (CLI tools + `pip install bcdata` hint).
+- [x] Quick-start invocation (with + without `--with-bcfp-views`) + expected runtime.
+- [x] Output schema list.
+- [x] Pointer to `lnk_pipeline_crossings()` (#138) as the consumer.
 
 ## Phase 3: NEWS + DESCRIPTION + open PR
 
-- [ ] DESCRIPTION 0.31.0 → 0.31.1 (patch — data-raw + docs).
-- [ ] NEWS.md 0.31.1 entry.
+- [x] DESCRIPTION 0.31.0 → 0.31.1.
+- [x] NEWS.md 0.31.1 entry.
+- [x] `devtools::test()` clean (808 PASS / 0 FAIL — no R changes, no-op as expected).
 - [ ] `/code-check` clean on staged diff.
-- [ ] `devtools::test()` + `lintr::lint_package()` clean.
 - [ ] Commit, push, open PR closing #137 with SRED tag.
 - [ ] `/gh-pr-merge` → tag v0.31.1.
 - [ ] `/planning-archive`.
