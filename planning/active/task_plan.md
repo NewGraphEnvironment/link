@@ -4,17 +4,17 @@ Replace fresh::extdata/crossings.csv + bcfp tunnel barriers_* dependency with a 
 
 ## Phase 0: `lnk_inputs_verify()` (exported, generic)
 
-- [ ] `R/lnk_inputs_verify.R`. `lnk_inputs_verify(conn, required)` where `required` is character vector of `<schema>.<table>`. Fail-loud listing missing.
-- [ ] Roxygen + runnable `@examples`.
-- [ ] Mocked unit test.
+- [x] `R/lnk_inputs_verify.R`. `lnk_inputs_verify(conn, required)` where `required` is character vector of `<schema>.<table>`. Fail-loud listing missing. Single-roundtrip via `unnest($1::text[], $2::text[])` LEFT JOIN information_schema.tables.
+- [x] Roxygen + runnable `@examples`.
+- [x] Mocked unit test (9 expectations — happy path, missing tables, malformed strings, arg validation).
 
 ## Phase 1: `lnk_points_snap()` (exported, generic)
 
-- [ ] `R/lnk_points_snap.R`. Wraps `fresh::frs_point_snap()` for any point table; writes a snapped output table.
-- [ ] `snap_tolerance` + `exclude_edge_types` default to `NULL`, resolve from `parameters_fresh.csv` (new rows: `snap_tolerance_default`, `snap_edge_types_exclude`).
-- [ ] Roxygen + `@examples`.
-- [ ] Mocked unit tests.
-- [ ] Manual smoke against ADMS PSCIS.
+- [x] `R/lnk_points_snap.R`. Bulk lateral-KNN snap (matches bcfp's `load_dams.sql` pattern). One round-trip; scales province-wide.
+- [x] Defaults `snap_tolerance = 100`, `exclude_edge_types = 1425L` (subsurface). Callers can override or pull from their config.
+- [x] Roxygen + `@examples`.
+- [x] Mocked unit tests (17 expectations across 5 tests — default args, vector exclude, opt-out, blue_line_key/stream_order constraints, validation).
+- [ ] Manual smoke against ADMS PSCIS (deferred to Phase 2 integration, when we have the snapshot loaded).
 
 ## Phase 2: Source-precedence union
 
