@@ -40,7 +40,8 @@ Schema migrations to the ledger should update `cols_baseline` in
 [`lnk_baseline_append()`](https://newgraphenvironment.github.io/link/reference/lnk_baseline_append.md)
 
 Other baseline:
-[`lnk_baseline_append()`](https://newgraphenvironment.github.io/link/reference/lnk_baseline_append.md)
+[`lnk_baseline_append()`](https://newgraphenvironment.github.io/link/reference/lnk_baseline_append.md),
+[`lnk_baseline_current()`](https://newgraphenvironment.github.io/link/reference/lnk_baseline_current.md)
 
 ## Examples
 

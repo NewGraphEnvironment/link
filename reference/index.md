@@ -14,6 +14,9 @@
 - [`lnk_baseline_append()`](https://newgraphenvironment.github.io/link/reference/lnk_baseline_append.md)
   : Append a row to the run-tracking baseline ledger
 
+- [`lnk_baseline_current()`](https://newgraphenvironment.github.io/link/reference/lnk_baseline_current.md)
+  : Is this host's baseline already current at the supplied upstream?
+
 - [`lnk_baseline_read()`](https://newgraphenvironment.github.io/link/reference/lnk_baseline_read.md)
   : Read the run-tracking baseline ledger
 

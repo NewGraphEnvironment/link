@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.32.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.33.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,6 +31,16 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.33.0" id="link-0330">link 0.33.0<a class="anchor" aria-label="anchor" href="#link-0330"></a></h2>
+<p>Closes <a href="https://github.com/NewGraphEnvironment/link/issues/148" class="external-link">#148</a>. Wednesday-morning sync chain shifted earlier so a fully-fresh local fwapg lands before workday-start, and <code>data-raw/snapshot_bcfp.sh</code> is now schedulable per host without manual install gymnastics.</p>
+<ul><li>
+<code>.github/workflows/sync-bcfishpass-csvs.yml</code> cron: Wed 6 AM PDT (13:00 UTC) → Wed 4 AM PDT (11:00 UTC). Runs 1 h after the upstream dump in <code>NewGraphEnvironment/db_newgraph#7</code> (which itself shifted to Wed 3 AM PDT).</li>
+<li>New exported <code>lnk_baseline_current(log, host, path)</code> predicate. Returns <code>TRUE</code> when this host’s most-recent <code>data-raw/logs/bcfp_baselines.csv</code> row already stamps the upstream <code>bcfp_model_version</code> carried in <code>log</code>. Per-host scoped — M4 stamping a SHA must not gate M1 from snapshotting its own fwapg.</li>
+<li>
+<code>data-raw/snapshot_bcfp.sh</code> updates: self-anchors to repo root via <code>cd "$(dirname "$0")/.."</code> (so cron-default <code>$HOME</code> cwd doesn’t break the relative ledger path); skip-guard runs FIRST via <code><a href="../reference/lnk_baseline_current.html">lnk_baseline_current()</a></code> before any DB-credential resolution (a host with a stale env file can skip cleanly when this week’s ledger already matches); sources <code>~/.config/snapshot-bcfp.env</code> for per-host <code>DATABASE_URL</code> / <code>PG*</code> vars; xtrace removed from <code>set -euxo pipefail</code> → <code>set -euo pipefail</code> to keep credentials out of <code>~/.local/state/snapshot-bcfp/*.log</code>.</li>
+<li>New <code>data-raw/scheduler/</code> directory with launchd plist (<code>com.newgraph.snapshot-bcfp.plist</code> for M4 + M1, fires Wed 5 AM local), Linux crontab line (<code>snapshot-bcfp.cron</code> for cypher, <code>0 12 * * WED</code> UTC), and <code>README.md</code> documenting per-host install + uninstall + env file format.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.32.1" id="link-0321">link 0.32.1<a class="anchor" aria-label="anchor" href="#link-0321"></a></h2>
 <p>Post-merge <code>/code-check</code> follow-up on <code>#138</code> (v0.32.0). Three fragility fixes (no behaviour change for valid inputs) plus a stashed snapshot-script fix:</p>

@@ -1,5 +1,36 @@
 # Changelog
 
+## link 0.33.0
+
+Closes [\#148](https://github.com/NewGraphEnvironment/link/issues/148).
+Wednesday-morning sync chain shifted earlier so a fully-fresh local
+fwapg lands before workday-start, and `data-raw/snapshot_bcfp.sh` is now
+schedulable per host without manual install gymnastics.
+
+- `.github/workflows/sync-bcfishpass-csvs.yml` cron: Wed 6 AM PDT (13:00
+  UTC) → Wed 4 AM PDT (11:00 UTC). Runs 1 h after the upstream dump in
+  `NewGraphEnvironment/db_newgraph#7` (which itself shifted to Wed 3 AM
+  PDT).
+- New exported `lnk_baseline_current(log, host, path)` predicate.
+  Returns `TRUE` when this host’s most-recent
+  `data-raw/logs/bcfp_baselines.csv` row already stamps the upstream
+  `bcfp_model_version` carried in `log`. Per-host scoped — M4 stamping a
+  SHA must not gate M1 from snapshotting its own fwapg.
+- `data-raw/snapshot_bcfp.sh` updates: self-anchors to repo root via
+  `cd "$(dirname "$0")/.."` (so cron-default `$HOME` cwd doesn’t break
+  the relative ledger path); skip-guard runs FIRST via
+  [`lnk_baseline_current()`](https://newgraphenvironment.github.io/link/reference/lnk_baseline_current.md)
+  before any DB-credential resolution (a host with a stale env file can
+  skip cleanly when this week’s ledger already matches); sources
+  `~/.config/snapshot-bcfp.env` for per-host `DATABASE_URL` / `PG*`
+  vars; xtrace removed from `set -euxo pipefail` → `set -euo pipefail`
+  to keep credentials out of `~/.local/state/snapshot-bcfp/*.log`.
+- New `data-raw/scheduler/` directory with launchd plist
+  (`com.newgraph.snapshot-bcfp.plist` for M4 + M1, fires Wed 5 AM
+  local), Linux crontab line (`snapshot-bcfp.cron` for cypher,
+  `0 12 * * WED` UTC), and `README.md` documenting per-host install +
+  uninstall + env file format.
+
 ## link 0.32.1
 
 Post-merge `/code-check` follow-up on `#138` (v0.32.0). Three fragility

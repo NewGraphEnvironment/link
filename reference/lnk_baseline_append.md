@@ -69,6 +69,7 @@ to `bcfishpass.log.model_run_id`; the SHA in `log$model_version` /
 [`lnk_bucket_log()`](https://newgraphenvironment.github.io/link/reference/lnk_bucket_log.md)
 
 Other baseline:
+[`lnk_baseline_current()`](https://newgraphenvironment.github.io/link/reference/lnk_baseline_current.md),
 [`lnk_baseline_read()`](https://newgraphenvironment.github.io/link/reference/lnk_baseline_read.md)
 
 ## Examples
