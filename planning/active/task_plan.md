@@ -18,7 +18,7 @@ Replace fresh::extdata/crossings.csv + bcfp tunnel barriers_* dependency with a 
 
 ## Phase 2: Source-precedence union (LEAN columns, not full bcfp shape)
 
-- [ ] `.lnk_crossings_union(conn, schema, aoi)` — port the source-precedence STRUCTURE from `bcfishpass/model/01_access/sql/load_crossings.sql` (PSCIS > PSCIS-on-modelled > CABD > modelled), but only emit the columns `lnk_barriers_emit()` needs:
+- [x] `.lnk_crossings_union(conn, schema, aoi)` — port the source-precedence STRUCTURE from `bcfishpass/model/01_access/sql/load_crossings.sql` (PSCIS > CABD > modelled), but only emit the columns `lnk_barriers_emit()` needs:
   - `aggregated_crossings_id` (PK)
   - `crossing_source` ('PSCIS' | 'CABD' | 'MODELLED_CROSSINGS' | 'USER_MISC')
   - `crossing_feature_type` (for `barrier_type`)
@@ -36,8 +36,11 @@ Replace fresh::extdata/crossings.csv + bcfp tunnel barriers_* dependency with a 
 
 ## Phase 3: Apply user overrides
 
-- [ ] `.lnk_crossings_apply_overrides(conn, schema)` — joins `<schema>.pscis_fixes` + `<schema>.crossing_fixes` (already loaded by `lnk_pipeline_load`) into `<schema>.crossings`. Updates `barrier_status`.
-- [ ] Same row-level effect as existing override path.
+- [x] `.lnk_crossings_apply_overrides(conn, schema)` — joins `<schema>.pscis_fixes` + `<schema>.crossing_fixes` (already loaded by `lnk_pipeline_load`) into `<schema>.crossings`. Updates `barrier_status`.
+- [x] Modelled-row JOIN handles +1e9 ID offset: `c.aggregated_crossings_id = (cf.aggregated_crossings_id::bigint + 1000000000)::text`.
+- [x] Mirrors bcfp: `barrier_status = 'PASSABLE' WHEN structure IN ('NONE', 'OBS')` for modelled fixes.
+- [x] No-op when fix tables absent (info_schema check up-front).
+- [x] 13 mocked test expectations.
 
 ## Phase 4: `lnk_barriers_emit()` (exported)
 
@@ -45,15 +48,23 @@ Replace fresh::extdata/crossings.csv + bcfp tunnel barriers_* dependency with a 
 - [x] Output column shapes match bcfp barriers_* schemas — `aggregated_crossings_id` + network position + `geom`.
 - [x] 22 mocked unit test expectations — verifies all 5 table operations, anthropogenic semantics, PSCIS/CABD branches, remediations UNION, validation.
 
-## Phase 5: ADMS Surface 2 parity
+## Phase 5: `lnk_pipeline_crossings()` umbrella + composition
 
-- [ ] Run `lnk_pipeline_crossings()` on ADMS. Wire output into `lnk_pipeline_access`.
-- [ ] Compare `mapping_code_<sp>` vs bcfp tunnel reference. ±5 % per species acceptable.
+- [x] `R/lnk_pipeline_crossings.R` (exported). Composes the five steps in order: `lnk_inputs_verify` → `lnk_points_snap` → `.lnk_crossings_union` → `.lnk_crossings_apply_overrides` → `lnk_barriers_emit`.
+- [x] `snap_tolerance` arg threaded through to `lnk_points_snap` (default 100 m).
+- [x] Roxygen with runnable `@examples`.
+- [x] 13 mocked test expectations covering composition order + arg threading.
+- [x] Full suite: 902 PASS / 0 FAIL. Lints clean on all new R/ files.
+
+## Phase 6: ADMS live smoke + parity verification (live DB)
+
+- [ ] Run `lnk_pipeline_crossings()` on ADMS against the locally-loaded primitives (PSCIS + CABD + modelled — already loaded earlier today). Verify `<schema>.crossings_lookup` + 4 `barriers_*` tables produced.
+- [ ] Wire `<schema>.barriers_*` into `lnk_pipeline_access(barrier_sources = list(...))` and diff `mapping_code_<sp>` vs bcfp tunnel reference. ±5 % per species acceptable.
 - [ ] Stamp `data-raw/logs/<TS>_link138_pscis_primitives_ADMS.txt`.
 
-## Phase 6: NEWS + DESCRIPTION + open PR
+## Phase 7: NEWS + DESCRIPTION + open PR
 
-- [ ] DESCRIPTION 0.31.0 → 0.32.0.
+- [ ] DESCRIPTION 0.31.1 → 0.32.0 (minor — 4 new exports: `lnk_inputs_verify`, `lnk_points_snap`, `lnk_barriers_emit`, `lnk_pipeline_crossings`).
 - [ ] NEWS.md 0.32.0 entry.
 - [ ] `/code-check` clean.
 - [ ] `devtools::test()` + `lintr::lint_package()` + `devtools::check()` clean.

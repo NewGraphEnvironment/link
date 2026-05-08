@@ -20,3 +20,13 @@
 - Branch `138-lnk-pipeline-crossings-build-slim-fresh-` pushed with Phases 0+1+4 done. PWF preserved here.
 - Switching to #137 (snapshot script) so Phase 5 (parity verification) can validate Phase 2+3 against a real DB once we resume.
 - Resume: `git checkout 138-lnk-pipeline-crossings-build-slim-fresh-`.
+
+## Resumed 2026-05-08 (after #137 v0.31.1 ship)
+
+- Branch rebased onto v0.31.1 main.
+- Snapshot script run on local fwapg loaded 6 of 7 tables (PSCIS×4 + cabd.dams + fresh.modelled_stream_crossings). Observations parquet failed via Arrow FID-type error → tracked at rtj#66.
+- Phase 2 done: `.lnk_crossings_union(conn, schema, aoi)` shipped — lean column union of PSCIS + CABD + modelled with ID-space offsets per bcfp. xref-presence detected via information_schema.
+- Phase 3 done: `.lnk_crossings_apply_overrides(conn, schema)` shipped — applies pscis_fixes + crossing_fixes (with +1e9 modelled-ID offset in the JOIN). No-op when fix tables absent.
+- Phase 5 done: `lnk_pipeline_crossings(conn, aoi, cfg, loaded, schema, snap_tolerance)` shipped — exported umbrella composing all five steps.
+- Full suite: 902 PASS / 0 FAIL. Lints clean.
+- Next: Phase 6 (live ADMS smoke against the loaded DB).
