@@ -30,9 +30,9 @@ Replace fresh::extdata/crossings.csv + bcfp tunnel barriers_* dependency with a 
 
 ## Phase 4: `lnk_barriers_emit()` (exported)
 
-- [ ] `R/lnk_barriers_emit.R`. Emits `<schema>.crossings_lookup` + 4 barriers_* via filtered SELECTs.
-- [ ] Output column shapes match `lnk_pipeline_access(barrier_sources = list(...))` consumer.
-- [ ] Roxygen + mocked unit test.
+- [x] `R/lnk_barriers_emit.R`. Single SQL transaction emits 5 tables: `crossings_lookup` + 4 `barriers_*`. Filters mirror bcfp's `barriers_anthropogenic.sql` / `barriers_pscis.sql` / `barriers_dams.sql` / `remediations_barriers.sql` (`barrier_status IN ('BARRIER', 'POTENTIAL')` + `blue_line_key = watershed_key` side-channel filter; remediations is anth UNION REMEDIATED-PASSABLE).
+- [x] Output column shapes match bcfp barriers_* schemas — `aggregated_crossings_id` + network position + `geom`.
+- [x] 22 mocked unit test expectations — verifies all 5 table operations, anthropogenic semantics, PSCIS/CABD branches, remediations UNION, validation.
 
 ## Phase 5: ADMS Surface 2 parity
 
