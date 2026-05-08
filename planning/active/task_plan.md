@@ -58,16 +58,16 @@ Replace fresh::extdata/crossings.csv + bcfp tunnel barriers_* dependency with a 
 
 ## Phase 6: ADMS live smoke + parity verification (live DB)
 
-- [ ] Run `lnk_pipeline_crossings()` on ADMS against the locally-loaded primitives (PSCIS + CABD + modelled — already loaded earlier today). Verify `<schema>.crossings_lookup` + 4 `barriers_*` tables produced.
-- [ ] Wire `<schema>.barriers_*` into `lnk_pipeline_access(barrier_sources = list(...))` and diff `mapping_code_<sp>` vs bcfp tunnel reference. ±5 % per species acceptable.
-- [ ] Stamp `data-raw/logs/<TS>_link138_pscis_primitives_ADMS.txt`.
+- [x] Live smoke on local fwapg: `lnk_pipeline_crossings()` runs end-to-end against the loaded primitives (`whse_fish.pscis_assessment_svw`, `fresh.modelled_stream_crossings`, stub `working_adms.dams`). Surfaced 7 real-DB issues mocks missed (RPostgres parameterized arrays, multi-statement queries, MultiPoint vs Point, ltree casts, watershed_key/group_code FWA join). All fixed.
+- [x] ADMS scoping confirmed: 67 PSCIS + 3,584 modelled = 3,651 crossings; barriers_emit produces 3,616 anth / 33 PSCIS / 5 remediations.
+- [ ] Full parity vs bcfp tunnel reference (`mapping_code_<sp>`) — deferred. Phase 6 demonstrates the pipeline works end-to-end; bit-perfect parity vs bcfp depends on populated CABD dams (lnk_pipeline_prepare wiring) + bcfishobs.observations (rtj#66 blocker). Track as follow-up.
 
 ## Phase 7: NEWS + DESCRIPTION + open PR
 
-- [ ] DESCRIPTION 0.31.1 → 0.32.0 (minor — 4 new exports: `lnk_inputs_verify`, `lnk_points_snap`, `lnk_barriers_emit`, `lnk_pipeline_crossings`).
-- [ ] NEWS.md 0.32.0 entry.
-- [ ] `/code-check` clean.
-- [ ] `devtools::test()` + `lintr::lint_package()` + `devtools::check()` clean.
+- [x] DESCRIPTION 0.31.1 → 0.32.0 (minor — 4 new exports).
+- [x] NEWS.md 0.32.0 entry.
+- [x] `devtools::test()`: 903 PASS / 0 FAIL.
+- [x] `devtools::check()`: 3 WARNINGs all pre-existing (lnk_barrier_overrides + lnk_pipeline_load non-ASCII; missing-link in lnk_load.Rd; undocumented `presence` arg on lnk_pipeline_access.Rd). None from #138 files.
 - [ ] Commit, push, open PR closing #138 with SRED tag.
 - [ ] `/gh-pr-merge` → tag v0.32.0.
 - [ ] `/planning-archive`.

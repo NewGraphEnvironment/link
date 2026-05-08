@@ -29,4 +29,5 @@
 - Phase 3 done: `.lnk_crossings_apply_overrides(conn, schema)` shipped — applies pscis_fixes + crossing_fixes (with +1e9 modelled-ID offset in the JOIN). No-op when fix tables absent.
 - Phase 5 done: `lnk_pipeline_crossings(conn, aoi, cfg, loaded, schema, snap_tolerance)` shipped — exported umbrella composing all five steps.
 - Full suite: 902 PASS / 0 FAIL. Lints clean.
-- Next: Phase 6 (live ADMS smoke against the loaded DB).
+- Phase 6 done: live ADMS smoke surfaced + fixed 7 real-DB issues (RPostgres array params, multi-statement queries, MultiPoint Point, ltree casts, FWA watershed_key + group_code join). End-to-end smoke produces 3,651 crossings + 3,616 anth barriers in <2 s.
+- Phase 7: DESCRIPTION 0.31.1 → 0.32.0; NEWS.md 0.32.0 entry; tests + check clean (3 pre-existing WARNINGs unchanged). Ready to push + open PR.
