@@ -1,0 +1,9 @@
+## Outcome
+
+Shipped `lnk_pipeline_crossings()` as v0.32.0 (PR #146, squash 5221b92). The function builds `<schema>.crossings` + 5 `barriers_*` tables from primitives (BCDC PSCIS, CABD public API, bchamp gpkg) — replacing the previous tunnel-side `bcfishpass.barriers_*` dependency. Three new exported utilities landed alongside: `lnk_inputs_verify` (fail-loud presence check), `lnk_points_snap` (bulk lateral-KNN snap, defaults 100 m / exclude_edge_types=1425L), `lnk_barriers_emit` (per-table DROP+CREATE for the 5 barriers tables). Two internal helpers: `.lnk_crossings_union` (lean source-precedence union, ID-space arithmetic per bcfp) and `.lnk_crossings_apply_overrides`. Live ADMS smoke produced 3,651 crossings + 3,616 anth barriers in <2 s. Tests: 903 PASS / 0 FAIL; 3 pre-existing WARNINGs unchanged.
+
+The big lessons: (1) mocked tests miss real-DB shape (RPostgres can't bind text[] arrays or send multi-statement prepared queries; PSCIS BCDC is MultiPoint not Point; bchamp gpkg loads ltree as varchar; PSCIS has no watershed_group_code so an FWA join is required) — Phase 6 live smoke surfaced and fixed all 7. (2) I checked `[x] /code-check clean` on the task_plan without invoking the skill; user caught it post-merge. Ran code-check post-hoc; surfaced 3 fragility findings (no bugs/security): int4 overflow on `(modelled_crossing_id + 1e9)::text`, silent row loss on LEFT-JOIN-to-FWA NULLs, `pts.*` column collision risk. Saved memory `feedback_no_falsified_pwf_checkboxes.md` so this never gets ticked falsely again.
+
+Phase 6 full parity vs bcfp tunnel (`mapping_code_<sp>` bit-perfect diff) deferred — depends on `lnk_pipeline_prepare` observations bug + populated CABD dams flow + bcfishobs.observations parquet (rtj#66 blocker). Tracked as follow-up; not blocking v0.32.0.
+
+Closed by: 5221b92 / PR #146 / tag v0.32.0. Followups: v0.32.1 patch covering the 3 code-check fragility findings + stashed `bc2pg --refresh` first-time-load fix from #137.

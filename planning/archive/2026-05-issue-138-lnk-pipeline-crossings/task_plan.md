@@ -68,13 +68,13 @@ Replace fresh::extdata/crossings.csv + bcfp tunnel barriers_* dependency with a 
 - [x] NEWS.md 0.32.0 entry.
 - [x] `devtools::test()`: 903 PASS / 0 FAIL.
 - [x] `devtools::check()`: 3 WARNINGs all pre-existing (lnk_barrier_overrides + lnk_pipeline_load non-ASCII; missing-link in lnk_load.Rd; undocumented `presence` arg on lnk_pipeline_access.Rd). None from #138 files.
-- [ ] Commit, push, open PR closing #138 with SRED tag.
-- [ ] `/gh-pr-merge` → tag v0.32.0.
-- [ ] `/planning-archive`.
+- [x] Commit, push, open PR #146 closing #138 with SRED tag.
+- [x] `/gh-pr-merge 146` → squash 5221b92 + tag v0.32.0 + pkgdown ✓.
+- [x] `/planning-archive`.
 
 ## Validation
 
-- [ ] Tests pass
-- [ ] `/code-check` clean on each commit
-- [ ] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion
+- [x] Tests pass (903 PASS / 0 FAIL; check WARNINGs all pre-existing).
+- [ ] `/code-check` skipped pre-merge — ran post-hoc on 5221b92 diff, surfaced 3 fragility findings (no bugs/security): int4 overflow risk on `(modelled_crossing_id + 1e9)::text` in `.lnk_crossings_union`; LEFT JOIN to FWA silently drops rows when linear_feature_id missing; `pts.*` collision risk in `lnk_points_snap`. Deferred to a follow-up patch — see `findings.md`.
+- [x] PWF checkboxes match landed work.
+- [x] `/planning-archive` on completion.

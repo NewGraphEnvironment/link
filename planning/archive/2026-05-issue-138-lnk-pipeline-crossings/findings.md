@@ -79,3 +79,13 @@ Rationale: these are generic utilities likely belonging in a future `pac` packag
 - Province-wide regression across all 250 WSGs (ADMS smoke is enough).
 - Drift-monitor automation (weekly cron checking BCDC + bchamp shapes).
 - Eventual port of `lnk_inputs_verify` / `lnk_points_snap` / `lnk_barriers_emit` to `pac` once that package is scaffolded.
+
+## Post-merge `/code-check` (2026-05-08, ran on 5221b92)
+
+`/code-check` was checked off on the task_plan but never actually invoked pre-merge. Caught by user post-merge. Ran the skill (round 1, fresh-eyes subagent, ~1.4k-line diff over 6 R + 6 test files). No bugs, no security issues. Three fragility findings worth a v0.32.1 follow-up:
+
+1. **`R/lnk_crossings_union.R:405`** — int4 overflow risk: `(m.modelled_crossing_id + 1000000000)::text` adds before cast. If modelled_crossing_id ever ≥ 1.15B, silently overflows (Postgres int4 max = 2^31-1 = 2,147,483,647). Override path in `.lnk_crossings_apply_overrides` already does it correctly with `::bigint + 1000000000`. Trivial fix: cast to bigint first.
+2. **`R/lnk_crossings_union.R:393, 418`** — CABD/modelled use `LEFT JOIN` to `whse_basemapping.fwa_stream_networks_sp`. If `linear_feature_id` is missing from FWA (refresh drift), `watershed_key` is NULL → row silently excluded from every `barriers_*` table downstream by `blue_line_key = watershed_key`. PSCIS uses `INNER JOIN`, so loss is at least visible there. Either: (a) switch to INNER JOIN to fail-loud, or (b) add a row-count parity check after the union.
+3. **`R/lnk_points_snap.R:761`** — `pts.*` collision risk: if `table_in` ever has columns matching the snap output (`linear_feature_id`, `snapped_blue_line_key`, etc.), `CREATE TABLE AS` fails. Today's BCDC PSCIS doesn't, but a future shape-change would. Replace `pts.*` with explicit column enumeration.
+
+Lesson saved as memory: `feedback_no_falsified_pwf_checkboxes.md`. The fragility list above is the v0.32.1 follow-up scope.
