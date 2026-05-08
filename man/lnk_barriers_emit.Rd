@@ -43,7 +43,8 @@ bcfp's \code{crossings} shape (\code{barrier_status}, \code{crossing_source},
 \code{lnk_pipeline_crossings()} phase; may move to a future \code{pac} package
 once that's scaffolded.
 
-Filters mirror \verb{bcfishpass/model/01_access/sql/\{barriers_anthropogenic,barriers_pscis,barriers_dams,remediations_barriers\}.sql}:
+Filters mirror bcfp's \verb{model/01_access/sql/barriers_*.sql} and
+\code{remediations_barriers.sql}:
 \itemize{
 \item \verb{barrier_status IN ('BARRIER', 'POTENTIAL')} for anthropogenic-style tables.
 \item \code{blue_line_key = watershed_key} (excludes side-channel features).

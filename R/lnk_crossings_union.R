@@ -137,8 +137,13 @@
       d.localcode_ltree,
       d.watershed_group_code,
       d.geom
+    -- INNER JOIN to FWA: a LEFT JOIN here would NULL watershed_key on
+    -- missing linear_feature_id, then barriers_emit silently drops the
+    -- row downstream via `blue_line_key = watershed_key`. INNER JOIN
+    -- drops at the union step instead, so the row-count discrepancy is
+    -- observable here and not buried in barriers output.
     FROM %s d
-    LEFT JOIN whse_basemapping.fwa_stream_networks_sp fwa_d
+    INNER JOIN whse_basemapping.fwa_stream_networks_sp fwa_d
       ON d.linear_feature_id = fwa_d.linear_feature_id
     WHERE d.watershed_group_code = %s
 
@@ -147,8 +152,10 @@
     -- Modelled branch (those NOT covered by PSCIS via the xref table).
     -- Cast wscode_ltree / localcode_ltree to ltree -- bchamp gpkg
     -- imports them as varchar but the canonical FWA type is ltree.
+    -- modelled_crossing_id is int4 in bchamp; cast to bigint before
+    -- adding 1e9 so 1.15B+ values can't overflow.
     SELECT
-      (m.modelled_crossing_id + 1000000000)::text AS aggregated_crossings_id,
+      (m.modelled_crossing_id::bigint + 1000000000)::text AS aggregated_crossings_id,
       'MODELLED_CROSSINGS'::text  AS crossing_source,
       NULL::text                  AS crossing_feature_type,
       'POTENTIAL'::text           AS barrier_status,
@@ -162,8 +169,9 @@
       m.localcode_ltree::ltree    AS localcode_ltree,
       m.watershed_group_code,
       m.geom
+    -- INNER JOIN to FWA: same rationale as the CABD branch.
     FROM %s m
-    LEFT JOIN whse_basemapping.fwa_stream_networks_sp fwa_m
+    INNER JOIN whse_basemapping.fwa_stream_networks_sp fwa_m
       ON m.linear_feature_id = fwa_m.linear_feature_id
     WHERE m.watershed_group_code = %s
       %s;
