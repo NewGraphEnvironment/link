@@ -16,12 +16,23 @@ Replace fresh::extdata/crossings.csv + bcfp tunnel barriers_* dependency with a 
 - [x] Mocked unit tests (17 expectations across 5 tests — default args, vector exclude, opt-out, blue_line_key/stream_order constraints, validation).
 - [ ] Manual smoke against ADMS PSCIS (deferred to Phase 2 integration, when we have the snapshot loaded).
 
-## Phase 2: Source-precedence union
+## Phase 2: Source-precedence union (LEAN columns, not full bcfp shape)
 
-- [ ] `.lnk_crossings_union(conn, schema, aoi)` — port `bcfishpass/model/01_access/sql/load_crossings.sql`. PSCIS > PSCIS-on-modelled > CABD > modelled. `crossing_source` column.
+- [ ] `.lnk_crossings_union(conn, schema, aoi)` — port the source-precedence STRUCTURE from `bcfishpass/model/01_access/sql/load_crossings.sql` (PSCIS > PSCIS-on-modelled > CABD > modelled), but only emit the columns `lnk_barriers_emit()` needs:
+  - `aggregated_crossings_id` (PK)
+  - `crossing_source` ('PSCIS' | 'CABD' | 'MODELLED_CROSSINGS' | 'USER_MISC')
+  - `crossing_feature_type` (for `barrier_type`)
+  - `barrier_status` ('PASSABLE' | 'BARRIER' | 'POTENTIAL' | ...)
+  - `pscis_status` (for remediations filter)
+  - `dam_name` (NULL for non-CABD rows; populated for CABD)
+  - `linear_feature_id`, `blue_line_key`, `watershed_key`, `downstream_route_measure`
+  - `wscode_ltree`, `localcode_ltree`
+  - `watershed_group_code`
+  - `geom`
+- [ ] **SKIP**: road tenure / FTEN / OGC / rail / UTM / structured_name / pscis_assessment_comment / etc. — bcfp's full crossings shape is for many downstream consumers; we only feed barriers_*.
 - [ ] ID-space arithmetic per bcfp (PSCIS direct, CABD +1e9, modelled +1.5e9, user_misc +1.2e9).
-- [ ] AOI filter.
-- [ ] Row-count validation.
+- [ ] AOI filter (`watershed_group_code = aoi`).
+- [ ] Row-count validation: PSCIS_rows + CABD_rows + modelled_rows >= union_rows (precedence dedup reduces).
 
 ## Phase 3: Apply user overrides
 

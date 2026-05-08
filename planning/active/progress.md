@@ -13,4 +13,10 @@
 - Phase 4 done (out of order — easier to ship before the heavier Phase 2 union): `lnk_barriers_emit(conn, schema)` shipped. 22 expectations covering all 5 tables, semantic filters, validation.
 - Full suite: 856 PASS / 0 FAIL. Lints clean.
 - All three EXPORTED utilities (Phases 0, 1, 4) shipped: `lnk_inputs_verify`, `lnk_points_snap`, `lnk_barriers_emit`. Issue is now purely about composing them via the crossings-specific internal helpers (Phases 2+3) + Phase 5 parity.
-- Next: Phase 2 — port `bcfishpass/model/01_access/sql/load_crossings.sql` (24 KB) source-precedence union to `.lnk_crossings_union()`.
+- Next: Phase 2 — port the source-precedence STRUCTURE (PSCIS > PSCIS-on-modelled > CABD > modelled) from `bcfishpass/model/01_access/sql/load_crossings.sql`, but emit ONLY the lean column set needed by `lnk_barriers_emit()` (id, source, feature_type, statuses, dam_name, network position + geom). Skip road tenure / FTEN / OGC / rail metadata — those feed bcfp's downstream non-barrier consumers, which we don't reproduce.
+
+## Parked 2026-05-08
+
+- Branch `138-lnk-pipeline-crossings-build-slim-fresh-` pushed with Phases 0+1+4 done. PWF preserved here.
+- Switching to #137 (snapshot script) so Phase 5 (parity verification) can validate Phase 2+3 against a real DB once we resume.
+- Resume: `git checkout 138-lnk-pipeline-crossings-build-slim-fresh-`.
