@@ -53,8 +53,8 @@ bcfp's `crossings` shape (`barrier_status`, `crossing_source`,
 [`lnk_pipeline_crossings()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_crossings.md)
 phase; may move to a future `pac` package once that's scaffolded.
 
-Filters mirror
-`bcfishpass/model/01_access/sql/{barriers_anthropogenic,barriers_pscis,barriers_dams,remediations_barriers}.sql`:
+Filters mirror bcfp's `model/01_access/sql/barriers_*.sql` and
+`remediations_barriers.sql`:
 
 - `barrier_status IN ('BARRIER', 'POTENTIAL')` for anthropogenic-style
   tables.

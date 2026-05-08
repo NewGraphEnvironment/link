@@ -1,5 +1,29 @@
 # Changelog
 
+## link 0.32.1
+
+Post-merge `/code-check` follow-up on `#138` (v0.32.0). Three fragility
+fixes (no behaviour change for valid inputs) plus a stashed
+snapshot-script fix:
+
+- `.lnk_crossings_union`: cast `modelled_crossing_id` to `bigint` before
+  adding `1e9` so values past int4 max can’t overflow. Override path
+  (`.lnk_crossings_apply_overrides`) already did this; the union branch
+  matches now.
+- `.lnk_crossings_union`: switch CABD + modelled FWA joins from
+  `LEFT JOIN` to `INNER JOIN`. Missing `linear_feature_id` (FWA refresh
+  drift) previously NULL’d `watershed_key` and the row got silently
+  dropped much later by `barriers_emit`’s
+  `blue_line_key = watershed_key` filter — drop at the union step
+  instead so the count discrepancy is observable upstream.
+- `lnk_points_snap`: pre-flight check on input columns. `pts.*` would
+  otherwise produce a `CREATE TABLE AS` error from a column-name
+  collision deep in a 100-line statement; now errors out with a clear
+  list of colliding columns before any DDL runs.
+- `data-raw/snapshot_bcfp.sh`: `bcdata bc2pg --refresh` requires the
+  target table to already exist — drop-then-load instead so first-time
+  snapshots succeed.
+
 ## link 0.32.0
 
 Closes [\#138](https://github.com/NewGraphEnvironment/link/issues/138).

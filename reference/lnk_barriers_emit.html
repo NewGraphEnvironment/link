@@ -13,7 +13,7 @@ SELECTs:"><meta property="og:image" content="https://newgraphenvironment.github.
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.32.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.32.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -86,7 +86,8 @@ bcfp's <code>crossings</code> shape (<code>barrier_status</code>, <code>crossing
 <code>pscis_status</code>). Lives in link as the emit step of the new
 <code><a href="lnk_pipeline_crossings.html">lnk_pipeline_crossings()</a></code> phase; may move to a future <code>pac</code> package
 once that's scaffolded.</p>
-<p>Filters mirror <code>bcfishpass/model/01_access/sql/{barriers_anthropogenic,barriers_pscis,barriers_dams,remediations_barriers}.sql</code>:</p><ul><li><p><code>barrier_status IN ('BARRIER', 'POTENTIAL')</code> for anthropogenic-style tables.</p></li>
+<p>Filters mirror bcfp's <code>model/01_access/sql/barriers_*.sql</code> and
+<code>remediations_barriers.sql</code>:</p><ul><li><p><code>barrier_status IN ('BARRIER', 'POTENTIAL')</code> for anthropogenic-style tables.</p></li>
 <li><p><code>blue_line_key = watershed_key</code> (excludes side-channel features).</p></li>
 <li><p><code>barriers_remediations</code> = <code>barriers_anthropogenic</code> UNION
 crossings WHERE <code>pscis_status = 'REMEDIATED' AND barrier_status = 'PASSABLE'</code>

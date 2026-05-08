@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.32.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.32.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,6 +31,18 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.32.1" id="link-0321">link 0.32.1<a class="anchor" aria-label="anchor" href="#link-0321"></a></h2>
+<p>Post-merge <code>/code-check</code> follow-up on <code>#138</code> (v0.32.0). Three fragility fixes (no behaviour change for valid inputs) plus a stashed snapshot-script fix:</p>
+<ul><li>
+<code>.lnk_crossings_union</code>: cast <code>modelled_crossing_id</code> to <code>bigint</code> before adding <code>1e9</code> so values past int4 max can’t overflow. Override path (<code>.lnk_crossings_apply_overrides</code>) already did this; the union branch matches now.</li>
+<li>
+<code>.lnk_crossings_union</code>: switch CABD + modelled FWA joins from <code>LEFT JOIN</code> to <code>INNER JOIN</code>. Missing <code>linear_feature_id</code> (FWA refresh drift) previously NULL’d <code>watershed_key</code> and the row got silently dropped much later by <code>barriers_emit</code>’s <code>blue_line_key = watershed_key</code> filter — drop at the union step instead so the count discrepancy is observable upstream.</li>
+<li>
+<code>lnk_points_snap</code>: pre-flight check on input columns. <code>pts.*</code> would otherwise produce a <code>CREATE TABLE AS</code> error from a column-name collision deep in a 100-line statement; now errors out with a clear list of colliding columns before any DDL runs.</li>
+<li>
+<code>data-raw/snapshot_bcfp.sh</code>: <code>bcdata bc2pg --refresh</code> requires the target table to already exist — drop-then-load instead so first-time snapshots succeed.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.32.0" id="link-0320">link 0.32.0<a class="anchor" aria-label="anchor" href="#link-0320"></a></h2>
 <p>Closes <a href="https://github.com/NewGraphEnvironment/link/issues/138" class="external-link">#138</a>. New <code><a href="../reference/lnk_pipeline_crossings.html">lnk_pipeline_crossings()</a></code> builds <code>&lt;schema&gt;.crossings</code> + <code>&lt;schema&gt;.barriers_*</code> from public-source primitives (BCDC PSCIS via <code>bcdata bc2pg</code>, CABD via the public API, bchamp <code>modelled_stream_crossings.gpkg.zip</code>) — no tunnel, no <code>bcfishpass.barriers_*</code> reads. Phase B of the self-sufficiency roadmap (<code>#117</code> csv-sync + <code>#137</code> snapshot script were Phase A).</p>
