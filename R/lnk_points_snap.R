@@ -104,8 +104,13 @@ lnk_points_snap <- function(conn, table_in, table_out,
 
   geom_q <- DBI::dbQuoteIdentifier(conn, geom_col)
 
-  sql <- sprintf("
-    DROP TABLE IF EXISTS %s;
+  # Wrap the input geometry with ST_GeometryN(..., 1) so MultiPoint
+  # inputs (e.g. bcdata bc2pg's PSCIS output) work — ST_LineLocatePoint
+  # requires Point. ST_GeometryN(point, 1) is a no-op on already-Point.
+  pt_expr <- sprintf("ST_GeometryN(pts.%s, 1)", geom_q)
+
+  drop_sql <- sprintf("DROP TABLE IF EXISTS %s;", table_out)
+  create_sql <- sprintf("
     CREATE TABLE %s AS
     SELECT
       pts.*,
@@ -114,7 +119,7 @@ lnk_points_snap <- function(conn, table_in, table_out,
       snap.downstream_route_measure,
       snap.wscode_ltree,
       snap.localcode_ltree,
-      ST_Distance(pts.%s, snap.geom_snapped) AS distance_to_stream,
+      ST_Distance(%s, snap.geom_snapped) AS distance_to_stream,
       snap.geom_snapped
     FROM %s pts
     CROSS JOIN LATERAL (
@@ -123,24 +128,25 @@ lnk_points_snap <- function(conn, table_in, table_out,
         s.blue_line_key,
         s.wscode_ltree,
         s.localcode_ltree,
-        ST_LineLocatePoint(s.geom, pts.%s)
+        ST_LineLocatePoint(s.geom, %s)
           * ST_Length(s.geom) AS downstream_route_measure,
-        ST_ClosestPoint(s.geom, pts.%s) AS geom_snapped
+        ST_ClosestPoint(s.geom, %s) AS geom_snapped
       FROM whse_basemapping.fwa_stream_networks_sp s
-      WHERE ST_DWithin(s.geom, pts.%s, %f)
+      WHERE ST_DWithin(s.geom, %s, %f)
         AND %s
-      ORDER BY s.geom <-> pts.%s
+      ORDER BY s.geom <-> %s
       LIMIT 1
     ) snap;",
-    table_out, table_out,
-    geom_q,
+    table_out,
+    pt_expr,
     table_in,
-    geom_q, geom_q, geom_q,
+    pt_expr, pt_expr, pt_expr,
     snap_tolerance,
     where_sql,
-    geom_q
+    pt_expr
   )
 
-  DBI::dbExecute(conn, sql)
+  DBI::dbExecute(conn, drop_sql)
+  DBI::dbExecute(conn, create_sql)
   invisible(table_out)
 }

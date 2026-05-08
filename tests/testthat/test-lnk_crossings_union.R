@@ -3,7 +3,7 @@ test_that(".lnk_crossings_union builds the union SQL with PSCIS + CABD + modelle
   m_quote_id <- mockery::mock(DBI::SQL("\"working_adms\""), cycle = TRUE)
   m_quote_str <- mockery::mock(DBI::SQL("'ADMS'"), cycle = TRUE)
   m_query <- mockery::mock(data.frame(present = TRUE))
-  m_exec <- mockery::mock(1L)
+  m_exec <- mockery::mock(1L, cycle = TRUE)
   with_mocked_bindings(
     dbQuoteIdentifier = m_quote_id,
     dbQuoteString = m_quote_str,
@@ -15,7 +15,9 @@ test_that(".lnk_crossings_union builds the union SQL with PSCIS + CABD + modelle
     }
   )
   expect_null(result)
-  sql <- mockery::mock_args(m_exec)[[1]][[2]]
+  sql <- paste(vapply(mockery::mock_args(m_exec),
+                      function(a) a[[2]], character(1)),
+               collapse = "\n")
   expect_match(sql, "DROP TABLE IF EXISTS .*\\.crossings")
   expect_match(sql, "CREATE TABLE .*\\.crossings AS")
   expect_match(sql, "'PSCIS'::text")
@@ -30,7 +32,7 @@ test_that(".lnk_crossings_union excludes modelled crossings via xref when presen
   m_quote_id <- mockery::mock(DBI::SQL("\"s\""), cycle = TRUE)
   m_quote_str <- mockery::mock(DBI::SQL("'AOI'"), cycle = TRUE)
   m_query <- mockery::mock(data.frame(present = TRUE))
-  m_exec <- mockery::mock(1L)
+  m_exec <- mockery::mock(1L, cycle = TRUE)
   with_mocked_bindings(
     dbQuoteIdentifier = m_quote_id,
     dbQuoteString = m_quote_str,
@@ -41,7 +43,9 @@ test_that(".lnk_crossings_union excludes modelled crossings via xref when presen
       link:::.lnk_crossings_union(conn, "s", "AOI")
     }
   )
-  sql <- mockery::mock_args(m_exec)[[1]][[2]]
+  sql <- paste(vapply(mockery::mock_args(m_exec),
+                      function(a) a[[2]], character(1)),
+               collapse = "\n")
   expect_match(sql, "modelled_crossing_id NOT IN")
   expect_match(sql, "FROM .*\\.pscis_modelledcrossings_streams_xref")
 })
@@ -51,7 +55,7 @@ test_that(".lnk_crossings_union skips the xref clause when xref table missing", 
   m_quote_id <- mockery::mock(DBI::SQL("\"s\""), cycle = TRUE)
   m_quote_str <- mockery::mock(DBI::SQL("'AOI'"), cycle = TRUE)
   m_query <- mockery::mock(data.frame(present = FALSE))
-  m_exec <- mockery::mock(1L)
+  m_exec <- mockery::mock(1L, cycle = TRUE)
   with_mocked_bindings(
     dbQuoteIdentifier = m_quote_id,
     dbQuoteString = m_quote_str,
@@ -62,7 +66,9 @@ test_that(".lnk_crossings_union skips the xref clause when xref table missing", 
       link:::.lnk_crossings_union(conn, "s", "AOI")
     }
   )
-  sql <- mockery::mock_args(m_exec)[[1]][[2]]
+  sql <- paste(vapply(mockery::mock_args(m_exec),
+                      function(a) a[[2]], character(1)),
+               collapse = "\n")
   expect_no_match(sql, "modelled_crossing_id NOT IN")
 })
 

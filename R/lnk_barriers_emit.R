@@ -58,114 +58,109 @@ lnk_barriers_emit <- function(conn, schema) {
 
   s <- DBI::dbQuoteIdentifier(conn, schema)
 
-  # Five tables, all DROP + CREATE TABLE AS in one transaction.
-  sql <- sprintf("
-    -- crossings_lookup (slim id + status projection)
-    DROP TABLE IF EXISTS %s.crossings_lookup;
-    CREATE TABLE %s.crossings_lookup AS
-    SELECT
-      aggregated_crossings_id,
-      pscis_status,
-      barrier_status
-    FROM %s.crossings;
+  # Each table: separate DROP + CREATE pair (RPostgres rejects multi-
+  # statement prepared queries, so we issue them individually).
+  ddl <- list(
+    crossings_lookup = sprintf("
+      CREATE TABLE %s.crossings_lookup AS
+      SELECT aggregated_crossings_id, pscis_status, barrier_status
+      FROM %s.crossings;",
+      s, s), # nolint: indentation_linter
 
-    -- barriers_anthropogenic
-    DROP TABLE IF EXISTS %s.barriers_anthropogenic;
-    CREATE TABLE %s.barriers_anthropogenic AS
-    SELECT
-      aggregated_crossings_id AS barriers_anthropogenic_id,
-      crossing_feature_type   AS barrier_type,
-      NULL::text              AS barrier_name,
-      linear_feature_id,
-      blue_line_key,
-      watershed_key,
-      downstream_route_measure,
-      wscode_ltree,
-      localcode_ltree,
-      watershed_group_code,
-      ST_Force2D(geom)        AS geom
-    FROM %s.crossings
-    WHERE barrier_status IN ('BARRIER', 'POTENTIAL')
-      AND blue_line_key = watershed_key;
+    barriers_anthropogenic = sprintf("
+      CREATE TABLE %s.barriers_anthropogenic AS
+      SELECT
+        aggregated_crossings_id AS barriers_anthropogenic_id,
+        crossing_feature_type   AS barrier_type,
+        NULL::text              AS barrier_name,
+        linear_feature_id,
+        blue_line_key,
+        watershed_key,
+        downstream_route_measure,
+        wscode_ltree,
+        localcode_ltree,
+        watershed_group_code,
+        ST_Force2D(geom)        AS geom
+      FROM %s.crossings
+      WHERE barrier_status IN ('BARRIER', 'POTENTIAL')
+        AND blue_line_key = watershed_key;",
+      s, s), # nolint: indentation_linter
 
-    -- barriers_pscis
-    DROP TABLE IF EXISTS %s.barriers_pscis;
-    CREATE TABLE %s.barriers_pscis AS
-    SELECT
-      aggregated_crossings_id AS barriers_pscis_id,
-      crossing_feature_type   AS barrier_type,
-      crossing_source         AS barrier_name,
-      linear_feature_id,
-      blue_line_key,
-      watershed_key,
-      downstream_route_measure,
-      wscode_ltree,
-      localcode_ltree,
-      watershed_group_code,
-      ST_Force2D(geom)        AS geom
-    FROM %s.crossings
-    WHERE crossing_source = 'PSCIS'
-      AND barrier_status IN ('BARRIER', 'POTENTIAL')
-      AND blue_line_key = watershed_key;
+    barriers_pscis = sprintf("
+      CREATE TABLE %s.barriers_pscis AS
+      SELECT
+        aggregated_crossings_id AS barriers_pscis_id,
+        crossing_feature_type   AS barrier_type,
+        crossing_source         AS barrier_name,
+        linear_feature_id,
+        blue_line_key,
+        watershed_key,
+        downstream_route_measure,
+        wscode_ltree,
+        localcode_ltree,
+        watershed_group_code,
+        ST_Force2D(geom)        AS geom
+      FROM %s.crossings
+      WHERE crossing_source = 'PSCIS'
+        AND barrier_status IN ('BARRIER', 'POTENTIAL')
+        AND blue_line_key = watershed_key;",
+      s, s), # nolint: indentation_linter
 
-    -- barriers_dams (FROM crossings filtered to dam source -- empty if no dam rows)
-    DROP TABLE IF EXISTS %s.barriers_dams;
-    CREATE TABLE %s.barriers_dams AS
-    SELECT
-      aggregated_crossings_id AS barriers_dams_id,
-      crossing_feature_type   AS barrier_type,
-      dam_name                AS barrier_name,
-      linear_feature_id,
-      blue_line_key,
-      watershed_key,
-      downstream_route_measure,
-      wscode_ltree,
-      localcode_ltree,
-      watershed_group_code,
-      ST_Force2D(geom)        AS geom
-    FROM %s.crossings
-    WHERE crossing_source = 'CABD'
-      AND barrier_status IN ('BARRIER', 'POTENTIAL')
-      AND blue_line_key = watershed_key;
+    barriers_dams = sprintf("
+      CREATE TABLE %s.barriers_dams AS
+      SELECT
+        aggregated_crossings_id AS barriers_dams_id,
+        crossing_feature_type   AS barrier_type,
+        dam_name                AS barrier_name,
+        linear_feature_id,
+        blue_line_key,
+        watershed_key,
+        downstream_route_measure,
+        wscode_ltree,
+        localcode_ltree,
+        watershed_group_code,
+        ST_Force2D(geom)        AS geom
+      FROM %s.crossings
+      WHERE crossing_source = 'CABD'
+        AND barrier_status IN ('BARRIER', 'POTENTIAL')
+        AND blue_line_key = watershed_key;",
+      s, s), # nolint: indentation_linter
 
-    -- barriers_remediations (anthropogenic UNION REMEDIATED-PASSABLE crossings)
-    DROP TABLE IF EXISTS %s.barriers_remediations;
-    CREATE TABLE %s.barriers_remediations AS
-    SELECT
-      barriers_anthropogenic_id  AS barriers_remediations_id,
-      'barriers_anthropogenic'   AS barrier_type,
-      NULL::text                 AS barrier_name,
-      linear_feature_id,
-      blue_line_key,
-      watershed_key,
-      downstream_route_measure,
-      wscode_ltree,
-      localcode_ltree,
-      watershed_group_code
-    FROM %s.barriers_anthropogenic
-    UNION ALL
-    SELECT
-      aggregated_crossings_id    AS barriers_remediations_id,
-      'remediation'              AS barrier_type,
-      NULL::text                 AS barrier_name,
-      linear_feature_id,
-      blue_line_key,
-      watershed_key,
-      downstream_route_measure,
-      wscode_ltree,
-      localcode_ltree,
-      watershed_group_code
-    FROM %s.crossings
-    WHERE pscis_status = 'REMEDIATED'
-      AND barrier_status = 'PASSABLE';
-    ",
-    s, s, s,                # crossings_lookup
-    s, s, s,                # barriers_anthropogenic
-    s, s, s,                # barriers_pscis
-    s, s, s,                # barriers_dams
-    s, s, s, s              # barriers_remediations (UNION ALL needs 4 schema refs)
+    barriers_remediations = sprintf("
+      CREATE TABLE %s.barriers_remediations AS
+      SELECT
+        barriers_anthropogenic_id AS barriers_remediations_id,
+        'barriers_anthropogenic'  AS barrier_type,
+        NULL::text                AS barrier_name,
+        linear_feature_id,
+        blue_line_key,
+        watershed_key,
+        downstream_route_measure,
+        wscode_ltree,
+        localcode_ltree,
+        watershed_group_code
+      FROM %s.barriers_anthropogenic
+      UNION ALL
+      SELECT
+        aggregated_crossings_id   AS barriers_remediations_id,
+        'remediation'             AS barrier_type,
+        NULL::text                AS barrier_name,
+        linear_feature_id,
+        blue_line_key,
+        watershed_key,
+        downstream_route_measure,
+        wscode_ltree,
+        localcode_ltree,
+        watershed_group_code
+      FROM %s.crossings
+      WHERE pscis_status = 'REMEDIATED'
+        AND barrier_status = 'PASSABLE';",
+                                    s, s, s)
   )
 
-  DBI::dbExecute(conn, sql)
+  for (tbl in names(ddl)) {
+    DBI::dbExecute(conn, sprintf("DROP TABLE IF EXISTS %s.%s;", s, tbl))
+    DBI::dbExecute(conn, ddl[[tbl]])
+  }
   invisible(NULL)
 }

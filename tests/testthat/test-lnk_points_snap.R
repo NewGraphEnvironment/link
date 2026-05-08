@@ -5,7 +5,7 @@ test_that("lnk_points_snap builds expected SQL with default args", {
     DBI::SQL('"geom"'), DBI::SQL('"geom"'),
     cycle = TRUE
   )
-  m_exec <- mockery::mock(1L)
+  m_exec <- mockery::mock(1L, cycle = TRUE)
   with_mocked_bindings(
     dbQuoteIdentifier = m_quote,
     dbExecute = m_exec,
@@ -17,21 +17,22 @@ test_that("lnk_points_snap builds expected SQL with default args", {
     }
   )
   expect_equal(result, "fresh.pscis_assessment_snapped")
-  call_args <- mockery::mock_args(m_exec)[[1]]
-  sql <- call_args[[2]]
+  sql <- paste(vapply(mockery::mock_args(m_exec),
+                      function(a) a[[2]], character(1)),
+               collapse = "\n")
   expect_match(sql, "DROP TABLE IF EXISTS fresh\\.pscis_assessment_snapped")
   expect_match(sql, "CREATE TABLE fresh\\.pscis_assessment_snapped")
   expect_match(sql, "FROM whse_fish\\.pscis_assessment_svw pts")
   expect_match(sql, "wscode_ltree != '999'")
   expect_match(sql, "edge_type NOT IN \\(1425\\)")
-  expect_match(sql, "ST_DWithin\\(s\\.geom, pts\\.")
+  expect_match(sql, "ST_DWithin\\(s\\.geom, ST_GeometryN\\(pts\\.")
   expect_match(sql, "100\\.0+") # snap_tolerance
 })
 
 test_that("lnk_points_snap accepts vector exclude_edge_types", {
   conn <- structure(list(), class = "DBIConnection")
   m_quote <- mockery::mock(DBI::SQL('"geom"'), cycle = TRUE)
-  m_exec <- mockery::mock(1L)
+  m_exec <- mockery::mock(1L, cycle = TRUE)
   with_mocked_bindings(
     dbQuoteIdentifier = m_quote,
     dbExecute = m_exec,
@@ -41,14 +42,16 @@ test_that("lnk_points_snap accepts vector exclude_edge_types", {
                       exclude_edge_types = c(1410L, 1425L))
     }
   )
-  sql <- mockery::mock_args(m_exec)[[1]][[2]]
+  sql <- paste(vapply(mockery::mock_args(m_exec),
+                      function(a) a[[2]], character(1)),
+               collapse = "\n")
   expect_match(sql, "edge_type NOT IN \\(1410, 1425\\)")
 })
 
 test_that("lnk_points_snap omits exclude_edge_types when integer(0)", {
   conn <- structure(list(), class = "DBIConnection")
   m_quote <- mockery::mock(DBI::SQL('"geom"'), cycle = TRUE)
-  m_exec <- mockery::mock(1L)
+  m_exec <- mockery::mock(1L, cycle = TRUE)
   with_mocked_bindings(
     dbQuoteIdentifier = m_quote,
     dbExecute = m_exec,
@@ -58,7 +61,9 @@ test_that("lnk_points_snap omits exclude_edge_types when integer(0)", {
                       exclude_edge_types = integer(0))
     }
   )
-  sql <- mockery::mock_args(m_exec)[[1]][[2]]
+  sql <- paste(vapply(mockery::mock_args(m_exec),
+                      function(a) a[[2]], character(1)),
+               collapse = "\n")
   expect_no_match(sql, "edge_type NOT IN")
 })
 
@@ -66,7 +71,7 @@ test_that("lnk_points_snap honours blue_line_key_col + stream_order_min", {
   conn <- structure(list(), class = "DBIConnection")
   m_quote <- mockery::mock(DBI::SQL('"blue_line_key"'),
                             DBI::SQL('"geom"'), cycle = TRUE)
-  m_exec <- mockery::mock(1L)
+  m_exec <- mockery::mock(1L, cycle = TRUE)
   with_mocked_bindings(
     dbQuoteIdentifier = m_quote,
     dbExecute = m_exec,
@@ -77,7 +82,9 @@ test_that("lnk_points_snap honours blue_line_key_col + stream_order_min", {
                       stream_order_min = 3)
     }
   )
-  sql <- mockery::mock_args(m_exec)[[1]][[2]]
+  sql <- paste(vapply(mockery::mock_args(m_exec),
+                      function(a) a[[2]], character(1)),
+               collapse = "\n")
   expect_match(sql, "s\\.blue_line_key = pts\\.")
   expect_match(sql, "s\\.stream_order >= 3")
 })

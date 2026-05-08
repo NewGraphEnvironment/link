@@ -53,20 +53,25 @@ lnk_inputs_verify <- function(conn, required) {
   schemas <- vapply(parts, `[`, character(1), 1L)
   tables  <- vapply(parts, `[`, character(1), 2L)
 
-  # Single round-trip: existence-check via information_schema.
-  # `unnest($1::text[], $2::text[])` lets us pass the schema/table
-  # vectors as-is.
-  res <- DBI::dbGetQuery(conn,
-    paste(
-      "SELECT s.schema_name, s.table_name,",
-      "       (t.table_name IS NOT NULL) AS exists",
-      "FROM unnest($1::text[], $2::text[]) AS s(schema_name, table_name)",
-      "LEFT JOIN information_schema.tables t",
-      "  ON t.table_schema = s.schema_name",
-      " AND t.table_name   = s.table_name"
-    ),
-    params = list(schemas, tables)
-  )
+  # Single round-trip: existence-check via information_schema. Values
+  # are inline-quoted (RPostgres' parameterized text[] support is finicky;
+  # safer to format the VALUES clause directly with dbQuoteString).
+  values <- vapply(seq_along(schemas), function(i) {
+    sprintf("(%s, %s)",
+            DBI::dbQuoteString(conn, schemas[i]),
+            DBI::dbQuoteString(conn, tables[i]))
+  }, character(1))
+  values_sql <- paste(values, collapse = ", ")
+
+  res <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT s.schema_name, s.table_name,
+            (t.table_name IS NOT NULL) AS exists
+     FROM (VALUES %s) AS s(schema_name, table_name)
+     LEFT JOIN information_schema.tables t
+       ON t.table_schema = s.schema_name
+      AND t.table_name   = s.table_name",
+    values_sql
+  ))
 
   missing <- res[!res$exists, , drop = FALSE]
   if (nrow(missing) > 0L) {

@@ -90,11 +90,15 @@
     ""
   }
 
+  DBI::dbExecute(conn, sprintf("DROP TABLE IF EXISTS %s.crossings;", s))
+
   sql <- sprintf("
-    DROP TABLE IF EXISTS %s.crossings;
     CREATE TABLE %s.crossings AS
 
-    -- PSCIS branch (highest precedence)
+    -- PSCIS branch (highest precedence). Joins fwa_stream_networks_sp
+    -- on linear_feature_id to recover watershed_key + watershed_group_code
+    -- (PSCIS BCDC tables don't carry watershed_group_code natively; derived
+    -- post-snap via the FWA join). Filtering to AOI is also done here.
     SELECT
       p.stream_crossing_id::text  AS aggregated_crossings_id,
       'PSCIS'::text               AS crossing_source,
@@ -104,13 +108,16 @@
       NULL::text                  AS dam_name,
       p.linear_feature_id,
       p.snapped_blue_line_key     AS blue_line_key,
-      NULL::bigint                AS watershed_key,
+      fwa_p.watershed_key         AS watershed_key,
       p.downstream_route_measure,
       p.wscode_ltree,
       p.localcode_ltree,
-      %s::text                    AS watershed_group_code,
+      fwa_p.watershed_group_code  AS watershed_group_code,
       p.geom_snapped              AS geom
     FROM %s.pscis_assessment_snapped p
+    INNER JOIN whse_basemapping.fwa_stream_networks_sp fwa_p
+      ON p.linear_feature_id = fwa_p.linear_feature_id
+    WHERE fwa_p.watershed_group_code = %s
 
     UNION ALL
 
@@ -124,18 +131,22 @@
       d.dam_name,
       d.linear_feature_id,
       d.blue_line_key,
-      NULL::bigint                AS watershed_key,
+      fwa_d.watershed_key         AS watershed_key,
       d.downstream_route_measure,
       d.wscode_ltree,
       d.localcode_ltree,
       d.watershed_group_code,
       d.geom
     FROM %s d
+    LEFT JOIN whse_basemapping.fwa_stream_networks_sp fwa_d
+      ON d.linear_feature_id = fwa_d.linear_feature_id
     WHERE d.watershed_group_code = %s
 
     UNION ALL
 
-    -- Modelled branch (those NOT covered by PSCIS via the xref table)
+    -- Modelled branch (those NOT covered by PSCIS via the xref table).
+    -- Cast wscode_ltree / localcode_ltree to ltree -- bchamp gpkg
+    -- imports them as varchar but the canonical FWA type is ltree.
     SELECT
       (m.modelled_crossing_id + 1000000000)::text AS aggregated_crossings_id,
       'MODELLED_CROSSINGS'::text  AS crossing_source,
@@ -145,22 +156,23 @@
       NULL::text                  AS dam_name,
       m.linear_feature_id,
       m.blue_line_key,
-      NULL::bigint                AS watershed_key,
+      fwa_m.watershed_key         AS watershed_key,
       m.downstream_route_measure,
-      m.wscode_ltree,
-      m.localcode_ltree,
+      m.wscode_ltree::ltree       AS wscode_ltree,
+      m.localcode_ltree::ltree    AS localcode_ltree,
       m.watershed_group_code,
       m.geom
     FROM %s m
+    LEFT JOIN whse_basemapping.fwa_stream_networks_sp fwa_m
+      ON m.linear_feature_id = fwa_m.linear_feature_id
     WHERE m.watershed_group_code = %s
       %s;
     ",
-    s, s,
-    aoi_q,                       # PSCIS branch wsg
-    s,                           # PSCIS table
-    dams_table, aoi_q,           # CABD table + AOI filter
-    modelled_table, aoi_q,       # Modelled table + AOI
-    xref_clause                  # xref exclusion
+    s,                           # CREATE TABLE %s.crossings AS
+    s, aoi_q,                    # PSCIS FROM <schema>.pscis_..._snapped + AOI WHERE
+    dams_table, aoi_q,           # CABD FROM + AOI WHERE
+    modelled_table, aoi_q,       # Modelled FROM + AOI WHERE
+    xref_clause                  # xref exclusion clause
   )
 
   DBI::dbExecute(conn, sql)

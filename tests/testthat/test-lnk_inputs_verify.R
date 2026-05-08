@@ -6,13 +6,19 @@ test_that("lnk_inputs_verify returns invisible NULL when all tables exist", {
     exists = c(TRUE, TRUE),
     stringsAsFactors = FALSE
   )
-  m <- mockery::mock(fake_result)
-  with_mocked_bindings(dbGetQuery = m, .package = "DBI", {
-    result <- lnk_inputs_verify(conn,
-                                c("whse_fish.pscis_assessment_svw", "cabd.dams"))
-  })
+  m_query <- mockery::mock(fake_result)
+  m_quote <- mockery::mock(DBI::SQL("'q'"), cycle = TRUE)
+  with_mocked_bindings(
+    dbGetQuery = m_query,
+    dbQuoteString = m_quote,
+    .package = "DBI",
+    {
+      result <- lnk_inputs_verify(conn,
+                                  c("whse_fish.pscis_assessment_svw", "cabd.dams"))
+    }
+  )
   expect_null(result)
-  mockery::expect_called(m, 1)
+  mockery::expect_called(m_query, 1)
 })
 
 test_that("lnk_inputs_verify fails loud listing missing tables", {
@@ -23,17 +29,23 @@ test_that("lnk_inputs_verify fails loud listing missing tables", {
     exists = c(TRUE, FALSE, FALSE),
     stringsAsFactors = FALSE
   )
-  m <- mockery::mock(fake_result)
-  with_mocked_bindings(dbGetQuery = m, .package = "DBI", {
-    expect_error(
-      lnk_inputs_verify(conn, c(
-        "whse_fish.pscis_assessment_svw",
-        "cabd.dams",
-        "fresh.modelled_stream_crossings"
-      )),
-      "cabd\\.dams"
-    )
-  })
+  m_query <- mockery::mock(fake_result)
+  m_quote <- mockery::mock(DBI::SQL("'q'"), cycle = TRUE)
+  with_mocked_bindings(
+    dbGetQuery = m_query,
+    dbQuoteString = m_quote,
+    .package = "DBI",
+    {
+      expect_error(
+        lnk_inputs_verify(conn, c(
+          "whse_fish.pscis_assessment_svw",
+          "cabd.dams",
+          "fresh.modelled_stream_crossings"
+        )),
+        "cabd\\.dams"
+      )
+    }
+  )
 })
 
 test_that("lnk_inputs_verify rejects malformed schema.table strings", {
