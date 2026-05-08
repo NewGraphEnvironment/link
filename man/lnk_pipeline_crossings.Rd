@@ -4,7 +4,17 @@
 \alias{lnk_pipeline_crossings}
 \title{Build crossings + barriers_* tables from primitives}
 \usage{
-lnk_pipeline_crossings(conn, aoi, cfg, loaded, schema, snap_tolerance = 100)
+lnk_pipeline_crossings(
+  conn,
+  aoi,
+  cfg,
+  loaded,
+  schema,
+  snap_tolerance = 100,
+  pscis_table = "whse_fish.pscis_assessment_svw",
+  modelled_table = "fresh.modelled_stream_crossings",
+  dams_table = paste0(schema, ".dams")
+)
 }
 \arguments{
 \item{conn}{A DBI connection.}
@@ -23,6 +33,18 @@ pre-created via \code{\link[=lnk_pipeline_setup]{lnk_pipeline_setup()}}.}
 
 \item{snap_tolerance}{Maximum PSCIS snap distance in metres. Default
 \code{100} (matches bcfp).}
+
+\item{pscis_table}{Source table for PSCIS assessments. Default
+\code{"whse_fish.pscis_assessment_svw"} — the canonical BCDC view.}
+
+\item{modelled_table}{Source table for modelled stream crossings.
+Default \code{"fresh.modelled_stream_crossings"} — populated by
+\code{data-raw/snapshot_bcfp.sh} (link#137). Province-wide; the AOI
+filter is applied during the union.}
+
+\item{dams_table}{Source table for CABD dams. Default
+\code{paste0(schema, ".dams")} — produced per-AOI by
+\code{\link[=lnk_pipeline_prepare]{lnk_pipeline_prepare()}}.}
 }
 \value{
 \code{invisible(conn)} for piping.

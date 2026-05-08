@@ -38,7 +38,7 @@ test_that("lnk_pipeline_crossings composes the five steps in order", {
   required <- mockery::mock_args(m_verify)[[1]][[2]]
   expect_setequal(required, c(
     "whse_fish.pscis_assessment_svw",
-    "working_adms.modelled_stream_crossings",
+    "fresh.modelled_stream_crossings",
     "working_adms.dams"
   ))
 

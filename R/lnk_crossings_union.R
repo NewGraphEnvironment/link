@@ -12,13 +12,16 @@
 #' branch — they're already represented by their PSCIS counterpart.
 #'
 #' @param conn A DBI connection.
-#' @param schema Working schema (must contain
-#'   `<schema>.pscis_assessment_snapped` (output of `.lnk_snap_pscis()`),
-#'   `<schema>.dams` (from [lnk_pipeline_prepare()]),
-#'   `<schema>.modelled_stream_crossings` (from #137 snapshot),
-#'   `<schema>.pscis_modelledcrossings_streams_xref` (from
-#'   [lnk_pipeline_load()] — optional; treated as empty if absent).
+#' @param schema Working schema. Receives `<schema>.crossings` and reads
+#'   `<schema>.pscis_assessment_snapped` (output of [lnk_points_snap()])
+#'   plus optional `<schema>.pscis_modelledcrossings_streams_xref` (from
+#'   [lnk_pipeline_load()] — treated as empty when absent).
 #' @param aoi Watershed group code.
+#' @param modelled_table Fully-qualified `<schema>.<table>` of the
+#'   modelled stream crossings primitive. Default
+#'   `"fresh.modelled_stream_crossings"`.
+#' @param dams_table Fully-qualified `<schema>.<table>` of the per-AOI
+#'   dams table from [lnk_pipeline_prepare()]. Default `<schema>.dams`.
 #'
 #' @return `invisible(NULL)`. Side effect: drops + recreates
 #'   `<schema>.crossings` with the lean column set.
@@ -49,11 +52,15 @@
 #'
 #' @keywords internal
 #' @noRd
-.lnk_crossings_union <- function(conn, schema, aoi) {
+.lnk_crossings_union <- function(conn, schema, aoi,
+                                 modelled_table = "fresh.modelled_stream_crossings",
+                                 dams_table = paste0(schema, ".dams")) {
   stopifnot(
     inherits(conn, "DBIConnection"),
     is.character(schema), length(schema) == 1L, nzchar(schema),
-    is.character(aoi), length(aoi) == 1L, nzchar(aoi)
+    is.character(aoi), length(aoi) == 1L, nzchar(aoi),
+    is.character(modelled_table), length(modelled_table) == 1L,
+    is.character(dams_table), length(dams_table) == 1L
   )
 
   s <- DBI::dbQuoteIdentifier(conn, schema)
@@ -123,7 +130,7 @@
       d.localcode_ltree,
       d.watershed_group_code,
       d.geom
-    FROM %s.dams d
+    FROM %s d
     WHERE d.watershed_group_code = %s
 
     UNION ALL
@@ -144,15 +151,16 @@
       m.localcode_ltree,
       m.watershed_group_code,
       m.geom
-    FROM %s.modelled_stream_crossings m
+    FROM %s m
     WHERE m.watershed_group_code = %s
       %s;
     ",
     s, s,
     aoi_q,                       # PSCIS branch wsg
     s,                           # PSCIS table
-    s, aoi_q,                    # CABD table + AOI filter
-    s, aoi_q, xref_clause        # Modelled table + AOI + xref exclusion
+    dams_table, aoi_q,           # CABD table + AOI filter
+    modelled_table, aoi_q,       # Modelled table + AOI
+    xref_clause                  # xref exclusion
   )
 
   DBI::dbExecute(conn, sql)

@@ -26,6 +26,15 @@
 #'   pre-created via [lnk_pipeline_setup()].
 #' @param snap_tolerance Maximum PSCIS snap distance in metres. Default
 #'   `100` (matches bcfp).
+#' @param pscis_table Source table for PSCIS assessments. Default
+#'   `"whse_fish.pscis_assessment_svw"` — the canonical BCDC view.
+#' @param modelled_table Source table for modelled stream crossings.
+#'   Default `"fresh.modelled_stream_crossings"` — populated by
+#'   `data-raw/snapshot_bcfp.sh` (link#137). Province-wide; the AOI
+#'   filter is applied during the union.
+#' @param dams_table Source table for CABD dams. Default
+#'   `paste0(schema, ".dams")` — produced per-AOI by
+#'   [lnk_pipeline_prepare()].
 #'
 #' @return `invisible(conn)` for piping.
 #'
@@ -67,41 +76,45 @@
 #'   [lnk_pipeline_access()]
 #' @export
 lnk_pipeline_crossings <- function(conn, aoi, cfg, loaded, schema,
-                                   snap_tolerance = 100) {
+                                   snap_tolerance = 100,
+                                   pscis_table = "whse_fish.pscis_assessment_svw",
+                                   modelled_table = "fresh.modelled_stream_crossings",
+                                   dams_table = paste0(schema, ".dams")) {
   stopifnot(
     inherits(conn, "DBIConnection"),
     is.character(aoi), length(aoi) == 1L, nzchar(aoi),
     is.character(schema), length(schema) == 1L, nzchar(schema),
     is.numeric(snap_tolerance), length(snap_tolerance) == 1L,
-    snap_tolerance > 0
+    snap_tolerance > 0,
+    is.character(pscis_table), length(pscis_table) == 1L, nzchar(pscis_table),
+    is.character(modelled_table), length(modelled_table) == 1L, nzchar(modelled_table),
+    is.character(dams_table), length(dams_table) == 1L, nzchar(dams_table)
   )
 
   # 1. Verify required source tables are present.
-  lnk_inputs_verify(conn, c(
-    "whse_fish.pscis_assessment_svw",
-    paste0(schema, ".modelled_stream_crossings"),
-    paste0(schema, ".dams")
-  ))
+  lnk_inputs_verify(conn, c(pscis_table, modelled_table, dams_table)) # nolint: object_usage_linter
 
   # 2. Snap PSCIS assessments to FWA. Other PSCIS variants
   #    (design_proposal, habitat_confirmation, remediation) are not
   #    required for the lean barriers build.
-  lnk_points_snap(
+  lnk_points_snap( # nolint: object_usage_linter
     conn,
-    table_in       = "whse_fish.pscis_assessment_svw",
+    table_in       = pscis_table,
     table_out      = paste0(schema, ".pscis_assessment_snapped"),
     snap_tolerance = snap_tolerance
   )
 
   # 3. Union into <schema>.crossings (lean column set).
-  .lnk_crossings_union(conn, schema, aoi)
+  .lnk_crossings_union(conn, schema, aoi,                # nolint: object_usage_linter
+                       modelled_table = modelled_table,
+                       dams_table = dams_table)
 
   # 4. Apply user_pscis_barrier_status + user_modelled_crossing_fixes
   #    from staging tables created by lnk_pipeline_load().
-  .lnk_crossings_apply_overrides(conn, schema)
+  .lnk_crossings_apply_overrides(conn, schema) # nolint: object_usage_linter
 
   # 5. Emit slim crossings_lookup + four barriers_* tables.
-  lnk_barriers_emit(conn, schema)
+  lnk_barriers_emit(conn, schema) # nolint: object_usage_linter
 
   invisible(conn)
 }
