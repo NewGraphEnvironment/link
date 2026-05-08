@@ -35,7 +35,20 @@
 #
 # Runtime: ~5 min for primitives; +2-3 min with --with-bcfp-views.
 
-set -euxo pipefail
+# Note: `set -x` (xtrace) is intentionally OFF. The script sources
+# `~/.config/snapshot-bcfp.env` which may carry DB credentials, and the
+# launchd / cron path writes stderr to log files on disk. xtrace would
+# echo `+ PGPASSWORD=...` and `+ DATABASE_URL=postgresql://user:pass@...`
+# into those logs. Keep -e -u -o pipefail; rely on explicit echos for
+# diagnostics.
+set -euo pipefail
+
+# Anchor cwd at the repo root so the default ledger path
+# `data-raw/logs/bcfp_baselines.csv` resolves correctly regardless of
+# how the script was invoked. cron jobs default to $HOME; without this
+# the skip-guard returns FALSE and the stamp-write lands at
+# $HOME/data-raw/logs/... -- silently bypassing the real ledger.
+cd "$(dirname "$0")/.."
 
 WITH_BCFP_VIEWS=0
 for arg in "$@"; do
@@ -44,6 +57,27 @@ for arg in "$@"; do
     *) echo "Unknown arg: $arg" >&2; exit 1 ;;
   esac
 done
+
+# Skip-if-stamped guard runs FIRST -- before any DB-credential resolution.
+# Reads `data-raw/logs/bcfp_baselines.csv` + the s3 log.json via httr; no
+# Postgres needed. If this host's most-recent ledger row already matches
+# the upstream bcfp build identifier, exit 0. Per-host scoped via
+# lnk_baseline_skip_p; each host populates its own local fwapg.
+# A host with a stale/missing env file can skip cleanly when this week's
+# ledger already matches, instead of aborting on PG* unbound-variable.
+# Default behaviour on R failure (e.g. R not on PATH): proceed with the
+# snapshot (rely on later DB-credential resolution to fail loud).
+SKIP=$(Rscript -e "cat(link::lnk_baseline_skip_p(link::lnk_bucket_log()))" 2>/dev/null || echo "FALSE")
+if [ "$SKIP" = "TRUE" ]; then
+  echo "snapshot_bcfp: ledger row for $(hostname) already at this upstream SHA; skipping."
+  exit 0
+fi
+
+# Source per-host env file if present. data-raw/scheduler/README.md
+# documents the format -- DATABASE_URL or PG* vars. Keeps secrets out
+# of the launchd plist / cron template that ships in the repo.
+# shellcheck disable=SC1091
+[ -f "${HOME}/.config/snapshot-bcfp.env" ] && source "${HOME}/.config/snapshot-bcfp.env"
 
 # Resolve DATABASE_URL from PG* env if not already set.
 if [ -z "${DATABASE_URL:-}" ]; then

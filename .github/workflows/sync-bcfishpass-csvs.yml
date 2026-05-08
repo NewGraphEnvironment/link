@@ -15,14 +15,15 @@
 #            fresh / crate is required before merging -- see link#64.
 #   none  -- no drift, exit clean.
 #
-# Cadence rationale: bcfishpass tunnel rebuilds Tuesdays ~20:00 PDT
-# (smnorris/bcfishpass:ng-prod run finishes 02:55-06:31 UTC Wed across
-# last 6 runs). NewGraphEnvironment/db_newgraph dumps to s3://fresh-bc
-# at 12:00 UTC Wed (= 5 AM PDT), ~5.5h past the worst observed
-# completion. The dump itself completes in ~30 s. This workflow runs
-# at 13:00 UTC Wed (= 6 AM PDT), ~1h after the upstream dump --
-# generous cushion vs. dump duration. Re-running against the same
-# upstream produces no changes.
+# Cadence rationale: bcfishpass tunnel rebuilds Tuesdays ~13:25 PDT
+# (smnorris/bcfishpass:ng-prod scheduled run); finishes Tue 9:15 PM PDT
+# best, Tue 11:31 PM PDT worst observed (Wed 04:15-06:31 UTC; n=2).
+# NewGraphEnvironment/db_newgraph dumps to s3://fresh-bc at Wed 3 AM
+# PDT (10:00 UTC), 3.5h past worst-case completion. The dump itself
+# completes in ~30 s. This workflow runs at Wed 4 AM PDT (11:00 UTC),
+# 1h after the upstream dump. Host snapshot scripts (M4, M1, cypher)
+# fire at Wed 5 AM PDT (12:00 UTC), 1h after this. Users wake to a
+# fully-fresh local fwapg.
 #
 # Source flipped from gh api -> s3://fresh-bc on 2026-05-07 (link#117 +
 # NewGraphEnvironment/db_newgraph#4 / PR #5). Eliminates GitHub-API
@@ -37,7 +38,7 @@ name: sync-bcfishpass-csvs
 
 on:
   schedule:
-    - cron: '0 13 * * WED'  # 13:00 UTC Wed = 06:00 PDT, ~1h after upstream dump (which itself runs <1 min)
+    - cron: '0 11 * * WED'  # 11:00 UTC Wed = 4 AM PDT, 1h after upstream dump (db_newgraph#7 cadence)
   workflow_dispatch:
 
 permissions:

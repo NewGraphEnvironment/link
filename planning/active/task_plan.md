@@ -12,74 +12,41 @@ This issue does three things:
 
 **File:** `.github/workflows/sync-bcfishpass-csvs.yml`
 
-- [ ] Cron `'0 13 * * WED'` → `'0 11 * * WED'` (Wed 6 AM PDT → Wed 4 AM PDT).
-- [ ] Header comment update: chain timing reflects upstream dump Wed 3 AM PDT (10:00 UTC) → csv-sync Wed 4 AM PDT (11:00 UTC) → host snapshot Wed 5 AM PDT (12:00 UTC).
-- [ ] No change to PR-merge logic, drift handling, or `gh pr merge --merge --delete-branch` semantics.
+- [x] Cron `'0 13 * * WED'` → `'0 11 * * WED'` (Wed 6 AM PDT → Wed 4 AM PDT).
+- [x] Header comment update: chain timing reflects upstream dump Wed 3 AM PDT (10:00 UTC) → csv-sync Wed 4 AM PDT (11:00 UTC) → host snapshot Wed 5 AM PDT (12:00 UTC).
+- [x] No change to PR-merge logic, drift handling, or `gh pr merge --merge --delete-branch` semantics.
 
 ## Phase 2 — `lnk_baseline_skip_p()` (exported)
 
-New `R/lnk_baseline_skip_p.R`. Reuses `lnk_baseline_read()` + `lnk_bucket_log()`.
-
-**Signature:**
-```r
-lnk_baseline_skip_p(
-  log,
-  host = Sys.info()[["nodename"]],
-  path = "data-raw/logs/bcfp_baselines.csv"
-)
-```
-
-**Behaviour:**
-- Read ledger at `path` via `lnk_baseline_read()`. Filter rows where `host == <this host>`.
-- If no rows for this host → return `FALSE` (snapshot should run).
-- Take latest row by `run_started_pdt`. If `bcfp_model_version` equals `log$model_version`, return `TRUE` (skip).
-- Else `FALSE`.
-- Per-host scoping is the load-bearing piece — M4 having stamped this week's SHA must NOT prevent M1 from running (each host populates its own local fwapg).
-
-**Tasks:**
-
-- [ ] `R/lnk_baseline_skip_p.R` with roxygen + runnable `@examples` using bundled fixture.
-- [ ] Mocked tests: latest-row-matches → TRUE; latest-row-mismatches → FALSE; no-host-rows → FALSE; file-missing → FALSE.
+- [x] `R/lnk_baseline_skip_p.R` with roxygen + runnable `@examples`.
+- [x] Mocked tests: latest-row-matches → TRUE; latest-row-mismatches → FALSE; no-host-rows → FALSE; file-missing → FALSE; per-host scoping (M4 stamped, M1 NOT skip); arg-shape validation. 12 expectations across 6 tests, all passing.
 
 ## Phase 3 — `snapshot_bcfp.sh` updates
 
-**File:** `data-raw/snapshot_bcfp.sh`
-
-- [ ] **Optional env file source** at script top: `[ -f ~/.config/snapshot-bcfp.env ] && source ~/.config/snapshot-bcfp.env`. Provides `DATABASE_URL` or `PG*` vars per host without baking secrets into the tracked plist/cron template.
-- [ ] **Skip-if-stamped guard**, after env resolution but before any data loads:
-  ```bash
-  SKIP=$(Rscript -e "cat(link::lnk_baseline_skip_p(link::lnk_bucket_log()))")
-  if [ "$SKIP" = "TRUE" ]; then
-    echo "snapshot_bcfp: ledger row for $(hostname) already at this upstream SHA; skipping."
-    exit 0
-  fi
-  ```
-- [ ] No change to existing `--with-bcfp-views` flag, ledger stamping at end of script, or other behaviour.
+- [x] Self-anchor cwd at repo root (`cd "$(dirname "$0")/.."`) so the cron-default `$HOME` cwd doesn't break the relative ledger path. Found in code-check round 1.
+- [x] Skip-if-stamped guard runs FIRST — before env-file source + DB-credential resolution. A host with a stale env file can skip cleanly when this week's ledger already matches. Reordered in code-check round 2.
+- [x] Source `~/.config/snapshot-bcfp.env` if present.
+- [x] Drop `x` from `set -euxo pipefail` → `set -euo pipefail` to keep credentials out of `~/.local/state/snapshot-bcfp/*.log`. Found in code-check round 2.
+- [x] No change to existing `--with-bcfp-views` flag, ledger stamping at end of script.
 
 ## Phase 4 — `data-raw/scheduler/` templates
 
-New directory.
-
-- [ ] `com.newgraph.snapshot-bcfp.plist` — macOS launchd template. `StartCalendarInterval` = Wed 5:00 AM **local time** (launchd's calendar interval is local). `WorkingDirectory` placeholder for the repo path. `StandardOutPath` / `StandardErrorPath` → `~/.local/state/snapshot-bcfp/<date>.log`.
-- [ ] `snapshot-bcfp.cron` — Linux crontab one-liner: `0 12 * * WED bash <repo-path>/data-raw/snapshot_bcfp.sh >> ~/.local/state/snapshot-bcfp/$(date +\%Y-\%m-\%d).log 2>&1`. (`0 12 UTC` = Wed 5 AM PDT.)
-- [ ] `README.md` — per-host install:
-  - macOS: copy plist → `~/Library/LaunchAgents/`, edit `WorkingDirectory`, `launchctl load <path>`, smoke-test with `launchctl start com.newgraph.snapshot-bcfp`.
-  - Linux: `crontab -e`, paste the cron line, edit the repo path.
-  - Both: create `~/.config/snapshot-bcfp.env` with `DATABASE_URL=...` (or `PG*` vars) — single example block.
-  - Uninstall: `launchctl unload ...` / `crontab -e` removal.
+- [x] `com.newgraph.snapshot-bcfp.plist` — macOS launchd template (Weekday=3 = Wed; Hour=5; local time).
+- [x] `snapshot-bcfp.cron` — Linux crontab one-liner (`0 12 * * WED` UTC = Wed 5 AM PDT).
+- [x] `README.md` — per-host install/uninstall + env file format docs.
 
 ## Phase 5 — Validation
 
-- [ ] `devtools::test()` clean (covers new `lnk_baseline_skip_p` tests).
-- [ ] `lintr::lint_package()` clean on touched files (don't re-flag pre-existing).
-- [ ] `devtools::check()` — confirm 3 pre-existing WARNINGs unchanged, no new ones from this work.
-- [ ] **Manual smoke on M4** (this host): copy plist, edit `WorkingDirectory`, `launchctl load`, `launchctl start com.newgraph.snapshot-bcfp`. Verify: log written to `~/.local/state/snapshot-bcfp/<date>.log`, ledger gains a fresh row, second invocation hits the skip path and exits early with the warning.
-- [ ] `/code-check` round 1 on staged diff (skill spec rounds 2+3 conditional on findings).
+- [x] `devtools::test()` 921 PASS / 0 FAIL.
+- [x] `lintr::lint_package()` clean on touched files.
+- [x] `devtools::check()` — 3 pre-existing WARNINGs unchanged, 0 new from this work.
+- [ ] **Manual smoke on M4** (this host): deferred; requires `~/.config/snapshot-bcfp.env` setup + `launchctl load`. Will verify on first scheduled cycle Wed 14 May 2026.
+- [x] `/code-check`: round 1 caught cron-cwd bug; round 2 caught xtrace credential leak + skip-guard ordering; round 3 Clean.
 
 ## Phase 6 — Release + PR
 
-- [ ] DESCRIPTION 0.32.1 → 0.33.0 (minor — new `lnk_baseline_skip_p` export).
-- [ ] NEWS.md 0.33.0 section.
+- [x] DESCRIPTION 0.32.1 → 0.33.0.
+- [x] NEWS.md 0.33.0 section.
 - [ ] Atomic commit (code + PWF tick).
 - [ ] Push, open PR closing #148 with SRED tag.
 - [ ] `/gh-pr-merge` → tag v0.33.0.
@@ -87,7 +54,7 @@ New directory.
 
 ## Validation
 
-- [ ] Tests pass
-- [ ] `/code-check` clean on each commit
-- [ ] PWF checkboxes match landed work
+- [x] Tests pass
+- [x] `/code-check` clean (3 rounds: round 1 + round 2 surfaced 3 real issues, all fixed; round 3 Clean)
+- [x] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
