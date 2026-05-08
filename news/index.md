@@ -1,5 +1,30 @@
 # Changelog
 
+## link 0.31.1
+
+Closes [\#137](https://github.com/NewGraphEnvironment/link/issues/137).
+New `data-raw/snapshot_bcfp.sh` shell script loads bcfp dependencies
+into a local Postgres from public sources only — no SSH tunnel, no DB
+pg_dump. Prepares the local fwapg for `lnk_pipeline_crossings()`
+(link#138, in flight) and parity comparisons.
+
+- BCDC PSCIS via Python `bcdata bc2pg --refresh` → `whse_fish.pscis_*`
+  (4 tables).
+- CABD dams via `ogr2ogr` from CABD’s public GeoJSON API → `cabd.dams`.
+- bchamp `modelled_stream_crossings.gpkg.zip` via `curl` + `ogr2ogr` →
+  `fresh.modelled_stream_crossings`.
+- bchamp `observations.parquet` via `ogr2ogr /vsicurl/...` →
+  `bcfishobs.observations` (same artifact bcfp’s
+  `jobs/load_observations` consumes).
+- Optional `--with-bcfp-views`: pulls Simon’s bcfp output views
+  (`crossings_vw`, `streams_vw`) from `s3://newgraph/` for parity
+  comparison.
+- Stamps `data-raw/logs/bcfp_baselines.csv` with the bcfp build
+  identifier from `s3://fresh-bc/bcfishpass/log.json` via
+  [`lnk_baseline_append()`](https://newgraphenvironment.github.io/link/reference/lnk_baseline_append.md).
+
+Documented in `data-raw/README.md` under a new `## Bootstrap` section.
+
 ## link 0.31.0
 
 Closes [\#117](https://github.com/NewGraphEnvironment/link/issues/117).
