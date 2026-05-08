@@ -60,11 +60,15 @@ $PSQL -c "CREATE SCHEMA IF NOT EXISTS bcfishobs;"
 # -----------------------------------------
 # 1. BCDC PSCIS
 # -----------------------------------------
+# Drop the table first so the load is fresh on every run. `bcdata bc2pg
+# --refresh` requires the target table to already exist (truncates it);
+# DROP+create-from-scratch is simpler for our snapshot use case.
 for tbl in pscis_assessment_svw \
           pscis_design_proposal_svw \
           pscis_habitat_confirmation_svw \
           pscis_remediation_svw; do
-  bcdata bc2pg --refresh "whse_fish.${tbl}" --db_url "$DATABASE_URL"
+  $PSQL -c "DROP TABLE IF EXISTS whse_fish.${tbl};"
+  bcdata bc2pg "whse_fish.${tbl}" --db_url "$DATABASE_URL"
 done
 
 # -----------------------------------------

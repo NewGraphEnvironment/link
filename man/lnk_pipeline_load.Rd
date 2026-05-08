@@ -92,6 +92,7 @@ Other pipeline:
 \code{\link{lnk_pipeline_break}()},
 \code{\link{lnk_pipeline_classify}()},
 \code{\link{lnk_pipeline_connect}()},
+\code{\link{lnk_pipeline_crossings}()},
 \code{\link{lnk_pipeline_mapping_code}()},
 \code{\link{lnk_pipeline_prepare}()},
 \code{\link{lnk_pipeline_setup}()},

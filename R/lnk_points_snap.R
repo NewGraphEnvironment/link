@@ -109,6 +109,39 @@ lnk_points_snap <- function(conn, table_in, table_out,
   # requires Point. ST_GeometryN(point, 1) is a no-op on already-Point.
   pt_expr <- sprintf("ST_GeometryN(pts.%s, 1)", geom_q)
 
+  # Fail loud if the input table has columns that collide with the snap
+  # output projection — `pts.*` would otherwise produce a duplicate-name
+  # error from CREATE TABLE AS at the bottom of a 100-line statement.
+  # Require <schema>.<table> form so the lookup can run; bare names and
+  # 3-part names get a clear error rather than a silent skip.
+  parts <- strsplit(table_in, ".", fixed = TRUE)[[1]]
+  if (length(parts) != 2L) {
+    stop(
+      sprintf("table_in must be '<schema>.<table>'; got '%s'.", table_in),
+      call. = FALSE
+    )
+  }
+  in_cols <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT column_name
+       FROM information_schema.columns
+      WHERE table_schema = %s AND table_name = %s;",
+    DBI::dbQuoteString(conn, parts[1]),
+    DBI::dbQuoteString(conn, parts[2])
+  ))$column_name
+  snap_cols <- c("linear_feature_id", "snapped_blue_line_key",
+                 "downstream_route_measure", "wscode_ltree",
+                 "localcode_ltree", "distance_to_stream",
+                 "geom_snapped")
+  collisions <- intersect(in_cols, snap_cols)
+  if (length(collisions) > 0L) {
+    stop(
+      sprintf("Input table %s has columns that collide with snap output: %s. ",
+              table_in, paste(collisions, collapse = ", ")),
+      "Rename or drop them before snapping.",
+      call. = FALSE
+    )
+  }
+
   drop_sql <- sprintf("DROP TABLE IF EXISTS %s;", table_out)
   create_sql <- sprintf("
     CREATE TABLE %s AS

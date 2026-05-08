@@ -24,7 +24,13 @@ test_that(".lnk_crossings_union builds the union SQL with PSCIS + CABD + modelle
   expect_match(sql, "'CABD'::text")
   expect_match(sql, "'MODELLED_CROSSINGS'::text")
   expect_match(sql, "'DAM'::text\\s+AS crossing_feature_type")
-  expect_match(sql, "modelled_crossing_id \\+ 1000000000")
+  expect_match(sql, "modelled_crossing_id::bigint \\+ 1000000000")
+  # CABD + modelled branches use INNER JOIN to FWA so missing
+  # linear_feature_id fails loud instead of silently dropping rows.
+  expect_match(sql,
+               "FROM .* d\\s+INNER JOIN whse_basemapping\\.fwa_stream_networks_sp fwa_d")
+  expect_match(sql,
+               "FROM .* m\\s+INNER JOIN whse_basemapping\\.fwa_stream_networks_sp fwa_m")
 })
 
 test_that(".lnk_crossings_union excludes modelled crossings via xref when present", {
