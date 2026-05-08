@@ -1,0 +1,7 @@
+## Outcome
+
+Shipped v0.33.0 (PR #149-pending). csv-sync workflow shifted Wed 6 AM PDT → Wed 4 AM PDT (1 h after the upstream dump in db_newgraph#7). New `lnk_baseline_skip_p()` exported predicate lets `data-raw/snapshot_bcfp.sh` short-circuit when this host's most-recent ledger row already stamps the upstream `bcfp_model_version` — per-host scoped so M4's stamp doesn't gate M1. New `data-raw/scheduler/` ships launchd plist (Wed 5 AM local, M4 + M1) + Linux crontab line (`0 12 * * WED` UTC, cypher) + README documenting per-host install + uninstall + the `~/.config/snapshot-bcfp.env` format.
+
+`/code-check` ran cleanly across 3 rounds. Round 1 caught a real cron-cwd bug (the script's relative `data-raw/logs/bcfp_baselines.csv` path resolved to `$HOME/data-raw/...` under cron's default cwd, silently bypassing the real ledger and breaking both the skip-guard and the stamp-write); fix was self-anchoring via `cd "$(dirname "$0")/.."`. Round 2 caught two more: `set -x` was tracing sourced env-file assignments (including `PGPASSWORD`) into the launchd `*.err` log on disk; fix was `set -euxo pipefail` → `set -euo pipefail`. And the skip-guard ran AFTER `${PGUSER:?}/${PGPASSWORD:?}` which would abort when env file was stale, even though the skip-guard doesn't need DB credentials; fix was reordering — skip-guard now runs first. Round 3 returned Clean.
+
+Closed by: 7957204 / PR #<TBD-after-merge>. Verification window: Wed 14 May 2026, 4 AM PDT (csv-sync) + Wed 5 AM PDT (scheduled snapshots, once each host installs the plist/cron entry).
