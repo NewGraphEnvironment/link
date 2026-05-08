@@ -8,6 +8,9 @@
 - [`lnk_barrier_overrides()`](https://newgraphenvironment.github.io/link/reference/lnk_barrier_overrides.md)
   : Build barrier override list from evidence sources
 
+- [`lnk_barriers_emit()`](https://newgraphenvironment.github.io/link/reference/lnk_barriers_emit.md)
+  : Emit slim crossings_lookup + per-source barriers\_\* tables
+
 - [`lnk_baseline_append()`](https://newgraphenvironment.github.io/link/reference/lnk_baseline_append.md)
   : Append a row to the run-tracking baseline ledger
 
@@ -30,6 +33,9 @@
 
 - [`lnk_db_conn()`](https://newgraphenvironment.github.io/link/reference/lnk_db_conn.md)
   : Connect to FWA PostgreSQL database
+
+- [`lnk_inputs_verify()`](https://newgraphenvironment.github.io/link/reference/lnk_inputs_verify.md)
+  : Verify that required Postgres tables exist in a connection
 
 - [`lnk_load()`](https://newgraphenvironment.github.io/link/reference/lnk_load.md)
   : Load override CSVs into a database table
@@ -58,6 +64,9 @@
 - [`lnk_pipeline_connect()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_connect.md)
   : Apply Rearing-Spawning and Waterbody Connectivity
 
+- [`lnk_pipeline_crossings()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_crossings.md)
+  : Build crossings + barriers\_\* tables from primitives
+
 - [`lnk_pipeline_load()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_load.md)
   : Load Crossings and Apply Crossing-Level Overrides
 
@@ -75,6 +84,9 @@
 
 - [`lnk_pipeline_species()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_species.md)
   : Resolve the Species Set for an AOI
+
+- [`lnk_points_snap()`](https://newgraphenvironment.github.io/link/reference/lnk_points_snap.md)
+  : Snap a Postgres table of points to the FWA stream network
 
 - [`lnk_presence()`](https://newgraphenvironment.github.io/link/reference/lnk_presence.md)
   : Per-AOI species presence with bcfp species-group expansion

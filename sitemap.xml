@@ -11,6 +11,7 @@
 <url><loc>https://newgraphenvironment.github.io/link/reference/link-package.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_aggregate.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_barrier_overrides.html</loc></url>
+<url><loc>https://newgraphenvironment.github.io/link/reference/lnk_barriers_emit.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_baseline_append.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_baseline_read.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_bucket_get.html</loc></url>
@@ -18,6 +19,7 @@
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_config.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_config_verify.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_db_conn.html</loc></url>
+<url><loc>https://newgraphenvironment.github.io/link/reference/lnk_inputs_verify.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_load.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_load_overrides.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_match.html</loc></url>
@@ -27,12 +29,14 @@
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_pipeline_break.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_pipeline_classify.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_pipeline_connect.html</loc></url>
+<url><loc>https://newgraphenvironment.github.io/link/reference/lnk_pipeline_crossings.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_pipeline_load.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_pipeline_mapping_code.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_pipeline_persist.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_pipeline_prepare.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_pipeline_setup.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_pipeline_species.html</loc></url>
+<url><loc>https://newgraphenvironment.github.io/link/reference/lnk_points_snap.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_presence.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_rules_build.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_score.html</loc></url>

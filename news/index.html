@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.31.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.32.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,8 +32,24 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.32.0" id="link-0320">link 0.32.0<a class="anchor" aria-label="anchor" href="#link-0320"></a></h2>
+<p>Closes <a href="https://github.com/NewGraphEnvironment/link/issues/138" class="external-link">#138</a>. New <code><a href="../reference/lnk_pipeline_crossings.html">lnk_pipeline_crossings()</a></code> builds <code>&lt;schema&gt;.crossings</code> + <code>&lt;schema&gt;.barriers_*</code> from public-source primitives (BCDC PSCIS via <code>bcdata bc2pg</code>, CABD via the public API, bchamp <code>modelled_stream_crossings.gpkg.zip</code>) — no tunnel, no <code>bcfishpass.barriers_*</code> reads. Phase B of the self-sufficiency roadmap (<code>#117</code> csv-sync + <code>#137</code> snapshot script were Phase A).</p>
+<p>Four new exports — three are generic enough that they may relocate to a future <code>pac</code> package once that’s scaffolded:</p>
+<ul><li>
+<code>lnk_inputs_verify(conn, required)</code> — fail-loud existence check for <code>&lt;schema&gt;.&lt;table&gt;</code> preconditions. Single round-trip via <code>information_schema.tables</code>.</li>
+<li>
+<code>lnk_points_snap(conn, table_in, table_out, ...)</code> — bulk lateral-KNN snap to FWA. Wraps the same <code>CROSS JOIN LATERAL ... ORDER BY &lt;-&gt; ... LIMIT 1</code> pattern used by bcfp’s <code>load_dams.sql</code> and link’s existing CABD path. One SQL round-trip; scales province-wide. Handles MultiPoint inputs via <code>ST_GeometryN(..., 1)</code>.</li>
+<li>
+<code>lnk_barriers_emit(conn, schema)</code> — emits <code>&lt;schema&gt;.crossings_lookup</code> (slim id + statuses projection) plus four <code>&lt;schema&gt;.barriers_*</code> tables (<code>anthropogenic</code>, <code>pscis</code>, <code>dams</code>, <code>remediations</code>). Filters mirror bcfp’s <code>model/01_access/sql/barriers_*.sql</code> and <code>remediations_barriers.sql</code>.</li>
+<li>
+<code>lnk_pipeline_crossings(conn, aoi, cfg, loaded, schema, snap_tolerance, pscis_table, modelled_table, dams_table)</code> — exported pipeline phase. Composes input verification + PSCIS snap + source-precedence union + override application + barriers emit. Source tables configurable via the <code>*_table</code> args.</li>
+</ul><p>Lean column set: only what <code><a href="../reference/lnk_barriers_emit.html">lnk_barriers_emit()</a></code> consumes — <code>aggregated_crossings_id</code>, <code>crossing_source</code>, <code>crossing_feature_type</code>, <code>barrier_status</code>, <code>pscis_status</code>, <code>dam_name</code>, network position columns, geom. Drops bcfp’s road tenure / FTEN / OGC / rail / UTM metadata that downstream non-barrier consumers need.</p>
+<p>Live ADMS smoke against local fwapg loaded with <code>data-raw/snapshot_bcfp.sh</code> (link#137): 67 PSCIS + 3,584 modelled = 3,651 crossings unioned in &lt;1s; barriers_emit produces 3,616 anthropogenic / 33 PSCIS / 5 remediations.</p>
+<p>Tests: 94 new mocked unit-test expectations across the four exports + two internal helpers (<code>.lnk_crossings_union</code>, <code>.lnk_crossings_apply_overrides</code>). 903 PASS / 0 FAIL total.</p>
+</div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.31.1" id="link-0311">link 0.31.1<a class="anchor" aria-label="anchor" href="#link-0311"></a></h2>
-<p>Closes <a href="https://github.com/NewGraphEnvironment/link/issues/137" class="external-link">#137</a>. New <code>data-raw/snapshot_bcfp.sh</code> shell script loads bcfp dependencies into a local Postgres from public sources only — no SSH tunnel, no DB pg_dump. Prepares the local fwapg for <code>lnk_pipeline_crossings()</code> (link#138, in flight) and parity comparisons.</p>
+<p>Closes <a href="https://github.com/NewGraphEnvironment/link/issues/137" class="external-link">#137</a>. New <code>data-raw/snapshot_bcfp.sh</code> shell script loads bcfp dependencies into a local Postgres from public sources only — no SSH tunnel, no DB pg_dump. Prepares the local fwapg for <code><a href="../reference/lnk_pipeline_crossings.html">lnk_pipeline_crossings()</a></code> (link#138, in flight) and parity comparisons.</p>
 <ul><li>BCDC PSCIS via Python <code>bcdata bc2pg --refresh</code> → <code>whse_fish.pscis_*</code> (4 tables).</li>
 <li>CABD dams via <code>ogr2ogr</code> from CABD’s public GeoJSON API → <code>cabd.dams</code>.</li>
 <li>bchamp <code>modelled_stream_crossings.gpkg.zip</code> via <code>curl</code> + <code>ogr2ogr</code> → <code>fresh.modelled_stream_crossings</code>.</li>
