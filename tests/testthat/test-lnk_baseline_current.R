@@ -25,7 +25,7 @@ base_row <- function(...) {
   modifyList(defaults, list(...))
 }
 
-test_that("lnk_baseline_skip_p returns TRUE when latest row matches model_version", {
+test_that("lnk_baseline_current returns TRUE when latest row matches model_version", {
   rows <- do.call(rbind, list(
     as.data.frame(base_row(run_started_pdt = "2026-05-01 09:00",
                            bcfp_model_version = "v0.7.14-100-gOLD")),
@@ -34,31 +34,31 @@ test_that("lnk_baseline_skip_p returns TRUE when latest row matches model_versio
   ))
   path <- make_ledger(rows)
   log <- list(model_version = "v0.7.14-125-g6e9cf1c")
-  expect_true(lnk_baseline_skip_p(log, host = "test-host", path = path))
+  expect_true(lnk_baseline_current(log, host = "test-host", path = path))
 })
 
-test_that("lnk_baseline_skip_p returns FALSE when latest row's version differs", {
+test_that("lnk_baseline_current returns FALSE when latest row's version differs", {
   rows <- as.data.frame(base_row(bcfp_model_version = "v0.7.14-100-gOLD"))
   path <- make_ledger(rows)
   log <- list(model_version = "v0.7.14-125-g6e9cf1c")
-  expect_false(lnk_baseline_skip_p(log, host = "test-host", path = path))
+  expect_false(lnk_baseline_current(log, host = "test-host", path = path))
 })
 
-test_that("lnk_baseline_skip_p returns FALSE when no rows for host", {
+test_that("lnk_baseline_current returns FALSE when no rows for host", {
   rows <- as.data.frame(base_row(host = "other-host"))
   path <- make_ledger(rows)
   log <- list(model_version = "v0.7.14-125-g6e9cf1c")
-  expect_false(lnk_baseline_skip_p(log, host = "test-host", path = path))
+  expect_false(lnk_baseline_current(log, host = "test-host", path = path))
 })
 
-test_that("lnk_baseline_skip_p returns FALSE when ledger file is missing", {
+test_that("lnk_baseline_current returns FALSE when ledger file is missing", {
   log <- list(model_version = "v0.7.14-125-g6e9cf1c")
-  expect_false(lnk_baseline_skip_p(log,
+  expect_false(lnk_baseline_current(log,
                                    host = "test-host",
                                    path = tempfile(fileext = ".csv")))
 })
 
-test_that("lnk_baseline_skip_p picks LATEST row for host (per-host scoping)", {
+test_that("lnk_baseline_current picks LATEST row for host (per-host scoping)", {
   # M4 stamped this week's SHA; M1 has only an older row. M1 should NOT skip.
   rows <- do.call(rbind, list(
     as.data.frame(base_row(host = "m4",
@@ -70,16 +70,16 @@ test_that("lnk_baseline_skip_p picks LATEST row for host (per-host scoping)", {
   ))
   path <- make_ledger(rows)
   log <- list(model_version = "v0.7.14-125-g6e9cf1c")
-  expect_true(lnk_baseline_skip_p(log, host = "m4", path = path))
-  expect_false(lnk_baseline_skip_p(log, host = "m1", path = path))
+  expect_true(lnk_baseline_current(log, host = "m4", path = path))
+  expect_false(lnk_baseline_current(log, host = "m1", path = path))
 })
 
-test_that("lnk_baseline_skip_p validates argument shapes", {
+test_that("lnk_baseline_current validates argument shapes", {
   log <- list(model_version = "v1")
-  expect_error(lnk_baseline_skip_p("not a list"))
-  expect_error(lnk_baseline_skip_p(list()))                       # missing key
-  expect_error(lnk_baseline_skip_p(list(model_version = "")))     # empty
-  expect_error(lnk_baseline_skip_p(list(model_version = c("a", "b"))))
-  expect_error(lnk_baseline_skip_p(log, host = ""))
-  expect_error(lnk_baseline_skip_p(log, path = ""))
+  expect_error(lnk_baseline_current("not a list"))
+  expect_error(lnk_baseline_current(list()))                       # missing key
+  expect_error(lnk_baseline_current(list(model_version = "")))     # empty
+  expect_error(lnk_baseline_current(list(model_version = c("a", "b"))))
+  expect_error(lnk_baseline_current(log, host = ""))
+  expect_error(lnk_baseline_current(log, path = ""))
 })

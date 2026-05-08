@@ -44,6 +44,6 @@ subset(baseline, grepl("^csv-sync-", run_label))
 
 Other baseline: 
 \code{\link{lnk_baseline_append}()},
-\code{\link{lnk_baseline_skip_p}()}
+\code{\link{lnk_baseline_current}()}
 }
 \concept{baseline}

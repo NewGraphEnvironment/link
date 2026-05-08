@@ -68,7 +68,7 @@ lnk_baseline_read(tmp)
 \code{\link[=lnk_baseline_read]{lnk_baseline_read()}}, \code{\link[=lnk_bucket_log]{lnk_bucket_log()}}
 
 Other baseline: 
-\code{\link{lnk_baseline_read}()},
-\code{\link{lnk_baseline_skip_p}()}
+\code{\link{lnk_baseline_current}()},
+\code{\link{lnk_baseline_read}()}
 }
 \concept{baseline}

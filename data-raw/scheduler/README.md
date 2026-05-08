@@ -81,9 +81,9 @@ Wed 5 AM PDT (12:00 UTC)      → THIS: snapshot_bcfp.sh on each host
    tail -f ~/.local/state/snapshot-bcfp/cron.log
    ```
 
-## Skip-if-already-stamped behaviour
+## Skip-if-current behaviour
 
-The script calls `link::lnk_baseline_skip_p()` early. If this host's most-recent ledger row in `data-raw/logs/bcfp_baselines.csv` already stamps the upstream `bcfp_model_version` from `s3://fresh-bc/bcfishpass/log.json`, the script logs "skipping" and exits 0 without re-snapshotting. Avoids redundant data loads when launchd / cron fires twice per cycle (e.g. wake-from-sleep catch-up runs on macOS).
+The script calls `link::lnk_baseline_current()` early. If this host's most-recent ledger row in `data-raw/logs/bcfp_baselines.csv` already stamps the upstream `bcfp_model_version` from `s3://fresh-bc/bcfishpass/log.json`, the script logs "skipping" and exits 0 without re-snapshotting. Avoids redundant data loads when launchd / cron fires twice per cycle (e.g. wake-from-sleep catch-up runs on macOS).
 
 ## Uninstall
 

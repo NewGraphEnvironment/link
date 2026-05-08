@@ -58,17 +58,17 @@ for arg in "$@"; do
   esac
 done
 
-# Skip-if-stamped guard runs FIRST -- before any DB-credential resolution.
+# Skip-if-current guard runs FIRST -- before any DB-credential resolution.
 # Reads `data-raw/logs/bcfp_baselines.csv` + the s3 log.json via httr; no
 # Postgres needed. If this host's most-recent ledger row already matches
 # the upstream bcfp build identifier, exit 0. Per-host scoped via
-# lnk_baseline_skip_p; each host populates its own local fwapg.
+# lnk_baseline_current; each host populates its own local fwapg.
 # A host with a stale/missing env file can skip cleanly when this week's
 # ledger already matches, instead of aborting on PG* unbound-variable.
 # Default behaviour on R failure (e.g. R not on PATH): proceed with the
 # snapshot (rely on later DB-credential resolution to fail loud).
-SKIP=$(Rscript -e "cat(link::lnk_baseline_skip_p(link::lnk_bucket_log()))" 2>/dev/null || echo "FALSE")
-if [ "$SKIP" = "TRUE" ]; then
+CURRENT=$(Rscript -e "cat(link::lnk_baseline_current(link::lnk_bucket_log()))" 2>/dev/null || echo "FALSE")
+if [ "$CURRENT" = "TRUE" ]; then
   echo "snapshot_bcfp: ledger row for $(hostname) already at this upstream SHA; skipping."
   exit 0
 fi

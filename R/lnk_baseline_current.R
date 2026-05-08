@@ -1,4 +1,4 @@
-#' Should this host skip a redundant snapshot?
+#' Is this host's baseline already current at the supplied upstream?
 #'
 #' Predicate helper for `data-raw/snapshot_bcfp.sh` and any other host-side
 #' snapshot driver. Returns `TRUE` when the most recent ledger row for this
@@ -20,9 +20,10 @@
 #'   `data-raw/logs/bcfp_baselines.csv` relative to the working directory.
 #'
 #' @return `TRUE` when the latest row for `host` matches `log$model_version`
-#'   (snapshot can be skipped). `FALSE` otherwise — including when the
-#'   ledger file is missing, has no rows for `host`, or has a different
-#'   model_version on its latest row for this host.
+#'   (snapshot can be skipped — the host is already current at this upstream
+#'   build). `FALSE` otherwise — including when the ledger file is missing,
+#'   has no rows for `host`, or has a different model_version on its latest
+#'   row for this host.
 #'
 #' @details
 #' "Latest row for host" means the row with the lexicographically greatest
@@ -35,7 +36,7 @@
 #' \dontrun{
 #' log <- lnk_bucket_log()
 #'
-#' if (lnk_baseline_skip_p(log)) {
+#' if (lnk_baseline_current(log)) {
 #'   message("This host already snapshotted at ", log$model_version,
 #'           "; skipping.")
 #'   quit(status = 0)
@@ -46,9 +47,9 @@
 #' @family baseline
 #' @seealso [lnk_baseline_read()], [lnk_baseline_append()], [lnk_bucket_log()]
 #' @export
-lnk_baseline_skip_p <- function(log,
-                                host = Sys.info()[["nodename"]],
-                                path = "data-raw/logs/bcfp_baselines.csv") {
+lnk_baseline_current <- function(log,
+                                 host = Sys.info()[["nodename"]],
+                                 path = "data-raw/logs/bcfp_baselines.csv") {
   stopifnot(
     is.list(log),
     "model_version" %in% names(log),
