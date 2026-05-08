@@ -8,6 +8,49 @@ target.** Pick the verb prefix from the categories below; suffix the
 target (e.g. `_provincial`, `_wsg`, `_schema`, `_breaks`) so the purpose
 reads left-to-right.
 
+## Bootstrap
+
+One-time setup so `lnk_pipeline_crossings()` (link#138) and parity comparisons can run against a local fwapg without a tunnel.
+
+| Script | Purpose |
+|--------|---------|
+| `snapshot_bcfp.sh` | Loads bcfp dependencies into the local Postgres from public sources only. PSCIS via Python `bcdata bc2pg`, CABD dams via CABD GeoJSON API, modelled crossings + observations from bchamp objectstore. Optional `--with-bcfp-views` also pulls Simon's bcfp output views from `s3://newgraph` for parity comparison. Stamps `data-raw/logs/bcfp_baselines.csv` with the upstream build identifier (link#117 ledger). |
+
+### Prereqs
+
+- Local Postgres with PostGIS. `PGUSER`/`PGPASSWORD`/`PGHOST`/`PGPORT`/`PGDATABASE` env vars or `~/.pgpass` (or a single `DATABASE_URL`).
+- Python `bcdata` CLI: `pip install bcdata`.
+- GDAL `ogr2ogr` with GeoJSON + parquet drivers (Homebrew GDAL has both).
+- `curl`, `unzip`.
+- `aws` CLI (only for `--with-bcfp-views`; anonymous read works).
+- R with link package installed (for the baseline-stamp step).
+
+### Quick start
+
+```bash
+cd ~/Projects/repo/link
+
+# Primitives only (~5 min):
+bash data-raw/snapshot_bcfp.sh
+
+# Plus parity-comparison views (~7 min):
+bash data-raw/snapshot_bcfp.sh --with-bcfp-views
+```
+
+### What lands in your local DB
+
+- `whse_fish.pscis_assessment_svw`, `pscis_design_proposal_svw`, `pscis_habitat_confirmation_svw`, `pscis_remediation_svw` (BCDC PSCIS)
+- `cabd.dams` (CABD public API)
+- `fresh.modelled_stream_crossings` (bchamp gpkg)
+- `bcfishobs.observations` (bchamp parquet — same artifact bcfp's `jobs/load_observations` consumes)
+- `data-raw/logs/bcfp_baselines.csv` — appended row stamping which upstream build the snapshot reflects.
+
+With `--with-bcfp-views`:
+
+- `fresh.crossings_bcfp`, `fresh.streams_bcfp` (bcfp output, dumped weekly Sun by Simon's `dump_weekly`; aligned with the most recent Tue rebuild SHA between Wed and the next Tue).
+
+After running this script, `lnk_pipeline_crossings()` (link#138) and `lnk_pipeline_access(barrier_sources = list(...))` work end-to-end against locally-loaded primitives.
+
 ## Pipeline drivers (top-down)
 
 The dispatch hierarchy: trifecta → run_provincial → compare_wsg.
