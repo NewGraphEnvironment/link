@@ -43,6 +43,7 @@ subset(baseline, grepl("^csv-sync-", run_label))
 \code{\link[=lnk_baseline_append]{lnk_baseline_append()}}
 
 Other baseline: 
-\code{\link{lnk_baseline_append}()}
+\code{\link{lnk_baseline_append}()},
+\code{\link{lnk_baseline_current}()}
 }
 \concept{baseline}

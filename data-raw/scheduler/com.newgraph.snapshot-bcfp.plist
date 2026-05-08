@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  com.newgraph.snapshot-bcfp.plist
+  ================================
+
+  macOS launchd template that fires data-raw/snapshot_bcfp.sh weekly.
+  Wed 5:00 AM PDT (local time -- launchd's StartCalendarInterval is
+  always interpreted in local time).
+
+  TEMPLATE NOTES:
+    * REPLACE {{REPO_PATH}} with the absolute path to the link repo on
+      this host (e.g. /Users/airvine/Projects/repo/link).
+    * REPLACE {{HOME}} with the absolute home directory path
+      (e.g. /Users/airvine).
+    * The script reads ~/.config/snapshot-bcfp.env for DATABASE_URL or
+      PG* vars; do NOT bake credentials into this plist.
+
+  See data-raw/scheduler/README.md for install + uninstall commands.
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.newgraph.snapshot-bcfp</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>{{REPO_PATH}}/data-raw/snapshot_bcfp.sh</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>{{REPO_PATH}}</string>
+
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Weekday</key>
+    <integer>3</integer>
+    <key>Hour</key>
+    <integer>5</integer>
+    <key>Minute</key>
+    <integer>0</integer>
+  </dict>
+
+  <key>RunAtLoad</key>
+  <false/>
+
+  <key>StandardOutPath</key>
+  <string>{{HOME}}/.local/state/snapshot-bcfp/launchd.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>{{HOME}}/.local/state/snapshot-bcfp/launchd.err</string>
+</dict>
+</plist>

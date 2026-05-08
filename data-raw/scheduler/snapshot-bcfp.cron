@@ -1,0 +1,28 @@
+# snapshot-bcfp.cron
+# ==================
+#
+# Linux crontab line that fires data-raw/snapshot_bcfp.sh weekly.
+# Wed 12:00 UTC = Wed 5:00 AM PDT (= Wed 4:00 AM PST during winter).
+#
+# cron is in UTC by default on standard server installs (cypher uses
+# UTC). Wall-clock equivalence to the macOS launchd plist (which uses
+# local time) drifts by 1h across DST flips -- acceptable for a weekly
+# snapshot.
+#
+# REPLACE {{REPO_PATH}} with the absolute path to the link repo on
+# this host (e.g. /home/nge/Projects/repo/link).
+# REPLACE {{HOME}} with the absolute home directory path.
+#
+# The script reads ~/.config/snapshot-bcfp.env for DATABASE_URL or
+# PG* vars; do NOT bake credentials into this cron line.
+#
+# Install:  crontab -e   (paste the line below, edit placeholders)
+# View:     crontab -l
+# Remove:   crontab -e   (delete the line)
+#
+# The script self-anchors to the repo root via `cd "$(dirname "$0")/.."`
+# at its top, so a relative or absolute path both work here.
+#
+# See data-raw/scheduler/README.md for full instructions.
+
+0 12 * * WED bash {{REPO_PATH}}/data-raw/snapshot_bcfp.sh >> {{HOME}}/.local/state/snapshot-bcfp/cron.log 2>&1
