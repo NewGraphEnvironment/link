@@ -1,3 +1,20 @@
+# link 0.32.0
+
+Closes [#138](https://github.com/NewGraphEnvironment/link/issues/138). New `lnk_pipeline_crossings()` builds `<schema>.crossings` + `<schema>.barriers_*` from public-source primitives (BCDC PSCIS via `bcdata bc2pg`, CABD via the public API, bchamp `modelled_stream_crossings.gpkg.zip`) — no tunnel, no `bcfishpass.barriers_*` reads. Phase B of the self-sufficiency roadmap (`#117` csv-sync + `#137` snapshot script were Phase A).
+
+Four new exports — three are generic enough that they may relocate to a future `pac` package once that's scaffolded:
+
+- `lnk_inputs_verify(conn, required)` — fail-loud existence check for `<schema>.<table>` preconditions. Single round-trip via `information_schema.tables`.
+- `lnk_points_snap(conn, table_in, table_out, ...)` — bulk lateral-KNN snap to FWA. Wraps the same `CROSS JOIN LATERAL ... ORDER BY <-> ... LIMIT 1` pattern used by bcfp's `load_dams.sql` and link's existing CABD path. One SQL round-trip; scales province-wide. Handles MultiPoint inputs via `ST_GeometryN(..., 1)`.
+- `lnk_barriers_emit(conn, schema)` — emits `<schema>.crossings_lookup` (slim id + statuses projection) plus four `<schema>.barriers_*` tables (`anthropogenic`, `pscis`, `dams`, `remediations`). Filters mirror bcfp's `model/01_access/sql/barriers_*.sql` and `remediations_barriers.sql`.
+- `lnk_pipeline_crossings(conn, aoi, cfg, loaded, schema, snap_tolerance, pscis_table, modelled_table, dams_table)` — exported pipeline phase. Composes input verification + PSCIS snap + source-precedence union + override application + barriers emit. Source tables configurable via the `*_table` args.
+
+Lean column set: only what `lnk_barriers_emit()` consumes — `aggregated_crossings_id`, `crossing_source`, `crossing_feature_type`, `barrier_status`, `pscis_status`, `dam_name`, network position columns, geom. Drops bcfp's road tenure / FTEN / OGC / rail / UTM metadata that downstream non-barrier consumers need.
+
+Live ADMS smoke against local fwapg loaded with `data-raw/snapshot_bcfp.sh` (link#137): 67 PSCIS + 3,584 modelled = 3,651 crossings unioned in <1s; barriers_emit produces 3,616 anthropogenic / 33 PSCIS / 5 remediations.
+
+Tests: 94 new mocked unit-test expectations across the four exports + two internal helpers (`.lnk_crossings_union`, `.lnk_crossings_apply_overrides`). 903 PASS / 0 FAIL total.
+
 # link 0.31.1
 
 Closes [#137](https://github.com/NewGraphEnvironment/link/issues/137). New `data-raw/snapshot_bcfp.sh` shell script loads bcfp dependencies into a local Postgres from public sources only — no SSH tunnel, no DB pg_dump. Prepares the local fwapg for `lnk_pipeline_crossings()` (link#138, in flight) and parity comparisons.
