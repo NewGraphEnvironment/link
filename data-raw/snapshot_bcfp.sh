@@ -165,10 +165,50 @@ ogr2ogr -f PostgreSQL \
 # -----------------------------------------
 # 4. bchamp observations (parquet) -- matches bcfp's jobs/load_observations
 # -----------------------------------------
+# observation_key is a string FID in the parquet; ogr2ogr -overwrite rejects
+# string FIDs on table creation. bcfp's load_observations uses -append into a
+# pre-existing table. We mirror that: DROP + CREATE (text PK) + -append.
+$PSQL -c "DROP TABLE IF EXISTS bcfishobs.observations;"
+$PSQL -c "CREATE TABLE bcfishobs.observations (
+  observation_key text NOT NULL PRIMARY KEY,
+  fish_observation_point_id numeric,
+  wbody_id numeric,
+  species_code varchar(6),
+  agency_id numeric,
+  point_type_code varchar(20),
+  observation_date date,
+  agency_name varchar(60),
+  source varchar(1000),
+  source_ref varchar(4000),
+  utm_zone integer,
+  utm_easting integer,
+  utm_northing integer,
+  activity_code varchar(100),
+  activity varchar(300),
+  life_stage_code varchar(100),
+  life_stage varchar(300),
+  species_name varchar(60),
+  waterbody_identifier varchar(9),
+  waterbody_type varchar(20),
+  gazetted_name varchar(30),
+  new_watershed_code varchar(56),
+  trimmed_watershed_code varchar(56),
+  acat_report_url varchar(254),
+  feature_code varchar(10),
+  linear_feature_id bigint,
+  wscode ltree,
+  localcode ltree,
+  blue_line_key integer,
+  watershed_group_code varchar(4),
+  downstream_route_measure double precision,
+  match_type text,
+  distance_to_stream double precision,
+  geom geometry(PointZ, 3005)
+);"
 ogr2ogr -f PostgreSQL \
   "PG:$DATABASE_URL" \
-  -overwrite \
-  -preserve_fid \
+  -append \
+  --config OGR_TRUNCATE=YES \
   --config PG_USE_COPY=YES \
   -nln bcfishobs.observations \
   /vsicurl/https://nrs.objectstore.gov.bc.ca/bchamp/bcfishobs/observations.parquet \
