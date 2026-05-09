@@ -19,11 +19,30 @@ One-time setup so `lnk_pipeline_crossings()` (link#138) and parity comparisons c
 ### Prereqs
 
 - Local Postgres with PostGIS. `PGUSER`/`PGPASSWORD`/`PGHOST`/`PGPORT`/`PGDATABASE` env vars or `~/.pgpass` (or a single `DATABASE_URL`).
-- Python `bcdata` CLI: `pip install bcdata`.
-- GDAL `ogr2ogr` with GeoJSON + parquet drivers (Homebrew GDAL has both).
+- Python `bcdata` CLI: `uv tool install bcdata==0.16.0.post1`.
+- GDAL `ogr2ogr` with GeoJSON + Parquet drivers.
 - `curl`, `unzip`.
 - `aws` CLI (only for `--with-bcfp-views`; anonymous read works).
 - R with link package installed (for the baseline-stamp step).
+
+#### Install paths by host
+
+| Host | GDAL | bcdata | Canonical installer |
+|------|------|--------|---------------------|
+| M4 / m1 (macOS) | Homebrew (`brew install gdal`) | `uv tool install bcdata==0.16.0.post1` | `kdot install_geo.sh` |
+| cypher (Ubuntu) | conda-forge via micromamba | `uv tool install bcdata==0.16.0.post1` | rtj cloud-init |
+
+#### Verify your setup
+
+```bash
+bcdata --version
+ogr2ogr --formats | grep -i parquet
+psql --version
+curl --version
+aws --version          # only needed for --with-bcfp-views
+```
+
+The script checks these at startup and exits with a clear error if anything is missing.
 
 ### Quick start
 

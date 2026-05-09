@@ -19,11 +19,16 @@
 #
 # Prereqs:
 #   - Local Postgres with PostGIS. Connection via PG* env vars or ~/.pgpass.
-#   - Python `bcdata` CLI (`pip install bcdata`).
-#   - GDAL `ogr2ogr` (Homebrew GDAL has GeoJSON + parquet drivers).
+#   - Python `bcdata` CLI (`uv tool install bcdata==0.16.0.post1`).
+#   - GDAL `ogr2ogr` with Parquet driver (macOS: Homebrew GDAL;
+#     Ubuntu/cypher: conda-forge GDAL via micromamba).
 #   - `curl`, `unzip`.
 #   - `aws` CLI (only for --with-bcfp-views).
 #   - R with link package installed (for the baseline-stamp step).
+#
+# Install paths by host:
+#   M4/m1: kdot install_geo.sh (Homebrew GDAL + uv + bcdata)
+#   cypher: rtj cloud-init (micromamba conda-forge GDAL + uv + bcdata)
 #
 # Required env (or pgpass):
 #   PGUSER, PGPASSWORD, PGHOST, PGPORT, PGDATABASE
@@ -57,6 +62,26 @@ for arg in "$@"; do
     *) echo "Unknown arg: $arg" >&2; exit 1 ;;
   esac
 done
+
+# -----------------------------------------
+# Fail-fast prereq checks
+# -----------------------------------------
+MISSING=""
+for cmd in bcdata ogr2ogr psql curl unzip; do
+  command -v "$cmd" >/dev/null 2>&1 || MISSING="$MISSING $cmd"
+done
+if [ "$WITH_BCFP_VIEWS" = "1" ]; then
+  command -v aws >/dev/null 2>&1 || MISSING="$MISSING aws"
+fi
+if [ -n "$MISSING" ]; then
+  echo "FATAL: missing required tools:$MISSING" >&2
+  echo "See data-raw/README.md for install instructions per host." >&2
+  exit 1
+fi
+if ! ogr2ogr --formats 2>/dev/null | grep -qi parquet; then
+  echo "FATAL: ogr2ogr lacks Parquet driver. Need conda-forge or Homebrew GDAL." >&2
+  exit 1
+fi
 
 # Skip-if-current guard runs FIRST -- before any DB-credential resolution.
 # Reads `data-raw/logs/bcfp_baselines.csv` + the s3 log.json via httr; no
