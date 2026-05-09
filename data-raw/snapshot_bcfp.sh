@@ -143,6 +143,7 @@ ogr2ogr -f PostgreSQL \
 ogr2ogr -f PostgreSQL \
   "PG:$DATABASE_URL" \
   -overwrite \
+  -preserve_fid \
   --config PG_USE_COPY=YES \
   -nln bcfishobs.observations \
   /vsicurl/https://nrs.objectstore.gov.bc.ca/bchamp/bcfishobs/observations.parquet \
