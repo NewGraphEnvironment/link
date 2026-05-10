@@ -77,9 +77,12 @@ compare_bcfishpass_wsg <- function(wsg, config, dams = TRUE,
   link::lnk_pipeline_setup(conn, schema, overwrite = TRUE)
   link::lnk_pipeline_load(conn, aoi = wsg, cfg = config,
     loaded = loaded, schema = schema)
+  # conn_tunnel = conn (LOCAL) -- per #137 snapshot_bcfp.sh loads cabd.dams
+  # locally. The tunnel (conn_ref) is reserved for the parity-comparison
+  # queries below; build phase reads only from local.
   link::lnk_pipeline_prepare(conn, aoi = wsg, cfg = config,
     loaded = loaded, schema = schema,
-    conn_tunnel = if (dams) conn_ref else NULL)
+    conn_tunnel = if (dams) conn else NULL)
   link::lnk_pipeline_break(conn, aoi = wsg, cfg = config,
     loaded = loaded, schema = schema)
   link::lnk_pipeline_classify(conn, aoi = wsg, cfg = config,

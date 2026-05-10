@@ -139,6 +139,7 @@ ogr2ogr -f PostgreSQL \
   --config OGR_TRUNCATE=YES \
   --config PG_USE_COPY=YES \
   -nln cabd.dams \
+  -lco GEOMETRY_NAME=geom \
   "https://cabd-web.azurewebsites.net/cabd-api/features/dams?filter=province_territory_code:eq:bc&filter=use_analysis:eq:true" \
   OGRGeoJSON
 

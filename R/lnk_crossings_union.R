@@ -121,14 +121,27 @@
 
     UNION ALL
 
-    -- CABD branch (dams from lnk_pipeline_prepare's existing snap+filter)
+    -- CABD branch (dams from lnk_pipeline_prepare's existing snap+filter).
+    -- CASE on passability_status_code mirrors bcfp's load_crossings.sql:
+    -- normalises CABD's integer code into the bcfp barrier_status text vocab
+    -- ('BARRIER' / 'POTENTIAL' / 'PASSABLE' / 'UNKNOWN'), shared across all
+    -- crossing sources. The union is the convergence point for heterogeneous
+    -- source vocabularies; cabd.dams stays raw upstream (and <schema>.dams
+    -- carries only the integer code, matching bcfp's <schema>.dams shape).
     SELECT
       d.dam_id::text              AS aggregated_crossings_id,
       'CABD'::text                AS crossing_source,
       'DAM'::text                 AS crossing_feature_type,
-      d.passability_status        AS barrier_status,
+      CASE
+        WHEN d.passability_status_code = 1 THEN 'BARRIER'
+        WHEN d.passability_status_code = 2 THEN 'POTENTIAL'
+        WHEN d.passability_status_code = 3 THEN 'PASSABLE'
+        WHEN d.passability_status_code = 4 THEN 'UNKNOWN'
+        WHEN d.passability_status_code = 5 THEN 'PASSABLE'
+        WHEN d.passability_status_code = 6 THEN 'PASSABLE'
+      END                         AS barrier_status,
       NULL::text                  AS pscis_status,
-      d.dam_name,
+      d.dam_name_en               AS dam_name,
       d.linear_feature_id,
       d.blue_line_key,
       fwa_d.watershed_key         AS watershed_key,
@@ -154,11 +167,20 @@
     -- imports them as varchar but the canonical FWA type is ltree.
     -- modelled_crossing_id is int4 in bchamp; cast to bigint before
     -- adding 1e9 so 1.15B+ values can't overflow.
+    --
+    -- barrier_status from modelled_crossing_type (mirrors bcfp's
+    -- load_crossings.sql): CBS = closed-bottom (culvert) -> POTENTIAL;
+    -- OBS = open-bottom (bridge) -> PASSABLE. User-fix flips
+    -- (structure IN ('NONE','OBS')) layer on top via
+    -- .lnk_crossings_apply_overrides.
     SELECT
       (m.modelled_crossing_id::bigint + 1000000000)::text AS aggregated_crossings_id,
       'MODELLED_CROSSINGS'::text  AS crossing_source,
       NULL::text                  AS crossing_feature_type,
-      'POTENTIAL'::text           AS barrier_status,
+      CASE
+        WHEN m.modelled_crossing_type = 'OBS' THEN 'PASSABLE'
+        ELSE 'POTENTIAL'
+      END                         AS barrier_status,
       NULL::text                  AS pscis_status,
       NULL::text                  AS dam_name,
       m.linear_feature_id,
