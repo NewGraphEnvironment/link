@@ -442,7 +442,113 @@ habitat tibble. After fix: CM 80.28 → **99.95%**, PK 80.28 → **99.67%**.
 `lnk_presence` disagree on what "species present" means. Should be the
 same definition or one should call the other. To file as a link issue.
 
+## Diagnostic workflow for per-WSG mapping_code divergences
+
+When a WSG shows lower-than-expected match %, follow this recipe. Built from the
+PARS BT 56% investigation 2026-05-10.
+
+### Step 1 — Pull diff pattern distribution
+
+The driver writes diff-pattern counts for each species. Pull the species under
+investigation:
+
+```bash
+grep "  bt " logs/<TS>_mapping_code_parity_<WSG>.txt | head -20
+```
+
+Each line is `<species>  <count>  <link_value> | <bcfp_value>` for a single
+distinct mismatch pair. Counts add up to the species' total `n_diff`.
+
+### Step 2 — Identify dominant themes
+
+Group the patterns by what differs. Common themes:
+
+- `link emits X, bcfp emits Y where Y is "stronger" barrier` — link missing
+  barriers downstream that bcfp sees. (Examples: `ACCESS;NONE | ACCESS;DAM`,
+  `ACCESS;ASSESSED | ACCESS;DAM`.)
+- `link has X, bcfp emits "" (empty)` — link sees habitat where bcfp says no
+  habitat / inaccessible.
+- Token1 differs (habitat label) — `ACCESS | SPAWN`, `REAR | SPAWN` etc. —
+  habitat classification disagreement (break-position drift, eligibility
+  thresholds).
+- Token2 differs only — `ACCESS;NONE | ACCESS;MODELLED` — barrier source
+  detection differs.
+
+### Step 3 — Hypothesize cause from theme
+
+Match theme → likely root cause:
+
+| Theme | Likely cause |
+|---|---|
+| Link `NONE`/`ASSESSED` → bcfp `DAM` | Link missing dam barriers downstream (cross-WSG dnstr or dams pipeline gap) |
+| Link `ASSESSED` → bcfp `MODELLED` | Link's PSCIS / modelled crossings differ in network position |
+| Token1 `ACCESS` → `SPAWN`/`REAR` | Habitat classification differs (segment-level eligibility) |
+| Token1 `""` (empty) → bcfp populated | Link sees barriers blocking species, bcfp doesn't (presence/expansion or barrier filter difference) |
+
+### Step 4 — Verify with side-by-side queries
+
+Query both sides for the suspected cause. For dam-related:
+
+```sql
+-- Tunnel: dam_dnstr_ind distribution + sample dnstr arrays
+SELECT dam_dnstr_ind, dam_hydro_dnstr_ind, count(*)
+FROM bcfishpass.streams_access JOIN bcfishpass.streams USING (segmented_stream_id)
+WHERE watershed_group_code='<WSG>' GROUP BY 1,2;
+
+-- What's IN the dnstr arrays? Do they reference barriers in OTHER WSGs?
+SELECT array_to_string(barriers_dams_dnstr, ';') AS dams_dnstr, count(*)
+FROM bcfishpass.streams_access JOIN bcfishpass.streams USING (segmented_stream_id)
+WHERE watershed_group_code='<WSG>' AND dam_dnstr_ind=TRUE
+GROUP BY 1 ORDER BY 2 DESC LIMIT 5;
+
+-- Look up those barrier IDs — what WSG do they belong to?
+SELECT barriers_dams_id, barrier_name, watershed_group_code
+FROM bcfishpass.barriers_dams WHERE barriers_dams_id IN ('<id1>', '<id2>', ...);
+```
+
+If the dam IDs belong to DIFFERENT WSGs than the one we're testing, that's
+cross-WSG dam_dnstr_ind. The Phase A driver stages per-WSG so it misses
+these.
+
+### Step 5 — Document and either fix or note as known limitation
+
+If the root cause is fixable in scope, file an issue / patch. If it's a
+known limitation of the per-WSG strategy (like cross-WSG dnstr), note it
+as a caveat for that family of WSGs and continue.
+
+### PARS BT 56% — confirmed cross-WSG dam_dnstr_ind (2026-05-10)
+
+Diff patterns showed dominant `ACCESS;NONE | ACCESS;DAM`,
+`ACCESS;ASSESSED | ACCESS;DAM`, `REAR;ASSESSED | REAR;DAM`. Tunnel
+diagnostic: PARS has 0 rows in `barriers_dams`, but
+`streams_access.dam_dnstr_ind = TRUE` for 29,798 PARS rows. The
+`barriers_dams_dnstr` array contains 3 dam IDs:
+
+- `785afb41-...` — W.A.C. Bennett Dam (PCEA)
+- `320902cd-...` — Peace Canyon Dam (UPCE)
+- `957546a9-...` — Site C Dam (UPCE)
+
+PARS drains through these via the Peace River. bcfp computes
+`barriers_dams_dnstr` province-wide; our driver stages per-WSG so the
+downstream walk can't reach them.
+
+**Same root cause likely explains WILL's 85%** (also a Peace tributary).
+**BULK's 76% has a different cause** (Skeena drainage, no downstream hydro
+— investigate separately).
+
+### Open work surfaced by PARS investigation
+
+- [ ] Phase A driver scope: cross-WSG dnstr feature lookup. Either
+      stage `barriers_dams` / `barriers_anthropogenic` province-wide
+      (load all rows, not just `WHERE watershed_group_code = '<wsg>'`),
+      or document the per-WSG-only scope as a known caveat for
+      hydro-downstream WSGs.
+- [ ] Investigate BULK's ~84% match — different cause than PARS/WILL,
+      not cross-WSG dams (Skeena drainage).
+
 ### Phase A baseline (2026-05-10 with fixes applied)
+
+ADMS:
 
 | species | match % | n_diff |
 |---|---|---|
@@ -454,6 +560,18 @@ same definition or one should call the other. To file as a link issue.
 | sk  | 99.09% | 130 |
 | st  | 100.00% | 0 (absent species) |
 | wct | 100.00% | 0 (absent species) |
+
+Multi-WSG scale test (BULK, WILL, PARS):
+
+| WSG | bt | ch | cm | co | pk | sk | st | wct | n_total |
+|---|---|---|---|---|---|---|---|---|---|
+| BULK | 76.30% | 84.07% | 84.18% | 83.82% | 84.14% | 84.17% | 79.88% | 100% | 39,481 |
+| WILL | 85.48% | 86.83% | 87.05% | 86.49% | 87.03% | 87.05% | 100% | 100% | 17,148 |
+| PARS | **56.16%** | 100% | 100% | 100% | 100% | 100% | 100% | 100% | 37,509 |
+
+Driver scales (no errors at 39k+ segments). Lower-than-ADMS numbers
+across BULK/WILL/PARS are surfacing different root causes per WSG;
+PARS investigated above (cross-WSG dam_dnstr_ind), BULK + WILL TBD.
 
 Remaining gaps are input drift (link's locally-built barriers slightly
 differ from bcfp's tunnel ones), per-segment habitat classification
