@@ -37,10 +37,10 @@ Initial Phase 1 results showed ADMS 99-100% but BULK 79-86%, WILL 95-98%. Diagno
 
 ## Phase 3: live Phase A mapping_code parity re-run
 
-- [ ] Re-run `data-raw/compare_bcfp_mapping_code.R --wsgs=ADMS,BULK,WILL` (and PARS for completeness).
-- [ ] Acceptance: ≥99% on all species in ADMS, BULK, WILL — incl. spawn-only species (cm, pk).
-- [ ] PARS BT may stay at ~56% (cross-WSG dam_dnstr, link#152 deferred). Documented as expected.
-- [ ] Update `research/bcfp_compare_mapping_code.md` Status section with the new numbers.
+- [x] Re-run `data-raw/compare_bcfp_mapping_code.R --wsgs=ADMS,BULK,WILL` (and PARS for completeness).
+- [x] Acceptance: ≥99% on all species in ADMS, BULK, WILL — incl. spawn-only species (cm, pk).
+- [x] PARS BT may stay at ~56% (cross-WSG dam_dnstr, link#152 deferred). Documented as expected.
+- [x] Update `research/bcfp_compare_mapping_code.md` Status section with the new numbers.
 
 ## Phase 4: release
 

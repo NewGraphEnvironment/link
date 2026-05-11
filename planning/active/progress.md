@@ -29,3 +29,9 @@
 - Rewrote stale xref-presence tests in `test-lnk_crossings_union.R` to probe for `<schema>.crossing_fixes` (Phase 1.5 added a structure-filter that gates on its presence).
 - Added `test-lnk_pipeline_pscis_build.R` covering: 5-step SQL composition (each step's key markers), xref-staging branch (loaded vs DB-only), Step 5 skip when xref absent, argument validation.
 - Full suite: 962 PASS / 0 FAIL.
+
+## Session 2026-05-11 (Phase 3)
+
+- Phase A re-run executed during Phase 1.5 (post-fix v7 log already on disk).
+- Updated `research/bcfp_compare_mapping_code.md` Status section: replaced "ready to ship" framing with shipped numbers; added Phase A post-link#154 sub-section preserving the 2026-05-10 baseline for history.
+- Acceptance bar met: ≥99% on every in-WSG species across ADMS, BULK, WILL, PARS. PARS BT 60% deferred to link#152.

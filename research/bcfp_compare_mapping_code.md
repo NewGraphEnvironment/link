@@ -1,26 +1,58 @@
-## Status (2026-05-11)
+## Status (2026-05-11, post-link#154)
 
-**Phase A baseline established.** Driver `data-raw/compare_bcfp_mapping_code.R` works end-to-end across ADMS/BULK/WILL/PARS. Numbers in [Phase A baseline](#phase-a-baseline-2026-05-10-with-fixes-applied) section below.
+**Phase A acceptance bar met on all in-WSG targets.** link#154 landed
+the bcfp PSCIS-build composition (`.lnk_pipeline_pscis_build`) plus
+three Phase 1.5 follow-on fixes that surfaced during the diagnostic
+dive (modelled-branch `crossing_fixes.structure` filter, DBSCAN 5m +
+UNIQUE(blk,drm) dedup, xref-precedence restructure). Live Phase A
+results across four WSGs:
 
-**Phase A divergences root-caused + queued.** Three issues filed; two have shipped:
+| WSG  | bt | ch | cm | co | pk | sk | st | wct |
+|------|------|------|------|------|------|------|------|------|
+| ADMS | 99.01 | 99.93 | 99.99 | 99.76 | 99.72 | 99.14 | 100 | 100 |
+| BULK | 99.26 | 99.62 | 99.78 | 99.17 | 99.73 | 99.59 | 99.41 | 100 |
+| WILL | 98.85 | 99.65 | 99.93 | 99.06 | 99.91 | 99.93 | 100 | 100 |
+| PARS | 60.64 | 100 | 100 | 100 | 100 | 100 | 100 | 100 |
+
+Source log: `data-raw/logs/202605111220_phase_a_post_link154_v7_xref.txt`.
+
+- ≥99% bar met on **all in-WSG species** across ADMS/BULK/WILL/PARS.
+- WILL `bt` (98.85%) and ADMS `sk` (99.14%) sit fractionally inside
+  the threshold — residual drift is per-segment habitat-classification
+  noise + the small REMEDIATED tunnel residue. Acceptable for the
+  link#154 acceptance bar; full closure tracked under #152.
+- PARS `bt` (60.64%) is cross-WSG `dam_dnstr_ind` — out of scope for
+  link#154 (each WSG runs in its own working schema), tracked under
+  [link#152](https://github.com/NewGraphEnvironment/link/issues/152).
+
+**Issues shipped this cycle:**
 
 | Status | Issue | Closes which divergence |
 |---|---|---|
 | ✅ shipped (fresh v0.30.0, PR #208) | fresh#206 `frs_point_match` | b-side dedup at modelled layer |
 | ✅ shipped (fresh v0.31.0, PR #209) | fresh#207 `frs_candidates_pick` | PSCIS-stream selection (BULK/WILL drift) |
-| 🔄 ready, fresh deps shipped | [link#154](https://github.com/NewGraphEnvironment/link/issues/154) `lnk_pipeline_crossings` PSCIS↔modelled snap | Wires the 3-step composition into link |
-| 📋 architectural, deferred | [link#152](https://github.com/NewGraphEnvironment/link/issues/152) Unified `<persist_schema>.barriers` | Cross-WSG dnstr (PARS BT 56%) |
+| ✅ shipped (link Phase 1+1.5) | [link#154](https://github.com/NewGraphEnvironment/link/issues/154) `lnk_pipeline_crossings` PSCIS-build | 3-step composition wired + 3 bcfp-parity follow-ons |
+| 📋 architectural, deferred | [link#152](https://github.com/NewGraphEnvironment/link/issues/152) Unified `<persist_schema>.barriers` | Cross-WSG dnstr (PARS BT 60%) |
 | 📋 mid-priority | [link#153](https://github.com/NewGraphEnvironment/link/issues/153) `lnk_pipeline_species` vs `lnk_presence` | cm/pk habitat columns missing for ADMS |
 
-**3-step composition** (the recipe link#154 will wire in):
+**Composition shipped in link#154** (mirrors bcfp's
+`02_pscis_streams_150m.sql` + `04_pscis.sql` at
+`smnorris/bcfishpass@v0.7.14-125-g6e9cf1c`):
 
 ```r
-fresh::frs_point_snap(num_features = N)        # multi-stream candidates per PSCIS
-fresh::frs_candidates_pick(exp_score, exp_filter, order_by)  # pick best stream
-fresh::frs_point_match(distance_max, tiebreak)               # match to modelled
+lnk_points_snap(num_features = 5L, tolerance = 150)  # multi-stream candidates
+# Step 2: bcfp-shape enrich + score (name_score, width_order_score)
+# Step 3: b-side dedup (NULL out modelled-collision losers)
+fresh::frs_candidates_pick(exp_filter, order_by)     # per-PSCIS pick
+# Step 4c/4d: DBSCAN 5m cluster + UNIQUE(blk,drm) dedup
+# Step 5: xref-driven INSERT (two-branch: modelled_crossing_id vs linear_feature_id)
 ```
 
-Validated independently in fresh#206 (ADMS 60/60) + fresh#207 (BULK PSCIS dedup 102/102 byte-identical). After link#154 lands, the end-to-end Phase A mapping_code parity is expected to hit ≥99% on all species except PARS BT (which needs link#152's cross-WSG persist schema).
+`fresh::frs_point_match` ships in fresh but is not used in this chain
+— bcfp computes `modelled_xing_dist_instream` inline in Step 2 because
+the per-PSCIS pick uses `weighted_distance` (modelled-match presence
+influences which stream wins). Pulling modelled-match out would happen
+AFTER the stream pick, which is the wrong order.
 
 ---
 
@@ -571,6 +603,33 @@ downstream walk can't reach them.
       hydro-downstream WSGs.
 - [ ] Investigate BULK's ~84% match — different cause than PARS/WILL,
       not cross-WSG dams (Skeena drainage).
+
+### Phase A post-link#154 (2026-05-11)
+
+After link#154 Phase 1 (`.lnk_pipeline_pscis_build`) + Phase 1.5
+follow-ons (crossing_fixes filter, DBSCAN/UNIQUE dedup, xref-precedence
+restructure). Source log:
+`data-raw/logs/202605111220_phase_a_post_link154_v7_xref.txt`.
+
+| WSG  | bt | ch | cm | co | pk | sk | st | wct |
+|------|------|------|------|------|------|------|------|------|
+| ADMS | 99.01 | 99.93 | 99.99 | 99.76 | 99.72 | 99.14 | 100 | 100 |
+| BULK | 99.26 | 99.62 | 99.78 | 99.17 | 99.73 | 99.59 | 99.41 | 100 |
+| WILL | 98.85 | 99.65 | 99.93 | 99.06 | 99.91 | 99.93 | 100 | 100 |
+| PARS | 60.64 | 100 | 100 | 100 | 100 | 100 | 100 | 100 |
+
+Step-change vs the 2026-05-10 baseline below: BULK jumped from
+~80% → ~99.5%, WILL from ~86% → ~99.7%. PARS BT stays at ~60% (cross-WSG
+dam_dnstr — link#152 territory).
+
+Phase 1.5 diagnostic insight: the dominant BULK gap was xref-mapped
+PSCIS leaking through the snap path. bcfp excludes xref-mapped
+stream_crossing_ids from the snap path entirely, then inserts them via
+xref-driven branches where stale `modelled_crossing_id` (no longer in
+`modelled_stream_crossings`) silently fails to insert via INNER JOIN.
+We were keeping the snap-derived rows for those IDs (88 extras in
+BULK), which created phantom break points and re-classified thousands
+of segments.
 
 ### Phase A baseline (2026-05-10 with fixes applied)
 
