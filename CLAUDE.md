@@ -741,6 +741,12 @@ test structure, hex sticker, etc.).
   stay when the role IS the name (e.g. `segments`, `observations`,
   `crossings`). Existing functions using `<role>_table` or bare `to`
   migrate opportunistically when touched; no big-bang rename.
+- **Same convention for column-name parameters: `col_<role>`**:
+  `col_a_id`, `col_b_id`, `col_segment_id`, `col_blue_line_key`,
+  `col_key`. Picked over `<role>_col` (e.g. `segment_id_col`) for the
+  same autocomplete-grouping reason. fresh's existing
+  `segment_id_col` / `feature_id_col` precede this convention and
+  migrate opportunistically.
 - For SQL DDL+INSERT pairs that share a schema, use a single named
   vector as the source of truth. Both `CREATE TABLE` and
   `INSERT (cols) SELECT cols` derive their column lists from the same
