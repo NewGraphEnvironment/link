@@ -118,6 +118,15 @@ bcdata (PSCIS assessments)   ─┘</code></pre>
 <span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="kw">ORDER</span> <span class="kw">BY</span> model_run_id <span class="kw">DESC</span> <span class="kw">LIMIT</span> <span class="dv">5</span>;</span></code></pre></div>
 <p><code>model_version</code> format <code>&lt;tag&gt;-&lt;commits&gt;-g&lt;short-sha&gt;</code> (e.g. <code>v0.7.14-113-ga7373af</code>) — the trailing SHA is the exact <code>smnorris/bcfishpass</code> commit Simon’s rebuild used. That SHA is the deterministic ref for matching link’s bundle CSVs to the tunnel’s input state — required for apples-to-apples comparison.</p>
 <p>CSV-sync workflow goal: bundle CSVs in <code>inst/extdata/configs/bcfishpass/overrides/</code> should match the tunnel’s last-rebuild SHA. Drift between the two means comparison numbers shift for input reasons, not methodology reasons. See the <a href="project_csv_sync_rewrite.html">csv-sync rewrite plan in memory</a>.</p>
+<div class="section level3">
+<h3 id="pin-upstream-versions-in-issuepr-bodies">Pin upstream versions in issue/PR bodies<a class="anchor" aria-label="anchor" href="#pin-upstream-versions-in-issuepr-bodies"></a></h3>
+<p>When an issue or PR body describes upstream behaviour (bcfp SQL, fresh primitives, fwapg, etc.) as the rationale or reference, <strong>pin the upstream version</strong>. Use <code>&lt;owner&gt;/&lt;repo&gt;@&lt;version-or-sha&gt;</code> format:</p>
+<ul><li>bcfp: the deterministic ref is <code>bcfishpass.log.model_version</code> (e.g. <code>smnorris/bcfishpass@v0.7.14-125-g6e9cf1c</code>). Cite <code>model_run_id</code> + date alongside for human readability.</li>
+<li>fresh / link / other NGE: tag refs (<code>fresh@v0.29.0</code>) or short SHAs (<code>fresh@f42e86a</code>).</li>
+<li>fwapg / db_newgraph: same — tag or short SHA.</li>
+</ul><p>Without a version pin, “this behaviour exists upstream” claims rot — six-month-old issues end up describing code that no longer exists, and no one knows what was being compared against. Version-pinning makes the issue self-contained and reproducible.</p>
+<p>Note: <code>&lt;owner&gt;/&lt;repo&gt;@&lt;sha&gt;</code> references a commit; this does <strong>not</strong> trigger GitHub notifications to the referenced repo’s participants (unlike <code>&lt;owner&gt;/&lt;repo&gt;#&lt;n&gt;</code> issue/PR references — see <code>feedback_no_cross_ref_external_issues.md</code> in memory).</p>
+</div>
 </div>
 <div class="section level2">
 <h2 id="exported-functions-18">Exported Functions (18)<a class="anchor" aria-label="anchor" href="#exported-functions-18"></a></h2>
@@ -820,6 +829,8 @@ bcdata (PSCIS assessments)   ─┘</code></pre>
 <li><p>Match existing patterns in each codebase</p></li>
 <li><p>Use <code>pak</code> for package installation (not <code>install.packages</code>)</p></li>
 <li><p>Prefix column name vectors with <code>cols_</code> for discoverability in the environment pane: <code>cols_all</code>, <code>cols_carry</code>, <code>cols_split</code>, <code>cols_writable</code>. Same principle for other grouped vectors (<code>params_</code>, <code>tbl_</code>, etc.)</p></li>
+<li><p><strong>Function parameters that name a database table use <code>table_&lt;role&gt;</code></strong>: <code>table_in</code>, <code>table_out</code>, <code>table_to</code>, <code>table_pscis</code>, <code>table_modelled</code>, <code>table_target</code>. Picked over <code>&lt;role&gt;_table</code> (e.g. <code>pscis_table</code>) for consistency and to group table args together in autocomplete / signature views. Also picked over bare <code>to</code> for destination tables — <code>table_to</code> is explicit about what’s being passed. Single-noun args stay when the role IS the name (e.g. <code>segments</code>, <code>observations</code>, <code>crossings</code>). Existing functions using <code>&lt;role&gt;_table</code> or bare <code>to</code> migrate opportunistically when touched; no big-bang rename.</p></li>
+<li><p><strong>Same convention for column-name parameters: <code>col_&lt;role&gt;</code></strong>: <code>col_a_id</code>, <code>col_b_id</code>, <code>col_segment_id</code>, <code>col_blue_line_key</code>, <code>col_key</code>. Picked over <code>&lt;role&gt;_col</code> (e.g. <code>segment_id_col</code>) for the same autocomplete-grouping reason. fresh’s existing <code>segment_id_col</code> / <code>feature_id_col</code> precede this convention and migrate opportunistically.</p></li>
 <li>
 <p>For SQL DDL+INSERT pairs that share a schema, use a single named vector as the source of truth. Both <code>CREATE TABLE</code> and <code>INSERT (cols) SELECT cols</code> derive their column lists from the same <code>cols_*</code> vector. Avoids drift between table shape and write projection — when columns change, you edit one place. Example:</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
