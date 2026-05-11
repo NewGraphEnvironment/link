@@ -13,7 +13,7 @@ wscode_ltree, localcode_ltree, plus snap distance."><meta property="og:image" co
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.33.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.34.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -55,7 +55,8 @@ segment's <code>linear_feature_id</code>, <code>blue_line_key</code>, <code>down
 <span>  snap_tolerance <span class="op">=</span> <span class="fl">100</span>,</span>
 <span>  exclude_edge_types <span class="op">=</span> <span class="fl">1425L</span>,</span>
 <span>  blue_line_key_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  stream_order_min <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  stream_order_min <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  num_features <span class="op">=</span> <span class="fl">1L</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -101,6 +102,16 @@ to any FWA stream within tolerance.</p></dd>
 <dt id="arg-stream-order-min">stream_order_min<a class="anchor" aria-label="anchor" href="#arg-stream-order-min"></a></dt>
 <dd><p>Optional minimum <code>stream_order</code> to include.
 <code>NULL</code> (default) accepts any order.</p></dd>
+
+
+<dt id="arg-num-features">num_features<a class="anchor" aria-label="anchor" href="#arg-num-features"></a></dt>
+<dd><p>Integer scalar. Maximum number of stream candidates
+per input point. Default <code>1L</code> (nearest-only — backwards compatible).
+Set higher (e.g. <code>5L</code>) for downstream scoring/dedup workflows that
+need multiple candidates per point (e.g. bcfp PSCIS-to-stream
+selection where stream-name match disambiguates among nearby streams).
+Output has one row per (input row, candidate stream) pair, ordered by
+distance ascending.</p></dd>
 
 </dl></div>
     <div class="section level2">

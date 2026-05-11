@@ -16,7 +16,8 @@ lnk_points_snap(
   snap_tolerance = 100,
   exclude_edge_types = 1425L,
   blue_line_key_col = NULL,
-  stream_order_min = NULL
+  stream_order_min = NULL,
+  num_features = 1L
 )
 ```
 
@@ -60,6 +61,16 @@ lnk_points_snap(
 
   Optional minimum `stream_order` to include. `NULL` (default) accepts
   any order.
+
+- num_features:
+
+  Integer scalar. Maximum number of stream candidates per input point.
+  Default `1L` (nearest-only — backwards compatible). Set higher (e.g.
+  `5L`) for downstream scoring/dedup workflows that need multiple
+  candidates per point (e.g. bcfp PSCIS-to-stream selection where
+  stream-name match disambiguates among nearby streams). Output has one
+  row per (input row, candidate stream) pair, ordered by distance
+  ascending.
 
 ## Value
 
