@@ -747,6 +747,11 @@ test structure, hex sticker, etc.).
   same autocomplete-grouping reason. fresh's existing
   `segment_id_col` / `feature_id_col` precede this convention and
   migrate opportunistically.
+- **Same convention for SQL-expression parameters: `exp_<role>`**:
+  `exp_score`, `exp_filter`, `exp_where`, `exp_select`. SQL fragments
+  the caller writes that get embedded into a generated query. Like
+  `table_*` and `col_*`, the `exp_` prefix groups expression args
+  together in autocomplete / signature views.
 - For SQL DDL+INSERT pairs that share a schema, use a single named
   vector as the source of truth. Both `CREATE TABLE` and
   `INSERT (cols) SELECT cols` derive their column lists from the same
