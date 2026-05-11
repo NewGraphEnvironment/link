@@ -70,6 +70,18 @@ ORDER BY model_run_id DESC LIMIT 5;
 
 CSV-sync workflow goal: bundle CSVs in `inst/extdata/configs/bcfishpass/overrides/` should match the tunnel's last-rebuild SHA. Drift between the two means comparison numbers shift for input reasons, not methodology reasons. See the [csv-sync rewrite plan in memory](project_csv_sync_rewrite.md).
 
+### Pin upstream versions in issue/PR bodies
+
+When an issue or PR body describes upstream behaviour (bcfp SQL, fresh primitives, fwapg, etc.) as the rationale or reference, **pin the upstream version**. Use `<owner>/<repo>@<version-or-sha>` format:
+
+- bcfp: the deterministic ref is `bcfishpass.log.model_version` (e.g. `smnorris/bcfishpass@v0.7.14-125-g6e9cf1c`). Cite `model_run_id` + date alongside for human readability.
+- fresh / link / other NGE: tag refs (`fresh@v0.29.0`) or short SHAs (`fresh@f42e86a`).
+- fwapg / db_newgraph: same — tag or short SHA.
+
+Without a version pin, "this behaviour exists upstream" claims rot — six-month-old issues end up describing code that no longer exists, and no one knows what was being compared against. Version-pinning makes the issue self-contained and reproducible.
+
+Note: `<owner>/<repo>@<sha>` references a commit; this does **not** trigger GitHub notifications to the referenced repo's participants (unlike `<owner>/<repo>#<n>` issue/PR references — see `feedback_no_cross_ref_external_issues.md` in memory).
+
 ## Exported Functions (18)
 
 ### Core
@@ -720,6 +732,15 @@ test structure, hex sticker, etc.).
 - Prefix column name vectors with `cols_` for discoverability in the
   environment pane: `cols_all`, `cols_carry`, `cols_split`, `cols_writable`.
   Same principle for other grouped vectors (`params_`, `tbl_`, etc.)
+- **Function parameters that name a database table use `table_<role>`**:
+  `table_in`, `table_out`, `table_to`, `table_pscis`, `table_modelled`,
+  `table_target`. Picked over `<role>_table` (e.g. `pscis_table`) for
+  consistency and to group table args together in autocomplete /
+  signature views. Also picked over bare `to` for destination tables —
+  `table_to` is explicit about what's being passed. Single-noun args
+  stay when the role IS the name (e.g. `segments`, `observations`,
+  `crossings`). Existing functions using `<role>_table` or bare `to`
+  migrate opportunistically when touched; no big-bang rename.
 - For SQL DDL+INSERT pairs that share a schema, use a single named
   vector as the source of truth. Both `CREATE TABLE` and
   `INSERT (cols) SELECT cols` derive their column lists from the same
