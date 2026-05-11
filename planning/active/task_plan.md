@@ -8,9 +8,9 @@ Full algorithm + critical-files table in `/Users/airvine/.claude/plans/snuggly-f
 
 ## Phase 1: schema + persist DDL
 
-- [ ] Add `cols_barriers` vector at top of `R/lnk_persist_init.R` (alongside `cols_streams` / `cols_habitat`).
-- [ ] Extend `lnk_persist_init()` to `CREATE TABLE IF NOT EXISTS <schema>.barriers` with `cols_barriers` + indexes (GIN on `blocks_species`, btree on `(watershed_group_code, barrier_source)`, btree on `(blue_line_key, downstream_route_measure)`, GIST on `geom`).
-- [ ] Update `test-lnk_persist_init.R` — assert `<schema>.barriers` CREATE TABLE statement is issued.
+- [x] Add `cols_barriers` vector at top of `R/lnk_persist_init.R` (alongside `cols_streams` / `cols_habitat`).
+- [x] Extend `lnk_persist_init()` to `CREATE TABLE IF NOT EXISTS <schema>.barriers` with `cols_barriers` + indexes (GIN on `blocks_species`, btree on `(watershed_group_code, barrier_source)`, btree on `(blue_line_key, downstream_route_measure)`, GIST on `geom`).
+- [x] Update `test-lnk_persist_init.R` — assert `<schema>.barriers` CREATE TABLE statement is issued.
 
 ## Phase 2: `lnk_barriers_unify`
 
