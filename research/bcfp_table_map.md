@@ -1,3 +1,17 @@
+## Status update (2026-05-11)
+
+The three mechanisms identified at the bottom of this doc as "Open work" have been addressed:
+
+| Original gap | Resolution |
+|---|---|
+| PSCIS records with `modelled_crossing_id` set in BCDC but not in xref CSV → bcfp catches via unique constraint, link doesn't | **link#154** (queued) will wire `frs_point_snap(num_features = N)` + `fresh::frs_candidates_pick` + `fresh::frs_point_match` to reproduce the snap+pick+match chain byte-identically. Both fresh primitives shipped (v0.30.0 + v0.31.0). |
+| `(blue_line_key, downstream_route_measure)` position collisions | Same as above — the 3-step composition in link#154 mirrors bcfp's unique-constraint-driven dedup via bidirectional dedup in `frs_point_match` + scored-candidate selection in `frs_candidates_pick`. |
+| `user_modelled_crossing_fixes.structure` filter — bcfp excludes NONE/CBS, link only flips status | Will be handled in link#154 implementation alongside the rest of the snap rewrite. |
+
+See `research/bcfp_compare_mapping_code.md` for the live Phase A numbers + 3-step composition recipe.
+
+---
+
 # bcfp ↔ link table relationship map
 
 Built 2026-05-10 to reason about per-WSG mapping_code divergences from a

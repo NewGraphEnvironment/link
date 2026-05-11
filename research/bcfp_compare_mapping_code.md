@@ -1,3 +1,29 @@
+## Status (2026-05-11)
+
+**Phase A baseline established.** Driver `data-raw/compare_bcfp_mapping_code.R` works end-to-end across ADMS/BULK/WILL/PARS. Numbers in [Phase A baseline](#phase-a-baseline-2026-05-10-with-fixes-applied) section below.
+
+**Phase A divergences root-caused + queued.** Three issues filed; two have shipped:
+
+| Status | Issue | Closes which divergence |
+|---|---|---|
+| ✅ shipped (fresh v0.30.0, PR #208) | fresh#206 `frs_point_match` | b-side dedup at modelled layer |
+| ✅ shipped (fresh v0.31.0, PR #209) | fresh#207 `frs_candidates_pick` | PSCIS-stream selection (BULK/WILL drift) |
+| 🔄 ready, fresh deps shipped | [link#154](https://github.com/NewGraphEnvironment/link/issues/154) `lnk_pipeline_crossings` PSCIS↔modelled snap | Wires the 3-step composition into link |
+| 📋 architectural, deferred | [link#152](https://github.com/NewGraphEnvironment/link/issues/152) Unified `<persist_schema>.barriers` | Cross-WSG dnstr (PARS BT 56%) |
+| 📋 mid-priority | [link#153](https://github.com/NewGraphEnvironment/link/issues/153) `lnk_pipeline_species` vs `lnk_presence` | cm/pk habitat columns missing for ADMS |
+
+**3-step composition** (the recipe link#154 will wire in):
+
+```r
+fresh::frs_point_snap(num_features = N)        # multi-stream candidates per PSCIS
+fresh::frs_candidates_pick(exp_score, exp_filter, order_by)  # pick best stream
+fresh::frs_point_match(distance_max, tiebreak)               # match to modelled
+```
+
+Validated independently in fresh#206 (ADMS 60/60) + fresh#207 (BULK PSCIS dedup 102/102 byte-identical). After link#154 lands, the end-to-end Phase A mapping_code parity is expected to hit ≥99% on all species except PARS BT (which needs link#152's cross-WSG persist schema).
+
+---
+
 # bcfp parity — `streams_mapping_code` comparison
 
 How to reproduce, run, and interpret per-segment per-species
