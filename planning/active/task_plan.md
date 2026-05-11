@@ -14,15 +14,15 @@ Full algorithm + critical-files table in `/Users/airvine/.claude/plans/snuggly-f
 
 ## Phase 2: `lnk_barriers_unify`
 
-- [ ] Write `R/lnk_barriers_unify.R` — new exported function. Signature: `lnk_barriers_unify(conn, aoi, cfg, loaded, schema = paste0("working_", tolower(aoi)))`. 5-source UNION ALL building per-WSG `<schema>.barriers` staging:
+- [x] Write `R/lnk_barriers_unify.R` — new exported function. Signature: `lnk_barriers_unify(conn, aoi, cfg, loaded, schema = paste0("working_", tolower(aoi)))`. 5-source UNION ALL building per-WSG `<schema>.barriers` staging:
   - Anthropogenic (PSCIS/CABD/MODELLED with `barrier_status IN ('BARRIER','POTENTIAL')`)
   - Remediations (PASSABLE remediations — `blocks_species = ARRAY[]`)
   - Gradient (per-class; `blocks_species` derived from `parameters_fresh$access_gradient_max`)
   - Falls (natural, all species)
   - Subsurface_flow (natural, all species, opt-in)
-- [ ] `devtools::document()` regenerate man.
-- [ ] Write `tests/testthat/test-lnk_barriers_unify.R` — mocked SQL composition + `blocks_species` derivation.
-- [ ] `lintr::lint` clean.
+- [x] `devtools::document()` regenerate man.
+- [x] Write `tests/testthat/test-lnk_barriers_unify.R` — mocked SQL composition + `blocks_species` derivation.
+- [x] `lintr::lint` clean.
 
 ## Phase 3: persistence + `lnk_pipeline_persist` extension
 

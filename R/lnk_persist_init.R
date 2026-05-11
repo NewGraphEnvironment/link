@@ -67,7 +67,7 @@ cols_barriers <- c(
   downstream_route_measure = "double precision",
   wscode_ltree             = "ltree",
   localcode_ltree          = "ltree",
-  geom                     = "geometry(PointZM, 3005)"
+  geom                     = "geometry(Point, 3005)"
 )
 
 #' Build a CREATE TABLE column-list clause from a `cols_*` vector.

@@ -14,3 +14,11 @@
 - Extended `lnk_persist_init()`: CREATE TABLE + 5 indexes (GIN blocks_species, btree wsg/source/blk_drm, GIST geom).
 - Test coverage in `test-lnk_persist_init.R` — asserts table DDL + each index emitted.
 - 35 PASS / 0 FAIL on this test file. Lint clean for new lines (pre-existing indent warnings unchanged).
+
+## Session 2026-05-11 (Phase 2)
+
+- New `R/lnk_barriers_unify.R` (~280 lines). Four-source UNION ALL: anthropogenic (PSCIS/CABD/MODELLED with BARRIER/POTENTIAL), gradient (per-class), falls, subsurface_flow (opt-in). Builds `<schema>.barriers` in working schema.
+- Gradient `blocks_species` derived per row via SQL CASE built from `loaded$parameters_fresh$access_gradient_max` and `.lnk_classes_bcfp` (basis-point class IDs 1500/2000/2500/3000 mapped to fractional thresholds 0.15/0.20/0.25/0.30).
+- `id_barrier` namespaced per source (anthro = aggregated_crossings_id; gradient + 3e9; falls + 4e9; subsurface + 5e9).
+- New `tests/testthat/test-lnk_barriers_unify.R` — 23 PASS / 0 FAIL.
+- man page regenerated via `devtools::document()`.
