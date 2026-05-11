@@ -122,7 +122,7 @@ lnk_barriers_views <- function(conn, schema, cfg,
   # lnk_barriers_emit() emits (kept per the link#152 design — they
   # remain useful primitives for diagnostics).
   source_filters <- list(
-    anthropogenic_unified = "barrier_source IN ('PSCIS', 'CABD', 'MODELLED')",
+    anthropogenic_unified = "barrier_source IN ('PSCIS', 'CABD', 'MODELLED_CROSSINGS')",
     pscis_unified         = "barrier_source = 'PSCIS'",
     dams_unified          = "barrier_source = 'CABD'"
   )

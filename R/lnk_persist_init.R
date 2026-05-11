@@ -55,7 +55,7 @@ cols_habitat <- c(
 #' See link#152.
 #' @noRd
 cols_barriers <- c(
-  id_barrier               = "bigint NOT NULL",
+  id_barrier               = "text NOT NULL",
   watershed_group_code     = "varchar(4) NOT NULL",
   barrier_source           = "varchar(20) NOT NULL",
   barrier_subtype          = "varchar(50)",

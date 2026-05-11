@@ -33,7 +33,7 @@ test_that("lnk_barriers_views emits one DROP+CREATE per species + 3 source views
   # Source-typed views with _unified suffix.
   expect_match(sql, "CREATE OR REPLACE VIEW working_pars\\.barriers_anthropogenic_unified AS")
   expect_match(sql,
-               "WHERE barrier_source IN \\('PSCIS', 'CABD', 'MODELLED'\\)")
+               "WHERE barrier_source IN \\('PSCIS', 'CABD', 'MODELLED_CROSSINGS'\\)")
   expect_match(sql, "CREATE OR REPLACE VIEW working_pars\\.barriers_dams_unified AS")
   expect_match(sql, "WHERE barrier_source = 'CABD'")
   expect_match(sql, "CREATE OR REPLACE VIEW working_pars\\.barriers_pscis_unified AS")

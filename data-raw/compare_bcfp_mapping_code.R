@@ -111,14 +111,41 @@ run_one <- function(wsg) {
   link::lnk_pipeline_connect(conn, aoi = wsg, cfg = cfg, loaded = loaded,
                              schema = schema)
 
+  # Phase 6.5: unified barriers (link#152) ------------------------------------
+  # Build per-WSG <schema>.barriers via the four-source UNION ALL, then
+  # persist its slice into the province-wide <persist_schema>.barriers
+  # (initialized by lnk_persist_init below alongside streams/habitat).
+  # Cross-WSG dam_dnstr_ind resolves correctly once all WSGs in scope
+  # have written their slice.
+  active_species_pre <- link::lnk_pipeline_species(cfg, loaded, wsg)
+  link::lnk_persist_init(conn, cfg, species = active_species_pre)
+  link::lnk_barriers_unify(conn, aoi = wsg, cfg = cfg, loaded = loaded,
+                           schema = schema)
+  link::lnk_pipeline_persist(conn, aoi = wsg, cfg = cfg,
+                             species = active_species_pre, schema = schema)
+
+  # Build per-species + source views over the unified table. These
+  # land under <schema>.barriers_<sp>_unified and
+  # <schema>.barriers_<src>_unified — the underlying VIEW points at
+  # <persist_schema>.barriers (cross-WSG).
+  link::lnk_barriers_views(conn, schema = schema, cfg = cfg)
+
   # Phase 7: streams_access ----------------------------------------------------
-  # Self-sufficiency note: link doesn't yet build bcfp-shape per-species
-  # barriers tables locally (link#152). For Phase A parity validation we
-  # stage bcfp's per-species barriers from the tunnel into the working
-  # schema, preserving the bcfp table name so `lnk_pipeline_access` derives
-  # the correct `<table>_id` column. Tables are dropped with the schema at
-  # end of run. After link#152 ships, this staging step is replaced by
-  # reading link's locally-built `<schema>.barriers` directly.
+  # Cross-WSG fix (link#152): point `barrier_sources` `anthropogenic` +
+  # `dams` at the unified VIEWs (see lnk_barriers_views). These are the
+  # sources `dam_dnstr_ind` walks, and the unified table is province-
+  # wide — fresh::frs_network_features walks FWA topology and resolves
+  # downstream barriers regardless of which WSG they physically live
+  # in. This is what closes the PARS BT 60% defect.
+  #
+  # `barriers_per_sp` still uses bcfp-tunnel-staged per-species tables.
+  # Local-only self-sufficiency for per-species barriers requires
+  # within-WSG minimal-reduction per species (different gradient
+  # subsets per species's `access_gradient_max`) — that's a separate
+  # scope, tracked under a follow-up issue. The unified table doesn't
+  # encode per-species minimal-reduction (the `blocks_species`
+  # predicate captures threshold-block but not minimal-position),
+  # so consuming it for per-species access over-emits.
   bcfp_per_sp <- list(
     bt  = "barriers_bt",
     ch  = "barriers_ch_cm_co_pk_sk",
@@ -160,9 +187,9 @@ run_one <- function(wsg) {
     observations    = paste0(schema, ".observations"),
     presence        = pres,
     barrier_sources = list(
-      anthropogenic = paste0(schema, ".barriers_anthropogenic"),
+      anthropogenic = paste0(schema, ".barriers_anthropogenic_unified"),
       pscis         = paste0(schema, ".barriers_pscis"),
-      dams          = paste0(schema, ".barriers_dams"),
+      dams          = paste0(schema, ".barriers_dams_unified"),
       remediations  = paste0(schema, ".barriers_remediations")),
     crossings_table = paste0(schema, ".crossings"))
 

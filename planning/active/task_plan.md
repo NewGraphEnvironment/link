@@ -37,12 +37,12 @@ Full algorithm + critical-files table in `/Users/airvine/.claude/plans/snuggly-f
 
 ## Phase 5: orchestrator wiring + compare scripts
 
-- [ ] Wire `lnk_barriers_unify` into `data-raw/compare_bcfishpass_wsg.R` after `lnk_pipeline_crossings`. Call `lnk_persist_init` + extended `lnk_pipeline_persist` to write to persist schema.
-- [ ] Update `data-raw/compare_bcfp_mapping_code.R` — replace bcfp-tunnel barriers staging (lines 122–147) with `barriers_unified = paste0(tn$schema, ".barriers")`.
+- [x] Wired into `data-raw/compare_bcfp_mapping_code.R` (compare_bcfishpass_wsg has no access-phase call so no changes needed there) after `lnk_pipeline_crossings`. Call `lnk_persist_init` + extended `lnk_pipeline_persist` to write to persist schema.
+- [x] `barrier_sources$anthropogenic` + `barrier_sources$dams` now point at `<schema>.barriers_anthropogenic_unified` / `barriers_dams_unified` views; per-species barriers stay on the tunnel-staging path (per-species minimal-reduction is a separate scope expansion) — replace bcfp-tunnel barriers staging (lines 122–147) with `barriers_unified = paste0(tn$schema, ".barriers")`.
 
 ## Phase 6: Phase A re-run + acceptance
 
-- [ ] Live Phase A re-run: `data-raw/compare_bcfp_mapping_code.R --wsgs=ADMS,BULK,WILL,PARS`. PARS BT must hit ≥99% from local-only inputs (cross-WSG validation). Other WSGs maintain ≥99%.
+- [x] Live Phase A re-run: `data-raw/compare_bcfp_mapping_code.R --wsgs=ADMS,BULK,WILL,PARS`. PARS BT must hit ≥99% from local-only inputs (cross-WSG validation). Other WSGs maintain ≥99%.
 - [ ] Update `research/bcfp_compare_mapping_code.md` Status section: PARS BT closure noted, Skeena unblocked.
 
 ## Phase 7: release

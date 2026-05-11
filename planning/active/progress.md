@@ -36,3 +36,23 @@
 - `_unified` suffix avoids name collision with the per-WSG `barriers_<sp>` + `barriers_anthropogenic` tables that `.lnk_pipeline_prep_minimal` + `lnk_barriers_emit` already build.
 - Zero API change to `lnk_pipeline_access`. Callers pass view names through existing `barriers_per_sp` + `barrier_sources` args. Cross-WSG dnstr fix arrives "for free" because the views point at the province-wide table.
 - New `tests/testthat/test-lnk_barriers_views.R` — 21 PASS / 0 FAIL. Full suite: 1017 PASS / 0 FAIL.
+
+## Session 2026-05-11 (Phase 5 + 6 — wiring + acceptance)
+
+- Wired `lnk_persist_init` + `lnk_barriers_unify` + `lnk_pipeline_persist` + `lnk_barriers_views` into the per-WSG loop in `data-raw/compare_bcfp_mapping_code.R` (after `lnk_pipeline_connect`).
+- `barrier_sources$anthropogenic` + `barrier_sources$dams` redirected to the unified VIEWs over `<persist_schema>.barriers`. `pscis` + `remediations` stay on the working-schema tables emitted by `lnk_barriers_emit`. Per-species `barriers_per_sp` keeps the bcfp-tunnel staging path (unified-table doesn't capture per-species minimal-reduction; deferred to follow-up).
+- Critical fix during validation: `lnk_barriers_views` source filter was `MODELLED` but `lnk_barriers_unify` writes `MODELLED_CROSSINGS` (verbatim from `crossings.crossing_source`). Aligned both sides on `MODELLED_CROSSINGS`. Without this, the anthropogenic view dropped ~95% of crossings.
+- Test scope expanded to include PCEA + UPCE (the WSGs holding Bennett/Peace Canyon/Site C dams that PARS drains through) so `fresh.barriers` has the cross-WSG dam rows when PARS computes `dam_dnstr_ind`.
+
+**Phase A results (6 WSGs):**
+
+| WSG  | bt    | ch    | cm    | co    | pk    | sk    | st    | wct |
+|------|-------|-------|-------|-------|-------|-------|-------|-----|
+| ADMS | 99.00 | 99.92 | 99.99 | 99.76 | 99.71 | 99.14 | 100   | 100 |
+| BULK | 99.27 | 99.62 | 99.78 | 99.18 | 99.73 | 99.59 | 99.41 | 100 |
+| WILL | 98.86 | 99.65 | 99.93 | 99.07 | 99.91 | 99.93 | 100   | 100 |
+| PCEA | 99.93 | 100   | 100   | 100   | 100   | 100   | 100   | 100 |
+| UPCE | 99.91 | 100   | 100   | 100   | 100   | 100   | 100   | 100 |
+| **PARS** | **98.63** | 100 | 100 | 100 | 100 | 100 | 100 | 100 |
+
+**PARS BT: 60.64% → 98.63% (+38pp).** Cross-WSG `dam_dnstr_ind` fix validated. Source log: `data-raw/logs/202605111557_phase_a_FINAL_link152.txt`.

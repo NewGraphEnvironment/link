@@ -76,8 +76,9 @@ test_that("lnk_persist_init creates schema + streams + per-species habitat table
   # Unified barriers table (link#152) — shape + indexes.
   expect_match(joined, "CREATE TABLE IF NOT EXISTS fresh\\.barriers")
   expect_match(joined, "PRIMARY KEY \\(id_barrier, watershed_group_code\\)")
+  expect_match(joined, "id_barrier\\s+text NOT NULL")
   expect_match(joined, "blocks_species text\\[\\]")
-  expect_match(joined, "geom geometry\\(PointZM, 3005\\)")
+  expect_match(joined, "geom geometry\\(Point, 3005\\)")
   expect_match(joined,
                "CREATE INDEX IF NOT EXISTS barriers_blocks_idx ON fresh\\.barriers USING GIN")
   expect_match(joined,

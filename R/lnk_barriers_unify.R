@@ -19,9 +19,11 @@
 #'
 #' Source families + `blocks_species` semantics:
 #'
-#' - **Anthropogenic** (`barrier_source IN ('PSCIS','CABD','MODELLED')`,
+#' - **Anthropogenic** (`barrier_source IN ('PSCIS','CABD','MODELLED_CROSSINGS')`,
 #'   from `<schema>.crossings WHERE barrier_status IN ('BARRIER','POTENTIAL')`):
-#'   blocks all 8 species.
+#'   blocks all 8 species. `crossing_source` is mapped through verbatim,
+#'   keeping the `MODELLED_CROSSINGS` value (vs. lossy normalization to
+#'   `MODELLED`).
 #' - **Gradient** (`barrier_source = 'GRADIENT'`, from
 #'   `<schema>.gradient_barriers_raw`): blocks species whose
 #'   `access_gradient_max <= gradient_class / 100`. Derived per row from
@@ -172,7 +174,7 @@ lnk_barriers_unify <- function(conn, aoi, cfg, loaded,
   # CABD (dam_id). Cast to bigint explicitly.
   sql_anth <- sprintf("
     SELECT
-      aggregated_crossings_id::bigint   AS id_barrier,
+      aggregated_crossings_id::text     AS id_barrier,
       watershed_group_code,
       crossing_source                   AS barrier_source,
       crossing_feature_type             AS barrier_subtype,
@@ -196,7 +198,7 @@ lnk_barriers_unify <- function(conn, aoi, cfg, loaded,
   # via FWA_LocateAlong + Force2D for cross-source uniformity.
   sql_gradient <- sprintf("
     SELECT
-      3000000000::bigint + row_number() OVER ()  AS id_barrier,
+      ('GRADIENT-' || row_number() OVER ()::text)::text AS id_barrier,
       %1$s::varchar(4)                  AS watershed_group_code,
       'GRADIENT'::text                  AS barrier_source,
       label                             AS barrier_subtype,
@@ -218,7 +220,7 @@ lnk_barriers_unify <- function(conn, aoi, cfg, loaded,
   # for ltrees + length to compute integer drm.
   sql_falls <- sprintf("
     SELECT
-      4000000000::bigint + row_number() OVER () AS id_barrier,
+      ('FALLS-' || row_number() OVER ()::text)::text AS id_barrier,
       f.watershed_group_code,
       'FALLS'::text                     AS barrier_source,
       'falls'::text                     AS barrier_subtype,
@@ -244,7 +246,7 @@ lnk_barriers_unify <- function(conn, aoi, cfg, loaded,
   if (has_subsurface) {
     sql_subsurface <- sprintf("
       SELECT
-        5000000000::bigint + row_number() OVER () AS id_barrier,
+        ('SUBSURFACE-' || row_number() OVER ()::text)::text AS id_barrier,
         %1$s::varchar(4)                AS watershed_group_code,
         'SUBSURFACE_FLOW'::text         AS barrier_source,
         'subsurface_flow'::text         AS barrier_subtype,

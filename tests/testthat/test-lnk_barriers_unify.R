@@ -51,12 +51,12 @@ test_that("lnk_barriers_unify emits a UNION of anthropogenic + gradient + falls"
   # Gradient branch.
   expect_match(sql, "'GRADIENT'::text\\s+AS barrier_source")
   expect_match(sql, "FROM working_pars\\.gradient_barriers_raw")
-  expect_match(sql, "3000000000::bigint")
+  expect_match(sql, "'GRADIENT-' \\|\\|")
 
   # Falls branch.
   expect_match(sql, "'FALLS'::text\\s+AS barrier_source")
   expect_match(sql, "FROM working_pars\\.falls f")
-  expect_match(sql, "4000000000::bigint")
+  expect_match(sql, "'FALLS-' \\|\\|")
 
   # Subsurface absent → no subsurface branch.
   expect_no_match(sql, "'SUBSURFACE_FLOW'")
@@ -90,7 +90,7 @@ test_that("lnk_barriers_unify includes subsurface_flow when staging table presen
   sql <- paste(captured, collapse = "\n")
   expect_match(sql, "'SUBSURFACE_FLOW'::text\\s+AS barrier_source")
   expect_match(sql, "FROM working_pars\\.barriers_subsurfaceflow")
-  expect_match(sql, "5000000000::bigint")
+  expect_match(sql, "'SUBSURFACE-' \\|\\|")
 })
 
 test_that("lnk_barriers_unify derives gradient blocks_species per class from parameters_fresh", {
