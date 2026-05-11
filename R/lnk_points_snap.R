@@ -30,6 +30,13 @@
 #'   to any FWA stream within tolerance.
 #' @param stream_order_min Optional minimum `stream_order` to include.
 #'   `NULL` (default) accepts any order.
+#' @param num_features Integer scalar. Maximum number of stream candidates
+#'   per input point. Default `1L` (nearest-only — backwards compatible).
+#'   Set higher (e.g. `5L`) for downstream scoring/dedup workflows that
+#'   need multiple candidates per point (e.g. bcfp PSCIS-to-stream
+#'   selection where stream-name match disambiguates among nearby streams).
+#'   Output has one row per (input row, candidate stream) pair, ordered by
+#'   distance ascending.
 #'
 #' @return `invisible(table_out)`. Side effect: creates `table_out` in
 #'   `conn`'s database.
@@ -66,7 +73,8 @@ lnk_points_snap <- function(conn, table_in, table_out,
                             snap_tolerance = 100,
                             exclude_edge_types = 1425L,
                             blue_line_key_col = NULL,
-                            stream_order_min = NULL) {
+                            stream_order_min = NULL,
+                            num_features = 1L) {
   stopifnot(
     inherits(conn, "DBIConnection"),
     is.character(table_in), length(table_in) == 1L, nzchar(table_in),
@@ -78,7 +86,9 @@ lnk_points_snap <- function(conn, table_in, table_out,
     is.null(blue_line_key_col) ||
       (is.character(blue_line_key_col) && length(blue_line_key_col) == 1L),
     is.null(stream_order_min) ||
-      (is.numeric(stream_order_min) && length(stream_order_min) == 1L)
+      (is.numeric(stream_order_min) && length(stream_order_min) == 1L),
+    is.numeric(num_features), length(num_features) == 1L,
+    num_features >= 1, !is.na(num_features)
   )
 
   # Constrained candidate-stream WHERE clause built up from optional args.
@@ -161,14 +171,21 @@ lnk_points_snap <- function(conn, table_in, table_out,
         s.blue_line_key,
         s.wscode_ltree,
         s.localcode_ltree,
-        ST_LineLocatePoint(s.geom, %s)
-          * ST_Length(s.geom) AS downstream_route_measure,
+        -- Add segment's downstream_route_measure offset to the within-
+        -- segment position to get the absolute drm on the blue line.
+        -- Clamp to [segment.downstream_route_measure, segment.upstream_route_measure]
+        -- to avoid floating-point edge cases past the segment boundary.
+        -- Formula mirrors bcfp/04_pscis.sql lines 43-45 + 79-82.
+        CEIL(GREATEST(s.downstream_route_measure, FLOOR(LEAST(s.upstream_route_measure,
+          (ST_LineLocatePoint(s.geom, ST_ClosestPoint(s.geom, %s)) * s.length_metre)
+            + s.downstream_route_measure
+        )))) AS downstream_route_measure,
         ST_ClosestPoint(s.geom, %s) AS geom_snapped
       FROM whse_basemapping.fwa_stream_networks_sp s
       WHERE ST_DWithin(s.geom, %s, %f)
         AND %s
       ORDER BY s.geom <-> %s
-      LIMIT 1
+      LIMIT %d
     ) snap;",
     table_out,
     pt_expr,
@@ -176,7 +193,8 @@ lnk_points_snap <- function(conn, table_in, table_out,
     pt_expr, pt_expr, pt_expr,
     snap_tolerance,
     where_sql,
-    pt_expr
+    pt_expr,
+    as.integer(num_features)
   )
 
   DBI::dbExecute(conn, drop_sql)

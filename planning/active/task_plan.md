@@ -6,21 +6,14 @@ Wires the 3-step fresh primitive composition (`frs_point_snap` + `frs_candidates
 
 ## Phase 1: scaffold + DESCRIPTION + write `.lnk_pipeline_pscis_build`
 
-- [ ] DESCRIPTION: pin `Remotes: NewGraphEnvironment/fresh@v0.31.0` and bump Suggests `fresh (>= 0.31.0)`. Reinstall fresh from local source if not already on the system.
-- [ ] Write `R/lnk_pipeline_pscis_build.R` (new private helper):
-  - Signature: `.lnk_pipeline_pscis_build(conn, aoi, schema, snap_num_features = 5L, snap_tolerance = 150L)`
-  - Implements Steps 1-5 from the plan (multi-stream snap → enrich + score → b-side dedup UPDATE → frs_candidates_pick → xref overrides).
-  - Step 2 SQL embedded verbatim from bcfp (name_score CASE + width_order_score CASE).
-  - Returns `invisible(conn)`.
-  - Roxygen: `@noRd` (private), `@family pipeline`.
-- [ ] Update `R/lnk_pipeline_crossings.R`:
-  - Replace `lnk_points_snap(...)` call with `.lnk_pipeline_pscis_build(...)`.
-  - Update roxygen: PSCIS branch now uses bcfp-shape snap-pick-match chain.
-- [ ] Update `R/lnk_crossings_union.R`:
-  - PSCIS branch reads `<schema>.pscis` instead of `<schema>.pscis_assessment_snapped`.
-  - Modelled-branch xref-exclusion reads `<schema>.pscis.modelled_crossing_id` instead of the xref staging table directly.
-- [ ] `devtools::document()` to regenerate man/ + NAMESPACE
-- [ ] `lintr::lint("R/lnk_pipeline_pscis_build.R")` + `R/lnk_pipeline_crossings.R` clean
+- [x] DESCRIPTION: pin `Remotes: NewGraphEnvironment/fresh@v0.31.0` and bump Suggests `fresh (>= 0.31.0)`.
+- [x] Write `R/lnk_pipeline_pscis_build.R` (new private helper, 5 steps).
+- [x] Update `R/lnk_pipeline_crossings.R` — replace `lnk_points_snap` call with `.lnk_pipeline_pscis_build`.
+- [x] Update `R/lnk_crossings_union.R` — PSCIS branch reads `<schema>.pscis`; modelled-branch xref-exclusion reads `<schema>.pscis.modelled_crossing_id`.
+- [x] Extended `lnk_points_snap` with `num_features` arg (backward-compatible).
+- [x] **Bug fix in `lnk_points_snap`**: the previous `downstream_route_measure = ST_LineLocatePoint * ST_Length` formula computed position WITHIN the segment, not absolute drm on the blue line. Added segment offset `+ s.downstream_route_measure` and `s.length_metre` instead of `ST_Length(s.geom)`, with `GREATEST/LEAST/FLOOR/CEIL` clamping per bcfp's pattern. This fix is what made ADMS jump from 15/60 to 60/60 byte-identical for PSCIS-modelled linkage.
+- [x] `devtools::document()` regenerated.
+- [x] `lintr::lint` clean on all touched files.
 
 ## Phase 2: tests
 

@@ -94,14 +94,17 @@ lnk_pipeline_crossings <- function(conn, aoi, cfg, loaded, schema,
   # 1. Verify required source tables are present.
   lnk_inputs_verify(conn, c(pscis_table, modelled_table, dams_table)) # nolint: object_usage_linter
 
-  # 2. Snap PSCIS assessments to FWA. Other PSCIS variants
-  #    (design_proposal, habitat_confirmation, remediation) are not
-  #    required for the lean barriers build.
-  lnk_points_snap( # nolint: object_usage_linter
-    conn,
-    table_in       = pscis_table,
-    table_out      = paste0(schema, ".pscis_assessment_snapped"),
-    snap_tolerance = snap_tolerance
+  # 2. Build <schema>.pscis via bcfp-shape snap + score + pick + xref chain.
+  #    Mirrors bcfp's 02_pscis_streams_150m.sql + 04_pscis.sql at
+  #    smnorris/bcfishpass@v0.7.14-125-g6e9cf1c. Output table provides
+  #    every column the PSCIS branch of .lnk_crossings_union needs,
+  #    plus modelled_crossing_id (which drives the modelled-branch
+  #    xref exclusion downstream).
+  .lnk_pipeline_pscis_build(  # nolint: object_usage_linter
+    conn, aoi = aoi, schema = schema,
+    pscis_table = pscis_table,
+    modelled_table = modelled_table,
+    snap_tolerance = max(snap_tolerance, 150)  # bcfp uses 150m
   )
 
   # 3. Union into <schema>.crossings (lean column set).
