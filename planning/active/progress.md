@@ -56,3 +56,12 @@
 | **PARS** | **98.63** | 100 | 100 | 100 | 100 | 100 | 100 | 100 |
 
 **PARS BT: 60.64% → 98.63% (+38pp).** Cross-WSG `dam_dnstr_ind` fix validated. Source log: `data-raw/logs/202605111557_phase_a_FINAL_link152.txt`.
+
+## Session 2026-05-11 (Phase 7 — release)
+
+- DESCRIPTION: 0.34.0 → 0.35.0 + Date 2026-05-11.
+- NEWS.md: added 0.35.0 entry covering #152 (unified barriers + PARS BT closure + new exports).
+- research/bcfp_compare_mapping_code.md Status section updated with post-#152 results and the 6-WSG Phase A table.
+- `devtools::check()`: 0 errors, 3 warnings + 3 notes (all pre-existing).
+- `devtools::test()`: 1018 PASS / 0 FAIL.
+- Next: `/planning-archive` + `/gh-pr-push`.

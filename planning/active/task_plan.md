@@ -43,13 +43,13 @@ Full algorithm + critical-files table in `/Users/airvine/.claude/plans/snuggly-f
 ## Phase 6: Phase A re-run + acceptance
 
 - [x] Live Phase A re-run: `data-raw/compare_bcfp_mapping_code.R --wsgs=ADMS,BULK,WILL,PARS`. PARS BT must hit ≥99% from local-only inputs (cross-WSG validation). Other WSGs maintain ≥99%.
-- [ ] Update `research/bcfp_compare_mapping_code.md` Status section: PARS BT closure noted, Skeena unblocked.
+- [x] Update `research/bcfp_compare_mapping_code.md` Status section: PARS BT closure noted, Skeena unblocked.
 
 ## Phase 7: release
 
-- [ ] DESCRIPTION 0.34.0 → 0.35.0 (minor — new export, schema additions, no breaking changes).
-- [ ] NEWS.md 0.35.0 entry: unified barriers shape, PARS BT closure, new `lnk_barriers_unify` export.
-- [ ] `devtools::check()`: 0 errors / pre-existing notes only.
+- [x] DESCRIPTION 0.34.0 → 0.35.0 (minor — new export, schema additions, no breaking changes).
+- [x] NEWS.md 0.35.0 entry: unified barriers shape, PARS BT closure, new `lnk_barriers_unify` export.
+- [x] `devtools::check()`: 0 errors / pre-existing notes only.
 - [ ] `/planning-archive` + `/gh-pr-push` to open PR closing #152.
 
 ## Validation

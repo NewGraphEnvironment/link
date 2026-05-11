@@ -1,3 +1,43 @@
+## Status (2026-05-11, post-link#152)
+
+**PARS BT cross-WSG closure: 60.64% → 98.63%.** link#152 shipped the
+unified province-wide `<persist_schema>.barriers` table with
+`blocks_species text[]` predicate + the `lnk_barriers_unify` /
+`lnk_barriers_views` exports. `barrier_sources` `anthropogenic` +
+`dams` in `lnk_pipeline_access` now read from views over
+`fresh.barriers`, so `dam_dnstr_ind` walks find Bennett / Peace Canyon
+/ Site C dams in PCEA/UPCE even when computing for PARS — that's what
+closed the gap. The 6-WSG Phase A run (ADMS/BULK/WILL/PCEA/UPCE/PARS)
+holds ≥99% on every in-WSG species except PARS BT 98.63% (residual
+non-cross-WSG drift) and a handful of species fractionally inside 99%.
+Source log: `data-raw/logs/202605111557_phase_a_FINAL_link152.txt`.
+
+| WSG  | bt    | ch    | cm    | co    | pk    | sk    | st    | wct |
+|------|-------|-------|-------|-------|-------|-------|-------|-----|
+| ADMS | 99.00 | 99.92 | 99.99 | 99.76 | 99.71 | 99.14 | 100   | 100 |
+| BULK | 99.27 | 99.62 | 99.78 | 99.18 | 99.73 | 99.59 | 99.41 | 100 |
+| WILL | 98.86 | 99.65 | 99.93 | 99.07 | 99.91 | 99.93 | 100   | 100 |
+| PCEA | 99.93 | 100   | 100   | 100   | 100   | 100   | 100   | 100 |
+| UPCE | 99.91 | 100   | 100   | 100   | 100   | 100   | 100   | 100 |
+| PARS | 98.63 | 100   | 100   | 100   | 100   | 100   | 100   | 100 |
+
+Implementation: `lnk_persist_init()` extended with `cols_barriers` DDL
+(13 columns, PK on `(id_barrier, watershed_group_code)`, 5 indexes
+including GIN on `blocks_species`). `lnk_barriers_unify` consolidates
+four sources (anthropogenic / gradient / falls / subsurface_flow) into
+`<schema>.barriers` with `blocks_species` per row (gradient derived
+from `parameters_fresh$access_gradient_max`). `lnk_pipeline_persist`
+extends with a `<schema>.barriers` → `<persist_schema>.barriers`
+DELETE-WHERE-WSG + INSERT branch. `lnk_barriers_views` emits per-species
++ per-source VIEWs (`_unified` suffix) so existing `barriers_per_sp` /
+`barrier_sources` API consumes them unchanged.
+
+Out of scope (filed under follow-up): per-species local-only barriers
+materialization (`barriers_<sp>_unified` is currently broader than
+bcfp's minimal-reduced `barriers_<sp>`; the unified-table
+`blocks_species` predicate doesn't encode per-species minimal-position
+semantics).
+
 ## Status (2026-05-11, post-link#154)
 
 **Phase A acceptance bar met on all in-WSG targets.** link#154 landed
