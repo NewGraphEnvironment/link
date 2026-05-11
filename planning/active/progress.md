@@ -35,3 +35,10 @@
 - Phase A re-run executed during Phase 1.5 (post-fix v7 log already on disk).
 - Updated `research/bcfp_compare_mapping_code.md` Status section: replaced "ready to ship" framing with shipped numbers; added Phase A post-link#154 sub-section preserving the 2026-05-10 baseline for history.
 - Acceptance bar met: ≥99% on every in-WSG species across ADMS, BULK, WILL, PARS. PARS BT 60% deferred to link#152.
+
+## Session 2026-05-11 (Phase 4)
+
+- DESCRIPTION: 0.33.0 → 0.34.0 + Date: 2026-05-11.
+- NEWS.md: added 0.34.0 entry covering #154 + the three Phase 1.5 follow-on fixes (xref restructure, DBSCAN + UNIQUE dedup, crossing_fixes structure filter), `lnk_points_snap` drm bug fix, `num_features` arg.
+- `devtools::check()`: 0 errors, 3 warnings + 3 notes (all pre-existing — no new diagnostics from this change set).
+- Next: `/planning-archive` + `/gh-pr-push`.

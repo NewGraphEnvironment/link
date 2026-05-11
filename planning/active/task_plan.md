@@ -44,9 +44,9 @@ Initial Phase 1 results showed ADMS 99-100% but BULK 79-86%, WILL 95-98%. Diagno
 
 ## Phase 4: release
 
-- [ ] DESCRIPTION 0.33.0 → 0.34.0 (minor — modifies pipeline behavior, no new exports but user-facing semantics change).
-- [ ] NEWS.md 0.34.0 entry covering: 3-step composition with fresh primitives, BULK/WILL parity jump, what changed in `lnk_pipeline_crossings`.
-- [ ] `devtools::check()`: 0 errors / pre-existing notes/warnings only.
+- [x] DESCRIPTION 0.33.0 → 0.34.0 (minor — modifies pipeline behavior, no new exports but user-facing semantics change).
+- [x] NEWS.md 0.34.0 entry covering: 3-step composition with fresh primitives, BULK/WILL parity jump, what changed in `lnk_pipeline_crossings`.
+- [x] `devtools::check()`: 0 errors / pre-existing notes/warnings only.
 - [ ] `/planning-archive` + `/gh-pr-push` to open PR closing #154.
 
 ## Validation
