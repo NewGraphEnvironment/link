@@ -12,7 +12,8 @@ lnk_points_snap(
   snap_tolerance = 100,
   exclude_edge_types = 1425L,
   blue_line_key_col = NULL,
-  stream_order_min = NULL
+  stream_order_min = NULL,
+  num_features = 1L
 )
 }
 \arguments{
@@ -39,6 +40,14 @@ to any FWA stream within tolerance.}
 
 \item{stream_order_min}{Optional minimum \code{stream_order} to include.
 \code{NULL} (default) accepts any order.}
+
+\item{num_features}{Integer scalar. Maximum number of stream candidates
+per input point. Default \code{1L} (nearest-only — backwards compatible).
+Set higher (e.g. \code{5L}) for downstream scoring/dedup workflows that
+need multiple candidates per point (e.g. bcfp PSCIS-to-stream
+selection where stream-name match disambiguates among nearby streams).
+Output has one row per (input row, candidate stream) pair, ordered by
+distance ascending.}
 }
 \value{
 \code{invisible(table_out)}. Side effect: creates \code{table_out} in

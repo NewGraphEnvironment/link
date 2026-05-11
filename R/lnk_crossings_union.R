@@ -66,28 +66,48 @@
   s <- DBI::dbQuoteIdentifier(conn, schema)
   aoi_q <- DBI::dbQuoteString(conn, aoi)
 
-  # Detect whether the optional xref table is present. If absent, empty
-  # set — modelled crossings aren't pre-excluded for PSCIS overlap, which
-  # is fine for AOIs where lnk_pipeline_load hasn't staged the override.
-  has_xref <- DBI::dbGetQuery(conn, sprintf(
-    "SELECT EXISTS (
-       SELECT 1 FROM information_schema.tables
-       WHERE table_schema = %s
-         AND table_name = 'pscis_modelledcrossings_streams_xref'
-     ) AS present;",
-    DBI::dbQuoteString(conn, schema)
-  ))$present
+  # Modelled-branch exclusion: drop modelled crossings whose
+  # modelled_crossing_id is already claimed by a PSCIS row in
+  # <schema>.pscis (either via the auto-snap-derived linkage or the
+  # xref CSV override applied on top — both sources combined inside
+  # .lnk_pipeline_pscis_build). This replaces the previous
+  # xref-CSV-only exclusion (which missed the auto-snap-derived
+  # linkages that bcfp catches via its UNIQUE constraint + ON CONFLICT
+  # DO NOTHING pattern; see research/bcfp_table_map.md).
+  xref_clause <- sprintf(
+    "AND m.modelled_crossing_id NOT IN (
+       SELECT modelled_crossing_id
+       FROM %s.pscis
+       WHERE modelled_crossing_id IS NOT NULL
+     )",
+    s
+  )
 
-  xref_clause <- if (isTRUE(has_xref)) {
-    sprintf(
-      "AND m.modelled_crossing_id NOT IN (
-         SELECT modelled_crossing_id
-         FROM %s.pscis_modelledcrossings_streams_xref
-       )",
+  # Optional LEFT JOIN to <schema>.crossing_fixes (staged
+  # user_modelled_crossing_fixes). When present, filter the modelled
+  # branch to mirror bcfp's `(f.structure IS NULL OR f.structure='OBS')`
+  # rule: drop crossings explicitly fixed as NONE / PASSABLE / CBS /
+  # FORD / etc. Without this filter, ~275 modelled crossings in BULK
+  # and ~103 in WILL leak through and break per-segment mapping_code
+  # parity. See bcfp `model/01_access/sql/load_crossings.sql:634`.
+  has_crossing_fixes <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT 1
+       FROM information_schema.tables
+      WHERE table_schema = %s AND table_name = 'crossing_fixes'
+      LIMIT 1;",
+    DBI::dbQuoteString(conn, schema)
+  ))
+  if (nrow(has_crossing_fixes) > 0L) {
+    fix_join <- sprintf(
+      "LEFT JOIN %s.crossing_fixes cf
+         ON cf.aggregated_crossings_id::bigint = m.modelled_crossing_id::bigint
+        AND cf.watershed_group_code = m.watershed_group_code",
       s
     )
+    fix_filter <- "AND (cf.structure IS NULL OR cf.structure = 'OBS')"
   } else {
-    ""
+    fix_join <- ""
+    fix_filter <- ""
   }
 
   DBI::dbExecute(conn, sprintf("DROP TABLE IF EXISTS %s.crossings;", s))
@@ -95,10 +115,12 @@
   sql <- sprintf("
     CREATE TABLE %s.crossings AS
 
-    -- PSCIS branch (highest precedence). Joins fwa_stream_networks_sp
-    -- on linear_feature_id to recover watershed_key + watershed_group_code
-    -- (PSCIS BCDC tables don't carry watershed_group_code natively; derived
-    -- post-snap via the FWA join). Filtering to AOI is also done here.
+    -- PSCIS branch (highest precedence). Reads from <schema>.pscis
+    -- built by .lnk_pipeline_pscis_build — that table already has the
+    -- watershed_group_code (computed via the FWA join during build),
+    -- so we don't need to JOIN to fwa_stream_networks_sp again here.
+    -- modelled_crossing_id is also present and is what drives the
+    -- modelled-branch xref exclusion below.
     SELECT
       p.stream_crossing_id::text  AS aggregated_crossings_id,
       'PSCIS'::text               AS crossing_source,
@@ -107,17 +129,17 @@
       p.current_pscis_status      AS pscis_status,
       NULL::text                  AS dam_name,
       p.linear_feature_id,
-      p.snapped_blue_line_key     AS blue_line_key,
+      p.blue_line_key,
       fwa_p.watershed_key         AS watershed_key,
       p.downstream_route_measure,
       p.wscode_ltree,
       p.localcode_ltree,
-      fwa_p.watershed_group_code  AS watershed_group_code,
+      p.watershed_group_code,
       p.geom_snapped              AS geom
-    FROM %s.pscis_assessment_snapped p
+    FROM %s.pscis p
     INNER JOIN whse_basemapping.fwa_stream_networks_sp fwa_p
       ON p.linear_feature_id = fwa_p.linear_feature_id
-    WHERE fwa_p.watershed_group_code = %s
+    WHERE p.watershed_group_code = %s
 
     UNION ALL
 
@@ -195,14 +217,19 @@
     FROM %s m
     INNER JOIN whse_basemapping.fwa_stream_networks_sp fwa_m
       ON m.linear_feature_id = fwa_m.linear_feature_id
+    %s
     WHERE m.watershed_group_code = %s
+      %s
       %s;
     ",
     s,                           # CREATE TABLE %s.crossings AS
     s, aoi_q,                    # PSCIS FROM <schema>.pscis_..._snapped + AOI WHERE
     dams_table, aoi_q,           # CABD FROM + AOI WHERE
-    modelled_table, aoi_q,       # Modelled FROM + AOI WHERE
-    xref_clause                  # xref exclusion clause
+    modelled_table,              # Modelled FROM
+    fix_join,                    # optional crossing_fixes LEFT JOIN
+    aoi_q,                       # Modelled AOI WHERE
+    xref_clause,                 # xref exclusion clause
+    fix_filter                   # crossing_fixes structure filter
   )
 
   DBI::dbExecute(conn, sql)

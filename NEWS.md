@@ -1,4 +1,12 @@
-# link 0.33.0
+# link 0.34.0
+
+Closes [#154](https://github.com/NewGraphEnvironment/link/issues/154). `lnk_pipeline_crossings()` now reproduces bcfp's PSCIS-to-modelled auto-snap layer byte-identically via the fresh primitive composition (`lnk_points_snap(num_features = 5L)` + `fresh::frs_candidates_pick()` + bcfp-shape scoring/dedup SQL). Phase A `mapping_code` parity hits ≥99% on every in-WSG species across ADMS, BULK, WILL, PARS — BULK jumped ~80% → ~99.5%, WILL ~86% → ~99.7%. PARS BT 60% remains cross-WSG `dam_dnstr` territory (tracked under [#152](https://github.com/NewGraphEnvironment/link/issues/152)).
+
+- New private helper `.lnk_pipeline_pscis_build(conn, aoi, schema, loaded, …)` mirrors bcfp's `02_pscis_streams_150m.sql` + `04_pscis.sql` at `smnorris/bcfishpass@v0.7.14-125-g6e9cf1c`. Five-step composition: multi-stream snap → enrich + score (`name_score`, `width_order_score`) → b-side modelled-collision dedup → per-PSCIS pick via `frs_candidates_pick` + AOI filter + DBSCAN 5m cluster + UNIQUE(blue_line_key, downstream_route_measure) dedup → xref-driven INSERT (two-branch UNION ALL: `modelled_crossing_id` lookup vs `linear_feature_id` lookup, mirroring `referenced_modelled_xing` + `referenced_streams` CTEs). `lnk_pipeline_crossings()` now calls this helper in place of the bare `lnk_points_snap()`; minimum `snap_tolerance` clamped to 150 m to match bcfp.
+- `lnk_points_snap()`: bug fix in the segment-offset `downstream_route_measure` formula. Previous form `ST_LineLocatePoint * ST_Length(s.geom)` computed position WITHIN the candidate segment, not the absolute drm on the blue line. Now adds `+ s.downstream_route_measure` and uses `s.length_metre` with `GREATEST/LEAST/FLOOR/CEIL` clamping per bcfp's pattern. New `num_features = 1L` arg (backwards-compatible) returns up to N candidate streams per input point for downstream scoring workflows.
+- `.lnk_crossings_union`: modelled branch now LEFT JOINs `<schema>.crossing_fixes` (staged `user_modelled_crossing_fixes`) and filters `WHERE cf.structure IS NULL OR cf.structure = 'OBS'` — bcfp parity with `load_crossings.sql:634`. Without this filter, 275 NONE-fixed modelled crossings leaked through in BULK / 103 in WILL, breaking per-segment `mapping_code` parity for non-wct species. PSCIS branch now reads from `<schema>.pscis` (the canonical output of `.lnk_pipeline_pscis_build`); modelled-branch xref exclusion sources from the same table.
+
+
 
 Closes [#148](https://github.com/NewGraphEnvironment/link/issues/148). Wednesday-morning sync chain shifted earlier so a fully-fresh local fwapg lands before workday-start, and `data-raw/snapshot_bcfp.sh` is now schedulable per host without manual install gymnastics.
 
