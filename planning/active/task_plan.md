@@ -31,9 +31,9 @@ Full algorithm + critical-files table in `/Users/airvine/.claude/plans/snuggly-f
 
 ## Phase 4: `lnk_pipeline_access` consumes unified table
 
-- [ ] Add `barriers_unified` arg to `lnk_pipeline_access()`. When supplied, build subquery-based `features` references for per-species loop (`WHERE <sp> = ANY(blocks_species)`) and source-typed loop (`WHERE barrier_source = '<src>'`). Cache by filter signature.
-- [ ] When `barriers_unified = NULL`, existing `barriers_per_sp` + `barrier_sources` paths run unchanged (backward compat).
-- [ ] Update `test-lnk_pipeline_access.R` — coverage for the unified-barriers code path.
+- [x] Phase 4 implementation deviation: added new `lnk_barriers_views(conn, schema, cfg)` helper instead of an arg-level refactor to `lnk_pipeline_access`. Helper emits per-species + per-source VIEWs over `<persist_schema>.barriers` with `_unified` suffix; callers pass those view names via existing `barriers_per_sp` + `barrier_sources` args. Zero API change to `lnk_pipeline_access`, no new arg.. When supplied, build subquery-based `features` references for per-species loop (`WHERE <sp> = ANY(blocks_species)`) and source-typed loop (`WHERE barrier_source = '<src>'`). Cache by filter signature.
+- [x] `lnk_pipeline_access` API unchanged, existing `barriers_per_sp` + `barrier_sources` paths run unchanged (backward compat).
+- [x] New `tests/testthat/test-lnk_barriers_views.R` covers view creation. `test-lnk_pipeline_access.R` not modified (no API change).
 
 ## Phase 5: orchestrator wiring + compare scripts
 

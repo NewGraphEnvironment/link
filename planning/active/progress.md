@@ -28,3 +28,11 @@
 - Extended `lnk_pipeline_persist()` with barriers DELETE/INSERT branch (gated on `<schema>.barriers` staging-table probe so older orchestrators without `lnk_barriers_unify` keep working).
 - Updated `test-lnk_pipeline_persist.R`: 4 existing tests refactored to mock `dbGetQuery`/`dbQuoteString` so the probe returns "absent" by default; 2 new tests cover the barriers-present and barriers-absent branches.
 - Full suite: 996 PASS / 0 FAIL.
+
+## Session 2026-05-11 (Phase 4)
+
+- **Design pivot**: instead of adding a `barriers_unified` arg to `lnk_pipeline_access` (which would have required either fresh-side identifier-validator changes or in-function temp-view creation), introduced a separate `lnk_barriers_views(conn, schema, cfg)` helper.
+- The helper emits `<schema>.barriers_<sp>_unified` (8 species) + `<schema>.barriers_{anthropogenic,pscis,dams}_unified` (3 source views) as `CREATE OR REPLACE VIEW`s over `<persist_schema>.barriers`. Each view exposes `id_barrier AS barriers_<x>_unified_id` so fresh's `feature_id_col = "<table>_id"` convention works unchanged.
+- `_unified` suffix avoids name collision with the per-WSG `barriers_<sp>` + `barriers_anthropogenic` tables that `.lnk_pipeline_prep_minimal` + `lnk_barriers_emit` already build.
+- Zero API change to `lnk_pipeline_access`. Callers pass view names through existing `barriers_per_sp` + `barrier_sources` args. Cross-WSG dnstr fix arrives "for free" because the views point at the province-wide table.
+- New `tests/testthat/test-lnk_barriers_views.R` — 21 PASS / 0 FAIL. Full suite: 1017 PASS / 0 FAIL.

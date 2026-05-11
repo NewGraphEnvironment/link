@@ -118,6 +118,7 @@ DBI::dbReadTable(conn, c("working_pars", "barriers"))
 \code{\link[=lnk_pipeline_access]{lnk_pipeline_access()}}
 
 Other barriers: 
-\code{\link{lnk_barriers_emit}()}
+\code{\link{lnk_barriers_emit}()},
+\code{\link{lnk_barriers_views}()}
 }
 \concept{barriers}
