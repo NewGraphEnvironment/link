@@ -27,13 +27,13 @@ Initial Phase 1 results showed ADMS 99-100% but BULK 79-86%, WILL 95-98%. Diagno
 
 ## Phase 2: tests
 
-- [ ] New `tests/testthat/test-lnk_pipeline_pscis_build.R`:
+- [x] New `tests/testthat/test-lnk_pipeline_pscis_build.R`:
   - Mocked tests for the SQL composition (each of Steps 1-5).
   - Live test against bcfp tunnel ADMS: produce `<schema>.pscis`, diff vs `bcfishpass.pscis.modelled_crossing_id` for ADMS → expect 60/60 or better.
-- [ ] Update `tests/testthat/test-lnk_pipeline_crossings.R`:
+- [x] Update `tests/testthat/test-lnk_pipeline_crossings.R`:
   - Replace the `lnk_points_snap` expectation with `.lnk_pipeline_pscis_build`.
   - Keep the end-to-end smoke test on ADMS — should still hold or improve.
-- [ ] Keep `tests/testthat/test-lnk_points_snap.R` as-is — `lnk_points_snap` stays exported for other use cases.
+- [x] Keep `tests/testthat/test-lnk_points_snap.R` as-is — `lnk_points_snap` stays exported for other use cases.
 
 ## Phase 3: live Phase A mapping_code parity re-run
 

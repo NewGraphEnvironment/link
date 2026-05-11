@@ -2,7 +2,7 @@ test_that(".lnk_crossings_union builds the union SQL with PSCIS + CABD + modelle
   conn <- structure(list(), class = "DBIConnection")
   m_quote_id <- mockery::mock(DBI::SQL("\"working_adms\""), cycle = TRUE)
   m_quote_str <- mockery::mock(DBI::SQL("'ADMS'"), cycle = TRUE)
-  m_query <- mockery::mock(data.frame(present = TRUE))
+  m_query <- mockery::mock(data.frame(dummy = TRUE), cycle = TRUE)
   m_exec <- mockery::mock(1L, cycle = TRUE)
   with_mocked_bindings(
     dbQuoteIdentifier = m_quote_id,
@@ -31,36 +31,19 @@ test_that(".lnk_crossings_union builds the union SQL with PSCIS + CABD + modelle
                "FROM .* d\\s+INNER JOIN whse_basemapping\\.fwa_stream_networks_sp fwa_d")
   expect_match(sql,
                "FROM .* m\\s+INNER JOIN whse_basemapping\\.fwa_stream_networks_sp fwa_m")
-})
-
-test_that(".lnk_crossings_union excludes modelled crossings via xref when present", {
-  conn <- structure(list(), class = "DBIConnection")
-  m_quote_id <- mockery::mock(DBI::SQL("\"s\""), cycle = TRUE)
-  m_quote_str <- mockery::mock(DBI::SQL("'AOI'"), cycle = TRUE)
-  m_query <- mockery::mock(data.frame(present = TRUE))
-  m_exec <- mockery::mock(1L, cycle = TRUE)
-  with_mocked_bindings(
-    dbQuoteIdentifier = m_quote_id,
-    dbQuoteString = m_quote_str,
-    dbGetQuery = m_query,
-    dbExecute = m_exec,
-    .package = "DBI",
-    {
-      link:::.lnk_crossings_union(conn, "s", "AOI")
-    }
-  )
-  sql <- paste(vapply(mockery::mock_args(m_exec),
-                      function(a) a[[2]], character(1)),
-               collapse = "\n")
+  # PSCIS branch reads from <schema>.pscis (post-#154); modelled-branch
+  # xref exclusion sources from the same table.
+  expect_match(sql, "FROM .*\\.pscis p")
   expect_match(sql, "modelled_crossing_id NOT IN")
-  expect_match(sql, "FROM .*\\.pscis_modelledcrossings_streams_xref")
+  expect_match(sql, "FROM .*\\.pscis")
 })
 
-test_that(".lnk_crossings_union skips the xref clause when xref table missing", {
+test_that(".lnk_crossings_union includes crossing_fixes filter when staging table present", {
   conn <- structure(list(), class = "DBIConnection")
   m_quote_id <- mockery::mock(DBI::SQL("\"s\""), cycle = TRUE)
   m_quote_str <- mockery::mock(DBI::SQL("'AOI'"), cycle = TRUE)
-  m_query <- mockery::mock(data.frame(present = FALSE))
+  # First call (table-presence probe) returns one row → table present.
+  m_query <- mockery::mock(data.frame(x = 1L))
   m_exec <- mockery::mock(1L, cycle = TRUE)
   with_mocked_bindings(
     dbQuoteIdentifier = m_quote_id,
@@ -75,7 +58,32 @@ test_that(".lnk_crossings_union skips the xref clause when xref table missing", 
   sql <- paste(vapply(mockery::mock_args(m_exec),
                       function(a) a[[2]], character(1)),
                collapse = "\n")
-  expect_no_match(sql, "modelled_crossing_id NOT IN")
+  expect_match(sql, "LEFT JOIN .*\\.crossing_fixes cf")
+  expect_match(sql, "cf\\.structure IS NULL OR cf\\.structure = 'OBS'")
+})
+
+test_that(".lnk_crossings_union skips crossing_fixes filter when staging table missing", {
+  conn <- structure(list(), class = "DBIConnection")
+  m_quote_id <- mockery::mock(DBI::SQL("\"s\""), cycle = TRUE)
+  m_quote_str <- mockery::mock(DBI::SQL("'AOI'"), cycle = TRUE)
+  # Zero-row data.frame → probe says table missing.
+  m_query <- mockery::mock(data.frame(x = integer(0)))
+  m_exec <- mockery::mock(1L, cycle = TRUE)
+  with_mocked_bindings(
+    dbQuoteIdentifier = m_quote_id,
+    dbQuoteString = m_quote_str,
+    dbGetQuery = m_query,
+    dbExecute = m_exec,
+    .package = "DBI",
+    {
+      link:::.lnk_crossings_union(conn, "s", "AOI")
+    }
+  )
+  sql <- paste(vapply(mockery::mock_args(m_exec),
+                      function(a) a[[2]], character(1)),
+               collapse = "\n")
+  expect_no_match(sql, "LEFT JOIN .*\\.crossing_fixes cf")
+  expect_no_match(sql, "cf\\.structure IS NULL")
 })
 
 test_that(".lnk_crossings_union validates argument shapes", {

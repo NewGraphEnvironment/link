@@ -22,3 +22,10 @@
   3. xref-precedence: bcfp excludes xref-mapped from snap path then inserts via xref-driven branches
 - Implemented all three. Phase A results jumped to ≥99% on ADMS/BULK/WILL (all species).
 - Next: code-check, commit Phase 1.5, then Phase 2 (tests).
+
+## Session 2026-05-11 (Phase 2)
+
+- Rewrote `test-lnk_pipeline_crossings.R` to mock `.lnk_pipeline_pscis_build` instead of `lnk_points_snap`; verifies snap_tolerance clamp to >= 150 (bcfp parity).
+- Rewrote stale xref-presence tests in `test-lnk_crossings_union.R` to probe for `<schema>.crossing_fixes` (Phase 1.5 added a structure-filter that gates on its presence).
+- Added `test-lnk_pipeline_pscis_build.R` covering: 5-step SQL composition (each step's key markers), xref-staging branch (loaded vs DB-only), Step 5 skip when xref absent, argument validation.
+- Full suite: 962 PASS / 0 FAIL.
