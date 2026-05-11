@@ -72,5 +72,33 @@ lnk_pipeline_persist <- function(conn, aoi, cfg, species,
       sp_table, habitat_cols, habitat_cols, schema, sp_lit))
   }
 
+  # ----- barriers -----
+  # Unified province-wide barriers (link#152). Per-WSG slice copied
+  # from working <schema>.barriers (built by lnk_barriers_unify) into
+  # <persist_schema>.barriers via the same DELETE-WHERE-WSG + INSERT
+  # idiom. Cross-WSG dnstr queries (e.g. PARS BT through dams in
+  # PCEA/UPCE) resolve correctly once all WSGs have written their
+  # slice.
+  #
+  # Probe for <schema>.barriers — only copy if lnk_barriers_unify has
+  # produced it. Older orchestrators that don't yet call unify keep
+  # the existing streams-only persistence behaviour.
+  barriers_present <- nrow(DBI::dbGetQuery(conn, sprintf(
+    "SELECT 1 FROM information_schema.tables
+      WHERE table_schema = %s AND table_name = 'barriers'
+      LIMIT 1;",
+    DBI::dbQuoteString(conn, schema)
+  ))) > 0L
+  if (barriers_present) {
+    barriers_table <- paste0(tn$schema, ".barriers")
+    barriers_cols <- paste(names(cols_barriers), collapse = ", ")
+    .lnk_db_execute(conn, sprintf(
+      "DELETE FROM %s WHERE watershed_group_code = %s",
+      barriers_table, aoi_lit))
+    .lnk_db_execute(conn, sprintf(
+      "INSERT INTO %s (%s) SELECT %s FROM %s.barriers",
+      barriers_table, barriers_cols, barriers_cols, schema))
+  }
+
   invisible(conn)
 }

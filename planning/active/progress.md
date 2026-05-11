@@ -22,3 +22,9 @@
 - `id_barrier` namespaced per source (anthro = aggregated_crossings_id; gradient + 3e9; falls + 4e9; subsurface + 5e9).
 - New `tests/testthat/test-lnk_barriers_unify.R` — 23 PASS / 0 FAIL.
 - man page regenerated via `devtools::document()`.
+
+## Session 2026-05-11 (Phase 3)
+
+- Extended `lnk_pipeline_persist()` with barriers DELETE/INSERT branch (gated on `<schema>.barriers` staging-table probe so older orchestrators without `lnk_barriers_unify` keep working).
+- Updated `test-lnk_pipeline_persist.R`: 4 existing tests refactored to mock `dbGetQuery`/`dbQuoteString` so the probe returns "absent" by default; 2 new tests cover the barriers-present and barriers-absent branches.
+- Full suite: 996 PASS / 0 FAIL.

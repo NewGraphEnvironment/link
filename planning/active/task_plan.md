@@ -26,8 +26,8 @@ Full algorithm + critical-files table in `/Users/airvine/.claude/plans/snuggly-f
 
 ## Phase 3: persistence + `lnk_pipeline_persist` extension
 
-- [ ] Extend `lnk_pipeline_persist()` to also persist `<schema>.barriers` to `<persist_schema>.barriers` (DELETE WHERE watershed_group_code = aoi; INSERT). Driven by `cols_barriers`.
-- [ ] Update `test-lnk_pipeline_persist.R` — assert barriers DELETE/INSERT is issued.
+- [x] Extend `lnk_pipeline_persist()` to also persist `<schema>.barriers` to `<persist_schema>.barriers` (DELETE WHERE watershed_group_code = aoi; INSERT). Driven by `cols_barriers`.
+- [x] Update `test-lnk_pipeline_persist.R` — assert barriers DELETE/INSERT is issued.
 
 ## Phase 4: `lnk_pipeline_access` consumes unified table
 
