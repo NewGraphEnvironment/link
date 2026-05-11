@@ -12,3 +12,13 @@
 - Scaffolded PWF baseline with approved phases
 - Plan file: `/Users/airvine/.claude/plans/snuggly-fluttering-hopper.md`
 - Next: start Phase 1 — pin DESCRIPTION + write `R/lnk_pipeline_pscis_build.R`
+
+## Session 2026-05-11 (Phase 1.5)
+
+- Diagnosed BULK/WILL drift after initial Phase 1 commit (`93083da`).
+- Identified three additional bcfp-parity gaps (see findings.md):
+  1. `crossing_fixes.structure` filter missing in modelled branch of `.lnk_crossings_union`
+  2. DBSCAN 5m + UNIQUE(blk,drm) dedup missing in `.lnk_pipeline_pscis_build`
+  3. xref-precedence: bcfp excludes xref-mapped from snap path then inserts via xref-driven branches
+- Implemented all three. Phase A results jumped to ≥99% on ADMS/BULK/WILL (all species).
+- Next: code-check, commit Phase 1.5, then Phase 2 (tests).

@@ -124,3 +124,37 @@ Currently `Remotes: NewGraphEnvironment/fresh` (no version). Need `Remotes: NewG
 ### compare_bcfp_mapping_code.R impact
 
 Tunnel-side per-species barrier staging block (lines ~122-147) STAYS — link#152 (unified barriers) is independent and still needs bcfp tunnel staging for the per-species barriers until that issue lands.
+
+## Phase 1.5 — BULK/WILL diagnostic dive (2026-05-11)
+
+Initial Phase 1 commit (93083da) brought ADMS to 99-100% byte-identical but BULK/WILL lagged badly. Stepwise diagnosis:
+
+### Three additional bcfp-parity gaps surfaced
+
+1. **Modelled `user_modelled_crossing_fixes.structure` exclusion** (`R/lnk_crossings_union.R`).
+   - bcfp `model/01_access/sql/load_crossings.sql:634` filters `WHERE (f.structure IS NULL OR f.structure = 'OBS')` — drops modelled crossings explicitly marked NONE/PASSABLE/CBS/FORD/etc.
+   - We had only an UPDATE-style override that flipped barrier_status to PASSABLE; the rows survived.
+   - BULK has 275 NONE-fixed crossings, WILL has 103. ADMS only 7 (which is why ADMS appeared healthy).
+   - Fix: LEFT JOIN to `<schema>.crossing_fixes` + `WHERE (cf.structure IS NULL OR cf.structure = 'OBS')`.
+
+2. **DBSCAN 5m cluster + UNIQUE(blk,drm) dedup** (`R/lnk_pipeline_pscis_build.R`).
+   - bcfp `04_pscis.sql` clusters derived geoms with `ST_ClusterDBSCAN(geom, 5, 1)` then `DISTINCT ON (cid) ORDER BY distance_to_stream ASC, assessment_date DESC, modelled_crossing_id`.
+   - Also has table-level `UNIQUE (blue_line_key, downstream_route_measure)` + `ON CONFLICT DO NOTHING` on inserts.
+   - DBSCAN dropped only ~15 PSCIS in BULK on its own (small effect compared to the xref restructure below).
+
+3. **xref-precedence restructure** (`R/lnk_pipeline_pscis_build.R`).
+   - **Dominant BULK gap.** bcfp's order is xref INSERT first → snap INSERT excluding xref stream_crossing_ids. xref entries with stale `modelled_crossing_id` (no longer in `modelled_stream_crossings`) silently fail to insert via the INNER JOIN to modelled in `referenced_modelled_xing`.
+   - We were taking snap output unconditionally and overlaying xref fields via UPDATE. Snap kept PSCIS that bcfp drops because bcfp's xref path INSERT-fails silently.
+   - 88 of BULK's 92 PSCIS extras (vs ref) are xref-mapped IDs that bcfp drops this way.
+   - Fix: DELETE xref-mapped stream_crossing_ids from `<schema>.pscis` post-snap, then INSERT via two-branch UNION ALL mirroring bcfp's `referenced_modelled_xing` + `referenced_streams` CTEs.
+
+### Phase A results post-fixes
+
+| WSG  | bt | ch | cm | co | pk | sk | st | wct |
+|------|------|------|------|------|------|------|------|------|
+| ADMS | 99.01 | 99.93 | 99.99 | 99.76 | 99.72 | 99.14 | 100 | 100 |
+| BULK | 99.26 | 99.62 | 99.78 | 99.17 | 99.73 | 99.59 | 99.41 | 100 |
+| WILL | 98.85 | 99.65 | 99.93 | 99.06 | 99.91 | 99.93 | 100 | 100 |
+| PARS | 60.64 | 100 | 100 | 100 | 100 | 100 | 100 | 100 |
+
+PARS BT 60.64% is cross-WSG dnstr (link#152 deferred). All other ≥99%.

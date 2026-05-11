@@ -83,6 +83,33 @@
     s
   )
 
+  # Optional LEFT JOIN to <schema>.crossing_fixes (staged
+  # user_modelled_crossing_fixes). When present, filter the modelled
+  # branch to mirror bcfp's `(f.structure IS NULL OR f.structure='OBS')`
+  # rule: drop crossings explicitly fixed as NONE / PASSABLE / CBS /
+  # FORD / etc. Without this filter, ~275 modelled crossings in BULK
+  # and ~103 in WILL leak through and break per-segment mapping_code
+  # parity. See bcfp `model/01_access/sql/load_crossings.sql:634`.
+  has_crossing_fixes <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT 1
+       FROM information_schema.tables
+      WHERE table_schema = %s AND table_name = 'crossing_fixes'
+      LIMIT 1;",
+    DBI::dbQuoteString(conn, schema)
+  ))
+  if (nrow(has_crossing_fixes) > 0L) {
+    fix_join <- sprintf(
+      "LEFT JOIN %s.crossing_fixes cf
+         ON cf.aggregated_crossings_id::bigint = m.modelled_crossing_id::bigint
+        AND cf.watershed_group_code = m.watershed_group_code",
+      s
+    )
+    fix_filter <- "AND (cf.structure IS NULL OR cf.structure = 'OBS')"
+  } else {
+    fix_join <- ""
+    fix_filter <- ""
+  }
+
   DBI::dbExecute(conn, sprintf("DROP TABLE IF EXISTS %s.crossings;", s))
 
   sql <- sprintf("
@@ -190,14 +217,19 @@
     FROM %s m
     INNER JOIN whse_basemapping.fwa_stream_networks_sp fwa_m
       ON m.linear_feature_id = fwa_m.linear_feature_id
+    %s
     WHERE m.watershed_group_code = %s
+      %s
       %s;
     ",
     s,                           # CREATE TABLE %s.crossings AS
     s, aoi_q,                    # PSCIS FROM <schema>.pscis_..._snapped + AOI WHERE
     dams_table, aoi_q,           # CABD FROM + AOI WHERE
-    modelled_table, aoi_q,       # Modelled FROM + AOI WHERE
-    xref_clause                  # xref exclusion clause
+    modelled_table,              # Modelled FROM
+    fix_join,                    # optional crossing_fixes LEFT JOIN
+    aoi_q,                       # Modelled AOI WHERE
+    xref_clause,                 # xref exclusion clause
+    fix_filter                   # crossing_fixes structure filter
   )
 
   DBI::dbExecute(conn, sql)

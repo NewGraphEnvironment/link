@@ -58,7 +58,7 @@
 #'
 #' @family pipeline
 #' @noRd
-.lnk_pipeline_pscis_build <- function(conn, aoi, schema,
+.lnk_pipeline_pscis_build <- function(conn, aoi, schema, loaded = NULL,
                                       pscis_table = "whse_fish.pscis_assessment_svw",
                                       modelled_table = "fresh.modelled_stream_crossings",
                                       snap_tolerance = 150,
@@ -67,11 +67,30 @@
     inherits(conn, "DBIConnection"),
     is.character(aoi), length(aoi) == 1L, nzchar(aoi),
     is.character(schema), length(schema) == 1L, nzchar(schema),
+    is.null(loaded) || is.list(loaded),
     is.numeric(snap_tolerance), length(snap_tolerance) == 1L,
     snap_tolerance > 0,
     is.numeric(snap_num_features), length(snap_num_features) == 1L,
     snap_num_features >= 1
   )
+
+  # Stage pscis_modelledcrossings_streams_xref from `loaded` into the
+  # working schema if available. lnk_pipeline_load doesn't currently
+  # stage this CSV (only pscis_fixes, crossing_fixes, etc.); we own
+  # the staging here so Step 5 has the table to UPDATE from.
+  if (!is.null(loaded) && !is.null(loaded$pscis_modelledcrossings_streams_xref)) {
+    xref_df <- loaded$pscis_modelledcrossings_streams_xref
+    .lnk_db_execute(conn, sprintf(
+      "DROP TABLE IF EXISTS %s.pscis_modelledcrossings_streams_xref;",
+      schema
+    ))
+    DBI::dbWriteTable(
+      conn,
+      DBI::Id(schema = schema, table = "pscis_modelledcrossings_streams_xref"),
+      xref_df,
+      overwrite = TRUE
+    )
+  }
 
   s <- schema  # short alias for sprintf
 
@@ -254,7 +273,8 @@
         "CASE WHEN modelled_xing_dist_instream IS NOT NULL ",
         "THEN distance_to_stream - (distance_to_stream * 0.1) ",
         "ELSE distance_to_stream END ASC"
-      )
+      ),
+      "linear_feature_id ASC"  # deterministic tiebreak when scores + distance tie
     )
   )
 
@@ -268,6 +288,59 @@
     SELECT * FROM %1$s.pscis_picked
     WHERE watershed_group_code = %2$s;", s, .lnk_quote_literal(aoi)) # nolint: indentation_linter, line_length_linter
   .lnk_db_execute(conn, sql_aoi_filter)
+
+  # =====================================================================
+  # Step 4c: DBSCAN 5m spatial cluster dedup
+  # =====================================================================
+  # Mirrors bcfp 04_pscis.sql `clusters AS ... ST_ClusterDBSCAN(geom, 5, 1)
+  # ... de_duped AS SELECT DISTINCT ON (cid) ORDER BY cid, distance_to_stream
+  # asc, assessment_date desc, modelled_crossing_id`. Within-cluster
+  # priority: closest to stream wins, then newest assessment, then lowest
+  # modelled_crossing_id. Drops PSCIS that bcfp folds into a neighbor.
+  # Without this, BULK leaks ~97 extras (most of the 104 PSCIS that
+  # bcfp drops via this step).
+  sql_dbscan_dedup <- sprintf("
+    WITH clusters AS (
+      SELECT
+        stream_crossing_id,
+        ST_ClusterDBSCAN(geom_snapped, 5, 1) OVER () AS cid
+      FROM %1$s.pscis
+    ),
+    de_duped AS (
+      SELECT DISTINCT ON (cid) c.stream_crossing_id
+      FROM clusters c
+      INNER JOIN %1$s.pscis p ON c.stream_crossing_id = p.stream_crossing_id
+      LEFT JOIN %2$s a ON c.stream_crossing_id = a.stream_crossing_id
+      ORDER BY cid, p.distance_to_stream ASC,
+               a.assessment_date DESC NULLS LAST,
+               p.modelled_crossing_id ASC NULLS LAST
+    )
+    DELETE FROM %1$s.pscis
+    WHERE stream_crossing_id NOT IN (SELECT stream_crossing_id FROM de_duped);
+    ", s, pscis_table) # nolint: indentation_linter, line_length_linter
+  .lnk_db_execute(conn, sql_dbscan_dedup)
+
+  # =====================================================================
+  # Step 4d: UNIQUE(blue_line_key, downstream_route_measure) dedup
+  # =====================================================================
+  # Mirrors bcfp's table-level `UNIQUE (blue_line_key,
+  # downstream_route_measure)` constraint enforced via `ON CONFLICT DO
+  # NOTHING` on both INSERTs. When two PSCIS resolve to the same
+  # (blue_line_key, downstream_route_measure) after CEIL/FLOOR rounding
+  # in lnk_points_snap, only the closest-to-stream wins. Accounts for
+  # the remaining ~7 BULK extras not caught by DBSCAN.
+  sql_blkdrm_dedup <- sprintf("
+    WITH winners AS (
+      SELECT DISTINCT ON (blue_line_key, downstream_route_measure)
+        stream_crossing_id
+      FROM %1$s.pscis
+      ORDER BY blue_line_key, downstream_route_measure,
+               distance_to_stream ASC, stream_crossing_id ASC
+    )
+    DELETE FROM %1$s.pscis
+    WHERE stream_crossing_id NOT IN (SELECT stream_crossing_id FROM winners);
+    ", s) # nolint: indentation_linter
+  .lnk_db_execute(conn, sql_blkdrm_dedup)
 
   # =====================================================================
   # Step 5: apply xref CSV overrides (manual PSCIS->modelled matches)
@@ -284,34 +357,114 @@
   ))$present
 
   if (isTRUE(has_xref)) {
-    # Update existing rows where the xref provides a manual match.
-    sql_xref_update <- sprintf("
-      UPDATE %1$s.pscis p
-      SET modelled_crossing_id = x.modelled_crossing_id,
-          linear_feature_id = COALESCE(x.linear_feature_id, p.linear_feature_id)
-      FROM %1$s.pscis_modelledcrossings_streams_xref x
-      WHERE p.stream_crossing_id = x.stream_crossing_id;", s) # nolint: indentation_linter
-    .lnk_db_execute(conn, sql_xref_update)
+    # Mirror bcfp's two-INSERT order from 04_pscis.sql:
+    #
+    # 1. xref rows take precedence — for each xref stream_crossing_id,
+    #    use the xref-supplied modelled_crossing_id or linear_feature_id
+    #    to compute the on-stream location. snap-derived location is
+    #    discarded for xref-mapped IDs.
+    # 2. The snap-derived path silently drops any stream_crossing_id
+    #    that appears in xref (bcfp `pts AS ... WHERE stream_crossing_id
+    #    NOT IN (xref)`).
+    #
+    # Net: xref-mapped IDs land via xref; everything else via snap.
+    # Without this, BULK leaks ~88 xref-mapped PSCIS that bcfp drops
+    # (xref maps them to a now-missing modelled_crossing_id; bcfp's
+    # INNER JOIN to modelled_stream_crossings filters them out).
 
-    # INSERT xref-only PSCIS rows that the snap missed entirely.
-    # These force-add the PSCIS to the output (with whatever attrs
-    # we can pull from pscis_assessment_svw + the xref's
-    # linear_feature_id when set).
+    # Drop xref-mapped IDs from the snap path output. Re-inserted next
+    # via xref-driven paths.
+    sql_drop_xref_snap <- sprintf("
+      DELETE FROM %1$s.pscis
+      WHERE stream_crossing_id IN (
+        SELECT stream_crossing_id
+        FROM %1$s.pscis_modelledcrossings_streams_xref
+      );", s) # nolint: indentation_linter
+    .lnk_db_execute(conn, sql_drop_xref_snap)
+
+    # Insert xref rows. Two-branch UNION ALL mirrors bcfp's
+    # referenced_modelled_xing + referenced_streams CTEs:
+    #
+    # Branch A (referenced_modelled_xing): xref.modelled_crossing_id is
+    # set → look up modelled_stream_crossings → INNER JOIN to FWA via
+    # m.linear_feature_id. modelled_crossing_id missing from the local
+    # table silently drops the row (bcfp parity).
+    #
+    # Branch B (referenced_streams): xref.linear_feature_id is set →
+    # look up FWA directly. xref entries with neither set produce no
+    # row (effectively excluded from pscis).
     sql_xref_insert <- sprintf("
       INSERT INTO %1$s.pscis (
         stream_crossing_id, modelled_crossing_id, linear_feature_id,
-        current_barrier_result_code, current_pscis_status
+        blue_line_key, downstream_route_measure, wscode_ltree,
+        localcode_ltree, watershed_group_code, distance_to_stream,
+        current_barrier_result_code, current_pscis_status,
+        geom_snapped
       )
+      -- Branch A: xref via modelled_crossing_id
+      SELECT
+        x.stream_crossing_id,
+        x.modelled_crossing_id,
+        m.linear_feature_id,
+        m.blue_line_key,
+        CEIL(GREATEST(s.downstream_route_measure, FLOOR(LEAST(s.upstream_route_measure,
+          (ST_LineLocatePoint(s.geom, ST_ClosestPoint(s.geom, ST_GeometryN(p.geom, 1)))
+            * s.length_metre) + s.downstream_route_measure
+        )))) AS downstream_route_measure,
+        m.wscode_ltree::ltree,
+        m.localcode_ltree::ltree,
+        m.watershed_group_code,
+        ST_Distance(p.geom, ST_ClosestPoint(s.geom, ST_GeometryN(p.geom, 1)))
+          AS distance_to_stream,
+        a.current_barrier_result_code,
+        a.current_pscis_status,
+        ST_ClosestPoint(s.geom, ST_GeometryN(p.geom, 1)) AS geom_snapped
+      FROM %1$s.pscis_modelledcrossings_streams_xref x
+      INNER JOIN %4$s m ON x.modelled_crossing_id = m.modelled_crossing_id
+      INNER JOIN whse_basemapping.fwa_stream_networks_sp s
+        ON m.linear_feature_id = s.linear_feature_id
+      INNER JOIN %2$s p ON x.stream_crossing_id = p.stream_crossing_id
+      LEFT JOIN %2$s a ON x.stream_crossing_id = a.stream_crossing_id
+      WHERE x.modelled_crossing_id IS NOT NULL
+        AND m.watershed_group_code = %3$s
+
+      UNION ALL
+
+      -- Branch B: xref via linear_feature_id directly
       SELECT
         x.stream_crossing_id,
         x.modelled_crossing_id,
         x.linear_feature_id,
+        s.blue_line_key,
+        CEIL(GREATEST(s.downstream_route_measure, FLOOR(LEAST(s.upstream_route_measure,
+          (ST_LineLocatePoint(s.geom, ST_ClosestPoint(s.geom, ST_GeometryN(p.geom, 1)))
+            * s.length_metre) + s.downstream_route_measure
+        )))) AS downstream_route_measure,
+        s.wscode_ltree,
+        s.localcode_ltree,
+        s.watershed_group_code,
+        ST_Distance(p.geom, ST_ClosestPoint(s.geom, ST_GeometryN(p.geom, 1)))
+          AS distance_to_stream,
         a.current_barrier_result_code,
-        a.current_pscis_status
+        a.current_pscis_status,
+        ST_ClosestPoint(s.geom, ST_GeometryN(p.geom, 1)) AS geom_snapped
       FROM %1$s.pscis_modelledcrossings_streams_xref x
+      INNER JOIN whse_basemapping.fwa_stream_networks_sp s
+        ON x.linear_feature_id = s.linear_feature_id
+      INNER JOIN %2$s p ON x.stream_crossing_id = p.stream_crossing_id
       LEFT JOIN %2$s a ON x.stream_crossing_id = a.stream_crossing_id
-      WHERE x.stream_crossing_id NOT IN (SELECT stream_crossing_id FROM %1$s.pscis);", s, pscis_table) # nolint: indentation_linter, line_length_linter
+      WHERE x.linear_feature_id IS NOT NULL
+        AND s.watershed_group_code = %3$s;
+      ", s, pscis_table, .lnk_quote_literal(aoi), modelled_table) # nolint: indentation_linter, line_length_linter
     .lnk_db_execute(conn, sql_xref_insert)
+
+    # Final UNIQUE(blue_line_key, downstream_route_measure) dedup after
+    # xref INSERT — xref rows may collide with snap rows at the same
+    # location. bcfp's xref INSERT runs FIRST (xref always wins);
+    # ours runs last, so winners are determined by smallest
+    # distance_to_stream after both INSERTs. Same UNIQUE-collision
+    # semantics, deterministic with a stream_crossing_id tiebreak.
+    .lnk_db_execute(conn, sql_blkdrm_dedup)
   }
 
   invisible(conn)

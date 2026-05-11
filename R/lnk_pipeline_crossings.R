@@ -101,7 +101,7 @@ lnk_pipeline_crossings <- function(conn, aoi, cfg, loaded, schema,
   #    plus modelled_crossing_id (which drives the modelled-branch
   #    xref exclusion downstream).
   .lnk_pipeline_pscis_build(  # nolint: object_usage_linter
-    conn, aoi = aoi, schema = schema,
+    conn, aoi = aoi, schema = schema, loaded = loaded,
     pscis_table = pscis_table,
     modelled_table = modelled_table,
     snap_tolerance = max(snap_tolerance, 150)  # bcfp uses 150m

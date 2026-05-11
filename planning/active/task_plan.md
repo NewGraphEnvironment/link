@@ -15,6 +15,16 @@ Wires the 3-step fresh primitive composition (`frs_point_snap` + `frs_candidates
 - [x] `devtools::document()` regenerated.
 - [x] `lintr::lint` clean on all touched files.
 
+## Phase 1.5: BULK/WILL parity follow-on fixes (post-baseline)
+
+Initial Phase 1 results showed ADMS 99-100% but BULK 79-86%, WILL 95-98%. Diagnostic dive revealed three additional bcfp-parity gaps not in the original plan:
+
+- [x] **Modelled-branch `crossing_fixes` filter** in `.lnk_crossings_union`: bcfp drops modelled crossings where `user_modelled_crossing_fixes.structure NOT IN (NULL, 'OBS')` entirely (`load_crossings.sql:634`). Without this filter, 275 NONE-fixed modelled crossings leaked through in BULK, 103 in WILL. Closed WILL gap from 95% → 97-98%.
+- [x] **DBSCAN 5m spatial dedup + UNIQUE(blk,drm) dedup** in `.lnk_pipeline_pscis_build`: bcfp's `clusters AS ... ST_ClusterDBSCAN(geom, 5, 1)` + `DISTINCT ON (cid)` step. Implemented as `DELETE … WHERE NOT IN winners` after Step 4b.
+- [x] **xref-precedence restructure** in `.lnk_pipeline_pscis_build`: bcfp excludes xref-mapped `stream_crossing_id`s from the snap path entirely, then inserts them via xref-driven INSERT (referenced_modelled_xing + referenced_streams branches). xref entries with stale `modelled_crossing_id` (no longer in `modelled_stream_crossings`) silently drop via INNER JOIN — that's the bcfp parity behavior we now match. **This was the dominant BULK gap**: 88 xref-mapped PSCIS leaked through snap and we kept them. Closed BULK to 99.17-99.78%.
+
+**Phase A results post-fixes:** ADMS 99.0-100%, BULK 99.17-99.78%, WILL 98.85-99.93%, PARS 100% (except BT 60.64%, cross-WSG dam_dnstr — link#152).
+
 ## Phase 2: tests
 
 - [ ] New `tests/testthat/test-lnk_pipeline_pscis_build.R`:
