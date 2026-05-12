@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.35.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.35.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,6 +31,11 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.35.1" id="link-0351">link 0.35.1<a class="anchor" aria-label="anchor" href="#link-0351"></a></h2>
+<ul><li>
+<code>data-raw/snapshot_bcfp.sh</code>: replace <code>grep -qi parquet</code> with <code>grep -i parquet &gt; /dev/null</code> in the Parquet prereq check (<a href="https://github.com/NewGraphEnvironment/link/issues/160" class="external-link">#160</a>). Under <code>set -euo pipefail</code>, <code>grep -q</code> closes the pipe on first match, <code>ogr2ogr</code> gets SIGPIPE (exit 141), <code>pipefail</code> propagates, <code>!</code> flips it, and the script FATALs even though the Parquet driver IS present. Originally chased as a non-interactive ssh / conda env issue (NewGraphEnvironment/rtj#129) — that was a misdiagnosis; PATH from rtj#66/#123 was always correct.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.35.0" id="link-0350">link 0.35.0<a class="anchor" aria-label="anchor" href="#link-0350"></a></h2>
 <p>Closes <a href="https://github.com/NewGraphEnvironment/link/issues/152" class="external-link">#152</a>. New unified province-wide <code>&lt;persist_schema&gt;.barriers</code> table with a pre-computed <code>blocks_species text[]</code> predicate. Closes the cross-WSG <code>dam_dnstr_ind</code> defect — PARS BT mapping_code parity jumped from 60.64% → 98.63% (+38 pp) because dam barriers in upstream-of-PARS WSGs (Bennett in PCEA, Peace Canyon / Site C in UPCE) now resolve correctly via FWA-topology walks over the province-wide table. Other Phase A WSGs maintained ≥99% across all species (full 6-WSG matrix in <code>research/bcfp_compare_mapping_code.md</code>).</p>
