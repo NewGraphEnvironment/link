@@ -77,8 +77,8 @@ if (length(csvs) > 0) {
     df <- read.csv(p, stringsAsFactors = FALSE)
     if (nrow(df) == 0) return(NULL)
     # Map nodename → host short code
-    df$host <- ifelse(grepl("Allans|MacBook-Pro$", df$host), "m4",
-              ifelse(grepl("MacBook-Pro-2|m1", df$host),    "m1",
+    df$host <- ifelse(grepl("MacBook-Pro-2", df$host),       "m4",
+              ifelse(grepl("Allans|MacBook-Pro$", df$host),  "m1",
               ifelse(grepl("cypher", df$host),               "cy",
                      df$host)))
     df[df$status == "ok", c("wsg", "elapsed_s", "host")]
@@ -119,8 +119,11 @@ all_w$m4_equiv <- all_w$time_s / yest_factor[all_w$host]
 # Fetch the canonical 232-WSG list from wsg_species_presence and assign
 # any unseen WSGs the median time so they enter the LPT plan.
 suppressPackageStartupMessages({library(link)})
-loaded <- lnk_load_overrides(lnk_config("default_extrabreaks"))
-spp_cols <- c("ch","cm","co","pk","sk","st","bt","wct","ct","dv","rb")
+cfg <- lnk_config("bcfishpass")  # canonical bundle for provincial dispatch
+loaded <- lnk_load_overrides(cfg)
+# Filter to bundle species only — broader inclusion (e.g. ct/dv/gr/rb) lets
+# WSGs through that the bundle can't classify (link#157).
+spp_cols <- tolower(cfg$species)
 wsg_pres <- loaded$wsg_species_presence
 has_spp <- apply(wsg_pres[, spp_cols, drop = FALSE], 1,
                  function(r) any(r %in% c("t","TRUE",TRUE)))

@@ -46,7 +46,10 @@ if (length(schema_arg) > 0) {
 loaded <- lnk_load_overrides(cfg)
 
 wsgs_arg <- args[grep("^--wsgs=", args)]
-spp_cols <- c("ch", "cm", "co", "pk", "sk", "st", "bt", "wct", "ct", "dv", "rb")
+# Filter to bundle species only — broader inclusion (e.g. ct/dv/gr/rb) lets
+# WSGs through that the bundle can't classify; they error 50-80s in with
+# "No species resolved for AOI". See link#157.
+spp_cols <- tolower(cfg$species)
 wsg_pres <- loaded$wsg_species_presence
 has_spp <- apply(wsg_pres[, spp_cols, drop = FALSE], 1, function(r) {
   any(r %in% c("t", "TRUE", TRUE))

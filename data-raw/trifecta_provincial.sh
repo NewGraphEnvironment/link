@@ -43,14 +43,18 @@ ORCH_LOG="$LOG_DIR/${TS}_trifecta_provincial_orchestrator.txt"
 # Compute the WSG list + 3-way split deterministically here so the
 # orchestrator log records the assignment up front.
 SPLIT_R="$LOG_DIR/${TS}_trifecta_provincial_split.R"
-cat > "$SPLIT_R" <<'SPLIT_EOF'
+cat > "$SPLIT_R" <<SPLIT_EOF
 suppressPackageStartupMessages({})
-loaded <- link::lnk_load_overrides(link::lnk_config("bcfishpass"))
-wsg_pres <- loaded$wsg_species_presence
-spp_cols <- c("ch","cm","co","pk","sk","st","bt","wct","ct","dv","rb")
+cfg <- link::lnk_config("$CONFIG")
+loaded <- link::lnk_load_overrides(cfg)
+wsg_pres <- loaded\$wsg_species_presence
+# Filter to bundle species only — broader inclusion (e.g. ct/dv/gr/rb) lets
+# WSGs through that the bundle can't classify; they error 50-80s in with
+# "No species resolved for AOI". See link#157.
+spp_cols <- tolower(cfg\$species)
 has_spp <- apply(wsg_pres[, spp_cols, drop = FALSE], 1,
                  function(r) any(r %in% c("t","TRUE",TRUE)))
-all_wsgs <- sort(wsg_pres$watershed_group_code[has_spp])
+all_wsgs <- sort(wsg_pres\$watershed_group_code[has_spp])
 n <- length(all_wsgs)
 m4_n <- ceiling(n/3)
 m1_n <- ceiling((n - m4_n)/2)
