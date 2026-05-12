@@ -59,7 +59,7 @@ test_that(".lnk_crossings_union includes crossing_fixes filter when staging tabl
                       function(a) a[[2]], character(1)),
                collapse = "\n")
   expect_match(sql, "LEFT JOIN .*\\.crossing_fixes cf")
-  expect_match(sql, "cf\\.structure IS NULL OR cf\\.structure = 'OBS'")
+  expect_match(sql, "NULLIF\\(cf\\.structure, ''\\) IS NULL OR cf\\.structure = 'OBS'")
 })
 
 test_that(".lnk_crossings_union skips crossing_fixes filter when staging table missing", {

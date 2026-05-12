@@ -270,3 +270,25 @@ Wall: ~2 hours with current LPT factors (M4=1.0, M1=0.83, cy=1.83). Each provinc
 2. **New small divergences (THOM CH/CO, MFRA CH, REVL WCT)** — check bcfp tunnel refresh status for these WSGs.
 3. **Class C SK rows** — individual WSG classification (stale-bcfp vs methodology vs fresh-bug).
 4. **link#53 (distributed work)** — current run already at ~2 hr; further gains would require cypher swap to a faster droplet class or co-locating closer to S3.
+
+## Addendum (2026-05-11, 23:30 PDT) — link#158 closure of token2 NONE→MODELLED
+
+Segment-level trace of BBAR + THOM (after the headline rollup above) revealed the dominant residual divergence across the province: link's `<schema>.barriers_anthropogenic_unified` set under-emits **modelled crossings** by 3.7% in BBAR / 12.6% in THOM vs bcfp's `barriers_anthropogenic`. Mechanism: `.lnk_crossings_union`'s Phase 1.5 modelled-branch filter `(cf.structure IS NULL OR cf.structure = 'OBS')` dropped rows where `crossing_fixes.structure = ''` (empty string from CSV load), because `IS NULL` returns FALSE for empty strings.
+
+This explained the consistent `ACCESS;NONE | ACCESS;MODELLED` pattern in mapping_code parity (link sees no downstream barrier where bcfp sees a modelled crossing).
+
+**MODELLED is informational** — it tells you "there's a modelled crossing downstream — field-verify whether it's a barrier" — not a passability claim. Losing it loses operational signal even when access classification stays right.
+
+Fix shipped on main as `4ca6970` (link#158, `NULLIF(cf.structure, '') IS NULL OR cf.structure = 'OBS'`). Verified BBAR + THOM segment-level parity:
+
+| WSG | sp | Pre-#158 | Post-#158 |
+|---|---|---:|---:|
+| BBAR | bt | 99.79% | **99.97%** |
+| BBAR | ch/cm/co/pk/sk | 99.90-99.91% | **99.99-100%** |
+| THOM | bt | **95.10%** | **99.97%** (closed 1106/1112 diffs) |
+| THOM | st | 97.44% | **99.98%** (closed 575/581) |
+| THOM | ch/cm/co/pk/sk | 99.47-99.55% | **99.93-100%** |
+
+Full provincial mapping_code re-run not yet executed but the pattern was uniform across the 10 WSGs of the Phase A run plus BBAR + THOM, so expect similar gap-closure on every WSG that has modelled crossings with `''` structure-fix entries. Provincial rollup-level numbers in this doc's headline table are unchanged because token2 NONE↔MODELLED swaps don't affect linear-sum aggregates.
+
+**Unexplained-divergences list now empty for token2 mechanism.** Remaining residual divergences (Class C SK new-geographies, fresh#158 stream-order bypass, BBAR CH/CO +12% rearing) are still open per the prior taxonomy, but the mapping_code-level signal is now ≥99.9% on every species in BBAR + THOM.
