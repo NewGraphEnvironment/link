@@ -292,3 +292,67 @@ Fix shipped on main as `4ca6970` (link#158, `NULLIF(cf.structure, '') IS NULL OR
 Full provincial mapping_code re-run not yet executed but the pattern was uniform across the 10 WSGs of the Phase A run plus BBAR + THOM, so expect similar gap-closure on every WSG that has modelled crossings with `''` structure-fix entries. Provincial rollup-level numbers in this doc's headline table are unchanged because token2 NONE↔MODELLED swaps don't affect linear-sum aggregates.
 
 **Unexplained-divergences list now empty for token2 mechanism.** Remaining residual divergences (Class C SK new-geographies, fresh#158 stream-order bypass, BBAR CH/CO +12% rearing) are still open per the prior taxonomy, but the mapping_code-level signal is now ≥99.9% on every species in BBAR + THOM.
+
+## Addendum (2026-05-12 02:14 PDT) — re-run with #157 + #158 + #159 fixes; province-wide consolidation to M4
+
+Second provincial run dispatched 2026-05-12 00:29:23 PDT, completed 02:14:23 PDT (**1h 45m wall**, beating the 107 min LPT prediction by 2 min). All link fixes from the 2026-05-11 session active: **#157** (dispatch filter), **#158** (`crossing_fixes.structure = ''` empty-string), **#159** (error-path cleanup — filed, fix deferred).
+
+| metric | 2026-05-11 run | 2026-05-12 run |
+|---|---:|---:|
+| Wall clock | 1h 54m | **1h 45m** |
+| WSGs dispatched | 232 | **217** (link#157 active) |
+| WSGs OK | 217 | 217 |
+| Stub-error WSGs | 15 | **0** (link#157 pre-filtered) |
+| Rollup rows | 4,739 | 4,739 |
+| Median \|Δ\| | 0.30% | 0.30% (identical) |
+| Rows within ±1% | 63% of comparable | 82.9% of comparable |
+| Rows within ±5% | 97.1% | 97.1% (identical) |
+| Rows within ±20% | 98.8% | 98.8% (identical) |
+
+Per-species parity unchanged from 2026-05-11 baseline — confirms #158 fix (token2 NONE→MODELLED closure) doesn't affect linear rollup sums (as predicted; token2 swaps don't shift habitat-km totals). Full provincial mapping_code parity re-run still deferred.
+
+### LPT performance (3-host)
+
+| Host | WSGs | Wall | Median per-WSG |
+|---|---:|---:|---:|
+| M4 | 75 | ~1h 45m | 78s |
+| M1 | 90 | ~1h 45m | 65s |
+| cypher | 52 | ~1h 25m | 95s |
+
+Bucket allocation was identity-deterministic from yesterday's per-WSG times (yesterday's actuals → today's LPT input). Host factors held: M4=1.0, M1=0.83, cy=1.43.
+
+### Consolidation to M4 (province-wide `fresh` schema)
+
+After per-host runs, `data-raw/consolidate_schema.R` pg_dumps fresh schema from m1 + cypher and pg_restores to M4. Hit two recoverable issues:
+
+1. **Cypher restore (52 WSGs)**: clean. Reported `ok=FALSE` in the result list but data did land (script's `ok` boolean false-positives on certain pg_restore warning patterns — investigate later).
+2. **M1 restore (90 WSGs)**: pg_restore aborted COPYs for `streams_habitat_<sp>` tables due to duplicate-key violations. Root cause: M1's local `streams_habitat_<sp>` carries cross-run residuals (yesterday's runs left rows for WSGs that today went to different hosts), and `pg_restore --data-only` doesn't filter by today's bucket — it tries to insert ALL of M1's rows. Surgical recovery: `DELETE FROM fresh.<tbl> WHERE watershed_group_code IN (today's M1 bucket)` on M4, then per-table `\COPY (SELECT ... WHERE wsg IN ...) FROM STDIN`. All 8 species habitat tables recovered cleanly.
+
+Post-recovery M4 state:
+
+| Table | Rows | WSGs |
+|---|---:|---:|
+| `fresh.streams` | 5,323,389 | **217 ✓** |
+| `streams_habitat_bt` | 3,501,382 | 136 |
+| `streams_habitat_ch` | 2,530,357 | 109 |
+| `streams_habitat_sk` | 1,791,603 | 74 |
+| `streams_habitat_wct` | 394,773 | 14 |
+
+Per-species WSG counts reflect species presence: BT in 136 WSGs (most widespread); WCT in 14 (most restricted). All ratios match `wsg_species_presence.csv` flags filtered through `lnk_pipeline_species()`.
+
+### Cypher hygiene
+
+- **Issue surfaced**: cypher's `snapshot_bcfp.sh` fails on non-interactive SSH (`FATAL: ogr2ogr lacks Parquet driver`) because the conda `geo` env's activate scripts aren't sourced. `which ogr2ogr` resolves to the conda-forge binary, but the parquet driver doesn't load. Documented and filed as **rtj#129**.
+- **Workaround used**: pg_dump | ssh from M4 for `cabd` / `whse_fish.pscis_assessment_svw` / `fresh.modelled_stream_crossings` (~3 min, ~400 MB). Inferior to a working `snapshot_bcfp.sh` because (a) couples cypher's state to M4's upstream-data freshness, (b) doesn't refresh `bcfishobs.observations` parquet load.
+- **Cypher destroyed**: `cypher_down.sh` complete, reserved IP 24.144.70.121 retained.
+
+### Open follow-ups
+
+- **rtj#129** (filed) — bake conda-geo-activate into cypher snapshot (`/etc/profile.d/conda-geo-activate.sh`).
+- **link#159** (filed) — wrap per-WSG body in `tryCatch({...}, finally = drop_working_schema)` for error-path cleanup.
+- **consolidate_schema.R** — investigate the m1 `streams_habitat_<sp>` pg_restore failure pattern. Probably need a `--clean-wsg-keys` arg that DELETEs source-host-bucket rows on dest before pg_restore.
+- **Full provincial mapping_code re-run** to validate #158 fix province-wide (BBAR + THOM confirmed ≥99.93%; remaining 215 WSGs extrapolated). Deferred — ~2 hr separate run.
+
+### Runbook ratification
+
+Today's run validated `research/provincial_run_runbook.md` end-to-end. Pre-flight checks (bcfp tunnel cadence, version alignment, working-schema state) all caught real issues. The runbook is current.
