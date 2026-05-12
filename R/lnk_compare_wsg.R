@@ -152,13 +152,10 @@ lnk_compare_wsg <- function(conn, aoi, cfg, loaded,
       call. = FALSE
     )
   }
-  if (isTRUE(with_mapping_code)) {
-    stop(
-      "with_mapping_code = TRUE is not yet implemented (Phase 2 of ",
-      "link#162). Use FALSE for the rollup-only path.",
-      call. = FALSE
-    )
-  }
+  # `with_mapping_code = TRUE` requires conn_ref also for the
+  # streams_mapping_code comparison query. Already validated above
+  # when reference == 'bcfishpass' (the only supported reference today).
+  # No additional gate needed.
 
   # Defensive reset of per-WSG staging from any prior partial run.
   DBI::dbExecute(conn, sprintf(
@@ -195,8 +192,20 @@ lnk_compare_wsg <- function(conn, aoi, cfg, loaded,
          call. = FALSE)
   }
 
-  # Persist per-WSG segment-level data to province-wide tables.
+  # Persist init creates the province-wide target tables (streams,
+  # streams_habitat_<sp>, barriers). Always runs.
   lnk_persist_init(conn, cfg, species = active_species) # nolint: object_usage_linter
+
+  # `with_mapping_code = TRUE`: build the unified per-WSG barriers
+  # table BEFORE persist so persist handles streams + habitat + barriers
+  # in one idempotent transaction. Mirrors data-raw/compare_bcfp_mapping_code.R
+  # ordering (link#152 cross-WSG dam_dnstr_ind fix).
+  if (isTRUE(with_mapping_code)) {
+    lnk_barriers_unify(conn, aoi = aoi, cfg = cfg, # nolint: object_usage_linter
+                       loaded = loaded, schema = schema)
+  }
+
+  # Persist per-WSG segment-level data to province-wide tables.
   lnk_pipeline_persist(conn, aoi = aoi, cfg = cfg, # nolint: object_usage_linter
                        species = active_species, schema = schema)
 
@@ -235,12 +244,23 @@ lnk_compare_wsg <- function(conn, aoi, cfg, loaded,
     aoi = aoi, species = species,
     rollup_link = rollup_link, rollup_ref = rollup_ref)
 
+  # =====================================================================
+  # Mapping_code branch — additive phases on the same network state
+  # =====================================================================
+  mapping_code <- NULL
+  if (isTRUE(with_mapping_code)) {
+    mapping_code <- .lnk_compare_wsg_mapping_code( # nolint: object_usage_linter
+      conn = conn, conn_ref = conn_ref,
+      aoi = aoi, cfg = cfg, loaded = loaded,
+      schema = schema, reference = reference)
+  }
+
   # Optional cleanup.
   if (isTRUE(cleanup_working)) {
     DBI::dbExecute(conn, sprintf("DROP SCHEMA %s CASCADE", schema))
   }
 
-  list(rollup = rollup, mapping_code = NULL)
+  list(rollup = rollup, mapping_code = mapping_code)
 }
 
 
@@ -548,4 +568,264 @@ lnk_compare_wsg <- function(conn, aoi, cfg, loaded,
     round(100 * (out$link_value - out$ref_value) /
           out$ref_value, 1))
   out
+}
+
+
+# ---------------------------------------------------------------------------
+# Mapping_code branch — additive phases on top of the rollup pipeline
+# ---------------------------------------------------------------------------
+
+#' Run the mapping_code phases and compute per-species segment-level
+#' match stats vs the reference's `streams_mapping_code` table.
+#'
+#' Additive on top of the rollup pipeline — operates on the network
+#' state already produced by setup → ... → connect → persist (with
+#' `lnk_barriers_unify` slotted before persist). Adds:
+#'   1. `lnk_barriers_views` — per-species + per-source VIEWs over
+#'      `<persist_schema>.barriers` (cross-WSG access barriers).
+#'   2. Stage reference's per-species barriers from `conn_ref` into
+#'      `<schema>` — the `barriers_per_sp` arg of `lnk_pipeline_access`
+#'      needs bcfp-shape per-species tables that capture minimal-position
+#'      semantics the unified table doesn't encode.
+#'   3. `lnk_pipeline_access` — per-segment access classification.
+#'   4. Pivot `streams_habitat` long → wide for the mapping_code call.
+#'   5. `lnk_pipeline_mapping_code` — per-segment token classification.
+#'   6. Query reference's `streams_mapping_code` and diff per species.
+#'
+#' Returns one row per species: `wsg`, `species`, `total_segs`,
+#' `match_pct`, `n_diffs`, `top_pattern` (the dominant "link | bcfp"
+#' diff string), `top_pattern_count`.
+#'
+#' @noRd
+.lnk_compare_wsg_mapping_code <- function(conn, conn_ref, aoi, cfg, loaded,
+                                          schema, reference) {
+  if (reference != "bcfishpass") {
+    stop("Mapping_code branch currently supports reference = 'bcfishpass' ",
+         "only (got '", reference, "').", call. = FALSE)
+  }
+
+  # 1. Per-species + per-source VIEWs over <persist_schema>.barriers.
+  lnk_barriers_views(conn, schema = schema, cfg = cfg) # nolint: object_usage_linter
+
+  # 2. Stage reference's per-species barriers into working schema. The
+  # unified table doesn't capture per-species minimal-position semantics
+  # (link#152 footnote); per-species access needs bcfp-shape tables.
+  # Cross-WSG dam_dnstr_ind still uses the unified VIEWs (link#152 fix).
+  .lnk_compare_wsg_stage_reference_barriers( # nolint: object_usage_linter
+    conn = conn, conn_ref = conn_ref, aoi = aoi, schema = schema)
+
+  # 3. Per-segment access classification.
+  pres <- lnk_presence(loaded$wsg_species_presence, aoi) # nolint: object_usage_linter
+  bcfp_per_sp <- list(
+    bt  = "barriers_bt",
+    ch  = "barriers_ch_cm_co_pk_sk",
+    cm  = "barriers_ch_cm_co_pk_sk",
+    co  = "barriers_ch_cm_co_pk_sk",
+    pk  = "barriers_ch_cm_co_pk_sk",
+    sk  = "barriers_ch_cm_co_pk_sk",
+    st  = "barriers_st",
+    wct = "barriers_wct"
+  )
+  barriers_per_sp <- setNames(
+    lapply(names(bcfp_per_sp),
+           function(sp) paste0(schema, ".", bcfp_per_sp[[sp]])),
+    names(bcfp_per_sp))
+
+  acc <- lnk_pipeline_access( # nolint: object_usage_linter
+    conn,
+    segments        = paste0(schema, ".streams"),
+    aoi             = aoi,
+    to              = paste0(schema, ".streams_access"),
+    barriers_per_sp = barriers_per_sp,
+    observations    = paste0(schema, ".observations"),
+    presence        = pres,
+    barrier_sources = list(
+      anthropogenic = paste0(schema, ".barriers_anthropogenic_unified"),
+      pscis         = paste0(schema, ".barriers_pscis"),
+      dams          = paste0(schema, ".barriers_dams_unified"),
+      remediations  = paste0(schema, ".barriers_remediations")),
+    crossings_table = paste0(schema, ".crossings"))
+
+  # 4. Pivot habitat long → wide. lnk_pipeline_mapping_code expects
+  # `spawning_<sp>` / `rearing_<sp>` columns for all 8 bcfp species.
+  # Pre-allocate missing species cols with 0 (link#153 followup).
+  hab_long <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT id_segment, lower(species_code) AS species_code,
+            COALESCE(spawning::int, 0) AS spawning,
+            COALESCE(rearing::int, 0)  AS rearing
+       FROM %s.streams_habitat
+      WHERE watershed_group_code = %s",
+    schema, DBI::dbQuoteLiteral(conn, aoi)))
+  if (nrow(hab_long) == 0L) {
+    stop(sprintf("%s.streams_habitat empty for WSG %s", schema, aoi),
+         call. = FALSE)
+  }
+  hab_wide <- tidyr::pivot_wider(
+    hab_long,
+    id_cols     = "id_segment",
+    names_from  = "species_code",
+    values_from = c("spawning", "rearing"),
+    values_fill = list(spawning = 0L, rearing = 0L))
+  bcfp_species <- c("bt", "ch", "cm", "co", "pk", "sk", "st", "wct")
+  for (sp in bcfp_species) {
+    for (col in c(paste0("spawning_", sp), paste0("rearing_", sp))) {
+      if (!(col %in% names(hab_wide))) {
+        hab_wide[[col]] <- 0L
+      }
+    }
+  }
+
+  fc <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT id_segment, feature_code FROM %s.streams
+      WHERE watershed_group_code = %s",
+    schema, DBI::dbQuoteLiteral(conn, aoi)))
+
+  # 5. Per-segment token classification.
+  lnk_pipeline_mapping_code( # nolint: object_usage_linter
+    access       = acc,
+    habitat      = hab_wide,
+    feature_code = fc,
+    to           = paste0(schema, ".streams_mapping_code"),
+    conn         = conn,
+    presence     = pres)
+
+  # 6. Diff vs reference per species.
+  .lnk_compare_wsg_mapping_code_diff( # nolint: object_usage_linter
+    conn = conn, conn_ref = conn_ref,
+    aoi = aoi, schema = schema, bcfp_species = bcfp_species)
+}
+
+
+#' Stage per-species reference barriers into the working schema
+#'
+#' Pulls `bcfishpass.barriers_bt`, `barriers_ch_cm_co_pk_sk`, `barriers_st`,
+#' `barriers_wct` from the reference tunnel filtered to `aoi`, writes to
+#' `<schema>.<table>`. Re-casts `wscode_ltree` / `localcode_ltree` to
+#' `ltree` after `dbWriteTable` (which degrades them to text).
+#'
+#' Workaround until link#152's `blocks_species` predicate captures
+#' per-species minimal-position semantics. Documented in
+#' research/provincial_parity_2026_05_11.md operational notes.
+#'
+#' @noRd
+.lnk_compare_wsg_stage_reference_barriers <- function(conn, conn_ref,
+                                                      aoi, schema) {
+  tables <- c("barriers_bt", "barriers_ch_cm_co_pk_sk",
+              "barriers_st", "barriers_wct")
+  aoi_lit_ref <- DBI::dbQuoteLiteral(conn_ref, aoi)
+  for (tbl in tables) {
+    # `tbl` is a hardcoded whitelisted name above; `aoi` is regex-validated
+    # at the lnk_compare_wsg entry; `schema` passes the same whitelist.
+    # No untrusted interpolation in these statements.
+    rows <- DBI::dbGetQuery(conn_ref, sprintf(
+      "SELECT * FROM bcfishpass.%s WHERE watershed_group_code = %s",
+      tbl, aoi_lit_ref))
+    DBI::dbExecute(conn, sprintf("DROP TABLE IF EXISTS %s.%s CASCADE",
+                                 schema, tbl))
+    DBI::dbWriteTable(conn,
+      DBI::Id(schema = schema, table = tbl),
+      rows, overwrite = TRUE)
+    DBI::dbExecute(conn, sprintf(
+      "ALTER TABLE %1$s.%2$s
+         ALTER COLUMN wscode_ltree   TYPE ltree USING wscode_ltree::ltree,
+         ALTER COLUMN localcode_ltree TYPE ltree USING localcode_ltree::ltree",
+      schema, tbl))
+  }
+}
+
+
+#' Diff link's streams_mapping_code vs reference's, return per-species stats
+#'
+#' Joins on `(blue_line_key, downstream_route_measure, length_metre)` —
+#' the canonical segment identity across link and bcfp. NA-aware
+#' comparison: `NA == NA` counts as match; `NA` vs concrete value is a
+#' mismatch.
+#'
+#' Returns one row per `bcfp_species`. `top_pattern` is the dominant
+#' "<link_value> | <bcfp_value>" diff string; useful for class-A/B/C/D
+#' taxonomy lookup downstream.
+#'
+#' @noRd
+.lnk_compare_wsg_mapping_code_diff <- function(conn, conn_ref, aoi, schema,
+                                               bcfp_species) {
+  aoi_lit_link <- DBI::dbQuoteLiteral(conn, aoi)
+  aoi_lit_ref  <- DBI::dbQuoteLiteral(conn_ref, aoi)
+
+  # Round float join keys to 3 decimal places (mm precision on values
+  # already in metres). `downstream_route_measure` + `length_metre` are
+  # PostGIS-computed doubles; deterministic across runs that share the
+  # same fwapg segmentation, but rounding makes the join robust to any
+  # future ULP-level drift between link's and bcfp's tunnels.
+  link_mc <- DBI::dbGetQuery(conn, sprintf("
+    SELECT lmc.*, ls.blue_line_key,
+           round(ls.downstream_route_measure::numeric, 3) AS downstream_route_measure,
+           round(ls.length_metre::numeric, 3)             AS length_metre
+      FROM %1$s.streams_mapping_code lmc
+      JOIN %1$s.streams ls ON ls.id_segment = lmc.id_segment
+     WHERE ls.watershed_group_code = %2$s",
+    schema, aoi_lit_link))
+
+  bcfp_mc <- DBI::dbGetQuery(conn_ref, sprintf("
+    SELECT bmc.*, bs.blue_line_key,
+           round(bs.downstream_route_measure::numeric, 3) AS downstream_route_measure,
+           round(bs.length_metre::numeric, 3)             AS length_metre
+      FROM bcfishpass.streams_mapping_code bmc
+      JOIN bcfishpass.streams bs
+        ON bs.segmented_stream_id = bmc.segmented_stream_id
+     WHERE bs.watershed_group_code = %s", aoi_lit_ref))
+
+  joined <- merge(
+    link_mc, bcfp_mc,
+    by = c("blue_line_key", "downstream_route_measure", "length_metre"),
+    suffixes = c("_link", "_bcfp"))
+
+  # No-overlap guard. A zero-row merge means the two tunnels' streams
+  # don't share any (blue_line_key, measure, length) keys for this WSG
+  # — almost always a data bug (e.g. mismatched fwapg snapshot, empty
+  # bcfp WSG). Fail loud rather than emit NaN match_pct rows.
+  if (nrow(joined) == 0L) {
+    stop(sprintf(
+      "no overlap between link's and bcfishpass's streams_mapping_code for %s ",
+      aoi),
+      "(link rows: ", nrow(link_mc), ", bcfp rows: ", nrow(bcfp_mc),
+      "). Check fwapg snapshot alignment between the two tunnels.",
+      call. = FALSE)
+  }
+
+  rows <- lapply(bcfp_species, function(sp) {
+    link_col <- paste0("mapping_code_", sp, "_link")
+    bcfp_col <- paste0("mapping_code_", sp, "_bcfp")
+    if (!(link_col %in% names(joined)) || !(bcfp_col %in% names(joined))) {
+      return(tibble::tibble(
+        wsg = aoi, species = sp,
+        total_segs = nrow(joined), match_pct = NA_real_,
+        n_diffs = NA_integer_,
+        top_pattern = NA_character_, top_pattern_count = NA_integer_))
+    }
+    l <- joined[[link_col]]
+    b <- joined[[bcfp_col]]
+    matches <- (is.na(l) & is.na(b)) | (!is.na(l) & !is.na(b) & l == b)
+    n_match <- sum(matches)
+    n_total <- nrow(joined)
+    diff_idx <- which(!matches)
+
+    top_pattern <- NA_character_
+    top_pattern_count <- NA_integer_
+    if (length(diff_idx) > 0L) {
+      patt <- paste0(ifelse(is.na(l[diff_idx]), "<NA>", l[diff_idx]),
+                     " | ",
+                     ifelse(is.na(b[diff_idx]), "<NA>", b[diff_idx]))
+      tab <- sort(table(patt), decreasing = TRUE)
+      top_pattern <- names(tab)[1]
+      top_pattern_count <- as.integer(tab[1])
+    }
+    tibble::tibble(
+      wsg = aoi, species = sp,
+      total_segs = n_total,
+      match_pct = round(100 * n_match / n_total, 2),
+      n_diffs = as.integer(n_total - n_match),
+      top_pattern = top_pattern,
+      top_pattern_count = top_pattern_count)
+  })
+  do.call(rbind, rows)
 }

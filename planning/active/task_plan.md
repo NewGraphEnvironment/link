@@ -17,9 +17,9 @@ Bundles three cleanups while in the area: `balance_provincial_buckets.R` dedup b
 
 ## Phase 2: `lnk_compare_wsg` mapping_code branch
 
-- [ ] Extend `lnk_compare_wsg.R` with `with_mapping_code = TRUE` path. Composes the additional phases (barriers_unify → views → access → mapping_code → diff vs `bcfishpass.streams_mapping_code`).
-- [ ] Per-species segment-level diff stats: total_segs, match_pct, n_diffs, top_pattern, top_pattern_count. Tibble shape matches the `mapping_code` slot in the return value documented above.
-- [ ] Tests cover the additional path (mocked SQL).
+- [x] Extend `lnk_compare_wsg.R` with `with_mapping_code = TRUE` path. Composes the additional phases (barriers_unify → views → access → mapping_code → diff vs `bcfishpass.streams_mapping_code`).
+- [x] Per-species segment-level diff stats: total_segs, match_pct, n_diffs, top_pattern, top_pattern_count. Tibble shape matches the `mapping_code` slot in the return value documented above.
+- [x] Tests cover the additional path (mocked SQL).
 
 ## Phase 3: data-raw refactor
 
