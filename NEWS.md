@@ -1,3 +1,7 @@
+# link 0.35.1
+
+* `data-raw/snapshot_bcfp.sh`: replace `grep -qi parquet` with `grep -i parquet > /dev/null` in the Parquet prereq check ([#160](https://github.com/NewGraphEnvironment/link/issues/160)). Under `set -euo pipefail`, `grep -q` closes the pipe on first match, `ogr2ogr` gets SIGPIPE (exit 141), `pipefail` propagates, `!` flips it, and the script FATALs even though the Parquet driver IS present. Originally chased as a non-interactive ssh / conda env issue (NewGraphEnvironment/rtj#129) — that was a misdiagnosis; PATH from rtj#66/#123 was always correct.
+
 # link 0.35.0
 
 Closes [#152](https://github.com/NewGraphEnvironment/link/issues/152). New unified province-wide `<persist_schema>.barriers` table with a pre-computed `blocks_species text[]` predicate. Closes the cross-WSG `dam_dnstr_ind` defect — PARS BT mapping_code parity jumped from 60.64% → 98.63% (+38 pp) because dam barriers in upstream-of-PARS WSGs (Bennett in PCEA, Peace Canyon / Site C in UPCE) now resolve correctly via FWA-topology walks over the province-wide table. Other Phase A WSGs maintained ≥99% across all species (full 6-WSG matrix in `research/bcfp_compare_mapping_code.md`).
