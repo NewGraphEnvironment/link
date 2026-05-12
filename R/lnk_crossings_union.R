@@ -104,7 +104,14 @@
         AND cf.watershed_group_code = m.watershed_group_code",
       s
     )
-    fix_filter <- "AND (cf.structure IS NULL OR cf.structure = 'OBS')"
+    # CSV-loaded structure column carries empty strings ('') for "no fix
+    # applied" rows; treat them as NULL-equivalent so bcfp's intent
+    # `f.structure IS NULL OR f.structure = 'OBS'` doesn't drop them.
+    # Without this, the modelled branch under-emits by ~165 crossings in
+    # BBAR / ~809 in THOM (provincial pattern), causing
+    # `has_barriers_anthropogenic_dnstr` to mis-emit FALSE downstream and
+    # mapping_code token2 to flip NONE→MODELLED. See link#158.
+    fix_filter <- "AND (NULLIF(cf.structure, '') IS NULL OR cf.structure = 'OBS')"
   } else {
     fix_join <- ""
     fix_filter <- ""
