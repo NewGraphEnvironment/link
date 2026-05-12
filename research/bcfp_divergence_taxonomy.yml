@@ -1,0 +1,215 @@
+# bcfp_divergence_taxonomy.yml
+#
+# Single source of truth for known link-vs-bcfp divergence patterns,
+# consumed by `lnk_parity_annotate()`. First-match-wins: entries are
+# evaluated in order and the first one whose `wsg`, `species`,
+# `metric`, `pattern`, and (optional) `diff_range` all match a rollup
+# row tags it with the entry's `id`, `class`, `mechanism`, `refs`, and
+# `status`. Unmatched rows where `|diff_pct| >= tolerance` become
+# `class: UNEXPLAINED, status: NEEDS_INVESTIGATION`; smaller residuals
+# are `class: WITHIN_TOLERANCE, status: CLOSED`.
+#
+# Schema per entry:
+#   id           string         unique slug for the pattern
+#   wsg          string|array   "*" wildcard or specific WSG code(s)
+#   species      string|array   "*" wildcard or specific species code(s)
+#   metric       string|array   "*" wildcard or habitat_type value(s)
+#                               (spawning, rearing, lake_rearing,
+#                                wetland_rearing, rearing_stream,
+#                                rearing_lake_centerline,
+#                                rearing_wetland_centerline)
+#   pattern      string         link_gt_bcfp | link_lt_bcfp |
+#                               bcfp_only | link_only
+#   diff_range   [min, max]     optional, absolute |diff_pct| range
+#   class        string         A|B|C|D|MEASUREMENT_ASYMMETRY|
+#                               TOKEN2_RESIDUAL|...
+#   mechanism    string         one-sentence reason
+#   refs         array          research doc + issue refs
+#   status       string         INTENTIONAL|INTENTIONAL_FRESH_DEFERRED|
+#                               NEEDS_INVESTIGATION|CLOSED
+#
+# Pattern semantics:
+#   link_gt_bcfp  diff_pct > 0   (link credits more than bcfp)
+#   link_lt_bcfp  diff_pct < 0   (link credits less than bcfp)
+#   bcfp_only     link_value=0 AND ref_value>0 (typically diff_pct=-100)
+#   link_only     link_value>0 AND (ref_value=0 OR NA)
+
+entries:
+
+  # ---------------------------------------------------------------------------
+  # Class MEASUREMENT_ASYMMETRY — link credits centerline km AND polygon ha
+  # as separate columns. bcfp credits only one or the other per species.
+  # The `-100%` rows in the rollup are this asymmetry, not a defect.
+  # ---------------------------------------------------------------------------
+  - id: lake-wetland-polygon-asymmetry
+    wsg: "*"
+    species: "*"
+    metric: [lake_rearing, wetland_rearing]
+    pattern: bcfp_only
+    class: MEASUREMENT_ASYMMETRY
+    mechanism: link credits centerline km AND polygon ha as separate columns; bcfp credits only one
+    refs:
+      - research/default_vs_bcfishpass.md
+      - research/provincial_parity_2026_05_11.md#intentional-divergences
+    status: INTENTIONAL
+
+  - id: lake-wetland-centerline-zero-bcfp
+    wsg: "*"
+    species: "*"
+    metric: [rearing_lake_centerline, rearing_wetland_centerline]
+    pattern: link_only
+    class: MEASUREMENT_ASYMMETRY
+    mechanism: bcfp does not materialize rearing centerline slices; link reports both
+    refs: [research/default_vs_bcfishpass.md]
+    status: INTENTIONAL
+
+  # ---------------------------------------------------------------------------
+  # Class A — bcfp-side staleness. link is correct; bcfp's
+  # `barriers_subsurfaceflow` has stale entries that should have been
+  # excluded by `user_barriers_definite_control` (barrier_ind = FALSE).
+  # Filed upstream; Simon hasn't refreshed yet.
+  # ---------------------------------------------------------------------------
+  - id: setn-anadr-rearing-stale
+    wsg: SETN
+    species: [CH, CM, CO, PK, SK, ST]
+    metric: [rearing, rearing_stream]
+    pattern: link_gt_bcfp
+    diff_range: [50, 250]
+    class: A
+    mechanism: bcfp barriers_subsurfaceflow stale; link applies user_barriers_definite_control overrides
+    refs:
+      - research/provincial_parity_2026_05_01.md#class-a
+      - research/provincial_parity_2026_05_11.md#class-a
+    status: INTENTIONAL
+
+  - id: setn-anadr-spawning-stale
+    wsg: SETN
+    species: [CH, CM, CO, PK, SK, ST]
+    metric: spawning
+    pattern: link_gt_bcfp
+    diff_range: [5, 250]
+    class: A
+    mechanism: bcfp barriers_subsurfaceflow stale; link applies user_barriers_definite_control overrides
+    refs:
+      - research/provincial_parity_2026_05_01.md#class-a
+      - research/provincial_parity_2026_05_11.md#class-a
+    status: INTENTIONAL
+
+  # ---------------------------------------------------------------------------
+  # Class B — fresh#158 stream-order bypass. bcfp credits order-1 tribs of
+  # order-5+ mainstems as rearing without channel-width check. fresh's
+  # bundled methodology declines to fake it. -5 to -9% rearing_stream on
+  # HORS-class WSGs.
+  # ---------------------------------------------------------------------------
+  - id: hors-class-stream-order-bypass
+    wsg: [HORS, CLRH, COLR, KHOR]
+    species: "*"
+    metric: rearing_stream
+    pattern: link_lt_bcfp
+    diff_range: [4, 12]
+    class: B
+    mechanism: fresh#158 stream_order_parent rear bypass deferred; dimensions.csv rear_stream_order_bypass=no
+    refs:
+      - https://github.com/NewGraphEnvironment/fresh/issues/158
+      - research/dimensions_audit.md
+      - research/bcfishpass_methodology.md
+    status: INTENTIONAL_FRESH_DEFERRED
+
+  # ---------------------------------------------------------------------------
+  # Class C — SK new-geographies. Three open fresh mechanisms feed this
+  # (multi-lake topology, lake-adjacency knob, upstream-spawn cluster gate).
+  # Each row needs individual inspection — some are stale-bcfp, some
+  # genuine link methodology, some fresh-side bugs.
+  # ---------------------------------------------------------------------------
+  - id: sk-lake-clustering-divergence
+    wsg: [BULK, CHWK, KUMR, LRDO, NASC, NASR, NEVI, QUES, TOBA, THOM, OWIK, STIR, SQAM, NECR, NECL, ATNA, KNIG]
+    species: SK
+    metric: [spawning, rearing, lake_rearing, rearing_stream]
+    pattern: link_gt_bcfp
+    diff_range: [8, 100]
+    class: C
+    mechanism: SK lake clustering / multi-lake / adjacency — fresh#190 parked, fresh#191 filed
+    refs:
+      - https://github.com/NewGraphEnvironment/fresh/issues/190
+      - https://github.com/NewGraphEnvironment/fresh/issues/191
+      - research/provincial_parity_2026_05_11.md#class-c
+    status: INTENTIONAL_FRESH_DEFERRED
+
+  - id: sk-lake-clustering-under-credit
+    wsg: [TOBA, NASC, KUMR]
+    species: SK
+    metric: rearing
+    pattern: link_lt_bcfp
+    diff_range: [8, 50]
+    class: C
+    mechanism: SK lake clustering — link under-credits relative to bcfp on some WSGs
+    refs:
+      - https://github.com/NewGraphEnvironment/fresh/issues/190
+      - research/provincial_parity_2026_05_11.md#class-c
+    status: INTENTIONAL_FRESH_DEFERRED
+
+  # ---------------------------------------------------------------------------
+  # Class D survivor — BBAR CH/CO rearing over-credit. TWAC/STHM/BULL/COWN
+  # closed by link#152/#154 (PR 2026-05-04 to 2026-05-11). BBAR remains
+  # open; needs segment-level trace.
+  # ---------------------------------------------------------------------------
+  - id: bbar-ch-co-rearing-over-credit
+    wsg: BBAR
+    species: [CH, CO]
+    metric: rearing
+    pattern: link_gt_bcfp
+    diff_range: [10, 15]
+    class: D
+    mechanism: link credits ~+12% rearing vs bcfp; mechanism TBD (stale bcfp barrier-set or genuine methodology)
+    refs:
+      - research/provincial_parity_2026_05_11.md#class-d
+      - research/provincial_parity_2026_05_01.md#class-d
+    status: NEEDS_INVESTIGATION
+
+  # ---------------------------------------------------------------------------
+  # Small new residuals from 2026-05-11 run. Within the range where bcfp-
+  # side staleness is plausible (Tuesday rebuild lag picking up override
+  # changes). Open follow-ups, not yet traced.
+  # ---------------------------------------------------------------------------
+  - id: thom-anadr-small-rearing-divergence
+    wsg: THOM
+    species: [CH, CO]
+    metric: rearing
+    pattern: link_gt_bcfp
+    diff_range: [5, 10]
+    class: D
+    mechanism: small over-credit; suspected bcfp tunnel staleness on recent override changes
+    refs: [research/provincial_parity_2026_05_11.md#unexplained-divergences-from-this-run]
+    status: NEEDS_INVESTIGATION
+
+  - id: mfra-ch-small-rearing-divergence
+    wsg: MFRA
+    species: CH
+    metric: rearing
+    pattern: link_gt_bcfp
+    diff_range: [5, 10]
+    class: D
+    mechanism: small over-credit; suspected bcfp tunnel staleness
+    refs: [research/provincial_parity_2026_05_11.md#unexplained-divergences-from-this-run]
+    status: NEEDS_INVESTIGATION
+
+  - id: revl-wct-small-rearing-stream-divergence
+    wsg: REVL
+    species: WCT
+    metric: rearing_stream
+    pattern: link_lt_bcfp
+    diff_range: [5, 10]
+    class: D
+    mechanism: small under-credit; suspected bcfp tunnel staleness
+    refs: [research/provincial_parity_2026_05_11.md#unexplained-divergences-from-this-run]
+    status: NEEDS_INVESTIGATION
+
+# ----------------------------------------------------------------------------
+# Class TOKEN2_RESIDUAL (segment-level mapping_code NONE/MODELLED swap from
+# crossing_fixes.structure = '', closed by link#158 2026-05-11) is NOT
+# represented here as a rollup taxonomy entry: token2 swaps don't affect
+# linear rollup sums, so any rollup-level row matching a small diff_range
+# would be a false positive. The mapping_code branch of lnk_compare_wsg
+# surfaces this pattern at the right level (per-species n_diffs +
+# top_pattern). Re-add a rollup entry only if a future regression
+# propagates token2 differences into linear sums.

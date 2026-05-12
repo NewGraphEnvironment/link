@@ -29,9 +29,9 @@ Bundles three cleanups while in the area: `balance_provincial_buckets.R` dedup b
 
 ## Phase 4: taxonomy YAML + annotator
 
-- [ ] Write `research/bcfp_divergence_taxonomy.yml` with initial ~20 entries covering Class A (SETN), Class B (HORS et al), Class C (SK new-geographies — LRDO/BULK/NASR/etc.), Class D survivor (BBAR CH/CO), MEASUREMENT_ASYMMETRY (lake/wetland centerline-vs-polygon), TOKEN2_RESIDUAL.
-- [ ] Write `R/lnk_parity_annotate.R` — reads taxonomy, joins per-WSG rollup + mapping_code stats, emits annotated tibble + optional CSV.
-- [ ] Mocked tests: wildcard handling, pattern matching (`link_gt_bcfp`, `link_lt_bcfp`, `bcfp_only`, `link_only`), first-match-wins semantics, UNEXPLAINED fallback at `|diff_pct| >= 2%`.
+- [x] Write `research/bcfp_divergence_taxonomy.yml` with initial ~20 entries covering Class A (SETN), Class B (HORS et al), Class C (SK new-geographies — LRDO/BULK/NASR/etc.), Class D survivor (BBAR CH/CO), MEASUREMENT_ASYMMETRY (lake/wetland centerline-vs-polygon), TOKEN2_RESIDUAL.
+- [x] Write `R/lnk_parity_annotate.R` — reads taxonomy, joins per-WSG rollup + mapping_code stats, emits annotated tibble + optional CSV.
+- [x] Mocked tests: wildcard handling, pattern matching (`link_gt_bcfp`, `link_lt_bcfp`, `bcfp_only`, `link_only`), first-match-wins semantics, UNEXPLAINED fallback at `|diff_pct| >= 2%`.
 
 ## Phase 5: orchestrator + dispatch
 

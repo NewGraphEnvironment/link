@@ -139,5 +139,8 @@ print(result_mc$mapping_code)
 \code{\link[=lnk_pipeline_setup]{lnk_pipeline_setup()}}, \code{\link[=lnk_pipeline_load]{lnk_pipeline_load()}},
 \code{\link[=lnk_pipeline_prepare]{lnk_pipeline_prepare()}}, \code{\link[=lnk_pipeline_persist]{lnk_pipeline_persist()}},
 \code{\link[=lnk_parity_annotate]{lnk_parity_annotate()}}
+
+Other compare: 
+\code{\link{lnk_parity_annotate}()}
 }
 \concept{compare}
