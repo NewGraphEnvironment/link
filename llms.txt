@@ -31,6 +31,17 @@ Redistributed bcfishpass override data carries its own license — see
 - [`lnk_barriers_emit()`](https://newgraphenvironment.github.io/link/reference/lnk_barriers_emit.md)
   : Emit slim crossings_lookup + per-source barriers\_\* tables
 
+- [`lnk_barriers_unify()`](https://newgraphenvironment.github.io/link/reference/lnk_barriers_unify.md)
+  :
+
+  Unify per-WSG barrier sources into the working-schema
+  `<schema>.barriers`
+
+- [`lnk_barriers_views()`](https://newgraphenvironment.github.io/link/reference/lnk_barriers_views.md)
+  :
+
+  Create working-schema views over `<persist_schema>.barriers`
+
 - [`lnk_baseline_append()`](https://newgraphenvironment.github.io/link/reference/lnk_baseline_append.md)
   : Append a row to the run-tracking baseline ledger
 

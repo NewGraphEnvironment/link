@@ -1,6 +1,53 @@
 # Changelog
 
-## link 0.34.0
+## link 0.35.0
+
+Closes [\#152](https://github.com/NewGraphEnvironment/link/issues/152).
+New unified province-wide `<persist_schema>.barriers` table with a
+pre-computed `blocks_species text[]` predicate. Closes the cross-WSG
+`dam_dnstr_ind` defect — PARS BT mapping_code parity jumped from 60.64%
+→ 98.63% (+38 pp) because dam barriers in upstream-of-PARS WSGs (Bennett
+in PCEA, Peace Canyon / Site C in UPCE) now resolve correctly via
+FWA-topology walks over the province-wide table. Other Phase A WSGs
+maintained ≥99% across all species (full 6-WSG matrix in
+`research/bcfp_compare_mapping_code.md`).
+
+- New exported `lnk_barriers_unify(conn, aoi, cfg, loaded, schema)`.
+  Consolidates four per-WSG barrier source families into
+  `<schema>.barriers`: anthropogenic (PSCIS / CABD / MODELLED_CROSSINGS
+  with `barrier_status IN ('BARRIER','POTENTIAL')`), gradient
+  (per-class, `blocks_species` derived from
+  `parameters_fresh$access_gradient_max`), falls, and opt-in
+  subsurface_flow. Per-source `id_barrier` namespacing keeps rows unique
+  within a WSG without coordinating sequence IDs (anthropogenic =
+  `aggregated_crossings_id`; others get `<SOURCE>-<rownum>` text
+  prefixes).
+- New exported `lnk_barriers_views(conn, schema, cfg)`. Emits
+  per-species (`<schema>.barriers_<sp>_unified` for the 8 mapping_code
+  species) + per-source
+  (`<schema>.barriers_{anthropogenic,pscis,dams}_unified`)
+  `CREATE OR REPLACE VIEW`s over `<persist_schema>.barriers`. Each view
+  re-exposes `id_barrier AS barriers_<x>_unified_id` so the existing
+  `lnk_pipeline_access` `feature_id_col = "<table>_id"` convention works
+  unchanged. `_unified` suffix avoids name collisions with the per-WSG
+  tables `.lnk_pipeline_prep_minimal` + `lnk_barriers_emit` already
+  build (those stay — they’re useful primitives).
+- [`lnk_persist_init()`](https://newgraphenvironment.github.io/link/reference/lnk_persist_init.md)
+  extended with `cols_barriers` DDL: 13 columns, PK on
+  `(id_barrier, watershed_group_code)`, GIN index on `blocks_species`,
+  btree indexes on `(watershed_group_code, barrier_source)` and
+  `(blue_line_key, downstream_route_measure)`, GIST on `geom`.
+- [`lnk_pipeline_persist()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_persist.md)
+  extended with a `<schema>.barriers` → `<persist_schema>.barriers`
+  DELETE-WHERE-WSG + INSERT branch (gated on staging-table presence so
+  older orchestrators that don’t yet call `lnk_barriers_unify` keep
+  working without behaviour change).
+- `data-raw/compare_bcfp_mapping_code.R`:
+  `barrier_sources$anthropogenic` + `barrier_sources$dams` now point at
+  the unified views. `barriers_per_sp` keeps the bcfp-tunnel staging
+  fallback (the unified-table `blocks_species` predicate doesn’t encode
+  per-species minimal-position semantics — that’s a separate scope
+  expansion).
 
 Closes [\#154](https://github.com/NewGraphEnvironment/link/issues/154).
 [`lnk_pipeline_crossings()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_crossings.md)

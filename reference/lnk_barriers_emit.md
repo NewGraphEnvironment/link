@@ -66,6 +66,12 @@ Filters mirror bcfp's `model/01_access/sql/barriers_*.sql` and
   (bcfp-intended logic per the v0.30.2 fix; see
   `smnorris/bcfishpass#891`).
 
+## See also
+
+Other barriers:
+[`lnk_barriers_unify()`](https://newgraphenvironment.github.io/link/reference/lnk_barriers_unify.md),
+[`lnk_barriers_views()`](https://newgraphenvironment.github.io/link/reference/lnk_barriers_views.md)
+
 ## Examples
 
 ``` r
