@@ -124,6 +124,12 @@ lnk_compare_wsg <- function(conn, aoi, cfg, loaded,
     is.logical(with_mapping_code), length(with_mapping_code) == 1L,
     is.null(species) || is.character(species),
     is.character(schema), length(schema) == 1L, nzchar(schema),
+    # `schema` is interpolated raw into DDL (DROP TABLE / DROP SCHEMA
+    # CASCADE) via sprintf elsewhere in this function and propagated
+    # through every lnk_pipeline_* call. Whitelist regex makes SQL
+    # injection structurally impossible even if a caller overrides
+    # the default `working_<aoi>` value.
+    grepl("^[a-z_][a-z0-9_]*$", schema),
     is.logical(dams), length(dams) == 1L,
     is.logical(cleanup_working), length(cleanup_working) == 1L
   )
@@ -177,8 +183,19 @@ lnk_compare_wsg <- function(conn, aoi, cfg, loaded,
   lnk_pipeline_connect(conn, aoi = aoi, cfg = cfg, # nolint: object_usage_linter
                        loaded = loaded, schema = schema)
 
-  # Persist per-WSG segment-level data to province-wide tables.
+  # Resolve active species set BEFORE persist. Empty here means the WSG
+  # has no presence for any bundle species — there's nothing to persist
+  # or compare. Error out before calling persist (which would otherwise
+  # run with an empty species vector and either no-op silently or fail
+  # with a less-clear downstream message).
   active_species <- lnk_pipeline_species(cfg, loaded, aoi) # nolint: object_usage_linter
+  if (length(active_species) == 0L) {
+    stop("no active species in ", aoi,
+         " — cfg$species intersected with wsg_species_presence is empty.",
+         call. = FALSE)
+  }
+
+  # Persist per-WSG segment-level data to province-wide tables.
   lnk_persist_init(conn, cfg, species = active_species) # nolint: object_usage_linter
   lnk_pipeline_persist(conn, aoi = aoi, cfg = cfg, # nolint: object_usage_linter
                        species = active_species, schema = schema)
@@ -193,7 +210,9 @@ lnk_compare_wsg <- function(conn, aoi, cfg, loaded,
   }
   if (length(species) == 0L) {
     stop("no species to roll up in ", aoi, " (active=",
-         paste(active_species, collapse = ","), ")", call. = FALSE)
+         paste(active_species, collapse = ","),
+         ") after intersecting with caller-passed `species`.",
+         call. = FALSE)
   }
 
   # =====================================================================

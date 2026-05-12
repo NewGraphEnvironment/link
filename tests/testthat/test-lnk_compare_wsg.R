@@ -97,8 +97,86 @@ test_that("lnk_compare_wsg with_mapping_code=TRUE errors with Phase 2 message", 
 })
 
 # ---------------------------------------------------------------------------
+# Schema injection guard
+# ---------------------------------------------------------------------------
+
+test_that("lnk_compare_wsg rejects schema with characters outside the SQL identifier whitelist", {
+  expect_error(
+    lnk_compare_wsg(mock_conn(), aoi = "ADMS",
+                    cfg = mock_cfg(), loaded = mock_loaded(),
+                    schema = "x; DROP SCHEMA public CASCADE; --"),
+    "schema"
+  )
+  expect_error(
+    lnk_compare_wsg(mock_conn(), aoi = "ADMS",
+                    cfg = mock_cfg(), loaded = mock_loaded(),
+                    schema = "Working_ADMS"),    # mixed case
+    "schema"
+  )
+  expect_error(
+    lnk_compare_wsg(mock_conn(), aoi = "ADMS",
+                    cfg = mock_cfg(), loaded = mock_loaded(),
+                    schema = "1invalid"),        # leading digit
+    "schema"
+  )
+})
+
+# ---------------------------------------------------------------------------
 # Composition: rollup-only path calls pipeline phases in order
 # ---------------------------------------------------------------------------
+
+test_that("lnk_compare_wsg errors before persist when active_species is empty", {
+  m_setup <- function(...) invisible(NULL)
+  m_load <- function(...) invisible(NULL)
+  m_prepare <- function(...) invisible(NULL)
+  m_crossings <- function(...) invisible(NULL)
+  m_break <- function(...) invisible(NULL)
+  m_classify <- function(...) invisible(NULL)
+  m_connect <- function(...) invisible(NULL)
+  m_species <- function(...) character(0)  # empty
+  m_persist_init_called <- FALSE
+  m_persist_init <- function(...) {
+    m_persist_init_called <<- TRUE; invisible(NULL)
+  }
+  m_persist_called <- FALSE
+  m_persist <- function(...) {
+    m_persist_called <<- TRUE; invisible(NULL)
+  }
+  m_exec <- function(...) 1L
+
+  with_mocked_bindings(
+    lnk_pipeline_setup = m_setup,
+    lnk_pipeline_load = m_load,
+    lnk_pipeline_prepare = m_prepare,
+    lnk_pipeline_crossings = m_crossings,
+    lnk_pipeline_break = m_break,
+    lnk_pipeline_classify = m_classify,
+    lnk_pipeline_connect = m_connect,
+    lnk_pipeline_species = m_species,
+    lnk_persist_init = m_persist_init,
+    lnk_pipeline_persist = m_persist,
+    {
+      with_mocked_bindings(
+        dbExecute = m_exec,
+        .package = "DBI",
+        {
+          expect_error(
+            lnk_compare_wsg(
+              conn = mock_conn(), aoi = "ADMS",
+              cfg = mock_cfg(), loaded = mock_loaded(),
+              reference = "bcfishpass", conn_ref = mock_conn()
+            ),
+            "no active species"
+          )
+        }
+      )
+    }
+  )
+
+  # persist must not have been called with empty species
+  expect_false(m_persist_init_called)
+  expect_false(m_persist_called)
+})
 
 test_that("lnk_compare_wsg composes pipeline phases in expected order", {
   calls <- character()
