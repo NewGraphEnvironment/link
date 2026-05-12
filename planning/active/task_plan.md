@@ -10,10 +10,10 @@ Bundles three cleanups while in the area: `balance_provincial_buckets.R` dedup b
 
 ## Phase 1: scaffold + `lnk_compare_wsg` (rollup-only path)
 
-- [ ] Write `R/lnk_compare_wsg.R` — exported function. Body composes existing pipeline phases. `with_mapping_code = FALSE` only in this phase. `reference` arg validated against `c("bcfishpass")`.
-- [ ] `devtools::document()`.
-- [ ] Mocked tests: SQL composition under `local_mocked_bindings`, arg validation, reference dispatch error on unknown values.
-- [ ] `lintr::lint` clean.
+- [x] Write `R/lnk_compare_wsg.R` — exported function. Body composes existing pipeline phases. `with_mapping_code = FALSE` only in this phase. `reference` arg validated against `c("bcfishpass")`.
+- [x] `devtools::document()`.
+- [x] Mocked tests: SQL composition under `local_mocked_bindings`, arg validation, reference dispatch error on unknown values.
+- [x] `lintr::lint` clean (indent warnings match existing codebase style; not regressions).
 
 ## Phase 2: `lnk_compare_wsg` mapping_code branch
 
