@@ -78,7 +78,11 @@ if [ -n "$MISSING" ]; then
   echo "See data-raw/README.md for install instructions per host." >&2
   exit 1
 fi
-if ! ogr2ogr --formats 2>/dev/null | grep -qi parquet; then
+# grep without -q (and redirect to /dev/null) so it reads all input and
+# doesn't close the pipe early. With -q + set -euo pipefail, ogr2ogr gets
+# SIGPIPE (exit 141), pipefail propagates, `!` flips it, FATAL fires
+# even though the Parquet driver IS present (link#160).
+if ! ogr2ogr --formats 2>/dev/null | grep -i parquet > /dev/null; then
   echo "FATAL: ogr2ogr lacks Parquet driver. Need conda-forge or Homebrew GDAL." >&2
   exit 1
 fi
