@@ -43,6 +43,33 @@ cols_habitat <- c(
   wetland_rearing      = "boolean"
 )
 
+#' Column shape for the unified province-wide barriers table.
+#'
+#' `<persist_schema>.barriers` holds all access-time barriers across all
+#' source families with a pre-computed `blocks_species text[]` predicate.
+#' Cross-WSG dnstr lookups in [lnk_pipeline_access()] resolve correctly
+#' regardless of which WSG a barrier physically lives in — fixes the
+#' PARS BT 60% defect (PARS drains through dams in PCEA / UPCE WSGs)
+#' and unblocks any regional run that crosses WSG boundaries.
+#'
+#' See link#152.
+#' @noRd
+cols_barriers <- c(
+  id_barrier               = "text NOT NULL",
+  watershed_group_code     = "varchar(4) NOT NULL",
+  barrier_source           = "varchar(20) NOT NULL",
+  barrier_subtype          = "varchar(50)",
+  passability              = "varchar(20)",
+  blocks_species           = "text[]",
+  linear_feature_id        = "bigint",
+  blue_line_key            = "integer",
+  watershed_key            = "integer",
+  downstream_route_measure = "double precision",
+  wscode_ltree             = "ltree",
+  localcode_ltree          = "ltree",
+  geom                     = "geometry(Point, 3005)"
+)
+
 #' Build a CREATE TABLE column-list clause from a `cols_*` vector.
 #'
 #' Returns the inner body — caller wraps with `CREATE TABLE … (…)`.
@@ -133,6 +160,36 @@ lnk_persist_init <- function(conn, cfg, species) {
     .lnk_db_execute(conn, sprintf(
       "CREATE INDEX IF NOT EXISTS streams_habitat_%s_wsg_idx ON %s (watershed_group_code)",
       tolower(sp), sp_table))
+  }
+
+  # Unified province-wide barriers table (link#152). Primary key on
+  # (id_barrier, watershed_group_code) — `id_barrier` is namespaced per
+  # source-family inside lnk_barriers_unify so it stays unique across
+  # rows in a WSG.
+  barriers_pk <- c("id_barrier", "watershed_group_code")
+  .lnk_db_execute(conn, sprintf(
+    "CREATE TABLE IF NOT EXISTS %s.barriers (\n  %s\n)",
+    schema, .lnk_cols_clause(cols_barriers, barriers_pk)))
+
+  # Indexes for the dominant access patterns:
+  # - WSG-scan filtering (per-WSG runs DELETE then INSERT here).
+  # - blocks_species @> ARRAY['BT'] (per-species access queries).
+  # - barrier_source filtering (anthropogenic / dams / remediations
+  #   source-typed dnstr arrays in lnk_pipeline_access).
+  # - blue_line_key + downstream_route_measure (FWA topology walks
+  #   inside fresh::frs_network_features).
+  # - geom (spatial visualization).
+  barriers_idx_specs <- list(
+    barriers_wsg_idx        = "(watershed_group_code)",
+    barriers_blocks_idx     = "USING GIN (blocks_species)",
+    barriers_source_idx     = "(barrier_source)",
+    barriers_blk_drm_idx    = "(blue_line_key, downstream_route_measure)",
+    barriers_geom_idx       = "USING GIST (geom)"
+  )
+  for (idx_name in names(barriers_idx_specs)) {
+    .lnk_db_execute(conn, sprintf(
+      "CREATE INDEX IF NOT EXISTS %s ON %s.barriers %s",
+      idx_name, schema, barriers_idx_specs[[idx_name]]))
   }
 
   invisible(conn)

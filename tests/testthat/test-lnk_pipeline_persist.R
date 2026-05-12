@@ -1,5 +1,17 @@
 # Tests for lnk_pipeline_persist — SQL emission shape (mocked DB)
 
+# Mock DBI helpers shared across tests — barriers staging-table probe
+# returns "absent" by default so legacy tests don't see the new
+# barriers DELETE/INSERT branch.
+mock_dbi_no_barriers <- function() {
+  with(list(), {
+    list(
+      dbGetQuery    = function(...) data.frame(x = integer(0)),
+      dbQuoteString = function(...) DBI::SQL("'x'")
+    )
+  })
+}
+
 test_that("lnk_pipeline_persist emits DELETE+INSERT for streams + each species", {
   captured <- character(0)
   local_mocked_bindings(
@@ -7,9 +19,17 @@ test_that("lnk_pipeline_persist emits DELETE+INSERT for streams + each species",
       captured <<- c(captured, sql); invisible(NULL)
     }
   )
-  cfg <- lnk_config("bcfishpass")
-  lnk_pipeline_persist("mock-conn", aoi = "LRDO", cfg = cfg,
-    species = c("BT", "SK"))
+  m <- mock_dbi_no_barriers()
+  with_mocked_bindings(
+    dbGetQuery = m$dbGetQuery, dbQuoteString = m$dbQuoteString,
+    .package = "DBI",
+    {
+      cfg <- lnk_config("bcfishpass")
+      lnk_pipeline_persist(
+        structure(list(), class = "DBIConnection"),
+        aoi = "LRDO", cfg = cfg, species = c("BT", "SK"))
+    }
+  )
 
   joined <- paste(captured, collapse = "\n")
 
@@ -37,11 +57,20 @@ test_that("lnk_pipeline_persist counts: 2 streams ops + 2 ops per species", {
       captured <<- c(captured, sql); invisible(NULL)
     }
   )
-  cfg <- lnk_config("bcfishpass")
-  lnk_pipeline_persist("mock-conn", aoi = "ADMS", cfg = cfg,
-    species = c("BT", "CH", "SK"))
+  m <- mock_dbi_no_barriers()
+  with_mocked_bindings(
+    dbGetQuery = m$dbGetQuery, dbQuoteString = m$dbQuoteString,
+    .package = "DBI",
+    {
+      cfg <- lnk_config("bcfishpass")
+      lnk_pipeline_persist(
+        structure(list(), class = "DBIConnection"),
+        aoi = "ADMS", cfg = cfg, species = c("BT", "CH", "SK"))
+    }
+  )
 
   # 2 (streams DELETE+INSERT) + 2 * 3 (per-species DELETE+INSERT) = 8
+  # (barriers branch skipped — probe returned absent)
   expect_equal(length(captured), 8L)
 })
 
@@ -62,11 +91,69 @@ test_that("lnk_pipeline_persist accepts non-default schema", {
       captured <<- c(captured, sql); invisible(NULL)
     }
   )
-  cfg <- lnk_config("bcfishpass")
-  lnk_pipeline_persist("mock-conn", aoi = "LRDO", cfg = cfg,
-    species = "BT", schema = "working_custom")
+  m <- mock_dbi_no_barriers()
+  with_mocked_bindings(
+    dbGetQuery = m$dbGetQuery, dbQuoteString = m$dbQuoteString,
+    .package = "DBI",
+    {
+      cfg <- lnk_config("bcfishpass")
+      lnk_pipeline_persist(
+        structure(list(), class = "DBIConnection"),
+        aoi = "LRDO", cfg = cfg, species = "BT", schema = "working_custom")
+    }
+  )
 
   joined <- paste(captured, collapse = "\n")
   expect_match(joined, "FROM working_custom\\.streams")
   expect_match(joined, "FROM working_custom\\.streams_habitat WHERE species_code = 'BT'")
+})
+
+test_that("lnk_pipeline_persist persists barriers when staging table present", {
+  captured <- character(0)
+  local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) {
+      captured <<- c(captured, sql); invisible(NULL)
+    }
+  )
+  # Probe returns one row → <schema>.barriers exists.
+  with_mocked_bindings(
+    dbGetQuery    = function(...) data.frame(x = 1L),
+    dbQuoteString = function(...) DBI::SQL("'working_pars'"),
+    .package = "DBI",
+    {
+      cfg <- lnk_config("bcfishpass")
+      lnk_pipeline_persist(
+        structure(list(), class = "DBIConnection"),
+        aoi = "PARS", cfg = cfg, species = "BT")
+    }
+  )
+
+  joined <- paste(captured, collapse = "\n")
+  expect_match(joined,
+               "DELETE FROM fresh\\.barriers WHERE watershed_group_code = 'PARS'")
+  expect_match(joined,
+               "INSERT INTO fresh\\.barriers \\(id_barrier, watershed_group_code,.*blocks_species.*geom\\)\\s+SELECT id_barrier, watershed_group_code,.*\\s+FROM working_pars\\.barriers")
+})
+
+test_that("lnk_pipeline_persist skips barriers branch when staging table absent", {
+  captured <- character(0)
+  local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) {
+      captured <<- c(captured, sql); invisible(NULL)
+    }
+  )
+  m <- mock_dbi_no_barriers()
+  with_mocked_bindings(
+    dbGetQuery = m$dbGetQuery, dbQuoteString = m$dbQuoteString,
+    .package = "DBI",
+    {
+      cfg <- lnk_config("bcfishpass")
+      lnk_pipeline_persist(
+        structure(list(), class = "DBIConnection"),
+        aoi = "PARS", cfg = cfg, species = "BT")
+    }
+  )
+  joined <- paste(captured, collapse = "\n")
+  expect_no_match(joined, "DELETE FROM fresh\\.barriers")
+  expect_no_match(joined, "INSERT INTO fresh\\.barriers")
 })

@@ -63,4 +63,9 @@ DBI::dbReadTable(conn, c("working_adms", "crossings_lookup"))
 }
 
 }
+\seealso{
+Other barriers: 
+\code{\link{lnk_barriers_unify}()},
+\code{\link{lnk_barriers_views}()}
+}
 \concept{barriers}
