@@ -23,9 +23,9 @@ Bundles three cleanups while in the area: `balance_provincial_buckets.R` dedup b
 
 ## Phase 3: data-raw refactor
 
-- [ ] `data-raw/compare_bcfishpass_wsg.R` — collapse to thin wrapper around `lnk_compare_wsg(reference = "bcfishpass")`. Keep RDS persistence + bcfp baseline stamping + per-WSG timing CSV (those stay in data-raw).
-- [ ] `data-raw/compare_bcfp_mapping_code.R` — DELETE (logic now in `lnk_compare_wsg`).
-- [ ] Smoke: re-run ADMS via the refactored wrapper, confirm bit-identical rollup tibble + mapping_code stats vs pre-refactor.
+- [x] `data-raw/compare_bcfishpass_wsg.R` — collapse to thin wrapper around `lnk_compare_wsg(reference = "bcfishpass")`. Keep RDS persistence + bcfp baseline stamping + per-WSG timing CSV (those stay in data-raw).
+- [x] `data-raw/compare_bcfp_mapping_code.R` — DELETE (logic now in `lnk_compare_wsg`).
+- [x] Smoke: re-run ADMS via the refactored wrapper, confirm bit-identical rollup tibble + mapping_code stats vs pre-refactor.
 
 ## Phase 4: taxonomy YAML + annotator
 
