@@ -35,9 +35,10 @@ Bundles three cleanups while in the area: `balance_provincial_buckets.R` dedup b
 
 ## Phase 5: orchestrator + dispatch
 
-- [ ] `data-raw/run_provincial_parity.R` — `--with-mapping-code` flag passthrough. Post-run call to `lnk_parity_annotate()` writes `<TS>_annotated.csv` to `data-raw/logs/provincial_parity/`.
-- [ ] `data-raw/trifecta_provincial.sh` — `--with-mapping-code` flag + multi-workspace dispatch (3 cyphers via `--workspace job1,job2,job3` + M4 + M1). Each cypher workspace dispatched via `cypher_run.sh --workspace jobN`. RDS files auto-pulled back to M4 at completion (existing rsync pattern).
-- [ ] Pre-flight checks (per `research/provincial_run_runbook.md`): all 5 hosts return matching link+fresh versions before dispatch.
+- [x] `data-raw/run_provincial_parity.R` — `--with-mapping-code` flag passthrough. Post-run call to `lnk_parity_annotate()` writes `<TS>_annotated.csv` to `data-raw/logs/provincial_parity/`.
+- [x] `data-raw/trifecta_provincial.sh` — `--with-mapping-code` flag + multi-workspace dispatch (3 cyphers via `--workspace job1,job2,job3` + M4 + M1). Each cypher workspace dispatched via `cypher_run.sh --workspace jobN`. RDS files auto-pulled back to M4 at completion (existing rsync pattern).
+- [x] Pre-flight checks (per `research/provincial_run_runbook.md`): all 5 hosts return matching link+fresh versions before dispatch.
+- [x] Inline LPT (formula-based bucket allocation): `--host-speeds=m4=1.0,m1=0.83,cy=1.83` CLI flag with defaults; trifecta reads `_per_wsg_times.csv` files and computes balanced buckets at dispatch time. Manual `--<host>-bucket=` overrides retained. Tested end-to-end on 217 WSGs of real timing data — 5-host wall projected ~77 min (vs ~2 hours single-cypher).
 
 ## Phase 6: cleanups bundled
 

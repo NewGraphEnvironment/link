@@ -39,6 +39,11 @@ config_arg <- args[grep("^--config=", args)]
 config_name <- if (length(config_arg) > 0) sub("^--config=", "", config_arg[1]) else "bcfishpass"
 cfg <- lnk_config(config_name)
 
+# `--with-mapping-code` (no value): pass through to the wrapper so each
+# WSG's RDS holds list(rollup, mapping_code) instead of a bare rollup
+# tibble. The post-loop annotation step (below) reads either shape.
+with_mapping_code <- "--with-mapping-code" %in% args
+
 schema_arg <- args[grep("^--schema=", args)]
 if (length(schema_arg) > 0) {
   cfg$pipeline$schema <- sub("^--schema=", "", schema_arg[1])
@@ -193,11 +198,16 @@ for (w in wsgs) {
   cat(format(Sys.time(), "%H:%M:%S"), "  ", w, " ... ", sep = "")
   t0 <- Sys.time()
   tryCatch({
-    out <- compare_bcfishpass_wsg(wsg = w, config = cfg)
+    out <- compare_bcfishpass_wsg(wsg = w, config = cfg,
+                                  with_mapping_code = with_mapping_code)
     saveRDS(out, out_rds)
+    # `out` is either a tibble (rollup-only) or list(rollup, mapping_code).
+    # Use the rollup tibble for the timing CSV's `rows` column either way.
+    rollup_for_time <- if (is.data.frame(out)) out else out$rollup
     elapsed <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
-    cat("done ", round(elapsed, 1), "s, rows ", nrow(out), "\n", sep = "")
-    append_time(w, elapsed, nrow(out), "ok")
+    cat("done ", round(elapsed, 1), "s, rows ",
+        nrow(rollup_for_time), "\n", sep = "")
+    append_time(w, elapsed, nrow(rollup_for_time), "ok")
   }, error = function(e) {
     elapsed <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
     saveRDS(list(error = conditionMessage(e),
@@ -215,3 +225,45 @@ cat("Ended:", format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z"), "\n")
 cat("Total wall time:", round(t_total_s / 60, 1), "min  (",
     round(t_total_s, 1), "s)\n", sep = "")
 cat("WSGs completed:", length(list.files(out_dir, pattern = "\\.rds$")), "\n")
+
+# ---------------------------------------------------------------------------
+# Post-loop annotation: bind all per-WSG RDS rollups, annotate against
+# the bcfp divergence taxonomy, write `<TS>_<host>_annotated.csv`.
+# Each host writes its own bucket's annotated CSV. The orchestrator
+# (trifecta_provincial.sh) does the province-wide aggregate after the
+# RDS pull-back step.
+#
+# Skipped if the taxonomy YAML doesn't exist relative to the script's
+# working dir (e.g. running from a host without the research/ tree).
+# ---------------------------------------------------------------------------
+taxonomy_path <- normalizePath(
+  file.path("..", "research", "bcfp_divergence_taxonomy.yml"),
+  mustWork = FALSE)
+if (file.exists(taxonomy_path)) {
+  rds_files <- list.files(out_dir, pattern = "\\.rds$", full.names = TRUE)
+  rollup_list <- lapply(rds_files, function(f) {
+    x <- tryCatch(readRDS(f), error = function(e) NULL)
+    if (is.null(x)) return(NULL)
+    # Skip per-WSG error stubs (saved as list(error=..., elapsed_s=...))
+    if (is.list(x) && !is.data.frame(x) && "error" %in% names(x)) return(NULL)
+    # Phase 2 shape: list(rollup, mapping_code)
+    if (is.list(x) && !is.data.frame(x) && "rollup" %in% names(x)) return(x$rollup)
+    # Phase 1 shape: bare rollup tibble
+    if (is.data.frame(x)) return(x)
+    NULL
+  })
+  rollup_all <- do.call(rbind, Filter(Negate(is.null), rollup_list))
+  if (!is.null(rollup_all) && nrow(rollup_all) > 0L) {
+    annotated_csv <- file.path(out_dir, sprintf(
+      "%s_%s_annotated.csv",
+      format(Sys.time(), "%Y%m%d_%H%M"),
+      host_id))
+    link::lnk_parity_annotate(
+      rollup_all, taxonomy = taxonomy_path, to = annotated_csv)
+    cat("Annotated CSV: ", annotated_csv, "\n", sep = "")
+    cat("  rows: ", nrow(rollup_all), "\n", sep = "")
+  }
+} else {
+  cat("[annotate] taxonomy YAML not found at ", taxonomy_path,
+      " - skipping annotation\n", sep = "")
+}
