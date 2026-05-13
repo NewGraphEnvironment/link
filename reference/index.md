@@ -39,6 +39,9 @@
 
   Read the build-identifier `log.json` from a bucket prefix
 
+- [`lnk_compare_wsg()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_wsg.md)
+  : Compare one watershed group against a reference dataset
+
 - [`lnk_config()`](https://newgraphenvironment.github.io/link/reference/lnk_config.md)
   : Load a Pipeline Config Bundle (Manifest)
 
@@ -62,6 +65,9 @@
 
 - [`lnk_override()`](https://newgraphenvironment.github.io/link/reference/lnk_override.md)
   : Validate and apply overrides to a table
+
+- [`lnk_parity_annotate()`](https://newgraphenvironment.github.io/link/reference/lnk_parity_annotate.md)
+  : Annotate a parity rollup against the bcfp divergence taxonomy
 
 - [`lnk_persist_init()`](https://newgraphenvironment.github.io/link/reference/lnk_persist_init.md)
   : Initialize persistent province-wide habitat tables

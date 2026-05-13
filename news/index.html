@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.35.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.36.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,6 +31,30 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.36.0" id="link-0360">link 0.36.0<a class="anchor" aria-label="anchor" href="#link-0360"></a></h2>
+<p>Closes <a href="https://github.com/NewGraphEnvironment/link/issues/162" class="external-link">#162</a>. Lifts two scattered <code>data-raw/</code> scripts (linear rollup parity + per-segment mapping_code parity) into one package-level <code><a href="../reference/lnk_compare_wsg.html">lnk_compare_wsg()</a></code>, adds an annotated CSV pipeline (<code><a href="../reference/lnk_parity_annotate.html">lnk_parity_annotate()</a></code> against a YAML divergence taxonomy), modernizes the multi-host orchestrator to 5-host (M4 + M1 + N cyphers via tofu workspaces), and hardens the spin-up + smoke flow so failures fail loud + fail fast. Full per-phase summary: <code>planning/archive/2026-05-link162-lnk-compare-wsg-annotated-csv/README.md</code>.</p>
+<ul><li>New exported <code>lnk_compare_wsg(conn, aoi, cfg, loaded, reference, with_mapping_code, ...)</code>. Per-WSG convenience wrapper around the existing <code>lnk_pipeline_*</code> phases. Returns <code>list(rollup, mapping_code)</code>. <code>reference = "bcfishpass"</code> only initially; <code>with_mapping_code = TRUE</code> adds the per-segment lens additive on top of the same network state (no double-pipeline). Defensive empty-merge handling for the 36 WSGs bcfp doesn’t model (warning + NA-filled tibble, not error). <code>data-raw/compare_bcfishpass_wsg.R</code> collapses from 432 → 77 lines as a thin wrapper; <code>data-raw/compare_bcfp_mapping_code.R</code> deleted.</li>
+<li>New exported <code>lnk_parity_annotate(rollup, taxonomy, to, tolerance)</code>. First-match-wins lookup against <code>research/bcfp_divergence_taxonomy.yml</code>. Tags each rollup row with <code>taxonomy_id, class, mechanism, status, refs</code> columns. Unmatched rows: <code>class = UNEXPLAINED (|diff_pct| &gt;= tolerance) | WITHIN_TOLERANCE | NOT_APPLICABLE</code>. Accepts both <code>ref_value</code> and <code>bcfishpass_value</code> column names. Optional CSV write.</li>
+<li>New <code>research/bcfp_divergence_taxonomy.yml</code> — single source of truth for known patterns. 11 entries covering Classes A (SETN stale), B (HORS fresh#158 bypass), C (SK new-geographies fresh#190/#191), D (BBAR + small 2026-05-11 residuals), MEASUREMENT_ASYMMETRY (lake/wetland centerline-vs-polygon).</li>
+<li>
+<code>data-raw/trifecta_provincial.sh</code> extended for M4 + M1 + N cypher workspaces (<code>--cy-workspaces=job1,job2,job3</code>). Inline greedy LPT bucket allocation (reads prior <code>_per_wsg_times.csv</code>, uses CLI <code>--host-speeds=m4=1.0,m1=0.83,cy=1.83</code> for projection + back-normalization — no feedback loop). Pre-flight version check across all hosts before dispatch. Post-pull aggregate annotation against the taxonomy. Empty-bucket guard. Cypher-side R log pull-back at run end so cross-repo log boundary doesn’t hide errors. Truth-in-headline reports OK vs error-stub RDS counts (was misleading <code>N/N pulled</code>).</li>
+<li>
+<code>data-raw/trifecta_smoke.sh</code> rewritten as a 77-line shim over the production orchestrator — one small WSG per host (m4=DEAD, m1=ELKR, cyN=ADMS/BABL/BULL), passes <code>--fail-fast</code> automatically, asserts every smoke RDS is a successful tibble (not error stub) before declaring pass. Exits non-zero with clear message + pointer to the cypher R log when any WSG fails. “Smoke passed” now means every smoke WSG produced a valid tibble, not just “scripts exited 0”.</li>
+<li>
+<code>data-raw/archive_provincial_runs.sh</code> — new helper. Moves prior-run <code>_per_wsg_times.csv</code> + <code>*.rds</code> + <code>*_annotated.csv</code> into <code>archive/&lt;TS&gt;/</code> so the LPT planner uses the most recent run only.</li>
+<li>
+<code>data-raw/balance_provincial_buckets.R</code> — dedup <code>(wsg, host)</code> and cross-host before LPT so multi-run CSV accumulation no longer double-assigns WSGs to buckets. Superseded for the N-host orchestrator (which computes LPT inline) but kept for standalone planning.</li>
+<li>
+<code>data-raw/consolidate_schema.R</code> — bucket-aware destination cleanup (<code>DELETE FROM &lt;schema&gt;.&lt;table&gt; WHERE watershed_group_code IN (&lt;bucket&gt;)</code> on each <code>watershed_group_code</code>-bearing table before pg_restore — prevents duplicate-key violations on re-consolidation). Pre/post row-count delta verification: <code>ok = TRUE</code> requires <code>count(*)</code> post-restore &gt; pre-restore (NOT <code>pg_stat_user_tables.n_live_tup</code> which lags asynchronously).</li>
+<li>
+<code>lnk_persist_init(force_recreate = FALSE)</code> — new flag + DDL drift detection via <code>.lnk_validate_persist_table()</code>. Errors loud when an existing target table has unexpected <code>GENERATED ALWAYS</code> columns (catches cypher snapshots baked when <code><a href="https://newgraphenvironment.github.io/fresh/reference/frs_col_generate.html" class="external-link">fresh::frs_col_generate()</a></code> had been run on <code>fresh.streams</code>). <code>force_recreate = TRUE</code> DROPs+recreates with correct DDL. 6 new tests cover detection, force-recreate, no-op, and arg validation.</li>
+<li>
+<code>data-raw/run_provincial_parity.R</code> — <code>--with-mapping-code</code> flag passthrough; new <code>--fail-fast</code> flag (default FALSE preserves soft-fail for full provincial runs; smoke runner injects it automatically so WSG <a href="https://github.com/NewGraphEnvironment/link/issues/1" class="external-link">#1</a> failure on a host stops the loop instead of confirming the same failure 30 more times); post-loop annotation step writes <code>&lt;TS&gt;_&lt;host&gt;_annotated.csv</code>.</li>
+<li>Updated <code>research/provincial_run_runbook.md</code> for the 5-host flow + smoke-first cadence + DDL drift handling. The runbook is now the operational source of truth; <code>data-raw/README.md#provincial-dispatch</code> is the CLI reference.</li>
+<li>2026-05-12 → 13 live provincial run results in <code>research/provincial_parity_2026_05_12.md</code>. Acceptance bar (zero <code>UNEXPLAINED</code> at <code>|diff_pct| &gt;= 2%</code>) NOT YET MET (56 surviving UNEXPLAINED rows; 93 cypher WSGs lost to DDL drift now fixed by <code>lnk_persist_init</code> hardening — next provincial run should hit 217/217 OK and provide the full picture). Operational lessons documented in <code>planning/archive/2026-05-link162-lnk-compare-wsg-annotated-csv/findings.md</code>.</li>
+</ul><p>Filed follow-up: <a href="https://github.com/NewGraphEnvironment/link/issues/163" class="external-link">#163</a> — adaptive <code>host_speeds</code> learning from observed wall times (LPT refinement; currently uses static CLI defaults).</p>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.35.1" id="link-0351">link 0.35.1<a class="anchor" aria-label="anchor" href="#link-0351"></a></h2>
 <ul><li>

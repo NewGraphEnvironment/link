@@ -8,7 +8,7 @@ workers can race; only one CREATE wins).
 ## Usage
 
 ``` r
-lnk_persist_init(conn, cfg, species)
+lnk_persist_init(conn, cfg, species, force_recreate = FALSE)
 ```
 
 ## Arguments
@@ -27,6 +27,17 @@ lnk_persist_init(conn, cfg, species)
   `streams_habitat_<sp>` tables for. Typically derived via
   [`lnk_pipeline_species()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_species.md)
   or `unique(loaded$parameters_fresh$species_code)`.
+
+- force_recreate:
+
+  Logical. When `TRUE`, drop any existing target tables whose DDL
+  doesn't match the expected shape — specifically, tables that have
+  unexpected `GENERATED ALWAYS` columns. Default `FALSE` errors loud
+  instead so the operator can audit before the destructive recreate. Use
+  when spinning a new host from a snapshot whose fwapg volume carries
+  stale `fresh.streams` DDL (e.g. cypher snapshots baked when
+  `frs_col_generate()` had been run on the persist schema). See link#162
+  Phase 7 hardening.
 
 ## Value
 
@@ -53,6 +64,11 @@ conn <- lnk_db_conn()
 cfg <- lnk_config("bcfishpass")
 loaded <- lnk_load_overrides(cfg)
 species <- unique(loaded$parameters_fresh$species_code)
+
+# First-time setup or healthy state: idempotent CREATE IF NOT EXISTS.
 lnk_persist_init(conn, cfg, species)
+
+# If a snapshot-baked DB has stale GENERATED columns on fresh.streams:
+lnk_persist_init(conn, cfg, species, force_recreate = TRUE)
 } # }
 ```
