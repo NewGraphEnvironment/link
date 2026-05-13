@@ -782,10 +782,11 @@ lnk_compare_wsg <- function(conn, aoi, cfg, loaded,
   # No-overlap handling. Two distinct cases:
   #   (a) bcfp has 0 rows for this WSG — bcfp's bundle filter doesn't
   #       model it (link#157-style, but on the bcfp side: ~36 WSGs we
-  #       model that bcfp's 2026-05-12 build does not, e.g. ISKR/LRAN/
-  #       MURR/PINE Yukon/Mackenzie peripherals). Not a defect — emit
-  #       a warning + NA-filled per-species mapping_code stats so the
-  #       rollup tibble still returns and the run continues.
+  #       model that bcfp's 2026-05-12 build does not, spanning
+  #       Mackenzie/Peace drainages, Stikine, and central-BC basins
+  #       like BEAV/COAL/DUNE). Not a defect — emit a warning +
+  #       NA-filled per-species mapping_code stats so the rollup
+  #       tibble still returns and the run continues.
   #   (b) bcfp has rows but no key overlap — that IS a fwapg snapshot
   #       misalignment between tunnels, worth surfacing loudly.
   if (nrow(joined) == 0L) {
