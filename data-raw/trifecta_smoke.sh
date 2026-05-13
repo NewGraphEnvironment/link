@@ -78,12 +78,13 @@ fi
 
 # Smoke RDS dir — same as the orchestrator picks for bcfishpass.
 SMOKE_DIR="$SCRIPT_DIR/logs/provincial_parity"
+mkdir -p "$SMOKE_DIR"   # find aborts under set -euo pipefail if dir doesn't exist
 
 # Snapshot pre-existing RDS so the post-check only inspects WSGs the
 # smoke wrote (resume-safe orchestrators skip cached RDS; we don't
 # want to flag a leftover ADMS.rds from yesterday as a smoke failure).
 PRE_RDS_LIST=$(mktemp)
-find "$SMOKE_DIR" -maxdepth 1 -name '*.rds' 2>/dev/null | sort > "$PRE_RDS_LIST"
+find "$SMOKE_DIR" -maxdepth 1 -name '*.rds' 2>/dev/null | sort > "$PRE_RDS_LIST" || true
 
 # Run the orchestrator. Don't exec — we want control flow back so we
 # can run the smoke-pass assertion afterward.
@@ -100,7 +101,7 @@ bash "$SCRIPT_DIR/trifecta_provincial.sh" \
 # stub. ANY error stub means the test caught a real failure mode that
 # would otherwise have wasted a 90-minute provincial run.
 POST_RDS_LIST=$(mktemp)
-find "$SMOKE_DIR" -maxdepth 1 -name '*.rds' 2>/dev/null | sort > "$POST_RDS_LIST"
+find "$SMOKE_DIR" -maxdepth 1 -name '*.rds' 2>/dev/null | sort > "$POST_RDS_LIST" || true
 NEW_RDS=$(comm -23 "$POST_RDS_LIST" "$PRE_RDS_LIST")
 rm -f "$PRE_RDS_LIST" "$POST_RDS_LIST"
 
