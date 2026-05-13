@@ -55,10 +55,18 @@ set -euo pipefail
 # $HOME/data-raw/logs/... -- silently bypassing the real ledger.
 cd "$(dirname "$0")/.."
 
+# Ensure standard tool locations are on PATH. Non-interactive ssh on
+# macOS strips PATH to /usr/bin:/bin; without this prefix bcdata (uv
+# tool) and ogr2ogr (Homebrew) aren't found. Idempotent on hosts where
+# these are already on PATH.
+export PATH="/opt/homebrew/bin:/usr/local/bin:$HOME/.local/bin:$PATH"
+
 WITH_BCFP_VIEWS=0
+FORCE=0
 for arg in "$@"; do
   case "$arg" in
     --with-bcfp-views) WITH_BCFP_VIEWS=1 ;;
+    --force) FORCE=1 ;;
     *) echo "Unknown arg: $arg" >&2; exit 1 ;;
   esac
 done
@@ -97,9 +105,13 @@ fi
 # Default behaviour on R failure (e.g. R not on PATH): proceed with the
 # snapshot (rely on later DB-credential resolution to fail loud).
 CURRENT=$(Rscript -e "cat(link::lnk_baseline_current(link::lnk_bucket_log()))" 2>/dev/null || echo "FALSE")
-if [ "$CURRENT" = "TRUE" ]; then
+if [ "$CURRENT" = "TRUE" ] && [ "$FORCE" = "0" ]; then
   echo "snapshot_bcfp: ledger row for $(hostname) already at this upstream SHA; skipping."
+  echo "  (--force to re-pull anyway — useful when upstream parquet drift differs from bcfp git SHA)"
   exit 0
+fi
+if [ "$FORCE" = "1" ]; then
+  echo "snapshot_bcfp: --force given; bypassing ledger skip-if-current guard."
 fi
 
 # Source per-host env file if present. data-raw/scheduler/README.md
