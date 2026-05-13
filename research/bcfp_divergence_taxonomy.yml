@@ -72,14 +72,15 @@ entries:
   - id: setn-anadr-rearing-stale
     wsg: SETN
     species: [CH, CM, CO, PK, SK, ST]
-    metric: [rearing, rearing_stream]
+    metric: [rearing, rearing_stream, lake_rearing]
     pattern: link_gt_bcfp
     diff_range: [50, 250]
     class: A
-    mechanism: bcfp barriers_subsurfaceflow stale; link applies user_barriers_definite_control overrides
+    mechanism: bcfp barriers_subsurfaceflow stale; link applies user_barriers_definite_control overrides. Verified 2026-05-13 on SETN SK lake_rearing — bcfp has 346 subsurfaceflow rows in SETN; link's control list excludes Bridge River (blk 356363618 dam spillway noted as "historic salmon habitat"); link credits 2 additional upstream lakes (4 vs 2) → +96% lake_rearing ha.
     refs:
       - research/provincial_parity_2026_05_01.md#class-a
       - research/provincial_parity_2026_05_11.md#class-a
+      - research/provincial_parity_2026_05_12.md#class-a
     status: INTENTIONAL
 
   - id: setn-anadr-spawning-stale
@@ -104,15 +105,16 @@ entries:
   - id: hors-class-stream-order-bypass
     wsg: [HORS, CLRH, COLR, KHOR]
     species: "*"
-    metric: rearing_stream
+    metric: [rearing, rearing_stream]
     pattern: link_lt_bcfp
     diff_range: [4, 12]
     class: B
-    mechanism: fresh#158 stream_order_parent rear bypass deferred; dimensions.csv rear_stream_order_bypass=no
+    mechanism: fresh#158 stream_order_parent rear bypass deferred; dimensions.csv rear_stream_order_bypass=no. Affects rearing TOTAL (not just the rearing_stream slice) — bcfp credits order-1 tribs of order-5+ mainstems as rearing without channel-width check; that under-credit propagates from the stream-edge-type slice into the rearing aggregate.
     refs:
       - https://github.com/NewGraphEnvironment/fresh/issues/158
       - research/dimensions_audit.md
       - research/bcfishpass_methodology.md
+      - research/provincial_parity_2026_05_01.md#class-b-fresh158-stream-order-bypass-known-gap
     status: INTENTIONAL_FRESH_DEFERRED
 
   # ---------------------------------------------------------------------------
@@ -173,13 +175,15 @@ entries:
   # ---------------------------------------------------------------------------
   - id: thom-anadr-small-rearing-divergence
     wsg: THOM
-    species: [CH, CO]
+    species: [CH, CO, ST]
     metric: rearing
     pattern: link_gt_bcfp
-    diff_range: [5, 10]
+    diff_range: [4, 10]
     class: D
-    mechanism: small over-credit; suspected bcfp tunnel staleness on recent override changes
-    refs: [research/provincial_parity_2026_05_11.md#unexplained-divergences-from-this-run]
+    mechanism: small over-credit; suspected bcfp tunnel staleness on recent override changes. Verified 2026-05-13 against bcfp 122 — CH +7.18%, CO +6.98%, ST +4.64% — same sign, same magnitude class. ST added based on this audit; diff_range lowered from [5,10] to [4,10] to capture ST.
+    refs:
+      - research/provincial_parity_2026_05_11.md#unexplained-divergences-from-this-run
+      - research/provincial_parity_2026_05_12.md#class-d-survivor
     status: NEEDS_INVESTIGATION
 
   - id: mfra-ch-small-rearing-divergence
