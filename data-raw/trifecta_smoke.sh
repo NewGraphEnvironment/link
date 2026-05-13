@@ -121,7 +121,7 @@ suppressWarnings(suppressMessages({
     x <- tryCatch(readRDS(f), error = function(e) NULL); if (is.null(x)) next
     if (is.list(x) && !is.data.frame(x) && "error" %in% names(x)) {
       n_err <- n_err + 1
-      err_wsgs <- c(err_wsgs, sub("\\.rds$", "", basename(f)))
+      err_wsgs <- c(err_wsgs, sub("[.]rds$", "", basename(f)))
     }
   }
   if (n_err > 0L) cat("SMOKE_ERR:", n_err, paste(err_wsgs, collapse=","))

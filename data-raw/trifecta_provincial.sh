@@ -558,9 +558,11 @@ echo
 TOTAL_RDS=$(find "$REPO_ROOT/data-raw/logs/$RDS_DIR_NAME" -maxdepth 1 \
               -name '*.rds' 2>/dev/null | wc -l | tr -d ' ')
 if [ "$TOTAL_RDS" -gt 0 ]; then
+  # `[.]rds$` is character-class form — equivalent to `\\.rds$` but
+  # avoids backslash-eat surprises through shell quoting layers.
   RDS_COUNTS=$(Rscript -e '
 files <- list.files(commandArgs(trailingOnly = TRUE)[1],
-                    pattern = "\\.rds$", full.names = TRUE)
+                    pattern = "[.]rds$", full.names = TRUE)
 n_ok <- 0; n_err <- 0
 for (f in files) {
   x <- tryCatch(readRDS(f), error = function(e) NULL); if (is.null(x)) next
@@ -568,7 +570,7 @@ for (f in files) {
   else n_ok <- n_ok + 1
 }
 cat(n_ok, n_err)
-' "$REPO_ROOT/data-raw/logs/$RDS_DIR_NAME" 2>/dev/null)
+' "$REPO_ROOT/data-raw/logs/$RDS_DIR_NAME" 2>/dev/null || echo "0 0")
   # Default-coerce in case Rscript hiccuped: empty string in arithmetic
   # comparison aborts under `set -e`.
   N_OK=$(echo "$RDS_COUNTS" | awk '{print $1+0}')
