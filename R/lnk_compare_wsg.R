@@ -779,11 +779,30 @@ lnk_compare_wsg <- function(conn, aoi, cfg, loaded,
     by = c("blue_line_key", "downstream_route_measure", "length_metre"),
     suffixes = c("_link", "_bcfp"))
 
-  # No-overlap guard. A zero-row merge means the two tunnels' streams
-  # don't share any (blue_line_key, measure, length) keys for this WSG
-  # — almost always a data bug (e.g. mismatched fwapg snapshot, empty
-  # bcfp WSG). Fail loud rather than emit NaN match_pct rows.
+  # No-overlap handling. Two distinct cases:
+  #   (a) bcfp has 0 rows for this WSG — bcfp's bundle filter doesn't
+  #       model it (link#157-style, but on the bcfp side: ~36 WSGs we
+  #       model that bcfp's 2026-05-12 build does not, e.g. ISKR/LRAN/
+  #       MURR/PINE Yukon/Mackenzie peripherals). Not a defect — emit
+  #       a warning + NA-filled per-species mapping_code stats so the
+  #       rollup tibble still returns and the run continues.
+  #   (b) bcfp has rows but no key overlap — that IS a fwapg snapshot
+  #       misalignment between tunnels, worth surfacing loudly.
   if (nrow(joined) == 0L) {
+    if (nrow(bcfp_mc) == 0L) {
+      warning(sprintf(
+        "bcfishpass.streams_mapping_code has 0 rows for %s — bcfp does ",
+        aoi),
+        "not model this WSG. Returning NA-filled mapping_code stats.",
+        call. = FALSE)
+      return(do.call(rbind, lapply(bcfp_species, function(sp) {
+        tibble::tibble(
+          wsg = aoi, species = sp,
+          total_segs = 0L, match_pct = NA_real_,
+          n_diffs = NA_integer_,
+          top_pattern = NA_character_, top_pattern_count = NA_integer_)
+      })))
+    }
     stop(sprintf(
       "no overlap between link's and bcfishpass's streams_mapping_code for %s ",
       aoi),
