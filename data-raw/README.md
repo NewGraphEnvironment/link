@@ -77,8 +77,8 @@ The dispatch hierarchy: trifecta → run_provincial → compare_wsg.
 | Script | Calls | Purpose |
 |--------|-------|---------|
 | `trifecta_provincial.sh` | `run_provincial_parity.R` (×N hosts) | M4 + M1 + N-cypher orchestrator. Inline LPT bucket allocation (reads `_per_wsg_times.csv` from prior runs, computes balanced split using `--host-speeds=`), pre-flight version check across all hosts, parallel dispatch, RDS pull-back, post-pull `lnk_parity_annotate` against the divergence taxonomy. See "Provincial dispatch" section below for full flag reference + gotchas. |
-| `trifecta_15wsg.sh` | same | 15-WSG smoke variant of the above. |
-| `trifecta_smoke.sh` | same | Single-WSG smoke variant. |
+| `trifecta_15wsg.sh` | same | 15-WSG smoke variant (legacy 3-host, hardcoded WSG list). |
+| `trifecta_smoke.sh` | `trifecta_provincial.sh` | N-host smoke shim: one small WSG per host, ~3 min wall. See `Provincial dispatch` section. |
 | `run_provincial_parity.R` | `compare_bcfishpass_wsg.R` per WSG | Single-host provincial dispatcher. Loops every WSG in `wsg_species_presence`, saves per-WSG RDS, emits per-WSG times CSV. After the loop, optionally annotates the host's bucket against `research/bcfp_divergence_taxonomy.yml` (writes `<TS>_<host>_annotated.csv`). Accepts `--wsgs=`, `--config=`, `--schema=`, `--rds-dir=`, `--with-mapping-code`. |
 | `compare_bcfishpass_wsg.R` | `lnk_pipeline_*` family | Single-WSG end-to-end runner. Sources both connections (local fwapg + bcfp tunnel), runs the 6-phase pipeline, persists, emits comparison rollup tibble (link vs bcfp). The atomic unit of work in every multi-WSG run above. |
 
@@ -88,8 +88,10 @@ Run-adjacent helpers (planning, consolidation across hosts).
 
 | Script | Purpose |
 |--------|---------|
-| `balance_provincial_buckets.R` | Standalone LPT planner for the 3-host case. Reads per-host wall times from prior runs and prints buckets ready to paste into `trifecta_provincial.sh --m4-bucket=…`. **Superseded for the N-host orchestrator** — `trifecta_provincial.sh` now computes the LPT plan inline at dispatch time using the same algorithm. Kept here for one-off planning + cross-checks. |
-| `consolidate_schema.R` | pg_dump from M1 + cypher → scp to M4 → pg_restore --data-only. Used after a multi-host trifecta run to merge per-host schema writes onto the M4 reference DB. |
+| `balance_provincial_buckets.R` | Standalone LPT planner for the 3-host case. Reads per-host wall times from prior runs and prints buckets ready to paste into `trifecta_provincial.sh --m4-bucket=…`. **Superseded for the N-host orchestrator** — `trifecta_provincial.sh` now computes the LPT plan inline at dispatch time using the same algorithm. Kept here for one-off planning + cross-checks. Dedups `(wsg, host)` and across hosts before LPT so multi-run CSV accumulation doesn't double-assign WSGs. |
+| `consolidate_schema.R` | pg_dump from M1 + cypher → scp to M4 → pg_restore --data-only. Bucket-aware destination cleanup (DELETEs each source host's WSG bucket from destination tables before restore — avoids duplicate-key violations on re-consolidation). `ok = TRUE` requires pg_restore rc=0 AND post-restore row count > 0; rc=0 with empty schema flags as failure. |
+| `archive_provincial_runs.sh` | Moves the current top-level `_per_wsg_times.csv` + `*.rds` + `*_annotated.csv` artifacts in `provincial_<bundle>/` to `archive/<TS>/`. Operator cadence: run between provincial runs when you want the LPT planner to use the most recent run only. Skip to median-over multiple recent runs. |
+| `trifecta_smoke.sh` | Thin shim over `trifecta_provincial.sh` — one small WSG per host (m4→DEAD, m1→ELKR, cyN→ADMS/BABL/BULL). ~3 min wall. Exercises every orchestrator code path (preflight, dispatch, tunnel, RDS pull-back, annotation) before committing to a 200-WSG run. All flags pass through (e.g. `--cy-workspaces=`, `--with-mapping-code`). |
 
 ## Provincial dispatch (`trifecta_provincial.sh`)
 
@@ -102,11 +104,18 @@ province-wide annotated CSV.
 ```bash
 cd ~/Projects/repo/link/data-raw
 
-# 3-host default (M4 + M1 + 1 cypher in the default tofu workspace):
-./trifecta_provincial.sh
+# Optional: archive prior run's CSVs first if you want LPT to plan
+# against this run only (not median-of-recent-runs):
+./archive_provincial_runs.sh
 
-# 5-host (3 cyphers via tofu workspaces — must be `cypher_up.sh`'d first):
-./trifecta_provincial.sh --cy-workspaces=job1,job2,job3
+# Smoke-test first (~3 min, one small WSG per host) — catches preflight,
+# tunnel, dispatch, and annotation surprises before the full run:
+./trifecta_smoke.sh                                     # 3-host smoke
+./trifecta_smoke.sh --cy-workspaces=job1,job2,job3      # 5-host smoke
+
+# Full run:
+./trifecta_provincial.sh                                # 3-host default
+./trifecta_provincial.sh --cy-workspaces=job1,job2,job3 # 5-host
 
 # Add per-segment mapping_code lens (+50% cost):
 ./trifecta_provincial.sh --cy-workspaces=job1,job2,job3 --with-mapping-code
@@ -114,6 +123,10 @@ cd ~/Projects/repo/link/data-raw
 # Custom host-speed factors (lower = faster):
 ./trifecta_provincial.sh --host-speeds=m4=1.0,m1=0.83,cy=1.83
 ```
+
+**Recommended cadence:** archive → smoke → full run. The smoke catches
+~99% of surprises in 3 minutes; the archive ensures LPT plans against
+the freshest data.
 
 ### CLI flags
 

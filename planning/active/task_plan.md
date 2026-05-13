@@ -42,9 +42,10 @@ Bundles three cleanups while in the area: `balance_provincial_buckets.R` dedup b
 
 ## Phase 6: cleanups bundled
 
-- [ ] `data-raw/balance_provincial_buckets.R` — add `aggregate(time_s ~ wsg + host, FUN = median)` after CSV load to dedup `(wsg, host)` pairs from multi-run CSV picks; then `aggregate(m4_equiv ~ wsg, FUN = median)` before LPT to dedup across hosts. Test by re-running yesterday's CSVs (which contain dupes) and confirming bucket counts sum to canonical.
-- [ ] `data-raw/consolidate_schema.R` — change `ok` flag derivation: `ok = TRUE` only when pg_restore exit code 0 AND post-restore row count > 0 for the target schema. Add bucket-aware destination cleanup: before pg_restore, `DELETE FROM <dest_schema>.<tbl> WHERE watershed_group_code IN (<source host's bucket>)` per table that has `watershed_group_code` column.
-- [ ] Stale `_per_wsg_times.csv` convention: extend `balance_provincial_buckets.R` to read only `data-raw/logs/provincial_parity/*_per_wsg_times.csv` (top level) — older CSVs move to `archive/YYYYMMDD_HHMM/` subdirs.
+- [x] `data-raw/balance_provincial_buckets.R` — added `aggregate(time_s ~ wsg + host, FUN = median)` after CSV load to dedup `(wsg, host)` pairs from multi-run CSV picks; then `aggregate(m4_equiv ~ wsg, FUN = median)` before LPT to dedup across hosts. Verified by re-running yesterday's 9 CSVs and confirming bucket counts sum to canonical 217.
+- [x] `data-raw/consolidate_schema.R` — bucket-aware destination cleanup (DELETE from each `watershed_group_code`-bearing table before pg_restore, gated on `src$bucket`) + pre/post row-count delta verification (`ok = FALSE` when `post_rows <= pre_rows`). Uses authoritative `count(*)` not async `pg_stat_user_tables.n_live_tup`.
+- [x] Stale `_per_wsg_times.csv` convention: new `data-raw/archive_provincial_runs.sh` moves top-level CSVs + RDS + annotated CSVs into `archive/<TS>/`. Documented in README as the run cadence: archive → smoke → full.
+- [x] **Bonus: smoke test modernization.** `data-raw/trifecta_smoke.sh` rewritten as a thin shim over `trifecta_provincial.sh` (one small WSG per host, N-cypher support, all flags pass through). Catches preflight/dispatch/tunnel/annotation surprises in ~3 min before committing to a ~80 min full run.
 
 ## Phase 7: full provincial run + acceptance
 

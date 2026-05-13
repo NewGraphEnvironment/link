@@ -84,7 +84,10 @@ if (length(csvs) > 0) {
     df[df$status == "ok", c("wsg", "elapsed_s", "host")]
   }))
   rows$time_s <- rows$elapsed_s
-  all_w <- rows[, c("wsg", "time_s", "host")]
+  # Dedup (wsg, host) by median across runs. Multiple CSVs in the live
+  # dir produce one row per (run, wsg) — without this step the same WSG
+  # appears N times in the LPT input and gets assigned to N buckets.
+  all_w <- aggregate(time_s ~ wsg + host, data = rows, FUN = median)
   m4 <- all_w[all_w$host == "m4", ]
   m1 <- all_w[all_w$host == "m1", ]
   cy <- all_w[all_w$host == "cy", ]
@@ -140,6 +143,10 @@ if (length(missing) > 0) {
 
 # ---- Greedy LPT bin-packing ----------------------------------------------
 
+# Dedup across hosts: a WSG that ran on both m4 AND m1 (rare but possible
+# across multi-run histories) would otherwise appear twice and be assigned
+# to two buckets. Median collapses to one m4_equiv per WSG.
+all_w <- aggregate(m4_equiv ~ wsg, data = all_w, FUN = median)
 all_w <- all_w[order(-all_w$m4_equiv), ]
 load <- c(m4 = 0, m1 = 0, cy = 0)
 buckets <- list(m4 = character(), m1 = character(), cy = character())
