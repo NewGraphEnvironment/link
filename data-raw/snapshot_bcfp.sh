@@ -58,8 +58,9 @@ cd "$(dirname "$0")/.."
 # Ensure standard tool locations are on PATH. Non-interactive ssh on
 # macOS strips PATH to /usr/bin:/bin; without this prefix bcdata (uv
 # tool) and ogr2ogr (Homebrew) aren't found. Idempotent on hosts where
-# these are already on PATH.
-export PATH="/opt/homebrew/bin:/usr/local/bin:$HOME/.local/bin:$PATH"
+# these are already on PATH. `libpq/bin` covers Homebrew's keg-only
+# psql (not in /opt/homebrew/bin by default).
+export PATH="/opt/homebrew/bin:/opt/homebrew/opt/libpq/bin:/usr/local/bin:$HOME/.local/bin:$PATH"
 
 WITH_BCFP_VIEWS=0
 FORCE=0
