@@ -1,283 +1,305 @@
 # Provincial run runbook
 
-Pre-flight checklist, execution recipe, and post-run cleanup for the 3-host distributed provincial parity run (`data-raw/trifecta_provincial.sh`). Use this every time before kicking off a provincial run — the catches surface input drift, timing collisions with bcfp rebuilds, and broken-cleanup-state from prior runs.
+End-to-end checklist for a 5-host distributed provincial parity run. The
+golden-path sequence is **archive → smoke → full → verify → burn**. Skipping any
+step risks wasted compute or wasted DO spend; the orchestrator's tests (#162
+Phase 7 hardening) make each step's failure mode loud.
 
 Companion docs:
-- `research/provincial_parity_2026_05_11.md` — latest run results + divergence taxonomy
-- `research/bcfishpass_methodology.md` — bcfp methodology canonical reference
-- `research/bcfp_compare_mapping_code.md` — per-segment mapping_code parity (#152/#154/#158 closure)
+
+- `data-raw/README.md` — `Provincial dispatch` section: full CLI flag reference
+- `research/provincial_parity_2026_05_12.md` — most recent run results
+- `research/bcfp_divergence_taxonomy.yml` — known divergence patterns
+- `research/bcfp_divergence_investigation.md` — diagnostic recipes
 - CLAUDE.md `## bcfishpass tunnel rebuild cadence` — timing semantics
 
 ## TL;DR sequence
 
+```bash
+cd ~/Projects/repo/link/data-raw
+
+./archive_provincial_runs.sh                            # 1. clean LPT input
+# (spin cyphers per §1)
+./trifecta_smoke.sh --cy-workspaces=job1,job2,job3      # 2. smoke (~3 min)
+# (if smoke errors loud, fix and re-run; DO NOT skip to full)
+./trifecta_provincial.sh --with-mapping-code --cy-workspaces=job1,job2,job3   # 3. full (~80 min)
+# (inspect annotated CSV)
+# (consolidate fresh schema via consolidate_schema.R)
+~/Projects/repo/rtj/scripts/cypher/cypher_down.sh --workspace job1   # 4. burn (mandatory)
+~/Projects/repo/rtj/scripts/cypher/cypher_down.sh --workspace job2
+~/Projects/repo/rtj/scripts/cypher/cypher_down.sh --workspace job3
 ```
-[pre-flight] → [snapshot bcfp inputs] → [install fresh+link latest] → [dispatch trifecta] → [verify outputs] → [burn down cypher]
-```
 
-Every step has explicit checks below. If any check fails, **don't proceed — diagnose first**.
+Each step has explicit checks below. **Don't proceed when a step fails.**
 
-## 1. Pre-flight checks (must all pass)
+## 1. Spin up + snapshot inputs
 
-### 1.1 — bcfp tunnel rebuild cadence
+### 1.1 bcfp tunnel cadence
 
-The bcfp tunnel (`bcfishpass` schema on `localhost:63333` via `db_newgraph`) **rebuilds weekly on Tuesdays around 19:00-23:00 PDT** via `smnorris/db_newgraph`'s scheduled GHA workflow.
-
-**Risk:** if your input snapshot is taken AFTER rebuild starts but BEFORE it finishes (or vice versa), inputs are mismatched against the bcfp parity reference.
-
-**Check:**
+The tunnel-side `bcfishpass.*` schema rebuilds Tuesdays around 19:00-23:00 PDT.
+Check current build:
 
 ```sql
 -- localhost:63333 / dbname=bcfishpass / user=newgraph
 SELECT model_run_id, date_completed, model_version
-FROM bcfishpass.log
-ORDER BY model_run_id DESC LIMIT 5;
+FROM bcfishpass.log ORDER BY model_run_id DESC LIMIT 1;
 ```
 
-Decision table:
-
-| Condition | Action |
+| Now | Action |
 |---|---|
-| Now < Tue 19:00 PDT AND last build > 1 day old | **Safe.** Run. Both snapshot + tunnel are in the same cycle. |
-| Tue 19:00 PDT ≤ Now ≤ Wed 02:00 PDT (rebuild window) | **WAIT.** Rebuild in flight or just finished — tables may be inconsistent. Defer 12+ hours. |
-| Now > Wed 02:00 PDT AND last build = today | **Safe.** Fresh cycle just landed. Run. |
+| Outside Tue 19:00 → Wed 02:00 PDT window | Safe. Run. |
+| Inside the window | WAIT 12 h. Tunnel may be mid-rebuild. |
 
-### 1.2 — fresh + link versions on all 3 hosts
+Record the SHA — `data-raw/logs/bcfp_baselines.csv` will auto-stamp it at run start.
+
+### 1.2 Spin cyphers (N workspaces)
 
 ```bash
-for HOST in M4 m1 cypher; do
-  case $HOST in
-    M4)  CMD='Rscript -e "cat(as.character(packageVersion(\"fresh\")), as.character(packageVersion(\"link\")))"' ;;
-    m1)  CMD="ssh m1 'Rscript -e \"cat(as.character(packageVersion(\\\"fresh\\\")), as.character(packageVersion(\\\"link\\\")))\"'" ;;
-    cypher) CMD="ssh cypher 'Rscript -e \"cat(as.character(packageVersion(\\\"fresh\\\")), as.character(packageVersion(\\\"link\\\")))\"'" ;;
-  esac
-  echo -n "$HOST: " && eval "$CMD" && echo
+cd ~/Projects/repo/rtj/scripts/cypher
+./cypher_up.sh --workspace job1 &
+./cypher_up.sh --workspace job2 &
+./cypher_up.sh --workspace job3 &
+wait
+```
+
+~3 min wall (parallel). Each spawns a 32 GB / 8 vcpu droplet from `cypher-<date>-warm`
+snapshot. The snapshot has fwapg + bcfishobs + GDAL/bcdata tooling; primitives still need a refresh per §1.3.
+
+### 1.3 Refresh snapshot_bcfp on all hosts
+
+```bash
+# M4 (local) — only if its PSCIS/CABD/observations are >7 days old
+PGUSER=postgres PGPASSWORD=postgres PGHOST=localhost PGPORT=5432 PGDATABASE=fwapg \
+  bash ~/Projects/repo/link/data-raw/snapshot_bcfp.sh
+
+# M1
+ssh m1 'cd ~/Projects/repo/link/data-raw && \
+  export PGUSER=postgres PGPASSWORD=postgres PGHOST=localhost PGPORT=5432 PGDATABASE=fwapg && \
+  bash snapshot_bcfp.sh'
+
+# Each cypher — same env vars
+for IP in $(for w in job1 job2 job3; do
+              cd ~/Projects/repo/rtj/env/do/dev/cypher && TF_WORKSPACE=$w tofu output -raw droplet_ip
+            done); do
+  ssh "cypher@$IP" 'cd ~/Projects/repo/link/data-raw && \
+    export PGUSER=postgres PGPASSWORD=postgres PGHOST=localhost PGPORT=5432 PGDATABASE=fwapg && \
+    bash snapshot_bcfp.sh' &
 done
+wait
 ```
 
-Latest versions today: `fresh@0.31.0`, `link@0.35.0+`. All 3 hosts must match before dispatch. See §3.2 for install recipe.
-
-### 1.3 — working schema cleanup on all hosts
+Verify row-counts match across hosts AND bcfp tunnel:
 
 ```bash
-# M4
-psql "postgresql://postgres:postgres@localhost:5432/fwapg" -c "
-SELECT schema_name FROM information_schema.schemata WHERE schema_name LIKE 'working_%';"
-# m1 / cypher
-ssh m1 "docker exec fresh-db psql -U postgres fwapg -c \"
-SELECT schema_name FROM information_schema.schemata WHERE schema_name LIKE 'working_%';\""
-ssh cypher "docker exec fresh-db psql -U postgres fwapg -c \"
-SELECT schema_name FROM information_schema.schemata WHERE schema_name LIKE 'working_%';\""
+# All 5 hosts + bcfp tunnel should return matching row counts on
+# whse_fish.pscis_assessment_svw, cabd.dams, fresh.modelled_stream_crossings,
+# bcfishobs.observations. Drift on bcfishobs is the most common — re-run
+# snapshot_bcfp.sh on the lagging host.
 ```
 
-**Expect empty.** If schemas linger, prior run had an error-path leak (see link#159). Drop them:
+### 1.4 Pull + install link on all hosts (BEFORE any dispatch)
 
 ```bash
-# M4 example
-psql "postgresql://postgres:postgres@localhost:5432/fwapg" -c "DROP SCHEMA IF EXISTS working_<wsg> CASCADE;"
-```
+cd ~/Projects/repo/link && git pull --ff-only
+Rscript -e 'pak::local_install(upgrade = FALSE, ask = FALSE)'
 
-### 1.4 — disk free on cypher (if reusing droplet)
-
-Cypher droplet has 100 GB. A fresh provincial run with no cleanup leaks consumes ~10-15 GB. **If `df -h` on cypher shows >70% used, destroy and re-spin before running** (`cypher_down.sh && cypher_up.sh`).
-
-```bash
-ssh cypher 'df -h | grep -E "^/dev/|Filesystem"'
-```
-
-### 1.5 — RDS file count on M4
-
-Trifecta is resume-safe (skips WSGs with existing RDS). Decide whether you want to resume or start fresh.
-
-```bash
-ls data-raw/logs/provincial_parity/*.rds 2>/dev/null | wc -l
-```
-
-To start fresh:
-
-```bash
-rm -f data-raw/logs/provincial_parity/{ADMS,BULK,...}.rds
-# OR for full reset:
-mv data-raw/logs/provincial_parity data-raw/logs/provincial_parity_$(date +%Y%m%d_%H%M)
-mkdir data-raw/logs/provincial_parity
-```
-
-## 2. Snapshot bcfp inputs (on each host that needs it)
-
-`data-raw/snapshot_bcfp.sh` loads from public sources into local Postgres:
-- `whse_fish.pscis_assessment_svw` via Python `bcdata bc2pg`
-- `cabd.dams` via ogr2ogr (GeoJSON API)
-- `fresh.modelled_stream_crossings` via curl + gpkg
-- `bcfishobs.observations` via parquet
-
-Idempotent — run on each host that doesn't have current state. **Must run AFTER a bcfp-tunnel rebuild** to refresh tables to current cycle.
-
-### M4 snapshot (canonical reference)
-
-```bash
-~/.config/snapshot-bcfp.env  # PG* env vars
-bash ~/Projects/repo/link/data-raw/snapshot_bcfp.sh 2>&1 | tee ~/.local/state/snapshot-bcfp/$(date +%Y%m%d%H%M).log
-```
-
-### m1 + cypher
-
-Requires the same `~/.config/snapshot-bcfp.env` on each host. M1 has the canonical setup. Cypher's `cypher-20260508-warm` snapshot has the GDAL/conda/bcdata stack baked in (rtj#66), but the env file may or may not be in the snapshot:
-
-```bash
-ssh cypher 'cat ~/.config/snapshot-bcfp.env 2>/dev/null || echo MISSING'
-# If MISSING, write inline (cypher's Docker fresh-db on localhost:5432):
-ssh cypher 'mkdir -p ~/.config && cat > ~/.config/snapshot-bcfp.env <<EOF
-export PGHOST=localhost
-export PGPORT=5432
-export PGUSER=postgres
-export PGPASSWORD=postgres
-export PGDATABASE=fwapg
-export DATABASE_URL=postgresql://postgres:postgres@localhost:5432/fwapg
-EOF'
-ssh cypher 'bash ~/Projects/repo/link/data-raw/snapshot_bcfp.sh' 2>&1 | tail -5
-```
-
-### Verify snapshot landed (per-host)
-
-```sql
-SELECT 'cabd.dams' t, count(*) FROM cabd.dams
-UNION ALL SELECT 'pscis_svw', count(*) FROM whse_fish.pscis_assessment_svw
-UNION ALL SELECT 'modelled', count(*) FROM fresh.modelled_stream_crossings;
-```
-
-Expected magnitudes (as of 2026-05-11): cabd.dams 2,594 / pscis_svw 19,903 / modelled 532,166.
-
-### Baselines ledger
-
-`snapshot_bcfp.sh` stamps `data-raw/logs/bcfp_baselines.csv` with the bcfp build identifier (`model_version` from `bcfishpass.log`) and an absolute timestamp. **Confirm the run_label / model_version row is fresh** before kicking the trifecta. Cross-run drift in bcfp `model_version` between hosts means snapshot timing wasn't aligned.
-
-## 3. Install fresh + link to latest on all hosts
-
-### 3.1 — pull main
-
-```bash
-cd ~/Projects/repo/fresh && git checkout main && git pull --ff-only
-cd ~/Projects/repo/link && git checkout main && git pull --ff-only
-
-ssh m1 'cd ~/Projects/repo/fresh && git pull --ff-only && cd ~/Projects/repo/link && git checkout data-raw/logs/bcfp_baselines.csv && git pull --ff-only'
-ssh cypher 'cd ~/Projects/repo/fresh && git pull --ff-only && cd ~/Projects/repo/link && git checkout data-raw/logs/bcfp_baselines.csv && git pull --ff-only'
-```
-
-### 3.2 — install
-
-M4 + M1 (pak handles sf):
-
-```bash
-Rscript -e 'pak::local_install("~/Projects/repo/fresh", upgrade = FALSE, ask = FALSE)'
-Rscript -e 'pak::local_install("~/Projects/repo/link",  upgrade = FALSE, ask = FALSE)'
-ssh m1 'Rscript -e "pak::local_install(\"~/Projects/repo/fresh\", upgrade = FALSE, ask = FALSE)"'
-ssh m1 'Rscript -e "pak::local_install(\"~/Projects/repo/link\",  upgrade = FALSE, ask = FALSE)"'
-```
-
-Cypher (pak conflicts with conda-managed sf; use R CMD INSTALL to skip dependency reinstall):
-
-```bash
-ssh cypher 'R CMD INSTALL --no-test-load ~/Projects/repo/fresh && R CMD INSTALL --no-test-load ~/Projects/repo/link'
-```
-
-### 3.3 — verify
-
-```bash
-for HOST in '' m1 cypher; do
-  CMD='Rscript -e "cat(\"fresh\", as.character(packageVersion(\"fresh\")), \" link\", as.character(packageVersion(\"link\")), \"\n\")"'
-  if [ -z "$HOST" ]; then eval "$CMD"; else ssh $HOST "$CMD"; fi
+for H in m1 cypher@$JOB1_IP cypher@$JOB2_IP cypher@$JOB3_IP; do
+  ssh $H 'cd ~/Projects/repo/link && git stash --include-untracked >/dev/null 2>&1 || true; \
+          git fetch origin && git reset --hard origin/main && \
+          Rscript -e "pak::local_install(upgrade = FALSE, ask = FALSE)"' &
 done
+wait
 ```
 
-All 3 must report identical fresh + link versions.
+**Critical**: never `pak::local_install` on a host whose R session is already
+mid-run. Library-in-memory != library-on-disk; an in-flight R session keeps the
+version it loaded at startup. Install BEFORE any dispatch, full stop.
 
-## 4. Pre-dispatch cleanup
+### 1.5 First-time DDL fix on cypher snapshot
+
+Snapshot-baked cyphers carry a stale `fresh.streams` DDL (`gradient` as
+`GENERATED ALWAYS`). `lnk_persist_init` detects this and errors loud. Recreate
+with the correct DDL **once per cypher spin**:
 
 ```bash
-# Compute LPT-balanced buckets using prior per-WSG times (or median fallback)
-Rscript data-raw/balance_provincial_buckets.R
-# Copy the --m4-bucket / --m1-bucket / --cy-bucket lines to clipboard.
+for IP in $JOB1_IP $JOB2_IP $JOB3_IP; do
+  ssh "cypher@$IP" 'Rscript -e "
+    library(link)
+    conn <- DBI::dbConnect(RPostgres::Postgres(),
+      host=\"localhost\", port=5432, dbname=\"fwapg\",
+      user=\"postgres\", password=\"postgres\")
+    cfg <- lnk_config(\"bcfishpass\")
+    loaded <- lnk_load_overrides(cfg)
+    species <- unique(loaded\$parameters_fresh\$species_code)
+    lnk_persist_init(conn, cfg, species, force_recreate = TRUE)
+  "' &
+done
+wait
 ```
 
+After this, `lnk_persist_init` future calls (during dispatch) are silent no-ops.
+
+## 2. Archive prior run + smoke
+
+### 2.1 Archive ALL hosts' RDS
+
 ```bash
-# Clear persistent schema if you want a strictly clean fresh.streams + fresh.barriers.
-# Skip if resuming or wanting to preserve prior run for diff.
-psql "postgresql://postgres:postgres@localhost:5432/fwapg" -c "TRUNCATE fresh.streams CASCADE;"
-ssh m1     'docker exec fresh-db psql -U postgres fwapg -c "TRUNCATE fresh.streams CASCADE;"'
-ssh cypher 'docker exec fresh-db psql -U postgres fwapg -c "TRUNCATE fresh.streams CASCADE;"'
+cd ~/Projects/repo/link/data-raw
+./archive_provincial_runs.sh
+ssh m1 'cd ~/Projects/repo/link/data-raw && ./archive_provincial_runs.sh'
+for IP in $JOB1_IP $JOB2_IP $JOB3_IP; do
+  ssh "cypher@$IP" 'cd ~/Projects/repo/link/data-raw && ./archive_provincial_runs.sh' &
+done
+wait
 ```
 
+Skipping a host means its leftover RDS files SCP back to M4 at run-end and
+pollute the aggregate annotation (caught on 2026-05-12).
+
+### 2.2 Smoke (1 WSG per host, ~3 min)
+
 ```bash
-# Clear stale fresh.streams.gradient GENERATED column if present (pre-#152 snapshot artifact)
-ssh cypher 'docker exec fresh-db psql -U postgres fwapg -c "DROP TABLE IF EXISTS fresh.streams CASCADE;"'
+cd ~/Projects/repo/link/data-raw
+./trifecta_smoke.sh --cy-workspaces=job1,job2,job3 --with-mapping-code
 ```
 
-## 5. Dispatch trifecta
+**Exits non-zero** if any host produced an error stub. Inspect:
 
-```bash
-cd ~/Projects/repo/link/data-raw && time ./trifecta_provincial.sh \
-  --m4-bucket="WSG1,WSG2,..." \
-  --m1-bucket="..." \
-  --cy-bucket="..."
+```
+data-raw/logs/<TS>_trifecta_provincial_*.txt       # orchestrator + per-host
+data-raw/logs/<TS>_trifecta_provincial_cypher_*_R.txt   # cypher R output (auto-pulled)
 ```
 
-Wall: ~2 hours with 3 hosts at LPT-balanced ~155 min projection. Orchestrator log + per-host logs in `data-raw/logs/<TS>_trifecta_provincial_*.txt`. RDS files auto-rsync'd back from m1 + cypher to M4 at completion.
+Common smoke failures + fixes:
 
-## 6. Post-run verification
+| Error | Cause | Fix |
+|---|---|---|
+| `DDL drift in fresh.streams` | §1.5 not done | Run §1.5 |
+| `packageVersion mismatch` | preflight version drift | §1.4 install |
+| `cannot connect to localhost:63333` | bcfp tunnel down on M4 | check SSH forwarding |
+| `bcfishobs row count differs` | §1.3 not done on this host | re-run snapshot_bcfp.sh |
+
+**Don't dispatch the full run until smoke exits 0.** Saves ~90 min of wasted
+compute per failure mode.
+
+## 3. Full dispatch
 
 ```bash
-# Count
-ls data-raw/logs/provincial_parity/*.rds | wc -l
-# Should equal expected canonical count (217 for bcfishpass bundle after link#157).
+cd ~/Projects/repo/link/data-raw
+./trifecta_provincial.sh \
+  --with-mapping-code \
+  --cy-workspaces=job1,job2,job3 \
+  > /tmp/full_run.log 2>&1 &
+disown
+```
 
-# Aggregate summary script (`/tmp/summary.R` pattern from research/provincial_parity_2026_05_11.md)
-Rscript /tmp/summary.R
+Inline LPT computes balanced buckets from prior `_per_wsg_times.csv`. Override
+manually via `--host-speeds=` or `--<host>-bucket=` per `data-raw/README.md`.
+Wall: ~80-95 min for 217 WSGs across 5 hosts.
 
-# Check error-status RDS files
+## 4. Post-run verification
+
+The orchestrator's final headline tells the truth:
+
+```
+[trifecta-provincial] local RDS: 217/217 pulled — 217 OK, 0 errors
+```
+
+If `errors > 0`, inspect the listed cypher-side R log paths. Don't proceed to
+consolidation until the error stubs are recovered (re-dispatch the failed WSGs
+on a host whose stack is healthy).
+
+Annotated CSV path printed at end. Read class breakdown:
+
+```r
+ann <- read.csv("data-raw/logs/provincial_parity/<TS>_annotated.csv")
+table(ann$class, useNA = "ifany")
+unexp <- ann[ann$class == "UNEXPLAINED" & abs(ann$diff_pct) >= 2, ]
+nrow(unexp)
+```
+
+**Acceptance bar**: `nrow(unexp) == 0`. Surviving UNEXPLAINED rows go through
+the investigation toolkit (`research/bcfp_divergence_investigation.md`); add
+taxonomy entries + re-annotate without rerunning the pipeline.
+
+## 5. Consolidate fresh schema (m1 + cyphers → M4)
+
+```bash
+cd ~/Projects/repo/link/data-raw
 Rscript -e '
-files <- list.files("data-raw/logs/provincial_parity", pattern = "^[A-Z]{4}\\.rds$", full.names = TRUE)
-for (f in files) { r <- readRDS(f); if (is.list(r) && !is.null(r$error)) cat(basename(f), ": ", r$error, "\n") }
-'
+source("consolidate_schema.R")
+result <- consolidate_schema(
+  schema = "fresh",
+  sources = list(
+    list(host = "m1",                  via = "docker", bucket = strsplit("WSG1,WSG2,...", ",")[[1]]),
+    list(host = "cypher@<JOB1_IP>",    via = "docker", bucket = strsplit("...", ",")[[1]]),
+    list(host = "cypher@<JOB2_IP>",    via = "docker", bucket = strsplit("...", ",")[[1]]),
+    list(host = "cypher@<JOB3_IP>",    via = "docker", bucket = strsplit("...", ",")[[1]])
+  ),
+  backup = TRUE)'
 ```
 
-## 7. Cypher burn-down (mandatory)
+Bucket strings come from the orchestrator log (per-host bucket lines under
+`[trifecta-provincial] dispatch start`). `consolidate_schema` (Phase 6) does
+bucket-aware DELETE + pg_restore + pre/post row-count assertion.
+
+## 6. Burn cyphers — MANDATORY
 
 ```bash
-~/Projects/repo/rtj/scripts/cypher/cypher_down.sh
+for w in job1 job2 job3; do
+  ~/Projects/repo/rtj/scripts/cypher/cypher_down.sh --workspace $w &
+done
+wait
+
+# Verify destruction (cross-check via tofu state + doctl)
+for w in job1 job2 job3; do
+  N=$(cd ~/Projects/repo/rtj/env/do/dev/cypher && TF_WORKSPACE=$w tofu state list | wc -l)
+  echo "cy[$w]: $N tofu resources (expect 0)"
+done
+doctl compute droplet list --no-header | grep -i cypher || echo "no cypher droplets (clean)"
 ```
 
-**Always run**, regardless of outcome. The reserved IP (24.144.70.121) persists for the next spin. Cypher droplet costs ~$0.50/hr while up.
+Cypher droplets cost ~$0.06/hr each (3 × $0.06 = $0.18/hr). Burn at end of
+EVERY session, regardless of outcome. The 2026-05-12 → 13 incident left them
+running ~10 h unattended because the burn was coupled to a script that
+silently died on an unrelated grep bug — see `planning/active/findings.md`
+for the operational lessons.
 
-## 8. Document run in research/
+## 7. Document run
 
-If headline numbers shifted meaningfully from `research/provincial_parity_<latest>.md`, append a dated addendum or create a new dated file. Required sections:
+If headline numbers shifted meaningfully from the previous dated parity doc,
+append an addendum or create a new `research/provincial_parity_YYYY_MM_DD.md`.
+Required sections:
 
-- Run metadata (timestamp, hardware, link/fresh versions, bcfp `model_version` reference)
-- Per-host wall times
-- Headline parity per species
-- Anomalies (new divergence patterns)
+- Run metadata (timestamp, hardware, link/fresh versions, bcfp `model_version`)
+- Per-host wall times (from `_per_wsg_times.csv`)
+- Headline class breakdown (annotated CSV summary)
+- UNEXPLAINED rows + taxonomy follow-ups
 - Cypher state (destroyed at end)
 
 ## Known operational issues (open)
 
-- **link#159** — error-path cleanup leaks working schemas. Wrap per-WSG body in `tryCatch({...}, finally = drop_working_schema)`.
-- **link#157** — fixed: 15 known-empty WSGs now filtered pre-dispatch (~12 min saved per run).
-- **link#158** — fixed: `crossing_fixes.structure = ''` no longer drops modelled crossings (token2-NONE→MODELLED pattern closed at segment level).
+- **link#163** — Adaptive `host_speeds` learning from observed wall times (LPT
+  refinement; currently static CLI defaults)
+- **fresh#158** — `stream_order_parent` rear bypass deferred (Class B taxonomy)
+- **fresh#190, #191** — SK new-geographies (Class C taxonomy)
 
-## Known measurement asymmetries (intentional, won't close without methodology decisions)
+## Known measurement asymmetries (intentional)
 
-- **Lake/wetland rearing centerline-vs-polygon double-count** — link credits both `*_ha` polygon area and `*_centerline_km` linear length; bcfp credits only one. Produces `-100%` sentinel rows in rollups. See `research/default_vs_bcfishpass.md`.
-- **`rear_stream_order_bypass = no`** — fresh has no clean implementation of bcfp's inline `(stream_order_parent >= 5 AND stream_order = 1)` cw-bypass. Costs 5-9% under-credit on HORS/CLRH/COLR/KHOR rearing_stream. fresh#158 deferred.
-- **SK new-geographies** — fresh#190 (multi-lake topology, parked) + fresh#191 (lake-adjacency knob, filed). Causes 10-85% divergence on LRDO / BULK / NASR / NASC / TOBA / NEVI / CHWK / QUES / KUMR / THOM. Each WSG needs individual stale-bcfp-vs-methodology classification.
+- **Lake/wetland rearing centerline-vs-polygon double-count**. `research/default_vs_bcfishpass.md`
+- **`rear_stream_order_bypass = no`** — costs 5-9% under-credit on HORS-class
+  rearing_stream. Tagged Class B in taxonomy.
+- **SK new-geographies** — 10-85% divergence on LRDO/BULK/NASR/NASC/TOBA/etc.
+  Tagged Class C in taxonomy.
 
-## Quick-reference table — what each script does
+## Quick-reference table
 
 | Script | Purpose | Wall |
 |---|---|---|
-| `snapshot_bcfp.sh` | Load BCDC PSCIS + CABD + bchamp + bcfishobs into local fwapg from public sources | 10-15 min |
-| `cypher_up.sh` | Spin DO droplet from `cypher-<date>-warm` snapshot | 3 min |
-| `cypher_restore-fwapg.sh` | **Only if snapshot lacks fwapg.** Restores from S3 dump | 30 min |
-| `trifecta_provincial.sh` | Dispatch 3-host distributed provincial run with LPT buckets | ~2 hr |
-| `compare_bcfishpass_wsg()` | Per-WSG rollup parity (linear sums vs bcfp.habitat_linear_*) | 30-300s per WSG |
-| `compare_bcfp_mapping_code.R` | Per-segment mapping_code parity (token-level vs bcfp.streams_mapping_code) | 30-300s per WSG |
-| `balance_provincial_buckets.R` | Compute LPT-balanced WSG buckets from per-WSG times | 10s |
-| `cypher_down.sh` | Destroy DO droplet (reserved IP persists) | 30s |
+| `snapshot_bcfp.sh` | Load PSCIS + CABD + bchamp + bcfishobs into local fwapg | ~5-15 min |
+| `cypher_up.sh --workspace <ws>` | Spin DO droplet from `cypher-<date>-warm` snapshot | ~3 min |
+| `archive_provincial_runs.sh` | Move prior-run RDS + CSVs to archive/ | <1s |
+| `trifecta_smoke.sh` | 1-WSG-per-host smoke; fails loud on any error stub | ~3 min |
+| `trifecta_provincial.sh` | N-cypher full dispatch with inline LPT + annotation | ~80 min (5-host) |
+| `consolidate_schema.R` | pg_dump from m1+cyphers → pg_restore on M4 | ~5 min |
+| `cypher_down.sh --workspace <ws>` | Destroy DO droplet (idempotent) | ~30s |
