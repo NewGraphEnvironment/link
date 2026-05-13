@@ -4,7 +4,7 @@
 \alias{lnk_persist_init}
 \title{Initialize persistent province-wide habitat tables}
 \usage{
-lnk_persist_init(conn, cfg, species)
+lnk_persist_init(conn, cfg, species, force_recreate = FALSE)
 }
 \arguments{
 \item{conn}{DBI connection.}
@@ -14,6 +14,15 @@ lnk_persist_init(conn, cfg, species)
 \item{species}{Character vector of species codes (uppercased) to
 create \verb{streams_habitat_<sp>} tables for. Typically derived via
 \code{\link[=lnk_pipeline_species]{lnk_pipeline_species()}} or \code{unique(loaded$parameters_fresh$species_code)}.}
+
+\item{force_recreate}{Logical. When \code{TRUE}, drop any existing target
+tables whose DDL doesn't match the expected shape — specifically,
+tables that have unexpected \verb{GENERATED ALWAYS} columns. Default
+\code{FALSE} errors loud instead so the operator can audit before the
+destructive recreate. Use when spinning a new host from a snapshot
+whose fwapg volume carries stale \code{fresh.streams} DDL (e.g. cypher
+snapshots baked when \code{frs_col_generate()} had been run on the
+persist schema). See link#162 Phase 7 hardening.}
 }
 \value{
 \code{conn} invisibly.
@@ -40,6 +49,11 @@ conn <- lnk_db_conn()
 cfg <- lnk_config("bcfishpass")
 loaded <- lnk_load_overrides(cfg)
 species <- unique(loaded$parameters_fresh$species_code)
+
+# First-time setup or healthy state: idempotent CREATE IF NOT EXISTS.
 lnk_persist_init(conn, cfg, species)
+
+# If a snapshot-baked DB has stale GENERATED columns on fresh.streams:
+lnk_persist_init(conn, cfg, species, force_recreate = TRUE)
 }
 }

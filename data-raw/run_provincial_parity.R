@@ -44,6 +44,14 @@ cfg <- lnk_config(config_name)
 # tibble. The post-loop annotation step (below) reads either shape.
 with_mapping_code <- "--with-mapping-code" %in% args
 
+# `--fail-fast` (no value): the first WSG that errors aborts the loop
+# instead of saving an error stub and continuing. Default FALSE
+# preserves the resume-safe per-WSG soft-fail behavior for full
+# provincial runs (where some WSGs legitimately error for bcfp-not-
+# modeled reasons). Smoke runs pass --fail-fast so "WSG #1 failed"
+# doesn't waste 30 more WSGs of compute confirming the same failure.
+fail_fast <- "--fail-fast" %in% args
+
 schema_arg <- args[grep("^--schema=", args)]
 if (length(schema_arg) > 0) {
   cfg$pipeline$schema <- sub("^--schema=", "", schema_arg[1])
@@ -216,6 +224,15 @@ for (w in wsgs) {
     cat("ERROR (", round(elapsed, 1), "s): ",
         conditionMessage(e), "\n", sep = "")
     append_time(w, elapsed, NA_integer_, "error")
+    if (isTRUE(fail_fast)) {
+      # Bubble the error up so the host process exits non-zero. The
+      # orchestrator's `wait` will see this and the smoke runner's
+      # post-dispatch assertion will flag it. Saves ~30 WSGs of
+      # confirm-the-same-failure compute on the bcfp-not-modeled set
+      # or a snapshot DDL drift.
+      stop(sprintf("[fail-fast] aborting on %s: %s",
+                   w, conditionMessage(e)), call. = FALSE)
+    }
   })
 }
 

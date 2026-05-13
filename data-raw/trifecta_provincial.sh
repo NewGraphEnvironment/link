@@ -505,6 +505,30 @@ done
 echo "============================================"
 
 # ---------------------------------------------------------------------------
+# Pull cypher-side R logs back. cypher_run.sh writes the actual Rscript
+# stdout/stderr to `rtj/scripts/cypher/logs/<TS>_cypher-run_*.txt`.
+# Without this step, the orchestrator's per-host log only captures the
+# wrapper init (tunnel setup) — cypher-side R errors (e.g. INSERT
+# failures from DDL drift) are invisible until someone goes hunting
+# in rtj's logs dir. Land them alongside m4/m1 logs so the headline
+# below can reflect what actually happened.
+# ---------------------------------------------------------------------------
+RTJ_CY_LOGDIR="$REPO_ROOT/../rtj/scripts/cypher/logs"
+for ((i=0; i<N_CY; i++)); do
+  WS="${CY_WS_ARR[$i]}"
+  # cypher_run.sh names: <RUN_TS>_cypher-run_<workload-name>_<ws>.txt
+  # The wrap script (CY_SHELL_PATHS[i]) is named with TS — derive its basename
+  CY_WRAP_BASE=$(basename "${CY_SHELL_PATHS[$i]}" .sh)
+  # Find the most-recent cypher-run log for this workload + workspace.
+  # `|| true` guards the pipefail trap: ls exits non-zero on no-match,
+  # which would otherwise abort the script via $(... | ...) command-sub.
+  CY_R_LOG=$(ls -1t "$RTJ_CY_LOGDIR"/*_cypher-run_"${CY_WRAP_BASE}"_"${WS}".txt 2>/dev/null | head -1 || true)
+  if [ -n "$CY_R_LOG" ] && [ -f "$CY_R_LOG" ]; then
+    cp "$CY_R_LOG" "$LOG_DIR/${TS}_trifecta_provincial_cypher_${WS}_R.txt"
+  fi
+done
+
+# ---------------------------------------------------------------------------
 # Pull RDS files back to M4.
 #   M1: via ~/.ssh/config alias
 #   Each cypher: via TF_WORKSPACE-resolved droplet IP
@@ -526,12 +550,38 @@ for ((i=0; i<N_CY; i++)); do
       "$REPO_ROOT/data-raw/logs/$RDS_DIR_NAME/" 2>&1 | tail -3 || true
 done
 
-# Final inventory. Use `find` rather than `ls *.rds` so `set -euo pipefail`
-# doesn't abort when no RDS files exist (worst-case all-hosts-failed path).
+# Final inventory + truth-in-headline error-stub vs OK count. Without
+# this, `217 / 217` could be 217 error stubs (e.g. cypher DDL drift
+# silently produced 93 stubs on 2026-05-12). Inspect each RDS and
+# count.
 echo
 TOTAL_RDS=$(find "$REPO_ROOT/data-raw/logs/$RDS_DIR_NAME" -maxdepth 1 \
-              -name '*.rds' 2>/dev/null | wc -l)
-echo "[trifecta-provincial] local RDS file count: $TOTAL_RDS / $TOTAL"
+              -name '*.rds' 2>/dev/null | wc -l | tr -d ' ')
+if [ "$TOTAL_RDS" -gt 0 ]; then
+  RDS_COUNTS=$(Rscript -e '
+files <- list.files(commandArgs(trailingOnly = TRUE)[1],
+                    pattern = "\\.rds$", full.names = TRUE)
+n_ok <- 0; n_err <- 0
+for (f in files) {
+  x <- tryCatch(readRDS(f), error = function(e) NULL); if (is.null(x)) next
+  if (is.list(x) && !is.data.frame(x) && "error" %in% names(x)) n_err <- n_err + 1
+  else n_ok <- n_ok + 1
+}
+cat(n_ok, n_err)
+' "$REPO_ROOT/data-raw/logs/$RDS_DIR_NAME" 2>/dev/null)
+  # Default-coerce in case Rscript hiccuped: empty string in arithmetic
+  # comparison aborts under `set -e`.
+  N_OK=$(echo "$RDS_COUNTS" | awk '{print $1+0}')
+  N_ERR=$(echo "$RDS_COUNTS" | awk '{print $2+0}')
+  N_OK=${N_OK:-0}; N_ERR=${N_ERR:-0}
+  echo "[trifecta-provincial] local RDS: $TOTAL_RDS / $TOTAL pulled — $N_OK OK, $N_ERR errors"
+  if [ "$N_ERR" -gt 0 ]; then
+    echo "[trifecta-provincial] WARN: $N_ERR error-stub RDS found. Inspect cypher-side R logs:"
+    ls "$LOG_DIR/${TS}_trifecta_provincial_cypher_"*_R.txt 2>/dev/null | sed 's/^/  /' || true
+  fi
+else
+  echo "[trifecta-provincial] local RDS file count: 0 / $TOTAL (no files pulled — all hosts failed?)"
+fi
 
 # ---------------------------------------------------------------------------
 # Aggregate annotation: bind all RDS, lnk_parity_annotate against the
