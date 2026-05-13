@@ -1,7 +1,7 @@
 Package: link
 Title: Stream Network Habitat Interpretation (Experimental)
-Version: 0.35.1
-Date: 2026-05-12
+Version: 0.36.0
+Date: 2026-05-13
 Authors@R: c(
     person("Allan", "Irvine", , "airvine@newgraphenvironment.com",
            role = c("aut", "cre"),
@@ -24,6 +24,7 @@ Imports:
     jsonlite,
     RPostgres,
     tibble,
+    tidyr,
     tools,
     utils,
     yaml

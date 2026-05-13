@@ -40,6 +40,11 @@
 #'           Defaults to `"fresh-db"`.
 #'     \item `pg_user`, `pg_db` — Postgres user + db. Default `"postgres"` /
 #'           `"fwapg"`.
+#'     \item `bucket` — optional character vector of `watershed_group_code`
+#'           values. When provided, the source's bucket is DELETEd from
+#'           every destination table that has a `watershed_group_code`
+#'           column BEFORE pg_restore. Prevents duplicate-key violations
+#'           when re-consolidating after a prior partial restore.
 #'   }
 #' @param backup Logical. If TRUE (default), pg_dump local destination
 #'   before restoring — rollback safety net. Saved to
@@ -114,6 +119,45 @@ consolidate_schema <- function(schema,
       next
     }
 
+    # 3.5. Bucket-aware destination cleanup. When the source spec carries
+    # `bucket = c(...)`, DELETE those WSG codes from every destination
+    # table that has a `watershed_group_code` column, so pg_restore
+    # --data-only INSERTs land on empty rows instead of hitting a
+    # duplicate-key violation (each persist table has a PK on
+    # (id_segment, watershed_group_code) or similar).
+    if (!is.null(src$bucket) && length(src$bucket) > 0L) {
+      wgc_tables <- DBI::dbGetQuery(dest_conn, sprintf(
+        "SELECT table_name FROM information_schema.columns
+         WHERE table_schema = '%s' AND column_name = 'watershed_group_code'
+         ORDER BY table_name", schema))$table_name
+      if (length(wgc_tables) > 0L) {
+        wsg_list <- paste0("'", src$bucket, "'", collapse = ", ")
+        log(src$host, " -> DELETE bucket (", length(src$bucket),
+            " WSGs) from ", length(wgc_tables), " tables")
+        for (t in wgc_tables) {
+          DBI::dbExecute(dest_conn, sprintf(
+            "DELETE FROM %s.%s WHERE watershed_group_code IN (%s)",
+            schema, t, wsg_list))
+        }
+      }
+    }
+
+    # 3.6. Snapshot pre-restore row count across the schema. The post-
+    # restore check requires `restored_rows > pre_rows` (a strict
+    # increase), not just "non-zero". A non-zero check would falsely
+    # pass any iteration after the first source — the schema already
+    # has rows from prior iterations, so the second source's bad
+    # restore wouldn't be caught.
+    pre_tables <- DBI::dbGetQuery(dest_conn, sprintf(
+      "SELECT tablename FROM pg_tables WHERE schemaname = '%s'",
+      schema))$tablename
+    pre_rows <- 0L
+    for (t in pre_tables) {
+      n <- DBI::dbGetQuery(dest_conn, sprintf(
+        "SELECT count(*)::bigint AS n FROM %s.%s", schema, t))$n
+      if (!is.na(n)) pre_rows <- pre_rows + n
+    }
+
     # 4. pg_restore --data-only onto destination.
     log(src$host, " -> pg_restore --data-only ", local_dump)
     cmd <- sprintf(
@@ -123,6 +167,35 @@ consolidate_schema <- function(schema,
     if (rc != 0L) {
       results[[src$host]] <- list(ok = FALSE, stage = "pg_restore", rc = rc,
                                    local_dump = local_dump)
+      next
+    }
+
+    # 4.5. Verify pg_restore actually moved data. Exit code 0 + no
+    # net new rows in the target schema means the source dump was
+    # empty (e.g. a host that ran zero WSGs because its bucket was
+    # misconfigured) — flag as failure so the operator notices
+    # instead of treating it as a successful no-op.
+    #
+    # `count(*)` is the authoritative source (NOT
+    # `pg_stat_user_tables.n_live_tup`, which lags the commit
+    # asynchronously). Strict increase against `pre_rows` snapshot
+    # so multi-source loops catch a bad source-N after source-1
+    # already populated the schema.
+    post_tables <- DBI::dbGetQuery(dest_conn, sprintf(
+      "SELECT tablename FROM pg_tables WHERE schemaname = '%s'",
+      schema))$tablename
+    post_rows <- 0L
+    for (t in post_tables) {
+      n <- DBI::dbGetQuery(dest_conn, sprintf(
+        "SELECT count(*)::bigint AS n FROM %s.%s", schema, t))$n
+      if (!is.na(n)) post_rows <- post_rows + n
+    }
+    if (post_rows <= pre_rows) {
+      log(src$host, " -> WARN: pg_restore rc=0 but row count did not ",
+          "increase (", pre_rows, " -> ", post_rows, ") — flagging as failure")
+      results[[src$host]] <- list(ok = FALSE, stage = "pg_restore_empty",
+                                   rc = 0L, local_dump = local_dump,
+                                   pre_rows = pre_rows, post_rows = post_rows)
       next
     }
 

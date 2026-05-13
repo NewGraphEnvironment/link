@@ -56,8 +56,14 @@ test_that("lnk_persist_init creates schema + streams + per-species habitat table
       captured <<- c(captured, sql); invisible(NULL)
     }
   )
+  # Mock DBI::dbGetQuery so the new DDL-drift check sees an empty world
+  # (table doesn't exist → no-op, CREATE IF NOT EXISTS handles it).
   cfg <- lnk_config("bcfishpass")
-  lnk_persist_init("mock-conn", cfg, species = c("BT", "CH", "SK"))
+  with_mocked_bindings(
+    dbGetQuery = function(conn, sql) data.frame(),  # no rows = no table
+    .package = "DBI",
+    lnk_persist_init("mock-conn", cfg, species = c("BT", "CH", "SK"))
+  )
 
   joined <- paste(captured, collapse = "\n")
   expect_match(joined, "CREATE SCHEMA IF NOT EXISTS fresh")
@@ -95,4 +101,91 @@ test_that("lnk_persist_init errors on invalid inputs", {
                "species must be a non-empty character vector")
   expect_error(lnk_persist_init("conn", cfg, c("BT", "")),
                "species must not contain empty strings")
+  expect_error(lnk_persist_init("conn", cfg, "BT", force_recreate = "yes"),
+               "force_recreate must be a single logical")
+})
+
+# ---------------------------------------------------------------------------
+# DDL drift detection (Phase 7 hardening, link#162)
+# ---------------------------------------------------------------------------
+
+test_that("lnk_persist_init errors loud when target table has unexpected GENERATED columns", {
+  local_mocked_bindings(.lnk_db_execute = function(...) invisible(NULL))
+  cfg <- lnk_config("bcfishpass")
+
+  # First query: "does the table exist?" returns 1 row (yes)
+  # Second query: "any GENERATED columns?" returns row with 'gradient'
+  # Subsequent queries (for habitat tables): empty (don't exist)
+  call_n <- 0
+  mock_q <- function(conn, sql) {
+    call_n <<- call_n + 1
+    if (grepl("information_schema.tables", sql) &&
+        grepl("'streams'", sql) && !grepl("habitat", sql)) {
+      return(data.frame(x = 1L))
+    }
+    if (grepl("information_schema.columns", sql) &&
+        grepl("'streams'", sql) && !grepl("habitat", sql)) {
+      return(data.frame(column_name = "gradient", stringsAsFactors = FALSE))
+    }
+    data.frame()  # everything else: no rows
+  }
+
+  expect_error(
+    with_mocked_bindings(
+      dbGetQuery = mock_q, .package = "DBI",
+      lnk_persist_init("conn", cfg, species = "BT")
+    ),
+    "DDL drift in fresh.streams.*gradient"
+  )
+})
+
+test_that("lnk_persist_init with force_recreate=TRUE DROPs stale-DDL table", {
+  captured <- character(0)
+  local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) {
+      captured <<- c(captured, sql); invisible(NULL)
+    }
+  )
+  cfg <- lnk_config("bcfishpass")
+
+  # streams exists with bad DDL; habitat tables don't exist
+  mock_q <- function(conn, sql) {
+    if (grepl("information_schema.tables", sql) &&
+        grepl("'streams'", sql) && !grepl("habitat", sql)) {
+      return(data.frame(x = 1L))
+    }
+    if (grepl("information_schema.columns", sql) &&
+        grepl("'streams'", sql) && !grepl("habitat", sql)) {
+      return(data.frame(column_name = "gradient", stringsAsFactors = FALSE))
+    }
+    data.frame()
+  }
+
+  expect_message(
+    with_mocked_bindings(
+      dbGetQuery = mock_q, .package = "DBI",
+      lnk_persist_init("conn", cfg, species = "BT", force_recreate = TRUE)
+    ),
+    "DROPping per force_recreate"
+  )
+  expect_true(any(grepl("DROP TABLE fresh\\.streams CASCADE", captured)))
+  # The subsequent CREATE TABLE IF NOT EXISTS should still fire
+  expect_true(any(grepl("CREATE TABLE IF NOT EXISTS fresh\\.streams", captured)))
+})
+
+test_that("lnk_persist_init is silent when existing table has no GENERATED columns", {
+  local_mocked_bindings(.lnk_db_execute = function(...) invisible(NULL))
+  cfg <- lnk_config("bcfishpass")
+  # Tables exist but have no GENERATED columns
+  mock_q <- function(conn, sql) {
+    if (grepl("information_schema.tables", sql)) return(data.frame(x = 1L))
+    if (grepl("information_schema.columns", sql)) return(data.frame())  # no gen cols
+    data.frame()
+  }
+  expect_no_error(
+    with_mocked_bindings(
+      dbGetQuery = mock_q, .package = "DBI",
+      lnk_persist_init("conn", cfg, species = "BT")
+    )
+  )
 })

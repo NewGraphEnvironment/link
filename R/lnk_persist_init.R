@@ -70,6 +70,69 @@ cols_barriers <- c(
   geom                     = "geometry(Point, 3005)"
 )
 
+#' Validate that an existing target table doesn't carry stale DDL
+#' (unexpected `GENERATED ALWAYS` columns).
+#'
+#' `lnk_persist_init` uses `CREATE TABLE IF NOT EXISTS` — idempotent
+#' but oblivious to DDL drift. When a host's fwapg volume carries a
+#' table whose schema differs from what we expect (e.g. cypher snapshots
+#' baked when `fresh::frs_col_generate()` had been run on `fresh.streams`,
+#' leaving `gradient` as `GENERATED ALWAYS`), the CREATE is a no-op,
+#' the stale DDL survives, and `lnk_pipeline_persist`'s INSERT fails
+#' downstream with `cannot insert a non-DEFAULT value into column ...`.
+#'
+#' This helper detects that case at init time:
+#' - Table doesn't exist: no-op (CREATE IF NOT EXISTS will handle it).
+#' - Table exists with no unexpected GENERATED columns: no-op.
+#' - Table exists with unexpected GENERATED columns + `force_recreate = FALSE`:
+#'   stop with a clear error pointing at the offending columns + how to fix.
+#' - Table exists with unexpected GENERATED columns + `force_recreate = TRUE`:
+#'   DROP CASCADE so the subsequent CREATE re-runs with the correct DDL.
+#'
+#' @noRd
+.lnk_validate_persist_table <- function(conn, schema, table, force_recreate) {
+  # Does the table exist?
+  exists_row <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT 1 FROM information_schema.tables
+     WHERE table_schema = '%s' AND table_name = '%s'",
+    schema, table))
+  if (nrow(exists_row) == 0L) return(invisible())
+
+  # Any GENERATED columns? lnk_persist_init's target tables don't use
+  # GENERATED — any present is a drift signal worth surfacing.
+  gen_rows <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT column_name
+     FROM information_schema.columns
+     WHERE table_schema = '%s' AND table_name = '%s'
+       AND is_generated = 'ALWAYS'",
+    schema, table))
+  if (nrow(gen_rows) == 0L) return(invisible())
+
+  unexpected <- gen_rows$column_name
+  if (isTRUE(force_recreate)) {
+    message(sprintf(
+      "[lnk_persist_init] %s.%s has unexpected GENERATED columns (%s); DROPping per force_recreate=TRUE",
+      schema, table, paste(unexpected, collapse = ",")))
+    .lnk_db_execute(conn, sprintf(
+      "DROP TABLE %s.%s CASCADE", schema, table))
+    return(invisible())
+  }
+
+  stop(sprintf(
+    "DDL drift in %s.%s: %d GENERATED ALWAYS column(s) found (%s) that lnk_persist_init does not expect.\n",
+    schema, table, length(unexpected), paste(unexpected, collapse = ", ")),
+    "Subsequent lnk_pipeline_persist INSERTs would fail with ",
+    "'cannot insert a non-DEFAULT value into column ...'.\n",
+    "This commonly affects droplets spun from snapshots whose ",
+    "`fresh.streams` was baked after `fresh::frs_col_generate()` ran on ",
+    "it. Fix one of two ways:\n",
+    "  - lnk_persist_init(conn, cfg, species, force_recreate = TRUE) ",
+    "to DROP+recreate the offending table(s) with correct DDL\n",
+    "  - or manually: DROP TABLE ", schema, ".", table, " CASCADE",
+    call. = FALSE)
+}
+
+
 #' Build a CREATE TABLE column-list clause from a `cols_*` vector.
 #'
 #' Returns the inner body — caller wraps with `CREATE TABLE … (…)`.
@@ -102,6 +165,14 @@ cols_barriers <- c(
 #' @param species Character vector of species codes (uppercased) to
 #'   create `streams_habitat_<sp>` tables for. Typically derived via
 #'   [lnk_pipeline_species()] or `unique(loaded$parameters_fresh$species_code)`.
+#' @param force_recreate Logical. When `TRUE`, drop any existing target
+#'   tables whose DDL doesn't match the expected shape — specifically,
+#'   tables that have unexpected `GENERATED ALWAYS` columns. Default
+#'   `FALSE` errors loud instead so the operator can audit before the
+#'   destructive recreate. Use when spinning a new host from a snapshot
+#'   whose fwapg volume carries stale `fresh.streams` DDL (e.g. cypher
+#'   snapshots baked when `frs_col_generate()` had been run on the
+#'   persist schema). See link#162 Phase 7 hardening.
 #'
 #' @return `conn` invisibly.
 #'
@@ -111,10 +182,15 @@ cols_barriers <- c(
 #' cfg <- lnk_config("bcfishpass")
 #' loaded <- lnk_load_overrides(cfg)
 #' species <- unique(loaded$parameters_fresh$species_code)
+#'
+#' # First-time setup or healthy state: idempotent CREATE IF NOT EXISTS.
 #' lnk_persist_init(conn, cfg, species)
+#'
+#' # If a snapshot-baked DB has stale GENERATED columns on fresh.streams:
+#' lnk_persist_init(conn, cfg, species, force_recreate = TRUE)
 #' }
 #' @export
-lnk_persist_init <- function(conn, cfg, species) {
+lnk_persist_init <- function(conn, cfg, species, force_recreate = FALSE) {
   if (!inherits(cfg, "lnk_config")) {
     stop("cfg must be an lnk_config object", call. = FALSE)
   }
@@ -124,6 +200,9 @@ lnk_persist_init <- function(conn, cfg, species) {
   if (any(!nzchar(species))) {
     stop("species must not contain empty strings", call. = FALSE)
   }
+  if (!is.logical(force_recreate) || length(force_recreate) != 1L) {
+    stop("force_recreate must be a single logical", call. = FALSE)
+  }
 
   tn <- .lnk_table_names(cfg)
   schema <- tn$schema
@@ -131,6 +210,21 @@ lnk_persist_init <- function(conn, cfg, species) {
 
   .lnk_db_execute(conn, sprintf(
     "CREATE SCHEMA IF NOT EXISTS %s", schema))
+
+  # DDL drift check BEFORE CREATE IF NOT EXISTS. `CREATE TABLE IF NOT
+  # EXISTS` is a no-op when the table exists — even if the existing
+  # DDL is wrong. That hides snapshot drift (e.g. cypher's `fresh.streams`
+  # baked with `gradient` as GENERATED ALWAYS) until INSERT fails 80 min
+  # later. Validate explicitly:
+  .lnk_validate_persist_table(conn, schema = schema, table = "streams",
+                              force_recreate = force_recreate)
+  for (sp in species) {
+    .lnk_validate_persist_table(conn, schema = schema,
+                                table = paste0("streams_habitat_", tolower(sp)),
+                                force_recreate = force_recreate)
+  }
+  .lnk_validate_persist_table(conn, schema = schema, table = "barriers",
+                              force_recreate = force_recreate)
 
   # Persistent streams.
   .lnk_db_execute(conn, sprintf(

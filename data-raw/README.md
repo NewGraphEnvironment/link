@@ -76,10 +76,10 @@ The dispatch hierarchy: trifecta → run_provincial → compare_wsg.
 
 | Script | Calls | Purpose |
 |--------|-------|---------|
-| `trifecta_provincial.sh` | `run_provincial_parity.R` (×3 hosts) | 3-host orchestrator. Splits WSGs across M4 + M1 + cypher, dispatches in parallel, consolidates RDS files back to M4. Accepts `--config=`, `--schema=`, optional `--m4-bucket=`/`--m1-bucket=`/`--cy-bucket=` LPT overrides. |
-| `trifecta_15wsg.sh` | same | 15-WSG smoke variant of the above. |
-| `trifecta_smoke.sh` | same | Single-WSG smoke variant. |
-| `run_provincial_parity.R` | `compare_bcfishpass_wsg.R` per WSG | Single-host provincial dispatcher. Loops every WSG in `wsg_species_presence`, saves per-WSG RDS, emits per-WSG times CSV. Accepts `--wsgs=`, `--config=`, `--schema=`, `--rds-dir=`. |
+| `trifecta_provincial.sh` | `run_provincial_parity.R` (×N hosts) | M4 + M1 + N-cypher orchestrator. Inline LPT bucket allocation (reads `_per_wsg_times.csv` from prior runs, computes balanced split using `--host-speeds=`), pre-flight version check across all hosts, parallel dispatch, RDS pull-back, post-pull `lnk_parity_annotate` against the divergence taxonomy. See "Provincial dispatch" section below for full flag reference + gotchas. |
+| `trifecta_15wsg.sh` | same | 15-WSG smoke variant (legacy 3-host, hardcoded WSG list). |
+| `trifecta_smoke.sh` | `trifecta_provincial.sh` | N-host smoke shim: one small WSG per host, ~3 min wall. See `Provincial dispatch` section. |
+| `run_provincial_parity.R` | `compare_bcfishpass_wsg.R` per WSG | Single-host provincial dispatcher. Loops every WSG in `wsg_species_presence`, saves per-WSG RDS, emits per-WSG times CSV. After the loop, optionally annotates the host's bucket against `research/bcfp_divergence_taxonomy.yml` (writes `<TS>_<host>_annotated.csv`). Accepts `--wsgs=`, `--config=`, `--schema=`, `--rds-dir=`, `--with-mapping-code`. |
 | `compare_bcfishpass_wsg.R` | `lnk_pipeline_*` family | Single-WSG end-to-end runner. Sources both connections (local fwapg + bcfp tunnel), runs the 6-phase pipeline, persists, emits comparison rollup tibble (link vs bcfp). The atomic unit of work in every multi-WSG run above. |
 
 ## Pipeline support
@@ -88,8 +88,129 @@ Run-adjacent helpers (planning, consolidation across hosts).
 
 | Script | Purpose |
 |--------|---------|
-| `balance_provincial_buckets.R` | Reads per-host wall times from prior provincial runs (CSV preferred, text-log fallback) and emits LPT-balanced 3-host buckets. ~27 min savings vs sequential thirds. Output ready to paste into `trifecta_provincial.sh --m4-bucket=…`. |
-| `consolidate_schema.R` | pg_dump from M1 + cypher → scp to M4 → pg_restore --data-only. Used after a multi-host trifecta run to merge per-host schema writes onto the M4 reference DB. |
+| `balance_provincial_buckets.R` | Standalone LPT planner for the 3-host case. Reads per-host wall times from prior runs and prints buckets ready to paste into `trifecta_provincial.sh --m4-bucket=…`. **Superseded for the N-host orchestrator** — `trifecta_provincial.sh` now computes the LPT plan inline at dispatch time using the same algorithm. Kept here for one-off planning + cross-checks. Dedups `(wsg, host)` and across hosts before LPT so multi-run CSV accumulation doesn't double-assign WSGs. |
+| `consolidate_schema.R` | pg_dump from M1 + cypher → scp to M4 → pg_restore --data-only. Bucket-aware destination cleanup (DELETEs each source host's WSG bucket from destination tables before restore — avoids duplicate-key violations on re-consolidation). `ok = TRUE` requires pg_restore rc=0 AND post-restore row count > 0; rc=0 with empty schema flags as failure. |
+| `archive_provincial_runs.sh` | Moves the current top-level `_per_wsg_times.csv` + `*.rds` + `*_annotated.csv` artifacts in `provincial_<bundle>/` to `archive/<TS>/`. Operator cadence: run between provincial runs when you want the LPT planner to use the most recent run only. Skip to median-over multiple recent runs. |
+| `trifecta_smoke.sh` | Thin shim over `trifecta_provincial.sh` — one small WSG per host (m4→DEAD, m1→ELKR, cyN→ADMS/BABL/BULL). ~3 min wall. Exercises every orchestrator code path (preflight, dispatch, tunnel, RDS pull-back, annotation) before committing to a 200-WSG run. All flags pass through (e.g. `--cy-workspaces=`, `--with-mapping-code`). |
+
+## Provincial dispatch (`trifecta_provincial.sh`)
+
+The flagship orchestrator. Dispatches `run_provincial_parity.R` across
+M4 + M1 + N cyphers in parallel, pulls RDS files back, and emits a
+province-wide annotated CSV.
+
+### Quick start
+
+```bash
+cd ~/Projects/repo/link/data-raw
+
+# Optional: archive prior run's CSVs first if you want LPT to plan
+# against this run only (not median-of-recent-runs):
+./archive_provincial_runs.sh
+
+# Smoke-test first (~3 min, one small WSG per host) — catches preflight,
+# tunnel, dispatch, and annotation surprises before the full run:
+./trifecta_smoke.sh                                     # 3-host smoke
+./trifecta_smoke.sh --cy-workspaces=job1,job2,job3      # 5-host smoke
+
+# Full run:
+./trifecta_provincial.sh                                # 3-host default
+./trifecta_provincial.sh --cy-workspaces=job1,job2,job3 # 5-host
+
+# Add per-segment mapping_code lens (+50% cost):
+./trifecta_provincial.sh --cy-workspaces=job1,job2,job3 --with-mapping-code
+
+# Custom host-speed factors (lower = faster):
+./trifecta_provincial.sh --host-speeds=m4=1.0,m1=0.83,cy=1.83
+```
+
+**Recommended cadence:** archive → smoke → full run. The smoke catches
+~99% of surprises in 3 minutes; the archive ensures LPT plans against
+the freshest data.
+
+### CLI flags
+
+| Flag | Default | Purpose |
+|------|---------|---------|
+| `--config=<name>` | `bcfishpass` | Bundle (also `default`, etc.) |
+| `--schema=<name>` | bundle's `cfg$pipeline$schema` | Override persist schema |
+| `--rds-dir=<name>` | `provincial_<config>` | Override RDS output dir |
+| `--host-speeds=<csv>` | `m4=1.0,m1=0.83,cy=1.83` | Per-host slowness vs M4. Used for LPT projection AND back-normalizing prior-run times to M4-equivalent intrinsic work. |
+| `--cy-workspaces=<csv>` | `default` | Comma-list of cypher tofu workspaces |
+| `--with-mapping-code` | off | Pass through to per-host runner |
+| `--skip-preflight` | off | Skip version-match check (debug only) |
+| `--m4-bucket=<csv>` | LPT plan | Override M4's WSG list |
+| `--m1-bucket=<csv>` | LPT plan | Override M1's WSG list |
+| `--cy-bucket=<csv>` | LPT plan | Single-cypher override (only with N_CY=1) |
+| `--cyN-bucket=<csv>` (1-indexed) | LPT plan | Per-cypher override for N>1 cyphers |
+
+### How bucket allocation works
+
+The orchestrator allocates WSGs to hosts using greedy LPT (Longest
+Processing Time first), computed inline at dispatch time:
+
+1. Reads every `_per_wsg_times.csv` in `data-raw/logs/provincial_parity/`
+   (or `provincial_<config>/` for non-bcfishpass bundles).
+2. Back-normalizes each WSG's recorded elapsed time to M4-equivalent
+   intrinsic work using the **CLI `--host-speeds`** factors (NOT
+   per-host observed means — that would feedback-loop on imbalanced
+   prior runs).
+3. Sorts WSGs descending by M4-equivalent work.
+4. For each WSG, assigns it to the host with the lowest projected
+   finish time (`current_load + m4_equiv × host_factor`).
+5. Missing WSGs (no timing data yet) get the median M4-equivalent.
+
+Without prior timing CSVs in the live dir, falls back to a deterministic
+`ceil(n/H)` split. Manual `--<host>-bucket=` overrides bypass LPT.
+
+### Pre-flight version check
+
+Before dispatch, the orchestrator queries `packageVersion("link")` +
+`packageVersion("fresh")` on each host (local M4, ssh-to-M1, ssh-to-each-cypher).
+Aborts if any disagree — a stale install on one host silently produces
+divergent rollup numbers and pollutes the comparison.
+
+Override with `--skip-preflight` only for development; in production
+the version match is the cheapest sanity check available.
+
+### Gotchas
+
+- **Bash 4+ required.** Uses associative arrays and `read -a`. macOS
+  ships bash 3.2; ensure `#!/usr/bin/env bash` resolves to homebrew bash
+  (`/opt/homebrew/bin/bash` on Apple Silicon). The orchestrator detects
+  this implicitly via the env shebang.
+- **Cyphers must be spun up before dispatch.** `cypher_up.sh --workspace
+  job1` per workspace listed in `--cy-workspaces=`. The pre-flight
+  `tofu output -raw droplet_ip` fails fast when a workspace has no
+  droplet.
+- **Per-WSG timing CSVs accumulate.** The LPT block reads ALL CSVs in
+  the live dir, taking the per-WSG median across samples. Archive older
+  runs to `archive/YYYYMMDD_HHMM/` if you want the planner to focus on
+  recent data only.
+- **Host-name detection is hardcoded.** Maps `MacBook-Pro-2*` → m4,
+  `Allans*|*MacBook-Pro$` → m1, `cypher*` → cy. New/renamed machines
+  emit `[LPT] WARN: dropped N timing rows with unrecognized host_short`
+  and silently miss those samples — update the regex in the inline R
+  block when the fleet changes.
+- **`--host-speeds` is the ground truth.** Re-measure with an ADMS smoke
+  per host when fleet/firmware changes shift performance. Defaults
+  (`m4=1.0, m1=0.83, cy=1.83`) derive from the 2026-05-11 5-host run.
+- **Per-cypher speed overrides** via `--host-speeds=...,cy1=1.83,cy2=2.10`
+  apply only to LPT projection (where the script knows about each
+  cypher workspace), not back-normalization (where the CSV's host_short
+  is always `cy`, never `cy1`).
+- **Empty buckets fail loudly.** The orchestrator aborts before dispatch
+  if LPT produces an empty bucket for any host. Without this guard the
+  dispatched `Rscript ... --wsgs=` would silently process zero WSGs and
+  exit 0.
+- **Both per-host AND province-wide annotated CSVs land in
+  `provincial_<config>/`.** Per-host (`<TS>_<host>_annotated.csv`) is
+  each host's own bucket; orchestrator-side (`<TS>_annotated.csv`) is
+  the province-wide aggregate. Intentional redundancy — single-host
+  runs only produce the per-host CSV.
+- **Disk: 60 GB minimum per worker** (see "Disk capacity per worker
+  host" section below). The cypher disk-full incident on 2026-05-04
+  motivated `cleanup_working = TRUE` defaults.
 
 ## Analysis (post-run)
 
