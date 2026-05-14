@@ -46,7 +46,16 @@ M4_OVERRIDE=""
 M1_OVERRIDE=""
 CY_OVERRIDE=""
 CY_WORKSPACES="default"
-HOST_SPEEDS="m4=1.0,m1=0.83,cy=1.83"
+HOST_SPEEDS="m4=1.0,m1=0.79,cy=1.23"
+# Time-multiplier vs M4 baseline; LARGER = SLOWER = fewer WSGs assigned by LPT.
+# (The LPT formula reads `candidate = load + m4_equiv * host_factor` —
+#  smaller factor = less per-WSG cost on that host = more WSGs assigned.)
+#
+# Calibrated 2026-05-13 from per-WSG medians on the bcfishpass-122 dispatch:
+#   m4   101s/WSG → 1.00  (Apple M4 Max, 32GB shared_buffers + 14 parallel workers)
+#   m1    80s/WSG → 0.79  (Apple M1 MBP, 8GB shared_buffers — fresh#199 over-tuning)
+#   cy   124s/WSG → 1.23  (8vCPU/32GB DO droplet, 32GB host preset)
+# If you spin c-class or m-class droplets, override via --host-speeds.
 declare -A CYN_BUCKETS=()
 WITH_MAPPING_CODE=""
 SKIP_PREFLIGHT=0
@@ -249,16 +258,34 @@ if (!is.null(times) && nrow(times) > 0L) {
       paste0(names(load), "=", round(load/60, 1),
              collapse = ", "), "\n", sep = "")
 } else {
-  # Fallback: deterministic ceil(n/H) split. Guards small-n edge case
-  # where m4_n + m1_n could exceed n (round-1 code-check finding).
-  cat("[LPT] no timing CSVs found; using deterministic split\n")
+  # Fallback: host_speeds-weighted alphabetical split. Each host gets
+  # floor((n * speed_factor) / sum(speed_factors)) WSGs; remainder
+  # distributed to highest-factor hosts first. Without this weighting,
+  # equal-split sends 217/5 = 44 WSGs to every host — cyphers finish in
+  # 60% of M4's wall and M4 in 83% of M1's wall, wasting cypher capacity
+  # AND making M1 the long pole. (Bug discovered 2026-05-13 mid-dispatch;
+  # host_factor from --host-speeds is required for fair fallback.)
+  cat("[LPT] no timing CSVs found; using host_speeds-weighted split\n")
   n <- length(all_wsgs)
-  n_hosts <- length(host_keys)
-  chunk <- ceiling(n / n_hosts)
+  weights <- host_factor[host_keys]
+  share <- weights / sum(weights)
+  sizes <- floor(n * share)
+  remainder <- n - sum(sizes)
+  if (remainder > 0) {
+    ord <- order(-weights)
+    for (i in seq_len(remainder)) sizes[ord[i]] <- sizes[ord[i]] + 1
+  }
+  cat("[LPT] weighted sizes: ",
+      paste0(names(sizes), "=", sizes, collapse = ", "), "\n", sep = "")
+  lo <- 1L
   for (i in seq_along(host_keys)) {
-    lo <- (i - 1) * chunk + 1
-    hi <- min(i * chunk, n)
-    buckets[[host_keys[i]]] <- if (lo > n) character(0) else all_wsgs[lo:hi]
+    if (sizes[i] == 0) {
+      buckets[[host_keys[i]]] <- character(0)
+      next
+    }
+    hi <- lo + sizes[i] - 1L
+    buckets[[host_keys[i]]] <- all_wsgs[lo:hi]
+    lo <- hi + 1L
   }
 }
 
@@ -448,14 +475,47 @@ done
 # ---------------------------------------------------------------------------
 START=$(date +%s)
 
-# m4 (local)
+# m4 (local) — uses same inline-tunnel pattern as cyphers so the run
+# is idempotent on tunnel state. If an existing persistent tunnel on
+# 63333 is up, `ssh -L 63333` warns "Address already in use" and the
+# existing tunnel is reused; the trap-kill at exit kills only the new
+# (bind-failed) ssh PID, preserving the operator's persistent tunnel.
 M4_LOG="$LOG_DIR/${TS}_trifecta_provincial_m4.txt"
-( cd "$REPO_ROOT/data-raw" && Rscript run_provincial_parity.R "--wsgs=$M4_WSGS" $EXTRA_ARGS > "$M4_LOG" 2>&1 ) &
+M4_SHELL="$LOG_DIR/${TS}_trifecta_provincial_m4.sh"
+cat > "$M4_SHELL" <<M4_EOF
+#!/usr/bin/env bash
+set -euo pipefail
+ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new \\
+    -o ServerAliveInterval=60 -o ServerAliveCountMax=10 \\
+    -L 63333:127.0.0.1:5432 db_newgraph -N &
+TUNNEL_PID=\$!
+trap 'kill \$TUNNEL_PID 2>/dev/null || true' EXIT
+for _ in \$(seq 1 10); do
+  nc -z localhost 63333 2>/dev/null && break
+  sleep 0.5
+done
+cd $REPO_ROOT/data-raw
+Rscript run_provincial_parity.R "--wsgs=$M4_WSGS" $EXTRA_ARGS
+M4_EOF
+chmod +x "$M4_SHELL"
+( bash "$M4_SHELL" > "$M4_LOG" 2>&1 ) &
 M4_PID=$!
 
-# m1 (ssh)
+# m1 (ssh) — reverse-forwards M4's bcfp tunnel into M1's localhost:63333
+# via `ssh -R`. M1 does NOT need its own db_newgraph identity authorized
+# (it doesn't; the pre-2026-05-13 runs worked only because the operator
+# had manually opened a persistent tunnel on M1 using their interactive
+# key, and prior runs happened to land while that tunnel was still up).
+#
+# Requirements:
+#   - M4 must have the bcfp tunnel up on localhost:63333. The m4 block
+#     above ensures this (idempotent inline tunnel).
+#   - M1 must allow reverse port-forwards (OpenSSH default = yes).
+#   - Nothing else listening on M1's port 63333 (M1 has no persistent
+#     tunnel; this is free in practice).
 M1_LOG="$LOG_DIR/${TS}_trifecta_provincial_m1.txt"
-( ssh -o ServerAliveInterval=60 -o ServerAliveCountMax=10 m1 \
+( ssh -o ServerAliveInterval=60 -o ServerAliveCountMax=10 \
+    -R 63333:127.0.0.1:63333 m1 \
     "cd ~/Projects/repo/link/data-raw && Rscript run_provincial_parity.R '--wsgs=$M1_WSGS' $EXTRA_ARGS" \
     > "$M1_LOG" 2>&1 ) &
 M1_PID=$!
