@@ -6,14 +6,16 @@ After #168 shipped (v0.37.0, PG-state resume), this PR adds the CLI surface for 
 
 Patch the original filename first so the smoke (Phase 3) validates on the known-good name. Rename in Phase 4.
 
-- [ ] Add `--wsgs=A,B,C` arg parse. In SPLIT_R block (~line 135), intersect `all_wsgs` with the `--wsgs` list when provided; error loud on unknown WSGs.
-- [ ] Add `--no-cyphers` arg parse. When set: force `N_CY=0`, skip cypher wrap generation (lines 449-471), skip cypher subprocess launch (lines 523-536), skip cypher RDS pullback, skip cypher R log pullback.
-- [ ] Add `--force` arg parse and forward to `Rscript run_provincial_parity.R ... --force`.
-- [ ] Fix phantom-cy bug for `n_cy = 0`: `paste0("cy", integer(0))` returns `"cy"` (length-1 due to constant recycling); use explicit `if (n_cy == 0L) character(0)` branch.
-- [ ] Harden empty `CY_WORKSPACES` / `N_CY` init for the cy-less path.
-- [ ] Update usage block.
-- [ ] `bash -n data-raw/trifecta_provincial.sh` syntax-clean.
-- [ ] `/code-check` clean on staged diff.
+- [x] Add `--wsgs=A,B,C` arg parse. SPLIT_R block intersects `all_wsgs` with the `--wsgs` list; errors loud on unknown WSGs via `stop(call. = FALSE)`. Verified end-to-end with `--wsgs=BOGUS,ADMS`.
+- [x] Add `--no-cyphers` arg parse. Wipes `CY_WORKSPACES=""` → empty `CY_WS_ARR` → `N_CY=0`; all `for ((i=0; i<N_CY; i++))` loops downstream (wrap, launch, RDS/R-log pullback) become no-ops naturally.
+- [x] Add `--force` arg parse; appended to `EXTRA_ARGS` so it forwards to every per-host `Rscript run_provincial_parity.R` invocation.
+- [x] Fix phantom-cy bug for `n_cy = 0`: three-branch `cy_host_keys` (`character(0)` / `"cy"` / `paste0(...)`) avoids the constant-recycling trap.
+- [x] Harden empty-CY_WORKSPACES init: explicit `CY_WS_ARR=()` when `CY_WORKSPACES=""` (was `read -r -a` which yields single-element-empty-string).
+- [x] Surface R-side error messages: wrap `SPLIT_OUT=$(Rscript ...)` with explicit `||` block (round-1 code-check fix; without it, R `stop()` calls aborted bash with no operator-visible message).
+- [x] Update usage block.
+- [x] `bash -n data-raw/trifecta_provincial.sh` syntax-clean.
+- [x] Verified SPLIT_R logic via isolated R run: `--wsgs=DEAD,ADMS --no-cyphers` correctly produces `all_wsgs=ADMS,DEAD`, `n_cy=0`, `host_keys=m4,m1`, `cy_host_keys` length 0.
+- [x] `/code-check` round 1 caught silent-abort bug, fixed; round 2 clean.
 - [ ] Commit "trifecta_provincial.sh: --wsgs filter, --no-cyphers mode, --force passthrough"
 
 ## Phase 2 — CLI surface on `province_run.sh`

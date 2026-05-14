@@ -8,4 +8,5 @@
 - rtj cross-repo update authorized (direct commit + push).
 - Created branch `172-provincial-run-autonomy-renames` off main (v0.37.0 baseline).
 - Scaffolded PWF baseline (`task_plan.md`, `findings.md`, `progress.md`) with 7 approved phases.
-- Next: start Phase 1 — patch `trifecta_provincial.sh` for `--wsgs`, `--no-cyphers`, `--force`, plus phantom-cy fix.
+- **Phase 1 done.** Added `--wsgs=`, `--no-cyphers`, `--force` to `trifecta_provincial.sh`. Fixed phantom-cy (R's `paste0("cy", integer(0))` → `"cy"` recycling bug) via 3-branch `cy_host_keys`. Hardened empty-`CY_WORKSPACES` init. `/code-check` round 1 caught a silent-abort bug (R `stop()` exits bash without operator-visible message under `SPLIT_OUT=$(...)`); fixed with explicit `||` block dumping SPLIT_OUT to stderr. Round 2 clean. SPLIT_R logic verified via isolated R run.
+- Next: Phase 2 — propagate the same flags through `province_run.sh` umbrella.

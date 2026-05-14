@@ -16,11 +16,19 @@
 #   ./trifecta_provincial.sh                          # 3-host default: M4 + M1 + 1 cypher
 #   ./trifecta_provincial.sh --with-mapping-code      # per-WSG mapping_code lens
 #   ./trifecta_provincial.sh --cy-workspaces=job1,job2,job3   # 5-host: 3 cyphers
+#   ./trifecta_provincial.sh --wsgs=ADMS,BULK,DEAD --no-cyphers   # M4+M1, 3 WSGs
+#   ./trifecta_provincial.sh --force --no-cyphers     # force re-run, M4+M1 only
 #
 # CLI flags:
 #   --config=<name>           bundle (default: bcfishpass)
 #   --schema=<name>           override cfg$pipeline$schema
 #   --rds-dir=<name>          override per-bundle RDS dir
+#   --wsgs=<csv>              restrict to a subset of the bundle's WSG list
+#                             (intersected with bundle presence-filtered set;
+#                              unknown WSGs error loud)
+#   --no-cyphers              skip cypher hosts entirely; dispatch M4+M1 only
+#   --force                   forward --force to the per-host Rscript
+#                             (bypasses both PG-state and RDS resume gates)
 #   --host-speeds=<csv>       per-host speed factor vs M4 (default: m4=1.0,m1=0.83,cy=1.83).
 #                             Higher = slower. Used in LPT bucket projection.
 #                             Per-cypher overrides via --host-speeds=...,cy1=1.83,cy2=2.10
@@ -32,7 +40,8 @@
 #   --with-mapping-code       pass through to run_provincial_parity.R
 #   --skip-preflight          skip version-match check (debug only)
 #
-# Estimated wall: ~2 hours single-cypher, ~50-60 min 3-cypher.
+# Estimated wall: ~2 hours single-cypher, ~50-60 min 3-cypher,
+# ~30-40 min M4+M1 only (16-WSG default-bundle smoke test).
 
 set -euo pipefail
 
@@ -59,12 +68,18 @@ HOST_SPEEDS="m4=1.0,m1=0.79,cy=1.23"
 declare -A CYN_BUCKETS=()
 WITH_MAPPING_CODE=""
 SKIP_PREFLIGHT=0
+WSGS_FILTER=""
+NO_CYPHERS=0
+FORCE_FLAG=""
 
 for arg in "$@"; do
   case "$arg" in
     --config=*)         CONFIG="${arg#--config=}" ;;
     --schema=*)         SCHEMA="${arg#--schema=}" ;;
     --rds-dir=*)        RDS_DIR="${arg#--rds-dir=}" ;;
+    --wsgs=*)           WSGS_FILTER="${arg#--wsgs=}" ;;
+    --no-cyphers)       NO_CYPHERS=1 ;;
+    --force)            FORCE_FLAG="--force" ;;
     --host-speeds=*)    HOST_SPEEDS="${arg#--host-speeds=}" ;;
     --m4-bucket=*)      M4_OVERRIDE="${arg#--m4-bucket=}" ;;
     --m1-bucket=*)      M1_OVERRIDE="${arg#--m1-bucket=}" ;;
@@ -79,13 +94,28 @@ for arg in "$@"; do
   esac
 done
 
+# --no-cyphers wipes the cypher workspace list so the rest of the
+# script sees a zero-cypher plan. Bash array init from an empty string
+# via `read -r -a` produces a single-element array containing "" —
+# clear it explicitly to get a true empty list.
+if [ "$NO_CYPHERS" -eq 1 ]; then
+  CY_WORKSPACES=""
+fi
+
 EXTRA_ARGS="--config=$CONFIG"
 [ -n "$SCHEMA" ]            && EXTRA_ARGS="$EXTRA_ARGS --schema=$SCHEMA"
 [ -n "$RDS_DIR" ]           && EXTRA_ARGS="$EXTRA_ARGS --rds-dir=$RDS_DIR"
 [ -n "$WITH_MAPPING_CODE" ] && EXTRA_ARGS="$EXTRA_ARGS $WITH_MAPPING_CODE"
+[ -n "$FORCE_FLAG" ]        && EXTRA_ARGS="$EXTRA_ARGS $FORCE_FLAG"
 
-# Parse cypher workspace list into array
-IFS=',' read -r -a CY_WS_ARR <<< "$CY_WORKSPACES"
+# Parse cypher workspace list into array. Empty CY_WORKSPACES (set by
+# --no-cyphers) yields N_CY=0; all `for ((i=0; i<N_CY; i++))` loops
+# below become no-ops naturally.
+if [ -z "$CY_WORKSPACES" ]; then
+  CY_WS_ARR=()
+else
+  IFS=',' read -r -a CY_WS_ARR <<< "$CY_WORKSPACES"
+fi
 N_CY=${#CY_WS_ARR[@]}
 
 # --cy-bucket is only valid with exactly 1 cypher workspace.
@@ -134,6 +164,22 @@ has_spp <- apply(wsg_pres[, spp_cols, drop = FALSE], 1,
                  function(r) any(r %in% c("t","TRUE",TRUE)))
 all_wsgs <- sort(wsg_pres\$watershed_group_code[has_spp])
 
+# --wsgs subset filter. Intersect with the bundle's presence-filtered
+# WSG set; error loud on any unknown WSG so a typo doesn't silently
+# drop work.
+wsgs_filter_csv <- "$WSGS_FILTER"
+if (nzchar(wsgs_filter_csv)) {
+  requested <- trimws(strsplit(wsgs_filter_csv, ",", fixed = TRUE)[[1]])
+  unknown <- setdiff(requested, all_wsgs)
+  if (length(unknown) > 0L) {
+    stop("--wsgs contains WSGs not in the bundle presence-filtered set: ",
+         paste(unknown, collapse = ", "), call. = FALSE)
+  }
+  all_wsgs <- sort(intersect(all_wsgs, requested))
+  cat("[LPT] --wsgs subset: ", length(all_wsgs), " of ",
+      length(requested), " requested kept\n", sep = "")
+}
+
 # Parse --host-speeds=m4=1.0,m1=0.83,cy=1.83 into a named numeric vector
 parse_speeds <- function(s) {
   pairs <- strsplit(s, ",", fixed = TRUE)[[1]]
@@ -154,10 +200,25 @@ if (!all(c("m4","m1","cy") %in% names(speeds))) {
 # Hosts in the plan: m4, m1, cy1..cyN_CY (each cypher workspace is its
 # own host). Per-cypher speed: take \`cyN\` from --host-speeds if present,
 # else fall back to the generic \`cy\` factor.
+#
+# Phantom-cy guard for the --no-cyphers / empty workspace list case:
+# R's \`paste0("cy", integer(0))\` returns \`"cy"\` (length 1) due to
+# constant recycling, which would put a non-existent cypher in
+# host_keys. Three-branch the construction to keep n_cy = 0 honest.
 cy_ws_csv <- "$CY_WORKSPACES"
-cy_ws <- strsplit(cy_ws_csv, ",", fixed = TRUE)[[1]]
+cy_ws <- if (nzchar(cy_ws_csv)) {
+  strsplit(cy_ws_csv, ",", fixed = TRUE)[[1]]
+} else {
+  character(0)
+}
 n_cy <- length(cy_ws)
-cy_host_keys <- if (n_cy == 1L) "cy" else paste0("cy", seq_len(n_cy))
+cy_host_keys <- if (n_cy == 0L) {
+  character(0)
+} else if (n_cy == 1L) {
+  "cy"
+} else {
+  paste0("cy", seq_len(n_cy))
+}
 host_keys <- c("m4", "m1", cy_host_keys)
 host_factor <- numeric(length(host_keys))
 names(host_factor) <- host_keys
@@ -295,7 +356,12 @@ for (h in host_keys) {
 }
 SPLIT_EOF
 
-SPLIT_OUT=$(Rscript "$SPLIT_R" 2>&1)
+SPLIT_OUT=$(Rscript "$SPLIT_R" 2>&1) || {
+  rc=$?
+  echo "ERROR: split/LPT R script failed (rc=$rc):" >&2
+  echo "$SPLIT_OUT" >&2
+  exit "$rc"
+}
 echo "$SPLIT_OUT" | grep -E "^\[LPT\]" || true
 
 M4_WSGS=$(echo "$SPLIT_OUT" | awk -F'=' '$1=="M4" {print $2}')
