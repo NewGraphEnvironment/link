@@ -18,26 +18,51 @@
 #   - bcfishpass_ref (reference data; not pipeline output)
 #
 # Usage:
-#   bash data-raw/province_clean.sh [--cy-workspaces=job1,job2,job3] [--skip-m1] [--skip-cy]
+#   bash data-raw/province_clean.sh [flags]
+#
+# Flags:
+#   --cy-workspaces=A,B,C  cypher workspaces to clean (default: job1,job2,job3)
+#   --skip-m1              skip M1
+#   --skip-cy              skip all cyphers
+#   --schemas=A,B,C        SCOPED MODE — drop ONLY these exact schemas.
+#                          Skips the working*/fresh_*/fresh heuristic AND
+#                          skips the snapshot_bcfp.sh re-run (canonical state
+#                          not touched). Use for per-bundle pre-cleans like
+#                          `--schemas=fresh_default` before subset dispatches.
 #
 # Honors /tmp/cy_ips.env if present (set by trifecta_provincial.sh dispatch
 # wrapper). Otherwise derives cypher IPs from tofu state.
 #
-# Expected wall: ~2-3 min (parallel across all hosts).
+# Expected wall:
+#   Full mode (default):  ~2-3 min (drop + snapshot reload, parallel)
+#   Scoped (--schemas=):  ~10-20 s   (drop only)
 
 set -euo pipefail
 
 CY_WORKSPACES="job1,job2,job3"
 SKIP_M1=0
 SKIP_CY=0
+SCOPED_SCHEMAS=""
+SAW_SCHEMAS=0
 for arg in "$@"; do
   case "$arg" in
     --cy-workspaces=*) CY_WORKSPACES="${arg#--cy-workspaces=}" ;;
     --skip-m1)         SKIP_M1=1 ;;
     --skip-cy)         SKIP_CY=1 ;;
+    --schemas=*)       SCOPED_SCHEMAS="${arg#--schemas=}"; SAW_SCHEMAS=1 ;;
     *) echo "FATAL: unknown arg: $arg" >&2; exit 1 ;;
   esac
 done
+
+# Guard against empty `--schemas=` falling through to the destructive
+# heuristic full-wipe. Callers that build the arg dynamically and end
+# up with an empty value need to know — silently wiping `fresh` is the
+# wrong default for "the operator forgot to populate $VAR".
+if [ "$SAW_SCHEMAS" = "1" ] && [ -z "$SCOPED_SCHEMAS" ]; then
+  echo "FATAL: --schemas= requires at least one schema (got empty value)." >&2
+  echo "       Omit --schemas= entirely to invoke the heuristic full-wipe mode." >&2
+  exit 1
+fi
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
@@ -71,12 +96,28 @@ if [ "$SKIP_CY" = "0" ]; then
 fi
 echo "  ✓ killed"
 
-# --- Step 2-4: drop stale schemas + fresh, parallel across hosts ---
-# Combined DROP block: drops working_*, fresh_<bundle>*, AND fresh itself.
-DROP_SQL="SELECT 'DROP SCHEMA \"' || schema_name || '\" CASCADE' FROM information_schema.schemata WHERE (schema_name LIKE 'working%' OR schema_name LIKE 'fresh_%' OR schema_name = 'fresh') AND schema_name NOT IN ('bcfishpass_ref') \\gexec
+# --- Step 2-4: drop stale schemas, parallel across hosts ---
+# Default (heuristic) mode: drops working_*, fresh_<bundle>*, AND fresh
+# itself; recreates empty `fresh`.
+#
+# Scoped mode (--schemas=A,B,C): drops ONLY the listed exact schemas;
+# does NOT recreate `fresh`. Use for per-bundle pre-cleans before subset
+# dispatches (e.g. --schemas=fresh_default).
+if [ -n "$SCOPED_SCHEMAS" ]; then
+  # Build a literal IN-list of schema names, double-quoted for safety.
+  SCOPED_IN=$(echo "$SCOPED_SCHEMAS" | awk -F',' '{
+    for(i=1;i<=NF;i++) {
+      gsub(/^[ \t]+|[ \t]+$/, "", $i)
+      printf("%s\047%s\047", (i==1?"":","), $i)
+    }
+  }')
+  DROP_SQL="SELECT 'DROP SCHEMA \"' || schema_name || '\" CASCADE' FROM information_schema.schemata WHERE schema_name IN ($SCOPED_IN) \\gexec"
+  echo "--- step 2-4 (scoped): drop schemas [$SCOPED_SCHEMAS], parallel ---"
+else
+  DROP_SQL="SELECT 'DROP SCHEMA \"' || schema_name || '\" CASCADE' FROM information_schema.schemata WHERE (schema_name LIKE 'working%' OR schema_name LIKE 'fresh_%' OR schema_name = 'fresh') AND schema_name NOT IN ('bcfishpass_ref') \\gexec
 CREATE SCHEMA fresh;"
-
-echo "--- step 2-4: drop stale schemas + recreate fresh, parallel ---"
+  echo "--- step 2-4: drop stale schemas + recreate fresh, parallel ---"
+fi
 
 (
   PGPASSWORD=postgres psql -h localhost -p 5432 -U postgres -d fwapg <<EOF > "/tmp/clean_m4.log" 2>&1
@@ -107,6 +148,15 @@ wait
 echo "  ✓ schemas dropped + fresh recreated empty"
 
 # --- Step 5: reload modelled_stream_crossings via snapshot_bcfp.sh --force ---
+# Skipped under --schemas= (scoped mode): canonical fresh schema wasn't
+# touched, so modelled_stream_crossings is still present.
+if [ -n "$SCOPED_SCHEMAS" ]; then
+  echo "--- step 5: SKIPPED (scoped mode — canonical fresh untouched) ---"
+  echo
+  echo "=== province_clean.sh complete (scoped: [$SCOPED_SCHEMAS]) $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
+  exit 0
+fi
+
 echo "--- step 5: snapshot_bcfp.sh --force on all hosts ---"
 
 (

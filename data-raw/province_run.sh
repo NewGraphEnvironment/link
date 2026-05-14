@@ -50,6 +50,7 @@ FORCE_FLAG=""
 for arg in "$@"; do
   case "$arg" in
     --skip-smoke)      SKIP_SMOKE=1 ;;
+    --with-mapping-code) ;;  # default-on; accept explicitly for symmetry with --no-mapping-code
     --no-mapping-code) NO_MAPPING=1 ;;
     --keep-cyphers)    KEEP_CYPHERS=1 ;;
     --wsgs=*)          WSGS_FILTER="${arg#--wsgs=}" ;;
@@ -156,6 +157,28 @@ doctl compute droplet list --no-header >/dev/null 2>&1 || { echo "  ✗ doctl no
   || { echo "  ✗ tofu workspace list failed"; fail=1; }
 [ "$fail" = "0" ] || { echo "FATAL: pre-flight failed; aborting before spend"; exit 1; }
 echo "  ✓ pre-flight clean"
+
+# --- Step 0: pre-clean target schema (when --schema= is set) ---
+# Drops $SCHEMA on every host before dispatch so the per-WSG pipeline
+# writes land into a clean slate AND so consolidate's pg_dump source
+# contains only the current run's bucket (no leftover WSGs from prior
+# runs colliding with destination data). Uses state_clean.sh in
+# scoped mode (--schemas=...) which skips the canonical-fresh wipe and
+# the snapshot_bcfp.sh reload.
+#
+# Skipped when --schema is empty (writes go to the bundle's default
+# schema, typically the canonical `fresh` — which Step 1+2's snapshot
+# already handles).
+if [ -n "$SCHEMA" ]; then
+  echo "=== Step 0: pre-clean target schema [$SCHEMA] ==="
+  CLEAN_ARGS="--schemas=$SCHEMA"
+  [ "$NO_CYPHERS" = "1" ] && CLEAN_ARGS="$CLEAN_ARGS --skip-cy"
+  bash data-raw/province_clean.sh $CLEAN_ARGS > "$LOG_DIR/${TS}_preclean.log" 2>&1 || {
+    echo "FATAL: pre-clean failed; see $LOG_DIR/${TS}_preclean.log"
+    exit 1
+  }
+  echo "  ✓ pre-cleaned"
+fi
 
 # --- Step 1+2: snapshot_bcfp.sh on M4 + M1 (parallel) ---
 echo "=== Step 1+2: snapshot_bcfp.sh --force on M4 + M1 ==="
