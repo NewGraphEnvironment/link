@@ -57,13 +57,13 @@ The link pipeline produces the BC freshwater network model — PG `fresh.*` tabl
 
 ## Phase 6 — `data-raw/run_provincial_parity.R` resume-check rewrite
 
-- [ ] Source `wsg_pipeline_run.R` + `wsg_compare.R` (replace single source of old file).
-- [ ] Open one `conn` to local fwapg at top of script (replace per-WSG conn churn).
-- [ ] Add `--force` CLI flag parse.
-- [ ] Replace cache-skip block (lines 200-205) with the four-branch logic (force / fully-cached / compare-only / pipeline+compare).
-- [ ] Helper `.is_error_stub(rds_path)` reads the RDS, returns `TRUE` iff it's a `list(error=..., elapsed_s=...)` stub. Stub-detection mirrors lines 264-270 of the post-loop annotation block.
-- [ ] Update header comments to reflect PG-state resume.
-- [ ] `/code-check` clean
+- [x] Source `wsg_pipeline_run.R` + `wsg_compare.R` (done in Phase 5).
+- [x] Add a script-level `probe_conn` for the PG-state probe (separate from per-WSG function conns, which open + close internally).
+- [x] Add `--force` CLI flag parse.
+- [x] Replace cache-skip block with the four-branch logic (force / fully-cached / compare-only / pipeline+compare).
+- [x] Two new helpers: `.is_error_stub(rds_path)` and `.rollup_has_mapping_code(rds_path)`. The mapping_code helper covers the case where a previous rollup-only run saved a bare tibble but the current run wants mapping_code — invalidates the cache so re-run fires.
+- [x] Update header comments to reflect the new resume semantics.
+- [x] `/code-check` round 1 clean (1 dead assignment noted, removed).
 - [ ] Commit "Update run_provincial_parity.R: PG-state resume check + --force"
 
 ## Phase 7 — Smoke matrix (1-WSG, 4 cache states)
