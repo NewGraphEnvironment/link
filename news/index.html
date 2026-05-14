@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.36.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.36.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,6 +31,21 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.36.1" id="link-0361">link 0.36.1<a class="anchor" aria-label="anchor" href="#link-0361"></a></h2>
+<p>Operational hardening from the 2026-05-13 → 2026-05-14 provincial dispatch session. No <code>R/</code> API changes — patches landed in <code>data-raw/</code> operational tooling. Closes <a href="https://github.com/NewGraphEnvironment/link/pull/171" class="external-link">#171</a>.</p>
+<ul><li>
+<code>data-raw/trifecta_provincial.sh</code>: M1 reverse-forward tunnel (<code>ssh -R 63333:127.0.0.1:63333</code>) — M1 no longer needs its own (passphrase-protected) <code>db_newgraph</code> identity to reach bcfp. M4 idempotent inline-tunnel block. LPT fallback uses host_speeds-weighted alphabetical split when no <code>_per_wsg_times.csv</code> exists (was equal-split, ignored host_speeds). <code>HOST_SPEEDS</code> recalibrated to time-multiplier semantics: <code>m4=1.0,m1=0.79,cy=1.23</code> (larger=slower=fewer WSGs assigned). Calibrated from per-WSG medians on the 5-host 2026-05-13 dispatch.</li>
+<li>New <code>data-raw/province_run.sh</code> — top-level 10-step wrapper (pre-flight, snapshot, spin, prep, archive, smoke, dispatch, acceptance, consolidate, burn) with trap-EXIT cypher burn that fires regardless of mid-flight failure. Drafted ready for a <code>--smoke-only</code> regression-test mode in a follow-up.</li>
+<li>New <code>data-raw/province_clean.sh</code> — idempotent multi-host state wipe (kills <code>R --no-echo</code> + <code>Rscript</code> + <code>run_provincial</code>, drops <code>fresh</code> + <code>working_*</code> + <code>fresh_&lt;bundle&gt;*</code> schemas, reloads <code>fresh.modelled_stream_crossings</code> via <code>snapshot_bcfp.sh --force</code>). &lt;5 min wall.</li>
+<li>New <code>data-raw/province_progress.sh</code> — mtime-based per-host progress probe. Cross-host TZ-glob hell solved by using <code>find -mmin -N</code> and <code>ls -t</code> (newest by mtime, not filename) — cypher logs use UTC, M4/M1 use local; date-globbing across hosts broke at TZ rollover.</li>
+<li>
+<code>research/post_compact_provincial_handoff.md</code> — tunnel architecture gotcha section (how each host reaches bcfp) + LPT fallback gotcha section.</li>
+<li>
+<code>planning/active/{task_plan,findings,progress}.md</code> — full PWF capture: 12 distinct gotchas surfaced during the session, including <code>pkill -f Rscript</code> missing the <code>R --no-echo</code> subprocess (caused concurrent dispatches), RDS-cache-skip in <code>run_provincial_parity.R</code>, stale cypher snapshot <code>fresh.*</code> data, M1 SSH key passphrase + Keychain-only unlock, and M4 PG over-tuning. Wrapper test strategy documented.</li>
+</ul><p>Follow-up issues filed (not closed here): <a href="https://github.com/NewGraphEnvironment/link/issues/167" class="external-link">#167</a> tunnel autossh, <a href="https://github.com/NewGraphEnvironment/link/issues/168" class="external-link">#168</a> decouple bcfp compare from pipeline, <a href="https://github.com/NewGraphEnvironment/link/issues/169" class="external-link">#169</a> simplify <code>lnk_persist_init</code> after rtj#145, <a href="https://github.com/NewGraphEnvironment/link/issues/170" class="external-link">#170</a> S3-based consolidate. Plus rtj#145 (rebuild cypher snapshot with fwa-dump tables ONLY) and fresh#199 (reopened — M4 PG over-tuning evidence).</p>
+<p>Run result: 217-WSG BC stream network model in M4 <code>fresh</code> schema. Annotated parity CSV at <code>data-raw/logs/provincial_parity/20260514_0622_*_annotated.csv</code> — 91 <code>UNEXPLAINED</code> rows at <code>|diff_pct| &gt;= 2%</code> (acceptance bar still not met; investigation queue for next session).</p>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.36.0" id="link-0360">link 0.36.0<a class="anchor" aria-label="anchor" href="#link-0360"></a></h2>
 <p>Closes <a href="https://github.com/NewGraphEnvironment/link/issues/162" class="external-link">#162</a>. Lifts two scattered <code>data-raw/</code> scripts (linear rollup parity + per-segment mapping_code parity) into one package-level <code><a href="../reference/lnk_compare_wsg.html">lnk_compare_wsg()</a></code>, adds an annotated CSV pipeline (<code><a href="../reference/lnk_parity_annotate.html">lnk_parity_annotate()</a></code> against a YAML divergence taxonomy), modernizes the multi-host orchestrator to 5-host (M4 + M1 + N cyphers via tofu workspaces), and hardens the spin-up + smoke flow so failures fail loud + fail fast. Full per-phase summary: <code>planning/archive/2026-05-link162-lnk-compare-wsg-annotated-csv/README.md</code>.</p>

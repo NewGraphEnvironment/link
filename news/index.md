@@ -1,5 +1,62 @@
 # Changelog
 
+## link 0.36.1
+
+Operational hardening from the 2026-05-13 → 2026-05-14 provincial
+dispatch session. No `R/` API changes — patches landed in `data-raw/`
+operational tooling. Closes
+[\#171](https://github.com/NewGraphEnvironment/link/pull/171).
+
+- `data-raw/trifecta_provincial.sh`: M1 reverse-forward tunnel
+  (`ssh -R 63333:127.0.0.1:63333`) — M1 no longer needs its own
+  (passphrase-protected) `db_newgraph` identity to reach bcfp. M4
+  idempotent inline-tunnel block. LPT fallback uses host_speeds-weighted
+  alphabetical split when no `_per_wsg_times.csv` exists (was
+  equal-split, ignored host_speeds). `HOST_SPEEDS` recalibrated to
+  time-multiplier semantics: `m4=1.0,m1=0.79,cy=1.23`
+  (larger=slower=fewer WSGs assigned). Calibrated from per-WSG medians
+  on the 5-host 2026-05-13 dispatch.
+- New `data-raw/province_run.sh` — top-level 10-step wrapper
+  (pre-flight, snapshot, spin, prep, archive, smoke, dispatch,
+  acceptance, consolidate, burn) with trap-EXIT cypher burn that fires
+  regardless of mid-flight failure. Drafted ready for a `--smoke-only`
+  regression-test mode in a follow-up.
+- New `data-raw/province_clean.sh` — idempotent multi-host state wipe
+  (kills `R --no-echo` + `Rscript` + `run_provincial`, drops `fresh` +
+  `working_*` + `fresh_<bundle>*` schemas, reloads
+  `fresh.modelled_stream_crossings` via `snapshot_bcfp.sh --force`). \<5
+  min wall.
+- New `data-raw/province_progress.sh` — mtime-based per-host progress
+  probe. Cross-host TZ-glob hell solved by using `find -mmin -N` and
+  `ls -t` (newest by mtime, not filename) — cypher logs use UTC, M4/M1
+  use local; date-globbing across hosts broke at TZ rollover.
+- `research/post_compact_provincial_handoff.md` — tunnel architecture
+  gotcha section (how each host reaches bcfp) + LPT fallback gotcha
+  section.
+- `planning/active/{task_plan,findings,progress}.md` — full PWF capture:
+  12 distinct gotchas surfaced during the session, including
+  `pkill -f Rscript` missing the `R --no-echo` subprocess (caused
+  concurrent dispatches), RDS-cache-skip in `run_provincial_parity.R`,
+  stale cypher snapshot `fresh.*` data, M1 SSH key passphrase +
+  Keychain-only unlock, and M4 PG over-tuning. Wrapper test strategy
+  documented.
+
+Follow-up issues filed (not closed here):
+[\#167](https://github.com/NewGraphEnvironment/link/issues/167) tunnel
+autossh, [\#168](https://github.com/NewGraphEnvironment/link/issues/168)
+decouple bcfp compare from pipeline,
+[\#169](https://github.com/NewGraphEnvironment/link/issues/169) simplify
+`lnk_persist_init` after rtj#145,
+[\#170](https://github.com/NewGraphEnvironment/link/issues/170) S3-based
+consolidate. Plus rtj#145 (rebuild cypher snapshot with fwa-dump tables
+ONLY) and fresh#199 (reopened — M4 PG over-tuning evidence).
+
+Run result: 217-WSG BC stream network model in M4 `fresh` schema.
+Annotated parity CSV at
+`data-raw/logs/provincial_parity/20260514_0622_*_annotated.csv` — 91
+`UNEXPLAINED` rows at `|diff_pct| >= 2%` (acceptance bar still not met;
+investigation queue for next session).
+
 ## link 0.36.0
 
 Closes [\#162](https://github.com/NewGraphEnvironment/link/issues/162).
