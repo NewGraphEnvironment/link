@@ -66,15 +66,24 @@ The link pipeline produces the BC freshwater network model — PG `fresh.*` tabl
 - [x] `/code-check` round 1 clean (1 dead assignment noted, removed).
 - [ ] Commit "Update run_provincial_parity.R: PG-state resume check + --force"
 
-## Phase 7 — Smoke matrix (1-WSG, 4 cache states)
+## Phase 7 — Smoke matrix (1-WSG, 4 cache states) — DONE
 
-Pick smallest available WSG (ADMS or DEAD). Run on M4, local fwapg.
+Ran against isolated schema `fresh_smoke168` on M4 (DEAD WSG, ~12k segments). Schema dropped after smoke; canonical `fresh.*` untouched.
 
-- [ ] **State A — empty:** delete RDS, drop WSG from `<persist_schema>.streams`. Run loop. Expect: pipeline + compare fire, PG populated, RDS written. Wall time ~80s.
-- [ ] **State B — pipeline-cached:** keep PG state from A, delete RDS only. Run loop. Expect: skip pipeline, run compare only, RDS written. Wall time ~3-5s.
-- [ ] **State C — fully cached:** keep PG + RDS from B. Run loop. Expect: "cached, skip" message, no-op. Wall time <1s per WSG.
-- [ ] **State D — `--force`:** keep PG + RDS. Run with `--force`. Expect: pipeline + compare re-run, RDS overwritten. Wall time ~80s.
-- [ ] Document each outcome in `progress.md` with wall times.
+| State | Setup | Wall | Outcome |
+|-------|-------|------|---------|
+| A — empty | drop schema + RDS | 57s | pipeline + compare fired, 42 rollup rows, RDS written; `<schema>.streams` + per-species habitat + barriers populated |
+| B — pipeline-cached | drop RDS only | 9s | `[compare-only]` log marker, 42 rows, RDS written (~6× speedup vs A) |
+| C — fully cached | both intact | 2s | `(cached, skip)` no work |
+| D — `--force` | both intact | 56s | pipeline + compare re-fired regardless of cache state |
+
+Post-pipeline PG state: `fresh_smoke168.streams` = 12,301 rows for DEAD (matches canonical `fresh.streams` count); 6 per-species habitat tables created (BT, CH, CO, PK, SK, ST); `fresh_smoke168.barriers` populated (confirms `lnk_barriers_unify` always-on change works).
+
+- [x] State A: empty → pipeline + compare fire.
+- [x] State B: pipeline-cached → compare-only fires.
+- [x] State C: fully cached → skip.
+- [x] State D: `--force` → both re-fire.
+- [x] Decoupled architecture verified end-to-end against live DB.
 
 ## Phase 8 — `devtools::check()` + release v0.37.0
 
