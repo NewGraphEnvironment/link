@@ -23,7 +23,8 @@ suppressPackageStartupMessages({
 
 # Relative — script is run from data-raw/, so this works on every host
 # (M4, M1, cypher) without path patching.
-source("compare_bcfishpass_wsg.R")
+source("wsg_pipeline_run.R")
+source("wsg_compare.R")
 
 # CLI args:
 #   --wsgs=<comma-list>  Restrict to a WSG subset (distributed split).
@@ -206,8 +207,36 @@ for (w in wsgs) {
   cat(format(Sys.time(), "%H:%M:%S"), "  ", w, " ... ", sep = "")
   t0 <- Sys.time()
   tryCatch({
-    out <- compare_bcfishpass_wsg(wsg = w, config = cfg,
-                                  with_mapping_code = with_mapping_code)
+    out <- if (isTRUE(with_mapping_code)) {
+      # Mapping_code lens stays bundled via the lnk_compare_wsg wrapper
+      # — decoupling deferred per #168 scope. Wrapped in an anonymous
+      # function so `on.exit` has a frame to attach to (top-level script
+      # `on.exit` binds to globalenv and leaks conns over the loop).
+      (function() {
+        conn_local <- DBI::dbConnect(RPostgres::Postgres(),
+          host = "localhost", port = 5432, dbname = "fwapg",
+          user = "postgres", password = "postgres")
+        on.exit(try(DBI::dbDisconnect(conn_local), silent = TRUE), add = TRUE)
+        conn_ref <- DBI::dbConnect(RPostgres::Postgres(),
+          host = "localhost", port = 63333, dbname = "bcfishpass",
+          user = Sys.getenv("PG_USER_SHARE", "newgraph"),
+          password = Sys.getenv("PG_PASS_SHARE"))
+        on.exit(try(DBI::dbDisconnect(conn_ref), silent = TRUE), add = TRUE)
+        message(format(link::lnk_stamp(cfg, conn = conn_local, aoi = w),
+                       "markdown"))
+        res <- link::lnk_compare_wsg(
+          conn = conn_local, aoi = w, cfg = cfg,
+          loaded = loaded, reference = "bcfishpass",
+          conn_ref = conn_ref, with_mapping_code = TRUE
+        )
+        names(res$rollup)[names(res$rollup) == "ref_value"] <-
+          "bcfishpass_value"
+        res
+      })()
+    } else {
+      wsg_pipeline_run(wsg = w, config = cfg)
+      wsg_compare(wsg = w, config = cfg)
+    }
     saveRDS(out, out_rds)
     # `out` is either a tibble (rollup-only) or list(rollup, mapping_code).
     # Use the rollup tibble for the timing CSV's `rows` column either way.

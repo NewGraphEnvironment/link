@@ -104,7 +104,8 @@ build_config <- function(swaps) {
 # -----------------------------------------------------------------------------
 # Run the pipeline for one config, return rollup + rules.yaml CO block.
 # -----------------------------------------------------------------------------
-source("data-raw/compare_bcfishpass_wsg.R")
+source("data-raw/wsg_pipeline_run.R")
+source("data-raw/wsg_compare.R")
 
 run_one <- function(config_name, spec) {
   message(sprintf("[%s] building config", config_name))
@@ -116,7 +117,8 @@ run_one <- function(config_name, spec) {
 
   message(sprintf("[%s] running BABL pipeline", config_name))
   t0 <- Sys.time()
-  rollup <- compare_bcfishpass_wsg(demo_wsg, cfg)
+  wsg_pipeline_run(demo_wsg, cfg)
+  rollup <- wsg_compare(demo_wsg, cfg)
   elapsed <- as.numeric(Sys.time() - t0, units = "secs")
   message(sprintf("[%s] elapsed %.1fs", config_name, elapsed))
 

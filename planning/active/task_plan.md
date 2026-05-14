@@ -45,13 +45,14 @@ The link pipeline produces the BC freshwater network model — PG `fresh.*` tabl
 
 ## Phase 5 — `data-raw/` split
 
-- [ ] `git mv data-raw/compare_bcfishpass_wsg.R data-raw/wsg_compare.R`
-- [ ] Edit `data-raw/wsg_compare.R`: function becomes `wsg_compare(wsg, config, reference = "bcfishpass", species = NULL)`. Removes pipeline orchestration; calls `link::lnk_compare_rollup()`. Keeps the `ref_value → bcfishpass_value` rename when `reference == "bcfishpass"`.
-- [ ] Write `data-raw/wsg_pipeline_run.R`: function `wsg_pipeline_run(wsg, config, dams = TRUE, cleanup_working = TRUE)`. Opens local fwapg conn, stamps via `lnk_stamp`, calls `link::lnk_pipeline_run()`. Returns invisibly.
-- [ ] Update `data-raw/_targets.R` (3 references at lines 49, 69, 78): source both new files; replace `compare_bcfishpass_wsg(wsg, config)` with `wsg_pipeline_run(wsg, config); wsg_compare(wsg, config)`.
-- [ ] Update `data-raw/regress_dams_isolation.R`: same pattern.
-- [ ] Update `data-raw/rule_flexibility_demo.R`: same pattern.
-- [ ] `/code-check` clean
+- [x] `git mv data-raw/compare_bcfishpass_wsg.R data-raw/wsg_compare.R`
+- [x] Edit `data-raw/wsg_compare.R`: function `wsg_compare(wsg, config, species, reference = "bcfishpass")`. Removes pipeline orchestration; calls `link::lnk_compare_rollup()`. Keeps the `ref_value → bcfishpass_value` rename when `reference == "bcfishpass"`.
+- [x] Write `data-raw/wsg_pipeline_run.R`: function `wsg_pipeline_run(wsg, config, dams = TRUE, cleanup_working = TRUE)`. Opens local fwapg conn, stamps via `lnk_stamp`, calls `link::lnk_pipeline_run()`. Returns invisibly.
+- [x] Update `data-raw/_targets.R` — source both new files; tar_map target bodies now call `wsg_pipeline_run; wsg_compare` (return value of last expression becomes target value).
+- [x] Update `data-raw/regress_dams_isolation.R`: same pattern; `dams` flag now passed to `wsg_pipeline_run`.
+- [x] Update `data-raw/rule_flexibility_demo.R`: same pattern.
+- [x] Update `data-raw/run_provincial_parity.R` source + call site (loop body retains the cache-skip — Phase 6 rewrites that). Mapping_code branch wraps the bundled `lnk_compare_wsg(with_mapping_code = TRUE)` flow in an IIFE so `on.exit` has a real frame.
+- [x] `/code-check` round 1 found connection-leak bug (`on.exit` in top-level for-loop binds to globalenv, doesn't fire); fixed via IIFE wrap. Round 2 clean.
 - [ ] Commit "Split compare_bcfishpass_wsg.R into wsg_pipeline_run.R + wsg_compare.R"
 
 ## Phase 6 — `data-raw/run_provincial_parity.R` resume-check rewrite
