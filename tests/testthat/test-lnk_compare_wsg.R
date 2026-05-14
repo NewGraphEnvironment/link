@@ -118,159 +118,88 @@ test_that("lnk_compare_wsg rejects schema with characters outside the SQL identi
 # Composition: rollup-only path calls pipeline phases in order
 # ---------------------------------------------------------------------------
 
-test_that("lnk_compare_wsg errors before persist when active_species is empty", {
-  m_setup <- function(...) invisible(NULL)
-  m_load <- function(...) invisible(NULL)
-  m_prepare <- function(...) invisible(NULL)
-  m_crossings <- function(...) invisible(NULL)
-  m_break <- function(...) invisible(NULL)
-  m_classify <- function(...) invisible(NULL)
-  m_connect <- function(...) invisible(NULL)
-  m_species <- function(...) character(0)  # empty
-  m_persist_init_called <- FALSE
-  m_persist_init <- function(...) {
-    m_persist_init_called <<- TRUE; invisible(NULL)
+test_that("lnk_compare_wsg propagates lnk_pipeline_run's empty-species error", {
+  # After #168 decoupling, the "no active species" error originates inside
+  # lnk_pipeline_run. Wrapper just propagates.
+  m_pipeline_run <- function(...) {
+    stop("no active species in ADMS — bundle empty", call. = FALSE)
   }
-  m_persist_called <- FALSE
-  m_persist <- function(...) {
-    m_persist_called <<- TRUE; invisible(NULL)
+  m_rollup_called <- FALSE
+  m_rollup <- function(...) {
+    m_rollup_called <<- TRUE; tibble::tibble()
   }
-  m_exec <- function(...) 1L
 
   with_mocked_bindings(
-    lnk_pipeline_setup = m_setup,
-    lnk_pipeline_load = m_load,
-    lnk_pipeline_prepare = m_prepare,
-    lnk_pipeline_crossings = m_crossings,
-    lnk_pipeline_break = m_break,
-    lnk_pipeline_classify = m_classify,
-    lnk_pipeline_connect = m_connect,
-    lnk_pipeline_species = m_species,
-    lnk_persist_init = m_persist_init,
-    lnk_pipeline_persist = m_persist,
+    lnk_pipeline_run = m_pipeline_run,
+    lnk_compare_rollup = m_rollup,
     {
-      with_mocked_bindings(
-        dbExecute = m_exec,
-        .package = "DBI",
-        {
-          expect_error(
-            lnk_compare_wsg(
-              conn = mock_conn(), aoi = "ADMS",
-              cfg = mock_cfg(), loaded = mock_loaded(),
-              reference = "bcfishpass", conn_ref = mock_conn()
-            ),
-            "no active species"
-          )
-        }
+      expect_error(
+        lnk_compare_wsg(
+          conn = mock_conn(), aoi = "ADMS",
+          cfg = mock_cfg(), loaded = mock_loaded(),
+          reference = "bcfishpass", conn_ref = mock_conn()
+        ),
+        "no active species"
       )
     }
   )
 
-  # persist must not have been called with empty species
-  expect_false(m_persist_init_called)
-  expect_false(m_persist_called)
+  # compare_rollup must not have been called if pipeline_run errored
+  expect_false(m_rollup_called)
 })
 
-test_that("lnk_compare_wsg composes pipeline phases in expected order", {
+test_that("lnk_compare_wsg composes lnk_pipeline_run then lnk_compare_rollup (rollup-only path)", {
   calls <- character()
-  m_setup <- function(conn, schema, overwrite) {
-    calls <<- c(calls, "setup"); invisible(conn)
+  pipeline_args <- list()
+  rollup_args <- list()
+
+  m_pipeline_run <- function(conn, aoi, cfg, loaded, schema, dams,
+                             cleanup_working) {
+    calls <<- c(calls, "pipeline_run")
+    pipeline_args <<- list(cleanup_working = cleanup_working,
+                           dams = dams, schema = schema)
+    invisible(conn)
   }
-  m_load <- function(conn, aoi, cfg, loaded, schema) {
-    calls <<- c(calls, "load"); invisible(conn)
-  }
-  m_prepare <- function(conn, aoi, cfg, loaded, schema, conn_tunnel = NULL,
-                        ...) {
-    calls <<- c(calls, "prepare"); invisible(conn)
-  }
-  m_crossings <- function(conn, aoi, cfg, loaded, schema, ...) {
-    calls <<- c(calls, "crossings"); invisible(conn)
-  }
-  m_break <- function(conn, aoi, cfg, loaded, schema, ...) {
-    calls <<- c(calls, "break"); invisible(conn)
-  }
-  m_classify <- function(conn, aoi, cfg, loaded, schema, ...) {
-    calls <<- c(calls, "classify"); invisible(conn)
-  }
-  m_connect <- function(conn, aoi, cfg, loaded, schema, ...) {
-    calls <<- c(calls, "connect"); invisible(conn)
-  }
-  m_species <- function(cfg, loaded, aoi) {
-    calls <<- c(calls, "species"); c("BT","CH","CO","SK")
-  }
-  m_persist_init <- function(conn, cfg, species) {
-    calls <<- c(calls, "persist_init"); invisible(conn)
-  }
-  m_persist <- function(conn, aoi, cfg, species, schema) {
-    calls <<- c(calls, "persist"); invisible(conn)
-  }
-  m_rollup_link <- function(...) {
-    calls <<- c(calls, "rollup_link")
-    list(km = data.frame(species_code = "BT", spawning_km = 10,
-                         rearing_km = 20, rearing_stream_km = 15,
-                         rearing_lake_centerline_km = 3,
-                         rearing_wetland_centerline_km = 2),
-         lake_ha = data.frame(species_code = "BT", lake_rearing_ha = 100),
-         wetland_ha = data.frame(species_code = "BT", wetland_rearing_ha = 50))
-  }
-  m_rollup_ref <- function(...) {
-    calls <<- c(calls, "rollup_ref")
-    data.frame(species_code = "BT", spawning_km = 11, rearing_km = 21,
-               rearing_stream_km = 16, rearing_lake_centerline_km = 3,
-               rearing_wetland_centerline_km = 2,
-               lake_rearing_ha = 105, wetland_rearing_ha = 50)
-  }
-  m_exec <- function(conn, sql) {
-    if (grepl("DROP", sql)) calls <<- c(calls, "exec_drop")
-    1L
+  m_rollup <- function(conn, aoi, cfg, reference, conn_ref, species) {
+    calls <<- c(calls, "rollup")
+    rollup_args <<- list(reference = reference, species = species)
+    tibble::tibble(
+      wsg = aoi, species = "BT",
+      habitat_type = c("spawning", "rearing", "lake_rearing",
+                       "wetland_rearing", "rearing_stream",
+                       "rearing_lake_centerline",
+                       "rearing_wetland_centerline"),
+      unit = c("km", "km", "ha", "ha", "km", "km", "km"),
+      link_value = 1, ref_value = 1, diff_pct = 0)
   }
 
   with_mocked_bindings(
-    lnk_pipeline_setup = m_setup,
-    lnk_pipeline_load = m_load,
-    lnk_pipeline_prepare = m_prepare,
-    lnk_pipeline_crossings = m_crossings,
-    lnk_pipeline_break = m_break,
-    lnk_pipeline_classify = m_classify,
-    lnk_pipeline_connect = m_connect,
-    lnk_pipeline_species = m_species,
-    lnk_persist_init = m_persist_init,
-    lnk_pipeline_persist = m_persist,
-    .lnk_compare_wsg_rollup_link = m_rollup_link,
-    .lnk_compare_wsg_rollup_reference = m_rollup_ref,
+    lnk_pipeline_run = m_pipeline_run,
+    lnk_compare_rollup = m_rollup,
     {
-      with_mocked_bindings(
-        dbExecute = m_exec,
-        .package = "DBI",
-        {
-          result <- lnk_compare_wsg(
-            conn = mock_conn(), aoi = "ADMS",
-            cfg = mock_cfg(), loaded = mock_loaded(),
-            reference = "bcfishpass", conn_ref = mock_conn(),
-            species = "BT", cleanup_working = FALSE
-          )
-        }
+      result <- lnk_compare_wsg(
+        conn = mock_conn(), aoi = "ADMS",
+        cfg = mock_cfg(), loaded = mock_loaded(),
+        reference = "bcfishpass", conn_ref = mock_conn(),
+        species = "BT", cleanup_working = FALSE
       )
     }
   )
 
-  # Pipeline phases in correct order, before rollup queries.
-  expected_order <- c(
-    "exec_drop",  # defensive reset
-    "setup", "load", "prepare", "crossings", "break", "classify", "connect",
-    "species",    # active_species resolution
-    "persist_init", "persist",
-    "rollup_link", "rollup_ref"
-  )
-  expect_equal(calls, expected_order)
+  # Wrapper invokes pipeline_run first, then compare_rollup.
+  expect_equal(calls, c("pipeline_run", "rollup"))
+  # cleanup_working passes through verbatim when with_mapping_code = FALSE.
+  expect_false(pipeline_args$cleanup_working)
+  expect_true(pipeline_args$dams)
+  # Caller-passed species threaded through.
+  expect_equal(rollup_args$species, "BT")
+  expect_equal(rollup_args$reference, "bcfishpass")
 
   # Return shape
   expect_named(result, c("rollup", "mapping_code"))
   expect_null(result$mapping_code)
   expect_s3_class(result$rollup, "tbl_df")
-  # 7 habitat types × 1 species
   expect_equal(nrow(result$rollup), 7L)
-  expect_setequal(unique(result$rollup$species), "BT")
 })
 
 # ---------------------------------------------------------------------------
@@ -369,36 +298,22 @@ test_that(".lnk_compare_wsg_assemble_rollup handles NA ref values (not modelled)
 
 test_that("lnk_compare_wsg composes mapping_code branch when with_mapping_code=TRUE", {
   calls <- character()
-  m_phase <- function(name) function(...) {
-    calls <<- c(calls, name); invisible(NULL)
+  pipeline_args <- list()
+
+  m_pipeline_run <- function(conn, aoi, cfg, loaded, schema, dams,
+                             cleanup_working) {
+    calls <<- c(calls, "pipeline_run")
+    # mapping_code branch forces cleanup_working = FALSE on the pipeline
+    # call so the working schema survives for the mapping_code build.
+    pipeline_args <<- list(cleanup_working = cleanup_working)
+    invisible(conn)
   }
-  m_species <- function(...) {
-    calls <<- c(calls, "species"); c("BT","CH","CO","SK")
-  }
-  m_persist_init <- function(...) {
-    calls <<- c(calls, "persist_init"); invisible(NULL)
-  }
-  m_unify <- function(...) {
-    calls <<- c(calls, "barriers_unify"); invisible(NULL)
-  }
-  m_persist <- function(...) {
-    calls <<- c(calls, "persist"); invisible(NULL)
-  }
-  m_rollup_link <- function(...) {
-    calls <<- c(calls, "rollup_link")
-    list(km = data.frame(species_code = "BT", spawning_km = 10,
-                         rearing_km = 20, rearing_stream_km = 15,
-                         rearing_lake_centerline_km = 3,
-                         rearing_wetland_centerline_km = 2),
-         lake_ha = data.frame(species_code = "BT", lake_rearing_ha = 100),
-         wetland_ha = data.frame(species_code = "BT", wetland_rearing_ha = 50))
-  }
-  m_rollup_ref <- function(...) {
-    calls <<- c(calls, "rollup_ref")
-    data.frame(species_code = "BT", spawning_km = 11, rearing_km = 21,
-               rearing_stream_km = 16, rearing_lake_centerline_km = 3,
-               rearing_wetland_centerline_km = 2,
-               lake_rearing_ha = 105, wetland_rearing_ha = 50)
+  m_rollup <- function(...) {
+    calls <<- c(calls, "rollup")
+    tibble::tibble(
+      wsg = "ADMS", species = "BT",
+      habitat_type = "spawning", unit = "km",
+      link_value = 10, ref_value = 11, diff_pct = -9.1)
   }
   m_mc <- function(...) {
     calls <<- c(calls, "mapping_code_branch")
@@ -410,19 +325,8 @@ test_that("lnk_compare_wsg composes mapping_code branch when with_mapping_code=T
   m_exec <- function(...) 1L
 
   with_mocked_bindings(
-    lnk_pipeline_setup = m_phase("setup"),
-    lnk_pipeline_load = m_phase("load"),
-    lnk_pipeline_prepare = m_phase("prepare"),
-    lnk_pipeline_crossings = m_phase("crossings"),
-    lnk_pipeline_break = m_phase("break"),
-    lnk_pipeline_classify = m_phase("classify"),
-    lnk_pipeline_connect = m_phase("connect"),
-    lnk_pipeline_species = m_species,
-    lnk_persist_init = m_persist_init,
-    lnk_barriers_unify = m_unify,
-    lnk_pipeline_persist = m_persist,
-    .lnk_compare_wsg_rollup_link = m_rollup_link,
-    .lnk_compare_wsg_rollup_reference = m_rollup_ref,
+    lnk_pipeline_run = m_pipeline_run,
+    lnk_compare_rollup = m_rollup,
     .lnk_compare_wsg_mapping_code = m_mc,
     {
       with_mocked_bindings(
@@ -441,17 +345,11 @@ test_that("lnk_compare_wsg composes mapping_code branch when with_mapping_code=T
     }
   )
 
-  # Order check: barriers_unify between persist_init and persist.
-  expect_true(which(calls == "barriers_unify") >
-              which(calls == "persist_init"))
-  expect_true(which(calls == "barriers_unify") <
-              which(calls == "persist"))
-
-  # mapping_code_branch fires AFTER rollup queries (additive on the
-  # same network state — rollup numbers don't depend on mapping_code
-  # output).
-  expect_true(which(calls == "mapping_code_branch") >
-              which(calls == "rollup_ref"))
+  # Pipeline runs first (forced cleanup_working=FALSE so mapping_code
+  # build has the working schema), then rollup reads persisted state,
+  # then mapping_code branch fires (additive on the same network state).
+  expect_equal(calls, c("pipeline_run", "rollup", "mapping_code_branch"))
+  expect_false(pipeline_args$cleanup_working)
 
   expect_named(result, c("rollup", "mapping_code"))
   expect_s3_class(result$mapping_code, "tbl_df")

@@ -35,10 +35,12 @@ The link pipeline produces the BC freshwater network model — PG `fresh.*` tabl
 
 ## Phase 4 — Refactor `R/lnk_compare_wsg.R` as wrapper
 
-- [ ] Replace body of `lnk_compare_wsg()` for rollup-only path: calls `lnk_pipeline_run() + lnk_compare_rollup()`. For `with_mapping_code=TRUE` retain the current bundled flow (working-schema-based mapping_code build kept intact — decoupling deferred).
-- [ ] Verify the 5 existing tests in `tests/testthat/test-lnk_compare_wsg.R` still pass unchanged (arg validation + phase-composition assertions).
-- [ ] `Rscript -e 'devtools::test(filter = "lnk_compare_wsg")' 2>&1 | grep -E "(FAIL|ERROR|PASS)" | tail -5`
-- [ ] `/code-check` clean
+- [x] Replace body of `lnk_compare_wsg()`: both paths now call `lnk_pipeline_run() + lnk_compare_rollup()`. Mapping_code branch additionally calls `.lnk_compare_wsg_mapping_code` after the rollup; forces `cleanup_working = FALSE` on the pipeline call so the working schema survives the mapping_code build.
+- [x] **Behavior shift documented:** active-species set is now discovered from PG state (post-persist), not `cfg$species ∩ wsg_species_presence` (pre-persist). Equivalent on a fresh single-call run; future-proofs `lnk_compare_rollup` against config drift between modelling + comparison.
+- [x] Update existing tests in `tests/testthat/test-lnk_compare_wsg.R` — composition tests now mock `lnk_pipeline_run` + `lnk_compare_rollup` at the new boundary instead of per-phase mocks. Arg-validation tests unchanged.
+- [x] `Rscript -e 'devtools::test(filter = "lnk_compare_wsg")'` — 55 PASS, 0 FAIL. Full suite: 1172 PASS / 0 FAIL.
+- [x] `lintr::lint("R/lnk_compare_wsg.R")` — 46 lints (down from 48 pre-existing on main; refactor removed two sprintf blocks).
+- [x] `/code-check` round 1 clean.
 - [ ] Commit "Refactor lnk_compare_wsg as wrapper over lnk_pipeline_run + lnk_compare_rollup"
 
 ## Phase 5 — `data-raw/` split
