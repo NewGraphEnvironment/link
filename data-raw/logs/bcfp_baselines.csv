@@ -5,3 +5,15 @@ run_started_pdt,host,run_label,link_schema,bcfp_model_run_id,bcfp_model_version,
 2026-05-04 23:02,MacBook-Pro-2.local,provincial_default_rearbreaks,fresh_default_rearbreaks,120,v0.7.14-113-ga7373af,2026-04-28 23:17,auto-stamped at run_provincial_parity.R start
 2026-05-07 16:10,runnervmeorf1,csv-sync-20260507,n/a,,v0.7.14-125-g6e9cf1c,2026-05-06T04:15:41Z,auto-append by csv-sync; head_sha=6e9cf1c
 2026-05-13 05:01,runnervmeorf1,csv-sync-20260513,n/a,,v0.7.14-141-g05057f9,2026-05-13T03:55:54Z,auto-append by csv-sync; head_sha=05057f9
+2026-05-13 16:39,MacBook-Pro-2.local,snapshot-20260513,n/a,,v0.7.14-141-g05057f9,2026-05-13T03:55:54Z,manual snapshot via data-raw/snapshot_bcfp.sh; head_sha=05057f9
+2026-05-13 17:14,MacBook-Pro-2.local,provincial_parity,fresh,122,v0.7.14-141-g05057f9,2026-05-12 20:28,auto-stamped at run_provincial_parity.R start
+2026-05-13 17:44,MacBook-Pro-2.local,provincial_parity,fresh,122,v0.7.14-141-g05057f9,2026-05-12 20:28,auto-stamped at run_provincial_parity.R start
+2026-05-13 18:18,MacBook-Pro-2.local,provincial_parity,fresh,122,v0.7.14-141-g05057f9,2026-05-12 20:28,auto-stamped at run_provincial_parity.R start
+2026-05-13 18:28,MacBook-Pro-2.local,provincial_parity,fresh,122,v0.7.14-141-g05057f9,2026-05-12 20:28,auto-stamped at run_provincial_parity.R start
+2026-05-13 18:32,MacBook-Pro-2.local,provincial_parity,fresh,122,v0.7.14-141-g05057f9,2026-05-12 20:28,auto-stamped at run_provincial_parity.R start
+2026-05-13 18:39,MacBook-Pro-2.local,provincial_parity,fresh,122,v0.7.14-141-g05057f9,2026-05-12 20:28,auto-stamped at run_provincial_parity.R start
+2026-05-13 22:23,MacBook-Pro-2.local,snapshot-20260514,n/a,,v0.7.14-141-g05057f9,2026-05-13T03:55:54Z,manual snapshot via data-raw/snapshot_bcfp.sh; head_sha=05057f9
+2026-05-13 22:36,MacBook-Pro-2.local,provincial_parity,fresh,122,v0.7.14-141-g05057f9,2026-05-12 20:28,auto-stamped at run_provincial_parity.R start
+2026-05-13 22:45,MacBook-Pro-2.local,snapshot-20260514,n/a,,v0.7.14-141-g05057f9,2026-05-13T03:55:54Z,manual snapshot via data-raw/snapshot_bcfp.sh; head_sha=05057f9
+2026-05-13 22:48,MacBook-Pro-2.local,provincial_parity,fresh,122,v0.7.14-141-g05057f9,2026-05-12 20:28,auto-stamped at run_provincial_parity.R start
+2026-05-14 06:00,MacBook-Pro-2.local,provincial_parity,fresh,122,v0.7.14-141-g05057f9,2026-05-12 20:28,auto-stamped at run_provincial_parity.R start

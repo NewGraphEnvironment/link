@@ -177,6 +177,36 @@ The 2026-05-12 → 13 cost incident left 3 cyphers running ~10 hours unattended 
 
 Use `trap EXIT` defense if you write a wrapper. Without a wrapper, you do this manually as Step 10 above.
 
+## LPT split gotcha (added 2026-05-13 after fix)
+
+**Symptom**: Orchestrator log shows `[LPT] no timing CSVs found; using deterministic split` and buckets come out roughly equal in size (`m4=44  m1=44  cypher_total=129` for 217 WSGs = 44 per cypher), ignoring host_speeds entirely.
+
+**Why it matters**: M1 is the slowest host (~0.83×), cyphers are fastest (~1.83×). Equal-split forces the cyphers to idle ~40% of wall while waiting for M1 → run wall is ~M1-bound. With proper weighting, runtime drops ~25-30%.
+
+**Trigger**: No `_per_wsg_times.csv` files in `data-raw/logs/provincial_parity/` at the top level. Happens if you archive prior runs (which moves the timing CSVs to `archive/<TS>/`) without inheriting prior timing data into the new run.
+
+**Fix landed 2026-05-13** (`trifecta_provincial.sh` SPLIT_R block): when no timing CSV exists, the fallback now uses host_speeds-weighted alphabetical split (`floor(n * speed_factor / sum(speed_factors))` per host, remainder to highest-factor hosts). Log line is now `[LPT] no timing CSVs found; using host_speeds-weighted split` and reports per-host bucket sizes.
+
+**Tradeoff vs LPT-with-timings**: still doesn't know which specific WSGs are heavy (BULK / THOM heavyweights vs lightweight DEAD / ELKR). LPT-with-timings places heavyweights first; weighted-split is alphabetical. Better than equal split, worse than real LPT. The remedy: after the first successful provincial run, the per_wsg_times.csv landing in the top level gives the next dispatch real LPT data.
+
+## Tunnel architecture gotchas (added 2026-05-13 after fix)
+
+All hosts run the link pipeline against their OWN local fwapg, and ALL HOSTS run the bcfp comparison against `localhost:63333` (per `compare_bcfishpass_wsg.R:48`). How each host reaches the bcfp tunnel at db_newgraph:
+
+| Host | How it reaches bcfp |
+|---|---|
+| M4 | Operator's persistent tunnel + `trifecta_provincial.sh` opens an idempotent inline tunnel as backup (no harm if already up — bind fails silently, existing tunnel preserved) |
+| M1 | **Reverse forward from M4** (`ssh -R 63333:127.0.0.1:63333 m1`) — M1's localhost:63333 → M4's localhost:63333 → db_newgraph:5432. M1 does NOT need its own working db_newgraph identity. |
+| cypher[jobN] | Opens its OWN ssh tunnel via `ssh -L 63333 db_newgraph -N &` inside the generated wrapper script. Cyphers have `~/.ssh/id_db_newgraph` (passphrase-free, authorized on db_newgraph). |
+
+**Why M1 uses reverse-forward instead of opening its own tunnel:**
+
+M1's `~/.ssh/db_newgraph` private key IS authorized on db_newgraph, BUT it's passphrase-protected. Interactive ssh on M1 works because macOS Keychain caches the passphrase and feeds it to ssh transparently. Non-interactive ssh (orchestrator dispatch) cannot reach Keychain → key stays locked → "Permission denied (publickey)".
+
+History: Prior runs (e.g. 2026-05-12 with 67 M1 WSGs OK) worked only because the operator had manually opened a persistent tunnel on M1 from an interactive shell beforehand, and the dispatch happened to land while that tunnel was still up. Reboots (or any reason the tunnel dropped) silently broke the next dispatch.
+
+**Symptom of regression**: M1 WSG errors with `connection to server at "localhost", port 63333 failed: Connection refused`. Verify M4's tunnel is up (`pg_isready -h localhost -p 63333` on M4) and re-dispatch — the `-R` flag will reopen the forward.
+
 ## When to pause and ask the user
 
 | Situation | Why |
