@@ -20,15 +20,17 @@ Patch the original filename first so the smoke (Phase 3) validates on the known-
 
 ## Phase 2 — CLI surface on `province_run.sh`
 
-- [ ] Add `--wsgs=`, `--config=`, `--schema=`, `--no-cyphers`, `--force` to arg parser.
-- [ ] Defaults: `--config=bcfishpass`, `--schema=""` (use bundle default), `--wsgs=""` (full bundle).
-- [ ] Forward new flags to `trifecta_provincial.sh` invocation.
-- [ ] When `--no-cyphers`: skip Step 3 (cypher spin), Step 4 (cypher prep), Step 5 cypher iterations (M4+M1 archive only), Step 9 cypher consolidate sources (M1 only), Step 10 cypher burn (trap-EXIT no-op).
-- [ ] Step 8 ANN_CSV path: derive from `CONFIG_NAME` so non-bcfishpass bundles get `provincial_<config>/` not hardcoded `provincial_parity/`.
-- [ ] Auto-skip-smoke when `--no-cyphers` OR `--wsgs` is set. Place notice AFTER the `exec > >(tee -a "$LOG")` redirect so it lands in the log.
-- [ ] Update usage block.
-- [ ] `bash -n data-raw/province_run.sh` syntax-clean.
-- [ ] `/code-check` clean.
+- [x] Add `--wsgs=`, `--config=`, `--schema=`, `--no-cyphers`, `--force` to arg parser. Defaults: `bcfishpass`, empty schema, no filter, cyphers on, no force.
+- [x] Build `DISPATCH_FLAGS` for passthrough; forwarded to `trifecta_provincial.sh` invocation in Step 7.
+- [x] Gate Step 3 (cypher spin) + Step 4 (cypher prep) behind `if NO_CYPHERS=0`. Step 5 only iterates cypher archive when `NO_CYPHERS=0` (M4+M1 always archive). `CYPHERS_UP=1` only sets inside the cypher branch, so trap-EXIT burn correctly no-ops under `--no-cyphers`.
+- [x] Step 7 omits `--cy-workspaces=...` when `--no-cyphers` or `--wsgs` is set (trifecta_provincial.sh derives the M4+M1-only plan from DISPATCH_FLAGS).
+- [x] Step 8 ANN_CSV path config-aware: `provincial_parity/` (bcfishpass back-compat) vs `provincial_<config>/`.
+- [x] Step 9 consolidate: split into multi-host (M1+cy1+cy2+cy3) vs M1-only branches. Target schema resolved via `--schema` first, else `lnk_config(CONFIG_NAME)$pipeline$schema` lookup with explicit error/empty/NULL guards (round-1 code-check fix; round 1 had silent fallback masking misconfigured `--config=`).
+- [x] Auto-skip-smoke when `--no-cyphers` OR `--wsgs` is set. Notice placed AFTER `exec > >(tee -a "$LOG")` redirect so it lands in the log.
+- [x] Update usage block.
+- [x] `bash -n data-raw/province_run.sh` syntax-clean.
+- [x] Empirically verified TARGET_SCHEMA lookup: bcfishpass → "fresh", default → "fresh" (operator must `--schema=fresh_default` for default-bundle isolation), BOGUS → errors loud.
+- [x] `/code-check` round 1: 1 real bug (TARGET_SCHEMA fallback) fixed. Round 2 clean.
 - [ ] Commit "province_run.sh: --wsgs / --config / --schema / --no-cyphers / --force passthrough"
 
 ## Phase 3 — Integration test (M4+M1, 16-WSG default-bundle, pre-rename)

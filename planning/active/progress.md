@@ -9,4 +9,5 @@
 - Created branch `172-provincial-run-autonomy-renames` off main (v0.37.0 baseline).
 - Scaffolded PWF baseline (`task_plan.md`, `findings.md`, `progress.md`) with 7 approved phases.
 - **Phase 1 done.** Added `--wsgs=`, `--no-cyphers`, `--force` to `trifecta_provincial.sh`. Fixed phantom-cy (R's `paste0("cy", integer(0))` → `"cy"` recycling bug) via 3-branch `cy_host_keys`. Hardened empty-`CY_WORKSPACES` init. `/code-check` round 1 caught a silent-abort bug (R `stop()` exits bash without operator-visible message under `SPLIT_OUT=$(...)`); fixed with explicit `||` block dumping SPLIT_OUT to stderr. Round 2 clean. SPLIT_R logic verified via isolated R run.
-- Next: Phase 2 — propagate the same flags through `province_run.sh` umbrella.
+- **Phase 2 done.** Added 5 new flags to `province_run.sh`. Gated Step 3+4 (cypher spin/prep), Step 5 cypher archive, Step 9 cypher-source consolidate, and trap-EXIT burn behind `if NO_CYPHERS=0`. Step 7 omits `--cy-workspaces=...` under `--no-cyphers` or `--wsgs`. Step 8 ANN_CSV path is config-aware. Auto-skip-smoke fires when smoke assumptions don't hold. `/code-check` round 1 caught a silent TARGET_SCHEMA fallback bug (masked misconfigured `--config=` with hardcoded "fresh"); fixed with explicit guards. Round 2 clean.
+- Next: Phase 3 — M4+M1 16-WSG integration test on the patched-but-not-yet-renamed scripts.
