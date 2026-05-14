@@ -46,7 +46,8 @@
 library(targets)
 library(tarchetypes)
 
-source("compare_bcfishpass_wsg.R")
+source("wsg_pipeline_run.R")
+source("wsg_compare.R")
 
 tar_option_set(
   packages = c("link", "fresh", "DBI", "RPostgres", "tibble", "dplyr")
@@ -66,7 +67,10 @@ list(
     values = tibble::tibble(wsg = wsgs),
     tar_target(
       comparison_bcfishpass,
-      compare_bcfishpass_wsg(wsg = wsg, config = cfg_bcfishpass)
+      {
+        wsg_pipeline_run(wsg = wsg, config = cfg_bcfishpass)
+        wsg_compare(wsg = wsg, config = cfg_bcfishpass)
+      }
     )
   ),
 
@@ -75,7 +79,10 @@ list(
     values = tibble::tibble(wsg = wsgs),
     tar_target(
       comparison_default,
-      compare_bcfishpass_wsg(wsg = wsg, config = cfg_default)
+      {
+        wsg_pipeline_run(wsg = wsg, config = cfg_default)
+        wsg_compare(wsg = wsg, config = cfg_default)
+      }
     )
   ),
 

@@ -153,3 +153,105 @@ test_that("merge_lists handles empty inputs", {
   expect_equal(link:::.lnk_merge_lists(list(), list(x = 1)), list(x = 1))
   expect_equal(link:::.lnk_merge_lists(list(x = 1), list()), list(x = 1))
 })
+
+# --- .lnk_wsg_persisted ---
+
+test_that(".lnk_wsg_persisted rejects non-DBI conn", {
+  expect_error(
+    link:::.lnk_wsg_persisted(conn = "not-a-conn",
+                              cfg = lnk_config("bcfishpass"),
+                              aoi = "ADMS"),
+    "DBI"
+  )
+})
+
+test_that(".lnk_wsg_persisted rejects non-lnk_config cfg", {
+  conn <- structure(list(), class = "DBIConnection")
+  expect_error(
+    link:::.lnk_wsg_persisted(conn = conn,
+                              cfg = list(name = "x"),
+                              aoi = "ADMS"),
+    "cfg"
+  )
+})
+
+test_that(".lnk_wsg_persisted rejects invalid aoi", {
+  conn <- structure(list(), class = "DBIConnection")
+  cfg <- lnk_config("bcfishpass")
+  expect_error(
+    link:::.lnk_wsg_persisted(conn, cfg, aoi = ""),
+    "aoi"
+  )
+  expect_error(
+    link:::.lnk_wsg_persisted(conn, cfg, aoi = c("ADMS", "BULK")),
+    "aoi"
+  )
+})
+
+test_that(".lnk_wsg_persisted returns FALSE when streams table is absent", {
+  conn <- structure(list(), class = "DBIConnection")
+  cfg <- lnk_config("bcfishpass")
+
+  # Mock: information_schema returns no rows (table doesn't exist)
+  m_query <- function(conn, sql) {
+    if (grepl("information_schema", sql)) {
+      data.frame()
+    } else {
+      stop("Should not reach streams query when table is absent")
+    }
+  }
+
+  with_mocked_bindings(
+    dbGetQuery = m_query,
+    .package = "DBI",
+    {
+      expect_false(link:::.lnk_wsg_persisted(conn, cfg, "ADMS"))
+    }
+  )
+})
+
+test_that(".lnk_wsg_persisted returns TRUE when WSG has rows", {
+  conn <- structure(list(), class = "DBIConnection")
+  cfg <- lnk_config("bcfishpass")
+
+  m_query <- function(conn, sql) {
+    if (grepl("information_schema", sql)) {
+      data.frame(x = 1L)               # table exists
+    } else if (grepl("watershed_group_code", sql)) {
+      data.frame(x = 1L)               # WSG has rows
+    } else {
+      stop("Unexpected query")
+    }
+  }
+
+  with_mocked_bindings(
+    dbGetQuery = m_query,
+    .package = "DBI",
+    {
+      expect_true(link:::.lnk_wsg_persisted(conn, cfg, "ADMS"))
+    }
+  )
+})
+
+test_that(".lnk_wsg_persisted returns FALSE when table exists but WSG has no rows", {
+  conn <- structure(list(), class = "DBIConnection")
+  cfg <- lnk_config("bcfishpass")
+
+  m_query <- function(conn, sql) {
+    if (grepl("information_schema", sql)) {
+      data.frame(x = 1L)               # table exists
+    } else if (grepl("watershed_group_code", sql)) {
+      data.frame()                      # no rows for this WSG
+    } else {
+      stop("Unexpected query")
+    }
+  }
+
+  with_mocked_bindings(
+    dbGetQuery = m_query,
+    .package = "DBI",
+    {
+      expect_false(link:::.lnk_wsg_persisted(conn, cfg, "ADMS"))
+    }
+  )
+})

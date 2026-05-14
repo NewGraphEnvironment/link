@@ -14,18 +14,21 @@ suppressPackageStartupMessages({
 })
 
 setwd("/Users/airvine/Projects/repo/link/data-raw")
-source("compare_bcfishpass_wsg.R")
+source("wsg_pipeline_run.R")
+source("wsg_compare.R")
 
 cfg <- link::lnk_config("bcfishpass")
 
 cat("=== HARR with dams OFF (conn_tunnel = NULL) ===\n")
 t0 <- Sys.time()
-off <- compare_bcfishpass_wsg(wsg = "HARR", config = cfg, dams = FALSE)
+wsg_pipeline_run(wsg = "HARR", config = cfg, dams = FALSE)
+off <- wsg_compare(wsg = "HARR", config = cfg)
 cat(sprintf("(%.1fs)\n\n", as.numeric(Sys.time() - t0, units = "secs")))
 
 cat("=== HARR with dams ON (conn_tunnel = conn_ref) ===\n")
 t0 <- Sys.time()
-on  <- compare_bcfishpass_wsg(wsg = "HARR", config = cfg, dams = TRUE)
+wsg_pipeline_run(wsg = "HARR", config = cfg, dams = TRUE)
+on  <- wsg_compare(wsg = "HARR", config = cfg)
 cat(sprintf("(%.1fs)\n\n", as.numeric(Sys.time() - t0, units = "secs")))
 
 key <- c("wsg", "species", "habitat_type", "unit")

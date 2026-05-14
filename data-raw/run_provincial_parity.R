@@ -1,12 +1,25 @@
-# Provincial parity-only run — link 0.20.0 single-host baseline
+# Provincial parity-only run — single-host orchestrator loop.
 #
-# Loops over every WSG with any of our modelled species present, runs
-# compare_bcfishpass_wsg() with the bcfishpass bundle, saves per-WSG
-# rollup tibbles to `data-raw/logs/provincial_parity/<WSG>.rds`.
+# For each WSG with any modelled species present: run the link
+# pipeline (wsg_pipeline_run) and compare its persisted state against
+# bcfishpass (wsg_compare). Saves per-WSG rollup tibbles to
+# `data-raw/logs/provincial_parity/<WSG>.rds`.
 #
-# Resume-safe: skips WSGs whose RDS file already exists.
-# Error-tolerant: a per-WSG failure saves an error stub and moves on.
-# Logs progress + timing to `data-raw/logs/<TS>_provincial_parity.txt`.
+# Resume gate (#168 — PG state is canonical, RDS is diagnostic):
+#   pipeline_done = fresh.streams has rows for WSG
+#                   (via link:::.lnk_wsg_persisted)
+#   rollup_ok     = RDS exists, isn't an error stub, and (for
+#                   --with-mapping-code) has $mapping_code present
+#
+#   force          → re-run pipeline + compare
+#   both done      → skip
+#   pipeline only  → re-run compare only (~1-2s)
+#   neither        → run pipeline + compare
+#
+# `--force` bypasses both checks. Error-tolerant: a per-WSG failure
+# saves an error stub and moves on (or aborts the loop with
+# `--fail-fast`). Logs progress + timing to
+# `data-raw/logs/<TS>_provincial_parity.txt`.
 #
 # Known residuals at link 0.20.0:
 #   - HORS-class stream-order bypass (fresh#158 not yet shipped)
@@ -23,7 +36,8 @@ suppressPackageStartupMessages({
 
 # Relative — script is run from data-raw/, so this works on every host
 # (M4, M1, cypher) without path patching.
-source("compare_bcfishpass_wsg.R")
+source("wsg_pipeline_run.R")
+source("wsg_compare.R")
 
 # CLI args:
 #   --wsgs=<comma-list>  Restrict to a WSG subset (distributed split).
@@ -51,6 +65,12 @@ with_mapping_code <- "--with-mapping-code" %in% args
 # modeled reasons). Smoke runs pass --fail-fast so "WSG #1 failed"
 # doesn't waste 30 more WSGs of compute confirming the same failure.
 fail_fast <- "--fail-fast" %in% args
+
+# `--force` (no value): bypass both the PG-state and RDS resume checks.
+# Re-runs pipeline + compare for every WSG in `wsgs`. Use when external
+# state has shifted (fwapg refresh, bcfp tunnel rebuild, config edit)
+# and you want a clean rebuild rather than a continuation.
+force_run <- "--force" %in% args
 
 schema_arg <- args[grep("^--schema=", args)]
 if (length(schema_arg) > 0) {
@@ -197,17 +217,93 @@ stamp_bcfp_baseline <- function(config_name, link_schema) {
 
 stamp_bcfp_baseline(config_name, cfg$pipeline$schema)
 
+# Script-level conn for the resume-state probe. PG is the canonical
+# state — the RDS file is a diagnostic side-artifact, not the source
+# of truth for whether the modelling pipeline ran. The per-WSG
+# functions wsg_pipeline_run / wsg_compare each open their own
+# short-lived conns, so this is only for resume checks here.
+probe_conn <- DBI::dbConnect(RPostgres::Postgres(),
+  host = "localhost", port = 5432, dbname = "fwapg",
+  user = "postgres", password = "postgres")
+on.exit(try(DBI::dbDisconnect(probe_conn), silent = TRUE), add = TRUE)
+
+# RDS files saved when a WSG errors are stubs of shape
+# list(error = "<message>", elapsed_s = <numeric>). These do NOT
+# represent a successful comparison; resume logic must treat them
+# as if no rollup is cached so the WSG re-runs on next dispatch.
+.is_error_stub <- function(rds_path) {
+  if (!file.exists(rds_path)) return(FALSE)
+  x <- tryCatch(readRDS(rds_path), error = function(e) NULL)
+  is.list(x) && !is.data.frame(x) && "error" %in% names(x)
+}
+
+# Mapping_code path: PG-state resume doesn't capture mapping_code
+# output, so when --with-mapping-code is set we force a re-run unless
+# the RDS already holds a list with $mapping_code present.
+.rollup_has_mapping_code <- function(rds_path) {
+  if (!file.exists(rds_path)) return(FALSE)
+  x <- tryCatch(readRDS(rds_path), error = function(e) NULL)
+  is.list(x) && !is.data.frame(x) && "mapping_code" %in% names(x) &&
+    !is.null(x$mapping_code)
+}
+
 for (w in wsgs) {
   out_rds <- file.path(out_dir, paste0(w, ".rds"))
-  if (file.exists(out_rds)) {
-    cat(format(Sys.time(), "%H:%M:%S"), "  ", w, " (cached, skip)\n", sep = "")
+
+  # Resume gate. Four states:
+  #   force        → always re-run pipeline + compare.
+  #   fully cached → PG has rows AND a non-stub RDS exists.
+  #                  Skip; nothing to do.
+  #   compare only → PG has rows but RDS is missing or is an error
+  #                  stub. Skip pipeline, re-run compare only (~1-2s).
+  #   missing      → PG empty for this WSG. Run pipeline + compare.
+  pipeline_done <- link:::.lnk_wsg_persisted(probe_conn, cfg, w)
+  rollup_ok <- file.exists(out_rds) && !.is_error_stub(out_rds) &&
+    (!isTRUE(with_mapping_code) || .rollup_has_mapping_code(out_rds))
+
+  if (!isTRUE(force_run) && pipeline_done && rollup_ok) {
+    cat(format(Sys.time(), "%H:%M:%S"), "  ", w,
+        " (cached, skip)\n", sep = "")
     next
   }
-  cat(format(Sys.time(), "%H:%M:%S"), "  ", w, " ... ", sep = "")
+
+  do_pipeline <- isTRUE(force_run) || !pipeline_done ||
+    isTRUE(with_mapping_code)  # mapping_code path drives its own pipeline
+
+  cat(format(Sys.time(), "%H:%M:%S"), "  ", w, " ... ",
+      if (!do_pipeline) "[compare-only] " else "", sep = "")
   t0 <- Sys.time()
   tryCatch({
-    out <- compare_bcfishpass_wsg(wsg = w, config = cfg,
-                                  with_mapping_code = with_mapping_code)
+    out <- if (isTRUE(with_mapping_code)) {
+      # Mapping_code lens stays bundled via the lnk_compare_wsg wrapper
+      # — decoupling deferred per #168 scope. Wrapped in an anonymous
+      # function so `on.exit` has a frame to attach to (top-level script
+      # `on.exit` binds to globalenv and leaks conns over the loop).
+      (function() {
+        conn_local <- DBI::dbConnect(RPostgres::Postgres(),
+          host = "localhost", port = 5432, dbname = "fwapg",
+          user = "postgres", password = "postgres")
+        on.exit(try(DBI::dbDisconnect(conn_local), silent = TRUE), add = TRUE)
+        conn_ref <- DBI::dbConnect(RPostgres::Postgres(),
+          host = "localhost", port = 63333, dbname = "bcfishpass",
+          user = Sys.getenv("PG_USER_SHARE", "newgraph"),
+          password = Sys.getenv("PG_PASS_SHARE"))
+        on.exit(try(DBI::dbDisconnect(conn_ref), silent = TRUE), add = TRUE)
+        message(format(link::lnk_stamp(cfg, conn = conn_local, aoi = w),
+                       "markdown"))
+        res <- link::lnk_compare_wsg(
+          conn = conn_local, aoi = w, cfg = cfg,
+          loaded = loaded, reference = "bcfishpass",
+          conn_ref = conn_ref, with_mapping_code = TRUE
+        )
+        names(res$rollup)[names(res$rollup) == "ref_value"] <-
+          "bcfishpass_value"
+        res
+      })()
+    } else {
+      if (do_pipeline) wsg_pipeline_run(wsg = w, config = cfg)
+      wsg_compare(wsg = w, config = cfg)
+    }
     saveRDS(out, out_rds)
     # `out` is either a tibble (rollup-only) or list(rollup, mapping_code).
     # Use the rollup tibble for the timing CSV's `rows` column either way.

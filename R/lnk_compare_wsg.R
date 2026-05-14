@@ -157,107 +157,32 @@ lnk_compare_wsg <- function(conn, aoi, cfg, loaded,
   # when reference == 'bcfishpass' (the only supported reference today).
   # No additional gate needed.
 
-  # Defensive reset of per-WSG staging from any prior partial run.
-  DBI::dbExecute(conn, sprintf(
-    "DROP TABLE IF EXISTS %1$s.streams, %1$s.streams_habitat,
-     %1$s.streams_breaks CASCADE", schema))
+  # Run the modelling pipeline. When with_mapping_code = TRUE we keep
+  # the working schema so .lnk_compare_wsg_mapping_code can build the
+  # streams_access / streams_mapping_code intermediate tables on top of
+  # it; otherwise apply the caller's cleanup preference.
+  pipeline_cleanup <- if (isTRUE(with_mapping_code)) FALSE else cleanup_working
+  lnk_pipeline_run( # nolint: object_usage_linter
+    conn = conn, aoi = aoi, cfg = cfg, loaded = loaded,
+    schema = schema, dams = dams,
+    cleanup_working = pipeline_cleanup)
 
-  # =====================================================================
-  # Build phases — shared between rollup and mapping_code modes
-  # =====================================================================
-  lnk_pipeline_setup(conn, schema, overwrite = TRUE) # nolint: object_usage_linter
-  lnk_pipeline_load(conn, aoi = aoi, cfg = cfg, # nolint: object_usage_linter
-                    loaded = loaded, schema = schema)
-  lnk_pipeline_prepare(conn, aoi = aoi, cfg = cfg, # nolint: object_usage_linter
-                       loaded = loaded, schema = schema,
-                       conn_tunnel = if (dams) conn else NULL)
-  lnk_pipeline_crossings(conn, aoi = aoi, cfg = cfg, # nolint: object_usage_linter
-                         loaded = loaded, schema = schema)
-  lnk_pipeline_break(conn, aoi = aoi, cfg = cfg, # nolint: object_usage_linter
-                     loaded = loaded, schema = schema)
-  lnk_pipeline_classify(conn, aoi = aoi, cfg = cfg, # nolint: object_usage_linter
-                        loaded = loaded, schema = schema)
-  lnk_pipeline_connect(conn, aoi = aoi, cfg = cfg, # nolint: object_usage_linter
-                       loaded = loaded, schema = schema)
-
-  # Resolve active species set BEFORE persist. Empty here means the WSG
-  # has no presence for any bundle species — there's nothing to persist
-  # or compare. Error out before calling persist (which would otherwise
-  # run with an empty species vector and either no-op silently or fail
-  # with a less-clear downstream message).
-  active_species <- lnk_pipeline_species(cfg, loaded, aoi) # nolint: object_usage_linter
-  if (length(active_species) == 0L) {
-    stop("no active species in ", aoi,
-         " — cfg$species intersected with wsg_species_presence is empty.",
-         call. = FALSE)
-  }
-
-  # Persist init creates the province-wide target tables (streams,
-  # streams_habitat_<sp>, barriers). Always runs.
-  lnk_persist_init(conn, cfg, species = active_species) # nolint: object_usage_linter
-
-  # `with_mapping_code = TRUE`: build the unified per-WSG barriers
-  # table BEFORE persist so persist handles streams + habitat + barriers
-  # in one idempotent transaction. Mirrors data-raw/compare_bcfp_mapping_code.R
-  # ordering (link#152 cross-WSG dam_dnstr_ind fix).
-  if (isTRUE(with_mapping_code)) {
-    lnk_barriers_unify(conn, aoi = aoi, cfg = cfg, # nolint: object_usage_linter
-                       loaded = loaded, schema = schema)
-  }
-
-  # Persist per-WSG segment-level data to province-wide tables.
-  lnk_pipeline_persist(conn, aoi = aoi, cfg = cfg, # nolint: object_usage_linter
-                       species = active_species, schema = schema)
-
-  # Resolve final species list for the rollup. Caller-passed `species`
-  # is intersected with the pipeline-active set (anything outside that
-  # has no habitat data anyway).
-  if (is.null(species)) {
-    species <- active_species
-  } else {
-    species <- intersect(species, active_species)
-  }
-  if (length(species) == 0L) {
-    stop("no species to roll up in ", aoi, " (active=",
-         paste(active_species, collapse = ","),
-         ") after intersecting with caller-passed `species`.",
-         call. = FALSE)
-  }
-
-  # =====================================================================
-  # Rollup queries — link side
-  # =====================================================================
-  rollup_link <- .lnk_compare_wsg_rollup_link( # nolint: object_usage_linter
-    conn = conn, aoi = aoi, schema = schema, species = species)
-
-  # =====================================================================
-  # Rollup queries — reference side (dispatched on `reference`)
-  # =====================================================================
-  rollup_ref <- .lnk_compare_wsg_rollup_reference( # nolint: object_usage_linter
+  # Read persisted state + reference into the long-format rollup.
+  rollup <- lnk_compare_rollup( # nolint: object_usage_linter
+    conn = conn, aoi = aoi, cfg = cfg,
     reference = reference, conn_ref = conn_ref,
-    aoi = aoi, species = species)
+    species = species)
 
-  # =====================================================================
-  # Assemble long-format output
-  # =====================================================================
-  rollup <- .lnk_compare_wsg_assemble_rollup( # nolint: object_usage_linter
-    aoi = aoi, species = species,
-    rollup_link = rollup_link, rollup_ref = rollup_ref)
-
-  # =====================================================================
-  # Mapping_code branch — additive phases on the same network state
-  # =====================================================================
   mapping_code <- NULL
   if (isTRUE(with_mapping_code)) {
     mapping_code <- .lnk_compare_wsg_mapping_code( # nolint: object_usage_linter
       conn = conn, conn_ref = conn_ref,
       aoi = aoi, cfg = cfg, loaded = loaded,
       schema = schema, reference = reference)
-  }
-
-  # Optional cleanup.
-  if (isTRUE(cleanup_working)) {
-    DBI::dbExecute(conn, sprintf("DROP SCHEMA %s CASCADE", schema))
+    # Cleanup the working schema we kept for the mapping_code build.
+    if (isTRUE(cleanup_working)) {
+      DBI::dbExecute(conn, sprintf("DROP SCHEMA %s CASCADE", schema))
+    }
   }
 
   list(rollup = rollup, mapping_code = mapping_code)
