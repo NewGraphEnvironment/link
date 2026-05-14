@@ -11,18 +11,19 @@ The link pipeline produces the BC freshwater network model — PG `fresh.*` tabl
 - [x] `Rscript -e 'devtools::test(filter = "lnk_pipeline_run")'` — 16 PASS, 0 FAIL.
 - [x] `lintr::lint("R/lnk_pipeline_run.R")` — 1 indentation lint on DROP TABLE sprintf, matches existing pattern in `lnk_compare_wsg.R:162` (accepted, pre-existing style).
 - [x] `/code-check` clean on staged diff (round 1 clean).
-- [ ] Commit "Add lnk_pipeline_run — modelling umbrella for one WSG"
+- [x] Commit "Add lnk_pipeline_run — modelling umbrella for one WSG" (d4e046f)
 
 ## Phase 2 — `R/lnk_compare_rollup.R` (comparison-only)
 
-- [ ] Add `R/lnk_compare_rollup.R` with `lnk_compare_rollup(conn, aoi, cfg, reference = "bcfishpass", conn_ref = NULL, species = NULL)`. Reads `<persist_schema>.streams` + `streams_habitat_<sp>` (NOT working schema). Reference dispatch lifted from existing `.lnk_compare_wsg_rollup_reference`.
-- [ ] Adapt link-side rollup queries: today's working-schema long-format query (`R/lnk_compare_wsg.R:299-364`) becomes per-species queries on wide `streams_habitat_<sp>` joined to `streams`, UNION ALL into the existing long output shape. Lake/wetland ha queries adapt similarly.
-- [ ] Roxygen with `@examples` mirroring `lnk_compare_wsg`.
-- [ ] `devtools::document()`.
-- [ ] Add `tests/testthat/test-lnk_compare_rollup.R` — arg validation + reference dispatch.
-- [ ] Bit-identical-rollup test: same PG state, `lnk_compare_rollup()` must match `lnk_compare_wsg()` rollup column-for-column. Live DB test, skip-if-not-local gated.
-- [ ] `Rscript -e 'devtools::test(filter = "lnk_compare_rollup")' 2>&1 | grep -E "(FAIL|ERROR|PASS)" | tail -5`
-- [ ] `/code-check` clean
+- [x] Add `R/lnk_compare_rollup.R` with `lnk_compare_rollup(conn, aoi, cfg, reference = "bcfishpass", conn_ref = NULL, species = NULL)`. Reads `<persist_schema>.streams` + `streams_habitat_<sp>` (NOT working schema). Reference dispatch + assembly reused from existing `.lnk_compare_wsg_rollup_reference` and `.lnk_compare_wsg_assemble_rollup`.
+- [x] Adapt link-side rollup queries: per-species `UNION ALL` across `streams_habitat_<sp>` for km query; per-species UNION ALL into DISTINCT-waterbody_key joins for lake/wetland ha. Species auto-discovered from PG via `information_schema` probe — no need for `loaded$wsg_species_presence` here.
+- [x] Roxygen with `@examples` mirroring `lnk_compare_wsg`.
+- [x] `devtools::document()`.
+- [x] Add `tests/testthat/test-lnk_compare_rollup.R` — arg validation + reference dispatch + composition (resolve → link → ref → assemble) + caller-species intersection.
+- [ ] Bit-identical-rollup test: same PG state, `lnk_compare_rollup()` must match `lnk_compare_wsg()` rollup column-for-column. Live DB test — deferred to Phase 7 smoke matrix (cheaper to run there alongside the cache-state matrix).
+- [x] `Rscript -e 'devtools::test(filter = "lnk_compare_rollup")'` — 15 PASS, 0 FAIL.
+- [x] `lintr::lint("R/lnk_compare_rollup.R")` — 0 lints after `# nolint start: indentation_linter` block + species-suffix regex filter (round-1 fragility fix).
+- [x] `/code-check` — round 1: 1 fragile (sp interpolation), fixed via regex filter; round 2 clean.
 - [ ] Commit "Add lnk_compare_rollup — reference-agnostic comparison reader"
 
 ## Phase 3 — `.lnk_wsg_persisted()` PG-state probe

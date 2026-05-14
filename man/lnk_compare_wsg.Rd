@@ -141,6 +141,7 @@ print(result_mc$mapping_code)
 \code{\link[=lnk_parity_annotate]{lnk_parity_annotate()}}
 
 Other compare: 
+\code{\link{lnk_compare_rollup}()},
 \code{\link{lnk_parity_annotate}()}
 }
 \concept{compare}

@@ -60,6 +60,7 @@ stopifnot(nrow(unexplained) == 0L)
 \code{\link[=lnk_compare_wsg]{lnk_compare_wsg()}}
 
 Other compare: 
+\code{\link{lnk_compare_rollup}()},
 \code{\link{lnk_compare_wsg}()}
 }
 \concept{compare}
