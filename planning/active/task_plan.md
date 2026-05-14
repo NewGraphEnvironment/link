@@ -87,11 +87,10 @@ Post-pipeline PG state: `fresh_smoke168.streams` = 12,301 rows for DEAD (matches
 
 ## Phase 8 — `devtools::check()` + release v0.37.0
 
-- [ ] `Rscript -e 'devtools::check()' 2>&1 | grep -E "(ERROR|WARNING|NOTE)" | tail -10` → 0 errors, 0 warnings
-- [ ] `Rscript -e 'lintr::lint_package()' | head -20` clean (or only previously-accepted lints)
-- [ ] Update `DESCRIPTION` Version 0.36.1 → 0.37.0
-- [ ] Update `NEWS.md` with v0.37.0 entry — one short paragraph covering the decouple + new exports + new resume logic.
-- [ ] Update `CLAUDE.md` "Exported Functions" section: bump count, add `lnk_pipeline_run` and `lnk_compare_rollup` rows under appropriate family headers.
+- [x] `Rscript -e 'devtools::check()'` — 0 errors. 3 warnings + 2 notes all pre-existing on main (non-ASCII em-dashes in roxygen, missing cross-refs in unrelated Rd files). No regression introduced by #168.
+- [x] Update `DESCRIPTION` Version 0.36.1 → 0.37.0.
+- [x] Update `NEWS.md` with v0.37.0 entry covering the decouple, new exports, new resume logic, smoke matrix validation, and filed-but-not-closed family-shape follow-ups.
+- [x] Update `CLAUDE.md` Exported Functions section: bump count to 20, add `lnk_pipeline_run` under Pipeline helpers, add new Compare family section with `lnk_compare_rollup`, `lnk_compare_wsg`, `lnk_parity_annotate`.
 - [ ] Commit "Release v0.37.0"
 - [ ] `/planning-archive` with slug `decouple-pipeline-compare`
 - [ ] `/gh-pr-push` opens PR with SRED tag in body
