@@ -58,9 +58,11 @@ and unblocks any regional run.
 
 Source families + \code{blocks_species} semantics:
 \itemize{
-\item \strong{Anthropogenic} (\verb{barrier_source IN ('PSCIS','CABD','MODELLED')},
+\item \strong{Anthropogenic} (\verb{barrier_source IN ('PSCIS','CABD','MODELLED_CROSSINGS')},
 from \verb{<schema>.crossings WHERE barrier_status IN ('BARRIER','POTENTIAL')}):
-blocks all 8 species.
+blocks all 8 species. \code{crossing_source} is mapped through verbatim,
+keeping the \code{MODELLED_CROSSINGS} value (vs. lossy normalization to
+\code{MODELLED}).
 \item \strong{Gradient} (\code{barrier_source = 'GRADIENT'}, from
 \verb{<schema>.gradient_barriers_raw}): blocks species whose
 \code{access_gradient_max <= gradient_class / 100}. Derived per row from

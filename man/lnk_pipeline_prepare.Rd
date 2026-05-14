@@ -133,6 +133,7 @@ Other pipeline:
 \code{\link{lnk_pipeline_crossings}()},
 \code{\link{lnk_pipeline_load}()},
 \code{\link{lnk_pipeline_mapping_code}()},
+\code{\link{lnk_pipeline_run}()},
 \code{\link{lnk_pipeline_setup}()},
 \code{\link{lnk_pipeline_species}()},
 \code{\link{lnk_presence}()}

@@ -4,13 +4,13 @@ The link pipeline produces the BC freshwater network model — PG `fresh.*` tabl
 
 ## Phase 1 — `R/lnk_pipeline_run.R` (modelling-only umbrella)
 
-- [ ] Add `R/lnk_pipeline_run.R` with `lnk_pipeline_run(conn, aoi, cfg, loaded, schema, dams, cleanup_working)`. Phases: setup → load → prepare → crossings → break → classify → connect → species → persist_init → barriers_unify → persist. Drop working schema on exit when `cleanup_working = TRUE`.
-- [ ] Roxygen with `@examples` (using bundled test cfg + `\dontrun{}` for DB).
-- [ ] `devtools::document()` to register the export in NAMESPACE.
-- [ ] Add `tests/testthat/test-lnk_pipeline_run.R` — arg validation + phase-order composition via `mockery::stub` (mirror `test-lnk_compare_wsg.R:23-110, 174-368`).
-- [ ] `Rscript -e 'devtools::test(filter = "lnk_pipeline_run")' 2>&1 | grep -E "(FAIL|ERROR|PASS)" | tail -5`
-- [ ] `lintr::lint("R/lnk_pipeline_run.R")` clean
-- [ ] `/code-check` clean on staged diff
+- [x] Add `R/lnk_pipeline_run.R` with `lnk_pipeline_run(conn, aoi, cfg, loaded, schema, dams, cleanup_working)`. Phases: setup → load → prepare → crossings → break → classify → connect → species → persist_init → barriers_unify → persist. Drop working schema on exit when `cleanup_working = TRUE`.
+- [x] Roxygen with `@examples` (using bundled test cfg + `\dontrun{}` for DB).
+- [x] `devtools::document()` to register the export in NAMESPACE.
+- [x] Add `tests/testthat/test-lnk_pipeline_run.R` — arg validation + phase-order composition via `with_mocked_bindings` (mirror `test-lnk_compare_wsg.R:23-110, 174-368`).
+- [x] `Rscript -e 'devtools::test(filter = "lnk_pipeline_run")'` — 16 PASS, 0 FAIL.
+- [x] `lintr::lint("R/lnk_pipeline_run.R")` — 1 indentation lint on DROP TABLE sprintf, matches existing pattern in `lnk_compare_wsg.R:162` (accepted, pre-existing style).
+- [x] `/code-check` clean on staged diff (round 1 clean).
 - [ ] Commit "Add lnk_pipeline_run — modelling umbrella for one WSG"
 
 ## Phase 2 — `R/lnk_compare_rollup.R` (comparison-only)
