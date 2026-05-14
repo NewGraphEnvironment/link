@@ -186,3 +186,51 @@
   }
   paste0("working_", tolower(aoi))
 }
+
+
+#' Has the modelling pipeline persisted rows for this WSG?
+#'
+#' Probes `<persist_schema>.streams` for `watershed_group_code = aoi`.
+#' Returns `TRUE` when the table exists and has at least one row for
+#' the WSG; `FALSE` when the table is absent OR has no rows for the
+#' WSG. Used by the orchestrator loop (run_provincial_parity.R) as the
+#' canonical resume check — PG state is authoritative, RDS files are
+#' diagnostic side-artifacts.
+#'
+#' Cheap: information_schema probe + one LIMIT 1 query.
+#'
+#' @param conn DBI connection to the local pipeline database.
+#' @param cfg An `lnk_config` object — provides `<persist_schema>` via
+#'   `.lnk_table_names(cfg)$schema`.
+#' @param aoi Watershed group code.
+#' @return `TRUE` if persisted, `FALSE` otherwise.
+#' @noRd
+.lnk_wsg_persisted <- function(conn, cfg, aoi) {
+  if (!inherits(conn, "DBIConnection")) {
+    stop("conn must be a DBI connection", call. = FALSE)
+  }
+  if (!inherits(cfg, "lnk_config")) {
+    stop("cfg must be an lnk_config object", call. = FALSE)
+  }
+  if (!is.character(aoi) || length(aoi) != 1L || !nzchar(aoi)) {
+    stop("aoi must be a single non-empty WSG code", call. = FALSE)
+  }
+
+  tn <- .lnk_table_names(cfg)
+  schema_lit <- DBI::dbQuoteLiteral(conn, tn$schema)
+
+  # nolint start: indentation_linter
+  has_table <- nrow(DBI::dbGetQuery(conn, sprintf(
+    "SELECT 1 FROM information_schema.tables
+      WHERE table_schema = %s AND table_name = 'streams' LIMIT 1",
+    schema_lit))) > 0L
+  if (!has_table) {
+    return(FALSE)
+  }
+
+  aoi_lit <- DBI::dbQuoteLiteral(conn, aoi)
+  nrow(DBI::dbGetQuery(conn, sprintf(
+    "SELECT 1 FROM %s WHERE watershed_group_code = %s LIMIT 1",
+    tn$streams, aoi_lit))) > 0L
+  # nolint end: indentation_linter
+}

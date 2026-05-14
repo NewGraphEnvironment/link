@@ -24,13 +24,13 @@ The link pipeline produces the BC freshwater network model — PG `fresh.*` tabl
 - [x] `Rscript -e 'devtools::test(filter = "lnk_compare_rollup")'` — 15 PASS, 0 FAIL.
 - [x] `lintr::lint("R/lnk_compare_rollup.R")` — 0 lints after `# nolint start: indentation_linter` block + species-suffix regex filter (round-1 fragility fix).
 - [x] `/code-check` — round 1: 1 fragile (sp interpolation), fixed via regex filter; round 2 clean.
-- [ ] Commit "Add lnk_compare_rollup — reference-agnostic comparison reader"
+- [x] Commit "Add lnk_compare_rollup — reference-agnostic comparison reader" (ece0f11)
 
 ## Phase 3 — `.lnk_wsg_persisted()` PG-state probe
 
-- [ ] Add `.lnk_wsg_persisted(conn, cfg, aoi)` to `R/utils.R` after `.lnk_working_schema`. Uses `.lnk_table_names()` to get `<persist_schema>.streams`. Returns `FALSE` if table absent, else `nrow(SELECT 1 ... LIMIT 1) > 0`.
-- [ ] Add `tests/testthat/test-utils.R` entries — table-missing / table-present-with-WSG / table-present-without-WSG.
-- [ ] `/code-check` clean
+- [x] Add `.lnk_wsg_persisted(conn, cfg, aoi)` to `R/utils.R` after `.lnk_working_schema`. Two-stage probe: `information_schema.tables` (early-exit FALSE when streams table absent), then `LIMIT 1` row check.
+- [x] Add `tests/testthat/test-utils.R` entries — arg validation (3) + table-missing / table-present-with-WSG / table-present-without-WSG (6 new test_that blocks, 48 PASS total in file).
+- [x] `/code-check` clean (round 1; one fragility raised was already in accepted-tradeoffs).
 - [ ] Commit "Add .lnk_wsg_persisted PG-state probe for resume checks"
 
 ## Phase 4 — Refactor `R/lnk_compare_wsg.R` as wrapper
