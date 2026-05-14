@@ -130,7 +130,7 @@ trigger GitHub notifications to the referenced repo’s participants
 (unlike `<owner>/<repo>#<n>` issue/PR references — see
 `feedback_no_cross_ref_external_issues.md` in memory).
 
-## Exported Functions (18)
+## Exported Functions (20)
 
 ### Core
 
@@ -207,6 +207,12 @@ Every phase that reads a data table takes both `cfg` (manifest) and
 `loaded` (the named list from
 [`lnk_load_overrides()`](https://newgraphenvironment.github.io/link/reference/lnk_load_overrides.md)).
 Callers materialize once and thread `loaded` through. -
+`lnk_pipeline_run(conn, aoi, cfg, loaded, schema, dams, cleanup_working)`
+— modelling umbrella; chains all phases below plus `lnk_persist_init` +
+`lnk_barriers_unify` + `lnk_pipeline_persist` into one per-WSG call.
+Writes `<persist_schema>.streams`, `streams_habitat_<sp>`, `barriers`.
+This is the modelling boundary — comparison is separate
+(`lnk_compare_rollup`, `lnk_compare_wsg`). -
 `lnk_pipeline_setup(conn, schema, overwrite)` — create per-run working
 schema. - `lnk_pipeline_load(conn, aoi, cfg, loaded, schema)` —
 crossings + modelled fixes + PSCIS status overrides. Reads
@@ -233,6 +239,24 @@ cluster + connected_waterbody. -
 this config classifies in this AOI” (intersects `cfg$species` with
 `loaded$wsg_species_presence` presence; falls back to
 `loaded$parameters_fresh$species_code` when `cfg$species` is missing).
+
+### Compare family
+
+- `lnk_compare_rollup(conn, aoi, cfg, reference, conn_ref, species)` —
+  reads `<persist_schema>` (no working schema) + reference DB, returns
+  long-format diff tibble. Species auto-discovered from PG.
+  Reference-agnostic via `reference` arg (`"bcfishpass"` only today).
+  Use for compare-only re-runs against existing PG state.
+- `lnk_compare_wsg(conn, aoi, cfg, loaded, reference, with_mapping_code, conn_ref, ...)`
+  — bundled convenience wrapper that calls
+  `lnk_pipeline_run() + lnk_compare_rollup()`. For
+  `with_mapping_code = TRUE`, additionally builds the per-segment
+  streams_mapping_code lens (still working-schema-bound; mapping_code
+  decoupling is a follow-up).
+- `lnk_parity_annotate(rollup, taxonomy, to, tolerance)` — annotates a
+  parity rollup against `research/bcfp_divergence_taxonomy.yml`. Tags
+  each row with `taxonomy_id, class, mechanism, status, refs`. Unmatched
+  rows: `UNEXPLAINED | WITHIN_TOLERANCE | NOT_APPLICABLE`.
 
 ### Bridge to fresh
 

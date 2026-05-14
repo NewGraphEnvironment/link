@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.36.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.37.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,6 +31,20 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.37.0" id="link-0370">link 0.37.0<a class="anchor" aria-label="anchor" href="#link-0370"></a></h2>
+<p>Decouple bcfp comparison from the modelling pipeline. Closes <a href="https://github.com/NewGraphEnvironment/link/issues/168" class="external-link">#168</a>. The link package’s deliverable — the per-WSG model in <code>&lt;persist_schema&gt;.streams</code> + per-species habitat + barriers — now runs and is observable independently of any comparison framework. Comparison vs bcfishpass (or any future reference) is a diagnostic overlay that reads the persisted state and never gates whether the model itself ran.</p>
+<ul><li>New exported <code>lnk_pipeline_run(conn, aoi, cfg, loaded, schema, dams, cleanup_working)</code> — modelling-only umbrella over the 7 <code>lnk_pipeline_*</code> phases plus persist_init + barriers_unify + persist. Writes per-WSG segment data to PG. <code>lnk_barriers_unify</code> is promoted from gated-behind-with_mapping_code to always-on so <code>&lt;persist_schema&gt;.barriers</code> is canonical state for any future reader.</li>
+<li>New exported <code>lnk_compare_rollup(conn, aoi, cfg, reference, conn_ref, species)</code> — reads persisted state + reference DB, returns the long-format rollup tibble. Reference-agnostic via the <code>reference</code> arg (<code>"bcfishpass"</code> today). Species auto-discovered from PG via <code>information_schema</code> probe.</li>
+<li>
+<code><a href="../reference/lnk_compare_wsg.html">lnk_compare_wsg()</a></code> refactored as a thin wrapper over both new functions. Bundled behavior preserved for <code>with_mapping_code = TRUE</code> (mapping_code decoupling deferred — follow-up). Active-species set is now PG-state-derived (post-persist) rather than <code>cfg$species ∩ wsg_species_presence</code> (pre-persist); equivalent on a fresh single-call run, future-proofs callers against config drift.</li>
+<li>
+<code>data-raw/compare_bcfishpass_wsg.R</code> split into <code>data-raw/wsg_pipeline_run.R</code> (modelling) + <code>data-raw/wsg_compare.R</code> (compare). 4 callers updated to the explicit two-call pattern (<code>_targets.R</code>, <code>regress_dams_isolation.R</code>, <code>rule_flexibility_demo.R</code>, <code>run_provincial_parity.R</code>).</li>
+<li>
+<code>data-raw/run_provincial_parity.R</code> resume gate uses PG state as canonical: probes <code>&lt;persist_schema&gt;.streams</code> via internal <code>.lnk_wsg_persisted()</code>; RDS files are diagnostic side-artifacts that no longer silently mask an empty pipeline. Four-branch logic (force / fully-cached / compare-only / pipeline+compare). New <code>--force</code> CLI flag bypasses all caching. New helpers <code>.is_error_stub</code> (re-runs WSGs whose previous attempt failed) and <code>.rollup_has_mapping_code</code> (invalidates bare-rollup cache when the mapping_code lens is requested). Closes the 2026-05-14 incident where 4 of 16 WSGs were silently skipped due to stale error-stub RDS files.</li>
+<li>Phase 7 smoke matrix validates against live DB on DEAD WSG: empty state (57s pipeline+compare) → pipeline-cached (9s compare-only, ~6× speedup) → fully cached (2s skip) → <code>--force</code> (56s re-fire). Confirms the resume gate value and the decoupled boundary.</li>
+</ul><p>Filed-but-not-closed follow-ups: <code>lnk_compare_mapping_code</code> as its own family member (promotes the <code>with_mapping_code = TRUE</code> flag to a stand-alone export), <code>lnk_compare_wsg → lnk_compare_run</code> family rename, persist family naming pass, the 8 <code>data-raw/</code> script renames (stay in <a href="https://github.com/NewGraphEnvironment/link/issues/172" class="external-link">#172</a>).</p>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.36.1" id="link-0361">link 0.36.1<a class="anchor" aria-label="anchor" href="#link-0361"></a></h2>
 <p>Operational hardening from the 2026-05-13 → 2026-05-14 provincial dispatch session. No <code>R/</code> API changes — patches landed in <code>data-raw/</code> operational tooling. Closes <a href="https://github.com/NewGraphEnvironment/link/pull/171" class="external-link">#171</a>.</p>

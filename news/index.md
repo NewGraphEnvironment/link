@@ -1,5 +1,61 @@
 # Changelog
 
+## link 0.37.0
+
+Decouple bcfp comparison from the modelling pipeline. Closes
+[\#168](https://github.com/NewGraphEnvironment/link/issues/168). The
+link package’s deliverable — the per-WSG model in
+`<persist_schema>.streams` + per-species habitat + barriers — now runs
+and is observable independently of any comparison framework. Comparison
+vs bcfishpass (or any future reference) is a diagnostic overlay that
+reads the persisted state and never gates whether the model itself ran.
+
+- New exported
+  `lnk_pipeline_run(conn, aoi, cfg, loaded, schema, dams, cleanup_working)`
+  — modelling-only umbrella over the 7 `lnk_pipeline_*` phases plus
+  persist_init + barriers_unify + persist. Writes per-WSG segment data
+  to PG. `lnk_barriers_unify` is promoted from
+  gated-behind-with_mapping_code to always-on so
+  `<persist_schema>.barriers` is canonical state for any future reader.
+- New exported
+  `lnk_compare_rollup(conn, aoi, cfg, reference, conn_ref, species)` —
+  reads persisted state + reference DB, returns the long-format rollup
+  tibble. Reference-agnostic via the `reference` arg (`"bcfishpass"`
+  today). Species auto-discovered from PG via `information_schema`
+  probe.
+- [`lnk_compare_wsg()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_wsg.md)
+  refactored as a thin wrapper over both new functions. Bundled behavior
+  preserved for `with_mapping_code = TRUE` (mapping_code decoupling
+  deferred — follow-up). Active-species set is now PG-state-derived
+  (post-persist) rather than `cfg$species ∩ wsg_species_presence`
+  (pre-persist); equivalent on a fresh single-call run, future-proofs
+  callers against config drift.
+- `data-raw/compare_bcfishpass_wsg.R` split into
+  `data-raw/wsg_pipeline_run.R` (modelling) + `data-raw/wsg_compare.R`
+  (compare). 4 callers updated to the explicit two-call pattern
+  (`_targets.R`, `regress_dams_isolation.R`, `rule_flexibility_demo.R`,
+  `run_provincial_parity.R`).
+- `data-raw/run_provincial_parity.R` resume gate uses PG state as
+  canonical: probes `<persist_schema>.streams` via internal
+  `.lnk_wsg_persisted()`; RDS files are diagnostic side-artifacts that
+  no longer silently mask an empty pipeline. Four-branch logic (force /
+  fully-cached / compare-only / pipeline+compare). New `--force` CLI
+  flag bypasses all caching. New helpers `.is_error_stub` (re-runs WSGs
+  whose previous attempt failed) and `.rollup_has_mapping_code`
+  (invalidates bare-rollup cache when the mapping_code lens is
+  requested). Closes the 2026-05-14 incident where 4 of 16 WSGs were
+  silently skipped due to stale error-stub RDS files.
+- Phase 7 smoke matrix validates against live DB on DEAD WSG: empty
+  state (57s pipeline+compare) → pipeline-cached (9s compare-only, ~6×
+  speedup) → fully cached (2s skip) → `--force` (56s re-fire). Confirms
+  the resume gate value and the decoupled boundary.
+
+Filed-but-not-closed follow-ups: `lnk_compare_mapping_code` as its own
+family member (promotes the `with_mapping_code = TRUE` flag to a
+stand-alone export), `lnk_compare_wsg → lnk_compare_run` family rename,
+persist family naming pass, the 8 `data-raw/` script renames (stay in
+[\#172](https://github.com/NewGraphEnvironment/link/issues/172)).
+
 ## link 0.36.1
 
 Operational hardening from the 2026-05-13 → 2026-05-14 provincial

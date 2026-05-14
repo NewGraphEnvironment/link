@@ -39,6 +39,9 @@
 
   Read the build-identifier `log.json` from a bucket prefix
 
+- [`lnk_compare_rollup()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_rollup.md)
+  : Compare one watershed group's persisted state against a reference
+
 - [`lnk_compare_wsg()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_wsg.md)
   : Compare one watershed group against a reference dataset
 
@@ -98,6 +101,9 @@
 
 - [`lnk_pipeline_prepare()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_prepare.md)
   : Prepare the Network and Barrier Inputs for a Pipeline Run
+
+- [`lnk_pipeline_run()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_run.md)
+  : Run the link pipeline end-to-end for one watershed group
 
 - [`lnk_pipeline_setup()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_setup.md)
   : Set Up the Working Schema for a Pipeline Run
