@@ -1,3 +1,28 @@
+# link 0.38.0
+
+Provincial-run autonomy CLI + 8 operational-script renames to noun_verb convention. Closes [#172](https://github.com/NewGraphEnvironment/link/issues/172). Builds on v0.37.0's #168 decouple — with PG-state resume in place, the autonomy surface stays thin and the renames stay mechanical.
+
+- **Single-command autonomous run.** `wsgs_run_pipeline.sh` (was `province_run.sh`) accepts `--wsgs=A,B,C`, `--config=<name>`, `--schema=<name>`, `--no-cyphers`, `--force`, forwards to `wsgs_dispatch.sh` (was `trifecta_provincial.sh`) which intersects the WSG subset in its LPT split. M4+M1-only baseline validated end-to-end: 16-WSG default-bundle dispatch lands 16/16 in `fresh_default.streams` on M4, ~20 min wall, no operator prompts.
+- **Step 0 pre-clean.** When `--schema=` is set, umbrella fires `state_clean.sh --schemas=<schema>` on every host before Step 1. Drops only the target schema (skips the canonical-fresh heuristic + snapshot reload). Eliminates a class of consolidate failures where stale leftover WSGs on a source host collided with destination data during pg_restore.
+- **Scoped `state_clean.sh` (was `province_clean.sh`).** New `--schemas=A,B,C` mode drops only the listed schemas. Empty `--schemas=` rejected loud to prevent dynamic-arg silent fall-through to the destructive default mode.
+- **Phantom-cy + error-surface fixes in `wsgs_dispatch.sh`.** R's `paste0("cy", integer(0))` returns `"cy"` length-1 (constant recycling) — would put a non-existent cypher in the host plan under `--no-cyphers`. Three-branched `cy_host_keys`. Empty `CY_WORKSPACES` init via explicit `CY_WS_ARR=()` (was `read -r -a` yielding single-empty-element). `SPLIT_OUT=$(Rscript ...)` wrapped with explicit `||` block so R-side `stop()` messages reach the operator (e.g. `--wsgs=BOGUS` surfaces the R error verbatim instead of silent abort).
+- **8 rename mapping (`git mv` preserves `git log --follow`).** Names now describe scope honestly — these scripts work for any list of WSGs / any host count / any reference:
+
+| Old | New |
+|---|---|
+| `data-raw/province_run.sh` | `data-raw/wsgs_run_pipeline.sh` |
+| `data-raw/province_clean.sh` | `data-raw/state_clean.sh` |
+| `data-raw/province_progress.sh` | `data-raw/progress_check.sh` |
+| `data-raw/trifecta_provincial.sh` | `data-raw/wsgs_dispatch.sh` |
+| `data-raw/run_provincial_parity.R` | `data-raw/wsgs_run_host.R` |
+| `data-raw/consolidate_schema.R` | `data-raw/schema_consolidate.R` |
+| `data-raw/archive_provincial_runs.sh` | `data-raw/runs_archive.sh` |
+| `data-raw/balance_provincial_buckets.R` | `data-raw/buckets_balance.R` |
+
+The `wsg_*` (singular, per-WSG functions from #168) vs `wsgs_*` (plural, collection-level orchestrators) distinction is now load-bearing in the naming. `compare_bcfishpass_wsg.R → wsg_compare.R` was renamed in #168.
+
+Filed-but-not-closed follow-ups: cypher integration testing (issue #172 Phase 2 + 3 acceptance — defer until M4+M1 baseline lands repeatably); LPT-fallback empty-bucket edge case when N_WSGs ≤ N_hosts without timing CSVs (pre-existing, not a #172 regression).
+
 # link 0.37.0
 
 Decouple bcfp comparison from the modelling pipeline. Closes [#168](https://github.com/NewGraphEnvironment/link/issues/168). The link package's deliverable — the per-WSG model in `<persist_schema>.streams` + per-species habitat + barriers — now runs and is observable independently of any comparison framework. Comparison vs bcfishpass (or any future reference) is a diagnostic overlay that reads the persisted state and never gates whether the model itself ran.

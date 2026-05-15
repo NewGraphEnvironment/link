@@ -75,19 +75,20 @@ Patch the original filename first so the smoke (Phase 3) validates on the known-
 - [x] `devtools::test()` — 1172 PASS / 0 FAIL.
 - [x] Reverted M1 to main + dropped the test branch (for now); will re-pull when PR lands. — see Phase 6 cross-repo note below.
 
-## Phase 6 — Cross-repo rtj update
+## Phase 6 — Cross-repo rtj update (DEFERRED to post-merge)
 
-- [ ] In `~/Projects/repo/rtj`, update `scripts/cypher/cypher_run.sh` reference from `run_provincial_parity.R` → `wsgs_run_host.R`.
+Lands after link's rename PR merges so `cypher_run.sh` never references a missing file on link/main. Will be done as part of `/gh-pr-merge` workflow.
+
+- [ ] In `~/Projects/repo/rtj`, update `scripts/cypher/cypher_run.sh` reference from `run_provincial_parity.R` → `wsgs_run_host.R` (only the docstring at `scripts/cypher/cypher_run.sh:8` references the old name — confirmed; the script itself takes the workload-script path as an arg so no runtime hardcode).
 - [ ] `bash -n scripts/cypher/cypher_run.sh` clean.
-- [ ] Commit "scripts/cypher/cypher_run.sh: update for link wsgs_run_host.R rename" on rtj/main.
-- [ ] Push to origin/main.
-- [ ] Order: rtj commit lands **after** link's rename PR merges so cypher_run.sh never references a missing file on link/main.
+- [ ] Commit + push on rtj/main.
 
 ## Phase 7 — Release v0.38.0
 
-- [ ] Update `DESCRIPTION` Version 0.37.0 → 0.38.0.
-- [ ] Update `NEWS.md` with v0.38.0 entry covering CLI surface + 8 renames.
-- [ ] Update `CLAUDE.md` if any rename touches its references.
+- [x] `devtools::check()` — 0 errors, same warning baseline as v0.37.0 (3 warnings + 2 notes all pre-existing on main; no regression).
+- [x] Update `DESCRIPTION` Version 0.37.0 → 0.38.0.
+- [x] Update `NEWS.md` with v0.38.0 entry covering CLI surface (5 new flags), Step 0 pre-clean, scoped `state_clean.sh --schemas=`, phantom-cy / error-surface fixes, and the 8-rename mapping table.
+- [x] `CLAUDE.md` already updated via Phase 4 sed pass (one line in the Status v0.29.0 entry mentioned `consolidate_schema`).
 - [ ] Commit "Release v0.38.0".
 - [ ] `/planning-archive` with slug `provincial-run-autonomy-renames`.
 - [ ] `/gh-pr-push` opens PR with SRED tag in body.
