@@ -57,8 +57,17 @@
 #' @param backup Logical. If TRUE (default), pg_dump local destination
 #'   before consolidating — rollback safety net. Saved to
 #'   `/tmp/<schema>_pre_consolidate_<TS>.dump`.
-#' @param dest_conn DBI connection for verification queries + (optional)
-#'   for invoking lnk_db_conn-style auth. Default `link::lnk_db_conn()`.
+#' @param dest_conn DBI connection for verification queries. Default
+#'   `NULL` — function constructs a connection to local fwapg
+#'   (`localhost:5432/fwapg`, postgres/postgres) to match the COPY
+#'   commands' hardcoded target. Pass an explicit connection only when
+#'   you're running against a non-standard local fwapg layout. Note:
+#'   `link::lnk_db_conn()` is NOT a safe default — on M4 it routes to
+#'   the tunnel (`localhost:63333/bcfishpass`), which causes the
+#'   `wgc_tables` enumeration to return empty and silently skip every
+#'   source. Caught after #180 first integration run (Peace Tier 2,
+#'   2026-05-15: 12 of 16 Peace WSGs lost because consolidate skipped
+#'   M1 + both cyphers).
 #' @param verbose Logical.
 #' @param keep_source Logical. When FALSE (default), drop the source
 #'   schema on each remote host after a successful COPY — workers
@@ -71,13 +80,25 @@
 schema_consolidate <- function(schema,
                                 sources,
                                 backup = TRUE,
-                                dest_conn = link::lnk_db_conn(),
+                                dest_conn = NULL,
                                 verbose = TRUE,
                                 keep_source = FALSE) {
   stopifnot(
     is.character(schema), length(schema) == 1L, nzchar(schema),
     is.list(sources), length(sources) > 0L
   )
+
+  # Construct destination connection if not passed. Default is local
+  # fwapg (matches the hardcoded `PGHOST=localhost PGPORT=5432 PGDATABASE=fwapg`
+  # in the COPY shellouts below). DO NOT default to `link::lnk_db_conn()`
+  # — on M4 that returns a tunnel:63333/bcfishpass connection, which
+  # silently breaks the `wgc_tables` enumeration and skips every source.
+  if (is.null(dest_conn)) {
+    dest_conn <- DBI::dbConnect(RPostgres::Postgres(),
+      host = "localhost", port = 5432L,
+      dbname = "fwapg", user = "postgres", password = "postgres")
+    on.exit(try(DBI::dbDisconnect(dest_conn), silent = TRUE), add = TRUE)
+  }
 
   ts <- format(Sys.time(), "%Y%m%d%H%M")
   log <- function(...) if (verbose) cat(sprintf("[%s] %s\n",
