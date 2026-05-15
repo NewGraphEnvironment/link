@@ -65,13 +65,15 @@ Patch the original filename first so the smoke (Phase 3) validates on the known-
 
 ## Phase 5 — Smoke after rename
 
-- [ ] 1-WSG smoke via the renamed umbrella:
-  ```bash
-  bash data-raw/wsgs_run_pipeline.sh --wsgs=DEAD --config=bcfishpass --no-cyphers
-  ```
-- [ ] Acceptance: exit code 0, DEAD lands in M4 `fresh.streams`.
-- [ ] `devtools::test()` passes.
-- [ ] `devtools::check()` — same warning baseline as v0.37.0 (no new warnings).
+- [x] First attempt with 1-WSG `--wsgs=DEAD --config=bcfishpass --no-cyphers` surfaced a pre-existing LPT-fallback edge case: with no timing CSVs available for bcfishpass, the weighted split puts all WSGs on M4 → M1 empty bucket → empty-bucket guard fires. Not a rename bug — same behavior on main pre-rename. Not in scope to fix here; documented for follow-up.
+- [x] Re-launched with `--wsgs=DEAD,ADMS,CRKD --config=default --schema=fresh_default --no-cyphers --with-mapping-code` (timing CSVs for `default` bundle exist from Phase 3 runs → LPT does a proper greedy split):
+  - Exit 0, 3m 13s wall, 18/3 OK (pulled 18 RDS including legacy provincial_default/ artifacts), 0 errors.
+  - `wsgs_run_pipeline.sh complete in 193s` — umbrella ran end-to-end under the new name.
+  - Step 0 pre-clean dropped `fresh_default` on both hosts; Step 7 dispatch via `wsgs_dispatch.sh` → `wsgs_run_host.R`; Step 9 consolidate succeeded.
+  - Annotated CSV: `data-raw/logs/provincial_default/202605141757_annotated.csv` (427 rows, 84 UNEXPLAINED at ≥2%, methodology divergence vs bcfp, expected).
+- [x] Cosmetic fixup: 10 occurrences of `[trifecta-provincial]` log prefix inside `wsgs_dispatch.sh` swept to `[wsgs-dispatch]` (sed only matched filenames originally, not hyphenated prose). Fold into the rename commit history.
+- [x] `devtools::test()` — 1172 PASS / 0 FAIL.
+- [x] Reverted M1 to main + dropped the test branch (for now); will re-pull when PR lands. — see Phase 6 cross-repo note below.
 
 ## Phase 6 — Cross-repo rtj update
 

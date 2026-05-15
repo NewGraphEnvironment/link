@@ -496,7 +496,7 @@ done
 TOTAL=$((M4_COUNT + M1_COUNT + CY_TOTAL))
 
 echo "============================================"
-echo "[trifecta-provincial] dispatch start: $(date '+%H:%M:%S')"
+echo "[wsgs-dispatch] dispatch start: $(date '+%H:%M:%S')"
 echo "  total WSGs: $TOTAL  (m4=$M4_COUNT  m1=$M1_COUNT  cypher_total=$CY_TOTAL)"
 echo "  config: $CONFIG  with_mapping_code: ${WITH_MAPPING_CODE:-no}"
 echo "  m4     bucket: $M4_WSGS"
@@ -621,7 +621,7 @@ END=$(date +%s)
 ELAPSED=$((END - START))
 
 echo "============================================"
-printf '[trifecta-provincial] elapsed: %dh%02dm%02ds\n' \
+printf '[wsgs-dispatch] elapsed: %dh%02dm%02ds\n' \
        $((ELAPSED/3600)) $(((ELAPSED%3600)/60)) $((ELAPSED%60))
 printf '  m4     exit=%d  log=%s\n' "$M4_EXIT" "$M4_LOG"
 printf '  m1     exit=%d  log=%s\n' "$M1_EXIT" "$M1_LOG"
@@ -660,7 +660,7 @@ done
 #   Each cypher: via TF_WORKSPACE-resolved droplet IP
 # ---------------------------------------------------------------------------
 echo
-echo "[trifecta-provincial] pulling m1 RDS files"
+echo "[wsgs-dispatch] pulling m1 RDS files"
 scp -q "m1:~/Projects/repo/link/data-raw/logs/$RDS_DIR_NAME/*.rds" \
     "$REPO_ROOT/data-raw/logs/$RDS_DIR_NAME/" 2>&1 | tail -3 || true
 
@@ -668,10 +668,10 @@ for ((i=0; i<N_CY; i++)); do
   WS="${CY_WS_ARR[$i]}"
   CY_IP=$(cd "$REPO_ROOT/../rtj/env/do/dev/cypher" && TF_WORKSPACE="$WS" tofu output -raw droplet_ip 2>/dev/null || echo "")
   if [ -z "$CY_IP" ]; then
-    echo "[trifecta-provincial] WARN: workspace '$WS' has no droplet_ip — skipping pull"
+    echo "[wsgs-dispatch] WARN: workspace '$WS' has no droplet_ip — skipping pull"
     continue
   fi
-  echo "[trifecta-provincial] pulling cypher[$WS] RDS files (cypher@$CY_IP)"
+  echo "[wsgs-dispatch] pulling cypher[$WS] RDS files (cypher@$CY_IP)"
   scp -q "cypher@$CY_IP:/home/cypher/Projects/repo/link/data-raw/logs/$RDS_DIR_NAME/*.rds" \
       "$REPO_ROOT/data-raw/logs/$RDS_DIR_NAME/" 2>&1 | tail -3 || true
 done
@@ -702,13 +702,13 @@ cat(n_ok, n_err)
   N_OK=$(echo "$RDS_COUNTS" | awk '{print $1+0}')
   N_ERR=$(echo "$RDS_COUNTS" | awk '{print $2+0}')
   N_OK=${N_OK:-0}; N_ERR=${N_ERR:-0}
-  echo "[trifecta-provincial] local RDS: $TOTAL_RDS / $TOTAL pulled — $N_OK OK, $N_ERR errors"
+  echo "[wsgs-dispatch] local RDS: $TOTAL_RDS / $TOTAL pulled — $N_OK OK, $N_ERR errors"
   if [ "$N_ERR" -gt 0 ]; then
-    echo "[trifecta-provincial] WARN: $N_ERR error-stub RDS found. Inspect cypher-side R logs:"
+    echo "[wsgs-dispatch] WARN: $N_ERR error-stub RDS found. Inspect cypher-side R logs:"
     ls "$LOG_DIR/${TS}_wsgs_dispatch_cypher_"*_R.txt 2>/dev/null | sed 's/^/  /' || true
   fi
 else
-  echo "[trifecta-provincial] local RDS file count: 0 / $TOTAL (no files pulled — all hosts failed?)"
+  echo "[wsgs-dispatch] local RDS file count: 0 / $TOTAL (no files pulled — all hosts failed?)"
 fi
 
 # ---------------------------------------------------------------------------
@@ -721,7 +721,7 @@ TAXONOMY="$REPO_ROOT/research/bcfp_divergence_taxonomy.yml"
 
 if [ -f "$TAXONOMY" ]; then
   echo
-  echo "[trifecta-provincial] aggregating + annotating $TOTAL_RDS RDS files"
+  echo "[wsgs-dispatch] aggregating + annotating $TOTAL_RDS RDS files"
   Rscript - <<RSCRIPT_EOF
 suppressPackageStartupMessages({library(link)})
 rds_files <- list.files("$REPO_ROOT/data-raw/logs/$RDS_DIR_NAME",
@@ -753,9 +753,9 @@ if (nrow(unexp) > 0) {
   cat("  acceptance bar met.\n")
 }
 RSCRIPT_EOF
-  echo "[trifecta-provincial] annotated CSV: $ANNOTATED_CSV"
+  echo "[wsgs-dispatch] annotated CSV: $ANNOTATED_CSV"
 else
-  echo "[trifecta-provincial] WARN: taxonomy YAML not at $TAXONOMY — skipping annotation"
+  echo "[wsgs-dispatch] WARN: taxonomy YAML not at $TAXONOMY — skipping annotation"
 fi
 
 # ---------------------------------------------------------------------------
