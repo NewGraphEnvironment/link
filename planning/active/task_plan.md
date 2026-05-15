@@ -35,19 +35,20 @@ Patch the original filename first so the smoke (Phase 3) validates on the known-
 
 ## Phase 3 — Integration test (M4+M1, 16-WSG default-bundle, pre-rename)
 
-- [ ] Pre-flight: M4 has bcfp tunnel up, M1 ssh reachable, `fresh.modelled_stream_crossings` present on both hosts.
-- [ ] Wipe state via `bash data-raw/province_clean.sh --skip-cy`.
-- [ ] Run autonomous:
+- [x] Pre-flight: M4 has bcfp tunnel up, M1 ssh reachable, `fresh.modelled_stream_crossings` present on both hosts. Verified at session start.
+- [x] First attempt (no pre-clean) surfaced a consolidate edge case: M1's `fresh_default` had leftover WSGs from yesterday's province-wide run; `pg_dump --schema=fresh_default` pulled rows for WSGs outside the current bucket, colliding with M4's destination data on pg_restore. Six duplicate-key errors; 12 of 16 WSGs landed.
+- [x] Root-cause fix: added `state_clean.sh --schemas=<csv>` scoped mode + `province_run.sh` Step 0 pre-clean. When `--schema=` is set, umbrella drops the target schema on all hosts BEFORE Step 1.
+- [x] Run autonomous (relaunch with pre-clean):
   ```bash
   bash data-raw/province_run.sh \
     --wsgs=CARP,CRKD,FINA,FINL,FIRE,FOXR,INGR,LOMI,MESI,NATR,OSPK,PARA,PARS,PCEA,TOOD,UOMI \
-    --config=default --schema=fresh_default --no-cyphers --with-mapping-code
+    --config=default --schema=fresh_default --no-cyphers --with-mapping-code --force
   ```
-- [ ] Acceptance: exit code 0, ~30–40 min wall, no operator prompts mid-run.
-- [ ] Verify `SELECT count(DISTINCT watershed_group_code) FROM fresh_default.streams` = 16 on M4.
-- [ ] Verify `fresh_default.streams_habitat_*` populated for each species in the bundle.
-- [ ] Verify annotated CSV written with all 16 WSGs.
-- [ ] Document outcome in `progress.md` with wall time + per-host breakdown.
+- [x] Acceptance: exit code 0, 20m wall (under 30-40 min budget), no operator prompts mid-run.
+- [x] Verified: `fresh_default.streams` = **16/16 WSGs** on M4, 468,631 rows. CARP,CRKD,FINA,FINL,FIRE,FOXR,INGR,LOMI,MESI,NATR,OSPK,PARA,PARS,PCEA,TOOD,UOMI all present.
+- [x] Per-species habitat tables: bt, gr, ko, rb + barriers (correct for the geographic test set — northern WSGs without CH/CO/SK/ST presence).
+- [x] Annotated CSV: `data-raw/logs/provincial_default/202605141658_annotated.csv` — 343 rows (263 NOT_APPLICABLE + 66 UNEXPLAINED + 14 WITHIN_TOLERANCE). 66 UNEXPLAINED at ≥2% surfaced as WARNING (methodology divergence, expected for `default` vs bcfishpass).
+- [x] Consolidate (M1 → M4) succeeded — no duplicate-key conflicts now that pre-clean handles stale state.
 
 ## Phase 4 — Rename 8 scripts + update all live references
 
