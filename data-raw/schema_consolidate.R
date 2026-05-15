@@ -137,24 +137,76 @@ schema_consolidate <- function(schema,
     }
     wsg_list_sql <- paste0("'", src$bucket, "'", collapse = ", ")
 
-    # 3. Enumerate persistent tables on the destination (must already
-    # exist via lnk_persist_init). Same wgc_tables set drives the
-    # destination DELETE + per-table COPY streaming. JOIN against
-    # information_schema.tables WHERE table_type = 'BASE TABLE' so
-    # any future views in the schema with a watershed_group_code
-    # column don't accidentally land in the table loop (DELETE +
-    # COPY FROM STDIN both fail against views).
-    wgc_tables <- DBI::dbGetQuery(dest_conn, sprintf(
+    # 3. Enumerate persistent tables on BOTH destination AND source,
+    # then iterate the intersection. Destination accumulates tables
+    # across runs (e.g. M4 carries `streams_habitat_<sp>` residue from
+    # prior runs with study-area WSGs whose species presence covered
+    # the full set). Source hosts only create habitat tables for
+    # species their assigned bucket actually models (lnk_persist_init
+    # is per-species-in-bucket). If we drove the loop off the
+    # destination list, the COPY would hit the first dest-only table
+    # and fail with `relation does not exist` on source — caught
+    # 2026-05-15 in Peace Tier 2: cyphers had BT/GR/RB habitat only;
+    # M4 had all 9 species; loop broke at `_ch` so `_gr`/`_rb` never
+    # copied (link#185). Driving off intersection avoids that class.
+    # JOIN against information_schema.tables WHERE table_type = 'BASE
+    # TABLE' so views with a watershed_group_code column don't land
+    # in the loop (DELETE + COPY FROM STDIN both fail on views).
+    wgc_query <- sprintf(
       "SELECT c.table_name FROM information_schema.columns c
        JOIN information_schema.tables t
          ON t.table_schema = c.table_schema AND t.table_name = c.table_name
        WHERE c.table_schema = '%s' AND c.column_name = 'watershed_group_code'
          AND t.table_type = 'BASE TABLE'
-       ORDER BY c.table_name", schema))$table_name
-    if (length(wgc_tables) == 0L) {
+       ORDER BY c.table_name", schema)
+    dest_wgc <- DBI::dbGetQuery(dest_conn, wgc_query)$table_name
+    if (length(dest_wgc) == 0L) {
       log(src$host, " -> ERROR: no tables with watershed_group_code in '",
           schema, "' on destination (did lnk_persist_init run?)")
       results[[src$host]] <- list(ok = FALSE, stage = "no_wgc_tables", rc = -1L)
+      next
+    }
+    # Source enumeration via SSH + psql. Same query, same shape, just
+    # tab-separated rows piped back over ssh. `\t` + `\a` for clean
+    # parse-as-lines. Quote-escape pattern matches the COPY shellouts
+    # below (single-quoted outer ssh arg; inner `'` -> `'\''`).
+    src_wgc_sql <- gsub("\n\\s+", " ", wgc_query)
+    src_wgc_inner <- if (via == "docker") {
+      sprintf("docker exec %s psql -U %s -d %s -t -A -c \"%s\"",
+              container, pg_user, pg_db, src_wgc_sql)
+    } else {
+      sprintf("PGHOST=localhost PGPORT=5432 PGDATABASE=%s PGUSER=%s PGPASSWORD=postgres psql -t -A -c \"%s\"",
+              pg_db, pg_user, src_wgc_sql)
+    }
+    src_wgc_inner_esc <- gsub("'", "'\\''", src_wgc_inner, fixed = TRUE)
+    src_wgc_raw <- system(sprintf("ssh '%s' '%s'", src$host, src_wgc_inner_esc),
+                          intern = TRUE)
+    src_wgc <- src_wgc_raw[nzchar(src_wgc_raw)]
+    if (length(src_wgc) == 0L) {
+      log(src$host, " -> ERROR: no tables with watershed_group_code in '",
+          schema, "' on source (lnk_persist_init may not have run)")
+      results[[src$host]] <- list(ok = FALSE, stage = "no_source_wgc_tables",
+                                   rc = -1L)
+      next
+    }
+    wgc_tables <- intersect(src_wgc, dest_wgc)
+    skipped_source_only <- setdiff(src_wgc, dest_wgc)
+    skipped_dest_only <- setdiff(dest_wgc, src_wgc)
+    if (length(skipped_source_only) > 0L) {
+      log(src$host, " -> NOTE: skipping ", length(skipped_source_only),
+          " source-only tables (absent on destination): ",
+          paste(skipped_source_only, collapse = ", "))
+    }
+    if (length(skipped_dest_only) > 0L) {
+      log(src$host, " -> NOTE: skipping ", length(skipped_dest_only),
+          " destination-only tables (absent on source): ",
+          paste(skipped_dest_only, collapse = ", "))
+    }
+    if (length(wgc_tables) == 0L) {
+      log(src$host, " -> ERROR: no overlap between source and destination ",
+          "tables in '", schema, "'")
+      results[[src$host]] <- list(ok = FALSE, stage = "no_table_overlap",
+                                   rc = -1L)
       next
     }
 
@@ -191,9 +243,16 @@ schema_consolidate <- function(schema,
     # explicitly, no pipefail magic required. Per-table file released
     # between tables; largest case (streams in a 13-WSG bucket) is
     # ~100 MB transient.
-    copy_failed <- FALSE
-    failed_table <- NA_character_
-    failed_stage <- NA_character_
+    # 4. Per-table COPY: accumulate copied vs errored sets, do NOT
+    # break on the first per-table failure. Each table's COPY is
+    # independent at the SQL level (separate ssh round-trip, separate
+    # destination COPY transaction). Breaking would leak the partial-
+    # transfer class — caught in link#185 where a fail at table N
+    # silently skipped table N+1..M that DID exist on source.
+    copied_tables <- character()
+    errored_tables <- character()
+    first_err_stage <- NA_character_
+    first_err_table <- NA_character_
     log(src$host, " -> COPY (bucket-filtered) for ", length(wgc_tables),
         " tables")
     for (t in wgc_tables) {
@@ -222,9 +281,14 @@ schema_consolidate <- function(schema,
                         src$host, src_inner_esc, shQuote(tmpf))
       rc_src <- system(stage1)
       if (rc_src != 0L) {
-        copy_failed <- TRUE; failed_table <- t; failed_stage <- "source_copy"
+        log(src$host, " -> WARN: source_copy failed on table '", t,
+            "' (continuing)")
+        errored_tables <- c(errored_tables, t)
+        if (is.na(first_err_table)) {
+          first_err_stage <- "source_copy"; first_err_table <- t
+        }
         unlink(tmpf)
-        break
+        next
       }
       # Stage 2: local temp file -> destination COPY FROM STDIN.
       dest_sql <- sprintf("COPY %s.%s FROM STDIN", schema, t)
@@ -234,15 +298,28 @@ schema_consolidate <- function(schema,
       rc_dest <- system(stage2)
       unlink(tmpf)
       if (rc_dest != 0L) {
-        copy_failed <- TRUE; failed_table <- t; failed_stage <- "dest_copy"
-        break
+        log(src$host, " -> WARN: dest_copy failed on table '", t,
+            "' (continuing)")
+        errored_tables <- c(errored_tables, t)
+        if (is.na(first_err_table)) {
+          first_err_stage <- "dest_copy"; first_err_table <- t
+        }
+        next
       }
+      copied_tables <- c(copied_tables, t)
     }
-    if (isTRUE(copy_failed)) {
-      log(src$host, " -> ERROR: COPY failed (", failed_stage,
-          ") on table '", failed_table, "'")
-      results[[src$host]] <- list(ok = FALSE, stage = failed_stage,
-                                   rc = -1L, table = failed_table)
+    if (length(errored_tables) > 0L) {
+      log(src$host, " -> ERROR: ", length(errored_tables),
+          " of ", length(wgc_tables), " tables failed: ",
+          paste(errored_tables, collapse = ", "),
+          " (first failure: ", first_err_stage, " on '",
+          first_err_table, "')")
+      results[[src$host]] <- list(
+        ok = FALSE, stage = first_err_stage, rc = -1L,
+        table = first_err_table,
+        copied = copied_tables, errored = errored_tables,
+        skipped_source_only = skipped_source_only,
+        skipped_dest_only = skipped_dest_only)
       next
     }
 
@@ -288,11 +365,15 @@ schema_consolidate <- function(schema,
     # Pass keep_source = TRUE to skip the cleanup entirely (debug).
     if (!isTRUE(keep_source)) {
       log(src$host, " -> DELETE bucket from source (post-COPY cleanup)")
-      # Build a single multi-statement psql -c "..." for all tables.
-      # `;`-separated DELETE statements wrapped in one psql invocation
-      # — fewer ssh round-trips than per-table.
+      # Build a single multi-statement psql -c "..." for tables we
+      # successfully COPYed. `;`-separated DELETE statements wrapped in
+      # one psql invocation — fewer ssh round-trips than per-table.
+      # Use `copied_tables`, NOT `wgc_tables`: only delete from source
+      # the tables we actually transferred; tables we didn't copy stay
+      # intact on source (e.g. if a table errored, keep its data for
+      # debugging or retry).
       delete_stmts <- paste(
-        vapply(wgc_tables, function(t) sprintf(
+        vapply(copied_tables, function(t) sprintf(
           "DELETE FROM %s.%s WHERE watershed_group_code IN (%s)",
           schema, t, wsg_list_sql), character(1)),
         collapse = "; ")
@@ -317,8 +398,12 @@ schema_consolidate <- function(schema,
       }
     }
 
-    results[[src$host]] <- list(ok = TRUE, stage = "complete",
-                                 pre_rows = pre_rows, post_rows = post_rows)
+    results[[src$host]] <- list(
+      ok = TRUE, stage = "complete",
+      pre_rows = pre_rows, post_rows = post_rows,
+      copied = copied_tables, errored = character(),
+      skipped_source_only = skipped_source_only,
+      skipped_dest_only = skipped_dest_only)
   }
 
   # 5. Verification: per-table row + WSG counts on destination.
