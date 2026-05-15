@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Provincial parity orchestrator — dispatch across M4 + M1 + N cyphers.
-# Each host runs `run_provincial_parity.R --wsgs=<bucket> --config=<bundle>`
+# Each host runs `wsgs_run_host.R --wsgs=<bucket> --config=<bundle>`
 # (resume-safe; skips WSGs whose RDS already exists). After all hosts
 # finish, pulls every host's RDS files back to M4, binds them, and writes
 # `<TS>_annotated.csv` against `research/bcfp_divergence_taxonomy.yml`.
@@ -13,11 +13,11 @@
 # Per-host `--<host>-bucket=` overrides still take precedence.
 #
 # Usage:
-#   ./trifecta_provincial.sh                          # 3-host default: M4 + M1 + 1 cypher
-#   ./trifecta_provincial.sh --with-mapping-code      # per-WSG mapping_code lens
-#   ./trifecta_provincial.sh --cy-workspaces=job1,job2,job3   # 5-host: 3 cyphers
-#   ./trifecta_provincial.sh --wsgs=ADMS,BULK,DEAD --no-cyphers   # M4+M1, 3 WSGs
-#   ./trifecta_provincial.sh --force --no-cyphers     # force re-run, M4+M1 only
+#   ./wsgs_dispatch.sh                          # 3-host default: M4 + M1 + 1 cypher
+#   ./wsgs_dispatch.sh --with-mapping-code      # per-WSG mapping_code lens
+#   ./wsgs_dispatch.sh --cy-workspaces=job1,job2,job3   # 5-host: 3 cyphers
+#   ./wsgs_dispatch.sh --wsgs=ADMS,BULK,DEAD --no-cyphers   # M4+M1, 3 WSGs
+#   ./wsgs_dispatch.sh --force --no-cyphers     # force re-run, M4+M1 only
 #
 # CLI flags:
 #   --config=<name>           bundle (default: bcfishpass)
@@ -37,7 +37,7 @@
 #   --cy-bucket=<csv>         single-cypher override (only valid with 1 workspace)
 #   --cy-workspaces=<csv>     comma-list of cypher tofu workspaces (default: "default")
 #   --cyN-bucket=<csv>        per-cypher override (1-indexed, e.g. --cy1-bucket=...)
-#   --with-mapping-code       pass through to run_provincial_parity.R
+#   --with-mapping-code       pass through to wsgs_run_host.R
 #   --skip-preflight          skip version-match check (debug only)
 #
 # Estimated wall: ~2 hours single-cypher, ~50-60 min 3-cypher,
@@ -129,7 +129,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LOG_DIR="$REPO_ROOT/data-raw/logs"
 mkdir -p "$LOG_DIR"
 TS=$(date +%Y%m%d%H%M)
-ORCH_LOG="$LOG_DIR/${TS}_trifecta_provincial_orchestrator.txt"
+ORCH_LOG="$LOG_DIR/${TS}_wsgs_dispatch_orchestrator.txt"
 
 # ---------------------------------------------------------------------------
 # Bucket allocation. Greedy LPT (Longest Processing Time first):
@@ -151,7 +151,7 @@ ORCH_LOG="$LOG_DIR/${TS}_trifecta_provincial_orchestrator.txt"
 # Manual --m4-bucket / --m1-bucket / --cyN-bucket overrides ALWAYS take
 # precedence over the computed LPT plan.
 # ---------------------------------------------------------------------------
-SPLIT_R="$LOG_DIR/${TS}_trifecta_provincial_split.R"
+SPLIT_R="$LOG_DIR/${TS}_wsgs_dispatch_split.R"
 cat > "$SPLIT_R" <<SPLIT_EOF
 suppressPackageStartupMessages({})
 
@@ -393,7 +393,7 @@ for ((i=0; i<N_CY; i++)); do
 done
 
 # Guard against silent empty dispatch. An empty bucket would dispatch
-# `Rscript run_provincial_parity.R --wsgs=` (empty string), which the
+# `Rscript wsgs_run_host.R --wsgs=` (empty string), which the
 # R script accepts without error and processes 0 WSGs. Every host
 # "succeeds" with no work done — the orchestrator reports exit=0 and
 # 0 RDS files, masking the upstream split failure.
@@ -516,7 +516,7 @@ declare -a CY_SHELL_PATHS=()
 for ((i=0; i<N_CY; i++)); do
   WS="${CY_WS_ARR[$i]}"
   BUCKET="${CY_BUCKETS[$i]}"
-  CY_SHELL="$LOG_DIR/${TS}_trifecta_provincial_cypher_${WS}.sh"
+  CY_SHELL="$LOG_DIR/${TS}_wsgs_dispatch_cypher_${WS}.sh"
   cat > "$CY_SHELL" <<CYPHER_EOF
 #!/usr/bin/env bash
 set -euo pipefail
@@ -530,7 +530,7 @@ for _ in \$(seq 1 10); do
   sleep 0.5
 done
 cd ~/Projects/repo/link/data-raw
-Rscript run_provincial_parity.R "--wsgs=$BUCKET" $EXTRA_ARGS
+Rscript wsgs_run_host.R "--wsgs=$BUCKET" $EXTRA_ARGS
 CYPHER_EOF
   chmod +x "$CY_SHELL"
   CY_SHELL_PATHS+=("$CY_SHELL")
@@ -546,8 +546,8 @@ START=$(date +%s)
 # 63333 is up, `ssh -L 63333` warns "Address already in use" and the
 # existing tunnel is reused; the trap-kill at exit kills only the new
 # (bind-failed) ssh PID, preserving the operator's persistent tunnel.
-M4_LOG="$LOG_DIR/${TS}_trifecta_provincial_m4.txt"
-M4_SHELL="$LOG_DIR/${TS}_trifecta_provincial_m4.sh"
+M4_LOG="$LOG_DIR/${TS}_wsgs_dispatch_m4.txt"
+M4_SHELL="$LOG_DIR/${TS}_wsgs_dispatch_m4.sh"
 cat > "$M4_SHELL" <<M4_EOF
 #!/usr/bin/env bash
 set -euo pipefail
@@ -561,7 +561,7 @@ for _ in \$(seq 1 10); do
   sleep 0.5
 done
 cd $REPO_ROOT/data-raw
-Rscript run_provincial_parity.R "--wsgs=$M4_WSGS" $EXTRA_ARGS
+Rscript wsgs_run_host.R "--wsgs=$M4_WSGS" $EXTRA_ARGS
 M4_EOF
 chmod +x "$M4_SHELL"
 ( bash "$M4_SHELL" > "$M4_LOG" 2>&1 ) &
@@ -579,10 +579,10 @@ M4_PID=$!
 #   - M1 must allow reverse port-forwards (OpenSSH default = yes).
 #   - Nothing else listening on M1's port 63333 (M1 has no persistent
 #     tunnel; this is free in practice).
-M1_LOG="$LOG_DIR/${TS}_trifecta_provincial_m1.txt"
+M1_LOG="$LOG_DIR/${TS}_wsgs_dispatch_m1.txt"
 ( ssh -o ServerAliveInterval=60 -o ServerAliveCountMax=10 \
     -R 63333:127.0.0.1:63333 m1 \
-    "cd ~/Projects/repo/link/data-raw && Rscript run_provincial_parity.R '--wsgs=$M1_WSGS' $EXTRA_ARGS" \
+    "cd ~/Projects/repo/link/data-raw && Rscript wsgs_run_host.R '--wsgs=$M1_WSGS' $EXTRA_ARGS" \
     > "$M1_LOG" 2>&1 ) &
 M1_PID=$!
 
@@ -591,7 +591,7 @@ declare -a CY_PIDS=()
 declare -a CY_LOGS=()
 for ((i=0; i<N_CY; i++)); do
   WS="${CY_WS_ARR[$i]}"
-  CY_LOG="$LOG_DIR/${TS}_trifecta_provincial_cypher_${WS}.txt"
+  CY_LOG="$LOG_DIR/${TS}_wsgs_dispatch_cypher_${WS}.txt"
   CY_LOGS+=("$CY_LOG")
   if [ "$WS" = "default" ]; then
     ( bash "$REPO_ROOT/../rtj/scripts/cypher/cypher_run.sh" "${CY_SHELL_PATHS[$i]}" > "$CY_LOG" 2>&1 ) &
@@ -650,7 +650,7 @@ for ((i=0; i<N_CY; i++)); do
   # which would otherwise abort the script via $(... | ...) command-sub.
   CY_R_LOG=$(ls -1t "$RTJ_CY_LOGDIR"/*_cypher-run_"${CY_WRAP_BASE}"_"${WS}".txt 2>/dev/null | head -1 || true)
   if [ -n "$CY_R_LOG" ] && [ -f "$CY_R_LOG" ]; then
-    cp "$CY_R_LOG" "$LOG_DIR/${TS}_trifecta_provincial_cypher_${WS}_R.txt"
+    cp "$CY_R_LOG" "$LOG_DIR/${TS}_wsgs_dispatch_cypher_${WS}_R.txt"
   fi
 done
 
@@ -705,7 +705,7 @@ cat(n_ok, n_err)
   echo "[trifecta-provincial] local RDS: $TOTAL_RDS / $TOTAL pulled — $N_OK OK, $N_ERR errors"
   if [ "$N_ERR" -gt 0 ]; then
     echo "[trifecta-provincial] WARN: $N_ERR error-stub RDS found. Inspect cypher-side R logs:"
-    ls "$LOG_DIR/${TS}_trifecta_provincial_cypher_"*_R.txt 2>/dev/null | sed 's/^/  /' || true
+    ls "$LOG_DIR/${TS}_wsgs_dispatch_cypher_"*_R.txt 2>/dev/null | sed 's/^/  /' || true
   fi
 else
   echo "[trifecta-provincial] local RDS file count: 0 / $TOTAL (no files pulled — all hosts failed?)"

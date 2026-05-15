@@ -161,7 +161,7 @@ The genuine "needs work" set is **Class D and the unresolved part of C**. Maybe 
 - `data-raw/logs/20260501_0251_provincial_parity_per_wsg.csv` — per-WSG summary
 - `data-raw/logs/provincial_parity/<WSG>.rds` — per-WSG output, 217 files
 - `data-raw/logs/20260430_2155_provincial_parity.txt` — run log
-- `data-raw/run_provincial_parity.R` — reusable runner script
+- `data-raw/wsgs_run_host.R` — reusable runner script
 
 ## Next
 

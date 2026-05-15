@@ -9,7 +9,7 @@
 # cypher caught up. This script projects ~10-15 min savings per run.
 #
 # Usage:
-#   Rscript data-raw/balance_provincial_buckets.R
+#   Rscript data-raw/buckets_balance.R
 #
 # Hardcoded inputs (override above when re-running with new baseline):
 #   - Yesterday's host log paths (one per host)
@@ -23,16 +23,16 @@ suppressPackageStartupMessages({})
 
 logs_dir <- "/Users/airvine/Projects/repo/link/data-raw/logs"
 
-# Prefer per-WSG CSVs (emitted by run_provincial_parity.R after this script
+# Prefer per-WSG CSVs (emitted by wsgs_run_host.R after this script
 # was added). Fall back to text-log regex parsing for older runs.
 csvs <- list.files(file.path(logs_dir, "provincial_parity"),
                    pattern = "_per_wsg_times\\.csv$", full.names = TRUE)
 csvs <- c(csvs, list.files(file.path(logs_dir, "provincial_default"),
                            pattern = "_per_wsg_times\\.csv$", full.names = TRUE))
 if (length(csvs) == 0) {
-  m4_log <- file.path(logs_dir, "202605031423_trifecta_provincial_m4.txt")
-  m1_log <- file.path(logs_dir, "202605031423_trifecta_provincial_m1.txt")
-  cy_log <- "/Users/airvine/Projects/repo/rtj/scripts/cypher/logs/202605031423_cypher-run_202605031423_trifecta_provincial_cypher.txt"
+  m4_log <- file.path(logs_dir, "202605031423_wsgs_dispatch_m4.txt")
+  m1_log <- file.path(logs_dir, "202605031423_wsgs_dispatch_m1.txt")
+  cy_log <- "/Users/airvine/Projects/repo/rtj/scripts/cypher/logs/202605031423_cypher-run_202605031423_wsgs_dispatch_cypher.txt"
 }
 
 # Host speed factors (M4 = reference). Use yesterday's per-host MEAN

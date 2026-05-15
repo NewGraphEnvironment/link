@@ -28,7 +28,7 @@
 # These are accepted as known gaps in this baseline.
 #
 # Run from data-raw/:
-#   Rscript run_provincial_parity.R > logs/<TS>_provincial_parity.txt 2>&1 &
+#   Rscript wsgs_run_host.R > logs/<TS>_provincial_parity.txt 2>&1 &
 
 suppressPackageStartupMessages({
   library(link); library(fresh); library(dplyr); library(DBI); library(RPostgres)
@@ -121,7 +121,7 @@ cat("Output dir :", out_dir, "\n\n")
 t_total <- Sys.time()
 
 # Per-WSG timings CSV (one row appended per WSG completion).
-# Drives data-raw/balance_provincial_buckets.R for future LPT planning;
+# Drives data-raw/buckets_balance.R for future LPT planning;
 # replaces the regex-parse-the-text-log path. Host-tagged via Sys.info()
 # so multi-host trifecta runs produce comparable rows.
 host_id <- Sys.info()[["nodename"]]
@@ -203,7 +203,7 @@ stamp_bcfp_baseline <- function(config_name, link_schema) {
       bcfp_model_run_id = bcfp$model_run_id,
       bcfp_model_version = bcfp$model_version,
       bcfp_date_completed = bcfp$date_completed,
-      notes = "auto-stamped at run_provincial_parity.R start",
+      notes = "auto-stamped at wsgs_run_host.R start",
       stringsAsFactors = FALSE)
     write.table(row, csv_path, sep = ",", row.names = FALSE,
                 col.names = FALSE, quote = FALSE, append = TRUE)
@@ -343,7 +343,7 @@ cat("WSGs completed:", length(list.files(out_dir, pattern = "\\.rds$")), "\n")
 # Post-loop annotation: bind all per-WSG RDS rollups, annotate against
 # the bcfp divergence taxonomy, write `<TS>_<host>_annotated.csv`.
 # Each host writes its own bucket's annotated CSV. The orchestrator
-# (trifecta_provincial.sh) does the province-wide aggregate after the
+# (wsgs_dispatch.sh) does the province-wide aggregate after the
 # RDS pull-back step.
 #
 # Skipped if the taxonomy YAML doesn't exist relative to the script's

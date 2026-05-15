@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Archive per-run artifacts in data-raw/logs/provincial_<bundle>/ to
 # data-raw/logs/provincial_<bundle>/archive/<TS>/ so the LPT planner
-# (both trifecta_provincial.sh inline and balance_provincial_buckets.R)
+# (both wsgs_dispatch.sh inline and buckets_balance.R)
 # sees only the LATEST run's _per_wsg_times.csv files in the top level.
 #
 # Operator cadence: run this BEFORE kicking off a new provincial run if
@@ -10,8 +10,8 @@
 # smoothing out noisy one-offs but slower to react to host changes).
 #
 # Usage:
-#   ./archive_provincial_runs.sh                          # bcfishpass (default)
-#   ./archive_provincial_runs.sh --config=default         # different bundle
+#   ./runs_archive.sh                          # bcfishpass (default)
+#   ./runs_archive.sh --config=default         # different bundle
 #
 # What's archived:
 #   - *_per_wsg_times.csv  (drives LPT)

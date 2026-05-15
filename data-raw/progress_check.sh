@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# province_progress.sh — report live progress of an in-flight provincial dispatch.
+# progress_check.sh — report live progress of an in-flight provincial dispatch.
 #
 # Reads each host's newest `_per_wsg_times.csv` (by mtime, NOT by date glob —
 # cypher logs use UTC, M4/M1 use local TZ; date-globbing across hosts breaks
@@ -9,9 +9,9 @@
 # plus a sample of the most recent completions to see what each host is on.
 #
 # Usage:
-#   bash data-raw/province_progress.sh [--cy-workspaces=job1,job2,job3] [--mtime-min=120]
+#   bash data-raw/progress_check.sh [--cy-workspaces=job1,job2,job3] [--mtime-min=120]
 #
-# Honors /tmp/cy_ips.env if present (set by trifecta_provincial.sh dispatch).
+# Honors /tmp/cy_ips.env if present (set by wsgs_dispatch.sh dispatch).
 # Otherwise derives cypher IPs from tofu state per workspace.
 #
 # --mtime-min=N : only consider CSVs modified in the last N minutes (default 240
@@ -85,11 +85,11 @@ done
 
 echo
 # Orchestrator-side state
-if pgrep -f "trifecta_provincial.sh" >/dev/null 2>&1; then
-  PID=$(pgrep -f "trifecta_provincial.sh" | head -1)
+if pgrep -f "wsgs_dispatch.sh" >/dev/null 2>&1; then
+  PID=$(pgrep -f "wsgs_dispatch.sh" | head -1)
   echo "dispatch process: ✓ PID=$PID (running)"
   # Find latest orchestrator log to extract bucket sizes if possible
-  LATEST_ORCH=$(find ~/Projects/repo/link/data-raw/logs -maxdepth 1 -name '*_trifecta_provincial_orchestrator.txt' -mmin -$MTIME_MIN | sort | tail -1)
+  LATEST_ORCH=$(find ~/Projects/repo/link/data-raw/logs -maxdepth 1 -name '*_wsgs_dispatch_orchestrator.txt' -mmin -$MTIME_MIN | sort | tail -1)
   if [ -n "$LATEST_ORCH" ]; then
     echo "orchestrator log: $LATEST_ORCH"
     grep -E "total WSGs|projected finish" "$LATEST_ORCH" 2>/dev/null | head -2

@@ -193,7 +193,7 @@
 #' Probes `<persist_schema>.streams` for `watershed_group_code = aoi`.
 #' Returns `TRUE` when the table exists and has at least one row for
 #' the WSG; `FALSE` when the table is absent OR has no rows for the
-#' WSG. Used by the orchestrator loop (run_provincial_parity.R) as the
+#' WSG. Used by the orchestrator loop (wsgs_run_host.R) as the
 #' canonical resume check — PG state is authoritative, RDS files are
 #' diagnostic side-artifacts.
 #'

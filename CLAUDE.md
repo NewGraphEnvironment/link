@@ -15,7 +15,7 @@ Infrastructure stack stabilized; methodology research is the active focus. Recen
 
 - **v0.27.0** (#114, #45) — `cfg$pipeline$gradient_classes` config knob + per-species filter derivation in `prep_minimal`. Bit-identical bcfp parity by default; lets bundles override the break vector.
 - **v0.28.0** (#119, #45-followup) — Orphan-class break source: classes below all species' access thresholds enter `gradient_barriers_minimal` as a shared `barriers_orphan` table (segmentation only, no access semantics). New `default_extrabreaks` bundle. Province-wide methodology delta (231 vs 225 WSGs): SK spawn +6.7%, BT/RB/ST/WCT/GR spawn +1–2%, CH/ST rear -11%, BT/CO/GR rear -3 to -7%. "Ceiling sub-segment" mechanism — flat parts of mixed reaches now pass spawn; steep pockets previously folded into rear via averaging exceed rear ceiling as standalone segments.
-- **v0.29.0** (#120, #118) — DB hygiene: `cleanup_working = TRUE` in `compare_bcfishpass_wsg` drops working schemas after rollup; `keep_source = FALSE` in `consolidate_schema` drops source schemas after pg_restore. Prevents the disk-full incident that crashed cypher 2026-05-04.
+- **v0.29.0** (#120, #118) — DB hygiene: `cleanup_working = TRUE` in `compare_bcfishpass_wsg` drops working schemas after rollup; `keep_source = FALSE` in `schema_consolidate` drops source schemas after pg_restore. Prevents the disk-full incident that crashed cypher 2026-05-04.
 
 Cypher recovered (volumes nuked); needs fwapg reload before next provincial run. Methodology research is active: `default_extrabreaks` proved the mechanism; next variants include spawn-only / rear-only break vectors (each adds ~4 new classes; per-WSG cost ~1.3–1.4× vs default) and the channel-class breaks research (#52, blocked on fresh-side helper).
 

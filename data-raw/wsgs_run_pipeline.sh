@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# province_run.sh — top-level wrapper for the full provincial parity run.
+# wsgs_run_pipeline.sh — top-level wrapper for the full provincial parity run.
 #
 # Orchestrates the 10-step sequence documented in
 # research/post_compact_provincial_handoff.md:
@@ -7,7 +7,7 @@
 #   1+2.        snapshot_bcfp.sh on M4 + M1 (parallel)
 #   3.          cypher_up.sh job1/job2/job3 (parallel)
 #   4.          cypher_prep.sh on each cypher (parallel)
-#   5.          archive_provincial_runs.sh on all 5 hosts (parallel)
+#   5.          runs_archive.sh on all 5 hosts (parallel)
 #   6.          SMOKE — fail-fast
 #   7.          FULL DISPATCH
 #   8.          acceptance bar check (UNEXPLAINED at |diff_pct|>=2% == 0)
@@ -19,7 +19,7 @@
 # only attempts burn when there's something to burn.
 #
 # Usage:
-#   bash data-raw/province_run.sh [flags]
+#   bash data-raw/wsgs_run_pipeline.sh [flags]
 #
 # Flags:
 #   --wsgs=A,B,C       restrict to a WSG subset (full bundle if omitted)
@@ -65,7 +65,7 @@ done
 MAPPING_FLAG="--with-mapping-code"
 [ "$NO_MAPPING" = "1" ] && MAPPING_FLAG=""
 
-# Build the passthrough flag string for trifecta_provincial.sh + trifecta_smoke.sh.
+# Build the passthrough flag string for wsgs_dispatch.sh + trifecta_smoke.sh.
 DISPATCH_FLAGS=""
 [ -n "$WSGS_FILTER" ] && DISPATCH_FLAGS="$DISPATCH_FLAGS --wsgs=$WSGS_FILTER"
 [ -n "$CONFIG_NAME" ] && DISPATCH_FLAGS="$DISPATCH_FLAGS --config=$CONFIG_NAME"
@@ -76,13 +76,13 @@ DISPATCH_FLAGS=""
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$REPO_ROOT"
 TS="$(date -u +%Y%m%d_%H%M%S)"
-LOG_DIR="$REPO_ROOT/data-raw/logs/province_run"
+LOG_DIR="$REPO_ROOT/data-raw/logs/wsgs_run_pipeline"
 mkdir -p "$LOG_DIR"
-LOG="$LOG_DIR/${TS}_province_run.log"
+LOG="$LOG_DIR/${TS}_wsgs_run_pipeline.log"
 exec > >(tee -a "$LOG") 2>&1
 
 START_EPOCH=$(date +%s)
-echo "=== province_run.sh $TS ==="
+echo "=== wsgs_run_pipeline.sh $TS ==="
 echo "  log:         $LOG"
 echo "  config:      $CONFIG_NAME"
 [ -n "$SCHEMA" ]      && echo "  schema:      $SCHEMA"
@@ -173,7 +173,7 @@ if [ -n "$SCHEMA" ]; then
   echo "=== Step 0: pre-clean target schema [$SCHEMA] ==="
   CLEAN_ARGS="--schemas=$SCHEMA"
   [ "$NO_CYPHERS" = "1" ] && CLEAN_ARGS="$CLEAN_ARGS --skip-cy"
-  bash data-raw/province_clean.sh $CLEAN_ARGS > "$LOG_DIR/${TS}_preclean.log" 2>&1 || {
+  bash data-raw/state_clean.sh $CLEAN_ARGS > "$LOG_DIR/${TS}_preclean.log" 2>&1 || {
     echo "FATAL: pre-clean failed; see $LOG_DIR/${TS}_preclean.log"
     exit 1
   }
@@ -234,14 +234,14 @@ else
 fi
 
 # --- Step 5: archive prior RDS — M4+M1 always, cyphers only when up ---
-echo "=== Step 5: archive_provincial_runs.sh on all hosts ==="
-bash data-raw/archive_provincial_runs.sh > "$LOG_DIR/${TS}_archive_m4.log" 2>&1 &
-ssh m1 'cd ~/Projects/repo/link/data-raw && ./archive_provincial_runs.sh' \
+echo "=== Step 5: runs_archive.sh on all hosts ==="
+bash data-raw/runs_archive.sh > "$LOG_DIR/${TS}_archive_m4.log" 2>&1 &
+ssh m1 'cd ~/Projects/repo/link/data-raw && ./runs_archive.sh' \
   > "$LOG_DIR/${TS}_archive_m1.log" 2>&1 &
 if [ "$NO_CYPHERS" = "0" ]; then
   for WS in job1 job2 job3; do
     IP="${CY_IP[$WS]}"
-    ssh "cypher@$IP" 'cd ~/Projects/repo/link/data-raw && ./archive_provincial_runs.sh' \
+    ssh "cypher@$IP" 'cd ~/Projects/repo/link/data-raw && ./runs_archive.sh' \
       > "$LOG_DIR/${TS}_archive_$WS.log" 2>&1 &
   done
 fi
@@ -264,7 +264,7 @@ fi
 
 # --- Step 7: FULL DISPATCH ---
 # When --no-cyphers OR --wsgs is set, omit --cy-workspaces so
-# trifecta_provincial.sh runs with the M4+M1-only plan it derives
+# wsgs_dispatch.sh runs with the M4+M1-only plan it derives
 # from DISPATCH_FLAGS (which includes --no-cyphers, --wsgs, etc.).
 if [ "$NO_CYPHERS" = "0" ] && [ -z "$WSGS_FILTER" ]; then
   TRIFECTA_CY_ARG="--cy-workspaces=job1,job2,job3"
@@ -275,9 +275,9 @@ else
 fi
 echo "  DISPATCH_FLAGS=$DISPATCH_FLAGS"
 cd "$REPO_ROOT/data-raw"
-if ! bash trifecta_provincial.sh $TRIFECTA_CY_ARG $DISPATCH_FLAGS $MAPPING_FLAG \
+if ! bash wsgs_dispatch.sh $TRIFECTA_CY_ARG $DISPATCH_FLAGS $MAPPING_FLAG \
      > "$LOG_DIR/${TS}_full.log" 2>&1; then
-  echo "WARNING: trifecta_provincial.sh exited non-zero; partial result may exist"
+  echo "WARNING: wsgs_dispatch.sh exited non-zero; partial result may exist"
   # don't exit — let acceptance + consolidate inspect what landed
 fi
 echo "--- full dispatch tail ---"
@@ -314,7 +314,7 @@ fi
 # dynamically — M1 always present; cyphers only when --no-cyphers
 # wasn't set.
 echo "=== Step 9: consolidate target schema ==="
-ORCH_LOG=$(ls -1t data-raw/logs/*_trifecta_provincial_orchestrator.txt 2>/dev/null | head -1 || true)
+ORCH_LOG=$(ls -1t data-raw/logs/*_wsgs_dispatch_orchestrator.txt 2>/dev/null | head -1 || true)
 if [ -z "$ORCH_LOG" ]; then
   echo "  ✗ no orchestrator log found — cannot extract per-host buckets"
   exit 1
@@ -371,14 +371,14 @@ if [ "$NO_CYPHERS" = "0" ]; then
   TARGET_SCHEMA="$TARGET_SCHEMA" SOURCES_R="$SOURCES_R" \
   Rscript -e '
 suppressPackageStartupMessages({library(link)})
-source("consolidate_schema.R")
+source("schema_consolidate.R")
 sources <- eval(parse(text = Sys.getenv("SOURCES_R")))
-result <- consolidate_schema(schema = Sys.getenv("TARGET_SCHEMA"),
+result <- schema_consolidate(schema = Sys.getenv("TARGET_SCHEMA"),
                               sources = sources, backup = TRUE)
 print(result)
 saveRDS(result, "/tmp/consolidate_result.rds")
 ' > "$LOG_DIR/${TS}_consolidate.log" 2>&1 || {
-    echo "  ✗ consolidate_schema.R failed; see $LOG_DIR/${TS}_consolidate.log"
+    echo "  ✗ schema_consolidate.R failed; see $LOG_DIR/${TS}_consolidate.log"
     exit 1
   }
 else
@@ -386,8 +386,8 @@ else
   M1_BUCKET="$M1_BUCKET" TARGET_SCHEMA="$TARGET_SCHEMA" \
   Rscript -e '
 suppressPackageStartupMessages({library(link)})
-source("consolidate_schema.R")
-result <- consolidate_schema(
+source("schema_consolidate.R")
+result <- schema_consolidate(
   schema  = Sys.getenv("TARGET_SCHEMA"),
   sources = list(list(host = "m1", via = "docker",
                        bucket = strsplit(Sys.getenv("M1_BUCKET"), ",")[[1]])),
@@ -395,7 +395,7 @@ result <- consolidate_schema(
 print(result)
 saveRDS(result, "/tmp/consolidate_result.rds")
 ' > "$LOG_DIR/${TS}_consolidate.log" 2>&1 || {
-    echo "  ✗ consolidate_schema.R failed; see $LOG_DIR/${TS}_consolidate.log"
+    echo "  ✗ schema_consolidate.R failed; see $LOG_DIR/${TS}_consolidate.log"
     exit 1
   }
 fi
@@ -406,7 +406,7 @@ cd "$REPO_ROOT"
 END_EPOCH=$(date +%s)
 WALL=$(( END_EPOCH - START_EPOCH ))
 echo
-echo "=== province_run.sh complete in ${WALL}s (~$((WALL/60))m) ==="
+echo "=== wsgs_run_pipeline.sh complete in ${WALL}s (~$((WALL/60))m) ==="
 echo "  annotated CSV:  $ANN_CSV"
 echo "  UNEXPLAINED ≥2%: $N_UNEXP"
 echo "  trap EXIT will now burn cyphers (unless --keep-cyphers)"

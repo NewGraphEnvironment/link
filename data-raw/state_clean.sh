@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# province_clean.sh — wipe link-pipeline state on all hosts to a known-clean
+# state_clean.sh — wipe link-pipeline state on all hosts to a known-clean
 # baseline. Idempotent. Runs in <5 min wall on a healthy cluster.
 #
 # What it cleans:
@@ -18,7 +18,7 @@
 #   - bcfishpass_ref (reference data; not pipeline output)
 #
 # Usage:
-#   bash data-raw/province_clean.sh [flags]
+#   bash data-raw/state_clean.sh [flags]
 #
 # Flags:
 #   --cy-workspaces=A,B,C  cypher workspaces to clean (default: job1,job2,job3)
@@ -30,7 +30,7 @@
 #                          not touched). Use for per-bundle pre-cleans like
 #                          `--schemas=fresh_default` before subset dispatches.
 #
-# Honors /tmp/cy_ips.env if present (set by trifecta_provincial.sh dispatch
+# Honors /tmp/cy_ips.env if present (set by wsgs_dispatch.sh dispatch
 # wrapper). Otherwise derives cypher IPs from tofu state.
 #
 # Expected wall:
@@ -79,12 +79,12 @@ if [ "$SKIP_CY" = "0" ]; then
   done
 fi
 
-echo "=== province_clean.sh starting $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
+echo "=== state_clean.sh starting $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
 echo "  hosts: M4 + $([ "$SKIP_M1" = "0" ] && echo "M1 + ")$([ "$SKIP_CY" = "0" ] && echo "${#CY_IPS[@]} cyphers" || echo "no cyphers")"
 
 # --- Step 1: kill in-flight processes ---
 echo "--- step 1: kill in-flight dispatch ---"
-ps -ef | grep -E "trifecta_provincial|cypher_run|run_provincial_parity|ssh.*cypher@|ssh.*-R.*m1|consolidate_schema" \
+ps -ef | grep -E "wsgs_dispatch|cypher_run|wsgs_run_host|ssh.*cypher@|ssh.*-R.*m1|schema_consolidate" \
   | grep -v grep | awk '{print $2}' | xargs -r kill -9 2>/dev/null || true
 sleep 2
 [ "$SKIP_M1" = "0" ] && ssh m1 'pkill -9 -f "Rscript.*run_provincial" 2>/dev/null' 2>&1 || true
@@ -153,7 +153,7 @@ echo "  ✓ schemas dropped + fresh recreated empty"
 if [ -n "$SCOPED_SCHEMAS" ]; then
   echo "--- step 5: SKIPPED (scoped mode — canonical fresh untouched) ---"
   echo
-  echo "=== province_clean.sh complete (scoped: [$SCOPED_SCHEMAS]) $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
+  echo "=== state_clean.sh complete (scoped: [$SCOPED_SCHEMAS]) $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
   exit 0
 fi
 
@@ -204,4 +204,4 @@ if [ "$SKIP_CY" = "0" ]; then
   done
 fi
 
-echo "=== province_clean.sh complete $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
+echo "=== state_clean.sh complete $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="

@@ -2,7 +2,7 @@
 #
 # Compare-only wrapper around `link::lnk_compare_rollup(reference = "bcfishpass")`
 # for the targets pipeline in data-raw/_targets.R and the orchestrator
-# scripts (run_provincial_parity.R, trifecta_*.sh).
+# scripts (wsgs_run_host.R, trifecta_*.sh).
 #
 # Reads persisted state in <persist_schema>.streams + streams_habitat_<sp>
 # (written by `wsg_pipeline_run.R` or any prior modelling call), queries

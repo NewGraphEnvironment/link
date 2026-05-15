@@ -52,22 +52,15 @@ Patch the original filename first so the smoke (Phase 3) validates on the known-
 
 ## Phase 4 — Rename 8 scripts + update all live references
 
-- [ ] `git mv data-raw/province_run.sh data-raw/wsgs_run_pipeline.sh`
-- [ ] `git mv data-raw/province_clean.sh data-raw/state_clean.sh`
-- [ ] `git mv data-raw/province_progress.sh data-raw/progress_check.sh`
-- [ ] `git mv data-raw/trifecta_provincial.sh data-raw/wsgs_dispatch.sh`
-- [ ] `git mv data-raw/run_provincial_parity.R data-raw/wsgs_run_host.R`
-- [ ] `git mv data-raw/consolidate_schema.R data-raw/schema_consolidate.R`
-- [ ] `git mv data-raw/archive_provincial_runs.sh data-raw/runs_archive.sh`
-- [ ] `git mv data-raw/balance_provincial_buckets.R data-raw/buckets_balance.R`
-- [ ] Update internal references in each renamed file (self-name in usage block, `source()` calls between them, log filenames).
-- [ ] Update `data-raw/README.md` (~27 refs).
-- [ ] Update `research/provincial_run_runbook.md` (~12 refs).
-- [ ] Update `research/post_compact_provincial_handoff.md` (~8 refs).
-- [ ] Update `CLAUDE.md` (2 refs).
-- [ ] **Do NOT update** `planning/archive/**`, `NEWS.md` historical entries.
-- [ ] `bash -n` clean on all 4 renamed shell scripts.
-- [ ] `/code-check` clean.
+- [x] `git mv` all 8 renames (preserves `git log --follow`).
+- [x] `sed -i ''` across live tree applies all 8 old→new substitutions atomically. Order chosen to avoid prefix collisions; verified no new name contains any old name as substring (sed map is idempotent).
+- [x] Internal references updated in renamed files: usage blocks, `Rscript wsgs_run_host.R` invocations, log-filename literals (`${TS}_wsgs_dispatch_*`), cross-script `bash` calls.
+- [x] Updated `data-raw/README.md`, `data-raw/trifecta_smoke.sh`, `data-raw/query_schema_delta.R`, `wsg_compare.R`, `wsg_pipeline_run.R`.
+- [x] Updated `research/*.md` (runbook, handoff, parity docs).
+- [x] Updated `CLAUDE.md`, `R/utils.R` (one-line docstring ref).
+- [x] **NOT updated** (sealed): `NEWS.md` historical entries (reverted after sed swept them), `planning/archive/**`.
+- [x] `bash -n` clean on all renamed shell scripts (wsgs_run_pipeline.sh, state_clean.sh, progress_check.sh, wsgs_dispatch.sh, runs_archive.sh) + trifecta_smoke.sh sibling.
+- [x] `/code-check` round 1 clean (all 7 concerns verified: bash syntax, cross-refs, log literals, Rscript invocations, tree-wide grep empty, idempotency, R/utils.R docstring).
 - [ ] Commit "Rename 8 operational scripts to noun_verb convention"
 
 ## Phase 5 — Smoke after rename

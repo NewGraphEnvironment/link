@@ -5,7 +5,7 @@
 **Software**: link 0.35.0 (sha 8f8c7b6 + #157 dispatch fix), fresh 0.31.0, bcfp reference `bcfishpass@v0.7.14-125-g6e9cf1c` via tunnel `db_newgraph`
 **Configuration**: bcfishpass bundle parity only
 **Source data**: 232 candidate WSGs filtered → 217 dispatched (link#157), 15 known-empty WSGs excluded from dispatch
-**Source log**: `data-raw/logs/202605112010_trifecta_provincial_orchestrator.txt`
+**Source log**: `data-raw/logs/202605112010_wsgs_dispatch_orchestrator.txt`
 **Output**: 232 RDS files in `data-raw/logs/provincial_parity/*.rds` (15 stub-error from this run, 217 OK)
 **Aggregate**: 1,647 comparable rollup rows (after dropping `-100%` lake/wetland centerline artifacts and NA-baseline rows)
 
@@ -52,10 +52,10 @@ Single-host baseline (2026-05-01): 4h 55min. 3-host LPT split saved **~3 hours**
 | M1 | Allans MacBook Pro (tailnet) | 0.83 (faster!) | 100 (102 − 7 errors) | 114.7 min | 64s |
 | cypher | DO droplet (g-8vcpu-32gb) | 1.83 | 46 | 88.6 min | 97s |
 
-LPT (Longest Processing Time first) bin-packing in `data-raw/balance_provincial_buckets.R` weights each WSG by its `m4_equiv` time, then assigns to the host whose projected finish time would be shortest. Cypher gets the fewest WSGs because its per-WSG cost is 1.83× M4's; M1 gets the most because it's slightly faster than M4 per-WSG. Predicted wall was 155.5 min vs actual 114.7 min — predictions tracked within 25%.
+LPT (Longest Processing Time first) bin-packing in `data-raw/buckets_balance.R` weights each WSG by its `m4_equiv` time, then assigns to the host whose projected finish time would be shortest. Cypher gets the fewest WSGs because its per-WSG cost is 1.83× M4's; M1 gets the most because it's slightly faster than M4 per-WSG. Predicted wall was 155.5 min vs actual 114.7 min — predictions tracked within 25%.
 
 **Operational notes:**
-- `data-raw/trifecta_provincial.sh` orchestrates dispatch via SSH + tailnet (`m1`) + reserved-IP SSH (`cypher@24.144.70.121`). cypher gets its bcfp-tunnel via in-script SSH local-forward `-L 63333:127.0.0.1:5432 db_newgraph`.
+- `data-raw/wsgs_dispatch.sh` orchestrates dispatch via SSH + tailnet (`m1`) + reserved-IP SSH (`cypher@24.144.70.121`). cypher gets its bcfp-tunnel via in-script SSH local-forward `-L 63333:127.0.0.1:5432 db_newgraph`.
 - M1 + cypher needed a one-time data sync of `cabd.dams` (1.9 MB), `whse_fish.pscis_assessment_svw` (18 MB), `fresh.modelled_stream_crossings` (380 MB) from M4 via `pg_dump | ssh docker exec psql`. `snapshot_bcfp.sh` is the canonical loader but those hosts didn't have it configured.
 - cypher's fresh+link install required `R CMD INSTALL --no-test-load` because pak tried to upgrade `sf` and conflicted with the host's conda-managed GDAL; downgrading to `R CMD INSTALL` kept the existing `sf 1.1.0` intact.
 
@@ -228,11 +228,11 @@ for HOST in m1 cypher@24.144.70.121; do
 done
 
 # 4. Compute LPT-balanced buckets
-Rscript data-raw/balance_provincial_buckets.R
+Rscript data-raw/buckets_balance.R
 # Copy the --m4-bucket= / --m1-bucket= / --cy-bucket= overrides into the next step
 
 # 5. Dispatch
-cd data-raw && ./trifecta_provincial.sh --m4-bucket=... --m1-bucket=... --cy-bucket=...
+cd data-raw && ./wsgs_dispatch.sh --m4-bucket=... --m1-bucket=... --cy-bucket=...
 
 # 6. After completion: consolidate per-host RDS files (auto-pulled by trifecta script)
 # 7. Aggregate: source /tmp/summary.R-style script over data-raw/logs/provincial_parity/*.rds
@@ -242,8 +242,8 @@ Wall: ~2 hours with current LPT factors (M4=1.0, M1=0.83, cy=1.83). Each provinc
 
 ## Files
 
-- Trifecta orchestrator log: `data-raw/logs/202605112010_trifecta_provincial_orchestrator.txt`
-- Per-host run logs: `data-raw/logs/202605112010_trifecta_provincial_{m4,m1,cypher}.txt`
+- Trifecta orchestrator log: `data-raw/logs/202605112010_wsgs_dispatch_orchestrator.txt`
+- Per-host run logs: `data-raw/logs/202605112010_wsgs_dispatch_{m4,m1,cypher}.txt`
 - Per-WSG timing CSVs: `data-raw/logs/provincial_parity/20260511_2010_{m4,m1,cy}_per_wsg_times.csv`
 - Per-WSG rollup RDS: `data-raw/logs/provincial_parity/<WSG>.rds`
 - Aggregate summary: `/tmp/provincial_summary.rds` (regenerate via `/tmp/summary.R`)
@@ -323,7 +323,7 @@ Bucket allocation was identity-deterministic from yesterday's per-WSG times (yes
 
 ### Consolidation to M4 (province-wide `fresh` schema)
 
-After per-host runs, `data-raw/consolidate_schema.R` pg_dumps fresh schema from m1 + cypher and pg_restores to M4. Hit two recoverable issues:
+After per-host runs, `data-raw/schema_consolidate.R` pg_dumps fresh schema from m1 + cypher and pg_restores to M4. Hit two recoverable issues:
 
 1. **Cypher restore (52 WSGs)**: clean. Reported `ok=FALSE` in the result list but data did land (script's `ok` boolean false-positives on certain pg_restore warning patterns — investigate later).
 2. **M1 restore (90 WSGs)**: pg_restore aborted COPYs for `streams_habitat_<sp>` tables due to duplicate-key violations. Root cause: M1's local `streams_habitat_<sp>` carries cross-run residuals (yesterday's runs left rows for WSGs that today went to different hosts), and `pg_restore --data-only` doesn't filter by today's bucket — it tries to insert ALL of M1's rows. Surgical recovery: `DELETE FROM fresh.<tbl> WHERE watershed_group_code IN (today's M1 bucket)` on M4, then per-table `\COPY (SELECT ... WHERE wsg IN ...) FROM STDIN`. All 8 species habitat tables recovered cleanly.
@@ -350,7 +350,7 @@ Per-species WSG counts reflect species presence: BT in 136 WSGs (most widespread
 
 - **rtj#129** (filed) — bake conda-geo-activate into cypher snapshot (`/etc/profile.d/conda-geo-activate.sh`).
 - **link#159** (filed) — wrap per-WSG body in `tryCatch({...}, finally = drop_working_schema)` for error-path cleanup.
-- **consolidate_schema.R** — investigate the m1 `streams_habitat_<sp>` pg_restore failure pattern. Probably need a `--clean-wsg-keys` arg that DELETEs source-host-bucket rows on dest before pg_restore.
+- **schema_consolidate.R** — investigate the m1 `streams_habitat_<sp>` pg_restore failure pattern. Probably need a `--clean-wsg-keys` arg that DELETEs source-host-bucket rows on dest before pg_restore.
 - **Full provincial mapping_code re-run** to validate #158 fix province-wide (BBAR + THOM confirmed ≥99.93%; remaining 215 WSGs extrapolated). Deferred — ~2 hr separate run.
 
 ### Runbook ratification
