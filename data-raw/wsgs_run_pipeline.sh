@@ -31,6 +31,11 @@
 #                          integration tests, or `--cy-workspaces=job1,job2` for Tier 2.
 #                          Mutually exclusive with --no-cyphers.
 #   --force            forward --force to per-host Rscript (bypass resume gates)
+#   --reset-schema     opts into Step 0 (drop target schema on all hosts before
+#                      dispatch). Default: skip Step 0 — pipeline writes are
+#                      additive (rely on lnk_pipeline_persist's DELETE-WHERE-WSG
+#                      idempotency). Use this only when you want a fresh-slate
+#                      schema OR to break a consolidate-stale-WSG collision.
 #   --skip-smoke       skip the smoke pre-check
 #   --no-mapping-code  drop the mapping_code lens
 #   --keep-cyphers     don't burn cyphers on exit (debug)
@@ -52,6 +57,7 @@ SCHEMA=""
 NO_CYPHERS=0
 FORCE_FLAG=""
 CY_WORKSPACES="job1,job2,job3"
+RESET_SCHEMA=0
 for arg in "$@"; do
   case "$arg" in
     --skip-smoke)      SKIP_SMOKE=1 ;;
@@ -64,6 +70,7 @@ for arg in "$@"; do
     --no-cyphers)      NO_CYPHERS=1 ;;
     --cy-workspaces=*) CY_WORKSPACES="${arg#--cy-workspaces=}" ;;
     --force)           FORCE_FLAG="--force" ;;
+    --reset-schema)    RESET_SCHEMA=1 ;;
     *) echo "FATAL: unknown arg: $arg" >&2; exit 1 ;;
   esac
 done
@@ -104,6 +111,7 @@ echo "  config:      $CONFIG_NAME"
 [ -n "$WSGS_FILTER" ] && echo "  wsgs:        $WSGS_FILTER"
 echo "  no-cyphers:  $([ "$NO_CYPHERS" = "0" ] && echo no || echo YES)"
 echo "  force:       $([ -n "$FORCE_FLAG" ] && echo YES || echo no)"
+echo "  reset-schema:$([ "$RESET_SCHEMA" = "1" ] && echo YES || echo no)"
 echo "  mapping:     $([ "$NO_MAPPING" = "0" ] && echo with || echo without)"
 echo "  smoke:       $([ "$SKIP_SMOKE" = "0" ] && echo on || echo SKIPPED)"
 echo "  keep-cy:     $([ "$KEEP_CYPHERS" = "0" ] && echo no || echo YES)"
@@ -177,7 +185,7 @@ doctl compute droplet list --no-header >/dev/null 2>&1 || { echo "  ✗ doctl no
 [ "$fail" = "0" ] || { echo "FATAL: pre-flight failed; aborting before spend"; exit 1; }
 echo "  ✓ pre-flight clean"
 
-# --- Step 0: pre-clean target schema (when --schema= is set) ---
+# --- Step 0: pre-clean target schema (OPTIONAL — opts in via --reset-schema) ---
 # Drops $SCHEMA on every host before dispatch so the per-WSG pipeline
 # writes land into a clean slate AND so consolidate's pg_dump source
 # contains only the current run's bucket (no leftover WSGs from prior
@@ -185,11 +193,21 @@ echo "  ✓ pre-flight clean"
 # scoped mode (--schemas=...) which skips the canonical-fresh wipe and
 # the snapshot_bcfp.sh reload.
 #
-# Skipped when --schema is empty (writes go to the bundle's default
-# schema, typically the canonical `fresh` — which Step 1+2's snapshot
-# already handles).
-if [ -n "$SCHEMA" ]; then
-  echo "=== Step 0: pre-clean target schema [$SCHEMA] ==="
+# Default (no --reset-schema): SKIPPED. Pipeline writes are additive:
+# lnk_pipeline_persist's DELETE-WHERE-WSG idempotency handles per-WSG
+# replacement; new WSGs add cleanly to existing schema state.
+#
+# Use --reset-schema when:
+#   - You want a fresh-slate schema rebuild
+#   - You're breaking a consolidate-stale-WSG collision (rare; surfaces
+#     when a sibling host has leftover WSGs outside the current bucket)
+# Requires --schema=<name> to be set.
+if [ "$RESET_SCHEMA" = "1" ]; then
+  if [ -z "$SCHEMA" ]; then
+    echo "FATAL: --reset-schema requires --schema=<name>" >&2
+    exit 1
+  fi
+  echo "=== Step 0: pre-clean target schema [$SCHEMA] (--reset-schema) ==="
   CLEAN_ARGS="--schemas=$SCHEMA"
   [ "$NO_CYPHERS" = "1" ] && CLEAN_ARGS="$CLEAN_ARGS --skip-cy"
   bash data-raw/state_clean.sh $CLEAN_ARGS > "$LOG_DIR/${TS}_preclean.log" 2>&1 || {
@@ -197,6 +215,8 @@ if [ -n "$SCHEMA" ]; then
     exit 1
   }
   echo "  ✓ pre-cleaned"
+elif [ -n "$SCHEMA" ]; then
+  echo "=== Step 0: SKIPPED (additive mode; pass --reset-schema to wipe $SCHEMA) ==="
 fi
 
 # --- Step 1+2: snapshot_bcfp.sh on M4 + M1 (parallel) ---
