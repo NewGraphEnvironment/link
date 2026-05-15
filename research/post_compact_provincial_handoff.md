@@ -6,7 +6,7 @@ Read this first if you're a fresh Claude session and the user asks you to run th
 
 - `lnk_compare_wsg()` + `lnk_parity_annotate()` — exported library functions
 - `research/bcfp_divergence_taxonomy.yml` — 11 verified-mechanism entries
-- 5-host N-cypher orchestrator (`data-raw/trifecta_provincial.sh`)
+- 5-host N-cypher orchestrator (`data-raw/wsgs_dispatch.sh`)
 - Phase 7 hardening: DDL drift detection, smoke fail-fast, log visibility, truth-in-headline
 - 5-WSG audit (ADMS/SETN/HORS/BULK/THOM) hit 0 UNEXPLAINED at |diff_pct|>=2%
 
@@ -85,10 +85,10 @@ wait
 # If any cypher's prep fails, surface to user and STOP.
 
 # === Step 5: archive prior RDS on ALL hosts (cross-host smoke gotcha from 2026-05-12) ===
-cd ~/Projects/repo/link/data-raw && bash archive_provincial_runs.sh
-ssh m1 'cd ~/Projects/repo/link/data-raw && ./archive_provincial_runs.sh'
+cd ~/Projects/repo/link/data-raw && bash runs_archive.sh
+ssh m1 'cd ~/Projects/repo/link/data-raw && ./runs_archive.sh'
 for IP in <cy1_ip> <cy2_ip> <cy3_ip>; do
-  ssh "cypher@$IP" 'cd ~/Projects/repo/link/data-raw && ./archive_provincial_runs.sh' &
+  ssh "cypher@$IP" 'cd ~/Projects/repo/link/data-raw && ./runs_archive.sh' &
 done
 wait
 
@@ -100,17 +100,17 @@ if [ $SMOKE_RC -ne 0 ]; then
   # Smoke caught an error stub. STOP.
   grep -E "smoke.*FAILED|smoke.*ERROR" /tmp/smoke.log
   # Inspect:
-  #   data-raw/logs/<TS>_trifecta_provincial_cypher_<ws>_R.txt
+  #   data-raw/logs/<TS>_wsgs_dispatch_cypher_<ws>_R.txt
   # DO NOT proceed to step 7 until smoke is clean.
 fi
 
 # === Step 7: FULL PROVINCIAL DISPATCH (~80-95 min wall) ===
 cd ~/Projects/repo/link/data-raw
-nohup bash trifecta_provincial.sh \
+nohup bash wsgs_dispatch.sh \
   --cy-workspaces=job1,job2,job3 \
   --with-mapping-code > /tmp/full_run.log 2>&1 &
 # Check completion via process list + log tail
-ps -ef | grep trifecta_provincial.sh | grep -v grep | wc -l   # 0 when done
+ps -ef | grep wsgs_dispatch.sh | grep -v grep | wc -l   # 0 when done
 tail -10 /tmp/full_run.log
 # Expected final headline: "local RDS: 217/217 pulled — 217 OK, 0 errors"
 
@@ -130,20 +130,20 @@ if (nrow(unexp) > 0) print(head(unexp[, c('wsg','species','habitat_type','link_v
 
 # === Step 9: consolidate fresh schema (m1 + 3 cyphers -> M4) ===
 # Extract per-host buckets from orchestrator log:
-ORCH_LOG=$(ls -1t data-raw/logs/*_trifecta_provincial_orchestrator.txt | head -1)
+ORCH_LOG=$(ls -1t data-raw/logs/*_wsgs_dispatch_orchestrator.txt | head -1)
 M1_BUCKET=$(grep '^  m1     bucket:' "$ORCH_LOG" | sed 's/.*bucket: //')
 CY1_BUCKET=$(grep '^  cypher\[job1\] bucket:' "$ORCH_LOG" | sed 's/.*bucket: //')
 CY2_BUCKET=$(grep '^  cypher\[job2\] bucket:' "$ORCH_LOG" | sed 's/.*bucket: //')
 CY3_BUCKET=$(grep '^  cypher\[job3\] bucket:' "$ORCH_LOG" | sed 's/.*bucket: //')
 
-# Then invoke consolidate_schema.R (DBI calls, needs PG_PASS_SHARE):
+# Then invoke schema_consolidate.R (DBI calls, needs PG_PASS_SHARE):
 cd ~/Projects/repo/link/data-raw
 M1_BUCKET="$M1_BUCKET" CY1_BUCKET="$CY1_BUCKET" CY2_BUCKET="$CY2_BUCKET" CY3_BUCKET="$CY3_BUCKET" \
 CY1_IP=<cy1_ip> CY2_IP=<cy2_ip> CY3_IP=<cy3_ip> \
 Rscript -e '
 suppressPackageStartupMessages({library(link)})
-source("consolidate_schema.R")
-result <- consolidate_schema(
+source("schema_consolidate.R")
+result <- schema_consolidate(
   schema = "fresh",
   sources = list(
     list(host = "m1",                                  via = "docker", bucket = strsplit(Sys.getenv("M1_BUCKET"),  ",")[[1]]),
@@ -185,7 +185,7 @@ Use `trap EXIT` defense if you write a wrapper. Without a wrapper, you do this m
 
 **Trigger**: No `_per_wsg_times.csv` files in `data-raw/logs/provincial_parity/` at the top level. Happens if you archive prior runs (which moves the timing CSVs to `archive/<TS>/`) without inheriting prior timing data into the new run.
 
-**Fix landed 2026-05-13** (`trifecta_provincial.sh` SPLIT_R block): when no timing CSV exists, the fallback now uses host_speeds-weighted alphabetical split (`floor(n * speed_factor / sum(speed_factors))` per host, remainder to highest-factor hosts). Log line is now `[LPT] no timing CSVs found; using host_speeds-weighted split` and reports per-host bucket sizes.
+**Fix landed 2026-05-13** (`wsgs_dispatch.sh` SPLIT_R block): when no timing CSV exists, the fallback now uses host_speeds-weighted alphabetical split (`floor(n * speed_factor / sum(speed_factors))` per host, remainder to highest-factor hosts). Log line is now `[LPT] no timing CSVs found; using host_speeds-weighted split` and reports per-host bucket sizes.
 
 **Tradeoff vs LPT-with-timings**: still doesn't know which specific WSGs are heavy (BULK / THOM heavyweights vs lightweight DEAD / ELKR). LPT-with-timings places heavyweights first; weighted-split is alphabetical. Better than equal split, worse than real LPT. The remedy: after the first successful provincial run, the per_wsg_times.csv landing in the top level gives the next dispatch real LPT data.
 
@@ -195,7 +195,7 @@ All hosts run the link pipeline against their OWN local fwapg, and ALL HOSTS run
 
 | Host | How it reaches bcfp |
 |---|---|
-| M4 | Operator's persistent tunnel + `trifecta_provincial.sh` opens an idempotent inline tunnel as backup (no harm if already up — bind fails silently, existing tunnel preserved) |
+| M4 | Operator's persistent tunnel + `wsgs_dispatch.sh` opens an idempotent inline tunnel as backup (no harm if already up — bind fails silently, existing tunnel preserved) |
 | M1 | **Reverse forward from M4** (`ssh -R 63333:127.0.0.1:63333 m1`) — M1's localhost:63333 → M4's localhost:63333 → db_newgraph:5432. M1 does NOT need its own working db_newgraph identity. |
 | cypher[jobN] | Opens its OWN ssh tunnel via `ssh -L 63333 db_newgraph -N &` inside the generated wrapper script. Cyphers have `~/.ssh/id_db_newgraph` (passphrase-free, authorized on db_newgraph). |
 
@@ -236,12 +236,12 @@ History: Prior runs (e.g. 2026-05-12 with 67 M1 WSGs OK) worked only because the
 | Diagnostic recipes per Class | `research/bcfp_divergence_investigation.md` |
 | Operational runbook | `research/provincial_run_runbook.md` |
 | Latest live run record | `research/provincial_parity_2026_05_12.md` |
-| Orchestrator | `data-raw/trifecta_provincial.sh` |
+| Orchestrator | `data-raw/wsgs_dispatch.sh` |
 | Smoke shim | `data-raw/trifecta_smoke.sh` |
 | Per-cypher prep | `data-raw/cypher_prep.sh` (defaults to `main` branch) |
 | Snapshot loader | `data-raw/snapshot_bcfp.sh` (with `--force` flag) |
-| Archive helper | `data-raw/archive_provincial_runs.sh` |
-| Consolidation | `data-raw/consolidate_schema.R` (R, not shell — pre/post row delta verification) |
+| Archive helper | `data-raw/runs_archive.sh` |
+| Consolidation | `data-raw/schema_consolidate.R` (R, not shell — pre/post row delta verification) |
 | Cypher infra | `~/Projects/repo/rtj/scripts/cypher/cypher_{up,down,run}.sh --workspace <name>` |
 | Findings from Phase 7 | `planning/archive/2026-05-link162-lnk-compare-wsg-annotated-csv/findings.md` |
 | Memory state | `~/.claude/projects/-Users-airvine-Projects-repo-link/memory/project_link_state.md` |

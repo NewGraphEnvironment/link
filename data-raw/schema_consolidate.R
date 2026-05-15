@@ -1,12 +1,12 @@
 #!/usr/bin/env Rscript
-# data-raw/consolidate_schema.R
+# data-raw/schema_consolidate.R
 #
 # Consolidate a Postgres schema from multiple remote hosts onto the
 # local fwapg via `pg_dump -Fc` + scp + `pg_restore --data-only`.
 #
 # Usage:
 #   Source this file (or Rscript), then:
-#     consolidate_schema(
+#     schema_consolidate(
 #       schema = "fresh",
 #       sources = list(
 #         list(host = "m1",                 via = "docker", container = "fresh-db"),
@@ -18,7 +18,7 @@
 # pattern (fresh schema across M4 + M1 + cypher) but not generalized
 # to arbitrary table subsets, alternative protocols (COPY streaming,
 # logical replication), or arbitrary destination conns. Promote to
-# `lnk_consolidate_schema()` only after using it 2-3 times for
+# `lnk_schema_consolidate()` only after using it 2-3 times for
 # different schemas — the right API will emerge from real usage.
 #
 # Why pg_dump/restore not COPY streaming: per-host dumps act as
@@ -60,7 +60,7 @@
 #'   retry.
 #'
 #' @return Invisibly: list of per-source pg_dump + restore outcomes.
-consolidate_schema <- function(schema,
+schema_consolidate <- function(schema,
                                 sources,
                                 backup = TRUE,
                                 dest_conn = link::lnk_db_conn(),
@@ -246,7 +246,7 @@ consolidate_schema <- function(schema,
 # ---------------------------------------------------------------------------
 if (!interactive() && length(commandArgs(trailingOnly = TRUE)) == 0L &&
     sys.nframe() == 0L) {
-  consolidate_schema(
+  schema_consolidate(
     schema = "fresh",
     sources = list(
       list(host = "m1",                  via = "docker"),

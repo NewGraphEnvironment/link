@@ -9,8 +9,8 @@
 - Per-WSG RDS: `data-raw/logs/provincial_parity/*.rds`
 - Per-WSG mapping_code stats embedded in each list-shape RDS
 - Aggregate annotated CSV: `data-raw/logs/provincial_parity/__TS___annotated.csv` (output of `lnk_parity_annotate()` against `research/bcfp_divergence_taxonomy.yml`)
-- Per-host run logs: `data-raw/logs/202605122221_trifecta_provincial_*.txt`
-- Orchestrator log: `data-raw/logs/202605122221_trifecta_provincial_orchestrator.txt`
+- Per-host run logs: `data-raw/logs/202605122221_wsgs_dispatch_*.txt`
+- Orchestrator log: `data-raw/logs/202605122221_wsgs_dispatch_orchestrator.txt`
 
 This is the **first run that exercises link#162's full machinery**: inline LPT bucket allocation (Phase 5), N-cypher dispatch via tofu workspaces, post-pull `lnk_parity_annotate()` against the divergence taxonomy YAML, the `lnk_compare_wsg` library function (replacing the inline `compare_bcfishpass_wsg.R` SQL), and the `mapping_code` branch (per-segment per-species token-level parity).
 
@@ -177,7 +177,7 @@ If the diff count is non-zero AND those segments appear in the WSG's mapping_cod
 
 This run surfaced several gotchas worth codifying for the wrapper script (`data-raw/run_phase7.sh` follow-up):
 
-1. **Cross-host archival before run.** `archive_provincial_runs.sh` ran on M4 only initially; M1's stale RDS got SCP-pulled back during the post-pull step, polluting the aggregate annotation. Fix: archive on ALL hosts (M4 + M1 + all cyphers) before dispatch. Now codified in the recommended cadence in `data-raw/README.md`.
+1. **Cross-host archival before run.** `runs_archive.sh` ran on M4 only initially; M1's stale RDS got SCP-pulled back during the post-pull step, polluting the aggregate annotation. Fix: archive on ALL hosts (M4 + M1 + all cyphers) before dispatch. Now codified in the recommended cadence in `data-raw/README.md`.
 
 2. **bcfp coverage gap is real, not a bug.** bcfp's 2026-05-12 build models 187 WSGs; we dispatch 217. The 36-WSG delta caused `with_mapping_code = TRUE` to stop loudly when it should have warned + returned NA. Fix (commit __TBD__): `.lnk_compare_wsg_mapping_code_diff` distinguishes (a) bcfp 0 rows → warn + NA fill, (b) bcfp has rows but no merge → stop loud (real misalignment).
 
@@ -187,8 +187,8 @@ This run surfaced several gotchas worth codifying for the wrapper script (`data-
 
 ## Files
 
-- Orchestrator log: `data-raw/logs/202605122221_trifecta_provincial_orchestrator.txt`
-- Per-host run logs: `data-raw/logs/202605122221_trifecta_provincial_{m4,m1,cypher_job1,cypher_job2,cypher_job3}.txt`
+- Orchestrator log: `data-raw/logs/202605122221_wsgs_dispatch_orchestrator.txt`
+- Per-host run logs: `data-raw/logs/202605122221_wsgs_dispatch_{m4,m1,cypher_job1,cypher_job2,cypher_job3}.txt`
 - Per-host timing CSVs: `data-raw/logs/provincial_parity/__TS___{m4,m1,cy}_per_wsg_times.csv`
 - Per-WSG rollup RDS: `data-raw/logs/provincial_parity/*.rds`
 - Aggregate annotated CSV: `data-raw/logs/provincial_parity/__TS___annotated.csv`

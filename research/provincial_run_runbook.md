@@ -18,13 +18,13 @@ Companion docs:
 ```bash
 cd ~/Projects/repo/link/data-raw
 
-./archive_provincial_runs.sh                            # 1. clean LPT input
+./runs_archive.sh                            # 1. clean LPT input
 # (spin cyphers per §1)
 ./trifecta_smoke.sh --cy-workspaces=job1,job2,job3      # 2. smoke (~3 min)
 # (if smoke errors loud, fix and re-run; DO NOT skip to full)
-./trifecta_provincial.sh --with-mapping-code --cy-workspaces=job1,job2,job3   # 3. full (~80 min)
+./wsgs_dispatch.sh --with-mapping-code --cy-workspaces=job1,job2,job3   # 3. full (~80 min)
 # (inspect annotated CSV)
-# (consolidate fresh schema via consolidate_schema.R)
+# (consolidate fresh schema via schema_consolidate.R)
 ~/Projects/repo/rtj/scripts/cypher/cypher_down.sh --workspace job1   # 4. burn (mandatory)
 ~/Projects/repo/rtj/scripts/cypher/cypher_down.sh --workspace job2
 ~/Projects/repo/rtj/scripts/cypher/cypher_down.sh --workspace job3
@@ -145,10 +145,10 @@ After this, `lnk_persist_init` future calls (during dispatch) are silent no-ops.
 
 ```bash
 cd ~/Projects/repo/link/data-raw
-./archive_provincial_runs.sh
-ssh m1 'cd ~/Projects/repo/link/data-raw && ./archive_provincial_runs.sh'
+./runs_archive.sh
+ssh m1 'cd ~/Projects/repo/link/data-raw && ./runs_archive.sh'
 for IP in $JOB1_IP $JOB2_IP $JOB3_IP; do
-  ssh "cypher@$IP" 'cd ~/Projects/repo/link/data-raw && ./archive_provincial_runs.sh' &
+  ssh "cypher@$IP" 'cd ~/Projects/repo/link/data-raw && ./runs_archive.sh' &
 done
 wait
 ```
@@ -166,8 +166,8 @@ cd ~/Projects/repo/link/data-raw
 **Exits non-zero** if any host produced an error stub. Inspect:
 
 ```
-data-raw/logs/<TS>_trifecta_provincial_*.txt       # orchestrator + per-host
-data-raw/logs/<TS>_trifecta_provincial_cypher_*_R.txt   # cypher R output (auto-pulled)
+data-raw/logs/<TS>_wsgs_dispatch_*.txt       # orchestrator + per-host
+data-raw/logs/<TS>_wsgs_dispatch_cypher_*_R.txt   # cypher R output (auto-pulled)
 ```
 
 Common smoke failures + fixes:
@@ -186,7 +186,7 @@ compute per failure mode.
 
 ```bash
 cd ~/Projects/repo/link/data-raw
-./trifecta_provincial.sh \
+./wsgs_dispatch.sh \
   --with-mapping-code \
   --cy-workspaces=job1,job2,job3 \
   > /tmp/full_run.log 2>&1 &
@@ -227,8 +227,8 @@ taxonomy entries + re-annotate without rerunning the pipeline.
 ```bash
 cd ~/Projects/repo/link/data-raw
 Rscript -e '
-source("consolidate_schema.R")
-result <- consolidate_schema(
+source("schema_consolidate.R")
+result <- schema_consolidate(
   schema = "fresh",
   sources = list(
     list(host = "m1",                  via = "docker", bucket = strsplit("WSG1,WSG2,...", ",")[[1]]),
@@ -240,7 +240,7 @@ result <- consolidate_schema(
 ```
 
 Bucket strings come from the orchestrator log (per-host bucket lines under
-`[trifecta-provincial] dispatch start`). `consolidate_schema` (Phase 6) does
+`[trifecta-provincial] dispatch start`). `schema_consolidate` (Phase 6) does
 bucket-aware DELETE + pg_restore + pre/post row-count assertion.
 
 ## 6. Burn cyphers — MANDATORY
@@ -298,8 +298,8 @@ Required sections:
 |---|---|---|
 | `snapshot_bcfp.sh` | Load PSCIS + CABD + bchamp + bcfishobs into local fwapg | ~5-15 min |
 | `cypher_up.sh --workspace <ws>` | Spin DO droplet from `cypher-<date>-warm` snapshot | ~3 min |
-| `archive_provincial_runs.sh` | Move prior-run RDS + CSVs to archive/ | <1s |
+| `runs_archive.sh` | Move prior-run RDS + CSVs to archive/ | <1s |
 | `trifecta_smoke.sh` | 1-WSG-per-host smoke; fails loud on any error stub | ~3 min |
-| `trifecta_provincial.sh` | N-cypher full dispatch with inline LPT + annotation | ~80 min (5-host) |
-| `consolidate_schema.R` | pg_dump from m1+cyphers → pg_restore on M4 | ~5 min |
+| `wsgs_dispatch.sh` | N-cypher full dispatch with inline LPT + annotation | ~80 min (5-host) |
+| `schema_consolidate.R` | pg_dump from m1+cyphers → pg_restore on M4 | ~5 min |
 | `cypher_down.sh --workspace <ws>` | Destroy DO droplet (idempotent) | ~30s |

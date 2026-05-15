@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Provincial parity orchestrator — dispatch across M4 + M1 + N cyphers.
-# Each host runs `run_provincial_parity.R --wsgs=<bucket> --config=<bundle>`
+# Each host runs `wsgs_run_host.R --wsgs=<bucket> --config=<bundle>`
 # (resume-safe; skips WSGs whose RDS already exists). After all hosts
 # finish, pulls every host's RDS files back to M4, binds them, and writes
 # `<TS>_annotated.csv` against `research/bcfp_divergence_taxonomy.yml`.
@@ -13,14 +13,22 @@
 # Per-host `--<host>-bucket=` overrides still take precedence.
 #
 # Usage:
-#   ./trifecta_provincial.sh                          # 3-host default: M4 + M1 + 1 cypher
-#   ./trifecta_provincial.sh --with-mapping-code      # per-WSG mapping_code lens
-#   ./trifecta_provincial.sh --cy-workspaces=job1,job2,job3   # 5-host: 3 cyphers
+#   ./wsgs_dispatch.sh                          # 3-host default: M4 + M1 + 1 cypher
+#   ./wsgs_dispatch.sh --with-mapping-code      # per-WSG mapping_code lens
+#   ./wsgs_dispatch.sh --cy-workspaces=job1,job2,job3   # 5-host: 3 cyphers
+#   ./wsgs_dispatch.sh --wsgs=ADMS,BULK,DEAD --no-cyphers   # M4+M1, 3 WSGs
+#   ./wsgs_dispatch.sh --force --no-cyphers     # force re-run, M4+M1 only
 #
 # CLI flags:
 #   --config=<name>           bundle (default: bcfishpass)
 #   --schema=<name>           override cfg$pipeline$schema
 #   --rds-dir=<name>          override per-bundle RDS dir
+#   --wsgs=<csv>              restrict to a subset of the bundle's WSG list
+#                             (intersected with bundle presence-filtered set;
+#                              unknown WSGs error loud)
+#   --no-cyphers              skip cypher hosts entirely; dispatch M4+M1 only
+#   --force                   forward --force to the per-host Rscript
+#                             (bypasses both PG-state and RDS resume gates)
 #   --host-speeds=<csv>       per-host speed factor vs M4 (default: m4=1.0,m1=0.83,cy=1.83).
 #                             Higher = slower. Used in LPT bucket projection.
 #                             Per-cypher overrides via --host-speeds=...,cy1=1.83,cy2=2.10
@@ -29,10 +37,11 @@
 #   --cy-bucket=<csv>         single-cypher override (only valid with 1 workspace)
 #   --cy-workspaces=<csv>     comma-list of cypher tofu workspaces (default: "default")
 #   --cyN-bucket=<csv>        per-cypher override (1-indexed, e.g. --cy1-bucket=...)
-#   --with-mapping-code       pass through to run_provincial_parity.R
+#   --with-mapping-code       pass through to wsgs_run_host.R
 #   --skip-preflight          skip version-match check (debug only)
 #
-# Estimated wall: ~2 hours single-cypher, ~50-60 min 3-cypher.
+# Estimated wall: ~2 hours single-cypher, ~50-60 min 3-cypher,
+# ~30-40 min M4+M1 only (16-WSG default-bundle smoke test).
 
 set -euo pipefail
 
@@ -59,12 +68,18 @@ HOST_SPEEDS="m4=1.0,m1=0.79,cy=1.23"
 declare -A CYN_BUCKETS=()
 WITH_MAPPING_CODE=""
 SKIP_PREFLIGHT=0
+WSGS_FILTER=""
+NO_CYPHERS=0
+FORCE_FLAG=""
 
 for arg in "$@"; do
   case "$arg" in
     --config=*)         CONFIG="${arg#--config=}" ;;
     --schema=*)         SCHEMA="${arg#--schema=}" ;;
     --rds-dir=*)        RDS_DIR="${arg#--rds-dir=}" ;;
+    --wsgs=*)           WSGS_FILTER="${arg#--wsgs=}" ;;
+    --no-cyphers)       NO_CYPHERS=1 ;;
+    --force)            FORCE_FLAG="--force" ;;
     --host-speeds=*)    HOST_SPEEDS="${arg#--host-speeds=}" ;;
     --m4-bucket=*)      M4_OVERRIDE="${arg#--m4-bucket=}" ;;
     --m1-bucket=*)      M1_OVERRIDE="${arg#--m1-bucket=}" ;;
@@ -79,13 +94,28 @@ for arg in "$@"; do
   esac
 done
 
+# --no-cyphers wipes the cypher workspace list so the rest of the
+# script sees a zero-cypher plan. Bash array init from an empty string
+# via `read -r -a` produces a single-element array containing "" —
+# clear it explicitly to get a true empty list.
+if [ "$NO_CYPHERS" -eq 1 ]; then
+  CY_WORKSPACES=""
+fi
+
 EXTRA_ARGS="--config=$CONFIG"
 [ -n "$SCHEMA" ]            && EXTRA_ARGS="$EXTRA_ARGS --schema=$SCHEMA"
 [ -n "$RDS_DIR" ]           && EXTRA_ARGS="$EXTRA_ARGS --rds-dir=$RDS_DIR"
 [ -n "$WITH_MAPPING_CODE" ] && EXTRA_ARGS="$EXTRA_ARGS $WITH_MAPPING_CODE"
+[ -n "$FORCE_FLAG" ]        && EXTRA_ARGS="$EXTRA_ARGS $FORCE_FLAG"
 
-# Parse cypher workspace list into array
-IFS=',' read -r -a CY_WS_ARR <<< "$CY_WORKSPACES"
+# Parse cypher workspace list into array. Empty CY_WORKSPACES (set by
+# --no-cyphers) yields N_CY=0; all `for ((i=0; i<N_CY; i++))` loops
+# below become no-ops naturally.
+if [ -z "$CY_WORKSPACES" ]; then
+  CY_WS_ARR=()
+else
+  IFS=',' read -r -a CY_WS_ARR <<< "$CY_WORKSPACES"
+fi
 N_CY=${#CY_WS_ARR[@]}
 
 # --cy-bucket is only valid with exactly 1 cypher workspace.
@@ -99,7 +129,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LOG_DIR="$REPO_ROOT/data-raw/logs"
 mkdir -p "$LOG_DIR"
 TS=$(date +%Y%m%d%H%M)
-ORCH_LOG="$LOG_DIR/${TS}_trifecta_provincial_orchestrator.txt"
+ORCH_LOG="$LOG_DIR/${TS}_wsgs_dispatch_orchestrator.txt"
 
 # ---------------------------------------------------------------------------
 # Bucket allocation. Greedy LPT (Longest Processing Time first):
@@ -121,7 +151,7 @@ ORCH_LOG="$LOG_DIR/${TS}_trifecta_provincial_orchestrator.txt"
 # Manual --m4-bucket / --m1-bucket / --cyN-bucket overrides ALWAYS take
 # precedence over the computed LPT plan.
 # ---------------------------------------------------------------------------
-SPLIT_R="$LOG_DIR/${TS}_trifecta_provincial_split.R"
+SPLIT_R="$LOG_DIR/${TS}_wsgs_dispatch_split.R"
 cat > "$SPLIT_R" <<SPLIT_EOF
 suppressPackageStartupMessages({})
 
@@ -133,6 +163,22 @@ spp_cols <- tolower(cfg\$species)
 has_spp <- apply(wsg_pres[, spp_cols, drop = FALSE], 1,
                  function(r) any(r %in% c("t","TRUE",TRUE)))
 all_wsgs <- sort(wsg_pres\$watershed_group_code[has_spp])
+
+# --wsgs subset filter. Intersect with the bundle's presence-filtered
+# WSG set; error loud on any unknown WSG so a typo doesn't silently
+# drop work.
+wsgs_filter_csv <- "$WSGS_FILTER"
+if (nzchar(wsgs_filter_csv)) {
+  requested <- trimws(strsplit(wsgs_filter_csv, ",", fixed = TRUE)[[1]])
+  unknown <- setdiff(requested, all_wsgs)
+  if (length(unknown) > 0L) {
+    stop("--wsgs contains WSGs not in the bundle presence-filtered set: ",
+         paste(unknown, collapse = ", "), call. = FALSE)
+  }
+  all_wsgs <- sort(intersect(all_wsgs, requested))
+  cat("[LPT] --wsgs subset: ", length(all_wsgs), " of ",
+      length(requested), " requested kept\n", sep = "")
+}
 
 # Parse --host-speeds=m4=1.0,m1=0.83,cy=1.83 into a named numeric vector
 parse_speeds <- function(s) {
@@ -154,10 +200,25 @@ if (!all(c("m4","m1","cy") %in% names(speeds))) {
 # Hosts in the plan: m4, m1, cy1..cyN_CY (each cypher workspace is its
 # own host). Per-cypher speed: take \`cyN\` from --host-speeds if present,
 # else fall back to the generic \`cy\` factor.
+#
+# Phantom-cy guard for the --no-cyphers / empty workspace list case:
+# R's \`paste0("cy", integer(0))\` returns \`"cy"\` (length 1) due to
+# constant recycling, which would put a non-existent cypher in
+# host_keys. Three-branch the construction to keep n_cy = 0 honest.
 cy_ws_csv <- "$CY_WORKSPACES"
-cy_ws <- strsplit(cy_ws_csv, ",", fixed = TRUE)[[1]]
+cy_ws <- if (nzchar(cy_ws_csv)) {
+  strsplit(cy_ws_csv, ",", fixed = TRUE)[[1]]
+} else {
+  character(0)
+}
 n_cy <- length(cy_ws)
-cy_host_keys <- if (n_cy == 1L) "cy" else paste0("cy", seq_len(n_cy))
+cy_host_keys <- if (n_cy == 0L) {
+  character(0)
+} else if (n_cy == 1L) {
+  "cy"
+} else {
+  paste0("cy", seq_len(n_cy))
+}
 host_keys <- c("m4", "m1", cy_host_keys)
 host_factor <- numeric(length(host_keys))
 names(host_factor) <- host_keys
@@ -295,7 +356,12 @@ for (h in host_keys) {
 }
 SPLIT_EOF
 
-SPLIT_OUT=$(Rscript "$SPLIT_R" 2>&1)
+SPLIT_OUT=$(Rscript "$SPLIT_R" 2>&1) || {
+  rc=$?
+  echo "ERROR: split/LPT R script failed (rc=$rc):" >&2
+  echo "$SPLIT_OUT" >&2
+  exit "$rc"
+}
 echo "$SPLIT_OUT" | grep -E "^\[LPT\]" || true
 
 M4_WSGS=$(echo "$SPLIT_OUT" | awk -F'=' '$1=="M4" {print $2}')
@@ -327,7 +393,7 @@ for ((i=0; i<N_CY; i++)); do
 done
 
 # Guard against silent empty dispatch. An empty bucket would dispatch
-# `Rscript run_provincial_parity.R --wsgs=` (empty string), which the
+# `Rscript wsgs_run_host.R --wsgs=` (empty string), which the
 # R script accepts without error and processes 0 WSGs. Every host
 # "succeeds" with no work done — the orchestrator reports exit=0 and
 # 0 RDS files, masking the upstream split failure.
@@ -430,7 +496,7 @@ done
 TOTAL=$((M4_COUNT + M1_COUNT + CY_TOTAL))
 
 echo "============================================"
-echo "[trifecta-provincial] dispatch start: $(date '+%H:%M:%S')"
+echo "[wsgs-dispatch] dispatch start: $(date '+%H:%M:%S')"
 echo "  total WSGs: $TOTAL  (m4=$M4_COUNT  m1=$M1_COUNT  cypher_total=$CY_TOTAL)"
 echo "  config: $CONFIG  with_mapping_code: ${WITH_MAPPING_CODE:-no}"
 echo "  m4     bucket: $M4_WSGS"
@@ -450,7 +516,7 @@ declare -a CY_SHELL_PATHS=()
 for ((i=0; i<N_CY; i++)); do
   WS="${CY_WS_ARR[$i]}"
   BUCKET="${CY_BUCKETS[$i]}"
-  CY_SHELL="$LOG_DIR/${TS}_trifecta_provincial_cypher_${WS}.sh"
+  CY_SHELL="$LOG_DIR/${TS}_wsgs_dispatch_cypher_${WS}.sh"
   cat > "$CY_SHELL" <<CYPHER_EOF
 #!/usr/bin/env bash
 set -euo pipefail
@@ -464,7 +530,7 @@ for _ in \$(seq 1 10); do
   sleep 0.5
 done
 cd ~/Projects/repo/link/data-raw
-Rscript run_provincial_parity.R "--wsgs=$BUCKET" $EXTRA_ARGS
+Rscript wsgs_run_host.R "--wsgs=$BUCKET" $EXTRA_ARGS
 CYPHER_EOF
   chmod +x "$CY_SHELL"
   CY_SHELL_PATHS+=("$CY_SHELL")
@@ -480,8 +546,8 @@ START=$(date +%s)
 # 63333 is up, `ssh -L 63333` warns "Address already in use" and the
 # existing tunnel is reused; the trap-kill at exit kills only the new
 # (bind-failed) ssh PID, preserving the operator's persistent tunnel.
-M4_LOG="$LOG_DIR/${TS}_trifecta_provincial_m4.txt"
-M4_SHELL="$LOG_DIR/${TS}_trifecta_provincial_m4.sh"
+M4_LOG="$LOG_DIR/${TS}_wsgs_dispatch_m4.txt"
+M4_SHELL="$LOG_DIR/${TS}_wsgs_dispatch_m4.sh"
 cat > "$M4_SHELL" <<M4_EOF
 #!/usr/bin/env bash
 set -euo pipefail
@@ -495,7 +561,7 @@ for _ in \$(seq 1 10); do
   sleep 0.5
 done
 cd $REPO_ROOT/data-raw
-Rscript run_provincial_parity.R "--wsgs=$M4_WSGS" $EXTRA_ARGS
+Rscript wsgs_run_host.R "--wsgs=$M4_WSGS" $EXTRA_ARGS
 M4_EOF
 chmod +x "$M4_SHELL"
 ( bash "$M4_SHELL" > "$M4_LOG" 2>&1 ) &
@@ -513,10 +579,10 @@ M4_PID=$!
 #   - M1 must allow reverse port-forwards (OpenSSH default = yes).
 #   - Nothing else listening on M1's port 63333 (M1 has no persistent
 #     tunnel; this is free in practice).
-M1_LOG="$LOG_DIR/${TS}_trifecta_provincial_m1.txt"
+M1_LOG="$LOG_DIR/${TS}_wsgs_dispatch_m1.txt"
 ( ssh -o ServerAliveInterval=60 -o ServerAliveCountMax=10 \
     -R 63333:127.0.0.1:63333 m1 \
-    "cd ~/Projects/repo/link/data-raw && Rscript run_provincial_parity.R '--wsgs=$M1_WSGS' $EXTRA_ARGS" \
+    "cd ~/Projects/repo/link/data-raw && Rscript wsgs_run_host.R '--wsgs=$M1_WSGS' $EXTRA_ARGS" \
     > "$M1_LOG" 2>&1 ) &
 M1_PID=$!
 
@@ -525,7 +591,7 @@ declare -a CY_PIDS=()
 declare -a CY_LOGS=()
 for ((i=0; i<N_CY; i++)); do
   WS="${CY_WS_ARR[$i]}"
-  CY_LOG="$LOG_DIR/${TS}_trifecta_provincial_cypher_${WS}.txt"
+  CY_LOG="$LOG_DIR/${TS}_wsgs_dispatch_cypher_${WS}.txt"
   CY_LOGS+=("$CY_LOG")
   if [ "$WS" = "default" ]; then
     ( bash "$REPO_ROOT/../rtj/scripts/cypher/cypher_run.sh" "${CY_SHELL_PATHS[$i]}" > "$CY_LOG" 2>&1 ) &
@@ -555,7 +621,7 @@ END=$(date +%s)
 ELAPSED=$((END - START))
 
 echo "============================================"
-printf '[trifecta-provincial] elapsed: %dh%02dm%02ds\n' \
+printf '[wsgs-dispatch] elapsed: %dh%02dm%02ds\n' \
        $((ELAPSED/3600)) $(((ELAPSED%3600)/60)) $((ELAPSED%60))
 printf '  m4     exit=%d  log=%s\n' "$M4_EXIT" "$M4_LOG"
 printf '  m1     exit=%d  log=%s\n' "$M1_EXIT" "$M1_LOG"
@@ -584,7 +650,7 @@ for ((i=0; i<N_CY; i++)); do
   # which would otherwise abort the script via $(... | ...) command-sub.
   CY_R_LOG=$(ls -1t "$RTJ_CY_LOGDIR"/*_cypher-run_"${CY_WRAP_BASE}"_"${WS}".txt 2>/dev/null | head -1 || true)
   if [ -n "$CY_R_LOG" ] && [ -f "$CY_R_LOG" ]; then
-    cp "$CY_R_LOG" "$LOG_DIR/${TS}_trifecta_provincial_cypher_${WS}_R.txt"
+    cp "$CY_R_LOG" "$LOG_DIR/${TS}_wsgs_dispatch_cypher_${WS}_R.txt"
   fi
 done
 
@@ -594,7 +660,7 @@ done
 #   Each cypher: via TF_WORKSPACE-resolved droplet IP
 # ---------------------------------------------------------------------------
 echo
-echo "[trifecta-provincial] pulling m1 RDS files"
+echo "[wsgs-dispatch] pulling m1 RDS files"
 scp -q "m1:~/Projects/repo/link/data-raw/logs/$RDS_DIR_NAME/*.rds" \
     "$REPO_ROOT/data-raw/logs/$RDS_DIR_NAME/" 2>&1 | tail -3 || true
 
@@ -602,10 +668,10 @@ for ((i=0; i<N_CY; i++)); do
   WS="${CY_WS_ARR[$i]}"
   CY_IP=$(cd "$REPO_ROOT/../rtj/env/do/dev/cypher" && TF_WORKSPACE="$WS" tofu output -raw droplet_ip 2>/dev/null || echo "")
   if [ -z "$CY_IP" ]; then
-    echo "[trifecta-provincial] WARN: workspace '$WS' has no droplet_ip — skipping pull"
+    echo "[wsgs-dispatch] WARN: workspace '$WS' has no droplet_ip — skipping pull"
     continue
   fi
-  echo "[trifecta-provincial] pulling cypher[$WS] RDS files (cypher@$CY_IP)"
+  echo "[wsgs-dispatch] pulling cypher[$WS] RDS files (cypher@$CY_IP)"
   scp -q "cypher@$CY_IP:/home/cypher/Projects/repo/link/data-raw/logs/$RDS_DIR_NAME/*.rds" \
       "$REPO_ROOT/data-raw/logs/$RDS_DIR_NAME/" 2>&1 | tail -3 || true
 done
@@ -636,13 +702,13 @@ cat(n_ok, n_err)
   N_OK=$(echo "$RDS_COUNTS" | awk '{print $1+0}')
   N_ERR=$(echo "$RDS_COUNTS" | awk '{print $2+0}')
   N_OK=${N_OK:-0}; N_ERR=${N_ERR:-0}
-  echo "[trifecta-provincial] local RDS: $TOTAL_RDS / $TOTAL pulled — $N_OK OK, $N_ERR errors"
+  echo "[wsgs-dispatch] local RDS: $TOTAL_RDS / $TOTAL pulled — $N_OK OK, $N_ERR errors"
   if [ "$N_ERR" -gt 0 ]; then
-    echo "[trifecta-provincial] WARN: $N_ERR error-stub RDS found. Inspect cypher-side R logs:"
-    ls "$LOG_DIR/${TS}_trifecta_provincial_cypher_"*_R.txt 2>/dev/null | sed 's/^/  /' || true
+    echo "[wsgs-dispatch] WARN: $N_ERR error-stub RDS found. Inspect cypher-side R logs:"
+    ls "$LOG_DIR/${TS}_wsgs_dispatch_cypher_"*_R.txt 2>/dev/null | sed 's/^/  /' || true
   fi
 else
-  echo "[trifecta-provincial] local RDS file count: 0 / $TOTAL (no files pulled — all hosts failed?)"
+  echo "[wsgs-dispatch] local RDS file count: 0 / $TOTAL (no files pulled — all hosts failed?)"
 fi
 
 # ---------------------------------------------------------------------------
@@ -655,7 +721,7 @@ TAXONOMY="$REPO_ROOT/research/bcfp_divergence_taxonomy.yml"
 
 if [ -f "$TAXONOMY" ]; then
   echo
-  echo "[trifecta-provincial] aggregating + annotating $TOTAL_RDS RDS files"
+  echo "[wsgs-dispatch] aggregating + annotating $TOTAL_RDS RDS files"
   Rscript - <<RSCRIPT_EOF
 suppressPackageStartupMessages({library(link)})
 rds_files <- list.files("$REPO_ROOT/data-raw/logs/$RDS_DIR_NAME",
@@ -687,9 +753,9 @@ if (nrow(unexp) > 0) {
   cat("  acceptance bar met.\n")
 }
 RSCRIPT_EOF
-  echo "[trifecta-provincial] annotated CSV: $ANNOTATED_CSV"
+  echo "[wsgs-dispatch] annotated CSV: $ANNOTATED_CSV"
 else
-  echo "[trifecta-provincial] WARN: taxonomy YAML not at $TAXONOMY — skipping annotation"
+  echo "[wsgs-dispatch] WARN: taxonomy YAML not at $TAXONOMY — skipping annotation"
 fi
 
 # ---------------------------------------------------------------------------

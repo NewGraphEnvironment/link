@@ -150,7 +150,7 @@ Eight species columns: `mapping_code_bt`, `mapping_code_ch`,
   builds `<schema>.crossings` + `<schema>.barriers_anthropogenic` /
   `barriers_pscis` / `barriers_dams` / `barriers_remediations` from
   primitives. These are the inputs to `lnk_pipeline_access(barrier_sources = ...)`.
-- The provincial parity script `data-raw/run_provincial_parity.R` runs
+- The provincial parity script `data-raw/wsgs_run_host.R` runs
   phases 1–6 + km/ha rollup against bcfp. It does *not* run phases
   7–8 (access + mapping_code). The mapping_code comparison is its own
   driver — this document plus `compare_bcfp_mapping_code.R`.

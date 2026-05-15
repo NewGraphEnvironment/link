@@ -3,7 +3,7 @@
 **Date**: 2026-05-01 08:12–08:18 PDT
 **Versions**: link 0.21.0, fresh 0.26.0, bcfishpass 440bc1e
 **Hosts**: M4 Max + M1 over Tailscale, both with local Docker fwapg :5432 + bcfp tunnel :63333
-**Coordination**: ad-hoc — `Rscript run_provincial_parity.R --wsgs=<bucket>` per host, rsync per-WSG RDS files at end
+**Coordination**: ad-hoc — `Rscript wsgs_run_host.R --wsgs=<bucket>` per host, rsync per-WSG RDS files at end
 
 ## Headline
 
@@ -27,7 +27,7 @@ The minor `bcfishobs` row-count delta between M4 (372,420) and M1 (372,505 from 
 
 ## Architecture
 
-Each host runs `run_provincial_parity.R --wsgs=<bucket>` against its own:
+Each host runs `wsgs_run_host.R --wsgs=<bucket>` against its own:
 - writable Docker fwapg on :5432 (mutates `fresh.streams` per WSG)
 - bcfp reference DB on :63333 (read-only via SSH tunnel to db_newgraph)
 
@@ -46,12 +46,12 @@ No shared filesystem. No coordination layer. Manual partition driven by per-WSG 
 ```bash
 # m4
 mkdir -p data-raw/logs/provincial_parity
-Rscript data-raw/run_provincial_parity.R --wsgs=BULK,HARR,DEAD \
+Rscript data-raw/wsgs_run_host.R --wsgs=BULK,HARR,DEAD \
   > data-raw/logs/<TS>_dist_m4.txt 2>&1 &
 
 # m1 (over Tailscale)
 ssh m1 "cd /Users/airvine/Projects/repo/link && nohup bash -c \
-  '/usr/bin/time -p Rscript data-raw/run_provincial_parity.R --wsgs=ELKR,LFRA,VICT \
+  '/usr/bin/time -p Rscript data-raw/wsgs_run_host.R --wsgs=ELKR,LFRA,VICT \
    > data-raw/logs/<TS>_dist_m1.txt 2>&1' > /dev/null 2>&1 < /dev/null &"
 
 # wait for both, then rsync

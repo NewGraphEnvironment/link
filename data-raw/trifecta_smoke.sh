@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Smoke variant of trifecta_provincial.sh — one small WSG per host.
+# Smoke variant of wsgs_dispatch.sh — one small WSG per host.
 #
 # Thin shim that calls the production orchestrator with explicit per-host
 # bucket overrides. Goal: exercise EVERY code path the full provincial run
@@ -19,7 +19,7 @@
 #   cy2    → BABL  (small generic)
 #   cy3    → BULL  (small generic)
 #
-# All other flags pass through to trifecta_provincial.sh.
+# All other flags pass through to wsgs_dispatch.sh.
 
 set -euo pipefail
 
@@ -32,7 +32,7 @@ for arg in "$@"; do
     --cy-workspaces=*) CY_WORKSPACES="${arg#--cy-workspaces=}" ;;
     --m4-bucket=*|--m1-bucket=*|--cy-bucket=*|--cy[1-9]-bucket=*)
       echo "ERROR: trifecta_smoke.sh does not accept manual bucket overrides." >&2
-      echo "  Smoke picks one small WSG per host. Use trifecta_provincial.sh directly to override." >&2
+      echo "  Smoke picks one small WSG per host. Use wsgs_dispatch.sh directly to override." >&2
       exit 2
       ;;
     *)
@@ -89,7 +89,7 @@ find "$SMOKE_DIR" -maxdepth 1 -name '*.rds' 2>/dev/null | sort > "$PRE_RDS_LIST"
 # Run the orchestrator. Don't exec — we want control flow back so we
 # can run the smoke-pass assertion afterward.
 ORCH_RC=0
-bash "$SCRIPT_DIR/trifecta_provincial.sh" \
+bash "$SCRIPT_DIR/wsgs_dispatch.sh" \
   --m4-bucket=DEAD \
   --m1-bucket=ELKR \
   --cy-workspaces="$CY_WORKSPACES" \
@@ -134,11 +134,11 @@ if [ -n "$ERR_LINE" ]; then
   echo "" >&2
   echo "[smoke] FAILED: $N WSG(s) errored: $WSGS" >&2
   echo "[smoke] inspect logs:" >&2
-  echo "  data-raw/logs/<TS>_trifecta_provincial_*.txt (orchestrator-side)" >&2
+  echo "  data-raw/logs/<TS>_wsgs_dispatch_*.txt (orchestrator-side)" >&2
   echo "  rtj/scripts/cypher/logs/<TS>_cypher-run_*.txt (cypher-side R output)" >&2
-  echo "[smoke] DO NOT dispatch trifecta_provincial.sh until these are fixed." >&2
+  echo "[smoke] DO NOT dispatch wsgs_dispatch.sh until these are fixed." >&2
   exit 5
 fi
 
-echo "[smoke] PASS: all $(echo "$NEW_RDS" | wc -l | tr -d ' ') new RDS are successful tibbles. Safe to dispatch trifecta_provincial.sh."
+echo "[smoke] PASS: all $(echo "$NEW_RDS" | wc -l | tr -d ' ') new RDS are successful tibbles. Safe to dispatch wsgs_dispatch.sh."
 exit $ORCH_RC
