@@ -29,7 +29,7 @@ focus. Recent shipped work (v0.27 → v0.29):
   ceiling as standalone segments.
 - **v0.29.0** (#120, \#118) — DB hygiene: `cleanup_working = TRUE` in
   `compare_bcfishpass_wsg` drops working schemas after rollup;
-  `keep_source = FALSE` in `consolidate_schema` drops source schemas
+  `keep_source = FALSE` in `schema_consolidate` drops source schemas
   after pg_restore. Prevents the disk-full incident that crashed cypher
   2026-05-04.
 
