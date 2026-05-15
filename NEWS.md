@@ -1,3 +1,7 @@
+# link 0.38.1
+
+* `wsgs_run_pipeline.sh`: `--cy-workspaces=A,B,C` passthrough for #178 Tier 1/2 cypher integration tests (was hardcoded for the full `job1,job2,job3` set). CY_WS_ARR threaded through Steps 3/4/5/7/9 + trap-EXIT burn. Step 9 SOURCES_R built dynamically per-cypher. Tier 1 (1 cypher) validated live: 13/13 study-area WSGs, 22m wall, exit 0, cy1 burn clean.
+
 # link 0.38.0
 
 Provincial-run autonomy CLI + 8 operational-script renames to noun_verb convention. Closes [#172](https://github.com/NewGraphEnvironment/link/issues/172). Builds on v0.37.0's #168 decouple — with PG-state resume in place, the autonomy surface stays thin and the renames stay mechanical.
