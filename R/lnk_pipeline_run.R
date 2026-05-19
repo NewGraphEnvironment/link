@@ -167,14 +167,23 @@ lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
 
     # 1. Per-species + per-source barrier views over working <schema>.barriers
     # (built by lnk_barriers_unify above). Tunnel-free, link-canonical.
+    # `species = active_species` so the view set matches the bundle (default
+    # config = bt/gr/ko/rb — not the bcfp 8). Otherwise lnk_pipeline_access
+    # below fails JOINing barriers_<sp>_unified for a species the views
+    # didn't cover.
     lnk_barriers_views(conn, schema = schema, cfg = cfg, # nolint: object_usage_linter
+                       species = active_species,
                        barriers_table = paste0(schema, ".barriers"))
 
-    # 2. Per-segment access. barriers_per_sp keys cover the full bcfp
-    # species set so all `access_<sp>` + `has_barriers_<sp>_dnstr` columns
-    # in the persist table get populated (-9 for species absent from the
-    # WSG via lnk_pipeline_access's presence-aware code-assignment).
-    sp_set <- c("bt", "ch", "cm", "co", "pk", "sk", "st", "wct")
+    # 2. Per-segment access. barriers_per_sp keys = active species for
+    # this bundle so working schema's streams_access columns match the
+    # persist DDL (which is also bundle-species-driven via cols_*).
+    # The pre-#187-Phase-7 hardcoded 8 bcfp species created a working-vs-
+    # persist column mismatch when the bundle's species was a subset
+    # (e.g. default config = bt/gr/ko/rb). lnk_barriers_views default
+    # species still creates views for all 8 (idempotent CREATE OR REPLACE);
+    # we just pick the subset for the access call.
+    sp_set <- tolower(active_species)
     barriers_per_sp <- setNames(
       lapply(sp_set, function(sp) paste0(schema, ".barriers_", sp, "_unified")),
       sp_set)
@@ -195,13 +204,32 @@ lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
 
     # 3. Per-segment per-species mapping_code tokens. Schema-aware wrapper
     # over lnk_pipeline_mapping_code — delegates the pure data transform.
+    # Species pass-through: intersect bcfp residence defaults with
+    # active_species so mapping_code only computes for species the bundle
+    # actually models. Species in active_species but NOT in any bcfp
+    # residence category (e.g. GR/KO/RB in the default bundle) get
+    # assigned to species_resident by fallback — GR/KO/RB are all resident
+    # salmonids; treat as resident until link#189 data-drives this from
+    # dimensions.csv.
+    sp_resident_bcfp   <- c("bt", "wct")
+    sp_anadromous_bcfp <- c("ch", "cm", "co", "pk", "sk", "st")
+    sp_spawn_only_bcfp <- c("cm", "pk")
+    sp_resident_active   <- intersect(sp_set, sp_resident_bcfp)
+    sp_anadromous_active <- intersect(sp_set, sp_anadromous_bcfp)
+    sp_unclassified      <- setdiff(sp_set, c(sp_resident_bcfp, sp_anadromous_bcfp))
+    sp_resident_active   <- union(sp_resident_active, sp_unclassified)
+    sp_spawn_only_active <- intersect(sp_set, sp_spawn_only_bcfp)
+
     lnk_mapping_code(conn, # nolint: object_usage_linter
       table_access  = paste0(schema, ".streams_access"),
       table_habitat = paste0(schema, ".streams_habitat"),
       table_streams = paste0(schema, ".streams"),
       aoi           = aoi,
       table_to      = paste0(schema, ".streams_mapping_code"),
-      presence      = pres)
+      presence      = pres,
+      species_resident   = sp_resident_active,
+      species_anadromous = sp_anadromous_active,
+      species_spawn_only = sp_spawn_only_active)
   }
 
   lnk_pipeline_persist(conn, aoi = aoi, cfg = cfg, # nolint: object_usage_linter
