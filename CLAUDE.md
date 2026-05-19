@@ -8,7 +8,7 @@ notice.
 ## Repository Context
 
 **Repository:** NewGraphEnvironment/link **Primary Language:** R
-**Prefix:** `lnk_` **Branch:** `main` (v0.39.0 as of 2026-05-15)
+**Prefix:** `lnk_` **Branch:** `main` (v0.39.1 as of 2026-05-19)
 
 ## Status (2026-05-04)
 

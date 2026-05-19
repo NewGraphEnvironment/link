@@ -1,5 +1,28 @@
 # Changelog
 
+## link 0.39.1
+
+Fail loud on transient cypher prep failures. Closes
+[\#182](https://github.com/NewGraphEnvironment/link/issues/182).
+Trip-mode hardening before M1 takes over cypher dispatch while the user
+is in Europe.
+
+- **`data-raw/cypher_prep.sh`** — replace `set -e` with
+  `set -euo pipefail`; wrap three `| tail -N` pipelines with tempfile +
+  exit-check pattern (`bash snapshot_bcfp.sh`,
+  `Rscript pak::local_install`, `Rscript lnk_persist_init`). Before:
+  `tail`’s exit 0 masked upstream failures, script printed `=== READY`
+  while cypher was half-prepped, umbrella’s downstream marker-grep
+  caught it but the failure was opaque on the cypher itself. After: each
+  failure mode dumps its full log to stderr and exits 1, ssh-back to the
+  umbrella surfaces the non-zero exit, marker-grep continues to work as
+  belt-and-suspenders. Hit twice in 2026-05-15 (Peace Tier 2 retry +
+  post-#185 re-spin; transient bcdata openmaps WFS timeout in both
+  cases). Sibling fix shipped in
+  [rtj#163](https://github.com/NewGraphEnvironment/rtj/pull/163) for the
+  cypher orchestration scripts; this is the link-side complement
+  covering the per-cypher prep script.
+
 ## link 0.39.0
 
 Additive multi-host runs + two coupled fixes to `schema_consolidate.R`.
