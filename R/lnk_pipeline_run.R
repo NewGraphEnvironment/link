@@ -174,15 +174,28 @@ lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
   if (isTRUE(mapping_code)) {
     pres <- lnk_presence(loaded$wsg_species_presence, aoi) # nolint: object_usage_linter
 
-    # 1. Per-species + per-source barrier views over working <schema>.barriers
-    # (built by lnk_barriers_unify above). Tunnel-free, link-canonical.
-    # `species = active_species` so the view set matches the bundle (default
-    # config = bt/gr/ko/rb — not the bcfp 8). Otherwise lnk_pipeline_access
-    # below fails JOINing barriers_<sp>_unified for a species the views
-    # didn't cover.
+    # 0. Pre-persist current WSG's barriers + streams + habitat into
+    # <persist_schema> BEFORE building views. lnk_barriers_views defaults
+    # to reading the persist barriers table — necessary for cross-WSG
+    # access lookups (e.g. PARS BT through Bennett dams in PCEA/UPCE,
+    # link#152). My #187 Phase 4 worked around an ordering issue by
+    # pointing views at working <schema>.barriers, but that loses the
+    # cross-WSG visibility. Fix: persist current WSG's barriers FIRST,
+    # so persist holds current + all previously-persisted WSGs by the
+    # time the views are built. Second persist call below re-runs
+    # idempotently and adds streams_access + streams_mapping_code.
+    # link#196.
+    lnk_pipeline_persist(conn, aoi = aoi, cfg = cfg, # nolint: object_usage_linter
+                         species = active_species, schema = schema)
+
+    # 1. Per-species + per-source barrier views over PERSIST
+    # <persist_schema>.barriers (default — see #196). Province-wide,
+    # tunnel-free, link-canonical. Sees current WSG (just persisted) +
+    # all previously-persisted WSGs (cross-WSG dam visibility).
+    # `species = active_species` so the view set matches the bundle
+    # (default config = bt/gr/ko/rb — not the bcfp 8).
     lnk_barriers_views(conn, schema = schema, cfg = cfg, # nolint: object_usage_linter
-                       species = active_species,
-                       barriers_table = paste0(schema, ".barriers"))
+                       species = active_species)
 
     # 2. Per-segment access. barriers_per_sp keys = active species for
     # this bundle so working schema's streams_access columns match the
