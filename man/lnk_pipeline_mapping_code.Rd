@@ -11,11 +11,14 @@ lnk_pipeline_mapping_code(
   to = NULL,
   conn = NULL,
   presence = NULL,
-  resident_species = c("bt", "wct"),
-  anadromous_species = c("ch", "cm", "co", "pk", "sk", "st"),
-  spawn_only_species = c("cm", "pk"),
+  species_resident = c("bt", "wct"),
+  species_anadromous = c("ch", "cm", "co", "pk", "sk", "st"),
+  species_spawn_only = c("cm", "pk"),
   segment_id_col = "id_segment",
-  intermittent_feature_code = "GA24850150"
+  intermittent_feature_code = "GA24850150",
+  resident_species,
+  anadromous_species,
+  spawn_only_species
 )
 }
 \arguments{
@@ -44,15 +47,19 @@ Default \code{NULL} returns-only.}
 \item{conn}{A \link[DBI:DBIConnection-class]{DBI::DBIConnection}. Required only when \code{to} is
 supplied; ignored otherwise.}
 
-\item{resident_species}{Character. Species using the resident flavor
-of \code{mapping_code_barrier}. Default \code{c("bt", "wct")}.}
+\item{species_resident}{Character. Species using the resident flavor
+of \code{mapping_code_barrier}. Default \code{c("bt", "wct")}. (Renamed from
+\code{resident_species} in v0.40.0; old name accepted with deprecation
+warning until v0.41.0.)}
 
-\item{anadromous_species}{Character. Species using the anadromous
-flavor. Default \code{c("ch", "cm", "co", "pk", "sk", "st")}.}
+\item{species_anadromous}{Character. Species using the anadromous
+flavor. Default \code{c("ch", "cm", "co", "pk", "sk", "st")}. (Renamed
+from \code{anadromous_species} in v0.40.0.)}
 
-\item{spawn_only_species}{Character. Species without rearing
+\item{species_spawn_only}{Character. Species without rearing
 semantics (token 1 only emits SPAWN, never REAR). Default
-\code{c("cm", "pk")}. Mirrors bcfp.}
+\code{c("cm", "pk")}. Mirrors bcfp. (Renamed from \code{spawn_only_species}
+in v0.40.0.)}
 
 \item{segment_id_col}{Character. Default \code{"id_segment"}.}
 
@@ -62,7 +69,7 @@ that flags an intermittent stream. Default \code{"GA24850150"} (bcfp).}
 \value{
 A tibble keyed by \code{segment_id_col} with one
 \verb{mapping_code_<sp>} character column per species in
-\code{union(resident_species, anadromous_species)}.
+\code{union(species_resident, species_anadromous)}.
 }
 \description{
 Mirrors \code{bcfishpass.streams_mapping_code} -- a per-segment per-species

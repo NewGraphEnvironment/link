@@ -10,12 +10,13 @@ lnk_compare_wsg(
   cfg,
   loaded,
   reference = "bcfishpass",
-  with_mapping_code = FALSE,
+  mapping_code = FALSE,
   conn_ref = NULL,
   species = NULL,
   schema = paste0("working_", tolower(aoi)),
   dams = TRUE,
-  cleanup_working = TRUE
+  cleanup_working = TRUE,
+  with_mapping_code
 )
 }
 \arguments{
@@ -31,9 +32,11 @@ localhost fwapg).}
 \item{reference}{Character scalar identifying the reference dataset.
 Currently only \code{"bcfishpass"} is supported.}
 
-\item{with_mapping_code}{Logical. When \code{TRUE}, run the additional
+\item{mapping_code}{Logical. When \code{TRUE}, run the additional
 \code{barriers_unify} → \code{barriers_views} → \code{access} → \code{mapping_code}
-phases and emit per-species segment-match stats. Default \code{FALSE}.}
+phases and emit per-species segment-match stats. Default \code{FALSE}.
+(Renamed from \code{with_mapping_code} in v0.40.0; old name still
+accepted with deprecation warning until v0.41.0.)}
 
 \item{conn_ref}{DBI connection to the reference database. Required
 when \code{reference = "bcfishpass"} (the bcfp tunnel at
@@ -68,14 +71,14 @@ habitat types: \code{spawning}, \code{rearing}, \code{lake_rearing},
 match stats vs \code{bcfishpass.streams_mapping_code}. Columns:
 \code{wsg}, \code{species}, \code{total_segs}, \code{match_pct}, \code{n_diffs},
 \code{top_pattern}, \code{top_pattern_count}. \code{NULL} when
-\code{with_mapping_code = FALSE}.
+\code{mapping_code = FALSE}.
 }
 }
 \description{
 Per-WSG convenience wrapper around the existing \verb{lnk_pipeline_*}
 helpers that produces a long-format rollup tibble suitable for
 provincial parity comparisons. Optionally adds a per-segment
-\code{mapping_code} lens when \code{with_mapping_code = TRUE}.
+\code{mapping_code} lens when \code{mapping_code = TRUE}.
 }
 \details{
 \code{reference} is a string identifying the comparison source. Today
@@ -84,7 +87,7 @@ on \code{conn_ref}). The arg is future-proofed for default-bundle parity,
 regression detection across link runs, or non-bcfp external data.
 \subsection{Additive, not duplicative}{
 
-Both \code{with_mapping_code = FALSE} and \code{with_mapping_code = TRUE} run
+Both \code{mapping_code = FALSE} and \code{mapping_code = TRUE} run
 the per-WSG pipeline \strong{once}. The \code{TRUE} path is purely additive —
 it adds \code{lnk_barriers_unify}, \code{lnk_barriers_views}, \code{lnk_pipeline_access},
 and \code{lnk_pipeline_mapping_code} phases on top of the same network
@@ -129,7 +132,7 @@ result_mc <- lnk_compare_wsg(
   conn = conn, aoi = "ADMS",
   cfg = cfg, loaded = loaded,
   reference = "bcfishpass", conn_ref = conn_ref,
-  with_mapping_code = TRUE
+  mapping_code = TRUE
 )
 print(result_mc$mapping_code)
 }

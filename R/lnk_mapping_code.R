@@ -177,7 +177,7 @@ lnk_mapping_code <- function(
     to                 = table_to,
     conn               = conn,
     presence           = presence,
-    resident_species   = species_resident,
-    anadromous_species = species_anadromous,
-    spawn_only_species = species_spawn_only)
+    species_resident   = species_resident,
+    species_anadromous = species_anadromous,
+    species_spawn_only = species_spawn_only)
 }

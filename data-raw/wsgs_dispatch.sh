@@ -14,7 +14,7 @@
 #
 # Usage:
 #   ./wsgs_dispatch.sh                          # 3-host default: M4 + M1 + 1 cypher
-#   ./wsgs_dispatch.sh --with-mapping-code      # per-WSG mapping_code lens
+#   ./wsgs_dispatch.sh --mapping-code           # per-WSG mapping_code lens
 #   ./wsgs_dispatch.sh --cy-workspaces=job1,job2,job3   # 5-host: 3 cyphers
 #   ./wsgs_dispatch.sh --wsgs=ADMS,BULK,DEAD --no-cyphers   # M4+M1, 3 WSGs
 #   ./wsgs_dispatch.sh --force --no-cyphers     # force re-run, M4+M1 only
@@ -37,7 +37,7 @@
 #   --cy-bucket=<csv>         single-cypher override (only valid with 1 workspace)
 #   --cy-workspaces=<csv>     comma-list of cypher tofu workspaces (default: "default")
 #   --cyN-bucket=<csv>        per-cypher override (1-indexed, e.g. --cy1-bucket=...)
-#   --with-mapping-code       pass through to wsgs_run_host.R
+#   --mapping-code            pass through to wsgs_run_host.R (deprecated alias: --with-mapping-code)
 #   --skip-preflight          skip version-match check (debug only)
 #
 # Estimated wall: ~2 hours single-cypher, ~50-60 min 3-cypher,
@@ -66,7 +66,7 @@ HOST_SPEEDS="m4=1.0,m1=0.79,cy=1.23"
 #   cy   124s/WSG → 1.23  (8vCPU/32GB DO droplet, 32GB host preset)
 # If you spin c-class or m-class droplets, override via --host-speeds.
 declare -A CYN_BUCKETS=()
-WITH_MAPPING_CODE=""
+MAPPING_CODE=""
 SKIP_PREFLIGHT=0
 WSGS_FILTER=""
 NO_CYPHERS=0
@@ -89,7 +89,10 @@ for arg in "$@"; do
       N="${arg#--cy}"; N="${N%-bucket=*}"
       CYN_BUCKETS[$N]="${arg#--cy${N}-bucket=}"
       ;;
-    --with-mapping-code) WITH_MAPPING_CODE="--with-mapping-code" ;;
+    --mapping-code)      MAPPING_CODE="--mapping-code" ;;
+    --with-mapping-code)
+      echo "WARN: --with-mapping-code is deprecated; use --mapping-code (removal v0.41.0)" >&2
+      MAPPING_CODE="--mapping-code" ;;
     --skip-preflight)    SKIP_PREFLIGHT=1 ;;
   esac
 done
@@ -105,7 +108,7 @@ fi
 EXTRA_ARGS="--config=$CONFIG"
 [ -n "$SCHEMA" ]            && EXTRA_ARGS="$EXTRA_ARGS --schema=$SCHEMA"
 [ -n "$RDS_DIR" ]           && EXTRA_ARGS="$EXTRA_ARGS --rds-dir=$RDS_DIR"
-[ -n "$WITH_MAPPING_CODE" ] && EXTRA_ARGS="$EXTRA_ARGS $WITH_MAPPING_CODE"
+[ -n "$MAPPING_CODE" ]      && EXTRA_ARGS="$EXTRA_ARGS $MAPPING_CODE"
 [ -n "$FORCE_FLAG" ]        && EXTRA_ARGS="$EXTRA_ARGS $FORCE_FLAG"
 
 # Parse cypher workspace list into array. Empty CY_WORKSPACES (set by
@@ -498,7 +501,7 @@ TOTAL=$((M4_COUNT + M1_COUNT + CY_TOTAL))
 echo "============================================"
 echo "[wsgs-dispatch] dispatch start: $(date '+%H:%M:%S')"
 echo "  total WSGs: $TOTAL  (m4=$M4_COUNT  m1=$M1_COUNT  cypher_total=$CY_TOTAL)"
-echo "  config: $CONFIG  with_mapping_code: ${WITH_MAPPING_CODE:-no}"
+echo "  config: $CONFIG  mapping_code: ${MAPPING_CODE:-no}"
 echo "  m4     bucket: $M4_WSGS"
 echo "  m1     bucket: $M1_WSGS"
 for ((i=0; i<N_CY; i++)); do

@@ -297,7 +297,7 @@ test_that(".lnk_compare_wsg_assemble_rollup handles NA ref values (not modelled)
   expect_true(all(is.na(out$ref_value)))
 })
 
-test_that("lnk_compare_wsg composes mapping_code branch when with_mapping_code=TRUE", {
+test_that("lnk_compare_wsg composes mapping_code branch when mapping_code=TRUE", {
   calls <- character()
   pipeline_args <- list()
 
@@ -337,7 +337,7 @@ test_that("lnk_compare_wsg composes mapping_code branch when with_mapping_code=T
             conn = mock_conn(), aoi = "ADMS",
             cfg = mock_cfg(), loaded = mock_loaded(),
             reference = "bcfishpass", conn_ref = mock_conn(),
-            with_mapping_code = TRUE,
+            mapping_code = TRUE,
             species = "BT", cleanup_working = FALSE
           )
         }

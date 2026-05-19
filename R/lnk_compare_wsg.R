@@ -3,7 +3,7 @@
 #' Per-WSG convenience wrapper around the existing `lnk_pipeline_*`
 #' helpers that produces a long-format rollup tibble suitable for
 #' provincial parity comparisons. Optionally adds a per-segment
-#' `mapping_code` lens when `with_mapping_code = TRUE`.
+#' `mapping_code` lens when `mapping_code = TRUE`.
 #'
 #' `reference` is a string identifying the comparison source. Today
 #' only `"bcfishpass"` is supported (queries `bcfishpass.habitat_linear_<sp>`
@@ -12,7 +12,7 @@
 #'
 #' ## Additive, not duplicative
 #'
-#' Both `with_mapping_code = FALSE` and `with_mapping_code = TRUE` run
+#' Both `mapping_code = FALSE` and `mapping_code = TRUE` run
 #' the per-WSG pipeline **once**. The `TRUE` path is purely additive —
 #' it adds `lnk_barriers_unify`, `lnk_barriers_views`, `lnk_pipeline_access`,
 #' and `lnk_pipeline_mapping_code` phases on top of the same network
@@ -26,9 +26,11 @@
 #' @param loaded Named list from [lnk_load_overrides()].
 #' @param reference Character scalar identifying the reference dataset.
 #'   Currently only `"bcfishpass"` is supported.
-#' @param with_mapping_code Logical. When `TRUE`, run the additional
+#' @param mapping_code Logical. When `TRUE`, run the additional
 #'   `barriers_unify` → `barriers_views` → `access` → `mapping_code`
 #'   phases and emit per-species segment-match stats. Default `FALSE`.
+#'   (Renamed from `with_mapping_code` in v0.40.0; old name still
+#'   accepted with deprecation warning until v0.41.0.)
 #' @param conn_ref DBI connection to the reference database. Required
 #'   when `reference = "bcfishpass"` (the bcfp tunnel at
 #'   `localhost:63333`). Caller manages this connection.
@@ -56,7 +58,7 @@
 #'     match stats vs `bcfishpass.streams_mapping_code`. Columns:
 #'     `wsg`, `species`, `total_segs`, `match_pct`, `n_diffs`,
 #'     `top_pattern`, `top_pattern_count`. `NULL` when
-#'     `with_mapping_code = FALSE`.
+#'     `mapping_code = FALSE`.
 #'
 #' @details
 #' Side effects: writes per-WSG segment-level data to the persistent
@@ -96,7 +98,7 @@
 #'   conn = conn, aoi = "ADMS",
 #'   cfg = cfg, loaded = loaded,
 #'   reference = "bcfishpass", conn_ref = conn_ref,
-#'   with_mapping_code = TRUE
+#'   mapping_code = TRUE
 #' )
 #' print(result_mc$mapping_code)
 #' }
@@ -108,12 +110,21 @@
 #' @export
 lnk_compare_wsg <- function(conn, aoi, cfg, loaded,
                             reference = "bcfishpass",
-                            with_mapping_code = FALSE,
+                            mapping_code = FALSE,
                             conn_ref = NULL,
                             species = NULL,
                             schema = paste0("working_", tolower(aoi)),
                             dams = TRUE,
-                            cleanup_working = TRUE) {
+                            cleanup_working = TRUE,
+                            with_mapping_code) {
+  # Deprecation shim (link#187, removal in v0.41.0): accept the old
+  # `with_mapping_code` arg name; warn + remap to `mapping_code`.
+  if (!missing(with_mapping_code)) {
+    .Deprecated(msg = paste(
+      "`with_mapping_code` is deprecated; use `mapping_code` instead.",
+      "The old name will be removed in v0.41.0."))
+    mapping_code <- with_mapping_code
+  }
   stopifnot(
     inherits(conn, "DBIConnection"),
     is.character(aoi), length(aoi) == 1L, nzchar(aoi),
@@ -121,7 +132,7 @@ lnk_compare_wsg <- function(conn, aoi, cfg, loaded,
     inherits(cfg, "lnk_config"),
     is.list(loaded),
     is.character(reference), length(reference) == 1L, nzchar(reference),
-    is.logical(with_mapping_code), length(with_mapping_code) == 1L,
+    is.logical(mapping_code), length(mapping_code) == 1L,
     is.null(species) || is.character(species),
     is.character(schema), length(schema) == 1L, nzchar(schema),
     # `schema` is interpolated raw into DDL (DROP TABLE / DROP SCHEMA
@@ -152,12 +163,12 @@ lnk_compare_wsg <- function(conn, aoi, cfg, loaded,
       call. = FALSE
     )
   }
-  # `with_mapping_code = TRUE` requires conn_ref also for the
+  # `mapping_code = TRUE` requires conn_ref also for the
   # streams_mapping_code comparison query. Already validated above
   # when reference == 'bcfishpass' (the only supported reference today).
   # No additional gate needed.
 
-  # Run the modelling pipeline. `mapping_code = with_mapping_code` routes
+  # Run the modelling pipeline. `mapping_code = mapping_code` routes
   # the streams_access + streams_mapping_code build through pipeline_run's
   # tunnel-free phase (link#187) which persists both tables into
   # `<persist_schema>`. cleanup_working passes straight through — no
@@ -167,7 +178,7 @@ lnk_compare_wsg <- function(conn, aoi, cfg, loaded,
     conn = conn, aoi = aoi, cfg = cfg, loaded = loaded,
     schema = schema, dams = dams,
     cleanup_working = cleanup_working,
-    mapping_code = with_mapping_code)
+    mapping_code = mapping_code)
 
   # Read persisted state + reference into the long-format rollup.
   rollup <- lnk_compare_rollup( # nolint: object_usage_linter
@@ -175,18 +186,20 @@ lnk_compare_wsg <- function(conn, aoi, cfg, loaded,
     reference = reference, conn_ref = conn_ref,
     species = species)
 
-  mapping_code <- NULL
-  if (isTRUE(with_mapping_code)) {
+  # Local result var named `mc_stats` to avoid shadowing the
+  # `mapping_code` parameter (caught during the v0.40.0 rename).
+  mc_stats <- NULL
+  if (isTRUE(mapping_code)) {
     # Diff link's `<persist_schema>.streams_mapping_code` (built by
     # pipeline_run's mapping_code phase) against reference's. Tunnel-
     # bound — needs conn_ref. Build path was already executed above.
     bcfp_species <- c("bt", "ch", "cm", "co", "pk", "sk", "st", "wct")
-    mapping_code <- .lnk_compare_wsg_mapping_code_diff( # nolint: object_usage_linter
+    mc_stats <- .lnk_compare_wsg_mapping_code_diff( # nolint: object_usage_linter
       conn = conn, conn_ref = conn_ref,
       aoi = aoi, cfg = cfg, bcfp_species = bcfp_species)
   }
 
-  list(rollup = rollup, mapping_code = mapping_code)
+  list(rollup = rollup, mapping_code = mc_stats)
 }
 
 
