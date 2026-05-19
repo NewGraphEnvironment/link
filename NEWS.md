@@ -1,3 +1,15 @@
+# link 0.40.1
+
+Hotfix for v0.40.0's `lnk_pipeline_run(mapping_code = TRUE)` path on non-bcfp bundles. Closes [#192](https://github.com/NewGraphEnvironment/link/issues/192).
+
+v0.40.0's mapping_code phase hardcoded `sp_set <- c("bt","ch","cm","co","pk","sk","st","wct")` (the bcfp 8 species) and called `lnk_barriers_views` without a `species` arg (uses the same bcfp 8 default). Working schema's `streams_access` got bcfp-8-species columns, but persist `streams_access` was created by `lnk_persist_init(species = active_species)` with the bundle's species — for the `default` config that's bt/gr/ko/rb. The persist `INSERT ... SELECT` projects persist's column list against working → fails with `column a.has_barriers_ko_dnstr does not exist`.
+
+Effect: `lnk_pipeline_run(mapping_code = TRUE)` worked only for the bcfishpass bundle (full 8-species). Every other bundle (including the `default` operator-facing one) errored on persist.
+
+Fix: pipeline_run's mapping_code phase now uses `active_species` (bundle-driven) for both `lnk_barriers_views(species = ...)` and `lnk_pipeline_access(barriers_per_sp = ...)`. Passes `species_<role>` to `lnk_mapping_code` filtered against `active_species` — species in active_species that don't appear in any bcfp residence category (GR/KO/RB) fall through to `species_resident` (placeholder; the data-driven categorization lands via #189).
+
+Caught by live smoke 2026-05-19 on PARS with default bundle. Pre-merge unit tests didn't cover this path; #191 tracks the test catch-up.
+
 # link 0.40.0
 
 Mapping_code tunnel decouple + portable `lnk_mapping_code()` build + `<type>_<role>` rename sweep. Closes [#187](https://github.com/NewGraphEnvironment/link/issues/187). Major architectural shift in how access semantics flow through the parity diff. **BC: parameter and CLI-flag renames (deprecation shims for one release; removal v0.41.0).**
