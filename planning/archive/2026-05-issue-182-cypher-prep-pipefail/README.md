@@ -1,0 +1,5 @@
+## Outcome
+
+Fixed the `cypher_prep.sh` pipefail bug class — three `| tail -N` pipelines (snapshot_bcfp, pak::local_install, lnk_persist_init) wrapped with tempfile + exit-check pattern. `set -e` → `set -euo pipefail`. Before: tail's exit 0 masked upstream failures, cypher printed `=== READY` while half-prepped, umbrella's downstream marker-grep was the only safety net. After: each failure dumps full log to stderr and exits 1; umbrella's marker-grep stays as belt-and-suspenders. Bit us twice in one session (2026-05-15 Peace Tier 2 retry + post-#185 re-spin, both bcdata openmaps WFS timeouts) and motivated the urgency — M1 takes over cypher dispatch from M4 during the user's Europe trip, and silent failures are operator-hostile on a phone connection. Code-check round 1 surfaced a third instance of the same anti-pattern (pak::local_install at line 53), folded into the fix. Sibling pipefail sweep shipped in rtj#163 covering the cypher orchestration scripts (cypher_up/down/run/snapshot); this issue is the link-side complement covering the per-cypher prep script.
+
+Closed by: commit `d565e3e` / PR #TBD (v0.39.1)
