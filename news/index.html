@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.40.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.40.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,6 +31,14 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.40.1" id="link-0401">link 0.40.1<a class="anchor" aria-label="anchor" href="#link-0401"></a></h2>
+<p>Hotfix for v0.40.0’s <code>lnk_pipeline_run(mapping_code = TRUE)</code> path on non-bcfp bundles. Closes <a href="https://github.com/NewGraphEnvironment/link/issues/192" class="external-link">#192</a>.</p>
+<p>v0.40.0’s mapping_code phase hardcoded <code>sp_set &lt;- c("bt","ch","cm","co","pk","sk","st","wct")</code> (the bcfp 8 species) and called <code>lnk_barriers_views</code> without a <code>species</code> arg (uses the same bcfp 8 default). Working schema’s <code>streams_access</code> got bcfp-8-species columns, but persist <code>streams_access</code> was created by <code>lnk_persist_init(species = active_species)</code> with the bundle’s species — for the <code>default</code> config that’s bt/gr/ko/rb. The persist <code>INSERT ... SELECT</code> projects persist’s column list against working → fails with <code>column a.has_barriers_ko_dnstr does not exist</code>.</p>
+<p>Effect: <code>lnk_pipeline_run(mapping_code = TRUE)</code> worked only for the bcfishpass bundle (full 8-species). Every other bundle (including the <code>default</code> operator-facing one) errored on persist.</p>
+<p>Fix: pipeline_run’s mapping_code phase now uses <code>active_species</code> (bundle-driven) for both <code>lnk_barriers_views(species = ...)</code> and <code>lnk_pipeline_access(barriers_per_sp = ...)</code>. Passes <code>species_&lt;role&gt;</code> to <code>lnk_mapping_code</code> filtered against <code>active_species</code> — species in active_species that don’t appear in any bcfp residence category (GR/KO/RB) fall through to <code>species_resident</code> (placeholder; the data-driven categorization lands via <a href="https://github.com/NewGraphEnvironment/link/issues/189" class="external-link">#189</a>).</p>
+<p>Caught by live smoke 2026-05-19 on PARS with default bundle. Pre-merge unit tests didn’t cover this path; <a href="https://github.com/NewGraphEnvironment/link/issues/191" class="external-link">#191</a> tracks the test catch-up.</p>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.40.0" id="link-0400">link 0.40.0<a class="anchor" aria-label="anchor" href="#link-0400"></a></h2>
 <p>Mapping_code tunnel decouple + portable <code><a href="../reference/lnk_mapping_code.html">lnk_mapping_code()</a></code> build + <code>&lt;type&gt;_&lt;role&gt;</code> rename sweep. Closes <a href="https://github.com/NewGraphEnvironment/link/issues/187" class="external-link">#187</a>. Major architectural shift in how access semantics flow through the parity diff. <strong>BC: parameter and CLI-flag renames (deprecation shims for one release; removal v0.41.0).</strong></p>
