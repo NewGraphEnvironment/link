@@ -145,7 +145,16 @@ lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
          call. = FALSE)
   }
 
-  lnk_persist_init(conn, cfg, species = active_species) # nolint: object_usage_linter
+  # Persist DDL sized to the FULL bundle (cfg$species), not the per-WSG
+  # active subset (link#194). Wide tables (streams_access,
+  # streams_mapping_code) have one column per species — first WSG would
+  # lock the column set if we passed active_species, then subsequent WSGs
+  # with different active sets would fail INSERT. Per-WSG INSERTs still
+  # use active_species (in lnk_pipeline_persist below) so unused species'
+  # columns get NULL for WSGs that don't model them. Per-species habitat
+  # tables (streams_habitat_<sp>) get created for the full bundle too —
+  # empty tables for species no WSG populates are cheap.
+  lnk_persist_init(conn, cfg, species = cfg$species) # nolint: object_usage_linter
 
   # Always unify barriers — makes `<persist_schema>.barriers` canonical
   # for any future reader (e.g. a decoupled mapping_code comparison).
