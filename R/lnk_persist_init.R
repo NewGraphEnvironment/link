@@ -43,6 +43,64 @@ cols_habitat <- c(
   wetland_rearing      = "boolean"
 )
 
+#' Column shape for the per-segment per-species access table.
+#'
+#' Persist mirror of `lnk_pipeline_access()`'s scalar output projection.
+#' Per-species columns generated dynamically at DDL/INSERT time from the
+#' bundle's `species` arg — `has_barriers_<sp>_dnstr` (boolean) and
+#' `access_<sp>` (integer code per `lnk_pipeline_access` doc:
+#' -9=absent / 0=blocked / 1=modelled-accessible / 2=observed-upstream).
+#' Array columns (`barriers_<sp>_dnstr`, `obsrvtn_species_codes_upstr`)
+#' stay in-memory on the returned tibble; not persisted.
+#'
+#' See `R/lnk_pipeline_access.R` for the source projection. See link#187
+#' for the persist-this-and-mapping_code design.
+#' @noRd
+cols_streams_access_base <- c(
+  id_segment                = "integer NOT NULL",
+  watershed_group_code      = "varchar(4) NOT NULL",
+  remediated_dnstr_ind      = "boolean",
+  has_observation_key_upstr = "boolean"
+)
+
+#' Per-species column generator for `streams_access`.
+#'
+#' Returns a named character vector keyed by column-name → DDL type,
+#' two columns per species (`has_barriers_<sp>_dnstr` boolean,
+#' `access_<sp>` integer). Combined with `cols_streams_access_base` at
+#' DDL/INSERT time.
+#' @noRd
+.lnk_cols_streams_access_per_sp <- function(species) {
+  sp <- tolower(species)
+  c(
+    setNames(rep("boolean", length(sp)),
+             paste0("has_barriers_", sp, "_dnstr")),
+    setNames(rep("integer", length(sp)),
+             paste0("access_", sp))
+  )
+}
+
+#' Column shape for the per-segment per-species mapping_code table.
+#'
+#' Persist mirror of `lnk_pipeline_mapping_code()`'s output. Per-species
+#' columns generated dynamically — `mapping_code_<sp>` text. QGIS bcfp-
+#' shape symbology consumer (`data-raw/build_species_views.R --bcfp`).
+#'
+#' See `R/lnk_pipeline_mapping_code.R` for the source projection.
+#' See link#187 for the persist-and-decouple design.
+#' @noRd
+cols_streams_mapping_code_base <- c(
+  id_segment           = "integer NOT NULL",
+  watershed_group_code = "varchar(4) NOT NULL"
+)
+
+#' Per-species column generator for `streams_mapping_code`.
+#' @noRd
+.lnk_cols_streams_mapping_code_per_sp <- function(species) {
+  sp <- tolower(species)
+  setNames(rep("text", length(sp)), paste0("mapping_code_", sp))
+}
+
 #' Column shape for the unified province-wide barriers table.
 #'
 #' `<persist_schema>.barriers` holds all access-time barriers across all
@@ -225,6 +283,11 @@ lnk_persist_init <- function(conn, cfg, species, force_recreate = FALSE) {
   }
   .lnk_validate_persist_table(conn, schema = schema, table = "barriers",
                               force_recreate = force_recreate)
+  .lnk_validate_persist_table(conn, schema = schema, table = "streams_access",
+                              force_recreate = force_recreate)
+  .lnk_validate_persist_table(conn, schema = schema,
+                              table = "streams_mapping_code",
+                              force_recreate = force_recreate)
 
   # Persistent streams.
   .lnk_db_execute(conn, sprintf(
@@ -285,6 +348,45 @@ lnk_persist_init <- function(conn, cfg, species, force_recreate = FALSE) {
       "CREATE INDEX IF NOT EXISTS %s ON %s.barriers %s",
       idx_name, schema, barriers_idx_specs[[idx_name]]))
   }
+
+  # Per-segment per-species access table (link#187). Wide shape (one
+  # row per segment, all species columns inline) — matches the QGIS-
+  # consumer expectation + bcfp's `bcfishpass.streams_access` shape.
+  # Generated DDL: base cols + dynamic per-species (has_barriers + access).
+  cols_streams_access <- c(cols_streams_access_base,
+                           .lnk_cols_streams_access_per_sp(species))
+  .lnk_db_execute(conn, sprintf(
+    "CREATE TABLE IF NOT EXISTS %s.streams_access (\n  %s\n)",
+    schema, .lnk_cols_clause(cols_streams_access, pk)))
+  .lnk_db_execute(conn, sprintf(
+    "CREATE INDEX IF NOT EXISTS streams_access_wsg_idx ON %s.streams_access (watershed_group_code)",
+    schema))
+
+  # Per-segment per-species mapping_code table (link#187). Same wide
+  # shape. Consumed by `data-raw/build_species_views.R --bcfp` to build
+  # `streams_<sp>_bcfp_vw` views for QGIS symbology.
+  cols_streams_mapping_code <- c(cols_streams_mapping_code_base,
+                                 .lnk_cols_streams_mapping_code_per_sp(species))
+  .lnk_db_execute(conn, sprintf(
+    "CREATE TABLE IF NOT EXISTS %s.streams_mapping_code (\n  %s\n)",
+    schema, .lnk_cols_clause(cols_streams_mapping_code, pk)))
+  .lnk_db_execute(conn, sprintf(
+    "CREATE INDEX IF NOT EXISTS streams_mapping_code_wsg_idx ON %s.streams_mapping_code (watershed_group_code)",
+    schema))
+
+  # Long-form habitat view (link#187). UNION ALL across per-species
+  # `streams_habitat_<sp>` tables — emits (id_segment, watershed_group_code,
+  # species_code, spawning, rearing) for any consumer that prefers long
+  # form (e.g. `lnk_mapping_code()` queries this shape). VIEW not table:
+  # the data already lives in the per-species split; materializing would
+  # 100% duplicate.
+  view_unions <- vapply(species, function(sp) sprintf(
+    "SELECT id_segment, watershed_group_code, '%s'::text AS species_code, spawning, rearing FROM %s.streams_habitat_%s",
+    tolower(sp), schema, tolower(sp)),
+    character(1))
+  .lnk_db_execute(conn, sprintf(
+    "CREATE OR REPLACE VIEW %s.streams_habitat_long_vw AS\n%s",
+    schema, paste(view_unions, collapse = "\nUNION ALL\n")))
 
   invisible(conn)
 }
