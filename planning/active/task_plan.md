@@ -18,8 +18,8 @@ Hit twice in this session (2026-05-15 Peace Tier 2 retry + post-#185 re-spin). T
 
 ## Phase 2 — Local syntax + dry verification (no cypher spin)
 
-- [ ] `bash -n data-raw/cypher_prep.sh` clean.
-- [ ] Visual diff of expected stdout: confirm the last line of cypher_prep's stdout on success still contains `snapshot_bcfp.sh: complete.` so the umbrella's `grep -q` works unchanged.
+- [x] `bash -n data-raw/cypher_prep.sh` clean (verified in Phase 1).
+- [x] Visual diff of expected stdout: confirmed via `sed -n` that the snapshot success path emits `tail -5 "$TMP_SNAP_LOG"` which contains the `snapshot_bcfp.sh: complete.` marker; umbrella's `grep -q` (`wsgs_run_pipeline.sh:264`) reads the prep log which still contains the marker.
 
 ## Phase 3 — Live verification (deferred to next cypher spin)
 
@@ -29,9 +29,9 @@ Live cypher smoke is the gold standard but adds ~$0.50 + ~5 min overhead and a b
 
 ## Phase 4 — Release v0.39.1
 
-- [ ] Update `DESCRIPTION`: `Version: 0.39.0 → 0.39.1`, `Date: 2026-05-15`.
-- [ ] Update `NEWS.md` with v0.39.1 entry. Cite rtj#163 as the cross-repo companion fix.
-- [ ] Update `CLAUDE.md` branch reference to `v0.39.1`.
+- [x] Update `DESCRIPTION`: `Version: 0.39.0 → 0.39.1`, `Date: 2026-05-19`.
+- [x] Update `NEWS.md` with v0.39.1 entry. Cite rtj#163 as the cross-repo companion fix.
+- [x] Update `CLAUDE.md` branch reference to `v0.39.1`.
 - [ ] Commit `Release v0.39.1`.
 - [ ] `/planning-archive` with slug `cypher-prep-pipefail`.
 - [ ] `/gh-pr-push` opens PR.
