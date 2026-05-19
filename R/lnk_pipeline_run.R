@@ -178,11 +178,11 @@ lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
     # 2. Per-segment access. barriers_per_sp keys = active species for
     # this bundle so working schema's streams_access columns match the
     # persist DDL (which is also bundle-species-driven via cols_*).
-    # The pre-#187-Phase-7 hardcoded 8 bcfp species created a working-vs-
-    # persist column mismatch when the bundle's species was a subset
-    # (e.g. default config = bt/gr/ko/rb). lnk_barriers_views default
-    # species still creates views for all 8 (idempotent CREATE OR REPLACE);
-    # we just pick the subset for the access call.
+    # The pre-#192 hardcoded 8 bcfp species created a working-vs-persist
+    # column mismatch when the bundle's species was a subset (e.g. default
+    # config = bt/gr/ko/rb). lnk_barriers_views above created views for
+    # exactly active_species (not the bcfp 8); barriers_per_sp keys here
+    # mirror that set so lnk_pipeline_access JOINs only existing views.
     sp_set <- tolower(active_species)
     barriers_per_sp <- setNames(
       lapply(sp_set, function(sp) paste0(schema, ".barriers_", sp, "_unified")),
