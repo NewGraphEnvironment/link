@@ -60,20 +60,30 @@
 #'   Default `NULL` returns-only.
 #' @param conn A [DBI::DBIConnection-class]. Required only when `to` is
 #'   supplied; ignored otherwise.
-#' @param resident_species Character. Species using the resident flavor
-#'   of `mapping_code_barrier`. Default `c("bt", "wct")`.
-#' @param anadromous_species Character. Species using the anadromous
-#'   flavor. Default `c("ch", "cm", "co", "pk", "sk", "st")`.
-#' @param spawn_only_species Character. Species without rearing
+#' @param species_resident Character. Species using the resident flavor
+#'   of `mapping_code_barrier`. Default `c("bt", "wct")`. (Renamed from
+#'   `resident_species` in v0.40.0; old name accepted with deprecation
+#'   warning until v0.41.0.)
+#' @param species_anadromous Character. Species using the anadromous
+#'   flavor. Default `c("ch", "cm", "co", "pk", "sk", "st")`. (Renamed
+#'   from `anadromous_species` in v0.40.0.)
+#' @param species_spawn_only Character. Species without rearing
 #'   semantics (token 1 only emits SPAWN, never REAR). Default
-#'   `c("cm", "pk")`. Mirrors bcfp.
+#'   `c("cm", "pk")`. Mirrors bcfp. (Renamed from `spawn_only_species`
+#'   in v0.40.0.)
 #' @param segment_id_col Character. Default `"id_segment"`.
 #' @param intermittent_feature_code Character. The `feature_code` value
 #'   that flags an intermittent stream. Default `"GA24850150"` (bcfp).
+#' @param resident_species **Deprecated** alias for `species_resident`.
+#'   Kept for one release (v0.40.0); removal in v0.41.0.
+#' @param anadromous_species **Deprecated** alias for `species_anadromous`.
+#'   Kept for one release (v0.40.0); removal in v0.41.0.
+#' @param spawn_only_species **Deprecated** alias for `species_spawn_only`.
+#'   Kept for one release (v0.40.0); removal in v0.41.0.
 #'
 #' @return A tibble keyed by `segment_id_col` with one
 #'   `mapping_code_<sp>` character column per species in
-#'   `union(resident_species, anadromous_species)`.
+#'   `union(species_resident, species_anadromous)`.
 #'
 #' @family pipeline
 #'
@@ -85,19 +95,44 @@ lnk_pipeline_mapping_code <- function(
     to = NULL,
     conn = NULL,
     presence = NULL,
-    resident_species = c("bt", "wct"),
-    anadromous_species = c("ch", "cm", "co", "pk", "sk", "st"),
-    spawn_only_species = c("cm", "pk"),
+    species_resident = c("bt", "wct"),
+    species_anadromous = c("ch", "cm", "co", "pk", "sk", "st"),
+    species_spawn_only = c("cm", "pk"),
     segment_id_col = "id_segment",
-    intermittent_feature_code = "GA24850150") {
+    intermittent_feature_code = "GA24850150",
+    resident_species,
+    anadromous_species,
+    spawn_only_species) {
+
+  # Deprecation shims (link#187, removal in v0.41.0). Old names accepted
+  # for one release; remap to species_<role> per the NGE <type>_<role>
+  # convention (CLAUDE.md "Style").
+  if (!missing(resident_species)) {
+    .Deprecated(msg = paste(
+      "`resident_species` is deprecated; use `species_resident` instead.",
+      "Removal in v0.41.0."))
+    species_resident <- resident_species
+  }
+  if (!missing(anadromous_species)) {
+    .Deprecated(msg = paste(
+      "`anadromous_species` is deprecated; use `species_anadromous` instead.",
+      "Removal in v0.41.0."))
+    species_anadromous <- anadromous_species
+  }
+  if (!missing(spawn_only_species)) {
+    .Deprecated(msg = paste(
+      "`spawn_only_species` is deprecated; use `species_spawn_only` instead.",
+      "Removal in v0.41.0."))
+    species_spawn_only <- spawn_only_species
+  }
 
   stopifnot(
     is.data.frame(access),
     is.data.frame(habitat),
     segment_id_col %in% names(access),
     segment_id_col %in% names(habitat),
-    is.character(resident_species), is.character(anadromous_species),
-    is.character(spawn_only_species),
+    is.character(species_resident), is.character(species_anadromous),
+    is.character(species_spawn_only),
     is.character(segment_id_col), length(segment_id_col) == 1L,
     is.character(intermittent_feature_code),
     length(intermittent_feature_code) == 1L
@@ -178,7 +213,7 @@ lnk_pipeline_mapping_code <- function(
   names(out) <- segment_id_col
   out[[segment_id_col]] <- access[[segment_id_col]]
 
-  all_species <- union(resident_species, anadromous_species)
+  all_species <- union(species_resident, species_anadromous)
   for (sp in all_species) {
     # When `presence` is supplied and the species is absent, emit ""
     # for every row and skip the per-row token construction. Avoids
@@ -221,7 +256,7 @@ lnk_pipeline_mapping_code <- function(
     spawning_zero <- !is.na(spawning) & spawning < 1
     rearing_zero <- !is.na(rearing) & rearing < 1
 
-    is_spawn_only <- sp %in% spawn_only_species
+    is_spawn_only <- sp %in% species_spawn_only
 
     if (is_spawn_only) {
       token1 <- ifelse(accessible & spawning_zero, "ACCESS",
@@ -233,7 +268,7 @@ lnk_pipeline_mapping_code <- function(
                                      NA_character_)))
     }
 
-    mc_barrier <- if (sp %in% resident_species) {
+    mc_barrier <- if (sp %in% species_resident) {
       mc_barrier_resident
     } else {
       mc_barrier_anadr

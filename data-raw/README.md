@@ -79,7 +79,7 @@ The dispatch hierarchy: trifecta → run_provincial → compare_wsg.
 | `wsgs_dispatch.sh` | `wsgs_run_host.R` (×N hosts) | M4 + M1 + N-cypher orchestrator. Inline LPT bucket allocation (reads `_per_wsg_times.csv` from prior runs, computes balanced split using `--host-speeds=`), pre-flight version check across all hosts, parallel dispatch, RDS pull-back, post-pull `lnk_parity_annotate` against the divergence taxonomy. See "Provincial dispatch" section below for full flag reference + gotchas. |
 | `trifecta_15wsg.sh` | same | 15-WSG smoke variant (legacy 3-host, hardcoded WSG list). |
 | `trifecta_smoke.sh` | `wsgs_dispatch.sh` | N-host smoke shim: one small WSG per host, ~3 min wall. See `Provincial dispatch` section. |
-| `wsgs_run_host.R` | `compare_bcfishpass_wsg.R` per WSG | Single-host provincial dispatcher. Loops every WSG in `wsg_species_presence`, saves per-WSG RDS, emits per-WSG times CSV. After the loop, optionally annotates the host's bucket against `research/bcfp_divergence_taxonomy.yml` (writes `<TS>_<host>_annotated.csv`). Accepts `--wsgs=`, `--config=`, `--schema=`, `--rds-dir=`, `--with-mapping-code`. |
+| `wsgs_run_host.R` | `compare_bcfishpass_wsg.R` per WSG | Single-host provincial dispatcher. Loops every WSG in `wsg_species_presence`, saves per-WSG RDS, emits per-WSG times CSV. After the loop, optionally annotates the host's bucket against `research/bcfp_divergence_taxonomy.yml` (writes `<TS>_<host>_annotated.csv`). Accepts `--wsgs=`, `--config=`, `--schema=`, `--rds-dir=`, `--mapping-code`. |
 | `compare_bcfishpass_wsg.R` | `lnk_pipeline_*` family | Single-WSG end-to-end runner. Sources both connections (local fwapg + bcfp tunnel), runs the 6-phase pipeline, persists, emits comparison rollup tibble (link vs bcfp). The atomic unit of work in every multi-WSG run above. |
 
 ## Pipeline support
@@ -91,7 +91,7 @@ Run-adjacent helpers (planning, consolidation across hosts).
 | `buckets_balance.R` | Standalone LPT planner for the 3-host case. Reads per-host wall times from prior runs and prints buckets ready to paste into `wsgs_dispatch.sh --m4-bucket=…`. **Superseded for the N-host orchestrator** — `wsgs_dispatch.sh` now computes the LPT plan inline at dispatch time using the same algorithm. Kept here for one-off planning + cross-checks. Dedups `(wsg, host)` and across hosts before LPT so multi-run CSV accumulation doesn't double-assign WSGs. |
 | `schema_consolidate.R` | pg_dump from M1 + cypher → scp to M4 → pg_restore --data-only. Bucket-aware destination cleanup (DELETEs each source host's WSG bucket from destination tables before restore — avoids duplicate-key violations on re-consolidation). `ok = TRUE` requires pg_restore rc=0 AND post-restore row count > 0; rc=0 with empty schema flags as failure. |
 | `runs_archive.sh` | Moves the current top-level `_per_wsg_times.csv` + `*.rds` + `*_annotated.csv` artifacts in `provincial_<bundle>/` to `archive/<TS>/`. Operator cadence: run between provincial runs when you want the LPT planner to use the most recent run only. Skip to median-over multiple recent runs. |
-| `trifecta_smoke.sh` | Thin shim over `wsgs_dispatch.sh` — one small WSG per host (m4→DEAD, m1→ELKR, cyN→ADMS/BABL/BULL). ~3 min wall. Exercises every orchestrator code path (preflight, dispatch, tunnel, RDS pull-back, annotation) before committing to a 200-WSG run. All flags pass through (e.g. `--cy-workspaces=`, `--with-mapping-code`). |
+| `trifecta_smoke.sh` | Thin shim over `wsgs_dispatch.sh` — one small WSG per host (m4→DEAD, m1→ELKR, cyN→ADMS/BABL/BULL). ~3 min wall. Exercises every orchestrator code path (preflight, dispatch, tunnel, RDS pull-back, annotation) before committing to a 200-WSG run. All flags pass through (e.g. `--cy-workspaces=`, `--mapping-code`). |
 
 ## Provincial dispatch (`wsgs_dispatch.sh`)
 
@@ -118,7 +118,7 @@ cd ~/Projects/repo/link/data-raw
 ./wsgs_dispatch.sh --cy-workspaces=job1,job2,job3 # 5-host
 
 # Add per-segment mapping_code lens (+50% cost):
-./wsgs_dispatch.sh --cy-workspaces=job1,job2,job3 --with-mapping-code
+./wsgs_dispatch.sh --cy-workspaces=job1,job2,job3 --mapping-code
 
 # Custom host-speed factors (lower = faster):
 ./wsgs_dispatch.sh --host-speeds=m4=1.0,m1=0.83,cy=1.83
@@ -137,7 +137,7 @@ the freshest data.
 | `--rds-dir=<name>` | `provincial_<config>` | Override RDS output dir |
 | `--host-speeds=<csv>` | `m4=1.0,m1=0.83,cy=1.83` | Per-host slowness vs M4. Used for LPT projection AND back-normalizing prior-run times to M4-equivalent intrinsic work. |
 | `--cy-workspaces=<csv>` | `default` | Comma-list of cypher tofu workspaces |
-| `--with-mapping-code` | off | Pass through to per-host runner |
+| `--mapping-code` | off | Pass through to per-host runner |
 | `--skip-preflight` | off | Skip version-match check (debug only) |
 | `--m4-bucket=<csv>` | LPT plan | Override M4's WSG list |
 | `--m1-bucket=<csv>` | LPT plan | Override M1's WSG list |

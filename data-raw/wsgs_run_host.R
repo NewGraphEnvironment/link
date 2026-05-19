@@ -9,7 +9,7 @@
 #   pipeline_done = fresh.streams has rows for WSG
 #                   (via link:::.lnk_wsg_persisted)
 #   rollup_ok     = RDS exists, isn't an error stub, and (for
-#                   --with-mapping-code) has $mapping_code present
+#                   --mapping-code) has $mapping_code present
 #
 #   force          → re-run pipeline + compare
 #   both done      → skip
@@ -53,10 +53,16 @@ config_arg <- args[grep("^--config=", args)]
 config_name <- if (length(config_arg) > 0) sub("^--config=", "", config_arg[1]) else "bcfishpass"
 cfg <- lnk_config(config_name)
 
-# `--with-mapping-code` (no value): pass through to the wrapper so each
+# `--mapping-code` (no value): pass through to the wrapper so each
 # WSG's RDS holds list(rollup, mapping_code) instead of a bare rollup
 # tibble. The post-loop annotation step (below) reads either shape.
-with_mapping_code <- "--with-mapping-code" %in% args
+# Renamed from `--with-mapping-code` in v0.40.0; old form still accepted
+# with a stderr deprecation warning until v0.41.0.
+mapping_code <- "--mapping-code" %in% args
+if ("--with-mapping-code" %in% args) {
+  message("WARN: --with-mapping-code is deprecated; use --mapping-code (removal v0.41.0)")
+  mapping_code <- TRUE
+}
 
 # `--fail-fast` (no value): the first WSG that errors aborts the loop
 # instead of saving an error stub and continuing. Default FALSE
@@ -238,7 +244,7 @@ on.exit(try(DBI::dbDisconnect(probe_conn), silent = TRUE), add = TRUE)
 }
 
 # Mapping_code path: PG-state resume doesn't capture mapping_code
-# output, so when --with-mapping-code is set we force a re-run unless
+# output, so when --mapping-code is set we force a re-run unless
 # the RDS already holds a list with $mapping_code present.
 .rollup_has_mapping_code <- function(rds_path) {
   if (!file.exists(rds_path)) return(FALSE)
@@ -259,7 +265,7 @@ for (w in wsgs) {
   #   missing      → PG empty for this WSG. Run pipeline + compare.
   pipeline_done <- link:::.lnk_wsg_persisted(probe_conn, cfg, w)
   rollup_ok <- file.exists(out_rds) && !.is_error_stub(out_rds) &&
-    (!isTRUE(with_mapping_code) || .rollup_has_mapping_code(out_rds))
+    (!isTRUE(mapping_code) || .rollup_has_mapping_code(out_rds))
 
   if (!isTRUE(force_run) && pipeline_done && rollup_ok) {
     cat(format(Sys.time(), "%H:%M:%S"), "  ", w,
@@ -268,13 +274,13 @@ for (w in wsgs) {
   }
 
   do_pipeline <- isTRUE(force_run) || !pipeline_done ||
-    isTRUE(with_mapping_code)  # mapping_code path drives its own pipeline
+    isTRUE(mapping_code)  # mapping_code path drives its own pipeline
 
   cat(format(Sys.time(), "%H:%M:%S"), "  ", w, " ... ",
       if (!do_pipeline) "[compare-only] " else "", sep = "")
   t0 <- Sys.time()
   tryCatch({
-    out <- if (isTRUE(with_mapping_code)) {
+    out <- if (isTRUE(mapping_code)) {
       # Mapping_code lens stays bundled via the lnk_compare_wsg wrapper
       # — decoupling deferred per #168 scope. Wrapped in an anonymous
       # function so `on.exit` has a frame to attach to (top-level script
@@ -294,7 +300,7 @@ for (w in wsgs) {
         res <- link::lnk_compare_wsg(
           conn = conn_local, aoi = w, cfg = cfg,
           loaded = loaded, reference = "bcfishpass",
-          conn_ref = conn_ref, with_mapping_code = TRUE
+          conn_ref = conn_ref, mapping_code = TRUE
         )
         names(res$rollup)[names(res$rollup) == "ref_value"] <-
           "bcfishpass_value"

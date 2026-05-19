@@ -100,5 +100,79 @@ lnk_pipeline_persist <- function(conn, aoi, cfg, species,
       barriers_table, barriers_cols, barriers_cols, schema))
   }
 
+  # ----- streams_access (link#187) -----
+  # Per-segment per-species access. Working `<schema>.streams_access` is
+  # built by lnk_pipeline_access; persist phase copies the per-WSG slice
+  # into <persist_schema>.streams_access. Gated by presence — operators
+  # who don't run the mapping_code path won't have the working table
+  # and we skip cleanly.
+  #
+  # JOIN to working.streams for watershed_group_code: lnk_pipeline_access
+  # writes scalar projection via dbWriteTable which doesn't include the
+  # WSG column. Join-back is the simplest way to keep the persist
+  # DELETE-WHERE-WSG idiom working without modifying lnk_pipeline_access.
+  access_present <- nrow(DBI::dbGetQuery(conn, sprintf(
+    "SELECT 1 FROM information_schema.tables
+      WHERE table_schema = %s AND table_name = 'streams_access'
+      LIMIT 1;",
+    DBI::dbQuoteString(conn, schema)
+  ))) > 0L
+  if (access_present) {
+    access_table <- paste0(tn$schema, ".streams_access")
+    access_cols_v <- c(cols_streams_access_base,
+                       .lnk_cols_streams_access_per_sp(species))
+    access_cols <- paste(names(access_cols_v), collapse = ", ")
+    # SELECT projection: pull watershed_group_code from streams (JOIN),
+    # everything else from streams_access (a.*-minus-id_segment).
+    select_cols <- vapply(names(access_cols_v), function(col) {
+      if (col == "watershed_group_code") "s.watershed_group_code"
+      else if (col == "id_segment") "a.id_segment"
+      else paste0("a.", col)
+    }, character(1))
+    select_clause <- paste(select_cols, collapse = ", ")
+    .lnk_db_execute(conn, sprintf(
+      "DELETE FROM %s WHERE watershed_group_code = %s",
+      access_table, aoi_lit))
+    .lnk_db_execute(conn, sprintf(
+      "INSERT INTO %s (%s)
+       SELECT %s FROM %s.streams_access a
+       JOIN %s.streams s USING (id_segment)
+       WHERE s.watershed_group_code = %s",
+      access_table, access_cols, select_clause,
+      schema, schema, aoi_lit))
+  }
+
+  # ----- streams_mapping_code (link#187) -----
+  # Same JOIN-back pattern: lnk_pipeline_mapping_code's output has only
+  # id_segment + mapping_code_<sp> cols; WSG comes from streams.
+  mapping_present <- nrow(DBI::dbGetQuery(conn, sprintf(
+    "SELECT 1 FROM information_schema.tables
+      WHERE table_schema = %s AND table_name = 'streams_mapping_code'
+      LIMIT 1;",
+    DBI::dbQuoteString(conn, schema)
+  ))) > 0L
+  if (mapping_present) {
+    mapping_table <- paste0(tn$schema, ".streams_mapping_code")
+    mapping_cols_v <- c(cols_streams_mapping_code_base,
+                        .lnk_cols_streams_mapping_code_per_sp(species))
+    mapping_cols <- paste(names(mapping_cols_v), collapse = ", ")
+    select_cols <- vapply(names(mapping_cols_v), function(col) {
+      if (col == "watershed_group_code") "s.watershed_group_code"
+      else if (col == "id_segment") "m.id_segment"
+      else paste0("m.", col)
+    }, character(1))
+    select_clause <- paste(select_cols, collapse = ", ")
+    .lnk_db_execute(conn, sprintf(
+      "DELETE FROM %s WHERE watershed_group_code = %s",
+      mapping_table, aoi_lit))
+    .lnk_db_execute(conn, sprintf(
+      "INSERT INTO %s (%s)
+       SELECT %s FROM %s.streams_mapping_code m
+       JOIN %s.streams s USING (id_segment)
+       WHERE s.watershed_group_code = %s",
+      mapping_table, mapping_cols, select_clause,
+      schema, schema, aoi_lit))
+  }
+
   invisible(conn)
 }

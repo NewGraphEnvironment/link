@@ -61,7 +61,9 @@ RESET_SCHEMA=0
 for arg in "$@"; do
   case "$arg" in
     --skip-smoke)      SKIP_SMOKE=1 ;;
-    --with-mapping-code) ;;  # default-on; accept explicitly for symmetry with --no-mapping-code
+    --mapping-code)      ;;  # default-on; accept explicitly for symmetry with --no-mapping-code
+    --with-mapping-code)
+      echo "WARN: --with-mapping-code is deprecated; use --mapping-code (removal v0.41.0)" >&2 ;;
     --no-mapping-code) NO_MAPPING=1 ;;
     --keep-cyphers)    KEEP_CYPHERS=1 ;;
     --wsgs=*)          WSGS_FILTER="${arg#--wsgs=}" ;;
@@ -84,7 +86,7 @@ else
 fi
 N_CY=${#CY_WS_ARR[@]}
 
-MAPPING_FLAG="--with-mapping-code"
+MAPPING_FLAG="--mapping-code"
 [ "$NO_MAPPING" = "1" ] && MAPPING_FLAG=""
 
 # Build the passthrough flag string for wsgs_dispatch.sh + trifecta_smoke.sh.

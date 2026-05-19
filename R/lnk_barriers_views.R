@@ -37,6 +37,15 @@
 #'   for the underlying persist-schema reference).
 #' @param species Character vector of species codes the views should
 #'   cover. Default `c("BT","CH","CM","CO","PK","SK","ST","WCT")`.
+#' @param barriers_table Character or `NULL`. Source barriers table the
+#'   views read from. Default `NULL` → uses `<persist_schema>.barriers`
+#'   from `cfg` (the original behaviour). Pass a working-schema name
+#'   (e.g. `paste0(schema, ".barriers")`) to build the views over a
+#'   per-WSG working table — used by [lnk_pipeline_run()]'s mapping_code
+#'   phase, which runs BEFORE the per-WSG persist write so persist
+#'   barriers may not yet hold current data. Tunnel-free / link-canonical
+#'   either way (the underlying table has `blocks_species` from
+#'   [lnk_barriers_unify()]).
 #'
 #' @return `invisible(conn)`. Side effect: drops + recreates one view
 #'   per species + three source-typed views in `schema`.
@@ -79,16 +88,29 @@
 #' @export
 lnk_barriers_views <- function(conn, schema, cfg,
                                species = c("BT", "CH", "CM", "CO",
-                                           "PK", "SK", "ST", "WCT")) {
+                                           "PK", "SK", "ST", "WCT"),
+                               barriers_table = NULL) {
   stopifnot(
     inherits(conn, "DBIConnection"),
     is.character(schema), length(schema) == 1L, nzchar(schema),
     inherits(cfg, "lnk_config"),
-    is.character(species), length(species) > 0L
+    is.character(species), length(species) > 0L,
+    is.null(barriers_table) ||
+      (is.character(barriers_table) && length(barriers_table) == 1L &&
+        nzchar(barriers_table))
   )
 
+  # `barriers_table` defaults to `<persist_schema>.barriers` for the
+  # existing callers (compare_wsg). Pass `paste0(schema, ".barriers")` to
+  # build views over a per-WSG working barriers table — used by
+  # lnk_pipeline_run's mapping_code phase, which runs BEFORE the per-WSG
+  # persist write so persist.barriers may not have current data (link#187).
   tn <- .lnk_table_names(cfg)
-  persist_barriers <- paste0(tn$schema, ".barriers")
+  persist_barriers <- if (!is.null(barriers_table)) {
+    barriers_table
+  } else {
+    paste0(tn$schema, ".barriers")
+  }
 
   # Per-species views. Each view re-exposes id_barrier as
   # `barriers_<sp>_unified_id` so fresh::frs_network_features's

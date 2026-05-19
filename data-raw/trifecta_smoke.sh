@@ -10,7 +10,7 @@
 # Usage:
 #   ./trifecta_smoke.sh                                     # 3-host: M4 + M1 + 1 cypher
 #   ./trifecta_smoke.sh --cy-workspaces=job1,job2,job3      # 5-host: same as full
-#   ./trifecta_smoke.sh --with-mapping-code                 # exercise mapping_code branch
+#   ./trifecta_smoke.sh --mapping-code                      # exercise mapping_code branch
 #
 # Per-host smoke WSGs (smallest, also exercise specific code paths):
 #   m4     → DEAD  (exercises barriers_definite_control)

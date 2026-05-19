@@ -8,7 +8,8 @@ lnk_barriers_views(
   conn,
   schema,
   cfg,
-  species = c("BT", "CH", "CM", "CO", "PK", "SK", "ST", "WCT")
+  species = c("BT", "CH", "CM", "CO", "PK", "SK", "ST", "WCT"),
+  barriers_table = NULL
 )
 }
 \arguments{
@@ -21,6 +22,16 @@ for the underlying persist-schema reference).}
 
 \item{species}{Character vector of species codes the views should
 cover. Default \code{c("BT","CH","CM","CO","PK","SK","ST","WCT")}.}
+
+\item{barriers_table}{Character or \code{NULL}. Source barriers table the
+views read from. Default \code{NULL} → uses \verb{<persist_schema>.barriers}
+from \code{cfg} (the original behaviour). Pass a working-schema name
+(e.g. \code{paste0(schema, ".barriers")}) to build the views over a
+per-WSG working table — used by \code{\link[=lnk_pipeline_run]{lnk_pipeline_run()}}'s mapping_code
+phase, which runs BEFORE the per-WSG persist write so persist
+barriers may not yet hold current data. Tunnel-free / link-canonical
+either way (the underlying table has \code{blocks_species} from
+\code{\link[=lnk_barriers_unify]{lnk_barriers_unify()}}).}
 }
 \value{
 \code{invisible(conn)}. Side effect: drops + recreates one view

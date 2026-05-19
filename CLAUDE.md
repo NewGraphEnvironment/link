@@ -7,7 +7,7 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Repository:** NewGraphEnvironment/link
 **Primary Language:** R
 **Prefix:** `lnk_`
-**Branch:** `main` (v0.39.1 as of 2026-05-19)
+**Branch:** `main` (v0.40.0 as of 2026-05-19)
 
 ## Status (2026-05-04)
 

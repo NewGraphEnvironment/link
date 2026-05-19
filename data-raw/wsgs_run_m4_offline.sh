@@ -25,7 +25,7 @@
 #     --schema=fresh_default \
 #     [--force] \
 #     [--no-snapshot] \
-#     [--with-mapping-code]
+#     [--mapping-code]
 #
 # Flags:
 #   --wsgs=A,B,C        comma-separated WSG codes (REQUIRED)
@@ -33,7 +33,7 @@
 #   --schema=NAME       destination schema (default: fresh)
 #   --force             bypass the per-WSG PG-state + RDS resume gates
 #   --no-snapshot       skip the snapshot_bcfp.sh --force step
-#   --with-mapping-code build the mapping-code lens (slower; needed for
+#   --mapping-code       build the mapping_code lens (slower; needed for
 #                       lnk_compare_mapping_code follow-up work)
 
 set -euo pipefail
@@ -53,7 +53,10 @@ for arg in "$@"; do
     --schema=*)          SCHEMA="${arg#*=}" ;;
     --force)             FORCE_FLAG="--force" ;;
     --no-snapshot)       SKIP_SNAPSHOT=1 ;;
-    --with-mapping-code) MAPPING_CODE_FLAG="--with-mapping-code" ;;
+    --mapping-code)      MAPPING_CODE_FLAG="--mapping-code" ;;
+    --with-mapping-code)
+      echo "WARN: --with-mapping-code is deprecated; use --mapping-code (removal v0.41.0)" >&2
+      MAPPING_CODE_FLAG="--mapping-code" ;;
     -h|--help)
       sed -n 's/^# \{0,1\}//p' "$0" | head -45
       exit 0 ;;

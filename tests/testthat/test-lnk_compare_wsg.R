@@ -154,10 +154,11 @@ test_that("lnk_compare_wsg composes lnk_pipeline_run then lnk_compare_rollup (ro
   rollup_args <- list()
 
   m_pipeline_run <- function(conn, aoi, cfg, loaded, schema, dams,
-                             cleanup_working) {
+                             cleanup_working, mapping_code = FALSE) {
     calls <<- c(calls, "pipeline_run")
     pipeline_args <<- list(cleanup_working = cleanup_working,
-                           dams = dams, schema = schema)
+                           dams = dams, schema = schema,
+                           mapping_code = mapping_code)
     invisible(conn)
   }
   m_rollup <- function(conn, aoi, cfg, reference, conn_ref, species) {
@@ -296,16 +297,15 @@ test_that(".lnk_compare_wsg_assemble_rollup handles NA ref values (not modelled)
   expect_true(all(is.na(out$ref_value)))
 })
 
-test_that("lnk_compare_wsg composes mapping_code branch when with_mapping_code=TRUE", {
+test_that("lnk_compare_wsg composes mapping_code branch when mapping_code=TRUE", {
   calls <- character()
   pipeline_args <- list()
 
   m_pipeline_run <- function(conn, aoi, cfg, loaded, schema, dams,
-                             cleanup_working) {
+                             cleanup_working, mapping_code = FALSE) {
     calls <<- c(calls, "pipeline_run")
-    # mapping_code branch forces cleanup_working = FALSE on the pipeline
-    # call so the working schema survives for the mapping_code build.
-    pipeline_args <<- list(cleanup_working = cleanup_working)
+    pipeline_args <<- list(cleanup_working = cleanup_working,
+                            mapping_code = mapping_code)
     invisible(conn)
   }
   m_rollup <- function(...) {
@@ -315,8 +315,8 @@ test_that("lnk_compare_wsg composes mapping_code branch when with_mapping_code=T
       habitat_type = "spawning", unit = "km",
       link_value = 10, ref_value = 11, diff_pct = -9.1)
   }
-  m_mc <- function(...) {
-    calls <<- c(calls, "mapping_code_branch")
+  m_mc_diff <- function(...) {
+    calls <<- c(calls, "mapping_code_diff")
     tibble::tibble(
       wsg = "ADMS", species = "BT",
       total_segs = 100L, match_pct = 99.5, n_diffs = 0L,
@@ -327,7 +327,7 @@ test_that("lnk_compare_wsg composes mapping_code branch when with_mapping_code=T
   with_mocked_bindings(
     lnk_pipeline_run = m_pipeline_run,
     lnk_compare_rollup = m_rollup,
-    .lnk_compare_wsg_mapping_code = m_mc,
+    .lnk_compare_wsg_mapping_code_diff = m_mc_diff,
     {
       with_mocked_bindings(
         dbExecute = m_exec,
@@ -337,7 +337,7 @@ test_that("lnk_compare_wsg composes mapping_code branch when with_mapping_code=T
             conn = mock_conn(), aoi = "ADMS",
             cfg = mock_cfg(), loaded = mock_loaded(),
             reference = "bcfishpass", conn_ref = mock_conn(),
-            with_mapping_code = TRUE,
+            mapping_code = TRUE,
             species = "BT", cleanup_working = FALSE
           )
         }
@@ -345,11 +345,13 @@ test_that("lnk_compare_wsg composes mapping_code branch when with_mapping_code=T
     }
   )
 
-  # Pipeline runs first (forced cleanup_working=FALSE so mapping_code
-  # build has the working schema), then rollup reads persisted state,
-  # then mapping_code branch fires (additive on the same network state).
-  expect_equal(calls, c("pipeline_run", "rollup", "mapping_code_branch"))
+  # Post-#187: lnk_pipeline_run gets mapping_code = TRUE (build path),
+  # cleanup_working passes straight through (no special-case retention
+  # needed since build runs inside pipeline_run, not in compare_wsg).
+  # Then rollup reads persisted state, then diff fires against persist.
+  expect_equal(calls, c("pipeline_run", "rollup", "mapping_code_diff"))
   expect_false(pipeline_args$cleanup_working)
+  expect_true(pipeline_args$mapping_code)
 
   expect_named(result, c("rollup", "mapping_code"))
   expect_s3_class(result$mapping_code, "tbl_df")
@@ -359,15 +361,12 @@ test_that("lnk_compare_wsg composes mapping_code branch when with_mapping_code=T
                  "n_diffs", "top_pattern", "top_pattern_count"))
 })
 
-test_that(".lnk_compare_wsg_mapping_code errors for unsupported reference", {
-  expect_error(
-    link:::.lnk_compare_wsg_mapping_code(
-      conn = mock_conn(), conn_ref = mock_conn(),
-      aoi = "ADMS", cfg = mock_cfg(), loaded = mock_loaded(),
-      schema = "working_adms", reference = "unknown_ref"),
-    "currently supports reference = 'bcfishpass' only"
-  )
-})
+# Pre-#187 there was a `.lnk_compare_wsg_mapping_code` helper that
+# inlined the build and gated reference dispatch. The helper is deleted
+# (build moved to `lnk_pipeline_run`, gate moved upstream to
+# `lnk_compare_wsg` reference dispatch around line ~141). The
+# corresponding reference-gate assertion happens in the
+# "lnk_compare_wsg validates reference" test elsewhere in this file.
 
 test_that(".lnk_compare_wsg_mapping_code_diff computes per-species stats with top_pattern", {
   # 4 segments. Species BT: 1 match, 3 mismatches all with same pattern.
@@ -400,7 +399,7 @@ test_that(".lnk_compare_wsg_mapping_code_diff computes per-species stats with to
     {
       result <- link:::.lnk_compare_wsg_mapping_code_diff(
         conn = mock_conn(), conn_ref = mock_conn(),
-        aoi = "ADMS", schema = "working_adms",
+        aoi = "ADMS", cfg = mock_cfg(),
         bcfp_species = c("bt", "ch", "cm")
       )
     }
