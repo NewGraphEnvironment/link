@@ -1,3 +1,23 @@
+# link 0.40.2
+
+Hotfix for wide-table species-set evolution in v0.40.0/v0.40.1's `lnk_pipeline_run(mapping_code = TRUE)` path. Closes [#194](https://github.com/NewGraphEnvironment/link/issues/194).
+
+v0.40.1 made the mapping_code phase use `active_species` (per-WSG subset of bundle species) for working schema's `streams_access` columns — matching the persist DDL because `lnk_persist_init` was also passed `active_species`. But persist is province-wide. When WSG #2 has a different active subset than WSG #1, the persist table is locked to #1's column set and #2's INSERT projection fails:
+
+```
+ERROR: column "has_barriers_ch_dnstr" of relation "streams_access" does not exist
+```
+
+Live smoke 2026-05-19: PARS ran first (default config, active = bt/gr/ko/rb) → 4-column persist DDL. BULK next (default config, active = bt/ch/co/pk/sk/st/rb — BULK is salmon-bearing in the Skeena) → 7-column INSERT projection against 4-column table → fail.
+
+Fix: `lnk_pipeline_run` passes `cfg$species` (full bundle, 11 species for `default` config) to `lnk_persist_init` instead of `active_species`. Persist DDL is bundle-sized; per-WSG INSERTs in `lnk_pipeline_persist` continue using `active_species` for projection so unused species' columns get NULL. Per-species habitat tables (`streams_habitat_<sp>`) similarly created for the full bundle — extras stay empty until populated.
+
+Verified live: PARS + BULK now coexist in `fresh_default.streams_access` / `fresh_default.streams_mapping_code` with their respective active subsets, NULL for non-active columns.
+
+**Migration**: existing persist tables created with narrower DDL do NOT auto-grow. Drop `<persist_schema>.streams_access`, `<persist_schema>.streams_mapping_code`, and `<persist_schema>.streams_habitat_long_vw`, then re-run `lnk_pipeline_run(mapping_code = TRUE)` to recreate them with the bundle-wide DDL.
+
+No regression in bcfishpass bundle: `cfg$species` = bcfp 8 = active for most bcfp-bundle WSGs → identical INSERT projection.
+
 # link 0.40.1
 
 Hotfix for v0.40.0's `lnk_pipeline_run(mapping_code = TRUE)` path on non-bcfp bundles. Closes [#192](https://github.com/NewGraphEnvironment/link/issues/192).
