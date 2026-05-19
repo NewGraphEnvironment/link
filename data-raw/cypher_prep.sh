@@ -40,7 +40,7 @@
 # converge on main and the orchestrator's preflight version-check
 # (data-raw/dispatch_provincial.sh) confirms link versions match.
 
-set -e
+set -euo pipefail
 
 BRANCH="${CYPHER_PREP_BRANCH:-main}"
 
@@ -50,12 +50,40 @@ git stash --include-untracked >/dev/null 2>&1 || true
 git checkout "$BRANCH" 2>/dev/null || git checkout -B "$BRANCH" "origin/$BRANCH"
 git reset --hard "origin/$BRANCH"
 
-Rscript -e "pak::local_install(upgrade = FALSE, ask = FALSE)" 2>&1 | tail -3
+# pak::local_install — same tempfile + exit-check pattern as snapshot
+# and persist_init below. A pak failure (network blip, dep resolution
+# issue) was previously masked by `| tail -3` and only surfaced via
+# the version-mismatch check downstream.
+TMP_PAK_LOG=$(mktemp)
+if ! Rscript -e "pak::local_install(upgrade = FALSE, ask = FALSE)" > "$TMP_PAK_LOG" 2>&1; then
+  echo "FATAL: pak::local_install failed; full log:" >&2
+  cat "$TMP_PAK_LOG" >&2
+  rm -f "$TMP_PAK_LOG"
+  exit 1
+fi
+tail -3 "$TMP_PAK_LOG"
+rm -f "$TMP_PAK_LOG"
 echo "=== link: $(Rscript -e "cat(as.character(packageVersion(\"link\")))") fresh: $(Rscript -e "cat(as.character(packageVersion(\"fresh\")))")"
 
 cd data-raw
 export PGUSER=postgres PGPASSWORD=postgres PGHOST=localhost PGPORT=5432 PGDATABASE=fwapg
-bash snapshot_bcfp.sh 2>&1 | tail -5
+
+# snapshot_bcfp.sh — capture full log to tempfile so a failure dumps the
+# whole log to stderr (operator-debuggable on the cypher itself) instead
+# of being masked by `| tail -5` (set -e doesn't propagate exit codes
+# through pipelines). On success, tail-5 to stdout preserves the
+# umbrella's downstream `grep -q "snapshot_bcfp.sh: complete"` check
+# (data-raw/wsgs_run_pipeline.sh:264). Bug class documented in CLAUDE.md
+# "Shell Scripts → pipefail with ssh+tee"; sibling fix in rtj#163.
+TMP_SNAP_LOG=$(mktemp)
+if ! bash snapshot_bcfp.sh > "$TMP_SNAP_LOG" 2>&1; then
+  echo "FATAL: snapshot_bcfp.sh failed; full log:" >&2
+  cat "$TMP_SNAP_LOG" >&2
+  rm -f "$TMP_SNAP_LOG"
+  exit 1
+fi
+tail -5 "$TMP_SNAP_LOG"
+rm -f "$TMP_SNAP_LOG"
 
 # DDL fix: lnk_persist_init detects unexpected GENERATED ALWAYS columns
 # in fresh.streams (cypher snapshot artifact) and DROPs the offending
@@ -64,7 +92,13 @@ bash snapshot_bcfp.sh 2>&1 | tail -5
 # have the expected (non-generated) DDL. Without this fix, all WSGs on
 # the cypher fail with `cannot insert a non-DEFAULT value into column gradient`
 # (the bug that wasted 93 WSGs on the 2026-05-12 provincial run).
-Rscript -e '
+#
+# Same tempfile + exit-check pattern as snapshot above — without it,
+# `| tail -10` would mask R-side failures (e.g. fresh schema state
+# unexpected, conn refused) and the script would print "=== READY"
+# while leaving the cypher half-prepped.
+TMP_INIT_LOG=$(mktemp)
+if ! Rscript -e '
 suppressPackageStartupMessages({library(link); library(DBI); library(RPostgres)})
 conn <- DBI::dbConnect(RPostgres::Postgres(),
   host="localhost", port=5432, dbname="fwapg",
@@ -74,5 +108,12 @@ loaded <- lnk_load_overrides(cfg)
 species <- unique(loaded$parameters_fresh$species_code)
 lnk_persist_init(conn, cfg, species, force_recreate = TRUE)
 cat("=== lnk_persist_init done\n")
-' 2>&1 | tail -10
+' > "$TMP_INIT_LOG" 2>&1; then
+  echo "FATAL: lnk_persist_init failed; full log:" >&2
+  cat "$TMP_INIT_LOG" >&2
+  rm -f "$TMP_INIT_LOG"
+  exit 1
+fi
+tail -10 "$TMP_INIT_LOG"
+rm -f "$TMP_INIT_LOG"
 echo "=== READY"

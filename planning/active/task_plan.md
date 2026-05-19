@@ -8,12 +8,13 @@ Hit twice in this session (2026-05-15 Peace Tier 2 retry + post-#185 re-spin). T
 
 ## Phase 1 — Fix cypher_prep.sh
 
-- [ ] Replace `set -e` (line 43) with `set -euo pipefail`.
-- [ ] Wrap `bash snapshot_bcfp.sh 2>&1 | tail -5` (line 58) with the tempfile + exit-check pattern. Preserve the tail-5-on-success for back-compat with the umbrella's marker-grep.
-- [ ] Wrap the `Rscript -e '...lnk_persist_init...' 2>&1 | tail -10` (lines 67-77) with the same pattern. Same bug class, same fix.
-- [ ] `bash -n data-raw/cypher_prep.sh` syntax-clean.
-- [ ] `/code-check` clean on staged diff.
-- [ ] Commit `cypher_prep.sh: fail loud on snapshot + persist_init failures (#182)` — atomic, includes the checkbox flip.
+- [x] Replace `set -e` (line 43) with `set -euo pipefail`.
+- [x] Wrap `bash snapshot_bcfp.sh 2>&1 | tail -5` with the tempfile + exit-check pattern. Preserve the tail-5-on-success for back-compat with the umbrella's marker-grep.
+- [x] Wrap the `Rscript -e '...lnk_persist_init...' 2>&1 | tail -10` with the same pattern. Same bug class, same fix.
+- [x] **Extended scope**: also wrapped `Rscript -e "pak::local_install ..." 2>&1 | tail -3` (third instance of the same anti-pattern, flagged by code-check round 1). Three sites total, all hardened.
+- [x] `bash -n data-raw/cypher_prep.sh` syntax-clean.
+- [x] `/code-check` clean on staged diff (two rounds — round 1 surfaced the third site, round 2 clean on extended fix).
+- [x] Commit `cypher_prep.sh: fail loud on snapshot + persist_init + pak failures (#182)`.
 
 ## Phase 2 — Local syntax + dry verification (no cypher spin)
 
