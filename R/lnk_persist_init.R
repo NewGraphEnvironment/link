@@ -58,10 +58,14 @@ cols_habitat <- c(
 #' @noRd
 cols_streams_access_base <- c(
   id_segment                = "integer NOT NULL",
-  watershed_group_code      = "varchar(4) NOT NULL",
-  remediated_dnstr_ind      = "boolean",
-  has_observation_key_upstr = "boolean"
+  watershed_group_code      = "varchar(4) NOT NULL"
 )
+# Conditional cols `remediated_dnstr_ind` + `has_observation_key_upstr`
+# are written by lnk_pipeline_access only when remediations /
+# observations tables are passed. Omitted from the persist base shape
+# until a consumer requires them — adding them would force every caller
+# to pass those upstream tables. Re-introduce as nullable columns + a
+# null-tolerant persist projection when needed.
 
 #' Per-species column generator for `streams_access`.
 #'
