@@ -91,6 +91,7 @@ print(rollup)
 
 Other compare: 
 \code{\link{lnk_compare_wsg}()},
+\code{\link{lnk_mapping_code}()},
 \code{\link{lnk_parity_annotate}()}
 }
 \concept{compare}
