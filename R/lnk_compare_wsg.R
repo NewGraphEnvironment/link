@@ -46,6 +46,9 @@
 #' @param cleanup_working Logical. When `TRUE` (default), drop the
 #'   `<schema>` working schema at the end. Pass `FALSE` for interactive
 #'   debug / manual inspection.
+#' @param with_mapping_code **Deprecated** alias for `mapping_code`.
+#'   Kept for one release (v0.40.0); removal in v0.41.0. Emits a
+#'   deprecation warning when supplied.
 #'
 #' @return A list with two elements:
 #'   - `rollup`: tibble with one row per (species, habitat_type) — 7

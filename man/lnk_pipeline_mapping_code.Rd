@@ -65,6 +65,15 @@ in v0.40.0.)}
 
 \item{intermittent_feature_code}{Character. The \code{feature_code} value
 that flags an intermittent stream. Default \code{"GA24850150"} (bcfp).}
+
+\item{resident_species}{\strong{Deprecated} alias for \code{species_resident}.
+Kept for one release (v0.40.0); removal in v0.41.0.}
+
+\item{anadromous_species}{\strong{Deprecated} alias for \code{species_anadromous}.
+Kept for one release (v0.40.0); removal in v0.41.0.}
+
+\item{spawn_only_species}{\strong{Deprecated} alias for \code{species_spawn_only}.
+Kept for one release (v0.40.0); removal in v0.41.0.}
 }
 \value{
 A tibble keyed by \code{segment_id_col} with one

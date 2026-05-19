@@ -74,6 +74,12 @@
 #' @param segment_id_col Character. Default `"id_segment"`.
 #' @param intermittent_feature_code Character. The `feature_code` value
 #'   that flags an intermittent stream. Default `"GA24850150"` (bcfp).
+#' @param resident_species **Deprecated** alias for `species_resident`.
+#'   Kept for one release (v0.40.0); removal in v0.41.0.
+#' @param anadromous_species **Deprecated** alias for `species_anadromous`.
+#'   Kept for one release (v0.40.0); removal in v0.41.0.
+#' @param spawn_only_species **Deprecated** alias for `species_spawn_only`.
+#'   Kept for one release (v0.40.0); removal in v0.41.0.
 #'
 #' @return A tibble keyed by `segment_id_col` with one
 #'   `mapping_code_<sp>` character column per species in

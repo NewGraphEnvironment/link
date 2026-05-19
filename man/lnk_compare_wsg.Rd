@@ -57,6 +57,10 @@ runs from local \code{cabd.dams}. Pass \code{FALSE} to skip dams entirely.}
 \item{cleanup_working}{Logical. When \code{TRUE} (default), drop the
 \verb{<schema>} working schema at the end. Pass \code{FALSE} for interactive
 debug / manual inspection.}
+
+\item{with_mapping_code}{\strong{Deprecated} alias for \code{mapping_code}.
+Kept for one release (v0.40.0); removal in v0.41.0. Emits a
+deprecation warning when supplied.}
 }
 \value{
 A list with two elements:
