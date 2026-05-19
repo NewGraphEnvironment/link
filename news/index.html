@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.40.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.40.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,6 +31,17 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.40.2" id="link-0402">link 0.40.2<a class="anchor" aria-label="anchor" href="#link-0402"></a></h2>
+<p>Hotfix for wide-table species-set evolution in v0.40.0/v0.40.1’s <code>lnk_pipeline_run(mapping_code = TRUE)</code> path. Closes <a href="https://github.com/NewGraphEnvironment/link/issues/194" class="external-link">#194</a>.</p>
+<p>v0.40.1 made the mapping_code phase use <code>active_species</code> (per-WSG subset of bundle species) for working schema’s <code>streams_access</code> columns — matching the persist DDL because <code>lnk_persist_init</code> was also passed <code>active_species</code>. But persist is province-wide. When WSG <a href="https://github.com/NewGraphEnvironment/link/issues/2" class="external-link">#2</a> has a different active subset than WSG <a href="https://github.com/NewGraphEnvironment/link/issues/1" class="external-link">#1</a>, the persist table is locked to <a href="https://github.com/NewGraphEnvironment/link/issues/1" class="external-link">#1</a>’s column set and <a href="https://github.com/NewGraphEnvironment/link/issues/2" class="external-link">#2</a>’s INSERT projection fails:</p>
+<pre><code>ERROR: column "has_barriers_ch_dnstr" of relation "streams_access" does not exist</code></pre>
+<p>Live smoke 2026-05-19: PARS ran first (default config, active = bt/gr/ko/rb) → 4-column persist DDL. BULK next (default config, active = bt/ch/co/pk/sk/st/rb — BULK is salmon-bearing in the Skeena) → 7-column INSERT projection against 4-column table → fail.</p>
+<p>Fix: <code>lnk_pipeline_run</code> passes <code>cfg$species</code> (full bundle, 11 species for <code>default</code> config) to <code>lnk_persist_init</code> instead of <code>active_species</code>. Persist DDL is bundle-sized; per-WSG INSERTs in <code>lnk_pipeline_persist</code> continue using <code>active_species</code> for projection so unused species’ columns get NULL. Per-species habitat tables (<code>streams_habitat_&lt;sp&gt;</code>) similarly created for the full bundle — extras stay empty until populated.</p>
+<p>Verified live: PARS + BULK now coexist in <code>fresh_default.streams_access</code> / <code>fresh_default.streams_mapping_code</code> with their respective active subsets, NULL for non-active columns.</p>
+<p><strong>Migration</strong>: existing persist tables created with narrower DDL do NOT auto-grow. Drop <code>&lt;persist_schema&gt;.streams_access</code>, <code>&lt;persist_schema&gt;.streams_mapping_code</code>, and <code>&lt;persist_schema&gt;.streams_habitat_long_vw</code>, then re-run <code>lnk_pipeline_run(mapping_code = TRUE)</code> to recreate them with the bundle-wide DDL.</p>
+<p>No regression in bcfishpass bundle: <code>cfg$species</code> = bcfp 8 = active for most bcfp-bundle WSGs → identical INSERT projection.</p>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.40.1" id="link-0401">link 0.40.1<a class="anchor" aria-label="anchor" href="#link-0401"></a></h2>
 <p>Hotfix for v0.40.0’s <code>lnk_pipeline_run(mapping_code = TRUE)</code> path on non-bcfp bundles. Closes <a href="https://github.com/NewGraphEnvironment/link/issues/192" class="external-link">#192</a>.</p>
