@@ -14,7 +14,8 @@ lnk_barriers_views(
   conn,
   schema,
   cfg,
-  species = c("BT", "CH", "CM", "CO", "PK", "SK", "ST", "WCT")
+  species = c("BT", "CH", "CM", "CO", "PK", "SK", "ST", "WCT"),
+  barriers_table = NULL
 )
 ```
 
@@ -37,6 +38,20 @@ lnk_barriers_views(
 
   Character vector of species codes the views should cover. Default
   `c("BT","CH","CM","CO","PK","SK","ST","WCT")`.
+
+- barriers_table:
+
+  Character or `NULL`. Source barriers table the views read from.
+  Default `NULL` → uses `<persist_schema>.barriers` from `cfg` (the
+  original behaviour). Pass a working-schema name (e.g.
+  `paste0(schema, ".barriers")`) to build the views over a per-WSG
+  working table — used by
+  [`lnk_pipeline_run()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_run.md)'s
+  mapping_code phase, which runs BEFORE the per-WSG persist write so
+  persist barriers may not yet hold current data. Tunnel-free /
+  link-canonical either way (the underlying table has `blocks_species`
+  from
+  [`lnk_barriers_unify()`](https://newgraphenvironment.github.io/link/reference/lnk_barriers_unify.md)).
 
 ## Value
 

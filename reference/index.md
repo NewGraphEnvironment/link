@@ -63,6 +63,9 @@
 - [`lnk_load_overrides()`](https://newgraphenvironment.github.io/link/reference/lnk_load_overrides.md)
   : Materialize the Tabular Data Files Declared in a Config Bundle
 
+- [`lnk_mapping_code()`](https://newgraphenvironment.github.io/link/reference/lnk_mapping_code.md)
+  : Build per-segment per-species mapping_code tokens from schema tables
+
 - [`lnk_match()`](https://newgraphenvironment.github.io/link/reference/lnk_match.md)
   : Match crossing records across data systems
 

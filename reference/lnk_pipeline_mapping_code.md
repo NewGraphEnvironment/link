@@ -15,11 +15,14 @@ lnk_pipeline_mapping_code(
   to = NULL,
   conn = NULL,
   presence = NULL,
-  resident_species = c("bt", "wct"),
-  anadromous_species = c("ch", "cm", "co", "pk", "sk", "st"),
-  spawn_only_species = c("cm", "pk"),
+  species_resident = c("bt", "wct"),
+  species_anadromous = c("ch", "cm", "co", "pk", "sk", "st"),
+  species_spawn_only = c("cm", "pk"),
   segment_id_col = "id_segment",
-  intermittent_feature_code = "GA24850150"
+  intermittent_feature_code = "GA24850150",
+  resident_species,
+  anadromous_species,
+  spawn_only_species
 )
 ```
 
@@ -61,20 +64,24 @@ lnk_pipeline_mapping_code(
   [DBI::DBIConnection](https://dbi.r-dbi.org/reference/DBIConnection-class.html).
   Required only when `to` is supplied; ignored otherwise.
 
-- resident_species:
+- species_resident:
 
   Character. Species using the resident flavor of
-  `mapping_code_barrier`. Default `c("bt", "wct")`.
+  `mapping_code_barrier`. Default `c("bt", "wct")`. (Renamed from
+  `resident_species` in v0.40.0; old name accepted with deprecation
+  warning until v0.41.0.)
 
-- anadromous_species:
+- species_anadromous:
 
   Character. Species using the anadromous flavor. Default
-  `c("ch", "cm", "co", "pk", "sk", "st")`.
+  `c("ch", "cm", "co", "pk", "sk", "st")`. (Renamed from
+  `anadromous_species` in v0.40.0.)
 
-- spawn_only_species:
+- species_spawn_only:
 
   Character. Species without rearing semantics (token 1 only emits
-  SPAWN, never REAR). Default `c("cm", "pk")`. Mirrors bcfp.
+  SPAWN, never REAR). Default `c("cm", "pk")`. Mirrors bcfp. (Renamed
+  from `spawn_only_species` in v0.40.0.)
 
 - segment_id_col:
 
@@ -85,11 +92,26 @@ lnk_pipeline_mapping_code(
   Character. The `feature_code` value that flags an intermittent stream.
   Default `"GA24850150"` (bcfp).
 
+- resident_species:
+
+  **Deprecated** alias for `species_resident`. Kept for one release
+  (v0.40.0); removal in v0.41.0.
+
+- anadromous_species:
+
+  **Deprecated** alias for `species_anadromous`. Kept for one release
+  (v0.40.0); removal in v0.41.0.
+
+- spawn_only_species:
+
+  **Deprecated** alias for `species_spawn_only`. Kept for one release
+  (v0.40.0); removal in v0.41.0.
+
 ## Value
 
 A tibble keyed by `segment_id_col` with one `mapping_code_<sp>`
 character column per species in
-`union(resident_species, anadromous_species)`.
+`union(species_resident, species_anadromous)`.
 
 ## Details
 

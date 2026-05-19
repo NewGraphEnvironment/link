@@ -1,5 +1,107 @@
 # Changelog
 
+## link 0.40.0
+
+Mapping_code tunnel decouple + portable
+[`lnk_mapping_code()`](https://newgraphenvironment.github.io/link/reference/lnk_mapping_code.md)
+build + `<type>_<role>` rename sweep. Closes
+[\#187](https://github.com/NewGraphEnvironment/link/issues/187). Major
+architectural shift in how access semantics flow through the parity
+diff. **BC: parameter and CLI-flag renames (deprecation shims for one
+release; removal v0.41.0).**
+
+- **Persist `streams_access` + `streams_mapping_code` + long-form
+  habitat view.**
+  [`lnk_persist_init()`](https://newgraphenvironment.github.io/link/reference/lnk_persist_init.md)
+  now creates two new per-WSG per-species persist tables
+  (`streams_access`, `streams_mapping_code`) and one VIEW
+  (`streams_habitat_long_vw` = `UNION ALL` across `streams_habitat_<sp>`
+  tables, presents the per-species split as long-form for any consumer
+  that prefers it). Per-species column generators
+  (`.lnk_cols_streams_access_per_sp()`,
+  `.lnk_cols_streams_mapping_code_per_sp()`) are species-driven — pass a
+  different species set, get matching columns.
+  [`lnk_pipeline_persist()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_persist.md)
+  extended with `streams_access` + `streams_mapping_code` write blocks,
+  gated by presence of the working-side tables (skip cleanly when the
+  mapping_code path didn’t run).
+
+- **[`lnk_mapping_code()`](https://newgraphenvironment.github.io/link/reference/lnk_mapping_code.md)
+  — new exported portable build entry point.** Schema-aware wrapper
+  around
+  [`lnk_pipeline_mapping_code()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_mapping_code.md)
+  (the pure data transform). Takes explicit `table_<role>` args
+  (`table_access`, `table_habitat`, `table_streams`) — function works
+  against working-schema tables (mid-pipeline) or persist-schema tables
+  (ad-hoc rebuild). Caller can invoke it directly against persist data
+  with the tunnel down to rebuild `streams_mapping_code` without
+  re-running the full pipeline — the headline use case unblocking QGIS
+  bcfp-shape symbology via `data-raw/build_species_views.R --bcfp`.
+
+- **`lnk_pipeline_run(..., mapping_code = TRUE)` — tunnel-free
+  mapping_code phase.** New optional phase that runs
+  `lnk_barriers_views` (over working `<schema>.barriers`, tunnel-free,
+  link-canonical) + `lnk_pipeline_access` + `lnk_mapping_code` between
+  `lnk_barriers_unify` and `lnk_pipeline_persist`. Persist phase copies
+  both new tables to `<persist_schema>`. **Methodology shift:** ACCESS
+  now uses link’s own per-species barriers (derived from
+  `<schema>.barriers`’s `blocks_species` predicate per link#152) instead
+  of bcfp’s barriers tables staged via the tunnel. Pre-#187 the only
+  path that built `streams_mapping_code` was `lnk_compare_wsg`, and
+  access there used bcfp-staged barriers — so link’s
+  `streams_mapping_code` reflected link’s habitat + bcfp’s access.
+  Post-#187 it reflects link’s habitat + link’s access. The parity diff
+  vs `bcfishpass.streams_mapping_code` becomes more meaningful (surfaces
+  real link-vs-bcfp divergence that was artificially suppressed before).
+  Expect non-trivial parity-number deltas on the next provincial run vs
+  pre-#187 baselines.
+
+- **[`lnk_compare_wsg()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_wsg.md)
+  refactored.** Build delegated to
+  `lnk_pipeline_run(mapping_code = TRUE)`; only the diff stays in
+  compare. `.lnk_compare_wsg_mapping_code_diff()` rewritten to read from
+  `<persist_schema>.streams_mapping_code` instead of working schema. The
+  orphan helpers (`.lnk_compare_wsg_mapping_code`,
+  `.lnk_compare_wsg_stage_reference_barriers`) deleted — ~200 lines
+  simpler.
+
+- **BC: parameter rename `with_mapping_code` → `mapping_code`** in
+  [`lnk_compare_wsg()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_wsg.md)
+  and
+  [`lnk_pipeline_run()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_run.md).
+  Old name accepted with
+  [`.Deprecated()`](https://rdrr.io/r/base/Deprecated.html) warning for
+  one release; removal in v0.41.0.
+
+- **BC: parameter rename `<role>_species` → `species_<role>`** in
+  [`lnk_pipeline_mapping_code()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_mapping_code.md)
+  (three params: `resident_species` → `species_resident`,
+  `anadromous_species` → `species_anadromous`, `spawn_only_species` →
+  `species_spawn_only`). Matches the documented `<type>_<role>`
+  convention (`col_<role>`, `table_<role>`, `exp_<role>`, now
+  `species_<role>`). Old names accepted with deprecation warning until
+  v0.41.0.
+
+- **BC: CLI flag rename `--with-mapping-code` → `--mapping-code`** in
+  `wsgs_run_pipeline.sh`, `wsgs_dispatch.sh`, `wsgs_run_m4_offline.sh`,
+  `trifecta_smoke.sh`, `wsgs_run_host.R`. Old flag accepted with stderr
+  deprecation warning until v0.41.0.
+
+- **[`lnk_barriers_views()`](https://newgraphenvironment.github.io/link/reference/lnk_barriers_views.md)
+  gains `barriers_table` arg.** Default `NULL` preserves the existing
+  `<persist_schema>.barriers` source. Pass a working-schema table to
+  build views over a per-WSG working barriers table — used by the new
+  `mapping_code` phase. Backward-compatible.
+
+- **Follow-up filed:**
+  [\#189](https://github.com/NewGraphEnvironment/link/issues/189) —
+  data-drive species residence categorization (`species_resident` /
+  `species_anadromous` / `species_spawn_only`) from `dimensions.csv`.
+  Today the defaults are hardcoded to bcfp’s species residence model;
+  [\#189](https://github.com/NewGraphEnvironment/link/issues/189) moves
+  them to bundle data so custom species (sea-run cutthroat, Dolly
+  Varden, future mixes) work without monkey-patching function defaults.
+
 ## link 0.39.1
 
 Fail loud on transient cypher prep failures. Closes

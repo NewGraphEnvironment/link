@@ -15,7 +15,8 @@ lnk_pipeline_run(
   loaded,
   schema = paste0("working_", tolower(aoi)),
   dams = TRUE,
-  cleanup_working = TRUE
+  cleanup_working = TRUE,
+  mapping_code = FALSE
 )
 ```
 
@@ -58,6 +59,17 @@ lnk_pipeline_run(
 
   Logical. When `TRUE` (default), drop the `<schema>` working schema at
   the end. Pass `FALSE` for interactive debug / manual inspection.
+
+- mapping_code:
+
+  Logical. When `TRUE`, additionally runs the tunnel-free mapping_code
+  build phase (10b above) — produces `<persist_schema>.streams_access`
+  and `<persist_schema>.streams_mapping_code` for the WSG, consumed
+  downstream by `data-raw/build_species_views.R --bcfp` (QGIS bcfp-
+  shape symbology). Default `FALSE`. Methodology shift from pre-#187
+  compare_wsg: access uses link's own per-species barriers (via
+  `blocks_species` predicate on `<schema>.barriers`), not bcfp's
+  tunnel-staged tables.
 
 ## Value
 
@@ -112,11 +124,21 @@ rather than the comparison RDS artifact.
     — unify per-source barriers into a single working-schema table
     (always; promotes the mapping_code-only flag in
     [`lnk_compare_wsg()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_wsg.md)
-    to canonical PG state).
+    to canonical PG state). 10b. *Optional* mapping_code phase — gated
+    by `mapping_code = TRUE`. Runs between barriers_unify and persist:
+    [`lnk_barriers_views()`](https://newgraphenvironment.github.io/link/reference/lnk_barriers_views.md)
+    over working `<schema>.barriers` (tunnel- free, link-canonical
+    per-species views),
+    [`lnk_pipeline_access()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_access.md)
+    (writes working `streams_access`),
+    [`lnk_mapping_code()`](https://newgraphenvironment.github.io/link/reference/lnk_mapping_code.md)
+    (writes working `streams_mapping_code`). Persist phase copies both
+    to `<persist_schema>`. See link#187.
 
 11. [`lnk_pipeline_persist()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_persist.md)
-    — copy per-WSG streams + per-species habitat + barriers into
-    `<persist_schema>` (idempotent DELETE-WHERE-WSG + INSERT).
+    — copy per-WSG streams + per-species habitat + barriers (+ optional
+    streams_access + streams_mapping_code) into `<persist_schema>`
+    (idempotent DELETE-WHERE-WSG + INSERT).
 
 ## See also
 

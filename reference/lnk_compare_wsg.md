@@ -3,7 +3,7 @@
 Per-WSG convenience wrapper around the existing `lnk_pipeline_*` helpers
 that produces a long-format rollup tibble suitable for provincial parity
 comparisons. Optionally adds a per-segment `mapping_code` lens when
-`with_mapping_code = TRUE`.
+`mapping_code = TRUE`.
 
 ## Usage
 
@@ -14,12 +14,13 @@ lnk_compare_wsg(
   cfg,
   loaded,
   reference = "bcfishpass",
-  with_mapping_code = FALSE,
+  mapping_code = FALSE,
   conn_ref = NULL,
   species = NULL,
   schema = paste0("working_", tolower(aoi)),
   dams = TRUE,
-  cleanup_working = TRUE
+  cleanup_working = TRUE,
+  with_mapping_code
 )
 ```
 
@@ -49,11 +50,13 @@ lnk_compare_wsg(
   Character scalar identifying the reference dataset. Currently only
   `"bcfishpass"` is supported.
 
-- with_mapping_code:
+- mapping_code:
 
   Logical. When `TRUE`, run the additional `barriers_unify` →
   `barriers_views` → `access` → `mapping_code` phases and emit
-  per-species segment-match stats. Default `FALSE`.
+  per-species segment-match stats. Default `FALSE`. (Renamed from
+  `with_mapping_code` in v0.40.0; old name still accepted with
+  deprecation warning until v0.41.0.)
 
 - conn_ref:
 
@@ -85,6 +88,12 @@ lnk_compare_wsg(
   Logical. When `TRUE` (default), drop the `<schema>` working schema at
   the end. Pass `FALSE` for interactive debug / manual inspection.
 
+- with_mapping_code:
+
+  **Deprecated** alias for `mapping_code`. Kept for one release
+  (v0.40.0); removal in v0.41.0. Emits a deprecation warning when
+  supplied.
+
 ## Value
 
 A list with two elements:
@@ -99,7 +108,7 @@ A list with two elements:
 - `mapping_code`: tibble with one row per species — segment-level match
   stats vs `bcfishpass.streams_mapping_code`. Columns: `wsg`, `species`,
   `total_segs`, `match_pct`, `n_diffs`, `top_pattern`,
-  `top_pattern_count`. `NULL` when `with_mapping_code = FALSE`.
+  `top_pattern_count`. `NULL` when `mapping_code = FALSE`.
 
 ## Details
 
@@ -110,8 +119,8 @@ regression detection across link runs, or non-bcfp external data.
 
 ### Additive, not duplicative
 
-Both `with_mapping_code = FALSE` and `with_mapping_code = TRUE` run the
-per-WSG pipeline **once**. The `TRUE` path is purely additive — it adds
+Both `mapping_code = FALSE` and `mapping_code = TRUE` run the per-WSG
+pipeline **once**. The `TRUE` path is purely additive — it adds
 `lnk_barriers_unify`, `lnk_barriers_views`, `lnk_pipeline_access`, and
 `lnk_pipeline_mapping_code` phases on top of the same network state,
 then queries `bcfishpass.streams_mapping_code` for the segment- level
@@ -143,6 +152,7 @@ only one depending on species rule).
 
 Other compare:
 [`lnk_compare_rollup()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_rollup.md),
+[`lnk_mapping_code()`](https://newgraphenvironment.github.io/link/reference/lnk_mapping_code.md),
 [`lnk_parity_annotate()`](https://newgraphenvironment.github.io/link/reference/lnk_parity_annotate.md)
 
 ## Examples
@@ -169,7 +179,7 @@ result_mc <- lnk_compare_wsg(
   conn = conn, aoi = "ADMS",
   cfg = cfg, loaded = loaded,
   reference = "bcfishpass", conn_ref = conn_ref,
-  with_mapping_code = TRUE
+  mapping_code = TRUE
 )
 print(result_mc$mapping_code)
 } # }

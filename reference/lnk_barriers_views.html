@@ -17,7 +17,7 @@ consumer code paths run unchanged."><meta property="og:image" content="https://n
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.39.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.40.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -57,7 +57,8 @@ consumer code paths run unchanged.</p>
 <span>  <span class="va">conn</span>,</span>
 <span>  <span class="va">schema</span>,</span>
 <span>  <span class="va">cfg</span>,</span>
-<span>  species <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"BT"</span>, <span class="st">"CH"</span>, <span class="st">"CM"</span>, <span class="st">"CO"</span>, <span class="st">"PK"</span>, <span class="st">"SK"</span>, <span class="st">"ST"</span>, <span class="st">"WCT"</span><span class="op">)</span></span>
+<span>  species <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"BT"</span>, <span class="st">"CH"</span>, <span class="st">"CM"</span>, <span class="st">"CO"</span>, <span class="st">"PK"</span>, <span class="st">"SK"</span>, <span class="st">"ST"</span>, <span class="st">"WCT"</span><span class="op">)</span>,</span>
+<span>  barriers_table <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -81,6 +82,18 @@ for the underlying persist-schema reference).</p></dd>
 <dt id="arg-species">species<a class="anchor" aria-label="anchor" href="#arg-species"></a></dt>
 <dd><p>Character vector of species codes the views should
 cover. Default <code>c("BT","CH","CM","CO","PK","SK","ST","WCT")</code>.</p></dd>
+
+
+<dt id="arg-barriers-table">barriers_table<a class="anchor" aria-label="anchor" href="#arg-barriers-table"></a></dt>
+<dd><p>Character or <code>NULL</code>. Source barriers table the
+views read from. Default <code>NULL</code> → uses <code>&lt;persist_schema&gt;.barriers</code>
+from <code>cfg</code> (the original behaviour). Pass a working-schema name
+(e.g. <code>paste0(schema, ".barriers")</code>) to build the views over a
+per-WSG working table — used by <code><a href="lnk_pipeline_run.html">lnk_pipeline_run()</a></code>'s mapping_code
+phase, which runs BEFORE the per-WSG persist write so persist
+barriers may not yet hold current data. Tunnel-free / link-canonical
+either way (the underlying table has <code>blocks_species</code> from
+<code><a href="lnk_barriers_unify.html">lnk_barriers_unify()</a></code>).</p></dd>
 
 </dl></div>
     <div class="section level2">
