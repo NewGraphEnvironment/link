@@ -9,15 +9,21 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (v0.40.0 as of 2026-05-19)
 
-## Status (2026-05-04)
+## Status (2026-05-19)
 
-Infrastructure stack stabilized; methodology research is the active focus. Recent shipped work (v0.27 → v0.29):
+Tour-prep complete. Pipeline + comparison are decoupled (#168), the orchestrator runs autonomously (#172), and the QGIS bcfp-shape symbology path is tunnel-free (#187). M1 takes over cypher dispatch during the user's Europe trip.
 
-- **v0.27.0** (#114, #45) — `cfg$pipeline$gradient_classes` config knob + per-species filter derivation in `prep_minimal`. Bit-identical bcfp parity by default; lets bundles override the break vector.
-- **v0.28.0** (#119, #45-followup) — Orphan-class break source: classes below all species' access thresholds enter `gradient_barriers_minimal` as a shared `barriers_orphan` table (segmentation only, no access semantics). New `default_extrabreaks` bundle. Province-wide methodology delta (231 vs 225 WSGs): SK spawn +6.7%, BT/RB/ST/WCT/GR spawn +1–2%, CH/ST rear -11%, BT/CO/GR rear -3 to -7%. "Ceiling sub-segment" mechanism — flat parts of mixed reaches now pass spawn; steep pockets previously folded into rear via averaging exceed rear ceiling as standalone segments.
-- **v0.29.0** (#120, #118) — DB hygiene: `cleanup_working = TRUE` in `compare_bcfishpass_wsg` drops working schemas after rollup; `keep_source = FALSE` in `schema_consolidate` drops source schemas after pg_restore. Prevents the disk-full incident that crashed cypher 2026-05-04.
+Recent shipped work (v0.36 → v0.40):
 
-Cypher recovered (volumes nuked); needs fwapg reload before next provincial run. Methodology research is active: `default_extrabreaks` proved the mechanism; next variants include spawn-only / rear-only break vectors (each adds ~4 new classes; per-WSG cost ~1.3–1.4× vs default) and the channel-class breaks research (#52, blocked on fresh-side helper).
+- **v0.36.0** (#162) — `lnk_compare_wsg` + provincial parity annotated CSV (single-source-of-truth taxonomy). 5-host orchestrator. Methodology audited on ADMS/SETN/HORS/BULK/THOM (0 UNEXPLAINED at |diff_pct|≥2%).
+- **v0.37.0** (#168) — Decoupled bcfp compare from link modelling pipeline. New `lnk_pipeline_run()` (modelling umbrella) + `lnk_compare_rollup()` (reference-agnostic comparison reader). PG-state resume gate via `link:::.lnk_wsg_persisted()` replaces brittle RDS-existence check. Species auto-discovered from PG.
+- **v0.38.0** (#172) — Provincial-run autonomy + 8-script noun_verb rename. `wsgs_run_pipeline.sh` / `wsgs_dispatch.sh` / `wsgs_run_host.R` accept `--wsgs=`, `--config=`, `--schema=`, `--no-cyphers`, `--force`. Single-command provincial dispatch.
+- **v0.38.1** (#178 Tier 1) — Single-cypher integration test for the autonomous wrapper. Validated cypher spin → prep → dispatch → consolidate → burn cycle. Row-level verification proved consolidate is byte-exact.
+- **v0.39.0** (#180, #185) — Additive multi-host runs + bucket-filtered COPY-streaming in `schema_consolidate.R`. `--reset-schema` opt-in; default is additive. Per-source `wgc_tables` enumeration (#185 fix to silent partial-copy bug when source's table set is a subset of destination's).
+- **v0.39.1** (#182) — Fail loud on transient cypher prep failures. `data-raw/cypher_prep.sh` replace `set -e` with `set -euo pipefail`; wrap three `| tail -N` pipelines with tempfile + exit-check pattern. Sibling fix to rtj#163 covering cypher orchestration scripts.
+- **v0.40.0** (#187) — Mapping_code tunnel decouple + portable `lnk_mapping_code()` build + `<type>_<role>` rename sweep. Persist `streams_access` + `streams_mapping_code` + `streams_habitat_long_vw` view. `lnk_pipeline_run(mapping_code = TRUE)` builds tunnel-free; access semantics now use link's own per-species barriers (via `blocks_species` predicate from #152). BC: param rename `with_mapping_code` → `mapping_code`, `<role>_species` → `species_<role>`; CLI `--with-mapping-code` → `--mapping-code`. Deprecation shims for one release; removal v0.41.0.
+
+Open follow-ups: #189 (data-drive species residence from `dimensions.csv` — sea-run cutthroat, Dolly Varden); #175 (`lnk_compare_mapping_code` as own family member — unblocked by #187); #176 (`lnk_compare_wsg` → `lnk_compare_run` rename); #177 (persist family reshape); #183 (sibling-host parity hook).
 
 ## Architecture
 
@@ -82,7 +88,7 @@ Without a version pin, "this behaviour exists upstream" claims rot — six-month
 
 Note: `<owner>/<repo>@<sha>` references a commit; this does **not** trigger GitHub notifications to the referenced repo's participants (unlike `<owner>/<repo>#<n>` issue/PR references — see `feedback_no_cross_ref_external_issues.md` in memory).
 
-## Exported Functions (20)
+## Exported Functions (43)
 
 ### Core
 - `lnk_thresholds(csv, high, moderate, low)` — configurable severity thresholds. Ships BC defaults. CSV or inline override. Feeds into `lnk_score()`.
@@ -108,7 +114,7 @@ Note: `<owner>/<repo>@<sha>` references a commit; this does **not** trigger GitH
 
 ### Pipeline helpers
 Six-phase bcfishpass-reproducing pipeline, driven by `lnk_config()` + `lnk_load_overrides()`. Every phase that reads a data table takes both `cfg` (manifest) and `loaded` (the named list from `lnk_load_overrides()`). Callers materialize once and thread `loaded` through.
-- `lnk_pipeline_run(conn, aoi, cfg, loaded, schema, dams, cleanup_working)` — modelling umbrella; chains all phases below plus `lnk_persist_init` + `lnk_barriers_unify` + `lnk_pipeline_persist` into one per-WSG call. Writes `<persist_schema>.streams`, `streams_habitat_<sp>`, `barriers`. This is the modelling boundary — comparison is separate (`lnk_compare_rollup`, `lnk_compare_wsg`).
+- `lnk_pipeline_run(conn, aoi, cfg, loaded, schema, dams, cleanup_working, mapping_code)` — modelling umbrella; chains all phases below plus `lnk_persist_init` + `lnk_barriers_unify` + `lnk_pipeline_persist` into one per-WSG call. Writes `<persist_schema>.streams`, `streams_habitat_<sp>`, `barriers`. With `mapping_code = TRUE` additionally writes `streams_access` + `streams_mapping_code` (tunnel-free; v0.40.0). This is the modelling boundary — comparison is separate (`lnk_compare_rollup`, `lnk_compare_wsg`).
 - `lnk_pipeline_setup(conn, schema, overwrite)` — create per-run working schema.
 - `lnk_pipeline_load(conn, aoi, cfg, loaded, schema)` — crossings + modelled fixes + PSCIS status overrides. Reads `loaded$user_modelled_crossing_fixes`, `loaded$user_pscis_barrier_status`, `loaded$user_crossings_misc`.
 - `lnk_pipeline_prepare(conn, aoi, cfg, loaded, schema)` — falls, definite + control, habitat confirms, gradient barriers, `natural_barriers`, barrier overrides, per-model minimal reduction, base segments. Manifest-key gating via `loaded$user_barriers_definite_control` and `loaded$user_habitat_classification` (no DB probes).
@@ -119,7 +125,8 @@ Six-phase bcfishpass-reproducing pipeline, driven by `lnk_config()` + `lnk_load_
 
 ### Compare family
 - `lnk_compare_rollup(conn, aoi, cfg, reference, conn_ref, species)` — reads `<persist_schema>` (no working schema) + reference DB, returns long-format diff tibble. Species auto-discovered from PG. Reference-agnostic via `reference` arg (`"bcfishpass"` only today). Use for compare-only re-runs against existing PG state.
-- `lnk_compare_wsg(conn, aoi, cfg, loaded, reference, with_mapping_code, conn_ref, ...)` — bundled convenience wrapper that calls `lnk_pipeline_run() + lnk_compare_rollup()`. For `with_mapping_code = TRUE`, additionally builds the per-segment streams_mapping_code lens (still working-schema-bound; mapping_code decoupling is a follow-up).
+- `lnk_compare_wsg(conn, aoi, cfg, loaded, reference, mapping_code, conn_ref, ...)` — bundled convenience wrapper that calls `lnk_pipeline_run() + lnk_compare_rollup()`. For `mapping_code = TRUE` delegates the build to `lnk_pipeline_run`'s mapping_code phase (writes to persist) and then runs the diff against the reference's `streams_mapping_code`. Old `with_mapping_code` param accepted with deprecation warning until v0.41.0.
+- `lnk_mapping_code(conn, table_access, table_habitat, table_streams, aoi, table_to, presence, species_resident, species_anadromous, species_spawn_only)` — portable schema-aware build wrapping `lnk_pipeline_mapping_code()`. Explicit `table_<role>` args (NGE convention) — works against working schema (mid-pipeline) or persist schema (ad-hoc rebuild). Tunnel-free. The QGIS bcfp-shape view consumer entry point (#187).
 - `lnk_parity_annotate(rollup, taxonomy, to, tolerance)` — annotates a parity rollup against `research/bcfp_divergence_taxonomy.yml`. Tags each row with `taxonomy_id, class, mechanism, status, refs`. Unmatched rows: `UNEXPLAINED | WITHIN_TOLERANCE | NOT_APPLICABLE`.
 
 ### Bridge to fresh
