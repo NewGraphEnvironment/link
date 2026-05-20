@@ -124,9 +124,9 @@ provenance:
   overrides/user_habitat_classification.csv:
     source: https://github.com/smnorris/bcfishpass
     path: data/user_habitat_classification.csv
-    upstream_sha: 05057f9
-    synced: 2026-05-13
-    checksum: sha256:b142691bb54d37b6533c955d508c0f6b730a920143aaba81d7d55e5c719ede27
+    upstream_sha: e12c1a5
+    synced: 2026-05-20
+    checksum: sha256:fe7621a0b6a9663c8aa0ed61d3b779f95300e3a52d6f0d181f661774edbd8652
     shape_checksum: sha256:35604598f352c0cc958e8330e80627ec65154e4eaba9dbba8cac92c8516706a0
   overrides/observation_exclusions.csv:
     source: link (hand-authored)
@@ -178,7 +178,7 @@ provenance:
   overrides/user_crossings_misc.csv:
     source: https://github.com/smnorris/bcfishpass
     path: data/user_crossings_misc.csv
-    upstream_sha: 05057f9
-    synced: 2026-05-13
-    checksum: sha256:fc6daaa386ec13863aed9456aefb750ec7a6408f3125cdabcb29c93a9a8f4fd9
+    upstream_sha: e12c1a5
+    synced: 2026-05-20
+    checksum: sha256:4089ee892b9790acd898d8619c7b07d37902ad7e191544a2f3ed647cd303b438
     shape_checksum: sha256:463bc63156786be38c39d5479bfe07ce7b593e1174ecba6f7d9e5ac52c2c6bfd
