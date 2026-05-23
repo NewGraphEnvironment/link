@@ -197,14 +197,20 @@ lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
     lnk_barriers_views(conn, schema = schema, cfg = cfg, # nolint: object_usage_linter
                        species = active_species)
 
-    # 2. Per-segment access. barriers_per_sp keys = active species for
-    # this bundle so working schema's streams_access columns match the
-    # persist DDL (which is also bundle-species-driven via cols_*).
-    # The pre-#192 hardcoded 8 bcfp species created a working-vs-persist
-    # column mismatch when the bundle's species was a subset (e.g. default
-    # config = bt/gr/ko/rb). lnk_barriers_views above created views for
-    # exactly active_species (not the bcfp 8); barriers_per_sp keys here
-    # mirror that set so lnk_pipeline_access JOINs only existing views.
+    # 2. Per-segment access. barriers_per_sp drives `accessible` (token1
+    # ACCESS + token2 gate). KNOWN-DIVERGENT from bcfp — see RUNBOOK.md §5.
+    # bcfp's per-species access set (`barriers_<sp>`, built in
+    # smnorris/bcfishpass model/01_access/sql/model_access_bt.sql) is
+    # NATURAL barriers only (gradient at the species threshold + falls +
+    # subsurface), MINUS barriers with upstream observations / confirmed
+    # habitat, plus user_definite — dams are NEVER in it (they annotate
+    # access via token2, not block it). link's `_unified` views instead
+    # carry ALL barriers incl dams (blocks_species universal, §2a), so
+    # dam-downstream segments read inaccessible and lose their `;DAM`
+    # token. The correct fix is a natural-only per-species *feature* view
+    # with the override applied (reproducing bcfp barriers_<sp>) — real
+    # work, scoped separately, not a table swap. `_min` cannot be used
+    # here: it is a break-spec with no id column (RUNBOOK §2b).
     sp_set <- tolower(active_species)
     barriers_per_sp <- setNames(
       lapply(sp_set, function(sp) paste0(schema, ".barriers_", sp, "_unified")),
