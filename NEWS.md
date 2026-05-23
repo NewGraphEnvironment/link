@@ -1,3 +1,9 @@
+# link 0.40.3
+
+Persist the per-source downstream-barrier flag columns in `streams_access` so `lnk_pipeline_mapping_code`'s second token (`DAM`/`MODELLED`/`ASSESSED`/`REMEDIATED`/`NONE`) populates from persisted state instead of defaulting to `NONE`. Three coupled fixes ([#196](https://github.com/NewGraphEnvironment/link/issues/196)): `lnk_persist_init` adds the six flag columns to the `streams_access` DDL; `lnk_pipeline_run` pre-persists barriers before the mapping_code phase for cross-WSG dam visibility (link#152); `lnk_pipeline_persist` projects the flag columns in the INSERT (the DDL/INSERT pair must match — the missing projection was the actual `NONE`-token bug).
+
+Adds `RUNBOOK.md` — the durable mental model of the barrier → access → mapping_code machinery, including the authoritative bcfp access-set mechanism (read from `smnorris/bcfishpass@v0.7.15`). Note: the per-species *accessibility* set still carries dams (it should be natural-only + observation/habitat-overridden, per bcfp); dam-downstream segments therefore still emit a bare habitat token rather than `SPAWN;DAM`. Characterized in RUNBOOK §5 with a scoped fix (follow-up issue).
+
 # link 0.40.2
 
 Hotfix for wide-table species-set evolution in v0.40.0/v0.40.1's `lnk_pipeline_run(mapping_code = TRUE)` path. Closes [#194](https://github.com/NewGraphEnvironment/link/issues/194).
