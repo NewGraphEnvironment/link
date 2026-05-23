@@ -47,6 +47,9 @@ min and you're oriented.
 
 ## DB state does NOT travel — rebuild on M1
 
+**Get going: follow `RUNBOOK.md` §0 (docker → install → snapshot → tunnel)** —
+the canonical fresh-machine bootstrap. Summary below.
+
 The docker `fresh-db` (snapshot + persist tables + working schemas) is M4-local.
 On M1 you must either rebuild or use the tunnel:
 

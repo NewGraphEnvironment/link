@@ -10,6 +10,41 @@ bitten us. When the mechanics change, update this file in the same commit.
 
 ---
 
+## 0. Getting going (operate on a fresh machine — e.g. M1)
+
+The modelling runs against a local Postgres (docker `fresh-db`) holding the bcfp
+inputs. DB state is **machine-local** — rebuild it from public sources, no DB
+dump needed. One-time prereqs (GDAL+Parquet driver, uv, bcdata, psql) install via
+kdot `install_geo.sh`.
+
+```bash
+# 1. Docker daemon + local fwapg
+open -a Docker                                    # if daemon down; wait ~30s
+cd ~/Projects/repo/fresh/docker && docker compose up -d db
+
+# 2. Install link
+cd ~/Projects/repo/link && Rscript -e 'pak::local_install(upgrade = FALSE, ask = FALSE)'
+
+# 3. Snapshot bcfp inputs into local fwapg (tunnel-free, public sources, ~5-8 min)
+PGUSER=postgres PGPASSWORD=postgres PGHOST=localhost PGPORT=5432 PGDATABASE=fwapg \
+  bash data-raw/snapshot_bcfp.sh --with-bcfp-views --force
+#   loads whse_fish.pscis_*, cabd.dams, fresh.modelled_stream_crossings,
+#   bcfishobs.observations (+ bcfp crossings_vw). streams_vw silently fails
+#   (1.6 GB, see §6) — use the tunnel for bcfp streams parity instead.
+
+# 4. bcfp comparison tunnel (parity diffs ONLY — the build itself is tunnel-free)
+ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new \
+  -L 63333:127.0.0.1:5432 db_newgraph -N -f
+psql "host=localhost port=63333 dbname=bcfishpass user=newgraph" \
+  -c "SELECT model_run_id, model_version FROM bcfishpass.log ORDER BY 1 DESC LIMIT 1;"
+```
+
+Local fwapg conn: `host=localhost port=5432 dbname=fwapg user=postgres
+password=postgres`. (M1's `~/.Renviron` defaults `PG_*_SHARE` to the tunnel
+`:63333` — for the local build set `Sys.setenv()` to `:5432` in R; see the
+m1-testing pattern in `fresh/CLAUDE.md`.) Then build:
+`lnk_pipeline_run(conn, "PARS", cfg, loaded, schema, mapping_code = TRUE)`.
+
 ## 1. The big picture
 
 link reproduces bcfishpass's per-segment, per-species habitat + connectivity
