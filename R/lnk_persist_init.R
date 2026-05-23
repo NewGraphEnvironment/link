@@ -154,6 +154,24 @@ cols_barriers <- c(
   geom                     = "geometry(Point, 3005)"
 )
 
+#' Column shape for the province-wide barrier-overrides table.
+#'
+#' `<persist_schema>.barrier_overrides` holds the per-(segment x species)
+#' observation/habitat barrier-skip list (`lnk_barrier_overrides` output)
+#' accumulated across all WSGs. Persisted province-wide so the per-species
+#' access view (`barriers_<sp>_access`, [lnk_barriers_views()]) can
+#' anti-join it for natural barriers in ANY WSG a downstream walk crosses —
+#' the cross-WSG twin of the link#152 barriers fix. One named vector drives
+#' both the DDL ([lnk_persist_init()]) and the INSERT projection
+#' ([lnk_pipeline_persist()]). link#200.
+#' @noRd
+cols_barrier_overrides <- c(
+  blue_line_key            = "integer NOT NULL",
+  downstream_route_measure = "double precision NOT NULL",
+  species_code             = "text NOT NULL",
+  watershed_group_code     = "varchar(4) NOT NULL"
+)
+
 #' Validate that an existing target table doesn't carry stale DDL
 #' (unexpected `GENERATED ALWAYS` columns).
 #'
@@ -309,6 +327,8 @@ lnk_persist_init <- function(conn, cfg, species, force_recreate = FALSE) {
   }
   .lnk_validate_persist_table(conn, schema = schema, table = "barriers",
                               force_recreate = force_recreate)
+  .lnk_validate_persist_table(conn, schema = schema, table = "barrier_overrides",
+                              force_recreate = force_recreate)
   .lnk_validate_persist_table(conn, schema = schema, table = "streams_access",
                               force_recreate = force_recreate)
   .lnk_validate_persist_table(conn, schema = schema,
@@ -374,6 +394,23 @@ lnk_persist_init <- function(conn, cfg, species, force_recreate = FALSE) {
       "CREATE INDEX IF NOT EXISTS %s ON %s.barriers %s",
       idx_name, schema, barriers_idx_specs[[idx_name]]))
   }
+
+  # Province-wide barrier-overrides table (link#200). The per-(segment x
+  # species) observation/habitat barrier-skip list, accumulated per-WSG so
+  # the per-species access view can anti-join it cross-WSG. PK on
+  # (blue_line_key, downstream_route_measure, species_code) — a barrier
+  # position belongs to exactly one WSG so this stays unique across WSGs.
+  barrier_overrides_pk <- c("blue_line_key", "downstream_route_measure",
+                            "species_code")
+  .lnk_db_execute(conn, sprintf(
+    "CREATE TABLE IF NOT EXISTS %s.barrier_overrides (\n  %s\n)",
+    schema, .lnk_cols_clause(cols_barrier_overrides, barrier_overrides_pk)))
+  .lnk_db_execute(conn, sprintf(
+    "CREATE INDEX IF NOT EXISTS barrier_overrides_wsg_idx ON %s.barrier_overrides (watershed_group_code)",
+    schema))
+  .lnk_db_execute(conn, sprintf(
+    "CREATE INDEX IF NOT EXISTS barrier_overrides_blk_drm_idx ON %s.barrier_overrides (blue_line_key, downstream_route_measure)",
+    schema))
 
   # Per-segment per-species access table (link#187). Wide shape (one
   # row per segment, all species columns inline) — matches the QGIS-

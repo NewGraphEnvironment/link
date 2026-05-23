@@ -33,6 +33,13 @@
 #' - **Subsurface_flow** (`barrier_source = 'SUBSURFACE_FLOW'`, from
 #'   `<schema>.barriers_subsurfaceflow`): blocks all 8 species. Opt-in
 #'   (only built when `cfg$pipeline$break_order` includes `"subsurfaceflow"`).
+#' - **User_definite** (`barrier_source = 'USER_DEFINITE'`, from
+#'   `<schema>.barriers_definite`): blocks all 8 species. ltrees +
+#'   `linear_feature_id` resolved by JOIN to
+#'   `whse_basemapping.fwa_stream_networks_sp` (mirrors the FALLS branch
+#'   and bcfp's `barriers_user_definite.sql`). Persisted province-wide so
+#'   the per-species access view (`barriers_<sp>_access`,
+#'   [lnk_barriers_views()]) can include them override-exempt — link#200.
 #'
 #' Remediations (PASSABLE remediation crossings) are intentionally NOT
 #' in this table. They're consumed via `<schema>.barriers_remediations`
@@ -67,6 +74,8 @@
 #' - `<schema>.crossings` (from [lnk_pipeline_crossings()]).
 #' - `<schema>.gradient_barriers_raw` (from [lnk_pipeline_prepare()]).
 #' - `<schema>.falls` (from [lnk_pipeline_prepare()]).
+#' - `<schema>.barriers_definite` (from [lnk_pipeline_prepare()]; always
+#'   created, may be empty).
 #'
 #' Optional:
 #' - `<schema>.barriers_subsurfaceflow` (only when the config opts in).
@@ -241,7 +250,41 @@ lnk_barriers_unify <- function(conn, aoi, cfg, loaded,
     WHERE f.watershed_group_code = %3$s",
     all_species_arr, schema, aoi_lit)  # nolint: indentation_linter
 
-  union_parts <- c(sql_anth, sql_gradient, sql_falls)
+  # Source 4: user-definite barriers. id_barrier = 'USER_DEFINITE-' ||
+  # row_number(). <schema>.barriers_definite (built in lnk_pipeline_prepare
+  # from user_barriers_definite.csv) carries blue_line_key +
+  # downstream_route_measure only — the empty-fallback shape has just those
+  # two columns — so reference ONLY those from `d` and JOIN to FWA for
+  # ltrees + linear_feature_id + watershed_key, exactly as the FALLS branch
+  # does. Mirrors bcfp model/01_access/sql/barriers_user_definite.sql.
+  # blocks_species = all (a user-definite barrier blocks every species).
+  # These are override-EXEMPT: the per-species access view
+  # (barriers_<sp>_access) never lifts them via barrier_overrides — bcfp
+  # unions all user_definite AFTER the observation/habitat filter ("include
+  # *all* user added features, even those below observations"). link#200.
+  sql_user_definite <- sprintf("
+    SELECT
+      ('USER_DEFINITE-' || row_number() OVER ()::text)::text AS id_barrier,
+      %1$s::varchar(4)                  AS watershed_group_code,
+      'USER_DEFINITE'::text             AS barrier_source,
+      'user_definite'::text             AS barrier_subtype,
+      'BARRIER'::text                   AS passability,
+      %2$s                              AS blocks_species,
+      s.linear_feature_id,
+      d.blue_line_key,
+      s.watershed_key,
+      d.downstream_route_measure::double precision,
+      s.wscode_ltree,
+      s.localcode_ltree,
+      ST_Force2D(FWA_LocateAlong(d.blue_line_key, d.downstream_route_measure))::geometry(Point, 3005) AS geom
+    FROM %3$s.barriers_definite d
+    JOIN whse_basemapping.fwa_stream_networks_sp s
+      ON d.blue_line_key = s.blue_line_key
+     AND d.downstream_route_measure >= s.downstream_route_measure
+     AND d.downstream_route_measure <  s.upstream_route_measure",
+    aoi_lit, all_species_arr, schema)  # nolint: indentation_linter
+
+  union_parts <- c(sql_anth, sql_gradient, sql_falls, sql_user_definite)
 
   if (has_subsurface) {
     sql_subsurface <- sprintf("

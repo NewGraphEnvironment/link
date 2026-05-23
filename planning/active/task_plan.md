@@ -4,12 +4,13 @@ link's per-species mapping_code accessibility uses `barriers_<sp>_unified` = ALL
 
 ## Phase 1 — make the override + user_definite province-wide
 
-- [ ] `USER_DEFINITE` family in `lnk_barriers_unify` (mirror FALLS branch: FWA-join for ltree; source `<schema>.barriers_definite`; `blocks_species`=all; reference only `blue_line_key`+`downstream_route_measure` for empty-fallback safety). No persist DDL change.
-- [ ] `cols_barrier_overrides` vector + `CREATE TABLE IF NOT EXISTS <persist>.barrier_overrides` in `lnk_persist_init` (one vector drives DDL + INSERT).
-- [ ] Persist `barrier_overrides` (DELETE-WHERE-WSG + INSERT, add `'<aoi>'` as `watershed_group_code`) in `lnk_pipeline_persist`; probe-gated.
-- [ ] Add override-persist to the mapping_code-phase pre-persist in `lnk_pipeline_run` (so persist holds current WSG's overrides before views build).
-- [ ] Tests: unify `USER_DEFINITE` branch SQL; persist_init `barrier_overrides` DDL; persist INSERT projection.
-- [ ] `/code-check` + commit.
+- [x] `USER_DEFINITE` family in `lnk_barriers_unify` (mirror FALLS branch: FWA-join for ltree; source `<schema>.barriers_definite`; `blocks_species`=all; reference only `blue_line_key`+`downstream_route_measure` for empty-fallback safety). No persist DDL change.
+- [x] `cols_barrier_overrides` vector + `CREATE TABLE IF NOT EXISTS <persist>.barrier_overrides` in `lnk_persist_init` (one vector drives DDL + INSERT).
+- [x] Persist `barrier_overrides` (DELETE-WHERE-WSG + INSERT, add `'<aoi>'` as `watershed_group_code`) in `lnk_pipeline_persist`; probe-gated.
+- [x] Pre-persist auto-handled: the mapping_code-phase pre-persist (`lnk_pipeline_run.R:188`) already calls the full `lnk_pipeline_persist`, which now persists `barrier_overrides` — no separate edit needed.
+- [x] Tests: unify `USER_DEFINITE` branch SQL; persist_init `barrier_overrides` DDL; persist INSERT projection. (96 pass)
+- [x] DB-smoke: `barrier_overrides` DDL creates in `fresh`; USER_DEFINITE branch parses + resolves ltree/geom (empty-fallback safe + one-row).
+- [x] `/code-check` (round 1 clean) + commit.
 
 ## Phase 2 — `barriers_<sp>_access` view over province-wide inputs
 

@@ -100,6 +100,38 @@ lnk_pipeline_persist <- function(conn, aoi, cfg, species,
       barriers_table, barriers_cols, barriers_cols, schema))
   }
 
+  # ----- barrier_overrides (link#200) -----
+  # Per-(segment x species) observation/habitat skip list. Working
+  # <schema>.barrier_overrides (built by lnk_barrier_overrides in
+  # lnk_pipeline_prepare) carries (blue_line_key, downstream_route_measure,
+  # species_code) only — add the AOI as watershed_group_code in the SELECT.
+  # Persisted province-wide so barriers_<sp>_access can anti-join it for
+  # natural barriers in any WSG a downstream walk crosses. Probe-gated like
+  # barriers above.
+  overrides_present <- nrow(DBI::dbGetQuery(conn, sprintf(
+    "SELECT 1 FROM information_schema.tables
+      WHERE table_schema = %s AND table_name = 'barrier_overrides'
+      LIMIT 1;",
+    DBI::dbQuoteString(conn, schema)
+  ))) > 0L
+  if (overrides_present) {
+    overrides_table <- paste0(tn$schema, ".barrier_overrides")
+    overrides_cols <- paste(names(cols_barrier_overrides), collapse = ", ")
+    # SELECT projection: WSG is the literal AOI (working table lacks it);
+    # the other three come straight from the working override table.
+    overrides_select <- vapply(names(cols_barrier_overrides), function(col) {
+      if (col == "watershed_group_code") paste0(aoi_lit, "::varchar(4)")
+      else col
+    }, character(1))
+    .lnk_db_execute(conn, sprintf(
+      "DELETE FROM %s WHERE watershed_group_code = %s",
+      overrides_table, aoi_lit))
+    .lnk_db_execute(conn, sprintf(
+      "INSERT INTO %s (%s) SELECT %s FROM %s.barrier_overrides",
+      overrides_table, overrides_cols,
+      paste(overrides_select, collapse = ", "), schema))
+  }
+
   # ----- streams_access (link#187) -----
   # Per-segment per-species access. Working `<schema>.streams_access` is
   # built by lnk_pipeline_access; persist phase copies the per-WSG slice
