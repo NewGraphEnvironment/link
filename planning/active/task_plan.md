@@ -21,9 +21,10 @@ link's per-species mapping_code accessibility uses `barriers_<sp>_unified` = ALL
 
 ## Phase 3 — repoint `barriers_per_sp` → `_access`
 
-- [ ] `lnk_pipeline_run` (:215-217) `..._unified` → `..._access`; rewrite KNOWN-DIVERGENT comment (:200-213).
-- [ ] Update `test-lnk_pipeline_run.R` if it asserts the `_unified` name.
-- [ ] `/code-check` + commit.
+- [x] `lnk_pipeline_run` (:215-217) `..._unified` → `..._access`; rewrote KNOWN-DIVERGENT comment (:200-213) to describe the landed fix.
+- [x] `test-lnk_pipeline_run.R` asserts no `_unified`/`barriers_per_sp` name → no update needed.
+- [x] Full suite 1193 pass (the lone FAIL is the env-only `db_conn` test — needs the real db_newgraph tunnel: `.Renviron` `PG_*_SHARE` → `:63333` w/ airvine/bcfishpass creds; CI skips it via `skip_if_no_db`). Phase 3 repoint validated by Phase 2's code-check (consumption confirmed).
+- [x] commit.
 
 ## Phase 4 — DB validation (hard gate): PARS + LFRA vs `fresh.streams_vw_bcfp`
 
