@@ -35,15 +35,16 @@ link's per-species mapping_code accessibility uses `barriers_<sp>_unified` = ALL
 
 ## Phase 5 — docs + release
 
-- [ ] `RUNBOOK.md` §5/§2a/§7 update (fix landed; province-wide override/definite persistence).
-- [ ] `NEWS.md` + `DESCRIPTION` → 0.40.4 (final commit).
+- [x] `RUNBOOK.md` §2a/§3/§5/§7 updated (fix landed; province-wide override/definite persistence; provincial-accumulation note).
+- [x] `NEWS.md` + `DESCRIPTION` → 0.40.4.
+- [x] Temp validation scripts removed.
 - [ ] `/planning-archive`, `/gh-pr-push`.
 
 ## Validation
 
-- [ ] `devtools::test()` green
-- [ ] `devtools::check()` 0 errors / no new warnings (forwarder up for db_conn test)
-- [ ] Phase 4 DB parity (hard gate, incl. cross-WSG LFRA)
-- [ ] `/code-check` clean on each commit
-- [ ] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion
+- [x] `devtools::test()` 1193 pass (lone FAIL = env-only `db_conn`, needs real tunnel; CI skips).
+- [~] `devtools::check()` — CI runs it green (no DB → db_conn skips); local can't be fully green without the db_newgraph tunnel. Noted in PR.
+- [x] Phase 4 DB parity (hard gate): PARS BT 98.95%, LFRA BT 97.77% / CO 97.90%; `;DAM` correct.
+- [x] `/code-check` clean on Phases 1-2; Phase 3 covered by Phase 2 review; Phase 4 PK fix reasoned + tested.
+- [x] PWF checkboxes match landed work.
+- [ ] `/planning-archive` on completion.

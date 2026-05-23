@@ -95,13 +95,18 @@ fractional thresholds via `.lnk_classes_bcfp` (`lnk_pipeline_prepare.R`):
 `class_value ≥ s$access_gradient_max`. BT's `access_gradient_max` is 0.25, so a
 2500-class gradient blocks BT; CH/CO/SK at 0.15 are blocked from 1500 up.
 
-**Key consequence: dams block *all* species universally.** There is no
+**Key consequence: dams block *all* species in `blocks_species`.** There is no
 per-species dam rule in any config file. A dam (CABD, via the anthropogenic
-family) gets `blocks_species = {all species}`. **This is the #196 bug.** bcfp
-does NOT put dams in the per-species *access* set at all (§5) — they're a
-downstream *descriptor*, not an accessibility barrier. link conflating the two
-in `blocks_species` is the root cause; see §5 for the authoritative bcfp
-mechanism and the fix shape.
+family) gets `blocks_species = {all species}`. This was the #196 dam-token bug.
+bcfp does NOT put dams in the per-species *access* set at all (§5) — they're a
+downstream *descriptor*, not an accessibility barrier. **Fixed in #200/v0.40.4:**
+accessibility no longer reads `blocks_species` over all barriers. It reads the
+per-species `barriers_<sp>_access` view (§5), which filters to NATURAL sources
+only (`barrier_source IN ('GRADIENT','FALLS','SUBSURFACE_FLOW','USER_DEFINITE')`)
+— so dams are excluded from access and (correctly) annotate token2 only.
+`blocks_species` is still computed for all families (it's how the `_access` view
+gets the per-species gradient threshold for free); the access view just ignores
+the anthropogenic rows.
 
 Remediations (PASSABLE) are **not** in `blocks_species`. They flow separately
 via `<schema>.barriers_remediations` for the sequence-aware `remediated_dnstr_ind`.
@@ -132,9 +137,11 @@ exist`.) `barriers_per_sp` mechanically requires the *feature view* shape.
 Computes `<schema>.streams_access` — per-segment, per-species accessibility plus
 downstream barrier-source flags. Two distinct inputs, two distinct roles:
 
-- **`barriers_per_sp`** — named list `sp → barriers_<sp>_unified`. Drives
-  `has_barriers_<sp>_dnstr` (is a blocking barrier downstream for this species).
-  This is **accessibility** — feeds `accessible` in mapping_code. Each table's
+- **`barriers_per_sp`** — named list `sp → barriers_<sp>_access` (#200; was
+  `_unified` pre-v0.40.4). Drives `has_barriers_<sp>_dnstr` (is a blocking
+  *natural* barrier downstream for this species, override-applied). This is
+  **accessibility** — feeds `accessible` in mapping_code. NATURAL-only +
+  override-filtered + user_definite (§5) — dams are NOT here. Each table's
   feature id is derived as `<table>_id` and passed to `frs_network_features`.
 - **`barrier_sources`** — named list of source-typed feature tables
   (`anthropogenic`, `pscis`, `dams`, `remediations`). Drives the
@@ -224,38 +231,54 @@ mapping_code (`load_streams_mapping_code.sql`) gates the barrier token on
 `spawning_bt > 0` (token1 SPAWN) AND `dam_dnstr_ind = true` (a dam is downstream
 → token2 DAM). The dam doesn't block access; it annotates it.
 
-### Where link diverges (the #196 bug, fully characterized)
+### Where link diverged, and how #200/v0.40.4 fixed it
 
-link's `barriers_per_sp = barriers_<sp>_unified` = **all** barriers (incl dams,
-PSCIS, modelled) WHERE species ∈ `blocks_species` (§2a). Two wrongs:
+The #196 bug was: `barriers_per_sp = barriers_<sp>_unified` = **all** barriers
+(incl dams, PSCIS, modelled) WHERE species ∈ `blocks_species` (§2a). Two wrongs,
+both now fixed:
 
-1. **Wrong content.** It includes dams/anthropogenic. bcfp's `barriers_<sp>` is
-   natural-only. So every PARS segment below a dam reads `has_barriers_bt_dnstr
-   = TRUE` → `accessible = FALSE` → token2 `;DAM` suppressed → bare `SPAWN`.
-2. **No override applied.** bcfp removes barriers with upstream observations /
-   confirmed habitat. link HAS this logic — `lnk_barrier_overrides`
-   (`lnk_pipeline_prepare.R:519`) — but its output `<schema>.barrier_overrides`
-   feeds only `lnk_pipeline_classify` (habitat gating), NOT
-   `lnk_pipeline_access` (mapping_code accessibility). So link's habitat token
-   (SPAWN/REAR) is override-aware but its `accessible` flag is not.
+1. **Wrong content** (FIXED). It included dams/anthropogenic; bcfp's
+   `barriers_<sp>` is natural-only. Every PARS segment below a dam read
+   `has_barriers_bt_dnstr = TRUE` → `accessible = FALSE` → token2 `;DAM`
+   suppressed → bare `SPAWN`.
+2. **No override applied** (FIXED). bcfp removes barriers with upstream
+   observations / confirmed habitat. link's `lnk_barrier_overrides`
+   (`lnk_pipeline_prepare.R:519`) output `<schema>.barrier_overrides` fed only
+   `lnk_pipeline_classify` (habitat), NOT the access path.
 
-Note: link's `access_<sp>` integer (`lnk_pipeline_access.R:364`,
-`ifelse(blocked, 0, ifelse(observed, 2, 1))`) IS observation-aware and matches
-bcfp's `access_bt` code — but mapping_code reads `has_barriers_<sp>_dnstr`, not
-`access_<sp>`.
+**The fix (#200/v0.40.4) — all three access inputs persisted province-wide:**
 
-### The fix shape
+- `barriers_per_sp` now points at `<schema>.barriers_<sp>_access`
+  (`lnk_barriers_views`): feature-shaped (has-id, §2b), NATURAL only
+  (`barrier_source IN ('GRADIENT','FALLS','SUBSURFACE_FLOW','USER_DEFINITE')` —
+  gradient-at-species-threshold is already encoded in `blocks_species`), MINUS
+  the override (anti-join `barrier_overrides`), with `USER_DEFINITE`
+  override-exempt. Dams stay in `barrier_sources` → token2 only.
+- `user_barriers_definite` is now a `USER_DEFINITE` family in `lnk_barriers_unify`
+  (persist `barriers`), ltree-resolved via the same FWA join the FALLS branch
+  uses (mirrors bcfp `barriers_user_definite.sql`).
+- `barrier_overrides` is now persisted province-wide
+  (`<persist>.barrier_overrides`, `lnk_persist_init` + `lnk_pipeline_persist`).
+  Because the access view reads persist (cross-WSG) barriers, the override must
+  also be province-wide so a natural barrier in *any* WSG a downstream walk
+  crosses is lifted correctly. Persist PK is
+  `(blue_line_key, downstream_route_measure, species_code, watershed_group_code)`
+  — boundary-stream override positions are computed by two adjacent WSG runs, so
+  WSG must be in the key.
 
-`barriers_per_sp` must reproduce bcfp's `barriers_<sp>`: a **feature-shaped**
-(has-id, §2b) per-species view of **natural barriers only** — gradient at the
-species' threshold + falls + subsurface — with the observation/habitat override
-applied and `user_barriers_definite` unioned in. Dams stay in `barrier_sources`
-(token2 only). This is real work (a per-species access-barrier builder), not a
-table swap. Confirm with `fresh.streams_vw_bcfp` once it loads (the snapshot's
-streams view failed on a transient gzip error 2026-05-23; retry).
+**Provincial-accumulation property** (do not forget): a single-WSG run only sees
+WSGs already in persist. PARS only emits `;DAM` once PCEA+UPCE (which hold the
+Bennett/Peace Canyon dams PARS drains through) are persisted. This is identical
+to bcfp's accumulated `barriers_<sp>` and to link's natural-barrier persistence
+(link#152) — handled by the provincial orchestrator.
 
-What does **NOT** work: `barriers_<sp>_min` (break-spec, no id, §2b) — though its
-*content* (gradient+falls) is close to the right base.
+**Validated (v0.40.4):** PARS BT 98.95%, LFRA BT 97.77% / CO 97.90% per-segment
+vs `fresh.streams_vw_bcfp`. Residual ~1-2% is token1 habitat-presence
+(`ACCESS`↔`SPAWN`/`REAR`, dimensions/rules), not the dam-access fix.
+
+What does **NOT** work (rejected during #196): `barriers_<sp>_min` (break-spec,
+no id, §2b) — its *content* (gradient+falls) is close, but it cannot feed
+`frs_network_features`.
 
 ### Does dam blocking "depend on species"? (recurring question)
 
@@ -361,7 +384,7 @@ direction. Not yet scoped; candidate issue.
 | Rule | File | Drives |
 |---|---|---|
 | Per-species gradient access threshold | `configs/<name>/parameters_fresh.csv` → `access_gradient_max` | gradient `blocks_species` (§2a) |
-| Per-species observation override | `parameters_fresh.csv` → `observation_*` | barrier-skip via observations |
+| Per-species observation override | `parameters_fresh.csv` → `observation_*` | barrier-skip via observations; feeds habitat (`lnk_pipeline_classify`) AND access (anti-join in `barriers_<sp>_access`, persisted as `barrier_overrides`, #200) |
 | Habitat dimensions (spawn/rear by gradient, channel width, lake/stream, …) | `configs/<name>/dimensions.csv` → `lnk_rules_build()` → `rules.yaml` | `frs_habitat_classify()` (token1 habitat) |
 | Species residence (resident/anadromous/spawn-only) | **hardcoded** defaults in `lnk_pipeline_mapping_code()` | which mc_barrier flavor + spawn-only token1 |
 | Dam / anthropogenic blocking | **nowhere** — universal `all species` in `lnk_barriers_unify` | `blocks_species` (§2a). Not rules-driven. |
