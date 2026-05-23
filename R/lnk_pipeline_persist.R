@@ -119,7 +119,13 @@ lnk_pipeline_persist <- function(conn, aoi, cfg, species,
   ))) > 0L
   if (access_present) {
     access_table <- paste0(tn$schema, ".streams_access")
+    # MUST mirror the DDL column set in lnk_persist_init exactly:
+    # base + per-source flags (#196) + per-species. Missing the source
+    # flags here was the v0.40.3 bug — DDL had the columns but the INSERT
+    # projection didn't populate them, so they stayed NULL and
+    # lnk_pipeline_mapping_code's second token defaulted to NONE.
     access_cols_v <- c(cols_streams_access_base,
+                       .lnk_cols_streams_access_source_flags(),
                        .lnk_cols_streams_access_per_sp(species))
     access_cols <- paste(names(access_cols_v), collapse = ", ")
     # SELECT projection: pull watershed_group_code from streams (JOIN),

@@ -2,12 +2,18 @@
 
 Experimental package — breaking all the time and loving the learning curve. Stream-network habitat-classification tooling layered over `fresh`. Under active development; APIs and outputs change without notice.
 
+> **Read [`RUNBOOK.md`](RUNBOOK.md) first.** It is the durable mental model of the barrier → access → mapping_code machinery (what feeds what, where each rule lives, the gotchas). This `CLAUDE.md` carries conventions + status; the RUNBOOK carries the *mechanics*. Don't re-derive the system from source each session — read the runbook, and update it in-commit when the mechanics change.
+
 ## Repository Context
 
 **Repository:** NewGraphEnvironment/link
 **Primary Language:** R
 **Prefix:** `lnk_`
 **Branch:** `main` (v0.40.2 as of 2026-05-19)
+
+## Status (2026-05-23) — ACTIVE HANDOFF
+
+**Picking up this repo? Read [`planning/active/HANDOFF.md`](planning/active/HANDOFF.md) first, then [`RUNBOOK.md`](RUNBOOK.md).** Work on branch `196-streams-access-source-flags` is mid-stream and handing off to M1. The mapping_code/access mechanism is solved and the next fix (Phase 4d) is scoped — do not start over. v0.40.3 (persist per-source flags) is ready to ship; the dam/access divergence is characterized with a drafted fix + issue.
 
 ## Status (2026-05-19)
 

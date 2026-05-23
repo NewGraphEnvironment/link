@@ -174,24 +174,43 @@ lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
   if (isTRUE(mapping_code)) {
     pres <- lnk_presence(loaded$wsg_species_presence, aoi) # nolint: object_usage_linter
 
-    # 1. Per-species + per-source barrier views over working <schema>.barriers
-    # (built by lnk_barriers_unify above). Tunnel-free, link-canonical.
-    # `species = active_species` so the view set matches the bundle (default
-    # config = bt/gr/ko/rb — not the bcfp 8). Otherwise lnk_pipeline_access
-    # below fails JOINing barriers_<sp>_unified for a species the views
-    # didn't cover.
-    lnk_barriers_views(conn, schema = schema, cfg = cfg, # nolint: object_usage_linter
-                       species = active_species,
-                       barriers_table = paste0(schema, ".barriers"))
+    # 0. Pre-persist current WSG's barriers + streams + habitat into
+    # <persist_schema> BEFORE building views. lnk_barriers_views defaults
+    # to reading the persist barriers table — necessary for cross-WSG
+    # access lookups (e.g. PARS BT through Bennett dams in PCEA/UPCE,
+    # link#152). My #187 Phase 4 worked around an ordering issue by
+    # pointing views at working <schema>.barriers, but that loses the
+    # cross-WSG visibility. Fix: persist current WSG's barriers FIRST,
+    # so persist holds current + all previously-persisted WSGs by the
+    # time the views are built. Second persist call below re-runs
+    # idempotently and adds streams_access + streams_mapping_code.
+    # link#196.
+    lnk_pipeline_persist(conn, aoi = aoi, cfg = cfg, # nolint: object_usage_linter
+                         species = active_species, schema = schema)
 
-    # 2. Per-segment access. barriers_per_sp keys = active species for
-    # this bundle so working schema's streams_access columns match the
-    # persist DDL (which is also bundle-species-driven via cols_*).
-    # The pre-#192 hardcoded 8 bcfp species created a working-vs-persist
-    # column mismatch when the bundle's species was a subset (e.g. default
-    # config = bt/gr/ko/rb). lnk_barriers_views above created views for
-    # exactly active_species (not the bcfp 8); barriers_per_sp keys here
-    # mirror that set so lnk_pipeline_access JOINs only existing views.
+    # 1. Per-species + per-source barrier views over PERSIST
+    # <persist_schema>.barriers (default — see #196). Province-wide,
+    # tunnel-free, link-canonical. Sees current WSG (just persisted) +
+    # all previously-persisted WSGs (cross-WSG dam visibility).
+    # `species = active_species` so the view set matches the bundle
+    # (default config = bt/gr/ko/rb — not the bcfp 8).
+    lnk_barriers_views(conn, schema = schema, cfg = cfg, # nolint: object_usage_linter
+                       species = active_species)
+
+    # 2. Per-segment access. barriers_per_sp drives `accessible` (token1
+    # ACCESS + token2 gate). KNOWN-DIVERGENT from bcfp — see RUNBOOK.md §5.
+    # bcfp's per-species access set (`barriers_<sp>`, built in
+    # smnorris/bcfishpass model/01_access/sql/model_access_bt.sql) is
+    # NATURAL barriers only (gradient at the species threshold + falls +
+    # subsurface), MINUS barriers with upstream observations / confirmed
+    # habitat, plus user_definite — dams are NEVER in it (they annotate
+    # access via token2, not block it). link's `_unified` views instead
+    # carry ALL barriers incl dams (blocks_species universal, §2a), so
+    # dam-downstream segments read inaccessible and lose their `;DAM`
+    # token. The correct fix is a natural-only per-species *feature* view
+    # with the override applied (reproducing bcfp barriers_<sp>) — real
+    # work, scoped separately, not a table swap. `_min` cannot be used
+    # here: it is a break-spec with no id column (RUNBOOK §2b).
     sp_set <- tolower(active_species)
     barriers_per_sp <- setNames(
       lapply(sp_set, function(sp) paste0(schema, ".barriers_", sp, "_unified")),

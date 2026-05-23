@@ -60,12 +60,34 @@ cols_streams_access_base <- c(
   id_segment                = "integer NOT NULL",
   watershed_group_code      = "varchar(4) NOT NULL"
 )
-# Conditional cols `remediated_dnstr_ind` + `has_observation_key_upstr`
-# are written by lnk_pipeline_access only when remediations /
-# observations tables are passed. Omitted from the persist base shape
-# until a consumer requires them — adding them would force every caller
-# to pass those upstream tables. Re-introduce as nullable columns + a
-# null-tolerant persist projection when needed.
+#' Per-source flag column generator for `streams_access` (link#196).
+#'
+#' Returns a named character vector keyed by column-name → DDL type for
+#' the per-barrier-source downstream flags + the indicator columns.
+#' These columns are consumed by `lnk_pipeline_mapping_code` for the
+#' second-token classification (DAM / MODELLED / ASSESSED / REMEDIATED /
+#' NONE). Without them persisted, `lnk_mapping_code` reads the persist
+#' table and finds the flags absent → all second tokens default to
+#' NONE (the v0.40.2 PARS BT bug).
+#'
+#' Hardcoded source classes (anthropogenic / pscis / dams /
+#' remediations) match the keys `lnk_pipeline_run` passes as
+#' `barrier_sources` to `lnk_pipeline_access`. Data-driving these per
+#' bundle is link#197 territory.
+#' @noRd
+.lnk_cols_streams_access_source_flags <- function() {
+  c(
+    has_barriers_anthropogenic_dnstr = "boolean",
+    has_barriers_pscis_dnstr         = "boolean",
+    has_barriers_dams_dnstr          = "boolean",
+    has_barriers_remediations_dnstr  = "boolean",
+    dam_dnstr_ind                    = "boolean",
+    remediated_dnstr_ind             = "boolean"
+  )
+}
+
+# `has_observation_key_upstr` is observations-conditional; still
+# omitted from the persist base shape until a consumer requires it.
 
 #' Per-species column generator for `streams_access`.
 #'
@@ -358,6 +380,7 @@ lnk_persist_init <- function(conn, cfg, species, force_recreate = FALSE) {
   # consumer expectation + bcfp's `bcfishpass.streams_access` shape.
   # Generated DDL: base cols + dynamic per-species (has_barriers + access).
   cols_streams_access <- c(cols_streams_access_base,
+                           .lnk_cols_streams_access_source_flags(),
                            .lnk_cols_streams_access_per_sp(species))
   .lnk_db_execute(conn, sprintf(
     "CREATE TABLE IF NOT EXISTS %s.streams_access (\n  %s\n)",
