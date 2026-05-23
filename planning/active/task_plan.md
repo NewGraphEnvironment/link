@@ -51,14 +51,15 @@ Post-#187 `lnk_mapping_code` second token defaulted to `NONE` for every segment 
 - [x] Documented authoritatively in RUNBOOK.md (§2a, §5) + CLAUDE.md pointer + findings. (user ask: "do our homework and document so we can find it")
 - [ ] streams_vw_bcfp retry (task b122hazyb) for empirical parity numbers (snapshot's streams view failed on transient gzip).
 
-## Phase 4d — the real fix (NEW, needs scoping/approval)
+## Phase 4d — the real fix (FILED as #200; #201 = redesign follow-up)
 
+- [x] Filed #200 (access-set reproduction) + #201 (blocks_species redesign + dam-override, depends on #200).
 - [ ] Build per-species NATURAL-only *feature* view reproducing bcfp `barriers_<sp>`:
   gradient@species-threshold + falls + subsurface, MINUS observation/habitat
   overrides, ∪ user_barriers_definite. Has-id (feature shape, §2b).
 - [ ] Wire `lnk_barrier_overrides` output into the access path (currently classify-only).
 - [ ] Point `barriers_per_sp` at the new view; dams stay in barrier_sources (token2).
-- [ ] Candidate issue: `blocks_species` redesign (carry ingredients, classify access late) — RUNBOOK §5 design implication. Draft + review before filing (no unreviewed issues).
+- [x] `blocks_species` redesign (carry ingredients, classify access late) + dam-override — filed as #201 (RUNBOOK §5 design implication).
 
 ## Phase 5 — performance concern (NEW — decide before merge)
 
