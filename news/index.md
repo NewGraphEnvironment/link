@@ -1,5 +1,30 @@
 # Changelog
 
+## link 0.40.4
+
+Reproduce bcfp’s per-species accessibility so dam-downstream segments
+emit the dam descriptor
+([\#200](https://github.com/NewGraphEnvironment/link/issues/200)). The
+mapping_code phase previously drove `accessible` from
+`barriers_<sp>_unified` (all barriers, including dams), so every segment
+below a dam read inaccessible and lost its
+`;DAM`/`;MODELLED`/`;ASSESSED` second token — emitting a bare
+`SPAWN`/`REAR` where bcfp emits `SPAWN;DAM`. It now uses a new
+per-species `barriers_<sp>_access` view that reproduces bcfp’s
+`barriers_<sp>`: natural barriers only (gradient at the species
+threshold ∪ falls ∪ subsurface), minus the observation/habitat override,
+plus all user-definite barriers (override-exempt). Dams stay in
+`barrier_sources` and annotate token2 only.
+
+All three access inputs are now persisted province-wide so the cross-WSG
+downstream walk is correct in every watershed group, not just the run’s
+own: natural barriers (already), `user_barriers_definite` (new
+`USER_DEFINITE` family in `lnk_barriers_unify`, ltree-resolved via the
+FWA join like falls), and the observation/habitat override (new
+`<persist_schema>.barrier_overrides` table). Validated against
+`bcfishpass@v0.7.15`: PARS BT 98.95%, LFRA BT 97.77% / CO 97.90%
+per-segment mapping_code match. See `RUNBOOK.md` §5.
+
 ## link 0.40.3
 
 Persist the per-source downstream-barrier flag columns in

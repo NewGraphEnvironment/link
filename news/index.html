@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.40.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.40.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,6 +31,11 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.40.4" id="link-0404">link 0.40.4<a class="anchor" aria-label="anchor" href="#link-0404"></a></h2>
+<p>Reproduce bcfp’s per-species accessibility so dam-downstream segments emit the dam descriptor (<a href="https://github.com/NewGraphEnvironment/link/issues/200" class="external-link">#200</a>). The mapping_code phase previously drove <code>accessible</code> from <code>barriers_&lt;sp&gt;_unified</code> (all barriers, including dams), so every segment below a dam read inaccessible and lost its <code>;DAM</code>/<code>;MODELLED</code>/<code>;ASSESSED</code> second token — emitting a bare <code>SPAWN</code>/<code>REAR</code> where bcfp emits <code>SPAWN;DAM</code>. It now uses a new per-species <code>barriers_&lt;sp&gt;_access</code> view that reproduces bcfp’s <code>barriers_&lt;sp&gt;</code>: natural barriers only (gradient at the species threshold ∪ falls ∪ subsurface), minus the observation/habitat override, plus all user-definite barriers (override-exempt). Dams stay in <code>barrier_sources</code> and annotate token2 only.</p>
+<p>All three access inputs are now persisted province-wide so the cross-WSG downstream walk is correct in every watershed group, not just the run’s own: natural barriers (already), <code>user_barriers_definite</code> (new <code>USER_DEFINITE</code> family in <code>lnk_barriers_unify</code>, ltree-resolved via the FWA join like falls), and the observation/habitat override (new <code>&lt;persist_schema&gt;.barrier_overrides</code> table). Validated against <code>bcfishpass@v0.7.15</code>: PARS BT 98.95%, LFRA BT 97.77% / CO 97.90% per-segment mapping_code match. See <code>RUNBOOK.md</code> §5.</p>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.40.3" id="link-0403">link 0.40.3<a class="anchor" aria-label="anchor" href="#link-0403"></a></h2>
 <p>Persist the per-source downstream-barrier flag columns in <code>streams_access</code> so <code>lnk_pipeline_mapping_code</code>’s second token (<code>DAM</code>/<code>MODELLED</code>/<code>ASSESSED</code>/<code>REMEDIATED</code>/<code>NONE</code>) populates from persisted state instead of defaulting to <code>NONE</code>. Three coupled fixes (<a href="https://github.com/NewGraphEnvironment/link/issues/196" class="external-link">#196</a>): <code>lnk_persist_init</code> adds the six flag columns to the <code>streams_access</code> DDL; <code>lnk_pipeline_run</code> pre-persists barriers before the mapping_code phase for cross-WSG dam visibility (link#152); <code>lnk_pipeline_persist</code> projects the flag columns in the INSERT (the DDL/INSERT pair must match — the missing projection was the actual <code>NONE</code>-token bug).</p>

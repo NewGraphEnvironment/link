@@ -17,7 +17,7 @@ consumer code paths run unchanged."><meta property="og:image" content="https://n
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.40.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.40.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -98,8 +98,9 @@ either way (the underlying table has <code>blocks_species</code> from
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p><code>invisible(conn)</code>. Side effect: drops + recreates one view
-per species + three source-typed views in <code>schema</code>.</p>
+    <p><code>invisible(conn)</code>. Side effect: drops + recreates two views
+per species (<code>_unified</code> + <code>_access</code>) + three source-typed views in
+<code>schema</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -108,11 +109,23 @@ resolve correctly because <code><a href="https://newgraphenvironment.github.io/f
 FWA topology and reads from the view (which is the unified table).
 Fixes the PARS BT 60% defect (PARS drains through dams in PCEA /
 UPCE WSGs) and unblocks any regional run.</p>
-<p>Per-species views:</p><ul><li><p><code>&lt;schema&gt;.barriers_&lt;sp&gt;_unified</code> for each species (<code>bt</code>, <code>ch</code>, <code>cm</code>,
-<code>co</code>, <code>pk</code>, <code>sk</code>, <code>st</code>, <code>wct</code>) — filtered by
-<code>'&lt;SP&gt;' = ANY(blocks_species)</code>. <code>_unified</code> suffix avoids name
-collision with the per-WSG <code>&lt;schema&gt;.barriers_&lt;sp&gt;</code> tables that
-<code>.lnk_pipeline_prep_minimal</code> builds for the break-time path.</p></li>
+<p>Per-species views (two per species <code>bt</code>, <code>ch</code>, <code>cm</code>, <code>co</code>, <code>pk</code>, <code>sk</code>,
+<code>st</code>, <code>wct</code>):</p><ul><li><p><code>&lt;schema&gt;.barriers_&lt;sp&gt;_unified</code> — filtered by
+<code>'&lt;SP&gt;' = ANY(blocks_species)</code> (ALL barrier families incl dams).
+<code>_unified</code> suffix avoids name collision with the per-WSG
+<code>&lt;schema&gt;.barriers_&lt;sp&gt;</code> tables that <code>.lnk_pipeline_prep_minimal</code>
+builds for the break-time path.</p></li>
+<li><p><code>&lt;schema&gt;.barriers_&lt;sp&gt;_access</code> — the per-species <strong>accessibility</strong>
+set that drives <code>accessible</code> in mapping_code (link#200). Reproduces
+bcfp <code>barriers_&lt;sp&gt;</code>: NATURAL barriers only
+(<code>barrier_source IN ('GRADIENT','FALLS','SUBSURFACE_FLOW')</code> — the
+gradient-at-species-threshold is already encoded in <code>blocks_species</code>)
+MINUS the observation/habitat override (anti-join <code>barrier_overrides</code>),
+∪ all <code>USER_DEFINITE</code> (override-exempt). Dams/PSCIS/modelled are
+excluded — they annotate token2 via the per-source views, never block
+access. Same feature shape (<code>barriers_&lt;sp&gt;_access_id</code> + ltrees + geom)
+so <code><a href="lnk_pipeline_access.html">lnk_pipeline_access()</a></code> / <code><a href="https://newgraphenvironment.github.io/fresh/reference/frs_network_features.html" class="external-link">fresh::frs_network_features()</a></code> consume it
+unchanged. See <code>RUNBOOK.md</code> §5.</p></li>
 </ul><p>Per-source views (matching the bcfp source-typed tables consumed by
 the <code>barrier_sources</code> arg of <code>lnk_pipeline_access</code>):</p><ul><li><p><code>&lt;schema&gt;.barriers_anthropogenic_unified</code> — <code>barrier_source IN ('PSCIS','CABD','MODELLED')</code>.</p></li>
 <li><p><code>&lt;schema&gt;.barriers_pscis_unified</code> — <code>barrier_source = 'PSCIS'</code>.</p></li>

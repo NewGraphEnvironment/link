@@ -55,8 +55,8 @@ lnk_barriers_views(
 
 ## Value
 
-`invisible(conn)`. Side effect: drops + recreates one view per species +
-three source-typed views in `schema`.
+`invisible(conn)`. Side effect: drops + recreates two views per species
+(`_unified` + `_access`) + three source-typed views in `schema`.
 
 ## Details
 
@@ -67,13 +67,29 @@ walks FWA topology and reads from the view (which is the unified table).
 Fixes the PARS BT 60% defect (PARS drains through dams in PCEA / UPCE
 WSGs) and unblocks any regional run.
 
-Per-species views:
+Per-species views (two per species `bt`, `ch`, `cm`, `co`, `pk`, `sk`,
+`st`, `wct`):
 
-- `<schema>.barriers_<sp>_unified` for each species (`bt`, `ch`, `cm`,
-  `co`, `pk`, `sk`, `st`, `wct`) — filtered by
-  `'<SP>' = ANY(blocks_species)`. `_unified` suffix avoids name
-  collision with the per-WSG `<schema>.barriers_<sp>` tables that
-  `.lnk_pipeline_prep_minimal` builds for the break-time path.
+- `<schema>.barriers_<sp>_unified` — filtered by
+  `'<SP>' = ANY(blocks_species)` (ALL barrier families incl dams).
+  `_unified` suffix avoids name collision with the per-WSG
+  `<schema>.barriers_<sp>` tables that `.lnk_pipeline_prep_minimal`
+  builds for the break-time path.
+
+- `<schema>.barriers_<sp>_access` — the per-species **accessibility**
+  set that drives `accessible` in mapping_code (link#200). Reproduces
+  bcfp `barriers_<sp>`: NATURAL barriers only
+  (`barrier_source IN ('GRADIENT','FALLS','SUBSURFACE_FLOW')` — the
+  gradient-at-species-threshold is already encoded in `blocks_species`)
+  MINUS the observation/habitat override (anti-join
+  `barrier_overrides`), ∪ all `USER_DEFINITE` (override-exempt).
+  Dams/PSCIS/modelled are excluded — they annotate token2 via the
+  per-source views, never block access. Same feature shape
+  (`barriers_<sp>_access_id` + ltrees + geom) so
+  [`lnk_pipeline_access()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_access.md)
+  /
+  [`fresh::frs_network_features()`](https://newgraphenvironment.github.io/fresh/reference/frs_network_features.html)
+  consume it unchanged. See `RUNBOOK.md` §5.
 
 Per-source views (matching the bcfp source-typed tables consumed by the
 `barrier_sources` arg of `lnk_pipeline_access`):

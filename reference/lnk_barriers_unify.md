@@ -94,6 +94,15 @@ Source families + `blocks_species` semantics:
   (only built when `cfg$pipeline$break_order` includes
   `"subsurfaceflow"`).
 
+- **User_definite** (`barrier_source = 'USER_DEFINITE'`, from
+  `<schema>.barriers_definite`): blocks all 8 species. ltrees +
+  `linear_feature_id` resolved by JOIN to
+  `whse_basemapping.fwa_stream_networks_sp` (mirrors the FALLS branch
+  and bcfp's `barriers_user_definite.sql`). Persisted province-wide so
+  the per-species access view (`barriers_<sp>_access`,
+  [`lnk_barriers_views()`](https://newgraphenvironment.github.io/link/reference/lnk_barriers_views.md))
+  can include them override-exempt — link#200.
+
 Remediations (PASSABLE remediation crossings) are intentionally NOT in
 this table. They're consumed via `<schema>.barriers_remediations`
 (emitted by
@@ -116,6 +125,10 @@ Required pre-existing tables in `schema`:
 
 - `<schema>.falls` (from
   [`lnk_pipeline_prepare()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_prepare.md)).
+
+- `<schema>.barriers_definite` (from
+  [`lnk_pipeline_prepare()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_prepare.md);
+  always created, may be empty).
 
 Optional:
 
