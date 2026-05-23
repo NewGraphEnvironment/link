@@ -33,6 +33,33 @@ Post-#187 `lnk_mapping_code` second token defaulted to `NONE` for every segment 
 - [ ] Tunnel up → `lnk_compare_wsg(aoi="PARS", mapping_code=TRUE)` → match_pct vs bcfp ≥ ~95%.
 - [ ] Re-run BULK too (also damaged / needs rebuild).
 
+## Phase 4b — Cause 4 fix: barriers_per_sp `_unified` → `_min` (NEW)
+
+- [x] Root-caused: `_unified` (all barriers) over-blocks; `_min` (gradient+falls natural barriers) is correct per-species access set. Dams stay in `barrier_sources` (token2 only). Grounded in pre-#187 matching code + prep_minimal source.
+- [x] Swap applied in `lnk_pipeline_run` Phase 4 (uncommitted).
+- [x] Verify: PARS run (task `bpzeq473w`) → **FAILED mechanically**. `barriers_bt_min_id does not exist` — `_min` tables are break-specs (no id col); `frs_network_features` needs a feature id. `_min` cannot feed `barriers_per_sp`. See findings.
+- [x] Architectural finding: `barriers_<sp>_unified` = persist barriers WHERE species ∈ blocks_species (#152), feature-shaped w/ id. Correct fix = per-species feature view, `_unified` shape, natural-only filter — but gated on bcfp semantics.
+- [ ] **REVERT the `_min` swap** in lnk_pipeline_run (restore `_unified`) — known state for the data investigation. (deferred until snapshot confirms direction)
+
+## Phase 4c — empirical bcfp semantics (BLOCKING — redo snapshot)
+
+- [x] Tunnel down (stale). Snapshot script is tunnel-free (public sources). Run `snapshot_bcfp.sh --with-bcfp-views --force` → local `fresh.streams_bcfp` (task `be94vol3c`).
+- [ ] Inspect `fresh.streams_bcfp` columns — does it carry `mapping_code_bt` + access cols per segment?
+- [ ] Row-level: PARS segments above Bennett/Peace Canyon dams — bcfp `mapping_code_bt` value? In bcfp's accessible set or not?
+- [x] **RESOLVED by reading bcfp source** (not data — authoritative). Fix shape = (a): per-species access set is natural-only + override-filtered; dams never block access. See findings (RESOLVED 2026-05-23) + RUNBOOK.md §5.
+- [x] Reverted broken `_min` swap → `_unified` (runnable, known-divergent) w/ comment → RUNBOOK §5.
+- [x] Documented authoritatively in RUNBOOK.md (§2a, §5) + CLAUDE.md pointer + findings. (user ask: "do our homework and document so we can find it")
+- [ ] streams_vw_bcfp retry (task b122hazyb) for empirical parity numbers (snapshot's streams view failed on transient gzip).
+
+## Phase 4d — the real fix (NEW, needs scoping/approval)
+
+- [ ] Build per-species NATURAL-only *feature* view reproducing bcfp `barriers_<sp>`:
+  gradient@species-threshold + falls + subsurface, MINUS observation/habitat
+  overrides, ∪ user_barriers_definite. Has-id (feature shape, §2b).
+- [ ] Wire `lnk_barrier_overrides` output into the access path (currently classify-only).
+- [ ] Point `barriers_per_sp` at the new view; dams stay in barrier_sources (token2).
+- [ ] Candidate issue: `blocks_species` redesign (carry ingredients, classify access late) — RUNBOOK §5 design implication. Draft + review before filing (no unreviewed issues).
+
 ## Phase 5 — performance concern (NEW — decide before merge)
 
 - [ ] Wall time blew up to 956s (~16 min) vs normal ~3.5 min for PARS — the double-persist (pre-persist barriers + final persist) re-writes streams + habitat + barriers twice. Decide:
