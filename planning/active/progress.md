@@ -8,7 +8,9 @@
 - Phase 3 (`475e397`): `lnk_pipeline_persist` INSERT projection now includes the source flags — THE actual NONE-token bug. Verified in isolation: persist streams_access flags populate (anth 48559, dams 48559, dam_ind 32406).
 - Branch `196-streams-access-source-flags`, 3 commits ahead of main.
 - Phase 4 IN FLIGHT: clean PARS `lnk_pipeline_run(mapping_code=TRUE)` (task `btkkjqxlp`) — rebuilds habitat (damaged by debug shortcut persisting from half-built working_pars_dbg) + verifies end-to-end token output.
-- Next: confirm PARS BT tokens include DAM/MODELLED/ASSESSED; decide Phase 5 (wall-time double-persist); rebuild BULK; release v0.40.3.
+- Phase 4 result: streams_access flags NOW persist (dams 48561, dam_ind 32370). BUT tokens still wrong — found **Cause 4** (methodology, not bug): access_bt=0 (blocked) for ALL PARS segments because cross-WSG dams are downstream → `accessible=FALSE` → token1/2/3 collapse to SPAWN/REAR/blank. bcfp emits SPAWN;DAM regardless. See findings Cause 4. **Paused for user decision** on accessibility-gating semantics.
+- 3 persist commits (91f3f90, e23819a, 475e397) are correct + shippable on their own (flags should persist). Token semantics is separate — likely new issue, possibly tied to #197 rules engine.
+- Next: (a) user decides Cause-4 semantics; (b) decide Phase 5 wall-time; (c) rebuild BULK; (d) ship v0.40.3 (persist fixes) maybe independent of the token-semantics work.
 
 ### Environment
 - docker `fresh-db` up (was down mid-session; `open -a Docker` + `docker compose up -d db` in fresh/docker/).

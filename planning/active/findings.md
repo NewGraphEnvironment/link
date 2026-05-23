@@ -36,7 +36,29 @@ CAUTION: running `lnk_pipeline_persist` against the incomplete `working_pars_dbg
 - `barriers_dams_unified` (view over persist) = 178 dams province-wide; PARS-local `barriers_dams` = 0. Confirms cross-WSG dams only visible via persist.
 - bcfp `streams_mapping_code` has no `watershed_group_code`; JOIN `bcfishpass.streams ON segmented_stream_id`.
 
+## Cause 4 — METHODOLOGY, not a bug (the deepest finding)
+
+After all 3 persist fixes, streams_access flags persist correctly (dams 48561, dam_ind 32370 for PARS) but mapping_code STILL diverges from bcfp. Root: `access_bt = 0` (BLOCKED) for ALL 48561 PARS segments, because every PARS segment has a downstream dam (Bennett/Peace Canyon in PCEA — PARS drains through them). link#152 cross-WSG barriers correctly flag this.
+
+`lnk_pipeline_mapping_code:236` `accessible <- !has_barriers_sp & !no_data`. With every segment blocked:
+- token1 (`:262-268`): `ACCESS` requires `accessible` → never fires; only SPAWN/REAR (habitat-driven) or NA
+- token2 (`:276`): `ifelse(accessible, mc_barrier, NA)` → always NA → no `;DAM`
+- token3 (`:277`): same → no `;INTERMITTENT`
+
+Result: link emits `SPAWN` / `REAR` / `` (blank). bcfp emits `SPAWN;DAM` / `ACCESS;DAM` / `REAR;DAM` for the SAME segments — bcfp does NOT gate token1/token2 on downstream-dam accessibility.
+
+This is the v0.40.0 methodology shift at the semantic level: pre-#187 access used bcfp-staged barriers → matched bcfp (98.63%). Post-#187 access uses link's own cross-WSG-aware barriers → all PARS segments read blocked → tokens collapse.
+
+**DECISION NEEDED (user domain call)**:
+1. Match bcfp — emit token2 (DAM/MODELLED/etc) + keep habitat token1 regardless of `accessible`. Change the `accessible` gating in lnk_pipeline_mapping_code:262-277.
+2. Keep link's stricter semantics (blocked → suppress habitat token). More defensible biologically but won't match bcfp.
+3. Read bcfp's mapping_code SQL (smnorris/bcfishpass) to learn their exact accessibility definition first.
+
+This is NOT in #196's original scope (persist flags). #196's 3 commits are correct + shippable on their own merit (flags should persist). The token semantics is a separate concern — likely a new issue, possibly intertwined with #197 (rules engine) since the `accessible`-gating IS a rule.
+
 ## Open
 
+- **Cause 4 methodology decision** — blocks PARS-vs-bcfp parity. Pending user.
 - Wall time 956s (~16 min) for one PARS run — double-persist overhead. See task_plan Phase 5.
 - BULK also needs a clean rebuild (damaged in earlier debug churn).
+- access_bt=0 everywhere also means the rollup (spawn/rear km) may be affected — verify whether habitat km changed vs historic.
