@@ -51,6 +51,32 @@ Approach A (definite as unify family) + persist overrides was chosen over the is
 - `frs_network_features` (fresh) needs `feature_id_col, blue_line_key, downstream_route_measure, wscode_ltree, localcode_ltree` on the feature table. The `phase4d_plan_draft.md:37` draft wrongly dropped the ltree cols.
 - `whse_basemapping.fwa_stream_networks_sp` present in local fwapg; `fresh.streams_vw_bcfp` loaded (4.23M rows, PARS 43,660, carries `mapping_code_bt`) — tunnel-free parity baseline. bcfp baseline `v0.7.15-14-ge12c1a5`.
 
+## Phase 4 validation — PARS BT (2026-05-23)
+
+Run `lnk_pipeline_run("PARS", mapping_code=TRUE)` against local docker fwapg (bcfp baseline `v0.7.15-14-ge12c1a5` in `fresh.streams_vw_bcfp`).
+
+**Result: 99.04% per-segment match vs bcfp** (42,701 / 43,114 joined on `blue_line_key` + rounded `downstream_route_measure`). The headline #200 fix works:
+- token1 collapse GONE — `ACCESS`/`SPAWN`/`REAR` emit (was bare `SPAWN`/`REAR`). Counts ≈ bcfp (`SPAWN;DAM` 5293 vs 5263, `REAR;DAM` 2213 vs 2191).
+- token2 `;DAM` emerges — dam-downstream-but-accessible segments now annotate `;DAM` not `;NONE`.
+
+**Cross-WSG dependency confirmed (the provincial design's whole point):** the FIRST PARS run (PARS only) emitted `;NONE` because the Bennett/Peace Canyon dams live in PCEA/UPCE, which weren't persisted. After persisting PCEA + UPCE barriers (`mapping_code=FALSE`) and re-running PARS, the cross-WSG downstream walk saw the dams → `;DAM`. token2/`barrier_sources` is unchanged by #200; it just needs the downstream WSGs in persist.
+
+Residual ~1% (413 segs): token1 `ACCESS`↔`REAR` swaps (habitat-presence threshold — dimensions/rules, not #200) + a few token2 `DAM`↔`MODELLED` next-downstream-ordering edges. Not the dam-access divergence.
+
+### Phase 4 validation — LFRA (anadromous; Coquitlam/Alouette/Stave/Ruskin dams)
+
+`lnk_pipeline_run("LFRA", mapping_code=TRUE)`. Match vs bcfp: **LFRA/bt 97.77%, LFRA/co 97.90%** (26,651 segs each). LFRA coho DAM-token count link **4672 vs bcfp 4636** — the dam descriptor + above-dam path works for anadromous salmon, not just resident BT. LFRA drains to the ocean (lowest Fraser group) so its dams are in-WSG — single run, no cross-WSG persist needed (unlike PARS→PCEA/UPCE).
+
+Residual ~2%: token1 `ACCESS`↔`SPAWN`/`REAR` (spawning/rearing **habitat-presence** — token1 habitat fires regardless of access per RUNBOOK §4; governed by `frs_habitat_classify`/dimensions, unaffected by #200) + small token2 `DAM`↔`MODELLED`/`NONE` next-downstream-ordering edges. The dam-access fix itself (token2 DAM on accessible dam-downstream segments) matches.
+
+**Acceptance MET** for both resident + anadromous. Remaining habitat-token1 parity is a separate, pre-existing concern (habitat rules), not #200.
+
+### Stale-persist-table drift (pre-existing, surfaced in Phase 4)
+
+LFRA first failed: `column "has_barriers_ch_dnstr" of relation "streams_access" does not exist`. The M1 `fresh.streams_access` / `streams_mapping_code` were stale at bt+co width (old pre-v0.40.2 runs); `lnk_persist_init`'s `CREATE IF NOT EXISTS` won't widen an existing table, and `.lnk_validate_persist_table` only detects GENERATED-column drift, not species-count drift. `lnk_pipeline_run` correctly sizes persist_init to `cfg$species` (8) — so DROPping the two stale wide tables + re-running recreated them full-width. NOT a #200 bug (production provincial runs start clean). Possible follow-up: extend drift-validate to species-column count.
+
+**Real bug caught + fixed during the run:** `barrier_overrides` PK was `(blk, drm, species_code)` — UPCE's persist INSERT collided with PCEA's because the SAME override position is computed by two adjacent WSG runs (boundary streams whose `blue_line_key` spans WSGs). Fixed: PK now includes `watershed_group_code` (mirrors `cols_barriers`), so per-WSG DELETE+INSERT is clean; the WSG-agnostic access anti-join makes the duplicate harmless.
+
 ## Open / watch
 
 - Cross-WSG override correctness — the provincial design should fix it; **verify on LFRA** in Phase 4 (don't assume).

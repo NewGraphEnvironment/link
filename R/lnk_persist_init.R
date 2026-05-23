@@ -397,11 +397,15 @@ lnk_persist_init <- function(conn, cfg, species, force_recreate = FALSE) {
 
   # Province-wide barrier-overrides table (link#200). The per-(segment x
   # species) observation/habitat barrier-skip list, accumulated per-WSG so
-  # the per-species access view can anti-join it cross-WSG. PK on
-  # (blue_line_key, downstream_route_measure, species_code) — a barrier
-  # position belongs to exactly one WSG so this stays unique across WSGs.
+  # the per-species access view can anti-join it cross-WSG. PK includes
+  # watershed_group_code (mirrors cols_barriers' (id_barrier, wsg) PK):
+  # the SAME override position can be computed by two adjacent WSG runs
+  # (boundary streams whose blue_line_key spans WSGs), so (blk, drm,
+  # species) is NOT unique across WSGs. Per-WSG DELETE-WHERE-WSG + INSERT
+  # stays clean; the access anti-join is WSG-agnostic so duplicates are
+  # harmless.
   barrier_overrides_pk <- c("blue_line_key", "downstream_route_measure",
-                            "species_code")
+                            "species_code", "watershed_group_code")
   .lnk_db_execute(conn, sprintf(
     "CREATE TABLE IF NOT EXISTS %s.barrier_overrides (\n  %s\n)",
     schema, .lnk_cols_clause(cols_barrier_overrides, barrier_overrides_pk)))

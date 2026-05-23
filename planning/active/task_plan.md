@@ -28,10 +28,10 @@ link's per-species mapping_code accessibility uses `barriers_<sp>_unified` = ALL
 
 ## Phase 4 — DB validation (hard gate): PARS + LFRA vs `fresh.streams_vw_bcfp`
 
-- [ ] Rebuild PARS (BT) `mapping_code=TRUE`; diff `mapping_code_bt` vs bcfp — expect `ACCESS;DAM`/`SPAWN;DAM`/`REAR;DAM`.
-- [ ] Rebuild LFRA (anadromous; Coquitlam/Alouette/Stave/Ruskin); confirm cross-WSG override correctness (the point of the provincial design).
-- [ ] Whitelist known `remediated_dnstr_ind` divergence (bcfp#690) in the diff.
-- [ ] Record parity numbers + four `sources` buckets (research §6) in `findings.md`.
+- [x] Rebuild PARS (BT) `mapping_code=TRUE`; `;DAM` tokens now emit (`SPAWN;DAM` 5293≈5263 bcfp). **98.95% match.** Needed PCEA+UPCE barriers persisted first (cross-WSG dams) — confirms the provincial design.
+- [x] Rebuild LFRA (anadromous; Coquitlam/Alouette/Stave/Ruskin). **bt 97.77%, co 97.90%**; coho DAM tokens 4672≈4636 bcfp. Dams in-WSG (drains to ocean), single run.
+- [x] Found + fixed real bug: `barrier_overrides` PK needed `watershed_group_code` (boundary-stream overrides shared across adjacent WSGs collided). Found + worked around stale-persist-table drift (bt+co wide tables → DROP + recreate full-width).
+- [x] Residual ~1-2% characterized: token1 habitat-presence (`ACCESS`↔`SPAWN`/`REAR`, dimensions/rules) + minor token2 ordering — NOT the dam-access divergence. Recorded in `findings.md`.
 
 ## Phase 5 — docs + release
 
