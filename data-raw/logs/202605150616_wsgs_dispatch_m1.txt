@@ -1,0 +1,1118 @@
+=== PROVINCIAL PARITY RUN — link 0.20.0 ===
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Library/R/arm64/4.5/library/link/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+Started:2026-05-15 06:16:51 PDT (epoch1778851011)
+WSGs to run: 5 
+Output dir : /Users/airvine/Projects/repo/link/data-raw/logs/provincial_default 
+
+[bcfp-baseline] stamped: model_run_id=122 host=Allans-MacBook-Pro -> /Users/airvine/Projects/repo/link/data-raw/logs/bcfp_baselines.csv
+06:16:52  PARS ... ## Run stamp — default
+
+- AOI: `PARS`
+- Started: 2026-05-15 06:16:53 PDT
+
+### Software
+- link: 0.38.1 (sha NA)
+- fresh: 0.31.0 (sha NA)
+- R: R version 4.5.2 (2025-10-31)
+
+### Database snapshot
+- bcfishobs.observations: 372,627
+- whse_basemapping.fwa_stream_networks_sp: 4,907,441
+
+### Config provenance (12 files, 0 byte / 0 shape drifted)
+
+| file | byte drift | shape drift |
+|---|---|---|
+| `rules.yaml` | no | no |
+| `dimensions.csv` | no | no |
+| `parameters_fresh.csv` | no | no |
+| `overrides/user_habitat_classification.csv` | no | no |
+| `overrides/observation_exclusions.csv` | no | no |
+| `overrides/wsg_species_presence.csv` | no | no |
+| `overrides/user_modelled_crossing_fixes.csv` | no | no |
+| `overrides/user_pscis_barrier_status.csv` | no | no |
+| `overrides/pscis_modelledcrossings_streams_xref.csv` | no | no |
+| `overrides/user_barriers_definite.csv` | no | no |
+| `overrides/user_barriers_definite_control.csv` | no | no |
+| `overrides/user_crossings_misc.csv` | no | no |
+NOTICE:  schema "working_pars" does not exist, skipping
+
+NOTICE:  schema "working_pars" does not exist, skipping
+
+NOTICE:  schema "working_pars" does not exist, skipping
+
+NOTICE:  schema "working_pars" does not exist, skipping
+
+NOTICE:  schema "fresh" already exists, skipping
+
+Override validation: working_pars.pscis_fixes vs working_pars.crossings
+  Total overrides:  3
+  Valid (matched):  3
+  Orphans:          0
+  Duplicates:       0
+Updated 3 of 3961 rows (barrier_status)
+NOTICE:  table "barriers_definite" does not exist, skipping
+
+NOTICE:  table "barriers_definite_control" does not exist, skipping
+
+NOTICE:  table "observations" does not exist, skipping
+
+NOTICE:  table "streams_blk" does not exist, skipping
+
+NOTICE:  table "gradient_barriers_raw" does not exist, skipping
+
+NOTICE:  table "natural_barriers" does not exist, skipping
+
+NOTICE:  table "barrier_overrides" does not exist, skipping
+
+NOTICE:  table "barriers_bt" does not exist, skipping
+
+NOTICE:  table "barriers_bt_min" does not exist, skipping
+
+NOTICE:  table "barriers_ch" does not exist, skipping
+
+NOTICE:  table "barriers_ch_min" does not exist, skipping
+
+NOTICE:  table "barriers_cm" does not exist, skipping
+
+NOTICE:  table "barriers_cm_min" does not exist, skipping
+
+NOTICE:  table "barriers_co" does not exist, skipping
+
+NOTICE:  table "barriers_co_min" does not exist, skipping
+
+NOTICE:  table "barriers_pk" does not exist, skipping
+
+NOTICE:  table "barriers_pk_min" does not exist, skipping
+
+NOTICE:  table "barriers_sk" does not exist, skipping
+
+NOTICE:  table "barriers_sk_min" does not exist, skipping
+
+NOTICE:  table "barriers_st" does not exist, skipping
+
+NOTICE:  table "barriers_st_min" does not exist, skipping
+
+NOTICE:  table "barriers_wct" does not exist, skipping
+
+NOTICE:  table "barriers_wct_min" does not exist, skipping
+
+NOTICE:  table "barriers_ko" does not exist, skipping
+
+NOTICE:  table "barriers_ko_min" does not exist, skipping
+
+NOTICE:  table "barriers_rb" does not exist, skipping
+
+NOTICE:  table "barriers_rb_min" does not exist, skipping
+
+NOTICE:  table "barriers_gr" does not exist, skipping
+
+NOTICE:  table "barriers_gr_min" does not exist, skipping
+
+NOTICE:  table "gradient_barriers_minimal" does not exist, skipping
+
+NOTICE:  table "streams" does not exist, skipping
+
+NOTICE:  table "streams_habitat" does not exist, skipping
+
+NOTICE:  table "cabd_exclusions" does not exist, skipping
+
+NOTICE:  table "cabd_blkey_xref" does not exist, skipping
+
+NOTICE:  table "cabd_passability_status_updates" does not exist, skipping
+
+NOTICE:  table "cabd_additions" does not exist, skipping
+
+NOTICE:  table "cabd_dams_raw" does not exist, skipping
+
+NOTICE:  table "dams" does not exist, skipping
+
+NOTICE:  table "pscis_modelledcrossings_streams_xref" does not exist, skipping
+
+NOTICE:  table "pscis_stream_candidates" does not exist, skipping
+
+NOTICE:  table "pscis_streams_150m" does not exist, skipping
+
+NOTICE:  table "pscis_picked" does not exist, skipping
+
+NOTICE:  table "pscis" does not exist, skipping
+
+NOTICE:  table "crossings_lookup" does not exist, skipping
+
+NOTICE:  table "barriers_anthropogenic" does not exist, skipping
+
+NOTICE:  table "barriers_pscis" does not exist, skipping
+
+NOTICE:  table "barriers_dams" does not exist, skipping
+
+NOTICE:  table "barriers_remediations" does not exist, skipping
+
+NOTICE:  table "observations_breaks" does not exist, skipping
+
+NOTICE:  table "habitat_endpoints" does not exist, skipping
+
+NOTICE:  table "crossings_breaks" does not exist, skipping
+
+NOTICE:  table "streams_breaks" does not exist, skipping
+
+NOTICE:  relation "streams_id_segment_idx" already exists, skipping
+
+NOTICE:  table "streams_acc_015" does not exist, skipping
+
+NOTICE:  table "streams_acc_025" does not exist, skipping
+
+NOTICE:  table "streams_acc_025_ovr_bt" does not exist, skipping
+
+NOTICE:  table "frs_clusters_bt" does not exist, skipping
+
+NOTICE:  table "frs_clusters_ko" does not exist, skipping
+
+NOTICE:  table "frs_qual_spawn_ko" does not exist, skipping
+
+NOTICE:  table "frs_trace_lfid_ko" does not exist, skipping
+
+NOTICE:  table "frs_clusters_gr" does not exist, skipping
+
+NOTICE:  schema "fresh_default" already exists, skipping
+
+NOTICE:  relation "streams" already exists, skipping
+
+NOTICE:  relation "streams_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_blk_idx" already exists, skipping
+
+NOTICE:  relation "streams_geom_idx" already exists, skipping
+
+NOTICE:  relation "streams_wbk_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_bt" already exists, skipping
+
+NOTICE:  relation "streams_habitat_bt_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_ko" already exists, skipping
+
+NOTICE:  relation "streams_habitat_ko_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_rb" already exists, skipping
+
+NOTICE:  relation "streams_habitat_rb_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_gr" already exists, skipping
+
+NOTICE:  relation "streams_habitat_gr_wsg_idx" already exists, skipping
+
+NOTICE:  relation "barriers" already exists, skipping
+
+NOTICE:  relation "barriers_wsg_idx" already exists, skipping
+
+NOTICE:  relation "barriers_blocks_idx" already exists, skipping
+
+NOTICE:  relation "barriers_source_idx" already exists, skipping
+
+NOTICE:  relation "barriers_blk_drm_idx" already exists, skipping
+
+NOTICE:  relation "barriers_geom_idx" already exists, skipping
+
+NOTICE:  table "barriers" does not exist, skipping
+
+NOTICE:  view "barriers_bt_unified" does not exist, skipping
+
+NOTICE:  view "barriers_ch_unified" does not exist, skipping
+
+NOTICE:  view "barriers_cm_unified" does not exist, skipping
+
+NOTICE:  view "barriers_co_unified" does not exist, skipping
+
+NOTICE:  view "barriers_pk_unified" does not exist, skipping
+
+NOTICE:  view "barriers_sk_unified" does not exist, skipping
+
+NOTICE:  view "barriers_st_unified" does not exist, skipping
+
+NOTICE:  view "barriers_wct_unified" does not exist, skipping
+
+NOTICE:  view "barriers_anthropogenic_unified" does not exist, skipping
+
+NOTICE:  view "barriers_pscis_unified" does not exist, skipping
+
+NOTICE:  view "barriers_dams_unified" does not exist, skipping
+
+NOTICE:  table "barriers_ch_cm_co_pk_sk" does not exist, skipping
+
+done 192s, rows 28
+06:20:04  FOXR ... ## Run stamp — default
+
+- AOI: `FOXR`
+- Started: 2026-05-15 06:20:05 PDT
+
+### Software
+- link: 0.38.1 (sha NA)
+- fresh: 0.31.0 (sha NA)
+- R: R version 4.5.2 (2025-10-31)
+
+### Database snapshot
+- bcfishobs.observations: 372,627
+- whse_basemapping.fwa_stream_networks_sp: 4,907,441
+
+### Config provenance (12 files, 0 byte / 0 shape drifted)
+
+| file | byte drift | shape drift |
+|---|---|---|
+| `rules.yaml` | no | no |
+| `dimensions.csv` | no | no |
+| `parameters_fresh.csv` | no | no |
+| `overrides/user_habitat_classification.csv` | no | no |
+| `overrides/observation_exclusions.csv` | no | no |
+| `overrides/wsg_species_presence.csv` | no | no |
+| `overrides/user_modelled_crossing_fixes.csv` | no | no |
+| `overrides/user_pscis_barrier_status.csv` | no | no |
+| `overrides/pscis_modelledcrossings_streams_xref.csv` | no | no |
+| `overrides/user_barriers_definite.csv` | no | no |
+| `overrides/user_barriers_definite_control.csv` | no | no |
+| `overrides/user_crossings_misc.csv` | no | no |
+NOTICE:  schema "working_foxr" does not exist, skipping
+
+NOTICE:  schema "working_foxr" does not exist, skipping
+
+NOTICE:  schema "working_foxr" does not exist, skipping
+
+NOTICE:  schema "working_foxr" does not exist, skipping
+
+NOTICE:  schema "fresh" already exists, skipping
+
+NOTICE:  table "barriers_definite" does not exist, skipping
+
+NOTICE:  table "barriers_definite_control" does not exist, skipping
+
+NOTICE:  table "observations" does not exist, skipping
+
+NOTICE:  table "streams_blk" does not exist, skipping
+
+NOTICE:  table "gradient_barriers_raw" does not exist, skipping
+
+NOTICE:  table "natural_barriers" does not exist, skipping
+
+NOTICE:  table "barrier_overrides" does not exist, skipping
+
+NOTICE:  table "barriers_bt" does not exist, skipping
+
+NOTICE:  table "barriers_bt_min" does not exist, skipping
+
+NOTICE:  table "barriers_ch" does not exist, skipping
+
+NOTICE:  table "barriers_ch_min" does not exist, skipping
+
+NOTICE:  table "barriers_cm" does not exist, skipping
+
+NOTICE:  table "barriers_cm_min" does not exist, skipping
+
+NOTICE:  table "barriers_co" does not exist, skipping
+
+NOTICE:  table "barriers_co_min" does not exist, skipping
+
+NOTICE:  table "barriers_pk" does not exist, skipping
+
+NOTICE:  table "barriers_pk_min" does not exist, skipping
+
+NOTICE:  table "barriers_sk" does not exist, skipping
+
+NOTICE:  table "barriers_sk_min" does not exist, skipping
+
+NOTICE:  table "barriers_st" does not exist, skipping
+
+NOTICE:  table "barriers_st_min" does not exist, skipping
+
+NOTICE:  table "barriers_wct" does not exist, skipping
+
+NOTICE:  table "barriers_wct_min" does not exist, skipping
+
+NOTICE:  table "barriers_ko" does not exist, skipping
+
+NOTICE:  table "barriers_ko_min" does not exist, skipping
+
+NOTICE:  table "barriers_rb" does not exist, skipping
+
+NOTICE:  table "barriers_rb_min" does not exist, skipping
+
+NOTICE:  table "barriers_gr" does not exist, skipping
+
+NOTICE:  table "barriers_gr_min" does not exist, skipping
+
+NOTICE:  table "gradient_barriers_minimal" does not exist, skipping
+
+NOTICE:  table "streams" does not exist, skipping
+
+NOTICE:  table "streams_habitat" does not exist, skipping
+
+NOTICE:  table "cabd_exclusions" does not exist, skipping
+
+NOTICE:  table "cabd_blkey_xref" does not exist, skipping
+
+NOTICE:  table "cabd_passability_status_updates" does not exist, skipping
+
+NOTICE:  table "cabd_additions" does not exist, skipping
+
+NOTICE:  table "cabd_dams_raw" does not exist, skipping
+
+NOTICE:  table "dams" does not exist, skipping
+
+NOTICE:  table "pscis_modelledcrossings_streams_xref" does not exist, skipping
+
+NOTICE:  table "pscis_stream_candidates" does not exist, skipping
+
+NOTICE:  table "pscis_streams_150m" does not exist, skipping
+
+NOTICE:  table "pscis_picked" does not exist, skipping
+
+NOTICE:  table "pscis" does not exist, skipping
+
+NOTICE:  table "crossings_lookup" does not exist, skipping
+
+NOTICE:  table "barriers_anthropogenic" does not exist, skipping
+
+NOTICE:  table "barriers_pscis" does not exist, skipping
+
+NOTICE:  table "barriers_dams" does not exist, skipping
+
+NOTICE:  table "barriers_remediations" does not exist, skipping
+
+NOTICE:  table "observations_breaks" does not exist, skipping
+
+NOTICE:  table "habitat_endpoints" does not exist, skipping
+
+NOTICE:  table "crossings_breaks" does not exist, skipping
+
+NOTICE:  table "streams_breaks" does not exist, skipping
+
+NOTICE:  relation "streams_id_segment_idx" already exists, skipping
+
+NOTICE:  table "streams_acc_015" does not exist, skipping
+
+NOTICE:  table "streams_acc_025" does not exist, skipping
+
+NOTICE:  table "streams_acc_025_ovr_bt" does not exist, skipping
+
+NOTICE:  table "frs_clusters_bt" does not exist, skipping
+
+NOTICE:  table "frs_clusters_gr" does not exist, skipping
+
+NOTICE:  schema "fresh_default" already exists, skipping
+
+NOTICE:  relation "streams" already exists, skipping
+
+NOTICE:  relation "streams_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_blk_idx" already exists, skipping
+
+NOTICE:  relation "streams_geom_idx" already exists, skipping
+
+NOTICE:  relation "streams_wbk_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_bt" already exists, skipping
+
+NOTICE:  relation "streams_habitat_bt_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_rb" already exists, skipping
+
+NOTICE:  relation "streams_habitat_rb_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_gr" already exists, skipping
+
+NOTICE:  relation "streams_habitat_gr_wsg_idx" already exists, skipping
+
+NOTICE:  relation "barriers" already exists, skipping
+
+NOTICE:  relation "barriers_wsg_idx" already exists, skipping
+
+NOTICE:  relation "barriers_blocks_idx" already exists, skipping
+
+NOTICE:  relation "barriers_source_idx" already exists, skipping
+
+NOTICE:  relation "barriers_blk_drm_idx" already exists, skipping
+
+NOTICE:  relation "barriers_geom_idx" already exists, skipping
+
+NOTICE:  table "barriers" does not exist, skipping
+
+NOTICE:  view "barriers_bt_unified" does not exist, skipping
+
+NOTICE:  view "barriers_ch_unified" does not exist, skipping
+
+NOTICE:  view "barriers_cm_unified" does not exist, skipping
+
+NOTICE:  view "barriers_co_unified" does not exist, skipping
+
+NOTICE:  view "barriers_pk_unified" does not exist, skipping
+
+NOTICE:  view "barriers_sk_unified" does not exist, skipping
+
+NOTICE:  view "barriers_st_unified" does not exist, skipping
+
+NOTICE:  view "barriers_wct_unified" does not exist, skipping
+
+NOTICE:  view "barriers_anthropogenic_unified" does not exist, skipping
+
+NOTICE:  view "barriers_pscis_unified" does not exist, skipping
+
+NOTICE:  view "barriers_dams_unified" does not exist, skipping
+
+NOTICE:  table "barriers_ch_cm_co_pk_sk" does not exist, skipping
+
+done 119.3s, rows 21
+06:22:04  INGR ... ## Run stamp — default
+
+- AOI: `INGR`
+- Started: 2026-05-15 06:22:05 PDT
+
+### Software
+- link: 0.38.1 (sha NA)
+- fresh: 0.31.0 (sha NA)
+- R: R version 4.5.2 (2025-10-31)
+
+### Database snapshot
+- bcfishobs.observations: 372,627
+- whse_basemapping.fwa_stream_networks_sp: 4,907,441
+
+### Config provenance (12 files, 0 byte / 0 shape drifted)
+
+| file | byte drift | shape drift |
+|---|---|---|
+| `rules.yaml` | no | no |
+| `dimensions.csv` | no | no |
+| `parameters_fresh.csv` | no | no |
+| `overrides/user_habitat_classification.csv` | no | no |
+| `overrides/observation_exclusions.csv` | no | no |
+| `overrides/wsg_species_presence.csv` | no | no |
+| `overrides/user_modelled_crossing_fixes.csv` | no | no |
+| `overrides/user_pscis_barrier_status.csv` | no | no |
+| `overrides/pscis_modelledcrossings_streams_xref.csv` | no | no |
+| `overrides/user_barriers_definite.csv` | no | no |
+| `overrides/user_barriers_definite_control.csv` | no | no |
+| `overrides/user_crossings_misc.csv` | no | no |
+NOTICE:  schema "working_ingr" does not exist, skipping
+
+NOTICE:  schema "working_ingr" does not exist, skipping
+
+NOTICE:  schema "working_ingr" does not exist, skipping
+
+NOTICE:  schema "working_ingr" does not exist, skipping
+
+NOTICE:  schema "fresh" already exists, skipping
+
+NOTICE:  table "barriers_definite" does not exist, skipping
+
+NOTICE:  table "barriers_definite_control" does not exist, skipping
+
+NOTICE:  table "observations" does not exist, skipping
+
+NOTICE:  table "streams_blk" does not exist, skipping
+
+NOTICE:  table "gradient_barriers_raw" does not exist, skipping
+
+NOTICE:  table "natural_barriers" does not exist, skipping
+
+NOTICE:  table "barrier_overrides" does not exist, skipping
+
+NOTICE:  table "barriers_bt" does not exist, skipping
+
+NOTICE:  table "barriers_bt_min" does not exist, skipping
+
+NOTICE:  table "barriers_ch" does not exist, skipping
+
+NOTICE:  table "barriers_ch_min" does not exist, skipping
+
+NOTICE:  table "barriers_cm" does not exist, skipping
+
+NOTICE:  table "barriers_cm_min" does not exist, skipping
+
+NOTICE:  table "barriers_co" does not exist, skipping
+
+NOTICE:  table "barriers_co_min" does not exist, skipping
+
+NOTICE:  table "barriers_pk" does not exist, skipping
+
+NOTICE:  table "barriers_pk_min" does not exist, skipping
+
+NOTICE:  table "barriers_sk" does not exist, skipping
+
+NOTICE:  table "barriers_sk_min" does not exist, skipping
+
+NOTICE:  table "barriers_st" does not exist, skipping
+
+NOTICE:  table "barriers_st_min" does not exist, skipping
+
+NOTICE:  table "barriers_wct" does not exist, skipping
+
+NOTICE:  table "barriers_wct_min" does not exist, skipping
+
+NOTICE:  table "barriers_ko" does not exist, skipping
+
+NOTICE:  table "barriers_ko_min" does not exist, skipping
+
+NOTICE:  table "barriers_rb" does not exist, skipping
+
+NOTICE:  table "barriers_rb_min" does not exist, skipping
+
+NOTICE:  table "barriers_gr" does not exist, skipping
+
+NOTICE:  table "barriers_gr_min" does not exist, skipping
+
+NOTICE:  table "gradient_barriers_minimal" does not exist, skipping
+
+NOTICE:  table "streams" does not exist, skipping
+
+NOTICE:  table "streams_habitat" does not exist, skipping
+
+NOTICE:  table "cabd_exclusions" does not exist, skipping
+
+NOTICE:  table "cabd_blkey_xref" does not exist, skipping
+
+NOTICE:  table "cabd_passability_status_updates" does not exist, skipping
+
+NOTICE:  table "cabd_additions" does not exist, skipping
+
+NOTICE:  table "cabd_dams_raw" does not exist, skipping
+
+NOTICE:  table "dams" does not exist, skipping
+
+NOTICE:  table "pscis_modelledcrossings_streams_xref" does not exist, skipping
+
+NOTICE:  table "pscis_stream_candidates" does not exist, skipping
+
+NOTICE:  table "pscis_streams_150m" does not exist, skipping
+
+NOTICE:  table "pscis_picked" does not exist, skipping
+
+NOTICE:  table "pscis" does not exist, skipping
+
+NOTICE:  table "crossings_lookup" does not exist, skipping
+
+NOTICE:  table "barriers_anthropogenic" does not exist, skipping
+
+NOTICE:  table "barriers_pscis" does not exist, skipping
+
+NOTICE:  table "barriers_dams" does not exist, skipping
+
+NOTICE:  table "barriers_remediations" does not exist, skipping
+
+NOTICE:  table "observations_breaks" does not exist, skipping
+
+NOTICE:  table "habitat_endpoints" does not exist, skipping
+
+NOTICE:  table "crossings_breaks" does not exist, skipping
+
+NOTICE:  table "streams_breaks" does not exist, skipping
+
+NOTICE:  relation "streams_id_segment_idx" already exists, skipping
+
+NOTICE:  table "streams_acc_015" does not exist, skipping
+
+NOTICE:  table "streams_acc_025" does not exist, skipping
+
+NOTICE:  table "streams_acc_025_ovr_bt" does not exist, skipping
+
+NOTICE:  table "frs_clusters_bt" does not exist, skipping
+
+NOTICE:  table "frs_clusters_gr" does not exist, skipping
+
+NOTICE:  schema "fresh_default" already exists, skipping
+
+NOTICE:  relation "streams" already exists, skipping
+
+NOTICE:  relation "streams_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_blk_idx" already exists, skipping
+
+NOTICE:  relation "streams_geom_idx" already exists, skipping
+
+NOTICE:  relation "streams_wbk_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_bt" already exists, skipping
+
+NOTICE:  relation "streams_habitat_bt_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_rb" already exists, skipping
+
+NOTICE:  relation "streams_habitat_rb_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_gr" already exists, skipping
+
+NOTICE:  relation "streams_habitat_gr_wsg_idx" already exists, skipping
+
+NOTICE:  relation "barriers" already exists, skipping
+
+NOTICE:  relation "barriers_wsg_idx" already exists, skipping
+
+NOTICE:  relation "barriers_blocks_idx" already exists, skipping
+
+NOTICE:  relation "barriers_source_idx" already exists, skipping
+
+NOTICE:  relation "barriers_blk_drm_idx" already exists, skipping
+
+NOTICE:  relation "barriers_geom_idx" already exists, skipping
+
+NOTICE:  table "barriers" does not exist, skipping
+
+NOTICE:  view "barriers_bt_unified" does not exist, skipping
+
+NOTICE:  view "barriers_ch_unified" does not exist, skipping
+
+NOTICE:  view "barriers_cm_unified" does not exist, skipping
+
+NOTICE:  view "barriers_co_unified" does not exist, skipping
+
+NOTICE:  view "barriers_pk_unified" does not exist, skipping
+
+NOTICE:  view "barriers_sk_unified" does not exist, skipping
+
+NOTICE:  view "barriers_st_unified" does not exist, skipping
+
+NOTICE:  view "barriers_wct_unified" does not exist, skipping
+
+NOTICE:  view "barriers_anthropogenic_unified" does not exist, skipping
+
+NOTICE:  view "barriers_pscis_unified" does not exist, skipping
+
+NOTICE:  view "barriers_dams_unified" does not exist, skipping
+
+NOTICE:  table "barriers_ch_cm_co_pk_sk" does not exist, skipping
+
+done 115.4s, rows 21
+06:23:59  LOMI ... ## Run stamp — default
+
+- AOI: `LOMI`
+- Started: 2026-05-15 06:24:00 PDT
+
+### Software
+- link: 0.38.1 (sha NA)
+- fresh: 0.31.0 (sha NA)
+- R: R version 4.5.2 (2025-10-31)
+
+### Database snapshot
+- bcfishobs.observations: 372,627
+- whse_basemapping.fwa_stream_networks_sp: 4,907,441
+
+### Config provenance (12 files, 0 byte / 0 shape drifted)
+
+| file | byte drift | shape drift |
+|---|---|---|
+| `rules.yaml` | no | no |
+| `dimensions.csv` | no | no |
+| `parameters_fresh.csv` | no | no |
+| `overrides/user_habitat_classification.csv` | no | no |
+| `overrides/observation_exclusions.csv` | no | no |
+| `overrides/wsg_species_presence.csv` | no | no |
+| `overrides/user_modelled_crossing_fixes.csv` | no | no |
+| `overrides/user_pscis_barrier_status.csv` | no | no |
+| `overrides/pscis_modelledcrossings_streams_xref.csv` | no | no |
+| `overrides/user_barriers_definite.csv` | no | no |
+| `overrides/user_barriers_definite_control.csv` | no | no |
+| `overrides/user_crossings_misc.csv` | no | no |
+NOTICE:  schema "working_lomi" does not exist, skipping
+
+NOTICE:  schema "working_lomi" does not exist, skipping
+
+NOTICE:  schema "working_lomi" does not exist, skipping
+
+NOTICE:  schema "working_lomi" does not exist, skipping
+
+NOTICE:  schema "fresh" already exists, skipping
+
+NOTICE:  table "barriers_definite" does not exist, skipping
+
+NOTICE:  table "barriers_definite_control" does not exist, skipping
+
+NOTICE:  table "observations" does not exist, skipping
+
+NOTICE:  table "streams_blk" does not exist, skipping
+
+NOTICE:  table "gradient_barriers_raw" does not exist, skipping
+
+NOTICE:  table "natural_barriers" does not exist, skipping
+
+NOTICE:  table "barrier_overrides" does not exist, skipping
+
+NOTICE:  table "barriers_bt" does not exist, skipping
+
+NOTICE:  table "barriers_bt_min" does not exist, skipping
+
+NOTICE:  table "barriers_ch" does not exist, skipping
+
+NOTICE:  table "barriers_ch_min" does not exist, skipping
+
+NOTICE:  table "barriers_cm" does not exist, skipping
+
+NOTICE:  table "barriers_cm_min" does not exist, skipping
+
+NOTICE:  table "barriers_co" does not exist, skipping
+
+NOTICE:  table "barriers_co_min" does not exist, skipping
+
+NOTICE:  table "barriers_pk" does not exist, skipping
+
+NOTICE:  table "barriers_pk_min" does not exist, skipping
+
+NOTICE:  table "barriers_sk" does not exist, skipping
+
+NOTICE:  table "barriers_sk_min" does not exist, skipping
+
+NOTICE:  table "barriers_st" does not exist, skipping
+
+NOTICE:  table "barriers_st_min" does not exist, skipping
+
+NOTICE:  table "barriers_wct" does not exist, skipping
+
+NOTICE:  table "barriers_wct_min" does not exist, skipping
+
+NOTICE:  table "barriers_ko" does not exist, skipping
+
+NOTICE:  table "barriers_ko_min" does not exist, skipping
+
+NOTICE:  table "barriers_rb" does not exist, skipping
+
+NOTICE:  table "barriers_rb_min" does not exist, skipping
+
+NOTICE:  table "barriers_gr" does not exist, skipping
+
+NOTICE:  table "barriers_gr_min" does not exist, skipping
+
+NOTICE:  table "gradient_barriers_minimal" does not exist, skipping
+
+NOTICE:  table "streams" does not exist, skipping
+
+NOTICE:  table "streams_habitat" does not exist, skipping
+
+NOTICE:  table "cabd_exclusions" does not exist, skipping
+
+NOTICE:  table "cabd_blkey_xref" does not exist, skipping
+
+NOTICE:  table "cabd_passability_status_updates" does not exist, skipping
+
+NOTICE:  table "cabd_additions" does not exist, skipping
+
+NOTICE:  table "cabd_dams_raw" does not exist, skipping
+
+NOTICE:  table "dams" does not exist, skipping
+
+NOTICE:  table "pscis_modelledcrossings_streams_xref" does not exist, skipping
+
+NOTICE:  table "pscis_stream_candidates" does not exist, skipping
+
+NOTICE:  table "pscis_streams_150m" does not exist, skipping
+
+NOTICE:  table "pscis_picked" does not exist, skipping
+
+NOTICE:  table "pscis" does not exist, skipping
+
+NOTICE:  table "crossings_lookup" does not exist, skipping
+
+NOTICE:  table "barriers_anthropogenic" does not exist, skipping
+
+NOTICE:  table "barriers_pscis" does not exist, skipping
+
+NOTICE:  table "barriers_dams" does not exist, skipping
+
+NOTICE:  table "barriers_remediations" does not exist, skipping
+
+NOTICE:  table "observations_breaks" does not exist, skipping
+
+NOTICE:  table "habitat_endpoints" does not exist, skipping
+
+NOTICE:  table "crossings_breaks" does not exist, skipping
+
+NOTICE:  table "streams_breaks" does not exist, skipping
+
+NOTICE:  relation "streams_id_segment_idx" already exists, skipping
+
+NOTICE:  table "streams_acc_015" does not exist, skipping
+
+NOTICE:  table "streams_acc_025" does not exist, skipping
+
+NOTICE:  table "streams_acc_025_ovr_bt" does not exist, skipping
+
+NOTICE:  table "frs_clusters_bt" does not exist, skipping
+
+NOTICE:  table "frs_clusters_gr" does not exist, skipping
+
+NOTICE:  schema "fresh_default" already exists, skipping
+
+NOTICE:  relation "streams" already exists, skipping
+
+NOTICE:  relation "streams_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_blk_idx" already exists, skipping
+
+NOTICE:  relation "streams_geom_idx" already exists, skipping
+
+NOTICE:  relation "streams_wbk_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_bt" already exists, skipping
+
+NOTICE:  relation "streams_habitat_bt_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_rb" already exists, skipping
+
+NOTICE:  relation "streams_habitat_rb_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_gr" already exists, skipping
+
+NOTICE:  relation "streams_habitat_gr_wsg_idx" already exists, skipping
+
+NOTICE:  relation "barriers" already exists, skipping
+
+NOTICE:  relation "barriers_wsg_idx" already exists, skipping
+
+NOTICE:  relation "barriers_blocks_idx" already exists, skipping
+
+NOTICE:  relation "barriers_source_idx" already exists, skipping
+
+NOTICE:  relation "barriers_blk_drm_idx" already exists, skipping
+
+NOTICE:  relation "barriers_geom_idx" already exists, skipping
+
+NOTICE:  table "barriers" does not exist, skipping
+
+NOTICE:  view "barriers_bt_unified" does not exist, skipping
+
+NOTICE:  view "barriers_ch_unified" does not exist, skipping
+
+NOTICE:  view "barriers_cm_unified" does not exist, skipping
+
+NOTICE:  view "barriers_co_unified" does not exist, skipping
+
+NOTICE:  view "barriers_pk_unified" does not exist, skipping
+
+NOTICE:  view "barriers_sk_unified" does not exist, skipping
+
+NOTICE:  view "barriers_st_unified" does not exist, skipping
+
+NOTICE:  view "barriers_wct_unified" does not exist, skipping
+
+NOTICE:  view "barriers_anthropogenic_unified" does not exist, skipping
+
+NOTICE:  view "barriers_pscis_unified" does not exist, skipping
+
+NOTICE:  view "barriers_dams_unified" does not exist, skipping
+
+NOTICE:  table "barriers_ch_cm_co_pk_sk" does not exist, skipping
+
+done 90.5s, rows 21
+06:25:29  CRKD ... ## Run stamp — default
+
+- AOI: `CRKD`
+- Started: 2026-05-15 06:25:31 PDT
+
+### Software
+- link: 0.38.1 (sha NA)
+- fresh: 0.31.0 (sha NA)
+- R: R version 4.5.2 (2025-10-31)
+
+### Database snapshot
+- bcfishobs.observations: 372,627
+- whse_basemapping.fwa_stream_networks_sp: 4,907,441
+
+### Config provenance (12 files, 0 byte / 0 shape drifted)
+
+| file | byte drift | shape drift |
+|---|---|---|
+| `rules.yaml` | no | no |
+| `dimensions.csv` | no | no |
+| `parameters_fresh.csv` | no | no |
+| `overrides/user_habitat_classification.csv` | no | no |
+| `overrides/observation_exclusions.csv` | no | no |
+| `overrides/wsg_species_presence.csv` | no | no |
+| `overrides/user_modelled_crossing_fixes.csv` | no | no |
+| `overrides/user_pscis_barrier_status.csv` | no | no |
+| `overrides/pscis_modelledcrossings_streams_xref.csv` | no | no |
+| `overrides/user_barriers_definite.csv` | no | no |
+| `overrides/user_barriers_definite_control.csv` | no | no |
+| `overrides/user_crossings_misc.csv` | no | no |
+NOTICE:  schema "working_crkd" does not exist, skipping
+
+NOTICE:  schema "working_crkd" does not exist, skipping
+
+NOTICE:  schema "working_crkd" does not exist, skipping
+
+NOTICE:  schema "working_crkd" does not exist, skipping
+
+NOTICE:  schema "fresh" already exists, skipping
+
+NOTICE:  table "barriers_definite" does not exist, skipping
+
+NOTICE:  table "barriers_definite_control" does not exist, skipping
+
+NOTICE:  table "observations" does not exist, skipping
+
+NOTICE:  table "streams_blk" does not exist, skipping
+
+NOTICE:  table "gradient_barriers_raw" does not exist, skipping
+
+NOTICE:  table "natural_barriers" does not exist, skipping
+
+NOTICE:  table "barrier_overrides" does not exist, skipping
+
+NOTICE:  table "barriers_bt" does not exist, skipping
+
+NOTICE:  table "barriers_bt_min" does not exist, skipping
+
+NOTICE:  table "barriers_ch" does not exist, skipping
+
+NOTICE:  table "barriers_ch_min" does not exist, skipping
+
+NOTICE:  table "barriers_cm" does not exist, skipping
+
+NOTICE:  table "barriers_cm_min" does not exist, skipping
+
+NOTICE:  table "barriers_co" does not exist, skipping
+
+NOTICE:  table "barriers_co_min" does not exist, skipping
+
+NOTICE:  table "barriers_pk" does not exist, skipping
+
+NOTICE:  table "barriers_pk_min" does not exist, skipping
+
+NOTICE:  table "barriers_sk" does not exist, skipping
+
+NOTICE:  table "barriers_sk_min" does not exist, skipping
+
+NOTICE:  table "barriers_st" does not exist, skipping
+
+NOTICE:  table "barriers_st_min" does not exist, skipping
+
+NOTICE:  table "barriers_wct" does not exist, skipping
+
+NOTICE:  table "barriers_wct_min" does not exist, skipping
+
+NOTICE:  table "barriers_ko" does not exist, skipping
+
+NOTICE:  table "barriers_ko_min" does not exist, skipping
+
+NOTICE:  table "barriers_rb" does not exist, skipping
+
+NOTICE:  table "barriers_rb_min" does not exist, skipping
+
+NOTICE:  table "barriers_gr" does not exist, skipping
+
+NOTICE:  table "barriers_gr_min" does not exist, skipping
+
+NOTICE:  table "gradient_barriers_minimal" does not exist, skipping
+
+NOTICE:  table "streams" does not exist, skipping
+
+NOTICE:  table "streams_habitat" does not exist, skipping
+
+NOTICE:  table "cabd_exclusions" does not exist, skipping
+
+NOTICE:  table "cabd_blkey_xref" does not exist, skipping
+
+NOTICE:  table "cabd_passability_status_updates" does not exist, skipping
+
+NOTICE:  table "cabd_additions" does not exist, skipping
+
+NOTICE:  table "cabd_dams_raw" does not exist, skipping
+
+NOTICE:  table "dams" does not exist, skipping
+
+NOTICE:  table "pscis_modelledcrossings_streams_xref" does not exist, skipping
+
+NOTICE:  table "pscis_stream_candidates" does not exist, skipping
+
+NOTICE:  table "pscis_streams_150m" does not exist, skipping
+
+NOTICE:  table "pscis_picked" does not exist, skipping
+
+NOTICE:  table "pscis" does not exist, skipping
+
+NOTICE:  table "crossings_lookup" does not exist, skipping
+
+NOTICE:  table "barriers_anthropogenic" does not exist, skipping
+
+NOTICE:  table "barriers_pscis" does not exist, skipping
+
+NOTICE:  table "barriers_dams" does not exist, skipping
+
+NOTICE:  table "barriers_remediations" does not exist, skipping
+
+NOTICE:  table "observations_breaks" does not exist, skipping
+
+NOTICE:  table "habitat_endpoints" does not exist, skipping
+
+NOTICE:  table "crossings_breaks" does not exist, skipping
+
+NOTICE:  table "streams_breaks" does not exist, skipping
+
+NOTICE:  relation "streams_id_segment_idx" already exists, skipping
+
+NOTICE:  table "streams_acc_025" does not exist, skipping
+
+NOTICE:  table "frs_clusters_bt" does not exist, skipping
+
+NOTICE:  schema "fresh_default" already exists, skipping
+
+NOTICE:  relation "streams" already exists, skipping
+
+NOTICE:  relation "streams_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_blk_idx" already exists, skipping
+
+NOTICE:  relation "streams_geom_idx" already exists, skipping
+
+NOTICE:  relation "streams_wbk_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_bt" already exists, skipping
+
+NOTICE:  relation "streams_habitat_bt_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_rb" already exists, skipping
+
+NOTICE:  relation "streams_habitat_rb_wsg_idx" already exists, skipping
+
+NOTICE:  relation "barriers" already exists, skipping
+
+NOTICE:  relation "barriers_wsg_idx" already exists, skipping
+
+NOTICE:  relation "barriers_blocks_idx" already exists, skipping
+
+NOTICE:  relation "barriers_source_idx" already exists, skipping
+
+NOTICE:  relation "barriers_blk_drm_idx" already exists, skipping
+
+NOTICE:  relation "barriers_geom_idx" already exists, skipping
+
+NOTICE:  table "barriers" does not exist, skipping
+
+NOTICE:  view "barriers_bt_unified" does not exist, skipping
+
+NOTICE:  view "barriers_ch_unified" does not exist, skipping
+
+NOTICE:  view "barriers_cm_unified" does not exist, skipping
+
+NOTICE:  view "barriers_co_unified" does not exist, skipping
+
+NOTICE:  view "barriers_pk_unified" does not exist, skipping
+
+NOTICE:  view "barriers_sk_unified" does not exist, skipping
+
+NOTICE:  view "barriers_st_unified" does not exist, skipping
+
+NOTICE:  view "barriers_wct_unified" does not exist, skipping
+
+NOTICE:  view "barriers_anthropogenic_unified" does not exist, skipping
+
+NOTICE:  view "barriers_pscis_unified" does not exist, skipping
+
+NOTICE:  view "barriers_dams_unified" does not exist, skipping
+
+NOTICE:  table "barriers_ch_cm_co_pk_sk" does not exist, skipping
+
+done 49.9s, rows 14
+
+=== DONE ===
+There were 30 warnings (use warnings() to see them)
+Ended: 2026-05-15 06:26:19 PDT 
+Total wall time:9.5min  (568.9s)
+WSGs completed: 22 
+Annotated CSV: /Users/airvine/Projects/repo/link/data-raw/logs/provincial_default/20260515_0626_Allans-MacBook-Pro_annotated.csv
+  rows: 567

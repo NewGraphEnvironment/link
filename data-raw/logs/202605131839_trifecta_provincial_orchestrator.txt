@@ -1,0 +1,50 @@
+============================================
+[trifecta-provincial] dispatch start: 18:39:22
+  total WSGs: 217  (m4=33  m1=42  cypher_total=142)
+  config: bcfishpass  with_mapping_code: --with-mapping-code
+  m4     bucket: BARR,BLAR,CANO,CHIR,COWN,DOGC,FINA,FROG,GUIC,ISKR,KHOR,KLUM,KTSU,LDEN,LKEL,LOMI,MAHD,MESI,MSKE,NARC,NEVI,OWIK,PINE,SETN,SLOC,STUR,TAHS,TOAD,TWAC,UDEN,UNAR,UPCE,WORC
+  m1     bucket: BABR,BIGC,BRKS,CARP,CHWK,COAL,CRKD,ELKR,FIRE,FRCN,GRAI,HOMA,JENR,KHTZ,KLIN,KSHR,LBTN,LHAF,LMUS,LPCE,LSTR,MESC,MORI,MSTR,NASC,NBNK,NIEL,PARS,SAJR,SEYM,SKGT,SQAM,SUST,TAKL,TOBA,TUYR,UCHR,UJER,UNRS,UPRO,USTK,ADMS
+  cypher[job1] bucket: ALBN,BELA,BOWR,CAMB,CHIL,CLWR,COTR,DEAR,DUNE,FINL,FRAN,GOLD,HOLB,INKR,KETL,KISP,KLAR,KOTR,LBIR,LFRA,LISR,LNTH,LRDO,LTRE,MDEA,MMUS,MPRO,NAKR,NAZR,NICL,OSPK,PCEA,REVL,SANJ,SIML,SPAT,STUL,TAHR,TAYR,TOOD,TURN,UBTN,UHAF,UMUS,UOMI,USKE,WILL
+  cypher[job2] bucket: ATNA,BBAR,BLUR,BULK,CARR,CLAY,COLR,DEAD,DRIR,EUCH,FONT,GATA,HARR,HORS,JERV,KINR,KITL,KNIG,KUMR,LCHL,LIAR,LNAR,LPRO,LSAL,MBNK,MFRA,MORK,MURR,NASR,NECL,NIMP,PARA,PORI,SALM,SHER,SMAR,STHM,SWIR,TASR,TESR,TSAY,UARL,UEUT,UKEC,UNTH,USHU,UTRE,ZYMO
+  cypher[job3] bucket: BABL,BEAV,BONP,BULL,CHES,CLRH,COMX,DEAL,DUNC,EUCL,FOXR,GLAR,HERR,INGR,KEEC,KISK,KITR,KOTL,LARL,LCHR,LILL,LNIC,LRAN,LSKE,MCGR,MIDR,MORR,NAHR,NATR,NECR,OKAN,PARK,QUES,SALR,SHUL,SMOK,STIR,TABR,TATR,THOM,TSIT,UBIR,UFRA,ULRD,UNUR,USIK,VICT
+============================================
+[dispatch] m4 PID=93228  m1 PID=93229  cyphers PIDs=93230 93231 93232
+[dispatch] tail logs:
+  /Users/airvine/Projects/repo/link/data-raw/logs/202605131839_trifecta_provincial_m4.txt
+  /Users/airvine/Projects/repo/link/data-raw/logs/202605131839_trifecta_provincial_m1.txt
+  /Users/airvine/Projects/repo/link/data-raw/logs/202605131839_trifecta_provincial_cypher_job1.txt
+  /Users/airvine/Projects/repo/link/data-raw/logs/202605131839_trifecta_provincial_cypher_job2.txt
+  /Users/airvine/Projects/repo/link/data-raw/logs/202605131839_trifecta_provincial_cypher_job3.txt
+============================================
+[trifecta-provincial] elapsed: 1h15m36s
+  m4     exit=0  log=/Users/airvine/Projects/repo/link/data-raw/logs/202605131839_trifecta_provincial_m4.txt
+  m1     exit=0  log=/Users/airvine/Projects/repo/link/data-raw/logs/202605131839_trifecta_provincial_m1.txt
+  cypher[job1] exit=0  log=/Users/airvine/Projects/repo/link/data-raw/logs/202605131839_trifecta_provincial_cypher_job1.txt
+  cypher[job2] exit=0  log=/Users/airvine/Projects/repo/link/data-raw/logs/202605131839_trifecta_provincial_cypher_job2.txt
+  cypher[job3] exit=0  log=/Users/airvine/Projects/repo/link/data-raw/logs/202605131839_trifecta_provincial_cypher_job3.txt
+============================================
+
+[trifecta-provincial] pulling m1 RDS files
+[trifecta-provincial] pulling cypher[job1] RDS files (cypher@144.126.212.28)
+[trifecta-provincial] pulling cypher[job2] RDS files (cypher@137.184.80.195)
+[trifecta-provincial] pulling cypher[job3] RDS files (cypher@137.184.228.20)
+
+[trifecta-provincial] local RDS: 217 / 217 pulled — 207 OK, 10 errors
+[trifecta-provincial] WARN: 10 error-stub RDS found. Inspect cypher-side R logs:
+  /Users/airvine/Projects/repo/link/data-raw/logs/202605131839_trifecta_provincial_cypher_job1_R.txt
+  /Users/airvine/Projects/repo/link/data-raw/logs/202605131839_trifecta_provincial_cypher_job2_R.txt
+  /Users/airvine/Projects/repo/link/data-raw/logs/202605131839_trifecta_provincial_cypher_job3_R.txt
+
+[trifecta-provincial] aggregating + annotating 217 RDS files
+[annotate] rows: 4522 
+[annotate] class breakdown:
+
+                    A                     B                     C 
+                   14                    11                    15 
+                    D MEASUREMENT_ASYMMETRY        NOT_APPLICABLE 
+                    7                   417                  2537 
+          UNEXPLAINED      WITHIN_TOLERANCE 
+                   87                  1434 
+[annotate] UNEXPLAINED with |diff_pct| >= 2: 87
+  acceptance bar (zero UNEXPLAINED >=2%) NOT met — investigate.
+[trifecta-provincial] annotated CSV: /Users/airvine/Projects/repo/link/data-raw/logs/provincial_parity/202605131839_annotated.csv

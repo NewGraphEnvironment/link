@@ -1,0 +1,6 @@
+[cypher_run] workload: /Users/airvine/Projects/repo/link/data-raw/logs/202605150616_wsgs_dispatch_cypher_job1.sh
+[cypher_run] target:   cypher@137.184.90.205
+[cypher_run] remote:   /home/cypher/cypher-workloads/202605150616_wsgs_dispatch_cypher_job1-202605150616.sh
+[cypher_run] log:      /Users/airvine/Projects/repo/rtj/scripts/cypher/logs/202605150616_cypher-run_202605150616_wsgs_dispatch_cypher_job1_job1.txt
+[cypher_run] elapsed: 9m14s  exit_code: 0
+[cypher_run] log: /Users/airvine/Projects/repo/rtj/scripts/cypher/logs/202605150616_cypher-run_202605150616_wsgs_dispatch_cypher_job1_job1.txt

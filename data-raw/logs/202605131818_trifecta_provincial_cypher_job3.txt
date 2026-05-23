@@ -1,0 +1,6 @@
+[cypher_run] workload: /Users/airvine/Projects/repo/link/data-raw/logs/202605131818_trifecta_provincial_cypher_job3.sh
+[cypher_run] target:   cypher@137.184.228.20
+[cypher_run] remote:   /home/cypher/cypher-workloads/202605131818_trifecta_provincial_cypher_job3-202605131818.sh
+[cypher_run] log:      /Users/airvine/Projects/repo/rtj/scripts/cypher/logs/202605131818_cypher-run_202605131818_trifecta_provincial_cypher_job3_job3.txt
+[cypher_run] elapsed: 2m12s  exit_code: 0
+[cypher_run] log: /Users/airvine/Projects/repo/rtj/scripts/cypher/logs/202605131818_cypher-run_202605131818_trifecta_provincial_cypher_job3_job3.txt

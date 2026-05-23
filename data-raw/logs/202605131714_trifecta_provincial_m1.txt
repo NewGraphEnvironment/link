@@ -1,0 +1,23 @@
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Library/R/arm64/4.5/library/link/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
+=== PROVINCIAL PARITY RUN — link 0.20.0 ===
+Started:2026-05-13 17:14:09 PDT (epoch1778717649)
+WSGs to run: 1 
+Output dir : /Users/airvine/Projects/repo/link/data-raw/logs/provincial_parity 
+
+[bcfp-baseline] WARN: connection to server at "localhost" (::1), port 63333 failed: Connection refused
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 63333 failed: Connection refused
+	Is the server running on that host and accepting TCP/IP connections?
+
+17:14:09  ELKR ... ERROR (0.1s): connection to server at "localhost" (::1), port 63333 failed: Connection refused
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 63333 failed: Connection refused
+	Is the server running on that host and accepting TCP/IP connections?
+
+
+=== DONE ===
+Ended: 2026-05-13 17:14:09 PDT 
+Total wall time:0min  (0.2s)
+WSGs completed: 1 

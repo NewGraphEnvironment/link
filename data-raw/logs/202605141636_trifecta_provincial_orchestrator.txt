@@ -1,0 +1,30 @@
+============================================
+[trifecta-provincial] dispatch start: 16:36:34
+  total WSGs: 16  (m4=8  m1=8  cypher_total=0)
+  config: default  with_mapping_code: --with-mapping-code
+  m4     bucket: FINL,FOXR,FIRE,MESI,PARA,OSPK,CRKD,CARP
+  m1     bucket: PARS,TOOD,FINA,INGR,NATR,PCEA,UOMI,LOMI
+============================================
+[dispatch] m4 PID=75202  m1 PID=75203  cyphers PIDs=
+[dispatch] tail logs:
+  /Users/airvine/Projects/repo/link/data-raw/logs/202605141636_trifecta_provincial_m4.txt
+  /Users/airvine/Projects/repo/link/data-raw/logs/202605141636_trifecta_provincial_m1.txt
+============================================
+[trifecta-provincial] elapsed: 0h08m00s
+  m4     exit=0  log=/Users/airvine/Projects/repo/link/data-raw/logs/202605141636_trifecta_provincial_m4.txt
+  m1     exit=0  log=/Users/airvine/Projects/repo/link/data-raw/logs/202605141636_trifecta_provincial_m1.txt
+============================================
+
+[trifecta-provincial] pulling m1 RDS files
+
+[trifecta-provincial] local RDS: 16 / 16 pulled — 16 OK, 0 errors
+
+[trifecta-provincial] aggregating + annotating 16 RDS files
+[annotate] rows: 343 
+[annotate] class breakdown:
+
+  NOT_APPLICABLE      UNEXPLAINED WITHIN_TOLERANCE 
+             263               73                7 
+[annotate] UNEXPLAINED with |diff_pct| >= 2: 73
+  acceptance bar (zero UNEXPLAINED >=2%) NOT met — investigate.
+[trifecta-provincial] annotated CSV: /Users/airvine/Projects/repo/link/data-raw/logs/provincial_default/202605141636_annotated.csv

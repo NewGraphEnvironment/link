@@ -1,0 +1,48 @@
+============================================
+[trifecta-provincial] dispatch start: 17:44:15
+  total WSGs: 5  (m4=1  m1=1  cypher_total=3)
+  config: bcfishpass  with_mapping_code: --with-mapping-code
+  m4     bucket: DEAD
+  m1     bucket: ELKR
+  cypher[job1] bucket: ADMS
+  cypher[job2] bucket: BABL
+  cypher[job3] bucket: BULL
+============================================
+[dispatch] m4 PID=78574  m1 PID=78577  cyphers PIDs=78579 78580 78582
+[dispatch] tail logs:
+  /Users/airvine/Projects/repo/link/data-raw/logs/202605131744_trifecta_provincial_m4.txt
+  /Users/airvine/Projects/repo/link/data-raw/logs/202605131744_trifecta_provincial_m1.txt
+  /Users/airvine/Projects/repo/link/data-raw/logs/202605131744_trifecta_provincial_cypher_job1.txt
+  /Users/airvine/Projects/repo/link/data-raw/logs/202605131744_trifecta_provincial_cypher_job2.txt
+  /Users/airvine/Projects/repo/link/data-raw/logs/202605131744_trifecta_provincial_cypher_job3.txt
+============================================
+[trifecta-provincial] elapsed: 0h03m10s
+  m4     exit=0  log=/Users/airvine/Projects/repo/link/data-raw/logs/202605131744_trifecta_provincial_m4.txt
+  m1     exit=0  log=/Users/airvine/Projects/repo/link/data-raw/logs/202605131744_trifecta_provincial_m1.txt
+  cypher[job1] exit=0  log=/Users/airvine/Projects/repo/link/data-raw/logs/202605131744_trifecta_provincial_cypher_job1.txt
+  cypher[job2] exit=0  log=/Users/airvine/Projects/repo/link/data-raw/logs/202605131744_trifecta_provincial_cypher_job2.txt
+  cypher[job3] exit=0  log=/Users/airvine/Projects/repo/link/data-raw/logs/202605131744_trifecta_provincial_cypher_job3.txt
+============================================
+
+[trifecta-provincial] pulling m1 RDS files
+[trifecta-provincial] pulling cypher[job1] RDS files (cypher@144.126.212.28)
+[trifecta-provincial] pulling cypher[job2] RDS files (cypher@137.184.80.195)
+[trifecta-provincial] pulling cypher[job3] RDS files (cypher@137.184.228.20)
+
+[trifecta-provincial] local RDS: 5 / 5 pulled — 4 OK, 1 errors
+[trifecta-provincial] WARN: 1 error-stub RDS found. Inspect cypher-side R logs:
+  /Users/airvine/Projects/repo/link/data-raw/logs/202605131744_trifecta_provincial_cypher_job1_R.txt
+  /Users/airvine/Projects/repo/link/data-raw/logs/202605131744_trifecta_provincial_cypher_job2_R.txt
+  /Users/airvine/Projects/repo/link/data-raw/logs/202605131744_trifecta_provincial_cypher_job3_R.txt
+
+[trifecta-provincial] aggregating + annotating 5 RDS files
+[annotate] rows: 119 
+[annotate] class breakdown:
+
+MEASUREMENT_ASYMMETRY        NOT_APPLICABLE           UNEXPLAINED 
+                   14                    59                     2 
+     WITHIN_TOLERANCE 
+                   44 
+[annotate] UNEXPLAINED with |diff_pct| >= 2: 2
+  acceptance bar (zero UNEXPLAINED >=2%) NOT met — investigate.
+[trifecta-provincial] annotated CSV: /Users/airvine/Projects/repo/link/data-raw/logs/provincial_parity/202605131744_annotated.csv

@@ -1,0 +1,34 @@
+============================================
+[wsgs-dispatch] dispatch start: 21:18:43
+  total WSGs: 13  (m4=4  m1=6  cypher_total=3)
+  config: default  with_mapping_code: --with-mapping-code
+  m4     bucket: FRAN,LCHL,MORR,WILL
+  m1     bucket: BULK,KLUM,LSAL,NECR,UFRA,ZYMO
+  cypher[job1] bucket: KISP,MORK,TABR
+============================================
+[dispatch] m4 PID=28193  m1 PID=28194  cyphers PIDs=28195
+[dispatch] tail logs:
+  /Users/airvine/Projects/repo/link/data-raw/logs/202605142118_wsgs_dispatch_m4.txt
+  /Users/airvine/Projects/repo/link/data-raw/logs/202605142118_wsgs_dispatch_m1.txt
+  /Users/airvine/Projects/repo/link/data-raw/logs/202605142118_wsgs_dispatch_cypher_job1.txt
+============================================
+[wsgs-dispatch] elapsed: 0h16m05s
+  m4     exit=0  log=/Users/airvine/Projects/repo/link/data-raw/logs/202605142118_wsgs_dispatch_m4.txt
+  m1     exit=0  log=/Users/airvine/Projects/repo/link/data-raw/logs/202605142118_wsgs_dispatch_m1.txt
+  cypher[job1] exit=0  log=/Users/airvine/Projects/repo/link/data-raw/logs/202605142118_wsgs_dispatch_cypher_job1.txt
+============================================
+
+[wsgs-dispatch] pulling m1 RDS files
+[wsgs-dispatch] pulling cypher[job1] RDS files (cypher@64.23.253.231)
+
+[wsgs-dispatch] local RDS: 31 / 13 pulled — 31 OK, 0 errors
+
+[wsgs-dispatch] aggregating + annotating 31 RDS files
+[annotate] rows: 868 
+[annotate] class breakdown:
+
+               C   NOT_APPLICABLE      UNEXPLAINED WITHIN_TOLERANCE 
+               1              581              223               63 
+[annotate] UNEXPLAINED with |diff_pct| >= 2: 223
+  acceptance bar (zero UNEXPLAINED >=2%) NOT met — investigate.
+[wsgs-dispatch] annotated CSV: /Users/airvine/Projects/repo/link/data-raw/logs/provincial_default/202605142118_annotated.csv

@@ -1,0 +1,9 @@
+============================================
+[trifecta-provincial] dispatch start: 11:21:15
+  total WSGs: 16  (m4=7  m1=9  cypher_total=0)
+  config: default  with_mapping_code: --with-mapping-code
+  m4     bucket: FINA,FOXR,LOMI,NATR,PARA,TOOD,CRKD
+  m1     bucket: FINL,FIRE,INGR,MESI,OSPK,PARS,PCEA,UOMI,CARP
+============================================
+[dispatch] m4 PID=92336  m1 PID=92337  cyphers PIDs=
+[dispatch] tail logs:

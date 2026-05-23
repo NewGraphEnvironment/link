@@ -1,0 +1,11 @@
+============================================
+[trifecta-provincial] dispatch start: 11:10:01
+  total WSGs: 9  (m4=5  m1=4  cypher_total=0)
+  config: default  with_mapping_code: --with-mapping-code
+  m4     bucket: CARP,CRKD,FINA,FINL,FIRE
+  m1     bucket: FOXR,INGR,LOMI,MESI
+============================================
+[dispatch] m4 PID=88393  m1 PID=88394  cyphers PIDs=
+[dispatch] tail logs:
+  /Users/airvine/Projects/repo/link/data-raw/logs/202605141110_trifecta_provincial_m4.txt
+  /Users/airvine/Projects/repo/link/data-raw/logs/202605141110_trifecta_provincial_m1.txt

@@ -1,0 +1,38 @@
+============================================
+[wsgs-dispatch] dispatch start: 00:27:26
+  total WSGs: 16  (m4=4  m1=5  cypher_total=7)
+  config: default  with_mapping_code: --with-mapping-code
+  m4     bucket: FINL,NATR,PCEA,PARA
+  m1     bucket: PARS,FIRE,INGR,LOMI,CRKD
+  cypher[job1] bucket: TOOD,OSPK,UOMI
+  cypher[job2] bucket: FOXR,FINA,MESI,CARP
+============================================
+[dispatch] m4 PID=24882  m1 PID=24883  cyphers PIDs=24884 24885
+[dispatch] tail logs:
+  /Users/airvine/Projects/repo/link/data-raw/logs/202605150027_wsgs_dispatch_m4.txt
+  /Users/airvine/Projects/repo/link/data-raw/logs/202605150027_wsgs_dispatch_m1.txt
+  /Users/airvine/Projects/repo/link/data-raw/logs/202605150027_wsgs_dispatch_cypher_job1.txt
+  /Users/airvine/Projects/repo/link/data-raw/logs/202605150027_wsgs_dispatch_cypher_job2.txt
+============================================
+[wsgs-dispatch] elapsed: 0h10m57s
+  m4     exit=0  log=/Users/airvine/Projects/repo/link/data-raw/logs/202605150027_wsgs_dispatch_m4.txt
+  m1     exit=0  log=/Users/airvine/Projects/repo/link/data-raw/logs/202605150027_wsgs_dispatch_m1.txt
+  cypher[job1] exit=0  log=/Users/airvine/Projects/repo/link/data-raw/logs/202605150027_wsgs_dispatch_cypher_job1.txt
+  cypher[job2] exit=0  log=/Users/airvine/Projects/repo/link/data-raw/logs/202605150027_wsgs_dispatch_cypher_job2.txt
+============================================
+
+[wsgs-dispatch] pulling m1 RDS files
+[wsgs-dispatch] pulling cypher[job1] RDS files (cypher@146.190.136.99)
+[wsgs-dispatch] pulling cypher[job2] RDS files (cypher@134.199.212.46)
+
+[wsgs-dispatch] local RDS: 31 / 16 pulled — 31 OK, 0 errors
+
+[wsgs-dispatch] aggregating + annotating 31 RDS files
+[annotate] rows: 868 
+[annotate] class breakdown:
+
+               C   NOT_APPLICABLE      UNEXPLAINED WITHIN_TOLERANCE 
+               1              581              227               59 
+[annotate] UNEXPLAINED with |diff_pct| >= 2: 227
+  acceptance bar (zero UNEXPLAINED >=2%) NOT met — investigate.
+[wsgs-dispatch] annotated CSV: /Users/airvine/Projects/repo/link/data-raw/logs/provincial_default/202605150027_annotated.csv

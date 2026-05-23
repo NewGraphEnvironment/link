@@ -1,0 +1,17 @@
+============================================
+[trifecta-provincial] dispatch start: 22:36:57
+  total WSGs: 217  (m4=33  m1=42  cypher_total=142)
+  config: bcfishpass  with_mapping_code: --with-mapping-code
+  m4     bucket: KLUM,UNAR,SLOC,BBAR,BOWR,CHES,COAL,DEAR,FINL,FRCN,HOMA,JERV,KITR,KSHR,LFRA,LNAR,LRDO,MESC,MORK,NASC,NICL,PARS,SALM,SHUL,STUL,TAKL,TOOD,UBIR,ULRD,UPRO,UTRE,BARR,BLAR
+  m1     bucket: OWIK,MSKE,UDEN,ADMS,BEAV,BONP,CAMB,CLRH,COTR,DUNC,EUCL,FRAN,GRAI,HORS,KHTZ,KITL,KOTR,LBTN,LIAR,LNIC,LRAN,MCGR,MMUS,MURR,NATR,NECR,OSPK,PORI,SEYM,SMAR,STIR,TAHR,TESR,TSIT,UBTN,UKEC,UNUR,USTK,UPCE,CHIR,TAHS,GUIC
+  cypher[job1] bucket: SETN,FINA,LOMI,ATNA,BELA,BRKS,CARP,CHWK,COLR,DEAD,DUNE,FIRE,GATA,HARR,INGR,KEEC,KISK,KLIN,KUMR,LCHL,LILL,LNTH,LSAL,LTRE,MFRA,MORR,NAHR,NAZR,NIEL,PARA,QUES,SALR,SIML,SPAT,SUST,TASR,THOM,TURN,UCHR,UHAF,UNRS,USHU,VICT,COWN,DOGC,KTSU,NEVI
+  cypher[job2] bucket: TOAD,FROG,WORC,ISKR,BABR,BLUR,BULL,CHIL,CLWR,CRKD,DRIR,EUCH,FOXR,GOLD,HOLB,JENR,KINR,KLAR,KOTL,LBIR,LHAF,LMUS,LPRO,LSTR,MDEA,MORI,MSTR,NASR,NECL,OKAN,PCEA,SAJR,SHER,SMOK,STHM,TABR,TAYR,TSAY,UARL,UFRA,UMUS,UOMI,USKE,ZYMO,MAHD,CANO,STUR
+  cypher[job3] bucket: PINE,KHOR,ALBN,LDEN,BABL,BIGC,BULK,CARR,CLAY,COMX,DEAL,ELKR,FONT,GLAR,HERR,INKR,KETL,KISP,KNIG,LARL,LCHR,LISR,LPCE,LSKE,MBNK,MIDR,MPRO,NAKR,NBNK,NIMP,PARK,REVL,SANJ,SKGT,SQAM,SWIR,TATR,TOBA,TUYR,UEUT,UJER,UNTH,USIK,WILL,MESI,NARC,TWAC,LKEL
+============================================
+[dispatch] m4 PID=34614  m1 PID=34615  cyphers PIDs=34616 34617 34618
+[dispatch] tail logs:
+  /Users/airvine/Projects/repo/link/data-raw/logs/202605132236_trifecta_provincial_m4.txt
+  /Users/airvine/Projects/repo/link/data-raw/logs/202605132236_trifecta_provincial_m1.txt
+  /Users/airvine/Projects/repo/link/data-raw/logs/202605132236_trifecta_provincial_cypher_job1.txt
+  /Users/airvine/Projects/repo/link/data-raw/logs/202605132236_trifecta_provincial_cypher_job2.txt
+  /Users/airvine/Projects/repo/link/data-raw/logs/202605132236_trifecta_provincial_cypher_job3.txt
