@@ -34,8 +34,9 @@ either way (the underlying table has \code{blocks_species} from
 \code{\link[=lnk_barriers_unify]{lnk_barriers_unify()}}).}
 }
 \value{
-\code{invisible(conn)}. Side effect: drops + recreates one view
-per species + three source-typed views in \code{schema}.
+\code{invisible(conn)}. Side effect: drops + recreates two views
+per species (\verb{_unified} + \verb{_access}) + three source-typed views in
+\code{schema}.
 }
 \description{
 Emits per-species + per-source views in the working schema that
@@ -52,13 +53,25 @@ FWA topology and reads from the view (which is the unified table).
 Fixes the PARS BT 60\% defect (PARS drains through dams in PCEA /
 UPCE WSGs) and unblocks any regional run.
 
-Per-species views:
+Per-species views (two per species \code{bt}, \code{ch}, \code{cm}, \code{co}, \code{pk}, \code{sk},
+\code{st}, \code{wct}):
 \itemize{
-\item \verb{<schema>.barriers_<sp>_unified} for each species (\code{bt}, \code{ch}, \code{cm},
-\code{co}, \code{pk}, \code{sk}, \code{st}, \code{wct}) — filtered by
-\code{'<SP>' = ANY(blocks_species)}. \verb{_unified} suffix avoids name
-collision with the per-WSG \verb{<schema>.barriers_<sp>} tables that
-\code{.lnk_pipeline_prep_minimal} builds for the break-time path.
+\item \verb{<schema>.barriers_<sp>_unified} — filtered by
+\code{'<SP>' = ANY(blocks_species)} (ALL barrier families incl dams).
+\verb{_unified} suffix avoids name collision with the per-WSG
+\verb{<schema>.barriers_<sp>} tables that \code{.lnk_pipeline_prep_minimal}
+builds for the break-time path.
+\item \verb{<schema>.barriers_<sp>_access} — the per-species \strong{accessibility}
+set that drives \code{accessible} in mapping_code (link#200). Reproduces
+bcfp \verb{barriers_<sp>}: NATURAL barriers only
+(\verb{barrier_source IN ('GRADIENT','FALLS','SUBSURFACE_FLOW')} — the
+gradient-at-species-threshold is already encoded in \code{blocks_species})
+MINUS the observation/habitat override (anti-join \code{barrier_overrides}),
+∪ all \code{USER_DEFINITE} (override-exempt). Dams/PSCIS/modelled are
+excluded — they annotate token2 via the per-source views, never block
+access. Same feature shape (\verb{barriers_<sp>_access_id} + ltrees + geom)
+so \code{\link[=lnk_pipeline_access]{lnk_pipeline_access()}} / \code{\link[fresh:frs_network_features]{fresh::frs_network_features()}} consume it
+unchanged. See \code{RUNBOOK.md} §5.
 }
 
 Per-source views (matching the bcfp source-typed tables consumed by

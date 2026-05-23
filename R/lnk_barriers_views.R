@@ -13,12 +13,24 @@
 #' Fixes the PARS BT 60% defect (PARS drains through dams in PCEA /
 #' UPCE WSGs) and unblocks any regional run.
 #'
-#' Per-species views:
-#' - `<schema>.barriers_<sp>_unified` for each species (`bt`, `ch`, `cm`,
-#'   `co`, `pk`, `sk`, `st`, `wct`) — filtered by
-#'   `'<SP>' = ANY(blocks_species)`. `_unified` suffix avoids name
-#'   collision with the per-WSG `<schema>.barriers_<sp>` tables that
-#'   `.lnk_pipeline_prep_minimal` builds for the break-time path.
+#' Per-species views (two per species `bt`, `ch`, `cm`, `co`, `pk`, `sk`,
+#' `st`, `wct`):
+#' - `<schema>.barriers_<sp>_unified` — filtered by
+#'   `'<SP>' = ANY(blocks_species)` (ALL barrier families incl dams).
+#'   `_unified` suffix avoids name collision with the per-WSG
+#'   `<schema>.barriers_<sp>` tables that `.lnk_pipeline_prep_minimal`
+#'   builds for the break-time path.
+#' - `<schema>.barriers_<sp>_access` — the per-species **accessibility**
+#'   set that drives `accessible` in mapping_code (link#200). Reproduces
+#'   bcfp `barriers_<sp>`: NATURAL barriers only
+#'   (`barrier_source IN ('GRADIENT','FALLS','SUBSURFACE_FLOW')` — the
+#'   gradient-at-species-threshold is already encoded in `blocks_species`)
+#'   MINUS the observation/habitat override (anti-join `barrier_overrides`),
+#'   ∪ all `USER_DEFINITE` (override-exempt). Dams/PSCIS/modelled are
+#'   excluded — they annotate token2 via the per-source views, never block
+#'   access. Same feature shape (`barriers_<sp>_access_id` + ltrees + geom)
+#'   so [lnk_pipeline_access()] / [fresh::frs_network_features()] consume it
+#'   unchanged. See `RUNBOOK.md` §5.
 #'
 #' Per-source views (matching the bcfp source-typed tables consumed by
 #' the `barrier_sources` arg of `lnk_pipeline_access`):
@@ -47,8 +59,9 @@
 #'   either way (the underlying table has `blocks_species` from
 #'   [lnk_barriers_unify()]).
 #'
-#' @return `invisible(conn)`. Side effect: drops + recreates one view
-#'   per species + three source-typed views in `schema`.
+#' @return `invisible(conn)`. Side effect: drops + recreates two views
+#'   per species (`_unified` + `_access`) + three source-typed views in
+#'   `schema`.
 #'
 #' @details
 #' Views are dropped + recreated on each call (`CREATE OR REPLACE VIEW`)
@@ -112,6 +125,13 @@ lnk_barriers_views <- function(conn, schema, cfg,
     paste0(tn$schema, ".barriers")
   }
 
+  # The per-species access view (barriers_<sp>_access) anti-joins the
+  # barrier-overrides skip list. Read it from the SAME schema as the
+  # barriers source so persist-barriers pairs with the province-wide
+  # overrides (link#200) and a working-schema barriers_table (if ever
+  # passed) pairs with that schema's per-WSG overrides. link#200.
+  overrides_table <- sub("\\.barriers$", ".barrier_overrides", persist_barriers)
+
   # Per-species views. Each view re-exposes id_barrier as
   # `barriers_<sp>_unified_id` so fresh::frs_network_features's
   # `feature_id_col = "<table>_id"` convention works unchanged.
@@ -137,6 +157,43 @@ lnk_barriers_views <- function(conn, schema, cfg,
     )
     .lnk_db_execute(conn, sprintf("DROP VIEW IF EXISTS %s", view_name))
     .lnk_db_execute(conn, sql_view)
+
+    # Per-species ACCESS view (link#200). The set that drives `accessible`
+    # in mapping_code — reproduces bcfp `barriers_<sp>`: NATURAL barriers
+    # only (gradient at the species threshold — already encoded in
+    # blocks_species — ∪ falls ∪ subsurface) MINUS the observation/habitat
+    # override, ∪ all user_definite (override-EXEMPT). Dams/PSCIS/modelled
+    # are NOT here (they annotate token2 via barrier_sources, never block
+    # access). Same feature shape as `_unified` (id + ltrees + geom) so
+    # fresh::frs_network_features walks it unchanged. The override anti-join
+    # reads province-wide `overrides_table` so a natural barrier in ANY WSG
+    # a downstream walk crosses is lifted correctly. See RUNBOOK.md §5.
+    access_view <- paste0(schema, ".barriers_", sp_lower, "_access")
+    access_id   <- paste0("barriers_", sp_lower, "_access_id")
+    sql_access <- sprintf(
+      "CREATE OR REPLACE VIEW %s AS
+       SELECT id_barrier AS %s,
+              barrier_source, barrier_subtype, passability,
+              blocks_species,
+              linear_feature_id, blue_line_key, watershed_key,
+              downstream_route_measure, wscode_ltree, localcode_ltree,
+              watershed_group_code, geom
+       FROM %s b
+       WHERE %s = ANY(blocks_species)
+         AND barrier_source IN ('GRADIENT', 'FALLS', 'SUBSURFACE_FLOW', 'USER_DEFINITE')
+         AND (
+           barrier_source = 'USER_DEFINITE'
+           OR NOT EXISTS (
+             SELECT 1 FROM %s o
+             WHERE o.species_code = %s
+               AND o.blue_line_key = b.blue_line_key
+               AND abs(o.downstream_route_measure - b.downstream_route_measure) < 1
+           )
+         )",
+      access_view, access_id, persist_barriers, sp_lit, overrides_table, sp_lit
+    )
+    .lnk_db_execute(conn, sprintf("DROP VIEW IF EXISTS %s", access_view))
+    .lnk_db_execute(conn, sql_access)
   }
 
   # Per-source views — unified (cross-WSG) shape exposed under a

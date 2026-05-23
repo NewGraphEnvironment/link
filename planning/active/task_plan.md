@@ -14,9 +14,10 @@ link's per-species mapping_code accessibility uses `barriers_<sp>_unified` = ALL
 
 ## Phase 2 — `barriers_<sp>_access` view over province-wide inputs
 
-- [ ] Per-species `_access` view in `lnk_barriers_views`: natural (`barrier_source IN ('GRADIENT','FALLS','SUBSURFACE_FLOW','USER_DEFINITE')`) over persist `barriers`, `NOT EXISTS` anti-join over **persist** `barrier_overrides` (per-species), `USER_DEFINITE` override-exempt, expose `barriers_<sp>_access_id`, keep `wscode_ltree`/`localcode_ltree`, alias `b`.
-- [ ] Tests: `_access` view SQL per species; update hardcoded `length(captured)` count.
-- [ ] `/code-check` + commit.
+- [x] Per-species `_access` view in `lnk_barriers_views`: natural (`barrier_source IN ('GRADIENT','FALLS','SUBSURFACE_FLOW','USER_DEFINITE')`) over persist `barriers`, `NOT EXISTS` anti-join over `barrier_overrides` (derived from the barriers source schema via `sub()`), `USER_DEFINITE` override-exempt, expose `barriers_<sp>_access_id`, keep `wscode_ltree`/`localcode_ltree`, alias `b`.
+- [x] Tests: `_access` view SQL per species; counts updated (22→38, 10→14). 30 pass.
+- [x] DB-smoke: `barriers_bt_access` valid + queryable; 904,262 natural rows, 0 non-natural (dams/anthropogenic excluded) vs `_unified` 1,045,358.
+- [x] `/code-check` (clean) + commit.
 
 ## Phase 3 — repoint `barriers_per_sp` → `_access`
 
