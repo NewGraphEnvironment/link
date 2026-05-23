@@ -72,6 +72,13 @@ blocks all 8 species.
 \item \strong{Subsurface_flow} (\code{barrier_source = 'SUBSURFACE_FLOW'}, from
 \verb{<schema>.barriers_subsurfaceflow}): blocks all 8 species. Opt-in
 (only built when \code{cfg$pipeline$break_order} includes \code{"subsurfaceflow"}).
+\item \strong{User_definite} (\code{barrier_source = 'USER_DEFINITE'}, from
+\verb{<schema>.barriers_definite}): blocks all 8 species. ltrees +
+\code{linear_feature_id} resolved by JOIN to
+\code{whse_basemapping.fwa_stream_networks_sp} (mirrors the FALLS branch
+and bcfp's \code{barriers_user_definite.sql}). Persisted province-wide so
+the per-species access view (\verb{barriers_<sp>_access},
+\code{\link[=lnk_barriers_views]{lnk_barriers_views()}}) can include them override-exempt — link#200.
 }
 
 Remediations (PASSABLE remediation crossings) are intentionally NOT
@@ -90,6 +97,8 @@ Required pre-existing tables in \code{schema}:
 \item \verb{<schema>.crossings} (from \code{\link[=lnk_pipeline_crossings]{lnk_pipeline_crossings()}}).
 \item \verb{<schema>.gradient_barriers_raw} (from \code{\link[=lnk_pipeline_prepare]{lnk_pipeline_prepare()}}).
 \item \verb{<schema>.falls} (from \code{\link[=lnk_pipeline_prepare]{lnk_pipeline_prepare()}}).
+\item \verb{<schema>.barriers_definite} (from \code{\link[=lnk_pipeline_prepare]{lnk_pipeline_prepare()}}; always
+created, may be empty).
 }
 
 Optional:

@@ -198,22 +198,21 @@ lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
                        species = active_species)
 
     # 2. Per-segment access. barriers_per_sp drives `accessible` (token1
-    # ACCESS + token2 gate). KNOWN-DIVERGENT from bcfp — see RUNBOOK.md §5.
-    # bcfp's per-species access set (`barriers_<sp>`, built in
-    # smnorris/bcfishpass model/01_access/sql/model_access_bt.sql) is
-    # NATURAL barriers only (gradient at the species threshold + falls +
-    # subsurface), MINUS barriers with upstream observations / confirmed
-    # habitat, plus user_definite — dams are NEVER in it (they annotate
-    # access via token2, not block it). link's `_unified` views instead
-    # carry ALL barriers incl dams (blocks_species universal, §2a), so
-    # dam-downstream segments read inaccessible and lose their `;DAM`
-    # token. The correct fix is a natural-only per-species *feature* view
-    # with the override applied (reproducing bcfp barriers_<sp>) — real
-    # work, scoped separately, not a table swap. `_min` cannot be used
-    # here: it is a break-spec with no id column (RUNBOOK §2b).
+    # ACCESS + token2 gate). Uses the per-species `barriers_<sp>_access`
+    # views (link#200) — these reproduce bcfp's per-species access set
+    # (`barriers_<sp>`, smnorris/bcfishpass model/01_access/sql/
+    # model_access_bt.sql): NATURAL barriers only (gradient at the species
+    # threshold + falls + subsurface), MINUS the observation/habitat
+    # override, ∪ user_definite (override-exempt). Dams/PSCIS/modelled are
+    # NOT in the access set — they annotate access via token2
+    # (barrier_sources below), never block it. So a dam-downstream segment
+    # that is otherwise accessible stays accessible and emits `;DAM`. All
+    # inputs are province-wide-persisted (barriers + barrier_overrides via
+    # the pre-persist above), so the cross-WSG downstream walk is correct in
+    # every WSG, not just the run's own. See RUNBOOK.md §5.
     sp_set <- tolower(active_species)
     barriers_per_sp <- setNames(
-      lapply(sp_set, function(sp) paste0(schema, ".barriers_", sp, "_unified")),
+      lapply(sp_set, function(sp) paste0(schema, ".barriers_", sp, "_access")),
       sp_set)
 
     lnk_pipeline_access(conn, # nolint: object_usage_linter

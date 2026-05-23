@@ -91,6 +91,13 @@ test_that("lnk_persist_init creates schema + streams + per-species habitat table
                "CREATE INDEX IF NOT EXISTS barriers_blk_drm_idx ON fresh\\.barriers \\(blue_line_key, downstream_route_measure\\)")
   expect_match(joined,
                "CREATE INDEX IF NOT EXISTS barriers_geom_idx ON fresh\\.barriers USING GIST")
+
+  # Province-wide barrier-overrides table (link#200) — shape + indexes.
+  expect_match(joined, "CREATE TABLE IF NOT EXISTS fresh\\.barrier_overrides")
+  expect_match(joined,
+               "PRIMARY KEY \\(blue_line_key, downstream_route_measure, species_code, watershed_group_code\\)")
+  expect_match(joined,
+               "CREATE INDEX IF NOT EXISTS barrier_overrides_blk_drm_idx ON fresh\\.barrier_overrides \\(blue_line_key, downstream_route_measure\\)")
 })
 
 test_that("lnk_persist_init errors on invalid inputs", {

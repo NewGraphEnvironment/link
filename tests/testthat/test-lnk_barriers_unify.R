@@ -93,6 +93,48 @@ test_that("lnk_barriers_unify includes subsurface_flow when staging table presen
   expect_match(sql, "'SUBSURFACE-' \\|\\|")
 })
 
+test_that("lnk_barriers_unify emits a USER_DEFINITE branch from barriers_definite", {
+  captured <- character(0)
+  m_query <- mockery::mock(data.frame(x = integer(0)))  # subsurface absent
+  m_quote_str <- mockery::mock(DBI::SQL("'working_pars'"), cycle = TRUE)
+  local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) {
+      captured <<- c(captured, sql); invisible(NULL)
+    }
+  )
+  with_mocked_bindings(
+    dbGetQuery = m_query,
+    dbQuoteString = m_quote_str,
+    .package = "DBI",
+    {
+      lnk_barriers_unify(
+        conn = structure(list(), class = "DBIConnection"),
+        aoi = "PARS",
+        cfg = cfg_fixture(),
+        loaded = loaded_fixture(),
+        schema = "working_pars"
+      )
+    }
+  )
+
+  sql <- paste(captured, collapse = "\n")
+
+  # User-definite branch: own barrier_source + namespaced id, sourced from
+  # <schema>.barriers_definite, ltree resolved via the FWA join (mirrors
+  # FALLS + bcfp barriers_user_definite.sql). link#200.
+  expect_match(sql, "'USER_DEFINITE'::text\\s+AS barrier_source")
+  expect_match(sql, "FROM working_pars\\.barriers_definite d")
+  expect_match(sql, "'USER_DEFINITE-' \\|\\|")
+  expect_match(sql, "JOIN whse_basemapping\\.fwa_stream_networks_sp s")
+  # Blocks all species in the set (the override-exempt user set is universal).
+  expect_match(sql,
+               "ARRAY\\['BT', 'CH', 'CM', 'CO', 'PK', 'SK', 'ST', 'WCT'\\]::text\\[\\]\\s+AS blocks_species")
+  # Only blue_line_key + downstream_route_measure referenced from `d`
+  # (empty-fallback shape safety) — no d.wscode_ltree / d.barrier_type.
+  expect_no_match(sql, "d\\.wscode_ltree")
+  expect_no_match(sql, "d\\.barrier_type")
+})
+
 test_that("lnk_barriers_unify derives gradient blocks_species per class from parameters_fresh", {
   captured <- character(0)
   m_query <- mockery::mock(data.frame(x = integer(0)))
