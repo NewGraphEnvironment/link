@@ -166,10 +166,10 @@ lnk_compare_wsg <- function(conn, aoi, cfg, loaded,
       call. = FALSE
     )
   }
-  # `mapping_code = TRUE` requires conn_ref also for the
-  # streams_mapping_code comparison query. Already validated above
-  # when reference == 'bcfishpass' (the only supported reference today).
-  # No additional gate needed.
+  # `mapping_code = TRUE` is now tunnel-free (link#175) — it diffs against
+  # the LOCAL bcfp snapshot (fresh.streams_vw_bcfp), not conn_ref. conn_ref
+  # is still required above for the rollup (bcfp habitat_linear isn't in the
+  # snapshot).
 
   # Run the modelling pipeline. `mapping_code = mapping_code` routes
   # the streams_access + streams_mapping_code build through pipeline_run's
@@ -194,12 +194,11 @@ lnk_compare_wsg <- function(conn, aoi, cfg, loaded,
   mc_stats <- NULL
   if (isTRUE(mapping_code)) {
     # Diff link's `<persist_schema>.streams_mapping_code` (built by
-    # pipeline_run's mapping_code phase) against reference's. Tunnel-
-    # bound — needs conn_ref. Build path was already executed above.
-    bcfp_species <- c("bt", "ch", "cm", "co", "pk", "sk", "st", "wct")
-    mc_stats <- .lnk_compare_wsg_mapping_code_diff( # nolint: object_usage_linter
-      conn = conn, conn_ref = conn_ref,
-      aoi = aoi, cfg = cfg, bcfp_species = bcfp_species)
+    # pipeline_run's mapping_code phase) against the LOCAL bcfp snapshot —
+    # tunnel-free (link#175). Species auto-resolve to the WSG-active set.
+    mc_stats <- lnk_compare_mapping_code( # nolint: object_usage_linter
+      conn = conn, aoi = aoi, cfg = cfg,
+      reference = reference, species = species)
   }
 
   list(rollup = rollup, mapping_code = mc_stats)
@@ -510,27 +509,4 @@ lnk_compare_wsg <- function(conn, aoi, cfg, loaded,
     round(100 * (out$link_value - out$ref_value) /
           out$ref_value, 1))
   out
-}
-
-#' Diff link's streams_mapping_code vs reference's, return per-species stats
-#'
-#' Joins on `(blue_line_key, downstream_route_measure, length_metre)` —
-#' the canonical segment identity across link and bcfp. NA-aware
-#' comparison: `NA == NA` counts as match; `NA` vs concrete value is a
-#' mismatch.
-#'
-#' Returns one row per `bcfp_species`. `top_pattern` is the dominant
-#' "<link_value> | <bcfp_value>" diff string; useful for class-A/B/C/D
-#' taxonomy lookup downstream.
-#'
-#' @noRd
-.lnk_compare_wsg_mapping_code_diff <- function(conn, conn_ref, aoi, cfg,
-                                               bcfp_species) {
-  # Delegates to the stand-alone lnk_compare_mapping_code() (link#175). Passing
-  # conn_ref selects the legacy tunnel path (diff vs bcfishpass.streams_mapping_code
-  # over :63333); the tunnel-free local-snapshot path is the default when
-  # conn_ref is NULL. The shared diff logic lives in .lnk_mc_diff().
-  lnk_compare_mapping_code(conn, aoi = aoi, cfg = cfg,
-                           reference = "bcfishpass", conn_ref = conn_ref,
-                           species = bcfp_species)
 }

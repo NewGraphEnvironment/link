@@ -20,7 +20,7 @@
 #' function via `lnk_pipeline_run(..., mapping_code = TRUE)`. Operators
 #' can also call this directly against persist schema with the tunnel
 #' down — the build is tunnel-independent (the diff vs reference is
-#' separate, see `.lnk_compare_wsg_mapping_code_diff`).
+#' separate, see [lnk_compare_mapping_code()]).
 #'
 #' Tracks link#187 (tunnel decouple + portable build).
 #'

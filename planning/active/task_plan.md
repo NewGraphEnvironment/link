@@ -12,9 +12,10 @@ Promote the `with_mapping_code` flag to a stand-alone `lnk_compare_mapping_code(
 
 ## Phase 2 — compare-family wiring + back-compat
 
-- [ ] `lnk_compare_wsg(mapping_code = TRUE)` routes through the new export (tunnel-free default); preserve call surface.
-- [ ] `data-raw/wsg_compare.R`: tunnel-free mapping_code path; drop mandatory `PG_PASS_SHARE`/`:63333` for it.
-- [ ] Tests + `/code-check` + commit.
+- [x] `lnk_compare_wsg(mapping_code = TRUE)` routes through `lnk_compare_mapping_code` tunnel-free (no `conn_ref` for the mapping_code lens; rollup still uses the tunnel — snapshot lacks `habitat_linear`). Removed dead `.lnk_compare_wsg_mapping_code_diff` helper; fixed the `lnk_mapping_code` doc ref.
+- [x] `data-raw/wsg_compare.R`: added `wsg_compare_mapping_code()` — tunnel-free (local conn only, no `PG_PASS_SHARE`/`:63333`). The dispatcher's post-consolidate compare entry.
+- [x] Tests: repointed `lnk_compare_wsg` composition test to mock `lnk_compare_mapping_code`; 93 compare pass / 1216 total (lone FAIL = env db_conn). Live `wsg_compare_mapping_code("PARS")` = 98.95% with `PG_PASS_SHARE` unset.
+- [ ] `/code-check` + commit.
 
 ## Phase 3 — orchestrator: tunnel-free + M1-dispatch + post-consolidate recompute
 

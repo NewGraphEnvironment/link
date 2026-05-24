@@ -66,3 +66,33 @@ wsg_compare <- function(wsg, config, species = NULL,
   }
   rollup
 }
+
+
+# Tunnel-free per-segment mapping_code parity (link#175). Diffs link's
+# persisted <persist_schema>.streams_mapping_code against the LOCAL bcfp
+# snapshot fresh.streams_vw_bcfp (loaded by snapshot_bcfp.sh --with-bcfp-views
+# from public S3). No bcfp tunnel, no PG_PASS_SHARE, no :63333 — a single
+# local connection. This is the compare the orchestrator runs on the
+# dispatcher after consolidate (cyphers just run + persist).
+#
+# Return: tibble wsg, species, total_segs, match_pct, n_diffs, top_pattern,
+# top_pattern_count.
+wsg_compare_mapping_code <- function(wsg, config, species = NULL,
+                                     reference = "bcfishpass") {
+  stopifnot(
+    is.character(wsg), length(wsg) == 1L, nzchar(wsg),
+    grepl("^[A-Z]{3,5}$", wsg),
+    inherits(config, "lnk_config"),
+    is.null(species) || is.character(species),
+    is.character(reference), length(reference) == 1L, nzchar(reference)
+  )
+
+  conn <- DBI::dbConnect(RPostgres::Postgres(),
+    host = "localhost", port = 5432, dbname = "fwapg",
+    user = "postgres", password = "postgres")
+  on.exit(try(DBI::dbDisconnect(conn), silent = TRUE), add = TRUE)
+
+  link::lnk_compare_mapping_code(
+    conn = conn, aoi = wsg, cfg = config,
+    reference = reference, species = species)
+}

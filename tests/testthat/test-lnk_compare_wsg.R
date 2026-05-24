@@ -315,8 +315,8 @@ test_that("lnk_compare_wsg composes mapping_code branch when mapping_code=TRUE",
       habitat_type = "spawning", unit = "km",
       link_value = 10, ref_value = 11, diff_pct = -9.1)
   }
-  m_mc_diff <- function(...) {
-    calls <<- c(calls, "mapping_code_diff")
+  m_mc <- function(...) {
+    calls <<- c(calls, "mapping_code")
     tibble::tibble(
       wsg = "ADMS", species = "BT",
       total_segs = 100L, match_pct = 99.5, n_diffs = 0L,
@@ -327,7 +327,7 @@ test_that("lnk_compare_wsg composes mapping_code branch when mapping_code=TRUE",
   with_mocked_bindings(
     lnk_pipeline_run = m_pipeline_run,
     lnk_compare_rollup = m_rollup,
-    .lnk_compare_wsg_mapping_code_diff = m_mc_diff,
+    lnk_compare_mapping_code = m_mc,
     {
       with_mocked_bindings(
         dbExecute = m_exec,
@@ -349,7 +349,7 @@ test_that("lnk_compare_wsg composes mapping_code branch when mapping_code=TRUE",
   # cleanup_working passes straight through (no special-case retention
   # needed since build runs inside pipeline_run, not in compare_wsg).
   # Then rollup reads persisted state, then diff fires against persist.
-  expect_equal(calls, c("pipeline_run", "rollup", "mapping_code_diff"))
+  expect_equal(calls, c("pipeline_run", "rollup", "mapping_code"))
   expect_false(pipeline_args$cleanup_working)
   expect_true(pipeline_args$mapping_code)
 
