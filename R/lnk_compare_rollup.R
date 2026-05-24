@@ -201,7 +201,7 @@ lnk_compare_rollup <- function(conn, aoi, cfg,
       "SELECT %s AS species_code, s.id_segment, s.length_metre,
               s.edge_type, h.spawning, h.rearing
          FROM %s.streams s
-         JOIN %s.streams_habitat_%s h ON s.id_segment = h.id_segment
+         JOIN %s.streams_habitat_%s h ON s.id_segment = h.id_segment AND s.watershed_group_code = h.watershed_group_code
         WHERE s.watershed_group_code = %s",
       sp_lit, tn$schema, tn$schema, tolower(sp), aoi_lit)  # nolint: indentation_linter
   }, character(1)), collapse = "\n        UNION ALL\n        ")
@@ -232,7 +232,7 @@ lnk_compare_rollup <- function(conn, aoi, cfg,
     sprintf(
       "SELECT %s AS species_code, s.waterbody_key
          FROM %s.streams s
-         JOIN %s.streams_habitat_%s h ON s.id_segment = h.id_segment
+         JOIN %s.streams_habitat_%s h ON s.id_segment = h.id_segment AND s.watershed_group_code = h.watershed_group_code
         WHERE s.watershed_group_code = %s
           AND h.lake_rearing = TRUE",
       sp_lit, tn$schema, tn$schema, tolower(sp), aoi_lit)  # nolint: indentation_linter
@@ -253,7 +253,7 @@ lnk_compare_rollup <- function(conn, aoi, cfg,
     sprintf(
       "SELECT %s AS species_code, s.waterbody_key
          FROM %s.streams s
-         JOIN %s.streams_habitat_%s h ON s.id_segment = h.id_segment
+         JOIN %s.streams_habitat_%s h ON s.id_segment = h.id_segment AND s.watershed_group_code = h.watershed_group_code
         WHERE s.watershed_group_code = %s
           AND h.wetland_rearing = TRUE",
       sp_lit, tn$schema, tn$schema, tolower(sp), aoi_lit)  # nolint: indentation_linter

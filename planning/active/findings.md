@@ -30,6 +30,14 @@ From the `fish_passage_*_reporting` repos' `wsg_code`/`wsg` params:
 
 M1 fired up 3 cyphers in parallel (`cypher_up.sh --workspace job1/2/3`, ~3 min each from warm snapshot `228350154`), verified ready, burned clean (`cypher_down.sh`, 0 tofu resources). DO auth + Tailscale confirmed. `wsgs_run_pipeline.sh` is the all-in-one (spin→prep→dispatch→consolidate→compare→burn via `trap EXIT`).
 
+## Phase 1 done + id_segment bug (2026-05-24)
+
+`lnk_compare_mapping_code()` built tunnel-free (reads local `fresh.streams_vw_bcfp`); `.lnk_compare_wsg_mapping_code_diff` delegates; shared merge in `.lnk_mc_diff`. **Live PARS BT 98.95% tunnel-free** (reproduced the hand-validation). WSG-active species resolution added (PARS → BT only; CO empty in upper Peace, correctly excluded — avoids spurious 0%).
+
+**id_segment is NOT globally unique** (per-WSG row index): `fresh.streams` = 1,542,427 rows but only **80,555 distinct id_segment** (~19× repeat across WSGs; unique only on the persist PK `(id_segment, watershed_group_code)`). Any persist join on `id_segment` ALONE is a ~19-22× cartesian. Found two: `lnk_compare_mapping_code` (fixed in build) and **`lnk_compare_rollup`** (3 joins — was inflating km ~22×: PARS BT spawning_km 36,820 → 1,681; **tactically fixed to full-PK joins this phase**). Safe: `lnk_compare_wsg`/`lnk_pipeline_persist` (working schema = single WSG).
+
+**bcfp `segmented_stream_id` (verified):** globally unique (4.23M distinct); position-derived from `blue_line_key` + `downstream_route_measure` (data dictionary confirms); text; integer part = blk, fraction = `round(measure,3)`-derived; segmentation-dependent. Root fix = make link `id_segment` likewise position-derived → filed **#203** (also enables direct `id_segment == segmented_stream_id` joins).
+
 ## Open / watch
 
 - Reference freshness: re-snapshot if the run slips past Tue 2026-05-27 (next bcfp rebuild). Orchestrator Step 1+2 re-snapshots each host automatically.

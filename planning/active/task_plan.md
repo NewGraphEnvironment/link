@@ -4,9 +4,10 @@ Promote the `with_mapping_code` flag to a stand-alone `lnk_compare_mapping_code(
 
 ## Phase 1 — `lnk_compare_mapping_code()` standalone + tunnel-free (reusable core)
 
-- [ ] New export `R/lnk_compare_mapping_code.R`: `lnk_compare_mapping_code(conn, aoi, cfg, reference = "bcfishpass", species = NULL)`. Diff link's `<persist>.streams_mapping_code` (joined to `<persist>.streams` for blk+measure) vs local `fresh.streams_vw_bcfp` on `(blue_line_key, round(downstream_route_measure,1))` per species. Returns `wsg, species, joined, matches, match_pct, n_diffs` + top token-mismatch pairs. Single `conn`, no `conn_ref`.
-- [ ] Refactor `.lnk_compare_wsg_mapping_code_diff` (`R/lnk_compare_wsg.R`) to delegate; `reference`-switch keeps the tunnel path available but default tunnel-free.
-- [ ] Tests `tests/testthat/test-lnk_compare_mapping_code.R`: SQL-shape (mock conn) + live-DB PARS BT ≈ 98.95% vs the loaded snapshot.
+- [x] New export `R/lnk_compare_mapping_code.R`: tunnel-free (reference = local `fresh.streams_vw_bcfp`, `conn_ref=NULL` default; tunnel path kept for back-compat). Joins `<persist>.streams_mapping_code` → `<persist>.streams` on the **full PK** `(id_segment, watershed_group_code)`, diffs vs the snapshot on `(blue_line_key, round(measure,3))` per **WSG-active** species. Returns `wsg, species, total_segs, match_pct, n_diffs, top_pattern, top_pattern_count`.
+- [x] Refactor `.lnk_compare_wsg_mapping_code_diff` → delegates; shared merge/match in `.lnk_mc_diff`.
+- [x] Tests: `test-lnk_compare_mapping_code.R` (arg-val + `.lnk_mc_diff` compose + live PARS BT) + adapted the moved test in `test-lnk_compare_wsg.R`. 93 compare tests pass; **live PARS BT 98.95% tunnel-free**.
+- [x] **Bug caught + fixed:** `id_segment` is per-WSG (not globally unique; 80,555 distinct / 1.5M rows → ~22× cartesian on `id_segment`-alone persist joins). Fixed `lnk_compare_rollup`'s 3 joins to full PK (PARS BT spawning_km 36,820 → 1,681). Added WSG-active species resolution (avoids spurious 0% for absent species). Filed root issue **#203** (position-derived globally-unique `id_segment`, bcfp-style).
 - [ ] `/code-check` + commit.
 
 ## Phase 2 — compare-family wiring + back-compat
