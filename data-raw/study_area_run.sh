@@ -193,26 +193,33 @@ if [ "$N_CY" -gt 0 ]; then
 fi
 
 # --- run buckets DS-first (dispatcher local + cyphers, parallel) ---
+# Per-WSG SOFT-FAIL (mirrors wsgs_run_host.R resume-safe behaviour): a single
+# WSG error logs a warning and the loop CONTINUES. It must NEVER abort the host
+# and trip the trap-burn before consolidate — that lost a whole run + the
+# cyphers' data on 2026-05-25 (one species-less WSG -> exit 1 -> FATAL -> burn).
+# Missing WSGs surface as gaps in the final compare, not as data loss.
 echo "=== run buckets (DS-first) ==="
 ( cd "$REPO_ROOT"
   for w in $(echo "$DISP_BUCKET" | tr ',' ' '); do
-    LNK_LOAD=loadall Rscript data-raw/wsg_run_one.R "$w" "$CONFIG" || exit 1
+    LNK_LOAD=loadall Rscript data-raw/wsg_run_one.R "$w" "$CONFIG" \
+      || echo "[WARN] dispatcher WSG $w failed (continuing)"
   done ) > "$LOG_DIR/${TS}_run_local.log" 2>&1 &
 LOCAL_PID=$!
 declare -A CY_PID
 for WS in "${CY_WS_ARR[@]}"; do
   IP="${CY_IP[$WS]}"; B_SPACE=$(echo "${CY_BUCKET[$WS]}" | tr ',' ' ')
-  ssh "cypher@$IP" "set -e; cd ~/Projects/repo/link && for w in $B_SPACE; do Rscript data-raw/wsg_run_one.R \$w '$CONFIG'; done" \
+  ssh "cypher@$IP" "cd ~/Projects/repo/link && for w in $B_SPACE; do Rscript data-raw/wsg_run_one.R \$w '$CONFIG' || echo \"[WARN] cy WSG \$w failed\"; done" \
     > "$LOG_DIR/${TS}_run_$WS.log" 2>&1 &
   CY_PID[$WS]=$!
 done
-RUN_FAIL=0
-wait $LOCAL_PID || { echo "  ✗ dispatcher run failed; see $LOG_DIR/${TS}_run_local.log"; RUN_FAIL=1; }
+# A non-zero host exit (e.g. ssh dropped) is logged, NOT fatal — we still
+# consolidate whatever each host persisted so a late failure can't lose the
+# other hosts' work.
+wait $LOCAL_PID || echo "  WARN: dispatcher run returned non-zero; see $LOG_DIR/${TS}_run_local.log"
 for WS in "${CY_WS_ARR[@]}"; do
-  wait "${CY_PID[$WS]}" || { echo "  ✗ cy[$WS] run failed; see $LOG_DIR/${TS}_run_$WS.log"; RUN_FAIL=1; }
+  wait "${CY_PID[$WS]}" || echo "  WARN: cy[$WS] run returned non-zero; see $LOG_DIR/${TS}_run_$WS.log"
 done
-[ "$RUN_FAIL" = "0" ] || { echo "FATAL: a host run failed; aborting (cyphers burn on exit)"; exit 1; }
-echo "  ✓ all host runs complete"
+echo "  ✓ host runs finished (per-WSG soft-fail; gaps surface in compare)"
 
 # --- consolidate cyphers -> dispatcher ---
 if [ "$N_CY" -gt 0 ]; then
