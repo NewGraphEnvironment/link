@@ -46,7 +46,7 @@ The proven flow = `cypher_up.sh` → `cypher_prep.sh` → per-host `lnk_pipeline
 
 - [x] **Authoritative parity obtained** (post-recompute, all 50 WSGs on M1): **median 99.66%, mean 99.11%**, 130/148 rows ≥99%. Genuine divergences (recompute-stable → taxonomy): SETN salmon ~94%, UNRS BT 61.8%.
 - [x] **Methodology finding:** post-consolidate recompute REQUIRED (drainage-closed insufficient). Driver does it (recompute diverged WSGs <99% via full pipeline, then re-compare). Filed **#205** — the full-pipeline recompute is ~2× on diverged WSGs (re-runs streams/habitat to redo cheap access); the cheap access-only recompute (reuse persisted streams/habitat) makes recompute-ALL bulletproof + ~1×.
-- [ ] **OPEN DECISION (next session):** build #205 (cheap recompute) → then one clean driver-automated run that's both validated AND fast. (Numbers already in via manual recompute; the clean run validates the driver's auto-recompute end-to-end.)
+- [x] **DECIDED: build #205** (cheap recompute) → Phase 7 below. Then one clean driver-automated run that's both validated AND fast.
 - [ ] Annotate SETN/UNRS via `research/bcfp_divergence_taxonomy.yml` (lnk_parity_annotate).
 
 ## Phase 6 — docs + release
@@ -55,9 +55,19 @@ The proven flow = `cypher_up.sh` → `cypher_prep.sh` → per-host `lnk_pipeline
 - [ ] `research/provincial_parity_2026_05_25.md` (authoritative numbers — written this compact-prep).
 - [ ] RUNBOOK (recompute step); NEWS + DESCRIPTION bump; `/planning-archive`; `/gh-pr-push` (after #205 + clean run).
 
+## Phase 7 — #205 cheap access-only recompute (the efficiency keystone)
+
+Plan: `~/.claude/plans/atomic-conjuring-tome.md`. Pre-flight DONE (PSCIS in persist barriers ✓; preservable phase-1 cols ✓). Builds on this `175-` branch.
+
+- [ ] **7a.** New export `R/lnk_access.R` — `lnk_access(conn, cfg, aoi, table_streams, table_barriers, table_to, merge=FALSE, presence=NULL, species=NULL)`. Portable access builder (twin of `lnk_mapping_code`, `@family compare`, `table_<role>` params). Builds per-species `_access` + source views internally via `lnk_barriers_views(barriers_table=table_barriers)`; runs `lnk_pipeline_access` (observations=NULL, crossings=NULL) → scratch. `merge=FALSE` overwrite; `merge=TRUE` surgical UPDATE on `(id_segment, watershed_group_code)`: SET cross-WSG cols (`has_barriers_*`, `dam_dnstr_ind`), PRESERVE `remediated_dnstr_ind`, `access_<sp>` = 0-if-blocked / keep-2 / else-1. `devtools::document()`.
+- [ ] **7b.** `data-raw/wsg_recompute_one.R` (sibling of `wsg_run_one.R`): `lnk_access(merge=TRUE, table_to=<persist>.streams_access)` + `lnk_mapping_code` (→ `<persist>.streams_mapping_code` via scratch + DELETE/INSERT). Wire `study_area_run.sh` recompute block to call it; switch to recompute-ALL (cheap); `--recompute=all|diverged` (default all). Docs: `research/study_area_run.md` past-tense #205, `RUNBOOK.md` §5.
+- [ ] **7c.** `tests/testthat/test-lnk_access.R` (arg-val + gated DB). M1 validation: `wsg_recompute_one.R FINA/PARA` reproduces full-pipeline recompute (FINA 99.8% / PARA 99.3%) via `lnk_compare_mapping_code`, in seconds; REMEDIATED preserved; `;DAM` present.
+- [ ] `/code-check` + commit per sub-phase.
+
 ## Validation
 
 - [ ] `devtools::test()` green; Phase 1 live-DB reproduces PARS BT ≈ 98.95% tunnel-free
+- [ ] #205: `lnk_access(merge=TRUE)` recompute reproduces full-pipeline numbers in ~seconds
 - [ ] Phase 4 4-WSG run completes spin→…→burn, cyphers torn down clean
 - [ ] Phase 5 study-area `match_pct` recorded; PARS shows `;DAM`
 - [ ] `/code-check` clean on each commit
