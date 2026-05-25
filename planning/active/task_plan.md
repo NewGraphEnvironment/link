@@ -17,6 +17,12 @@ Promote the `with_mapping_code` flag to a stand-alone `lnk_compare_mapping_code(
 - [x] Tests: repointed `lnk_compare_wsg` composition test to mock `lnk_compare_mapping_code`; 93 compare pass / 1216 total (lone FAIL = env db_conn). Live `wsg_compare_mapping_code("PARS")` = 98.95% with `PG_PASS_SHARE` unset.
 - [ ] `/code-check` + commit.
 
+## Phase 3a — consolidate/persist shape-tolerance (3-WSG smoke fixes, #204)
+
+- [x] `data-raw/schema_consolidate.R`: shape-tolerant COPY — enumerate columns on both hosts, COPY the shared set **by name** in dest ordinal order (was positional `SELECT *` → `FROM STDIN`, which broke on any species-column-count drift). Host- and species-count-agnostic; nothing hardcoded. Sibling to #185.
+- [x] `data-raw/cypher_prep.sh`: align persist species to `cfg$species` (matches `lnk_pipeline_run` R/lnk_pipeline_run.R:157), not `parameters_fresh` (11 sp incl CT/DV/RB). Removes the cross-host wide-table drift at source.
+- [x] Filed #204 (persist_init blind to species-column-set drift; abstract/no-hardcode north star). `/code-check` clean (round 1 — 0 findings).
+
 ## Phase 3 — orchestrator: tunnel-free + M1-dispatch + post-consolidate recompute
 
 - [ ] `wsgs_run_pipeline.sh`: drop `:63333` pre-flight + `PG_PASS_SHARE` req; add **Step 9b post-consolidate recompute** (loop `lnk_pipeline_access` + `lnk_mapping_code` over consolidated barriers for all run WSGs, then one `lnk_compare_mapping_code`). Fixes cross-WSG `;DAM` in distributed runs.

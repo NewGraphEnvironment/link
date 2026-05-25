@@ -210,6 +210,60 @@ schema_consolidate <- function(schema,
       next
     }
 
+    # 3.4. Per-table SHARED-column resolution for shape-tolerant COPY.
+    # `COPY (SELECT *) TO STDOUT` -> `COPY <t> FROM STDIN` is positional:
+    # it breaks ("extra data after last expected column") the moment a
+    # source table's column set differs from the destination's. This
+    # happens across hosts whenever a wide per-species table
+    # (streams_access, streams_mapping_code) was created from a different
+    # species set — e.g. a warm cypher snapshot baked an 11-species
+    # streams_access (ct/dv/rb included) while the dispatcher's persist
+    # is 8-species. Caught 2026-05-25 in the 3-WSG smoke (link#175).
+    #
+    # Fix: enumerate columns on BOTH sides, COPY only the intersection,
+    # BY NAME, in destination ordinal order. Source-only columns are
+    # dropped at SELECT; destination-only columns take their default /
+    # NULL. Both COPY statements list the same ordered column vector, so
+    # ordinal drift between hosts no longer matters.
+    tbl_list_sql <- paste(sprintf("'%s'", wgc_tables), collapse = ", ")
+    cols_sql <- gsub("\n\\s+", " ", sprintf(
+      "SELECT table_name, column_name FROM information_schema.columns
+       WHERE table_schema = '%s' AND table_name IN (%s)
+       ORDER BY table_name, ordinal_position", schema, tbl_list_sql))
+    dest_cols_df <- DBI::dbGetQuery(dest_conn, cols_sql)
+    dest_cols <- split(dest_cols_df$column_name, dest_cols_df$table_name)
+    src_cols_inner <- if (via == "docker") {
+      sprintf("docker exec %s psql -U %s -d %s -t -A -c \"%s\"",
+              container, pg_user, pg_db, cols_sql)
+    } else {
+      sprintf("PGHOST=localhost PGPORT=5432 PGDATABASE=%s PGUSER=%s PGPASSWORD=postgres psql -t -A -c \"%s\"",
+              pg_db, pg_user, cols_sql)
+    }
+    src_cols_inner_esc <- gsub("'", "'\\''", src_cols_inner, fixed = TRUE)
+    src_cols_raw <- system(sprintf("ssh '%s' '%s'", src$host, src_cols_inner_esc),
+                           intern = TRUE)
+    src_cols_raw <- src_cols_raw[nzchar(src_cols_raw)]
+    src_cols_split <- strsplit(src_cols_raw, "|", fixed = TRUE)
+    src_cols <- split(
+      vapply(src_cols_split, `[`, character(1), 2L),
+      vapply(src_cols_split, `[`, character(1), 1L))
+    # Destination ordinal order, restricted to columns present on source.
+    shared_cols <- lapply(wgc_tables, function(t) {
+      dc <- dest_cols[[t]]
+      dc[dc %in% src_cols[[t]]]
+    })
+    names(shared_cols) <- wgc_tables
+    for (t in wgc_tables) {
+      dc <- dest_cols[[t]]; sc <- src_cols[[t]]; sh <- shared_cols[[t]]
+      if (length(sh) < length(dc) || length(sh) < length(sc)) {
+        log(src$host, " -> NOTE: column drift on '", t, "' — COPY ",
+            length(sh), " shared cols (dest=", length(dc), ", src=",
+            length(sc), "); src-only: ",
+            paste(setdiff(sc, dc), collapse = ","), "; dest-only: ",
+            paste(setdiff(dc, sc), collapse = ","))
+      }
+    }
+
     # 3.5. Bucket-aware destination cleanup. DELETE the bucket's WSGs
     # from every destination table BEFORE the COPY-INSERTs so PK
     # constraints don't fire on the inbound rows.
@@ -256,9 +310,10 @@ schema_consolidate <- function(schema,
     log(src$host, " -> COPY (bucket-filtered) for ", length(wgc_tables),
         " tables")
     for (t in wgc_tables) {
+      col_list <- paste(shared_cols[[t]], collapse = ", ")
       src_sql <- sprintf(
-        "COPY (SELECT * FROM %s.%s WHERE watershed_group_code IN (%s)) TO STDOUT",
-        schema, t, wsg_list_sql)
+        "COPY (SELECT %s FROM %s.%s WHERE watershed_group_code IN (%s)) TO STDOUT",
+        col_list, schema, t, wsg_list_sql)
       src_inner <- if (via == "docker") {
         sprintf("docker exec -i %s psql -U %s -d %s -c \"%s\"",
                 container, pg_user, pg_db, src_sql)
@@ -290,8 +345,10 @@ schema_consolidate <- function(schema,
         unlink(tmpf)
         next
       }
-      # Stage 2: local temp file -> destination COPY FROM STDIN.
-      dest_sql <- sprintf("COPY %s.%s FROM STDIN", schema, t)
+      # Stage 2: local temp file -> destination COPY FROM STDIN. Same
+      # explicit shared-column list as the source SELECT so the transfer
+      # is by-name (shape-tolerant), not positional.
+      dest_sql <- sprintf("COPY %s.%s (%s) FROM STDIN", schema, t, col_list)
       stage2 <- sprintf(
         "PGHOST=localhost PGPORT=5432 PGDATABASE=fwapg PGUSER=postgres PGPASSWORD=postgres psql -v ON_ERROR_STOP=1 -c \"%s\" < %s",
         dest_sql, shQuote(tmpf))
