@@ -28,8 +28,10 @@
 #
 # The number of --focal flags MUST equal 1 (dispatcher) + N cyphers, in
 # order: first --focal -> dispatcher, the rest -> cyphers in --cy-workspaces
-# order. Cyphers burn right after consolidate (minimise idle); a trap EXIT
-# is the safety net.
+# order. Put the LARGEST area on the dispatcher (first --focal): it is the
+# fast, free local host, while cyphers are slower + paid — give them the
+# smaller areas so they finish + burn sooner. Cyphers burn right after
+# consolidate (minimise idle); a trap EXIT is the safety net.
 
 set -euo pipefail
 
@@ -164,8 +166,16 @@ if [ "$N_CY" -gt 0 ]; then
   echo "=== prep cyphers (cypher_prep.sh) ==="
   for WS in "${CY_WS_ARR[@]}"; do
     IP="${CY_IP[$WS]}"
-    ( scp -q "$REPO_ROOT/data-raw/cypher_prep.sh" "cypher@$IP:/tmp/cypher_prep.sh" \
-      && ssh "cypher@$IP" "bash /tmp/cypher_prep.sh" ) > "$LOG_DIR/${TS}_prep_$WS.log" 2>&1 &
+    ( # Wait for the fresh droplet's sshd before scp — cypher_up returns as
+      # soon as the IP is assigned, often before SSH is up, which races scp
+      # into "Connection closed". Poll up to ~150s, accept the new host key.
+      for _ in $(seq 1 30); do
+        ssh -o ConnectTimeout=5 -o BatchMode=yes -o StrictHostKeyChecking=accept-new \
+          "cypher@$IP" 'true' 2>/dev/null && break
+        sleep 5
+      done
+      scp -q "$REPO_ROOT/data-raw/cypher_prep.sh" "cypher@$IP:/tmp/cypher_prep.sh" \
+        && ssh "cypher@$IP" "bash /tmp/cypher_prep.sh" ) > "$LOG_DIR/${TS}_prep_$WS.log" 2>&1 &
   done
   wait
   for WS in "${CY_WS_ARR[@]}"; do
