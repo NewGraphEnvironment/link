@@ -66,6 +66,12 @@ LOG_DIR="$REPO_ROOT/data-raw/logs/study_area_run"
 mkdir -p "$LOG_DIR"
 CYPHER_DIR="$HOME/Projects/repo/rtj/scripts/cypher"
 CYPHER_TF="$HOME/Projects/repo/rtj/env/do/dev/cypher"
+# Cyphers must run the SAME git ref as the dispatcher so they carry these
+# driver scripts (wsg_run_one.R etc.) + a matching link install. cypher_prep
+# reads CYPHER_PREP_BRANCH (default main, which lacks these scripts); pass the
+# dispatcher's current branch. The branch MUST be pushed to origin first —
+# cypher_prep does `git fetch origin && git reset --hard origin/$BRANCH`.
+LINK_BRANCH="$(git -C "$REPO_ROOT" branch --show-current)"
 
 # Resolve persist schema (don't hardcode "fresh").
 SCHEMA=$(cd "$REPO_ROOT" && Rscript -e \
@@ -74,6 +80,7 @@ SCHEMA=$(cd "$REPO_ROOT" && Rscript -e \
 
 echo "=== study_area_run $TS ==="
 echo "  config:       $CONFIG"
+echo "  branch:       $LINK_BRANCH (cyphers run this ref)"
 echo "  persist:      $SCHEMA"
 echo "  cyphers:      ${CY_WS_ARR[*]:-<none>} ($N_CY)"
 echo "  log dir:      $LOG_DIR"
@@ -175,7 +182,7 @@ if [ "$N_CY" -gt 0 ]; then
         sleep 5
       done
       scp -q "$REPO_ROOT/data-raw/cypher_prep.sh" "cypher@$IP:/tmp/cypher_prep.sh" \
-        && ssh "cypher@$IP" "bash /tmp/cypher_prep.sh" ) > "$LOG_DIR/${TS}_prep_$WS.log" 2>&1 &
+        && ssh "cypher@$IP" "CYPHER_PREP_BRANCH='$LINK_BRANCH' bash /tmp/cypher_prep.sh" ) > "$LOG_DIR/${TS}_prep_$WS.log" 2>&1 &
   done
   wait
   for WS in "${CY_WS_ARR[@]}"; do
