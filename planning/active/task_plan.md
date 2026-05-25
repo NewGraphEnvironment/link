@@ -23,12 +23,19 @@ Promote the `with_mapping_code` flag to a stand-alone `lnk_compare_mapping_code(
 - [x] `data-raw/cypher_prep.sh`: align persist species to `cfg$species` (matches `lnk_pipeline_run` R/lnk_pipeline_run.R:157), not `parameters_fresh` (11 sp incl CT/DV/RB). Removes the cross-host wide-table drift at source.
 - [x] Filed #204 (persist_init blind to species-column-set drift; abstract/no-hardcode north star). `/code-check` clean (round 1 — 0 findings).
 
-## Phase 3 — orchestrator: tunnel-free + M1-dispatch + post-consolidate recompute
+## Phase 3 — orchestrator: REVISED 2026-05-25 (reuse smoke flow, NOT old-orchestrator refactor)
 
-- [ ] `wsgs_run_pipeline.sh`: drop `:63333` pre-flight + `PG_PASS_SHARE` req; add **Step 9b post-consolidate recompute** (loop `lnk_pipeline_access` + `lnk_mapping_code` over consolidated barriers for all run WSGs, then one `lnk_compare_mapping_code`). Fixes cross-WSG `;DAM` in distributed runs.
-- [ ] M1-as-dispatcher: generalize host model in `wsgs_run_pipeline.sh` + `wsgs_dispatch.sh` (drop hardcoded self-`ssh m1`).
-- [ ] `wsgs_run_host.R`: cyphers run + persist only — drop per-host tunnel compare.
-- [ ] `/code-check` + commit.
+**Decision (user steer "are these already dealt with in our start-to-finish scripts?"):** the 3-WSG smoke already proved an M1-dispatch, tunnel-free, abstract flow that BYPASSES the old M4-centric `wsgs_run_pipeline.sh`/`wsgs_dispatch.sh`/`wsgs_run_host.R`. Those carry M4/tunnel baggage and are NOT being refactored. Discarded the Plan-agent's 30-edit refactor.
+
+The proven flow = `cypher_up.sh` → `cypher_prep.sh` → per-host `lnk_pipeline_run(aoi=WSG, mapping_code=TRUE)` (local, no tunnel, no M4) → `schema_consolidate(sources=list({host,via,bucket}))` (shape-tolerant) → `wsg_compare_mapping_code(wsg,cfg)` (tunnel-free) → `cypher_down.sh`.
+
+- [x] **Cross-WSG `;DAM` solved WITHOUT recompute** (validated `public.wsg_outlet` closure on PARS → PCEA/UPCE/LPCE/FINA/PARA/LBTN, depth-2 dams DS-of PARS depth-3): drainage-CLOSED bucket per host + DS-first order → downstream dam barriers persist before upstream WSG computes access → `;DAM` correct from the per-host run. One study area (closed) per host; study areas are drainage-independent (roots 100/200/400).
+- [x] Built 4 lean reusable scripts (reuse existing cypher_up/prep/down + schema_consolidate + lnk_pipeline_run + wsg_compare_mapping_code):
+  - `data-raw/study_area_wsgs.R` — closure + DS-first list via `public.wsg_outlet`.
+  - `data-raw/wsg_run_one.R` — `lnk_pipeline_run(mapping_code=TRUE)` for one WSG, local, host-agnostic (`LNK_LOAD=loadall` dispatcher / `library(link)` cyphers).
+  - `data-raw/study_area_compare.R` — tunnel-free `wsg_compare_mapping_code` loop → CSV.
+  - `data-raw/study_area_run.sh` — driver: pre-flight (tunnel-free) → spin → prep → run DS-first buckets (dispatcher local + cyphers) → consolidate cyphers→dispatcher → BURN (minimise idle) → compare → CSV. trap-EXIT burn safety net.
+- [x] `/code-check` (1 fresh-eyes round): fixed burn-verification pipefail (`|| n="?"`), added bucket-overlap warning; accepted empty-array idiom (M1 bash 5.3). Committed.
 
 ## Phase 4 — 4-WSG end-to-end test (mechanics)
 
