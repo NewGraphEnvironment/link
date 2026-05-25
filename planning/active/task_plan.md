@@ -29,7 +29,7 @@ Promote the `with_mapping_code` flag to a stand-alone `lnk_compare_mapping_code(
 
 The proven flow = `cypher_up.sh` → `cypher_prep.sh` → per-host `lnk_pipeline_run(aoi=WSG, mapping_code=TRUE)` (local, no tunnel, no M4) → `schema_consolidate(sources=list({host,via,bucket}))` (shape-tolerant) → `wsg_compare_mapping_code(wsg,cfg)` (tunnel-free) → `cypher_down.sh`.
 
-- [x] **Cross-WSG `;DAM` solved WITHOUT recompute** (validated `public.wsg_outlet` closure on PARS → PCEA/UPCE/LPCE/FINA/PARA/LBTN, depth-2 dams DS-of PARS depth-3): drainage-CLOSED bucket per host + DS-first order → downstream dam barriers persist before upstream WSG computes access → `;DAM` correct from the per-host run. One study area (closed) per host; study areas are drainage-independent (roots 100/200/400).
+- [x] ~~Cross-WSG `;DAM` solved WITHOUT recompute~~ **CORRECTED 2026-05-25: drainage-closed + DS-first is NOT sufficient.** It reduces but doesn't eliminate cross-WSG access gaps — downstream barriers can be cross-bucket or arrive late in DS-first order. Full run showed FINA 75.5% / PARA 68.6% per-host → 99%+ only after re-modelling on the full consolidated barrier set. **A POST-CONSOLIDATE RECOMPUTE is required** (see Phase 5 + #205). Drainage-closed bucketing is now just a speed knob (less divergence → less recompute), not a correctness lever.
 - [x] Built 4 lean reusable scripts (reuse existing cypher_up/prep/down + schema_consolidate + lnk_pipeline_run + wsg_compare_mapping_code):
   - `data-raw/study_area_wsgs.R` — closure + DS-first list via `public.wsg_outlet`.
   - `data-raw/wsg_run_one.R` — `lnk_pipeline_run(mapping_code=TRUE)` for one WSG, local, host-agnostic (`LNK_LOAD=loadall` dispatcher / `library(link)` cyphers).
@@ -37,17 +37,23 @@ The proven flow = `cypher_up.sh` → `cypher_prep.sh` → per-host `lnk_pipeline
   - `data-raw/study_area_run.sh` — driver: pre-flight (tunnel-free) → spin → prep → run DS-first buckets (dispatcher local + cyphers) → consolidate cyphers→dispatcher → BURN (minimise idle) → compare → CSV. trap-EXIT burn safety net.
 - [x] `/code-check` (1 fresh-eyes round): fixed burn-verification pipefail (`|| n="?"`), added bucket-overlap warning; accepted empty-array idiom (M1 bash 5.3). Committed.
 
-## Phase 4 — 4-WSG end-to-end test (mechanics)
+## Phase 4 — end-to-end mechanics (lean flow)
 
-- [ ] `wsgs_run_pipeline.sh --wsgs=<4 small WSGs> --cy-workspaces=job1,job2,job3 --mapping-code`: spin → prep → dispatch → consolidate → recompute → tunnel-free compare → burn. Confirm M1 dispatch + new compare path.
+- [x] Stage A (dispatcher-only PARS, $0): driver + tunnel-free pre-flight + DS-first + compare validated; PARS `ACCESS;DAM;INTERMITTENT`.
+- [x] Full 3-area run (fullrun4, 50 WSGs, M1+2cy): spin → prep → run → consolidate (incl wide tables, #204 fix validated) → burn clean → compare. Caught the prep-race (#583a4ab), branch-on-cyphers (#7e96b10), data-loss-via-trap-burn (→ species filter #157 + soft-fail, 65d26ca).
 
-## Phase 5 — study-area parity run
+## Phase 5 — study-area parity run + the recompute finding
 
-- [ ] Run 3 study areas (~52 drainage-closed WSGs; closure + DS-first via `public.wsg_outlet` / `wscode_ltree` ancestry), 3 cyphers + M1. Record per-WSG + per-study-area `match_pct`; surface UNEXPLAINED divergence.
+- [x] **Authoritative parity obtained** (post-recompute, all 50 WSGs on M1): **median 99.66%, mean 99.11%**, 130/148 rows ≥99%. Genuine divergences (recompute-stable → taxonomy): SETN salmon ~94%, UNRS BT 61.8%.
+- [x] **Methodology finding:** post-consolidate recompute REQUIRED (drainage-closed insufficient). Driver does it (recompute diverged WSGs <99% via full pipeline, then re-compare). Filed **#205** — the full-pipeline recompute is ~2× on diverged WSGs (re-runs streams/habitat to redo cheap access); the cheap access-only recompute (reuse persisted streams/habitat) makes recompute-ALL bulletproof + ~1×.
+- [ ] **OPEN DECISION (next session):** build #205 (cheap recompute) → then one clean driver-automated run that's both validated AND fast. (Numbers already in via manual recompute; the clean run validates the driver's auto-recompute end-to-end.)
+- [ ] Annotate SETN/UNRS via `research/bcfp_divergence_taxonomy.yml` (lnk_parity_annotate).
 
 ## Phase 6 — docs + release
 
-- [ ] RUNBOOK (tunnel-free compare + orchestrator recompute); NEWS + DESCRIPTION bump; `/planning-archive`; `/gh-pr-push`.
+- [x] `research/study_area_run.md` (lean flow + recompute methodology + gotchas); `data-raw/README.md` driver entry; memory.
+- [ ] `research/provincial_parity_2026_05_25.md` (authoritative numbers — written this compact-prep).
+- [ ] RUNBOOK (recompute step); NEWS + DESCRIPTION bump; `/planning-archive`; `/gh-pr-push` (after #205 + clean run).
 
 ## Validation
 
