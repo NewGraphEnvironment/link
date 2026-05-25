@@ -40,18 +40,34 @@ cyphers in order. Dispatcher-only (no cyphers): omit `--cy-workspaces`, pass one
    per-WSG **soft-fail**.
 5. **Consolidate** cyphers → dispatcher (`schema_consolidate.R`, shape-tolerant).
 6. **Burn** cyphers (then a trap-EXIT safety net).
-7. **Compare** all run WSGs tunnel-free (`study_area_compare.R` →
-   `lnk_compare_mapping_code` → CSV).
+7. **Compare pass 1** all run WSGs tunnel-free (`study_area_compare.R`).
+8. **Post-consolidate recompute** the diverged WSGs (any species `<99%`) on the
+   dispatcher — now that ALL barriers are consolidated, re-model them against
+   the complete barrier set (`wsg_run_one.R`), order-independent.
+9. **Compare pass 2** (final CSV).
 
-## Why no post-consolidate recompute
+## Post-consolidate recompute — the correctness guarantee
 
-Cross-WSG `;DAM` (a WSG emits `;DAM` only once its downstream dam-bearing WSGs
-are persisted — the provincial-accumulation property, `RUNBOOK.md` §5) is
-solved **per-host**: each host gets a *drainage-closed* bucket run *DS-first*,
-so downstream dam barriers persist before upstream WSGs compute access. Study
-areas are drainage-independent (roots 100/200/400) → one closed area per host →
-no cross-host recompute needed. Validated dispatcher-only: PARS emits
-`ACCESS;DAM;INTERMITTENT` (Bennett dams in PCEA/UPCE, DS-first), BT match 99.0%.
+Each WSG's accessibility (hence its `mapping_code` token1 ACCESS/SPAWN/REAR and
+token2 DAM/…) depends on whether a blocking barrier exists **downstream** —
+possibly in a *different* WSG (the provincial-accumulation property,
+`RUNBOOK.md` §5). When WSGs are distributed across machines, each machine holds
+only its own bucket's barriers while it runs, so a WSG's access is computed
+against an **incomplete** barrier set → wrong tokens.
+
+**Drainage-closed + DS-first bucketing is NOT sufficient on its own.** It
+*reduces* divergence (downstream often persists first within a bucket) but does
+not eliminate it: downstream barriers can be cross-bucket, or arrive late in
+DS-first order. Caught 2026-05-25 — FINA 75.5% / PARA 68.6% per-host → both
+**99%+** after re-modelling on the full consolidated barrier set.
+
+So the methodology is **distribute (any bucketing) → consolidate → recompute →
+compare**, and the *recompute* is what makes it correct **regardless of machine
+count or WSG assignment**. The bucketing is now just a speed knob (less
+divergence → less recompute), not a correctness lever. Today the recompute uses
+the full pipeline on diverged WSGs (slow); the cheap access-only recompute that
+reuses persisted streams/habitat is **link#205** — that makes recompute-ALL
+viable and the guarantee bulletproof rather than threshold-based.
 
 ## Gotchas that cost real time (2026-05-25)
 
