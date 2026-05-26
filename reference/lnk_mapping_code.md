@@ -116,13 +116,15 @@ The compare wrapper now goes through this function via
 `lnk_pipeline_run(..., mapping_code = TRUE)`. Operators can also call
 this directly against persist schema with the tunnel down — the build is
 tunnel-independent (the diff vs reference is separate, see
-`.lnk_compare_wsg_mapping_code_diff`).
+[`lnk_compare_mapping_code()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_mapping_code.md)).
 
 Tracks link#187 (tunnel decouple + portable build).
 
 ## See also
 
 Other compare:
+[`lnk_access()`](https://newgraphenvironment.github.io/link/reference/lnk_access.md),
+[`lnk_compare_mapping_code()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_mapping_code.md),
 [`lnk_compare_rollup()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_rollup.md),
 [`lnk_compare_wsg()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_wsg.md),
 [`lnk_parity_annotate()`](https://newgraphenvironment.github.io/link/reference/lnk_parity_annotate.md)

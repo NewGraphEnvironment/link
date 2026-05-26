@@ -2,6 +2,9 @@
 
 ## All functions
 
+- [`lnk_access()`](https://newgraphenvironment.github.io/link/reference/lnk_access.md)
+  : Build per-segment per-species access from schema tables (portable)
+
 - [`lnk_aggregate()`](https://newgraphenvironment.github.io/link/reference/lnk_aggregate.md)
   : Compute upstream habitat per crossing
 
@@ -38,6 +41,10 @@
   :
 
   Read the build-identifier `log.json` from a bucket prefix
+
+- [`lnk_compare_mapping_code()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_mapping_code.md)
+  : Compare one watershed group's persisted mapping_code tokens against
+  a reference
 
 - [`lnk_compare_rollup()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_rollup.md)
   : Compare one watershed group's persisted state against a reference
