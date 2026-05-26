@@ -96,13 +96,19 @@ ins_cols <- paste(c("id_segment", "watershed_group_code", mc_cols), collapse = "
 sel_cols <- paste(c("m.id_segment", "s.watershed_group_code",
                     paste0("m.", mc_cols)), collapse = ", ")
 wsg_lit  <- DBI::dbQuoteLiteral(conn, wsg)
-DBI::dbExecute(conn, sprintf(
-  "DELETE FROM %s.streams_mapping_code WHERE watershed_group_code = %s", sch, wsg_lit))
-DBI::dbExecute(conn, sprintf(
-  "INSERT INTO %s.streams_mapping_code (%s)
-   SELECT %s FROM %s m JOIN %s.streams s USING (id_segment)
-   WHERE s.watershed_group_code = %s",
-  sch, ins_cols, sel_cols, mc_scratch, sch, wsg_lit))
+# Atomic DELETE+INSERT — without the transaction a failed INSERT (e.g. the #203
+# cartesian PK violation that caused FINA's mc data loss on 2026-05-25) would
+# leave the WSG's rows deleted but not re-inserted. Wrap so any failure rolls
+# back the DELETE. See soul/conventions/code-check.md Docker/Postgres.
+DBI::dbWithTransaction(conn, {
+  DBI::dbExecute(conn, sprintf(
+    "DELETE FROM %s.streams_mapping_code WHERE watershed_group_code = %s", sch, wsg_lit))
+  DBI::dbExecute(conn, sprintf(
+    "INSERT INTO %s.streams_mapping_code (%s)
+     SELECT %s FROM %s m JOIN %s.streams s USING (id_segment)
+     WHERE s.watershed_group_code = %s",
+    sch, ins_cols, sel_cols, mc_scratch, sch, wsg_lit))
+})
 
 cat(sprintf("[wsg_recompute_one] %s recomputed in %.2f min (persist=%s)\n",
             wsg, as.numeric(difftime(Sys.time(), t0, units = "mins")), sch))
