@@ -76,6 +76,7 @@ The dispatch hierarchy: trifecta → run_provincial → compare_wsg.
 
 | Script | Calls | Purpose |
 |--------|-------|---------|
+| `study_area_run.sh` | `study_area_wsgs.R`, `wsg_run_one.R`, `schema_consolidate.R`, `study_area_compare.R` | **Lean tunnel-free, M1-as-dispatcher** study-area parity runner (link#175). No M4, no `:63333`. Drainage-closed DS-first buckets (one study area per host), per-WSG soft-fail, consolidate cyphers→M1, burn, tunnel-free `lnk_compare_mapping_code` → CSV. Full procedure + gotchas: `research/study_area_run.md`. |
 | `wsgs_dispatch.sh` | `wsgs_run_host.R` (×N hosts) | M4 + M1 + N-cypher orchestrator. Inline LPT bucket allocation (reads `_per_wsg_times.csv` from prior runs, computes balanced split using `--host-speeds=`), pre-flight version check across all hosts, parallel dispatch, RDS pull-back, post-pull `lnk_parity_annotate` against the divergence taxonomy. See "Provincial dispatch" section below for full flag reference + gotchas. |
 | `trifecta_15wsg.sh` | same | 15-WSG smoke variant (legacy 3-host, hardcoded WSG list). |
 | `trifecta_smoke.sh` | `wsgs_dispatch.sh` | N-host smoke shim: one small WSG per host, ~3 min wall. See `Provincial dispatch` section. |

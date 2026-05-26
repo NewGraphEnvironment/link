@@ -1,84 +1,45 @@
-# Findings — mapping_code accessibility, reproduce bcfp `barriers_<sp>` (#200)
+# Findings — tunnel-free `lnk_compare_mapping_code` + orchestrator (#175)
 
 ## Issue context
 
-link's per-species mapping_code accessibility (`barriers_per_sp` → `accessible`) uses `barriers_<sp>_unified` = ALL barriers (incl dams/PSCIS/modelled) where the species is in `blocks_species`. bcfp's per-species access set is natural barriers only (gradient@species-threshold ∪ falls ∪ subsurface), MINUS upstream observation/habitat overrides, ∪ all `user_barriers_definite`. Dams are never in the access set — token2 descriptor only. Consequence: every segment below a dam reads inaccessible → `;DAM`/`;MODELLED`/`;ASSESSED` second token suppressed (token2 correctly gated on `accessible`) → link emits bare `SPAWN`/`REAR` where bcfp emits `SPAWN;DAM`.
+#175 (updated 2026-05-24): promote `with_mapping_code` flag → stand-alone `lnk_compare_mapping_code()` export, sibling to `lnk_compare_rollup`. Post-#200 refinement: make the reference the **local snapshot** `fresh.streams_vw_bcfp`, not the `:63333` tunnel. Also (folded in): the provincial orchestrator's tunnel-free + M1-dispatch + post-consolidate cross-WSG recompute. Supersedes #167 (tunnel-drops → autossh; tunnel-free obviates it).
 
-## bcfp mechanism (read authoritatively from `smnorris/bcfishpass@e12c1a5`, 2026-05-23)
+## Mechanism (mapped this session)
 
-All 5 per-species access models (`model/01_access/sql/model_access_{bt,ch_cm_co_pk_sk,wct,ct_dv_rb,st}.sql`) share one structure:
-```
-barriers_<sp> = ( gradient@species-classes ∪ falls ∪ subsurface )
-  MINUS (barriers with upstream observation OR confirmed habitat, in the species' obs-set)
-  ∪ ALL barriers_user_definite        -- override-EXEMPT (comment: "include *all* user added features, even those below observations")
-```
-Per-species axes (the only differences across models):
+- **Existing compare** (`R/lnk_compare_wsg.R`): `.lnk_compare_wsg_mapping_code_diff(conn, conn_ref, …)` diffs link's `<persist>.streams_mapping_code` vs `bcfishpass.streams_mapping_code` over the **tunnel** (`conn_ref`, `:63333`), joined on `segmented_stream_id`. Returns per-species `wsg, species, total_segs, match_pct, n_diffs`. `lnk_compare_rollup` is the km-rollup sibling (also tunnel, queries `bcfishpass.habitat_linear_<sp>`).
+- **Tunnel-free swap**: the snapshot (`snapshot_bcfp.sh --with-bcfp-views`) already loads bcfp's published streams output into local `fresh.streams_vw_bcfp` (province-wide, has `mapping_code_<sp>` + `blue_line_key` + `downstream_route_measure`). So the compare = local join, same DB, no `conn_ref`.
+- **Join key**: link's `<persist>.streams_mapping_code.id_segment` is a local surrogate (≠ bcfp `segmented_stream_id`). Join via `<persist>.streams` to get `blue_line_key` + `downstream_route_measure`, then match `fresh.streams_vw_bcfp` on `(blue_line_key, round(downstream_route_measure,1))`. This is the validated query: PARS BT 98.95%, LFRA BT 97.77% / CO 97.90%.
+- **Reference build verified**: `s3://fresh-bc/bcfishpass/log.json` → `v0.7.15-14-ge12c1a5` (2026-05-20 rebuild); our snapshot matches. Next rebuild Tue 2026-05-27.
 
-| Model | Gradient classes | Obs/habitat species |
-|---|---|---|
-| BT | 25, 30 | BT,CH,CM,CO,PK,SK,ST |
-| salmon (CH,CM,CO,PK,SK) | 15, 20, 25, 30 | CH,CM,CO,PK,SK |
-| ST | 20, 25, 30 | CH,CM,CO,PK,SK,ST |
-| WCT | 20, 25, 30 | (wct) |
-| CT,DV,RB | 25, 30 | BT,DV,CT,RB |
+## Orchestrator gaps (predates #200 + tunnel-free)
 
-- **`barriers_user_definite.sql`** materializes the definite table with a synthesized deterministic id + ltree resolved by joining the raw user CSV to `whse_basemapping.fwa_stream_networks_sp` (segment whose `[downstream_route_measure, upstream_route_measure)` contains the barrier). link's existing FALLS branch in `lnk_barriers_unify.R:221-242` does the **identical** join.
-- **`load_streams_access.sql`** — `barriers_<sp>_dnstr` (per-species, natural+definite) is separate from `barriers_anthropogenic_dnstr`/`barriers_dams_dnstr` (descriptors). `access_<sp>` = 0 if a downstream barrier exists, else 1/2 (obs-aware). token2 gate (`load_streams_mapping_code.sql`) = `barriers_<sp>_dnstr = array[]` — identical to link's `ifelse(accessible, mc_barrier, NA)`.
-- **Province-wide accumulation**: each `barriers_<sp>` is per-WSG-built but accumulated into one province-wide table, so cross-WSG downstream walks (PARS→PCEA→UPCE) see the correct override-applied set.
+- `wsgs_run_pipeline.sh` pre-flight hard-requires `:63333` + `PG_PASS_SHARE` (lines ~179-181). M4-centric: hardcoded `ssh m1` (229/280/284), "snapshot on M4+M1", LPT host model `m4/m1/cy`.
+- `wsg_compare.R` → `lnk_compare_rollup(reference="bcfishpass")` connects `conn_ref` to the tunnel (lines ~44-46). Each host runs compare per-WSG → each needs the tunnel.
+- **Cross-WSG `;DAM` gap**: `wsgs_run_host.R` computes mapping_code per-WSG against only the host's local bucket barriers, **before** consolidate → cross-WSG dams in other buckets invisible. No post-consolidate recompute. Fix = Step 9b recompute on the merged schema (the two-pass), then one tunnel-free compare. Simplification: cyphers run+persist only (no compare, no tunnel); dispatcher recomputes + compares once.
+- `cypher_prep.sh` installs link from `main` by default → cyphers get v0.40.4 automatically now that #200 is merged. ✓ (no branch-push needed).
 
-## link mapping (every ingredient already exists)
+## Study areas (the validation scope)
 
-| bcfp ingredient | link object | state |
-|---|---|---|
-| gradient@species-threshold | `access_gradient_max` → `blocks_species` (gradient CASE in `lnk_barriers_unify`) | ✓ correct |
-| obs/habitat override | `lnk_barrier_overrides` → `<schema>.barrier_overrides` (uses `fwa_upstream`, topological/cross-WSG) | ✓ computed; **per-WSG only, not persisted** |
-| user_definite | `<schema>.barriers_definite` (`lnk_pipeline_prepare.R:182-200`; CSV cols, no id/ltree; empty-fallback = blk+drm only) | **per-WSG only, not in persist barriers** |
-| natural barriers | persist `barriers` (gradient/falls/subsurface families) | ✓ province-wide |
+From the `fish_passage_*_reporting` repos' `wsg_code`/`wsg` params:
+- **Peace** (`fish_passage_peace_2025_reporting` index.Rmd): CARP, CRKD, FINA, FINL, FIRE, FOXR, INGR, LOMI, MESI, NATR, OSPK, PARA, PARS, PCEA, TOOD, UOMI (16)
+- **Fraser** (`fish_passage_fraser_2025_reporting` index.Rmd): LCHL, NECR, FRAN, MORK, UFRA, WILL, TABR, LSAL (8)
+- **Skeena** (`fish_passage_skeena_2024_reporting` `0160-load-bcfishpass-data.R`): BULK, MORR, ZYMO, KISP, KLUM (5)
+- 29 focal → **52 with downstream-closure** (LFRA, MFRA, UPCE, LPCE, LBTN, LSKE, USKE, MSKE, …). Closure + DS-first order derivable from `public.wsg_outlet` (per-WSG outlet `wscode_ltree`, materialized this session) via `@>` ancestry. Major drainages by root wscode: Fraser `100` (68), Peace `200` (65), Columbia `300`/ELKR (17), Skeena `400` (12).
 
-`lnk_barrier_overrides` output is `(blue_line_key, downstream_route_measure, species_code)` and currently feeds only `lnk_pipeline_classify` (habitat), NOT the access path.
+## Cypher capability (proven 2026-05-24)
 
-## The design decision (why province-wide, not a per-WSG view)
+M1 fired up 3 cyphers in parallel (`cypher_up.sh --workspace job1/2/3`, ~3 min each from warm snapshot `228350154`), verified ready, burned clean (`cypher_down.sh`, 0 tofu resources). DO auth + Tailscale confirmed. `wsgs_run_pipeline.sh` is the all-in-one (spin→prep→dispatch→consolidate→compare→burn via `trap EXIT`).
 
-The access set is a downstream `frs_network_features` walk that **crosses WSG boundaries**. A per-WSG `_access` view (subtract only the current WSG's overrides from province-wide natural barriers) is quietly wrong for any natural barrier in a downstream/sibling WSG — the cross-WSG twin of the dam bug. Rejected. Correct design: **persist all three access inputs province-wide** (natural ✓, override → new persist table, user_definite → `USER_DEFINITE` persist family), persisted **together per WSG** so any persisted WSG is internally consistent. Caveat (single-WSG run sees only persisted WSGs) is identical to today's natural barriers and bcfp's accumulation — handled by the provincial orchestrator.
+## Phase 1 done + id_segment bug (2026-05-24)
 
-Approach A (definite as unify family) + persist overrides was chosen over the issue-draft's per-WSG view-union (B') after a Plan-agent review and the user's explicit "make it provincial, don't ship a 2/200 one-off." `barriers_definite` lacks id+ltree → resolved via the FALLS-pattern FWA join. No `cols_barriers` DDL change (USER_DEFINITE is a new row-source, same columns). `barrier_overrides` persist uses a single `cols_barrier_overrides` vector for DDL+INSERT (avoids the v0.40.3 matched-pair drift).
+`lnk_compare_mapping_code()` built tunnel-free (reads local `fresh.streams_vw_bcfp`); `.lnk_compare_wsg_mapping_code_diff` delegates; shared merge in `.lnk_mc_diff`. **Live PARS BT 98.95% tunnel-free** (reproduced the hand-validation). WSG-active species resolution added (PARS → BT only; CO empty in upper Peace, correctly excluded — avoids spurious 0%).
 
-## Verified facts (this session)
+**id_segment is NOT globally unique** (per-WSG row index): `fresh.streams` = 1,542,427 rows but only **80,555 distinct id_segment** (~19× repeat across WSGs; unique only on the persist PK `(id_segment, watershed_group_code)`). Any persist join on `id_segment` ALONE is a ~19-22× cartesian. Found two: `lnk_compare_mapping_code` (fixed in build) and **`lnk_compare_rollup`** (3 joins — was inflating km ~22×: PARS BT spawning_km 36,820 → 1,681; **tactically fixed to full-PK joins this phase**). Safe: `lnk_compare_wsg`/`lnk_pipeline_persist` (working schema = single WSG).
 
-- Persist pattern is `cols_*`-vector-driven; `cols_barriers` drives both DDL (`lnk_persist_init`) and INSERT (`lnk_pipeline_persist.R:94,99`).
-- break (`lnk_pipeline_break.R:112`) + classify (`lnk_pipeline_classify.R:223`) read `<schema>.barriers_definite` separately → adding `USER_DEFINITE` to persist `barriers` does NOT double-count.
-- `barriers_anthropogenic/dams/pscis_unified` filter by `barrier_source` → `USER_DEFINITE` doesn't pollute them. `lnk_compare_*` don't read `_unified`.
-- `frs_network_features` (fresh) needs `feature_id_col, blue_line_key, downstream_route_measure, wscode_ltree, localcode_ltree` on the feature table. The `phase4d_plan_draft.md:37` draft wrongly dropped the ltree cols.
-- `whse_basemapping.fwa_stream_networks_sp` present in local fwapg; `fresh.streams_vw_bcfp` loaded (4.23M rows, PARS 43,660, carries `mapping_code_bt`) — tunnel-free parity baseline. bcfp baseline `v0.7.15-14-ge12c1a5`.
-
-## Phase 4 validation — PARS BT (2026-05-23)
-
-Run `lnk_pipeline_run("PARS", mapping_code=TRUE)` against local docker fwapg (bcfp baseline `v0.7.15-14-ge12c1a5` in `fresh.streams_vw_bcfp`).
-
-**Result: 99.04% per-segment match vs bcfp** (42,701 / 43,114 joined on `blue_line_key` + rounded `downstream_route_measure`). The headline #200 fix works:
-- token1 collapse GONE — `ACCESS`/`SPAWN`/`REAR` emit (was bare `SPAWN`/`REAR`). Counts ≈ bcfp (`SPAWN;DAM` 5293 vs 5263, `REAR;DAM` 2213 vs 2191).
-- token2 `;DAM` emerges — dam-downstream-but-accessible segments now annotate `;DAM` not `;NONE`.
-
-**Cross-WSG dependency confirmed (the provincial design's whole point):** the FIRST PARS run (PARS only) emitted `;NONE` because the Bennett/Peace Canyon dams live in PCEA/UPCE, which weren't persisted. After persisting PCEA + UPCE barriers (`mapping_code=FALSE`) and re-running PARS, the cross-WSG downstream walk saw the dams → `;DAM`. token2/`barrier_sources` is unchanged by #200; it just needs the downstream WSGs in persist.
-
-Residual ~1% (413 segs): token1 `ACCESS`↔`REAR` swaps (habitat-presence threshold — dimensions/rules, not #200) + a few token2 `DAM`↔`MODELLED` next-downstream-ordering edges. Not the dam-access divergence.
-
-### Phase 4 validation — LFRA (anadromous; Coquitlam/Alouette/Stave/Ruskin dams)
-
-`lnk_pipeline_run("LFRA", mapping_code=TRUE)`. Match vs bcfp: **LFRA/bt 97.77%, LFRA/co 97.90%** (26,651 segs each). LFRA coho DAM-token count link **4672 vs bcfp 4636** — the dam descriptor + above-dam path works for anadromous salmon, not just resident BT. LFRA drains to the ocean (lowest Fraser group) so its dams are in-WSG — single run, no cross-WSG persist needed (unlike PARS→PCEA/UPCE).
-
-Residual ~2%: token1 `ACCESS`↔`SPAWN`/`REAR` (spawning/rearing **habitat-presence** — token1 habitat fires regardless of access per RUNBOOK §4; governed by `frs_habitat_classify`/dimensions, unaffected by #200) + small token2 `DAM`↔`MODELLED`/`NONE` next-downstream-ordering edges. The dam-access fix itself (token2 DAM on accessible dam-downstream segments) matches.
-
-**Acceptance MET** for both resident + anadromous. Remaining habitat-token1 parity is a separate, pre-existing concern (habitat rules), not #200.
-
-### Stale-persist-table drift (pre-existing, surfaced in Phase 4)
-
-LFRA first failed: `column "has_barriers_ch_dnstr" of relation "streams_access" does not exist`. The M1 `fresh.streams_access` / `streams_mapping_code` were stale at bt+co width (old pre-v0.40.2 runs); `lnk_persist_init`'s `CREATE IF NOT EXISTS` won't widen an existing table, and `.lnk_validate_persist_table` only detects GENERATED-column drift, not species-count drift. `lnk_pipeline_run` correctly sizes persist_init to `cfg$species` (8) — so DROPping the two stale wide tables + re-running recreated them full-width. NOT a #200 bug (production provincial runs start clean). Possible follow-up: extend drift-validate to species-column count.
-
-**Real bug caught + fixed during the run:** `barrier_overrides` PK was `(blk, drm, species_code)` — UPCE's persist INSERT collided with PCEA's because the SAME override position is computed by two adjacent WSG runs (boundary streams whose `blue_line_key` spans WSGs). Fixed: PK now includes `watershed_group_code` (mirrors `cols_barriers`), so per-WSG DELETE+INSERT is clean; the WSG-agnostic access anti-join makes the duplicate harmless.
+**bcfp `segmented_stream_id` (verified):** globally unique (4.23M distinct); position-derived from `blue_line_key` + `downstream_route_measure` (data dictionary confirms); text; integer part = blk, fraction = `round(measure,3)`-derived; segmentation-dependent. Root fix = make link `id_segment` likewise position-derived → filed **#203** (also enables direct `id_segment == segmented_stream_id` joins).
 
 ## Open / watch
 
-- Cross-WSG override correctness — the provincial design should fix it; **verify on LFRA** in Phase 4 (don't assume).
-- `remediated_dnstr_ind` divergence is bcfp's own bug (`smnorris/bcfishpass#690`) — whitelist in the parity diff.
-- Pre-existing (out of scope): `lnk_pipeline_run.R:228` `pscis = <schema>.barriers_pscis` vs view name `barriers_pscis_unified` — watch in Phase 4.
+- Reference freshness: re-snapshot if the run slips past Tue 2026-05-27 (next bcfp rebuild). Orchestrator Step 1+2 re-snapshots each host automatically.
+- Residual ~1-2% mapping_code mismatch is token1 habitat-presence (dimensions/rules), not the dam-access fix — don't chase under #175.
+- Base public inputs (pscis/cabd/obs) pulled live each snapshot → slight drift vs bcfp's frozen build inputs; small (98.95% confirms).

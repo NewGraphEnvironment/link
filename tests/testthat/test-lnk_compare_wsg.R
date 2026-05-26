@@ -315,8 +315,8 @@ test_that("lnk_compare_wsg composes mapping_code branch when mapping_code=TRUE",
       habitat_type = "spawning", unit = "km",
       link_value = 10, ref_value = 11, diff_pct = -9.1)
   }
-  m_mc_diff <- function(...) {
-    calls <<- c(calls, "mapping_code_diff")
+  m_mc <- function(...) {
+    calls <<- c(calls, "mapping_code")
     tibble::tibble(
       wsg = "ADMS", species = "BT",
       total_segs = 100L, match_pct = 99.5, n_diffs = 0L,
@@ -327,7 +327,7 @@ test_that("lnk_compare_wsg composes mapping_code branch when mapping_code=TRUE",
   with_mocked_bindings(
     lnk_pipeline_run = m_pipeline_run,
     lnk_compare_rollup = m_rollup,
-    .lnk_compare_wsg_mapping_code_diff = m_mc_diff,
+    lnk_compare_mapping_code = m_mc,
     {
       with_mocked_bindings(
         dbExecute = m_exec,
@@ -349,7 +349,7 @@ test_that("lnk_compare_wsg composes mapping_code branch when mapping_code=TRUE",
   # cleanup_working passes straight through (no special-case retention
   # needed since build runs inside pipeline_run, not in compare_wsg).
   # Then rollup reads persisted state, then diff fires against persist.
-  expect_equal(calls, c("pipeline_run", "rollup", "mapping_code_diff"))
+  expect_equal(calls, c("pipeline_run", "rollup", "mapping_code"))
   expect_false(pipeline_args$cleanup_working)
   expect_true(pipeline_args$mapping_code)
 
@@ -368,42 +368,27 @@ test_that("lnk_compare_wsg composes mapping_code branch when mapping_code=TRUE",
 # corresponding reference-gate assertion happens in the
 # "lnk_compare_wsg validates reference" test elsewhere in this file.
 
-test_that(".lnk_compare_wsg_mapping_code_diff computes per-species stats with top_pattern", {
-  # 4 segments. Species BT: 1 match, 3 mismatches all with same pattern.
-  # Species CH: all 4 match. Species CM: 2 match, 2 different patterns.
+test_that(".lnk_mc_diff computes per-species stats with top_pattern (merge logic)", {
+  # Merge/match logic moved to .lnk_mc_diff (link#175); test it directly —
+  # no DB mock needed. 4 segments. BT: 1 match, 3 same-pattern mismatches.
+  # CH: all 4 match. CM: 2 match, 2 different patterns.
   link_mc <- data.frame(
     id_segment = 1:4,
     mapping_code_bt = c("ACCESS;NONE", "ACCESS;NONE", "ACCESS;NONE", "ACCESS;NONE"),
     mapping_code_ch = c("ACCESS;NONE", "ACCESS;NONE", "ACCESS;NONE", "ACCESS;NONE"),
     mapping_code_cm = c("ACCESS;NONE", "ACCESS;NONE", "REAR;NONE", "ACCESS;NONE"),
     blue_line_key = 1:4, downstream_route_measure = c(10, 20, 30, 40),
-    length_metre = 100,
     stringsAsFactors = FALSE
   )
   bcfp_mc <- data.frame(
-    segmented_stream_id = 1:4,
+    blue_line_key = 1:4, downstream_route_measure = c(10, 20, 30, 40),
     mapping_code_bt = c("ACCESS;NONE", "ACCESS;MODELLED", "ACCESS;MODELLED", "ACCESS;MODELLED"),
     mapping_code_ch = c("ACCESS;NONE", "ACCESS;NONE", "ACCESS;NONE", "ACCESS;NONE"),
     mapping_code_cm = c("ACCESS;NONE", "ACCESS;MODELLED", "SPAWN;NONE", "ACCESS;NONE"),
-    blue_line_key = 1:4, downstream_route_measure = c(10, 20, 30, 40),
-    length_metre = 100,
     stringsAsFactors = FALSE
   )
-  m_q <- function(conn, sql) {
-    if (grepl("FROM bcfishpass", sql)) bcfp_mc else link_mc
-  }
-  with_mocked_bindings(
-    dbGetQuery = m_q,
-    dbQuoteLiteral = function(...) DBI::SQL("'ADMS'"),
-    .package = "DBI",
-    {
-      result <- link:::.lnk_compare_wsg_mapping_code_diff(
-        conn = mock_conn(), conn_ref = mock_conn(),
-        aoi = "ADMS", cfg = mock_cfg(),
-        bcfp_species = c("bt", "ch", "cm")
-      )
-    }
-  )
+  result <- link:::.lnk_mc_diff(link_mc, bcfp_mc, aoi = "ADMS",
+                                species = c("bt", "ch", "cm"))
 
   expect_s3_class(result, "tbl_df")
   expect_equal(nrow(result), 3L)

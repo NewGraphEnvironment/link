@@ -20,7 +20,7 @@
 #' function via `lnk_pipeline_run(..., mapping_code = TRUE)`. Operators
 #' can also call this directly against persist schema with the tunnel
 #' down — the build is tunnel-independent (the diff vs reference is
-#' separate, see `.lnk_compare_wsg_mapping_code_diff`).
+#' separate, see [lnk_compare_mapping_code()]).
 #'
 #' Tracks link#187 (tunnel decouple + portable build).
 #'
@@ -120,10 +120,35 @@ lnk_mapping_code <- function(
 
   # 1. Access: scalar projection from streams_access. lnk_pipeline_mapping_code
   # expects a data.frame keyed by id_segment.
-  access <- DBI::dbGetQuery(conn, sprintf(
-    "SELECT * FROM %s WHERE id_segment IN (
-       SELECT id_segment FROM %s WHERE watershed_group_code = %s)",
-    table_access, table_streams, aoi_lit))
+  #
+  # `id_segment` is per-WSG unique, NOT globally (link#203). When table_access
+  # is a PERSIST table (all WSGs), `id_segment IN (FINA's segments)` matches
+  # access rows from every WSG that happens to share those id_segment values
+  # -> ~N(WSGs)× duplicates -> propagates through the pivot/joins below and
+  # blows up `streams_mapping_code_pkey` on the persist write. Caught
+  # 2026-05-25 in the link#205 cheap recompute. Fix: when table_access carries
+  # `watershed_group_code` (persist shape, from lnk_persist_init's
+  # cols_streams_access_base), filter by that directly. Working-schema access
+  # (written by lnk_pipeline_access via dbWriteTable, no WSG col) falls back
+  # to the id_segment-in clause (only one WSG present there, so the cartesian
+  # is impossible).
+  access_schema_table <- strsplit(table_access, "\\.", fixed = FALSE)[[1]]
+  access_has_wsg <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT 1 FROM information_schema.columns
+       WHERE table_schema = %s AND table_name = %s
+         AND column_name = 'watershed_group_code' LIMIT 1",
+    DBI::dbQuoteString(conn, access_schema_table[1]),
+    DBI::dbQuoteString(conn, access_schema_table[length(access_schema_table)])))
+  if (nrow(access_has_wsg) > 0L) {
+    access <- DBI::dbGetQuery(conn, sprintf(
+      "SELECT * FROM %s WHERE watershed_group_code = %s",
+      table_access, aoi_lit))
+  } else {
+    access <- DBI::dbGetQuery(conn, sprintf(
+      "SELECT * FROM %s WHERE id_segment IN (
+         SELECT id_segment FROM %s WHERE watershed_group_code = %s)",
+      table_access, table_streams, aoi_lit))
+  }
   if (nrow(access) == 0L) {
     stop(sprintf("%s empty for WSG %s", table_access, aoi), call. = FALSE)
   }

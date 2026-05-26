@@ -105,7 +105,15 @@ conn <- DBI::dbConnect(RPostgres::Postgres(),
   user="postgres", password="postgres")
 cfg <- lnk_config("bcfishpass")
 loaded <- lnk_load_overrides(cfg)
-species <- unique(loaded$parameters_fresh$species_code)
+# Persist species set MUST match lnk_pipeline_run (R/lnk_pipeline_run.R:
+# `lnk_persist_init(conn, cfg, species = cfg$species)`). The wide per-
+# species tables (streams_access, streams_mapping_code) carry one column
+# per species, so a cypher seeding from parameters_fresh (11 sp: adds
+# CT/DV/RB) while the dispatcher uses cfg$species (8 sp) produces a
+# column-set mismatch that breaks the cross-host COPY-consolidate.
+# Caught 2026-05-25 in the 3-WSG smoke (link#175). Mirror cfg$species,
+# with the same parameters_fresh fallback lnk_pipeline_species uses.
+species <- if (!is.null(cfg$species)) cfg$species else unique(loaded$parameters_fresh$species_code)
 lnk_persist_init(conn, cfg, species, force_recreate = TRUE)
 cat("=== lnk_persist_init done\n")
 ' > "$TMP_INIT_LOG" 2>&1; then

@@ -1,14 +1,34 @@
-# Progress — mapping_code accessibility, reproduce bcfp `barriers_<sp>` (#200)
+# Progress — tunnel-free `lnk_compare_mapping_code` + orchestrator (#175)
 
-## Session 2026-05-23
+## Session 2026-05-24
 
-- M4→M1 handoff resumed; v0.40.3 shipped (PR #199 merged `46b2042`, tagged).
-- Environment up on M1: docker fresh-db, link 0.40.3, bcfp snapshot reloaded (`v0.7.15-14-ge12c1a5`, `streams_vw_bcfp` loaded locally), local `:63333→:5432` forwarder (db_newgraph tunnel key deauthorized on M1 — not blocking).
-- Read bcfp access machinery end-to-end (5 species models + `barriers_user_definite.sql` + `load_streams_access.sql`) — see findings.
-- Plan-agent design review: rejected per-WSG view (B'); user pushed for province-wide correctness. Final design = persist all access inputs province-wide (USER_DEFINITE family + persist barrier_overrides + `_access` view). Plan approved.
-- Archived #196 PWF; created branch `200-mapping-code-accessibility-reproduce-bcf`; scaffolded #200 PWF baseline.
-- Phase 1 done: `USER_DEFINITE` family in `lnk_barriers_unify` (FALLS-pattern FWA ltree join); `cols_barrier_overrides` + DDL in `lnk_persist_init`; persist copy in `lnk_pipeline_persist` (pre-persist auto-picks it up). Unit tests 96 pass; DB-smoke validated DDL + branch (empty-fallback safe, one-row resolves ltree/geom). Both configs persist to schema `fresh` (provincial `fresh_default` is a runtime `--schema` override). Commit `a82a7fc`.
-- Phase 2 done: `barriers_<sp>_access` view in `lnk_barriers_views` (natural-only + override anti-join + definite-exempt). DB-smoke: 904,262 natural rows, 0 non-natural. code-check clean. Commit `f758e44`.
-- Phase 3 done: repoint `barriers_per_sp` → `_access` + comment. Commit `c412d68`.
-- Phase 4 done: validated PARS BT 98.95%, LFRA BT 97.77% / CO 97.90% vs `streams_vw_bcfp`; `;DAM` tokens correct. Found+fixed `barrier_overrides` PK (added `watershed_group_code` — boundary-stream cross-WSG collision). Worked around stale bt+co persist tables (DROP + recreate full-width). PARS needed PCEA+UPCE persisted first (cross-WSG dams). Commit `2ea3a7d`.
-- Phase 5: RUNBOOK §2a/§3/§5/§7 updated; NEWS + DESCRIPTION → 0.40.4; temp scripts removed. test 1193 pass (lone FAIL = env db_conn). Next: archive + open PR (stop before merge per user).
+- #200 (v0.40.4) merged via PR #202; cyphers proven (3-way spin/burn) + tunnel-free reference verified (`v0.7.15-14-ge12c1a5`).
+- Edited #175 + #167 in-body (no new issues): #175 now scopes tunnel-free `lnk_compare_mapping_code` + orchestrator (M1-dispatch + post-consolidate recompute); #167 superseded by tunnel-free.
+- Plan-mode exploration; phases approved by user.
+- Archived #200 PWF; created branch `175-promote-with-mapping-code-flag-to-stand` off main; scaffolded #175 PWF baseline.
+- Phase 1 done: `lnk_compare_mapping_code()` tunnel-free + `.lnk_compare_wsg_mapping_code_diff` delegates + `.lnk_mc_diff` shared. Live PARS BT 98.95% tunnel-free; 1216 tests pass (lone FAIL = env db_conn). Caught id_segment ~22× cartesian → fixed `lnk_compare_rollup` (full-PK joins) + WSG-active species resolution; filed #203 (position-derived globally-unique id_segment, bcfp-verified). 
+- Phase 2 done: `lnk_compare_wsg(mapping_code=TRUE)` now tunnel-free (routes through `lnk_compare_mapping_code`, no conn_ref; rollup still tunnel — snapshot lacks habitat_linear). Removed dead `.lnk_compare_wsg_mapping_code_diff`; added `wsg_compare_mapping_code()` (tunnel-free orchestrator entry, verified PARS 98.95% w/ PG_PASS_SHARE unset). 93 compare / 1216 total pass.
+- Next: Phase 3 — orchestrator (`wsgs_run_pipeline.sh` drop :63333 pre-flight + M1-dispatch + Step 9b post-consolidate recompute; `wsgs_run_host.R` cyphers run+persist only).
+
+## Session 2026-05-25
+
+- 3-WSG smoke (CRKD@M1, LCHL@cy1, ZYMO@cy2): plumbing spin→prep→run→consolidate→burn works; caught wide-table shape drift — cyphers' `streams_access`/`streams_mapping_code` had 11 species cols (CT/DV/RB) vs M1's 8 → positional COPY-consolidate failed. Cyphers burned + confirmed gone (0 tofu resources each).
+- Root cause: `cypher_prep.sh` seeded `lnk_persist_init` from `parameters_fresh` (11 sp) while `lnk_pipeline_run` + dispatcher use `cfg$species` (8 sp). Warm snapshot predates wide tables (#187) — not a snapshot artifact.
+- Phase 3a done (per user steer "build abstract, shouldn't matter which machine / how many species cols, don't hardcode"):
+  - `schema_consolidate.R` → shape-tolerant COPY (runtime shared-column intersection, copy-by-name, dest ordinal order). No hardcoded species/cols/host.
+  - `cypher_prep.sh` → persist species = `cfg$species` (mirrors `lnk_pipeline_run`).
+  - Filed #204 (persist_init species-column-set drift detection + abstract/no-hardcode north star). `/code-check` clean.
+- Next: Phase 3 orchestrator (M1-dispatch generalization — "shouldn't matter which machine runs"), then re-run the 3-WSG smoke to confirm consolidate of the two wide tables, then study-area parity.
+- Phase 3 REVISED (user: "are these already dealt with in our start-to-finish scripts?"): the smoke flow already does M1-dispatch + tunnel-free + abstract consolidate. Dropped the 30-edit old-orchestrator refactor. Built 4 lean reusable scripts (study_area_wsgs.R / wsg_run_one.R / study_area_compare.R / study_area_run.sh); cross-WSG `;DAM` solved via drainage-closed buckets + DS-first (no recompute), validated on public.wsg_outlet. /code-check clean. Commit 0673025. Filed #204.
+- **Phase 4 — Stage A PASS (dispatcher-only PARS, $0):** driver + tunnel-free pre-flight + DS-first run + tunnel-free compare all work. **Cross-WSG `;DAM` CONFIRMED** — PARS top_pattern `ACCESS;DAM;INTERMITTENT` (Bennett dams in PCEA/UPCE ran DS-first). match% BT: FINA 99.8 / PARA 99.3 / PARS 99.0 / PCEA 99.8 / UPCE 99.6 (LBTN/LPCE no bcfp ref). CSV: data-raw/logs/study_area_run/20260525_090730_compare.csv.
+- **Phase 5 — full 3-area run** (52 WSGs, zero overlap: Peace 19 / Fraser 24 / Skeena 9). Several iterations + a data-loss incident, all root-caused + fixed from the RECORDS (user steer: "look in our records — there's a runbook"):
+  - Fixed cypher prep scp race (SSH-readiness wait, 583a4ab) and branch-not-on-cyphers (`CYPHER_PREP_BRANCH`, 7e96b10 — branch must be pushed).
+  - **Data-loss incident (root-caused):** closure pulled in species-less WSG LEUT → `lnk_pipeline_run` "No species resolved for AOI" → dispatcher `|| exit 1` → driver FATAL → **trap burned cyphers with un-consolidated Peace+Skeena data**. One bad WSG lost a whole run. (Cyphers were NOT externally destroyed — the driver's own trap burned them.)
+  - **Records review:** `research/provincial_run_runbook.md` (archive→spin→snapshot→install→smoke→dispatch→verify→consolidate→burn) + `data-raw/wsgs_run_host.R:88` already solved this via the **#157 species-presence filter** + resume-safe **per-WSG soft-fail**. My lean driver had the right shape (tunnel-free, M1-dispatch) but dropped that robustness.
+  - **Fixes (65d26ca):** `study_area_wsgs.R` filters closure to bundle-species presence (Fraser drops LEUT,LNRS); `study_area_run.sh` per-WSG soft-fail (never abort host/burn before consolidate); `wsg_run_one.R` defensive skip. /code-check clean.
+  - **Cost reality (runbook §6):** cyphers ~$0.06/hr each — "minimize idle" = don't leave up for HOURS (2026-05-12 10-hr incident), not shave minutes. My early-burn agonizing was over cents; dropped it.
+  - Re-run launched (pid 37285): dispatcher=Fraser (on M1 per user), cy1=Peace, cy2=Skeena. Log /tmp/fullrun4.log.
+  - **Full run completed (fullrun4, 50 WSGs):** consolidate (incl wide tables — #204 fix validated) + burn clean + tunnel-free compare. **median match 99.7%, mean 98.7%**, 150 rows (50 WSGs × 7 sp).
+  - **METHODOLOGY FINDING (the deliverable):** drainage-closed + DS-first per-host is **NOT sufficient** for cross-WSG access/`;DAM`. 6/50 WSGs diverged (FINA 75.5%, PARA 68.6%, UNRS, LFRA, LKEL, SETN) — their downstream barriers were cross-bucket / late-in-DS-order → access computed on incomplete barriers. Re-modelling on the full consolidated barrier set fixes them exactly (FINA→99.8%, PARA→99.3%). The orchestrator has NO recompute (provincial run compares km rollups, not per-segment mapping_code) — so this is new to #175.
+  - **Correct durable methodology = distribute (any bucketing) → consolidate → POST-CONSOLIDATE RECOMPUTE (diverged WSGs) → compare.** Bucketing is now a speed knob, not a correctness lever. Added to `study_area_run.sh` (recompute any-species-`<99%`, re-compare). Filed **#205** (cheap access-only recompute reusing persisted streams/habitat → makes recompute-ALL bulletproof + fast). Docs: `research/study_area_run.md`.
+  - Next: commit driver recompute + docs; re-run from the top to produce the authoritative post-recompute parity CSV; then `research/provincial_parity_2026_05_25.md` + CLAUDE.md status.

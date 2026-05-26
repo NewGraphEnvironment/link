@@ -166,10 +166,10 @@ lnk_compare_wsg <- function(conn, aoi, cfg, loaded,
       call. = FALSE
     )
   }
-  # `mapping_code = TRUE` requires conn_ref also for the
-  # streams_mapping_code comparison query. Already validated above
-  # when reference == 'bcfishpass' (the only supported reference today).
-  # No additional gate needed.
+  # `mapping_code = TRUE` is now tunnel-free (link#175) — it diffs against
+  # the LOCAL bcfp snapshot (fresh.streams_vw_bcfp), not conn_ref. conn_ref
+  # is still required above for the rollup (bcfp habitat_linear isn't in the
+  # snapshot).
 
   # Run the modelling pipeline. `mapping_code = mapping_code` routes
   # the streams_access + streams_mapping_code build through pipeline_run's
@@ -194,12 +194,11 @@ lnk_compare_wsg <- function(conn, aoi, cfg, loaded,
   mc_stats <- NULL
   if (isTRUE(mapping_code)) {
     # Diff link's `<persist_schema>.streams_mapping_code` (built by
-    # pipeline_run's mapping_code phase) against reference's. Tunnel-
-    # bound — needs conn_ref. Build path was already executed above.
-    bcfp_species <- c("bt", "ch", "cm", "co", "pk", "sk", "st", "wct")
-    mc_stats <- .lnk_compare_wsg_mapping_code_diff( # nolint: object_usage_linter
-      conn = conn, conn_ref = conn_ref,
-      aoi = aoi, cfg = cfg, bcfp_species = bcfp_species)
+    # pipeline_run's mapping_code phase) against the LOCAL bcfp snapshot —
+    # tunnel-free (link#175). Species auto-resolve to the WSG-active set.
+    mc_stats <- lnk_compare_mapping_code( # nolint: object_usage_linter
+      conn = conn, aoi = aoi, cfg = cfg,
+      reference = reference, species = species)
   }
 
   list(rollup = rollup, mapping_code = mc_stats)
@@ -510,127 +509,4 @@ lnk_compare_wsg <- function(conn, aoi, cfg, loaded,
     round(100 * (out$link_value - out$ref_value) /
           out$ref_value, 1))
   out
-}
-
-#' Diff link's streams_mapping_code vs reference's, return per-species stats
-#'
-#' Joins on `(blue_line_key, downstream_route_measure, length_metre)` —
-#' the canonical segment identity across link and bcfp. NA-aware
-#' comparison: `NA == NA` counts as match; `NA` vs concrete value is a
-#' mismatch.
-#'
-#' Returns one row per `bcfp_species`. `top_pattern` is the dominant
-#' "<link_value> | <bcfp_value>" diff string; useful for class-A/B/C/D
-#' taxonomy lookup downstream.
-#'
-#' @noRd
-.lnk_compare_wsg_mapping_code_diff <- function(conn, conn_ref, aoi, cfg,
-                                               bcfp_species) {
-  aoi_lit_link <- DBI::dbQuoteLiteral(conn, aoi)
-  aoi_lit_ref  <- DBI::dbQuoteLiteral(conn_ref, aoi)
-  tn <- .lnk_table_names(cfg)
-  persist_schema <- tn$schema
-
-  # Round float join keys to 3 decimal places (mm precision on values
-  # already in metres). `downstream_route_measure` + `length_metre` are
-  # PostGIS-computed doubles; deterministic across runs that share the
-  # same fwapg segmentation, but rounding makes the join robust to any
-  # future ULP-level drift between link's and bcfp's tunnels.
-  #
-  # Reads link's `<persist_schema>.streams_mapping_code` (link#187 — built
-  # by lnk_pipeline_run's mapping_code phase, persisted via lnk_pipeline_persist).
-  # Pre-#187 this read from the working schema's table; persist path is
-  # symmetric vs the bcfp source below.
-  link_mc <- DBI::dbGetQuery(conn, sprintf("
-    SELECT lmc.*, ls.blue_line_key,
-           round(ls.downstream_route_measure::numeric, 3) AS downstream_route_measure,
-           round(ls.length_metre::numeric, 3)             AS length_metre
-      FROM %1$s.streams_mapping_code lmc
-      JOIN %1$s.streams ls ON ls.id_segment = lmc.id_segment
-     WHERE ls.watershed_group_code = %2$s",
-    persist_schema, aoi_lit_link))
-
-  bcfp_mc <- DBI::dbGetQuery(conn_ref, sprintf("
-    SELECT bmc.*, bs.blue_line_key,
-           round(bs.downstream_route_measure::numeric, 3) AS downstream_route_measure,
-           round(bs.length_metre::numeric, 3)             AS length_metre
-      FROM bcfishpass.streams_mapping_code bmc
-      JOIN bcfishpass.streams bs
-        ON bs.segmented_stream_id = bmc.segmented_stream_id
-     WHERE bs.watershed_group_code = %s", aoi_lit_ref))
-
-  joined <- merge(
-    link_mc, bcfp_mc,
-    by = c("blue_line_key", "downstream_route_measure", "length_metre"),
-    suffixes = c("_link", "_bcfp"))
-
-  # No-overlap handling. Two distinct cases:
-  #   (a) bcfp has 0 rows for this WSG — bcfp's bundle filter doesn't
-  #       model it (link#157-style, but on the bcfp side: ~36 WSGs we
-  #       model that bcfp's 2026-05-12 build does not, spanning
-  #       Mackenzie/Peace drainages, Stikine, and central-BC basins
-  #       like BEAV/COAL/DUNE). Not a defect — emit a warning +
-  #       NA-filled per-species mapping_code stats so the rollup
-  #       tibble still returns and the run continues.
-  #   (b) bcfp has rows but no key overlap — that IS a fwapg snapshot
-  #       misalignment between tunnels, worth surfacing loudly.
-  if (nrow(joined) == 0L) {
-    if (nrow(bcfp_mc) == 0L) {
-      warning(sprintf(
-        "bcfishpass.streams_mapping_code has 0 rows for %s — bcfp does ",
-        aoi),
-        "not model this WSG. Returning NA-filled mapping_code stats.",
-        call. = FALSE)
-      return(do.call(rbind, lapply(bcfp_species, function(sp) {
-        tibble::tibble(
-          wsg = aoi, species = sp,
-          total_segs = 0L, match_pct = NA_real_,
-          n_diffs = NA_integer_,
-          top_pattern = NA_character_, top_pattern_count = NA_integer_)
-      })))
-    }
-    stop(sprintf(
-      "no overlap between link's and bcfishpass's streams_mapping_code for %s ",
-      aoi),
-      "(link rows: ", nrow(link_mc), ", bcfp rows: ", nrow(bcfp_mc),
-      "). Check fwapg snapshot alignment between the two tunnels.",
-      call. = FALSE)
-  }
-
-  rows <- lapply(bcfp_species, function(sp) {
-    link_col <- paste0("mapping_code_", sp, "_link")
-    bcfp_col <- paste0("mapping_code_", sp, "_bcfp")
-    if (!(link_col %in% names(joined)) || !(bcfp_col %in% names(joined))) {
-      return(tibble::tibble(
-        wsg = aoi, species = sp,
-        total_segs = nrow(joined), match_pct = NA_real_,
-        n_diffs = NA_integer_,
-        top_pattern = NA_character_, top_pattern_count = NA_integer_))
-    }
-    l <- joined[[link_col]]
-    b <- joined[[bcfp_col]]
-    matches <- (is.na(l) & is.na(b)) | (!is.na(l) & !is.na(b) & l == b)
-    n_match <- sum(matches)
-    n_total <- nrow(joined)
-    diff_idx <- which(!matches)
-
-    top_pattern <- NA_character_
-    top_pattern_count <- NA_integer_
-    if (length(diff_idx) > 0L) {
-      patt <- paste0(ifelse(is.na(l[diff_idx]), "<NA>", l[diff_idx]),
-                     " | ",
-                     ifelse(is.na(b[diff_idx]), "<NA>", b[diff_idx]))
-      tab <- sort(table(patt), decreasing = TRUE)
-      top_pattern <- names(tab)[1]
-      top_pattern_count <- as.integer(tab[1])
-    }
-    tibble::tibble(
-      wsg = aoi, species = sp,
-      total_segs = n_total,
-      match_pct = round(100 * n_match / n_total, 2),
-      n_diffs = as.integer(n_total - n_match),
-      top_pattern = top_pattern,
-      top_pattern_count = top_pattern_count)
-  })
-  do.call(rbind, rows)
 }

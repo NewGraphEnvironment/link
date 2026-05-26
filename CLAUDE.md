@@ -11,9 +11,11 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (v0.40.2 as of 2026-05-19)
 
-## Status (2026-05-23) — ACTIVE HANDOFF
+## Status (2026-05-25) — ACTIVE HANDOFF (#175 study-area mapping_code parity)
 
-**Picking up this repo? Read [`planning/active/HANDOFF.md`](planning/active/HANDOFF.md) first, then [`RUNBOOK.md`](RUNBOOK.md).** Work on branch `196-streams-access-source-flags` is mid-stream and handing off to M1. The mapping_code/access mechanism is solved and the next fix (Phase 4d) is scoped — do not start over. v0.40.3 (persist per-source flags) is ready to ship; the dam/access divergence is characterized with a drafted fix + issue.
+**Picking up? Read [`planning/active/task_plan.md`](planning/active/task_plan.md) + [`progress.md`](planning/active/progress.md), then [`research/study_area_run.md`](research/study_area_run.md) and [`RUNBOOK.md`](RUNBOOK.md).** Branch `175-promote-with-mapping-code-flag-to-stand` (pushed, `34b0cd3`). Built a lean tunnel-free, M1-dispatch study-area parity runner (`data-raw/study_area_run.sh` + `study_area_wsgs.R` / `wsg_run_one.R` / `study_area_compare.R`); ran all 3 study areas (50 WSGs) — **authoritative parity median 99.66%** ([`research/provincial_parity_2026_05_25.md`](research/provincial_parity_2026_05_25.md)).
+
+**THE key finding:** per-segment mapping_code parity needs a **post-consolidate recompute** — drainage-closed + DS-first per-host is NOT sufficient (downstream barriers can be cross-bucket / late-in-order; FINA 75%→99% only after re-modelling on the full consolidated barrier set). The recompute is the correctness guarantee; bucketing is just a speed knob. **Next: build #205** (cheap access-only recompute reusing persisted streams/habitat — the current full-pipeline recompute is ~2× on diverged WSGs), then one clean driver-automated run, then annotate the genuine divergences (UNRS reservoir, SETN salmon) + ship. Filed #204 (persist shape-drift) + #205 (cheap recompute). Do NOT start over — the methodology is solved.
 
 ## Status (2026-05-19)
 

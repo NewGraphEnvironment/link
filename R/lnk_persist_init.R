@@ -346,7 +346,16 @@ lnk_persist_init <- function(conn, cfg, species, force_recreate = FALSE) {
     streams_wsg_idx  = "(watershed_group_code)",
     streams_blk_idx  = "(blue_line_key)",
     streams_geom_idx = "USING GIST (geom)",
-    streams_wbk_idx  = "(waterbody_key)"
+    streams_wbk_idx  = "(waterbody_key)",
+    # ltree GiST/btree — fresh::frs_network_features's downstream walk needs
+    # these for ltree-containment traversal (fresh/R/utils.R:416-431,
+    # frs_network.R:450). Without them an ad-hoc persist-schema access recompute
+    # (lnk_access, link#205) times out — the full pipeline is fast only because
+    # its working streams carry these indexes.
+    streams_wscode_gist_idx     = "USING GIST (wscode_ltree)",
+    streams_wscode_btree_idx    = "(wscode_ltree)",
+    streams_localcode_gist_idx  = "USING GIST (localcode_ltree)",
+    streams_localcode_btree_idx = "(localcode_ltree)"
   )
   for (idx_name in names(idx_specs)) {
     .lnk_db_execute(conn, sprintf(
@@ -387,7 +396,13 @@ lnk_persist_init <- function(conn, cfg, species, force_recreate = FALSE) {
     barriers_blocks_idx     = "USING GIN (blocks_species)",
     barriers_source_idx     = "(barrier_source)",
     barriers_blk_drm_idx    = "(blue_line_key, downstream_route_measure)",
-    barriers_geom_idx       = "USING GIST (geom)"
+    barriers_geom_idx       = "USING GIST (geom)",
+    # ltree GiST/btree — same rationale as streams: frs_network_features walks
+    # the barrier (feature) side by ltree containment too (link#205).
+    barriers_wscode_gist_idx     = "USING GIST (wscode_ltree)",
+    barriers_wscode_btree_idx    = "(wscode_ltree)",
+    barriers_localcode_gist_idx  = "USING GIST (localcode_ltree)",
+    barriers_localcode_btree_idx = "(localcode_ltree)"
   )
   for (idx_name in names(barriers_idx_specs)) {
     .lnk_db_execute(conn, sprintf(

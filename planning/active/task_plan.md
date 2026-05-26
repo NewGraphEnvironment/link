@@ -1,50 +1,80 @@
-# Task: mapping_code accessibility — reproduce bcfp `barriers_<sp>` (natural-only + override), provincially consistent (#200)
+# Task: tunnel-free `lnk_compare_mapping_code` + provincial orchestrator for 4-way study-area parity (#175)
 
-link's per-species mapping_code accessibility uses `barriers_<sp>_unified` = ALL barriers (incl dams) where the species ∈ `blocks_species`, so dam-downstream segments read inaccessible and lose their `;DAM` token2. bcfp's access set is natural-only (gradient@species-threshold ∪ falls ∪ subsurface) MINUS observation/habitat override ∪ all user_definite — dams annotate (token2), never block. Fix: make all access inputs province-wide-persisted (natural ✓ already, override + user_definite added), build a `barriers_<sp>_access` view over them, repoint `barriers_per_sp`. Full design: `planning/active/findings.md` + `RUNBOOK.md` §5.
+Promote the `with_mapping_code` flag to a stand-alone `lnk_compare_mapping_code()` export, made **tunnel-free** (reference = local snapshot `fresh.streams_vw_bcfp`, not the `:63333` bcfp tunnel), then fix the provincial orchestrator (M1-dispatch + post-consolidate cross-WSG recompute) so the 3 study areas (Peace 16 / Fraser 8 / Skeena 5, ~52 drainage-closed WSGs) run correctly 4-way (3 cyphers + M1). Full design: `planning/active/findings.md` + issue #175 (updated 2026-05-24). Relates to SRED NewGraphEnvironment/sred-2025-2026#24.
 
-## Phase 1 — make the override + user_definite province-wide
+## Phase 1 — `lnk_compare_mapping_code()` standalone + tunnel-free (reusable core)
 
-- [x] `USER_DEFINITE` family in `lnk_barriers_unify` (mirror FALLS branch: FWA-join for ltree; source `<schema>.barriers_definite`; `blocks_species`=all; reference only `blue_line_key`+`downstream_route_measure` for empty-fallback safety). No persist DDL change.
-- [x] `cols_barrier_overrides` vector + `CREATE TABLE IF NOT EXISTS <persist>.barrier_overrides` in `lnk_persist_init` (one vector drives DDL + INSERT).
-- [x] Persist `barrier_overrides` (DELETE-WHERE-WSG + INSERT, add `'<aoi>'` as `watershed_group_code`) in `lnk_pipeline_persist`; probe-gated.
-- [x] Pre-persist auto-handled: the mapping_code-phase pre-persist (`lnk_pipeline_run.R:188`) already calls the full `lnk_pipeline_persist`, which now persists `barrier_overrides` — no separate edit needed.
-- [x] Tests: unify `USER_DEFINITE` branch SQL; persist_init `barrier_overrides` DDL; persist INSERT projection. (96 pass)
-- [x] DB-smoke: `barrier_overrides` DDL creates in `fresh`; USER_DEFINITE branch parses + resolves ltree/geom (empty-fallback safe + one-row).
-- [x] `/code-check` (round 1 clean) + commit.
+- [x] New export `R/lnk_compare_mapping_code.R`: tunnel-free (reference = local `fresh.streams_vw_bcfp`, `conn_ref=NULL` default; tunnel path kept for back-compat). Joins `<persist>.streams_mapping_code` → `<persist>.streams` on the **full PK** `(id_segment, watershed_group_code)`, diffs vs the snapshot on `(blue_line_key, round(measure,3))` per **WSG-active** species. Returns `wsg, species, total_segs, match_pct, n_diffs, top_pattern, top_pattern_count`.
+- [x] Refactor `.lnk_compare_wsg_mapping_code_diff` → delegates; shared merge/match in `.lnk_mc_diff`.
+- [x] Tests: `test-lnk_compare_mapping_code.R` (arg-val + `.lnk_mc_diff` compose + live PARS BT) + adapted the moved test in `test-lnk_compare_wsg.R`. 93 compare tests pass; **live PARS BT 98.95% tunnel-free**.
+- [x] **Bug caught + fixed:** `id_segment` is per-WSG (not globally unique; 80,555 distinct / 1.5M rows → ~22× cartesian on `id_segment`-alone persist joins). Fixed `lnk_compare_rollup`'s 3 joins to full PK (PARS BT spawning_km 36,820 → 1,681). Added WSG-active species resolution (avoids spurious 0% for absent species). Filed root issue **#203** (position-derived globally-unique `id_segment`, bcfp-style).
+- [ ] `/code-check` + commit.
 
-## Phase 2 — `barriers_<sp>_access` view over province-wide inputs
+## Phase 2 — compare-family wiring + back-compat
 
-- [x] Per-species `_access` view in `lnk_barriers_views`: natural (`barrier_source IN ('GRADIENT','FALLS','SUBSURFACE_FLOW','USER_DEFINITE')`) over persist `barriers`, `NOT EXISTS` anti-join over `barrier_overrides` (derived from the barriers source schema via `sub()`), `USER_DEFINITE` override-exempt, expose `barriers_<sp>_access_id`, keep `wscode_ltree`/`localcode_ltree`, alias `b`.
-- [x] Tests: `_access` view SQL per species; counts updated (22→38, 10→14). 30 pass.
-- [x] DB-smoke: `barriers_bt_access` valid + queryable; 904,262 natural rows, 0 non-natural (dams/anthropogenic excluded) vs `_unified` 1,045,358.
-- [x] `/code-check` (clean) + commit.
+- [x] `lnk_compare_wsg(mapping_code = TRUE)` routes through `lnk_compare_mapping_code` tunnel-free (no `conn_ref` for the mapping_code lens; rollup still uses the tunnel — snapshot lacks `habitat_linear`). Removed dead `.lnk_compare_wsg_mapping_code_diff` helper; fixed the `lnk_mapping_code` doc ref.
+- [x] `data-raw/wsg_compare.R`: added `wsg_compare_mapping_code()` — tunnel-free (local conn only, no `PG_PASS_SHARE`/`:63333`). The dispatcher's post-consolidate compare entry.
+- [x] Tests: repointed `lnk_compare_wsg` composition test to mock `lnk_compare_mapping_code`; 93 compare pass / 1216 total (lone FAIL = env db_conn). Live `wsg_compare_mapping_code("PARS")` = 98.95% with `PG_PASS_SHARE` unset.
+- [ ] `/code-check` + commit.
 
-## Phase 3 — repoint `barriers_per_sp` → `_access`
+## Phase 3a — consolidate/persist shape-tolerance (3-WSG smoke fixes, #204)
 
-- [x] `lnk_pipeline_run` (:215-217) `..._unified` → `..._access`; rewrote KNOWN-DIVERGENT comment (:200-213) to describe the landed fix.
-- [x] `test-lnk_pipeline_run.R` asserts no `_unified`/`barriers_per_sp` name → no update needed.
-- [x] Full suite 1193 pass (the lone FAIL is the env-only `db_conn` test — needs the real db_newgraph tunnel: `.Renviron` `PG_*_SHARE` → `:63333` w/ airvine/bcfishpass creds; CI skips it via `skip_if_no_db`). Phase 3 repoint validated by Phase 2's code-check (consumption confirmed).
-- [x] commit.
+- [x] `data-raw/schema_consolidate.R`: shape-tolerant COPY — enumerate columns on both hosts, COPY the shared set **by name** in dest ordinal order (was positional `SELECT *` → `FROM STDIN`, which broke on any species-column-count drift). Host- and species-count-agnostic; nothing hardcoded. Sibling to #185.
+- [x] `data-raw/cypher_prep.sh`: align persist species to `cfg$species` (matches `lnk_pipeline_run` R/lnk_pipeline_run.R:157), not `parameters_fresh` (11 sp incl CT/DV/RB). Removes the cross-host wide-table drift at source.
+- [x] Filed #204 (persist_init blind to species-column-set drift; abstract/no-hardcode north star). `/code-check` clean (round 1 — 0 findings).
 
-## Phase 4 — DB validation (hard gate): PARS + LFRA vs `fresh.streams_vw_bcfp`
+## Phase 3 — orchestrator: REVISED 2026-05-25 (reuse smoke flow, NOT old-orchestrator refactor)
 
-- [x] Rebuild PARS (BT) `mapping_code=TRUE`; `;DAM` tokens now emit (`SPAWN;DAM` 5293≈5263 bcfp). **98.95% match.** Needed PCEA+UPCE barriers persisted first (cross-WSG dams) — confirms the provincial design.
-- [x] Rebuild LFRA (anadromous; Coquitlam/Alouette/Stave/Ruskin). **bt 97.77%, co 97.90%**; coho DAM tokens 4672≈4636 bcfp. Dams in-WSG (drains to ocean), single run.
-- [x] Found + fixed real bug: `barrier_overrides` PK needed `watershed_group_code` (boundary-stream overrides shared across adjacent WSGs collided). Found + worked around stale-persist-table drift (bt+co wide tables → DROP + recreate full-width).
-- [x] Residual ~1-2% characterized: token1 habitat-presence (`ACCESS`↔`SPAWN`/`REAR`, dimensions/rules) + minor token2 ordering — NOT the dam-access divergence. Recorded in `findings.md`.
+**Decision (user steer "are these already dealt with in our start-to-finish scripts?"):** the 3-WSG smoke already proved an M1-dispatch, tunnel-free, abstract flow that BYPASSES the old M4-centric `wsgs_run_pipeline.sh`/`wsgs_dispatch.sh`/`wsgs_run_host.R`. Those carry M4/tunnel baggage and are NOT being refactored. Discarded the Plan-agent's 30-edit refactor.
 
-## Phase 5 — docs + release
+The proven flow = `cypher_up.sh` → `cypher_prep.sh` → per-host `lnk_pipeline_run(aoi=WSG, mapping_code=TRUE)` (local, no tunnel, no M4) → `schema_consolidate(sources=list({host,via,bucket}))` (shape-tolerant) → `wsg_compare_mapping_code(wsg,cfg)` (tunnel-free) → `cypher_down.sh`.
 
-- [x] `RUNBOOK.md` §2a/§3/§5/§7 updated (fix landed; province-wide override/definite persistence; provincial-accumulation note).
-- [x] `NEWS.md` + `DESCRIPTION` → 0.40.4.
-- [x] Temp validation scripts removed.
-- [ ] `/planning-archive`, `/gh-pr-push`.
+- [x] ~~Cross-WSG `;DAM` solved WITHOUT recompute~~ **CORRECTED 2026-05-25: drainage-closed + DS-first is NOT sufficient.** It reduces but doesn't eliminate cross-WSG access gaps — downstream barriers can be cross-bucket or arrive late in DS-first order. Full run showed FINA 75.5% / PARA 68.6% per-host → 99%+ only after re-modelling on the full consolidated barrier set. **A POST-CONSOLIDATE RECOMPUTE is required** (see Phase 5 + #205). Drainage-closed bucketing is now just a speed knob (less divergence → less recompute), not a correctness lever.
+- [x] Built 4 lean reusable scripts (reuse existing cypher_up/prep/down + schema_consolidate + lnk_pipeline_run + wsg_compare_mapping_code):
+  - `data-raw/study_area_wsgs.R` — closure + DS-first list via `public.wsg_outlet`.
+  - `data-raw/wsg_run_one.R` — `lnk_pipeline_run(mapping_code=TRUE)` for one WSG, local, host-agnostic (`LNK_LOAD=loadall` dispatcher / `library(link)` cyphers).
+  - `data-raw/study_area_compare.R` — tunnel-free `wsg_compare_mapping_code` loop → CSV.
+  - `data-raw/study_area_run.sh` — driver: pre-flight (tunnel-free) → spin → prep → run DS-first buckets (dispatcher local + cyphers) → consolidate cyphers→dispatcher → BURN (minimise idle) → compare → CSV. trap-EXIT burn safety net.
+- [x] `/code-check` (1 fresh-eyes round): fixed burn-verification pipefail (`|| n="?"`), added bucket-overlap warning; accepted empty-array idiom (M1 bash 5.3). Committed.
+
+## Phase 4 — end-to-end mechanics (lean flow)
+
+- [x] Stage A (dispatcher-only PARS, $0): driver + tunnel-free pre-flight + DS-first + compare validated; PARS `ACCESS;DAM;INTERMITTENT`.
+- [x] Full 3-area run (fullrun4, 50 WSGs, M1+2cy): spin → prep → run → consolidate (incl wide tables, #204 fix validated) → burn clean → compare. Caught the prep-race (#583a4ab), branch-on-cyphers (#7e96b10), data-loss-via-trap-burn (→ species filter #157 + soft-fail, 65d26ca).
+
+## Phase 5 — study-area parity run + the recompute finding
+
+- [x] **Authoritative parity obtained** (post-recompute, all 50 WSGs on M1): **median 99.66%, mean 99.11%**, 130/148 rows ≥99%. Genuine divergences (recompute-stable → taxonomy): SETN salmon ~94%, UNRS BT 61.8%.
+- [x] **Methodology finding:** post-consolidate recompute REQUIRED (drainage-closed insufficient). Driver does it (recompute diverged WSGs <99% via full pipeline, then re-compare). Filed **#205** — the full-pipeline recompute is ~2× on diverged WSGs (re-runs streams/habitat to redo cheap access); the cheap access-only recompute (reuse persisted streams/habitat) makes recompute-ALL bulletproof + ~1×.
+- [x] **DECIDED: build #205** (cheap recompute) → Phase 7 below. Then one clean driver-automated run that's both validated AND fast.
+- [ ] Annotate SETN/UNRS via `research/bcfp_divergence_taxonomy.yml` (lnk_parity_annotate).
+
+## Phase 6 — docs + release
+
+- [x] `research/study_area_run.md` (lean flow + recompute methodology + gotchas); `data-raw/README.md` driver entry; memory.
+- [ ] `research/provincial_parity_2026_05_25.md` (authoritative numbers — written this compact-prep).
+- [ ] RUNBOOK (recompute step); NEWS + DESCRIPTION bump; `/planning-archive`; `/gh-pr-push` (after #205 + clean run).
+
+## Phase 7 — #205 cheap access-only recompute (the efficiency keystone)
+
+Plan: `~/.claude/plans/atomic-conjuring-tome.md`. Pre-flight DONE (PSCIS in persist barriers ✓; preservable phase-1 cols ✓). Builds on this `175-` branch.
+
+- [x] **7a.** `R/lnk_access.R` — portable access builder (twin of `lnk_mapping_code`). Builds per-species `_access` + source views internally; AOI-scopes streams as a **real TABLE** with indexes + `ANALYZE` (CRITICAL — view didn't carry stats, planner picked the wrong join direction, blew up cost ~1000×); `merge=TRUE` does surgical UPDATE preserving `remediated_dnstr_ind` + observed `access_<sp>=2`. `devtools::document()` regenerates NAMESPACE + man.
+- [x] **#205 ancillary fixes surfaced + fixed:**
+  - `R/lnk_persist_init.R` — added ltree GIST/btree indexes on persist `streams` + `barriers` (matches `fresh::utils.R:416-431`; required for `frs_network_features` traversal).
+  - `R/lnk_mapping_code.R` — fix #203 cross-WSG cartesian (access read used `id_segment IN ...` which was 50×-duplicated against persist; branch by `watershed_group_code` column presence).
+  - `data-raw/wsg_recompute_one.R` — sets `statement_timeout`/`lock_timeout` so a runaway/locked query fails fast instead of orphaning a server-side backend (RUNBOOK §6).
+- [x] **7b.** `data-raw/wsg_recompute_one.R` (sibling of `wsg_run_one.R`) — `lnk_access(merge=TRUE)` + `lnk_mapping_code` + DELETE/INSERT into `<persist>.streams_mapping_code`. `study_area_run.sh` wired to call it + switched to recompute-ALL (cheap → bulletproof, no threshold). Docs: `research/study_area_run.md` past-tense + `RUNBOOK.md` §6 (orphaned-backend / `statement_timeout` / view-vs-table planner gotcha / #203 cartesian).
+- [ ] **7c.** `tests/testthat/test-lnk_access.R` (deferred — M1 integration test is the proof; unit test is follow-up).
+- [x] **M1 validation:** FINA cheap recompute **11.86 s wall** (vs ~90 s full pipeline = ~8× faster), bcfp parity **99.8% / 57 diffs / `ACCESS;DAM` top** — IDENTICAL to the full-pipeline recompute. Methodology is correct + cheap.
+- [ ] `/code-check` (deferred: empirical integration validation passed; review on PR).
 
 ## Validation
 
-- [x] `devtools::test()` 1193 pass (lone FAIL = env-only `db_conn`, needs real tunnel; CI skips).
-- [~] `devtools::check()` — CI runs it green (no DB → db_conn skips); local can't be fully green without the db_newgraph tunnel. Noted in PR.
-- [x] Phase 4 DB parity (hard gate): PARS BT 98.95%, LFRA BT 97.77% / CO 97.90%; `;DAM` correct.
-- [x] `/code-check` clean on Phases 1-2; Phase 3 covered by Phase 2 review; Phase 4 PK fix reasoned + tested.
-- [x] PWF checkboxes match landed work.
-- [ ] `/planning-archive` on completion.
+- [ ] `devtools::test()` green; Phase 1 live-DB reproduces PARS BT ≈ 98.95% tunnel-free
+- [ ] #205: `lnk_access(merge=TRUE)` recompute reproduces full-pipeline numbers in ~seconds
+- [ ] Phase 4 4-WSG run completes spin→…→burn, cyphers torn down clean
+- [ ] Phase 5 study-area `match_pct` recorded; PARS shows `;DAM`
+- [ ] `/code-check` clean on each commit
+- [ ] PWF checkboxes match landed work
+- [ ] `/planning-archive` on completion
