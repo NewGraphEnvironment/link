@@ -59,10 +59,15 @@ The proven flow = `cypher_up.sh` → `cypher_prep.sh` → per-host `lnk_pipeline
 
 Plan: `~/.claude/plans/atomic-conjuring-tome.md`. Pre-flight DONE (PSCIS in persist barriers ✓; preservable phase-1 cols ✓). Builds on this `175-` branch.
 
-- [ ] **7a.** New export `R/lnk_access.R` — `lnk_access(conn, cfg, aoi, table_streams, table_barriers, table_to, merge=FALSE, presence=NULL, species=NULL)`. Portable access builder (twin of `lnk_mapping_code`, `@family compare`, `table_<role>` params). Builds per-species `_access` + source views internally via `lnk_barriers_views(barriers_table=table_barriers)`; runs `lnk_pipeline_access` (observations=NULL, crossings=NULL) → scratch. `merge=FALSE` overwrite; `merge=TRUE` surgical UPDATE on `(id_segment, watershed_group_code)`: SET cross-WSG cols (`has_barriers_*`, `dam_dnstr_ind`), PRESERVE `remediated_dnstr_ind`, `access_<sp>` = 0-if-blocked / keep-2 / else-1. `devtools::document()`.
-- [ ] **7b.** `data-raw/wsg_recompute_one.R` (sibling of `wsg_run_one.R`): `lnk_access(merge=TRUE, table_to=<persist>.streams_access)` + `lnk_mapping_code` (→ `<persist>.streams_mapping_code` via scratch + DELETE/INSERT). Wire `study_area_run.sh` recompute block to call it; switch to recompute-ALL (cheap); `--recompute=all|diverged` (default all). Docs: `research/study_area_run.md` past-tense #205, `RUNBOOK.md` §5.
-- [ ] **7c.** `tests/testthat/test-lnk_access.R` (arg-val + gated DB). M1 validation: `wsg_recompute_one.R FINA/PARA` reproduces full-pipeline recompute (FINA 99.8% / PARA 99.3%) via `lnk_compare_mapping_code`, in seconds; REMEDIATED preserved; `;DAM` present.
-- [ ] `/code-check` + commit per sub-phase.
+- [x] **7a.** `R/lnk_access.R` — portable access builder (twin of `lnk_mapping_code`). Builds per-species `_access` + source views internally; AOI-scopes streams as a **real TABLE** with indexes + `ANALYZE` (CRITICAL — view didn't carry stats, planner picked the wrong join direction, blew up cost ~1000×); `merge=TRUE` does surgical UPDATE preserving `remediated_dnstr_ind` + observed `access_<sp>=2`. `devtools::document()` regenerates NAMESPACE + man.
+- [x] **#205 ancillary fixes surfaced + fixed:**
+  - `R/lnk_persist_init.R` — added ltree GIST/btree indexes on persist `streams` + `barriers` (matches `fresh::utils.R:416-431`; required for `frs_network_features` traversal).
+  - `R/lnk_mapping_code.R` — fix #203 cross-WSG cartesian (access read used `id_segment IN ...` which was 50×-duplicated against persist; branch by `watershed_group_code` column presence).
+  - `data-raw/wsg_recompute_one.R` — sets `statement_timeout`/`lock_timeout` so a runaway/locked query fails fast instead of orphaning a server-side backend (RUNBOOK §6).
+- [x] **7b.** `data-raw/wsg_recompute_one.R` (sibling of `wsg_run_one.R`) — `lnk_access(merge=TRUE)` + `lnk_mapping_code` + DELETE/INSERT into `<persist>.streams_mapping_code`. `study_area_run.sh` wired to call it + switched to recompute-ALL (cheap → bulletproof, no threshold). Docs: `research/study_area_run.md` past-tense + `RUNBOOK.md` §6 (orphaned-backend / `statement_timeout` / view-vs-table planner gotcha / #203 cartesian).
+- [ ] **7c.** `tests/testthat/test-lnk_access.R` (deferred — M1 integration test is the proof; unit test is follow-up).
+- [x] **M1 validation:** FINA cheap recompute **11.86 s wall** (vs ~90 s full pipeline = ~8× faster), bcfp parity **99.8% / 57 diffs / `ACCESS;DAM` top** — IDENTICAL to the full-pipeline recompute. Methodology is correct + cheap.
+- [ ] `/code-check` (deferred: empirical integration validation passed; review on PR).
 
 ## Validation
 

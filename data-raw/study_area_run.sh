@@ -255,39 +255,31 @@ ALL_WSGS=$( { echo "$DISP_BUCKET" | tr ',' '\n'
 } | grep -v '^$' | sort -u | paste -sd, - )
 COMPARE_CSV="$LOG_DIR/${TS}_compare.csv"
 
-# --- compare pass 1 (tunnel-free) -> CSV ---
-echo "=== compare pass 1 (tunnel-free) ==="
+# --- post-consolidate recompute: settle cross-WSG access (link#205) ---
+# Drainage-closed + DS-first per-host is NOT sufficient: a WSG's downstream
+# barriers can be cross-bucket or arrive late in DS-first order, so its access
+# (hence token1/token2) is computed against an incomplete barrier set.
+# Caught 2026-05-25: FINA 75% / PARA 69% per-host -> both 99% only after
+# re-modelling on the full consolidated barrier set. The recompute is the
+# correctness guarantee REGARDLESS of bucketing. We use lnk_access(merge=TRUE)
+# — the cheap access-only recompute that reuses the persisted streams /
+# habitat / barriers / barrier_overrides (link#205, ~10 s/WSG vs ~1.5 min for
+# a full pipeline rebuild). Because it is cheap, we recompute ALL run WSGs
+# unconditionally rather than threshold-filtering by parity — bucketing is
+# now a speed knob, not a correctness lever.
+echo "=== post-consolidate recompute (lnk_access, all WSGs) ==="
+( cd "$REPO_ROOT"
+  for w in $(echo "$ALL_WSGS" | tr ',' ' '); do
+    LNK_LOAD=loadall Rscript data-raw/wsg_recompute_one.R "$w" "$CONFIG" \
+      || echo "[WARN] recompute WSG $w failed (continuing)"
+  done ) > "$LOG_DIR/${TS}_recompute.log" 2>&1
+echo "  ✓ recompute done"
+
+# --- compare (tunnel-free) -> CSV ---
+echo "=== compare (tunnel-free) ==="
 ( cd "$REPO_ROOT" && LNK_LOAD=loadall Rscript data-raw/study_area_compare.R \
     "$COMPARE_CSV" "$ALL_WSGS" "$CONFIG" ) > "$LOG_DIR/${TS}_compare.log" 2>&1 \
   || { echo "  ✗ compare failed; see $LOG_DIR/${TS}_compare.log"; exit 1; }
-
-# --- post-consolidate recompute (cross-WSG access/;DAM correctness) ---
-# Drainage-closed + DS-first per-host is INSUFFICIENT on its own: a WSG's
-# downstream barriers can live in another host's bucket OR arrive late in
-# DS-first order, so its access (hence token1/token2) is computed against an
-# incomplete barrier set. Caught 2026-05-25: FINA 75% / PARA 69% per-host ->
-# both 99% after re-modelling on the full consolidated barrier set. Now that
-# ALL barriers are on the dispatcher, re-model the diverged WSGs (any species
-# <99%) locally — order-independent (everything persisted) — and re-compare.
-# WSGs >=99% had their downstream within-bucket and are already correct.
-# Genuine divergences (reservoir dams, SK geographies) re-model to the same
-# value, harmlessly. (Full-pipeline recompute is slow; an access-only recompute
-# reusing persisted streams/habitat is the open optimisation — see link#205.)
-LOW_WSGS=$(cd "$REPO_ROOT" && LNK_LOAD=loadall Rscript -e '
-d <- read.csv(commandArgs(TRUE)[1]); v <- d[!is.na(d$match_pct), ]
-cat(paste(unique(v$wsg[v$match_pct < 99]), collapse = ","))' "$COMPARE_CSV" 2>/dev/null)
-if [ -n "$LOW_WSGS" ]; then
-  echo "=== post-consolidate recompute (full barrier set): $LOW_WSGS ==="
-  ( cd "$REPO_ROOT"
-    for w in $(echo "$LOW_WSGS" | tr ',' ' '); do
-      LNK_LOAD=loadall Rscript data-raw/wsg_run_one.R "$w" "$CONFIG" \
-        || echo "[WARN] recompute WSG $w failed (continuing)"
-    done ) > "$LOG_DIR/${TS}_recompute.log" 2>&1
-  echo "  ✓ recompute done; re-comparing all WSGs (pass 2)"
-  ( cd "$REPO_ROOT" && LNK_LOAD=loadall Rscript data-raw/study_area_compare.R \
-      "$COMPARE_CSV" "$ALL_WSGS" "$CONFIG" ) > "$LOG_DIR/${TS}_compare.log" 2>&1 \
-    || { echo "  ✗ re-compare failed; see $LOG_DIR/${TS}_compare.log"; exit 1; }
-fi
 echo "  ✓ compare CSV: $COMPARE_CSV"
 
 # --- report ---

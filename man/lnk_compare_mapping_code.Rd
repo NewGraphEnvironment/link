@@ -99,6 +99,7 @@ lnk_compare_mapping_code(conn, "PARS", cfg, conn_ref = conn_ref)
 \code{\link[=lnk_compare_rollup]{lnk_compare_rollup()}}, \code{\link[=lnk_compare_wsg]{lnk_compare_wsg()}}, \code{\link[=lnk_pipeline_run]{lnk_pipeline_run()}}
 
 Other compare: 
+\code{\link{lnk_access}()},
 \code{\link{lnk_compare_rollup}()},
 \code{\link{lnk_compare_wsg}()},
 \code{\link{lnk_mapping_code}()},

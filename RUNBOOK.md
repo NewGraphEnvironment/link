@@ -376,6 +376,35 @@ direction. Not yet scoped; candidate issue.
   barriers (for cross-WSG views) *and* persists at the end → PARS ~16 min vs
   ~3.5 min normal. Pre-persisting only barriers (not streams+habitat) is the
   open optimization (#196 Phase 5).
+- **`pkill <R client>` does NOT cancel its Postgres query — the backend
+  orphans.** Caught 2026-05-25 (link#205): a killed recompute left a
+  `frs_network_features` SELECT running 1h45m server-side, holding a lock on
+  `barriers_bt_access`; every later `lnk_barriers_views` `DROP VIEW` blocked
+  behind it indefinitely (silent hangs). The R client died; the libpq backend
+  did not. **Always terminate the server-side backend** (`SELECT
+  pg_terminate_backend(pid) FROM pg_stat_activity WHERE state='active' …`),
+  not just the client. And **set `statement_timeout` + `lock_timeout` on any
+  long-running DB op** (`SET statement_timeout = '600000'; SET lock_timeout =
+  '60000'`) — a runaway cancels server-side instead of orphaning, and a
+  blocked DROP VIEW fails fast instead of wedging. `data-raw/wsg_recompute_one.R`
+  sets these on its conn for exactly this reason.
+- **AOI-scoping streams to a VIEW (not a real table) makes the planner pick
+  the wrong join driver.** Caught 2026-05-25 (link#205): scoping
+  `fresh.streams` to one WSG via `CREATE VIEW … WHERE wsg = 'FINA'` left
+  Postgres with no small-table stats; it picked the ~800k-row
+  `barriers_bt_access` as the outer driver of `frs_network_features`'s
+  nested loop, blowing the cost up by ~1000× (estimated 71M result rows, >10
+  min wall). Solution: materialize as a real `CREATE TABLE` with an
+  `id_segment` btree + ltree GiST + blue_line_key + `ANALYZE`. Then the
+  planner picks the 26k-row AOI streams as outer and the walk takes ~10s.
+  Mirrors the full pipeline's working schema (also a real, indexed table).
+- **`id_segment IN (…)` is cartesian against the persist schema** (link#203).
+  `id_segment` is unique per WSG, not globally; a query like
+  `SELECT * FROM <persist_access> WHERE id_segment IN (SELECT id_segment FROM
+  <streams> WHERE wsg = aoi)` matches access rows from every WSG that
+  happens to share those id_segment values → ~N(WSGs)× duplicates. Filter
+  by `watershed_group_code` directly when the table has that column.
+  `lnk_mapping_code` learned this the hard way.
 
 ---
 

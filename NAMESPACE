@@ -3,6 +3,7 @@
 S3method(format,lnk_stamp)
 S3method(print,lnk_config)
 S3method(print,lnk_stamp)
+export(lnk_access)
 export(lnk_aggregate)
 export(lnk_barrier_overrides)
 export(lnk_barriers_emit)

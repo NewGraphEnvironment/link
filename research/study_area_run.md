@@ -40,11 +40,12 @@ cyphers in order. Dispatcher-only (no cyphers): omit `--cy-workspaces`, pass one
    per-WSG **soft-fail**.
 5. **Consolidate** cyphers → dispatcher (`schema_consolidate.R`, shape-tolerant).
 6. **Burn** cyphers (then a trap-EXIT safety net).
-7. **Compare pass 1** all run WSGs tunnel-free (`study_area_compare.R`).
-8. **Post-consolidate recompute** the diverged WSGs (any species `<99%`) on the
-   dispatcher — now that ALL barriers are consolidated, re-model them against
-   the complete barrier set (`wsg_run_one.R`), order-independent.
-9. **Compare pass 2** (final CSV).
+7. **Post-consolidate recompute ALL run WSGs** on the dispatcher via
+   `wsg_recompute_one.R` → [lnk_access()] `merge=TRUE` (cheap access-only,
+   reuses persisted streams/habitat/barriers; ~10s/WSG) + `lnk_mapping_code`.
+   Because it is cheap, every run WSG is re-settled — bucketing is a speed
+   knob, not a correctness lever (link#205).
+8. **Compare** all run WSGs tunnel-free (`study_area_compare.R`) → CSV.
 
 ## Post-consolidate recompute — the correctness guarantee
 
@@ -63,11 +64,20 @@ DS-first order. Caught 2026-05-25 — FINA 75.5% / PARA 68.6% per-host → both
 
 So the methodology is **distribute (any bucketing) → consolidate → recompute →
 compare**, and the *recompute* is what makes it correct **regardless of machine
-count or WSG assignment**. The bucketing is now just a speed knob (less
-divergence → less recompute), not a correctness lever. Today the recompute uses
-the full pipeline on diverged WSGs (slow); the cheap access-only recompute that
-reuses persisted streams/habitat is **link#205** — that makes recompute-ALL
-viable and the guarantee bulletproof rather than threshold-based.
+count or WSG assignment**. The recompute is **`lnk_access(merge=TRUE)` +
+`lnk_mapping_code`** (link#205): cheap access-only, reusing the persisted
+streams / habitat / barriers / barrier_overrides — no full pipeline, ~10s/WSG
+(FINA: 11.86s wall vs ~90s full pipeline, identical bcfp parity). Two
+non-obvious things had to be true for it to be cheap:
+1. AOI-scope the segments as a **real table** (with indexes + `ANALYZE`),
+   not a view — otherwise the planner picks the ~800k-row barriers as the
+   outer driver and the join cost explodes by ~1000×.
+2. Persist `streams` / `barriers` need **ltree GIST/btree indexes**
+   (`lnk_persist_init` builds them; matches `fresh`'s working-table pattern).
+3. `lnk_mapping_code` must filter access by `watershed_group_code` when the
+   table has that column (persist) — the original `id_segment IN (…)` query is
+   cartesian against persist because `id_segment` is per-WSG, not globally
+   unique (link#203).
 
 ## Gotchas that cost real time (2026-05-25)
 
@@ -99,4 +109,5 @@ viable and the guarantee bulletproof rather than threshold-based.
 | `data-raw/study_area_run.sh` | driver: pre-flight → spin → prep → run DS-first → consolidate → burn → compare |
 | `data-raw/study_area_wsgs.R` | focal → drainage-closed, DS-first, species-filtered WSG list |
 | `data-raw/wsg_run_one.R` | one WSG: `lnk_pipeline_run(mapping_code=TRUE)`, local, host-agnostic |
+| `data-raw/wsg_recompute_one.R` | one WSG cheap post-consolidate recompute (`lnk_access(merge=TRUE)` + `lnk_mapping_code`) — link#205. Sets `statement_timeout`/`lock_timeout` so a runaway/locked query fails fast |
 | `data-raw/study_area_compare.R` | tunnel-free `lnk_compare_mapping_code` loop → CSV |
