@@ -32,9 +32,9 @@ New exported function `lnk_wsg_resolve(cfg, loaded, wsgs = NULL, expand = TRUE)`
 
 ## Phase 1 — fresh dep bump + install
 
-- [ ] Edit `DESCRIPTION`: `Remotes: NewGraphEnvironment/fresh@v0.31.0 → @v0.32.0` and `Suggests: fresh (>= 0.31.0) → (>= 0.32.0)`
-- [ ] Reinstall fresh into link's library via `pak::local_install(upgrade = FALSE, ask = FALSE)` or `devtools::install_dev_deps()` so `fresh::frs_wsg_drainage` is available
-- [ ] Smoke test: `fresh::frs_wsg_drainage(lnk_db_conn(), c("PARS","BULK"))` returns the 15-WSG closure
+- [x] Edit `DESCRIPTION`: `Remotes: NewGraphEnvironment/fresh@v0.31.0 → @v0.32.0` and `Suggests: fresh (>= 0.31.0) → (>= 0.32.0)`
+- [x] Reinstall fresh into link's library via `pak::pkg_install("NewGraphEnvironment/fresh@v0.32.0")` — confirmed `packageVersion("fresh") == "0.32.0"`, `frs_wsg_drainage` present in fresh namespace
+- [x] Smoke test from link's session: `fresh::frs_wsg_drainage(conn, c("PARS","BULK"))` returns the 15-WSG closure — exact match to expected `KISP, KLUM, LKEL, LSKE, MSKE, USKE, BULK, FINA, LBTN, LPCE, MORR, PARA, PCEA, UPCE, PARS`
 
 ## Phase 2 — Write `R/lnk_wsg_resolve.R`
 
