@@ -46,13 +46,9 @@ New exported function `lnk_wsg_resolve(cfg, loaded, wsgs = NULL, expand = TRUE)`
 
 ## Phase 3 — Tests
 
-- [ ] `tests/testthat/test-lnk_wsg_resolve.R`:
-  - Arg validation (no DB): non-`lnk_config` cfg / non-list loaded / non-char wsgs / non-logical expand / `NA` in wsgs rejected
-  - Stub-based province-mode: 3-WSG stub `loaded$wsg_species_presence` with mixed presence; `wsgs = NULL` returns the species-positive subset
-  - Stub-based strict-mode: `wsgs = c("X","Y"), expand = FALSE` species-filters input verbatim (no DB call)
-  - Live DB (skip_if_no_db per `tests/testthat/setup.R`): `wsgs = c("PARS","BULK")` returns the exact 15-WSG closure; province mode returns ≥ 200 WSGs
-- [ ] `devtools::test()` green
-- [ ] `/code-check` clean → atomic commit
+- [x] `tests/testthat/test-lnk_wsg_resolve.R` — 13 test_that blocks / 22 expectations: 6 arg-validation + 1 missing-wp + 1 missing-species-columns (no DB), 4 stub-based province/strict (stub deliberately not pre-sorted so `sort()` is load-bearing per code-check Round 1), 2 live-DB (gated on `skip_if_no_db()`): PARS+BULK exact 15-WSG closure + province mode ≥ 200 WSGs sorted
+- [x] `devtools::test(filter = "lnk_wsg_resolve")` green — 22/22 PASS against live fwapg
+- [x] `/code-check` Round 1: 1 finding (stub pre-sorted → province sort not actually exercised); fixed by reordering stub to `c("CCCC","AAAA","BBBB")`. Round 2: 1 naming finding (misleading test name); renamed. → atomic commit
 
 ## Phase 4 — Convert `data-raw/study_area_wsgs.R` to CLI shim
 
