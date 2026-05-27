@@ -67,8 +67,9 @@ lnk_wsg_resolve <- function(cfg, loaded, wsgs = NULL, expand = TRUE) {
          call. = FALSE)
   }
   if (!is.null(wsgs)) {
-    if (!is.character(wsgs) || length(wsgs) == 0L ||
-        anyNA(wsgs) || !all(nzchar(wsgs))) {
+    bad <- !is.character(wsgs) || length(wsgs) == 0L ||
+      anyNA(wsgs) || !all(nzchar(wsgs))
+    if (bad) {
       stop("wsgs must be NULL or a non-empty character vector free of NA",
            call. = FALSE)
     }

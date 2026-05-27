@@ -54,13 +54,12 @@ test_that("lnk_wsg_resolve rejects missing/empty wsg_species_presence", {
                         class = c("lnk_config", "list"))
   expect_error(lnk_wsg_resolve(cfg_stub, list()),
                "wsg_species_presence is missing or empty")
-  expect_error(
-    lnk_wsg_resolve(cfg_stub,
-                    list(wsg_species_presence = data.frame(
-                      watershed_group_code = character(0),
-                      bt = character(0), stringsAsFactors = FALSE))),
-    "wsg_species_presence is missing or empty"
-  )
+  empty_wp <- list(wsg_species_presence = data.frame(
+    watershed_group_code = character(0),
+    bt = character(0), stringsAsFactors = FALSE
+  ))
+  expect_error(lnk_wsg_resolve(cfg_stub, empty_wp),
+               "wsg_species_presence is missing or empty")
 })
 
 test_that("lnk_wsg_resolve rejects missing species columns", {

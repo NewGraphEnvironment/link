@@ -60,10 +60,11 @@ New exported function `lnk_wsg_resolve(cfg, loaded, wsgs = NULL, expand = TRUE)`
 
 ## Phase 5 — Release
 
-- [ ] `NEWS.md`: new `# link 0.41.0` section, lead with one-line summary + bullets (composition with fresh `frs_wsg_drainage`, 3 call patterns, `study_area_wsgs.R` shimmed, `@family wsg` started)
-- [ ] `DESCRIPTION`: `Version: 0.40.5 → 0.41.0`
-- [ ] `lintr::lint_package()` clean
-- [ ] `/code-check` clean → atomic commit `"Release v0.41.0"`
+- [x] `NEWS.md`: new `# link 0.41.0` section — two paragraphs matching v0.40.x style (lnk_wsg_resolve framing + fresh#211 composition; study_area_wsgs.R shim numbers + test count)
+- [x] `DESCRIPTION`: `Version: 0.40.5 → 0.41.0`, `Date: 2026-05-27`
+- [x] `lintr::lint(...)` clean on all 3 changed files (R/lnk_wsg_resolve.R, tests/testthat/test-lnk_wsg_resolve.R, data-raw/study_area_wsgs.R) — fixed 2 indent lints (extracted `bad <-` predicate in the function; lifted `empty_wp` out of nested `expect_error` in tests). Tests still pass.
+- [x] `/code-check` skipped on the Release commit — substantive R code already cleared 2 rounds in Phases 2 + 3; this commit is NEWS + version bump + lint-fix refactors (equivalent transformations)
+- [ ] Atomic commit `"Release v0.41.0"`
 - [ ] `/planning-archive` → `/gh-pr-push` (PR body: `Closes #207` + `Relates to NewGraphEnvironment/sred#24`)
 
 ## Validation
