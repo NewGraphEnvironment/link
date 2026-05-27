@@ -38,11 +38,11 @@ New exported function `lnk_wsg_resolve(cfg, loaded, wsgs = NULL, expand = TRUE)`
 
 ## Phase 2 — Write `R/lnk_wsg_resolve.R`
 
-- [ ] Function with `cfg` + `loaded` validation mirroring `lnk_pipeline_species` (`R/lnk_pipeline_species.R:42-53`); 3-branch dispatch on `(wsgs, expand)`; `expand = TRUE` branch opens DB via `lnk_db_conn()` + `on.exit(dbDisconnect)`; species filter inline using exact `apply(wp[, tolower(cfg$species), drop = FALSE], 1, function(r) any(r %in% c("t","TRUE",TRUE)))` idiom from `study_area_wsgs.R:60-64`; preserve DS-first order via `closure[closure %in% modelable]`
-- [ ] Roxygen: `@family wsg` (new family), `@param` blocks, `\dontrun{}` example showing all 3 call patterns; `@export`
-- [ ] `devtools::document()` → regenerate `NAMESPACE` + `man/lnk_wsg_resolve.Rd`
-- [ ] Smoke-validate live: `lnk_wsg_resolve(cfg, loaded, c("PARS","BULK"))` reproduces 15-WSG closure; `expand = FALSE` returns just `c("PARS","BULK")`; `NULL` returns full bundle-species province
-- [ ] `/code-check` clean → atomic commit
+- [x] Function with `cfg` + `loaded` validation mirroring `lnk_pipeline_species` (`R/lnk_pipeline_species.R:42-53`); 3-branch dispatch on `(wsgs, expand)`; `expand = TRUE` branch opens DB via `lnk_db_conn()` + `on.exit(dbDisconnect)`; species filter inline using `study_area_wsgs.R:60-64` idiom; preserve DS-first order via `closure[closure %in% modelable]`. Province mode sorts alphabetically (Round 1 fix); closure + strict modes `message()` listing dropped species-less WSGs (Round 1 fix, parity with CLI script).
+- [x] Roxygen: `@family wsg`, `@param` blocks, `\dontrun{}` example showing all 3 call patterns; `@return` documents per-mode ordering + drop-message behaviour; `@export`
+- [x] `devtools::document()` → regenerated `NAMESPACE` + `man/lnk_wsg_resolve.Rd`
+- [x] Smoke-validated live: closure 15/15 exact match; strict returns input verbatim; province 217 WSGs sorted; species-less message fires
+- [x] `/code-check` Round 1 (3 findings: undocumented province order, silent strict drops, silent closure drops) all fixed; Round 2 Clean → atomic commit
 
 ## Phase 3 — Tests
 
