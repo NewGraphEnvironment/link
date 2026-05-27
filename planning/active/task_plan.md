@@ -52,10 +52,11 @@ New exported function `lnk_wsg_resolve(cfg, loaded, wsgs = NULL, expand = TRUE)`
 
 ## Phase 4 — Convert `data-raw/study_area_wsgs.R` to CLI shim
 
-- [ ] Rewrite: keep args parsing + `LNK_LOAD=loadall` idiom; replace closure + filter block (lines 43-74) with one `lnk_wsg_resolve(cfg, loaded, wsgs = focal)` call; `cat(paste(result, collapse=","), "\n")` to stdout
-- [ ] Validate stdout shape unchanged: `Rscript data-raw/study_area_wsgs.R "PARS,BULK"` outputs the exact same comma-separated 15-WSG list (byte-comparable to pre-#207)
-- [ ] Confirm `data-raw/study_area_run.sh` interface unchanged
-- [ ] `/code-check` clean → atomic commit
+- [x] Rewrite: 76 → 33 lines. Args parsing + `LNK_LOAD=loadall` idiom preserved; closure + filter + ordering block replaced with one `lnk_wsg_resolve(cfg, loaded, wsgs = focal)` call; loud-fail on empty result preserved
+- [x] **Byte-identical stdout** validated: `diff /tmp/pre207_stdout.txt /tmp/post207_stdout.txt` returns 0 for `PARS,BULK` input (76 bytes both)
+- [x] Stderr unchanged (only pre-existing `cabd_blkey_xref.csv` warning from `lnk_load_overrides`); no new noise from `lnk_wsg_resolve` in the happy path
+- [x] `data-raw/study_area_run.sh` interface unchanged
+- [x] `/code-check` Round 1 Clean → atomic commit
 
 ## Phase 5 — Release
 
