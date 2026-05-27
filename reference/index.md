@@ -144,3 +144,6 @@
 
 - [`lnk_thresholds()`](https://newgraphenvironment.github.io/link/reference/lnk_thresholds.md)
   : Load configurable severity scoring thresholds
+
+- [`lnk_wsg_resolve()`](https://newgraphenvironment.github.io/link/reference/lnk_wsg_resolve.md)
+  : Resolve the Set of Watershed Groups to Model

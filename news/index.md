@@ -1,5 +1,42 @@
 # Changelog
 
+## link 0.41.0
+
+New exported function
+[`lnk_wsg_resolve()`](https://newgraphenvironment.github.io/link/reference/lnk_wsg_resolve.md)
+— the bundle-aware “what WSGs should we model?” resolver
+([\#207](https://github.com/NewGraphEnvironment/link/issues/207)).
+Composes the FWA drainage closure (now a fresh primitive:
+[`fresh::frs_wsg_drainage()`](https://newgraphenvironment.github.io/fresh/reference/frs_wsg_drainage.html),
+[NewGraphEnvironment/fresh#211](https://github.com/NewGraphEnvironment/fresh/pull/212)
+/ fresh v0.32.0) with the bundle’s `wsg_species_presence` filter
+(link#157). Three call patterns dispatched by `(wsgs, expand)`: province
+mode (`wsgs = NULL` → all bundle-species WSGs, sorted alphabetically),
+closure mode (`wsgs = c(...), expand = TRUE` → focal + drainage closure,
+DS-first preserved), strict mode (`wsgs = c(...), expand = FALSE` →
+species-filter input verbatim). Validation mirrors
+`lnk_pipeline_species`; closure mode opens its own DB conn via
+[`lnk_db_conn()`](https://newgraphenvironment.github.io/link/reference/lnk_db_conn.md)
+with `on.exit` cleanup; closure + strict modes emit
+[`message()`](https://rdrr.io/r/base/message.html) listing any
+species-less WSGs dropped from the result (parity with the previous
+inline diagnostic). New `@family wsg` — pre-stages a `lnk_wsg_*` family
+for follow-on topology helpers (e.g. cross-host DS-first bucketing).
+
+`data-raw/study_area_wsgs.R` shrinks 76 → 33 lines — pure CLI shim now,
+delegating to
+[`lnk_wsg_resolve()`](https://newgraphenvironment.github.io/link/reference/lnk_wsg_resolve.md).
+Stdout is **byte-identical** for the regression baseline (`PARS,BULK` →
+the exact 15-WSG closure
+`KISP, KLUM, LKEL, LSKE, MSKE, USKE, BULK, FINA, LBTN, LPCE, MORR, PARA, PCEA, UPCE, PARS`),
+so `data-raw/study_area_run.sh` and downstream consumers are unchanged.
+fresh dependency pin:
+`Remotes: NewGraphEnvironment/fresh@v0.31.0 → `[`@v0`](https://github.com/v0)`.32.0`.
+22 tests added (`tests/testthat/test-lnk_wsg_resolve.R`): arg
+validation, stub-based province/strict (stub deliberately
+non-alphabetical so [`sort()`](https://rdrr.io/r/base/sort.html) is
+load-bearing), live-DB closure + province (gated on `skip_if_no_db()`).
+
 ## link 0.40.5
 
 Tunnel-free per-segment `mapping_code` parity for the 3 FWCP study areas
