@@ -52,12 +52,102 @@
 <img src="logo.png" class="logo" alt=""><h1 id="link-">link <a class="anchor" aria-label="anchor" href="#link-"></a>
 </h1>
 </div>
-<p>Experimental package — breaking all the time and loving the learning curve.</p>
+<blockquote>
+<p>Stream Network Habitat Interpretation</p>
+</blockquote>
+<p>An interpretation layer between field/modelled evidence and stream-network habitat modelling. Loads override CSVs through a canonical schema, snaps points to the network, matches records across data systems, resolves per-species barrier connectivity from observations and confirmations, and orchestrates a multi-phase pipeline that produces per-segment habitat outputs. Pairs with <a href="https://github.com/NewGraphEnvironment/fresh" class="external-link">fresh</a> for the modelling engine. Currently reproduces <a href="https://github.com/smnorris/bcfishpass" class="external-link">bcfishpass</a>’s fish-passage classification method on BC’s Freshwater Atlas; interpretation logic is network-agnostic by design.</p>
+<blockquote>
+<p>Experimental — APIs and outputs change without notice as the package consolidates.</p>
+</blockquote>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"NewGraphEnvironment/link"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="prerequisites">Prerequisites<a class="anchor" aria-label="anchor" href="#prerequisites"></a>
+</h2>
+<p>PostgreSQL with <a href="https://github.com/smnorris/fwapg" class="external-link">fwapg</a> loaded (same prerequisite as <code>fresh</code>; see <code>fresh</code>’s <code>docker/</code> for a local setup). Connection via <code><a href="reference/lnk_db_conn.html">lnk_db_conn()</a></code> or direct <code><a href="https://dbi.r-dbi.org/reference/dbConnect.html" class="external-link">DBI::dbConnect()</a></code>.</p>
+</div>
+<div class="section level2">
+<h2 id="what-link-does">What link does<a class="anchor" aria-label="anchor" href="#what-link-does"></a>
+</h2>
+<p>link sits between raw evidence — PSCIS crossings, fish observations, habitat confirmations, falls, user-defined barriers — and the habitat-modelling engine:</p>
+<ol style="list-style-type: decimal">
+<li>
+<strong>Load</strong> override CSVs (<code><a href="reference/lnk_load.html">lnk_load()</a></code>, <code><a href="reference/lnk_load_overrides.html">lnk_load_overrides()</a></code>) with canonical-schema validation via <a href="https://github.com/NewGraphEnvironment/crate" class="external-link">crate</a>.</li>
+<li>
+<strong>Snap</strong> points to the network (<code><a href="reference/lnk_points_snap.html">lnk_points_snap()</a></code>).</li>
+<li>
+<strong>Match</strong> crossings across data systems by network position (<code><a href="reference/lnk_match.html">lnk_match()</a></code>) within a configurable in-stream distance tolerance — linking PSCIS, MoTI, operator-submitted, and provincial inventories.</li>
+<li>
+<strong>Resolve</strong> per-species barrier overrides from evidence (<code><a href="reference/lnk_barrier_overrides.html">lnk_barrier_overrides()</a></code>): which gradient or falls barriers to skip given upstream observations + habitat confirmations.</li>
+<li>
+<strong>Orchestrate</strong> the pipeline (<code>lnk_pipeline_*()</code>, or <code><a href="reference/lnk_pipeline_run.html">lnk_pipeline_run()</a></code> end-to-end) that produces per-watershed-group habitat outputs reproducing bcfishpass.</li>
+<li>
+<strong>Compare</strong> runs across configurations (<code>lnk_compare_*()</code>, <code><a href="reference/lnk_parity_annotate.html">lnk_parity_annotate()</a></code>, <code>lnk_baseline_*()</code>) for province-wide parity audits and reproducibility checks.</li>
+</ol>
+</div>
+<div class="section level2">
+<h2 id="the-pipeline">The pipeline<a class="anchor" aria-label="anchor" href="#the-pipeline"></a>
+</h2>
+<p>For a given watershed group:</p>
+<pre><code>load → setup → prepare → break → access → classify → connect → crossings → persist</code></pre>
+<p>Each phase is a callable function (<code>lnk_pipeline_&lt;phase&gt;()</code>), so a user can stop, inspect, resume, or rebuild from any phase. <code><a href="reference/lnk_pipeline_run.html">lnk_pipeline_run()</a></code> chains them end-to-end. <code><a href="reference/lnk_baseline_current.html">lnk_baseline_current()</a></code> captures a known-good run as a reference for diffing future runs.</p>
+</div>
+<div class="section level2">
+<h2 id="using-with-fresh">Using with fresh<a class="anchor" aria-label="anchor" href="#using-with-fresh"></a>
+</h2>
+<p><a href="https://github.com/NewGraphEnvironment/fresh" class="external-link">fresh</a> is the modelling engine — it segments, classifies, and aggregates on the network. link prepares fresh’s two key inputs:</p>
+<ul>
+<li>
+<strong>Break sources</strong> for <code>frs_network_segment()</code> — per-table specs assembled via <code><a href="reference/lnk_source.html">lnk_source()</a></code>.</li>
+<li>
+<strong>Barrier overrides</strong> for <code>frs_habitat_classify()</code> — a per-species skip list produced by <code><a href="reference/lnk_barrier_overrides.html">lnk_barrier_overrides()</a></code>.</li>
+</ul>
+<p>The two together reproduce bcfishpass on the Freshwater Atlas.</p>
+</div>
+<div class="section level2">
+<h2 id="roadmap">Roadmap<a class="anchor" aria-label="anchor" href="#roadmap"></a>
+</h2>
+<p>link is currently FWA-grounded through its dependency on <code>fresh</code>. The interpretation logic — what counts as evidence of a passable barrier, how observations resolve override decisions, how cross-system crossings are matched — is network-agnostic by design. Active design work:</p>
+<ul>
+<li>
+<strong>Network agnosticism</strong> inherited from <code>fresh</code>’s in-flight <code>spyda</code> topology engine (<a href="https://github.com/NewGraphEnvironment/fresh/issues/41" class="external-link">fresh#41</a>) and configurable column names (<a href="https://github.com/NewGraphEnvironment/fresh/issues/44" class="external-link">fresh#44</a>).</li>
+<li>
+<strong>Crossing-connectivity scoring</strong> — <code><a href="reference/lnk_score.html">lnk_score()</a></code> framework for combining multiple connectivity signals into a prioritization output.</li>
+<li>
+<strong>Province-wide parity audits</strong> — <code>lnk_compare_*()</code> machinery for systematic comparison of pipeline variants and reproduction of an authoritative reference run.</li>
+</ul>
+</div>
+<div class="section level2">
+<h2 id="ecosystem">Ecosystem<a class="anchor" aria-label="anchor" href="#ecosystem"></a>
+</h2>
+<table class="table">
+<colgroup>
+<col width="50%">
+<col width="50%">
+</colgroup>
+<thead><tr>
+<th>Package</th>
+<th>Role</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><strong>link</strong></td>
+<td>Stream-network habitat interpretation (this package) — interprets evidence, drives the modelling engine</td>
+</tr>
+<tr>
+<td><a href="https://github.com/NewGraphEnvironment/fresh" class="external-link">fresh</a></td>
+<td>Stream-network modelling engine — segment, classify, cluster, aggregate</td>
+</tr>
+<tr>
+<td><a href="https://github.com/NewGraphEnvironment/crate" class="external-link">crate</a></td>
+<td>Canonical schema + validation for input CSVs</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div class="section level2">
 <h2 id="license">License<a class="anchor" aria-label="anchor" href="#license"></a>
