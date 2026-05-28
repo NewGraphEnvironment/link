@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.41.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.41.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,6 +31,10 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.41.1" id="link-0411">link 0.41.1<a class="anchor" aria-label="anchor" href="#link-0411"></a></h2>
+<p><code>data-raw/study_area_run.sh</code> gains a <code>--schema=&lt;persist-schema&gt;</code> flag for side-by-side bundle compares. Without the flag, behaviour is unchanged (config’s YAML <code>pipeline$schema</code> default). With the flag, the driver exports <code>LNK_SCHEMA</code> so all per-WSG R scripts (<code>wsg_run_one.R</code>, <code>wsg_recompute_one.R</code>, <code>study_area_compare.R</code>) override <code>cfg$pipeline$schema</code> at runtime. The propagation works through SSH to cyphers too (each remote shell exports <code>LNK_SCHEMA</code> before its WSG loop). Use case: <code>--config=default --schema=fresh_default</code> lets a default-config run land in <code>fresh_default</code> without clobbering an earlier <code>--config=bcfishpass</code> baseline in <code>fresh</code>. Empty <code>--schema=</code> value errors loudly rather than silently falling through to the YAML default. Live-validated on ADMS (2.2 min, 11 species habitat tables landed in <code>fresh_default</code>, <code>fresh</code> untouched).</p>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.41.0" id="link-0410">link 0.41.0<a class="anchor" aria-label="anchor" href="#link-0410"></a></h2>
 <p>New exported function <code><a href="../reference/lnk_wsg_resolve.html">lnk_wsg_resolve()</a></code> — the bundle-aware “what WSGs should we model?” resolver (<a href="https://github.com/NewGraphEnvironment/link/issues/207" class="external-link">#207</a>). Composes the FWA drainage closure (now a fresh primitive: <code><a href="https://newgraphenvironment.github.io/fresh/reference/frs_wsg_drainage.html" class="external-link">fresh::frs_wsg_drainage()</a></code>, <a href="https://github.com/NewGraphEnvironment/fresh/pull/212" class="external-link">NewGraphEnvironment/fresh#211</a> / fresh v0.32.0) with the bundle’s <code>wsg_species_presence</code> filter (link#157). Three call patterns dispatched by <code>(wsgs, expand)</code>: province mode (<code>wsgs = NULL</code> → all bundle-species WSGs, sorted alphabetically), closure mode (<code>wsgs = c(...), expand = TRUE</code> → focal + drainage closure, DS-first preserved), strict mode (<code>wsgs = c(...), expand = FALSE</code> → species-filter input verbatim). Validation mirrors <code>lnk_pipeline_species</code>; closure mode opens its own DB conn via <code><a href="../reference/lnk_db_conn.html">lnk_db_conn()</a></code> with <code>on.exit</code> cleanup; closure + strict modes emit <code><a href="https://rdrr.io/r/base/message.html" class="external-link">message()</a></code> listing any species-less WSGs dropped from the result (parity with the previous inline diagnostic). New <code>@family wsg</code> — pre-stages a <code>lnk_wsg_*</code> family for follow-on topology helpers (e.g. cross-host DS-first bucketing).</p>

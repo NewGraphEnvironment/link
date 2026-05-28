@@ -1,5 +1,21 @@
 # Changelog
 
+## link 0.41.1
+
+`data-raw/study_area_run.sh` gains a `--schema=<persist-schema>` flag
+for side-by-side bundle compares. Without the flag, behaviour is
+unchanged (config’s YAML `pipeline$schema` default). With the flag, the
+driver exports `LNK_SCHEMA` so all per-WSG R scripts (`wsg_run_one.R`,
+`wsg_recompute_one.R`, `study_area_compare.R`) override
+`cfg$pipeline$schema` at runtime. The propagation works through SSH to
+cyphers too (each remote shell exports `LNK_SCHEMA` before its WSG
+loop). Use case: `--config=default --schema=fresh_default` lets a
+default-config run land in `fresh_default` without clobbering an earlier
+`--config=bcfishpass` baseline in `fresh`. Empty `--schema=` value
+errors loudly rather than silently falling through to the YAML default.
+Live-validated on ADMS (2.2 min, 11 species habitat tables landed in
+`fresh_default`, `fresh` untouched).
+
 ## link 0.41.0
 
 New exported function
