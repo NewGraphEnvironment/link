@@ -28,6 +28,11 @@ suppressPackageStartupMessages({
 source("data-raw/wsg_compare.R")
 
 cfg <- lnk_config(config)
+# LNK_SCHEMA env var (set by study_area_run.sh --schema=) overrides the
+# config's YAML default persist schema. Compare must read from the schema
+# the run/recompute wrote to.
+.lnk_schema_env <- Sys.getenv("LNK_SCHEMA")
+if (nzchar(.lnk_schema_env)) cfg$pipeline$schema <- .lnk_schema_env
 
 rows <- list()
 for (w in wsgs) {

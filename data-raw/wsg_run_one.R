@@ -34,6 +34,12 @@ conn <- lnk_db_conn(dbname = "fwapg", host = "localhost", port = 5432L,
 on.exit(try(DBI::dbDisconnect(conn), silent = TRUE), add = TRUE)
 
 cfg    <- lnk_config(config)
+# LNK_SCHEMA env var (set by study_area_run.sh --schema=) overrides the
+# config's YAML default persist schema — used for side-by-side bundle
+# compares so e.g. `--config=default --schema=fresh_default` doesn't
+# clobber an earlier `--config=bcfishpass` run sitting in `fresh`.
+.lnk_schema_env <- Sys.getenv("LNK_SCHEMA")
+if (nzchar(.lnk_schema_env)) cfg$pipeline$schema <- .lnk_schema_env
 loaded <- lnk_load_overrides(cfg)
 
 # Defensive skip (link#157): a WSG with no bundle-species presence can't be
