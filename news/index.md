@@ -1,5 +1,17 @@
 # Changelog
 
+## link 0.41.2
+
+`data-raw/study_area_run.sh` pre-flight bug fix exposed by v0.41.1’s
+`--schema=` flag. The pre-flight check for the bcfp reference view was
+looking in `$SCHEMA.streams_vw_bcfp` (the override-able persist schema),
+but the bcfp reference is hard-coded to `fresh.streams_vw_bcfp` in
+`R/lnk_compare_mapping_code.R:78` — it’s a constant comparison
+reference, not a per-run output. The coincidence held while `$SCHEMA`
+was always `"fresh"`; the new flag exposed the latent bug. Now the
+pre-flight always checks `fresh.streams_vw_bcfp`, independent of
+`$SCHEMA`.
+
 ## link 0.41.1
 
 `data-raw/study_area_run.sh` gains a `--schema=<persist-schema>` flag

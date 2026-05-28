@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.41.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.41.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,6 +31,10 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.41.2" id="link-0412">link 0.41.2<a class="anchor" aria-label="anchor" href="#link-0412"></a></h2>
+<p><code>data-raw/study_area_run.sh</code> pre-flight bug fix exposed by v0.41.1’s <code>--schema=</code> flag. The pre-flight check for the bcfp reference view was looking in <code>$SCHEMA.streams_vw_bcfp</code> (the override-able persist schema), but the bcfp reference is hard-coded to <code>fresh.streams_vw_bcfp</code> in <code>R/lnk_compare_mapping_code.R:78</code> — it’s a constant comparison reference, not a per-run output. The coincidence held while <code>$SCHEMA</code> was always <code>"fresh"</code>; the new flag exposed the latent bug. Now the pre-flight always checks <code>fresh.streams_vw_bcfp</code>, independent of <code>$SCHEMA</code>.</p>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.41.1" id="link-0411">link 0.41.1<a class="anchor" aria-label="anchor" href="#link-0411"></a></h2>
 <p><code>data-raw/study_area_run.sh</code> gains a <code>--schema=&lt;persist-schema&gt;</code> flag for side-by-side bundle compares. Without the flag, behaviour is unchanged (config’s YAML <code>pipeline$schema</code> default). With the flag, the driver exports <code>LNK_SCHEMA</code> so all per-WSG R scripts (<code>wsg_run_one.R</code>, <code>wsg_recompute_one.R</code>, <code>study_area_compare.R</code>) override <code>cfg$pipeline$schema</code> at runtime. The propagation works through SSH to cyphers too (each remote shell exports <code>LNK_SCHEMA</code> before its WSG loop). Use case: <code>--config=default --schema=fresh_default</code> lets a default-config run land in <code>fresh_default</code> without clobbering an earlier <code>--config=bcfishpass</code> baseline in <code>fresh</code>. Empty <code>--schema=</code> value errors loudly rather than silently falling through to the YAML default. Live-validated on ADMS (2.2 min, 11 species habitat tables landed in <code>fresh_default</code>, <code>fresh</code> untouched).</p>
