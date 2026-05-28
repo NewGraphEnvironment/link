@@ -132,9 +132,12 @@ trap burn_cyphers EXIT
 echo "=== pre-flight ==="
 fail=0
 pg_isready -h localhost -p 5432 >/dev/null 2>&1 || { echo "  ✗ local fwapg down (:5432)"; fail=1; }
+# bcfp reference view is a constant (fresh.streams_vw_bcfp) — it lives in
+# its own schema independent of $SCHEMA (the persist target). All compare
+# code paths (R/lnk_compare_mapping_code.R:78 default) read it from `fresh`.
 HAS_VW=$(PGPASSWORD=postgres psql -h localhost -p 5432 -U postgres -d fwapg -t -A -c \
-  "SELECT 1 FROM information_schema.tables WHERE table_schema='$SCHEMA' AND table_name='streams_vw_bcfp'" 2>/dev/null || true)
-[ "$HAS_VW" = "1" ] || { echo "  ✗ $SCHEMA.streams_vw_bcfp missing (run snapshot_bcfp.sh --with-bcfp-views)"; fail=1; }
+  "SELECT 1 FROM information_schema.tables WHERE table_schema='fresh' AND table_name='streams_vw_bcfp'" 2>/dev/null || true)
+[ "$HAS_VW" = "1" ] || { echo "  ✗ fresh.streams_vw_bcfp missing (run snapshot_bcfp.sh --with-bcfp-views)"; fail=1; }
 if [ "$N_CY" -gt 0 ]; then
   doctl compute droplet list --no-header >/dev/null 2>&1 || { echo "  ✗ doctl not authed"; fail=1; }
   (cd "$CYPHER_TF" && tofu workspace list >/dev/null 2>&1) || { echo "  ✗ tofu workspace list failed"; fail=1; }
