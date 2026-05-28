@@ -24,7 +24,7 @@
 #     --focal=<dispatcher focal csv> \
 #     --focal=<cy1 focal csv> \
 #     --focal=<cy2 focal csv> \
-#     [--config=bcfishpass] [--keep-cyphers]
+#     [--config=bcfishpass] [--schema=<persist-schema>] [--keep-cyphers]
 #
 # The number of --focal flags MUST equal 1 (dispatcher) + N cyphers, in
 # order: first --focal -> dispatcher, the rest -> cyphers in --cy-workspaces
@@ -38,12 +38,15 @@ set -euo pipefail
 # --- args ---
 CY_WS=""
 CONFIG="bcfishpass"
+SCHEMA_OVERRIDE=""
 KEEP_CYPHERS=0
 FOCAL_ARR=()
 for arg in "$@"; do
   case "$arg" in
     --cy-workspaces=*) CY_WS="${arg#--cy-workspaces=}" ;;
     --config=*)        CONFIG="${arg#--config=}" ;;
+    --schema=*)        SCHEMA_OVERRIDE="${arg#--schema=}"
+                       [ -n "$SCHEMA_OVERRIDE" ] || { echo "FATAL: --schema= requires a non-empty value" >&2; exit 1; } ;;
     --focal=*)         FOCAL_ARR+=("${arg#--focal=}") ;;
     --keep-cyphers)    KEEP_CYPHERS=1 ;;
     *) echo "unknown arg: $arg" >&2; exit 1 ;;
@@ -73,10 +76,18 @@ CYPHER_TF="$HOME/Projects/repo/rtj/env/do/dev/cypher"
 # cypher_prep does `git fetch origin && git reset --hard origin/$BRANCH`.
 LINK_BRANCH="$(git -C "$REPO_ROOT" branch --show-current)"
 
-# Resolve persist schema (don't hardcode "fresh").
-SCHEMA=$(cd "$REPO_ROOT" && Rscript -e \
-  'cat(link::lnk_config(commandArgs(TRUE)[1])$pipeline$schema)' "$CONFIG" 2>/dev/null || true)
+# Resolve persist schema: --schema= overrides the config's YAML default
+# (e.g. for side-by-side bundle compares: --config=default --schema=fresh_default
+# keeps the bcfp-config run intact in `fresh`). All R scripts read LNK_SCHEMA
+# below and override `cfg$pipeline$schema` if it is non-empty.
+if [ -n "$SCHEMA_OVERRIDE" ]; then
+  SCHEMA="$SCHEMA_OVERRIDE"
+else
+  SCHEMA=$(cd "$REPO_ROOT" && Rscript -e \
+    'cat(link::lnk_config(commandArgs(TRUE)[1])$pipeline$schema)' "$CONFIG" 2>/dev/null || true)
+fi
 [ -n "$SCHEMA" ] || { echo "FATAL: could not resolve persist schema for --config=$CONFIG"; exit 1; }
+export LNK_SCHEMA="$SCHEMA"
 
 echo "=== study_area_run $TS ==="
 echo "  config:       $CONFIG"
@@ -208,7 +219,7 @@ LOCAL_PID=$!
 declare -A CY_PID
 for WS in "${CY_WS_ARR[@]}"; do
   IP="${CY_IP[$WS]}"; B_SPACE=$(echo "${CY_BUCKET[$WS]}" | tr ',' ' ')
-  ssh "cypher@$IP" "cd ~/Projects/repo/link && for w in $B_SPACE; do Rscript data-raw/wsg_run_one.R \$w '$CONFIG' || echo \"[WARN] cy WSG \$w failed\"; done" \
+  ssh "cypher@$IP" "cd ~/Projects/repo/link && export LNK_SCHEMA='$SCHEMA' && for w in $B_SPACE; do Rscript data-raw/wsg_run_one.R \$w '$CONFIG' || echo \"[WARN] cy WSG \$w failed\"; done" \
     > "$LOG_DIR/${TS}_run_$WS.log" 2>&1 &
   CY_PID[$WS]=$!
 done

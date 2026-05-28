@@ -43,6 +43,11 @@ DBI::dbExecute(conn, "SET statement_timeout = '600000'")  # 10 min / statement
 DBI::dbExecute(conn, "SET lock_timeout = '60000'")        # 1 min on lock waits
 
 cfg    <- lnk_config(config)
+# LNK_SCHEMA env var (set by study_area_run.sh --schema=) overrides the
+# config's YAML default persist schema. Recompute must match the schema
+# used by the run/consolidate phases.
+.lnk_schema_env <- Sys.getenv("LNK_SCHEMA")
+if (nzchar(.lnk_schema_env)) cfg$pipeline$schema <- .lnk_schema_env
 loaded <- lnk_load_overrides(cfg)
 
 active <- lnk_pipeline_species(cfg, loaded, wsg)
