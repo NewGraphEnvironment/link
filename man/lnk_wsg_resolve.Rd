@@ -4,7 +4,7 @@
 \alias{lnk_wsg_resolve}
 \title{Resolve the Set of Watershed Groups to Model}
 \usage{
-lnk_wsg_resolve(cfg, loaded, wsgs = NULL, expand = TRUE)
+lnk_wsg_resolve(cfg, loaded, wsgs = NULL, expand = TRUE, conn = NULL)
 }
 \arguments{
 \item{cfg}{An \code{lnk_config} object from \code{\link[=lnk_config]{lnk_config()}}.}
@@ -18,6 +18,12 @@ for province mode. Codes are upper-cased internally before use.}
 \item{expand}{Logical. When \code{wsgs} is non-\code{NULL}, \code{TRUE} (default)
 closure-expands via \code{\link[fresh:frs_wsg_drainage]{fresh::frs_wsg_drainage()}}; \code{FALSE} uses the
 input as-is (species-filter only).}
+
+\item{conn}{Optional \link[DBI:DBIConnection-class]{DBI::DBIConnection}. Only used in closure
+mode (\code{wsgs} non-\code{NULL} and \code{expand = TRUE}). When \code{NULL} (default),
+one is opened via \code{\link[=lnk_db_conn]{lnk_db_conn()}} (env-var-driven) and closed on
+exit. Pass an explicit conn to control the target DB (e.g. local
+docker fwapg vs an env-pinned tunnel) — recommended in scripts.}
 }
 \value{
 Character vector of WSG codes. Province mode returns the
@@ -42,7 +48,9 @@ Three call patterns dispatched by \code{wsgs} + \code{expand}:
 \item \code{wsgs = c(...)} + \code{expand = TRUE} (default) — \emph{closure mode}:
 expand the focal set to its drainage closure (focal + every WSG
 they flow through, ordered downstream-first), then species-filter.
-Opens a connection via \code{\link[=lnk_db_conn]{lnk_db_conn()}} and closes it on exit.
+Requires a DB connection — pass \code{conn} explicitly, or one is
+opened from \code{\link[=lnk_db_conn]{lnk_db_conn()}} (defaults to env-var-driven) and
+closed on exit.
 \item \code{wsgs = c(...)} + \code{expand = FALSE} — \emph{strict mode}: species-filter
 the input verbatim, no closure expansion, no DB.
 }
