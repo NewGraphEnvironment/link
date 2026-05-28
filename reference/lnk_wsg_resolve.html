@@ -15,7 +15,7 @@ filter (link#157)."><meta property="og:image" content="https://newgraphenvironme
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.41.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.41.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -50,7 +50,7 @@ filter (link#157).</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">lnk_wsg_resolve</span><span class="op">(</span><span class="va">cfg</span>, <span class="va">loaded</span>, wsgs <span class="op">=</span> <span class="cn">NULL</span>, expand <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">lnk_wsg_resolve</span><span class="op">(</span><span class="va">cfg</span>, <span class="va">loaded</span>, wsgs <span class="op">=</span> <span class="cn">NULL</span>, expand <span class="op">=</span> <span class="cn">TRUE</span>, conn <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -76,6 +76,14 @@ for province mode. Codes are upper-cased internally before use.</p></dd>
 closure-expands via <code><a href="https://newgraphenvironment.github.io/fresh/reference/frs_wsg_drainage.html" class="external-link">fresh::frs_wsg_drainage()</a></code>; <code>FALSE</code> uses the
 input as-is (species-filter only).</p></dd>
 
+
+<dt id="arg-conn">conn<a class="anchor" aria-label="anchor" href="#arg-conn"></a></dt>
+<dd><p>Optional <a href="https://dbi.r-dbi.org/reference/DBIConnection-class.html" class="external-link">DBI::DBIConnection</a>. Only used in closure
+mode (<code>wsgs</code> non-<code>NULL</code> and <code>expand = TRUE</code>). When <code>NULL</code> (default),
+one is opened via <code><a href="lnk_db_conn.html">lnk_db_conn()</a></code> (env-var-driven) and closed on
+exit. Pass an explicit conn to control the target DB (e.g. local
+docker fwapg vs an env-pinned tunnel) — recommended in scripts.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -93,7 +101,9 @@ species filter (closure / strict modes) are reported via <code><a href="https://
 <li><p><code>wsgs = c(...)</code> + <code>expand = TRUE</code> (default) — <em>closure mode</em>:
 expand the focal set to its drainage closure (focal + every WSG
 they flow through, ordered downstream-first), then species-filter.
-Opens a connection via <code><a href="lnk_db_conn.html">lnk_db_conn()</a></code> and closes it on exit.</p></li>
+Requires a DB connection — pass <code>conn</code> explicitly, or one is
+opened from <code><a href="lnk_db_conn.html">lnk_db_conn()</a></code> (defaults to env-var-driven) and
+closed on exit.</p></li>
 <li><p><code>wsgs = c(...)</code> + <code>expand = FALSE</code> — <em>strict mode</em>: species-filter
 the input verbatim, no closure expansion, no DB.</p></li>
 </ul><p>Species filter: a WSG is kept if <em>any</em> of <code>tolower(cfg$species)</code>

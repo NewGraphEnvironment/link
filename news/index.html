@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.41.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.41.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,6 +31,10 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.41.3" id="link-0413">link 0.41.3<a class="anchor" aria-label="anchor" href="#link-0413"></a></h2>
+<p><code><a href="../reference/lnk_wsg_resolve.html">lnk_wsg_resolve()</a></code> gains an optional <code>conn</code> argument so callers can control the DB connection rather than relying on env-var-driven <code><a href="../reference/lnk_db_conn.html">lnk_db_conn()</a></code>. When <code>conn = NULL</code> (default), behaviour is unchanged — <code><a href="../reference/lnk_db_conn.html">lnk_db_conn()</a></code> is used as before. The change matters in environments where <code>PG_*_SHARE</code> env vars (or <code>~/.Renviron</code>) point at a tunnel that isn’t reachable: <code>data-raw/study_area_wsgs.R</code> now opens a local docker fwapg connection explicitly and passes it through, matching every other driver script’s <code>localhost:5432/fwapg postgres/postgres</code> pattern (and the pre-#207 inline behaviour). Strict mode and province mode remain DB-free; <code>conn</code> is consulted only in closure mode (<code>wsgs</code> non-<code>NULL</code> + <code>expand = TRUE</code>). Latent on the v0.41.0 release; exposed by the v0.41.1 study-area run when the dispatcher’s <code>~/.Renviron</code> was pinned to the dead db_newgraph tunnel.</p>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.41.2" id="link-0412">link 0.41.2<a class="anchor" aria-label="anchor" href="#link-0412"></a></h2>
 <p><code>data-raw/study_area_run.sh</code> pre-flight bug fix exposed by v0.41.1’s <code>--schema=</code> flag. The pre-flight check for the bcfp reference view was looking in <code>$SCHEMA.streams_vw_bcfp</code> (the override-able persist schema), but the bcfp reference is hard-coded to <code>fresh.streams_vw_bcfp</code> in <code>R/lnk_compare_mapping_code.R:78</code> — it’s a constant comparison reference, not a per-run output. The coincidence held while <code>$SCHEMA</code> was always <code>"fresh"</code>; the new flag exposed the latent bug. Now the pre-flight always checks <code>fresh.streams_vw_bcfp</code>, independent of <code>$SCHEMA</code>.</p>

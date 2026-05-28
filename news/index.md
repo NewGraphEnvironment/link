@@ -1,5 +1,24 @@
 # Changelog
 
+## link 0.41.3
+
+[`lnk_wsg_resolve()`](https://newgraphenvironment.github.io/link/reference/lnk_wsg_resolve.md)
+gains an optional `conn` argument so callers can control the DB
+connection rather than relying on env-var-driven
+[`lnk_db_conn()`](https://newgraphenvironment.github.io/link/reference/lnk_db_conn.md).
+When `conn = NULL` (default), behaviour is unchanged —
+[`lnk_db_conn()`](https://newgraphenvironment.github.io/link/reference/lnk_db_conn.md)
+is used as before. The change matters in environments where `PG_*_SHARE`
+env vars (or `~/.Renviron`) point at a tunnel that isn’t reachable:
+`data-raw/study_area_wsgs.R` now opens a local docker fwapg connection
+explicitly and passes it through, matching every other driver script’s
+`localhost:5432/fwapg postgres/postgres` pattern (and the pre-#207
+inline behaviour). Strict mode and province mode remain DB-free; `conn`
+is consulted only in closure mode (`wsgs` non-`NULL` + `expand = TRUE`).
+Latent on the v0.41.0 release; exposed by the v0.41.1 study-area run
+when the dispatcher’s `~/.Renviron` was pinned to the dead db_newgraph
+tunnel.
+
 ## link 0.41.2
 
 `data-raw/study_area_run.sh` pre-flight bug fix exposed by v0.41.1’s

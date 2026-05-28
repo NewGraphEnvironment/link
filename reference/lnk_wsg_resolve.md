@@ -9,7 +9,7 @@ with the bundle's species-presence filter (link#157).
 ## Usage
 
 ``` r
-lnk_wsg_resolve(cfg, loaded, wsgs = NULL, expand = TRUE)
+lnk_wsg_resolve(cfg, loaded, wsgs = NULL, expand = TRUE, conn = NULL)
 ```
 
 ## Arguments
@@ -37,6 +37,17 @@ lnk_wsg_resolve(cfg, loaded, wsgs = NULL, expand = TRUE)
   [`fresh::frs_wsg_drainage()`](https://newgraphenvironment.github.io/fresh/reference/frs_wsg_drainage.html);
   `FALSE` uses the input as-is (species-filter only).
 
+- conn:
+
+  Optional
+  [DBI::DBIConnection](https://dbi.r-dbi.org/reference/DBIConnection-class.html).
+  Only used in closure mode (`wsgs` non-`NULL` and `expand = TRUE`).
+  When `NULL` (default), one is opened via
+  [`lnk_db_conn()`](https://newgraphenvironment.github.io/link/reference/lnk_db_conn.md)
+  (env-var-driven) and closed on exit. Pass an explicit conn to control
+  the target DB (e.g. local docker fwapg vs an env-pinned tunnel) —
+  recommended in scripts.
+
 ## Value
 
 Character vector of WSG codes. Province mode returns the
@@ -57,10 +68,10 @@ Three call patterns dispatched by `wsgs` + `expand`:
 
 - `wsgs = c(...)` + `expand = TRUE` (default) — *closure mode*: expand
   the focal set to its drainage closure (focal + every WSG they flow
-  through, ordered downstream-first), then species-filter. Opens a
-  connection via
+  through, ordered downstream-first), then species-filter. Requires a DB
+  connection — pass `conn` explicitly, or one is opened from
   [`lnk_db_conn()`](https://newgraphenvironment.github.io/link/reference/lnk_db_conn.md)
-  and closes it on exit.
+  (defaults to env-var-driven) and closed on exit.
 
 - `wsgs = c(...)` + `expand = FALSE` — *strict mode*: species-filter the
   input verbatim, no closure expansion, no DB.
