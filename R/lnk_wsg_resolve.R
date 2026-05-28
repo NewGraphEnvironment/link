@@ -14,7 +14,9 @@
 #'   - `wsgs = c(...)` + `expand = TRUE` (default) — *closure mode*:
 #'     expand the focal set to its drainage closure (focal + every WSG
 #'     they flow through, ordered downstream-first), then species-filter.
-#'     Opens a connection via [lnk_db_conn()] and closes it on exit.
+#'     Requires a DB connection — pass `conn` explicitly, or one is
+#'     opened from [lnk_db_conn()] (defaults to env-var-driven) and
+#'     closed on exit.
 #'   - `wsgs = c(...)` + `expand = FALSE` — *strict mode*: species-filter
 #'     the input verbatim, no closure expansion, no DB.
 #'
@@ -30,6 +32,11 @@
 #' @param expand Logical. When `wsgs` is non-`NULL`, `TRUE` (default)
 #'   closure-expands via [fresh::frs_wsg_drainage()]; `FALSE` uses the
 #'   input as-is (species-filter only).
+#' @param conn Optional [DBI::DBIConnection-class]. Only used in closure
+#'   mode (`wsgs` non-`NULL` and `expand = TRUE`). When `NULL` (default),
+#'   one is opened via [lnk_db_conn()] (env-var-driven) and closed on
+#'   exit. Pass an explicit conn to control the target DB (e.g. local
+#'   docker fwapg vs an env-pinned tunnel) — recommended in scripts.
 #'
 #' @return Character vector of WSG codes. Province mode returns the
 #'   species-filtered set sorted alphabetically; closure mode preserves the
@@ -57,7 +64,8 @@
 #' # Strict mode — exactly these, species-filtered, no closure
 #' lnk_wsg_resolve(cfg, loaded, wsgs = c("BBAR", "BULK"), expand = FALSE)
 #' }
-lnk_wsg_resolve <- function(cfg, loaded, wsgs = NULL, expand = TRUE) {
+lnk_wsg_resolve <- function(cfg, loaded, wsgs = NULL, expand = TRUE,
+                            conn = NULL) {
   if (!inherits(cfg, "lnk_config")) {
     stop("cfg must be an lnk_config object (from lnk_config())",
          call. = FALSE)
@@ -111,8 +119,10 @@ lnk_wsg_resolve <- function(cfg, loaded, wsgs = NULL, expand = TRUE) {
   }
 
   # Closure mode ---------------------------------------------------------
-  conn <- lnk_db_conn()
-  on.exit(try(DBI::dbDisconnect(conn), silent = TRUE), add = TRUE)
+  if (is.null(conn)) {
+    conn <- lnk_db_conn()
+    on.exit(try(DBI::dbDisconnect(conn), silent = TRUE), add = TRUE)
+  }
   closure <- fresh::frs_wsg_drainage(conn, focal)
   # Preserve DS-first order from frs_wsg_drainage by indexing closure,
   # not the modelable set

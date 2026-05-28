@@ -25,9 +25,19 @@ if (identical(Sys.getenv("LNK_LOAD"), "loadall")) {
   suppressPackageStartupMessages(library(link))
 }
 
+suppressPackageStartupMessages({
+  library(DBI); library(RPostgres)
+})
+# Force local docker fwapg regardless of PG_*_SHARE env (matches every
+# other driver script and the pre-#207 inline behaviour) — env-var
+# defaults point at the db_newgraph tunnel which is dead on M1.
+conn <- DBI::dbConnect(RPostgres::Postgres(), host = "localhost", port = 5432,
+                       dbname = "fwapg", user = "postgres", password = "postgres")
+on.exit(try(DBI::dbDisconnect(conn), silent = TRUE), add = TRUE)
+
 cfg    <- lnk_config(config)
 loaded <- lnk_load_overrides(cfg)
-keep   <- lnk_wsg_resolve(cfg, loaded, wsgs = focal)
+keep   <- lnk_wsg_resolve(cfg, loaded, wsgs = focal, conn = conn)
 
 if (length(keep) == 0L) {
   stop("no modelable WSGs after species-presence filter", call. = FALSE)
