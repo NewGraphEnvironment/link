@@ -16,6 +16,14 @@ devtools::load_all(quiet = TRUE)
 
 bundles <- c("bcfishpass", "default")
 
+# Findings accumulator — every `!!`-level finding routes through flag() so the
+# end-of-run rollup (and non-zero exit) catches anything that scrolled past.
+FINDINGS <- character(0)
+flag <- function(section, msg) {
+  FINDINGS[[length(FINDINGS) + 1L]] <<- sprintf("[%s] %s", section, msg)
+  cat(sprintf("    !! %s\n", msg))
+}
+
 cat("\n==== CONFIG AUDIT (link", as.character(packageVersion("link")), ") ====\n")
 
 # ---------------------------------------------------------------------------
@@ -23,55 +31,26 @@ cat("\n==== CONFIG AUDIT (link", as.character(packageVersion("link")), ") ====\n
 # ---------------------------------------------------------------------------
 cat("\n--- 1. Provenance drift (config.yaml `provenance:` vs current files) ---\n")
 
-shape_checksum <- function(path) {
-  if (!file.exists(path)) return(NA_character_)
-  ext <- tools::file_ext(path)
-  obj <- if (ext == "csv") {
-    df <- utils::read.csv(path, stringsAsFactors = FALSE, check.names = FALSE)
-    list(cols = names(df), nrow = nrow(df), col_types = vapply(df, class, character(1)))
-  } else if (ext == "yaml") {
-    y <- yaml::read_yaml(path)
-    list(top_keys = names(y))
-  } else {
-    list(size = file.size(path))
-  }
-  paste0("sha256:", digest::digest(obj, algo = "sha256", serialize = TRUE))
-}
-
-byte_checksum <- function(path) {
-  if (!file.exists(path)) return(NA_character_)
-  paste0("sha256:", digest::digest(file = path, algo = "sha256"))
-}
-
-drift_report <- list()
-for (b in bundles) {
-  cfg_path <- sprintf("inst/extdata/configs/%s/config.yaml", b)
-  cfg <- yaml::read_yaml(cfg_path)
-  bundle_dir <- dirname(cfg_path)
-  rows <- list()
-  for (key in names(cfg$provenance)) {
-    p <- file.path(bundle_dir, key)
-    rec <- cfg$provenance[[key]]
-    cur_byte <- byte_checksum(p)
-    cur_shape <- shape_checksum(p)
-    rows[[length(rows) + 1]] <- tibble(
-      bundle = b, file = key,
-      byte_drift  = !is.na(rec$checksum) && !is.na(cur_byte) &&
-                     rec$checksum != cur_byte,
-      shape_drift = !is.na(rec$shape_checksum) && !is.na(cur_shape) &&
-                     rec$shape_checksum != cur_shape,
-      cur_byte = cur_byte, rec_byte = rec$checksum,
-      cur_shape = cur_shape, rec_shape = rec$shape_checksum
-    )
-  }
-  drift_report[[b]] <- bind_rows(rows)
-}
+# Use the canonical verifier (R/lnk_config_verify.R) — same byte +
+# .lnk_shape_fingerprint recipe that wrote the provenance baselines (and that
+# regen_provenance.R refreshes). Reinventing the recipe here is what caused the
+# earlier 24/24 false-positive shape-drift wall.
+drift_report <- lapply(bundles, function(b) {
+  v <- lnk_config_verify(lnk_config(b))
+  v$bundle <- b
+  v
+})
 all_drift <- bind_rows(drift_report)
 drifted <- all_drift |> dplyr::filter(byte_drift | shape_drift)
 cat(sprintf("  %d drifted entries across %d bundles\n",
             nrow(drifted), length(bundles)))
 if (nrow(drifted) > 0) {
   print(drifted |> dplyr::select(bundle, file, byte_drift, shape_drift), n = Inf)
+  for (i in seq_len(nrow(drifted))) {
+    kinds <- c(if (drifted$byte_drift[i]) "byte", if (drifted$shape_drift[i]) "shape")
+    flag(sprintf("1 %s", drifted$bundle[i]),
+         sprintf("%s drift: %s", paste(kinds, collapse = "+"), drifted$file[i]))
+  }
 }
 
 # ---------------------------------------------------------------------------
@@ -81,15 +60,19 @@ cat("\n--- 2. rules.yaml regen vs committed ---\n")
 for (b in bundles) {
   dim_csv <- sprintf("inst/extdata/configs/%s/dimensions.csv", b)
   rules_committed <- sprintf("inst/extdata/configs/%s/rules.yaml", b)
+  # edge_types = "explicit" to match how the committed rules.yaml is actually
+  # built (data-raw/build_rules.R + regen_provenance.R). Regenerating with
+  # "categories" here is what produced the earlier spurious all-species diff.
   tf <- tempfile(fileext = ".yaml")
-  lnk_rules_build(dim_csv, tf, edge_types = "categories")
+  lnk_rules_build(dim_csv, tf, edge_types = "explicit")
 
   identical_yaml <- identical(yaml::read_yaml(tf), yaml::read_yaml(rules_committed))
   identical_text <- identical(readLines(tf), readLines(rules_committed))
   cat(sprintf("  %-12s  identical(structure)=%s  identical(bytes)=%s\n",
               b, identical_yaml, identical_text))
   if (!identical_yaml) {
-    cat("    !! regen differs from committed — committed rules.yaml is stale\n")
+    flag(sprintf("2 %s", b),
+         "rules.yaml regen differs from committed — committed copy is stale")
   } else if (!identical_text) {
     cat("    (text differs but yaml structure matches — likely formatting only)\n")
   }
@@ -120,23 +103,84 @@ for (b in bundles) {
   cat(sprintf("    wsg_species_presence cols:%s\n", paste(sort(wsg_sp), collapse = " ")))
   cat(sprintf("    rules.yaml top-level:     %s\n", paste(sort(yaml_sp), collapse = " ")))
 
-  # Mismatches
-  in_dim_not_pf <- setdiff(dim_sp, pf_sp)
-  in_pf_not_dim <- setdiff(pf_sp, dim_sp)
-  in_pf_not_wsg <- setdiff(pf_sp, wsg_sp)
-  in_dim_not_yaml <- setdiff(dim_sp, yaml_sp)
-  in_yaml_not_dim <- setdiff(yaml_sp, dim_sp)
-
-  flags <- list(
-    "dim ∖ pf"     = in_dim_not_pf,
-    "pf ∖ dim"     = in_pf_not_dim,
-    "pf ∖ wsg-cols"= in_pf_not_wsg,
-    "dim ∖ yaml"   = in_dim_not_yaml,
-    "yaml ∖ dim"   = in_yaml_not_dim
+  # Defect directions — a non-empty set here breaks the pipeline, so flag:
+  #   dim ∖ pf   : species has habitat rules but no access/cluster params
+  #                (classify/cluster fails for it)
+  #   yaml ∖ dim : rules.yaml entry with no dimensions source — can't happen
+  #                via lnk_rules_build(), so it means a stale/hand-edited yaml
+  defects <- list(
+    "dim ∖ pf"   = setdiff(dim_sp, pf_sp),
+    "yaml ∖ dim" = setdiff(yaml_sp, dim_sp)
   )
-  for (name in names(flags)) {
-    if (length(flags[[name]]) > 0) {
-      cat(sprintf("    !! %s: %s\n", name, paste(flags[[name]], collapse = ", ")))
+  # Expected supersets / intentional exclusions — print for visibility but do
+  # NOT flag (these are by design, not defects):
+  #   pf ∖ dim    : params carry species we don't habitat-model (e.g. CT/DV/RB)
+  #   pf ∖ wsg    : params species absent from a (subset) presence table
+  #   dim ∖ yaml  : dimensions species intentionally dropped at generation
+  expected <- list(
+    "pf ∖ dim"     = setdiff(pf_sp, dim_sp),
+    "pf ∖ wsg-cols"= setdiff(pf_sp, wsg_sp),
+    "dim ∖ yaml"   = setdiff(dim_sp, yaml_sp)
+  )
+  for (name in names(expected)) {
+    if (length(expected[[name]]) > 0) {
+      cat(sprintf("    (expected) %s: %s\n", name,
+                  paste(expected[[name]], collapse = ", ")))
+    }
+  }
+  for (name in names(defects)) {
+    if (length(defects[[name]]) > 0) {
+      flag(sprintf("3 %s", b),
+           sprintf("%s: %s", name, paste(defects[[name]], collapse = ", ")))
+    }
+  }
+}
+
+# ---------------------------------------------------------------------------
+# 3b. parameters_fresh column drift (fresh canonical vs link config)
+# ---------------------------------------------------------------------------
+# fresh owns the access/cluster parameter SCHEMA; link hand-authors per-bundle
+# copies seeded from it plus link-only `observation_*` extensions. Values
+# legitimately diverge (link tunes them) — only the COLUMN SET matters here.
+# A column fresh added that link is missing means link's copy may no longer
+# load cleanly through frs_habitat(); flag it. See link#129 for the
+# directionality (link->fresh for rules.yaml; fresh->link col-schema for this).
+cat("\n--- 3b. parameters_fresh column drift (fresh canonical vs link) ---\n")
+pf_fresh_path <- system.file("extdata", "parameters_fresh.csv", package = "fresh")
+if (!nzchar(pf_fresh_path)) {
+  cat("  (fresh's bundled parameters_fresh.csv not found — is fresh installed?)\n")
+} else {
+  cols_fresh <- names(utils::read.csv(pf_fresh_path, stringsAsFactors = FALSE,
+                                      check.names = FALSE, nrows = 1))
+  cat(sprintf("  fresh canonical (%d cols): %s\n",
+              length(cols_fresh), paste(cols_fresh, collapse = ", ")))
+  for (b in bundles) {
+    pf_csv   <- sprintf("inst/extdata/configs/%s/parameters_fresh.csv", b)
+    cols_link <- names(utils::read.csv(pf_csv, stringsAsFactors = FALSE,
+                                       check.names = FALSE, nrows = 1))
+
+    in_fresh_not_link <- setdiff(cols_fresh, cols_link)
+    extra_link        <- setdiff(cols_link, cols_fresh)
+    link_extensions   <- extra_link[grepl("^observation_", extra_link)]
+    unexpected_link   <- setdiff(extra_link, link_extensions)
+
+    cat(sprintf("\n  bundle: %s\n", b))
+    if (length(link_extensions) > 0) {
+      cat(sprintf("    link-only extensions (expected): %s\n",
+                  paste(link_extensions, collapse = ", ")))
+    }
+    if (length(in_fresh_not_link) > 0) {
+      flag(sprintf("3b %s", b),
+           sprintf("fresh ∖ link (link missing engine param): %s",
+                   paste(in_fresh_not_link, collapse = ", ")))
+    }
+    if (length(unexpected_link) > 0) {
+      flag(sprintf("3b %s", b),
+           sprintf("link ∖ fresh (unexpected non-observation col): %s",
+                   paste(unexpected_link, collapse = ", ")))
+    }
+    if (length(in_fresh_not_link) == 0 && length(unexpected_link) == 0) {
+      cat("    column set aligned (link = fresh + observation_* extensions)\n")
     }
   }
 }
@@ -147,15 +191,20 @@ for (b in bundles) {
 cat("\n--- 4. Override files on disk vs declared in config.yaml ---\n")
 for (b in bundles) {
   cfg_path <- sprintf("inst/extdata/configs/%s/config.yaml", b)
+  bundle_dir <- dirname(cfg_path)
   cfg <- yaml::read_yaml(cfg_path)
+  # Declared paths are bundle-relative (e.g. "parameters_fresh.csv" at root,
+  # "overrides/foo.csv"). Resolve each against bundle_dir — basename-matching
+  # only the overrides/ dir is what mis-flagged root-level parameters_fresh.csv.
   declared_paths <- vapply(cfg$files, \(x) x$path, character(1))
-  declared_files <- basename(declared_paths)
+  missing <- declared_paths[!file.exists(file.path(bundle_dir, declared_paths))]
 
-  override_dir <- sprintf("inst/extdata/configs/%s/overrides", b)
-  on_disk <- list.files(override_dir, pattern = "\\.csv$")
-
-  undeclared <- setdiff(on_disk, declared_files)
-  missing <- setdiff(declared_files, on_disk)
+  # Undeclared: override-dir csvs not in the declared set (compare full
+  # bundle-relative path so root vs overrides/ never collide on basename).
+  override_rel <- file.path("overrides",
+                            list.files(file.path(bundle_dir, "overrides"),
+                                       pattern = "\\.csv$"))
+  undeclared <- setdiff(override_rel, declared_paths)
 
   cat(sprintf("\n  bundle: %s\n", b))
   if (length(undeclared) > 0) {
@@ -165,8 +214,8 @@ for (b in bundles) {
     cat("    on-disk-but-not-declared: (none)\n")
   }
   if (length(missing) > 0) {
-    cat(sprintf("    !! declared-but-missing: %s\n",
-                paste(missing, collapse = ", ")))
+    flag(sprintf("4 %s", b),
+         sprintf("declared-but-missing: %s", paste(missing, collapse = ", ")))
   } else {
     cat("    declared-but-missing: (none)\n")
   }
@@ -179,11 +228,15 @@ cat("\n--- 5. lnk_load_overrides() smoke per bundle ---\n")
 for (b in bundles) {
   cfg <- tryCatch(lnk_config(b), error = function(e) NULL)
   if (is.null(cfg)) {
-    cat(sprintf("  %s: lnk_config FAILED\n", b)); next
+    cat(sprintf("  %s: lnk_config FAILED\n", b))
+    FINDINGS[[length(FINDINGS) + 1L]] <- sprintf("[5 %s] lnk_config FAILED", b)
+    next
   }
   loaded <- tryCatch(lnk_load_overrides(cfg), error = function(e) e)
   if (inherits(loaded, "error")) {
     cat(sprintf("  %s: lnk_load_overrides FAILED — %s\n", b, conditionMessage(loaded)))
+    FINDINGS[[length(FINDINGS) + 1L]] <-
+      sprintf("[5 %s] lnk_load_overrides FAILED — %s", b, conditionMessage(loaded))
   } else {
     cat(sprintf("  %s: %d entries loaded — %s\n", b, length(loaded),
                 paste(names(loaded), collapse = ", ")))
@@ -204,4 +257,15 @@ cat("  Note: these were the pre-bundle predecessors. Per CLAUDE.md they map to\n
 cat("  the default bundle's dimensions.csv. If they have drifted from the\n")
 cat("  default bundle, they're stale and should be either removed or pinned.\n")
 
+# ---------------------------------------------------------------------------
+# Rollup — aggregate every `!!` finding so nothing scrolls past, exit non-zero
+# so the trifecta can gate on a clean audit.
+# ---------------------------------------------------------------------------
 cat("\n==== AUDIT COMPLETE ====\n")
+if (length(FINDINGS) == 0L) {
+  cat("\nNo findings — config layers aligned.\n")
+} else {
+  cat(sprintf("\n!! %d finding(s):\n", length(FINDINGS)))
+  for (f in FINDINGS) cat(sprintf("   %s\n", f))
+  if (!interactive()) quit(status = 1L)
+}
