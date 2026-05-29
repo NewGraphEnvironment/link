@@ -16,6 +16,14 @@ devtools::load_all(quiet = TRUE)
 
 bundles <- c("bcfishpass", "default")
 
+# Findings accumulator — every `!!`-level finding routes through flag() so the
+# end-of-run rollup (and non-zero exit) catches anything that scrolled past.
+FINDINGS <- character(0)
+flag <- function(section, msg) {
+  FINDINGS[[length(FINDINGS) + 1L]] <<- sprintf("[%s] %s", section, msg)
+  cat(sprintf("    !! %s\n", msg))
+}
+
 cat("\n==== CONFIG AUDIT (link", as.character(packageVersion("link")), ") ====\n")
 
 # ---------------------------------------------------------------------------
@@ -72,6 +80,11 @@ cat(sprintf("  %d drifted entries across %d bundles\n",
             nrow(drifted), length(bundles)))
 if (nrow(drifted) > 0) {
   print(drifted |> dplyr::select(bundle, file, byte_drift, shape_drift), n = Inf)
+  for (i in seq_len(nrow(drifted))) {
+    kinds <- c(if (drifted$byte_drift[i]) "byte", if (drifted$shape_drift[i]) "shape")
+    flag(sprintf("1 %s", drifted$bundle[i]),
+         sprintf("%s drift: %s", paste(kinds, collapse = "+"), drifted$file[i]))
+  }
 }
 
 # ---------------------------------------------------------------------------
@@ -89,7 +102,8 @@ for (b in bundles) {
   cat(sprintf("  %-12s  identical(structure)=%s  identical(bytes)=%s\n",
               b, identical_yaml, identical_text))
   if (!identical_yaml) {
-    cat("    !! regen differs from committed — committed rules.yaml is stale\n")
+    flag(sprintf("2 %s", b),
+         "rules.yaml regen differs from committed — committed copy is stale")
   } else if (!identical_text) {
     cat("    (text differs but yaml structure matches — likely formatting only)\n")
   }
@@ -136,7 +150,8 @@ for (b in bundles) {
   )
   for (name in names(flags)) {
     if (length(flags[[name]]) > 0) {
-      cat(sprintf("    !! %s: %s\n", name, paste(flags[[name]], collapse = ", ")))
+      flag(sprintf("3 %s", b),
+           sprintf("%s: %s", name, paste(flags[[name]], collapse = ", ")))
     }
   }
 }
@@ -175,12 +190,14 @@ if (!nzchar(pf_fresh_path)) {
                   paste(link_extensions, collapse = ", ")))
     }
     if (length(in_fresh_not_link) > 0) {
-      cat(sprintf("    !! fresh ∖ link (link missing engine param): %s\n",
-                  paste(in_fresh_not_link, collapse = ", ")))
+      flag(sprintf("3b %s", b),
+           sprintf("fresh ∖ link (link missing engine param): %s",
+                   paste(in_fresh_not_link, collapse = ", ")))
     }
     if (length(unexpected_link) > 0) {
-      cat(sprintf("    !! link ∖ fresh (unexpected non-observation col): %s\n",
-                  paste(unexpected_link, collapse = ", ")))
+      flag(sprintf("3b %s", b),
+           sprintf("link ∖ fresh (unexpected non-observation col): %s",
+                   paste(unexpected_link, collapse = ", ")))
     }
     if (length(in_fresh_not_link) == 0 && length(unexpected_link) == 0) {
       cat("    column set aligned (link = fresh + observation_* extensions)\n")
@@ -212,8 +229,8 @@ for (b in bundles) {
     cat("    on-disk-but-not-declared: (none)\n")
   }
   if (length(missing) > 0) {
-    cat(sprintf("    !! declared-but-missing: %s\n",
-                paste(missing, collapse = ", ")))
+    flag(sprintf("4 %s", b),
+         sprintf("declared-but-missing: %s", paste(missing, collapse = ", ")))
   } else {
     cat("    declared-but-missing: (none)\n")
   }
@@ -226,11 +243,15 @@ cat("\n--- 5. lnk_load_overrides() smoke per bundle ---\n")
 for (b in bundles) {
   cfg <- tryCatch(lnk_config(b), error = function(e) NULL)
   if (is.null(cfg)) {
-    cat(sprintf("  %s: lnk_config FAILED\n", b)); next
+    cat(sprintf("  %s: lnk_config FAILED\n", b))
+    FINDINGS[[length(FINDINGS) + 1L]] <- sprintf("[5 %s] lnk_config FAILED", b)
+    next
   }
   loaded <- tryCatch(lnk_load_overrides(cfg), error = function(e) e)
   if (inherits(loaded, "error")) {
     cat(sprintf("  %s: lnk_load_overrides FAILED — %s\n", b, conditionMessage(loaded)))
+    FINDINGS[[length(FINDINGS) + 1L]] <-
+      sprintf("[5 %s] lnk_load_overrides FAILED — %s", b, conditionMessage(loaded))
   } else {
     cat(sprintf("  %s: %d entries loaded — %s\n", b, length(loaded),
                 paste(names(loaded), collapse = ", ")))
@@ -251,4 +272,15 @@ cat("  Note: these were the pre-bundle predecessors. Per CLAUDE.md they map to\n
 cat("  the default bundle's dimensions.csv. If they have drifted from the\n")
 cat("  default bundle, they're stale and should be either removed or pinned.\n")
 
+# ---------------------------------------------------------------------------
+# Rollup — aggregate every `!!` finding so nothing scrolls past, exit non-zero
+# so the trifecta can gate on a clean audit.
+# ---------------------------------------------------------------------------
 cat("\n==== AUDIT COMPLETE ====\n")
+if (length(FINDINGS) == 0L) {
+  cat("\nNo findings — config layers aligned.\n")
+} else {
+  cat(sprintf("\n!! %d finding(s):\n", length(FINDINGS)))
+  for (f in FINDINGS) cat(sprintf("   %s\n", f))
+  if (!interactive()) quit(status = 1L)
+}
