@@ -142,6 +142,53 @@ for (b in bundles) {
 }
 
 # ---------------------------------------------------------------------------
+# 3b. parameters_fresh column drift (fresh canonical vs link config)
+# ---------------------------------------------------------------------------
+# fresh owns the access/cluster parameter SCHEMA; link hand-authors per-bundle
+# copies seeded from it plus link-only `observation_*` extensions. Values
+# legitimately diverge (link tunes them) — only the COLUMN SET matters here.
+# A column fresh added that link is missing means link's copy may no longer
+# load cleanly through frs_habitat(); flag it. See link#129 for the
+# directionality (link->fresh for rules.yaml; fresh->link col-schema for this).
+cat("\n--- 3b. parameters_fresh column drift (fresh canonical vs link) ---\n")
+pf_fresh_path <- system.file("extdata", "parameters_fresh.csv", package = "fresh")
+if (!nzchar(pf_fresh_path)) {
+  cat("  (fresh's bundled parameters_fresh.csv not found — is fresh installed?)\n")
+} else {
+  cols_fresh <- names(utils::read.csv(pf_fresh_path, stringsAsFactors = FALSE,
+                                      check.names = FALSE, nrows = 1))
+  cat(sprintf("  fresh canonical (%d cols): %s\n",
+              length(cols_fresh), paste(cols_fresh, collapse = ", ")))
+  for (b in bundles) {
+    pf_csv   <- sprintf("inst/extdata/configs/%s/parameters_fresh.csv", b)
+    cols_link <- names(utils::read.csv(pf_csv, stringsAsFactors = FALSE,
+                                       check.names = FALSE, nrows = 1))
+
+    in_fresh_not_link <- setdiff(cols_fresh, cols_link)
+    extra_link        <- setdiff(cols_link, cols_fresh)
+    link_extensions   <- extra_link[grepl("^observation_", extra_link)]
+    unexpected_link   <- setdiff(extra_link, link_extensions)
+
+    cat(sprintf("\n  bundle: %s\n", b))
+    if (length(link_extensions) > 0) {
+      cat(sprintf("    link-only extensions (expected): %s\n",
+                  paste(link_extensions, collapse = ", ")))
+    }
+    if (length(in_fresh_not_link) > 0) {
+      cat(sprintf("    !! fresh ∖ link (link missing engine param): %s\n",
+                  paste(in_fresh_not_link, collapse = ", ")))
+    }
+    if (length(unexpected_link) > 0) {
+      cat(sprintf("    !! link ∖ fresh (unexpected non-observation col): %s\n",
+                  paste(unexpected_link, collapse = ", ")))
+    }
+    if (length(in_fresh_not_link) == 0 && length(unexpected_link) == 0) {
+      cat("    column set aligned (link = fresh + observation_* extensions)\n")
+    }
+  }
+}
+
+# ---------------------------------------------------------------------------
 # 4. Undeclared override CSVs (files on disk but not in cfg$files)
 # ---------------------------------------------------------------------------
 cat("\n--- 4. Override files on disk vs declared in config.yaml ---\n")
