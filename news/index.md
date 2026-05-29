@@ -1,5 +1,28 @@
 # Changelog
 
+## link 0.41.4
+
+`data-raw/audit_configs.R` is now a trustworthy pre-trifecta gate. The
+script grew an end-of-run rollup that aggregates every finding and exits
+non-zero when any fired (previously findings scrolled past inline and
+the script always exited 0, so the trifecta could not gate on a clean
+audit), plus a section comparing fresh’s canonical
+`parameters_fresh.csv` column set against each link bundle’s copy (flags
+engine params fresh added that link is missing; treats `observation_*`
+as expected link-only extensions — the `parameters_fresh` half of the
+fresh↔︎link config-drift gap, rules.yaml half tracked in
+[\#129](https://github.com/NewGraphEnvironment/link/issues/129)). All 30
+findings the audit had been emitting were audit-side defects, not config
+drift (`lnk_config_verify` reports 0 byte/shape drift in both bundles):
+§1 now calls the canonical
+[`lnk_config_verify()`](https://newgraphenvironment.github.io/link/reference/lnk_config_verify.md)
+rather than a divergent homegrown checksum recipe; §2 regenerates
+rules.yaml with `edge_types="explicit"` to match how the committed copy
+is built; §3 splits species-axis mismatches into flagged defects vs
+informational expected asymmetries; §4 resolves declared paths against
+the bundle dir and compares full relative paths instead of basenames.
+Audit now reports “No findings — config layers aligned.” and exits 0.
+
 ## link 0.41.3
 
 [`lnk_wsg_resolve()`](https://newgraphenvironment.github.io/link/reference/lnk_wsg_resolve.md)
