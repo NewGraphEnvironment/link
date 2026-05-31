@@ -15,10 +15,10 @@ Two analyses:
 pkgdown CI has **no Postgres and no bcfp snapshot**. The model run + comparison happen **once locally** in a data-gen script that caches artifacts to `inst/vignette-data/`; the vignette only *loads* those (model-run chunks shown `eval=FALSE`, mirroring flooded's `vca` chunk). Do not run the model during vignette build.
 
 ## Phase 1 — Vignette infra scaffold
-- [ ] `DESCRIPTION`: add Suggests `bookdown, knitr, rmarkdown, terra, xciter, gq`; add `VignetteBuilder: knitr`; add `NewGraphEnvironment/xciter` + `NewGraphEnvironment/gq` to Remotes.
-- [ ] Create `vignettes/` + `vignettes/references.bib` (seed cites: bcfishpass, fwapg, bcfishobs, any GR/habitat refs).
-- [ ] Reinstall dev deps so `xciter` + `gq` resolve (`pak::local_install_dev_deps()` or per-pkg `pak::pkg_install`).
-- [ ] `/code-check` clean → commit (checkbox flip).
+- [x] `DESCRIPTION`: add Suggests `bookdown, knitr, rmarkdown, terra, xciter, gq`; add `VignetteBuilder: knitr`; add `NewGraphEnvironment/xciter` + `NewGraphEnvironment/gq` to Remotes.
+- [x] Create `vignettes/` + `vignettes/references.bib` (seed cites: bcfishpass, fwapg, bcfishobs, any GR/habitat refs).
+- [x] Reinstall dev deps so `xciter` + `gq` resolve — both already installed (`gq` registry consume pattern verified: `gq_tmap_classes()` returns 30 token→hex values, salmon layer field `mapping_code_salmon`).
+- [x] `/code-check` clean → commit (checkbox flip).
 
 ## Phase 2 — Data-gen script + cached artifacts
 - [ ] `data-raw/pars_vignette_data.R`: (a) bcfp config → `lnk_pipeline_run(aoi="PARS", mapping_code=TRUE)` persist `fresh`; (b) default config → same, persist `fresh_default`; (c) `lnk_compare_mapping_code` (bcfp) + `lnk_compare_rollup` + `lnk_parity_annotate`; (d) `lnk_stamp`/`lnk_stamp_finish`; (e) pull spatial layers (PARS `aoi`, `streams` + mapping_code tokens incl. GR, `waterbodies`, optional context) into `inst/vignette-data/pars.gpkg`; (f) cache `pars_parity.rds`, `pars_stamp.rds`.
