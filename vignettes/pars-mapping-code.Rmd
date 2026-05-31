@@ -1,0 +1,280 @@
+---
+title: "Per-segment habitat mapping_code — Parsnip River Watershed Group"
+output:
+  bookdown::html_vignette2
+bibliography: references.bib
+link-citations: false
+vignette: >
+  %\VignetteIndexEntry{Per-segment habitat mapping_code — Parsnip River Watershed Group}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 6,
+  dpi = 150,
+  message = FALSE,
+  warning = FALSE
+)
+library(link)
+```
+
+This vignette walks a per-segment habitat `mapping_code` analysis through the
+Parsnip River Watershed Group (`PARS`, ~5,600 km², north-eastern BC) end to
+end. It does two things. First, it shows `link`'s `bcfishpass` configuration
+**reproducing** the per-segment `mapping_code` that
+[bcfishpass](https://github.com/smnorris/bcfishpass) [@norris_bcfishpass]
+produces — the parity check that earns trust in the rest of the analysis.
+Second, it shows `link` **extending** that methodology to a species bcfishpass
+does not model in the Peace: Arctic grayling (`GR`).
+
+`link` is layered on the canonical
+[`fwapg`](https://github.com/smnorris/fwapg) [@norris_fwapg] /
+`bcfishpass` / [`bcfishobs`](https://github.com/smnorris/bcfishobs)
+[@norris_bcfishobs] stack from Simon Norris (Hillcrest Geographics). That
+stack is the foundation; `link` does not replace it. What `link` adds is a
+configuration-driven re-expression of the same modelling so it can be pointed
+at new species and new study areas — here, the **Fish Passage Peace 2025**
+program — while staying byte-checkable against the upstream reference.
+
+## Why the Parsnip, and why only bull trout for parity
+
+The Parsnip drains north into Williston Reservoir and on through the Peace →
+Slave → Mackenzie system to the Arctic Ocean. It sits **above the W.A.C.
+Bennett Dam**, which severs the Peace from the lower Fraser and the Pacific.
+Pacific salmon (Chinook, chum, coho, pink, sockeye) and steelhead therefore do
+not occur here. Of the species in `link`'s `bcfishpass` configuration, only
+**bull trout (`BT`)** is biologically present in `PARS`. The parity check is
+consequently a single-species comparison — and that is the correct, honest
+scope for this watershed, not a limitation of the method.
+
+The same geography is what makes the Parsnip a good showcase for the
+extension. Arctic grayling is a defining sportfish of the upper Peace, and
+bcfishpass does not model it at all. `link`'s `default` configuration does.
+
+## Modelling parameters
+
+Per-segment `mapping_code` is assembled from access, spawning, and rearing
+classifications. Access is gated by a per-species maximum-gradient threshold;
+the values below are the ones in force for this run, sourced from bcfishpass.
+The full provenance stamp (config file hashes, software versions, database
+snapshot sizes) follows the parameter table.
+
+```{r params, echo = FALSE}
+params <- data.frame(
+  species = c("BT", "GR"),
+  access_gradient_max = c(0.25, 0.25),
+  configuration = c("bcfishpass (parity)", "default (link extension)"),
+  modelled_by_bcfishpass = c("yes", "no"),
+  source = c("@norris_bcfishpass", "@norris_bcfishpass"),
+  stringsAsFactors = FALSE
+)
+params <- xciter::xct_keys_to_inline_table_col(
+  params, col_format = "source", path_bib = "references.bib"
+)
+knitr::kable(
+  params, row.names = FALSE,
+  caption = "Access-gradient thresholds for the two species mapped in this vignette. Bull trout is modelled by both bcfishpass and link's bcfishpass config (the parity case); Arctic grayling is modelled only by link's default config (the extension). The gradient ceiling is inherited from bcfishpass."
+)
+```
+
+```{r stamp, echo = FALSE, results = "asis"}
+stamp <- readRDS(system.file("vignette-data/pars_stamp.rds",
+                             package = "link", mustWork = TRUE))
+cat(format(stamp, "markdown"))
+```
+
+## Cached inputs
+
+The model run and the bcfishpass comparison both require a populated
+PostgreSQL/PostGIS database and a bcfishpass snapshot — neither of which
+exists on the documentation-build CI. So they run **once, locally**, in
+`data-raw/pars_vignette_data.R`, which caches its outputs to
+`inst/vignette-data/`. This vignette only *loads* those artifacts; it never
+touches a database at build time. Direct downloads from the repo (open in
+QGIS or any GDAL-aware tool):
+
+- [`pars.gpkg`](https://github.com/NewGraphEnvironment/link/raw/main/inst/vignette-data/pars.gpkg)
+  — vectors: `aoi` (WSG boundary), `streams` (per-segment `mapping_code_bt`
+  from the bcfishpass config + `mapping_code_gr` from the default config),
+  `waterbodies` (lakes + rivers + manmade)
+- [`pars_parity.rds`](https://github.com/NewGraphEnvironment/link/raw/main/inst/vignette-data/pars_parity.rds)
+  — tunnel-free per-species `mapping_code` parity tibble
+- [`pars_stamp.rds`](https://github.com/NewGraphEnvironment/link/raw/main/inst/vignette-data/pars_stamp.rds)
+  — the run-provenance stamp rendered above
+
+```{r load, include = FALSE}
+library(sf)
+
+gpkg   <- system.file("vignette-data/pars.gpkg",   package = "link", mustWork = TRUE)
+parity <- readRDS(system.file("vignette-data/pars_parity.rds",
+                              package = "link", mustWork = TRUE))
+
+aoi         <- sf::st_read(gpkg, layer = "aoi",         quiet = TRUE)
+streams     <- sf::st_read(gpkg, layer = "streams",     quiet = TRUE)
+waterbodies <- sf::st_read(gpkg, layer = "waterbodies", quiet = TRUE)
+```
+
+The model run itself — shown here for reference, not executed at build time —
+is one call per configuration. The Peace study-area run that produced the
+state this vignette reads modelled the drainage **most-downstream-watershed-group
+first**, so a segment's downstream-dam (`;DAM`) tokens, which can live in an
+adjacent watershed group, resolve correctly. A standalone single-group re-run
+would diverge on exactly those cross-group segments, so the data-gen script
+reads the persisted study-area state rather than recomputing it.
+
+```{r model-run, eval = FALSE}
+conn <- lnk_db_conn()
+
+cfg_bcfp <- lnk_config("bcfishpass")          # persists to schema `fresh`
+loaded   <- lnk_load_overrides(cfg_bcfp)
+lnk_pipeline_run(conn, aoi = "PARS", cfg = cfg_bcfp, loaded = loaded,
+                 mapping_code = TRUE)
+
+cfg_default <- lnk_config("default")          # persists to `fresh_default`
+cfg_default$pipeline$schema <- "fresh_default"
+loaded_d <- lnk_load_overrides(cfg_default)
+lnk_pipeline_run(conn, aoi = "PARS", cfg = cfg_default, loaded = loaded_d,
+                 mapping_code = TRUE)
+```
+
+## Reproducing bcfishpass (parity)
+
+`lnk_compare_mapping_code()` compares `link`'s per-segment `mapping_code`
+against the local bcfishpass snapshot, segment by segment, with no database
+tunnel required. The comparison restricts itself to species that are actually
+active in the watershed group — which, for the reasons above, is bull trout
+alone in `PARS`.
+
+```{r parity-table, echo = FALSE}
+ptab <- parity[, c("wsg", "species", "total_segs", "match_pct",
+                   "n_diffs", "top_pattern", "top_pattern_count")]
+names(ptab) <- c("WSG", "species", "segments", "match %", "n diffs",
+                 "top diff pattern (link | bcfishpass)", "count")
+knitr::kable(
+  ptab, row.names = FALSE,
+  caption = "Per-segment mapping_code parity for bull trout in PARS, link's bcfishpass config vs the local bcfishpass snapshot. The top diff pattern column shows the most common (link | reference) disagreement, not a literal mapping_code value."
+)
+```
+
+```{r parity-pct, echo = FALSE, results = "asis"}
+cat(sprintf("link reproduces **%.2f%%** of bcfishpass's per-segment bull-trout `mapping_code` across %s segments, with %s disagreements. That is consistent with the 99.66%% study-area median established for the Peace.\n",
+            parity$match_pct[1],
+            format(parity$total_segs[1], big.mark = ","),
+            format(parity$n_diffs[1], big.mark = ",")))
+```
+
+The remaining disagreements concentrate on intermittent reaches downstream of
+dams — segments where the `;INTERMITTENT` and `;DAM` qualifiers interact, and
+where cross-watershed-group ordering is most sensitive.
+
+```{r map-bt, echo = FALSE, fig.cap = "Bull-trout per-segment mapping_code across the Parsnip River Watershed Group, link's bcfishpass configuration. Stream colours come straight from the bcfishpass symbology registry bundled in gq, so they match a bcfishpass QGIS project exactly. Light-blue polygons are lakes, rivers, and manmade waterbodies; the heavy black line is the watershed-group boundary."}
+reg <- gq::gq_reg_main()
+cls <- gq::gq_tmap_classes(reg$layers$streams_salmon)
+
+bt <- streams[!is.na(streams$mapping_code_bt) & nzchar(streams$mapping_code_bt), ]
+bt$col <- cls$values[bt$mapping_code_bt]
+bt$col[is.na(bt$col)] <- "#999999"
+
+plot(sf::st_geometry(aoi), col = NA, border = "black", lwd = 1.5,
+     main = "PARS — bull trout mapping_code (link bcfishpass config)")
+plot(sf::st_geometry(waterbodies), col = "#a3cdb966", border = "#2171B5",
+     lwd = 0.3, add = TRUE)
+plot(sf::st_geometry(bt), col = bt$col, lwd = 0.6, add = TRUE)
+
+present <- names(cls$values) %in% unique(bt$mapping_code_bt)
+legend("topright", legend = cls$labels[present], col = cls$values[present],
+       lwd = 2, cex = 0.6, bg = "white")
+```
+
+## Arctic grayling — a link extension
+
+bcfishpass does not model Arctic grayling, so there is nothing to compare
+against; this is net-new output. `link`'s `default` configuration carries `GR`
+in its species dimensions, and the same six-phase pipeline that produced the
+bull-trout parity above produces a per-segment `mapping_code` for grayling.
+The map below is rendered with the **same** gq symbology registry — the token
+vocabulary (`ACCESS`/`SPAWN`/`REAR` × `NONE`/`MODELLED`/`ASSESSED`/`DAM`/…) is
+species-agnostic, so one colour lookup styles every species consistently.
+
+```{r map-gr, echo = FALSE, fig.cap = "Arctic grayling per-segment mapping_code across the Parsnip River Watershed Group, link's default configuration — a species bcfishpass does not model. Same gq registry symbology as the bull-trout map, so the two are directly comparable. The grayling network is smaller than bull trout's (19,233 vs 31,932 classified segments), but every grayling segment is net-new output relative to bcfishpass, and 1,764 of them carry no bull-trout classification at all."}
+gr <- streams[!is.na(streams$mapping_code_gr) & nzchar(streams$mapping_code_gr), ]
+gr$col <- cls$values[gr$mapping_code_gr]
+gr$col[is.na(gr$col)] <- "#999999"
+
+plot(sf::st_geometry(aoi), col = NA, border = "black", lwd = 1.5,
+     main = "PARS — Arctic grayling mapping_code (link default config)")
+plot(sf::st_geometry(waterbodies), col = "#a3cdb966", border = "#2171B5",
+     lwd = 0.3, add = TRUE)
+plot(sf::st_geometry(gr), col = gr$col, lwd = 0.6, add = TRUE)
+
+present_gr <- names(cls$values) %in% unique(gr$mapping_code_gr)
+legend("topright", legend = cls$labels[present_gr], col = cls$values[present_gr],
+       lwd = 2, cex = 0.6, bg = "white")
+```
+
+## Maps — detail comparison
+
+The full-watershed views compress a lot of network. Cropping to a sub-reach
+puts bull trout and grayling side by side at full resolution. Grayling's
+modelled network is the smaller of the two overall, but 1,764 segments carry a
+grayling classification with no bull-trout classification — the reaches where
+the extension is doing genuinely new work.
+
+```{r map-detail, echo = FALSE, fig.width = 7, fig.height = 4, fig.cap = "Detail of a sub-reach of the Parsnip River Watershed Group: bull trout (left, link bcfishpass config) and Arctic grayling (right, link default config), same extent, same gq symbology. Grey background streams are the modelled network for the other species, so the coloured overlay shows where each species' classification reaches."}
+e <- sf::st_bbox(aoi)
+inset <- sf::st_bbox(c(
+  xmin = unname(e["xmin"] + (e["xmax"] - e["xmin"]) * 0.30),
+  ymin = unname(e["ymin"] + (e["ymax"] - e["ymin"]) * 0.30),
+  xmax = unname(e["xmin"] + (e["xmax"] - e["xmin"]) * 0.62),
+  ymax = unname(e["ymin"] + (e["ymax"] - e["ymin"]) * 0.62)
+), crs = sf::st_crs(aoi))
+
+clip <- function(x) suppressWarnings(sf::st_crop(x, inset))
+bt_d <- clip(bt)
+gr_d <- clip(gr)
+all_d <- clip(streams)
+wb_d  <- clip(waterbodies)
+
+op <- par(mfrow = c(1, 2), mar = c(1, 1, 2, 1))
+
+plot(sf::st_geometry(all_d), col = "#cccccc", lwd = 0.4,
+     main = "Bull trout", axes = FALSE)
+if (nrow(wb_d) > 0) {
+  plot(sf::st_geometry(wb_d), col = "#a3cdb966", border = "#2171B5",
+       lwd = 0.3, add = TRUE)
+}
+plot(sf::st_geometry(bt_d), col = bt_d$col, lwd = 0.9, add = TRUE)
+
+plot(sf::st_geometry(all_d), col = "#cccccc", lwd = 0.4,
+     main = "Arctic grayling", axes = FALSE)
+if (nrow(wb_d) > 0) {
+  plot(sf::st_geometry(wb_d), col = "#a3cdb966", border = "#2171B5",
+       lwd = 0.3, add = TRUE)
+}
+plot(sf::st_geometry(gr_d), col = gr_d$col, lwd = 0.9, add = TRUE)
+
+par(op)
+```
+
+## From vignette to report
+
+This vignette is a rehearsal. The same analysis — parity to earn trust, then a
+species extension that bcfishpass does not cover — is built to transfer into
+the **Fish Passage Peace 2025** report as an appendix, following the path the
+`flooded` package's floodplain vignette took into its own reporting template.
+The framing there is deliberate and load-bearing: `link` *complements and
+extends* the `fwapg` / `bcfishpass` / `bcfishobs` stack, and the report should
+say so plainly. The parity number is what licenses the extension — once
+`link` reproduces bcfishpass for bull trout, its grayling output stands on the
+same modelling, just pointed at a species the upstream stack leaves unmodelled.
+
+The grayling showcase here uses the `default` configuration and is independent
+of any work to add grayling to the `bcfishpass`-comparison config — the two
+should not be conflated.
+
+## References

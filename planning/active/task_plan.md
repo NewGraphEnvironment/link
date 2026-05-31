@@ -26,10 +26,10 @@ pkgdown CI has **no Postgres and no bcfp snapshot**. The model run + comparison 
 - [x] `/code-check` clean → commit (script + artifacts + checkbox).
 
 ## Phase 3 — Write `vignettes/pars-mapping-code.Rmd`
-- [ ] 8 sections: orient → **Modelling parameters** (`xciter` param/stamp table) → **Cached inputs** (`system.file` + GitHub raw links) → **Reproducing bcfishpass (parity)** (kable of cached parity tibble) → **Arctic grayling — a link extension** (GR map) → **Maps** (streams coloured by mapping_code via the `gq` registry — `gq::gq_reg_main()` + `gq_tmap_classes()` + base-R `plot`/`legend`, fresh's recipe; optional terra hillshade backdrop; full-WSG + detail) → **From vignette to report** (forward-looking, names Peace 2025 appendix / template#192) → **References**.
-- [ ] Model-run chunks `eval=FALSE`; data-load chunks read cached artifacts.
-- [ ] Positioning prose reviewed against #192 ("extends, not supersedes").
-- [ ] `/code-check` clean → commit.
+- [x] 8 sections: orient → **Modelling parameters** (`xciter` species/gradient param table + `lnk_stamp` provenance) → **Cached inputs** (`system.file` + GitHub raw links) → **Reproducing bcfishpass (parity)** (kable of cached parity tibble + BT full-WSG map) → **Arctic grayling — a link extension** (GR full-WSG map) → **Maps — detail comparison** (BT vs GR sub-reach via the `gq` registry — `gq_reg_main()` + `gq_tmap_classes()` + base-R `plot`/`legend`, fresh's recipe; hillshade dropped — no PARS DEM shipped) → **From vignette to report** (Peace 2025 appendix / template#192) → **References**.
+- [x] Model-run chunks `eval=FALSE`; data-load chunks read cached artifacts (`system.file` gpkg + 2 rds). No DB touched at build — confirmed by full local render.
+- [x] Positioning prose reviewed against #192 ("complements and extends, never supersedes"; Norris stack framed foundational, credited inline).
+- [x] `/code-check`: round 1 caught a factually-wrong GR map caption ("broader" — data shows GR 19,233 < BT 31,932 classified segs); corrected to "smaller, but 1,764 GR-only segments". Round 2 clean. Render verified: 3 figures numbered, 2 tables, citations resolved, no raw `@keys` leaked.
 
 ## Phase 4 — Render + verify
 - [ ] `pkgdown::build_site(new_process=FALSE, install=FALSE)` (or `devtools::build_vignettes()`) renders clean; figures numbered, cross-refs + inline citations resolve; no DB touched at build.
