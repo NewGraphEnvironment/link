@@ -21,9 +21,9 @@ pkgdown CI has **no Postgres and no bcfp snapshot**. The model run + comparison 
 - [x] `/code-check` clean → commit (checkbox flip).
 
 ## Phase 2 — Data-gen script + cached artifacts
-- [ ] `data-raw/pars_vignette_data.R`: (a) bcfp config → `lnk_pipeline_run(aoi="PARS", mapping_code=TRUE)` persist `fresh`; (b) default config → same, persist `fresh_default`; (c) `lnk_compare_mapping_code` (bcfp) + `lnk_compare_rollup` + `lnk_parity_annotate`; (d) `lnk_stamp`/`lnk_stamp_finish`; (e) pull spatial layers (PARS `aoi`, `streams` + mapping_code tokens incl. GR, `waterbodies`, optional context) into `inst/vignette-data/pars.gpkg`; (f) cache `pars_parity.rds`, `pars_stamp.rds`.
-- [ ] Run locally; confirm artifacts written + sizes reasonable (ship-small).
-- [ ] `/code-check` clean → commit (script + artifacts + checkbox).
+- [x] `data-raw/pars_vignette_data.R`: model state READ (not recomputed) from the authoritative #175 DS-first study-area persists — `fresh` (bcfp cfg, BT only in the Peace) + `fresh_default` (default cfg, adds GR/RB/KO); guarded persisted-state check shows the run invocation. (c) `lnk_compare_mapping_code` (tunnel-free, BT 99.04%); (d) `lnk_stamp`/`lnk_stamp_finish`; (e) spatial layers (PARS `aoi`, `streams` with `mapping_code_bt` from `fresh` + `mapping_code_gr` from `fresh_default`, `waterbodies`) → `inst/vignette-data/pars.gpkg`; (f) cache `pars_parity.rds` + `pars_stamp.rds`. **`lnk_compare_rollup`/`lnk_parity_annotate` dropped: they need the live bcfp tunnel (`:63333`), which breaks the tunnel-free no-DB design — and PARS BT at 99% has no habitat-km divergence to annotate.**
+- [x] Run locally; confirm artifacts written + sizes reasonable: `pars.gpkg` 9.7 MB (33,696 streams + 1,914 waterbodies, ZM-dropped + 15 m simplify), `pars_parity.rds` 272 B, `pars_stamp.rds` 1.9 KB. gq registry matches 99.99% of BT + GR tokens.
+- [x] `/code-check` clean → commit (script + artifacts + checkbox).
 
 ## Phase 3 — Write `vignettes/pars-mapping-code.Rmd`
 - [ ] 8 sections: orient → **Modelling parameters** (`xciter` param/stamp table) → **Cached inputs** (`system.file` + GitHub raw links) → **Reproducing bcfishpass (parity)** (kable of cached parity tibble) → **Arctic grayling — a link extension** (GR map) → **Maps** (streams coloured by mapping_code via the `gq` registry — `gq::gq_reg_main()` + `gq_tmap_classes()` + base-R `plot`/`legend`, fresh's recipe; optional terra hillshade backdrop; full-WSG + detail) → **From vignette to report** (forward-looking, names Peace 2025 appendix / template#192) → **References**.
