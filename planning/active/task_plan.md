@@ -32,9 +32,9 @@ pkgdown CI has **no Postgres and no bcfp snapshot**. The model run + comparison 
 - [x] `/code-check`: round 1 caught a factually-wrong GR map caption ("broader" — data shows GR 19,233 < BT 31,932 classified segs); corrected to "smaller, but 1,764 GR-only segments". Round 2 clean. Render verified: 3 figures numbered, 2 tables, citations resolved, no raw `@keys` leaked.
 
 ## Phase 4 — Render + verify
-- [ ] `pkgdown::build_site(new_process=FALSE, install=FALSE)` (or `devtools::build_vignettes()`) renders clean; figures numbered, cross-refs + inline citations resolve; no DB touched at build.
-- [ ] `lintr::lint_package()` clean (covers the new data-raw script + Rmd-adjacent R).
-- [ ] `/code-check` clean → commit.
+- [x] Render verified two ways, both tunnel-free: (1) `rmarkdown::render` via the `bookdown::html_vignette2` engine — **figures numbered 1/2/3**, 2 tables, citations resolved, no raw `@keys`; (2) `pkgdown::build_article("pars-mapping-code")` — all 3 figures + captions + tables + citations render. pkgdown flattens bookdown "Figure N" numbering by design (articles path), but the vignette uses **no `\@ref()` cross-refs**, so nothing breaks; numbering is present in the shipped vignette build. No DB touched — chunks read `system.file("vignette-data/...")` only. Required a local `pak::local_install` so `inst/vignette-data/` ships; pkgdown CI installs before building, so `system.file` resolves there automatically.
+- [x] `lintr::lint_package()`: **vignette now 0 lints** (wrapped 3 long caption/sprintf strings with `paste0`). data-raw script retains 4 `indentation_linter` on multi-line SQL — accepted in Phase 2, matches the shipped `wsg_compare.R` pattern. Package-wide pre-existing lints (~1,250, this is a relaxed data-pipeline repo) unchanged / out of scope.
+- [x] `/code-check` clean (fresh-eyes round confirmed the `paste0` wraps preserve exact caption text + all sprintf format specifiers) → commit.
 
 ## Phase 5 — Release
 - [ ] `NEWS.md` new section + `DESCRIPTION` version bump (final commit).

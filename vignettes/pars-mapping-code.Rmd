@@ -78,7 +78,12 @@ params <- xciter::xct_keys_to_inline_table_col(
 )
 knitr::kable(
   params, row.names = FALSE,
-  caption = "Access-gradient thresholds for the two species mapped in this vignette. Bull trout is modelled by both bcfishpass and link's bcfishpass config (the parity case); Arctic grayling is modelled only by link's default config (the extension). The gradient ceiling is inherited from bcfishpass."
+  caption = paste0(
+    "Access-gradient thresholds for the two species mapped in this vignette. ",
+    "Bull trout is modelled by both bcfishpass and link's bcfishpass config ",
+    "(the parity case); Arctic grayling is modelled only by link's default ",
+    "config (the extension). The gradient ceiling is inherited from bcfishpass."
+  )
 )
 ```
 
@@ -157,12 +162,20 @@ names(ptab) <- c("WSG", "species", "segments", "match %", "n diffs",
                  "top diff pattern (link | bcfishpass)", "count")
 knitr::kable(
   ptab, row.names = FALSE,
-  caption = "Per-segment mapping_code parity for bull trout in PARS, link's bcfishpass config vs the local bcfishpass snapshot. The top diff pattern column shows the most common (link | reference) disagreement, not a literal mapping_code value."
+  caption = paste0(
+    "Per-segment mapping_code parity for bull trout in PARS, link's ",
+    "bcfishpass config vs the local bcfishpass snapshot. The top diff pattern ",
+    "column shows the most common (link | reference) disagreement, not a ",
+    "literal mapping_code value."
+  )
 )
 ```
 
 ```{r parity-pct, echo = FALSE, results = "asis"}
-cat(sprintf("link reproduces **%.2f%%** of bcfishpass's per-segment bull-trout `mapping_code` across %s segments, with %s disagreements. That is consistent with the 99.66%% study-area median established for the Peace.\n",
+cat(sprintf(paste0("link reproduces **%.2f%%** of bcfishpass's per-segment ",
+                   "bull-trout `mapping_code` across %s segments, with %s ",
+                   "disagreements. That is consistent with the 99.66%% ",
+                   "study-area median established for the Peace.\n"),
             parity$match_pct[1],
             format(parity$total_segs[1], big.mark = ","),
             format(parity$n_diffs[1], big.mark = ",")))

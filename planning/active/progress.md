@@ -25,4 +25,10 @@
   data-load chunks read cached artifacts — full local render confirmed tunnel-free (3 figures numbered, 2 tables,
   citations resolved). Installed `bookdown` (was missing locally). `/code-check`: round 1 fixed a wrong GR caption
   ("broader" → "smaller; 1,764 GR-only segs"), round 2 clean.
-- Next: Phase 4 — render via pkgdown + `lintr::lint_package()` gate.
+- Phase 4 done: render verified tunnel-free two ways — `rmarkdown::render` (bookdown engine, figures numbered
+  1/2/3) and `pkgdown::build_article` (all figs/tables/citations render; pkgdown flattens "Figure N" numbering by
+  design but no `\@ref` cross-refs exist, so nothing breaks). No DB touched — chunks read `system.file` artifacts.
+  Needed a local `pak::local_install` so `inst/vignette-data/` ships (CI installs before pkgdown, resolves there).
+  Wrapped 3 long caption/sprintf strings with `paste0` → vignette is 0 lints; data-raw keeps 4 accepted SQL-indent
+  lints. `/code-check` clean (verified the wraps preserve exact text + format specifiers). Installed `bookdown`.
+- Next: Phase 5 — NEWS.md + DESCRIPTION bump → `/planning-archive` → `/gh-pr-push`.
