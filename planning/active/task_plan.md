@@ -37,7 +37,7 @@ pkgdown CI has **no Postgres and no bcfp snapshot**. The model run + comparison 
 - [x] `/code-check` clean (fresh-eyes round confirmed the `paste0` wraps preserve exact caption text + all sprintf format specifiers) → commit.
 
 ## Phase 5 — Release
-- [ ] `NEWS.md` new section + `DESCRIPTION` version bump (final commit).
+- [x] `NEWS.md` new `# link 0.42.0` section (minor bump — net-new vignette feature) + `DESCRIPTION` Version 0.41.4 → 0.42.0, Date → 2026-06-01.
 - [ ] `/planning-archive` → `/gh-pr-push` (PR body: `Closes #215` + `Relates to NewGraphEnvironment/sred#24`).
 
 ## Dependencies / relations
