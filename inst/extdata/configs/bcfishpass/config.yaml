@@ -124,9 +124,9 @@ provenance:
   overrides/user_habitat_classification.csv:
     source: https://github.com/smnorris/bcfishpass
     path: data/user_habitat_classification.csv
-    upstream_sha: e12c1a5
-    synced: 2026-05-20
-    checksum: sha256:fe7621a0b6a9663c8aa0ed61d3b779f95300e3a52d6f0d181f661774edbd8652
+    upstream_sha: 3ca0886
+    synced: 2026-06-03
+    checksum: sha256:80b69d0954563660c13bc481b2e955000748e0597d4e10ce0c16462d9a5df966
     shape_checksum: sha256:35604598f352c0cc958e8330e80627ec65154e4eaba9dbba8cac92c8516706a0
   overrides/observation_exclusions.csv:
     source: link (hand-authored)
@@ -143,9 +143,9 @@ provenance:
   overrides/user_modelled_crossing_fixes.csv:
     source: https://github.com/smnorris/bcfishpass
     path: data/user_modelled_crossing_fixes.csv
-    upstream_sha: 05057f9
-    synced: 2026-05-13
-    checksum: sha256:8774ceedaf0e34d8b7387c8a9d0c7f047fe55607e4d4fa65da7fb88539b2e2a9
+    upstream_sha: 3ca0886
+    synced: 2026-06-03
+    checksum: sha256:d5c84fb00906acae110249c2976907860b829d4430e43ffaf2671e02e8e40037
     shape_checksum: sha256:acbddab3bd06ac4790eb129201198e614c1d4c08b83cd18ee94e4cdfafa09ab2
   overrides/user_pscis_barrier_status.csv:
     source: https://github.com/smnorris/bcfishpass
@@ -157,9 +157,9 @@ provenance:
   overrides/pscis_modelledcrossings_streams_xref.csv:
     source: https://github.com/smnorris/bcfishpass
     path: data/pscis_modelledcrossings_streams_xref.csv
-    upstream_sha: 05057f9
-    synced: 2026-05-13
-    checksum: sha256:cbba2d02ad844c235755d8b90307f3793cbdd86e2224820be86fe71aade9b9f8
+    upstream_sha: 3ca0886
+    synced: 2026-06-03
+    checksum: sha256:c148aff946b0ec3517d44fbca87f9102b2e248231caf4ea32d6171a867db0bf5
     shape_checksum: sha256:c2cebcc7398ddd12d0803eefafbe219f3551e6948051f18d89d7984130c1589d
   overrides/user_barriers_definite.csv:
     source: https://github.com/smnorris/bcfishpass

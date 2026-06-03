@@ -18,3 +18,4 @@ run_started_pdt,host,run_label,link_schema,bcfp_model_run_id,bcfp_model_version,
 2026-05-13 22:48,MacBook-Pro-2.local,provincial_parity,fresh,122,v0.7.14-141-g05057f9,2026-05-12 20:28,auto-stamped at run_provincial_parity.R start
 2026-05-14 06:00,MacBook-Pro-2.local,provincial_parity,fresh,122,v0.7.14-141-g05057f9,2026-05-12 20:28,auto-stamped at run_provincial_parity.R start
 2026-05-20 04:59,runnervmrw5os,csv-sync-20260520,n/a,,v0.7.15-14-ge12c1a5,2026-05-20T03:58:33Z,auto-append by csv-sync; head_sha=e12c1a5
+2026-06-03 05:35,runnervm3jyl0,csv-sync-20260603,n/a,,v0.7.15-39-g3ca0886,2026-06-03T03:44:28Z,auto-append by csv-sync; head_sha=3ca0886
