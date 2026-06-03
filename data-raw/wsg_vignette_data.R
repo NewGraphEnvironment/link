@@ -6,7 +6,7 @@
 # study area is a one-line edit (matches the flooded package's
 # data-raw/wsg_vignette_data.R).
 #
-# Generates the cached artifacts that back vignettes/pars-mapping-code.Rmd.
+# Generates the cached artifacts that back vignettes/pars-habitat-connectivity.Rmd.
 # Runs ONCE locally. pkgdown CI has no Postgres and no bcfp snapshot, so the
 # vignette only *loads* these artifacts — it never touches a database at
 # build time. This is the flooded data-gen pattern, not the .Rmd.orig

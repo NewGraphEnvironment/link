@@ -1,9 +1,9 @@
 ---
-title: "Per-segment habitat mapping_code — Parsnip River Watershed Group"
+title: "Bull trout and Arctic grayling: habitat and connectivity classification for the Parsnip River Watershed Group"
 output:
   bookdown::html_vignette2
 vignette: >
-  %\VignetteIndexEntry{Per-segment habitat mapping_code — Parsnip River Watershed Group}
+  %\VignetteIndexEntry{Bull trout and Arctic grayling: habitat and connectivity classification for the Parsnip River Watershed Group}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -25,30 +25,33 @@ This vignette walks a per-segment habitat `mapping_code` analysis through the
 Parsnip River Watershed Group (`PARS`, ~5,600 km², north-eastern BC) end to
 end. It does two things. First, it shows `link`'s `bcfishpass` configuration
 **reproducing** the per-segment `mapping_code` that
-[bcfishpass](https://github.com/smnorris/bcfishpass) produces — the parity
-check that earns trust in the rest of the analysis. Second, it shows `link`
-**extending** that methodology to a species bcfishpass does not model in the
-Peace: Arctic grayling (`GR`).
+[bcfishpass](https://github.com/smnorris/bcfishpass) produces. Second, it shows
+`link` **extending** that methodology to a species bcfishpass does not model in
+the Peace: Arctic grayling (`GR`).
 
 The Parsnip River Watershed Group sits between Prince George and Mackenzie, BC.
 The Parsnip flows north into the southern arm of Williston Reservoir, joining
 the Peace River system; from there the drainage runs Peace → Slave → Mackenzie,
-ultimately discharging to the Arctic Ocean via the Mackenzie Delta. It lies
-**above the W.A.C. Bennett Dam**, which severs the upper Peace from the Pacific,
-so the Pacific salmon and steelhead bcfishpass models elsewhere do not occur
-here — of the species in `link`'s `bcfishpass` configuration, bull trout
-(`BT`) is the only one present, which is why the parity check below is a
-single-species comparison. Arctic grayling, a defining sportfish of the upper
-Peace that bcfishpass does not model, is the extension.
+ultimately discharging to the Arctic Ocean via the Mackenzie Delta. Of the
+species in `link`'s `bcfishpass` configuration, bull trout (`BT`) is the only
+one present, so the parity check below is a single-species comparison. Both
+bull trout and Arctic grayling (`GR`) are cold-water species whose
+distributions the model resolves through gradient, channel-width, and access
+thresholds. Bull trout — provincially blue-listed and a COSEWIC species of
+special concern in the Western Arctic population — spawn as adfluvial migrants
+in cold, low-gradient tributaries such as the Misinchinka and Anzac. Arctic
+grayling, at the southern edge of their range in the Williston watershed, hold
+to cooler, larger (fourth-order and up) clear-water reaches and spawn over fine
+gravels.
 
 `link` is layered on the canonical
 [`fwapg`](https://github.com/smnorris/fwapg) /
 `bcfishpass` / [`bcfishobs`](https://github.com/smnorris/bcfishobs) stack from
-Simon Norris (Hillcrest Geographics). That stack is the foundation; `link` does
-not replace it. What `link` adds is a configuration-driven re-expression of the
-same modelling so it can be pointed at new species and new study areas — here,
-the **Fish Passage Peace 2025** program — while staying byte-checkable against
-the upstream reference.
+Simon Norris (Hillcrest Geographics). What `link` adds is a configuration-driven
+re-expression of the same modelling: we can experiment with different
+configurations for species bcfishpass already models, and extend to species it
+does not — here, Arctic grayling for the **Fish Passage Peace 2025** program —
+while staying byte-checkable against the upstream reference.
 
 ## Modelling parameters
 
@@ -66,14 +69,13 @@ params <- data.frame(
   rear_grad_max = c(0.1049, 0.0349),
   spawn_cw_min_m = c(2, 4),
   rear_cw_min_m = c(1.5, 1.5),
-  modelled_by_bcfishpass = c("yes", "no"),
   stringsAsFactors = FALSE
 )
 knitr::kable(
   params, row.names = FALSE,
   col.names = c("species", "configuration", "access grad max",
                 "spawn grad max", "rear grad max", "spawn CW min (m)",
-                "rear CW min (m)", "modelled by bcfishpass"),
+                "rear CW min (m)"),
   caption = paste0(
     "Access, spawning, and rearing gradient ceilings and minimum channel ",
     "widths for the two species mapped in this vignette. Bull trout is ",
@@ -85,6 +87,20 @@ knitr::kable(
   )
 )
 ```
+
+Each segment's `mapping_code` is a compact token of the form
+`<use>;<barrier-status>`, optionally suffixed `;INTERMITTENT` for intermittent
+streams. The first field is the highest-value habitat use modelled for that
+segment — `SPAWN`, `REAR`, or `ACCESS` (reachable, but no modelled spawning or
+rearing habitat). The second records the most significant barrier *downstream*
+of the segment: `NONE` (none known), `MODELLED` (a modelled potential barrier),
+`ASSESSED` (a field-assessed known barrier), `DAM`, or `REMEDIATED` (a barrier
+since fixed). Stream colour is keyed on barrier status alone — a purple segment
+sits below a dam, a red one below a field-assessed barrier — regardless of
+habitat use, while line width encodes the habitat use itself: spawning reaches
+draw thickest, rearing medium, access-only thinnest. Both the colours and the
+widths are read straight from the bcfishpass symbology registry bundled in
+`gq`, so the maps match a bcfishpass QGIS project exactly.
 
 ## Cached inputs
 
@@ -204,6 +220,16 @@ where cross-watershed-group ordering is most sensitive.
 reg <- gq::gq_reg_main()
 cls <- gq::gq_tmap_classes(reg$layers$streams_salmon)
 
+# bcfishpass line widths come from the same registry — habitat use drives line
+# weight (SPAWN thick, REAR medium, ACCESS thin), barrier status drives colour.
+# Stored raw here and scaled per map below (full-WSG views need thinner lines
+# than the zoomed detail panels). Unmatched tokens fall to the thinnest weight.
+width_for <- function(tokens) {
+  w <- cls$widths[tokens]
+  w[is.na(w)] <- min(cls$widths, na.rm = TRUE)
+  unname(w)
+}
+
 # Context layers shared by the two full-WSG maps, drawn UNDER the
 # mapping_code streams: waterbodies, resource roads, railways, then the
 # land-use polygons (parks, reserves) on top of hydro/transport so they read
@@ -273,12 +299,13 @@ legend_mapping_code <- function(tokens) {
 bt <- streams[!is.na(streams$mapping_code_bt) & nzchar(streams$mapping_code_bt), ]
 bt$col <- cls$values[bt$mapping_code_bt]
 bt$col[is.na(bt$col)] <- "#999999"
+bt$w <- width_for(bt$mapping_code_bt)
 
 op <- par(mar = c(2, 1, 4, 8))
 plot(sf::st_geometry(aoi), col = NA, border = "black", lwd = 1.5, axes = FALSE,
      main = "PARS — bull trout mapping_code\n(link bcfishpass config)")
 draw_context_full()
-plot(sf::st_geometry(bt), col = bt$col, lwd = 0.6, add = TRUE)
+plot(sf::st_geometry(bt), col = bt$col, lwd = bt$w * 0.6, add = TRUE)
 plot(sf::st_geometry(aoi), col = NA, border = "black", lwd = 1.5, add = TRUE)
 label_reserves(reserves)
 legend_mapping_code(bt$mapping_code_bt)
@@ -299,12 +326,13 @@ species-agnostic, so one colour lookup styles every species consistently.
 gr <- streams[!is.na(streams$mapping_code_gr) & nzchar(streams$mapping_code_gr), ]
 gr$col <- cls$values[gr$mapping_code_gr]
 gr$col[is.na(gr$col)] <- "#999999"
+gr$w <- width_for(gr$mapping_code_gr)
 
 op <- par(mar = c(2, 1, 4, 8))
 plot(sf::st_geometry(aoi), col = NA, border = "black", lwd = 1.5, axes = FALSE,
      main = "PARS — Arctic grayling mapping_code\n(link default config)")
 draw_context_full()
-plot(sf::st_geometry(gr), col = gr$col, lwd = 0.6, add = TRUE)
+plot(sf::st_geometry(gr), col = gr$col, lwd = gr$w * 0.6, add = TRUE)
 plot(sf::st_geometry(aoi), col = NA, border = "black", lwd = 1.5, add = TRUE)
 label_reserves(reserves)
 legend_mapping_code(gr$mapping_code_gr)
@@ -375,7 +403,7 @@ panel <- function(seg, title) {
     plot(rpts, pch = 23, bg = "#222222", col = "white", cex = 1.0, add = TRUE)
   }
   if (!is.null(seg) && nrow(seg) > 0L) {
-    plot(sf::st_geometry(seg), col = seg$col, lwd = 0.9, add = TRUE)
+    plot(sf::st_geometry(seg), col = seg$col, lwd = seg$w, add = TRUE)
   }
   if (!is.null(aoi_d)) {
     plot(sf::st_geometry(aoi_d), border = "black", lwd = 1.5, add = TRUE)
@@ -393,19 +421,3 @@ panel(bt_d, "Bull trout")
 panel(gr_d, "Arctic grayling")
 par(op)
 ```
-
-## From vignette to report
-
-This vignette is a rehearsal. The same analysis — parity to earn trust, then a
-species extension that bcfishpass does not cover — is built to transfer into
-the **Fish Passage Peace 2025** report as an appendix, following the path the
-`flooded` package's floodplain vignette took into its own reporting template.
-The framing there is deliberate and load-bearing: `link` *complements and
-extends* the `fwapg` / `bcfishpass` / `bcfishobs` stack, and the report should
-say so plainly. The parity number is what licenses the extension — once
-`link` reproduces bcfishpass for bull trout, its grayling output stands on the
-same modelling, just pointed at a species the upstream stack leaves unmodelled.
-
-The grayling showcase here uses the `default` configuration and is independent
-of any work to add grayling to the `bcfishpass`-comparison config — the two
-should not be conflated.
