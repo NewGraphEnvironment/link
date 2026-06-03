@@ -71,8 +71,8 @@ shows <code>link</code>’s <code>bcfishpass</code> configuration
 <strong>reproducing</strong> the per-segment <code>mapping_code</code>
 that <a href="https://github.com/smnorris/bcfishpass" class="external-link">bcfishpass</a>
 produces. Second, it shows <code>link</code> <strong>extending</strong>
-that methodology to a species bcfishpass does not model in the Peace:
-Arctic grayling (<code>GR</code>).</p>
+that methodology to a species bcfishpass does not yet model in the
+Peace: Arctic grayling (<code>GR</code>).</p>
 <p>The Parsnip River Watershed Group sits between Prince George and
 Mackenzie, BC. The Parsnip flows north into the southern arm of
 Williston Reservoir, joining the Peace River system; from there the
@@ -166,9 +166,9 @@ fixed). Stream colour is keyed on barrier status alone — a purple
 segment sits below a dam, a red one below a field-assessed barrier —
 regardless of habitat use, while line width encodes the habitat use
 itself: spawning reaches draw thickest, rearing medium, access-only
-thinnest. Both the colours and the widths are read straight from the
-bcfishpass symbology registry bundled in <code>gq</code>, so the maps
-match a bcfishpass QGIS project exactly.</p>
+thinnest. Intermittent reaches (<code>;INTERMITTENT</code>) draw dashed.
+Colours and widths are read straight from the bcfishpass symbology
+registry, so the maps match a bcfishpass QGIS project exactly.</p>
 </div>
 <div class="section level2">
 <h2 id="cached-inputs">Cached inputs<a class="anchor" aria-label="anchor" href="#cached-inputs"></a>
@@ -271,37 +271,36 @@ downstream of dams — segments where the <code>;INTERMITTENT</code> and
 <code>;DAM</code> qualifiers interact, and where cross-watershed-group
 ordering is most sensitive.</p>
 <div class="figure">
-<img src="pars-habitat-connectivity_files/figure-html/map-bt-1.png" class="r-plt" alt="Bull-trout per-segment mapping_code across the Parsnip River Watershed Group, link's bcfishpass configuration. Stream colours come straight from the bcfishpass symbology registry bundled in gq, so they match a bcfishpass QGIS project exactly. Context: lakes/rivers/manmade waterbodies (light blue), provincial parks (green), First Nations reserves (grey polygon + black diamond + label), resource roads (grey), railways (black dashed); the heavy black line is the watershed-group boundary." width="1050"><p class="caption">
+<img src="pars-habitat-connectivity_files/figure-html/map-bt-1.png" class="r-plt" alt="Bull-trout per-segment mapping_code across the Parsnip River Watershed Group, link's bcfishpass configuration. Stream colours come straight from the bcfishpass symbology registry, so they match a bcfishpass QGIS project exactly. Context: lakes/rivers/manmade waterbodies (light blue), provincial parks (green), First Nations reserves (grey polygon + black diamond + label), resource roads (grey), railways (black dashed); the heavy black line is the watershed-group boundary." width="1050"><p class="caption">
 Bull-trout per-segment mapping_code across the Parsnip River Watershed
 Group, link’s bcfishpass configuration. Stream colours come straight
-from the bcfishpass symbology registry bundled in gq, so they match a
-bcfishpass QGIS project exactly. Context: lakes/rivers/manmade
-waterbodies (light blue), provincial parks (green), First Nations
-reserves (grey polygon + black diamond + label), resource roads (grey),
-railways (black dashed); the heavy black line is the watershed-group
-boundary.
+from the bcfishpass symbology registry, so they match a bcfishpass QGIS
+project exactly. Context: lakes/rivers/manmade waterbodies (light blue),
+provincial parks (green), First Nations reserves (grey polygon + black
+diamond + label), resource roads (grey), railways (black dashed); the
+heavy black line is the watershed-group boundary.
 </p>
 </div>
 </div>
 <div class="section level2">
 <h2 id="arctic-grayling-a-link-extension">Arctic grayling — a link extension<a class="anchor" aria-label="anchor" href="#arctic-grayling-a-link-extension"></a>
 </h2>
-<p>bcfishpass does not model Arctic grayling, so there is nothing to
+<p>bcfishpass does not yet model Arctic grayling, so there is nothing to
 compare against; this is net-new output. <code>link</code>’s
 <code>default</code> configuration carries <code>GR</code> in its
 species dimensions, and the same six-phase pipeline that produced the
 bull-trout parity above produces a per-segment <code>mapping_code</code>
 for grayling. The map below is rendered with the <strong>same</strong>
-gq symbology registry — the token vocabulary
+bcfishpass symbology registry — the token vocabulary
 (<code>ACCESS</code>/<code>SPAWN</code>/<code>REAR</code> ×
 <code>NONE</code>/<code>MODELLED</code>/<code>ASSESSED</code>/<code>DAM</code>/…)
 is species-agnostic, so one colour lookup styles every species
 consistently.</p>
 <div class="figure">
-<img src="pars-habitat-connectivity_files/figure-html/map-gr-1.png" class="r-plt" alt="Arctic grayling per-segment mapping_code across the Parsnip River Watershed Group, link's default configuration — a species bcfishpass does not model. Same gq registry symbology and context layers as the bull-trout map, so the two are directly comparable. The grayling network is smaller than bull trout's (19,233 vs 31,932 classified segments), but every grayling segment is net-new output relative to bcfishpass, and 1,764 of them carry no bull-trout classification at all." width="1050"><p class="caption">
+<img src="pars-habitat-connectivity_files/figure-html/map-gr-1.png" class="r-plt" alt="Arctic grayling per-segment mapping_code across the Parsnip River Watershed Group, link's default configuration — a species bcfishpass does not yet model. Same symbology registry and context layers as the bull-trout map, so the two are directly comparable. The grayling network is smaller than bull trout's (19,233 vs 31,932 classified segments), but every grayling segment is net-new output relative to bcfishpass, and 1,764 of them carry no bull-trout classification at all." width="1050"><p class="caption">
 Arctic grayling per-segment mapping_code across the Parsnip River
 Watershed Group, link’s default configuration — a species bcfishpass
-does not model. Same gq registry symbology and context layers as the
+does not yet model. Same symbology registry and context layers as the
 bull-trout map, so the two are directly comparable. The grayling network
 is smaller than bull trout’s (19,233 vs 31,932 classified segments), but
 every grayling segment is net-new output relative to bcfishpass, and
@@ -319,11 +318,11 @@ segments carry a grayling classification with no bull-trout
 classification — the reaches where the extension is doing genuinely new
 work.</p>
 <div class="figure">
-<img src="pars-habitat-connectivity_files/figure-html/map-detail-1.png" class="r-plt" alt="South-east corner of the Parsnip River Watershed Group at full resolution — the headwaters near the continental divide: bull trout (left, link bcfishpass config) and Arctic grayling (right, link default config), same extent, same gq symbology. Grey background streams are the full modelled network, so the coloured overlay shows where each species' classification reaches. Context: waterbodies (light blue), parks (green), reserves (grey + diamond), roads (grey), railways (black dashed), named streams (italic blue labels)." width="1050"><p class="caption">
+<img src="pars-habitat-connectivity_files/figure-html/map-detail-1.png" class="r-plt" alt="South-east corner of the Parsnip River Watershed Group at full resolution — the headwaters near the continental divide: bull trout (left, link bcfishpass config) and Arctic grayling (right, link default config), same extent, same symbology. Grey background streams are the full modelled network, so the coloured overlay shows where each species' classification reaches. Context: waterbodies (light blue), parks (green), reserves (grey + diamond), roads (grey), railways (black dashed), named streams (italic blue labels)." width="1050"><p class="caption">
 South-east corner of the Parsnip River Watershed Group at full
 resolution — the headwaters near the continental divide: bull trout
 (left, link bcfishpass config) and Arctic grayling (right, link default
-config), same extent, same gq symbology. Grey background streams are the
+config), same extent, same symbology. Grey background streams are the
 full modelled network, so the coloured overlay shows where each species’
 classification reaches. Context: waterbodies (light blue), parks
 (green), reserves (grey + diamond), roads (grey), railways (black

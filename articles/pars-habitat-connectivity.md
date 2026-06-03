@@ -6,7 +6,8 @@ north-eastern BC) end to end. It does two things. First, it shows
 `link`’s `bcfishpass` configuration **reproducing** the per-segment
 `mapping_code` that [bcfishpass](https://github.com/smnorris/bcfishpass)
 produces. Second, it shows `link` **extending** that methodology to a
-species bcfishpass does not model in the Peace: Arctic grayling (`GR`).
+species bcfishpass does not yet model in the Peace: Arctic grayling
+(`GR`).
 
 The Parsnip River Watershed Group sits between Prince George and
 Mackenzie, BC. The Parsnip flows north into the southern arm of
@@ -66,9 +67,10 @@ known barrier), `DAM`, or `REMEDIATED` (a barrier since fixed). Stream
 colour is keyed on barrier status alone — a purple segment sits below a
 dam, a red one below a field-assessed barrier — regardless of habitat
 use, while line width encodes the habitat use itself: spawning reaches
-draw thickest, rearing medium, access-only thinnest. Both the colours
-and the widths are read straight from the bcfishpass symbology registry
-bundled in `gq`, so the maps match a bcfishpass QGIS project exactly.
+draw thickest, rearing medium, access-only thinnest. Intermittent
+reaches (`;INTERMITTENT`) draw dashed. Colours and widths are read
+straight from the bcfishpass symbology registry, so the maps match a
+bcfishpass QGIS project exactly.
 
 ## Cached inputs
 
@@ -144,37 +146,36 @@ sensitive.
 
 ![Bull-trout per-segment mapping_code across the Parsnip River Watershed
 Group, link's bcfishpass configuration. Stream colours come straight
-from the bcfishpass symbology registry bundled in gq, so they match a
-bcfishpass QGIS project exactly. Context: lakes/rivers/manmade
-waterbodies (light blue), provincial parks (green), First Nations
-reserves (grey polygon + black diamond + label), resource roads (grey),
-railways (black dashed); the heavy black line is the watershed-group
+from the bcfishpass symbology registry, so they match a bcfishpass QGIS
+project exactly. Context: lakes/rivers/manmade waterbodies (light blue),
+provincial parks (green), First Nations reserves (grey polygon + black
+diamond + label), resource roads (grey), railways (black dashed); the
+heavy black line is the watershed-group
 boundary.](pars-habitat-connectivity_files/figure-html/map-bt-1.png)
 
 Bull-trout per-segment mapping_code across the Parsnip River Watershed
 Group, link’s bcfishpass configuration. Stream colours come straight
-from the bcfishpass symbology registry bundled in gq, so they match a
-bcfishpass QGIS project exactly. Context: lakes/rivers/manmade
-waterbodies (light blue), provincial parks (green), First Nations
-reserves (grey polygon + black diamond + label), resource roads (grey),
-railways (black dashed); the heavy black line is the watershed-group
-boundary.
+from the bcfishpass symbology registry, so they match a bcfishpass QGIS
+project exactly. Context: lakes/rivers/manmade waterbodies (light blue),
+provincial parks (green), First Nations reserves (grey polygon + black
+diamond + label), resource roads (grey), railways (black dashed); the
+heavy black line is the watershed-group boundary.
 
 ## Arctic grayling — a link extension
 
-bcfishpass does not model Arctic grayling, so there is nothing to
+bcfishpass does not yet model Arctic grayling, so there is nothing to
 compare against; this is net-new output. `link`’s `default`
 configuration carries `GR` in its species dimensions, and the same
 six-phase pipeline that produced the bull-trout parity above produces a
 per-segment `mapping_code` for grayling. The map below is rendered with
-the **same** gq symbology registry — the token vocabulary
+the **same** bcfishpass symbology registry — the token vocabulary
 (`ACCESS`/`SPAWN`/`REAR` × `NONE`/`MODELLED`/`ASSESSED`/`DAM`/…) is
 species-agnostic, so one colour lookup styles every species
 consistently.
 
 ![Arctic grayling per-segment mapping_code across the Parsnip River
 Watershed Group, link's default configuration — a species bcfishpass
-does not model. Same gq registry symbology and context layers as the
+does not yet model. Same symbology registry and context layers as the
 bull-trout map, so the two are directly comparable. The grayling network
 is smaller than bull trout's (19,233 vs 31,932 classified segments), but
 every grayling segment is net-new output relative to bcfishpass, and
@@ -183,7 +184,7 @@ all.](pars-habitat-connectivity_files/figure-html/map-gr-1.png)
 
 Arctic grayling per-segment mapping_code across the Parsnip River
 Watershed Group, link’s default configuration — a species bcfishpass
-does not model. Same gq registry symbology and context layers as the
+does not yet model. Same symbology registry and context layers as the
 bull-trout map, so the two are directly comparable. The grayling network
 is smaller than bull trout’s (19,233 vs 31,932 classified segments), but
 every grayling segment is net-new output relative to bcfishpass, and
@@ -201,7 +202,7 @@ work.
 ![South-east corner of the Parsnip River Watershed Group at full
 resolution — the headwaters near the continental divide: bull trout
 (left, link bcfishpass config) and Arctic grayling (right, link default
-config), same extent, same gq symbology. Grey background streams are the
+config), same extent, same symbology. Grey background streams are the
 full modelled network, so the coloured overlay shows where each species'
 classification reaches. Context: waterbodies (light blue), parks
 (green), reserves (grey + diamond), roads (grey), railways (black
@@ -211,7 +212,7 @@ labels).](pars-habitat-connectivity_files/figure-html/map-detail-1.png)
 South-east corner of the Parsnip River Watershed Group at full
 resolution — the headwaters near the continental divide: bull trout
 (left, link bcfishpass config) and Arctic grayling (right, link default
-config), same extent, same gq symbology. Grey background streams are the
+config), same extent, same symbology. Grey background streams are the
 full modelled network, so the coloured overlay shows where each species’
 classification reaches. Context: waterbodies (light blue), parks
 (green), reserves (grey + diamond), roads (grey), railways (black
