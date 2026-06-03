@@ -26,8 +26,8 @@ Parsnip River Watershed Group (`PARS`, ~5,600 km², north-eastern BC) end to
 end. It does two things. First, it shows `link`'s `bcfishpass` configuration
 **reproducing** the per-segment `mapping_code` that
 [bcfishpass](https://github.com/smnorris/bcfishpass) produces. Second, it shows
-`link` **extending** that methodology to a species bcfishpass does not model in
-the Peace: Arctic grayling (`GR`).
+`link` **extending** that methodology to a species bcfishpass does not yet
+model in the Peace: Arctic grayling (`GR`).
 
 The Parsnip River Watershed Group sits between Prince George and Mackenzie, BC.
 The Parsnip flows north into the southern arm of Williston Reservoir, joining
@@ -98,9 +98,10 @@ of the segment: `NONE` (none known), `MODELLED` (a modelled potential barrier),
 since fixed). Stream colour is keyed on barrier status alone — a purple segment
 sits below a dam, a red one below a field-assessed barrier — regardless of
 habitat use, while line width encodes the habitat use itself: spawning reaches
-draw thickest, rearing medium, access-only thinnest. Both the colours and the
-widths are read straight from the bcfishpass symbology registry bundled in
-`gq`, so the maps match a bcfishpass QGIS project exactly.
+draw thickest, rearing medium, access-only thinnest. Intermittent reaches
+(`;INTERMITTENT`) draw dashed. Colours and widths are read straight from the
+bcfishpass symbology registry, so the maps match a bcfishpass QGIS project
+exactly.
 
 ## Cached inputs
 
@@ -289,23 +290,27 @@ label_reserves <- function(x, cex = 0.45) {
 # right margin) so it never overlaps the network.
 legend_mapping_code <- function(tokens) {
   present <- names(cls$values) %in% unique(tokens)
-  legend("topright", inset = c(-0.34, 0), xpd = TRUE, title = "mapping_code",
+  toks <- names(cls$values)[present]
+  legend("topright", inset = c(-0.34, 0), xpd = TRUE, title = "Legend",
          legend = cls$labels[present], col = cls$values[present],
-         lwd = 2, cex = 0.55, bty = "n")
+         lwd = cls$widths[present] * 2,
+         lty = ifelse(grepl(";INTERMITTENT", toks), "dashed", "solid"),
+         cex = 0.55, bty = "n")
 }
 ```
 
-```{r map-bt, echo = FALSE, fig.cap = "Bull-trout per-segment mapping_code across the Parsnip River Watershed Group, link's bcfishpass configuration. Stream colours come straight from the bcfishpass symbology registry bundled in gq, so they match a bcfishpass QGIS project exactly. Context: lakes/rivers/manmade waterbodies (light blue), provincial parks (green), First Nations reserves (grey polygon + black diamond + label), resource roads (grey), railways (black dashed); the heavy black line is the watershed-group boundary."}
+```{r map-bt, echo = FALSE, fig.cap = "Bull-trout per-segment mapping_code across the Parsnip River Watershed Group, link's bcfishpass configuration. Stream colours come straight from the bcfishpass symbology registry, so they match a bcfishpass QGIS project exactly. Context: lakes/rivers/manmade waterbodies (light blue), provincial parks (green), First Nations reserves (grey polygon + black diamond + label), resource roads (grey), railways (black dashed); the heavy black line is the watershed-group boundary."}
 bt <- streams[!is.na(streams$mapping_code_bt) & nzchar(streams$mapping_code_bt), ]
 bt$col <- cls$values[bt$mapping_code_bt]
 bt$col[is.na(bt$col)] <- "#999999"
 bt$w <- width_for(bt$mapping_code_bt)
+bt$lty <- ifelse(grepl(";INTERMITTENT", bt$mapping_code_bt), "dashed", "solid")
 
 op <- par(mar = c(2, 1, 4, 8))
 plot(sf::st_geometry(aoi), col = NA, border = "black", lwd = 1.5, axes = FALSE,
      main = "PARS — bull trout mapping_code\n(link bcfishpass config)")
 draw_context_full()
-plot(sf::st_geometry(bt), col = bt$col, lwd = bt$w * 0.6, add = TRUE)
+plot(sf::st_geometry(bt), col = bt$col, lwd = bt$w * 0.6, lty = bt$lty, add = TRUE)
 plot(sf::st_geometry(aoi), col = NA, border = "black", lwd = 1.5, add = TRUE)
 label_reserves(reserves)
 legend_mapping_code(bt$mapping_code_bt)
@@ -314,25 +319,26 @@ par(op)
 
 ## Arctic grayling — a link extension
 
-bcfishpass does not model Arctic grayling, so there is nothing to compare
+bcfishpass does not yet model Arctic grayling, so there is nothing to compare
 against; this is net-new output. `link`'s `default` configuration carries `GR`
 in its species dimensions, and the same six-phase pipeline that produced the
 bull-trout parity above produces a per-segment `mapping_code` for grayling.
-The map below is rendered with the **same** gq symbology registry — the token
-vocabulary (`ACCESS`/`SPAWN`/`REAR` × `NONE`/`MODELLED`/`ASSESSED`/`DAM`/…) is
-species-agnostic, so one colour lookup styles every species consistently.
+The map below is rendered with the **same** bcfishpass symbology registry — the
+token vocabulary (`ACCESS`/`SPAWN`/`REAR` × `NONE`/`MODELLED`/`ASSESSED`/`DAM`/…)
+is species-agnostic, so one colour lookup styles every species consistently.
 
-```{r map-gr, echo = FALSE, fig.cap = "Arctic grayling per-segment mapping_code across the Parsnip River Watershed Group, link's default configuration — a species bcfishpass does not model. Same gq registry symbology and context layers as the bull-trout map, so the two are directly comparable. The grayling network is smaller than bull trout's (19,233 vs 31,932 classified segments), but every grayling segment is net-new output relative to bcfishpass, and 1,764 of them carry no bull-trout classification at all."}
+```{r map-gr, echo = FALSE, fig.cap = "Arctic grayling per-segment mapping_code across the Parsnip River Watershed Group, link's default configuration — a species bcfishpass does not yet model. Same symbology registry and context layers as the bull-trout map, so the two are directly comparable. The grayling network is smaller than bull trout's (19,233 vs 31,932 classified segments), but every grayling segment is net-new output relative to bcfishpass, and 1,764 of them carry no bull-trout classification at all."}
 gr <- streams[!is.na(streams$mapping_code_gr) & nzchar(streams$mapping_code_gr), ]
 gr$col <- cls$values[gr$mapping_code_gr]
 gr$col[is.na(gr$col)] <- "#999999"
 gr$w <- width_for(gr$mapping_code_gr)
+gr$lty <- ifelse(grepl(";INTERMITTENT", gr$mapping_code_gr), "dashed", "solid")
 
 op <- par(mar = c(2, 1, 4, 8))
 plot(sf::st_geometry(aoi), col = NA, border = "black", lwd = 1.5, axes = FALSE,
      main = "PARS — Arctic grayling mapping_code\n(link default config)")
 draw_context_full()
-plot(sf::st_geometry(gr), col = gr$col, lwd = gr$w * 0.6, add = TRUE)
+plot(sf::st_geometry(gr), col = gr$col, lwd = gr$w * 0.6, lty = gr$lty, add = TRUE)
 plot(sf::st_geometry(aoi), col = NA, border = "black", lwd = 1.5, add = TRUE)
 label_reserves(reserves)
 legend_mapping_code(gr$mapping_code_gr)
@@ -347,7 +353,7 @@ modelled network is the smaller of the two overall, but 1,764 segments carry a
 grayling classification with no bull-trout classification — the reaches where
 the extension is doing genuinely new work.
 
-```{r map-detail, echo = FALSE, fig.width = 7, fig.height = 4.5, fig.cap = "South-east corner of the Parsnip River Watershed Group at full resolution — the headwaters near the continental divide: bull trout (left, link bcfishpass config) and Arctic grayling (right, link default config), same extent, same gq symbology. Grey background streams are the full modelled network, so the coloured overlay shows where each species' classification reaches. Context: waterbodies (light blue), parks (green), reserves (grey + diamond), roads (grey), railways (black dashed), named streams (italic blue labels)."}
+```{r map-detail, echo = FALSE, fig.width = 7, fig.height = 4.5, fig.cap = "South-east corner of the Parsnip River Watershed Group at full resolution — the headwaters near the continental divide: bull trout (left, link bcfishpass config) and Arctic grayling (right, link default config), same extent, same symbology. Grey background streams are the full modelled network, so the coloured overlay shows where each species' classification reaches. Context: waterbodies (light blue), parks (green), reserves (grey + diamond), roads (grey), railways (black dashed), named streams (italic blue labels)."}
 e <- sf::st_bbox(aoi)
 inset_bbox <- sf::st_bbox(c(
   xmin = unname(e["xmin"] + (e["xmax"] - e["xmin"]) * 0.55),
@@ -403,7 +409,8 @@ panel <- function(seg, title) {
     plot(rpts, pch = 23, bg = "#222222", col = "white", cex = 1.0, add = TRUE)
   }
   if (!is.null(seg) && nrow(seg) > 0L) {
-    plot(sf::st_geometry(seg), col = seg$col, lwd = seg$w, add = TRUE)
+    plot(sf::st_geometry(seg), col = seg$col, lwd = seg$w, lty = seg$lty,
+         add = TRUE)
   }
   if (!is.null(aoi_d)) {
     plot(sf::st_geometry(aoi_d), border = "black", lwd = 1.5, add = TRUE)
