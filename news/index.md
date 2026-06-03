@@ -1,5 +1,28 @@
 # Changelog
 
+## link 0.42.0
+
+First package vignette: `vignettes/pars-habitat-connectivity.Rmd` — bull
+trout and Arctic grayling habitat and connectivity classification for
+the Parsnip River Watershed Group (`PARS`, FWCP Peace), rehearsed
+end-to-end so it can transfer into the Fish Passage Peace 2025 report
+appendix
+([\#215](https://github.com/NewGraphEnvironment/link/issues/215)). Two
+analyses: (1) **parity** — link’s `bcfishpass` config reproduces
+bcfishpass’s per-segment `mapping_code` for bull trout at 99.04%; (2)
+**extension** — link’s `default` config models Arctic grayling, which
+bcfishpass does not model at all. Map symbology reuses the bcfishpass
+symbology registry bundled in `gq`
+([`gq::gq_reg_main()`](https://newgraphenvironment.github.io/gq/reference/gq_reg_main.html) +
+`gq_tmap_classes()`, the same recipe `fresh` uses), so stream colours
+match a bcfishpass QGIS project exactly. The vignette is tunnel-free:
+the model run + comparison run once locally in
+`data-raw/wsg_vignette_data.R`, which caches artifacts to
+`inst/vignette-data/` (`pars.gpkg`, `pars_parity.rds`); the vignette
+only loads those, so pkgdown CI builds it with no Postgres and no
+bcfishpass snapshot. New Suggests (`bookdown`, `gq`, `knitr`,
+`rmarkdown`) + `VignetteBuilder: knitr` + `gq` Remote.
+
 ## link 0.41.4
 
 `data-raw/audit_configs.R` is now a trustworthy pre-trifecta gate. The

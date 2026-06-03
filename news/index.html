@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.41.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.42.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -16,6 +16,10 @@
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/pars-habitat-connectivity.html">Bull trout and Arctic grayling: habitat and connectivity classification for the Parsnip River Watershed Group</a></li>
+  </ul></li>
 <li class="active nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
@@ -31,6 +35,10 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.42.0" id="link-0420">link 0.42.0<a class="anchor" aria-label="anchor" href="#link-0420"></a></h2>
+<p>First package vignette: <code>vignettes/pars-habitat-connectivity.Rmd</code> — bull trout and Arctic grayling habitat and connectivity classification for the Parsnip River Watershed Group (<code>PARS</code>, FWCP Peace), rehearsed end-to-end so it can transfer into the Fish Passage Peace 2025 report appendix (<a href="https://github.com/NewGraphEnvironment/link/issues/215" class="external-link">#215</a>). Two analyses: (1) <strong>parity</strong> — link’s <code>bcfishpass</code> config reproduces bcfishpass’s per-segment <code>mapping_code</code> for bull trout at 99.04%; (2) <strong>extension</strong> — link’s <code>default</code> config models Arctic grayling, which bcfishpass does not model at all. Map symbology reuses the bcfishpass symbology registry bundled in <code>gq</code> (<code><a href="https://newgraphenvironment.github.io/gq/reference/gq_reg_main.html" class="external-link">gq::gq_reg_main()</a></code> + <code>gq_tmap_classes()</code>, the same recipe <code>fresh</code> uses), so stream colours match a bcfishpass QGIS project exactly. The vignette is tunnel-free: the model run + comparison run once locally in <code>data-raw/wsg_vignette_data.R</code>, which caches artifacts to <code>inst/vignette-data/</code> (<code>pars.gpkg</code>, <code>pars_parity.rds</code>); the vignette only loads those, so pkgdown CI builds it with no Postgres and no bcfishpass snapshot. New Suggests (<code>bookdown</code>, <code>gq</code>, <code>knitr</code>, <code>rmarkdown</code>) + <code>VignetteBuilder: knitr</code> + <code>gq</code> Remote.</p>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.41.4" id="link-0414">link 0.41.4<a class="anchor" aria-label="anchor" href="#link-0414"></a></h2>
 <p><code>data-raw/audit_configs.R</code> is now a trustworthy pre-trifecta gate. The script grew an end-of-run rollup that aggregates every finding and exits non-zero when any fired (previously findings scrolled past inline and the script always exited 0, so the trifecta could not gate on a clean audit), plus a section comparing fresh’s canonical <code>parameters_fresh.csv</code> column set against each link bundle’s copy (flags engine params fresh added that link is missing; treats <code>observation_*</code> as expected link-only extensions — the <code>parameters_fresh</code> half of the fresh↔︎link config-drift gap, rules.yaml half tracked in <a href="https://github.com/NewGraphEnvironment/link/issues/129" class="external-link">#129</a>). All 30 findings the audit had been emitting were audit-side defects, not config drift (<code>lnk_config_verify</code> reports 0 byte/shape drift in both bundles): §1 now calls the canonical <code><a href="../reference/lnk_config_verify.html">lnk_config_verify()</a></code> rather than a divergent homegrown checksum recipe; §2 regenerates rules.yaml with <code>edge_types="explicit"</code> to match how the committed copy is built; §3 splits species-axis mismatches into flagged defects vs informational expected asymmetries; §4 resolves declared paths against the bundle dir and compares full relative paths instead of basenames. Audit now reports “No findings — config layers aligned.” and exits 0.</p>

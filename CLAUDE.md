@@ -573,7 +573,7 @@ When changing a `configs/<name>/dimensions.csv` or any file that feeds
 
 ## SRED
 
-Relates to NewGraphEnvironment/sred-2025-2026#24 — crossing connectivity
+Relates to NewGraphEnvironment/sred#24 — crossing connectivity
 interpretation package.
 
 # CI Monitoring
@@ -1344,7 +1344,7 @@ traceable record of what was planned, built, and verified.
 
 For new packages or major features, work on a branch and merge via PR:
 
-    main ← scaffold-branch (PR closes with "Relates to NewGraphEnvironment/sred-2025-2026#N")
+    main ← scaffold-branch (PR closes with "Relates to NewGraphEnvironment/sred#N")
 
 This gives one PR that contains all commits — a single SRED
 cross-reference covers the entire body of work. Individual commits
@@ -1400,7 +1400,9 @@ Demonstrates the package solving an actual problem end-to-end - Uses
 bundled test data (committed to `inst/testdata/`) - Hosted on pkgdown so
 users can read it without installing
 
-**Output format:** Use `bookdown::html_vignette2` (not
+**Output format:** Use
+[`bookdown::html_vignette2`](https://pkgs.rstudio.com/bookdown/reference/html_document2.html)
+(not
 [`rmarkdown::html_vignette`](https://pkgs.rstudio.com/rmarkdown/reference/html_vignette.html))
 for figure numbering and cross-references. Requires `bookdown` in
 Suggests and chunks must have `fig.cap` for numbered figures.

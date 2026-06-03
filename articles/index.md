@@ -2,5 +2,6 @@
 
 ### All vignettes
 
-- [Modelling spawning and rearing habitat using bcfishpass
-  defaults](https://newgraphenvironment.github.io/link/articles/habitat-bcfishpass.md):
+- [Bull trout and Arctic grayling: habitat and connectivity
+  classification for the Parsnip River Watershed
+  Group](https://newgraphenvironment.github.io/link/articles/pars-habitat-connectivity.md):

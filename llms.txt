@@ -277,3 +277,10 @@ Redistributed bcfishpass override data carries its own license — see
 - [`lnk_wsg_resolve()`](https://newgraphenvironment.github.io/link/reference/lnk_wsg_resolve.md)
   : Resolve the Set of Watershed Groups to Model
 
+# Articles
+
+### All vignettes
+
+- [Bull trout and Arctic grayling: habitat and connectivity
+  classification for the Parsnip River Watershed
+  Group](https://newgraphenvironment.github.io/link/articles/pars-habitat-connectivity.md):
