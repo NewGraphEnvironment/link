@@ -275,7 +275,7 @@ When changing a `configs/<name>/dimensions.csv` or any file that feeds `lnk_rule
 
 ## SRED
 
-Relates to NewGraphEnvironment/sred-2025-2026#24 — crossing connectivity interpretation package.
+Relates to NewGraphEnvironment/sred#24 — crossing connectivity interpretation package.
 
 <!-- BEGIN SOUL CONVENTIONS — DO NOT EDIT BELOW THIS LINE -->
 
@@ -822,7 +822,7 @@ traceable record of what was planned, built, and verified.
 For new packages or major features, work on a branch and merge via PR:
 
 ```
-main ← scaffold-branch (PR closes with "Relates to NewGraphEnvironment/sred-2025-2026#N")
+main ← scaffold-branch (PR closes with "Relates to NewGraphEnvironment/sred#N")
 ```
 
 This gives one PR that contains all commits — a single SRED cross-reference
