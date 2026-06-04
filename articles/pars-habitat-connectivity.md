@@ -1,13 +1,38 @@
 # Bull trout and Arctic grayling: habitat and connectivity classification for the Parsnip River Watershed Group
 
-This vignette walks a per-segment habitat `mapping_code` analysis
-through the Parsnip River Watershed Group (`PARS`, ~5,600 km²,
-north-eastern BC) end to end. It does two things. First, it shows
-`link`’s `bcfishpass` configuration **reproducing** the per-segment
-`mapping_code` that [bcfishpass](https://github.com/smnorris/bcfishpass)
-produces. Second, it shows `link` **extending** that methodology to a
-species bcfishpass does not yet model in the Peace: Arctic grayling
-(`GR`).
+For any stream in a watershed, fisheries managers want to know three
+things: can a fish get there, is it good habitat, and what — if anything
+— blocks the way. This vignette runs that analysis end to end for the
+Parsnip River Watershed Group (`PARS`, ~5,600 km², north-eastern BC).
+
+`link` models the entire stream network of a watershed group one segment
+at a time, and for each species works out:
+
+- **Access** — can the fish reach the segment, or is the route
+  downstream likely too steep (gradient), or cut off by a barrier such
+  as a dam, waterfall, or perched culvert?
+- **Habitat** — if it is reachable, is the segment likely large enough
+  (channel width) and its gradient gentle enough for the modelled
+  species to use it as **spawning** habitat, **rearing** habitat, or
+  simply passable water with neither?
+- **Barriers** — the most significant obstacle downstream: a **dam**, a
+  **known** barrier that has been assessed in the field (a road culvert,
+  weir, etc.), a **modelled** crossing (predicted from road–stream
+  intersections but not yet field-checked), or one that has since been
+  **remediated** (fixed).
+
+It also flags reaches that are **intermittent** (seasonally dry).
+[bcfishpass](https://github.com/smnorris/bcfishpass) condenses that
+whole per-segment verdict into one compact label it calls a
+`mapping_code` — for example `SPAWN;DAM`, spawning habitat with a dam
+downstream. `link` reproduces those same labels, and the maps below
+colour and weight every stream by them.
+
+The vignette does two things. First, it shows `link`’s `bcfishpass`
+configuration **reproducing** bcfishpass’s per-segment classification
+for bull trout (`BT`) — a parity check against the established tool.
+Second, it shows `link` **extending** the same method to a species
+bcfishpass does not yet model in the Peace: Arctic grayling (`GR`).
 
 The Parsnip River Watershed Group sits between Prince George and
 Mackenzie, BC. The Parsnip flows north into the southern arm of
@@ -31,17 +56,22 @@ and up) clear-water reaches and spawn over fine gravels.
 Norris (Hillcrest Geographics). What `link` adds is a
 configuration-driven re-expression of the same modelling: we can
 experiment with different configurations for species bcfishpass already
-models, and extend to species it does not — here, Arctic grayling for
-the **Fish Passage Peace 2025** program — while staying byte-checkable
-against the upstream reference.
+models, and extend to species it does not — here, Arctic grayling —
+while staying byte-checkable against the upstream reference.
 
 ## Modelling parameters
 
-Per-segment `mapping_code` is assembled from access, spawning, and
-rearing classifications. Access is gated by a per-species **maximum**
-gradient; spawning and rearing are then gated by their own **maximum**
-gradients and a minimum channel width. The values in force for this run
-are below.
+A `mapping_code` is a per-segment, per-species label that bcfishpass
+computes over the BC Freshwater Atlas (FWA) stream network — it is not
+part of the FWA itself. Producing it means first re-cutting the FWA
+streams into shorter segments wherever a fish’s prospects change — at
+gradient transitions, falls, dams, modelled and assessed crossings, and
+habitat thresholds — then giving each resulting segment its access,
+spawning, and rearing classification. `link` reproduces that
+segmentation and those classifications. Access is gated by a per-species
+**maximum** gradient; spawning and rearing are then gated by their own
+**maximum** gradients and a minimum channel width. The values in force
+for this run are below.
 
 | species | configuration | access grad max | spawn grad max | rear grad max | spawn CW min (m) | rear CW min (m) |
 |:---|:---|---:|---:|---:|---:|---:|

@@ -64,15 +64,45 @@
 
     
     
-<p>This vignette walks a per-segment habitat <code>mapping_code</code>
-analysis through the Parsnip River Watershed Group (<code>PARS</code>,
-~5,600 km², north-eastern BC) end to end. It does two things. First, it
-shows <code>link</code>’s <code>bcfishpass</code> configuration
-<strong>reproducing</strong> the per-segment <code>mapping_code</code>
-that <a href="https://github.com/smnorris/bcfishpass" class="external-link">bcfishpass</a>
-produces. Second, it shows <code>link</code> <strong>extending</strong>
-that methodology to a species bcfishpass does not yet model in the
-Peace: Arctic grayling (<code>GR</code>).</p>
+<p>For any stream in a watershed, fisheries managers want to know three
+things: can a fish get there, is it good habitat, and what — if anything
+— blocks the way. This vignette runs that analysis end to end for the
+Parsnip River Watershed Group (<code>PARS</code>, ~5,600 km²,
+north-eastern BC).</p>
+<p><code>link</code> models the entire stream network of a watershed
+group one segment at a time, and for each species works out:</p>
+<ul>
+<li>
+<strong>Access</strong> — can the fish reach the segment, or is the
+route downstream likely too steep (gradient), or cut off by a barrier
+such as a dam, waterfall, or perched culvert?</li>
+<li>
+<strong>Habitat</strong> — if it is reachable, is the segment likely
+large enough (channel width) and its gradient gentle enough for the
+modelled species to use it as <strong>spawning</strong> habitat,
+<strong>rearing</strong> habitat, or simply passable water with
+neither?</li>
+<li>
+<strong>Barriers</strong> — the most significant obstacle
+downstream: a <strong>dam</strong>, a <strong>known</strong> barrier
+that has been assessed in the field (a road culvert, weir, etc.), a
+<strong>modelled</strong> crossing (predicted from road–stream
+intersections but not yet field-checked), or one that has since been
+<strong>remediated</strong> (fixed).</li>
+</ul>
+<p>It also flags reaches that are <strong>intermittent</strong>
+(seasonally dry). <a href="https://github.com/smnorris/bcfishpass" class="external-link">bcfishpass</a> condenses
+that whole per-segment verdict into one compact label it calls a
+<code>mapping_code</code> — for example <code>SPAWN;DAM</code>, spawning
+habitat with a dam downstream. <code>link</code> reproduces those same
+labels, and the maps below colour and weight every stream by them.</p>
+<p>The vignette does two things. First, it shows <code>link</code>’s
+<code>bcfishpass</code> configuration <strong>reproducing</strong>
+bcfishpass’s per-segment classification for bull trout (<code>BT</code>)
+— a parity check against the established tool. Second, it shows
+<code>link</code> <strong>extending</strong> the same method to a
+species bcfishpass does not yet model in the Peace: Arctic grayling
+(<code>GR</code>).</p>
 <p>The Parsnip River Watershed Group sits between Prince George and
 Mackenzie, BC. The Parsnip flows north into the southern arm of
 Williston Reservoir, joining the Peace River system; from there the
@@ -95,13 +125,19 @@ stack from Simon Norris (Hillcrest Geographics). What <code>link</code>
 adds is a configuration-driven re-expression of the same modelling: we
 can experiment with different configurations for species bcfishpass
 already models, and extend to species it does not — here, Arctic
-grayling for the <strong>Fish Passage Peace 2025</strong> program —
-while staying byte-checkable against the upstream reference.</p>
+grayling — while staying byte-checkable against the upstream
+reference.</p>
 <div class="section level2">
 <h2 id="modelling-parameters">Modelling parameters<a class="anchor" aria-label="anchor" href="#modelling-parameters"></a>
 </h2>
-<p>Per-segment <code>mapping_code</code> is assembled from access,
-spawning, and rearing classifications. Access is gated by a per-species
+<p>A <code>mapping_code</code> is a per-segment, per-species label that
+bcfishpass computes over the BC Freshwater Atlas (FWA) stream network —
+it is not part of the FWA itself. Producing it means first re-cutting
+the FWA streams into shorter segments wherever a fish’s prospects change
+— at gradient transitions, falls, dams, modelled and assessed crossings,
+and habitat thresholds — then giving each resulting segment its access,
+spawning, and rearing classification. <code>link</code> reproduces that
+segmentation and those classifications. Access is gated by a per-species
 <strong>maximum</strong> gradient; spawning and rearing are then gated
 by their own <strong>maximum</strong> gradients and a minimum channel
 width. The values in force for this run are below.</p>
