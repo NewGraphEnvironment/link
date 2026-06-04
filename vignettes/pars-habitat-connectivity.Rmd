@@ -298,13 +298,17 @@ draw_context_full <- function() {
     plot(sf::st_geometry(parks), col = "#639b5f55", border = "#33a02c",
          lwd = 0.7, add = TRUE)
   }
-  if (!is.null(reserves)) {
-    plot(sf::st_geometry(reserves), col = "#b2b2b288", border = "#232323",
-         lwd = 0.6, add = TRUE)
-    pts <- suppressWarnings(sf::st_centroid(sf::st_geometry(reserves),
-                                            of_largest_polygon = TRUE))
-    plot(pts, pch = 23, bg = "#222222", col = "white", cex = 0.9, add = TRUE)
-  }
+}
+
+# Reserves draw OVER the mapping_code streams (called after the stream plot),
+# so the polygon + centroid diamond read where they overlap the network.
+draw_reserves <- function(x, fill = "#b2b2b288", cex = 0.9) {
+  if (is.null(x) || nrow(x) == 0L) return(invisible())
+  plot(sf::st_geometry(x), col = fill, border = "#232323", lwd = 0.6,
+       add = TRUE)
+  pts <- suppressWarnings(sf::st_centroid(sf::st_geometry(x),
+                                          of_largest_polygon = TRUE))
+  plot(pts, pch = 23, bg = "#222222", col = "white", cex = cex, add = TRUE)
 }
 
 # Reserve english_name labels with a thin white halo, drawn last with
@@ -337,11 +341,18 @@ label_reserves <- function(x, cex = 0.45) {
 legend_mapping_code <- function(tokens) {
   present <- names(cls$values) %in% unique(tokens)
   toks <- names(cls$values)[present]
+  key_lwd <- cls$widths[present] * 2
+  # base R scales dash length by line width, so a thick "dashed" key fits only
+  # ~1 dash in the short legend segment while thin keys show many. Give thicker
+  # intermittent keys a finer pattern so all read as dashes at the same seg.len.
+  is_int <- grepl(";INTERMITTENT", toks)
+  key_lty <- ifelse(!is_int, "solid",
+                    ifelse(key_lwd > 2.5, "22",
+                           ifelse(key_lwd > 1.5, "33", "44")))
   legend("topright", inset = c(-0.34, 0), xpd = TRUE, title = "Legend",
          legend = label_for(toks), col = cls$values[present],
-         lwd = cls$widths[present] * 2,
-         lty = ifelse(grepl(";INTERMITTENT", toks), "dashed", "solid"),
-         cex = 0.55, bty = "n")
+         lwd = key_lwd, lty = key_lty,
+         seg.len = 3, cex = 0.55, bty = "n")
 }
 ```
 
@@ -358,6 +369,7 @@ plot(sf::st_geometry(aoi), col = NA, border = "black", lwd = 1.5, axes = FALSE,
 draw_context_full()
 plot(sf::st_geometry(bt), col = bt$col, lwd = bt$w * 0.6, lty = bt$lty, add = TRUE)
 plot(sf::st_geometry(aoi), col = NA, border = "black", lwd = 1.5, add = TRUE)
+draw_reserves(reserves)
 label_reserves(reserves)
 legend_mapping_code(bt$mapping_code_bt)
 par(op)
@@ -386,6 +398,7 @@ plot(sf::st_geometry(aoi), col = NA, border = "black", lwd = 1.5, axes = FALSE,
 draw_context_full()
 plot(sf::st_geometry(gr), col = gr$col, lwd = gr$w * 0.6, lty = gr$lty, add = TRUE)
 plot(sf::st_geometry(aoi), col = NA, border = "black", lwd = 1.5, add = TRUE)
+draw_reserves(reserves)
 label_reserves(reserves)
 legend_mapping_code(gr$mapping_code_gr)
 par(op)
@@ -447,17 +460,11 @@ panel <- function(seg, title) {
     plot(sf::st_geometry(parks_d), col = "#639b5f55", border = "#33a02c",
          lwd = 0.8, add = TRUE)
   }
-  if (!is.null(res_d)) {
-    plot(sf::st_geometry(res_d), col = "#b2b2b2aa", border = "#232323",
-         lwd = 0.7, add = TRUE)
-    rpts <- suppressWarnings(sf::st_centroid(sf::st_geometry(res_d),
-                                             of_largest_polygon = TRUE))
-    plot(rpts, pch = 23, bg = "#222222", col = "white", cex = 1.0, add = TRUE)
-  }
   if (!is.null(seg) && nrow(seg) > 0L) {
     plot(sf::st_geometry(seg), col = seg$col, lwd = seg$w, lty = seg$lty,
          add = TRUE)
   }
+  draw_reserves(res_d, fill = "#b2b2b2aa", cex = 1.0)
   if (!is.null(aoi_d)) {
     plot(sf::st_geometry(aoi_d), border = "black", lwd = 1.5, add = TRUE)
   }
