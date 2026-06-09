@@ -51,16 +51,16 @@ on it, not the reverse), so `mapping_code = FALSE` should still produce
 - [x] Add new mocks to empty-species / dams / cleanup tests so they keep passing.
 
 ## Phase 3 — Verify + release
-- [ ] `devtools::document()`; `lintr::lint_package()` clean; `devtools::test()` green.
-- [ ] `tools::buildVignettes(dir = ".", tangle = FALSE, clean = TRUE)` exits 0.
-- [ ] `/code-check` clean → atomic commits (code + checkbox flip) per phase.
-- [ ] NEWS.md entry + `DESCRIPTION` bump 0.42.0 → 0.43.0 (final commit).
+- [x] `devtools::document()`; `lintr::lint_package()` clean; `devtools::test()` green.
+- [x] `tools::buildVignettes(dir = ".", tangle = FALSE, clean = TRUE)` exits 0.
+- [x] `/code-check` clean → atomic commits (code + checkbox flip) per phase.
+- [x] NEWS.md entry + `DESCRIPTION` bump 0.42.0 → 0.43.0 (final commit).
 - [ ] `/planning-archive` → `/gh-pr-push` (PR body: `Closes #218`, SRED tag in PR body).
 
 ## Validation
 
-- [ ] `devtools::test()` green, incl. rewritten composition test + new gating test
-- [ ] `tools::buildVignettes` exits 0
-- [ ] `/code-check` clean on each commit
-- [ ] PWF checkboxes match landed work
+- [x] `devtools::test()` green, incl. rewritten composition test + new gating test
+- [x] `tools::buildVignettes` exits 0
+- [x] `/code-check` clean on each commit
+- [x] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion

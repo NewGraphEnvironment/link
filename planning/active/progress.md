@@ -12,4 +12,7 @@
 - Phase 2 — rewrote "composes phases in expected order" (new order: …barriers_unify, presence,
   persist, barriers_views, access, persist); added "builds access for both mapping_code values,
   gates lnk_mapping_code" test; added access-path mocks to dams + cleanup tests. 20 PASS in file.
-- Next: Phase 3 — `/code-check`, atomic commit (Phase 1+2), buildVignettes, NEWS + bump 0.42.0→0.43.0.
+- Phase 1+2 atomic commit `681c7bd` (code + roxygen + Rd + tests + checkbox flips).
+- Phase 3 — `/code-check` clean (3 rounds, 0 findings); `buildVignettes` exit 0;
+  test-lnk_pipeline_run.R 20 PASS. NEWS 0.43.0 entry + DESCRIPTION bump 0.42.0→0.43.0.
+- Next: `/planning-archive` → `/gh-pr-push` (PR body: `Closes #218`, SRED tag).
