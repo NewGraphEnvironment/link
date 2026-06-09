@@ -62,13 +62,16 @@ lnk_pipeline_run(
 
 - mapping_code:
 
-  Logical. When `TRUE`, additionally runs the tunnel-free mapping_code
-  build phase (10b above) — produces `<persist_schema>.streams_access`
-  and `<persist_schema>.streams_mapping_code` for the WSG, consumed
-  downstream by `data-raw/build_species_views.R --bcfp` (QGIS bcfp-
-  shape symbology). Default `FALSE`. Methodology shift from pre-#187
-  compare_wsg: access uses link's own per-species barriers (via
-  `blocks_species` predicate on `<schema>.barriers`), not bcfp's
+  Logical. Gates only the mapping_code **token assembly** (phase 10b) —
+  when `TRUE`,
+  [`lnk_mapping_code()`](https://newgraphenvironment.github.io/link/reference/lnk_mapping_code.md)
+  runs and `<persist_schema>.streams_mapping_code` is produced for the
+  WSG, consumed downstream by `data-raw/build_species_views.R --bcfp`
+  (QGIS bcfp-shape symbology). Default `FALSE`. **`streams_access` is
+  built and persisted regardless of this flag** (phase 10a, link#218) —
+  access is foundational, not mapping_code-specific. Methodology shift
+  from pre-#187 compare_wsg: access uses link's own per-species barriers
+  (via `blocks_species` predicate on `<schema>.barriers`), not bcfp's
   tunnel-staged tables.
 
 ## Value
@@ -124,21 +127,25 @@ rather than the comparison RDS artifact.
     — unify per-source barriers into a single working-schema table
     (always; promotes the mapping_code-only flag in
     [`lnk_compare_wsg()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_wsg.md)
-    to canonical PG state). 10b. *Optional* mapping_code phase — gated
-    by `mapping_code = TRUE`. Runs between barriers_unify and persist:
+    to canonical PG state). 10a. **Access phase (always-on, link#218).**
+    Runs between barriers_unify and persist: a pre-persist of the
+    current WSG (so the next two steps see cross-WSG barriers),
     [`lnk_barriers_views()`](https://newgraphenvironment.github.io/link/reference/lnk_barriers_views.md)
-    over working `<schema>.barriers` (tunnel- free, link-canonical
-    per-species views),
+    (tunnel-free, link-canonical per-species views over
+    `<persist_schema>.barriers`), and
     [`lnk_pipeline_access()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_access.md)
-    (writes working `streams_access`),
+    (writes working `streams_access`). Access is foundational —
+    mapping_code depends on it — so it builds regardless of
+    `mapping_code`. See link#187, \#196. 10b. *Optional* mapping_code
+    token assembly — gated by `mapping_code = TRUE`.
     [`lnk_mapping_code()`](https://newgraphenvironment.github.io/link/reference/lnk_mapping_code.md)
-    (writes working `streams_mapping_code`). Persist phase copies both
-    to `<persist_schema>`. See link#187.
+    consumes `streams_access` + `streams_habitat` and writes working
+    `streams_mapping_code`.
 
 11. [`lnk_pipeline_persist()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_persist.md)
-    — copy per-WSG streams + per-species habitat + barriers (+ optional
-    streams_access + streams_mapping_code) into `<persist_schema>`
-    (idempotent DELETE-WHERE-WSG + INSERT).
+    — copy per-WSG streams + per-species habitat + barriers +
+    streams_access (+ optional streams_mapping_code) into
+    `<persist_schema>` (idempotent DELETE-WHERE-WSG + INSERT).
 
 ## See also
 

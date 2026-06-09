@@ -1,5 +1,26 @@
 # Changelog
 
+## link 0.43.0
+
+[`lnk_pipeline_run()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_run.md)
+now builds and persists `<persist_schema>.streams_access` (and
+`access_<sp>`) regardless of the `mapping_code` flag
+([\#218](https://github.com/NewGraphEnvironment/link/issues/218)).
+Access is foundational — `mapping_code` depends on it, not the reverse —
+so the access build (`lnk_presence` → pre-persist → `lnk_barriers_views`
+→ `lnk_pipeline_access`) moves out of the `if (isTRUE(mapping_code))`
+block to run unconditionally; only the `mapping_code` **token assembly**
+(`lnk_mapping_code`) stays gated. Habitat-only callers
+(`mapping_code = FALSE` — `data-raw/wsg_pipeline_run.R`,
+`lnk_compare_wsg(mapping_code = FALSE)`) now also emit `streams_access`.
+No persist change required:
+[`lnk_pipeline_persist()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_persist.md)
+already probes for `streams_access` and `streams_mapping_code`
+independently and copies whichever working tables exist. The
+`mapping_code = TRUE` execution order (pre-persist → barriers_views →
+access → mapping_code → final persist) is byte-identical to v0.42.0, so
+the cached vignette parity (99.04% BT) is unchanged.
+
 ## link 0.42.0
 
 First package vignette: `vignettes/pars-habitat-connectivity.Rmd` — bull
