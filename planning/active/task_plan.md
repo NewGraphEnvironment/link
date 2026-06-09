@@ -34,21 +34,21 @@ on it, not the reverse), so `mapping_code = FALSE` should still produce
   chunk); `mapping_code = TRUE` sequence is byte-identical after refactor.
 
 ## Phase 1 — Hoist access out of the `mapping_code` gate
-- [ ] `R/lnk_pipeline_run.R`: move `lnk_presence`, `barriers_per_sp`, pre-persist,
+- [x] `R/lnk_pipeline_run.R`: move `lnk_presence`, `barriers_per_sp`, pre-persist,
   `lnk_barriers_views`, `lnk_pipeline_access` out of `if (isTRUE(mapping_code))`
   so they run unconditionally (after `lnk_barriers_unify`, before final persist).
   Keep species-residence classification + `lnk_mapping_code` inside a slimmer gate.
-- [ ] Update roxygen header (phase-order list, `@param mapping_code`) to say access
+- [x] Update roxygen header (phase-order list, `@param mapping_code`) to say access
   is always built and only token assembly is gated. Re-`document()`.
 
 ## Phase 2 — Update + extend tests
-- [ ] Rewrite "composes phases in expected order" (`test-lnk_pipeline_run.R:141`):
+- [x] Rewrite "composes phases in expected order" (`test-lnk_pipeline_run.R:141`):
   default path now includes pre-persist, `barriers_views`, `pipeline_access`, then
   final persist (two `persist` calls). Add mocks for `lnk_presence`,
   `lnk_barriers_views`, `lnk_pipeline_access`.
-- [ ] Add test: `lnk_pipeline_access` called for BOTH `mapping_code` values;
+- [x] Add test: `lnk_pipeline_access` called for BOTH `mapping_code` values;
   `lnk_mapping_code` called only when `mapping_code = TRUE`.
-- [ ] Add new mocks to empty-species / dams / cleanup tests so they keep passing.
+- [x] Add new mocks to empty-species / dams / cleanup tests so they keep passing.
 
 ## Phase 3 — Verify + release
 - [ ] `devtools::document()`; `lintr::lint_package()` clean; `devtools::test()` green.

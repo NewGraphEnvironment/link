@@ -174,6 +174,15 @@ test_that("lnk_pipeline_run composes phases in expected order", {
   m_persist <- function(conn, aoi, cfg, species, schema) {
     calls <<- c(calls, "persist"); invisible(conn)
   }
+  m_presence <- function(...) {
+    calls <<- c(calls, "presence"); NULL
+  }
+  m_views <- function(conn, schema, cfg, species, ...) {
+    calls <<- c(calls, "barriers_views"); invisible(conn)
+  }
+  m_access <- function(conn, ...) {
+    calls <<- c(calls, "access"); invisible(conn)
+  }
   m_exec <- function(conn, sql) {
     if (grepl("DROP", sql)) calls <<- c(calls, "exec_drop")
     1L
@@ -191,6 +200,9 @@ test_that("lnk_pipeline_run composes phases in expected order", {
     lnk_persist_init = m_persist_init,
     lnk_barriers_unify = m_unify,
     lnk_pipeline_persist = m_persist,
+    lnk_presence = m_presence,
+    lnk_barriers_views = m_views,
+    lnk_pipeline_access = m_access,
     {
       with_mocked_bindings(
         dbExecute = m_exec,
@@ -206,13 +218,18 @@ test_that("lnk_pipeline_run composes phases in expected order", {
     }
   )
 
-  # Expected: defensive drop, then phases in order, then species
-  # resolution, then persist_init, then barriers_unify, then persist.
+  # Expected: defensive drop, modelling phases, species resolution,
+  # persist_init, barriers_unify, then the always-on access phase
+  # (link#218): presence -> pre-persist -> barriers_views -> access,
+  # then the final persist. mapping_code = FALSE here, so the token
+  # assembly (lnk_mapping_code) does NOT run.
   expected_order <- c(
     "exec_drop",
     "setup", "load", "prepare", "crossings", "break", "classify", "connect",
     "species",
-    "persist_init", "barriers_unify", "persist"
+    "persist_init", "barriers_unify",
+    "presence", "persist", "barriers_views", "access",
+    "persist"
   )
   expect_equal(calls, expected_order)
   # Returns conn invisibly
@@ -241,6 +258,9 @@ test_that("lnk_pipeline_run passes NULL conn_tunnel when dams = FALSE", {
     lnk_persist_init = m_noop,
     lnk_barriers_unify = m_noop,
     lnk_pipeline_persist = m_noop,
+    lnk_presence = m_noop,
+    lnk_barriers_views = m_noop,
+    lnk_pipeline_access = m_noop,
     {
       with_mocked_bindings(
         dbExecute = m_exec,
@@ -280,6 +300,9 @@ test_that("lnk_pipeline_run drops working schema when cleanup_working = TRUE", {
     lnk_persist_init = m_noop,
     lnk_barriers_unify = m_noop,
     lnk_pipeline_persist = m_noop,
+    lnk_presence = m_noop,
+    lnk_barriers_views = m_noop,
+    lnk_pipeline_access = m_noop,
     {
       with_mocked_bindings(
         dbExecute = m_exec,
@@ -296,4 +319,65 @@ test_that("lnk_pipeline_run drops working schema when cleanup_working = TRUE", {
   )
 
   expect_true(drop_schema_seen)
+})
+
+# ---------------------------------------------------------------------------
+# Access always runs; mapping_code token assembly is gated (link#218)
+# ---------------------------------------------------------------------------
+
+test_that("lnk_pipeline_run builds access for both mapping_code values, gates lnk_mapping_code", {
+  run_once <- function(mapping_code) {
+    seen <- list(access = FALSE, mapping = FALSE)
+    m_noop <- function(...) invisible(NULL)
+    m_species <- function(...) c("BT")
+    m_access <- function(...) {
+      seen$access <<- TRUE; invisible(NULL)
+    }
+    m_mapping <- function(...) {
+      seen$mapping <<- TRUE; invisible(NULL)
+    }
+    m_exec <- function(...) 1L
+
+    with_mocked_bindings(
+      lnk_pipeline_setup = m_noop,
+      lnk_pipeline_load = m_noop,
+      lnk_pipeline_prepare = m_noop,
+      lnk_pipeline_crossings = m_noop,
+      lnk_pipeline_break = m_noop,
+      lnk_pipeline_classify = m_noop,
+      lnk_pipeline_connect = m_noop,
+      lnk_pipeline_species = m_species,
+      lnk_persist_init = m_noop,
+      lnk_barriers_unify = m_noop,
+      lnk_pipeline_persist = m_noop,
+      lnk_presence = m_noop,
+      lnk_barriers_views = m_noop,
+      lnk_pipeline_access = m_access,
+      lnk_mapping_code = m_mapping,
+      {
+        with_mocked_bindings(
+          dbExecute = m_exec,
+          .package = "DBI",
+          {
+            lnk_pipeline_run(
+              conn = mock_conn(), aoi = "ADMS",
+              cfg = mock_cfg(), loaded = mock_loaded(),
+              mapping_code = mapping_code, cleanup_working = FALSE
+            )
+          }
+        )
+      }
+    )
+    seen
+  }
+
+  off <- run_once(FALSE)
+  on <- run_once(TRUE)
+
+  # Access builds regardless of the flag.
+  expect_true(off$access)
+  expect_true(on$access)
+  # Token assembly is gated.
+  expect_false(off$mapping)
+  expect_true(on$mapping)
 })
