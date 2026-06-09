@@ -38,15 +38,16 @@ runs from local \code{cabd.dams}. Pass \code{FALSE} to skip dams entirely.}
 \verb{<schema>} working schema at the end. Pass \code{FALSE} for interactive
 debug / manual inspection.}
 
-\item{mapping_code}{Logical. When \code{TRUE}, additionally runs the
-tunnel-free mapping_code build phase (10b above) — produces
-\verb{<persist_schema>.streams_access} and
-\verb{<persist_schema>.streams_mapping_code} for the WSG, consumed
-downstream by \code{data-raw/build_species_views.R --bcfp} (QGIS bcfp-
-shape symbology). Default \code{FALSE}. Methodology shift from pre-#187
-compare_wsg: access uses link's own per-species barriers (via
-\code{blocks_species} predicate on \verb{<schema>.barriers}), not bcfp's
-tunnel-staged tables.}
+\item{mapping_code}{Logical. Gates only the mapping_code \strong{token
+assembly} (phase 10b) — when \code{TRUE}, \code{\link[=lnk_mapping_code]{lnk_mapping_code()}} runs and
+\verb{<persist_schema>.streams_mapping_code} is produced for the WSG,
+consumed downstream by \code{data-raw/build_species_views.R --bcfp} (QGIS
+bcfp-shape symbology). Default \code{FALSE}. \strong{\code{streams_access} is built
+and persisted regardless of this flag} (phase 10a, link#218) —
+access is foundational, not mapping_code-specific. Methodology shift
+from pre-#187 compare_wsg: access uses link's own per-species
+barriers (via \code{blocks_species} predicate on \verb{<schema>.barriers}),
+not bcfp's tunnel-staged tables.}
 }
 \value{
 \code{conn}, invisibly. Side effects are the writes into
@@ -86,15 +87,18 @@ AOI (cfg$species ∩ wsg_species_presence). Empty set is an error.
 \item \code{\link[=lnk_barriers_unify]{lnk_barriers_unify()}} — unify per-source barriers into a single
 working-schema table (always; promotes the mapping_code-only
 flag in \code{lnk_compare_wsg()} to canonical PG state).
-10b. \emph{Optional} mapping_code phase — gated by \code{mapping_code = TRUE}.
-Runs between barriers_unify and persist:
-\code{\link[=lnk_barriers_views]{lnk_barriers_views()}} over working \verb{<schema>.barriers} (tunnel-
-free, link-canonical per-species views), \code{\link[=lnk_pipeline_access]{lnk_pipeline_access()}}
-(writes working \code{streams_access}), \code{\link[=lnk_mapping_code]{lnk_mapping_code()}} (writes
-working \code{streams_mapping_code}). Persist phase copies both to
-\verb{<persist_schema>}. See link#187.
+10a. \strong{Access phase (always-on, link#218).} Runs between barriers_unify
+and persist: a pre-persist of the current WSG (so the next two steps
+see cross-WSG barriers), \code{\link[=lnk_barriers_views]{lnk_barriers_views()}} (tunnel-free,
+link-canonical per-species views over \verb{<persist_schema>.barriers}),
+and \code{\link[=lnk_pipeline_access]{lnk_pipeline_access()}} (writes working \code{streams_access}). Access
+is foundational — mapping_code depends on it — so it builds regardless
+of \code{mapping_code}. See link#187, #196.
+10b. \emph{Optional} mapping_code token assembly — gated by \code{mapping_code = TRUE}.
+\code{\link[=lnk_mapping_code]{lnk_mapping_code()}} consumes \code{streams_access} + \code{streams_habitat}
+and writes working \code{streams_mapping_code}.
 \item \code{\link[=lnk_pipeline_persist]{lnk_pipeline_persist()}} — copy per-WSG streams + per-species
-habitat + barriers (+ optional streams_access + streams_mapping_code)
+habitat + barriers + streams_access (+ optional streams_mapping_code)
 into \verb{<persist_schema>} (idempotent DELETE-WHERE-WSG + INSERT).
 }
 }
