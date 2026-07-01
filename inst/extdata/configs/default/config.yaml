@@ -182,7 +182,7 @@ provenance:
   overrides/user_crossings_misc.csv:
     source: https://github.com/smnorris/bcfishpass
     path: data/user_crossings_misc.csv
-    upstream_sha: e12c1a5
-    synced: 2026-05-20
-    checksum: sha256:4089ee892b9790acd898d8619c7b07d37902ad7e191544a2f3ed647cd303b438
+    upstream_sha: 2917790
+    synced: 2026-07-01
+    checksum: sha256:e569fdfcf8c98eb0c7928b52a3de894a3c46e2599cafb04e746d4f858dffc711
     shape_checksum: sha256:463bc63156786be38c39d5479bfe07ce7b593e1174ecba6f7d9e5ac52c2c6bfd
