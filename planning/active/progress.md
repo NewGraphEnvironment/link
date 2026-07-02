@@ -59,7 +59,26 @@
   (link populated, ref NA). Live MORR coho accessible_km 3330.25
   (= Phase-1 proof). 108 tests green; lint clean (only pre-existing
   helper-name/indent notes); docs regenerated.
-- Next: Phase 2 (4/4) — add tunnel-free `accessible_km` reference path
-  (`fresh.streams_vw_bcfp`, predicate `barriers_ch_cm_co_pk_sk_dnstr =
-  ''` for coho/salmon) so `accessible`'s ref_value/diff_pct populate.
-  Do NOT force-unify with the tunnel-based habitat ref.
+- **Phase 2 (4/4) done.** Tunnel-free `accessible_km` reference wired.
+  New `.lnk_compare_wsg_accessible_ref(conn, aoi, species)` sums
+  `fresh.streams_vw_bcfp.length_metre WHERE <barrier_group> = ''` on the
+  LOCAL conn (snapshot authoritative; tunnel dead on M1). Only the
+  Phase-1-proven salmon group is wired (CH/CM/CO/PK/SK →
+  `barriers_ch_cm_co_pk_sk_dnstr`); BT/ST/WCT/CT-DV-RB short-circuit to
+  NA (each needs its own proof — Phase 3). Threaded local `conn` through
+  `.lnk_compare_wsg_rollup_reference` (habitat ref stays tunnel-based on
+  `conn_ref`; the two reference sources are intentionally decoupled) and
+  `lnk_compare_rollup`'s call site. Live: MORR CO ref 3327.38 vs link
+  3330.25 → diff_pct 0.1% (matches Phase-1); BT ref NA. SK ref = CO ref
+  (bcfp models the salmon group with one shared column — per-species vs
+  per-group coarsening surfaces in the diff, documented for Phase 3).
+  4 new helper tests (mock `DBI::dbGetQuery`); m_ref mock gained `conn`.
+  65+20 tests green in the two touched files; lint no new indent notes
+  (one object_length note on the >30-char helper name, matching the
+  established `.lnk_compare_wsg_*` family); docs regenerated. The one
+  full-suite FAIL (`public.wsg_outlet` missing) is pre-existing +
+  environmental, unrelated.
+- Next: Phase 3 — extend `accessible_km` ref to BT
+  (`barriers_bt_dnstr`), ST (`barriers_st_dnstr`), WCT/CT-DV-RB; wire
+  into `lnk_parity_annotate()` + `research/bcfp_divergence_taxonomy.yml`.
+  Each species-group needs its own Phase-1-style proof before wiring.

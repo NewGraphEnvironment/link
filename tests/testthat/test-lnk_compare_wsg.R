@@ -451,3 +451,52 @@ test_that(".lnk_compare_wsg_assemble_rollup handles zero ref values (avoid div-b
   zero_ref <- out[out$ref_value == 0, ]
   expect_true(all(is.na(zero_ref$diff_pct)))
 })
+
+# ---------------------------------------------------------------------------
+# Tunnel-free accessible_km reference (link#221 Phase 2 4/4)
+# ---------------------------------------------------------------------------
+
+test_that(".lnk_compare_wsg_accessible_ref queries salmon group, short-circuits others", {
+  queries <- character()
+  m_get <- function(conn, statement, ...) {
+    queries <<- c(queries, statement)
+    data.frame(accessible_km = 3330.25)
+  }
+
+  with_mocked_bindings(
+    dbGetQuery = m_get,
+    dbQuoteLiteral = function(conn, x, ...) paste0("'", x, "'"),
+    .package = "DBI",
+    {
+      out <- link:::.lnk_compare_wsg_accessible_ref(
+        conn = mock_conn(), aoi = "MORR",
+        species = c("CO", "BT", "SK"))
+    }
+  )
+
+  # CO + SK are salmon-group → one query each; BT short-circuits to NA
+  expect_equal(out, c(3330.25, NA_real_, 3330.25))
+  expect_length(queries, 2L)
+  expect_true(all(grepl("barriers_ch_cm_co_pk_sk_dnstr = ''", queries)))
+  expect_true(all(grepl("fresh\\.streams_vw_bcfp", queries)))
+  expect_true(all(grepl("watershed_group_code = 'MORR'", queries)))
+})
+
+test_that(".lnk_compare_wsg_accessible_ref returns all-NA when no salmon species", {
+  m_get <- function(conn, statement, ...) {
+    stop("dbGetQuery should not be called for non-salmon species")
+  }
+
+  with_mocked_bindings(
+    dbGetQuery = m_get,
+    dbQuoteLiteral = function(conn, x, ...) paste0("'", x, "'"),
+    .package = "DBI",
+    {
+      out <- link:::.lnk_compare_wsg_accessible_ref(
+        conn = mock_conn(), aoi = "MORR",
+        species = c("BT", "ST", "WCT"))
+    }
+  )
+
+  expect_equal(out, rep(NA_real_, 3))
+})

@@ -312,18 +312,60 @@ lnk_compare_wsg <- function(conn, aoi, cfg, loaded,
 #' Compute reference-side rollup queries for the requested `reference`
 #'
 #' Dispatches on `reference`. Currently only `"bcfishpass"` is wired —
-#' queries `bcfishpass.habitat_linear_<sp>` per species, joined to the
-#' same `fwa_lakes_poly` / `fwa_wetlands_poly` for the ha columns
-#' bcfp doesn't materialize natively.
+#' queries `bcfishpass.habitat_linear_<sp>` per species (on `conn_ref`,
+#' the tunnel), joined to the same `fwa_lakes_poly` / `fwa_wetlands_poly`
+#' for the ha columns bcfp doesn't materialize natively. The `accessible_km`
+#' reference is sourced separately + tunnel-free from `fresh.streams_vw_bcfp`
+#' on the local `conn` (see [.lnk_compare_wsg_accessible_ref()]); the two
+#' reference sources stay intentionally decoupled (link#221).
 #'
 #' @noRd
 .lnk_compare_wsg_rollup_reference <- function(reference, conn_ref,
-                                              aoi, species) {
+                                              aoi, species, conn) {
   if (reference == "bcfishpass") {
-    return(.lnk_compare_wsg_rollup_bcfishpass(
-      conn_ref = conn_ref, aoi = aoi, species = species))
+    ref <- .lnk_compare_wsg_rollup_bcfishpass(
+      conn_ref = conn_ref, aoi = aoi, species = species) # nolint: indentation_linter
+    ref$accessible_km <- .lnk_compare_wsg_accessible_ref(
+      conn = conn, aoi = aoi, species = ref$species_code) # nolint: indentation_linter
+    return(ref)
   }
   stop("Unknown reference '", reference, "' in dispatch.", call. = FALSE)
+}
+
+
+#' Tunnel-free `accessible_km` reference from `fresh.streams_vw_bcfp`
+#'
+#' Sums `length_metre` where the species' bcfp barrier-group column is
+#' empty (`= ''` = no barrier downstream = accessible). Sourced from the
+#' local province-wide snapshot (`conn`), NOT the tunnel — the `:63333`
+#' tunnel is dead on M1 and the snapshot is authoritative. Only the
+#' Phase-1-proven salmon group (CH/CM/CO/PK/SK →
+#' `barriers_ch_cm_co_pk_sk_dnstr`) is wired; other species short-circuit
+#' to `NA` (their reference lands in a later phase, each needing its own
+#' proof). `barrier_group` values are a trusted constant whitelist — safe
+#' to interpolate.
+#'
+#' @noRd
+.lnk_compare_wsg_accessible_ref <- function(conn, aoi, species) {
+  barrier_group <- c(
+    CH = "barriers_ch_cm_co_pk_sk_dnstr",
+    CM = "barriers_ch_cm_co_pk_sk_dnstr",
+    CO = "barriers_ch_cm_co_pk_sk_dnstr",
+    PK = "barriers_ch_cm_co_pk_sk_dnstr",
+    SK = "barriers_ch_cm_co_pk_sk_dnstr"
+  )
+  aoi_lit <- DBI::dbQuoteLiteral(conn, aoi)
+  vapply(species, function(sp) {
+    grp <- barrier_group[toupper(sp)]
+    if (is.na(grp)) return(NA_real_)
+    res <- DBI::dbGetQuery(conn, sprintf("
+      SELECT round((COALESCE(sum(length_metre), 0) / 1000)::numeric, 2)
+        AS accessible_km
+      FROM fresh.streams_vw_bcfp
+      WHERE watershed_group_code = %s AND %s = ''",
+      aoi_lit, unname(grp)))  # nolint: indentation_linter
+    res$accessible_km[1]
+  }, numeric(1), USE.NAMES = FALSE)
 }
 
 

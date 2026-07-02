@@ -125,7 +125,7 @@ test_that("lnk_compare_rollup composes resolve → link-rollup → ref-rollup �
          wetland_ha = data.frame(species_code = "BT", wetland_rearing_ha = 50,
                                  stringsAsFactors = FALSE))
   }
-  m_ref <- function(reference, conn_ref, aoi, species) {
+  m_ref <- function(reference, conn_ref, aoi, species, conn) {
     calls <<- c(calls, "ref")
     data.frame(species_code = "BT",
                spawning_km = 11, rearing_km = 21,

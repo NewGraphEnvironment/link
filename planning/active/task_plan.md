@@ -47,8 +47,20 @@ per-crossing roll-up is a later phase. Morice vignette is separate/later.
   assertions 7→8 / 14→16 updated in both test-lnk_compare_wsg.R and
   test-lnk_compare_rollup.R (7→8). Live MORR coho accessible_km 3330.25
   (= Phase-1 proof). 108 tests across the 3 files pass; docs regenerated.
-- [ ] Keep habitat ref tunnel-based; add tunnel-free `accessible_km` ref path. Do
-  NOT force-unify the two reference sources this phase.
+- [x] Keep habitat ref tunnel-based; add tunnel-free `accessible_km` ref path. Do
+  NOT force-unify the two reference sources this phase. Added
+  `.lnk_compare_wsg_accessible_ref(conn, aoi, species)` — sums
+  `fresh.streams_vw_bcfp.length_metre` where the species' bcfp
+  barrier-group column `= ''` (salmon group CH/CM/CO/PK/SK →
+  `barriers_ch_cm_co_pk_sk_dnstr`; other species short-circuit to NA
+  pending Phase 3). Threaded local `conn` into
+  `.lnk_compare_wsg_rollup_reference`, which now merges `accessible_km`
+  onto the tunnel-based habitat ref df (two sources stay decoupled).
+  `lnk_compare_rollup` passes `conn = conn`. Live MORR CO ref 3327.38
+  vs link 3330.25 → diff_pct 0.1% (= Phase-1 proof); BT ref NA. 4 new
+  helper tests (mock `DBI::dbGetQuery`: salmon → query with
+  `barriers_ch_cm_co_pk_sk_dnstr = ''` predicate, BT/ST/WCT →
+  short-circuit NA, no query). m_ref mock signature gained `conn`.
 
 ## Phase 3 — All bcfp-modelled species into the parity compare
 - [ ] Extend `accessible_km` to salmon (`barriers_ch_cm_co_pk_sk_dnstr`), BT

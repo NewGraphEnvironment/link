@@ -38,8 +38,9 @@ A tibble with one row per (species, habitat_type) — 8
 habitat types per species (the 7 habitat km/ha types plus
 \code{accessible} km, link#221). Columns: \code{wsg}, \code{species},
 \code{habitat_type}, \code{unit} (\code{km} | \code{ha}), \code{link_value}, \code{ref_value},
-\code{diff_pct}. \code{accessible}'s \code{ref_value} is \code{NA} until the tunnel-free
-reference path lands.
+\code{diff_pct}. \code{accessible}'s \code{ref_value} is sourced tunnel-free from
+\code{fresh.streams_vw_bcfp} for the salmon group (CH/CM/CO/PK/SK); other
+species carry \code{NA} until their reference path lands (link#221 Phase 3).
 }
 \description{
 Comparison-only counterpart to \code{\link[=lnk_pipeline_run]{lnk_pipeline_run()}}. Reads the

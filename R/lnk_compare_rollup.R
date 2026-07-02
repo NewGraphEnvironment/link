@@ -45,8 +45,9 @@
 #'   habitat types per species (the 7 habitat km/ha types plus
 #'   `accessible` km, link#221). Columns: `wsg`, `species`,
 #'   `habitat_type`, `unit` (`km` | `ha`), `link_value`, `ref_value`,
-#'   `diff_pct`. `accessible`'s `ref_value` is `NA` until the tunnel-free
-#'   reference path lands.
+#'   `diff_pct`. `accessible`'s `ref_value` is sourced tunnel-free from
+#'   `fresh.streams_vw_bcfp` for the salmon group (CH/CM/CO/PK/SK); other
+#'   species carry `NA` until their reference path lands (link#221 Phase 3).
 #'
 #' @examples
 #' \dontrun{
@@ -122,7 +123,7 @@ lnk_compare_rollup <- function(conn, aoi, cfg,
     conn = conn, cfg = cfg, aoi = aoi, species = species)
   rollup_ref <- .lnk_compare_wsg_rollup_reference( # nolint
     reference = reference, conn_ref = conn_ref,
-    aoi = aoi, species = species)
+    aoi = aoi, species = species, conn = conn)
 
   .lnk_compare_wsg_assemble_rollup( # nolint
     aoi = aoi, species = species,
