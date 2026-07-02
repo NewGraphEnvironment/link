@@ -27,5 +27,22 @@
   sources `streams_access.access_<sp> IN (1,2)`, not `streams_habitat.accessible`.
 - Discovered `streams_habitat_<sp>.accessible` bool diverges from the access model
   (MORR coho 3424 vs 3330 km) — do NOT sum it for accessible_km.
-- Next: Phase 2 (2/4) — fold `.lnk_compare_rollup_link` habitat km sums into the
-  `lnk_rollup_wsg` path; then emit accessible_km as 8th habitat_type + update tests.
+- **Phase 2 (1/4) doc tweak committed** (`f8ce11c`): `@seealso [lnk_aggregate()]`
+  + a flat-per-WSG-GROUP-BY vs per-crossing-upstream-network note, so the
+  rollup/aggregate split is intentional. Regenerated compare-family Rd
+  back-references (missed in the prior commit).
+- **Phase 2 (2/4) done.** Folded `.lnk_compare_rollup_link`'s `km` block into
+  `lnk_rollup_wsg`: it now passes a 5-metric `metrics` vector (COALESCE→0 to
+  keep the old CASE-WHEN measured-zero, not NULL/NA), renames
+  `species`→`species_code`, drops `wsg`, preserving the
+  `list(km, lake_ha, wetland_ha)` contract. `lnk_rollup_wsg` streams_access
+  join `JOIN`→`LEFT JOIN` (access is optional metadata; absent → accessible_km
+  0, habitat length never dropped). Verified byte-identical vs the old
+  CASE-WHEN SQL on MORR BT+CO across all 5 metrics (BT 951.33/1824.66/1272.03/
+  0/0, CO 915.97/1228.72/927.70/0/0); `lnk_rollup_wsg` accessible_km still
+  3330.25. `lnk_pipeline_access` runs unconditionally so persist
+  `streams_access` always exists — fold is safe even for mapping_code=FALSE.
+  Dead working-schema `.lnk_compare_wsg_rollup_link` left untouched.
+- Next: Phase 2 (3/4) — emit accessible_km as 8th habitat_type in
+  `.lnk_compare_wsg_assemble_rollup` + update row-count assertions
+  (7→8, 14→16) in `test-lnk_compare_wsg.R`.

@@ -26,7 +26,16 @@ per-crossing roll-up is a later phase. Morice vignette is separate/later.
   verified MORR coho `accessible_km` = 3330.25 (matches Phase-1 proof). 27 unit
   tests. `accessible_km` sources `streams_access.access_<sp> IN (1,2)`, NOT the
   divergent `streams_habitat_<sp>.accessible` bool (MORR 3330 vs 3424 km).
-- [ ] Fold `.lnk_compare_rollup_link` habitat km sums into that single path.
+- [x] Fold `.lnk_compare_rollup_link` habitat km sums into that single
+  path. `.lnk_compare_rollup_link`'s `km` block now delegates to
+  `lnk_rollup_wsg` via a 5-metric `metrics` vector (COALESCE→0 to
+  preserve the historical CASE-WHEN measured-zero semantics), renaming
+  `species`→`species_code` to keep the `list(km, lake_ha, wetland_ha)`
+  contract. `lnk_rollup_wsg`'s `streams_access` join changed
+  `JOIN`→`LEFT JOIN` so habitat length is never dropped when access is
+  unbuilt. Byte-identical vs the old form on MORR (BT/CO, all 5
+  metrics). lake_ha / wetland_ha (DISTINCT-waterbody polygon joins)
+  stay as-is — different shape, not a per-segment length sum.
 - [ ] Emit `accessible_km` as an 8th habitat_type in
   `.lnk_compare_wsg_assemble_rollup`; update row-count assertions in
   `tests/testthat/test-lnk_compare_wsg.R`.

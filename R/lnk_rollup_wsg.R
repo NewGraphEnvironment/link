@@ -2,13 +2,21 @@
 #'
 #' Reusable, predicate-driven roll-up over link's persisted per-species
 #' tables. For each species it joins `<schema>.streams` (length + edge
-#' type) to `<schema>.streams_access` (per-species `access_<sp>` code)
-#' and `<schema>.streams_habitat_<sp>` (spawning / rearing flags) on the
-#' full PK `(id_segment, watershed_group_code)` (#203), exposes the
-#' three species-varying inputs under **generic aliases** — `access`
-#' (int: -9 absent / 0 blocked / 1 modelled / 2 observed), `spawning`,
-#' `rearing` (bool) — then aggregates by `(watershed_group_code,
-#' species_code)`.
+#' type) to `<schema>.streams_habitat_<sp>` (spawning / rearing flags)
+#' and **left-joins** `<schema>.streams_access` (per-species
+#' `access_<sp>` code) on the full PK `(id_segment,
+#' watershed_group_code)` (#203), exposes the three species-varying
+#' inputs under **generic aliases** — `access` (int: -9 absent / 0
+#' blocked / 1 modelled / 2 observed), `spawning`, `rearing` (bool) —
+#' then aggregates by `(watershed_group_code, species_code)`.
+#'
+#' The `streams_access` join is a LEFT join: access is optional metadata
+#' for a length roll-up. When a segment has no `streams_access` row
+#' (access not yet built for the WSG), `access` is `NULL` and
+#' `accessible_km` resolves to 0 — build it via
+#' `lnk_pipeline_run(mapping_code = TRUE)` (or the unconditional access
+#' phase). Length is never dropped by a missing access row, so the
+#' habitat metrics (`spawning_km`, `rearing_km`) are unaffected.
 #'
 #' Because the per-species columns are aliased to fixed names, the
 #' `metrics` SQL is written **once**, species-agnostic — mirroring
@@ -120,15 +128,15 @@ lnk_rollup_wsg <- function(conn, aoi, species,
               s.length_metre, s.edge_type,
               a.access_%s AS access, h.spawning, h.rearing
          FROM %s.streams s
-         JOIN %s.streams_access a
-           ON s.id_segment = a.id_segment
-          AND s.watershed_group_code = a.watershed_group_code
          JOIN %s.streams_habitat_%s h
            ON s.id_segment = h.id_segment
           AND s.watershed_group_code = h.watershed_group_code
+         LEFT JOIN %s.streams_access a
+           ON s.id_segment = a.id_segment
+          AND s.watershed_group_code = a.watershed_group_code
         WHERE s.watershed_group_code = %s",
       sp_lit, tolower(sp),
-      schema, schema, schema, tolower(sp), aoi_lit)
+      schema, schema, tolower(sp), schema, aoi_lit)
   }, character(1)), collapse = "\n      UNION ALL\n      ")
 
   cols_metric <- paste(

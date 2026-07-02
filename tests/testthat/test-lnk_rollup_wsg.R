@@ -84,6 +84,10 @@ test_that(".lnk_rollup_wsg_sql builds one UNION ALL branch per species", {
   # Full-PK join (#203) on both access and habitat.
   expect_match(sql, "s\\.watershed_group_code = a\\.watershed_group_code")
   expect_match(sql, "s\\.watershed_group_code = h\\.watershed_group_code")
+  # streams_access is LEFT-joined (optional) so habitat length is never
+  # dropped when access is unbuilt; habitat is an inner join.
+  expect_match(sql, "LEFT JOIN fresh\\.streams_access")
+  expect_match(sql, "JOIN fresh\\.streams_habitat_co")
   # Metric aliases + grouping.
   expect_match(sql, "AS accessible_km")
   expect_match(sql, "AS spawning_km")

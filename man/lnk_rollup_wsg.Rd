@@ -48,14 +48,22 @@ per metric. Columns: \code{wsg}, \code{species}, then \code{names(metrics)}.
 \description{
 Reusable, predicate-driven roll-up over link's persisted per-species
 tables. For each species it joins \verb{<schema>.streams} (length + edge
-type) to \verb{<schema>.streams_access} (per-species \verb{access_<sp>} code)
-and \verb{<schema>.streams_habitat_<sp>} (spawning / rearing flags) on the
-full PK \verb{(id_segment, watershed_group_code)} (#203), exposes the
-three species-varying inputs under \strong{generic aliases} — \code{access}
-(int: -9 absent / 0 blocked / 1 modelled / 2 observed), \code{spawning},
-\code{rearing} (bool) — then aggregates by \verb{(watershed_group_code, species_code)}.
+type) to \verb{<schema>.streams_habitat_<sp>} (spawning / rearing flags)
+and \strong{left-joins} \verb{<schema>.streams_access} (per-species
+\verb{access_<sp>} code) on the full PK \verb{(id_segment, watershed_group_code)} (#203), exposes the three species-varying
+inputs under \strong{generic aliases} — \code{access} (int: -9 absent / 0
+blocked / 1 modelled / 2 observed), \code{spawning}, \code{rearing} (bool) —
+then aggregates by \verb{(watershed_group_code, species_code)}.
 }
 \details{
+The \code{streams_access} join is a LEFT join: access is optional metadata
+for a length roll-up. When a segment has no \code{streams_access} row
+(access not yet built for the WSG), \code{access} is \code{NULL} and
+\code{accessible_km} resolves to 0 — build it via
+\code{lnk_pipeline_run(mapping_code = TRUE)} (or the unconditional access
+phase). Length is never dropped by a missing access row, so the
+habitat metrics (\code{spawning_km}, \code{rearing_km}) are unaffected.
+
 Because the per-species columns are aliased to fixed names, the
 \code{metrics} SQL is written \strong{once}, species-agnostic — mirroring
 \code{fresh::frs_aggregate()}'s \code{metrics} / \code{where} shape. Adding a species
