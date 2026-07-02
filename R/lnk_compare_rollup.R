@@ -41,10 +41,12 @@
 #'   (e.g. `c("BT","CO")`) to restrict the rollup to. Default `NULL`
 #'   discovers the set from PG.
 #'
-#' @return A tibble with one row per (species, habitat_type) — 7
-#'   habitat types per species. Columns: `wsg`, `species`,
+#' @return A tibble with one row per (species, habitat_type) — 8
+#'   habitat types per species (the 7 habitat km/ha types plus
+#'   `accessible` km, link#221). Columns: `wsg`, `species`,
 #'   `habitat_type`, `unit` (`km` | `ha`), `link_value`, `ref_value`,
-#'   `diff_pct`.
+#'   `diff_pct`. `accessible`'s `ref_value` is `NA` until the tunnel-free
+#'   reference path lands.
 #'
 #' @examples
 #' \dontrun{
@@ -198,10 +200,13 @@ lnk_compare_rollup <- function(conn, aoi, cfg,
   # Habitat km sums delegate to the single predicate-driven roll-up
   # primitive (link#221) so there is one per-(WSG, species) km query
   # builder. lnk_rollup_wsg exposes `length_metre` / `edge_type` /
-  # `spawning` / `rearing` under generic aliases; these five metrics
-  # reproduce the historical shape. It returns `wsg` + `species` +
-  # metrics — drop `wsg` and rename `species` -> `species_code` to
-  # preserve this helper's `list(km, lake_ha, wetland_ha)` contract.
+  # `access` / `spawning` / `rearing` under generic aliases; the first
+  # five metrics reproduce the historical shape, and `accessible_km`
+  # (link#221) sums link's per-species access model
+  # (`streams_access.access_<sp> IN (1,2)`, LEFT-joined by
+  # lnk_rollup_wsg). It returns `wsg` + `species` + metrics — drop
+  # `wsg` and rename `species` -> `species_code` to preserve this
+  # helper's `list(km, lake_ha, wetland_ha)` contract.
   # COALESCE(..., 0): an empty FILTER set sums to NULL, but the
   # historical CASE-WHEN-ELSE-0 form returned a measured 0 for a
   # species present in the WSG with no segments in that slice. Preserve
@@ -219,7 +224,9 @@ lnk_compare_rollup <- function(conn, aoi, cfg,
       et_lake_sql),
     rearing_wetland_centerline_km = sprintf(
       "round(COALESCE(sum(length_metre) FILTER (WHERE rearing AND edge_type IN %s), 0)::numeric / 1000, 2)", # nolint: line_length_linter
-      et_wetland_sql))
+      et_wetland_sql),
+    accessible_km =
+      "round(COALESCE(sum(length_metre) FILTER (WHERE access IN (1, 2)), 0)::numeric / 1000, 2)") # nolint: line_length_linter
 
   km <- lnk_rollup_wsg( # nolint: object_usage_linter
     conn = conn, aoi = aoi, species = species,

@@ -169,8 +169,8 @@ test_that("lnk_compare_wsg composes lnk_pipeline_run then lnk_compare_rollup (ro
       habitat_type = c("spawning", "rearing", "lake_rearing",
                        "wetland_rearing", "rearing_stream",
                        "rearing_lake_centerline",
-                       "rearing_wetland_centerline"),
-      unit = c("km", "km", "ha", "ha", "km", "km", "km"),
+                       "rearing_wetland_centerline", "accessible"),
+      unit = c("km", "km", "ha", "ha", "km", "km", "km", "km"),
       link_value = 1, ref_value = 1, diff_pct = 0)
   }
 
@@ -200,14 +200,14 @@ test_that("lnk_compare_wsg composes lnk_pipeline_run then lnk_compare_rollup (ro
   expect_named(result, c("rollup", "mapping_code"))
   expect_null(result$mapping_code)
   expect_s3_class(result$rollup, "tbl_df")
-  expect_equal(nrow(result$rollup), 7L)
+  expect_equal(nrow(result$rollup), 8L)
 })
 
 # ---------------------------------------------------------------------------
 # Rollup tibble shape + diff_pct computation
 # ---------------------------------------------------------------------------
 
-test_that(".lnk_compare_wsg_assemble_rollup produces 7 rows per species + correct diff_pct", {
+test_that(".lnk_compare_wsg_assemble_rollup produces 8 rows per species + correct diff_pct", {
   link_data <- list(
     km = data.frame(
       species_code = c("BT","CH"),
@@ -216,6 +216,7 @@ test_that(".lnk_compare_wsg_assemble_rollup produces 7 rows per species + correc
       rearing_stream_km = c(150, 80),
       rearing_lake_centerline_km = c(30, 10),
       rearing_wetland_centerline_km = c(20, 10),
+      accessible_km = c(180, 90),
       stringsAsFactors = FALSE
     ),
     lake_ha = data.frame(species_code = c("BT","CH"),
@@ -242,8 +243,8 @@ test_that(".lnk_compare_wsg_assemble_rollup produces 7 rows per species + correc
     rollup_link = link_data, rollup_ref = ref_data
   )
 
-  # 7 habitat types × 2 species
-  expect_equal(nrow(out), 14L)
+  # 8 habitat types × 2 species (7 habitat + accessible, link#221)
+  expect_equal(nrow(out), 16L)
   expect_named(out, c("wsg", "species", "habitat_type", "unit",
                        "link_value", "ref_value", "diff_pct"))
   expect_setequal(unique(out$wsg), "TEST")
@@ -253,6 +254,14 @@ test_that(".lnk_compare_wsg_assemble_rollup produces 7 rows per species + correc
   expect_equal(bt_spawn$link_value, 100)
   expect_equal(bt_spawn$ref_value, 99)
   expect_equal(bt_spawn$diff_pct, 1.0)
+
+  # accessible: link_value from km$accessible_km; ref lacks the column
+  # (tunnel-free ref not yet wired) → ref_value + diff_pct NA.
+  bt_acc <- out[out$species == "BT" & out$habitat_type == "accessible", ]
+  expect_equal(bt_acc$link_value, 180)
+  expect_equal(bt_acc$unit, "km")
+  expect_true(is.na(bt_acc$ref_value))
+  expect_true(is.na(bt_acc$diff_pct))
 
   bt_lake <- out[out$species == "BT" & out$habitat_type == "lake_rearing", ]
   expect_equal(bt_lake$link_value, 1000)
@@ -267,6 +276,7 @@ test_that(".lnk_compare_wsg_assemble_rollup handles NA ref values (not modelled)
                     rearing_stream_km = 180,
                     rearing_lake_centerline_km = 15,
                     rearing_wetland_centerline_km = 5,
+                    accessible_km = 190,
                     stringsAsFactors = FALSE),
     lake_ha = data.frame(species_code = "RB", lake_rearing_ha = 0,
                          stringsAsFactors = FALSE),
@@ -416,6 +426,7 @@ test_that(".lnk_compare_wsg_assemble_rollup handles zero ref values (avoid div-b
                     rearing_stream_km = 180,
                     rearing_lake_centerline_km = 0,
                     rearing_wetland_centerline_km = 0,
+                    accessible_km = 190,
                     stringsAsFactors = FALSE),
     lake_ha = data.frame(species_code = "BT", lake_rearing_ha = 0,
                          stringsAsFactors = FALSE),

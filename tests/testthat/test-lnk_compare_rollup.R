@@ -118,6 +118,7 @@ test_that("lnk_compare_rollup composes resolve → link-rollup → ref-rollup �
                          rearing_stream_km = 15,
                          rearing_lake_centerline_km = 3,
                          rearing_wetland_centerline_km = 2,
+                         accessible_km = 18,
                          stringsAsFactors = FALSE),
          lake_ha = data.frame(species_code = "BT", lake_rearing_ha = 100,
                               stringsAsFactors = FALSE),
@@ -148,10 +149,19 @@ test_that("lnk_compare_rollup composes resolve → link-rollup → ref-rollup �
   )
 
   expect_equal(calls, c("resolve", "link", "ref"))
-  # 7 habitat types × 1 species
-  expect_equal(nrow(result), 7L)
+  # 8 habitat types × 1 species (7 habitat + accessible, link#221)
+  expect_equal(nrow(result), 8L)
   expect_named(result, c("wsg", "species", "habitat_type", "unit",
                          "link_value", "ref_value", "diff_pct"))
   expect_setequal(unique(result$species), "BT")
   expect_setequal(unique(result$wsg), "ADMS")
+
+  # accessible row: link value flows from km$accessible_km; ref has no
+  # accessible column (tunnel-free ref path not yet wired) → NA diff.
+  acc <- result[result$habitat_type == "accessible", ]
+  expect_equal(nrow(acc), 1L)
+  expect_equal(acc$link_value, 18)
+  expect_equal(acc$unit, "km")
+  expect_true(is.na(acc$ref_value))
+  expect_true(is.na(acc$diff_pct))
 })

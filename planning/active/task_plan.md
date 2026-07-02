@@ -36,9 +36,17 @@ per-crossing roll-up is a later phase. Morice vignette is separate/later.
   unbuilt. Byte-identical vs the old form on MORR (BT/CO, all 5
   metrics). lake_ha / wetland_ha (DISTINCT-waterbody polygon joins)
   stay as-is — different shape, not a per-segment length sum.
-- [ ] Emit `accessible_km` as an 8th habitat_type in
+- [x] Emit `accessible_km` as an 8th habitat_type in
   `.lnk_compare_wsg_assemble_rollup`; update row-count assertions in
-  `tests/testthat/test-lnk_compare_wsg.R`.
+  `tests/testthat/test-lnk_compare_wsg.R`. Added `accessible_km` to
+  `.lnk_compare_rollup_link`'s `km_metrics` (COALESCE'd `access IN (1,2)`
+  via lnk_rollup_wsg's LEFT-joined `access` alias); appended `accessible`
+  (km) to habitat_types/units/col_suffix/link_sources in
+  `.lnk_compare_wsg_assemble_rollup`. `ref_value`/`diff_pct` are NA for
+  `accessible` until the tunnel-free ref lands (4/4). Row-count
+  assertions 7→8 / 14→16 updated in both test-lnk_compare_wsg.R and
+  test-lnk_compare_rollup.R (7→8). Live MORR coho accessible_km 3330.25
+  (= Phase-1 proof). 108 tests across the 3 files pass; docs regenerated.
 - [ ] Keep habitat ref tunnel-based; add tunnel-free `accessible_km` ref path. Do
   NOT force-unify the two reference sources this phase.
 

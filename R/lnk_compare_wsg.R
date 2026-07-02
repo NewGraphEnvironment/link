@@ -51,12 +51,13 @@
 #'   deprecation warning when supplied.
 #'
 #' @return A list with two elements:
-#'   - `rollup`: tibble with one row per (species, habitat_type) — 7
+#'   - `rollup`: tibble with one row per (species, habitat_type) — 8
 #'     habitat types: `spawning`, `rearing`, `lake_rearing`,
 #'     `wetland_rearing`, `rearing_stream`, `rearing_lake_centerline`,
-#'     `rearing_wetland_centerline`. Columns: `wsg`, `species`,
-#'     `habitat_type`, `unit` (`km` | `ha`), `link_value`,
-#'     `ref_value`, `diff_pct`.
+#'     `rearing_wetland_centerline`, `accessible` (km, link#221).
+#'     Columns: `wsg`, `species`, `habitat_type`, `unit` (`km` | `ha`),
+#'     `link_value`, `ref_value`, `diff_pct`. `accessible`'s `ref_value`
+#'     is `NA` until the tunnel-free reference path lands.
 #'   - `mapping_code`: tibble with one row per species — segment-level
 #'     match stats vs `bcfishpass.streams_mapping_code`. Columns:
 #'     `wsg`, `species`, `total_segs`, `match_pct`, `n_diffs`,
@@ -434,25 +435,28 @@ lnk_compare_wsg <- function(conn, aoi, cfg, loaded,
 
 #' Assemble long-format output tibble from link + ref rollup data
 #'
-#' Produces 7 rows per species (spawning, rearing, lake_rearing,
+#' Produces 8 rows per species (spawning, rearing, lake_rearing,
 #' wetland_rearing, rearing_stream, rearing_lake_centerline,
-#' rearing_wetland_centerline). `diff_pct = NA` when `ref_value` is
-#' `NA` (species not modelled by reference) or `0` (avoid div-by-zero
-#' even when the measurement is real).
+#' rearing_wetland_centerline, accessible). `diff_pct = NA` when
+#' `ref_value` is `NA` (species not modelled by reference, or — for
+#' `accessible` — the tunnel-free reference path not yet wired) or `0`
+#' (avoid div-by-zero even when the measurement is real).
 #'
 #' @noRd
 .lnk_compare_wsg_assemble_rollup <- function(aoi, species,
                                              rollup_link, rollup_ref) {
   habitat_types <- c(
     "spawning", "rearing", "lake_rearing", "wetland_rearing",
-    "rearing_stream", "rearing_lake_centerline", "rearing_wetland_centerline"
+    "rearing_stream", "rearing_lake_centerline", "rearing_wetland_centerline",
+    "accessible"
   )
   units <- c(
     spawning = "km", rearing = "km",
     lake_rearing = "ha", wetland_rearing = "ha",
     rearing_stream = "km",
     rearing_lake_centerline = "km",
-    rearing_wetland_centerline = "km"
+    rearing_wetland_centerline = "km",
+    accessible = "km"
   )
   col_suffix <- c(
     spawning = "spawning_km", rearing = "rearing_km",
@@ -460,7 +464,8 @@ lnk_compare_wsg <- function(conn, aoi, cfg, loaded,
     wetland_rearing = "wetland_rearing_ha",
     rearing_stream = "rearing_stream_km",
     rearing_lake_centerline = "rearing_lake_centerline_km",
-    rearing_wetland_centerline = "rearing_wetland_centerline_km"
+    rearing_wetland_centerline = "rearing_wetland_centerline_km",
+    accessible = "accessible_km"
   )
 
   sp_col <- rep(species, each = length(habitat_types))
@@ -483,7 +488,8 @@ lnk_compare_wsg <- function(conn, aoi, cfg, loaded,
     wetland_rearing            = rollup_link$wetland_ha,
     rearing_stream             = rollup_link$km,
     rearing_lake_centerline    = rollup_link$km,
-    rearing_wetland_centerline = rollup_link$km
+    rearing_wetland_centerline = rollup_link$km,
+    accessible                 = rollup_link$km
   )
 
   for (i in seq_len(nrow(out))) {

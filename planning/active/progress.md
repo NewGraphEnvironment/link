@@ -43,6 +43,23 @@
   3330.25. `lnk_pipeline_access` runs unconditionally so persist
   `streams_access` always exists — fold is safe even for mapping_code=FALSE.
   Dead working-schema `.lnk_compare_wsg_rollup_link` left untouched.
-- Next: Phase 2 (3/4) — emit accessible_km as 8th habitat_type in
-  `.lnk_compare_wsg_assemble_rollup` + update row-count assertions
-  (7→8, 14→16) in `test-lnk_compare_wsg.R`.
+- **Phase 2 (2/4) committed** (`4be5b87`) after 3-round code-check clean.
+- **Phase 2 (3/4) done.** accessible_km now emits as the 8th
+  habitat_type. Added `accessible_km` to `.lnk_compare_rollup_link`'s
+  `km_metrics` (`round(COALESCE(sum(length_metre) FILTER (WHERE access IN
+  (1,2)),0)/1000,2)`) — sources link's per-species access model via
+  lnk_rollup_wsg's LEFT-joined `access` alias, NOT the divergent
+  streams_habitat.accessible bool. Appended `accessible` (unit km) to
+  habitat_types/units/col_suffix/link_sources in
+  `.lnk_compare_wsg_assemble_rollup`. Its `ref_value`/`diff_pct` stay NA
+  (the bcfp habitat ref has no accessible column) until Phase 2 (4/4)
+  wires the tunnel-free `fresh.streams_vw_bcfp` ref. Row-count assertions
+  bumped 7→8 / 14→16 in test-lnk_compare_wsg.R + 7→8 in
+  test-lnk_compare_rollup.R, each with a new accessible-row check
+  (link populated, ref NA). Live MORR coho accessible_km 3330.25
+  (= Phase-1 proof). 108 tests green; lint clean (only pre-existing
+  helper-name/indent notes); docs regenerated.
+- Next: Phase 2 (4/4) — add tunnel-free `accessible_km` reference path
+  (`fresh.streams_vw_bcfp`, predicate `barriers_ch_cm_co_pk_sk_dnstr =
+  ''` for coho/salmon) so `accessible`'s ref_value/diff_pct populate.
+  Do NOT force-unify with the tunnel-based habitat ref.
