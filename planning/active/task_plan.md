@@ -19,10 +19,13 @@ per-crossing roll-up is a later phase. Morice vignette is separate/later.
   vs-salmon-group reconciliation + SETN known-divergence in `findings.md`.
 
 ## Phase 2 — Abstract the roll-up into one reusable, predicate-driven function
-- [ ] Introduce a single roll-up primitive emitting `accessible_km` +
+- [x] Introduce a single roll-up primitive emitting `accessible_km` +
   `spawning_km` + `rearing_km` per `(WSG, species)`, data-driven over species.
-  Recommend link `lnk_rollup_wsg` (mirror `frs_aggregate`'s `metrics`/`where`
-  shape); promote to fresh later if reuse demands.
+  Shipped `lnk_rollup_wsg` (mirrors `frs_aggregate`'s `metrics`/`where` shape,
+  species-agnostic via generic `access`/`spawning`/`rearing` aliases). Live-
+  verified MORR coho `accessible_km` = 3330.25 (matches Phase-1 proof). 27 unit
+  tests. `accessible_km` sources `streams_access.access_<sp> IN (1,2)`, NOT the
+  divergent `streams_habitat_<sp>.accessible` bool (MORR 3330 vs 3424 km).
 - [ ] Fold `.lnk_compare_rollup_link` habitat km sums into that single path.
 - [ ] Emit `accessible_km` as an 8th habitat_type in
   `.lnk_compare_wsg_assemble_rollup`; update row-count assertions in
