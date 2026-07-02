@@ -11,4 +11,8 @@
 - Phases approved by user.
 - Created branch `221-per-wsg-habitat-access-km-rollup` off main.
 - Scaffolded PWF baseline with approved phases.
-- Next: Phase 1 — write `data-raw/accessible_km_proof_co.R`.
+- **Phase 1 done.** Wrote `data-raw/accessible_km_proof_co.R`; ran across all 20
+  locally-persisted WSGs: 19/20 within ±5% (most < 1%), SETN +109.75% correctly
+  flagged as documented bcfp-side stale-subsurfaceflow divergence (link correct).
+  Predicate corrected to `= ''` (snapshot stores barrier arrays as text).
+- Next: Phase 2 — abstract the roll-up into `lnk_rollup_wsg`.

@@ -24,8 +24,21 @@ other value is a barrier id / comma list.
   (full PK, #203), `WHERE a.access_co IN (1,2)`, `sum(s.length_metre)/1000`.
 - ref side: `fresh.streams_vw_bcfp WHERE barriers_ch_cm_co_pk_sk_dnstr = ''`,
   `sum(length_metre)/1000`.
-- Result (only WSGs with local `streams_access`): **MORR 0.09%, BULK 0.27%** —
-  both far inside ≤5%.
+- Result: **20 WSGs** present locally in both tables. **19/20 within ±5%**, most
+  under 1% (COTR/LKEL/WILL 0.00; MORR 0.09; BULK 0.27; largest passing FRCN 4.30,
+  LFRA 4.16). Full table in `data-raw/accessible_km_proof_co.R` header / run output.
+
+### SETN — known divergence (excluded from hard-fail)
+- SETN pct_diff **+109.75%** (link 1497.55 km vs ref 713.95 km). This is the
+  **expected direction**: bcfp's `barriers_subsurfaceflow` is stale for ~95% of
+  SETN segments (74,816 / 78,937), propagating into
+  `barriers_ch_cm_co_pk_sk_dnstr` so bcfp UNDER-credits accessible habitat. link
+  correctly applies `user_barriers_definite_control`. Documented as
+  `setn-anadr-*-stale` in `research/bcfp_divergence_taxonomy.yml`
+  (status INTENTIONAL) + `research/provincial_parity_2026_05_01.md`. **Not a link
+  defect** — reproducing it is validation that accessible_km faithfully tracks the
+  access model. The proof script allowlists SETN (`known_divergence`) so it prints
+  + flags but does not hard-fail.
 
 ## Per-species vs salmon-group reconciliation
 

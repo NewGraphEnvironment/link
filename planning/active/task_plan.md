@@ -10,12 +10,13 @@ abstracted per-WSG length roll-up emitting `accessible_km` + `spawning_km` +
 per-crossing roll-up is a later phase. Morice vignette is separate/later.
 
 ## Phase 1 — Coho `accessible_km` proof (reproducible, no new abstraction)
-- [ ] Add `data-raw/accessible_km_proof_co.R` that runs the validated two-sided
+- [x] Add `data-raw/accessible_km_proof_co.R` that runs the validated two-sided
   query for every WSG present in both `fresh.streams_access` and
-  `fresh.streams_vw_bcfp` (today: BULK, MORR) and asserts `abs(pct_diff) <= 5` per
-  WSG, printing the table. Uses `lnk_db_conn()` local-docker args.
-- [ ] Record predicate correction (`= ''` not `= array[]::text[]`) + per-species-
-  vs-salmon-group reconciliation in `findings.md`.
+  `fresh.streams_vw_bcfp` and asserts `abs(pct_diff) <= 5` per WSG (allowlisting
+  documented divergences), printing the table. Uses `lnk_db_conn()` local-docker
+  args. Run: 19/20 WSGs within ±5%; SETN flagged as known bcfp-side stale.
+- [x] Record predicate correction (`= ''` not `= array[]::text[]`) + per-species-
+  vs-salmon-group reconciliation + SETN known-divergence in `findings.md`.
 
 ## Phase 2 — Abstract the roll-up into one reusable, predicate-driven function
 - [ ] Introduce a single roll-up primitive emitting `accessible_km` +
