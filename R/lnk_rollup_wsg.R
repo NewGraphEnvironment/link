@@ -15,6 +15,12 @@
 #' `fresh::frs_aggregate()`'s `metrics` / `where` shape. Adding a species
 #' is a `species` vector edit, not a query edit.
 #'
+#' This is a **flat per-WSG `GROUP BY`** — it sums whole-WSG length by
+#' `(watershed_group_code, species_code)`. It is distinct from
+#' [lnk_aggregate()] / [fresh::frs_aggregate()], which roll habitat up the
+#' network *upstream of individual crossings* (point-based traversal). Use
+#' this for WSG totals; use those for per-crossing upstream summaries.
+#'
 #' `accessible_km` sums `access IN (1, 2)` — link's per-species access
 #' model on `streams_access`, the number validated against the
 #' tunnel-free bcfp reference in `data-raw/accessible_km_proof_co.R`
@@ -57,7 +63,8 @@
 #' }
 #'
 #' @family compare
-#' @seealso [lnk_compare_rollup()], [fresh::frs_aggregate()]
+#' @seealso [lnk_compare_rollup()], [lnk_aggregate()],
+#'   [fresh::frs_aggregate()]
 #' @export
 # nolint start: indentation_linter
 lnk_rollup_wsg <- function(conn, aoi, species,

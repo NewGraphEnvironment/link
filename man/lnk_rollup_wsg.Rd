@@ -61,6 +61,12 @@ Because the per-species columns are aliased to fixed names, the
 \code{fresh::frs_aggregate()}'s \code{metrics} / \code{where} shape. Adding a species
 is a \code{species} vector edit, not a query edit.
 
+This is a \strong{flat per-WSG \verb{GROUP BY}} — it sums whole-WSG length by
+\verb{(watershed_group_code, species_code)}. It is distinct from
+\code{\link[=lnk_aggregate]{lnk_aggregate()}} / \code{\link[fresh:frs_aggregate]{fresh::frs_aggregate()}}, which roll habitat up the
+network \emph{upstream of individual crossings} (point-based traversal). Use
+this for WSG totals; use those for per-crossing upstream summaries.
+
 \code{accessible_km} sums \verb{access IN (1, 2)} — link's per-species access
 model on \code{streams_access}, the number validated against the
 tunnel-free bcfp reference in \code{data-raw/accessible_km_proof_co.R}
@@ -82,7 +88,8 @@ lnk_rollup_wsg(conn, aoi = "MORR", species = c("CO", "BT"),
 
 }
 \seealso{
-\code{\link[=lnk_compare_rollup]{lnk_compare_rollup()}}, \code{\link[fresh:frs_aggregate]{fresh::frs_aggregate()}}
+\code{\link[=lnk_compare_rollup]{lnk_compare_rollup()}}, \code{\link[=lnk_aggregate]{lnk_aggregate()}},
+\code{\link[fresh:frs_aggregate]{fresh::frs_aggregate()}}
 
 Other compare: 
 \code{\link{lnk_access}()},
