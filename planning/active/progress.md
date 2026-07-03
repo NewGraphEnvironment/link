@@ -36,3 +36,24 @@ Session is being handed off (context-heavy). Pick up here:
 5. Phase 4: `/code-check`, atomic commit, file the rename follow-up issue, `/gh-pr-push`.
 
 Tasks #16–#19 track the remaining phases.
+
+## Session 2026-07-03 (cont.) — Phase 1 complete
+
+- Reproduced the full pre-fix fingerprint live on `:5432` fwapg (`working_fina.barriers_bt`
+  = 16 barriers incl. frontier 3834.78; `barriers_bt_min` = 0 rows on the blk = the
+  `frs_barriers_minimal` smoking gun; `gradient_barriers_minimal` empty; segment 4218
+  `[3390.6, 7998.1]` 4607.5 m straddling, `access_bt = 1`).
+- **Discovered FINA/PARS/PCEA carry no salmon/ST** (Peace, above Bennett dam) — the plan's
+  item (d) "salmon (CO) ≤ tolerance" would be vacuous there. Swept all persisted WSGs and
+  picked **LKEL** (smallest with ST + salmon: BT 401 / ST 365 / CO 328 km; pre-fix already
+  clean) as the no-regression sentinel.
+- Wrote `data-raw/accessible_km_fix_validate.R` (read-only, exits non-zero on any breach):
+  parity sweep over {FINA,PARS,PCEA,LKEL} × 8 species with a `both-present` assert gate,
+  plus 4 structural checks on the canonical blk 359209845. Matches `wsg_run_one.R` conn
+  recipe + `LNK_LOAD=loadall` guard.
+- **Confirmed FAILS pre-fix** (exit 1, 7 checks): FINA/PARS/PCEA BT parity + all 4 FINA
+  structural; LKEL sentinel passes; bcfp-only SK correctly excluded.
+- `lintr`: only house-style hanging-indent nits (siblings in `data-raw/` share them;
+  `lint_package()` doesn't scan `data-raw/`). No line-length breaches.
+- Next: Phase 2 — the one-file fix at `lnk_pipeline_prepare.R:592-593` (union raw `model_tbl`
+  instead of `frs_barriers_minimal`-reduced `_min`), then re-run + re-validate.

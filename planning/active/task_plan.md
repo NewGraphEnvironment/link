@@ -27,12 +27,34 @@ access-threshold classes don't get the same treatment.
   clarifying comment now; file a **separate** rename issue once the fix is confirmed.
 
 ## Phase 1 — Reproduce (tests-first)
-- [ ] Add `data-raw/accessible_km_fix_validate.R`: (a) assert `gradient_barriers_minimal`
+- [x] Add `data-raw/accessible_km_fix_validate.R`: (a) assert `gradient_barriers_minimal`
       contains the FINA/BT interior frontier (blk 359209845, ~3835); (b) assert the
       segment at measure 3835 has `access_bt = 0`; (c) sum BT `accessible_km`
       FINA/PARS/PCEA vs `fresh.streams_vw_bcfp` (`barriers_bt_dnstr = ''`) and assert
       convergence; (d) assert salmon (CO) stays ≤ tolerance.
-- [ ] Run against current (pre-fix) persisted state → confirm it FAILS (bug reproduces).
+- [x] Run against current (pre-fix) persisted state → confirm it FAILS (bug reproduces).
+
+**Phase 1 result (2026-07-03):** script fails pre-fix, exit 1, 7 checks. Parity:
+FINA-BT +23.59%, PARS-BT +3.43%, PCEA-BT +40.36%. Structural (blk 359209845):
+gradient_barriers_minimal empty, 1 segment straddles 3834.78, no break at frontier,
+accessible reach runs to 7998.1 (over-credit 4163 m — matches issue exactly).
+- **Validation-set refinement:** FINA/PARS/PCEA are Peace WSGs above the Bennett dam —
+  BT-only, **no salmon/ST** (all 0 km), so item (d) is vacuous there. Added **LKEL**
+  (smallest persisted WSG with ST + salmon; pre-fix already clean BT +0.7% / ST,CO 0%)
+  as the no-regression sentinel. This fulfills (d), not scope creep.
+- **One-sided-presence gate:** both-present → assert tolerance; a species present on only
+  one side FAILs by default (catches a link collapse-to-zero regression) EXCEPT the
+  allowlisted #189 residence cases (`residence_exclude = "LKEL:sk"` — link models CO/CH/CM/PK
+  not SK; bcfp lumps all salmon into one barrier group). Keeps the gate scoped to #223
+  segmentation parity without masking a real regression in the exit code.
+- **Code-check (2 rounds, fresh-eyes agents):** fixed 2 findings — (1) `isTRUE(all(...))`
+  on the S3 access_bt check so a hypothetical NULL records a clean FAIL instead of crashing;
+  (2) the one-sided-presence gate above (was a silent `n/a`, could have exit-0'd a regression).
+  Lint clean (snake_case constants) bar the shared data-raw SQL hanging-indent style.
+- Reference predicate `barriers_<group>_dnstr = ''` verified identical to bcfp
+  `access_<sp> IN (1,2)`. Tolerance `TOL_PCT = 1.0` (tunable in Phase 3 from post-fix numbers).
+- Local fwapg is `:5432` (`postgres`/`postgres`/`fwapg`); `:63333` is the bcfp `bcfishpass`
+  tunnel (no `fresh.*`). Script uses the `:5432` recipe per `wsg_run_one.R`.
 
 ## Phase 2 — Fix
 - [ ] `prepare.R:592-593`: union raw `barriers_<model>` (gradient ∪ falls) into
