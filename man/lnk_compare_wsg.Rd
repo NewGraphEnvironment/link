@@ -65,12 +65,13 @@ deprecation warning when supplied.}
 \value{
 A list with two elements:
 \itemize{
-\item \code{rollup}: tibble with one row per (species, habitat_type) — 7
+\item \code{rollup}: tibble with one row per (species, habitat_type) — 8
 habitat types: \code{spawning}, \code{rearing}, \code{lake_rearing},
 \code{wetland_rearing}, \code{rearing_stream}, \code{rearing_lake_centerline},
-\code{rearing_wetland_centerline}. Columns: \code{wsg}, \code{species},
-\code{habitat_type}, \code{unit} (\code{km} | \code{ha}), \code{link_value},
-\code{ref_value}, \code{diff_pct}.
+\code{rearing_wetland_centerline}, \code{accessible} (km, link#221).
+Columns: \code{wsg}, \code{species}, \code{habitat_type}, \code{unit} (\code{km} | \code{ha}),
+\code{link_value}, \code{ref_value}, \code{diff_pct}. \code{accessible}'s \code{ref_value}
+is \code{NA} until the tunnel-free reference path lands.
 \item \code{mapping_code}: tibble with one row per species — segment-level
 match stats vs \code{bcfishpass.streams_mapping_code}. Columns:
 \code{wsg}, \code{species}, \code{total_segs}, \code{match_pct}, \code{n_diffs},
@@ -152,6 +153,7 @@ Other compare:
 \code{\link{lnk_compare_mapping_code}()},
 \code{\link{lnk_compare_rollup}()},
 \code{\link{lnk_mapping_code}()},
-\code{\link{lnk_parity_annotate}()}
+\code{\link{lnk_parity_annotate}()},
+\code{\link{lnk_rollup_wsg}()}
 }
 \concept{compare}

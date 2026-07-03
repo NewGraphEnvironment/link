@@ -105,10 +105,22 @@ pre/post fix), link-conservative, and unrelated to #223 (likely the connected-wa
 nuance documented in `research/bcfishpass_methodology.md`). Out of scope; flag if it recurs broadly.
 
 ## Phase 4 — Ship + follow-ups
-- [ ] `/code-check`; atomic commit(s) (code + checkbox flips).
+- [x] `/code-check`; atomic commit (`c86f103`).
 - [ ] File the separate rename issue (`gradient_barriers_minimal` → `gradient_barriers_break`).
-- [ ] `/planning-archive`; `/gh-pr-push` (PR closes #223). NEWS/DESCRIPTION bump as final commit.
-- [ ] Rebase 221 on top of merged fix; unblock #221 Phase 3 (wire BT/ST into parity).
+- [x] Filed #224 — bcfp `dam_dnstr_ind` reservoir-inflow propagation (surfaced in PARS validation, out of scope).
+
+## Phase 5 — COMBINED #221 + #223: provincial accessible+habitat parity (one PR)
+Decision (user): merge #221 (`lnk_compare_rollup` accessible_km column + `lnk_rollup_wsg`)
+into #223 → **one PR closing both**. #221 surfaced #223; #223 makes #221's accessible
+parity pass — inseparable for the proof. Merged 221→223 (PWF conflicts only; R/tests/research clean).
+- [x] Merge `origin/221-per-wsg-habitat-access-km-rollup` into the #223 branch.
+- [ ] Verify combined package loads + `devtools::test()` green (221 rollup tests + 223 pipeline tests).
+- [ ] Re-run 11-WSG cross-section with the fix (done: FINA/PARS/PCEA/LKEL; new: BULK/MORR/KISP/
+      LFRA/USKE all-7-species + ELKR/KOTR WCT). ~40 min local, no cyphers (2–3 min/WSG measured).
+- [ ] Run `lnk_compare_rollup` across them → per-species per-WSG table: **accessible + spawn + rear**
+      parity vs bcfp (tunnel-free `streams_vw_bcfp`). Prove equivalence before PR.
+- [ ] Update `research/provincial_parity_*.md` with the accessible columns + the combined result.
+- [ ] `/planning-archive`; `/gh-pr-push` (PR closes #221 + #223). NEWS/DESCRIPTION bump as final commit.
 - [ ] Return to the accessible_km vignette to demonstrate bcfp equivalence.
 
 ## Validation
