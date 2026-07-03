@@ -47,6 +47,15 @@ Result: link `[3391,7998]` = 4607 m accessible (whole); bcfp `[3391,3835]` 444 m
 accessible + `[3835,7998]` **4163 m blocked**. Over-credit = 4163 m on this one blk.
 Aggregate: FINA +1438 km, PCEA +2021 km, PARS +238 km.
 
+## Live pre-fix fingerprint (local fwapg :5432, 2026-07-03)
+
+- `working_fina.gradient_barriers_minimal` on blk 359209845 = **empty** (no break at 3835).
+- `fresh.streams` blk 359209845 FINA: `id_segment 4218` = `[3391, 7998]` = **4607 m one
+  segment** straddling 3835 (segments 4215–4217 break normally below 3391).
+- BT `accessible_km` FINA: link **7520.7 km** / bcfp **6085.2 km** = **+23.59%**.
+- Post-fix expectation: blk breaks at ~3835; the segment starting there gets
+  `access_bt = 0`; FINA link BT km drops toward 6085.
+
 ## bcfp reference identity
 
 Tunnel-free `fresh.streams_vw_bcfp`: `smnorris/bcfishpass@v0.7.15-41-g2917790`
