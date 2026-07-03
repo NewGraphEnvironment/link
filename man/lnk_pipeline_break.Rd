@@ -52,7 +52,7 @@ Valid entries for \code{cfg$pipeline$break_order}. Omit an entry to skip
 both segmentation and access-gating from that source.\tabular{llll}{
    name \tab source table \tab role \tab classify label \cr
    \code{observations} \tab \verb{<schema>.observations_breaks} \tab fish observations from \code{bcfishobs.observations}, WSG- and species-filtered, exclusions applied \tab (informational; not a barrier) \cr
-   \code{gradient_minimal} \tab \verb{<schema>.gradient_barriers_minimal} \tab minimal-reduced gradient barriers (per-model 15/20/25/30\%) \tab classify uses the FULL set with \verb{gradient_<NNNN>} labels \cr
+   \code{gradient_minimal} \tab \verb{<schema>.gradient_barriers_minimal} \tab FULL per-model gradient barriers (15/20/25/30\%) + falls — every position breaks the network so access gates at each frontier (#223); NOT minimal-reduced despite the legacy name \tab classify uses the same FULL set with \verb{gradient_<NNNN>} labels \cr
    \code{falls} \tab \verb{<schema>.falls} \tab natural waterfalls from \code{whse_basemapping.fwa_obstacles_sp} (loaded by \code{prep_load_aux}); each fall is its own barrier (NOT minimal-reduced) \tab \code{blocked} \cr
    \code{barriers_definite} \tab \verb{<schema>.barriers_definite} \tab \code{user_barriers_definite.csv} for the AOI \tab \code{blocked} \cr
    \code{subsurfaceflow} \tab \verb{<schema>.barriers_subsurfaceflow} \tab FWA \verb{edge_type IN (1410, 1425)} start points; honours \code{user_barriers_definite_control}. Opt-in (only built when listed) \tab \code{blocked} \cr

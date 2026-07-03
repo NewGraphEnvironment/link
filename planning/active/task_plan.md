@@ -57,18 +57,52 @@ accessible reach runs to 7998.1 (over-credit 4163 m — matches issue exactly).
   tunnel (no `fresh.*`). Script uses the `:5432` recipe per `wsg_run_one.R`.
 
 ## Phase 2 — Fix
-- [ ] `prepare.R:592-593`: union raw `barriers_<model>` (gradient ∪ falls) into
+- [x] `prepare.R:566-594`: union raw `barriers_<model>` (gradient ∪ falls) into
       `gradient_barriers_minimal` instead of the `frs_barriers_minimal`-reduced `_min`
-      table. Remove the now-unused per-model minimal call/table.
-- [ ] Update stale docs (keep table name): `prepare.R` roxygen `:19-20`/`:34`/`:36`,
-      `lnk_pipeline_break.R:24` — say it's now the full per-model break set.
+      table. Removed the per-model minimal call + `min_tbl`. Verified `frs_barriers_minimal`
+      now unused in link and no other consumer of the `_min` tables (grep).
+- [x] Update stale docs (keep table name): `prepare.R` roxygen + `lnk_pipeline_break.R:24`
+      — now describe the FULL per-model break set. `devtools::document()` re-run.
+
+**LKEL canary (2026-07-03) — fix validated end-to-end, downstream fallout assessed:**
+- **accessible_km converges:** LKEL BT +0.72% → **−0.00%** (exact); ST/CO/CH/CM/PK stay exact.
+  Segments 3,376 → 7,446 (~2.2×). Ran in 1.3 min.
+- **Downstream outputs safe.** Proven by a pre-fix baseline re-run (stash → run → measure → pop):
+  habitat spawning/rearing km are BYTE-IDENTICAL pre-fix and post-fix (ST spawning 108.0, CO 139.2
+  both runs) — the fix is neutral on habitat. mapping_code *improves* (mapping_code_bt 711.3 → 714.1
+  vs bcfp 714.4).
+- **Habitat parity vs bcfp is clean** (corrected measurement — see below): BT spawning +0.0%,
+  ST −2.6%, CO −8.7%; rearing all ~+1%.
+  - MEASUREMENT-BUG CORRECTION: an earlier note here claimed ST/CO spawning +42%/+24%. That was a
+    bad reference predicate — `fresh.streams_vw_bcfp.spawning_<sp>` is coded **0/1/2/3**, and filtering
+    `spawning_st = 1` dropped the 2/3 km, undercounting bcfp. Correct predicate is `spawning_<sp> > 0`.
+    No such divergence exists; the fix does not touch habitat.
+- **Downstream fallout verdict:** no correctness regressions from the denser break set — fresh's
+  break machinery dedups + drops sub-1m coincident breaks (no zero-length segments), habitat
+  length is conserved, and classify already gated on the FULL gradient set. The only real cost is
+  the 2–3.5× segment/storage/runtime increase (inherent to bcfp-matching; intersects perf issue #205).
 
 ## Phase 3 — Validate (no-regression)
-- [ ] Re-run `lnk_pipeline_run` for FINA / PARS / PCEA (mapping_code = TRUE).
-- [ ] Validation script passes: BT `accessible_km` converges to bcfp; segment 3835 blocked.
-- [ ] Salmon `accessible_km` stays ≤0.27%.
-- [ ] Habitat + mapping_code parity holds or improves vs the 99.66% baseline.
-- [ ] `devtools::test()` + `lintr::lint_package()` clean; `devtools::document()` re-run.
+- [x] Re-ran `lnk_pipeline_run(mapping_code = TRUE)` for FINA / PARS / PCEA / LKEL. Fast:
+      1.9 / 2.6 / 3.1 / 1.3 min (segments 26k→70k, 48k→97k, 34k→106k, 3.4k→7.4k). No perf blowup.
+- [x] **Validation script ALL CHECKS PASS.** BT accessible_km: FINA +23.59%→**−0.02%**,
+      PARS +3.43%→**−0.01%**, PCEA +40.36%→**−0.01%**, LKEL exact. Structural: FINA blk 359209845
+      breaks at 3835, segment above is BT-blocked, accessible reach tops at the frontier.
+      (Fixed validator S2: breaks round to integer via `measure_precision=0L` so the break lands
+      at round(3834.78)=3835 like bcfp — S2 now uses the eps window; still catches the pre-fix straddle.)
+- [x] Salmon/ST no-regression (LKEL): accessible_km exact for BT/ST/CO/CH/CM/PK.
+- [x] **Habitat + mapping_code parity holds** (corrected `>0` predicate): BT spawning/rearing within
+      ~1% on all 4 WSGs; LKEL ST spawning −2.6%, CO spawning −8.7% (modest, link-under, PRE-EXISTING
+      + fix-neutral); mapping_code improves. No regression from the denser segmentation.
+- [x] `devtools::test()` green (`FAIL 1 | PASS 1254`; the 1 FAIL is the pre-existing
+      environmental `public.wsg_outlet` missing-table in test-lnk_wsg_resolve, unrelated).
+      Updated the 4 `.lnk_pipeline_prep_minimal` unit tests to the new contract (no
+      `frs_barriers_minimal`; raw `barriers_<sp>` in the union). `devtools::document()` re-run.
+      No new non-indentation lints on touched files.
+
+**Note — LKEL CO spawning −8.7%** is the one non-trivial habitat gap; it is pre-existing (identical
+pre/post fix), link-conservative, and unrelated to #223 (likely the connected-waterbody spawning
+nuance documented in `research/bcfishpass_methodology.md`). Out of scope; flag if it recurs broadly.
 
 ## Phase 4 — Ship + follow-ups
 - [ ] `/code-check`; atomic commit(s) (code + checkbox flips).

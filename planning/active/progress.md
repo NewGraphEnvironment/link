@@ -57,3 +57,29 @@ Tasks #16–#19 track the remaining phases.
   `lint_package()` doesn't scan `data-raw/`). No line-length breaches.
 - Next: Phase 2 — the one-file fix at `lnk_pipeline_prepare.R:592-593` (union raw `model_tbl`
   instead of `frs_barriers_minimal`-reduced `_min`), then re-run + re-validate.
+
+## Session 2026-07-03 (cont.) — Phase 2 fix + downstream-fallout assessment
+
+- **Fix landed:** `lnk_pipeline_prepare.R` — dropped the per-model `frs_barriers_minimal`
+  reduction; `gradient_barriers_minimal` now unions the RAW per-model (gradient ∪ falls)
+  positions (mirrors the orphan path, matches bcfp). Updated stale roxygen in prepare.R +
+  break.R. `frs_barriers_minimal` is now unused in link; grep confirmed no other consumer
+  of the `_min` tables.
+- **Downstream-fallout trace (user asked "will the new barriers cause issues downstream?"):**
+  - Traced fresh's break machinery (subagent): `frs_break_apply` dedups (`DISTINCT`+`round`)
+    and drops breaks within 1 m of an existing boundary → NO zero-length segments; generated
+    measure columns make re-breaking idempotent; habitat length conserved under splitting.
+  - `classify.R:205` already builds `streams_breaks` from `gradient_barriers_raw` (FULL set) —
+    the fix just aligns the base segmentation to what classify already gates against.
+  - **Volume:** break positions explode (FINA 11→49,880; PCEA 32→82,931; PARS 10,977→64,483;
+    LKEL 640→5,145) → segments ~2–3.5×. Real perf/storage cost, inherent to bcfp-matching (#205).
+- **LKEL canary (fix) + pre-fix baseline (stash→run→measure→pop):**
+  - accessible_km LKEL BT +0.72% → −0.00% exact; ST/CO/CH/CM/PK exact. Segments 3,376 → 7,446.
+  - habitat spawning/rearing km BYTE-IDENTICAL pre/post fix → the fix is neutral on habitat.
+  - mapping_code improves (711.3 → 714.1 vs bcfp 714.4).
+  - **Habitat parity vs bcfp is CLEAN** (BT spawning +0.0%, ST −2.6%, CO −8.7%; rearing ~+1%).
+  - MEASUREMENT-BUG CORRECTION (user caught it): I first reported ST/CO spawning +42%/+24% — WRONG.
+    `streams_vw_bcfp.spawning_<sp>` is coded 0/1/2/3; I'd filtered `= 1` and dropped the 2/3 km,
+    undercounting the bcfp reference. Correct predicate `spawning_<sp> > 0`. No divergence; nothing to file.
+- Next: Phase 3 — run FINA/PARS/PCEA (+ restore LKEL) with the fix, then the validator (expect
+  all pass); confirm BT habitat holds on the diverged WSGs.

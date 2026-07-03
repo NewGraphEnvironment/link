@@ -164,12 +164,17 @@ if (!gbm_exists) {
   }
 }
 
-# S2 segmentation: no fresh.streams segment straddles the frontier.
+# S2 segmentation: no fresh.streams segment straddles the frontier. Breaks round
+# to integer (measure_precision = 0L in lnk_pipeline_break), so the break lands at
+# round(3834.78) = 3835 — exactly as bcfp does. A segment must span BEYOND the
+# rounding window to count as a straddle; the clean below-frontier segment that
+# ends at 3835 (0.22 m above the un-rounded frontier) is a proper break, not a
+# straddle. The genuine pre-fix straddle [3390.6, 7998.1] still fails this.
 span <- DBI::dbGetQuery(conn, sprintf(
   "SELECT count(*)::int AS n FROM fresh.streams
     WHERE blue_line_key = %d AND watershed_group_code = 'FINA'
       AND downstream_route_measure < %f AND upstream_route_measure > %f",
-  frontier_blk, frontier_m, frontier_m))$n
+  frontier_blk, frontier_m - frontier_eps, frontier_m + frontier_eps))$n
 if (span == 0L) {
   record_pass(sprintf("no segment straddles the frontier (streams break at %.2f)", frontier_m))
 } else {
