@@ -169,3 +169,31 @@ The cleanest test for hypothesis 1: count BULK PSCIS rows in `whse_fish.pscis_as
 - [ ] Decide on dedup strategy for link: extend xref-based exclusion, OR add explicit `(blue_line_key, drm)` dedup in the union SQL, OR add a unique constraint to `<schema>.crossings` + use upsert. (Probably the last for parity with bcfp's mechanism.)
 - [ ] Document why link only uses `pscis_assessment_svw` and not the other 3 PSCIS BCDC views (or extend to all 4).
 - [ ] Document modelled_stream_crossings_fixes.csv treatment — does link's `user_modelled_crossing_fixes` correspond to bcfp's `modelled_stream_crossings_fixes.csv`? (They appear different — one drives barrier_status, the other drives modelled_crossing_type during the modelled crossings table build itself.)
+
+## Column value coding — `fresh.streams_vw_bcfp` (parity predicate)
+
+The tunnel-free bcfp reference view codes its per-species habitat/access columns as
+**integers 0/1/2/3, NOT boolean 0/1**. When comparing link vs bcfp accessible /
+spawning / rearing km, use the right predicate:
+
+| bcfp column | presence predicate | notes |
+|---|---|---|
+| `access_<sp>` | `IN (1, 2)` | 1 = modelled, 2 = observed. Equivalent to `barriers_<group>_dnstr = ''` (empty string, char varying — NOT `text[]`). |
+| `spawning_<sp>` | `IN (1, 2)` | a bare `= 1` UNDER-counts (drops 2/3); `> 0` OVER-counts (includes 3, a category link doesn't credit). |
+| `rearing_<sp>` | `IN (1, 2)` | no `rearing_cm` / `rearing_pk` columns — chum & pink don't rear in freshwater. |
+
+Salmon (CH/CM/CO/PK/SK) share one accessible barrier column
+`barriers_ch_cm_co_pk_sk_dnstr`; BT = `barriers_bt_dnstr`, ST = `barriers_st_dnstr`,
+WCT = `barriers_wct_dnstr`.
+
+**Link side:** `streams_habitat_<sp>` uses BOOLEAN `spawning`/`rearing`;
+`streams_access.access_<sp>` is the int. Sum `streams.length_metre` (length lives on
+`streams`), joining streams+access+habitat on the full PK
+`(id_segment, watershed_group_code)` (#203 — a bare `id_segment` join fans out
+cartesian).
+
+Getting this wrong (`= 1` instead of `IN (1,2)`) manufactured a false "+42% ST /
++24% CO spawning divergence" during #223 validation; real parity is exact. Canonical
+harness: `data-raw/parity_crosssection.R`. Known parked departure: BULK SK
+spawning/rearing (fresh#190 dual-rearing-lake topology). Species link doesn't model
+but bcfp does (residence, #189): exclude, don't assert.

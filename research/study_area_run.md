@@ -19,7 +19,7 @@ bash data-raw/study_area_run.sh \
   --focal=<Skeena focal csv>      # -> cy2 (job2)
 ```
 
-Focal lists live in `~/.claude/.../memory/study-areas-peace-fraser-skeena.md`.
+Focal lists + study-area definitions: [`research/study_areas.md`](study_areas.md).
 `--focal` count MUST equal `1 + N(--cy-workspaces)`; first = dispatcher, rest =
 cyphers in order. Dispatcher-only (no cyphers): omit `--cy-workspaces`, pass one
 `--focal`. Pre-req: dispatcher has `fresh.streams_vw_bcfp`
@@ -111,3 +111,37 @@ non-obvious things had to be true for it to be cheap:
 | `data-raw/wsg_run_one.R` | one WSG: `lnk_pipeline_run(mapping_code=TRUE)`, local, host-agnostic |
 | `data-raw/wsg_recompute_one.R` | one WSG cheap post-consolidate recompute (`lnk_access(merge=TRUE)` + `lnk_mapping_code`) — link#205. Sets `statement_timeout`/`lock_timeout` so a runaway/locked query fails fast |
 | `data-raw/study_area_compare.R` | tunnel-free `lnk_compare_mapping_code` loop → CSV |
+
+## Cypher operational gotchas
+
+The tunnel-free M1-dispatch runner tripped over things the older `wsgs_run_host.R`
++ `research/provincial_run_runbook.md` already solved. The worst (2026-05-25): a
+species-less closure WSG (LEUT) errored "No species resolved for AOI" → `|| exit 1`
+→ driver FATAL → the trap's `cypher_down` **burned the cyphers with their
+un-consolidated data** — a whole run's Peace + Skeena gone, self-inflicted (the
+driver's own trap, not external destruction).
+
+- **Always species-filter the WSG set** to bundle-species presence (link#157,
+  `wsgs_run_host.R:88` pattern) — closure pulls in unmodelable WSGs.
+- **Per-WSG soft-fail; never abort a host before consolidate** — one bad WSG must
+  become a compare gap, not total data loss.
+- **Cyphers checkout `main` by default** → pass `CYPHER_PREP_BRANCH=<branch>` AND
+  push the branch first (`cypher_prep` does `git reset --hard origin/$BRANCH`).
+- **Wait for sshd before scp** to a fresh droplet (`cypher_up` returns pre-sshd).
+- **Cyphers cost ~$0.06/hr each** — "minimize idle" means don't leave them up for
+  hours, not shave minutes; don't over-engineer early-burn.
+- **Read the records first** (`RUNBOOK.md`, `research/provincial_run_runbook.md`,
+  `data-raw/wsgs_run_host.R`) before re-deriving orchestration.
+
+### Correctness knob: post-consolidate recompute
+
+Per-segment access (hence mapping_code) depends on **downstream** barriers, possibly
+in another WSG (provincial accumulation, RUNBOOK §5). Distributed hosts each see only
+their own bucket's barriers mid-run → incomplete → wrong tokens. **Drainage-closed +
+DS-first per-host is NOT sufficient** (it only reduces divergence): 2026-05-25 had
+FINA 75.5% / PARA 68.6% per-host → 99%+ only after re-modelling on the consolidated
+barrier set. So recompute the diverged WSGs on the dispatcher post-consolidate.
+Bucketing is a speed knob, not a correctness lever. Authoritative result: median
+**99.66%**; genuine divergences SETN salmon ~94%, UNRS BT 61.8%. The full-pipeline
+recompute is ~2× on diverged WSGs; a cheap access-only recompute (#205) makes
+recompute-all bulletproof + ~1×.
