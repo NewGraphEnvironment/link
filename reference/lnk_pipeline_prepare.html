@@ -136,9 +136,10 @@ enriched with <code>wscode_ltree</code> and <code>localcode_ltree</code> for
 <code><a href="lnk_barrier_overrides.html">lnk_barrier_overrides()</a></code> to compute the per-species skip list.
 User-definite barriers are intentionally excluded here and
 consumed by later phases directly — bcfishpass parity.</p></li>
-<li><p>Per-model barrier tables reduced to the minimal downstream-most
-set via <code><a href="https://newgraphenvironment.github.io/fresh/reference/frs_barriers_minimal.html" class="external-link">fresh::frs_barriers_minimal()</a></code>, then unioned into
-<code>gradient_barriers_minimal</code> for segmentation</p></li>
+<li><p>Per-model barrier tables (gradient class-filtered + falls) unioned
+into <code>gradient_barriers_minimal</code> — the FULL per-model position set
+(NOT minimal-reduced, despite the legacy name), so streams break at
+every frontier and per-segment access gating is correct (#223)</p></li>
 <li><p>Base stream segments (<code>fresh.streams</code>) loaded from FWA with
 channel width, stream order parent, GENERATED gradient / measures
 / length columns, and a unique <code>id_segment</code></p></li>
@@ -150,9 +151,8 @@ channel width, stream order parent, GENERATED gradient / measures
 <li><p><code>&lt;schema&gt;.barriers_subsurfaceflow</code> (only when subsurfaceflow opted in
 via <code>cfg$pipeline$break_order</code>)</p></li>
 <li><p><code>&lt;schema&gt;.barrier_overrides</code></p></li>
-<li><p><code>&lt;schema&gt;.barriers_&lt;model&gt;</code> + <code>&lt;schema&gt;.barriers_&lt;model&gt;_min</code>
-per-model pre/post minimal reduction</p></li>
-<li><p><code>&lt;schema&gt;.gradient_barriers_minimal</code> (union of minimal positions)</p></li>
+<li><p><code>&lt;schema&gt;.barriers_&lt;model&gt;</code> — per-model gradient + falls positions</p></li>
+<li><p><code>&lt;schema&gt;.gradient_barriers_minimal</code> (union of per-model raw positions)</p></li>
 <li><p><code>fresh.streams</code> (base segments — not namespaced by AOI; fresh
 owns its output schema)</p></li>
 <li><p><code>&lt;schema&gt;.dams</code> (only when <code>conn_tunnel</code> is supplied) — pulled

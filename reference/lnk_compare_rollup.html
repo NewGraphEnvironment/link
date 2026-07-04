@@ -98,10 +98,13 @@ discovers the set from PG.</p></dd>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A tibble with one row per (species, habitat_type) — 7
-habitat types per species. Columns: <code>wsg</code>, <code>species</code>,
+    <p>A tibble with one row per (species, habitat_type) — 8
+habitat types per species (the 7 habitat km/ha types plus
+<code>accessible</code> km, link#221). Columns: <code>wsg</code>, <code>species</code>,
 <code>habitat_type</code>, <code>unit</code> (<code>km</code> | <code>ha</code>), <code>link_value</code>, <code>ref_value</code>,
-<code>diff_pct</code>.</p>
+<code>diff_pct</code>. <code>accessible</code>'s <code>ref_value</code> is sourced tunnel-free from
+<code>fresh.streams_vw_bcfp</code> for the salmon group (CH/CM/CO/PK/SK); other
+species carry <code>NA</code> until their reference path lands (link#221 Phase 3).</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -136,7 +139,8 @@ out — no error).</p>
 <code><a href="lnk_compare_mapping_code.html">lnk_compare_mapping_code()</a></code>,
 <code><a href="lnk_compare_wsg.html">lnk_compare_wsg()</a></code>,
 <code><a href="lnk_mapping_code.html">lnk_mapping_code()</a></code>,
-<code><a href="lnk_parity_annotate.html">lnk_parity_annotate()</a></code></p></div>
+<code><a href="lnk_parity_annotate.html">lnk_parity_annotate()</a></code>,
+<code><a href="lnk_rollup_wsg.html">lnk_rollup_wsg()</a></code></p></div>
     </div>
 
     <div class="section level2">

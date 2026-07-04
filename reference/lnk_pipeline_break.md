@@ -75,7 +75,7 @@ segmentation and access-gating from that source.
 |----|----|----|----|
 | name | source table | role | classify label |
 | `observations` | `<schema>.observations_breaks` | fish observations from `bcfishobs.observations`, WSG- and species-filtered, exclusions applied | (informational; not a barrier) |
-| `gradient_minimal` | `<schema>.gradient_barriers_minimal` | minimal-reduced gradient barriers (per-model 15/20/25/30%) | classify uses the FULL set with `gradient_<NNNN>` labels |
+| `gradient_minimal` | `<schema>.gradient_barriers_minimal` | FULL per-model gradient barriers (15/20/25/30%) + falls — every position breaks the network so access gates at each frontier (#223); NOT minimal-reduced despite the legacy name | classify uses the same FULL set with `gradient_<NNNN>` labels |
 | `falls` | `<schema>.falls` | natural waterfalls from `whse_basemapping.fwa_obstacles_sp` (loaded by `prep_load_aux`); each fall is its own barrier (NOT minimal-reduced) | `blocked` |
 | `barriers_definite` | `<schema>.barriers_definite` | `user_barriers_definite.csv` for the AOI | `blocked` |
 | `subsurfaceflow` | `<schema>.barriers_subsurfaceflow` | FWA `edge_type IN (1410, 1425)` start points; honours `user_barriers_definite_control`. Opt-in (only built when listed) | `blocked` |

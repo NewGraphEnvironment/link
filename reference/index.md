@@ -127,6 +127,9 @@
 - [`lnk_presence()`](https://newgraphenvironment.github.io/link/reference/lnk_presence.md)
   : Per-AOI species presence with bcfp species-group expansion
 
+- [`lnk_rollup_wsg()`](https://newgraphenvironment.github.io/link/reference/lnk_rollup_wsg.md)
+  : Roll up per-(WSG, species) length metrics from persisted state
+
 - [`lnk_rules_build()`](https://newgraphenvironment.github.io/link/reference/lnk_rules_build.md)
   : Build habitat eligibility rules YAML from dimensions CSV
 

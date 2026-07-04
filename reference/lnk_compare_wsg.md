@@ -98,12 +98,13 @@ lnk_compare_wsg(
 
 A list with two elements:
 
-- `rollup`: tibble with one row per (species, habitat_type) — 7 habitat
+- `rollup`: tibble with one row per (species, habitat_type) — 8 habitat
   types: `spawning`, `rearing`, `lake_rearing`, `wetland_rearing`,
   `rearing_stream`, `rearing_lake_centerline`,
-  `rearing_wetland_centerline`. Columns: `wsg`, `species`,
-  `habitat_type`, `unit` (`km` \| `ha`), `link_value`, `ref_value`,
-  `diff_pct`.
+  `rearing_wetland_centerline`, `accessible` (km, link#221). Columns:
+  `wsg`, `species`, `habitat_type`, `unit` (`km` \| `ha`), `link_value`,
+  `ref_value`, `diff_pct`. `accessible`'s `ref_value` is `NA` until the
+  tunnel-free reference path lands.
 
 - `mapping_code`: tibble with one row per species — segment-level match
   stats vs `bcfishpass.streams_mapping_code`. Columns: `wsg`, `species`,
@@ -155,7 +156,8 @@ Other compare:
 [`lnk_compare_mapping_code()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_mapping_code.md),
 [`lnk_compare_rollup()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_rollup.md),
 [`lnk_mapping_code()`](https://newgraphenvironment.github.io/link/reference/lnk_mapping_code.md),
-[`lnk_parity_annotate()`](https://newgraphenvironment.github.io/link/reference/lnk_parity_annotate.md)
+[`lnk_parity_annotate()`](https://newgraphenvironment.github.io/link/reference/lnk_parity_annotate.md),
+[`lnk_rollup_wsg()`](https://newgraphenvironment.github.io/link/reference/lnk_rollup_wsg.md)
 
 ## Examples
 

@@ -139,12 +139,13 @@ deprecation warning when supplied.</p></dd>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A list with two elements:</p><ul><li><p><code>rollup</code>: tibble with one row per (species, habitat_type) — 7
+    <p>A list with two elements:</p><ul><li><p><code>rollup</code>: tibble with one row per (species, habitat_type) — 8
 habitat types: <code>spawning</code>, <code>rearing</code>, <code>lake_rearing</code>,
 <code>wetland_rearing</code>, <code>rearing_stream</code>, <code>rearing_lake_centerline</code>,
-<code>rearing_wetland_centerline</code>. Columns: <code>wsg</code>, <code>species</code>,
-<code>habitat_type</code>, <code>unit</code> (<code>km</code> | <code>ha</code>), <code>link_value</code>,
-<code>ref_value</code>, <code>diff_pct</code>.</p></li>
+<code>rearing_wetland_centerline</code>, <code>accessible</code> (km, link#221).
+Columns: <code>wsg</code>, <code>species</code>, <code>habitat_type</code>, <code>unit</code> (<code>km</code> | <code>ha</code>),
+<code>link_value</code>, <code>ref_value</code>, <code>diff_pct</code>. <code>accessible</code>'s <code>ref_value</code>
+is <code>NA</code> until the tunnel-free reference path lands.</p></li>
 <li><p><code>mapping_code</code>: tibble with one row per species — segment-level
 match stats vs <code>bcfishpass.streams_mapping_code</code>. Columns:
 <code>wsg</code>, <code>species</code>, <code>total_segs</code>, <code>match_pct</code>, <code>n_diffs</code>,
@@ -192,7 +193,8 @@ only one depending on species rule).</p>
 <code><a href="lnk_compare_mapping_code.html">lnk_compare_mapping_code()</a></code>,
 <code><a href="lnk_compare_rollup.html">lnk_compare_rollup()</a></code>,
 <code><a href="lnk_mapping_code.html">lnk_mapping_code()</a></code>,
-<code><a href="lnk_parity_annotate.html">lnk_parity_annotate()</a></code></p></div>
+<code><a href="lnk_parity_annotate.html">lnk_parity_annotate()</a></code>,
+<code><a href="lnk_rollup_wsg.html">lnk_rollup_wsg()</a></code></p></div>
     </div>
 
     <div class="section level2">

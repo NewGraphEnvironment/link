@@ -104,10 +104,10 @@ lnk_pipeline_prepare(
   intentionally excluded here and consumed by later phases directly —
   bcfishpass parity.
 
-- Per-model barrier tables reduced to the minimal downstream-most set
-  via
-  [`fresh::frs_barriers_minimal()`](https://newgraphenvironment.github.io/fresh/reference/frs_barriers_minimal.html),
-  then unioned into `gradient_barriers_minimal` for segmentation
+- Per-model barrier tables (gradient class-filtered + falls) unioned
+  into `gradient_barriers_minimal` — the FULL per-model position set
+  (NOT minimal-reduced, despite the legacy name), so streams break at
+  every frontier and per-segment access gating is correct (#223)
 
 - Base stream segments (`fresh.streams`) loaded from FWA with channel
   width, stream order parent, GENERATED gradient / measures / length
@@ -128,10 +128,10 @@ Writes to (under the caller's working schema unless noted):
 
 - `<schema>.barrier_overrides`
 
-- `<schema>.barriers_<model>` + `<schema>.barriers_<model>_min`
-  per-model pre/post minimal reduction
+- `<schema>.barriers_<model>` — per-model gradient + falls positions
 
-- `<schema>.gradient_barriers_minimal` (union of minimal positions)
+- `<schema>.gradient_barriers_minimal` (union of per-model raw
+  positions)
 
 - `fresh.streams` (base segments — not namespaced by AOI; fresh owns its
   output schema)
