@@ -44,7 +44,12 @@
 </blockquote>
 <div class="section level2">
 <h2 id="repository-context">Repository Context<a class="anchor" aria-label="anchor" href="#repository-context"></a></h2>
-<p><strong>Repository:</strong> NewGraphEnvironment/link <strong>Primary Language:</strong> R <strong>Prefix:</strong> <code>lnk_</code> <strong>Branch:</strong> <code>main</code> (v0.40.2 as of 2026-05-19)</p>
+<p><strong>Repository:</strong> NewGraphEnvironment/link <strong>Primary Language:</strong> R <strong>Prefix:</strong> <code>lnk_</code> <strong>Branch:</strong> <code>main</code> (v0.44.0 as of 2026-07-03)</p>
+</div>
+<div class="section level2">
+<h2 id="status-2026-07-03--v0440-shipped-221--223-accessible_km">Status (2026-07-03) — v0.44.0 shipped (#221 + #223 accessible_km)<a class="anchor" aria-label="anchor" href="#status-2026-07-03--v0440-shipped-221--223-accessible_km"></a></h2>
+<p>Fixed the BT/ST <code>accessible_km</code> over-credit: streams now break at <strong>every</strong> gradient frontier (<code>lnk_pipeline_prepare.R</code> unions the raw per-model positions into <code>gradient_barriers_minimal</code>, not the <code>frs_barriers_minimal</code> reduction) — matching bcfp. Added the <code>accessible_km</code> roll-up column + <code><a href="reference/lnk_rollup_wsg.html">lnk_rollup_wsg()</a></code> (#221). Proven across 11 WSGs × 8 species: <code>accessible_km</code> 44/44 within 0.05%, habitat holds (parked BULK SK = fresh#190). Validator/proof: <code>data-raw/parity_crosssection.R</code> + <code>research/parity_accessible_habitat_2026_07_03.md</code>. <strong>Gotcha that bit hard:</strong> <code>fresh.streams_vw_bcfp</code> spawning/rearing/access_<sp> are coded 0/1/2/3 → parity uses <code>IN (1,2)</code> (a <code>= 1</code> under-counts; see memory <code>bcfp-vw-column-coding</code>). Segment count now 2–3.5× (bcfp-matching; intersects #205). Open follow-ups: <strong>#225</strong> (rename <code>gradient_barriers_minimal</code> → <code>gradient_barriers_break</code>), <strong>#226</strong> (vignette accessible_km demo), <strong>#227</strong> (<code>wsg_outlet</code> builder + single-WSG guard; relates to #222), <strong>#224</strong> (bcfp <code>dam_dnstr_ind</code> reservoir-inflow quirk — reference-side, not ours).</sp></p>
+<p>The 2026-05-25 handoff below (#175 study-area parity) is <strong>complete/superseded</strong> — kept for history.</p>
 </div>
 <div class="section level2">
 <h2 id="status-2026-05-25--active-handoff-175-study-area-mapping_code-parity">Status (2026-05-25) — ACTIVE HANDOFF (#175 study-area mapping_code parity)<a class="anchor" aria-label="anchor" href="#status-2026-05-25--active-handoff-175-study-area-mapping_code-parity"></a></h2>
