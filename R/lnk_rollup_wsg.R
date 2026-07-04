@@ -31,8 +31,9 @@
 #'
 #' `accessible_km` sums `access IN (1, 2)` — link's per-species access
 #' model on `streams_access`, the number validated against the
-#' tunnel-free bcfp reference in `data-raw/accessible_km_proof_co.R`
-#' (coho, 19/20 WSGs within +/-5%). It deliberately does **not** use the
+#' tunnel-free bcfp reference in `data-raw/parity_crosssection.R`
+#' (accessible + spawning + rearing, 8 species x 11 WSGs). It
+#' deliberately does **not** use the
 #' `accessible` boolean on `streams_habitat_<sp>`, which carries
 #' different (pre-gating) semantics and diverges from the access model
 #' (MORR coho: 3424 km vs the validated 3330 km).

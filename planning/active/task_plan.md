@@ -127,8 +127,10 @@ parity pass — inseparable for the proof. Merged 221→223 (PWF conflicts only;
 - [ ] Return to the accessible_km vignette to demonstrate bcfp equivalence.
 
 ## Validation
-- `Rscript data-raw/accessible_km_fix_validate.R` exits non-zero if any WSG BT
-  `|pct_diff|` exceeds tolerance or segment 3835 is not blocked.
+- `LNK_LOAD=loadall Rscript data-raw/parity_crosssection.R <WSG...>` — the single
+  accessible+spawn+rear parity validator/proof (supersedes accessible_km_fix_validate.R +
+  accessible_km_proof_co.R, both folded in). Exits non-zero on any accessible-over-tol,
+  structural FINA-frontier failure, or non-parked habitat divergence.
 - `Rscript -e 'devtools::test()' 2>&1 | grep -E "(FAIL|ERROR|PASS)"` green.
 
 ## Out of scope
