@@ -1,5 +1,46 @@
 # Changelog
 
+## link 0.44.0
+
+Fix a BT/ST `accessible_km` over-credit and add the per-WSG
+`accessible_km` roll-up
+([\#223](https://github.com/NewGraphEnvironment/link/issues/223),
+[\#221](https://github.com/NewGraphEnvironment/link/issues/221)). The
+stream break source `gradient_barriers_minimal` was fed the
+[`fresh::frs_barriers_minimal()`](https://newgraphenvironment.github.io/fresh/reference/frs_barriers_minimal.html)
+downstream-most reduction as a *segmentation* source, so a single stream
+segment straddled the accessibility frontier and its whole reach —
+including the blocked reach above the barrier — was credited accessible
+(`accessible_km` +40.4% PCEA, +23.6% FINA). The fix
+(`R/lnk_pipeline_prepare.R`) unions the **raw** per-model gradient +
+falls positions into `gradient_barriers_minimal` so streams break at
+every frontier — mirroring the orphan path already in the code and
+matching bcfishpass, which segments at every gradient barrier;
+[`fresh::frs_barriers_minimal()`](https://newgraphenvironment.github.io/fresh/reference/frs_barriers_minimal.html)
+is now unused in link.
+[`lnk_compare_rollup()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_rollup.md)
+gains an `accessible_km` column and a reusable
+[`lnk_rollup_wsg()`](https://newgraphenvironment.github.io/link/reference/lnk_rollup_wsg.md)
+(tunnel-free vs `fresh.streams_vw_bcfp`, `access_<sp> IN (1,2)`). Proven
+with `data-raw/parity_crosssection.R` across 11 WSGs × 8 species (Peace
+/ Fraser / Skeena / Columbia): `accessible_km` converges 44/44 within
+0.05%, spawning/rearing hold — the only two over-tolerance being the
+documented parked BULK SK
+([fresh#190](https://github.com/NewGraphEnvironment/fresh/issues/190)
+dual-rearing-lake topology). The fix is habitat-neutral (byte-identical
+spawn/rear pre/post); segment count grows 2–3.5× (inherent to
+bcfp-matching, intersects
+[\#205](https://github.com/NewGraphEnvironment/link/issues/205)).
+Follow-ups:
+[\#224](https://github.com/NewGraphEnvironment/link/issues/224) (bcfp
+`dam_dnstr_ind` reservoir-inflow propagation),
+[\#225](https://github.com/NewGraphEnvironment/link/issues/225) (rename
+`gradient_barriers_minimal` → `gradient_barriers_break`),
+[\#226](https://github.com/NewGraphEnvironment/link/issues/226) (PARS
+vignette `accessible_km` demo),
+[\#227](https://github.com/NewGraphEnvironment/link/issues/227)
+(`public.wsg_outlet` builder + single-WSG guard).
+
 ## link 0.43.0
 
 [`lnk_pipeline_run()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_run.md)
