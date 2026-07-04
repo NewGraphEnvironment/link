@@ -166,6 +166,23 @@ work with any PostgreSQL.
 conn <- lnk_db_conn()  # reads PG_DB_SHARE, PG_HOST_SHARE, etc.
 ```
 
+**Local docker fwapg (dev / parity work).**
+[`lnk_db_conn()`](https://newgraphenvironment.github.io/link/reference/lnk_db_conn.md)
+with no args reads `PG_*_SHARE`, which on some machines points at the
+(intermittent) `:63333` bcfp tunnel — the wrong DB for the `fresh.*`
+persist. For local-docker work pass explicit args:
+`lnk_db_conn(dbname="fwapg", host="localhost", port=5432L, user="postgres", password="postgres")`.
+Bring it up from `~/Projects/repo/fresh/docker/` with
+`docker compose up -d db`. `:5432` holds the local `fresh.*` persist +
+`working_<wsg>` schemas + `fresh.streams_vw_bcfp`; `:63333` is the bcfp
+tunnel (`bcfishpass.*`, no `fresh.*`).
+
+**Join persisted `fresh.*` on the full PK**
+`(id_segment, watershed_group_code)` — `id_segment` is NOT globally
+unique across WSGs in the consolidated persist, so a bare `id_segment`
+join fans out cartesian (#203). Length lives on `streams`, not
+`streams_access` / `streams_habitat_<sp>`.
+
 ## bcfishpass tunnel rebuild cadence
 
 The tunnel-side `bcfishpass.*` schema (used as the comparison reference
