@@ -113,13 +113,16 @@ nuance documented in `research/bcfishpass_methodology.md`). Out of scope; flag i
 Decision (user): merge #221 (`lnk_compare_rollup` accessible_km column + `lnk_rollup_wsg`)
 into #223 → **one PR closing both**. #221 surfaced #223; #223 makes #221's accessible
 parity pass — inseparable for the proof. Merged 221→223 (PWF conflicts only; R/tests/research clean).
-- [x] Merge `origin/221-per-wsg-habitat-access-km-rollup` into the #223 branch.
-- [ ] Verify combined package loads + `devtools::test()` green (221 rollup tests + 223 pipeline tests).
-- [ ] Re-run 11-WSG cross-section with the fix (done: FINA/PARS/PCEA/LKEL; new: BULK/MORR/KISP/
-      LFRA/USKE all-7-species + ELKR/KOTR WCT). ~40 min local, no cyphers (2–3 min/WSG measured).
-- [ ] Run `lnk_compare_rollup` across them → per-species per-WSG table: **accessible + spawn + rear**
-      parity vs bcfp (tunnel-free `streams_vw_bcfp`). Prove equivalence before PR.
-- [ ] Update `research/provincial_parity_*.md` with the accessible columns + the combined result.
+- [x] Merge `origin/221-per-wsg-habitat-access-km-rollup` into the #223 branch (`b53ad46`).
+- [x] Combined package: `devtools::test()` **FAIL 1 | PASS 1298** (+44 from 221 rollup tests; the
+      1 FAIL is the pre-existing environmental `public.wsg_outlet`). document() clean.
+- [x] Re-ran 11-WSG cross-section with the fix (FINA/PARS/PCEA/LKEL + BULK/MORR/KISP/LFRA/USKE +
+      ELKR/KOTR). ~40 min local, no cyphers (BULK 5.9 / LFRA 9.4 min the largest).
+- [x] Built + ran `data-raw/parity_crosssection.R` (tunnel-free; link `lnk_rollup_wsg` vs bcfp
+      `streams_vw_bcfp` `IN (1,2)`). **Result: accessible 44/44 exact (max 0.05%); spawn 42/43;
+      rear 34/35. The only 2 over-tol are BULK SK (spawn +11.0%, rear +35.2%) = documented parked
+      fresh#190 (Elwin+Day Lake topology). Zero #223 regressions.** #189 residence species excluded.
+- [x] Wrote `research/parity_accessible_habitat_2026_07_03.md` (the accessible-column parity proof).
 - [ ] `/planning-archive`; `/gh-pr-push` (PR closes #221 + #223). NEWS/DESCRIPTION bump as final commit.
 - [ ] Return to the accessible_km vignette to demonstrate bcfp equivalence.
 
