@@ -1,0 +1,161 @@
+[23:49:10] backup local fresh_default -> /tmp/fresh_default_pre_consolidate_202605272349.dump
+[23:49:52] cypher@143.110.147.193 -> DELETE bucket (19 WSGs) from 16 tables
+[23:49:53] cypher@143.110.147.193 -> COPY (bucket-filtered) for 16 tables
+COPY 234
+COPY 757530
+COPY 533441
+COPY 533441
+COPY 533441
+COPY 0
+COPY 0
+COPY 0
+COPY 493379
+COPY 101017
+COPY 0
+COPY 533441
+COPY 0
+COPY 0
+COPY 0
+COPY 533441
+[23:52:34] cypher@143.110.147.193 -> DELETE bucket from source (post-COPY cleanup)
+DELETE 234
+DELETE 757530
+DELETE 533441
+DELETE 533441
+DELETE 533441
+DELETE 0
+DELETE 0
+DELETE 0
+DELETE 493379
+DELETE 101017
+DELETE 0
+DELETE 533441
+DELETE 0
+DELETE 0
+DELETE 0
+DELETE 533441
+[23:52:43] cypher@143.110.226.17 -> DELETE bucket (9 WSGs) from 16 tables
+[23:52:44] cypher@143.110.226.17 -> COPY (bucket-filtered) for 16 tables
+COPY 1133
+COPY 449476
+COPY 255785
+COPY 255785
+COPY 255785
+COPY 255785
+COPY 103339
+COPY 255785
+COPY 29996
+COPY 0
+COPY 175259
+COPY 255785
+COPY 228402
+COPY 255785
+COPY 0
+COPY 255785
+[23:54:09] cypher@143.110.226.17 -> DELETE bucket from source (post-COPY cleanup)
+DELETE 1133
+DELETE 449476
+DELETE 255785
+DELETE 255785
+DELETE 255785
+DELETE 255785
+DELETE 103339
+DELETE 255785
+DELETE 29996
+DELETE 0
+DELETE 175259
+DELETE 255785
+DELETE 228402
+DELETE 255785
+DELETE 0
+DELETE 255785
+[23:54:14] verify destination tables in schema 'fresh_default'
+                    tbl    rows
+1     barrier_overrides    2703
+2              barriers 1894845
+3               streams 1345901
+4        streams_access 1345901
+5    streams_habitat_bt 1314494
+6    streams_habitat_ch  786317
+7    streams_habitat_cm  266412
+8    streams_habitat_co  569224
+9    streams_habitat_gr  523375
+10   streams_habitat_ko  101017
+11   streams_habitat_pk  387446
+12   streams_habitat_rb 1345901
+13   streams_habitat_sk  524002
+14   streams_habitat_st  418858
+15  streams_habitat_wct       0
+16 streams_mapping_code 1345901
+$sources
+$sources$`cypher@143.110.147.193`
+$sources$`cypher@143.110.147.193`$ok
+[1] TRUE
+
+$sources$`cypher@143.110.147.193`$stage
+[1] "complete"
+
+$sources$`cypher@143.110.147.193`$pre_rows
+[1] 6051406
+
+$sources$`cypher@143.110.147.193`$post_rows
+[1] 10070771
+
+$sources$`cypher@143.110.147.193`$copied
+ [1] "barrier_overrides"    "barriers"             "streams"             
+ [4] "streams_access"       "streams_habitat_bt"   "streams_habitat_ch"  
+ [7] "streams_habitat_cm"   "streams_habitat_co"   "streams_habitat_gr"  
+[10] "streams_habitat_ko"   "streams_habitat_pk"   "streams_habitat_rb"  
+[13] "streams_habitat_sk"   "streams_habitat_st"   "streams_habitat_wct" 
+[16] "streams_mapping_code"
+
+$sources$`cypher@143.110.147.193`$errored
+character(0)
+
+$sources$`cypher@143.110.147.193`$skipped_source_only
+character(0)
+
+$sources$`cypher@143.110.147.193`$skipped_dest_only
+character(0)
+
+
+$sources$`cypher@143.110.226.17`
+$sources$`cypher@143.110.226.17`$ok
+[1] TRUE
+
+$sources$`cypher@143.110.226.17`$stage
+[1] "complete"
+
+$sources$`cypher@143.110.226.17`$pre_rows
+[1] 9138412
+
+$sources$`cypher@143.110.226.17`$post_rows
+[1] 12172297
+
+$sources$`cypher@143.110.226.17`$copied
+ [1] "barrier_overrides"    "barriers"             "streams"             
+ [4] "streams_access"       "streams_habitat_bt"   "streams_habitat_ch"  
+ [7] "streams_habitat_cm"   "streams_habitat_co"   "streams_habitat_gr"  
+[10] "streams_habitat_ko"   "streams_habitat_pk"   "streams_habitat_rb"  
+[13] "streams_habitat_sk"   "streams_habitat_st"   "streams_habitat_wct" 
+[16] "streams_mapping_code"
+
+$sources$`cypher@143.110.226.17`$errored
+character(0)
+
+$sources$`cypher@143.110.226.17`$skipped_source_only
+character(0)
+
+$sources$`cypher@143.110.226.17`$skipped_dest_only
+character(0)
+
+
+
+$tables
+ [1] "barrier_overrides"    "barriers"             "streams"             
+ [4] "streams_access"       "streams_habitat_bt"   "streams_habitat_ch"  
+ [7] "streams_habitat_cm"   "streams_habitat_co"   "streams_habitat_gr"  
+[10] "streams_habitat_ko"   "streams_habitat_pk"   "streams_habitat_rb"  
+[13] "streams_habitat_sk"   "streams_habitat_st"   "streams_habitat_wct" 
+[16] "streams_mapping_code"
+

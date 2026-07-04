@@ -1,0 +1,50 @@
+"wsg","species","habitat_type","unit","link_value","ref_value","diff_pct","taxonomy_id","class","mechanism","status","refs"
+"SETN","BT","spawning","km",811.52,809.07,0.3,,"WITHIN_TOLERANCE",,"CLOSED",
+"SETN","BT","rearing","km",1323.44,1317.58,0.4,,"WITHIN_TOLERANCE",,"CLOSED",
+"SETN","BT","lake_rearing","ha",0,11536.48,-100,"lake-wetland-polygon-asymmetry","MEASUREMENT_ASYMMETRY","link credits centerline km AND polygon ha as separate columns; bcfp credits only one","INTENTIONAL","research/default_vs_bcfishpass.md; research/provincial_parity_2026_05_11.md#intentional-divergences"
+"SETN","BT","wetland_rearing","ha",0,719.75,-100,"lake-wetland-polygon-asymmetry","MEASUREMENT_ASYMMETRY","link credits centerline km AND polygon ha as separate columns; bcfp credits only one","INTENTIONAL","research/default_vs_bcfishpass.md; research/provincial_parity_2026_05_11.md#intentional-divergences"
+"SETN","BT","rearing_stream","km",900.76,895.29,0.6,,"WITHIN_TOLERANCE",,"CLOSED",
+"SETN","BT","rearing_lake_centerline","km",0,0,,,"NOT_APPLICABLE",,,
+"SETN","BT","rearing_wetland_centerline","km",0,0,,,"NOT_APPLICABLE",,,
+"SETN","CH","spawning","km",537.97,271.08,98.5,"setn-anadr-spawning-stale","A","bcfp barriers_subsurfaceflow stale; link applies user_barriers_definite_control overrides","INTENTIONAL","research/provincial_parity_2026_05_01.md#class-a; research/provincial_parity_2026_05_11.md#class-a"
+"SETN","CH","rearing","km",609.31,295.58,106.1,"setn-anadr-rearing-stale","A","bcfp barriers_subsurfaceflow stale; link applies user_barriers_definite_control overrides","INTENTIONAL","research/provincial_parity_2026_05_01.md#class-a; research/provincial_parity_2026_05_11.md#class-a"
+"SETN","CH","lake_rearing","ha",0,0,,,"NOT_APPLICABLE",,,
+"SETN","CH","wetland_rearing","ha",0,0,,,"NOT_APPLICABLE",,,
+"SETN","CH","rearing_stream","km",387.98,133.02,191.7,"setn-anadr-rearing-stale","A","bcfp barriers_subsurfaceflow stale; link applies user_barriers_definite_control overrides","INTENTIONAL","research/provincial_parity_2026_05_01.md#class-a; research/provincial_parity_2026_05_11.md#class-a"
+"SETN","CH","rearing_lake_centerline","km",0,0,,,"NOT_APPLICABLE",,,
+"SETN","CH","rearing_wetland_centerline","km",0,0,,,"NOT_APPLICABLE",,,
+"SETN","CM","spawning","km",670.26,338.25,98.2,"setn-anadr-spawning-stale","A","bcfp barriers_subsurfaceflow stale; link applies user_barriers_definite_control overrides","INTENTIONAL","research/provincial_parity_2026_05_01.md#class-a; research/provincial_parity_2026_05_11.md#class-a"
+"SETN","CM","rearing","km",0,0,,,"NOT_APPLICABLE",,,
+"SETN","CM","lake_rearing","ha",0,,,,"NOT_APPLICABLE",,,
+"SETN","CM","wetland_rearing","ha",0,,,,"NOT_APPLICABLE",,,
+"SETN","CM","rearing_stream","km",0,0,,,"NOT_APPLICABLE",,,
+"SETN","CM","rearing_lake_centerline","km",0,0,,,"NOT_APPLICABLE",,,
+"SETN","CM","rearing_wetland_centerline","km",0,0,,,"NOT_APPLICABLE",,,
+"SETN","CO","spawning","km",629.66,316.46,99,"setn-anadr-spawning-stale","A","bcfp barriers_subsurfaceflow stale; link applies user_barriers_definite_control overrides","INTENTIONAL","research/provincial_parity_2026_05_01.md#class-a; research/provincial_parity_2026_05_11.md#class-a"
+"SETN","CO","rearing","km",678.76,319.09,112.7,"setn-anadr-rearing-stale","A","bcfp barriers_subsurfaceflow stale; link applies user_barriers_definite_control overrides","INTENTIONAL","research/provincial_parity_2026_05_01.md#class-a; research/provincial_parity_2026_05_11.md#class-a"
+"SETN","CO","lake_rearing","ha",0,0,,,"NOT_APPLICABLE",,,
+"SETN","CO","wetland_rearing","ha",0,61.1,-100,"lake-wetland-polygon-asymmetry","MEASUREMENT_ASYMMETRY","link credits centerline km AND polygon ha as separate columns; bcfp credits only one","INTENTIONAL","research/default_vs_bcfishpass.md; research/provincial_parity_2026_05_11.md#intentional-divergences"
+"SETN","CO","rearing_stream","km",457.44,156.53,192.2,"setn-anadr-rearing-stale","A","bcfp barriers_subsurfaceflow stale; link applies user_barriers_definite_control overrides","INTENTIONAL","research/provincial_parity_2026_05_01.md#class-a; research/provincial_parity_2026_05_11.md#class-a"
+"SETN","CO","rearing_lake_centerline","km",0,0,,,"NOT_APPLICABLE",,,
+"SETN","CO","rearing_wetland_centerline","km",0,0,,,"NOT_APPLICABLE",,,
+"SETN","PK","spawning","km",670.26,338.25,98.2,"setn-anadr-spawning-stale","A","bcfp barriers_subsurfaceflow stale; link applies user_barriers_definite_control overrides","INTENTIONAL","research/provincial_parity_2026_05_01.md#class-a; research/provincial_parity_2026_05_11.md#class-a"
+"SETN","PK","rearing","km",0,0,,,"NOT_APPLICABLE",,,
+"SETN","PK","lake_rearing","ha",0,,,,"NOT_APPLICABLE",,,
+"SETN","PK","wetland_rearing","ha",0,,,,"NOT_APPLICABLE",,,
+"SETN","PK","rearing_stream","km",0,0,,,"NOT_APPLICABLE",,,
+"SETN","PK","rearing_lake_centerline","km",0,0,,,"NOT_APPLICABLE",,,
+"SETN","PK","rearing_wetland_centerline","km",0,0,,,"NOT_APPLICABLE",,,
+"SETN","SK","spawning","km",13.81,7.04,96.2,"setn-anadr-spawning-stale","A","bcfp barriers_subsurfaceflow stale; link applies user_barriers_definite_control overrides","INTENTIONAL","research/provincial_parity_2026_05_01.md#class-a; research/provincial_parity_2026_05_11.md#class-a"
+"SETN","SK","rearing","km",352.45,173.05,103.7,"setn-anadr-rearing-stale","A","bcfp barriers_subsurfaceflow stale; link applies user_barriers_definite_control overrides","INTENTIONAL","research/provincial_parity_2026_05_01.md#class-a; research/provincial_parity_2026_05_11.md#class-a"
+"SETN","SK","lake_rearing","ha",10692.54,5442.25,96.5,,"UNEXPLAINED",,"NEEDS_INVESTIGATION",
+"SETN","SK","wetland_rearing","ha",0,0,,,"NOT_APPLICABLE",,,
+"SETN","SK","rearing_stream","km",0,0,,,"NOT_APPLICABLE",,,
+"SETN","SK","rearing_lake_centerline","km",0,0,,,"NOT_APPLICABLE",,,
+"SETN","SK","rearing_wetland_centerline","km",0,0,,,"NOT_APPLICABLE",,,
+"SETN","ST","spawning","km",634.98,366.21,73.4,"setn-anadr-spawning-stale","A","bcfp barriers_subsurfaceflow stale; link applies user_barriers_definite_control overrides","INTENTIONAL","research/provincial_parity_2026_05_01.md#class-a; research/provincial_parity_2026_05_11.md#class-a"
+"SETN","ST","rearing","km",872.89,487.4,79.1,"setn-anadr-rearing-stale","A","bcfp barriers_subsurfaceflow stale; link applies user_barriers_definite_control overrides","INTENTIONAL","research/provincial_parity_2026_05_01.md#class-a; research/provincial_parity_2026_05_11.md#class-a"
+"SETN","ST","lake_rearing","ha",0,0,,,"NOT_APPLICABLE",,,
+"SETN","ST","wetland_rearing","ha",0,0,,,"NOT_APPLICABLE",,,
+"SETN","ST","rearing_stream","km",619.04,294.1,110.5,"setn-anadr-rearing-stale","A","bcfp barriers_subsurfaceflow stale; link applies user_barriers_definite_control overrides","INTENTIONAL","research/provincial_parity_2026_05_01.md#class-a; research/provincial_parity_2026_05_11.md#class-a"
+"SETN","ST","rearing_lake_centerline","km",0,0,,,"NOT_APPLICABLE",,,
+"SETN","ST","rearing_wetland_centerline","km",0,0,,,"NOT_APPLICABLE",,,

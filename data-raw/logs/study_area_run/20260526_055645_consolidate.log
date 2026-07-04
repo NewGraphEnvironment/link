@@ -1,0 +1,167 @@
+[00:12:51] backup local fresh -> /tmp/fresh_pre_consolidate_202605260012.dump
+[00:18:05] cypher@64.23.192.219 -> NOTE: skipping 9 source-only tables (absent on destination): streams_bt, streams_ch, streams_co, streams_habitat, streams_pk, streams_rb, streams_sk, streams_st, streams_v2
+[00:18:05] cypher@64.23.192.219 -> NOTE: skipping 2 destination-only tables (absent on source): crossings_vw_bcfp, streams_vw_bcfp
+[00:18:06] cypher@64.23.192.219 -> DELETE bucket (19 WSGs) from 14 tables
+[00:18:11] cypher@64.23.192.219 -> COPY (bucket-filtered) for 14 tables
+COPY 215
+COPY 760938
+COPY 37361
+COPY 533446
+COPY 533446
+COPY 533446
+COPY 0
+COPY 0
+COPY 0
+COPY 0
+COPY 0
+COPY 0
+COPY 0
+COPY 533446
+[00:21:24] cypher@64.23.192.219 -> DELETE bucket from source (post-COPY cleanup)
+DELETE 215
+DELETE 760938
+DELETE 37361
+DELETE 533446
+DELETE 533446
+DELETE 533446
+DELETE 0
+DELETE 0
+DELETE 0
+DELETE 0
+DELETE 0
+DELETE 0
+DELETE 0
+DELETE 533446
+[00:21:32] cypher@143.198.231.80 -> NOTE: skipping 9 source-only tables (absent on destination): streams_bt, streams_ch, streams_co, streams_habitat, streams_pk, streams_rb, streams_sk, streams_st, streams_v2
+[00:21:32] cypher@143.198.231.80 -> NOTE: skipping 2 destination-only tables (absent on source): crossings_vw_bcfp, streams_vw_bcfp
+[00:21:32] cypher@143.198.231.80 -> DELETE bucket (9 WSGs) from 14 tables
+[00:21:36] cypher@143.198.231.80 -> COPY (bucket-filtered) for 14 tables
+COPY 792
+COPY 450412
+COPY 16756
+COPY 255784
+COPY 255784
+COPY 255784
+COPY 255784
+COPY 103337
+COPY 255784
+COPY 175258
+COPY 228401
+COPY 255784
+COPY 0
+COPY 255784
+[00:23:12] cypher@143.198.231.80 -> DELETE bucket from source (post-COPY cleanup)
+DELETE 792
+DELETE 450412
+DELETE 16756
+DELETE 255784
+DELETE 255784
+DELETE 255784
+DELETE 255784
+DELETE 103337
+DELETE 255784
+DELETE 175258
+DELETE 228401
+DELETE 255784
+DELETE 0
+DELETE 255784
+[00:23:16] verify destination tables in schema 'fresh'
+                         tbl    rows
+1          barrier_overrides    2778
+2                   barriers 3409512
+3          crossings_vw_bcfp  533069
+4  modelled_stream_crossings  529244
+5                    streams 2400140
+6             streams_access 1329990
+7         streams_habitat_bt 2085733
+8         streams_habitat_ch 1358766
+9         streams_habitat_cm  533071
+10        streams_habitat_co 1075471
+11        streams_habitat_pk  626717
+12        streams_habitat_sk  946046
+13        streams_habitat_st  873318
+14       streams_habitat_wct  208587
+15      streams_mapping_code 1329990
+16           streams_vw_bcfp 4230118
+17    zz_lnk_mc_scratch_fina   26094
+$sources
+$sources$`cypher@64.23.192.219`
+$sources$`cypher@64.23.192.219`$ok
+[1] TRUE
+
+$sources$`cypher@64.23.192.219`$stage
+[1] "complete"
+
+$sources$`cypher@64.23.192.219`$pre_rows
+[1] 13777057
+
+$sources$`cypher@64.23.192.219`$post_rows
+[1] 16709355
+
+$sources$`cypher@64.23.192.219`$copied
+ [1] "barrier_overrides"         "barriers"                 
+ [3] "modelled_stream_crossings" "streams"                  
+ [5] "streams_access"            "streams_habitat_bt"       
+ [7] "streams_habitat_ch"        "streams_habitat_cm"       
+ [9] "streams_habitat_co"        "streams_habitat_pk"       
+[11] "streams_habitat_sk"        "streams_habitat_st"       
+[13] "streams_habitat_wct"       "streams_mapping_code"     
+
+$sources$`cypher@64.23.192.219`$errored
+character(0)
+
+$sources$`cypher@64.23.192.219`$skipped_source_only
+[1] "streams_bt"      "streams_ch"      "streams_co"      "streams_habitat"
+[5] "streams_pk"      "streams_rb"      "streams_sk"      "streams_st"     
+[9] "streams_v2"     
+
+$sources$`cypher@64.23.192.219`$skipped_dest_only
+[1] "crossings_vw_bcfp" "streams_vw_bcfp"  
+
+
+$sources$`cypher@143.198.231.80`
+$sources$`cypher@143.198.231.80`$ok
+[1] TRUE
+
+$sources$`cypher@143.198.231.80`$stage
+[1] "complete"
+
+$sources$`cypher@143.198.231.80`$pre_rows
+[1] 13943919
+
+$sources$`cypher@143.198.231.80`$post_rows
+[1] 16709363
+
+$sources$`cypher@143.198.231.80`$copied
+ [1] "barrier_overrides"         "barriers"                 
+ [3] "modelled_stream_crossings" "streams"                  
+ [5] "streams_access"            "streams_habitat_bt"       
+ [7] "streams_habitat_ch"        "streams_habitat_cm"       
+ [9] "streams_habitat_co"        "streams_habitat_pk"       
+[11] "streams_habitat_sk"        "streams_habitat_st"       
+[13] "streams_habitat_wct"       "streams_mapping_code"     
+
+$sources$`cypher@143.198.231.80`$errored
+character(0)
+
+$sources$`cypher@143.198.231.80`$skipped_source_only
+[1] "streams_bt"      "streams_ch"      "streams_co"      "streams_habitat"
+[5] "streams_pk"      "streams_rb"      "streams_sk"      "streams_st"     
+[9] "streams_v2"     
+
+$sources$`cypher@143.198.231.80`$skipped_dest_only
+[1] "crossings_vw_bcfp" "streams_vw_bcfp"  
+
+
+
+$tables
+ [1] "barrier_overrides"         "barriers"                 
+ [3] "crossings_vw_bcfp"         "modelled_stream_crossings"
+ [5] "streams"                   "streams_access"           
+ [7] "streams_habitat_bt"        "streams_habitat_ch"       
+ [9] "streams_habitat_cm"        "streams_habitat_co"       
+[11] "streams_habitat_pk"        "streams_habitat_sk"       
+[13] "streams_habitat_st"        "streams_habitat_wct"      
+[15] "streams_mapping_code"      "streams_vw_bcfp"          
+[17] "zz_lnk_mc_scratch_fina"   
+

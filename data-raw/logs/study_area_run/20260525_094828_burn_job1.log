@@ -1,0 +1,24 @@
+[cypher_down] destroying workspace 'job1' (no reserved IP)
+[31m╷[0m[0m
+[31m│[0m [0m[1m[31mError: [0m[0m[1mError acquiring the state lock[0m
+[31m│[0m [0m
+[31m│[0m [0m[0mError message: operation error S3: PutObject, https response error
+[31m│[0m [0mStatusCode: 412, RequestID: T4X9RGM7619W9HD4, HostID:
+[31m│[0m [0mRdXoEZArSLcEdW8vo0jItD3Dyl8v5szDBO7ZlrY5Vjo/q304Q/KjWNL1lK0yvo9sJx+WIAYCXU0=,
+[31m│[0m [0mapi error PreconditionFailed: At least one of the pre-conditions you
+[31m│[0m [0mspecified did not hold
+[31m│[0m [0mLock Info:
+[31m│[0m [0m  ID:        32081074-dabe-b4e7-ca1a-43fe34c9add8
+[31m│[0m [0m  Path:      tofu-state-newgraph/env:/job1/do/dev/cypher/terraform.tfstate
+[31m│[0m [0m  Operation: OperationTypeApply
+[31m│[0m [0m  Who:       airvine@Allans-MacBook-Pro
+[31m│[0m [0m  Version:   1.12.0
+[31m│[0m [0m  Created:   2026-05-25 10:17:35.999285 +0000 UTC
+[31m│[0m [0m  Info:      
+[31m│[0m [0m
+[31m│[0m [0m
+[31m│[0m [0mOpenTofu acquires a state lock to protect the state from being written
+[31m│[0m [0mby multiple users at the same time. Please resolve the issue above and try
+[31m│[0m [0magain. For most commands, you can disable locking with the "-lock=false"
+[31m│[0m [0mflag, but this is not recommended.
+[31m╵[0m[0m

@@ -1,0 +1,50 @@
+From https://github.com/NewGraphEnvironment/link
+   11e9c22..2beb42f  main       -> origin/main
+ * [new branch]      138-lnk-pipeline-crossings-build-slim-fresh- -> origin/138-lnk-pipeline-crossings-build-slim-fresh-
+ * [new branch]      152-unified-persist-schema-barriers -> origin/152-unified-persist-schema-barriers
+ * [new branch]      162-lnk-compare-wsg-annotated-csv -> origin/162-lnk-compare-wsg-annotated-csv
+ * [new branch]      175-promote-with-mapping-code-flag-to-stand -> origin/175-promote-with-mapping-code-flag-to-stand
+   ff85787..f388236  gh-pages   -> origin/gh-pages
+ * [new tag]         v0.40.4    -> v0.40.4
+ * [new tag]         v0.30.0    -> v0.30.0
+ * [new tag]         v0.30.1    -> v0.30.1
+ * [new tag]         v0.30.2    -> v0.30.2
+ * [new tag]         v0.31.0    -> v0.31.0
+ * [new tag]         v0.31.1    -> v0.31.1
+ * [new tag]         v0.32.0    -> v0.32.0
+ * [new tag]         v0.32.1    -> v0.32.1
+ * [new tag]         v0.33.0    -> v0.33.0
+ * [new tag]         v0.34.0    -> v0.34.0
+ * [new tag]         v0.35.0    -> v0.35.0
+ * [new tag]         v0.35.1    -> v0.35.1
+ * [new tag]         v0.36.0    -> v0.36.0
+ * [new tag]         v0.36.1    -> v0.36.1
+ * [new tag]         v0.37.0    -> v0.37.0
+ * [new tag]         v0.38.0    -> v0.38.0
+ * [new tag]         v0.38.1    -> v0.38.1
+ * [new tag]         v0.39.0    -> v0.39.0
+ * [new tag]         v0.39.1    -> v0.39.1
+ * [new tag]         v0.40.0    -> v0.40.0
+ * [new tag]         v0.40.1    -> v0.40.1
+ * [new tag]         v0.40.2    -> v0.40.2
+ * [new tag]         v0.40.3    -> v0.40.3
+Your branch is behind 'origin/main' by 57 commits, and can be fast-forwarded.
+  (use "git pull" to update your local branch)
+HEAD is now at 2beb42f v0.40.4: per-species access reproduces bcfp barriers_<sp> so dam-downstream emits ;DAM (#200) (#202)
+✔ Built link 0.40.4 (6.9s)
+✔ Installed link 0.40.4 (local) (129ms)
+✔ 1 pkg + 43 deps: kept 40, upd 1, dld 1 (NA B) [21s]
+=== link: 0.40.4 fresh: 0.31.0
+2026-05-25 09:53:19,780:INFO:bcdata.cli: Load of whse_fish.pscis_remediation_svw to whse_fish.pscis_remediation_svw in postgresql://postgres:postgres@localhost:5432/fwapg complete
+DROP TABLE
+CREATE TABLE
+Stamped data-raw/logs/bcfp_baselines.csv with bcfp build v0.7.15-14-ge12c1a5 (head_sha=e12c1a5)
+snapshot_bcfp.sh: complete.
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/home/cypher/R/x86_64-pc-linux-gnu-library/4.6/link/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
+NOTICE:  schema "fresh" already exists, skipping
+
+[lnk_persist_init] fresh.streams has unexpected GENERATED columns (gradient,downstream_route_measure,upstream_route_measure,length_metre); DROPping per force_recreate=TRUE
+=== lnk_persist_init done
+=== READY

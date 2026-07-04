@@ -1,0 +1,14 @@
+Warning messages:
+1: reference has 0 rows for LBTN — not modelled there; returning NA stats. 
+2: reference has 0 rows for LPCE — not modelled there; returning NA stats. 
+[study_area_compare] 7 rows across 7/7 WSGs -> /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20260525_090730_compare.csv
+# A tibble: 7 × 7
+  wsg   species total_segs match_pct n_diffs top_pattern       top_pattern_count
+* <chr> <chr>        <int>     <dbl>   <int> <chr>                         <int>
+1 FINA  BT           26089      99.8      57 ACCESS;DAM | REA…                 9
+2 LBTN  BT               0      NA        NA <NA>                             NA
+3 LPCE  BT               0      NA        NA <NA>                             NA
+4 PARA  BT           17062      99.3     123 ACCESS;MODELLED …                29
+5 PARS  BT           43124      99.0     449 ACCESS;DAM;INTER…                60
+6 PCEA  BT           33744      99.8      84 ACCESS;DAM | REA…                44
+7 UPCE  BT           23072      99.6     100 REAR;MODELLED | …                12

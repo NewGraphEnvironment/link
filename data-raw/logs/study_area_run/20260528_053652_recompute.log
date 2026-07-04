@@ -1,0 +1,1842 @@
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  view "barriers_bt_unified" does not exist, skipping
+
+NOTICE:  view "barriers_bt_access" does not exist, skipping
+
+NOTICE:  view "barriers_ch_unified" does not exist, skipping
+
+NOTICE:  view "barriers_ch_access" does not exist, skipping
+
+NOTICE:  view "barriers_co_unified" does not exist, skipping
+
+NOTICE:  view "barriers_co_access" does not exist, skipping
+
+NOTICE:  view "barriers_sk_unified" does not exist, skipping
+
+NOTICE:  view "barriers_sk_access" does not exist, skipping
+
+NOTICE:  view "barriers_rb_unified" does not exist, skipping
+
+NOTICE:  view "barriers_rb_access" does not exist, skipping
+
+NOTICE:  view "barriers_anthropogenic_unified" does not exist, skipping
+
+NOTICE:  view "barriers_pscis_unified" does not exist, skipping
+
+NOTICE:  view "barriers_dams_unified" does not exist, skipping
+
+NOTICE:  table "zz_lnk_streams_bbar" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+7: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+8: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+# A tibble: 24,165 × 6
+   id_segment mapping_code_bt    mapping_code_rb mapping_code_ch mapping_code_co
+        <int> <chr>              <chr>           <chr>           <chr>          
+ 1       4747 ""                 ""              ""              ""             
+ 2       4754 ""                 ""              ""              ""             
+ 3       4786 "ACCESS;MODELLED;… "ACCESS;MODELL… ""              ""             
+ 4       4835 "ACCESS;MODELLED"  "ACCESS;MODELL… ""              ""             
+ 5       4846 ""                 ""              ""              ""             
+ 6       4857 "ACCESS;NONE"      "ACCESS;NONE"   "ACCESS;NONE"   "ACCESS;NONE"  
+ 7       4875 "ACCESS;MODELLED;… "ACCESS;MODELL… "ACCESS;DAM;IN… "ACCESS;DAM;IN…
+ 8       4904 "SPAWN;NONE"       "SPAWN;NONE"    "SPAWN;NONE"    "SPAWN;NONE"   
+ 9       4925 "SPAWN;NONE"       "SPAWN;NONE"    "SPAWN;NONE"    "SPAWN;NONE"   
+10       5071 "ACCESS;NONE"      "ACCESS;NONE"   "ACCESS;NONE"   "ACCESS;NONE"  
+# ℹ 24,155 more rows
+# ℹ 1 more variable: mapping_code_sk <chr>
+[1] 24165
+[wsg_recompute_one] BBAR recomputed in 1.34 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  view "barriers_pk_unified" does not exist, skipping
+
+NOTICE:  view "barriers_pk_access" does not exist, skipping
+
+NOTICE:  view "barriers_st_unified" does not exist, skipping
+
+NOTICE:  view "barriers_st_access" does not exist, skipping
+
+NOTICE:  table "zz_lnk_streams_bulk" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+7: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+8: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+9: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+10: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+# A tibble: 42,860 × 8
+   id_segment mapping_code_bt    mapping_code_rb mapping_code_ch mapping_code_co
+        <int> <chr>              <chr>           <chr>           <chr>          
+ 1      19050 "ACCESS;ASSESSED;… "REAR;ASSESSED… "ACCESS;ASSESS… "ACCESS;ASSESS…
+ 2      19025 ""                 ""              ""              ""             
+ 3       6689 ""                 ""              ""              ""             
+ 4      15214 "ACCESS;MODELLED"  "ACCESS;MODELL… ""              ""             
+ 5      23670 ""                 ""              ""              ""             
+ 6      32848 ""                 ""              ""              ""             
+ 7      14347 "ACCESS;ASSESSED"  "ACCESS;ASSESS… "ACCESS;ASSESS… "ACCESS;ASSESS…
+ 8       2272 "ACCESS;ASSESSED;… "ACCESS;ASSESS… ""              ""             
+ 9       2289 "ACCESS;NONE;INTE… "ACCESS;NONE;I… ""              ""             
+10       2410 "ACCESS;NONE;INTE… "ACCESS;NONE;I… "ACCESS;NONE;I… "ACCESS;NONE;I…
+# ℹ 42,850 more rows
+# ℹ 3 more variables: mapping_code_pk <chr>, mapping_code_sk <chr>,
+#   mapping_code_st <chr>
+[1] 42860
+[wsg_recompute_one] BULK recomputed in 1.05 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  view "barriers_ko_unified" does not exist, skipping
+
+NOTICE:  view "barriers_ko_access" does not exist, skipping
+
+NOTICE:  table "zz_lnk_streams_carp" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+# A tibble: 17,421 × 4
+   id_segment mapping_code_bt                mapping_code_ko mapping_code_rb
+        <int> <chr>                          <chr>           <chr>          
+ 1      13396 ""                             ""              ""             
+ 2        267 "ACCESS;ASSESSED;INTERMITTENT" ""              ""             
+ 3        268 "ACCESS;ASSESSED;INTERMITTENT" ""              ""             
+ 4        269 "ACCESS;ASSESSED;INTERMITTENT" ""              ""             
+ 5      13397 ""                             ""              ""             
+ 6       6273 "ACCESS;MODELLED;INTERMITTENT" ""              ""             
+ 7       6274 "ACCESS;ASSESSED"              ""              ""             
+ 8       6275 "ACCESS;ASSESSED"              ""              ""             
+ 9       6278 "REAR;MODELLED;INTERMITTENT"   ""              "REAR"         
+10      11741 "SPAWN;MODELLED"               ""              "SPAWN"        
+# ℹ 17,411 more rows
+[1] 17421
+[wsg_recompute_one] CARP recomputed in 0.23 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_ches" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+7: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+# A tibble: 9,332 × 5
+   id_segment mapping_code_bt    mapping_code_rb mapping_code_ch mapping_code_sk
+        <int> <chr>              <chr>           <chr>           <chr>          
+ 1       1564 "ACCESS;MODELLED;… "ACCESS;MODELL… "ACCESS;MODELL… "ACCESS;MODELL…
+ 2       1567 ""                 ""              ""              ""             
+ 3       1572 "ACCESS;NONE;INTE… "ACCESS;NONE;I… "ACCESS;NONE;I… "ACCESS;NONE;I…
+ 4       1520 "ACCESS;NONE;INTE… ""              ""              ""             
+ 5       1613 "SPAWN;MODELLED"   ""              ""              ""             
+ 6       1655 "REAR;MODELLED;IN… ""              ""              ""             
+ 7       1656 "ACCESS;MODELLED;… ""              ""              ""             
+ 8       1657 "REAR;NONE;INTERM… ""              ""              ""             
+ 9       1658 "ACCESS;NONE;INTE… ""              ""              ""             
+10       1676 "ACCESS;NONE;INTE… ""              ""              ""             
+# ℹ 9,322 more rows
+[1] 9332
+[wsg_recompute_one] CHES recomputed in 0.34 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  view "barriers_cm_unified" does not exist, skipping
+
+NOTICE:  view "barriers_cm_access" does not exist, skipping
+
+NOTICE:  table "zz_lnk_streams_chwk" does not exist, skipping
+
+There were 11 warnings (use warnings() to see them)
+# A tibble: 8,866 × 9
+   id_segment mapping_code_bt mapping_code_rb mapping_code_ch mapping_code_cm
+        <int> <chr>           <chr>           <chr>           <chr>          
+ 1       5218 "ACCESS;NONE"   "ACCESS;NONE"   "ACCESS;NONE"   "ACCESS;NONE"  
+ 2        115 "ACCESS;NONE"   "ACCESS;NONE"   "ACCESS;NONE"   "ACCESS;NONE"  
+ 3       5494 "ACCESS;DAM"    "ACCESS;DAM"    "ACCESS;DAM"    "ACCESS;DAM"   
+ 4        345 "ACCESS;NONE"   "ACCESS;NONE"   "ACCESS;NONE"   "ACCESS;NONE"  
+ 5         59 "ACCESS;NONE"   "ACCESS;NONE"   "ACCESS;NONE"   "ACCESS;NONE"  
+ 6        150 "ACCESS;NONE"   "ACCESS;NONE"   "ACCESS;NONE"   "ACCESS;NONE"  
+ 7        184 "SPAWN;NONE"    "SPAWN;NONE"    "SPAWN;NONE"    "SPAWN;NONE"   
+ 8       5509 ""              ""              ""              ""             
+ 9        155 "ACCESS;NONE"   "ACCESS;NONE"   "ACCESS;NONE"   "ACCESS;NONE"  
+10       1663 ""              ""              ""              ""             
+# ℹ 8,856 more rows
+# ℹ 4 more variables: mapping_code_co <chr>, mapping_code_pk <chr>,
+#   mapping_code_sk <chr>, mapping_code_st <chr>
+[1] 8866
+[wsg_recompute_one] CHWK recomputed in 2.47 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_cotr" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+7: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+8: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+# A tibble: 29,425 × 6
+   id_segment mapping_code_bt    mapping_code_rb mapping_code_ch mapping_code_co
+        <int> <chr>              <chr>           <chr>           <chr>          
+ 1        503 ACCESS;NONE        ACCESS;NONE     "ACCESS;NONE"   "ACCESS;NONE"  
+ 2       1863 ACCESS;MODELLED;I… ACCESS;MODELLE… "ACCESS;MODELL… "ACCESS;MODELL…
+ 3       7067 ACCESS;MODELLED    ACCESS;MODELLED "ACCESS;MODELL… "ACCESS;MODELL…
+ 4       8325 ACCESS;NONE        ACCESS;NONE     "ACCESS;NONE"   "ACCESS;NONE"  
+ 5        548 ACCESS;NONE        ACCESS;NONE     "ACCESS;NONE"   "ACCESS;NONE"  
+ 6      16363 ACCESS;NONE        ACCESS;NONE     ""              ""             
+ 7      13008 ACCESS;NONE        ACCESS;NONE     "ACCESS;NONE"   "ACCESS;NONE"  
+ 8        206 SPAWN;NONE         SPAWN;NONE      "SPAWN;NONE"    "SPAWN;NONE"   
+ 9        418 ACCESS;NONE        ACCESS;NONE     "ACCESS;NONE"   "ACCESS;NONE"  
+10       1201 ACCESS;MODELLED    ACCESS;MODELLED "ACCESS;MODELL… "ACCESS;MODELL…
+# ℹ 29,415 more rows
+# ℹ 1 more variable: mapping_code_pk <chr>
+[1] 29425
+[wsg_recompute_one] COTR recomputed in 1.16 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_crkd" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+# A tibble: 22,641 × 3
+   id_segment mapping_code_bt              mapping_code_rb
+        <int> <chr>                        <chr>          
+ 1      13388 ACCESS;ASSESSED              ""             
+ 2      10993 ACCESS;MODELLED;INTERMITTENT ""             
+ 3      10991 ACCESS;MODELLED;INTERMITTENT ""             
+ 4      10996 ACCESS;MODELLED              ""             
+ 5      22376 ACCESS;DAM                   ""             
+ 6      10997 ACCESS;MODELLED              ""             
+ 7      10998 ACCESS;MODELLED              ""             
+ 8      11000 ACCESS;MODELLED              ""             
+ 9      11001 REAR;ASSESSED                "REAR"         
+10      14507 ACCESS;MODELLED;INTERMITTENT ""             
+# ℹ 22,631 more rows
+[1] 22641
+[wsg_recompute_one] CRKD recomputed in 0.16 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_dogc" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+7: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+8: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+# A tibble: 13,535 × 6
+   id_segment mapping_code_bt    mapping_code_rb mapping_code_ch mapping_code_co
+        <int> <chr>              <chr>           <chr>           <chr>          
+ 1       6106 ""                 ""              ""              ""             
+ 2       3227 "ACCESS;NONE"      "ACCESS;NONE"   "ACCESS;NONE"   "ACCESS;NONE"  
+ 3      12769 ""                 ""              ""              ""             
+ 4      10023 ""                 ""              ""              ""             
+ 5       3150 ""                 ""              ""              ""             
+ 6        616 "ACCESS;MODELLED;… "ACCESS;MODELL… ""              ""             
+ 7       4444 ""                 ""              ""              ""             
+ 8       3685 ""                 ""              ""              ""             
+ 9       6104 ""                 ""              ""              ""             
+10        234 ""                 ""              ""              ""             
+# ℹ 13,525 more rows
+# ℹ 1 more variable: mapping_code_sk <chr>
+[1] 13535
+[wsg_recompute_one] DOGC recomputed in 0.79 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  view "barriers_gr_unified" does not exist, skipping
+
+NOTICE:  view "barriers_gr_access" does not exist, skipping
+
+NOTICE:  table "zz_lnk_streams_fina" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+# A tibble: 26,094 × 4
+   id_segment mapping_code_bt                mapping_code_rb mapping_code_gr    
+        <int> <chr>                          <chr>           <chr>              
+ 1      15146 "ACCESS;DAM;INTERMITTENT"      ""              "ACCESS;DAM;INTERM…
+ 2      15147 ""                             ""              ""                 
+ 3      15148 ""                             ""              ""                 
+ 4      15149 ""                             ""              ""                 
+ 5      15150 ""                             ""              ""                 
+ 6      15151 "REAR;MODELLED"                "REAR"          "ACCESS;MODELLED"  
+ 7      15153 "ACCESS;MODELLED;INTERMITTENT" ""              ""                 
+ 8      15158 "REAR;MODELLED"                "REAR"          "ACCESS;MODELLED"  
+ 9      24501 "SPAWN;MODELLED"               "SPAWN"         "ACCESS;MODELLED"  
+10      15159 "ACCESS;MODELLED"              ""              "ACCESS;MODELLED"  
+# ℹ 26,084 more rows
+[1] 26094
+[wsg_recompute_one] FINA recomputed in 0.68 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_finl" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+# A tibble: 43,850 × 4
+   id_segment mapping_code_bt mapping_code_rb mapping_code_gr
+        <int> <chr>           <chr>           <chr>          
+ 1        460 "SPAWN;DAM"     "SPAWN"         "SPAWN;DAM"    
+ 2      26722 "SPAWN;DAM"     "SPAWN"         "SPAWN;DAM"    
+ 3      13205 ""              ""              ""             
+ 4       9242 ""              ""              ""             
+ 5        573 "SPAWN;DAM"     "SPAWN"         "SPAWN;DAM"    
+ 6        658 "ACCESS;DAM"    ""              "ACCESS;DAM"   
+ 7      13887 "REAR;MODELLED" "REAR"          ""             
+ 8       1512 ""              ""              ""             
+ 9        207 "SPAWN;DAM"     "SPAWN"         "SPAWN;DAM"    
+10      10082 ""              ""              ""             
+# ℹ 43,840 more rows
+[1] 43850
+[wsg_recompute_one] FINL recomputed in 0.51 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_fire" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+# A tibble: 31,882 × 4
+   id_segment mapping_code_bt mapping_code_rb mapping_code_gr
+        <int> <chr>           <chr>           <chr>          
+ 1       5371 ""              ""              ""             
+ 2      14843 "REAR;DAM"      "REAR"          "ACCESS;DAM"   
+ 3      29273 "SPAWN;DAM"     ""              ""             
+ 4       4954 ""              ""              ""             
+ 5        344 "SPAWN;DAM"     "SPAWN"         "SPAWN;DAM"    
+ 6      25290 "ACCESS;DAM"    ""              ""             
+ 7      11020 ""              ""              ""             
+ 8        368 ""              ""              ""             
+ 9      30725 "ACCESS;DAM"    ""              ""             
+10      13554 ""              ""              ""             
+# ℹ 31,872 more rows
+[1] 31882
+[wsg_recompute_one] FIRE recomputed in 0.43 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_foxr" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+# A tibble: 30,429 × 4
+   id_segment mapping_code_bt           mapping_code_rb mapping_code_gr         
+        <int> <chr>                     <chr>           <chr>                   
+ 1      13706 ""                        ""              ""                      
+ 2      26071 ""                        ""              ""                      
+ 3      13040 "SPAWN;DAM"               "SPAWN"         "SPAWN;DAM"             
+ 4      17443 "ACCESS;DAM;INTERMITTENT" ""              ""                      
+ 5      17927 "ACCESS;DAM"              ""              "ACCESS;DAM"            
+ 6       7448 "ACCESS;DAM;INTERMITTENT" ""              "ACCESS;DAM;INTERMITTEN…
+ 7      16810 "ACCESS;MODELLED"         ""              "ACCESS;MODELLED"       
+ 8       9633 ""                        ""              ""                      
+ 9        222 "SPAWN;DAM"               "SPAWN"         "SPAWN;DAM"             
+10      25891 "ACCESS;DAM;INTERMITTENT" ""              "ACCESS;DAM;INTERMITTEN…
+# ℹ 30,419 more rows
+[1] 30429
+[wsg_recompute_one] FOXR recomputed in 0.43 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_fran" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+7: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+# A tibble: 41,585 × 5
+   id_segment mapping_code_bt    mapping_code_rb mapping_code_ch mapping_code_sk
+        <int> <chr>              <chr>           <chr>           <chr>          
+ 1       9149 "ACCESS;NONE"      "ACCESS;NONE"   "ACCESS;NONE"   "REAR;NONE"    
+ 2      13647 "REAR;NONE;INTERM… "REAR;NONE;INT… "REAR;NONE;INT… "ACCESS;NONE;I…
+ 3      15781 "ACCESS;MODELLED"  "ACCESS;MODELL… "ACCESS;MODELL… "ACCESS;MODELL…
+ 4      11034 ""                 ""              ""              ""             
+ 5       2592 "ACCESS;MODELLED"  "ACCESS;MODELL… "ACCESS;MODELL… "ACCESS;MODELL…
+ 6       7574 "ACCESS;ASSESSED"  "ACCESS;ASSESS… "ACCESS;ASSESS… "ACCESS;ASSESS…
+ 7       6257 "ACCESS;ASSESSED"  "ACCESS;ASSESS… "ACCESS;ASSESS… "ACCESS;ASSESS…
+ 8       2106 "ACCESS;MODELLED"  "ACCESS;MODELL… "ACCESS;MODELL… "ACCESS;MODELL…
+ 9      15326 "REAR;MODELLED;IN… "REAR;MODELLED… "REAR;MODELLED… "ACCESS;MODELL…
+10      13839 "ACCESS;MODELLED"  "ACCESS;MODELL… "ACCESS;MODELL… "ACCESS;MODELL…
+# ℹ 41,575 more rows
+[1] 41585
+[wsg_recompute_one] FRAN recomputed in 0.93 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_frcn" does not exist, skipping
+
+There were 11 warnings (use warnings() to see them)
+# A tibble: 28,988 × 9
+   id_segment mapping_code_bt mapping_code_rb mapping_code_ch mapping_code_cm
+        <int> <chr>           <chr>           <chr>           <chr>          
+ 1      25496 ""              ""              ""              ""             
+ 2      25497 ""              ""              ""              ""             
+ 3      25498 ""              ""              ""              ""             
+ 4      25500 ""              ""              ""              ""             
+ 5      25501 ""              ""              ""              ""             
+ 6      25502 ""              ""              ""              ""             
+ 7      25503 ""              ""              ""              ""             
+ 8      25504 ""              ""              ""              ""             
+ 9      25505 ""              ""              ""              ""             
+10      25506 ""              ""              ""              ""             
+# ℹ 28,978 more rows
+# ℹ 4 more variables: mapping_code_co <chr>, mapping_code_pk <chr>,
+#   mapping_code_sk <chr>, mapping_code_st <chr>
+[1] 28988
+[wsg_recompute_one] FRCN recomputed in 3.31 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_harr" does not exist, skipping
+
+There were 11 warnings (use warnings() to see them)
+# A tibble: 17,737 × 9
+   id_segment mapping_code_bt mapping_code_rb mapping_code_ch mapping_code_cm
+        <int> <chr>           <chr>           <chr>           <chr>          
+ 1       3538 ""              ""              ""              ""             
+ 2       3540 ""              ""              ""              ""             
+ 3       3541 ""              ""              ""              ""             
+ 4       3542 ""              ""              ""              ""             
+ 5       3543 ""              ""              ""              ""             
+ 6       3544 ""              ""              ""              ""             
+ 7       4044 ""              ""              ""              ""             
+ 8       4137 ""              ""              ""              ""             
+ 9       3545 ""              ""              ""              ""             
+10       3549 ""              ""              ""              ""             
+# ℹ 17,727 more rows
+# ℹ 4 more variables: mapping_code_co <chr>, mapping_code_pk <chr>,
+#   mapping_code_sk <chr>, mapping_code_st <chr>
+[1] 17737
+[wsg_recompute_one] HARR recomputed in 1.26 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_ingr" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+# A tibble: 28,860 × 4
+   id_segment mapping_code_bt           mapping_code_rb mapping_code_gr         
+        <int> <chr>                     <chr>           <chr>                   
+ 1       3804 "ACCESS;DAM;INTERMITTENT" ""              ""                      
+ 2      27372 "SPAWN;DAM"               "SPAWN"         "SPAWN;DAM"             
+ 3      14758 ""                        ""              ""                      
+ 4      13675 ""                        ""              ""                      
+ 5      13676 ""                        ""              ""                      
+ 6      13677 ""                        ""              ""                      
+ 7      19546 ""                        ""              ""                      
+ 8      19549 "ACCESS;DAM"              ""              ""                      
+ 9      19550 "ACCESS;DAM;INTERMITTENT" ""              "ACCESS;DAM;INTERMITTEN…
+10      19551 "ACCESS;DAM;INTERMITTENT" ""              ""                      
+# ℹ 28,850 more rows
+[1] 28860
+[wsg_recompute_one] INGR recomputed in 0.46 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_kisp" does not exist, skipping
+
+There were 11 warnings (use warnings() to see them)
+# A tibble: 30,907 × 9
+   id_segment mapping_code_bt mapping_code_rb mapping_code_ch mapping_code_cm
+        <int> <chr>           <chr>           <chr>           <chr>          
+ 1      29103 ""              ""              ""              ""             
+ 2       2084 "ACCESS;NONE"   "ACCESS;NONE"   ""              ""             
+ 3       2091 ""              ""              ""              ""             
+ 4      25937 ""              ""              ""              ""             
+ 5      25938 ""              ""              ""              ""             
+ 6      25939 ""              ""              ""              ""             
+ 7       2093 "ACCESS;NONE"   "ACCESS;NONE"   "ACCESS;NONE"   "ACCESS;NONE"  
+ 8      25940 ""              ""              ""              ""             
+ 9      25944 ""              ""              ""              ""             
+10       8030 ""              ""              ""              ""             
+# ℹ 30,897 more rows
+# ℹ 4 more variables: mapping_code_co <chr>, mapping_code_pk <chr>,
+#   mapping_code_sk <chr>, mapping_code_st <chr>
+[1] 30907
+[wsg_recompute_one] KISP recomputed in 1.77 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_klum" does not exist, skipping
+
+There were 11 warnings (use warnings() to see them)
+# A tibble: 31,527 × 9
+   id_segment mapping_code_bt    mapping_code_rb mapping_code_ch mapping_code_cm
+        <int> <chr>              <chr>           <chr>           <chr>          
+ 1      22332 "ACCESS;NONE"      "ACCESS;NONE"   "ACCESS;NONE"   "ACCESS;NONE"  
+ 2      22339 ""                 ""              ""              ""             
+ 3      22340 ""                 ""              ""              ""             
+ 4      22341 ""                 ""              ""              ""             
+ 5      22342 ""                 ""              ""              ""             
+ 6      22343 ""                 ""              ""              ""             
+ 7      22370 "ACCESS;NONE;INTE… "ACCESS;NONE;I… "ACCESS;NONE;I… "ACCESS;NONE;I…
+ 8      22344 ""                 ""              ""              ""             
+ 9      22444 ""                 ""              ""              ""             
+10      22355 ""                 ""              ""              ""             
+# ℹ 31,517 more rows
+# ℹ 4 more variables: mapping_code_co <chr>, mapping_code_pk <chr>,
+#   mapping_code_sk <chr>, mapping_code_st <chr>
+[1] 31527
+[wsg_recompute_one] KLUM recomputed in 1.27 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_lbtn" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+# A tibble: 28,304 × 4
+   id_segment mapping_code_bt              mapping_code_rb       mapping_code_gr
+        <int> <chr>                        <chr>                 <chr>          
+ 1      11312 REAR;MODELLED                REAR;MODELLED         ACCESS;MODELLED
+ 2      16990 ACCESS;MODELLED              ACCESS;MODELLED       ACCESS;MODELLED
+ 3      17092 ACCESS;MODELLED              ACCESS;MODELLED       ACCESS;MODELLED
+ 4      16991 ACCESS;MODELLED              ACCESS;MODELLED       ACCESS;MODELLED
+ 5      16992 ACCESS;MODELLED              ACCESS;MODELLED       ACCESS;MODELLED
+ 6      16993 ACCESS;MODELLED              ACCESS;MODELLED       ACCESS;MODELLED
+ 7      16994 ACCESS;MODELLED              ACCESS;MODELLED       ACCESS;MODELLED
+ 8       8661 ACCESS;NONE                  ACCESS;NONE           ACCESS;NONE    
+ 9       9401 ACCESS;MODELLED              REAR;MODELLED         REAR;MODELLED  
+10      15517 ACCESS;MODELLED;INTERMITTENT ACCESS;MODELLED;INTE… ACCESS;MODELLE…
+# ℹ 28,294 more rows
+[1] 28304
+[wsg_recompute_one] LBTN recomputed in 0.28 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_lchl" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+7: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+# A tibble: 19,891 × 5
+   id_segment mapping_code_bt mapping_code_rb mapping_code_ch mapping_code_co
+        <int> <chr>           <chr>           <chr>           <chr>          
+ 1       5302 ACCESS;ASSESSED ACCESS;ASSESSED ACCESS;ASSESSED ACCESS;ASSESSED
+ 2      14258 ACCESS;MODELLED ACCESS;MODELLED ACCESS;MODELLED ACCESS;MODELLED
+ 3      14259 ACCESS;MODELLED ACCESS;MODELLED ACCESS;MODELLED ACCESS;MODELLED
+ 4      14260 ACCESS;MODELLED ACCESS;MODELLED ACCESS;MODELLED ACCESS;MODELLED
+ 5      14263 ACCESS;MODELLED ACCESS;MODELLED ACCESS;MODELLED ACCESS;MODELLED
+ 6      14264 ACCESS;MODELLED ACCESS;MODELLED ACCESS;MODELLED ACCESS;MODELLED
+ 7      14265 ACCESS;MODELLED ACCESS;MODELLED ACCESS;MODELLED ACCESS;MODELLED
+ 8      14266 ACCESS;MODELLED ACCESS;MODELLED ACCESS;MODELLED ACCESS;MODELLED
+ 9      14267 ACCESS;MODELLED ACCESS;MODELLED ACCESS;MODELLED ACCESS;MODELLED
+10      14268 ACCESS;MODELLED ACCESS;MODELLED ACCESS;MODELLED ACCESS;MODELLED
+# ℹ 19,881 more rows
+[1] 19891
+[wsg_recompute_one] LCHL recomputed in 0.45 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_lfra" does not exist, skipping
+
+There were 11 warnings (use warnings() to see them)
+# A tibble: 26,925 × 9
+   id_segment mapping_code_bt   mapping_code_rb  mapping_code_ch mapping_code_cm
+        <int> <chr>             <chr>            <chr>           <chr>          
+ 1         66 "SPAWN;NONE"      "SPAWN;NONE"     "SPAWN;NONE"    "SPAWN;NONE"   
+ 2        397 "SPAWN;NONE"      "SPAWN;NONE"     "SPAWN;NONE"    "SPAWN;NONE"   
+ 3       1245 "ACCESS;DAM"      ""               "ACCESS;DAM"    "ACCESS;DAM"   
+ 4       9667 ""                ""               ""              ""             
+ 5       3325 "ACCESS;MODELLED" "ACCESS;MODELLE… "ACCESS;DAM"    "ACCESS;DAM"   
+ 6      12428 "ACCESS;NONE"     "ACCESS;NONE"    "ACCESS;NONE"   "ACCESS;NONE"  
+ 7       5552 ""                ""               ""              ""             
+ 8       8428 "ACCESS;NONE"     "ACCESS;NONE"    "ACCESS;NONE"   "ACCESS;NONE"  
+ 9       5568 ""                ""               ""              ""             
+10      14403 ""                ""               ""              ""             
+# ℹ 26,915 more rows
+# ℹ 4 more variables: mapping_code_co <chr>, mapping_code_pk <chr>,
+#   mapping_code_sk <chr>, mapping_code_st <chr>
+[1] 26925
+[wsg_recompute_one] LFRA recomputed in 4.74 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_lkel" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+7: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+8: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+9: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+10: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+# A tibble: 3,376 × 8
+   id_segment mapping_code_bt    mapping_code_rb mapping_code_ch mapping_code_cm
+        <int> <chr>              <chr>           <chr>           <chr>          
+ 1       1373 ""                 ""              ""              ""             
+ 2       1224 "ACCESS;DAM"       "ACCESS;DAM"    ""              ""             
+ 3        464 "REAR;DAM;INTERMI… "REAR;DAM;INTE… ""              ""             
+ 4       2042 ""                 ""              ""              ""             
+ 5        705 "ACCESS;NONE"      "ACCESS;NONE"   "ACCESS;NONE"   "ACCESS;NONE"  
+ 6        457 "ACCESS;DAM"       "ACCESS;DAM"    "ACCESS;DAM"    "ACCESS;DAM"   
+ 7       1158 "ACCESS;DAM"       "ACCESS;DAM"    "ACCESS;DAM"    "ACCESS;DAM"   
+ 8        740 "ACCESS;NONE"      "ACCESS;NONE"   "ACCESS;NONE"   "ACCESS;NONE"  
+ 9       1139 ""                 ""              ""              ""             
+10        994 ""                 ""              ""              ""             
+# ℹ 3,366 more rows
+# ℹ 3 more variables: mapping_code_co <chr>, mapping_code_pk <chr>,
+#   mapping_code_st <chr>
+[1] 3376
+[wsg_recompute_one] LKEL recomputed in 1.18 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_lomi" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+# A tibble: 21,628 × 4
+   id_segment mapping_code_bt                mapping_code_rb mapping_code_gr    
+        <int> <chr>                          <chr>           <chr>              
+ 1       7859 "ACCESS;DAM"                   "REAR"          "ACCESS;DAM"       
+ 2       7860 "ACCESS;DAM"                   ""              "ACCESS;DAM"       
+ 3      15230 "ACCESS;MODELLED;INTERMITTENT" ""              ""                 
+ 4       7861 "ACCESS;DAM;INTERMITTENT"      "REAR"          "ACCESS;DAM;INTERM…
+ 5       7885 "ACCESS;MODELLED"              ""              "ACCESS;MODELLED"  
+ 6       8069 "ACCESS;DAM;INTERMITTENT"      ""              ""                 
+ 7       7863 "ACCESS;DAM;INTERMITTENT"      ""              ""                 
+ 8       8027 ""                             ""              ""                 
+ 9       8031 "ACCESS;DAM;INTERMITTENT"      ""              ""                 
+10       8032 ""                             ""              ""                 
+# ℹ 21,618 more rows
+[1] 21628
+[wsg_recompute_one] LOMI recomputed in 0.33 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_lpce" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+# A tibble: 11,483 × 4
+   id_segment mapping_code_bt                mapping_code_rb     mapping_code_gr
+        <int> <chr>                          <chr>               <chr>          
+ 1       1000 "ACCESS;NONE;INTERMITTENT"     "ACCESS;NONE;INTER… ""             
+ 2        999 "ACCESS;NONE;INTERMITTENT"     "ACCESS;NONE;INTER… "ACCESS;NONE;I…
+ 3       1010 "ACCESS;MODELLED;INTERMITTENT" "ACCESS;MODELLED;I… ""             
+ 4       1011 ""                             ""                  ""             
+ 5       1023 "ACCESS;DAM;INTERMITTENT"      "ACCESS;DAM;INTERM… "ACCESS;DAM;IN…
+ 6       1024 "ACCESS;DAM;INTERMITTENT"      "ACCESS;DAM;INTERM… ""             
+ 7       3442 "ACCESS;MODELLED;INTERMITTENT" "ACCESS;MODELLED;I… ""             
+ 8       3446 "ACCESS;MODELLED;INTERMITTENT" "ACCESS;MODELLED;I… "ACCESS;MODELL…
+ 9        572 ""                             ""                  ""             
+10       8629 "REAR;DAM"                     "REAR;DAM"          "ACCESS;DAM"   
+# ℹ 11,473 more rows
+[1] 11483
+[wsg_recompute_one] LPCE recomputed in 0.18 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_lsal" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+# A tibble: 11,517 × 3
+   id_segment mapping_code_rb              mapping_code_ch           
+        <int> <chr>                        <chr>                     
+ 1       1395 ACCESS;MODELLED              "ACCESS;MODELLED"         
+ 2       2743 ACCESS;NONE                  "ACCESS;NONE"             
+ 3       1499 ACCESS;MODELLED              "ACCESS;MODELLED"         
+ 4        106 ACCESS;NONE                  "ACCESS;NONE"             
+ 5        925 ACCESS;MODELLED              "ACCESS;MODELLED"         
+ 6       2725 ACCESS;NONE;INTERMITTENT     "ACCESS;NONE;INTERMITTENT"
+ 7       4702 ACCESS;NONE                  "ACCESS;NONE"             
+ 8       8991 ACCESS;MODELLED;INTERMITTENT ""                        
+ 9       2988 ACCESS;MODELLED              "ACCESS;MODELLED"         
+10       7660 ACCESS;MODELLED              "ACCESS;MODELLED"         
+# ℹ 11,507 more rows
+[1] 11517
+[wsg_recompute_one] LSAL recomputed in 0.17 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_lske" does not exist, skipping
+
+There were 11 warnings (use warnings() to see them)
+# A tibble: 37,529 × 9
+   id_segment mapping_code_bt    mapping_code_rb mapping_code_ch mapping_code_cm
+        <int> <chr>              <chr>           <chr>           <chr>          
+ 1        243 "SPAWN;NONE"       "SPAWN;NONE"    "SPAWN;NONE"    "SPAWN;NONE"   
+ 2        676 "SPAWN;NONE"       "SPAWN;NONE"    "SPAWN;NONE"    "SPAWN;NONE"   
+ 3       9587 ""                 ""              ""              ""             
+ 4      21382 "SPAWN;NONE"       "SPAWN;NONE"    "SPAWN;NONE"    "SPAWN;NONE"   
+ 5       5232 "ACCESS;NONE"      "ACCESS;NONE"   "ACCESS;NONE"   "ACCESS;NONE"  
+ 6      17024 "REAR;NONE"        "REAR;NONE"     "REAR;NONE"     "ACCESS;NONE"  
+ 7      25989 "REAR;MODELLED"    "REAR;MODELLED" ""              ""             
+ 8      27779 "ACCESS;MODELLED;… "ACCESS;MODELL… ""              ""             
+ 9       1114 "ACCESS;NONE"      "ACCESS;NONE"   "ACCESS;NONE"   "ACCESS;NONE"  
+10       4916 "ACCESS;NONE"      "ACCESS;NONE"   "ACCESS;NONE"   "ACCESS;NONE"  
+# ℹ 37,519 more rows
+# ℹ 4 more variables: mapping_code_co <chr>, mapping_code_pk <chr>,
+#   mapping_code_sk <chr>, mapping_code_st <chr>
+[1] 37529
+[wsg_recompute_one] LSKE recomputed in 1.65 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_mesi" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+# A tibble: 18,534 × 4
+   id_segment mapping_code_bt                mapping_code_rb mapping_code_gr
+        <int> <chr>                          <chr>           <chr>          
+ 1       5648 ""                             ""              ""             
+ 2      10343 ""                             ""              ""             
+ 3      10344 ""                             ""              ""             
+ 4      10345 ""                             ""              ""             
+ 5      10346 ""                             ""              ""             
+ 6        431 ""                             ""              ""             
+ 7        495 ""                             ""              ""             
+ 8        673 ""                             ""              ""             
+ 9        497 "ACCESS;MODELLED;INTERMITTENT" ""              ""             
+10        498 "ACCESS;MODELLED;INTERMITTENT" ""              ""             
+# ℹ 18,524 more rows
+[1] 18534
+[wsg_recompute_one] MESI recomputed in 0.29 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_mfra" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+# A tibble: 9,227 × 3
+   id_segment mapping_code_rb                mapping_code_ch               
+        <int> <chr>                          <chr>                         
+ 1        313 "ACCESS;MODELLED;INTERMITTENT" ""                            
+ 2       1535 "ACCESS;MODELLED;INTERMITTENT" "ACCESS;MODELLED;INTERMITTENT"
+ 3       4562 "ACCESS;MODELLED;INTERMITTENT" "ACCESS;MODELLED;INTERMITTENT"
+ 4        757 ""                             ""                            
+ 5       8466 "SPAWN;DAM"                    "REAR;DAM"                    
+ 6       8467 "ACCESS;DAM"                   "ACCESS;DAM"                  
+ 7       8468 "ACCESS;DAM"                   "ACCESS;DAM"                  
+ 8       8469 "SPAWN;DAM"                    "REAR;DAM"                    
+ 9       8535 "ACCESS;MODELLED"              ""                            
+10       8485 "REAR;MODELLED"                "REAR;DAM"                    
+# ℹ 9,217 more rows
+[1] 9227
+[wsg_recompute_one] MFRA recomputed in 0.33 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_mork" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+# A tibble: 54,006 × 4
+   id_segment mapping_code_bt                mapping_code_rb     mapping_code_ch
+        <int> <chr>                          <chr>               <chr>          
+ 1       5332 "ACCESS;NONE;INTERMITTENT"     "ACCESS;NONE;INTER… "ACCESS;NONE;I…
+ 2       5333 "ACCESS;MODELLED;INTERMITTENT" "ACCESS;MODELLED;I… "ACCESS;MODELL…
+ 3       5343 ""                             ""                  ""             
+ 4       5334 "ACCESS;NONE;INTERMITTENT"     "ACCESS;NONE;INTER… ""             
+ 5       5335 "ACCESS;NONE;INTERMITTENT"     "ACCESS;NONE;INTER… "ACCESS;NONE;I…
+ 6       5336 "ACCESS;MODELLED;INTERMITTENT" "ACCESS;MODELLED;I… "ACCESS;MODELL…
+ 7       5337 "ACCESS;MODELLED;INTERMITTENT" "ACCESS;MODELLED;I… "ACCESS;MODELL…
+ 8       5345 "ACCESS;NONE;INTERMITTENT"     "ACCESS;NONE;INTER… ""             
+ 9       5346 "ACCESS;NONE;INTERMITTENT"     "ACCESS;NONE;INTER… ""             
+10      15902 ""                             ""                  ""             
+# ℹ 53,996 more rows
+[1] 54006
+[wsg_recompute_one] MORK recomputed in 1.31 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_morr" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+7: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+8: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+9: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+10: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+# A tibble: 29,060 × 8
+   id_segment mapping_code_bt   mapping_code_rb  mapping_code_ch mapping_code_co
+        <int> <chr>             <chr>            <chr>           <chr>          
+ 1      21429 "ACCESS;NONE"     "ACCESS;NONE"    "ACCESS;NONE"   "ACCESS;NONE"  
+ 2      21515 "ACCESS;MODELLED" "ACCESS;MODELLE… "ACCESS;MODELL… "ACCESS;MODELL…
+ 3      25360 "SPAWN;NONE"      "SPAWN;NONE"     "SPAWN;NONE"    "SPAWN;NONE"   
+ 4      17137 ""                ""               ""              ""             
+ 5      25361 "SPAWN;NONE"      "SPAWN;NONE"     "SPAWN;NONE"    "SPAWN;NONE"   
+ 6      25362 "SPAWN;NONE"      "SPAWN;NONE"     "SPAWN;NONE"    "SPAWN;NONE"   
+ 7      25364 "SPAWN;NONE"      "SPAWN;NONE"     "SPAWN;NONE"    "SPAWN;NONE"   
+ 8      25365 "SPAWN;NONE"      "SPAWN;NONE"     "SPAWN;NONE"    "SPAWN;NONE"   
+ 9      25366 "SPAWN;NONE"      "SPAWN;NONE"     "SPAWN;NONE"    "SPAWN;NONE"   
+10      25367 "SPAWN;NONE"      "SPAWN;NONE"     "SPAWN;NONE"    "SPAWN;NONE"   
+# ℹ 29,050 more rows
+# ℹ 3 more variables: mapping_code_pk <chr>, mapping_code_sk <chr>,
+#   mapping_code_st <chr>
+[1] 29060
+[wsg_recompute_one] MORR recomputed in 0.85 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_mske" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+7: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+8: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+9: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+10: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+# A tibble: 29,996 × 8
+   id_segment mapping_code_bt    mapping_code_rb mapping_code_gr mapping_code_ch
+        <int> <chr>              <chr>           <chr>           <chr>          
+ 1       4445 ""                 ""              ""              ""             
+ 2      10123 ""                 ""              ""              ""             
+ 3      19380 "ACCESS;NONE"      "ACCESS;NONE"   ""              ""             
+ 4        386 "ACCESS;NONE"      "ACCESS;NONE"   "ACCESS;NONE"   "ACCESS;NONE"  
+ 5        338 "ACCESS;NONE"      "ACCESS;NONE"   "ACCESS;NONE"   "ACCESS;NONE"  
+ 6      10833 ""                 ""              ""              ""             
+ 7        232 "REAR;NONE"        "REAR;NONE"     "ACCESS;NONE"   "REAR;NONE"    
+ 8      16939 "ACCESS;NONE"      "ACCESS;NONE"   "ACCESS;NONE"   "ACCESS;NONE"  
+ 9       7140 "REAR;NONE;INTERM… "REAR;NONE;INT… "ACCESS;NONE;I… "REAR;NONE;INT…
+10      25996 ""                 ""              ""              ""             
+# ℹ 29,986 more rows
+# ℹ 3 more variables: mapping_code_co <chr>, mapping_code_sk <chr>,
+#   mapping_code_st <chr>
+[1] 29996
+[wsg_recompute_one] MSKE recomputed in 1.57 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_narc" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+7: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+# A tibble: 19,689 × 5
+   id_segment mapping_code_bt   mapping_code_rb  mapping_code_ch mapping_code_pk
+        <int> <chr>             <chr>            <chr>           <chr>          
+ 1       6299 "ACCESS;MODELLED" "ACCESS;MODELLE… "ACCESS;MODELL… "ACCESS;MODELL…
+ 2      10348 "REAR;MODELLED"   "REAR;MODELLED"  "REAR;DAM"      "ACCESS;DAM"   
+ 3        780 "ACCESS;NONE"     "ACCESS;NONE"    "ACCESS;NONE"   "ACCESS;NONE"  
+ 4      18172 "SPAWN;NONE"      "SPAWN;NONE"     "SPAWN;NONE"    "SPAWN;NONE"   
+ 5       6763 "ACCESS;MODELLED" "ACCESS;MODELLE… "ACCESS;MODELL… "ACCESS;MODELL…
+ 6       4964 "ACCESS;MODELLED" "ACCESS;MODELLE… "ACCESS;DAM"    "ACCESS;DAM"   
+ 7      11970 "ACCESS;MODELLED" "ACCESS;MODELLE… "ACCESS;MODELL… "ACCESS;MODELL…
+ 8      15923 "SPAWN;NONE"      "SPAWN;NONE"     "SPAWN;NONE"    "SPAWN;NONE"   
+ 9       9395 ""                ""               ""              ""             
+10       4164 "REAR;MODELLED"   "REAR;MODELLED"  "REAR;MODELLED" "ACCESS;MODELL…
+# ℹ 19,679 more rows
+[1] 19689
+[wsg_recompute_one] NARC recomputed in 0.69 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_natr" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+7: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+# A tibble: 35,038 × 5
+   id_segment mapping_code_bt    mapping_code_ko mapping_code_rb mapping_code_gr
+        <int> <chr>              <chr>           <chr>           <chr>          
+ 1       1554 "ACCESS;MODELLED"  ""              ""              ""             
+ 2       2820 "REAR;DAM"         ""              "REAR"          "ACCESS;DAM"   
+ 3       7306 "ACCESS;MODELLED"  ""              ""              "ACCESS;MODELL…
+ 4       3053 "REAR;DAM"         ""              ""              ""             
+ 5      11013 "REAR;MODELLED;IN… ""              "REAR"          "ACCESS;MODELL…
+ 6       5229 ""                 ""              ""              ""             
+ 7       3844 "ACCESS;DAM"       ""              ""              "ACCESS;DAM"   
+ 8      14544 "REAR;MODELLED"    ""              "REAR"          "ACCESS;MODELL…
+ 9      15305 "REAR;DAM"         ""              "REAR"          "ACCESS;DAM"   
+10      13918 "REAR;DAM;INTERMI… ""              "REAR"          "ACCESS;DAM;IN…
+# ℹ 35,028 more rows
+[1] 35038
+[wsg_recompute_one] NATR recomputed in 0.67 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_necr" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+7: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+8: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+# A tibble: 27,989 × 6
+   id_segment mapping_code_bt   mapping_code_rb  mapping_code_ch mapping_code_co
+        <int> <chr>             <chr>            <chr>           <chr>          
+ 1      10359 "ACCESS;MODELLED" "ACCESS;MODELLE… "ACCESS;MODELL… "ACCESS;MODELL…
+ 2       3529 "ACCESS;NONE"     "ACCESS;NONE"    "ACCESS;NONE"   "ACCESS;NONE"  
+ 3        606 ""                ""               ""              ""             
+ 4       2692 "ACCESS;ASSESSED" "ACCESS;ASSESSE… "ACCESS;ASSESS… "ACCESS;ASSESS…
+ 5       4286 ""                ""               ""              ""             
+ 6       6740 "REAR;MODELLED"   "REAR;MODELLED"  "REAR;MODELLED" "REAR;MODELLED"
+ 7      11024 "ACCESS;NONE"     "ACCESS;NONE"    "ACCESS;NONE"   "ACCESS;NONE"  
+ 8      10529 "ACCESS;MODELLED" "ACCESS;MODELLE… ""              ""             
+ 9       6583 "ACCESS;MODELLED" "ACCESS;MODELLE… "ACCESS;MODELL… "ACCESS;MODELL…
+10       8573 "REAR;MODELLED"   "REAR;MODELLED"  "REAR;MODELLED" "REAR;MODELLED"
+# ℹ 27,979 more rows
+# ℹ 1 more variable: mapping_code_sk <chr>
+[1] 27989
+[wsg_recompute_one] NECR recomputed in 0.75 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_ospk" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+# A tibble: 25,679 × 4
+   id_segment mapping_code_bt                mapping_code_rb mapping_code_gr
+        <int> <chr>                          <chr>           <chr>          
+ 1       1502 ""                             ""              ""             
+ 2       1442 ""                             ""              ""             
+ 3       1443 ""                             ""              ""             
+ 4       1444 ""                             ""              ""             
+ 5       1450 ""                             ""              ""             
+ 6       3741 "ACCESS;MODELLED;INTERMITTENT" ""              ""             
+ 7      21042 ""                             ""              ""             
+ 8      21043 ""                             ""              ""             
+ 9       1447 ""                             ""              ""             
+10       1448 ""                             ""              ""             
+# ℹ 25,669 more rows
+[1] 25679
+[wsg_recompute_one] OSPK recomputed in 0.40 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_para" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+# A tibble: 19,079 × 4
+   id_segment mapping_code_bt           mapping_code_rb mapping_code_gr  
+        <int> <chr>                     <chr>           <chr>            
+ 1      12383 "ACCESS;DAM;INTERMITTENT" ""              ""               
+ 2      12384 "ACCESS;DAM;INTERMITTENT" ""              ""               
+ 3      13978 "REAR;ASSESSED"           "REAR"          "ACCESS;ASSESSED"
+ 4      13979 "SPAWN;ASSESSED"          "SPAWN"         "SPAWN;ASSESSED" 
+ 5      13980 "REAR;ASSESSED"           "REAR"          "ACCESS;ASSESSED"
+ 6       3768 ""                        ""              ""               
+ 7       7589 "ACCESS;DAM"              ""              ""               
+ 8      13983 "SPAWN;ASSESSED"          "SPAWN"         "SPAWN;ASSESSED" 
+ 9      17780 "ACCESS;MODELLED"         ""              "ACCESS;MODELLED"
+10      17781 "ACCESS;MODELLED"         ""              "ACCESS;MODELLED"
+# ℹ 19,069 more rows
+[1] 19079
+[wsg_recompute_one] PARA recomputed in 0.37 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_pars" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+7: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+# A tibble: 48,558 × 5
+   id_segment mapping_code_bt    mapping_code_ko mapping_code_rb mapping_code_gr
+        <int> <chr>              <chr>           <chr>           <chr>          
+ 1        232 ""                 ""              ""              ""             
+ 2      18229 "REAR;DAM;INTERMI… ""              "REAR"          "REAR;DAM;INTE…
+ 3       4606 "ACCESS;DAM;INTER… ""              ""              "ACCESS;DAM;IN…
+ 4       4742 "ACCESS;ASSESSED;… ""              ""              ""             
+ 5       4875 "ACCESS;DAM;INTER… ""              ""              ""             
+ 6       5085 "ACCESS;DAM;INTER… ""              ""              "ACCESS;DAM;IN…
+ 7       5086 "ACCESS;DAM;INTER… ""              ""              ""             
+ 8       6469 "ACCESS;DAM;INTER… ""              ""              ""             
+ 9       6627 "ACCESS;ASSESSED;… ""              "REAR"          "ACCESS;ASSESS…
+10       6750 "ACCESS;DAM;INTER… ""              ""              ""             
+# ℹ 48,548 more rows
+[1] 48558
+[wsg_recompute_one] PARS recomputed in 0.90 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_pcea" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+# A tibble: 33,763 × 4
+   id_segment mapping_code_bt           mapping_code_rb mapping_code_gr
+        <int> <chr>                     <chr>           <chr>          
+ 1       7309 ""                        ""              ""             
+ 2       7310 "SPAWN;DAM"               "SPAWN"         "SPAWN;DAM"    
+ 3       7311 ""                        ""              ""             
+ 4       7303 "ACCESS;DAM"              ""              ""             
+ 5       7304 ""                        ""              ""             
+ 6       7323 ""                        ""              ""             
+ 7       7312 ""                        ""              ""             
+ 8       7314 ""                        ""              ""             
+ 9       7315 "ACCESS;DAM;INTERMITTENT" ""              ""             
+10       7316 ""                        ""              ""             
+# ℹ 33,753 more rows
+[1] 33763
+[wsg_recompute_one] PCEA recomputed in 0.47 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_salr" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+# A tibble: 10,663 × 3
+   id_segment mapping_code_rb mapping_code_ch
+        <int> <chr>           <chr>          
+ 1       3742 ACCESS;NONE     "ACCESS;NONE"  
+ 2       5094 ACCESS;NONE     ""             
+ 3         32 ACCESS;NONE     "ACCESS;NONE"  
+ 4       1876 ACCESS;NONE     ""             
+ 5       3131 ACCESS;NONE     "ACCESS;NONE"  
+ 6       1194 ACCESS;NONE     "ACCESS;NONE"  
+ 7       7024 REAR;NONE       ""             
+ 8       7497 REAR;NONE       "REAR;NONE"    
+ 9      10042 ACCESS;NONE     "ACCESS;NONE"  
+10       4704 REAR;NONE       "ACCESS;NONE"  
+# ℹ 10,653 more rows
+[1] 10663
+[wsg_recompute_one] SALR recomputed in 0.16 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_setn" does not exist, skipping
+
+There were 11 warnings (use warnings() to see them)
+# A tibble: 80,557 × 9
+   id_segment mapping_code_bt    mapping_code_rb mapping_code_ch mapping_code_cm
+        <int> <chr>              <chr>           <chr>           <chr>          
+ 1      47614 ""                 ""              ""              ""             
+ 2      47451 ""                 ""              ""              ""             
+ 3      47452 ""                 ""              ""              ""             
+ 4      47453 ""                 ""              ""              ""             
+ 5      47455 "SPAWN;DAM"        "SPAWN;DAM"     ""              ""             
+ 6      47456 "ACCESS;DAM;INTER… "ACCESS;DAM;IN… ""              ""             
+ 7      47457 "ACCESS;DAM;INTER… "ACCESS;DAM;IN… ""              ""             
+ 8      47458 ""                 ""              ""              ""             
+ 9      47459 ""                 ""              ""              ""             
+10      47460 ""                 ""              ""              ""             
+# ℹ 80,547 more rows
+# ℹ 4 more variables: mapping_code_co <chr>, mapping_code_pk <chr>,
+#   mapping_code_sk <chr>, mapping_code_st <chr>
+[1] 80557
+[wsg_recompute_one] SETN recomputed in 4.90 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_tabr" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+# A tibble: 12,948 × 4
+   id_segment mapping_code_bt mapping_code_rb mapping_code_ch  
+        <int> <chr>           <chr>           <chr>            
+ 1       5541 REAR;ASSESSED   REAR;ASSESSED   "ACCESS;ASSESSED"
+ 2       1190 REAR;MODELLED   REAR;MODELLED   "REAR;MODELLED"  
+ 3       4818 ACCESS;ASSESSED REAR;ASSESSED   ""               
+ 4       1301 ACCESS;ASSESSED ACCESS;ASSESSED ""               
+ 5       3325 ACCESS;ASSESSED ACCESS;ASSESSED "ACCESS;ASSESSED"
+ 6       8335 ACCESS;ASSESSED ACCESS;ASSESSED ""               
+ 7         57 ACCESS;NONE     ACCESS;NONE     "ACCESS;NONE"    
+ 8       7977 SPAWN;ASSESSED  SPAWN;ASSESSED  "ACCESS;ASSESSED"
+ 9         93 ACCESS;NONE     ACCESS;NONE     "ACCESS;NONE"    
+10       6832 ACCESS;MODELLED ACCESS;MODELLED ""               
+# ℹ 12,938 more rows
+[1] 12948
+[wsg_recompute_one] TABR recomputed in 0.54 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_tood" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+# A tibble: 45,998 × 4
+   id_segment mapping_code_bt         mapping_code_rb mapping_code_gr          
+        <int> <chr>                   <chr>           <chr>                    
+ 1      23114 ""                      ""              ""                       
+ 2       9114 ""                      ""              ""                       
+ 3       7931 ""                      ""              ""                       
+ 4       9483 ""                      ""              ""                       
+ 5      15720 "REAR;DAM;INTERMITTENT" "REAR"          "ACCESS;DAM;INTERMITTENT"
+ 6      34267 ""                      ""              ""                       
+ 7      11267 "ACCESS;DAM"            ""              "ACCESS;DAM"             
+ 8       4118 "REAR;DAM;INTERMITTENT" "REAR"          "ACCESS;DAM;INTERMITTENT"
+ 9       8022 "REAR;DAM;INTERMITTENT" "REAR"          ""                       
+10      30124 "ACCESS;DAM"            ""              "ACCESS;DAM"             
+# ℹ 45,988 more rows
+[1] 45998
+[wsg_recompute_one] TOOD recomputed in 0.73 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_twac" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+# A tibble: 12,404 × 4
+   id_segment mapping_code_bt              mapping_code_rb       mapping_code_ch
+        <int> <chr>                        <chr>                 <chr>          
+ 1       1502 "REAR;MODELLED;INTERMITTENT" "REAR;MODELLED;INTER… ""             
+ 2        111 "ACCESS;NONE"                "ACCESS;NONE"         "ACCESS;NONE"  
+ 3       1585 ""                           ""                    ""             
+ 4       3896 "ACCESS;MODELLED"            "ACCESS;MODELLED"     "ACCESS;DAM"   
+ 5         33 "SPAWN;NONE"                 "SPAWN;NONE"          "SPAWN;NONE"   
+ 6       3066 ""                           ""                    ""             
+ 7       2381 ""                           ""                    ""             
+ 8        426 ""                           ""                    ""             
+ 9      10028 ""                           ""                    ""             
+10        135 "ACCESS;MODELLED"            "ACCESS;MODELLED"     "ACCESS;DAM"   
+# ℹ 12,394 more rows
+[1] 12404
+[wsg_recompute_one] TWAC recomputed in 0.35 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_ufra" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+# A tibble: 35,722 × 4
+   id_segment mapping_code_bt mapping_code_rb mapping_code_ch
+        <int> <chr>           <chr>           <chr>          
+ 1      19039 ""              ""              ""             
+ 2      13632 ""              ""              ""             
+ 3      12811 "SPAWN;NONE"    ""              ""             
+ 4      10469 ""              ""              ""             
+ 5       3810 ""              ""              ""             
+ 6       2404 ""              ""              ""             
+ 7      10407 ""              ""              ""             
+ 8      11464 ""              ""              ""             
+ 9       2485 "SPAWN;NONE"    "SPAWN;NONE"    "SPAWN;NONE"   
+10      18515 ""              ""              ""             
+# ℹ 35,712 more rows
+[1] 35722
+[wsg_recompute_one] UFRA recomputed in 1.29 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_unrs" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+# A tibble: 26,143 × 3
+   id_segment mapping_code_bt mapping_code_rb
+        <int> <chr>           <chr>          
+ 1      22808 SPAWN;NONE      SPAWN          
+ 2      22809 SPAWN;NONE      SPAWN          
+ 3      22810 SPAWN;NONE      SPAWN          
+ 4      22811 SPAWN;NONE      SPAWN          
+ 5      22812 SPAWN;NONE      SPAWN          
+ 6      22813 SPAWN;NONE      SPAWN          
+ 7      22814 SPAWN;NONE      SPAWN          
+ 8      22815 SPAWN;NONE      SPAWN          
+ 9      22816 SPAWN;NONE      SPAWN          
+10      22817 SPAWN;NONE      SPAWN          
+# ℹ 26,133 more rows
+[1] 26143
+[wsg_recompute_one] UNRS recomputed in 0.22 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_uomi" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+# A tibble: 19,176 × 4
+   id_segment mapping_code_bt           mapping_code_rb mapping_code_gr         
+        <int> <chr>                     <chr>           <chr>                   
+ 1      13743 "ACCESS;MODELLED"         ""              ""                      
+ 2      13912 "ACCESS;DAM;INTERMITTENT" "REAR"          "ACCESS;DAM;INTERMITTEN…
+ 3         34 "SPAWN;DAM"               "SPAWN"         "SPAWN;DAM"             
+ 4      13925 "ACCESS;DAM"              "REAR"          "ACCESS;DAM"            
+ 5      14240 "ACCESS;DAM;INTERMITTENT" ""              "ACCESS;DAM;INTERMITTEN…
+ 6      14247 ""                        ""              ""                      
+ 7      14265 ""                        ""              ""                      
+ 8      14272 ""                        ""              ""                      
+ 9      14277 "ACCESS;DAM"              ""              "ACCESS;DAM"            
+10      14294 ""                        ""              ""                      
+# ℹ 19,166 more rows
+[1] 19176
+[wsg_recompute_one] UOMI recomputed in 0.29 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_upce" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+# A tibble: 25,024 × 4
+   id_segment mapping_code_bt         mapping_code_rb         mapping_code_gr  
+        <int> <chr>                   <chr>                   <chr>            
+ 1      16579 SPAWN;MODELLED          SPAWN;MODELLED          ""               
+ 2       4601 ACCESS;DAM;INTERMITTENT ACCESS;DAM;INTERMITTENT ""               
+ 3       4611 ACCESS;MODELLED         ACCESS;MODELLED         ""               
+ 4       4626 ACCESS;MODELLED         ACCESS;MODELLED         ""               
+ 5       4627 ACCESS;MODELLED         ACCESS;MODELLED         ""               
+ 6      17552 REAR;MODELLED           REAR;MODELLED           "ACCESS;MODELLED"
+ 7      17880 ACCESS;DAM;INTERMITTENT ACCESS;DAM;INTERMITTENT ""               
+ 8      18350 ACCESS;MODELLED         ACCESS;MODELLED         "ACCESS;MODELLED"
+ 9      19091 ACCESS;DAM              ACCESS;DAM              ""               
+10      19526 REAR;DAM                REAR;DAM                "ACCESS;DAM"     
+# ℹ 25,014 more rows
+[1] 25024
+[wsg_recompute_one] UPCE recomputed in 0.25 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_uske" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+7: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+8: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+9: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+# A tibble: 26,523 × 7
+   id_segment mapping_code_bt    mapping_code_rb mapping_code_ch mapping_code_co
+        <int> <chr>              <chr>           <chr>           <chr>          
+ 1       5335 "ACCESS;NONE"      "ACCESS;NONE"   "ACCESS;NONE"   "ACCESS;NONE"  
+ 2       5343 "ACCESS;NONE;INTE… "ACCESS;NONE;I… ""              ""             
+ 3       5375 "ACCESS;NONE"      "ACCESS;NONE"   ""              ""             
+ 4       5371 ""                 ""              ""              ""             
+ 5      12460 "REAR;NONE"        "REAR;NONE"     ""              ""             
+ 6      12415 ""                 ""              ""              ""             
+ 7      12393 "ACCESS;NONE;INTE… "ACCESS;NONE;I… ""              ""             
+ 8      12418 ""                 ""              ""              ""             
+ 9      12419 ""                 ""              ""              ""             
+10      12440 ""                 ""              ""              ""             
+# ℹ 26,513 more rows
+# ℹ 2 more variables: mapping_code_sk <chr>, mapping_code_st <chr>
+[1] 26523
+[wsg_recompute_one] USKE recomputed in 1.39 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_will" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+7: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+# A tibble: 19,440 × 5
+   id_segment mapping_code_bt    mapping_code_rb mapping_code_ch mapping_code_co
+        <int> <chr>              <chr>           <chr>           <chr>          
+ 1      17939 ACCESS;ASSESSED;I… ACCESS;ASSESSE… ACCESS;ASSESSE… ACCESS;ASSESSE…
+ 2      17880 SPAWN;NONE         SPAWN;NONE      SPAWN;NONE      SPAWN;NONE     
+ 3      17881 REAR;NONE          REAR;NONE       REAR;NONE       REAR;NONE      
+ 4      17882 SPAWN;NONE         SPAWN;NONE      SPAWN;NONE      SPAWN;NONE     
+ 5      17883 SPAWN;NONE         SPAWN;NONE      REAR;NONE       SPAWN;NONE     
+ 6      17884 REAR;NONE          REAR;NONE       REAR;NONE       REAR;NONE      
+ 7      17885 REAR;NONE          REAR;NONE       REAR;NONE       REAR;NONE      
+ 8      17886 SPAWN;NONE         SPAWN;NONE      REAR;NONE       SPAWN;NONE     
+ 9      17887 REAR;NONE          REAR;NONE       REAR;NONE       REAR;NONE      
+10      17888 REAR;NONE          REAR;NONE       REAR;NONE       REAR;NONE      
+# ℹ 19,430 more rows
+[1] 19440
+[wsg_recompute_one] WILL recomputed in 0.48 min (persist=fresh_default)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_zymo" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+7: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+8: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+# A tibble: 24,007 × 6
+   id_segment mapping_code_bt    mapping_code_rb mapping_code_ch mapping_code_co
+        <int> <chr>              <chr>           <chr>           <chr>          
+ 1      23108 "SPAWN;NONE"       "SPAWN;NONE"    "SPAWN;NONE"    "SPAWN;NONE"   
+ 2      23109 "SPAWN;NONE"       "SPAWN;NONE"    "REAR;NONE"     "SPAWN;NONE"   
+ 3      23110 "SPAWN;NONE"       "SPAWN;NONE"    "SPAWN;NONE"    "SPAWN;NONE"   
+ 4      23119 "SPAWN;NONE"       "SPAWN;NONE"    "SPAWN;NONE"    "SPAWN;NONE"   
+ 5      23120 "SPAWN;NONE"       "SPAWN;NONE"    "SPAWN;NONE"    "SPAWN;NONE"   
+ 6       1053 "ACCESS;NONE;INTE… "ACCESS;NONE;I… ""              ""             
+ 7       2163 "ACCESS;MODELLED;… "ACCESS;MODELL… ""              ""             
+ 8       1003 "ACCESS;MODELLED;… "ACCESS;MODELL… "ACCESS;MODELL… "ACCESS;MODELL…
+ 9       1014 ""                 ""              ""              ""             
+10       1015 ""                 ""              ""              ""             
+# ℹ 23,997 more rows
+# ℹ 1 more variable: mapping_code_st <chr>
+[1] 24007
+[wsg_recompute_one] ZYMO recomputed in 0.60 min (persist=fresh_default)

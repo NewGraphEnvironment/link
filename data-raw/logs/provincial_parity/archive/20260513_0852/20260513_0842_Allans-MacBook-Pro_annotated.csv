@@ -1,0 +1,15 @@
+"wsg","species","habitat_type","unit","link_value","ref_value","diff_pct","taxonomy_id","class","mechanism","status","refs"
+"ELKR","BT","spawning","km",1523.58,1497.68,1.7,,"WITHIN_TOLERANCE",,"CLOSED",
+"ELKR","BT","rearing","km",2083.77,2104.67,-1,,"WITHIN_TOLERANCE",,"CLOSED",
+"ELKR","BT","lake_rearing","ha",0,598.1,-100,"lake-wetland-polygon-asymmetry","MEASUREMENT_ASYMMETRY","link credits centerline km AND polygon ha as separate columns; bcfp credits only one","INTENTIONAL","research/default_vs_bcfishpass.md; research/provincial_parity_2026_05_11.md#intentional-divergences"
+"ELKR","BT","wetland_rearing","ha",0,978.43,-100,"lake-wetland-polygon-asymmetry","MEASUREMENT_ASYMMETRY","link credits centerline km AND polygon ha as separate columns; bcfp credits only one","INTENTIONAL","research/default_vs_bcfishpass.md; research/provincial_parity_2026_05_11.md#intentional-divergences"
+"ELKR","BT","rearing_stream","km",1558.44,1579.1,-1.3,,"WITHIN_TOLERANCE",,"CLOSED",
+"ELKR","BT","rearing_lake_centerline","km",0,0,,,"NOT_APPLICABLE",,,
+"ELKR","BT","rearing_wetland_centerline","km",0,0,,,"NOT_APPLICABLE",,,
+"ELKR","WCT","spawning","km",1564.19,1538.22,1.7,,"WITHIN_TOLERANCE",,"CLOSED",
+"ELKR","WCT","rearing","km",1884.79,1889.65,-0.3,,"WITHIN_TOLERANCE",,"CLOSED",
+"ELKR","WCT","lake_rearing","ha",0,0,,,"NOT_APPLICABLE",,,
+"ELKR","WCT","wetland_rearing","ha",0,600.27,-100,"lake-wetland-polygon-asymmetry","MEASUREMENT_ASYMMETRY","link credits centerline km AND polygon ha as separate columns; bcfp credits only one","INTENTIONAL","research/default_vs_bcfishpass.md; research/provincial_parity_2026_05_11.md#intentional-divergences"
+"ELKR","WCT","rearing_stream","km",1376.23,1384.4,-0.6,,"WITHIN_TOLERANCE",,"CLOSED",
+"ELKR","WCT","rearing_lake_centerline","km",0,0,,,"NOT_APPLICABLE",,,
+"ELKR","WCT","rearing_wetland_centerline","km",0,0,,,"NOT_APPLICABLE",,,
