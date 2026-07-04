@@ -9,7 +9,13 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Repository:** NewGraphEnvironment/link
 **Primary Language:** R
 **Prefix:** `lnk_`
-**Branch:** `main` (v0.40.2 as of 2026-05-19)
+**Branch:** `main` (v0.44.0 as of 2026-07-03)
+
+## Status (2026-07-03) — v0.44.0 shipped (#221 + #223 accessible_km)
+
+Fixed the BT/ST `accessible_km` over-credit: streams now break at **every** gradient frontier (`lnk_pipeline_prepare.R` unions the raw per-model positions into `gradient_barriers_minimal`, not the `frs_barriers_minimal` reduction) — matching bcfp. Added the `accessible_km` roll-up column + `lnk_rollup_wsg()` (#221). Proven across 11 WSGs × 8 species: `accessible_km` 44/44 within 0.05%, habitat holds (parked BULK SK = fresh#190). Validator/proof: `data-raw/parity_crosssection.R` + `research/parity_accessible_habitat_2026_07_03.md`. **Gotcha that bit hard:** `fresh.streams_vw_bcfp` spawning/rearing/access_<sp> are coded 0/1/2/3 → parity uses `IN (1,2)` (a `= 1` under-counts; see memory `bcfp-vw-column-coding`). Segment count now 2–3.5× (bcfp-matching; intersects #205). Open follow-ups: **#225** (rename `gradient_barriers_minimal` → `gradient_barriers_break`), **#226** (vignette accessible_km demo), **#227** (`wsg_outlet` builder + single-WSG guard; relates to #222), **#224** (bcfp `dam_dnstr_ind` reservoir-inflow quirk — reference-side, not ours).
+
+The 2026-05-25 handoff below (#175 study-area parity) is **complete/superseded** — kept for history.
 
 ## Status (2026-05-25) — ACTIVE HANDOFF (#175 study-area mapping_code parity)
 
