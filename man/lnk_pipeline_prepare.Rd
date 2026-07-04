@@ -75,9 +75,10 @@ enriched with \code{wscode_ltree} and \code{localcode_ltree} for
 \code{lnk_barrier_overrides()} to compute the per-species skip list.
 User-definite barriers are intentionally excluded here and
 consumed by later phases directly — bcfishpass parity.
-\item Per-model barrier tables reduced to the minimal downstream-most
-set via \code{\link[fresh:frs_barriers_minimal]{fresh::frs_barriers_minimal()}}, then unioned into
-\code{gradient_barriers_minimal} for segmentation
+\item Per-model barrier tables (gradient class-filtered + falls) unioned
+into \code{gradient_barriers_minimal} — the FULL per-model position set
+(NOT minimal-reduced, despite the legacy name), so streams break at
+every frontier and per-segment access gating is correct (#223)
 \item Base stream segments (\code{fresh.streams}) loaded from FWA with
 channel width, stream order parent, GENERATED gradient / measures
 / length columns, and a unique \code{id_segment}
@@ -93,9 +94,8 @@ Writes to (under the caller's working schema unless noted):
 \item \verb{<schema>.barriers_subsurfaceflow} (only when subsurfaceflow opted in
 via \code{cfg$pipeline$break_order})
 \item \verb{<schema>.barrier_overrides}
-\item \verb{<schema>.barriers_<model>} + \verb{<schema>.barriers_<model>_min}
-per-model pre/post minimal reduction
-\item \verb{<schema>.gradient_barriers_minimal} (union of minimal positions)
+\item \verb{<schema>.barriers_<model>} — per-model gradient + falls positions
+\item \verb{<schema>.gradient_barriers_minimal} (union of per-model raw positions)
 \item \code{fresh.streams} (base segments — not namespaced by AOI; fresh
 owns its output schema)
 \item \verb{<schema>.dams} (only when \code{conn_tunnel} is supplied) — pulled

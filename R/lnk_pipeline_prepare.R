@@ -15,9 +15,10 @@
 #'   `lnk_barrier_overrides()` to compute the per-species skip list.
 #'   User-definite barriers are intentionally excluded here and
 #'   consumed by later phases directly — bcfishpass parity.
-#' - Per-model barrier tables reduced to the minimal downstream-most
-#'   set via [fresh::frs_barriers_minimal()], then unioned into
-#'   `gradient_barriers_minimal` for segmentation
+#' - Per-model barrier tables (gradient class-filtered + falls) unioned
+#'   into `gradient_barriers_minimal` — the FULL per-model position set
+#'   (NOT minimal-reduced, despite the legacy name), so streams break at
+#'   every frontier and per-segment access gating is correct (#223)
 #' - Base stream segments (`fresh.streams`) loaded from FWA with
 #'   channel width, stream order parent, GENERATED gradient / measures
 #'   / length columns, and a unique `id_segment`
@@ -31,9 +32,8 @@
 #'   - `<schema>.barriers_subsurfaceflow` (only when subsurfaceflow opted in
 #'     via `cfg$pipeline$break_order`)
 #'   - `<schema>.barrier_overrides`
-#'   - `<schema>.barriers_<model>` + `<schema>.barriers_<model>_min`
-#'     per-model pre/post minimal reduction
-#'   - `<schema>.gradient_barriers_minimal` (union of minimal positions)
+#'   - `<schema>.barriers_<model>` — per-model gradient + falls positions
+#'   - `<schema>.gradient_barriers_minimal` (union of per-model raw positions)
 #'   - `fresh.streams` (base segments — not namespaced by AOI; fresh
 #'     owns its output schema)
 #'   - `<schema>.dams` (only when `conn_tunnel` is supplied) — pulled
@@ -567,9 +567,8 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
   for (model_name in names(models)) {
     class_filter <- paste(models[[model_name]], collapse = ", ")
     model_tbl <- paste0(schema, ".barriers_", model_name)
-    min_tbl <- paste0(model_tbl, "_min")
 
-    # Build pre-minimal set: gradient (class-filtered) + falls
+    # Build the per-model break set: gradient (class-filtered) + falls.
     .lnk_db_execute(conn, sprintf("DROP TABLE IF EXISTS %s", model_tbl))
     .lnk_db_execute(conn, sprintf(
       "CREATE TABLE %s AS
@@ -589,8 +588,17 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
       model_tbl, schema, class_filter,
       schema, .lnk_quote_literal(aoi)))
 
-    fresh::frs_barriers_minimal(conn, from = model_tbl, to = min_tbl)
-    minimal_tbls <- c(minimal_tbls, min_tbl)
+    # Feed the RAW per-model positions into the break network — every gradient /
+    # falls barrier must split the streams so the per-segment downstream-barrier
+    # access check (lnk_pipeline_access) can gate the reach ABOVE each frontier.
+    # Do NOT frs_barriers_minimal() here: minimal reduction keeps only the
+    # downstream-most position per flow path (correct for an access DECISION,
+    # wrong as a SEGMENTATION source — it strips the interior frontier so a single
+    # segment straddles the barrier and its whole reach is mislabelled accessible;
+    # #223). This mirrors the orphan-set treatment below and matches bcfishpass,
+    # which segments at every gradient barrier. Table name kept as
+    # gradient_barriers_minimal for now; a follow-up issue renames it.
+    minimal_tbls <- c(minimal_tbls, model_tbl)
   }
 
   # Orphan classes: thresholds in `classes` that fall below every species's

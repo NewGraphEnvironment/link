@@ -41,10 +41,13 @@
 #'   (e.g. `c("BT","CO")`) to restrict the rollup to. Default `NULL`
 #'   discovers the set from PG.
 #'
-#' @return A tibble with one row per (species, habitat_type) — 7
-#'   habitat types per species. Columns: `wsg`, `species`,
+#' @return A tibble with one row per (species, habitat_type) — 8
+#'   habitat types per species (the 7 habitat km/ha types plus
+#'   `accessible` km, link#221). Columns: `wsg`, `species`,
 #'   `habitat_type`, `unit` (`km` | `ha`), `link_value`, `ref_value`,
-#'   `diff_pct`.
+#'   `diff_pct`. `accessible`'s `ref_value` is sourced tunnel-free from
+#'   `fresh.streams_vw_bcfp` for the salmon group (CH/CM/CO/PK/SK); other
+#'   species carry `NA` until their reference path lands (link#221 Phase 3).
 #'
 #' @examples
 #' \dontrun{
@@ -120,7 +123,7 @@ lnk_compare_rollup <- function(conn, aoi, cfg,
     conn = conn, cfg = cfg, aoi = aoi, species = species)
   rollup_ref <- .lnk_compare_wsg_rollup_reference( # nolint
     reference = reference, conn_ref = conn_ref,
-    aoi = aoi, species = species)
+    aoi = aoi, species = species, conn = conn)
 
   .lnk_compare_wsg_assemble_rollup( # nolint
     aoi = aoi, species = species,
@@ -195,35 +198,43 @@ lnk_compare_rollup <- function(conn, aoi, cfg,
   et_lake_sql    <- "(1500, 1525)"
   et_wetland_sql <- "(1700)"
 
-  union_streams <- paste(vapply(species, function(sp) {
-    sp_lit <- DBI::dbQuoteLiteral(conn, sp)
-    sprintf(
-      "SELECT %s AS species_code, s.id_segment, s.length_metre,
-              s.edge_type, h.spawning, h.rearing
-         FROM %s.streams s
-         JOIN %s.streams_habitat_%s h ON s.id_segment = h.id_segment AND s.watershed_group_code = h.watershed_group_code
-        WHERE s.watershed_group_code = %s",
-      sp_lit, tn$schema, tn$schema, tolower(sp), aoi_lit)  # nolint: indentation_linter
-  }, character(1)), collapse = "\n        UNION ALL\n        ")
+  # Habitat km sums delegate to the single predicate-driven roll-up
+  # primitive (link#221) so there is one per-(WSG, species) km query
+  # builder. lnk_rollup_wsg exposes `length_metre` / `edge_type` /
+  # `access` / `spawning` / `rearing` under generic aliases; the first
+  # five metrics reproduce the historical shape, and `accessible_km`
+  # (link#221) sums link's per-species access model
+  # (`streams_access.access_<sp> IN (1,2)`, LEFT-joined by
+  # lnk_rollup_wsg). It returns `wsg` + `species` + metrics — drop
+  # `wsg` and rename `species` -> `species_code` to preserve this
+  # helper's `list(km, lake_ha, wetland_ha)` contract.
+  # COALESCE(..., 0): an empty FILTER set sums to NULL, but the
+  # historical CASE-WHEN-ELSE-0 form returned a measured 0 for a
+  # species present in the WSG with no segments in that slice. Preserve
+  # that 0 (not NA) so downstream parity diff_pct is unchanged.
+  km_metrics <- c(
+    spawning_km =
+      "round(COALESCE(sum(length_metre) FILTER (WHERE spawning), 0)::numeric / 1000, 2)", # nolint: line_length_linter
+    rearing_km =
+      "round(COALESCE(sum(length_metre) FILTER (WHERE rearing), 0)::numeric / 1000, 2)", # nolint: line_length_linter
+    rearing_stream_km = sprintf(
+      "round(COALESCE(sum(length_metre) FILTER (WHERE rearing AND edge_type IN %s), 0)::numeric / 1000, 2)", # nolint: line_length_linter
+      et_stream_sql),
+    rearing_lake_centerline_km = sprintf(
+      "round(COALESCE(sum(length_metre) FILTER (WHERE rearing AND edge_type IN %s), 0)::numeric / 1000, 2)", # nolint: line_length_linter
+      et_lake_sql),
+    rearing_wetland_centerline_km = sprintf(
+      "round(COALESCE(sum(length_metre) FILTER (WHERE rearing AND edge_type IN %s), 0)::numeric / 1000, 2)", # nolint: line_length_linter
+      et_wetland_sql),
+    accessible_km =
+      "round(COALESCE(sum(length_metre) FILTER (WHERE access IN (1, 2)), 0)::numeric / 1000, 2)") # nolint: line_length_linter
 
-  km <- DBI::dbGetQuery(conn, sprintf("
-    SELECT species_code,
-      round(SUM(CASE WHEN spawning THEN length_metre ELSE 0 END)::numeric
-        / 1000, 2) AS spawning_km,
-      round(SUM(CASE WHEN rearing  THEN length_metre ELSE 0 END)::numeric
-        / 1000, 2) AS rearing_km,
-      round(SUM(CASE WHEN rearing AND edge_type IN %s
-                     THEN length_metre ELSE 0 END)::numeric / 1000, 2)
-        AS rearing_stream_km,
-      round(SUM(CASE WHEN rearing AND edge_type IN %s
-                     THEN length_metre ELSE 0 END)::numeric / 1000, 2)
-        AS rearing_lake_centerline_km,
-      round(SUM(CASE WHEN rearing AND edge_type IN %s
-                     THEN length_metre ELSE 0 END)::numeric / 1000, 2)
-        AS rearing_wetland_centerline_km
-    FROM (%s) per_species
-    GROUP BY species_code ORDER BY species_code",
-    et_stream_sql, et_lake_sql, et_wetland_sql, union_streams))  # nolint: indentation_linter
+  km <- lnk_rollup_wsg( # nolint: object_usage_linter
+    conn = conn, aoi = aoi, species = species,
+    schema = tn$schema, metrics = km_metrics)
+  km$wsg <- NULL
+  names(km)[names(km) == "species"] <- "species_code"
+  km <- km[, c("species_code", names(km_metrics))]
 
   # Lake / wetland ha — DISTINCT waterbody_key joins to fwa polygon
   # tables avoid double-counting multi-segment lakes/wetlands.

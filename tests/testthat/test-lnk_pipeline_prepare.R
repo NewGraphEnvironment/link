@@ -305,13 +305,18 @@ test_that(".lnk_pipeline_prep_minimal builds per-species tables from access_grad
   .lnk_pipeline_prep_minimal("mock-conn", aoi = "BULK", cfg = cfg,
     loaded = loaded, schema = "w_bulk")
 
-  # One barrier table per species (BT/CH/SK/ST/WCT)
-  expect_length(minimal_calls, 5L)
-  from_tables <- vapply(minimal_calls, `[[`, character(1), "from")
-  table_names <- sub("^[^.]+\\.", "", from_tables)
-  expect_setequal(table_names,
-    c("barriers_bt", "barriers_ch", "barriers_sk",
-      "barriers_st", "barriers_wct"))
+  # Fix #223: raw per-species positions feed segmentation directly —
+  # frs_barriers_minimal is no longer called; each raw barriers_<sp> table
+  # enters the gradient_barriers_minimal union.
+  expect_length(minimal_calls, 0L)
+  union_sql <- captured[grepl(
+    "CREATE TABLE w_bulk\\.gradient_barriers_minimal", captured)]
+  expect_length(union_sql, 1L)
+  for (tbl in c("barriers_bt", "barriers_ch", "barriers_sk",
+                "barriers_st", "barriers_wct")) {
+    expect_match(union_sql, sprintf("FROM w_bulk\\.%s\\b", tbl))
+  }
+  expect_no_match(union_sql, "_min\\b")
 
   # BT @ 0.25 → classes 2500, 3000 (only those ≥ 0.25)
   bt_create <- captured[grepl("CREATE TABLE w_bulk\\.barriers_bt\\b", captured)]
@@ -335,8 +340,12 @@ test_that(".lnk_pipeline_prep_minimal builds per-species tables from access_grad
 })
 
 test_that(".lnk_pipeline_prep_minimal skips species with NA / zero access_gradient_max", {
+  captured <- character(0)
   local_mocked_bindings(
-    .lnk_db_execute = function(conn, sql) invisible(NULL)
+    .lnk_db_execute = function(conn, sql) {
+      captured <<- c(captured, sql)
+      invisible(NULL)
+    }
   )
   minimal_calls <- list()
   local_mocked_bindings(
@@ -361,11 +370,16 @@ test_that(".lnk_pipeline_prep_minimal skips species with NA / zero access_gradie
   .lnk_pipeline_prep_minimal("mock-conn", aoi = "BULK", cfg = cfg,
     loaded = loaded, schema = "w")
 
-  # BT yields a barrier table; LK + ZR skipped. Orphan branch doesn't
-  # call frs_barriers_minimal (raw positions used directly), so only
-  # BT's call appears here.
-  expect_length(minimal_calls, 1L)
-  expect_match(minimal_calls[[1]]$from, "barriers_bt$")
+  # BT yields a barrier table; LK + ZR skipped. Fix #223: raw positions feed
+  # segmentation, so frs_barriers_minimal is not called — BT's raw table enters
+  # the union, the skipped species do not.
+  expect_length(minimal_calls, 0L)
+  union_sql <- captured[grepl(
+    "CREATE TABLE w\\.gradient_barriers_minimal", captured)]
+  expect_length(union_sql, 1L)
+  expect_match(union_sql, "FROM w\\.barriers_bt\\b")
+  expect_no_match(union_sql, "barriers_lk")
+  expect_no_match(union_sql, "barriers_zr")
 })
 
 test_that(".lnk_pipeline_prep_minimal adds orphan-class break source when low classes present", {
@@ -401,13 +415,9 @@ test_that(".lnk_pipeline_prep_minimal adds orphan-class break source when low cl
   .lnk_pipeline_prep_minimal("mock-conn", aoi = "BULK", cfg = cfg,
     loaded = loaded, schema = "w", classes = custom)
 
-  # Expected: 2 per-species tables get frs_barriers_minimal calls (BT, CH).
-  # Orphan branch creates barriers_orphan but does NOT call
-  # frs_barriers_minimal on it (raw positions used directly for segmentation).
-  expect_length(minimal_calls, 2L)
-  from_tables <- vapply(minimal_calls, `[[`, character(1), "from")
-  table_names <- sub("^[^.]+\\.", "", from_tables)
-  expect_setequal(table_names, c("barriers_bt", "barriers_ch"))
+  # Fix #223: no per-species frs_barriers_minimal call — the raw barriers_bt/ch
+  # enter the union directly, exactly as the orphan set already does.
+  expect_length(minimal_calls, 0L)
 
   # Orphan CREATE TABLE statement still emitted, filtering to class 500
   orphan_create <- captured[grepl("CREATE TABLE w\\.barriers_orphan\\b", captured)]
@@ -419,11 +429,17 @@ test_that(".lnk_pipeline_prep_minimal adds orphan-class break source when low cl
   union_sql <- captured[grepl("CREATE TABLE w\\.gradient_barriers_minimal", captured)]
   expect_length(union_sql, 1L)
   expect_match(union_sql, "FROM w\\.barriers_orphan\\b")
+  expect_match(union_sql, "FROM w\\.barriers_bt\\b")
+  expect_match(union_sql, "FROM w\\.barriers_ch\\b")
 })
 
 test_that(".lnk_pipeline_prep_minimal does NOT add orphan branch when no low classes", {
+  captured <- character(0)
   local_mocked_bindings(
-    .lnk_db_execute = function(conn, sql) invisible(NULL)
+    .lnk_db_execute = function(conn, sql) {
+      captured <<- c(captured, sql)
+      invisible(NULL)
+    }
   )
   minimal_calls <- list()
   local_mocked_bindings(
@@ -448,10 +464,15 @@ test_that(".lnk_pipeline_prep_minimal does NOT add orphan branch when no low cla
   .lnk_pipeline_prep_minimal("mock-conn", aoi = "BULK", cfg = cfg,
     loaded = loaded, schema = "w", classes = .lnk_classes_bcfp)
 
-  from_tables <- vapply(minimal_calls, `[[`, character(1), "from")
-  table_names <- sub("^[^.]+\\.", "", from_tables)
-  expect_false("barriers_orphan" %in% table_names)
-  expect_setequal(table_names, c("barriers_bt", "barriers_ch"))
+  # Fix #223: frs_barriers_minimal not called; the union carries the raw
+  # per-species tables and NO orphan table (no low classes here).
+  expect_length(minimal_calls, 0L)
+  union_sql <- captured[grepl(
+    "CREATE TABLE w\\.gradient_barriers_minimal", captured)]
+  expect_length(union_sql, 1L)
+  expect_match(union_sql, "FROM w\\.barriers_bt\\b")
+  expect_match(union_sql, "FROM w\\.barriers_ch\\b")
+  expect_no_match(union_sql, "barriers_orphan")
 })
 
 test_that(".lnk_pipeline_prep_minimal honours custom classes vector", {
