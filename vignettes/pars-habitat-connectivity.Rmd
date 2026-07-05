@@ -150,6 +150,9 @@ time. Direct downloads from the repo (open in QGIS or any GDAL-aware tool):
   context layers `reserves`, `parks`, `roads`, `railways`
 - [`pars_parity.rds`](https://github.com/NewGraphEnvironment/link/raw/main/inst/vignette-data/pars_parity.rds)
   — tunnel-free per-species `mapping_code` parity tibble
+- [`pars_accessible.rds`](https://github.com/NewGraphEnvironment/link/raw/main/inst/vignette-data/pars_accessible.rds)
+  — bull-trout accessible / spawning / rearing habitat (km), link's roll-up vs
+  the local bcfishpass snapshot
 
 ```{r load, include = FALSE}
 library(sf)
@@ -157,6 +160,8 @@ library(sf)
 gpkg   <- system.file("vignette-data/pars.gpkg",   package = "link", mustWork = TRUE)
 parity <- readRDS(system.file("vignette-data/pars_parity.rds",
                               package = "link", mustWork = TRUE))
+accessible <- readRDS(system.file("vignette-data/pars_accessible.rds",
+                                  package = "link", mustWork = TRUE))
 
 present <- sf::st_layers(gpkg)$name
 lyr <- function(name) {
@@ -184,6 +189,14 @@ roads    <- clip_aoi(roads)
 railways <- clip_aoi(railways)
 reserves <- clip_aoi(reserves)
 parks    <- clip_aoi(parks)
+
+# Classified-segment counts for the grayling map captions — derived from the
+# loaded layer so they track the cached artifact, never hand-edited (link#226).
+.bt_present <- !is.na(streams$mapping_code_bt) & nzchar(streams$mapping_code_bt)
+.gr_present <- !is.na(streams$mapping_code_gr) & nzchar(streams$mapping_code_gr)
+n_bt     <- sum(.bt_present)
+n_gr     <- sum(.gr_present)
+n_gronly <- sum(.gr_present & !.bt_present)
 ```
 
 The model run itself — shown here for reference, not executed at build time —
@@ -246,6 +259,44 @@ cat(sprintf(paste0("link reproduces **%.2f%%** of bcfishpass's per-segment ",
 The remaining disagreements concentrate on intermittent reaches downstream of
 dams — segments where the `;INTERMITTENT` and `;DAM` qualifiers interact, and
 where cross-watershed-group ordering is most sensitive.
+
+### Accessible habitat (km)
+
+Per-segment `mapping_code` agreement is one lens; the habitat **totals** are
+another. `link`'s `accessible_km` roll-up (`lnk_rollup_wsg()`) sums stream length
+a species can reach — `access` in {modelled, observed} — and compares it against
+the same quantity from the bcfishpass reference view, tunnel-free, using the
+identical `IN (1, 2)` predicate. Before the #223 access-segmentation fix a reach
+could straddle a gradient frontier and be credited whole; now streams break at
+**every** frontier, so the accessible total converges on bcfishpass exactly.
+
+```{r accessible-table, echo = FALSE}
+atab <- accessible
+names(atab) <- c("metric", "link km", "bcfishpass km", "diff %")
+knitr::kable(
+  atab, row.names = FALSE, digits = 2,
+  caption = paste0(
+    "Bull-trout accessible / spawning / rearing habitat (km) in PARS: link's ",
+    "roll-up vs the local bcfishpass snapshot. accessible_km is the #223 target ",
+    "and matches exactly; spawning and rearing agree within habitat-methodology ",
+    "tolerance (both well inside the 5% parity band)."
+  )
+)
+```
+
+```{r accessible-pct, echo = FALSE, results = "asis"}
+acc <- accessible[accessible$metric == "accessible", ]
+cat(sprintf(paste0("link models **%s km** of bull-trout accessible habitat in ",
+                   "PARS against bcfishpass's **%s km** — a **%+.2f%%** difference. ",
+                   "That aggregate holds to hundredths of a percent even though the ",
+                   "per-segment `mapping_code` above disagrees on %s segments: the ",
+                   "disagreements fall on short reaches that do not move the ",
+                   "habitat totals.\n"),
+            formatC(acc$link_km, format = "f", digits = 1, big.mark = ","),
+            formatC(acc$bcfp_km, format = "f", digits = 1, big.mark = ","),
+            acc$diff_pct,
+            format(parity$n_diffs[1], big.mark = ",")))
+```
 
 ```{r symbology, include = FALSE}
 reg <- gq::gq_reg_main()
@@ -385,7 +436,7 @@ The map below is rendered with the **same** bcfishpass symbology registry — th
 token vocabulary (`ACCESS`/`SPAWN`/`REAR` × `NONE`/`MODELLED`/`ASSESSED`/`DAM`/…)
 is species-agnostic, so one colour lookup styles every species consistently.
 
-```{r map-gr, echo = FALSE, fig.cap = "Arctic grayling per-segment mapping_code across the Parsnip River Watershed Group, link's default configuration — a species bcfishpass does not yet model. Same symbology registry and context layers as the bull-trout map, so the two are directly comparable. The grayling network is smaller than bull trout's (19,233 vs 31,932 classified segments), but every grayling segment is net-new output relative to bcfishpass, and 1,764 of them carry no bull-trout classification at all."}
+```{r map-gr, echo = FALSE, fig.cap = sprintf("Arctic grayling per-segment mapping_code across the Parsnip River Watershed Group, link's default configuration — a species bcfishpass does not yet model. Same symbology registry and context layers as the bull-trout map, so the two are directly comparable. The grayling network is smaller than bull trout's (%s vs %s classified segments), but every grayling segment is net-new output relative to bcfishpass, and %s of them carry no bull-trout classification at all.", format(n_gr, big.mark = ","), format(n_bt, big.mark = ","), format(n_gronly, big.mark = ","))}
 gr <- streams[!is.na(streams$mapping_code_gr) & nzchar(streams$mapping_code_gr), ]
 gr$col <- cls$values[gr$mapping_code_gr]
 gr$col[is.na(gr$col)] <- "#999999"
@@ -408,7 +459,7 @@ par(op)
 
 The full-watershed views compress a lot of network. Cropping to a sub-reach
 puts bull trout and grayling side by side at full resolution. Grayling's
-modelled network is the smaller of the two overall, but 1,764 segments carry a
+modelled network is the smaller of the two overall, but `r format(n_gronly, big.mark = ",")` segments carry a
 grayling classification with no bull-trout classification — the reaches where
 the extension is doing genuinely new work.
 

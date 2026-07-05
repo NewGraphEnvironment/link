@@ -32,13 +32,13 @@
       if it balloons bump `st_simplify(dTolerance=)` (L123) — note R CMD installed-size NOTE.
 
 ## Phase 4: Vignette — accessible_km subsection + fix stale captions
-- [ ] `load` chunk (~L154): `readRDS(pars_accessible.rds)`; inline-compute `n_bt`/`n_gr`/`n_gronly` from the
+- [x] `load` chunk (~L154): `readRDS(pars_accessible.rds)`; inline-compute `n_bt`/`n_gr`/`n_gronly` from the
       loaded `streams` layer (DB-free).
-- [ ] Replace hardcoded caption counts — map-gr `fig.cap` (`Rmd:388`) + map-detail prose (`Rmd:411`) → vars.
-- [ ] Add `### Accessible habitat (km)` under `## Reproducing bcfishpass (parity)`: prose + captioned kable +
+- [x] Replace hardcoded caption counts — map-gr `fig.cap` (`Rmd:388`) + map-detail prose (`Rmd:411`) → vars.
+- [x] Add `### Accessible habitat (km)` under `## Reproducing bcfishpass (parity)`: prose + captioned kable +
       computed `results="asis"` sentence (accessible −0.01%, bridge to the 416 mapping_code disagreements;
       spawn/rear within-tolerance, not "exact").
-- [ ] Update `## Cached inputs` prose + raw-download links (~L138-152) to include `pars_accessible.rds`.
+- [x] Update `## Cached inputs` prose + raw-download links (~L138-152) to include `pars_accessible.rds`.
 
 ## Phase 5: Verify + finalize
 - [ ] Knit with DB **stopped** — cache-only; numbers + captions + numbering correct.
@@ -48,8 +48,8 @@
 
 ## Validation
 - [x] Phase 1 gate met (segmentation match + length-consistent join)
-- [ ] Vignette knits from cache with DB stopped; accessible sentence ≈ "6,822.5 km vs 6,822.9 km, −0.01%"
-- [ ] `pars_accessible.rds` equals the live-verified table (±rounding)
+- [x] Vignette knits from cache with DB stopped; accessible sentence ≈ "6,822.5 km vs 6,822.9 km, −0.01%"
+- [x] `pars_accessible.rds` equals the live-verified table (±rounding)
 - [ ] `/code-check` clean on each commit
 - [ ] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion

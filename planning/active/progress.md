@@ -19,5 +19,11 @@
 - **Phase 3 done:** regenerated all artifacts. accessible **6822.47 | 6822.88 | −0.01%** (exact),
   spawning +0.93%, rearing −0.53%; mapping_code parity 98.91%; gpkg 11.9 MB (no balloon), all 8 layers,
   tunnel context included.
-- Next: Phase 4 — vignette accessible_km subsection + inline-compute the stale map captions, then
-  DB-stopped knit (Phase 5).
+- **Phase 4 done:** vignette gains `### Accessible habitat (km)` (bridging table + computed prose:
+  6,822.5 vs 6,822.9 km, −0.01%), loads `pars_accessible.rds`, and the stale map captions
+  (19,233/31,932/1,764) are now inline-computed (`n_gr`/`n_bt`/`n_gronly` → 19,232/38,622/257).
+- **Phase 5 verify:** cache-only knit passed (exit 0) — accessible numbers + computed captions render,
+  stale values gone; the only `lnk_db_conn()` sits in the `eval=FALSE` demo chunk. `/code-check` round 1:
+  1 low latent finding (diff_pct div-by-zero on the generic-reuse path) fixed with an NA guard; PARS
+  artifact unchanged.
+- Next: NEWS + patch bump, archive PWF, open PR (Closes #226; ref sred#24).

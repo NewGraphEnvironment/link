@@ -130,7 +130,7 @@ accessible <- data.frame(
   metric   = c("accessible", "spawning", "rearing"),
   link_km  = .link_v,
   bcfp_km  = .bcfp_v,
-  diff_pct = round(100 * (.link_v - .bcfp_v) / .bcfp_v, 2),
+  diff_pct = ifelse(.bcfp_v == 0, NA_real_, round(100 * (.link_v - .bcfp_v) / .bcfp_v, 2)),
   stringsAsFactors = FALSE)
 saveRDS(accessible, file.path(out_dir, paste0(stub, "_accessible.rds")))
 message("[wsg_vignette_data] accessible km (link|bcfp|diff%): ",
