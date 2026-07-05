@@ -41,15 +41,15 @@
 - [x] Update `## Cached inputs` prose + raw-download links (~L138-152) to include `pars_accessible.rds`.
 
 ## Phase 5: Verify + finalize
-- [ ] Knit with DB **stopped** — cache-only; numbers + captions + numbering correct.
-- [ ] `/code-check` on staged diff.
-- [ ] NEWS.md (patch); `/planning-archive`; `/gh-pr-push` (Closes #226; relates #221/#223; ref
+- [x] Knit with DB **stopped** — cache-only; numbers + captions + numbering correct.
+- [x] `/code-check` on staged diff.
+- [x] NEWS.md (patch); `/planning-archive`; `/gh-pr-push` (Closes #226; relates #221/#223; ref
       `NewGraphEnvironment/sred#24`). Version bump (patch) as final commit / at `/gh-pr-merge`.
 
 ## Validation
 - [x] Phase 1 gate met (segmentation match + length-consistent join)
 - [x] Vignette knits from cache with DB stopped; accessible sentence ≈ "6,822.5 km vs 6,822.9 km, −0.01%"
 - [x] `pars_accessible.rds` equals the live-verified table (±rounding)
-- [ ] `/code-check` clean on each commit
-- [ ] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion
+- [x] `/code-check` clean on each commit
+- [x] PWF checkboxes match landed work
+- [x] `/planning-archive` on completion
