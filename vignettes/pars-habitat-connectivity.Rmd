@@ -120,15 +120,21 @@ knitr::kable(
 
 Each segment's `mapping_code` is a compact token of the form
 `<use>;<barrier-status>`, optionally suffixed `;INTERMITTENT` for intermittent
-streams. The first field is the highest-value habitat use modelled for that
-segment — `SPAWN`, `REAR`, or `ACCESS` (reachable, but no modelled spawning or
-rearing habitat). The second records the most significant barrier *downstream*
-of the segment: `NONE` (none known), `MODELLED` (a modelled potential barrier),
-`ASSESSED` (a field-assessed known barrier), `DAM`, or `REMEDIATED` (a barrier
-since fixed). Stream colour is keyed on barrier status alone — a purple segment
-sits below a dam, a red one below a field-assessed barrier — regardless of
-habitat use, while line width encodes the habitat use itself: spawning reaches
-draw thickest, rearing medium, access-only thinnest. Intermittent reaches
+streams. A segment is classified only where the species can reach it — its
+blocking barriers all lie upstream — so **every coloured reach is accessible
+habitat**; reaches the species cannot reach carry no code and stay grey. The
+first field is the highest-value habitat use modelled for the reach — `SPAWN`,
+`REAR`, or `ACCESS` (reachable, but no modelled spawning or rearing habitat) —
+and it sets the **line width**: spawning thickest, rearing medium, access-only
+thinnest. The second field sets the **colour** and names the most significant
+structure lying *downstream* of the reach — necessarily one that does not block
+the species, since a blocking barrier would leave the reach inaccessible and
+uncoloured: `NONE` (blue, none known), `MODELLED` (orange, a mapped but
+unassessed crossing), `ASSESSED` (red, a field-assessed PSCIS crossing), `DAM`
+(purple), or `REMEDIATED` (green, a barrier since fixed). So a purple reach is
+accessible habitat with a dam downstream of it, and a red reach has a
+field-assessed crossing downstream — the colour reflects that downstream
+structure, not the habitat use, which the width carries. Intermittent reaches
 (`;INTERMITTENT`) draw dashed. Colours and widths are read straight from the
 bcfishpass symbology registry, so the maps match a bcfishpass QGIS project
 exactly.
