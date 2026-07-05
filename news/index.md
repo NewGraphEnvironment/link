@@ -1,5 +1,36 @@
 # Changelog
 
+## link 0.44.1
+
+Extend the PARS vignette to demonstrate `accessible_km`
+bcfishpass-equivalence
+([\#226](https://github.com/NewGraphEnvironment/link/issues/226)).
+`vignettes/pars-habitat-connectivity.Rmd` gains an **Accessible habitat
+(km)** section: a link-vs-bcfishpass roll-up table (bull-trout
+accessible / spawning / rearing, from the new cached
+`pars_accessible.rds`) plus computed prose — link models 6,822.5 km of
+accessible bull-trout habitat against bcfishpass’s 6,822.9 km, a −0.01%
+difference (the
+[\#223](https://github.com/NewGraphEnvironment/link/issues/223)
+access-segmentation fix; spawning/rearing agree within the 5% habitat
+band). `data-raw/wsg_vignette_data.R` grows the accessible roll-up
+(mirroring `data-raw/parity_crosssection.R`’s
+[`lnk_rollup_wsg()`](https://newgraphenvironment.github.io/link/reference/lnk_rollup_wsg.md) +
+`fresh.streams_vw_bcfp` `IN (1,2)` computation) and a
+**segmentation-parity guard** that refuses to build when `fresh` and
+`fresh_default` disagree by more than 1%. All cached artifacts were
+regenerated from the post-#223 state: this required re-modelling the
+`default` (Arctic grayling) config for `PARS` into `fresh_default`,
+which had been left on the pre-#223 segmentation (48,558 segments vs
+`fresh`’s 97,538) — a naive regeneration would have joined the grayling
+`mapping_code` onto mismatched geometry and corrupted the map. The
+re-model (`data-raw/wsg_run_one.R` + a `merge = TRUE` recompute for
+cross-WSG `;DAM`) brings both configs onto the same segmentation; the
+previously hardcoded grayling map-caption counts are now computed inline
+from the loaded layer so they track the artifact. Bull-trout
+`mapping_code` parity refreshes to 98.91% (from 99.04%, on the denser
+post-#223 segmentation). Verified with a database-free knit.
+
 ## link 0.44.0
 
 Fix a BT/ST `accessible_km` over-credit and add the per-WSG

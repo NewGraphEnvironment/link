@@ -19,6 +19,27 @@ notice.
 **Repository:** NewGraphEnvironment/link **Primary Language:** R
 **Prefix:** `lnk_` **Branch:** `main` (v0.44.0 as of 2026-07-03)
 
+## Status (2026-07-04) — v0.44.1 shipped (#226 vignette accessible_km)
+
+Extended the PARS vignette with an **Accessible habitat (km)** section
+proving `accessible_km` bcfp-equivalence (link 6,822.5 vs bcfp 6,822.9
+km BT, **−0.01%**; table from cached
+`inst/vignette-data/pars_accessible.rds`). **Gotcha that bit hard:**
+“regenerate the vignette artifacts” was NOT docs-only — the two persist
+configs drift in segmentation because only WSGs re-modelled post-#223
+are dense. `fresh` (bcfp config) had PARS at 97,538 segs but
+`fresh_default` (default/grayling) was still pre-#223 (48,558); the
+gpkg’s single `streams` layer joins `fresh` geometry to `fresh_default`
+`mapping_code_gr` on `id_segment`, so a naive regen attaches grayling
+tokens to mismatched geometry → corrupt GR map. Fix: re-model the
+lagging config (`data-raw/wsg_run_one.R` + `merge=TRUE` recompute via
+`wsg_recompute_one.R` for cross-WSG `;DAM`) so both share segmentation;
+`wsg_vignette_data.R` now carries a **segmentation-parity guard** that
+refuses a mixed build. Any cross-config artifact joined on `id_segment`
+must verify both sides share segmentation first. mapping_code parity
+refreshed 99.04%→98.91% (denser post-#223). Open follow-ups unchanged:
+**\#224**, **\#225**, **\#227**.
+
 ## Status (2026-07-03) — v0.44.0 shipped (#221 + \#223 accessible_km)
 
 Fixed the BT/ST `accessible_km` over-credit: streams now break at

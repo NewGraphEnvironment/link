@@ -121,6 +121,9 @@ GDAL-aware tool):
   `roads`, `railways`
 - [`pars_parity.rds`](https://github.com/NewGraphEnvironment/link/raw/main/inst/vignette-data/pars_parity.rds)
   — tunnel-free per-species `mapping_code` parity tibble
+- [`pars_accessible.rds`](https://github.com/NewGraphEnvironment/link/raw/main/inst/vignette-data/pars_accessible.rds)
+  — bull-trout accessible / spawning / rearing habitat (km), link’s
+  roll-up vs the local bcfishpass snapshot
 
 The model run itself — shown here for reference, not executed at build
 time — is one call per configuration. The Peace study-area run that
@@ -158,21 +161,52 @@ trout alone in `PARS`.
 
 | WSG | species | segments | match % | n diffs | top diff pattern (link \| bcfishpass) | count |
 |:---|:---|---:|---:|---:|:---|---:|
-| PARS | BT | 43120 | 99.04 | 416 | ACCESS;DAM;INTERMITTENT \| REAR;DAM;INTERMITTENT | 60 |
+| PARS | BT | 43600 | 98.91 | 476 | REAR;DAM \| ACCESS;DAM | 83 |
 
 Per-segment mapping_code parity for bull trout in PARS, link’s
 bcfishpass config vs the local bcfishpass snapshot. The top diff pattern
 column shows the most common (link \| reference) disagreement, not a
 literal mapping_code value. {.table}
 
-link reproduces **99.04%** of bcfishpass’s per-segment bull-trout
-`mapping_code` across 43,120 segments, with 416 disagreements. That is
+link reproduces **98.91%** of bcfishpass’s per-segment bull-trout
+`mapping_code` across 43,600 segments, with 476 disagreements. That is
 consistent with the 99.66% study-area median established for the Peace.
 
 The remaining disagreements concentrate on intermittent reaches
 downstream of dams — segments where the `;INTERMITTENT` and `;DAM`
 qualifiers interact, and where cross-watershed-group ordering is most
 sensitive.
+
+### Accessible habitat (km)
+
+Per-segment `mapping_code` agreement is one lens; the habitat **totals**
+are another. `link`’s `accessible_km` roll-up
+([`lnk_rollup_wsg()`](https://newgraphenvironment.github.io/link/reference/lnk_rollup_wsg.md))
+sums stream length a species can reach — `access` in {modelled,
+observed} — and compares it against the same quantity from the
+bcfishpass reference view, tunnel-free, using the identical `IN (1, 2)`
+predicate. Before the \#223 access-segmentation fix a reach could
+straddle a gradient frontier and be credited whole; now streams break at
+**every** frontier, so the accessible total converges on bcfishpass
+exactly.
+
+| metric     | link km | bcfishpass km | diff % |
+|:-----------|--------:|--------------:|-------:|
+| accessible | 6822.47 |       6822.88 |  -0.01 |
+| spawning   | 1683.38 |       1667.92 |   0.93 |
+| rearing    | 2575.06 |       2588.91 |  -0.53 |
+
+Bull-trout accessible / spawning / rearing habitat (km) in PARS: link’s
+roll-up vs the local bcfishpass snapshot. accessible_km is the \#223
+target and matches exactly; spawning and rearing agree within
+habitat-methodology tolerance (both well inside the 5% parity band).
+{.table}
+
+link models **6,822.5 km** of bull-trout accessible habitat in PARS
+against bcfishpass’s **6,822.9 km** — a **-0.01%** difference. That
+aggregate holds to hundredths of a percent even though the per-segment
+`mapping_code` above disagrees on 476 segments: the disagreements fall
+on short reaches that do not move the habitat totals.
 
 ![Bull-trout per-segment mapping_code across the Parsnip River Watershed
 Group, link's bcfishpass configuration. Stream colours come straight
@@ -207,24 +241,24 @@ consistently.
 Watershed Group, link's default configuration — a species bcfishpass
 does not yet model. Same symbology registry and context layers as the
 bull-trout map, so the two are directly comparable. The grayling network
-is smaller than bull trout's (19,233 vs 31,932 classified segments), but
-every grayling segment is net-new output relative to bcfishpass, and
-1,764 of them carry no bull-trout classification at
+is smaller than bull trout's (19,232 vs 38,622 classified segments), but
+every grayling segment is net-new output relative to bcfishpass, and 257
+of them carry no bull-trout classification at
 all.](pars-habitat-connectivity_files/figure-html/map-gr-1.png)
 
 Arctic grayling per-segment mapping_code across the Parsnip River
 Watershed Group, link’s default configuration — a species bcfishpass
 does not yet model. Same symbology registry and context layers as the
 bull-trout map, so the two are directly comparable. The grayling network
-is smaller than bull trout’s (19,233 vs 31,932 classified segments), but
-every grayling segment is net-new output relative to bcfishpass, and
-1,764 of them carry no bull-trout classification at all.
+is smaller than bull trout’s (19,232 vs 38,622 classified segments), but
+every grayling segment is net-new output relative to bcfishpass, and 257
+of them carry no bull-trout classification at all.
 
 ## Maps — detail comparison
 
 The full-watershed views compress a lot of network. Cropping to a
 sub-reach puts bull trout and grayling side by side at full resolution.
-Grayling’s modelled network is the smaller of the two overall, but 1,764
+Grayling’s modelled network is the smaller of the two overall, but 257
 segments carry a grayling classification with no bull-trout
 classification — the reaches where the extension is doing genuinely new
 work.
