@@ -8,27 +8,27 @@
 (re-model the stale grayling schema, not just add the accessible table).
 
 ## Phase 1: Re-model PARS default config to post-#223 (modelling prerequisite)
-- [ ] Re-model PARS default config → `fresh_default` post-#223 via `lnk_pipeline_run(aoi="PARS",
+- [x] Re-model PARS default config → `fresh_default` post-#223 via `lnk_pipeline_run(aoi="PARS",
       cfg=lnk_config("default"), schema="fresh_default", mapping_code=TRUE)` (reuse `data-raw/wsg_run_one.R`
       if it selects config/schema; else call directly). Local `:5432`.
-- [ ] Recompute PARS access `merge=TRUE` + `lnk_mapping_code` so cross-WSG `;DAM` is settled against the
+- [x] Recompute PARS access `merge=TRUE` + `lnk_mapping_code` so cross-WSG `;DAM` is settled against the
       consolidated barrier set (downstream Peace WSGs already persisted in `fresh_default`).
-- [ ] **Gate:** `fresh_default.streams` PARS ≈ 97,538 / ~142 m (matches `fresh`) and the gpkg `id_segment`
+- [x] **Gate:** `fresh_default.streams` PARS ≈ 97,538 / ~142 m (matches `fresh`) and the gpkg `id_segment`
       join fresh↔fresh_default is ~100% length-consistent. If not, STOP and reassess.
 
 ## Phase 2: Extend data-gen — accessible_km cache + segmentation guard
-- [ ] `data-raw/wsg_vignette_data.R`: LINK `lnk_rollup_wsg(aoi, species="BT", schema="fresh")` + BCFP
+- [x] `data-raw/wsg_vignette_data.R`: LINK `lnk_rollup_wsg(aoi, species="BT", schema="fresh")` + BCFP
       `fresh.streams_vw_bcfp` (`access_bt`/`spawning_bt`/`rearing_bt` `IN (1,2)`, coalesce, schema-qualified,
       mirror `parity_crosssection.R:55-69`) → 3-row `accessible` (metric/link_km/bcfp_km/diff_pct) →
       `saveRDS` `inst/vignette-data/pars_accessible.rds`.
-- [ ] Harden `persisted()` guard (`wsg_vignette_data.R:65-81`): assert `fresh.streams` vs
+- [x] Harden `persisted()` guard (`wsg_vignette_data.R:65-81`): assert `fresh.streams` vs
       `fresh_default.streams` AOI segment counts agree — refuse a mixed-segmentation gpkg.
 
 ## Phase 3: Regenerate all cached artifacts
-- [ ] `LNK_LOAD=loadall Rscript data-raw/wsg_vignette_data.R`.
-- [ ] Confirm `pars.gpkg` (post-#223 geometry, valid GR join), `pars_parity.rds` (refreshed BT parity),
+- [x] `LNK_LOAD=loadall Rscript data-raw/wsg_vignette_data.R`.
+- [x] Confirm `pars.gpkg` (post-#223 geometry, valid GR join), `pars_parity.rds` (refreshed BT parity),
       `pars_accessible.rds` (new).
-- [ ] Sanity: accessible −0.01% (6822.47/6822.88); mapping_code ~99%; **measure gpkg size** (~2× → ~22 MB);
+- [x] Sanity: accessible −0.01% (6822.47/6822.88); mapping_code ~99%; **measure gpkg size** (~2× → ~22 MB);
       if it balloons bump `st_simplify(dTolerance=)` (L123) — note R CMD installed-size NOTE.
 
 ## Phase 4: Vignette — accessible_km subsection + fix stale captions
@@ -47,7 +47,7 @@
       `NewGraphEnvironment/sred#24`). Version bump (patch) as final commit / at `/gh-pr-merge`.
 
 ## Validation
-- [ ] Phase 1 gate met (segmentation match + length-consistent join)
+- [x] Phase 1 gate met (segmentation match + length-consistent join)
 - [ ] Vignette knits from cache with DB stopped; accessible sentence ≈ "6,822.5 km vs 6,822.9 km, −0.01%"
 - [ ] `pars_accessible.rds` equals the live-verified table (±rounding)
 - [ ] `/code-check` clean on each commit
