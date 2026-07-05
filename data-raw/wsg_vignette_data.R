@@ -81,11 +81,61 @@ if (!persisted("fresh") || !persisted("fresh_default")) {
 }
 message("[wsg_vignette_data] authoritative ", aoi, " state present in fresh + fresh_default")
 
+# --- segmentation-parity guard (link#226) ------------------------------------
+# The gpkg's streams layer joins `fresh` geometry + mapping_code_bt to
+# `fresh_default` mapping_code_gr on id_segment, so BOTH configs must sit on the
+# SAME post-#223 segmentation. If one lags (e.g. fresh_default not re-modelled
+# after the #223 access-segmentation fix), the GR token lands on the wrong
+# geometry — refuse to build rather than ship a corrupt grayling map.
+seg_count <- function(schema) DBI::dbGetQuery(conn, sprintf(
+  "SELECT count(*)::int n FROM %s.streams WHERE watershed_group_code = %s",
+  schema, DBI::dbQuoteLiteral(conn, aoi)))$n
+.n_fresh <- seg_count("fresh")
+.n_fdef  <- seg_count("fresh_default")
+if (abs(.n_fresh - .n_fdef) > 0.01 * max(.n_fresh, .n_fdef)) {
+  stop(sprintf(
+    paste0("%s segmentation mismatch: fresh %d vs fresh_default %d segments (>1%%). ",
+           "Re-model the lagging config post-#223 before generating vignette data ",
+           "(link#226) — the gpkg joins fresh geometry to fresh_default ",
+           "mapping_code_gr on id_segment."),
+    aoi, .n_fresh, .n_fdef), call. = FALSE)
+}
+message(sprintf("[wsg_vignette_data] segmentation parity OK: fresh %d / fresh_default %d segments",
+                .n_fresh, .n_fdef))
+
 # --- tunnel-free parity (BT is the only bcfp-config species in the Peace) -----
 parity <- lnk_compare_mapping_code(conn, aoi = aoi, cfg = cfg_bcfp)
 saveRDS(parity, file.path(out_dir, paste0(stub, "_parity.rds")))
 message("[wsg_vignette_data] parity rows: ", nrow(parity),
         " (median match_pct = ", stats::median(parity$match_pct, na.rm = TRUE), ")")
+
+# --- accessible / spawning / rearing km parity (BT, tunnel-free; link#226) ----
+# link side = the #221 roll-up; bcfp side = the fresh.streams_vw_bcfp reference
+# with the IN (1,2) predicate (bcfp codes access/spawn/rear 0/1/2/3, so a bare
+# `= 1` under-counts). Same computation as the #223 proof
+# (data-raw/parity_crosssection.R). accessible_km is the #223 target and matches
+# exactly; spawning/rearing agree within habitat-methodology tolerance.
+metrics_km <- c("accessible_km", "spawning_km", "rearing_km")
+acc_link <- lnk_rollup_wsg(conn, aoi = aoi, species = "BT", schema = "fresh")
+acc_bcfp <- DBI::dbGetQuery(conn, sprintf(
+  "SELECT
+     round((coalesce(sum(length_metre) FILTER (WHERE access_bt   IN (1,2)),0)/1000)::numeric,2) AS accessible_km,
+     round((coalesce(sum(length_metre) FILTER (WHERE spawning_bt IN (1,2)),0)/1000)::numeric,2) AS spawning_km,
+     round((coalesce(sum(length_metre) FILTER (WHERE rearing_bt  IN (1,2)),0)/1000)::numeric,2) AS rearing_km
+   FROM fresh.streams_vw_bcfp WHERE watershed_group_code = %s",
+  DBI::dbQuoteLiteral(conn, aoi)))
+.link_v <- as.numeric(unlist(acc_link[1, metrics_km]))
+.bcfp_v <- as.numeric(unlist(acc_bcfp[1, metrics_km]))
+accessible <- data.frame(
+  metric   = c("accessible", "spawning", "rearing"),
+  link_km  = .link_v,
+  bcfp_km  = .bcfp_v,
+  diff_pct = ifelse(.bcfp_v == 0, NA_real_, round(100 * (.link_v - .bcfp_v) / .bcfp_v, 2)),
+  stringsAsFactors = FALSE)
+saveRDS(accessible, file.path(out_dir, paste0(stub, "_accessible.rds")))
+message("[wsg_vignette_data] accessible km (link|bcfp|diff%): ",
+        paste(sprintf("%s %.1f|%.1f|%+.2f", accessible$metric, accessible$link_km,
+                      accessible$bcfp_km, accessible$diff_pct), collapse = "  "))
 
 # --- spatial layers -----------------------------------------------------------
 aoi_lit <- DBI::dbQuoteLiteral(conn, aoi)
