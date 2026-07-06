@@ -86,22 +86,6 @@ extension). Grayling’s lower access ceiling (0.15 vs 0.25) and narrower
 spawning/rearing gradient windows are what give it the smaller modelled
 network seen below. {.table style="width:100%;"}
 
-Each segment’s `mapping_code` is a compact token of the form
-`<use>;<barrier-status>`, optionally suffixed `;INTERMITTENT` for
-intermittent streams. The first field is the highest-value habitat use
-modelled for that segment — `SPAWN`, `REAR`, or `ACCESS` (reachable, but
-no modelled spawning or rearing habitat). The second records the most
-significant barrier *downstream* of the segment: `NONE` (none known),
-`MODELLED` (a modelled potential barrier), `ASSESSED` (a field-assessed
-known barrier), `DAM`, or `REMEDIATED` (a barrier since fixed). Stream
-colour is keyed on barrier status alone — a purple segment sits below a
-dam, a red one below a field-assessed barrier — regardless of habitat
-use, while line width encodes the habitat use itself: spawning reaches
-draw thickest, rearing medium, access-only thinnest. Intermittent
-reaches (`;INTERMITTENT`) draw dashed. Colours and widths are read
-straight from the bcfishpass symbology registry, so the maps match a
-bcfishpass QGIS project exactly.
-
 ## Cached inputs
 
 The model run and the bcfishpass comparison both require a populated
@@ -120,7 +104,7 @@ GDAL-aware tool):
   `named_streams`, and basemapping context layers `reserves`, `parks`,
   `roads`, `railways`
 - [`pars_parity.rds`](https://github.com/NewGraphEnvironment/link/raw/main/inst/vignette-data/pars_parity.rds)
-  — tunnel-free per-species `mapping_code` parity tibble
+  — per-species `mapping_code` parity tibble
 - [`pars_accessible.rds`](https://github.com/NewGraphEnvironment/link/raw/main/inst/vignette-data/pars_accessible.rds)
   — bull-trout accessible / spawning / rearing habitat (km), link’s
   roll-up vs the local bcfishpass snapshot
@@ -154,41 +138,33 @@ lnk_pipeline_run(conn, aoi = "PARS", cfg = cfg_default, loaded = loaded_d,
 
 [`lnk_compare_mapping_code()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_mapping_code.md)
 compares `link`’s per-segment `mapping_code` against the local
-bcfishpass snapshot, segment by segment, with no database tunnel
-required. The comparison restricts itself to species that are actually
-active in the watershed group — which, for the reasons above, is bull
-trout alone in `PARS`.
+bcfishpass snapshot, segment by segment. The comparison restricts itself
+to species that are actually active in the watershed group — which, for
+the reasons above, is bull trout alone in `PARS`.
 
-| WSG | species | segments | match % | n diffs | top diff pattern (link \| bcfishpass) | count |
-|:---|:---|---:|---:|---:|:---|---:|
-| PARS | BT | 43600 | 98.91 | 476 | REAR;DAM \| ACCESS;DAM | 83 |
+| WSG  | species | segments | match % |
+|:-----|:--------|---------:|--------:|
+| PARS | BT      |    43600 |   98.91 |
 
 Per-segment mapping_code parity for bull trout in PARS, link’s
-bcfishpass config vs the local bcfishpass snapshot. The top diff pattern
-column shows the most common (link \| reference) disagreement, not a
-literal mapping_code value. {.table}
+bcfishpass config vs the local bcfishpass snapshot. {.table}
 
 link reproduces **98.91%** of bcfishpass’s per-segment bull-trout
-`mapping_code` across 43,600 segments, with 476 disagreements. That is
-consistent with the 99.66% study-area median established for the Peace.
-
-The remaining disagreements concentrate on intermittent reaches
-downstream of dams — segments where the `;INTERMITTENT` and `;DAM`
-qualifiers interact, and where cross-watershed-group ordering is most
-sensitive.
+`mapping_code` across 43,600 segments — consistent with the 99.66%
+study-area median established for the Peace.
 
 ### Accessible habitat (km)
 
 Per-segment `mapping_code` agreement is one lens; the habitat **totals**
-are another. `link`’s `accessible_km` roll-up
-([`lnk_rollup_wsg()`](https://newgraphenvironment.github.io/link/reference/lnk_rollup_wsg.md))
-sums stream length a species can reach — `access` in {modelled,
-observed} — and compares it against the same quantity from the
-bcfishpass reference view, tunnel-free, using the identical `IN (1, 2)`
-predicate. Before the \#223 access-segmentation fix a reach could
-straddle a gradient frontier and be credited whole; now streams break at
-**every** frontier, so the accessible total converges on bcfishpass
-exactly.
+are another.
+[`lnk_rollup_wsg()`](https://newgraphenvironment.github.io/link/reference/lnk_rollup_wsg.md)
+sums, per species, the stream length a fish can reach (accessible) and
+the lengths modelled as spawning and rearing — link’s own model output,
+produced whether or not there is anything to compare against. Below,
+those totals sit next to the same quantities from the bcfishpass habitat
+model. Because `link` breaks streams at every gradient frontier, a reach
+never straddles the accessibility boundary, so the accessible total
+matches bcfishpass to a rounding error.
 
 | metric     | link km | bcfishpass km | diff % |
 |:-----------|--------:|--------------:|-------:|
@@ -197,16 +173,13 @@ exactly.
 | rearing    | 2575.06 |       2588.91 |  -0.53 |
 
 Bull-trout accessible / spawning / rearing habitat (km) in PARS: link’s
-roll-up vs the local bcfishpass snapshot. accessible_km is the \#223
-target and matches exactly; spawning and rearing agree within
-habitat-methodology tolerance (both well inside the 5% parity band).
-{.table}
+roll-up vs the local bcfishpass snapshot. Accessible habitat matches to
+a rounding error; spawning and rearing agree within the habitat model’s
+tolerance (both well inside the 5% parity band). {.table}
 
-link models **6,822.5 km** of bull-trout accessible habitat in PARS
-against bcfishpass’s **6,822.9 km** — a **-0.01%** difference. That
-aggregate holds to hundredths of a percent even though the per-segment
-`mapping_code` above disagrees on 476 segments: the disagreements fall
-on short reaches that do not move the habitat totals.
+link models **6,822.5 km** of accessible bull-trout habitat in PARS
+against bcfishpass’s **6,822.9 km** — a **-0.01%** difference. Spawning
+and rearing agree within the habitat model’s tolerance.
 
 ![Bull-trout per-segment mapping_code across the Parsnip River Watershed
 Group, link's bcfishpass configuration. Stream colours come straight
