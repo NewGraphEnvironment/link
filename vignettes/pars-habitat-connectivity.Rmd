@@ -118,21 +118,6 @@ knitr::kable(
 )
 ```
 
-Each segment's `mapping_code` is a compact token of the form
-`<use>;<barrier-status>`, optionally suffixed `;INTERMITTENT` for intermittent
-streams. The first field is the highest-value habitat use modelled for that
-segment — `SPAWN`, `REAR`, or `ACCESS` (reachable, but no modelled spawning or
-rearing habitat). The second records the most significant barrier *downstream*
-of the segment: `NONE` (none known), `MODELLED` (a modelled potential barrier),
-`ASSESSED` (a field-assessed known barrier), `DAM`, or `REMEDIATED` (a barrier
-since fixed). Stream colour is keyed on barrier status alone — a purple segment
-sits below a dam, a red one below a field-assessed barrier — regardless of
-habitat use, while line width encodes the habitat use itself: spawning reaches
-draw thickest, rearing medium, access-only thinnest. Intermittent reaches
-(`;INTERMITTENT`) draw dashed. Colours and widths are read straight from the
-bcfishpass symbology registry, so the maps match a bcfishpass QGIS project
-exactly.
-
 ## Cached inputs
 
 The model run and the bcfishpass comparison both require a populated
@@ -149,7 +134,7 @@ time. Direct downloads from the repo (open in QGIS or any GDAL-aware tool):
   `waterbodies` (lakes + rivers + manmade), `named_streams`, and basemapping
   context layers `reserves`, `parks`, `roads`, `railways`
 - [`pars_parity.rds`](https://github.com/NewGraphEnvironment/link/raw/main/inst/vignette-data/pars_parity.rds)
-  — tunnel-free per-species `mapping_code` parity tibble
+  — per-species `mapping_code` parity tibble
 - [`pars_accessible.rds`](https://github.com/NewGraphEnvironment/link/raw/main/inst/vignette-data/pars_accessible.rds)
   — bull-trout accessible / spawning / rearing habitat (km), link's roll-up vs
   the local bcfishpass snapshot
@@ -191,7 +176,7 @@ reserves <- clip_aoi(reserves)
 parks    <- clip_aoi(parks)
 
 # Classified-segment counts for the grayling map captions — derived from the
-# loaded layer so they track the cached artifact, never hand-edited (link#226).
+# loaded layer so they track the cached artifact, never hand-edited.
 .bt_present <- !is.na(streams$mapping_code_bt) & nzchar(streams$mapping_code_bt)
 .gr_present <- !is.na(streams$mapping_code_gr) & nzchar(streams$mapping_code_gr)
 n_bt     <- sum(.bt_present)
@@ -225,50 +210,41 @@ lnk_pipeline_run(conn, aoi = "PARS", cfg = cfg_default, loaded = loaded_d,
 ## Reproducing bcfishpass (parity)
 
 `lnk_compare_mapping_code()` compares `link`'s per-segment `mapping_code`
-against the local bcfishpass snapshot, segment by segment, with no database
-tunnel required. The comparison restricts itself to species that are actually
-active in the watershed group — which, for the reasons above, is bull trout
-alone in `PARS`.
+against the local bcfishpass snapshot, segment by segment. The comparison
+restricts itself to species that are actually active in the watershed group —
+which, for the reasons above, is bull trout alone in `PARS`.
 
 ```{r parity-table, echo = FALSE}
-ptab <- parity[, c("wsg", "species", "total_segs", "match_pct",
-                   "n_diffs", "top_pattern", "top_pattern_count")]
-names(ptab) <- c("WSG", "species", "segments", "match %", "n diffs",
-                 "top diff pattern (link | bcfishpass)", "count")
+ptab <- parity[, c("wsg", "species", "total_segs", "match_pct")]
+names(ptab) <- c("WSG", "species", "segments", "match %")
 knitr::kable(
   ptab, row.names = FALSE,
   caption = paste0(
     "Per-segment mapping_code parity for bull trout in PARS, link's ",
-    "bcfishpass config vs the local bcfishpass snapshot. The top diff pattern ",
-    "column shows the most common (link | reference) disagreement, not a ",
-    "literal mapping_code value."
+    "bcfishpass config vs the local bcfishpass snapshot."
   )
 )
 ```
 
 ```{r parity-pct, echo = FALSE, results = "asis"}
 cat(sprintf(paste0("link reproduces **%.2f%%** of bcfishpass's per-segment ",
-                   "bull-trout `mapping_code` across %s segments, with %s ",
-                   "disagreements. That is consistent with the 99.66%% ",
-                   "study-area median established for the Peace.\n"),
+                   "bull-trout `mapping_code` across %s segments — consistent ",
+                   "with the 99.66%% study-area median established for the ",
+                   "Peace.\n"),
             parity$match_pct[1],
-            format(parity$total_segs[1], big.mark = ","),
-            format(parity$n_diffs[1], big.mark = ",")))
+            format(parity$total_segs[1], big.mark = ",")))
 ```
-
-The remaining disagreements concentrate on intermittent reaches downstream of
-dams — segments where the `;INTERMITTENT` and `;DAM` qualifiers interact, and
-where cross-watershed-group ordering is most sensitive.
 
 ### Accessible habitat (km)
 
 Per-segment `mapping_code` agreement is one lens; the habitat **totals** are
-another. `link`'s `accessible_km` roll-up (`lnk_rollup_wsg()`) sums stream length
-a species can reach — `access` in {modelled, observed} — and compares it against
-the same quantity from the bcfishpass reference view, tunnel-free, using the
-identical `IN (1, 2)` predicate. Before the #223 access-segmentation fix a reach
-could straddle a gradient frontier and be credited whole; now streams break at
-**every** frontier, so the accessible total converges on bcfishpass exactly.
+another. `lnk_rollup_wsg()` sums, per species, the stream length a fish can reach
+(accessible) and the lengths modelled as spawning and rearing — link's own model
+output, produced whether or not there is anything to compare against. Below,
+those totals sit next to the same quantities from the bcfishpass habitat model.
+Because `link` breaks streams at every gradient frontier, a reach never straddles
+the accessibility boundary, so the accessible total matches bcfishpass to a
+rounding error.
 
 ```{r accessible-table, echo = FALSE}
 atab <- accessible
@@ -277,8 +253,8 @@ knitr::kable(
   atab, row.names = FALSE, digits = 2,
   caption = paste0(
     "Bull-trout accessible / spawning / rearing habitat (km) in PARS: link's ",
-    "roll-up vs the local bcfishpass snapshot. accessible_km is the #223 target ",
-    "and matches exactly; spawning and rearing agree within habitat-methodology ",
+    "roll-up vs the local bcfishpass snapshot. Accessible habitat matches to a ",
+    "rounding error; spawning and rearing agree within the habitat model's ",
     "tolerance (both well inside the 5% parity band)."
   )
 )
@@ -286,16 +262,13 @@ knitr::kable(
 
 ```{r accessible-pct, echo = FALSE, results = "asis"}
 acc <- accessible[accessible$metric == "accessible", ]
-cat(sprintf(paste0("link models **%s km** of bull-trout accessible habitat in ",
-                   "PARS against bcfishpass's **%s km** — a **%+.2f%%** difference. ",
-                   "That aggregate holds to hundredths of a percent even though the ",
-                   "per-segment `mapping_code` above disagrees on %s segments: the ",
-                   "disagreements fall on short reaches that do not move the ",
-                   "habitat totals.\n"),
+cat(sprintf(paste0("link models **%s km** of accessible bull-trout habitat in ",
+                   "PARS against bcfishpass's **%s km** — a **%+.2f%%** ",
+                   "difference. Spawning and rearing agree within the habitat ",
+                   "model's tolerance.\n"),
             formatC(acc$link_km, format = "f", digits = 1, big.mark = ","),
             formatC(acc$bcfp_km, format = "f", digits = 1, big.mark = ","),
-            acc$diff_pct,
-            format(parity$n_diffs[1], big.mark = ",")))
+            acc$diff_pct))
 ```
 
 ```{r symbology, include = FALSE}
