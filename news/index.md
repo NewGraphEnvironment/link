@@ -1,5 +1,24 @@
 # Changelog
 
+## link 0.44.2
+
+Reader-facing prose cleanup on the PARS vignette
+(`vignettes/pars-habitat-connectivity.Rmd`), from review — no model,
+artifact, or numbers change. Dropped internal issue numbers and
+build-infrastructure (“tunnel”) references, and cut the per-segment
+`mapping_code` disagreement detail (the top-diff-pattern columns and the
+“remaining disagreements” paragraph) since bull-trout parity is ~99%.
+The accessible / spawning / rearing km table stays but is reframed
+around
+[`lnk_rollup_wsg()`](https://newgraphenvironment.github.io/link/reference/lnk_rollup_wsg.md)
+as a standalone habitat-totals roll-up — link’s own numbers, no
+reference required — that happens to match bcfishpass, rather than a
+proof-of-parity exercise. Removed the `mapping_code` symbology paragraph
+entirely: the colour semantics were easy to mis-state (e.g. red marks an
+accessible reach whose downstream PSCIS crossing is ranked a *barrier*,
+not merely “field-assessed”), and each map already carries its own
+colour legend.
+
 ## link 0.44.1
 
 Extend the PARS vignette to demonstrate `accessible_km`
