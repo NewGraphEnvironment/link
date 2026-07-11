@@ -19,6 +19,28 @@ notice.
 **Repository:** NewGraphEnvironment/link **Primary Language:** R
 **Prefix:** `lnk_` **Branch:** `main` (v0.44.0 as of 2026-07-03)
 
+## Status (2026-07-11) — \#231 closed misdirected; \#232 opened (crossings parity)
+
+**Key correction (do NOT re-rabbit-hole):** the pipeline builds
+`<schema>.crossings` **from DB primitives** (`lnk_pipeline_crossings` →
+`.lnk_crossings_union`: PSCIS + `fresh.modelled_stream_crossings` +
+CABD), **not** from `crossings.csv`. The CSV read at
+`lnk_pipeline_load.R:100` is **vestigial** — the union drops + rebuilds
+the table before break/classify/mapping_code touch it. So \#231
+(“consume weekly crossings.csv; repoint pipeline off fresh”) was
+**closed as misdirected**; lessons in
+`planning/archive/2026-07-issue-231-crossings-from-primitives/README.md`
+(+ memory `crossings-built-from-primitives`). Freshness lever =
+`data-raw/snapshot_bcfp.sh` reloading the primitives into the
+**`fwapg`** DB (last load ~2026-05-26;
+[`lnk_db_conn()`](https://newgraphenvironment.github.io/link/reference/lnk_db_conn.md)
+defaults to a `bcfishpass` DB that LACKS them). Opened **\#232** —
+confirm link’s built crossings ≈ bcfp’s complete `crossings_vw` (the
+parity reference). Aside: `crossings.csv` was published to
+`s3://newgraph` (db_newgraph#15, smnorris PR \#57) before we realized
+the models don’t consume it — **db_newgraph#16** tracks reconsidering
+that dump.
+
 ## Status (2026-07-04) — v0.44.1 shipped (#226 vignette accessible_km)
 
 Extended the PARS vignette with an **Accessible habitat (km)** section
