@@ -17,7 +17,7 @@ notice.
 ## Repository Context
 
 **Repository:** NewGraphEnvironment/link **Primary Language:** R
-**Prefix:** `lnk_` **Branch:** `main` (v0.44.0 as of 2026-07-03)
+**Prefix:** `lnk_` **Branch:** `main` (v0.44.2 as of 2026-07-06)
 
 ## Status (2026-07-11) — \#231 closed misdirected; \#232 opened (crossings parity)
 
