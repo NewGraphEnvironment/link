@@ -42,10 +42,14 @@ The issue says `cluster_*` (9 columns) → `R/lnk_pipeline_connect.R`. That is i
 
 ## Phase 4: Make the dictionary load-bearing in the audit
 
-- [ ] `data-raw/audit_configs.R` §3b (line 164): replace the hardcoded `grepl("^observation_", extra_link)` ownership rule with a lookup against the dictionary's `owner` column
-- [ ] Add a dictionary-coverage check so an undocumented new column flags via `flag()` rather than passing silently
-- [ ] Preserve existing semantics: `flag()` accumulator, end-of-run rollup, non-zero exit
-- [ ] `Rscript data-raw/audit_configs.R` reports "No findings — config layers aligned." and exits 0
+- [x] `data-raw/audit_configs.R` §3b: replaced the hardcoded `grepl("^observation_", extra_link)` ownership rule with a lookup against the dictionary's `owner` column
+- [x] Add a dictionary-coverage check so an undocumented new column flags via `flag()` rather than passing silently
+- [x] Added a reverse consistency check: a column the dictionary calls link-owned that fresh actually ships is a stale dictionary, and flags
+- [x] Guard against the dictionary itself being missing/malformed (flags rather than erroring out mid-audit)
+- [x] Preserve existing semantics: `flag()` accumulator, end-of-run rollup, non-zero exit
+- [x] `Rscript data-raw/audit_configs.R` reports "No findings — config layers aligned." and exits 0
+- [x] **Negative-tested the guard** — removing one dictionary row makes the audit exit 1 and fire both `undocumented` and `not declared link-owned` flags; file restored byte-identical to HEAD afterwards
+- [x] No new lints introduced (13 before, 13 after — the first draft added one `indentation_linter` at the alignment check, since restructured)
 
 ## Phase 5: Documentation
 

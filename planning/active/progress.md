@@ -28,3 +28,8 @@
 - Ownership recorded as fact, not inference: 14 fresh-owned, 5 link-owned (`observation_*`)
 - Notable content captured: `cluster_spawn_bridge_distance` is overridden by `connected_distance_max` in rules.yaml when present (the YAML wins, the column is only a fallback); `rear_gradient_min` is the sole orphan of the 19
 - Next: Phase 4 — rewire `audit_configs.R` section 3b to read `owner` from the dictionary
+- **Phase 4 complete** — `audit_configs.R` section 3b now reads ownership from `dictionary_parameters_fresh.csv` instead of prefix-matching `^observation_`. Adding a link-owned column is now a dictionary edit, not a regex edit
+- Three guards where there was one: undocumented-column coverage, a reverse check (dictionary claims link-owned but fresh ships it = stale dictionary), and a missing/malformed-dictionary guard that flags instead of erroring mid-run
+- Negative-tested: dropping one dictionary row makes the audit exit 1 and fire both flags; restored byte-identical to HEAD. A guard that has never failed is not a verified guard
+- Lint parity held (13 before, 13 after) after restructuring an alignment check that had added one `indentation_linter`
+- Next: Phase 5 — RUNBOOK section 7 ownership row, NEWS, version bump
