@@ -253,7 +253,7 @@ To run the entire province: loop over watershed groups. Or pass any AOI with `sp
 - #45 — Gradient classes cleanup (derive from `loaded$parameters_fresh$access_gradient_max`)
 - #52 — Channel-class break positions vs gradient thresholds (research)
 - #53 — Distribute tar_make across M4 + M1 + db_newgraph
-- #75 — `dimensions_columns.csv` as source-of-truth: auto-gen README + `lnk_rules_build()` validation (CSV seeded in v0.17.0)
+- #75 — `dictionary_dimensions.csv` as source-of-truth: auto-gen README + `lnk_rules_build()` validation (CSV seeded in v0.17.0)
 
 ## Recently closed
 

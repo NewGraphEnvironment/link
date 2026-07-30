@@ -9,3 +9,11 @@
 - Created branch `233-rename-dimensions-columns-csv-dictionary` off updated main
 - Scaffolded PWF baseline from issue #233 with approved phases
 - Next: Phase 1 — `git mv` the dictionary + repair `CLAUDE.md:256`
+
+## Session 2026-07-30
+
+- **Phase 1 complete** — `git mv` to `dictionary_dimensions.csv`, `CLAUDE.md:256` repaired
+- Sweep verified: only `NEWS.md:421` + archived findings retain the old name (both historical by design). No indirect/glob reference — `audit_configs.R:205` globs only `overrides/`, never the configs root
+- Installed `fresh` v0.32.0 from local repo (was 0.31.0, below link's `fresh (>= 0.32.0)` pin) — cleared a spurious `frs_wsg_drainage` export error
+- Test suite: 1294 PASS, 1 FAIL. The failure (`test-lnk_wsg_resolve.R:138`) is missing DB table `public.wsg_outlet`, whose builder is open follow-up #227 — pre-existing, unrelated to the rename
+- Next: Phase 2 — write the failing dictionary/schema contract test

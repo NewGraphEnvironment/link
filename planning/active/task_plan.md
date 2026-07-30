@@ -10,10 +10,11 @@ The issue says `cluster_*` (9 columns) → `R/lnk_pipeline_connect.R`. That is i
 
 ## Phase 1: Rename + reference repair
 
-- [ ] `git mv inst/extdata/configs/dimensions_columns.csv inst/extdata/configs/dictionary_dimensions.csv`
-- [ ] Update `CLAUDE.md:256` (#75 entry) to the new filename
-- [ ] Confirm sweep clean: `grep -rn "dimensions_columns" . --exclude-dir=.git` returns only `NEWS.md:421` + `planning/archive/2026-05-issue-45-gradient-classes/findings.md:108` (both historical, intentionally untouched)
-- [ ] `devtools::test()` — confirms the rename is inert (`lnk_config()` resolves bundles via `dir.exists()`, `R/lnk_config.R:280`; nothing reads the dictionary)
+- [x] `git mv inst/extdata/configs/dimensions_columns.csv inst/extdata/configs/dictionary_dimensions.csv`
+- [x] Update `CLAUDE.md:256` (#75 entry) to the new filename
+- [x] Confirm sweep clean: `grep -rn "dimensions_columns" . --exclude-dir=.git` returns only `NEWS.md:421` + `planning/archive/2026-05-issue-45-gradient-classes/findings.md:108` (both historical, intentionally untouched)
+- [x] `devtools::test()` — confirms the rename is inert (`lnk_config()` resolves bundles via `dir.exists()`, `R/lnk_config.R:280`; nothing reads the dictionary). 1294 PASS; 1 pre-existing FAIL (`test-lnk_wsg_resolve.R:138`) from missing `public.wsg_outlet` DB table — builder is open follow-up #227, unrelated to this rename
+- [x] Verified no indirect reference: the only `list.files()` over a bundle dir is `data-raw/audit_configs.R:205`, scoped to `overrides/`, never the configs root. No hits in `_pkgdown.yml`, `.github/`, `vignettes/`, `man/`, `NAMESPACE`
 
 ## Phase 2: Test first — dictionary/schema contract
 
