@@ -23,3 +23,8 @@
 - Self-review caught two precision defects in the new test before commit: `nzchar(NA)` is `TRUE` so bare non-empty checks would wave through an NA cell (added `filled()`), and the owner assertion used `expect_setequal` where a domain check was meant (conflated two failure modes)
 - `lintr::lint()` clean on the new file
 - Next: Phase 3 — author `dictionary_parameters_fresh.csv` (19 rows) and turn the 6 red assertions green
+- **Phase 3 complete** — `inst/extdata/configs/dictionary_parameters_fresh.csv` authored, 19 rows. Contract tests 23 PASS / 0 FAIL; full suite 1317 PASS (up 23), same lone pre-existing #227 failure
+- Every `consumed_by` reference machine-verified against the actual source line via a throwaway resolver script — 24/24 resolve. Two were off by 1-2 lines in the first draft (`frs_habitat.R:1159` was blank; `frs_habitat_classify.R:168` pointed at `species_code` not `access_gradient_max`) and were corrected rather than left approximate
+- Ownership recorded as fact, not inference: 14 fresh-owned, 5 link-owned (`observation_*`)
+- Notable content captured: `cluster_spawn_bridge_distance` is overridden by `connected_distance_max` in rules.yaml when present (the YAML wins, the column is only a fallback); `rear_gradient_min` is the sole orphan of the 19
+- Next: Phase 4 — rewire `audit_configs.R` section 3b to read `owner` from the dictionary

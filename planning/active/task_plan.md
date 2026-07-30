@@ -28,16 +28,17 @@ The issue says `cluster_*` (9 columns) → `R/lnk_pipeline_connect.R`. That is i
 
 ## Phase 3: Author dictionary_parameters_fresh.csv
 
-- [ ] `inst/extdata/configs/dictionary_parameters_fresh.csv`, 19 rows, schema `column,type,group,owner,consumed_by,default_when_absent,description,related` (mirrors `dictionary_dimensions.csv` with `emits` → `consumed_by`, plus `owner`)
-- [ ] Groups: `key` / `access` / `gradient` / `cluster` / `observation`
-- [ ] Trace every `consumed_by` to a real `file:line`, distinguishing reader from pass-through. Verified refs on current HEAD:
+- [x] `inst/extdata/configs/dictionary_parameters_fresh.csv`, 19 rows, schema `column,type,group,owner,consumed_by,default_when_absent,description,related` (mirrors `dictionary_dimensions.csv` with `emits` → `consumed_by`, plus `owner`)
+- [x] Groups: `key` / `access` / `gradient` / `cluster` / `observation`
+- [x] Trace every `consumed_by` to a real `file:line`, distinguishing reader from pass-through. **All 24 refs machine-verified to resolve to the exact intended line** (two were off by 1–2 lines on first draft and were corrected, not left approximate). Verified refs on current HEAD:
   - `access_gradient_max` → `R/lnk_barriers_unify.R:139`, `R/lnk_pipeline_prepare.R:553` (+ fresh)
   - `spawn_gradient_min` → `fresh/R/frs_habitat_classify.R:171`, `fresh/R/frs_habitat_predicates.R:87`
   - `cluster_*` → `fresh/R/frs_habitat.R:1164-1196`; link pass-through at `R/lnk_pipeline_connect.R:107`
   - cluster semantics prose → `fresh/R/frs_cluster.R` roxygen (documents `direction` / `bridge_gradient` / `bridge_distance` / `confluence_m` in full)
   - `observation_*` → `R/lnk_barrier_overrides.R`
-- [ ] Record `rear_gradient_min` as unused — header-only in both packages, zero readers. fresh-owned, so its fate is a fresh-side call; do not drop it here
-- [ ] Phase 2 tests now pass
+- [x] Record `rear_gradient_min` as unused — header-only in both packages, zero readers. fresh-owned, so its fate is a fresh-side call; do not drop it here
+- [x] Confirmed the spawn-side cluster columns ARE consumed (`cluster_spawn_direction` at `fresh/R/frs_habitat.R:1228`, `cluster_spawn_confluence_m` at `:1230`) — `rear_gradient_min` is the only genuine orphan of the 19
+- [x] Phase 2 tests now pass — 23 PASS / 0 FAIL on the dictionary contract; full suite 1317 PASS
 
 ## Phase 4: Make the dictionary load-bearing in the audit
 
