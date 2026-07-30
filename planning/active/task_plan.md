@@ -18,12 +18,13 @@ The issue says `cluster_*` (9 columns) → `R/lnk_pipeline_connect.R`. That is i
 
 ## Phase 2: Test first — dictionary/schema contract
 
-- [ ] `tests/testthat/test-dictionaries.R`, using `system.file("extdata", "configs", ...)` (`inst/` ships; `data-raw/` is `.Rbuildignore`d, so testthat is the durable guard — the audit script is dev-only)
-- [ ] Assert: every column in each bundle's `parameters_fresh.csv` has exactly one dictionary row, and every dictionary row names a real column
-- [ ] Assert: `owner` ∈ {`fresh`, `link`}; the `link`-owned set is exactly the 5 `observation_*` columns
-- [ ] Assert: `dictionary_dimensions.csv` covers every column of each bundle's `dimensions.csv`
-- [ ] `skip_if_not_installed("fresh")` on the cross-package assertion — fresh is Suggests (>= 0.32.0)
-- [ ] Tests fail at this point (no dictionary yet). That is the contract.
+- [x] `tests/testthat/test-dictionaries.R`, using `system.file("extdata", "configs", ...)` (`inst/` ships; `data-raw/` is `.Rbuildignore`d, so testthat is the durable guard — the audit script is dev-only)
+- [x] Assert: every column in each bundle's `parameters_fresh.csv` has exactly one dictionary row, and every dictionary row names a real column
+- [x] Assert: `owner` ∈ {`fresh`, `link`}; the `link`-owned set is exactly the 5 `observation_*` columns
+- [x] Assert: `dictionary_dimensions.csv` covers every column of each bundle's `dimensions.csv`
+- [x] `skip_if_not_installed("fresh")` on the cross-package assertion — fresh is Suggests (>= 0.32.0)
+- [x] Tests fail at this point (no dictionary yet). That is the contract. **6 FAIL / 9 PASS** — every `parameters_fresh` assertion red, dimensions side already green
+- [x] Bundles carry *different* column subsets (bcfishpass `dimensions.csv` = 30 cols, defaults = 32), so coverage is asserted against the **union** across bundles, not any single bundle
 
 ## Phase 3: Author dictionary_parameters_fresh.csv
 
