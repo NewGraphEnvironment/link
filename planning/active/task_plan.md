@@ -53,19 +53,20 @@ The issue says `cluster_*` (9 columns) → `R/lnk_pipeline_connect.R`. That is i
 
 ## Phase 5: Documentation
 
-- [ ] `RUNBOOK.md` §7 "Where every rule lives": new ownership row pointing at fresh#129 + `audit_configs.R` §3b — the durable fix for the re-derivation problem
-- [ ] `NEWS.md` entry
-- [ ] Version bump to 0.44.3 as the **final** commit of the branch (per CLAUDE.md release convention)
+- [x] `RUNBOOK.md` §7 "Where every rule lives": new dictionary row + a full **"Who owns which `parameters_fresh` column"** subsection naming fresh#129, the 14/5 split, both enforcement points, and the opposite directions of travel for `rules.yaml` vs the column schema
+- [x] Recorded `rear_gradient_min` in the RUNBOOK's "gaps worth knowing" (now three, was two)
+- [x] `NEWS.md` entry
+- [x] Version bump to 0.44.3 as the **final** commit of the branch (per CLAUDE.md release convention)
 
 ## Validation
 
-- [ ] `Rscript -e 'devtools::test()' 2>&1 | grep -E "(FAIL|ERROR|PASS)" | tail -5`
-- [ ] `Rscript -e 'lintr::lint_package()'` clean
-- [ ] `Rscript data-raw/audit_configs.R` → 0 findings, exit 0
-- [ ] Every `consumed_by` entry resolves to a real file:line (spot-check by grep)
-- [ ] Tests pass
-- [ ] `/code-check` clean on each commit
-- [ ] PWF checkboxes match landed work
+- [x] `devtools::test()` — 1317 PASS, 1 pre-existing FAIL (#227 `public.wsg_outlet`, DB state, unrelated)
+- [x] `lintr` clean on both touched files (`test-dictionaries.R` 0 lints; `audit_configs.R` 13 = unchanged baseline)
+- [x] `Rscript data-raw/audit_configs.R` → 0 findings, exit 0
+- [x] Every `consumed_by` entry resolves to a real file:line — machine-verified, 24/24
+- [x] Tests pass
+- [x] `/code-check` clean on each commit (run inline; see progress.md)
+- [x] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
 
 ## Out of scope

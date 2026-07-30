@@ -33,3 +33,7 @@
 - Negative-tested: dropping one dictionary row makes the audit exit 1 and fire both flags; restored byte-identical to HEAD. A guard that has never failed is not a verified guard
 - Lint parity held (13 before, 13 after) after restructuring an alignment check that had added one `indentation_linter`
 - Next: Phase 5 — RUNBOOK section 7 ownership row, NEWS, version bump
+- **Phase 5 complete** — `RUNBOOK.md` section 7 gains a dictionary row plus a "Who owns which parameters_fresh column" subsection: the 14/5 split, fresh#129 as the deciding issue, both enforcement points, and the opposite directions of travel (`rules.yaml` link->fresh, column schema fresh->link). `rear_gradient_min` added to the "gaps worth knowing" list (now three)
+- `NEWS.md` entry written; version bumped 0.44.2 -> 0.44.3 as the final commit
+- Final validation: 1317 PASS / 1 pre-existing FAIL (#227), audit exits 0 with no findings, both touched files lint-clean, old-name sweep clean
+- Next: `/planning-archive`, then `/gh-pr-push`
