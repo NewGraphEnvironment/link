@@ -456,12 +456,45 @@ issue.
 | Habitat dimensions (spawn/rear by gradient, channel width, lake/stream, …) | `configs/<name>/dimensions.csv` → [`lnk_rules_build()`](https://newgraphenvironment.github.io/link/reference/lnk_rules_build.md) → `rules.yaml` | `frs_habitat_classify()` (token1 habitat) |
 | Species residence (resident/anadromous/spawn-only) | **hardcoded** defaults in [`lnk_pipeline_mapping_code()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_mapping_code.md) | which mc_barrier flavor + spawn-only token1 |
 | Dam / anthropogenic blocking | **nowhere** — universal `all species` in `lnk_barriers_unify` | `blocks_species` (§2a). Not rules-driven. |
+| What each config column means | `configs/dictionary_dimensions.csv`, `configs/dictionary_parameters_fresh.csv` | data dictionaries — per-column type, group, default, description, and (for `parameters_fresh`) `owner` + `consumed_by` <file:line> |
 
-Two gaps worth knowing: **species residence** is hardcoded (data-drive
-is follow-up \#189), and **dam blocking is not rules-driven** at all
-(universal). If dam blocking should ever become species-specific, it’s a
-new per-source-per-species column + `lnk_barriers_unify` change — not a
-tweak.
+### Who owns which `parameters_fresh` column
+
+**Do not re-derive this.** `parameters_fresh.csv` is co-owned, and the
+split is settled:
+
+- **fresh owns the 14 network-engine columns** — `species_code`,
+  `access_gradient_max`, the two `*_gradient_min`, and the nine
+  `cluster_*`. fresh ships them in its own
+  `inst/extdata/parameters_fresh.csv`; link’s bundles are seeded from
+  it.
+- **link owns the 5 `observation_*` columns** — fish-passage
+  interpretation (counts, thresholds, date windows, species pooling,
+  control veto).
+
+The boundary was decided in
+[fresh#129](https://github.com/NewGraphEnvironment/fresh/issues/129)
+(shipped fresh 0.12.7), which *removed* `observation_*` from fresh after
+fresh#69 had added them: “fish passage interpretation belongs in link,
+not the network engine.” Values may diverge freely per bundle — link
+tunes them — but the **column set** is contractual.
+
+Enforced in two places, both of which read
+`dictionary_parameters_fresh.csv`’s `owner` column rather than
+hardcoding the rule: `data-raw/audit_configs.R` §3b (pre-trifecta gate)
+and `tests/testthat/test-dictionaries.R` (runs in CI, since `data-raw/`
+is `.Rbuildignore`d). Direction of travel is opposite for the two shared
+artifacts: `rules.yaml` flows **link → fresh** (link owns the generator,
+[`lnk_rules_build()`](https://newgraphenvironment.github.io/link/reference/lnk_rules_build.md));
+the `parameters_fresh` column schema flows **fresh → link**.
+
+Three gaps worth knowing: **species residence** is hardcoded (data-drive
+is follow-up \#189), **dam blocking is not rules-driven** at all
+(universal), and `rear_gradient_min` is carried in the schema but **read
+by no code in either package** — it is fresh-owned, so removing it is a
+fresh-side call. If dam blocking should ever become species-specific,
+it’s a new per-source-per-species column + `lnk_barriers_unify` change —
+not a tweak.
 
 ------------------------------------------------------------------------
 

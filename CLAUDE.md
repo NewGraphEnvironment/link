@@ -41,6 +41,48 @@ parity reference). Aside: `crossings.csv` was published to
 the models don’t consume it — **db_newgraph#16** tracks reconsidering
 that dump.
 
+## Status (2026-07-31) — v0.44.3 shipped (#233 config dictionaries + ownership boundary)
+
+Both config CSVs now have data dictionaries:
+`configs/dictionary_dimensions.csv` (renamed from
+`dimensions_columns.csv`) and the new
+`configs/dictionary_parameters_fresh.csv` (19 rows — type, group,
+`owner`, `consumed_by`, default, description). **The point was not
+documentation, it was stopping the re-derivation:** the fresh↔︎link
+`parameters_fresh` column-ownership split had been settled long ago by
+[fresh#129](https://github.com/NewGraphEnvironment/fresh/issues/129)
+(fresh 0.12.7 *removed* `observation_*` — “fish passage interpretation
+belongs in link, not the network engine”) but was only findable by
+archaeology through two repos’ planning archives, so it kept getting
+re-worked from scratch. It is now the `owner` column — **14 fresh-owned
+engine params, 5 link-owned `observation_*`** — read by
+`audit_configs.R` §3b instead of a hardcoded
+`grepl("^observation_", ...)`, and written up in
+[`RUNBOOK.md`](https://newgraphenvironment.github.io/link/RUNBOOK.md) §7
+“Who owns which `parameters_fresh` column”. Adding a link-owned column
+is now a dictionary edit, not a regex edit.
+
+**Two findings from machine-verifying every `consumed_by` <file:line>
+(24/24) rather than inferring them:** link never reads the nine
+`cluster_*` columns at all — it only passes the frame through
+(`lnk_pipeline_connect.R:107`) to fresh’s `.frs_run_connectivity()`; and
+**`rear_gradient_min` is read by no code in either package** (recorded
+as unused, not dropped — fresh owns that schema). **Gotcha worth
+knowing:** the bundles carry *different* column subsets — bcfishpass
+`dimensions.csv` has 30 columns to the three `default*` bundles’ 32 — so
+any dictionary/coverage check must assert against the **union**, never a
+single bundle. Guarded in two layers because `data-raw/` is
+`.Rbuildignore`d and never runs for an installed package:
+`tests/testthat/test-dictionaries.R` (+23, the CI-side guard) and the
+audit’s coverage / reverse-consistency / missing-dictionary flags
+(negative-tested — dropping one row exits 1). Also removed
+`audit_configs.R`’s hardcoded `setwd("/Users/airvine/...")`: the script
+now derives its repo root from its own location and resolves paths via
+`repo_path()`, so it runs from any cwd and mutates none. Open follow-ups
+unchanged: **\#224**, **\#225**, **\#227** (the `public.wsg_outlet`
+builder — its absence is the one standing test failure,
+`test-lnk_wsg_resolve.R:138`).
+
 ## Status (2026-07-04) — v0.44.1 shipped (#226 vignette accessible_km)
 
 Extended the PARS vignette with an **Accessible habitat (km)** section
@@ -545,7 +587,8 @@ with `species` for sub-basin work.
   `loaded$parameters_fresh$access_gradient_max`)
 - \#52 — Channel-class break positions vs gradient thresholds (research)
 - \#53 — Distribute tar_make across M4 + M1 + db_newgraph
-- \#75 — `dimensions_columns.csv` as source-of-truth: auto-gen README +
+- \#75 — `dictionary_dimensions.csv` as source-of-truth: auto-gen
+  README +
   [`lnk_rules_build()`](https://newgraphenvironment.github.io/link/reference/lnk_rules_build.md)
   validation (CSV seeded in v0.17.0)
 

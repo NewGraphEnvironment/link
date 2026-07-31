@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.44.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.44.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -301,8 +301,24 @@ mc_barrier (from barrier_sources flags, resident vs anadromous differ slightly):
 </td>
 <td>
 <code>blocks_species</code> (§2a). Not rules-driven.</td>
-</tr></tbody></table><p>Two gaps worth knowing: <strong>species residence</strong> is hardcoded (data-drive is follow-up #189), and <strong>dam blocking is not rules-driven</strong> at all (universal). If dam blocking should ever become species-specific, it’s a new per-source-per-species column + <code>lnk_barriers_unify</code> change — not a tweak.</p>
+</tr><tr><td>What each config column means</td>
+<td>
+<code>configs/dictionary_dimensions.csv</code>, <code>configs/dictionary_parameters_fresh.csv</code>
+</td>
+<td>data dictionaries — per-column type, group, default, description, and (for <code>parameters_fresh</code>) <code>owner</code> + <code>consumed_by</code> <a href="file:line" class="uri">file:line</a>
+</td>
+</tr></tbody></table><div class="section level3">
+<h3 id="who-owns-which-parameters_fresh-column">Who owns which <code>parameters_fresh</code> column<a class="anchor" aria-label="anchor" href="#who-owns-which-parameters_fresh-column"></a></h3>
+<p><strong>Do not re-derive this.</strong> <code>parameters_fresh.csv</code> is co-owned, and the split is settled:</p>
+<ul><li>
+<strong>fresh owns the 14 network-engine columns</strong> — <code>species_code</code>, <code>access_gradient_max</code>, the two <code>*_gradient_min</code>, and the nine <code>cluster_*</code>. fresh ships them in its own <code>inst/extdata/parameters_fresh.csv</code>; link’s bundles are seeded from it.</li>
+<li>
+<strong>link owns the 5 <code>observation_*</code> columns</strong> — fish-passage interpretation (counts, thresholds, date windows, species pooling, control veto).</li>
+</ul><p>The boundary was decided in <a href="https://github.com/NewGraphEnvironment/fresh/issues/129" class="external-link">fresh#129</a> (shipped fresh 0.12.7), which <em>removed</em> <code>observation_*</code> from fresh after fresh#69 had added them: “fish passage interpretation belongs in link, not the network engine.” Values may diverge freely per bundle — link tunes them — but the <strong>column set</strong> is contractual.</p>
+<p>Enforced in two places, both of which read <code>dictionary_parameters_fresh.csv</code>’s <code>owner</code> column rather than hardcoding the rule: <code>data-raw/audit_configs.R</code> §3b (pre-trifecta gate) and <code>tests/testthat/test-dictionaries.R</code> (runs in CI, since <code>data-raw/</code> is <code>.Rbuildignore</code>d). Direction of travel is opposite for the two shared artifacts: <code>rules.yaml</code> flows <strong>link → fresh</strong> (link owns the generator, <code><a href="reference/lnk_rules_build.html">lnk_rules_build()</a></code>); the <code>parameters_fresh</code> column schema flows <strong>fresh → link</strong>.</p>
+<p>Three gaps worth knowing: <strong>species residence</strong> is hardcoded (data-drive is follow-up #189), <strong>dam blocking is not rules-driven</strong> at all (universal), and <code>rear_gradient_min</code> is carried in the schema but <strong>read by no code in either package</strong> — it is fresh-owned, so removing it is a fresh-side call. If dam blocking should ever become species-specific, it’s a new per-source-per-species column + <code>lnk_barriers_unify</code> change — not a tweak.</p>
 <hr></div>
+</div>
 <div class="section level2">
 <h2 id="id_8-fast-verification-recipes">8. Fast verification recipes<a class="anchor" aria-label="anchor" href="#id_8-fast-verification-recipes"></a></h2>
 <div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="co"># What does bcfp emit for a WSG's mapping_code (local snapshot, no tunnel)?</span></span>
