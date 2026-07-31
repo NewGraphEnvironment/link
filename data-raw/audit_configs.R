@@ -11,8 +11,30 @@ suppressPackageStartupMessages({
   library(yaml); library(digest); library(tibble); library(dplyr)
 })
 
-setwd("/Users/airvine/Projects/repo/link")
-devtools::load_all(quiet = TRUE)
+# Resolve the repo root from this script's own location — it lives at
+# <root>/data-raw/audit_configs.R. Every path below goes through repo_path(),
+# so the audit neither depends on nor mutates the caller's working directory.
+# (Previously this setwd()'d to a hardcoded /Users path, which made the script
+# unrunnable for anyone else and silently wrong from another checkout.)
+script_path <- local({
+  hit <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
+  if (length(hit) > 0) return(sub("^--file=", "", hit[1]))
+  # sourced rather than Rscript'd: find the sourcing frame's file
+  for (i in seq_len(sys.nframe())) {
+    of <- sys.frames()[[i]]$ofile
+    if (!is.null(of)) return(of)
+  }
+  NULL
+})
+if (is.null(script_path)) {
+  stop("Cannot resolve this script's location. Run it as:\n",
+       "  Rscript data-raw/audit_configs.R", call. = FALSE)
+}
+repo_root <- normalizePath(file.path(dirname(script_path), ".."),
+                           mustWork = TRUE)
+repo_path <- function(...) file.path(repo_root, ...)
+
+devtools::load_all(repo_root, quiet = TRUE)
 
 bundles <- c("bcfishpass", "default")
 
@@ -58,8 +80,8 @@ if (nrow(drifted) > 0) {
 # ---------------------------------------------------------------------------
 cat("\n--- 2. rules.yaml regen vs committed ---\n")
 for (b in bundles) {
-  dim_csv <- sprintf("inst/extdata/configs/%s/dimensions.csv", b)
-  rules_committed <- sprintf("inst/extdata/configs/%s/rules.yaml", b)
+  dim_csv <- repo_path(sprintf("inst/extdata/configs/%s/dimensions.csv", b))
+  rules_committed <- repo_path(sprintf("inst/extdata/configs/%s/rules.yaml", b))
   # edge_types = "explicit" to match how the committed rules.yaml is actually
   # built (data-raw/build_rules.R + regen_provenance.R). Regenerating with
   # "categories" here is what produced the earlier spurious all-species diff.
@@ -83,10 +105,10 @@ for (b in bundles) {
 # ---------------------------------------------------------------------------
 cat("\n--- 3. Species axis consistency per bundle ---\n")
 for (b in bundles) {
-  dim_csv  <- sprintf("inst/extdata/configs/%s/dimensions.csv", b)
-  pf_csv   <- sprintf("inst/extdata/configs/%s/parameters_fresh.csv", b)
-  wsg_csv  <- sprintf("inst/extdata/configs/%s/overrides/wsg_species_presence.csv", b)
-  yaml_path <- sprintf("inst/extdata/configs/%s/rules.yaml", b)
+  dim_csv  <- repo_path(sprintf("inst/extdata/configs/%s/dimensions.csv", b))
+  pf_csv   <- repo_path(sprintf("inst/extdata/configs/%s/parameters_fresh.csv", b))
+  wsg_csv  <- repo_path(sprintf("inst/extdata/configs/%s/overrides/wsg_species_presence.csv", b))
+  yaml_path <- repo_path(sprintf("inst/extdata/configs/%s/rules.yaml", b))
 
   dim_sp  <- gsub('"', '', utils::read.csv(dim_csv, stringsAsFactors = FALSE,
                                             check.names = FALSE)[[1]])
@@ -140,29 +162,59 @@ for (b in bundles) {
 # 3b. parameters_fresh column drift (fresh canonical vs link config)
 # ---------------------------------------------------------------------------
 # fresh owns the access/cluster parameter SCHEMA; link hand-authors per-bundle
-# copies seeded from it plus link-only `observation_*` extensions. Values
-# legitimately diverge (link tunes them) — only the COLUMN SET matters here.
-# A column fresh added that link is missing means link's copy may no longer
-# load cleanly through frs_habitat(); flag it. See link#129 for the
-# directionality (link->fresh for rules.yaml; fresh->link col-schema for this).
+# copies seeded from it plus link-only extensions. Values legitimately diverge
+# (link tunes them) — only the COLUMN SET matters here. A column fresh added
+# that link is missing means link's copy may no longer load cleanly through
+# frs_habitat(); flag it. See link#129 for the directionality (link->fresh for
+# rules.yaml; fresh->link col-schema for this).
+#
+# Ownership is NOT hardcoded here. It is declared per-column in
+# `dictionary_parameters_fresh.csv` (`owner` = fresh|link), which encodes the
+# partition settled by NewGraphEnvironment/fresh#129 — reading it means a new
+# link-owned column is documented once, not taught to a regex here. The
+# dictionary is itself guarded by tests/testthat/test-dictionaries.R.
 cat("\n--- 3b. parameters_fresh column drift (fresh canonical vs link) ---\n")
 pf_fresh_path <- system.file("extdata", "parameters_fresh.csv", package = "fresh")
+dict_pf_path <- repo_path("inst/extdata/configs/dictionary_parameters_fresh.csv")
+dict_pf <- if (file.exists(dict_pf_path)) {
+  utils::read.csv(dict_pf_path, stringsAsFactors = FALSE, check.names = FALSE)
+} else {
+  NULL
+}
+if (is.null(dict_pf)) {
+  flag("3b", sprintf("dictionary missing: %s", dict_pf_path))
+} else if (!all(c("column", "owner") %in% names(dict_pf))) {
+  flag("3b", sprintf("dictionary lacks column/owner fields: %s", dict_pf_path))
+}
 if (!nzchar(pf_fresh_path)) {
   cat("  (fresh's bundled parameters_fresh.csv not found — is fresh installed?)\n")
-} else {
+} else if (!is.null(dict_pf)) {
   cols_fresh <- names(utils::read.csv(pf_fresh_path, stringsAsFactors = FALSE,
                                       check.names = FALSE, nrows = 1))
+  owned_link <- dict_pf$column[dict_pf$owner == "link"]
   cat(sprintf("  fresh canonical (%d cols): %s\n",
               length(cols_fresh), paste(cols_fresh, collapse = ", ")))
+  cat(sprintf("  dictionary declares %d link-owned: %s\n",
+              length(owned_link), paste(owned_link, collapse = ", ")))
+
+  # The dictionary must also agree with fresh about who owns what. A column
+  # fresh ships but the dictionary calls link-owned is a stale dictionary.
+  mislabelled <- intersect(owned_link, cols_fresh)
+  if (length(mislabelled) > 0) {
+    flag("3b", sprintf("dictionary marks link-owned but fresh ships it: %s",
+                       paste(mislabelled, collapse = ", ")))
+  }
+
   for (b in bundles) {
-    pf_csv   <- sprintf("inst/extdata/configs/%s/parameters_fresh.csv", b)
+    pf_csv   <- repo_path(sprintf("inst/extdata/configs/%s/parameters_fresh.csv", b))
     cols_link <- names(utils::read.csv(pf_csv, stringsAsFactors = FALSE,
                                        check.names = FALSE, nrows = 1))
 
     in_fresh_not_link <- setdiff(cols_fresh, cols_link)
     extra_link        <- setdiff(cols_link, cols_fresh)
-    link_extensions   <- extra_link[grepl("^observation_", extra_link)]
-    unexpected_link   <- setdiff(extra_link, link_extensions)
+    link_extensions   <- intersect(extra_link, owned_link)
+    unexpected_link   <- setdiff(extra_link, owned_link)
+    undocumented      <- setdiff(cols_link, dict_pf$column)
 
     cat(sprintf("\n  bundle: %s\n", b))
     if (length(link_extensions) > 0) {
@@ -176,11 +228,20 @@ if (!nzchar(pf_fresh_path)) {
     }
     if (length(unexpected_link) > 0) {
       flag(sprintf("3b %s", b),
-           sprintf("link ∖ fresh (unexpected non-observation col): %s",
+           sprintf("link ∖ fresh (col not declared link-owned in dictionary): %s",
                    paste(unexpected_link, collapse = ", ")))
     }
-    if (length(in_fresh_not_link) == 0 && length(unexpected_link) == 0) {
-      cat("    column set aligned (link = fresh + observation_* extensions)\n")
+    # Coverage: a column nobody documented must not pass silently.
+    if (length(undocumented) > 0) {
+      flag(sprintf("3b %s", b),
+           sprintf("undocumented in dictionary_parameters_fresh.csv: %s",
+                   paste(undocumented, collapse = ", ")))
+    }
+    aligned <- length(in_fresh_not_link) == 0 &&
+      length(unexpected_link) == 0 &&
+      length(undocumented) == 0
+    if (aligned) {
+      cat("    column set aligned + fully documented\n")
     }
   }
 }
@@ -190,7 +251,7 @@ if (!nzchar(pf_fresh_path)) {
 # ---------------------------------------------------------------------------
 cat("\n--- 4. Override files on disk vs declared in config.yaml ---\n")
 for (b in bundles) {
-  cfg_path <- sprintf("inst/extdata/configs/%s/config.yaml", b)
+  cfg_path <- repo_path(sprintf("inst/extdata/configs/%s/config.yaml", b))
   bundle_dir <- dirname(cfg_path)
   cfg <- yaml::read_yaml(cfg_path)
   # Declared paths are bundle-relative (e.g. "parameters_fresh.csv" at root,
@@ -249,8 +310,11 @@ for (b in bundles) {
 cat("\n--- 6. Legacy top-level parameters_habitat_* files ---\n")
 for (f in c("inst/extdata/parameters_habitat_dimensions.csv",
             "inst/extdata/parameters_habitat_rules.yaml")) {
-  if (file.exists(f)) {
-    cat(sprintf("  %s  (mtime: %s)\n", f, format(file.info(f)$mtime, "%Y-%m-%d")))
+  # Resolve against the repo root, but report the repo-relative name.
+  full <- repo_path(f)
+  if (file.exists(full)) {
+    cat(sprintf("  %s  (mtime: %s)\n", f,
+                format(file.info(full)$mtime, "%Y-%m-%d")))
   }
 }
 cat("  Note: these were the pre-bundle predecessors. Per CLAUDE.md they map to\n")

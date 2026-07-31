@@ -1,0 +1,77 @@
+# Task: Rename dimensions_columns.csv → dictionary_dimensions.csv; add dictionary_parameters_fresh.csv (#233)
+
+Two config CSVs carry the pipeline's methodology. `dimensions.csv` has a data dictionary; `parameters_fresh.csv` has none — its 19 columns are documented only in scattered prose (`RUNBOOK.md` §7 covers two families, roxygen on `lnk_barrier_overrides()` covers the observation block, the 9 `cluster_*` columns are undocumented). The existing dictionary is also named for its shape (`dimensions_columns.csv`) rather than what it is.
+
+The deeper problem this fixes: **the fresh↔link column-ownership boundary keeps getting re-derived.** It was settled by NewGraphEnvironment/fresh#129 (shipped fresh 0.12.7 — `observation_*` removed from fresh because "fish passage interpretation belongs in link, not the network engine") and is enforced today by `data-raw/audit_configs.R` §3b. That decision is currently findable only by archaeology through two repos' planning archives. Encoding it as an `owner` column, and making the audit read it, ends the re-derivation.
+
+## Correction to the issue body
+
+The issue says `cluster_*` (9 columns) → `R/lnk_pipeline_connect.R`. That is imprecise and the implementation must not copy it. link only **passes** `loaded$parameters_fresh` through (`R/lnk_pipeline_connect.R:107` → `.frs_run_connectivity()`); the columns are actually **read in fresh** at `fresh/R/frs_habitat.R:1164-1196`. `access_gradient_max` is genuinely dual-consumed (link `R/lnk_barriers_unify.R:139` + `R/lnk_pipeline_prepare.R:553`, and fresh). So `consumed_by` must distinguish reader from pass-through, traced per column rather than assumed.
+
+## Phase 1: Rename + reference repair
+
+- [x] `git mv inst/extdata/configs/dimensions_columns.csv inst/extdata/configs/dictionary_dimensions.csv`
+- [x] Update `CLAUDE.md:256` (#75 entry) to the new filename
+- [x] Confirm sweep clean: `grep -rn "dimensions_columns" . --exclude-dir=.git` returns only `NEWS.md:421` + `planning/archive/2026-05-issue-45-gradient-classes/findings.md:108` (both historical, intentionally untouched)
+- [x] `devtools::test()` — confirms the rename is inert (`lnk_config()` resolves bundles via `dir.exists()`, `R/lnk_config.R:280`; nothing reads the dictionary). 1294 PASS; 1 pre-existing FAIL (`test-lnk_wsg_resolve.R:138`) from missing `public.wsg_outlet` DB table — builder is open follow-up #227, unrelated to this rename
+- [x] Verified no indirect reference: the only `list.files()` over a bundle dir is `data-raw/audit_configs.R:205`, scoped to `overrides/`, never the configs root. No hits in `_pkgdown.yml`, `.github/`, `vignettes/`, `man/`, `NAMESPACE`
+
+## Phase 2: Test first — dictionary/schema contract
+
+- [x] `tests/testthat/test-dictionaries.R`, using `system.file("extdata", "configs", ...)` (`inst/` ships; `data-raw/` is `.Rbuildignore`d, so testthat is the durable guard — the audit script is dev-only)
+- [x] Assert: every column in each bundle's `parameters_fresh.csv` has exactly one dictionary row, and every dictionary row names a real column
+- [x] Assert: `owner` ∈ {`fresh`, `link`}; the `link`-owned set is exactly the 5 `observation_*` columns
+- [x] Assert: `dictionary_dimensions.csv` covers every column of each bundle's `dimensions.csv`
+- [x] `skip_if_not_installed("fresh")` on the cross-package assertion — fresh is Suggests (>= 0.32.0)
+- [x] Tests fail at this point (no dictionary yet). That is the contract. **6 FAIL / 9 PASS** — every `parameters_fresh` assertion red, dimensions side already green
+- [x] Bundles carry *different* column subsets (bcfishpass `dimensions.csv` = 30 cols, defaults = 32), so coverage is asserted against the **union** across bundles, not any single bundle
+
+## Phase 3: Author dictionary_parameters_fresh.csv
+
+- [x] `inst/extdata/configs/dictionary_parameters_fresh.csv`, 19 rows, schema `column,type,group,owner,consumed_by,default_when_absent,description,related` (mirrors `dictionary_dimensions.csv` with `emits` → `consumed_by`, plus `owner`)
+- [x] Groups: `key` / `access` / `gradient` / `cluster` / `observation`
+- [x] Trace every `consumed_by` to a real `file:line`, distinguishing reader from pass-through. **All 24 refs machine-verified to resolve to the exact intended line** (two were off by 1–2 lines on first draft and were corrected, not left approximate). Verified refs on current HEAD:
+  - `access_gradient_max` → `R/lnk_barriers_unify.R:139`, `R/lnk_pipeline_prepare.R:553` (+ fresh)
+  - `spawn_gradient_min` → `fresh/R/frs_habitat_classify.R:171`, `fresh/R/frs_habitat_predicates.R:87`
+  - `cluster_*` → `fresh/R/frs_habitat.R:1164-1196`; link pass-through at `R/lnk_pipeline_connect.R:107`
+  - cluster semantics prose → `fresh/R/frs_cluster.R` roxygen (documents `direction` / `bridge_gradient` / `bridge_distance` / `confluence_m` in full)
+  - `observation_*` → `R/lnk_barrier_overrides.R`
+- [x] Record `rear_gradient_min` as unused — header-only in both packages, zero readers. fresh-owned, so its fate is a fresh-side call; do not drop it here
+- [x] Confirmed the spawn-side cluster columns ARE consumed (`cluster_spawn_direction` at `fresh/R/frs_habitat.R:1228`, `cluster_spawn_confluence_m` at `:1230`) — `rear_gradient_min` is the only genuine orphan of the 19
+- [x] Phase 2 tests now pass — 23 PASS / 0 FAIL on the dictionary contract; full suite 1317 PASS
+
+## Phase 4: Make the dictionary load-bearing in the audit
+
+- [x] `data-raw/audit_configs.R` §3b: replaced the hardcoded `grepl("^observation_", extra_link)` ownership rule with a lookup against the dictionary's `owner` column
+- [x] Add a dictionary-coverage check so an undocumented new column flags via `flag()` rather than passing silently
+- [x] Added a reverse consistency check: a column the dictionary calls link-owned that fresh actually ships is a stale dictionary, and flags
+- [x] Guard against the dictionary itself being missing/malformed (flags rather than erroring out mid-audit)
+- [x] Preserve existing semantics: `flag()` accumulator, end-of-run rollup, non-zero exit
+- [x] `Rscript data-raw/audit_configs.R` reports "No findings — config layers aligned." and exits 0
+- [x] **Negative-tested the guard** — removing one dictionary row makes the audit exit 1 and fire both `undocumented` and `not declared link-owned` flags; file restored byte-identical to HEAD afterwards
+- [x] No new lints introduced (13 before, 13 after — the first draft added one `indentation_linter` at the alignment check, since restructured)
+
+## Phase 5: Documentation
+
+- [x] `RUNBOOK.md` §7 "Where every rule lives": new dictionary row + a full **"Who owns which `parameters_fresh` column"** subsection naming fresh#129, the 14/5 split, both enforcement points, and the opposite directions of travel for `rules.yaml` vs the column schema
+- [x] Recorded `rear_gradient_min` in the RUNBOOK's "gaps worth knowing" (now three, was two)
+- [x] `NEWS.md` entry
+- [x] Version bump to 0.44.3 as the **final** commit of the branch (per CLAUDE.md release convention)
+
+## Validation
+
+- [x] `devtools::test()` — 1317 PASS, 1 pre-existing FAIL (#227 `public.wsg_outlet`, DB state, unrelated)
+- [x] `lintr` clean on both touched files (`test-dictionaries.R` 0 lints; `audit_configs.R` 13 = unchanged baseline)
+- [x] `Rscript data-raw/audit_configs.R` → 0 findings, exit 0
+- [x] Every `consumed_by` entry resolves to a real file:line — machine-verified, 24/24
+- [x] Tests pass
+- [x] `/code-check` clean on each commit (run inline; see progress.md)
+- [x] PWF checkboxes match landed work
+- [ ] `/planning-archive` on completion
+
+## Out of scope
+
+- #75's auto-generated README + `lnk_rules_build()` validation — this unblocks it by giving both files a consistent shape
+- Dropping or relocating `rear_gradient_min`
+- Any change to `fresh`
+- `audit_configs.R`'s hardcoded `setwd("/Users/airvine/Projects/repo/link")` (line 14) — a real portability defect that `/code-check` will flag when §3b is touched, but not this issue's scope. Worth its own issue.
