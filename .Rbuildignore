@@ -12,3 +12,5 @@
 ^\.lintr$
 ^\.claude$
 ^inst/testdata/\.gitkeep$
+^comms$
+^research$
