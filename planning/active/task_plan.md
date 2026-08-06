@@ -44,11 +44,11 @@ Mirrors `bcfishpass.log` + FK'd children that snapshot **actual parameter values
 
 ## Phase 2 — DDL
 
-- [ ] `R/lnk_log.R`: `cols_log`, `cols_log_input`; dictionary-driven
+- [x] `R/lnk_log.R`: `cols_log`, `cols_log_input`; dictionary-driven
       `.lnk_cols_log_parameters_fresh()` / `.lnk_cols_log_dimensions()`
-- [ ] `R/lnk_log.R`: `.lnk_log_align_columns()`, `.lnk_log_create_tables()`
-- [ ] `R/lnk_persist_init.R`: wire in at all three sites (cols, CREATE, drift-check list)
-- [ ] Tests: 4 CREATEs, `run_id text` PK, `text[]` cols, ADD COLUMN per column,
+- [x] `R/lnk_log.R`: `.lnk_log_align_columns()`, `.lnk_log_create_tables()`
+- [x] `R/lnk_persist_init.R`: wire in at all three sites (cols, CREATE, drift-check list)
+- [x] Tests: 4 CREATEs, `run_id text` PK, `text[]` cols, ADD COLUMN per column,
       dictionary covers the **union** of all bundle headers (bundles differ)
 
 ## Phase 3 — write path

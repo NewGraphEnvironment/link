@@ -114,6 +114,199 @@
 }
 
 
+#' DB primitives whose vintage determines model output.
+#'
+#' The pipeline's inputs, in the order they matter. `source` records where the
+#' data actually comes from — a fact that lives in the loader scripts, not the
+#' database, and which nothing else records.
+#'
+#' @return A data.frame with `table_name` and `source`.
+#' @noRd
+.lnk_input_primitives <- function() {
+  fwapg <- "fwapg/load.sh <- nrs.objectstore.gov.bc.ca/bchamp/fwapg"
+  data.frame(
+    table_name = c(
+      "whse_basemapping.fwa_stream_networks_sp",
+      "whse_basemapping.fwa_stream_networks_channel_width",
+      "whse_basemapping.fwa_stream_networks_order_parent",
+      "whse_basemapping.fwa_lakes_poly",
+      "whse_basemapping.fwa_wetlands_poly",
+      "whse_basemapping.fwa_rivers_poly",
+      "whse_basemapping.fwa_obstacles_sp",
+      "bcfishobs.observations",
+      "whse_fish.pscis_assessment_svw",
+      "cabd.dams",
+      "fresh.modelled_stream_crossings",
+      "public.wsg_outlet"
+    ),
+    source = c(
+      rep(fwapg, 7L),
+      "bcfishobs",
+      "bcdata bc2pg",
+      "CABD",
+      "snapshot_bcfp.sh <- bchamp objectstore",
+      "ad-hoc (link#227)"
+    ),
+    stringsAsFactors = FALSE
+  )
+}
+
+
+# ---------------------------------------------------------------------------
+# DDL
+# ---------------------------------------------------------------------------
+
+# One row per lnk_pipeline_run() call. `run_id` is TEXT (see file header).
+# `watershed_group_code` is present so schema_consolidate.R auto-discovers the
+# table — it keys off "has a watershed_group_code column".
+cols_log <- c(
+  run_id                 = "text NOT NULL",
+  watershed_group_code   = "varchar(4) NOT NULL",
+  date_start             = "timestamptz NOT NULL",
+  date_end               = "timestamptz",
+  run_label              = "text",
+  host                   = "text",
+  config_name            = "text",
+  config_hash            = "text",
+  config_drift           = "boolean",
+  link_version           = "text",
+  link_sha               = "text",
+  link_dirty             = "boolean",
+  fresh_version          = "text",
+  fresh_sha              = "text",
+  fresh_dirty            = "boolean",
+  crate_version          = "text",
+  fwapg_sha              = "text",
+  arg_dams               = "boolean",
+  arg_mapping_code       = "boolean",
+  arg_cleanup_working    = "boolean",
+  schema_persist         = "text",
+  species                = "text[]",
+  wsg_upstream           = "text[]",
+  bcfp_model_run_id      = "integer",
+  bcfp_model_version     = "text",
+  notes                  = "text"
+)
+
+# Per-primitive fingerprints. Carries watershed_group_code for the same
+# auto-discovery reason as `log`.
+cols_log_input <- c(
+  run_id                 = "text NOT NULL",
+  watershed_group_code   = "varchar(4)",
+  table_name             = "text NOT NULL",
+  row_count              = "bigint",
+  row_count_estimated    = "boolean",
+  size_bytes             = "bigint",
+  last_analyze           = "timestamptz",
+  source                 = "text",
+  source_at              = "timestamptz"
+)
+
+
+#' Column vectors for the config-snapshot tables, driven by the dictionaries.
+#'
+#' `dictionary_parameters_fresh.csv` and `dictionary_dimensions.csv` (link#233)
+#' are the canonical column lists, and they cover the *union* of all bundles —
+#' which matters because bundles carry different subsets (bcfishpass's
+#' `dimensions.csv` has 30 columns to the `default*` bundles' 32). Generating
+#' DDL from them means adding a parameter updates the dictionary and the log
+#' table together, by construction.
+#'
+#' Every value column is `text`: these are provenance snapshots, not compute
+#' inputs, so `text` is lossless (it preserves the `""` vs `NA` distinction the
+#' CSVs actually use) and immune to type drift.
+#'
+#' @noRd
+.lnk_dictionary_columns <- function(which) {
+  path <- system.file("extdata", "configs",
+                      paste0("dictionary_", which, ".csv"), package = "link")
+  if (!nzchar(path) || !file.exists(path)) {
+    stop("dictionary_", which, ".csv not found in the installed package",
+         call. = FALSE)
+  }
+  as.character(utils::read.csv(path, check.names = FALSE)$column)
+}
+
+#' @noRd
+.lnk_cols_log_parameters_fresh <- function() {
+  cols <- .lnk_dictionary_columns("parameters_fresh")
+  out <- stats::setNames(rep("text", length(cols)), cols)
+  out[["species_code"]] <- "text NOT NULL"
+  c(config_hash = "text NOT NULL", out)
+}
+
+#' @noRd
+.lnk_cols_log_dimensions <- function() {
+  cols <- .lnk_dictionary_columns("dimensions")
+  out <- stats::setNames(rep("text", length(cols)), cols)
+  out[["species"]] <- "text NOT NULL"
+  c(config_hash = "text NOT NULL", out)
+}
+
+
+#' Bring an existing log table up to the expected column set.
+#'
+#' `CREATE TABLE IF NOT EXISTS` is a no-op against a table that already exists,
+#' even with a drifted shape — so on its own it can never ship a *new* config
+#' column, and config columns are the entire point of these tables. A new
+#' parameter would be silently never logged, reintroducing the exact
+#' silent-drift failure this issue exists to prevent.
+#'
+#' `ADD COLUMN IF NOT EXISTS` is Postgres-native and idempotent, so this is
+#' cheap to run on every init.
+#'
+#' @noRd
+.lnk_log_align_columns <- function(conn, schema, table, cols) {
+  for (nm in names(cols)) {
+    # Drop NOT NULL when back-filling: an existing table may already hold rows.
+    type <- sub("\\s+NOT NULL$", "", cols[[nm]])
+    .lnk_db_execute(conn, sprintf(
+      "ALTER TABLE %s.%s ADD COLUMN IF NOT EXISTS %s %s",
+      schema, table, nm, type))
+  }
+  invisible(conn)
+}
+
+
+#' Create the four provenance tables. Idempotent.
+#'
+#' Called from [lnk_persist_init()] so a standalone init produces a complete
+#' schema, and again from the run-start path so a run never fails for want of
+#' a table.
+#'
+#' @noRd
+.lnk_log_create_tables <- function(conn, schema) {
+  specs <- list(
+    list(table = "log", cols = cols_log, pk = "run_id"),
+    list(table = "log_input", cols = cols_log_input,
+         pk = c("run_id", "table_name")),
+    list(table = "log_parameters_fresh", cols = .lnk_cols_log_parameters_fresh(),
+         pk = c("config_hash", "species_code")),
+    list(table = "log_dimensions", cols = .lnk_cols_log_dimensions(),
+         pk = c("config_hash", "species"))
+  )
+
+  for (s in specs) {
+    .lnk_db_execute(conn, sprintf(
+      "CREATE TABLE IF NOT EXISTS %s.%s (\n  %s\n)",
+      schema, s$table, .lnk_cols_clause(s$cols, s$pk)))
+    .lnk_log_align_columns(conn, schema, s$table, s$cols)
+  }
+
+  idx <- c(
+    log_wsg_date = "log (watershed_group_code, date_start DESC)",
+    log_config   = "log (config_hash)",
+    log_input_rn = "log_input (run_id)"
+  )
+  for (nm in names(idx)) {
+    .lnk_db_execute(conn, sprintf(
+      "CREATE INDEX IF NOT EXISTS %s_idx ON %s.%s", nm, schema, idx[[nm]]))
+  }
+
+  invisible(conn)
+}
+
+
 #' git SHA of the fwapg checkout that loaded the FWA primitives.
 #'
 #' The stream network is the most load-bearing input the pipeline has and it

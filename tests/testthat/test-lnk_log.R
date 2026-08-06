@@ -159,3 +159,112 @@ test_that("lnk_stamp gains host/config_hash/config_drift without losing old slot
   expect_identical(st$run$aoi, "PINE")
   expect_s3_class(st, "lnk_stamp")
 })
+
+
+# --- Phase 2: DDL -----------------------------------------------------------
+
+# Capture SQL without a database, mirroring test-lnk_persist_init.R.
+capture_ddl <- function(expr) {
+  captured <- character()
+  testthat::local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) {
+      captured <<- c(captured, sql)
+      invisible(conn)
+    }
+  )
+  force(expr)
+  captured
+}
+
+test_that(".lnk_log_create_tables emits all four CREATE TABLE statements", {
+  sql <- capture_ddl(.lnk_log_create_tables(NULL, "fresh_test"))
+  joined <- paste(sql, collapse = "\n")
+  for (tbl in c("log", "log_input", "log_parameters_fresh", "log_dimensions")) {
+    expect_match(joined,
+      sprintf("CREATE TABLE IF NOT EXISTS fresh_test\\.%s \\(", tbl))
+  }
+})
+
+test_that("log uses a TEXT run_id primary key, not a serial", {
+  # A serial would collide across hosts when schema_consolidate COPYs
+  # literal values between schemas whose sequences both start at 1.
+  sql <- paste(capture_ddl(.lnk_log_create_tables(NULL, "s")), collapse = "\n")
+  expect_match(sql, "run_id text NOT NULL")
+  expect_match(sql, "PRIMARY KEY \\(run_id\\)")
+  expect_no_match(sql, "serial")
+})
+
+test_that("log carries array columns and a watershed_group_code", {
+  sql <- paste(capture_ddl(.lnk_log_create_tables(NULL, "s")), collapse = "\n")
+  expect_match(sql, "species text\\[\\]")
+  expect_match(sql, "wsg_upstream text\\[\\]")
+  # Required for schema_consolidate.R auto-discovery.
+  expect_match(sql, "watershed_group_code varchar\\(4\\) NOT NULL")
+})
+
+test_that("config snapshot tables key on config_hash", {
+  sql <- paste(capture_ddl(.lnk_log_create_tables(NULL, "s")), collapse = "\n")
+  expect_match(sql, "PRIMARY KEY \\(config_hash, species_code\\)")
+  expect_match(sql, "PRIMARY KEY \\(config_hash, species\\)")
+})
+
+test_that("ADD COLUMN IF NOT EXISTS is emitted for every expected column", {
+  # CREATE TABLE IF NOT EXISTS cannot ship a new config column; this is what
+  # makes the wide design safe against dictionary growth.
+  sql <- paste(capture_ddl(.lnk_log_create_tables(NULL, "s")), collapse = "\n")
+  for (nm in names(cols_log)) {
+    expect_match(sql,
+      sprintf("ALTER TABLE s\\.log ADD COLUMN IF NOT EXISTS %s ", nm))
+  }
+  # NOT NULL must be stripped when back-filling an existing populated table.
+  expect_no_match(sql, "ADD COLUMN IF NOT EXISTS [a-z_]+ [a-z()0-9\\[\\]]+ NOT NULL")
+})
+
+test_that("indexes are created IF NOT EXISTS", {
+  sql <- paste(capture_ddl(.lnk_log_create_tables(NULL, "s")), collapse = "\n")
+  expect_match(sql, "CREATE INDEX IF NOT EXISTS log_wsg_date_idx")
+  expect_match(sql, "CREATE INDEX IF NOT EXISTS log_config_idx")
+  expect_match(sql, "CREATE INDEX IF NOT EXISTS log_input_rn_idx")
+})
+
+
+# --- dictionary-driven columns must cover EVERY bundle ----------------------
+
+bundle_union <- function(file) {
+  dirs <- list.dirs(system.file("extdata", "configs", package = "link"),
+                    recursive = FALSE)
+  out <- character()
+  for (d in dirs) {
+    f <- file.path(d, file)
+    if (file.exists(f)) {
+      out <- union(out, names(utils::read.csv(f, check.names = FALSE, nrows = 1)))
+    }
+  }
+  out
+}
+
+test_that("log_parameters_fresh covers the union of every bundle's header", {
+  # Bundles carry different column subsets, so coverage must be asserted
+  # against the union, never a single bundle.
+  cols <- setdiff(names(.lnk_cols_log_parameters_fresh()), "config_hash")
+  expect_setequal(cols, bundle_union("parameters_fresh.csv"))
+})
+
+test_that("log_dimensions covers the union of every bundle's header", {
+  cols <- setdiff(names(.lnk_cols_log_dimensions()), "config_hash")
+  expect_setequal(cols, bundle_union("dimensions.csv"))
+})
+
+test_that("snapshot value columns are text, only keys are constrained", {
+  cols <- .lnk_cols_log_parameters_fresh()
+  expect_identical(unname(cols[["species_code"]]), "text NOT NULL")
+  expect_identical(unname(cols[["access_gradient_max"]]), "text")
+})
+
+test_that(".lnk_input_primitives lists the pipeline's inputs with a source", {
+  p <- .lnk_input_primitives()
+  expect_true(all(c("table_name", "source") %in% names(p)))
+  expect_true("whse_basemapping.fwa_stream_networks_sp" %in% p$table_name)
+  expect_true("bcfishobs.observations" %in% p$table_name)
+  expect_false(any(is.na(p$source) | !nzchar(p$source)))
+})
