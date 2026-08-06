@@ -96,6 +96,7 @@ Other compare:
 \code{\link{lnk_access}()},
 \code{\link{lnk_compare_mapping_code}()},
 \code{\link{lnk_compare_wsg}()},
+\code{\link{lnk_log_read}()},
 \code{\link{lnk_mapping_code}()},
 \code{\link{lnk_parity_annotate}()},
 \code{\link{lnk_rollup_wsg}()}

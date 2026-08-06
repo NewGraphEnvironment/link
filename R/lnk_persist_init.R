@@ -334,6 +334,10 @@ lnk_persist_init <- function(conn, cfg, species, force_recreate = FALSE) {
   .lnk_validate_persist_table(conn, schema = schema,
                               table = "streams_mapping_code",
                               force_recreate = force_recreate)
+  for (tbl in c("log", "log_input", "log_parameters_fresh", "log_dimensions")) {
+    .lnk_validate_persist_table(conn, schema = schema, table = tbl,
+                                force_recreate = force_recreate)
+  }
 
   # Persistent streams.
   .lnk_db_execute(conn, sprintf(
@@ -470,6 +474,11 @@ lnk_persist_init <- function(conn, cfg, species, force_recreate = FALSE) {
   .lnk_db_execute(conn, sprintf(
     "CREATE OR REPLACE VIEW %s.streams_habitat_long_vw AS\n%s",
     schema, paste(view_unions, collapse = "\nUNION ALL\n")))
+
+  # Run-provenance sidecars (link#127): `log`, `log_input`,
+  # `log_parameters_fresh`, `log_dimensions`. Kept in R/lnk_log.R so the
+  # column vectors sit beside the writers that populate them.
+  .lnk_log_create_tables(conn, schema)
 
   invisible(conn)
 }
