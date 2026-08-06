@@ -102,6 +102,19 @@ test_that("lnk_pipeline_run errors before persist when active_species is empty",
   }
   m_exec <- function(...) 1L
 
+  m_log_fail_called <- FALSE
+  m_log_finish_called <- FALSE
+  m_log_start <- function(...) {
+    list(run_id = "rid", config_hash = "sha256:x", schema = "fresh_test",
+         schema_working = "working_adms")
+  }
+  m_log_finish <- function(...) {
+    m_log_finish_called <<- TRUE; invisible(TRUE)
+  }
+  m_log_fail <- function(...) {
+    m_log_fail_called <<- TRUE; invisible(TRUE)
+  }
+
   with_mocked_bindings(
     lnk_pipeline_setup = m_setup,
     lnk_pipeline_load = m_load,
@@ -114,6 +127,11 @@ test_that("lnk_pipeline_run errors before persist when active_species is empty",
     lnk_persist_init = m_persist_init,
     lnk_barriers_unify = m_unify,
     lnk_pipeline_persist = m_persist,
+    .lnk_log_run_start = m_log_start,
+    .lnk_log_run_finish = m_log_finish,
+    .lnk_log_run_fail = m_log_fail,
+    .lnk_log_config_snapshot = function(...) invisible(TRUE),
+    .lnk_log_inputs = function(...) invisible(TRUE),
     {
       with_mocked_bindings(
         dbExecute = m_exec,
@@ -130,6 +148,11 @@ test_that("lnk_pipeline_run errors before persist when active_species is empty",
       )
     }
   )
+
+  # A run that dies mid-pipeline must be marked failed, not finished —
+  # `date_end` stays NULL so partial state is visible rather than silent.
+  expect_true(m_log_fail_called)
+  expect_false(m_log_finish_called)
 
   # persist_init / barriers_unify / persist must NOT have fired
   # when active_species is empty
@@ -187,8 +210,21 @@ test_that("lnk_pipeline_run composes phases in expected order", {
     if (grepl("DROP", sql)) calls <<- c(calls, "exec_drop")
     1L
   }
+  m_log_start <- function(...) {
+    calls <<- c(calls, "log_start")
+    list(run_id = "rid", config_hash = "sha256:x", schema = "fresh_test",
+         schema_working = "working_adms")
+  }
+  m_log_finish <- function(...) {
+    calls <<- c(calls, "log_finish"); invisible(TRUE)
+  }
 
   with_mocked_bindings(
+    .lnk_log_run_start = m_log_start,
+    .lnk_log_run_finish = m_log_finish,
+    .lnk_log_run_fail = function(...) invisible(TRUE),
+    .lnk_log_config_snapshot = function(...) invisible(TRUE),
+    .lnk_log_inputs = function(...) invisible(TRUE),
     lnk_pipeline_setup = m_setup,
     lnk_pipeline_load = m_load,
     lnk_pipeline_prepare = m_prepare,
@@ -218,18 +254,22 @@ test_that("lnk_pipeline_run composes phases in expected order", {
     }
   )
 
-  # Expected: defensive drop, modelling phases, species resolution,
-  # persist_init, barriers_unify, then the always-on access phase
-  # (link#218): presence -> pre-persist -> barriers_views -> access,
-  # then the final persist. mapping_code = FALSE here, so the token
-  # assembly (lnk_mapping_code) does NOT run.
+  # Expected: run-log opened FIRST (link#127 — before anything writes, so
+  # wsg_upstream reflects the state the run started from), then the
+  # defensive drop, modelling phases, species resolution, persist_init,
+  # barriers_unify, then the always-on access phase (link#218):
+  # presence -> pre-persist -> barriers_views -> access, then the final
+  # persist, and the run-log closed LAST. mapping_code = FALSE here, so
+  # the token assembly (lnk_mapping_code) does NOT run.
   expected_order <- c(
+    "log_start",
     "exec_drop",
     "setup", "load", "prepare", "crossings", "break", "classify", "connect",
     "species",
     "persist_init", "barriers_unify",
     "presence", "persist", "barriers_views", "access",
-    "persist"
+    "persist",
+    "log_finish"
   )
   expect_equal(calls, expected_order)
   # Returns conn invisibly
@@ -269,7 +309,7 @@ test_that("lnk_pipeline_run passes NULL conn_tunnel when dams = FALSE", {
           lnk_pipeline_run(
             conn = mock_conn(), aoi = "ADMS",
             cfg = mock_cfg(), loaded = mock_loaded(),
-            dams = FALSE, cleanup_working = FALSE
+            dams = FALSE, log = FALSE, cleanup_working = FALSE
           )
         }
       )
@@ -311,7 +351,7 @@ test_that("lnk_pipeline_run drops working schema when cleanup_working = TRUE", {
           lnk_pipeline_run(
             conn = mock_conn(), aoi = "ADMS",
             cfg = mock_cfg(), loaded = mock_loaded(),
-            cleanup_working = TRUE
+            cleanup_working = TRUE, log = FALSE
           )
         }
       )
@@ -362,7 +402,8 @@ test_that("lnk_pipeline_run builds access for both mapping_code values, gates ln
             lnk_pipeline_run(
               conn = mock_conn(), aoi = "ADMS",
               cfg = mock_cfg(), loaded = mock_loaded(),
-              mapping_code = mapping_code, cleanup_working = FALSE
+              mapping_code = mapping_code, cleanup_working = FALSE,
+              log = FALSE
             )
           }
         )

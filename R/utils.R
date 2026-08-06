@@ -188,6 +188,80 @@
 }
 
 
+#' Host identifier for provenance records.
+#'
+#' Returns `LNK_HOST_ALIAS` when set (the per-host alias convention — each
+#' host sets it in `~/.Renviron`, e.g. `LNK_HOST_ALIAS=m4`), else the raw
+#' node name. Centralising this is why `data-raw/logs/bcfp_baselines.csv`
+#' historically mixed aliases (`m4`) with raw node names
+#' (`runnervmmklqx`): the driver scripts honoured the env var and the R
+#' helpers did not.
+#'
+#' @return A single non-empty string.
+#' @noRd
+.lnk_host <- function() {
+  alias <- Sys.getenv("LNK_HOST_ALIAS", unset = "")
+  if (nzchar(alias)) {
+    return(alias)
+  }
+  node <- unname(Sys.info()[["nodename"]])
+  if (is.null(node) || is.na(node) || !nzchar(node)) "unknown" else node
+}
+
+
+#' Which WSGs are already persisted in `<persist_schema>.streams`?
+#'
+#' Sibling of [.lnk_wsg_persisted()], which answers the same question for a
+#' single WSG. Returns the whole set, for recording the cross-WSG state a
+#' run starts from — link's per-WSG accumulation means a WSG's downstream
+#' barrier tokens depend on which *other* WSGs were persisted first
+#' (RUNBOOK §5), so the set is genuine provenance.
+#'
+#' Uses a recursive loose index scan rather than `SELECT DISTINCT`: the
+#' persist table is province-wide (tens of millions of rows post-#223) and
+#' a plain DISTINCT is a full HashAggregate. The recursion walks the
+#' existing `watershed_group_code` btree one value at a time — ~250 index
+#' probes instead of a full scan.
+#'
+#' @param conn DBI connection.
+#' @param cfg An `lnk_config` object.
+#' @return Sorted character vector; `character(0)` when the table is absent.
+#' @noRd
+.lnk_wsg_persisted_all <- function(conn, cfg) {
+  if (!inherits(conn, "DBIConnection")) {
+    stop("conn must be a DBI connection", call. = FALSE)
+  }
+  if (!inherits(cfg, "lnk_config")) {
+    stop("cfg must be an lnk_config object", call. = FALSE)
+  }
+
+  tn <- .lnk_table_names(cfg)
+  schema_lit <- DBI::dbQuoteLiteral(conn, tn$schema)
+
+  # nolint start: indentation_linter
+  has_table <- nrow(DBI::dbGetQuery(conn, sprintf(
+    "SELECT 1 FROM information_schema.tables
+      WHERE table_schema = %s AND table_name = 'streams' LIMIT 1",
+    schema_lit))) > 0L
+  if (!has_table) {
+    return(character(0))
+  }
+
+  res <- DBI::dbGetQuery(conn, sprintf(
+    "WITH RECURSIVE t AS (
+       (SELECT watershed_group_code AS w FROM %1$s ORDER BY 1 LIMIT 1)
+       UNION ALL
+       SELECT (SELECT watershed_group_code FROM %1$s
+                WHERE watershed_group_code > t.w ORDER BY 1 LIMIT 1)
+         FROM t WHERE t.w IS NOT NULL)
+     SELECT w FROM t WHERE w IS NOT NULL ORDER BY 1",
+    tn$streams))
+  # nolint end: indentation_linter
+
+  if (is.null(res) || nrow(res) == 0L) character(0) else as.character(res$w)
+}
+
+
 #' Has the modelling pipeline persisted rows for this WSG?
 #'
 #' Probes `<persist_schema>.streams` for `watershed_group_code = aoi`.
