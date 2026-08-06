@@ -1,6 +1,6 @@
 Package: link
 Title: Stream Network Habitat Interpretation (Experimental)
-Version: 0.44.3
+Version: 0.44.4
 Date: 2026-07-06
 Authors@R: c(
     person("Allan", "Irvine", , "airvine@newgraphenvironment.com",
@@ -30,14 +30,14 @@ Imports:
     yaml
 Remotes:
     NewGraphEnvironment/crate,
-    NewGraphEnvironment/fresh@v0.32.0,
+    NewGraphEnvironment/fresh@v0.33.0,
     NewGraphEnvironment/gq
 Suggests:
     bcdata,
     bookdown,
     digest,
     dplyr,
-    fresh (>= 0.32.0),
+    fresh (>= 0.33.0),
     gq,
     knitr,
     lintr,
