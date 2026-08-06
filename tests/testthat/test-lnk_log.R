@@ -435,3 +435,49 @@ test_that("config snapshot warns and inserts the intersection on shape drift", {
     "absent from the dictionary")
   expect_no_match(paste(sql, collapse = " "), "not_in_dictionary")
 })
+
+
+# --- Phase 5: read helper ---------------------------------------------------
+
+test_that("lnk_log_read validates its arguments", {
+  cfg <- lnk_config("default")
+  expect_error(lnk_log_read("nope", cfg), "DBIConnection")
+  expect_error(lnk_log_read(fake_conn(), list(name = "x")), "lnk_config")
+  expect_error(lnk_log_read(fake_conn(), cfg, aoi = c("A", "B")), "aoi")
+  expect_error(lnk_log_read(fake_conn(), cfg, latest = "yes"))
+})
+
+test_that("lnk_log_read builds DISTINCT ON for latest, plain select otherwise", {
+  cfg <- lnk_config("default")
+  seen <- character()
+  testthat::with_mocked_bindings(
+    dbGetQuery = function(conn, statement, ...) {
+      seen <<- c(seen, statement); data.frame()
+    },
+    dbQuoteLiteral = function(conn, x, ...) paste0("'", x, "'"),
+    .package = "DBI",
+    {
+      lnk_log_read(fake_conn(), cfg)
+      lnk_log_read(fake_conn(), cfg, latest = FALSE)
+      lnk_log_read(fake_conn(), cfg, aoi = "PINE")
+    }
+  )
+  expect_match(seen[1], "DISTINCT ON \\(watershed_group_code\\)")
+  expect_match(seen[1], "ORDER BY watershed_group_code, date_start DESC")
+  expect_no_match(seen[2], "DISTINCT ON")
+  expect_match(seen[3], "WHERE watershed_group_code = 'PINE'")
+})
+
+test_that("lnk_log_read returns a tibble", {
+  cfg <- lnk_config("default")
+  testthat::with_mocked_bindings(
+    dbGetQuery = function(conn, statement, ...) {
+      data.frame(run_id = "r1", watershed_group_code = "PINE")
+    },
+    dbQuoteLiteral = function(conn, x, ...) paste0("'", x, "'"),
+    .package = "DBI",
+    out <- lnk_log_read(fake_conn(), cfg)
+  )
+  expect_s3_class(out, "tbl_df")
+  expect_identical(out$run_id, "r1")
+})

@@ -307,6 +307,65 @@ cols_log_input <- c(
 }
 
 
+#' Read the run-provenance log from a persist schema
+#'
+#' Answers "which config produced this network, and when" without
+#' hand-written SQL. One row per `lnk_pipeline_run()` call; by default only
+#' the most recent run per watershed group.
+#'
+#' A watershed group present in `<persist_schema>.streams` but absent here was
+#' modelled before provenance logging existed (link#127) — absence means
+#' pre-provenance vintage, not an error. Rows are never backfilled, because
+#' the config and code state that produced them is not recoverable and a
+#' synthetic row would be fabricated provenance.
+#'
+#' @param conn DBI connection to the pipeline database.
+#' @param cfg An `lnk_config` object — supplies the persist schema.
+#' @param aoi Optional watershed group code to filter to.
+#' @param latest Logical. When `TRUE` (default), return only the newest run
+#'   per watershed group. `FALSE` returns the full history.
+#' @return A tibble, newest first.
+#' @family compare
+#' @export
+#' @examples
+#' \dontrun{
+#' conn <- lnk_db_conn()
+#' cfg  <- lnk_config("default")
+#'
+#' # What produced the current PINE network?
+#' lnk_log_read(conn, cfg, aoi = "PINE")
+#'
+#' # Every run, newest first.
+#' lnk_log_read(conn, cfg, latest = FALSE)
+#' }
+lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE) {
+  stopifnot(
+    inherits(conn, "DBIConnection"),
+    inherits(cfg, "lnk_config"),
+    is.logical(latest), length(latest) == 1L
+  )
+  if (!is.null(aoi) &&
+      (!is.character(aoi) || length(aoi) != 1L || !nzchar(aoi))) {
+    stop("aoi must be NULL or a single non-empty WSG code", call. = FALSE)
+  }
+
+  schema <- .lnk_table_names(cfg)$schema
+  where <- if (is.null(aoi)) "" else sprintf(
+    " WHERE watershed_group_code = %s", DBI::dbQuoteLiteral(conn, aoi))
+
+  sql <- if (isTRUE(latest)) {
+    sprintf(
+      "SELECT DISTINCT ON (watershed_group_code) * FROM %s.log%s
+        ORDER BY watershed_group_code, date_start DESC",
+      schema, where)
+  } else {
+    sprintf("SELECT * FROM %s.log%s ORDER BY date_start DESC", schema, where)
+  }
+
+  tibble::as_tibble(DBI::dbGetQuery(conn, sql))
+}
+
+
 # ---------------------------------------------------------------------------
 # Write path
 # ---------------------------------------------------------------------------

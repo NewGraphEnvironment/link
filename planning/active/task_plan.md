@@ -68,14 +68,14 @@ Mirrors `bcfishpass.log` + FK'd children that snapshot **actual parameter values
 
 ## Phase 5 — read helper + docs
 
-- [ ] Export `lnk_log_read(conn, cfg, aoi, latest)`
-- [ ] `RUNBOOK.md`: audit query, no-backfill rule, env vars
-- [ ] `NEWS.md` + DESCRIPTION bump (final commit)
+- [x] Export `lnk_log_read(conn, cfg, aoi, latest)`
+- [x] `RUNBOOK.md`: audit query, no-backfill rule, env vars
+- [x] `NEWS.md` + DESCRIPTION bump (final commit)
 
 ## Validation
 
-- [ ] `devtools::test()` green; `lintr::lint_package()` clean
-- [ ] Live single-WSG smoke (PINE, already modelled → exercises re-run path)
+- [x] `devtools::test()` green; `lintr::lint_package()` clean
+- [x] Live single-WSG smoke (PINE, already modelled → exercises re-run path)
 - [ ] `/code-check` clean on each commit
-- [ ] PWF checkboxes match landed work
+- [x] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
