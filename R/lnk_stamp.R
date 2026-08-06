@@ -88,9 +88,11 @@ lnk_stamp <- function(cfg,
 
   software <- list(
     link  = list(version = as.character(utils::packageVersion("link")),
-                  git_sha = .lnk_pkg_git_sha("link")),
+                  git_sha = .lnk_pkg_git_sha("link"),
+                  dirty   = .lnk_pkg_git_dirty("link")),
     fresh = list(version = .lnk_pkg_version_or_na("fresh"),
-                  git_sha = .lnk_pkg_git_sha("fresh")),
+                  git_sha = .lnk_pkg_git_sha("fresh"),
+                  dirty   = .lnk_pkg_git_dirty("fresh")),
     R     = R.version.string
   )
 
@@ -105,13 +107,21 @@ lnk_stamp <- function(cfg,
   }
 
   out <- list(
-    config_name = cfg$name,
-    config_dir  = cfg$dir,
-    provenance  = prov,
-    software    = software,
-    db          = db,
-    run         = list(aoi = aoi, start_time = start_time, end_time = NULL),
-    result      = NULL
+    config_name   = cfg$name,
+    config_dir    = cfg$dir,
+    config_hash   = .lnk_config_hash(cfg),
+    config_drift  = if (is.null(prov)) {
+      NA
+    } else {
+      any(prov$byte_drift, prov$shape_drift, na.rm = TRUE)
+    },
+    host          = .lnk_host(),
+    fwapg_sha     = .lnk_fwapg_sha(),
+    provenance    = prov,
+    software      = software,
+    db            = db,
+    run           = list(aoi = aoi, start_time = start_time, end_time = NULL),
+    result        = NULL
   )
   class(out) <- c("lnk_stamp", "list")
   out
@@ -270,6 +280,40 @@ format.lnk_stamp <- function(x, type = c("markdown", "text"), ...) {
     }
   }
   NA_character_
+}
+
+# Is a package's git tree dirty? A SHA recorded against a dirty tree is a
+# lie, so provenance records the flag alongside it. Three-tier, mirroring
+# `.lnk_pkg_git_sha()`:
+#   1. `<PKG>_GIT_DIRTY` env var — the only reliable path for an installed
+#      package (orchestrator sets it), values "1"/"true"/"yes" -> TRUE
+#   2. `git status --porcelain`, attempted only when a `.git` was actually
+#      found (i.e. a dev checkout / load_all)
+#   3. NA when neither resolves.
+.lnk_pkg_git_dirty <- function(pkg) {
+  env_key <- paste0(toupper(pkg), "_GIT_DIRTY")
+  v <- tolower(Sys.getenv(env_key, ""))
+  if (nzchar(v)) {
+    return(v %in% c("1", "true", "yes", "t"))
+  }
+
+  pkg_dir <- tryCatch(
+    find.package(pkg, quiet = TRUE),
+    error = function(e) character(0))
+  if (length(pkg_dir) == 0L) return(NA)
+
+  for (d in c(pkg_dir, dirname(pkg_dir))) {
+    if (!file.exists(file.path(d, ".git"))) next
+    out <- tryCatch(
+      suppressWarnings(system2("git", c("-C", shQuote(d), "status", "--porcelain"),
+                               stdout = TRUE, stderr = FALSE)),
+      error = function(e) NULL)
+    if (is.null(out)) return(NA)
+    status <- attr(out, "status")
+    if (!is.null(status) && !identical(as.integer(status), 0L)) return(NA)
+    return(length(out) > 0L)
+  }
+  NA
 }
 
 .lnk_read_git_head <- function(git_path) {

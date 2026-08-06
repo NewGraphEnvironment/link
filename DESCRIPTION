@@ -20,6 +20,7 @@ Depends:
 Imports:
     crate (>= 0.0.2),
     DBI,
+    digest,
     httr,
     jsonlite,
     RPostgres,
@@ -35,7 +36,6 @@ Remotes:
 Suggests:
     bcdata,
     bookdown,
-    digest,
     dplyr,
     fresh (>= 0.32.0),
     gq,

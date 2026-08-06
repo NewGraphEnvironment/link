@@ -35,12 +35,12 @@ Mirrors `bcfishpass.log` + FK'd children that snapshot **actual parameter values
 
 ## Phase 1 — primitives + hashing (no DB, unit-testable)
 
-- [ ] `DESCRIPTION`: move `digest` Suggests → Imports
-- [ ] `R/utils.R`: `.lnk_host()` honouring `LNK_HOST_ALIAS`; retrofit `lnk_baseline_append.R:88`
-- [ ] `R/utils.R`: `.lnk_wsg_persisted_all(conn, cfg)` (loose index scan + information_schema guard)
-- [ ] `R/lnk_log.R` (new): `.lnk_config_hash(cfg)`, `.lnk_run_id()`, `.lnk_fwapg_sha()`
-- [ ] `R/lnk_stamp.R`: `.lnk_pkg_git_dirty(pkg)`; extend `lnk_stamp()` additively
-- [ ] `tests/testthat/test-lnk_log.R`: hash stability/sensitivity, run_id format+uniqueness, host env var
+- [x] `DESCRIPTION`: move `digest` Suggests → Imports
+- [x] `R/utils.R`: `.lnk_host()` honouring `LNK_HOST_ALIAS`; retrofit `lnk_baseline_append.R:88`
+- [x] `R/utils.R`: `.lnk_wsg_persisted_all(conn, cfg)` (loose index scan + information_schema guard)
+- [x] `R/lnk_log.R` (new): `.lnk_config_hash(cfg)`, `.lnk_run_id()`, `.lnk_fwapg_sha()`
+- [x] `R/lnk_stamp.R`: `.lnk_pkg_git_dirty(pkg)`; extend `lnk_stamp()` additively
+- [x] `tests/testthat/test-lnk_log.R`: hash stability/sensitivity, run_id format+uniqueness, host env var
 
 ## Phase 2 — DDL
 
