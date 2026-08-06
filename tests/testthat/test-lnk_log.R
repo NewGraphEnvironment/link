@@ -268,3 +268,170 @@ test_that(".lnk_input_primitives lists the pipeline's inputs with a source", {
   expect_true("bcfishobs.observations" %in% p$table_name)
   expect_false(any(is.na(p$source) | !nzchar(p$source)))
 })
+
+
+# --- Phase 3: write path ----------------------------------------------------
+
+fake_conn <- function() structure(list(), class = "DBIConnection")
+
+# Capture SQL AND stub the DBI probes the write path makes.
+capture_write <- function(expr, probe_rows = 0L, query_result = NULL) {
+  captured <- character()
+  testthat::local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) {
+      captured <<- c(captured, sql)
+      invisible(conn)
+    }
+  )
+  testthat::with_mocked_bindings(
+    dbGetQuery = function(conn, statement, ...) {
+      if (!is.null(query_result)) return(query_result)
+      if (probe_rows > 0L) data.frame(x = seq_len(probe_rows)) else
+        data.frame()
+    },
+    dbQuoteLiteral = function(conn, x, ...) {
+      if (is.logical(x)) return(if (isTRUE(x)) "TRUE" else "FALSE")
+      paste0("'", gsub("'", "''", as.character(x)), "'")
+    },
+    .package = "DBI",
+    force(expr)
+  )
+  captured
+}
+
+test_that(".lnk_log_run_start opens a row with date_start and NULL date_end", {
+  cfg <- lnk_config("default")
+  sql <- capture_write(
+    .lnk_log_run_start(fake_conn(), cfg, "PINE", "working_pine"))
+  ins <- grep("INSERT INTO .*\\.log \\(", sql, value = TRUE)
+  expect_length(ins, 1L)
+  expect_match(ins, "date_start")
+  expect_match(ins, "now\\(\\)")
+  # date_end must not be set at open time.
+  expect_no_match(ins, "date_end")
+})
+
+test_that(".lnk_log_run_start records wsg_upstream as a text array", {
+  cfg <- lnk_config("default")
+  sql <- capture_write(
+    .lnk_log_run_start(fake_conn(), cfg, "PINE", "working_pine"))
+  ins <- grep("INSERT INTO .*\\.log \\(", sql, value = TRUE)
+  expect_match(ins, "wsg_upstream")
+  expect_match(ins, "ARRAY\\[\\]::text\\[\\]|ARRAY\\[.*\\]::text\\[\\]")
+})
+
+test_that(".lnk_log_run_start creates the tables before inserting", {
+  cfg <- lnk_config("default")
+  sql <- capture_write(
+    .lnk_log_run_start(fake_conn(), cfg, "PINE", "working_pine"))
+  first_create <- min(grep("CREATE TABLE IF NOT EXISTS", sql))
+  first_insert <- min(grep("INSERT INTO", sql))
+  expect_lt(first_create, first_insert)
+})
+
+test_that(".lnk_log_run_start returns run_id and config_hash", {
+  cfg <- lnk_config("default")
+  box <- new.env(parent = emptyenv())
+  capture_write(
+    assign("out", .lnk_log_run_start(fake_conn(), cfg, "PINE", "working_pine"),
+           envir = box))
+  expect_match(box$out$run_id, "-[0-9a-f]{6}$")
+  expect_match(box$out$config_hash, "^sha256:")
+  expect_identical(box$out$schema, cfg$pipeline$schema)
+})
+
+test_that(".lnk_log_run_finish sets date_end and species", {
+  cfg <- lnk_config("default")
+  sql <- capture_write(
+    .lnk_log_run_finish(fake_conn(), cfg, "rid-1", species = c("BT", "GR")))
+  expect_length(sql, 1L)
+  expect_match(sql, "SET date_end = now\\(\\)")
+  expect_match(sql, "species = ARRAY\\['BT', 'GR'\\]::text\\[\\]")
+  expect_match(sql, "WHERE run_id = 'rid-1'")
+})
+
+test_that(".lnk_log_run_fail sets notes and never touches date_end", {
+  cfg <- lnk_config("default")
+  sql <- capture_write(.lnk_log_run_fail(fake_conn(), cfg, "rid-1"))
+  expect_match(sql, "SET notes = ")
+  expect_no_match(sql, "date_end")
+})
+
+test_that("run_finish soft-fails to a warning rather than erroring", {
+  cfg <- lnk_config("default")
+  testthat::local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) stop("connection dropped")
+  )
+  expect_warning(out <- .lnk_log_run_finish(fake_conn(), cfg, "rid-1"),
+                 "not finalized")
+  expect_false(out)
+})
+
+test_that("log_input soft-fails to a warning rather than erroring", {
+  testthat::local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) stop("boom")
+  )
+  testthat::with_mocked_bindings(
+    dbGetQuery = function(conn, statement, ...) data.frame(),
+    dbQuoteLiteral = function(conn, x, ...) paste0("'", x, "'"),
+    .package = "DBI",
+    expect_warning(out <- .lnk_log_inputs(fake_conn(), "s", "rid", "PINE"),
+                   "log_input not recorded")
+  )
+  expect_false(out)
+})
+
+test_that(".lnk_log_inputs never issues a count(*)", {
+  sql <- capture_write(.lnk_log_inputs(fake_conn(), "s", "rid-1", "PINE"))
+  joined <- paste(sql, collapse = " ")
+  expect_no_match(joined, "count\\(\\*\\)")
+  expect_match(joined, "reltuples")
+  expect_match(joined, "row_count_estimated")
+})
+
+test_that(".lnk_log_inputs covers every declared primitive", {
+  sql <- paste(capture_write(
+    .lnk_log_inputs(fake_conn(), "s", "rid-1", "PINE")), collapse = " ")
+  for (tbl in .lnk_input_primitives()$table_name) {
+    expect_match(sql, tbl, fixed = TRUE)
+  }
+})
+
+test_that("config snapshot skips entirely when the hash is already present", {
+  cfg <- lnk_config("default")
+  loaded <- list(parameters_fresh = utils::read.csv(
+    file.path(cfg$dir, "parameters_fresh.csv"), check.names = FALSE))
+  sql <- capture_write(
+    .lnk_log_config_snapshot(fake_conn(), "s", cfg, loaded, "sha256:abc"),
+    probe_rows = 1L)
+  expect_length(sql, 0L)
+})
+
+test_that("config snapshot inserts full rows with ON CONFLICT DO NOTHING", {
+  cfg <- lnk_config("default")
+  loaded <- list(parameters_fresh = utils::read.csv(
+    file.path(cfg$dir, "parameters_fresh.csv"), check.names = FALSE))
+  sql <- capture_write(
+    .lnk_log_config_snapshot(fake_conn(), "s", cfg, loaded, "sha256:abc"),
+    probe_rows = 0L)
+  joined <- paste(sql, collapse = "\n")
+  expect_match(joined, "INSERT INTO s\\.log_parameters_fresh")
+  expect_match(joined, "INSERT INTO s\\.log_dimensions")
+  expect_match(joined, "ON CONFLICT DO NOTHING")
+  # The values actually land, not just the column names.
+  expect_match(joined, "'BT'")
+})
+
+test_that("config snapshot warns and inserts the intersection on shape drift", {
+  cfg <- lnk_config("default")
+  df <- utils::read.csv(file.path(cfg$dir, "parameters_fresh.csv"),
+                        check.names = FALSE)
+  df$not_in_dictionary <- "x"
+  expect_warning(
+    sql <- capture_write(
+      .lnk_log_config_snapshot(fake_conn(), "s", cfg,
+                               list(parameters_fresh = df), "sha256:abc"),
+      probe_rows = 0L),
+    "absent from the dictionary")
+  expect_no_match(paste(sql, collapse = " "), "not_in_dictionary")
+})

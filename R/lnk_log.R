@@ -307,6 +307,314 @@ cols_log_input <- c(
 }
 
 
+# ---------------------------------------------------------------------------
+# Write path
+# ---------------------------------------------------------------------------
+
+#' Quote an R value as a SQL literal, NA -> NULL.
+#' @noRd
+.lnk_log_lit <- function(conn, x) {
+  if (length(x) == 0L || all(is.na(x))) {
+    return("NULL")
+  }
+  as.character(DBI::dbQuoteLiteral(conn, x[[1]]))
+}
+
+#' Quote a character vector as a Postgres text[] literal.
+#' @noRd
+.lnk_log_arr <- function(conn, x) {
+  x <- x[!is.na(x)]
+  if (length(x) == 0L) {
+    return("ARRAY[]::text[]")
+  }
+  paste0("ARRAY[",
+         paste(vapply(x, function(v) as.character(DBI::dbQuoteLiteral(conn, v)),
+                      character(1)), collapse = ", "),
+         "]::text[]")
+}
+
+
+#' Record fingerprints of the DB primitives this run read.
+#'
+#' Reads provenance that already exists rather than recomputing it. Three
+#' sources with very different coverage, so the query LEFT JOINs all of them
+#' and lets absent facts stay NULL:
+#'
+#'   * `bcdata.log` — authoritative download times, but only for `bc2pg`
+#'     downloads. It does **not** cover FWA.
+#'   * `pg_class` — `reltuples` (estimated) and total relation size, free.
+#'   * `pg_stat_user_tables.last_autoanalyze` — a good load-date proxy, but
+#'     empty for bulk-restored tables (notably `fwa_stream_networks_sp`).
+#'
+#' Deliberately no `count(*)`: exact counts on a 4.9M-row, 9.8 GB table
+#' multiplied across a provincial pass would add hours, and an estimate plus an
+#' explicit `row_count_estimated` flag is the honest trade. Honest absence beats
+#' fabricated precision — hence NULLs rather than invented values.
+#'
+#' Soft-fails: provenance logging must never kill a modelling run.
+#'
+#' @noRd
+.lnk_log_inputs <- function(conn, schema, run_id, aoi) {
+  tryCatch({
+    prims <- .lnk_input_primitives()
+
+    has_bcdata <- nrow(DBI::dbGetQuery(conn,
+      "SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'bcdata' AND table_name = 'log' LIMIT 1")) > 0L
+
+    values <- paste(vapply(seq_len(nrow(prims)), function(i) {
+      sprintf("(%s, %s)",
+              DBI::dbQuoteLiteral(conn, prims$table_name[i]),
+              DBI::dbQuoteLiteral(conn, prims$source[i]))
+    }, character(1)), collapse = ", ")
+
+    src_at <- if (has_bcdata) {
+      "(SELECT b.latest_download FROM bcdata.log b WHERE b.table_name = p.tbl)"
+    } else {
+      "NULL::timestamptz"
+    }
+
+    # nolint start: indentation_linter
+    sql <- sprintf(
+      "INSERT INTO %s.log_input
+         (run_id, watershed_group_code, table_name, row_count,
+          row_count_estimated, size_bytes, last_analyze, source, source_at)
+       SELECT %s, %s, p.tbl,
+              c.reltuples::bigint,
+              TRUE,
+              pg_total_relation_size(c.oid),
+              s.last_autoanalyze,
+              p.src,
+              %s
+         FROM (VALUES %s) AS p(tbl, src)
+         LEFT JOIN pg_class c
+           ON c.oid = to_regclass(p.tbl)
+         LEFT JOIN pg_stat_user_tables s
+           ON s.relid = c.oid
+       ON CONFLICT (run_id, table_name) DO NOTHING",
+      schema,
+      DBI::dbQuoteLiteral(conn, run_id),
+      DBI::dbQuoteLiteral(conn, aoi),
+      src_at, values)
+    # nolint end: indentation_linter
+
+    .lnk_db_execute(conn, sql)
+    invisible(TRUE)
+  }, error = function(e) {
+    warning("log_input not recorded: ", conditionMessage(e), call. = FALSE)
+    invisible(FALSE)
+  })
+}
+
+
+#' Snapshot the config's full parameter rows, once per distinct config_hash.
+#'
+#' This is what makes a network self-describing: `observation_species = BT;DV`
+#' at threshold 1 with no date floor is recorded *in the database*, so a
+#' scenario run stays identifiable after the config file moves on. Mirrors
+#' bcfp's `log_parameters_habitat_thresholds`.
+#'
+#' Keyed on `config_hash` rather than `run_id`, so a 246-WSG provincial pass
+#' stores one parameter set rather than 246 copies.
+#'
+#' Shape guard: if a bundle carries a column the dictionary doesn't know about,
+#' warn and insert the intersection rather than failing the run.
+#'
+#' @noRd
+.lnk_log_config_snapshot <- function(conn, schema, cfg, loaded, config_hash) {
+  tryCatch({
+    already <- nrow(DBI::dbGetQuery(conn, sprintf(
+      "SELECT 1 FROM %s.log_parameters_fresh WHERE config_hash = %s LIMIT 1",
+      schema, DBI::dbQuoteLiteral(conn, config_hash)))) > 0L
+    if (already) {
+      return(invisible(TRUE))
+    }
+
+    specs <- list(
+      list(table = "log_parameters_fresh",
+           cols = .lnk_cols_log_parameters_fresh(),
+           data = loaded$parameters_fresh),
+      list(table = "log_dimensions",
+           cols = .lnk_cols_log_dimensions(),
+           data = tryCatch(utils::read.csv(cfg$dimensions, check.names = FALSE,
+                                           colClasses = "character"),
+                           error = function(e) NULL))
+    )
+
+    for (s in specs) {
+      df <- s$data
+      if (is.null(df) || nrow(df) == 0L) next
+
+      expected <- setdiff(names(s$cols), "config_hash")
+      extra <- setdiff(names(df), expected)
+      if (length(extra) > 0L) {
+        warning(s$table, ": bundle carries column(s) absent from the ",
+                "dictionary, inserting the intersection: ",
+                paste(extra, collapse = ", "), call. = FALSE)
+      }
+      use <- intersect(expected, names(df))
+      if (length(use) == 0L) next
+
+      rows <- vapply(seq_len(nrow(df)), function(i) {
+        vals <- vapply(use, function(nm) {
+          v <- df[[nm]][i]
+          if (is.na(v)) "NULL" else
+            as.character(DBI::dbQuoteLiteral(conn, as.character(v)))
+        }, character(1))
+        paste0("(", DBI::dbQuoteLiteral(conn, config_hash), ", ",
+               paste(vals, collapse = ", "), ")")
+      }, character(1))
+
+      .lnk_db_execute(conn, sprintf(
+        "INSERT INTO %s.%s (config_hash, %s) VALUES %s
+         ON CONFLICT DO NOTHING",
+        schema, s$table, paste(use, collapse = ", "),
+        paste(rows, collapse = ", ")))
+    }
+    invisible(TRUE)
+  }, error = function(e) {
+    warning("config snapshot not recorded: ", conditionMessage(e), call. = FALSE)
+    invisible(FALSE)
+  })
+}
+
+
+#' Open a run-log row. Loud by design.
+#'
+#' Runs in the first second and costs nothing, so a failure here means the
+#' schema is broken — better to know before 80 minutes of modelling than after.
+#' Everything downstream of the open row is soft.
+#'
+#' `wsg_upstream` is captured **before** any write touches the schema, because
+#' link accumulates cross-WSG state: a WSG's downstream barrier tokens depend on
+#' which other WSGs were persisted first (RUNBOOK §5). The current AOI is kept
+#' in the set if present — its presence is the "this is a re-run over existing
+#' state" signal, which is itself provenance.
+#'
+#' @return A list with `run_id`, `config_hash`, `date_start`.
+#' @noRd
+.lnk_log_run_start <- function(conn, cfg, aoi, schema_working,
+                               dams = TRUE, cleanup_working = TRUE,
+                               mapping_code = FALSE,
+                               run_label = NA_character_,
+                               notes = NA_character_) {
+  schema <- .lnk_table_names(cfg)$schema
+  .lnk_log_create_tables(conn, schema)
+
+  upstream <- tryCatch(.lnk_wsg_persisted_all(conn, cfg),
+                       error = function(e) character(0))
+
+  stamp <- lnk_stamp(cfg, conn = NULL, aoi = aoi)
+  run_id <- .lnk_run_id()
+  bcfp <- .lnk_bcfp_log_current(conn)
+
+  cols <- c("run_id", "watershed_group_code", "date_start", "run_label", "host",
+            "config_name", "config_hash", "config_drift",
+            "link_version", "link_sha", "link_dirty",
+            "fresh_version", "fresh_sha", "fresh_dirty",
+            "crate_version", "fwapg_sha",
+            "arg_dams", "arg_mapping_code", "arg_cleanup_working",
+            "schema_persist", "wsg_upstream",
+            "bcfp_model_run_id", "bcfp_model_version", "notes")
+
+  vals <- c(
+    DBI::dbQuoteLiteral(conn, run_id),
+    DBI::dbQuoteLiteral(conn, aoi),
+    "now()",
+    .lnk_log_lit(conn, run_label),
+    .lnk_log_lit(conn, stamp$host),
+    .lnk_log_lit(conn, cfg$name),
+    .lnk_log_lit(conn, stamp$config_hash),
+    .lnk_log_lit(conn, stamp$config_drift),
+    .lnk_log_lit(conn, stamp$software$link$version),
+    .lnk_log_lit(conn, stamp$software$link$git_sha),
+    .lnk_log_lit(conn, stamp$software$link$dirty),
+    .lnk_log_lit(conn, stamp$software$fresh$version),
+    .lnk_log_lit(conn, stamp$software$fresh$git_sha),
+    .lnk_log_lit(conn, stamp$software$fresh$dirty),
+    .lnk_log_lit(conn, .lnk_pkg_version_or_na("crate")),
+    .lnk_log_lit(conn, stamp$fwapg_sha),
+    .lnk_log_lit(conn, dams),
+    .lnk_log_lit(conn, mapping_code),
+    .lnk_log_lit(conn, cleanup_working),
+    .lnk_log_lit(conn, schema),
+    .lnk_log_arr(conn, upstream),
+    .lnk_log_lit(conn, if (is.null(bcfp)) NA else bcfp$model_run_id),
+    .lnk_log_lit(conn, if (is.null(bcfp)) NA else bcfp$model_version),
+    .lnk_log_lit(conn, notes)
+  )
+
+  .lnk_db_execute(conn, sprintf(
+    "INSERT INTO %s.log (%s) VALUES (%s)",
+    schema, paste(cols, collapse = ", "), paste(vals, collapse = ", ")))
+
+  list(run_id = run_id, config_hash = stamp$config_hash,
+       schema = schema, schema_working = schema_working)
+}
+
+
+#' Close a run-log row on success. Soft.
+#' @noRd
+.lnk_log_run_finish <- function(conn, cfg, run_id, species = character(0)) {
+  tryCatch({
+    schema <- .lnk_table_names(cfg)$schema
+    .lnk_db_execute(conn, sprintf(
+      "UPDATE %s.log SET date_end = now(), species = %s WHERE run_id = %s",
+      schema, .lnk_log_arr(conn, species),
+      DBI::dbQuoteLiteral(conn, run_id)))
+    invisible(TRUE)
+  }, error = function(e) {
+    warning("run log not finalized: ", conditionMessage(e), call. = FALSE)
+    invisible(FALSE)
+  })
+}
+
+
+#' Mark a run-log row failed. Soft, and never touches `date_end`.
+#'
+#' Leaving `date_end` NULL gives a three-state signal:
+#'   date_end set                -> success
+#'   date_end NULL + notes set   -> R error or interrupt (this ran)
+#'   date_end NULL + notes NULL  -> SIGKILL / OOM / reboot (nothing ran)
+#'
+#' @noRd
+.lnk_log_run_fail <- function(conn, cfg, run_id,
+                              message = "run failed or interrupted") {
+  tryCatch({
+    schema <- .lnk_table_names(cfg)$schema
+    .lnk_db_execute(conn, sprintf(
+      "UPDATE %s.log SET notes = concat_ws('; ', notes, %s) WHERE run_id = %s",
+      schema, DBI::dbQuoteLiteral(conn, message),
+      DBI::dbQuoteLiteral(conn, run_id)))
+    invisible(TRUE)
+  }, error = function(e) {
+    invisible(FALSE)
+  })
+}
+
+
+#' Latest bcfishpass build, when `bcfishpass.log` is reachable.
+#'
+#' Usually absent on a local fwapg (it lives behind the tunnel), so this returns
+#' NULL rather than erroring.
+#'
+#' @noRd
+.lnk_bcfp_log_current <- function(conn) {
+  tryCatch({
+    present <- nrow(DBI::dbGetQuery(conn,
+      "SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'bcfishpass' AND table_name = 'log' LIMIT 1")) > 0L
+    if (!present) {
+      return(NULL)
+    }
+    res <- DBI::dbGetQuery(conn,
+      "SELECT model_run_id, model_version FROM bcfishpass.log
+        ORDER BY model_run_id DESC LIMIT 1")
+    if (nrow(res) == 0L) NULL else as.list(res[1L, ])
+  }, error = function(e) NULL)
+}
+
+
 #' git SHA of the fwapg checkout that loaded the FWA primitives.
 #'
 #' The stream network is the most load-bearing input the pipeline has and it

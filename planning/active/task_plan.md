@@ -53,12 +53,12 @@ Mirrors `bcfishpass.log` + FK'd children that snapshot **actual parameter values
 
 ## Phase 3 — write path
 
-- [ ] `.lnk_log_inputs()` — one batched `pg_class`/`pg_stat_user_tables`/`bcdata.log`
+- [x] `.lnk_log_inputs()` — one batched `pg_class`/`pg_stat_user_tables`/`bcdata.log`
       LEFT JOIN, `bcdata.log` behind an information_schema probe; soft-fails
-- [ ] `.lnk_log_config_snapshot()` — existence guard + `ON CONFLICT DO NOTHING`; shape
+- [x] `.lnk_log_config_snapshot()` — existence guard + `ON CONFLICT DO NOTHING`; shape
       guard warns and inserts intersection
-- [ ] `.lnk_log_run_start()` (loud) / `.lnk_log_run_finish()` / `.lnk_log_run_fail()` (soft)
-- [ ] Tests: open/finish/fail row shapes, dedupe on second snapshot, soft-fail on throw
+- [x] `.lnk_log_run_start()` (loud) / `.lnk_log_run_finish()` / `.lnk_log_run_fail()` (soft)
+- [x] Tests: open/finish/fail row shapes, dedupe on second snapshot, soft-fail on throw
 
 ## Phase 4 — wire into `lnk_pipeline_run`
 
