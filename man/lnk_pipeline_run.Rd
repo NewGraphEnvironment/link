@@ -12,7 +12,10 @@ lnk_pipeline_run(
   schema = paste0("working_", tolower(aoi)),
   dams = TRUE,
   cleanup_working = TRUE,
-  mapping_code = FALSE
+  mapping_code = FALSE,
+  log = TRUE,
+  run_label = Sys.getenv("LNK_RUN_LABEL", NA_character_),
+  notes = NA_character_
 )
 }
 \arguments{
@@ -48,6 +51,20 @@ access is foundational, not mapping_code-specific. Methodology shift
 from pre-#187 compare_wsg: access uses link's own per-species
 barriers (via \code{blocks_species} predicate on \verb{<schema>.barriers}),
 not bcfp's tunnel-staged tables.}
+
+\item{log}{Logical. When \code{TRUE} (default), record run provenance into
+\verb{<persist_schema>.log} and its companion tables (link#127) — which
+config produced this network, what that config actually said, which
+primitive vintage it read, and when. The open row is written before
+any modelling so \code{wsg_upstream} reflects the state the run started
+from; everything after it degrades to a warning rather than failing
+the run. Pass \code{FALSE} for throwaway runs.}
+
+\item{run_label}{Character. Groups a campaign across hosts and WSGs
+(e.g. \code{"provincial_default_rearbreaks"}). Defaults to the
+\code{LNK_RUN_LABEL} env var so orchestrators can set it once.}
+
+\item{notes}{Character. Free-form note stored on the run row.}
 }
 \value{
 \code{conn}, invisibly. Side effects are the writes into

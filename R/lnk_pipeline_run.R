@@ -72,6 +72,17 @@
 #'   from pre-#187 compare_wsg: access uses link's own per-species
 #'   barriers (via `blocks_species` predicate on `<schema>.barriers`),
 #'   not bcfp's tunnel-staged tables.
+#' @param log Logical. When `TRUE` (default), record run provenance into
+#'   `<persist_schema>.log` and its companion tables (link#127) — which
+#'   config produced this network, what that config actually said, which
+#'   primitive vintage it read, and when. The open row is written before
+#'   any modelling so `wsg_upstream` reflects the state the run started
+#'   from; everything after it degrades to a warning rather than failing
+#'   the run. Pass `FALSE` for throwaway runs.
+#' @param run_label Character. Groups a campaign across hosts and WSGs
+#'   (e.g. `"provincial_default_rearbreaks"`). Defaults to the
+#'   `LNK_RUN_LABEL` env var so orchestrators can set it once.
+#' @param notes Character. Free-form note stored on the run row.
 #'
 #' @return `conn`, invisibly. Side effects are the writes into
 #'   `<persist_schema>.streams`, `streams_habitat_<sp>`, and `barriers`.
@@ -99,7 +110,11 @@ lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
                              schema = paste0("working_", tolower(aoi)),
                              dams = TRUE,
                              cleanup_working = TRUE,
-                             mapping_code = FALSE) {
+                             mapping_code = FALSE,
+                             log = TRUE,
+                             run_label = Sys.getenv("LNK_RUN_LABEL",
+                                                    NA_character_),
+                             notes = NA_character_) {
   stopifnot(
     inherits(conn, "DBIConnection"),
     is.character(aoi), length(aoi) == 1L, nzchar(aoi),
@@ -114,8 +129,32 @@ lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
     grepl("^[a-z_][a-z0-9_]*$", schema),
     is.logical(dams), length(dams) == 1L,
     is.logical(cleanup_working), length(cleanup_working) == 1L,
-    is.logical(mapping_code), length(mapping_code) == 1L
+    is.logical(mapping_code), length(mapping_code) == 1L,
+    is.logical(log), length(log) == 1L
   )
+
+  # Run provenance (link#127). Opened here, before anything writes, so
+  # `wsg_upstream` reflects the cross-WSG state this run actually started
+  # from — the pre-persist below mutates it. `on.exit` rather than
+  # tryCatch: it preserves traceback() for interactive debugging and keeps
+  # the invisible(conn) contract, at the cost of three lines.
+  run_log <- NULL
+  if (isTRUE(log)) {
+    run_log <- .lnk_log_run_start(conn, cfg = cfg, aoi = aoi,
+                                  schema_working = schema, dams = dams,
+                                  cleanup_working = cleanup_working,
+                                  mapping_code = mapping_code,
+                                  run_label = run_label, notes = notes)
+    completed <- FALSE
+    on.exit({
+      if (!completed) {
+        try(.lnk_log_run_fail(conn, cfg, run_log$run_id), silent = TRUE)
+      }
+    }, add = TRUE)
+    .lnk_log_config_snapshot(conn, run_log$schema, cfg, loaded,
+                             run_log$config_hash)
+    .lnk_log_inputs(conn, run_log$schema, run_log$run_id, aoi)
+  }
 
   # Defensive reset of per-WSG staging from any prior partial run.
   DBI::dbExecute(conn, sprintf(
@@ -267,6 +306,11 @@ lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
 
   if (isTRUE(cleanup_working)) {
     DBI::dbExecute(conn, sprintf("DROP SCHEMA %s CASCADE", schema))
+  }
+
+  if (!is.null(run_log)) {
+    completed <- TRUE
+    .lnk_log_run_finish(conn, cfg, run_log$run_id, species = active_species)
   }
 
   invisible(conn)

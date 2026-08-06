@@ -62,9 +62,9 @@ Mirrors `bcfishpass.log` + FK'd children that snapshot **actual parameter values
 
 ## Phase 4 — wire into `lnk_pipeline_run`
 
-- [ ] Three params (`run_label`, `notes`, `log`), three call sites, `on.exit()` + flag
-- [ ] **Same commit:** update the exact-`calls`-vector mock list in `test-lnk_pipeline_run.R`
-- [ ] Test: mid-phase throw → `log_fail` fired, `log_finish` not, error still propagates
+- [x] Three params (`run_label`, `notes`, `log`), three call sites, `on.exit()` + flag
+- [x] **Same commit:** update the exact-`calls`-vector mock list in `test-lnk_pipeline_run.R`
+- [x] Test: mid-phase throw → `log_fail` fired, `log_finish` not, error still propagates
 
 ## Phase 5 — read helper + docs
 
