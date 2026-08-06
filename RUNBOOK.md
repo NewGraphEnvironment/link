@@ -447,6 +447,75 @@ issue.
 
 ------------------------------------------------------------------------
 
+## 6b. Run provenance — which config built this network? (link#127)
+
+Every
+[`lnk_pipeline_run()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_run.md)
+writes four sidecar tables into the **persist** schema, so a network in
+the DB is self-describing:
+
+| table | grain | holds |
+|----|----|----|
+| `<persist>.log` | one row per run | `date_start` / `date_end`, `config_hash`, `config_drift`, link/fresh version + SHA + dirty flag, `fwapg_sha`, run args, `species[]`, `wsg_upstream[]`, bcfp baseline |
+| `<persist>.log_parameters_fresh` | `(config_hash, species_code)` | **full** `parameters_fresh.csv` rows |
+| `<persist>.log_dimensions` | `(config_hash, species)` | **full** `dimensions.csv` rows |
+| `<persist>.log_input` | `(run_id, table_name)` | per-primitive row count, size, last-analyze, source |
+
+Read it with `lnk_log_read(conn, cfg, aoi = "PINE")`. Mirrors
+`bcfishpass.log` + its `log_parameters_*` children.
+
+**Why full rows, not a pointer.** `observation_species = BT;DV` at
+threshold 1 with no date floor is recorded *in the database*, so two
+scenario runs stay distinguishable after the config file moves on. That
+is the whole point — see link#236, which runs the DV-as-BT override with
+and without.
+
+**The three-state completion signal:**
+
+| `date_end` | `notes` | meaning                                   |
+|------------|---------|-------------------------------------------|
+| set        | —       | success                                   |
+| NULL       | set     | R error or interrupt (`on.exit` ran)      |
+| NULL       | NULL    | SIGKILL / OOM / host reboot (nothing ran) |
+
+**No backfill, ever.** A WSG in `<persist>.streams` with no `log` row
+was modelled before provenance existed. That state is not recoverable
+and a synthetic row would be fabricated provenance. Audit which:
+
+``` sql
+SELECT DISTINCT watershed_group_code FROM <persist>.streams
+EXCEPT SELECT watershed_group_code FROM <persist>.log;
+```
+
+**Gotchas.**
+
+- `config_hash` hashes the **observed bytes of the resolved file set**,
+  not the declared `provenance:` block — `config.yaml` is absent from
+  its own block, so a declared-set hash would be blind to
+  `pipeline$schema`, `break_order` and `gradient_classes`.
+  `config_drift` is the separate “did it match what it claimed” axis.
+- `log_input` never runs `count(*)`. Row counts are `pg_class.reltuples`
+  estimates (`row_count_estimated = TRUE`); exact counts on a 4.9M-row /
+  9.8 GB table across a provincial pass would add hours.
+- **`bcdata.log` covers only `bc2pg` downloads — not FWA.** The stream
+  network is loaded by fwapg’s own `load.sh` from bchamp objectstore
+  parquet, and `pg_stat_user_tables` for it is empty (bulk-restored,
+  never analyzed). Its only real provenance is `fwapg_sha`, resolved
+  from `FWAPG_GIT_SHA` or a `.git` walk of `FWAPG_DIR`. Teaching
+  `snapshot_bcfp.sh` to stamp load events is the open follow-up that
+  fills `log_input.source_at`.
+- `log` and `log_input` carry `watershed_group_code` so
+  `schema_consolidate.R` auto-discovers them; `log_parameters_fresh` /
+  `log_dimensions` deliberately do not (they key on `config_hash`), so
+  **they do not yet travel between hosts** — follow-up PR.
+
+**Env vars:** `LNK_RUN_LABEL` (groups a campaign), `LINK_GIT_DIRTY` /
+`FRESH_GIT_DIRTY` (dirty-tree flag for installed packages),
+`FWAPG_GIT_SHA` / `FWAPG_DIR`, `LNK_HOST_ALIAS` (host name in provenance
+rows).
+
+------------------------------------------------------------------------
+
 ## 7. Where every rule lives
 
 | Rule | File | Drives |

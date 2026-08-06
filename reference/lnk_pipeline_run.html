@@ -13,7 +13,7 @@ streams_habitat_&amp;lt;sp&amp;gt; per species, barriers)."><meta property="og:i
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.44.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.45.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -59,7 +59,10 @@ in the persistent province-wide tables (<code>&lt;persist_schema&gt;.streams</co
 <span>  schema <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"working_"</span>, <span class="fu"><a href="https://rdrr.io/r/base/chartr.html" class="external-link">tolower</a></span><span class="op">(</span><span class="va">aoi</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  dams <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  cleanup_working <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  mapping_code <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  mapping_code <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  log <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  run_label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">"LNK_RUN_LABEL"</span>, <span class="cn">NA_character_</span><span class="op">)</span>,</span>
+<span>  notes <span class="op">=</span> <span class="cn">NA_character_</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -114,6 +117,26 @@ access is foundational, not mapping_code-specific. Methodology shift
 from pre-#187 compare_wsg: access uses link's own per-species
 barriers (via <code>blocks_species</code> predicate on <code>&lt;schema&gt;.barriers</code>),
 not bcfp's tunnel-staged tables.</p></dd>
+
+
+<dt id="arg-log">log<a class="anchor" aria-label="anchor" href="#arg-log"></a></dt>
+<dd><p>Logical. When <code>TRUE</code> (default), record run provenance into
+<code>&lt;persist_schema&gt;.log</code> and its companion tables (link#127) — which
+config produced this network, what that config actually said, which
+primitive vintage it read, and when. The open row is written before
+any modelling so <code>wsg_upstream</code> reflects the state the run started
+from; everything after it degrades to a warning rather than failing
+the run. Pass <code>FALSE</code> for throwaway runs.</p></dd>
+
+
+<dt id="arg-run-label">run_label<a class="anchor" aria-label="anchor" href="#arg-run-label"></a></dt>
+<dd><p>Character. Groups a campaign across hosts and WSGs
+(e.g. <code>"provincial_default_rearbreaks"</code>). Defaults to the
+<code>LNK_RUN_LABEL</code> env var so orchestrators can set it once.</p></dd>
+
+
+<dt id="arg-notes">notes<a class="anchor" aria-label="anchor" href="#arg-notes"></a></dt>
+<dd><p>Character. Free-form note stored on the run row.</p></dd>
 
 </dl></div>
     <div class="section level2">

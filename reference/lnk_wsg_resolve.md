@@ -92,8 +92,8 @@ lnk_wsg_resolve(cfg, loaded)
 
 # Study-area mode — focal + drainage closure (default)
 lnk_wsg_resolve(cfg, loaded, wsgs = c("PARS", "BULK"))
-#> [1] "KISP" "KLUM" "LKEL" "LSKE" "MSKE" "USKE" "BULK" "FINA"
-#>     "LBTN" "LPCE" "MORR" "PARA" "PCEA" "UPCE" "PARS"
+#> [1] "LPCE" "LSKE" "KLUM" "UPCE" "KISP" "PCEA" "BULK" "PARA"
+#>     "PARS"
 
 # Strict mode — exactly these, species-filtered, no closure
 lnk_wsg_resolve(cfg, loaded, wsgs = c("BBAR", "BULK"), expand = FALSE)

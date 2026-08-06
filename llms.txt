@@ -199,6 +199,9 @@ Redistributed bcfishpass override data carries its own license — see
 - [`lnk_load_overrides()`](https://newgraphenvironment.github.io/link/reference/lnk_load_overrides.md)
   : Materialize the Tabular Data Files Declared in a Config Bundle
 
+- [`lnk_log_read()`](https://newgraphenvironment.github.io/link/reference/lnk_log_read.md)
+  : Read the run-provenance log from a persist schema
+
 - [`lnk_mapping_code()`](https://newgraphenvironment.github.io/link/reference/lnk_mapping_code.md)
   : Build per-segment per-species mapping_code tokens from schema tables
 

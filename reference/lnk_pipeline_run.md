@@ -16,7 +16,10 @@ lnk_pipeline_run(
   schema = paste0("working_", tolower(aoi)),
   dams = TRUE,
   cleanup_working = TRUE,
-  mapping_code = FALSE
+  mapping_code = FALSE,
+  log = TRUE,
+  run_label = Sys.getenv("LNK_RUN_LABEL", NA_character_),
+  notes = NA_character_
 )
 ```
 
@@ -73,6 +76,26 @@ lnk_pipeline_run(
   from pre-#187 compare_wsg: access uses link's own per-species barriers
   (via `blocks_species` predicate on `<schema>.barriers`), not bcfp's
   tunnel-staged tables.
+
+- log:
+
+  Logical. When `TRUE` (default), record run provenance into
+  `<persist_schema>.log` and its companion tables (link#127) — which
+  config produced this network, what that config actually said, which
+  primitive vintage it read, and when. The open row is written before
+  any modelling so `wsg_upstream` reflects the state the run started
+  from; everything after it degrades to a warning rather than failing
+  the run. Pass `FALSE` for throwaway runs.
+
+- run_label:
+
+  Character. Groups a campaign across hosts and WSGs (e.g.
+  `"provincial_default_rearbreaks"`). Defaults to the `LNK_RUN_LABEL`
+  env var so orchestrators can set it once.
+
+- notes:
+
+  Character. Free-form note stored on the run row.
 
 ## Value
 
