@@ -19,6 +19,48 @@ notice.
 **Repository:** NewGraphEnvironment/link **Primary Language:** R
 **Prefix:** `lnk_` **Branch:** `main` (v0.44.2 as of 2026-07-06)
 
+## Status (2026-08-06) — v0.45.1 shipped (WSG drainage closure rebuilt; \#227 re-scoped)
+
+`public.wsg_outlet` is **gone as a concept**, not repaired.
+`fresh@v0.33.0` (fresh#214/#215) rebuilt `frs_wsg_drainage()` on
+per-group outlet **points** (`blue_line_key` +
+`downstream_route_measure`) tested with the measure-aware
+`whse_basemapping.fwa_downstream()`; outlets ship in fresh at
+`inst/extdata/wsg_outlet.csv` (246 rows, generator
+`data-raw/wsg_outlet.R`) and reach the DB as a `VALUES` list, so **no
+table is needed in any database**. Adopted here in \#238. The
+closure-mode `test-lnk_wsg_resolve.R` tests pass again and the suite is
+clean.
+
+**The old derivation was also wrong, and the missing table was masking
+it.** `nlevel(wscode_ltree) ASC` picks the shallowest code appearing
+*anywhere* in a group — including polygon slivers. MORR (Morice) clips a
+2-segment, 0 km, order-1 piece of the Bulkley-coded line `400.431358`
+next to 1,236 segments and 275 km of the order-8 Morice line, so the
+Bulkley appeared to drain through the Morice. Province-wide: 62/246
+groups had over-shallow outlets, 167 distinct outlets for 246 groups,
+and the 14-group Fraser cluster (all wscode `100`) fell through to an
+**alphabetical** tiebreak that put LFRA seventh — breaking the DS-first
+guarantee cross-WSG `;DAM` depends on. **Correct rule: filter to the
+group’s max stream order FIRST, then shallowest code, then lowest
+measure.** A single ltree can never order two groups on one stem; the
+4-arg ltree-only `fwa_downstream` returns FALSE for `UFRA → LFRA`.
+
+**Closures are now tighter** — `PARS + BULK` gives 9 WSGs, not 15 (drops
+LKEL, MSKE, USKE, LBTN, MORR, FINA, all correctly). Study-area buckets
+built before and after are **not comparable**; earlier runs were
+over-inclusive rather than short, so their results stand. **Gotchas:**
+[`lnk_db_conn()`](https://newgraphenvironment.github.io/link/reference/lnk_db_conn.md)
+lands on the tunnel (`:63333`, `bcfishpass`), while
+`data-raw/study_area_wsgs.R` hardcodes docker `fwapg` (`:5432`) — two
+databases, different load states (#222); docker `fwapg`’s
+`fwa_watershed_groups_poly` has NULL code columns, so derive from
+`fwa_stream_networks_sp`, which is populated in both. **\#227
+re-scoped** to just the single-WSG downstream-state guard — its body
+carries a three-tier design (auto-pass via a 2.4 s `cabd.dams` spatial
+check, fail loud, override recorded in the \#127 run log) and is
+buildable now the closure is correct.
+
 ## Status (2026-07-11) — \#231 closed misdirected; \#232 opened (crossings parity)
 
 **Key correction (do NOT re-rabbit-hole):** the pipeline builds
