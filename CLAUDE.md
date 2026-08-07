@@ -17,7 +17,7 @@ notice.
 ## Repository Context
 
 **Repository:** NewGraphEnvironment/link **Primary Language:** R
-**Prefix:** `lnk_` **Branch:** `main` (v0.44.2 as of 2026-07-06)
+**Prefix:** `lnk_` **Branch:** `main` (v0.45.1 as of 2026-08-06)
 
 ## Status (2026-08-06) — v0.45.1 shipped (WSG drainage closure rebuilt; \#227 re-scoped)
 
@@ -744,6 +744,221 @@ When changing a `configs/<name>/dimensions.csv` or any file that feeds
 
 Relates to NewGraphEnvironment/sred#24 — crossing connectivity
 interpretation package.
+
+## Working Conventions
+
+Operating rules learned on this repo. Migrated from machine-local Claude
+memory so they travel to every machine (soul#47 recipe).
+
+### Surface design decisions before writing code
+
+For load-bearing choices — function naming, family vs singleton, prefix,
+scope — present two or three concrete options with tradeoffs and let the
+user pick.
+
+**Why:** Twice in one session (#65 and the `schema_apply` naming) a
+design was implemented without consulting and had to be redone. Real
+design decisions sit *between* agreeing on direction and writing the
+diff; “auto mode” means execute the chosen path quickly, not skip the
+choice.
+
+**How to apply:** After agreeing the *what*, ask the *how* — which
+prefix, one function or a family, what does the package already do?
+Check `soul/conventions/newgraph.md` for `noun_verb-detail` before
+inventing a name.
+
+### Read the issue before re-deriving its design
+
+When work references a function or feature that has an issue, read that
+issue body in full — and scan its closed predecessors — before
+exploring.
+
+**Why:** An entire session went into re-deriving `frs_order_child`
+decisions that were documented verbatim in fresh#158, including a
+predecessor link to fresh#156 closed in its favour with its own
+analysis.
+
+**How to apply:** `gh issue view <N> --repo <owner>/<repo>` first.
+Search closed issues for rejected predecessors — “closed in favor of”
+comments carry the rationale. Check `planning/archive/` for prior PWFs
+on the topic. If the issue contradicts a hypothesis you’re about to
+test, say so before testing. Note that fresh#158 states link’s
+`frs_order_child` is deliberately **not** chasing bcfp parity — don’t
+assume parity is the goal for any link primitive without checking.
+
+### Detective work before scoping a “gap”
+
+When an issue claims data is missing relative to bcfishpass, run a count
+plus a row-level diff against the real data before scoping any
+implementation.
+
+**Why:** link#102 (CABD waterfalls “completeness gap”) dissolved in five
+minutes of `psql`: fresh’s `falls.csv` per-WSG barrier counts are
+byte-identical to `bcfishpass.falls WHERE barrier_ind = true` across all
+187 WSGs. The “missing famous falls” framing was wrong — those are
+mostly `barrier_ind = false` (fishways) or live in `cabd.dams`. A
+research-doc sentence had implied a divergence that didn’t exist at row
+level.
+
+**How to apply:** Counts from both sides → diff at WSG level → row-level
+spot-check on one representative WSG → only then scope. Costs 5–10
+minutes; has closed issues as not-a-bug and avoided multi-day PRs. Even
+when data does differ, the count diff sizes the work correctly.
+
+### Build abstract systems, not point solutions
+
+Reuse first, hardcode last, compose. New functions join an existing
+`lnk_*` family; don’t invent a family unless none fits.
+
+**Why:** The pipeline had two near-identical helpers applying CSV-driven
+`barrier_status` overrides, and a third of the same shape was about to
+be added. The user wants the system rationalized, not extended — “don’t
+be afraid to start over, might be smarter.”
+
+**How to apply:** Before adding a third helper of a shape, consolidate
+the two that exist. Mirror external systems by view or composition,
+never a hand-built table. **Don’t hide diamonds** — a primitive with
+utility beyond its caller belongs as a public function at its natural
+altitude (a “what’s downstream” SQL pattern serves water quality
+stations and sediment samples too, so it belongs in `fresh`’s
+`frs_network_*`, not a private link helper).
+
+### Never file an issue or PR without body review
+
+Draft the body, show it, and wait for explicit approval before
+`gh issue create` / `gh pr create`.
+
+**Why:** “Yes write the issue” arrived in the same message as unanswered
+architectural questions; link#112 was filed prematurely and the user had
+to edit a public issue after the fact.
+
+**How to apply:** Draft to a tempfile and show it in the response.
+Architectural questions in the same message mean the design isn’t
+settled — answer those, get sign-off, then file. Only exception: a skill
+where filing *is* the explicit ask.
+
+### PWF checkboxes are an integrity contract
+
+`- [x]` means the named action ran and reported clean. If it didn’t run,
+the box stays unchecked.
+
+**Why:** `[x] /code-check clean` was ticked on \#138 (v0.32.0) without
+invoking the skill. Run post-hoc, it surfaced three real fragility
+findings (int4 overflow, silent row loss on FWA-join NULLs, `pts.*`
+column collision) that should have been caught pre-merge.
+
+**How to apply:** Leave it unchecked, or reword to what actually
+happened (“deferred — see follow-up”). For a `/code-check` missed on an
+already-merged PR, run it post-hoc and ship the findings as a follow-up
+patch.
+
+### Fail loud; the release bar is the full sweep
+
+Before any minor or major release: `devtools::test()`,
+`devtools::check()`,
+[`lintr::lint_package()`](https://lintr.r-lib.org/reference/lint.html),
+and live parity **beyond the happy-path case**.
+
+**Why:** Each of these shipped or nearly shipped a quiet regression — a
+scratch primitive that matched 15613/15647 ADMS arrays but was lossy
+elsewhere; a consolidate driver that dropped source schemas even when
+restore failed (lost a cypher’s data); a resume gate that conflated “RDS
+present” with “WSG done” and silently no-op’d a recovery run.
+
+**How to apply:** If you tested ADMS, also test BULK or HORS. If you
+tested PSCIS barriers, also test dams. When the user says “ship it” and
+the sweep hasn’t run, ask first — seconds versus days. Surface failures
+inline with a proposed fix rather than papering over them.
+
+### Stamp the environment in every verification log
+
+Verification runs record environment state, not just numbers.
+
+**Why:** A refactor appeared to move BT rearing by 0.4 points against
+bcfishpass on ADMS. Hours went into hunting an extraction bug that
+didn’t exist — the drift was entirely input state changing between two
+run dates. Without stamps you cannot tell which input moved.
+
+**How to apply:** Header carries link version + SHA, fresh version +
+SHA, fwapg dump timestamp or schema hash, bcfishobs row count,
+bcfishpass reference row counts, and the reference data version.
+[`lnk_stamp()`](https://newgraphenvironment.github.io/link/reference/lnk_stamp.md)
+(#24) should drive this once it ships.
+
+### How to talk about bcfishpass
+
+Never position link or fresh as superseding or replacing bcfishpass. It
+is the system we learned from and build on.
+
+**Why:** It’s community infrastructure maintained by smnorris with
+contributions from many groups. Framing our work as a replacement
+misrepresents the relationship.
+
+**How to apply:** “validates against”, not “replaces”. “builds on the
+foundation of”, not “improves on”. “community-maintained override CSVs”,
+not “our data”. Frame methodology differences (wetland rearing,
+intermittent streams) as *our biological defaults*, not corrections. The
+bcfishpass comparison is a validation step, not the package’s goal.
+
+### Never write into smnorris/\* without explicit approval
+
+No comments, issues, PRs or any write action in an upstream repo unless
+the user approves that specific action.
+
+**Why:** Upstream is a third party; every write creates notifications
+and work for someone else. The user wants a deliberate decision each
+time, not a judgment call.
+
+**How to apply:** Read-only `gh` calls are fine. Any write
+(`gh issue create`, `gh pr comment`, `gh api -X POST`, …) waits for
+“file it” on that specific action. Draft it in chat first. Applies to
+bcfishpass, bcfishobs, db_newgraph, fwapg, and external orgs generally.
+
+### Sibling-repo work: branch and PR, no comms thread
+
+Working directly in `fresh` or `crate` from a link session is fine when
+the user directs it. The older comms-first rule was explicitly relaxed.
+
+**How to apply:** Proceed in the sibling repo — but still branch, still
+open a PR, **never push to a sibling’s main**. Keep commits separate per
+repo; don’t bundle a link change and a fresh change into one commit. Ask
+when an action is destructive or the intent is unclear.
+
+### No issue references in vignettes
+
+Vignettes describe what the package does today. Issue numbers go stale
+silently.
+
+**Why:** A vignette line reading “seed for link#75, which will turn this
+CSV into…” would still promise a future state after \#75 closed.
+
+**How to apply:** Vignettes link to behaviour and source paths only — no
+`#NN`, no “will become”. Issues are fine and encouraged in NEWS, PR
+bodies, commit messages, and `research/*.md`. Avoid them in README
+unless they describe a limitation users need today.
+
+### No manual reference index in \_pkgdown.yml
+
+With consistent prefix naming, drop the manual `reference:` section and
+let pkgdown auto-generate.
+
+**Why:** A manual index recreates groupings the naming already does, and
+breaks CI whenever a new export isn’t added to it — exactly how
+v0.18.1’s pkgdown build failed on `lnk_load_overrides`.
+
+**How to apply:** Keep `_pkgdown.yml` to `url:`, `template:`, and
+`articles:`. Manual sections only earn their place in packages with
+mixed prefixes or weak naming.
+
+### fresh tests itself against link’s compare script
+
+Both repos are local on the same machine, same Docker DB and tunnel.
+fresh can run link’s compare script directly — we are not the middleman.
+
+**How to apply:** A fresh issue should say
+`Rscript ~/Projects/repo/link/data-raw/compare_bcfishpass.R BULK` with
+target numbers, not “we’ll test and report back”. fresh installs link
+via `devtools::install_local()` and verifies before pushing.
 
 # CI Monitoring
 

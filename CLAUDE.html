@@ -44,7 +44,7 @@
 </blockquote>
 <div class="section level2">
 <h2 id="repository-context">Repository Context<a class="anchor" aria-label="anchor" href="#repository-context"></a></h2>
-<p><strong>Repository:</strong> NewGraphEnvironment/link <strong>Primary Language:</strong> R <strong>Prefix:</strong> <code>lnk_</code> <strong>Branch:</strong> <code>main</code> (v0.44.2 as of 2026-07-06)</p>
+<p><strong>Repository:</strong> NewGraphEnvironment/link <strong>Primary Language:</strong> R <strong>Prefix:</strong> <code>lnk_</code> <strong>Branch:</strong> <code>main</code> (v0.45.1 as of 2026-08-06)</p>
 </div>
 <div class="section level2">
 <h2 id="status-2026-08-06--v0451-shipped-wsg-drainage-closure-rebuilt-227-re-scoped">Status (2026-08-06) — v0.45.1 shipped (WSG drainage closure rebuilt; #227 re-scoped)<a class="anchor" aria-label="anchor" href="#status-2026-08-06--v0451-shipped-wsg-drainage-closure-rebuilt-227-re-scoped"></a></h2>
@@ -376,7 +376,93 @@ bcdata (PSCIS assessments)   ─┘</code></pre>
 <div class="section level2">
 <h2 id="sred">SRED<a class="anchor" aria-label="anchor" href="#sred"></a></h2>
 <p>Relates to NewGraphEnvironment/sred#24 — crossing connectivity interpretation package.</p>
+</div>
+<div class="section level2">
+<h2 id="working-conventions">Working Conventions<a class="anchor" aria-label="anchor" href="#working-conventions"></a></h2>
+<p>Operating rules learned on this repo. Migrated from machine-local Claude memory so they travel to every machine (soul#47 recipe).</p>
+<div class="section level3">
+<h3 id="surface-design-decisions-before-writing-code">Surface design decisions before writing code<a class="anchor" aria-label="anchor" href="#surface-design-decisions-before-writing-code"></a></h3>
+<p>For load-bearing choices — function naming, family vs singleton, prefix, scope — present two or three concrete options with tradeoffs and let the user pick.</p>
+<p><strong>Why:</strong> Twice in one session (#65 and the <code>schema_apply</code> naming) a design was implemented without consulting and had to be redone. Real design decisions sit <em>between</em> agreeing on direction and writing the diff; “auto mode” means execute the chosen path quickly, not skip the choice.</p>
+<p><strong>How to apply:</strong> After agreeing the <em>what</em>, ask the <em>how</em> — which prefix, one function or a family, what does the package already do? Check <code>soul/conventions/newgraph.md</code> for <code>noun_verb-detail</code> before inventing a name.</p>
+</div>
+<div class="section level3">
+<h3 id="read-the-issue-before-re-deriving-its-design">Read the issue before re-deriving its design<a class="anchor" aria-label="anchor" href="#read-the-issue-before-re-deriving-its-design"></a></h3>
+<p>When work references a function or feature that has an issue, read that issue body in full — and scan its closed predecessors — before exploring.</p>
+<p><strong>Why:</strong> An entire session went into re-deriving <code>frs_order_child</code> decisions that were documented verbatim in fresh#158, including a predecessor link to fresh#156 closed in its favour with its own analysis.</p>
+<p><strong>How to apply:</strong> <code>gh issue view &lt;N&gt; --repo &lt;owner&gt;/&lt;repo&gt;</code> first. Search closed issues for rejected predecessors — “closed in favor of” comments carry the rationale. Check <code>planning/archive/</code> for prior PWFs on the topic. If the issue contradicts a hypothesis you’re about to test, say so before testing. Note that fresh#158 states link’s <code>frs_order_child</code> is deliberately <strong>not</strong> chasing bcfp parity — don’t assume parity is the goal for any link primitive without checking.</p>
+</div>
+<div class="section level3">
+<h3 id="detective-work-before-scoping-a-gap">Detective work before scoping a “gap”<a class="anchor" aria-label="anchor" href="#detective-work-before-scoping-a-gap"></a></h3>
+<p>When an issue claims data is missing relative to bcfishpass, run a count plus a row-level diff against the real data before scoping any implementation.</p>
+<p><strong>Why:</strong> link#102 (CABD waterfalls “completeness gap”) dissolved in five minutes of <code>psql</code>: fresh’s <code>falls.csv</code> per-WSG barrier counts are byte-identical to <code>bcfishpass.falls WHERE barrier_ind = true</code> across all 187 WSGs. The “missing famous falls” framing was wrong — those are mostly <code>barrier_ind = false</code> (fishways) or live in <code>cabd.dams</code>. A research-doc sentence had implied a divergence that didn’t exist at row level.</p>
+<p><strong>How to apply:</strong> Counts from both sides → diff at WSG level → row-level spot-check on one representative WSG → only then scope. Costs 5–10 minutes; has closed issues as not-a-bug and avoided multi-day PRs. Even when data does differ, the count diff sizes the work correctly.</p>
+</div>
+<div class="section level3">
+<h3 id="build-abstract-systems-not-point-solutions">Build abstract systems, not point solutions<a class="anchor" aria-label="anchor" href="#build-abstract-systems-not-point-solutions"></a></h3>
+<p>Reuse first, hardcode last, compose. New functions join an existing <code>lnk_*</code> family; don’t invent a family unless none fits.</p>
+<p><strong>Why:</strong> The pipeline had two near-identical helpers applying CSV-driven <code>barrier_status</code> overrides, and a third of the same shape was about to be added. The user wants the system rationalized, not extended — “don’t be afraid to start over, might be smarter.”</p>
+<p><strong>How to apply:</strong> Before adding a third helper of a shape, consolidate the two that exist. Mirror external systems by view or composition, never a hand-built table. <strong>Don’t hide diamonds</strong> — a primitive with utility beyond its caller belongs as a public function at its natural altitude (a “what’s downstream” SQL pattern serves water quality stations and sediment samples too, so it belongs in <code>fresh</code>’s <code>frs_network_*</code>, not a private link helper).</p>
+</div>
+<div class="section level3">
+<h3 id="never-file-an-issue-or-pr-without-body-review">Never file an issue or PR without body review<a class="anchor" aria-label="anchor" href="#never-file-an-issue-or-pr-without-body-review"></a></h3>
+<p>Draft the body, show it, and wait for explicit approval before <code>gh issue create</code> / <code>gh pr create</code>.</p>
+<p><strong>Why:</strong> “Yes write the issue” arrived in the same message as unanswered architectural questions; link#112 was filed prematurely and the user had to edit a public issue after the fact.</p>
+<p><strong>How to apply:</strong> Draft to a tempfile and show it in the response. Architectural questions in the same message mean the design isn’t settled — answer those, get sign-off, then file. Only exception: a skill where filing <em>is</em> the explicit ask.</p>
+</div>
+<div class="section level3">
+<h3 id="pwf-checkboxes-are-an-integrity-contract">PWF checkboxes are an integrity contract<a class="anchor" aria-label="anchor" href="#pwf-checkboxes-are-an-integrity-contract"></a></h3>
+<p><code>- [x]</code> means the named action ran and reported clean. If it didn’t run, the box stays unchecked.</p>
+<p><strong>Why:</strong> <code>[x] /code-check clean</code> was ticked on #138 (v0.32.0) without invoking the skill. Run post-hoc, it surfaced three real fragility findings (int4 overflow, silent row loss on FWA-join NULLs, <code>pts.*</code> column collision) that should have been caught pre-merge.</p>
+<p><strong>How to apply:</strong> Leave it unchecked, or reword to what actually happened (“deferred — see follow-up”). For a <code>/code-check</code> missed on an already-merged PR, run it post-hoc and ship the findings as a follow-up patch.</p>
+</div>
+<div class="section level3">
+<h3 id="fail-loud-the-release-bar-is-the-full-sweep">Fail loud; the release bar is the full sweep<a class="anchor" aria-label="anchor" href="#fail-loud-the-release-bar-is-the-full-sweep"></a></h3>
+<p>Before any minor or major release: <code>devtools::test()</code>, <code>devtools::check()</code>, <code><a href="https://lintr.r-lib.org/reference/lint.html" class="external-link">lintr::lint_package()</a></code>, and live parity <strong>beyond the happy-path case</strong>.</p>
+<p><strong>Why:</strong> Each of these shipped or nearly shipped a quiet regression — a scratch primitive that matched 15613/15647 ADMS arrays but was lossy elsewhere; a consolidate driver that dropped source schemas even when restore failed (lost a cypher’s data); a resume gate that conflated “RDS present” with “WSG done” and silently no-op’d a recovery run.</p>
+<p><strong>How to apply:</strong> If you tested ADMS, also test BULK or HORS. If you tested PSCIS barriers, also test dams. When the user says “ship it” and the sweep hasn’t run, ask first — seconds versus days. Surface failures inline with a proposed fix rather than papering over them.</p>
+</div>
+<div class="section level3">
+<h3 id="stamp-the-environment-in-every-verification-log">Stamp the environment in every verification log<a class="anchor" aria-label="anchor" href="#stamp-the-environment-in-every-verification-log"></a></h3>
+<p>Verification runs record environment state, not just numbers.</p>
+<p><strong>Why:</strong> A refactor appeared to move BT rearing by 0.4 points against bcfishpass on ADMS. Hours went into hunting an extraction bug that didn’t exist — the drift was entirely input state changing between two run dates. Without stamps you cannot tell which input moved.</p>
+<p><strong>How to apply:</strong> Header carries link version + SHA, fresh version + SHA, fwapg dump timestamp or schema hash, bcfishobs row count, bcfishpass reference row counts, and the reference data version. <code><a href="reference/lnk_stamp.html">lnk_stamp()</a></code> (#24) should drive this once it ships.</p>
+</div>
+<div class="section level3">
+<h3 id="how-to-talk-about-bcfishpass">How to talk about bcfishpass<a class="anchor" aria-label="anchor" href="#how-to-talk-about-bcfishpass"></a></h3>
+<p>Never position link or fresh as superseding or replacing bcfishpass. It is the system we learned from and build on.</p>
+<p><strong>Why:</strong> It’s community infrastructure maintained by smnorris with contributions from many groups. Framing our work as a replacement misrepresents the relationship.</p>
+<p><strong>How to apply:</strong> “validates against”, not “replaces”. “builds on the foundation of”, not “improves on”. “community-maintained override CSVs”, not “our data”. Frame methodology differences (wetland rearing, intermittent streams) as <em>our biological defaults</em>, not corrections. The bcfishpass comparison is a validation step, not the package’s goal.</p>
+</div>
+<div class="section level3">
+<h3 id="never-write-into-smnorris-without-explicit-approval">Never write into smnorris/* without explicit approval<a class="anchor" aria-label="anchor" href="#never-write-into-smnorris-without-explicit-approval"></a></h3>
+<p>No comments, issues, PRs or any write action in an upstream repo unless the user approves that specific action.</p>
+<p><strong>Why:</strong> Upstream is a third party; every write creates notifications and work for someone else. The user wants a deliberate decision each time, not a judgment call.</p>
+<p><strong>How to apply:</strong> Read-only <code>gh</code> calls are fine. Any write (<code>gh issue create</code>, <code>gh pr comment</code>, <code>gh api -X POST</code>, …) waits for “file it” on that specific action. Draft it in chat first. Applies to bcfishpass, bcfishobs, db_newgraph, fwapg, and external orgs generally.</p>
+</div>
+<div class="section level3">
+<h3 id="sibling-repo-work-branch-and-pr-no-comms-thread">Sibling-repo work: branch and PR, no comms thread<a class="anchor" aria-label="anchor" href="#sibling-repo-work-branch-and-pr-no-comms-thread"></a></h3>
+<p>Working directly in <code>fresh</code> or <code>crate</code> from a link session is fine when the user directs it. The older comms-first rule was explicitly relaxed.</p>
+<p><strong>How to apply:</strong> Proceed in the sibling repo — but still branch, still open a PR, <strong>never push to a sibling’s main</strong>. Keep commits separate per repo; don’t bundle a link change and a fresh change into one commit. Ask when an action is destructive or the intent is unclear.</p>
+</div>
+<div class="section level3">
+<h3 id="no-issue-references-in-vignettes">No issue references in vignettes<a class="anchor" aria-label="anchor" href="#no-issue-references-in-vignettes"></a></h3>
+<p>Vignettes describe what the package does today. Issue numbers go stale silently.</p>
+<p><strong>Why:</strong> A vignette line reading “seed for link#75, which will turn this CSV into…” would still promise a future state after #75 closed.</p>
+<p><strong>How to apply:</strong> Vignettes link to behaviour and source paths only — no <code>#NN</code>, no “will become”. Issues are fine and encouraged in NEWS, PR bodies, commit messages, and <code>research/*.md</code>. Avoid them in README unless they describe a limitation users need today.</p>
+</div>
+<div class="section level3">
+<h3 id="no-manual-reference-index-in-_pkgdownyml">No manual reference index in _pkgdown.yml<a class="anchor" aria-label="anchor" href="#no-manual-reference-index-in-_pkgdownyml"></a></h3>
+<p>With consistent prefix naming, drop the manual <code>reference:</code> section and let pkgdown auto-generate.</p>
+<p><strong>Why:</strong> A manual index recreates groupings the naming already does, and breaks CI whenever a new export isn’t added to it — exactly how v0.18.1’s pkgdown build failed on <code>lnk_load_overrides</code>.</p>
+<p><strong>How to apply:</strong> Keep <code>_pkgdown.yml</code> to <code>url:</code>, <code>template:</code>, and <code>articles:</code>. Manual sections only earn their place in packages with mixed prefixes or weak naming.</p>
+</div>
+<div class="section level3">
+<h3 id="fresh-tests-itself-against-links-compare-script">fresh tests itself against link’s compare script<a class="anchor" aria-label="anchor" href="#fresh-tests-itself-against-links-compare-script"></a></h3>
+<p>Both repos are local on the same machine, same Docker DB and tunnel. fresh can run link’s compare script directly — we are not the middleman.</p>
+<p><strong>How to apply:</strong> A fresh issue should say <code>Rscript ~/Projects/repo/link/data-raw/compare_bcfishpass.R BULK</code> with target numbers, not “we’ll test and report back”. fresh installs link via <code>devtools::install_local()</code> and verifies before pushing.</p>
 <!-- BEGIN SOUL CONVENTIONS — DO NOT EDIT BELOW THIS LINE -->
+</div>
 </div>
 </div>
 <div class="section level1">
