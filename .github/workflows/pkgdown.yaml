@@ -16,8 +16,12 @@ permissions: read-all
 jobs:
   pkgdown:
     runs-on: ubuntu-latest
-    # Only restrict tokens on non-pull-request events
-    if: ${{ github.event_name != 'pull_request' }}
+    # The job runs on pull requests too, so the build and the leak gate below
+    # are verified before merge rather than after. Deploying is still refused
+    # on pull requests -- that condition lives on the deploy step itself, which
+    # is where it belongs: this job's other steps are all safe to run on a PR,
+    # and gating the whole job made the gate unverifiable exactly when it
+    # mattered.
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
     permissions:
