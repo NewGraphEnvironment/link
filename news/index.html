@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.45.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.45.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,10 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.45.2" id="link-0452">link 0.45.2<a class="anchor" aria-label="anchor" href="#link-0452"></a></h2>
+<p>Drops the <code>gr</code> (Arctic grayling) presence flag for <strong>LARL</strong> (Lower Arrow Lake) in the <code>default</code> config bundle (<a href="https://github.com/NewGraphEnvironment/link/pull/242" class="external-link">#242</a>). Grayling is an Arctic-drainage species and LARL is Columbia; because <code>wsg_species_presence</code> gates whether a species is modelled at all, the flag was producing a full grayling habitat and mapping_code layer for the Lower Arrow Lake system. It was not fabricated — four LARL observations spanning 1954-1995, plus one each in BULL and ELKR — but six historical records across three Columbia groups, newest 1995, is a thin basis for modelling a species across a watershed group, and most are plausibly mid-century stocking that never established. Scoped to <code>default</code> <strong>only</strong>: bcfishpass carries <code>gr = true</code> for LARL upstream, so the bcfishpass bundle is left byte-identical to it rather than silently diverged, since that is the bundle used for parity. The two copies of this file were identical and now differ deliberately; they converge again if <a href="https://github.com/NewGraphEnvironment/bcfishpass/issues/14" class="external-link">NewGraphEnvironment/bcfishpass#14</a> lands. No upstream PR was needed first because this file is hand-authored in link (<code>source: link (hand-authored)</code>, no <code>source: bcfp</code> in the <code>files:</code> block), so it is off the weekly csv-sync path. Also carries the 2026-08-12 csv-sync of <code>pscis_modelledcrossings_streams_xref.csv</code> (<a href="https://github.com/NewGraphEnvironment/link/pull/239" class="external-link">#239</a>).</p>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.45.1" id="link-0451">link 0.45.1<a class="anchor" aria-label="anchor" href="#link-0451"></a></h2>
 <p>Adopts <code>fresh</code> 0.33.0, which rebuilt <code>frs_wsg_drainage()</code> on per-group outlet points and the measure-aware <code>whse_basemapping.fwa_downstream()</code> (<a href="https://github.com/NewGraphEnvironment/fresh/issues/214" class="external-link">fresh#214</a>). This closes the <code>public.wsg_outlet</code> half of <a href="https://github.com/NewGraphEnvironment/link/issues/227" class="external-link">#227</a> by <strong>removing the dependency</strong> rather than repairing it — outlets now ship with fresh and reach the database as a <code>VALUES</code> list, so there is no ad-hoc table to materialize and none to lose on a docker volume rebuild. <code>test-lnk_wsg_resolve.R</code> closure-mode tests, red since the table went missing, pass again.</p>

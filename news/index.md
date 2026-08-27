@@ -1,5 +1,31 @@
 # Changelog
 
+## link 0.45.2
+
+Drops the `gr` (Arctic grayling) presence flag for **LARL** (Lower Arrow
+Lake) in the `default` config bundle
+([\#242](https://github.com/NewGraphEnvironment/link/pull/242)).
+Grayling is an Arctic-drainage species and LARL is Columbia; because
+`wsg_species_presence` gates whether a species is modelled at all, the
+flag was producing a full grayling habitat and mapping_code layer for
+the Lower Arrow Lake system. It was not fabricated — four LARL
+observations spanning 1954-1995, plus one each in BULL and ELKR — but
+six historical records across three Columbia groups, newest 1995, is a
+thin basis for modelling a species across a watershed group, and most
+are plausibly mid-century stocking that never established. Scoped to
+`default` **only**: bcfishpass carries `gr = true` for LARL upstream, so
+the bcfishpass bundle is left byte-identical to it rather than silently
+diverged, since that is the bundle used for parity. The two copies of
+this file were identical and now differ deliberately; they converge
+again if
+[NewGraphEnvironment/bcfishpass#14](https://github.com/NewGraphEnvironment/bcfishpass/issues/14)
+lands. No upstream PR was needed first because this file is
+hand-authored in link (`source: link (hand-authored)`, no `source: bcfp`
+in the `files:` block), so it is off the weekly csv-sync path. Also
+carries the 2026-08-12 csv-sync of
+`pscis_modelledcrossings_streams_xref.csv`
+([\#239](https://github.com/NewGraphEnvironment/link/pull/239)).
+
 ## link 0.45.1
 
 Adopts `fresh` 0.33.0, which rebuilt `frs_wsg_drainage()` on per-group
