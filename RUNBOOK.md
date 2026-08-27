@@ -519,6 +519,43 @@ per-source-per-species column + `lnk_barriers_unify` change — not a tweak.
 
 ---
 
+## 8b. Drainage closure: never hand-roll it from ltree
+
+**Use `lnk_wsg_resolve(cfg, loaded, wsgs, conn = conn)`.** It delegates to
+`fresh::frs_wsg_drainage()` (fresh >= 0.33.0), which tests per-group outlet
+**points** (`blue_line_key` + `downstream_route_measure`) with the measure-aware
+`whse_basemapping.fwa_downstream()`.
+
+**Do not** compute closure from `wscode_ltree` ancestry (`a.outlet @> b.outlet`).
+That was the pre-#227 method and it silently over-includes, because **two watershed
+groups on the same stream share an outlet code** — so `@>` is true in *both*
+directions and calls each one downstream of the other. Closure is measure-aware,
+not code-aware. This is why `c("PARS","BULK")` dropped from 15 WSGs to 9 when
+#238 adopted fresh 0.33.0.
+
+**Worked example — the Kootenay, where it bites hardest.** FWA carries the whole
+river under one continuous `wscode_ltree = 300.625474`, including the stretch that
+leaves BC near Newgate, runs through Montana and Idaho, and re-enters at Creston.
+Measures chain with no gap:
+
+```
+LARL 0–130 → KOTL 130–431,808 → BULL 431,808–495,206 → SMAR 495,206–608,735 → KOTR 608,735–773,149
+```
+
+So KOTR/SMAR/BULL are **upstream** of Kootenay Lake, reached via the US loop — but
+an ltree test sees them sharing KOTL's outlet code and reports them as downstream.
+The correct closure of `c("LARL","KOTL","SLOC")` is **just those three**: LARL is
+the terminal BC group (it holds the Kootenay's mouth at Castlegar and the Columbia
+down to the border — hence Waneta and Seven Mile sitting in it), and below it is
+the United States.
+
+**`public.wsg_outlet` is gone as a concept** (#227). If you find the table in a
+database it is a leftover from before fresh 0.33.0 — it still answers queries, and
+it answers them wrongly. Outlets now ship in fresh at `inst/extdata/wsg_outlet.csv`
+and reach the DB as a `VALUES` list; no table is needed anywhere.
+
+---
+
 ## 8. Fast verification recipes
 
 ```bash

@@ -136,16 +136,14 @@
       "bcfishobs.observations",
       "whse_fish.pscis_assessment_svw",
       "cabd.dams",
-      "fresh.modelled_stream_crossings",
-      "public.wsg_outlet"
+      "fresh.modelled_stream_crossings"
     ),
     source = c(
       rep(fwapg, 7L),
       "bcfishobs",
       "bcdata bc2pg",
       "CABD",
-      "snapshot_bcfp.sh <- bchamp objectstore",
-      "ad-hoc (link#227)"
+      "snapshot_bcfp.sh <- bchamp objectstore"
     ),
     stringsAsFactors = FALSE
   )
