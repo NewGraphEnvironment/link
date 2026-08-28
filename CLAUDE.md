@@ -9,7 +9,7 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Repository:** NewGraphEnvironment/link
 **Primary Language:** R
 **Prefix:** `lnk_`
-**Branch:** `main` (v0.45.1 as of 2026-08-06)
+**Branch:** `main` (v0.46.0 as of 2026-08-28)
 
 ## Status (2026-08-06) — v0.45.1 shipped (WSG drainage closure rebuilt; #227 re-scoped)
 
