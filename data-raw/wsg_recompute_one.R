@@ -115,5 +115,21 @@ DBI::dbWithTransaction(conn, {
     sch, ins_cols, sel_cols, mc_scratch, sch, wsg_lit))
 })
 
+# Post-condition (link#227). study_area_run.sh runs the per-WSG guard in
+# `warn` mode, because on a multi-host run a downstream group can legitimately
+# be mid-flight on another cypher. That deferral is only honest if something
+# enforces it afterwards — this is that something. By now every WSG has been
+# modelled and consolidated, so the guard MUST pass; a failure here means the
+# consolidate genuinely dropped a downstream group and this WSG's access is
+# built on barriers that never landed.
+guard <- tryCatch(
+  lnk_wsg_downstream_check(conn, aoi = wsg, cfg = cfg, loaded = loaded,
+                           on_fail = "error"),
+  error = function(e) {
+    message("[wsg_recompute_one] POST-CONDITION FAILED for ", wsg)
+    message(conditionMessage(e))
+    quit(status = 1)
+  })
+
 cat(sprintf("[wsg_recompute_one] %s recomputed in %.2f min (persist=%s)\n",
             wsg, as.numeric(difftime(Sys.time(), t0, units = "mins")), sch))

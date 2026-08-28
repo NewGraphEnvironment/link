@@ -215,14 +215,15 @@ fi
 echo "=== run buckets (DS-first) ==="
 ( cd "$REPO_ROOT"
   for w in $(echo "$DISP_BUCKET" | tr ',' ' '); do
-    LNK_LOAD=loadall Rscript data-raw/wsg_run_one.R "$w" "$CONFIG" \
+    LNK_LOAD=loadall LNK_GUARD_DOWNSTREAM=warn \
+      Rscript data-raw/wsg_run_one.R "$w" "$CONFIG" \
       || echo "[WARN] dispatcher WSG $w failed (continuing)"
   done ) > "$LOG_DIR/${TS}_run_local.log" 2>&1 &
 LOCAL_PID=$!
 declare -A CY_PID
 for WS in "${CY_WS_ARR[@]}"; do
   IP="${CY_IP[$WS]}"; B_SPACE=$(echo "${CY_BUCKET[$WS]}" | tr ',' ' ')
-  ssh "cypher@$IP" "cd ~/Projects/repo/link && export LNK_SCHEMA='$SCHEMA' && for w in $B_SPACE; do Rscript data-raw/wsg_run_one.R \$w '$CONFIG' || echo \"[WARN] cy WSG \$w failed\"; done" \
+  ssh "cypher@$IP" "cd ~/Projects/repo/link && export LNK_SCHEMA='$SCHEMA' && export LNK_GUARD_DOWNSTREAM=warn && for w in $B_SPACE; do Rscript data-raw/wsg_run_one.R \$w '$CONFIG' || echo \"[WARN] cy WSG \$w failed\"; done" \
     > "$LOG_DIR/${TS}_run_$WS.log" 2>&1 &
   CY_PID[$WS]=$!
 done

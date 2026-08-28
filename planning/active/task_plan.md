@@ -73,16 +73,16 @@ Two further corrections to the issue body:
 
 ## Phase 3 — Script integration
 
-- [ ] `wsg_run_one.R`: read `LNK_GUARD_DOWNSTREAM` (default `error`, unrecognised value
+- [x] `wsg_run_one.R`: read `LNK_GUARD_DOWNSTREAM` (default `error`, unrecognised value
       errors) + `LNK_GUARD_DOWNSTREAM_NOTE`; call guard; `quit(status = 1)` on fail;
       thread `notes = guard$note`
-- [ ] `study_area_run.sh`: export `LNK_GUARD_DOWNSTREAM=warn` on the dispatcher leg **and
+- [x] `study_area_run.sh`: export `LNK_GUARD_DOWNSTREAM=warn` on the dispatcher leg **and
       inside the ssh string**
-- [ ] Update header contract + the L272-290 comment block
+- [x] Update header contract + the L272-290 comment block
 
 ## Phase 4 — Post-condition
 
-- [ ] `wsg_recompute_one.R`: re-run guard with `on_fail = "error"` after consolidate —
+- [x] `wsg_recompute_one.R`: re-run guard with `on_fail = "error"` after consolidate —
       what makes Phase 3's `warn` a deferral rather than a hole
 
 ## Phase 5 — Docs, release, follow-up

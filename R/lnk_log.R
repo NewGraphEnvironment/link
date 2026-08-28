@@ -274,6 +274,11 @@ cols_log_input <- c(
 #'
 #' @noRd
 .lnk_log_create_tables <- function(conn, schema) {
+  # The log is opened BEFORE lnk_persist_init runs (the open row must predate
+  # any write, so wsg_upstream reflects the state the run started from), so on
+  # a brand-new persist schema nothing has created it yet.
+  .lnk_db_execute(conn, sprintf("CREATE SCHEMA IF NOT EXISTS %s", schema))
+
   specs <- list(
     list(table = "log", cols = cols_log, pk = "run_id"),
     list(table = "log_input", cols = cols_log_input,
