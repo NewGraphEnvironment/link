@@ -947,3 +947,78 @@ test_that(".lnk_pipeline_prep_dams applies the cabd_additions psc-NULL rule", {
     tn$schema))$n
   expect_identical(as.integer(n), 0L)
 })
+
+
+# --- Phase 1 (#227): shared SQL builders --------------------------------
+
+test_that(".lnk_dams_matched_sql keeps the snap semantics intact", {
+  sql <- .lnk_dams_matched_sql()
+  # Each of these encodes a distinct filter the guard must inherit exactly.
+  expect_match(sql, "CROSS JOIN LATERAL", fixed = TRUE)
+  expect_match(sql, "<= 65", fixed = TRUE)              # snap distance
+  expect_match(sql, "DISTINCT ON (c.dam_id)", fixed = TRUE)  # one row per dam
+  expect_match(sql, "999'::ltree", fixed = TRUE)        # excluded wscode
+  expect_match(sql, "ORDER BY str.geom <-> c.geom", fixed = TRUE)  # KNN
+})
+
+test_that(".lnk_dams_cabd_sql applies all three edit CSVs", {
+  sql <- .lnk_dams_cabd_sql("SRC", "EXCL", "XREF", "UPD")
+  expect_match(sql, "FROM SRC d", fixed = TRUE)
+  expect_match(sql, "LEFT OUTER JOIN EXCL x", fixed = TRUE)
+  expect_match(sql, "LEFT OUTER JOIN XREF blk", fixed = TRUE)
+  expect_match(sql, "LEFT OUTER JOIN UPD u", fixed = TRUE)
+  # Exclusions are an anti-join, not a filter on the dam source.
+  expect_match(sql, "WHERE x.cabd_id IS NULL", fixed = TRUE)
+  # Passability override wins over the raw code.
+  expect_match(sql, "COALESCE(u.passability_status_code", fixed = TRUE)
+})
+
+test_that("the emitted prep_dams DDL still carries the snap semantics", {
+  captured <- character()
+  local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) {
+      captured <<- c(captured, sql); invisible(conn)
+    }
+  )
+  # Only the SQL assembly is under test; stub the round trip and the writes.
+  with_mocked_bindings(
+    dbGetQuery = function(conn, statement, ...) {
+      data.frame(cabd_id = character(0), passability_status_code = integer(0))
+    },
+    dbWriteTable = function(conn, name, value, ...) invisible(TRUE),
+    .package = "DBI",
+    {
+      cfg <- lnk_config("bcfishpass")
+      loaded <- lnk_load_overrides(cfg)
+      .lnk_pipeline_prep_dams(structure(list(), class = "DBIConnection"),
+                              conn_tunnel = structure(list(),
+                                                      class = "DBIConnection"),
+                              aoi = "ADMS", schema = "s", loaded = loaded)
+    }
+  )
+  ddl <- paste(captured, collapse = "\n")
+  expect_match(ddl, "CROSS JOIN LATERAL", fixed = TRUE)
+  expect_match(ddl, "<= 65", fixed = TRUE)
+  expect_match(ddl, "DISTINCT ON (c.dam_id)", fixed = TRUE)
+  expect_match(ddl, "UNION ALL", fixed = TRUE)   # the cabd_additions `usa` CTE
+})
+
+test_that(".lnk_dams_edit_values_sql quotes literals and survives empty CSVs", {
+  conn <- structure(list(), class = "DBIConnection")
+  with_mocked_bindings(
+    dbQuoteLiteral = function(conn, x, ...) {
+      paste0("'", gsub("'", "''", as.character(x)), "'")
+    },
+    .package = "DBI",
+    {
+      # A cabd_id carrying a quote must not break out of the VALUES list.
+      v <- .lnk_dams_edit_values_sql(
+        conn, list(cabd_exclusions = data.frame(cabd_id = "o'brien",
+                                                stringsAsFactors = FALSE)))
+      expect_match(v$excl, "o''brien", fixed = TRUE)
+      # Absent CSVs still yield a typed sentinel so the LEFT JOIN shape holds.
+      expect_match(v$xref, "NULL::text", fixed = TRUE)
+      expect_match(v$upd, "NULL::integer", fixed = TRUE)
+    }
+  )
+})

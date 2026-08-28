@@ -50,12 +50,12 @@ Two further corrections to the issue body:
 
 ## Phase 1 — Factor the dam-snap SQL (no behaviour change)
 
-- [ ] `.lnk_dams_matched_sql()` — lateral-snap CTE, verbatim
-- [ ] `.lnk_dams_cabd_sql(dams_expr, excl_ref, xref_ref, upd_ref)` — parameterized source
-- [ ] `.lnk_dams_edit_values_sql(conn, loaded)` — VALUES fragments, `dbQuoteLiteral`, typed
+- [x] `.lnk_dams_matched_sql()` — lateral-snap CTE, verbatim
+- [x] `.lnk_dams_cabd_sql(dams_expr, excl_ref, xref_ref, upd_ref)` — parameterized source
+- [x] `.lnk_dams_edit_values_sql(conn, loaded)` — VALUES fragments, `dbQuoteLiteral`, typed
       NULL sentinel for empty CSVs
-- [ ] Rewrite `.lnk_pipeline_prep_dams` step 3 to compose from builders
-- [ ] Tests: golden still passes; DDL retains `CROSS JOIN LATERAL` / `<= 65` /
+- [x] Rewrite `.lnk_pipeline_prep_dams` step 3 to compose from builders
+- [x] Tests: golden still passes; DDL retains `CROSS JOIN LATERAL` / `<= 65` /
       `DISTINCT ON (c.dam_id)` / `UNION ALL`; VALUES escapes a `'`
 
 ## Phase 2 — Probe + guard
