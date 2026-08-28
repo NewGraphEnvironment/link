@@ -60,16 +60,16 @@ Two further corrections to the issue body:
 
 ## Phase 2 — Probe + guard
 
-- [ ] `.lnk_dams_blocking_downstream(conn, aoi, loaded, outlets)` — one read-only query
-- [ ] `.lnk_barriers_cabd_persisted(conn, cfg, dam_ids)` — dam-level presence
-- [ ] `lnk_wsg_downstream_check(conn, aoi, cfg, loaded, on_fail, override, outlets)` —
+- [x] `.lnk_dams_blocking_downstream(conn, aoi, loaded, outlets)` — one read-only query
+- [x] `.lnk_barriers_cabd_persisted(conn, cfg, dam_ids)` — dam-level presence
+- [x] `lnk_wsg_downstream_check(conn, aoi, cfg, loaded, on_fail, override, outlets)` —
       exported, `@family wsg`; intersect with species-filtered closure; `setdiff` not
       positional slicing; `override = ""` errors
-- [ ] Tests: arg validation; empty override errors; mocked `dbGetQuery` with **four**
+- [x] Tests: arg validation; empty override errors; mocked `dbGetQuery` with **four**
       branches (`information_schema`, `WITH RECURSIVE`, `fwa_downstream`, `barrier_source`);
       all four statuses; message names the dam
-- [ ] Live: PARS fails naming 3 dams; **BULK passes** (anti-cry-wolf); elapsed < 5 s
-- [ ] Live anti-drift: `prep_dams` blocking subset == guard probe for the same WSG
+- [x] Live: PARS fails naming 3 dams; **BULK passes** (anti-cry-wolf); elapsed < 5 s
+- [x] Live anti-drift: `prep_dams` blocking subset == guard probe for the same WSG
 
 ## Phase 3 — Script integration
 
