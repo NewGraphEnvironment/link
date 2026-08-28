@@ -76,4 +76,8 @@ lnk_wsg_resolve(cfg, loaded, wsgs = c("PARS", "BULK"))
 lnk_wsg_resolve(cfg, loaded, wsgs = c("BBAR", "BULK"), expand = FALSE)
 }
 }
+\seealso{
+Other wsg: 
+\code{\link{lnk_wsg_downstream_check}()}
+}
 \concept{wsg}

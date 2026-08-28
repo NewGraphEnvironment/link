@@ -11,6 +11,11 @@
 # when its access / mapping_code is computed — that is what makes cross-WSG
 # `;DAM` appear without any post-consolidate recompute (link#175).
 #
+# That precondition is ENFORCED as of link#227 by lnk_wsg_downstream_check().
+# Set LNK_GUARD_DOWNSTREAM=warn to defer to the post-consolidate recompute
+# (what study_area_run.sh does on multi-host runs, where downstream groups are
+# legitimately mid-flight on another host).
+#
 # Usage: [LNK_LOAD=loadall] Rscript wsg_run_one.R <WSG> [config]
 #   LNK_LOAD=loadall -> pkgload::load_all() (dispatcher dev checkout)
 #   default          -> library(link)       (pak-installed, e.g. cyphers)
@@ -52,10 +57,34 @@ if (length(active) == 0L) {
   quit(status = 0)
 }
 
+# Downstream-state guard (link#227). Accessibility is computed from the
+# ALREADY-PERSISTED barriers of the WSGs downstream, so running out of order
+# marks dammed-off segments accessible and still exits 0. This verifies the
+# DS-first precondition stated in the header above rather than trusting it.
+#   LNK_GUARD_DOWNSTREAM=error (default) | warn | ignore
+#   LNK_GUARD_DOWNSTREAM_NOTE=<justification>  -> proceed, recorded in the log
+guard_mode <- Sys.getenv("LNK_GUARD_DOWNSTREAM", "error")
+if (!guard_mode %in% c("error", "warn", "ignore")) {
+  stop("LNK_GUARD_DOWNSTREAM must be error, warn or ignore (got '",
+       guard_mode, "') - a typo must not silently disable the guard",
+       call. = FALSE)
+}
+guard_note <- Sys.getenv("LNK_GUARD_DOWNSTREAM_NOTE", "")
+guard <- tryCatch(
+  lnk_wsg_downstream_check(
+    conn, aoi = wsg, cfg = cfg, loaded = loaded,
+    on_fail = guard_mode,
+    override = if (nzchar(guard_note)) guard_note else NA_character_),
+  error = function(e) {
+    message(conditionMessage(e))
+    quit(status = 1)
+  })
+
 t0 <- Sys.time()
 lnk_pipeline_run(conn, aoi = wsg, cfg = cfg, loaded = loaded,
                  schema = paste0("working_", tolower(wsg)),
-                 mapping_code = TRUE, cleanup_working = FALSE)
+                 mapping_code = TRUE, cleanup_working = FALSE,
+                 notes = guard$note)
 cat(sprintf("[wsg_run_one] %s done in %.1f min (persist=%s)\n",
             wsg, as.numeric(difftime(Sys.time(), t0, units = "mins")),
             cfg$pipeline$schema))
