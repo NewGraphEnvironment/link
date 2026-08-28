@@ -1,7 +1,7 @@
 # Build per-segment access codes + downstream-feature arrays
 
 Composes
-[`fresh::frs_network_features()`](https://newgraphenvironment.github.io/fresh/reference/frs_network_features.html)
+[`fresh::frs_network_features()`](https://rdrr.io/pkg/fresh/man/frs_network_features.html)
 calls across species (and optionally observations) to produce a
 `streams_access` wide table that mirrors `bcfishpass.streams_access`'s
 shape — one row per segment, with per-species `barriers_<sp>_dnstr`

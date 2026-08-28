@@ -83,7 +83,7 @@ unaffected.
 
 Because the per-species columns are aliased to fixed names, the
 `metrics` SQL is written **once**, species-agnostic — mirroring
-[`fresh::frs_aggregate()`](https://newgraphenvironment.github.io/fresh/reference/frs_aggregate.html)'s
+[`fresh::frs_aggregate()`](https://rdrr.io/pkg/fresh/man/frs_aggregate.html)'s
 `metrics` / `where` shape. Adding a species is a `species` vector edit,
 not a query edit.
 
@@ -91,7 +91,7 @@ This is a **flat per-WSG `GROUP BY`** — it sums whole-WSG length by
 `(watershed_group_code, species_code)`. It is distinct from
 [`lnk_aggregate()`](https://newgraphenvironment.github.io/link/reference/lnk_aggregate.md)
 /
-[`fresh::frs_aggregate()`](https://newgraphenvironment.github.io/fresh/reference/frs_aggregate.html),
+[`fresh::frs_aggregate()`](https://rdrr.io/pkg/fresh/man/frs_aggregate.html),
 which roll habitat up the network *upstream of individual crossings*
 (point-based traversal). Use this for WSG totals; use those for
 per-crossing upstream summaries.
@@ -108,7 +108,7 @@ different (pre-gating) semantics and diverges from the access model
 
 [`lnk_compare_rollup()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_rollup.md),
 [`lnk_aggregate()`](https://newgraphenvironment.github.io/link/reference/lnk_aggregate.md),
-[`fresh::frs_aggregate()`](https://newgraphenvironment.github.io/fresh/reference/frs_aggregate.html)
+[`fresh::frs_aggregate()`](https://rdrr.io/pkg/fresh/man/frs_aggregate.html)
 
 Other compare:
 [`lnk_access()`](https://newgraphenvironment.github.io/link/reference/lnk_access.md),

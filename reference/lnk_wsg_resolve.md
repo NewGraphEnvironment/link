@@ -3,7 +3,7 @@
 Bundle-aware WSG resolver. Given a config + loaded overrides and an
 optional focal set, returns the character vector of WSG codes that
 should be modelled — composing FWA drainage closure (via
-[`fresh::frs_wsg_drainage()`](https://newgraphenvironment.github.io/fresh/reference/frs_wsg_drainage.html))
+[`fresh::frs_wsg_drainage()`](https://rdrr.io/pkg/fresh/man/frs_wsg_drainage.html))
 with the bundle's species-presence filter (link#157).
 
 ## Usage
@@ -34,7 +34,7 @@ lnk_wsg_resolve(cfg, loaded, wsgs = NULL, expand = TRUE, conn = NULL)
 
   Logical. When `wsgs` is non-`NULL`, `TRUE` (default) closure-expands
   via
-  [`fresh::frs_wsg_drainage()`](https://newgraphenvironment.github.io/fresh/reference/frs_wsg_drainage.html);
+  [`fresh::frs_wsg_drainage()`](https://rdrr.io/pkg/fresh/man/frs_wsg_drainage.html);
   `FALSE` uses the input as-is (species-filter only).
 
 - conn:
@@ -53,7 +53,7 @@ lnk_wsg_resolve(cfg, loaded, wsgs = NULL, expand = TRUE, conn = NULL)
 Character vector of WSG codes. Province mode returns the
 species-filtered set sorted alphabetically; closure mode preserves the
 downstream-first order from
-[`fresh::frs_wsg_drainage()`](https://newgraphenvironment.github.io/fresh/reference/frs_wsg_drainage.html);
+[`fresh::frs_wsg_drainage()`](https://rdrr.io/pkg/fresh/man/frs_wsg_drainage.html);
 strict mode preserves the caller-provided focal order. WSGs dropped by
 the species filter (closure / strict modes) are reported via
 [`message()`](https://rdrr.io/r/base/message.html).

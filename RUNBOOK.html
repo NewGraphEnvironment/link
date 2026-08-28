@@ -370,24 +370,33 @@ mc_barrier (from barrier_sources flags, resident vs anadromous differ slightly):
 <hr></div>
 </div>
 <div class="section level2">
+<h2 id="id_8b-drainage-closure-never-hand-roll-it-from-ltree">8b. Drainage closure: never hand-roll it from ltree<a class="anchor" aria-label="anchor" href="#id_8b-drainage-closure-never-hand-roll-it-from-ltree"></a></h2>
+<p><strong>Use <code>lnk_wsg_resolve(cfg, loaded, wsgs, conn = conn)</code>.</strong> It delegates to <code><a href="https://rdrr.io/pkg/fresh/man/frs_wsg_drainage.html" class="external-link">fresh::frs_wsg_drainage()</a></code> (fresh &gt;= 0.33.0), which tests per-group outlet <strong>points</strong> (<code>blue_line_key</code> + <code>downstream_route_measure</code>) with the measure-aware <code>whse_basemapping.fwa_downstream()</code>.</p>
+<p><strong>Do not</strong> compute closure from <code>wscode_ltree</code> ancestry (<code>a.outlet @&gt; b.outlet</code>). That was the pre-#227 method and it silently over-includes, because <strong>two watershed groups on the same stream share an outlet code</strong> — so <code>@&gt;</code> is true in <em>both</em> directions and calls each one downstream of the other. Closure is measure-aware, not code-aware. This is why <code>c("PARS","BULK")</code> dropped from 15 WSGs to 9 when #238 adopted fresh 0.33.0.</p>
+<p><strong>Worked example — the Kootenay, where it bites hardest.</strong> FWA carries the whole river under one continuous <code>wscode_ltree = 300.625474</code>, including the stretch that leaves BC near Newgate, runs through Montana and Idaho, and re-enters at Creston. Measures chain with no gap:</p>
+<pre><code>LARL 0–130 → KOTL 130–431,808 → BULL 431,808–495,206 → SMAR 495,206–608,735 → KOTR 608,735–773,149</code></pre>
+<p>So KOTR/SMAR/BULL are <strong>upstream</strong> of Kootenay Lake, reached via the US loop — but an ltree test sees them sharing KOTL’s outlet code and reports them as downstream. The correct closure of <code>c("LARL","KOTL","SLOC")</code> is <strong>just those three</strong>: LARL is the terminal BC group (it holds the Kootenay’s mouth at Castlegar and the Columbia down to the border — hence Waneta and Seven Mile sitting in it), and below it is the United States.</p>
+<p><strong><code>public.wsg_outlet</code> is gone as a concept</strong> (#227). If you find the table in a database it is a leftover from before fresh 0.33.0 — it still answers queries, and it answers them wrongly. Outlets now ship in fresh at <code>inst/extdata/wsg_outlet.csv</code> and reach the DB as a <code>VALUES</code> list; no table is needed anywhere.</p>
+<hr></div>
+<div class="section level2">
 <h2 id="id_8-fast-verification-recipes">8. Fast verification recipes<a class="anchor" aria-label="anchor" href="#id_8-fast-verification-recipes"></a></h2>
-<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="co"># What does bcfp emit for a WSG's mapping_code (local snapshot, no tunnel)?</span></span>
-<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="ex">docker</span> exec fresh-db psql <span class="at">-U</span> postgres <span class="at">-d</span> fwapg <span class="at">-c</span> <span class="dt">\</span></span>
-<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>  <span class="st">"SELECT mapping_code_bt, count(*) FROM fresh.streams_vw_bcfp</span></span>
-<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a><span class="st">   WHERE watershed_group_code='PARS' GROUP BY 1 ORDER BY 2 DESC;"</span></span>
-<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a></span>
-<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a><span class="co"># What does link emit (after a mapping_code=TRUE run)?</span></span>
-<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a><span class="ex">docker</span> exec fresh-db psql <span class="at">-U</span> postgres <span class="at">-d</span> fwapg <span class="at">-c</span> <span class="dt">\</span></span>
-<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>  <span class="st">"SELECT mapping_code_bt, count(*) FROM fresh_default.streams_mapping_code</span></span>
-<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a><span class="st">   WHERE watershed_group_code='PARS' GROUP BY 1 ORDER BY 2 DESC;"</span></span>
-<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a></span>
-<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a><span class="co"># Inspect a barrier view's shape / blocks_species</span></span>
-<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a><span class="ex">docker</span> exec fresh-db psql <span class="at">-U</span> postgres <span class="at">-d</span> fwapg <span class="at">-c</span> <span class="dt">\</span></span>
-<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a>  <span class="st">"SELECT pg_get_viewdef('fresh_default.barriers_bt_unified', true);"</span></span>
-<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a></span>
-<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a><span class="co"># Single-WSG tunnel-free build (the headline path)</span></span>
-<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a><span class="fu">bash</span> data-raw/wsgs_run_m4_offline.sh <span class="at">--wsgs</span><span class="op">=</span>PARS <span class="at">--config</span><span class="op">=</span>default <span class="dt">\</span></span>
-<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a>  <span class="at">--schema</span><span class="op">=</span>fresh_default <span class="at">--force</span> <span class="at">--mapping-code</span></span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># What does bcfp emit for a WSG's mapping_code (local snapshot, no tunnel)?</span></span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="ex">docker</span> exec fresh-db psql <span class="at">-U</span> postgres <span class="at">-d</span> fwapg <span class="at">-c</span> <span class="dt">\</span></span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>  <span class="st">"SELECT mapping_code_bt, count(*) FROM fresh.streams_vw_bcfp</span></span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="st">   WHERE watershed_group_code='PARS' GROUP BY 1 ORDER BY 2 DESC;"</span></span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a></span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a><span class="co"># What does link emit (after a mapping_code=TRUE run)?</span></span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a><span class="ex">docker</span> exec fresh-db psql <span class="at">-U</span> postgres <span class="at">-d</span> fwapg <span class="at">-c</span> <span class="dt">\</span></span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a>  <span class="st">"SELECT mapping_code_bt, count(*) FROM fresh_default.streams_mapping_code</span></span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a><span class="st">   WHERE watershed_group_code='PARS' GROUP BY 1 ORDER BY 2 DESC;"</span></span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a></span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a><span class="co"># Inspect a barrier view's shape / blocks_species</span></span>
+<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a><span class="ex">docker</span> exec fresh-db psql <span class="at">-U</span> postgres <span class="at">-d</span> fwapg <span class="at">-c</span> <span class="dt">\</span></span>
+<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a>  <span class="st">"SELECT pg_get_viewdef('fresh_default.barriers_bt_unified', true);"</span></span>
+<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a></span>
+<span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a><span class="co"># Single-WSG tunnel-free build (the headline path)</span></span>
+<span id="cb7-16"><a href="#cb7-16" tabindex="-1"></a><span class="fu">bash</span> data-raw/wsgs_run_m4_offline.sh <span class="at">--wsgs</span><span class="op">=</span>PARS <span class="at">--config</span><span class="op">=</span>default <span class="dt">\</span></span>
+<span id="cb7-17"><a href="#cb7-17" tabindex="-1"></a>  <span class="at">--schema</span><span class="op">=</span>fresh_default <span class="at">--force</span> <span class="at">--mapping-code</span></span></code></pre></div>
 <p>Local docker fwapg: <code>host=localhost port=5432 dbname=fwapg user=postgres password=postgres</code> (compose at <code>~/Projects/repo/fresh/docker/</code>).</p>
 </div>
 </div>

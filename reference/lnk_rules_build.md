@@ -2,7 +2,7 @@
 
 Transforms a species habitat dimensions CSV into the rules YAML format
 consumed by
-[`fresh::frs_habitat()`](https://newgraphenvironment.github.io/fresh/reference/frs_habitat.html).
+[`fresh::frs_habitat()`](https://rdrr.io/pkg/fresh/man/frs_habitat.html).
 The CSV is the human-edited source of truth; the YAML is the derived
 artifact.
 

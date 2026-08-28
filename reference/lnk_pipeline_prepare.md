@@ -72,7 +72,7 @@ lnk_pipeline_prepare(
 - classes:
 
   Optional named numeric vector of gradient class thresholds passed to
-  [`fresh::frs_break_find()`](https://newgraphenvironment.github.io/fresh/reference/frs_break_find.html).
+  [`fresh::frs_break_find()`](https://rdrr.io/pkg/fresh/man/frs_break_find.html).
   Names are the integer-encoded class labels (gradient × 10000,
   zero-padded to width 4 — e.g. `"1500"` for 0.15); values are the
   gradient fractions. When `NULL`, falls back to
@@ -94,7 +94,7 @@ lnk_pipeline_prepare(
   CSVs from the config bundle
 
 - Gradient barriers detected on the raw FWA network via
-  [`fresh::frs_break_find()`](https://newgraphenvironment.github.io/fresh/reference/frs_break_find.html),
+  [`fresh::frs_break_find()`](https://rdrr.io/pkg/fresh/man/frs_break_find.html),
   pruned against the control table, enriched with `wscode_ltree` and
   `localcode_ltree` for `fwa_upstream()` joins
 

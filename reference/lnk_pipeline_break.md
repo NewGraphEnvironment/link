@@ -3,7 +3,7 @@
 Fourth phase of the habitat classification pipeline. Builds the
 remaining break-source tables (observations, habitat endpoints,
 crossings) that depend on AOI- and config-specific data, then runs
-[`fresh::frs_break_apply()`](https://newgraphenvironment.github.io/fresh/reference/frs_break_apply.html)
+[`fresh::frs_break_apply()`](https://rdrr.io/pkg/fresh/man/frs_break_apply.html)
 sequentially over the break sources in the order defined by the config.
 After each round, `id_segment` is reassigned so downstream rounds see
 contiguous integer IDs.
