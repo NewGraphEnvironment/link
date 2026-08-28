@@ -11,7 +11,7 @@ classify, connect) consume:"><meta property="og:image" content="https://newgraph
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.45.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.45.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -107,7 +107,7 @@ step is a no-op.</p></dd>
 
 <dt id="arg-classes">classes<a class="anchor" aria-label="anchor" href="#arg-classes"></a></dt>
 <dd><p>Optional named numeric vector of gradient class
-thresholds passed to <code><a href="https://rdrr.io/pkg/fresh/man/frs_break_find.html" class="external-link">fresh::frs_break_find()</a></code>. Names are the
+thresholds passed to <code><a href="https://newgraphenvironment.github.io/fresh/reference/frs_break_find.html" class="external-link">fresh::frs_break_find()</a></code>. Names are the
 integer-encoded class labels (gradient × 10000, zero-padded to
 width 4 — e.g. <code>"1500"</code> for 0.15); values are the gradient
 fractions. When <code>NULL</code>, falls back to <code>cfg$pipeline$gradient_classes</code>
@@ -129,7 +129,7 @@ barrier for species <code>s</code> when its value is ≥ <code>s$access_gradient
 barriers, user barriers-definite control table, and expert
 habitat confirmation CSVs from the config bundle</p></li>
 <li><p>Gradient barriers detected on the raw FWA network via
-<code><a href="https://rdrr.io/pkg/fresh/man/frs_break_find.html" class="external-link">fresh::frs_break_find()</a></code>, pruned against the control table,
+<code><a href="https://newgraphenvironment.github.io/fresh/reference/frs_break_find.html" class="external-link">fresh::frs_break_find()</a></code>, pruned against the control table,
 enriched with <code>wscode_ltree</code> and <code>localcode_ltree</code> for
 <code>fwa_upstream()</code> joins</p></li>
 <li><p>A natural-barriers table (gradient + falls) used by

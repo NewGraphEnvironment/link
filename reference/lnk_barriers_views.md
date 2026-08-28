@@ -62,7 +62,7 @@ lnk_barriers_views(
 
 The views point at the province-wide table — cross-WSG dnstr walks
 resolve correctly because
-[`fresh::frs_network_features()`](https://rdrr.io/pkg/fresh/man/frs_network_features.html)
+[`fresh::frs_network_features()`](https://newgraphenvironment.github.io/fresh/reference/frs_network_features.html)
 walks FWA topology and reads from the view (which is the unified table).
 Fixes the PARS BT 60% defect (PARS drains through dams in PCEA / UPCE
 WSGs) and unblocks any regional run.
@@ -88,7 +88,7 @@ Per-species views (two per species `bt`, `ch`, `cm`, `co`, `pk`, `sk`,
   (`barriers_<sp>_access_id` + ltrees + geom) so
   [`lnk_pipeline_access()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_access.md)
   /
-  [`fresh::frs_network_features()`](https://rdrr.io/pkg/fresh/man/frs_network_features.html)
+  [`fresh::frs_network_features()`](https://newgraphenvironment.github.io/fresh/reference/frs_network_features.html)
   consume it unchanged. See `RUNBOOK.md` §5.
 
 Per-source views (matching the bcfp source-typed tables consumed by the

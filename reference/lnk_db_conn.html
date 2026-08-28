@@ -13,7 +13,7 @@ variables for local PostgreSQL."><meta property="og:image" content="https://newg
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.45.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.45.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -91,7 +91,7 @@ variables for local PostgreSQL.</p>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>Checks <code>PG_*_SHARE</code> first (the Docker fwapg convention shared with
-<code><a href="https://rdrr.io/pkg/fresh/man/frs_db_conn.html" class="external-link">fresh::frs_db_conn()</a></code>), then standard PostgreSQL variables (<code>PGHOST</code>,
+<code><a href="https://newgraphenvironment.github.io/fresh/reference/frs_db_conn.html" class="external-link">fresh::frs_db_conn()</a></code>), then standard PostgreSQL variables (<code>PGHOST</code>,
 etc.). This means <code>lnk_db_conn()</code> works identically to <code>frs_db_conn()</code>
 when both packages connect to the same database.</p>
     </div>

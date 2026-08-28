@@ -571,7 +571,7 @@ not a tweak.
 
 **Use `lnk_wsg_resolve(cfg, loaded, wsgs, conn = conn)`.** It delegates
 to
-[`fresh::frs_wsg_drainage()`](https://rdrr.io/pkg/fresh/man/frs_wsg_drainage.html)
+[`fresh::frs_wsg_drainage()`](https://newgraphenvironment.github.io/fresh/reference/frs_wsg_drainage.html)
 (fresh \>= 0.33.0), which tests per-group outlet **points**
 (`blue_line_key` + `downstream_route_measure`) with the measure-aware
 `whse_basemapping.fwa_downstream()`.

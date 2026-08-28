@@ -2,7 +2,7 @@
 
 Fifth phase of the habitat classification pipeline. Builds the
 access-gating break table consumed by classification, then calls
-[`fresh::frs_habitat_classify()`](https://rdrr.io/pkg/fresh/man/frs_habitat_classify.html)
+[`fresh::frs_habitat_classify()`](https://newgraphenvironment.github.io/fresh/reference/frs_habitat_classify.html)
 with the rules YAML, thresholds, per-species parameters, and barrier
 overrides from the config bundle.
 

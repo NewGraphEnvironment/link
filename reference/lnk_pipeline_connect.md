@@ -3,7 +3,7 @@
 Sixth and final phase of the habitat classification pipeline. Runs the
 connectivity logic that `frs_habitat()` executes internally —
 rearing-spawning clustering via
-[`fresh::frs_cluster()`](https://rdrr.io/pkg/fresh/man/frs_cluster.html)
+[`fresh::frs_cluster()`](https://newgraphenvironment.github.io/fresh/reference/frs_cluster.html)
 and connected-waterbody rules via `fresh:::.frs_connected_waterbody()` —
 configured by per-species flags in `loaded$parameters_fresh`:
 

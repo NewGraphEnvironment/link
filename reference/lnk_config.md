@@ -29,7 +29,7 @@ An `lnk_config` S3 list with these slots:
 - `description` — manifest's free-text description (or `NULL`)
 
 - `rules` — absolute path to the rules YAML (consumed by
-  [`fresh::frs_habitat_classify()`](https://rdrr.io/pkg/fresh/man/frs_habitat_classify.html))
+  [`fresh::frs_habitat_classify()`](https://newgraphenvironment.github.io/fresh/reference/frs_habitat_classify.html))
 
 - `dimensions` — absolute path to the dimensions CSV (input to
   [`lnk_rules_build()`](https://newgraphenvironment.github.io/link/reference/lnk_rules_build.md))
