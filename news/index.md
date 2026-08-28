@@ -1,5 +1,81 @@
 # Changelog
 
+## link 0.46.0
+
+Enforces the DS-first precondition that `data-raw/wsg_run_one.R` has
+stated in its own header since link#175 and that nothing checked
+([\#227](https://github.com/NewGraphEnvironment/link/issues/227)).
+Accessibility is not computed from the focal watershed group alone —
+link reads the **already-persisted** barriers of the groups downstream —
+so modelling a WSG out of order writes `streams_access` /
+`streams_mapping_code` marking segments accessible that are in fact
+dammed off, prints `done in N min`, and exits 0. A wrong answer
+indistinguishable from a right one. New exported
+[`lnk_wsg_downstream_check()`](https://newgraphenvironment.github.io/link/reference/lnk_wsg_downstream_check.md)
+verifies it instead: find the blocking dams on the focal WSG’s
+downstream flow path, confirm each is already persisted as a barrier,
+and fail loud naming them when it is not.
+
+**The predicate is path, not membership**, and that is the difference
+between a guard and a nuisance. The issue proposed flagging when a
+downstream group *contains* a blocking dam; measured against the live
+database that fires on BULK — whose closure holds 18 blocking dams
+across LSKE/KISP/KLUM, none of them below its outlet — which is the
+issue’s own motivating example. Operators would learn to reach for the
+override and the guard would stop meaning anything. Testing each dam
+with the measure-aware `whse_basemapping.fwa_downstream()` from the
+outlet shipped by
+[`fresh::frs_wsg_outlets()`](https://newgraphenvironment.github.io/fresh/reference/frs_wsg_outlets.html)
+gives PARS its three real dams (Peace Canyon, Site C, W.A.C. Bennett),
+SLOC the Brilliant Dam, and BULK nothing. It is complete rather than
+merely cheaper: access walks downstream from every segment and every
+focal segment exits through the focal outlet, so the out-of-WSG barriers
+reachable from *any* focal segment are exactly those below it. ~0.5 s
+against a 5 s budget.
+
+The guard applies link’s own filters by **sharing** the pipeline’s SQL,
+not copying it: the `cabd` and `matched` CTE bodies now live once and
+are consumed by both `.lnk_pipeline_prep_dams()` and the probe,
+parameterized on source so the pipeline reads its staged tables while
+the guard inlines `(VALUES …)` and writes nothing — the pattern fresh
+0.33.0 used to retire `public.wsg_outlet`. A guard that snapped or
+filtered differently would flag dams the pipeline treats as passable,
+which is the issue’s stated make-or-break. The refactor is
+behaviour-preserving and was verified so, against a golden capture taken
+first: byte-identical for ADMS, KOTL and PARS.
+
+Three tiers. Auto-pass is the common case. Failure names the dams, their
+passability codes and the DS-first order to model them in, and offers
+`wsg_recompute_one.R` as a correct escape that is not the override. The
+override requires a written justification — a bare `TRUE` is rejected,
+because the justification *is* the mechanism — and lands in
+`<persist>.log.notes` beside `wsg_upstream`
+([\#127](https://github.com/NewGraphEnvironment/link/issues/127)), so
+[`lnk_log_read()`](https://newgraphenvironment.github.io/link/reference/lnk_log_read.md)
+reports afterwards that a network was built on a stated assumption.
+`study_area_run.sh` exports `LNK_GUARD_DOWNSTREAM=warn` on **both**
+legs, since a downstream group can legitimately be mid-flight on another
+cypher; that is a deferral rather than a hole because
+`wsg_recompute_one.R` re-runs the guard in `error` mode after
+consolidate, when everything must be persisted. A hard pre-flight there
+would be worse than the bug: per-WSG failures soft-fail, so the WSG
+would be *skipped*, and `lnk_access(merge = TRUE)` cannot repair a group
+that was never modelled.
+
+Also fixes a defect shipped in 0.45.0: `.lnk_log_create_tables()` built
+the run-log tables but never the schema, so a brand-new persist schema
+failed with `schema does not exist`. The log is opened before
+`lnk_persist_init` by design — the open row must predate any write so
+`wsg_upstream` reflects the state the run started from — and every
+schema tested until now already existed. Found by running the guard’s
+smoke tests into scratch schemas. New `RUNBOOK.md` §8c carries the
+membership-vs-path measurement so it is not “simplified” back, and
+records the guard’s known bound: it inherits `frs_wsg_drainage()`’s
+one-outlet-per-group model. Follow-up
+[\#244](https://github.com/NewGraphEnvironment/link/issues/244) records
+that `cabd_additions` dams carry `barrier_ind = t` yet can never become
+barriers.
+
 ## link 0.45.3
 
 Purges stale `public.wsg_outlet` references and documents the

@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.45.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.46.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -317,7 +317,8 @@ mc_barrier (from barrier_sources flags, resident vs anadromous differ slightly):
 <strong><code>bcdata.log</code> covers only <code>bc2pg</code> downloads — not FWA.</strong> The stream network is loaded by fwapg’s own <code>load.sh</code> from bchamp objectstore parquet, and <code>pg_stat_user_tables</code> for it is empty (bulk-restored, never analyzed). Its only real provenance is <code>fwapg_sha</code>, resolved from <code>FWAPG_GIT_SHA</code> or a <code>.git</code> walk of <code>FWAPG_DIR</code>. Teaching <code>snapshot_bcfp.sh</code> to stamp load events is the open follow-up that fills <code>log_input.source_at</code>.</li>
 <li>
 <code>log</code> and <code>log_input</code> carry <code>watershed_group_code</code> so <code>schema_consolidate.R</code> auto-discovers them; <code>log_parameters_fresh</code> / <code>log_dimensions</code> deliberately do not (they key on <code>config_hash</code>), so <strong>they do not yet travel between hosts</strong> — follow-up PR.</li>
-</ul><p><strong>Env vars:</strong> <code>LNK_RUN_LABEL</code> (groups a campaign), <code>LINK_GIT_DIRTY</code> / <code>FRESH_GIT_DIRTY</code> (dirty-tree flag for installed packages), <code>FWAPG_GIT_SHA</code> / <code>FWAPG_DIR</code>, <code>LNK_HOST_ALIAS</code> (host name in provenance rows).</p>
+</ul><p><strong>Guard notes (link#227).</strong> <code>notes</code> may carry a downstream-guard record: <code>link#227 guard(override): 3 unmodelled downstream dam(s) — PCEA(1), UPCE(2) — &lt;justification&gt;</code> or <code>guard(warn): … at open</code>. Cross-check against the same row’s <code>wsg_upstream</code>, which independently records what was persisted when the run opened. See §8c.</p>
+<p><strong>Env vars:</strong> <code>LNK_RUN_LABEL</code> (groups a campaign), <code>LINK_GIT_DIRTY</code> / <code>FRESH_GIT_DIRTY</code> (dirty-tree flag for installed packages), <code>FWAPG_GIT_SHA</code> / <code>FWAPG_DIR</code>, <code>LNK_HOST_ALIAS</code> (host name in provenance rows).</p>
 <hr></div>
 <div class="section level2">
 <h2 id="id_7-where-every-rule-lives">7. Where every rule lives<a class="anchor" aria-label="anchor" href="#id_7-where-every-rule-lives"></a></h2>
@@ -377,6 +378,33 @@ mc_barrier (from barrier_sources flags, resident vs anadromous differ slightly):
 <pre><code>LARL 0–130 → KOTL 130–431,808 → BULL 431,808–495,206 → SMAR 495,206–608,735 → KOTR 608,735–773,149</code></pre>
 <p>So KOTR/SMAR/BULL are <strong>upstream</strong> of Kootenay Lake, reached via the US loop — but an ltree test sees them sharing KOTL’s outlet code and reports them as downstream. The correct closure of <code>c("LARL","KOTL","SLOC")</code> is <strong>just those three</strong>: LARL is the terminal BC group (it holds the Kootenay’s mouth at Castlegar and the Columbia down to the border — hence Waneta and Seven Mile sitting in it), and below it is the United States.</p>
 <p><strong><code>public.wsg_outlet</code> is gone as a concept</strong> (#227). If you find the table in a database it is a leftover from before fresh 0.33.0 — it still answers queries, and it answers them wrongly. Outlets now ship in fresh at <code>inst/extdata/wsg_outlet.csv</code> and reach the DB as a <code>VALUES</code> list; no table is needed anywhere.</p>
+</div>
+<div class="section level2">
+<h2 id="id_8c-downstream-state-the-guard-and-why-membership--path">8c. Downstream state: the guard, and why membership ≠ path<a class="anchor" aria-label="anchor" href="#id_8c-downstream-state-the-guard-and-why-membership--path"></a></h2>
+<p><code><a href="reference/lnk_pipeline_run.html">lnk_pipeline_run()</a></code> computes accessibility from the <strong>already-persisted</strong> barriers of the WSGs downstream. Model a WSG before them and the access query finds no downstream dams, marks dammed-off segments accessible, and <strong>exits 0</strong> — a wrong answer indistinguishable from a right one. <code><a href="reference/lnk_wsg_downstream_check.html">lnk_wsg_downstream_check()</a></code> (link#227) verifies that precondition instead of trusting it.</p>
+<p><strong>The predicate is PATH, not membership.</strong> The question is not “does a downstream watershed group <em>contain</em> a blocking dam” but “is there a blocking dam <strong>on this WSG’s downstream flow path</strong>”. Measured live:</p>
+<table class="table"><colgroup><col width="25%"><col width="25%"><col width="25%"><col width="25%"></colgroup><thead><tr><th>focal</th>
+<th>membership</th>
+<th>path</th>
+<th>reality</th>
+</tr></thead><tbody><tr><td><strong>BULK</strong></td>
+<td>fires — 18 blocking dams across LSKE/KISP/KLUM</td>
+<td><strong>0</strong></td>
+<td>none are below BULK’s outlet</td>
+</tr><tr><td><strong>PARS</strong></td>
+<td>fires</td>
+<td><strong>3</strong></td>
+<td>Peace Canyon, Site C, W.A.C. Bennett — correct</td>
+</tr><tr><td>SLOC</td>
+<td>fires</td>
+<td>1</td>
+<td>Brilliant Dam — correct</td>
+</tr></tbody></table><p>A membership guard cries wolf on BULK, operators learn to reach for the override, and the guard stops meaning anything. <strong>Do not “simplify” it back.</strong> The path form is complete, not merely cheaper: access walks downstream from every segment, and every focal segment exits through the focal outlet, so the out-of-WSG barriers reachable from <em>any</em> focal segment are exactly those below the outlet. ~0.5 s.</p>
+<p><strong>What counts as blocking</strong> — three filters that live downstream of <code>.lnk_pipeline_prep_dams</code>, all mirrored by the guard: <code>passability_status_code IN (1,2)</code>; a real <code>linear_feature_id</code> join; and <code>blue_line_key = watershed_key</code> (mainstem only). The psc filter is why the <code>cabd_additions</code> US placeholders never appear — they carry NULL.</p>
+<p><strong>Persistence is checked per DAM, not per WSG</strong> — <code>.lnk_wsg_persisted()</code> cannot tell a group persisted with <code>dams = FALSE</code>, which would pass a schema holding the streams but not the barriers.</p>
+<p><strong>Modes.</strong> <code>LNK_GUARD_DOWNSTREAM=error</code> (default) | <code>warn</code> | <code>ignore</code>. <code>study_area_run.sh</code> exports <strong><code>warn</code> on both legs</strong> (local subshell <em>and</em> inside the ssh string) because on a multi-host run a downstream group is legitimately mid-flight on another cypher. That is a deferral, not a hole: <code>wsg_recompute_one.R</code> re-runs the guard in <code>error</code> mode after consolidate, when everything must be persisted. A hard pre-flight there would be worse than the bug — per-WSG failures soft-fail, so the WSG would be <strong>skipped</strong>, and <code>lnk_access(merge = TRUE)</code> cannot repair a WSG that was never modelled.</p>
+<p><strong>Override</strong> requires a written justification (<code>LNK_GUARD_DOWNSTREAM_NOTE</code>); a bare <code>TRUE</code> is rejected. The note lands in <code>&lt;persist&gt;.log.notes</code> beside <code>wsg_upstream</code>, so <code><a href="reference/lnk_log_read.html">lnk_log_read()</a></code> reports that the network was built on a stated assumption.</p>
+<p><strong>Known bound:</strong> inherits <code>frs_wsg_drainage()</code>’s one-outlet-per-group model. A WSG draining by two independent paths would be under-covered.</p>
 <hr></div>
 <div class="section level2">
 <h2 id="id_8-fast-verification-recipes">8. Fast verification recipes<a class="anchor" aria-label="anchor" href="#id_8-fast-verification-recipes"></a></h2>

@@ -80,6 +80,11 @@ Species filter: a WSG is kept if *any* of `tolower(cfg$species)` columns
 in `loaded$wsg_species_presence` carries `"t"` (or `"TRUE"` / `TRUE`,
 defensively). DS-first ordering from the closure is preserved.
 
+## See also
+
+Other wsg:
+[`lnk_wsg_downstream_check()`](https://newgraphenvironment.github.io/link/reference/lnk_wsg_downstream_check.md)
+
 ## Examples
 
 ``` r
