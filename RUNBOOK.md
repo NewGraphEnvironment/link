@@ -466,6 +466,11 @@ EXCEPT SELECT watershed_group_code FROM <persist>.log;
   do not (they key on `config_hash`), so **they do not yet travel between
   hosts** — follow-up PR.
 
+**Guard notes (link#227).** `notes` may carry a downstream-guard record:
+`link#227 guard(override): 3 unmodelled downstream dam(s) — PCEA(1), UPCE(2) — <justification>`
+or `guard(warn): … at open`. Cross-check against the same row's `wsg_upstream`,
+which independently records what was persisted when the run opened. See §8c.
+
 **Env vars:** `LNK_RUN_LABEL` (groups a campaign), `LINK_GIT_DIRTY` /
 `FRESH_GIT_DIRTY` (dirty-tree flag for installed packages), `FWAPG_GIT_SHA` /
 `FWAPG_DIR`, `LNK_HOST_ALIAS` (host name in provenance rows).
@@ -553,6 +558,57 @@ the United States.
 database it is a leftover from before fresh 0.33.0 — it still answers queries, and
 it answers them wrongly. Outlets now ship in fresh at `inst/extdata/wsg_outlet.csv`
 and reach the DB as a `VALUES` list; no table is needed anywhere.
+
+## 8c. Downstream state: the guard, and why membership ≠ path
+
+`lnk_pipeline_run()` computes accessibility from the **already-persisted**
+barriers of the WSGs downstream. Model a WSG before them and the access query
+finds no downstream dams, marks dammed-off segments accessible, and **exits 0** —
+a wrong answer indistinguishable from a right one. `lnk_wsg_downstream_check()`
+(link#227) verifies that precondition instead of trusting it.
+
+**The predicate is PATH, not membership.** The question is not "does a downstream
+watershed group *contain* a blocking dam" but "is there a blocking dam **on this
+WSG's downstream flow path**". Measured live:
+
+| focal | membership | path | reality |
+|---|---|---|---|
+| **BULK** | fires — 18 blocking dams across LSKE/KISP/KLUM | **0** | none are below BULK's outlet |
+| **PARS** | fires | **3** | Peace Canyon, Site C, W.A.C. Bennett — correct |
+| SLOC | fires | 1 | Brilliant Dam — correct |
+
+A membership guard cries wolf on BULK, operators learn to reach for the override,
+and the guard stops meaning anything. **Do not "simplify" it back.** The path form
+is complete, not merely cheaper: access walks downstream from every segment, and
+every focal segment exits through the focal outlet, so the out-of-WSG barriers
+reachable from *any* focal segment are exactly those below the outlet. ~0.5 s.
+
+**What counts as blocking** — three filters that live downstream of
+`.lnk_pipeline_prep_dams`, all mirrored by the guard:
+`passability_status_code IN (1,2)`; a real `linear_feature_id` join; and
+`blue_line_key = watershed_key` (mainstem only). The psc filter is why the
+`cabd_additions` US placeholders never appear — they carry NULL.
+
+**Persistence is checked per DAM, not per WSG** — `.lnk_wsg_persisted()` cannot
+tell a group persisted with `dams = FALSE`, which would pass a schema holding the
+streams but not the barriers.
+
+**Modes.** `LNK_GUARD_DOWNSTREAM=error` (default) | `warn` | `ignore`.
+`study_area_run.sh` exports **`warn` on both legs** (local subshell *and* inside
+the ssh string) because on a multi-host run a downstream group is legitimately
+mid-flight on another cypher. That is a deferral, not a hole:
+`wsg_recompute_one.R` re-runs the guard in `error` mode after consolidate, when
+everything must be persisted. A hard pre-flight there would be worse than the bug —
+per-WSG failures soft-fail, so the WSG would be **skipped**, and
+`lnk_access(merge = TRUE)` cannot repair a WSG that was never modelled.
+
+**Override** requires a written justification (`LNK_GUARD_DOWNSTREAM_NOTE`); a
+bare `TRUE` is rejected. The note lands in `<persist>.log.notes` beside
+`wsg_upstream`, so `lnk_log_read()` reports that the network was built on a
+stated assumption.
+
+**Known bound:** inherits `frs_wsg_drainage()`'s one-outlet-per-group model. A
+WSG draining by two independent paths would be under-covered.
 
 ---
 

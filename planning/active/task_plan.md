@@ -87,16 +87,16 @@ Two further corrections to the issue body:
 
 ## Phase 5 — Docs, release, follow-up
 
-- [ ] `RUNBOOK.md` §8c — membership ≠ path, with the BULK counterexample; note the
+- [x] `RUNBOOK.md` §8c — membership ≠ path, with the BULK counterexample; note the
       single-outlet-per-group bound
-- [ ] `RUNBOOK.md` §6b — `guard(...)` note strings
-- [ ] `NEWS.md` + `DESCRIPTION` bump (final commit); `CLAUDE.md` status
-- [ ] File follow-up: `cabd_additions` psc NULL ⇒ US placeholder dams structurally never
+- [x] `RUNBOOK.md` §6b — `guard(...)` note strings
+- [x] `NEWS.md` + `DESCRIPTION` bump (final commit); `CLAUDE.md` status
+- [x] File follow-up: `cabd_additions` psc NULL ⇒ US placeholder dams structurally never
       barriers (0 rows in `fresh.barriers`)
 
 ## Validation
 
-- [ ] `devtools::test()` green; `lintr::lint_package()` no new lint classes
+- [x] `devtools::test()` green; `lintr::lint_package()` no new lint classes
 - [ ] `/code-check` clean on each commit
-- [ ] PWF checkboxes match landed work
+- [x] PWF checkboxes match landed work
 - [ ] `/planning-archive` then `/gh-pr-push`
