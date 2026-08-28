@@ -872,3 +872,78 @@ test_that(".lnk_pipeline_prep_dams emits load_dams.sql shape when conn_tunnel se
   expect_match(joined, "UNION ALL")
   expect_match(joined, "feature_type = 'dams'")
 })
+
+
+# --- Golden regression net for .lnk_pipeline_prep_dams (link#227 Phase 0) ---
+#
+# The CABD dam snap is the most delicate SQL in the package, and link#227
+# refactors it so the guard can share the exact same filters rather than
+# maintain a second copy that drifts. This test pins current behaviour FIRST,
+# so the refactor is provably behaviour-preserving.
+
+test_that(".lnk_pipeline_prep_dams output is stable (golden, pre-refactor)", {
+  conn <- skip_if_no_db()
+  cfg <- lnk_config("bcfishpass")
+  loaded <- lnk_load_overrides(cfg)
+  schema <- "working_golden_dams"
+
+  DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", schema))
+  DBI::dbExecute(conn, sprintf("CREATE SCHEMA %s", schema))
+  withr::defer(
+    try(DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", schema)),
+        silent = TRUE))
+
+  # ADMS: smallest WSG that still carries dams.
+  .lnk_pipeline_prep_dams(conn, conn_tunnel = conn, aoi = "ADMS",
+                          schema = schema, loaded = loaded)
+
+  got <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT dam_id, watershed_group_code, passability_status_code,
+            blue_line_key, round(downstream_route_measure::numeric, 2) AS drm
+       FROM %s.dams ORDER BY dam_id", schema))
+
+  # AOI filter applied: nothing outside ADMS survives step 4.
+  expect_true(all(got$watershed_group_code == "ADMS"))
+  expect_gt(nrow(got), 0L)
+
+  # The blocking subset is what the link#227 guard must reproduce exactly.
+  blocking <- got[got$passability_status_code %in% c(1L, 2L), ]
+  expect_gt(nrow(blocking), 0L)
+
+  # Pinned counts (captured 2026-08-28 pre-refactor against docker fwapg,
+  # cabd.dams 2594 rows). Not expect_snapshot(): snapshots skip on CRAN, which
+  # would make the regression net silently absent in exactly the run that
+  # matters. If cabd.dams is refreshed upstream these may legitimately move —
+  # re-pin deliberately rather than loosening the assertion.
+  expect_identical(nrow(got), 8L)
+  expect_identical(nrow(blocking), 8L)
+  expect_true(all(got$passability_status_code == 1L))
+
+  # dam_id uniqueness encodes DISTINCT ON (c.dam_id) — one row per dam even
+  # though the lateral snap can match several stream segments.
+  expect_identical(anyDuplicated(got$dam_id), 0L)
+
+  # Every dam snapped to a real blue line; the 65 m filter drops the rest.
+  expect_false(any(is.na(got$blue_line_key)))
+})
+
+test_that(".lnk_pipeline_prep_dams applies the cabd_additions psc-NULL rule", {
+  # The `usa` CTE hardcodes NULL::integer AS passability_status_code, and the
+  # barrier_status CASE in .lnk_crossings_union has no NULL arm — so the US
+  # placeholder dams (Grand Coulee, Chief Joseph) are structurally incapable of
+  # becoming barriers despite barrier_ind = t in cabd_additions.csv. The link#227
+  # guard must mirror this or it demands an override for the whole Columbia.
+  # Tracked as a latent bug in its own issue; pinned here so a fix is deliberate.
+  conn <- skip_if_no_db()
+  cfg <- lnk_config("bcfishpass")
+  tn <- .lnk_table_names(cfg)
+  present <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT 1 FROM information_schema.tables
+      WHERE table_schema = %s AND table_name = 'barriers' LIMIT 1",
+    DBI::dbQuoteLiteral(conn, tn$schema)))
+  skip_if(nrow(present) == 0L, "persist barriers table absent")
+  n <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT count(*) AS n FROM %s.barriers WHERE id_barrier ~ '^12000'",
+    tn$schema))$n
+  expect_identical(as.integer(n), 0L)
+})

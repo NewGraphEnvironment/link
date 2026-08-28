@@ -43,10 +43,10 @@ Two further corrections to the issue body:
 
 ## Phase 0 — Regression net (blocking)
 
-- [ ] Golden test for current `.lnk_pipeline_prep_dams` (row count + `dam_id` set + psc
+- [x] Golden test for current `.lnk_pipeline_prep_dams` (row count + `dam_id` set + psc
       distribution for one dam-bearing WSG)
-- [ ] Confirm `DESCRIPTION` pins `fresh (>= 0.33.0)`
-- [ ] Absence policy: missing `fwa_downstream` ⇒ `stop()`, never auto-pass
+- [x] Confirm `DESCRIPTION` pins `fresh (>= 0.33.0)`
+- [x] Absence policy: missing `fwa_downstream` ⇒ `stop()`, never auto-pass
 
 ## Phase 1 — Factor the dam-snap SQL (no behaviour change)
 
