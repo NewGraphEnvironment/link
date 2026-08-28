@@ -19,9 +19,11 @@ The 3 FWCP regions and their watershed groups — the parity-run scope for link
 
 29 focal WSGs → **~52 with downstream-closure** (every WSG each drains through —
 e.g. PARS → PCEA / UPCE / LPCE / FINA / PARA / LBTN). Closure + downstream-first
-order are derived from `wscode_ltree` ancestry (`@>`) via the `public.wsg_outlet`
-helper table (a per-WSG outlet `wscode_ltree`; see the Database Connection section
-of `CLAUDE.md` and issue #227 for its reproducible build). Major drainages by root
+order come from `lnk_wsg_resolve()`, which delegates to `fresh::frs_wsg_drainage()`
+(fresh >= 0.33.0). **Do not hand-roll this from `wscode_ltree` ancestry (`@>`)** —
+that was the pre-#227 method and it over-includes: two WSGs on the same stream share
+an outlet code, so `@>` calls each downstream of the other. The closure is
+measure-aware, not code-aware. See RUNBOOK section 8b. Major drainages by root
 wscode: Fraser `100` (68 WSGs), Peace `200` (65), Columbia `300`/ELKR (17 — NOT a
 study area), Skeena `400` (12).
 

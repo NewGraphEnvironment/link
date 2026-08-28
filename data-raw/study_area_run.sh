@@ -14,7 +14,7 @@
 #
 # Cross-WSG `;DAM` correctness WITHOUT a post-consolidate recompute: each
 # host gets a DRAINAGE-CLOSED bucket (focal WSGs + every WSG they drain
-# through, via study_area_wsgs.R / public.wsg_outlet) run DOWNSTREAM-FIRST,
+# through, via study_area_wsgs.R / lnk_wsg_resolve) run DOWNSTREAM-FIRST,
 # so a WSG's downstream dam barriers are persisted before its access /
 # mapping_code is computed. One study area (closed) per host.
 #

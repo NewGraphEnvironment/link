@@ -30,7 +30,7 @@ cyphers in order. Dispatcher-only (no cyphers): omit `--cy-workspaces`, pass one
 1. **Pre-flight** (tunnel-free): local fwapg up, `fresh.streams_vw_bcfp` present,
    doctl/tofu (only if cyphers).
 2. **Drainage-closed DS-first buckets** (`study_area_wsgs.R`): each focal set →
-   its closure (every WSG it drains through, via `public.wsg_outlet`,
+   its closure (every WSG it drains through, via `lnk_wsg_resolve()`,
    `f.outlet <@ w.outlet`) ordered downstream-first (`nlevel(outlet) ASC`),
    then **filtered to bundle-species presence** (link#157).
 3. **Spin + prep** cyphers (`cypher_up.sh`, `cypher_prep.sh` with
