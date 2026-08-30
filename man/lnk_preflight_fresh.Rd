@@ -61,4 +61,10 @@ res$version
 bad <- lnk_preflight_fresh(required = "frs_not_a_real_export", quiet = TRUE)
 bad$missing
 }
+\seealso{
+Other preflight: 
+\code{\link{lnk_preflight_parity}()},
+\code{\link{lnk_preflight_stamp}()},
+\code{\link{lnk_preflight_vintage}()}
+}
 \concept{preflight}

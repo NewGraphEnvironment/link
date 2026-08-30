@@ -33,28 +33,28 @@ separate session driven by the merged, hardened script.
 ## Phase 2 — pre-flight gates in `study_area_run.sh`
 
 ### 2a `preflight_local()` — pre-spin, zero cost
-- [ ] Gate 5: persist-schema guard (arg-time + resolved-collision second layer)
-- [ ] Gate 4: branch pushed (fetch first) + worktree clean
-- [ ] Gate 6: resolve and export `FWAPG_GIT_SHA`; fail when unresolvable
-- [ ] Gate 2: credential probe — doctl leg, tfvars `do_token` leg via direct
+- [x] Gate 5: persist-schema guard (arg-time + resolved-collision second layer)
+- [x] Gate 4: branch pushed (fetch first) + worktree clean
+- [x] Gate 6: resolve and export `FWAPG_GIT_SHA`; fail when unresolvable
+- [x] Gate 2: credential probe — doctl leg, tfvars `do_token` leg via direct
       DO API call, s3 backend leg labelled honestly
-- [ ] `R/lnk_preflight_vintage.R` + `data-raw/host_vintage.R` + tests
-- [ ] Gate 3a: dispatcher primitive vintage, `--vintage-max-days=N` (default 7)
+- [x] `R/lnk_preflight_vintage.R` + `data-raw/host_vintage.R` + tests
+- [x] Gate 3a: dispatcher primitive vintage, `--vintage-max-days=N` (default 7)
 
 ### 2b `preflight_hosts()` — post-prep, pre-write
-- [ ] `R/lnk_preflight_stamp.R` + `R/lnk_preflight_parity.R` +
+- [x] `R/lnk_preflight_stamp.R` + `R/lnk_preflight_parity.R` +
       `data-raw/host_stamp.R` + tests
-- [ ] Gate 1: cross-host parity keyed on `repo_sha` (**not** `link_sha` — that
+- [x] Gate 1: cross-host parity keyed on `repo_sha` (**not** `link_sha` — that
       is NA on every pak-installed cypher by construction)
-- [ ] Gate 3b: cypher primitive vintage
-- [ ] `--auto-install` remediation (re-run install stage, re-check once)
-- [ ] Export `FWAPG_GIT_SHA` on the run ssh leg (line 226)
+- [x] Gate 3b: cypher primitive vintage
+- [x] `--auto-install` remediation (re-run install stage, re-check once)
+- [x] Export `FWAPG_GIT_SHA` on the run ssh leg (line 226)
 
 ### 2c post-condition + ergonomics
-- [ ] Gate 7: per-host completeness count before consolidate
-- [ ] Coverage assertion after burn, before recompute
-- [ ] `--preflight-only`
-- [ ] `--refresh-primitives` (must land with gate 3a — m1 is 3 months stale)
+- [x] Gate 7: per-host completeness count before consolidate
+- [x] Coverage assertion after burn, before recompute
+- [x] `--preflight-only`
+- [x] `--refresh-primitives` (must land with gate 3a — m1 is 3 months stale)
 
 ## Phase 3 — bucketing derivation
 

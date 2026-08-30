@@ -159,3 +159,31 @@ every host for a reason unrelated to fresh.
 Drift guard verified by restoring the bug: dropping `frs_wsg_outlets` from
 `.lnk_fresh_required()` fails `test-lnk_preflight_fresh.R:78`, with the patch
 proven to have taken before the result was believed.
+
+## Pre-flight gates — both known answers, measured live on m1
+
+Every gate exercised in both directions before shipping. No droplets, no spend.
+
+| gate | firing case | passing case |
+|---|---|---|
+| primitive vintage | `--vintage-max-days=7` → FATAL, all four primitives named with ages (100/100/97/100 d) | `--vintage-max-days=200` → `✓ oldest 99.5 d` |
+| persist schema | `--config=default` → FATAL naming `--schema=` | `--config=default --schema=fresh_default` → `persist: fresh_default` |
+| tfvars `do_token` | `LNK_PREFLIGHT_DO_TOKEN=dop_v1_deadbeef…` → `✗ HTTP 401` | real token → `✓ HTTP 200` |
+| DO reachability | `LNK_PREFLIGHT_DO_URL=https://127.0.0.1:1/…` → `✗ could not reach the DO API` | — reported distinctly from 401, not collapsed into it |
+| branch pushed | unpushed branch → `✗ has no upstream` | after push (below) |
+| worktree clean | uncommitted work + `N_CY>0` → `✗` ; `N_CY=0` → `WARN` only | clean tree |
+| fwapg SHA | — | `✓ fwapg_sha e6e1eb0f4718` |
+
+### A false positive the first run caught
+
+The dispatcher fresh gate initially reported `✗ missing required symbols`
+against a perfectly good fresh 0.33.0. Cause: the gate ran
+`LNK_LOAD=loadall Rscript -e '...lnk_preflight_fresh...'`, but `LNK_LOAD` is
+only read by the *driver scripts* — a bare `-e` never loads the package, so
+the function did not exist, R exited non-zero, and the gate reported an
+assertion failure for a broken invocation.
+
+That is the same conflation the gates exist to prevent, one level up. Fixed by
+loading inside the expression and giving "could not run the check" its own exit
+code and its own message, so nobody is sent to debug fresh when the harness is
+what broke.
