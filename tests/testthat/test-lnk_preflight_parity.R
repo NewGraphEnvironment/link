@@ -113,6 +113,48 @@ test_that("a stamp is judgeable by the parity function it feeds", {
   expect_no_error(lnk_preflight_parity(df, n_expected = 1, quiet = TRUE))
 })
 
+test_that("an unresolved field survives the TSV round-trip the shell performs", {
+  # The version of this test that built the frame in R passed while the real
+  # gate was broken: the shell writes stamps to a TSV and reads them with
+  # read.delim(), whose default na.strings = "NA" turned the deliberate "NA"
+  # sentinel into a real NA. `%in% c("NA","")` did not match it and `!=`
+  # dropped it, so a run with fwapg_sha unresolved on EVERY host printed
+  # "host parity clean". Reproduced 2026-08-30, then fixed on both sides.
+  #
+  # This test crosses the seam: write the file the way collect_stamps() does,
+  # read it back the way judge_stamps() does.
+  cols <- .lnk_preflight_stamp_cols()
+  mk <- function(host, fwapg) {
+    v <- c(host, "0.47.0", "abc123def456", "0.33.0", "NA",
+           "deadbeef0001", "FALSE", "cfg012345678", fwapg, "4.5.2")
+    paste(v, collapse = "\t")
+  }
+  tsv <- withr::local_tempfile()
+  writeLines(c(mk("m1", "NA"), mk("cy-job1", "NA")), tsv)
+
+  s <- utils::read.delim(tsv, header = FALSE, colClasses = "character",
+                         na.strings = character(0), col.names = cols)
+  res <- lnk_preflight_parity(s, n_expected = 2, quiet = TRUE)
+  expect_false(res$ok)
+  expect_match(res$message, "fwapg_sha unresolved")
+
+  # And the belt: even parsed with read.delim's defaults, where the sentinel
+  # has already become a real NA, the judge must still refuse it.
+  s_na <- utils::read.delim(tsv, header = FALSE, colClasses = "character",
+                            col.names = cols)
+  expect_true(all(is.na(s_na$fwapg_sha)))       # premise: the NAs are real
+  expect_false(lnk_preflight_parity(s_na, n_expected = 2, quiet = TRUE)$ok)
+})
+
+test_that("a real NA in a key field is a mismatch, not silent agreement", {
+  # `!=` returns NA for an NA operand and which() drops it, so without
+  # normalisation a host whose field failed to parse would agree with
+  # everything.
+  s <- rbind(row("m1"), row("cy-job1", repo_sha = NA_character_))
+  res <- lnk_preflight_parity(s, n_expected = 2, quiet = TRUE)
+  expect_false(res$ok)
+})
+
 test_that(".lnk_repo_git_state reports NA for a non-git directory", {
   d <- withr::local_tempdir()
   g <- .lnk_repo_git_state(d)

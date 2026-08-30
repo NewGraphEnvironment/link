@@ -165,15 +165,13 @@ else
   # `2>/dev/null || true` is correct here and only looks like the bug shape:
   # an R failure yields an empty $SCHEMA, which the FATAL below catches.
   SCHEMA=$(resolve_schema "$CONFIG" 2>/dev/null || true)
-  # Second layer for the guard above, so it survives someone editing the
-  # YAML defaults: the name-based check catches the documented case, this
-  # catches a future third config that happens to collide.
-  BCFP_SCHEMA=$(resolve_schema bcfishpass 2>/dev/null || true)
-  if [ -n "$SCHEMA" ] && [ "$CONFIG" != "bcfishpass" ] && [ "$SCHEMA" = "$BCFP_SCHEMA" ]; then
-    echo "FATAL: --config=$CONFIG resolves to schema '$SCHEMA', the same target" >&2
-    echo "  as --config=bcfishpass. Pass an explicit --schema=." >&2
-    exit 1
-  fi
+  # There was a "second layer" collision check here comparing $SCHEMA to
+  # bcfishpass's. It was unreachable and has been removed rather than left
+  # as decoration: this branch runs only when --schema= is absent, and the
+  # guard above already exited for every non-bcfishpass config in that case,
+  # so its `[ "$CONFIG" != "bcfishpass" ]` test was always false. A guard
+  # that cannot go red is worse than none — it reads as coverage.
+  # The name-based guard above is the real one and covers every config.
 fi
 [ -n "$SCHEMA" ] || { echo "FATAL: could not resolve persist schema for --config=$CONFIG"; exit 1; }
 export LNK_SCHEMA="$SCHEMA"
@@ -375,10 +373,18 @@ quit(status = if (isTRUE(res$ok)) 0L else 1L)
     # `tofu plan` is NOT a valid probe: against a workspace with no
     # resources it returns "Plan: N to add" without ever contacting DO.
     # BSD sed on this PATH, so POSIX classes only — no \s, no \+.
-    local tok code
+    local tok code do_url
+    # Test seam. Restricted to https so a stray value cannot send a live
+    # bearer token to an arbitrary host over plaintext.
+    do_url="${LNK_PREFLIGHT_DO_URL:-https://api.digitalocean.com/v2/account}"
+    case "$do_url" in
+      https://*) ;;
+      *) echo "  ✗ LNK_PREFLIGHT_DO_URL must be https (got '$do_url')"; fail=1; do_url="" ;;
+    esac
     tok="${LNK_PREFLIGHT_DO_TOKEN:-$(sed -nE \
       's/^[[:space:]]*do_token[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' \
       "$CYPHER_TF/terraform.tfvars" 2>/dev/null | head -1)}"
+    [ -n "$do_url" ] || tok=""
     if [ -z "$tok" ]; then
       echo "  ✗ could not read do_token from $CYPHER_TF/terraform.tfvars"
       fail=1
@@ -386,8 +392,7 @@ quit(status = if (isTRUE(res$ok)) 0L else 1L)
       # --config - keeps the token out of argv, which `ps` exposes.
       code=$(printf 'header = "Authorization: Bearer %s"\n' "$tok" \
         | curl -sS --config - --max-time 20 -o /dev/null -w '%{http_code}' \
-               "${LNK_PREFLIGHT_DO_URL:-https://api.digitalocean.com/v2/account}" \
-               2>/dev/null) || code="000"
+               "$do_url" 2>/dev/null) || code="000"
       case "$code" in
         200) echo "  ✓ tofu do_token valid (HTTP 200 /v2/account)" ;;
         401) echo "  ✗ tofu do_token expired/revoked (HTTP 401) — mint a new PAT and update $CYPHER_TF/terraform.tfvars"; fail=1 ;;
@@ -446,7 +451,14 @@ judge_stamps() {     # $1 = tsv
   (cd "$REPO_ROOT" && LNK_LOAD=loadall Rscript -e '
 a <- commandArgs(TRUE)
 suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
+# na.strings = character(0) is load-bearing. lnk_preflight_stamp() emits the
+# literal string "NA" for anything it could not resolve; read.delim defaults
+# to na.strings = "NA" and would turn that sentinel back into a real NA,
+# which the unresolved check would then not match — so a run with fwapg_sha
+# unresolved on every host reported "host parity clean". (The R side also
+# treats NA as unresolved now; this keeps the data faithful regardless.)
 s <- utils::read.delim(a[1], header = FALSE, colClasses = "character",
+                       na.strings = character(0),
                        col.names = strsplit(a[2], ",")[[1]])
 res <- lnk_preflight_parity(s, n_expected = as.integer(a[3]))
 quit(status = if (isTRUE(res$ok)) 0L else 1L)
@@ -522,7 +534,21 @@ preflight_local || { echo "FATAL: pre-flight failed; aborting before spend"; exi
 echo "  ✓ pre-flight clean (tunnel-free)"
 
 if [ "$PREFLIGHT_ONLY" = "1" ]; then
-  echo "=== --preflight-only: all local gates passed; exiting before spin ==="
+  echo "=== --preflight-only: local gates passed; exiting before spin ==="
+  # Report what was NOT checked. Several gates are gated on N_CY > 0, so a
+  # bare --preflight-only silently skips the credential probes — which are
+  # the highest-value ones, since an expired token is what motivated them.
+  # Absence of evidence has to be reported as absence, not read as a pass.
+  if [ "$N_CY" -eq 0 ]; then
+    echo "  NOT CHECKED (no --cy-workspaces given, so no cypher gates ran):"
+    echo "    - doctl credential, tofu do_token, tofu s3 backend"
+    echo "    - branch-pushed assertion"
+    echo "    - host parity and cypher primitive vintage (need live cyphers)"
+    echo "  For the full pre-spend set, pass the workspaces you intend to use:"
+    echo "    bash data-raw/study_area_run.sh --preflight-only --cy-workspaces=job1,job2,job3"
+  else
+    echo "  NOT CHECKED (require live cyphers): host parity, cypher primitive vintage."
+  fi
   exit 0
 fi
 

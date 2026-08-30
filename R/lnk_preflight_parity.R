@@ -87,8 +87,17 @@ lnk_preflight_parity <- function(stamps,
       as.integer(n_expected), nrow(stamps)))
   }
 
+  # R's own NA counts as unresolved alongside the literal "NA" string.
+  # `lnk_preflight_stamp()` emits the string, but the shell round-trips the
+  # stamps through a TSV and `utils::read.delim()` defaults to
+  # `na.strings = "NA"` — which turns the sentinel back into a real NA that
+  # `%in% c("NA", "")` does not match and `!=` silently drops. The caller
+  # also passes `na.strings = character(0)`; this is the belt to that
+  # braces, so any future reader of a stamp table is judged correctly
+  # regardless of how it parsed the file.
+  is_unresolved <- function(x) is.na(x) | x %in% c("NA", "")
   for (k in intersect(forbid_na, names(stamps))) {
-    bad <- stamps$host[stamps[[k]] %in% c("NA", "")]
+    bad <- stamps$host[is_unresolved(stamps[[k]])]
     if (length(bad)) {
       problems <- c(problems, sprintf("%s unresolved on: %s", k,
                                       paste(bad, collapse = ", ")))
@@ -109,11 +118,16 @@ lnk_preflight_parity <- function(stamps,
   ref <- if (nrow(stamps)) stamps[1L, , drop = FALSE] else NULL
   if (!is.null(ref) && nrow(stamps) > 1L) {
     for (k in keys) {
-      off <- which(stamps[[k]] != ref[[k]])
+      # `!=` yields NA for an NA operand and `which()` drops it, so a host
+      # whose field failed to parse would silently agree. Compare on a
+      # sentinel-normalised copy instead.
+      lhs <- ifelse(is.na(stamps[[k]]), "NA", stamps[[k]])
+      rhs <- if (is.na(ref[[k]])) "NA" else ref[[k]]
+      off <- which(lhs != rhs)
       if (length(off)) {
         mismatches <- rbind(mismatches, data.frame(
-          host = stamps$host[off], field = k, value = stamps[[k]][off],
-          reference = ref[[k]], stringsAsFactors = FALSE))
+          host = stamps$host[off], field = k, value = lhs[off],
+          reference = rhs, stringsAsFactors = FALSE))
       }
     }
     if (nrow(mismatches)) {

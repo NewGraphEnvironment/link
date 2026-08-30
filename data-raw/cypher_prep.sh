@@ -155,7 +155,17 @@ FRESH_SHA=$(Rscript -e \
 # the image may keep unrelated settings here.
 RENV="$HOME/.Renviron"
 touch "$RENV"
-grep -vE '^(LINK_GIT_SHA|LINK_GIT_DIRTY|FRESH_GIT_SHA)=' "$RENV" > "$RENV.tmp" || true
+# grep exits 1 for "no lines matched" and >=2 for a real read error. `|| true`
+# would collapse those, and since `>` truncates the target before grep runs,
+# an error would replace ~/.Renviron with the empty file — destroying exactly
+# the unrelated settings this filter exists to preserve. Branch on the status.
+grep -vE '^(LINK_GIT_SHA|LINK_GIT_DIRTY|FRESH_GIT_SHA)=' "$RENV" > "$RENV.tmp"
+RC=$?
+if [ "$RC" -gt 1 ]; then
+  echo "FATAL: could not read $RENV (grep exit $RC); refusing to overwrite it" >&2
+  rm -f "$RENV.tmp"
+  exit 1
+fi
 mv "$RENV.tmp" "$RENV"
 {
   printf 'LINK_GIT_SHA=%s\n'   "$LINK_SHA"
