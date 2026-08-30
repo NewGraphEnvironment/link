@@ -714,18 +714,38 @@ echo "  ✓ host runs finished (per-WSG soft-fail; gaps surface in compare)"
 # about to be re-COPYed cannot delete anything it does not replace. The gap
 # then surfaces at the coverage post-condition after the burn, by which point
 # the successful work is safely on the dispatcher.
+# Split a CSV into lines, dropping blanks. `sed` deleting every line still
+# exits 0, where `grep -v '^$'` exits 1 — and under `set -euo pipefail` that
+# aborts the script from inside a plain assignment. That trap has now bitten
+# this diff twice (cypher_prep's ~/.Renviron filter, then the consolidate
+# bucket builder below), so the safe form lives in one helper rather than
+# being remembered at each call site.
+#
+# `printf '%s\n'`, not `printf '%s'`: without the trailing newline `wc -l`
+# counts separators rather than items and reports one fewer than there is, so
+# a host that completed its whole bucket would be reported incomplete. The
+# empty case still yields 0, because sed drops the resulting blank line.
+csv_lines() { printf '%s\n' "${1:-}" | tr ',' '\n' | sed '/^[[:space:]]*$/d'; }
+csv_count() { csv_lines "${1:-}" | wc -l | tr -d ' '; }
+
 bucket_done() {   # $1 = logfile; prints the WSGs the host reported, one per line
   # Matches the WSG code, not the surrounding prose, so a reworded cat() in
-  # wsg_run_one.R degrades to "this host reported nothing" — which narrows the
-  # bucket to empty and is handled loudly below — rather than to a wrong set.
-  sed -nE 's/^\[wsg_run_one\] ([A-Z]{4}) .*(done|SKIP).*/\1/p' "$1" 2>/dev/null \
-    | sort -u
+  # wsg_run_one.R degrades to "this host reported nothing" — handled loudly
+  # below — rather than to a wrong set.
+  #
+  # The readability test is not decorative: `sed` on a missing file exits
+  # non-zero, which under `set -e` would abort into the EXIT trap and burn
+  # the cyphers that DID succeed. An unreadable log means "reported nothing".
+  [ -r "$1" ] || return 0
+  sed -nE 's/^\[wsg_run_one\] ([A-Z]{4}) .*(done|SKIP).*/\1/p' "$1" | sort -u
 }
 
 report_completeness() {   # $1 = label, $2 = logfile, $3 = expected csv
   local exp_n got_n warn_n
-  exp_n=$(printf '%s' "$3" | tr ',' '\n' | grep -c '[^[:space:]]') || exp_n=0
-  got_n=$(bucket_done "$2" | grep -c '[^[:space:]]') || got_n=0
+  exp_n=$(csv_count "$3")
+  # bucket_done's `sort -u` terminates its last line, so wc -l is right here;
+  # counted the same way as exp_n regardless, so the two cannot drift.
+  got_n=$(csv_count "$(bucket_done "$2" | paste -sd, -)")
   warn_n=$(grep -c '^\[WARN\] ' "$2" 2>/dev/null) || warn_n=0
   if [ "$got_n" = "$exp_n" ]; then
     echo "  ✓ $1: $got_n/$exp_n WSGs accounted for"
@@ -746,8 +766,8 @@ for WS in "${CY_WS_ARR[@]}"; do
   CY_BUCKET_DONE[$WS]=$(bucket_done "$LOG_DIR/${TS}_run_$WS.log" | paste -sd, -)
 done
 [ "$complete_fail" = "0" ] || {
-  echo "  WARN: consolidating only the WSGs each host reported; the gap is"
-  echo "        reported by the coverage check after the cyphers are burned."
+  echo "  WARN: consolidating only the WSGs each host reported. The run will"
+  echo "        finish so nothing already computed is lost, then exit non-zero."
 }
 
 # --- consolidate cyphers -> dispatcher ---
@@ -764,7 +784,7 @@ if [ "$N_CY" -gt 0 ]; then
     # anything it does not replace. A host that reported nothing is skipped
     # entirely rather than handed an empty bucket — an empty one would make
     # schema_consolidate stop() and take the other hosts' work with it.
-    bucket_r=$(printf '%s' "${CY_BUCKET_DONE[$WS]}" | tr ',' '\n' | grep -v '^$' | sed "s/.*/'&'/" | paste -sd, -)
+    bucket_r=$(csv_lines "${CY_BUCKET_DONE[$WS]:-}" | sed "s/.*/'&'/" | paste -sd, -)
     if [ -z "$bucket_r" ]; then
       echo "  WARN: cy[$WS] reported no WSGs — skipping it in consolidate"
       continue
@@ -831,6 +851,19 @@ else
   echo "FATAL: could not verify WSG coverage in $SCHEMA"; exit 1
 fi
 
+# This check asks "are there rows", NOT "are they from this run". The persist
+# accumulates across runs and consolidate's DELETE is bucket-scoped, so a WSG
+# that was excluded from a narrowed bucket keeps its PREVIOUS run's rows and
+# passes here. It is a guard against consolidate destroying data, not a
+# substitute for the completeness accounting — an earlier revision of this
+# script leaned on it as the backstop for an incomplete run, and it cannot
+# carry that. `$RUN_INCOMPLETE` is what carries it, at the very end.
+RUN_INCOMPLETE="$complete_fail"
+if [ "$RUN_INCOMPLETE" != "0" ]; then
+  echo "  NOTE: some WSGs were excluded from consolidate this run; any rows"
+  echo "        they show above are from an EARLIER run, not this one."
+fi
+
 # --- post-consolidate recompute: settle cross-WSG access (link#205) ---
 # Drainage-closed + DS-first per-host is NOT sufficient: a WSG's downstream
 # barriers can be cross-bucket or arrive late in DS-first order, so its access
@@ -863,4 +896,17 @@ echo "=== summary ==="
 echo "  run WSGs: $ALL_WSGS"
 echo "  compare CSV: $COMPARE_CSV"
 tail -40 "$LOG_DIR/${TS}_compare.log" || true
+
+# An incomplete run must not exit 0. The failure is reported HERE rather than
+# at the point of detection so that everything already computed is
+# consolidated, recomputed, compared and written out first — the operator gets
+# the artifacts AND an accurate exit status, instead of one at the cost of the
+# other. A caller that only checks the exit code still learns the truth.
+if [ "${RUN_INCOMPLETE:-0}" != "0" ]; then
+  echo "=== study_area_run INCOMPLETE ==="
+  echo "  At least one host did not account for its whole bucket; only the"
+  echo "  WSGs it reported were consolidated. Artifacts above are valid for"
+  echo "  those WSGs. Re-run the missing ones before trusting the compare."
+  exit 1
+fi
 echo "=== study_area_run done ==="
