@@ -52,3 +52,14 @@ places and marked Phases 1-2 done. Follow-up #247 filed
 **Not done, deliberately:** `/code-check` was run once over the whole branch
 diff rather than per commit — recorded here rather than ticking a per-commit
 box that did not happen.
+
+### code-check — 5 rounds, converged
+
+Rounds 1-4 each found a blocker inside the previous round's fix; round 5 was
+clean, verified by restore-the-bug on each round-4 change. 14 real issues
+total, all fixed. Full table and the mechanism analysis in findings.md.
+
+The recurring cause was fixing one instance of a class without sweeping the
+diff for the rest — `grep` exiting 1 under `set -euo pipefail` aborted three
+different code paths across three rounds. Ended by replacing the remembered
+form with `csv_lines()` / `csv_count()`, which cannot be got wrong.

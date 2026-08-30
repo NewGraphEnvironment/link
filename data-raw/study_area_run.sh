@@ -592,9 +592,14 @@ done
 # computed on both and consolidate is last-writer-wins. Harmless when focal
 # sets are drainage-independent (Peace/Fraser/Skeena are distinct roots), but
 # surface an accidental overlap so it's visible rather than silent.
+# sed, not `grep -v '^$'`: grep exits 1 when it selects nothing, which under
+# `set -euo pipefail` aborts a plain assignment. Both instances here are
+# provably unreachable today (study_area_wsgs.R stop()s on an empty resolve,
+# so a bucket cannot be blank), but the unsafe form has already caused two
+# real aborts in this script and is exactly what gets copied next.
 DUP=$( { echo "$DISP_BUCKET" | tr ',' '\n'
   for WS in "${CY_WS_ARR[@]}"; do echo "${CY_BUCKET[$WS]}" | tr ',' '\n'; done
-} | grep -v '^$' | sort | uniq -d | paste -sd, - )
+} | sed '/^[[:space:]]*$/d' | sort | uniq -d | paste -sd, - )
 [ -z "$DUP" ] || echo "  WARN: buckets overlap on: $DUP (computed on multiple hosts; consolidate last-writer-wins)"
 
 # --- spin + prep cyphers ---
@@ -820,7 +825,7 @@ burn_cyphers || true
 # WSG set across all hosts.
 ALL_WSGS=$( { echo "$DISP_BUCKET" | tr ',' '\n'
   for WS in "${CY_WS_ARR[@]}"; do echo "${CY_BUCKET[$WS]}" | tr ',' '\n'; done
-} | grep -v '^$' | sort -u | paste -sd, - )
+} | sed '/^[[:space:]]*$/d' | sort -u | paste -sd, - )
 COMPARE_CSV="$LOG_DIR/${TS}_compare.csv"
 
 # --- coverage post-condition (link#246) ------------------------------------

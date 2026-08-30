@@ -216,3 +216,40 @@ unaffected and matches.
 
 Two consecutive `--write` runs are byte-identical, so the doc can be
 regenerated in CI or by a reviewer without churning the diff.
+
+## /code-check: five rounds, and what each found
+
+| round | findings | notable |
+|---|---|---|
+| 1 | 6 | TSV `na.strings` seam: the parity gate printed "host parity clean" with `fwapg_sha` unresolved on every host |
+| 2 | 3 | blocker **inside** round 1's fix — the new `~/.Renviron` guard was unreachable AND killed prep on every fresh droplet |
+| 3 | 2 (+1 adjacent) | the completeness gate aborted with `CYPHERS_UP=1`, so the trap burned cyphers and destroyed work that had succeeded |
+| 4 | 3 | round 3's two new guards were themselves unreachable — same `grep`-under-`set -e` class as round 2 |
+| 5 | **0 — clean** | verified by restoring each round-4 fix and across 16 helper inputs |
+
+**Rounds 1→4 each landed a blocker inside the previous round's fix.** The
+recurring mechanism was not carelessness about the *rule* — the rule was
+written down in the very comment above each defect — it was fixing one
+*instance* of a class without sweeping the diff for the others. `grep` exiting
+1 under `set -euo pipefail` caused three separate aborts in three separate
+places across three rounds.
+
+What ended it was replacing the remembered form with one that cannot be got
+wrong: `csv_lines()` / `csv_count()`, built on `sed` (exits 0 having deleted
+every line) rather than `grep -v '^$'` (exits 1). The two remaining
+`grep -v '^$'` instances were swept even though both are provably unreachable
+today, because the unsafe form is what gets copied next.
+
+**One bug was caught by reading a probe's own output rather than by review:**
+`printf '%s'` emits no trailing newline, so `wc -l` counted separators and
+`csv_count "MORR,BULK"` returned 1. A host that completed its whole bucket
+would have been reported incomplete. The test printed `job1 expected=1` for a
+two-element bucket; the number was the tell.
+
+**A backstop that did not back anything up.** Round 3's fix rested on the
+coverage post-condition catching any gap. Round 4 showed it could not: it
+asserts rows *exist*, not that they are *from this run*, and since the persist
+accumulates and consolidate's DELETE is bucket-scoped, an excluded WSG keeps
+its previous run's rows and passes. `RUN_INCOMPLETE` now carries the failure to
+a non-zero exit at end-of-script — after the artifacts are written, so the
+operator gets both the output and an honest status.

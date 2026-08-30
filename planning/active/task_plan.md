@@ -75,7 +75,7 @@ separate session driven by the merged, hardened script.
 
 ## Validation
 
-- [ ] Tests pass
-- [ ] `/code-check` clean on each commit
-- [ ] PWF checkboxes match landed work
+- [x] Tests pass (FAIL 0 | PASS 1603; R CMD check 0 errors)
+- [x] `/code-check` — 5 rounds over the branch diff (not per commit; see progress.md). Round 5 clean.
+- [x] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
