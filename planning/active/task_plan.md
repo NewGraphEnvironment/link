@@ -12,22 +12,22 @@ separate session driven by the merged, hardened script.
 
 ## Phase 1 — make fresh a real dependency
 
-- [ ] `DESCRIPTION`: move `fresh (>= 0.33.0)` Suggests → Imports (keep the
+- [x] `DESCRIPTION`: move `fresh (>= 0.33.0)` Suggests → Imports (keep the
       `Remotes: NewGraphEnvironment/fresh@v0.33.0` pin)
-- [ ] `R/lnk_preflight_fresh.R` — exported `lnk_preflight_fresh()`, internal
+- [x] `R/lnk_preflight_fresh.R` — exported `lnk_preflight_fresh()`, internal
       `.lnk_fresh_required()` (curated symbol list) and `.lnk_fresh_floor()`
       (parses the floor out of link's own DESCRIPTION, single-sourced)
-- [ ] `tests/testthat/test-lnk_preflight_fresh.R` — both known answers
-- [ ] `cypher_prep.sh`: `CYPHER_PREP_FRESH_REF` override + export assertion
+- [x] `tests/testthat/test-lnk_preflight_fresh.R` — both known answers
+- [x] `cypher_prep.sh`: `CYPHER_PREP_FRESH_REF` override + export assertion
       replacing the assert-nothing echo at line 66, using the file's own
       tempfile + `if !` idiom (never `$( )`, which discards exit status)
-- [ ] `cypher_prep.sh`: `CYPHER_PREP_STAGE=install|all` so `--auto-install`
+- [x] `cypher_prep.sh`: `CYPHER_PREP_STAGE=install|all` so `--auto-install`
       costs ~3 min not ~20
-- [ ] `cypher_prep.sh`: write `~/.Renviron` with the cypher's **own** observed
+- [x] `cypher_prep.sh`: write `~/.Renviron` with the cypher's **own** observed
       `LINK_GIT_SHA` / `LINK_GIT_DIRTY` / `FRESH_GIT_SHA`
-- [ ] `cypher_prep.sh`: header rewrite (the baked-fresh assumption is what
+- [x] `cypher_prep.sh`: header rewrite (the baked-fresh assumption is what
       broke) + fix stale `dispatch_provincial.sh` ref at line 41
-- [ ] **Sentinel fix** — `study_area_run.sh:203` and `wsgs_run_pipeline.sh:267`
+- [x] **Sentinel fix** — `study_area_run.sh:203` and `wsgs_run_pipeline.sh:267`
       grep `=== READY`, not `snapshot_bcfp.sh: complete`
 
 ## Phase 2 — pre-flight gates in `study_area_run.sh`

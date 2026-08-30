@@ -199,8 +199,24 @@ if [ "$N_CY" -gt 0 ]; then
         && ssh "cypher@$IP" "CYPHER_PREP_BRANCH='$LINK_BRANCH' bash /tmp/cypher_prep.sh" ) > "$LOG_DIR/${TS}_prep_$WS.log" 2>&1 &
   done
   wait
+  # Grep the ANCHORED "=== READY" (cypher_prep.sh's last line), not
+  # "snapshot_bcfp.sh: complete" (link#246). The old sentinel was wrong in
+  # both directions:
+  #
+  #   fail-toward-PASS — snapshot_bcfp.sh prints "complete." and
+  #   cypher_prep.sh's `tail -5` copies it into this log BEFORE
+  #   lnk_persist_init runs. A persist_init FATAL therefore exits 1 with the
+  #   sentinel already logged, this grep succeeds, and WSGs run against a
+  #   half-prepped cypher.
+  #
+  #   fail-toward-stop — the snapshot's skip-if-current path prints
+  #   "snapshot_bcfp: ... skipping." (no ".sh") and exits 0 without ever
+  #   emitting the sentinel, so a legitimately-skipped load read as FATAL.
+  #
+  # -x so "=== READY (install stage only; ...)" cannot satisfy a full-prep
+  # check. Only a complete prep prints the bare line.
   for WS in "${CY_WS_ARR[@]}"; do
-    grep -q "snapshot_bcfp.sh: complete" "$LOG_DIR/${TS}_prep_$WS.log" 2>/dev/null \
+    grep -qx "=== READY" "$LOG_DIR/${TS}_prep_$WS.log" 2>/dev/null \
       || { echo "FATAL: cypher[$WS] prep failed; see $LOG_DIR/${TS}_prep_$WS.log"; exit 1; }
   done
   echo "  ✓ cyphers prepped"

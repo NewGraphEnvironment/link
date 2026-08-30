@@ -127,3 +127,35 @@ Tables are selected solely by having a `watershed_group_code` column
 | Error | Resolution |
 |-------|------------|
 | | |
+
+## Sentinel gate — both known answers, measured
+
+Four fixtures, old grep vs new anchored grep:
+
+| fixture | old `grep -q "snapshot_bcfp.sh: complete"` | new `grep -qx "=== READY"` |
+|---|---|---|
+| snapshot completed, **persist_init FATAL** | **PASS** (the bug) | FATAL |
+| full prep succeeded | PASS | PASS |
+| `CYPHER_PREP_STAGE=install` partial prep | FATAL | FATAL |
+| snapshot legitimately **skipped**, prep OK | FATAL (false alarm) | PASS |
+
+Both defects reproduced and both fixed. The `-x` anchor is what stops the
+install-stage sentinel satisfying a full-prep check.
+
+## fresh symbol list cross-validated by two independent methods
+
+A source scan of `R/` (comments stripped) and a walk of link's own parsed
+namespace both return the same 12 `fresh::` call sites. The namespace walker
+is what ships, because it works for an installed package where `R/` does not
+exist — a source scan would find nothing there and report a clean drift check.
+
+Symbols mentioned in roxygen/comments but never called: `frs_habitat`,
+`frs_aggregate`, `frs_cluster`, `frs_db_conn`, `frs_edge_types`,
+`frs_point_snap_knn`, `.frs_access_label_filter`, `.frs_connected_waterbody`,
+`extdata`. Notably **`frs_point_snap_knn` is not exported by fresh 0.33.0** —
+adding it to the required list from a naive grep would have broken the check on
+every host for a reason unrelated to fresh.
+
+Drift guard verified by restoring the bug: dropping `frs_wsg_outlets` from
+`.lnk_fresh_required()` fails `test-lnk_preflight_fresh.R:78`, with the patch
+proven to have taken before the result was believed.

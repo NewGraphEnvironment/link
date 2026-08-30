@@ -263,8 +263,13 @@ if [ "$N_CY" -gt 0 ]; then
       ssh "cypher@$IP" "bash /tmp/cypher_prep.sh" ) > "$LOG_DIR/${TS}_prep_$WS.log" 2>&1 &
   done
   wait
+  # Anchored "=== READY", not "snapshot_bcfp.sh: complete" — the old
+  # sentinel is emitted before lnk_persist_init runs, so a persist_init
+  # FATAL passed this check and the run continued against a half-prepped
+  # cypher. Full rationale at the sibling site in study_area_run.sh
+  # (link#246).
   for WS in "${CY_WS_ARR[@]}"; do
-    if ! grep -q "snapshot_bcfp.sh: complete" "$LOG_DIR/${TS}_prep_$WS.log" 2>/dev/null; then
+    if ! grep -qx "=== READY" "$LOG_DIR/${TS}_prep_$WS.log" 2>/dev/null; then
       echo "FATAL: cypher[$WS] prep failed; see $LOG_DIR/${TS}_prep_$WS.log"
       exit 1
     fi
