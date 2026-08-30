@@ -209,9 +209,20 @@ burn_cyphers() {
     n=$(cd "$CYPHER_TF" && TF_WORKSPACE="$WS" tofu state list 2>/dev/null | wc -l | tr -d ' ') || n="?"
     echo "  cy[$WS]: $n tofu resources (expect 0)"; [ "$n" = "0" ] || clean=0
   done
-  if doctl compute droplet list --no-header 2>/dev/null | grep -qi cypher; then
-    echo "  ✗ doctl still shows cypher droplets"; clean=0
-  else echo "  ✓ doctl: no cypher droplets"; fi
+  # Three outcomes, not two. The old form piped doctl into grep, so a doctl
+  # failure produced no output, grep found no match, and a leaked droplet
+  # billing indefinitely was reported as "✓ no cypher droplets". Capture
+  # first, test the exit status, then test the value (link#246).
+  local dl
+  if dl=$(doctl compute droplet list --no-header 2>/dev/null); then
+    if printf '%s' "$dl" | grep -qi cypher; then
+      echo "  ✗ doctl still shows cypher droplets"; clean=0
+    else
+      echo "  ✓ doctl: no cypher droplets"
+    fi
+  else
+    echo "  ✗ could not query doctl — droplet state UNKNOWN, check manually"; clean=0
+  fi
   [ "$clean" = "1" ] && echo "  ✓ burn clean" || echo "  ✗ BURN INCOMPLETE — investigate"
   CYPHERS_UP=0
   return $rc
@@ -686,39 +697,57 @@ for WS in "${CY_WS_ARR[@]}"; do
 done
 echo "  ✓ host runs finished (per-WSG soft-fail; gaps surface in compare)"
 
-# --- completeness count, per host, BEFORE consolidate (link#246) -----------
+# --- completeness accounting, per host, BEFORE consolidate (link#246) ------
 # The per-WSG soft-fail above is deliberate, but it means "0 of 28 succeeded"
 # and "28 of 28 succeeded" produce the same exit status. That is exactly the
 # 2026-05 failure: every WSG on every cypher errored, the hosts exited 0, and
 # nothing said so until the compare.
 #
-# Counted before consolidate because consolidate DELETEs the destination
-# bucket before it COPYs — so a host that lost its whole bucket does not
-# merely fail to add rows, it REMOVES the rows already there and reports ok.
-check_bucket_complete() {   # $1 = label, $2 = logfile, $3 = expected count
-  local done_n warn_n
-  done_n=$(grep -c '^\[wsg_run_one\] .* \(done\|SKIP\)' "$2" 2>/dev/null) || done_n=0
+# It must NOT abort here, though. An abort at this point runs with
+# CYPHERS_UP=1, so the EXIT trap burns the cyphers and destroys the WSGs that
+# *did* succeed — one bad WSG on one host throwing away the whole paid run,
+# which is the exact accident the soft-fail comment above exists to prevent.
+#
+# Instead, narrow each host's consolidate bucket to the WSGs it actually
+# reported. That also removes the reason the abort was here: schema_consolidate
+# DELETEs its bucket before COPYing, and a bucket containing only WSGs that are
+# about to be re-COPYed cannot delete anything it does not replace. The gap
+# then surfaces at the coverage post-condition after the burn, by which point
+# the successful work is safely on the dispatcher.
+bucket_done() {   # $1 = logfile; prints the WSGs the host reported, one per line
+  # Matches the WSG code, not the surrounding prose, so a reworded cat() in
+  # wsg_run_one.R degrades to "this host reported nothing" — which narrows the
+  # bucket to empty and is handled loudly below — rather than to a wrong set.
+  sed -nE 's/^\[wsg_run_one\] ([A-Z]{4}) .*(done|SKIP).*/\1/p' "$1" 2>/dev/null \
+    | sort -u
+}
+
+report_completeness() {   # $1 = label, $2 = logfile, $3 = expected csv
+  local exp_n got_n warn_n
+  exp_n=$(printf '%s' "$3" | tr ',' '\n' | grep -c '[^[:space:]]') || exp_n=0
+  got_n=$(bucket_done "$2" | grep -c '[^[:space:]]') || got_n=0
   warn_n=$(grep -c '^\[WARN\] ' "$2" 2>/dev/null) || warn_n=0
-  if [ "$done_n" = "$3" ]; then
-    echo "  ✓ $1: $done_n/$3 WSGs accounted for"
+  if [ "$got_n" = "$exp_n" ]; then
+    echo "  ✓ $1: $got_n/$exp_n WSGs accounted for"
     return 0
   fi
-  echo "  ✗ $1: only $done_n/$3 WSGs accounted for ($warn_n [WARN]) — see $2"
+  echo "  ✗ $1: only $got_n/$exp_n WSGs accounted for ($warn_n [WARN]) — see $2"
   return 1
 }
 
+echo "=== per-host completeness ==="
 complete_fail=0
-n_disp=$(echo "$DISP_BUCKET" | tr ',' '\n' | grep -c '[^[:space:]]') || n_disp=0
-check_bucket_complete "dispatcher" "$LOG_DIR/${TS}_run_local.log" "$n_disp" || complete_fail=1
+report_completeness "dispatcher" "$LOG_DIR/${TS}_run_local.log" "$DISP_BUCKET" \
+  || complete_fail=1
+declare -A CY_BUCKET_DONE
 for WS in "${CY_WS_ARR[@]}"; do
-  n_ws=$(echo "${CY_BUCKET[$WS]}" | tr ',' '\n' | grep -c '[^[:space:]]') || n_ws=0
-  check_bucket_complete "cy[$WS]" "$LOG_DIR/${TS}_run_$WS.log" "$n_ws" || complete_fail=1
+  report_completeness "cy[$WS]" "$LOG_DIR/${TS}_run_$WS.log" "${CY_BUCKET[$WS]}" \
+    || complete_fail=1
+  CY_BUCKET_DONE[$WS]=$(bucket_done "$LOG_DIR/${TS}_run_$WS.log" | paste -sd, -)
 done
 [ "$complete_fail" = "0" ] || {
-  echo "FATAL: at least one host did not account for its whole bucket."
-  echo "  Refusing to consolidate — consolidate DELETEs before it COPYs, so"
-  echo "  proceeding would delete existing rows for the missing WSGs."
-  exit 1
+  echo "  WARN: consolidating only the WSGs each host reported; the gap is"
+  echo "        reported by the coverage check after the cyphers are burned."
 }
 
 # --- consolidate cyphers -> dispatcher ---
@@ -726,15 +755,33 @@ if [ "$N_CY" -gt 0 ]; then
   echo "=== consolidate cyphers -> dispatcher ($SCHEMA) ==="
   SRC_R="list("
   first=1
+  n_src=0
   for WS in "${CY_WS_ARR[@]}"; do
     IP="${CY_IP[$WS]}"
-    bucket_r=$(echo "${CY_BUCKET[$WS]}" | tr ',' '\n' | grep -v '^$' | sed "s/.*/'&'/" | paste -sd, -)
+    # The bucket is what the host REPORTED, not what it was asked to do.
+    # schema_consolidate DELETEs its bucket before COPYing, so a bucket
+    # holding only WSGs that are about to be re-COPYed cannot delete
+    # anything it does not replace. A host that reported nothing is skipped
+    # entirely rather than handed an empty bucket — an empty one would make
+    # schema_consolidate stop() and take the other hosts' work with it.
+    bucket_r=$(printf '%s' "${CY_BUCKET_DONE[$WS]}" | tr ',' '\n' | grep -v '^$' | sed "s/.*/'&'/" | paste -sd, -)
+    if [ -z "$bucket_r" ]; then
+      echo "  WARN: cy[$WS] reported no WSGs — skipping it in consolidate"
+      continue
+    fi
     [ "$first" = "1" ] || SRC_R="$SRC_R, "
     SRC_R="$SRC_R list(host = 'cypher@$IP', via = 'docker', bucket = c($bucket_r))"
     first=0
+    n_src=$((n_src + 1))
   done
   SRC_R="$SRC_R)"
-  ( cd "$REPO_ROOT" && Rscript -e "
+  if [ "$n_src" -eq 0 ]; then
+    # Zero sources gets its own branch: `list()` would make
+    # schema_consolidate a no-op that returns cleanly, which reads as
+    # "consolidated" when nothing was.
+    echo "  ✗ no cypher reported any WSG — nothing to consolidate"
+  else
+    ( cd "$REPO_ROOT" && Rscript -e "
 suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
 source('data-raw/schema_consolidate.R')
 res <- schema_consolidate(schema = '$SCHEMA', sources = $SRC_R, backup = TRUE)
@@ -742,8 +789,9 @@ print(res)
 ok <- all(vapply(res\$sources, function(s) isTRUE(s\$ok), logical(1)))
 quit(status = if (ok) 0 else 1)
 " ) > "$LOG_DIR/${TS}_consolidate.log" 2>&1 \
-    || { echo "  ✗ consolidate failed; see $LOG_DIR/${TS}_consolidate.log"; exit 1; }
-  echo "  ✓ consolidated (see $LOG_DIR/${TS}_consolidate.log)"
+      || { echo "  ✗ consolidate failed; see $LOG_DIR/${TS}_consolidate.log"; exit 1; }
+    echo "  ✓ consolidated $n_src/$N_CY cypher(s) (see $LOG_DIR/${TS}_consolidate.log)"
+  fi
 fi
 
 # --- burn cyphers now (work is consolidated; minimise idle) ---

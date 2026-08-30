@@ -155,6 +155,12 @@ FRESH_SHA=$(Rscript -e \
 # the image may keep unrelated settings here.
 RENV="$HOME/.Renviron"
 touch "$RENV"
+# `>` creates the temp at the ambient umask, so a 0600 ~/.Renviron would come
+# back 0644 after the mv — and this stack keeps PG_PASSWORD_SHARE in that
+# file. The intermediate is world-readable at a predictable path too, so the
+# umask has to cover the redirect itself rather than being a chmod after it.
+RENV_UMASK=$(umask)
+umask 077
 # grep exits 1 for "no lines matched" and >=2 for a real read error. `|| true`
 # would collapse those, and since `>` truncates the target before grep runs,
 # an error would replace ~/.Renviron with the empty file — destroying exactly
@@ -177,6 +183,8 @@ mv "$RENV.tmp" "$RENV"
   printf 'LINK_GIT_DIRTY=%s\n' "$LINK_DIRTY"
   [ -n "$FRESH_SHA" ] && printf 'FRESH_GIT_SHA=%s\n' "$FRESH_SHA"
 } >> "$RENV"
+chmod 600 "$RENV"
+umask "$RENV_UMASK"
 echo "=== provenance: link_sha=${LINK_SHA:0:12} dirty=$LINK_DIRTY fresh_sha=${FRESH_SHA:0:12}"
 
 # Assert the installed fresh actually exports what the pipeline calls.
