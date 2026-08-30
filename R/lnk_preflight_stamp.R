@@ -57,8 +57,13 @@ lnk_preflight_stamp <- function(cfg = lnk_config("bcfishpass"), repo = ".") {
     r_version     = na(getRversion()))
 }
 
-# The field order the shell's STAMP_COLS must match. Exposed as a function
-# so the contract has exactly one definition and a test can assert it.
+# The field order of a stamp line, as one definition. `lnk_preflight_stamp()`
+# builds its output in this order and `study_area_run.sh`'s judge_stamps()
+# calls this function for `col.names` — so there is no second list anywhere
+# and the shell cannot drift from the R side. It briefly was duplicated as a
+# `STAMP_COLS` string in the shell; dropping a field from the stamp then made
+# read.delim silently left-shift the remaining columns, and no test written
+# in R could have caught it, because both sides of the comparison were R.
 .lnk_preflight_stamp_cols <- function() {
   c("host", "link_version", "link_sha", "fresh_version", "fresh_sha",
     "repo_sha", "repo_dirty", "config_hash", "fwapg_sha", "r_version")

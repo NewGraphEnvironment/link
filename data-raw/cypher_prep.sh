@@ -159,8 +159,13 @@ touch "$RENV"
 # would collapse those, and since `>` truncates the target before grep runs,
 # an error would replace ~/.Renviron with the empty file — destroying exactly
 # the unrelated settings this filter exists to preserve. Branch on the status.
-grep -vE '^(LINK_GIT_SHA|LINK_GIT_DIRTY|FRESH_GIT_SHA)=' "$RENV" > "$RENV.tmp"
-RC=$?
+# `|| RC=$?` is required, not decorative: under `set -e` a bare grep aborts
+# the script the moment it selects no lines (exit 1), which would make the
+# check below unreachable AND kill prep in the most ordinary case there is —
+# an empty ~/.Renviron on a fresh droplet, or a re-prep of a host whose file
+# holds only these three keys.
+RC=0
+grep -vE '^(LINK_GIT_SHA|LINK_GIT_DIRTY|FRESH_GIT_SHA)=' "$RENV" > "$RENV.tmp" || RC=$?
 if [ "$RC" -gt 1 ]; then
   echo "FATAL: could not read $RENV (grep exit $RC); refusing to overwrite it" >&2
   rm -f "$RENV.tmp"

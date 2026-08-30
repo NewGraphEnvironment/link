@@ -275,10 +275,16 @@ quit(status = if (isTRUE(res$ok)) 0L else 1L)
   # silently runs older driver scripts against a newer dispatcher.
   if [ "$N_CY" -gt 0 ]; then
     # Fetch FIRST: @{upstream} is a LOCAL ref, so without this the check
-    # compares against a stale copy and is a false green.
-    git -C "$REPO_ROOT" fetch --quiet origin "$LINK_BRANCH" 2>/dev/null || true
-
-    if ! git -C "$REPO_ROOT" rev-parse --abbrev-ref '@{upstream}' >/dev/null 2>&1; then
+    # compares against a stale copy and is a false green. And a FAILED fetch
+    # leaves exactly that stale ref, so it cannot be waved through with
+    # `|| true` — that would print "origin/$BRANCH is at HEAD" on the
+    # strength of a comparison against a ref that was never updated, and the
+    # run would spin droplets before cypher_prep's own
+    # `git reset --hard origin/$BRANCH` discovered the problem.
+    if ! git -C "$REPO_ROOT" fetch --quiet origin "$LINK_BRANCH" 2>/dev/null; then
+      echo "  ✗ could not fetch origin/$LINK_BRANCH — cannot verify the cyphers' ref"
+      fail=1
+    elif ! git -C "$REPO_ROOT" rev-parse --abbrev-ref '@{upstream}' >/dev/null 2>&1; then
       echo "  ✗ branch '$LINK_BRANCH' has no upstream — git push -u origin $LINK_BRANCH"
       fail=1
     else
@@ -423,8 +429,6 @@ quit(status = if (isTRUE(res$ok)) 0L else 1L)
 # even though it is not a "fail before SPEND" one. A failure here exits 1,
 # which trips the EXIT trap and burns the cyphers, bounding the loss at
 # prep time rather than a whole run.
-STAMP_COLS="host,link_version,link_sha,fresh_version,fresh_sha,repo_sha,repo_dirty,config_hash,fwapg_sha,r_version"
-
 collect_stamps() {   # $1 = destination tsv
   local tsv="$1" out ws
   : > "$tsv"
@@ -451,18 +455,26 @@ judge_stamps() {     # $1 = tsv
   (cd "$REPO_ROOT" && LNK_LOAD=loadall Rscript -e '
 a <- commandArgs(TRUE)
 suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
-# na.strings = character(0) is load-bearing. lnk_preflight_stamp() emits the
-# literal string "NA" for anything it could not resolve; read.delim defaults
-# to na.strings = "NA" and would turn that sentinel back into a real NA,
-# which the unresolved check would then not match — so a run with fwapg_sha
-# unresolved on every host reported "host parity clean". (The R side also
-# treats NA as unresolved now; this keeps the data faithful regardless.)
+# Column names come from .lnk_preflight_stamp_cols(), the SAME function
+# lnk_preflight_stamp() builds its output from — deliberately not a second
+# list in this file. A shell-side copy would be an invariant enforced only
+# by two lists happening to agree: drop a field from the R stamp and
+# read.delim silently left-shifts the rest, padding the last column, so a
+# cypher on a different commit passes as "parity OK". No test written in R
+# can catch that, because both sides of the comparison would be R.
+#
+# na.strings = character(0) is load-bearing too. lnk_preflight_stamp() emits
+# the literal string "NA" for anything it could not resolve; read.delim
+# defaults to na.strings = "NA" and would turn that sentinel back into a
+# real NA, which the unresolved check would not match — so a run with
+# fwapg_sha unresolved on every host reported "host parity clean". (The R
+# side treats NA as unresolved now as well; this keeps the data faithful.)
 s <- utils::read.delim(a[1], header = FALSE, colClasses = "character",
                        na.strings = character(0),
-                       col.names = strsplit(a[2], ",")[[1]])
-res <- lnk_preflight_parity(s, n_expected = as.integer(a[3]))
+                       col.names = .lnk_preflight_stamp_cols())
+res <- lnk_preflight_parity(s, n_expected = as.integer(a[2]))
 quit(status = if (isTRUE(res$ok)) 0L else 1L)
-' "$1" "$STAMP_COLS" "$((N_CY + 1))")
+' "$1" "$((N_CY + 1))")
 }
 
 preflight_hosts() {

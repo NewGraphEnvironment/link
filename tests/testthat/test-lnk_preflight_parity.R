@@ -97,8 +97,12 @@ test_that("a single-host run with n_expected = 1 passes", {
 
 
 test_that("lnk_preflight_stamp returns the documented field order", {
-  # This is what keeps the shell's STAMP_COLS and the R field order from
-  # silently diverging - the two-place contract this design accepts.
+  # An honest scope note: this asserts the stamp matches its own declared
+  # contract. It does NOT prove the shell agrees, and an earlier version of
+  # this comment claimed it did while comparing R against R. The shell now
+  # calls .lnk_preflight_stamp_cols() directly for col.names, so there is no
+  # second list to diverge from - the duplication was removed rather than
+  # tested around.
   s <- lnk_preflight_stamp(lnk_config("bcfishpass"))
   expect_identical(names(s), .lnk_preflight_stamp_cols())
   expect_true(all(nzchar(s)))          # never empty; the literal "NA" instead
