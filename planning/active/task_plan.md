@@ -65,12 +65,13 @@ separate session driven by the merged, hardened script.
 
 ## Phase 4 — testing, docs, release
 
-- [ ] Both-known-answers run for every gate, recorded
-- [ ] `devtools::test()`, `devtools::document()`, `lintr::lint_package()`
-- [ ] RUNBOOK section; `NEWS.md`; version bump as the final commit
-- [ ] Edit issue #246 body (three corrections — see findings.md)
-- [ ] File follow-ups: `fresh.snapshot_stamp`, doctl/tofu account-UUID match,
-      `fresh::` call-site lint
+- [x] Both-known-answers run for every gate, recorded
+- [x] `devtools::test()`, `devtools::document()`, `lintr::lint_package()`
+- [x] RUNBOOK section; `NEWS.md`; version bump as the final commit
+- [x] Edit issue #246 body (three corrections — see findings.md)
+- [x] File follow-up #247 (`fresh.snapshot_stamp`). The `fresh::` call-site
+      lint was not deferred after all — it shipped as `.lnk_fresh_callsites()`
+      plus its drift test. doctl/tofu account-UUID match drafted, not filed.
 
 ## Validation
 
