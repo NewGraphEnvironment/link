@@ -58,10 +58,10 @@ separate session driven by the merged, hardened script.
 
 ## Phase 3 — bucketing derivation
 
-- [ ] `data-raw/study_area_buckets.R` — union-find over `frs_wsg_drainage()`
+- [x] `data-raw/study_area_buckets.R` — union-find over `frs_wsg_drainage()`
       closures, LPT-pack components into N hosts, emit `--focal=` strings
-- [ ] Rewrite `research/study_areas.md` from the script's own output
-- [ ] Verify against the issue's asserted 22 components / 119 modelable
+- [x] Rewrite `research/study_areas.md` from the script's own output
+- [x] Verify against the issue's asserted 22 components / 119 modelable
 
 ## Phase 4 — testing, docs, release
 

@@ -187,3 +187,32 @@ That is the same conflation the gates exist to prevent, one level up. Fixed by
 loading inside the expression and giving "could not run the check" its own exit
 code and its own message, so nobody is sent to debug fresh when the harness is
 what broke.
+
+## Bucketing derivation reproduces the issue's numbers
+
+`data-raw/study_area_buckets.R` (union-find over per-WSG
+`frs_wsg_drainage()` closures, then greedy LPT over components):
+
+| claim | issue | derived |
+|---|---|---|
+| focal WSGs | 96 | 96 |
+| raw closure | "close to 125" | **125** |
+| modelable | 119 | **119** |
+| drainage-independent components | 22 | **22** |
+| dropped by species presence | LNRS, LEUT, LFRT, MFRT, UFRT, LKEC | **exact match** |
+| dispatcher bucket | 39 | **39** |
+| overlap between hosts | zero | **zero** (asserted, not assumed) |
+
+Liard confirmed: LIAR, LMUS, ULRD, DEAR, FROG, BEAV and DUNE are all absent
+from the focal set and all present in the closure — the mechanism behind the
+93 → 119 growth.
+
+**One deliberate difference.** The cypher split is 27/26/27 where the issue
+says 28/24/28. The *components* are identical; only the packing differs,
+because this weights by stream-segment count from `fwa_stream_networks_sp`
+rather than by WSG count. A one-WSG component can outweigh a three-WSG one,
+so segment count is the better proxy for work. The dispatcher figure (39) is
+unaffected and matches.
+
+Two consecutive `--write` runs are byte-identical, so the doc can be
+regenerated in CI or by a reviewer without churning the diff.
