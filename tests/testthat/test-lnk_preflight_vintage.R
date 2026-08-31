@@ -96,3 +96,58 @@ test_that("lnk_preflight_vintage validates its arguments", {
   expect_error(lnk_preflight_vintage(vintage = x, tables = character(0)))
   expect_error(lnk_preflight_vintage(vintage = data.frame(a = 1)))
 })
+
+
+# --- absent vs unknown (link#246 pilot, 2026-08-31) -------------------------
+# The pilot reported `never loaded / absent: bcfishobs.observations` for a
+# table that existed and was healthy — a freshly restored database has rows
+# but no collected statistics. Absence and ignorance are different failures.
+
+test_that("a table that does not exist is reported as absent, not unknown", {
+  x <- v(fresh_ages())
+  x$table_exists <- TRUE
+  x$table_exists[2] <- FALSE
+  res <- lnk_preflight_vintage(vintage = x, now = now, quiet = TRUE)
+  expect_false(res$ok)
+  expect_identical(res$absent, all_four[2])
+  expect_length(res$unknown, 0L)
+  expect_match(res$message, "table does not exist", fixed = TRUE)
+})
+
+test_that("a table that exists with no timestamp is unknown, not absent", {
+  x <- v(fresh_ages())
+  x$table_exists <- TRUE
+  x$last_analyze[3] <- NA
+  res <- lnk_preflight_vintage(vintage = x, now = now, quiet = TRUE)
+  expect_false(res$ok)
+  expect_identical(res$unknown, all_four[3])
+  expect_length(res$absent, 0L)
+  expect_match(res$message, "exists but no timestamp", fixed = TRUE)
+})
+
+test_that("a table missing from the frame entirely is absent", {
+  x <- v(fresh_ages()[-1])
+  x$table_exists <- TRUE
+  res <- lnk_preflight_vintage(vintage = x, now = now, quiet = TRUE)
+  expect_identical(res$absent, all_four[1])
+})
+
+test_that("absent takes precedence over unknown for the same table", {
+  # A non-existent table also has no timestamp; it must be counted once, as
+  # absent, or the operator is told two contradictory things about it.
+  x <- v(fresh_ages())
+  x$table_exists <- TRUE
+  x$table_exists[1] <- FALSE
+  x$last_analyze[1] <- NA
+  res <- lnk_preflight_vintage(vintage = x, now = now, quiet = TRUE)
+  expect_identical(res$absent, all_four[1])
+  expect_length(res$unknown, 0L)
+  expect_identical(res$missing, all_four[1])
+})
+
+test_that("a frame without table_exists still works (rows taken to exist)", {
+  x <- v(fresh_ages())
+  expect_false("table_exists" %in% names(x))   # premise
+  expect_true(lnk_preflight_vintage(vintage = x, now = now,
+                                    max_age_days = 7, quiet = TRUE)$ok)
+})

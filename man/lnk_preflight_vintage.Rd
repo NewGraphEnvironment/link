@@ -24,15 +24,17 @@ snapshot-loaded set.}
 
 \item{now}{Reference time. Injectable so tests are not clock-dependent.}
 
-\item{vintage}{A data frame with \code{table_name} and \code{last_analyze}.
-Defaults to reading \code{conn}; pass directly to test, or to judge a
-stamp collected on another host.}
+\item{vintage}{A data frame with \code{table_name} and \code{last_analyze}, and
+optionally \code{table_exists}. Defaults to reading \code{conn}; pass directly to
+test, or to judge a stamp collected on another host. Rows in a frame
+without \code{table_exists} are taken to exist.}
 
 \item{quiet}{Suppress the human-readable report.}
 }
 \value{
-Invisibly, a list with \code{ok}, \code{vintage}, \code{stale}, \code{missing},
-\code{oldest_days} and \code{message}.
+Invisibly, a list with \code{ok}, \code{vintage}, \code{stale}, \code{absent},
+\code{unknown}, \code{missing} (the union of the last two, kept for callers that
+only care that something was wrong), \code{oldest_days} and \code{message}.
 }
 \description{
 \code{snapshot_bcfp.sh} loads four primitives from public sources into each
@@ -49,15 +51,23 @@ FWA. They are never \code{ANALYZE}d, so they carry no vintage at all and are
 not an axis this can measure — including them would mean every host
 failing forever on data that is not the staleness risk.
 
-\strong{Absence is not a pass.} A table missing from the result, and a table
-present with a NULL timestamp, both fail — in the same direction as a
-stale one. A query returning nothing must never read as "nothing is
-stale".
+\strong{Absence is not a pass}, but absence and ignorance are different
+failures and are reported as such. A table that does not exist is
+\code{absent}; one that exists but yields no usable timestamp is \code{unknown}.
+Both fail, in the same direction as a stale one — a query returning
+nothing must never read as "nothing is stale" — but they send an operator
+to different places. Conflating them cost a pilot run, which reported
+\verb{never loaded / absent} for a table that was present and healthy.
 
-\code{last_analyze} alone is unusable here: measured across all ten
-primitives it is NULL on every one, and only \code{last_autoanalyze} is
-populated. \code{GREATEST} of the two is the usable signal — in Postgres it
-ignores NULLs and is NULL only when every argument is.
+Two statistics quirks make this fiddlier than it looks. \code{last_analyze}
+alone is unusable: measured across all ten primitives it is NULL on every
+one and only \code{last_autoanalyze} is populated, so the query takes
+\code{GREATEST} of the pair (in Postgres that ignores NULLs and is NULL only
+when every argument is). And on a \strong{freshly restored} database neither is
+set — statistics are collected by (auto)analyze, so a table that was just
+loaded has rows and no stats at all. The query therefore falls back to the
+relation file's mtime, which exists for any real table. That fallback is
+why \code{unknown} should be unreachable in practice.
 }
 \examples{
 # Judge a vintage table without touching a database:

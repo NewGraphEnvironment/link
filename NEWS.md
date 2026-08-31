@@ -1,3 +1,15 @@
+# link 0.47.1
+
+Fixes two defects in the v0.47.0 pre-flight gates, both found by piloting them against a real cypher for the first time ([#246](https://github.com/NewGraphEnvironment/link/issues/246)). Both would have blocked the provincial run, and neither could have been caught by the tests as written.
+
+**The parity gate's dirty-tree check fired on every real run.** `preflight_hosts()` ran `lnk_preflight_parity()` with the default `forbid_dirty = TRUE`, but by the time it runs both hosts are dirty *by their own normal operation*: the dispatcher has written five run logs into the tracked `data-raw/logs/study_area_run/`, and `snapshot_bcfp.sh` has stamped `data-raw/logs/bcfp_baselines.csv` on each cypher. The check now runs only pre-spin in `preflight_local()`, which is the meaningful moment — `repo_sha` equality still proves both hosts are on the same commit, which is what parity actually asserts. It passed its tests only because the fixtures set `dirty = "FALSE"`: a fixture that could not reach the failure mode, which is the rule the same PR had just written into its own findings.
+
+**The vintage gate could not tell "absent" from "no statistics yet".** It reported `never loaded / absent: bcfishobs.observations` for a table that existed and was healthy. Statistics are collected by (auto)analyze, so on a **freshly restored** database — exactly what a cypher has after `snapshot_bcfp` — a table has rows and no stats at all, and `GREATEST(last_analyze, last_autoanalyze)` is NULL. The query now carries `table_exists` separately and falls back to the relation file's mtime, verified against a deliberately missing table (both `pg_relation_filepath` and `pg_stat_file` are strict, so absence yields NULL rather than an error). Absence and ignorance are now distinct states — `absent` and `unknown` — because both fail but they send an operator to different places.
+
+Both fixes keep the property that made the gates worth having: absence is still not a pass, a short result is still not agreement, and turning the dirty check off does not turn the gate off (tested — a `repo_sha` or `fresh_version` divergence still fails with `forbid_dirty = FALSE`).
+
+Also records what the pilots established, since it is what the next run depends on. `cypher_up` reports `ready` roughly **227 s before `cypher@` actually works**, because it polls for a marker baked into the snapshot image while `runcmd` — which copies root's SSH keys to the `cypher` user — is still running. link's prep now waits on a deadline for that specific user and fails loudly rather than falling through to `scp: Connection closed` (shipped in 0.47.0's line of work as [#251](https://github.com/NewGraphEnvironment/link/pull/251)); the root cause is fixed upstream in [NewGraphEnvironment/rtj#250](https://github.com/NewGraphEnvironment/rtj/pull/250).
+
 # link 0.47.0
 
 Closes the three gaps that would have made a provincial rerun silently skip most of its work ([#246](https://github.com/NewGraphEnvironment/link/issues/246)), and absorbs the sibling-host parity hook ([#183](https://github.com/NewGraphEnvironment/link/issues/183)).

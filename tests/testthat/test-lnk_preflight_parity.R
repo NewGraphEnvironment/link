@@ -170,3 +170,29 @@ test_that("a non-git host stamp fails parity rather than passing vacuously", {
   s <- rbind(row("m1"), row("cy-job1", repo_sha = "NA", repo_dirty = "NA"))
   expect_false(lnk_preflight_parity(s, n_expected = 2, quiet = TRUE)$ok)
 })
+
+
+test_that("forbid_dirty = FALSE lets a dirty-but-agreeing pair pass", {
+  # The post-prep parity check must pass this: by then BOTH hosts are dirty by
+  # their own normal operation — the dispatcher has written run logs into the
+  # tracked data-raw/logs/, and snapshot_bcfp.sh has stamped
+  # bcfp_baselines.csv on the cypher. With forbid_dirty left on (the default),
+  # the gate fired on every real run. Found by the link#246 pilot 2026-08-31;
+  # the original tests could not catch it because they set dirty = "FALSE".
+  s <- rbind(row("m1", repo_dirty = "TRUE"), row("cy-job1", repo_dirty = "TRUE"))
+  expect_false(lnk_preflight_parity(s, n_expected = 2, quiet = TRUE)$ok)
+  expect_true(lnk_preflight_parity(s, n_expected = 2, forbid_dirty = FALSE,
+                                   quiet = TRUE)$ok)
+})
+
+test_that("forbid_dirty = FALSE still catches a real divergence", {
+  # Turning the dirty check off must not turn the gate off.
+  s <- rbind(row("m1", repo_dirty = "TRUE"),
+             row("cy-job1", repo_dirty = "TRUE", repo_sha = "000000000000"))
+  expect_false(lnk_preflight_parity(s, n_expected = 2, forbid_dirty = FALSE,
+                                    quiet = TRUE)$ok)
+  s2 <- rbind(row("m1", repo_dirty = "TRUE"),
+              row("cy-job1", repo_dirty = "TRUE", fresh_version = "0.31.0"))
+  expect_false(lnk_preflight_parity(s2, n_expected = 2, forbid_dirty = FALSE,
+                                    quiet = TRUE)$ok)
+})

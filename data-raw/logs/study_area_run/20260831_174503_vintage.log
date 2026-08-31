@@ -1,0 +1,3 @@
+[preflight] primitive vintage (window 200 d) - FAILED
+  never loaded / absent: bcfishobs.observations
+  fix: bash data-raw/snapshot_bcfp.sh --with-bcfp-views --force
