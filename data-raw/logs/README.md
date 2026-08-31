@@ -1,55 +1,45 @@
-# `data-raw/logs/`
+# Run logs
 
-Run artifacts from pipeline drivers (`compare_bcfishpass_wsg.R`, `run_provincial_parity.R`, the trifecta scripts) plus operational outputs (pg_dumps, methodology-delta queries, regression logs).
+**These are retained deliberately as contemporaneous evidence of measurement
+runs, not accumulated by accident.** They are tracked in git, not gitignored,
+and should stay that way — see NewGraphEnvironment/soul#129.
 
-## Subdirectories
+Every number quoted in a `research/` run record, a NEWS entry or a PR body
+should be traceable to a file here.
 
-Per-run output is keyed by topic. Each subdir holds `<WSG>.rds` per-WSG rollup tibbles plus `<TS>_per_wsg_times.csv` host-tagged timing rows.
+## What is here
 
-| Subdir | Source script | Contents |
-|--------|---------------|----------|
-| `provincial_parity/` | `run_provincial_parity.R --config=bcfishpass` | bcfishpass-bundle rollups (link vs bcfp tunnel) |
-| `provincial_default/` | `run_provincial_parity.R --config=default` | default-bundle rollups |
-| `provincial_default_extrabreaks/` | `run_provincial_parity.R --config=default_extrabreaks` | orphan-class break-source experiment (v0.28.0) |
-| `methodology_delta/` | `query_schema_delta.R` | schema-vs-schema delta RDS snapshots |
-| `dumps_<schema>/` | `consolidate_schema.R` (manual) | pg_dump custom-format files for cross-host consolidation |
-| `baseline_pre_*/` | hand-archived | Pre-change baselines kept for regression diffs |
+| pattern | produced by | holds |
+|---|---|---|
+| `study_area_run/<TS>_up_<ws>.log` | `cypher_up.sh` via `study_area_run.sh` | droplet spin, tofu apply, cloud-init wait |
+| `study_area_run/<TS>_prep_<ws>.log` | `cypher_prep.sh` | git reset, package install, snapshot, persist_init |
+| `study_area_run/<TS>_stamps.tsv` | `host_stamp.R` | one provenance line per host — the parity gate's input |
+| `study_area_run/<TS>_vintage.log` | `host_vintage.R` | primitive freshness per host |
+| `study_area_run/<TS>_run_{local,<ws>}.log` | `wsg_run_one.R` | per-WSG modelling, `done in N min` |
+| `study_area_run/<TS>_consolidate.log` | `schema_consolidate.R` | cross-host COPY |
+| `study_area_run/<TS>_recompute.log` | `wsg_recompute_one.R` | post-consolidate access rebuild |
+| `study_area_run/<TS>_compare.{log,csv}` | `study_area_compare.R` | bcfishpass parity |
+| `study_area_run/<TS>_burn_<ws>.log` | `cypher_down.sh` | teardown + verification |
+| `bcfp_baselines.csv` | `snapshot_bcfp.sh` | which upstream bcfp build each host loaded |
+| `provincial_*/`, `methodology_delta/` | earlier orchestrators | historical runs |
 
-## Top-level files
+`<TS>` is UTC `YYYYMMDD_HHMMSS` and is shared by every file from one run, so a
+single run's artifacts sort together.
 
-### `bcfp_baselines.csv` — bcfp build inventory per run
+## Reading a run
 
-Records which `bcfishpass.*` schema rebuild each provincial run was compared against. Critical for paper trail because:
+Phase durations are not logged as such — reconstruct them from file mtimes,
+which is how the timings in `research/` were derived:
 
-- The tunnel's `bcfishpass.*` schema rebuilds **weekly Tuesdays ~20:00 PDT** via `smnorris/db_newgraph`'s scheduled GHA workflow.
-- Today's rollups in `provincial_*/` carry `bcfishpass_value` columns sourced from whichever build was live at the moment of comparison.
-- Without recording the build, tomorrow's same-config rerun produces shifts that look like methodology change but are actually upstream-rebuild change (`bcfishpass.streams_habitat_*` repopulated from new code / new input data).
-
-Columns:
-
-- `run_started_pdt` — local time the provincial dispatch fired
-- `run_label` — directory name where rollup RDS files landed
-- `link_schema` — persistent target schema for `lnk_pipeline_persist`
-- `bcfp_model_run_id` — primary key from `bcfishpass.log`
-- `bcfp_model_version` — `<tag>-<commits>-g<short-sha>` string
-- `bcfp_date_completed` — when Simon's rebuild finished
-- `notes` — anything else (orphan-branch experiments, partial reruns, etc.)
-
-How to query the current bcfp baseline (run before any provincial dispatch):
-
-```sql
--- localhost:63333 / dbname=bcfishpass / user=newgraph / password=PG_PASS_SHARE
-SELECT model_run_id, date_completed, model_version
-FROM bcfishpass.log
-ORDER BY model_run_id DESC LIMIT 1;
+```bash
+python3 -c "
+import glob,os,datetime
+fs=sorted(glob.glob('data-raw/logs/study_area_run/<TS>_*'),key=os.path.getmtime)
+t0=os.path.getmtime(fs[0])
+for f in fs: print('%6.1f min  %s' % ((os.path.getmtime(f)-t0)/60, os.path.basename(f)))"
 ```
 
-### Future automation
-
-The csv-sync rewrite ([link#117](https://github.com/NewGraphEnvironment/link/issues/117)) will append to this CSV at sync time, recording which bcfp build the bundle CSVs are now SHA-pinned to. That closes the loop: every comparison rollup has both the bcfp build AND the matching bundle CSV state on file.
-
-Until then, manually append a row at the start of each provincial run.
-
-## Naming convention for log files
-
-Run logs follow `<TS>_<topic>_<host>.txt` where `<TS>` is `YYYYMMDDHHMM`. See `data-raw/README.md` (parent) for the broader conventions.
+Per-WSG runtimes are better read from the run log itself
+(`grep 'done in' <TS>_run_*.log`) or, for any run after v0.45.0, from
+`<persist>.log` in Postgres, which records `date_start` / `date_end` per WSG
+alongside the software SHAs.

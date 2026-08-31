@@ -1,0 +1,114 @@
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
+NOTICE:  view "barriers_bt_unified" does not exist, skipping
+
+NOTICE:  view "barriers_bt_access" does not exist, skipping
+
+NOTICE:  view "barriers_ch_unified" does not exist, skipping
+
+NOTICE:  view "barriers_ch_access" does not exist, skipping
+
+NOTICE:  view "barriers_cm_unified" does not exist, skipping
+
+NOTICE:  view "barriers_cm_access" does not exist, skipping
+
+NOTICE:  view "barriers_co_unified" does not exist, skipping
+
+NOTICE:  view "barriers_co_access" does not exist, skipping
+
+NOTICE:  view "barriers_pk_unified" does not exist, skipping
+
+NOTICE:  view "barriers_pk_access" does not exist, skipping
+
+NOTICE:  view "barriers_st_unified" does not exist, skipping
+
+NOTICE:  view "barriers_st_access" does not exist, skipping
+
+NOTICE:  view "barriers_anthropogenic_unified" does not exist, skipping
+
+NOTICE:  view "barriers_pscis_unified" does not exist, skipping
+
+NOTICE:  view "barriers_dams_unified" does not exist, skipping
+
+NOTICE:  table "zz_lnk_streams_cown" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+7: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+8: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+9: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+# A tibble: 32,970 × 7
+   id_segment mapping_code_bt    mapping_code_ch mapping_code_cm mapping_code_co
+        <int> <chr>              <chr>           <chr>           <chr>          
+ 1      12905 "ACCESS;NONE"      "ACCESS;NONE"   "ACCESS;NONE"   "ACCESS;NONE"  
+ 2      25055 "ACCESS;NONE"      "ACCESS;NONE"   "ACCESS;NONE"   "ACCESS;NONE"  
+ 3      13380 ""                 ""              ""              ""             
+ 4      13381 ""                 ""              ""              ""             
+ 5      18907 "ACCESS;NONE"      "ACCESS;NONE"   "ACCESS;NONE"   "ACCESS;NONE"  
+ 6      27698 "ACCESS;MODELLED;… ""              ""              ""             
+ 7      10923 "ACCESS;MODELLED;… ""              ""              ""             
+ 8       8292 ""                 ""              ""              ""             
+ 9      11530 "ACCESS;MODELLED"  ""              ""              ""             
+10      15589 ""                 ""              ""              ""             
+# ℹ 32,960 more rows
+# ℹ 2 more variables: mapping_code_pk <chr>, mapping_code_st <chr>
+[1] 32970
+[wsg_recompute_one] COWN recomputed in 0.26 min (persist=fresh_smoke)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_tsit" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+7: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+8: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+# A tibble: 38,574 × 6
+   id_segment mapping_code_ch mapping_code_cm mapping_code_co mapping_code_pk
+        <int> <chr>           <chr>           <chr>           <chr>          
+ 1      17140 ""              ""              ""              ""             
+ 2       8529 ""              ""              ""              ""             
+ 3      14699 "ACCESS;NONE"   "ACCESS;NONE"   "ACCESS;NONE"   "ACCESS;NONE"  
+ 4      14726 ""              ""              ""              ""             
+ 5         59 ""              ""              ""              ""             
+ 6      29979 ""              ""              ""              ""             
+ 7      31267 "ACCESS;NONE"   "ACCESS;NONE"   "ACCESS;NONE"   "ACCESS;NONE"  
+ 8       6612 ""              ""              ""              ""             
+ 9       6902 ""              ""              ""              ""             
+10       3584 ""              ""              ""              ""             
+# ℹ 38,564 more rows
+# ℹ 1 more variable: mapping_code_st <chr>
+[1] 38574
+[wsg_recompute_one] TSIT recomputed in 0.41 min (persist=fresh_smoke)

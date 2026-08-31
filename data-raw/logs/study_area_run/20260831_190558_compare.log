@@ -1,0 +1,15 @@
+[study_area_compare] 11 rows across 2/2 WSGs -> /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20260831_190558_compare.csv
+# A tibble: 11 × 7
+   wsg   species total_segs match_pct n_diffs top_pattern      top_pattern_count
+ * <chr> <chr>        <int>     <dbl>   <int> <chr>                        <int>
+ 1 COWN  BT           19564      99.2     146 "REAR;MODELLED …                32
+ 2 COWN  CH           19564      99.7      51 "ACCESS;NONE | …                38
+ 3 COWN  CM           19564      99.1     183 "ACCESS;NONE | …               169
+ 4 COWN  CO           19564      99.3     129 "ACCESS;NONE | …                40
+ 5 COWN  PK           19564     100.0       9 "ACCESS;MODELLE…                 3
+ 6 COWN  ST           19564      99.8      33 "ACCESS;NONE | …                10
+ 7 TSIT  CH           15898      99.9       9 "ACCESS;MODELLE…                 2
+ 8 TSIT  CM           15898     100.0       6 "SPAWN | "                       3
+ 9 TSIT  CO           15898     100.0       8 "ACCESS;MODELLE…                 2
+10 TSIT  PK           15898      99.9       9 "ACCESS;NONE | …                 3
+11 TSIT  ST           15898      99.8      38 "REAR;MODELLED …                 7
