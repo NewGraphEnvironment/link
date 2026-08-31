@@ -201,6 +201,56 @@ host_wsgs <- lapply(seq_len(n_hosts), function(h) {
   unlist(resolved[assign_h == h], use.names = FALSE)
 })
 
+# --- assert the property the whole partition exists to provide -------------
+# Each host's bucket must be drainage-CLOSED: for every WSG it models, every
+# modelable WSG downstream of that one must also be on the same host. That is
+# what lets accessibility read already-persisted downstream barriers, and it
+# is the precondition lnk_wsg_downstream_check() enforces per WSG at run time.
+#
+# It does follow from packing whole components whose closures are disjoint —
+# but "follows by construction" is a claim, and a cheap one to check against
+# the closures already in hand. Asserted rather than reasoned about.
+for (h in seq_len(n_hosts)) {
+  if (!length(host_focal[[h]])) next
+  need <- intersect(unique(unlist(closures[host_focal[[h]]])), flat)
+  miss <- setdiff(need, host_wsgs[[h]])
+  if (length(miss)) {
+    stop(sprintf(
+      "host %d bucket is not drainage-closed - missing %s. A WSG would be modelled before its downstream barriers exist.",
+      h, paste(sort(miss), collapse = ", ")), call. = FALSE)
+  }
+}
+
+# And the DS-first order has to hold WITHIN each host: a WSG must appear
+# after everything downstream of it that the same host models. Concatenating
+# several components is safe precisely because they are drainage-independent,
+# so no flow path crosses a component boundary — but that is the claim, so
+# check it against real closures rather than restating it.
+#
+# `closures` is keyed by FOCAL WSG only; a bucket also holds closure members
+# that were never focal, so their closures are resolved here.
+message("verifying DS-first order within each host ...")
+closure_of <- new.env(parent = emptyenv())
+for (nm in names(closures)) assign(nm, closures[[nm]], envir = closure_of)
+for (x in flat) {
+  if (!exists(x, envir = closure_of, inherits = FALSE)) {
+    assign(x, fresh::frs_wsg_drainage(conn, x), envir = closure_of)
+  }
+}
+for (h in seq_len(n_hosts)) {
+  b <- host_wsgs[[h]]
+  if (length(b) < 2L) next
+  pos <- stats::setNames(seq_along(b), b)
+  for (x in b) {
+    ds <- intersect(setdiff(get(x, envir = closure_of), x), b)
+    late <- ds[pos[ds] > pos[[x]]]
+    if (length(late)) {
+      stop(sprintf("host %d: %s is ordered before its downstream %s", h, x,
+                   paste(late, collapse = ", ")), call. = FALSE)
+    }
+  }
+}
+
 # --- 6. report -------------------------------------------------------------
 host_label <- function(h) if (h == 1L) "dispatcher (m1)" else sprintf("job%d", h - 1L)
 

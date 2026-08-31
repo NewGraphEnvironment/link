@@ -253,3 +253,34 @@ accumulates and consolidate's DELETE is bucket-scoped, an excluded WSG keeps
 its previous run's rows and passes. `RUN_INCOMPLETE` now carries the failure to
 a non-zero exit at end-of-script — after the artifacts are written, so the
 operator gets both the output and an honest status.
+
+## Does the cypher split respect drainage closure? — audited
+
+Asked post-review, checked rather than argued. Four properties, all on the
+derived 4-host split:
+
+| property | result |
+|---|---|
+| raw closures of distinct components pairwise disjoint | **0 overlapping pairs** |
+| every host bucket drainage-closed (`closure(w) ∩ modelable ⊆ bucket`, for every `w`) | **0 violations** |
+| DS-first order valid within each host, across concatenated components | **0 violations** |
+| blocking dams in the 6 species-dropped WSGs | **none** |
+
+The third is the one worth naming: a host can hold several components, and
+its bucket is those components' DS-first lists concatenated. That is safe
+*because* components are drainage-independent — no flow path crosses a
+component boundary, so inter-component order is free. It is now checked
+rather than reasoned about.
+
+The fourth closes the residual gap. LEUT, LFRT, LKEC, LNRS, MFRT and UFRT sit
+in the closure but are dropped by species presence, so they are never
+modelled and never persist barriers. If one carried a blocking dam, a WSG
+above it would be modelled with that dam invisible — the #227 failure. None
+of the six holds a dam at all, so the gap is benign.
+
+Both assertions are now **in the generator**, and both were verified by
+restoring the bug: moving one WSG off its component's host gives
+`host 1 bucket is not drainage-closed - missing HARR`, and reversing a host's
+order gives `TAKL is ordered before its downstream LFRA, HARR, ...`. The
+un-corrupted script exits 0 and `research/study_areas.md` is byte-identical,
+so the assertions verify without changing the output.
