@@ -257,14 +257,26 @@ if [ "$N_CY" -gt 0 ]; then
 
   # --- Step 4: per-cypher prep (parallel) ---
   echo "=== Step 4: cypher_prep.sh on $N_CY cypher$([ $N_CY -eq 1 ] || echo s) ==="
+  # Pass the dispatcher's branch, as study_area_run.sh does. Without it
+  # cypher_prep defaults to `main` and installs main's link, while the
+  # cypher_prep.sh being executed is the one just scp'd from this checkout —
+  # so from a feature branch the prep script calls a link function the
+  # installed link does not have, and every cypher FATALs. Harmless-looking
+  # divergence between two callers of the same script (link#246).
+  PREP_BRANCH="$(git -C "$REPO_ROOT" branch --show-current)"
   for WS in "${CY_WS_ARR[@]}"; do
     IP="${CY_IP[$WS]}"
     ( scp -q data-raw/cypher_prep.sh "cypher@$IP:/tmp/cypher_prep.sh" && \
-      ssh "cypher@$IP" "bash /tmp/cypher_prep.sh" ) > "$LOG_DIR/${TS}_prep_$WS.log" 2>&1 &
+      ssh "cypher@$IP" "CYPHER_PREP_BRANCH='$PREP_BRANCH' bash /tmp/cypher_prep.sh" ) > "$LOG_DIR/${TS}_prep_$WS.log" 2>&1 &
   done
   wait
+  # Anchored "=== READY", not "snapshot_bcfp.sh: complete" — the old
+  # sentinel is emitted before lnk_persist_init runs, so a persist_init
+  # FATAL passed this check and the run continued against a half-prepped
+  # cypher. Full rationale at the sibling site in study_area_run.sh
+  # (link#246).
   for WS in "${CY_WS_ARR[@]}"; do
-    if ! grep -q "snapshot_bcfp.sh: complete" "$LOG_DIR/${TS}_prep_$WS.log" 2>/dev/null; then
+    if ! grep -qx "=== READY" "$LOG_DIR/${TS}_prep_$WS.log" 2>/dev/null; then
       echo "FATAL: cypher[$WS] prep failed; see $LOG_DIR/${TS}_prep_$WS.log"
       exit 1
     fi
