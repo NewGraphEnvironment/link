@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.47.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.47.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,12 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.47.2" id="link-0472">link 0.47.2<a class="anchor" aria-label="anchor" href="#link-0472"></a></h2>
+<p>Stops shipping <code>comms/</code> and <code>research/</code> in the built package (<a href="https://github.com/NewGraphEnvironment/link/pull/235" class="external-link">#235</a>). <code>R CMD build</code> includes every top-level directory not named in <code>.Rbuildignore</code>, so <code>pak::pak("NewGraphEnvironment/link")</code> was installing 15 files of cross-repo coordination notes and 22 of research working files into the user’s library. <code>R CMD check</code> reports this only as a NOTE and <code>.gitignore</code> does not cover it. Verified against the built tarball rather than the config, because the regex is easy to get subtly wrong: both directories go 15/22 → 0. The gap opens over time rather than at scaffold — <code>planning</code>, <code>dev</code>, <code>.claude</code> and <code>CLAUDE.md</code> were already excluded, and these two were added to the repo later.</p>
+<p>Also packs distributed work by <strong>finish time rather than segment count</strong> (<a href="https://github.com/NewGraphEnvironment/link/pull/253" class="external-link">#253</a>). The hosts are not interchangeable: measured on identical work, the dispatcher runs at 0.0391 min per 1000 persisted segments and a cypher at 0.0872 — <strong>2.23× slower</strong>. Balancing raw segments therefore balances <em>work</em> and unbalances <em>time</em>, and the makespan ends up set by a host that was given less to do; on the provincial set the dispatcher finished at 95 min while every cypher ran to ~190. Assigning each component to the host that would complete it earliest gives 149/149/150/150, cutting the provincial modelling phase by 41 minutes (21%) and taking the end-to-end estimate from 5.0 h to 4.3 h. <code>--host-speeds=</code> overrides the measured default. The relabelling step is gone rather than adapted — it packed into anonymous equal-speed bins and renamed them by load, which is meaningless once host 1 <em>is</em> the dispatcher and cannot be swapped for a cypher. Drainage-closure and downstream-first assertions were re-verified against the new assignment by restoring the bug, not inherited from the old one.</p>
+<p>Adds <code>research/run_record_2026_08_31_cypher_pilots.md</code> and <code>data-raw/logs/README.md</code> — the first record under <a href="https://github.com/NewGraphEnvironment/soul/issues/129" class="external-link">soul#129</a>, covering the four cypher pilots that produced the rates above and the four defects they exposed, including the ones where a correct diagnosis was retracted on a bad inference and where two gates passed tests that could not fail.</p>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.47.1" id="link-0471">link 0.47.1<a class="anchor" aria-label="anchor" href="#link-0471"></a></h2>
 <p>Fixes two defects in the v0.47.0 pre-flight gates, both found by piloting them against a real cypher for the first time (<a href="https://github.com/NewGraphEnvironment/link/issues/246" class="external-link">#246</a>). Both would have blocked the provincial run, and neither could have been caught by the tests as written.</p>

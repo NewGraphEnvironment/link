@@ -1,5 +1,45 @@
 # Changelog
 
+## link 0.47.2
+
+Stops shipping `comms/` and `research/` in the built package
+([\#235](https://github.com/NewGraphEnvironment/link/pull/235)).
+`R CMD build` includes every top-level directory not named in
+`.Rbuildignore`, so `pak::pak("NewGraphEnvironment/link")` was
+installing 15 files of cross-repo coordination notes and 22 of research
+working files into the user’s library. `R CMD check` reports this only
+as a NOTE and `.gitignore` does not cover it. Verified against the built
+tarball rather than the config, because the regex is easy to get subtly
+wrong: both directories go 15/22 → 0. The gap opens over time rather
+than at scaffold — `planning`, `dev`, `.claude` and `CLAUDE.md` were
+already excluded, and these two were added to the repo later.
+
+Also packs distributed work by **finish time rather than segment count**
+([\#253](https://github.com/NewGraphEnvironment/link/pull/253)). The
+hosts are not interchangeable: measured on identical work, the
+dispatcher runs at 0.0391 min per 1000 persisted segments and a cypher
+at 0.0872 — **2.23× slower**. Balancing raw segments therefore balances
+*work* and unbalances *time*, and the makespan ends up set by a host
+that was given less to do; on the provincial set the dispatcher finished
+at 95 min while every cypher ran to ~190. Assigning each component to
+the host that would complete it earliest gives 149/149/150/150, cutting
+the provincial modelling phase by 41 minutes (21%) and taking the
+end-to-end estimate from 5.0 h to 4.3 h. `--host-speeds=` overrides the
+measured default. The relabelling step is gone rather than adapted — it
+packed into anonymous equal-speed bins and renamed them by load, which
+is meaningless once host 1 *is* the dispatcher and cannot be swapped for
+a cypher. Drainage-closure and downstream-first assertions were
+re-verified against the new assignment by restoring the bug, not
+inherited from the old one.
+
+Adds `research/run_record_2026_08_31_cypher_pilots.md` and
+`data-raw/logs/README.md` — the first record under
+[soul#129](https://github.com/NewGraphEnvironment/soul/issues/129),
+covering the four cypher pilots that produced the rates above and the
+four defects they exposed, including the ones where a correct diagnosis
+was retracted on a bad inference and where two gates passed tests that
+could not fail.
+
 ## link 0.47.1
 
 Fixes two defects in the v0.47.0 pre-flight gates, both found by
