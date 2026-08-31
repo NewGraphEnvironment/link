@@ -57,6 +57,11 @@
 #   --auto-install          on a parity mismatch, re-run the cyphers'
 #                           install stage and re-check once
 #   --vintage-max-days=N    primitive staleness window (default 7)
+#   --prep-ssh-wait=N       seconds to wait for a fresh droplet to accept a
+#                           connection as the `cypher` user (default 600).
+#                           cypher_up returns early on snapshot spins
+#                           (NewGraphEnvironment/rtj#248), so this wait — not
+#                           cypher_up's — is what covers cloud-init's runcmd.
 #   --preflight-note="why"  downgrade ONLY vintage + parity to warnings,
 #                           and only with a written reason. There is no
 #                           global bypass on purpose.
@@ -73,6 +78,12 @@ REFRESH_PRIMITIVES=0
 AUTO_INSTALL=0
 VINTAGE_MAX_DAYS=7
 PREFLIGHT_NOTE=""
+# How long to wait for a fresh droplet to accept a connection as the `cypher`
+# user. 600s, not the old effective ~150s: cypher_up returns early on snapshot
+# spins (rtj#248), so this wait is what actually covers cloud-init's runcmd —
+# Docker, apt, micromamba and Tailscale all run before the SSH keys are copied
+# to the cypher user. cypher_up's own comment puts a snapshot spin at 3-5 min.
+PREP_SSH_WAIT_S=600
 FOCAL_ARR=()
 for arg in "$@"; do
   case "$arg" in
@@ -85,6 +96,11 @@ for arg in "$@"; do
     --preflight-only)  PREFLIGHT_ONLY=1 ;;
     --refresh-primitives) REFRESH_PRIMITIVES=1 ;;
     --auto-install)    AUTO_INSTALL=1 ;;
+    --prep-ssh-wait=*) PREP_SSH_WAIT_S="${arg#--prep-ssh-wait=}"
+                       case "$PREP_SSH_WAIT_S" in
+                         ''|*[!0-9]*) echo "FATAL: --prep-ssh-wait= needs a positive integer (got '$PREP_SSH_WAIT_S')" >&2; exit 1 ;;
+                       esac
+                       [ "$PREP_SSH_WAIT_S" -gt 0 ] || { echo "FATAL: --prep-ssh-wait must be > 0" >&2; exit 1; } ;;
     --vintage-max-days=*)
                        VINTAGE_MAX_DAYS="${arg#--vintage-max-days=}"
                        case "$VINTAGE_MAX_DAYS" in
@@ -622,14 +638,48 @@ if [ "$N_CY" -gt 0 ]; then
   echo "=== prep cyphers (cypher_prep.sh) ==="
   for WS in "${CY_WS_ARR[@]}"; do
     IP="${CY_IP[$WS]}"
-    ( # Wait for the fresh droplet's sshd before scp — cypher_up returns as
-      # soon as the IP is assigned, often before SSH is up, which races scp
-      # into "Connection closed". Poll up to ~150s, accept the new host key.
-      for _ in $(seq 1 30); do
-        ssh -o ConnectTimeout=5 -o BatchMode=yes -o StrictHostKeyChecking=accept-new \
-          "cypher@$IP" 'true' 2>/dev/null && break
-        sleep 5
+    ( # Wait until the droplet accepts a connection AS THE cypher USER before
+      # scp. `cypher_up` reporting "ready" is not sufficient: it polls for
+      # /var/lib/cloud/cypher-provisioned, which is baked into the snapshot
+      # image, so on a snapshot spin the marker is already present at first
+      # contact and the check returns before runcmd has copied root's SSH keys
+      # to the cypher user (NewGraphEnvironment/rtj#248). root@ works the whole
+      # time — DO injects keys every boot — so probing anything but `cypher@`
+      # would be a false green.
+      #
+      # Exhausting the wait must FAIL, not fall through. The previous loop ran
+      # its 30 attempts and then ran scp regardless, so a host that never
+      # accepted a connection produced one line — `scp: Connection closed` —
+      # pointing at scp rather than at the 150s of refusals before it. Measured
+      # 2026-08-31: all 30 attempts failed in 162s total, ~0.1s each, i.e. fast
+      # rejections rather than connect timeouts.
+      #
+      # DEADLINE not iteration count, because attempts differ in cost by two
+      # orders of magnitude: a refusal returns instantly, an unreachable host
+      # burns the full ConnectTimeout. 30 iterations meant anywhere from 2.5 to
+      # 5 minutes depending on failure mode, which is not a budget.
+      ssh_deadline=$(( $(date +%s) + PREP_SSH_WAIT_S ))
+      ssh_ok=0
+      ssh_last=""
+      while [ "$(date +%s)" -lt "$ssh_deadline" ]; do
+        if ssh_last=$(ssh -o ConnectTimeout=10 -o BatchMode=yes \
+             -o StrictHostKeyChecking=accept-new \
+             "cypher@$IP" 'true' 2>&1); then
+          ssh_ok=1
+          break
+        fi
+        sleep 10
       done
+      if [ "$ssh_ok" != "1" ]; then
+        echo "FATAL: cypher@$IP never accepted a connection within ${PREP_SSH_WAIT_S}s." >&2
+        echo "  Last ssh error: ${ssh_last:-<none>}" >&2
+        echo "  root@ almost certainly works — cypher_up injects keys for root on" >&2
+        echo "  every boot, while the cypher user's authorized_keys is copied by" >&2
+        echo "  cloud-init runcmd. Check with:" >&2
+        echo "    ssh root@$IP 'ls -l /home/cypher/.ssh/authorized_keys; cloud-init status'" >&2
+        echo "  See NewGraphEnvironment/rtj#248. Raise the wait with --prep-ssh-wait=<seconds>." >&2
+        exit 1
+      fi
       scp -q "$REPO_ROOT/data-raw/cypher_prep.sh" "cypher@$IP:/tmp/cypher_prep.sh" \
         && ssh "cypher@$IP" "CYPHER_PREP_BRANCH='$LINK_BRANCH' bash /tmp/cypher_prep.sh" ) > "$LOG_DIR/${TS}_prep_$WS.log" 2>&1 &
   done
