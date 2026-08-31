@@ -408,6 +408,75 @@ direction. Not yet scoped; candidate issue.
 
 ---
 
+## 6b. Run provenance — which config built this network? (link#127)
+
+Every `lnk_pipeline_run()` writes four sidecar tables into the **persist**
+schema, so a network in the DB is self-describing:
+
+| table | grain | holds |
+|---|---|---|
+| `<persist>.log` | one row per run | `date_start` / `date_end`, `config_hash`, `config_drift`, link/fresh version + SHA + dirty flag, `fwapg_sha`, run args, `species[]`, `wsg_upstream[]`, bcfp baseline |
+| `<persist>.log_parameters_fresh` | `(config_hash, species_code)` | **full** `parameters_fresh.csv` rows |
+| `<persist>.log_dimensions` | `(config_hash, species)` | **full** `dimensions.csv` rows |
+| `<persist>.log_input` | `(run_id, table_name)` | per-primitive row count, size, last-analyze, source |
+
+Read it with `lnk_log_read(conn, cfg, aoi = "PINE")`. Mirrors `bcfishpass.log`
++ its `log_parameters_*` children.
+
+**Why full rows, not a pointer.** `observation_species = BT;DV` at threshold 1
+with no date floor is recorded *in the database*, so two scenario runs stay
+distinguishable after the config file moves on. That is the whole point — see
+link#236, which runs the DV-as-BT override with and without.
+
+**The three-state completion signal:**
+
+| `date_end` | `notes` | meaning |
+|---|---|---|
+| set | — | success |
+| NULL | set | R error or interrupt (`on.exit` ran) |
+| NULL | NULL | SIGKILL / OOM / host reboot (nothing ran) |
+
+**No backfill, ever.** A WSG in `<persist>.streams` with no `log` row was
+modelled before provenance existed. That state is not recoverable and a
+synthetic row would be fabricated provenance. Audit which:
+
+```sql
+SELECT DISTINCT watershed_group_code FROM <persist>.streams
+EXCEPT SELECT watershed_group_code FROM <persist>.log;
+```
+
+**Gotchas.**
+
+- `config_hash` hashes the **observed bytes of the resolved file set**, not the
+  declared `provenance:` block — `config.yaml` is absent from its own block, so
+  a declared-set hash would be blind to `pipeline$schema`, `break_order` and
+  `gradient_classes`. `config_drift` is the separate "did it match what it
+  claimed" axis.
+- `log_input` never runs `count(*)`. Row counts are `pg_class.reltuples`
+  estimates (`row_count_estimated = TRUE`); exact counts on a 4.9M-row / 9.8 GB
+  table across a provincial pass would add hours.
+- **`bcdata.log` covers only `bc2pg` downloads — not FWA.** The stream network
+  is loaded by fwapg's own `load.sh` from bchamp objectstore parquet, and
+  `pg_stat_user_tables` for it is empty (bulk-restored, never analyzed). Its
+  only real provenance is `fwapg_sha`, resolved from `FWAPG_GIT_SHA` or a
+  `.git` walk of `FWAPG_DIR`. Teaching `snapshot_bcfp.sh` to stamp load events
+  is the open follow-up that fills `log_input.source_at`.
+- `log` and `log_input` carry `watershed_group_code` so `schema_consolidate.R`
+  auto-discovers them; `log_parameters_fresh` / `log_dimensions` deliberately
+  do not (they key on `config_hash`), so **they do not yet travel between
+  hosts** — follow-up PR.
+
+**Guard notes (link#227).** `notes` may carry a downstream-guard record:
+`link#227 guard(override): 3 unmodelled downstream dam(s) — PCEA(1), UPCE(2) — <justification>`
+or `guard(warn): … at open`. Cross-check against the same row's `wsg_upstream`,
+which independently records what was persisted when the run opened. See §8c.
+
+**Env vars:** `LNK_RUN_LABEL` (groups a campaign), `LINK_GIT_DIRTY` /
+`FRESH_GIT_DIRTY` (dirty-tree flag for installed packages), `FWAPG_GIT_SHA` /
+`FWAPG_DIR`, `LNK_HOST_ALIAS` (host name in provenance rows).
+
+---
+
 ## 7. Where every rule lives
 
 | Rule | File | Drives |
@@ -452,6 +521,163 @@ follow-up #189), **dam blocking is not rules-driven** at all (universal), and
 package** — it is fresh-owned, so removing it is a fresh-side call.
 If dam blocking should ever become species-specific, it's a new
 per-source-per-species column + `lnk_barriers_unify` change — not a tweak.
+
+---
+
+## 8b. Drainage closure: never hand-roll it from ltree
+
+**Use `lnk_wsg_resolve(cfg, loaded, wsgs, conn = conn)`.** It delegates to
+`fresh::frs_wsg_drainage()` (fresh >= 0.33.0), which tests per-group outlet
+**points** (`blue_line_key` + `downstream_route_measure`) with the measure-aware
+`whse_basemapping.fwa_downstream()`.
+
+**Do not** compute closure from `wscode_ltree` ancestry (`a.outlet @> b.outlet`).
+That was the pre-#227 method and it silently over-includes, because **two watershed
+groups on the same stream share an outlet code** — so `@>` is true in *both*
+directions and calls each one downstream of the other. Closure is measure-aware,
+not code-aware. This is why `c("PARS","BULK")` dropped from 15 WSGs to 9 when
+#238 adopted fresh 0.33.0.
+
+**Worked example — the Kootenay, where it bites hardest.** FWA carries the whole
+river under one continuous `wscode_ltree = 300.625474`, including the stretch that
+leaves BC near Newgate, runs through Montana and Idaho, and re-enters at Creston.
+Measures chain with no gap:
+
+```
+LARL 0–130 → KOTL 130–431,808 → BULL 431,808–495,206 → SMAR 495,206–608,735 → KOTR 608,735–773,149
+```
+
+So KOTR/SMAR/BULL are **upstream** of Kootenay Lake, reached via the US loop — but
+an ltree test sees them sharing KOTL's outlet code and reports them as downstream.
+The correct closure of `c("LARL","KOTL","SLOC")` is **just those three**: LARL is
+the terminal BC group (it holds the Kootenay's mouth at Castlegar and the Columbia
+down to the border — hence Waneta and Seven Mile sitting in it), and below it is
+the United States.
+
+**`public.wsg_outlet` is gone as a concept** (#227). If you find the table in a
+database it is a leftover from before fresh 0.33.0 — it still answers queries, and
+it answers them wrongly. Outlets now ship in fresh at `inst/extdata/wsg_outlet.csv`
+and reach the DB as a `VALUES` list; no table is needed anywhere.
+
+## 8c. Downstream state: the guard, and why membership ≠ path
+
+`lnk_pipeline_run()` computes accessibility from the **already-persisted**
+barriers of the WSGs downstream. Model a WSG before them and the access query
+finds no downstream dams, marks dammed-off segments accessible, and **exits 0** —
+a wrong answer indistinguishable from a right one. `lnk_wsg_downstream_check()`
+(link#227) verifies that precondition instead of trusting it.
+
+**The predicate is PATH, not membership.** The question is not "does a downstream
+watershed group *contain* a blocking dam" but "is there a blocking dam **on this
+WSG's downstream flow path**". Measured live:
+
+| focal | membership | path | reality |
+|---|---|---|---|
+| **BULK** | fires — 18 blocking dams across LSKE/KISP/KLUM | **0** | none are below BULK's outlet |
+| **PARS** | fires | **3** | Peace Canyon, Site C, W.A.C. Bennett — correct |
+| SLOC | fires | 1 | Brilliant Dam — correct |
+
+A membership guard cries wolf on BULK, operators learn to reach for the override,
+and the guard stops meaning anything. **Do not "simplify" it back.** The path form
+is complete, not merely cheaper: access walks downstream from every segment, and
+every focal segment exits through the focal outlet, so the out-of-WSG barriers
+reachable from *any* focal segment are exactly those below the outlet. ~0.5 s.
+
+**What counts as blocking** — three filters that live downstream of
+`.lnk_pipeline_prep_dams`, all mirrored by the guard:
+`passability_status_code IN (1,2)`; a real `linear_feature_id` join; and
+`blue_line_key = watershed_key` (mainstem only). The psc filter is why the
+`cabd_additions` US placeholders never appear — they carry NULL.
+
+**Persistence is checked per DAM, not per WSG** — `.lnk_wsg_persisted()` cannot
+tell a group persisted with `dams = FALSE`, which would pass a schema holding the
+streams but not the barriers.
+
+**Modes.** `LNK_GUARD_DOWNSTREAM=error` (default) | `warn` | `ignore`.
+`study_area_run.sh` exports **`warn` on both legs** (local subshell *and* inside
+the ssh string) because on a multi-host run a downstream group is legitimately
+mid-flight on another cypher. That is a deferral, not a hole:
+`wsg_recompute_one.R` re-runs the guard in `error` mode after consolidate, when
+everything must be persisted. A hard pre-flight there would be worse than the bug —
+per-WSG failures soft-fail, so the WSG would be **skipped**, and
+`lnk_access(merge = TRUE)` cannot repair a WSG that was never modelled.
+
+**Override** requires a written justification (`LNK_GUARD_DOWNSTREAM_NOTE`); a
+bare `TRUE` is rejected. The note lands in `<persist>.log.notes` beside
+`wsg_upstream`, so `lnk_log_read()` reports that the network was built on a
+stated assumption.
+
+**Known bound:** inherits `frs_wsg_drainage()`'s one-outlet-per-group model. A
+WSG draining by two independent paths would be under-covered.
+
+---
+
+## 8d. Pre-flight gates on a multi-host run (link#246)
+
+A study-area run spends money and writes to a shared persist, so the gates in
+`study_area_run.sh` sit in **two** blocks answering two different questions.
+
+**Why two, not one.** A cypher's software is *predictable* from the dispatcher
+before the cypher exists: its link comes from `git reset --hard
+origin/$LINK_BRANCH`, its fresh from link's `DESCRIPTION`. So `preflight_local()`
+validates what the workers are *going to get* — free, before the spin — and
+`preflight_hosts()` confirms after prep that they got it. Predict before spend;
+verify before write. Framing it as one gate forces a false choice between
+checking early and checking truthfully.
+
+`preflight_hosts()` genuinely cannot run earlier, and that is fine: it runs
+before any `wsg_run_one.R` touches the persist, and a failure exits 1, which
+trips the EXIT trap and burns the cyphers. The loss is bounded at spin + prep
+rather than a whole run of two mixed model versions landing in one schema with
+no `log` table to tell them apart.
+
+**No global bypass, on purpose.** An unconditional `--skip-preflight` is the
+affordance that let this class of failure happen. `--preflight-note="<why>"`
+downgrades *only* vintage and parity, and only with a written justification —
+the same position `lnk_wsg_downstream_check(override=)` takes. `--auto-install`
+is remediation, not a skip: it re-runs the cyphers' install stage (which re-runs
+the fresh assertion) and re-checks exactly once.
+
+### Three things that look like checks and are not
+
+| looks like | actually |
+|---|---|
+| `tofu plan` proves the DO token | against a zero-resource workspace it returns `Plan: N to add` **without contacting DO**. And `do_token` in tfvars is a *different* credential from doctl's — both were minted 2026-05-18 and both expired 2026-08-30. Probe each against `/v2/account` |
+| comparing `link_sha` across hosts | it is a real SHA on the `load_all` dispatcher and `NA` on every pak-installed cypher, so it can only ever fail. `fresh_sha` is `NA` on both, so it can only ever pass. Key on **`repo_sha`**, read on each host from the checkout it installed from |
+| `max(last_analyze)` for vintage | NULL on all ten primitives, measured. Empty in bash reads as "nothing to see". Use `GREATEST(last_analyze, last_autoanalyze)` |
+
+### The prep sentinel
+
+`cypher_prep.sh` ends with a bare `=== READY`, and the umbrella greps it
+**anchored** (`grep -qx`). Do not revert this to `snapshot_bcfp.sh: complete`,
+which was wrong in both directions: the snapshot emits it *before*
+`lnk_persist_init` runs, so a persist_init FATAL passed the gate and WSGs ran
+against a half-prepped cypher; and the snapshot's legitimate skip-if-current
+path never emits it at all, so a skipped load read as FATAL. The `-x` anchor is
+what stops `=== READY (install stage only; ...)` satisfying a full-prep check.
+
+### Two post-conditions, and why they are not optional
+
+`schema_consolidate` DELETEs the destination bucket
+(`schema_consolidate.R:272-276`) and *then* COPYs (`:313-316`). A host that
+produced nothing therefore does not merely fail to add rows — it **removes** the
+rows already there for those WSGs and returns `ok = TRUE`. So:
+
+- before consolidate, every host must account for its whole bucket
+  (`[wsg_run_one] … done|SKIP` lines counted against the bucket size);
+- after consolidate, every run WSG must have rows in `<persist>.streams`.
+
+The second is detection rather than prevention, and it is the one that would
+have caught link#246 on day one regardless of cause.
+
+### Host buckets are derived, not chosen
+
+`data-raw/study_area_buckets.R` partitions the focal set into
+drainage-independent components by union-find over per-WSG
+`frs_wsg_drainage()` closures, then LPT-packs the components onto hosts and
+writes `research/study_areas.md`. Overlapping closures would make consolidate
+last-writer-wins on the shared WSGs, so the script **asserts** disjointness.
+Never partition by `wscode_ltree` root — see §8b.
 
 ---
 

@@ -798,52 +798,17 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
   #    - UNION ALL with cabd_additions where feature_type='dams' (US placeholders)
   .lnk_db_execute(conn, sprintf(
     "DROP TABLE IF EXISTS %1$s.dams", schema))
+  # The `cabd` and `matched` CTE bodies are shared verbatim with the link#227
+  # downstream guard (`R/lnk_wsg_downstream_check.R`). A guard that snapped or
+  # filtered differently would flag dams this pipeline treats as passable, so
+  # the SQL is defined once and parameterized on its source rather than copied.
   .lnk_db_execute(conn, sprintf(
     "CREATE TABLE %1$s.dams AS
      WITH cabd AS (
-       SELECT d.cabd_id::text  AS dam_id,
-              blk.blue_line_key,
-              ST_GeomFromEWKB(d.geom_ewkb) AS geom,
-              d.dam_name_en, d.height_m, d.owner, d.dam_use,
-              d.operating_status,
-              COALESCE(u.passability_status_code,
-                       d.passability_status_code) AS passability_status_code
-       FROM %1$s.cabd_dams_raw d
-       LEFT OUTER JOIN %1$s.cabd_exclusions x ON d.cabd_id = x.cabd_id
-       LEFT OUTER JOIN %1$s.cabd_blkey_xref blk ON d.cabd_id = blk.cabd_id
-       LEFT OUTER JOIN %1$s.cabd_passability_status_updates u
-         ON d.cabd_id = u.cabd_id
-       WHERE x.cabd_id IS NULL
+       %2$s
      ),
      matched AS (
-       SELECT DISTINCT ON (c.dam_id)
-              c.dam_id,
-              str.linear_feature_id,
-              str.blue_line_key,
-              str.wscode_ltree,
-              str.localcode_ltree,
-              str.watershed_group_code,
-              ST_Distance(str.geom, c.geom) AS distance_to_stream,
-              ST_InterpolatePoint(str.geom, c.geom) AS downstream_route_measure,
-              c.dam_name_en, c.height_m, c.owner, c.dam_use,
-              c.operating_status, c.passability_status_code,
-              str.geom AS line_geom
-       FROM cabd c
-       CROSS JOIN LATERAL (
-         SELECT linear_feature_id, blue_line_key, wscode_ltree, localcode_ltree,
-                watershed_group_code, geom
-         FROM whse_basemapping.fwa_stream_networks_sp str
-         WHERE str.localcode_ltree IS NOT NULL
-           AND NOT str.wscode_ltree <@ '999'::ltree
-           AND (
-             (c.blue_line_key IS NULL)
-             OR (c.blue_line_key = str.blue_line_key)
-           )
-         ORDER BY str.geom <-> c.geom
-         LIMIT 1
-       ) str
-       WHERE ST_Distance(str.geom, c.geom) <= 65
-       ORDER BY c.dam_id, ST_Distance(str.geom, c.geom), str.linear_feature_id
+       %3$s
      ),
      placed AS (
        SELECT m.dam_id,
@@ -891,7 +856,17 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
      SELECT * FROM placed
      UNION ALL
      SELECT * FROM usa;",
-    schema))
+    schema,
+    .lnk_dams_cabd_sql(
+      dams_expr = sprintf(
+        "(SELECT cabd_id, passability_status_code, dam_name_en, height_m,
+                 owner, dam_use, operating_status,
+                 ST_GeomFromEWKB(geom_ewkb) AS geom
+            FROM %s.cabd_dams_raw)", schema),
+      excl_ref = sprintf("%s.cabd_exclusions", schema),
+      xref_ref = sprintf("%s.cabd_blkey_xref", schema),
+      upd_ref  = sprintf("%s.cabd_passability_status_updates", schema)),
+    .lnk_dams_matched_sql()))
 
   # 4. Filter the local <schema>.dams to the AOI (per-WSG locality).
   .lnk_db_execute(conn, sprintf(

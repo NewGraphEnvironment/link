@@ -1,0 +1,416 @@
+#!/usr/bin/env Rscript
+# study_area_buckets.R — partition the focal watershed groups into
+# drainage-INDEPENDENT components, then pack those components onto hosts.
+#
+# Why components rather than study areas (link#246):
+#
+#   Cross-WSG `;DAM` requires a host's bucket to be drainage-closed and run
+#   downstream-first. If two hosts' closures overlap, the overlapping WSGs
+#   are modelled twice and `schema_consolidate` resolves the collision
+#   last-writer-wins — so which host finished last silently decides the
+#   answer. Partitioning into components whose closures are disjoint makes
+#   that impossible by construction.
+#
+#   Do NOT partition by `wscode_ltree` root. That reproduces the sliver
+#   misclassification RUNBOOK section 8b documents: NATR files under Fraser
+#   though it drains to the Peace, and SPAT under Skeena though it drains
+#   the Stikine. Closure is measure-aware; a wscode root is not.
+#
+# Method: union-find over per-WSG `fresh::frs_wsg_drainage()` closures. Two
+# focal WSGs share a component iff their closures intersect. Each component
+# is then resolved through `lnk_wsg_resolve()` for the species filter and
+# the downstream-first order, and the components are packed onto hosts by
+# greedy LPT (longest processing time first) — the same algorithm
+# wsgs_dispatch.sh uses, with a component rather than a single WSG as the
+# indivisible atom.
+#
+# Usage:
+#   [LNK_LOAD=loadall] Rscript data-raw/study_area_buckets.R \
+#     [--hosts=4] [--config=bcfishpass] [--focal=A,B,C] [--write]
+#
+#   --hosts=N   number of hosts to pack onto (default 4: dispatcher + 3)
+#   --focal=    override the focal set (default: the baked-in 96)
+#   --write     rewrite research/study_areas.md from this run's output
+#
+# Stdout is the report. Nothing is written unless --write is passed.
+
+args <- commandArgs(trailingOnly = TRUE)
+arg_val <- function(flag, default) {
+  hit <- grep(paste0("^", flag, "="), args, value = TRUE)
+  if (!length(hit)) return(default)
+  sub(paste0("^", flag, "="), "", hit[1])
+}
+n_hosts <- as.integer(arg_val("--hosts", "4"))
+config  <- arg_val("--config", "bcfishpass")
+do_write <- "--write" %in% args
+if (is.na(n_hosts) || n_hosts < 1L) {
+  stop("--hosts must be a positive integer", call. = FALSE)
+}
+
+# Relative throughput per host, dispatcher first. Default from the measured
+# dispatcher:cypher ratio of 2.23x (link#246 pilot, 2026-08-31) — 1 / 2.23 =
+# 0.45. Override with --host-speeds=1,0.45,0.45 when the fleet differs.
+speeds_arg <- arg_val("--host-speeds", "")
+host_speeds <- if (nzchar(speeds_arg)) {
+  as.numeric(trimws(strsplit(speeds_arg, ",")[[1]]))
+} else {
+  c(1, rep(0.45, max(0L, n_hosts - 1L)))
+}
+if (length(host_speeds) != n_hosts || anyNA(host_speeds) ||
+    any(host_speeds <= 0)) {
+  stop("--host-speeds needs ", n_hosts,
+       " positive numbers (dispatcher first), got: ",
+       paste(host_speeds, collapse = ", "), call. = FALSE)
+}
+
+if (identical(Sys.getenv("LNK_LOAD"), "loadall")) {
+  suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
+} else {
+  suppressPackageStartupMessages(library(link))
+}
+suppressPackageStartupMessages({
+  library(DBI); library(RPostgres)
+})
+
+# The focal set, baked in rather than derived from whatever is currently
+# persisted. A default that reads `fresh.streams` would give a different
+# answer before and after the Phase 3 wipe, which is the opposite of what a
+# reproducible derivation is for. These are the 93 groups persisted as of
+# 2026-08-30 plus Columbia's KOTL / LARL / SLOC
+# (rtj/scripts/gis/projects/nelson/project.yml).
+FOCAL_DEFAULT <- c(
+  "ALBN", "BBAR", "BONP", "BRKS", "BULK", "CARP", "CARR", "CHES", "CHIR",
+  "CHWK", "CLRH", "COAL", "COTR", "COWN", "CRKD", "DOGC", "DUNC", "ELKR",
+  "FINA", "FINL", "FIRE", "FONT", "FOXR", "FRAN", "FRCN", "GATA", "GOLD",
+  "HARR", "HOMA", "INGR", "KETL", "KISP", "KITL", "KITR", "KLUM", "KOTR",
+  "KTSU", "LBTN", "LCHL", "LCHR", "LDEN", "LFRA", "LILL", "LKEL", "LNTH",
+  "LOMI", "LPCE", "LPRO", "LSAL", "LSKE", "LSTR", "MDEA", "MESI", "MFRA",
+  "MORK", "MORR", "MSKE", "MSTR", "NARC", "NASR", "NATR", "NECR", "NICL",
+  "OSPK", "PARA", "PARS", "PCEA", "QUES", "SAJR", "SALR", "SETN", "SHER",
+  "SMAR", "SPAT", "SUST", "TABR", "TAKL", "TATR", "TOOD", "TSIT", "TWAC",
+  "UBTN", "UFRA", "UJER", "UKEC", "UNRS", "UNUR", "UOMI", "UPCE", "USKE",
+  "UTRE", "WILL", "ZYMO",
+  # Columbia
+  "KOTL", "LARL", "SLOC")
+
+focal_arg <- arg_val("--focal", "")
+focal <- if (nzchar(focal_arg)) {
+  toupper(trimws(strsplit(focal_arg, ",")[[1]]))
+} else {
+  FOCAL_DEFAULT
+}
+focal <- sort(unique(focal[nzchar(focal)]))
+
+# Explicit local docker fwapg — lnk_db_conn()'s env defaults land on the
+# :63333 bcfp tunnel, a different database with a different load state
+# (#222). Same reasoning as study_area_wsgs.R.
+conn <- DBI::dbConnect(RPostgres::Postgres(), host = "localhost", port = 5432,
+                       dbname = "fwapg", user = "postgres", password = "postgres")
+on.exit(try(DBI::dbDisconnect(conn), silent = TRUE), add = TRUE)
+
+cfg    <- lnk_config(config)
+loaded <- lnk_load_overrides(cfg)
+
+message(sprintf("focal: %d WSGs | config: %s | hosts: %d",
+                length(focal), config, n_hosts))
+
+# --- 1. per-focal drainage closures ---------------------------------------
+message("resolving per-WSG drainage closures ...")
+closures <- stats::setNames(
+  lapply(focal, function(w) fresh::frs_wsg_drainage(conn, w)), focal)
+
+bad <- names(closures)[vapply(closures, length, integer(1)) == 0L]
+if (length(bad)) {
+  stop("frs_wsg_drainage returned nothing for: ", paste(bad, collapse = ", "),
+       " - an empty closure is a failure, not an isolated component",
+       call. = FALSE)
+}
+
+# --- 2. union-find ---------------------------------------------------------
+parent <- stats::setNames(seq_along(focal), focal)
+find <- function(i) {
+  while (parent[[i]] != i) {
+    parent[[i]] <<- parent[[parent[[i]]]]
+    i <- parent[[i]]
+  }
+  i
+}
+union2 <- function(a, b) {
+  ra <- find(a); rb <- find(b)
+  if (ra != rb) parent[[ra]] <<- rb
+  invisible(NULL)
+}
+
+# Index every closure member back to the focal WSGs that reach it; any two
+# focal WSGs sharing a member belong to one component.
+seen <- new.env(parent = emptyenv())
+for (i in seq_along(focal)) {
+  for (m in closures[[i]]) {
+    prev <- seen[[m]]
+    if (is.null(prev)) seen[[m]] <- i else union2(i, prev)
+  }
+}
+
+comp_id <- vapply(seq_along(focal), find, integer(1))
+components <- split(focal, comp_id)
+names(components) <- NULL
+# Largest first, ties broken alphabetically so the output is deterministic.
+components <- components[order(-lengths(components),
+                               vapply(components, `[`, character(1), 1))]
+
+message(sprintf("union-find: %d focal WSGs -> %d drainage-independent components",
+                length(focal), length(components)))
+
+# --- 3. resolve each component: closure + species filter + DS-first --------
+message("resolving modelable DS-first sets per component ...")
+resolved <- lapply(components, function(f) {
+  suppressMessages(lnk_wsg_resolve(cfg, loaded, wsgs = f, conn = conn))
+})
+
+# Disjointness is the whole point of the partition, so assert it rather than
+# trusting the algorithm. An overlap means consolidate would be
+# last-writer-wins on the shared WSGs.
+flat <- unlist(resolved)
+dup <- unique(flat[duplicated(flat)])
+if (length(dup)) {
+  stop("components overlap on: ", paste(dup, collapse = ", "),
+       " - the partition is not drainage-independent", call. = FALSE)
+}
+
+# --- 4. weights ------------------------------------------------------------
+# Stream-segment count per WSG is a far better proxy for modelling work than
+# a WSG count, and it is one query. Groups absent from the network table get
+# the median rather than zero, so an unknown never packs as free.
+w <- DBI::dbGetQuery(conn,
+  "SELECT watershed_group_code AS wsg, count(*)::numeric AS n
+     FROM whse_basemapping.fwa_stream_networks_sp GROUP BY 1")
+wmap <- stats::setNames(w$n, w$wsg)
+med <- stats::median(w$n)
+weight_of <- function(wsgs) {
+  v <- wmap[wsgs]
+  v[is.na(v)] <- med
+  sum(v)
+}
+comp_weight <- vapply(resolved, weight_of, numeric(1))
+
+# --- 5. greedy LPT pack, speed-aware ---------------------------------------
+# The hosts are NOT interchangeable. Measured 2026-08-31 on identical work,
+# per 1000 persisted segments: dispatcher 0.0391 min, cypher 0.0872 min — the
+# cyphers are **2.23x slower**. Packing by raw segment count therefore
+# balances WORK and unbalances TIME: a cypher handed half the dispatcher's
+# segments still finishes later, and the makespan is set by a host that was
+# given less to do.
+#
+# So each component goes to the host that would COMPLETE it earliest, which is
+# LPT for heterogeneous machines. Load is accumulated in dispatcher-equivalent
+# minutes, not segments.
+#
+# There is deliberately no relabelling step any more. The previous version
+# packed into anonymous equal-speed bins and then renamed them by descending
+# load so host 1 held the most — which is meaningless once the hosts differ,
+# because host 1 IS the dispatcher and cannot be swapped for a cypher. The
+# fast host now ends up with more work on its own, because it finishes sooner.
+ord <- order(-comp_weight)
+load_h <- rep(0, n_hosts)          # dispatcher-equivalent minutes
+seg_h  <- rep(0, n_hosts)          # raw segments, for the report
+assign_h <- integer(length(resolved))
+for (i in ord) {
+  finish <- load_h + comp_weight[i] / host_speeds
+  pick <- which.min(finish)
+  assign_h[i] <- pick
+  load_h[pick] <- finish[pick]
+  seg_h[pick] <- seg_h[pick] + comp_weight[i]
+}
+
+host_focal <- lapply(seq_len(n_hosts), function(h) {
+  unlist(components[assign_h == h], use.names = FALSE)
+})
+host_wsgs <- lapply(seq_len(n_hosts), function(h) {
+  unlist(resolved[assign_h == h], use.names = FALSE)
+})
+
+# --- assert the property the whole partition exists to provide -------------
+# Each host's bucket must be drainage-CLOSED: for every WSG it models, every
+# modelable WSG downstream of that one must also be on the same host. That is
+# what lets accessibility read already-persisted downstream barriers, and it
+# is the precondition lnk_wsg_downstream_check() enforces per WSG at run time.
+#
+# It does follow from packing whole components whose closures are disjoint —
+# but "follows by construction" is a claim, and a cheap one to check against
+# the closures already in hand. Asserted rather than reasoned about.
+for (h in seq_len(n_hosts)) {
+  if (!length(host_focal[[h]])) next
+  need <- intersect(unique(unlist(closures[host_focal[[h]]])), flat)
+  miss <- setdiff(need, host_wsgs[[h]])
+  if (length(miss)) {
+    stop(sprintf(
+      "host %d bucket is not drainage-closed - missing %s. A WSG would be modelled before its downstream barriers exist.",
+      h, paste(sort(miss), collapse = ", ")), call. = FALSE)
+  }
+}
+
+# And the DS-first order has to hold WITHIN each host: a WSG must appear
+# after everything downstream of it that the same host models. Concatenating
+# several components is safe precisely because they are drainage-independent,
+# so no flow path crosses a component boundary — but that is the claim, so
+# check it against real closures rather than restating it.
+#
+# `closures` is keyed by FOCAL WSG only; a bucket also holds closure members
+# that were never focal, so their closures are resolved here.
+message("verifying DS-first order within each host ...")
+closure_of <- new.env(parent = emptyenv())
+for (nm in names(closures)) assign(nm, closures[[nm]], envir = closure_of)
+for (x in flat) {
+  if (!exists(x, envir = closure_of, inherits = FALSE)) {
+    assign(x, fresh::frs_wsg_drainage(conn, x), envir = closure_of)
+  }
+}
+for (h in seq_len(n_hosts)) {
+  b <- host_wsgs[[h]]
+  if (length(b) < 2L) next
+  pos <- stats::setNames(seq_along(b), b)
+  for (x in b) {
+    ds <- intersect(setdiff(get(x, envir = closure_of), x), b)
+    late <- ds[pos[ds] > pos[[x]]]
+    if (length(late)) {
+      stop(sprintf("host %d: %s is ordered before its downstream %s", h, x,
+                   paste(late, collapse = ", ")), call. = FALSE)
+    }
+  }
+}
+
+# --- 6. report -------------------------------------------------------------
+host_label <- function(h) if (h == 1L) "dispatcher (m1)" else sprintf("job%d", h - 1L)
+
+cat("\n## Components\n\n")
+cat(sprintf("%d focal WSGs -> %d drainage-independent components\n\n",
+            length(focal), length(components)))
+cat("| # | focal | modelable | host | focal WSGs |\n")
+cat("|---|---|---|---|---|\n")
+for (i in seq_along(components)) {
+  cat(sprintf("| %d | %d | %d | %s | %s |\n", i,
+              length(components[[i]]), length(resolved[[i]]),
+              host_label(assign_h[i]),
+              paste(components[[i]], collapse = " ")))
+}
+
+cat("\n## Host buckets\n\n")
+cat("| host | speed | components | focal | modelable | segments | est. share |\n")
+cat("|---|---|---|---|---|---|---|\n")
+for (h in seq_len(n_hosts)) {
+  cat(sprintf("| %s | %.2fx | %d | %d | %d | %s | %.2f |\n", host_label(h),
+              host_speeds[h], sum(assign_h == h), length(host_focal[[h]]),
+              length(host_wsgs[[h]]), format(seg_h[h], big.mark = ","),
+              load_h[h] / max(load_h)))
+}
+cat(sprintf("\nmakespan is set by %s; balance = %.0f%% (100%% = every host finishes together)\n",
+            host_label(which.max(load_h)), 100 * mean(load_h) / max(load_h)))
+cat(sprintf("\ntotal modelable: %d | dropped by species presence: %d\n",
+            length(flat),
+            length(unique(unlist(closures))) - length(flat)))
+
+cat("\n## --focal= strings\n\n")
+cat("```\n")
+for (h in seq_len(n_hosts)) {
+  cat(sprintf("  --focal=%s \\\n", paste(sort(host_focal[[h]]), collapse = ",")))
+}
+cat("```\n")
+
+cat("\n## DS-first order per host\n\n")
+for (h in seq_len(n_hosts)) {
+  cat(sprintf("- **%s** (%d): %s\n", host_label(h), length(host_wsgs[[h]]),
+              paste(host_wsgs[[h]], collapse = ", ")))
+}
+
+# --- 7. optionally rewrite the research doc --------------------------------
+if (do_write) {
+  out <- file.path(dirname(dirname(normalizePath(
+    sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[1]),
+    mustWork = FALSE))), "research", "study_areas.md")
+  if (!dir.exists(dirname(out))) {
+    stop("cannot locate research/ from the script path", call. = FALSE)
+  }
+  con <- file(out, open = "wt")
+  on.exit(close(con), add = TRUE)
+  wr <- function(...) cat(..., "\n", sep = "", file = con)
+
+  wr("# Study areas — drainage-independent components and host buckets")
+  wr("")
+  wr("<!-- GENERATED by data-raw/study_area_buckets.R --write. Do not hand-edit:")
+  wr("     re-run the script instead, so the numbers stay derivable. -->")
+  wr("")
+  wr(sprintf("Generated from %d focal watershed groups, config `%s`, %d hosts.",
+             length(focal), config, n_hosts))
+  wr("")
+  wr("## Why components, not study areas")
+  wr("")
+  wr("Cross-WSG `;DAM` needs each host's bucket drainage-closed and run")
+  wr("downstream-first. Where two hosts' closures overlap, the shared WSGs are")
+  wr("modelled twice and `schema_consolidate` resolves the collision")
+  wr("last-writer-wins — so whichever host finished last silently decides the")
+  wr("answer. Partitioning into components whose closures are disjoint removes")
+  wr("that ambiguity by construction, and the derivation asserts disjointness")
+  wr("rather than assuming it.")
+  wr("")
+  wr("Partitioning by `wscode_ltree` root does **not** work: it reproduces the")
+  wr("sliver misclassification RUNBOOK section 8b documents — NATR filed under")
+  wr("Fraser though it drains to the Peace, SPAT under Skeena though it drains")
+  wr("the Stikine. Closure is measure-aware; a wscode root is not.")
+  wr("")
+  wr("## Host buckets")
+  wr("")
+  wr("| host | speed | components | focal | modelable | segments | est. share |")
+  wr("|---|---|---|---|---|---|---|")
+  for (h in seq_len(n_hosts)) {
+    wr(sprintf("| %s | %.2fx | %d | %d | %d | %s | %.2f |", host_label(h),
+               host_speeds[h], sum(assign_h == h), length(host_focal[[h]]),
+               length(host_wsgs[[h]]), format(seg_h[h], big.mark = ","),
+               load_h[h] / max(load_h)))
+  }
+  wr("")
+  wr(sprintf("%d focal WSGs resolve to %d components and %d modelable WSGs.",
+             length(focal), length(components), length(flat)))
+  wr("")
+  wr("Components are indivisible, so the packing is a greedy LPT over")
+  wr("component weights, not over WSGs. Weight is stream-segment count from")
+  wr("`fwa_stream_networks_sp`, which tracks modelling work far better than a")
+  wr("WSG count does — a one-WSG component can outweigh a three-WSG one. The")
+  wr("dispatcher is relabelled to whichever host draws the heaviest load,")
+  wr("since it is the free, fast local machine while the cyphers are paid.")
+  wr("")
+  wr("The component decomposition is a property of the drainage network and is")
+  wr("stable; the host assignment is only as stable as the weights, so expect")
+  wr("it to shift if the network table is reloaded.")
+  wr("")
+  wr("## `--focal=` strings")
+  wr("")
+  wr("```")
+  wr("bash data-raw/study_area_run.sh \\")
+  wr(sprintf("  --cy-workspaces=%s \\",
+             paste(sprintf("job%d", seq_len(n_hosts - 1L)), collapse = ",")))
+  for (h in seq_len(n_hosts)) {
+    wr(sprintf("  --focal=%s \\", paste(sort(host_focal[[h]]), collapse = ",")))
+  }
+  wr("  --config=bcfishpass")
+  wr("```")
+  wr("")
+  wr("## Downstream-first order per host")
+  wr("")
+  for (h in seq_len(n_hosts)) {
+    wr(sprintf("**%s** (%d WSGs)", host_label(h), length(host_wsgs[[h]])))
+    wr("")
+    wr(sprintf("    %s", paste(host_wsgs[[h]], collapse = ", ")))
+    wr("")
+  }
+  wr("## Components")
+  wr("")
+  wr("| # | focal | modelable | host | focal WSGs |")
+  wr("|---|---|---|---|---|")
+  for (i in seq_along(components)) {
+    wr(sprintf("| %d | %d | %d | %s | %s |", i,
+               length(components[[i]]), length(resolved[[i]]),
+               host_label(assign_h[i]),
+               paste(components[[i]], collapse = " ")))
+  }
+  message("wrote ", out)
+}

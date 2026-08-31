@@ -85,7 +85,7 @@ lnk_baseline_append <- function(log,
     run_started_pdt     = format(Sys.time(),
                                  tz = "America/Vancouver",
                                  "%Y-%m-%d %H:%M"),
-    host                = Sys.info()[["nodename"]],
+    host                = .lnk_host(),
     run_label           = run_label,
     link_schema         = link_schema,
     bcfp_model_run_id   = if (!is.null(log$model_run_id)) {

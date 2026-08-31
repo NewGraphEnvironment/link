@@ -126,19 +126,34 @@ test_that("lnk_wsg_resolve strict mode upper-cases focal codes", {
 
 # -- live DB (closure mode) --------------------------------------------------
 
-test_that("lnk_wsg_resolve closure mode returns PARS+BULK 15-WSG closure DS-first", {
+test_that("lnk_wsg_resolve closure mode returns the PARS+BULK closure DS-first", {
   skip_if_no_db()
   cfg    <- lnk_config("bcfishpass")
   loaded <- lnk_load_overrides(cfg)
+
+  # Tightened from 15 WSGs to 9 by fresh#214 (fresh 0.33.0), which rebuilt
+  # frs_wsg_drainage() on outlet points + the measure-aware fwa_downstream().
+  # The old single-ltree predicate over-included: LKEL is a separate Skeena
+  # tributary, MSKE/USKE sit upstream of the Bulkley confluence, LBTN is a
+  # Peace sibling, MORR is upstream of BULK, and FINA is a separate Williston
+  # arm the Parsnip never flows through.
   expected <- c(
-    "KISP", "KLUM", "LKEL", "LSKE", "MSKE", "USKE",
-    "BULK", "FINA", "LBTN", "LPCE", "MORR", "PARA", "PCEA", "UPCE",
-    "PARS"
+    "LPCE", "LSKE", "KLUM", "UPCE", "KISP", "PCEA", "BULK", "PARA", "PARS"
   )
   expect_identical(
     lnk_wsg_resolve(cfg, loaded, wsgs = c("PARS", "BULK")),
     expected
   )
+})
+
+test_that("lnk_wsg_resolve closure excludes upstream and sibling groups", {
+  skip_if_no_db()
+  cfg    <- lnk_config("bcfishpass")
+  loaded <- lnk_load_overrides(cfg)
+
+  res <- lnk_wsg_resolve(cfg, loaded, wsgs = c("PARS", "BULK"))
+  expect_false(any(c("MORR", "MSKE", "USKE", "LKEL", "LBTN", "FINA") %in% res))
+  expect_true(all(c("PARS", "BULK") %in% res))
 })
 
 test_that("lnk_wsg_resolve province mode returns the full bundle-species list", {
