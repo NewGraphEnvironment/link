@@ -22,12 +22,12 @@ the Stikine. Closure is measure-aware; a wscode root is not.
 
 ## Host buckets
 
-| host | components | focal | modelable | weight (segments) |
-|---|---|---|---|---|
-| dispatcher (m1) | 1 | 33 | 39 | 696,262 |
-| job1 | 8 | 15 | 27 | 626,778 |
-| job2 | 6 | 25 | 26 | 617,223 |
-| job3 | 7 | 23 | 27 | 616,960 |
+| host | speed | components | focal | modelable | segments | est. share |
+|---|---|---|---|---|---|---|
+| dispatcher (m1) | 1.00x | 8 | 49 | 56 | 1,086,085 | 0.99 |
+| job1 | 0.45x | 2 | 21 | 21 | 488,156 | 0.99 |
+| job2 | 0.45x | 6 | 11 | 21 | 492,655 | 1.00 |
+| job3 | 0.45x | 6 | 15 | 21 | 490,327 | 1.00 |
 
 96 focal WSGs resolve to 22 components and 119 modelable WSGs.
 
@@ -47,54 +47,54 @@ it to shift if the network table is reloaded.
 ```
 bash data-raw/study_area_run.sh \
   --cy-workspaces=job1,job2,job3 \
-  --focal=BBAR,BONP,CARR,CHES,CHIR,CHWK,COTR,DOGC,FRAN,FRCN,HARR,LCHL,LCHR,LFRA,LILL,LNTH,LSAL,MFRA,MORK,NARC,NECR,NICL,QUES,SAJR,SALR,SETN,TABR,TAKL,TWAC,UFRA,UNRS,UTRE,WILL \
-  --focal=ALBN,COAL,FONT,GATA,KETL,LPRO,LSTR,MDEA,MSTR,SHER,SPAT,TSIT,UJER,UKEC,UNUR \
-  --focal=BRKS,CARP,CRKD,FINA,FINL,FIRE,FOXR,GOLD,INGR,KITL,KITR,LBTN,LOMI,LPCE,MESI,NATR,OSPK,PARA,PARS,PCEA,TATR,TOOD,UBTN,UOMI,UPCE \
-  --focal=BULK,CLRH,COWN,DUNC,ELKR,HOMA,KISP,KLUM,KOTL,KOTR,KTSU,LARL,LDEN,LKEL,LSKE,MORR,MSKE,NASR,SLOC,SMAR,SUST,USKE,ZYMO \
+  --focal=ALBN,BBAR,BONP,BULK,CARR,CHES,CHIR,CHWK,COTR,DOGC,FRAN,FRCN,HARR,HOMA,KETL,KISP,KLUM,KTSU,LCHL,LCHR,LFRA,LILL,LKEL,LNTH,LSAL,LSKE,MFRA,MORK,MORR,MSKE,NARC,NASR,NECR,NICL,QUES,SAJR,SALR,SETN,SUST,TABR,TAKL,TWAC,UFRA,UNRS,UNUR,USKE,UTRE,WILL,ZYMO \
+  --focal=CARP,COWN,CRKD,FINA,FINL,FIRE,FOXR,INGR,LBTN,LOMI,LPCE,MESI,NATR,OSPK,PARA,PARS,PCEA,TOOD,UBTN,UOMI,UPCE \
+  --focal=COAL,FONT,GATA,GOLD,KITR,LPRO,MDEA,SHER,TSIT,UJER,UKEC \
+  --focal=BRKS,CLRH,DUNC,ELKR,KITL,KOTL,KOTR,LARL,LDEN,LSTR,MSTR,SLOC,SMAR,SPAT,TATR \
   --config=bcfishpass
 ```
 
 ## Downstream-first order per host
 
-**dispatcher (m1)** (39 WSGs)
+**dispatcher (m1)** (56 WSGs)
 
-    LFRA, HARR, CHWK, FRCN, LILL, SETN, THOM, BBAR, BONP, LNIC, LNTH, DOGC, NICL, MFRA, LCHR, TWAC, CHIR, NARC, SAJR, COTR, QUES, CARR, TABR, LCHL, LSAL, MORK, WILL, NECR, SALR, STUR, UFRA, CHES, FRAN, STUL, LTRE, UTRE, MIDR, UNRS, TAKL
+    LFRA, HARR, CHWK, FRCN, LILL, SETN, THOM, BBAR, BONP, LNIC, LNTH, DOGC, NICL, MFRA, LCHR, TWAC, CHIR, NARC, SAJR, COTR, QUES, CARR, TABR, LCHL, LSAL, MORK, WILL, NECR, SALR, STUR, UFRA, CHES, FRAN, STUL, LTRE, UTRE, MIDR, UNRS, TAKL, LSKE, KLUM, LKEL, KISP, ZYMO, BULK, MSKE, MORR, SUST, USKE, ALBN, HOMA, KETL, KTSU, LNAR, NASR, UNUR
 
-**job1** (27 WSGs)
+**job1** (21 WSGs)
 
-    DUNE, BEAV, LIAR, COAL, LMUS, FONT, LPRO, ULRD, DEAR, MDEA, UKEC, FROG, GATA, LSTR, STIR, MSTR, USTK, SPAT, ALBN, KETL, INKR, SHER, TSIT, TESR, JENR, UJER, UNUR
+    LPCE, LBTN, UPCE, PCEA, UBTN, PARA, CARP, FINA, NATR, PARS, CRKD, FINL, INGR, LOMI, MESI, OSPK, TOOD, UOMI, FIRE, FOXR, COWN
 
-**job2** (26 WSGs)
+**job2** (21 WSGs)
 
-    LPCE, LBTN, UPCE, PCEA, UBTN, PARA, CARP, FINA, NATR, PARS, CRKD, FINL, INGR, LOMI, MESI, OSPK, TOOD, UOMI, FIRE, FOXR, BRKS, GOLD, TSAY, KITL, KITR, TATR
+    DUNE, BEAV, LIAR, COAL, LMUS, FONT, LPRO, ULRD, DEAR, MDEA, UKEC, FROG, GATA, GOLD, KITR, INKR, SHER, TSIT, TESR, JENR, UJER
 
-**job3** (27 WSGs)
+**job3** (21 WSGs)
 
-    LSKE, KLUM, LKEL, KISP, ZYMO, BULK, MSKE, MORR, SUST, USKE, LARL, KOTL, SLOC, UARL, BULL, DUNC, REVL, CLRH, ELKR, SMAR, KOTR, COWN, HOMA, KTSU, LDEN, LNAR, NASR
+    LARL, KOTL, SLOC, UARL, BULL, DUNC, REVL, CLRH, ELKR, SMAR, KOTR, LSTR, STIR, MSTR, USTK, SPAT, BRKS, TSAY, KITL, LDEN, TATR
 
 ## Components
 
 | # | focal | modelable | host | focal WSGs |
 |---|---|---|---|---|
 | 1 | 33 | 39 | dispatcher (m1) | BBAR BONP CARR CHES CHIR CHWK COTR DOGC FRAN FRCN HARR LCHL LCHR LFRA LILL LNTH LSAL MFRA MORK NARC NECR NICL QUES SAJR SALR SETN TABR TAKL TWAC UFRA UNRS UTRE WILL |
-| 2 | 20 | 20 | job2 | CARP CRKD FINA FINL FIRE FOXR INGR LBTN LOMI LPCE MESI NATR OSPK PARA PARS PCEA TOOD UBTN UOMI UPCE |
-| 3 | 10 | 10 | job3 | BULK KISP KLUM LKEL LSKE MORR MSKE SUST USKE ZYMO |
+| 2 | 20 | 20 | job1 | CARP CRKD FINA FINL FIRE FOXR INGR LBTN LOMI LPCE MESI NATR OSPK PARA PARS PCEA TOOD UBTN UOMI UPCE |
+| 3 | 10 | 10 | dispatcher (m1) | BULK KISP KLUM LKEL LSKE MORR MSKE SUST USKE ZYMO |
 | 4 | 8 | 11 | job3 | CLRH DUNC ELKR KOTL KOTR LARL SLOC SMAR |
-| 5 | 6 | 13 | job1 | COAL FONT GATA LPRO MDEA UKEC |
-| 6 | 3 | 5 | job1 | LSTR MSTR SPAT |
-| 7 | 1 | 1 | job1 | ALBN |
-| 8 | 1 | 1 | job2 | BRKS |
-| 9 | 1 | 1 | job3 | COWN |
+| 5 | 6 | 13 | job2 | COAL FONT GATA LPRO MDEA UKEC |
+| 6 | 3 | 5 | job3 | LSTR MSTR SPAT |
+| 7 | 1 | 1 | dispatcher (m1) | ALBN |
+| 8 | 1 | 1 | job3 | BRKS |
+| 9 | 1 | 1 | job1 | COWN |
 | 10 | 1 | 1 | job2 | GOLD |
-| 11 | 1 | 1 | job3 | HOMA |
-| 12 | 1 | 1 | job1 | KETL |
-| 13 | 1 | 2 | job2 | KITL |
+| 11 | 1 | 1 | dispatcher (m1) | HOMA |
+| 12 | 1 | 1 | dispatcher (m1) | KETL |
+| 13 | 1 | 2 | job3 | KITL |
 | 14 | 1 | 1 | job2 | KITR |
-| 15 | 1 | 1 | job3 | KTSU |
+| 15 | 1 | 1 | dispatcher (m1) | KTSU |
 | 16 | 1 | 1 | job3 | LDEN |
-| 17 | 1 | 2 | job3 | NASR |
-| 18 | 1 | 2 | job1 | SHER |
-| 19 | 1 | 1 | job2 | TATR |
-| 20 | 1 | 1 | job1 | TSIT |
-| 21 | 1 | 3 | job1 | UJER |
-| 22 | 1 | 1 | job1 | UNUR |
+| 17 | 1 | 2 | dispatcher (m1) | NASR |
+| 18 | 1 | 2 | job2 | SHER |
+| 19 | 1 | 1 | job3 | TATR |
+| 20 | 1 | 1 | job2 | TSIT |
+| 21 | 1 | 3 | job2 | UJER |
+| 22 | 1 | 1 | dispatcher (m1) | UNUR |

@@ -47,6 +47,22 @@ if (is.na(n_hosts) || n_hosts < 1L) {
   stop("--hosts must be a positive integer", call. = FALSE)
 }
 
+# Relative throughput per host, dispatcher first. Default from the measured
+# dispatcher:cypher ratio of 2.23x (link#246 pilot, 2026-08-31) — 1 / 2.23 =
+# 0.45. Override with --host-speeds=1,0.45,0.45 when the fleet differs.
+speeds_arg <- arg_val("--host-speeds", "")
+host_speeds <- if (nzchar(speeds_arg)) {
+  as.numeric(trimws(strsplit(speeds_arg, ",")[[1]]))
+} else {
+  c(1, rep(0.45, max(0L, n_hosts - 1L)))
+}
+if (length(host_speeds) != n_hosts || anyNA(host_speeds) ||
+    any(host_speeds <= 0)) {
+  stop("--host-speeds needs ", n_hosts,
+       " positive numbers (dispatcher first), got: ",
+       paste(host_speeds, collapse = ", "), call. = FALSE)
+}
+
 if (identical(Sys.getenv("LNK_LOAD"), "loadall")) {
   suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
 } else {
@@ -177,22 +193,34 @@ weight_of <- function(wsgs) {
 }
 comp_weight <- vapply(resolved, weight_of, numeric(1))
 
-# --- 5. greedy LPT pack ----------------------------------------------------
+# --- 5. greedy LPT pack, speed-aware ---------------------------------------
+# The hosts are NOT interchangeable. Measured 2026-08-31 on identical work,
+# per 1000 persisted segments: dispatcher 0.0391 min, cypher 0.0872 min — the
+# cyphers are **2.23x slower**. Packing by raw segment count therefore
+# balances WORK and unbalances TIME: a cypher handed half the dispatcher's
+# segments still finishes later, and the makespan is set by a host that was
+# given less to do.
+#
+# So each component goes to the host that would COMPLETE it earliest, which is
+# LPT for heterogeneous machines. Load is accumulated in dispatcher-equivalent
+# minutes, not segments.
+#
+# There is deliberately no relabelling step any more. The previous version
+# packed into anonymous equal-speed bins and then renamed them by descending
+# load so host 1 held the most — which is meaningless once the hosts differ,
+# because host 1 IS the dispatcher and cannot be swapped for a cypher. The
+# fast host now ends up with more work on its own, because it finishes sooner.
 ord <- order(-comp_weight)
-load_h <- rep(0, n_hosts)
+load_h <- rep(0, n_hosts)          # dispatcher-equivalent minutes
+seg_h  <- rep(0, n_hosts)          # raw segments, for the report
 assign_h <- integer(length(resolved))
 for (i in ord) {
-  pick <- which.min(load_h)
+  finish <- load_h + comp_weight[i] / host_speeds
+  pick <- which.min(finish)
   assign_h[i] <- pick
-  load_h[pick] <- load_h[pick] + comp_weight[i]
+  load_h[pick] <- finish[pick]
+  seg_h[pick] <- seg_h[pick] + comp_weight[i]
 }
-
-# Host 1 is the dispatcher: free and fast, so it should carry the most.
-# Reorder host labels by descending load so that is true by construction.
-host_order <- order(-load_h)
-relabel <- stats::setNames(seq_along(host_order), host_order)
-assign_h <- as.integer(relabel[as.character(assign_h)])
-load_h <- load_h[host_order]
 
 host_focal <- lapply(seq_len(n_hosts), function(h) {
   unlist(components[assign_h == h], use.names = FALSE)
@@ -267,13 +295,16 @@ for (i in seq_along(components)) {
 }
 
 cat("\n## Host buckets\n\n")
-cat("| host | components | focal | modelable | weight (segments) |\n")
-cat("|---|---|---|---|---|\n")
+cat("| host | speed | components | focal | modelable | segments | est. share |\n")
+cat("|---|---|---|---|---|---|---|\n")
 for (h in seq_len(n_hosts)) {
-  cat(sprintf("| %s | %d | %d | %d | %s |\n", host_label(h),
-              sum(assign_h == h), length(host_focal[[h]]),
-              length(host_wsgs[[h]]), format(load_h[h], big.mark = ",")))
+  cat(sprintf("| %s | %.2fx | %d | %d | %d | %s | %.2f |\n", host_label(h),
+              host_speeds[h], sum(assign_h == h), length(host_focal[[h]]),
+              length(host_wsgs[[h]]), format(seg_h[h], big.mark = ","),
+              load_h[h] / max(load_h)))
 }
+cat(sprintf("\nmakespan is set by %s; balance = %.0f%% (100%% = every host finishes together)\n",
+            host_label(which.max(load_h)), 100 * mean(load_h) / max(load_h)))
 cat(sprintf("\ntotal modelable: %d | dropped by species presence: %d\n",
             length(flat),
             length(unique(unlist(closures))) - length(flat)))
@@ -328,12 +359,13 @@ if (do_write) {
   wr("")
   wr("## Host buckets")
   wr("")
-  wr("| host | components | focal | modelable | weight (segments) |")
-  wr("|---|---|---|---|---|")
+  wr("| host | speed | components | focal | modelable | segments | est. share |")
+  wr("|---|---|---|---|---|---|---|")
   for (h in seq_len(n_hosts)) {
-    wr(sprintf("| %s | %d | %d | %d | %s |", host_label(h),
-               sum(assign_h == h), length(host_focal[[h]]),
-               length(host_wsgs[[h]]), format(load_h[h], big.mark = ",")))
+    wr(sprintf("| %s | %.2fx | %d | %d | %d | %s | %.2f |", host_label(h),
+               host_speeds[h], sum(assign_h == h), length(host_focal[[h]]),
+               length(host_wsgs[[h]]), format(seg_h[h], big.mark = ","),
+               load_h[h] / max(load_h)))
   }
   wr("")
   wr(sprintf("%d focal WSGs resolve to %d components and %d modelable WSGs.",
