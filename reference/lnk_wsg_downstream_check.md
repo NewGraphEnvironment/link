@@ -58,7 +58,7 @@ lnk_wsg_downstream_check(
 - outlets:
 
   Per-group outlet points; defaults to
-  [`fresh::frs_wsg_outlets()`](https://newgraphenvironment.github.io/fresh/reference/frs_wsg_outlets.html).
+  [`fresh::frs_wsg_outlets()`](https://rdrr.io/pkg/fresh/man/frs_wsg_outlets.html).
 
 ## Value
 

@@ -236,7 +236,7 @@ issue’s own motivating example. Operators would learn to reach for the
 override and the guard would stop meaning anything. Testing each dam
 with the measure-aware `whse_basemapping.fwa_downstream()` from the
 outlet shipped by
-[`fresh::frs_wsg_outlets()`](https://newgraphenvironment.github.io/fresh/reference/frs_wsg_outlets.html)
+[`fresh::frs_wsg_outlets()`](https://rdrr.io/pkg/fresh/man/frs_wsg_outlets.html)
 gives PARS its three real dams (Peace Canyon, Site C, W.A.C. Bennett),
 SLOC the Brilliant Dam, and BULK nothing. It is complete rather than
 merely cheaper: access walks downstream from every segment and every
@@ -530,7 +530,7 @@ Fix a BT/ST `accessible_km` over-credit and add the per-WSG
 ([\#223](https://github.com/NewGraphEnvironment/link/issues/223),
 [\#221](https://github.com/NewGraphEnvironment/link/issues/221)). The
 stream break source `gradient_barriers_minimal` was fed the
-[`fresh::frs_barriers_minimal()`](https://newgraphenvironment.github.io/fresh/reference/frs_barriers_minimal.html)
+[`fresh::frs_barriers_minimal()`](https://rdrr.io/pkg/fresh/man/frs_barriers_minimal.html)
 downstream-most reduction as a *segmentation* source, so a single stream
 segment straddled the accessibility frontier and its whole reach —
 including the blocked reach above the barrier — was credited accessible
@@ -539,7 +539,7 @@ including the blocked reach above the barrier — was credited accessible
 falls positions into `gradient_barriers_minimal` so streams break at
 every frontier — mirroring the orphan path already in the code and
 matching bcfishpass, which segments at every gradient barrier;
-[`fresh::frs_barriers_minimal()`](https://newgraphenvironment.github.io/fresh/reference/frs_barriers_minimal.html)
+[`fresh::frs_barriers_minimal()`](https://rdrr.io/pkg/fresh/man/frs_barriers_minimal.html)
 is now unused in link.
 [`lnk_compare_rollup()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_rollup.md)
 gains an `accessible_km` column and a reusable
@@ -685,7 +685,7 @@ New exported function
 — the bundle-aware “what WSGs should we model?” resolver
 ([\#207](https://github.com/NewGraphEnvironment/link/issues/207)).
 Composes the FWA drainage closure (now a fresh primitive:
-[`fresh::frs_wsg_drainage()`](https://newgraphenvironment.github.io/fresh/reference/frs_wsg_drainage.html),
+[`fresh::frs_wsg_drainage()`](https://rdrr.io/pkg/fresh/man/frs_wsg_drainage.html),
 [NewGraphEnvironment/fresh#211](https://github.com/NewGraphEnvironment/fresh/pull/212)
 / fresh v0.32.0) with the bundle’s `wsg_species_presence` filter
 (link#157). Three call patterns dispatched by `(wsgs, expand)`: province
@@ -1325,7 +1325,7 @@ per-phase summary:
   detection via `.lnk_validate_persist_table()`. Errors loud when an
   existing target table has unexpected `GENERATED ALWAYS` columns
   (catches cypher snapshots baked when
-  [`fresh::frs_col_generate()`](https://newgraphenvironment.github.io/fresh/reference/frs_col_generate.html)
+  [`fresh::frs_col_generate()`](https://rdrr.io/pkg/fresh/man/frs_col_generate.html)
   had been run on `fresh.streams`). `force_recreate = TRUE`
   DROPs+recreates with correct DDL. 6 new tests cover detection,
   force-recreate, no-op, and arg validation.
@@ -1418,7 +1418,7 @@ Closes [\#154](https://github.com/NewGraphEnvironment/link/issues/154).
 now reproduces bcfp’s PSCIS-to-modelled auto-snap layer byte-identically
 via the fresh primitive composition
 (`lnk_points_snap(num_features = 5L)` +
-[`fresh::frs_candidates_pick()`](https://newgraphenvironment.github.io/fresh/reference/frs_candidates_pick.html) +
+[`fresh::frs_candidates_pick()`](https://rdrr.io/pkg/fresh/man/frs_candidates_pick.html) +
 bcfp-shape scoring/dedup SQL). Phase A `mapping_code` parity hits ≥99%
 on every in-WSG species across ADMS, BULK, WILL, PARS — BULK jumped ~80%
 → ~99.5%, WILL ~86% → ~99.7%. PARS BT 60% remains cross-WSG `dam_dnstr`
@@ -2035,7 +2035,7 @@ classified its upper portion as accessible.
 ## link 0.22.0
 
 Wires
-[`fresh::frs_order_child`](https://newgraphenvironment.github.io/fresh/reference/frs_order_child.html)
+[`fresh::frs_order_child`](https://rdrr.io/pkg/fresh/man/frs_order_child.html)
 into the pipeline as link methodology — small streams plugging directly
 into large rivers can be credited as rearing despite low/missing FWA
 channel-width estimates. Closes
@@ -2610,7 +2610,7 @@ bcfishpass vignette pulled out of pkgdown until tighter.
 - Open follow-ups: rollup-query retarget to `streams_habitat_linear` for
   apples-to-apples post-overlay comparison; range-containment relaxation
   in
-  [`fresh::frs_habitat_overlay`](https://newgraphenvironment.github.io/fresh/reference/frs_habitat_overlay.html).
+  [`fresh::frs_habitat_overlay`](https://rdrr.io/pkg/fresh/man/frs_habitat_overlay.html).
 
 ## link 0.11.1
 
@@ -2934,7 +2934,7 @@ calls.
   — load falls / definite / control / habitat CSVs, detect gradient
   barriers, compute per-species barrier skip list, reduce to minimal set
   via
-  [`fresh::frs_barriers_minimal()`](https://newgraphenvironment.github.io/fresh/reference/frs_barriers_minimal.html),
+  [`fresh::frs_barriers_minimal()`](https://rdrr.io/pkg/fresh/man/frs_barriers_minimal.html),
   load base segments
 - Add
   [`lnk_pipeline_break()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_break.md)
@@ -2943,7 +2943,7 @@ calls.
 - Add
   [`lnk_pipeline_classify()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_classify.md)
   — assemble access-gating breaks table and run
-  [`fresh::frs_habitat_classify()`](https://newgraphenvironment.github.io/fresh/reference/frs_habitat_classify.html)
+  [`fresh::frs_habitat_classify()`](https://rdrr.io/pkg/fresh/man/frs_habitat_classify.html)
 - Add
   [`lnk_pipeline_connect()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_connect.md)
   — per-species rearing-spawning clustering and connected-waterbody
