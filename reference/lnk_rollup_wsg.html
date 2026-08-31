@@ -132,11 +132,11 @@ phase). Length is never dropped by a missing access row, so the
 habitat metrics (<code>spawning_km</code>, <code>rearing_km</code>) are unaffected.</p>
 <p>Because the per-species columns are aliased to fixed names, the
 <code>metrics</code> SQL is written <strong>once</strong>, species-agnostic — mirroring
-<code><a href="https://rdrr.io/pkg/fresh/man/frs_aggregate.html" class="external-link">fresh::frs_aggregate()</a></code>'s <code>metrics</code> / <code>where</code> shape. Adding a species
+<code><a href="https://newgraphenvironment.github.io/fresh/reference/frs_aggregate.html" class="external-link">fresh::frs_aggregate()</a></code>'s <code>metrics</code> / <code>where</code> shape. Adding a species
 is a <code>species</code> vector edit, not a query edit.</p>
 <p>This is a <strong>flat per-WSG <code>GROUP BY</code></strong> — it sums whole-WSG length by
 <code>(watershed_group_code, species_code)</code>. It is distinct from
-<code><a href="lnk_aggregate.html">lnk_aggregate()</a></code> / <code><a href="https://rdrr.io/pkg/fresh/man/frs_aggregate.html" class="external-link">fresh::frs_aggregate()</a></code>, which roll habitat up the
+<code><a href="lnk_aggregate.html">lnk_aggregate()</a></code> / <code><a href="https://newgraphenvironment.github.io/fresh/reference/frs_aggregate.html" class="external-link">fresh::frs_aggregate()</a></code>, which roll habitat up the
 network <em>upstream of individual crossings</em> (point-based traversal). Use
 this for WSG totals; use those for per-crossing upstream summaries.</p>
 <p><code>accessible_km</code> sums <code>access IN (1, 2)</code> — link's per-species access
@@ -151,7 +151,7 @@ different (pre-gating) semantics and diverges from the access model
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p><code><a href="lnk_compare_rollup.html">lnk_compare_rollup()</a></code>, <code><a href="lnk_aggregate.html">lnk_aggregate()</a></code>,
-<code><a href="https://rdrr.io/pkg/fresh/man/frs_aggregate.html" class="external-link">fresh::frs_aggregate()</a></code></p>
+<code><a href="https://newgraphenvironment.github.io/fresh/reference/frs_aggregate.html" class="external-link">fresh::frs_aggregate()</a></code></p>
 <p>Other compare:
 <code><a href="lnk_access.html">lnk_access()</a></code>,
 <code><a href="lnk_compare_mapping_code.html">lnk_compare_mapping_code()</a></code>,

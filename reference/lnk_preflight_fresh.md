@@ -5,7 +5,7 @@
 including a default argument on an exported function
 ([`lnk_wsg_downstream_check()`](https://newgraphenvironment.github.io/link/reference/lnk_wsg_downstream_check.md),
 whose `outlets` defaults to
-[`fresh::frs_wsg_outlets()`](https://rdrr.io/pkg/fresh/man/frs_wsg_outlets.html)).
+[`fresh::frs_wsg_outlets()`](https://newgraphenvironment.github.io/fresh/reference/frs_wsg_outlets.html)).
 A `fresh` that is merely *present* is therefore not enough — it has to
 export the symbols.
 

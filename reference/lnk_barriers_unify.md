@@ -67,7 +67,7 @@ Per-WSG output is persisted to the province-wide table by
 using the same idempotent DELETE-WHERE-WSG + INSERT pattern already used
 for `streams` and `streams_habitat_<sp>`. Cross-WSG `dam_dnstr_ind`
 resolves correctly because
-[`fresh::frs_network_features()`](https://rdrr.io/pkg/fresh/man/frs_network_features.html)
+[`fresh::frs_network_features()`](https://newgraphenvironment.github.io/fresh/reference/frs_network_features.html)
 walks FWA topology and doesn't care which WSG a barrier physically lives
 in — fixes the PARS BT 60% defect (PARS drains through dams in PCEA/UPCE
 WSGs) and unblocks any regional run.

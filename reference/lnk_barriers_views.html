@@ -109,7 +109,7 @@ per species (<code>_unified</code> + <code>_access</code>) + three source-typed 
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>The views point at the province-wide table — cross-WSG dnstr walks
-resolve correctly because <code><a href="https://rdrr.io/pkg/fresh/man/frs_network_features.html" class="external-link">fresh::frs_network_features()</a></code> walks
+resolve correctly because <code><a href="https://newgraphenvironment.github.io/fresh/reference/frs_network_features.html" class="external-link">fresh::frs_network_features()</a></code> walks
 FWA topology and reads from the view (which is the unified table).
 Fixes the PARS BT 60% defect (PARS drains through dams in PCEA /
 UPCE WSGs) and unblocks any regional run.</p>
@@ -128,7 +128,7 @@ MINUS the observation/habitat override (anti-join <code>barrier_overrides</code>
 ∪ all <code>USER_DEFINITE</code> (override-exempt). Dams/PSCIS/modelled are
 excluded — they annotate token2 via the per-source views, never block
 access. Same feature shape (<code>barriers_&lt;sp&gt;_access_id</code> + ltrees + geom)
-so <code><a href="lnk_pipeline_access.html">lnk_pipeline_access()</a></code> / <code><a href="https://rdrr.io/pkg/fresh/man/frs_network_features.html" class="external-link">fresh::frs_network_features()</a></code> consume it
+so <code><a href="lnk_pipeline_access.html">lnk_pipeline_access()</a></code> / <code><a href="https://newgraphenvironment.github.io/fresh/reference/frs_network_features.html" class="external-link">fresh::frs_network_features()</a></code> consume it
 unchanged. See <code>RUNBOOK.md</code> §5.</p></li>
 </ul><p>Per-source views (matching the bcfp source-typed tables consumed by
 the <code>barrier_sources</code> arg of <code>lnk_pipeline_access</code>):</p><ul><li><p><code>&lt;schema&gt;.barriers_anthropogenic_unified</code> — <code>barrier_source IN ('PSCIS','CABD','MODELLED')</code>.</p></li>
