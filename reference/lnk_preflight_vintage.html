@@ -19,7 +19,7 @@ set, and said nothing about it anywhere (link#246)."><meta property="og:image" c
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.47.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.47.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -93,9 +93,10 @@ snapshot-loaded set.</p></dd>
 
 
 <dt id="arg-vintage">vintage<a class="anchor" aria-label="anchor" href="#arg-vintage"></a></dt>
-<dd><p>A data frame with <code>table_name</code> and <code>last_analyze</code>.
-Defaults to reading <code>conn</code>; pass directly to test, or to judge a
-stamp collected on another host.</p></dd>
+<dd><p>A data frame with <code>table_name</code> and <code>last_analyze</code>, and
+optionally <code>table_exists</code>. Defaults to reading <code>conn</code>; pass directly to
+test, or to judge a stamp collected on another host. Rows in a frame
+without <code>table_exists</code> are taken to exist.</p></dd>
 
 
 <dt id="arg-quiet">quiet<a class="anchor" aria-label="anchor" href="#arg-quiet"></a></dt>
@@ -104,8 +105,9 @@ stamp collected on another host.</p></dd>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>Invisibly, a list with <code>ok</code>, <code>vintage</code>, <code>stale</code>, <code>missing</code>,
-<code>oldest_days</code> and <code>message</code>.</p>
+    <p>Invisibly, a list with <code>ok</code>, <code>vintage</code>, <code>stale</code>, <code>absent</code>,
+<code>unknown</code>, <code>missing</code> (the union of the last two, kept for callers that
+only care that something was wrong), <code>oldest_days</code> and <code>message</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -113,14 +115,22 @@ stamp collected on another host.</p></dd>
 FWA. They are never <code>ANALYZE</code>d, so they carry no vintage at all and are
 not an axis this can measure — including them would mean every host
 failing forever on data that is not the staleness risk.</p>
-<p><strong>Absence is not a pass.</strong> A table missing from the result, and a table
-present with a NULL timestamp, both fail — in the same direction as a
-stale one. A query returning nothing must never read as "nothing is
-stale".</p>
-<p><code>last_analyze</code> alone is unusable here: measured across all ten
-primitives it is NULL on every one, and only <code>last_autoanalyze</code> is
-populated. <code>GREATEST</code> of the two is the usable signal — in Postgres it
-ignores NULLs and is NULL only when every argument is.</p>
+<p><strong>Absence is not a pass</strong>, but absence and ignorance are different
+failures and are reported as such. A table that does not exist is
+<code>absent</code>; one that exists but yields no usable timestamp is <code>unknown</code>.
+Both fail, in the same direction as a stale one — a query returning
+nothing must never read as "nothing is stale" — but they send an operator
+to different places. Conflating them cost a pilot run, which reported
+<code>never loaded / absent</code> for a table that was present and healthy.</p>
+<p>Two statistics quirks make this fiddlier than it looks. <code>last_analyze</code>
+alone is unusable: measured across all ten primitives it is NULL on every
+one and only <code>last_autoanalyze</code> is populated, so the query takes
+<code>GREATEST</code> of the pair (in Postgres that ignores NULLs and is NULL only
+when every argument is). And on a <strong>freshly restored</strong> database neither is
+set — statistics are collected by (auto)analyze, so a table that was just
+loaded has rows and no stats at all. The query therefore falls back to the
+relation file's mtime, which exists for any real table. That fallback is
+why <code>unknown</code> should be unreachable in practice.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

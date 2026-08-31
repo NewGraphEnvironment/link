@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.47.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.47.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,14 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.47.1" id="link-0471">link 0.47.1<a class="anchor" aria-label="anchor" href="#link-0471"></a></h2>
+<p>Fixes two defects in the v0.47.0 pre-flight gates, both found by piloting them against a real cypher for the first time (<a href="https://github.com/NewGraphEnvironment/link/issues/246" class="external-link">#246</a>). Both would have blocked the provincial run, and neither could have been caught by the tests as written.</p>
+<p><strong>The parity gate’s dirty-tree check fired on every real run.</strong> <code>preflight_hosts()</code> ran <code><a href="../reference/lnk_preflight_parity.html">lnk_preflight_parity()</a></code> with the default <code>forbid_dirty = TRUE</code>, but by the time it runs both hosts are dirty <em>by their own normal operation</em>: the dispatcher has written five run logs into the tracked <code>data-raw/logs/study_area_run/</code>, and <code>snapshot_bcfp.sh</code> has stamped <code>data-raw/logs/bcfp_baselines.csv</code> on each cypher. The check now runs only pre-spin in <code>preflight_local()</code>, which is the meaningful moment — <code>repo_sha</code> equality still proves both hosts are on the same commit, which is what parity actually asserts. It passed its tests only because the fixtures set <code>dirty = "FALSE"</code>: a fixture that could not reach the failure mode, which is the rule the same PR had just written into its own findings.</p>
+<p><strong>The vintage gate could not tell “absent” from “no statistics yet”.</strong> It reported <code>never loaded / absent: bcfishobs.observations</code> for a table that existed and was healthy. Statistics are collected by (auto)analyze, so on a <strong>freshly restored</strong> database — exactly what a cypher has after <code>snapshot_bcfp</code> — a table has rows and no stats at all, and <code>GREATEST(last_analyze, last_autoanalyze)</code> is NULL. The query now carries <code>table_exists</code> separately and falls back to the relation file’s mtime, verified against a deliberately missing table (both <code>pg_relation_filepath</code> and <code>pg_stat_file</code> are strict, so absence yields NULL rather than an error). Absence and ignorance are now distinct states — <code>absent</code> and <code>unknown</code> — because both fail but they send an operator to different places.</p>
+<p>Both fixes keep the property that made the gates worth having: absence is still not a pass, a short result is still not agreement, and turning the dirty check off does not turn the gate off (tested — a <code>repo_sha</code> or <code>fresh_version</code> divergence still fails with <code>forbid_dirty = FALSE</code>).</p>
+<p>Also records what the pilots established, since it is what the next run depends on. <code>cypher_up</code> reports <code>ready</code> roughly <strong>227 s before <code>cypher@</code> actually works</strong>, because it polls for a marker baked into the snapshot image while <code>runcmd</code> — which copies root’s SSH keys to the <code>cypher</code> user — is still running. link’s prep now waits on a deadline for that specific user and fails loudly rather than falling through to <code>scp: Connection closed</code> (shipped in 0.47.0’s line of work as <a href="https://github.com/NewGraphEnvironment/link/pull/251" class="external-link">#251</a>); the root cause is fixed upstream in <a href="https://github.com/NewGraphEnvironment/rtj/pull/250" class="external-link">NewGraphEnvironment/rtj#250</a>.</p>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.47.0" id="link-0470">link 0.47.0<a class="anchor" aria-label="anchor" href="#link-0470"></a></h2>
 <p>Closes the three gaps that would have made a provincial rerun silently skip most of its work (<a href="https://github.com/NewGraphEnvironment/link/issues/246" class="external-link">#246</a>), and absorbs the sibling-host parity hook (<a href="https://github.com/NewGraphEnvironment/link/issues/183" class="external-link">#183</a>).</p>
