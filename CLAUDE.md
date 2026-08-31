@@ -9,7 +9,52 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Repository:** NewGraphEnvironment/link
 **Primary Language:** R
 **Prefix:** `lnk_`
-**Branch:** `main` (v0.46.0 as of 2026-08-28)
+**Branch:** `main` (v0.47.2 as of 2026-08-31)
+
+## Status (2026-08-31) — v0.47.2 shipped (#246 Phases 1-2; orchestration proven on a real cypher)
+
+**The pre-flight gates exist and are exercised.** #246's Phases 1-2 shipped as
+v0.47.0-0.47.2. Root cause of the "silently skips 80 of 119 WSGs" failure was
+narrower than the issue stated: `fresh` was declared in **Suggests**, and
+`pak::local_install()` resolves hard deps only, so the `Remotes:` pin at
+DESCRIPTION was never applied and cyphers ran the image's fresh 0.31.0. Moving
+it to Imports fixes it with no change to the pak call. New
+`lnk_preflight_fresh()` asserts **symbols, not a version string**, with a drift
+guard that walks link's own namespace (not `R/`, which does not exist in an
+installed package).
+
+**Four cypher pilots, ~$1.00, four defects** — full record in
+`research/run_record_2026_08_31_cypher_pilots.md`, logs in
+`data-raw/logs/study_area_run/20260831_*`. Measured rates that now drive
+everything: dispatcher **0.0391** vs cypher **0.0872** min per 1000 persisted
+segments (**2.23x**), recompute 0.0112, persisted/source ratio ~3.5.
+
+### Three corrections to earlier beliefs — do not re-derive these
+
+1. **A wipe is NOT required for a provenanced rebuild.** #246 Phase 3 proposes
+   `DROP SCHEMA fresh CASCADE`. Unnecessary: `lnk_pipeline_persist` replaces per
+   WSG (`DELETE ... WHERE watershed_group_code`), and the 93 WSGs in `fresh` are
+   a **strict subset** of the 119-WSG run — zero orphans. Re-running overwrites
+   everything and adds 26. No destructive step, no empty window.
+2. **Only Peace is FWCP.** Fraser and Skeena are **HCTF** (provincial). "The 3
+   FWCP study areas" was wrong and propagated into several docs.
+3. **Field scope != model scope.** A GIS project's `watershed_groups`
+   (`rtj/.../project.yml`) is where crews collected; the reporting repo's
+   `wsg_code` is what is modelled. Peace is 8 vs 16.
+
+### Scope, honestly
+
+The "provincial" 119 is the drainage closure of *current* focal areas — BC has
+246 WSGs and **217 are modelable**. All-BC is 1.76x the work (4.49M vs 2.56M
+source segments), so "look anywhere" means 217, not 119.
+
+Estimates at m1+3 cyphers: field scope (34 WSGs) ~1.7h, the 119 ~4.3h, all-BC
+~7.3h. The serial recompute becomes the bottleneck past m1+5 — **#250**
+(parallelise it) is worth more than three extra machines.
+
+**Primitives refreshed 2026-08-31 21:45** on m1; the vintage gate passes at its
+7-day default. Open: **#246** (Phases 3-5), **#247** (`snapshot_stamp`), **#250**
+(parallel recompute), soul#129 (SRED evidence convention).
 
 ## Status (2026-08-06) — v0.45.1 shipped (WSG drainage closure rebuilt; #227 re-scoped)
 
