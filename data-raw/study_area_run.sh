@@ -499,7 +499,19 @@ suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
 s <- utils::read.delim(a[1], header = FALSE, colClasses = "character",
                        na.strings = character(0),
                        col.names = .lnk_preflight_stamp_cols())
-res <- lnk_preflight_parity(s, n_expected = as.integer(a[2]))
+# forbid_dirty = FALSE here, and ONLY here. The pre-spin check in
+# preflight_local() already required a clean dispatcher tree, which is the
+# meaningful moment. By the time this runs, BOTH hosts are dirty by their own
+# normal operation: the dispatcher has written five run logs into the tracked
+# data-raw/logs/study_area_run/, and snapshot_bcfp.sh has stamped
+# data-raw/logs/bcfp_baselines.csv on the cypher. Leaving it on made the gate
+# fire on every real run — it passed its tests only because the fixtures set
+# dirty = "FALSE", a fixture that could not reach the failure mode.
+#
+# repo_sha equality still proves both hosts are on the same commit, which is
+# what parity is actually asserting.
+res <- lnk_preflight_parity(s, n_expected = as.integer(a[2]),
+                            forbid_dirty = FALSE)
 quit(status = if (isTRUE(res$ok)) 0L else 1L)
 ' "$1" "$((N_CY + 1))")
 }

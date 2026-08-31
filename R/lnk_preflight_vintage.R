@@ -13,15 +13,23 @@
 #' not an axis this can measure — including them would mean every host
 #' failing forever on data that is not the staleness risk.
 #'
-#' **Absence is not a pass.** A table missing from the result, and a table
-#' present with a NULL timestamp, both fail — in the same direction as a
-#' stale one. A query returning nothing must never read as "nothing is
-#' stale".
+#' **Absence is not a pass**, but absence and ignorance are different
+#' failures and are reported as such. A table that does not exist is
+#' `absent`; one that exists but yields no usable timestamp is `unknown`.
+#' Both fail, in the same direction as a stale one — a query returning
+#' nothing must never read as "nothing is stale" — but they send an operator
+#' to different places. Conflating them cost a pilot run, which reported
+#' `never loaded / absent` for a table that was present and healthy.
 #'
-#' `last_analyze` alone is unusable here: measured across all ten
-#' primitives it is NULL on every one, and only `last_autoanalyze` is
-#' populated. `GREATEST` of the two is the usable signal — in Postgres it
-#' ignores NULLs and is NULL only when every argument is.
+#' Two statistics quirks make this fiddlier than it looks. `last_analyze`
+#' alone is unusable: measured across all ten primitives it is NULL on every
+#' one and only `last_autoanalyze` is populated, so the query takes
+#' `GREATEST` of the pair (in Postgres that ignores NULLs and is NULL only
+#' when every argument is). And on a **freshly restored** database neither is
+#' set — statistics are collected by (auto)analyze, so a table that was just
+#' loaded has rows and no stats at all. The query therefore falls back to the
+#' relation file's mtime, which exists for any real table. That fallback is
+#' why `unknown` should be unreachable in practice.
 #'
 #' @param conn A [DBI::DBIConnection-class] to the host's local fwapg, or
 #'   `NULL` when `vintage` is supplied directly.
@@ -29,13 +37,15 @@
 #' @param tables Fully-qualified table names to check. Defaults to the
 #'   snapshot-loaded set.
 #' @param now Reference time. Injectable so tests are not clock-dependent.
-#' @param vintage A data frame with `table_name` and `last_analyze`.
-#'   Defaults to reading `conn`; pass directly to test, or to judge a
-#'   stamp collected on another host.
+#' @param vintage A data frame with `table_name` and `last_analyze`, and
+#'   optionally `table_exists`. Defaults to reading `conn`; pass directly to
+#'   test, or to judge a stamp collected on another host. Rows in a frame
+#'   without `table_exists` are taken to exist.
 #' @param quiet Suppress the human-readable report.
 #'
-#' @return Invisibly, a list with `ok`, `vintage`, `stale`, `missing`,
-#'   `oldest_days` and `message`.
+#' @return Invisibly, a list with `ok`, `vintage`, `stale`, `absent`,
+#'   `unknown`, `missing` (the union of the last two, kept for callers that
+#'   only care that something was wrong), `oldest_days` and `message`.
 #'
 #' @family preflight
 #'
@@ -68,10 +78,32 @@ lnk_preflight_vintage <- function(conn = NULL,
 
   found <- vintage[vintage$table_name %in% tables, , drop = FALSE]
 
-  # Both flavours of "no answer" converge here: a table absent from the
-  # result and a table present with no timestamp.
-  missing <- sort(union(setdiff(tables, found$table_name),
-                        found$table_name[is.na(found$last_analyze)]))
+  # "No answer" is two different states and they need different words.
+  #
+  #   absent  — the table does not exist. Always a failure.
+  #   unknown — it exists but carries no usable timestamp.
+  #
+  # Conflating them cost a pilot run: on a freshly restored database a table
+  # has rows but has never been ANALYZEd, so the statistics views are NULL and
+  # the gate reported `never loaded / absent: bcfishobs.observations` for a
+  # table that was present and fine. `.lnk_vintage_read()` now falls back to
+  # the relation file's mtime, which exists for any real table, so `unknown`
+  # should be unreachable in practice — it is kept as a distinct state rather
+  # than folded back in, because a gate that cannot name what it saw sends
+  # people to the wrong place.
+  #
+  # `table_exists` is optional so a caller can still hand in a bare
+  # (table_name, last_analyze) frame; rows present in such a frame are taken
+  # to exist.
+  exists_col <- if ("table_exists" %in% names(found)) {
+    as.logical(found$table_exists)
+  } else {
+    rep(TRUE, nrow(found))
+  }
+  absent <- sort(union(setdiff(tables, found$table_name),
+                       found$table_name[!is.na(exists_col) & !exists_col]))
+  unknown <- sort(setdiff(found$table_name[is.na(found$last_analyze)], absent))
+  missing <- sort(union(absent, unknown))
 
   age <- as.numeric(difftime(now, found$last_analyze, units = "days"))
   stale <- sort(found$table_name[!is.na(age) & age > max_age_days])
@@ -79,8 +111,9 @@ lnk_preflight_vintage <- function(conn = NULL,
 
   out <- list(ok = length(missing) == 0L && length(stale) == 0L,
               vintage = found, stale = stale, missing = missing,
+              absent = absent, unknown = unknown,
               oldest_days = oldest,
-              message = .lnk_vintage_message(found, stale, missing,
+              message = .lnk_vintage_message(found, stale, absent, unknown,
                                              max_age_days, now))
   if (!quiet) message(out$message)
   invisible(out)
@@ -97,6 +130,7 @@ lnk_preflight_vintage <- function(conn = NULL,
 
 .lnk_vintage_read <- function(conn, tables) {
   empty <- data.frame(table_name = character(0),
+                      table_exists = logical(0),
                       last_analyze = as.POSIXct(character(0)),
                       stringsAsFactors = FALSE)
   if (is.null(conn)) return(empty)
@@ -105,20 +139,34 @@ lnk_preflight_vintage <- function(conn = NULL,
     tables, function(t) as.character(DBI::dbQuoteLiteral(conn, t)),
     character(1))), collapse = ", ")
 
-  # LEFT JOIN so a table that does not exist yields a row with a NULL
-  # timestamp rather than no row — both are failures, and both should be
-  # reported by name rather than inferred from a short result.
+  # LEFT JOIN so a table that does not exist yields a row rather than no row —
+  # its absence is reported by name instead of inferred from a short result.
+  #
+  # `table_exists` is carried separately from the timestamp because the two
+  # answer different questions, and the gate reports them differently.
+  #
+  # The COALESCE fallback to the relation file's mtime is what makes this
+  # usable on a freshly restored database: statistics are collected by
+  # (auto)analyze, so a table that was just loaded has rows and NULL stats.
+  # Measured on m1 — stats and mtime agree to within ~90s on every primitive,
+  # and mtime is populated where stats are not. `pg_relation_filepath` and
+  # `pg_stat_file` are both strict, so a non-existent table yields NULL rather
+  # than an error; verified against a deliberately missing table.
   DBI::dbGetQuery(conn, sprintf(
     "SELECT p.tbl AS table_name,
-            GREATEST(s.last_analyze, s.last_autoanalyze) AS last_analyze
+            (to_regclass(p.tbl) IS NOT NULL) AS table_exists,
+            COALESCE(
+              GREATEST(s.last_analyze, s.last_autoanalyze),
+              (pg_stat_file(pg_relation_filepath(c.oid))).modification
+            ) AS last_analyze
        FROM (VALUES %s) AS p(tbl)
        LEFT JOIN pg_class c ON c.oid = to_regclass(p.tbl)
        LEFT JOIN pg_stat_user_tables s ON s.relid = c.oid", vals))
 }
 
-.lnk_vintage_message <- function(found, stale, missing, max_age_days, now) {
+.lnk_vintage_message <- function(found, stale, absent, unknown, max_age_days, now) {
   head <- sprintf("primitive vintage (window %g d)", max_age_days)
-  if (length(stale) == 0L && length(missing) == 0L) {
+  if (length(stale) == 0L && length(absent) == 0L && length(unknown) == 0L) {
     age <- as.numeric(difftime(now, found$last_analyze, units = "days"))
     return(sprintf("[preflight] %s - OK, oldest %.1f d (%s)",
                    head, max(age),
@@ -131,9 +179,14 @@ lnk_preflight_vintage <- function(conn = NULL,
     parts <- c(parts, sprintf("  stale: %s",
       paste(sprintf("%s (%.0f d)", stale, age[stale]), collapse = ", ")))
   }
-  if (length(missing)) {
-    parts <- c(parts, sprintf("  never loaded / absent: %s",
-                              paste(missing, collapse = ", ")))
+  if (length(absent)) {
+    parts <- c(parts, sprintf("  table does not exist: %s",
+                              paste(absent, collapse = ", ")))
+  }
+  if (length(unknown)) {
+    parts <- c(parts, sprintf(
+      "  exists but no timestamp (stats not collected AND no file mtime): %s",
+      paste(unknown, collapse = ", ")))
   }
   parts <- c(parts,
     "  fix: bash data-raw/snapshot_bcfp.sh --with-bcfp-views --force")
