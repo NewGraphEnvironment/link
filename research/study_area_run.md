@@ -1,7 +1,15 @@
 # Study-area run (tunnel-free, M1-dispatch)
 
-Lean alternative to the 5-host `provincial_run_runbook.md` for running the **3
-FWCP study areas** (Peace / Fraser / Skeena) mapping_code parity. Reuses the
+Lean alternative to the 5-host `provincial_run_runbook.md` for running
+**study-area** mapping_code parity.
+
+> **Corrected 2026-08-31.** This document used to say "the 3 FWCP study areas".
+> Only **Peace** is FWCP; **Fraser and Skeena are HCTF** (provincial). And a
+> project's **field scope** (the WSGs in its GIS/Mergin AOI,
+> `rtj/scripts/gis/projects/<name>/project.yml`) is not its **model scope** (the
+> WSGs its report analyses, `wsg_code` in the reporting repo) — Peace is 8 field
+> vs 16 model. Conflating the two cost an hour. Full table in
+> `research/study_areas.md`. Reuses the
 proven per-WSG build + cypher lifecycle but is **tunnel-free** (compare =
 local bcfp snapshot, no `:63333`) and **M1-as-dispatcher** (no M4). Built for
 link#175. Companion: `provincial_run_runbook.md` (shared mechanics),
@@ -145,3 +153,54 @@ Bucketing is a speed knob, not a correctness lever. Authoritative result: median
 **99.66%**; genuine divergences SETN salmon ~94%, UNRS BT 61.8%. The full-pipeline
 recompute is ~2× on diverged WSGs; a cheap access-only recompute (#205) makes
 recompute-all bulletproof + ~1×.
+
+---
+
+## Pre-flight gates (v0.47.x, link#246)
+
+`study_area_run.sh` no longer trusts its inputs. Two blocks, answering two
+different questions — a cypher's software is *predictable* from the dispatcher
+before the cypher exists, so validate that pre-spin and confirm it post-prep.
+**Predict before spend; verify before write.**
+
+`preflight_local()` (pre-spin, free): dispatcher `fresh` completeness, branch
+pushed *and* worktree clean, `FWAPG_GIT_SHA` resolvable and exported, primitive
+vintage, and **both** DigitalOcean credentials forced through a real API call.
+
+`preflight_hosts()` (post-prep, pre-write): cross-host parity keyed on
+`repo_sha`, and cypher primitive vintage. A failure exits 1, which trips the
+EXIT trap and burns — bounding loss at prep rather than a whole run.
+
+Post-conditions: every host must account for its whole bucket before
+consolidate, and every run WSG must have rows in the persist afterwards.
+
+### Flags added
+
+| flag | |
+|---|---|
+| `--preflight-only` | run local gates and exit, zero spend. **Reports what it did NOT check** |
+| `--refresh-primitives` | `snapshot_bcfp.sh --with-bcfp-views --force` first. Default off |
+| `--vintage-max-days=N` | staleness window, default 7 |
+| `--prep-ssh-wait=N` | wait for `cypher@`, default 600s — see below |
+| `--auto-install` | on parity mismatch, re-run the cyphers' install stage, re-check once |
+| `--preflight-note="why"` | downgrades **only** vintage and parity, and only with a written reason. There is deliberately no global bypass |
+
+### Operational facts worth knowing before a run
+
+- **`cypher_up` reports ready ~227s before `cypher@` works** on a snapshot spin.
+  Fixed upstream (NewGraphEnvironment/rtj#250 — it now polls `cloud-init status`
+  rather than a marker baked into the image), but `--prep-ssh-wait` exists
+  because a caller should not depend on that being right.
+- **The run dirties its own repo** — it writes logs into the tracked
+  `data-raw/logs/study_area_run/`, and `snapshot_bcfp.sh` stamps
+  `bcfp_baselines.csv` on each cypher. So the dirty check runs pre-spin only.
+- **A wipe is NOT required for a provenanced rebuild.** `lnk_pipeline_persist`
+  replaces per WSG (`DELETE ... WHERE watershed_group_code = <aoi>` then INSERT),
+  so re-running a WSG overwrites it. Verified 2026-08-31: the 93 WSGs then in
+  `fresh` were a strict subset of the 119-WSG run, zero orphans.
+- Hosts are **not** interchangeable: dispatcher 0.0391 vs cypher 0.0872 min per
+  1000 persisted segments — **2.23x**. `study_area_buckets.R` packs by finish
+  time; see `--host-speeds=`.
+
+Measured timings and the four defects that produced these numbers:
+`research/run_record_2026_08_31_cypher_pilots.md`.

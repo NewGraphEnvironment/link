@@ -21,3 +21,4 @@ run_started_pdt,host,run_label,link_schema,bcfp_model_run_id,bcfp_model_version,
 2026-06-03 05:35,runnervm3jyl0,csv-sync-20260603,n/a,,v0.7.15-39-g3ca0886,2026-06-03T03:44:28Z,auto-append by csv-sync; head_sha=3ca0886
 2026-07-01 05:05,runnervmmklqx,csv-sync-20260701,n/a,,v0.7.15-41-g2917790,2026-07-01T03:06:02Z,auto-append by csv-sync; head_sha=2917790
 2026-08-12 04:43,runnervmvrwv9,csv-sync-20260812,n/a,,v0.7.15-46-gfd37948,2026-08-12T04:20:02Z,auto-append by csv-sync; head_sha=fd37948
+2026-08-31 14:50,m1,snapshot-20260831,n/a,,v0.7.15-47-ga702229,2026-08-19T04:31:37Z,manual snapshot via data-raw/snapshot_bcfp.sh; --with-bcfp-views; head_sha=a702229

@@ -5,6 +5,29 @@
 
 Generated from 96 focal watershed groups, config `bcfishpass`, 4 hosts.
 
+## Scope, and who funds what
+
+Two scopes exist and are easy to conflate — it cost an hour on 2026-08-31.
+**Field scope** is the WSGs a GIS/Mergin project's AOI covers, recorded in
+`rtj/scripts/gis/projects/<name>/project.yml`. **Model scope** is the WSGs a
+report analyses, recorded as `wsg_code` in the reporting repo. They
+legitimately differ: the entire FWCP Peace region is modelled, while only
+the project WSGs go into the GIS.
+
+| area | funder | field (rtj) | model (reporting repo) |
+|---|---|---|---|
+| Peace | **FWCP** | 8 | 16 |
+| Fraser | **HCTF** (provincial) | 10 | 8 (may be stale) |
+| Skeena | **HCTF** (provincial) | not yet in rtj | 5 |
+| Columbia / nelson | - | 3 | - |
+
+Only Peace is FWCP. Calling all three "the FWCP study areas" was an error
+carried in several docs until 2026-08-31.
+
+Note this file's focal set is **not** all of BC: 246 watershed groups exist,
+217 are modelable, and the set below is the drainage closure of current
+focal areas only.
+
 ## Why components, not study areas
 
 Cross-WSG `;DAM` needs each host's bucket drainage-closed and run
