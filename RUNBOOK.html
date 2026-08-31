@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.46.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.47.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -406,6 +406,43 @@ mc_barrier (from barrier_sources flags, resident vs anadromous differ slightly):
 <p><strong>Override</strong> requires a written justification (<code>LNK_GUARD_DOWNSTREAM_NOTE</code>); a bare <code>TRUE</code> is rejected. The note lands in <code>&lt;persist&gt;.log.notes</code> beside <code>wsg_upstream</code>, so <code><a href="reference/lnk_log_read.html">lnk_log_read()</a></code> reports that the network was built on a stated assumption.</p>
 <p><strong>Known bound:</strong> inherits <code>frs_wsg_drainage()</code>’s one-outlet-per-group model. A WSG draining by two independent paths would be under-covered.</p>
 <hr></div>
+<div class="section level2">
+<h2 id="id_8d-pre-flight-gates-on-a-multi-host-run-link246">8d. Pre-flight gates on a multi-host run (link#246)<a class="anchor" aria-label="anchor" href="#id_8d-pre-flight-gates-on-a-multi-host-run-link246"></a></h2>
+<p>A study-area run spends money and writes to a shared persist, so the gates in <code>study_area_run.sh</code> sit in <strong>two</strong> blocks answering two different questions.</p>
+<p><strong>Why two, not one.</strong> A cypher’s software is <em>predictable</em> from the dispatcher before the cypher exists: its link comes from <code>git reset --hard origin/$LINK_BRANCH</code>, its fresh from link’s <code>DESCRIPTION</code>. So <code>preflight_local()</code> validates what the workers are <em>going to get</em> — free, before the spin — and <code>preflight_hosts()</code> confirms after prep that they got it. Predict before spend; verify before write. Framing it as one gate forces a false choice between checking early and checking truthfully.</p>
+<p><code>preflight_hosts()</code> genuinely cannot run earlier, and that is fine: it runs before any <code>wsg_run_one.R</code> touches the persist, and a failure exits 1, which trips the EXIT trap and burns the cyphers. The loss is bounded at spin + prep rather than a whole run of two mixed model versions landing in one schema with no <code>log</code> table to tell them apart.</p>
+<p><strong>No global bypass, on purpose.</strong> An unconditional <code>--skip-preflight</code> is the affordance that let this class of failure happen. <code>--preflight-note="&lt;why&gt;"</code> downgrades <em>only</em> vintage and parity, and only with a written justification — the same position <code>lnk_wsg_downstream_check(override=)</code> takes. <code>--auto-install</code> is remediation, not a skip: it re-runs the cyphers’ install stage (which re-runs the fresh assertion) and re-checks exactly once.</p>
+<div class="section level3">
+<h3 id="three-things-that-look-like-checks-and-are-not">Three things that look like checks and are not<a class="anchor" aria-label="anchor" href="#three-things-that-look-like-checks-and-are-not"></a></h3>
+<table class="table"><colgroup><col width="50%"><col width="50%"></colgroup><thead><tr><th>looks like</th>
+<th>actually</th>
+</tr></thead><tbody><tr><td>
+<code>tofu plan</code> proves the DO token</td>
+<td>against a zero-resource workspace it returns <code>Plan: N to add</code> <strong>without contacting DO</strong>. And <code>do_token</code> in tfvars is a <em>different</em> credential from doctl’s — both were minted 2026-05-18 and both expired 2026-08-30. Probe each against <code>/v2/account</code>
+</td>
+</tr><tr><td>comparing <code>link_sha</code> across hosts</td>
+<td>it is a real SHA on the <code>load_all</code> dispatcher and <code>NA</code> on every pak-installed cypher, so it can only ever fail. <code>fresh_sha</code> is <code>NA</code> on both, so it can only ever pass. Key on <strong><code>repo_sha</code></strong>, read on each host from the checkout it installed from</td>
+</tr><tr><td>
+<code>max(last_analyze)</code> for vintage</td>
+<td>NULL on all ten primitives, measured. Empty in bash reads as “nothing to see”. Use <code>GREATEST(last_analyze, last_autoanalyze)</code>
+</td>
+</tr></tbody></table></div>
+<div class="section level3">
+<h3 id="the-prep-sentinel">The prep sentinel<a class="anchor" aria-label="anchor" href="#the-prep-sentinel"></a></h3>
+<p><code>cypher_prep.sh</code> ends with a bare <code>=== READY</code>, and the umbrella greps it <strong>anchored</strong> (<code>grep -qx</code>). Do not revert this to <code>snapshot_bcfp.sh: complete</code>, which was wrong in both directions: the snapshot emits it <em>before</em> <code>lnk_persist_init</code> runs, so a persist_init FATAL passed the gate and WSGs ran against a half-prepped cypher; and the snapshot’s legitimate skip-if-current path never emits it at all, so a skipped load read as FATAL. The <code>-x</code> anchor is what stops <code>=== READY (install stage only; ...)</code> satisfying a full-prep check.</p>
+</div>
+<div class="section level3">
+<h3 id="two-post-conditions-and-why-they-are-not-optional">Two post-conditions, and why they are not optional<a class="anchor" aria-label="anchor" href="#two-post-conditions-and-why-they-are-not-optional"></a></h3>
+<p><code>schema_consolidate</code> DELETEs the destination bucket (<code>schema_consolidate.R:272-276</code>) and <em>then</em> COPYs (<code>:313-316</code>). A host that produced nothing therefore does not merely fail to add rows — it <strong>removes</strong> the rows already there for those WSGs and returns <code>ok = TRUE</code>. So:</p>
+<ul><li>before consolidate, every host must account for its whole bucket (<code>[wsg_run_one] … done|SKIP</code> lines counted against the bucket size);</li>
+<li>after consolidate, every run WSG must have rows in <code>&lt;persist&gt;.streams</code>.</li>
+</ul><p>The second is detection rather than prevention, and it is the one that would have caught link#246 on day one regardless of cause.</p>
+</div>
+<div class="section level3">
+<h3 id="host-buckets-are-derived-not-chosen">Host buckets are derived, not chosen<a class="anchor" aria-label="anchor" href="#host-buckets-are-derived-not-chosen"></a></h3>
+<p><code>data-raw/study_area_buckets.R</code> partitions the focal set into drainage-independent components by union-find over per-WSG <code>frs_wsg_drainage()</code> closures, then LPT-packs the components onto hosts and writes <code>research/study_areas.md</code>. Overlapping closures would make consolidate last-writer-wins on the shared WSGs, so the script <strong>asserts</strong> disjointness. Never partition by <code>wscode_ltree</code> root — see §8b.</p>
+<hr></div>
+</div>
 <div class="section level2">
 <h2 id="id_8-fast-verification-recipes">8. Fast verification recipes<a class="anchor" aria-label="anchor" href="#id_8-fast-verification-recipes"></a></h2>
 <div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># What does bcfp emit for a WSG's mapping_code (local snapshot, no tunnel)?</span></span>

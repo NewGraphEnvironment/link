@@ -256,6 +256,18 @@ Redistributed bcfishpass override data carries its own license — see
 - [`lnk_points_snap()`](https://newgraphenvironment.github.io/link/reference/lnk_points_snap.md)
   : Snap a Postgres table of points to the FWA stream network
 
+- [`lnk_preflight_fresh()`](https://newgraphenvironment.github.io/link/reference/lnk_preflight_fresh.md)
+  : Does the installed 'fresh' provide what the pipeline calls?
+
+- [`lnk_preflight_parity()`](https://newgraphenvironment.github.io/link/reference/lnk_preflight_parity.md)
+  : Do all hosts' pre-flight stamps agree?
+
+- [`lnk_preflight_stamp()`](https://newgraphenvironment.github.io/link/reference/lnk_preflight_stamp.md)
+  : One-line provenance stamp for cross-host pre-flight parity
+
+- [`lnk_preflight_vintage()`](https://newgraphenvironment.github.io/link/reference/lnk_preflight_vintage.md)
+  : Are this host's DB primitives fresh enough to model against?
+
 - [`lnk_presence()`](https://newgraphenvironment.github.io/link/reference/lnk_presence.md)
   : Per-AOI species presence with bcfp species-group expansion
 

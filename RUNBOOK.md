@@ -669,6 +669,82 @@ model. A WSG draining by two independent paths would be under-covered.
 
 ------------------------------------------------------------------------
 
+## 8d. Pre-flight gates on a multi-host run (link#246)
+
+A study-area run spends money and writes to a shared persist, so the
+gates in `study_area_run.sh` sit in **two** blocks answering two
+different questions.
+
+**Why two, not one.** A cypher’s software is *predictable* from the
+dispatcher before the cypher exists: its link comes from
+`git reset --hard origin/$LINK_BRANCH`, its fresh from link’s
+`DESCRIPTION`. So `preflight_local()` validates what the workers are
+*going to get* — free, before the spin — and `preflight_hosts()`
+confirms after prep that they got it. Predict before spend; verify
+before write. Framing it as one gate forces a false choice between
+checking early and checking truthfully.
+
+`preflight_hosts()` genuinely cannot run earlier, and that is fine: it
+runs before any `wsg_run_one.R` touches the persist, and a failure exits
+1, which trips the EXIT trap and burns the cyphers. The loss is bounded
+at spin + prep rather than a whole run of two mixed model versions
+landing in one schema with no `log` table to tell them apart.
+
+**No global bypass, on purpose.** An unconditional `--skip-preflight` is
+the affordance that let this class of failure happen.
+`--preflight-note="<why>"` downgrades *only* vintage and parity, and
+only with a written justification — the same position
+`lnk_wsg_downstream_check(override=)` takes. `--auto-install` is
+remediation, not a skip: it re-runs the cyphers’ install stage (which
+re-runs the fresh assertion) and re-checks exactly once.
+
+### Three things that look like checks and are not
+
+| looks like | actually |
+|----|----|
+| `tofu plan` proves the DO token | against a zero-resource workspace it returns `Plan: N to add` **without contacting DO**. And `do_token` in tfvars is a *different* credential from doctl’s — both were minted 2026-05-18 and both expired 2026-08-30. Probe each against `/v2/account` |
+| comparing `link_sha` across hosts | it is a real SHA on the `load_all` dispatcher and `NA` on every pak-installed cypher, so it can only ever fail. `fresh_sha` is `NA` on both, so it can only ever pass. Key on **`repo_sha`**, read on each host from the checkout it installed from |
+| `max(last_analyze)` for vintage | NULL on all ten primitives, measured. Empty in bash reads as “nothing to see”. Use `GREATEST(last_analyze, last_autoanalyze)` |
+
+### The prep sentinel
+
+`cypher_prep.sh` ends with a bare `=== READY`, and the umbrella greps it
+**anchored** (`grep -qx`). Do not revert this to
+`snapshot_bcfp.sh: complete`, which was wrong in both directions: the
+snapshot emits it *before* `lnk_persist_init` runs, so a persist_init
+FATAL passed the gate and WSGs ran against a half-prepped cypher; and
+the snapshot’s legitimate skip-if-current path never emits it at all, so
+a skipped load read as FATAL. The `-x` anchor is what stops
+`=== READY (install stage only; ...)` satisfying a full-prep check.
+
+### Two post-conditions, and why they are not optional
+
+`schema_consolidate` DELETEs the destination bucket
+(`schema_consolidate.R:272-276`) and *then* COPYs (`:313-316`). A host
+that produced nothing therefore does not merely fail to add rows — it
+**removes** the rows already there for those WSGs and returns
+`ok = TRUE`. So:
+
+- before consolidate, every host must account for its whole bucket
+  (`[wsg_run_one] … done|SKIP` lines counted against the bucket size);
+- after consolidate, every run WSG must have rows in
+  `<persist>.streams`.
+
+The second is detection rather than prevention, and it is the one that
+would have caught link#246 on day one regardless of cause.
+
+### Host buckets are derived, not chosen
+
+`data-raw/study_area_buckets.R` partitions the focal set into
+drainage-independent components by union-find over per-WSG
+`frs_wsg_drainage()` closures, then LPT-packs the components onto hosts
+and writes `research/study_areas.md`. Overlapping closures would make
+consolidate last-writer-wins on the shared WSGs, so the script
+**asserts** disjointness. Never partition by `wscode_ltree` root — see
+§8b.
+
+------------------------------------------------------------------------
+
 ## 8. Fast verification recipes
 
 ``` bash
