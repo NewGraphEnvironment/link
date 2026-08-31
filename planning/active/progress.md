@@ -63,3 +63,31 @@ The recurring cause was fixing one instance of a class without sweeping the
 diff for the rest — `grep` exiting 1 under `set -euo pipefail` aborted three
 different code paths across three rounds. Ended by replacing the remembered
 form with `csv_lines()` / `csv_count()`, which cannot be got wrong.
+
+## Session 2026-08-31 — Phases 1-2 shipped and validated on real hardware
+
+Merged: #251 (prep readiness guard), #252 (two gate fixes, v0.47.1), #253
+(finish-time packing), #235 (internal dirs out of build), #254 (v0.47.2 +
+run record), #255 (doc corrections). Upstream NewGraphEnvironment/rtj#250
+(`cloud-init status` readiness) merged, rtj#248 closed.
+
+**Four cypher pilots, ~$1.00, four defects** — two of them in the new gates
+themselves. Pilot 4 clean end-to-end in 7.0 min with full provenance on the
+cypher row, which is #246 Phase 5's acceptance criterion.
+Record: `research/run_record_2026_08_31_cypher_pilots.md`.
+
+Measured: dispatcher 0.0391 vs cypher 0.0872 min/1k persisted segments
+(**2.23x**), recompute 0.0112, persisted/source ~3.5.
+
+**Three beliefs corrected** (now in CLAUDE.md, #246 body, memory, generated
+`research/study_areas.md`): the Phase 3 wipe is **not required** (93 ⊂ 119 and
+persist replaces per-WSG); only Peace is FWCP, Fraser+Skeena are HCTF; field
+scope != model scope.
+
+Primitives refreshed on m1 2026-08-31 21:45 — the one real prerequisite, now
+done. Vintage gate passes at its 7-day default.
+
+**Open decision, not a task:** run the 119 (closure of current focal areas,
+~4.3h) or all 217 modelable BC WSGs (1.76x the work). "Look anywhere" means 217.
+
+Filed: #247, #250, soul#129. PWF is complete apart from archiving.
