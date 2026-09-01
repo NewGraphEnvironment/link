@@ -39,6 +39,14 @@ eval "$(sed -n '/^csv_lines() {/p' "$RUN_SH")"
 eval "$(awk '/^recompute_one\(\)/,/^}/'      "$RUN_SH")"
 eval "$(awk '/^run_recompute_pool\(\)/,/^}/' "$RUN_SH")"
 
+# These are BENCHMARKS, not dispatches: the same WSG set is recomputed
+# repeatedly to measure the pool. LNK_LOG=0 keeps those passes out of
+# <persist>.log_recompute, whose rows would otherwise be byte-indistinguishable
+# from a real post-consolidate recompute — and study_area_verify.sql's "every
+# WSG has both a model and a recompute record" check would then pass on
+# benchmark noise (link#262). Mirrors lnk_pipeline_run(log = FALSE).
+export LNK_LOG=0
+
 export LNK_SCHEMA="$SCHEMA"
 N_WSG=$(csv_lines "$WSGS" | wc -l | tr -d ' ')
 # ${1:?} rejects an unset/empty arg but not "," -- and with N_WSG=0 the

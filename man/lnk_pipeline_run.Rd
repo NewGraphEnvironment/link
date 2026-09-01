@@ -14,6 +14,7 @@ lnk_pipeline_run(
   cleanup_working = TRUE,
   mapping_code = FALSE,
   log = TRUE,
+  run_uid = Sys.getenv("LNK_RUN_UID", NA_character_),
   run_label = Sys.getenv("LNK_RUN_LABEL", NA_character_),
   notes = NA_character_
 )
@@ -60,9 +61,18 @@ any modelling so \code{wsg_upstream} reflects the state the run started
 from; everything after it degrades to a warning rather than failing
 the run. Pass \code{FALSE} for throwaway runs.}
 
+\item{run_uid}{Character. Identifies one \emph{dispatch} — every host and every
+watershed group of a single \code{data-raw/study_area_run.sh} invocation share
+it, so "every row of that run" is one equality rather than a time window
+plus a host list (link#262). Defaults to the \code{LNK_RUN_UID} env var, which
+the driver exports to the local leg and into the cypher ssh string. \code{NA}
+for an ad-hoc single-WSG call is correct: there was no dispatch to belong
+to. Distinct from \code{run_id}, which is minted per call and is the log's PK.}
+
 \item{run_label}{Character. Groups a campaign across hosts and WSGs
-(e.g. \code{"provincial_default_rearbreaks"}). Defaults to the
-\code{LNK_RUN_LABEL} env var so orchestrators can set it once.}
+(e.g. \code{"provincial_default_rearbreaks"}). Operator-supplied free text —
+never assume it is unique; \code{run_uid} is the machine identifier. Defaults
+to the \code{LNK_RUN_LABEL} env var so orchestrators can set it once.}
 
 \item{notes}{Character. Free-form note stored on the run row.}
 }

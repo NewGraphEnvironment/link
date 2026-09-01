@@ -4,7 +4,14 @@
 \alias{lnk_log_read}
 \title{Read the run-provenance log from a persist schema}
 \usage{
-lnk_log_read(conn, cfg, aoi = NULL, latest = TRUE)
+lnk_log_read(
+  conn,
+  cfg,
+  aoi = NULL,
+  latest = TRUE,
+  run_uid = NULL,
+  phase = c("model", "recompute")
+)
 }
 \arguments{
 \item{conn}{DBI connection to the pipeline database.}
@@ -14,7 +21,21 @@ lnk_log_read(conn, cfg, aoi = NULL, latest = TRUE)
 \item{aoi}{Optional watershed group code to filter to.}
 
 \item{latest}{Logical. When \code{TRUE} (default), return only the newest run
-per watershed group. \code{FALSE} returns the full history.}
+per watershed group. \code{FALSE} returns the full history. \strong{Ignored when
+\code{run_uid} is supplied} — see below.}
+
+\item{run_uid}{Optional dispatch identifier (link#262). One dispatch of
+\code{data-raw/study_area_run.sh} stamps the same \code{run_uid} on every host and
+every watershed group, so this is what answers "everything from that run"
+without a time window. Supplying it forces \code{latest = FALSE}: the question
+is "every row of this run", and \verb{DISTINCT ON} would silently drop a WSG
+that was re-run within the same dispatch.}
+
+\item{phase}{Which log to read. \code{"model"} (default) reads \verb{<schema>.log},
+one row per \code{\link[=lnk_pipeline_run]{lnk_pipeline_run()}} call. \code{"recompute"} reads
+\verb{<schema>.log_recompute}, one row per \code{wsg_recompute_one.R} invocation —
+the post-consolidate pass that rewrites \code{streams_access} and
+\code{streams_mapping_code}, which is the output that ships.}
 }
 \value{
 A tibble, newest first.
@@ -41,6 +62,13 @@ lnk_log_read(conn, cfg, aoi = "PINE")
 
 # Every run, newest first.
 lnk_log_read(conn, cfg, latest = FALSE)
+
+# Everything from one dispatch, across every host — no time window.
+lnk_log_read(conn, cfg, run_uid = "20260901T184455-3f9ac1")
+
+# Was each of those WSGs also recomputed?
+lnk_log_read(conn, cfg, run_uid = "20260901T184455-3f9ac1",
+             phase = "recompute")
 }
 }
 \seealso{

@@ -1,109 +1,457 @@
--- Verification for the 2026-08-31 field-scope run.
+-- Verification for a study-area run, keyed on run_uid (link#262).
+--
 -- Independent of the driver's exit code: a wrapper's exit 0 is not the work
 -- completing. Every check below reads what actually landed.
 --
--- Run against local docker fwapg:
---   psql -h localhost -p 5432 -U postgres -d fwapg -f verify_field_run.sql
-
-\echo '=== 1. Provenance: rows written by THIS run (log) ==='
--- Expect 34 completed (date_end NOT NULL -- a row with date_start and no
--- date_end is a WSG that began and never finished, which is what the killed
--- attempt left behind for FRCN).
+--   psql -h localhost -p 5432 -U postgres -d fwapg \
+--        -v ON_ERROR_STOP=1 -v run_uid=20260901T184455-3f9ac1 \
+--        -f data-raw/study_area_verify.sql
 --
--- fresh_sha is expected NULL on the DISPATCHER and non-NULL on CYPHERS.
--- Measured 2026-08-31: m1 installs fresh locally (RemoteType: local, no
--- RemoteSha), so there is no SHA to record; cyphers install from GitHub via
--- the DESCRIPTION Remotes pin and do carry one. Asserting it non-NULL
--- everywhere reports a false failure on a healthy dispatcher.
+-- `-v run_uid=` is optional; without it the most recent labelled run is used.
+-- `-v schema=` defaults to `fresh`.
+--
+-- WHAT CHANGED FROM THE 2026-08-31 VERSION, and why it had to
+-- ------------------------------------------------------------------
+-- That version selected on `date_end > now() - interval '6 hours'` and
+-- compared against a hardcoded 34-WSG VALUES list. Both were wrong for the
+-- provincial run before it was even attempted:
+--
+--   * a time window is ambiguous the moment two runs overlap, and fragile
+--     across three hosts even when they do not;
+--   * a literal WSG list is a scope pinned to nothing — it silently describes
+--     whatever the last campaign happened to be, and at 217 WSGs it would have
+--     verified the wrong 34.
+--
+-- The per-WSG detail is now DERIVED from the run's own rows, so it cannot
+-- drift from the run it claims to check.
+--
+-- BUT the COUNT is supplied from outside, via `-v expected_n=`. Deriving the
+-- expected set entirely from `fresh.log` would be circular: a WSG that never
+-- produced a log row simply vanishes from "expected", and "produced no log
+-- row" is precisely the failure the check exists to catch. That is the
+-- guard-defeated-by-its-own-operation shape, and it is the reason the old
+-- hardcoded VALUES list existed at all — the list was the wrong externality,
+-- not proof that no externality was needed.
+--
+-- expected_n IS THE COUNT OF WSGs EXPECTED TO **MODEL**, WHICH IS NOT THE SIZE
+-- OF THE RUN'S BUCKET. A WSG with no bundle-species presence is skipped by
+-- wsg_run_one.R with exit 0 and writes no log row (link#157), so passing
+-- `csv_count "$ALL_WSGS"` would raise on a perfectly healthy run whenever the
+-- closure contains one. The driver already distinguishes the two: bucket_done()
+-- parses both `done` and `SKIP` lines, so the modelled count is the `done`
+-- lines alone:
+--
+--   sed -nE 's/^\[wsg_run_one\] ([A-Z]{4}) .*done.*/\1/p' <run log> | sort -u | wc -l
+--
+-- Omitting expected_n is legitimate and is reported as NOT CHECKED rather than
+-- silently skipped -- an unasserted count reads exactly like an asserted one.
+--
+-- ON_ERROR_STOP=1 is not decoration. The final check RAISEs, so this script
+-- exits non-zero on a real failure rather than printing a table nobody reads.
+-- It is negative-tested by data-raw/study_area_verify_negative.sh.
+
+\set ON_ERROR_STOP on
+
+\if :{?schema}
+\else
+\set schema fresh
+\endif
+
+-- Optional. Unset means "do not assert the count" -- reported below rather
+-- than silently skipped, because an unasserted count reads as an asserted one.
+\if :{?expected_n}
+\else
+\set expected_n ''
+\endif
+
+-- `-v unpinned_ok='<written reason>'` downgrades a missing bcfp_model_version
+-- from a raise to a printed note.
+--
+-- It exists because the driver and this script disagreed, and the driver was
+-- right. preflight_local() treats a missing bcfp baseline as a WARN, saying so
+-- inline: "an unpinned run is worse provenance but still correct modelling, and
+-- refusing to run over it would make the pin a blocker rather than a record."
+-- Raising here unconditionally meant a run the driver deliberately SANCTIONED
+-- could not pass its own verifier -- and at 217 WSGs the natural response is an
+-- hours-long re-run for a shortfall that costs nothing modelling-wise.
+--
+-- A written reason, not a bare flag. Same mechanism as
+-- study_area_run.sh's --preflight-note= and lnk_wsg_downstream_check(override=):
+-- the justification IS the control, so it cannot be waved through by reflex.
+\if :{?unpinned_ok}
+\else
+\set unpinned_ok ''
+\endif
+
+-- Resolve the run. coalesce + a scalar subquery so exactly one row always
+-- comes back: `\gset` against an empty result leaves the variable UNSET, and
+-- every later `:'run_uid'` would then break with an error about syntax rather
+-- than about the missing run.
+\if :{?run_uid}
+\else
+SELECT coalesce((SELECT run_uid FROM :schema.log
+                  WHERE run_uid IS NOT NULL
+                  ORDER BY date_start DESC LIMIT 1), '') AS run_uid \gset
+\endif
+
+-- Absence of evidence reported as absence. An unlabelled run yields zero rows
+-- for every check below, and zero rows printed is indistinguishable from
+-- "everything passed" — the exact failure mode this file exists to avoid.
+SELECT (:'run_uid' <> '') AS have_run \gset
+\if :have_run
+\else
+\echo ''
+\echo 'FATAL: no run_uid supplied and none found in the log.'
+\echo '  Every check here is scoped to one run, so without an id they would'
+\echo '  each return zero rows -- which prints as though nothing was wrong.'
+\echo '  Re-run the campaign with data-raw/study_area_run.sh (which mints and'
+\echo '  exports LNK_RUN_UID), or pass -v run_uid=<id> explicitly.'
+-- RAISE, not `\quit 1`. psql's \quit takes NO exit-code argument: it warns
+-- `extra argument "1" ignored` and exits 0 (measured, psql 18.3). So the
+-- natural form prints FATAL in red and then reports success — a
+-- fail-toward-pass on the exact branch that exists to stop a silent zero-row
+-- pass. ON_ERROR_STOP is set at the top of this file, so a raised exception
+-- both stops the script and sets a non-zero status.
+DO $$ BEGIN
+  RAISE EXCEPTION 'no run_uid supplied and none found in the log';
+END $$;
+\endif
+
+-- Parameters into session settings, up here rather than beside the DO block,
+-- because the verdict in 1b needs the escape too. psql does not interpolate
+-- :'var' inside a dollar-quoted string -- the body is a string literal to it --
+-- so the natural form fails at run time with `syntax error at or near ":"`
+-- while reading perfectly.
+SELECT set_config('lnk.run_uid',     :'run_uid',     false) AS run_uid,
+       set_config('lnk.schema',      :'schema',      false) AS schema,
+       set_config('lnk.expected_n',  :'expected_n',  false) AS expected_n,
+       set_config('lnk.unpinned_ok', :'unpinned_ok', false) AS unpinned_ok
+\gset assert_
+
+\echo ''
+\echo '=== run under verification ==='
+-- n_attempted vs n_completed, deliberately separate. The 2026-08-31 version
+-- filtered on `date_end > now() - interval '6 hours'`, which EXCLUDED rows
+-- with a NULL date_end -- so its single count silently meant "completed".
+-- Filtering on run_uid includes started-and-never-finished rows, so reporting
+-- one number here would quietly redefine it as "attempted" while every comment
+-- still said completed.
+SELECT :'run_uid'                           AS run_uid,
+       max(run_label)                       AS run_label,
+       count(DISTINCT watershed_group_code) AS n_attempted,
+       count(DISTINCT watershed_group_code)
+         FILTER (WHERE date_end IS NOT NULL) AS n_completed,
+       count(DISTINCT host)                 AS n_hosts,
+       max(bcfp_model_version)              AS bcfp_reference,
+       max(bcfp_pin_source)                 AS bcfp_pin_source,
+       min(date_start)                      AS started,
+       max(date_end)                        AS finished
+  FROM :schema.log
+ WHERE run_uid = :'run_uid';
+
+SELECT CASE WHEN :'expected_n' = ''
+            THEN 'NOT CHECKED: no -v expected_n= given, so a WSG that never logged is invisible'
+            ELSE 'expected_n = ' || :'expected_n' END AS scope_assertion;
+
+\echo ''
+\echo '=== 1. Provenance per host ==='
+-- fresh_sha is currently NULL on the DISPATCHER and non-NULL on CYPHERS, and
+-- the reason is NOT what an earlier version of this comment said.
+--
+-- Measured 2026-09-01: m1's installed fresh carries RemoteType github,
+-- RemoteRef v0.33.0 and RemoteSha 7f12d99115b7... -- byte-identical to the SHA
+-- the cyphers record. The column is NULL because .lnk_pkg_git_sha() reads an
+-- env var, then walks for .git, then gives up: it never reads RemoteSha from
+-- the installed DESCRIPTION, and an installed package has no .git. Cyphers
+-- populate it only because cypher_prep.sh sets FRESH_GIT_SHA explicitly.
+--
+-- So this tolerance is a workaround for an unread field, not for an absent
+-- one. Tracked separately; tighten to assert on every host once that lands.
+--
+-- bcfp_model_run_id is likewise expected NULL on a tunnel-free run: the pin
+-- comes from the local snapshot ledger, and log.json carries no run id
+-- (link#262). bcfp_model_version is the one that must be present.
 SELECT host,
-       count(*)                                       AS n_wsg,
-       count(*) FILTER (WHERE link_sha  IS NOT NULL)  AS has_link_sha,
-       count(*) FILTER (WHERE fresh_sha IS NOT NULL)  AS has_fresh_sha,
-       count(*) FILTER (WHERE fwapg_sha IS NOT NULL)  AS has_fwapg_sha,
-       count(*) FILTER (WHERE link_dirty)             AS n_dirty,
-       min(date_end)                                  AS first_done,
-       max(date_end)                                  AS last_done
-  FROM fresh.log
- WHERE date_end > now() - interval '6 hours'
+       count(*)                                          AS n_wsg,
+       count(*) FILTER (WHERE link_sha  IS NOT NULL)     AS has_link_sha,
+       count(*) FILTER (WHERE fresh_sha IS NOT NULL)     AS has_fresh_sha,
+       count(*) FILTER (WHERE fwapg_sha IS NOT NULL)     AS has_fwapg_sha,
+       count(*) FILTER (WHERE bcfp_model_version
+                              IS NOT NULL)               AS has_bcfp_version,
+       count(*) FILTER (WHERE link_dirty)                AS n_dirty,
+       count(*) FILTER (WHERE link_dirty IS NULL)        AS n_dirty_unknown,
+       min(date_end)                                     AS first_done,
+       max(date_end)                                     AS last_done
+  FROM :schema.log
+ WHERE run_uid = :'run_uid'
  GROUP BY host
  ORDER BY host;
 
 \echo ''
 \echo '=== 1b. Provenance verdict (host-aware) ==='
+-- ACCUMULATED, not an ordered CASE. This is the third time an arm shadowed a
+-- more serious one, and each fix was individually right:
+--
+--   round 1  added a `link_dirty IS NULL` NOTE above `fresh_sha NULL on a
+--            cypher`, hiding it;
+--   round 2  moved the NOTEs below the FAILs and wrote the invariant down;
+--   round 3  found the `unpinned_ok` escape had put a CONDITIONALLY sanctioned
+--            state into a FAIL slot still above `fresh_sha`, hiding it again.
+--
+-- So the invariant was never "FAILs before NOTEs" but "every arm above the line
+-- is UNCONDITIONALLY a failure" -- a rule no comment reliably enforces, because
+-- adding an arm is the natural edit and getting its rank right is a judgement.
+-- concat_ws skips NULLs, so every condition that holds is reported and none can
+-- mask another. Severity ordering stops being load-bearing.
+--
+-- fresh_sha is why this kept mattering: the DO block deliberately omits it
+-- (NULL is correct on the dispatcher), so THIS LINE is its only reporter, and
+-- it is link#246's acceptance criterion.
 SELECT host,
-       CASE
-         WHEN count(*) FILTER (WHERE link_sha IS NULL) > 0
-           THEN 'FAIL: link_sha NULL'
-         WHEN count(*) FILTER (WHERE fwapg_sha IS NULL) > 0
-           THEN 'FAIL: fwapg_sha NULL'
-         WHEN host <> 'm1' AND count(*) FILTER (WHERE fresh_sha IS NULL) > 0
-           THEN 'FAIL: fresh_sha NULL on a cypher'
-         WHEN host = 'm1' AND count(*) FILTER (WHERE fresh_sha IS NOT NULL) > 0
-           THEN 'NOTE: dispatcher now carries a fresh_sha (install method changed)'
-         ELSE 'OK'
-       END AS verdict
-  FROM fresh.log
- WHERE date_end > now() - interval '6 hours'
+       coalesce(nullif(concat_ws('; ',
+         CASE WHEN count(*) FILTER (WHERE link_sha IS NULL) > 0
+              THEN 'FAIL: link_sha NULL' END,
+         CASE WHEN count(*) FILTER (WHERE fwapg_sha IS NULL) > 0
+              THEN 'FAIL: fwapg_sha NULL' END,
+         CASE WHEN host <> 'm1' AND count(*) FILTER (WHERE fresh_sha IS NULL) > 0
+              THEN 'FAIL: fresh_sha NULL on a cypher' END,
+         CASE WHEN count(*) FILTER (WHERE link_dirty) > 0
+              THEN 'FAIL: link_dirty set -- tracked code differed from origin' END,
+         -- Escape-aware, so the word FAIL never appears on a run this script
+         -- then declares OK. A wrapper grepping for FAIL must not hit on a
+         -- sanctioned run; that is how the word stops being read.
+         CASE WHEN count(*) FILTER (WHERE bcfp_model_version IS NULL) > 0
+              THEN CASE
+                     WHEN nullif(btrim(coalesce(
+                            current_setting('lnk.unpinned_ok', true), '')), '') IS NULL
+                       THEN 'FAIL: bcfp_model_version NULL -- unpinned (see -v unpinned_ok=)'
+                     ELSE 'NOTE: unpinned, accepted by -v unpinned_ok='
+                   END
+              END,
+         CASE WHEN count(*) FILTER (WHERE link_dirty IS NULL) > 0
+              THEN 'NOTE: link_dirty NULL -- provenance unknown, not clean' END,
+         CASE WHEN host = 'm1' AND count(*) FILTER (WHERE fresh_sha IS NOT NULL) > 0
+              THEN 'NOTE: dispatcher now carries a fresh_sha (install method changed)' END
+       ), ''), 'OK') AS verdict
+  FROM :schema.log
+ WHERE run_uid = :'run_uid'
  GROUP BY host
  ORDER BY host;
 
 \echo ''
 \echo '=== 1c. Started but never finished (must be empty) ==='
 SELECT host, watershed_group_code, date_start
-  FROM fresh.log
- WHERE date_start > now() - interval '6 hours' AND date_end IS NULL
+  FROM :schema.log
+ WHERE run_uid = :'run_uid' AND date_end IS NULL
  ORDER BY host, watershed_group_code;
 
 \echo ''
 \echo '=== 2. The distinct SHAs -- all hosts must agree ==='
-SELECT DISTINCT link_sha, fresh_sha, fwapg_sha
-  FROM fresh.log
- WHERE date_end > now() - interval '6 hours';
+SELECT DISTINCT link_sha, fwapg_sha, bcfp_model_version
+  FROM :schema.log
+ WHERE run_uid = :'run_uid';
 
 \echo ''
-\echo '=== 3. Coverage: every expected WSG has streams rows ==='
--- Absence of evidence must be reported as absence. The LEFT JOIN yields a row
--- for a WSG with no streams rather than a short result nobody counts.
-WITH expected(wsg) AS (
-  VALUES ('LFRA'),('HARR'),('FRCN'),('SETN'),('BBAR'),('DOGC'),('MFRA'),
-         ('TWAC'),('NARC'),('COTR'),('TABR'),('LCHL'),('LSAL'),('MORK'),
-         ('WILL'),('BOWR'),('NECR'),('UFRA'),('FRAN'),
-         ('LPCE'),('PINE'),('UPCE'),('PCEA'),('PARA'),('CARP'),('NATR'),
-         ('PARS'),('CRKD'),
-         ('LSKE'),('KLUM'),('KISP'),('ZYMO'),('BULK'),('MORR')
-)
-SELECT e.wsg,
-       coalesce(s.n, 0)          AS n_segments,
-       (l.watershed_group_code IS NOT NULL) AS logged_this_run
-  FROM expected e
+\echo '=== 3. Coverage: every WSG of this run has streams rows ==='
+-- The expected set is the run's own log rows, not a literal list. LEFT JOIN so
+-- a WSG with no streams yields a row rather than a short result nobody counts.
+SELECT l.watershed_group_code AS wsg,
+       coalesce(s.n, 0)       AS n_segments
+  FROM (SELECT DISTINCT watershed_group_code
+          FROM :schema.log WHERE run_uid = :'run_uid') l
   LEFT JOIN (SELECT watershed_group_code, count(*) n
-               FROM fresh.streams GROUP BY 1) s
-         ON s.watershed_group_code = e.wsg
-  LEFT JOIN (SELECT DISTINCT watershed_group_code
-               FROM fresh.log
-              WHERE date_end > now() - interval '6 hours') l
-         ON l.watershed_group_code = e.wsg
- ORDER BY (coalesce(s.n,0) = 0) DESC, e.wsg;
+               FROM :schema.streams GROUP BY 1) s
+         ON s.watershed_group_code = l.watershed_group_code
+ ORDER BY (coalesce(s.n, 0) = 0) DESC, l.watershed_group_code;
 
 \echo ''
-\echo '=== 4. Any expected WSG with ZERO segments (must be empty) ==='
-WITH expected(wsg) AS (
-  VALUES ('LFRA'),('HARR'),('FRCN'),('SETN'),('BBAR'),('DOGC'),('MFRA'),
-         ('TWAC'),('NARC'),('COTR'),('TABR'),('LCHL'),('LSAL'),('MORK'),
-         ('WILL'),('BOWR'),('NECR'),('UFRA'),('FRAN'),
-         ('LPCE'),('PINE'),('UPCE'),('PCEA'),('PARA'),('CARP'),('NATR'),
-         ('PARS'),('CRKD'),
-         ('LSKE'),('KLUM'),('KISP'),('ZYMO'),('BULK'),('MORR')
-)
-SELECT e.wsg
-  FROM expected e
-  LEFT JOIN fresh.streams s ON s.watershed_group_code = e.wsg
- GROUP BY e.wsg
-HAVING count(s.*) = 0;
+\echo '=== 4. Modelled vs recomputed -- the difference, per WSG ==='
+-- The gap link#262 exists to close. `log` records when a WSG was MODELLED;
+-- the recompute is what rewrites streams_access and streams_mapping_code, and
+-- those are the values that ship. A WSG modelled but not recomputed has
+-- cross-WSG access -- hence token1/token2 and ;DAM -- computed against an
+-- incomplete barrier set. That is bad output, not missing output: every other
+-- check on this page passes for it.
+SELECT coalesce(m.wsg, r.wsg)                              AS wsg,
+       (m.wsg IS NOT NULL)                                 AS modelled,
+       (r.wsg IS NOT NULL)                                 AS recomputed,
+       m.done                                              AS model_done,
+       r.done                                              AS recompute_done,
+       CASE
+         WHEN m.wsg IS NULL                THEN 'recomputed but never modelled'
+         WHEN r.wsg IS NULL                THEN 'MODELLED BUT NOT RECOMPUTED'
+         WHEN r.done IS NULL               THEN 'recompute started, never finished'
+         WHEN m.done IS NULL               THEN 'model started, never finished'
+         WHEN r.done < m.done              THEN 'RECOMPUTE PREDATES THE MODEL'
+         ELSE 'ok'
+       END                                                 AS state
+  FROM (SELECT watershed_group_code AS wsg, max(date_end) AS done
+          FROM :schema.log
+         WHERE run_uid = :'run_uid' GROUP BY 1) m
+  FULL JOIN (SELECT watershed_group_code AS wsg, max(date_end) AS done
+               FROM :schema.log_recompute
+              WHERE run_uid = :'run_uid' GROUP BY 1) r
+         ON r.wsg = m.wsg
+ ORDER BY (CASE WHEN m.wsg IS NULL OR r.wsg IS NULL
+                  OR r.done IS NULL OR m.done IS NULL THEN 0 ELSE 1 END),
+          coalesce(m.wsg, r.wsg);
 
 \echo ''
 \echo '=== 5. Whole-schema picture: the mixture this run leaves behind ==='
--- 93 WSGs were in fresh before; 34 are now provenanced. The remainder keep
--- May-primitive rows. This is issue #256's subject -- report it, do not hide it.
-SELECT count(DISTINCT watershed_group_code) AS wsg_in_streams FROM fresh.streams;
-SELECT count(DISTINCT watershed_group_code) AS wsg_with_any_log FROM fresh.log;
+SELECT count(DISTINCT watershed_group_code) AS wsg_in_streams FROM :schema.streams;
+SELECT count(DISTINCT watershed_group_code) AS wsg_with_any_log FROM :schema.log;
+SELECT count(DISTINCT run_uid) AS runs_ever_labelled FROM :schema.log;
+
+\echo ''
+\echo '=== 6. ASSERTIONS (raise, so this script can actually fail) ==='
+-- Everything above prints. This is the part that decides the exit status.
+-- Negative-tested by data-raw/study_area_verify_negative.sh, which asserts all
+-- three answers: healthy passes, a deleted recompute row fails, a wrong
+-- expected_n fails.
+--
+-- Parameters arrive via set_config, NOT via :'run_uid' inside the block. psql
+-- does not interpolate its variables inside a dollar-quoted string -- the body
+-- is a string literal to it -- so the natural form fails with
+-- `syntax error at or near ":"` at run time while reading perfectly. Found by
+-- running it; nothing about the text suggests it.
+
+DO $$
+DECLARE
+  v_run    text := current_setting('lnk.run_uid');
+  v_sch    text := current_setting('lnk.schema');
+  n_expect int  := nullif(current_setting('lnk.expected_n'), '')::int;
+  -- btrim: a whitespace-only value is not a written justification. The
+  -- sibling this mechanism cites, lnk_wsg_downstream_check(override=), rejects
+  -- a bare TRUE for the same reason -- the reason IS the control.
+  v_unpin  text := nullif(btrim(current_setting('lnk.unpinned_ok')), '');
+  n_model  int;
+  n_gap    int;
+  n_open   int;
+  n_seg    int;
+  n_prov   int;
+  n_pin    int;
+  n_fresh  int;
+  bad      text;
+BEGIN
+  EXECUTE format(
+    'SELECT count(DISTINCT watershed_group_code) FROM %I.log WHERE run_uid = $1',
+    v_sch) INTO n_model USING v_run;
+
+  IF n_model = 0 THEN
+    RAISE EXCEPTION 'run % has no rows in %.log', v_run, v_sch;
+  END IF;
+
+  -- The externally-supplied count. Without it every check below is scoped to
+  -- whatever the run happened to log, so a WSG that never started is invisible
+  -- to all of them -- the guard cannot see what its own input omitted.
+  IF n_expect IS NOT NULL AND n_model <> n_expect THEN
+    RAISE EXCEPTION
+      'run %: % WSG(s) in the log, but -v expected_n=% was supplied. A WSG that never produced a log row is invisible to every other check on this page. If the difference is species-skipped WSGs, expected_n should count MODELLED WSGs (the `done` lines), not the run bucket -- see the header.',
+      v_run, n_model, n_expect;
+  END IF;
+
+  -- Modelled but not recomputed. THE check link#262 exists for: these WSGs'
+  -- streams_access and streams_mapping_code still hold pre-consolidate values,
+  -- so cross-WSG access -- hence token1/token2 and ;DAM -- is wrong for them.
+  -- Bad output, not missing output: every other check on this page passes.
+  EXECUTE format(
+    'SELECT count(*), coalesce(string_agg(wsg, '','' ORDER BY wsg), '''')
+       FROM (SELECT DISTINCT watershed_group_code AS wsg FROM %I.log
+              WHERE run_uid = $1
+             EXCEPT
+             SELECT DISTINCT watershed_group_code FROM %I.log_recompute
+              WHERE run_uid = $1 AND date_end IS NOT NULL) t',
+    v_sch, v_sch) INTO n_gap, bad USING v_run;
+
+  IF n_gap > 0 THEN
+    RAISE EXCEPTION
+      'run %: % WSG(s) modelled but not recomputed: %. Re-run just those: LNK_SCHEMA=% LNK_LOAD=loadall Rscript data-raw/wsg_recompute_one.R <WSG>',
+      v_run, n_gap, bad, v_sch;
+  END IF;
+
+  EXECUTE format(
+    'SELECT count(*) FROM %I.log WHERE run_uid = $1 AND date_end IS NULL',
+    v_sch) INTO n_open USING v_run;
+  IF n_open > 0 THEN
+    RAISE EXCEPTION 'run %: % modelling row(s) started and never finished',
+      v_run, n_open;
+  END IF;
+
+  EXECUTE format(
+    'SELECT count(*) FROM (SELECT DISTINCT watershed_group_code w FROM %I.log
+       WHERE run_uid = $1) l
+       LEFT JOIN (SELECT watershed_group_code w, count(*) n FROM %I.streams
+                   GROUP BY 1) s ON s.w = l.w
+      WHERE coalesce(s.n, 0) = 0',
+    v_sch, v_sch) INTO n_seg USING v_run;
+  IF n_seg > 0 THEN
+    RAISE EXCEPTION 'run %: % WSG(s) have zero rows in %.streams',
+      v_run, n_seg, v_sch;
+  END IF;
+
+  -- Provenance that must be present on every row. fresh_sha and
+  -- bcfp_model_run_id are deliberately NOT here -- both are legitimately NULL
+  -- on a healthy tunnel-free dispatcher (measured 2026-08-31), and asserting
+  -- them reports a false failure.
+  -- Split from the pin check below so the message names the actual problem.
+  -- The combined form said "missing link_sha / fwapg_sha / bcfp_model_version,
+  -- or flagged link_dirty" for any of four unrelated causes, which is a worse
+  -- diagnosis than no message.
+  EXECUTE format(
+    'SELECT count(*) FROM %I.log
+      WHERE run_uid = $1
+        AND (link_sha IS NULL OR fwapg_sha IS NULL OR link_dirty)',
+    v_sch) INTO n_prov USING v_run;
+  IF n_prov > 0 THEN
+    RAISE EXCEPTION
+      'run %: % row(s) missing link_sha or fwapg_sha, or flagged link_dirty',
+      v_run, n_prov;
+  END IF;
+
+  -- fresh_sha, HOST-AWARE. Previously omitted from the assertions entirely,
+  -- with the correct reason that NULL is expected on the dispatcher (m1
+  -- installs fresh locally: RemoteType local, no RemoteSha). But omitting it
+  -- left section 1b printing 'FAIL: fresh_sha NULL on a cypher' while this
+  -- script exited 0 and declared OK -- the same self-contradiction round 3
+  -- flagged for the unpinned case, found by sweeping every single-fault state
+  -- rather than by reading.
+  --
+  -- A cypher installs fresh from GitHub via the DESCRIPTION Remotes pin, so a
+  -- NULL there means it ran the image's fresh instead: link#246's exact
+  -- failure, where 80 of 119 WSGs were silently skipped. That is a run-failing
+  -- condition, not a note. Scoped to non-dispatcher hosts so the dispatcher's
+  -- legitimate NULL still passes.
+  EXECUTE format(
+    'SELECT count(*) FROM %I.log
+      WHERE run_uid = $1 AND host <> ''m1'' AND fresh_sha IS NULL',
+    v_sch) INTO n_fresh USING v_run;
+  IF n_fresh > 0 THEN
+    RAISE EXCEPTION
+      'run %: % row(s) on a non-dispatcher host have no fresh_sha, so that host ran the image''s fresh rather than the DESCRIPTION Remotes pin (link#246). Its WSGs cannot be trusted.',
+      v_run, n_fresh;
+  END IF;
+
+  -- The bcfp pin, with the sanctioned-unpinned escape.
+  EXECUTE format(
+    'SELECT count(*) FROM %I.log WHERE run_uid = $1 AND bcfp_model_version IS NULL',
+    v_sch) INTO n_pin USING v_run;
+  IF n_pin > 0 THEN
+    IF v_unpin IS NULL THEN
+      RAISE EXCEPTION
+        'run %: % row(s) have no bcfp_model_version, so their parity numbers cannot be traced to a reference build. If this run was knowingly made without a pin (preflight_local warns rather than blocks), re-run with -v unpinned_ok=<written reason>.',
+        v_run, n_pin;
+    END IF;
+    RAISE NOTICE 'NOTE: % row(s) unpinned, accepted: %', n_pin, v_unpin;
+  END IF;
+
+  IF n_pin > 0 THEN
+    RAISE NOTICE 'PASS (UNPINNED): run % -- % WSG(s), all modelled, recomputed and segmented. % row(s) carry NO bcfp reference, accepted by -v unpinned_ok=. Their parity numbers cannot be traced to a reference build.',
+      v_run, n_model, n_pin;
+  ELSE
+    RAISE NOTICE 'PASS: run % -- % WSG(s), all modelled, recomputed, segmented and provenanced',
+      v_run, n_model;
+  END IF;
+END $$;
+
+\echo ''
+\echo '=== verify: OK ==='

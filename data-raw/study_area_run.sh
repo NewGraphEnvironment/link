@@ -67,9 +67,29 @@
 #                           cypher_up returns early on snapshot spins
 #                           (NewGraphEnvironment/rtj#248), so this wait — not
 #                           cypher_up's — is what covers cloud-init's runcmd.
+#   --run-label="text"      operator name for this campaign, written to
+#                           <persist>.log.run_label and
+#                           <persist>.log_recompute.run_label on every row of
+#                           every host. Free text; never assumed unique.
 #   --preflight-note="why"  downgrade ONLY vintage + parity to warnings,
 #                           and only with a written reason. There is no
 #                           global bypass on purpose.
+#
+# Run identity (link#262). Three levels, and only the middle one is new:
+#
+#   run_id     minted per lnk_pipeline_run() call, i.e. ONE PER WSG, and the
+#              log's PK. A 217-WSG dispatch mints 217 of them, so it cannot
+#              answer "everything from that run".
+#   run_uid    minted ONCE below and exported to every host. Makes a dispatch
+#              a single queryable unit — `WHERE run_uid = '...'` instead of a
+#              time window plus a host list, which is fragile at 34 WSGs on
+#              three hosts and ambiguous the moment two runs overlap.
+#   run_label  --run-label=, for humans.
+#
+# Both are exported on BOTH legs — the local Rscript loop and the ssh command
+# string. Exporting only the local leg is the LNK_GUARD_DOWNSTREAM trap
+# (link#227): the cyphers silently write NULL and the run is half-labelled,
+# with nothing to say so.
 
 set -euo pipefail
 
@@ -83,6 +103,7 @@ REFRESH_PRIMITIVES=0
 AUTO_INSTALL=0
 VINTAGE_MAX_DAYS=7
 PREFLIGHT_NOTE=""
+RUN_LABEL=""
 # How long to wait for a fresh droplet to accept a connection as the `cypher`
 # user. 600s, not the old effective ~150s: cypher_up returns early on snapshot
 # spins (rtj#248), so this wait is what actually covers cloud-init's runcmd —
@@ -146,6 +167,27 @@ for arg in "$@"; do
     --preflight-note=*)
                        PREFLIGHT_NOTE="${arg#--preflight-note=}"
                        [ -n "$PREFLIGHT_NOTE" ] || { echo "FATAL: --preflight-note= requires a written justification, not an empty value" >&2; exit 1; } ;;
+    # Refuse an empty value rather than accepting it. `--run-label=` with
+    # nothing after it would export LNK_RUN_LABEL="" — SET BUT EMPTY, which
+    # Sys.getenv(x, NA) returns as "" rather than NA. R normalises it back to
+    # NULL (.lnk_blank_to_na), but an operator who typed the flag meant to
+    # label the run, so silently recording nothing is the wrong answer.
+    --run-label=*)     RUN_LABEL="${arg#--run-label=}"
+                       [ -n "$RUN_LABEL" ] || { echo "FATAL: --run-label= requires a non-empty value" >&2; exit 1; }
+                       # The label is interpolated into the cypher ssh command
+                       # string inside single quotes, so a value containing one
+                       # would terminate the quote and re-parse the remainder on
+                       # the remote shell. Restrict the charset rather than rely
+                       # on quoting surviving a local-shell -> ssh-argv ->
+                       # remote-shell round trip: a label is an identifier, and
+                       # refusing a bad one costs a retype where getting it
+                       # wrong corrupts the whole remote invocation.
+                       case "$RUN_LABEL" in
+                         *[!A-Za-z0-9._-]*)
+                           echo "FATAL: --run-label= accepts only A-Z a-z 0-9 . _ - (got '$RUN_LABEL')" >&2
+                           echo "  It is interpolated into the cypher ssh command string." >&2
+                           exit 1 ;;
+                       esac ;;
     *) echo "unknown arg: $arg" >&2; exit 1 ;;
   esac
 done
@@ -223,7 +265,24 @@ fi
 [ -n "$SCHEMA" ] || { echo "FATAL: could not resolve persist schema for --config=$CONFIG"; exit 1; }
 export LNK_SCHEMA="$SCHEMA"
 
+# --- run identity (link#262) ---
+# Minted ONCE, here, before anything forks. $TS is already the run's own
+# UTC stamp and is what every log file in this run is named after, so the uid
+# is greppable back to its artifacts. The random suffix is what makes it an
+# identifier rather than a timestamp: two dispatches started in the same
+# second — a re-run fired immediately after a failure, most plausibly — would
+# otherwise share a uid and merge into one "run", which is precisely the
+# ambiguity this replaces.
+#
+# $RANDOM is fine for that job (collision avoidance within a second, not
+# secrecy). Padded to a fixed width so the ids sort and eyeball consistently.
+RUN_UID="${TS}-$(printf '%04x%04x' "$RANDOM" "$RANDOM")"
+export LNK_RUN_UID="$RUN_UID"
+export LNK_RUN_LABEL="$RUN_LABEL"
+
 echo "=== study_area_run $TS ==="
+echo "  run_uid:      $RUN_UID"
+echo "  run_label:    ${RUN_LABEL:-<none>}"
 echo "  config:       $CONFIG"
 echo "  branch:       $LINK_BRANCH (cyphers run this ref)"
 echo "  persist:      $SCHEMA"
@@ -403,8 +462,18 @@ quit(status = if (isTRUE(res$ok)) 0L else 1L)
   # Uncommitted work is unpushable by definition, so for a multi-host run it
   # is the same failure. With no cyphers there is no drift axis, only a
   # provenance-honesty concern, so it warns rather than blocks local dev.
+  #
+  # Excludes data-raw/logs (link#257). That directory is TRACKED on purpose —
+  # run logs are contemporaneous evidence — and this very script writes ~15
+  # files into it, plus snapshot_bcfp.sh stamps bcfp_baselines.csv there. So
+  # the run dirties its own checkout by operating, and the bare predicate
+  # blocked every second run. Untracked files elsewhere still count: a new
+  # uncommitted R/*.R is invisible to a cypher, which is the drift being
+  # detected. Same pathspec as .lnk_pkg_git_dirty(), and `:(exclude)` in long
+  # form for the same reason — `:!` aborts, and an aborted git status returns
+  # empty, which reads as clean.
   local dirty
-  if dirty=$(git -C "$REPO_ROOT" status --porcelain 2>/dev/null); then
+  if dirty=$(git -C "$REPO_ROOT" status --porcelain -- ':(top,exclude)data-raw/logs' 2>/dev/null); then
     if [ -n "$dirty" ]; then
       if [ "$N_CY" -gt 0 ]; then
         echo "  ✗ dispatcher checkout dirty; cyphers reset to origin/$LINK_BRANCH and cannot see it"
@@ -435,6 +504,33 @@ quit(status = if (isTRUE(res$ok)) 0L else 1L)
   else
     echo "  ✗ no fwapg checkout at $fwapg_dir — set FWAPG_DIR, or every row lands fwapg_sha=NA"
     fail=1
+  fi
+
+  # --- gate: bcfp reference pinned, and exported to all hosts (link#262) --
+  # The compare reference is the LOCAL snapshot fresh.streams_vw_bcfp, and the
+  # build it was loaded from is recorded by snapshot_bcfp.sh in
+  # data-raw/logs/bcfp_baselines.csv. That ledger is PER HOST, and a cypher has
+  # no row of its own — it git-resets the repo (so the CSV is present) but never
+  # snapshots under its own hostname. Without this export every cypher row lands
+  # bcfp_model_version NULL: 13 of 34 rows last field run, the majority at 217.
+  #
+  # Exactly the FWAPG_GIT_SHA shape above, for exactly the same reason. Resolve
+  # once here from the dispatcher's ledger; hand the same value to every host.
+  local bcfp_ver
+  if bcfp_ver=$(cd "$REPO_ROOT" && LNK_LOAD=loadall Rscript -e '
+suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
+v <- link:::.lnk_bcfp_log_ledger()
+cat(if (is.null(v)) "" else v$model_version)
+' 2>/dev/null) && [ -n "$bcfp_ver" ]; then
+    export LNK_BCFP_MODEL_VERSION="$bcfp_ver"
+    echo "  ✓ bcfp reference pinned at $bcfp_ver (exported to all hosts)"
+  else
+    # A warning, not a failure. An unpinned run is worse provenance but still
+    # correct modelling, and refusing to run over it would make the pin a
+    # blocker rather than a record. It IS reported, because a silent NULL is
+    # how this column stayed empty for 37 rows without anyone noticing.
+    echo "  WARN: no bcfp baseline row for this host — bcfp_model_version will"
+    echo "        be NULL on every row. Run: bash data-raw/snapshot_bcfp.sh --with-bcfp-views"
   fi
 
   # --- gate: primitive vintage on the dispatcher --------------------------
@@ -819,7 +915,14 @@ for WS in "${CY_WS_ARR[@]}"; do
   # cypher writes its OWN observed values into ~/.Renviron during prep;
   # pushing the dispatcher's values across would launder a claim into the
   # worker's provenance and make the parity gate circular.
-  ssh "cypher@$IP" "cd ~/Projects/repo/link && export LNK_SCHEMA='$SCHEMA' && export LNK_GUARD_DOWNSTREAM=warn && export FWAPG_GIT_SHA='${FWAPG_GIT_SHA:-}' && for w in $B_SPACE; do Rscript data-raw/wsg_run_one.R \$w '$CONFIG' || echo \"[WARN] cy WSG \$w failed\"; done" \
+  # LNK_RUN_UID / LNK_RUN_LABEL must be exported HERE as well as on the local
+  # leg (link#262). An export in the dispatcher's environment does not cross
+  # ssh, so setting only the local one lands run_uid on the dispatcher's WSGs
+  # and NULL on every cypher's — a half-labelled run that looks fine until
+  # someone queries it. This is the same both-legs trap LNK_GUARD_DOWNSTREAM
+  # hit in link#227, where the missed second leg made cyphers hard-fail and
+  # silently skip WSGs.
+  ssh "cypher@$IP" "cd ~/Projects/repo/link && export LNK_SCHEMA='$SCHEMA' && export LNK_GUARD_DOWNSTREAM=warn && export FWAPG_GIT_SHA='${FWAPG_GIT_SHA:-}' && export LNK_RUN_UID='$RUN_UID' && export LNK_RUN_LABEL='$RUN_LABEL' && export LNK_BCFP_MODEL_VERSION='${LNK_BCFP_MODEL_VERSION:-}' && for w in $B_SPACE; do Rscript data-raw/wsg_run_one.R \$w '$CONFIG' || echo \"[WARN] cy WSG \$w failed\"; done" \
     > "$LOG_DIR/${TS}_run_$WS.log" 2>&1 &
   CY_PID[$WS]=$!
 done
@@ -1192,22 +1295,57 @@ N_RECOMPUTE=$(csv_count "$ALL_WSGS")
 
 echo "=== post-consolidate recompute (lnk_access, ${N_RECOMPUTE} WSGs, -j${RECOMPUTE_JOBS}) ==="
 
-# Build the barrier views ONCE, single-threaded, before any job starts.
-if ( cd "$REPO_ROOT" && LNK_LOAD=loadall \
-       Rscript data-raw/barriers_views_build.R "$CONFIG" ) \
-     > "$LOG_DIR/${TS}_recompute_views.log" 2>&1; then
-  echo "  ✓ barrier views built once for $SCHEMA"
+# Ensure the log tables exist ONCE, single-threaded, before any job starts
+# (link#262). wsg_recompute_one.R deliberately refuses to run DDL — it runs
+# inside this pool, and schema DDL belongs at init, not in N concurrent jobs.
+# That leaves one edge case with the worst possible timing: if every focal WSG
+# on the dispatcher species-skips (wsg_run_one.R exits 0 without calling
+# lnk_pipeline_run), nothing ever creates log_recompute, and the pool would
+# then hard-stop on all N WSGs — at the end of a paid multi-host run, after
+# consolidate. One idempotent call here removes the class for nothing.
+if ( cd "$REPO_ROOT" && LNK_LOAD=loadall Rscript -e '
+suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
+cfg <- lnk_config(commandArgs(TRUE)[1])
+s <- Sys.getenv("LNK_SCHEMA"); if (nzchar(s)) cfg$pipeline$schema <- s
+conn <- lnk_db_conn(dbname = "fwapg", host = "localhost", port = 5432L,
+                    user = "postgres", password = "postgres")
+on.exit(try(DBI::dbDisconnect(conn), silent = TRUE), add = TRUE)
+link:::.lnk_log_create_tables(conn, cfg$pipeline$schema)
+' "$CONFIG" ) > "$LOG_DIR/${TS}_recompute_logtables.log" 2>&1; then
+  echo "  ✓ log tables present in $SCHEMA"
 else
-  # Deliberately NOT falling back to per-WSG builds. At -j>1 that is exactly
-  # the race the hoist removes, and it would turn one loud pre-build failure
-  # into N quiet lock_timeouts attributed to individual WSGs.
-  echo "  ✗ barrier view build failed; see $LOG_DIR/${TS}_recompute_views.log"
-  echo "    skipping the recompute — the run will exit non-zero"
+  echo "  ✗ could not ensure log tables; see $LOG_DIR/${TS}_recompute_logtables.log"
+  echo "    the recompute would fail per-WSG on a missing log_recompute"
   RECOMPUTE_FAIL=1
-  # Which stage failed decides which evidence exists. The pool never ran, so
-  # RECOMPUTE_LOG and RC_TSV were never created -- naming them at the final
-  # gate would send the operator to two absent files.
-  RECOMPUTE_FAIL_STAGE="views"
+  # Its OWN stage token. Reusing "views" made the final gate print "the barrier
+  # views could not be built" and point at ${TS}_recompute_views.log -- a file
+  # the views step never wrote, because it is gated on RECOMPUTE_FAIL=0 and
+  # never ran. Two prep steps, two names, two pieces of evidence.
+  RECOMPUTE_FAIL_STAGE="logtables"
+fi
+
+# Build the barrier views ONCE, single-threaded, before any job starts.
+# Nested rather than `[ "$RECOMPUTE_FAIL" = "0" ] && ( build )`: with the
+# short-circuit form, an already-failed log-table step would fall into this
+# else and report "barrier view build failed", naming a log file that was
+# never written. Two prep steps, two diagnoses.
+if [ "$RECOMPUTE_FAIL" = "0" ]; then
+  if ( cd "$REPO_ROOT" && LNK_LOAD=loadall \
+         Rscript data-raw/barriers_views_build.R "$CONFIG" ) \
+       > "$LOG_DIR/${TS}_recompute_views.log" 2>&1; then
+    echo "  ✓ barrier views built once for $SCHEMA"
+  else
+    # Deliberately NOT falling back to per-WSG builds. At -j>1 that is exactly
+    # the race the hoist removes, and it would turn one loud pre-build failure
+    # into N quiet lock_timeouts attributed to individual WSGs.
+    echo "  ✗ barrier view build failed; see $LOG_DIR/${TS}_recompute_views.log"
+    echo "    skipping the recompute — the run will exit non-zero"
+    RECOMPUTE_FAIL=1
+    # Which stage failed decides which evidence exists. The pool never ran, so
+    # RECOMPUTE_LOG and RC_TSV were never created -- naming them at the final
+    # gate would send the operator to two absent files.
+    RECOMPUTE_FAIL_STAGE="views"
+  fi
 fi
 
 if [ "$RECOMPUTE_FAIL" = "0" ]; then
@@ -1275,7 +1413,10 @@ if [ "${RUN_INCOMPLETE:-0}" != "0" ] || [ "${RECOMPUTE_FAIL:-0}" != "0" ]; then
     echo "  PRE-consolidate values, so cross-WSG access — hence token1/token2"
     echo "  and ;DAM — is WRONG for them. This is bad output, not missing"
     echo "  output: the compare CSV above will look complete."
-    if [ "${RECOMPUTE_FAIL_STAGE:-pool}" = "views" ]; then
+    if [ "${RECOMPUTE_FAIL_STAGE:-pool}" = "logtables" ]; then
+      echo "  The provenance log tables could not be created, so NO WSG was"
+      echo "  recomputed. See $LOG_DIR/${TS}_recompute_logtables.log."
+    elif [ "${RECOMPUTE_FAIL_STAGE:-pool}" = "views" ]; then
       echo "  The barrier views could not be built, so NO WSG was recomputed."
       echo "  See $LOG_DIR/${TS}_recompute_views.log."
     else

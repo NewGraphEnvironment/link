@@ -79,9 +79,17 @@
 #'   any modelling so `wsg_upstream` reflects the state the run started
 #'   from; everything after it degrades to a warning rather than failing
 #'   the run. Pass `FALSE` for throwaway runs.
+#' @param run_uid Character. Identifies one *dispatch* — every host and every
+#'   watershed group of a single `data-raw/study_area_run.sh` invocation share
+#'   it, so "every row of that run" is one equality rather than a time window
+#'   plus a host list (link#262). Defaults to the `LNK_RUN_UID` env var, which
+#'   the driver exports to the local leg and into the cypher ssh string. `NA`
+#'   for an ad-hoc single-WSG call is correct: there was no dispatch to belong
+#'   to. Distinct from `run_id`, which is minted per call and is the log's PK.
 #' @param run_label Character. Groups a campaign across hosts and WSGs
-#'   (e.g. `"provincial_default_rearbreaks"`). Defaults to the
-#'   `LNK_RUN_LABEL` env var so orchestrators can set it once.
+#'   (e.g. `"provincial_default_rearbreaks"`). Operator-supplied free text —
+#'   never assume it is unique; `run_uid` is the machine identifier. Defaults
+#'   to the `LNK_RUN_LABEL` env var so orchestrators can set it once.
 #' @param notes Character. Free-form note stored on the run row.
 #'
 #' @return `conn`, invisibly. Side effects are the writes into
@@ -112,6 +120,8 @@ lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
                              cleanup_working = TRUE,
                              mapping_code = FALSE,
                              log = TRUE,
+                             run_uid = Sys.getenv("LNK_RUN_UID",
+                                                  NA_character_),
                              run_label = Sys.getenv("LNK_RUN_LABEL",
                                                     NA_character_),
                              notes = NA_character_) {
@@ -144,6 +154,7 @@ lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
                                   schema_working = schema, dams = dams,
                                   cleanup_working = cleanup_working,
                                   mapping_code = mapping_code,
+                                  run_uid = run_uid,
                                   run_label = run_label, notes = notes)
     completed <- FALSE
     on.exit({
