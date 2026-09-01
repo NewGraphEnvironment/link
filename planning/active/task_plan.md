@@ -43,14 +43,14 @@ Two findings from exploration reshape the work (both recorded in `findings.md`):
 
 ## Phase 3 — `lnk_fanout_judge()` (pure addition, no caller)
 
-- [ ] `R/lnk_fanout_judge.R`: five statuses — `none_expected`, `none_ran`,
+- [x] `R/lnk_fanout_judge.R`: five statuses — `none_expected`, `none_ran`,
       `all_failed`, `ok`, `partial`. Takes expected job **names**, not a count.
       `expected` has **no default** (per `lnk_preflight_parity(n_expected)`)
-- [ ] Malformed rc (`NA`, `""`, non-numeric) is a **failure**, not a neutral
-- [ ] `data-raw/fanout_judge.R` shell entry point; handles the zero-byte TSV itself
-- [ ] `tests/testthat/test-lnk_fanout_judge.R` — all five statuses, malformed rc,
+- [x] Malformed rc (`NA`, `""`, non-numeric) is a **failure**, not a neutral
+- [x] `data-raw/fanout_judge.R` shell entry point; handles the zero-byte TSV itself
+- [x] `tests/testthat/test-lnk_fanout_judge.R` — all five statuses, malformed rc,
       duplicate and unexpected job ids, `expected` omitted
-- [ ] Restore-the-bug check on each branch
+- [x] Restore-the-bug check on each branch
 
 ## Phase 4 — the shell fan-out
 

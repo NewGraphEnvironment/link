@@ -63,6 +63,7 @@ bad$missing
 }
 \seealso{
 Other preflight: 
+\code{\link{lnk_fanout_judge}()},
 \code{\link{lnk_preflight_parity}()},
 \code{\link{lnk_preflight_stamp}()},
 \code{\link{lnk_preflight_vintage}()}
