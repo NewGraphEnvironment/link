@@ -176,10 +176,13 @@ capture_ddl <- function(expr) {
   captured
 }
 
-test_that(".lnk_log_create_tables emits all four CREATE TABLE statements", {
+test_that(".lnk_log_create_tables emits a CREATE TABLE for every spec", {
+  # Enumerated, not a remembered count: the name used to say "all four" and
+  # kept passing at five, because it asserts presence rather than coverage.
   sql <- capture_ddl(.lnk_log_create_tables(NULL, "fresh_test"))
   joined <- paste(sql, collapse = "\n")
-  for (tbl in c("log", "log_input", "log_parameters_fresh", "log_dimensions")) {
+  for (tbl in c("log", "log_recompute", "log_input", "log_parameters_fresh",
+                "log_dimensions")) {
     expect_match(joined,
       sprintf("CREATE TABLE IF NOT EXISTS fresh_test\\.%s \\(", tbl))
   }
@@ -452,7 +455,8 @@ test_that("lnk_log_read builds DISTINCT ON for latest, plain select otherwise", 
   seen <- character()
   testthat::with_mocked_bindings(
     dbGetQuery = function(conn, statement, ...) {
-      seen <<- c(seen, statement); data.frame()
+      seen <<- c(seen, statement)
+      data.frame()
     },
     dbQuoteLiteral = function(conn, x, ...) paste0("'", x, "'"),
     .package = "DBI",
@@ -480,4 +484,412 @@ test_that("lnk_log_read returns a tibble", {
   )
   expect_s3_class(out, "tbl_df")
   expect_identical(out$run_id, "r1")
+})
+
+
+# --- link#262: run identity, recompute log, bcfp pin ------------------------
+
+# --- .lnk_blank_to_na -------------------------------------------------------
+
+test_that(".lnk_blank_to_na treats a set-but-empty value as absent", {
+  # Sys.getenv(x, NA) returns NA only when x is UNSET. `export LNK_RUN_UID=""`
+  # yields "", which would be quoted into SQL as '' — and an empty-string
+  # run_uid joins to every other empty-string row, merging two unlabelled
+  # dispatches into one "run". Worse than NULL, not equivalent to it.
+  expect_true(is.na(.lnk_blank_to_na("")))
+  expect_true(is.na(.lnk_blank_to_na("   ")))
+  expect_true(is.na(.lnk_blank_to_na(NA_character_)))
+  expect_true(is.na(.lnk_blank_to_na(character(0))))
+  expect_identical(.lnk_blank_to_na("field-scope-2026"), "field-scope-2026")
+})
+
+
+# --- DDL --------------------------------------------------------------------
+
+test_that("log_recompute is created alongside the other log tables", {
+  sql <- capture_ddl(.lnk_log_create_tables(NULL, "fresh_test"))
+  joined <- paste(sql, collapse = "\n")
+  for (tbl in c("log", "log_recompute", "log_input",
+                "log_parameters_fresh", "log_dimensions")) {
+    expect_match(joined,
+      sprintf("CREATE TABLE IF NOT EXISTS fresh_test\\.%s \\(", tbl))
+  }
+})
+
+test_that("log_recompute keys on a TEXT recompute_id, not a serial", {
+  # Same reason as `log`: schema_consolidate COPYs literal values between
+  # hosts whose sequences would both start at 1.
+  sql <- paste(capture_ddl(.lnk_log_create_tables(NULL, "s")), collapse = "\n")
+  expect_match(sql, "recompute_id text NOT NULL")
+  expect_match(sql, "PRIMARY KEY \\(recompute_id\\)")
+})
+
+test_that("log_recompute carries watershed_group_code for consolidate pickup", {
+  # schema_consolidate.R discovers tables by "is a BASE TABLE with a
+  # watershed_group_code column". Without it a cypher's recompute rows would
+  # never travel home, and nothing would say so.
+  expect_true("watershed_group_code" %in% names(cols_log_recompute))
+})
+
+test_that("log gains run_uid and an index on it", {
+  sql <- paste(capture_ddl(.lnk_log_create_tables(NULL, "s")), collapse = "\n")
+  expect_match(sql, "run_uid text")
+  expect_match(sql, "CREATE INDEX IF NOT EXISTS log_run_uid_idx ON s\\.log \\(run_uid\\)")
+  expect_match(sql,
+    "CREATE INDEX IF NOT EXISTS log_rc_run_uid_idx ON s\\.log_recompute \\(run_uid\\)")
+})
+
+test_that("ADD COLUMN IF NOT EXISTS covers every log_recompute column", {
+  # CREATE TABLE IF NOT EXISTS is a no-op against a drifted table, so this is
+  # what actually ships a new column to a live schema.
+  sql <- paste(capture_ddl(.lnk_log_create_tables(NULL, "s")), collapse = "\n")
+  for (nm in names(cols_log_recompute)) {
+    expect_match(sql, sprintf(
+      "ALTER TABLE s\\.log_recompute ADD COLUMN IF NOT EXISTS %s ", nm))
+  }
+})
+
+test_that("log_recompute does not claim primitive inputs it never read", {
+  # The recompute reads the already-persisted streams / habitat / barriers,
+  # not the DB primitives. A fingerprint here would describe inputs it never
+  # touched, and log_input is keyed on run_id, not recompute_id.
+  expect_false(any(grepl("^(row_count|last_analyze|table_name)$",
+                         names(cols_log_recompute))))
+})
+
+
+# --- run_uid on the modelling write path ------------------------------------
+
+test_that(".lnk_log_run_start writes run_uid into the INSERT", {
+  cfg <- lnk_config("default")
+  sql <- capture_write(
+    .lnk_log_run_start(fake_conn(), cfg, "PINE", "working_pine",
+                       run_uid = "20260901T120000-abcd1234",
+                       run_label = "field-scope"))
+  ins <- grep("INSERT INTO .*\\.log \\(", sql, value = TRUE)
+  expect_length(ins, 1L)
+  expect_match(ins, "run_uid")
+  expect_match(ins, "20260901T120000-abcd1234")
+  expect_match(ins, "field-scope")
+})
+
+test_that(".lnk_log_run_start records a blank run_uid as NULL, not ''", {
+  cfg <- lnk_config("default")
+  sql <- capture_write(
+    .lnk_log_run_start(fake_conn(), cfg, "PINE", "working_pine",
+                       run_uid = "", run_label = ""))
+  ins <- grep("INSERT INTO .*\\.log \\(", sql, value = TRUE)
+  # The VALUES list must carry NULL for both, and no empty string literal.
+  expect_no_match(ins, "''\\s*,\\s*''")
+})
+
+test_that(".lnk_log_run_start still opens with run_uid absent", {
+  # An ad-hoc single-WSG call belongs to no dispatch. NA is the honest answer.
+  cfg <- lnk_config("default")
+  sql <- capture_write(
+    .lnk_log_run_start(fake_conn(), cfg, "PINE", "working_pine"))
+  ins <- grep("INSERT INTO .*\\.log \\(", sql, value = TRUE)
+  expect_match(ins, "run_uid")
+  expect_match(ins, "NULL")
+})
+
+
+# --- .lnk_log_recompute_* ---------------------------------------------------
+
+test_that(".lnk_log_recompute_start refuses when the table is absent", {
+  # And says how to fix it. The pool runs up to 16 wide, so this path must
+  # never respond by running DDL.
+  cfg <- lnk_config("default")
+  expect_error(
+    capture_write(
+      .lnk_log_recompute_start(fake_conn(), cfg, "PINE"),
+      probe_rows = 0L),
+    "log_recompute is missing")
+  expect_error(
+    capture_write(
+      .lnk_log_recompute_start(fake_conn(), cfg, "PINE"),
+      probe_rows = 0L),
+    "lnk_persist_init")
+})
+
+test_that(".lnk_log_recompute_start runs NO DDL when the table is present", {
+  # The whole point: CREATE TABLE IF NOT EXISTS and ALTER TABLE take an
+  # AccessExclusiveLock, and a queued exclusive request blocks every sibling's
+  # AccessShareLock behind it. That is the convoy link#250 hoisted the barrier
+  # views out of the pool to remove; re-introducing it here would be the same
+  # bug one layer down.
+  cfg <- lnk_config("default")
+  sql <- capture_write(
+    .lnk_log_recompute_start(fake_conn(), cfg, "PINE"),
+    probe_rows = 1L)
+  expect_length(grep("CREATE TABLE|ALTER TABLE|CREATE INDEX|CREATE SCHEMA", sql), 0L)
+})
+
+test_that(".lnk_log_recompute_start opens a row with date_start, no date_end", {
+  cfg <- lnk_config("default")
+  sql <- capture_write(
+    .lnk_log_recompute_start(fake_conn(), cfg, "PINE",
+                             run_uid = "20260901T120000-abcd1234",
+                             run_label = "field-scope",
+                             views_prebuilt = TRUE),
+    probe_rows = 1L)
+  ins <- grep("INSERT INTO .*\\.log_recompute \\(", sql, value = TRUE)
+  expect_length(ins, 1L)
+  expect_match(ins, "date_start")
+  expect_match(ins, "now\\(\\)")
+  expect_no_match(ins, "date_end")
+  expect_match(ins, "20260901T120000-abcd1234")
+  expect_match(ins, "views_prebuilt")
+})
+
+test_that(".lnk_log_recompute_start returns a recompute_id and the schema", {
+  cfg <- lnk_config("default")
+  box <- new.env(parent = emptyenv())
+  capture_write(
+    assign("out", .lnk_log_recompute_start(fake_conn(), cfg, "PINE"),
+           envir = box),
+    probe_rows = 1L)
+  expect_match(box$out$recompute_id, "-[0-9a-f]{6}$")
+  expect_identical(box$out$schema, cfg$pipeline$schema)
+})
+
+test_that(".lnk_log_recompute_finish sets date_end and species", {
+  cfg <- lnk_config("default")
+  sql <- capture_write(
+    .lnk_log_recompute_finish(fake_conn(), cfg, "rid-1", c("BT", "CO")))
+  upd <- grep("UPDATE .*\\.log_recompute SET date_end", sql, value = TRUE)
+  expect_length(upd, 1L)
+  expect_match(upd, "species = ARRAY\\['BT', 'CO'\\]::text\\[\\]")
+  expect_match(upd, "WHERE recompute_id = 'rid-1'")
+})
+
+test_that(".lnk_log_recompute_fail appends notes and never sets date_end", {
+  # Three-state signal, same as the modelling log: date_end set -> success;
+  # NULL + notes -> it ran and errored; NULL + no notes -> the process died.
+  cfg <- lnk_config("default")
+  sql <- capture_write(
+    .lnk_log_recompute_fail(fake_conn(), cfg, "rid-1", "post-condition failed"))
+  upd <- grep("UPDATE .*\\.log_recompute SET notes", sql, value = TRUE)
+  expect_length(upd, 1L)
+  expect_match(upd, "concat_ws")
+  expect_no_match(upd, "date_end")
+})
+
+
+# --- .lnk_bcfp_log_current: the tunnel-free pin -----------------------------
+
+# A ledger in the shape lnk_baseline_append() writes.
+local_ledger <- function(rows, env = parent.frame()) {
+  path <- withr::local_tempfile(fileext = ".csv", .local_envir = env)
+  writeLines(c(paste(names(cols_baseline), collapse = ","), rows), path)
+  withr::local_envvar(LNK_BCFP_BASELINE = path, .local_envir = env)
+  path
+}
+
+test_that(".lnk_bcfp_log_ledger reads this host's latest model_version", {
+  withr::local_envvar(LNK_HOST_ALIAS = "m1")
+  local_ledger(c(
+    "2026-08-01 10:00,m1,snapshot-old,n/a,,v0.7.15-40-gaaaaaaa,2026-08-01T00:00:00Z,x",
+    "2026-08-31 14:50,m1,snapshot-new,n/a,,v0.7.15-47-ga702229,2026-08-19T04:31:37Z,y"))
+  out <- .lnk_bcfp_log_ledger()
+  expect_identical(out$model_version, "v0.7.15-47-ga702229")
+})
+
+test_that(".lnk_bcfp_log_ledger leaves model_run_id NA rather than inventing one", {
+  # log.json carries no model_run_id — lnk_bucket_log() requires only
+  # model_version, date_completed, head_sha — so lnk_baseline_append() writes
+  # "". Honest absence beats a fabricated id.
+  withr::local_envvar(LNK_HOST_ALIAS = "m1")
+  local_ledger(
+    "2026-08-31 14:50,m1,snapshot,n/a,,v0.7.15-47-ga702229,2026-08-19T04:31:37Z,y")
+  out <- .lnk_bcfp_log_ledger()
+  expect_true(is.na(out$model_run_id))
+})
+
+test_that(".lnk_bcfp_log_ledger carries a model_run_id when the ledger has one", {
+  withr::local_envvar(LNK_HOST_ALIAS = "m4")
+  local_ledger(
+    "2026-05-03 14:23,m4,provincial,fresh_default,120,v0.7.14-113-ga7373af,2026-04-28 23:17,z")
+  out <- .lnk_bcfp_log_ledger()
+  expect_identical(out$model_run_id, 120L)
+})
+
+test_that(".lnk_bcfp_log_ledger is scoped to THIS host", {
+  # Each host snapshots into its own local Postgres, so another host's stamp
+  # says nothing about what this one loaded.
+  withr::local_envvar(LNK_HOST_ALIAS = "m1")
+  local_ledger(
+    "2026-08-31 14:50,cypher-job1,snapshot,n/a,,v0.7.15-47-ga702229,2026-08-19T04:31:37Z,y")
+  expect_null(.lnk_bcfp_log_ledger())
+})
+
+test_that(".lnk_bcfp_log_ledger returns NULL when the ledger is absent", {
+  withr::local_envvar(LNK_BCFP_BASELINE = file.path(tempdir(), "no-such.csv"))
+  expect_null(.lnk_bcfp_log_ledger())
+})
+
+test_that(".lnk_bcfp_log_current prefers the DB when bcfishpass.log is reachable", {
+  # Tier 1 carries model_run_id, which the ledger cannot. It must win.
+  withr::local_envvar(LNK_HOST_ALIAS = "m1")
+  local_ledger(
+    "2026-08-31 14:50,m1,snapshot,n/a,,LEDGER-VERSION,2026-08-19T04:31:37Z,y")
+  out <- testthat::with_mocked_bindings(
+    dbGetQuery = function(conn, statement, ...) {
+      if (grepl("information_schema", statement)) return(data.frame(x = 1L))
+      data.frame(model_run_id = 999L, model_version = "DB-VERSION")
+    },
+    .package = "DBI",
+    .lnk_bcfp_log_current(fake_conn()))
+  expect_identical(out$model_version, "DB-VERSION")
+  expect_identical(out$model_run_id, 999L)
+})
+
+test_that(".lnk_bcfp_log_current falls back to the ledger with no bcfishpass schema", {
+  # The measured state of every study-area run: local docker fwapg holds ZERO
+  # bcfishpass tables, so tier 1 returns NULL on every WSG. Before link#262
+  # that left bcfp_model_version NULL on all 37 rows of the field run.
+  withr::local_envvar(LNK_HOST_ALIAS = "m1")
+  local_ledger(
+    "2026-08-31 14:50,m1,snapshot,n/a,,v0.7.15-47-ga702229,2026-08-19T04:31:37Z,y")
+  out <- testthat::with_mocked_bindings(
+    dbGetQuery = function(conn, statement, ...) data.frame(),
+    .package = "DBI",
+    .lnk_bcfp_log_current(fake_conn()))
+  expect_identical(out$model_version, "v0.7.15-47-ga702229")
+})
+
+
+# --- lnk_log_read -----------------------------------------------------------
+
+capture_read_sql <- function(expr) {
+  seen <- character()
+  testthat::with_mocked_bindings(
+    dbGetQuery = function(conn, statement, ...) {
+      seen <<- c(seen, statement)
+      data.frame()
+    },
+    dbQuoteLiteral = function(conn, x, ...) {
+      paste0("'", gsub("'", "''", as.character(x)), "'")
+    },
+    .package = "DBI",
+    force(expr))
+  seen
+}
+
+test_that("lnk_log_read reads <schema>.log by default", {
+  cfg <- lnk_config("default")
+  sql <- capture_read_sql(lnk_log_read(fake_conn(), cfg))
+  expect_match(sql, sprintf("FROM %s\\.log", cfg$pipeline$schema))
+  expect_match(sql, "DISTINCT ON \\(watershed_group_code\\)")
+})
+
+test_that("lnk_log_read(phase = 'recompute') reads log_recompute", {
+  cfg <- lnk_config("default")
+  sql <- capture_read_sql(lnk_log_read(fake_conn(), cfg, phase = "recompute"))
+  expect_match(sql, sprintf("FROM %s\\.log_recompute", cfg$pipeline$schema))
+})
+
+test_that("lnk_log_read(run_uid=) filters on it", {
+  cfg <- lnk_config("default")
+  sql <- capture_read_sql(
+    lnk_log_read(fake_conn(), cfg, run_uid = "20260901T120000-abcd1234"))
+  expect_match(sql, "run_uid = '20260901T120000-abcd1234'")
+})
+
+test_that("lnk_log_read(run_uid=) overrides latest and returns every row", {
+  # "Every row of a named run" is the acceptance criterion. DISTINCT ON would
+  # return one row per WSG and silently hide a WSG re-run inside the same
+  # dispatch — the case the identifier exists to make visible.
+  cfg <- lnk_config("default")
+  sql <- capture_read_sql(
+    lnk_log_read(fake_conn(), cfg, run_uid = "uid-1", latest = TRUE))
+  expect_no_match(sql, "DISTINCT ON")
+})
+
+test_that("lnk_log_read combines aoi and run_uid with AND", {
+  cfg <- lnk_config("default")
+  sql <- capture_read_sql(
+    lnk_log_read(fake_conn(), cfg, aoi = "PINE", run_uid = "uid-1"))
+  expect_match(sql, "watershed_group_code = 'PINE' AND run_uid = 'uid-1'")
+})
+
+test_that("lnk_log_read rejects a blank run_uid", {
+  cfg <- lnk_config("default")
+  expect_error(lnk_log_read(fake_conn(), cfg, run_uid = ""), "run_uid")
+  expect_error(lnk_log_read(fake_conn(), cfg, run_uid = c("a", "b")), "run_uid")
+})
+
+test_that("lnk_log_read rejects an unknown phase", {
+  cfg <- lnk_config("default")
+  expect_error(lnk_log_read(fake_conn(), cfg, phase = "nonsense"))
+})
+
+test_that(".lnk_log_recompute_start defaults run_uid/run_label from the env", {
+  # Regression for a bug an end-to-end run caught and the unit tests could not:
+  # the env read was wired into lnk_pipeline_run() only, so the recompute row
+  # landed with run_uid NULL and the model-vs-recompute join had nothing to
+  # join on. The earlier tests passed the value explicitly and so never
+  # exercised the default.
+  withr::local_envvar(LNK_RUN_UID = "20260901T000000-fromenv",
+                      LNK_RUN_LABEL = "label-from-env")
+  cfg <- lnk_config("default")
+  sql <- capture_write(
+    .lnk_log_recompute_start(fake_conn(), cfg, "PINE"), probe_rows = 1L)
+  ins <- grep("INSERT INTO .*\\.log_recompute \\(", sql, value = TRUE)
+  expect_match(ins, "20260901T000000-fromenv")
+  expect_match(ins, "label-from-env")
+})
+
+test_that("model and recompute rows agree on run_uid from one env setting", {
+  # The pair the whole design exists to make queryable: one export, both rows.
+  withr::local_envvar(LNK_RUN_UID = "20260901T000000-shared")
+  cfg <- lnk_config("default")
+  model <- capture_write(
+    .lnk_log_run_start(fake_conn(), cfg, "PINE", "working_pine",
+                       run_uid = Sys.getenv("LNK_RUN_UID", NA_character_)))
+  recomp <- capture_write(
+    .lnk_log_recompute_start(fake_conn(), cfg, "PINE"), probe_rows = 1L)
+  expect_match(grep("INSERT INTO .*\\.log \\(", model, value = TRUE),
+               "20260901T000000-shared")
+  expect_match(grep("INSERT INTO .*\\.log_recompute \\(", recomp, value = TRUE),
+               "20260901T000000-shared")
+})
+
+test_that(".lnk_bcfp_log_current tier 0 reads LNK_BCFP_MODEL_VERSION", {
+  # A cypher has no ledger row of its own -- it git-resets the repo but never
+  # snapshots under its own hostname -- so without this every cypher row lands
+  # unpinned. Same shape as the FWAPG_GIT_SHA export the driver already does.
+  withr::local_envvar(LNK_BCFP_MODEL_VERSION = "v0.7.15-47-ga702229",
+                      LNK_HOST_ALIAS = "cypher-job1")
+  out <- .lnk_bcfp_log_current(fake_conn())
+  expect_identical(out$model_version, "v0.7.15-47-ga702229")
+  expect_identical(out$source, "env")
+})
+
+test_that("bcfp_pin_source records which tier answered", {
+  # So "not pinned" is distinguishable from "pinned, from the ledger" without
+  # inferring it from a NULL model_run_id.
+  withr::local_envvar(LNK_HOST_ALIAS = "m1", LNK_BCFP_MODEL_VERSION = "")
+  local_ledger(
+    "2026-08-31 14:50,m1,snapshot,n/a,,v0.7.15-47-ga702229,2026-08-19T04:31:37Z,y")
+  expect_identical(.lnk_bcfp_log_ledger()$source, "ledger")
+
+  cfg <- lnk_config("default")
+  sql <- capture_write(
+    .lnk_log_run_start(fake_conn(), cfg, "PINE", "working_pine"))
+  ins <- grep("INSERT INTO .*\\.log \\(", sql, value = TRUE)
+  expect_match(ins, "bcfp_pin_source")
+})
+
+test_that("log_recompute is created before its indexes are", {
+  # An intermediate state during this work had log_recompute's indexes in the
+  # idx vector while the table did not yet exist, which makes
+  # .lnk_log_create_tables() throw -- and it is called from the LOUD
+  # .lnk_log_run_start(), i.e. every run dies at second one.
+  sql <- capture_ddl(.lnk_log_create_tables(NULL, "s"))
+  create <- grep("CREATE TABLE IF NOT EXISTS s\\.log_recompute", sql)
+  index <- grep("CREATE INDEX IF NOT EXISTS log_rc_", sql)
+  expect_gt(length(create), 0L)
+  expect_gt(length(index), 0L)
+  expect_lt(max(create), min(index))
 })

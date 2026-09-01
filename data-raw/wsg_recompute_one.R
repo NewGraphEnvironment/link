@@ -72,6 +72,79 @@ t0   <- Sys.time()
 # deep inside the network walk.
 .lnk_views_prebuilt <- identical(Sys.getenv("LNK_VIEWS_PREBUILT"), "1")
 
+# Provenance (link#262). Until now this script wrote NOTHING, while rewriting
+# <persist>.streams_access and <persist>.streams_mapping_code — so fresh.log
+# recorded when a WSG was MODELLED and said nothing about when its persisted
+# access and mapping_code last CHANGED. The recompute's output is what ships,
+# and #250 made it cheap enough to re-run casually over 217 WSGs in one command.
+#
+# Its own table, not a row in `log`: a recompute row in `log` would win
+# lnk_log_read()'s DISTINCT ON and be returned as "what produced this network".
+#
+# The open is LOUD (a missing table means the schema was never initialised, and
+# that is worth knowing before the work, not after); everything after it is
+# soft, exactly like lnk_pipeline_run's log.
+#
+# LNK_LOG=0 opts out. data-raw/recompute_sweep.sh re-runs the SAME WSG set at
+# widths 1, 2, 4, 8 to measure the pool, and recompute_parity.sh shuffles the
+# order for its invariance pass. Those are benchmarks, not dispatches, and their
+# rows would be byte-indistinguishable from a real post-consolidate recompute —
+# so study_area_verify.sql's "every WSG has both a model and a recompute
+# record" would pass on benchmark noise. Mirrors lnk_pipeline_run(log = FALSE),
+# which exists for the same reason.
+#
+# getFromNamespace, NOT `link:::`. This script runs in BOTH modes (see the
+# usage header): LNK_LOAD=loadall on the dispatcher, plain library(link) on a
+# hand invocation. `link:::` resolves against the INSTALLED namespace in both,
+# so under load_all it would silently call a different copy of the package than
+# the one being tested — the data-raw staleness trap. getFromNamespace() asks
+# whichever namespace is actually loaded, which is the right one either way.
+.rc_log <- !identical(Sys.getenv("LNK_LOG"), "0")
+.rc_start <- utils::getFromNamespace(".lnk_log_recompute_start", "link")
+.rc_finish <- utils::getFromNamespace(".lnk_log_recompute_finish", "link")
+.rc_fail <- utils::getFromNamespace(".lnk_log_recompute_fail", "link")
+
+rlog <- if (.rc_log) {
+  .rc_start(conn, cfg = cfg, aoi = wsg, views_prebuilt = .lnk_views_prebuilt)
+} else {
+  NULL
+}
+
+# Explicit failure marking, NOT on.exit. `on.exit()` registered at the TOP
+# LEVEL of an Rscript never fires: it attaches to the global environment, which
+# never exits, so the handler is registered and simply never called. Measured
+# 2026-09-01 —
+#
+#   $ printf 'on.exit(cat("H\n"));cat("start\n");stop("boom")' | Rscript -
+#   start
+#   Error: boom
+#   Execution halted            <- "H" was never printed
+#
+# — and the same on quit(). It looks correct because it IS correct inside a
+# function. This file already carried two dead handlers for exactly that reason
+# (dbDisconnect above, and the scratch-table DROP below), which is the likely
+# source of the 49 orphaned `zz_lnk_mc_scratch_*` tables recorded in link#246's
+# findings.
+#
+# Without this, an error between here and the post-condition would leave
+# date_end NULL AND notes NULL — which this design defines as "SIGKILL / OOM /
+# reboot, nothing ran". That mislabels the commonest failure as the rarest, and
+# silently: the row looks like a machine that died, not like work that broke.
+rc_fail_mark <- function(e) {
+  if (!.rc_log) {
+    return(invisible(NULL))
+  }
+  try(.rc_fail(conn, cfg, rlog$recompute_id,
+               message = paste0("recompute failed: ", conditionMessage(e))),
+      silent = TRUE)
+  invisible(NULL)
+}
+
+# The work runs inside a function so that on.exit() is real (see above). The
+# scratch-table DROP in particular has to fire: registered at top level it never
+# did, which is how `zz_lnk_mc_scratch_*` tables accumulated.
+recompute_wsg <- function() {
+
 # 1. Surgically recompute streams_access (cross-WSG cols) in place.
 lnk_access(conn, cfg, aoi = wsg,
   table_streams  = paste0(sch, ".streams"),
@@ -136,14 +209,33 @@ DBI::dbWithTransaction(conn, {
 # modelled and consolidated, so the guard MUST pass; a failure here means the
 # consolidate genuinely dropped a downstream group and this WSG's access is
 # built on barriers that never landed.
-guard <- tryCatch(
   lnk_wsg_downstream_check(conn, aoi = wsg, cfg = cfg, loaded = loaded,
-                           on_fail = "error"),
-  error = function(e) {
-    message("[wsg_recompute_one] POST-CONDITION FAILED for ", wsg)
-    message(conditionMessage(e))
-    quit(status = 1)
-  })
+                           on_fail = "error")
+}
+
+# The post-condition is part of the work, so a failure marks the row the same
+# way any other error does. Distinguished only by its message, because the
+# remedy differs: a post-condition failure means the consolidate dropped a
+# downstream group, not that this WSG's recompute broke.
+ok <- tryCatch({
+  recompute_wsg()
+  TRUE
+}, error = function(e) {
+  message("[wsg_recompute_one] FAILED for ", wsg)
+  message(conditionMessage(e))
+  rc_fail_mark(e)
+  FALSE
+})
+
+if (!ok) {
+  try(DBI::dbDisconnect(conn), silent = TRUE)
+  quit(status = 1)
+}
+
+# Closed only after the post-condition passes. `date_end` therefore means
+# "recomputed AND verified", which is what a reader of this table needs.
+if (.rc_log) .rc_finish(conn, cfg, rlog$recompute_id, species = active)
+try(DBI::dbDisconnect(conn), silent = TRUE)
 
 cat(sprintf("[wsg_recompute_one] %s recomputed in %.2f min (persist=%s)\n",
             wsg, as.numeric(difftime(Sys.time(), t0, units = "mins")), sch))

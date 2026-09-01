@@ -102,6 +102,18 @@
 #' that ids minted independently on several cyphers never collide when
 #' `schema_consolidate.R` COPYs them into one province-wide schema.
 #'
+#' Three identity levels, deliberately distinct (link#262):
+#'
+#'   `run_id`     this, the PK. ONE PER WSG — a 217-WSG dispatch mints 217.
+#'   `run_uid`    one per dispatch, shared by every host and every WSG of it.
+#'                Minted once by `data-raw/study_area_run.sh` and handed to
+#'                every host as `LNK_RUN_UID`, so "everything from that run" is
+#'                one equality rather than a time window plus a host list.
+#'                NA for an ad-hoc single-WSG call, which is honest: there was
+#'                no dispatch to belong to.
+#'   `run_label`  operator free text (`--run-label=`). Names the campaign for a
+#'                human; never assume it is unique.
+#'
 #' @return A single string.
 #' @noRd
 .lnk_run_id <- function() {
@@ -162,6 +174,7 @@ cols_log <- c(
   watershed_group_code   = "varchar(4) NOT NULL",
   date_start             = "timestamptz NOT NULL",
   date_end               = "timestamptz",
+  run_uid                = "text",
   run_label              = "text",
   host                   = "text",
   config_name            = "text",
@@ -183,6 +196,53 @@ cols_log <- c(
   wsg_upstream           = "text[]",
   bcfp_model_run_id      = "integer",
   bcfp_model_version     = "text",
+  bcfp_pin_source        = "text",
+  notes                  = "text"
+)
+
+# One row per data-raw/wsg_recompute_one.R invocation (link#262).
+#
+# A SEPARATE TABLE, not a `phase` column on `log`. The recompute rewrites
+# <persist>.streams_access and <persist>.streams_mapping_code — the output that
+# actually ships — so it needs a record; but folding it into `log` would:
+#
+#   * make lnk_log_read()'s `DISTINCT ON (watershed_group_code) ORDER BY
+#     date_start DESC` return the recompute row as "what produced this
+#     network", which it did not;
+#   * change what count(*) means for every existing consumer, including
+#     data-raw/study_area_verify.sql;
+#   * leave arg_dams / arg_mapping_code / wsg_upstream / config_drift NULL or
+#     misleading, since those are facts about a modelling run.
+#
+# Deliberately NO log_input FK: the recompute reads the already-persisted
+# streams / habitat / barriers, not the DB primitives, so a primitive
+# fingerprint here would describe inputs it never touched.
+#
+# `watershed_group_code` is present so schema_consolidate.R auto-discovers the
+# table — it keys off "is a BASE TABLE with a watershed_group_code column"
+# (data-raw/schema_consolidate.R), so a cypher's recompute rows travel home
+# with no list for anyone to maintain.
+cols_log_recompute <- c(
+  recompute_id           = "text NOT NULL",
+  watershed_group_code   = "varchar(4) NOT NULL",
+  date_start             = "timestamptz NOT NULL",
+  date_end               = "timestamptz",
+  run_uid                = "text",
+  run_label              = "text",
+  host                   = "text",
+  config_name            = "text",
+  config_hash            = "text",
+  link_version           = "text",
+  link_sha               = "text",
+  link_dirty             = "boolean",
+  fresh_version          = "text",
+  fresh_sha              = "text",
+  fresh_dirty            = "boolean",
+  crate_version          = "text",
+  fwapg_sha              = "text",
+  schema_persist         = "text",
+  species                = "text[]",
+  views_prebuilt         = "boolean",
   notes                  = "text"
 )
 
@@ -281,6 +341,8 @@ cols_log_input <- c(
 
   specs <- list(
     list(table = "log", cols = cols_log, pk = "run_id"),
+    list(table = "log_recompute", cols = cols_log_recompute,
+         pk = "recompute_id"),
     list(table = "log_input", cols = cols_log_input,
          pk = c("run_id", "table_name")),
     list(table = "log_parameters_fresh", cols = .lnk_cols_log_parameters_fresh(),
@@ -297,9 +359,12 @@ cols_log_input <- c(
   }
 
   idx <- c(
-    log_wsg_date = "log (watershed_group_code, date_start DESC)",
-    log_config   = "log (config_hash)",
-    log_input_rn = "log_input (run_id)"
+    log_wsg_date    = "log (watershed_group_code, date_start DESC)",
+    log_config      = "log (config_hash)",
+    log_input_rn    = "log_input (run_id)",
+    log_run_uid     = "log (run_uid)",
+    log_rc_run_uid  = "log_recompute (run_uid)",
+    log_rc_wsg_date = "log_recompute (watershed_group_code, date_start DESC)"
   )
   for (nm in names(idx)) {
     .lnk_db_execute(conn, sprintf(
@@ -326,7 +391,19 @@ cols_log_input <- c(
 #' @param cfg An `lnk_config` object — supplies the persist schema.
 #' @param aoi Optional watershed group code to filter to.
 #' @param latest Logical. When `TRUE` (default), return only the newest run
-#'   per watershed group. `FALSE` returns the full history.
+#'   per watershed group. `FALSE` returns the full history. **Ignored when
+#'   `run_uid` is supplied** — see below.
+#' @param run_uid Optional dispatch identifier (link#262). One dispatch of
+#'   `data-raw/study_area_run.sh` stamps the same `run_uid` on every host and
+#'   every watershed group, so this is what answers "everything from that run"
+#'   without a time window. Supplying it forces `latest = FALSE`: the question
+#'   is "every row of this run", and `DISTINCT ON` would silently drop a WSG
+#'   that was re-run within the same dispatch.
+#' @param phase Which log to read. `"model"` (default) reads `<schema>.log`,
+#'   one row per [lnk_pipeline_run()] call. `"recompute"` reads
+#'   `<schema>.log_recompute`, one row per `wsg_recompute_one.R` invocation —
+#'   the post-consolidate pass that rewrites `streams_access` and
+#'   `streams_mapping_code`, which is the output that ships.
 #' @return A tibble, newest first.
 #' @family compare
 #' @export
@@ -340,8 +417,17 @@ cols_log_input <- c(
 #'
 #' # Every run, newest first.
 #' lnk_log_read(conn, cfg, latest = FALSE)
+#'
+#' # Everything from one dispatch, across every host — no time window.
+#' lnk_log_read(conn, cfg, run_uid = "20260901T184455-3f9ac1")
+#'
+#' # Was each of those WSGs also recomputed?
+#' lnk_log_read(conn, cfg, run_uid = "20260901T184455-3f9ac1",
+#'              phase = "recompute")
 #' }
-lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE) {
+lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
+                         run_uid = NULL, phase = c("model", "recompute")) {
+  phase <- match.arg(phase)
   stopifnot(
     inherits(conn, "DBIConnection"),
     inherits(cfg, "lnk_config"),
@@ -351,18 +437,38 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE) {
       (!is.character(aoi) || length(aoi) != 1L || !nzchar(aoi))) {
     stop("aoi must be NULL or a single non-empty WSG code", call. = FALSE)
   }
+  if (!is.null(run_uid) &&
+      (!is.character(run_uid) || length(run_uid) != 1L || !nzchar(run_uid))) {
+    stop("run_uid must be NULL or a single non-empty string", call. = FALSE)
+  }
 
   schema <- .lnk_table_names(cfg)$schema
-  where <- if (is.null(aoi)) "" else sprintf(
-    " WHERE watershed_group_code = %s", DBI::dbQuoteLiteral(conn, aoi))
+  table <- if (identical(phase, "recompute")) "log_recompute" else "log"
 
-  sql <- if (isTRUE(latest)) {
-    sprintf(
-      "SELECT DISTINCT ON (watershed_group_code) * FROM %s.log%s
-        ORDER BY watershed_group_code, date_start DESC",
-      schema, where)
+  preds <- c(
+    if (!is.null(aoi)) sprintf("watershed_group_code = %s",
+                               DBI::dbQuoteLiteral(conn, aoi)),
+    if (!is.null(run_uid)) sprintf("run_uid = %s",
+                                   DBI::dbQuoteLiteral(conn, run_uid))
+  )
+  where <- if (length(preds) == 0L) {
+    ""
   } else {
-    sprintf("SELECT * FROM %s.log%s ORDER BY date_start DESC", schema, where)
+    paste0(" WHERE ", paste(preds, collapse = " AND "))
+  }
+
+  # A run_uid filter is a question about a whole dispatch, so it overrides
+  # `latest` rather than composing with it. Composing would return one row per
+  # WSG and hide a WSG re-run inside the same dispatch — the case the identifier
+  # exists to make visible.
+  if (isTRUE(latest) && is.null(run_uid)) {
+    sql <- sprintf(
+      "SELECT DISTINCT ON (watershed_group_code) * FROM %s.%s%s
+        ORDER BY watershed_group_code, date_start DESC",
+      schema, table, where)
+  } else {
+    sql <- sprintf("SELECT * FROM %s.%s%s ORDER BY date_start DESC",
+                   schema, table, where)
   }
 
   tibble::as_tibble(DBI::dbGetQuery(conn, sql))
@@ -380,6 +486,26 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE) {
     return("NULL")
   }
   as.character(DBI::dbQuoteLiteral(conn, x[[1]]))
+}
+
+#' Normalise an env-sourced identifier: blank is absent, not a value.
+#'
+#' `Sys.getenv("X", NA_character_)` returns `NA` only when X is **unset**. A
+#' set-but-empty var — `export LNK_RUN_UID=""`, or an orchestrator interpolating
+#' a variable that never got assigned — yields `""`, which `.lnk_log_lit()` would
+#' faithfully quote as `''`. An empty-string run_uid is worse than a NULL one:
+#' it joins to every other empty-string row, so two unlabelled dispatches would
+#' merge into one "run".
+#'
+#' This is the "empty is not unset" trap in one line, applied where the value
+#' crosses into SQL so every caller is covered rather than each remembering.
+#'
+#' @noRd
+.lnk_blank_to_na <- function(x) {
+  if (length(x) != 1L || is.na(x) || !nzchar(trimws(as.character(x)))) {
+    return(NA_character_)
+  }
+  as.character(x)
 }
 
 #' Quote a character vector as a Postgres text[] literal.
@@ -558,10 +684,14 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE) {
 .lnk_log_run_start <- function(conn, cfg, aoi, schema_working,
                                dams = TRUE, cleanup_working = TRUE,
                                mapping_code = FALSE,
+                               run_uid = NA_character_,
                                run_label = NA_character_,
                                notes = NA_character_) {
   schema <- .lnk_table_names(cfg)$schema
   .lnk_log_create_tables(conn, schema)
+
+  run_uid <- .lnk_blank_to_na(run_uid)
+  run_label <- .lnk_blank_to_na(run_label)
 
   upstream <- tryCatch(.lnk_wsg_persisted_all(conn, cfg),
                        error = function(e) character(0))
@@ -570,19 +700,22 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE) {
   run_id <- .lnk_run_id()
   bcfp <- .lnk_bcfp_log_current(conn)
 
-  cols <- c("run_id", "watershed_group_code", "date_start", "run_label", "host",
+  cols <- c("run_id", "watershed_group_code", "date_start",
+            "run_uid", "run_label", "host",
             "config_name", "config_hash", "config_drift",
             "link_version", "link_sha", "link_dirty",
             "fresh_version", "fresh_sha", "fresh_dirty",
             "crate_version", "fwapg_sha",
             "arg_dams", "arg_mapping_code", "arg_cleanup_working",
             "schema_persist", "wsg_upstream",
-            "bcfp_model_run_id", "bcfp_model_version", "notes")
+            "bcfp_model_run_id", "bcfp_model_version", "bcfp_pin_source",
+            "notes")
 
   vals <- c(
     DBI::dbQuoteLiteral(conn, run_id),
     DBI::dbQuoteLiteral(conn, aoi),
     "now()",
+    .lnk_log_lit(conn, run_uid),
     .lnk_log_lit(conn, run_label),
     .lnk_log_lit(conn, stamp$host),
     .lnk_log_lit(conn, cfg$name),
@@ -603,6 +736,7 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE) {
     .lnk_log_arr(conn, upstream),
     .lnk_log_lit(conn, if (is.null(bcfp)) NA else bcfp$model_run_id),
     .lnk_log_lit(conn, if (is.null(bcfp)) NA else bcfp$model_version),
+    .lnk_log_lit(conn, if (is.null(bcfp)) NA else bcfp$source),
     .lnk_log_lit(conn, notes)
   )
 
@@ -655,25 +789,271 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE) {
 }
 
 
-#' Latest bcfishpass build, when `bcfishpass.log` is reachable.
+#' Latest bcfishpass build the comparison reference was taken from.
 #'
-#' Usually absent on a local fwapg (it lives behind the tunnel), so this returns
-#' NULL rather than erroring.
+#' Two tiers, and the second is the one that fires on a real run (link#262).
 #'
+#' **Tier 1 — `bcfishpass.log`.** Right whenever the connection actually reaches
+#' a bcfp database (the `:63333` tunnel). Carries `model_run_id`, which nothing
+#' else does.
+#'
+#' **Tier 2 — the local baseline ledger.** `data-raw/study_area_run.sh` is
+#' deliberately tunnel-free, so the pipeline connection is local docker fwapg,
+#' which holds **zero** `bcfishpass` tables — measured 2026-09-01:
+#' `information_schema.tables WHERE table_schema = 'bcfishpass'` returns 0. Tier
+#' 1 therefore returns NULL on every WSG of every study-area run, which is why
+#' `bcfp_model_run_id` and `bcfp_model_version` were NULL on all 37 rows of the
+#' 2026-08-31 field run.
+#'
+#' The reference those runs compare against is not the tunnel either: it is
+#' `fresh.streams_vw_bcfp`, a local snapshot `ogr2ogr`'d from the newgraph
+#' bucket by `data-raw/snapshot_bcfp.sh`, whose step 6 already stamps the build
+#' it loaded into `data-raw/logs/bcfp_baselines.csv` via [lnk_baseline_append()].
+#' So the deterministic ref exists locally, and querying a live `bcfishpass.log`
+#' at compare time would name the build the tunnel is at *now* — it rebuilds
+#' weekly — rather than the one the numbers were computed against. That is a
+#' wrong pin, not a missing one.
+#'
+#' **`model_run_id` is NULL on tier 2 and that is correct.** `log.json` carries
+#' no such key ([lnk_bucket_log()] requires only `model_version`,
+#' `date_completed`, `head_sha`) and [lnk_baseline_append()] writes `""` for it.
+#' Honest absence beats a fabricated id.
+#'
+#' Ledger path: `LNK_BCFP_BASELINE`, else `data-raw/logs/bcfp_baselines.csv`
+#' relative to the working directory. Both hosts run the drivers from the repo
+#' root — the dispatcher via `cd "$REPO_ROOT"`, cyphers via
+#' `cd ~/Projects/repo/link` inside the ssh string — so cwd resolves on both.
+#' A miss returns NULL rather than erroring; provenance must never kill a run.
+#'
+#' **Tier 0 — `LNK_BCFP_MODEL_VERSION`.** The ledger is a per-host record, and a
+#' cypher has no row of its own: it `git reset --hard`s the repo (so the CSV is
+#' present) but never runs `snapshot_bcfp.sh` under its own hostname, so tier 2
+#' returns NULL there and every cypher row would land unpinned — 13 of 34 in the
+#' last field run, and the majority at 217 WSGs. `study_area_run.sh` already
+#' solves this exact shape for `FWAPG_GIT_SHA`: resolve once on the dispatcher,
+#' export to every host. Tier 0 is that, and it also removes the working-
+#' directory dependence tier 2 would otherwise put on a persisted value.
+#'
+#' `bcfp_pin_source` records which tier answered, so "not pinned" is
+#' distinguishable from "pinned, from the ledger" without inferring it from a
+#' NULL id.
+#'
+#' @return A list with `model_run_id`, `model_version` and `source`, or NULL.
 #' @noRd
 .lnk_bcfp_log_current <- function(conn) {
-  tryCatch({
+  env_version <- .lnk_blank_to_na(Sys.getenv("LNK_BCFP_MODEL_VERSION", ""))
+  if (!is.na(env_version)) {
+    env_id <- suppressWarnings(
+      as.integer(.lnk_blank_to_na(Sys.getenv("LNK_BCFP_MODEL_RUN_ID", ""))))
+    return(list(model_run_id = env_id, model_version = env_version,
+                source = "env"))
+  }
+
+  from_db <- tryCatch({
     present <- nrow(DBI::dbGetQuery(conn,
       "SELECT 1 FROM information_schema.tables
         WHERE table_schema = 'bcfishpass' AND table_name = 'log' LIMIT 1")) > 0L
     if (!present) {
+      NULL
+    } else {
+      res <- DBI::dbGetQuery(conn,
+        "SELECT model_run_id, model_version FROM bcfishpass.log
+          ORDER BY model_run_id DESC LIMIT 1")
+      if (nrow(res) == 0L) NULL else c(as.list(res[1L, ]), list(source = "db"))
+    }
+  }, error = function(e) NULL)
+
+  if (!is.null(from_db)) {
+    return(from_db)
+  }
+  .lnk_bcfp_log_ledger()
+}
+
+
+#' Tier 2 of [.lnk_bcfp_log_current()] — the local snapshot ledger.
+#'
+#' Scoped to THIS host's rows for the same reason [lnk_baseline_current()] is:
+#' each host snapshots into its own local Postgres, so another host's stamp says
+#' nothing about what this one loaded. Recency by `run_started_pdt`, whose
+#' `YYYY-MM-DD HH:MM` format makes lexicographic ordering chronological — the
+#' rule is [lnk_baseline_current()]'s, reused rather than re-derived.
+#'
+#' @noRd
+.lnk_bcfp_log_ledger <- function() {
+  tryCatch({
+    path <- Sys.getenv("LNK_BCFP_BASELINE", "")
+    if (!nzchar(path)) path <- "data-raw/logs/bcfp_baselines.csv"
+    if (!file.exists(path)) {
       return(NULL)
     }
-    res <- DBI::dbGetQuery(conn,
-      "SELECT model_run_id, model_version FROM bcfishpass.log
-        ORDER BY model_run_id DESC LIMIT 1")
-    if (nrow(res) == 0L) NULL else as.list(res[1L, ])
+
+    ledger <- lnk_baseline_read(path = path)
+    rows <- ledger[ledger$host == .lnk_host(), , drop = FALSE]
+    if (nrow(rows) == 0L) {
+      return(NULL)
+    }
+
+    latest <- rows[order(rows$run_started_pdt, decreasing = TRUE), ,
+                   drop = FALSE][1L, , drop = FALSE]
+    version <- latest$bcfp_model_version
+    if (length(version) != 1L || is.na(version) || !nzchar(version)) {
+      return(NULL)
+    }
+
+    # "" is what lnk_baseline_append() writes when log.json has no
+    # model_run_id, which is every tunnel-free stamp. Carry it as NA rather
+    # than inserting an empty string into an integer column.
+    id <- latest$bcfp_model_run_id
+    id <- if (length(id) != 1L || is.na(id) || !nzchar(as.character(id))) {
+      NA_integer_
+    } else {
+      suppressWarnings(as.integer(id))
+    }
+
+    list(model_run_id = id, model_version = version, source = "ledger")
   }, error = function(e) NULL)
+}
+
+
+#' Open a recompute-log row. Loud by design; the rest of the trio is soft.
+#'
+#' `data-raw/wsg_recompute_one.R` rewrites `<persist>.streams_access` and
+#' `<persist>.streams_mapping_code` — the values that actually ship — and until
+#' link#262 recorded nothing at all, so `fresh.log` said when a WSG was
+#' *modelled* and nothing about when its persisted access last *changed*.
+#'
+#' **This never runs DDL.** `study_area_run.sh` drives the recompute through a
+#' pool up to 16 wide (`--recompute-jobs`), and schema DDL belongs at
+#' initialisation rather than in N concurrent jobs: creation should happen once,
+#' where a failure is one loud error instead of N attributed to individual WSGs.
+#'
+#' Not claimed as a measured lock convoy. link#250's convoy was
+#' `CREATE OR REPLACE VIEW` against views every sibling holds a long
+#' `AccessShareLock` on *for the duration of the network walk*; an
+#' `ADD COLUMN IF NOT EXISTS` on a table these jobs only INSERT into takes
+#' AccessExclusive for microseconds with no long readers queued behind it. The
+#' shapes are related but not the same, and stating the stronger version as
+#' fact would teach a future reader "never DDL under any pool", which is not
+#' what #250 measured.
+#'
+#' So the table is created by [lnk_persist_init()], by every modelling run (both
+#' via `.lnk_log_create_tables()`), and once by `study_area_run.sh` immediately
+#' before the pool — that last one covers the case where every dispatcher WSG
+#' species-skips and no modelling run ever happens. This asserts presence.
+#'
+#' @return A list with `recompute_id` and `schema`.
+#' @noRd
+#' `run_uid` / `run_label` default from the environment, exactly as
+#' [lnk_pipeline_run()] does. They must: the whole point of the identifier is
+#' that a WSG's modelling row and its recompute row carry the SAME one, and the
+#' recompute has no other route to it — `study_area_run.sh` invokes this script
+#' per WSG, not through R. Caught by an end-to-end run rather than by the unit
+#' tests, which passed the value explicitly and so never exercised the default.
+#' @noRd
+.lnk_log_recompute_start <- function(conn, cfg, aoi,
+                                     run_uid = Sys.getenv("LNK_RUN_UID",
+                                                          NA_character_),
+                                     run_label = Sys.getenv("LNK_RUN_LABEL",
+                                                            NA_character_),
+                                     views_prebuilt = NA,
+                                     notes = NA_character_) {
+  schema <- .lnk_table_names(cfg)$schema
+  run_uid <- .lnk_blank_to_na(run_uid)
+  run_label <- .lnk_blank_to_na(run_label)
+
+  present <- nrow(DBI::dbGetQuery(conn, sprintf(
+    "SELECT 1 FROM information_schema.tables
+      WHERE table_schema = %s AND table_name = 'log_recompute' LIMIT 1",
+    DBI::dbQuoteLiteral(conn, schema)))) > 0L
+  if (!present) {
+    stop(sprintf(
+      paste0("%s.log_recompute is missing. It is created by lnk_persist_init() ",
+             "and by every lnk_pipeline_run(), and is deliberately NOT created ",
+             "here: this runs inside a pool up to 16 wide, where DDL is a lock ",
+             "convoy (link#250, link#262). Initialise the schema first:\n",
+             "  lnk_persist_init(conn, cfg)"),
+      schema), call. = FALSE)
+  }
+
+  stamp <- lnk_stamp(cfg, conn = NULL, aoi = aoi)
+  recompute_id <- .lnk_run_id()
+
+  cols <- c("recompute_id", "watershed_group_code", "date_start",
+            "run_uid", "run_label", "host", "config_name", "config_hash",
+            "link_version", "link_sha", "link_dirty",
+            "fresh_version", "fresh_sha", "fresh_dirty",
+            "crate_version", "fwapg_sha", "schema_persist",
+            "views_prebuilt", "notes")
+
+  vals <- c(
+    DBI::dbQuoteLiteral(conn, recompute_id),
+    DBI::dbQuoteLiteral(conn, aoi),
+    "now()",
+    .lnk_log_lit(conn, run_uid),
+    .lnk_log_lit(conn, run_label),
+    .lnk_log_lit(conn, stamp$host),
+    .lnk_log_lit(conn, cfg$name),
+    .lnk_log_lit(conn, stamp$config_hash),
+    .lnk_log_lit(conn, stamp$software$link$version),
+    .lnk_log_lit(conn, stamp$software$link$git_sha),
+    .lnk_log_lit(conn, stamp$software$link$dirty),
+    .lnk_log_lit(conn, stamp$software$fresh$version),
+    .lnk_log_lit(conn, stamp$software$fresh$git_sha),
+    .lnk_log_lit(conn, stamp$software$fresh$dirty),
+    .lnk_log_lit(conn, .lnk_pkg_version_or_na("crate")),
+    .lnk_log_lit(conn, stamp$fwapg_sha),
+    .lnk_log_lit(conn, schema),
+    .lnk_log_lit(conn, views_prebuilt),
+    .lnk_log_lit(conn, notes)
+  )
+
+  .lnk_db_execute(conn, sprintf(
+    "INSERT INTO %s.log_recompute (%s) VALUES (%s)",
+    schema, paste(cols, collapse = ", "), paste(vals, collapse = ", ")))
+
+  list(recompute_id = recompute_id, schema = schema)
+}
+
+
+#' Close a recompute-log row on success. Soft.
+#' @noRd
+.lnk_log_recompute_finish <- function(conn, cfg, recompute_id,
+                                      species = character(0)) {
+  tryCatch({
+    schema <- .lnk_table_names(cfg)$schema
+    .lnk_db_execute(conn, sprintf(
+      "UPDATE %s.log_recompute SET date_end = now(), species = %s
+        WHERE recompute_id = %s",
+      schema, .lnk_log_arr(conn, species),
+      DBI::dbQuoteLiteral(conn, recompute_id)))
+    invisible(TRUE)
+  }, error = function(e) {
+    warning("recompute log not finalized: ", conditionMessage(e), call. = FALSE)
+    invisible(FALSE)
+  })
+}
+
+
+#' Mark a recompute-log row failed. Soft, and never touches `date_end`.
+#'
+#' Same three-state signal as [.lnk_log_run_fail()]: `date_end` set means
+#' success, NULL with notes means it ran and errored, NULL with no notes means
+#' the process died without running anything.
+#'
+#' @noRd
+.lnk_log_recompute_fail <- function(conn, cfg, recompute_id,
+                                    message = "recompute failed or interrupted") {
+  tryCatch({
+    schema <- .lnk_table_names(cfg)$schema
+    .lnk_db_execute(conn, sprintf(
+      "UPDATE %s.log_recompute SET notes = concat_ws('; ', notes, %s)
+        WHERE recompute_id = %s",
+      schema, DBI::dbQuoteLiteral(conn, message),
+      DBI::dbQuoteLiteral(conn, recompute_id)))
+    invisible(TRUE)
+  }, error = function(e) {
+    invisible(FALSE)
+  })
 }
 
 

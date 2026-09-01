@@ -290,6 +290,75 @@ format.lnk_stamp <- function(x, type = c("markdown", "text"), ...) {
 #   2. `git status --porcelain`, attempted only when a `.git` was actually
 #      found (i.e. a dev checkout / load_all)
 #   3. NA when neither resolves.
+#
+# The pathspec is load-bearing (link#257). `data-raw/logs/` is TRACKED on
+# purpose — run logs are retained as contemporaneous evidence — and the run
+# writes ~15 files into it while it runs, plus `bcfp_baselines.csv` which
+# snapshot_bcfp.sh stamps on every host. So the dispatcher dirties its own
+# checkout by operating, and a bare `git status --porcelain` reported
+# link_dirty = TRUE on all 21 dispatcher rows of the first provenanced run
+# while the tracked code was byte-identical to origin/main. A flag that is
+# always set carries no information, and the one field that exists to say
+# "this SHA cannot be trusted" was itself untrustworthy.
+#
+# The subject is "does tracked code differ from what a cypher will check out",
+# so the run's own outputs are excluded and nothing else is. Untracked files
+# are deliberately still counted: a new uncommitted R/*.R is invisible to a
+# cypher, which is exactly the drift being detected.
+#
+# Two details, both probed against a temp checkout in both states rather than
+# reasoned about:
+#
+#   * `:(exclude)` LONG FORM ONLY. `:!data-raw/logs` keeps parsing pathspec
+#     magic after the `!`, so `d` aborts the whole command — and an aborted
+#     git status returns empty, which reads as CLEAN. Fail-toward-skip on the
+#     guard whose job is to catch a lie.
+#   * `top` anchors the exclude at the REPO ROOT. `-- . ':(exclude)…'` resolves
+#     both terms against the cwd, so were `-C` ever pointed at a subdirectory
+#     the exclude would name a path that does not exist while `.` narrowed the
+#     scan — silently missing a modified file one level up. A lone anchored
+#     exclude means "everything except this", from anywhere.
+#
+# Measured on a fixture with a modified tracked log, an untracked log, a
+# modified tracked R file and an untracked R file: 0 hits with only the logs
+# touched, 2 once R/ was touched, identical from the root and from a subdir.
+#
+# shQuote() is REQUIRED, not decoration. system2() shell-quotes the command and
+# pastes the arguments on raw, so the parentheses in `:(top,exclude)` are
+# parsed by the shell:
+#   sh: -c: line 0: syntax error near unexpected token `('
+# The command then never runs, `out` is NULL, and this returns NA — so the
+# predicate silently stops measuring anything at all. Caught on the first probe
+# after writing it; it is invisible by reading, because the pathspec is correct
+# and only its transport is not.
+.lnk_git_dirty_pathspec <- c("--", shQuote(":(top,exclude)data-raw/logs"))
+
+# The git call, split out from .lnk_pkg_git_dirty() so it can be tested
+# against a REAL checkout in both states. The defect this guards is in what
+# git is ASKED, so a mocked return value cannot see it — the test has to run
+# the command.
+#
+# Returns TRUE (dirty), FALSE (clean), or NA (could not tell). NA must never
+# be collapsed into FALSE: "git failed" and "nothing changed" are different
+# facts, and only one of them means the SHA can be trusted.
+.lnk_git_dirty_at <- function(d) {
+  # system2() RAISES rather than returning a status when the command does not
+  # exist, so a machine without git would error the caller instead of
+  # degrading to NA. Test for the tool before calling it.
+  if (!nzchar(Sys.which("git"))) return(NA)
+
+  out <- tryCatch(
+    suppressWarnings(system2("git",
+                             c("-C", shQuote(d), "status", "--porcelain",
+                               .lnk_git_dirty_pathspec),
+                             stdout = TRUE, stderr = FALSE)),
+    error = function(e) NULL)
+  if (is.null(out)) return(NA)
+  status <- attr(out, "status")
+  if (!is.null(status) && !identical(as.integer(status), 0L)) return(NA)
+  length(out) > 0L
+}
+
 .lnk_pkg_git_dirty <- function(pkg) {
   env_key <- paste0(toupper(pkg), "_GIT_DIRTY")
   v <- tolower(Sys.getenv(env_key, ""))
@@ -304,14 +373,7 @@ format.lnk_stamp <- function(x, type = c("markdown", "text"), ...) {
 
   for (d in c(pkg_dir, dirname(pkg_dir))) {
     if (!file.exists(file.path(d, ".git"))) next
-    out <- tryCatch(
-      suppressWarnings(system2("git", c("-C", shQuote(d), "status", "--porcelain"),
-                               stdout = TRUE, stderr = FALSE)),
-      error = function(e) NULL)
-    if (is.null(out)) return(NA)
-    status <- attr(out, "status")
-    if (!is.null(status) && !identical(as.integer(status), 0L)) return(NA)
-    return(length(out) > 0L)
+    return(.lnk_git_dirty_at(d))
   }
   NA
 }

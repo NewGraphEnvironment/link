@@ -11,6 +11,48 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (v0.47.2 as of 2026-08-31)
 
+## Status (2026-09-01) — v0.49.0: provenance gaps closed before the 217-WSG run (#262, #257)
+
+**Two of the four reported gaps were wired and unfed; a third named the wrong
+source.** `run_label` has been threaded to the INSERT since #127 — NULL only
+because nothing set `LNK_RUN_LABEL`. `.lnk_bcfp_log_current()` has been called at
+run open just as long — NULL because it queries `bcfishpass.log` and local docker
+fwapg holds **zero** `bcfishpass` tables. Building what the issue literally asked
+for would have added code beside working code twice and recorded a wrong value the
+third time. **Measure before characterising, even when the issue is your own.**
+
+**New: `run_uid`** (one per dispatch, all hosts) beside `run_id` (one per WSG,
+the PK) and `run_label` (operator text). **New `<schema>.log_recompute`** — the
+recompute rewrites `streams_access` / `streams_mapping_code`, which is what
+ships, and logged nothing. **bcfp pin is tunnel-free**, three tiers, with
+`bcfp_pin_source` recording which answered; `bcfp_model_run_id` stays NULL there
+because `log.json` has no such key, and that is correct. **`link_dirty` means
+something again** (#257).
+
+**Four traps worth not re-learning.** `on.exit()` at an Rscript's **top level
+never fires** — measured on both `stop()` and `quit()`; `wsg_recompute_one.R`
+already carried two dead handlers, the likely source of #246's 49 orphaned
+`zz_lnk_mc_scratch_*` tables. `system2()` shell-quotes the command but pastes
+**arguments raw**, so `:(top,exclude)`'s parens were eaten by the shell and the
+dirty predicate returned `NA` for every input. **psql does not interpolate
+`:'var'` inside a dollar-quoted string** — parameters reach the assertion block
+via `set_config`. And an env var **exported on the local leg does not cross
+ssh**: `LNK_RUN_UID` had to go into the ssh command string too, exactly as
+`LNK_GUARD_DOWNSTREAM` did in #227.
+
+**Both the shell-quoting and the psql one were found by running the code, not by
+reading it** — each reads perfectly and fails at run time. So did the biggest
+one: an end-to-end model+recompute showed the recompute row landing with
+`run_uid` NULL, because the env default was wired into `lnk_pipeline_run()` only.
+Every unit test passed the value explicitly and so never exercised the default.
+
+`study_area_verify.sql` now takes `-v run_uid=` and **asserts via `RAISE`**, with
+`-v expected_n=` supplied from outside — deriving the expected set entirely from
+`fresh.log` is circular, since a WSG that never logged vanishes from "expected".
+`data-raw/study_area_verify_negative.sh` proves it fails when it should *and
+passes when it should*. Suite 1825 pass / 0 fail (HEAD baseline 1719), 16
+warnings both sides.
+
 ## Status (2026-08-31, late) — first provenanced multi-host run; scope decided; public-repo hygiene
 
 **34 field WSGs modelled across three hosts, verified against the DB rather than
