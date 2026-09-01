@@ -325,6 +325,41 @@ test_that(".lnk_input_primitives lists the pipeline's inputs with a source", {
   expect_false(any(is.na(p$source) | !nzchar(p$source)))
 })
 
+test_that("the primitives list names fwa_obstructionS_sp, not fwa_obstacles_sp", {
+  # link#271. `fwa_obstacles_sp` does not exist and never has -- a repo-wide
+  # grep of fwapg returns zero hits -- so this row fingerprinted nothing for
+  # 429 log_input rows. Pinned because the two names are one letter-group
+  # apart and a future edit could plausibly reintroduce the wrong one.
+  tbls <- .lnk_input_primitives()$table_name
+  expect_true("whse_basemapping.fwa_obstructions_sp" %in% tbls)
+  expect_false("whse_basemapping.fwa_obstacles_sp" %in% tbls)
+})
+
+test_that("every primitive names a table that actually exists", {
+  # The guard that generalises, and the one that would have caught link#271
+  # rather than pinning it after the fact: the assertion above knows about one
+  # wrong name, this one knows about all of them.
+  #
+  # DB-gated, so it skips in CI -- a skip is not a pass, and the assertion
+  # above is the always-runs half of the pair. Kept anyway because it is the
+  # only check that fails on the NEXT wrong name rather than on this one.
+  # skip_if_no_db() registers its own withr::defer(dbDisconnect) in the
+  # caller's frame, so disconnecting here double-frees and warns.
+  conn <- skip_if_no_db()
+
+  tbls <- .lnk_input_primitives()$table_name
+  found <- vapply(tbls, function(t) {
+    !is.na(DBI::dbGetQuery(conn, sprintf(
+      "SELECT to_regclass(%s)::text AS t", DBI::dbQuoteLiteral(conn, t)))$t[1])
+  }, logical(1))
+
+  # Premise: the probe can distinguish. Without this a to_regclass that always
+  # returned NA would make the expectation below vacuous in the other
+  # direction, and a broken probe would read as "the whole list is missing".
+  expect_true(any(found))
+  expect_identical(tbls[!found], character(0))
+})
+
 
 # --- Phase 3: write path ----------------------------------------------------
 
