@@ -33,8 +33,8 @@ PGUSER=postgres PGPASSWORD=postgres PGHOST=localhost PGPORT=5432 PGDATABASE=fwap
 #   (1.6 GB, see §6) — use the tunnel for bcfp streams parity instead.
 
 # 4. bcfp comparison tunnel (parity diffs ONLY — the build itself is tunnel-free)
-ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new \
-  -L 63333:127.0.0.1:5432 db_newgraph -N -f
+#    Forward the reference DB to :63333 however your environment reaches it.
+#    Host aliases and credentials are infrastructure — see rtj, not here.
 psql "host=localhost port=63333 dbname=bcfishpass user=newgraph" \
   -c "SELECT model_run_id, model_version FROM bcfishpass.log ORDER BY 1 DESC LIMIT 1;"
 ```
@@ -642,7 +642,7 @@ the fresh assertion) and re-checks exactly once.
 
 | looks like | actually |
 |---|---|
-| `tofu plan` proves the DO token | against a zero-resource workspace it returns `Plan: N to add` **without contacting DO**. And `do_token` in tfvars is a *different* credential from doctl's — both were minted 2026-05-18 and both expired 2026-08-30. Probe each against `/v2/account` |
+| a provisioning tool's `plan` proves its credential | against a zero-resource workspace it plans without contacting the provider at all. The orchestrator and the provisioner also use *separate* credentials, which expire independently. Probe each against the provider's account endpoint. Details are infrastructure — see rtj |
 | comparing `link_sha` across hosts | it is a real SHA on the `load_all` dispatcher and `NA` on every pak-installed cypher, so it can only ever fail. `fresh_sha` is `NA` on both, so it can only ever pass. Key on **`repo_sha`**, read on each host from the checkout it installed from |
 | `max(last_analyze)` for vintage | NULL on all ten primitives, measured. Empty in bash reads as "nothing to see". Use `GREATEST(last_analyze, last_autoanalyze)` |
 
