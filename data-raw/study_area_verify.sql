@@ -117,6 +117,17 @@ DO $$ BEGIN
 END $$;
 \endif
 
+-- Parameters into session settings, up here rather than beside the DO block,
+-- because the verdict in 1b needs the escape too. psql does not interpolate
+-- :'var' inside a dollar-quoted string -- the body is a string literal to it --
+-- so the natural form fails at run time with `syntax error at or near ":"`
+-- while reading perfectly.
+SELECT set_config('lnk.run_uid',     :'run_uid',     false) AS run_uid,
+       set_config('lnk.schema',      :'schema',      false) AS schema,
+       set_config('lnk.expected_n',  :'expected_n',  false) AS expected_n,
+       set_config('lnk.unpinned_ok', :'unpinned_ok', false) AS unpinned_ok
+\gset assert_
+
 \echo ''
 \echo '=== run under verification ==='
 -- n_attempted vs n_completed, deliberately separate. The 2026-08-31 version
@@ -171,38 +182,50 @@ SELECT host,
 
 \echo ''
 \echo '=== 1b. Provenance verdict (host-aware) ==='
+-- ACCUMULATED, not an ordered CASE. This is the third time an arm shadowed a
+-- more serious one, and each fix was individually right:
+--
+--   round 1  added a `link_dirty IS NULL` NOTE above `fresh_sha NULL on a
+--            cypher`, hiding it;
+--   round 2  moved the NOTEs below the FAILs and wrote the invariant down;
+--   round 3  found the `unpinned_ok` escape had put a CONDITIONALLY sanctioned
+--            state into a FAIL slot still above `fresh_sha`, hiding it again.
+--
+-- So the invariant was never "FAILs before NOTEs" but "every arm above the line
+-- is UNCONDITIONALLY a failure" -- a rule no comment reliably enforces, because
+-- adding an arm is the natural edit and getting its rank right is a judgement.
+-- concat_ws skips NULLs, so every condition that holds is reported and none can
+-- mask another. Severity ordering stops being load-bearing.
+--
+-- fresh_sha is why this kept mattering: the DO block deliberately omits it
+-- (NULL is correct on the dispatcher), so THIS LINE is its only reporter, and
+-- it is link#246's acceptance criterion.
 SELECT host,
-       CASE
-         WHEN count(*) FILTER (WHERE link_sha IS NULL) > 0
-           THEN 'FAIL: link_sha NULL'
-         WHEN count(*) FILTER (WHERE fwapg_sha IS NULL) > 0
-           THEN 'FAIL: fwapg_sha NULL'
-         WHEN count(*) FILTER (WHERE bcfp_model_version IS NULL) > 0
-           THEN 'FAIL: bcfp_model_version NULL -- unpinned (see -v unpinned_ok=)'
-         WHEN count(*) FILTER (WHERE link_dirty) > 0
-           THEN 'FAIL: link_dirty set -- tracked code differed from origin'
-         WHEN host <> 'm1' AND count(*) FILTER (WHERE fresh_sha IS NULL) > 0
-           THEN 'FAIL: fresh_sha NULL on a cypher'
-         -- ---- every FAIL arm is above this line; every NOTE below it ----
-         -- CASE takes the FIRST matching arm, so a NOTE placed among the FAILs
-         -- SHADOWS every FAIL after it. That is not hypothetical: the NULL arm
-         -- below was first written directly under the link_dirty FAIL, where a
-         -- cypher with a NULL link_dirty AND a NULL fresh_sha would have
-         -- reported the note and hidden the failure. Keep the partition.
-         --
-         -- NULL is "could not tell", NOT the same as FALSE, and it must not be
-         -- collapsed into it: `x OR link_dirty` yields NULL for a NULL row, so
-         -- the assertion block cannot see these at all. Reported rather than
-         -- raised, because NA is legitimate for an installed package with no
-         -- .git and no <PKG>_GIT_DIRTY -- raising would refuse every hand-run.
-         -- Unexpected on a driver run, where cypher_prep writes
-         -- LINK_GIT_DIRTY into ~/.Renviron on every worker.
-         WHEN count(*) FILTER (WHERE link_dirty IS NULL) > 0
-           THEN 'NOTE: link_dirty NULL on some rows -- provenance unknown, not clean'
-         WHEN host = 'm1' AND count(*) FILTER (WHERE fresh_sha IS NOT NULL) > 0
-           THEN 'NOTE: dispatcher now carries a fresh_sha (install method changed)'
-         ELSE 'OK'
-       END AS verdict
+       coalesce(nullif(concat_ws('; ',
+         CASE WHEN count(*) FILTER (WHERE link_sha IS NULL) > 0
+              THEN 'FAIL: link_sha NULL' END,
+         CASE WHEN count(*) FILTER (WHERE fwapg_sha IS NULL) > 0
+              THEN 'FAIL: fwapg_sha NULL' END,
+         CASE WHEN host <> 'm1' AND count(*) FILTER (WHERE fresh_sha IS NULL) > 0
+              THEN 'FAIL: fresh_sha NULL on a cypher' END,
+         CASE WHEN count(*) FILTER (WHERE link_dirty) > 0
+              THEN 'FAIL: link_dirty set -- tracked code differed from origin' END,
+         -- Escape-aware, so the word FAIL never appears on a run this script
+         -- then declares OK. A wrapper grepping for FAIL must not hit on a
+         -- sanctioned run; that is how the word stops being read.
+         CASE WHEN count(*) FILTER (WHERE bcfp_model_version IS NULL) > 0
+              THEN CASE
+                     WHEN nullif(btrim(coalesce(
+                            current_setting('lnk.unpinned_ok', true), '')), '') IS NULL
+                       THEN 'FAIL: bcfp_model_version NULL -- unpinned (see -v unpinned_ok=)'
+                     ELSE 'NOTE: unpinned, accepted by -v unpinned_ok='
+                   END
+              END,
+         CASE WHEN count(*) FILTER (WHERE link_dirty IS NULL) > 0
+              THEN 'NOTE: link_dirty NULL -- provenance unknown, not clean' END,
+         CASE WHEN host = 'm1' AND count(*) FILTER (WHERE fresh_sha IS NOT NULL) > 0
+              THEN 'NOTE: dispatcher now carries a fresh_sha (install method changed)' END
+       ), ''), 'OK') AS verdict
   FROM :schema.log
  WHERE run_uid = :'run_uid'
  GROUP BY host
@@ -284,18 +307,16 @@ SELECT count(DISTINCT run_uid) AS runs_ever_labelled FROM :schema.log;
 -- is a string literal to it -- so the natural form fails with
 -- `syntax error at or near ":"` at run time while reading perfectly. Found by
 -- running it; nothing about the text suggests it.
-SELECT set_config('lnk.run_uid',     :'run_uid',     false) AS run_uid,
-       set_config('lnk.schema',      :'schema',      false) AS schema,
-       set_config('lnk.expected_n',  :'expected_n',  false) AS expected_n,
-       set_config('lnk.unpinned_ok', :'unpinned_ok', false) AS unpinned_ok
-\gset assert_
 
 DO $$
 DECLARE
   v_run    text := current_setting('lnk.run_uid');
   v_sch    text := current_setting('lnk.schema');
   n_expect int  := nullif(current_setting('lnk.expected_n'), '')::int;
-  v_unpin  text := nullif(current_setting('lnk.unpinned_ok'), '');
+  -- btrim: a whitespace-only value is not a written justification. The
+  -- sibling this mechanism cites, lnk_wsg_downstream_check(override=), rejects
+  -- a bare TRUE for the same reason -- the reason IS the control.
+  v_unpin  text := nullif(btrim(current_setting('lnk.unpinned_ok')), '');
   n_model  int;
   n_gap    int;
   n_open   int;
@@ -392,8 +413,13 @@ BEGIN
     RAISE NOTICE 'NOTE: % row(s) unpinned, accepted: %', n_pin, v_unpin;
   END IF;
 
-  RAISE NOTICE 'PASS: run % -- % WSG(s), all modelled, recomputed, segmented and provenanced',
-    v_run, n_model;
+  IF n_pin > 0 THEN
+    RAISE NOTICE 'PASS (UNPINNED): run % -- % WSG(s), all modelled, recomputed and segmented. % row(s) carry NO bcfp reference, accepted by -v unpinned_ok=. Their parity numbers cannot be traced to a reference build.',
+      v_run, n_model, n_pin;
+  ELSE
+    RAISE NOTICE 'PASS: run % -- % WSG(s), all modelled, recomputed, segmented and provenanced',
+      v_run, n_model;
+  END IF;
 END $$;
 
 \echo ''

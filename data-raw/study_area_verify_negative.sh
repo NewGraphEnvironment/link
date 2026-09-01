@@ -9,9 +9,12 @@
 # time — including the healthy one, because a guard that only ever returns one
 # value is indistinguishable from a broken one.
 #
-#   1. as-is                        -> expect PASS (exit 0)
-#   2. one log_recompute row gone   -> expect FAIL (exit non-zero)
-#   3. wrong expected_n             -> expect FAIL (exit non-zero)
+#   1. as-is                          -> expect PASS (exit 0)
+#   2. one log_recompute row gone     -> expect FAIL (exit non-zero)
+#   3. wrong expected_n               -> expect FAIL (exit non-zero)
+#   4a. bcfp pin removed              -> expect FAIL
+#   4b.  ... plus -v unpinned_ok=<why> -> expect PASS
+#   4c.  ... plus a whitespace reason  -> expect FAIL
 #
 # Nothing durable is mutated: every case runs against a SCRATCH SCHEMA holding a
 # copy of the run's rows, so the real persist is never touched at all. Not a
@@ -69,6 +72,17 @@ trap cleanup EXIT
 # A scratch copy: same shape, only this run's rows. The verify script takes
 # -v schema=, so it runs against the copy unmodified — testing the shipped
 # file, not a variant of it.
+#
+# SCRATCH_MADE is armed BEFORE the heredoc, not after. Adding ON_ERROR_STOP to
+# the array above turned this from continue-and-exit-0 into abort-with-rc-3, so
+# under `set -euo pipefail` a mid-heredoc failure exits INSIDE the window
+# between CREATE SCHEMA and any later assignment -- and the trap would then
+# decline to drop, leaking the schema. That is the exact leak the early trap was
+# added to close: two individually-correct fixes, neither measured against the
+# other. The flag means "this script may have created it", not "it finished";
+# the heredoc's first statement is DROP SCHEMA IF EXISTS, so arming early is
+# idempotent and free.
+SCRATCH_MADE=1
 "${PSQL[@]}" >/dev/null <<SQL
 DROP SCHEMA IF EXISTS ${SCRATCH} CASCADE;
 CREATE SCHEMA ${SCRATCH};
@@ -82,7 +96,6 @@ CREATE TABLE ${SCRATCH}.streams        AS
      (SELECT watershed_group_code FROM ${SRC_SCHEMA}.log WHERE run_uid = '${RUN_UID}');
 SQL
 
-SCRATCH_MADE=1
 N_WSG=$("${PSQL[@]}" -c "SELECT count(DISTINCT watershed_group_code) FROM ${SCRATCH}.log")
 echo "  scratch schema $SCRATCH built: $N_WSG WSG(s)"
 
@@ -158,11 +171,44 @@ else
   echo "  ✓ 3. expected_n=$((N_WSG + 1)) (wrong)  -> FAIL (as expected)"
 fi
 
+# --- 4. the unpinned escape: must FAIL without a reason, PASS with one --------
+# `unpinned_ok` SUPPRESSES a raise, so a mis-wiring fails silently -- verify
+# simply stops failing on unpinned runs and nobody finds out. That is the one
+# direction this file exists to catch, and it was the only control in it with
+# no case of its own.
+"${PSQL[@]}" -c "UPDATE ${SCRATCH}.log SET bcfp_model_version = NULL" >/dev/null
+if run_verify -v expected_n="$N_WSG"; then
+  echo "  ✗ 4a. unpinned, no reason      -> PASSED, but should have FAILED."
+  echo "       The bcfp pin assertion is not firing."
+  show_verify
+  fails=$((fails + 1))
+else
+  echo "  ✓ 4a. unpinned, no reason      -> FAIL (as expected)"
+fi
+if run_verify -v expected_n="$N_WSG" -v unpinned_ok='negative test'; then
+  echo "  ✓ 4b. unpinned + written reason-> PASS (as expected)"
+else
+  echo "  ✗ 4b. unpinned + written reason-> FAILED, but the escape should allow it."
+  echo "       An escape that never works is the same as no escape."
+  show_verify
+  fails=$((fails + 1))
+fi
+# Whitespace is not a written justification.
+if run_verify -v expected_n="$N_WSG" -v unpinned_ok='   '; then
+  echo "  ✗ 4c. unpinned + blank reason  -> PASSED; whitespace accepted as a reason."
+  fails=$((fails + 1))
+else
+  echo "  ✓ 4c. unpinned + blank reason  -> FAIL (as expected)"
+fi
+"${PSQL[@]}" -c "UPDATE ${SCRATCH}.log SET bcfp_model_version =
+   (SELECT bcfp_model_version FROM ${SRC_SCHEMA}.log
+     WHERE run_uid = '${RUN_UID}' LIMIT 1)" >/dev/null
+
 echo ""
 if [ "$fails" = "0" ]; then
   echo "=== negative test PASSED: the verify script fails when it should, and"
   echo "    passes when it should ==="
   exit 0
 fi
-echo "=== negative test FAILED ($fails of 3 cases wrong) ==="
+echo "=== negative test FAILED ($fails case(s) wrong) ==="
 exit 1
