@@ -3163,6 +3163,56 @@ Two habits that make this cheap:
   When a result is surprisingly clean, suspect the instrument before the world —
   the same prior the broken-probe rule applies to surprising *failures*.
 
+### A paged API's default `limit` reads as absence
+
+Asking a paged endpoint for "everything" and searching the response finds only
+what fits on the first page. The items past it are reported **missing**, which is
+a stronger and more actionable claim than "I did not look far enough" — and it
+does not error, so nothing distinguishes the two.
+
+Measured 2026-08-31 against a STAC catalogue: a `limit=200` search reported two of
+sixteen objects absent from the collection. Paging the whole thing — follow the
+`rel="next"` link until it stops — returned 230 items with **every one present**.
+Had that finding shipped it would have read as "those surveys were never
+catalogued" and sent someone looking for imagery that already existed.
+
+Adjacent to *"Prove absence before acting on it"* above, and worth separating: the
+remedy there is a wider query as a control, which does nothing here because the
+query was already wide enough. The defect is in the **transport**, not the filter.
+
+- Follow pagination to exhaustion, or ask the API for its own count and assert you
+  retrieved it. `numberMatched` is the STAC field; most paged APIs have one, and a
+  `None` there is itself a signal that you must page.
+- **A negative result from a paged source is not a finding until you have paged
+  it.** The positive results are fine — anything you found, you found.
+- Same shape for `gh` (`--limit` defaults to 30), `aws s3api list-objects-v2`
+  (1000 keys, `NextContinuationToken`), and any `?page=` REST endpoint.
+
+### A structural property is not a performance measurement
+
+Reading a number out of a format — block size, chunk size, page size, record
+length — and inferring a *cost* from it skips the layer that usually decides the
+cost. Caches, buffers and read-ahead sit between the structure and the wire, and
+they are the whole reason the structure is tunable in the first place.
+
+Measured 2026-08-31: a GDAL STACIT source reports 128x128 blocks against the same
+COG's native 512x512, and that was written into an issue as "roughly 16x the range
+requests", as an argument against adopting it. Counting the actual requests with
+`CPL_CURL_VERBOSE` gave **14 against 14**, with bytes fetched within 16 KB and
+identical pixels. GDAL's block cache absorbs the difference entirely.
+
+The tell is a ratio derived by arithmetic on two numbers neither of which is a
+count of the thing being claimed. It reads as quantitative — it has a factor and
+a unit — which is exactly what makes it survive review.
+
+- Count the operation you are claiming: requests, queries, allocations, bytes.
+  Most stacks will tell you (`CPL_CURL_VERBOSE`, a query log, `strace -c`).
+- Sibling of *"A proxy assertion does not guard the thing it stands for"* above,
+  pointed the other way: that one is a **test** asserting a proxy, this is a
+  **claim** asserting one. The test fails silently; the claim gets acted on.
+- It cost nothing here only because the user pushed back on a number that looked
+  unmotivated. Do not rely on that.
+
 
 # Comms Conventions
 
@@ -3841,7 +3891,52 @@ Skip planning for single-file edits, quick fixes, or tasks with obvious next ste
 5. **Commit the plan** — After Plan-agent review + fixes. This is the baseline.
 6. **Work in atomic commits** — Each commit bundles code changes WITH checkbox updates in the planning files. The diff shows both what was done and the checkbox marking it done.
 7. **Code check before commit** — Run `/code-check` on staged diffs before committing. Don't mark a task done until the diff passes review.
-8. **Archive when complete** — Move `planning/active/` to `planning/archive/` via `/planning-archive`. Write a README.md in the archive directory with a one-paragraph outcome summary and closing commit/PR ref — future sessions scan these to catch up fast.
+8. **Archive when complete** — Move `planning/active/` to `planning/archive/` via `/planning-archive`. Write a README.md in the archive directory with a one-paragraph outcome summary and closing commit/PR ref — future sessions scan these to catch up fast. Where the work produced measurements, that README is also the evidence record; see below.
+
+## The archive README is the measurement record
+
+Debugging and benchmarking sessions are systematic investigation: a stated unknown, an
+experiment, a number, a conclusion, and usually two or three informative dead ends. That
+is SRED evidence, and it scatters — into PR bodies, issue comments, and log files whose
+names encode a timestamp and nothing else. In six months the chain *we did not know X,
+we measured Y, therefore Z* survives only in a chat transcript.
+
+**The archive README is where that chain lives.** Not a separate run record: the PWF
+triple already holds every part of it — the question in `task_plan.md`'s frame, the
+method in `progress.md`, the numbers in `findings.md`, the dead ends in its "Errors
+Encountered" table. A second document would restate all of it and be half-populated.
+The README is the index over them.
+
+So an archive README for work that produced measurements carries two more sections:
+
+```markdown
+## Measurement
+
+m1 0.0391 vs cypher 0.0872 min/1k segments — hosts are 2.23x apart.
+Moved the provincial estimate 5.0 h -> 4.3 h and changed how work packs across machines.
+
+## Evidence
+
+`data-raw/logs/study_area_run/20260831_19*` — four spins, one defect each.
+```
+
+Three rules on those sections:
+
+- **Numbers carry units, and say what changed because of them.** A measurement nobody
+  acted on is still worth recording if it turned an assumption into a number — say that
+  too. "Confirmed the expected" is a real outcome.
+- **Cite a prefix or glob, never a file list.** A list rots the moment a run is re-run;
+  a prefix survives. This is why campaign subdirectories exist (`newgraph.md`, "Which
+  logs to commit").
+- **Keep the wrong turns.** A diagnosis made, retracted on a bad inference, then
+  confirmed by measurement *is* the evidence of systematic investigation. Sanitising it
+  into a tidy conclusion destroys exactly what makes the record worth keeping.
+
+**The case this does not cover.** Measurement that predates an issue has no PWF to
+attach to — `/planning-init` takes an issue number, and exploratory runs often *produce*
+the issues rather than follow them. That measurement belongs in the issue or PR it
+spawned, with the log directory's own README as the index. Do not build a third system
+to close this gap.
 
 ## Atomic Commits (Critical)
 
