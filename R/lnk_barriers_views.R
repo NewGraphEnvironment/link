@@ -58,17 +58,42 @@
 #'   barriers may not yet hold current data. Tunnel-free / link-canonical
 #'   either way (the underlying table has `blocks_species` from
 #'   [lnk_barriers_unify()]).
+#' @param recreate Logical. `FALSE` (default) emits `CREATE OR REPLACE VIEW`
+#'   only. `TRUE` restores the historical `DROP VIEW IF EXISTS` +
+#'   `CREATE OR REPLACE VIEW` pair — needed only when a view's **column
+#'   shape** has changed, since `CREATE OR REPLACE` may not rename, retype,
+#'   reorder or drop an output column. See Details for why the default
+#'   changed (link#250).
 #'
-#' @return `invisible(conn)`. Side effect: drops + recreates two views
+#' @return `invisible(conn)`. Side effect: creates or replaces two views
 #'   per species (`_unified` + `_access`) + three source-typed views in
 #'   `schema`.
 #'
 #' @details
-#' Views are dropped + recreated on each call (`CREATE OR REPLACE VIEW`)
-#' so reruns are safe. The underlying `<persist_schema>.barriers`
-#' table must exist — typically initialized by [lnk_persist_init()] and
-#' populated by [lnk_barriers_unify()] + [lnk_pipeline_persist()] for
-#' all WSGs in the regional scope.
+#' Reruns are safe: each view is emitted with `CREATE OR REPLACE VIEW`, which
+#' is atomic — a concurrent reader sees either the old definition or the new
+#' one, never nothing.
+#'
+#' Until link 0.47.3 every statement was preceded by `DROP VIEW IF EXISTS`.
+#' Each statement autocommits, so that pair left a real interval in which the
+#' view **did not exist**, and a concurrent
+#' [fresh::frs_network_features()] walk could fail with
+#' `relation ... does not exist`. The DROP was belt-and-braces from the
+#' function's first commit rather than a fix for anything, and the view column
+#' list has not changed since, so `CREATE OR REPLACE` alone is sufficient.
+#' `RUNBOOK.md` §6 records the DROP's cost in the *sequential* case as well:
+#' an orphaned backend holding a lock on `barriers_bt_access` blocked every
+#' later `DROP VIEW` indefinitely.
+#'
+#' If a future change alters a view's column shape, `CREATE OR REPLACE` will
+#' fail and the error names `recreate = TRUE`. That is deliberately not an
+#' automatic fallback — silently reverting to DROP + CREATE would reintroduce
+#' the window at the worst moment, part-way through a parallel recompute
+#' (link#250).
+#'
+#' The underlying `<persist_schema>.barriers` table must exist — typically
+#' initialized by [lnk_persist_init()] and populated by [lnk_barriers_unify()]
+#' + [lnk_pipeline_persist()] for all WSGs in the regional scope.
 #'
 #' @examples
 #' \dontrun{
@@ -102,7 +127,8 @@
 lnk_barriers_views <- function(conn, schema, cfg,
                                species = c("BT", "CH", "CM", "CO",
                                            "PK", "SK", "ST", "WCT"),
-                               barriers_table = NULL) {
+                               barriers_table = NULL,
+                               recreate = FALSE) {
   stopifnot(
     inherits(conn, "DBIConnection"),
     is.character(schema), length(schema) == 1L, nzchar(schema),
@@ -110,7 +136,8 @@ lnk_barriers_views <- function(conn, schema, cfg,
     is.character(species), length(species) > 0L,
     is.null(barriers_table) ||
       (is.character(barriers_table) && length(barriers_table) == 1L &&
-        nzchar(barriers_table))
+        nzchar(barriers_table)),
+    is.logical(recreate), length(recreate) == 1L, !is.na(recreate)
   )
 
   # `barriers_table` defaults to `<persist_schema>.barriers` for the
@@ -155,8 +182,7 @@ lnk_barriers_views <- function(conn, schema, cfg,
        WHERE %s = ANY(blocks_species)",
       view_name, id_col, persist_barriers, sp_lit
     )
-    .lnk_db_execute(conn, sprintf("DROP VIEW IF EXISTS %s", view_name))
-    .lnk_db_execute(conn, sql_view)
+    .lnk_views_execute(conn, sql_view, recreate = recreate, view = view_name)
 
     # Per-species ACCESS view (link#200). The set that drives `accessible`
     # in mapping_code — reproduces bcfp `barriers_<sp>`: NATURAL barriers
@@ -192,8 +218,7 @@ lnk_barriers_views <- function(conn, schema, cfg,
          )",
       access_view, access_id, persist_barriers, sp_lit, overrides_table, sp_lit
     )
-    .lnk_db_execute(conn, sprintf("DROP VIEW IF EXISTS %s", access_view))
-    .lnk_db_execute(conn, sql_access)
+    .lnk_views_execute(conn, sql_access, recreate = recreate, view = access_view)
   }
 
   # Per-source views — unified (cross-WSG) shape exposed under a
@@ -220,9 +245,49 @@ lnk_barriers_views <- function(conn, schema, cfg,
        WHERE %s",
       view_name, id_col, persist_barriers, source_filters[[src]]
     )
-    .lnk_db_execute(conn, sprintf("DROP VIEW IF EXISTS %s", view_name))
-    .lnk_db_execute(conn, sql_view)
+    .lnk_views_execute(conn, sql_view, recreate = recreate, view = view_name)
   }
 
   invisible(conn)
+}
+
+#' Emit one barrier view, atomically by default
+#'
+#' `CREATE OR REPLACE VIEW` is atomic — a concurrent reader sees the old
+#' definition or the new one, never nothing. `DROP VIEW` + `CREATE` is not:
+#' each statement autocommits, so it leaves a window in which the view is
+#' absent. That window is invisible in a serial run and is a defect under the
+#' parallel recompute (link#250).
+#'
+#' `CREATE OR REPLACE` cannot rename, retype, reorder or drop an output
+#' column. When that is what a caller needs, it must say so with
+#' `recreate = TRUE` — we do NOT fall back automatically. An automatic
+#' fallback would reintroduce the DROP window exactly when nobody is watching:
+#' mid-fan-out, where the resulting `relation does not exist` in a sibling
+#' surfaces as a per-WSG `[WARN]` rather than as an operator error.
+#'
+#' @noRd
+.lnk_views_execute <- function(conn, sql, recreate, view) {
+  if (isTRUE(recreate)) {
+    .lnk_db_execute(conn, sprintf("DROP VIEW IF EXISTS %s", view))
+    return(.lnk_db_execute(conn, sql))
+  }
+  tryCatch(
+    .lnk_db_execute(conn, sql),
+    error = function(e) {
+      msg <- conditionMessage(e)
+      # Postgres' three shape-change refusals. Matched on the message because
+      # it does not raise a distinguishable condition class through DBI.
+      shape_re <- paste0("cannot (change name of|change data type of|",
+                         "drop columns from) view column")
+      shape_change <- grepl(shape_re, msg)
+      if (!shape_change) stop(e)
+      stop("lnk_barriers_views(): the definition of ", view, " changed shape, ",
+           "so CREATE OR REPLACE cannot apply it.\n",
+           "  Re-run with recreate = TRUE, which drops and recreates. NOTE ",
+           "that a DROP leaves an interval in which the view does not exist, ",
+           "so do not do it while a parallel recompute is running (link#250).",
+           "\n  Original: ", msg, call. = FALSE)
+    }
+  )
 }

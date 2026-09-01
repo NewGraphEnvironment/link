@@ -20,14 +20,14 @@ Two findings from exploration reshape the work (both recorded in `findings.md`):
 
 ## Phase 1 — remove the redundant `DROP VIEW` (v0.47.3, ships alone)
 
-- [ ] `R/lnk_barriers_views.R`: add `recreate = FALSE`; default emits
+- [x] `R/lnk_barriers_views.R`: add `recreate = FALSE`; default emits
       `CREATE OR REPLACE VIEW` only (19 statements, not 38)
-- [ ] `.lnk_views_execute()` internal: on a genuine shape-change error, **stop with
+- [x] `.lnk_views_execute()` internal: on a genuine shape-change error, **stop with
       instructions naming `recreate = TRUE`** — never silently fall back to
       DROP+CREATE, which reintroduces the window mid-fan-out
-- [ ] `tests/testthat/test-lnk_barriers_views.R`: `38L` → `19L`; new `recreate = TRUE`
+- [x] `tests/testthat/test-lnk_barriers_views.R`: `38L` → `19L`; new `recreate = TRUE`
       case asserting `38L` and the DROP; mocked shape-change error asserting guidance
-- [ ] Version 0.47.3 + NEWS
+- [x] Version 0.47.3 + NEWS
 
 ## Phase 2 — hoist the view build (v0.48.0)
 

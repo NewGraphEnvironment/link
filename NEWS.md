@@ -1,3 +1,13 @@
+# link 0.47.3
+
+Stops `lnk_barriers_views()` dropping each view before recreating it ([#250](https://github.com/NewGraphEnvironment/link/issues/250)). `CREATE OR REPLACE VIEW` is atomic — a concurrent reader sees the old definition or the new one — but `DROP VIEW IF EXISTS` followed by a separate `CREATE` is not, because each statement autocommits. That pair left a real interval in which the view **did not exist**, so a concurrent `fresh::frs_network_features()` walk could fail with `relation ... does not exist`. Per call the statement count goes 38 → 19.
+
+The DROP was belt-and-braces from the function's first commit rather than a fix for anything, and the view column list has been byte-identical since — so `CREATE OR REPLACE`'s "may not rename, retype, reorder or drop an output column" restriction is satisfied. It had already cost something in the *sequential* case: `RUNBOOK.md` §6 records an orphaned backend holding a lock on `barriers_bt_access` while every later `DROP VIEW` blocked indefinitely, which is why `wsg_recompute_one.R` sets `lock_timeout` at all.
+
+New `recreate = TRUE` restores the old pair for a genuine column-shape change. A shape change under the default **stops with an error naming that flag** rather than falling back automatically — an automatic fallback would reintroduce the window at the worst moment, part-way through a parallel recompute, where a sibling's `relation does not exist` surfaces as a per-WSG `[WARN]` and not as an operator error. The unrelated-error path is tested too, so a missing `barriers` table cannot be relabelled as a shape change and send someone to fix the wrong thing.
+
+The test asserts the **absence of `DROP VIEW`**, not merely the lower count: a count alone would still pass if a DROP were reintroduced alongside a removed CREATE. Verified by restoring the defect and confirming three tests go red.
+
 # link 0.47.2
 
 Stops shipping `comms/` and `research/` in the built package ([#235](https://github.com/NewGraphEnvironment/link/pull/235)). `R CMD build` includes every top-level directory not named in `.Rbuildignore`, so `pak::pak("NewGraphEnvironment/link")` was installing 15 files of cross-repo coordination notes and 22 of research working files into the user's library. `R CMD check` reports this only as a NOTE and `.gitignore` does not cover it. Verified against the built tarball rather than the config, because the regex is easy to get subtly wrong: both directories go 15/22 → 0. The gap opens over time rather than at scaffold — `planning`, `dev`, `.claude` and `CLAUDE.md` were already excluded, and these two were added to the repo later.
