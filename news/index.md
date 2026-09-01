@@ -1,5 +1,106 @@
 # Changelog
 
+## link 0.49.0
+
+Closes the provenance gaps that cannot be fixed after a run
+([\#262](https://github.com/NewGraphEnvironment/link/issues/262),
+[\#257](https://github.com/NewGraphEnvironment/link/issues/257)). The
+217-WSG provincial run is next, and
+[\#246](https://github.com/NewGraphEnvironment/link/issues/246) exists
+because 93 WSGs once accumulated with no log tables at all — a partial
+record at 217 repeats that at scale.
+
+**Two of the four reported gaps were wired and unfed, and a third named
+the wrong source.** `run_label` has been threaded from
+[`lnk_pipeline_run()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_run.md)
+to the INSERT since
+[\#127](https://github.com/NewGraphEnvironment/link/issues/127); it was
+NULL because nothing ever set `LNK_RUN_LABEL`. `.lnk_bcfp_log_current()`
+has been called at run open just as long; it returns NULL because it
+queries `bcfishpass.log` and the local docker fwapg holds **zero**
+`bcfishpass` tables — the run is tunnel-free by design. Implementing
+what the issue literally asked for would have added code beside working
+code twice and recorded a wrong value the third time.
+
+**A dispatch is now one queryable unit.** New `run_uid` — minted once
+per `study_area_run.sh` invocation, shared by every host and every WSG —
+replaces “a time window plus a host list”, which is fragile at 34 WSGs
+on three hosts and ambiguous the moment two runs overlap.
+[`lnk_log_read()`](https://newgraphenvironment.github.io/link/reference/lnk_log_read.md)
+gains `run_uid` (which overrides `latest`, since `DISTINCT ON` would
+hide a WSG re-run inside the same dispatch) and `phase`. The identifier
+reaches cyphers because it is exported on **both** legs — the local loop
+and the ssh command string; the local-only version is the
+`LNK_GUARD_DOWNSTREAM` trap of
+[\#227](https://github.com/NewGraphEnvironment/link/issues/227), and it
+fails silently rather than loudly.
+
+**The recompute now records what it did.**
+`data-raw/wsg_recompute_one.R` rewrites `streams_access` and
+`streams_mapping_code` — the values that actually ship — and logged
+nothing, so `fresh.log` recorded when a WSG was *modelled* and said
+nothing about when its persisted access last *changed*. New
+`<schema>.log_recompute`, its own table rather than a `phase` column,
+because a recompute row in `log` would win
+[`lnk_log_read()`](https://newgraphenvironment.github.io/link/reference/lnk_log_read.md)’s
+`DISTINCT ON` and be returned as “what produced this network”. It
+carries `watershed_group_code`, so `schema_consolidate.R` discovers it
+with no list to maintain, and `LNK_LOG=0` keeps benchmark passes
+(`recompute_sweep.sh`, `recompute_parity.sh`) out of it — otherwise the
+new verify check would pass on benchmark noise.
+
+**[`on.exit()`](https://rdrr.io/r/base/on.exit.html) at the top level of
+an Rscript never fires**, which is how the first draft of that logging
+shipped a dead failure handler. It attaches to the global environment,
+which never exits — measured, on both
+[`stop()`](https://rdrr.io/r/base/stop.html) and
+[`quit()`](https://rdrr.io/r/base/quit.html). The same file already
+carried two dead handlers for that reason, the likely source of the 49
+orphaned `zz_lnk_mc_scratch_*` tables recorded in
+[\#246](https://github.com/NewGraphEnvironment/link/issues/246). The
+work now runs inside a function, where `on.exit` is real.
+
+**The bcfp reference is pinned from the snapshot it was actually
+computed against.** Three tiers (`LNK_BCFP_MODEL_VERSION`,
+`bcfishpass.log`, then the local `bcfp_baselines.csv` ledger) with a new
+`bcfp_pin_source` recording which answered. The env tier is not
+redundant: the ledger is per host and a cypher has no row of its own, so
+without it the majority of a 217-WSG run lands unpinned — the same
+shape, and the same fix, as `FWAPG_GIT_SHA`. Querying a live
+`bcfishpass.log` at compare time, as the issue proposed, would name the
+build the tunnel is at *now* rather than the one the numbers came from.
+`bcfp_model_run_id` stays NULL on the tunnel-free path because
+`log.json` carries no such key; honest absence beats a fabricated id.
+
+**`link_dirty` means something again
+([\#257](https://github.com/NewGraphEnvironment/link/issues/257)).** It
+was `t` on all 21 dispatcher rows of the first provenanced run while the
+tracked tree was byte-identical to origin — the run writes ~15 files
+into a *tracked* log directory, so it dirtied its own checkout by
+operating. The predicate now excludes `data-raw/logs` and nothing else:
+untracked files elsewhere still count, because a new uncommitted `R/*.R`
+is invisible to a cypher and that is exactly the drift being detected.
+`:(exclude)` in long form, since `:!` aborts and an aborted `git status`
+returns empty, which reads as clean. And
+[`shQuote()`](https://rdrr.io/r/base/shQuote.html), because
+[`system2()`](https://rdrr.io/r/base/system2.html) shell-quotes the
+command but pastes arguments on raw — the parentheses in
+`:(top,exclude)` were parsed by the shell, the command never ran, and
+the predicate returned `NA` for every input. That one was caught by
+running it; it is invisible by reading.
+
+**`data-raw/study_area_verify.sql` can now actually fail.** It keyed on
+a 6-hour window and a hardcoded 34-WSG `VALUES` list — a scope pinned to
+nothing, and wrong for 217 before it was attempted. It now takes
+`-v run_uid=` and asserts via `RAISE`, so the exit status means
+something. `expected_n` is supplied from **outside** on purpose:
+deriving the expected set entirely from `fresh.log` is circular, since a
+WSG that never produced a log row vanishes from “expected” and that is
+the failure being checked for. New
+`data-raw/study_area_verify_negative.sh` proves it fails when it should
+*and passes when it should* — the healthy case runs first, because a
+script that always exits non-zero “detects” everything.
+
 ## link 0.48.0
 
 Runs the post-consolidate recompute N-wide

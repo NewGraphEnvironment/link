@@ -515,10 +515,141 @@ or `guard(warn): … at open`. Cross-check against the same row’s
 `wsg_upstream`, which independently records what was persisted when the
 run opened. See §8c.
 
-**Env vars:** `LNK_RUN_LABEL` (groups a campaign), `LINK_GIT_DIRTY` /
-`FRESH_GIT_DIRTY` (dirty-tree flag for installed packages),
-`FWAPG_GIT_SHA` / `FWAPG_DIR`, `LNK_HOST_ALIAS` (host name in provenance
-rows).
+**Env vars:** `LNK_RUN_UID` / `LNK_RUN_LABEL` (identify a dispatch — see
+§6c), `LINK_GIT_DIRTY` / `FRESH_GIT_DIRTY` (dirty-tree flag for
+installed packages), `FWAPG_GIT_SHA` / `FWAPG_DIR`,
+`LNK_BCFP_MODEL_VERSION` (bcfp reference pin), `LNK_BCFP_BASELINE`
+(ledger path override), `LNK_HOST_ALIAS` (host name in provenance rows),
+`LNK_LOG=0` (skip recompute logging — benchmarks only).
+
+------------------------------------------------------------------------
+
+## 6c. Run identity and the recompute log (link#262)
+
+### Three identifiers, and they answer different questions
+
+| column | scope | who mints it |
+|----|----|----|
+| `run_id` | **one per WSG** — the log’s PK. A 217-WSG dispatch mints 217. | `.lnk_run_id()`, per [`lnk_pipeline_run()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_run.md) call |
+| `run_uid` | **one per dispatch** — every host, every WSG of one run share it | `study_area_run.sh`, once, before anything forks |
+| `run_label` | operator free text (`--run-label=`) | the operator; **never assume it is unique** |
+
+Before this, “everything from the 2026-08-31 run” was answerable only by
+a time window plus a host list — fragile at 34 WSGs on three hosts,
+ambiguous the moment two runs overlap. Now:
+
+``` r
+
+lnk_log_read(conn, cfg, run_uid = "20260901T184455-3f9ac1")                    # modelling
+lnk_log_read(conn, cfg, run_uid = "20260901T184455-3f9ac1", phase = "recompute")
+```
+
+`run_uid` **overrides `latest`**: the question is “every row of this
+run”, and `DISTINCT ON` would hide a WSG re-run inside the same
+dispatch.
+
+`RUN_UID` is deliberately **not** host-prefixed (unlike `run_id`) — all
+hosts sharing one value is the entire point. Do not “fix” it by adding a
+host prefix. The random suffix is not decoration either: two dispatches
+started in the same second, which a re-run after a failure makes
+routine, would otherwise merge.
+
+**Both legs or nothing.** The driver exports `LNK_RUN_UID`,
+`LNK_RUN_LABEL` and `LNK_BCFP_MODEL_VERSION` to the local `Rscript` loop
+*and* inside the cypher ssh command string. An export in the
+dispatcher’s environment does not cross ssh, so setting only the local
+one lands the id on the dispatcher’s WSGs and NULL on every cypher’s — a
+half-labelled run that looks fine until someone queries it. This is the
+same trap `LNK_GUARD_DOWNSTREAM` hit in §8c.
+
+### `<schema>.log_recompute`
+
+`data-raw/wsg_recompute_one.R` rewrites `streams_access` and
+`streams_mapping_code` — **the values that ship** — and until \#262
+recorded nothing, so `log` said when a WSG was *modelled* and nothing
+about when its persisted access last *changed*.
+
+Its own table, not a `phase` column on `log`, because a recompute row in
+`log` would win
+[`lnk_log_read()`](https://newgraphenvironment.github.io/link/reference/lnk_log_read.md)’s
+`DISTINCT ON` and be returned as “what produced this network”, which it
+did not. It carries `watershed_group_code`, so `schema_consolidate.R`
+auto-discovers it with no list to maintain.
+
+**Deliberately absent:** `log_input` rows (the recompute reads persisted
+tables, not DB primitives) and the `bcfp_*` columns (it does not touch
+the reference). Issue \#262 asked for “the same provenance columns”;
+this is a considered deviation, not an oversight.
+
+**It never runs DDL.** The table is created by
+[`lnk_persist_init()`](https://newgraphenvironment.github.io/link/reference/lnk_persist_init.md),
+by every modelling run, and once by `study_area_run.sh` immediately
+before the pool — that last one covers the case where every dispatcher
+WSG species-skips and no modelling run ever happens, which would
+otherwise hard-stop all N recomputes at the end of a paid run.
+`.lnk_log_recompute_start()` asserts presence instead.
+
+**`LNK_LOG=0`** suppresses the row. `recompute_sweep.sh` and
+`recompute_parity.sh` set it: they re-run the same WSG set to measure
+the pool, and their rows would be indistinguishable from a real
+post-consolidate recompute — so the verify script’s model-vs-recompute
+check would pass on benchmark noise.
+
+**Known exposure:** `schema_consolidate.R` DELETEs its bucket from every
+discovered table before COPYing. `log_recompute` is populated *after*
+consolidate, so a second or resumed consolidate over the same bucket
+will wipe those rows. Re-run the recompute if that happens.
+
+### The bcfp reference pin, tunnel-free
+
+`bcfp_model_run_id` / `bcfp_model_version` were NULL on all 37 rows of
+the first provenanced run. Not because nothing wrote them —
+`.lnk_bcfp_log_current()` has been called at run open since \#127 — but
+because it queries `bcfishpass.log`, and the local docker fwapg holds
+**zero** `bcfishpass` tables. The run is tunnel-free by design.
+
+The reference is not the tunnel either: it is `fresh.streams_vw_bcfp`, a
+local snapshot, and `snapshot_bcfp.sh` already records the build it
+loaded in `data-raw/logs/bcfp_baselines.csv`. Querying a live
+`bcfishpass.log` at compare time would name the build the tunnel is at
+*now* — it rebuilds weekly — not the one the numbers were computed
+against. **A wrong pin, not a missing one.**
+
+Three tiers, and `bcfp_pin_source` records which answered:
+
+| tier | source | when |
+|----|----|----|
+| `env` | `LNK_BCFP_MODEL_VERSION` | every host of a driver run |
+| `db` | `bcfishpass.log` | a real bcfp connection (the tunnel) |
+| `ledger` | `bcfp_baselines.csv`, this host’s latest row | local, hand-invoked |
+
+Tier 0 exists because the ledger is **per host** and a cypher has no row
+of its own — it git-resets the repo, so the file is present, but it
+never snapshots under its own hostname. Without the export every cypher
+row lands unpinned: 13 of 34 last field run, the majority at 217. Same
+shape, same fix, as `FWAPG_GIT_SHA`.
+
+**`bcfp_model_run_id` stays NULL on the tunnel-free path and that is
+correct.** `log.json` carries no such key. Honest absence beats a
+fabricated id — do not “fix” it, and do not assert it in a verify
+script.
+
+### Verifying a run
+
+``` bash
+psql -h localhost -p 5432 -U postgres -d fwapg -v ON_ERROR_STOP=1 \
+     -v run_uid=<uid> -v expected_n=<N> -f data-raw/study_area_verify.sql
+bash data-raw/study_area_verify_negative.sh <uid>   # proves it can fail
+```
+
+`expected_n` is supplied from **outside** on purpose. Deriving the
+expected set entirely from `fresh.log` is circular: a WSG that never
+produced a log row vanishes from “expected”, and that is precisely the
+failure the check exists to catch. The old hardcoded 34-WSG `VALUES`
+list was the wrong externality, not proof that none was needed.
+
+Parameters reach the assertion block via `set_config`, not `:'run_uid'`
+— psql does not interpolate its variables inside a dollar-quoted string.
 
 ------------------------------------------------------------------------
 

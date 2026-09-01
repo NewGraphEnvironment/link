@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.48.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.49.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -318,8 +318,76 @@ mc_barrier (from barrier_sources flags, resident vs anadromous differ slightly):
 <li>
 <code>log</code> and <code>log_input</code> carry <code>watershed_group_code</code> so <code>schema_consolidate.R</code> auto-discovers them; <code>log_parameters_fresh</code> / <code>log_dimensions</code> deliberately do not (they key on <code>config_hash</code>), so <strong>they do not yet travel between hosts</strong> — follow-up PR.</li>
 </ul><p><strong>Guard notes (link#227).</strong> <code>notes</code> may carry a downstream-guard record: <code>link#227 guard(override): 3 unmodelled downstream dam(s) — PCEA(1), UPCE(2) — &lt;justification&gt;</code> or <code>guard(warn): … at open</code>. Cross-check against the same row’s <code>wsg_upstream</code>, which independently records what was persisted when the run opened. See §8c.</p>
-<p><strong>Env vars:</strong> <code>LNK_RUN_LABEL</code> (groups a campaign), <code>LINK_GIT_DIRTY</code> / <code>FRESH_GIT_DIRTY</code> (dirty-tree flag for installed packages), <code>FWAPG_GIT_SHA</code> / <code>FWAPG_DIR</code>, <code>LNK_HOST_ALIAS</code> (host name in provenance rows).</p>
+<p><strong>Env vars:</strong> <code>LNK_RUN_UID</code> / <code>LNK_RUN_LABEL</code> (identify a dispatch — see §6c), <code>LINK_GIT_DIRTY</code> / <code>FRESH_GIT_DIRTY</code> (dirty-tree flag for installed packages), <code>FWAPG_GIT_SHA</code> / <code>FWAPG_DIR</code>, <code>LNK_BCFP_MODEL_VERSION</code> (bcfp reference pin), <code>LNK_BCFP_BASELINE</code> (ledger path override), <code>LNK_HOST_ALIAS</code> (host name in provenance rows), <code>LNK_LOG=0</code> (skip recompute logging — benchmarks only).</p>
 <hr></div>
+<div class="section level2">
+<h2 id="id_6c-run-identity-and-the-recompute-log-link262">6c. Run identity and the recompute log (link#262)<a class="anchor" aria-label="anchor" href="#id_6c-run-identity-and-the-recompute-log-link262"></a></h2>
+<div class="section level3">
+<h3 id="three-identifiers-and-they-answer-different-questions">Three identifiers, and they answer different questions<a class="anchor" aria-label="anchor" href="#three-identifiers-and-they-answer-different-questions"></a></h3>
+<table class="table"><colgroup><col width="33%"><col width="33%"><col width="33%"></colgroup><thead><tr><th>column</th>
+<th>scope</th>
+<th>who mints it</th>
+</tr></thead><tbody><tr><td><code>run_id</code></td>
+<td>
+<strong>one per WSG</strong> — the log’s PK. A 217-WSG dispatch mints 217.</td>
+<td>
+<code>.lnk_run_id()</code>, per <code><a href="reference/lnk_pipeline_run.html">lnk_pipeline_run()</a></code> call</td>
+</tr><tr><td><code>run_uid</code></td>
+<td>
+<strong>one per dispatch</strong> — every host, every WSG of one run share it</td>
+<td>
+<code>study_area_run.sh</code>, once, before anything forks</td>
+</tr><tr><td><code>run_label</code></td>
+<td>operator free text (<code>--run-label=</code>)</td>
+<td>the operator; <strong>never assume it is unique</strong>
+</td>
+</tr></tbody></table><p>Before this, “everything from the 2026-08-31 run” was answerable only by a time window plus a host list — fragile at 34 WSGs on three hosts, ambiguous the moment two runs overlap. Now:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="reference/lnk_log_read.html">lnk_log_read</a></span><span class="op">(</span><span class="va">conn</span>, <span class="va">cfg</span>, run_uid <span class="op">=</span> <span class="st">"20260901T184455-3f9ac1"</span><span class="op">)</span>                    <span class="co"># modelling</span></span>
+<span><span class="fu"><a href="reference/lnk_log_read.html">lnk_log_read</a></span><span class="op">(</span><span class="va">conn</span>, <span class="va">cfg</span>, run_uid <span class="op">=</span> <span class="st">"20260901T184455-3f9ac1"</span>, phase <span class="op">=</span> <span class="st">"recompute"</span><span class="op">)</span></span></code></pre></div>
+<p><code>run_uid</code> <strong>overrides <code>latest</code></strong>: the question is “every row of this run”, and <code>DISTINCT ON</code> would hide a WSG re-run inside the same dispatch.</p>
+<p><code>RUN_UID</code> is deliberately <strong>not</strong> host-prefixed (unlike <code>run_id</code>) — all hosts sharing one value is the entire point. Do not “fix” it by adding a host prefix. The random suffix is not decoration either: two dispatches started in the same second, which a re-run after a failure makes routine, would otherwise merge.</p>
+<p><strong>Both legs or nothing.</strong> The driver exports <code>LNK_RUN_UID</code>, <code>LNK_RUN_LABEL</code> and <code>LNK_BCFP_MODEL_VERSION</code> to the local <code>Rscript</code> loop <em>and</em> inside the cypher ssh command string. An export in the dispatcher’s environment does not cross ssh, so setting only the local one lands the id on the dispatcher’s WSGs and NULL on every cypher’s — a half-labelled run that looks fine until someone queries it. This is the same trap <code>LNK_GUARD_DOWNSTREAM</code> hit in §8c.</p>
+</div>
+<div class="section level3">
+<h3 id="schemalog_recompute"><code>&lt;schema&gt;.log_recompute</code><a class="anchor" aria-label="anchor" href="#schemalog_recompute"></a></h3>
+<p><code>data-raw/wsg_recompute_one.R</code> rewrites <code>streams_access</code> and <code>streams_mapping_code</code> — <strong>the values that ship</strong> — and until #262 recorded nothing, so <code>log</code> said when a WSG was <em>modelled</em> and nothing about when its persisted access last <em>changed</em>.</p>
+<p>Its own table, not a <code>phase</code> column on <code>log</code>, because a recompute row in <code>log</code> would win <code><a href="reference/lnk_log_read.html">lnk_log_read()</a></code>’s <code>DISTINCT ON</code> and be returned as “what produced this network”, which it did not. It carries <code>watershed_group_code</code>, so <code>schema_consolidate.R</code> auto-discovers it with no list to maintain.</p>
+<p><strong>Deliberately absent:</strong> <code>log_input</code> rows (the recompute reads persisted tables, not DB primitives) and the <code>bcfp_*</code> columns (it does not touch the reference). Issue #262 asked for “the same provenance columns”; this is a considered deviation, not an oversight.</p>
+<p><strong>It never runs DDL.</strong> The table is created by <code><a href="reference/lnk_persist_init.html">lnk_persist_init()</a></code>, by every modelling run, and once by <code>study_area_run.sh</code> immediately before the pool — that last one covers the case where every dispatcher WSG species-skips and no modelling run ever happens, which would otherwise hard-stop all N recomputes at the end of a paid run. <code>.lnk_log_recompute_start()</code> asserts presence instead.</p>
+<p><strong><code>LNK_LOG=0</code></strong> suppresses the row. <code>recompute_sweep.sh</code> and <code>recompute_parity.sh</code> set it: they re-run the same WSG set to measure the pool, and their rows would be indistinguishable from a real post-consolidate recompute — so the verify script’s model-vs-recompute check would pass on benchmark noise.</p>
+<p><strong>Known exposure:</strong> <code>schema_consolidate.R</code> DELETEs its bucket from every discovered table before COPYing. <code>log_recompute</code> is populated <em>after</em> consolidate, so a second or resumed consolidate over the same bucket will wipe those rows. Re-run the recompute if that happens.</p>
+</div>
+<div class="section level3">
+<h3 id="the-bcfp-reference-pin-tunnel-free">The bcfp reference pin, tunnel-free<a class="anchor" aria-label="anchor" href="#the-bcfp-reference-pin-tunnel-free"></a></h3>
+<p><code>bcfp_model_run_id</code> / <code>bcfp_model_version</code> were NULL on all 37 rows of the first provenanced run. Not because nothing wrote them — <code>.lnk_bcfp_log_current()</code> has been called at run open since #127 — but because it queries <code>bcfishpass.log</code>, and the local docker fwapg holds <strong>zero</strong> <code>bcfishpass</code> tables. The run is tunnel-free by design.</p>
+<p>The reference is not the tunnel either: it is <code>fresh.streams_vw_bcfp</code>, a local snapshot, and <code>snapshot_bcfp.sh</code> already records the build it loaded in <code>data-raw/logs/bcfp_baselines.csv</code>. Querying a live <code>bcfishpass.log</code> at compare time would name the build the tunnel is at <em>now</em> — it rebuilds weekly — not the one the numbers were computed against. <strong>A wrong pin, not a missing one.</strong></p>
+<p>Three tiers, and <code>bcfp_pin_source</code> records which answered:</p>
+<table class="table"><colgroup><col width="33%"><col width="33%"><col width="33%"></colgroup><thead><tr><th>tier</th>
+<th>source</th>
+<th>when</th>
+</tr></thead><tbody><tr><td><code>env</code></td>
+<td><code>LNK_BCFP_MODEL_VERSION</code></td>
+<td>every host of a driver run</td>
+</tr><tr><td><code>db</code></td>
+<td><code>bcfishpass.log</code></td>
+<td>a real bcfp connection (the tunnel)</td>
+</tr><tr><td><code>ledger</code></td>
+<td>
+<code>bcfp_baselines.csv</code>, this host’s latest row</td>
+<td>local, hand-invoked</td>
+</tr></tbody></table><p>Tier 0 exists because the ledger is <strong>per host</strong> and a cypher has no row of its own — it git-resets the repo, so the file is present, but it never snapshots under its own hostname. Without the export every cypher row lands unpinned: 13 of 34 last field run, the majority at 217. Same shape, same fix, as <code>FWAPG_GIT_SHA</code>.</p>
+<p><strong><code>bcfp_model_run_id</code> stays NULL on the tunnel-free path and that is correct.</strong> <code>log.json</code> carries no such key. Honest absence beats a fabricated id — do not “fix” it, and do not assert it in a verify script.</p>
+</div>
+<div class="section level3">
+<h3 id="verifying-a-run">Verifying a run<a class="anchor" aria-label="anchor" href="#verifying-a-run"></a></h3>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="ex">psql</span> <span class="at">-h</span> localhost <span class="at">-p</span> 5432 <span class="at">-U</span> postgres <span class="at">-d</span> fwapg <span class="at">-v</span> ON_ERROR_STOP=1 <span class="dt">\</span></span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>     <span class="at">-v</span> run_uid=<span class="op">&lt;</span>uid<span class="op">&gt;</span> -v expected_n=<span class="op">&lt;</span>N<span class="op">&gt;</span> -f data-raw/study_area_verify.sql</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="fu">bash</span> data-raw/study_area_verify_negative.sh <span class="op">&lt;</span>uid<span class="op">&gt;</span>   <span class="co"># proves it can fail</span></span></code></pre></div>
+<p><code>expected_n</code> is supplied from <strong>outside</strong> on purpose. Deriving the expected set entirely from <code>fresh.log</code> is circular: a WSG that never produced a log row vanishes from “expected”, and that is precisely the failure the check exists to catch. The old hardcoded 34-WSG <code>VALUES</code> list was the wrong externality, not proof that none was needed.</p>
+<p>Parameters reach the assertion block via <code>set_config</code>, not <code>:'run_uid'</code> — psql does not interpolate its variables inside a dollar-quoted string.</p>
+<hr></div>
+</div>
 <div class="section level2">
 <h2 id="id_7-where-every-rule-lives">7. Where every rule lives<a class="anchor" aria-label="anchor" href="#id_7-where-every-rule-lives"></a></h2>
 <table class="table"><colgroup><col width="33%"><col width="33%"><col width="33%"></colgroup><thead><tr><th>Rule</th>
@@ -443,23 +511,23 @@ mc_barrier (from barrier_sources flags, resident vs anadromous differ slightly):
 </div>
 <div class="section level2">
 <h2 id="id_8-fast-verification-recipes">8. Fast verification recipes<a class="anchor" aria-label="anchor" href="#id_8-fast-verification-recipes"></a></h2>
-<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># What does bcfp emit for a WSG's mapping_code (local snapshot, no tunnel)?</span></span>
-<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="ex">docker</span> exec fresh-db psql <span class="at">-U</span> postgres <span class="at">-d</span> fwapg <span class="at">-c</span> <span class="dt">\</span></span>
-<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>  <span class="st">"SELECT mapping_code_bt, count(*) FROM fresh.streams_vw_bcfp</span></span>
-<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="st">   WHERE watershed_group_code='PARS' GROUP BY 1 ORDER BY 2 DESC;"</span></span>
-<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a></span>
-<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a><span class="co"># What does link emit (after a mapping_code=TRUE run)?</span></span>
-<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a><span class="ex">docker</span> exec fresh-db psql <span class="at">-U</span> postgres <span class="at">-d</span> fwapg <span class="at">-c</span> <span class="dt">\</span></span>
-<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a>  <span class="st">"SELECT mapping_code_bt, count(*) FROM fresh_default.streams_mapping_code</span></span>
-<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a><span class="st">   WHERE watershed_group_code='PARS' GROUP BY 1 ORDER BY 2 DESC;"</span></span>
-<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a></span>
-<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a><span class="co"># Inspect a barrier view's shape / blocks_species</span></span>
-<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a><span class="ex">docker</span> exec fresh-db psql <span class="at">-U</span> postgres <span class="at">-d</span> fwapg <span class="at">-c</span> <span class="dt">\</span></span>
-<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a>  <span class="st">"SELECT pg_get_viewdef('fresh_default.barriers_bt_unified', true);"</span></span>
-<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a></span>
-<span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a><span class="co"># Single-WSG tunnel-free build (the headline path)</span></span>
-<span id="cb7-16"><a href="#cb7-16" tabindex="-1"></a><span class="fu">bash</span> data-raw/wsgs_run_m4_offline.sh <span class="at">--wsgs</span><span class="op">=</span>PARS <span class="at">--config</span><span class="op">=</span>default <span class="dt">\</span></span>
-<span id="cb7-17"><a href="#cb7-17" tabindex="-1"></a>  <span class="at">--schema</span><span class="op">=</span>fresh_default <span class="at">--force</span> <span class="at">--mapping-code</span></span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="co"># What does bcfp emit for a WSG's mapping_code (local snapshot, no tunnel)?</span></span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="ex">docker</span> exec fresh-db psql <span class="at">-U</span> postgres <span class="at">-d</span> fwapg <span class="at">-c</span> <span class="dt">\</span></span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>  <span class="st">"SELECT mapping_code_bt, count(*) FROM fresh.streams_vw_bcfp</span></span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="st">   WHERE watershed_group_code='PARS' GROUP BY 1 ORDER BY 2 DESC;"</span></span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a></span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a><span class="co"># What does link emit (after a mapping_code=TRUE run)?</span></span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a><span class="ex">docker</span> exec fresh-db psql <span class="at">-U</span> postgres <span class="at">-d</span> fwapg <span class="at">-c</span> <span class="dt">\</span></span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a>  <span class="st">"SELECT mapping_code_bt, count(*) FROM fresh_default.streams_mapping_code</span></span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a><span class="st">   WHERE watershed_group_code='PARS' GROUP BY 1 ORDER BY 2 DESC;"</span></span>
+<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a></span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a><span class="co"># Inspect a barrier view's shape / blocks_species</span></span>
+<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a><span class="ex">docker</span> exec fresh-db psql <span class="at">-U</span> postgres <span class="at">-d</span> fwapg <span class="at">-c</span> <span class="dt">\</span></span>
+<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a>  <span class="st">"SELECT pg_get_viewdef('fresh_default.barriers_bt_unified', true);"</span></span>
+<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a></span>
+<span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a><span class="co"># Single-WSG tunnel-free build (the headline path)</span></span>
+<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a><span class="fu">bash</span> data-raw/wsgs_run_m4_offline.sh <span class="at">--wsgs</span><span class="op">=</span>PARS <span class="at">--config</span><span class="op">=</span>default <span class="dt">\</span></span>
+<span id="cb9-17"><a href="#cb9-17" tabindex="-1"></a>  <span class="at">--schema</span><span class="op">=</span>fresh_default <span class="at">--force</span> <span class="at">--mapping-code</span></span></code></pre></div>
 <p>Local docker fwapg: <code>host=localhost port=5432 dbname=fwapg user=postgres password=postgres</code> (compose at <code>~/Projects/repo/fresh/docker/</code>).</p>
 </div>
 </div>

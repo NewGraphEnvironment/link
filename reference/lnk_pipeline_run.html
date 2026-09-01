@@ -13,7 +13,7 @@ streams_habitat_&amp;lt;sp&amp;gt; per species, barriers)."><meta property="og:i
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.48.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.49.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -61,6 +61,7 @@ in the persistent province-wide tables (<code>&lt;persist_schema&gt;.streams</co
 <span>  cleanup_working <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  mapping_code <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  log <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  run_uid <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">"LNK_RUN_UID"</span>, <span class="cn">NA_character_</span><span class="op">)</span>,</span>
 <span>  run_label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">"LNK_RUN_LABEL"</span>, <span class="cn">NA_character_</span><span class="op">)</span>,</span>
 <span>  notes <span class="op">=</span> <span class="cn">NA_character_</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -129,10 +130,21 @@ from; everything after it degrades to a warning rather than failing
 the run. Pass <code>FALSE</code> for throwaway runs.</p></dd>
 
 
+<dt id="arg-run-uid">run_uid<a class="anchor" aria-label="anchor" href="#arg-run-uid"></a></dt>
+<dd><p>Character. Identifies one <em>dispatch</em> — every host and every
+watershed group of a single <code>data-raw/study_area_run.sh</code> invocation share
+it, so "every row of that run" is one equality rather than a time window
+plus a host list (link#262). Defaults to the <code>LNK_RUN_UID</code> env var, which
+the driver exports to the local leg and into the cypher ssh string. <code>NA</code>
+for an ad-hoc single-WSG call is correct: there was no dispatch to belong
+to. Distinct from <code>run_id</code>, which is minted per call and is the log's PK.</p></dd>
+
+
 <dt id="arg-run-label">run_label<a class="anchor" aria-label="anchor" href="#arg-run-label"></a></dt>
 <dd><p>Character. Groups a campaign across hosts and WSGs
-(e.g. <code>"provincial_default_rearbreaks"</code>). Defaults to the
-<code>LNK_RUN_LABEL</code> env var so orchestrators can set it once.</p></dd>
+(e.g. <code>"provincial_default_rearbreaks"</code>). Operator-supplied free text —
+never assume it is unique; <code>run_uid</code> is the machine identifier. Defaults
+to the <code>LNK_RUN_LABEL</code> env var so orchestrators can set it once.</p></dd>
 
 
 <dt id="arg-notes">notes<a class="anchor" aria-label="anchor" href="#arg-notes"></a></dt>

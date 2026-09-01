@@ -11,7 +11,7 @@ the most recent run per watershed group.'><meta property="og:image" content="htt
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.48.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.49.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -48,7 +48,14 @@ the most recent run per watershed group.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">lnk_log_read</span><span class="op">(</span><span class="va">conn</span>, <span class="va">cfg</span>, aoi <span class="op">=</span> <span class="cn">NULL</span>, latest <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">lnk_log_read</span><span class="op">(</span></span>
+<span>  <span class="va">conn</span>,</span>
+<span>  <span class="va">cfg</span>,</span>
+<span>  aoi <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  latest <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  run_uid <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  phase <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"model"</span>, <span class="st">"recompute"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -69,7 +76,25 @@ the most recent run per watershed group.</p>
 
 <dt id="arg-latest">latest<a class="anchor" aria-label="anchor" href="#arg-latest"></a></dt>
 <dd><p>Logical. When <code>TRUE</code> (default), return only the newest run
-per watershed group. <code>FALSE</code> returns the full history.</p></dd>
+per watershed group. <code>FALSE</code> returns the full history. <strong>Ignored when
+<code>run_uid</code> is supplied</strong> — see below.</p></dd>
+
+
+<dt id="arg-run-uid">run_uid<a class="anchor" aria-label="anchor" href="#arg-run-uid"></a></dt>
+<dd><p>Optional dispatch identifier (link#262). One dispatch of
+<code>data-raw/study_area_run.sh</code> stamps the same <code>run_uid</code> on every host and
+every watershed group, so this is what answers "everything from that run"
+without a time window. Supplying it forces <code>latest = FALSE</code>: the question
+is "every row of this run", and <code>DISTINCT ON</code> would silently drop a WSG
+that was re-run within the same dispatch.</p></dd>
+
+
+<dt id="arg-phase">phase<a class="anchor" aria-label="anchor" href="#arg-phase"></a></dt>
+<dd><p>Which log to read. <code>"model"</code> (default) reads <code>&lt;schema&gt;.log</code>,
+one row per <code><a href="lnk_pipeline_run.html">lnk_pipeline_run()</a></code> call. <code>"recompute"</code> reads
+<code>&lt;schema&gt;.log_recompute</code>, one row per <code>wsg_recompute_one.R</code> invocation —
+the post-consolidate pass that rewrites <code>streams_access</code> and
+<code>streams_mapping_code</code>, which is the output that ships.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -107,6 +132,13 @@ synthetic row would be fabricated provenance.</p>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Every run, newest first.</span></span></span>
 <span class="r-in"><span><span class="fu">lnk_log_read</span><span class="op">(</span><span class="va">conn</span>, <span class="va">cfg</span>, latest <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Everything from one dispatch, across every host — no time window.</span></span></span>
+<span class="r-in"><span><span class="fu">lnk_log_read</span><span class="op">(</span><span class="va">conn</span>, <span class="va">cfg</span>, run_uid <span class="op">=</span> <span class="st">"20260901T184455-3f9ac1"</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Was each of those WSGs also recomputed?</span></span></span>
+<span class="r-in"><span><span class="fu">lnk_log_read</span><span class="op">(</span><span class="va">conn</span>, <span class="va">cfg</span>, run_uid <span class="op">=</span> <span class="st">"20260901T184455-3f9ac1"</span>,</span></span>
+<span class="r-in"><span>             phase <span class="op">=</span> <span class="st">"recompute"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 </code></pre></div>
     </div>
