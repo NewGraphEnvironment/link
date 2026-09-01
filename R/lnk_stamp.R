@@ -40,8 +40,15 @@
 #'   - `config_dir` — `cfg$dir`
 #'   - `provenance` — output of [lnk_config_verify()] called on `cfg`
 #'     at stamp time (carries observed checksums + drift status)
-#'   - `software` — list of versions + git SHAs for `link`, `fresh`,
-#'     plus `R.version.string`
+#'   - `fwapg_sha` — git SHA of the `fwapg` checkout that loaded the FWA
+#'     primitives
+#'   - `bcfishobs_sha` — git SHA of the `bcfishobs` checkout that matched
+#'     observations onto the network. A model input, not a reference
+#'     dataset: it decides which barriers are skipped, and so which
+#'     segments are accessible (link#264)
+#'   - `software` — list of versions, git SHAs and `sha_source` (which
+#'     resolver tier answered) for `link` and `fresh`, plus
+#'     `R.version.string`
 #'   - `db` — list of DB snapshot counts, or `NULL`
 #'   - `run` — list with `aoi`, `start_time`, `end_time` (initially
 #'     `NULL` — set by [lnk_stamp_finish()])
@@ -86,13 +93,21 @@ lnk_stamp <- function(cfg,
     NULL
   }
 
+  # One .lnk_pkg_git_state() call per package, not four wrapper calls: the
+  # sha, the dirty flag and the tier that answered are three facts about one
+  # resolution, and resolving them separately is how they drift apart.
+  link_git  <- .lnk_pkg_git_state("link")
+  fresh_git <- .lnk_pkg_git_state("fresh")
+
   software <- list(
     link  = list(version = as.character(utils::packageVersion("link")),
-                  git_sha = .lnk_pkg_git_sha("link"),
-                  dirty   = .lnk_pkg_git_dirty("link")),
+                  git_sha    = link_git$sha,
+                  dirty      = link_git$dirty,
+                  sha_source = link_git$source),
     fresh = list(version = .lnk_pkg_version_or_na("fresh"),
-                  git_sha = .lnk_pkg_git_sha("fresh"),
-                  dirty   = .lnk_pkg_git_dirty("fresh")),
+                  git_sha    = fresh_git$sha,
+                  dirty      = fresh_git$dirty,
+                  sha_source = fresh_git$source),
     R     = R.version.string
   )
 
@@ -117,6 +132,7 @@ lnk_stamp <- function(cfg,
     },
     host          = .lnk_host(),
     fwapg_sha     = .lnk_fwapg_sha(),
+    bcfishobs_sha = .lnk_bcfishobs_sha(),
     provenance    = prov,
     software      = software,
     db            = db,
@@ -255,41 +271,165 @@ format.lnk_stamp <- function(x, type = c("markdown", "text"), ...) {
            error = function(e) NA_character_)
 }
 
-# Discover a package's git SHA from its install dir, falling back to an
-# env var when the package was installed without `.git/` (R CMD INSTALL,
-# pak, CRAN). Three-tier:
-#   1. `LINK_GIT_SHA` (or `<PKG>_GIT_SHA`) env var — explicit override
-#   2. `.git/HEAD` chain in the package dir or its parent (devtools::load_all)
-#   3. NA when neither resolves.
-.lnk_pkg_git_sha <- function(pkg) {
-  env_key <- paste0(toupper(pkg), "_GIT_SHA")
-  v <- Sys.getenv(env_key, "")
-  if (nzchar(v)) return(v)
+# `RemoteSha` from an installed package's DESCRIPTION, or NA.
+#
+# pak and remotes write `Remote*` fields at install time recording the source
+# they actually built from. A package installed from a source checkout
+# (`pak::local_install`, `R CMD INSTALL`) gets `RemoteType: local` and no
+# `RemoteSha`; one installed from a git ref gets both. A source tree under
+# `pkgload::load_all()` has neither — the fields do not exist until install.
+#
+# This is a more honest answer than a `.git` walk would give for an installed
+# package even if one were possible: it is what was BUILT, not what a checkout
+# on the same machine happens to sit at now.
+#
+# `packageDescription()` returns a bare `NA` (not a list) for a package that is
+# not installed, and `NA$RemoteSha` is an error rather than NULL — hence the
+# `is.list()` guard rather than a bare `$`.
+#
+# THE SHAPE GUARD IS NOT DEFENSIVE PROGRAMMING. `RemoteSha` holds a git commit
+# only for git-backed installs; for `RemoteType: standard` (CRAN, PPM,
+# r-universe) remotes writes the package **version** into the same field.
+# Measured 2026-09-01 in this library: 278 of 300 installed packages carry a
+# non-hex `RemoteSha` — `"1.4-8"`, `"0.5.3"`. Taking it unfiltered would put
+# `fresh_sha = "0.33.0"` in a column that `study_area_verify.sql` and
+# `lnk_preflight_parity()` both treat as a commit, with `source = "remote_sha"`
+# and `dirty = FALSE` asserting it. Reachable rather than hypothetical: `fresh`
+# resolves from CRAN-style remotes on any host installed through PPM or
+# r-universe.
+#
+# The OTHER install path worth knowing about writes no `Remote*` fields at all:
+# `scripts/update_hosts.sh` uses `R CMD INSTALL` on a GitHub source tarball,
+# deliberately, to route around r-lib/pak#658 on cypher. That leaves this tier
+# with nothing to read and no `.git` to fall back to, so the SHA is genuinely
+# unrecoverable from the install. It is why that script now writes
+# `FRESH_GIT_SHA` itself, and why `preflight_local()` gates on the resolved
+# value BEFORE any spend rather than discovering it at the parity check.
+#
+# Anything that is not a hex object name declines the tier and falls through,
+# which is the honest outcome: a version is not a code identity.
+.lnk_pkg_remote_sha <- function(pkg) {
+  d <- tryCatch(suppressWarnings(utils::packageDescription(pkg)),
+                error = function(e) NULL)
+  if (!is.list(d)) return(NA_character_)
+  sha <- .lnk_blank_to_na(d$RemoteSha)
+  if (is.na(sha) || !grepl("^[0-9a-f]{7,40}$", sha)) return(NA_character_)
+  sha
+}
 
+# The first directory at or above a package's install dir that carries a `.git`
+# whose HEAD reads. Returns `list(dir, sha)`, both NULL when none does.
+#
+# One lookup serving both the SHA and the dirty predicate is the point: the
+# dirty flag then describes the *same* checkout the SHA came from, which two
+# independent walks are free to disagree about.
+.lnk_pkg_git_lookup <- function(pkg) {
+  none <- list(dir = NULL, sha = NULL)
   pkg_dir <- tryCatch(
     find.package(pkg, quiet = TRUE),
     error = function(e) character(0))
-  if (length(pkg_dir) == 0L) return(NA_character_)
+  if (length(pkg_dir) == 0L) return(none)
 
-  # Walk up looking for a .git directory or file.
   for (d in c(pkg_dir, dirname(pkg_dir))) {
     git <- file.path(d, ".git")
-    if (file.exists(git)) {
-      sha <- .lnk_read_git_head(git)
-      if (!is.null(sha)) return(sha)
-    }
+    if (!file.exists(git)) next
+    sha <- .lnk_read_git_head(git)
+    if (!is.null(sha)) return(list(dir = d, sha = sha))
   }
-  NA_character_
+  none
 }
 
-# Is a package's git tree dirty? A SHA recorded against a dirty tree is a
-# lie, so provenance records the flag alongside it. Three-tier, mirroring
-# `.lnk_pkg_git_sha()`:
-#   1. `<PKG>_GIT_DIRTY` env var — the only reliable path for an installed
-#      package (orchestrator sets it), values "1"/"true"/"yes" -> TRUE
-#   2. `git status --porcelain`, attempted only when a `.git` was actually
-#      found (i.e. a dev checkout / load_all)
-#   3. NA when neither resolves.
+# A package's code identity: which commit, was the tree modified, and which
+# tier answered.
+#
+# ONE resolver with two wrappers, not two parallel three-tier resolvers. The
+# two answers are read from the same DESCRIPTION and the same checkout, so
+# splitting them lets them drift about the same package — silently, since
+# neither function can see the other's tiers.
+#
+# `sha` and `dirty` walk their OWN tier lists over that shared lookup, because
+# the env vars are set independently: `cypher_prep.sh` has always written
+# `FRESH_GIT_SHA` and never `FRESH_GIT_DIRTY`, so a design where one env var
+# claims the whole state would leave `dirty` NA on exactly the host that set
+# the SHA.
+#
+#   tier            sha                        dirty
+#   ------------------------------------------------------------------
+#   1 env           <PKG>_GIT_SHA              <PKG>_GIT_DIRTY, else fall through
+#   2 DESCRIPTION   RemoteSha                  FALSE when RemoteSha is present
+#   3 .git walk     .lnk_read_git_head()       .lnk_git_dirty_at()
+#   -               NA                         NA
+#
+# Tier 2's dirty is an inference, and a sound one: `RemoteSha` is only written
+# when the install came from a published ref, which is not a working tree and
+# cannot have been modified. It is what makes `fresh_dirty` answerable on a
+# host with no `fresh` checkout at all — the state it was NULL in on all 39
+# rows of the first provenanced runs (link#264).
+#
+# `source` names the tier that answered for the SHA, so "pinned, from the
+# DESCRIPTION" is distinguishable from "pinned, by the orchestrator" without
+# inferring it. Same reasoning as `bcfp_pin_source` (link#262).
+.lnk_pkg_git_state <- function(pkg) {
+  key <- toupper(pkg)
+
+  env_sha <- .lnk_blank_to_na(Sys.getenv(paste0(key, "_GIT_SHA"), ""))
+  env_dirty_raw <- .lnk_blank_to_na(Sys.getenv(paste0(key, "_GIT_DIRTY"), ""))
+  env_dirty <- if (is.na(env_dirty_raw)) {
+    NA
+  } else {
+    tolower(trimws(env_dirty_raw)) %in% c("1", "true", "yes", "t")
+  }
+
+  remote_sha <- .lnk_pkg_remote_sha(pkg)
+  git <- .lnk_pkg_git_lookup(pkg)
+
+  sha <- NA_character_
+  source <- NA_character_
+  if (!is.na(env_sha)) {
+    sha <- env_sha
+    source <- "env"
+  } else if (!is.na(remote_sha)) {
+    sha <- remote_sha
+    source <- "remote_sha"
+  } else if (!is.null(git$sha)) {
+    sha <- git$sha
+    source <- "git"
+  }
+
+  # `identical(sha, remote_sha)` is load-bearing. Tier 2's FALSE is a statement
+  # about the commit `RemoteSha` names, and it may only be applied to a SHA
+  # that IS that commit. Without the equality an orchestrator setting
+  # `<PKG>_GIT_SHA` to anything else would have `dirty = FALSE` attached to a
+  # commit this host never built — clean asserted about the wrong tree, which
+  # is the failure the flag exists to prevent.
+  #
+  # It costs nothing in the case that matters: `cypher_prep.sh` derives
+  # `FRESH_GIT_SHA` from `RemoteSha`, so the two are equal on a cypher. Where
+  # they genuinely differ this falls through to the `.git` walk and then to NA,
+  # and `FRESH_GIT_DIRTY` — which `cypher_prep.sh` now also writes — is what
+  # answers instead.
+  dirty <- if (!is.na(env_dirty)) {
+    env_dirty
+  } else if (!is.na(remote_sha) && identical(sha, remote_sha)) {
+    FALSE
+  } else if (!is.null(git$dir)) {
+    .lnk_git_dirty_at(git$dir)
+  } else {
+    NA
+  }
+
+  list(sha = sha, dirty = dirty, source = source)
+}
+
+# Thin wrappers over [.lnk_pkg_git_state()]. Kept because they are the shape
+# every caller already uses, and because a caller that wants one fact should
+# not have to know the other exists.
+.lnk_pkg_git_sha <- function(pkg) .lnk_pkg_git_state(pkg)$sha
+
+.lnk_pkg_git_dirty <- function(pkg) .lnk_pkg_git_state(pkg)$dirty
+
+# Is a git working directory dirty? A SHA recorded against a dirty tree is a
+# lie, so provenance records the flag alongside it.
 #
 # The pathspec is load-bearing (link#257). `data-raw/logs/` is TRACKED on
 # purpose — run logs are retained as contemporaneous evidence — and the run
@@ -333,7 +473,7 @@ format.lnk_stamp <- function(x, type = c("markdown", "text"), ...) {
 # and only its transport is not.
 .lnk_git_dirty_pathspec <- c("--", shQuote(":(top,exclude)data-raw/logs"))
 
-# The git call, split out from .lnk_pkg_git_dirty() so it can be tested
+# The git call, split out from .lnk_pkg_git_state() so it can be tested
 # against a REAL checkout in both states. The defect this guards is in what
 # git is ASKED, so a mocked return value cannot see it — the test has to run
 # the command.
@@ -357,25 +497,6 @@ format.lnk_stamp <- function(x, type = c("markdown", "text"), ...) {
   status <- attr(out, "status")
   if (!is.null(status) && !identical(as.integer(status), 0L)) return(NA)
   length(out) > 0L
-}
-
-.lnk_pkg_git_dirty <- function(pkg) {
-  env_key <- paste0(toupper(pkg), "_GIT_DIRTY")
-  v <- tolower(Sys.getenv(env_key, ""))
-  if (nzchar(v)) {
-    return(v %in% c("1", "true", "yes", "t"))
-  }
-
-  pkg_dir <- tryCatch(
-    find.package(pkg, quiet = TRUE),
-    error = function(e) character(0))
-  if (length(pkg_dir) == 0L) return(NA)
-
-  for (d in c(pkg_dir, dirname(pkg_dir))) {
-    if (!file.exists(file.path(d, ".git"))) next
-    return(.lnk_git_dirty_at(d))
-  }
-  NA
 }
 
 .lnk_read_git_head <- function(git_path) {

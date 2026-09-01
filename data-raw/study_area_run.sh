@@ -495,15 +495,107 @@ quit(status = if (isTRUE(res$ok)) 0L else 1L)
   local fwapg_dir fwdirty
   fwapg_dir="${FWAPG_DIR:-$HOME/Projects/repo/fwapg}"
   if FWAPG_SHA=$(git -C "$fwapg_dir" rev-parse HEAD 2>/dev/null) && [ -n "$FWAPG_SHA" ]; then
+    # `else fail=1` is not decoration. Without it the probe fails toward SKIP:
+    # a git that errors makes the inner `if` false, nothing is reported, and
+    # the SHA is exported with a tick. There is deliberately no fwapg_dirty
+    # column, so this gate is the ONLY thing standing between a modified
+    # checkout and a SHA recorded as if it described one.
     if fwdirty=$(git -C "$fwapg_dir" status --porcelain 2>/dev/null); then
       [ -z "$fwdirty" ] \
         || { echo "  ✗ fwapg checkout dirty ($fwapg_dir) — the SHA stamped into log.fwapg_sha would be a lie"; fail=1; }
+    else
+      echo "  ✗ could not read git status in $fwapg_dir — cannot certify fwapg_sha clean"
+      fail=1
     fi
     export FWAPG_GIT_SHA="$FWAPG_SHA"
     echo "  ✓ fwapg_sha ${FWAPG_SHA:0:12} (exported to all hosts)"
   else
     echo "  ✗ no fwapg checkout at $fwapg_dir — set FWAPG_DIR, or every row lands fwapg_sha=NA"
     fail=1
+  fi
+
+  # --- gate: bcfishobs SHA resolvable and exported (link#264) -------------
+  # bcfishobs is a MODEL INPUT, not a reference dataset: it snaps observations
+  # onto the network, lnk_barrier_overrides() counts those observations
+  # upstream of each barrier to decide which barriers are skipped, and so it
+  # moves access and mapping_code. Everything the 39 logged runs recorded
+  # about it was a row count and a hardcoded source string.
+  #
+  # Exactly the fwapg block above, including the dirty refusal: a cypher has
+  # no bcfishobs checkout, so without the export every cypher row lands
+  # bcfishobs_sha = NA. There is deliberately NO bcfishobs_dirty column —
+  # this gate is what makes a recorded SHA clean by construction, and a
+  # column FALSE on every row carries no information (link#257).
+  local bcfo_dir bcfo_dirty
+  bcfo_dir="${BCFISHOBS_DIR:-$HOME/Projects/repo/bcfishobs}"
+  if BCFISHOBS_SHA=$(git -C "$bcfo_dir" rev-parse HEAD 2>/dev/null) && [ -n "$BCFISHOBS_SHA" ]; then
+    if bcfo_dirty=$(git -C "$bcfo_dir" status --porcelain 2>/dev/null); then
+      [ -z "$bcfo_dirty" ] \
+        || { echo "  ✗ bcfishobs checkout dirty ($bcfo_dir) — the SHA stamped into log.bcfishobs_sha would be a lie"; fail=1; }
+    else
+      echo "  ✗ could not read git status in $bcfo_dir — cannot certify bcfishobs_sha clean"
+      fail=1
+    fi
+    export BCFISHOBS_GIT_SHA="$BCFISHOBS_SHA"
+    echo "  ✓ bcfishobs_sha ${BCFISHOBS_SHA:0:12} (exported to all hosts)"
+  else
+    echo "  ✗ no bcfishobs checkout at $bcfo_dir — set BCFISHOBS_DIR, or every row lands bcfishobs_sha=NA"
+    fail=1
+  fi
+
+  # --- gate: fresh's own code identity, BEFORE any spend (link#264) -------
+  # fresh_sha and fresh_dirty are asserted on every host by
+  # study_area_verify.sql, and fresh_sha is a lnk_preflight_parity key. Both
+  # of those fire LATE: parity runs after spin + prep, so an unresolvable
+  # fresh burns droplets before anyone finds out, and verify runs after the
+  # whole run. This is the same fact, five seconds in, for free.
+  #
+  # The state that reaches it is not exotic. `scripts/update_hosts.sh` uses
+  # `R CMD INSTALL` on a source tarball to route around r-lib/pak#658, and
+  # that writes no Remote* fields at all — so before that script started
+  # recording FRESH_GIT_SHA itself, a host updated with it had no recoverable
+  # fresh identity. Any host updated by an older copy of it still does not.
+  # The third field is a STALENESS check, not a repeat of the first. An env
+  # pin (FRESH_GIT_SHA, written by scripts/update_hosts.sh or cypher_prep.sh)
+  # wins tier 1 and nothing expires it, so a later install by another route --
+  # pak, r-universe, a hand-run R CMD INSTALL -- leaves the old value winning
+  # and this gate reading the very variable it is meant to be gating. Where
+  # the DESCRIPTION also has an answer, the two must agree; where it does not,
+  # there is nothing to check and the pin stands alone.
+  local fresh_state fresh_sha_local fresh_dirty_local fresh_stale
+  fresh_state=$(cd "$REPO_ROOT" && LNK_LOAD=loadall Rscript -e '
+suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
+st <- link:::.lnk_pkg_git_state("fresh")
+remote <- link:::.lnk_pkg_remote_sha("fresh")
+stale <- !is.na(remote) && !is.na(st$sha) && !identical(remote, st$sha)
+cat(if (is.na(st$sha)) "" else st$sha, "|",
+    if (is.na(st$dirty)) "" else tolower(as.character(st$dirty)), "|",
+    if (stale) remote else "", sep = "")
+' 2>/dev/null) || fresh_state="||"
+  fresh_sha_local="${fresh_state%%|*}"
+  fresh_stale="${fresh_state##*|}"
+  fresh_dirty_local="${fresh_state#*|}"
+  fresh_dirty_local="${fresh_dirty_local%%|*}"
+  if [ -n "$fresh_stale" ]; then
+    echo "  ✗ FRESH_GIT_SHA pins ${fresh_sha_local:0:12} but the installed fresh"
+    echo "    was built from ${fresh_stale:0:12}. The env pin is stale and would"
+    echo "    be recorded as this run's fresh_sha. Fix: remove FRESH_GIT_SHA from"
+    echo "    ~/.Renviron, or re-run bash scripts/update_hosts.sh fresh"
+    fail=1
+  elif [ -z "$fresh_sha_local" ]; then
+    echo "  ✗ fresh_sha unresolvable on this host — every row would land fresh_sha=NA,"
+    echo "    which study_area_verify.sql now RAISEs on and parity refuses."
+    echo "    Fix: bash scripts/update_hosts.sh fresh   (it records the sha it installs)"
+    fail=1
+  elif [ "$fresh_dirty_local" = "true" ]; then
+    echo "  ✗ fresh reports dirty — the SHA stamped into log.fresh_sha would be a lie"
+    fail=1
+  elif [ -z "$fresh_dirty_local" ]; then
+    echo "  ✗ fresh_dirty unresolvable — 'unknown' is not 'clean', and log.fresh_sha"
+    echo "    cannot be trusted without it. Fix: bash scripts/update_hosts.sh fresh"
+    fail=1
+  else
+    echo "  ✓ fresh_sha ${fresh_sha_local:0:12} (clean)"
   fi
 
   # --- gate: bcfp reference pinned, and exported to all hosts (link#262) --
@@ -632,7 +724,7 @@ collect_stamps() {   # $1 = destination tsv
   printf '%s\n' "$out" >> "$tsv"
   for ws in "${CY_WS_ARR[@]}"; do
     if ! out=$(ssh -o BatchMode=yes -o ConnectTimeout=15 "cypher@${CY_IP[$ws]}" \
-        "cd ~/Projects/repo/link && export FWAPG_GIT_SHA='${FWAPG_GIT_SHA:-}' && Rscript data-raw/host_stamp.R '$CONFIG'" 2>/dev/null); then
+        "cd ~/Projects/repo/link && export FWAPG_GIT_SHA='${FWAPG_GIT_SHA:-}' && export BCFISHOBS_GIT_SHA='${BCFISHOBS_GIT_SHA:-}' && Rscript data-raw/host_stamp.R '$CONFIG'" 2>/dev/null); then
       echo "  ✗ cy[$ws] stamp failed (ssh or Rscript) — treated as a FAILURE, not a skip"
       return 1
     fi
@@ -922,7 +1014,7 @@ for WS in "${CY_WS_ARR[@]}"; do
   # someone queries it. This is the same both-legs trap LNK_GUARD_DOWNSTREAM
   # hit in link#227, where the missed second leg made cyphers hard-fail and
   # silently skip WSGs.
-  ssh "cypher@$IP" "cd ~/Projects/repo/link && export LNK_SCHEMA='$SCHEMA' && export LNK_GUARD_DOWNSTREAM=warn && export FWAPG_GIT_SHA='${FWAPG_GIT_SHA:-}' && export LNK_RUN_UID='$RUN_UID' && export LNK_RUN_LABEL='$RUN_LABEL' && export LNK_BCFP_MODEL_VERSION='${LNK_BCFP_MODEL_VERSION:-}' && for w in $B_SPACE; do Rscript data-raw/wsg_run_one.R \$w '$CONFIG' || echo \"[WARN] cy WSG \$w failed\"; done" \
+  ssh "cypher@$IP" "cd ~/Projects/repo/link && export LNK_SCHEMA='$SCHEMA' && export LNK_GUARD_DOWNSTREAM=warn && export FWAPG_GIT_SHA='${FWAPG_GIT_SHA:-}' && export BCFISHOBS_GIT_SHA='${BCFISHOBS_GIT_SHA:-}' && export LNK_RUN_UID='$RUN_UID' && export LNK_RUN_LABEL='$RUN_LABEL' && export LNK_BCFP_MODEL_VERSION='${LNK_BCFP_MODEL_VERSION:-}' && for w in $B_SPACE; do Rscript data-raw/wsg_run_one.R \$w '$CONFIG' || echo \"[WARN] cy WSG \$w failed\"; done" \
     > "$LOG_DIR/${TS}_run_$WS.log" 2>&1 &
   CY_PID[$WS]=$!
 done

@@ -22,18 +22,25 @@ contract — the field order — is a documented, tested thing rather than
 an inline \code{Rscript -e} incantation that drifts between two call sites.
 }
 \details{
-\strong{\code{repo_sha} is the load-bearing field, not \code{link_sha}.}
-\code{.lnk_pkg_git_sha()} resolves a SHA from a \code{.git} beside the installed
-package. On the dispatcher link is \code{pkgload::load_all}'d from a checkout,
-so it finds one; on every cypher link is pak-installed, so it does not
-and returns \code{NA}. \code{fresh_sha} is \code{NA} on both unless pak recorded a
-\code{RemoteSha}. Comparing \code{link_sha} across hosts would therefore always
-fail, and comparing \code{fresh_sha} would be a vacuous \code{NA == NA} pass — a
-check that looks like a check. \code{repo_sha} is read from
-\verb{~/Projects/repo/link} \strong{on the host itself}, which on a cypher is
-exactly what \verb{git reset --hard origin/<branch>} produced. It is an
-independent observation rather than a restatement of what the
-dispatcher believes (link#246).
+\strong{\code{repo_sha} is the load-bearing field for link, not \code{link_sha}.}
+\code{.lnk_pkg_git_state()} resolves link's SHA from a \code{.git} beside the
+installed package. On the dispatcher link is \code{pkgload::load_all}'d from
+a checkout, so it finds one; on every cypher link is pak-installed from
+a local source tree, so it does not and returns \code{NA}. Comparing
+\code{link_sha} across hosts would therefore always fail — a check that
+looks like a check. \code{repo_sha} is read from \verb{~/Projects/repo/link}
+\strong{on the host itself}, which on a cypher is exactly what
+\verb{git reset --hard origin/<branch>} produced. It is an independent
+observation rather than a restatement of what the dispatcher believes
+(link#246).
+
+\strong{\code{fresh_sha} is different, and stopped being vacuous in link#264.}
+This paragraph used to say it was \code{NA} on both hosts, making any
+comparison a \code{NA == NA} pass. That was measured false on 2026-09-01:
+the dispatcher's installed \code{fresh} carried
+\verb{RemoteSha 7f12d99115b7…}, byte-identical to the value its cyphers
+recorded, and the resolver simply never read the field. It does now, so
+\code{fresh_sha} resolves everywhere and \code{\link[=lnk_preflight_parity]{lnk_preflight_parity()}} keys on it.
 
 Unresolvable facts are the literal string \code{"NA"}, never empty, so a
 truncated ssh response is distinguishable from a resolved absence.

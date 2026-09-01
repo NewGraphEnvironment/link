@@ -19,7 +19,7 @@ test_that("lnk_stamp returns lnk_stamp S3 with expected slots", {
   expect_s3_class(s, "lnk_stamp")
   expect_setequal(names(s),
     c("config_name", "config_dir", "config_hash", "config_drift",
-      "host", "fwapg_sha", "provenance",
+      "host", "fwapg_sha", "bcfishobs_sha", "provenance",
       "software", "db", "run", "result"))
   expect_equal(s$config_name, "bcfishpass")
   expect_equal(s$run$aoi, "ADMS")

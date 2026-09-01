@@ -124,6 +124,59 @@ test_that(".lnk_fwapg_sha returns NA when nothing resolves", {
 })
 
 
+# --- .lnk_bcfishobs_sha (link#264) ------------------------------------------
+
+test_that(".lnk_bcfishobs_sha prefers the env var", {
+  # The tier every cypher takes: no bcfishobs checkout exists there, so
+  # study_area_run.sh resolves it once on the dispatcher and exports it.
+  withr::local_envvar(BCFISHOBS_GIT_SHA = "08630cf4ac14")
+  expect_identical(.lnk_bcfishobs_sha(), "08630cf4ac14")
+})
+
+test_that(".lnk_bcfishobs_sha reads a real checkout via BCFISHOBS_DIR", {
+  # Both known answers for the directory tier, against a real git repo rather
+  # than a mock: the value must come from HEAD, not from the env.
+  skip_if(!nzchar(Sys.which("git")), "git not installed")
+  d <- withr::local_tempdir()
+  run <- function(...) {
+    out <- suppressWarnings(system2("git", c("-C", shQuote(d), ...),
+                                    stdout = TRUE, stderr = FALSE))
+    st <- attr(out, "status")
+    if (!is.null(st) && !identical(as.integer(st), 0L)) stop("git setup failed")
+    invisible(out)
+  }
+  writeLines("x", file.path(d, "README.md"))
+  run("init", "-q", ".")
+  run("add", "-A")
+  run("-c", "user.email=t@example.com", "-c", "user.name=t",
+      "commit", "-qm", "init")
+  head <- suppressWarnings(system2("git", c("-C", shQuote(d), "rev-parse", "HEAD"),
+                                   stdout = TRUE, stderr = FALSE))[1]
+
+  withr::local_envvar(BCFISHOBS_GIT_SHA = "", BCFISHOBS_DIR = d)
+  expect_identical(.lnk_bcfishobs_sha(), head)
+})
+
+test_that(".lnk_bcfishobs_sha returns NA when nothing resolves", {
+  # HOME-based fallback may find a real checkout on a dev machine, so assert
+  # the type contract, exactly as the fwapg test above does.
+  withr::local_envvar(BCFISHOBS_GIT_SHA = "",
+                      BCFISHOBS_DIR = withr::local_tempdir())
+  out <- .lnk_bcfishobs_sha()
+  expect_true(is.character(out) && length(out) == 1L)
+})
+
+test_that("fwapg and bcfishobs resolvers do not read each other's env", {
+  # They share .lnk_checkout_sha(), so a copy-paste of the wrong variable name
+  # is the failure this closes -- and it would be invisible on a machine where
+  # both checkouts sit at the conventional path.
+  withr::local_envvar(FWAPG_GIT_SHA = "fwapg000000",
+                      BCFISHOBS_GIT_SHA = "bcfishobs00")
+  expect_identical(.lnk_fwapg_sha(), "fwapg000000")
+  expect_identical(.lnk_bcfishobs_sha(), "bcfishobs00")
+})
+
+
 # --- .lnk_pkg_git_dirty -----------------------------------------------------
 
 test_that(".lnk_pkg_git_dirty honours the env override", {
@@ -879,6 +932,66 @@ test_that("bcfp_pin_source records which tier answered", {
     .lnk_log_run_start(fake_conn(), cfg, "PINE", "working_pine"))
   ins <- grep("INSERT INTO .*\\.log \\(", sql, value = TRUE)
   expect_match(ins, "bcfp_pin_source")
+})
+
+test_that("both log tables carry the new code-identity columns (link#264)", {
+  # BOTH tables, asserted together. link#262's most expensive defect was a
+  # value wired into one write path only -- every unit test passed it
+  # explicitly, so the gap was invisible until an end-to-end run landed a NULL.
+  sql <- capture_ddl(.lnk_log_create_tables(NULL, "s"))
+  for (tbl in c("log", "log_recompute")) {
+    ddl <- grep(sprintf("CREATE TABLE IF NOT EXISTS s\\.%s \\(", tbl),
+                sql, value = TRUE)
+    expect_length(ddl, 1L)
+    expect_match(ddl, "bcfishobs_sha")
+    expect_match(ddl, "fresh_sha_source")
+  }
+
+  # And the ALTER path, which is what an EXISTING fresh.log takes -- the 39
+  # rows already in the table are reached by ADD COLUMN, never by CREATE.
+  for (col in c("bcfishobs_sha", "fresh_sha_source")) {
+    for (tbl in c("log", "log_recompute")) {
+      expect_gt(length(grep(sprintf(
+        "ALTER TABLE s\\.%s ADD COLUMN IF NOT EXISTS %s ", tbl, col), sql)), 0L)
+    }
+  }
+})
+
+test_that("both INSERT paths write bcfishobs_sha and fresh_sha_source", {
+  withr::local_envvar(BCFISHOBS_GIT_SHA = "bcfishobs264",
+                      FRESH_GIT_SHA = "freshsha264", FRESH_GIT_DIRTY = "")
+  cfg <- lnk_config("default")
+
+  model <- capture_write(
+    .lnk_log_run_start(fake_conn(), cfg, "PINE", "working_pine"))
+  ins <- grep("INSERT INTO .*\\.log \\(", model, value = TRUE)
+  expect_match(ins, "bcfishobs_sha")
+  expect_match(ins, "'bcfishobs264'")
+  expect_match(ins, "fresh_sha_source")
+  # The tier that answered, recorded rather than inferred from a NULL.
+  expect_match(ins, "'env'")
+
+  recomp <- capture_write(
+    .lnk_log_recompute_start(fake_conn(), cfg, "PINE"), probe_rows = 1L)
+  ins_rc <- grep("INSERT INTO .*\\.log_recompute \\(", recomp, value = TRUE)
+  expect_match(ins_rc, "bcfishobs_sha")
+  expect_match(ins_rc, "'bcfishobs264'")
+  expect_match(ins_rc, "fresh_sha_source")
+})
+
+test_that("log_input stores NULL, not -1, for a never-analyzed table", {
+  # PG14+ uses reltuples = -1 for "never analyzed". Stored raw it became a
+  # row count of -1 on bcfishobs.observations (1 of 429 rows). -1 is unknown,
+  # not a quantity, and row_count_estimated must not claim a method for a
+  # count that does not exist.
+  sql <- capture_write(
+    .lnk_log_inputs(fake_conn(), "s", "run-1", "PINE"))
+  ins <- grep("INSERT INTO s\\.log_input", sql, value = TRUE)
+  expect_length(ins, 1L)
+  expect_match(ins, "nullif\\(c\\.reltuples, -1\\)::bigint")
+  expect_match(ins, "CASE WHEN nullif\\(c\\.reltuples, -1\\) IS NULL THEN NULL")
+  # Premise: the bare form is gone, not merely accompanied by the guarded one.
+  expect_false(grepl("[^)]c\\.reltuples::bigint", ins))
 })
 
 test_that("log_recompute is created before its indexes are", {

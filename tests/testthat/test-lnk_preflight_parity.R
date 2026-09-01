@@ -1,6 +1,6 @@
 row <- function(host, ...) {
   d <- list(host = host, link_version = "0.46.0", link_sha = "NA",
-            fresh_version = "0.33.0", fresh_sha = "NA",
+            fresh_version = "0.33.0", fresh_sha = "7f12d99115b7",
             repo_sha = "abc123def456", repo_dirty = "FALSE",
             config_hash = "cfg012345678", fwapg_sha = "e6e1eb0aaaaa",
             r_version = "4.5.2")
@@ -24,10 +24,19 @@ test_that("parity does NOT over-fire on link_sha, which is NA on installed hosts
   expect_true(lnk_preflight_parity(s, n_expected = 2, quiet = TRUE)$ok)
 })
 
-test_that("parity does not key on fresh_sha either", {
-  # And the mirror: keying on it would be a vacuous NA == NA pass.
+test_that("parity DOES key on fresh_sha now that it resolves everywhere", {
+  # The inverse of what this test asserted before link#264. It was excluded
+  # because it was NA on both hosts, so comparing it was a vacuous NA == NA
+  # pass. The dispatcher's value turned out to be sitting unread in the
+  # installed DESCRIPTION, so the exclusion outlived its reason.
+  #
+  # A cypher on a different fresh BUILD at the same version string is
+  # link#246 exactly, and fresh_version alone cannot see it.
   s <- rbind(row("m1"), row("cy-job1", fresh_sha = "abc999888777"))
-  expect_true(lnk_preflight_parity(s, n_expected = 2, quiet = TRUE)$ok)
+  res <- lnk_preflight_parity(s, n_expected = 2, quiet = TRUE)
+  expect_false(res$ok)
+  expect_identical(res$offenders, "cy-job1")
+  expect_true("fresh_sha" %in% res$mismatches$field)
 })
 
 test_that("parity fails on a fresh_version mismatch and names the host", {
@@ -68,6 +77,23 @@ test_that("parity fails on an unresolved fwapg_sha - NA == NA is not agreement",
   res <- lnk_preflight_parity(s, n_expected = 2, quiet = TRUE)
   expect_false(res$ok)
   expect_match(res$message, "fwapg_sha unresolved")
+})
+
+test_that("parity fails on an unresolved fresh_sha on EVERY host", {
+  # Both hosts NA is the pre-link#264 steady state, and it used to pass. It
+  # is the state where nobody can say which fresh build produced the run, so
+  # it has to fail rather than agree with itself.
+  s <- rbind(row("m1", fresh_sha = "NA"), row("cy-job1", fresh_sha = "NA"))
+  res <- lnk_preflight_parity(s, n_expected = 2, quiet = TRUE)
+  expect_false(res$ok)
+  expect_match(res$message, "fresh_sha unresolved")
+
+  # And on one host only -- link#246's failure, where a cypher ran the
+  # image's fresh instead of the DESCRIPTION Remotes pin.
+  s1 <- rbind(row("m1"), row("cy-job1", fresh_sha = "NA"))
+  res1 <- lnk_preflight_parity(s1, n_expected = 2, quiet = TRUE)
+  expect_false(res1$ok)
+  expect_match(res1$message, "cy-job1")
 })
 
 test_that("parity fails on an empty-string field, not just the literal NA", {

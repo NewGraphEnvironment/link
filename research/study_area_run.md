@@ -220,10 +220,15 @@ above still stand; these are additional and were learned on the field-scope run
   `pkgload::load_all()`, and the recompute re-reads git state for `lnk_stamp()`.
   An edit mid-run risks reading a tree that never existed, and stamps
   `link_dirty` onto part of one run.
-- **`fresh_sha` is legitimately NULL on the dispatcher and non-NULL on cyphers.**
-  m1 installs `fresh` locally (`RemoteType: local`, no `RemoteSha`); cyphers
-  install from GitHub via the DESCRIPTION `Remotes:` pin. A verification
-  asserting it non-NULL everywhere reports a false failure on a healthy m1.
+- **`fresh_sha` is non-NULL on every host from link#264 onward.** It was NULL on
+  the dispatcher for 24 of the first 39 logged rows, and the stated reason —
+  "m1 installs `fresh` locally, `RemoteType: local`, no `RemoteSha`" — was
+  measured **false** on 2026-09-01: m1's install carried `RemoteType github`,
+  `RemoteRef v0.33.0` and a `RemoteSha` byte-identical to the cyphers'. The
+  resolver simply never read the field. It does now, so a verification
+  asserting it non-NULL everywhere is correct rather than a false failure, and
+  `study_area_verify.sql` asserts exactly that. **Runs logged before v0.50.0
+  still carry the NULLs** and are not retroactively fixable.
 - **`link_dirty` is currently always TRUE on the dispatcher, and it is FALSE** —
   the run's own logs land in the tracked `data-raw/logs/`. #257.
 - **Measured timing, 34 WSGs / 3 hosts:** 158 min total — spin + prep + parity

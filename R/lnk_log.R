@@ -186,8 +186,10 @@ cols_log <- c(
   fresh_version          = "text",
   fresh_sha              = "text",
   fresh_dirty            = "boolean",
+  fresh_sha_source       = "text",
   crate_version          = "text",
   fwapg_sha              = "text",
+  bcfishobs_sha          = "text",
   arg_dams               = "boolean",
   arg_mapping_code       = "boolean",
   arg_cleanup_working    = "boolean",
@@ -238,8 +240,10 @@ cols_log_recompute <- c(
   fresh_version          = "text",
   fresh_sha              = "text",
   fresh_dirty            = "boolean",
+  fresh_sha_source       = "text",
   crate_version          = "text",
   fwapg_sha              = "text",
+  bcfishobs_sha          = "text",
   schema_persist         = "text",
   species                = "text[]",
   views_prebuilt         = "boolean",
@@ -539,6 +543,13 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
 #' explicit `row_count_estimated` flag is the honest trade. Honest absence beats
 #' fabricated precision — hence NULLs rather than invented values.
 #'
+#' Which is why `reltuples` is passed through `nullif(…, -1)`. Since PG14
+#' `reltuples = -1` is the sentinel for **never analyzed** — unknown, not a
+#' count — and storing it raw put a `-1` row count in `log_input` for
+#' `bcfishobs.observations` (1 of 429 rows, link#264). `row_count_estimated`
+#' goes NULL alongside it: with no count there is no method to describe, and
+#' `TRUE` there asserted an estimate that did not exist.
+#'
 #' Soft-fails: provenance logging must never kill a modelling run.
 #'
 #' @noRd
@@ -568,8 +579,8 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
          (run_id, watershed_group_code, table_name, row_count,
           row_count_estimated, size_bytes, last_analyze, source, source_at)
        SELECT %s, %s, p.tbl,
-              c.reltuples::bigint,
-              TRUE,
+              nullif(c.reltuples, -1)::bigint,
+              CASE WHEN nullif(c.reltuples, -1) IS NULL THEN NULL ELSE TRUE END,
               pg_total_relation_size(c.oid),
               s.last_autoanalyze,
               p.src,
@@ -704,8 +715,8 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
             "run_uid", "run_label", "host",
             "config_name", "config_hash", "config_drift",
             "link_version", "link_sha", "link_dirty",
-            "fresh_version", "fresh_sha", "fresh_dirty",
-            "crate_version", "fwapg_sha",
+            "fresh_version", "fresh_sha", "fresh_dirty", "fresh_sha_source",
+            "crate_version", "fwapg_sha", "bcfishobs_sha",
             "arg_dams", "arg_mapping_code", "arg_cleanup_working",
             "schema_persist", "wsg_upstream",
             "bcfp_model_run_id", "bcfp_model_version", "bcfp_pin_source",
@@ -727,8 +738,10 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
     .lnk_log_lit(conn, stamp$software$fresh$version),
     .lnk_log_lit(conn, stamp$software$fresh$git_sha),
     .lnk_log_lit(conn, stamp$software$fresh$dirty),
+    .lnk_log_lit(conn, stamp$software$fresh$sha_source),
     .lnk_log_lit(conn, .lnk_pkg_version_or_na("crate")),
     .lnk_log_lit(conn, stamp$fwapg_sha),
+    .lnk_log_lit(conn, stamp$bcfishobs_sha),
     .lnk_log_lit(conn, dams),
     .lnk_log_lit(conn, mapping_code),
     .lnk_log_lit(conn, cleanup_working),
@@ -988,8 +1001,8 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
   cols <- c("recompute_id", "watershed_group_code", "date_start",
             "run_uid", "run_label", "host", "config_name", "config_hash",
             "link_version", "link_sha", "link_dirty",
-            "fresh_version", "fresh_sha", "fresh_dirty",
-            "crate_version", "fwapg_sha", "schema_persist",
+            "fresh_version", "fresh_sha", "fresh_dirty", "fresh_sha_source",
+            "crate_version", "fwapg_sha", "bcfishobs_sha", "schema_persist",
             "views_prebuilt", "notes")
 
   vals <- c(
@@ -1007,8 +1020,10 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
     .lnk_log_lit(conn, stamp$software$fresh$version),
     .lnk_log_lit(conn, stamp$software$fresh$git_sha),
     .lnk_log_lit(conn, stamp$software$fresh$dirty),
+    .lnk_log_lit(conn, stamp$software$fresh$sha_source),
     .lnk_log_lit(conn, .lnk_pkg_version_or_na("crate")),
     .lnk_log_lit(conn, stamp$fwapg_sha),
+    .lnk_log_lit(conn, stamp$bcfishobs_sha),
     .lnk_log_lit(conn, schema),
     .lnk_log_lit(conn, views_prebuilt),
     .lnk_log_lit(conn, notes)
@@ -1081,13 +1096,56 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
 #' @return A single string or `NA_character_`.
 #' @noRd
 .lnk_fwapg_sha <- function() {
-  v <- Sys.getenv("FWAPG_GIT_SHA", "")
-  if (nzchar(v)) return(v)
+  .lnk_checkout_sha(Sys.getenv("FWAPG_GIT_SHA", ""),
+                    Sys.getenv("FWAPG_DIR", ""),
+                    file.path(path.expand("~"), "Projects", "repo", "fwapg"))
+}
 
-  candidates <- c(
-    Sys.getenv("FWAPG_DIR", ""),
-    file.path(path.expand("~"), "Projects", "repo", "fwapg")
-  )
+
+#' git SHA of the bcfishobs checkout that matched observations onto the network.
+#'
+#' `bcfishobs` is a **model input, not a reference dataset**. It is the pipeline
+#' that snaps fish observations to the stream network, and
+#' [lnk_barrier_overrides()] counts those observations upstream of each barrier
+#' to decide which barriers are skipped during access gating. Different
+#' `bcfishobs` code gives different matching, so different barriers, so
+#' different access, so a different `mapping_code`. `fwapg` gets a `fwapg_sha`
+#' and `bcfishpass` got `bcfp_model_version` (link#262); until link#264 this
+#' carried a row count and a hardcoded source string and nothing else.
+#'
+#' Same three tiers as [.lnk_fwapg_sha()], and exported to every host by
+#' `data-raw/study_area_run.sh`'s `preflight_local()` for the same reason:
+#' a cypher has no `bcfishobs` checkout at all, so without the export every
+#' cypher row would land NA.
+#'
+#' **Fork note, so it is not re-derived.** Both `NewGraphEnvironment/fwapg` and
+#' `NewGraphEnvironment/bcfishobs` are forks of `smnorris/*`, and both currently
+#' carry zero local commits. That is why these SHAs resolve against upstream at
+#' all — an accident of being 0-ahead, not a property. A recorded fork SHA is
+#' fine; recording it without knowing it came from a fork is what would rot.
+#'
+#' @return A single string or `NA_character_`.
+#' @noRd
+.lnk_bcfishobs_sha <- function() {
+  .lnk_checkout_sha(Sys.getenv("BCFISHOBS_GIT_SHA", ""),
+                    Sys.getenv("BCFISHOBS_DIR", ""),
+                    file.path(path.expand("~"), "Projects", "repo", "bcfishobs"))
+}
+
+
+#' The shared body of [.lnk_fwapg_sha()] and [.lnk_bcfishobs_sha()].
+#'
+#' One implementation rather than two copies, so a fix to the tier order or the
+#' `.git` handling cannot land on one input and miss the other.
+#'
+#' @param env_sha Value of the `<REPO>_GIT_SHA` override (`""` when unset).
+#' @param dir Value of the `<REPO>_DIR` override (`""` when unset).
+#' @param fallback Conventional checkout path, tried last.
+#' @noRd
+.lnk_checkout_sha <- function(env_sha, dir, fallback) {
+  if (nzchar(env_sha)) return(env_sha)
+
+  candidates <- c(dir, fallback)
   for (d in candidates[nzchar(candidates)]) {
     git <- file.path(d, ".git")
     if (file.exists(git)) {

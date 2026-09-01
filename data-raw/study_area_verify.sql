@@ -155,18 +155,23 @@ SELECT CASE WHEN :'expected_n' = ''
 
 \echo ''
 \echo '=== 1. Provenance per host ==='
--- fresh_sha is currently NULL on the DISPATCHER and non-NULL on CYPHERS, and
--- the reason is NOT what an earlier version of this comment said.
+-- fresh_sha is expected NON-NULL ON EVERY HOST from link#264 (link >= v0.50.0).
 --
--- Measured 2026-09-01: m1's installed fresh carries RemoteType github,
--- RemoteRef v0.33.0 and RemoteSha 7f12d99115b7... -- byte-identical to the SHA
--- the cyphers record. The column is NULL because .lnk_pkg_git_sha() reads an
--- env var, then walks for .git, then gives up: it never reads RemoteSha from
--- the installed DESCRIPTION, and an installed package has no .git. Cyphers
--- populate it only because cypher_prep.sh sets FRESH_GIT_SHA explicitly.
+-- It used to be NULL on the dispatcher, tolerated here, and the stated reason
+-- was that m1 installed fresh locally with no RemoteSha. Measured 2026-09-01:
+-- false. m1's install carried RemoteType github, RemoteRef v0.33.0 and a
+-- RemoteSha byte-identical to the SHA its cyphers recorded. The resolver read
+-- an env var, then walked for .git, then gave up -- it never read RemoteSha,
+-- and an installed package has no .git. The tolerance was a workaround for an
+-- UNREAD field, not an absent one, so it has been removed along with the cause.
 --
--- So this tolerance is a workaround for an unread field, not for an absent
--- one. Tracked as link#264; tighten to assert on every host once that lands.
+-- Runs logged BEFORE v0.50.0 still carry NULL fresh_sha on dispatcher rows and
+-- will fail this check. That is correct: those rows genuinely cannot say which
+-- fresh build produced them, and it is not retroactively fixable.
+--
+-- bcfishobs_sha is new in the same release and is expected non-NULL everywhere
+-- for the same reason fwapg_sha is: study_area_run.sh resolves it once on the
+-- dispatcher and exports it to every leg.
 --
 -- bcfp_model_run_id is likewise expected NULL on a tunnel-free run: the pin
 -- comes from the local snapshot ledger, and log.json carries no run id
@@ -176,6 +181,8 @@ SELECT host,
        count(*) FILTER (WHERE link_sha  IS NOT NULL)     AS has_link_sha,
        count(*) FILTER (WHERE fresh_sha IS NOT NULL)     AS has_fresh_sha,
        count(*) FILTER (WHERE fwapg_sha IS NOT NULL)     AS has_fwapg_sha,
+       count(*) FILTER (WHERE bcfishobs_sha
+                              IS NOT NULL)               AS has_bcfishobs_sha,
        count(*) FILTER (WHERE bcfp_model_version
                               IS NOT NULL)               AS has_bcfp_version,
        count(*) FILTER (WHERE link_dirty)                AS n_dirty,
@@ -188,7 +195,7 @@ SELECT host,
  ORDER BY host;
 
 \echo ''
-\echo '=== 1b. Provenance verdict (host-aware) ==='
+\echo '=== 1b. Provenance verdict (per host) ==='
 -- ACCUMULATED, not an ordered CASE. This is the third time an arm shadowed a
 -- more serious one, and each fix was individually right:
 --
@@ -204,19 +211,32 @@ SELECT host,
 -- concat_ws skips NULLs, so every condition that holds is reported and none can
 -- mask another. Severity ordering stops being load-bearing.
 --
--- fresh_sha is why this kept mattering: the DO block deliberately omits it
--- (NULL is correct on the dispatcher), so THIS LINE is its only reporter, and
--- it is link#246's acceptance criterion.
+-- fresh_sha is no longer host-aware (link#264): the dispatcher's NULL was an
+-- unread DESCRIPTION field, not an absent one, so the arm below is
+-- unconditional and the DO block asserts the same thing rather than omitting
+-- it. The two agreeing is the point -- the previous split had section 1b
+-- printing 'FAIL: fresh_sha NULL on a cypher' while the script exited 0.
 SELECT host,
        coalesce(nullif(concat_ws('; ',
          CASE WHEN count(*) FILTER (WHERE link_sha IS NULL) > 0
               THEN 'FAIL: link_sha NULL' END,
          CASE WHEN count(*) FILTER (WHERE fwapg_sha IS NULL) > 0
               THEN 'FAIL: fwapg_sha NULL' END,
-         CASE WHEN host <> 'm1' AND count(*) FILTER (WHERE fresh_sha IS NULL) > 0
-              THEN 'FAIL: fresh_sha NULL on a cypher' END,
+         CASE WHEN count(*) FILTER (WHERE fresh_sha IS NULL) > 0
+              THEN 'FAIL: fresh_sha NULL' END,
+         CASE WHEN count(*) FILTER (WHERE bcfishobs_sha IS NULL) > 0
+              THEN 'FAIL: bcfishobs_sha NULL' END,
          CASE WHEN count(*) FILTER (WHERE link_dirty) > 0
               THEN 'FAIL: link_dirty set -- tracked code differed from origin' END,
+         -- By exact symmetry with link_dirty, and it had no arm at all in the
+         -- first draft of link#264: the diff made fresh_dirty resolvable and
+         -- gave the WEAKER `IS NULL` state a NOTE, while the state that makes
+         -- the newly-mandatory fresh_sha a LIE went unreported and the run
+         -- closed with PASS. Found by sweeping every single-fault state, which
+         -- is the only thing that finds a missing arm -- reading the file
+         -- shows you the arms that exist.
+         CASE WHEN count(*) FILTER (WHERE fresh_dirty) > 0
+              THEN 'FAIL: fresh_dirty set -- log.fresh_sha does not describe what ran' END,
          -- Escape-aware, so the word FAIL never appears on a run this script
          -- then declares OK. A wrapper grepping for FAIL must not hit on a
          -- sanctioned run; that is how the word stops being read.
@@ -230,8 +250,8 @@ SELECT host,
               END,
          CASE WHEN count(*) FILTER (WHERE link_dirty IS NULL) > 0
               THEN 'NOTE: link_dirty NULL -- provenance unknown, not clean' END,
-         CASE WHEN host = 'm1' AND count(*) FILTER (WHERE fresh_sha IS NOT NULL) > 0
-              THEN 'NOTE: dispatcher now carries a fresh_sha (install method changed)' END
+         CASE WHEN count(*) FILTER (WHERE fresh_dirty IS NULL) > 0
+              THEN 'NOTE: fresh_dirty NULL -- provenance unknown, not clean' END
        ), ''), 'OK') AS verdict
   FROM :schema.log
  WHERE run_uid = :'run_uid'
@@ -247,9 +267,30 @@ SELECT host, watershed_group_code, date_start
 
 \echo ''
 \echo '=== 2. The distinct SHAs -- all hosts must agree ==='
-SELECT DISTINCT link_sha, fwapg_sha, bcfp_model_version
+-- fresh_sha and bcfishobs_sha joined this list in link#264. Every arm in 1b
+-- tests IS NULL, so two hosts carrying DIFFERENT non-NULL values pass every
+-- check above -- present on both, agreeing on neither. lnk_preflight_parity()
+-- keys on fresh_sha, but only pre-write: a cypher re-prepped mid-run
+-- (--auto-install) lands outside that window, and this is the only place after
+-- it where the disagreement is visible.
+--
+-- More than one row here is the finding. link_sha legitimately differs by host
+-- (a real SHA on the load_all dispatcher, NULL on a pak-installed cypher), so
+-- read the columns individually rather than the row count.
+SELECT DISTINCT link_sha, fresh_sha, fwapg_sha, bcfishobs_sha, bcfp_model_version
   FROM :schema.log
  WHERE run_uid = :'run_uid';
+
+\echo ''
+\echo '=== 2b. Inputs every host must agree on (must be one row) ==='
+-- The subset of section 2 that admits no legitimate per-host variation, so
+-- "more than one row" is mechanically a defect rather than something to read.
+SELECT count(*) AS n_distinct_input_sets,
+       CASE WHEN count(*) > 1
+            THEN 'FAIL: hosts disagree on fresh_sha / fwapg_sha / bcfishobs_sha'
+            ELSE 'OK' END AS verdict
+  FROM (SELECT DISTINCT fresh_sha, fwapg_sha, bcfishobs_sha
+          FROM :schema.log WHERE run_uid = :'run_uid') d;
 
 \echo ''
 \echo '=== 3. Coverage: every WSG of this run has streams rows ==='
@@ -389,10 +430,16 @@ BEGIN
       v_run, n_seg, v_sch;
   END IF;
 
-  -- Provenance that must be present on every row. fresh_sha and
-  -- bcfp_model_run_id are deliberately NOT here -- both are legitimately NULL
-  -- on a healthy tunnel-free dispatcher (measured 2026-08-31), and asserting
-  -- them reports a false failure.
+  -- Provenance that must be present on every row. bcfp_model_run_id is
+  -- deliberately NOT here -- it is legitimately NULL on a healthy tunnel-free
+  -- run, because the pin comes from the local snapshot ledger and log.json
+  -- carries no run id (link#262) -- and asserting it reports a false failure.
+  --
+  -- fresh_sha IS here from link#264. It was omitted with the reason that NULL
+  -- is expected on the dispatcher; that reason was measured false (the SHA sat
+  -- unread in the installed DESCRIPTION), and the omission was also the thing
+  -- that let section 1b print FAIL while this script exited 0.
+  --
   -- Split from the pin check below so the message names the actual problem.
   -- The combined form said "missing link_sha / fwapg_sha / bcfp_model_version,
   -- or flagged link_dirty" for any of four unrelated causes, which is a worse
@@ -400,35 +447,56 @@ BEGIN
   EXECUTE format(
     'SELECT count(*) FROM %I.log
       WHERE run_uid = $1
-        AND (link_sha IS NULL OR fwapg_sha IS NULL OR link_dirty)',
+        AND (link_sha IS NULL OR fwapg_sha IS NULL
+             OR bcfishobs_sha IS NULL OR link_dirty OR fresh_dirty)',
     v_sch) INTO n_prov USING v_run;
   IF n_prov > 0 THEN
     RAISE EXCEPTION
-      'run %: % row(s) missing link_sha or fwapg_sha, or flagged link_dirty',
+      'run %: % row(s) missing link_sha, fwapg_sha or bcfishobs_sha, or flagged link_dirty or fresh_dirty',
       v_run, n_prov;
   END IF;
 
-  -- fresh_sha, HOST-AWARE. Previously omitted from the assertions entirely,
-  -- with the correct reason that NULL is expected on the dispatcher (m1
-  -- installs fresh locally: RemoteType local, no RemoteSha). But omitting it
-  -- left section 1b printing 'FAIL: fresh_sha NULL on a cypher' while this
-  -- script exited 0 and declared OK -- the same self-contradiction round 3
-  -- flagged for the unpinned case, found by sweeping every single-fault state
-  -- rather than by reading.
+  -- fresh_sha, on EVERY host. This was host-aware until link#264, excusing the
+  -- dispatcher on a reason that turned out to be false; it now resolves
+  -- everywhere -- from RemoteSha on the dispatcher, from the env var
+  -- cypher_prep.sh writes on a cypher -- and both routes name the same commit.
   --
-  -- A cypher installs fresh from GitHub via the DESCRIPTION Remotes pin, so a
-  -- NULL there means it ran the image's fresh instead: link#246's exact
-  -- failure, where 80 of 119 WSGs were silently skipped. That is a run-failing
-  -- condition, not a note. Scoped to non-dispatcher hosts so the dispatcher's
-  -- legitimate NULL still passes.
+  -- A NULL on a cypher still means what it always meant: that host ran the
+  -- image's fresh instead of the DESCRIPTION Remotes pin, which is link#246's
+  -- exact failure, where 80 of 119 WSGs were silently skipped. A NULL on the
+  -- dispatcher now means the same class of thing -- an install whose identity
+  -- cannot be established. Either way the run's WSGs cannot be trusted, so it
+  -- is a run-failing condition rather than a note.
+  --
+  -- Kept as its OWN assertion rather than folded into the block above, so the
+  -- message can say what a NULL here implies. Merging it would restore the
+  -- four-causes-one-message diagnosis that block's comment exists to warn off.
   EXECUTE format(
-    'SELECT count(*) FROM %I.log
-      WHERE run_uid = $1 AND host <> ''m1'' AND fresh_sha IS NULL',
+    'SELECT count(*) FROM %I.log WHERE run_uid = $1 AND fresh_sha IS NULL',
     v_sch) INTO n_fresh USING v_run;
   IF n_fresh > 0 THEN
     RAISE EXCEPTION
-      'run %: % row(s) on a non-dispatcher host have no fresh_sha, so that host ran the image''s fresh rather than the DESCRIPTION Remotes pin (link#246). Its WSGs cannot be trusted.',
+      'run %: % row(s) have no fresh_sha, so which fresh BUILD produced them cannot be established (link#264). On a cypher this is link#246 exactly -- the image''s fresh ran instead of the DESCRIPTION Remotes pin. Rows logged before link v0.50.0 carry this legitimately and are not retroactively fixable.',
       v_run, n_fresh;
+  END IF;
+
+  -- Cross-host agreement on the three shared inputs. Section 2b PRINTS this
+  -- verdict; without the raise below the script would print the word FAIL and
+  -- then exit 0, which is how the word stops being read. Every arm labelled
+  -- FAIL has an assertion behind it.
+  --
+  -- Only the fields with no legitimate per-host variation are here. link_sha
+  -- is deliberately excluded: it is a real SHA on the load_all dispatcher and
+  -- NULL on a pak-installed cypher, so requiring agreement would fail every
+  -- healthy run.
+  EXECUTE format(
+    'SELECT count(*) FROM (SELECT DISTINCT fresh_sha, fwapg_sha, bcfishobs_sha
+                             FROM %I.log WHERE run_uid = $1) d',
+    v_sch) INTO n_prov USING v_run;
+  IF n_prov > 1 THEN
+    RAISE EXCEPTION
+      'run %: hosts disagree on their inputs -- % distinct (fresh_sha, fwapg_sha, bcfishobs_sha) sets where there must be 1. Parity diffs from this run mix version drift with methodology drift and cannot be separated afterwards (link#183, link#264).',
+      v_run, n_prov;
   END IF;
 
   -- The bcfp pin, with the sanctioned-unpinned escape.
