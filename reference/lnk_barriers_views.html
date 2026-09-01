@@ -17,7 +17,7 @@ consumer code paths run unchanged."><meta property="og:image" content="https://n
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.47.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.48.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -62,7 +62,8 @@ consumer code paths run unchanged.</p>
 <span>  <span class="va">schema</span>,</span>
 <span>  <span class="va">cfg</span>,</span>
 <span>  species <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"BT"</span>, <span class="st">"CH"</span>, <span class="st">"CM"</span>, <span class="st">"CO"</span>, <span class="st">"PK"</span>, <span class="st">"SK"</span>, <span class="st">"ST"</span>, <span class="st">"WCT"</span><span class="op">)</span>,</span>
-<span>  barriers_table <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  barriers_table <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  recreate <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -99,10 +100,19 @@ barriers may not yet hold current data. Tunnel-free / link-canonical
 either way (the underlying table has <code>blocks_species</code> from
 <code><a href="lnk_barriers_unify.html">lnk_barriers_unify()</a></code>).</p></dd>
 
+
+<dt id="arg-recreate">recreate<a class="anchor" aria-label="anchor" href="#arg-recreate"></a></dt>
+<dd><p>Logical. <code>FALSE</code> (default) emits <code>CREATE OR REPLACE VIEW</code>
+only. <code>TRUE</code> restores the historical <code>DROP VIEW IF EXISTS</code> +
+<code>CREATE OR REPLACE VIEW</code> pair — needed only when a view's <strong>column
+shape</strong> has changed, since <code>CREATE OR REPLACE</code> may not rename, retype,
+reorder or drop an output column. See Details for why the default
+changed (link#250).</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p><code>invisible(conn)</code>. Side effect: drops + recreates two views
+    <p><code>invisible(conn)</code>. Side effect: creates or replaces two views
 per species (<code>_unified</code> + <code>_access</code>) + three source-typed views in
 <code>schema</code>.</p>
     </div>
@@ -138,12 +148,27 @@ the <code>barrier_sources</code> arg of <code>lnk_pipeline_access</code>):</p><u
 built by <code><a href="lnk_barriers_emit.html">lnk_barriers_emit()</a></code> — they're consumed by the
 <code>remediated_dnstr_ind</code> path which joins to <code>&lt;schema&gt;.crossings</code>
 directly, not via the unified barriers table.)</p>
-<p>Views are dropped + recreated on each call (<code>CREATE OR REPLACE VIEW</code>)
-so reruns are safe. The underlying <code>&lt;persist_schema&gt;.barriers</code>
-table must exist — typically initialized by <code><a href="lnk_persist_init.html">lnk_persist_init()</a></code> and
-populated by <code><a href="lnk_barriers_unify.html">lnk_barriers_unify()</a></code> + <code><a href="lnk_pipeline_persist.html">lnk_pipeline_persist()</a></code> for
-all WSGs in the regional scope.</p>
-    </div>
+<p>Reruns are safe: each view is emitted with <code>CREATE OR REPLACE VIEW</code>, which
+is atomic — a concurrent reader sees either the old definition or the new
+one, never nothing.</p>
+<p>Until link 0.47.3 every statement was preceded by <code>DROP VIEW IF EXISTS</code>.
+Each statement autocommits, so that pair left a real interval in which the
+view <strong>did not exist</strong>, and a concurrent
+<code><a href="https://newgraphenvironment.github.io/fresh/reference/frs_network_features.html" class="external-link">fresh::frs_network_features()</a></code> walk could fail with
+<code>relation ... does not exist</code>. The DROP was belt-and-braces from the
+function's first commit rather than a fix for anything, and the view column
+list has not changed since, so <code>CREATE OR REPLACE</code> alone is sufficient.
+<code>RUNBOOK.md</code> §6 records the DROP's cost in the <em>sequential</em> case as well:
+an orphaned backend holding a lock on <code>barriers_bt_access</code> blocked every
+later <code>DROP VIEW</code> indefinitely.</p>
+<p>If a future change alters a view's column shape, <code>CREATE OR REPLACE</code> will
+fail and the error names <code>recreate = TRUE</code>. That is deliberately not an
+automatic fallback — silently reverting to DROP + CREATE would reintroduce
+the window at the worst moment, part-way through a parallel recompute
+(link#250).</p>
+<p>The underlying <code>&lt;persist_schema&gt;.barriers</code> table must exist — typically
+initialized by <code><a href="lnk_persist_init.html">lnk_persist_init()</a></code> and populated by <code><a href="lnk_barriers_unify.html">lnk_barriers_unify()</a></code></p><ul><li><p><code><a href="lnk_pipeline_persist.html">lnk_pipeline_persist()</a></code> for all WSGs in the regional scope.</p></li>
+</ul></div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p><code><a href="lnk_barriers_unify.html">lnk_barriers_unify()</a></code>, <code><a href="lnk_pipeline_access.html">lnk_pipeline_access()</a></code>,

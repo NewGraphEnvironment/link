@@ -22,7 +22,8 @@ lnk_access(
   table_to,
   merge = FALSE,
   presence = NULL,
-  species = NULL
+  species = NULL,
+  build_views = TRUE
 )
 ```
 
@@ -72,6 +73,21 @@ lnk_access(
 - species:
 
   Character vector of species codes. Default `cfg$species`.
+
+- build_views:
+
+  Logical. `TRUE` (default) rebuilds the per-species `_access` and
+  per-source `_unified` views over `table_barriers` on every call, via
+  [`lnk_barriers_views()`](https://newgraphenvironment.github.io/link/reference/lnk_barriers_views.md).
+  Pass `FALSE` when the caller has already built them — the parallel
+  recompute does, once, before it fans out (link#250). Those views are
+  **schema-scoped**, so rebuilding them per-AOI is the one piece of
+  shared mutation in an otherwise AOI-partitioned call, and
+  `CREATE OR REPLACE VIEW` takes an `AccessExclusiveLock` that queues
+  ahead of every concurrent reader. `FALSE` **verifies** the views are
+  present rather than trusting the caller, and errors naming
+  [`lnk_barriers_views()`](https://newgraphenvironment.github.io/link/reference/lnk_barriers_views.md)
+  if they are not.
 
 ## Value
 

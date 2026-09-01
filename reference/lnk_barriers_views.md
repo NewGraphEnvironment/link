@@ -15,7 +15,8 @@ lnk_barriers_views(
   schema,
   cfg,
   species = c("BT", "CH", "CM", "CO", "PK", "SK", "ST", "WCT"),
-  barriers_table = NULL
+  barriers_table = NULL,
+  recreate = FALSE
 )
 ```
 
@@ -53,10 +54,19 @@ lnk_barriers_views(
   from
   [`lnk_barriers_unify()`](https://newgraphenvironment.github.io/link/reference/lnk_barriers_unify.md)).
 
+- recreate:
+
+  Logical. `FALSE` (default) emits `CREATE OR REPLACE VIEW` only. `TRUE`
+  restores the historical `DROP VIEW IF EXISTS` +
+  `CREATE OR REPLACE VIEW` pair — needed only when a view's **column
+  shape** has changed, since `CREATE OR REPLACE` may not rename, retype,
+  reorder or drop an output column. See Details for why the default
+  changed (link#250).
+
 ## Value
 
-`invisible(conn)`. Side effect: drops + recreates two views per species
-(`_unified` + `_access`) + three source-typed views in `schema`.
+`invisible(conn)`. Side effect: creates or replaces two views per
+species (`_unified` + `_access`) + three source-typed views in `schema`.
 
 ## Details
 
@@ -107,14 +117,36 @@ by
 — they're consumed by the `remediated_dnstr_ind` path which joins to
 `<schema>.crossings` directly, not via the unified barriers table.)
 
-Views are dropped + recreated on each call (`CREATE OR REPLACE VIEW`) so
-reruns are safe. The underlying `<persist_schema>.barriers` table must
-exist — typically initialized by
+Reruns are safe: each view is emitted with `CREATE OR REPLACE VIEW`,
+which is atomic — a concurrent reader sees either the old definition or
+the new one, never nothing.
+
+Until link 0.47.3 every statement was preceded by `DROP VIEW IF EXISTS`.
+Each statement autocommits, so that pair left a real interval in which
+the view **did not exist**, and a concurrent
+[`fresh::frs_network_features()`](https://newgraphenvironment.github.io/fresh/reference/frs_network_features.html)
+walk could fail with `relation ... does not exist`. The DROP was
+belt-and-braces from the function's first commit rather than a fix for
+anything, and the view column list has not changed since, so
+`CREATE OR REPLACE` alone is sufficient. `RUNBOOK.md` §6 records the
+DROP's cost in the *sequential* case as well: an orphaned backend
+holding a lock on `barriers_bt_access` blocked every later `DROP VIEW`
+indefinitely.
+
+If a future change alters a view's column shape, `CREATE OR REPLACE`
+will fail and the error names `recreate = TRUE`. That is deliberately
+not an automatic fallback — silently reverting to DROP + CREATE would
+reintroduce the window at the worst moment, part-way through a parallel
+recompute (link#250).
+
+The underlying `<persist_schema>.barriers` table must exist — typically
+initialized by
 [`lnk_persist_init()`](https://newgraphenvironment.github.io/link/reference/lnk_persist_init.md)
 and populated by
-[`lnk_barriers_unify()`](https://newgraphenvironment.github.io/link/reference/lnk_barriers_unify.md) +
-[`lnk_pipeline_persist()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_persist.md)
-for all WSGs in the regional scope.
+[`lnk_barriers_unify()`](https://newgraphenvironment.github.io/link/reference/lnk_barriers_unify.md)
+
+- [`lnk_pipeline_persist()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_persist.md)
+  for all WSGs in the regional scope.
 
 ## See also
 

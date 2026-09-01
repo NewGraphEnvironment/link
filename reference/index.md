@@ -61,6 +61,9 @@
 - [`lnk_db_conn()`](https://newgraphenvironment.github.io/link/reference/lnk_db_conn.md)
   : Connect to FWA PostgreSQL database
 
+- [`lnk_fanout_judge()`](https://newgraphenvironment.github.io/link/reference/lnk_fanout_judge.md)
+  : Judge the outcome of a parallel fan-out
+
 - [`lnk_inputs_verify()`](https://newgraphenvironment.github.io/link/reference/lnk_inputs_verify.md)
   : Verify that required Postgres tables exist in a connection
 
