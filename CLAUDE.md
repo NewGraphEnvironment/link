@@ -9,7 +9,7 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Repository:** NewGraphEnvironment/link
 **Primary Language:** R
 **Prefix:** `lnk_`
-**Branch:** `main` (v0.47.2 as of 2026-08-31)
+**Branch:** `main` (v0.49.0 as of 2026-09-01)
 
 ## Status (2026-09-01) — v0.49.0: provenance gaps closed before the 217-WSG run (#262, #257)
 
@@ -135,8 +135,8 @@ Estimates at m1+3 cyphers: field scope (34 WSGs) ~1.7h, the 119 ~4.3h, all-BC
 (parallelise it) is worth more than three extra machines.
 
 **Primitives refreshed 2026-08-31 21:45** on m1; the vintage gate passes at its
-7-day default. Open: **#246** (Phases 3-5), **#247** (`snapshot_stamp`), **#250**
-(parallel recompute), soul#129 (SRED evidence convention).
+7-day default. Open: **#246** (Phases 3-5), **#247** (`snapshot_stamp` — superseded in scope
+by #265). #250 and #257 closed; #262 closed by v0.49.0.
 
 ## Status (2026-08-06) — v0.45.1 shipped (WSG drainage closure rebuilt; #227 re-scoped)
 
@@ -261,7 +261,7 @@ Without a version pin, "this behaviour exists upstream" claims rot — six-month
 
 Note: `<owner>/<repo>@<sha>` references a commit; this does **not** trigger GitHub notifications to the referenced repo's participants (unlike `<owner>/<repo>#<n>` issue/PR references — see `feedback_no_cross_ref_external_issues.md` in memory).
 
-## Exported Functions (43)
+## Exported Functions (54)
 
 ### Core
 - `lnk_thresholds(csv, high, moderate, low)` — configurable severity thresholds. Ships BC defaults. CSV or inline override. Feeds into `lnk_score()`.
