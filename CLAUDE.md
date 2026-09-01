@@ -3077,6 +3077,56 @@ when a job writes provenance about itself, read that provenance back and check i
 against independently-measured ground truth, because the job is the one witness
 that cannot contradict itself.
 
+### A search that finds nothing has proven nothing until it has found something
+
+The positive-control rule above catches a probe reporting a **defect** that isn't
+there. This is the mirror, and it is worse, because its output is *reassuring*:
+a search that cannot match returns empty, empty reads as clean, and a clean
+result ends the investigation instead of prompting one.
+
+It is how an audit gets reported as passed without ever having run.
+
+**The common cause is a regex feature the local tool does not have.** BSD tools
+(macOS default) and GNU tools disagree, and the disagreement is silent — an
+unsupported escape is treated as a literal, matches nothing, and exits 1 like an
+honest no-match:
+
+```bash
+# macOS: \b is not reliably supported. Matches nothing. Exit 1. Looks clean.
+git grep -InE '\b([0-9]{1,3}\.){3}[0-9]{1,3}\b' -- .
+
+# Same tree, working pattern: 33 distinct addresses across 101 files.
+git grep -ohE '([0-9]{1,3}\.){3}[0-9]{1,3}' -- . | sort -u
+```
+
+Measured 2026-08-31 in link. The first form was run as a repo audit for exposed
+host addresses in a public repo, returned empty, and the result was written into
+an issue as *"no IPs in any tracked file"* — an affirmative finding, from a
+command that could not have found one. This is the same shape as the
+empty-result-set rule near the top of this file, arriving through a regex dialect
+rather than through a loop.
+
+**Before trusting an empty search, make it match something.** One line, and it
+converts "I found nothing" into "I looked, and here is proof I could see":
+
+```bash
+git grep -c 'PATTERN' -- <a file you KNOW contains it>   # must be non-zero
+```
+
+If you cannot name a file that should match, construct one in `/tmp` and search
+that. A search whose ability to match has never been demonstrated is not
+evidence, and reporting it as an audit result is worse than not auditing —
+someone will rely on it.
+
+Two habits that make this cheap:
+
+- **Prefer POSIX ERE and explicit character classes over shorthand escapes.**
+  `[^0-9]` and `(^|[^0-9])` travel; `\b`, `\d`, `\s`, `\+` and `\|` do not.
+- **Reconcile the count against expectation.** "Zero occurrences of an IP address
+  in a repo full of orchestration logs" should read as implausible on its face.
+  When a result is surprisingly clean, suspect the instrument before the world —
+  the same prior the broken-probe rule applies to surprising *failures*.
+
 
 # Comms Conventions
 
