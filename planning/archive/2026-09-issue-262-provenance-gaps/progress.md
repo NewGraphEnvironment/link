@@ -41,3 +41,21 @@ All six phases implemented. Notable events, in the order they happened:
   perfectly. Parameters now arrive via `set_config`. Found by running it.
 - Suite: **FAIL 0 | WARN 16 | PASS 1825**, against a HEAD baseline of
   **WARN 16 | PASS 1719** — +106 tests, no new warnings.
+
+### Post-merge follow-up scoping (same session, 2026-09-01)
+
+Traced what the provenance record can and cannot recover, by measurement:
+
+- **link's 17 config files round-trip byte-exact.** `git archive` at a row's
+  `link_sha`, recompute `.lnk_config_hash()` -> matches the stored value. So
+  `link_sha` finds the files and `config_hash` proves those bytes were read.
+- **fresh's CSVs**: exact on cyphers via `fresh_sha`; on m1 `fresh_version`
+  0.33.0 -> tag `v0.33.0` recovers 7 of 7 data files byte-identical, but that is
+  an inference the record cannot confirm.
+- **Corrected a claim I had repeated all session**: m1's fresh DOES carry a
+  `RemoteSha`, identical to the cyphers'. `.lnk_pkg_git_sha()` never reads it.
+- **bcfishobs has no code pin at all** — a row count and a literal string.
+- **The FWA object store is versioned** (`x-amz-version-id`, `?versionId=`
+  re-fetch works) but **refuses listing**, so unrecorded ids are unrecoverable.
+
+Two issue bodies drafted and preserved unfiled at `planning/active/`.
