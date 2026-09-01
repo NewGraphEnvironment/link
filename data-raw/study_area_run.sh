@@ -243,7 +243,37 @@ burn_cyphers() {
   CYPHERS_UP=0
   return $rc
 }
-trap burn_cyphers EXIT
+
+# Host addresses must not reach a public repo. The logs below are committed
+# deliberately as evidence (soul#129), but a worker's address is infrastructure
+# identity, not evidence -- nothing in a log is less useful for its removal.
+#
+# Runs from the EXIT trap so it covers every path, including the one where the
+# driver is killed partway. That is not hypothetical: on 2026-08-31 a killed run
+# left its addresses in logs that were then committed to this public repo.
+#
+# Loopback and 0.0.0.0 are meaningful and kept. The negative lookaheads also
+# spare R version strings -- `0.0.0.9000` matches an IPv4 pattern, and blanket
+# substitution silently corrupts every DESCRIPTION-style version it meets.
+redact_log_addresses() {
+  [ -d "${LOG_DIR:-}" ] || return 0
+  local n=0 f
+  for f in "$LOG_DIR"/"${TS:-}"_*; do
+    [ -f "$f" ] || continue
+    perl -i -pe 's/(?<![\d.])(?!0\.0\.0\.0)(?!127\.0\.0\.1)(?!0\.0\.0\.9)(\d{1,3}\.){3}\d{1,3}(?![\d.])/<host>/g' \
+      "$f" 2>/dev/null && n=$((n + 1))
+  done
+  [ "$n" -gt 0 ] && echo "  ✓ redacted host addresses in $n log file(s)"
+  return 0
+}
+
+on_exit() {
+  local rc=$?
+  burn_cyphers || rc=$?
+  redact_log_addresses
+  return $rc
+}
+trap on_exit EXIT
 
 # --- pre-flight, local: everything answerable before a droplet exists ------
 #
