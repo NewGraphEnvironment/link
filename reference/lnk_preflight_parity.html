@@ -15,7 +15,7 @@ absorbed into link#246."><meta property="og:image" content="https://newgraphenvi
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.49.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.50.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -57,8 +57,9 @@ absorbed into link#246.</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">lnk_preflight_parity</span><span class="op">(</span></span>
 <span>  <span class="va">stamps</span>,</span>
 <span>  <span class="va">n_expected</span>,</span>
-<span>  keys <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"link_version"</span>, <span class="st">"fresh_version"</span>, <span class="st">"repo_sha"</span>, <span class="st">"config_hash"</span>, <span class="st">"fwapg_sha"</span><span class="op">)</span>,</span>
-<span>  forbid_na <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"link_version"</span>, <span class="st">"fresh_version"</span>, <span class="st">"repo_sha"</span>, <span class="st">"fwapg_sha"</span><span class="op">)</span>,</span>
+<span>  keys <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"link_version"</span>, <span class="st">"fresh_version"</span>, <span class="st">"fresh_sha"</span>, <span class="st">"repo_sha"</span>, <span class="st">"config_hash"</span>,</span>
+<span>    <span class="st">"fwapg_sha"</span><span class="op">)</span>,</span>
+<span>  forbid_na <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"link_version"</span>, <span class="st">"fresh_version"</span>, <span class="st">"fresh_sha"</span>, <span class="st">"repo_sha"</span>, <span class="st">"fwapg_sha"</span><span class="op">)</span>,</span>
 <span>  forbid_dirty <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  quiet <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -110,9 +111,21 @@ host is a failure, not a neutral. <code>NA == NA</code> is not agreement.</p></l
 <li><p><strong>Nothing is dirty.</strong> A SHA recorded against a dirty tree is a lie,
 the same position <code><a href="lnk_stamp.html">lnk_stamp()</a></code> already takes for packages.</p></li>
 </ul><p>Only then are the key fields compared, against row 1 (the dispatcher) as
-reference. <code>link_sha</code> and <code>fresh_sha</code> are deliberately <strong>not</strong> keys —
-see <code><a href="lnk_preflight_stamp.html">lnk_preflight_stamp()</a></code> for why comparing them is either guaranteed
-to fail or guaranteed to pass vacuously.</p>
+reference.</p>
+<p><strong><code>fresh_sha</code> became a key in link#264 and <code>link_sha</code> did not.</strong> Until
+then both were excluded together, on the joint grounds that <code>link_sha</code>
+can only ever fail and <code>fresh_sha</code> could only ever pass vacuously
+(<code>NA == NA</code>). Only the first half is still true. <code>fresh_sha</code> now
+resolves on every host — from <code>RemoteSha</code> on the dispatcher, from the
+env var a cypher's prep writes — and both routes name the same commit,
+so it is the one field that proves every host is running the same
+<code>fresh</code> <strong>build</strong> rather than the same version string. A cypher that
+silently ran the image's <code>fresh</code> is exactly link#246, and it is a
+version-and-SHA drift that <code>fresh_version</code> alone can miss.</p>
+<p><code>link_sha</code> stays excluded, unchanged: it is a real SHA on a <code>load_all</code>
+dispatcher and <code>NA</code> on every pak-installed cypher, so keying on it
+fails every legitimate run. <code>repo_sha</code> is the field that carries link's
+cross-host identity — see <code><a href="lnk_preflight_stamp.html">lnk_preflight_stamp()</a></code>.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
@@ -127,7 +140,7 @@ to fail or guaranteed to pass vacuously.</p>
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">row</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">host</span>, <span class="va">...</span><span class="op">)</span> <span class="op">{</span></span></span>
 <span class="r-in"><span>  <span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>host <span class="op">=</span> <span class="va">host</span>, link_version <span class="op">=</span> <span class="st">"0.46.0"</span>, link_sha <span class="op">=</span> <span class="st">"NA"</span>,</span></span>
-<span class="r-in"><span>            fresh_version <span class="op">=</span> <span class="st">"0.33.0"</span>, fresh_sha <span class="op">=</span> <span class="st">"NA"</span>,</span></span>
+<span class="r-in"><span>            fresh_version <span class="op">=</span> <span class="st">"0.33.0"</span>, fresh_sha <span class="op">=</span> <span class="st">"7f12d99115b7"</span>,</span></span>
 <span class="r-in"><span>            repo_sha <span class="op">=</span> <span class="st">"abc123def456"</span>, repo_dirty <span class="op">=</span> <span class="st">"FALSE"</span>,</span></span>
 <span class="r-in"><span>            config_hash <span class="op">=</span> <span class="st">"cfg012345678"</span>, fwapg_sha <span class="op">=</span> <span class="st">"e6e1eb0aaaaa"</span>,</span></span>
 <span class="r-in"><span>            r_version <span class="op">=</span> <span class="st">"4.4.1"</span><span class="op">)</span></span></span>

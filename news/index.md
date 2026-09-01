@@ -1,5 +1,99 @@
 # Changelog
 
+## link 0.50.0
+
+Closes the code-identity gaps in `fresh.log`
+([\#264](https://github.com/NewGraphEnvironment/link/issues/264)), the
+last provenance work before the 217-WSG run. Measured against the 39
+rows in the table: `fresh_sha` filled on 15, `fresh_dirty` on **0**, and
+`bcfishobs` — a model input — carrying no code pin at all.
+
+**The dispatcher’s `fresh_sha` was never missing. It was unread.** The
+standing explanation, repeated in `CLAUDE.md`, `RUNBOOK.md`,
+`research/study_area_run.md` and `data-raw/study_area_verify.sql`, was
+that m1 installs `fresh` locally (`RemoteType: local`, no `RemoteSha`).
+Measured 2026-09-01: m1’s install carries `RemoteType github`,
+`RemoteRef v0.33.0` and a `RemoteSha` byte-identical to the SHA every
+cypher records. `.lnk_pkg_git_sha()` read an env var, then walked for
+`.git`, then gave up — and an installed package has no `.git`. **The
+tolerance in the verifier was a workaround for an unread field, not an
+absent one**, and a false rationale invites the fix in the wrong
+direction.
+
+**One resolver, two wrappers.** New `.lnk_pkg_git_state()` returns
+`list(sha, dirty, source)`; `.lnk_pkg_git_sha()` and
+`.lnk_pkg_git_dirty()` delegate. Two functions reading the same
+DESCRIPTION and the same checkout are free to drift about one package,
+silently. `sha` and `dirty` still walk their **own** tier lists over
+that shared lookup, because `cypher_prep.sh` has always written
+`FRESH_GIT_SHA` and never `FRESH_GIT_DIRTY` — a design where one env var
+claims the whole state leaves `dirty` NA on exactly the host that set
+the SHA.
+
+**Two inferences that had to be bounded rather than taken.** Tier 2’s
+`dirty = FALSE` is sound — `RemoteSha` is only written for an install
+from a published ref, which is not a working tree — but it is gated on
+`identical(sha, remote_sha)`, since applied to any other SHA it
+certifies a commit the host never built. And the tier applies a **hex
+shape guard**: a `RemoteType: standard` install writes the package
+*version* into `RemoteSha`, and **278 of 300** packages in this library
+carry a non-hex value there. Unfiltered it would put
+`fresh_sha = "0.33.0"` in a column two consumers read as a commit.
+
+**`bcfishobs` is a model input, not a reference dataset.**
+[`lnk_barrier_overrides()`](https://newgraphenvironment.github.io/link/reference/lnk_barrier_overrides.md)
+counts its observations upstream of each barrier to decide which
+barriers are skipped, so different `bcfishobs` code gives different
+barriers, different access, a different `mapping_code`. New
+`bcfishobs_sha` column and `.lnk_bcfishobs_sha()`, sharing one body with
+`.lnk_fwapg_sha()`. **No `bcfishobs_dirty` column**, against the issue’s
+own proposal: `fwapg` has none either, because `preflight_local()`
+refuses to run over a dirty checkout and a column `FALSE` on every row
+is [\#257](https://github.com/NewGraphEnvironment/link/issues/257)
+pointing the other way. New `fresh_sha_source` records which tier
+answered, mirroring `bcfp_pin_source`.
+
+**`fresh_sha` is now a pre-flight parity key.** It was excluded
+alongside `link_sha` on the joint grounds that one can only ever fail
+and the other could only ever pass vacuously. Only the first half
+survives. It is the one field proving every host runs the same fresh
+**build** rather than the same version string —
+[\#246](https://github.com/NewGraphEnvironment/link/issues/246) exactly,
+where a cypher silently ran the image’s fresh.
+
+**Where the review paid.** Three rounds found fourteen defects, and
+rounds 2 and 3 found them **inside the previous round’s fixes**.
+`scripts/update_hosts.sh` installs via `R CMD INSTALL` of a source
+tarball to route around r-lib/pak#658, which writes no `Remote*` fields
+— so the new assertions would have failed that host *after* droplets
+were paid for. Teaching it to record what it installed then introduced
+three fresh defects of its own: `| tail -3` swallowed a failed install
+so the pin was stamped for a build that never happened; pinning
+`LINK_GIT_DIRTY=false` would have made `link_dirty` permanently FALSE on
+the `load_all` dispatcher, which is
+[\#257](https://github.com/NewGraphEnvironment/link/issues/257) stuck in
+the direction nobody can notice; and resolving the SHA per host raced a
+mid-run push. The verifier gained a `fresh_dirty = TRUE` arm it had
+lacked entirely — the first draft gave the weaker `IS NULL` state a NOTE
+while the state that makes the newly-mandatory `fresh_sha` a *lie*
+closed the run with PASS.
+
+**Verified against the database, not an exit code.** A log table built
+with the pre-#264 column set gains both columns via `ADD COLUMN`, and a
+real write lands all four values on `log` *and* `log_recompute`. The
+verifier was swept across nine single-fault states on a synthetic
+two-host fixture — every one answering correctly, healthy passing before
+*and* after, since a mutation left unrestored would leave later cases
+printing ticks against damaged data. The first attempt at that sweep
+reported a correct FAIL that had actually errored on a column the
+fixture lacked, which is why the post-restore case exists.
+
+**Rows logged before this release keep their NULLs and will now fail the
+verifier.** That is correct: they cannot say which `fresh` build
+produced them, and it is not retroactively fixable.
+
+Suite 1894 pass / 0 fail, 16 warnings (0.49.0 baseline: 1825 / 0 / 16).
+
 ## link 0.49.0
 
 Closes the provenance gaps that cannot be fixed after a run

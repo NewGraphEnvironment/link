@@ -65,7 +65,16 @@ An `lnk_stamp` S3 list with these slots:
   called on `cfg` at stamp time (carries observed checksums + drift
   status)
 
-- `software` — list of versions + git SHAs for `link`, `fresh`, plus
+- `fwapg_sha` — git SHA of the `fwapg` checkout that loaded the FWA
+  primitives
+
+- `bcfishobs_sha` — git SHA of the `bcfishobs` checkout that matched
+  observations onto the network. A model input, not a reference dataset:
+  it decides which barriers are skipped, and so which segments are
+  accessible (link#264)
+
+- `software` — list of versions, git SHAs and `sha_source` (which
+  resolver tier answered) for `link` and `fresh`, plus
   `R.version.string`
 
 - `db` — list of DB snapshot counts, or `NULL`
@@ -103,12 +112,12 @@ stamp <- lnk_stamp(cfg, aoi = "ADMS")
 stamp
 #> <lnk_stamp> bcfishpass
 #>   aoi:        ADMS
-#>   started:    2026-09-01 20:47:52 UTC
-#>   link:       0.49.0
+#>   started:    2026-09-01 22:02:12 UTC
+#>   link:       0.50.0
 #>   fresh:      0.33.0
 #>   provenance: 12 files (0 byte, 0 shape drifted)
 format(stamp, "markdown")
-#> [1] "## Run stamp — bcfishpass\n\n- AOI: `ADMS`\n- Started: 2026-09-01 20:47:52 UTC\n\n### Software\n- link: 0.49.0 (sha NA)\n- fresh: 0.33.0 (sha NA)\n- R: R version 4.6.1 (2026-06-24)\n\n### Config provenance (12 files, 0 byte / 0 shape drifted)\n\n| file | byte drift | shape drift |\n|---|---|---|\n| `rules.yaml` | no | no |\n| `dimensions.csv` | no | no |\n| `parameters_fresh.csv` | no | no |\n| `overrides/user_habitat_classification.csv` | no | no |\n| `overrides/observation_exclusions.csv` | no | no |\n| `overrides/wsg_species_presence.csv` | no | no |\n| `overrides/user_modelled_crossing_fixes.csv` | no | no |\n| `overrides/user_pscis_barrier_status.csv` | no | no |\n| `overrides/pscis_modelledcrossings_streams_xref.csv` | no | no |\n| `overrides/user_barriers_definite.csv` | no | no |\n| `overrides/user_barriers_definite_control.csv` | no | no |\n| `overrides/user_crossings_misc.csv` | no | no |"
+#> [1] "## Run stamp — bcfishpass\n\n- AOI: `ADMS`\n- Started: 2026-09-01 22:02:12 UTC\n\n### Software\n- link: 0.50.0 (sha NA)\n- fresh: 0.33.0 (sha 7f12d99115b7d20302d5ed043188cb870f90f83b)\n- R: R version 4.6.1 (2026-06-24)\n\n### Config provenance (12 files, 0 byte / 0 shape drifted)\n\n| file | byte drift | shape drift |\n|---|---|---|\n| `rules.yaml` | no | no |\n| `dimensions.csv` | no | no |\n| `parameters_fresh.csv` | no | no |\n| `overrides/user_habitat_classification.csv` | no | no |\n| `overrides/observation_exclusions.csv` | no | no |\n| `overrides/wsg_species_presence.csv` | no | no |\n| `overrides/user_modelled_crossing_fixes.csv` | no | no |\n| `overrides/user_pscis_barrier_status.csv` | no | no |\n| `overrides/pscis_modelledcrossings_streams_xref.csv` | no | no |\n| `overrides/user_barriers_definite.csv` | no | no |\n| `overrides/user_barriers_definite_control.csv` | no | no |\n| `overrides/user_crossings_misc.csv` | no | no |"
 
 if (FALSE) { # \dontrun{
 # Full workflow with DB and a result

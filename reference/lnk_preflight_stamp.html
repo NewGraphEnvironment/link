@@ -15,7 +15,7 @@ an inline Rscript -e incantation that drifts between two call sites."><meta prop
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.49.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.50.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -75,18 +75,24 @@ an inline <code>Rscript -e</code> incantation that drifts between two call sites
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p><strong><code>repo_sha</code> is the load-bearing field, not <code>link_sha</code>.</strong>
-<code>.lnk_pkg_git_sha()</code> resolves a SHA from a <code>.git</code> beside the installed
-package. On the dispatcher link is <code><a href="https://pkgload.r-lib.org/reference/load_all.html" class="external-link">pkgload::load_all</a></code>'d from a checkout,
-so it finds one; on every cypher link is pak-installed, so it does not
-and returns <code>NA</code>. <code>fresh_sha</code> is <code>NA</code> on both unless pak recorded a
-<code>RemoteSha</code>. Comparing <code>link_sha</code> across hosts would therefore always
-fail, and comparing <code>fresh_sha</code> would be a vacuous <code>NA == NA</code> pass — a
-check that looks like a check. <code>repo_sha</code> is read from
-<code>~/Projects/repo/link</code> <strong>on the host itself</strong>, which on a cypher is
-exactly what <code>git reset --hard origin/&lt;branch&gt;</code> produced. It is an
-independent observation rather than a restatement of what the
-dispatcher believes (link#246).</p>
+    <p><strong><code>repo_sha</code> is the load-bearing field for link, not <code>link_sha</code>.</strong>
+<code>.lnk_pkg_git_state()</code> resolves link's SHA from a <code>.git</code> beside the
+installed package. On the dispatcher link is <code><a href="https://pkgload.r-lib.org/reference/load_all.html" class="external-link">pkgload::load_all</a></code>'d from
+a checkout, so it finds one; on every cypher link is pak-installed from
+a local source tree, so it does not and returns <code>NA</code>. Comparing
+<code>link_sha</code> across hosts would therefore always fail — a check that
+looks like a check. <code>repo_sha</code> is read from <code>~/Projects/repo/link</code>
+<strong>on the host itself</strong>, which on a cypher is exactly what
+<code>git reset --hard origin/&lt;branch&gt;</code> produced. It is an independent
+observation rather than a restatement of what the dispatcher believes
+(link#246).</p>
+<p><strong><code>fresh_sha</code> is different, and stopped being vacuous in link#264.</strong>
+This paragraph used to say it was <code>NA</code> on both hosts, making any
+comparison a <code>NA == NA</code> pass. That was measured false on 2026-09-01:
+the dispatcher's installed <code>fresh</code> carried
+<code>RemoteSha 7f12d99115b7…</code>, byte-identical to the value its cyphers
+recorded, and the resolver simply never read the field. It does now, so
+<code>fresh_sha</code> resolves everywhere and <code><a href="lnk_preflight_parity.html">lnk_preflight_parity()</a></code> keys on it.</p>
 <p>Unresolvable facts are the literal string <code>"NA"</code>, never empty, so a
 truncated ssh response is distinguishable from a resolved absence.</p>
     </div>

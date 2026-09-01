@@ -834,7 +834,7 @@ re-runs the fresh assertion) and re-checks exactly once.
 | looks like | actually |
 |----|----|
 | a provisioning tool’s `plan` proves its credential | against a zero-resource workspace it plans without contacting the provider at all. The orchestrator and the provisioner also use *separate* credentials, which expire independently. Probe each against the provider’s account endpoint. Details are infrastructure — see rtj |
-| comparing `link_sha` across hosts | it is a real SHA on the `load_all` dispatcher and `NA` on every pak-installed cypher, so it can only ever fail. `fresh_sha` is `NA` on both, so it can only ever pass. Key on **`repo_sha`**, read on each host from the checkout it installed from |
+| comparing `link_sha` across hosts | it is a real SHA on the `load_all` dispatcher and `NA` on every pak-installed cypher, so it can only ever fail. Key on **`repo_sha`**, read on each host from the checkout it installed from. `fresh_sha` was excluded alongside it on the grounds that it was `NA` everywhere and could only ever pass — that half was measured false on 2026-09-01 and the field is a real key since link#264 |
 | `max(last_analyze)` for vintage | NULL on all ten primitives, measured. Empty in bash reads as “nothing to see”. Use `GREATEST(last_analyze, last_autoanalyze)` |
 
 ### The prep sentinel
