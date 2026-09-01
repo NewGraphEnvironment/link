@@ -155,11 +155,18 @@ SELECT CASE WHEN :'expected_n' = ''
 
 \echo ''
 \echo '=== 1. Provenance per host ==='
--- fresh_sha is expected NULL on the DISPATCHER and non-NULL on CYPHERS.
--- Measured 2026-08-31: m1 installs fresh locally (RemoteType: local, no
--- RemoteSha), so there is no SHA to record; cyphers install from GitHub via
--- the DESCRIPTION Remotes pin and do carry one. Asserting it non-NULL
--- everywhere reports a false failure on a healthy dispatcher.
+-- fresh_sha is currently NULL on the DISPATCHER and non-NULL on CYPHERS, and
+-- the reason is NOT what an earlier version of this comment said.
+--
+-- Measured 2026-09-01: m1's installed fresh carries RemoteType github,
+-- RemoteRef v0.33.0 and RemoteSha 7f12d99115b7... -- byte-identical to the SHA
+-- the cyphers record. The column is NULL because .lnk_pkg_git_sha() reads an
+-- env var, then walks for .git, then gives up: it never reads RemoteSha from
+-- the installed DESCRIPTION, and an installed package has no .git. Cyphers
+-- populate it only because cypher_prep.sh sets FRESH_GIT_SHA explicitly.
+--
+-- So this tolerance is a workaround for an unread field, not for an absent
+-- one. Tracked separately; tighten to assert on every host once that lands.
 --
 -- bcfp_model_run_id is likewise expected NULL on a tunnel-free run: the pin
 -- comes from the local snapshot ledger, and log.json carries no run id

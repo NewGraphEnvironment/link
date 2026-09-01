@@ -75,9 +75,13 @@ so it does not scale with scope the way modelling does — which makes **#250**
 (`nohup … & disown`) — a tool-managed background process gets reclaimed, which
 killed a run at 33 min. **Never touch the repo mid-run**: the dispatcher uses
 `pkgload::load_all()` and the recompute re-reads git state for `lnk_stamp()`.
-And `fresh_sha` is legitimately **NULL on the dispatcher** (local install, no
-`RemoteSha`) and non-NULL only on cyphers — asserting it everywhere reports a
-false failure on a healthy m1.
+And `fresh_sha` is **NULL on the dispatcher** and non-NULL only on cyphers, so
+asserting it everywhere reports a false failure on a healthy m1. **The stated
+reason for that was wrong** — corrected 2026-09-01: m1's installed `fresh`
+carries `RemoteType: github`, `RemoteRef: v0.33.0` and a `RemoteSha` identical
+to the cyphers'. `.lnk_pkg_git_sha()` simply never reads `RemoteSha` from the
+installed DESCRIPTION. The tolerance is a workaround for an *unread* field, not
+an absent one.
 
 **link is PUBLIC; rtj is PRIVATE; NewGraphEnvironment is a personal account** —
 no org policy backstops visibility. 33 host addresses across 101 tracked files
