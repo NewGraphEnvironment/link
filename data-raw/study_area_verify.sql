@@ -323,6 +323,7 @@ DECLARE
   n_seg    int;
   n_prov   int;
   n_pin    int;
+  n_fresh  int;
   bad      text;
 BEGIN
   EXECUTE format(
@@ -398,6 +399,29 @@ BEGIN
     RAISE EXCEPTION
       'run %: % row(s) missing link_sha or fwapg_sha, or flagged link_dirty',
       v_run, n_prov;
+  END IF;
+
+  -- fresh_sha, HOST-AWARE. Previously omitted from the assertions entirely,
+  -- with the correct reason that NULL is expected on the dispatcher (m1
+  -- installs fresh locally: RemoteType local, no RemoteSha). But omitting it
+  -- left section 1b printing 'FAIL: fresh_sha NULL on a cypher' while this
+  -- script exited 0 and declared OK -- the same self-contradiction round 3
+  -- flagged for the unpinned case, found by sweeping every single-fault state
+  -- rather than by reading.
+  --
+  -- A cypher installs fresh from GitHub via the DESCRIPTION Remotes pin, so a
+  -- NULL there means it ran the image's fresh instead: link#246's exact
+  -- failure, where 80 of 119 WSGs were silently skipped. That is a run-failing
+  -- condition, not a note. Scoped to non-dispatcher hosts so the dispatcher's
+  -- legitimate NULL still passes.
+  EXECUTE format(
+    'SELECT count(*) FROM %I.log
+      WHERE run_uid = $1 AND host <> ''m1'' AND fresh_sha IS NULL',
+    v_sch) INTO n_fresh USING v_run;
+  IF n_fresh > 0 THEN
+    RAISE EXCEPTION
+      'run %: % row(s) on a non-dispatcher host have no fresh_sha, so that host ran the image''s fresh rather than the DESCRIPTION Remotes pin (link#246). Its WSGs cannot be trusted.',
+      v_run, n_fresh;
   END IF;
 
   -- The bcfp pin, with the sanctioned-unpinned escape.

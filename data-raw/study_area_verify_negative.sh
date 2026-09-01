@@ -176,6 +176,19 @@ fi
 # simply stops failing on unpinned runs and nobody finds out. That is the one
 # direction this file exists to catch, and it was the only control in it with
 # no case of its own.
+# Premise first. If the run under test is ALREADY unpinned -- precisely the
+# situation unpinned_ok exists for, and one preflight_local() sanctions -- the
+# UPDATE below is a no-op and 4a/4b/4c would exercise nothing while printing
+# three ticks. Case 2 three blocks up sets the standard: absence reported as
+# absence, counted as a failure, never as a pass.
+N_PINNED=$("${PSQL[@]}" -c "SELECT count(*) FROM ${SCRATCH}.log
+                             WHERE bcfp_model_version IS NOT NULL")
+if [ "${N_PINNED:-0}" = "0" ]; then
+  echo "  ⊘ 4. SKIPPED: run $RUN_UID is already unpinned on every row, so"
+  echo "       removing the pin changes nothing and 4a-4c would test nothing."
+  echo "       Absence reported as absence -- this is NOT a pass."
+  fails=$((fails + 1))
+else
 "${PSQL[@]}" -c "UPDATE ${SCRATCH}.log SET bcfp_model_version = NULL" >/dev/null
 if run_verify -v expected_n="$N_WSG"; then
   echo "  ✗ 4a. unpinned, no reason      -> PASSED, but should have FAILED."
@@ -200,9 +213,20 @@ if run_verify -v expected_n="$N_WSG" -v unpinned_ok='   '; then
 else
   echo "  ✓ 4c. unpinned + blank reason  -> FAIL (as expected)"
 fi
-"${PSQL[@]}" -c "UPDATE ${SCRATCH}.log SET bcfp_model_version =
-   (SELECT bcfp_model_version FROM ${SRC_SCHEMA}.log
-     WHERE run_uid = '${RUN_UID}' LIMIT 1)" >/dev/null
+# Restore CORRELATED, per row. `SET col = (SELECT ... LIMIT 1)` would write one
+# arbitrary source row's value to every row -- flattening, not restoring. That
+# is harmless only while nothing runs after this point, and it is harmless for a
+# reason another check enforces (section 2 asserts the hosts agree on the pin).
+# A case 5 appended below would inherit a table whose pin column is uniform by
+# construction, making a per-host pin defect structurally untestable: the
+# fixture-cannot-reach-the-failure shape, arriving through a cleanup step.
+# Case 2's restore is already correlated; this matches it.
+"${PSQL[@]}" -c "UPDATE ${SCRATCH}.log t SET bcfp_model_version = s.bcfp_model_version
+   FROM ${SRC_SCHEMA}.log s
+  WHERE s.run_uid = '${RUN_UID}'
+    AND s.host = t.host
+    AND s.watershed_group_code = t.watershed_group_code" >/dev/null
+fi
 
 echo ""
 if [ "$fails" = "0" ]; then
