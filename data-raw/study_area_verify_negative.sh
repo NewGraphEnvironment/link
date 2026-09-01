@@ -268,6 +268,53 @@ for col in fresh_sha bcfishobs_sha; do
   n=$((n + 1))
 done
 
+# --- 6b. fresh_dirty TRUE: must FAIL -----------------------------------------
+# A different mutation from the NULL cases above, and the one the first draft
+# of link#264 shipped with no arm at all: fresh_sha present but describing a
+# modified tree. The columns being non-NULL is what made the run PASS, which
+# is exactly why a NULL-only sweep cannot find it.
+"${PSQL[@]}" -c "UPDATE ${SCRATCH}.log SET fresh_dirty = TRUE" >/dev/null
+if run_verify -v expected_n="$N_WSG"; then
+  echo "  ✗ 6b. fresh_dirty=TRUE         -> PASSED, but should have FAILED."
+  echo "       A dirty fresh makes log.fresh_sha a lie and nothing caught it."
+  show_verify
+  fails=$((fails + 1))
+else
+  echo "  ✓ 6b. fresh_dirty=TRUE         -> FAIL (as expected)"
+fi
+"${PSQL[@]}" -c "UPDATE ${SCRATCH}.log t SET fresh_dirty = s.fresh_dirty
+   FROM ${SRC_SCHEMA}.log s
+  WHERE s.run_uid = '${RUN_UID}'
+    AND s.host = t.host
+    AND s.watershed_group_code = t.watershed_group_code" >/dev/null
+
+# --- 6c. hosts disagreeing on an input: must FAIL ----------------------------
+# Section 2b prints this verdict, so it needs an assertion behind it or the
+# script prints the word FAIL and exits 0. Only runs where there IS a second
+# host to disagree with -- on a single-host run the state is unreachable, and
+# an unreachable case reported as a pass is the thing this file exists against.
+N_HOSTS=$("${PSQL[@]}" -c "SELECT count(DISTINCT host) FROM ${SCRATCH}.log")
+if [ "${N_HOSTS:-1}" -lt 2 ]; then
+  echo "  ⊘ 6c. SKIPPED: run $RUN_UID used one host, so hosts cannot disagree."
+  echo "       Absence reported as absence -- this is NOT a pass."
+else
+  ODD=$("${PSQL[@]}" -c "SELECT host FROM ${SCRATCH}.log ORDER BY host DESC LIMIT 1")
+  "${PSQL[@]}" -c "UPDATE ${SCRATCH}.log SET fresh_sha = 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef'
+                    WHERE host = '${ODD}'" >/dev/null
+  if run_verify -v expected_n="$N_WSG"; then
+    echo "  ✗ 6c. $ODD on a different fresh -> PASSED, but should have FAILED."
+    show_verify
+    fails=$((fails + 1))
+  else
+    echo "  ✓ 6c. $ODD on a different fresh -> FAIL (as expected)"
+  fi
+  "${PSQL[@]}" -c "UPDATE ${SCRATCH}.log t SET fresh_sha = s.fresh_sha
+     FROM ${SRC_SCHEMA}.log s
+    WHERE s.run_uid = '${RUN_UID}'
+      AND s.host = t.host
+      AND s.watershed_group_code = t.watershed_group_code" >/dev/null
+fi
+
 # The healthy case again, LAST. Cases 2/4/5/6 each mutate the scratch schema
 # and restore it, and a restore that silently did not restore would leave every
 # later case running against damaged data while still printing ticks. Re-running

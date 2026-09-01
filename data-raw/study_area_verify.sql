@@ -195,7 +195,7 @@ SELECT host,
  ORDER BY host;
 
 \echo ''
-\echo '=== 1b. Provenance verdict (host-aware) ==='
+\echo '=== 1b. Provenance verdict (per host) ==='
 -- ACCUMULATED, not an ordered CASE. This is the third time an arm shadowed a
 -- more serious one, and each fix was individually right:
 --
@@ -228,6 +228,15 @@ SELECT host,
               THEN 'FAIL: bcfishobs_sha NULL' END,
          CASE WHEN count(*) FILTER (WHERE link_dirty) > 0
               THEN 'FAIL: link_dirty set -- tracked code differed from origin' END,
+         -- By exact symmetry with link_dirty, and it had no arm at all in the
+         -- first draft of link#264: the diff made fresh_dirty resolvable and
+         -- gave the WEAKER `IS NULL` state a NOTE, while the state that makes
+         -- the newly-mandatory fresh_sha a LIE went unreported and the run
+         -- closed with PASS. Found by sweeping every single-fault state, which
+         -- is the only thing that finds a missing arm -- reading the file
+         -- shows you the arms that exist.
+         CASE WHEN count(*) FILTER (WHERE fresh_dirty) > 0
+              THEN 'FAIL: fresh_dirty set -- log.fresh_sha does not describe what ran' END,
          -- Escape-aware, so the word FAIL never appears on a run this script
          -- then declares OK. A wrapper grepping for FAIL must not hit on a
          -- sanctioned run; that is how the word stops being read.
@@ -258,9 +267,30 @@ SELECT host, watershed_group_code, date_start
 
 \echo ''
 \echo '=== 2. The distinct SHAs -- all hosts must agree ==='
-SELECT DISTINCT link_sha, fwapg_sha, bcfp_model_version
+-- fresh_sha and bcfishobs_sha joined this list in link#264. Every arm in 1b
+-- tests IS NULL, so two hosts carrying DIFFERENT non-NULL values pass every
+-- check above -- present on both, agreeing on neither. lnk_preflight_parity()
+-- keys on fresh_sha, but only pre-write: a cypher re-prepped mid-run
+-- (--auto-install) lands outside that window, and this is the only place after
+-- it where the disagreement is visible.
+--
+-- More than one row here is the finding. link_sha legitimately differs by host
+-- (a real SHA on the load_all dispatcher, NULL on a pak-installed cypher), so
+-- read the columns individually rather than the row count.
+SELECT DISTINCT link_sha, fresh_sha, fwapg_sha, bcfishobs_sha, bcfp_model_version
   FROM :schema.log
  WHERE run_uid = :'run_uid';
+
+\echo ''
+\echo '=== 2b. Inputs every host must agree on (must be one row) ==='
+-- The subset of section 2 that admits no legitimate per-host variation, so
+-- "more than one row" is mechanically a defect rather than something to read.
+SELECT count(*) AS n_distinct_input_sets,
+       CASE WHEN count(*) > 1
+            THEN 'FAIL: hosts disagree on fresh_sha / fwapg_sha / bcfishobs_sha'
+            ELSE 'OK' END AS verdict
+  FROM (SELECT DISTINCT fresh_sha, fwapg_sha, bcfishobs_sha
+          FROM :schema.log WHERE run_uid = :'run_uid') d;
 
 \echo ''
 \echo '=== 3. Coverage: every WSG of this run has streams rows ==='
@@ -418,11 +448,11 @@ BEGIN
     'SELECT count(*) FROM %I.log
       WHERE run_uid = $1
         AND (link_sha IS NULL OR fwapg_sha IS NULL
-             OR bcfishobs_sha IS NULL OR link_dirty)',
+             OR bcfishobs_sha IS NULL OR link_dirty OR fresh_dirty)',
     v_sch) INTO n_prov USING v_run;
   IF n_prov > 0 THEN
     RAISE EXCEPTION
-      'run %: % row(s) missing link_sha, fwapg_sha or bcfishobs_sha, or flagged link_dirty',
+      'run %: % row(s) missing link_sha, fwapg_sha or bcfishobs_sha, or flagged link_dirty or fresh_dirty',
       v_run, n_prov;
   END IF;
 
@@ -448,6 +478,25 @@ BEGIN
     RAISE EXCEPTION
       'run %: % row(s) have no fresh_sha, so which fresh BUILD produced them cannot be established (link#264). On a cypher this is link#246 exactly -- the image''s fresh ran instead of the DESCRIPTION Remotes pin. Rows logged before link v0.50.0 carry this legitimately and are not retroactively fixable.',
       v_run, n_fresh;
+  END IF;
+
+  -- Cross-host agreement on the three shared inputs. Section 2b PRINTS this
+  -- verdict; without the raise below the script would print the word FAIL and
+  -- then exit 0, which is how the word stops being read. Every arm labelled
+  -- FAIL has an assertion behind it.
+  --
+  -- Only the fields with no legitimate per-host variation are here. link_sha
+  -- is deliberately excluded: it is a real SHA on the load_all dispatcher and
+  -- NULL on a pak-installed cypher, so requiring agreement would fail every
+  -- healthy run.
+  EXECUTE format(
+    'SELECT count(*) FROM (SELECT DISTINCT fresh_sha, fwapg_sha, bcfishobs_sha
+                             FROM %I.log WHERE run_uid = $1) d',
+    v_sch) INTO n_prov USING v_run;
+  IF n_prov > 1 THEN
+    RAISE EXCEPTION
+      'run %: hosts disagree on their inputs -- % distinct (fresh_sha, fwapg_sha, bcfishobs_sha) sets where there must be 1. Parity diffs from this run mix version drift with methodology drift and cannot be separated afterwards (link#183, link#264).',
+      v_run, n_prov;
   END IF;
 
   -- The bcfp pin, with the sanctioned-unpinned escape.

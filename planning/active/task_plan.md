@@ -96,12 +96,22 @@ second, explicit observation on top of one. Kept, and relabelled.
 
 ## Phase 5: the false rationale, and tightening the verifier
 
-- [ ] Every stale "m1 installs fresh locally" claim removed (`git grep RemoteType`)
-- [ ] `study_area_verify.sql` §1b: `fresh_sha IS NULL` unconditional FAIL on
+- [x] Every stale "m1 installs fresh locally" claim removed (`git grep RemoteType`)
+- [x] `study_area_verify.sql` §1b: `fresh_sha IS NULL` unconditional FAIL on
       every host; accumulator kept, no ordered `CASE`
-- [ ] DO block: `fresh_sha` and `bcfishobs_sha` in the every-row provenance
+- [x] DO block: `fresh_sha` and `bcfishobs_sha` in the every-row provenance
       assertion; host-aware branch deleted
-- [ ] Single-fault sweep — no arm labelled FAIL may exit 0
+- [x] Single-fault sweep — no arm labelled FAIL may exit 0. Run for real
+      against a synthetic 2-host/3-WSG fixture built from the shipped DDL:
+      9 states, every one answering correctly, healthy passing before *and*
+      after so no mutation went unrestored
+- [x] Added in round-2 review: a **`fresh_dirty = TRUE` arm**, which the
+      first draft omitted entirely — it gave the weaker `IS NULL` state a
+      NOTE while the state that makes the newly-mandatory `fresh_sha` a lie
+      closed the run with PASS
+- [x] Added in round-2 review: §2b + a DO-block assertion for **hosts
+      disagreeing on a non-NULL input**. Every other arm tests `IS NULL`, so
+      two hosts on different `fresh_sha` values passed the whole script
 
 ## Phase 6: issue body, then PR
 
@@ -110,12 +120,14 @@ second, explicit observation on top of one. Kept, and relabelled.
 
 ## Validation
 
-- [ ] Tests pass (baseline 1825 pass / 0 fail / 16 warnings)
-- [ ] `devtools::document()` clean, NAMESPACE unchanged
-- [ ] `lintr::lint_package()` no worse than baseline
-- [ ] Live end-to-end on one WSG + a recompute, read back from the DB —
+- [x] Tests pass (baseline 1825 pass / 0 fail / 16 warnings)
+- [x] `devtools::document()` clean, NAMESPACE unchanged
+- [x] `lintr::lint_package()` no worse than baseline
+- [x] Live end-to-end on one WSG + a recompute, read back from the DB —
       four columns non-NULL on **both** log tables
-- [ ] `data-raw/study_area_verify_negative.sh` fails when it should and passes
-      when it should
-- [ ] `/code-check` clean on each commit
-- [ ] PWF checkboxes match landed work
+- [x] `data-raw/study_area_verify_negative.sh` gains cases 5/6 (the new
+      columns), 6b (`fresh_dirty`), 6c (cross-host disagreement) and 7
+      (healthy again post-restore, so a restore that did not restore cannot
+      leave later cases printing ticks against damaged data)
+- [x] `/code-check` clean on each commit
+- [x] PWF checkboxes match landed work
