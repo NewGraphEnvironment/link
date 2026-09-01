@@ -1,0 +1,17 @@
+Warning message:
+reference has 0 rows for LPCE — not modelled there; returning NA stats. 
+[study_area_compare] 116 rows across 34/34 WSGs -> /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20260831_232553_compare.csv
+# A tibble: 116 × 7
+   wsg   species total_segs match_pct n_diffs top_pattern      top_pattern_count
+ * <chr> <chr>        <int>     <dbl>   <int> <chr>                        <int>
+ 1 BBAR  BT           23886      99.8      38 "REAR;NONE | AC…                11
+ 2 BBAR  CH           23886     100.0       6 "ACCESS;NONE;IN…                 3
+ 3 BBAR  CO           23886     100.0       4 "ACCESS;NONE;IN…                 3
+ 4 BBAR  SK           23886     100.0       4 "ACCESS;NONE;IN…                 3
+ 5 BOWR  BT           20129      98.9     217 "ACCESS;NONE;IN…                43
+ 6 BOWR  CH           20129      99.1     175 "ACCESS;NONE | …                82
+ 7 BOWR  CO           20129      99.5     108 "ACCESS;NONE | …                25
+ 8 BOWR  SK           20129      99.0     193 "ACCESS;NONE | …               106
+ 9 BULK  BT           42937      99.2     366 "ACCESS;ASSESSE…                80
+10 BULK  CH           42937      99.7     120 "ACCESS;ASSESSE…                13
+# ℹ 106 more rows

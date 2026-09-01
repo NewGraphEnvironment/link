@@ -1,0 +1,256 @@
+[17:58:09] backup local fresh -> /tmp/fresh_pre_consolidate_202608311758.dump
+[18:03:41] cypher@137.184.114.142 -> NOTE: skipping 9 source-only tables (absent on destination): streams_bt, streams_ch, streams_co, streams_habitat, streams_pk, streams_rb, streams_sk, streams_st, streams_v2
+[18:03:41] cypher@137.184.114.142 -> NOTE: skipping 2 destination-only tables (absent on source): crossings_vw_bcfp, streams_vw_bcfp
+[18:03:44] cypher@137.184.114.142 -> DELETE bucket (9 WSGs) from 16 tables
+[18:03:50] cypher@137.184.114.142 -> COPY (bucket-filtered) for 16 tables
+COPY 128
+COPY 335662
+COPY 9
+COPY 99
+COPY 28471
+COPY 506088
+COPY 506088
+COPY 506088
+COPY 0
+COPY 0
+COPY 0
+COPY 0
+COPY 0
+COPY 0
+COPY 0
+COPY 506088
+[18:06:04] cypher@137.184.114.142 -> DELETE bucket from source (post-COPY cleanup)
+DELETE 128
+DELETE 335662
+DELETE 9
+DELETE 99
+DELETE 28471
+DELETE 506088
+DELETE 506088
+DELETE 506088
+DELETE 0
+DELETE 0
+DELETE 0
+DELETE 0
+DELETE 0
+DELETE 0
+DELETE 0
+DELETE 506088
+[18:06:09] cypher@134.199.216.122 -> NOTE: skipping 9 source-only tables (absent on destination): streams_bt, streams_ch, streams_co, streams_habitat, streams_pk, streams_rb, streams_sk, streams_st, streams_v2
+[18:06:09] cypher@134.199.216.122 -> NOTE: skipping 2 destination-only tables (absent on source): crossings_vw_bcfp, streams_vw_bcfp
+[18:06:10] cypher@134.199.216.122 -> DELETE bucket (6 WSGs) from 16 tables
+[18:06:16] cypher@134.199.216.122 -> COPY (bucket-filtered) for 16 tables
+COPY 747
+COPY 315151
+COPY 6
+COPY 66
+COPY 15814
+COPY 433339
+COPY 433339
+COPY 433339
+COPY 433339
+COPY 227918
+COPY 433339
+COPY 374170
+COPY 374170
+COPY 433339
+COPY 0
+COPY 433339
+[18:08:24] cypher@134.199.216.122 -> DELETE bucket from source (post-COPY cleanup)
+DELETE 747
+DELETE 315151
+DELETE 6
+DELETE 66
+DELETE 15814
+DELETE 433339
+DELETE 433339
+DELETE 433339
+DELETE 433339
+DELETE 227918
+DELETE 433339
+DELETE 374170
+DELETE 374170
+DELETE 433339
+DELETE 0
+DELETE 433339
+[18:08:30] verify destination tables in schema 'fresh'
+                         tbl    rows
+1          barrier_overrides    4038
+2                   barriers 3517653
+3          crossings_vw_bcfp  525527
+4                        log      37
+5             log_dimensions       8
+6                  log_input     407
+7       log_parameters_fresh      11
+8  modelled_stream_crossings  524562
+9                    streams 3585498
+10            streams_access 2590711
+11        streams_habitat_bt 3265139
+12        streams_habitat_ch 2115933
+13        streams_habitat_cm  878913
+14        streams_habitat_co 1690905
+15        streams_habitat_pk 1056356
+16        streams_habitat_sk 1518626
+17        streams_habitat_st 1382505
+18       streams_habitat_wct  299441
+19      streams_mapping_code 2590711
+20           streams_vw_bcfp 4272365
+21    zz_lnk_mc_scratch_bbar   24165
+22    zz_lnk_mc_scratch_bulk   42861
+23    zz_lnk_mc_scratch_carp   17420
+24    zz_lnk_mc_scratch_ches    9332
+25    zz_lnk_mc_scratch_chwk    8866
+26    zz_lnk_mc_scratch_cotr   29425
+27    zz_lnk_mc_scratch_crkd   22642
+28    zz_lnk_mc_scratch_dogc   13535
+29    zz_lnk_mc_scratch_fina   26094
+30    zz_lnk_mc_scratch_finl   43850
+31    zz_lnk_mc_scratch_fire   31882
+32    zz_lnk_mc_scratch_foxr   30429
+33    zz_lnk_mc_scratch_fran   41586
+34    zz_lnk_mc_scratch_frcn   28989
+35    zz_lnk_mc_scratch_harr   17737
+36    zz_lnk_mc_scratch_ingr   28861
+37    zz_lnk_mc_scratch_kisp   30906
+38    zz_lnk_mc_scratch_klum   31527
+39    zz_lnk_mc_scratch_lbtn   28304
+40    zz_lnk_mc_scratch_lchl   19891
+41    zz_lnk_mc_scratch_lfra   26925
+42    zz_lnk_mc_scratch_lkel    3376
+43    zz_lnk_mc_scratch_lomi   21628
+44    zz_lnk_mc_scratch_lpce   11483
+45    zz_lnk_mc_scratch_lsal   11517
+46    zz_lnk_mc_scratch_lske   37528
+47    zz_lnk_mc_scratch_mesi   18534
+48    zz_lnk_mc_scratch_mfra    9227
+49    zz_lnk_mc_scratch_mork   54009
+50    zz_lnk_mc_scratch_morr   29060
+51    zz_lnk_mc_scratch_mske   29996
+52    zz_lnk_mc_scratch_narc   19689
+53    zz_lnk_mc_scratch_natr   35038
+54    zz_lnk_mc_scratch_necr   27989
+55    zz_lnk_mc_scratch_ospk   25679
+56    zz_lnk_mc_scratch_para   19079
+57    zz_lnk_mc_scratch_pars   48561
+58    zz_lnk_mc_scratch_pcea   33764
+59    zz_lnk_mc_scratch_salr   10663
+60    zz_lnk_mc_scratch_setn   80557
+61    zz_lnk_mc_scratch_tabr   12948
+62    zz_lnk_mc_scratch_tood   45998
+63    zz_lnk_mc_scratch_twac   12404
+64    zz_lnk_mc_scratch_ufra   35722
+65    zz_lnk_mc_scratch_unrs   26143
+66    zz_lnk_mc_scratch_uomi   19176
+67    zz_lnk_mc_scratch_upce   25024
+68    zz_lnk_mc_scratch_uske   26523
+69    zz_lnk_mc_scratch_will   19441
+70    zz_lnk_mc_scratch_zymo   24007
+$sources
+$sources$`cypher@137.184.114.142`
+$sources$`cypher@137.184.114.142`$ok
+[1] TRUE
+
+$sources$`cypher@137.184.114.142`$stage
+[1] "complete"
+
+$sources$`cypher@137.184.114.142`$pre_rows
+[1] 21563268
+
+$sources$`cypher@137.184.114.142`$post_rows
+[1] 23951989
+
+$sources$`cypher@137.184.114.142`$copied
+ [1] "barrier_overrides"         "barriers"                 
+ [3] "log"                       "log_input"                
+ [5] "modelled_stream_crossings" "streams"                  
+ [7] "streams_access"            "streams_habitat_bt"       
+ [9] "streams_habitat_ch"        "streams_habitat_cm"       
+[11] "streams_habitat_co"        "streams_habitat_pk"       
+[13] "streams_habitat_sk"        "streams_habitat_st"       
+[15] "streams_habitat_wct"       "streams_mapping_code"     
+
+$sources$`cypher@137.184.114.142`$errored
+character(0)
+
+$sources$`cypher@137.184.114.142`$skipped_source_only
+[1] "streams_bt"      "streams_ch"      "streams_co"      "streams_habitat"
+[5] "streams_pk"      "streams_rb"      "streams_sk"      "streams_st"     
+[9] "streams_v2"     
+
+$sources$`cypher@137.184.114.142`$skipped_dest_only
+[1] "crossings_vw_bcfp" "streams_vw_bcfp"  
+
+
+$sources$`cypher@134.199.216.122`
+$sources$`cypher@134.199.216.122`$ok
+[1] TRUE
+
+$sources$`cypher@134.199.216.122`$stage
+[1] "complete"
+
+$sources$`cypher@134.199.216.122`$pre_rows
+[1] 20680020
+
+$sources$`cypher@134.199.216.122`$post_rows
+[1] 25021435
+
+$sources$`cypher@134.199.216.122`$copied
+ [1] "barrier_overrides"         "barriers"                 
+ [3] "log"                       "log_input"                
+ [5] "modelled_stream_crossings" "streams"                  
+ [7] "streams_access"            "streams_habitat_bt"       
+ [9] "streams_habitat_ch"        "streams_habitat_cm"       
+[11] "streams_habitat_co"        "streams_habitat_pk"       
+[13] "streams_habitat_sk"        "streams_habitat_st"       
+[15] "streams_habitat_wct"       "streams_mapping_code"     
+
+$sources$`cypher@134.199.216.122`$errored
+character(0)
+
+$sources$`cypher@134.199.216.122`$skipped_source_only
+[1] "streams_bt"      "streams_ch"      "streams_co"      "streams_habitat"
+[5] "streams_pk"      "streams_rb"      "streams_sk"      "streams_st"     
+[9] "streams_v2"     
+
+$sources$`cypher@134.199.216.122`$skipped_dest_only
+[1] "crossings_vw_bcfp" "streams_vw_bcfp"  
+
+
+
+$tables
+ [1] "barrier_overrides"         "barriers"                 
+ [3] "crossings_vw_bcfp"         "log"                      
+ [5] "log_dimensions"            "log_input"                
+ [7] "log_parameters_fresh"      "modelled_stream_crossings"
+ [9] "streams"                   "streams_access"           
+[11] "streams_habitat_bt"        "streams_habitat_ch"       
+[13] "streams_habitat_cm"        "streams_habitat_co"       
+[15] "streams_habitat_pk"        "streams_habitat_sk"       
+[17] "streams_habitat_st"        "streams_habitat_wct"      
+[19] "streams_mapping_code"      "streams_vw_bcfp"          
+[21] "zz_lnk_mc_scratch_bbar"    "zz_lnk_mc_scratch_bulk"   
+[23] "zz_lnk_mc_scratch_carp"    "zz_lnk_mc_scratch_ches"   
+[25] "zz_lnk_mc_scratch_chwk"    "zz_lnk_mc_scratch_cotr"   
+[27] "zz_lnk_mc_scratch_crkd"    "zz_lnk_mc_scratch_dogc"   
+[29] "zz_lnk_mc_scratch_fina"    "zz_lnk_mc_scratch_finl"   
+[31] "zz_lnk_mc_scratch_fire"    "zz_lnk_mc_scratch_foxr"   
+[33] "zz_lnk_mc_scratch_fran"    "zz_lnk_mc_scratch_frcn"   
+[35] "zz_lnk_mc_scratch_harr"    "zz_lnk_mc_scratch_ingr"   
+[37] "zz_lnk_mc_scratch_kisp"    "zz_lnk_mc_scratch_klum"   
+[39] "zz_lnk_mc_scratch_lbtn"    "zz_lnk_mc_scratch_lchl"   
+[41] "zz_lnk_mc_scratch_lfra"    "zz_lnk_mc_scratch_lkel"   
+[43] "zz_lnk_mc_scratch_lomi"    "zz_lnk_mc_scratch_lpce"   
+[45] "zz_lnk_mc_scratch_lsal"    "zz_lnk_mc_scratch_lske"   
+[47] "zz_lnk_mc_scratch_mesi"    "zz_lnk_mc_scratch_mfra"   
+[49] "zz_lnk_mc_scratch_mork"    "zz_lnk_mc_scratch_morr"   
+[51] "zz_lnk_mc_scratch_mske"    "zz_lnk_mc_scratch_narc"   
+[53] "zz_lnk_mc_scratch_natr"    "zz_lnk_mc_scratch_necr"   
+[55] "zz_lnk_mc_scratch_ospk"    "zz_lnk_mc_scratch_para"   
+[57] "zz_lnk_mc_scratch_pars"    "zz_lnk_mc_scratch_pcea"   
+[59] "zz_lnk_mc_scratch_salr"    "zz_lnk_mc_scratch_setn"   
+[61] "zz_lnk_mc_scratch_tabr"    "zz_lnk_mc_scratch_tood"   
+[63] "zz_lnk_mc_scratch_twac"    "zz_lnk_mc_scratch_ufra"   
+[65] "zz_lnk_mc_scratch_unrs"    "zz_lnk_mc_scratch_uomi"   
+[67] "zz_lnk_mc_scratch_upce"    "zz_lnk_mc_scratch_uske"   
+[69] "zz_lnk_mc_scratch_will"    "zz_lnk_mc_scratch_zymo"   
+

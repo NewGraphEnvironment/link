@@ -91,3 +91,113 @@ done. Vintage gate passes at its 7-day default.
 ~4.3h) or all 217 modelable BC WSGs (1.76x the work). "Look anywhere" means 217.
 
 Filed: #247, #250, soul#129. PWF is complete apart from archiving.
+
+## Session 2026-08-31 (evening) — field-scope run, Phases 3-5
+
+#246 Phases 1-2 shipped as v0.47.2. This session executed what the plan
+deferred: a real run against the merged, hardened script.
+
+**Scope run: field, not provincial.** 23 focal WSGs from the three study areas
+(`rtj/scripts/gis/projects/*/project.yml`) -> 34 modelable in drainage closure,
+3 drainage-independent components, zero species drops. Scope decision itself is
+still open at #256 — running the field scope defers it rather than settling it.
+
+| host | area | focal | modelable | segments |
+|---|---|---|---|---|
+| dispatcher (m1) | Fraser (HCTF) | 10 | 19 | 401,803 |
+| cy job1 | Peace (FWCP) | 8 | 9 | 216,542 |
+| cy job2 | Skeena (HCTF) | 5 | 6 | 161,105 |
+
+### Attempt 1 (`20260831_225003`) — killed at ~33 min, no data lost
+
+Every gate passed, including the one that matters:
+
+```
+[preflight] host parity - OK across 3 host(s): m1, cypher-job1, cypher-job2
+```
+
+That is #246's Phase 5 acceptance criterion, on real hardware, first time.
+
+Killed because the driver was launched inside a tool-managed background
+process whose lifecycle the harness owns. **The EXIT trap fired correctly and
+burned both droplets** — verified twice, by the script's own
+`✓ doctl: no cypher droplets` and by an independent `doctl compute droplet
+list`. Loss bounded to ~$0.30. Modelling had reached 3 WSGs (FRCN, HARR, LFRA);
+harmless, since persist replaces per WSG and the re-run walks the same
+DS-first order.
+
+Logs retained deliberately (soul#129) — commit 50f6d46.
+
+### Attempt 2 — refused before spending, correctly
+
+The pre-spin dirty gate blocked it. Cause: attempt 1's own logs, untracked in
+the tracked `data-raw/logs/` directory. No droplets spun, so this cost nothing.
+
+Filed as **#257**: the gate tests blanket cleanliness where its actual subject
+is "does tracked *code* differ from what cyphers check out". An untracked log
+cannot reach a cypher. Same family as the `CLAUDE.md` rule *"a guard placed
+mid-operation can be defeated by the operation itself"*, one step removed — the
+guard is correctly placed and it is the *previous* run that dirties the tree.
+
+### Attempt 3 — the real run
+
+Launched detached (`nohup` + `disown`). Two operational findings worth carrying
+into RUNBOOK rather than relearning:
+
+1. **Launch long runs detached.** A tool-managed background process is not a
+   home for a 1.7 h run.
+2. **Do not touch the repo while a run is in flight.** The dispatcher runs
+   through `pkgload::load_all()`, and the recompute phase re-reads git state
+   for `lnk_stamp()` — so an edit mid-run both risks reading a tree that never
+   existed and writes `link_dirty = t` into `fresh.log` for part of one run.
+
+### Open after this
+
+- **#256** — scope: field 34 / provincial 119 / all-BC 217. Unresolved.
+- **#257** — dirty-gate predicate too broad.
+- **#250** — parallelise the serial recompute (the bottleneck past m1+5).
+- **#247** — `fresh.snapshot_stamp`.
+- `/planning-archive` for #246.
+
+### Attempt 3 result — complete, 34/34
+
+`20260831_232553`, 23:25:53 -> 02:04:31 = **158 min** against a ~102 min
+prediction (55% over; the recompute runs over all 95 WSGs, not the 34).
+
+Every post-condition passed, in the order that matters -- burn before the
+coverage check so a failure cannot leak spend, coverage before the recompute so
+a partial result is never painted as complete:
+
+```
+✓ dispatcher: 19/19   ✓ cy[job1]: 9/9   ✓ cy[job2]: 6/6
+✓ consolidated 2/2 cypher(s)
+✓ burn clean -- doctl: no cypher droplets
+✓ every run WSG has rows in fresh.streams
+✓ recompute done       116 compare rows across 34/34 WSGs
+```
+
+Independent verification (not the exit code):
+
+- 34/34 WSGs have rows and a log entry for this run; **zero** with zero segments
+- `fresh` went **93 -> 95** WSGs; BOWR and PINE were never modelled before
+- Cyphers carry all three SHAs -- `fresh_sha 7f12d99115b7` is #246's acceptance
+  criterion, NA on every cypher before this work
+- `link_sha 50f6d464` identical across all three hosts within the run
+
+Stale WSGs densified as expected post-#223: SETN 80,557 -> 188,552, UFRA
+35,722 -> 96,298, BBAR 24,165 -> 62,623. Already-current ones did not move
+(PARS 97,538 -> 97,533, BULK and MORR unchanged), which is the tell that the
+run refreshed what was stale and left what was current.
+
+**Defect found by verifying rather than reading: `link_dirty = t` on all 21
+dispatcher rows, and it is false.** `git status --porcelain --untracked-files=no`
+was empty -- the only dirt was the run's own 15 log files. Widened #257 to cover
+both call sites (`study_area_run.sh` gate and `.lnk_pkg_git_dirty()` at
+`R/lnk_stamp.R:308`). This matters because `link_dirty` is what tells a reader
+whether `link_sha` can be trusted; always-set means it carries no information.
+
+Cost: ~$0.83 this attempt, ~$1.13 including the killed one.
+
+Left behind: one dangling `fresh.log` row (FRCN, `date_start` set, `date_end`
+NULL) from the killed attempt. Cosmetic, but a naive count treats it as done --
+which is why verification splits it out as its own check.
