@@ -16,3 +16,9 @@ data-raw/maps/*_files/
 
 # Track public-visibility marker even though ~/.gitignore excludes .claude/
 !.claude/visibility
+
+# Per-job recompute logs (link#250). The pool writes one file per WSG into
+# ${TS}_recompute.d/ and concatenates them into the tracked ${TS}_recompute.log;
+# the subdir is removed on success and kept on failure for forensics. Belt to
+# that braces so a killed run cannot commit 217 files to this public repo.
+data-raw/logs/study_area_run/*_recompute.d/

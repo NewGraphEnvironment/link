@@ -54,20 +54,20 @@ Two findings from exploration reshape the work (both recorded in `findings.md`):
 
 ## Phase 4 — the shell fan-out
 
-- [ ] `--recompute-jobs=N` (default 4) on the `--vintage-max-days=` template, with
+- [x] `--recompute-jobs=N` (default 4) on the `--vintage-max-days=` template, with
       an upper bound, echoed in the banner
-- [ ] Hand-rolled bounded pool: `kill -0` liveness + `wait <pid>` (bash 3.2 —
+- [x] Hand-rolled bounded pool: `kill -0` liveness + `wait <pid>` (bash 3.2 —
       `wait -n` unavailable). Per-job `.rc` file is the source of truth, not the harness
-- [ ] Per-job logs in `$LOG_DIR/${TS}_recompute.d/`, concatenated via
+- [x] Per-job logs in `$LOG_DIR/${TS}_recompute.d/`, concatenated via
       `find ... -exec cat {} +`, subdir removed on success and kept on failure
-- [ ] `.gitignore` for the `.d/` + one-level descent in `redact_log_addresses()`
-- [ ] Hoisted view build before fan-out; **no fallback** to per-WSG builds on failure
+- [x] `.gitignore` for the `.d/` + one-level descent in `redact_log_addresses()`
+- [x] Hoisted view build before fan-out; **no fallback** to per-WSG builds on failure
 
 ## Phase 5 — wire failure into the exit code
 
-- [ ] `RECOMPUTE_FAIL` initialised with the other flags, ORed with `RUN_INCOMPLETE`
+- [x] `RECOMPUTE_FAIL` initialised with the other flags, ORed with `RUN_INCOMPLETE`
       at the final gate; `:958` assignment does not move
-- [ ] Separate message per cause — an incomplete recompute is *silently wrong*
+- [x] Separate message per cause — an incomplete recompute is *silently wrong*
       output, not missing output, and needs the re-run command
 
 ## Phase 6 — prove byte-identical output
