@@ -296,7 +296,11 @@ fi
 N_HOSTS=$("${PSQL[@]}" -c "SELECT count(DISTINCT host) FROM ${SCRATCH}.log")
 if [ "${N_HOSTS:-1}" -lt 2 ]; then
   echo "  ⊘ 6c. SKIPPED: run $RUN_UID used one host, so hosts cannot disagree."
-  echo "       Absence reported as absence -- this is NOT a pass."
+  echo "       Absence reported as absence -- this is NOT a pass. Counted as a"
+  echo "       failure, like cases 2, 4 and 5/6: without it the banner would"
+  echo "       read 'the verify script fails when it should' about a brand-new"
+  echo "       assertion this run never exercised."
+  fails=$((fails + 1))
 else
   ODD=$("${PSQL[@]}" -c "SELECT host FROM ${SCRATCH}.log ORDER BY host DESC LIMIT 1")
   "${PSQL[@]}" -c "UPDATE ${SCRATCH}.log SET fresh_sha = 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef'

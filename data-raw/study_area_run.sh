@@ -555,16 +555,34 @@ quit(status = if (isTRUE(res$ok)) 0L else 1L)
   # that writes no Remote* fields at all — so before that script started
   # recording FRESH_GIT_SHA itself, a host updated with it had no recoverable
   # fresh identity. Any host updated by an older copy of it still does not.
-  local fresh_state fresh_sha_local fresh_dirty_local
+  # The third field is a STALENESS check, not a repeat of the first. An env
+  # pin (FRESH_GIT_SHA, written by scripts/update_hosts.sh or cypher_prep.sh)
+  # wins tier 1 and nothing expires it, so a later install by another route --
+  # pak, r-universe, a hand-run R CMD INSTALL -- leaves the old value winning
+  # and this gate reading the very variable it is meant to be gating. Where
+  # the DESCRIPTION also has an answer, the two must agree; where it does not,
+  # there is nothing to check and the pin stands alone.
+  local fresh_state fresh_sha_local fresh_dirty_local fresh_stale
   fresh_state=$(cd "$REPO_ROOT" && LNK_LOAD=loadall Rscript -e '
 suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
 st <- link:::.lnk_pkg_git_state("fresh")
+remote <- link:::.lnk_pkg_remote_sha("fresh")
+stale <- !is.na(remote) && !is.na(st$sha) && !identical(remote, st$sha)
 cat(if (is.na(st$sha)) "" else st$sha, "|",
-    if (is.na(st$dirty)) "" else tolower(as.character(st$dirty)), sep = "")
-' 2>/dev/null) || fresh_state="|"
+    if (is.na(st$dirty)) "" else tolower(as.character(st$dirty)), "|",
+    if (stale) remote else "", sep = "")
+' 2>/dev/null) || fresh_state="||"
   fresh_sha_local="${fresh_state%%|*}"
+  fresh_stale="${fresh_state##*|}"
   fresh_dirty_local="${fresh_state#*|}"
-  if [ -z "$fresh_sha_local" ]; then
+  fresh_dirty_local="${fresh_dirty_local%%|*}"
+  if [ -n "$fresh_stale" ]; then
+    echo "  ✗ FRESH_GIT_SHA pins ${fresh_sha_local:0:12} but the installed fresh"
+    echo "    was built from ${fresh_stale:0:12}. The env pin is stale and would"
+    echo "    be recorded as this run's fresh_sha. Fix: remove FRESH_GIT_SHA from"
+    echo "    ~/.Renviron, or re-run bash scripts/update_hosts.sh fresh"
+    fail=1
+  elif [ -z "$fresh_sha_local" ]; then
     echo "  ✗ fresh_sha unresolvable on this host — every row would land fresh_sha=NA,"
     echo "    which study_area_verify.sql now RAISEs on and parity refuses."
     echo "    Fix: bash scripts/update_hosts.sh fresh   (it records the sha it installs)"

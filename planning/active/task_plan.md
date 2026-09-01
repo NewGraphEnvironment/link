@@ -82,7 +82,15 @@ second, explicit observation on top of one. Kept, and relabelled.
       have failed that host only *after* droplets were paid for
 - [x] Added in round-2 review: `scripts/update_hosts.sh` now resolves the
       commit from the API, fetches **that sha's** tarball, and records
-      `<PKG>_GIT_SHA` / `_GIT_DIRTY` itself
+      `FRESH_GIT_SHA` / `_GIT_DIRTY` itself
+- [x] Narrowed in round-3 review, where **every** finding landed inside that
+      round-2 fix: `| tail -3` swallowed a failed install so the pin was
+      stamped for a build that never happened; pinning `LINK_*` would have
+      made `link_dirty` permanently FALSE on the load_all dispatcher
+      (link#257 in the dangerous direction); the sha is now resolved once per
+      package rather than per host; and the pre-spend gate cross-checks the
+      env pin against `RemoteSha` so a stale pin cannot satisfy the gate that
+      reads it
 - [x] Added in round-2 review: both dirty probes gained `else fail=1` — they
       failed toward *skip*, exporting a SHA with a tick when git errored
 

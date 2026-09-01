@@ -67,24 +67,26 @@ resolve_sha() {   # $1 = pkg. Prints the sha, or exits non-zero.
 }
 
 install_remote() {
-  local host="$1" pkg="$2"
-  local need_sudo="" sha upkg
+  local host="$1" pkg="$2" sha="$3"
+  local need_sudo="" upkg pin=""
   [ "$host" = "cypher" ] && need_sudo="sudo "
-  if ! sha=$(resolve_sha "$pkg"); then
-    echo "FATAL: could not resolve $pkg main sha from the GitHub API." >&2
-    echo "  Refusing to install unpinned: the host would log ${pkg}_sha NULL" >&2
-    echo "  and study_area_run.sh would refuse the run at pre-flight." >&2
-    return 1
-  fi
   upkg=$(printf '%s' "$pkg" | tr '[:lower:]' '[:upper:]')
-  local cmd
-  cmd="set -e
-    cd /tmp
-    rm -rf '${pkg}-${sha}' '${pkg}-${sha}.tar.gz'
-    curl -sSL -o '${pkg}-${sha}.tar.gz' 'https://github.com/NewGraphEnvironment/${pkg}/archive/${sha}.tar.gz'
-    tar xzf '${pkg}-${sha}.tar.gz'
-    ${need_sudo}R CMD INSTALL '${pkg}-${sha}' 2>&1 | tail -3
-    rm -rf '${pkg}-${sha}' '${pkg}-${sha}.tar.gz'
+
+  # ONLY fresh gets an env pin, and link deliberately does not.
+  #
+  # link's identity on every host is the CHECKOUT: the dispatcher runs it via
+  # `LNK_LOAD=loadall` from ~/Projects/repo/link, and .lnk_pkg_git_state()
+  # takes the env var ahead of the .git walk. Writing LINK_GIT_SHA here would
+  # therefore pin log.link_sha to main's tarball commit rather than the branch
+  # that actually ran, and — worse — LINK_GIT_DIRTY=false would make
+  # log.link_dirty FALSE on every dispatcher row forever. That is link#257
+  # reintroduced pointing the dangerous way: the field exists to say "this SHA
+  # cannot be trusted", and a permanent false is the one value that cannot.
+  #
+  # fresh has no checkout on these hosts and no Remote* fields after a tarball
+  # install, so an env pin is the only identity available to it.
+  if [ "$pkg" = "fresh" ]; then
+    pin="
     RENV=\"\$HOME/.Renviron\"
     touch \"\$RENV\"
     RENV_UMASK=\$(umask); umask 077
@@ -98,8 +100,37 @@ install_remote() {
     printf '${upkg}_GIT_SHA=%s\\n'   '${sha}' >> \"\$RENV\"
     printf '${upkg}_GIT_DIRTY=%s\\n' 'false'  >> \"\$RENV\"
     chmod 600 \"\$RENV\"; umask \"\$RENV_UMASK\"
+    echo '${pkg}_sha=${sha}'"
+  fi
+
+  local cmd
+  # `R CMD INSTALL ... | tail -3` reports TAIL's exit status, which is 0 for a
+  # healthy tail whatever the install did — and `set -e` does not propagate
+  # through a pipeline. A failed install would then reach the pin block and
+  # stamp FRESH_GIT_SHA for a build that never happened, satisfying the
+  # pre-flight gate, the parity check and every verify assertion with exactly
+  # the lie they exist to catch. Quieter still when the old version is present:
+  # packageVersion() succeeds and nothing looks wrong at all.
+  #
+  # Tempfile + explicit status check, the same idiom cypher_prep.sh uses for
+  # its pak and snapshot blocks, so the pin is unreachable unless the install
+  # returned 0.
+  cmd="set -e
+    cd /tmp
+    rm -rf '${pkg}-${sha}' '${pkg}-${sha}.tar.gz'
+    curl -sSL -o '${pkg}-${sha}.tar.gz' 'https://github.com/NewGraphEnvironment/${pkg}/archive/${sha}.tar.gz'
+    tar xzf '${pkg}-${sha}.tar.gz'
+    TMP_INSTALL=\$(mktemp)
+    if ! ${need_sudo}R CMD INSTALL '${pkg}-${sha}' > \"\$TMP_INSTALL\" 2>&1; then
+      echo 'FATAL: R CMD INSTALL of ${pkg} failed; nothing pinned. Log:' >&2
+      tail -20 \"\$TMP_INSTALL\" >&2
+      rm -f \"\$TMP_INSTALL\"; rm -rf '${pkg}-${sha}' '${pkg}-${sha}.tar.gz'
+      exit 1
+    fi
+    tail -3 \"\$TMP_INSTALL\"
+    rm -f \"\$TMP_INSTALL\"
+    rm -rf '${pkg}-${sha}' '${pkg}-${sha}.tar.gz'${pin}
     Rscript -e 'cat(\"${pkg}=\", as.character(packageVersion(\"${pkg}\")), \"\\n\", sep=\"\")'
-    echo '${pkg}_sha=${sha}'
   "
   if [ "$host" = "m4" ]; then
     bash -c "$cmd"
@@ -108,9 +139,28 @@ install_remote() {
   fi
 }
 
+# Resolve each package's sha ONCE, before any host is touched. Resolving
+# per (host, pkg) is six API calls over the script's 3-5 minutes, and a push
+# in that window leaves hosts on different commits — the exact axis
+# fresh_sha-as-a-parity-key and study_area_verify.sql's cross-host assertion
+# now refuse a run over. One resolve, one commit, every host.
+declare -a SHAS=()
+for pkg in "${PKGS[@]}"; do
+  if ! sha=$(resolve_sha "$pkg"); then
+    echo "FATAL: could not resolve $pkg main sha from the GitHub API." >&2
+    echo "  Refusing to install unpinned: fresh would log fresh_sha NULL and" >&2
+    echo "  study_area_run.sh would refuse the run at pre-flight." >&2
+    exit 1
+  fi
+  SHAS+=("$sha")
+  echo "resolved $pkg -> ${sha:0:12}"
+done
+
 for h in "${HOSTS[@]}"; do
   echo "=== $h ==="
+  i=0
   for pkg in "${PKGS[@]}"; do
-    install_remote "$h" "$pkg"
+    install_remote "$h" "$pkg" "${SHAS[$i]}"
+    i=$((i + 1))
   done
 done
