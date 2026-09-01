@@ -2057,6 +2057,20 @@ the premise fail.** A count threshold is the usual offender — 206 clears
 ### sf: name validation must account for the geometry column
 - The active geometry column is a named entry in `names(x)`, but its name is **not fixed** — `"geometry"` from `sf::st_read()` of some sources, `"geom"` from a GeoPackage/PostGIS layer, `"geometry"` or `"_ogr_geometry_"` elsewhere. Code that validates user-supplied column names with `cols %in% names(x)` will happily accept the geometry column, then break downstream (`st_join` drops `y`'s geometry, so a requested "attribute" column silently never appears; a 0-row short-circuit path may instead attach a stray empty sfc). A same-name collision check across two sf objects also misses this when the two layers name their geometry differently. Guard explicitly with `attr(x, "sf_column")` — reject it from the caller-supplied column set. (drift#42)
 
+### sf: `st_intersection()` / `st_difference()` return a GEOMETRYCOLLECTION that QGIS will not draw
+- Intersecting or differencing two polygon layers yields a `GEOMETRYCOLLECTION` wherever the inputs *also* touch along a line or at a point. The polygonal part is real and `st_area()` reports it correctly, so every numeric check passes — but QGIS renders the feature as nothing, and it reads to the user as "one row with no geometry".
+- The failure is silent in exactly the wrong direction: written to a GeoPackage the layer reports its `geometry_type` as `Geometry Collection` and its area as correct. Nothing errors. It surfaces only when someone opens it.
+- Whether it fires depends on the geometry, not the code, so the same call can be clean on one input and a collection on the next. Do not conclude from one working case that a path is safe.
+- Fix: `sf::st_collection_extract(g, "POLYGON")` then cast to a single type before writing. Areas are unchanged — the discarded fragments have zero area.
+- **Assert it on anything you hand over**, not just the layer you expect to be interesting: no `GEOMETRYCOLLECTION` in `st_geometry_type()`, and `sum(st_is_empty())` is 0, across *every* layer in the file. Caught 2026-08-31 in floodplains only because the user opened the deliverable and asked why a layer looked empty.
+
+### A per-tenant key looks global whenever your test data has one tenant
+- `code-check-infra.md` records this for database joins (link's `id_segment`, unique per watershed group, cartesian against a multi-tenant table). The same mechanism appears well outside Postgres — in vector attribute tables, exported layers, and anything numbered per group during generation — and the reason it survives review is always the same: **the data that would expose it is the data nobody tested on.**
+- If N-1 of your areas have exactly one tenant, a per-tenant key is *observably* unique in all of them. Verifying uniqueness on one of those and generalising is not carelessness; it is a correct observation about an unrepresentative sample.
+- Caught 2026-08-31 in floodplains: `patch_id` is numbered within each sub-basin. Every whole-watershed-group area has one sub-basin, so `patch_id` was globally unique in all five that had been run. The only subset area (13 sub-basins) had 2032 rows and 1973 distinct ids. Grouping on it alone mis-apportioned by 6%.
+- **The tell is a contradictory pass.** That run reported "weights sum to 1 per patch" and "0 unbridged patches" *and* a 6% shortfall — three results that cannot all be true. A reconciliation check that disagrees with its own component checks is pointing at a key, not at arithmetic.
+- Before keying on an id you did not generate, ask what it is unique *within*, and prefer the composite (`(patch_id, name_basin)`) even where the current data makes the extra column redundant.
+
 ### sf: reproject the polygon to get a lat/lon bbox, never transform the projected bbox corners
 - To hand a geographic (EPSG:4326) bounding box to a bbox-filtered query (WFS/OGC features, `?bbox=`), reproject the whole AOI **geometry** then take its bbox: `sf::st_bbox(sf::st_transform(aoi, 4326))`. Do **not** compute the bbox in the projected CRS and transform its two corner points — a projected rectangle's edges bow under reprojection, so the corner-transformed box is skewed and generally too short on one axis. The pre-filter then silently under-covers the true extent: features inside the AOI but outside the shrunken box are never fetched, and a downstream clip can only *remove*, never recover them. Symptom: counts a few percent low near the north/south extremes of an area, with no error. A native-CRS bbox filter (e.g. ogr2ogr `-spat <bounds> -spat_srs EPSG:3005`) is unaffected — only the reproject-the-corners step is the bug. (rfp#12)
 
@@ -3468,6 +3482,49 @@ Two checks worth making once you have one:
 - **No arm labelled FAIL may exit 0.** Sweep every single-fault state and check the
   label against the exit status; a reported-but-unenforced FAIL trains people to
   ignore the word. Where a condition is deliberately advisory, label it NOTE.
+
+### When a system both records and renders, the rendered copy drifts into fiction
+
+A pipeline that writes a durable record (a log table, a manifest) often also
+renders a human-readable summary beside its output — a `.stamp.md`, a README, a
+report header. Consumers reach for the **rendered** one, because it is a file
+sitting next to the artifact rather than a query against a database they may not
+have. So that is the copy that gets published, and the copy nobody checks.
+
+Measured 2026-09-01 across `link` and `floodplains`. Same runs, two artifacts:
+
+```
+fresh.log            UTRE 1.04 min   UTRE 1.67 min   FRAN 3.33 min   UFRA 4.12 min
+aquatic_network.stamp.md   "Started: 22:42:31  Ended: 22:42:31 (0.0s elapsed)"
+```
+
+The sidecar was constructed by calling the open and the close on **one line**, so
+the interval it reports is the cost of building the stamp object — not the work.
+A 0.0s network build for a 4,877-segment watershed group is not plausible, and
+the file states it as fact. It was a candidate field for publication into a STAC
+catalogue, where a consumer would have had no way to tell a wrong duration from a
+right one.
+
+Two rules, and the second is the one that saves the time:
+
+- **Prefer the record over the rendering** when both exist. The record is written
+  by the code doing the work, at the moment it does it; the rendering is assembled
+  afterwards by code that has to be *told* what happened. Only one of those can be
+  wrong about its own subject.
+- **A duration whose start and end are set in the same expression is not a
+  measurement.** Grep for it: `finish(start(...))`, `stamp <- close(open(x))`, any
+  construction where the two calls cannot have work between them. It reads as
+  bookkeeping and produces a number with a unit.
+
+The wider tell: **a rendered artifact that nothing consumes programmatically has
+nothing keeping it honest.** Tests assert on the record; the sidecar is prose.
+When a downstream repo then starts publishing the sidecar, it inherits every
+drift that accumulated while nobody was reading it — which is exactly when it
+becomes load-bearing.
+
+Same family as *"Measure the output, not the input you handed in"* above, one
+level out: there the probe reads back its own input, here the artifact reports a
+quantity it never observed.
 
 
 # Comms Conventions
