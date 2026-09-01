@@ -509,6 +509,32 @@ Both repos are local on the same machine, same Docker DB and tunnel. fresh can r
 
 **How to apply:** A fresh issue should say `Rscript ~/Projects/repo/link/data-raw/compare_bcfishpass.R BULK` with target numbers, not "we'll test and report back". fresh installs link via `devtools::install_local()` and verifies before pushing.
 
+### Infrastructure identity stays out of this repo
+
+Host aliases, addresses, ssh key names and similar belong in machine-local
+memory, not in link. Migrate the *behaviour* — which port, which failure mode,
+what to do when a host key rotates — and leave the identity behind.
+
+**Why:** link is **PUBLIC**, rtj is **PRIVATE**, and NewGraphEnvironment is a
+personal account — no org-level visibility policy backstops anything. 33 host
+addresses across 101 tracked files were scrubbed on 2026-08-31 (`7b83578`), and
+the run now redacts its own logs from the EXIT trap (`7701ffc`). None of it was
+a credential; the rule is about how the repo reads and where infra identity
+lives, not about any single string being harmful.
+
+**How to apply:** Write the mechanism, not the address. `db_newgraph` is *ours*
+(we pay, Simon runs it) so scrubbing it needs no external approval — but most of
+its ~140 mentions here are legitimate workflow documentation and only the
+**ssh-host-alias** uses are misplaced. Same word, two meanings: do not blanket-
+`sed` it. History still carries what was scrubbed; that is deliberate, and
+current state is what matters. Boundary write-up: rtj#257.
+
+**When auditing for this, prove the search can match before trusting an empty
+result.** A repo-wide audit run with `\b` (which BSD grep does not reliably
+support) returned nothing and was reported as "no IPs in any tracked file"; a
+working pattern on the same tree found 33. Anchor on POSIX classes, and match a
+file you know contains one before concluding a repo is clean.
+
 <!-- BEGIN SOUL CONVENTIONS — DO NOT EDIT BELOW THIS LINE -->
 
 

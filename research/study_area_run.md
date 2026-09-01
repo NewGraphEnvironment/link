@@ -204,3 +204,45 @@ consolidate, and every run WSG must have rows in the persist afterwards.
 
 Measured timings and the four defects that produced these numbers:
 `research/run_record_2026_08_31_cypher_pilots.md`.
+
+## Operational facts from the first real multi-host run (2026-08-31, 34 WSGs)
+
+Migrated from machine-local memory 2026-09-01 (soul#47). The 2026-05-25 gotchas
+above still stand; these are additional and were learned on the field-scope run
+(`20260831_232553`, 3 hosts, 158 min, ~$0.83).
+
+- **Launch a long run DETACHED — `nohup … & disown`.** A run started inside a
+  tool-managed background process is killed when the harness reclaims it.
+  Measured: killed at 33 min, mid-modelling. The EXIT trap fired correctly and
+  burned both droplets, so the loss was ~$0.30 rather than an overnight bill —
+  but the run was gone.
+- **Never touch the repo while a run is in flight.** The dispatcher runs via
+  `pkgload::load_all()`, and the recompute re-reads git state for `lnk_stamp()`.
+  An edit mid-run risks reading a tree that never existed, and stamps
+  `link_dirty` onto part of one run.
+- **`fresh_sha` is legitimately NULL on the dispatcher and non-NULL on cyphers.**
+  m1 installs `fresh` locally (`RemoteType: local`, no `RemoteSha`); cyphers
+  install from GitHub via the DESCRIPTION `Remotes:` pin. A verification
+  asserting it non-NULL everywhere reports a false failure on a healthy m1.
+- **`link_dirty` is currently always TRUE on the dispatcher, and it is FALSE** —
+  the run's own logs land in the tracked `data-raw/logs/`. #257.
+- **Measured timing, 34 WSGs / 3 hosts:** 158 min total — spin + prep + parity
+  ~10, modelling ~83, consolidate + burn + coverage ~11, recompute + compare
+  ~55. The recompute runs over **all** WSGs in the schema (95 at the time), not
+  the run's 34, which is why it dominates and why #250 mattered more than more
+  machines. #250 has since parallelised it; see
+  `research/recompute_parallel_2026_09_01.md` for what that did and did not buy.
+- **Verify a completed run against the DB, never the exit code.** Filter
+  `fresh.log` on `date_end`, **not** `date_start` — a killed run leaves rows
+  with `date_start` set and `date_end` NULL, which a naive count reports as
+  done. `data-raw/study_area_verify.sql` is the reusable checker. Note it cannot
+  yet group a run as a unit: `run_id` is per WSG, so reconstruction is by time
+  window until #262 lands.
+- **Cyphers cost $0.25/hr each** (`s-8vcpu-32gb-amd`, from
+  `doctl compute size list`, 2026-08-31). An earlier note said $0.06, which was
+  wrong. "Minimize idle" therefore means do not leave them up for hours — it is
+  not a reason to shave minutes or to over-engineer an early burn.
+- **Referencing a repo in a markdown FILE never notifies anyone.** Only
+  issue/PR bodies, comments and commit messages create cross-references. So
+  scrubbing an `owner/repo#N` form from docs is safe; writing that form in the
+  commit message that does the scrub is what would notify.
