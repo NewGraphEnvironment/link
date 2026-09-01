@@ -1317,7 +1317,11 @@ else
   echo "  ✗ could not ensure log tables; see $LOG_DIR/${TS}_recompute_logtables.log"
   echo "    the recompute would fail per-WSG on a missing log_recompute"
   RECOMPUTE_FAIL=1
-  RECOMPUTE_FAIL_STAGE="views"
+  # Its OWN stage token. Reusing "views" made the final gate print "the barrier
+  # views could not be built" and point at ${TS}_recompute_views.log -- a file
+  # the views step never wrote, because it is gated on RECOMPUTE_FAIL=0 and
+  # never ran. Two prep steps, two names, two pieces of evidence.
+  RECOMPUTE_FAIL_STAGE="logtables"
 fi
 
 # Build the barrier views ONCE, single-threaded, before any job starts.
@@ -1409,7 +1413,10 @@ if [ "${RUN_INCOMPLETE:-0}" != "0" ] || [ "${RECOMPUTE_FAIL:-0}" != "0" ]; then
     echo "  PRE-consolidate values, so cross-WSG access — hence token1/token2"
     echo "  and ;DAM — is WRONG for them. This is bad output, not missing"
     echo "  output: the compare CSV above will look complete."
-    if [ "${RECOMPUTE_FAIL_STAGE:-pool}" = "views" ]; then
+    if [ "${RECOMPUTE_FAIL_STAGE:-pool}" = "logtables" ]; then
+      echo "  The provenance log tables could not be created, so NO WSG was"
+      echo "  recomputed. See $LOG_DIR/${TS}_recompute_logtables.log."
+    elif [ "${RECOMPUTE_FAIL_STAGE:-pool}" = "views" ]; then
       echo "  The barrier views could not be built, so NO WSG was recomputed."
       echo "  See $LOG_DIR/${TS}_recompute_views.log."
     else

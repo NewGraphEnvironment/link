@@ -31,8 +31,20 @@
 -- row" is precisely the failure the check exists to catch. That is the
 -- guard-defeated-by-its-own-operation shape, and it is the reason the old
 -- hardcoded VALUES list existed at all — the list was the wrong externality,
--- not proof that no externality was needed. A count is the cheap one that
--- survives 217 WSGs; the driver knows it (`csv_count "$ALL_WSGS"`).
+-- not proof that no externality was needed.
+--
+-- expected_n IS THE COUNT OF WSGs EXPECTED TO **MODEL**, WHICH IS NOT THE SIZE
+-- OF THE RUN'S BUCKET. A WSG with no bundle-species presence is skipped by
+-- wsg_run_one.R with exit 0 and writes no log row (link#157), so passing
+-- `csv_count "$ALL_WSGS"` would raise on a perfectly healthy run whenever the
+-- closure contains one. The driver already distinguishes the two: bucket_done()
+-- parses both `done` and `SKIP` lines, so the modelled count is the `done`
+-- lines alone:
+--
+--   sed -nE 's/^\[wsg_run_one\] ([A-Z]{4}) .*done.*/\1/p' <run log> | sort -u | wc -l
+--
+-- Omitting expected_n is legitimate and is reported as NOT CHECKED rather than
+-- silently skipped -- an unasserted count reads exactly like an asserted one.
 --
 -- ON_ERROR_STOP=1 is not decoration. The final check RAISEs, so this script
 -- exits non-zero on a real failure rather than printing a table nobody reads.
@@ -130,6 +142,7 @@ SELECT host,
        count(*) FILTER (WHERE bcfp_model_version
                               IS NOT NULL)               AS has_bcfp_version,
        count(*) FILTER (WHERE link_dirty)                AS n_dirty,
+       count(*) FILTER (WHERE link_dirty IS NULL)        AS n_dirty_unknown,
        min(date_end)                                     AS first_done,
        max(date_end)                                     AS last_done
   FROM :schema.log
@@ -149,6 +162,15 @@ SELECT host,
            THEN 'FAIL: bcfp_model_version NULL (snapshot ledger unreadable?)'
          WHEN count(*) FILTER (WHERE link_dirty) > 0
            THEN 'FAIL: link_dirty set -- tracked code differed from origin'
+         -- NULL is "could not tell", NOT the same as FALSE, and it must not be
+         -- collapsed into it: `x OR link_dirty` yields NULL for a NULL row, so
+         -- the assertion below cannot see these at all. Reported here rather
+         -- than raised, because NA is legitimate for an installed package with
+         -- no .git and no <PKG>_GIT_DIRTY -- raising would refuse every
+         -- hand-run. Unexpected on a driver run, where cypher_prep writes
+         -- LINK_GIT_DIRTY into ~/.Renviron on every worker.
+         WHEN count(*) FILTER (WHERE link_dirty IS NULL) > 0
+           THEN 'NOTE: link_dirty NULL on some rows -- provenance unknown, not clean'
          WHEN host <> 'm1' AND count(*) FILTER (WHERE fresh_sha IS NULL) > 0
            THEN 'FAIL: fresh_sha NULL on a cypher'
          WHEN host = 'm1' AND count(*) FILTER (WHERE fresh_sha IS NOT NULL) > 0
@@ -266,7 +288,7 @@ BEGIN
   -- to all of them -- the guard cannot see what its own input omitted.
   IF n_expect IS NOT NULL AND n_model <> n_expect THEN
     RAISE EXCEPTION
-      'run %: % WSG(s) in the log, but -v expected_n=% was supplied. A WSG that never produced a log row is invisible to every other check on this page.',
+      'run %: % WSG(s) in the log, but -v expected_n=% was supplied. A WSG that never produced a log row is invisible to every other check on this page. If the difference is species-skipped WSGs, expected_n should count MODELLED WSGs (the `done` lines), not the run bucket -- see the header.',
       v_run, n_model, n_expect;
   END IF;
 

@@ -941,14 +941,15 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
 #' before the pool — that last one covers the case where every dispatcher WSG
 #' species-skips and no modelling run ever happens. This asserts presence.
 #'
-#' @return A list with `recompute_id` and `schema`.
-#' @noRd
+#'
 #' `run_uid` / `run_label` default from the environment, exactly as
 #' [lnk_pipeline_run()] does. They must: the whole point of the identifier is
 #' that a WSG's modelling row and its recompute row carry the SAME one, and the
 #' recompute has no other route to it — `study_area_run.sh` invokes this script
 #' per WSG, not through R. Caught by an end-to-end run rather than by the unit
 #' tests, which passed the value explicitly and so never exercised the default.
+#'
+#' @return A list with `recompute_id` and `schema`.
 #' @noRd
 .lnk_log_recompute_start <- function(conn, cfg, aoi,
                                      run_uid = Sys.getenv("LNK_RUN_UID",
