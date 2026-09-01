@@ -2082,6 +2082,9 @@ the premise fail.** A count threshold is the usual offender — 206 clears
   ```
   Their PR now carries a commit whose content is already on main. That is harmless — git sees identical changes on both sides and merges cleanly — and verifiable before you rely on it: `git diff origin/main -- <the-file>` on their branch should be empty. The cost is one duplicated commit message in the log, which is cheaper than a contested force-push.
 - **The moment to use a worktree is when you are about to touch a second repo**, not after something goes wrong. Observed 2026-08-26 in gq#57: a fix in the primary repo needed a matching change in `soul`, and `soul`'s shared checkout had meanwhile been switched to a parallel session's feature branch. The commit landed in their open PR silently — `git push` reported success, because it was a perfectly valid push to a branch nobody had said was wrong.
+- **The mirror case is worse, because the success message means the opposite of what it looks like.** `git push -u origin main` pushes the *local ref named `main`* — not `HEAD`. If a parallel session moved the checkout onto their branch, your commit is on **their** branch, local `main` has not moved, and the push prints **`Everything up-to-date`**. That is indistinguishable from "already pushed", so the natural reading is that the work is safely on origin when nothing was sent at all. Observed 2026-08-31 in rtj: a memory-audit commit reported a clean push and was not on `origin/main`.
+  - **Verify the artifact, not the push output.** `git cat-file -e origin/main:<a file you wrote>` answers the question the exit code does not. A push that says "up-to-date" when you have just committed is a contradiction worth one command.
+  - Prefer `git push origin HEAD` when you mean "publish what I am on", and read `git status -sb` for the branch name **before** committing, not after the push looks odd.
 
 ### Adopting Existing Config
 
@@ -2114,6 +2117,32 @@ When importing config from one location into a canonical one (legacy `~/.bash_pr
 - The tell is when the thing being changed is a **pattern people copy** rather than a function people call. Anything that has ever been pasted into documentation has an unbounded number of call sites, and the repo boundary is exactly where the search stops being meaningful.
 - Ask directly: *what do the downstream users actually read?* Often it is not the API docs. If the answer is a skill file, a README, or an onboarding doc, that file is a call site and belongs in the sweep.
 - (gq#57, 2026-08: the provider inventory was complete within gq — 9 lines, 6 files, verified twice. The consumer projects read `soul/skills/cartography`, which shipped its own hand-rolled snippet naming the broken provider and never called gq's function at all. Fixing gq alone would have left every downstream repo pointed at the watermark. Caught by a reviewer asking what consumers read, not by the grep.)
+
+### A defect's magnitude is dataset-specific — measure it where it lands
+
+- Sibling of the rule above, for numbers rather than enumerations. Once a bug is confirmed, the
+  natural next question is "how bad is it?" — and the natural next move is to measure on whatever
+  fixture is at hand. That number is about **that dataset**, and quoting it about another is a
+  guess wearing a measurement's clothes.
+- The mechanism: a pipeline usually has several constraints, and a defect only reaches the output
+  through the one that binds. Change dataset, change which constraint binds, change the blast
+  radius — with no change to the bug.
+- Measured 2026-08-31 in `flooded`. A units error inflating a modelled depth by 3.59x was measured
+  on the bundled 10 m tile and reported as roughly **2x** the mapped area. On the 30 m production
+  watershed the same defect cost **16%** — because there the slope and cost-distance criteria bind
+  first and clip most of the error before it reaches the boundary. Both numbers are correct; only
+  one of them was about the data anybody cared about.
+- **Tell:** you are about to say "so X is roughly N× off" about a dataset you did not measure. The
+  fixture is convenient precisely because it is small and well-understood, which is also why it
+  does not resemble production.
+- The remedy is usually cheap and nobody reaches for it: **re-run the comparison on the real
+  input.** In the case above the production inputs were already cached on disk, and the corrected
+  run took minutes.
+- Corollary worth stating separately, because it changes what a report has to retract: **ratios and
+  absolutes do not move together.** In the same measurement, absolute disturbed area fell 16% while
+  disturbed-as-percent-of-AOI went 27.51% -> 27.50% — unchanged to two decimals, because the
+  over-mapped margin happened to carry the same land-cover mix as the core. Establish which kind of
+  claim is affected before telling anyone their published numbers are wrong.
 
 ### Do not write to an artifact a human is testing on
 
@@ -2985,6 +3014,68 @@ it never crosses the code that dirties it — the fixture and the guard agree
 about a world the operation has already left. This is the fixture-cannot-reach-
 the-failure-mode rule above, arriving through placement rather than data.
 
+
+### A job that writes into its own tracked output directory poisons every dirty-check
+
+The rule above covers a *guard* defeated by its own operation. The same mechanism
+has a second victim that is quieter and worse: a **provenance field** that records
+whether the tree was dirty.
+
+A run that writes logs, caches, or reports into a tracked directory is dirty from
+its own first write onward. Anything reading `git status` after that gets the
+wrong answer, and there are usually two such readers with different consequences:
+
+| reader | consequence | how it surfaces |
+|---|---|---|
+| a pre-flight gate | refuses to start | loudly, on the next run |
+| a provenance stamp written into the output | records "built from a modified tree" | **never** |
+
+The second inverts the field's entire purpose. A `dirty` flag exists to say *this
+SHA cannot be trusted*. Set unconditionally, it carries no information — and
+readers learn to ignore the column, at which point a genuinely dirty run is
+indistinguishable from a clean one.
+
+Measured 2026-08-31 in link, after a fully successful 34-unit run:
+
+```
+    host     | n_units | n_dirty
+-------------+---------+---------
+ cypher-job1 |       9 |       0
+ cypher-job2 |       6 |       0
+ dispatcher  |      21 |      21     <- every row, and every one false
+
+$ git status --porcelain | wc -l
+15                                    # all of them the run's own logs
+$ git status --porcelain --untracked-files=no
+                                      # empty: zero tracked modifications
+```
+
+Only the dispatcher was affected, because the workers reset to origin and shipped
+their logs back over the wire rather than writing into their own checkout. So the
+defect is invisible on exactly the hosts that are easiest to test, and it survived
+four pilot runs.
+
+**Match the predicate to the subject.** Both readers above actually want *does
+tracked code differ from what will be deployed*, which untracked outputs cannot
+affect:
+
+```bash
+git status --porcelain --untracked-files=no -- . ':(exclude)path/to/logs'
+```
+
+- **`:(exclude)` long form, never `:!`** — `:!path` keeps parsing magic after the
+  `!`, aborts, and an aborted `git status` returns empty, which reads as *clean*.
+  Fail-toward-skip on the guard whose job is to stop the run.
+- **Decide `--untracked-files=no` deliberately.** It also hides a genuinely new
+  uncommitted source file, which *is* invisible to the deploy target and may be
+  the thing you wanted caught. Excluding only the output directory keeps that.
+
+**Fixtures cannot reach this.** A test supplies a clean tree directly and never
+crosses the code that dirties it. The only thing that finds it is verifying a
+*completed real run* against the record it wrote — which is the general lesson:
+when a job writes provenance about itself, read that provenance back and check it
+against independently-measured ground truth, because the job is the one witness
+that cannot contradict itself.
 
 
 # Comms Conventions
