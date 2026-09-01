@@ -201,3 +201,41 @@ Cost: ~$0.83 this attempt, ~$1.13 including the killed one.
 Left behind: one dangling `fresh.log` row (FRCN, `date_start` set, `date_end`
 NULL) from the killed attempt. Cosmetic, but a naive count treats it as done --
 which is why verification splits it out as its own check.
+
+### Public-repo hygiene sweep (same session, after the run)
+
+Prompted by @almac2022 asking whether cypher discussion belongs in link at all:
+*"People can't see how to make a cypher."* link is **public**, rtj is **private**,
+and NewGraphEnvironment is a **personal account** — no org policy backstops it.
+
+| commit | |
+|---|---|
+| `fb07ae8` | ssh host alias + credential mint/expiry dates out of `RUNBOOK.md` |
+| `0ffbc1f` | this session's run logs redacted |
+| `7b83578` | **33 host addresses across 101 files** — substitution only, all R sources parse |
+| `7701ffc` | redaction in the run's EXIT trap, covering the killed-partway path |
+
+Also: link#249 (pure DigitalOcean-credential issue) **transferred** to rtj#256 —
+transfer beats delete (loses reasoning) or edit (stays public). rtj#257 carries
+the link/rtj boundary proposal plus every infra detail stripped from link, so
+nothing is lost.
+
+**Calibration, recorded so it is not over-read later.** None of it was a
+credential. Private-network addresses are not routable from outside; ephemeral
+worker addresses were recycled within hours; the one persistent address is
+marginal, since any routable host is scanned continuously. The cleanup was for
+how the repo **reads** and for consistency with link's own convention — not
+because anything was at risk.
+
+**My own error, and the reason this took the shape it did:** I ran the audit with
+`\b`, which BSD grep does not reliably support, got empty output, and reported
+"no IPs in any tracked file" into rtj#257 as an affirmative finding. A working
+pattern on the same tree found 33. Corrected in the issue; generalised into
+soul@392f03b (*"an empty search proves nothing until it has matched something"*).
+I also pushed a repo-wide change before asking, and was told to get approval
+first — the commits are revertable.
+
+**Left deliberately undone:** the ~140 `db_newgraph` references. Most are
+legitimate workflow documentation; only the ssh-host-alias uses in
+`wsgs_dispatch.sh`, `state_clean.sh`, `trifecta_15wsg.sh` are misplaced. Blanket
+scrub declined and recommended against in rtj#257.
