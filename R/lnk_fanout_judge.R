@@ -98,6 +98,20 @@ lnk_fanout_judge <- function(rc, expected, label = "fanout",
   status <- as.character(rc$rc)
   problems <- character(0)
 
+  # A duplicate in `expected` is a harness bug on the CALLER's side, and it
+  # reads as success if unchecked: `setdiff()` deduplicates `missing` while
+  # `n_expected` counts the duplicate, so expecting c("A", "A") and getting
+  # one clean report yields status "ok" with the message "1/2 succeeded".
+  # study_area_run.sh sorts -u, but both sweep scripts pass an
+  # operator-supplied list straight through.
+  expected_dups <- sort(unique(expected[duplicated(expected)]))
+  if (length(expected_dups)) {
+    problems <- c(problems, sprintf(
+      "%d job id(s) listed more than once in `expected`: %s",
+      length(expected_dups), paste(expected_dups, collapse = ", ")))
+  }
+  expected <- unique(expected)
+
   # An unparseable status is a FAILURE, not a neutral. `as.integer("abc")` is
   # NA and every comparison against NA disappears from `which()`, so a job
   # whose status could not be read would otherwise be counted as fine.
@@ -160,6 +174,13 @@ lnk_fanout_judge <- function(rc, expected, label = "fanout",
     "partial"
   }
 
+  # Everything wrong OTHER than the emptiness itself. `allow_empty` excuses an
+  # empty expectation and nothing else -- without this split, a caller passing
+  # allow_empty with jobs that reported AND FAILED gets ok = TRUE and the
+  # message "OK (none_expected): 0/0 succeeded", while `problems` sits there
+  # recording the failure nobody will read.
+  other_problems <- problems
+
   if (st == "none_expected") {
     problems <- c(
       sprintf("no jobs were expected%s",
@@ -171,7 +192,11 @@ lnk_fanout_judge <- function(rc, expected, label = "fanout",
                   problems)
   }
 
-  ok <- if (st == "none_expected") allow_empty else st == "ok"
+  ok <- if (st == "none_expected") {
+    allow_empty && length(other_problems) == 0L
+  } else {
+    st == "ok"
+  }
 
   out <- list(
     ok = ok, status = st, label = label,

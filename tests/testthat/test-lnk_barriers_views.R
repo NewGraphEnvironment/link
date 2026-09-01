@@ -124,29 +124,38 @@ test_that("recreate = TRUE restores the DROP+CREATE pair", {
   expect_equal(sum(grepl("^CREATE OR REPLACE VIEW", captured)), 19L)
 })
 
-test_that("a column-shape change errors with recreate = TRUE guidance", {
+test_that("every column-shape refusal errors with recreate = TRUE guidance", {
   # Postgres refuses CREATE OR REPLACE when a view's output columns change.
   # The right response is to STOP naming the escape hatch, never to fall back
   # to DROP+CREATE -- that would reintroduce the non-existence window
   # mid-fan-out, which is the whole defect link#250 removed.
-  local_mocked_bindings(
-    .lnk_db_execute = function(conn, sql) {
-      stop("SQL execution failed:\ncannot change name of view column ",
-           "\"barriers_bt_unified_id\" to \"id\"", call. = FALSE)
-    }
+  #
+  # ALL FOUR refusals, verified verbatim against a live server. The wording is
+  # not uniform: three end in "view column" and the drop case does not. A
+  # fixture carrying only the rename message reaches one arm while reading as
+  # coverage of the branch -- which is exactly how the first version of this
+  # regex shipped missing the drop case.
+  msgs <- c(
+    rename    = "cannot change name of view column \"a\" to \"zzz\"",
+    retype    = "cannot change data type of view column \"a\" from integer to text",
+    collation = "cannot change collation of view column \"a\"",
+    drop      = "cannot drop columns from view"
   )
   cfg <- lnk_config("bcfishpass")
-  expect_error(
-    lnk_barriers_views(structure(list(), class = "DBIConnection"),
-                       schema = "working_pars", cfg = cfg, species = "BT"),
-    "recreate = TRUE"
-  )
-  # It must name the view that failed, not just the remedy.
-  expect_error(
-    lnk_barriers_views(structure(list(), class = "DBIConnection"),
-                       schema = "working_pars", cfg = cfg, species = "BT"),
-    "working_pars\\.barriers_bt_unified"
-  )
+  for (nm in names(msgs)) {
+    local_mocked_bindings(
+      .lnk_db_execute = function(conn, sql) {
+        stop("SQL execution failed:\n", msgs[[nm]], call. = FALSE)
+      }
+    )
+    err <- tryCatch(
+      lnk_barriers_views(structure(list(), class = "DBIConnection"),
+                         schema = "working_pars", cfg = cfg, species = "BT"),
+      error = conditionMessage)
+    expect_match(err, "recreate = TRUE", info = nm)
+    # It must name the view that failed, not just the remedy.
+    expect_match(err, "working_pars\\.barriers_bt_unified", info = nm)
+  }
 })
 
 test_that("an unrelated SQL error is re-raised unchanged, not relabelled", {

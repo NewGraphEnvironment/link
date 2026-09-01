@@ -177,13 +177,26 @@ else
 fi
 
 # A digest file with only a header would make every diff trivially equal --
-# three identical empty results reported as a pass. Assert we measured something.
+# three identical empty results reported as a pass. Assert we measured
+# something, and assert it at FULL STRENGTH.
+#
+# The digest emits one row per (table, WSG) over TWO tables, so the expected
+# count is 2 x N_WSG, not N_WSG. `GROUP BY` over zero rows yields no groups,
+# so a streams_mapping_code that is empty for every WSG drops out of the
+# digest entirely -- all three passes then compare equal on streams_access
+# alone, and a threshold of N_WSG still clears. That is the same
+# "three identical empty results reported as a pass" this guard exists to
+# prevent, surviving at half strength.
 N_ROWS=$(($(wc -l < "$OUT_DIR/${TS}_A.csv") - 1))
-if [ "$N_ROWS" -lt "$N_WSG" ]; then
-  echo "  FAIL digest covers $N_ROWS row(s) for $N_WSG WSG(s) — nothing was compared"
+N_EXPECT=$((2 * N_WSG))
+if [ "$N_ROWS" -ne "$N_EXPECT" ]; then
+  echo "  FAIL digest covers $N_ROWS row(s), expected $N_EXPECT (2 tables x $N_WSG WSGs)"
+  echo "       missing (table, WSG) pairs — the comparison is weaker than it looks:"
+  awk -F, 'NR>1{seen[$1"|"$2]=1} END{for(k in seen) print "         have " k}' \
+    "$OUT_DIR/${TS}_A.csv" | sort
   FAILED=1
 else
-  echo "  ok   digest covers $N_ROWS table-WSG row(s)"
+  echo "  ok   digest covers $N_ROWS table-WSG row(s) (2 x $N_WSG)"
 fi
 
 "${PSQL[@]}" -q -c "DROP SCHEMA IF EXISTS $BAK CASCADE;"

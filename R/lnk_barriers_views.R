@@ -276,10 +276,18 @@ lnk_barriers_views <- function(conn, schema, cfg,
     .lnk_db_execute(conn, sql),
     error = function(e) {
       msg <- conditionMessage(e)
-      # Postgres' three shape-change refusals. Matched on the message because
+      # Postgres' four shape-change refusals. Matched on the message because
       # it does not raise a distinguishable condition class through DBI.
-      shape_re <- paste0("cannot (change name of|change data type of|",
-                         "drop columns from) view column")
+      # NOTE the wording is NOT uniform -- three end in "view column", but
+      # the drop case is "cannot drop columns from view" with no trailing
+      # noun. Verified against the live server, because a regex that assumed
+      # a common suffix silently missed that one arm entirely:
+      #   cannot change name of view column "a" to "zzz"
+      #   cannot change data type of view column "a" from integer to text
+      #   cannot change collation of view column "a"
+      #   cannot drop columns from view
+      shape_re <- paste0("cannot (change (name|data type|collation) of ",
+                         "view column|drop columns from view)")
       shape_change <- grepl(shape_re, msg)
       if (!shape_change) stop(e)
       stop("lnk_barriers_views(): the definition of ", view, " changed shape, ",

@@ -41,6 +41,12 @@ eval "$(awk '/^run_recompute_pool\(\)/,/^}/' "$RUN_SH")"
 
 export LNK_SCHEMA="$SCHEMA"
 N_WSG=$(csv_lines "$WSGS" | wc -l | tr -d ' ')
+# ${1:?} rejects an unset/empty arg but not "," -- and with N_WSG=0 the
+# per-width failure marker below compares 0 reported against 0 expected and
+# passes, printing a clean timing table over zero measured jobs. This is the
+# only pool consumer that does not call lnk_fanout_judge, so it needs its own
+# empty branch.
+[ "$N_WSG" -gt 0 ] || { echo "FATAL: no WSGs resolved from '$WSGS'" >&2; exit 1; }
 
 echo "=== recompute width sweep $TS ==="
 echo "  WSGs:   $WSGS ($N_WSG)"
@@ -99,7 +105,30 @@ for w in "${WIDTHS[@]}"; do
     "$(awk -v b="$BASE" -v s="$SEC" 'BEGIN{print (s>0)?b/s:0}')" \
     "$PEAK_B" "$PEAK_W" \
     "$([ "$NRC" = "$N_WSG" ] && [ "$NFAIL" = "0" ] || echo "  <-- $NFAIL failed / $NRC of $N_WSG reported")"
-  rm -rf "$RC_DIR"
+  # Per-job logs KEPT. The makespan of a pool is bounded below by its longest
+  # single job, so "why did -jN not scale" is answered by the per-WSG times
+  # and by nothing else -- deleting them here cost two wrong diagnoses
+  # (a Postgres worker-pool theory and a Docker I/O theory) before the
+  # distribution was looked at. link#250.
+done
+
+echo
+echo "--- slowest jobs per width (the makespan floor is the slowest single one)"
+for w in "${WIDTHS[@]}"; do
+  D="$OUT_DIR/${TS}_j${w}.d"
+  [ -d "$D" ] || continue
+  printf '  -j%-3s ' "$w"
+  # `|| true`: grep exits 1 when a width produced no per-job timings at all,
+  # which is exactly the all-failed case this summary exists to explain --
+  # under `set -euo pipefail` that would kill the script instead.
+  TIMES=$(grep -ho 'recomputed in [0-9.]* min' "$D"/*.log 2>/dev/null | awk '{print $3}' || true)
+  if [ -z "$TIMES" ]; then
+    echo "(no per-job timings — every job failed, or none ran)"
+  else
+    printf '%s\n' "$TIMES" | sort -rn \
+      | awk 'NR==1{mx=$1} NR<=3{printf "%s ", $1"min"} {s+=$1}
+             END{printf " (sum %.1f min, slowest = %.0f%% of it)\n", s, (s>0)?100*mx/s:0}'
+  fi
 done
 echo
 echo "peak backends = concurrent non-worker sessions; peak workers = parallel"

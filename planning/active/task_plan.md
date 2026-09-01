@@ -72,21 +72,24 @@ Two findings from exploration reshape the work (both recorded in `findings.md`):
 
 ## Phase 6 — prove byte-identical output
 
-- [ ] `data-raw/recompute_checksum.sql`: per WSG, columns `ORDER BY column_name`,
+- [x] `data-raw/recompute_checksum.sql`: per WSG, columns `ORDER BY column_name`,
       rows `ORDER BY watershed_group_code, id_segment` (#203), session settings pinned
-- [ ] `data-raw/recompute_parity.sh`: three passes — A serial, B serial again
+- [x] `data-raw/recompute_parity.sh`: three passes — A serial, B serial again
       (idempotence), C parallel with **shuffled** order (order/width invariance)
-- [ ] `H_A == H_B == H_C`
+- [x] `H_A == H_B == H_C`
 
 ## Phase 7 — measure and release
 
-- [ ] `-j ∈ {1,2,4,6,8}` on a fixed subset; peak backends from `pg_stat_activity`
-- [ ] Wall clock before/after, recorded in the PR
-- [ ] v0.48.0 + NEWS naming the exit-code fix explicitly, not as a side effect
+- [x] `-j` sweep on fixed subsets; peak backends + parallel workers sampled from
+      `pg_stat_activity`; two wrong diagnoses recorded in `research/`
+- [x] Wall clock before/after, recorded in the PR — **1.43x / 1.51x, not ~3.4x**;
+      makespan is floored by the slowest single WSG, not by pool width
+- [x] v0.48.0 + NEWS naming the exit-code fix explicitly, not as a side effect
 
 ## Validation
 
-- [ ] Tests pass
-- [ ] `/code-check` clean on each commit
-- [ ] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion
+- [x] Tests pass
+- [x] `/code-check` — run once over the whole branch diff before the PR,
+      not per commit; findings folded in
+- [x] PWF checkboxes match landed work
+- [x] `/planning-archive` on completion

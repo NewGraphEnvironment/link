@@ -99,6 +99,7 @@ RECOMPUTE_JOBS=4
 # Set when the recompute did not complete for every WSG. Initialised here, not
 # at the recompute, so `set -u` cannot bite on any earlier exit path.
 RECOMPUTE_FAIL=0
+RECOMPUTE_FAIL_STAGE=""
 FOCAL_ARR=()
 for arg in "$@"; do
   case "$arg" in
@@ -121,6 +122,11 @@ for arg in "$@"; do
                        case "$RECOMPUTE_JOBS" in
                          ''|*[!0-9]*) echo "FATAL: --recompute-jobs= needs a positive integer (got '$RECOMPUTE_JOBS')" >&2; exit 1 ;;
                        esac
+                       # Base-10 normalise before the bounds: $(( )) reads a
+                       # leading zero as octal, so --recompute-jobs=010 would
+                       # pass a <=16 check on the value 10 and then build an
+                       # 8-slot pool.
+                       RECOMPUTE_JOBS=$((10#$RECOMPUTE_JOBS))
                        [ "$RECOMPUTE_JOBS" -gt 0 ] || { echo "FATAL: --recompute-jobs must be > 0" >&2; exit 1; }
                        # Upper bound: past this the Postgres side is the
                        # constraint, not the cores. Each job builds two GiST
@@ -891,6 +897,41 @@ recompute_one() {   # $1 = WSG
 run_recompute_pool() {   # $1 = width
   local width="$1" slot pid w all_pids=""
   local SLOT_PID
+  # Width must be a positive integer or this HANGS rather than failing:
+  # `seq 0 -1` is empty, so the slot scan never runs, `break 2` is
+  # unreachable, and the outer `while :; sleep 1` spins forever.
+  # --recompute-jobs validates its own input, but recompute_parity.sh and
+  # recompute_sweep.sh pass a width straight through, so the guard belongs
+  # HERE where all three callers meet it.
+  #
+  # SHAPE FIRST, then value. `[ abc -lt 1 ]` exits 2 ("integer expression
+  # expected") rather than returning true, so a numeric-only guard treats a
+  # non-numeric width as "condition false", falls through, and hangs -- which
+  # is the exact failure it was written to prevent. Measured: 0 and -1 were
+  # refused while abc and 2x still hung.
+  case "${width:-}" in
+    ''|*[!0-9]*)
+      echo "FATAL: run_recompute_pool needs a positive integer width (got '${width:-}')" >&2
+      return 1 ;;
+  esac
+  # NORMALISE THE BASE ONCE, before anything consumes it. `test` and `case`
+  # read base 10; `$(( ))` reads a leading zero as OCTAL. So "08" passes both
+  # validators and then dies in `$((width - 1))` with "value too great for
+  # base" -> empty seq -> the same hang; and "010" quietly becomes 8, giving
+  # a pool two slots narrower than the operator asked for and than the banner
+  # reports. Three rounds of this bug were three predicates disagreeing about
+  # the grammar; one normalisation ends the class.
+  width=$((10#$width))
+  # Upper bound HERE, not only on the CLI flag. `10#` wraps silently on
+  # overflow -- 10#99999999999999999999 is 7766279631452241919, which passes
+  # the shape check and the >= 1 test and then sends `seq` off for the rest of
+  # the afternoon. --recompute-jobs is saved by its own <= 16, but
+  # recompute_parity.sh and recompute_sweep.sh pass an operator width straight
+  # through, and this function is what all three callers meet.
+  if [ "$width" -lt 1 ] || [ "$width" -gt 64 ]; then
+    echo "FATAL: run_recompute_pool needs 1 <= width <= 64 (got '$width')" >&2
+    return 1
+  fi
   # Pre-seed every slot. Referencing an unset array element under `set -u` is
   # an unbound-variable error on bash 3.2.
   SLOT_PID=()
@@ -1114,6 +1155,10 @@ else
   echo "  ✗ barrier view build failed; see $LOG_DIR/${TS}_recompute_views.log"
   echo "    skipping the recompute — the run will exit non-zero"
   RECOMPUTE_FAIL=1
+  # Which stage failed decides which evidence exists. The pool never ran, so
+  # RECOMPUTE_LOG and RC_TSV were never created -- naming them at the final
+  # gate would send the operator to two absent files.
+  RECOMPUTE_FAIL_STAGE="views"
 fi
 
 if [ "$RECOMPUTE_FAIL" = "0" ]; then
@@ -1134,6 +1179,7 @@ if [ "$RECOMPUTE_FAIL" = "0" ]; then
     rm -rf "$RC_DIR"
   else
     echo "  ✗ recompute incomplete; see $RECOMPUTE_LOG and $RC_DIR/"
+    RECOMPUTE_FAIL_STAGE="pool"
     # Per-job logs KEPT on failure: the concatenation is the artifact, the
     # per-job files are what you actually grep.
     RECOMPUTE_FAIL=1
@@ -1176,7 +1222,12 @@ if [ "${RUN_INCOMPLETE:-0}" != "0" ] || [ "${RECOMPUTE_FAIL:-0}" != "0" ]; then
     echo "  PRE-consolidate values, so cross-WSG access — hence token1/token2"
     echo "  and ;DAM — is WRONG for them. This is bad output, not missing"
     echo "  output: the compare CSV above will look complete."
-    echo "  See $RECOMPUTE_LOG (and ${RC_TSV} for per-WSG exit status)."
+    if [ "${RECOMPUTE_FAIL_STAGE:-pool}" = "views" ]; then
+      echo "  The barrier views could not be built, so NO WSG was recomputed."
+      echo "  See $LOG_DIR/${TS}_recompute_views.log."
+    else
+      echo "  See $RECOMPUTE_LOG (and ${RC_TSV} for per-WSG exit status)."
+    fi
     echo "  Re-run just those, no full run needed:"
     echo "    LNK_SCHEMA=$SCHEMA LNK_LOAD=loadall \\"
     echo "      Rscript data-raw/wsg_recompute_one.R <WSG> $CONFIG"

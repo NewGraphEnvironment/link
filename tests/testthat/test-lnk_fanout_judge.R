@@ -33,6 +33,25 @@ test_that("allow_empty flips the verdict without turning the branch off", {
   expect_equal(res$status, "none_expected")
 })
 
+test_that("allow_empty does not excuse a job that reported and FAILED", {
+  # The previous test passes a NON-empty `expected`, which routes past the
+  # none_expected branch entirely -- so its premise made this case
+  # unreachable. Here `expected` IS empty, which is the branch allow_empty
+  # governs, and a job still reported a non-zero status. allow_empty excuses
+  # an empty expectation, not a failure.
+  res <- lnk_fanout_judge(rcf("BULK", "1"), expected = character(0),
+                          allow_empty = TRUE, quiet = TRUE)
+  expect_false(res$ok)
+  expect_equal(res$status, "none_expected")
+  expect_match(paste(res$problems, collapse = "\n"), "exited non-zero")
+
+  # ...and the genuinely empty case still passes, so the flag is not simply
+  # broken in the other direction.
+  clean <- lnk_fanout_judge(none(), expected = character(0),
+                            allow_empty = TRUE, quiet = TRUE)
+  expect_true(clean$ok)
+})
+
 test_that("allow_empty does not excuse a non-empty run that failed", {
   # Guards the obvious mis-implementation: allow_empty short-circuiting the
   # whole function rather than just the empty branch.
@@ -122,6 +141,22 @@ test_that("a job that was never asked for fails and is listed separately", {
   expect_false(res$ok)
   expect_equal(res$unexpected, "ZZZZ")
   expect_match(paste(res$problems, collapse = "\n"), "not asked for")
+})
+
+test_that("a duplicate in `expected` fails instead of reading as success", {
+  # setdiff() deduplicates `missing` while n_expected counts the duplicate, so
+  # unchecked this returns status "ok" with "1/2 job(s) succeeded" -- a clean
+  # verdict over a list the caller got wrong. study_area_run.sh sorts -u, but
+  # the sweep scripts pass an operator-supplied list straight through.
+  res <- lnk_fanout_judge(rcf("BULK", "0"), expected = c("BULK", "BULK"),
+                          quiet = TRUE)
+  expect_false(res$ok)
+  expect_match(paste(res$problems, collapse = "\n"),
+               "listed more than once in `expected`")
+  # The dedup must also correct the arithmetic, not just warn about it.
+  expect_equal(res$n_expected, 1L)
+  expect_equal(res$n_ok, 1L)
+  expect_length(res$missing, 0L)
 })
 
 test_that("expected has no default and rc must carry both columns", {
