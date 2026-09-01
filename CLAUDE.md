@@ -11,6 +11,42 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (v0.47.2 as of 2026-08-31)
 
+## Status (2026-08-31, late) — first provenanced multi-host run; scope decided; public-repo hygiene
+
+**34 field WSGs modelled across three hosts, verified against the DB rather than
+an exit code.** Run `20260831_232553`: 19 on m1 (Fraser), 9 + 6 on two cyphers
+(Peace, Skeena). 158 min, ~$0.83. Every post-condition passed — per-host
+completeness 19/19 + 9/9 + 6/6, consolidate 2/2, burn clean, coverage verified,
+116 compare rows across 34/34. `fresh` grew **93 → 95** (BOWR and PINE modelled
+for the first time). Cypher rows carry `fresh_sha` — #246's acceptance criterion,
+`NA` on every cypher before that work. Reusable checker: `data-raw/study_area_verify.sql`.
+
+Measured, and they now drive planning: **modelling 83 min, recompute + compare 55
+min.** The recompute runs over **every WSG in the schema**, not the run's own set,
+so it does not scale with scope the way modelling does — which makes **#250**
+(parallelise it) worth more than more machines.
+
+**Scope decided (#256 closed): all 217 modelable BC watershed groups**, not the
+119-WSG closure and not the 34-WSG field set.
+
+**Three operational facts worth not relearning.** Launch long runs **detached**
+(`nohup … & disown`) — a tool-managed background process gets reclaimed, which
+killed a run at 33 min. **Never touch the repo mid-run**: the dispatcher uses
+`pkgload::load_all()` and the recompute re-reads git state for `lnk_stamp()`.
+And `fresh_sha` is legitimately **NULL on the dispatcher** (local install, no
+`RemoteSha`) and non-NULL only on cyphers — asserting it everywhere reports a
+false failure on a healthy m1.
+
+**link is PUBLIC; rtj is PRIVATE; NewGraphEnvironment is a personal account** —
+no org policy backstops visibility. 33 host addresses across 101 tracked files
+were redacted (`7b83578`), the run now redacts its own logs from the EXIT trap
+(`7701ffc`), and `RUNBOOK.md` lost an ssh host alias and credential dates
+(`fb07ae8`). None of it was a credential; the cleanup is about how the repo reads
+and about link's own rule that infra identity stays in machine-local memory.
+Boundary proposal + preserved details: **rtj#257**; the pure-infra issue moved to
+**rtj#256**. Open: **#257** (`link_dirty` is `t` on every dispatcher row and is
+false — the run's own logs dirty the tree).
+
 ## Status (2026-08-31) — v0.47.2 shipped (#246 Phases 1-2; orchestration proven on a real cypher)
 
 **The pre-flight gates exist and are exercised.** #246's Phases 1-2 shipped as

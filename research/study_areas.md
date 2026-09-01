@@ -18,7 +18,7 @@ the project WSGs go into the GIS.
 |---|---|---|---|
 | Peace | **FWCP** | 8 | 16 |
 | Fraser | **HCTF** (provincial) | 10 | 8 (may be stale) |
-| Skeena | **HCTF** (provincial) | not yet in rtj | 5 |
+| Skeena | **HCTF** (provincial) | 5 | 5 |
 | Columbia / nelson | - | 3 | - |
 
 Only Peace is FWCP. Calling all three "the FWCP study areas" was an error
