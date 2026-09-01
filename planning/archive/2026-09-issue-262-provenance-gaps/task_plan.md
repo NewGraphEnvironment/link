@@ -140,6 +140,6 @@ Gaps 2 and 4 are confirmed as stated.
 ## Validation
 
 - [x] `devtools::test()`, `devtools::document()`, `lintr::lint_package()` clean
-- [ ] `/code-check` clean on each commit
-- [ ] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion
+- [x] `/code-check` — 4 rounds; rounds 1-3 each found real defects in the previous round's fixes; round 4 converged by enumeration
+- [x] PWF checkboxes match landed work
+- [x] `/planning-archive` on completion
