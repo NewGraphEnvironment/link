@@ -60,7 +60,7 @@ OpenTofu will perform the following actions:
           [32m+[0m[0m port_range                = "22"
           [32m+[0m[0m protocol                  = "tcp"
           [32m+[0m[0m source_addresses          = [
-              [32m+[0m[0m "0.0.0.0/0",
+              [32m+[0m[0m "<redacted-ip>/0",
             ]
           [32m+[0m[0m source_droplet_ids        = []
           [32m+[0m[0m source_kubernetes_ids     = []
@@ -71,7 +71,7 @@ OpenTofu will perform the following actions:
           [32m+[0m[0m port_range                = "41641"
           [32m+[0m[0m protocol                  = "udp"
           [32m+[0m[0m source_addresses          = [
-              [32m+[0m[0m "0.0.0.0/0",
+              [32m+[0m[0m "<redacted-ip>/0",
               [32m+[0m[0m "::/0",
             ]
           [32m+[0m[0m source_droplet_ids        = []
@@ -82,7 +82,7 @@ OpenTofu will perform the following actions:
 
       [32m+[0m[0m outbound_rule {
           [32m+[0m[0m destination_addresses          = [
-              [32m+[0m[0m "0.0.0.0/0",
+              [32m+[0m[0m "<redacted-ip>/0",
               [32m+[0m[0m "::/0",
             ]
           [32m+[0m[0m destination_droplet_ids        = []
@@ -93,7 +93,7 @@ OpenTofu will perform the following actions:
         }
       [32m+[0m[0m outbound_rule {
           [32m+[0m[0m destination_addresses          = [
-              [32m+[0m[0m "0.0.0.0/0",
+              [32m+[0m[0m "<redacted-ip>/0",
               [32m+[0m[0m "::/0",
             ]
           [32m+[0m[0m destination_droplet_ids        = []
@@ -105,7 +105,7 @@ OpenTofu will perform the following actions:
         }
       [32m+[0m[0m outbound_rule {
           [32m+[0m[0m destination_addresses          = [
-              [32m+[0m[0m "0.0.0.0/0",
+              [32m+[0m[0m "<redacted-ip>/0",
               [32m+[0m[0m "::/0",
             ]
           [32m+[0m[0m destination_droplet_ids        = []
@@ -146,15 +146,15 @@ Apply complete! Resources: 2 added, 0 changed, 0 destroyed.
 Outputs:
 
 [0mdroplet_id = "596738480"
-droplet_ip = "137.184.114.142"
+droplet_ip = "<redacted-ip>"
 tailnet_name = "cypher-job1"
 
-[cypher_up] droplet IP: 137.184.114.142 (id: 596738480)
+[cypher_up] droplet IP: <redacted-ip> (id: 596738480)
 [cypher_up] waiting for cloud-init to finish (up to 20 min for cold first build)...
 [cypher_up] cloud-init complete
 
 [cypher_up] ready
-  ssh cypher@137.184.114.142  # direct droplet IP (no reserved IP for named workspaces)
+  ssh cypher@<redacted-ip>  # direct droplet IP (no reserved IP for named workspaces)
 
 Next:
   scripts/cypher/cypher_run.sh --workspace job1 <workload>

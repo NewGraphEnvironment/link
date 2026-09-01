@@ -16,8 +16,8 @@ OpenTofu will perform the following actions:
       [31m-[0m[0m graceful_shutdown    = false [90m-> null[0m[0m
       [31m-[0m[0m id                   = "596738480" [90m-> null[0m[0m
       [31m-[0m[0m image                = "228350154" [90m-> null[0m[0m
-      [31m-[0m[0m ipv4_address         = "137.184.114.142" [90m-> null[0m[0m
-      [31m-[0m[0m ipv4_address_private = "10.124.0.6" [90m-> null[0m[0m
+      [31m-[0m[0m ipv4_address         = "<redacted-ip>" [90m-> null[0m[0m
+      [31m-[0m[0m ipv4_address_private = "<redacted-ip>" [90m-> null[0m[0m
       [31m-[0m[0m ipv6                 = false [90m-> null[0m[0m
       [31m-[0m[0m locked               = false [90m-> null[0m[0m
       [31m-[0m[0m memory               = 32768 [90m-> null[0m[0m
@@ -64,7 +64,7 @@ OpenTofu will perform the following actions:
           [31m-[0m[0m port_range                = "22" [90m-> null[0m[0m
           [31m-[0m[0m protocol                  = "tcp" [90m-> null[0m[0m
           [31m-[0m[0m source_addresses          = [
-              [31m-[0m[0m "0.0.0.0/0",
+              [31m-[0m[0m "<redacted-ip>/0",
             ] [90m-> null[0m[0m
           [31m-[0m[0m source_droplet_ids        = [] [90m-> null[0m[0m
           [31m-[0m[0m source_kubernetes_ids     = [] [90m-> null[0m[0m
@@ -75,7 +75,7 @@ OpenTofu will perform the following actions:
           [31m-[0m[0m port_range                = "41641" [90m-> null[0m[0m
           [31m-[0m[0m protocol                  = "udp" [90m-> null[0m[0m
           [31m-[0m[0m source_addresses          = [
-              [31m-[0m[0m "0.0.0.0/0",
+              [31m-[0m[0m "<redacted-ip>/0",
               [31m-[0m[0m "::/0",
             ] [90m-> null[0m[0m
           [31m-[0m[0m source_droplet_ids        = [] [90m-> null[0m[0m
@@ -86,7 +86,7 @@ OpenTofu will perform the following actions:
 
       [31m-[0m[0m outbound_rule {
           [31m-[0m[0m destination_addresses          = [
-              [31m-[0m[0m "0.0.0.0/0",
+              [31m-[0m[0m "<redacted-ip>/0",
               [31m-[0m[0m "::/0",
             ] [90m-> null[0m[0m
           [31m-[0m[0m destination_droplet_ids        = [] [90m-> null[0m[0m
@@ -97,7 +97,7 @@ OpenTofu will perform the following actions:
         }
       [31m-[0m[0m outbound_rule {
           [31m-[0m[0m destination_addresses          = [
-              [31m-[0m[0m "0.0.0.0/0",
+              [31m-[0m[0m "<redacted-ip>/0",
               [31m-[0m[0m "::/0",
             ] [90m-> null[0m[0m
           [31m-[0m[0m destination_droplet_ids        = [] [90m-> null[0m[0m
@@ -109,7 +109,7 @@ OpenTofu will perform the following actions:
         }
       [31m-[0m[0m outbound_rule {
           [31m-[0m[0m destination_addresses          = [
-              [31m-[0m[0m "0.0.0.0/0",
+              [31m-[0m[0m "<redacted-ip>/0",
               [31m-[0m[0m "::/0",
             ] [90m-> null[0m[0m
           [31m-[0m[0m destination_droplet_ids        = [] [90m-> null[0m[0m
@@ -125,7 +125,7 @@ OpenTofu will perform the following actions:
 [0m
 Changes to Outputs:
   [31m-[0m[0m droplet_id   = "596738480" [90m-> null[0m[0m
-  [31m-[0m[0m droplet_ip   = "137.184.114.142" [90m-> null[0m[0m
+  [31m-[0m[0m droplet_ip   = "<redacted-ip>" [90m-> null[0m[0m
   [31m-[0m[0m tailnet_name = "cypher-job1" [90m-> null[0m[0m
 [0m[1mmodule.droplet.digitalocean_firewall.this[0]: Destroying... [id=156fedc0-caca-4fd0-8748-eb670e45aca8][0m[0m
 [0m[1mmodule.droplet.digitalocean_firewall.this[0]: Destruction complete after 0s[0m

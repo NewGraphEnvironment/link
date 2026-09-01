@@ -1,8 +1,8 @@
 [17:58:09] backup local fresh -> /tmp/fresh_pre_consolidate_202608311758.dump
-[18:03:41] cypher@137.184.114.142 -> NOTE: skipping 9 source-only tables (absent on destination): streams_bt, streams_ch, streams_co, streams_habitat, streams_pk, streams_rb, streams_sk, streams_st, streams_v2
-[18:03:41] cypher@137.184.114.142 -> NOTE: skipping 2 destination-only tables (absent on source): crossings_vw_bcfp, streams_vw_bcfp
-[18:03:44] cypher@137.184.114.142 -> DELETE bucket (9 WSGs) from 16 tables
-[18:03:50] cypher@137.184.114.142 -> COPY (bucket-filtered) for 16 tables
+[18:03:41] cypher@<redacted-ip> -> NOTE: skipping 9 source-only tables (absent on destination): streams_bt, streams_ch, streams_co, streams_habitat, streams_pk, streams_rb, streams_sk, streams_st, streams_v2
+[18:03:41] cypher@<redacted-ip> -> NOTE: skipping 2 destination-only tables (absent on source): crossings_vw_bcfp, streams_vw_bcfp
+[18:03:44] cypher@<redacted-ip> -> DELETE bucket (9 WSGs) from 16 tables
+[18:03:50] cypher@<redacted-ip> -> COPY (bucket-filtered) for 16 tables
 COPY 128
 COPY 335662
 COPY 9
@@ -19,7 +19,7 @@ COPY 0
 COPY 0
 COPY 0
 COPY 506088
-[18:06:04] cypher@137.184.114.142 -> DELETE bucket from source (post-COPY cleanup)
+[18:06:04] cypher@<redacted-ip> -> DELETE bucket from source (post-COPY cleanup)
 DELETE 128
 DELETE 335662
 DELETE 9
@@ -36,10 +36,10 @@ DELETE 0
 DELETE 0
 DELETE 0
 DELETE 506088
-[18:06:09] cypher@134.199.216.122 -> NOTE: skipping 9 source-only tables (absent on destination): streams_bt, streams_ch, streams_co, streams_habitat, streams_pk, streams_rb, streams_sk, streams_st, streams_v2
-[18:06:09] cypher@134.199.216.122 -> NOTE: skipping 2 destination-only tables (absent on source): crossings_vw_bcfp, streams_vw_bcfp
-[18:06:10] cypher@134.199.216.122 -> DELETE bucket (6 WSGs) from 16 tables
-[18:06:16] cypher@134.199.216.122 -> COPY (bucket-filtered) for 16 tables
+[18:06:09] cypher@<redacted-ip> -> NOTE: skipping 9 source-only tables (absent on destination): streams_bt, streams_ch, streams_co, streams_habitat, streams_pk, streams_rb, streams_sk, streams_st, streams_v2
+[18:06:09] cypher@<redacted-ip> -> NOTE: skipping 2 destination-only tables (absent on source): crossings_vw_bcfp, streams_vw_bcfp
+[18:06:10] cypher@<redacted-ip> -> DELETE bucket (6 WSGs) from 16 tables
+[18:06:16] cypher@<redacted-ip> -> COPY (bucket-filtered) for 16 tables
 COPY 747
 COPY 315151
 COPY 6
@@ -56,7 +56,7 @@ COPY 374170
 COPY 433339
 COPY 0
 COPY 433339
-[18:08:24] cypher@134.199.216.122 -> DELETE bucket from source (post-COPY cleanup)
+[18:08:24] cypher@<redacted-ip> -> DELETE bucket from source (post-COPY cleanup)
 DELETE 747
 DELETE 315151
 DELETE 6
@@ -146,20 +146,20 @@ DELETE 433339
 69    zz_lnk_mc_scratch_will   19441
 70    zz_lnk_mc_scratch_zymo   24007
 $sources
-$sources$`cypher@137.184.114.142`
-$sources$`cypher@137.184.114.142`$ok
+$sources$`cypher@<redacted-ip>`
+$sources$`cypher@<redacted-ip>`$ok
 [1] TRUE
 
-$sources$`cypher@137.184.114.142`$stage
+$sources$`cypher@<redacted-ip>`$stage
 [1] "complete"
 
-$sources$`cypher@137.184.114.142`$pre_rows
+$sources$`cypher@<redacted-ip>`$pre_rows
 [1] 21563268
 
-$sources$`cypher@137.184.114.142`$post_rows
+$sources$`cypher@<redacted-ip>`$post_rows
 [1] 23951989
 
-$sources$`cypher@137.184.114.142`$copied
+$sources$`cypher@<redacted-ip>`$copied
  [1] "barrier_overrides"         "barriers"                 
  [3] "log"                       "log_input"                
  [5] "modelled_stream_crossings" "streams"                  
@@ -169,32 +169,32 @@ $sources$`cypher@137.184.114.142`$copied
 [13] "streams_habitat_sk"        "streams_habitat_st"       
 [15] "streams_habitat_wct"       "streams_mapping_code"     
 
-$sources$`cypher@137.184.114.142`$errored
+$sources$`cypher@<redacted-ip>`$errored
 character(0)
 
-$sources$`cypher@137.184.114.142`$skipped_source_only
+$sources$`cypher@<redacted-ip>`$skipped_source_only
 [1] "streams_bt"      "streams_ch"      "streams_co"      "streams_habitat"
 [5] "streams_pk"      "streams_rb"      "streams_sk"      "streams_st"     
 [9] "streams_v2"     
 
-$sources$`cypher@137.184.114.142`$skipped_dest_only
+$sources$`cypher@<redacted-ip>`$skipped_dest_only
 [1] "crossings_vw_bcfp" "streams_vw_bcfp"  
 
 
-$sources$`cypher@134.199.216.122`
-$sources$`cypher@134.199.216.122`$ok
+$sources$`cypher@<redacted-ip>`
+$sources$`cypher@<redacted-ip>`$ok
 [1] TRUE
 
-$sources$`cypher@134.199.216.122`$stage
+$sources$`cypher@<redacted-ip>`$stage
 [1] "complete"
 
-$sources$`cypher@134.199.216.122`$pre_rows
+$sources$`cypher@<redacted-ip>`$pre_rows
 [1] 20680020
 
-$sources$`cypher@134.199.216.122`$post_rows
+$sources$`cypher@<redacted-ip>`$post_rows
 [1] 25021435
 
-$sources$`cypher@134.199.216.122`$copied
+$sources$`cypher@<redacted-ip>`$copied
  [1] "barrier_overrides"         "barriers"                 
  [3] "log"                       "log_input"                
  [5] "modelled_stream_crossings" "streams"                  
@@ -204,15 +204,15 @@ $sources$`cypher@134.199.216.122`$copied
 [13] "streams_habitat_sk"        "streams_habitat_st"       
 [15] "streams_habitat_wct"       "streams_mapping_code"     
 
-$sources$`cypher@134.199.216.122`$errored
+$sources$`cypher@<redacted-ip>`$errored
 character(0)
 
-$sources$`cypher@134.199.216.122`$skipped_source_only
+$sources$`cypher@<redacted-ip>`$skipped_source_only
 [1] "streams_bt"      "streams_ch"      "streams_co"      "streams_habitat"
 [5] "streams_pk"      "streams_rb"      "streams_sk"      "streams_st"     
 [9] "streams_v2"     
 
-$sources$`cypher@134.199.216.122`$skipped_dest_only
+$sources$`cypher@<redacted-ip>`$skipped_dest_only
 [1] "crossings_vw_bcfp" "streams_vw_bcfp"  
 
 
