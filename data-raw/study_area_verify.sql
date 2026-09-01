@@ -64,6 +64,25 @@
 \set expected_n ''
 \endif
 
+-- `-v unpinned_ok='<written reason>'` downgrades a missing bcfp_model_version
+-- from a raise to a printed note.
+--
+-- It exists because the driver and this script disagreed, and the driver was
+-- right. preflight_local() treats a missing bcfp baseline as a WARN, saying so
+-- inline: "an unpinned run is worse provenance but still correct modelling, and
+-- refusing to run over it would make the pin a blocker rather than a record."
+-- Raising here unconditionally meant a run the driver deliberately SANCTIONED
+-- could not pass its own verifier -- and at 217 WSGs the natural response is an
+-- hours-long re-run for a shortfall that costs nothing modelling-wise.
+--
+-- A written reason, not a bare flag. Same mechanism as
+-- study_area_run.sh's --preflight-note= and lnk_wsg_downstream_check(override=):
+-- the justification IS the control, so it cannot be waved through by reflex.
+\if :{?unpinned_ok}
+\else
+\set unpinned_ok ''
+\endif
+
 -- Resolve the run. coalesce + a scalar subquery so exactly one row always
 -- comes back: `\gset` against an empty result leaves the variable UNSET, and
 -- every later `:'run_uid'` would then break with an error about syntax rather
@@ -159,7 +178,7 @@ SELECT host,
          WHEN count(*) FILTER (WHERE fwapg_sha IS NULL) > 0
            THEN 'FAIL: fwapg_sha NULL'
          WHEN count(*) FILTER (WHERE bcfp_model_version IS NULL) > 0
-           THEN 'FAIL: bcfp_model_version NULL (snapshot ledger unreadable?)'
+           THEN 'FAIL: bcfp_model_version NULL -- unpinned (see -v unpinned_ok=)'
          WHEN count(*) FILTER (WHERE link_dirty) > 0
            THEN 'FAIL: link_dirty set -- tracked code differed from origin'
          WHEN host <> 'm1' AND count(*) FILTER (WHERE fresh_sha IS NULL) > 0
@@ -265,9 +284,10 @@ SELECT count(DISTINCT run_uid) AS runs_ever_labelled FROM :schema.log;
 -- is a string literal to it -- so the natural form fails with
 -- `syntax error at or near ":"` at run time while reading perfectly. Found by
 -- running it; nothing about the text suggests it.
-SELECT set_config('lnk.run_uid',    :'run_uid',    false) AS run_uid,
-       set_config('lnk.schema',     :'schema',     false) AS schema,
-       set_config('lnk.expected_n', :'expected_n', false) AS expected_n
+SELECT set_config('lnk.run_uid',     :'run_uid',     false) AS run_uid,
+       set_config('lnk.schema',      :'schema',      false) AS schema,
+       set_config('lnk.expected_n',  :'expected_n',  false) AS expected_n,
+       set_config('lnk.unpinned_ok', :'unpinned_ok', false) AS unpinned_ok
 \gset assert_
 
 DO $$
@@ -275,11 +295,13 @@ DECLARE
   v_run    text := current_setting('lnk.run_uid');
   v_sch    text := current_setting('lnk.schema');
   n_expect int  := nullif(current_setting('lnk.expected_n'), '')::int;
+  v_unpin  text := nullif(current_setting('lnk.unpinned_ok'), '');
   n_model  int;
   n_gap    int;
   n_open   int;
   n_seg    int;
   n_prov   int;
+  n_pin    int;
   bad      text;
 BEGIN
   EXECUTE format(
@@ -342,16 +364,32 @@ BEGIN
   -- bcfp_model_run_id are deliberately NOT here -- both are legitimately NULL
   -- on a healthy tunnel-free dispatcher (measured 2026-08-31), and asserting
   -- them reports a false failure.
+  -- Split from the pin check below so the message names the actual problem.
+  -- The combined form said "missing link_sha / fwapg_sha / bcfp_model_version,
+  -- or flagged link_dirty" for any of four unrelated causes, which is a worse
+  -- diagnosis than no message.
   EXECUTE format(
     'SELECT count(*) FROM %I.log
       WHERE run_uid = $1
-        AND (link_sha IS NULL OR fwapg_sha IS NULL
-             OR bcfp_model_version IS NULL OR link_dirty)',
+        AND (link_sha IS NULL OR fwapg_sha IS NULL OR link_dirty)',
     v_sch) INTO n_prov USING v_run;
   IF n_prov > 0 THEN
     RAISE EXCEPTION
-      'run %: % row(s) missing link_sha / fwapg_sha / bcfp_model_version, or flagged link_dirty',
+      'run %: % row(s) missing link_sha or fwapg_sha, or flagged link_dirty',
       v_run, n_prov;
+  END IF;
+
+  -- The bcfp pin, with the sanctioned-unpinned escape.
+  EXECUTE format(
+    'SELECT count(*) FROM %I.log WHERE run_uid = $1 AND bcfp_model_version IS NULL',
+    v_sch) INTO n_pin USING v_run;
+  IF n_pin > 0 THEN
+    IF v_unpin IS NULL THEN
+      RAISE EXCEPTION
+        'run %: % row(s) have no bcfp_model_version, so their parity numbers cannot be traced to a reference build. If this run was knowingly made without a pin (preflight_local warns rather than blocks), re-run with -v unpinned_ok=<written reason>.',
+        v_run, n_pin;
+    END IF;
+    RAISE NOTICE 'NOTE: % row(s) unpinned, accepted: %', n_pin, v_unpin;
   END IF;
 
   RAISE NOTICE 'PASS: run % -- % WSG(s), all modelled, recomputed, segmented and provenanced',

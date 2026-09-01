@@ -30,7 +30,14 @@ SRC_SCHEMA="${2:-fresh}"
 SCRATCH="zz_lnk_verify_negative"
 
 export PGPASSWORD=postgres
-PSQL=(psql -h localhost -p 5432 -U postgres -d fwapg -t -A)
+# ON_ERROR_STOP is load-bearing on the SETUP heredoc below, not decoration:
+# psql continues past a failed statement in a multi-statement script and still
+# exits 0. Without it, a missing ${SRC_SCHEMA}.log_recompute (an older persist,
+# pre-#262) would build a PARTIAL scratch schema silently, case 1 would report
+# "healthy data FAILED", and the operator would be sent to debug
+# study_area_verify.sql when the fault is in this script's own setup. Inert for
+# the single-statement -c probes that share the array.
+PSQL=(psql -h localhost -p 5432 -U postgres -d fwapg -t -A -v ON_ERROR_STOP=1)
 
 RUN_UID="${1:-}"
 if [ -z "$RUN_UID" ]; then
@@ -44,6 +51,20 @@ if [ -z "$RUN_UID" ]; then
   exit 1
 fi
 echo "=== negative test of study_area_verify.sql against run $RUN_UID ==="
+
+# Register the EXIT trap BEFORE anything it cleans up exists. Installing it
+# after `CREATE SCHEMA` leaves a window -- the mktemp and the N_WSG query --
+# in which `set -euo pipefail` can exit with no trap registered, leaking the
+# scratch schema into the database. SCRATCH_MADE exists precisely so the trap
+# can be armed early and still know whether there is anything to drop.
+SCRATCH_MADE=0
+VERIFY_LOG=""
+cleanup() {
+  [ -z "$VERIFY_LOG" ] || rm -f "$VERIFY_LOG"
+  [ "$SCRATCH_MADE" = "1" ] || return 0
+  "${PSQL[@]}" -c "DROP SCHEMA IF EXISTS ${SCRATCH} CASCADE" >/dev/null 2>&1 || true
+}
+trap cleanup EXIT
 
 # A scratch copy: same shape, only this run's rows. The verify script takes
 # -v schema=, so it runs against the copy unmodified — testing the shipped
@@ -69,18 +90,11 @@ echo "  scratch schema $SCRATCH built: $N_WSG WSG(s)"
 # answers the wrong way. Discarding it entirely would leave "case 1 failed but
 # should have passed" with nothing to act on — and that is the case an operator
 # most needs to read, because it invalidates every case after it.
+# One trap, armed above. A second `trap ... EXIT` would REPLACE the first
+# rather than add to it, so both cleanups live in one handler.
 VERIFY_LOG="$(mktemp "${TMPDIR:-/tmp}/lnk_verify_neg.XXXXXX")" || exit 1
 [ -n "$VERIFY_LOG" ] || exit 1
 
-# ONE trap, not two. A second `trap ... EXIT` REPLACES the first rather than
-# adding to it, so registering the scratch-schema drop and then the tempfile
-# cleanup separately would silently leave the schema behind on every run.
-cleanup() {
-  rm -f "$VERIFY_LOG"
-  [ "${SCRATCH_MADE:-0}" = "1" ] || return 0
-  "${PSQL[@]}" -c "DROP SCHEMA IF EXISTS ${SCRATCH} CASCADE" >/dev/null 2>&1 || true
-}
-trap cleanup EXIT
 run_verify() {   # $@ = extra psql -v flags; returns the exit code
   psql -h localhost -p 5432 -U postgres -d fwapg -q \
        -v ON_ERROR_STOP=1 -v run_uid="$RUN_UID" -v schema="$SCRATCH" "$@" \

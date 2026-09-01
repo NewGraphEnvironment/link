@@ -825,14 +825,20 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
 #' `cd ~/Projects/repo/link` inside the ssh string — so cwd resolves on both.
 #' A miss returns NULL rather than erroring; provenance must never kill a run.
 #'
-#' **Tier 0 — `LNK_BCFP_MODEL_VERSION`.** The ledger is a per-host record, and a
-#' cypher has no row of its own: it `git reset --hard`s the repo (so the CSV is
-#' present) but never runs `snapshot_bcfp.sh` under its own hostname, so tier 2
-#' returns NULL there and every cypher row would land unpinned — 13 of 34 in the
-#' last field run, and the majority at 217 WSGs. `study_area_run.sh` already
-#' solves this exact shape for `FWAPG_GIT_SHA`: resolve once on the dispatcher,
-#' export to every host. Tier 0 is that, and it also removes the working-
-#' directory dependence tier 2 would otherwise put on a persisted value.
+#' **Tier 0 — `LNK_BCFP_MODEL_VERSION`.** Every host of one run must pin the
+#' **same** reference, and tier 2 cannot guarantee that: the ledger is a per-host
+#' record, so each cypher would record whatever *it* last snapshotted. The
+#' compare runs on the dispatcher against the dispatcher's
+#' `fresh.streams_vw_bcfp`, so the dispatcher's build is the one every row should
+#' name. `study_area_run.sh` resolves it once in `preflight_local()` and exports
+#' it to both legs — exactly what it already does with `FWAPG_GIT_SHA`. Tier 0
+#' also removes the working-directory dependence tier 2 would otherwise put on a
+#' persisted value.
+#'
+#' (An earlier version of this comment said a cypher has *no* ledger row. That
+#' is wrong: `cypher_prep.sh` runs `snapshot_bcfp.sh`, whose stamp is not gated
+#' on `--with-bcfp-views`, so a cypher does write its own honest row. The reason
+#' tier 0 exists is agreement across hosts, not absence on one.)
 #'
 #' `bcfp_pin_source` records which tier answered, so "not pinned" is
 #' distinguishable from "pinned, from the ledger" without inferring it from a
