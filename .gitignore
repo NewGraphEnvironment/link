@@ -16,3 +16,16 @@ data-raw/maps/*_files/
 
 # Track public-visibility marker even though ~/.gitignore excludes .claude/
 !.claude/visibility
+
+# Per-job recompute logs (link#250). The pool writes one file per WSG into
+# ${TS}_recompute.d/ and concatenates them into the tracked ${TS}_recompute.log;
+# the subdir is removed on success and kept on failure for forensics. Belt to
+# that braces so a killed run cannot commit 217 files to this public repo.
+data-raw/logs/study_area_run/*_recompute.d/
+
+# recompute_parity.sh / recompute_sweep.sh working files. The A/B/C digest
+# CSVs ARE committed -- they are the evidence for link#250's byte-identical
+# claim -- but the per-job scratch and the pg_stat_activity samples are not.
+data-raw/logs/recompute_parity/*.d/
+data-raw/logs/recompute_parity/*.samples
+data-raw/logs/recompute_parity/*.d.tsv

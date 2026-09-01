@@ -9,7 +9,8 @@ lnk_barriers_views(
   schema,
   cfg,
   species = c("BT", "CH", "CM", "CO", "PK", "SK", "ST", "WCT"),
-  barriers_table = NULL
+  barriers_table = NULL,
+  recreate = FALSE
 )
 }
 \arguments{
@@ -32,9 +33,16 @@ phase, which runs BEFORE the per-WSG persist write so persist
 barriers may not yet hold current data. Tunnel-free / link-canonical
 either way (the underlying table has \code{blocks_species} from
 \code{\link[=lnk_barriers_unify]{lnk_barriers_unify()}}).}
+
+\item{recreate}{Logical. \code{FALSE} (default) emits \verb{CREATE OR REPLACE VIEW}
+only. \code{TRUE} restores the historical \verb{DROP VIEW IF EXISTS} +
+\verb{CREATE OR REPLACE VIEW} pair — needed only when a view's \strong{column
+shape} has changed, since \verb{CREATE OR REPLACE} may not rename, retype,
+reorder or drop an output column. See Details for why the default
+changed (link#250).}
 }
 \value{
-\code{invisible(conn)}. Side effect: drops + recreates two views
+\code{invisible(conn)}. Side effect: creates or replaces two views
 per species (\verb{_unified} + \verb{_access}) + three source-typed views in
 \code{schema}.
 }
@@ -87,11 +95,32 @@ built by \code{\link[=lnk_barriers_emit]{lnk_barriers_emit()}} — they're consu
 \code{remediated_dnstr_ind} path which joins to \verb{<schema>.crossings}
 directly, not via the unified barriers table.)
 
-Views are dropped + recreated on each call (\verb{CREATE OR REPLACE VIEW})
-so reruns are safe. The underlying \verb{<persist_schema>.barriers}
-table must exist — typically initialized by \code{\link[=lnk_persist_init]{lnk_persist_init()}} and
-populated by \code{\link[=lnk_barriers_unify]{lnk_barriers_unify()}} + \code{\link[=lnk_pipeline_persist]{lnk_pipeline_persist()}} for
-all WSGs in the regional scope.
+Reruns are safe: each view is emitted with \verb{CREATE OR REPLACE VIEW}, which
+is atomic — a concurrent reader sees either the old definition or the new
+one, never nothing.
+
+Until link 0.47.3 every statement was preceded by \verb{DROP VIEW IF EXISTS}.
+Each statement autocommits, so that pair left a real interval in which the
+view \strong{did not exist}, and a concurrent
+\code{\link[fresh:frs_network_features]{fresh::frs_network_features()}} walk could fail with
+\verb{relation ... does not exist}. The DROP was belt-and-braces from the
+function's first commit rather than a fix for anything, and the view column
+list has not changed since, so \verb{CREATE OR REPLACE} alone is sufficient.
+\code{RUNBOOK.md} §6 records the DROP's cost in the \emph{sequential} case as well:
+an orphaned backend holding a lock on \code{barriers_bt_access} blocked every
+later \verb{DROP VIEW} indefinitely.
+
+If a future change alters a view's column shape, \verb{CREATE OR REPLACE} will
+fail and the error names \code{recreate = TRUE}. That is deliberately not an
+automatic fallback — silently reverting to DROP + CREATE would reintroduce
+the window at the worst moment, part-way through a parallel recompute
+(link#250).
+
+The underlying \verb{<persist_schema>.barriers} table must exist — typically
+initialized by \code{\link[=lnk_persist_init]{lnk_persist_init()}} and populated by \code{\link[=lnk_barriers_unify]{lnk_barriers_unify()}}
+\itemize{
+\item \code{\link[=lnk_pipeline_persist]{lnk_pipeline_persist()}} for all WSGs in the regional scope.
+}
 }
 \examples{
 \dontrun{

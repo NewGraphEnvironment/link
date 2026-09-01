@@ -1,4 +1,4 @@
-test_that("lnk_barriers_views emits one DROP+CREATE per species + 3 source views", {
+test_that("lnk_barriers_views emits one CREATE per species view + 3 source views", {
   captured <- character(0)
   local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) {
@@ -14,9 +14,15 @@ test_that("lnk_barriers_views emits one DROP+CREATE per species + 3 source views
 
   sql <- paste(captured, collapse = "\n")
 
-  # 8 species → DROP+CREATE for _unified AND _access (4 each = 32); plus
-  # 3 source views → 3 DROP + 3 CREATE = 6. Total 38.
-  expect_equal(length(captured), 38L)
+  # 8 species → CREATE for _unified AND _access (2 each = 16); plus 3 source
+  # views = 3. Total 19. Was 38 before link#250 removed the redundant
+  # DROP VIEW that preceded every statement.
+  expect_equal(length(captured), 19L)
+
+  # The DROP is what left a window in which the view did not exist. Assert
+  # its ABSENCE, not just the lower count -- a count alone would still pass
+  # if a DROP were reintroduced alongside a removed CREATE.
+  expect_no_match(sql, "DROP VIEW")
 
   # Per-species views land under <schema>.barriers_<sp>_unified, with
   # the id alias `barriers_<sp>_unified_id` for fresh's feature_id_col
@@ -70,9 +76,8 @@ test_that("lnk_barriers_views honours a custom species set", {
 
   sql <- paste(captured, collapse = "\n")
 
-  # 2 species → 4 each (_unified + _access DROP+CREATE) = 8; plus 3 source
-  # views → 6. Total 14.
-  expect_equal(length(captured), 14L)
+  # 2 species → 2 each (_unified + _access) = 4; plus 3 source views. Total 7.
+  expect_equal(length(captured), 7L)
   expect_match(sql, "barriers_bt_unified")
   expect_match(sql, "barriers_bt_access")
   expect_match(sql, "barriers_sk_access")
@@ -87,4 +92,91 @@ test_that("lnk_barriers_views validates argument shapes", {
   expect_error(lnk_barriers_views(conn, "", cfg))
   expect_error(lnk_barriers_views(conn, "working_pars", list()))
   expect_error(lnk_barriers_views(conn, "working_pars", cfg, species = character(0)))
+  expect_error(lnk_barriers_views(conn, "working_pars", cfg, recreate = NA))
+  expect_error(lnk_barriers_views(conn, "working_pars", cfg, recreate = "yes"))
+})
+
+test_that("recreate = TRUE restores the DROP+CREATE pair", {
+  # The escape hatch for a genuine column-shape change. It must still work,
+  # and it must be the ONLY way to get a DROP -- so this test is what stops
+  # the default from being quietly reverted.
+  captured <- character(0)
+  local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) {
+      captured <<- c(captured, sql); invisible(NULL)
+    }
+  )
+  cfg <- lnk_config("bcfishpass")
+  lnk_barriers_views(
+    structure(list(), class = "DBIConnection"),
+    schema = "working_pars",
+    cfg = cfg,
+    recreate = TRUE
+  )
+
+  sql <- paste(captured, collapse = "\n")
+
+  expect_equal(length(captured), 38L)
+  expect_match(sql, "DROP VIEW IF EXISTS working_pars\\.barriers_bt_access")
+  expect_match(sql, "DROP VIEW IF EXISTS working_pars\\.barriers_dams_unified")
+  # Every DROP is still followed by its CREATE.
+  expect_equal(sum(grepl("^DROP VIEW", captured)), 19L)
+  expect_equal(sum(grepl("^CREATE OR REPLACE VIEW", captured)), 19L)
+})
+
+test_that("every column-shape refusal errors with recreate = TRUE guidance", {
+  # Postgres refuses CREATE OR REPLACE when a view's output columns change.
+  # The right response is to STOP naming the escape hatch, never to fall back
+  # to DROP+CREATE -- that would reintroduce the non-existence window
+  # mid-fan-out, which is the whole defect link#250 removed.
+  #
+  # ALL FOUR refusals, verified verbatim against a live server. The wording is
+  # not uniform: three end in "view column" and the drop case does not. A
+  # fixture carrying only the rename message reaches one arm while reading as
+  # coverage of the branch -- which is exactly how the first version of this
+  # regex shipped missing the drop case.
+  msgs <- c(
+    rename    = "cannot change name of view column \"a\" to \"zzz\"",
+    retype    = "cannot change data type of view column \"a\" from integer to text",
+    collation = "cannot change collation of view column \"a\"",
+    drop      = "cannot drop columns from view"
+  )
+  cfg <- lnk_config("bcfishpass")
+  for (nm in names(msgs)) {
+    local_mocked_bindings(
+      .lnk_db_execute = function(conn, sql) {
+        stop("SQL execution failed:\n", msgs[[nm]], call. = FALSE)
+      }
+    )
+    err <- tryCatch(
+      lnk_barriers_views(structure(list(), class = "DBIConnection"),
+                         schema = "working_pars", cfg = cfg, species = "BT"),
+      error = conditionMessage)
+    expect_match(err, "recreate = TRUE", info = nm)
+    # It must name the view that failed, not just the remedy.
+    expect_match(err, "working_pars\\.barriers_bt_unified", info = nm)
+  }
+})
+
+test_that("an unrelated SQL error is re-raised unchanged, not relabelled", {
+  # The shape-change branch must not swallow ordinary failures -- a missing
+  # barriers table reported as "re-run with recreate = TRUE" would send the
+  # operator to fix the wrong thing.
+  local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) {
+      stop("SQL execution failed:\nrelation \"fresh.barriers\" does not exist",
+           call. = FALSE)
+    }
+  )
+  cfg <- lnk_config("bcfishpass")
+  expect_error(
+    lnk_barriers_views(structure(list(), class = "DBIConnection"),
+                       schema = "working_pars", cfg = cfg, species = "BT"),
+    "does not exist"
+  )
+  msg <- tryCatch(
+    lnk_barriers_views(structure(list(), class = "DBIConnection"),
+                       schema = "working_pars", cfg = cfg, species = "BT"),
+    error = conditionMessage)
+  expect_false(grepl("recreate = TRUE", msg, fixed = TRUE))
 })

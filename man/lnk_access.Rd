@@ -13,7 +13,8 @@ lnk_access(
   table_to,
   merge = FALSE,
   presence = NULL,
-  species = NULL
+  species = NULL,
+  build_views = TRUE
 )
 }
 \arguments{
@@ -41,6 +42,17 @@ surgically UPDATEs \code{table_to}'s \code{aoi} rows (recompute; see Merge mode)
 for \code{aoi}; pass-through to \code{\link[=lnk_pipeline_access]{lnk_pipeline_access()}}.}
 
 \item{species}{Character vector of species codes. Default \code{cfg$species}.}
+
+\item{build_views}{Logical. \code{TRUE} (default) rebuilds the per-species
+\verb{_access} and per-source \verb{_unified} views over \code{table_barriers} on every
+call, via \code{\link[=lnk_barriers_views]{lnk_barriers_views()}}. Pass \code{FALSE} when the caller has
+already built them — the parallel recompute does, once, before it fans
+out (link#250). Those views are \strong{schema-scoped}, so rebuilding them
+per-AOI is the one piece of shared mutation in an otherwise
+AOI-partitioned call, and \verb{CREATE OR REPLACE VIEW} takes an
+\code{AccessExclusiveLock} that queues ahead of every concurrent reader.
+\code{FALSE} \strong{verifies} the views are present rather than trusting the
+caller, and errors naming \code{\link[=lnk_barriers_views]{lnk_barriers_views()}} if they are not.}
 }
 \value{
 \code{conn} invisibly.

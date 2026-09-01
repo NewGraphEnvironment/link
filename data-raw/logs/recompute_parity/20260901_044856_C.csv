@@ -1,0 +1,9 @@
+tbl,watershed_group_code,n_rows,digest
+streams_access,CHES,9332,e6ae0f8bbe52e46b913f6ccefc4fca74
+streams_access,CHWK,8866,2e527bf13e8e16b0c962906983def914
+streams_access,LKEL,7446,fac493b494c0e4d64ccdf0db0daf8813
+streams_access,SALR,10663,37d9b88cb0719fcdf510218c40551043
+streams_mapping_code,CHES,9332,a9a3a997affe67787398d9c05446a812
+streams_mapping_code,CHWK,8866,dd9caff368ffe8cdf96ff6d8ecc57697
+streams_mapping_code,LKEL,7446,98f65ae19f47e3a1b538aaccf154374e
+streams_mapping_code,SALR,10663,375821b99b1a2efe58db212fe10ddf16
