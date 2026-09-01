@@ -888,6 +888,55 @@ recompute_one() {   # $1 = WSG
   return 0
 }
 
+# Order the pool's work list LONGEST-FIRST from previously recorded times.
+#
+# A pool's makespan is bounded below by its slowest single job, so a long job
+# that starts last extends the whole phase. Measured 2026-09-01: CHWK is 226 s
+# against 11 s for SALR, and one WSG was 74% of a four-WSG set. LPT is already
+# this repo's answer for packing components onto hosts (study_area_buckets.R,
+# wsgs_dispatch.sh); this is the same rule one level down, inside one host.
+#
+# Ordered on prior RECOMPUTE times, never on segment count. Segments are a
+# reasonable proxy for modelling work (R^2 0.64 over 104 WSGs) and a bad one
+# here: SALR has 20% MORE segments than CHWK and finishes 20x faster, so a
+# segment ordering would actively run the cheap job first.
+#
+# Times come from previous runs' committed ${TS}_recompute.log files, newest
+# wins. A WSG with no recorded time gets the MEDIAN of those that have one --
+# the same rule study_area_buckets.R uses for a WSG missing from the network
+# table, so an unknown never sorts as free.
+#
+# With NO prior times at all this returns the input order and SAYS SO. The
+# ops-hardening record (planning/archive/2026-05-ops-hardening-20260514) has
+# the precedent: an LPT fallback that silently degraded to a naive split and
+# ignored host speeds went unnoticed across a 217-WSG run.
+recompute_order() {   # $1 = csv of WSGs -> prints WSGs, longest-first
+  local wsgs="$1" tf med n
+  tf=$(mktemp "${TMPDIR:-/tmp}/lnk_rc_times.XXXXXX") || { csv_lines "$wsgs"; return 0; }
+  # sort -r on TS-prefixed names is newest-first; awk keeps the first sighting
+  # of each WSG, so a later run's time wins.
+  find "$LOG_DIR" -maxdepth 1 -name '*_recompute.log' -type f 2>/dev/null \
+    | sort -r \
+    | while IFS= read -r f; do
+        sed -nE 's/^\[wsg_recompute_one\] ([A-Z]{4}) recomputed in ([0-9.]+) min.*/\1 \2/p' "$f"
+      done | awk '!seen[$1]++' > "$tf"
+  n=$(wc -l < "$tf" | tr -d ' ')
+  if [ "${n:-0}" -eq 0 ]; then
+    echo "  note: no prior recompute times in $LOG_DIR — running in input order" >&2
+    rm -f "$tf"; csv_lines "$wsgs"; return 0
+  fi
+  med=$(cut -d' ' -f2 "$tf" | sort -n \
+        | awk '{a[NR]=$1} END{print (NR%2) ? a[(NR+1)/2] : (a[NR/2]+a[NR/2+1])/2}')
+  echo "  ordering ${n} known WSG time(s) longest-first (median ${med} min for the rest)" >&2
+  csv_lines "$wsgs" \
+    | awk -v tf="$tf" -v med="$med" '
+        BEGIN { while ((getline l < tf) > 0) { split(l, a, " "); t[a[1]] = a[2] } }
+        { printf "%s %s\n", ($1 in t ? t[$1] : med), $1 }' \
+    | sort -k1,1nr -k2,2 \
+    | cut -d' ' -f2
+  rm -f "$tf"
+}
+
 # Bounded-width pool. `wait -n` is bash 4.3+ and /bin/bash on macOS is 3.2.57,
 # so a free slot is found by polling liveness with `kill -0` and reaping the
 # finished child with `wait <pid>` (which returns immediately for a child that
@@ -1163,6 +1212,10 @@ fi
 
 if [ "$RECOMPUTE_FAIL" = "0" ]; then
   rm -rf "$RC_DIR"; mkdir -p "$RC_DIR"
+  # Longest-first. Ordering is the CALLER's business -- run_recompute_pool
+  # consumes ALL_WSGS as given, which keeps it testable by pool_probe.sh and
+  # lets recompute_parity.sh shuffle deliberately for its invariance pass.
+  ALL_WSGS=$(recompute_order "$ALL_WSGS" | paste -sd, -)
   run_recompute_pool "$RECOMPUTE_JOBS"
 
   # Never `cat "$RC_DIR"/*` — ARG_MAX at provincial scope. `find -exec ... +`

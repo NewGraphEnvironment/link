@@ -34,11 +34,42 @@ balancing heuristic.
 | LKEL | 7,446 | 40 s |
 
 SALR is 20% **larger** than CHWK and finishes **20× faster**. The cost is in
-the downstream barrier walk, not the segment count — so a bucketing scheme
-balanced on segments (or on persisted rows, as `study_area_buckets.R` does for
-modelling) does **not** balance recompute time. Whether the 34-WSG field set
-or the 217-WSG provincial set contains a similar dominant item is unknown and
-was not measured here; it decides the real speedup, and it needs a real run.
+the downstream barrier walk, not the segment count.
+
+**Two corrections to how this was first written up.** The recompute is not
+bucketed at all — buckets distribute *modelling* across hosts, while the
+recompute runs dispatcher-only over every WSG in the schema. And the bucketing
+was already not naively segment-balanced: link#253 made the packing
+speed-aware (finish time, not raw segments), after link#246 had already moved
+the weight from WSG count to segment count.
+
+What the measurement does bear on is narrower, and genuinely open. #246 chose
+segment count because it beats *WSG* count — "a one-WSG component can outweigh
+a three-WSG one" — and never against measured time. Checked here against the
+104 WSGs of real modelling times already sitting in `_per_wsg_times.csv`:
+
+| | |
+|---|---|
+| Pearson r | 0.798 |
+| R² (time ~ segments) | **0.636** |
+| seconds per 1000 segments | 1.88 → 9.49, a **5× spread** |
+
+Segments explain about two thirds of modelling time. **CHWK is the slowest
+per-segment WSG in modelling too** — 9.49 s/1000, worst of 104 — the same WSG
+that dominated the recompute. So it is an intrinsically expensive watershed
+group, not a recompute quirk.
+
+That is still not sufficient to change `comp_weight`. Measured times are more
+accurate but are not always present, and an LPT fallback that silently
+degraded when they were missing is exactly the incident in
+`planning/archive/2026-05-ops-hardening-20260514/findings.md:23-29` — it
+ignored host speeds across a 217-WSG run and nobody noticed. Segment count is
+one query and never degrades. The tradeoff needs its own measurement on
+modelling, and is filed separately.
+
+Whether the 34-WSG field set or the 217-WSG provincial set contains a
+similarly dominant item is unknown and was not measured here; it decides the
+real speedup, and it needs a real run.
 
 ## Two wrong diagnoses, recorded so they are not re-derived
 
@@ -107,6 +138,15 @@ tables into R and compute there, and every job additionally pays a full
 `pkgload::load_all()` of the source tree (`wsg_recompute_one.R:25-27`).
 
 Two candidates, both out of scope for #250 and both worth their own issue:
+
+0. **Order the pool longest-first — DONE in this PR.** A pool cannot beat its
+   slowest job, and the work list was `sort -u`, i.e. alphabetical. It now
+   orders on prior recompute times from committed `${TS}_recompute.log` files,
+   newest wins, unknown WSGs at the median of the known (the rule
+   `study_area_buckets.R` already uses for a WSG missing from the network
+   table). With no prior times it returns the input order **and says so**,
+   rather than degrading silently. Ordered on recompute times and never on
+   segments, which would put the cheap job first here.
 
 1. **Drop the per-job `load_all()`** — install once, run jobs under
    `library(link)`. Changes the `LNK_LOAD` contract shared with
