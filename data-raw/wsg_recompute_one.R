@@ -59,12 +59,26 @@ pres <- lnk_presence(loaded$wsg_species_presence, wsg)
 sch  <- cfg$pipeline$schema
 t0   <- Sys.time()
 
+# LNK_VIEWS_PREBUILT=1 — study_area_run.sh built the barrier views ONCE
+# before fanning out (link#250, data-raw/barriers_views_build.R). Those views
+# are SCHEMA-scoped and are the only shared mutation this script performs;
+# rebuilding them per WSG under concurrency is a lock convoy, because
+# CREATE OR REPLACE VIEW takes an AccessExclusiveLock and a queued exclusive
+# request blocks every sibling's AccessShareLock behind it.
+#
+# Absent env var -> build them here, exactly as before. A 1-wide run and any
+# hand-invocation of this script are unchanged. lnk_access VERIFIES the views
+# exist when told to skip, so a mis-set flag fails loudly instead of erroring
+# deep inside the network walk.
+.lnk_views_prebuilt <- identical(Sys.getenv("LNK_VIEWS_PREBUILT"), "1")
+
 # 1. Surgically recompute streams_access (cross-WSG cols) in place.
 lnk_access(conn, cfg, aoi = wsg,
   table_streams  = paste0(sch, ".streams"),
   table_barriers = paste0(sch, ".barriers"),
   table_to       = paste0(sch, ".streams_access"),
-  merge = TRUE, presence = pres, species = active)
+  merge = TRUE, presence = pres, species = active,
+  build_views = !.lnk_views_prebuilt)
 
 # 2. Rebuild mapping_code from the updated access -> scratch -> persist.
 sp_set <- tolower(active)

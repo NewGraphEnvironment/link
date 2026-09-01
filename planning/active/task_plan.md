@@ -31,15 +31,15 @@ Two findings from exploration reshape the work (both recorded in `findings.md`):
 
 ## Phase 2 — hoist the view build (v0.48.0)
 
-- [ ] `R/lnk_access.R`: add `build_views = TRUE`; when `FALSE`, **verify the views
+- [x] `R/lnk_access.R`: add `build_views = TRUE`; when `FALSE`, **verify the views
       exist** and `stop()` naming `lnk_barriers_views()` rather than trusting
-- [ ] `data-raw/barriers_views_build.R`: thin entry point on the `host_vintage.R`
+- [x] `data-raw/barriers_views_build.R`: thin entry point on the `host_vintage.R`
       model, builds the family once for `cfg$species`
-- [ ] `data-raw/wsg_recompute_one.R`: read `LNK_VIEWS_PREBUILT=1`, pass
+- [x] `data-raw/wsg_recompute_one.R`: read `LNK_VIEWS_PREBUILT=1`, pass
       `build_views = FALSE`; absent env var → unchanged behaviour
-- [ ] `tests/testthat/test-lnk_access.R`: guard fires on absent views; confirm
+- [x] `tests/testthat/test-lnk_access.R`: guard fires on absent views; confirm
       `.lnk_table_exists()` is true for a **view**, not just a table
-- [ ] Exercise serially on a real WSG set before Phase 4
+- [x] Exercise serially on a real WSG set before Phase 4
 
 ## Phase 3 — `lnk_fanout_judge()` (pure addition, no caller)
 

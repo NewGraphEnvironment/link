@@ -60,6 +60,16 @@
 #' @param presence An `lnk_presence` object or `NULL`. Per-species presence
 #'   for `aoi`; pass-through to [lnk_pipeline_access()].
 #' @param species Character vector of species codes. Default `cfg$species`.
+#' @param build_views Logical. `TRUE` (default) rebuilds the per-species
+#'   `_access` and per-source `_unified` views over `table_barriers` on every
+#'   call, via [lnk_barriers_views()]. Pass `FALSE` when the caller has
+#'   already built them — the parallel recompute does, once, before it fans
+#'   out (link#250). Those views are **schema-scoped**, so rebuilding them
+#'   per-AOI is the one piece of shared mutation in an otherwise
+#'   AOI-partitioned call, and `CREATE OR REPLACE VIEW` takes an
+#'   `AccessExclusiveLock` that queues ahead of every concurrent reader.
+#'   `FALSE` **verifies** the views are present rather than trusting the
+#'   caller, and errors naming [lnk_barriers_views()] if they are not.
 #'
 #' @return `conn` invisibly.
 #'
@@ -93,7 +103,7 @@
 #' @export
 lnk_access <- function(conn, cfg, aoi, table_streams, table_barriers,
                        table_to, merge = FALSE, presence = NULL,
-                       species = NULL) {
+                       species = NULL, build_views = TRUE) {
   stopifnot(
     inherits(conn, "DBIConnection"),
     inherits(cfg, "lnk_config"),
@@ -102,7 +112,8 @@ lnk_access <- function(conn, cfg, aoi, table_streams, table_barriers,
     is.character(table_barriers), length(table_barriers) == 1L, nzchar(table_barriers),
     is.character(table_to), length(table_to) == 1L, nzchar(table_to),
     is.logical(merge), length(merge) == 1L,
-    is.null(species) || is.character(species)
+    is.null(species) || is.character(species),
+    is.logical(build_views), length(build_views) == 1L, !is.na(build_views)
   )
 
   species <- if (is.null(species)) cfg$species else species
@@ -115,16 +126,36 @@ lnk_access <- function(conn, cfg, aoi, table_streams, table_barriers,
   # read it + the sibling barrier_overrides). Derive it from the qualified name.
   view_schema <- sub("\\.[^.]+$", "", table_barriers)
 
-  # 1. Per-species `_access` + per-source `_unified` views over table_barriers.
-  lnk_barriers_views(conn, schema = view_schema, cfg = cfg,
-                     species = toupper(sp_set), barriers_table = table_barriers)
-
   barriers_per_sp <- stats::setNames(
     as.list(paste0(view_schema, ".barriers_", sp_set, "_access")), sp_set)
   barrier_sources <- list(
     anthropogenic = paste0(view_schema, ".barriers_anthropogenic_unified"),
     pscis         = paste0(view_schema, ".barriers_pscis_unified"),
     dams          = paste0(view_schema, ".barriers_dams_unified"))
+
+  # 1. Per-species `_access` + per-source `_unified` views over table_barriers.
+  if (isTRUE(build_views)) {
+    lnk_barriers_views(conn, schema = view_schema, cfg = cfg,
+                       species = toupper(sp_set), barriers_table = table_barriers)
+  } else {
+    # `build_views = FALSE` is a promise the CALLER made. Verify it rather
+    # than trust it. An absent view otherwise fails deep inside the network
+    # walk with a bare "relation does not exist", and under a fan-out that
+    # reads as one WSG's [WARN] rather than as the operator error it is.
+    # `.lnk_table_exists` is true for views as well as tables (verified
+    # against fresh.barriers_ch_access, link#250).
+    need <- c(unlist(barriers_per_sp, use.names = FALSE),
+              unlist(barrier_sources, use.names = FALSE))
+    absent <- need[!vapply(need, function(v) .lnk_table_exists(conn, v),
+                           logical(1))]
+    if (length(absent)) {
+      stop("lnk_access(build_views = FALSE) but these are missing from ",
+           view_schema, ": ", paste(absent, collapse = ", "),
+           "\n  Build them first with lnk_barriers_views(conn, schema = \"",
+           view_schema, "\", cfg = cfg), or pass build_views = TRUE.",
+           call. = FALSE)
+    }
+  }
 
   # AOI-scope the segments — and as a real TABLE (with indexes + ANALYZE),
   # NOT a view. `frs_network_features` joins segments to features via
