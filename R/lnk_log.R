@@ -144,7 +144,13 @@
       "whse_basemapping.fwa_lakes_poly",
       "whse_basemapping.fwa_wetlands_poly",
       "whse_basemapping.fwa_rivers_poly",
-      "whse_basemapping.fwa_obstacles_sp",
+      # fwa_obstructionS_sp, not fwa_obstacles_sp. There is no table by the
+      # latter name anywhere in fwapg (repo-wide grep: zero hits) and there
+      # never has been, so this row fingerprinted nothing for 429 log_input
+      # rows — the NULL was honest about a question asked wrongly, not about a
+      # table we could not measure. The real table is downloaded by
+      # fwapg/load.sh:20 and holds 32,541 rows here (link#271).
+      "whse_basemapping.fwa_obstructions_sp",
       "bcfishobs.observations",
       "whse_fish.pscis_assessment_svw",
       "cabd.dams",
