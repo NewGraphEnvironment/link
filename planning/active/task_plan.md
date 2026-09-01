@@ -73,9 +73,18 @@ second, explicit observation on top of one. Kept, and relabelled.
 
 - [ ] `preflight_local()` resolves `BCFISHOBS_GIT_SHA`, fails on a dirty
       checkout, exports it
-- [ ] Export added to **both** ssh strings that carry `FWAPG_GIT_SHA`
-- [ ] `cypher_prep.sh` writes `FRESH_GIT_DIRTY` — strip list **and** write block
-- [ ] `bash -n` both scripts; each export confirmed inside the quoted ssh body
+- [x] Export added to **both** ssh strings that carry `FWAPG_GIT_SHA`
+- [x] `cypher_prep.sh` writes `FRESH_GIT_DIRTY` — strip list **and** write block
+- [x] `bash -n` both scripts; each export confirmed inside the quoted ssh body
+- [x] Added in round-2 review: a **pre-spend `fresh_sha` gate**, because
+      `scripts/update_hosts.sh` installs fresh via `R CMD INSTALL` of a source
+      tarball, which writes no `Remote*` fields — so the new assertions would
+      have failed that host only *after* droplets were paid for
+- [x] Added in round-2 review: `scripts/update_hosts.sh` now resolves the
+      commit from the API, fetches **that sha's** tarball, and records
+      `<PKG>_GIT_SHA` / `_GIT_DIRTY` itself
+- [x] Added in round-2 review: both dirty probes gained `else fail=1` — they
+      failed toward *skip*, exporting a SHA with a tick when git errored
 
 ## Phase 4: pre-flight parity
 

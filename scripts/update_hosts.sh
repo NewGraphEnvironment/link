@@ -37,19 +37,69 @@ done
 #      R 4.5 mismatch surfaces as the pak#658 bug
 #   2. link + fresh are pure-R packages — source install is fast (~10s each)
 #   3. One canonical recipe across all hosts
+# `R CMD INSTALL` of a source tarball writes NO Remote* fields, so a package
+# installed this way has no recoverable commit identity: link's
+# .lnk_pkg_git_state() finds no RemoteSha and no .git, and the run logs a NULL
+# fresh_sha. That was tolerated until link#264 made the column load-bearing —
+# it is now a pre-flight failure and a study_area_verify.sql RAISE.
+#
+# So this script records what it installed. Two details, both load-bearing:
+#
+#   * The SHA is resolved from the GitHub API FIRST and the tarball is then
+#     fetched BY THAT SHA, not by `refs/heads/main`. Fetching main and
+#     recording a separately-resolved sha races: a push between the two calls
+#     makes the recorded sha describe code this host never installed, which is
+#     precisely the lie the field exists to prevent.
+#   * `_GIT_DIRTY=false` is a fact, not an optimism: a published commit's
+#     tarball is not a working tree and has no uncommitted state.
+#
+# These are the same ~/.Renviron keys `data-raw/cypher_prep.sh` owns. Both
+# write the truth about whatever they just installed, so whichever ran last is
+# correct — but do not add a third writer without re-reading both.
+resolve_sha() {   # $1 = pkg. Prints the sha, or exits non-zero.
+  local sha
+  sha=$(curl -sSL -H 'Accept: application/vnd.github.sha' \
+        "https://api.github.com/repos/NewGraphEnvironment/$1/commits/main") || return 1
+  # Anchored, because an API error body is a 200-with-JSON and would otherwise
+  # be written into the env var as if it were a commit.
+  printf '%s' "$sha" | grep -qE '^[0-9a-f]{40}$' || return 1
+  printf '%s' "$sha"
+}
+
 install_remote() {
   local host="$1" pkg="$2"
-  local need_sudo=""
+  local need_sudo="" sha upkg
   [ "$host" = "cypher" ] && need_sudo="sudo "
+  if ! sha=$(resolve_sha "$pkg"); then
+    echo "FATAL: could not resolve $pkg main sha from the GitHub API." >&2
+    echo "  Refusing to install unpinned: the host would log ${pkg}_sha NULL" >&2
+    echo "  and study_area_run.sh would refuse the run at pre-flight." >&2
+    return 1
+  fi
+  upkg=$(printf '%s' "$pkg" | tr '[:lower:]' '[:upper:]')
   local cmd
   cmd="set -e
     cd /tmp
-    rm -rf '${pkg}-main' '${pkg}-main.tar.gz'
-    curl -sSL -o '${pkg}-main.tar.gz' 'https://github.com/NewGraphEnvironment/${pkg}/archive/refs/heads/main.tar.gz'
-    tar xzf '${pkg}-main.tar.gz'
-    ${need_sudo}R CMD INSTALL '${pkg}-main' 2>&1 | tail -3
-    rm -rf '${pkg}-main' '${pkg}-main.tar.gz'
+    rm -rf '${pkg}-${sha}' '${pkg}-${sha}.tar.gz'
+    curl -sSL -o '${pkg}-${sha}.tar.gz' 'https://github.com/NewGraphEnvironment/${pkg}/archive/${sha}.tar.gz'
+    tar xzf '${pkg}-${sha}.tar.gz'
+    ${need_sudo}R CMD INSTALL '${pkg}-${sha}' 2>&1 | tail -3
+    rm -rf '${pkg}-${sha}' '${pkg}-${sha}.tar.gz'
+    RENV=\"\$HOME/.Renviron\"
+    touch \"\$RENV\"
+    RENV_UMASK=\$(umask); umask 077
+    RC=0
+    grep -vE '^(${upkg}_GIT_SHA|${upkg}_GIT_DIRTY)=' \"\$RENV\" > \"\$RENV.tmp\" || RC=\$?
+    if [ \"\$RC\" -gt 1 ]; then
+      echo 'FATAL: could not read ~/.Renviron; refusing to overwrite it' >&2
+      rm -f \"\$RENV.tmp\"; exit 1
+    fi
+    mv \"\$RENV.tmp\" \"\$RENV\"
+    printf '${upkg}_GIT_SHA=%s\\n'   '${sha}' >> \"\$RENV\"
+    printf '${upkg}_GIT_DIRTY=%s\\n' 'false'  >> \"\$RENV\"
+    chmod 600 \"\$RENV\"; umask \"\$RENV_UMASK\"
     Rscript -e 'cat(\"${pkg}=\", as.character(packageVersion(\"${pkg}\")), \"\\n\", sep=\"\")'
+    echo '${pkg}_sha=${sha}'
   "
   if [ "$host" = "m4" ]; then
     bash -c "$cmd"

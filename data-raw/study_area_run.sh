@@ -495,9 +495,17 @@ quit(status = if (isTRUE(res$ok)) 0L else 1L)
   local fwapg_dir fwdirty
   fwapg_dir="${FWAPG_DIR:-$HOME/Projects/repo/fwapg}"
   if FWAPG_SHA=$(git -C "$fwapg_dir" rev-parse HEAD 2>/dev/null) && [ -n "$FWAPG_SHA" ]; then
+    # `else fail=1` is not decoration. Without it the probe fails toward SKIP:
+    # a git that errors makes the inner `if` false, nothing is reported, and
+    # the SHA is exported with a tick. There is deliberately no fwapg_dirty
+    # column, so this gate is the ONLY thing standing between a modified
+    # checkout and a SHA recorded as if it described one.
     if fwdirty=$(git -C "$fwapg_dir" status --porcelain 2>/dev/null); then
       [ -z "$fwdirty" ] \
         || { echo "  ✗ fwapg checkout dirty ($fwapg_dir) — the SHA stamped into log.fwapg_sha would be a lie"; fail=1; }
+    else
+      echo "  ✗ could not read git status in $fwapg_dir — cannot certify fwapg_sha clean"
+      fail=1
     fi
     export FWAPG_GIT_SHA="$FWAPG_SHA"
     echo "  ✓ fwapg_sha ${FWAPG_SHA:0:12} (exported to all hosts)"
@@ -524,12 +532,52 @@ quit(status = if (isTRUE(res$ok)) 0L else 1L)
     if bcfo_dirty=$(git -C "$bcfo_dir" status --porcelain 2>/dev/null); then
       [ -z "$bcfo_dirty" ] \
         || { echo "  ✗ bcfishobs checkout dirty ($bcfo_dir) — the SHA stamped into log.bcfishobs_sha would be a lie"; fail=1; }
+    else
+      echo "  ✗ could not read git status in $bcfo_dir — cannot certify bcfishobs_sha clean"
+      fail=1
     fi
     export BCFISHOBS_GIT_SHA="$BCFISHOBS_SHA"
     echo "  ✓ bcfishobs_sha ${BCFISHOBS_SHA:0:12} (exported to all hosts)"
   else
     echo "  ✗ no bcfishobs checkout at $bcfo_dir — set BCFISHOBS_DIR, or every row lands bcfishobs_sha=NA"
     fail=1
+  fi
+
+  # --- gate: fresh's own code identity, BEFORE any spend (link#264) -------
+  # fresh_sha and fresh_dirty are asserted on every host by
+  # study_area_verify.sql, and fresh_sha is a lnk_preflight_parity key. Both
+  # of those fire LATE: parity runs after spin + prep, so an unresolvable
+  # fresh burns droplets before anyone finds out, and verify runs after the
+  # whole run. This is the same fact, five seconds in, for free.
+  #
+  # The state that reaches it is not exotic. `scripts/update_hosts.sh` uses
+  # `R CMD INSTALL` on a source tarball to route around r-lib/pak#658, and
+  # that writes no Remote* fields at all — so before that script started
+  # recording FRESH_GIT_SHA itself, a host updated with it had no recoverable
+  # fresh identity. Any host updated by an older copy of it still does not.
+  local fresh_state fresh_sha_local fresh_dirty_local
+  fresh_state=$(cd "$REPO_ROOT" && LNK_LOAD=loadall Rscript -e '
+suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
+st <- link:::.lnk_pkg_git_state("fresh")
+cat(if (is.na(st$sha)) "" else st$sha, "|",
+    if (is.na(st$dirty)) "" else tolower(as.character(st$dirty)), sep = "")
+' 2>/dev/null) || fresh_state="|"
+  fresh_sha_local="${fresh_state%%|*}"
+  fresh_dirty_local="${fresh_state#*|}"
+  if [ -z "$fresh_sha_local" ]; then
+    echo "  ✗ fresh_sha unresolvable on this host — every row would land fresh_sha=NA,"
+    echo "    which study_area_verify.sql now RAISEs on and parity refuses."
+    echo "    Fix: bash scripts/update_hosts.sh fresh   (it records the sha it installs)"
+    fail=1
+  elif [ "$fresh_dirty_local" = "true" ]; then
+    echo "  ✗ fresh reports dirty — the SHA stamped into log.fresh_sha would be a lie"
+    fail=1
+  elif [ -z "$fresh_dirty_local" ]; then
+    echo "  ✗ fresh_dirty unresolvable — 'unknown' is not 'clean', and log.fresh_sha"
+    echo "    cannot be trusted without it. Fix: bash scripts/update_hosts.sh fresh"
+    fail=1
+  else
+    echo "  ✓ fresh_sha ${fresh_sha_local:0:12} (clean)"
   fi
 
   # --- gate: bcfp reference pinned, and exported to all hosts (link#262) --
