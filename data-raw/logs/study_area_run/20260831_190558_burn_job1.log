@@ -16,8 +16,8 @@ OpenTofu will perform the following actions:
       [31m-[0m[0m graceful_shutdown    = false [90m-> null[0m[0m
       [31m-[0m[0m id                   = "596689967" [90m-> null[0m[0m
       [31m-[0m[0m image                = "228350154" [90m-> null[0m[0m
-      [31m-[0m[0m ipv4_address         = "147.182.228.14" [90m-> null[0m[0m
-      [31m-[0m[0m ipv4_address_private = "10.124.0.2" [90m-> null[0m[0m
+      [31m-[0m[0m ipv4_address         = "<host>" [90m-> null[0m[0m
+      [31m-[0m[0m ipv4_address_private = "<host>" [90m-> null[0m[0m
       [31m-[0m[0m ipv6                 = false [90m-> null[0m[0m
       [31m-[0m[0m locked               = false [90m-> null[0m[0m
       [31m-[0m[0m memory               = 32768 [90m-> null[0m[0m
@@ -125,7 +125,7 @@ OpenTofu will perform the following actions:
 [0m
 Changes to Outputs:
   [31m-[0m[0m droplet_id   = "596689967" [90m-> null[0m[0m
-  [31m-[0m[0m droplet_ip   = "147.182.228.14" [90m-> null[0m[0m
+  [31m-[0m[0m droplet_ip   = "<host>" [90m-> null[0m[0m
   [31m-[0m[0m tailnet_name = "cypher-job1" [90m-> null[0m[0m
 [0m[1mmodule.droplet.digitalocean_firewall.this[0]: Destroying... [id=2b99f569-a20d-49bf-a516-a39d795c2779][0m[0m
 [0m[1mmodule.droplet.digitalocean_firewall.this[0]: Destruction complete after 0s[0m

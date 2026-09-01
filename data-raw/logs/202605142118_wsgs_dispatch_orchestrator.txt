@@ -19,7 +19,7 @@
 ============================================
 
 [wsgs-dispatch] pulling m1 RDS files
-[wsgs-dispatch] pulling cypher[job1] RDS files (cypher@64.23.253.231)
+[wsgs-dispatch] pulling cypher[job1] RDS files (cypher@<host>)
 
 [wsgs-dispatch] local RDS: 31 / 13 pulled — 31 OK, 0 errors
 

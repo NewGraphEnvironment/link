@@ -1,6 +1,6 @@
 [12:17:55] backup local fresh_smoke -> /tmp/fresh_smoke_pre_consolidate_202608311217.dump
-[12:17:58] cypher@147.182.228.14 -> DELETE bucket (1 WSGs) from 15 tables
-[12:17:59] cypher@147.182.228.14 -> COPY (bucket-filtered) for 15 tables
+[12:17:58] cypher@<host> -> DELETE bucket (1 WSGs) from 15 tables
+[12:17:59] cypher@<host> -> COPY (bucket-filtered) for 15 tables
 COPY 44
 COPY 31515
 COPY 1
@@ -16,7 +16,7 @@ COPY 0
 COPY 38574
 COPY 0
 COPY 38574
-[12:18:18] cypher@147.182.228.14 -> DELETE bucket from source (post-COPY cleanup)
+[12:18:18] cypher@<host> -> DELETE bucket from source (post-COPY cleanup)
 DELETE 44
 DELETE 31515
 DELETE 1
@@ -52,33 +52,33 @@ DELETE 38574
 16  streams_habitat_wct     0
 17 streams_mapping_code 71544
 $sources
-$sources$`cypher@147.182.228.14`
-$sources$`cypher@147.182.228.14`$ok
+$sources$`cypher@<host>`
+$sources$`cypher@<host>`$ok
 [1] TRUE
 
-$sources$`cypher@147.182.228.14`$stage
+$sources$`cypher@<host>`$stage
 [1] "complete"
 
-$sources$`cypher@147.182.228.14`$pre_rows
+$sources$`cypher@<host>`$pre_rows
 [1] 322238
 
-$sources$`cypher@147.182.228.14`$post_rows
+$sources$`cypher@<host>`$post_rows
 [1] 662401
 
-$sources$`cypher@147.182.228.14`$copied
+$sources$`cypher@<host>`$copied
  [1] "barrier_overrides"    "barriers"             "log"                 
  [4] "log_input"            "streams"              "streams_access"      
  [7] "streams_habitat_bt"   "streams_habitat_ch"   "streams_habitat_cm"  
 [10] "streams_habitat_co"   "streams_habitat_pk"   "streams_habitat_sk"  
 [13] "streams_habitat_st"   "streams_habitat_wct"  "streams_mapping_code"
 
-$sources$`cypher@147.182.228.14`$errored
+$sources$`cypher@<host>`$errored
 character(0)
 
-$sources$`cypher@147.182.228.14`$skipped_source_only
+$sources$`cypher@<host>`$skipped_source_only
 character(0)
 
-$sources$`cypher@147.182.228.14`$skipped_dest_only
+$sources$`cypher@<host>`$skipped_dest_only
 character(0)
 
 

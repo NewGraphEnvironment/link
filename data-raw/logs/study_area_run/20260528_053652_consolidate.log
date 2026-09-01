@@ -1,6 +1,6 @@
 [23:49:10] backup local fresh_default -> /tmp/fresh_default_pre_consolidate_202605272349.dump
-[23:49:52] cypher@143.110.147.193 -> DELETE bucket (19 WSGs) from 16 tables
-[23:49:53] cypher@143.110.147.193 -> COPY (bucket-filtered) for 16 tables
+[23:49:52] cypher@<host> -> DELETE bucket (19 WSGs) from 16 tables
+[23:49:53] cypher@<host> -> COPY (bucket-filtered) for 16 tables
 COPY 234
 COPY 757530
 COPY 533441
@@ -17,7 +17,7 @@ COPY 0
 COPY 0
 COPY 0
 COPY 533441
-[23:52:34] cypher@143.110.147.193 -> DELETE bucket from source (post-COPY cleanup)
+[23:52:34] cypher@<host> -> DELETE bucket from source (post-COPY cleanup)
 DELETE 234
 DELETE 757530
 DELETE 533441
@@ -34,8 +34,8 @@ DELETE 0
 DELETE 0
 DELETE 0
 DELETE 533441
-[23:52:43] cypher@143.110.226.17 -> DELETE bucket (9 WSGs) from 16 tables
-[23:52:44] cypher@143.110.226.17 -> COPY (bucket-filtered) for 16 tables
+[23:52:43] cypher@<host> -> DELETE bucket (9 WSGs) from 16 tables
+[23:52:44] cypher@<host> -> COPY (bucket-filtered) for 16 tables
 COPY 1133
 COPY 449476
 COPY 255785
@@ -52,7 +52,7 @@ COPY 228402
 COPY 255785
 COPY 0
 COPY 255785
-[23:54:09] cypher@143.110.226.17 -> DELETE bucket from source (post-COPY cleanup)
+[23:54:09] cypher@<host> -> DELETE bucket from source (post-COPY cleanup)
 DELETE 1133
 DELETE 449476
 DELETE 255785
@@ -88,20 +88,20 @@ DELETE 255785
 15  streams_habitat_wct       0
 16 streams_mapping_code 1345901
 $sources
-$sources$`cypher@143.110.147.193`
-$sources$`cypher@143.110.147.193`$ok
+$sources$`cypher@<host>`
+$sources$`cypher@<host>`$ok
 [1] TRUE
 
-$sources$`cypher@143.110.147.193`$stage
+$sources$`cypher@<host>`$stage
 [1] "complete"
 
-$sources$`cypher@143.110.147.193`$pre_rows
+$sources$`cypher@<host>`$pre_rows
 [1] 6051406
 
-$sources$`cypher@143.110.147.193`$post_rows
+$sources$`cypher@<host>`$post_rows
 [1] 10070771
 
-$sources$`cypher@143.110.147.193`$copied
+$sources$`cypher@<host>`$copied
  [1] "barrier_overrides"    "barriers"             "streams"             
  [4] "streams_access"       "streams_habitat_bt"   "streams_habitat_ch"  
  [7] "streams_habitat_cm"   "streams_habitat_co"   "streams_habitat_gr"  
@@ -109,30 +109,30 @@ $sources$`cypher@143.110.147.193`$copied
 [13] "streams_habitat_sk"   "streams_habitat_st"   "streams_habitat_wct" 
 [16] "streams_mapping_code"
 
-$sources$`cypher@143.110.147.193`$errored
+$sources$`cypher@<host>`$errored
 character(0)
 
-$sources$`cypher@143.110.147.193`$skipped_source_only
+$sources$`cypher@<host>`$skipped_source_only
 character(0)
 
-$sources$`cypher@143.110.147.193`$skipped_dest_only
+$sources$`cypher@<host>`$skipped_dest_only
 character(0)
 
 
-$sources$`cypher@143.110.226.17`
-$sources$`cypher@143.110.226.17`$ok
+$sources$`cypher@<host>`
+$sources$`cypher@<host>`$ok
 [1] TRUE
 
-$sources$`cypher@143.110.226.17`$stage
+$sources$`cypher@<host>`$stage
 [1] "complete"
 
-$sources$`cypher@143.110.226.17`$pre_rows
+$sources$`cypher@<host>`$pre_rows
 [1] 9138412
 
-$sources$`cypher@143.110.226.17`$post_rows
+$sources$`cypher@<host>`$post_rows
 [1] 12172297
 
-$sources$`cypher@143.110.226.17`$copied
+$sources$`cypher@<host>`$copied
  [1] "barrier_overrides"    "barriers"             "streams"             
  [4] "streams_access"       "streams_habitat_bt"   "streams_habitat_ch"  
  [7] "streams_habitat_cm"   "streams_habitat_co"   "streams_habitat_gr"  
@@ -140,13 +140,13 @@ $sources$`cypher@143.110.226.17`$copied
 [13] "streams_habitat_sk"   "streams_habitat_st"   "streams_habitat_wct" 
 [16] "streams_mapping_code"
 
-$sources$`cypher@143.110.226.17`$errored
+$sources$`cypher@<host>`$errored
 character(0)
 
-$sources$`cypher@143.110.226.17`$skipped_source_only
+$sources$`cypher@<host>`$skipped_source_only
 character(0)
 
-$sources$`cypher@143.110.226.17`$skipped_dest_only
+$sources$`cypher@<host>`$skipped_dest_only
 character(0)
 
 

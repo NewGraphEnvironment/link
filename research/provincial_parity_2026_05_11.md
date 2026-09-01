@@ -1,7 +1,7 @@
 # Provincial parity — link 0.35.0 (2026-05-11)
 
 **Run**: 2026-05-11 20:10:53 → 22:05:39 PDT (**1h 54min wall**)
-**Hardware**: M4 Max (local) + M1 (Allans MacBook Pro via tailnet) + cypher (DigitalOcean droplet via reserved IP 24.144.70.121)
+**Hardware**: M4 Max (local) + M1 (Allans MacBook Pro via tailnet) + cypher (DigitalOcean droplet via reserved IP <host>)
 **Software**: link 0.35.0 (sha 8f8c7b6 + #157 dispatch fix), fresh 0.31.0, bcfp reference `bcfishpass@v0.7.14-125-g6e9cf1c` via tunnel `db_newgraph`
 **Configuration**: bcfishpass bundle parity only
 **Source data**: 232 candidate WSGs filtered → 217 dispatched (link#157), 15 known-empty WSGs excluded from dispatch
@@ -55,7 +55,7 @@ Single-host baseline (2026-05-01): 4h 55min. 3-host LPT split saved **~3 hours**
 LPT (Longest Processing Time first) bin-packing in `data-raw/buckets_balance.R` weights each WSG by its `m4_equiv` time, then assigns to the host whose projected finish time would be shortest. Cypher gets the fewest WSGs because its per-WSG cost is 1.83× M4's; M1 gets the most because it's slightly faster than M4 per-WSG. Predicted wall was 155.5 min vs actual 114.7 min — predictions tracked within 25%.
 
 **Operational notes:**
-- `data-raw/wsgs_dispatch.sh` orchestrates dispatch via SSH + tailnet (`m1`) + reserved-IP SSH (`cypher@24.144.70.121`). cypher gets its bcfp-tunnel via in-script SSH local-forward `-L 63333:127.0.0.1:5432 db_newgraph`.
+- `data-raw/wsgs_dispatch.sh` orchestrates dispatch via SSH + tailnet (`m1`) + reserved-IP SSH (`cypher@<host>`). cypher gets its bcfp-tunnel via in-script SSH local-forward `-L 63333:127.0.0.1:5432 db_newgraph`.
 - M1 + cypher needed a one-time data sync of `cabd.dams` (1.9 MB), `whse_fish.pscis_assessment_svw` (18 MB), `fresh.modelled_stream_crossings` (380 MB) from M4 via `pg_dump | ssh docker exec psql`. `snapshot_bcfp.sh` is the canonical loader but those hosts didn't have it configured.
 - cypher's fresh+link install required `R CMD INSTALL --no-test-load` because pak tried to upgrade `sf` and conflicted with the host's conda-managed GDAL; downgrading to `R CMD INSTALL` kept the existing `sf 1.1.0` intact.
 
@@ -218,7 +218,7 @@ ssh m1 'Rscript -e "packageVersion(\"link\"); packageVersion(\"fresh\")"'
 ssh cypher 'Rscript -e "packageVersion(\"link\"); packageVersion(\"fresh\")"'
 
 # 3. Ship local-only datasets to M1 + cypher (one-time per snapshot refresh)
-for HOST in m1 cypher@24.144.70.121; do
+for HOST in m1 cypher@<host>; do
   pg_dump "postgresql://postgres:postgres@localhost:5432/fwapg" --schema=cabd --no-owner --no-privileges \
     | ssh "$HOST" "docker exec -i fresh-db psql -U postgres fwapg"
   pg_dump "postgresql://postgres:postgres@localhost:5432/fwapg" --table=whse_fish.pscis_assessment_svw --no-owner --no-privileges \
@@ -344,7 +344,7 @@ Per-species WSG counts reflect species presence: BT in 136 WSGs (most widespread
 
 - **Issue surfaced**: cypher's `snapshot_bcfp.sh` fails on non-interactive SSH (`FATAL: ogr2ogr lacks Parquet driver`) because the conda `geo` env's activate scripts aren't sourced. `which ogr2ogr` resolves to the conda-forge binary, but the parquet driver doesn't load. Documented and filed as **rtj#129**.
 - **Workaround used**: pg_dump | ssh from M4 for `cabd` / `whse_fish.pscis_assessment_svw` / `fresh.modelled_stream_crossings` (~3 min, ~400 MB). Inferior to a working `snapshot_bcfp.sh` because (a) couples cypher's state to M4's upstream-data freshness, (b) doesn't refresh `bcfishobs.observations` parquet load.
-- **Cypher destroyed**: `cypher_down.sh` complete, reserved IP 24.144.70.121 retained.
+- **Cypher destroyed**: `cypher_down.sh` complete, reserved IP <host> retained.
 
 ### Open follow-ups
 

@@ -11,7 +11,7 @@
 #       sources = list(
 #         list(host = "m1",                  via = "docker",
 #              bucket = c("ADMS","BULK","DEAD")),
-#         list(host = "cypher@100.72.81.25", via = "docker",
+#         list(host = "cypher@<host>", via = "docker",
 #              bucket = c("ELKR","FOXR"))),
 #       backup = TRUE,
 #       verbose = TRUE)
@@ -40,7 +40,7 @@
 #'   destination with the expected tables; `lnk_persist_init` creates them).
 #' @param sources List of source-host specs. Each list element:
 #'   \itemize{
-#'     \item `host` — SSH target (e.g. `"m1"`, `"cypher@100.72.81.25"`).
+#'     \item `host` — SSH target (e.g. `"m1"`, `"cypher@<host>"`).
 #'     \item `via` — `"docker"` (run psql inside container) or
 #'           `"psql"` (host has psql in PATH).
 #'     \item `container` — Docker container name when `via = "docker"`.
@@ -489,7 +489,7 @@ if (!interactive() && length(commandArgs(trailingOnly = TRUE)) == 0L &&
     schema = "fresh",
     sources = list(
       list(host = "m1",                  via = "docker"),
-      list(host = "cypher@100.72.81.25", via = "docker")
+      list(host = "cypher@<host>", via = "docker")
     ),
     backup = TRUE)
 }

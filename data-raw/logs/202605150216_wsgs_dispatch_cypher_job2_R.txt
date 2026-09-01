@@ -1,11 +1,11 @@
 # cypher_run.sh
 workload: /Users/airvine/Projects/repo/link/data-raw/logs/202605150216_wsgs_dispatch_cypher_job2.sh
 extra_args: 
-target: cypher@164.92.77.211
+target: cypher@<host>
 timestamp_utc: 2026-05-15T09:17:02Z
 
 # run
-Warning: Permanently added '104.248.107.222' (ED25519) to the list of known hosts.
+Warning: Permanently added '<host>' (ED25519) to the list of known hosts.
 === PROVINCIAL PARITY RUN — link 0.20.0 ===
 Started:2026-05-15 09:17:06 UTC (epoch1778836626)
 WSGs to run: 4 

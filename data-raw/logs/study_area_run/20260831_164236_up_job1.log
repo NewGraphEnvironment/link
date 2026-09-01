@@ -146,15 +146,15 @@ Apply complete! Resources: 2 added, 0 changed, 0 destroyed.
 Outputs:
 
 [0mdroplet_id = "596654901"
-droplet_ip = "137.184.224.198"
+droplet_ip = "<host>"
 tailnet_name = "cypher-job1"
 
-[cypher_up] droplet IP: 137.184.224.198 (id: 596654901)
+[cypher_up] droplet IP: <host> (id: 596654901)
 [cypher_up] waiting for cloud-init to finish (up to 20 min for cold first build)...
 [cypher_up] cloud-init complete
 
 [cypher_up] ready
-  ssh cypher@137.184.224.198  # direct droplet IP (no reserved IP for named workspaces)
+  ssh cypher@<host>  # direct droplet IP (no reserved IP for named workspaces)
 
 Next:
   scripts/cypher/cypher_run.sh --workspace job1 <workload>

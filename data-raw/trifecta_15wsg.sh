@@ -97,7 +97,7 @@ M1_PID=$!
 
 CY_LOG="$LOG_DIR/${TS}_trifecta15_cypher.txt"
 (
-  scp -q "$WORKLOAD_R" cypher@100.72.81.25:/home/cypher/cypher-workloads/${TS}_trifecta15_workload.R
+  scp -q "$WORKLOAD_R" cypher@<host>:/home/cypher/cypher-workloads/${TS}_trifecta15_workload.R
   bash "$REPO_ROOT/../rtj/scripts/cypher/cypher_run.sh" "$CYPHER_SHELL"
 ) > "$CY_LOG" 2>&1 &
 CY_PID=$!
@@ -127,7 +127,7 @@ done
 # Pull cypher's RDS files back so the rollup tibble can be assembled locally
 echo
 echo "[trifecta15] pulling cypher rollup RDS files"
-scp -q cypher@100.72.81.25:/home/cypher/cypher-workloads/logs/*_trifecta15_cypher_${CFG}_*.rds \
+scp -q cypher@<host>:/home/cypher/cypher-workloads/logs/*_trifecta15_cypher_${CFG}_*.rds \
     "$REPO_ROOT/data-raw/logs/" 2>&1 | tail -5 || true
 
 # Pull m1's RDS files back too

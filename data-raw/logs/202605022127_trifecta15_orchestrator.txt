@@ -29,7 +29,7 @@ host total: 477.0s (5/5 ok)
 
 --- 202605022127_trifecta15_cypher.txt (per-WSG walls) ---
 [cypher_run] workload: /Users/airvine/Projects/repo/link/data-raw/logs/202605022127_trifecta15_cypher.sh
-[cypher_run] target:   cypher@24.144.70.121
+[cypher_run] target:   cypher@<host>
 [cypher_run] remote:   /home/cypher/cypher-workloads/202605022127_trifecta15_cypher-202605022127.sh
 [cypher_run] log:      /Users/airvine/Projects/repo/rtj/scripts/cypher/logs/202605022127_cypher-run_202605022127_trifecta15_cypher.txt
 [cypher_run] elapsed: 9m23s  exit_code: 0

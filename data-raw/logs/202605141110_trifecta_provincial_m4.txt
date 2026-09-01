@@ -906,5 +906,5 @@ NOTICE:  table "barriers_cm" does not exist, skipping
 
 NOTICE:  table "barriers_cm_min" does not exist, skipping
 
-Read from remote host 104.248.107.222: Operation timed out
+Read from remote host <host>: Operation timed out
 client_loop: send disconnect: Broken pipe

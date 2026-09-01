@@ -25,9 +25,9 @@
 ============================================
 
 [trifecta-provincial] pulling m1 RDS files
-[trifecta-provincial] pulling cypher[job1] RDS files (cypher@144.126.212.28)
-[trifecta-provincial] pulling cypher[job2] RDS files (cypher@137.184.80.195)
-[trifecta-provincial] pulling cypher[job3] RDS files (cypher@137.184.228.20)
+[trifecta-provincial] pulling cypher[job1] RDS files (cypher@<host>)
+[trifecta-provincial] pulling cypher[job2] RDS files (cypher@<host>)
+[trifecta-provincial] pulling cypher[job3] RDS files (cypher@<host>)
 
 [trifecta-provincial] local RDS: 217 / 217 pulled — 207 OK, 10 errors
 [trifecta-provincial] WARN: 10 error-stub RDS found. Inspect cypher-side R logs:

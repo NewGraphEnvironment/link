@@ -1,7 +1,7 @@
 # cypher_run.sh
 workload: /Users/airvine/Projects/repo/link/data-raw/logs/202605131744_trifecta_provincial_cypher_job1.sh
 extra_args: 
-target: cypher@144.126.212.28
+target: cypher@<host>
 timestamp_utc: 2026-05-14T00:44:17Z
 
 # run
