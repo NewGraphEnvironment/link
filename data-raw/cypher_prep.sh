@@ -147,9 +147,34 @@ fi
 # A local/source install has no RemoteSha; empty is the honest answer and
 # the parity gate reports it as unresolved rather than treating NA == NA as
 # agreement.
+#
+# Routed through link's own .lnk_pkg_remote_sha() rather than reading
+# RemoteSha directly (link#264). For a `RemoteType: standard` install — CRAN,
+# PPM, r-universe, all of which can serve `fresh` — remotes writes the package
+# VERSION into that field, so the raw read would export
+# FRESH_GIT_SHA=0.33.0 into a column two consumers treat as a commit. The
+# resolver applies the hex shape guard, so there is one definition of "is this
+# a commit" rather than one here and one in R.
+#
+# It reads the DESCRIPTION only and never the environment, which matters
+# because this runs BEFORE the ~/.Renviron rewrite below: a resolver that
+# consulted FRESH_GIT_SHA would read the previous prep's value and write it
+# back, making a stale pin self-perpetuating.
 FRESH_SHA=$(Rscript -e \
-  'x <- packageDescription("fresh")$RemoteSha; cat(if (is.null(x) || is.na(x)) "" else x)' \
+  'x <- link:::.lnk_pkg_remote_sha("fresh"); cat(if (is.na(x)) "" else x)' \
   2>/dev/null) || FRESH_SHA=""
+
+# fresh_dirty was NULL on all 39 logged rows because nothing ever set it
+# (link#264). A resolved RemoteSha means pak built from a published git ref,
+# which is not a working tree and cannot have been modified — so `false` is a
+# fact here, not an optimistic default. No sha, no claim: the key is omitted
+# and the column stays honestly NULL.
+#
+# link's resolver infers the same thing, so this is a second observation
+# rather than the sole mechanism. It earns its two lines in the one state the
+# inference declines: if FRESH_GIT_SHA is ever set to something other than the
+# built commit, the resolver refuses to certify it clean and this answers.
+if [ -n "$FRESH_SHA" ]; then FRESH_DIRTY=false; else FRESH_DIRTY=""; fi
 
 # Strip only the keys we own, then append — never rewrite wholesale, since
 # the image may keep unrelated settings here.
@@ -171,7 +196,7 @@ umask 077
 # an empty ~/.Renviron on a fresh droplet, or a re-prep of a host whose file
 # holds only these three keys.
 RC=0
-grep -vE '^(LINK_GIT_SHA|LINK_GIT_DIRTY|FRESH_GIT_SHA)=' "$RENV" > "$RENV.tmp" || RC=$?
+grep -vE '^(LINK_GIT_SHA|LINK_GIT_DIRTY|FRESH_GIT_SHA|FRESH_GIT_DIRTY)=' "$RENV" > "$RENV.tmp" || RC=$?
 if [ "$RC" -gt 1 ]; then
   echo "FATAL: could not read $RENV (grep exit $RC); refusing to overwrite it" >&2
   rm -f "$RENV.tmp"
@@ -182,6 +207,7 @@ mv "$RENV.tmp" "$RENV"
   printf 'LINK_GIT_SHA=%s\n'   "$LINK_SHA"
   printf 'LINK_GIT_DIRTY=%s\n' "$LINK_DIRTY"
   [ -n "$FRESH_SHA" ] && printf 'FRESH_GIT_SHA=%s\n' "$FRESH_SHA"
+  [ -n "$FRESH_DIRTY" ] && printf 'FRESH_GIT_DIRTY=%s\n' "$FRESH_DIRTY"
 } >> "$RENV"
 chmod 600 "$RENV"
 umask "$RENV_UMASK"

@@ -50,24 +50,24 @@ second, explicit observation on top of one. Kept, and relabelled.
 
 ## Phase 1: `.lnk_pkg_git_state()` — one resolver
 
-- [ ] Tests first: both known answers per tier against real installs
+- [x] Tests first: both known answers per tier against real installs
       (`fresh` has `RemoteSha`, `link` is `RemoteType: local` and has none);
       env override wins over both; clean and dirty checkout for the `.git` tier
-- [ ] Premise asserted inline, so a future install-method change fails naming
+- [x] Premise asserted inline, so a future install-method change fails naming
       the real cause rather than the behaviour under test
-- [ ] `.lnk_pkg_git_state()` in `R/lnk_stamp.R`; `sha` and `dirty` each resolve
+- [x] `.lnk_pkg_git_state()` in `R/lnk_stamp.R`; `sha` and `dirty` each resolve
       through their own tier list (env → DESCRIPTION → `.git` → NA), tier
       detection done once, returns `list(sha, dirty, source)`
-- [ ] `.lnk_pkg_git_sha()` / `.lnk_pkg_git_dirty()` become thin wrappers
-- [ ] `.lnk_git_dirty_pathspec` / `.lnk_git_dirty_at()` untouched
+- [x] `.lnk_pkg_git_sha()` / `.lnk_pkg_git_dirty()` become thin wrappers
+- [x] `.lnk_git_dirty_pathspec` / `.lnk_git_dirty_at()` untouched
 
 ## Phase 2: log columns and the bcfishobs resolver
 
-- [ ] `.lnk_bcfishobs_sha()` mirroring `.lnk_fwapg_sha()`, with the fork note
-- [ ] `lnk_stamp()` gains `bcfishobs_sha` beside `fwapg_sha`
-- [ ] `cols_log` + `cols_log_recompute` gain `bcfishobs_sha`, `fresh_sha_source`
-- [ ] Both wired into **both** INSERT sites, asserted on both
-- [ ] `log_input`: store NULL, not `-1`, for PG's never-analyzed sentinel
+- [x] `.lnk_bcfishobs_sha()` mirroring `.lnk_fwapg_sha()`, with the fork note
+- [x] `lnk_stamp()` gains `bcfishobs_sha` beside `fwapg_sha`
+- [x] `cols_log` + `cols_log_recompute` gain `bcfishobs_sha`, `fresh_sha_source`
+- [x] Both wired into **both** INSERT sites, asserted on both
+- [x] `log_input`: store NULL, not `-1`, for PG's never-analyzed sentinel
 
 ## Phase 3: shell — resolve once, export to every leg
 

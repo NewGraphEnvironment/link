@@ -7,8 +7,9 @@
 lnk_preflight_parity(
   stamps,
   n_expected,
-  keys = c("link_version", "fresh_version", "repo_sha", "config_hash", "fwapg_sha"),
-  forbid_na = c("link_version", "fresh_version", "repo_sha", "fwapg_sha"),
+  keys = c("link_version", "fresh_version", "fresh_sha", "repo_sha", "config_hash",
+    "fwapg_sha"),
+  forbid_na = c("link_version", "fresh_version", "fresh_sha", "repo_sha", "fwapg_sha"),
   forbid_dirty = TRUE,
   quiet = FALSE
 )
@@ -53,14 +54,28 @@ the same position \code{\link[=lnk_stamp]{lnk_stamp()}} already takes for packag
 }
 
 Only then are the key fields compared, against row 1 (the dispatcher) as
-reference. \code{link_sha} and \code{fresh_sha} are deliberately \strong{not} keys —
-see \code{\link[=lnk_preflight_stamp]{lnk_preflight_stamp()}} for why comparing them is either guaranteed
-to fail or guaranteed to pass vacuously.
+reference.
+
+\strong{\code{fresh_sha} became a key in link#264 and \code{link_sha} did not.} Until
+then both were excluded together, on the joint grounds that \code{link_sha}
+can only ever fail and \code{fresh_sha} could only ever pass vacuously
+(\code{NA == NA}). Only the first half is still true. \code{fresh_sha} now
+resolves on every host — from \code{RemoteSha} on the dispatcher, from the
+env var a cypher's prep writes — and both routes name the same commit,
+so it is the one field that proves every host is running the same
+\code{fresh} \strong{build} rather than the same version string. A cypher that
+silently ran the image's \code{fresh} is exactly link#246, and it is a
+version-and-SHA drift that \code{fresh_version} alone can miss.
+
+\code{link_sha} stays excluded, unchanged: it is a real SHA on a \code{load_all}
+dispatcher and \code{NA} on every pak-installed cypher, so keying on it
+fails every legitimate run. \code{repo_sha} is the field that carries link's
+cross-host identity — see \code{\link[=lnk_preflight_stamp]{lnk_preflight_stamp()}}.
 }
 \examples{
 row <- function(host, ...) {
   d <- list(host = host, link_version = "0.46.0", link_sha = "NA",
-            fresh_version = "0.33.0", fresh_sha = "NA",
+            fresh_version = "0.33.0", fresh_sha = "7f12d99115b7",
             repo_sha = "abc123def456", repo_dirty = "FALSE",
             config_hash = "cfg012345678", fwapg_sha = "e6e1eb0aaaaa",
             r_version = "4.4.1")

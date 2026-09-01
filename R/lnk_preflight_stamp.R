@@ -6,18 +6,25 @@
 #' contract — the field order — is a documented, tested thing rather than
 #' an inline `Rscript -e` incantation that drifts between two call sites.
 #'
-#' **`repo_sha` is the load-bearing field, not `link_sha`.**
-#' `.lnk_pkg_git_sha()` resolves a SHA from a `.git` beside the installed
-#' package. On the dispatcher link is `pkgload::load_all`'d from a checkout,
-#' so it finds one; on every cypher link is pak-installed, so it does not
-#' and returns `NA`. `fresh_sha` is `NA` on both unless pak recorded a
-#' `RemoteSha`. Comparing `link_sha` across hosts would therefore always
-#' fail, and comparing `fresh_sha` would be a vacuous `NA == NA` pass — a
-#' check that looks like a check. `repo_sha` is read from
-#' `~/Projects/repo/link` **on the host itself**, which on a cypher is
-#' exactly what `git reset --hard origin/<branch>` produced. It is an
-#' independent observation rather than a restatement of what the
-#' dispatcher believes (link#246).
+#' **`repo_sha` is the load-bearing field for link, not `link_sha`.**
+#' `.lnk_pkg_git_state()` resolves link's SHA from a `.git` beside the
+#' installed package. On the dispatcher link is `pkgload::load_all`'d from
+#' a checkout, so it finds one; on every cypher link is pak-installed from
+#' a local source tree, so it does not and returns `NA`. Comparing
+#' `link_sha` across hosts would therefore always fail — a check that
+#' looks like a check. `repo_sha` is read from `~/Projects/repo/link`
+#' **on the host itself**, which on a cypher is exactly what
+#' `git reset --hard origin/<branch>` produced. It is an independent
+#' observation rather than a restatement of what the dispatcher believes
+#' (link#246).
+#'
+#' **`fresh_sha` is different, and stopped being vacuous in link#264.**
+#' This paragraph used to say it was `NA` on both hosts, making any
+#' comparison a `NA == NA` pass. That was measured false on 2026-09-01:
+#' the dispatcher's installed `fresh` carried
+#' `RemoteSha 7f12d99115b7…`, byte-identical to the value its cyphers
+#' recorded, and the resolver simply never read the field. It does now, so
+#' `fresh_sha` resolves everywhere and [lnk_preflight_parity()] keys on it.
 #'
 #' Unresolvable facts are the literal string `"NA"`, never empty, so a
 #' truncated ssh response is distinguishable from a resolved absence.

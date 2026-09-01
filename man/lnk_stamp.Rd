@@ -38,8 +38,15 @@ An \code{lnk_stamp} S3 list with these slots:
 \item \code{config_dir} — \code{cfg$dir}
 \item \code{provenance} — output of \code{\link[=lnk_config_verify]{lnk_config_verify()}} called on \code{cfg}
 at stamp time (carries observed checksums + drift status)
-\item \code{software} — list of versions + git SHAs for \code{link}, \code{fresh},
-plus \code{R.version.string}
+\item \code{fwapg_sha} — git SHA of the \code{fwapg} checkout that loaded the FWA
+primitives
+\item \code{bcfishobs_sha} — git SHA of the \code{bcfishobs} checkout that matched
+observations onto the network. A model input, not a reference
+dataset: it decides which barriers are skipped, and so which
+segments are accessible (link#264)
+\item \code{software} — list of versions, git SHAs and \code{sha_source} (which
+resolver tier answered) for \code{link} and \code{fresh}, plus
+\code{R.version.string}
 \item \code{db} — list of DB snapshot counts, or \code{NULL}
 \item \code{run} — list with \code{aoi}, \code{start_time}, \code{end_time} (initially
 \code{NULL} — set by \code{\link[=lnk_stamp_finish]{lnk_stamp_finish()}})

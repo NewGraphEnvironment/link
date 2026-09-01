@@ -228,6 +228,58 @@ fi
     AND s.watershed_group_code = t.watershed_group_code" >/dev/null
 fi
 
+# --- 5/6. the code-identity columns: must FAIL when NULL (link#264) ----------
+# Both were tolerated-or-absent before this release: fresh_sha was excused on
+# the dispatcher for a reason that turned out to be false, and bcfishobs_sha
+# did not exist. Each now has an unconditional assertion, and an assertion
+# nobody has watched go red is decoration -- these are the cases that watch.
+#
+# Driven by a loop rather than written twice, so a third column added later
+# joins by adding one word and cannot quietly be given a case that is never
+# run. Each iteration restores CORRELATED per row, matching cases 2 and 4:
+# a `SET col = (SELECT ... LIMIT 1)` would flatten the column across hosts and
+# leave the NEXT iteration a fixture that cannot reach its own failure.
+n=5
+for col in fresh_sha bcfishobs_sha; do
+  n_present=$("${PSQL[@]}" -c "SELECT count(*) FROM ${SCRATCH}.log
+                                WHERE ${col} IS NOT NULL")
+  if [ "${n_present:-0}" = "0" ]; then
+    echo "  ⊘ $n. SKIPPED: $col is already NULL on every row of $RUN_UID, so"
+    echo "       nulling it changes nothing and this case would test nothing."
+    echo "       Absence reported as absence -- this is NOT a pass. Expected"
+    echo "       for any run logged before link v0.50.0."
+    fails=$((fails + 1))
+  else
+    "${PSQL[@]}" -c "UPDATE ${SCRATCH}.log SET ${col} = NULL" >/dev/null
+    if run_verify -v expected_n="$N_WSG"; then
+      echo "  ✗ $n. $col NULLed -> PASSED, but should have FAILED."
+      echo "       The $col assertion is not firing."
+      show_verify
+      fails=$((fails + 1))
+    else
+      echo "  ✓ $n. $col NULLed -> FAIL (as expected)"
+    fi
+    "${PSQL[@]}" -c "UPDATE ${SCRATCH}.log t SET ${col} = s.${col}
+       FROM ${SRC_SCHEMA}.log s
+      WHERE s.run_uid = '${RUN_UID}'
+        AND s.host = t.host
+        AND s.watershed_group_code = t.watershed_group_code" >/dev/null
+  fi
+  n=$((n + 1))
+done
+
+# The healthy case again, LAST. Cases 2/4/5/6 each mutate the scratch schema
+# and restore it, and a restore that silently did not restore would leave every
+# later case running against damaged data while still printing ticks. Re-running
+# case 1 at the end is what makes the restores load-bearing rather than assumed.
+if run_verify -v expected_n="$N_WSG"; then
+  echo "  ✓ 7. healthy data, post-restore-> PASS (as expected)"
+else
+  echo "  ✗ 7. healthy data, post-restore-> FAILED; a restore above did not restore."
+  show_verify
+  fails=$((fails + 1))
+fi
+
 echo ""
 if [ "$fails" = "0" ]; then
   echo "=== negative test PASSED: the verify script fails when it should, and"

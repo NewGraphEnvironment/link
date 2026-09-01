@@ -506,6 +506,32 @@ quit(status = if (isTRUE(res$ok)) 0L else 1L)
     fail=1
   fi
 
+  # --- gate: bcfishobs SHA resolvable and exported (link#264) -------------
+  # bcfishobs is a MODEL INPUT, not a reference dataset: it snaps observations
+  # onto the network, lnk_barrier_overrides() counts those observations
+  # upstream of each barrier to decide which barriers are skipped, and so it
+  # moves access and mapping_code. Everything the 39 logged runs recorded
+  # about it was a row count and a hardcoded source string.
+  #
+  # Exactly the fwapg block above, including the dirty refusal: a cypher has
+  # no bcfishobs checkout, so without the export every cypher row lands
+  # bcfishobs_sha = NA. There is deliberately NO bcfishobs_dirty column —
+  # this gate is what makes a recorded SHA clean by construction, and a
+  # column FALSE on every row carries no information (link#257).
+  local bcfo_dir bcfo_dirty
+  bcfo_dir="${BCFISHOBS_DIR:-$HOME/Projects/repo/bcfishobs}"
+  if BCFISHOBS_SHA=$(git -C "$bcfo_dir" rev-parse HEAD 2>/dev/null) && [ -n "$BCFISHOBS_SHA" ]; then
+    if bcfo_dirty=$(git -C "$bcfo_dir" status --porcelain 2>/dev/null); then
+      [ -z "$bcfo_dirty" ] \
+        || { echo "  ✗ bcfishobs checkout dirty ($bcfo_dir) — the SHA stamped into log.bcfishobs_sha would be a lie"; fail=1; }
+    fi
+    export BCFISHOBS_GIT_SHA="$BCFISHOBS_SHA"
+    echo "  ✓ bcfishobs_sha ${BCFISHOBS_SHA:0:12} (exported to all hosts)"
+  else
+    echo "  ✗ no bcfishobs checkout at $bcfo_dir — set BCFISHOBS_DIR, or every row lands bcfishobs_sha=NA"
+    fail=1
+  fi
+
   # --- gate: bcfp reference pinned, and exported to all hosts (link#262) --
   # The compare reference is the LOCAL snapshot fresh.streams_vw_bcfp, and the
   # build it was loaded from is recorded by snapshot_bcfp.sh in
@@ -632,7 +658,7 @@ collect_stamps() {   # $1 = destination tsv
   printf '%s\n' "$out" >> "$tsv"
   for ws in "${CY_WS_ARR[@]}"; do
     if ! out=$(ssh -o BatchMode=yes -o ConnectTimeout=15 "cypher@${CY_IP[$ws]}" \
-        "cd ~/Projects/repo/link && export FWAPG_GIT_SHA='${FWAPG_GIT_SHA:-}' && Rscript data-raw/host_stamp.R '$CONFIG'" 2>/dev/null); then
+        "cd ~/Projects/repo/link && export FWAPG_GIT_SHA='${FWAPG_GIT_SHA:-}' && export BCFISHOBS_GIT_SHA='${BCFISHOBS_GIT_SHA:-}' && Rscript data-raw/host_stamp.R '$CONFIG'" 2>/dev/null); then
       echo "  ✗ cy[$ws] stamp failed (ssh or Rscript) — treated as a FAILURE, not a skip"
       return 1
     fi
@@ -922,7 +948,7 @@ for WS in "${CY_WS_ARR[@]}"; do
   # someone queries it. This is the same both-legs trap LNK_GUARD_DOWNSTREAM
   # hit in link#227, where the missed second leg made cyphers hard-fail and
   # silently skip WSGs.
-  ssh "cypher@$IP" "cd ~/Projects/repo/link && export LNK_SCHEMA='$SCHEMA' && export LNK_GUARD_DOWNSTREAM=warn && export FWAPG_GIT_SHA='${FWAPG_GIT_SHA:-}' && export LNK_RUN_UID='$RUN_UID' && export LNK_RUN_LABEL='$RUN_LABEL' && export LNK_BCFP_MODEL_VERSION='${LNK_BCFP_MODEL_VERSION:-}' && for w in $B_SPACE; do Rscript data-raw/wsg_run_one.R \$w '$CONFIG' || echo \"[WARN] cy WSG \$w failed\"; done" \
+  ssh "cypher@$IP" "cd ~/Projects/repo/link && export LNK_SCHEMA='$SCHEMA' && export LNK_GUARD_DOWNSTREAM=warn && export FWAPG_GIT_SHA='${FWAPG_GIT_SHA:-}' && export BCFISHOBS_GIT_SHA='${BCFISHOBS_GIT_SHA:-}' && export LNK_RUN_UID='$RUN_UID' && export LNK_RUN_LABEL='$RUN_LABEL' && export LNK_BCFP_MODEL_VERSION='${LNK_BCFP_MODEL_VERSION:-}' && for w in $B_SPACE; do Rscript data-raw/wsg_run_one.R \$w '$CONFIG' || echo \"[WARN] cy WSG \$w failed\"; done" \
     > "$LOG_DIR/${TS}_run_$WS.log" 2>&1 &
   CY_PID[$WS]=$!
 done
