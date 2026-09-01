@@ -57,8 +57,8 @@
 <span id="cb1-13"><a href="#cb1-13" tabindex="-1"></a><span class="co">#   (1.6 GB, see §6) — use the tunnel for bcfp streams parity instead.</span></span>
 <span id="cb1-14"><a href="#cb1-14" tabindex="-1"></a></span>
 <span id="cb1-15"><a href="#cb1-15" tabindex="-1"></a><span class="co"># 4. bcfp comparison tunnel (parity diffs ONLY — the build itself is tunnel-free)</span></span>
-<span id="cb1-16"><a href="#cb1-16" tabindex="-1"></a><span class="fu">ssh</span> <span class="at">-o</span> BatchMode=yes <span class="at">-o</span> StrictHostKeyChecking=accept-new <span class="dt">\</span></span>
-<span id="cb1-17"><a href="#cb1-17" tabindex="-1"></a>  <span class="at">-L</span> 63333:127.0.0.1:5432 db_newgraph <span class="at">-N</span> <span class="at">-f</span></span>
+<span id="cb1-16"><a href="#cb1-16" tabindex="-1"></a><span class="co">#    Forward the reference DB to :63333 however your environment reaches it.</span></span>
+<span id="cb1-17"><a href="#cb1-17" tabindex="-1"></a><span class="co">#    Host aliases and credentials are infrastructure — see rtj, not here.</span></span>
 <span id="cb1-18"><a href="#cb1-18" tabindex="-1"></a><span class="ex">psql</span> <span class="st">"host=localhost port=63333 dbname=bcfishpass user=newgraph"</span> <span class="dt">\</span></span>
 <span id="cb1-19"><a href="#cb1-19" tabindex="-1"></a>  <span class="at">-c</span> <span class="st">"SELECT model_run_id, model_version FROM bcfishpass.log ORDER BY 1 DESC LIMIT 1;"</span></span></code></pre></div>
 <p>Local fwapg conn: <code>host=localhost port=5432 dbname=fwapg user=postgres password=postgres</code>. (M1’s <code>~/.Renviron</code> defaults <code>PG_*_SHARE</code> to the tunnel <code>:63333</code> — for the local build set <code><a href="https://rdrr.io/r/base/Sys.setenv.html" class="external-link">Sys.setenv()</a></code> to <code>:5432</code> in R; see the m1-testing pattern in <code>fresh/CLAUDE.md</code>.) Then build: <code>lnk_pipeline_run(conn, "PARS", cfg, loaded, schema, mapping_code = TRUE)</code>.</p>
@@ -416,10 +416,8 @@ mc_barrier (from barrier_sources flags, resident vs anadromous differ slightly):
 <h3 id="three-things-that-look-like-checks-and-are-not">Three things that look like checks and are not<a class="anchor" aria-label="anchor" href="#three-things-that-look-like-checks-and-are-not"></a></h3>
 <table class="table"><colgroup><col width="50%"><col width="50%"></colgroup><thead><tr><th>looks like</th>
 <th>actually</th>
-</tr></thead><tbody><tr><td>
-<code>tofu plan</code> proves the DO token</td>
-<td>against a zero-resource workspace it returns <code>Plan: N to add</code> <strong>without contacting DO</strong>. And <code>do_token</code> in tfvars is a <em>different</em> credential from doctl’s — both were minted 2026-05-18 and both expired 2026-08-30. Probe each against <code>/v2/account</code>
-</td>
+</tr></thead><tbody><tr><td>a provisioning tool’s <code>plan</code> proves its credential</td>
+<td>against a zero-resource workspace it plans without contacting the provider at all. The orchestrator and the provisioner also use <em>separate</em> credentials, which expire independently. Probe each against the provider’s account endpoint. Details are infrastructure — see rtj</td>
 </tr><tr><td>comparing <code>link_sha</code> across hosts</td>
 <td>it is a real SHA on the <code>load_all</code> dispatcher and <code>NA</code> on every pak-installed cypher, so it can only ever fail. <code>fresh_sha</code> is <code>NA</code> on both, so it can only ever pass. Key on <strong><code>repo_sha</code></strong>, read on each host from the checkout it installed from</td>
 </tr><tr><td>
