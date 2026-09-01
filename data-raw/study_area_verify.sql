@@ -166,7 +166,7 @@ SELECT CASE WHEN :'expected_n' = ''
 -- populate it only because cypher_prep.sh sets FRESH_GIT_SHA explicitly.
 --
 -- So this tolerance is a workaround for an unread field, not for an absent
--- one. Tracked separately; tighten to assert on every host once that lands.
+-- one. Tracked as link#264; tighten to assert on every host once that lands.
 --
 -- bcfp_model_run_id is likewise expected NULL on a tunnel-free run: the pin
 -- comes from the local snapshot ledger, and log.json carries no run id
