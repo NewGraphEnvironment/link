@@ -162,17 +162,24 @@ SELECT host,
            THEN 'FAIL: bcfp_model_version NULL (snapshot ledger unreadable?)'
          WHEN count(*) FILTER (WHERE link_dirty) > 0
            THEN 'FAIL: link_dirty set -- tracked code differed from origin'
+         WHEN host <> 'm1' AND count(*) FILTER (WHERE fresh_sha IS NULL) > 0
+           THEN 'FAIL: fresh_sha NULL on a cypher'
+         -- ---- every FAIL arm is above this line; every NOTE below it ----
+         -- CASE takes the FIRST matching arm, so a NOTE placed among the FAILs
+         -- SHADOWS every FAIL after it. That is not hypothetical: the NULL arm
+         -- below was first written directly under the link_dirty FAIL, where a
+         -- cypher with a NULL link_dirty AND a NULL fresh_sha would have
+         -- reported the note and hidden the failure. Keep the partition.
+         --
          -- NULL is "could not tell", NOT the same as FALSE, and it must not be
          -- collapsed into it: `x OR link_dirty` yields NULL for a NULL row, so
-         -- the assertion below cannot see these at all. Reported here rather
-         -- than raised, because NA is legitimate for an installed package with
-         -- no .git and no <PKG>_GIT_DIRTY -- raising would refuse every
-         -- hand-run. Unexpected on a driver run, where cypher_prep writes
+         -- the assertion block cannot see these at all. Reported rather than
+         -- raised, because NA is legitimate for an installed package with no
+         -- .git and no <PKG>_GIT_DIRTY -- raising would refuse every hand-run.
+         -- Unexpected on a driver run, where cypher_prep writes
          -- LINK_GIT_DIRTY into ~/.Renviron on every worker.
          WHEN count(*) FILTER (WHERE link_dirty IS NULL) > 0
            THEN 'NOTE: link_dirty NULL on some rows -- provenance unknown, not clean'
-         WHEN host <> 'm1' AND count(*) FILTER (WHERE fresh_sha IS NULL) > 0
-           THEN 'FAIL: fresh_sha NULL on a cypher'
          WHEN host = 'm1' AND count(*) FILTER (WHERE fresh_sha IS NOT NULL) > 0
            THEN 'NOTE: dispatcher now carries a fresh_sha (install method changed)'
          ELSE 'OK'
