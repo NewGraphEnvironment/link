@@ -88,10 +88,10 @@ second, explicit observation on top of one. Kept, and relabelled.
 
 ## Phase 4: pre-flight parity
 
-- [ ] `fresh_sha` added to `keys` and `forbid_na` defaults
-- [ ] The now-false rationale rewritten in both preflight files
-- [ ] `lnk_preflight_stamp()` field order unchanged — no shell contract move
-- [ ] Tests: an unresolved `fresh_sha` fails parity; matching SHAs pass;
+- [x] `fresh_sha` added to `keys` and `forbid_na` defaults
+- [x] The now-false rationale rewritten in both preflight files
+- [x] `lnk_preflight_stamp()` field order unchanged — no shell contract move
+- [x] Tests: an unresolved `fresh_sha` fails parity; matching SHAs pass;
       `@examples` updated (they hardcode `fresh_sha = "NA"`)
 
 ## Phase 5: the false rationale, and tightening the verifier
