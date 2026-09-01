@@ -41,13 +41,24 @@ expected_ids <- expected_ids[nzchar(expected_ids)]
 # which under `set -e` would be indistinguishable from a real verdict of
 # failure -- and would hide WHY. Handle it here so the R function always sees
 # a well-formed frame and the branch is judged, not thrown.
-rc <- if (!file.exists(tsv) || file.size(tsv) == 0) {
+#
+# Emptiness is decided by READING, not by file.size(): size does not stat
+# reliably for a fifo, so a caller passing a process substitution would have
+# a perfectly good pass judged "nothing ran".
+rc_lines <- if (file.exists(tsv)) {
+  readLines(tsv, warn = FALSE)
+} else {
+  character(0)
+}
+rc_lines <- rc_lines[nzchar(trimws(rc_lines))]
+
+rc <- if (length(rc_lines) == 0L) {
   data.frame(job = character(0), rc = character(0), stringsAsFactors = FALSE)
 } else {
   # na.strings = character(0): a literal "NA" in the status column must reach
   # the judge as the string so it can be reported as unreadable, not silently
   # become R's NA. Same reasoning as judge_stamps() in study_area_run.sh.
-  utils::read.delim(tsv, header = FALSE, sep = "\t", quote = "",
+  utils::read.delim(text = rc_lines, header = FALSE, sep = "\t", quote = "",
                     colClasses = "character", na.strings = character(0),
                     col.names = c("job", "rc"), strip.white = TRUE)
 }

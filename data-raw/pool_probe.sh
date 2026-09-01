@@ -85,5 +85,24 @@ echo "  width 4: ${W4}s   width 8: ${W8}s"
 [ "$W8" -lt "$W4" ] && { PASS=$((PASS+1)); echo "  ok   width 8 faster than width 4"; } \
                     || { FAIL=$((FAIL+1)); echo "  FAIL width 8 (${W8}s) not faster than width 4 (${W4}s)"; }
 
+
+# The pool must wait for ITS OWN children only. A bare `wait` waits for every
+# background job in the calling shell, so an unrelated long-lived one hangs it
+# with all the work already done. Measured 2026-09-01: a sampler loop in
+# recompute_sweep.sh wedged the pool indefinitely.
+#
+# Backgrounded HERE, in the same shell that calls the pool, because that is
+# the only arrangement in which a bare `wait` can see it.
+STUB_SLEEP=0
+( while :; do sleep 1; done ) &
+UNRELATED=$!
+T0=$(date +%s)
+run_case "unrelated background job present" "A,B,C" 2 3 0
+ELAPSED=$(( $(date +%s) - T0 ))
+kill "$UNRELATED" 2>/dev/null || true
+wait "$UNRELATED" 2>/dev/null || true
+[ "$ELAPSED" -lt 20 ] && { PASS=$((PASS+1)); echo "  ok   pool ignored the unrelated job (${ELAPSED}s)"; } \
+                      || { FAIL=$((FAIL+1)); echo "  FAIL pool waited on an unrelated job (${ELAPSED}s)"; }
+
 echo "PASS=$PASS FAIL=$FAIL"
 [ "$FAIL" -eq 0 ]

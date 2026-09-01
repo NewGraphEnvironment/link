@@ -889,7 +889,7 @@ recompute_one() {   # $1 = WSG
 # file is the single source of truth, which also means the evidence survives a
 # killed dispatcher.
 run_recompute_pool() {   # $1 = width
-  local width="$1" slot pid w
+  local width="$1" slot pid w all_pids=""
   local SLOT_PID
   # Pre-seed every slot. Referencing an unset array element under `set -u` is
   # an unbound-variable error on bash 3.2.
@@ -911,11 +911,21 @@ run_recompute_pool() {   # $1 = width
     done
     recompute_one "$w" &
     SLOT_PID[$slot]=$!
+    all_pids="$all_pids ${SLOT_PID[$slot]}"
   done
-  # Drain the last partial wave. An empty WSG list means zero iterations and
-  # `wait` returns 0 -- that emptiness is NOT judged here, it is judged in R
-  # by lnk_fanout_judge(), where the branch can be tested.
-  wait
+  # Drain the last partial wave, waiting on OUR children only.
+  #
+  # A bare `wait` waits for every background job in the calling shell, not
+  # just the ones this pool started -- so it silently couples the pool to
+  # whatever else the caller has backgrounded, and hangs outright if any of
+  # those is long-lived. Measured 2026-09-01: a 2-second sampler loop
+  # backgrounded by data-raw/recompute_sweep.sh wedged the pool indefinitely,
+  # with every job already finished and nothing to show for it.
+  #
+  # An empty WSG list means zero iterations and no pids -- that emptiness is
+  # NOT judged here, it is judged in R by lnk_fanout_judge(), where the
+  # branch can be tested.
+  for pid in $all_pids; do wait "$pid" 2>/dev/null || true; done
 }
 
 bucket_done() {   # $1 = logfile; prints the WSGs the host reported, one per line
