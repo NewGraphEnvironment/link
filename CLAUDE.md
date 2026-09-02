@@ -64,9 +64,24 @@ for the first time). Cypher rows carry `fresh_sha` — #246's acceptance criteri
 `NA` on every cypher before that work. Reusable checker: `data-raw/study_area_verify.sql`.
 
 Measured, and they now drive planning: **modelling 83 min, recompute + compare 55
-min.** The recompute runs over **every WSG in the schema**, not the run's own set,
-so it does not scale with scope the way modelling does — which makes **#250**
-(parallelise it) worth more than more machines.
+min.**
+
+**Correction 2026-09-02: the recompute runs over the RUN's WSGs, not the whole
+schema.** This paragraph used to say the opposite, and the conclusion drawn from
+it — that the recompute does not scale with scope, so parallelising it beats
+adding machines — does not follow. `ALL_WSGS` is the union of the host buckets
+(`study_area_run.sh:1306`), and the 2026-09-01 run logged
+`post-consolidate recompute (lnk_access, 34 WSGs, -j4)` for a 34-WSG run against
+a 95-WSG schema. Whatever was true when this was written, #205 (cheap
+access-only recompute) and #250 (parallelise) changed it and the line was never
+updated. It **does** scale with scope, so 217 WSGs means ~6.4x this recompute,
+not a constant.
+
+Recomputing all *run* WSGs is deliberate, not sloppy: at ~10 s/WSG it is cheap,
+and threshold-filtering by parity is what produced FINA at 75% in May —
+"bucketing is now a speed knob, not a correctness lever"
+(`study_area_run.sh:1361`). Whether the set can be narrowed to
+`run ∪ upstream(run)` at 217 is **#274**, unmeasured.
 
 **Scope decided (#256 closed): all 217 modelable BC watershed groups**, not the
 119-WSG closure and not the 34-WSG field set.

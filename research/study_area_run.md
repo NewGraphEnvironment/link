@@ -233,9 +233,14 @@ above still stand; these are additional and were learned on the field-scope run
   the run's own logs land in the tracked `data-raw/logs/`. #257.
 - **Measured timing, 34 WSGs / 3 hosts:** 158 min total — spin + prep + parity
   ~10, modelling ~83, consolidate + burn + coverage ~11, recompute + compare
-  ~55. The recompute runs over **all** WSGs in the schema (95 at the time), not
-  the run's 34, which is why it dominates and why #250 mattered more than more
-  machines. #250 has since parallelised it; see
+  ~55. **Correction 2026-09-02: the recompute runs over the RUN's WSGs, not the
+  schema.** This said "all WSGs in the schema (95 at the time), not the run's
+  34, which is why it dominates". `ALL_WSGS` is the union of the host buckets
+  (`study_area_run.sh:1306`), and the 2026-09-01 run logged
+  `recompute (lnk_access, 34 WSGs, -j4)` against a 95-WSG schema. So it **does**
+  scale with scope — 217 WSGs is ~6.4x, not a constant — and the inference that
+  parallelising beat adding machines rested on a false premise. Narrowing the
+  set to `run ∪ upstream(run)` is #274, unmeasured. #250 parallelised it; see
   `research/recompute_parallel_2026_09_01.md` for what that did and did not buy.
 - **Verify a completed run against the DB, never the exit code.** Filter
   `fresh.log` on `date_end`, **not** `date_start` — a killed run leaves rows

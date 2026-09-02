@@ -38,10 +38,24 @@ the downstream barrier walk, not the segment count.
 
 **Two corrections to how this was first written up.** The recompute is not
 bucketed at all — buckets distribute *modelling* across hosts, while the
-recompute runs dispatcher-only over every WSG in the schema. And the bucketing
+recompute runs dispatcher-only over the union of them. And the bucketing
 was already not naively segment-balanced: link#253 made the packing
 speed-aware (finish time, not raw segments), after link#246 had already moved
 the weight from WSG count to segment count.
+
+**A third correction, 2026-09-02.** The sentence above said "over every WSG in
+the schema". It does not, and did not: `ALL_WSGS` is the union of the host
+buckets (`study_area_run.sh:1306`), and the 2026-09-01 field run logged
+`recompute (lnk_access, 34 WSGs, -j4)` against a 95-WSG schema. The same wrong
+claim had propagated into `CLAUDE.md` and `research/study_area_run.md`; all
+three are corrected. It matters because the recompute therefore **does** scale
+with scope — 217 WSGs is ~6.4x this one, not a constant — which is the opposite
+of the planning conclusion the claim was used to support.
+
+Combined with the ceiling measured above, that points somewhere specific: the
+pool is already at 79–93% of its Amdahl limit, so parallelism has little left to
+give. The remaining lever is doing **less work**, i.e. recomputing
+`run ∪ upstream(run)` rather than every run WSG. Tracked as link#274, unmeasured.
 
 What the measurement does bear on is narrower, and genuinely open. #246 chose
 segment count because it beats *WSG* count — "a one-WSG component can outweigh
