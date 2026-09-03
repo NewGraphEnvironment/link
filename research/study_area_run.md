@@ -231,6 +231,16 @@ above still stand; these are additional and were learned on the field-scope run
   still carry the NULLs** and are not retroactively fixable.
 - **`link_dirty` is currently always TRUE on the dispatcher, and it is FALSE** —
   the run's own logs land in the tracked `data-raw/logs/`. #257.
+- **Measured timing, 34 WSGs / 3 hosts, SECOND run 2026-09-01 (`20260901_234743`):
+  133 min** — spin + prep + parity ~11, then modelling / consolidate / recompute +
+  compare. 25 min faster than the 2026-08-31 run below on the same scope and host
+  count; the recompute was parallel this time (link#250), which is most of it. Same
+  buckets, 19 Fraser / 9 Peace / 6 Skeena, reproducible from the focal sets in
+  `research/study_area_scope_and_funders.md`. **First run with complete code
+  provenance:** `fresh_sha`, `fresh_dirty`, `fresh_sha_source` and `bcfishobs_sha`
+  non-NULL on all 34 rows across 3 hosts, one distinct input-SHA set, `link_dirty`
+  0 everywhere, `study_area_verify.sql` exit 0 with `expected_n=34`. Logs committed
+  under `data-raw/logs/study_area_run/20260901_234743*`.
 - **Measured timing, 34 WSGs / 3 hosts:** 158 min total — spin + prep + parity
   ~10, modelling ~83, consolidate + burn + coverage ~11, recompute + compare
   ~55. **Correction 2026-09-02: the recompute runs over the RUN's WSGs, not the
