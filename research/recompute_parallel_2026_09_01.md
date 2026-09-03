@@ -173,6 +173,51 @@ Two candidates, both out of scope for #250 and both worth their own issue:
    the serial path too — which is worth more than pool width, because the
    makespan floor *is* the slowest WSG.
 
+## The bench is capped below the host — local numbers understate
+
+Everything above was measured against a **local Docker Postgres**, and that
+cluster is smaller than the machine it runs on. On the machine used here the
+Docker VM had **6 of the host's 10 CPUs**, and the server ran:
+
+| setting | value |
+|---|---|
+| `max_parallel_workers` | 4 |
+| `max_parallel_workers_per_gather` | 3 |
+| `max_worker_processes` | 6 |
+| `max_connections` | 40 |
+| `shared_buffers` | 1 GB |
+| `work_mem` | 1 GB |
+| `maintenance_work_mem` | 2 GB |
+
+So a **single** recompute query can consume the cluster's entire parallel-worker
+pool, and `-jN` beyond a handful of jobs is contending for a pool sized for one.
+
+**Do not conclude from a flat local `-jN` curve that the workload will not scale
+on other hardware.** The ceiling measured here is partly this bench's, and a
+dispatcher with more cores and a differently-tuned cluster is a different
+experiment.
+
+**And do not read that as "the pool was the constraint" either** — the section
+above measured that directly and it was not: disabling intra-query parallelism
+barely moved serial time, and the database sat idle at ~1.1 active backends
+while the cost stayed R-side. Both statements are true at once. The bench
+understates *and* the thing it understates was not the bottleneck.
+
+Check the bench before trusting a scaling number from it:
+
+```bash
+docker info --format '{{.NCPU}} CPUs / {{.MemTotal}} bytes'
+psql -h localhost -p 5432 -U postgres -d fwapg -c "
+  SELECT name, setting, unit FROM pg_settings
+   WHERE name IN ('max_parallel_workers','max_parallel_workers_per_gather',
+                  'max_worker_processes','max_connections','shared_buffers',
+                  'work_mem','maintenance_work_mem') ORDER BY name;"
+```
+
+Migrated from machine-local memory 2026-09-02 (soul#47). The host's identity
+stays in memory; only the shape of the constraint and how to re-measure it
+belong here.
+
 ## Reproducing
 
 ```bash
