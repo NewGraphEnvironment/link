@@ -61,18 +61,37 @@ blocks with five URL shapes:
 | `fwa_lakes_poly` | **200** | 404 | — | |
 | `fwa_wetlands_poly` | **200** | 404 | — | |
 | `fwa_rivers_poly` | **200** | 404 | — | |
-| `fwa_obstacles_sp` | 404 | 404 | 404 | **not loaded by fwapg at all** |
+| `fwa_obstructions_sp` | **200** | 404 | — | *(listed here as `fwa_obstacles_sp` until 2026-09-02 — see below)* |
 
 Two consequences worth not re-deriving:
 
-- **Only the loader knows the URL it built.** Probing from link would mean
-  reimplementing `load.sh`'s dispatch — a second list that silently drifts from
-  the first.
 - **`order_parent` is derived, not downloaded.** A NULL artifact there is correct
   and permanent; any schema must distinguish *derived* from *unrecorded* or it
-  reads as a gap forever. And `obstacles_sp` is a **stale entry** in
-  `.lnk_input_primitives()` — absent from the bucket, absent from our database,
-  and 39 of 429 `log_input` rows already carry NULL for it.
+  reads as a gap forever.
+
+### Two corrections, 2026-09-02
+
+Both claims below were stated here as measured fact and were wrong. Each had also
+propagated into link#265 and into machine-local memory — one source, three
+restatements, which is why agreeing copies are not corroboration.
+
+- **"Only the loader knows the URL it built"** — used to argue that probing was
+  impossible and the fork-divergence question was therefore on the critical path.
+  **False.** `fwapg/load.sh:2` is `set -euxo pipefail`, so the loader already
+  traces every fully-expanded URL to stderr, including all ~250 per-WSG
+  `fwa_stream_networks_sp/$WSG.parquet` fetches. `./load.sh 2> run.log` is a
+  complete, ordered record with **no change to fwapg at all** — no fork commit, no
+  upstream PR. That is link#270. The genuine obstacle is narrower and unchanged:
+  the watershed-group list comes from an OGR query against the remote parquet
+  (`load.sh:40-43`), so a link-side reimplementation would drift from it.
+- **"`obstacles_sp` is a stale entry … absent from the bucket"** — the symptom was
+  right and the cause was not. It is a **naming error**: no `fwa_obstacles_sp`
+  exists anywhere in fwapg (repo-wide grep, zero hits), the real table is
+  **`fwa_obstructions_sp`**, it *is* downloaded (`load.sh:20`), and it holds
+  **32,541 rows** in our database. So the 39 NULL `log_input` rows were honest
+  about a question asked wrongly. Fixed in link#271 / v0.50.0; the doc line at
+  `R/lnk_pipeline_break.R:25` still carries the wrong name and is deliberately
+  left for reading rather than substitution.
 
 ## What pins each input today
 
