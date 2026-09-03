@@ -1,0 +1,742 @@
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_natr" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] NATR recomputed in 0.29 min (persist=fresh)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_pars" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] PARS recomputed in 0.50 min (persist=fresh)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_harr" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+7: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+8: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+9: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+10: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] HARR recomputed in 2.94 min (persist=fresh)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_bowr" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+7: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] BOWR recomputed in 1.41 min (persist=fresh)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_morr" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+7: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+8: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+9: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] MORR recomputed in 2.08 min (persist=fresh)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_setn" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+7: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+8: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+9: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+10: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] SETN recomputed in 8.36 min (persist=fresh)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_crkd" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] CRKD recomputed in 0.18 min (persist=fresh)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_lpce" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] LPCE recomputed in 0.13 min (persist=fresh)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_lfra" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+7: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+8: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+9: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+10: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] LFRA recomputed in 8.97 min (persist=fresh)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_para" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] PARA recomputed in 0.25 min (persist=fresh)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_kisp" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+7: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+8: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+9: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+10: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] KISP recomputed in 3.36 min (persist=fresh)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_bbar" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+7: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] BBAR recomputed in 2.27 min (persist=fresh)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_lchl" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] LCHL recomputed in 0.65 min (persist=fresh)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_lsal" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] LSAL recomputed in 0.21 min (persist=fresh)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_narc" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] NARC recomputed in 1.08 min (persist=fresh)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_pine" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] PINE recomputed in 0.29 min (persist=fresh)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_cotr" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+7: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] COTR recomputed in 1.75 min (persist=fresh)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_fran" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] FRAN recomputed in 1.46 min (persist=fresh)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_bulk" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+7: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+8: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+9: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] BULK recomputed in 2.41 min (persist=fresh)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_zymo" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+7: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] ZYMO recomputed in 1.31 min (persist=fresh)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_klum" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+7: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+8: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+9: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+10: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] KLUM recomputed in 2.56 min (persist=fresh)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_frcn" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+7: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+8: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+9: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+10: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] FRCN recomputed in 6.97 min (persist=fresh)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_will" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] WILL recomputed in 0.74 min (persist=fresh)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_mfra" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] MFRA recomputed in 0.36 min (persist=fresh)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_ufra" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] UFRA recomputed in 1.61 min (persist=fresh)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_twac" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] TWAC recomputed in 0.53 min (persist=fresh)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_upce" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] UPCE recomputed in 0.22 min (persist=fresh)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_tabr" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] TABR recomputed in 0.73 min (persist=fresh)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_dogc" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+7: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] DOGC recomputed in 1.26 min (persist=fresh)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_carp" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] CARP recomputed in 0.14 min (persist=fresh)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_pcea" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] PCEA recomputed in 0.42 min (persist=fresh)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_lske" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+7: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+8: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+9: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+10: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] LSKE recomputed in 3.18 min (persist=fresh)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_mork" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] MORK recomputed in 1.76 min (persist=fresh)
+[1] 0
+[1] 0
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
+NOTICE:  table "zz_lnk_streams_necr" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+7: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] NECR recomputed in 1.10 min (persist=fresh)

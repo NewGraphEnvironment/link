@@ -1,0 +1,91 @@
+=== study_area_run 20260901_234743 ===
+  run_uid:      20260901_234743-6628379d
+  run_label:    <none>
+  config:       bcfishpass
+  branch:       main (cyphers run this ref)
+  persist:      fresh
+  cyphers:      job1 job2 (2)
+  log dir:      /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run
+  vintage max:  7 d
+  recompute -j: 4
+=== pre-flight (local; pre-spend) ===
+  ✓ dispatcher fresh exports what the pipeline calls
+  ✓ origin/main is at HEAD
+  ✓ fwapg_sha e6e1eb0f4718 (exported to all hosts)
+  ✓ bcfishobs_sha 08630cf4ac14 (exported to all hosts)
+  ✓ fresh_sha 7f12d99115b7 (clean)
+  ✓ bcfp reference pinned at v0.7.15-47-ga702229 (exported to all hosts)
+    [preflight] primitive vintage (window 7 d) - OK, oldest 1.1 d (whse_fish.pscis_assessment_svw)
+  ✓ dispatcher primitives within 7 d
+  ✓ doctl token valid (DO API reachable)
+  ✓ tofu do_token valid (HTTP 200 /v2/account)
+  ✓ tofu s3 backend reachable
+  ✓ pre-flight clean (tunnel-free)
+=== resolve drainage-closed DS-first buckets ===
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Library/R/arm64/4.5/library/link/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
+  dispatcher (focal=BOWR,COTR,FRAN,LCHL,LSAL,MORK,NECR,TABR,UFRA,WILL): LFRA,HARR,FRCN,SETN,BBAR,DOGC,MFRA,TWAC,NARC,COTR,TABR,LCHL,LSAL,MORK,WILL,BOWR,NECR,UFRA,FRAN
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Library/R/arm64/4.5/library/link/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
+  cy[job1] (focal=CARP,CRKD,NATR,PARA,PARS,PCEA,PINE,UPCE): LPCE,PINE,UPCE,PCEA,PARA,CARP,NATR,PARS,CRKD
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Library/R/arm64/4.5/library/link/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
+  cy[job2] (focal=BULK,MORR,ZYMO,KISP,KLUM): LSKE,KLUM,KISP,ZYMO,BULK,MORR
+=== spin cyphers: job1 job2 ===
+  cy[job1] = 143.244.183.92
+  cy[job2] = 143.198.48.197
+=== prep cyphers (cypher_prep.sh) ===
+  ✓ cyphers prepped
+=== pre-flight (hosts; post-prep, pre-write) ===
+[preflight] host parity - OK across 3 host(s): m1, cypher-job1, cypher-job2
+  ✓ host parity clean (3 hosts)
+  ✓ cy[job1] primitives within 7 d
+  ✓ cy[job2] primitives within 7 d
+=== run buckets (DS-first) ===
+  ✓ host runs finished (per-WSG soft-fail; gaps surface in compare)
+=== per-host completeness ===
+  ✓ dispatcher: 19/19 WSGs accounted for
+  ✓ cy[job1]: 9/9 WSGs accounted for
+  ✓ cy[job2]: 6/6 WSGs accounted for
+=== consolidate cyphers -> dispatcher (fresh) ===
+  ✓ consolidated 2/2 cypher(s) (see /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20260901_234743_consolidate.log)
+=== BURN CYPHERS (trap EXIT) ===
+  cy[job1]: 0 tofu resources (expect 0)
+  cy[job2]: 0 tofu resources (expect 0)
+  ✓ doctl: no cypher droplets
+  ✓ burn clean
+=== verify WSG coverage in fresh ===
+  ✓ every run WSG has rows in fresh.streams
+=== post-consolidate recompute (lnk_access, 34 WSGs, -j4) ===
+  ✓ log tables present in fresh
+  ✓ barrier views built once for fresh
+  ordering 54 known WSG time(s) longest-first (median 0.555 min for the rest)
+[fanout] recompute - OK: 34/34 job(s) succeeded
+  ✓ recompute: 34/34 WSGs
+=== compare (tunnel-free) ===
+  ✓ compare CSV: /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20260901_234743_compare.csv
+=== summary ===
+  run WSGs: SETN,LFRA,FRCN,KISP,LSKE,HARR,KLUM,BULK,BBAR,MORR,MORK,COTR,UFRA,FRAN,BOWR,DOGC,ZYMO,NECR,NARC,WILL,LCHL,TABR,PARS,TWAC,PCEA,MFRA,NATR,PINE,PARA,UPCE,LSAL,CRKD,CARP,LPCE
+  compare CSV: /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20260901_234743_compare.csv
+Warning message:
+reference has 0 rows for LPCE — not modelled there; returning NA stats. 
+[study_area_compare] 116 rows across 34/34 WSGs -> /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20260901_234743_compare.csv
+# A tibble: 116 × 7
+   wsg   species total_segs match_pct n_diffs top_pattern      top_pattern_count
+ * <chr> <chr>        <int>     <dbl>   <int> <chr>                        <int>
+ 1 SETN  BT           78820      99.7     257 "REAR;MODELLED …                60
+ 2 SETN  CH           78820      94.7    4150 "ACCESS;DAM | "               1708
+ 3 SETN  CM           78820      94.8    4090 "ACCESS;DAM | "               1585
+ 4 SETN  CO           78820      94.8    4131 "ACCESS;DAM | "               1434
+ 5 SETN  PK           78820      94.8    4098 "ACCESS;DAM | "               1585
+ 6 SETN  SK           78820      94.7    4172 "ACCESS;DAM | "               2433
+ 7 SETN  ST           78820      93.6    5008 "ACCESS;DAM | "               1751
+ 8 LFRA  BT           27395      97.9     571 "ACCESS;ASSESSE…               100
+ 9 LFRA  CH           27395      99.7      94 "SPAWN;MODELLED…                29
+10 LFRA  CM           27395      99.6     123 "ACCESS;NONE | …                33
+# ℹ 106 more rows
+=== study_area_run done ===
+  ✓ redacted host addresses in 18 log file(s)
