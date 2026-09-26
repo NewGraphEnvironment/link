@@ -52,10 +52,10 @@ What exploration found:
 - **Seed:** `BT, DV, region` for Fraser, Mackenzie, Skeena and Columbia, plus `subregion` Kootenay, all `pool = yes`, source "operator call 2026-09-26". Kootenay is inside Columbia already; its row is there so the tracker can diverge later.
 
 ## Phase 1: Region lookup
-- [ ] `data-raw/wsg_regions_defs.csv`, hand-curated: `level, name, wscode_prefix`, holding 18 region rows and the Kootenay sub-region row. The coastal and cross-border names are drafted from their member WSGs and marked as drafts in the generator header.
-- [ ] `data-raw/wsg_regions.R`, which reads fresh's `wsg_outlet.csv` and the defs, then assigns region by top code and sub-region by the longest matching prefix. It writes `inst/extdata/wsg_regions.csv` (`watershed_group_code, region, subregion, wscode_outlet`).
+- [x] `data-raw/wsg_regions_defs.csv`, hand-curated: `level, name, wscode_prefix`, holding 18 region rows and the Kootenay sub-region row. The coastal and cross-border names are drafted from their member WSGs and marked as drafts in the generator header.
+- [x] `data-raw/wsg_regions.R`, which reads fresh's `wsg_outlet.csv` and the defs, then assigns region by top code and sub-region by the longest matching prefix. It writes `inst/extdata/wsg_regions.csv` (`watershed_group_code, region, subregion, wscode_outlet`).
   - It asserts 246 rows, every WSG with a region, and every def matched at least once.
-- [ ] Edit #290's body: regions are package-level (decided at this gate).
+- [x] Edit #290's body: regions are package-level (decided at this gate).
 
 ## Phase 2: Tracker and resolver
 - [ ] `inst/extdata/configs/default/overrides/species_pooling.csv` with the seed rows.
