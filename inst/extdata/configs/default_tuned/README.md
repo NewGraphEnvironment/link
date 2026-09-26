@@ -11,7 +11,7 @@ Everything else — `rules.yaml`, `dimensions.csv`, `parameters_fresh.csv`, `ove
 
 ## Status
 
-The thresholds CSV starts as a byte-identical copy of `default`'s, so today this bundle classifies exactly as `default` does, into its own schema. Calibrated CH and BT gradient and channel-width values from the observation work in link#284 land here, each with its evidence recorded in `research/habitat_thresholds.md`.
+One cell differs from `default` (link#284): BT `rear_gradient_max` 0.1049 → 0.1249. The other CH and BT gradient maxima and channel-width minima were examined and kept, as were `spawn_gradient_min` and `cluster_bridge_gradient` in the inherited `parameters_fresh.csv`. Channel-width maxima, MAD, lake area and edge types were out of scope and are unchanged. The evidence for each value, changed or kept, is in [`research/habitat_thresholds.md`](../../../../research/habitat_thresholds.md). The values are **candidates, unscored**: they have not yet been run against the observation validation (link#283).
 
 ## When you change a value
 
