@@ -24,3 +24,30 @@ Known biases to report alongside the numbers, not correct silently:
 - sampling clusters near road access;
 - observations exist only where fish have access, so observed gradients are cut off at the access limit.
 
+
+## fresh#218 is a bare-`id_segment` join artifact (measured 2026-09-26)
+
+Docker fwapg :5432.
+
+| query | rows |
+|---|---|
+| `fresh.streams_habitat_ch` total / distinct `(id_segment, watershed_group_code)` | 2,329,201 / 2,329,201 |
+| `fresh_default.streams_habitat_ch` total / distinct full PK | 786,317 / 786,317 |
+| Naver Creek (blk 356363814, COTR) `streams ⋈ streams_habitat_ch` on full PK | 187 |
+| same on bare `id_segment` | 4,301 |
+
+Naver's `id_segment` range is 35796–35982; those integers are other segments in other
+WSGs (#203). No duplication. #283 body corrected. fresh#218 itself (a fresh-repo issue)
+is left for the user — offered in the PR report.
+
+## Circularity
+
+Observations feed the model: barrier overrides (`observation_threshold` BT 1, CH 5,
+`observation_species` BT `BT;DV`, CH `CH;CM;CO;PK;SK`), observation break points, and
+`user_habitat_classification` (field-confirmed habitat). So accessible capture partly
+reads the model's own input. Spawning/rearing capture is the score.
+
+## Coverage for the baseline
+
+`fresh_default` 55 WSGs (all with `streams_access`); `fresh` 59 WSGs with access; 51 shared.
+`fresh_default_tuned` does not exist. FISS snapshot WSGs in `fresh_default`: COTR, PINE, UPCE.

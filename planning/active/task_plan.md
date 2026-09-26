@@ -65,9 +65,9 @@ bundle × species × WSG table, so two bundles can be diffed.
 
 ## Phases
 ### Phase 1: Correct the frame
-- [ ] Edit #283 body: fresh#218 finding (full-PK join is correct), circularity of
+- [x] Edit #283 body: fresh#218 finding (full-PK join is correct), circularity of
       accessible capture, the decided output shape
-- [ ] Record the fresh#218 measurement in `findings.md`
+- [x] Record the fresh#218 measurement in `findings.md`
 
 ### Phase 2: Tests first
 - [ ] `tests/testthat/test-lnk_habitat_validate.R`: arg validation; `.lnk_obs_stage()`
