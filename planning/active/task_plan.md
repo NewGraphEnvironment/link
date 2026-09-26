@@ -9,83 +9,102 @@ Current values (fresh `parameters_habitat_thresholds.csv`; link `default/paramet
 
 Rearing-to-spawning connection is identical for both (`cluster_rearing = TRUE`, direction `both`, `cluster_bridge_gradient 0.05`, `cluster_bridge_distance 10000`). For BT the 5 % bridge is shorter than its 10.49 % rearing cutoff, so steep rearing only survives with spawning upstream of it. Whether that is right is untested.
 
-Channel width is mostly modelled: on the local `fresh.streams`, 1.38 M segments modelled, 98.5 k field-measured, 90 k river polygons and 2.19 M NULL. NULL fails every width test, and order-1 streams are NULL (fresh#28), which likely removes BT headwater rearing wholesale.
+## Scope (re-decided at plan gate, 2026-09-26 — supersedes the 2026-09-25 gate)
 
-## Scope (decided at plan gate, 2026-09-25)
+#282 has since merged (v0.51.0), so step 4 is now in scope. #283 has not been built.
 
-**Decided at the gate:** this branch covers steps 1, 2, 3 and 6. Steps 4 and 5 (the
-`default_tuned` bundle and scoring it) wait on #282 (per-bundle thresholds) and #283
-(observation validation), both still open. The PR relates to #284 but does not close it.
-The analysis code goes in a `data-raw/` script feeding a research doc, with no new
-exports.
+- **Evidence now, score later.** This branch covers steps 1, 2, 3, 4 and 6. Verdicts are
+  *candidate, unscored*. Step 5 waits on #283; the PR relates to #284 and does not close it.
+- **`default_tuned` owns a copy of `parameters_fresh.csv`**, so CH/BT `spawn_gradient_min`
+  and BT `cluster_bridge_gradient` can be tuned. Everything else stays inherited.
+- Analysis lives in `data-raw/query_*` scripts writing to `data-raw/logs/habitat_thresholds_284/`,
+  feeding `research/habitat_thresholds.md`. No new exports.
+- The plan review (`review-plan.md`, 3 blockers) is folded in below. B1 and B3 were re-probed
+  2026-09-26: 4840/4870 BT and 3532/3550 CH observations in `fresh_default` sit within 1 m of a
+  segment break, and the FDIS key is in `source`, not `source_ref`.
 
-**Measured during exploration (local docker fwapg :5432):**
-- `bcfishobs.observations`: BT 11,375 (life stage **100 % NULL**); CH 9,023, of which
-  ~3.2k have a coded life stage and ~1k have a spawning or rearing `activity`.
-- Hatchery releases: `source LIKE 'Releases Database%'` (142 CH/BT rows).
-- bcfishobs carries **no** length, width or effort. Per the user, bcfishobs is built from
-  FISS; step 2 therefore goes to the FISS *site* layer, not to our crews' sheets, which
-  hold little CH or BT.
-- `fresh_default.streams` (55 WSGs): width source is 66k field, 49k river polygon,
-  673k modelled and 977k NULL. UNTH and LNTH exist only in `fresh` (the bcfishpass
-  config); BULK and MORR are in both.
-- Current cutoffs: CH spawn gradient ≤ 0.0449 / width ≥ 4, rear gradient ≤ 0.0549 /
-  width ≥ 1.5, access 0.15. BT spawn ≤ 0.0549 / 2, rear ≤ 0.1049 / 1.5, access 0.25.
-  The bridge gradient is 0.05 for both species.
+## Decision rule and confidence (fixed before looking at distributions)
 
-## Phase 1: Observation distributions (step 1)
-- [ ] `data-raw/habitat_thresholds_observations.R`:
-  - Pull CH and BT from `bcfishobs.observations`. Drop `observation_exclusions`
-    (default bundle, read through `lnk_config()` / `lnk_load_overrides()`) and
-    `Releases Database` rows. Record the counts dropped at each step.
-  - Life-stage class: CH from `life_stage` plus `activity`
-    (spawning / rearing / adult / juvenile / unknown). BT is all unknown.
-  - Join each observation to (a) the province-wide FWA line
-    (`fwa_stream_networks_sp` gradient + `fwa_stream_networks_channel_width` with its
-    source) and (b) the link `fresh_default.streams` segment within the 55 persisted
-    WSGs, matched on `blue_line_key` and measure within the segment range, joined on the
-    full PK. (b) is the gradient the model actually tests. Report (a) and (b) side by side.
-  - Split by region (derive a region/WSG grouping) and by width source
-    (measured / river polygon / modelled / NULL), kept separate.
-  - Write `research/habitat_thresholds_obs.rds` and figures: ECDF/histograms of gradient
-    and width at observations, by stage and region, with the current cutoffs drawn in.
-- [ ] Summary numbers per species and stage: the share of observations each current
-  cutoff excludes, and the share sitting on NULL-width or order-1 segments (fresh#28).
-- [ ] Record the known biases next to the numbers: points sit at the downstream end of a
-  site; sampling clusters by road access; the access cutoff truncates observed gradients.
+Use = CH/BT observations, deduplicated to one per species × `blue_line_key` × rounded measure,
+match types A/B (stream, within 100 m), within WSGs persisted in `fresh_default`. Availability =
+length of accessible (`streams_habitat_<sp>.accessible`) stream-edge segments not in a waterbody,
+in the same WSGs. The selection ratio per bin is use share ÷ availability share.
+
+- **Gradient max** (per stage): candidate = the use P95 of the tested (upstream-segment)
+  gradient, snapped to the `x.xx49` grid. It is kept at the current value when
+  |candidate − current| < 0.5 percentage points, or when the selection ratio in the bin
+  just above the current cutoff is ≥ 1 (the cutoff is not binding).
+- **Channel width min**: candidate = the use P5 of non-NULL width, excluding river polygons
+  (which bypass the width test), checked against the field-measured subset. It is kept when
+  |candidate − current| < 0.5 m.
+- **`spawn_gradient_min`**: a floor only if the spawn-stage selection ratio in [0, floor) is
+  < 0.5 **and** fewer than 5 % of spawn-stage observations fall below it. Otherwise 0.
+- **BT `cluster_bridge_gradient`**: raise it only if more than 10 % of BT observations sit on
+  segments that pass the rear predicate but have `rearing = FALSE`.
+- **Confidence**: *high* = n ≥ 100 stage observations and the literature agrees; *medium* =
+  n ≥ 30, or the literature alone; *low* = otherwise. A value changes only at medium or above.
+- FISS site presence/absence (Phase 2) and the literature (Phase 3) can veto a candidate that
+  contradicts them. They cannot create one on their own.
+
+## Phase 1: Observation use vs availability (step 1)
+- [ ] `data-raw/query_habitat_thresholds_obs.R`: CH + BT obs; drop `observation_exclusions`
+  (`data_error | release_exclude`, via `lnk_load_overrides(lnk_config("default"))`) and
+  `Releases Database` rows; keep a count ledger at each step. DV rows are sensitivity-only, used
+  where `wsg_species_presence` marks bt and not dv.
+- [ ] Stage: CH spawn = activity SPL/SPM/S; CH rear = activity R/REA or life stage
+  Fry/Parr/Juvenile (never Adult, holding, migrating or OBL); BT = unknown (DV stage as
+  sensitivity).
+- [ ] Join on the upstream segment at the break (`abs(s.downstream_route_measure − m) < 1`, else
+  containing), on the full PK in `fresh_default.streams`, asserting exactly one segment per obs.
+  Add a 100 m FWA window gradient from geometry Z. Decompose each obs into passes / fails-gradient
+  / fails-width / width-NULL / river-poly-bypass / lake-wetland, and read the final flags from
+  `streams_habitat_ch/_bt`.
+- [ ] Availability from accessible segments in the same WSGs; selection ratios by gradient and
+  width bin, by region (top-level wscode) and width source; project dominance reported.
+  CSVs + PNGs in `data-raw/logs/habitat_thresholds_284/`, with a README carrying the stamp
+  (link/fresh SHA, `fresh_default` vintage from its `log`, bcfishobs row count).
+- [ ] G9 metric for the BT bridge; G7 CH `user_habitat_classification` known-spawning overlap.
 
 ## Phase 2: FISS site-level evidence (step 2)
-- [ ] Probe the FISS stream sample sites layer (bcdata `WHSE_FISH.FISS_STREAM_SAMPLE_SITES_SP`,
-  or whatever fwapg/bcfishobs already loads) for measured channel width, gradient and
-  site identifiers. Check whether FDIS `source_ref` (`fshclctn_id`) links CH/BT
-  observations to a site record.
-- [ ] If it links: add site-measured width and gradient per observation to the Phase 1
-  table, and derive sampled-without-CH/BT sites as pseudo-absences.
-- [ ] Record what FISS cannot give us (fish size, effort, BT life stage) as a gap. If a
-  source exists but is out of reach here, file a follow-up issue rather than build it.
+- [ ] `data-raw/query_habitat_thresholds_fiss.R`: read the `knowledge` FISS data-submission
+  snapshots (`LNK_KNOWLEDGE_DIR`, default `~/Projects/repo/knowledge`; SHA recorded):
+  `fiss_sites_<wsg>_all.csv` for UNTH, LNTH, COTR, PINE and UPCE. Per site: measured width
+  and gradient (percent → proportion), effort, and CH/BT caught vs sampled-without (NFC
+  included) as true absences.
+- [ ] Presence vs absence distributions against the current cutoffs; snap sites to
+  `fresh.streams` to size modelled-vs-measured width and gradient error. Output goes to the
+  campaign dir.
+- [ ] Draft (not file) a `knowledge` issue for parsing the individual-fish sheets (fish
+  length, for the adult/juvenile split) into `planning/active/`.
 
 ## Phase 3: Literature (step 3)
-- [ ] Search Zotero (MCP `zotero_*`, `/zotero-lookup`) and the web for CH (stream- vs
-  ocean-type) and BT (resident / fluvial / adfluvial) spawning and rearing gradient and
-  channel width. One cited value or range per threshold. Flag new references for adding
-  to Zotero; add none without approval of the collection.
+- [ ] Zotero (MCP + SQLite) and the web: CH stream- vs ocean-type, and BT resident / fluvial /
+  adfluvial, spawning and rearing gradient and width. One cited value or range per threshold
+  in `findings.md`, with page references. Gaps are flagged; new references are listed for
+  approval, not added.
 
-## Phase 4: Verdict (step 6)
-- [ ] `research/habitat_thresholds.md`, a topic file revised in place, with the provenance
-  line (Verified / Issues / Produced by). One section per species with, for each
-  threshold: current value, observation evidence, literature, candidate value (or "keep"),
-  and confidence. Include `spawn_gradient_min` (with the reverted 0.0025 floor from
-  `research/default_vs_bcfishpass.md:443`) and the BT `cluster_bridge_gradient`.
-- [ ] Record the candidates as the input for #282's `default_tuned` bundle, and list the
-  pilot-WSG scoring plan for step 5: which WSGs have both species and good sampling,
-  checked against `wsg_species_presence`, and the config/schema decisions that run
-  will need.
-- [ ] Update `research/README.md` if one exists (otherwise note the missing index), and
-  edit the #284 body to show what has landed and what waits on #282/#283.
+## Phase 4: Candidates in `default_tuned` (step 4)
+- [ ] Apply the decision rule; write the candidate CH/BT values into
+  `configs/default_tuned/parameters_habitat_thresholds.csv`.
+- [ ] `configs/default_tuned/parameters_fresh.csv` (copy of default's; CH/BT
+  `spawn_gradient_min` and BT `cluster_bridge_gradient` per the rule). Declare it in
+  `config.yaml` `files:` + `provenance:`; update the README.
+- [ ] Update `test-lnk_config.R` (it now owns `parameters_fresh`) and assert that only the
+  intended CH/BT cells differ from `default`. `audit_configs.R` §2 and `lnk_config_verify()`
+  must be clean.
+
+## Phase 5: Verdict (step 6)
+- [ ] `research/habitat_thresholds.md`, a topic file with a provenance line: one section per
+  species, one row per threshold (current / use-vs-availability / FISS / literature /
+  candidate / confidence / status). It states the biases (points at site downstream ends,
+  road access, crews avoiding big and steep water, segment-average gradient, observations
+  creating breaks) and the step-5 scoring plan with the run decisions it will need.
+- [ ] Create `research/README.md` (index; none exists). Link it from `default_tuned/README.md`.
+  Edit the #284 body to show what has landed and what waits on #283.
 
 ## Validation
-- [ ] Script runs clean end to end from a fresh session against docker fwapg
+- [ ] Scripts run clean end to end from a fresh session against docker fwapg
+- [ ] Tests pass; lintr clean on touched R files
 - [ ] `/code-check` clean on each commit
-- [ ] `.Rbuildignore` still excludes `research/` and `data-raw/`
 - [ ] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion, then `/gh-pr-push` (PR "Relates to #284")

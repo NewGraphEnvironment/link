@@ -20,3 +20,14 @@ Phase 1 not started (no script written). Measured before parking:
 - fresh installed 0.33.0 (`7f12d99`), local checkout v0.34.0: CH/BT threshold rows identical in the CSV read.
 - A Plan-agent review of this task_plan was spawned before parking; its findings were not yet in.
 - Resume: #282 lands `default_tuned` + per-bundle thresholds, which also unblocks steps 4–5 here.
+
+## Session 2026-09-26 — resumed
+
+- #282 merged (v0.51.0). Re-ran plan gate: evidence now / score after #283; `default_tuned`
+  owns a copy of `parameters_fresh.csv`.
+- New branch `284-research-calibrate-ch-and-bt-gradient-an` off `origin/main`, carrying the
+  three planning commits from the parked `-a` branch by cherry-pick. That leaves the unpushed
+  MCGR run-log commit (`796c182`, on local `main` and the parked branch) out of this PR.
+- Folded `review-plan.md` B1–B3 and G1–G11 into task_plan; re-probed B1 and B3 (both hold).
+- Found `knowledge` owns FISS data-submission snapshots (UNTH, LNTH, COTR, PINE, UPCE),
+  which replaces the bcdata/`fshclctn_id` route that B3 showed does not link.
