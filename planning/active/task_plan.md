@@ -97,19 +97,19 @@ bundle × species × WSG table, so two bundles can be diffed.
 - [x] `devtools::document()`, tests green, `lintr::lint_package()` clean
 
 ### Phase 4: Driver + baseline run
-- [ ] `data-raw/habitat_validate.R` (`--schemas=`, `--wsgs=`, `--species=`,
+- [x] `data-raw/habitat_validate.R` (`--schemas=`, `--wsgs=`, `--species=`,
       `--buffers=0,100`, optional `LNK_KNOWLEDGE_DIR` for FISS absences via
       `lnk_points_snap()`), writes `data-raw/logs/habitat_validate_283/`: `summary.csv`,
       `misses_binned.csv` (gradient / width / edge-type bins, aggregates only),
       `diff.csv` (bundle A vs B per species × WSG × stage), `stamp.txt`
-- [ ] Run read-only: `fresh_default` vs `fresh` on their 51 shared WSGs, CH + BT
-- [ ] Sanity: summary obs counts reconcile with #284's ledger for `fresh_default`
+- [x] Run read-only: `fresh_default` vs `fresh` on their 51 shared WSGs, CH + BT
+- [x] Sanity: summary obs counts reconcile with #284's ledger for `fresh_default`
 
 ### Phase 5: Record
-- [ ] `research/habitat_validation.md` (method, biases incl. circularity, baseline
+- [x] `research/habitat_validation.md` (method, biases incl. circularity, baseline
       numbers); index in `research/README.md`; point `research/habitat_thresholds.md`
       step 5 at it
-- [ ] CLAUDE.md status above the marker; NEWS entry
+- [x] CLAUDE.md status above the marker; NEWS entry deferred to `/gh-pr-merge` (release bookkeeping)
 
 ## Out of scope
 Running `default_tuned` / candidate thresholds — that is #284 step 5 and needs its own
@@ -117,8 +117,8 @@ run decisions (config, schema, closure, `dams`, `mapping_code`) stated at launch
 
 ## Validation
 - [ ] Tests pass (incl. DB fixture test), `devtools::check()` / lintr clean
-- [ ] `/code-check` clean on each commit
-- [ ] PWF checkboxes match landed work
+- [x] `/code-check`: 5 rounds (review-round1..5.md); loop ended by enumeration (R3/R4, 59 rows), R5's finding fixed and pinned by a test
+- [x] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
 
 ## Verification

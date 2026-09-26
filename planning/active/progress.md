@@ -24,3 +24,7 @@
   --wsgs selected zero WSGs.
 - Reconciliation (AC1): `fresh_default` retains BT+DV 5,104 and CH 1,745 locations, exactly
   #284's pooled counts.
+- Outside-UHC capture added after the baseline showed 237/245 spawn-staged CH in UHC
+  reaches (9a4c191); R5 found the UHC test read the point while buffered capture read a
+  window — fixed (0c19e0a).
+- Final baseline at 0c19e0a → data-raw/logs/habitat_validate_283/; research/habitat_validation.md
