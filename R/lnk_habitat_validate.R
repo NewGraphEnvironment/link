@@ -62,7 +62,9 @@
 #'   habitat. Spawning and rearing capture is the score.
 #'   `n_in_uhc_spawn` / `n_in_uhc_rear` count locations inside a
 #'   `user_habitat_classification` reach confirming that habitat type for the
-#'   species (indicator 1); with `overlay_applied` TRUE the segments wholly
+#'   species (indicator 1) anywhere in the window capture reads (the
+#'   point's segment up to `buffer_m` upstream); with `overlay_applied` TRUE the
+#'   segments wholly
 #'   inside such a reach are forced to habitat, so most of those locations are
 #'   captured by construction. `share_spawning_outside_uhc` and
 #'   `share_rearing_any_outside_uhc` repeat the capture without them, which is
@@ -477,15 +479,17 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
                  WHERE u.species_code = a.species_code
                    AND u.blue_line_key = a.blue_line_key
                    AND u.spawning = 1
-                   AND a.m BETWEEN u.downstream_route_measure
-                               AND u.upstream_route_measure) AS in_uhc_spawn,
+                   AND u.upstream_route_measure >= least(a.m, a.seg_drm)
+                   AND u.downstream_route_measure
+                       <= greatest(a.m, a.seg_drm) + %7$s) AS in_uhc_spawn,
               EXISTS (
                 SELECT 1 FROM pg_temp.lnk_vd_uhc u
                  WHERE u.species_code = a.species_code
                    AND u.blue_line_key = a.blue_line_key
                    AND u.rearing = 1
-                   AND a.m BETWEEN u.downstream_route_measure
-                               AND u.upstream_route_measure) AS in_uhc_rear
+                   AND u.upstream_route_measure >= least(a.m, a.seg_drm)
+                   AND u.downstream_route_measure
+                       <= greatest(a.m, a.seg_drm) + %7$s) AS in_uhc_rear
          FROM pg_temp.lnk_vd_att a
          LEFT JOIN %2$s.streams_access x
            ON x.id_segment = a.id_segment
@@ -502,7 +506,7 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
       .lnk_hv_buffered(schema, spl,
                        "h.rearing OR h.lake_rearing OR h.wetland_rearing",
                        buf),
-      .lnk_quote_literal(sp))
+      .lnk_quote_literal(sp), buf)
   }, character(1)), collapse = "\n UNION ALL\n ")
 
   out <- DBI::dbGetQuery(conn, paste(per_species,

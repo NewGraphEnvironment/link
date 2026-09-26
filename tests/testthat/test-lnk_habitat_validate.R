@@ -192,11 +192,13 @@ validate_loaded <- function() {
     observation_exclusions = data.frame(
       observation_key = "o3", data_error = "t", release_exclude = "",
       stringsAsFactors = FALSE),
-    # A spawning-only reach and a confirmed non-habitat reach, both over o2.
+    # A spawning-only reach and a confirmed non-habitat reach, both over o2,
+    # and a spawning reach 50 m above o1.
     user_habitat_classification = data.frame(
       species_code = "BT", blue_line_key = 1L,
-      downstream_route_measure = c(0, 40), upstream_route_measure = c(60, 70),
-      spawning = c(1L, -1L), rearing = c(NA, -4L)))
+      downstream_route_measure = c(0, 40, 150),
+      upstream_route_measure = c(60, 70, 160),
+      spawning = c(1L, -1L, 1L), rearing = c(NA, -4L, NA)))
 }
 
 validate_conn <- function(env = parent.frame()) {
@@ -298,6 +300,9 @@ test_that("buffer_m captures habitat upstream along the same stream", {
   expect_true(o1(101)$spawning)
   # Accessibility stays the point's own segment.
   expect_false(o1(101)$accessible)
+  # The UHC reach 50 m up is inside the buffered window, not the point's.
+  expect_false(o1(0)$in_uhc_spawn)
+  expect_true(o1(51)$in_uhc_spawn)
 })
 
 test_that("absences are counted against the segment containing them", {

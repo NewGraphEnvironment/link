@@ -160,7 +160,9 @@ inputs: they lift barriers (\code{observation_threshold} in
 habitat. Spawning and rearing capture is the score.
 \code{n_in_uhc_spawn} / \code{n_in_uhc_rear} count locations inside a
 \code{user_habitat_classification} reach confirming that habitat type for the
-species (indicator 1); with \code{overlay_applied} TRUE the segments wholly
+species (indicator 1) anywhere in the window capture reads (the
+point's segment up to \code{buffer_m} upstream); with \code{overlay_applied} TRUE the
+segments wholly
 inside such a reach are forced to habitat, so most of those locations are
 captured by construction. \code{share_spawning_outside_uhc} and
 \code{share_rearing_any_outside_uhc} repeat the capture without them, which is
