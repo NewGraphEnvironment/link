@@ -304,6 +304,14 @@ cols_log_input <- c(
 }
 
 #' @noRd
+.lnk_cols_log_parameters_habitat_thresholds <- function() {
+  cols <- .lnk_dictionary_columns("parameters_habitat_thresholds")
+  out <- stats::setNames(rep("text", length(cols)), cols)
+  out[["species_code"]] <- "text NOT NULL"
+  c(config_hash = "text NOT NULL", out)
+}
+
+#' @noRd
 .lnk_cols_log_dimensions <- function() {
   cols <- .lnk_dictionary_columns("dimensions")
   out <- stats::setNames(rep("text", length(cols)), cols)
@@ -336,7 +344,7 @@ cols_log_input <- c(
 }
 
 
-#' Create the four provenance tables. Idempotent.
+#' Create the provenance tables. Idempotent.
 #'
 #' Called from [lnk_persist_init()] so a standalone init produces a complete
 #' schema, and again from the run-start path so a run never fails for want of
@@ -356,6 +364,9 @@ cols_log_input <- c(
     list(table = "log_input", cols = cols_log_input,
          pk = c("run_id", "table_name")),
     list(table = "log_parameters_fresh", cols = .lnk_cols_log_parameters_fresh(),
+         pk = c("config_hash", "species_code")),
+    list(table = "log_parameters_habitat_thresholds",
+         cols = .lnk_cols_log_parameters_habitat_thresholds(),
          pk = c("config_hash", "species_code")),
     list(table = "log_dimensions", cols = .lnk_cols_log_dimensions(),
          pk = c("config_hash", "species"))
@@ -628,17 +639,27 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
 #' @noRd
 .lnk_log_config_snapshot <- function(conn, schema, cfg, loaded, config_hash) {
   tryCatch({
-    already <- nrow(DBI::dbGetQuery(conn, sprintf(
-      "SELECT 1 FROM %s.log_parameters_fresh WHERE config_hash = %s LIMIT 1",
-      schema, DBI::dbQuoteLiteral(conn, config_hash)))) > 0L
-    if (already) {
-      return(invisible(TRUE))
+    # Checked per table, not once: a hash snapshotted before a table existed
+    # (log_parameters_habitat_thresholds arrived in #282) must still get it.
+    already <- function(table) {
+      nrow(DBI::dbGetQuery(conn, sprintf(
+        "SELECT 1 FROM %s.%s WHERE config_hash = %s LIMIT 1",
+        schema, table, DBI::dbQuoteLiteral(conn, config_hash)))) > 0L
     }
 
     specs <- list(
       list(table = "log_parameters_fresh",
            cols = .lnk_cols_log_parameters_fresh(),
            data = loaded$parameters_fresh),
+      # A bundle without its own thresholds runs fresh's copy, so that is
+      # what gets recorded — a run never logs no thresholds at all.
+      list(table = "log_parameters_habitat_thresholds",
+           cols = .lnk_cols_log_parameters_habitat_thresholds(),
+           data = loaded$parameters_habitat_thresholds %||%
+             tryCatch(utils::read.csv(
+               suppressMessages(.lnk_habitat_thresholds_csv(cfg)),
+               check.names = FALSE, colClasses = "character"),
+               error = function(e) NULL)),
       list(table = "log_dimensions",
            cols = .lnk_cols_log_dimensions(),
            data = tryCatch(utils::read.csv(cfg$dimensions, check.names = FALSE,
@@ -649,6 +670,7 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
     for (s in specs) {
       df <- s$data
       if (is.null(df) || nrow(df) == 0L) next
+      if (already(s$table)) next
 
       expected <- setdiff(names(s$cols), "config_hash")
       extra <- setdiff(names(df), expected)

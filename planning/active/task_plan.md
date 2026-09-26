@@ -67,19 +67,19 @@ Related staleness: `default/config.yaml`'s description says the bundle ships `sp
 - [x] `lnk_config_verify()` passes for all four bundles.
 
 ## Phase 3: Log the threshold values
-- [ ] `inst/extdata/configs/dictionary_parameters_habitat_thresholds.csv` (column,
+- [x] `inst/extdata/configs/dictionary_parameters_habitat_thresholds.csv` (column,
   type, group, owner, consumed_by, default_when_absent, description, related), covering
   all 14 columns, with `consumed_by` checked against real file:line in fresh and link.
-- [ ] `test-dictionaries.R`: shape, coverage and no-orphan tests for the new dictionary.
+- [x] `test-dictionaries.R`: shape, coverage and no-orphan tests for the new dictionary.
   Bundle reads go through `lnk_config(b)` resolved paths (`cfg$dimensions`,
   `cfg$files$<stem>$path`), so thin bundles work.
-- [ ] `R/lnk_log.R`: add `.lnk_cols_log_parameters_habitat_thresholds()` and a
+- [x] `R/lnk_log.R`: add `.lnk_cols_log_parameters_habitat_thresholds()` and a
   `log_parameters_habitat_thresholds` table spec (PK `config_hash, species_code`) in
   `.lnk_log_create_tables()`, plus a spec entry in `.lnk_log_config_snapshot()` fed by
   `loaded$parameters_habitat_thresholds`. When the bundle does not declare the file,
   snapshot fresh's copy so a run never logs nothing. Tests follow the existing
   log-snapshot tests.
-- [ ] `data-raw/audit_configs.R`: add the new dictionary to the coverage checks.
+- [x] `data-raw/audit_configs.R`: add the new dictionary to the coverage checks.
 
 ## Phase 4: `default_tuned` bundle + stale text
 - [ ] `inst/extdata/configs/default_tuned/`: `config.yaml` (`extends: default`,

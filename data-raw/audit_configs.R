@@ -247,6 +247,55 @@ if (!nzchar(pf_fresh_path)) {
 }
 
 # ---------------------------------------------------------------------------
+# 3c. parameters_habitat_thresholds column drift + dictionary coverage (#282)
+# ---------------------------------------------------------------------------
+# Each bundle vendors its own copy of fresh's thresholds CSV. A column fresh
+# adds that a bundle lacks means that bundle's copy is stale; a column nobody
+# documented must not pass silently. Values are allowed to differ — that is the
+# point of a per-bundle copy — so only the header is compared.
+cat("\n--- 3c. parameters_habitat_thresholds column drift + coverage ---\n")
+th_fresh_path <- system.file("extdata", "parameters_habitat_thresholds.csv",
+                             package = "fresh")
+dict_th_path <- repo_path(
+  "inst/extdata/configs/dictionary_parameters_habitat_thresholds.csv")
+if (!file.exists(dict_th_path)) {
+  flag("3c", sprintf("dictionary missing: %s", dict_th_path))
+} else {
+  dict_th <- utils::read.csv(dict_th_path, stringsAsFactors = FALSE,
+                             check.names = FALSE)
+  cols_th_fresh <- if (nzchar(th_fresh_path)) {
+    names(utils::read.csv(th_fresh_path, check.names = FALSE, nrows = 1))
+  } else {
+    cat("  (fresh's thresholds CSV not found — is fresh installed?)\n")
+    NULL
+  }
+  for (b in bundles) {
+    th_csv <- lnk_config(b)$files$parameters_habitat_thresholds$path
+    cat(sprintf("\n  bundle: %s\n", b))
+    if (is.null(th_csv)) {
+      flag(sprintf("3c %s", b), "declares no files$parameters_habitat_thresholds")
+      next
+    }
+    cols_b <- names(utils::read.csv(th_csv, check.names = FALSE, nrows = 1))
+    stale <- setdiff(cols_th_fresh, cols_b)
+    undocumented <- setdiff(cols_b, dict_th$column)
+    if (length(stale) > 0) {
+      flag(sprintf("3c %s", b),
+           sprintf("fresh ships threshold column(s) the bundle lacks: %s",
+                   paste(stale, collapse = ", ")))
+    }
+    if (length(undocumented) > 0) {
+      flag(sprintf("3c %s", b),
+           sprintf("undocumented in dictionary_parameters_habitat_thresholds.csv: %s",
+                   paste(undocumented, collapse = ", ")))
+    }
+    if (length(stale) == 0 && length(undocumented) == 0) {
+      cat("    column set aligned + fully documented\n")
+    }
+  }
+}
+
+# ---------------------------------------------------------------------------
 # 4. Undeclared override CSVs (files on disk but not in cfg$files)
 # ---------------------------------------------------------------------------
 cat("\n--- 4. Override files on disk vs declared in config.yaml ---\n")

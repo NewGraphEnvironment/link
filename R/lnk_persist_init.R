@@ -334,7 +334,8 @@ lnk_persist_init <- function(conn, cfg, species, force_recreate = FALSE) {
   .lnk_validate_persist_table(conn, schema = schema,
                               table = "streams_mapping_code",
                               force_recreate = force_recreate)
-  for (tbl in c("log", "log_input", "log_parameters_fresh", "log_dimensions")) {
+  for (tbl in c("log", "log_input", "log_parameters_fresh",
+                "log_parameters_habitat_thresholds", "log_dimensions")) {
     .lnk_validate_persist_table(conn, schema = schema, table = tbl,
                                 force_recreate = force_recreate)
   }
@@ -476,7 +477,8 @@ lnk_persist_init <- function(conn, cfg, species, force_recreate = FALSE) {
     schema, paste(view_unions, collapse = "\nUNION ALL\n")))
 
   # Run-provenance sidecars (link#127): `log`, `log_input`,
-  # `log_parameters_fresh`, `log_dimensions`. Kept in R/lnk_log.R so the
+  # `log_parameters_fresh`, `log_parameters_habitat_thresholds` (#282),
+  # `log_dimensions`. Kept in R/lnk_log.R so the
   # column vectors sit beside the writers that populate them.
   .lnk_log_create_tables(conn, schema)
 

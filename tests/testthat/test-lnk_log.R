@@ -235,7 +235,7 @@ test_that(".lnk_log_create_tables emits a CREATE TABLE for every spec", {
   sql <- capture_ddl(.lnk_log_create_tables(NULL, "fresh_test"))
   joined <- paste(sql, collapse = "\n")
   for (tbl in c("log", "log_recompute", "log_input", "log_parameters_fresh",
-                "log_dimensions")) {
+                "log_parameters_habitat_thresholds", "log_dimensions")) {
     expect_match(joined,
       sprintf("CREATE TABLE IF NOT EXISTS fresh_test\\.%s \\(", tbl))
   }
@@ -304,6 +304,19 @@ test_that("log_parameters_fresh covers the union of every bundle's header", {
   # against the union, never a single bundle.
   cols <- setdiff(names(.lnk_cols_log_parameters_fresh()), "config_hash")
   expect_setequal(cols, bundle_union("parameters_fresh.csv"))
+})
+
+test_that("log_parameters_habitat_thresholds covers the union of every bundle's header", {
+  cols <- setdiff(names(.lnk_cols_log_parameters_habitat_thresholds()),
+                  "config_hash")
+  expect_setequal(cols, bundle_union("parameters_habitat_thresholds.csv"))
+})
+
+test_that("log_parameters_habitat_thresholds keys on (config_hash, species_code)", {
+  sql <- paste(capture_ddl(.lnk_log_create_tables(NULL, "s")), collapse = "\n")
+  expect_match(sql, paste0(
+    "CREATE TABLE IF NOT EXISTS s\\.log_parameters_habitat_thresholds \\(",
+    "[^;]*PRIMARY KEY \\(config_hash, species_code\\)"))
 })
 
 test_that("log_dimensions covers the union of every bundle's header", {
@@ -513,6 +526,74 @@ test_that("config snapshot inserts full rows with ON CONFLICT DO NOTHING", {
   expect_match(joined, "'BT'")
 })
 
+test_that("config snapshot records the bundle's habitat thresholds values", {
+  cfg <- lnk_config("default")
+  loaded <- lapply(c(parameters_fresh = "parameters_fresh",
+                     parameters_habitat_thresholds = "parameters_habitat_thresholds"),
+                   function(k) utils::read.csv(cfg$files[[k]]$path,
+                                               check.names = FALSE))
+  loaded$parameters_habitat_thresholds$spawn_gradient_max[
+    loaded$parameters_habitat_thresholds$species_code == "CH"] <- 0.0321
+  sql <- capture_write(
+    .lnk_log_config_snapshot(fake_conn(), "s", cfg, loaded, "sha256:abc"),
+    probe_rows = 0L)
+  ins <- grep("INSERT INTO s\\.log_parameters_habitat_thresholds", sql,
+              value = TRUE)
+  expect_length(ins, 1L)
+  expect_match(ins, "rear_lake_ha_min")
+  # The loaded value is what lands, not whatever is on disk.
+  expect_match(ins, "'0.0321'")
+})
+
+test_that("config snapshot logs fresh's thresholds when the bundle has none", {
+  skip_if_not_installed("fresh")
+  cfg <- lnk_config("default")
+  cfg$files$parameters_habitat_thresholds <- NULL
+  loaded <- list(parameters_fresh = utils::read.csv(
+    file.path(cfg$dir, "parameters_fresh.csv"), check.names = FALSE))
+  sql <- capture_write(
+    .lnk_log_config_snapshot(fake_conn(), "s", cfg, loaded, "sha256:abc"),
+    probe_rows = 0L)
+  ins <- grep("INSERT INTO s\\.log_parameters_habitat_thresholds", sql,
+              value = TRUE)
+  expect_length(ins, 1L)
+  expect_match(ins, "'0.0449'")  # fresh's CH spawn_gradient_max
+})
+
+test_that("config snapshot gates per table, so a new table is back-filled", {
+  # A hash logged before log_parameters_habitat_thresholds existed has rows in
+  # the older tables only. The old single gate on log_parameters_fresh would
+  # skip it for good.
+  cfg <- lnk_config("default")
+  loaded <- lapply(c(parameters_fresh = "parameters_fresh",
+                     parameters_habitat_thresholds = "parameters_habitat_thresholds"),
+                   function(k) utils::read.csv(cfg$files[[k]]$path,
+                                               check.names = FALSE))
+  captured <- character()
+  testthat::local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) {
+      captured <<- c(captured, sql)
+      invisible(conn)
+    }
+  )
+  testthat::with_mocked_bindings(
+    dbGetQuery = function(conn, statement, ...) {
+      if (grepl("log_parameters_habitat_thresholds", statement)) {
+        data.frame()
+      } else {
+        data.frame(x = 1L)
+      }
+    },
+    dbQuoteLiteral = function(conn, x, ...) {
+      paste0("'", gsub("'", "''", as.character(x)), "'")
+    },
+    .package = "DBI",
+    .lnk_log_config_snapshot(fake_conn(), "s", cfg, loaded, "sha256:abc")
+  )
+  expect_length(captured, 1L)
+  expect_match(captured, "INSERT INTO s\\.log_parameters_habitat_thresholds")
+})
+
 test_that("config snapshot warns and inserts the intersection on shape drift", {
   cfg <- lnk_config("default")
   df <- utils::read.csv(file.path(cfg$dir, "parameters_fresh.csv"),
@@ -598,7 +679,8 @@ test_that("log_recompute is created alongside the other log tables", {
   sql <- capture_ddl(.lnk_log_create_tables(NULL, "fresh_test"))
   joined <- paste(sql, collapse = "\n")
   for (tbl in c("log", "log_recompute", "log_input",
-                "log_parameters_fresh", "log_dimensions")) {
+                "log_parameters_fresh", "log_parameters_habitat_thresholds",
+                "log_dimensions")) {
     expect_match(joined,
       sprintf("CREATE TABLE IF NOT EXISTS fresh_test\\.%s \\(", tbl))
   }
