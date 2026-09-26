@@ -1,0 +1,9 @@
+## ADMS default zz282_def_adms  link=0.50.0 fresh=0.34.0  cfg_hash=sha256:008ed3a1a1f6c52c5a4c751feddff929766b4d11129d008f69cd229b5e23016e  1.2 min
+streams n=39423 digest=bbed26e41a4206c860a51af02e27ecc7
+ species_code     n n_spawn n_rear                           digest
+           BT 39423    1484   2393 18f2d027cf834ee330995ec62b71dd3b
+           CH 39423    1068   1470 ac5e427b0e480d50e99cd8404df65157
+           CO 39423    1238   1516 1a9669255ed036a8050187a82e986176
+           RB 39423    1242   2006 6662d822c956aeab9575b11f2ff791d0
+           SK 39423     912    360 3074c3b02d2b93fbbdb193e3da28c26e
+exit=0

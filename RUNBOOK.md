@@ -410,13 +410,14 @@ direction. Not yet scoped; candidate issue.
 
 ## 6b. Run provenance — which config built this network? (link#127)
 
-Every `lnk_pipeline_run()` writes four sidecar tables into the **persist**
+Every `lnk_pipeline_run()` writes five sidecar tables into the **persist**
 schema, so a network in the DB is self-describing:
 
 | table | grain | holds |
 |---|---|---|
 | `<persist>.log` | one row per run | `date_start` / `date_end`, `config_hash`, `config_drift`, link/fresh version + SHA + dirty flag, `fwapg_sha`, run args, `species[]`, `wsg_upstream[]`, bcfp baseline |
 | `<persist>.log_parameters_fresh` | `(config_hash, species_code)` | **full** `parameters_fresh.csv` rows |
+| `<persist>.log_parameters_habitat_thresholds` | `(config_hash, species_code)` | **full** thresholds rows the run used — the bundle's, or fresh's copy when it has none (#282) |
 | `<persist>.log_dimensions` | `(config_hash, species)` | **full** `dimensions.csv` rows |
 | `<persist>.log_input` | `(run_id, table_name)` | per-primitive row count, size, last-analyze, source |
 
@@ -462,7 +463,8 @@ EXCEPT SELECT watershed_group_code FROM <persist>.log;
   `.git` walk of `FWAPG_DIR`. Teaching `snapshot_bcfp.sh` to stamp load events
   is the open follow-up that fills `log_input.source_at`.
 - `log` and `log_input` carry `watershed_group_code` so `schema_consolidate.R`
-  auto-discovers them; `log_parameters_fresh` / `log_dimensions` deliberately
+  auto-discovers them; `log_parameters_fresh` / `log_parameters_habitat_thresholds` /
+  `log_dimensions` deliberately
   do not (they key on `config_hash`), so **they do not yet travel between
   hosts** — follow-up PR.
 
@@ -604,10 +606,11 @@ does not interpolate its variables inside a dollar-quoted string.
 |---|---|---|
 | Per-species gradient access threshold | `configs/<name>/parameters_fresh.csv` → `access_gradient_max` | gradient `blocks_species` (§2a) |
 | Per-species observation override | `parameters_fresh.csv` → `observation_*` | barrier-skip via observations; feeds habitat (`lnk_pipeline_classify`) AND access (anti-join in `barriers_<sp>_access`, persisted as `barrier_overrides`, #200) |
-| Habitat dimensions (spawn/rear by gradient, channel width, lake/stream, …) | `configs/<name>/dimensions.csv` → `lnk_rules_build()` → `rules.yaml` | `frs_habitat_classify()` (token1 habitat) |
+| Habitat dimensions (which edge / waterbody types spawn or rear, lake/wetland rules, bypasses) | `configs/<name>/dimensions.csv` → `lnk_rules_build()` → `rules.yaml` | `frs_habitat_classify()` (token1 habitat) |
+| Habitat thresholds (per-species spawn/rear gradient max, channel-width min/max, lake-area floor) | `configs/<name>/parameters_habitat_thresholds.csv` (#282) → `.lnk_habitat_thresholds_csv()` → `fresh::frs_params()` | numbers the `rules.yaml` rules inherit when they set none of their own |
 | Species residence (resident/anadromous/spawn-only) | **hardcoded** defaults in `lnk_pipeline_mapping_code()` | which mc_barrier flavor + spawn-only token1 |
 | Dam / anthropogenic blocking | **nowhere** — universal `all species` in `lnk_barriers_unify` | `blocks_species` (§2a). Not rules-driven. |
-| What each config column means | `configs/dictionary_dimensions.csv`, `configs/dictionary_parameters_fresh.csv` | data dictionaries — per-column type, group, default, description, and (for `parameters_fresh`) `owner` + `consumed_by` file:line |
+| What each config column means | `configs/dictionary_dimensions.csv`, `configs/dictionary_parameters_fresh.csv`, `configs/dictionary_parameters_habitat_thresholds.csv` | data dictionaries — per-column type, group, default, description, and (for `parameters_fresh`) `owner` + `consumed_by` file:line |
 
 ### Who owns which `parameters_fresh` column
 
@@ -642,6 +645,31 @@ follow-up #189), **dam blocking is not rules-driven** at all (universal), and
 package** — it is fresh-owned, so removing it is a fresh-side call.
 If dam blocking should ever become species-specific, it's a new
 per-source-per-species column + `lnk_barriers_unify` change — not a tweak.
+
+### Where habitat thresholds live (#282)
+
+Each bundle carries its own `parameters_habitat_thresholds.csv`, declared under
+`files:` with provenance. Before #282 every bundle ran fresh's installed copy,
+so a threshold change moved the parity reference too.
+
+- **bcfishpass's copy is frozen.** It is fresh's file byte-for-byte (bcfishpass
+  `parameters/example_newgraph` + fresh's edge-type columns). csv-sync ignores
+  it (`source` is fresh, not bcfishpass). Tune in `default_tuned`, never here.
+- **A bundle that declares none falls back to fresh's copy**, with a message, and
+  its `config_hash` then covers that file as `fresh:parameters_habitat_thresholds.csv`.
+- **Not every column is live on link's path.** Rules inherit only gradient and
+  channel width. `*_mad_*` are carried but never applied (MAD is rule-level only,
+  and streams carry no `mad_m3s`, fresh#114); `spawn/rear_edge_types` are read only
+  on fresh's no-rules fallback. `rear_lake_ha_min` is **baked into `rules.yaml`**
+  by `lnk_rules_build(thresholds =)`, so changing it needs a rules rebuild.
+  The dictionary's `consumed_by` column has the file:line for each.
+- **Runs record the values** in `<persist>.log_parameters_habitat_thresholds`
+  (keyed on `config_hash`), beside `log_parameters_fresh`.
+- **`default_tuned` is a thin bundle** (`extends: default`). Inherited provenance
+  entries carry `.dir`, `cfg$chain` lists the extends directories, and
+  `.lnk_config_hash()` hashes every `config.yaml` on the chain and names inherited
+  files `extends:<bundle>/<rel>` so the hash is the same on every host. Before
+  #282 no shipped bundle extended anything, and all three of those were broken.
 
 ---
 

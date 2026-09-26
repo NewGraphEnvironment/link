@@ -1,0 +1,8 @@
+## ADMS bcfishpass zz282_branch_adms  link=0.50.0 fresh=0.33.0  cfg_hash=sha256:fdec91f360d97566d2a25ddbc9f75cf75784bd608d599cfb0adf2bce2e6670b0  1.0 min
+streams n=39423 digest=802f0bfa7330ee39fb7b79d0c0dbc4bd
+ species_code     n n_spawn n_rear                           digest
+           BT 39423    1494   2555 711d8ced69e013c24a3dba819cf09769
+           CH 39423    1062   1215 4f4f035769d531abcf0f4f028f16195b
+           CO 39423    1218   1431 b34ce82982c09ce27af65df76cd17aa7
+           SK 39423     327    360 62d74a8ba46bea09c800a58fdc81f032
+exit=0

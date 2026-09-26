@@ -96,12 +96,12 @@ Related staleness: `default/config.yaml`'s description says the bundle ships `sp
 - [x] (found in Phase 4, not in the approved plan) Fix `extends:` provenance so a thin bundle is usable: inherited provenance keys resolved against the child dir (verify reported 12 inherited files missing → `config_drift = TRUE` on every run); `.lnk_config_hash` named inherited files by absolute path (host-dependent hash) and never hashed the parent's `config.yaml` (inherited `break_order` invisible). Hashes of the four non-extends bundles verified byte-identical before/after.
 
 ## Phase 5: Live verification (docker fwapg)
-- [ ] ADMS then BULK under `bcfishpass`: the classify output (`streams_habitat` flags
+- [x] ADMS then BULK under `bcfishpass`: the classify output (`streams_habitat` flags
   per segment) before and after the branch is identical. Record the result with a stamp
   in `data-raw/logs/`.
-- [ ] ADMS under a temp bundle extending `default` with CH `rear_gradient_max` changed:
+- [x] ADMS under a temp bundle extending `default` with CH `rear_gradient_max` changed:
   CH rearing differs, and other species are unchanged.
-- [ ] RUNBOOK §7 and CLAUDE.md: note where thresholds live now and that the bcfishpass
+- [x] RUNBOOK §7 and CLAUDE.md: note where thresholds live now and that the bcfishpass
   copy is frozen.
 
 ## Validation
