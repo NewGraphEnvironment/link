@@ -10,6 +10,7 @@ Reproduces bcfishpass output exactly for regression. All five watershed groups (
 | `rules.yaml` | Built rules YAML (consumed by `frs_habitat_classify()`). Regenerate from `dimensions.csv` via `lnk_rules_build()` |
 | `dimensions.csv` | Source of `rules.yaml` — species × habitat biology encoded for bcfishpass-match |
 | `parameters_fresh.csv` | Per-species fresh overrides (spawn_gradient_min, observation_threshold, etc.) |
+| `parameters_habitat_thresholds.csv` | Per-species gradient / channel-width / MAD / lake-area thresholds and edge types. Vendored from fresh (= bcfishpass `parameters/example_newgraph` + fresh's edge-type columns); provenance in `config.yaml`. **Frozen parity input** — not touched by the csv-sync workflow, so it changes only when someone changes it on purpose. |
 | `overrides/` | Synced from `smnorris/bcfishpass/data/` — expert-curated corrections + confirmed habitat + observation exclusions. Redistributed under `LICENSE-bcfishpass` at the repo root. |
 
 The bundle is consumed via `lnk_config("bcfishpass")` (manifest only — paths + provenance) and `lnk_load_overrides(cfg)` (canonical-shape tibbles). `user_habitat_classification` routes through `crate::crt_ingest()` for variant-stable ingest; the rest fall through to local CSV reads.
@@ -17,6 +18,7 @@ The bundle is consumed via `lnk_config("bcfishpass")` (manifest only — paths +
 ## What NOT to do here
 
 - Do not hand-edit `rules.yaml` — edit `dimensions.csv` and run `lnk_rules_build()`
+- Do not tune `parameters_habitat_thresholds.csv` here — it is the parity reference. Calibrated values belong in `default_tuned`.
 - Do not hand-edit files under `overrides/` — they are synced from bcfishpass upstream; file your correction there instead (see [smnorris/bcfishpass](https://github.com/smnorris/bcfishpass))
 
 ## Regenerating rules.yaml

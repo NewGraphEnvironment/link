@@ -1,7 +1,8 @@
 # data-raw/build_rules.R
 #
 # Regenerate both rules YAMLs from their dimensions CSVs.
-# Run after editing either CSV.
+# Run after editing either CSV, or a bundle's parameters_habitat_thresholds.csv
+# (its rear_lake_ha_min is baked into the rules).
 #
 # Usage:
 #   source("data-raw/build_rules.R")
@@ -23,6 +24,7 @@ link::lnk_rules_build(
 link::lnk_rules_build(
   csv = "inst/extdata/configs/default/dimensions.csv",
   to = "inst/extdata/configs/default/rules.yaml",
+  thresholds = "inst/extdata/configs/default/parameters_habitat_thresholds.csv",
   edge_types = "explicit"
 )
 
@@ -30,5 +32,6 @@ link::lnk_rules_build(
 link::lnk_rules_build(
   csv = "inst/extdata/configs/bcfishpass/dimensions.csv",
   to = "inst/extdata/configs/bcfishpass/rules.yaml",
+  thresholds = "inst/extdata/configs/bcfishpass/parameters_habitat_thresholds.csv",
   edge_types = "explicit"
 )

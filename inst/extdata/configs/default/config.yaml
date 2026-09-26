@@ -6,8 +6,10 @@ description: |
   (edge_type 1050/1150) as rearing habitat for species flagged
   `rear_wetland=yes` in dimensions.csv; lake rearing expanded beyond
   SK/KO per literature; `river_skip_cw_min=yes` on river polygons
-  where channel-width thresholds don't apply; spawn gradient min
-  0.0025 to exclude depositional reaches. Temperature, thermal
+  where channel-width thresholds don't apply. spawn_gradient_min stays
+  0, as in bcfishpass: a 0.0025 floor over-pruned observed spawning
+  reaches and was reverted (research/default_vs_bcfishpass.md §4).
+  Temperature, thermal
   refugia, and channel-class-based segmentation are not included
   here — those are separate follow-ups.
 
@@ -21,6 +23,8 @@ dimensions: dimensions.csv
 files:
   parameters_fresh:
     path: parameters_fresh.csv
+  parameters_habitat_thresholds:
+    path: parameters_habitat_thresholds.csv
   user_habitat_classification:
     source: bcfp
     path: overrides/user_habitat_classification.csv
@@ -125,6 +129,15 @@ provenance:
     synced: '2026-04-26'
     checksum: sha256:00e8d1fa342a0a9ca404f7ea11894332868f812a4a1963979aa4750f54ef3ade
     shape_checksum: sha256:2350b190b48ca5e78b576450b72888d96cc922ffb2c7d4eb976e1fa8504f8ee0
+  parameters_habitat_thresholds.csv:
+    source: https://github.com/NewGraphEnvironment/fresh
+    path: inst/extdata/parameters_habitat_thresholds.csv
+    upstream_sha: 7f12d99115b7d20302d5ed043188cb870f90f83b
+    upstream_version: fresh@v0.33.0
+    derived_from: smnorris/bcfishpass@4699d0f parameters/example_newgraph/parameters_habitat_thresholds.csv (+ fresh#104 edge_types columns)
+    synced: '2026-09-25'
+    checksum: sha256:7b904a18c29c724737ff24a27750bf05d7bfa281aa4fc1f7ac27c00238db042d
+    shape_checksum: sha256:8de9bc1fcc2c703176a57d8a982bd26da1c49a885af3053f00078003a7e9283f
   overrides/user_habitat_classification.csv:
     source: https://github.com/smnorris/bcfishpass
     path: data/user_habitat_classification.csv

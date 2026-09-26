@@ -87,7 +87,7 @@ lnk_config_verify <- function(cfg, strict = FALSE) {
   rows <- lapply(names(prov), function(rel) {
     byte_expected  <- prov[[rel]][["checksum"]]       %||% NA_character_
     shape_expected <- prov[[rel]][["shape_checksum"]] %||% NA_character_
-    abs_path <- file.path(cfg$dir, rel)
+    abs_path <- .lnk_provenance_path(cfg, rel)
     if (!file.exists(abs_path)) {
       return(data.frame(
         file           = rel,

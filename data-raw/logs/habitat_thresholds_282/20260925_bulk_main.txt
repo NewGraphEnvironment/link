@@ -1,0 +1,10 @@
+## BULK bcfishpass zz282_main_bulk  link=0.50.0 fresh=0.34.0  cfg_hash=sha256:19e3a0568842da0e65708356d1c4ab5cd6e9598c0cf2e2fa904881142cfc64da  3.8 min
+streams n=87639 digest=c14002061b1ec8be7915f3d0f0bef998
+ species_code     n n_spawn n_rear                           digest
+           BT 87639    5573   9512 845431673e63c54c9a96e48625f06292
+           CH 87639    3838   5095 c01bca765318418c9b55e53d93e9ff6b
+           CO 87639    5229   7031 d30f34c7ba435c902521100ac5fa5957
+           PK 87639    5410      0 a0dd094c0a45df0aa1aa7abbacb3ad62
+           SK 87639      76    139 c7c8f8a2c207c94be0514b4e8fd15691
+           ST 87639    3910   6499 c02326bba8d44048d16bbb45403bb738
+exit=0

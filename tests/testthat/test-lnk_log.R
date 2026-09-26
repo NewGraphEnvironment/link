@@ -235,7 +235,7 @@ test_that(".lnk_log_create_tables emits a CREATE TABLE for every spec", {
   sql <- capture_ddl(.lnk_log_create_tables(NULL, "fresh_test"))
   joined <- paste(sql, collapse = "\n")
   for (tbl in c("log", "log_recompute", "log_input", "log_parameters_fresh",
-                "log_dimensions")) {
+                "log_parameters_habitat_thresholds", "log_dimensions")) {
     expect_match(joined,
       sprintf("CREATE TABLE IF NOT EXISTS fresh_test\\.%s \\(", tbl))
   }
@@ -304,6 +304,19 @@ test_that("log_parameters_fresh covers the union of every bundle's header", {
   # against the union, never a single bundle.
   cols <- setdiff(names(.lnk_cols_log_parameters_fresh()), "config_hash")
   expect_setequal(cols, bundle_union("parameters_fresh.csv"))
+})
+
+test_that("log_parameters_habitat_thresholds covers the union of every bundle's header", {
+  cols <- setdiff(names(.lnk_cols_log_thresholds()),
+                  "config_hash")
+  expect_setequal(cols, bundle_union("parameters_habitat_thresholds.csv"))
+})
+
+test_that("log_parameters_habitat_thresholds keys on (config_hash, species_code)", {
+  sql <- paste(capture_ddl(.lnk_log_create_tables(NULL, "s")), collapse = "\n")
+  expect_match(sql, paste0(
+    "CREATE TABLE IF NOT EXISTS s\\.log_parameters_habitat_thresholds \\(",
+    "[^;]*PRIMARY KEY \\(config_hash, species_code\\)"))
 })
 
 test_that("log_dimensions covers the union of every bundle's header", {
@@ -513,6 +526,76 @@ test_that("config snapshot inserts full rows with ON CONFLICT DO NOTHING", {
   expect_match(joined, "'BT'")
 })
 
+test_that("config snapshot records the bundle's habitat thresholds values", {
+  cfg <- lnk_config("default")
+  loaded <- lapply(c(parameters_fresh = "parameters_fresh",
+                     parameters_habitat_thresholds = "parameters_habitat_thresholds"),
+                   function(k) {
+                     utils::read.csv(cfg$files[[k]]$path, check.names = FALSE)
+                   })
+  loaded$parameters_habitat_thresholds$spawn_gradient_max[
+    loaded$parameters_habitat_thresholds$species_code == "CH"] <- 0.0321
+  sql <- capture_write(
+    .lnk_log_config_snapshot(fake_conn(), "s", cfg, loaded, "sha256:abc"),
+    probe_rows = 0L)
+  ins <- grep("INSERT INTO s\\.log_parameters_habitat_thresholds", sql,
+              value = TRUE)
+  expect_length(ins, 1L)
+  expect_match(ins, "rear_lake_ha_min")
+  # The loaded value is what lands, not whatever is on disk.
+  expect_match(ins, "'0.0321'")
+})
+
+test_that("config snapshot logs fresh's thresholds when the bundle has none", {
+  skip_if_not_installed("fresh")
+  cfg <- lnk_config("default")
+  cfg$files$parameters_habitat_thresholds <- NULL
+  loaded <- list(parameters_fresh = utils::read.csv(
+    file.path(cfg$dir, "parameters_fresh.csv"), check.names = FALSE))
+  sql <- capture_write(
+    .lnk_log_config_snapshot(fake_conn(), "s", cfg, loaded, "sha256:abc"),
+    probe_rows = 0L)
+  ins <- grep("INSERT INTO s\\.log_parameters_habitat_thresholds", sql,
+              value = TRUE)
+  expect_length(ins, 1L)
+  expect_match(ins, "'0.0449'")  # fresh's CH spawn_gradient_max
+})
+
+test_that("config snapshot gates per table, so a new table is back-filled", {
+  # A hash logged before log_parameters_habitat_thresholds existed has rows in
+  # the older tables only. The old single gate on log_parameters_fresh would
+  # skip it for good.
+  cfg <- lnk_config("default")
+  loaded <- lapply(c(parameters_fresh = "parameters_fresh",
+                     parameters_habitat_thresholds = "parameters_habitat_thresholds"),
+                   function(k) {
+                     utils::read.csv(cfg$files[[k]]$path, check.names = FALSE)
+                   })
+  captured <- character()
+  testthat::local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) {
+      captured <<- c(captured, sql)
+      invisible(conn)
+    }
+  )
+  testthat::with_mocked_bindings(
+    dbGetQuery = function(conn, statement, ...) {
+      if (grepl("log_parameters_habitat_thresholds", statement)) {
+        data.frame()
+      } else {
+        data.frame(x = 1L)
+      }
+    },
+    dbQuoteLiteral = function(conn, x, ...) {
+      paste0("'", gsub("'", "''", as.character(x)), "'")
+    },
+    .package = "DBI",
+    .lnk_log_config_snapshot(fake_conn(), "s", cfg, loaded, "sha256:abc")
+  )
+  expect_length(captured, 1L)
+  expect_match(captured, "INSERT INTO s\\.log_parameters_habitat_thresholds")
+})
+
 test_that("config snapshot warns and inserts the intersection on shape drift", {
   cfg <- lnk_config("default")
   df <- utils::read.csv(file.path(cfg$dir, "parameters_fresh.csv"),
@@ -598,7 +681,8 @@ test_that("log_recompute is created alongside the other log tables", {
   sql <- capture_ddl(.lnk_log_create_tables(NULL, "fresh_test"))
   joined <- paste(sql, collapse = "\n")
   for (tbl in c("log", "log_recompute", "log_input",
-                "log_parameters_fresh", "log_dimensions")) {
+                "log_parameters_fresh", "log_parameters_habitat_thresholds",
+                "log_dimensions")) {
     expect_match(joined,
       sprintf("CREATE TABLE IF NOT EXISTS fresh_test\\.%s \\(", tbl))
   }
@@ -1040,4 +1124,91 @@ test_that("log_recompute is created before its indexes are", {
   expect_gt(length(create), 0L)
   expect_gt(length(index), 0L)
   expect_lt(max(create), min(index))
+})
+
+# --- config_hash across an extends chain (#282) ------------------------------
+
+# Two-bundle chain under `root`: base (full) + leaf (extends base).
+write_chain <- function(root, base_break_order = c("a", "b")) {
+  base <- file.path(root, "base")
+  leaf <- file.path(root, "leaf")
+  dir.create(base)
+  dir.create(leaf)
+  yaml::write_yaml(list(BT = list()), file.path(base, "rules.yaml"))
+  utils::write.csv(data.frame(species = "BT"), file.path(base, "dims.csv"),
+                   row.names = FALSE)
+  utils::write.csv(data.frame(species_code = "BT"),
+                   file.path(base, "params.csv"), row.names = FALSE)
+  utils::write.csv(data.frame(species_code = "BT", x = 1),
+                   file.path(leaf, "th.csv"), row.names = FALSE)
+  yaml::write_yaml(list(
+    name = "base", rules = "rules.yaml", dimensions = "dims.csv",
+    files = list(parameters_fresh = list(path = "params.csv")),
+    pipeline = list(break_order = base_break_order),
+    provenance = list(params.csv = list(checksum = "sha256:x"))),
+    file.path(base, "config.yaml"))
+  yaml::write_yaml(list(
+    name = "leaf", extends = "../base",
+    files = list(parameters_habitat_thresholds = list(path = "th.csv"))),
+    file.path(leaf, "config.yaml"))
+  leaf
+}
+
+test_that(".lnk_config_hash of an extends bundle does not depend on install path", {
+  # Inherited files used to be named by absolute path, so the same bundle
+  # hashed differently on every host.
+  root1 <- withr::local_tempdir()
+  root2 <- withr::local_tempdir()
+  h <- vapply(c(root1, root2), function(root) {
+    leaf <- write_chain(root)
+    withr::with_dir(root, .lnk_config_hash(lnk_config(leaf)))
+  }, character(1))
+  expect_identical(unname(h[1]), unname(h[2]))
+})
+
+test_that(".lnk_config_hash of an extends bundle sees the parent's config.yaml", {
+  # break_order is inherited, so a parent change changes the child's output.
+  # One root, so nothing but the parent's config.yaml differs between hashes.
+  root <- withr::local_tempdir()
+  leaf <- write_chain(root, c("a", "b"))
+  h1 <- withr::with_dir(root, .lnk_config_hash(lnk_config(leaf)))
+  base_cfg <- file.path(root, "base", "config.yaml")
+  m <- yaml::read_yaml(base_cfg)
+  m$pipeline$break_order <- c("b", "a")
+  yaml::write_yaml(m, base_cfg)
+  h2 <- withr::with_dir(root, .lnk_config_hash(lnk_config(leaf)))
+  expect_false(identical(h1, h2))
+})
+
+test_that(".lnk_config_hash covers fresh's thresholds when the bundle has none", {
+  # Otherwise a fresh upgrade that moves a threshold leaves the hash alone and
+  # log_parameters_habitat_thresholds keeps the first values it saw.
+  cfg <- lnk_config("default")
+  cfg$files$parameters_habitat_thresholds <- NULL
+  fake <- withr::local_tempfile(fileext = ".csv")
+  writeLines("species_code,rear_gradient_max\nCH,0.0549", fake)
+  local_mocked_bindings(.lnk_habitat_thresholds_csv = function(cfg) fake)
+  h1 <- .lnk_config_hash(cfg)
+  writeLines("species_code,rear_gradient_max\nCH,0.0321", fake)
+  h2 <- .lnk_config_hash(cfg)
+  expect_false(identical(h1, h2))
+})
+
+test_that(".lnk_config_hash ignores the fallback when the bundle declares its own", {
+  cfg <- lnk_config("default")
+  local_mocked_bindings(.lnk_habitat_thresholds_csv = function(cfg) {
+    stop("fallback consulted for a bundle that declares its own")
+  })
+  expect_match(.lnk_config_hash(cfg), "^sha256:")
+})
+
+test_that(".lnk_config_hash does not depend on the host's collation locale", {
+  # Byte order, not LC_COLLATE: en_US and C sort `user_barriers_definite.csv`
+  # and `user_barriers_definite_control.csv` in opposite orders.
+  cfg <- lnk_config("default")
+  h_c <- withr::with_collate("C", .lnk_config_hash(cfg))
+  h_en <- tryCatch(withr::with_collate("en_US.UTF-8", .lnk_config_hash(cfg)),
+                   warning = function(w) NA_character_)
+  skip_if(is.na(h_en), "en_US.UTF-8 collation not available on this host")
+  expect_identical(h_c, h_en)
 })

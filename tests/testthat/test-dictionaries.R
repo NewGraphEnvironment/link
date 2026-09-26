@@ -28,8 +28,12 @@ dict_read <- function(stem) {
   read_csv_plain(file.path(cfg_dir(), paste0("dictionary_", stem, ".csv")))
 }
 
+# Resolve through lnk_config() rather than <bundle>/<stem>.csv: a thin bundle
+# (`extends:`) carries only what it overrides and inherits the rest.
 bundle_cols <- function(bundle, stem) {
-  names(read_csv_plain(file.path(cfg_dir(), bundle, paste0(stem, ".csv"))))
+  cfg <- lnk_config(bundle)
+  path <- if (stem == "dimensions") cfg$dimensions else cfg$files[[stem]]$path
+  names(read_csv_plain(path))
 }
 
 # Union of a stem's columns across every bundle. Bundles legitimately carry
@@ -134,4 +138,48 @@ test_that("fresh-owned columns match fresh's canonical parameters_fresh.csv", {
   d <- dict_read("parameters_fresh")
   expect_setequal(d$column[d$owner == "fresh"],
                   names(read_csv_plain(canonical)))
+})
+
+# -- dictionary_parameters_habitat_thresholds (#282) --------------------------
+
+test_that("dictionary_parameters_habitat_thresholds has the expected shape", {
+  d <- dict_read("parameters_habitat_thresholds")
+
+  expect_true(all(c("column", "type", "group", "owner", "consumed_by",
+                    "default_when_absent", "description",
+                    "related") %in% names(d)))
+  expect_false(any(duplicated(d$column)))
+  expect_true(all(filled(d$column)))
+  expect_true(all(filled(d$description)))
+  expect_true(all(filled(d$consumed_by)))
+  expect_true(all(d$owner %in% c("fresh", "link")))
+})
+
+test_that("dictionary_parameters_habitat_thresholds covers every bundle's CSV", {
+  d <- dict_read("parameters_habitat_thresholds")
+
+  for (b in bundle_names()) {
+    undocumented <- setdiff(bundle_cols(b, "parameters_habitat_thresholds"),
+                            d$column)
+    expect_identical(
+      undocumented, character(0),
+      info = sprintf("bundle %s has undocumented threshold columns: %s",
+                     b, paste(undocumented, collapse = ", "))
+    )
+  }
+})
+
+test_that("dictionary_parameters_habitat_thresholds has no rows for absent columns", {
+  d <- dict_read("parameters_habitat_thresholds")
+  expect_setequal(d$column, bundle_cols_union("parameters_habitat_thresholds"))
+})
+
+test_that("every bundle declares its own parameters_habitat_thresholds", {
+  # The fallback to fresh's copy is for custom bundles. A shipped bundle that
+  # lost its entry would silently run thresholds outside its provenance.
+  for (b in bundle_names()) {
+    expect_false(
+      is.null(lnk_config(b)$files$parameters_habitat_thresholds),
+      info = sprintf("bundle %s declares no parameters_habitat_thresholds", b))
+  }
 })

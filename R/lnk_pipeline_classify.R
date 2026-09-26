@@ -31,7 +31,9 @@
 #'   with the species present in the AOI (via
 #'   `loaded$wsg_species_presence`).
 #' @param thresholds_csv Path to the habitat thresholds CSV. Default
-#'   uses the copy shipped with fresh.
+#'   `NULL` uses the config's own `files$parameters_habitat_thresholds`,
+#'   falling back (with a message) to the copy shipped with fresh when
+#'   the config declares none.
 #'
 #' @return `conn` invisibly, for pipe chaining.
 #'
@@ -56,10 +58,7 @@
 #' }
 lnk_pipeline_classify <- function(conn, aoi, cfg, loaded, schema,
                                    species = NULL,
-                                   thresholds_csv = system.file(
-                                     "extdata",
-                                     "parameters_habitat_thresholds.csv",
-                                     package = "fresh")) {
+                                   thresholds_csv = NULL) {
   .lnk_validate_identifier(schema, "schema")
   if (!is.character(aoi) || length(aoi) != 1L || !nzchar(aoi)) {
     stop("aoi must be a single non-empty string (watershed group code)",
@@ -73,6 +72,7 @@ lnk_pipeline_classify <- function(conn, aoi, cfg, loaded, schema,
     stop("loaded must be a named list (from lnk_load_overrides())",
          call. = FALSE)
   }
+  thresholds_csv <- thresholds_csv %||% .lnk_habitat_thresholds_csv(cfg)
   if (!nzchar(thresholds_csv) || !file.exists(thresholds_csv)) {
     stop("thresholds_csv not found: ", thresholds_csv, call. = FALSE)
   }

@@ -79,14 +79,20 @@ if (nrow(drifted) > 0) {
 # 2. rules.yaml regeneration diff
 # ---------------------------------------------------------------------------
 cat("\n--- 2. rules.yaml regen vs committed ---\n")
-for (b in bundles) {
-  dim_csv <- repo_path(sprintf("inst/extdata/configs/%s/dimensions.csv", b))
-  rules_committed <- repo_path(sprintf("inst/extdata/configs/%s/rules.yaml", b))
+# Every bundle, resolved through lnk_config(): a thin bundle's rules.yaml is
+# inherited but was built from the PARENT's thresholds, and rear_lake_ha_min is
+# baked in — so rebuilding with the bundle's own thresholds is the check that a
+# tuned CSV has not silently diverged from the rules it runs.
+for (b in basename(list.dirs(repo_path("inst/extdata/configs"), recursive = FALSE))) {
+  cfg_b <- lnk_config(b)
+  dim_csv <- cfg_b$dimensions
+  rules_committed <- cfg_b$rules
   # edge_types = "explicit" to match how the committed rules.yaml is actually
   # built (data-raw/build_rules.R + regen_provenance.R). Regenerating with
   # "categories" here is what produced the earlier spurious all-species diff.
   tf <- tempfile(fileext = ".yaml")
-  lnk_rules_build(dim_csv, tf, edge_types = "explicit")
+  lnk_rules_build(dim_csv, tf, edge_types = "explicit",
+                  thresholds = suppressMessages(.lnk_habitat_thresholds_csv(cfg_b)))
 
   identical_yaml <- identical(yaml::read_yaml(tf), yaml::read_yaml(rules_committed))
   identical_text <- identical(readLines(tf), readLines(rules_committed))
@@ -241,6 +247,58 @@ if (!nzchar(pf_fresh_path)) {
       length(unexpected_link) == 0 &&
       length(undocumented) == 0
     if (aligned) {
+      cat("    column set aligned + fully documented\n")
+    }
+  }
+}
+
+# ---------------------------------------------------------------------------
+# 3c. parameters_habitat_thresholds column drift + dictionary coverage (#282)
+# ---------------------------------------------------------------------------
+# Each bundle vendors its own copy of fresh's thresholds CSV. A column fresh
+# adds that a bundle lacks means that bundle's copy is stale; a column nobody
+# documented must not pass silently. Values are allowed to differ — that is the
+# point of a per-bundle copy — so only the header is compared.
+cat("\n--- 3c. parameters_habitat_thresholds column drift + coverage ---\n")
+th_fresh_path <- system.file("extdata", "parameters_habitat_thresholds.csv",
+                             package = "fresh")
+dict_th_path <- repo_path(
+  "inst/extdata/configs/dictionary_parameters_habitat_thresholds.csv")
+if (!file.exists(dict_th_path)) {
+  flag("3c", sprintf("dictionary missing: %s", dict_th_path))
+} else {
+  dict_th <- utils::read.csv(dict_th_path, stringsAsFactors = FALSE,
+                             check.names = FALSE)
+  cols_th_fresh <- if (nzchar(th_fresh_path)) {
+    names(utils::read.csv(th_fresh_path, check.names = FALSE, nrows = 1))
+  } else {
+    cat("  (fresh's thresholds CSV not found — is fresh installed?)\n")
+    NULL
+  }
+  # Every shipped bundle, thin ones included — each may carry its own copy.
+  all_bundles <- basename(list.dirs(repo_path("inst/extdata/configs"),
+                                    recursive = FALSE))
+  for (b in all_bundles) {
+    th_csv <- lnk_config(b)$files$parameters_habitat_thresholds$path
+    cat(sprintf("\n  bundle: %s\n", b))
+    if (is.null(th_csv)) {
+      flag(sprintf("3c %s", b), "declares no files$parameters_habitat_thresholds")
+      next
+    }
+    cols_b <- names(utils::read.csv(th_csv, check.names = FALSE, nrows = 1))
+    stale <- setdiff(cols_th_fresh, cols_b)
+    undocumented <- setdiff(cols_b, dict_th$column)
+    if (length(stale) > 0) {
+      flag(sprintf("3c %s", b),
+           sprintf("fresh ships threshold column(s) the bundle lacks: %s",
+                   paste(stale, collapse = ", ")))
+    }
+    if (length(undocumented) > 0) {
+      flag(sprintf("3c %s", b),
+           sprintf("undocumented in dictionary_parameters_habitat_thresholds.csv: %s",
+                   paste(undocumented, collapse = ", ")))
+    }
+    if (length(stale) == 0 && length(undocumented) == 0) {
       cat("    column set aligned + fully documented\n")
     }
   }

@@ -11,6 +11,31 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (v0.49.0 as of 2026-09-01)
 
+## Status (2026-09-25) — per-bundle habitat thresholds (#282); #284 parked
+
+**Thresholds now live in the bundle.** Every bundle declares
+`parameters_habitat_thresholds.csv` under `files:`; classify/connect resolve it
+from `cfg` and fall back to fresh's copy only for a custom bundle that declares
+none. The `bcfishpass` copy is a frozen parity input. Runs log the values in
+`<persist>.log_parameters_habitat_thresholds`. `default_tuned` (thin,
+`extends: default`) is where #284's calibrated CH/BT values land. RUNBOOK §7
+"Where habitat thresholds live" has the details, including which columns are
+carried but never applied on link's rules path (MAD, edge types) and that
+`rear_lake_ha_min` needs a rules rebuild.
+
+**`extends:` was broken for provenance until a bundle actually used it.**
+Inherited provenance resolved against the child dir (every inherited file
+"missing", `config_drift` always TRUE), `config_hash` named inherited files by
+absolute path (host-dependent), ignored the parent's `config.yaml`, and a depth-3
+chain did not load. All fixed; hashes of non-extends bundles are unchanged.
+
+**Full-run digests are not reproducible on main.** Two identical ADMS runs differ
+by one segment: the PSCIS→modelled crossing pick ties when two modelled
+candidates share a `linear_feature_id` (`R/lnk_pipeline_pscis_build.R:264-279`).
+To compare two code versions, prepare once and re-run classify/connect on the
+same schema (`data-raw/logs/habitat_thresholds_282/reclassify.R`). Issue drafted,
+awaiting body review.
+
 ## Status (2026-09-01) — v0.49.0: provenance gaps closed before the 217-WSG run (#262, #257)
 
 **Two of the four reported gaps were wired and unfed; a third named the wrong
