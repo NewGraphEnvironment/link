@@ -1,5 +1,29 @@
 # Changelog
 
+## link 0.51.1
+
+**`default_tuned` carries its first calibrated value**
+([\#284](https://github.com/NewGraphEnvironment/link/issues/284)): BT
+`rear_gradient_max` 0.1049 → 0.1349. The evidence is bull trout and
+Dolly Varden observations pooled (inland DV records are bull trout under
+the other name), n 4,764 on accessible segments, P95 0.135, and Isaak et
+al. (2015)’s 15 % natal-habitat envelope agrees. Every other CH and BT
+gradient maximum and channel-width minimum was examined and kept, as
+were `spawn_gradient_min` and `cluster_bridge_gradient`. So
+`default_tuned` differs from `default` in one cell and still inherits
+`parameters_fresh.csv`. The values are **candidates, unscored** until
+the observation validation
+([\#283](https://github.com/NewGraphEnvironment/link/issues/283)) runs.
+`default` and `bcfishpass` are unchanged.
+
+The evidence is in `research/habitat_thresholds.md`, one verdict per
+threshold with its observation, FISS-site and literature support. Three
+rule changes were made after the numbers had been seen, and each is
+disclosed there with what it moved. The producers are
+`data-raw/query_habitat_thresholds_{obs,fiss}.R`, writing to
+`data-raw/logs/habitat_thresholds_284/`; BT-only results are recorded
+beside the pooled ones. `research/` now has a README index.
+
 ## link 0.51.0
 
 Each config bundle now carries its own habitat thresholds

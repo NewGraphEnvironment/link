@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.51.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.51.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,11 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.51.1" id="link-0511">link 0.51.1<a class="anchor" aria-label="anchor" href="#link-0511"></a></h2>
+<p><strong><code>default_tuned</code> carries its first calibrated value</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/284" class="external-link">#284</a>): BT <code>rear_gradient_max</code> 0.1049 → 0.1349. The evidence is bull trout and Dolly Varden observations pooled (inland DV records are bull trout under the other name), n 4,764 on accessible segments, P95 0.135, and Isaak et al. (2015)’s 15 % natal-habitat envelope agrees. Every other CH and BT gradient maximum and channel-width minimum was examined and kept, as were <code>spawn_gradient_min</code> and <code>cluster_bridge_gradient</code>. So <code>default_tuned</code> differs from <code>default</code> in one cell and still inherits <code>parameters_fresh.csv</code>. The values are <strong>candidates, unscored</strong> until the observation validation (<a href="https://github.com/NewGraphEnvironment/link/issues/283" class="external-link">#283</a>) runs. <code>default</code> and <code>bcfishpass</code> are unchanged.</p>
+<p>The evidence is in <code>research/habitat_thresholds.md</code>, one verdict per threshold with its observation, FISS-site and literature support. Three rule changes were made after the numbers had been seen, and each is disclosed there with what it moved. The producers are <code>data-raw/query_habitat_thresholds_{obs,fiss}.R</code>, writing to <code>data-raw/logs/habitat_thresholds_284/</code>; BT-only results are recorded beside the pooled ones. <code>research/</code> now has a README index.</p>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.51.0" id="link-0510">link 0.51.0<a class="anchor" aria-label="anchor" href="#link-0510"></a></h2>
 <p>Each config bundle now carries its own habitat thresholds (<a href="https://github.com/NewGraphEnvironment/link/issues/282" class="external-link">#282</a>): per-species spawn/rear gradient max, channel-width min/max and lake-area floor, in <code>parameters_habitat_thresholds.csv</code> under <code>files:</code>. Before this, every bundle read fresh’s installed copy, so tuning a CH cutoff would also have moved the <code>bcfishpass</code> parity reference.</p>
