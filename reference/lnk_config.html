@@ -86,6 +86,10 @@ these checksums lives in <code><a href="lnk_config_verify.html">lnk_config_verif
 <li><p><code>extends</code> — character or <code>NULL</code>, the parent config name/path
 this manifest declared (post-resolution; not used by callers
 beyond audit)</p></li>
+<li><p><code>chain</code> — character vector of bundle directories along the
+<code>extends:</code> chain, leaf first (just <code>dir</code> when nothing is
+extended). Inherited <code>provenance</code> entries carry the directory
+they are relative to in <code>.dir</code>.</p></li>
 </ul></div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -117,19 +121,20 @@ scalars (<code>description</code>, <code>rules</code>, <code>dimensions</code>) 
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/home/runner/work/_temp/Library/link/extdata/configs/bcfishpass/rules.yaml"</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">cfg</span><span class="op">$</span><span class="va">files</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  [1] "parameters_fresh"                    </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [2] "user_habitat_classification"         </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [3] "observation_exclusions"              </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [4] "wsg_species_presence"                </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [5] "user_modelled_crossing_fixes"        </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [6] "user_pscis_barrier_status"           </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [7] "pscis_modelledcrossings_streams_xref"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [8] "user_barriers_definite"              </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [9] "user_barriers_definite_control"      </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [10] "user_crossings_misc"                 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [11] "cabd_exclusions"                     </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [12] "cabd_blkey_xref"                     </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [13] "cabd_passability_status_updates"     </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [14] "cabd_additions"                      </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [2] "parameters_habitat_thresholds"       </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [3] "user_habitat_classification"         </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [4] "observation_exclusions"              </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [5] "wsg_species_presence"                </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [6] "user_modelled_crossing_fixes"        </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [7] "user_pscis_barrier_status"           </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [8] "pscis_modelledcrossings_streams_xref"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [9] "user_barriers_definite"              </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [10] "user_barriers_definite_control"      </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [11] "user_crossings_misc"                 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [12] "cabd_exclusions"                     </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [13] "cabd_blkey_xref"                     </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [14] "cabd_passability_status_updates"     </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [15] "cabd_additions"                      </span>
 <span class="r-in"><span><span class="va">cfg</span><span class="op">$</span><span class="va">files</span><span class="op">$</span><span class="va">user_habitat_classification</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $source</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "bcfp"</span>

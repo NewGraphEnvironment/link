@@ -40,19 +40,20 @@ loaded <- lnk_load_overrides(cfg)
 #> Warning: incomplete final line found by readTableHeader on '/home/runner/work/_temp/Library/link/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
 names(loaded)
 #>  [1] "parameters_fresh"                    
-#>  [2] "user_habitat_classification"         
-#>  [3] "observation_exclusions"              
-#>  [4] "wsg_species_presence"                
-#>  [5] "user_modelled_crossing_fixes"        
-#>  [6] "user_pscis_barrier_status"           
-#>  [7] "pscis_modelledcrossings_streams_xref"
-#>  [8] "user_barriers_definite"              
-#>  [9] "user_barriers_definite_control"      
-#> [10] "user_crossings_misc"                 
-#> [11] "cabd_exclusions"                     
-#> [12] "cabd_blkey_xref"                     
-#> [13] "cabd_passability_status_updates"     
-#> [14] "cabd_additions"                      
+#>  [2] "parameters_habitat_thresholds"       
+#>  [3] "user_habitat_classification"         
+#>  [4] "observation_exclusions"              
+#>  [5] "wsg_species_presence"                
+#>  [6] "user_modelled_crossing_fixes"        
+#>  [7] "user_pscis_barrier_status"           
+#>  [8] "pscis_modelledcrossings_streams_xref"
+#>  [9] "user_barriers_definite"              
+#> [10] "user_barriers_definite_control"      
+#> [11] "user_crossings_misc"                 
+#> [12] "cabd_exclusions"                     
+#> [13] "cabd_blkey_xref"                     
+#> [14] "cabd_passability_status_updates"     
+#> [15] "cabd_additions"                      
 head(loaded$user_habitat_classification)
 #> # A tibble: 6 × 11
 #>   blue_line_key downstream_route_measure upstream_route_measure

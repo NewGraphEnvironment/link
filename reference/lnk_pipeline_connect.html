@@ -61,8 +61,7 @@ connected-waterbody rules via <code>fresh:::.frs_connected_waterbody()</code>
 <span>  <span class="va">loaded</span>,</span>
 <span>  <span class="va">schema</span>,</span>
 <span>  species <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  thresholds_csv <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"parameters_habitat_thresholds.csv"</span>, package <span class="op">=</span></span>
-<span>    <span class="st">"fresh"</span><span class="op">)</span></span>
+<span>  thresholds_csv <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -102,7 +101,9 @@ Default derives the same way as <code><a href="lnk_pipeline_classify.html">lnk_p
 
 <dt id="arg-thresholds-csv">thresholds_csv<a class="anchor" aria-label="anchor" href="#arg-thresholds-csv"></a></dt>
 <dd><p>Path to the habitat thresholds CSV. Default
-uses the copy shipped with fresh.</p></dd>
+<code>NULL</code> uses the config's own <code>files$parameters_habitat_thresholds</code>,
+falling back (with a message) to the copy shipped with fresh when
+the config declares none.</p></dd>
 
 </dl></div>
     <div class="section level2">

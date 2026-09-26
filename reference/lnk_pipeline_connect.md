@@ -17,8 +17,7 @@ lnk_pipeline_connect(
   loaded,
   schema,
   species = NULL,
-  thresholds_csv = system.file("extdata", "parameters_habitat_thresholds.csv", package =
-    "fresh")
+  thresholds_csv = NULL
 )
 ```
 
@@ -60,8 +59,9 @@ lnk_pipeline_connect(
 
 - thresholds_csv:
 
-  Path to the habitat thresholds CSV. Default uses the copy shipped with
-  fresh.
+  Path to the habitat thresholds CSV. Default `NULL` uses the config's
+  own `files$parameters_habitat_thresholds`, falling back (with a
+  message) to the copy shipped with fresh when the config declares none.
 
 ## Value
 

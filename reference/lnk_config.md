@@ -54,6 +54,11 @@ An `lnk_config` S3 list with these slots:
 - `extends` — character or `NULL`, the parent config name/path this
   manifest declared (post-resolution; not used by callers beyond audit)
 
+- `chain` — character vector of bundle directories along the `extends:`
+  chain, leaf first (just `dir` when nothing is extended). Inherited
+  `provenance` entries carry the directory they are relative to in
+  `.dir`.
+
 ## Details
 
 Tabular data (override CSVs, habitat classifications, parameters) is
@@ -91,19 +96,20 @@ cfg$rules
 #> [1] "/home/runner/work/_temp/Library/link/extdata/configs/bcfishpass/rules.yaml"
 names(cfg$files)
 #>  [1] "parameters_fresh"                    
-#>  [2] "user_habitat_classification"         
-#>  [3] "observation_exclusions"              
-#>  [4] "wsg_species_presence"                
-#>  [5] "user_modelled_crossing_fixes"        
-#>  [6] "user_pscis_barrier_status"           
-#>  [7] "pscis_modelledcrossings_streams_xref"
-#>  [8] "user_barriers_definite"              
-#>  [9] "user_barriers_definite_control"      
-#> [10] "user_crossings_misc"                 
-#> [11] "cabd_exclusions"                     
-#> [12] "cabd_blkey_xref"                     
-#> [13] "cabd_passability_status_updates"     
-#> [14] "cabd_additions"                      
+#>  [2] "parameters_habitat_thresholds"       
+#>  [3] "user_habitat_classification"         
+#>  [4] "observation_exclusions"              
+#>  [5] "wsg_species_presence"                
+#>  [6] "user_modelled_crossing_fixes"        
+#>  [7] "user_pscis_barrier_status"           
+#>  [8] "pscis_modelledcrossings_streams_xref"
+#>  [9] "user_barriers_definite"              
+#> [10] "user_barriers_definite_control"      
+#> [11] "user_crossings_misc"                 
+#> [12] "cabd_exclusions"                     
+#> [13] "cabd_blkey_xref"                     
+#> [14] "cabd_passability_status_updates"     
+#> [15] "cabd_additions"                      
 cfg$files$user_habitat_classification
 #> $source
 #> [1] "bcfp"
