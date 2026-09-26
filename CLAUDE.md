@@ -11,6 +11,30 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (v0.49.0 as of 2026-09-01)
 
+## Status (2026-09-26, late) — observation validation (#283)
+
+**`lnk_habitat_validate()` scores a run against fish, not against bcfishpass.**
+Capture on accessible / spawning / rearing, cost in km, miss reasons from the
+bundle's own predicates with gradient and width relaxed, and FISS absences.
+Driver: `data-raw/habitat_validate.R --bundles=<config>:<schema>,...`. Method,
+baseline and the step-5 command: `research/habitat_validation.md`.
+
+**Facts not worth re-deriving:**
+- **fresh#218 is a join artifact, not duplication.** Every persist table is unique
+  on `(id_segment, watershed_group_code)`; a bare `id_segment` join fans out 22x
+  (#203). Join on the full key and the persist schemas are fine.
+- **`default`'s `pipeline.schema` is `fresh`, which the bcfishpass bundle writes.**
+  So `schema` is required, and the function stops if `<schema>.log` records a WSG
+  under another config. `fresh_default` was built by overriding the schema.
+- **CH spawn-staged capture is the overlay.** 237 of 245 locations sit in
+  `user_habitat_classification` spawning reaches that `default` forces. Read
+  `share_*_outside_uhc`.
+- **BT rearing 0.1349 scores in-sample** (it is the P95 of the same locations);
+  hold records out via the `observations` argument.
+- A FISS site that caught fish but listed no species is **not** an absence. That was
+  63 % of BT absences in the first draft. `toupper(NULL)` is `character(0)`, which
+  made an absent `--wsgs` select zero WSGs, and only running the driver found it.
+
 ## Status (2026-09-25) — per-bundle habitat thresholds (#282); #284 parked
 
 **Thresholds now live in the bundle.** Every bundle declares

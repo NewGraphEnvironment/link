@@ -29,6 +29,7 @@ renamed.
 | File | Covers |
 |---|---|
 | [`habitat_thresholds.md`](habitat_thresholds.md) | CH and BT gradient and channel-width thresholds: observation evidence, literature, and the `default_tuned` candidates |
+| [`habitat_validation.md`](habitat_validation.md) | Scoring a run against fish observations (`lnk_habitat_validate()`): capture, cost, miss reasons, absences; `default` vs `bcfishpass` baseline |
 
 ## Runs, scope and infrastructure
 

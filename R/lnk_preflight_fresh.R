@@ -98,7 +98,8 @@ lnk_preflight_fresh <- function(required = .lnk_fresh_required(),
 .lnk_fresh_required <- function() {
   c("frs_break_apply", "frs_break_find", "frs_candidates_pick",
     "frs_col_generate", "frs_col_join", "frs_habitat_classify",
-    "frs_habitat_overlay", "frs_network_features", "frs_order_child",
+    "frs_habitat_overlay", "frs_habitat_predicates", "frs_network_features",
+    "frs_order_child",
     "frs_params", "frs_wsg_drainage", "frs_wsg_outlets")
 }
 

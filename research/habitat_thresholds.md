@@ -1,6 +1,6 @@
 # Habitat thresholds — CH and BT gradient and channel width
 
-**Verified:** 2026-09-26 · **Issues:** #284 (this), #283 (scoring, pending), #282 (`default_tuned`) · **Produced by:** `data-raw/query_habitat_thresholds_obs.R`, `data-raw/query_habitat_thresholds_fiss.R` → `data-raw/logs/habitat_thresholds_284/`; literature review archived with #284's PWF (`literature.md`) · **Status:** candidates set in `default_tuned`, **unscored**
+**Verified:** 2026-09-26 · **Issues:** #284 (this), #283 (the validator, [`habitat_validation.md`](habitat_validation.md)), #282 (`default_tuned`) · **Produced by:** `data-raw/query_habitat_thresholds_obs.R`, `data-raw/query_habitat_thresholds_fiss.R` → `data-raw/logs/habitat_thresholds_284/`; literature review archived with #284's PWF (`literature.md`) · **Status:** candidates set in `default_tuned`, **unscored**
 
 ## Verdict
 
@@ -256,6 +256,17 @@ committed here.
   issue, not a threshold.
 
 ## Step 5 — scoring (#283)
+
+The validator exists: `lnk_habitat_validate()` and `data-raw/habitat_validate.R`
+([`habitat_validation.md`](habitat_validation.md) has the method, the baseline, and the
+command). Two findings from it change how this step is read:
+
+- **CH spawning cannot be scored on spawn-staged observations.** 237 of 245 sit in
+  `user_habitat_classification` spawning reaches, which `default` forces to habitat.
+  Use the any-stage capture and `share_spawning_outside_uhc`.
+- **BT rearing 0.1349 scores in-sample,** because it is the P95 of the same BT+DV
+  locations. Hold records out (by project, date or WSG) through the function's
+  `observations` argument.
 
 Run `default` and `default_tuned` on pilot WSGs with both species present and
 observations to score against. The run decisions have to be stated before launch:
