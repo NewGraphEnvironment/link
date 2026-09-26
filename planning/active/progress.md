@@ -28,3 +28,7 @@
   reaches (9a4c191); R5 found the UHC test read the point while buffered capture read a
   window — fixed (0c19e0a).
 - Final baseline at 0c19e0a → data-raw/logs/habitat_validate_283/; research/habitat_validation.md
+- Full suite: preflight drift guard failed on the undeclared fresh symbol -> declared; and
+  fresh@v0.33.0 (pinned minimum) has no `model` arg on frs_habitat_predicates -> dropped,
+  guarded by a test that fails with it restored (fb5a27a). Remaining 3 failures are the
+  :63333 tunnel being down.

@@ -116,7 +116,7 @@ Running `default_tuned` / candidate thresholds — that is #284 step 5 and needs
 run decisions (config, schema, closure, `dams`, `mapping_code`) stated at launch.
 
 ## Validation
-- [ ] Tests pass (incl. DB fixture test), `devtools::check()` / lintr clean
+- [x] Tests: new file 91 pass incl. DB fixture; full suite FAIL 3 / PASS 2042, the 3 being the `:63333` tunnel down (test-lnk_db_conn, test-lnk_wsg_resolve x2), untouched by this branch. `devtools::check()`: its 1 ERROR is those same tunnel tests; 3 WARNINGs + 2 NOTEs are pre-existing files. lintr clean on new R code. The full suite caught one real defect: the preflight drift guard needed `frs_habitat_predicates` declared (fb5a27a), and review of that found the v0.33.0 `model =` incompatibility
 - [x] `/code-check`: 5 rounds (review-round1..5.md); loop ended by enumeration (R3/R4, 59 rows), R5's finding fixed and pinned by a test
 - [x] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
