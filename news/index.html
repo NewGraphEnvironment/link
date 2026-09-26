@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.51.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.52.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,23 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.52.0" id="link-0520">link 0.52.0<a class="anchor" aria-label="anchor" href="#link-0520"></a></h2>
+<p><strong>Habitat can now be scored against fish, not only against bcfishpass</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/283" class="external-link">#283</a>). New <code><a href="../reference/lnk_habitat_validate.html">lnk_habitat_validate()</a></code> scores a persisted run. For each watershed group, species and stage it reports:</p>
+<ul><li>
+<strong>capture:</strong> the share of observation locations on modelled accessible, spawning and rearing segments;</li>
+<li>
+<strong>cost:</strong> km of habitat, so capture can’t be bought by calling everything habitat;</li>
+<li>
+<strong>miss reasons:</strong> the bundle’s own habitat predicates re-evaluated with gradient and width relaxed, so <code>fails_gradient</code> means the gradient maximum is binding;</li>
+<li>
+<strong>absences</strong> (optional), as a false-positive check.</li>
+</ul><p>Observations can come from any source: bcfishobs by default, another table, or a data frame located on the FWA network. The bcfishobs filters default on and fail loudly when a source lacks their column. <code>data-raw/habitat_validate.R</code> compares two bundles.</p>
+<p>Read with care:</p>
+<ul><li>Chinook spawning capture in <code>default</code> is mostly the <code>user_habitat_classification</code> overlay: 237 of 245 spawn-staged locations sit in forced reaches. The <code>*_outside_uhc</code> shares report the rest.</li>
+<li>BT <code>rear_gradient_max</code> 0.1349 was set from these same observations, so scoring it here is in-sample. Hold records out to score it fairly.</li>
+</ul><p>The baseline (<code>default</code> vs <code>bcfishpass</code>, 51 WSGs) and the method are in <code>research/habitat_validation.md</code>. <code>schema</code> is a required argument, because <code>default</code>’s <code>pipeline.schema</code> names the schema the bcfishpass bundle writes. The function stops if a schema’s run log records another config.</p>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.51.1" id="link-0511">link 0.51.1<a class="anchor" aria-label="anchor" href="#link-0511"></a></h2>
 <p><strong><code>default_tuned</code> carries its first calibrated value</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/284" class="external-link">#284</a>): BT <code>rear_gradient_max</code> 0.1049 → 0.1349. The evidence is bull trout and Dolly Varden observations pooled (inland DV records are bull trout under the other name), n 4,764 on accessible segments, P95 0.135, and Isaak et al. (2015)’s 15 % natal-habitat envelope agrees. Every other CH and BT gradient maximum and channel-width minimum was examined and kept, as were <code>spawn_gradient_min</code> and <code>cluster_bridge_gradient</code>. So <code>default_tuned</code> differs from <code>default</code> in one cell and still inherits <code>parameters_fresh.csv</code>. The values are <strong>candidates, unscored</strong> until the observation validation (<a href="https://github.com/NewGraphEnvironment/link/issues/283" class="external-link">#283</a>) runs. <code>default</code> and <code>bcfishpass</code> are unchanged.</p>

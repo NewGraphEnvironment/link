@@ -1,5 +1,42 @@
 # Changelog
 
+## link 0.52.0
+
+**Habitat can now be scored against fish, not only against bcfishpass**
+([\#283](https://github.com/NewGraphEnvironment/link/issues/283)). New
+[`lnk_habitat_validate()`](https://newgraphenvironment.github.io/link/reference/lnk_habitat_validate.md)
+scores a persisted run. For each watershed group, species and stage it
+reports:
+
+- **capture:** the share of observation locations on modelled
+  accessible, spawning and rearing segments;
+- **cost:** km of habitat, so capture can’t be bought by calling
+  everything habitat;
+- **miss reasons:** the bundle’s own habitat predicates re-evaluated
+  with gradient and width relaxed, so `fails_gradient` means the
+  gradient maximum is binding;
+- **absences** (optional), as a false-positive check.
+
+Observations can come from any source: bcfishobs by default, another
+table, or a data frame located on the FWA network. The bcfishobs filters
+default on and fail loudly when a source lacks their column.
+`data-raw/habitat_validate.R` compares two bundles.
+
+Read with care:
+
+- Chinook spawning capture in `default` is mostly the
+  `user_habitat_classification` overlay: 237 of 245 spawn-staged
+  locations sit in forced reaches. The `*_outside_uhc` shares report the
+  rest.
+- BT `rear_gradient_max` 0.1349 was set from these same observations, so
+  scoring it here is in-sample. Hold records out to score it fairly.
+
+The baseline (`default` vs `bcfishpass`, 51 WSGs) and the method are in
+`research/habitat_validation.md`. `schema` is a required argument,
+because `default`’s `pipeline.schema` names the schema the bcfishpass
+bundle writes. The function stops if a schema’s run log records another
+config.
+
 ## link 0.51.1
 
 **`default_tuned` carries its first calibrated value**
