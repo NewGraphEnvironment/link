@@ -307,7 +307,7 @@ test_that("log_parameters_fresh covers the union of every bundle's header", {
 })
 
 test_that("log_parameters_habitat_thresholds covers the union of every bundle's header", {
-  cols <- setdiff(names(.lnk_cols_log_parameters_habitat_thresholds()),
+  cols <- setdiff(names(.lnk_cols_log_thresholds()),
                   "config_hash")
   expect_setequal(cols, bundle_union("parameters_habitat_thresholds.csv"))
 })
@@ -530,8 +530,9 @@ test_that("config snapshot records the bundle's habitat thresholds values", {
   cfg <- lnk_config("default")
   loaded <- lapply(c(parameters_fresh = "parameters_fresh",
                      parameters_habitat_thresholds = "parameters_habitat_thresholds"),
-                   function(k) utils::read.csv(cfg$files[[k]]$path,
-                                               check.names = FALSE))
+                   function(k) {
+                     utils::read.csv(cfg$files[[k]]$path, check.names = FALSE)
+                   })
   loaded$parameters_habitat_thresholds$spawn_gradient_max[
     loaded$parameters_habitat_thresholds$species_code == "CH"] <- 0.0321
   sql <- capture_write(
@@ -567,8 +568,9 @@ test_that("config snapshot gates per table, so a new table is back-filled", {
   cfg <- lnk_config("default")
   loaded <- lapply(c(parameters_fresh = "parameters_fresh",
                      parameters_habitat_thresholds = "parameters_habitat_thresholds"),
-                   function(k) utils::read.csv(cfg$files[[k]]$path,
-                                               check.names = FALSE))
+                   function(k) {
+                     utils::read.csv(cfg$files[[k]]$path, check.names = FALSE)
+                   })
   captured <- character()
   testthat::local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) {

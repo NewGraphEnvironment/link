@@ -339,7 +339,7 @@ cols_log_input <- c(
 }
 
 #' @noRd
-.lnk_cols_log_parameters_habitat_thresholds <- function() {
+.lnk_cols_log_thresholds <- function() {
   cols <- .lnk_dictionary_columns("parameters_habitat_thresholds")
   out <- stats::setNames(rep("text", length(cols)), cols)
   out[["species_code"]] <- "text NOT NULL"
@@ -401,7 +401,7 @@ cols_log_input <- c(
     list(table = "log_parameters_fresh", cols = .lnk_cols_log_parameters_fresh(),
          pk = c("config_hash", "species_code")),
     list(table = "log_parameters_habitat_thresholds",
-         cols = .lnk_cols_log_parameters_habitat_thresholds(),
+         cols = .lnk_cols_log_thresholds(),
          pk = c("config_hash", "species_code")),
     list(table = "log_dimensions", cols = .lnk_cols_log_dimensions(),
          pk = c("config_hash", "species"))
@@ -689,7 +689,7 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
       # A bundle without its own thresholds runs fresh's copy, so that is
       # what gets recorded — a run never logs no thresholds at all.
       list(table = "log_parameters_habitat_thresholds",
-           cols = .lnk_cols_log_parameters_habitat_thresholds(),
+           cols = .lnk_cols_log_thresholds(),
            data = loaded$parameters_habitat_thresholds %||%
              tryCatch(utils::read.csv(
                suppressMessages(.lnk_habitat_thresholds_csv(cfg)),
