@@ -633,7 +633,9 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
   res <- lapply(species, function(sp) {
     if (!any(seg$species_code == sp)) return(NULL)
     spp <- .lnk_hv_sp_params(params, loaded$parameters_fresh, sp)
-    pr <- fresh::frs_habitat_predicates(spp, model = "cw")
+    # Channel-width model: the default, and the only one fresh@v0.33.0 (the
+    # pinned minimum) has; it takes no `model` argument.
+    pr <- fresh::frs_habitat_predicates(spp)
     mins <- .lnk_hv_stage_min(spp)
     stage_pred <- list(
       spawn = pr$spawn,
