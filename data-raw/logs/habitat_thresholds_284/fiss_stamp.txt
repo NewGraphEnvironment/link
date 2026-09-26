@@ -1,0 +1,8 @@
+date: 2026-09-26 01:15 PDT
+link: 0.51.0 @ 9d1f975 (dirty: R/, configs/default or this script uncommitted)
+db: docker fwapg localhost:5432
+thresholds: inst/extdata/configs/default/parameters_habitat_thresholds.csv
+knowledge: knowledge @ 14afc0d (dirty data/)
+wsgs: COTR LNTH PINE UNTH UPCE
+schema snapped to: fresh (nearest segment within 150 m, same WSG); last logged run per WSG: COTR 2026-09-02 fresh 0.33.0@7f12d99; LNTH 2026-09-03 fresh 0.33.0@7f12d99; PINE 2026-09-02 fresh 0.33.0@7f12d99; UNTH 2026-09-03 fresh 0.33.0@7f12d99; UPCE 2026-09-02 fresh 0.33.0@7f12d99
+sites: 9679; with measured channel width: 362; with gradient: 353; snapped: 5322

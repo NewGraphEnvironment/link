@@ -1,0 +1,19 @@
+species_code,parameter,evidence_set,evidence_role,current,n,use_quantile,rule_value,ratio_first_bin_above_current,rule_says,floor_tested,use_share_below,avail_share_below,ratio_below,share_lost_to_clustering
+CH,spawn_gradient_max,CH_spawn,primary,0.0449,226,0.044275,0.0449,0.4581147888367009,keep,,,,,
+CH,rear_gradient_max,CH_rear,primary,0.0549,497,0.059559999999999995,0.054900000000000004,0.5132900582683886,keep,,,,,
+CH,spawn_channel_width_min,CH_spawn,primary,4,67,6.6370000000000005,6.6,,change,,,,,
+CH,rear_channel_width_min,CH_rear,primary,1.5,215,1.714,1.7,,keep,,,,,
+BT,spawn_gradient_max,BT_spawn_dv,primary,0.0549,76,0.19642500000000002,0.1949,1.3243211974618845,change,,,,,
+BT,rear_gradient_max,BT_any_dv,primary,0.1049,4764,0.13482499999999972,0.1349,0.7234104861018281,change,,,,,
+BT,rear_gradient_max,BT_any,comparison: BT records only,0.1049,2443,0.12533000000000008,0.1249,0.594507121781058,change,,,,,
+BT,spawn_channel_width_min,BT_spawn_dv,primary,2,53,1.16,1.2,,change,,,,,
+BT,rear_channel_width_min,BT_any_dv,primary,1.5,3035,1.48,1.5,,keep,,,,,
+BT,rear_channel_width_min,BT_any,comparison: BT records only,1.5,1469,1.9120000000000001,1.9,,keep,,,,,
+CH,spawn_gradient_min,CH_spawn,primary,0,226,,,,keep,0.001,0.35398230088495575,0.11325447588492017,3.125548002576457,
+CH,spawn_gradient_min,CH_spawn,primary,0,226,,,,keep,0.0025,0.41150442477876104,0.14603458433984534,2.8178559663724987,
+CH,spawn_gradient_min,CH_spawn,primary,0,226,,,,keep,0.005,0.4911504424778761,0.19031838731696,2.580677828358773,
+BT,spawn_gradient_min,BT_spawn_dv,primary,0,76,,,,keep,0.001,0.13157894736842105,0.06124296573643084,2.1484744539428844,
+BT,spawn_gradient_min,BT_spawn_dv,primary,0,76,,,,keep,0.0025,0.18421052631578946,0.08162888627134028,2.2566830778930442,
+BT,spawn_gradient_min,BT_spawn_dv,primary,0,76,,,,keep,0.005,0.18421052631578946,0.11064730346196426,1.6648442442983986,
+BT,cluster_bridge_gradient,BT_any_dv,primary,0.05,5104,,,,keep,,,,,0.01665360501567398
+BT,cluster_bridge_gradient,BT_any,comparison: BT records only,0.05,2560,,,,keep,,,,,0.012109375

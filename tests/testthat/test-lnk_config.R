@@ -303,6 +303,31 @@ test_that("default_tuned extends default and overrides only its thresholds", {
   expect_setequal(names(cfg$files), names(def$files))
 })
 
+test_that("default_tuned differs from default only in the #284 cells", {
+  # Every other value was examined and kept (research/habitat_thresholds.md);
+  # a cell outside this list changing is an untracked calibration.
+  rd <- function(cfg) {
+    utils::read.csv(cfg$files$parameters_habitat_thresholds$path,
+                    check.names = FALSE, stringsAsFactors = FALSE)
+  }
+  tuned <- rd(lnk_config("default_tuned"))
+  def <- rd(lnk_config("default"))
+  expect_identical(names(tuned), names(def))
+  expect_identical(tuned$species_code, def$species_code)
+
+  changed <- which(!mapply(identical, tuned, def))
+  diffs <- do.call(rbind, lapply(names(tuned)[changed], function(col) {
+    i <- which(!mapply(identical, tuned[[col]], def[[col]]))
+    data.frame(species_code = tuned$species_code[i], column = col,
+               default = def[[col]][i], tuned = tuned[[col]][i])
+  }))
+  diffs <- diffs[order(diffs$species_code, diffs$column), ]
+  rownames(diffs) <- NULL
+  expect_identical(diffs, data.frame(
+    species_code = "BT", column = "rear_gradient_max",
+    default = 0.1049, tuned = 0.1349))
+})
+
 test_that("inherited provenance verifies against the parent's files", {
   # Keys are relative to the bundle that declared them. Resolved against the
   # child's dir they name nothing, and every inherited file reads as missing.
@@ -318,7 +343,9 @@ test_that("a tuned threshold reaches frs_params; bcfishpass stays put", {
 
   tuned_dir <- file.path(withr::local_tempdir(), "tuned")
   dir.create(tuned_dir)
-  th <- utils::read.csv(file.path(lnk_config("default_tuned")$dir,
+  # Start from default's thresholds: default_tuned's own carry calibrated
+  # CH/BT values (#284), so BT would differ before this test changes anything.
+  th <- utils::read.csv(file.path(lnk_config("default")$dir,
                                   "parameters_habitat_thresholds.csv"),
                         check.names = FALSE)
   th$rear_gradient_max[th$species_code == "CH"] <- 0.0321
