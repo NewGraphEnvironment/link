@@ -226,13 +226,21 @@ print.lnk_config <- function(x, ...) {
   list(
     name = child$name %||% parent$name,
     description = child$description %||% parent$description,
-    rules = if (!is.null(child$rules)) child$rules else file.path(parent_dir, parent$rules),
-    dimensions = if (!is.null(child$dimensions)) child$dimensions else file.path(parent_dir, parent$dimensions),
+    rules = child$rules %||% .lnk_config_absolutize(parent$rules, parent_dir),
+    dimensions = child$dimensions %||%
+      .lnk_config_absolutize(parent$dimensions, parent_dir),
     files = parent_files,
     pipeline = parent_pipe,
     provenance = parent_prov,
     extends = child$extends
   )
+}
+
+# A parent's rules/dimensions are already absolute when the parent itself
+# extends something (a chain of three or more); prefixing them again names a
+# path that does not exist.
+.lnk_config_absolutize <- function(path, dir) {
+  if (is.null(path) || .lnk_path_is_absolute(path)) path else file.path(dir, path)
 }
 
 # Rewrite `files:` entry paths to absolute (against the given dir).

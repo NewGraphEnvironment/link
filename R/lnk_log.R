@@ -67,6 +67,13 @@
   )
   paths <- unique(paths[!is.na(paths) & nzchar(paths)])
 
+  # A bundle with no thresholds CSV of its own runs fresh's copy (#282), which
+  # sits outside every path above. Hash it by a fixed name, so a fresh upgrade
+  # that moves a threshold moves the hash, and the host path does not.
+  fallback <- if (is.null(cfg$files$parameters_habitat_thresholds)) {
+    suppressMessages(.lnk_habitat_thresholds_csv(cfg))
+  }
+
   # Name each file relative to the bundle that holds it, never by absolute
   # path, so the hash is the same on every host. Leaf files keep their plain
   # relative name (unchanged for bundles that extend nothing); inherited ones
@@ -90,6 +97,16 @@
     }
     digest::digest(file = p, algo = "sha256")
   }, character(1), USE.NAMES = FALSE)
+
+  if (length(fallback) == 1L && nzchar(fallback)) {
+    paths <- c(paths, fallback)
+    rel <- c(rel, "fresh:parameters_habitat_thresholds.csv")
+    digests <- c(digests, if (file.exists(fallback)) {
+      digest::digest(file = fallback, algo = "sha256")
+    } else {
+      "MISSING"
+    })
+  }
 
   ord <- order(rel)
   payload <- paste(

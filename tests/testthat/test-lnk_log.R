@@ -1177,3 +1177,25 @@ test_that(".lnk_config_hash of an extends bundle sees the parent's config.yaml",
   h2 <- withr::with_dir(root, .lnk_config_hash(lnk_config(leaf)))
   expect_false(identical(h1, h2))
 })
+
+test_that(".lnk_config_hash covers fresh's thresholds when the bundle has none", {
+  # Otherwise a fresh upgrade that moves a threshold leaves the hash alone and
+  # log_parameters_habitat_thresholds keeps the first values it saw.
+  cfg <- lnk_config("default")
+  cfg$files$parameters_habitat_thresholds <- NULL
+  fake <- withr::local_tempfile(fileext = ".csv")
+  writeLines("species_code,rear_gradient_max\nCH,0.0549", fake)
+  local_mocked_bindings(.lnk_habitat_thresholds_csv = function(cfg) fake)
+  h1 <- .lnk_config_hash(cfg)
+  writeLines("species_code,rear_gradient_max\nCH,0.0321", fake)
+  h2 <- .lnk_config_hash(cfg)
+  expect_false(identical(h1, h2))
+})
+
+test_that(".lnk_config_hash ignores the fallback when the bundle declares its own", {
+  cfg <- lnk_config("default")
+  local_mocked_bindings(.lnk_habitat_thresholds_csv = function(cfg) {
+    stop("fallback consulted for a bundle that declares its own")
+  })
+  expect_match(.lnk_config_hash(cfg), "^sha256:")
+})

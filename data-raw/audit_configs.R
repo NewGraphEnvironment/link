@@ -86,7 +86,9 @@ for (b in bundles) {
   # built (data-raw/build_rules.R + regen_provenance.R). Regenerating with
   # "categories" here is what produced the earlier spurious all-species diff.
   tf <- tempfile(fileext = ".yaml")
-  lnk_rules_build(dim_csv, tf, edge_types = "explicit")
+  # The bundle's own thresholds: rear_lake_ha_min is baked into rules.yaml.
+  lnk_rules_build(dim_csv, tf, edge_types = "explicit",
+                  thresholds = lnk_config(b)$files$parameters_habitat_thresholds$path)
 
   identical_yaml <- identical(yaml::read_yaml(tf), yaml::read_yaml(rules_committed))
   identical_text <- identical(readLines(tf), readLines(rules_committed))
@@ -269,7 +271,10 @@ if (!file.exists(dict_th_path)) {
     cat("  (fresh's thresholds CSV not found — is fresh installed?)\n")
     NULL
   }
-  for (b in bundles) {
+  # Every shipped bundle, thin ones included — each may carry its own copy.
+  all_bundles <- basename(list.dirs(repo_path("inst/extdata/configs"),
+                                    recursive = FALSE))
+  for (b in all_bundles) {
     th_csv <- lnk_config(b)$files$parameters_habitat_thresholds$path
     cat(sprintf("\n  bundle: %s\n", b))
     if (is.null(th_csv)) {

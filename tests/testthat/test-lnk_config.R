@@ -340,3 +340,21 @@ test_that("a tuned threshold reaches frs_params; bcfishpass stays put", {
 
   expect_identical(lnk_config_verify(lnk_config("bcfishpass")), bcfp_before)
 })
+
+test_that("a bundle can extend a bundle that itself extends (depth 3)", {
+  # The middle bundle's rules/dimensions are already absolute after its own
+  # merge; prefixing them with its dir again named a path that did not exist.
+  leaf <- file.path(withr::local_tempdir(), "leaf")
+  dir.create(leaf)
+  yaml::write_yaml(list(name = "leaf", extends = "default_tuned"),
+                   file.path(leaf, "config.yaml"))
+  cfg <- lnk_config(leaf)
+  def <- lnk_config("default")
+  expect_identical(cfg$rules, def$rules)
+  expect_identical(cfg$dimensions, def$dimensions)
+  expect_length(cfg$chain, 3L)
+  expect_identical(cfg$files$parameters_habitat_thresholds$path,
+                   lnk_config("default_tuned")$files$parameters_habitat_thresholds$path)
+  v <- lnk_config_verify(cfg)
+  expect_false(any(v$missing | v$byte_drift | v$shape_drift))
+})

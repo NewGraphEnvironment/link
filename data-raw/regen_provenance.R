@@ -29,7 +29,9 @@ for (b in c("bcfishpass", "default")) {
   dim_csv  <- sprintf("inst/extdata/configs/%s/dimensions.csv", b)
   out_yaml <- sprintf("inst/extdata/configs/%s/rules.yaml", b)
   cat(sprintf("[regen] %s rules.yaml ← %s\n", b, dim_csv))
-  lnk_rules_build(dim_csv, out_yaml, edge_types = "explicit")
+  lnk_rules_build(dim_csv, out_yaml, edge_types = "explicit",
+                  thresholds = sprintf(
+                    "inst/extdata/configs/%s/parameters_habitat_thresholds.csv", b))
 }
 
 # 2. Update provenance for the four drifted files in each bundle.
