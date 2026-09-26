@@ -1,3 +1,19 @@
+# link 0.51.0
+
+Each config bundle now carries its own habitat thresholds ([#282](https://github.com/NewGraphEnvironment/link/issues/282)): per-species spawn/rear gradient max, channel-width min/max and lake-area floor, in `parameters_habitat_thresholds.csv` under `files:`. Before this, every bundle read fresh's installed copy, so tuning a CH cutoff would also have moved the `bcfishpass` parity reference.
+
+**Where the numbers come from now.** `lnk_pipeline_classify()` and `lnk_pipeline_connect()` default `thresholds_csv` to `NULL` and resolve it from `cfg`. A custom bundle that declares no CSV falls back to fresh's copy with a message, and its `config_hash` covers that file. The four shipped bundles carry a byte-identical copy of fresh@v0.33.0's CSV (bcfishpass `example_newgraph@4699d0f` plus fresh's edge-type columns). The `bcfishpass` copy is a **frozen parity input**: csv-sync does not touch it. Runs record the values themselves in a new `<persist>.log_parameters_habitat_thresholds` table, built from a new dictionary. The config snapshot now gates per table, so a hash that was logged before a table existed still gets that table filled.
+
+**`default_tuned`** is a thin bundle (`extends: default`, schema `fresh_default_tuned`). It is where the calibrated CH and BT values from [#284](https://github.com/NewGraphEnvironment/link/issues/284) will go. Today its CSV is identical to `default`'s.
+
+**`extends:` had never been used by a shipped bundle, and five parts of it were broken.** Inherited provenance resolved against the child's directory, so `lnk_config_verify()` reported every inherited file missing and every run was flagged `config_drift`. `config_hash` named inherited files by absolute path and sorted by `LC_COLLATE` (`default` hashed `008ed3a1…` under en_US and `4669cd38…` under C), so the same bundle hashed differently on different machines. It also never read the parent's `config.yaml`, so an inherited `break_order` change left the child's hash unchanged. A three-level chain failed to load, and a relative `extends:` resolved against the working directory. All five are fixed. **Every bundle's `config_hash` changes in this release**; existing log rows keep their old hashes.
+
+**Two columns look live and are not.** On link's rules path, the CSV's MAD bounds and `spawn/rear_edge_types` are carried but never applied, and `rear_lake_ha_min` is baked into `rules.yaml`, so it only takes effect after the rules are rebuilt. `build_rules.R`, `regen_provenance.R` and audit §2 now build each bundle's rules from that bundle's own thresholds. The dictionary's `consumed_by` column and RUNBOOK §7 record which file and line reads each column. The stale `spawn_gradient_min 0.0025` claim was corrected in six places; every bundle ships 0.
+
+**Verified on fixed segmentation, because full runs are not reproducible on main.** Two identical ADMS runs on main differ by one segment: the PSCIS-to-modelled crossing pick has no tiebreak when two candidates share a `linear_feature_id`. That is a separate fix; until it lands, compare code versions by re-running classify and connect on one prepared schema. On that basis, output is byte-identical to 0.50.0 on ADMS (4 species) and BULK (6 species). A thin bundle with CH `rear_gradient_max` 0.0321 changes CH rearing on ADMS (1,470 → 1,280 segments) and nothing else. Record: `data-raw/logs/habitat_thresholds_282/`.
+
+Suite: `R CMD check` 1939 pass (0.50.0: 1867); the only failures are 3 tunnel-dependent tests, the same as the baseline.
+
 # link 0.50.0
 
 Closes the code-identity gaps in `fresh.log` ([#264](https://github.com/NewGraphEnvironment/link/issues/264)), the last provenance work before the 217-WSG run. Measured against the 39 rows in the table: `fresh_sha` filled on 15, `fresh_dirty` on **0**, and `bcfishobs` — a model input — carrying no code pin at all.
