@@ -63,6 +63,18 @@ bundle × species × WSG table, so two bundles can be diffed.
   downstream_route_measure, species_code)`; the caller locates them. FISS parsing stays in
   the driver because `knowledge` is private — only aggregates are committed.
 
+## Design changes from the plan review (review-plan.md, 2026-09-26)
+
+- `schema` is **required** (B1): `default` declares `pipeline.schema: fresh`, which the
+  bcfishpass bundle writes. Where `<schema>.log` records a WSG, its `config_name` must
+  equal `cfg$name`; unlogged WSGs pass and are flagged `run_logged = FALSE`.
+- Miss reasons re-evaluate the bundle's own predicates (`fresh::frs_habitat_predicates()`
+  over `cfg$rules` + thresholds) with gradient / width relaxed (G1), instead of
+  re-implementing the rules from the thresholds CSV.
+- Unattached locations counted as `n_unattached`, not as inaccessible (G2).
+- `rearing_any` (stream + lake + wetland) reported beside stream `rearing` (G3).
+- `pg_temp.` on temp-table drops.
+
 ## Phases
 ### Phase 1: Correct the frame
 - [x] Edit #283 body: fresh#218 finding (full-PK join is correct), circularity of
@@ -70,19 +82,19 @@ bundle × species × WSG table, so two bundles can be diffed.
 - [x] Record the fresh#218 measurement in `findings.md`
 
 ### Phase 2: Tests first
-- [ ] `tests/testthat/test-lnk_habitat_validate.R`: arg validation; `.lnk_obs_stage()`
+- [x] `tests/testthat/test-lnk_habitat_validate.R`: arg validation; `.lnk_obs_stage()`
       on activity/life_stage fixtures; `miss_reason` classification; summary shares
-- [ ] DB integration test (`skip_if_no_db()`) on a fixture schema `zz_lnk_validate_probe`
+- [x] DB integration test (`skip_if_no_db()`) on a fixture schema `zz_lnk_validate_probe`
       with `streams`, `streams_habitat_bt`, `streams_access`, and a fixture observations
       table: two WSGs sharing `id_segment` values (full-PK guard — restore a bare join and
       watch it fail), an excluded key, a release, a DV record in a no-BT WSG, a buffer case,
       one absence
 
 ### Phase 3: `lnk_habitat_validate()`
-- [ ] `R/lnk_habitat_validate.R`: exported function + internal SQL builders / helpers
+- [x] `R/lnk_habitat_validate.R`: exported function + internal SQL builders / helpers
       (temp tables, parameterised; species alpha-validated as in `lnk_rollup_wsg()`)
-- [ ] Runnable-by-design `@examples` (`\dontrun{}`, DB required — same as siblings)
-- [ ] `devtools::document()`, tests green, `lintr::lint_package()` clean
+- [x] Runnable-by-design `@examples` (`\dontrun{}`, DB required — same as siblings)
+- [x] `devtools::document()`, tests green, `lintr::lint_package()` clean
 
 ### Phase 4: Driver + baseline run
 - [ ] `data-raw/habitat_validate.R` (`--schemas=`, `--wsgs=`, `--species=`,
