@@ -36,6 +36,32 @@ To compare two code versions, prepare once and re-run classify/connect on the
 same schema (`data-raw/logs/habitat_thresholds_282/reclassify.R`). Issue drafted,
 awaiting body review.
 
+## Status (2026-09-26) — v0.51.1: first calibrated threshold in `default_tuned` (#284; step 5 open)
+
+**`research/habitat_thresholds.md` is the staging table for tuning CH/BT numbers.** One
+verdict per threshold (observation use vs accessible availability, FISS sites, literature).
+One cell moved: BT `rear_gradient_max` 0.1049 → 0.1349. `default` and `bcfishpass` are
+untouched, and everything is **unscored** until #283's validator exists. Producers:
+`data-raw/query_habitat_thresholds_{obs,fiss}.R`.
+
+**Facts not worth re-deriving:**
+- bcfishobs carries **no life stage or activity for BT at all**. DV records are pooled with
+  BT as the primary BT evidence (operator call, 2026-09-26: inland DV are bull trout under
+  the other name, and coastal biology is treated as equivalent). BT-only is kept beside it
+  as `evidence_role = comparison`.
+- Observations **are** the pipeline's break points. 99 % sit within 1 m of a segment
+  boundary; use the segment *starting* there (upstream), or joins double-match.
+- The rearing bridge (`cluster_bridge_gradient`) governs only rearing **above** spawning:
+  `.frs_cluster_both()` keeps a cluster with spawning anywhere upstream, with no gradient
+  test.
+- River polygons with NULL width fail the river rule's `channel_width [0, 9999]` (a
+  `BETWEEN`), so they drop out of habitat. There is an unfiled draft in the #284 archive.
+- FISS data-submission site data (width, gradient, effort, no-fish-captured) is parsed by
+  the private `knowledge` repo. Commit aggregates only here, because link is public.
+  `average_gradient_percent` there holds proportions.
+- About a third of CH observation locations in `fresh_default` are lower Fraser / coastal
+  Skeena (ocean-type runs), so the WSG set is not "interior only".
+
 ## Status (2026-09-01) — v0.49.0: provenance gaps closed before the 217-WSG run (#262, #257)
 
 **Two of the four reported gaps were wired and unfed; a third named the wrong
