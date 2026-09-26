@@ -306,6 +306,88 @@ test_that("species_obs values are case-insensitive", {
   expect_identical(v$summary$n_obs[v$summary$stage == "any"], 4L)
 })
 
+test_that("observations can be a data frame from any source", {
+  conn <- validate_conn()
+  s <- local_validate_fixture(conn)
+  mine <- data.frame(
+    species_code = "BT", watershed_group_code = "AAAA", blue_line_key = 1L,
+    downstream_route_measure = c(100, 50, 300),
+    is_rear = c(TRUE, NA, FALSE),
+    # Its own stage wins over bcfishobs wording where given.
+    activity = c(NA, "Spawning", "Spawning"), is_spawn = c(NA, NA, FALSE))
+  ld <- validate_loaded()
+  ld$observation_exclusions <- NULL
+  v <- lnk_habitat_validate(
+    conn, aoi = "AAAA", cfg = lnk_config("default"),
+    loaded = ld, species = "BT", schema = s,
+    observations = mine, match_types = NULL, source_exclude = NULL)
+  sm <- v$summary
+  expect_identical(sm$n_obs[sm$stage == "any"], 3L)
+  expect_identical(sm$n_obs[sm$stage == "rear"], 1L)
+  expect_identical(sm$n_obs[sm$stage == "spawn"], 1L)
+  # Keys are the caller's row numbers, so results join back.
+  expect_setequal(v$observations$observation_key, c("1", "2", "3"))
+  expect_identical(
+    v$observations$observation_key[round(v$observations$m) == 300], "3")
+  # The upstream segment rule still applies: 100 is segment 2.
+  expect_identical(
+    v$observations$id_segment[round(v$observations$m) == 100], 2L)
+})
+
+test_that("a filter whose column the source lacks is an error, not a pass", {
+  conn <- validate_conn()
+  s <- local_validate_fixture(conn)
+  mine <- data.frame(species_code = "BT", watershed_group_code = "AAAA",
+                     blue_line_key = 1L, downstream_route_measure = 50)
+  ld <- validate_loaded()
+  ld$observation_exclusions <- NULL
+  go <- function(obs = mine, loaded = ld, ...) lnk_habitat_validate(
+    conn, aoi = "AAAA", cfg = lnk_config("default"),
+    loaded = loaded, species = "BT", schema = s,
+    observations = obs, ...)
+  expect_error(go(source_exclude = NULL), "match_types = NULL")
+  expect_error(go(match_types = NULL), "source_exclude = NULL")
+  # Exclusions are keyed on observation_key; without one they cannot apply.
+  expect_error(go(loaded = validate_loaded(), match_types = NULL,
+                  source_exclude = NULL), "observation_exclusions")
+  expect_error(go(match_types = NULL, source_exclude = ""))
+  expect_error(go(obs = mine[, -2], match_types = NULL, source_exclude = NULL),
+               "watershed_group_code")
+})
+
+test_that("source_exclude matches a literal prefix, not a LIKE pattern", {
+  conn <- validate_conn()
+  s <- local_validate_fixture(conn)
+  mine <- data.frame(species_code = "BT", watershed_group_code = "AAAA",
+                     blue_line_key = 1L, downstream_route_measure = c(50, 300),
+                     source = c("50% stocked", "500 survey"))
+  ld <- validate_loaded()
+  ld$observation_exclusions <- NULL
+  v <- lnk_habitat_validate(
+    conn, aoi = "AAAA", cfg = lnk_config("default"),
+    loaded = ld, species = "BT", schema = s,
+    observations = mine, match_types = NULL, source_exclude = "50%")
+  expect_identical(round(v$observations$m), 300)
+})
+
+test_that("codes are normalised on the observation side, and 0/1 flags read as stage", {
+  conn <- validate_conn()
+  s <- local_validate_fixture(conn)
+  mine <- data.frame(species_code = c("bt", "BT "),
+                     watershed_group_code = c("aaaa", "AAAA"),
+                     blue_line_key = 1L, downstream_route_measure = c(50, 300),
+                     is_spawn = c(1, 0))
+  ld <- validate_loaded()
+  ld$observation_exclusions <- NULL
+  v <- lnk_habitat_validate(
+    conn, aoi = "AAAA", cfg = lnk_config("default"),
+    loaded = ld, species = "BT", schema = s,
+    observations = mine, match_types = NULL, source_exclude = NULL)
+  sm <- v$summary
+  expect_identical(sm$n_obs[sm$stage == "any"], 2L)
+  expect_identical(sm$n_obs[sm$stage == "spawn"], 1L)
+})
+
 test_that("buffer_m captures habitat upstream along the same stream", {
   conn <- validate_conn()
   s <- local_validate_fixture(conn)

@@ -27,6 +27,14 @@ that both retained the same observations.
   must be present in the WSG per `wsg_species_presence`. DV records count as BT where BT
   is present (the #284 pooling). Match types are A/B only (stream, within 100 m). One
   location per species × `blue_line_key` × metre, which is staged if any record there is.
+- **Other sources:** `observations` takes any table or data frame that has
+  `species_code`, `watershed_group_code`, `blue_line_key` and
+  `downstream_route_measure`, so crew data, eDNA or a held-out subset can be scored the
+  same way. A source can give its own `is_spawn` / `is_rear`. The two bcfishobs filters
+  (`match_types`, `source_exclude`) default on. When the source lacks the column a filter
+  needs, the function errors rather than skipping it, so a source without them passes
+  `NULL`. Measured: with the defaults, the bcfishobs path reproduces this baseline
+  exactly (120 of 120 summary rows, 5 WSGs).
 - **The segment:** the one *starting* within 1 m of the point, because the pipeline
   breaks at observations; otherwise the containing one. Every join is on the full
   `(id_segment, watershed_group_code)` key.

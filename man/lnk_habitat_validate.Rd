@@ -14,6 +14,7 @@ lnk_habitat_validate(
   observations = "bcfishobs.observations",
   species_obs = list(BT = c("BT", "DV")),
   match_types = c("A", "B"),
+  source_exclude = "Releases Database",
   buffer_m = 0,
   absences = NULL
 )
@@ -42,17 +43,27 @@ and (when present) \code{user_habitat_classification}.}
 \code{pipeline.schema} is not a reliable guide to which schema it built
 (\code{default} declares \code{fresh}, which the \code{bcfishpass} bundle writes).}
 
-\item{observations}{Schema-qualified observations table. Default
-\code{"bcfishobs.observations"}. Needs \code{observation_key}, \code{species_code},
-\code{watershed_group_code}, \code{blue_line_key}, \code{downstream_route_measure},
-\code{match_type}, \code{activity_code}, \code{activity}, \code{life_stage}, \code{source}.}
+\item{observations}{Fish records: a schema-qualified table name (default
+\code{"bcfishobs.observations"}) or a data frame. Required columns:
+\code{species_code}, \code{watershed_group_code}, \code{blue_line_key},
+\code{downstream_route_measure}, and for a table \code{observation_key}. A data
+frame without \code{observation_key} gets its own row numbers as keys, and
+then \code{loaded$observation_exclusions} must be \code{NULL} (the exclusions are
+matched on that key). Species and WSG codes are compared upper-cased
+and trimmed. Optional: \code{match_type}, \code{source}, \code{is_spawn}, \code{is_rear}
+(logical, 0/1 or t/true/yes), \code{activity_code}, \code{activity},
+\code{life_stage}.}
 
 \item{species_obs}{Named list mapping a model species to the observation
 species codes that count as it. Species not named map to themselves.
 Default pools DV records with BT (\code{list(BT = c("BT", "DV"))}).}
 
 \item{match_types}{Character vector of \code{match_type} classes (first
-letter) to keep. Default \code{c("A", "B")}.}
+letter) to keep, or \code{NULL} for no match-type filter. Default
+\code{c("A", "B")}.}
+
+\item{source_exclude}{Character vector of \code{source} prefixes to drop, or
+\code{NULL} for none. Default \code{"Releases Database"}.}
 
 \item{buffer_m}{Numeric scalar >= 0. Upstream distance within which
 modelled habitat still captures an observation. Default 0.}
@@ -105,24 +116,32 @@ bundles can be diffed on the same observations.
 }
 \section{Which observations count}{
 
-From \code{observations} (a \code{bcfishobs.observations}-shaped table), keeping:
+\code{observations} is any source of fish records located on the FWA network:
+\code{bcfishobs.observations} by default, or another table, or a data frame of
+your own. From it, keeping:
 \itemize{
 \item records not flagged \code{data_error} or \code{release_exclude} in
-\code{loaded$observation_exclusions} (the pipeline's own filter), and not
-from the \verb{Releases Database} source (stocked fish are not evidence of
-habitat use);
+\code{loaded$observation_exclusions} (matched on \code{observation_key}), and not
+from a \code{source} starting with any of \code{source_exclude} (by default the
+\verb{Releases Database}: stocked fish are not evidence of habitat use);
 \item observation species admitted for the model species by \code{species_obs},
 and only in WSGs where \code{loaded$wsg_species_presence} marks the model
 species present (so DV records count as BT only where BT is present);
-\item \code{match_type} classes in \code{match_types} (default A/B: matched to a
-stream within 100 m; C, 100-500 m from a stream, and the D/E
+\item \code{match_type} classes in \code{match_types} (default A/B, bcfishobs's matches
+to a stream within 100 m; C, 100-500 m from a stream, and the D/E
 waterbody matches are left out);
 \item one per species x \code{blue_line_key} x metre (repeat visits are one
 location; a location is spawn- or rear-staged if any record there is).
 }
 
-Pass a different \code{observations} table to score a held-out subset (by
-project, date or WSG).
+Stage comes from \code{is_spawn} / \code{is_rear} where the source carries them,
+and otherwise from bcfishobs's \code{activity_code}, \code{activity} and
+\code{life_stage} wording; a record with neither counts in the \code{any} stage only.
+
+A filter whose column the source does not have is an error, not a silent
+pass: set \code{match_types = NULL} or \code{source_exclude = NULL} for a source
+without \code{match_type} or \code{source}. Pass a subset to score held-out records
+(by project, date or WSG).
 }
 
 \section{Which segment an observation is on}{

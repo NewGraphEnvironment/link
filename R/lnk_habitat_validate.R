@@ -14,22 +14,30 @@
 #' bundles can be diffed on the same observations.
 #'
 #' @section Which observations count:
-#' From `observations` (a `bcfishobs.observations`-shaped table), keeping:
+#' `observations` is any source of fish records located on the FWA network:
+#' `bcfishobs.observations` by default, or another table, or a data frame of
+#' your own. From it, keeping:
 #' - records not flagged `data_error` or `release_exclude` in
-#'   `loaded$observation_exclusions` (the pipeline's own filter), and not
-#'   from the `Releases Database` source (stocked fish are not evidence of
-#'   habitat use);
+#'   `loaded$observation_exclusions` (matched on `observation_key`), and not
+#'   from a `source` starting with any of `source_exclude` (by default the
+#'   `Releases Database`: stocked fish are not evidence of habitat use);
 #' - observation species admitted for the model species by `species_obs`,
 #'   and only in WSGs where `loaded$wsg_species_presence` marks the model
 #'   species present (so DV records count as BT only where BT is present);
-#' - `match_type` classes in `match_types` (default A/B: matched to a
-#'   stream within 100 m; C, 100-500 m from a stream, and the D/E
+#' - `match_type` classes in `match_types` (default A/B, bcfishobs's matches
+#'   to a stream within 100 m; C, 100-500 m from a stream, and the D/E
 #'   waterbody matches are left out);
 #' - one per species x `blue_line_key` x metre (repeat visits are one
 #'   location; a location is spawn- or rear-staged if any record there is).
 #'
-#' Pass a different `observations` table to score a held-out subset (by
-#' project, date or WSG).
+#' Stage comes from `is_spawn` / `is_rear` where the source carries them,
+#' and otherwise from bcfishobs's `activity_code`, `activity` and
+#' `life_stage` wording; a record with neither counts in the `any` stage only.
+#'
+#' A filter whose column the source does not have is an error, not a silent
+#' pass: set `match_types = NULL` or `source_exclude = NULL` for a source
+#' without `match_type` or `source`. Pass a subset to score held-out records
+#' (by project, date or WSG).
 #'
 #' @section Which segment an observation is on:
 #' The pipeline breaks streams at observations, so most points sit on a
@@ -118,15 +126,24 @@
 #' @param schema Persist schema to score. Required: a bundle's
 #'   `pipeline.schema` is not a reliable guide to which schema it built
 #'   (`default` declares `fresh`, which the `bcfishpass` bundle writes).
-#' @param observations Schema-qualified observations table. Default
-#'   `"bcfishobs.observations"`. Needs `observation_key`, `species_code`,
-#'   `watershed_group_code`, `blue_line_key`, `downstream_route_measure`,
-#'   `match_type`, `activity_code`, `activity`, `life_stage`, `source`.
+#' @param observations Fish records: a schema-qualified table name (default
+#'   `"bcfishobs.observations"`) or a data frame. Required columns:
+#'   `species_code`, `watershed_group_code`, `blue_line_key`,
+#'   `downstream_route_measure`, and for a table `observation_key`. A data
+#'   frame without `observation_key` gets its own row numbers as keys, and
+#'   then `loaded$observation_exclusions` must be `NULL` (the exclusions are
+#'   matched on that key). Species and WSG codes are compared upper-cased
+#'   and trimmed. Optional: `match_type`, `source`, `is_spawn`, `is_rear`
+#'   (logical, 0/1 or t/true/yes), `activity_code`, `activity`,
+#'   `life_stage`.
 #' @param species_obs Named list mapping a model species to the observation
 #'   species codes that count as it. Species not named map to themselves.
 #'   Default pools DV records with BT (`list(BT = c("BT", "DV"))`).
 #' @param match_types Character vector of `match_type` classes (first
-#'   letter) to keep. Default `c("A", "B")`.
+#'   letter) to keep, or `NULL` for no match-type filter. Default
+#'   `c("A", "B")`.
+#' @param source_exclude Character vector of `source` prefixes to drop, or
+#'   `NULL` for none. Default `"Releases Database"`.
 #' @param buffer_m Numeric scalar >= 0. Upstream distance within which
 #'   modelled habitat still captures an observation. Default 0.
 #' @param absences Optional data frame of sites sampled with the species
@@ -184,6 +201,7 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
                                  observations = "bcfishobs.observations",
                                  species_obs = list(BT = c("BT", "DV")),
                                  match_types = c("A", "B"),
+                                 source_exclude = "Releases Database",
                                  buffer_m = 0,
                                  absences = NULL) {
   stopifnot(
@@ -200,13 +218,21 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
     is.list(species_obs),
     length(species_obs) == 0L || !is.null(names(species_obs)),
     all(vapply(species_obs, is.character, logical(1))),
-    is.character(match_types), length(match_types) >= 1L,
-    all(grepl("^[A-Z]$", match_types)),
+    is.null(match_types) ||
+      (is.character(match_types) && length(match_types) >= 1L &&
+         all(grepl("^[A-Z]$", match_types))),
+    is.null(source_exclude) ||
+      (is.character(source_exclude) && length(source_exclude) >= 1L &&
+         !anyNA(source_exclude) && all(nzchar(source_exclude))),
+    is.data.frame(observations) ||
+      (is.character(observations) && length(observations) == 1L),
     is.numeric(buffer_m), length(buffer_m) == 1L, !is.na(buffer_m),
     buffer_m >= 0, is.finite(buffer_m),
     is.null(absences) || is.data.frame(absences)
   )
-  .lnk_validate_identifier(observations, "observations table")
+  if (is.character(observations)) {
+    .lnk_validate_identifier(observations, "observations table")
+  }
   for (nm in c("wsg_species_presence", "parameters_fresh")) {
     if (is.null(loaded[[nm]])) {
       stop("loaded$", nm, " is required", call. = FALSE)
@@ -223,7 +249,7 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
   spec <- .lnk_hv_spec(loaded$wsg_species_presence, aoi, species,
                        species_obs)
   obs <- .lnk_hv_obs(conn, schema, observations, spec, loaded, species,
-                     match_types, buffer_m)
+                     match_types, source_exclude, buffer_m)
   obs <- .lnk_hv_dedup(obs)
   obs <- .lnk_hv_predicates(conn, schema, obs, cfg, loaded, species)
   obs <- .lnk_hv_reasons(obs)
@@ -389,16 +415,94 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
   invisible(NULL)
 }
 
+#' Resolve the observation source to a table and the columns it carries.
+#'
+#' A data frame goes to a session temp table. Optional columns a source
+#' lacks become typed NULLs, so one query serves every source.
+#' @noRd
+.lnk_hv_source <- function(conn, observations) {
+  cols_req <- c("species_code", "watershed_group_code", "blue_line_key",
+                "downstream_route_measure")
+  cols_opt <- c("observation_key", "match_type", "source", "is_spawn",
+                "is_rear", "activity_code", "activity", "life_stage")
+  key_generated <- FALSE
+  if (is.data.frame(observations)) {
+    d <- as.data.frame(observations)
+    miss <- setdiff(cols_req, names(d))
+    if (length(miss) > 0L) {
+      stop("observations is missing columns: ", paste(miss, collapse = ", "),
+           call. = FALSE)
+    }
+    d <- d[, intersect(c(cols_req, cols_opt), names(d)), drop = FALSE]
+    if (!"observation_key" %in% names(d)) {
+      # The caller's own row numbers, so results join back to their rows.
+      d$observation_key <- as.character(seq_len(nrow(d)))
+      key_generated <- TRUE
+    }
+    DBI::dbWriteTable(conn, "lnk_vd_src", d, temporary = TRUE,
+                      overwrite = TRUE)
+    src <- "pg_temp.lnk_vd_src"
+  } else {
+    src <- observations
+  }
+  cols <- names(DBI::dbGetQuery(conn, sprintf("SELECT * FROM %s LIMIT 0",
+                                              src)))
+  miss <- setdiff(c(cols_req, "observation_key"), cols)
+  if (length(miss) > 0L) {
+    stop(src, " is missing columns: ", paste(miss, collapse = ", "),
+         call. = FALSE)
+  }
+  list(src = src, cols = intersect(c(cols_req, cols_opt), cols),
+       key_generated = key_generated)
+}
+
 #' Filter observations, attach each to its segment, and flag capture.
 #' @noRd
 .lnk_hv_obs <- function(conn, schema, observations, spec, loaded, species,
-                        match_types, buffer_m) {
+                        match_types, source_exclude, buffer_m) {
+  s <- .lnk_hv_source(conn, observations)
+  has <- function(cl) cl %in% s$cols
+  opt <- function(cl, type) {
+    if (has(cl)) sprintf("o.%s::%s", cl, type) else sprintf("NULL::%s", type)
+  }
+  # A stage flag may arrive as logical, 0/1 (readr's reading of a 0/1
+  # column), or t/true/yes text; none of those casts to boolean alike.
+  opt_flag <- function(cl) {
+    if (!has(cl)) return("NULL::boolean")
+    sprintf(paste("CASE WHEN o.%1$s IS NULL THEN NULL",
+                  "ELSE lower(trim(o.%1$s::text)) IN",
+                  "('t', 'true', '1', '1.0', 'y', 'yes') END"), cl)
+  }
+  if (!is.null(match_types) && !has("match_type")) {
+    stop(s$src, " has no match_type column; pass match_types = NULL",
+         call. = FALSE)
+  }
+  if (!is.null(source_exclude) && !has("source")) {
+    stop(s$src, " has no source column; pass source_exclude = NULL",
+         call. = FALSE)
+  }
   excl <- loaded$observation_exclusions
   keys <- character(0)
   if (!is.null(excl) && nrow(excl) > 0L) {
     keys <- excl$observation_key[excl$data_error %in% c(TRUE, "t") |
                                    excl$release_exclude %in% c(TRUE, "t")]
   }
+  if (s$key_generated && length(keys) > 0L) {
+    stop("observations has no observation_key, so ",
+         "loaded$observation_exclusions cannot be applied; add the key, or ",
+         "set loaded$observation_exclusions <- NULL for a source it does ",
+         "not describe", call. = FALSE)
+  }
+  # Prefixes compared literally, so there are no LIKE wildcards to escape.
+  DBI::dbWriteTable(conn, "lnk_vd_srcx",
+                    data.frame(prefix = as.character(source_exclude)),
+                    temporary = TRUE, overwrite = TRUE)
+  where_match <- if (is.null(match_types)) "" else
+    "AND left(o.match_type::text, 1) = ANY($1)"
+  where_source <- if (is.null(source_exclude)) "" else
+    "AND NOT EXISTS (SELECT 1 FROM pg_temp.lnk_vd_srcx x
+                      WHERE left(coalesce(o.source::text, ''),
+                                 length(x.prefix)) = x.prefix)"
   DBI::dbWriteTable(conn, "lnk_vd_excl",
                     data.frame(observation_key = as.character(keys)),
                     temporary = TRUE, overwrite = TRUE)
@@ -423,21 +527,29 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
   .lnk_hv_drop_temp(conn, "lnk_vd_obs")
   DBI::dbExecute(conn, sprintf(
     "CREATE TEMP TABLE lnk_vd_obs AS
-     SELECT o.observation_key, sp.species_code,
-            o.species_code AS obs_species,
-            o.watershed_group_code, o.blue_line_key,
-            o.downstream_route_measure AS m,
-            left(o.match_type, 1) AS match_class,
-            o.activity_code, o.activity, o.life_stage
-       FROM %s o
-       JOIN pg_temp.lnk_vd_spec sp
-         ON sp.watershed_group_code = o.watershed_group_code
-        AND sp.obs_species = o.species_code
+     SELECT o.* FROM (
+       SELECT o.observation_key::text AS observation_key, sp.species_code,
+              upper(trim(o.species_code::text)) AS obs_species,
+              upper(trim(o.watershed_group_code::text))
+                AS watershed_group_code,
+              o.blue_line_key::integer AS blue_line_key,
+              o.downstream_route_measure::double precision AS m,
+              left(%2$s, 1) AS match_class,
+              %3$s AS activity_code, %4$s AS activity, %5$s AS life_stage,
+              %6$s AS src_is_spawn, %7$s AS src_is_rear
+         FROM %1$s o
+         JOIN pg_temp.lnk_vd_spec sp
+           ON sp.watershed_group_code = upper(trim(o.watershed_group_code::text))
+          AND sp.obs_species = upper(trim(o.species_code::text))
+        WHERE TRUE %8$s %9$s) o
       WHERE NOT EXISTS (SELECT 1 FROM pg_temp.lnk_vd_excl e
-                         WHERE e.observation_key = o.observation_key)
-        AND coalesce(o.source, '') NOT LIKE 'Releases Database%%'
-        AND left(o.match_type, 1) = ANY($1)", observations),
-    params = list(paste0("{", paste(match_types, collapse = ","), "}")))
+                         WHERE e.observation_key = o.observation_key)",
+    s$src, opt("match_type", "text"), opt("activity_code", "text"),
+    opt("activity", "text"), opt("life_stage", "text"),
+    opt_flag("is_spawn"), opt_flag("is_rear"),
+    where_match, where_source),
+    params = if (is.null(match_types)) NULL else
+      list(paste0("{", paste(match_types, collapse = ","), "}")))
 
   # The segment the model tests: the one STARTING within 1 m (upstream),
   # else the one containing the point. n_cand > 1 is the expected case of
@@ -526,9 +638,14 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
 #' record (by observation_key) supplies everything else.
 #' @noRd
 .lnk_hv_dedup <- function(obs) {
+  # A source's own stage wins where it gives one; bcfishobs wording otherwise.
   st <- .lnk_obs_stage(obs$activity_code, obs$activity, obs$life_stage)
-  obs$is_spawn <- st$is_spawn
-  obs$is_rear <- st$is_rear
+  own_spawn <- obs$src_is_spawn %||% rep(NA, nrow(obs))
+  own_rear <- obs$src_is_rear %||% rep(NA, nrow(obs))
+  obs$is_spawn <- ifelse(is.na(own_spawn), st$is_spawn, own_spawn)
+  obs$is_rear <- ifelse(is.na(own_rear), st$is_rear, own_rear)
+  obs$src_is_spawn <- NULL
+  obs$src_is_rear <- NULL
   obs$n_records <- rep(1L, nrow(obs))
   if (nrow(obs) == 0L) return(obs)
   loc <- paste(obs$species_code, obs$blue_line_key, round(obs$m))
