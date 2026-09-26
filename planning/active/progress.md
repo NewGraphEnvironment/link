@@ -31,3 +31,17 @@ Phase 1 not started (no script written). Measured before parking:
 - Folded `review-plan.md` B1–B3 and G1–G11 into task_plan; re-probed B1 and B3 (both hold).
 - Found `knowledge` owns FISS data-submission snapshots (UNTH, LNTH, COTR, PINE, UPCE),
   which replaces the bcdata/`fshclctn_id` route that B3 showed does not link.
+- Phases 1–2: `query_habitat_thresholds_obs.R` / `_fiss.R` → `data-raw/logs/habitat_thresholds_284/`.
+  Literature (Phase 3) by a background agent → `planning/active/literature.md`.
+- Phase 4: one cell in `default_tuned` (BT `rear_gradient_max` 0.1049 → 0.1249); the
+  `parameters_fresh.csv` copy was not made because the evidence keeps both of its values.
+- Phase 5: `research/habitat_thresholds.md` + new `research/README.md` index.
+- `/code-check`: 4 rounds (`review-round1..4.md`). R1 flipped CH rear 0.0649 → keep and BT
+  0.1349 → 0.1249 (accessible-only use, a post-hoc change disclosed in the doc). R2 corrected
+  the bridge mechanism (checked against fresh `.frs_cluster_both()`). R3 found the coverage
+  error (a third of the CH locations are lower Fraser / coastal Skeena). R4's enumeration was clean.
+- Agent spend: 1 literature + 4 review rounds = 5, at the §6 bound.
+- Drafts (not filed, awaiting approval): `draft_knowledge_issue.md` and
+  `draft_issue_riverpoly_null_width.md`.
+- Commits are grouped by phase; the checkbox flips land with Phase 5, because review ran
+  over the combined diff.
