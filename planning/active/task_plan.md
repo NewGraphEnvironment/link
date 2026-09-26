@@ -48,12 +48,12 @@ Related staleness: `default/config.yaml`'s description says the bundle ships `sp
   Change the `thresholds_csv` default in classify and connect to `NULL`, resolved through
   the helper. `lnk_pipeline_run()` needs no change, since classify and connect resolve
   from `cfg`. Update roxygen and `devtools::document()`.
-- [ ] `lnk_load_overrides()` already loads any `files:` CSV. Confirm
+- [x] `lnk_load_overrides()` already loads any `files:` CSV. Confirm
   `loaded$parameters_habitat_thresholds` arrives as a data frame (used by the log
   snapshot in Phase 3).
 
 ## Phase 2: Vendor the CSV into the shipped bundles
-- [ ] Copy fresh's `parameters_habitat_thresholds.csv` byte-for-byte into `bcfishpass/`,
+- [x] Copy fresh's `parameters_habitat_thresholds.csv` byte-for-byte into `bcfishpass/`,
   `default/`, `default_rearbreaks/` and `default_extrabreaks/`. Add a `files:` entry and
   a `provenance:` block to each: `source: fresh`, fresh version and SHA,
   `derived_from: smnorris/bcfishpass parameters/example_newgraph@4699d0f`, `synced`,
@@ -61,10 +61,10 @@ Related staleness: `default/config.yaml`'s description says the bundle ships `sp
   `source` is not the bcfishpass GitHub URL, so `sync_bcfishpass_csvs.R` will ignore the
   file; state that in the bcfishpass bundle README ("frozen parity input; change only
   deliberately").
-- [ ] `data-raw/build_rules.R`: pass each bundle's own thresholds CSV to
+- [x] `data-raw/build_rules.R`: pass each bundle's own thresholds CSV to
   `lnk_rules_build(thresholds =)`. Regenerate and confirm `git diff` on `rules.yaml` is
   empty apart from the header date.
-- [ ] `lnk_config_verify()` passes for all four bundles.
+- [x] `lnk_config_verify()` passes for all four bundles.
 
 ## Phase 3: Log the threshold values
 - [ ] `inst/extdata/configs/dictionary_parameters_habitat_thresholds.csv` (column,

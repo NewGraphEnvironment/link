@@ -23,6 +23,7 @@ Not in this config:
 | `rules.yaml` | Built rules YAML (consumed by `frs_habitat_classify()`). Regenerate from `dimensions.csv` via `lnk_rules_build()` |
 | `dimensions.csv` | Source of `rules.yaml` — species × habitat biology encoded for NewGraph defaults. Source of truth is `inst/extdata/parameters_habitat_dimensions.csv` (copied in here on bundle assembly) |
 | `parameters_fresh.csv` | Per-species fresh overrides (spawn_gradient_min, observation_threshold, etc.) |
+| `parameters_habitat_thresholds.csv` | Per-species gradient / channel-width / MAD / lake-area thresholds and edge types, read by classify and connect. Starts identical to fresh's copy; provenance in `config.yaml`. |
 | `overrides/` | Shared jurisdiction data — same barrier corrections, PSCIS status overrides, observation exclusions, habitat confirmations as the bcfishpass variant. These are BC-specific facts, not method choices. Redistributed under `LICENSE-bcfishpass` at the repo root. |
 
 The bundle is consumed via `lnk_config("default")` + `lnk_load_overrides(cfg)`. Project-experimental configs can declare `extends: default` to inherit this bundle and override specific entries (e.g. point a project's `user_barriers_definite` at a project-local CSV).

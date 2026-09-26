@@ -15,6 +15,8 @@ dimensions: dimensions.csv
 files:
   parameters_fresh:
     path: parameters_fresh.csv
+  parameters_habitat_thresholds:
+    path: parameters_habitat_thresholds.csv
   user_habitat_classification:
     source: bcfp
     path: overrides/user_habitat_classification.csv
@@ -121,6 +123,15 @@ provenance:
     synced: '2026-04-26'
     checksum: sha256:a877ec23b0e0853514d545fbd8b8f218718382dc44a72377ffcc45526e63984e
     shape_checksum: sha256:52dcadd062f584fa7e7828d580fbf6f3dd44261d6a6d37e7b831aa0e0b9be2d3
+  parameters_habitat_thresholds.csv:
+    source: https://github.com/NewGraphEnvironment/fresh
+    path: inst/extdata/parameters_habitat_thresholds.csv
+    upstream_sha: 7f12d99115b7d20302d5ed043188cb870f90f83b
+    upstream_version: fresh@v0.33.0
+    derived_from: smnorris/bcfishpass@4699d0f parameters/example_newgraph/parameters_habitat_thresholds.csv (+ fresh#104 edge_types columns)
+    synced: '2026-09-25'
+    checksum: sha256:7b904a18c29c724737ff24a27750bf05d7bfa281aa4fc1f7ac27c00238db042d
+    shape_checksum: sha256:8de9bc1fcc2c703176a57d8a982bd26da1c49a885af3053f00078003a7e9283f
   overrides/user_habitat_classification.csv:
     source: https://github.com/smnorris/bcfishpass
     path: data/user_habitat_classification.csv
