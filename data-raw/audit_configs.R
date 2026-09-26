@@ -79,16 +79,20 @@ if (nrow(drifted) > 0) {
 # 2. rules.yaml regeneration diff
 # ---------------------------------------------------------------------------
 cat("\n--- 2. rules.yaml regen vs committed ---\n")
-for (b in bundles) {
-  dim_csv <- repo_path(sprintf("inst/extdata/configs/%s/dimensions.csv", b))
-  rules_committed <- repo_path(sprintf("inst/extdata/configs/%s/rules.yaml", b))
+# Every bundle, resolved through lnk_config(): a thin bundle's rules.yaml is
+# inherited but was built from the PARENT's thresholds, and rear_lake_ha_min is
+# baked in — so rebuilding with the bundle's own thresholds is the check that a
+# tuned CSV has not silently diverged from the rules it runs.
+for (b in basename(list.dirs(repo_path("inst/extdata/configs"), recursive = FALSE))) {
+  cfg_b <- lnk_config(b)
+  dim_csv <- cfg_b$dimensions
+  rules_committed <- cfg_b$rules
   # edge_types = "explicit" to match how the committed rules.yaml is actually
   # built (data-raw/build_rules.R + regen_provenance.R). Regenerating with
   # "categories" here is what produced the earlier spurious all-species diff.
   tf <- tempfile(fileext = ".yaml")
-  # The bundle's own thresholds: rear_lake_ha_min is baked into rules.yaml.
   lnk_rules_build(dim_csv, tf, edge_types = "explicit",
-                  thresholds = lnk_config(b)$files$parameters_habitat_thresholds$path)
+                  thresholds = suppressMessages(.lnk_habitat_thresholds_csv(cfg_b)))
 
   identical_yaml <- identical(yaml::read_yaml(tf), yaml::read_yaml(rules_committed))
   identical_text <- identical(readLines(tf), readLines(rules_committed))

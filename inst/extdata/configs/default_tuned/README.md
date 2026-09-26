@@ -16,7 +16,7 @@ The thresholds CSV starts as a byte-identical copy of `default`'s, so today this
 ## When you change a value
 
 1. Edit `parameters_habitat_thresholds.csv` and update its `checksum` in `config.yaml`'s `provenance:` block (`lnk_config_verify(lnk_config("default_tuned"))` reports the drift until you do).
-2. If you changed `rear_lake_ha_min`, this bundle needs its own `rules.yaml` (that value is baked into the rules by `lnk_rules_build()`); add a `rules:` key and build it with `thresholds =` pointing here.
+2. If you changed `rear_lake_ha_min`, or added or dropped a species, this bundle needs its own `rules.yaml` (the inherited one was built from `default`'s thresholds, and `lnk_rules_build()` bakes those in); add a `rules:` key and build it with `thresholds =` pointing here. `data-raw/audit_configs.R` §2 rebuilds every bundle's rules from its own thresholds and flags the mismatch if you forget.
 3. Runs record the values themselves in `<schema>.log_parameters_habitat_thresholds`, keyed on `config_hash`.
 
 Do not tune the `bcfishpass` bundle's copy: it is the parity reference.

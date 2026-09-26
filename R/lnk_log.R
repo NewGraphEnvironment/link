@@ -108,7 +108,9 @@
     })
   }
 
-  ord <- order(rel)
+  # radix: byte order, not LC_COLLATE, or the hash differs between hosts whose
+  # locales sort `_control.csv` and `.csv` differently.
+  ord <- order(rel, method = "radix")
   payload <- paste(
     c(
       paste0("name=", cfg$name),

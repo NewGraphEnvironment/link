@@ -1146,7 +1146,7 @@ write_chain <- function(root, base_break_order = c("a", "b")) {
     provenance = list(params.csv = list(checksum = "sha256:x"))),
     file.path(base, "config.yaml"))
   yaml::write_yaml(list(
-    name = "leaf", extends = "./base",
+    name = "leaf", extends = "../base",
     files = list(parameters_habitat_thresholds = list(path = "th.csv"))),
     file.path(leaf, "config.yaml"))
   leaf
@@ -1198,4 +1198,15 @@ test_that(".lnk_config_hash ignores the fallback when the bundle declares its ow
     stop("fallback consulted for a bundle that declares its own")
   })
   expect_match(.lnk_config_hash(cfg), "^sha256:")
+})
+
+test_that(".lnk_config_hash does not depend on the host's collation locale", {
+  # Byte order, not LC_COLLATE: en_US and C sort `user_barriers_definite.csv`
+  # and `user_barriers_definite_control.csv` in opposite orders.
+  cfg <- lnk_config("default")
+  h_c <- withr::with_collate("C", .lnk_config_hash(cfg))
+  h_en <- tryCatch(withr::with_collate("en_US.UTF-8", .lnk_config_hash(cfg)),
+                   warning = function(w) NA_character_)
+  skip_if(is.na(h_en), "en_US.UTF-8 collation not available on this host")
+  expect_identical(h_c, h_en)
 })

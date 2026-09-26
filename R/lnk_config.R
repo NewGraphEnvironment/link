@@ -182,7 +182,14 @@ print.lnk_config <- function(x, ...) {
     return(list(manifest = manifest, dir = dir, chain = dir))
   }
 
-  parent <- .lnk_config_resolve(manifest$extends, seen = c(seen, dir))
+  # A relative path in `extends:` is relative to this bundle, like every other
+  # path in its manifest — not to whatever directory R happens to be in. A bare
+  # name (no separator) is still a bundled config.
+  parent_ref <- manifest$extends
+  if (grepl("[/\\\\]", parent_ref) && !.lnk_path_is_absolute(parent_ref)) {
+    parent_ref <- file.path(dir, parent_ref)
+  }
+  parent <- .lnk_config_resolve(parent_ref, seen = c(seen, dir))
   list(
     manifest = .lnk_config_merge(parent$manifest, manifest, parent$dir, dir),
     dir = dir,

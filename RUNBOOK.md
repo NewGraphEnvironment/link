@@ -668,7 +668,9 @@ so a threshold change moved the parity reference too.
 - **`default_tuned` is a thin bundle** (`extends: default`). Inherited provenance
   entries carry `.dir`, `cfg$chain` lists the extends directories, and
   `.lnk_config_hash()` hashes every `config.yaml` on the chain and names inherited
-  files `extends:<bundle>/<rel>` so the hash is the same on every host. Before
+  files `extends:<bundle>/<rel>`, sorted in byte order (not `LC_COLLATE`), so the
+  hash is the same on every host. A relative `extends:` path resolves against the
+  child bundle, not the working directory. Before
   #282 no shipped bundle extended anything, and all three of those were broken.
 
 ---

@@ -358,3 +358,26 @@ test_that("a bundle can extend a bundle that itself extends (depth 3)", {
   v <- lnk_config_verify(cfg)
   expect_false(any(v$missing | v$byte_drift | v$shape_drift))
 })
+
+test_that("a relative extends: resolves against the child bundle, not the cwd", {
+  root <- withr::local_tempdir()
+  base <- file.path(root, "base")
+  leaf <- file.path(root, "leaf")
+  dir.create(base)
+  dir.create(leaf)
+  file.copy(file.path(lnk_config("default")$dir, "config.yaml"), base)
+  m <- yaml::read_yaml(file.path(base, "config.yaml"))
+  # Point the copied manifest's files back at the bundled default.
+  def <- lnk_config("default")
+  m$rules <- def$rules
+  m$dimensions <- def$dimensions
+  m$files <- lapply(def$files, function(f) f["path"])
+  m$provenance <- NULL
+  yaml::write_yaml(m, file.path(base, "config.yaml"))
+  yaml::write_yaml(list(name = "leaf", extends = "../base"),
+                   file.path(leaf, "config.yaml"))
+
+  elsewhere <- withr::local_tempdir()
+  cfg <- withr::with_dir(elsewhere, lnk_config(leaf))
+  expect_identical(cfg$chain[[2]], normalizePath(base))
+})
