@@ -54,6 +54,10 @@
 #'   - `extends` — character or `NULL`, the parent config name/path
 #'     this manifest declared (post-resolution; not used by callers
 #'     beyond audit)
+#'   - `chain` — character vector of bundle directories along the
+#'     `extends:` chain, leaf first (just `dir` when nothing is
+#'     extended). Inherited `provenance` entries carry the directory
+#'     they are relative to in `.dir`.
 #'
 #' @export
 #'
@@ -122,7 +126,8 @@ lnk_config <- function(name_or_path) {
     files = files,
     pipeline = manifest$pipeline %||% list(),
     provenance = manifest$provenance,
-    extends = manifest$extends
+    extends = manifest$extends,
+    chain = resolved$chain
   )
   class(out) <- c("lnk_config", "list")
   out
@@ -174,13 +179,14 @@ print.lnk_config <- function(x, ...) {
   manifest <- yaml::read_yaml(manifest_path)
 
   if (is.null(manifest$extends)) {
-    return(list(manifest = manifest, dir = dir))
+    return(list(manifest = manifest, dir = dir, chain = dir))
   }
 
   parent <- .lnk_config_resolve(manifest$extends, seen = c(seen, dir))
   list(
     manifest = .lnk_config_merge(parent$manifest, manifest, parent$dir, dir),
-    dir = dir
+    dir = dir,
+    chain = c(dir, parent$chain)
   )
 }
 
@@ -198,7 +204,14 @@ print.lnk_config <- function(x, ...) {
     parent_files[[key]] <- child_files[[key]]
   }
 
-  parent_prov <- parent$provenance %||% list()
+  # Provenance keys are paths relative to the bundle that declared them, so an
+  # inherited entry keeps the parent's dir (`.dir`) — resolved against the
+  # child's dir it names a file that does not exist there. Deeper ancestors
+  # already carry theirs.
+  parent_prov <- lapply(parent$provenance %||% list(), function(entry) {
+    if (is.null(entry[[".dir"]])) entry[[".dir"]] <- parent_dir
+    entry
+  })
   child_prov <- child$provenance %||% list()
   for (key in names(child_prov)) {
     parent_prov[[key]] <- child_prov[[key]]
@@ -308,4 +321,10 @@ print.lnk_config <- function(x, ...) {
           "files$parameters_habitat_thresholds; using fresh's copy: ",
           fresh_path)
   fresh_path
+}
+
+# Absolute path of a provenance entry. Keys are relative to the bundle that
+# declared them: the leaf for its own entries, `.dir` for inherited ones.
+.lnk_provenance_path <- function(cfg, rel) {
+  file.path(cfg$provenance[[rel]][[".dir"]] %||% cfg$dir, rel)
 }

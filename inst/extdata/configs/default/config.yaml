@@ -6,8 +6,10 @@ description: |
   (edge_type 1050/1150) as rearing habitat for species flagged
   `rear_wetland=yes` in dimensions.csv; lake rearing expanded beyond
   SK/KO per literature; `river_skip_cw_min=yes` on river polygons
-  where channel-width thresholds don't apply; spawn gradient min
-  0.0025 to exclude depositional reaches. Temperature, thermal
+  where channel-width thresholds don't apply. spawn_gradient_min stays
+  0, as in bcfishpass: a 0.0025 floor over-pruned observed spawning
+  reaches and was reverted (research/default_vs_bcfishpass.md §4).
+  Temperature, thermal
   refugia, and channel-class-based segmentation are not included
   here — those are separate follow-ups.
 

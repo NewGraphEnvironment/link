@@ -82,16 +82,18 @@ Related staleness: `default/config.yaml`'s description says the bundle ships `sp
 - [x] `data-raw/audit_configs.R`: add the new dictionary to the coverage checks.
 
 ## Phase 4: `default_tuned` bundle + stale text
-- [ ] `inst/extdata/configs/default_tuned/`: `config.yaml` (`extends: default`,
+- [x] `inst/extdata/configs/default_tuned/`: `config.yaml` (`extends: default`,
   `pipeline.schema: fresh_default_tuned`, `files.parameters_habitat_thresholds` pointing
   at its own CSV, provenance) plus a README saying it is where #284's calibrated CH/BT
   values land. The CSV starts identical to default's.
-- [ ] Tests: `lnk_config("default_tuned")` resolves inherited files as absolute paths
+- [x] Tests: `lnk_config("default_tuned")` resolves inherited files as absolute paths
   and its own thresholds path. Changing `rear_gradient_max` in a temp copy changes what
   `frs_params` sees, while `bcfishpass`'s path and checksum are untouched.
-- [ ] Fix the stale `spawn_gradient_min 0.0025` sentence in `default/config.yaml` and
+- [x] Fix the stale `spawn_gradient_min 0.0025` sentence in `default/config.yaml` and
   `default/README.md` (the bundle ships 0; the floor was reverted, see
   `research/default_vs_bcfishpass.md:443`).
+
+- [x] (found in Phase 4, not in the approved plan) Fix `extends:` provenance so a thin bundle is usable: inherited provenance keys resolved against the child dir (verify reported 12 inherited files missing → `config_drift = TRUE` on every run); `.lnk_config_hash` named inherited files by absolute path (host-dependent hash) and never hashed the parent's `config.yaml` (inherited `break_order` invisible). Hashes of the four non-extends bundles verified byte-identical before/after.
 
 ## Phase 5: Live verification (docker fwapg)
 - [ ] ADMS then BULK under `bcfishpass`: the classify output (`streams_habitat` flags

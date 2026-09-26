@@ -54,16 +54,32 @@
     stop("cfg must be an lnk_config object", call. = FALSE)
   }
 
+  # Every config.yaml on the extends chain: a parent's pipeline knobs are
+  # inherited, so they change the child's output too.
+  chain <- cfg$chain %||% cfg$dir
   paths <- c(
-    file.path(cfg$dir, "config.yaml"),
+    file.path(chain, "config.yaml"),
     cfg$rules,
     cfg$dimensions,
     unlist(lapply(cfg$files, function(f) f$path), use.names = FALSE),
-    if (!is.null(cfg$provenance)) file.path(cfg$dir, names(cfg$provenance))
+    vapply(names(cfg$provenance), function(rel) .lnk_provenance_path(cfg, rel),
+           character(1), USE.NAMES = FALSE)
   )
   paths <- unique(paths[!is.na(paths) & nzchar(paths)])
 
+  # Name each file relative to the bundle that holds it, never by absolute
+  # path, so the hash is the same on every host. Leaf files keep their plain
+  # relative name (unchanged for bundles that extend nothing); inherited ones
+  # are prefixed with their bundle's directory name.
   rel <- vapply(paths, function(p) {
+    for (i in seq_along(chain)) {
+      pat <- paste0("^", .lnk_regex_escape(chain[[i]]), "/")
+      if (grepl(pat, p)) {
+        r <- sub(pat, "", p)
+        return(if (i == 1L) r else
+          paste0("extends:", basename(chain[[i]]), "/", r))
+      }
+    }
     r <- sub(paste0("^", .lnk_regex_escape(cfg$dir), "/?"), "", p)
     if (nzchar(r)) r else basename(p)
   }, character(1), USE.NAMES = FALSE)

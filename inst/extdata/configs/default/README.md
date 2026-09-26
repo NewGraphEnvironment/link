@@ -8,7 +8,7 @@ Documented departures from bcfishpass:
 - Wetland reaches (edge_type 1050/1150) as rearing habitat for species flagged `rear_wetland=yes` in dimensions.csv.
 - Lake rearing expanded beyond SK/KO to BT/CO/ST/WCT per literature.
 - `river_skip_cw_min=yes` — channel-width thresholds dropped on river-polygon segments where they're not meaningful.
-- `spawn_gradient_min = 0.0025` to exclude depositional reaches from spawning.
+- Not a departure: `spawn_gradient_min` stays 0, as in bcfishpass. A 0.0025 floor to exclude depositional reaches over-pruned observed spawning and was reverted (`research/default_vs_bcfishpass.md` §4); calibrating it is link#284.
 
 Not in this config:
 

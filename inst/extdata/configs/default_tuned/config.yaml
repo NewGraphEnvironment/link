@@ -1,0 +1,26 @@
+name: default_tuned
+description: |
+  The `default` bundle with calibrated species habitat thresholds. Inherits
+  everything from `default` (rules, dimensions, parameters_fresh, overrides,
+  pipeline knobs) and overrides only `parameters_habitat_thresholds.csv` and
+  the persist schema. Calibrated CH and BT gradient and channel-width values
+  from link#284 land here; until then the CSV is identical to default's, so
+  this bundle classifies exactly as `default` does.
+
+extends: default
+
+files:
+  parameters_habitat_thresholds:
+    path: parameters_habitat_thresholds.csv
+
+pipeline:
+  schema: fresh_default_tuned
+
+provenance:
+  parameters_habitat_thresholds.csv:
+    source: link (hand-tuned; starts as a copy of configs/default/parameters_habitat_thresholds.csv)
+    upstream_sha: 7f12d99115b7d20302d5ed043188cb870f90f83b
+    upstream_version: fresh@v0.33.0
+    synced: '2026-09-25'
+    checksum: sha256:7b904a18c29c724737ff24a27750bf05d7bfa281aa4fc1f7ac27c00238db042d
+    shape_checksum: sha256:8de9bc1fcc2c703176a57d8a982bd26da1c49a885af3053f00078003a7e9283f

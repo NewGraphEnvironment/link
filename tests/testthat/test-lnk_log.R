@@ -1123,3 +1123,57 @@ test_that("log_recompute is created before its indexes are", {
   expect_gt(length(index), 0L)
   expect_lt(max(create), min(index))
 })
+
+# --- config_hash across an extends chain (#282) ------------------------------
+
+# Two-bundle chain under `root`: base (full) + leaf (extends base).
+write_chain <- function(root, base_break_order = c("a", "b")) {
+  base <- file.path(root, "base")
+  leaf <- file.path(root, "leaf")
+  dir.create(base)
+  dir.create(leaf)
+  yaml::write_yaml(list(BT = list()), file.path(base, "rules.yaml"))
+  utils::write.csv(data.frame(species = "BT"), file.path(base, "dims.csv"),
+                   row.names = FALSE)
+  utils::write.csv(data.frame(species_code = "BT"),
+                   file.path(base, "params.csv"), row.names = FALSE)
+  utils::write.csv(data.frame(species_code = "BT", x = 1),
+                   file.path(leaf, "th.csv"), row.names = FALSE)
+  yaml::write_yaml(list(
+    name = "base", rules = "rules.yaml", dimensions = "dims.csv",
+    files = list(parameters_fresh = list(path = "params.csv")),
+    pipeline = list(break_order = base_break_order),
+    provenance = list(params.csv = list(checksum = "sha256:x"))),
+    file.path(base, "config.yaml"))
+  yaml::write_yaml(list(
+    name = "leaf", extends = "./base",
+    files = list(parameters_habitat_thresholds = list(path = "th.csv"))),
+    file.path(leaf, "config.yaml"))
+  leaf
+}
+
+test_that(".lnk_config_hash of an extends bundle does not depend on install path", {
+  # Inherited files used to be named by absolute path, so the same bundle
+  # hashed differently on every host.
+  root1 <- withr::local_tempdir()
+  root2 <- withr::local_tempdir()
+  h <- vapply(c(root1, root2), function(root) {
+    leaf <- write_chain(root)
+    withr::with_dir(root, .lnk_config_hash(lnk_config(leaf)))
+  }, character(1))
+  expect_identical(unname(h[1]), unname(h[2]))
+})
+
+test_that(".lnk_config_hash of an extends bundle sees the parent's config.yaml", {
+  # break_order is inherited, so a parent change changes the child's output.
+  # One root, so nothing but the parent's config.yaml differs between hashes.
+  root <- withr::local_tempdir()
+  leaf <- write_chain(root, c("a", "b"))
+  h1 <- withr::with_dir(root, .lnk_config_hash(lnk_config(leaf)))
+  base_cfg <- file.path(root, "base", "config.yaml")
+  m <- yaml::read_yaml(base_cfg)
+  m$pipeline$break_order <- c("b", "a")
+  yaml::write_yaml(m, base_cfg)
+  h2 <- withr::with_dir(root, .lnk_config_hash(lnk_config(leaf)))
+  expect_false(identical(h1, h2))
+})

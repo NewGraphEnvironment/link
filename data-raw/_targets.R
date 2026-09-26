@@ -24,7 +24,7 @@
 #   default    — NewGraph default, departures from bcfishpass documented
 #                in research/default_vs_bcfishpass.md (intermittent
 #                streams, wetland rearing, expanded lake rearing,
-#                river-polygon cw_min skip, spawn gradient min 0.0025).
+#                river-polygon cw_min skip).
 #
 # Rollup shape: `config`, `wsg`, `species`, `habitat_type`
 # ({spawning, rearing, lake_rearing, wetland_rearing}), `unit`

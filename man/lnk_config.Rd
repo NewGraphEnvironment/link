@@ -37,6 +37,10 @@ these checksums lives in \code{\link[=lnk_config_verify]{lnk_config_verify()}}.
 \item \code{extends} — character or \code{NULL}, the parent config name/path
 this manifest declared (post-resolution; not used by callers
 beyond audit)
+\item \code{chain} — character vector of bundle directories along the
+\verb{extends:} chain, leaf first (just \code{dir} when nothing is
+extended). Inherited \code{provenance} entries carry the directory
+they are relative to in \code{.dir}.
 }
 }
 \description{

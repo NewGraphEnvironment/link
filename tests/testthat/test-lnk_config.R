@@ -283,3 +283,60 @@ test_that(".lnk_habitat_thresholds_csv falls back to fresh's copy, loudly", {
   expect_identical(p, system.file("extdata", "parameters_habitat_thresholds.csv",
                                   package = "fresh"))
 })
+
+# -- default_tuned: the first shipped thin bundle (#282) ----------------------
+
+test_that("default_tuned extends default and overrides only its thresholds", {
+  cfg <- lnk_config("default_tuned")
+  def <- lnk_config("default")
+
+  expect_identical(cfg$extends, "default")
+  expect_identical(cfg$chain, c(cfg$dir, def$dir))
+  expect_identical(cfg$pipeline$schema, "fresh_default_tuned")
+  # Its own thresholds, everything else inherited from default.
+  expect_identical(cfg$files$parameters_habitat_thresholds$path,
+                   file.path(cfg$dir, "parameters_habitat_thresholds.csv"))
+  expect_identical(cfg$files$parameters_fresh$path,
+                   def$files$parameters_fresh$path)
+  expect_identical(cfg$rules, def$rules)
+  expect_identical(cfg$pipeline$break_order, def$pipeline$break_order)
+  expect_setequal(names(cfg$files), names(def$files))
+})
+
+test_that("inherited provenance verifies against the parent's files", {
+  # Keys are relative to the bundle that declared them. Resolved against the
+  # child's dir they name nothing, and every inherited file reads as missing.
+  v <- lnk_config_verify(lnk_config("default_tuned"))
+  expect_gt(nrow(v), 1L)
+  expect_false(any(v$missing))
+  expect_false(any(v$byte_drift | v$shape_drift))
+})
+
+test_that("a tuned threshold reaches frs_params; bcfishpass stays put", {
+  skip_if_not_installed("fresh")
+  bcfp_before <- lnk_config_verify(lnk_config("bcfishpass"))
+
+  tuned_dir <- file.path(withr::local_tempdir(), "tuned")
+  dir.create(tuned_dir)
+  th <- utils::read.csv(file.path(lnk_config("default_tuned")$dir,
+                                  "parameters_habitat_thresholds.csv"),
+                        check.names = FALSE)
+  th$rear_gradient_max[th$species_code == "CH"] <- 0.0321
+  utils::write.csv(th, file.path(tuned_dir, "parameters_habitat_thresholds.csv"),
+                   row.names = FALSE, na = "")
+  yaml::write_yaml(list(
+    name = "tuned", extends = "default",
+    files = list(parameters_habitat_thresholds =
+                   list(path = "parameters_habitat_thresholds.csv"))),
+    file.path(tuned_dir, "config.yaml"))
+
+  p_tuned <- fresh::frs_params(
+    csv = .lnk_habitat_thresholds_csv(lnk_config(tuned_dir)))
+  p_default <- fresh::frs_params(
+    csv = .lnk_habitat_thresholds_csv(lnk_config("default")))
+  expect_equal(p_tuned$CH$rear_gradient_max, 0.0321)
+  expect_equal(p_default$CH$rear_gradient_max, 0.0549)
+  expect_equal(p_tuned$BT, p_default$BT)
+
+  expect_identical(lnk_config_verify(lnk_config("bcfishpass")), bcfp_before)
+})
