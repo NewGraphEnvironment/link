@@ -598,6 +598,33 @@ support) returned nothing and was reported as "no IPs in any tracked file"; a
 working pattern on the same tree found 33. Anchor on POSIX classes, and match a
 file you know contains one before concluding a repo is clean.
 
+### State the run decisions before launching, never inherit a driver default
+
+Before any modelling run, enumerate what is being chosen and get an answer:
+**config**, **persist schema**, the **resolved closure** (which WSGs actually
+get modelled, not just the focal ones), the **species** that fall out of
+config x presence, and the load-bearing flags — `--refresh-primitives`,
+`--recompute-jobs`, `dams`, `mapping_code`.
+
+**Why:** on 2026-09-03 the North Thompson run (floodplains#75, run_uid
+`20260903_173205-67013fc3`) went out on `--config=bcfishpass` because that is
+what fifteen drivers default to. The operator expected `default` — link ships a
+config by that name carrying its own biological positions — and was already
+seventeen WSGs deep into a floodplain product line. Two focal WSGs also resolved
+to a six-WSG closure, which is a second decision the flag does not show. Their
+framing is the load-bearing part: *"We already have bcfishpass available via the
+tunnel. If I wanted that I would just grab from there."* link in bcfishpass mode
+is a **parity instrument**, not a basis for shipped products.
+
+**How to apply:** State the decision set above the launch command, one line each
+with the alternative named — "config: `bcfishpass` (parity, writes `fresh`) or
+`default` (link's own, writes `fresh_default`)" — and wait. A surprising default
+in a script is not a decision that has been made; it is one that was skipped.
+The two persist schemas are **not interchangeable**: TABR sits in both at 14,652
+vs 12,948 segments. Explicitly not wanted: a standing "always use X" rule — the
+ask is awareness per run, not a fixed answer. Fix tracked in #278, the fleet
+sweep in soul#178, and the bug class is now a row in soul's `code-check.md`.
+
 <!-- BEGIN SOUL CONVENTIONS — DO NOT EDIT BELOW THIS LINE -->
 
 
