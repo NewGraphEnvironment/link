@@ -105,8 +105,7 @@ Related staleness: `default/config.yaml`'s description says the bundle ships `sp
   copy is frozen.
 
 ## Validation
-- [ ] `devtools::test()`, `devtools::check()` and `lintr::lint_package()` clean
-  (baseline counts recorded first)
-- [ ] `/code-check` clean on each commit
-- [ ] PWF checkboxes match landed work
-- [ ] `/planning-archive`, then `/gh-pr-push` (Fixes #282, relates to #284)
+- [x] `devtools::test()`: 3 failures, identical to main's baseline (all `:63333` tunnel, environmental); `R CMD check` 1939 pass vs main 1867, same WARNINGs/NOTEs as main (branch has none new). `lintr`: no non-indentation lint on added lines (indentation_linter disagrees with the repo's own style throughout; object_usage hits are lintr reading the stale installed package)
+- [x] `/code-check`: round 1 on the Phase 1 staged diff; rounds 2–3 on the cumulative branch diff (Phases 2–5 were not each reviewed before their own commit — reviewed together after). Round 2: 3 findings fixed; round 3: 0 in-branch defects, mechanism enumerated, 4 reach-points fixed. Every fix mutation-tested
+- [x] PWF checkboxes match landed work
+- [x] `/planning-archive`, then `/gh-pr-push` (Fixes #282, relates to #284)
