@@ -1,0 +1,25 @@
+step,obs_species,n
+0 all CH/BT/DV records,BT,11375
+0 all CH/BT/DV records,CH,9023
+0 all CH/BT/DV records,DV,13094
+1 minus observation_exclusions (data_error | release_exclude),BT,11375
+1 minus observation_exclusions (data_error | release_exclude),CH,9016
+1 minus observation_exclusions (data_error | release_exclude),DV,13094
+2 minus Releases Database,BT,11247
+2 minus Releases Database,CH,9002
+2 minus Releases Database,DV,13090
+3 DV kept only where WSG has BT (sensitivity sets only),BT,11247
+3 DV kept only where WSG has BT (sensitivity sets only),CH,9002
+3 DV kept only where WSG has BT (sensitivity sets only),DV,8888
+4 in fresh_default WSGs where species present,BT,4844
+4 in fresh_default WSGs where species present,CH,3544
+4 in fresh_default WSGs where species present,DV,3981
+5 joined to a segment,BT,4844
+5 joined to a segment,CH,3544
+5 joined to a segment,DV,3981
+"6 match type A/B (stream, within 100 m)",BT,3297
+"6 match type A/B (stream, within 100 m)",CH,2971
+"6 match type A/B (stream, within 100 m)",DV,3457
+7 deduplicated to one per species x blue_line_key x metre,BT,2560
+7 deduplicated to one per species x blue_line_key x metre,CH,1745
+7 deduplicated to one per species x blue_line_key x metre,DV,2822
