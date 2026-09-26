@@ -27,15 +27,21 @@ Both are read-only against docker `fwapg` (:5432). Environment stamps are in
   `selection.csv`, `ratio` is use share ÷ availability share: above 1 is selected, below
   1 is avoided or under-sampled.
 - **Sets**: `CH_spawn` = activity SPL/SPM/S; `CH_rear` = activity R/REA or
-  Fry/Parr/Juvenile. `BT_any` has no stage, because bcfishobs gives BT none. The `*_dv`
-  sets add DV records in WSGs with BT, the way the pipeline already counts them for access
-  (`BT;DV`). They mix two chars and are capped at low confidence.
+  Fry/Parr/Juvenile. BT has no stage in bcfishobs. **`BT_any_dv` is the primary BT
+  evidence**: BT and DV records pooled in WSGs with BT, the way the pipeline already counts
+  them for access (`BT;DV`). Inland, DV are bull trout recorded under the other name, and
+  on the coast the two species' habitat biology is treated as equivalent. `BT_any` (BT
+  records only) is kept as the comparison: `candidates.csv` and `bridge_bt.csv` carry both,
+  marked by `evidence_role` / `set`. `BT_spawn_dv` and `BT_rear_dv` are the staged DV
+  records, the only staged char evidence.
 - **FISS**: provincial data submissions parsed by the private `knowledge` repo
   (`scripts/0200`–`0220`). Only aggregates are committed here. Site rows are written only
   when `LNK_FISS_SITES_OUT` names a path. `average_gradient_percent` holds proportions
   despite its name: every value is ≤ 0.43.
 - `candidates.csv` is the decision rule in the PWF (archived with #284), applied
-  mechanically to accessible-segment use (the bridge row uses all BT observations, the
-  share counting those on accessible segments). That restriction was added after a first run
-  had been seen, and it moved three verdicts. The research doc (Method, Change 1) lists
-  the before and after values, and where the final candidate departs from the rule.
+  mechanically, with three changes made after a first run had been seen: use restricted to
+  accessible segments; the inverted "ratio above cutoff ≥ 1 → keep" clause removed; and
+  BT+DV pooled as the primary BT evidence. The research doc (Method, Changes 1–3) lists
+  what each moved. Each bridge row (one per BT set) is the share of all of that set's
+  observations that sit on an accessible segment passing the rear predicate yet carrying
+  `rearing = FALSE`.

@@ -20,7 +20,8 @@
 #   projects.csv          project dominance (top sources per species)
 #   bridge_bt.csv         BT observations lost to cluster_rearing (G9)
 #   uhc_ch.csv            CH obs inside user_habitat_classification reaches (G7)
-#   candidates.csv        the decision rule in task_plan.md, applied mechanically
+#   candidates.csv        the decision rule in task_plan.md, applied mechanically, with the
+#                         three later changes recorded in research/habitat_thresholds.md
 #   stamp.txt             environment stamp
 #   fig_*.png             selection-ratio figures with current cutoffs
 
@@ -63,11 +64,13 @@ wsg_persisted <- dbGetQuery(conn, sprintf(
   "SELECT DISTINCT watershed_group_code FROM %s.streams", schema))$watershed_group_code
 
 # -- observations, every flag kept so the ledger is exact --------------------
-# DV rows stand in for BT where the WSG has BT, as the pipeline already treats
-# them (observation_species for BT is BT;DV). bcfishobs gives BT no life stage
-# or activity at all, so DV is the only staged char evidence. It mixes two
-# species (presence marks DV in 140 of 158 BT WSGs, so "BT and not DV" is
-# empty), which caps it at low confidence: a sensitivity set, never primary.
+# DV rows are pooled with BT where the WSG has BT, as the pipeline already
+# treats them (observation_species for BT is BT;DV). Inland, DV records are
+# bull trout recorded under the old name; on the coast either species occurs,
+# and their habitat biology is close enough not to separate here. bcfishobs
+# gives BT no life stage or activity at all, so DV records are also the only
+# staged char evidence. Pooled BT+DV is the primary BT evidence; BT-only is
+# kept beside it as a comparison, so the evidence exists both ways.
 dbExecute(conn, "DROP TABLE IF EXISTS t_obs")
 dbExecute(conn, "
   CREATE TEMP TABLE t_obs AS
@@ -198,7 +201,7 @@ ledger <- bind_rows(
   ledger_step(o0, "0 all CH/BT/DV records"),
   ledger_step(o1, "1 minus observation_exclusions (data_error | release_exclude)"),
   ledger_step(o2, "2 minus Releases Database"),
-  ledger_step(o3, "3 DV kept only where WSG has BT (sensitivity sets only)"),
+  ledger_step(o3, "3 DV kept only where WSG has BT (pooled with BT)"),
   ledger_step(o4, sprintf("4 in %s WSGs where species present", schema)),
   ledger_step(o5, "5 joined to a segment"),
   ledger_step(o6, "6 match type A/B (stream, within 100 m)"),
@@ -224,8 +227,9 @@ sets <- list(
   CH_any = filter(use, obs_species == "CH"),
   CH_spawn = filter(use, obs_species == "CH", is_spawn),
   CH_rear = filter(use, obs_species == "CH", is_rear),
+  # BT_any is BT-only records (the comparison); BT_any_dv pools BT and DV
+  # (primary), and BT and DV records at one location are one location there.
   BT_any = filter(use, obs_species == "BT"),
-  # BT and DV records at one location are one location here.
   BT_any_dv = filter(use, species_code == "BT") |> distinct(loc, .keep_all = TRUE),
   BT_spawn_dv = filter(use, obs_species == "DV", is_spawn),
   BT_rear_dv = filter(use, obs_species == "DV", is_rear))
@@ -353,11 +357,13 @@ projects <- use |>
 readr::write_csv(projects, file.path(dir_out, "projects.csv"), na = "")
 
 # -- G9: BT observations lost to cluster_rearing -----------------------------
-bt_rear <- status_one(sets$BT_any, "BT", "rear")
-bridge <- bt_rear |>
-  mutate(passes_predicate = status %in% c("passes", "passes_river_poly")) |>
-  count(passes_predicate, rearing, accessible) |>
-  mutate(share = n / sum(n))
+bridge <- bind_rows(lapply(c("BT_any_dv", "BT_any"), function(nm) {
+  status_one(sets[[nm]], "BT", "rear") |>
+    mutate(passes_predicate = status %in% c("passes", "passes_river_poly")) |>
+    count(passes_predicate, rearing, accessible) |>
+    mutate(share = n / sum(n)) |>
+    mutate(set = nm, .before = 1)
+}))
 readr::write_csv(bridge, file.path(dir_out, "bridge_bt.csv"), na = "")
 
 # -- G7: CH obs inside user_habitat_classification reaches -------------------
@@ -389,19 +395,22 @@ ratio_above <- function(set, cut) {
     mutate(lo = as.numeric(sub("^[\\[(]([^,]+),.*", "\\1", as.character(bin))))
   r$ratio[which(r$lo >= cut - 1e-9)[1]]
 }
-cand_row <- function(sp, param, set, current, kind) {
+cand_row <- function(sp, param, set, current, kind, role = "primary") {
   if (kind == "gradient_max") {
     x <- q_of(set, "gradient", "stream+river_poly", "p95")
     cand <- snap49(x[["q"]])
     ra <- ratio_above(set, current)
-    keep <- is.na(cand) || abs(cand - current) < 0.005 || isTRUE(ra >= 1)
+    # The pre-set rule also kept the value when `ra >= 1`. That clause was
+    # inverted (selection >= 1 above a cutoff argues for loosening), so it is
+    # no longer a keep condition; `ra` is reported for reading.
+    keep <- is.na(cand) || abs(cand - current) < 0.005
   } else {
     x <- q_of(set, "channel_width", "stream, any source", "p05")
     cand <- round(x[["q"]], 1)
     ra <- NA_real_
     keep <- is.na(cand) || abs(cand - current) < 0.5
   }
-  tibble(species_code = sp, parameter = param, evidence_set = set,
+  tibble(species_code = sp, parameter = param, evidence_set = set, evidence_role = role,
          current = current, n = x[["n"]], use_quantile = x[["q"]],
          rule_value = cand, ratio_first_bin_above_current = ra,
          rule_says = if (keep) "keep" else "change")
@@ -412,9 +421,13 @@ cands <- bind_rows(
   cand_row("CH", "spawn_channel_width_min", "CH_spawn", th$spawn_channel_width_min[th$species_code == "CH"], "width_min"),
   cand_row("CH", "rear_channel_width_min", "CH_rear", th$rear_channel_width_min[th$species_code == "CH"], "width_min"),
   cand_row("BT", "spawn_gradient_max", "BT_spawn_dv", th$spawn_gradient_max[th$species_code == "BT"], "gradient_max"),
-  cand_row("BT", "rear_gradient_max", "BT_any", th$rear_gradient_max[th$species_code == "BT"], "gradient_max"),
+  cand_row("BT", "rear_gradient_max", "BT_any_dv", th$rear_gradient_max[th$species_code == "BT"], "gradient_max"),
+  cand_row("BT", "rear_gradient_max", "BT_any", th$rear_gradient_max[th$species_code == "BT"], "gradient_max",
+           role = "comparison: BT records only"),
   cand_row("BT", "spawn_channel_width_min", "BT_spawn_dv", th$spawn_channel_width_min[th$species_code == "BT"], "width_min"),
-  cand_row("BT", "rear_channel_width_min", "BT_any", th$rear_channel_width_min[th$species_code == "BT"], "width_min"))
+  cand_row("BT", "rear_channel_width_min", "BT_any_dv", th$rear_channel_width_min[th$species_code == "BT"], "width_min"),
+  cand_row("BT", "rear_channel_width_min", "BT_any", th$rear_channel_width_min[th$species_code == "BT"], "width_min",
+           role = "comparison: BT records only"))
 
 # spawn_gradient_min: floor only if spawn use below it is < 5 % and the
 # selection ratio there is < 0.5.
@@ -425,7 +438,7 @@ floor_row <- function(sp, set) {
     us <- mean(d$gradient < f, na.rm = TRUE)
     as <- sum(a$km[a$gradient < f], na.rm = TRUE) / sum(a$km)
     tibble(species_code = sp, parameter = "spawn_gradient_min", evidence_set = set,
-           current = pf$spawn_gradient_min[pf$species_code == sp], n = nrow(d),
+           evidence_role = "primary", current = pf$spawn_gradient_min[pf$species_code == sp], n = nrow(d),
            floor_tested = f, use_share_below = us, avail_share_below = as,
            ratio_below = us / as,
            rule_says = if (isTRUE(us < 0.05 && us / as < 0.5)) "floor" else "keep")
@@ -433,12 +446,17 @@ floor_row <- function(sp, set) {
 }
 floors <- bind_rows(floor_row("CH", "CH_spawn"), floor_row("BT", "BT_spawn_dv"))
 
-bridge_share <- with(bridge, sum(n[passes_predicate & rearing %in% FALSE & accessible %in% TRUE]) / sum(n))
-bridge_row <- tibble(species_code = "BT", parameter = "cluster_bridge_gradient",
-                     evidence_set = "BT_any",
-                     current = pf$cluster_bridge_gradient[pf$species_code == "BT"],
-                     n = nrow(sets$BT_any), share_lost_to_clustering = bridge_share,
-                     rule_says = if (bridge_share > 0.10) "raise" else "keep")
+# Share of all the set's observations that sit on accessible segments passing
+# the rear predicate yet carry rearing = FALSE.
+bridge_row <- bind_rows(lapply(c("BT_any_dv", "BT_any"), function(nm) {
+  b <- bridge[bridge$set == nm, ]
+  sh <- sum(b$n[b$passes_predicate & b$rearing %in% FALSE & b$accessible %in% TRUE]) / sum(b$n)
+  tibble(species_code = "BT", parameter = "cluster_bridge_gradient", evidence_set = nm,
+         evidence_role = if (nm == "BT_any") "comparison: BT records only" else "primary",
+         current = pf$cluster_bridge_gradient[pf$species_code == "BT"],
+         n = nrow(sets[[nm]]), share_lost_to_clustering = sh,
+         rule_says = if (sh > 0.10) "raise" else "keep")
+}))
 
 readr::write_csv(bind_rows(cands, floors, bridge_row),
                  file.path(dir_out, "candidates.csv"), na = "")

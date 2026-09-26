@@ -8,9 +8,9 @@ step,obs_species,n
 2 minus Releases Database,BT,11247
 2 minus Releases Database,CH,9002
 2 minus Releases Database,DV,13090
-3 DV kept only where WSG has BT (sensitivity sets only),BT,11247
-3 DV kept only where WSG has BT (sensitivity sets only),CH,9002
-3 DV kept only where WSG has BT (sensitivity sets only),DV,8888
+3 DV kept only where WSG has BT (pooled with BT),BT,11247
+3 DV kept only where WSG has BT (pooled with BT),CH,9002
+3 DV kept only where WSG has BT (pooled with BT),DV,8888
 4 in fresh_default WSGs where species present,BT,4844
 4 in fresh_default WSGs where species present,CH,3544
 4 in fresh_default WSGs where species present,DV,3981

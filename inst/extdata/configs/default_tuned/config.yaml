@@ -4,7 +4,7 @@ description: |
   everything from `default` (rules, dimensions, parameters_fresh, overrides,
   pipeline knobs) and overrides only `parameters_habitat_thresholds.csv` and
   the persist schema. From link#284 it differs from default in one cell: BT
-  rear_gradient_max 0.1049 -> 0.1249. Evidence, and the gradient and width
+  rear_gradient_max 0.1049 -> 0.1349 (BT and DV records pooled). Evidence, and the gradient and width
   values that were examined and kept, are in
   research/habitat_thresholds.md; the candidates are unscored until the
   observation validation (link#283) runs.
@@ -24,5 +24,5 @@ provenance:
     upstream_sha: 7f12d99115b7d20302d5ed043188cb870f90f83b
     upstream_version: fresh@v0.33.0
     synced: '2026-09-26'
-    checksum: sha256:f695905587ee51f9053973314e595aff080295a14766b56d5a11191b0d5db075
+    checksum: sha256:8ee57893239b74ac96420cc963e9b48e84c903442342d61efc718d7e187ff463
     shape_checksum: sha256:8de9bc1fcc2c703176a57d8a982bd26da1c49a885af3053f00078003a7e9283f

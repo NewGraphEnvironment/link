@@ -11,16 +11,15 @@
 | CH | `spawn_channel_width_min` | 4 | **keep** | medium |
 | CH | `rear_channel_width_min` | 1.5 | **keep** | medium |
 | CH | `spawn_gradient_min` | 0 | **keep** | high |
-| BT | `spawn_gradient_max` | 0.0549 | **keep** | low |
-| BT | `rear_gradient_max` | 0.1049 | **0.1249** | high |
-| BT | `spawn_channel_width_min` | 2 | **keep** | low |
+| BT | `spawn_gradient_max` | 0.0549 | **keep** | medium |
+| BT | `rear_gradient_max` | 0.1049 | **0.1349** | high |
+| BT | `spawn_channel_width_min` | 2 | **keep** | medium |
 | BT | `rear_channel_width_min` | 1.5 | **keep** | medium |
 | BT | `spawn_gradient_min` | 0 | **keep** | medium |
 | BT | `cluster_bridge_gradient` | 0.05 | **keep** | medium |
 
 One value moves: BT rearing gradient loosens. Every other threshold the observations
-argued against was either vetoed by the literature or backed only by evidence too weak
-to act on. `spawn_gradient_min` and
+argued against was vetoed by the literature. `spawn_gradient_min` and
 `cluster_bridge_gradient` live in `parameters_fresh.csv`; both are kept, so
 `default_tuned` still inherits that file from `default`.
 
@@ -30,26 +29,28 @@ validation (#283). Scoring can overturn any row, including a "keep".
 ## Method
 
 The rule was fixed before any distribution was looked at, and applied mechanically
-(`candidates.csv`). Two changes were made to it afterwards; both are listed at the end
+(`candidates.csv`). Three changes were made to it afterwards; all are listed at the end
 of this section, with what they moved.
 
 - **Use**: CH and BT observations from `bcfishobs.observations`, with
   `observation_exclusions` (`data_error | release_exclude`) and `Releases Database`
   records removed. The rest are restricted to the 55 WSGs persisted in `fresh_default`
   where `wsg_species_presence` marks the species, match types A/B, one per species ×
-  `blue_line_key` × metre. That leaves CH 1,745 locations and BT 2,560. The quantiles,
+  `blue_line_key` × metre. That leaves CH 1,745 locations and BT 2,560, plus 2,822 DV
+  pooled with BT (5,104 BT+DV locations once shared locations are counted once). The quantiles,
   selection ratios and floor test use the ones on accessible segments; for gradient that
   means accessible *and* on a stream edge or river polygon (CH 226 spawning-staged and 497
-  rearing-staged; BT 2,443). The bridge share and the `user_habitat_classification`
+  rearing-staged; BT+DV 4,764, BT alone 2,443). The bridge share and the `user_habitat_classification`
   overlap use all of them. `obs_ledger.csv` has every step.
 - **The segment the model tests.** The pipeline breaks streams at every retained
   observation, so 99 % of points sit within 1 m of a break. The segment *starting* at
   the point (the upstream one) is used. A 100 m FWA window gradient from geometry Z
   checks it independently of link's breaks. The two agree for CH spawning (P95 0.044 vs
   0.042) but not everywhere. **CH rearing is 0.060 vs 0.062, and the window value would
-  snap to 0.0649 and flip that verdict to "change".** BT is 0.125 vs 0.141, 1.6 points
-  apart. The segment gradient is used because it is what the model tests; the window
-  values are why the scoring questions below keep the higher candidates in play.
+  snap to 0.0649 and flip that verdict to "change".** Pooled BT+DV is 0.135 vs 0.149; the
+  window value would snap to 0.1449, one step above the candidate. The segment gradient
+  is used because it is what the model tests; the window values are why the scoring
+  questions below keep the higher values in play.
 - **Availability**: accessible length in the same WSGs, stream edges outside waterbodies
   (plus river polygons for gradient). The **selection ratio** is the share of
   observations in a bin divided by the share of accessible length in it.
@@ -71,13 +72,24 @@ of this section, with what they moved.
   moved three verdicts**:
   - CH spawning gradient: P95 0.052 → 0.044, rule 0.0549 change → keep;
   - CH rearing gradient: P95 0.063 → 0.060, 0.0649 change → keep;
-  - BT rearing gradient: P95 0.131 → 0.125, 0.1349 → 0.1249.
+  - BT rearing gradient, BT records only (then the primary set): P95 0.131 → 0.125,
+    0.1349 → 0.1249. On the pooled BT+DV set adopted later (Change 3) the same change
+    moves P95 0.140 → 0.135, **0.1449 → 0.1349**.
 
   The pre-change values are what #283 scoring should test alongside the kept ones.
-- **Change 2: one clause is inverted.** "Keep when the selection ratio just above the
-  cutoff is ≥ 1" has it backwards: fish selecting habitat the cutoff excludes argues for
-  loosening. It fired once, for BT spawning gradient, where the evidence is
-  low-confidence and the value is kept either way.
+- **Change 2: one clause is inverted, and is now removed.** "Keep when the selection
+  ratio just above the cutoff is ≥ 1" has it backwards: fish selecting habitat the cutoff
+  excludes argues for loosening. It is no longer a keep condition in `candidates.csv`,
+  which still reports the ratio. It only ever fired for BT spawning gradient, which is
+  vetoed by the literature either way.
+- **Change 3: BT and DV pooled.** Inland, DV records are bull trout under the old or a
+  mistaken name; on the coast either species occurs, and their habitat biology is close
+  enough not to separate for this. So BT+DV is the primary BT evidence, and DV is no
+  longer capped at low confidence. BT records alone are kept beside it in
+  `candidates.csv` (`evidence_role = "comparison: BT records only"`) and `bridge_bt.csv`
+  (`set = BT_any`), so the evidence exists both ways. Pooling moved one value: BT rearing gradient 0.1249 → 0.1349. It also
+  lifted the low-confidence cap on DV staged records, which is why the BT spawning
+  gradient and width rows below became literature vetoes instead of weak evidence.
 
 ## Chinook (CH)
 
@@ -134,56 +146,71 @@ describes it as a small-stream filter.
 
 ## Bull trout (BT)
 
-bcfishobs gives BT **no life stage or activity at all**. The staged evidence comes from DV
-records in WSGs where BT is present, the way the pipeline already pools them for access
-(`observation_species = BT;DV`). Those records mix two chars: presence marks DV in 140
-of 158 BT WSGs, so "BT only" WSGs do not exist to separate them. That caps them at low
-confidence.
+bcfishobs gives BT **no life stage or activity at all**. BT and DV records are pooled
+(Method, Change 3), the way the pipeline already pools them for access
+(`observation_species = BT;DV`). Presence marks DV in 140 of 158 BT WSGs, and the DV
+records here are mostly Skeena and interior; the DV spawning records are mostly in MORR,
+ZYMO and BULK. The only staged char evidence comes from the DV records: 82 spawning and
+1,042 rearing on accessible segments, of which 76 and 991 sit on a stream edge or river
+polygon where gradient is tested.
 
-**Rearing gradient — 0.1049 → 0.1249 (high).**
+**Rearing gradient — 0.1049 → 0.1349 (high).**
 
-- All-stage BT use on accessible segments (n 2,443) has a P95 of 0.125. Selection is
-  ~0.6 from 5 to 12 %, dropping to 0.37 at 12–15 % and 0.19 at 15–20 %.
-- DV rearing records stay ≥ 1 up to 12 % (1.37 at 10.5–12 %, 0.70 at 12–15 %).
+| Evidence | n | P95 | Rule |
+|---|---|---|---|
+| BT+DV pooled (primary) | 4,764 | 0.135 | 0.1349 |
+| BT records only (comparison) | 2,443 | 0.125 | 0.1249 |
+| DV rearing-staged | 991 | 0.158 | — |
+
+- Pooled selection is ~0.7 from 5 to 12 %, dropping to 0.42 at 12–15 % and 0.26 at
+  15–20 %.
+- DV rearing records are selected (ratio ≥ 1) from 1 % to 12 % (1.37 at 10.5–12 %), and
+  drop to 0.70 at 12–15 %.
 - The literature agrees: Isaak et al. (2015) trim natal habitat at 15 % (< 1 % of
   occurrences above it), with a maximum habitat slope of 14.7 %; Porter et al. (2008)
   found BT CPUE highest in the steeper Thompson streams.
-- FISS presence sites (n 15) have a P95 of 0.106, which does not contradict it.
+- FISS presence sites (n 15) have a P95 of 0.106. They are fewer, but do not contradict it.
 - The current 0.1049 has no source.
 
 Caveat: all-stage use includes adults, so this is rearing inferred from occurrence.
 
-**Spawning gradient — keep 0.0549 (low).** DV spawning records (n 76) are too few, and of
-uncertain species. The literature has **no numeric reach-scale maximum**: redd sites are
-< 1 % (McPhail & Murray, via Ford et al. 1995) and spawning is "relatively low gradient"
-(McPhail & Baxter 1996).
+**Spawning gradient — keep 0.0549 (medium).** The 76 gradient-tested DV spawning
+records give a P95 of 0.196, and the rule says 0.1949. Most of them are low-gradient: 46
+(61 %) sit at or below 5 %, and the median is 0.031. The P95 is set by a thin tail: 17 at
+5–10 %, 7 at 10–15 %, and **6 above 15 %**. Six records on 15–25 % segments are what
+points at site ends on averaged segments can produce (Biases, below). They are not
+evidence of spawning on 20 % slopes.
+The literature vetoes it: redd sites are < 1 % (McPhail & Murray, via Ford et al. 1995)
+and spawning reaches are "relatively low gradient" (McPhail & Baxter 1996). No source
+gives a numeric reach-scale maximum.
 
-**Spawning width — keep 2 m (low).** DV spawning P5 is 1.2 m (n 53). The literature
-source for 2 m in spawners, Hagen et al. (2015, §4.1.2, Parsnip and Pack), states it as
-**wetted** width: the limit of use by migratory spawners. Wetted runs narrower than the
-channel width the model tests, so 2 m of channel width is, if anything, generous.
+**Spawning width — keep 2 m (medium).** DV spawning P5 is 1.2 m (n 53), and the rule
+says 1.2. The literature vetoes it: the source for 2 m in spawners, Hagen et al. (2015,
+§4.1.2, Parsnip and Pack), gives it as **wetted** width, the limit of use by migratory
+spawners. Wetted runs narrower than the channel width the model tests, so 2 m of channel
+width is, if anything, generous. Resident BT do spawn in smaller streams (McPhail &
+Baxter 1996), but no source gives a number for them, so this stays open for scoring.
 
 **Rearing width — keep 1.5 m (medium).**
 
-- All-stage P5 is 1.91 m, and selection is ≥ 1 from 3 m.
+- Pooled P5 is 1.48 m (BT alone 1.91 m), and pooled selection is ≥ 1 from 3 m.
 - FISS presence sites have a P5 of 1.9 m, with none below 1.5.
 - Juvenile occurrence is "very unlikely" below 2 m wetted width (Dunham & Rieman 1999,
   as cited in Dunham & Chandler 2001, pp. 3 and 26).
 
-That argues for no lower value, and the rule's 0.5 m tolerance keeps it.
+The pooled P5 sits on the current value; nothing argues for a lower one.
 
 **`spawn_gradient_min` — keep 0.** DV spawning selection is 2.2 in the flattest bin.
 
-**`cluster_bridge_gradient` — keep 0.05.** Only 1.2 % of BT observations (31 of all
-2,560) sit on accessible segments that pass the rearing predicate yet end up
-`rearing = FALSE`
-(`bridge_bt.csv`).
+**`cluster_bridge_gradient` — keep 0.05.** Only 1.7 % of pooled BT+DV observations (85
+of 5,104; BT alone 1.2 %, 31 of 2,560) sit on accessible segments that pass the rearing
+predicate yet end up `rearing = FALSE` (`bridge_bt.csv`).
 
 What the bridge does, from fresh's `.frs_cluster_both()`: a rearing cluster is kept if
 spawning lies anywhere **upstream** of it, with no gradient test. Failing that, it is
 kept if a downstream trace reaches spawning within 10 km through reaches under the
 bridge gradient. The 5 % therefore only matters for rearing that sits **above**
-spawning. Newly admitted 10.5–12.5 % rearing is kept when spawning lies above it, and
+spawning. Newly admitted 10.5–13.5 % rearing is kept when spawning lies above it, and
 otherwise only when it can reach spawning below through gentler water. The literature
 gives the bridge rule no origin.
 
@@ -198,7 +225,7 @@ committed here.
   −30 % / +55 %). Any width
   cutoff is resolved no better than that. The 81 FIELD_MEASURMENT segments match at 1.00
   because fwapg built them from these same sites, so they are not independent.
-- **Presence vs absence.** BT presence sites (n 16) sit on wider, flatter water (median
+- **Presence vs absence.** BT presence sites (n 16 for width, 15 for gradient) sit on wider, flatter water (median
   5.5 m, 2.5 %) than sampled-without-BT sites (1.46 m, 8 %). No CH was caught at a site
   with measured width.
 - **Units upstream.** `average_gradient_percent` holds proportions. This has been
@@ -209,7 +236,8 @@ committed here.
 - Observation points often sit at the downstream end of a sampling site, and the
   pipeline breaks segments at them.
 - Sampling clusters near road access and avoids big rivers and steep reaches; that is
-  the likely reason BT use on NULL-width (order-1) segments is 0.08 of availability.
+  the likely reason BT use on NULL-width (order-1) segments is 0.12 of availability
+  (pooled BT+DV; 0.08 for BT records alone).
 - Segment gradient is an average: a reach can hold a short steep pitch above its mean,
   or a flat one below.
 - **Access does not truncate the observed gradients.** Observations lift barriers (CH
@@ -242,9 +270,11 @@ observations to score against. The run decisions have to be stated before launch
 The questions scoring must answer:
 
 1. How much rearing length the BT gradient change adds, against the observation capture
-   it buys. Also test the pre-change values from Method, Change 1 (CH spawning 0.0549, CH
-   rearing 0.0649, BT 0.1349), since the change that retired them was made after the
-   numbers were seen. CH rearing 0.0649 is also what the window gradient gives.
+   it buys. Test BT-only 0.1249 and the pooled pre-change / window value 0.1449 beside the
+   pooled 0.1349. Also test the CH values
+   retired by Method, Change 1 (CH spawning 0.0549, CH rearing 0.0649), since that change
+   was made after the numbers were seen; CH rearing 0.0649 is also what the window
+   gradient gives.
 2. How much of the newly admitted BT rearing sits above spawning, where the 0.05
    downstream bridge decides whether it survives.
 3. Whether spawning capture at 3–4.5 % justifies keeping the CH cutoff above the

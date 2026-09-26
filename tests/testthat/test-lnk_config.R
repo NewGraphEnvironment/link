@@ -325,7 +325,7 @@ test_that("default_tuned differs from default only in the #284 cells", {
   rownames(diffs) <- NULL
   expect_identical(diffs, data.frame(
     species_code = "BT", column = "rear_gradient_max",
-    default = 0.1049, tuned = 0.1249))
+    default = 0.1049, tuned = 0.1349))
 })
 
 test_that("inherited provenance verifies against the parent's files", {

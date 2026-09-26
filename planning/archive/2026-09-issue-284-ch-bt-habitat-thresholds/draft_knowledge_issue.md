@@ -2,7 +2,7 @@
 
 **Title:** Parse FISS individual-fish sheets (length, life stage); `average_gradient_percent` holds proportions
 
-**If we do it:** link#284 can split bull trout and chinook FISS captures into adults and juveniles by length. bcfishobs gives BT no life stage at all, so this is the only route to BT spawning-vs-rearing evidence at measured sites. **If we never do:** BT stage stays inferred from DV records, which mix two chars.
+**If we do it:** link#284 can split bull trout and chinook FISS captures into adults and juveniles by length. bcfishobs gives BT no life stage at all, so this is the only route to BT spawning-vs-rearing evidence at measured sites. **If we never do:** BT stage stays inferred from DV records alone (DV and BT are pooled, but only DV records carry a stage).
 
 ## Problem
 

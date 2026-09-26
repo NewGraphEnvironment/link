@@ -1,5 +1,5 @@
-date: 2026-09-26 01:04 PDT
-link: 0.51.0 @ 9d1f975 (dirty: R/, configs/default or this script uncommitted)
+date: 2026-09-26 09:49 PDT
+link: 0.51.0 @ 60ca574 (dirty: R/, configs/default or this script uncommitted)
 fresh installed: 0.34.0 @ no recorded sha
 db: docker fwapg localhost:5432
 schema: fresh_default (55 WSGs persisted; 4 run-log rows, 2026-08-06 to 2026-08-27, built with fresh 0.32.0@NA, 0.33.0@NA; the other WSGs predate the log)
