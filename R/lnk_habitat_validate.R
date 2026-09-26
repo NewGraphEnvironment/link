@@ -64,7 +64,9 @@
 #'   `user_habitat_classification` reach confirming that habitat type for the
 #'   species (indicator 1); with `overlay_applied` TRUE the segments wholly
 #'   inside such a reach are forced to habitat, so most of those locations are
-#'   captured by construction.
+#'   captured by construction. `share_spawning_outside_uhc` and
+#'   `share_rearing_any_outside_uhc` repeat the capture without them, which is
+#'   the part of the score the observations did not decide.
 #' - **Thresholds set from these observations score in-sample.** A cutoff
 #'   calibrated on the same records (e.g. a use quantile) is partly
 #'   guaranteed its capture; hold records out to score it fairly.
@@ -142,7 +144,7 @@
 #'     `n_accessible`, `n_inaccessible`, `n_spawning`, `n_rearing`,
 #'     `n_rearing_any`, `n_habitat` (spawning or any rearing), the matching
 #'     `share_*` (of `n_obs`; `NA` when `n_obs` is 0), `n_in_uhc_spawn`,
-#'     `n_in_uhc_rear`, and cost
+#'     `n_in_uhc_rear`, the `*_outside_uhc` counts and shares, and cost
 #'     `accessible_km`, `spawning_km`, `rearing_km` from [lnk_rollup_wsg()].
 #'     With `absences`, also `n_absence`, `n_absence_accessible`,
 #'     `n_absence_spawning`, `n_absence_rearing` (stream) and
@@ -815,9 +817,21 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
       share_rearing = share(n_re), share_rearing_any = share(n_ra),
       share_habitat = share(n_hab),
       n_in_uhc_spawn = sum(d$in_uhc_spawn),
-      n_in_uhc_rear = sum(d$in_uhc_rear))
+      n_in_uhc_rear = sum(d$in_uhc_rear),
+      # The same capture with the overlay's reaches taken out: the part of
+      # the score the observations did not decide by construction.
+      n_obs_outside_uhc_spawn = sum(!d$in_uhc_spawn),
+      n_spawning_outside_uhc = sum(d$spawning & !d$in_uhc_spawn),
+      n_obs_outside_uhc_rear = sum(!d$in_uhc_rear),
+      n_rearing_any_outside_uhc = sum(d$rearing_any & !d$in_uhc_rear))
   })
   out <- cbind(grid, do.call(rbind, rows))
+  out$share_spawning_outside_uhc <- ifelse(
+    out$n_obs_outside_uhc_spawn > 0,
+    out$n_spawning_outside_uhc / out$n_obs_outside_uhc_spawn, NA_real_)
+  out$share_rearing_any_outside_uhc <- ifelse(
+    out$n_obs_outside_uhc_rear > 0,
+    out$n_rearing_any_outside_uhc / out$n_obs_outside_uhc_rear, NA_real_)
   out <- merge(out, cost, by = c("watershed_group_code", "species_code"),
                all.x = TRUE, sort = FALSE)
   if (!is.null(abs_sum)) {

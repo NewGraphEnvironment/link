@@ -244,6 +244,12 @@ make_totals <- function(s) {
     out[[paste0("share_", k)]] <- ifelse(
       out$n_obs > 0, out[[paste0("n_", k)]] / out$n_obs, NA_real_)
   }
+  out$share_spawning_outside_uhc <- ifelse(
+    out$n_obs_outside_uhc_spawn > 0,
+    out$n_spawning_outside_uhc / out$n_obs_outside_uhc_spawn, NA_real_)
+  out$share_rearing_any_outside_uhc <- ifelse(
+    out$n_obs_outside_uhc_rear > 0,
+    out$n_rearing_any_outside_uhc / out$n_obs_outside_uhc_rear, NA_real_)
   rownames(out) <- NULL
   out
 }
@@ -326,8 +332,9 @@ if (nrow(bundles) == 2L) {
   }
   cols_cmp <- c("n_obs", "n_accessible", "n_spawning", "n_rearing",
                 "n_rearing_any", "share_accessible", "share_spawning",
-                "share_rearing", "share_rearing_any", "accessible_km",
-                "spawning_km", "rearing_km")
+                "share_rearing", "share_rearing_any",
+                "share_spawning_outside_uhc", "share_rearing_any_outside_uhc",
+                "accessible_km", "spawning_km", "rearing_km")
   by <- c("watershed_group_code", "species_code", "stage", "buffer_m")
   a <- summary[summary$schema == bundles$schema[1] &
                  summary$watershed_group_code %in% shared, c(by, cols_cmp)]

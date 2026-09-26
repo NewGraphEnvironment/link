@@ -258,6 +258,11 @@ test_that("lnk_habitat_validate scores a fixture run on the full key", {
   expect_equal(a_any$share_rearing, 0.25)
   expect_identical(a_any$n_in_uhc_spawn, 1L)
   expect_identical(a_any$n_in_uhc_rear, 0L)
+  # o2 (loc 50) is the only location in a spawning UHC reach.
+  expect_identical(a_any$n_obs_outside_uhc_spawn, 3L)
+  expect_identical(a_any$n_spawning_outside_uhc, 0L)
+  expect_equal(a_any$share_spawning_outside_uhc, 0)
+  expect_equal(a_any$share_rearing_any_outside_uhc, 0.25)
   expect_true(is.integer(obs$n_cand))
   expect_equal(a_any$spawning_km, 0.1)
   expect_identical(sm$n_obs[sm$watershed_group_code == "AAAA" &

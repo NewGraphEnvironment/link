@@ -61,7 +61,10 @@ modelled habitat still captures an observation. Default 0.}
 not caught: \code{watershed_group_code}, \code{blue_line_key},
 \code{downstream_route_measure}, \code{species_code} (model species). The caller
 locates them on the network. Rows for a species not present in the WSG
-are dropped. Default \code{NULL}.}
+are dropped. Absences are captured the same way observations are,
+\code{buffer_m} included, so the two rates stay comparable. A WSG x species
+with no rows in \code{absences} reports \code{NA} (not assessed), so pass only
+sites from the areas that were surveyed. Default \code{NULL}.}
 }
 \value{
 A list of two data frames:
@@ -73,7 +76,7 @@ records the WSG), \code{n_obs} (locations on a segment), \code{n_unattached},
 \code{n_accessible}, \code{n_inaccessible}, \code{n_spawning}, \code{n_rearing},
 \code{n_rearing_any}, \code{n_habitat} (spawning or any rearing), the matching
 \verb{share_*} (of \code{n_obs}; \code{NA} when \code{n_obs} is 0), \code{n_in_uhc_spawn},
-\code{n_in_uhc_rear}, and cost
+\code{n_in_uhc_rear}, the \verb{*_outside_uhc} counts and shares, and cost
 \code{accessible_km}, \code{spawning_km}, \code{rearing_km} from \code{\link[=lnk_rollup_wsg]{lnk_rollup_wsg()}}.
 With \code{absences}, also \code{n_absence}, \code{n_absence_accessible},
 \code{n_absence_spawning}, \code{n_absence_rearing} (stream) and
@@ -112,7 +115,8 @@ habitat use);
 and only in WSGs where \code{loaded$wsg_species_presence} marks the model
 species present (so DV records count as BT only where BT is present);
 \item \code{match_type} classes in \code{match_types} (default A/B: matched to a
-stream within 100 m; the C-E waterbody matches are left out);
+stream within 100 m; C, 100-500 m from a stream, and the D/E
+waterbody matches are left out);
 \item one per species x \code{blue_line_key} x metre (repeat visits are one
 location; a location is spawn- or rear-staged if any record there is).
 }
@@ -158,7 +162,9 @@ habitat. Spawning and rearing capture is the score.
 \code{user_habitat_classification} reach confirming that habitat type for the
 species (indicator 1); with \code{overlay_applied} TRUE the segments wholly
 inside such a reach are forced to habitat, so most of those locations are
-captured by construction.
+captured by construction. \code{share_spawning_outside_uhc} and
+\code{share_rearing_any_outside_uhc} repeat the capture without them, which is
+the part of the score the observations did not decide.
 \item \strong{Thresholds set from these observations score in-sample.} A cutoff
 calibrated on the same records (e.g. a use quantile) is partly
 guaranteed its capture; hold records out to score it fairly.
