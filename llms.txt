@@ -193,6 +193,9 @@ Redistributed bcfishpass override data carries its own license — see
 - [`lnk_fanout_judge()`](https://newgraphenvironment.github.io/link/reference/lnk_fanout_judge.md)
   : Judge the outcome of a parallel fan-out
 
+- [`lnk_habitat_validate()`](https://newgraphenvironment.github.io/link/reference/lnk_habitat_validate.md)
+  : Validate modelled habitat against fish observations
+
 - [`lnk_inputs_verify()`](https://newgraphenvironment.github.io/link/reference/lnk_inputs_verify.md)
   : Verify that required Postgres tables exist in a connection
 
