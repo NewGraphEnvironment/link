@@ -125,5 +125,5 @@ in the same WSGs. The selection ratio per bin is use share ÷ availability share
   phases were reviewed as one pass). R1 and R2 found real defects, two of which flipped
   candidates; R3 and R4 were enumerations (88 and 97 claims). R4 ended the loop: 96/97
   matched, and the one miss was a section pointer, fixed.
-- [ ] PWF checkboxes match landed work
+- [x] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion, then `/gh-pr-push` (PR "Relates to #284")
