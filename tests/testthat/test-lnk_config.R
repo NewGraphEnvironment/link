@@ -262,3 +262,24 @@ test_that("cfg$provenance is NULL when manifest omits the block", {
   cfg <- lnk_config(tmp)
   expect_null(cfg$provenance)
 })
+
+# -- habitat thresholds path (#282) -------------------------------------------
+
+test_that(".lnk_habitat_thresholds_csv returns the bundle's own CSV when declared", {
+  cfg <- structure(list(
+    name = "stub",
+    files = list(parameters_habitat_thresholds = list(path = "/x/thresholds.csv"))
+  ), class = c("lnk_config", "list"))
+  expect_silent(p <- .lnk_habitat_thresholds_csv(cfg))
+  expect_identical(p, "/x/thresholds.csv")
+})
+
+test_that(".lnk_habitat_thresholds_csv falls back to fresh's copy, loudly", {
+  skip_if_not_installed("fresh")
+  cfg <- structure(list(name = "stub", files = list()),
+                   class = c("lnk_config", "list"))
+  expect_message(p <- .lnk_habitat_thresholds_csv(cfg),
+                 "declares no files\\$parameters_habitat_thresholds")
+  expect_identical(p, system.file("extdata", "parameters_habitat_thresholds.csv",
+                                  package = "fresh"))
+})

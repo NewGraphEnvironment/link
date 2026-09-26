@@ -288,3 +288,24 @@ print.lnk_config <- function(x, ...) {
        " (must contain '/').",
        call. = FALSE)
 }
+
+# Path to the habitat thresholds CSV a config runs with.
+#
+# A bundle declares its own under `files: parameters_habitat_thresholds:`
+# (#282), so a tuned bundle can move a species' gradient or channel-width
+# cutoff without moving the `bcfishpass` parity reference. A config that
+# declares none falls back to fresh's shipped copy — the pre-#282 behaviour
+# for every bundle — and says so, because that copy is outside the config's
+# provenance and changes whenever fresh is upgraded.
+.lnk_habitat_thresholds_csv <- function(cfg) {
+  path <- cfg$files$parameters_habitat_thresholds$path
+  if (!is.null(path)) {
+    return(path)
+  }
+  fresh_path <- system.file("extdata", "parameters_habitat_thresholds.csv",
+                            package = "fresh")
+  message("config '", cfg$name %||% "<unnamed>", "' declares no ",
+          "files$parameters_habitat_thresholds; using fresh's copy: ",
+          fresh_path)
+  fresh_path
+}

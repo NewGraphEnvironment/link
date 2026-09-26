@@ -37,13 +37,13 @@ Related staleness: `default/config.yaml`'s description says the bundle ships `sp
   Commit and push there, then return to main.
 
 ## Phase 1: Resolve thresholds from the bundle
-- [ ] Tests first (`test-lnk_pipeline_classify.R`, `test-lnk_pipeline_connect.R`, new
+- [x] Tests first (`test-lnk_pipeline_classify.R`, `test-lnk_pipeline_connect.R`, new
   helper tests):
   - With a bundle that declares the file, `frs_params` receives that bundle's path
     (mock `fresh::frs_params` via `local_mocked_bindings`).
   - With no declaration, it gets fresh's path and a message naming the fallback.
   - An explicit `thresholds_csv` argument still wins.
-- [ ] Internal helper `.lnk_thresholds_csv(cfg)` returning
+- [x] Internal helper `.lnk_thresholds_csv(cfg)` (named `.lnk_habitat_thresholds_csv` — `lnk_thresholds()` already means crossing severity) returning
   `cfg$files$parameters_habitat_thresholds$path`, or fresh's copy with a `message()`.
   Change the `thresholds_csv` default in classify and connect to `NULL`, resolved through
   the helper. `lnk_pipeline_run()` needs no change, since classify and connect resolve

@@ -58,3 +58,49 @@ test_that(".lnk_pipeline_classify_build_breaks unions all four sources", {
   expect_match(joined, "'POTENTIAL' THEN 'potential'")
   expect_match(joined, "'PASSABLE' THEN 'passable'")
 })
+
+# -- thresholds CSV resolution (#282) ----------------------------------------
+
+# Stops at frs_params and reports the csv it was handed, so nothing touches a DB.
+capture_thresholds_csv_classify <- function(cfg, ...) {
+  local_mocked_bindings(
+    .lnk_pipeline_classify_build_breaks = function(...) invisible(NULL)
+  )
+  local_mocked_bindings(
+    frs_params = function(csv = NULL, ...) stop("csv=", csv, call. = FALSE),
+    .package = "fresh"
+  )
+  err <- tryCatch(
+    lnk_pipeline_classify("mock", aoi = "BULK", cfg = cfg, loaded = list(),
+                          schema = "w_bulk", species = "BT", ...),
+    error = function(e) conditionMessage(e))
+  sub("^csv=", "", err)
+}
+
+test_that("lnk_pipeline_classify hands frs_params the bundle's own thresholds CSV", {
+  csv <- tempfile(fileext = ".csv")
+  file.create(csv)
+  cfg <- lnk_config("default")
+  cfg$files$parameters_habitat_thresholds <- list(path = csv)
+  expect_identical(capture_thresholds_csv_classify(cfg), csv)
+})
+
+test_that("lnk_pipeline_classify falls back to fresh's thresholds when undeclared", {
+  skip_if_not_installed("fresh")
+  cfg <- lnk_config("default")
+  cfg$files$parameters_habitat_thresholds <- NULL
+  expect_message(got <- capture_thresholds_csv_classify(cfg), "fresh's copy")
+  expect_identical(got, system.file("extdata",
+    "parameters_habitat_thresholds.csv", package = "fresh"))
+})
+
+test_that("lnk_pipeline_classify: an explicit thresholds_csv wins over the bundle's", {
+  bundle_csv <- tempfile(fileext = ".csv")
+  explicit_csv <- tempfile(fileext = ".csv")
+  file.create(bundle_csv, explicit_csv)
+  cfg <- lnk_config("default")
+  cfg$files$parameters_habitat_thresholds <- list(path = bundle_csv)
+  expect_identical(
+    capture_thresholds_csv_classify(cfg, thresholds_csv = explicit_csv),
+    explicit_csv)
+})

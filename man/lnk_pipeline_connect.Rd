@@ -11,8 +11,7 @@ lnk_pipeline_connect(
   loaded,
   schema,
   species = NULL,
-  thresholds_csv = system.file("extdata", "parameters_habitat_thresholds.csv", package =
-    "fresh")
+  thresholds_csv = NULL
 )
 }
 \arguments{
@@ -35,7 +34,9 @@ consistency; connectivity reads \code{fresh.streams_habitat} directly).}
 Default derives the same way as \code{\link[=lnk_pipeline_classify]{lnk_pipeline_classify()}}.}
 
 \item{thresholds_csv}{Path to the habitat thresholds CSV. Default
-uses the copy shipped with fresh.}
+\code{NULL} uses the config's own \code{files$parameters_habitat_thresholds},
+falling back (with a message) to the copy shipped with fresh when
+the config declares none.}
 }
 \value{
 \code{conn} invisibly, for pipe chaining.
