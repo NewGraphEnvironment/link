@@ -91,8 +91,7 @@ lnk_presence <- function(
          call. = FALSE)
   }
 
-  species_cols <- setdiff(names(wsg_species_presence),
-                          c("watershed_group_code", "notes"))
+  species_cols <- .lnk_presence_species_cols(wsg_species_presence)
 
   raw_present <- vapply(species_cols, function(sp) {
     .lnk_presence_truthy(row[[sp]])

@@ -34,7 +34,7 @@ What exploration found:
 
 "We want to be able to pool to the salmon level if we want. Which species should not matter. Just an abstract tool."
 
-- **Groups are data.** `inst/extdata/configs/default/overrides/species_groups.csv` has columns `group_code, species_code`. It is seeded with `SALMON` (CH, CM, CO, PK, SK) and `CHAR` (BT, DV), declared under `files:`, and given a dictionary.
+- **Groups are data.** `inst/extdata/configs/default/species_groups.csv` has columns `group_code, species_code`. It is seeded with `SALMON` (CH, CM, CO, PK, SK) and `CHAR` (BT, DV), declared under `files:`, and given a dictionary.
 - **Either side of a row can be a group.** In `species_pooling.csv`, both `species_code` (the target) and `species_obs` (the evidence) accept a species code or a group code, and the resolver expands both.
 - **Precedence**, in order:
   1. scope specificity (wsg > subregion > region);
@@ -58,21 +58,21 @@ What exploration found:
 - [x] Edit #290's body: regions are package-level (decided at this gate).
 
 ## Phase 2: Tracker and resolver
-- [ ] `inst/extdata/configs/default/overrides/species_pooling.csv` with the seed rows.
+- [x] `inst/extdata/configs/default/species_pooling.csv` (bundle root, not `overrides/`: the README defines that as shared jurisdiction facts) with the seed rows.
   - Columns: `species_code, species_obs, scope_level, scope, pool, confidence, rationale, source, verified, issue`.
   - Declared under `default`'s `files:`, with a provenance entry and checksum.
-- [ ] `inst/extdata/configs/default/overrides/species_groups.csv` (SALMON, CHAR), declared under `files:` with provenance, plus its dictionary
-- [ ] Tests for groups: expansion on either side, the taxon-specificity tie-break, a colliding group code errors, a nested group errors
-- [ ] `inst/extdata/configs/dictionary_species_pooling.csv`, a column dictionary, covered by `tests/testthat/test-dictionaries.R`.
-- [ ] Tests first, in `tests/testthat/test-lnk_species_pooling.R`:
+- [x] `inst/extdata/configs/default/overrides/species_groups.csv` (SALMON, CHAR), declared under `files:` with provenance, plus its dictionary
+- [x] Tests for groups: expansion on either side, the taxon-specificity tie-break, a colliding group code errors, a nested group errors
+- [x] `inst/extdata/configs/dictionary_species_pooling.csv`, a column dictionary, covered by `tests/testthat/test-dictionaries.R`.
+- [x] Tests first, in `tests/testthat/test-lnk_species_pooling.R`:
   - precedence (wsg > subregion > region);
   - a more specific `pool = no` overrides a region's `yes`;
   - unlisted means not pooled;
   - the species counts as itself;
   - the presence gate;
   - an unknown scope, a bad `scope_level` or conflicting rows at one level error.
-- [ ] `R/lnk_species_pooling.R`: `lnk_species_pooling(loaded, aoi, species)` returns `watershed_group_code, species_code, obs_species, scope_level, scope`. It is species-agnostic, and its `@examples` run against the shipped files.
-- [ ] `lnk_config_verify(lnk_config("default"))` is clean; `default_tuned` inherits the file
+- [x] `R/lnk_species_pooling.R`: `lnk_species_pooling(loaded, aoi, species)` returns `watershed_group_code, species_code, obs_species, scope_level, scope`. It is species-agnostic, and its `@examples` run against the shipped files.
+- [x] `lnk_config_verify(lnk_config("default"))` is clean; `default_tuned` inherits the file
 
 ## Phase 3: Consumers
 - [ ] `lnk_habitat_validate()`: `species_obs` also accepts the resolver's data frame, applied per WSG; the list form and its default are unchanged. Add tests for both forms.

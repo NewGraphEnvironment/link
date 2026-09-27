@@ -122,6 +122,12 @@
 }
 
 
+# The species columns of a wsg_species_presence frame: everything but the key
+# and `notes`. One definition, shared by every reader of the table (#290).
+.lnk_presence_species_cols <- function(x) {
+  setdiff(names(x), c("watershed_group_code", "notes"))
+}
+
 #' Species codes flagged present in a wsg_species_presence row.
 #'
 #' Treats every column except `watershed_group_code` and `notes` as a
@@ -133,7 +139,7 @@
 #' a code edit. See link#106.
 #' @noRd
 .lnk_wsg_species_present <- function(row) {
-  spp_cols <- setdiff(names(row), c("watershed_group_code", "notes"))
+  spp_cols <- .lnk_presence_species_cols(row)
   present <- vapply(spp_cols,
     function(x) identical(row[[x]], "t"), logical(1))
   toupper(spp_cols[present])

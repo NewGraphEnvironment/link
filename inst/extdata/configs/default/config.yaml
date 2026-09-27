@@ -25,6 +25,10 @@ files:
     path: parameters_fresh.csv
   parameters_habitat_thresholds:
     path: parameters_habitat_thresholds.csv
+  species_pooling:
+    path: species_pooling.csv
+  species_groups:
+    path: species_groups.csv
   user_habitat_classification:
     source: bcfp
     path: overrides/user_habitat_classification.csv
@@ -138,6 +142,16 @@ provenance:
     synced: '2026-09-25'
     checksum: sha256:7b904a18c29c724737ff24a27750bf05d7bfa281aa4fc1f7ac27c00238db042d
     shape_checksum: sha256:8de9bc1fcc2c703176a57d8a982bd26da1c49a885af3053f00078003a7e9283f
+  species_pooling.csv:
+    source: link (hand-authored; link#290). The DV->BT pooling tracker, one row per decision
+    synced: '2026-09-26'
+    checksum: sha256:576991e3df117d0f1298385014b2dc5e87b12f764c0ee9922de1e23727079d4b
+    shape_checksum: sha256:9d5830b904b5fda215ac1f47310d5b94089ae6b1e58311db7442a7b0e4fe2127
+  species_groups.csv:
+    source: link (hand-authored; link#290)
+    synced: '2026-09-26'
+    checksum: sha256:e6e18111f635427a02c01627c5062db1f9b590aed882c5db3d0881309e56d5fb
+    shape_checksum: sha256:f26bcf4fdd8096a93bed0c0ddd8f62bb50fe46186d82b121b66a4d5c84ad93e4
   overrides/user_habitat_classification.csv:
     source: https://github.com/smnorris/bcfishpass
     path: data/user_habitat_classification.csv

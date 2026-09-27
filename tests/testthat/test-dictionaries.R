@@ -183,3 +183,62 @@ test_that("every bundle declares its own parameters_habitat_thresholds", {
       info = sprintf("bundle %s declares no parameters_habitat_thresholds", b))
   }
 })
+
+# -- dictionary_species_pooling / dictionary_species_groups (#290) -----------
+
+# Only bundles that declare the file carry it; a bundle without a tracker pools
+# nothing, which is the documented fallback, so absence is not a failure here.
+declaring <- function(stem) {
+  Filter(function(b) !is.null(lnk_config(b)$files[[stem]]), bundle_names())
+}
+
+for (stem in c("species_pooling", "species_groups")) {
+  test_that(sprintf("dictionary_%s has the expected shape", stem), {
+    d <- dict_read(stem)
+    expect_true(all(c("column", "type", "group", "owner", "consumed_by",
+                      "default_when_absent", "description",
+                      "related") %in% names(d)))
+    expect_false(any(duplicated(d$column)))
+    expect_true(all(filled(d$column)))
+    expect_true(all(filled(d$description)))
+    expect_true(all(d$owner == "link"))
+  })
+
+  test_that(sprintf("dictionary_%s matches every declaring bundle's CSV", stem), {
+    d <- dict_read(stem)
+    bundles <- declaring(stem)
+    expect_gt(length(bundles), 0)
+    for (b in bundles) {
+      expect_setequal(bundle_cols(b, stem), d$column)
+    }
+  })
+}
+
+test_that("species_pooling / species_groups consumed_by refs land on their column", {
+  # Hand-maintained file:line refs drift whenever the code above them moves
+  # (#290 review round 2 found every one stale). Each link-side ref must point
+  # at a line that names its column. Source-tree only: an installed package
+  # has no R/ directory.
+  src <- testthat::test_path("..", "..", "R")
+  skip_if_not(dir.exists(src), "R/ source not available")
+  n_refs <- 0L
+  for (stem in c("species_pooling", "species_groups")) {
+    d <- dict_read(stem)
+    for (i in seq_len(nrow(d))) {
+      refs <- regmatches(d$consumed_by[i],
+                         gregexpr("R/[A-Za-z0-9_.]+\\.R:[0-9]+", d$consumed_by[i]))[[1]]
+      for (ref in refs) {
+        n_refs <- n_refs + 1L
+        f <- file.path(src, basename(sub(":[0-9]+$", "", ref)))
+        n <- as.integer(sub("^.*:", "", ref))
+        line <- readLines(f, warn = FALSE)[n]
+        # whole token: `scope` must not match `scope_level`, nor `pool`
+        # match `species_pooling`
+        tok <- paste0("(?<![A-Za-z0-9_])", d$column[i], "(?![A-Za-z0-9_])")
+        expect_true(grepl(tok, line, perl = TRUE),
+                    info = sprintf("%s %s -> %s", stem, d$column[i], line))
+      }
+    }
+  }
+  expect_gt(n_refs, 0)
+})

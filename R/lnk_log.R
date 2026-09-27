@@ -98,6 +98,20 @@
     digest::digest(file = p, algo = "sha256")
   }, character(1), USE.NAMES = FALSE)
 
+  # A pooling tracker (#290) is scoped by the package's region lookup, which
+  # sits outside the bundle: a region reassignment changes what pools, so it
+  # enters the hash too, by a fixed name.
+  if (!is.null(cfg$files$species_pooling)) {
+    regions <- .lnk_wsg_regions_path()
+    paths <- c(paths, regions)
+    rel <- c(rel, "link:wsg_regions.csv")
+    digests <- c(digests, if (file.exists(regions)) {
+      digest::digest(file = regions, algo = "sha256")
+    } else {
+      "MISSING"
+    })
+  }
+
   if (length(fallback) == 1L && nzchar(fallback)) {
     paths <- c(paths, fallback)
     rel <- c(rel, "fresh:parameters_habitat_thresholds.csv")

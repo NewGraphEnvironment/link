@@ -1,0 +1,3 @@
+column,type,group,owner,consumed_by,default_when_absent,description,related
+group_code,character,key,link,R/lnk_species_pooling.R:180,required,"Name of a set of species, usable on either side of a species_pooling row. Upper-cased; may not equal a species code, and groups may not nest.",species_code
+species_code,character,key,link,R/lnk_species_pooling.R:180,required,"One member species, one row each. Must be a species column of wsg_species_presence.",group_code

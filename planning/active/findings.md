@@ -64,3 +64,5 @@ Relates to #236, #284, #283, #189
 
 | Error | Resolution |
 |-------|------------|
+| A mutation-test loop restored from a path that did not exist, so later mutations ran stacked on earlier ones | Restore from the absolute repo path on every iteration, and run the unmutated copy first as a control (0 failing) |
+| sprintf() over SQL with a literal `LIKE '...%'` fails: "invalid format '%' A'" | Escape as `%%` when wrapping SQL in sprintf |
