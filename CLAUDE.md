@@ -60,6 +60,25 @@ To compare two code versions, prepare once and re-run classify/connect on the
 same schema (`data-raw/logs/habitat_thresholds_282/reclassify.R`). Issue drafted,
 awaiting body review.
 
+## Status (2026-09-26, late) — observation pooling is data (#290); #284 step 5 unparked
+
+**Which observation species count as which model species is a bundle tracker now, not code.**
+- `configs/default/species_pooling.csv` holds one dated, sourced row per decision, scoped to a region, sub-region or WSG.
+- `inst/extdata/wsg_regions.csv` is package-level geography: the region is the first segment of each group's *outlet* wscode.
+- `species_groups.csv` lets either side of a row be a group.
+- `lnk_species_pooling()` resolves it and knows no species.
+- The seed pools DV → BT in the Fraser, Mackenzie, Skeena and Columbia/Kootenay; everything unlisted is not pooled.
+- The state of knowledge lives in `research/species_pooling.md`.
+- **Do not re-hard-code a species pair anywhere**; add a row.
+
+**Facts not worth re-deriving:**
+- **No #284 or #283 number moved.** All 55 + 59 WSGs are in pooled regions. The obs query re-runs byte-identical except its province-wide ledger step 3 (DV 8,888 → 6,138), and the validator baseline re-runs byte-identical.
+- **Where the new rule bites:** 29 BT-present WSGs in the Nass, Stikine, Taku, Yukon and the coast, which pooled before and do not now.
+- **"No tracker" means no pooling in the resolver**, but the validator's list default (global DV→BT) is kept for back-compat. The driver resolves pooling **once**, from the first bundle declaring a tracker, and applies it to both bundles.
+- **Two presence tables must agree, WSG by WSG**: the pooling bundle's and each scored bundle's. Both drivers stop if they do not, and the comparison is keyed by WSG, never by row position (review found the row-position version).
+- **The #284 obs producer is not bit-reproducible.** A double-precision `sum(length_metre)` gives 1-ulp differences in `candidates.csv` between identical runs. This is pre-existing, and an issue is drafted.
+- **Hand-kept `consumed_by` file:line refs drift on every edit above them.** The two new dictionaries are now test-checked with a whole-token match.
+
 ## Status (2026-09-26) — v0.51.1: first calibrated threshold in `default_tuned` (#284; step 5 open)
 
 **`research/habitat_thresholds.md` is the staging table for tuning CH/BT numbers.** One

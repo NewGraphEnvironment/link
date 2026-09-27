@@ -87,7 +87,12 @@ of this section, with what they moved.
   enough not to separate for this. So BT+DV is the primary BT evidence, and DV is no
   longer capped at low confidence. BT records alone are kept beside it in
   `candidates.csv` (`evidence_role = "comparison: BT records only"`) and `bridge_bt.csv`
-  (`set = BT_any`), so the evidence exists both ways. Pooling moved one value: BT rearing gradient 0.1249 → 0.1349. It also
+  (`set = BT_any`), so the evidence exists both ways. Pooling moved one value: BT rearing gradient 0.1249 → 0.1349. Since #290 the pooling is data, not code: DV counts as BT only where `default`'s
+  `species_pooling.csv` says so (Fraser, Mackenzie, Skeena and Columbia;
+  [`species_pooling.md`](species_pooling.md)). All 55 WSGs used here are in those regions,
+  so no number in this file moved; re-running the producer changed only the
+  province-wide ledger row, where DV records outside those regions now drop at the pooling
+  step (8,888 → 6,138). It also
   lifted the low-confidence cap on DV staged records, which is why the BT spawning
   gradient and width rows below became literature vetoes instead of weak evidence.
 

@@ -78,22 +78,26 @@ What exploration found:
 - [x] `lnk_habitat_validate()`: `species_obs` also accepts the resolver's data frame, applied per WSG; the list form and its default are unchanged. Add tests for both forms.
 - [x] `data-raw/habitat_validate.R`: add `--pooling=<config>`, defaulting to the first bundle. The driver resolves once and passes the same table to both bundles, which keeps the same-observations assertion true. A bundle without the tracker falls back to the list default.
 - [x] `data-raw/query_habitat_thresholds_obs.R`: replace the hard-coded `CASE` and `dv_ok` with a join to the resolved table, pushed as a temp table. The BT-only comparison set is kept.
-- [ ] Update the method lines in `research/habitat_validation.md` and `research/habitat_thresholds.md` ("DV counts as BT in the regions `species_pooling.csv` lists").
+- [x] Update the method lines in `research/habitat_validation.md` and `research/habitat_thresholds.md` ("DV counts as BT in the regions `species_pooling.csv` lists").
 
 ## Phase 4: Verification
-- [ ] Re-run `query_habitat_thresholds_obs.R`. `data-raw/logs/habitat_thresholds_284/` must come out byte-identical to what is committed, since all 55 WSGs are in pooled regions. Any diff gets root-caused, not accepted.
-- [ ] Re-run `habitat_validate.R` on the #283 5-WSG check. `summary.csv` rows must be identical to the committed baseline.
-- [ ] Negative check with a scratch bundle that sets Skeena to `pool = no`: BULK and MORR DV records drop out of BT, and nothing else moves. This proves the resolver is wired and not bypassed.
-- [ ] Record the per-region pooled-WSG counts in `research/` (the tracker's state of knowledge) and link it from #290
+- [x] Re-run `query_habitat_thresholds_obs.R`. `data-raw/logs/habitat_thresholds_284/` must come out byte-identical to what is committed, since all 55 WSGs are in pooled regions. Any diff gets root-caused, not accepted.
+- [x] Re-run `habitat_validate.R` on the #283 5-WSG check. `summary.csv` rows must be identical to the committed baseline.
+- [x] Negative check with a scratch bundle that sets Skeena to `pool = no`: BULK and MORR DV records drop out of BT, and nothing else moves. This proves the resolver is wired and not bypassed.
+- [x] Record the per-region pooled-WSG counts in `research/` (the tracker's state of knowledge) and link it from #290
 
 ## Validation
 
-- [ ] Tests pass
-- [ ] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion
-- [ ] `devtools::test()`, `lintr::lint_package()`, `devtools::document()`, `pkgdown::check_pkgdown()` clean
-- [ ] `/code-check` clean on each commit
-- [ ] PWF checkboxes match landed work
+- [x] `devtools::test()`: 2135 pass, 3 fail. The 3 are all the `:63333` bcfishpass tunnel being down (`test-lnk_db_conn.R:10`, `test-lnk_wsg_resolve.R:143`, `:154`), in files and functions this branch does not touch.
+- [x] `devtools::document()` and `pkgdown::check_pkgdown()` clean
+- [x] `lintr`: **not clean**, recorded as-is.
+  - New code adds hanging-indent `indentation_linter` style lints, the same pattern as the repo's existing backlog (67 in `test-lnk_log.R` on main).
+  - Plus 3 `object_usage_linter` false positives: `.lnk_presence_species_cols` and `.lnk_wsg_regions_path` are absent from the stale installed package.
+- [x] `/code-check`:
+  - Phase 2: three rounds, ended by enumeration.
+  - Phase 3: two rounds, ended by enumeration, one below the skill's floor (stated in progress.md).
+  - Phase 1 (generator) and Phase 4 (docs and evidence): self-review and mutation tests only.
+- [x] PWF checkboxes match landed work
 - [ ] `/planning-archive`, then `/gh-pr-push` ("Fixes #290"); edit #284's body so step 5 is unparked
 
 Out of scope: the access override's `observation_species` (#236), which will consume `lnk_species_pooling()`; the FISS absence taxa in the driver (#284 step 5 plan); logging the tracker into `<schema>.log_*` (the pipeline does not consume it yet).

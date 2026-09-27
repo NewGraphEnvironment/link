@@ -63,3 +63,4 @@
     - stamps, "none" when empty.
   - Proven with scratch bundles, each stopping with the named cause: CH<-BT, a blanked MORR presence, a MORR→MORQ rename, and the driver on a mismatched presence. `default` still runs clean.
   - `candidates.csv` differs from the committed copy by at most 1.7e-16 relative (1 ulp) between identical runs. This is pre-existing: a float `sum()` in the availability SQL (findings table; issue drafted).
+- Phase 4 final, from committed `ba9de76`: the validator baseline (default vs bcfishpass, 55 + 59 WSGs, knowledge @ 508bf44) reproduces all 6 CSVs byte-identically, and the presence guard passes on the real pair. The #284 evidence is refreshed: ledger step 3 and the stamp (clean, `pooling:` line). `candidates.csv` was restored to its committed bytes because it differed only by 1-ulp float noise. Full suite: 2135 pass; 3 fail, all tunnel-down in untouched files.

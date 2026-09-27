@@ -28,8 +28,9 @@ Both are read-only against docker `fwapg` (:5432). Environment stamps are in
   1 is avoided or under-sampled.
 - **Sets**: `CH_spawn` = activity SPL/SPM/S; `CH_rear` = activity R/REA or
   Fry/Parr/Juvenile. BT has no stage in bcfishobs. **`BT_any_dv` is the primary BT
-  evidence**: BT and DV records pooled in WSGs with BT, the way the pipeline already counts
-  them for access (`BT;DV`). Inland, DV are bull trout recorded under the other name, and
+  evidence**: BT and DV records pooled where `default`'s `species_pooling.csv` pools them (#290:
+  Fraser, Mackenzie, Skeena and Columbia, where BT is present; before #290, every WSG with
+  BT). All 55 WSGs here are in those regions, so the evidence is unchanged. Inland, DV are bull trout recorded under the other name, and
   on the coast the two species' habitat biology is treated as equivalent. `BT_any` (BT
   records only) is kept as the comparison: `candidates.csv` and `bridge_bt.csv` carry both,
   marked by `evidence_role` / `set`. `BT_spawn_dv` and `BT_rear_dv` are the staged DV

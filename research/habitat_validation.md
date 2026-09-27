@@ -1,6 +1,6 @@
 # Habitat validation against fish observations
 
-**Verified:** 2026-09-26 · **Issues:** #283 (this), #284 (step 5 scores with it), #203 (full-key joins), fresh#218 · **Produced by:** `lnk_habitat_validate()` via `data-raw/habitat_validate.R` → `data-raw/logs/habitat_validate_283/` (link @ `0c19e0a`) · **Status:** baseline only; `default_tuned` not yet scored
+**Verified:** 2026-09-26 · **Issues:** #283 (this), #284 (step 5 scores with it), #290 (pooling as data), #203 (full-key joins), fresh#218 · **Produced by:** `lnk_habitat_validate()` via `data-raw/habitat_validate.R` → `data-raw/logs/habitat_validate_283/` (link @ `0c19e0a`) · **Status:** baseline only; `default_tuned` not yet scored
 
 ## What it measures
 
@@ -24,8 +24,12 @@ that both retained the same observations.
 
 - **Observations:** `bcfishobs.observations` with `observation_exclusions`
   (`data_error | release_exclude`) and every `Releases Database` record removed. Species
-  must be present in the WSG per `wsg_species_presence`. DV records count as BT where BT
-  is present (the #284 pooling). Match types are A/B only (stream, within 100 m). One
+  must be present in the WSG per `wsg_species_presence`. Which observation species count
+  as each model species comes from the pooling bundle's `species_pooling.csv` via
+  `lnk_species_pooling()` ([`species_pooling.md`](species_pooling.md), #290): for
+  `default`, DV counts as BT in the Fraser, Mackenzie, Skeena and Columbia, where BT is
+  present. The driver resolves it once, from the first bundle that declares a tracker (or
+  `--pooling=`), and applies it to both bundles; `stamp.txt` records which. Match types are A/B only (stream, within 100 m). One
   location per species × `blue_line_key` × metre, which is staged if any record there is.
 - **Other sources:** `observations` takes any table or data frame that has
   `species_code`, `watershed_group_code`, `blue_line_key` and
@@ -120,6 +124,13 @@ what #284 moved. NULL width is the second: 160 locations, which is consistent wi
 
 At buffer 0 on its own 55 WSGs, `fresh_default` retains **5,104** BT+DV and **1,745** CH
 locations, exactly #284's pooled counts. The filters are the same code path.
+
+**Under the regional pooling rule (#290).** The driver now takes DV→BT pooling from
+`default`'s `species_pooling.csv`, not from the function default. Re-run over the same 55
+and 59 WSGs (knowledge @ 508bf44, same database), it reproduces all six committed CSVs
+byte for byte, because every WSG in both schemas is in a pooled region. The first region
+where the two rules differ is one the baseline does not cover (the Nass, Stikine and the
+coast; [`species_pooling.md`](species_pooling.md)).
 
 ## Using it for #284 step 5
 
