@@ -9,7 +9,12 @@
 #
 # Read-only against docker fwapg (:5432). Temp tables only.
 #
-#   Rscript data-raw/query_habitat_thresholds_obs.R
+#   Rscript data-raw/query_habitat_thresholds_obs.R [--pooling=<config>] [--out=<dir>]
+#
+# --pooling names the bundle whose species_pooling.csv decides which
+# observation species count as each model species (default: `default`, the
+# bundle scored here). --out redirects the outputs, e.g. for a check run
+# against a scratch bundle that must not overwrite the committed evidence.
 #
 # Writes to data-raw/logs/habitat_thresholds_284/:
 #   obs_ledger.csv        counts dropped at each filter step
@@ -32,7 +37,13 @@ suppressPackageStartupMessages({
   library(ggplot2)
 })
 
-dir_out <- file.path("data-raw", "logs", "habitat_thresholds_284")
+opt <- function(name, default) {
+  a <- grep(paste0("^--", name, "="), commandArgs(trailingOnly = TRUE),
+            value = TRUE)
+  if (length(a) == 0L) default else sub(paste0("^--", name, "="), "", a[length(a)])
+}
+dir_out <- opt("out", file.path("data-raw", "logs", "habitat_thresholds_284"))
+pooling_cfg <- opt("pooling", "default")
 fs::dir_create(dir_out)
 
 conn <- lnk_db_conn(dbname = "fwapg", host = "localhost", port = 5432L,
@@ -58,36 +69,85 @@ presence <- readr::read_csv(cfg$files$wsg_species_presence$path,
   transmute(watershed_group_code,
             bt = bt %in% "t", ch = ch %in% "t", dv = dv %in% "t")
 dbWriteTable(conn, "t_excl", excl, temporary = TRUE, overwrite = TRUE)
-dbWriteTable(conn, "t_presence", presence, temporary = TRUE, overwrite = TRUE)
 
 wsg_persisted <- dbGetQuery(conn, sprintf(
   "SELECT DISTINCT watershed_group_code FROM %s.streams", schema))$watershed_group_code
 
 # -- observations, every flag kept so the ledger is exact --------------------
-# DV rows are pooled with BT where the WSG has BT, as the pipeline already
-# treats them (observation_species for BT is BT;DV). Inland, DV records are
-# bull trout recorded under the old name; on the coast either species occurs,
-# and their habitat biology is close enough not to separate here. bcfishobs
-# gives BT no life stage or activity at all, so DV records are also the only
-# staged char evidence. Pooled BT+DV is the primary BT evidence; BT-only is
-# kept beside it as a comparison, so the evidence exists both ways.
+# Which observation species count as each model species comes from the
+# bundle's pooling tracker (species_pooling.csv via lnk_species_pooling(),
+# link#290): per WSG, scoped to region, sub-region or WSG, and only where the
+# model species is present. For this bundle that pools DV records into BT in
+# the regions the tracker lists. Inland, DV records are bull trout recorded
+# under the old name, and bcfishobs gives BT no life stage or activity at all,
+# so DV records are also the only staged char evidence. Pooled BT+DV is the
+# primary BT evidence; BT-only is kept beside it as a comparison, so the
+# evidence exists both ways. `dv_ok` is FALSE for a record whose species is
+# neither a model species nor pooled into one in its WSG.
+loaded <- suppressWarnings(lnk_load_overrides(lnk_config(pooling_cfg)))
+if (is.null(loaded$species_pooling)) {
+  stop("--pooling=", pooling_cfg, " declares no species_pooling tracker",
+       call. = FALSE)
+}
+pool <- lnk_species_pooling(loaded, aoi = presence$watershed_group_code,
+                            species = species)
+pool <- pool[pool$scope_level != "self",
+             c("watershed_group_code", "species_code", "obs_species")]
+# One target per observation species per WSG, or the join below would copy
+# a record into two species' evidence.
+if (anyDuplicated(pool[c("watershed_group_code", "obs_species")])) {
+  stop("an observation species pools into two model species in one WSG; ",
+       "this script assigns each record to one species", call. = FALSE)
+}
+# ...and a model species' own records stay its own: pooling one model species
+# into another would relabel them away (the validator would count them twice).
+if (any(pool$obs_species %in% species)) {
+  stop("species_pooling pools a model species (",
+       paste(unique(pool$obs_species[pool$obs_species %in% species]),
+             collapse = ", "), ") into another; this script cannot",
+       call. = FALSE)
+}
+# The pooling bundle's presence decides where pooling applies; the steps below
+# filter on cfg's. If they disagree, pooled records drop silently.
+# Keyed by WSG code (never by row position): cfg's WSGs, looked up in each.
+presence_flags <- function(p, w) {
+  p <- as.data.frame(p)
+  names(p) <- tolower(names(p))
+  p <- p[match(w, toupper(p$watershed_group_code)), tolower(species), drop = FALSE]
+  vapply(p, function(x) as.character(x) %in% "t", logical(length(w)))
+}
+presence_cfg <- readr::read_csv(cfg$files$wsg_species_presence$path,
+                                show_col_types = FALSE,
+                                col_types = readr::cols(.default = "c"))
+w_cfg <- toupper(presence_cfg$watershed_group_code)
+if (!identical(presence_flags(loaded$wsg_species_presence, w_cfg),
+               presence_flags(presence_cfg, w_cfg))) {
+  stop("--pooling=", pooling_cfg, "'s wsg_species_presence differs from ",
+       cfg$name, "'s for ", paste(species, collapse = ", "), call. = FALSE)
+}
+dbWriteTable(conn, "t_pool", pool, temporary = TRUE, overwrite = TRUE)
+obs_codes <- sort(unique(c(species, pool$obs_species)))
+
 dbExecute(conn, "DROP TABLE IF EXISTS t_obs")
-dbExecute(conn, "
+dbExecute(conn, sprintf("
   CREATE TEMP TABLE t_obs AS
   SELECT o.observation_key,
          o.species_code AS obs_species,
-         CASE WHEN o.species_code = 'DV' THEN 'BT' ELSE o.species_code END AS species_code,
+         coalesce(pl.species_code, o.species_code) AS species_code,
          o.watershed_group_code, o.blue_line_key,
          o.downstream_route_measure AS m,
          left(o.match_type, 1) AS match_class,
          o.activity_code, o.activity, o.life_stage, o.source, o.source_ref,
          o.observation_date,
-         o.source LIKE 'Releases Database%' AS is_release,
+         o.source LIKE 'Releases Database%%' AS is_release,
          o.observation_key IN (SELECT observation_key FROM t_excl) AS is_excluded,
-         (o.species_code <> 'DV' OR coalesce(p.bt, false)) AS dv_ok
+         (o.species_code IN (%1$s) OR pl.species_code IS NOT NULL) AS dv_ok
   FROM bcfishobs.observations o
-  LEFT JOIN t_presence p ON p.watershed_group_code = o.watershed_group_code
-  WHERE o.species_code IN ('CH', 'BT', 'DV')")
+  LEFT JOIN t_pool pl ON pl.watershed_group_code = o.watershed_group_code
+                     AND pl.obs_species = o.species_code
+  WHERE o.species_code IN (%2$s)",
+  paste(DBI::dbQuoteString(conn, species), collapse = ", "),
+  paste(DBI::dbQuoteString(conn, obs_codes), collapse = ", ")))
 
 # The segment the model tests. Observations are break points (the pipeline
 # breaks at round(downstream_route_measure)), so a point usually sits on a
@@ -201,7 +261,7 @@ ledger <- bind_rows(
   ledger_step(o0, "0 all CH/BT/DV records"),
   ledger_step(o1, "1 minus observation_exclusions (data_error | release_exclude)"),
   ledger_step(o2, "2 minus Releases Database"),
-  ledger_step(o3, "3 DV kept only where WSG has BT (pooled with BT)"),
+  ledger_step(o3, "3 pooled species kept only where species_pooling.csv pools them into a present model species"),
   ledger_step(o4, sprintf("4 in %s WSGs where species present", schema)),
   ledger_step(o5, "5 joined to a segment"),
   ledger_step(o6, "6 match type A/B (stream, within 100 m)"),
@@ -518,6 +578,10 @@ stamp <- c(
           dbGetQuery(conn, "SELECT count(*) FROM bcfishobs.observations")[[1]]),
   sprintf("thresholds: %s", fs::path_rel(cfg$files$parameters_habitat_thresholds$path,
                                           fs::path_abs("."))),
+  sprintf("pooling: %s species_pooling.csv; %s", pooling_cfg,
+          if (nrow(pool) == 0L) "none" else
+            paste(unique(paste0(pool$species_code, "<-", pool$obs_species)),
+                  collapse = ", ")),
   sprintf("retained observations with 2+ candidate segments (upstream chosen): %d",
           sum(use$n_cand > 1L, na.rm = TRUE)))
 writeLines(stamp, file.path(dir_out, "stamp.txt"))

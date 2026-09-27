@@ -11,6 +11,14 @@
 #   Rscript data-raw/habitat_validate.R \
 #     --bundles=default:fresh_default,bcfishpass:fresh \
 #     [--wsgs=MORR,BULK] [--species=CH,BT] [--buffers=0,100] [--out=<dir>]
+#     [--pooling=<config>]
+#
+# Pooling (link#290): which observation species count as each model species
+# comes from one bundle's tracker (species_pooling.csv, resolved per WSG by
+# lnk_species_pooling()), by default the first of --bundles that declares
+# one. It is resolved once and applied to both bundles, so they are scored on
+# the same observations, and stamp.txt says which tracker it was. When no
+# bundle declares a tracker, lnk_habitat_validate()'s own default applies.
 #
 # Absences (optional): with LNK_KNOWLEDGE_DIR pointing at the private
 # `knowledge` repo, FISS data-submission sites that were sampled (effort
@@ -78,6 +86,7 @@ if (anyNA(buffers) || !0 %in% buffers) {
 }
 wsgs_arg <- toupper(split_csv(opt("wsgs")))
 dir_out <- opt("out", file.path("data-raw", "logs", "habitat_validate_283"))
+pooling_cfg <- opt("pooling")
 fs::dir_create(dir_out)
 # Clear this script's outputs first, so a partial or one-bundle run cannot
 # leave an older stamp or diff beside new CSVs.
@@ -204,6 +213,56 @@ absences <- fiss_absences()
 abs_note <- attr(absences, "reason")
 if (!is.null(abs_note)) absences <- NULL
 
+# -- pooling: resolved once, from one bundle -----------------------------------
+if (is.null(pooling_cfg)) {
+  declares <- vapply(bundles$config, function(b) {
+    !is.null(lnk_config(b)$files$species_pooling)
+  }, logical(1))
+  pooling_cfg <- if (any(declares)) bundles$config[which(declares)[1]] else NULL
+}
+loaded_pool <- if (is.null(pooling_cfg)) list() else
+  suppressWarnings(lnk_load_overrides(lnk_config(pooling_cfg)))
+args_pool <- list()
+pooling_note <- "no bundle declares a species_pooling tracker: lnk_habitat_validate() default"
+if (!is.null(pooling_cfg) && is.null(loaded_pool$species_pooling)) {
+  stop("--pooling=", pooling_cfg, " declares no species_pooling tracker",
+       call. = FALSE)
+}
+if (!is.null(loaded_pool$species_pooling)) {
+  # The pooling table is resolved against the pooling bundle's presence, and
+  # each bundle is then scored against its own. If they disagree on a species
+  # in play, pooled records drop silently in the WSGs where they differ.
+  presence_flags <- function(p, w) {
+    p <- as.data.frame(p)
+    names(p) <- tolower(names(p))
+    p <- p[match(w, toupper(p$watershed_group_code)), tolower(species), drop = FALSE]
+    vapply(p, function(x) as.character(x) %in% "t", logical(length(w)))
+  }
+  for (i in seq_len(nrow(bundles))) {
+    lp <- suppressWarnings(lnk_load_overrides(lnk_config(bundles$config[i])))
+    w <- bundle_wsgs[[i]]
+    if (!identical(presence_flags(lp$wsg_species_presence, w),
+                   presence_flags(loaded_pool$wsg_species_presence, w))) {
+      stop("bundle ", bundles$config[i], "'s wsg_species_presence differs ",
+           "from --pooling=", pooling_cfg, "'s for ",
+           paste(species, collapse = ", "), " in its WSGs", call. = FALSE)
+    }
+  }
+  args_pool$species_obs <- lnk_species_pooling(
+    loaded_pool, aoi = sort(unique(unlist(bundle_wsgs))), species = species)
+  pooled <- args_pool$species_obs[args_pool$species_obs$scope_level != "self", ]
+  pooling_note <- sprintf("%s species_pooling.csv (sha256 %s): %d WSG x species pairs pooled (%s)",
+                          pooling_cfg,
+                          substr(digest::digest(
+                            file = lnk_config(pooling_cfg)$files$species_pooling$path,
+                            algo = "sha256"), 1, 12), nrow(unique(pooled[c("watershed_group_code",
+                                                            "species_code")])),
+                          if (nrow(pooled) == 0L) "none" else
+                            paste(unique(paste0(pooled$species_code, "<-",
+                                                pooled$obs_species)),
+                                  collapse = ", "))
+}
+
 # -- validate ------------------------------------------------------------------
 runs <- list()
 for (i in seq_len(nrow(bundles))) {
@@ -214,10 +273,11 @@ for (i in seq_len(nrow(bundles))) {
                     bundles$config[i], bundles$schema[i],
                     length(bundle_wsgs[[i]]), b))
     runs[[length(runs) + 1L]] <- c(
-      lnk_habitat_validate(conn, aoi = bundle_wsgs[[i]], cfg = cfg,
-                           loaded = loaded, species = species,
-                           schema = bundles$schema[i], buffer_m = b,
-                           absences = absences),
+      do.call(lnk_habitat_validate,
+              c(list(conn, aoi = bundle_wsgs[[i]], cfg = cfg,
+                     loaded = loaded, species = species,
+                     schema = bundles$schema[i], buffer_m = b,
+                     absences = absences), args_pool)),
       list(bundle = paste0(bundles$config[i], ":", bundles$schema[i])))
   }
 }
@@ -388,6 +448,7 @@ stamp <- c(
   log_lines,
   sprintf("species: %s; buffers: %s m", paste(species, collapse = ","),
           paste(buffers, collapse = ",")),
+  sprintf("pooling: %s", pooling_note),
   sprintf("bcfishobs.observations rows: %s",
           dbGetQuery(conn, "SELECT count(*) FROM bcfishobs.observations")[[1]]),
   if (!is.null(abs_note)) sprintf("absences: none (%s)", abs_note) else

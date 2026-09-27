@@ -93,6 +93,36 @@ test_that(".lnk_hv_spec admits observation species only where the model species 
                          "BBBB CH CH"))
 })
 
+test_that(".lnk_hv_spec applies a per-WSG species_obs data frame (#290)", {
+  presence <- data.frame(
+    watershed_group_code = c("AAAA", "BBBB", "CCCC"),
+    bt = c("t", "t", ""), ch = c("t", "t", "t"), notes = "",
+    stringsAsFactors = FALSE)
+  so <- link:::.lnk_hv_species_obs(data.frame(
+    watershed_group_code = c("AAAA", "AAAA", "CCCC", "aaaa"),
+    species_code = c("BT", "BT", "BT", "bt"),
+    obs_species = c("BT", "DV", "DV", "dv ")))
+  s <- link:::.lnk_hv_spec(presence, aoi = c("AAAA", "BBBB", "CCCC"),
+                           species = c("BT", "CH"), species_obs = so)
+  got <- paste(s$watershed_group_code, s$species_code, s$obs_species)
+  # AAAA pools (deduplicated); BBBB is unlisted, so BT is itself only;
+  # CCCC lists a pooling row but BT is absent there, so it yields nothing
+  expect_setequal(got, c("AAAA BT BT", "AAAA BT DV", "AAAA CH CH",
+                         "BBBB BT BT", "BBBB CH CH", "CCCC CH CH"))
+})
+
+test_that(".lnk_hv_species_obs rejects a malformed species_obs", {
+  expect_error(link:::.lnk_hv_species_obs(
+    data.frame(watershed_group_code = "AAAA", species_code = "BT")),
+    "obs_species")
+  expect_error(link:::.lnk_hv_species_obs(
+    data.frame(watershed_group_code = "AAAA", species_code = "BT",
+               obs_species = NA)), "NA")
+  expect_error(link:::.lnk_hv_species_obs(list(c("BT", "DV"))), "named list")
+  expect_identical(link:::.lnk_hv_species_obs(list(bt = c("bt", "dv"))),
+                   list(BT = c("BT", "DV")))
+})
+
 test_that(".lnk_hv_spec returns a typed empty frame when nothing is present", {
   presence <- data.frame(watershed_group_code = "AAAA", bt = "",
                          stringsAsFactors = FALSE)
@@ -304,6 +334,23 @@ test_that("species_obs values are case-insensitive", {
   s <- local_validate_fixture(conn)
   v <- run_validate(conn, s, aoi = "AAAA", species_obs = list(bt = c("bt", "dv")))
   expect_identical(v$summary$n_obs[v$summary$stage == "any"], 4L)
+})
+
+test_that("a species_obs data frame scores the same as the equivalent list", {
+  conn <- validate_conn()
+  s <- local_validate_fixture(conn)
+  v_list <- run_validate(conn, s, aoi = "AAAA",
+                         species_obs = list(BT = c("BT", "DV")))
+  v_df <- run_validate(conn, s, aoi = "AAAA", species_obs = data.frame(
+    watershed_group_code = "AAAA", species_code = "BT", obs_species = "DV"))
+  expect_identical(v_df$summary, v_list$summary)
+  v_none <- run_validate(conn, s, aoi = "AAAA", species_obs = data.frame(
+    watershed_group_code = character(0), species_code = character(0),
+    obs_species = character(0)))
+  # o2 is the fixture's one admissible DV record (it shares a location with
+  # BT record o7, so location counts cannot tell the two apart)
+  expect_true("o2" %in% v_df$observations$observation_key)
+  expect_false("o2" %in% v_none$observations$observation_key)
 })
 
 test_that("observations can be a data frame from any source", {

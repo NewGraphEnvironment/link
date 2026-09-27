@@ -66,3 +66,4 @@ Relates to #236, #284, #283, #189
 |-------|------------|
 | A mutation-test loop restored from a path that did not exist, so later mutations ran stacked on earlier ones | Restore from the absolute repo path on every iteration, and run the unmutated copy first as a control (0 failing) |
 | sprintf() over SQL with a literal `LIKE '...%'` fails: "invalid format '%' A'" | Escape as `%%` when wrapping SQL in sprintf |
+| Two runs of `query_habitat_thresholds_obs.R` with identical inputs differ in the 17th significant digit of `candidates.csv` availability shares (`0.11325447588492017` vs `…016`) | Pre-existing, not #290. The cause is `sum(s.length_metre)` over double precision (line ~371), whose Postgres parallel-aggregation order varies. An issue is drafted in the final report (sum as `numeric`). The byte-identity check here compares against the run that matched; the committed evidence keeps its CSVs, and only the ledger and stamp are refreshed |

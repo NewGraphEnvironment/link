@@ -75,9 +75,9 @@ What exploration found:
 - [x] `lnk_config_verify(lnk_config("default"))` is clean; `default_tuned` inherits the file
 
 ## Phase 3: Consumers
-- [ ] `lnk_habitat_validate()`: `species_obs` also accepts the resolver's data frame, applied per WSG; the list form and its default are unchanged. Add tests for both forms.
-- [ ] `data-raw/habitat_validate.R`: add `--pooling=<config>`, defaulting to the first bundle. The driver resolves once and passes the same table to both bundles, which keeps the same-observations assertion true. A bundle without the tracker falls back to the list default.
-- [ ] `data-raw/query_habitat_thresholds_obs.R`: replace the hard-coded `CASE` and `dv_ok` with a join to the resolved table, pushed as a temp table. The BT-only comparison set is kept.
+- [x] `lnk_habitat_validate()`: `species_obs` also accepts the resolver's data frame, applied per WSG; the list form and its default are unchanged. Add tests for both forms.
+- [x] `data-raw/habitat_validate.R`: add `--pooling=<config>`, defaulting to the first bundle. The driver resolves once and passes the same table to both bundles, which keeps the same-observations assertion true. A bundle without the tracker falls back to the list default.
+- [x] `data-raw/query_habitat_thresholds_obs.R`: replace the hard-coded `CASE` and `dv_ok` with a join to the resolved table, pushed as a temp table. The BT-only comparison set is kept.
 - [ ] Update the method lines in `research/habitat_validation.md` and `research/habitat_thresholds.md` ("DV counts as BT in the regions `species_pooling.csv` lists").
 
 ## Phase 4: Verification

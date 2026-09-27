@@ -136,9 +136,16 @@
 #'   and trimmed. Optional: `match_type`, `source`, `is_spawn`, `is_rear`
 #'   (logical, 0/1 or t/true/yes), `activity_code`, `activity`,
 #'   `life_stage`.
-#' @param species_obs Named list mapping a model species to the observation
-#'   species codes that count as it. Species not named map to themselves.
-#'   Default pools DV records with BT (`list(BT = c("BT", "DV"))`).
+#' @param species_obs Which observation species count as each model species.
+#'   Either a named list mapping a model species to observation species
+#'   codes, applied in every WSG (default `list(BT = c("BT", "DV"))`, which
+#'   pools DV records with BT), or a per-WSG data frame with
+#'   `watershed_group_code`, `species_code` and `obs_species`, such as
+#'   [lnk_species_pooling()] returns. In the list form a species not named
+#'   maps to itself; in the data frame form a species always counts as
+#'   itself, and a WSG and species pair it does not list maps to itself only.
+#'   Either way a species is scored only where
+#'   `loaded$wsg_species_presence` marks it present.
 #' @param match_types Character vector of `match_type` classes (first
 #'   letter) to keep, or `NULL` for no match-type filter. Default
 #'   `c("A", "B")`.
@@ -216,8 +223,6 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
     is.character(schema), length(schema) == 1L, !is.na(schema),
     grepl("^[a-z_][a-z0-9_]*$", schema),
     is.list(species_obs),
-    length(species_obs) == 0L || !is.null(names(species_obs)),
-    all(vapply(species_obs, is.character, logical(1))),
     is.null(match_types) ||
       (is.character(match_types) && length(match_types) >= 1L &&
          all(grepl("^[A-Z]$", match_types))),
@@ -240,8 +245,7 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
   }
   aoi <- unique(aoi)
   species <- unique(toupper(species))
-  species_obs <- lapply(species_obs, toupper)
-  names(species_obs) <- toupper(names(species_obs))
+  species_obs <- .lnk_hv_species_obs(species_obs)
 
   .lnk_hv_check_schema(conn, schema, aoi, species)
   logged <- .lnk_hv_check_log(conn, schema, aoi, cfg)
@@ -355,15 +359,21 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
 #' the model species is present.
 #' @noRd
 .lnk_hv_spec <- function(presence, aoi, species, species_obs) {
+  per_wsg <- is.data.frame(species_obs)
   rows <- lapply(aoi, function(w) {
     row <- presence[presence$watershed_group_code == w, , drop = FALSE]
     if (nrow(row) == 0L) return(NULL)
     present <- intersect(species, .lnk_wsg_species_present(row[1, ]))
     if (length(present) == 0L) return(NULL)
     do.call(rbind, lapply(present, function(sp) {
+      obs <- if (per_wsg) {
+        c(sp, species_obs$obs_species[species_obs$watershed_group_code == w &
+                                        species_obs$species_code == sp])
+      } else {
+        species_obs[[sp]] %||% sp
+      }
       data.frame(watershed_group_code = w, species_code = sp,
-                 obs_species = unique(species_obs[[sp]] %||% sp),
-                 stringsAsFactors = FALSE)
+                 obs_species = unique(obs), stringsAsFactors = FALSE)
     }))
   })
   out <- do.call(rbind, rows)
@@ -372,6 +382,37 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
                       species_code = character(0),
                       obs_species = character(0), stringsAsFactors = FALSE)
   }
+  out
+}
+
+#' Normalise `species_obs`: a named list (applied in every WSG) or a per-WSG
+#' data frame (`watershed_group_code`, `species_code`, `obs_species`).
+#' Checked as a data frame first, because a data frame is also a list and
+#' would otherwise pass the list checks and silently map nothing.
+#' @noRd
+.lnk_hv_species_obs <- function(species_obs) {
+  up <- function(x) toupper(trimws(as.character(x)))
+  if (is.data.frame(species_obs)) {
+    cols <- c("watershed_group_code", "species_code", "obs_species")
+    miss <- setdiff(cols, names(species_obs))
+    if (length(miss) > 0L) {
+      stop("species_obs data frame lacks columns: ",
+           paste(miss, collapse = ", "), call. = FALSE)
+    }
+    out <- data.frame(lapply(species_obs[cols], up), stringsAsFactors = FALSE)
+    if (anyNA(out) || !all(vapply(out, function(x) all(nzchar(x)), TRUE))) {
+      stop("species_obs data frame has empty or NA codes", call. = FALSE)
+    }
+    return(unique(out))
+  }
+  if (!(length(species_obs) == 0L || !is.null(names(species_obs))) ||
+      !all(vapply(species_obs, is.character, logical(1)))) {
+    stop("species_obs must be a named list of character vectors or a data ",
+         "frame of watershed_group_code, species_code, obs_species",
+         call. = FALSE)
+  }
+  out <- lapply(species_obs, up)
+  names(out) <- up(names(out))
   out
 }
 

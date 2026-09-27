@@ -36,3 +36,30 @@
     - one `.lnk_presence_species_cols()` for three copies of the exclusion list;
     - `.lnk_wsg_regions_path()` stops on a missing file.
   - Also added: `.lnk_config_hash()` hashes `wsg_regions.csv` for tracker bundles (the plan review's G7), and its mocked test goes red when the block is removed.
+- Phase 3: `lnk_habitat_validate()` accepts a per-WSG `species_obs` data frame, checked as a data frame first (plan review B3).
+  - Rules: its own presence ∩ the table; an unlisted pair maps to itself; rows are deduplicated.
+  - The driver gains `--pooling=`, defaulting to the first bundle that declares a tracker. It resolves once, over the union of both bundles' WSGs, and stamps the choice.
+  - The obs query joins the resolved table instead of the hard-coded `CASE`, and gains `--pooling=` and `--out=`.
+  - Tests:
+    - 3 new, including end-to-end: the df form's `summary` is identical to the list form, and an empty df drops DV record `o2`;
+    - bypassing the df branch in a copy turns all 3 red.
+- Phase 4 negative check: a scratch bundle with Skeena `pool = no`.
+  - Ledger step-3 DV is 2,910, as predicted (6,138 − 3,228).
+  - 1,929 evidence rows drop, all DV and all Skeena, in exactly the 9 Skeena WSGs (BULK, KISP, KLUM, LKEL, LSKE, MORR, MSKE, USKE, ZYMO).
+  - 0 rows are added, and the remaining rows are identical.
+- Phase 3 `/code-check`: two rounds, then ended by enumeration. This is one round short of the skill's three-round floor, deliberately: review spend was at 6 agents, and the only round-2 finding was a single site, now keyed and proven.
+
+  | Round | Findings | Fixed | Accepted | Inside previous fix? |
+  |---|---|---|---|---|
+  | 1 | 3 fragile: CH<-BT relabelled silently; pooling-bundle vs scored-bundle presence disagreement drops silently; the zero-row stamp prints `"<-"` | 3 | 0 | — |
+  | 2 | 1 fragile: the query's presence check compared by row position (a renamed WSG slipped through) | 1 | 0 | yes |
+
+  - Enumeration of the mechanism's reach in this diff, each site guarded:
+    - the pool ↔ observations join (uniqueness and model-species guards);
+    - the query presence check, keyed by WSG;
+    - the driver presence check, keyed by WSG;
+    - the validator df ↔ its own presence (intersection and self fallback);
+    - the resolved WSG set, the union of both bundles';
+    - stamps, "none" when empty.
+  - Proven with scratch bundles, each stopping with the named cause: CH<-BT, a blanked MORR presence, a MORR→MORQ rename, and the driver on a mismatched presence. `default` still runs clean.
+  - `candidates.csv` differs from the committed copy by at most 1.7e-16 relative (1 ulp) between identical runs. This is pre-existing: a float `sum()` in the availability SQL (findings table; issue drafted).
