@@ -11,6 +11,11 @@ Moved "which observation species count as which model species" out of code and i
 
 The plan moved twice at the operator's word: regions went package-level rather than into the bundle, and pooling became abstract (species or group on either side) mid-plan.
 
+**After the PR opened (2026-09-27):**
+- The naming-history measurement showed Skeena DV is a current name, not a legacy one.
+- At the operator's call, the Skeena is split at Hazelton. Only the upper Skeena pools, through a new list-defined sub-region.
+- The tracker gains an optional `obs_year_max` column, so a row can pool only records dated before a year. It is empty in the seed.
+
 ## Measurement
 
 - **Where the new rule applies.** DV pools into BT in 129 WSGs. It does not in the 29 BT-present WSGs of unlisted regions (Nass, Stikine, Taku, Yukon, the coast), all of which pooled under the old "wherever BT is present" rule.
@@ -18,7 +23,7 @@ The plan moved twice at the operator's word: regions went package-level rather t
   - The #284 obs producer re-runs byte-identical in every CSV and PNG except the province-wide ledger step 3, where DV goes 8,888 → 6,138. The plan review independently derived the same 6,138.
   - The #283 validation baseline (55 + 59 WSGs, knowledge @ 508bf44) re-runs byte-identical in all 6 CSVs, before and after the Phase 3 guards.
 - **Negative check** (Skeena `pool = no`): ledger DV 2,910 (6,138 − 3,228). 1,929 evidence rows drop, all DV, in exactly the 9 Skeena WSGs; 0 rows are added and the rest are identical.
-- **A pre-existing reproducibility defect surfaced.** The #284 producer's `candidates.csv` differs by 1 ulp (1.7e-16 relative) between identical runs, from a double-precision `sum(length_metre)` in its availability SQL. The committed copy was kept, and the issue is drafted in `draft_obs_float_issue.md`.
+- **A pre-existing reproducibility defect surfaced.** The #284 producer's `candidates.csv` differs by 1 ulp (1.7e-16 relative) between identical runs, from a double-precision `sum(length_metre)` in its availability SQL. The committed copy was kept; filed as #293.
 - **Wrong turns kept:**
   - A mutation loop restored from a missing path, so mutations stacked until a control run was added.
   - A `sprintf()` over SQL with a literal `LIKE '...%'` crashed the first re-run.
@@ -32,6 +37,6 @@ The plan moved twice at the operator's word: regions went package-level rather t
 
 - `data-raw/logs/habitat_thresholds_284/` (refreshed: `obs_ledger.csv`, `stamp.txt`)
 - Review files: `review-*.md` here
-- Follow-up issue drafts, awaiting body review: `draft_*.md` here
+- Follow-up issue drafts, filed 2026-09-27: `draft_presence_groups_issue.md` → #292, `draft_obs_float_issue.md` → #293
 
 Closed by: PR for #290 (branch `290-region-scoped-dv-bt-observation-pooling`)

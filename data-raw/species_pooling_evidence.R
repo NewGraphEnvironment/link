@@ -19,10 +19,10 @@
 #   S4_hazelton_pre1995  S1 with the interior rows limited to before 1995
 #   BT_only              no pooling (the producer's BT_any comparison set)
 #
-# Every scenario runs through data-raw/query_habitat_thresholds_obs.R. The
-# rule is also reimplemented here over the S0 evidence, and the script stops
-# unless the two agree for every scenario (the check that the evidence tables
-# say what the producer computed). With --validate each is also scored
+# Every scenario runs through data-raw/query_habitat_thresholds_obs.R, and its
+# numbers come from that run. The rule is also reimplemented over the S0
+# evidence as a cross-check: the script stops unless the two agree for every
+# scenario without a year limit. The reimplementation also gives BT_only. With --validate each is also scored
 # through data-raw/habitat_validate.R (default:fresh_default, ~5 min each).
 #
 # Writes to data-raw/logs/species_pooling_290/:
@@ -200,30 +200,49 @@ keep_dv <- list(
   S3_pre1995 = function(s) pre(s),
   S4_hazelton_pre1995 = function(s) pre(s) | s$watershed_group_code %in% upper_skeena,
   BT_only = function(s) rep(FALSE, nrow(s)))
-scen <- bind_rows(lapply(names(keep_dv), function(s) {
+# Every scenario's numbers come from its own producer run. The reimplementation
+# (over the S0 evidence) is a cross-check for the scenarios without a year
+# limit, and supplies BT_only, which has no run of its own. It cannot stand in
+# for a year-limited scenario: the producer applies the year to each record
+# before it deduplicates locations, while S0's evidence is already
+# deduplicated, so a location with DV records on both sides of 1995 would be
+# judged by whichever record survived (review, 2026-09-27).
+prod_metrics <- function(dir) {
+  cand <- utils::read.csv(file.path(dir, "candidates.csv"))
+  cand <- cand[cand$species_code == "BT", ]
+  g <- function(set, par, col) {
+    v <- cand[[col]][cand$evidence_set == set & cand$parameter == par]
+    if (length(v)) v[1] else NA_real_
+  }
+  seg <- utils::read.csv(file.path(dir, "obs_segments.csv"))
+  tibble(
+    n_dv_records = sum(seg$species_code == "BT" & seg$obs_species == "DV"),
+    rear_n = g("BT_any_dv", "rear_gradient_max", "n"),
+    rear_gradient_p95 = g("BT_any_dv", "rear_gradient_max", "use_quantile"),
+    rear_gradient_rule = g("BT_any_dv", "rear_gradient_max", "rule_value"),
+    rear_width_n = g("BT_any_dv", "rear_channel_width_min", "n"),
+    rear_width_p05 = g("BT_any_dv", "rear_channel_width_min", "use_quantile"),
+    spawn_n = g("BT_spawn_dv", "spawn_gradient_max", "n"),
+    spawn_gradient_p95 = g("BT_spawn_dv", "spawn_gradient_max", "use_quantile"),
+    spawn_width_n = g("BT_spawn_dv", "spawn_channel_width_min", "n"),
+    spawn_width_p05 = g("BT_spawn_dv", "spawn_channel_width_min", "use_quantile"))
+}
+reimpl <- function(s) {
   k <- seg0$obs_species != "DV" | keep_dv[[s]](seg0)
   cbind(scenario = s, metrics(seg0[k, ]))
-}))
+}
+scen <- bind_rows(
+  lapply(names(runs), function(s) cbind(scenario = s, prod_metrics(runs[[s]]))),
+  reimpl("BT_only"))
 
-# The reimplementation must reproduce the producer where both exist.
-for (s in names(runs)) {
-  cand <- utils::read.csv(file.path(runs[[s]], "candidates.csv"))
-  cand <- cand[cand$species_code == "BT" & cand$evidence_set == "BT_any_dv", ]
-  mine <- scen[scen$scenario == s, ]
-  sp <- utils::read.csv(file.path(runs[[s]], "candidates.csv"))
-  sp <- sp[sp$species_code == "BT" & sp$evidence_set == "BT_spawn_dv", ]
-  got <- c(cand$n[cand$parameter == "rear_gradient_max"],
-           cand$use_quantile[cand$parameter == "rear_gradient_max"],
-           cand$n[cand$parameter == "rear_channel_width_min"],
-           cand$use_quantile[cand$parameter == "rear_channel_width_min"],
-           sp$n[sp$parameter == "spawn_gradient_max"],
-           sp$use_quantile[sp$parameter == "spawn_gradient_max"],
-           sp$n[sp$parameter == "spawn_channel_width_min"],
-           sp$use_quantile[sp$parameter == "spawn_channel_width_min"])
-  want <- c(mine$rear_n, mine$rear_gradient_p95, mine$rear_width_n,
-            mine$rear_width_p05, mine$spawn_n, mine$spawn_gradient_p95,
-            mine$spawn_width_n, mine$spawn_width_p05)
-  if (!isTRUE(all.equal(got, want, tolerance = 1e-9))) {
+no_year <- c("S0_whole_skeena", "S1_hazelton", "S2_noskeena")
+for (s in no_year) {
+  cols <- c("n_dv_records", "rear_n", "rear_gradient_p95", "rear_width_n",
+            "rear_width_p05", "spawn_n", "spawn_gradient_p95", "spawn_width_n",
+            "spawn_width_p05")
+  got <- unlist(scen[scen$scenario == s, cols])
+  want <- unlist(reimpl(s)[, cols])
+  if (!isTRUE(all.equal(unname(got), unname(want), tolerance = 1e-9))) {
     stop("reimplementation disagrees with the producer for ", s, ": ",
          paste(signif(got, 6), collapse = " "), " vs ",
          paste(signif(want, 6), collapse = " "), call. = FALSE)
@@ -242,10 +261,19 @@ scen$rear_gradient_says <- ifelse(
   "keep", "change")
 readr::write_csv(scen, file.path(dir_out, "scenarios.csv"), na = "")
 
-dropped <- bind_rows(lapply(setdiff(names(keep_dv), "S0_whole_skeena"), function(s) {
-  d <- seg0[seg0$obs_species == "DV" & !keep_dv[[s]](seg0), ]
+dv_by_wsg <- function(dir) {
+  seg <- utils::read.csv(file.path(dir, "obs_segments.csv"))
+  count(seg[seg$species_code == "BT" & seg$obs_species == "DV", ],
+        watershed_group_code, name = "n")
+}
+dv0 <- dv_by_wsg(runs$S0_whole_skeena)
+dropped <- bind_rows(lapply(setdiff(names(runs), "S0_whole_skeena"), function(s) {
+  d <- full_join(dv0, dv_by_wsg(runs[[s]]), by = "watershed_group_code",
+                 suffix = c("_s0", "_s")) |>
+    mutate(dv_rows = coalesce(n_s0, 0L) - coalesce(n_s, 0L)) |>
+    filter(dv_rows != 0L)
   if (nrow(d) == 0L) return(NULL)
-  count(d, watershed_group_code, name = "dv_rows") |> mutate(scenario = s, .before = 1)
+  transmute(d, scenario = s, watershed_group_code, dv_rows)
 }))
 readr::write_csv(dropped, file.path(dir_out, "scenarios_dropped.csv"), na = "")
 
@@ -456,7 +484,10 @@ writeLines(c(
           dbGetQuery(conn, "SELECT count(*) FROM bcfishobs.observations")[[1]]),
   sprintf("BT + DV records (not Releases): %d; undated: %d", nrow(obs), sum(is.na(obs$yr))),
   "evidence: data-raw/query_habitat_thresholds_obs.R on fresh_default (55 WSGs), one run per scenario bundle",
-  sprintf("reimplementation matched the producer for: %s", paste(names(runs), collapse = ", ")),
+  sprintf("scenario numbers from producer runs: %s; BT_only from the reimplementation",
+          paste(names(runs), collapse = ", ")),
+  sprintf("reimplementation cross-check matched the producer for: %s",
+          paste(no_year, collapse = ", ")),
   sprintf("validator runs: %s", if (do_validate) paste(names(bundles), collapse = ", ") else "not run")),
   file.path(dir_out, "stamp.txt"))
 DBI::dbDisconnect(conn)
