@@ -1,6 +1,6 @@
 # Species pooling: which observations count as which species
 
-**Verified:** 2026-09-26 · **Issues:** #290 (this), #236 (access override, which should read the same table), #284 (the BT evidence it defines) · **Produced by:** `lnk_species_pooling()` over `configs/default/species_pooling.csv` and `inst/extdata/wsg_regions.csv` (`data-raw/wsg_regions.R`); counts below from local fwapg, bcfishobs 373,050 rows · **Status:** seeded with one decision (DV → BT in four drainages)
+**Verified:** 2026-09-26 · **Issues:** #290 (this), #236 (access override, which should read the same table), #284 (the BT evidence it defines) · **Produced by:** `lnk_species_pooling()` over `configs/default/species_pooling.csv` and `inst/extdata/wsg_regions.csv` (`data-raw/wsg_regions.R`); counts below from local fwapg, bcfishobs 373,050 rows; the naming history and scenario sensitivity from `data-raw/species_pooling_evidence.R` → `data-raw/logs/species_pooling_290/` · **Status:** seeded with one decision (DV → BT in four drainages). **The Skeena row is in question**: see "The Skeena is a different case"
 
 ## What it is
 
@@ -90,3 +90,69 @@ The lower Fraser tributaries (LFRA, CHWK) are coastal-influenced, and are the fi
 candidates for a `wsg` row, either way. The unlisted coastal and northern BT-present WSGs
 (Nass and Stikine above all) are where a `pool = yes` row would need evidence rather than
 an assumption.
+
+## How DV and BT are recorded through time
+
+The DV share of all BT and DV records (`decade_region.csv`; releases removed; 24,337 records, 692 undated), with the record count in brackets:
+
+| | ≤ 1960s | 1970s | 1980s | 1990s | 2000s | 2010s |
+|---|---|---|---|---|---|---|
+| Columbia | 89 % (36) | 87 % (474) | 67 % (177) | **1 %** (1,384) | 0 % (743) | 0 % (1,631) |
+| Fraser | 93 % (46) | 86 % (310) | 89 % (478) | 37 % (1,089) | 14 % (605) | 5 % (1,081) |
+| Mackenzie | 94 % (16) | 74 % (453) | 57 % (348) | 23 % (1,016) | 9 % (1,456) | 7 % (1,562) |
+| **Skeena** | 100 % (24) | 100 % (346) | 100 % (141) | **91 %** (1,742) | **86 %** (450) | **98 %** (447) |
+| Coast and north | 100 % (56) | 100 % (554) | 100 % (764) | 96 % (2,247) | 89 % (1,030) | 83 % (2,461) |
+
+**In the interior the name changed.**
+- Char were mostly recorded as DV until the 1980s, and the name flips to BT through the 1990s, consistent with bull trout being recognised as a separate species and recording practice catching up.
+- The streams that carry a DV record show what happened after (`dv_streams_resampled.csv`; a later BT record counts first, whenever it came):
+
+  | Region | Streams with a DV record | Later recorded as BT | Not sampled after 1995 | Sampled after 1995, DV only |
+  |---|---|---|---|---|
+  | Columbia | 163 | 74 % | 26 % | 0 % |
+  | Fraser | 547 | 27 % | 51 % | 23 % |
+  | Mackenzie | 329 | 34 % | 45 % | 21 % |
+  | Skeena | 1,180 | **1 %** | 14 % | **85 %** |
+  | Coast and north | 2,356 | 2 % | 35 % | 63 % |
+
+- In the Fraser and Mackenzie about half the DV streams were fished in the inventory era and never again, so their only char evidence is an old "DV" that is almost certainly a bull trout. Where they were re-sampled, it often came back BT (74 % in the Columbia, where no DV stream was re-sampled without a BT record). Pooling is well founded there.
+
+## The Skeena is a different case
+
+- Skeena DV is **not** a legacy name. It is still 86 % or more of char records in every decade, the 2010s included.
+- 85 % of Skeena DV streams were sampled again after 1995 and still recorded only DV. Only 1 % were ever recorded as BT.
+- Whatever these fish are (true Dolly Varden, a local recording convention, or both), the naming-change argument that justifies interior pooling does not cover them. Pooling the Skeena is a judgement, and it carries the most weight: 1,929 of the 2,822 DV records in the #284 evidence are Skeena records, mostly from the 1990s on.
+
+## Sensitivity: what pooling does to the #284 BT evidence
+
+The scenarios (`scenarios.csv`):
+- **S0:** the current tracker.
+- **S1:** Skeena pooling only above Hazelton, where the Bulkley joins the Skeena. Pooled: BULK, MORR, KISP, BABL, BABR, SUST, MSKE, USKE. Kept apart: LSKE, KLUM, LKEL, ZYMO.
+- **S2:** no Skeena pooling.
+- **S3:** interior DV counted as BT only for records before 1995, and no Skeena pooling. The tracker has no time axis, so S3 is computed from the S0 evidence by the same rule. That reimplementation reproduces the producer exactly for S0–S2.
+
+| | DV records pooled | Rearing n | Rearing gradient P95 | Rule gives | Rearing width P5 | Spawning n (DV staged) | Bridge loss |
+|---|---|---|---|---|---|---|---|
+| S0 current | 2,822 | 4,764 | 0.1348 | **0.1349** | 1.48 m | 76 | 1.7 % |
+| S1 Hazelton | 1,970 | 3,988 | 0.1309 | **0.1349** | 1.47 m | 59 | 1.5 % |
+| S2 no Skeena | 893 | 3,058 | 0.1204 | **0.1249** | 1.68 m | 18 | 1.0 % |
+| S3 interior pre-1995 | 537 | 2,824 | 0.1203 | **0.1249** | 2.07 m | 8 | — |
+| BT records only | 0 | 2,443 | 0.1253 | **0.1249** | 1.91 m | 0 | 1.2 % (from #284's `bridge_bt.csv`) |
+
+- **`default_tuned`'s BT `rear_gradient_max` of 0.1349 depends on the Skeena DV records.** Drop them (S2, S3) and the rule gives 0.1249, the value the BT records alone give. The Hazelton cut (S1) keeps 0.1349, but only just: the rule floors the P95 to the hundredth, and S1's 0.1309 is **0.0009** above the 0.13 line where the result drops to 0.1249 (S0's 0.1348 is 0.0048 above it). A handful of records would flip it.
+- Rearing width stays within 0.5 m of the current 1.5 m in S0–S2, so it stays **keep**. S3's 2.07 m is 0.57 m above the current value, past the rule's 0.5 m keep band, so on that evidence the rule would tighten rearing width to about 2.1 m. It has not been checked against the literature here.
+- Without the Skeena, the staged spawning evidence nearly vanishes (18 records in S2, 8 in S3). BT's spawning thresholds already rest on the literature, and would then rest on nothing else.
+
+**Validator scores** (`validate_scenarios.csv`, `default` on `fresh_default`, BT, buffer 0). The model is the same in every row; only the evidence changes.
+
+| | Any stage: n | Capture on any rearing | Rear-staged: n | Capture on any rearing |
+|---|---|---|---|---|
+| S0 | 5,104 | 82.4 % | 1,053 | 66.5 % |
+| S1 | 4,275 | 83.5 % | 628 | 66.1 % |
+| S2 | 3,259 | 86.2 % | 205 | 75.6 % |
+
+Skeena DV records sit on modelled BT rearing less often than the rest (the model is the same in all three rows). That fits them being partly true Dolly Varden, in smaller and steeper water than the interior bull trout the thresholds describe. Most of the "rear-staged" BT evidence is Skeena DV: 848 of 1,053 records, since bcfishobs gives BT no life stage.
+
+## What this leaves open
+
+The tracker cannot yet say "DV counts as BT for records **before 1995**" (S3), which is the mechanism the interior history supports. That would take one optional column (for example `obs_year_max`) and one filter in `lnk_species_pooling()`'s consumers. The Skeena choice is S0, S1 or S2. It decides whether `default_tuned` keeps 0.1349 or goes back to 0.1249, so it is an input to #284 step 5, not a detail of it.

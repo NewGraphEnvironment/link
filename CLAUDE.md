@@ -70,6 +70,11 @@ awaiting body review.
 - The seed pools DV → BT in the Fraser, Mackenzie, Skeena and Columbia/Kootenay; everything unlisted is not pooled.
 - The state of knowledge lives in `research/species_pooling.md`.
 - **Do not re-hard-code a species pair anywhere**; add a row.
+- **The Skeena pooling row is unsettled, and `default_tuned`'s 0.1349 depends on it.**
+  - Interior DV is a legacy name (DV share of char records ~90 % before 1990, under 15 % after 2000).
+  - Skeena DV is not: 86 % or more in every decade, and 85 % of Skeena DV streams were re-sampled and still recorded DV.
+  - Without Skeena pooling, BT `rear_gradient_max` goes back to 0.1249. The above-Hazelton cut keeps 0.1349, by 0.0009.
+  - `research/species_pooling.md` and `data-raw/species_pooling_evidence.R` have the scenarios; the choice feeds #284 step 5.
 
 **Facts not worth re-deriving:**
 - **No #284 or #283 number moved.** All 55 + 59 WSGs are in pooled regions. The obs query re-runs byte-identical except its province-wide ledger step 3 (DV 8,888 → 6,138), and the validator baseline re-runs byte-identical.
