@@ -92,7 +92,8 @@ if (is.null(loaded$species_pooling)) {
 pool <- lnk_species_pooling(loaded, aoi = presence$watershed_group_code,
                             species = species)
 pool <- pool[pool$scope_level != "self",
-             c("watershed_group_code", "species_code", "obs_species")]
+             c("watershed_group_code", "species_code", "obs_species",
+               "obs_year_max")]
 # One target per observation species per WSG, or the join below would copy
 # a record into two species' evidence.
 if (anyDuplicated(pool[c("watershed_group_code", "obs_species")])) {
@@ -145,6 +146,9 @@ dbExecute(conn, sprintf("
   FROM bcfishobs.observations o
   LEFT JOIN t_pool pl ON pl.watershed_group_code = o.watershed_group_code
                      AND pl.obs_species = o.species_code
+                     -- a year-limited row pools only records dated within it
+                     AND (pl.obs_year_max IS NULL
+                          OR extract(year FROM o.observation_date) <= pl.obs_year_max)
   WHERE o.species_code IN (%2$s)",
   paste(DBI::dbQuoteString(conn, species), collapse = ", "),
   paste(DBI::dbQuoteString(conn, obs_codes), collapse = ", ")))
@@ -580,7 +584,9 @@ stamp <- c(
                                           fs::path_abs("."))),
   sprintf("pooling: %s species_pooling.csv; %s", pooling_cfg,
           if (nrow(pool) == 0L) "none" else
-            paste(unique(paste0(pool$species_code, "<-", pool$obs_species)),
+            paste(unique(paste0(pool$species_code, "<-", pool$obs_species,
+                                ifelse(is.na(pool$obs_year_max), "",
+                                       paste0(" (to ", pool$obs_year_max, ")")))),
                   collapse = ", ")),
   sprintf("retained observations with 2+ candidate segments (upstream chosen): %d",
           sum(use$n_cand > 1L, na.rm = TRUE)))

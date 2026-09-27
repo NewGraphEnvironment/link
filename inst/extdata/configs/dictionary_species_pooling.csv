@@ -1,9 +1,10 @@
 column,type,group,owner,consumed_by,default_when_absent,description,related
-species_code,character,rule,link,R/lnk_species_pooling.R:267,required,"The target: a model species code, or a species_groups group_code standing for each of its members. Upper-cased and trimmed.",species_obs
-species_obs,character,rule,link,R/lnk_species_pooling.R:268,required,"The evidence: an observation species code, or a group code, whose records count as the target. A species always counts as itself, so a row pairing a species with itself does nothing.",species_code
-scope_level,character,rule,link,R/lnk_species_pooling.R:234,required,"region, subregion or wsg. The most specific applicable level wins (wsg over subregion over region).",scope
-scope,character,rule,link,R/lnk_species_pooling.R:246,required,"A region or subregion name from inst/extdata/wsg_regions.csv, or a watershed group code. Matched case-insensitively; a name not in the lookup errors.",scope_level
-pool,character,rule,link,R/lnk_species_pooling.R:240,required,"yes pools the evidence into the target in this scope; no keeps them apart, and overrides a yes at a broader scope. Anything no row covers is not pooled.",-
+species_code,character,rule,link,R/lnk_species_pooling.R:291,required,"The target: a model species code, or a species_groups group_code standing for each of its members. Upper-cased and trimmed.",species_obs
+species_obs,character,rule,link,R/lnk_species_pooling.R:292,required,"The evidence: an observation species code, or a group code, whose records count as the target. A species always counts as itself, so a row pairing a species with itself does nothing.",species_code
+scope_level,character,rule,link,R/lnk_species_pooling.R:257,required,"region, subregion or wsg. The most specific applicable level wins (wsg over subregion over region).",scope
+scope,character,rule,link,R/lnk_species_pooling.R:269,required,"A region or subregion name from inst/extdata/wsg_regions.csv, or a watershed group code. Matched case-insensitively; a name not in the lookup errors.",scope_level
+pool,character,rule,link,R/lnk_species_pooling.R:263,required,"yes pools the evidence into the target in this scope; no keeps them apart, and overrides a yes at a broader scope. Anything no row covers is not pooled.",-
+obs_year_max,integer,rule,link,R/lnk_species_pooling.R:288,empty (no limit),"Optional. Limits the row to observation records dated in or before this year, for evidence whose meaning changed over time (e.g. a name applied to another species until recording practice caught up). An undated record does not meet a limit. Tied rows must agree on it.",pool
 confidence,character,record,link,- (not read; the record of why),-,"low, medium or high: how firmly the evidence supports the decision.",rationale
 rationale,character,record,link,- (not read; the record of why),-,Why the decision holds in this scope.,source
 source,character,record,link,- (not read; the record of why),-,"Where it comes from: an operator call with its date, a citation, a data set.",rationale

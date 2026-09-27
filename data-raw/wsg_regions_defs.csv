@@ -1,20 +1,21 @@
-level,name,wscode_prefix,note
-region,Fraser,100,
-region,Mackenzie,200,Peace and Liard in BC
-region,Columbia,300,
-region,Skeena,400,
-region,Nass,500,
-region,Stikine,600,
-region,Taku,700,
-region,Yukon,800,
-region,South Mainland Coast,900,draft name: Squamish to Seymour Inlet
-region,Central Mainland Coast,910,draft name: Owikeno to Kitimat and the Dean
-region,Outer North Coast Islands,915,draft name: Banks and Porcher Islands; Laredo Inlet; Kitasu Bay
-region,East Vancouver Island,920,draft name
-region,West Vancouver Island,930,draft name
-region,Haida Gwaii,940,Graham Island
-region,Haida Gwaii,950,Moresby Island
-region,Unuk,960,draft name: drains to Alaska
-region,Skagit,970,draft name: drains to Washington
-region,Alsek,990,draft name: Tatshenshini
-subregion,Kootenay,300.625474,Kootenay River mainstem code
+level,name,wscode_prefix,wsgs,note
+region,Fraser,100,,
+region,Mackenzie,200,,Peace and Liard in BC
+region,Columbia,300,,
+region,Skeena,400,,
+region,Nass,500,,
+region,Stikine,600,,
+region,Taku,700,,
+region,Yukon,800,,
+region,South Mainland Coast,900,,draft name: Squamish to Seymour Inlet
+region,Central Mainland Coast,910,,draft name: Owikeno to Kitimat and the Dean
+region,Outer North Coast Islands,915,,draft name: Banks and Porcher Islands; Laredo Inlet; Kitasu Bay
+region,East Vancouver Island,920,,draft name
+region,West Vancouver Island,930,,draft name
+region,Haida Gwaii,940,,Graham Island
+region,Haida Gwaii,950,,Moresby Island
+region,Unuk,960,,draft name: drains to Alaska
+region,Skagit,970,,draft name: drains to Washington
+region,Alsek,990,,draft name: Tatshenshini
+subregion,Kootenay,300.625474,,Kootenay River mainstem code
+subregion,Skeena above Hazelton,,BULK;MORR;KISP;BABL;BABR;SUST;MSKE;USKE,"Upstream of the Bulkley mouth at Hazelton (400.431358); KISP's outlet is below it but the Kispiox enters above. Listed, since MSKE and USKE outlets sit on the Skeena mainstem (400) like LSKE"

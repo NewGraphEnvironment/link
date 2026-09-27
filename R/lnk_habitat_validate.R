@@ -135,13 +135,16 @@
 #'   matched on that key). Species and WSG codes are compared upper-cased
 #'   and trimmed. Optional: `match_type`, `source`, `is_spawn`, `is_rear`
 #'   (logical, 0/1 or t/true/yes), `activity_code`, `activity`,
-#'   `life_stage`.
+#'   `life_stage`, and `observation_date`, which is required when
+#'   `species_obs` carries a year limit (`obs_year_max`).
 #' @param species_obs Which observation species count as each model species.
 #'   Either a named list mapping a model species to observation species
 #'   codes, applied in every WSG (default `list(BT = c("BT", "DV"))`, which
 #'   pools DV records with BT), or a per-WSG data frame with
 #'   `watershed_group_code`, `species_code` and `obs_species`, such as
-#'   [lnk_species_pooling()] returns. In the list form a species not named
+#'   [lnk_species_pooling()] returns, optionally with `obs_year_max` (a
+#'   pooled record counts only if dated in or before that year; an undated
+#'   one does not). In the list form a species not named
 #'   maps to itself; in the data frame form a species always counts as
 #'   itself, and a WSG and species pair it does not list maps to itself only.
 #'   Either way a species is scored only where
@@ -366,21 +369,31 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
     present <- intersect(species, .lnk_wsg_species_present(row[1, ]))
     if (length(present) == 0L) return(NULL)
     do.call(rbind, lapply(present, function(sp) {
-      obs <- if (per_wsg) {
-        c(sp, species_obs$obs_species[species_obs$watershed_group_code == w &
-                                        species_obs$species_code == sp])
+      if (per_wsg) {
+        k <- species_obs$watershed_group_code == w &
+          species_obs$species_code == sp
+        obs <- c(sp, species_obs$obs_species[k])
+        yr <- c(NA_integer_, species_obs$obs_year_max[k])
       } else {
-        species_obs[[sp]] %||% sp
+        obs <- species_obs[[sp]] %||% sp
+        yr <- rep(NA_integer_, length(obs))
       }
-      data.frame(watershed_group_code = w, species_code = sp,
-                 obs_species = unique(obs), stringsAsFactors = FALSE)
+      d <- unique(data.frame(watershed_group_code = w, species_code = sp,
+                             obs_species = obs, obs_year_max = yr,
+                             stringsAsFactors = FALSE))
+      if (anyDuplicated(d$obs_species)) {
+        stop("species_obs gives ", w, " ", sp, " two year limits for one ",
+             "observation species", call. = FALSE)
+      }
+      d
     }))
   })
   out <- do.call(rbind, rows)
   if (is.null(out)) {
     out <- data.frame(watershed_group_code = character(0),
                       species_code = character(0),
-                      obs_species = character(0), stringsAsFactors = FALSE)
+                      obs_species = character(0),
+                      obs_year_max = integer(0), stringsAsFactors = FALSE)
   }
   out
 }
@@ -402,6 +415,12 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
     out <- data.frame(lapply(species_obs[cols], up), stringsAsFactors = FALSE)
     if (anyNA(out) || !all(vapply(out, function(x) all(nzchar(x)), TRUE))) {
       stop("species_obs data frame has empty or NA codes", call. = FALSE)
+    }
+    # Optional record-date limit from lnk_species_pooling(); NA is no limit.
+    out$obs_year_max <- if ("obs_year_max" %in% names(species_obs)) {
+      .lnk_sp_year(species_obs[["obs_year_max"]])
+    } else {
+      rep(NA_integer_, nrow(out))
     }
     return(unique(out))
   }
@@ -465,7 +484,8 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
   cols_req <- c("species_code", "watershed_group_code", "blue_line_key",
                 "downstream_route_measure")
   cols_opt <- c("observation_key", "match_type", "source", "is_spawn",
-                "is_rear", "activity_code", "activity", "life_stage")
+                "is_rear", "activity_code", "activity", "life_stage",
+                "observation_date")
   key_generated <- FALSE
   if (is.data.frame(observations)) {
     d <- as.data.frame(observations)
@@ -547,6 +567,10 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
   DBI::dbWriteTable(conn, "lnk_vd_excl",
                     data.frame(observation_key = as.character(keys)),
                     temporary = TRUE, overwrite = TRUE)
+  if (any(!is.na(spec$obs_year_max)) && !has("observation_date")) {
+    stop(s$src, " has no observation_date column, which the year limits in ",
+         "species_obs (obs_year_max) need", call. = FALSE)
+  }
   DBI::dbWriteTable(conn, "lnk_vd_spec", spec,
                     temporary = TRUE, overwrite = TRUE)
   uhc <- loaded$user_habitat_classification
@@ -582,13 +606,16 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
          JOIN pg_temp.lnk_vd_spec sp
            ON sp.watershed_group_code = upper(trim(o.watershed_group_code::text))
           AND sp.obs_species = upper(trim(o.species_code::text))
+          -- a year-limited pooling admits only records dated within it
+          AND (sp.obs_year_max IS NULL
+               OR extract(year FROM %10$s) <= sp.obs_year_max)
         WHERE TRUE %8$s %9$s) o
       WHERE NOT EXISTS (SELECT 1 FROM pg_temp.lnk_vd_excl e
                          WHERE e.observation_key = o.observation_key)",
     s$src, opt("match_type", "text"), opt("activity_code", "text"),
     opt("activity", "text"), opt("life_stage", "text"),
     opt_flag("is_spawn"), opt_flag("is_rear"),
-    where_match, where_source),
+    where_match, where_source, opt("observation_date", "date")),
     params = if (is.null(match_types)) NULL else
       list(paste0("{", paste(match_types, collapse = ","), "}")))
 

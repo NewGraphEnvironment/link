@@ -128,7 +128,8 @@ test_that(".lnk_hv_spec returns a typed empty frame when nothing is present", {
                          stringsAsFactors = FALSE)
   s <- link:::.lnk_hv_spec(presence, "AAAA", "BT", list())
   expect_identical(nrow(s), 0L)
-  expect_named(s, c("watershed_group_code", "species_code", "obs_species"))
+  expect_named(s, c("watershed_group_code", "species_code", "obs_species",
+                    "obs_year_max"))
 })
 
 test_that(".lnk_hv_dedup merges records at one location and ORs their stages", {
@@ -351,6 +352,41 @@ test_that("a species_obs data frame scores the same as the equivalent list", {
   # BT record o7, so location counts cannot tell the two apart)
   expect_true("o2" %in% v_df$observations$observation_key)
   expect_false("o2" %in% v_none$observations$observation_key)
+})
+
+test_that("obs_year_max admits only pooled records dated within it (#290)", {
+  conn <- validate_conn()
+  s <- local_validate_fixture(conn)
+  so <- data.frame(watershed_group_code = "AAAA", species_code = "BT",
+                   obs_species = "DV", obs_year_max = 1994L)
+  # the fixture has no observation_date, which a year limit needs
+  expect_error(run_validate(conn, s, aoi = "AAAA", species_obs = so),
+               "observation_date")
+  DBI::dbExecute(conn, sprintf(
+    "ALTER TABLE %s.observations ADD COLUMN observation_date date", s))
+  DBI::dbExecute(conn, sprintf(
+    "UPDATE %s.observations SET observation_date = '1990-06-01'", s))
+  v_old <- run_validate(conn, s, aoi = "AAAA", species_obs = so)
+  expect_true("o2" %in% v_old$observations$observation_key)
+  DBI::dbExecute(conn, sprintf(
+    "UPDATE %s.observations SET observation_date = '2005-06-01'
+      WHERE observation_key = 'o2'", s))
+  v_new <- run_validate(conn, s, aoi = "AAAA", species_obs = so)
+  expect_false("o2" %in% v_new$observations$observation_key)
+  # an undated DV record does not meet the limit either
+  DBI::dbExecute(conn, sprintf(
+    "UPDATE %s.observations SET observation_date = NULL
+      WHERE observation_key = 'o2'", s))
+  v_na <- run_validate(conn, s, aoi = "AAAA", species_obs = so)
+  expect_false("o2" %in% v_na$observations$observation_key)
+  # BT's own records carry no limit. o2 (DV) shares a location with BT record
+  # o7, so with o2 admitted the location is keyed o2 (BT;DV), and without it
+  # the same location is keyed o7 (BT only).
+  o <- function(v, k) v$observations[v$observations$observation_key == k, ]
+  expect_identical(o(v_old, "o2")$obs_species, "BT;DV")
+  expect_identical(o(v_new, "o7")$obs_species, "BT")
+  expect_setequal(c(setdiff(v_old$observations$observation_key, "o2"), "o7"),
+                  v_new$observations$observation_key)
 })
 
 test_that("observations can be a data frame from any source", {

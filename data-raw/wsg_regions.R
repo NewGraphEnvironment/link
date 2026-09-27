@@ -3,18 +3,22 @@
 #
 # One row per BC watershed group: the region and sub-region its outlet drains
 # to. Geography, not biology, so it ships once at package level; bundles say
-# what to do with it (e.g. configs/default/overrides/species_pooling.csv).
+# what to do with it (e.g. configs/default/species_pooling.csv).
 #
 # Inputs:
 #   - fresh's inst/extdata/wsg_outlet.csv (fresh >= v0.33.0): each group's
 #     outlet point with its wscode_ltree. The outlet, not the group's
 #     shallowest code, because a group can touch more than one drainage.
 #   - data-raw/wsg_regions_defs.csv (hand-curated): `level` region|subregion,
-#     `name`, `wscode_prefix`, `note`. A region is matched on the outlet
-#     code's first segment; a sub-region on the longest wscode prefix
-#     (whole segments) that contains the outlet code. Names marked "draft"
-#     in `note` are placeholders until someone who knows the coast confirms
-#     them.
+#     `name`, `wscode_prefix`, `wsgs`, `note`. A region is matched on the
+#     outlet code's first segment. A sub-region is either a wscode prefix
+#     (the longest one, on whole segments, containing the outlet code) or an
+#     explicit `wsgs` list (semicolon-separated), for a split no prefix can
+#     draw: MSKE and USKE have their outlets on the Skeena mainstem (400), as
+#     LSKE does, so "Skeena above Hazelton" is a list. A sub-region row gives
+#     one or the other, never both, and a group may fall in only one
+#     sub-region (there is one column). Names marked "draft" in `note` are
+#     placeholders until someone who knows the coast confirms them.
 #
 #   Rscript data-raw/wsg_regions.R
 #
@@ -41,7 +45,10 @@ stopifnot(
   !anyDuplicated(outlet$watershed_group_code),
   !anyNA(outlet$wscode_ltree), all(nzchar(outlet$wscode_ltree)),
   all(defs$level %in% c("region", "subregion")),
-  !anyDuplicated(defs$wscode_prefix),
+  !anyDuplicated(defs$wscode_prefix[nzchar(defs$wscode_prefix)]),
+  # a row is a prefix or a list, never both or neither
+  xor(nzchar(defs$wscode_prefix), nzchar(defs$wsgs)),
+  all(!nzchar(defs$wsgs[defs$level == "region"])),
   # written unquoted
   !any(grepl(",", defs$name, fixed = TRUE))
 )
@@ -58,12 +65,29 @@ if (any(grepl(".", reg$wscode_prefix, fixed = TRUE))) {
 top <- sub("[.].*$", "", outlet$wscode_ltree)
 region <- reg$name[match(top, reg$wscode_prefix)]
 
-sub_defs <- defs[defs$level == "subregion", ]
+sub_defs <- defs[defs$level == "subregion" & nzchar(defs$wscode_prefix), ]
 subregion <- vapply(outlet$wscode_ltree, function(code) {
   hit <- sub_defs[in_prefix(code, sub_defs$wscode_prefix), , drop = FALSE]
   if (nrow(hit) == 0L) return(NA_character_)
   hit$name[which.max(nchar(hit$wscode_prefix))]
 }, character(1), USE.NAMES = FALSE)
+
+list_defs <- defs[defs$level == "subregion" & nzchar(defs$wsgs), ]
+listed <- lapply(strsplit(list_defs$wsgs, ";", fixed = TRUE), trimws)
+unknown <- setdiff(unlist(listed), outlet$watershed_group_code)
+if (length(unknown) > 0L) {
+  stop("sub-region lists name unknown groups: ", paste(unknown, collapse = ", "),
+       call. = FALSE)
+}
+for (i in seq_along(listed)) {
+  hit <- outlet$watershed_group_code %in% listed[[i]]
+  clash <- outlet$watershed_group_code[hit & !is.na(subregion)]
+  if (length(clash) > 0L) {
+    stop("groups in two sub-regions (", list_defs$name[i], " and another): ",
+         paste(clash, collapse = ", "), call. = FALSE)
+  }
+  subregion[hit] <- list_defs$name[i]
+}
 
 out <- data.frame(
   watershed_group_code = outlet$watershed_group_code,
@@ -79,7 +103,8 @@ if (anyNA(out$region)) {
        paste(out$watershed_group_code[is.na(out$region)], collapse = ", "),
        call. = FALSE)
 }
-unused <- defs$wscode_prefix[!vapply(defs$wscode_prefix, function(p) {
+pfx <- defs$wscode_prefix[nzchar(defs$wscode_prefix)]
+unused <- pfx[!vapply(pfx, function(p) {
   any(in_prefix(outlet$wscode_ltree, p))
 }, logical(1))]
 if (length(unused) > 0L) {

@@ -11,15 +11,19 @@
 #' `species_obs` (the observation species or a group), `scope_level`
 #' (`region`, `subregion` or `wsg`), `scope` (a name in
 #' `inst/extdata/wsg_regions.csv`, or a WSG code) and `pool` (`yes` / `no`).
-#' Other columns (`confidence`, `rationale`, `source`, `verified`, `issue`)
-#' are the record of why, and are not read here.
+#' An optional `obs_year_max` limits a pooling row to records dated in or
+#' before that year, for evidence whose meaning changed over time (a name
+#' that was applied to another species until recording practice caught up).
+#' Empty means no limit. Other columns (`confidence`, `rationale`, `source`,
+#' `verified`, `issue`) are the record of why, and are not read here.
 #'
 #' For each WSG, target and observation species pair, the applicable rows
 #' are resolved in order:
 #' 1. the most specific scope wins (`wsg` over `subregion` over `region`);
 #' 2. at equal scope, the row naming fewer groups wins (a species-to-species
 #'    row beats one that names a group);
-#' 3. rows still tied must agree on `pool`, or the call errors.
+#' 3. rows still tied must agree on `pool` and `obs_year_max`, or the call
+#'    errors.
 #'
 #' Anything no row covers is not pooled. A species always counts as itself,
 #' and a model species yields rows only where `wsg_species_presence` marks it
@@ -38,8 +42,10 @@
 #' @return A data frame, one row per WSG x model species x observation
 #'   species: `watershed_group_code`, `species_code`, `obs_species`,
 #'   `scope_level` (`self` for the species itself, else the winning row's
-#'   level), `scope` and `rule` (the winning row's number in the tracker, `NA`
-#'   for `self`). Codes are upper case.
+#'   level), `scope`, `rule` (the winning row's number in the tracker, `NA`
+#'   for `self`) and `obs_year_max` (the winning row's year limit, `NA` for
+#'   none; always `NA` for `self`). Consumers apply the year limit per record,
+#'   and an undated record does not meet one. Codes are upper case.
 #'
 #' @seealso [lnk_presence()], [lnk_habitat_validate()]
 #' @export
@@ -126,14 +132,14 @@ lnk_species_pooling <- function(loaded, aoi, species, regions = NULL) {
     self <- data.frame(watershed_group_code = w, species_code = present,
                        obs_species = present, scope_level = "self",
                        scope = NA_character_, rule = NA_integer_,
-                       stringsAsFactors = FALSE)
+                       obs_year_max = NA_integer_, stringsAsFactors = FALSE)
     if (nrow(hit) == 0L) return(self)
     won <- lapply(split(hit, paste(hit$target, hit$obs)), function(h) {
       h <- h[h$scope_rank == min(h$scope_rank), , drop = FALSE]
       h <- h[h$taxon_rank == min(h$taxon_rank), , drop = FALSE]
-      if (length(unique(h$pool)) > 1L) {
+      if (length(unique(paste(h$pool, h$obs_year_max))) > 1L) {
         stop(sprintf(
-          "species_pooling conflict for %s <- %s in %s: rows %s tie at %s scope and disagree on pool",
+          "species_pooling conflict for %s <- %s in %s: rows %s tie at %s scope and disagree on pool or obs_year_max",
           h$target[1], h$obs[1], w, paste(sort(unique(h$rule)), collapse = ", "),
           h$scope_level[1]), call. = FALSE)
       }
@@ -147,6 +153,7 @@ lnk_species_pooling <- function(loaded, aoi, species, regions = NULL) {
                            scope_level = won$scope_level,
                            scope = won$scope,
                            rule = won$rule,
+                           obs_year_max = won$obs_year_max,
                            stringsAsFactors = FALSE))
   })
   out <- do.call(rbind, out)
@@ -155,7 +162,8 @@ lnk_species_pooling <- function(loaded, aoi, species, regions = NULL) {
                       species_code = character(0),
                       obs_species = character(0),
                       scope_level = character(0), scope = character(0),
-                      rule = integer(0), stringsAsFactors = FALSE)
+                      rule = integer(0), obs_year_max = integer(0),
+                      stringsAsFactors = FALSE)
   }
   out <- out[order(out$watershed_group_code, out$species_code,
                    out$scope_level != "self", out$obs_species), ]
@@ -206,6 +214,20 @@ lnk_species_pooling <- function(loaded, aoi, species, regions = NULL) {
   lapply(split(s, g), unique)
 }
 
+#' Parse `obs_year_max`: empty or NA is no limit; anything else a whole year.
+#' @noRd
+.lnk_sp_year <- function(x) {
+  v <- trimws(as.character(x))
+  v[is.na(v)] <- ""
+  y <- suppressWarnings(as.numeric(v))
+  bad <- which(nzchar(v) & (is.na(y) | y != round(y) | y < 1800 | y > 2100))
+  if (length(bad) > 0L) {
+    stop(sprintf("species_pooling rows %s: obs_year_max must be a year or empty",
+                 paste(bad, collapse = ", ")), call. = FALSE)
+  }
+  as.integer(ifelse(nzchar(v), y, NA))
+}
+
 #' Validate the tracker and expand groups into one row per target x obs.
 #' @noRd
 .lnk_sp_rules <- function(species_pooling, groups, known_species, regions) {
@@ -213,7 +235,8 @@ lnk_species_pooling <- function(loaded, aoi, species, regions = NULL) {
                       scope_level = character(0), scope = character(0),
                       scope_key = character(0), pool = logical(0),
                       scope_rank = integer(0), taxon_rank = integer(0),
-                      rule = integer(0), stringsAsFactors = FALSE)
+                      rule = integer(0), obs_year_max = integer(0),
+                      stringsAsFactors = FALSE)
   if (is.null(species_pooling) || nrow(species_pooling) == 0L) return(empty)
   cols <- c("species_code", "species_obs", "scope_level", "scope", "pool")
   miss <- setdiff(cols, names(species_pooling))
@@ -262,6 +285,7 @@ lnk_species_pooling <- function(loaded, aoi, species, regions = NULL) {
          "', which is neither a known species nor a species_groups group",
          call. = FALSE)
   }
+  year <- .lnk_sp_year(p$obs_year_max %||% rep(NA, nrow(p)))
   scope_rank <- c(wsg = 1L, subregion = 2L, region = 3L)
   rows <- lapply(seq_len(nrow(p)), function(i) {
     t_code <- up(p$species_code[i])
@@ -275,7 +299,7 @@ lnk_species_pooling <- function(loaded, aoi, species, regions = NULL) {
                scope_rank = scope_rank[[level[i]]],
                taxon_rank = (t_code %in% names(groups)) +
                  (o_code %in% names(groups)),
-               rule = i, stringsAsFactors = FALSE)
+               rule = i, obs_year_max = year[i], stringsAsFactors = FALSE)
   })
   out <- do.call(rbind, rows)
   if (is.null(out)) empty else out

@@ -7,24 +7,23 @@
 #
 #   Rscript data-raw/species_pooling_evidence.R [--validate]
 #
-# Scenarios (pooling DV records into BT):
-#   S0_current   default's species_pooling.csv: Fraser, Mackenzie, Skeena,
-#                Columbia (incl. Kootenay)
-#   S1_hazelton  as S0, but in the Skeena only the groups above Hazelton
-#                (BULK, MORR, KISP, BABL, BABR, SUST, MSKE, USKE)
-#   S2_noskeena  as S0 without the Skeena
-#   S3_pre1995   Fraser, Mackenzie and Columbia only, and only DV records dated
-#                before 1995 (the naming-change era). The tracker has no time
-#                axis, so S3 is computed here from the S0 evidence, by the same
-#                rule as the producer. The reimplementation is checked against
-#                real producer runs for S0-S2, and the script stops if they
-#                disagree.
-#   BT_only      no pooling (the producer's BT_any comparison set)
+# Scenarios (pooling DV records into BT), each a scratch tracker built from
+# default's species_pooling.csv:
+#   S0_whole_skeena      Fraser, Mackenzie, Columbia (incl. Kootenay) and the
+#                        whole Skeena (the first seed)
+#   S1_hazelton          the committed tracker: the Skeena only above Hazelton
+#                        (BULK, MORR, KISP, BABL, BABR, SUST, MSKE, USKE)
+#   S2_noskeena          no Skeena
+#   S3_pre1995           no Skeena, and interior rows limited to records dated
+#                        before 1995 (obs_year_max 1994)
+#   S4_hazelton_pre1995  S1 with the interior rows limited to before 1995
+#   BT_only              no pooling (the producer's BT_any comparison set)
 #
-# S0-S2 are run through data-raw/query_habitat_thresholds_obs.R with a
-# scratch bundle each. With --validate, S1 and S2 are also scored through
-# data-raw/habitat_validate.R (default:fresh_default, ~5 min each); S0's
-# scores are the committed #283 baseline.
+# Every scenario runs through data-raw/query_habitat_thresholds_obs.R. The
+# rule is also reimplemented here over the S0 evidence, and the script stops
+# unless the two agree for every scenario (the check that the evidence tables
+# say what the producer computed). With --validate each is also scored
+# through data-raw/habitat_validate.R (default:fresh_default, ~5 min each).
 #
 # Writes to data-raw/logs/species_pooling_290/:
 #   decade_region.csv        BT and DV records by region x decade
@@ -55,10 +54,10 @@ upper_skeena <- c("BULK", "MORR", "KISP", "BABL", "BABR", "SUST", "MSKE", "USKE"
 year_cut <- 1995L
 regions <- utils::read.csv(.lnk_wsg_regions_path(), stringsAsFactors = FALSE,
                            na.strings = "")
-pooled_regions <- c("Fraser", "Mackenzie", "Columbia", "Skeena")
+named_regions <- c("Fraser", "Mackenzie", "Columbia", "Skeena")
 grp_of <- function(w) {
   r <- regions$region[match(w, regions$watershed_group_code)]
-  ifelse(r %in% pooled_regions, r, "Coast and north")
+  ifelse(r %in% named_regions, r, "Coast and north")
 }
 
 # -- 1. records through time --------------------------------------------------
@@ -112,7 +111,8 @@ readr::write_csv(wsg_share, file.path(dir_out, "wsg_dv_share.csv"), na = "")
 # -- 2. scenarios through the #284 producer -----------------------------------
 tmp <- withr::local_tempdir()
 tracker <- utils::read.csv(lnk_config("default")$files$species_pooling$path,
-                           stringsAsFactors = FALSE)
+                           stringsAsFactors = FALSE, colClasses = "character",
+                           na.strings = character(0))
 scenario_bundle <- function(name, rows) {
   d <- file.path(tmp, name)
   fs::dir_create(d)
@@ -123,19 +123,32 @@ scenario_bundle <- function(name, rows) {
                "    path: species_pooling.csv"), file.path(d, "config.yaml"))
   d
 }
-wsg_row <- function(w) {
-  data.frame(species_code = "BT", species_obs = "DV", scope_level = "wsg",
-             scope = w, pool = "yes", confidence = "medium",
-             rationale = "above Hazelton", source = "scenario", verified = "",
-             issue = "#290")
+hz <- tracker$scope == "Skeena above Hazelton"
+sk <- tracker$scope == "Skeena"
+interior <- tracker$scope %in% c("Fraser", "Mackenzie", "Columbia", "Kootenay")
+if (!any(hz) || !any(sk) || sum(interior) != 4L) {
+  stop("default's tracker no longer has the rows these scenarios edit",
+       call. = FALSE)
 }
+pre1995 <- function(x) {
+  x$obs_year_max[x$scope %in% c("Fraser", "Mackenzie", "Columbia", "Kootenay")] <-
+    as.character(year_cut - 1L)
+  x
+}
+s0 <- tracker[!hz, ]
+s0$pool[s0$scope == "Skeena"] <- "yes"
 bundles <- list(
-  S0_current = scenario_bundle("S0_current", tracker),
-  S1_hazelton = scenario_bundle("S1_hazelton", rbind(
-    transform(tracker, pool = ifelse(scope == "Skeena", "no", pool)),
-    do.call(rbind, lapply(upper_skeena, wsg_row)))),
-  S2_noskeena = scenario_bundle("S2_noskeena",
-    transform(tracker, pool = ifelse(scope == "Skeena", "no", pool))))
+  S0_whole_skeena = scenario_bundle("S0_whole_skeena", s0),
+  S1_hazelton = scenario_bundle("S1_hazelton", tracker),
+  S2_noskeena = scenario_bundle("S2_noskeena", tracker[!hz, ]),
+  S3_pre1995 = scenario_bundle("S3_pre1995", pre1995(tracker[!hz, ])),
+  S4_hazelton_pre1995 = scenario_bundle("S4_hazelton_pre1995", pre1995(tracker)))
+scen_label <- c(S0_whole_skeena = "S0 whole Skeena",
+                S1_hazelton = "S1 above Hazelton (adopted)",
+                S2_noskeena = "S2 no Skeena",
+                S3_pre1995 = "S3 no Skeena, interior pre-1995",
+                S4_hazelton_pre1995 = "S4 above Hazelton, interior pre-1995",
+                BT_only = "BT records only")
 
 runs <- lapply(names(bundles), function(s) {
   out <- file.path(tmp, paste0("out_", s))
@@ -150,7 +163,7 @@ runs <- lapply(names(bundles), function(s) {
 names(runs) <- names(bundles)
 
 # -- 3. the rule, reimplemented so S3 can be computed ---------------------------
-seg0 <- utils::read.csv(file.path(runs$S0_current, "obs_segments.csv"),
+seg0 <- utils::read.csv(file.path(runs$S0_whole_skeena, "obs_segments.csv"),
                         stringsAsFactors = FALSE)
 yr_of <- obs$yr[match(seg0$observation_key, obs$observation_key)]
 seg0$yr <- yr_of
@@ -177,13 +190,15 @@ metrics <- function(seg) {
     spawn_n = length(sg), spawn_gradient_p95 = q(sg, 0.95),
     spawn_width_n = length(sw), spawn_width_p05 = q(sw, 0.05))
 }
+pre <- function(s) grp_of(s$watershed_group_code) %in%
+  c("Fraser", "Mackenzie", "Columbia") & !is.na(s$yr) & s$yr < year_cut
 keep_dv <- list(
-  S0_current = function(s) rep(TRUE, nrow(s)),
+  S0_whole_skeena = function(s) rep(TRUE, nrow(s)),
   S1_hazelton = function(s) grp_of(s$watershed_group_code) != "Skeena" |
     s$watershed_group_code %in% upper_skeena,
   S2_noskeena = function(s) grp_of(s$watershed_group_code) != "Skeena",
-  S3_pre1995 = function(s) grp_of(s$watershed_group_code) %in%
-    c("Fraser", "Mackenzie", "Columbia") & !is.na(s$yr) & s$yr < year_cut,
+  S3_pre1995 = function(s) pre(s),
+  S4_hazelton_pre1995 = function(s) pre(s) | s$watershed_group_code %in% upper_skeena,
   BT_only = function(s) rep(FALSE, nrow(s)))
 scen <- bind_rows(lapply(names(keep_dv), function(s) {
   k <- seg0$obs_species != "DV" | keep_dv[[s]](seg0)
@@ -227,16 +242,16 @@ scen$rear_gradient_says <- ifelse(
   "keep", "change")
 readr::write_csv(scen, file.path(dir_out, "scenarios.csv"), na = "")
 
-dropped <- bind_rows(lapply(setdiff(names(keep_dv), "S0_current"), function(s) {
+dropped <- bind_rows(lapply(setdiff(names(keep_dv), "S0_whole_skeena"), function(s) {
   d <- seg0[seg0$obs_species == "DV" & !keep_dv[[s]](seg0), ]
   if (nrow(d) == 0L) return(NULL)
   count(d, watershed_group_code, name = "dv_rows") |> mutate(scenario = s, .before = 1)
 }))
 readr::write_csv(dropped, file.path(dir_out, "scenarios_dropped.csv"), na = "")
 
-# -- 4. optional: score S1, S2 through the validator ----------------------------
+# -- 4. optional: score every scenario through the validator --------------------
 if (do_validate) {
-  val <- bind_rows(lapply(c("S1_hazelton", "S2_noskeena"), function(s) {
+  val <- bind_rows(lapply(names(bundles), function(s) {
     out <- file.path(tmp, paste0("val_", s))
     message("validator: ", s)
     st <- system2("Rscript", c("data-raw/habitat_validate.R",
@@ -248,11 +263,6 @@ if (do_validate) {
     if (!identical(st, 0L)) stop("validator failed for ", s, call. = FALSE)
     cbind(scenario = s, utils::read.csv(file.path(out, "totals.csv")))
   }))
-  base <- utils::read.csv(file.path("data-raw", "logs", "habitat_validate_283",
-                                    "totals.csv"))
-  base <- base[base$schema == "fresh_default" & base$species_code == "BT" &
-                 base$buffer_m == 0, ]
-  val <- bind_rows(cbind(scenario = "S0_current", base), val)
   keep <- intersect(c("scenario", "species_code", "stage", "n_obs",
                       "share_accessible", "share_spawning", "share_rearing",
                       "share_rearing_any", "rearing_km", "spawning_km"),
@@ -304,7 +314,7 @@ ggsave(file.path(dir_out, "fig_dv_streams_fate.png"), p2, width = 7,
        height = 3.8, dpi = 150, bg = "white")
 
 sc3 <- filter(scen, scenario != "BT_only") |>
-  mutate(y = rev(seq_len(n())))
+  mutate(y = rev(seq_len(n())), lab = scen_label[scenario])
 bins <- data.frame(xmin = c(0.12, 0.13, 0.14), xmax = c(0.13, 0.14, 0.15),
                    rule = c("rule gives 0.1249", "rule gives 0.1349\n(default_tuned)",
                             "rule gives 0.1449"),
@@ -324,7 +334,7 @@ p3 <- ggplot(sc3, aes(rear_gradient_p95, y)) +
   geom_text(aes(label = paste0("n ", scales::comma(rear_n))), nudge_y = 0.32,
             size = 3, colour = "grey30") +
   scale_size_area(max_size = 6, guide = "none") +
-  scale_y_continuous(breaks = sc3$y, labels = sc3$scenario,
+  scale_y_continuous(breaks = sc3$y, labels = sc3$lab,
                      limits = c(0.3, max(sc3$y) + 0.9)) +
   scale_x_continuous(limits = c(0.118, 0.15), breaks = c(0.12, 0.13, 0.14),
                      expand = c(0, 0)) +
@@ -372,21 +382,26 @@ ggsave(file.path(dir_out, "fig_map_dv_share.png"), p4, width = 9, height = 5.4,
        dpi = 150, bg = "white")
 
 pool_state <- function(s) {
-  interior <- regions$watershed_group_code[
+  interior_wsg <- regions$watershed_group_code[
     regions$region %in% c("Fraser", "Mackenzie", "Columbia")]
-  sp <- switch(s,
-    S0_current = regions$watershed_group_code[regions$region %in% pooled_regions],
-    S1_hazelton = c(interior, upper_skeena),
-    S2_noskeena = interior,
-    S3_pre1995 = interior)
-  state <- ifelse(!wsg$watershed_group_code %in% bt_present, "BT not present",
-                  ifelse(wsg$watershed_group_code %in% sp,
-                         if (s == "S3_pre1995") "DV counts as BT (pre-1995 records)"
-                         else "DV counts as BT", "DV kept separate"))
-  transform(wsg, scenario = s, state = state)
+  full <- switch(s,
+    S0_whole_skeena = c(interior_wsg,
+                        regions$watershed_group_code[regions$region == "Skeena"]),
+    S1_hazelton = c(interior_wsg, upper_skeena),
+    S2_noskeena = interior_wsg,
+    S4_hazelton_pre1995 = upper_skeena)
+  dated <- if (s == "S4_hazelton_pre1995") interior_wsg else character(0)
+  w <- wsg$watershed_group_code
+  state <- ifelse(!w %in% bt_present, "BT not present",
+           ifelse(w %in% full, "DV counts as BT",
+           ifelse(w %in% dated, "DV counts as BT (pre-1995 records)",
+                  "DV kept separate")))
+  transform(wsg, scenario = scen_label[[s]], state = state)
 }
-pmap <- do.call(rbind, lapply(c("S0_current", "S1_hazelton", "S2_noskeena",
-                                "S3_pre1995"), pool_state))
+pmap <- do.call(rbind, lapply(c("S0_whole_skeena", "S1_hazelton", "S2_noskeena",
+                                "S4_hazelton_pre1995"), pool_state))
+pmap$scenario <- factor(pmap$scenario, scen_label[c("S0_whole_skeena",
+  "S1_hazelton", "S2_noskeena", "S4_hazelton_pre1995")])
 state_cols <- c(`DV counts as BT` = "#7570b3",
                 `DV counts as BT (pre-1995 records)` = "#b8b3e0",
                 `DV kept separate` = "#e7298a", `BT not present` = "grey88")
@@ -442,7 +457,7 @@ writeLines(c(
   sprintf("BT + DV records (not Releases): %d; undated: %d", nrow(obs), sum(is.na(obs$yr))),
   "evidence: data-raw/query_habitat_thresholds_obs.R on fresh_default (55 WSGs), one run per scenario bundle",
   sprintf("reimplementation matched the producer for: %s", paste(names(runs), collapse = ", ")),
-  sprintf("validator runs: %s", if (do_validate) "S1_hazelton, S2_noskeena (S0 = committed #283 baseline)" else "not run")),
+  sprintf("validator runs: %s", if (do_validate) paste(names(bundles), collapse = ", ") else "not run")),
   file.path(dir_out, "stamp.txt"))
 DBI::dbDisconnect(conn)
 message("wrote ", dir_out)

@@ -196,6 +196,35 @@ test_that("codes and scopes are matched case- and whitespace-insensitively", {
   expect_identical(obs_for(res, "W1", "AAA"), c("AAA", "BBB"))
 })
 
+test_that("obs_year_max is carried from the winning row, NA when empty", {
+  p <- rbind(pool_row("AAA", "BBB", "region", "North"),
+             pool_row("AAA", "BBB", "wsg", "W1"))
+  p$obs_year_max <- c("1994", "")
+  res <- lnk_species_pooling(loaded_fx(p), aoi = c("W1", "W2"),
+                             species = "AAA", regions = regions_fx)
+  y <- function(w) res$obs_year_max[res$watershed_group_code == w &
+                                      res$obs_species == "BBB"]
+  # W1: the wsg row wins and has no limit; W2: the region row's 1994
+  expect_identical(y("W1"), NA_integer_)
+  expect_identical(y("W2"), 1994L)
+  expect_true(all(is.na(res$obs_year_max[res$scope_level == "self"])))
+  expect_type(res$obs_year_max, "integer")
+})
+
+test_that("tied rows that disagree on obs_year_max error; bad years are refused", {
+  p <- rbind(pool_row("AAA", "BBB", "region", "North"),
+             pool_row("AAA", "BBB", "region", "North"))
+  p$obs_year_max <- c("1994", "2000")
+  expect_error(lnk_species_pooling(loaded_fx(p), aoi = "W1", species = "AAA",
+                                   regions = regions_fx), "obs_year_max")
+  for (bad in c("199x", "1994.5", "3000")) {
+    q <- pool_row("AAA", "BBB", "region", "North")
+    q$obs_year_max <- bad
+    expect_error(lnk_species_pooling(loaded_fx(q), aoi = "W1", species = "AAA",
+                                     regions = regions_fx), "obs_year_max")
+  }
+})
+
 test_that("the shipped default bundle resolves over every region", {
   cfg <- lnk_config("default")
   loaded <- suppressWarnings(lnk_load_overrides(cfg))
@@ -206,7 +235,8 @@ test_that("the shipped default bundle resolves over every region", {
                              species = unique(toupper(
                                loaded$parameters_fresh$species_code)))
   expect_true(all(c("watershed_group_code", "species_code", "obs_species",
-                    "scope_level", "scope", "rule") %in% names(res)))
+                    "scope_level", "scope", "rule", "obs_year_max") %in%
+                    names(res)))
   # every row that pools is traced to a tracker row
   pooled <- res[res$scope_level != "self", ]
   expect_gt(nrow(pooled), 0)

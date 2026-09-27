@@ -24,8 +24,10 @@ optional; without a tracker nothing is pooled).}
 A data frame, one row per WSG x model species x observation
 species: \code{watershed_group_code}, \code{species_code}, \code{obs_species},
 \code{scope_level} (\code{self} for the species itself, else the winning row's
-level), \code{scope} and \code{rule} (the winning row's number in the tracker, \code{NA}
-for \code{self}). Codes are upper case.
+level), \code{scope}, \code{rule} (the winning row's number in the tracker, \code{NA}
+for \code{self}) and \code{obs_year_max} (the winning row's year limit, \code{NA} for
+none; always \code{NA} for \code{self}). Consumers apply the year limit per record,
+and an undated record does not meet one. Codes are upper case.
 }
 \description{
 Reads a bundle's pooling tracker (\code{species_pooling.csv}) and species
@@ -40,8 +42,11 @@ A tracker row is \code{species_code} (the model species or a group of them),
 \code{species_obs} (the observation species or a group), \code{scope_level}
 (\code{region}, \code{subregion} or \code{wsg}), \code{scope} (a name in
 \code{inst/extdata/wsg_regions.csv}, or a WSG code) and \code{pool} (\code{yes} / \code{no}).
-Other columns (\code{confidence}, \code{rationale}, \code{source}, \code{verified}, \code{issue})
-are the record of why, and are not read here.
+An optional \code{obs_year_max} limits a pooling row to records dated in or
+before that year, for evidence whose meaning changed over time (a name
+that was applied to another species until recording practice caught up).
+Empty means no limit. Other columns (\code{confidence}, \code{rationale}, \code{source},
+\code{verified}, \code{issue}) are the record of why, and are not read here.
 
 For each WSG, target and observation species pair, the applicable rows
 are resolved in order:
@@ -49,7 +54,8 @@ are resolved in order:
 \item the most specific scope wins (\code{wsg} over \code{subregion} over \code{region});
 \item at equal scope, the row naming fewer groups wins (a species-to-species
 row beats one that names a group);
-\item rows still tied must agree on \code{pool}, or the call errors.
+\item rows still tied must agree on \code{pool} and \code{obs_year_max}, or the call
+errors.
 }
 
 Anything no row covers is not pooled. A species always counts as itself,
