@@ -13,3 +13,5 @@ Produced by `data-raw/species_pooling_evidence.R --validate` on local docker fwa
 | `fig_*.png` | The figures and maps used in the research doc and the walkthrough page |
 
 S0–S2 run through `query_habitat_thresholds_obs.R` with scratch bundles. S3 is computed from the S0 evidence by the same rule, and the script stops unless that computation reproduces the producer for S0–S2.
+
+The run's `stamp.txt` records link @ `eb7ae12`: the script and these outputs were committed together in the next commit (`e929a96`), so the tree it ran on was eb7ae12 plus this script.
