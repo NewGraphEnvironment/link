@@ -1,9 +1,10 @@
-date: 2026-09-26 13:39 PDT
-link: 0.51.1 @ 0c19e0a
+date: 2026-09-27 07:58 PDT
+link: 0.52.0 @ 911bed3
 fresh installed (builds the miss-reason predicates): 0.34.0 @ no recorded sha
 db: docker fwapg localhost:5432
 bundle default:fresh_default — 55 WSGs scored; 4 with a run-log row (fresh 0.32.0, 0.33.0, 2026-08-06 to 2026-08-27); the rest predate the log
 bundle bcfishpass:fresh — 59 WSGs scored; 39 with a run-log row (fresh 0.33.0, 2026-08-31 to 2026-09-26); the rest predate the log
 species: CH,BT; buffers: 0,100 m
+pooling: default species_pooling.csv (sha256 9c42964e0469): 56 WSG x species pairs pooled (BT<-DV)
 bcfishobs.observations rows: 373050
 absences: 4174 sampled FISS sites snapped within the snapshot WSGs (COTR,LNTH,PINE,UNTH,UPCE); usable as absences, before presence: CH 1906, BT 1535; other WSGs report NA; knowledge @ 508bf44

@@ -1,6 +1,6 @@
 # Habitat validation against fish observations
 
-**Verified:** 2026-09-26 · **Issues:** #283 (this), #284 (step 5 scores with it), #290 (pooling as data), #203 (full-key joins), fresh#218 · **Produced by:** `lnk_habitat_validate()` via `data-raw/habitat_validate.R` → `data-raw/logs/habitat_validate_283/` (link @ `0c19e0a`) · **Status:** baseline only; `default_tuned` not yet scored
+**Verified:** 2026-09-27 · **Issues:** #283 (this), #284 (step 5 scores with it), #290 (pooling as data), #203 (full-key joins), fresh#218 · **Produced by:** `lnk_habitat_validate()` via `data-raw/habitat_validate.R` → `data-raw/logs/habitat_validate_283/` (link @ `0c19e0a`) · **Status:** baseline only; `default_tuned` not yet scored
 
 ## What it measures
 
@@ -89,16 +89,16 @@ that both retained the same observations.
 | CH | spawn | 245 | default | 98.4 | 88.2 | 91.4 | 50.0 (n 8) | | |
 | CH | rear | 510 | bcfishpass | 76.5 | 84.1 | 84.1 | | | |
 | CH | rear | 510 | default | 77.5 | 84.7 | 84.7 | | | |
-| BT | any | 4,600 | bcfishpass | 64.5 | 81.7 | 81.7 | 64.5 | 46,512 | 76,872 |
-| BT | any | 4,600 | default | 65.4 | 81.1 | 82.8 | 65.4 | 47,099 | 75,280 |
-| BT | rear | 1,047 | bcfishpass | 41.8 | 63.6 | 63.6 | | | |
-| BT | rear | 1,047 | default | 44.3 | 65.9 | 66.5 | | | |
-| BT | spawn | 81 | bcfishpass | 45.7 | 70.4 | 70.4 | | | |
-| BT | spawn | 81 | default | 45.7 | 70.4 | 72.8 | | | |
+| BT | any | 3,771 | bcfishpass | 66.3 | 83.6 | 83.6 | 66.3 | 46,512 | 76,872 |
+| BT | any | 3,771 | default | 66.9 | 82.3 | 84.1 | 66.9 | 47,099 | 75,280 |
+| BT | rear | 622 | bcfishpass | 40.7 | 64.5 | 64.5 | | | |
+| BT | rear | 622 | default | 42.6 | 65.6 | 66.1 | | | |
+| BT | spawn | 64 | bcfishpass | 43.8 | 71.9 | 71.9 | | | |
+| BT | spawn | 64 | default | 43.8 | 70.3 | 73.4 | | | |
 
 BT has no `user_habitat_classification` rows, so its outside-UHC share is its share.
 
-- **BT:** `default` captures slightly more rear-staged locations (66.5 vs 63.6 % on any
+- **BT:** `default` captures slightly more rear-staged locations (66.1 vs 64.5 % on any
   rearing) with 1,592 km *less* rearing. That is the edge-type rule (bcfishpass's BT
   `rear: []` tests any edge), not the thresholds, which are the same in both bundles.
 - **CH:** `default` models 6,032 km (28 %) more rearing for 1.1 points more stream
@@ -112,25 +112,29 @@ BT has no `user_habitat_classification` rows, so its outside-UHC share is its sh
 modelled spawning, 678–686 on rearing. Most FISS sampling is juvenile electrofishing,
 which says little about BT spawning. Not decision-grade.
 
-**Misses** (`misses.csv`, `default` over its 55 WSGs, any stage): BT 344 `fails_gradient`, 160
-`width_null`, 126 `fails_width`, 100 `fails_gradient_and_width`, 89 `post_predicate`
-(clustering or gating), 42 `not_accessible`. CH 51 `fails_gradient`, 47 `width_null`,
+**Misses** (`misses.csv`, `default` over its 55 WSGs, any stage): BT 268 `fails_gradient`, 130
+`width_null`, 103 `fails_width`, 83 `fails_gradient_and_width`, 63 `post_predicate`
+(clustering or gating), 26 `not_accessible`. CH 51 `fails_gradient`, 47 `width_null`,
 27 `not_accessible`. For BT the gradient maximum is the binding threshold, which is
-what #284 moved. NULL width is the second: 160 locations, which is consistent with
+what #284 moved. NULL width is the second: 130 locations, which is consistent with
 #284's finding that 49 % of accessible BT stream length has no width.
 `misses_binned.csv` carries the gradient × width bins for each.
 
 ## Reconciliation with #284
 
-At buffer 0 on its own 55 WSGs, `fresh_default` retains **5,104** BT+DV and **1,745** CH
-locations, exactly #284's pooled counts. The filters are the same code path.
+At buffer 0 on its own 55 WSGs, `fresh_default` retains **4,275** BT+DV and **1,745** CH
+locations, exactly #284's pooled counts under the Hazelton split. The filters are the same
+code path.
 
-**Under the regional pooling rule (#290).** The driver now takes DV→BT pooling from
-`default`'s `species_pooling.csv`, not from the function default. Re-run over the same 55
-and 59 WSGs (knowledge @ 508bf44, same database), it reproduces all six committed CSVs
-byte for byte, because every WSG in both schemas is in a pooled region. The first region
-where the two rules differ is one the baseline does not cover (the Nass, Stikine and the
-coast; [`species_pooling.md`](species_pooling.md)).
+**Under the #290 tracker.** The driver takes DV→BT pooling from `default`'s
+`species_pooling.csv`, resolved once and applied to both bundles.
+- **The region rule alone** reproduced the pre-#290 CSVs byte for byte, because every WSG
+  in both schemas is in a pooled region.
+- **The Hazelton split then moved BT.** 852 DV records in LSKE, KLUM, LKEL and ZYMO no
+  longer count, so the shared BT set falls from 4,600 to 3,771 locations, and the
+  rear-staged set from 1,047 to 622. The BT rows above are the re-run (knowledge @
+  508bf44, same database); the CH rows are unchanged, byte for byte.
+- [`species_pooling.md`](species_pooling.md) has the scenarios.
 
 ## Using it for #284 step 5
 
