@@ -160,6 +160,10 @@
 - [`lnk_source()`](https://newgraphenvironment.github.io/link/reference/lnk_source.md)
   : Produce a fresh-compatible break source list
 
+- [`lnk_species_pooling()`](https://newgraphenvironment.github.io/link/reference/lnk_species_pooling.md)
+  : Resolve which observation species count as each model species, per
+  WSG
+
 - [`lnk_stamp()`](https://newgraphenvironment.github.io/link/reference/lnk_stamp.md)
   : Capture a Pipeline Run Stamp
 

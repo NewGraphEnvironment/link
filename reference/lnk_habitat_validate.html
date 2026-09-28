@@ -131,13 +131,23 @@ then <code>loaded$observation_exclusions</code> must be <code>NULL</code> (the e
 matched on that key). Species and WSG codes are compared upper-cased
 and trimmed. Optional: <code>match_type</code>, <code>source</code>, <code>is_spawn</code>, <code>is_rear</code>
 (logical, 0/1 or t/true/yes), <code>activity_code</code>, <code>activity</code>,
-<code>life_stage</code>.</p></dd>
+<code>life_stage</code>, and <code>observation_date</code>, which is required when
+<code>species_obs</code> carries a year limit (<code>obs_year_max</code>).</p></dd>
 
 
 <dt id="arg-species-obs">species_obs<a class="anchor" aria-label="anchor" href="#arg-species-obs"></a></dt>
-<dd><p>Named list mapping a model species to the observation
-species codes that count as it. Species not named map to themselves.
-Default pools DV records with BT (<code>list(BT = c("BT", "DV"))</code>).</p></dd>
+<dd><p>Which observation species count as each model species.
+Either a named list mapping a model species to observation species
+codes, applied in every WSG (default <code>list(BT = c("BT", "DV"))</code>, which
+pools DV records with BT), or a per-WSG data frame with
+<code>watershed_group_code</code>, <code>species_code</code> and <code>obs_species</code>, such as
+<code><a href="lnk_species_pooling.html">lnk_species_pooling()</a></code> returns, optionally with <code>obs_year_max</code> (a
+pooled record counts only if dated in or before that year; an undated
+one does not). In the list form a species not named
+maps to itself; in the data frame form a species always counts as
+itself, and a WSG and species pair it does not list maps to itself only.
+Either way a species is scored only where
+<code>loaded$wsg_species_presence</code> marks it present.</p></dd>
 
 
 <dt id="arg-match-types">match_types<a class="anchor" aria-label="anchor" href="#arg-match-types"></a></dt>

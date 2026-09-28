@@ -81,13 +81,23 @@ lnk_habitat_validate(
   are matched on that key). Species and WSG codes are compared
   upper-cased and trimmed. Optional: `match_type`, `source`, `is_spawn`,
   `is_rear` (logical, 0/1 or t/true/yes), `activity_code`, `activity`,
-  `life_stage`.
+  `life_stage`, and `observation_date`, which is required when
+  `species_obs` carries a year limit (`obs_year_max`).
 
 - species_obs:
 
-  Named list mapping a model species to the observation species codes
-  that count as it. Species not named map to themselves. Default pools
-  DV records with BT (`list(BT = c("BT", "DV"))`).
+  Which observation species count as each model species. Either a named
+  list mapping a model species to observation species codes, applied in
+  every WSG (default `list(BT = c("BT", "DV"))`, which pools DV records
+  with BT), or a per-WSG data frame with `watershed_group_code`,
+  `species_code` and `obs_species`, such as
+  [`lnk_species_pooling()`](https://newgraphenvironment.github.io/link/reference/lnk_species_pooling.md)
+  returns, optionally with `obs_year_max` (a pooled record counts only
+  if dated in or before that year; an undated one does not). In the list
+  form a species not named maps to itself; in the data frame form a
+  species always counts as itself, and a WSG and species pair it does
+  not list maps to itself only. Either way a species is scored only
+  where `loaded$wsg_species_presence` marks it present.
 
 - match_types:
 
