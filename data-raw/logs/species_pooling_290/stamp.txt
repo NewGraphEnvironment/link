@@ -1,0 +1,9 @@
+date: 2026-09-27 08:18 PDT
+link: 0.52.0 @ 911bed3
+db: docker fwapg localhost:5432
+bcfishobs.observations rows: 373050
+BT + DV records (not Releases): 24337; undated: 692
+evidence: data-raw/query_habitat_thresholds_obs.R on fresh_default (55 WSGs), one run per scenario bundle
+scenario numbers from producer runs: S0_whole_skeena, S1_hazelton, S2_noskeena, S3_pre1995, S4_hazelton_pre1995; BT_only from the reimplementation
+reimplementation cross-check matched the producer for: S0_whole_skeena, S1_hazelton, S2_noskeena
+validator runs: S0_whole_skeena, S1_hazelton, S2_noskeena, S3_pre1995, S4_hazelton_pre1995

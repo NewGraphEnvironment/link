@@ -60,6 +60,31 @@ To compare two code versions, prepare once and re-run classify/connect on the
 same schema (`data-raw/logs/habitat_thresholds_282/reclassify.R`). Issue drafted,
 awaiting body review.
 
+## Status (2026-09-26, late) — observation pooling is data (#290); #284 step 5 unparked
+
+**Which observation species count as which model species is a bundle tracker now, not code.**
+- `configs/default/species_pooling.csv` holds one dated, sourced row per decision, scoped to a region, sub-region or WSG.
+- `inst/extdata/wsg_regions.csv` is package-level geography: the region is the first segment of each group's *outlet* wscode.
+- `species_groups.csv` lets either side of a row be a group.
+- `lnk_species_pooling()` resolves it and knows no species.
+- **DV → BT pools in the Fraser, Mackenzie and Columbia/Kootenay, and in the Skeena only above Hazelton** (the sub-region `Skeena above Hazelton`: BULK, MORR, KISP, BABL, BABR, SUST, MSKE, USKE). Everything unlisted is not pooled.
+  - **Why the split:** interior DV is a legacy name (the DV share of char records is ~90 % before 1990 and under 15 % after 2000). Skeena DV is not: 86 % or more in every decade, and 85 % of Skeena DV streams were re-sampled and still recorded DV. The Skeena split was the operator's call, 2026-09-27.
+  - **The optional `obs_year_max` column** limits a row to records dated in or before a year; undated records do not qualify. It is empty in the seed.
+- The state of knowledge lives in `research/species_pooling.md`, with the scenarios from `data-raw/species_pooling_evidence.R`.
+- **Do not re-hard-code a species pair anywhere**; add a row.
+- **`default_tuned`'s BT `rear_gradient_max` of 0.1349 hangs by a thread.**
+  - Under the split, the pooled P95 is 0.1309, which clears the 0.13 line that would give 0.1249 by 0.0009.
+  - With no Skeena pooling, or with interior pooling limited to pre-1995 records, it gives 0.1249.
+  - #284 step 5 scoring should test both values.
+
+**Facts not worth re-deriving:**
+- **The region rule alone moved no #284 or #283 number** (all 55 + 59 WSGs are in pooled regions). **The Hazelton split does move them:** 852 DV records in LSKE, KLUM, LKEL and ZYMO drop out. No #284 verdict changes.
+- **Where the new rule bites:** 29 BT-present WSGs in the Nass, Stikine, Taku, Yukon and the coast, which pooled before and do not now.
+- **"No tracker" means no pooling in the resolver**, but the validator's list default (global DV→BT) is kept for back-compat. The driver resolves pooling **once**, from the first bundle declaring a tracker, and applies it to both bundles.
+- **Two presence tables must agree, WSG by WSG**: the pooling bundle's and each scored bundle's. Both drivers stop if they do not, and the comparison is keyed by WSG, never by row position (review found the row-position version).
+- **The #284 obs producer is not bit-reproducible.** A double-precision `sum(length_metre)` gives 1-ulp differences in `candidates.csv` between identical runs. This is pre-existing: #293.
+- **Hand-kept `consumed_by` file:line refs drift on every edit above them.** The two new dictionaries are now test-checked with a whole-token match.
+
 ## Status (2026-09-26) — v0.51.1: first calibrated threshold in `default_tuned` (#284; step 5 open)
 
 **`research/habitat_thresholds.md` is the staging table for tuning CH/BT numbers.** One

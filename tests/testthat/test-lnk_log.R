@@ -94,6 +94,25 @@ test_that(".lnk_config_hash changes when config.yaml pipeline$schema changes", {
   expect_false(identical(before, after))
 })
 
+test_that(".lnk_config_hash moves with the region lookup only for a tracker bundle", {
+  # #290: a pooling tracker is scoped by the package's wsg_regions.csv, which
+  # sits outside the bundle, so a region edit must move the hash.
+  regions <- withr::local_tempfile(fileext = ".csv")
+  file.copy(system.file("extdata", "wsg_regions.csv", package = "link"),
+            regions)
+  local_mocked_bindings(.lnk_wsg_regions_path = function() regions)
+  with_tracker <- lnk_config("default")
+  without <- lnk_config("bcfishpass")
+  expect_false(is.null(with_tracker$files$species_pooling))
+  expect_true(is.null(without$files$species_pooling))
+  h1 <- .lnk_config_hash(with_tracker)
+  b1 <- .lnk_config_hash(without)
+
+  cat("ZZZZ,Nowhere,,999\n", file = regions, append = TRUE)
+  expect_false(identical(h1, .lnk_config_hash(with_tracker)))
+  expect_identical(b1, .lnk_config_hash(without))
+})
+
 test_that(".lnk_config_hash tolerates a missing declared file", {
   dir <- local_bundle_copy("default")
   cfg <- lnk_config(dir)

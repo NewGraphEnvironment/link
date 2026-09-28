@@ -1,6 +1,6 @@
 # Habitat thresholds — CH and BT gradient and channel width
 
-**Verified:** 2026-09-26 · **Issues:** #284 (this), #283 (the validator, [`habitat_validation.md`](habitat_validation.md)), #282 (`default_tuned`) · **Produced by:** `data-raw/query_habitat_thresholds_obs.R`, `data-raw/query_habitat_thresholds_fiss.R` → `data-raw/logs/habitat_thresholds_284/`; literature review archived with #284's PWF (`literature.md`) · **Status:** candidates set in `default_tuned`, **unscored**
+**Verified:** 2026-09-27 · **Issues:** #284 (this), #290 (the pooling tracker), #283 (the validator, [`habitat_validation.md`](habitat_validation.md)), #282 (`default_tuned`) · **Produced by:** `data-raw/query_habitat_thresholds_obs.R`, `data-raw/query_habitat_thresholds_fiss.R` → `data-raw/logs/habitat_thresholds_284/`; literature review archived with #284's PWF (`literature.md`) · **Status:** candidates set in `default_tuned`, **unscored**
 
 ## Verdict
 
@@ -36,18 +36,19 @@ of this section, with what they moved.
   `observation_exclusions` (`data_error | release_exclude`) and `Releases Database`
   records removed. The rest are restricted to the 55 WSGs persisted in `fresh_default`
   where `wsg_species_presence` marks the species, match types A/B, one per species ×
-  `blue_line_key` × metre. That leaves CH 1,745 locations and BT 2,560, plus 2,822 DV
-  pooled with BT (5,104 BT+DV locations once shared locations are counted once). The quantiles,
+  `blue_line_key` × metre. That leaves CH 1,745 locations and BT 2,560, plus 1,970 DV
+  pooled with BT where `species_pooling.csv` pools them (4,275 BT+DV locations once shared
+  locations are counted once; see Change 4). The quantiles,
   selection ratios and floor test use the ones on accessible segments; for gradient that
   means accessible *and* on a stream edge or river polygon (CH 226 spawning-staged and 497
-  rearing-staged; BT+DV 4,764, BT alone 2,443). The bridge share and the `user_habitat_classification`
+  rearing-staged; BT+DV 3,988, BT alone 2,443). The bridge share and the `user_habitat_classification`
   overlap use all of them. `obs_ledger.csv` has every step.
 - **The segment the model tests.** The pipeline breaks streams at every retained
   observation, so 99 % of points sit within 1 m of a break. The segment *starting* at
   the point (the upstream one) is used. A 100 m FWA window gradient from geometry Z
   checks it independently of link's breaks. The two agree for CH spawning (P95 0.044 vs
   0.042) but not everywhere. **CH rearing is 0.060 vs 0.062, and the window value would
-  snap to 0.0649 and flip that verdict to "change".** Pooled BT+DV is 0.135 vs 0.149; the
+  snap to 0.0649 and flip that verdict to "change".** Pooled BT+DV is 0.131 vs 0.145; the
   window value would snap to 0.1449, one step above the candidate. The segment gradient
   is used because it is what the model tests; the window values are why the scoring
   questions below keep the higher values in play.
@@ -87,9 +88,21 @@ of this section, with what they moved.
   enough not to separate for this. So BT+DV is the primary BT evidence, and DV is no
   longer capped at low confidence. BT records alone are kept beside it in
   `candidates.csv` (`evidence_role = "comparison: BT records only"`) and `bridge_bt.csv`
-  (`set = BT_any`), so the evidence exists both ways. Pooling moved one value: BT rearing gradient 0.1249 → 0.1349. It also
+  (`set = BT_any`), so the evidence exists both ways. Pooling moved one value: BT rearing gradient 0.1249 → 0.1349. Since #290 the pooling is data, not code (`species_pooling.csv`): the region rule alone moved no number here, and the Hazelton split that followed is Change 4. It also
   lifted the low-confidence cap on DV staged records, which is why the BT spawning
   gradient and width rows below became literature vetoes instead of weak evidence.
+
+- **Change 4 (link#290): DV is pooled with BT only where `species_pooling.csv` says so, and
+  the Skeena is split at Hazelton.** The naming history shows interior DV is a legacy name
+  but Skeena DV is a current one ([`species_pooling.md`](species_pooling.md)). So DV counts
+  as BT in the Fraser, Mackenzie and Columbia, and in the Skeena only above Hazelton
+  (BULK, MORR, KISP, BABL, BABR, SUST, MSKE, USKE). 852 DV records in LSKE, KLUM, LKEL and
+  ZYMO drop out.
+  - **BT rearing gradient:** P95 0.1348 → 0.1309, n 4,764 → 3,988. The rule still gives
+    **0.1349**, but it now clears the 0.13 line that would drop it to 0.1249 by only
+    0.0009.
+  - **BT spawning width:** P5 1.16 → 1.12 m, rule 1.2 → 1.1 m. It is vetoed either way.
+  - No verdict moved.
 
 ## Chinook (CH)
 
@@ -158,14 +171,14 @@ polygon where gradient is tested.
 
 | Evidence | n | P95 | Rule |
 |---|---|---|---|
-| BT+DV pooled (primary) | 4,764 | 0.135 | 0.1349 |
+| BT+DV pooled (primary) | 3,988 | 0.131 | 0.1349 |
 | BT records only (comparison) | 2,443 | 0.125 | 0.1249 |
-| DV rearing-staged | 991 | 0.158 | — |
+| DV rearing-staged | 587 | 0.154 | — |
 
-- Pooled selection is ~0.7 from 5 to 12 %, dropping to 0.42 at 12–15 % and 0.26 at
+- Pooled selection is ~0.7 from 5 to 12 %, dropping to 0.41 at 12–15 % and 0.24 at
   15–20 %.
-- DV rearing records are selected (ratio ≥ 1) from 1 % to 12 % (1.37 at 10.5–12 %), and
-  drop to 0.70 at 12–15 %.
+- DV rearing records are selected (ratio ≥ 1) from 6 % to 12 % (1.43 at 10.5–12 %), and
+  drop to 0.72 at 12–15 %.
 - The literature agrees: Isaak et al. (2015) trim natal habitat at 15 % (< 1 % of
   occurrences above it), with a maximum habitat slope of 14.7 %; Porter et al. (2008)
   found BT CPUE highest in the steeper Thompson streams.
@@ -184,8 +197,8 @@ The literature vetoes it: redd sites are < 1 % (McPhail & Murray, via Ford et al
 and spawning reaches are "relatively low gradient" (McPhail & Baxter 1996). No source
 gives a numeric reach-scale maximum.
 
-**Spawning width — keep 2 m (medium).** DV spawning P5 is 1.2 m (n 53), and the rule
-says 1.2. The literature vetoes it: the source for 2 m in spawners, Hagen et al. (2015,
+**Spawning width — keep 2 m (medium).** DV spawning P5 is 1.12 m (n 40), and the rule
+says 1.1. The literature vetoes it: the source for 2 m in spawners, Hagen et al. (2015,
 §4.1.2, Parsnip and Pack), gives it as **wetted** width, the limit of use by migratory
 spawners. Wetted runs narrower than the channel width the model tests, so 2 m of channel
 width is, if anything, generous. Resident BT do spawn in smaller streams (McPhail &
@@ -193,7 +206,7 @@ Baxter 1996), but no source gives a number for them, so this stays open for scor
 
 **Rearing width — keep 1.5 m (medium).**
 
-- Pooled P5 is 1.48 m (BT alone 1.91 m), and pooled selection is ≥ 1 from 3 m.
+- Pooled P5 is 1.47 m (BT alone 1.91 m), and pooled selection is ≥ 1 from 3 m.
 - FISS presence sites have a P5 of 1.9 m, with none below 1.5.
 - Juvenile occurrence is "very unlikely" below 2 m wetted width (Dunham & Rieman 1999,
   as cited in Dunham & Chandler 2001, pp. 3 and 26).
@@ -202,8 +215,8 @@ The pooled P5 sits on the current value; nothing argues for a lower one.
 
 **`spawn_gradient_min` — keep 0.** DV spawning selection is 2.2 in the flattest bin.
 
-**`cluster_bridge_gradient` — keep 0.05.** Only 1.7 % of pooled BT+DV observations (85
-of 5,104; BT alone 1.2 %, 31 of 2,560) sit on accessible segments that pass the rearing
+**`cluster_bridge_gradient` — keep 0.05.** Only 1.5 % of pooled BT+DV observations (62
+of 4,275; BT alone 1.2 %, 31 of 2,560) sit on accessible segments that pass the rearing
 predicate yet end up `rearing = FALSE` (`bridge_bt.csv`).
 
 What the bridge does, from fresh's `.frs_cluster_both()`: a rearing cluster is kept if

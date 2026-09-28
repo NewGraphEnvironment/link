@@ -52,11 +52,21 @@ then \code{loaded$observation_exclusions} must be \code{NULL} (the exclusions ar
 matched on that key). Species and WSG codes are compared upper-cased
 and trimmed. Optional: \code{match_type}, \code{source}, \code{is_spawn}, \code{is_rear}
 (logical, 0/1 or t/true/yes), \code{activity_code}, \code{activity},
-\code{life_stage}.}
+\code{life_stage}, and \code{observation_date}, which is required when
+\code{species_obs} carries a year limit (\code{obs_year_max}).}
 
-\item{species_obs}{Named list mapping a model species to the observation
-species codes that count as it. Species not named map to themselves.
-Default pools DV records with BT (\code{list(BT = c("BT", "DV"))}).}
+\item{species_obs}{Which observation species count as each model species.
+Either a named list mapping a model species to observation species
+codes, applied in every WSG (default \code{list(BT = c("BT", "DV"))}, which
+pools DV records with BT), or a per-WSG data frame with
+\code{watershed_group_code}, \code{species_code} and \code{obs_species}, such as
+\code{\link[=lnk_species_pooling]{lnk_species_pooling()}} returns, optionally with \code{obs_year_max} (a
+pooled record counts only if dated in or before that year; an undated
+one does not). In the list form a species not named
+maps to itself; in the data frame form a species always counts as
+itself, and a WSG and species pair it does not list maps to itself only.
+Either way a species is scored only where
+\code{loaded$wsg_species_presence} marks it present.}
 
 \item{match_types}{Character vector of \code{match_type} classes (first
 letter) to keep, or \code{NULL} for no match-type filter. Default
