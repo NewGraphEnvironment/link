@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.52.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.53.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,20 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.53.0" id="link-0530">link 0.53.0<a class="anchor" aria-label="anchor" href="#link-0530"></a></h2>
+<p><strong>Which observation species count as evidence for which model species is now data, not code</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/290" class="external-link">#290</a>). New <code><a href="../reference/lnk_species_pooling.html">lnk_species_pooling()</a></code> resolves, per watershed group, which observation records count for each model species.</p>
+<ul><li>
+<strong>The tracker.</strong> It reads a tracker in the bundle, <code>species_pooling.csv</code>: one dated, sourced row per decision, scoped to a region, sub-region or watershed group.</li>
+<li>
+<strong>Groups.</strong> Either side of a row can be a species or a group from <code>species_groups.csv</code>, so pooling Dolly Varden into bull trout, or all salmon together, is a row rather than a code change.</li>
+<li>
+<strong>Resolution.</strong> The most specific scope wins, anything unlisted is not pooled, and an optional <code>obs_year_max</code> limits a row to records dated in or before a year.</li>
+<li>
+<strong>Regions</strong> come from the new package-level <code>inst/extdata/wsg_regions.csv</code>: the drainage each group’s outlet flows to, plus curated sub-regions.</li>
+</ul><p><code>default</code> pools DV into BT in the Fraser, Mackenzie and Columbia (with the Kootenay), and in the Skeena only above Hazelton. - <strong>Why the split:</strong> in the interior, DV is a name the records stopped using in the 1990s. In the Skeena it is still the recorded name, 86 % or more of char records in every decade. - <strong>The effect on <code>default_tuned</code>:</strong> 852 lower-Skeena DV records leave the <a href="https://github.com/NewGraphEnvironment/link/issues/284" class="external-link">#284</a> bull trout evidence. The calibrated BT rearing gradient stays at 0.1349, but its margin is now 0.0009. - <strong>The write-up:</strong> <code>research/species_pooling.md</code> has the naming history, the maps and five pooling scenarios.</p>
+<p><code><a href="../reference/lnk_habitat_validate.html">lnk_habitat_validate()</a></code> accepts the per-watershed-group table as <code>species_obs</code>, applies year limits record by record, and uses <code>observation_date</code> when a source has one. <code>data-raw/habitat_validate.R</code> resolves pooling once and applies it to both bundles it compares. <code>config_hash</code> changes for <code>default</code> and <code>default_tuned</code>, which now declare the tracker and hash the region lookup; no model output changed.</p>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.52.0" id="link-0520">link 0.52.0<a class="anchor" aria-label="anchor" href="#link-0520"></a></h2>
 <p><strong>Habitat can now be scored against fish, not only against bcfishpass</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/283" class="external-link">#283</a>). New <code><a href="../reference/lnk_habitat_validate.html">lnk_habitat_validate()</a></code> scores a persisted run. For each watershed group, species and stage it reports:</p>
