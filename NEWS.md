@@ -1,3 +1,19 @@
+# link 0.53.0
+
+**Which observation species count as evidence for which model species is now data, not code** ([#290](https://github.com/NewGraphEnvironment/link/issues/290)). New `lnk_species_pooling()` resolves, per watershed group, which observation records count for each model species.
+
+- **The tracker.** It reads a tracker in the bundle, `species_pooling.csv`: one dated, sourced row per decision, scoped to a region, sub-region or watershed group.
+- **Groups.** Either side of a row can be a species or a group from `species_groups.csv`, so pooling Dolly Varden into bull trout, or all salmon together, is a row rather than a code change.
+- **Resolution.** The most specific scope wins, anything unlisted is not pooled, and an optional `obs_year_max` limits a row to records dated in or before a year.
+- **Regions** come from the new package-level `inst/extdata/wsg_regions.csv`: the drainage each group's outlet flows to, plus curated sub-regions.
+
+`default` pools DV into BT in the Fraser, Mackenzie and Columbia (with the Kootenay), and in the Skeena only above Hazelton.
+- **Why the split:** in the interior, DV is a name the records stopped using in the 1990s. In the Skeena it is still the recorded name, 86 % or more of char records in every decade.
+- **The effect on `default_tuned`:** 852 lower-Skeena DV records leave the #284 bull trout evidence. The calibrated BT rearing gradient stays at 0.1349, but its margin is now 0.0009.
+- **The write-up:** `research/species_pooling.md` has the naming history, the maps and five pooling scenarios.
+
+`lnk_habitat_validate()` accepts the per-watershed-group table as `species_obs`, applies year limits record by record, and uses `observation_date` when a source has one. `data-raw/habitat_validate.R` resolves pooling once and applies it to both bundles it compares. `config_hash` changes for `default` and `default_tuned`, which now declare the tracker and hash the region lookup; no model output changed.
+
 # link 0.52.0
 
 **Habitat can now be scored against fish, not only against bcfishpass** ([#283](https://github.com/NewGraphEnvironment/link/issues/283)). New `lnk_habitat_validate()` scores a persisted run. For each watershed group, species and stage it reports:
