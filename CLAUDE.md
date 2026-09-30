@@ -28,7 +28,9 @@ Experimental package — breaking all the time and loving the learning curve. St
   could decide one step in six (`data-raw/logs/habitat_score_284/power_windows.*`).
   BT was widened to eight held-out WSGs, and CH dropped: unscorable, spread thin.
 - **Result.** Steps to 0.1349 take (ratio 0.60 and 0.71; 0.75 and 0.89
-  elevation-adjusted). 0.1449 does not (8 found, 25 expected).
+  elevation-adjusted). 0.1449 does not (8 found, 25 expected). The change adds
+  1,105 km of BT rearing (+5.8 %) across the 12 WSGs, from 2 % (BABL) to 9 % (KOTL,
+  UARL); `habitat_change.csv`.
 - **Elevation confounds gradient.** Core BT rearing thins 24.6 → 10.2 per 100 km from
   the low to the high third, and steep bands sit high. Weights instead of cutoffs went
   to knowledge#28, the biology first.

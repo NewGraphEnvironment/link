@@ -20,7 +20,7 @@ Held out, core 18.1 locations per 100 km.
 | to 0.1449 | 8 | 25 | 0.32 | 0.40 |
 
 - 0.1349 holds under both the rule's floor and the expected-count floor, so `default_tuned` is unchanged.
-- Capture rises from 81.2 % to 84.2 % for +585 km (+5.7 %).
+- Capture rises from 81.2 % to 84.2 % for +585 km (+5.7 %) on the held-out WSGs. Across all 12 the change adds 1,105 km of BT rearing (+5.8 %, from 2 % in BABL to 9 % in KOTL and UARL; `habitat_change.csv`).
 - The core tapers with gradient (18.6 / 19.8 / 15.6 / 11.8 per 100 km) and with elevation (24.6 / 19.3 / 10.2). The steep bands sit high, which is why the adjusted ratio exists.
 - 67–74 % of each band is bridge-only rearing; 101 km of the first band lies outside its gradient window (connectivity-admitted).
 - The build ran in 139.6 min (23 WSGs, 4 schemas).

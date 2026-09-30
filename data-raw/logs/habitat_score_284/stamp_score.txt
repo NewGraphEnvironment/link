@@ -1,5 +1,5 @@
-date: 2026-09-29 22:04 PDT
-link: 0.53.0 @ 031c5cc (at launch)
+date: 2026-09-30 10:08 PDT
+link: 0.53.0 @ 002321f (at launch)
 fresh: 0.34.0 @ no recorded sha
 db: docker fwapg localhost:5432
 variants: data-raw/habitat_score/variants.csv (md5 e7dec4a5b954d20a4d9582fdf483787e): default,bt_rear_0p1249,bt_rear_0p1349,bt_rear_0p1449
@@ -12,4 +12,4 @@ focal: ELKR,BULL,UARL,REVL,CLRH,LILL,BABL,BABR,PARS,KOTL,BULK,MORR; species: BT;
 rule: n_band >= 10 and density_ratio >= 0.5 on held-out WSGs
 pooling: default species_pooling.csv (sha256 9c42964e0469): 12 WSG x species pairs pooled (BT<-DV)
 bcfishobs.observations rows: 373050
-absences: FISS snapshots COTR,LNTH,PINE,UNTH,UPCE; knowledge @ 5e4e08e
+absences: FISS snapshots COTR,LNTH,PINE,UNTH,UPCE; knowledge @ afa84ef

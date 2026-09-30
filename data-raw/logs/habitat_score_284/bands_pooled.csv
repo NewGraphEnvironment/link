@@ -18,7 +18,7 @@
 "bt_rear_0p1349","bt_rear_0p1249","rear_gradient_max",0.1249,0.1349,"added","any","BT","rearing","held_out","removed","rear",0,0,10195.9446479322,241,,0.0236368486022407,
 "bt_rear_0p1349","bt_rear_0p1249","rear_gradient_max",0.1249,0.1349,"added","any","BT","rearing","held_out","removed","spawn",0,0,10195.9446479322,11,,0.00107886030964584,
 "bt_rear_0p1349","bt_rear_0p1249","rear_gradient_max",0.1249,0.1349,"added","any","BT","rearing","in_sample","added","any",137.577626542057,11,8935.91499550551,1020,0.0799548609499912,0.114146117159018,0.700460628359396
-"bt_rear_0p1349","bt_rear_0p1249","rear_gradient_max",0.1249,0.1349,"added","any","BT","rearing","in_sample","added","rear",137.577626542057,7,8935.91499550551,224,0.0508803660590853,0.0250673825917844,2.02974386626871
+"bt_rear_0p1349","bt_rear_0p1249","rear_gradient_max",0.1249,0.1349,"added","any","BT","rearing","in_sample","added","rear",137.577626542057,7,8935.91499550551,224,0.0508803660590853,0.0250673825917844,2.0297438662687
 "bt_rear_0p1349","bt_rear_0p1249","rear_gradient_max",0.1249,0.1349,"added","any","BT","rearing","in_sample","added","spawn",137.577626542057,1,8935.91499550551,24,0.00726862372272647,0.0026857909919769,2.70632515502494
 "bt_rear_0p1349","bt_rear_0p1249","rear_gradient_max",0.1249,0.1349,"added","any","BT","rearing","in_sample","removed","any",0.298000000000023,0,8935.91499550551,1020,0,0.114146117159018,0
 "bt_rear_0p1349","bt_rear_0p1249","rear_gradient_max",0.1249,0.1349,"added","any","BT","rearing","in_sample","removed","rear",0.298000000000023,0,8935.91499550551,224,0,0.0250673825917844,0
@@ -29,9 +29,9 @@
 "bt_rear_0p1449","bt_rear_0p1349","rear_gradient_max",0.1349,0.1449,"added","any","BT","rearing","held_out","removed","any",0,0,10195.9446479322,1841,,0.180561984550727,
 "bt_rear_0p1449","bt_rear_0p1349","rear_gradient_max",0.1349,0.1449,"added","any","BT","rearing","held_out","removed","rear",0,0,10195.9446479322,241,,0.0236368486022407,
 "bt_rear_0p1449","bt_rear_0p1349","rear_gradient_max",0.1349,0.1449,"added","any","BT","rearing","held_out","removed","spawn",0,0,10195.9446479322,11,,0.00107886030964584,
-"bt_rear_0p1449","bt_rear_0p1349","rear_gradient_max",0.1349,0.1449,"added","any","BT","rearing","in_sample","added","any",121.754733275809,9,8935.91499550551,1020,0.0739190974991702,0.114146117159018,0.64758310960497
+"bt_rear_0p1449","bt_rear_0p1349","rear_gradient_max",0.1349,0.1449,"added","any","BT","rearing","in_sample","added","any",121.754733275809,9,8935.91499550551,1020,0.0739190974991702,0.114146117159018,0.647583109604969
 "bt_rear_0p1449","bt_rear_0p1349","rear_gradient_max",0.1349,0.1449,"added","any","BT","rearing","in_sample","added","rear",121.754733275809,2,8935.91499550551,224,0.0164264661109267,0.0250673825917844,0.655292432338362
-"bt_rear_0p1449","bt_rear_0p1349","rear_gradient_max",0.1349,0.1449,"added","any","BT","rearing","in_sample","added","spawn",121.754733275809,0,8935.91499550552,24,0,0.0026857909919769,0
+"bt_rear_0p1449","bt_rear_0p1349","rear_gradient_max",0.1349,0.1449,"added","any","BT","rearing","in_sample","added","spawn",121.754733275809,0,8935.91499550551,24,0,0.0026857909919769,0
 "bt_rear_0p1449","bt_rear_0p1349","rear_gradient_max",0.1349,0.1449,"added","any","BT","rearing","in_sample","removed","any",0,0,8935.91499550551,1020,,0.114146117159018,
 "bt_rear_0p1449","bt_rear_0p1349","rear_gradient_max",0.1349,0.1449,"added","any","BT","rearing","in_sample","removed","rear",0,0,8935.91499550551,224,,0.0250673825917844,
-"bt_rear_0p1449","bt_rear_0p1349","rear_gradient_max",0.1349,0.1449,"added","any","BT","rearing","in_sample","removed","spawn",0,0,8935.91499550552,24,,0.0026857909919769,
+"bt_rear_0p1449","bt_rear_0p1349","rear_gradient_max",0.1349,0.1449,"added","any","BT","rearing","in_sample","removed","spawn",0,0,8935.91499550551,24,,0.0026857909919769,

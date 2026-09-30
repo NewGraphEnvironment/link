@@ -355,6 +355,18 @@ The questions scoring must answer:
 
 ### Results, 2026-09-29
 
+**In plain terms.** The old line said BT stop rearing at about 10 % gradient. Moving it
+to 12, 13 and 14 %, we checked whether bull trout turn up in the streams each move adds,
+on watersheds not used to choose the number:
+- between 10 and 13 % they do, at roughly two-thirds to nine-tenths of their rate in
+  normal rearing at the same elevation, so that water is habitat;
+- past 13 % they mostly don't: 8 sightings where about 25 were expected.
+
+So 0.1349 holds. Steep water looks emptier than it is partly because it sits high,
+where every stream holds fewer fish (colder, smaller, less sampled). Comparing like
+with like by elevation is what the adjusted ratio does. Across the 12 watersheds the
+change adds about 6 % more rearing (table below).
+
 Run `20260930_014921-53610765`, link @ `a11a001` (build) and `031c5cc` (score). The 23-WSG
 closure was modelled clean; each variant differs from `default` in one cell, on one
 shared segmentation. Evidence: `data-raw/logs/habitat_score_284/` (`verdict.csv`,
@@ -377,6 +389,28 @@ shared segmentation. Evidence: `data-raw/logs/habitat_score_284/` (`verdict.csv`
 - **Capture against cost** (held out, all stages): stream-rearing capture goes from
   81.2 % under `default` to 84.2 % at 0.1349 (1,841 → 1,908 of 2,266 locations) for
   585 km more rearing (+5.7 %). 0.1449 adds 138 km for 8 more.
+- **How much rearing the change adds** (`habitat_change.csv`, `default` → 0.1349, BT
+  stream rearing): **19,133 → 20,237 km, +1,105 km (+5.8 %)** across the 12 WSGs.
+  Spawning is unchanged: the cutoff is a rearing threshold.
+
+  | WSG | role | before | after | added |
+  |---|---|---|---|---|
+  | KOTL | in-sample | 1,599 km | 1,742 km | +143 km (+8.9 %) |
+  | UARL | held out | 777 | 846 | +69 (+8.8 %) |
+  | BULL | held out | 1,062 | 1,151 | +89 (+8.3 %) |
+  | ELKR | held out | 2,123 | 2,284 | +161 (+7.6 %) |
+  | CLRH | held out | 988 | 1,048 | +60 (+6.1 %) |
+  | LILL | held out | 906 | 958 | +51 (+5.7 %) |
+  | REVL | held out | 561 | 593 | +32 (+5.6 %) |
+  | PARS | in-sample | 2,635 | 2,775 | +140 (+5.3 %) |
+  | BULK | in-sample | 3,010 | 3,169 | +159 (+5.3 %) |
+  | BABR | held out | 1,724 | 1,806 | +82 (+4.8 %) |
+  | MORR | in-sample | 1,692 | 1,770 | +78 (+4.6 %) |
+  | BABL | held out | 2,055 | 2,097 | +42 (+2.0 %) |
+
+  The mountainous Kootenay and Columbia groups gain most, and the Babine least. These are
+  the only WSGs modelled at both cutoffs, so "about 6 %" elsewhere is a guess, not a
+  measurement.
 - **In-sample WSGs agree** (ratios 0.89, 0.70, 0.65; elevation-adjusted 0.94, 0.75,
   0.69), and never decide.
 - **The core itself tapers** with gradient: 18.6, 19.8, 15.6 and 11.8 locations per
@@ -384,7 +418,8 @@ shared segmentation. Evidence: `data-raw/logs/habitat_score_284/` (`verdict.csv`
   cliff the fish see (knowledge#28 takes up weights instead of cutoffs).
 - **Elevation is a confound.** Core rearing thins from 24.6 to 19.3 to 10.2 per 100 km
   across the low, mid and high thirds of each WSG's own rearing, and the steep bands
-  sit mostly high (263 of the first band's 422 km). The elevation-adjusted ratio
+  sit mostly high: 263 of the first band's 422 km, and 366 of the 585 km the two steps
+  to 0.1349 add (63 %; `elevation.csv`, held out). The elevation-adjusted ratio
   compares each band with the core at its own elevation mix. It raises the first two
   steps, and the third stays low.
 - **Question 2 (the bridge).** Of the first band's 422 km, 140 km has spawning upstream
@@ -395,6 +430,10 @@ shared segmentation. Evidence: `data-raw/logs/habitat_score_284/` (`verdict.csv`
   rearing (BULK, KOTL, LILL; 0.07 km held out) while adding 1,365 km, when a newly
   admitted segment merges clusters.
 - **Absences** do not reach these WSGs: the FISS snapshots cover none of the twelve.
+- **Re-running the score changes only the last digit or two** of the km sums and ratios
+  (`bands*.csv`, `taper.csv`, `elevation.csv`, `bridge_band.csv`). The double-precision
+  length sums in Postgres depend on summation order, the same effect as #293. No count,
+  ratio at printed precision, or verdict moves.
 
 **The floor, discussed after the build (2026-09-29).** The rule's floor is on the
 locations *found* in a band. A band fish avoid produces few, so it reads as
