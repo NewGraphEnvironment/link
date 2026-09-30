@@ -188,9 +188,9 @@ provenance:
   overrides/pscis_modelledcrossings_streams_xref.csv:
     source: https://github.com/smnorris/bcfishpass
     path: data/pscis_modelledcrossings_streams_xref.csv
-    upstream_sha: fd37948
-    synced: 2026-08-12
-    checksum: sha256:9d983291049e70f2bf980e7141d754a55111f92f1f1710ebed8ea5f5a93c2097
+    upstream_sha: b016ea0
+    synced: 2026-09-30
+    checksum: sha256:cd9202d46904fac2865acff36be1b4d104c299f3b803bde6993d537e8bc03ead
     shape_checksum: sha256:c2cebcc7398ddd12d0803eefafbe219f3551e6948051f18d89d7984130c1589d
   overrides/user_barriers_definite.csv:
     source: https://github.com/smnorris/bcfishpass
