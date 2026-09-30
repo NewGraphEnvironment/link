@@ -61,7 +61,42 @@ Relates to #20, #282, #283
 
 
 
+## Plan review and power check (2026-09-29)
+
+`review-plan.md` holds every finding and what was done with it. The one that changed the
+design: held-out observation locations per band window (FWA gradient, upper bounds,
+`data-raw/logs/habitat_score_284/power_windows.txt`, now deterministic through
+`bool_or` per location — the first `DISTINCT ON` draft moved staged CH counts by one
+between runs):
+
+| window | ELKR+BULL / UNTH+LNTH | widened BT set | 8 pilots | non-calibration |
+|---|---|---|---|---|
+| BT 0.1049–0.1249 | 10 | 43 | 66 | 95 |
+| BT 0.1249–0.1349 | 1 | 33 | 15 | 45 |
+| BT 0.1349–0.1449 | 0 | 22 | 17 | 35 |
+| CH spawn 0.0299–0.0449 | 0 | | 2 | 35 |
+| CH spawn 0.0449–0.0549 | 1 | | 1 | 19 |
+| CH rear 0.0549–0.0649 | 2 | | 2 | 17 |
+
+The reviewer's "best single held-out CH WSG holds 6" was close but not exact: the densest
+WSGs hold 5 (OWIK), 2 (LISR) and 5 (CARR). OWIK + BELA + KITR would reach 11 for CH
+spawning 0.0299–0.0449, so the doc says "three to six more WSGs per step" rather than
+"no small set".
+
+Operator decisions: BT only, with the widened held-out set; an underpowered step
+leaves `default_tuned` as it is.
+
+## Phase 1 refactor is byte-identical
+
+`habitat_validate.R`, re-run with the absence taxa as data and the loaders sourced from
+`habitat_validate_inputs.R`, with `knowledge` pinned at `508bf44` through `git archive`,
+reproduces all six #283 CSVs byte for byte. The `knowledge` repo had moved (5 FISS site
+files, about 11.8k lines), so an unpinned re-run would have differed for input reasons.
+Removing the `BT,caught,Dolly Varden` row moves BT absences 1535 → 1539 (the data drives
+the rule).
+
 ## Errors Encountered
 
 | Error | Resolution |
 |-------|------------|
+| `DISTINCT ON` probe gave staged CH counts differing by one between runs | aggregate per location with `bool_or`, as the validator dedups |

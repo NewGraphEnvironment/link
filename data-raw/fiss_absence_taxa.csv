@@ -1,0 +1,8 @@
+species_code,role,pattern
+CH,caught,Chinook
+CH,maybe,Unidentified
+CH,maybe,Salmon \(General\)
+BT,caught,Bull Trout
+BT,caught,Dolly Varden
+BT,maybe,Unidentified
+BT,maybe,Unidentifiable Trout

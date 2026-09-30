@@ -281,25 +281,72 @@ command). Two findings from it change how this step is read:
   locations. Hold records out (by project, date or WSG) through the function's
   `observations` argument.
 
-Run `default` and `default_tuned` on pilot WSGs with both species present and
-observations to score against. The run decisions have to be stated before launch:
+### Scoring design, fixed 2026-09-29 before any run
 
-- **config:** `default` and `default_tuned`, each writing its own schema
-  (`fresh_default`, `fresh_default_tuned`);
-- **WSGs:** BULK and MORR (both species, already in `fresh_default`); UNTH and LNTH
-  (FISS snapshots and both species, but only in `fresh`, so they need a `default` run
-  first);
-- the **closure** each resolves to, and `dams` / `mapping_code`.
+Every threshold variant is scored on the **same segmentation**. Each pilot WSG is prepared
+once under `default` and then re-classified once per variant, because two full runs are not
+bit-reproducible: the PSCIS tie in `lnk_pipeline_pscis_build.R` moves a segment. Access
+does not depend on the habitat thresholds, so every variant carries `default`'s
+`streams_access`.
+
+- **Variants** (`data-raw/habitat_score/variants.csv`): BT `rear_gradient_max` at 0.1249,
+  0.1349 (`default_tuned`) and 0.1449, each differing from `default` in that one cell.
+- **WSGs** (`data-raw/habitat_score/wsg_roles.csv`):
+  - **Held out:** ELKR, BULL, UARL, REVL, CLRH, LILL, BABL and BABR, none of them among the
+    55 WSGs the step-1 percentiles came from.
+  - **In-sample:** PARS, KOTL, BULK and MORR.
+  - The twelve resolve to a 23-WSG drainage closure, which is modelled downstream-first so
+    that access sees the barriers below each pilot. Only the pilots are re-classified.
+- **The band.** Each variant steps from its neighbour nearer `default` in the ladder
+  0.1049 → 0.1249 → 0.1349 → 0.1449. The band is the set of segments whose stream-rearing
+  flag differs between the two, joined on `(id_segment, watershed_group_code)`.
+  - **The core** is the segments that are rearing under every variant of the ladder, which
+    is `default`'s rearing outside every band.
+  - **Observations** are the validator's: the #290 pooling from `default`'s tracker, buffer
+    0. All stages count, since BT carries no life stage; that is the population the 0.1349
+    was calibrated on. BT has no `user_habitat_classification` reaches, so no forced
+    habitat sits in the core.
+- **Rule.**
+  - A band **is habitat** when its observations per km are at least 0.5 × the core's.
+  - It is read on the held-out WSGs, pooled, and needs **n ≥ 10** locations in the band.
+  - A step is taken when its band is habitat. The walk goes outward from `default` and
+    stops at the first step not taken.
+  - **An underpowered step (n < 10) changes nothing.** The step 1–4 verdict stands:
+    `default_tuned` keeps 0.1349, and the verdict is recorded as scored but underpowered.
+  - In-sample WSGs are reported and never decide. The literature veto stands.
+
+**Why BT only, and why these WSGs.** Before any band was computed, observation locations per
+gradient window were counted with no density attached (`data-raw/logs/habitat_score_284/`,
+FWA segment gradients, so upper bounds). The eight pilots first planned held out ELKR and
+BULL for BT, and UNTH and LNTH for CH:
+
+| window | first held-out set | widened BT set | all 8 pilots | non-calibration WSGs (106 BT, 94 CH) |
+|---|---|---|---|---|
+| BT 0.1049–0.1249 | 10 | 43 | 66 | 95 |
+| BT 0.1249–0.1349 | **1** | 33 | 15 | 45 |
+| BT 0.1349–0.1449 | 0 | 22 | 17 | 35 |
+| CH spawn-staged 0.0299–0.0449 | 0 | | 2 | 35 |
+| CH spawn-staged 0.0449–0.0549 | 1 | | 1 | 19 |
+| CH rear-staged 0.0549–0.0649 | 2 | | 2 | 17 |
+
+As first planned, the rule could not have decided five of the six steps. The held-out BT
+set was widened to the densest non-calibration BT WSGs (UARL, REVL, CLRH, LILL, BABL and
+BABR, beside ELKR and BULL), which gives the 43 / 33 / 22 above.
+
+CH was dropped. The CH locations outside the calibration set are spread thin: the
+densest WSGs hold 5, 2 and 5 per step (OWIK, LISR and CARR). Reaching n ≥ 10 would
+take three to six more WSGs per step, each with its own closure, on counts that are
+upper bounds before the access, width and cluster filters. **The CH verdicts stay
+"keep", unscored.** Operator's call, 2026-09-29, prompted by the plan review that found
+the gap.
 
 The questions scoring must answer:
 
 1. How much rearing length the BT gradient change adds, against the observation capture
    it buys. Test BT-only 0.1249 and the pooled pre-change / window value 0.1449 beside the
-   pooled 0.1349. Also test the CH values
-   retired by Method, Change 1 (CH spawning 0.0549, CH rearing 0.0649), since that change
-   was made after the numbers were seen; CH rearing 0.0649 is also what the window
-   gradient gives.
+   pooled 0.1349. The CH values retired by Method, Change 1 (CH spawning 0.0549, CH
+   rearing 0.0649) were to be tested too; they are unscorable (above).
 2. How much of the newly admitted BT rearing sits above spawning, where the 0.05
    downstream bridge decides whether it survives.
 3. Whether spawning capture at 3–4.5 % justifies keeping the CH cutoff above the
-   literature's 3 %.
+   literature's 3 %. Unscorable: 0 held-out spawn-staged locations in that window.
