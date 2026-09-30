@@ -37,7 +37,7 @@ Experimental package — breaking all the time and loving the learning curve. St
   agreed here, and the choice is open.
 - **Resume trusts nothing it cannot prove.** A base WSG is reused only when its log row
   is clean at this HEAD and its digest sits in the same `--out`; `built.csv` is per
-  variant × WSG. Code-check took five rounds to get there (`planning/archive/…-284-*`).
+  variant × WSG. Code-check took five rounds to get there (`planning/archive/2026-09-issue-284-step5-scoring/`).
 - Loosening a rearing cutoff can **remove** a little rearing (1.1 km against 1,365 km):
   clusters merge.
 
