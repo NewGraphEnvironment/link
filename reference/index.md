@@ -67,6 +67,9 @@
 - [`lnk_habitat_validate()`](https://newgraphenvironment.github.io/link/reference/lnk_habitat_validate.md)
   : Validate modelled habitat against fish observations
 
+- [`lnk_habitat_validate_band()`](https://newgraphenvironment.github.io/link/reference/lnk_habitat_validate_band.md)
+  : Score the habitat one threshold step adds or removes
+
 - [`lnk_inputs_verify()`](https://newgraphenvironment.github.io/link/reference/lnk_inputs_verify.md)
   : Verify that required Postgres tables exist in a connection
 
