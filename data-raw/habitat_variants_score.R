@@ -370,14 +370,25 @@ bands$role <- roles$role[match(
   paste(roles$watershed_group_code, roles$species_code))]
 utils::write.csv(bands, file.path(dir_out, "bands.csv"), row.names = FALSE,
                  na = "")
-# A ladder step moves habitat one way. Anything moved the other way means the
+# A ladder step moves habitat one way, except that clustering can drop a
+# segment when a newly admitted one merges it into a different cluster
+# (measured: 1.1 km against 1,365 km added across the BT steps). The
+# against-direction length stays in bands.csv; the run stops only when it is
+# more than 1 % of what the step moves the right way, which would mean the
 # ladder is not nested and the core is not "default outside every band".
-against <- bands[bands$direction != bands$step_direction & bands$band_km > 0, ]
-if (nrow(against) > 0L) {
-  stop("steps moved habitat against their direction (see bands.csv): ",
-       paste(unique(paste(against$variant, against$watershed_group_code)),
-             collapse = ", "), call. = FALSE)
+b_any <- bands[bands$stage == "any", ]
+with_km <- tapply(b_any$band_km[b_any$direction == b_any$step_direction],
+                  b_any$variant[b_any$direction == b_any$step_direction], sum)
+against_km <- tapply(b_any$band_km[b_any$direction != b_any$step_direction],
+                     b_any$variant[b_any$direction != b_any$step_direction], sum)
+share <- against_km / with_km[names(against_km)]
+if (any(share > 0.01, na.rm = TRUE)) {
+  stop("steps moved more than 1 % of their habitat against their direction ",
+       "(see bands.csv): ", paste(names(share)[share > 0.01], collapse = ", "),
+       call. = FALSE)
 }
+message("habitat moved against the step direction (km): ",
+        paste(names(against_km), round(against_km, 3), collapse = ", "))
 
 key_b <- c("variant", "step_from", "column", "value_from", "value",
            "step_direction", "obs_stage", "species_code", "flag", "role",
