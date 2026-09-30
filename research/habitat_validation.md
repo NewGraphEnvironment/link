@@ -1,6 +1,6 @@
 # Habitat validation against fish observations
 
-**Verified:** 2026-09-27 · **Issues:** #283 (this), #284 (step 5 scores with it), #290 (pooling as data), #203 (full-key joins), fresh#218 · **Produced by:** `lnk_habitat_validate()` via `data-raw/habitat_validate.R` → `data-raw/logs/habitat_validate_283/` (link @ `0c19e0a`) · **Status:** baseline only; `default_tuned` not yet scored
+**Verified:** 2026-09-27 · **Issues:** #283 (this), #284 (step 5 scores with it), #290 (pooling as data), #203 (full-key joins), fresh#218 · **Produced by:** `lnk_habitat_validate()` via `data-raw/habitat_validate.R` → `data-raw/logs/habitat_validate_283/` (link @ `0c19e0a`) · **Status:** baseline; #284 step 5 scored BT `rear_gradient_max` with it (see below)
 
 ## What it measures
 
@@ -136,18 +136,17 @@ code path.
   508bf44, same database); the CH rows are unchanged, byte for byte.
 - [`species_pooling.md`](species_pooling.md) has the scenarios.
 
-## Using it for #284 step 5
+## How #284 step 5 used it
 
-Model `default_tuned` into its own schema (`fresh_default_tuned`), stating the run
-decisions at launch. Then run:
+Step 5 did not diff two independently built schemas: two full runs differ by a segment
+(the PSCIS tie), which would break a segment-level comparison. Instead:
+- `data-raw/habitat_variants_build.R` prepares each WSG once under `default` and
+  re-classifies it per threshold variant, into `score284_<variant>`.
+- `data-raw/habitat_variants_score.R` runs this validator on every variant schema.
+- It then scores each threshold step with `lnk_habitat_validate_band()`: locations per
+  km on the segments the step moves, against the core every step agrees on.
 
-    Rscript data-raw/habitat_validate.R \
-      --bundles=default:fresh_default,default_tuned:fresh_default_tuned --wsgs=...
-
-- Read `share_rearing_any` against `rearing_km` for BT on the rear stage.
-- Read `share_*_outside_uhc` for CH.
-- Hold out records for the in-sample BT value (point 3 above).
-
-`diff.csv` gives the per-WSG deltas. It is per WSG × species × stage, so step 5's
-question 2 (how much newly admitted BT rearing sits above spawning) still needs a
-segment-level diff.
+Held-out WSGs, not held-out records, answered point 3: none of the eight decide-WSGs
+were among the 55 the percentile came from. The results are in
+[`habitat_thresholds.md`](habitat_thresholds.md), "Step 5"; the evidence is in
+`data-raw/logs/habitat_score_284/`.

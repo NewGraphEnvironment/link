@@ -1,0 +1,13 @@
+watershed_group_code,species_code,role
+ELKR,BT,held_out
+BULL,BT,held_out
+UARL,BT,held_out
+REVL,BT,held_out
+CLRH,BT,held_out
+LILL,BT,held_out
+BABL,BT,held_out
+BABR,BT,held_out
+PARS,BT,in_sample
+KOTL,BT,in_sample
+BULK,BT,in_sample
+MORR,BT,in_sample

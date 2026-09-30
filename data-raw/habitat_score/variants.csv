@@ -1,0 +1,5 @@
+variant,species_code,column,value,flag,obs_stage,step_from,equals_bundle
+default,,,,,,,default
+bt_rear_0p1249,BT,rear_gradient_max,0.1249,rearing,any,default,
+bt_rear_0p1349,BT,rear_gradient_max,0.1349,rearing,any,bt_rear_0p1249,default_tuned
+bt_rear_0p1449,BT,rear_gradient_max,0.1449,rearing,any,bt_rear_0p1349,

@@ -1,0 +1,15 @@
+"species_code","column","role","taper_class","km","n","per_100km","ratio_to_core"
+"BT","rear_gradient_max","held_out","band bt_rear_0p1249",422.199474061986,46,10.895323851883,0.603411835497524
+"BT","rear_gradient_max","held_out","band bt_rear_0p1349",163.041225190392,21,12.8801779890191,0.713338304353902
+"BT","rear_gradient_max","held_out","band bt_rear_0p1449",137.509597013536,8,5.81777575801674,0.322203800123956
+"BT","rear_gradient_max","held_out","core (-Inf,0.02]",4872.14486710653,908,18.6365558653686,1.03214172749264
+"BT","rear_gradient_max","held_out","core (0.02,0.05]",3045.06828125025,603,19.8025116123971,1.09671543883778
+"BT","rear_gradient_max","held_out","core (0.05,0.08]",1591.86910304486,249,15.6419896286524,0.866294733499563
+"BT","rear_gradient_max","held_out","core (0.08, Inf]",686.862396530564,81,11.7927550567832,0.653113947884755
+"BT","rear_gradient_max","in_sample","band bt_rear_0p1249",383.636642052419,39,10.1658693995844,0.890601419706828
+"BT","rear_gradient_max","in_sample","band bt_rear_0p1349",137.577626542057,11,7.99548609499912,0.700460628359394
+"BT","rear_gradient_max","in_sample","band bt_rear_0p1449",121.754733275809,9,7.39190974991701,0.647583109604966
+"BT","rear_gradient_max","in_sample","core (-Inf,0.02]",4295.08325339546,499,11.6179354522527,1.0178125845549
+"BT","rear_gradient_max","in_sample","core (0.02,0.05]",2553.40360190603,299,11.7098605084134,1.02586586384715
+"BT","rear_gradient_max","in_sample","core (0.05,0.08]",1443.37050177981,151,10.4616243586662,0.916511627293638
+"BT","rear_gradient_max","in_sample","core (0.08, Inf]",644.057638424171,71,11.0238580779381,0.965767242225204

@@ -1,0 +1,15 @@
+date: 2026-09-30 10:08 PDT
+link: 0.53.0 @ 002321f (at launch)
+fresh: 0.34.0 @ no recorded sha
+db: docker fwapg localhost:5432
+variants: data-raw/habitat_score/variants.csv (md5 e7dec4a5b954d20a4d9582fdf483787e): default,bt_rear_0p1249,bt_rear_0p1349,bt_rear_0p1449
+roles: data-raw/habitat_score/wsg_roles.csv (md5 3b6cefdc1b026173f4f8685a4fcd4b49)
+built default: thresholds sha256 7b904a18c29c; link a11a001; 12 WSGs, 2026-09-29 20:22:13 PDT to 2026-09-29 20:38:10 PDT
+built bt_rear_0p1249: thresholds sha256 f695905587ee; link a11a001; 12 WSGs, 2026-09-29 20:39:19 PDT to 2026-09-29 20:48:29 PDT
+built bt_rear_0p1349: thresholds sha256 8ee57893239b; link a11a001; 12 WSGs, 2026-09-29 20:49:36 PDT to 2026-09-29 20:58:48 PDT
+built bt_rear_0p1449: thresholds sha256 58e5ea82ebcb; link a11a001; 12 WSGs, 2026-09-29 20:59:56 PDT to 2026-09-29 21:09:01 PDT
+focal: ELKR,BULL,UARL,REVL,CLRH,LILL,BABL,BABR,PARS,KOTL,BULK,MORR; species: BT; buffers: 0,100 m
+rule: n_band >= 10 and density_ratio >= 0.5 on held-out WSGs
+pooling: default species_pooling.csv (sha256 9c42964e0469): 12 WSG x species pairs pooled (BT<-DV)
+bcfishobs.observations rows: 373050
+absences: FISS snapshots COTR,LNTH,PINE,UNTH,UPCE; knowledge @ afa84ef

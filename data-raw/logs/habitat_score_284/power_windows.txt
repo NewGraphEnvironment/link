@@ -1,0 +1,37 @@
+held-out BT ELKR+BULL / CH UNTH+LNTH:
+   bt_1049_1249    bt_1249_1349    bt_1349_1449 ch_sp_0299_0449 ch_sp_0449_0549 
+             10               1               0               0               1 
+ch_re_0549_0649 
+              2 
+widened held-out BT (ELKR BULL UARL REVL CLRH LILL BABL BABR):
+   bt_1049_1249    bt_1249_1349    bt_1349_1449 ch_sp_0299_0449 ch_sp_0449_0549 
+             43              33              22               0               0 
+ch_re_0549_0649 
+              2 
+all 8 pilots:
+   bt_1049_1249    bt_1249_1349    bt_1349_1449 ch_sp_0299_0449 ch_sp_0449_0549 
+             66              15              17               2               1 
+ch_re_0549_0649 
+              2 
+all non-calibration WSGs:
+   bt_1049_1249    bt_1249_1349    bt_1349_1449 ch_sp_0299_0449 ch_sp_0449_0549 
+             95              45              35              35              19 
+ch_re_0549_0649 
+             17 
+calibration 55:
+   bt_1049_1249    bt_1249_1349    bt_1349_1449 ch_sp_0299_0449 ch_sp_0449_0549 
+            160              37              35              10               2 
+ch_re_0549_0649 
+             12 
+top non-calibration BT WSGs, 0.1049-0.1449 window:
+
+BABR UARL DUNC REVL BABL LILL CARR KHOR KOTR SMAR CLRH ELKR HERR LNIC UNTH 
+  23   21   18   14   13   13    9    8    8    7    6    6    3    3    3 
+
+UARL REVL CLRH LILL BABL BABR HERR KOTR SMAR COLR ELKR GATA LNAR MURR TASR 
+   9    7    6    5    3    2    2    2    2    1    1    1    1    1    1 
+n non-calib BT WSGs: 106 ; n non-calib CH WSGs: 94 
+densest non-calibration CH WSGs per CH window:
+  spawn 0.0299 0.0449 : OWIK 5 BELA 4 KITR 2 LNAR 2 LNIC 2 STIR 2 
+  spawn 0.0449 0.0549 : LISR 2 SEYM 2 TSAY 2 KSHR 1 LNAR 1 LNIC 1 
+  rear 0.0549 0.0649 : CARR 5 LILL 2 UNTH 2 CLAY 1 HERR 1 KITR 1 

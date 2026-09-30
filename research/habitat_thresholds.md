@@ -1,6 +1,6 @@
 # Habitat thresholds — CH and BT gradient and channel width
 
-**Verified:** 2026-09-27 · **Issues:** #284 (this), #290 (the pooling tracker), #283 (the validator, [`habitat_validation.md`](habitat_validation.md)), #282 (`default_tuned`) · **Produced by:** `data-raw/query_habitat_thresholds_obs.R`, `data-raw/query_habitat_thresholds_fiss.R` → `data-raw/logs/habitat_thresholds_284/`; literature review archived with #284's PWF (`literature.md`) · **Status:** candidates set in `default_tuned`, **unscored**
+**Verified:** 2026-09-29 · **Issues:** #284 (this), #290 (the pooling tracker), #283 (the validator, [`habitat_validation.md`](habitat_validation.md)), #282 (`default_tuned`); spawned knowledge#28 (habitat weights) · **Produced by:** `data-raw/query_habitat_thresholds_obs.R`, `data-raw/query_habitat_thresholds_fiss.R` → `data-raw/logs/habitat_thresholds_284/`; step 5 by `data-raw/habitat_variants_build.R` and `data-raw/habitat_variants_score.R` → `data-raw/logs/habitat_score_284/`; literature review archived with #284's PWF (`literature.md`) · **Status:** BT `rear_gradient_max` 0.1349 **scored and held**; every other row unscored
 
 ## Verdict
 
@@ -12,7 +12,7 @@
 | CH | `rear_channel_width_min` | 1.5 | **keep** | medium |
 | CH | `spawn_gradient_min` | 0 | **keep** | high |
 | BT | `spawn_gradient_max` | 0.0549 | **keep** | medium |
-| BT | `rear_gradient_max` | 0.1049 | **0.1349** | high |
+| BT | `rear_gradient_max` | 0.1049 | **0.1349**, scored on held-out WSGs (step 5) | high |
 | BT | `spawn_channel_width_min` | 2 | **keep** | medium |
 | BT | `rear_channel_width_min` | 1.5 | **keep** | medium |
 | BT | `spawn_gradient_min` | 0 | **keep** | medium |
@@ -23,8 +23,10 @@ argued against was vetoed by the literature. `spawn_gradient_min` and
 `cluster_bridge_gradient` live in `parameters_fresh.csv`; both are kept, so
 `default_tuned` still inherits that file from `default`.
 
-"Unscored" means the candidates have not yet been run against the observation
-validation (#283). Scoring can overturn any row, including a "keep".
+"Unscored" means the row has not been run against the observation validation (#283).
+Step 5 scored the one moved value, BT `rear_gradient_max`, and it held. The CH rows
+could not be scored with the data available (Step 5, "Why BT only"). The other BT rows
+were not tested.
 
 ## Method
 
@@ -281,25 +283,164 @@ command). Two findings from it change how this step is read:
   locations. Hold records out (by project, date or WSG) through the function's
   `observations` argument.
 
-Run `default` and `default_tuned` on pilot WSGs with both species present and
-observations to score against. The run decisions have to be stated before launch:
+### Scoring design, fixed 2026-09-29 before any run
 
-- **config:** `default` and `default_tuned`, each writing its own schema
-  (`fresh_default`, `fresh_default_tuned`);
-- **WSGs:** BULK and MORR (both species, already in `fresh_default`); UNTH and LNTH
-  (FISS snapshots and both species, but only in `fresh`, so they need a `default` run
-  first);
-- the **closure** each resolves to, and `dams` / `mapping_code`.
+Every threshold variant is scored on the **same segmentation**. Each pilot WSG is prepared
+once under `default` and then re-classified once per variant, because two full runs are not
+bit-reproducible: the PSCIS tie in `lnk_pipeline_pscis_build.R` moves a segment. Access
+does not depend on the habitat thresholds, so every variant carries `default`'s
+`streams_access`.
+
+- **Variants** (`data-raw/habitat_score/variants.csv`): BT `rear_gradient_max` at 0.1249,
+  0.1349 (`default_tuned`) and 0.1449, each differing from `default` in that one cell.
+- **WSGs** (`data-raw/habitat_score/wsg_roles.csv`):
+  - **Held out:** ELKR, BULL, UARL, REVL, CLRH, LILL, BABL and BABR, none of them among the
+    55 WSGs the step-1 percentiles came from.
+  - **In-sample:** PARS, KOTL, BULK and MORR.
+  - The twelve resolve to a 23-WSG drainage closure, which is modelled downstream-first so
+    that access sees the barriers below each pilot. Only the pilots are re-classified.
+- **The band.** Each variant steps from its neighbour nearer `default` in the ladder
+  0.1049 → 0.1249 → 0.1349 → 0.1449. The band is the set of segments whose stream-rearing
+  flag differs between the two, joined on `(id_segment, watershed_group_code)`.
+  - **The core** is the segments that are rearing under every variant of the ladder, which
+    is `default`'s rearing outside every band.
+  - **Observations** are the validator's: the #290 pooling from `default`'s tracker, buffer
+    0. All stages count, since BT carries no life stage; that is the population the 0.1349
+    was calibrated on. BT has no `user_habitat_classification` reaches, so no forced
+    habitat sits in the core.
+- **Rule.**
+  - A band **is habitat** when its observations per km are at least 0.5 × the core's.
+  - It is read on the held-out WSGs, pooled, and needs **n ≥ 10** locations in the band.
+  - A step is taken when its band is habitat. The walk goes outward from `default` and
+    stops at the first step not taken.
+  - **An underpowered step (n < 10) changes nothing.** The step 1–4 verdict stands:
+    `default_tuned` keeps 0.1349, and the verdict is recorded as scored but underpowered.
+  - In-sample WSGs are reported and never decide. The literature veto stands.
+
+**Why BT only, and why these WSGs.** Before any band was computed, observation locations per
+gradient window were counted with no density attached (`data-raw/logs/habitat_score_284/`,
+FWA segment gradients, so upper bounds). The eight pilots first planned held out ELKR and
+BULL for BT, and UNTH and LNTH for CH:
+
+| window | first held-out set | widened BT set | all 8 pilots | non-calibration WSGs (106 BT, 94 CH) |
+|---|---|---|---|---|
+| BT 0.1049–0.1249 | 10 | 43 | 66 | 95 |
+| BT 0.1249–0.1349 | **1** | 33 | 15 | 45 |
+| BT 0.1349–0.1449 | 0 | 22 | 17 | 35 |
+| CH spawn-staged 0.0299–0.0449 | 0 | | 2 | 35 |
+| CH spawn-staged 0.0449–0.0549 | 1 | | 1 | 19 |
+| CH rear-staged 0.0549–0.0649 | 2 | | 2 | 17 |
+
+As first planned, the rule could not have decided five of the six steps. The held-out BT
+set was widened to the densest non-calibration BT WSGs (UARL, REVL, CLRH, LILL, BABL and
+BABR, beside ELKR and BULL), which gives the 43 / 33 / 22 above.
+
+CH was dropped. The CH locations outside the calibration set are spread thin: the
+densest WSGs hold 5, 2 and 5 per step (OWIK, LISR and CARR). Reaching n ≥ 10 would
+take three to six more WSGs per step, each with its own closure, on counts that are
+upper bounds before the access, width and cluster filters. **The CH verdicts stay
+"keep", unscored.** Operator's call, 2026-09-29, prompted by the plan review that found
+the gap.
 
 The questions scoring must answer:
 
 1. How much rearing length the BT gradient change adds, against the observation capture
    it buys. Test BT-only 0.1249 and the pooled pre-change / window value 0.1449 beside the
-   pooled 0.1349. Also test the CH values
-   retired by Method, Change 1 (CH spawning 0.0549, CH rearing 0.0649), since that change
-   was made after the numbers were seen; CH rearing 0.0649 is also what the window
-   gradient gives.
+   pooled 0.1349. The CH values retired by Method, Change 1 (CH spawning 0.0549, CH
+   rearing 0.0649) were to be tested too; they are unscorable (above).
 2. How much of the newly admitted BT rearing sits above spawning, where the 0.05
    downstream bridge decides whether it survives.
 3. Whether spawning capture at 3–4.5 % justifies keeping the CH cutoff above the
-   literature's 3 %.
+   literature's 3 %. Unscorable: 0 held-out spawn-staged locations in that window.
+
+### Results, 2026-09-29
+
+**In plain terms.** The old line said BT stop rearing at about 10 % gradient. Moving it
+to 12, 13 and 14 %, we checked whether bull trout turn up in the streams each move adds,
+on watersheds not used to choose the number:
+- between 10 and 13 % they do, at roughly two-thirds to nine-tenths of their rate in
+  normal rearing at the same elevation, so that water is habitat;
+- past 13 % they mostly don't: 8 sightings where about 25 were expected.
+
+So 0.1349 holds. Steep water looks emptier than it is partly because it sits high,
+where every stream holds fewer fish (colder, smaller, less sampled). Comparing like
+with like by elevation is what the adjusted ratio does. Across the 12 watersheds the
+change adds about 6 % more rearing (table below).
+
+Run `20260930_014921-53610765`, link @ `a11a001` (build) and `031c5cc` (score). The 23-WSG
+closure was modelled clean; each variant differs from `default` in one cell, on one
+shared segmentation. Evidence: `data-raw/logs/habitat_score_284/` (`verdict.csv`,
+`bands_pooled.csv`, `taper.csv`, `elevation*.csv`, `bridge_band.csv`, `built.csv`,
+`stamp_*.txt`).
+
+**Verdict: BT `rear_gradient_max` 0.1349 holds.** Held-out WSGs, pooled; the core is
+18.1 locations per 100 km.
+
+| step | band km | found | expected at the core rate | ratio | elevation-adjusted | rule | expected-count floor |
+|---|---|---|---|---|---|---|---|
+| 0.1049 → 0.1249 | 422 | 46 | 76 | 0.60 | 0.75 | take | take |
+| 0.1249 → 0.1349 | 163 | 21 | 29 | 0.71 | 0.89 | take | take |
+| 0.1349 → 0.1449 | 138 | 8 | 25 | 0.32 | 0.40 | keep (n < 10) | refuse |
+
+- **Both steps to 0.1349 are taken, and the step past it is not.** Under the rule as fixed
+  it is underpowered, which leaves 0.1349 standing. Under the alternative floor
+  (discussed with the operator after the build; see below) it is refused, which also
+  gives 0.1349. `default_tuned` does not change.
+- **Capture against cost** (held out, all stages): stream-rearing capture goes from
+  81.2 % under `default` to 84.2 % at 0.1349 (1,841 → 1,908 of 2,266 locations) for
+  585 km more rearing (+5.7 %). 0.1449 adds 138 km for 8 more.
+- **How much rearing the change adds** (`habitat_change.csv`, `default` → 0.1349, BT
+  stream rearing): **19,133 → 20,237 km, +1,105 km (+5.8 %)** across the 12 WSGs.
+  Spawning is unchanged: the cutoff is a rearing threshold.
+
+  | WSG | role | before | after | added |
+  |---|---|---|---|---|
+  | KOTL | in-sample | 1,599 km | 1,742 km | +143 km (+8.9 %) |
+  | UARL | held out | 777 | 846 | +69 (+8.8 %) |
+  | BULL | held out | 1,062 | 1,151 | +89 (+8.3 %) |
+  | ELKR | held out | 2,123 | 2,284 | +161 (+7.6 %) |
+  | CLRH | held out | 988 | 1,048 | +60 (+6.1 %) |
+  | LILL | held out | 906 | 958 | +51 (+5.7 %) |
+  | REVL | held out | 561 | 593 | +32 (+5.6 %) |
+  | PARS | in-sample | 2,635 | 2,775 | +140 (+5.3 %) |
+  | BULK | in-sample | 3,010 | 3,169 | +159 (+5.3 %) |
+  | BABR | held out | 1,724 | 1,806 | +82 (+4.8 %) |
+  | MORR | in-sample | 1,692 | 1,770 | +78 (+4.6 %) |
+  | BABL | held out | 2,055 | 2,097 | +42 (+2.0 %) |
+
+  The mountainous Kootenay and Columbia groups gain most, and the Babine least. These are
+  the only WSGs modelled at both cutoffs, so "about 6 %" elsewhere is a guess, not a
+  measurement.
+- **In-sample WSGs agree** (ratios 0.89, 0.70, 0.65; elevation-adjusted 0.94, 0.75,
+  0.69), and never decide.
+- **The core itself tapers** with gradient: 18.6, 19.8, 15.6 and 11.8 locations per
+  100 km at ≤ 2, 2–5, 5–8 and 8–10.5 %. A cutoff is one line across a slope, not a
+  cliff the fish see (knowledge#28 takes up weights instead of cutoffs).
+- **Elevation is a confound.** Core rearing thins from 24.6 to 19.3 to 10.2 per 100 km
+  across the low, mid and high thirds of each WSG's own rearing, and the steep bands
+  sit mostly high: 263 of the first band's 422 km, and 366 of the 585 km the two steps
+  to 0.1349 add (63 %; `elevation.csv`, held out). The elevation-adjusted ratio
+  compares each band with the core at its own elevation mix. It raises the first two
+  steps, and the third stays low.
+- **Question 2 (the bridge).** Of the first band's 422 km, 140 km has spawning upstream
+  and 282 km (67 %) survives only through the 5 % downstream bridge. The later bands
+  are 70 % and 74 % bridge-only. 101 km of the first band lies outside its gradient
+  window: lower-gradient stream the looser cutoff connects to a spawning cluster.
+- **Clustering moves a little habitat the other way.** Loosening removed 1.1 km of
+  rearing (BULK, KOTL, LILL; 0.07 km held out) while adding 1,365 km, when a newly
+  admitted segment merges clusters.
+- **Absences** do not reach these WSGs: the FISS snapshots cover none of the twelve.
+- **Re-running the score changes only the last digit or two** of the km sums and ratios
+  (`bands*.csv`, `taper.csv`, `elevation.csv`, `bridge_band.csv`). The double-precision
+  length sums in Postgres depend on summation order, the same effect as #293. No count,
+  ratio at printed precision, or verdict moves.
+
+**The floor, discussed after the build (2026-09-29).** The rule's floor is on the
+locations *found* in a band. A band fish avoid produces few, so it reads as
+"underpowered", not "refuse". The rule can confirm a loosening but hardly ever reject
+one, which is backwards for a sparse species. The alternative floor is on the locations
+the band would hold at the core's rate (band km × core rate), which is set by the band's
+length before any fish are counted. Both are in `verdict.csv` (`decision`,
+`decision_expected_floor`). They agree on every step that decides the value, so the
+choice did not need making here. It is open for the next tuning.
+
