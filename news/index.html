@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.53.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.54.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,19 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.54.0" id="link-0540">link 0.54.0<a class="anchor" aria-label="anchor" href="#link-0540"></a></h2>
+<p><strong>The calibrated BT rearing gradient in <code>default_tuned</code> is scored against fish, and it holds</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/284" class="external-link">#284</a>). New <code><a href="../reference/lnk_habitat_validate_band.html">lnk_habitat_validate_band()</a></code> measures observation locations per km on the segments a threshold step moves, against the core every step agrees on. It joins on the full key, and stops when two schemas’ segmentation differs or a schema holds no habitat for a watershed group.</p>
+<ul><li>
+<strong>The result.</strong> On eight watershed groups held out from its calibration, the steps from 0.1049 to 0.1349 add rearing that bull trout use at 0.60 and 0.71 of the core rate (0.75 and 0.89 at the same elevation). The step to 0.1449 does not (8 found where 25 were expected). <code>default_tuned</code> keeps 0.1349, which adds 1,105 km of BT rearing (+5.8 %) across the 12 groups scored.</li>
+<li>
+<strong>Scored on one shared segmentation.</strong> <code>data-raw/habitat_variants_build.R</code> models a drainage closure once and re-classifies each threshold variant on it; <code>data-raw/habitat_variants_score.R</code> applies a rule fixed before the run and writes the gradient taper, an elevation split and the per-group habitat change. Inputs are data in <code>data-raw/habitat_score/</code>.</li>
+<li>
+<strong>Elevation confounds gradient.</strong> Core bull trout rearing thins from 24.6 to 10.2 locations per 100 km between the low and high thirds of each group, and steep water sits high. Weighting habitat instead of cutting it continues in NewGraphEnvironment/knowledge#28.</li>
+<li>
+<strong>CH is unscored:</strong> too few held-out Chinook records to decide any step. The method and every number are in <code>research/habitat_thresholds.md</code>, “Step 5”.</li>
+</ul><p>FISS absence taxa are now data (<code>data-raw/fiss_absence_taxa.csv</code>), and the observation-validation drivers share one input loader; the <a href="https://github.com/NewGraphEnvironment/link/issues/283" class="external-link">#283</a> outputs are unchanged.</p>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.53.0" id="link-0530">link 0.53.0<a class="anchor" aria-label="anchor" href="#link-0530"></a></h2>
 <p><strong>Which observation species count as evidence for which model species is now data, not code</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/290" class="external-link">#290</a>). New <code><a href="../reference/lnk_species_pooling.html">lnk_species_pooling()</a></code> resolves, per watershed group, which observation records count for each model species.</p>
