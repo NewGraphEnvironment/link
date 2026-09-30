@@ -37,6 +37,11 @@
 #   verdict.csv       the rule per step, and the walked-out value per ladder
 #   bridge_band.csv   rearing km each added band holds with and without
 #                     spawning upstream
+#   taper.csv         observations per km along each ladder: the core cut into
+#                     gradient bins, then each band, against the core's rate
+#   elevation.csv     each band against the core within the same elevation
+#                     class (terciles of the WSG's own core rearing), so a
+#                     band's low rate can be told apart from "it is higher up"
 #   stamp_score.txt   environment stamp
 
 suppressPackageStartupMessages({
@@ -108,7 +113,8 @@ roles <- roles[roles$watershed_group_code %in% focal, ]
 species <- sort(unique(roles$species_code))
 schema_of <- function(v) paste0(prefix, v)
 outputs <- c("summary.csv", "totals.csv", "bands.csv", "bands_pooled.csv",
-             "verdict.csv", "bridge_band.csv", "stamp_score.txt")
+             "verdict.csv", "bridge_band.csv", "taper.csv", "elevation.csv",
+             "stamp_score.txt")
 unlink(file.path(dir_out, outputs))
 
 # Taken at launch: the code that runs is the code at the start.
@@ -398,6 +404,17 @@ rule$decision <- ifelse(
   rule$n_band < n_min, "keep (n < 10)",
   ifelse((rule$step_direction == "added") == rule$band_is_habitat,
          "take", "refuse"))
+# Beside the rule, not in it: the same floor on the locations the band would
+# hold at the core's rate (core density x band km), which is set by the band's
+# length before any fish are counted. The rule's floor on the locations
+# FOUND cannot refuse a band fish avoid (few found reads as "underpowered");
+# this reading can. Under discussion with the operator, 2026-09-29; the
+# verdict of record is `decision`.
+rule$n_expected <- rule$density_core * rule$band_km
+band_is_dense <- !is.na(rule$density_ratio) & rule$density_ratio >= ratio_min
+rule$decision_expected_floor <- ifelse(
+  is.na(rule$n_expected) | rule$n_expected < n_min, "keep (expected < 10)",
+  ifelse((rule$step_direction == "added") == band_is_dense, "take", "refuse"))
 # Walk each ladder out from default once, to its last step, and write that
 # one outcome on every row of the ladder. A ladder is the chain from default
 # to a tip (a variant no other variant steps from); a ladder that branches at
@@ -415,35 +432,150 @@ chain_to <- function(v) {
   chain
 }
 tips <- setdiff(rule$variant, variants$step_from)
-rule$ladder_tip <- rep(NA_character_, nrow(rule))
-rule$walk_status <- rep(NA_character_, nrow(rule))
-rule$walked_value <- rep(NA_real_, nrow(rule))
-for (tip in tips) {
-  chain <- chain_to(tip)
-  dec <- rule$decision[match(chain, rule$variant)]
-  stop_at <- which(dec != "take" | is.na(dec))[1]
-  r <- rule[rule$variant == tip, ]
-  if (is.na(stop_at)) {
-    status <- paste("taken through", tip)
-    value <- num(variants$value[variants$variant == tip])
-  } else if (identical(dec[stop_at], "refuse")) {
-    status <- paste("refused at", chain[stop_at])
-    value <- if (stop_at == 1L) {
-      value_of(base_variant, r$species_code, r$column)
+walk <- function(decision) {
+  out <- data.frame(tip = rep(NA_character_, nrow(rule)),
+                    status = rep(NA_character_, nrow(rule)),
+                    value = rep(NA_real_, nrow(rule)))
+  for (tip in tips) {
+    chain <- chain_to(tip)
+    dec <- decision[match(chain, rule$variant)]
+    stop_at <- which(dec != "take" | is.na(dec))[1]
+    r <- rule[rule$variant == tip, ]
+    if (is.na(stop_at)) {
+      status <- paste("taken through", tip)
+      value <- num(variants$value[variants$variant == tip])
+    } else if (identical(dec[stop_at], "refuse")) {
+      status <- paste("refused at", chain[stop_at])
+      value <- if (stop_at == 1L) {
+        value_of(base_variant, r$species_code, r$column)
+      } else {
+        num(variants$value[variants$variant == chain[stop_at - 1L]])
+      }
     } else {
-      num(variants$value[variants$variant == chain[stop_at - 1L]])
+      status <- paste("underpowered at", chain[stop_at],
+                      "- the step 1-4 verdict stands")
+      value <- NA_real_
     }
-  } else {
-    status <- paste("underpowered at", chain[stop_at],
-                    "- the step 1-4 verdict stands")
-    value <- NA_real_
+    on <- rule$variant %in% chain
+    out$tip[on] <- tip
+    out$status[on] <- status
+    out$value[on] <- value
   }
-  on <- rule$variant %in% chain
-  rule$ladder_tip[on] <- tip
-  rule$walk_status[on] <- status
-  rule$walked_value[on] <- value
+  out
 }
+w_rule <- walk(rule$decision)
+rule$ladder_tip <- w_rule$tip
+rule$walk_status <- w_rule$status
+rule$walked_value <- w_rule$value
+w_exp <- walk(rule$decision_expected_floor)
+rule$walk_status_expected_floor <- w_exp$status
+rule$walked_value_expected_floor <- w_exp$value
 utils::write.csv(rule, file.path(dir_out, "verdict.csv"), row.names = FALSE,
+                 na = "")
+
+# -- diagnostics: the taper, and the band against the core by elevation -----------------
+# Per segment of the base network, for each ladder (species x column x flag):
+# which step's band it is in (or the core, or neither), its gradient, its
+# elevation (mean of the geometry's Z range) and the locations on it. Rates
+# are pooled sums (locations / km) per role, never averages of segment rates.
+ladders <- unique(steps[c("species_code", "column", "flag")])
+seg_rows <- list()
+for (k in seq_len(nrow(ladders))) {
+  L <- ladders[k, ]
+  lad <- steps[steps$species_code == L$species_code & steps$column == L$column, ]
+  sch_all <- schema_of(ladder_of(L$species_code, L$column))
+  w_sp <- roles$watershed_group_code[roles$species_code == L$species_code]
+  spl <- tolower(L$species_code)
+  joins <- paste(sprintf(
+    "LEFT JOIN %1$s.streams_habitat_%2$s h%3$d
+       ON h%3$d.id_segment = s.id_segment
+      AND h%3$d.watershed_group_code = s.watershed_group_code",
+    sch_all, spl, seq_along(sch_all)), collapse = "\n ")
+  flag_of <- function(sch) {
+    sprintf("coalesce(h%d.%s, false)", match(sch, sch_all), L$flag)
+  }
+  band_case <- paste(sprintf("WHEN %s <> %s THEN %s",
+                             flag_of(schema_of(lad$variant)),
+                             flag_of(schema_of(lad$step_from)),
+                             DBI::dbQuoteString(conn, lad$variant)),
+                     collapse = " ")
+  d <- dbGetQuery(conn, sprintf(
+    "SELECT s.watershed_group_code, s.id_segment, s.length_metre, s.gradient,
+            (st_zmin(s.geom) + st_zmax(s.geom)) / 2 AS elevation,
+            CASE WHEN %3$s THEN 'core' %4$s ELSE NULL END AS class
+       FROM %1$s.streams s
+       %2$s
+      WHERE s.watershed_group_code = ANY($1)",
+    schema_of(base_variant), joins,
+    paste(vapply(sch_all, flag_of, character(1)), collapse = " AND "),
+    band_case), params = list(paste0("{", paste(w_sp, collapse = ","), "}")))
+  d <- d[!is.na(d$class), ]
+  o <- obs_base[obs_base$species_code == L$species_code &
+                  !is.na(obs_base$id_segment), ]
+  st <- unique(lad$obs_stage)
+  if (identical(st, "spawn")) o <- o[o$is_spawn %in% TRUE, ]
+  if (identical(st, "rear")) o <- o[o$is_rear %in% TRUE, ]
+  n_seg <- table(paste(o$watershed_group_code, o$id_segment))
+  d$n <- as.integer(n_seg[paste(d$watershed_group_code, d$id_segment)])
+  d$n[is.na(d$n)] <- 0L
+  d$species_code <- L$species_code
+  d$column <- L$column
+  d$role <- roles$role[match(paste(d$watershed_group_code, d$species_code),
+                             paste(roles$watershed_group_code,
+                                   roles$species_code))]
+  seg_rows[[k]] <- d
+}
+seg <- do.call(rbind, seg_rows)
+pool_rate <- function(d, by) {
+  a <- stats::aggregate(cbind(km = d$length_metre / 1000, n = d$n), d[by], sum)
+  a$per_100km <- ifelse(a$km > 0, 100 * a$n / a$km, NA_real_)
+  a
+}
+# Taper: the core split into gradient bins, then each band as its own row.
+grad_bins <- c(-Inf, 0.02, 0.05, 0.08, Inf)
+seg$taper_class <- ifelse(
+  seg$class == "core",
+  paste0("core ", as.character(cut(seg$gradient, grad_bins, right = TRUE))),
+  paste0("band ", seg$class))
+taper <- pool_rate(seg, c("species_code", "column", "role", "taper_class"))
+core_rate <- pool_rate(seg[seg$class == "core", ],
+                       c("species_code", "column", "role"))
+taper$ratio_to_core <- taper$per_100km /
+  core_rate$per_100km[match(paste(taper$species_code, taper$column, taper$role),
+                            paste(core_rate$species_code, core_rate$column,
+                                  core_rate$role))]
+utils::write.csv(taper[do.call(order, taper[c("species_code", "column", "role",
+                                              "taper_class")]), ],
+                 file.path(dir_out, "taper.csv"), row.names = FALSE, na = "")
+# Elevation: terciles of each WSG's own core elevation, length-weighted, so a
+# band sits in the same low / mid / high classes as the rearing it joins.
+seg$elev_class <- NA_character_
+for (w in unique(seg$watershed_group_code)) {
+  for (lad_key in unique(paste(seg$species_code, seg$column))) {
+    i <- seg$watershed_group_code == w & paste(seg$species_code, seg$column) == lad_key
+    core <- seg[i & seg$class == "core" & !is.na(seg$elevation), ]
+    if (nrow(core) == 0L) next
+    o <- order(core$elevation)
+    cw <- cumsum(core$length_metre[o]) / sum(core$length_metre)
+    cuts <- c(core$elevation[o][which(cw >= 1 / 3)[1]],
+              core$elevation[o][which(cw >= 2 / 3)[1]])
+    seg$elev_class[i] <- as.character(cut(seg$elevation[i],
+                                          c(-Inf, cuts, Inf),
+                                          labels = c("low", "mid", "high")))
+  }
+}
+elev <- pool_rate(seg[!is.na(seg$elev_class), ],
+                  c("species_code", "column", "role", "class", "elev_class"))
+elev_core <- elev[elev$class == "core", ]
+elev$core_per_100km <- elev_core$per_100km[match(
+  paste(elev$species_code, elev$column, elev$role, elev$elev_class),
+  paste(elev_core$species_code, elev_core$column, elev_core$role,
+        elev_core$elev_class))]
+elev$ratio_to_core <- elev$per_100km / elev$core_per_100km
+elev$elev_class <- factor(elev$elev_class, c("low", "mid", "high"))
+utils::write.csv(elev[do.call(order, elev[c("species_code", "column", "role",
+                                            "class", "elev_class")]), ],
+                 file.path(dir_out, "elevation.csv"), row.names = FALSE,
                  na = "")
 
 # -- question 2: added rearing with and without spawning upstream -------------------------
