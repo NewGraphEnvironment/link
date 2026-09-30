@@ -91,29 +91,29 @@ steps. Decided:
 - [x] `/code-check`: 5 rounds and an enumeration (`review-round1..5.md`, `review-enumeration.md`).
 
 ## Phase 4: Full build
-- [ ] Restate the run decisions and launch detached (`nohup … & disown`). The repo is not touched while it runs.
-- [ ] Verify post-conditions against the DB, not the exit code:
+- [x] Restate the run decisions and launch detached (`nohup … & disown`). The repo is not touched while it runs.
+- [x] Verify post-conditions against the DB, not the exit code (23 base WSGs clean at `a11a001`; 12 recompute rows, with REVL's access changed; 12 BT WSGs per variant; `built.csv` 48 rows):
   - 23 WSGs in `score284_default`;
   - the 12 focal WSGs in each variant schema (BT);
   - the invariants from Phase 3;
   - `<schema>.log` rows present for the base run.
-- [ ] Commit the run log and stamp to `data-raw/logs/habitat_score_284/` (redacted).
+- [x] Commit the run log and stamp to `data-raw/logs/habitat_score_284/` (redacted).
 
 ## Phase 5: Score
-- [ ] `data-raw/habitat_variants_score.R` sources `habitat_validate_inputs.R` for pooling (from `default`'s tracker) and absences, then runs `lnk_habitat_validate()` on every variant schema at buffers 0 and 100. Output: `summary.csv`, `totals.csv`.
-- [ ] Bands per ladder step via `lnk_habitat_validate_band()` → `bands.csv`, which holds held-out and in-sample rows, the absence count in each band, and `n` and `density_ratio`.
-- [ ] Apply the rule mechanically → `verdict.csv` (per ladder step: pass, fail or keep with n < 10, then the walked-out value).
-- [ ] Question 2: the km of BT rearing newly admitted in each band that has spawning upstream (`fwa_upstream`) against bridge-only. Output: `bridge_band.csv`.
+- [x] `data-raw/habitat_variants_score.R` sources `habitat_validate_inputs.R` for pooling (from `default`'s tracker) and absences, then runs `lnk_habitat_validate()` on every variant schema at buffers 0 and 100. Output: `summary.csv`, `totals.csv`.
+- [x] Bands per ladder step via `lnk_habitat_validate_band()` → `bands.csv`, which holds held-out and in-sample rows, the absence count in each band, and `n` and `density_ratio`.
+- [x] Apply the rule mechanically (plus the expected-count floor beside it, discussed with the operator after the build; the two agree) → `verdict.csv` (per ladder step: pass, fail or keep with n < 10, then the walked-out value).
+- [x] Question 2: the km of BT rearing newly admitted in each band that has spawning upstream (`fwa_upstream`) against bridge-only. Output: `bridge_band.csv`.
 - [x] Question 3 (the CH spawn 0.0299 band): dropped with CH; the research doc records it as unscorable (0 held-out spawn-staged locations).
 
 ## Phase 6: Verdict and landing
-- [ ] Revise `research/habitat_thresholds.md` in place:
+- [x] Revise `research/habitat_thresholds.md` in place (also: taper, elevation split and elevation-adjusted ratio; weights spun out to knowledge#28):
   - the verdict table, now scored;
   - the Step 5 results;
   - the header status line.
-- [ ] Update `habitat_validation.md`'s "Using it for #284 step 5" section.
-- [ ] If the rule moves a value, edit `configs/default_tuned/parameters_habitat_thresholds.csv`, its `config.yaml` checksum and README, then check with `lnk_config_verify()` and `audit_configs.R`. If not, the README and config description lose "unscored".
-- [ ] Update NEWS.md, the CLAUDE.md status and the #284 issue body (edited, not appended).
+- [x] Update `habitat_validation.md`'s "Using it for #284 step 5" section.
+- [x] If the rule moves a value (it did not: 0.1349 held), edit `configs/default_tuned/parameters_habitat_thresholds.csv`, its `config.yaml` checksum and README, then check with `lnk_config_verify()` and `audit_configs.R`. If not, the README and config description lose "unscored".
+- [x] CLAUDE.md status; #284 issue body (edited, not appended). NEWS and the version bump are `/gh-pr-merge`'s.
 
 ## Validation
 

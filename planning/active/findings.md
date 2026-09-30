@@ -95,8 +95,14 @@ files, about 11.8k lines), so an unpinned re-run would have differed for input r
 Removing the `BT,caught,Dolly Varden` row moves BT absences 1535 → 1539 (the data drives
 the rule).
 
+## Step 5 results (2026-09-29)
+
+Held out, core 18.1 locations per 100 km: bands 0.60 / 0.71 / 0.32 (elevation-adjusted 0.75 / 0.89 / 0.40); found 46 / 21 / 8 against 76 / 29 / 25 expected. 0.1349 holds under both floors. Capture 81.2 % → 84.2 % for +585 km (+5.7 %). The core itself tapers (18.6 / 19.8 / 15.6 / 11.8 per 100 km at ≤ 2 / 2–5 / 5–8 / 8–10.5 %) and thins with elevation (24.6 / 19.3 / 10.2). Of the bands, 67–74 % is bridge-only; 101 km of the first band is outside its gradient window (connectivity-admitted). The recompute changed REVL's access (cross-WSG). All in `research/habitat_thresholds.md` "Step 5, Results".
+
 ## Errors Encountered
 
 | Error | Resolution |
 |-------|------------|
 | `DISTINCT ON` probe gave staged CH counts differing by one between runs | aggregate per location with `bool_or`, as the validator dedups |
+| Scoring stopped: steps moved habitat against their direction (BULK, KOTL, LILL) | clustering merges; 1.1 km vs 1,365 km. Guard now tolerates <= 1 % of a step and reports the km |
+| BULL pre-flight: variant access check could never pass | dropped the check (a variant persists one species' access); access copied from the base |

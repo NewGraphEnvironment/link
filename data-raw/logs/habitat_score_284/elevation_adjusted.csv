@@ -1,0 +1,7 @@
+"species_code","column","role","class","km","n","expected","ratio_elevation_adjusted"
+"BT","rear_gradient_max","held_out","bt_rear_0p1249",422.199474061985,46,61.0878914598769,0.753013386134194
+"BT","rear_gradient_max","in_sample","bt_rear_0p1249",383.63664205242,39,41.4396247468154,0.941128213353263
+"BT","rear_gradient_max","held_out","bt_rear_0p1349",163.041225190392,21,23.6863513908807,0.886586526284713
+"BT","rear_gradient_max","in_sample","bt_rear_0p1349",137.577626542057,11,14.5917740163694,0.753849394025697
+"BT","rear_gradient_max","held_out","bt_rear_0p1449",137.509597013536,8,20.2119872410841,0.395804722444051
+"BT","rear_gradient_max","in_sample","bt_rear_0p1449",121.754733275809,9,13.0984648120284,0.687103422359485

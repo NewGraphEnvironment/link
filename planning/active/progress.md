@@ -12,3 +12,6 @@
 - Phase 3 code written (`habitat_variants_build.R`, `habitat_variants_score.R`), review gaps G1–G8, AC1, AC4 folded in.
 - Code-check: 5 rounds plus an enumeration. Rounds 3, 4 and 5 each found a defect inside the previous fix (the per-row walk, bundle provenance, the resume key). All fixed and probed. Summary in `review-enumeration.md`.
 - BULL pre-flight: invariants hold, bands reconcile, and the pipeline runs end to end. Next: commit, drop the pre-flight scratch schemas, launch the full build detached.
+- Build run `20260930_014921-53610765`: 139.6 min, every post-condition met in the DB. The scoring stopped once on the nesting guard (1.1 km moved against direction by clustering); it now tolerates up to 1 % and reports it.
+- Discussed with the operator: the n >= 10 floor (found vs expected), 0.5 as a cutoff, the temperature/elevation confound, weights instead of cutoffs. Added the taper, the elevation split, the elevation-adjusted ratio and the expected-floor reading. Filed knowledge#28 (the biology of habitat weights).
+- Verdict: 0.1349 held under both floors; `default_tuned` unchanged.

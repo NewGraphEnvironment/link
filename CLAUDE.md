@@ -11,6 +11,36 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (v0.49.0 as of 2026-09-01)
 
+## Status (2026-09-29) — #284 step 5: BT `rear_gradient_max` 0.1349 scored and held
+
+**Threshold variants are scored on one shared segmentation, never on two full runs.**
+- `data-raw/habitat_variants_build.R` models a closure once under `default` into
+  `score284_default`, keeps the focal working schemas, and re-classifies each variant
+  (a thin bundle, one cell changed) into `score284_<variant>`.
+- `data-raw/habitat_variants_score.R` scores each ladder step with the new
+  `lnk_habitat_validate_band()`: locations per km on the segments the step moves,
+  against the core every step agrees on. Held-out WSGs decide.
+- Inputs are data (`data-raw/habitat_score/`). Method and results:
+  `research/habitat_thresholds.md`, "Step 5".
+
+**Facts not worth re-deriving:**
+- **Power first.** A counts-only check before the build showed the planned held-out set
+  could decide one step in six (`data-raw/logs/habitat_score_284/power_windows.*`).
+  BT was widened to eight held-out WSGs, and CH dropped: unscorable, spread thin.
+- **Result.** Steps to 0.1349 take (ratio 0.60 and 0.71; 0.75 and 0.89
+  elevation-adjusted). 0.1449 does not (8 found, 25 expected).
+- **Elevation confounds gradient.** Core BT rearing thins 24.6 → 10.2 per 100 km from
+  the low to the high third, and steep bands sit high. Weights instead of cutoffs went
+  to knowledge#28, the biology first.
+- **The n ≥ 10 floor on locations *found* cannot refuse a band fish avoid.** A floor on
+  locations *expected* at the core rate can. Both readings are in `verdict.csv`; they
+  agreed here, and the choice is open.
+- **Resume trusts nothing it cannot prove.** A base WSG is reused only when its log row
+  is clean at this HEAD and its digest sits in the same `--out`; `built.csv` is per
+  variant × WSG. Code-check took five rounds to get there (`planning/archive/…-284-*`).
+- Loosening a rearing cutoff can **remove** a little rearing (1.1 km against 1,365 km):
+  clusters merge.
+
 ## Status (2026-09-26, late) — observation validation (#283)
 
 **`lnk_habitat_validate()` scores a run against fish, not against bcfishpass.**

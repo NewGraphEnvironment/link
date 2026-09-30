@@ -6,8 +6,9 @@ description: |
   the persist schema. From link#284 it differs from default in one cell: BT
   rear_gradient_max 0.1049 -> 0.1349 (BT and DV records pooled). Evidence, and the gradient and width
   values that were examined and kept, are in
-  research/habitat_thresholds.md; the candidates are unscored until the
-  observation validation (link#283) runs.
+  research/habitat_thresholds.md. The BT value was scored against held-out
+  fish observations (link#284 step 5) and held; the kept CH values are
+  unscored.
 
 extends: default
 
