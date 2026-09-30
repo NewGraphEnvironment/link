@@ -78,6 +78,7 @@ Other compare:
 \code{\link{lnk_compare_rollup}()},
 \code{\link{lnk_compare_wsg}()},
 \code{\link{lnk_habitat_validate}()},
+\code{\link{lnk_habitat_validate_band}()},
 \code{\link{lnk_mapping_code}()},
 \code{\link{lnk_parity_annotate}()},
 \code{\link{lnk_rollup_wsg}()}
