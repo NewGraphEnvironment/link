@@ -44,6 +44,8 @@
 #                     band's low rate can be told apart from "it is higher up"
 #   elevation_adjusted.csv  per band: found / expected at the core's rate in
 #                     the band's own elevation mix
+#   habitat_change.csv  per variant x WSG: stream-rearing and spawning km
+#                     against the base, and the change (km and %)
 #   stamp_score.txt   environment stamp
 
 suppressPackageStartupMessages({
@@ -116,7 +118,8 @@ species <- sort(unique(roles$species_code))
 schema_of <- function(v) paste0(prefix, v)
 outputs <- c("summary.csv", "totals.csv", "bands.csv", "bands_pooled.csv",
              "verdict.csv", "bridge_band.csv", "taper.csv", "elevation.csv",
-             "elevation_adjusted.csv", "stamp_score.txt")
+             "elevation_adjusted.csv", "habitat_change.csv",
+             "stamp_score.txt")
 unlink(file.path(dir_out, outputs))
 
 # Taken at launch: the code that runs is the code at the start.
@@ -280,6 +283,27 @@ for (k in c("accessible", "spawning", "rearing", "rearing_any")) {
 totals <- totals[do.call(order, totals[rev(key_t)]), ]
 utils::write.csv(totals, file.path(dir_out, "totals.csv"), row.names = FALSE,
                  na = "")
+
+# What each variant does to the amount of habitat, WSG by WSG: the cost side
+# of the score, in the units people quote (km), from the rollup the
+# validator already carries. One row per variant x WSG x species.
+hc <- summary[summary$buffer_m == 0 & summary$stage == "any",
+              c("variant", "watershed_group_code", "species_code", "role",
+                "rearing_km", "spawning_km")]
+hc_base <- hc[hc$variant == base_variant, ]
+key_hc <- function(d) paste(d$watershed_group_code, d$species_code)
+hc <- hc[hc$variant != base_variant, ]
+i <- match(key_hc(hc), key_hc(hc_base))
+hc$rearing_km_base <- hc_base$rearing_km[i]
+hc$spawning_km_base <- hc_base$spawning_km[i]
+hc$rearing_km_added <- hc$rearing_km - hc$rearing_km_base
+hc$rearing_pct_added <- ifelse(hc$rearing_km_base > 0,
+                               100 * hc$rearing_km_added / hc$rearing_km_base,
+                               NA_real_)
+hc$spawning_km_added <- hc$spawning_km - hc$spawning_km_base
+hc <- hc[order(hc$variant, -hc$rearing_pct_added), ]
+utils::write.csv(hc, file.path(dir_out, "habitat_change.csv"),
+                 row.names = FALSE, na = "")
 
 # -- absence sites attached to segments ---------------------------------------------------
 # The validator's absence output is counts; to count absence sites in a band
