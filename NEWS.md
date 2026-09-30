@@ -1,3 +1,14 @@
+# link 0.54.0
+
+**The calibrated BT rearing gradient in `default_tuned` is scored against fish, and it holds** ([#284](https://github.com/NewGraphEnvironment/link/issues/284)). New `lnk_habitat_validate_band()` measures observation locations per km on the segments a threshold step moves, against the core every step agrees on. It joins on the full key, and stops when two schemas' segmentation differs or a schema holds no habitat for a watershed group.
+
+- **The result.** On eight watershed groups held out from its calibration, the steps from 0.1049 to 0.1349 add rearing that bull trout use at 0.60 and 0.71 of the core rate (0.75 and 0.89 at the same elevation). The step to 0.1449 does not (8 found where 25 were expected). `default_tuned` keeps 0.1349, which adds 1,105 km of BT rearing (+5.8 %) across the 12 groups scored.
+- **Scored on one shared segmentation.** `data-raw/habitat_variants_build.R` models a drainage closure once and re-classifies each threshold variant on it; `data-raw/habitat_variants_score.R` applies a rule fixed before the run and writes the gradient taper, an elevation split and the per-group habitat change. Inputs are data in `data-raw/habitat_score/`.
+- **Elevation confounds gradient.** Core bull trout rearing thins from 24.6 to 10.2 locations per 100 km between the low and high thirds of each group, and steep water sits high. Weighting habitat instead of cutting it continues in NewGraphEnvironment/knowledge#28.
+- **CH is unscored:** too few held-out Chinook records to decide any step. The method and every number are in `research/habitat_thresholds.md`, "Step 5".
+
+FISS absence taxa are now data (`data-raw/fiss_absence_taxa.csv`), and the observation-validation drivers share one input loader; the #283 outputs are unchanged.
+
 # link 0.53.0
 
 **Which observation species count as evidence for which model species is now data, not code** ([#290](https://github.com/NewGraphEnvironment/link/issues/290)). New `lnk_species_pooling()` resolves, per watershed group, which observation records count for each model species.
