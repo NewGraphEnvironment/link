@@ -42,6 +42,8 @@
 #   elevation.csv     each band against the core within the same elevation
 #                     class (terciles of the WSG's own core rearing), so a
 #                     band's low rate can be told apart from "it is higher up"
+#   elevation_adjusted.csv  per band: found / expected at the core's rate in
+#                     the band's own elevation mix
 #   stamp_score.txt   environment stamp
 
 suppressPackageStartupMessages({
@@ -114,7 +116,7 @@ species <- sort(unique(roles$species_code))
 schema_of <- function(v) paste0(prefix, v)
 outputs <- c("summary.csv", "totals.csv", "bands.csv", "bands_pooled.csv",
              "verdict.csv", "bridge_band.csv", "taper.csv", "elevation.csv",
-             "stamp_score.txt")
+             "elevation_adjusted.csv", "stamp_score.txt")
 unlink(file.path(dir_out, outputs))
 
 # Taken at launch: the code that runs is the code at the start.
@@ -588,6 +590,18 @@ utils::write.csv(elev[do.call(order, elev[c("species_code", "column", "role",
                                             "class", "elev_class")]), ],
                  file.path(dir_out, "elevation.csv"), row.names = FALSE,
                  na = "")
+# One number per band: locations found against those expected if the band
+# held the core's rate in each of its own elevation classes (sum of band km x
+# core rate, class by class). It removes "the band is higher up" from the
+# pooled ratio; it does not remove temperature or size within a class.
+eb <- elev[elev$class != "core", ]
+eb$expected <- eb$km * eb$core_per_100km / 100
+adj <- stats::aggregate(cbind(km, n, expected) ~ species_code + column + role +
+                          class, eb, sum)
+adj$ratio_elevation_adjusted <- ifelse(adj$expected > 0, adj$n / adj$expected,
+                                       NA_real_)
+utils::write.csv(adj, file.path(dir_out, "elevation_adjusted.csv"),
+                 row.names = FALSE, na = "")
 
 # -- question 2: added rearing with and without spawning upstream -------------------------
 # .frs_cluster_both() keeps a rearing cluster with spawning anywhere upstream,
