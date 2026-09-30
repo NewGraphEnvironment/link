@@ -1262,6 +1262,45 @@ Leave `<` and `>` unescaped when you build a pattern from data.
 ### `tempfile()` lives in the session tempdir, so a path printed in an error names a file R is about to delete
 R removes its session `tempdir()` on exit, including after `stop()`.
 
+### R's `yaml` returns a mixed int/float sequence as a list, not a numeric vector
+`yaml::read_yaml()` simplifies a sequence to a vector only when every element has the same type, so `[0.164, 9999]` comes back as `list(0.164, 9999L)` while `[0.0, 9999.0]` is `c(0, 9999)`.
+
+### testthat's failure snapshots land in `tests/` and ride in on `git add -A`
+testthat 3e writes `tests/testthat/_problems/*.R` and `tests/testthat/testthat-problems.rds` when tests fail.
+
+### A pick whose `ORDER BY` ends on a key that is not unique in the group returns an arbitrary row
+`DISTINCT ON (k) … ORDER BY k, a, b` is deterministic only if `(a, b)` is unique within each `k`.
+
+### `sprintf("%g", x)` writes `Inf` and `NA` into SQL as bare words, which Postgres reads as column names
+A numeric formatter such as `sprintf("%.10g", x)` has no SQL form for non-finite values, so an open-ended range (`c(min, Inf)`, typically a blank `max` filled with `Inf` by a params loader) produces `x <= Inf`, and Postgres fails with `column "inf" does not exist`.
+
+### An `information_schema` lookup by the literal table name misses what Postgres resolves
+`WHERE table_schema = 's' AND table_name = 'T'` compares the text you passed, but Postgres folds unquoted identifiers to lower case, puts temp tables in `pg_temp_N`, and resolves unqualified names through `search_path`.
+
+### Rscript reads a script as it runs, so never edit a script while a run of it is in flight
+Copy the script and run the copy (`cp scripts/x.R "$TMPDIR/x_frozen.R" && Rscript "$TMPDIR/x_frozen.R"`) for anything long-running, or leave the file alone until the run exits.
+
+### A range total taken as the difference of two large running totals loses the small ranges
+Sum a range directly (segment tree, per-range `sum()`, or grouped sums) rather than as `cumsum[hi] - cumsum[lo]` when ranges are small relative to the running total.
+
+### A `pkg::` call in a test passes `devtools::test()` and fails `R CMD check` if `pkg` is undeclared
+`R CMD check` warns "'::' or ':::' import not declared from" for any package a test reaches with `::` that `DESCRIPTION` does not list, and under `error-on: "warning"` that reddens every runner.
+
+### Inside a dplyr verb, a column named like a local variable wins
+Inject a local value into a data-masked verb with `!!x` or `.env$x`, never a bare `x`: `transmute(d, aoi_id = id)` inside `for (id in ids)` reads the frame's own `id` column whenever one exists, with no warning, and the result is well-typed and plausible.
+
+### `earthdatalogin`'s search and download calls overwrite the netrc when they find no Earthdata entry
+Call NASA's CMR search with `curl` and download with `curl` given the netrc directly (`netrc = 1, netrc_file = <path>, cookiefile = ""` follows the URS redirect), or check `earthdatalogin:::has_edl_netrc()` yourself first.
+
+### A fetcher's test helper must make the network fail, not just mock the reader
+When a test mocks a downloader's reader and supplies fixture files, also mock the search and download functions to `stop()` by default, and re-mock them only in the tests that exercise that path.
+
+### testthat 3e `expect_message()` returns the condition, not the expression's value
+Assign inside the call, `expect_message(h <- f(x), "msg")`, never `h <- expect_message(f(x), "msg")`.
+
+### `c()` dispatches on its first argument, so `c(NULL, <Date>)` is a plain number
+Put a Date first when `c()` combines an optional piece with Dates: `c(NULL, <Date>)` takes the default method and returns a bare day count.
+
 # Code Check — Shell
 Tool-level traps in bash, sed, git and `gh`, and in the host toolchain those commands depend on.
 
@@ -1392,6 +1431,21 @@ Write `n=$(grep -c …) || n=0`, never `|| echo 0` inside the substitution: `gre
 
 ### macOS `/usr/bin/awk` aborts when a regex meets a byte slice that cuts a multibyte character
 Test a `substr()` slice with `==`, never with `~`, `match()` or `sub()`: the stock macOS awk counts bytes in `substr()` but converts a regex operand to wide characters, and a partial UTF-8 sequence kills the whole program.
+
+### A variable in a sed replacement is parsed, so its `\` and `&` are not literal
+Never interpolate data into the replacement half of `sed "s#…#$var#"`: sed reads `\(` as `(`, and `&` as the whole match, so the line written is not the value held.
+
+### A fetch can fail and still deliver the commit, so when you need an object, test the object
+When the goal is a specific commit, resolve its sha first (`git ls-remote`) and test `git cat-file -e "$sha^{commit}"` after the fetch rather than the fetch's exit status.
+
+### A default `GIT_SSH_COMMAND` outranks the machine's own ssh choice
+Supply a default ssh command only when `GIT_SSH_COMMAND`, `core.sshCommand` and `GIT_SSH` are all unset.
+
+### `curl -o` without `-L` saves the redirect page as the download
+`curl` does not follow redirects unless it is given `-L`, and it exits 0 on a 3xx.
+
+### `conda run` captures its child's output, so a pipe gets nothing
+`conda run -n env cmd` buffers the child's stdout and re-emits it, and that re-emission does not reach a pipe.
 
 # Code Check — Spatial
 terra, sf, bcdata, GDAL/OGR CLIs.
@@ -1532,6 +1586,48 @@ Before comparing a rendered shape against a raster, get the raster's valid-data 
 
 ### `sf::gdal_utils()` does not raise when GDAL cannot open the source
 Test the result before parsing it: `gdal_utils("info", ...)` on a source GDAL cannot open - an unreachable url, a missing key - **warns and returns `character(0)` or `NA`**, and the next `jsonlite::fromJSON()` dies with *"invalid char in json text"*, which names nothing about the cause.
+
+### A shift measured on one grid is wrong when applied on another
+Apply a displacement in the CRS it was measured in: transform the point there, add the shift, transform back.
+
+### Writing KML: `<color>` is `aabbggrr`, and a remote icon href renders nothing offline
+Do the hex swap in **one** helper and omit `<Icon><href>` entirely.
+
+### `rio cogeo validate` exits 0 when the file is NOT a valid COG
+It reports the verdict in text and returns success either way, so the exit status carries no information at all:
+
+### `terra::rast()` on a SpatRaster returns an empty template, not a copy
+Pass a SpatRaster through as is (`if (inherits(x, "SpatRaster")) x else terra::rast(x)`): `rast(x)` on one builds a new raster with the same geometry and **no values**, so a function that normalises its input with `terra::rast()` silently receives an all-empty grid when handed an object rather …
+
+### `terra::rasterize(filename = , datatype = <integer>)` writes the background as 0, not NA
+Rasterise in memory and then `writeRaster(datatype = …)`: written directly through `filename` with an integer `datatype` (INT1U, INT2S), cells no polygon covers come out as 0, while the file's NoData is 255, so they read back as data (terra 1.9.46 and 1.9.50; rspatial/terra#2195).
+
+### GDAL's `average` warp across a rotated CRS weights the wrong pixels; average in the target CRS instead
+To take class fractions or means from a fine grid in one CRS onto a coarse grid in another, resample nearest onto a grid aligned with the target and `fact` times finer (`terra::disagg(terra::rast(target), fact)`), then `terra::aggregate(fact, mean)`.
+
+### `terra::densify()` on lon/lat follows great circles, so a raster extent's parallel edges bow poleward
+Pass `flat = TRUE` (with the interval in degrees) when densifying a lon/lat extent before projecting it.
+
+### Planetary Computer STAC: a floodplain-scale read hits three limits a reach never does
+Query a large AOI by its convex hull, re-sign items before each tile, and give `datetime` explicit times (`…T00:00:00Z/…T23:59:59Z`).
+
+### gdalcubes reports failed chunk reads only on stderr, so a partial cube passes as complete
+Do not guard on it by capturing output.
+
+### terra reads a multi-variable gdalcubes NetCDF with its variables in alphabetical order
+Select layers by name after `terra::rast()` of a `gdalcubes::write_ncdf()` output, never by position.
+
+### terra's COG writer emits a `.aux.json` sidecar when the raster carries a time
+Strip `time` (and `units`, `varnames`, `longnames`, `metags`, `scoff`) before `writeRaster(filetype = "COG")`, or have the publisher move `<file>.aux.json` with the raster.
+
+### `sf::st_read()` promotes a mixed POLYGON/MULTIPOLYGON layer to all-MULTIPOLYGON
+Read with `promote_to_multi = FALSE` whenever a layer will be written back.
+
+### `sf::st_make_valid()` rewrites geometry that was already valid
+Run it on the invalid rows only (`!st_is_valid(x)`), or keep the original geometry and use the made-valid copy just for the computation.
+
+### terra: `unique()` and `freq()` on a factor return its labels, not its codes
+Read a factor raster's codes from a copy with its levels stripped (`levels(y) <- NULL`, or `set.cats(y, layer = 1, value = NULL)` on a copy you own), never from `terra::unique(x)[, 1]` or `terra::freq(x)$value`: on a factor both return the active category's labels, so matching …
 
 # Code Check Conventions
 Structured checklist for reviewing diffs before commit.
@@ -2247,6 +2343,8 @@ would, X is not evidence.
 
 When the user pushes back on an inference, re-derive rather than defend. The
 conclusion often survives; the reasoning that reaches it is usually different.
+
+*5 lines of evidence for this rule are in `conventions/karpathy.md`, which `/code-check` reads in full.*
 
 ### Documents that share an ancestor corroborate nothing
 
@@ -3525,191 +3623,3 @@ When an LLM assistant modifies R package code:
    ```bash
    Rscript -e 'devtools::check()' 2>&1 | grep -E "(ERROR|WARNING|NOTE|errors|warnings|notes)" | tail -10
    ```
-
-
-# Reference Management Conventions
-
-How references flow between Claude Code, Zotero, and technical writing at New Graph Environment.
-
-## Tool Routing
-
-Three tools, different purposes. Use the right one.
-
-| Need | Tool | Why |
-|------|------|-----|
-| Search by keyword, read metadata/fulltext, semantic search | **MCP `zotero_*` tools** | pyzotero, works with Zotero item keys |
-| Look up by citation key (e.g., `irvine2020ParsnipRiver`) | **`/zotero-lookup` skill** | Citation keys are a BBT feature — pyzotero can't resolve them |
-| Create items, attach PDFs, deduplicate | **`/zotero-api` skill** | Connector API for writes, JS console for attachments |
-
-**Citation keys vs item keys:** Citation keys (like `irvine2020ParsnipRiver`) come from Better BibTeX. Item keys (like `K7WALMSY`) are native Zotero. The MCP works with item keys. `/zotero-lookup` bridges citation keys to item data.
-
-**BBT citation key storage:** As of Feb 2025+, BBT stores citation keys as a `citationKey` field directly in `zotero.sqlite` (via Zotero's item data system), not in a separate BBT database. The old `better-bibtex.sqlite` and `better-bibtex.migrated` files are stale and no longer updated. Query citation keys with: `SELECT idv.value FROM items i JOIN itemData id ON i.itemID = id.itemID JOIN itemDataValues idv ON id.valueID = idv.valueID JOIN fields f ON id.fieldID = f.fieldID WHERE f.fieldName = 'citationKey'`.
-
-**BBT citekey format is locally patched to strip `&`:** the `citekeyFormat` pref (`extensions.zotero.translators.better-bibtex.citekeyFormat` in `~/Library/Application Support/Zotero/Profiles/*/prefs.js`) has a `.replace(find = "&", replace = "")` segment added by hand. Without it, institutional authors containing `&` (e.g. "BC Species & Ecosystem Explorer", "WA Dept of Fish & Wildlife") leak `&` into the citekey, and pandoc's `@key` parser stops at `&` — so cites render broken in any bookdown/quarto build even though biblatex accepts the key. Reapply via Zotero → Tools → Run JavaScript: `Zotero.Prefs.set("translators.better-bibtex.citekeyFormat", val)` (also patch `citekeyFormatEditing` to match). Survives Zotero/BBT auto-updates; reverts only on a profile reset or a manual edit via the BBT preferences UI. Detect drift: `grep citekeyFormat ~/Library/Application\ Support/Zotero/Profiles/*/prefs.js` should show the `.replace(find = "&", ...)` chain. Teammates on Skeena/Fraser/restoration machines that hit the same `@key`-breaks-at-`&` drift should run the same `Zotero.Prefs.set`.
-
-## Which routes are live by default
-
-Measured 2026-09-04 on a freshly provisioned machine. Four of the six routes below were
-dead, and each dead end costs a session time it has no reason to expect:
-
-| route | state on a default setup |
-|---|---|
-| **Web API** | **works** — the route to use for writes; targets a collection directly via `"collections": [...]` and needs Zotero neither open nor restarted for the write itself |
-| **read-only SQLite** | works, and remains the best route for *searching* (`/zotero-lookup`) |
-| MCP `zotero_*` | unavailable until an API key is configured — the install script registers the server but never configures a key |
-| Local API | `403 Local API is not enabled`, with and without the `Zotero-Allowed-Request` header |
-| Connector `saveItems` | HTTP 500 on a minimal item with exactly the documented headers — a defect, not a permission; reads on the same port (`ping`, `getSelectedCollection`) are fine, and `getSelectedCollection` returns the whole collection tree in one call |
-| JS runner (`zotero_run_js.sh`) | `osascript is not allowed assistive access` until the terminal has Accessibility |
-
-**Zotero's server takes about 30 s after launch to respond.** An early failure does not
-mean it is not running, which is exactly the wrong conclusion to draw at that moment —
-wait and retry once before diagnosing.
-
-The key's location, the password-manager item that holds it and the local port are
-infrastructure identity and stay in machine-local memory, not here (soul#177).
-
-**`immutable=1` serves a stale snapshot, so it cannot confirm a write landed.** The
-read-only URI the skills prescribe —
-`sqlite3 "file:$HOME/Zotero/zotero.sqlite?mode=ro&immutable=1"` — is right for
-*searching*, and it is exactly wrong for *verifying*: `immutable` tells SQLite the file
-cannot change, so it skips the WAL and the change counter and serves whatever it first
-mapped. A write made through the Web API is invisible to it for as long as the process
-lives, which reads as "the write failed" rather than "this reader cannot see it". Copy
-the file first when the question is whether something landed, and note that a Web API
-create also needs Zotero to **sync** before it is in the local database at all.
-
-Three skills prescribe that URI (`zotero-lookup`, `zotero-api`, `lit-search`) and none
-of them says this, which is why it is here rather than in one of them.
-
-## Citation keys are BBT-auto-derived
-
-**Never set `Citation Key:` in the `extra` field.** BBT honours it as a manual override,
-and that breaks the convention that every key follows one formula: stable, reproducible,
-the same key for the same paper on every collaborator's machine. Leave `extra` empty, or
-use it only for other Zotero-supported fields (`Original Date:`, `tex.shorttitle:`).
-Ten items created with hand-set keys in one lit review (cd#58, 2026-05-05) had to be
-PATCHed clean after the user caught it.
-
-- **Web API-created items get no key until Zotero restarts.** Sync alone does not trigger
-  BBT. On macOS:
-  ```bash
-  osascript -e 'tell application "Zotero" to quit'; sleep 3; open -a Zotero; sleep 30
-  ```
-  Thirty seconds covered seven fresh items (cd#61); scale the wait with the batch.
-- **Corporate-author guard.** CrossRef sometimes returns no individual authors (a paper
-  bylined to a working group), so the POST lands with empty `creators` and BBT falls back
-  to a `<title-prefix><year>` key. PATCH the individual authors from the paper's roster
-  into `creators` before triggering the restart.
-- **BBT and Zotero version lines are paired** — BBT 8.x for Zotero 7, 9.x for Zotero 8/9.
-  If Zotero auto-disables BBT after an update, keys silently stop generating for new
-  items; reinstall the matching line via Plugin Manager → gear → "Install Plugin From
-  File…" from the BBT releases page.
-
-`/lit-search` and `/zotero-api` point here; this is the authority (soul#43).
-
-## Adding References Workflow
-
-### 1. Search and flag
-
-When research turns up a reference:
-- **DOI available:** Tell the user — Zotero's magic wand (DOI lookup) is the fastest path
-- **ResearchGate link:** Flag to user for manual check — programmatic fetch is blocked (403), but full text is often there
-- **BC gov report:** Search [ACAT](https://a100.gov.bc.ca/pub/acat/), for.gov.bc.ca library, EIRS viewer
-- **Paywalled:** Note it, move on. Don't waste time trying to bypass.
-
-### 2. Add to Zotero
-
-**Preferred order:**
-1. DOI magic wand in Zotero UI (fastest, most complete metadata)
-2. Web API POST with `collections` array (grey literature, local PDFs — targets collection directly, no UI interaction needed)
-3. `saveItems` via `/zotero-api` (batch creation from structured data — requires UI collection selection)
-4. JS console script for group library (when connector can't target the right collection)
-
-**Collection targeting:** `saveItems` drops items into whatever collection is selected in Zotero's UI. Always confirm with the user before calling it. **Web API bypasses this** — include `"collections": ["KEY"]` in the POST body. Find collection keys with `?q=name` search on the collections endpoint.
-
-### 3. Attach PDFs
-
-`saveItems` attachments silently fail. Don't use them. Instead:
-
-1. **Web API S3 upload (preferred):** Create attachment item → get upload auth → build S3 body (Python: prefix + file bytes + suffix) → POST to S3 → register with uploadKey. Works without Zotero running. See `/zotero-api` skill section 4.
-2. **JS console fallback:** Download with `curl`, attach via `item_attach_pdf.js` in Zotero JS console.
-3. Verify attachment exists via MCP: `zotero_get_item_children`
-
-### 4. Verify
-
-After manual adds, confirm via MCP:
-- `zotero_search_items` — find by title
-- `zotero_get_item_metadata` — check fields are complete
-- `zotero_get_item_children` — confirm PDF attached
-
-### 5. Clean up
-
-If duplicates were created (common with `saveItems` retries):
-- Run `collection_dedup.js` via Zotero JS console
-- It keeps the copy with the most attachments, trashes the rest
-
-## In Reports (bookdown)
-
-### Bibliography generation
-
-```yaml
-# index.Rmd — dynamic bib from Zotero via Better BibTeX
-bibliography: "`r rbbt::bbt_write_bib('references.bib', overwrite = TRUE)`"
-```
-
-`rbbt` pulls from BBT, which syncs with Zotero. Edit references in Zotero → rebuild report → bibliography updates.
-
-**Library targeting:** rbbt must know which Zotero library to search. This is set globally in `~/.Rprofile`:
-
-```r
-# default library — NewGraphEnvironment group (libraryID 9, group 4733734)
-options(rbbt.default.library_id = 9)
-```
-
-Without this option, rbbt searches only the personal library (libraryID 1) and won't find group library references. The library IDs map to Zotero's internal numbering — use `/zotero-lookup` with `SELECT DISTINCT libraryID FROM citationkey` against the BBT database to discover available libraries.
-
-### Citation syntax
-
-- `[@key2020]` — parenthetical: (Author 2020)
-- `@key2020` — narrative: Author (2020)
-- `[@key1; @key2]` — multiple
-- `nocite:` in YAML — include uncited references
-
-### Cite primary sources
-
-When a review paper references an older study, trace back to the original and cite it. Don't attribute findings to the review when the original exists. (See LLM Agent Conventions in `newgraph.md`.)
-
-**When the original is unavailable** (paywalled, out of print, can't locate): use secondary citation format in the prose and include bib entries for both sources:
-
-> Smith et al. (2003; as cited in Doctor 2022) found that...
-
-Both `@smith2003` and `@doctor2022` go in the `.bib` file. The reader can then track down the original themselves. Flag incomplete metadata on the primary entry — it's better to have a partial reference than none at all.
-
-## PDF Fallback Chain
-
-When you need a PDF and the obvious URL doesn't work:
-
-1. DOI resolver → publisher site (often has OA link)
-2. Europe PMC (`europepmc.org/backend/ptpmcrender.fcgi?accid=PMC{ID}&blobtype=pdf`) — ncbi blocks curl
-3. SciELO — needs `User-Agent: Mozilla/5.0` header
-4. ResearchGate — flag to user for manual download
-5. Semantic Scholar — sometimes has OA links
-6. Ask user for institutional access
-
-Always verify downloads: `file paper.pdf` should say "PDF document", not HTML.
-
-## Searching Paper Content (ragnar)
-
-### Setup (per project)
-- `scripts/rag_build.R` — maps citation keys to Zotero PDF attachment keys, builds DuckDB
-- `data/rag/` gitignored — store is local, not committed
-- Dependencies: ragnar, Ollama with nomic-embed-text model
-- See `/lit-search` skill for full recipe
-
-### Query
-`ragnar_store_connect()` then `ragnar_retrieve()` — returns chunks with source file attribution.
-
-### Anti-patterns
-- NEVER write abstracts manually — if CrossRef has no abstract, leave blank
-- NEVER cite specific numbers without verifying from the source PDF via ragnar search
-- NEVER paraphrase equations — copy exact notation and cite page/section
