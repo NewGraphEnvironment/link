@@ -9,7 +9,7 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Repository:** NewGraphEnvironment/link
 **Primary Language:** R
 **Prefix:** `lnk_`
-**Branch:** `main` (v0.49.0 as of 2026-09-01)
+**Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
 ## Status (2026-09-29) — #284 step 5: BT `rear_gradient_max` 0.1349 scored and held
 
@@ -303,7 +303,7 @@ The guard applies link's filters by **sharing** the pipeline's SQL: the `cabd` /
 
 ## Status (2026-07-11) — #231 closed misdirected; #232 opened (crossings parity)
 
-**Key correction (do NOT re-rabbit-hole):** the pipeline builds `<schema>.crossings` **from DB primitives** (`lnk_pipeline_crossings` → `.lnk_crossings_union`: PSCIS + `fresh.modelled_stream_crossings` + CABD), **not** from `crossings.csv`. The CSV read at `lnk_pipeline_load.R:100` is **vestigial** — the union drops + rebuilds the table before break/classify/mapping_code touch it. So #231 ("consume weekly crossings.csv; repoint pipeline off fresh") was **closed as misdirected**; lessons in `planning/archive/2026-07-issue-231-crossings-from-primitives/README.md` (+ memory `crossings-built-from-primitives`). Freshness lever = `data-raw/snapshot_bcfp.sh` reloading the primitives into the **`fwapg`** DB (last load ~2026-05-26; `lnk_db_conn()` defaults to a `bcfishpass` DB that LACKS them). Opened **#232** — confirm link's built crossings ≈ bcfp's complete `crossings_vw` (the parity reference). Aside: `crossings.csv` was published to `s3://newgraph` (db_newgraph#15, smnorris PR #57) before we realized the models don't consume it — **db_newgraph#16** tracks reconsidering that dump.
+**Key correction (do NOT re-rabbit-hole):** the pipeline builds `<schema>.crossings` **from DB primitives** (`lnk_pipeline_crossings` → `.lnk_crossings_union`: PSCIS + `fresh.modelled_stream_crossings` + CABD), **not** from `crossings.csv`. The CSV read at `lnk_pipeline_load.R:100` is **vestigial** — the union drops + rebuilds the table before break/classify/mapping_code touch it. So #231 ("consume weekly crossings.csv; repoint pipeline off fresh") was **closed as misdirected**; lessons in `planning/archive/2026-07-issue-231-crossings-from-primitives/README.md`. Freshness lever = `data-raw/snapshot_bcfp.sh` reloading the primitives into the **`fwapg`** DB (last load ~2026-05-26; `lnk_db_conn()` defaults to a `bcfishpass` DB that LACKS them). Opened **#232** — confirm link's built crossings ≈ bcfp's complete `crossings_vw` (the parity reference). Aside: `crossings.csv` was published to `s3://newgraph` (db_newgraph#15, smnorris PR #57) before we realized the models don't consume it — **db_newgraph#16** tracks reconsidering that dump.
 
 ## Status (2026-07-31) — v0.44.3 shipped (#233 config dictionaries + ownership boundary)
 
@@ -317,7 +317,7 @@ Extended the PARS vignette with an **Accessible habitat (km)** section proving `
 
 ## Status (2026-07-03) — v0.44.0 shipped (#221 + #223 accessible_km)
 
-Fixed the BT/ST `accessible_km` over-credit: streams now break at **every** gradient frontier (`lnk_pipeline_prepare.R` unions the raw per-model positions into `gradient_barriers_minimal`, not the `frs_barriers_minimal` reduction) — matching bcfp. Added the `accessible_km` roll-up column + `lnk_rollup_wsg()` (#221). Proven across 11 WSGs × 8 species: `accessible_km` 44/44 within 0.05%, habitat holds (parked BULK SK = fresh#190). Validator/proof: `data-raw/parity_crosssection.R` + `research/parity_accessible_habitat_2026_07_03.md`. **Gotcha that bit hard:** `fresh.streams_vw_bcfp` spawning/rearing/access_<sp> are coded 0/1/2/3 → parity uses `IN (1,2)` (a `= 1` under-counts; see memory `bcfp-vw-column-coding`). Segment count now 2–3.5× (bcfp-matching; intersects #205). Open follow-ups: **#225** (rename `gradient_barriers_minimal` → `gradient_barriers_break`), **#226** (vignette accessible_km demo), **#227** (`wsg_outlet` builder + single-WSG guard; relates to #222), **#224** (bcfp `dam_dnstr_ind` reservoir-inflow quirk — reference-side, not ours).
+Fixed the BT/ST `accessible_km` over-credit: streams now break at **every** gradient frontier (`lnk_pipeline_prepare.R` unions the raw per-model positions into `gradient_barriers_minimal`, not the `frs_barriers_minimal` reduction) — matching bcfp. Added the `accessible_km` roll-up column + `lnk_rollup_wsg()` (#221). Proven across 11 WSGs × 8 species: `accessible_km` 44/44 within 0.05%, habitat holds (parked BULK SK = fresh#190). Validator/proof: `data-raw/parity_crosssection.R` + `research/parity_accessible_habitat_2026_07_03.md`. **Gotcha that bit hard:** `fresh.streams_vw_bcfp` spawning/rearing/access_<sp> are coded 0/1/2/3 → parity uses `IN (1,2)` (a `= 1` under-counts; see `research/bcfp_view_column_coding.md`). Segment count now 2–3.5× (bcfp-matching; intersects #205). Open follow-ups: **#225** (rename `gradient_barriers_minimal` → `gradient_barriers_break`), **#226** (vignette accessible_km demo), **#227** (`wsg_outlet` builder + single-WSG guard; relates to #222), **#224** (bcfp `dam_dnstr_ind` reservoir-inflow quirk — reference-side, not ours).
 
 The 2026-05-25 handoff below (#175 study-area parity) is **complete/superseded** — kept for history.
 
@@ -410,7 +410,7 @@ Without a version pin, "this behaviour exists upstream" claims rot — six-month
 
 Note: `<owner>/<repo>@<sha>` references a commit; this does **not** trigger GitHub notifications to the referenced repo's participants (unlike `<owner>/<repo>#<n>` issue/PR references — see `feedback_no_cross_ref_external_issues.md` in memory).
 
-## Exported Functions (54)
+## Exported Functions
 
 ### Core
 - `lnk_thresholds(csv, high, moderate, low)` — configurable severity thresholds. Ships BC defaults. CSV or inline override. Feeds into `lnk_score()`.
@@ -538,17 +538,9 @@ To run the entire province: loop over watershed groups. Or pass any AOI with `sp
 
 ## Open Issues
 
-- #18 — Configurable rearing-spawning connectivity
-- #19 — Habitat eligibility override CSV (edge_types + feature_codes)
 - #20 — Literature/observation evidence for habitat departures
 - #21 — GSDD and thermal energy as intrinsic potential variables
-- #24 — lnk_stamp (model params for report appendix)
-- #29 — SK spawning cluster divergence (blocked on fresh#133)
-- #33 — Cross-ref note: bcfishpass access_st checks SK instead of ST (bcfishpass#9)
-- #34 — Update doc version references (bcfishpass current, not v0.5.0)
-- #45 — Gradient classes cleanup (derive from `loaded$parameters_fresh$access_gradient_max`)
 - #52 — Channel-class break positions vs gradient thresholds (research)
-- #53 — Distribute tar_make across M4 + M1 + db_newgraph
 - #75 — `dictionary_dimensions.csv` as source-of-truth: auto-gen README + `lnk_rules_build()` validation (CSV seeded in v0.17.0)
 
 ## Recently closed
