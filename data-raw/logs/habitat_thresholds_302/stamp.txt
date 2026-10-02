@@ -1,0 +1,8 @@
+date: 2026-10-02 08:06 PDT
+link: 0.56.0 @ a7f919e
+fresh installed: 0.36.2 @ e3a37f031cca31ccfab59f47d6e19dde4083cca5
+db: docker fwapg localhost:5432
+schema: fresh_default; 46 calibration WSGs (persisted, with discharge): ADMS BBAR CARP CHES CHWK COTR CRKD DOGC FINA FINL FIRE FOXR FRAN FRCN HARR INGR KOTL LARL LBTN LCHL LFRA LOMI LPCE LSAL MESI MFRA MORK NARC NATR NECR OSPK PARA PARS PCEA PINE SALR SETN SLOC TABR TOOD TWAC UFRA UNRS UOMI UPCE WILL
+bcfishobs.observations rows: 373050
+discharge rows: 2716652 (2003189 with mad_m3s)
+pooling: default species_pooling.csv; BT<-DV

@@ -49,39 +49,36 @@ What exploration established:
       decision rule fixed in its header and committed before the first full run
       (P05; any-stage fallback for thin spawn cells; n ≥ 30; floor to 2 s.f.; max 9999)
 - [x] ~~Prove the #284 obs outputs reproduce~~ — moot: the #284 script is untouched
-- [ ] Run for `BT,GR,KO,RB` into `data-raw/logs/habitat_thresholds_302/` over every
-      discharge-covered `fresh_default` WSG; record coverage (share of obs with NULL
-      `mad_m3s`)
+- [x] Run for `BT,GR,KO,RB` into `data-raw/logs/habitat_thresholds_302/` over the 46
+      discharge-covered `fresh_default` WSGs; coverage recorded (9–28 % of tested
+      locations on lines with no discharge)
+- [x] BC-native width ↔ MAD equivalence (`width_mad_equivalent.txt`)
 
 ## Phase 2: FISS and literature
-- [ ] Extend `data-raw/query_habitat_thresholds_fiss.R` with `mad_m3s` at FISS sites
-      for the four species (aggregates only — link is public).
-- [ ] Literature search (Zotero / lit-search) for discharge ranges by species × stage.
-- [ ] `research/habitat_thresholds.md`: new "MAD (discharge)" section — one verdict per
-      threshold (obs P05, availability, FISS, literature), and the **scoring rule fixed
-      before any run** (same 0.5 × core density, n ≥ 10 held-out, walk-outward rule as
-      #284; core = cw base ∩ ranged steps).
+- [ ] `query_habitat_thresholds_fiss.R`: `--species`, `--out`, snapped segment `mad_m3s`
+      (defaults reproduce #284 on today's inputs); run for BT,GR,KO,RB into
+      `habitat_thresholds_302/` (aggregates only)
+- [x] Literature review (`planning/active/literature.md`; local Zotero full texts; two
+      key citations spot-checked against source text)
+- [ ] `research/habitat_thresholds.md` "MAD (discharge)" section: verdicts, method, the
+      operator's Change 1 (thin-spawn fallback), literature, and the **scoring design
+      fixed before any run** (expected-count floor of record; core = the mad rungs)
 
 ## Phase 3: Power check, then fix the scoring set
-- [ ] Count held-out observation locations per mad window (P02/P05/P10 ladder) per
-      species × stage on candidate covered, non-calibration WSGs, before any build.
-- [ ] Choose held-out / in-sample WSGs (`data-raw/habitat_score/wsg_roles_302.csv`);
-      drop species × stage that cannot reach n ≥ 10, recorded as unscorable (as CH was).
+- [ ] `data-raw/logs/habitat_score_302/power_windows.{R,txt}`: counts per MAD window on
+      covered non-calibration WSGs before any build
+- [ ] `wsg_roles_302.csv` (held-out BT 7, GR 3, RB 6; PARS/KOTL in-sample; HERR/LNTH left
+      out for their Fraser closures; 20-WSG closure); KO unscorable (no held-out WSG),
+      lands unscored
 
 ## Phase 4: mad dimension in the variants harness
-- [ ] `variants.csv` schema gains `model` (`cw` | `mad`); a `mad` variant's thin bundle
-      also writes a `parameters_habitat_method.csv` with the focal WSGs on `mad`.
-      Defaults keep #284's files byte-valid (empty `model` = `cw`).
-- [ ] Allow a variant to change more than one cell when they are the same
-      species × stage's `mad_min`/`mad_max` pair (or seed `mad_max` 9999 in a step 0);
-      keep the "differs in exactly the declared cells" assertion.
-- [ ] Invariants: cw identity check unchanged; for `mad` variants assert the focal
-      groups classified on `mad` (validator's `model` column) and that `mad_m3s` is
-      non-NULL on the working streams.
-- [ ] `data-raw/habitat_score/README.md` documents the new column; `variants_302.csv`
-      holds the ladders. Score script: `schema_core` = cw base + ranged steps.
-- [ ] Pre-flight on one small held-out WSG (`--wsgs=`), then the full build into
-      prefix `score302_` (detached; repo untouched while it runs).
+- [ ] `model` / `set` columns, method table per `mad` bundle, `method_sha256`, anchor
+      rungs, `_min` direction, `--floor`, `--working-prefix` (derived from `--prefix`),
+      core of a MAD ladder = its rungs, set restricted to `*_mad_*`, ladder consistency
+      checks; #284 re-score reproduces its committed outputs
+- [ ] `variants_302.csv`: 6 ladders (BT/GR/RB × spawn/rear), anchor P10 → P05 → P02, the
+      other stage's range held fixed in `set`
+- [ ] Pre-flight on one held-out WSG, then the full build into `score302_` (detached)
 
 ## Phase 5: Score and land
 - [ ] `habitat_variants_score.R` over the ladders → `data-raw/logs/habitat_score_302/`
