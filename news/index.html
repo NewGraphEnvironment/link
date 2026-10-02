@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.56.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.55.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,18 +35,6 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
-    <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.56.0" id="link-0560">link 0.56.0<a class="anchor" aria-label="anchor" href="#link-0560"></a></h2>
-<p><strong><code><a href="../reference/lnk_habitat_validate.html">lnk_habitat_validate()</a></code> scores each watershed group on the habitat model it was classified on</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/299" class="external-link">#299</a>). It reads the method table in the <code>cfg</code> it is given and resolves each group’s model with fresh’s own rule, which <code><a href="../reference/lnk_pipeline_classify.html">lnk_pipeline_classify()</a></code> now shares.</p>
-<ul><li>
-<strong>On a <code>mad</code> group,</strong> predicates, size relaxation and <code>width_null</code> use mean annual discharge (<code>mad_m3s</code>), joined from <code>fwa_stream_networks_discharge</code> on <code>linear_feature_id</code> because the persist does not carry it. Before, they used channel width, which the classification never tested.</li>
-<li>
-<strong>Reason labels are unchanged</strong> (<code>fails_width</code> means the group’s size dimension). <code>observations</code> gains <code>model</code> and <code>mad_m3s</code>, and <code>summary</code> gains <code>model</code>.</li>
-<li>
-<strong>New reason <code>no_mad_threshold</code>:</strong> a <code>mad</code> miss that a MAD range alone would admit, for the species that have none (BT, GR, KO, RB). Adding those thresholds is <a href="https://github.com/NewGraphEnvironment/link/issues/302" class="external-link">#302</a>.</li>
-<li>
-<strong>cw output is unchanged</strong> apart from the new columns. A run classified with a different method table, or with <code>lnk_pipeline_classify(method_csv =)</code>, is not detected, so swap the table on the <code>cfg</code> you pass. <code><a href="../reference/lnk_preflight_fresh.html">lnk_preflight_fresh()</a></code> now also checks <code>frs_habitat_predicates(model)</code>.</li>
-</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.55.0" id="link-0550">link 0.55.0<a class="anchor" aria-label="anchor" href="#link-0550"></a></h2>
 <p><strong>Each config can now choose channel width or discharge per watershed group</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/286" class="external-link">#286</a>). Bundles declare <code>parameters_habitat_method.csv</code> (<code>watershed_group_code</code>, <code>model</code> = <code>cw</code> or <code>mad</code>), which <code><a href="../reference/lnk_pipeline_classify.html">lnk_pipeline_classify()</a></code> passes to fresh as <code>params_method</code>; a new <code>method_csv =</code> argument overrides it.</p>
