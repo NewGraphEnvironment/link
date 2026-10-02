@@ -11,6 +11,31 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
+## Status (2026-10-02, late) — MAD ranges for BT, GR, KO and RB in `default_tuned` (#302)
+
+**`default_tuned` now carries mean-annual-discharge ranges for the four species
+`default` leaves without one; they are inert while every group is on `cw`.**
+- Values (m³/s, maxima open): BT 0.078 / 0.078, GR 0.96 spawn / 0.97 rear, RB 0.011 /
+  0.019, KO 0.57 (unscored). Scored on held-out WSGs by a rule fixed before the build;
+  every P10 → P05 loosening was refused except RB spawning.
+- **Cost before moving any group to `mad`:** at least −33 % BT and −82 % GR stream
+  rearing against `cw` on the held-out WSGs. Stream size and sampling effort are not
+  separated; a size-stratified core is the next tuning. `research/habitat_thresholds.md`,
+  "MAD (discharge)"; archive `planning/archive/2026-10-issue-302-mad-thresholds/`.
+
+**Facts not worth re-deriving:**
+- **The variants harness scores MAD ladders now:** `model` / `set` columns, an anchor
+  rung (cw base → first `mad` rung, taken by construction), `_min` loosens downward, a
+  MAD ladder's core is its rungs only (the cw base cuts on width), `--floor`,
+  `--working-prefix` derived from `--prefix`. #284's re-score reproduces all ten outputs.
+- **Build classifiers from fresh's compiled SQL, never from `rules.yaml`.** fresh's
+  main rear predicate ignores a W rule's `wetland_ha_min`, and its `L` rules include
+  reservoirs (fresh issue drafted, not filed). A rear size range gates the
+  `lake_rearing` / `wetland_rearing` bucket columns, never `rearing`.
+- **`elevation_adjusted.csv`'s band classes are not the bands.** A segment takes the first
+  step whose flags differ, so an anchor's `removed` class is only what no rung restores.
+  Quote `bands_pooled.csv` for a band's rate.
+
 ## Status (2026-10-02) — the validator scores each group on its own model (#299)
 
 **`lnk_habitat_validate()` re-tests a `mad` group on discharge, not width.**
