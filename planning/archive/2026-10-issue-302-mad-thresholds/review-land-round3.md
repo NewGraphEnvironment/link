@@ -115,22 +115,22 @@ Status: OK = population matches and the number reproduces. Held-out rows unless 
 | 7 | README.md:15 | channel-width maxima, lake area, edge types unchanged (MAD removed from list) | CSV diff | bundle | OK |
 | 8 | README.md:17 | `default` gives BT/GR/KO/RB no MAD; `mad` group loses all their stream habitat | `default` CSV; RUNBOOK §7 | bundle | OK |
 | 9 | README.md:17 | landed values list, maxima 9999 | `default_tuned` CSV | bundle | OK |
-| 10 | README.md:17 | no output moves while every group is `cw`; every group today | #5 | bundles | OK |
+| 10 | README.md:17 | no output moves while every group is `cw`; every group today | claim 5 | bundles | OK |
 | 11 | README.md:17 | calibrated in 46 groups | `habitat_thresholds_302/stamp.txt` | calibration | OK |
 | 12 | README.md:17 | each scored by a pre-fixed rule; values are what it walked to | `verdict.csv` `walked_value_of_record`; KO `candidates.csv` | BT/GR/RB vs KO | **minor (KO)** |
 | 13 | README.md:17 | KO could not be scored | `power_windows.txt` KO non-calibration 0 | covered WSGs | OK |
-| 14 | README.md:17 | at least a third less BT, four-fifths less GR rearing | #6 | held-out rearing | OK |
+| 14 | README.md:17 | at least a third less BT, four-fifths less GR rearing | claim 6 | held-out rearing | OK |
 | 15 | README.md:17 | size and effort not separated | design (no size-split core) | — | OK |
 | 16 | config.yaml:6-8 | BT 0.1349 scored and held | #284 record | — | OK |
 | 17 | config.yaml:9-10 | BT/GR/RB spawn+rear, KO spawn; maxima open | CSV | bundle | OK |
 | 18 | config.yaml:11-12 | keeps stream habitat, less than `cw` | `habitat_change.csv` spawning_km RB +12 % | held-out, spawn+rear | **mismatch** |
-| 19 | config.yaml:12 | no output moves under `cw` | #5 | bundles | OK |
+| 19 | config.yaml:12 | no output moves under `cw` | claim 5 | bundles | OK |
 | 20 | habitat_thresholds.md:3 | BT/GR/RB scored; loosening refused past P10 except RB spawn; KO unscored | `verdict.csv` | held-out | OK |
 | 21 | habitat_thresholds.md:21 | one gradient or width value moves | CSV diff | bundle | OK |
 | 22 | habitat_thresholds.md:452-454 | before #302 none in any bundle; still none in `default`, `bcfishpass` | CSVs | bundles | OK |
 | 23 | habitat_thresholds.md:466-472 | Verdict table: 7 values + "How" | `verdict.csv` walked_value_of_record, decision_of_record; KO `candidates.csv` | held-out | OK |
 | 24 | habitat_thresholds.md:474 | every `*_mad_max` 9999 | CSV | bundle | OK |
-| 25 | habitat_thresholds.md:475-476 | at least −33 % BT, −82 % GR, −4 % RB | #6 | held-out rearing | OK |
+| 25 | habitat_thresholds.md:475-476 | at least −33 % BT, −82 % GR, −4 % RB | claim 6 | held-out rearing | OK |
 | 26 | habitat_thresholds.md:476-477 | size and effort not separated | design | — | OK |
 | 27 | habitat_thresholds.md:539-540 | site evidence set beside candidates and landed values | bullets below | — | OK |
 | 28 | habitat_thresholds.md:547-548 | neither BT source is MAD; both consistent with 0.027 and 0.078 | literature.md l.77-81 | literature | OK (but see 29) |
@@ -145,7 +145,7 @@ Status: OK = population matches and the number reproduces. Held-out rows unless 
 | 37 | habitat_thresholds.md:654-662 | Results table: 7 rows × band km, found, expected, ratio, elevation-adjusted, decision | `verdict.csv` band_km, n_band, n_expected, density_ratio, decision_of_record; `elevation_adjusted.csv` threshold classes | held-out | OK |
 | 38 | habitat_thresholds.md:664-667 | floors agree except RB spawn P10→P05 (10.1 expected, 8 found); both land 0.011 | `verdict.csv` decision vs decision_expected_floor, walked_value* | held-out | OK |
 | 39 | habitat_thresholds.md:669-671 | anchor `removed` used at 0.36, 0.48, 0.50, 1.06 | `bands_pooled.csv` p10 removed/any | held-out, whole anchor band | OK |
-| 40 | habitat_thresholds.md:675-676 | restored is most by length: BT 3,062/4,505, GR 3,099/3,893, RB 569/864 | bands_pooled removed − elevation_adjusted removed class | held-out, **rear ladders only** | OK numbers; **label** (in #1 finding) |
+| 40 | habitat_thresholds.md:675-676 | restored is most by length: BT 3,062/4,505, GR 3,099/3,893, RB 569/864 | bands_pooled removed − elevation_adjusted removed class | held-out, **rear ladders only** | OK numbers; **label** (in finding 1) |
 | 41 | habitat_thresholds.md:676-677 | restored use 0.08, 0.06, 0.36, 0.47, 0.42 | (240−205)/3,061.5 ÷ 0.1459 etc. | held-out, restored part | OK |
 | 42 | habitat_thresholds.md:678-679 | residual 1,444 / 794 / 296 km used at or above core | `elevation_adjusted.csv` removed class: BT 0.97 / 0.86 | held-out residual | **mismatch (BT)** |
 | 43 | habitat_thresholds.md:681-683 | split = bands_pooled removed − elevation_adjusted removed; first differing step labels | `habitat_variants_score.R` l.696-711 | method | OK |
