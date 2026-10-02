@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.54.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.55.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -454,11 +454,31 @@ mc_barrier (from barrier_sources flags, resident vs anadromous differ slightly):
 <li>
 <strong>A bundle that declares none falls back to fresh’s copy</strong>, with a message, and its <code>config_hash</code> then covers that file as <code>fresh:parameters_habitat_thresholds.csv</code>.</li>
 <li>
-<strong>Not every column is live on link’s path.</strong> Rules inherit only gradient and channel width. <code>*_mad_*</code> are carried but never applied (MAD is rule-level only, and streams carry no <code>mad_m3s</code>, fresh#114); <code>spawn/rear_edge_types</code> are read only on fresh’s no-rules fallback. <code>rear_lake_ha_min</code> is <strong>baked into <code>rules.yaml</code></strong> by <code>lnk_rules_build(thresholds =)</code>, so changing it needs a rules rebuild. The dictionary’s <code>consumed_by</code> column has the <a href="file:line" class="uri">file:line</a> for each.</li>
+<strong>Not every column is live on link’s path.</strong> Rules inherit gradient and channel width; <code>*_mad_*</code> replace channel width only for watershed groups the bundle’s method table puts on <code>mad</code> (next section); <code>spawn/rear_edge_types</code> are read only on fresh’s no-rules fallback. <code>rear_lake_ha_min</code> is <strong>baked into <code>rules.yaml</code></strong> by <code>lnk_rules_build(thresholds =)</code>, so changing it needs a rules rebuild. The dictionary’s <code>consumed_by</code> column has the <a href="file:line" class="uri">file:line</a> for each.</li>
 <li>
 <strong>Runs record the values</strong> in <code>&lt;persist&gt;.log_parameters_habitat_thresholds</code> (keyed on <code>config_hash</code>), beside <code>log_parameters_fresh</code>.</li>
 <li>
 <strong><code>default_tuned</code> is a thin bundle</strong> (<code>extends: default</code>). Inherited provenance entries carry <code>.dir</code>, <code>cfg$chain</code> lists the extends directories, and <code>.lnk_config_hash()</code> hashes every <code>config.yaml</code> on the chain and names inherited files <code>extends:&lt;bundle&gt;/&lt;rel&gt;</code>, sorted in byte order (not <code>LC_COLLATE</code>), so the hash is the same on every host. A relative <code>extends:</code> path resolves against the child bundle, not the working directory. Before #282 no shipped bundle extended anything, and all three of those were broken.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="channel-width-or-discharge-per-watershed-group-286">Channel width or discharge, per watershed group (#286)<a class="anchor" aria-label="anchor" href="#channel-width-or-discharge-per-watershed-group-286"></a></h3>
+<p>Each bundle also declares <code>parameters_habitat_method.csv</code> (<code>watershed_group_code</code>, <code>model</code> = <code>cw</code> | <code>mad</code>), and <code><a href="reference/lnk_pipeline_classify.html">lnk_pipeline_classify()</a></code> passes it to <code>fresh::frs_habitat_classify(params_method =)</code>. That needs fresh &gt;= 0.35.0; the preflight asserts the argument (<code>required_formals</code>), not the version, so <strong>a cypher image still on an older fresh hard-fails at preflight — re-prep hosts before the next dispatch.</strong></p>
+<ul><li>
+<strong>Every shipped bundle is all <code>cw</code></strong>: a frozen copy of bcfishpass <code>parameters/example_newgraph</code> (188 groups). Outputs did not change (ADMS and BULK <code>streams_habitat</code> digests identical against main on fresh 0.33.0 and 0.36.2, <code>data-raw/logs/params_method_286/</code>).</li>
+<li>
+<strong>Frozen, not csv-synced.</strong> Its provenance <code>source</code> is deliberately not the bcfishpass URL: <code>sync_bcfishpass_csvs.R</code> syncs and auto-merges any entry with that exact source, which would let an upstream <code>cw</code> → <code>mad</code> flip change <code>default</code> unreviewed (and miss the two <code>default_*breaks</code> bundles). <code>derived_from</code> carries the upstream path. Moving a group is a reviewed row edit, which moves <code>config_hash</code>.</li>
+<li>
+<strong>Fallback and override</strong> mirror the thresholds: no declaration means fresh’s copy, hashed as <code>fresh:parameters_habitat_method.csv</code>; <code>method_csv =</code> on the call wins over both. A group the table does not list is <code>cw</code>.</li>
+<li>
+<strong><code>mad_m3s</code> is joined onto the working streams</strong> (<code>working_&lt;wsg&gt;.streams</code>, from <code>whse_basemapping.fwa_stream_networks_discharge</code> on <code>linear_feature_id</code>) for every group, survives breaking, and is <strong>never persisted</strong> (<code>cols_streams</code> does not carry it). A DB without the discharge table now fails prepare for every group. <code>log_input</code> fingerprints it.</li>
+<li>
+<strong>What <code>mad</code> changes</strong> (fresh’s rules, after bcfishpass): stream rules that inherit thresholds test <code>mad_m3s</code> against <code>*_mad_min/max</code> instead of channel width, so species with no MAD thresholds (BT, GR, KO, RB) lose all stream habitat; the rule-level <code>channel_width</code> river-polygon bypass is ignored; SK/KO lake rearing is polygon membership. <strong>Lake, wetland and <code>thresholds: false</code> rules inherit nothing under either model</strong>, so BT keeps its wetland and 1050/1150-edge rearing in a <code>mad</code> group (ADMS: 63.5 km, all inside waterbodies). link also skips the stream-order rearing bypass (<code>frs_order_child</code>) for a <code>mad</code> group — bcfp applies it in its cw branch only. fresh does not implement bcfp’s <code>stream_order &gt;= 8</code> spawning bypass.</li>
+<li>
+<strong>Discharge coverage is uneven.</strong> A segment with NULL <code>mad_m3s</code> fails every mad test, so a <code>mad</code> group without coverage loses all of its stream habitat with no error. BULK has none in the local fwapg. Check <code>count(mad_m3s)</code> before moving a group.</li>
+<li>
+<strong><code><a href="reference/lnk_habitat_validate.html">lnk_habitat_validate()</a></code> is still cw-only</strong>: its miss-reason relaxation rewrites <code>s.channel_width</code>, so it scores a <code>mad</code> group as if it were <code>cw</code>.</li>
+<li>
+<strong>Connectivity reads no size model.</strong> <code>.frs_run_connectivity</code> takes no <code>params_method</code>; its one width test (<code>.frs_connected_waterbody</code>, <code>spawn_connected_cw_min</code>) is 0 for SK/KO in every bundle, so it is inert.</li>
 </ul><hr></div>
 </div>
 <div class="section level2">

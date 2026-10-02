@@ -719,9 +719,9 @@ too.
 - **A bundle that declares none falls back to fresh’s copy**, with a
   message, and its `config_hash` then covers that file as
   `fresh:parameters_habitat_thresholds.csv`.
-- **Not every column is live on link’s path.** Rules inherit only
-  gradient and channel width. `*_mad_*` are carried but never applied
-  (MAD is rule-level only, and streams carry no `mad_m3s`, fresh#114);
+- **Not every column is live on link’s path.** Rules inherit gradient
+  and channel width; `*_mad_*` replace channel width only for watershed
+  groups the bundle’s method table puts on `mad` (next section);
   `spawn/rear_edge_types` are read only on fresh’s no-rules fallback.
   `rear_lake_ha_min` is **baked into `rules.yaml`** by
   `lnk_rules_build(thresholds =)`, so changing it needs a rules rebuild.
@@ -737,6 +737,61 @@ too.
   host. A relative `extends:` path resolves against the child bundle,
   not the working directory. Before \#282 no shipped bundle extended
   anything, and all three of those were broken.
+
+### Channel width or discharge, per watershed group (#286)
+
+Each bundle also declares `parameters_habitat_method.csv`
+(`watershed_group_code`, `model` = `cw` \| `mad`), and
+[`lnk_pipeline_classify()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_classify.md)
+passes it to `fresh::frs_habitat_classify(params_method =)`. That needs
+fresh \>= 0.35.0; the preflight asserts the argument
+(`required_formals`), not the version, so **a cypher image still on an
+older fresh hard-fails at preflight — re-prep hosts before the next
+dispatch.**
+
+- **Every shipped bundle is all `cw`**: a frozen copy of bcfishpass
+  `parameters/example_newgraph` (188 groups). Outputs did not change
+  (ADMS and BULK `streams_habitat` digests identical against main on
+  fresh 0.33.0 and 0.36.2, `data-raw/logs/params_method_286/`).
+- **Frozen, not csv-synced.** Its provenance `source` is deliberately
+  not the bcfishpass URL: `sync_bcfishpass_csvs.R` syncs and auto-merges
+  any entry with that exact source, which would let an upstream `cw` →
+  `mad` flip change `default` unreviewed (and miss the two
+  `default_*breaks` bundles). `derived_from` carries the upstream path.
+  Moving a group is a reviewed row edit, which moves `config_hash`.
+- **Fallback and override** mirror the thresholds: no declaration means
+  fresh’s copy, hashed as `fresh:parameters_habitat_method.csv`;
+  `method_csv =` on the call wins over both. A group the table does not
+  list is `cw`.
+- **`mad_m3s` is joined onto the working streams**
+  (`working_<wsg>.streams`, from
+  `whse_basemapping.fwa_stream_networks_discharge` on
+  `linear_feature_id`) for every group, survives breaking, and is
+  **never persisted** (`cols_streams` does not carry it). A DB without
+  the discharge table now fails prepare for every group. `log_input`
+  fingerprints it.
+- **What `mad` changes** (fresh’s rules, after bcfishpass): stream rules
+  that inherit thresholds test `mad_m3s` against `*_mad_min/max` instead
+  of channel width, so species with no MAD thresholds (BT, GR, KO, RB)
+  lose all stream habitat; the rule-level `channel_width` river-polygon
+  bypass is ignored; SK/KO lake rearing is polygon membership. **Lake,
+  wetland and `thresholds: false` rules inherit nothing under either
+  model**, so BT keeps its wetland and 1050/1150-edge rearing in a `mad`
+  group (ADMS: 63.5 km, all inside waterbodies). link also skips the
+  stream-order rearing bypass (`frs_order_child`) for a `mad` group —
+  bcfp applies it in its cw branch only. fresh does not implement bcfp’s
+  `stream_order >= 8` spawning bypass.
+- **Discharge coverage is uneven.** A segment with NULL `mad_m3s` fails
+  every mad test, so a `mad` group without coverage loses all of its
+  stream habitat with no error. BULK has none in the local fwapg. Check
+  `count(mad_m3s)` before moving a group.
+- **[`lnk_habitat_validate()`](https://newgraphenvironment.github.io/link/reference/lnk_habitat_validate.md)
+  is still cw-only**: its miss-reason relaxation rewrites
+  `s.channel_width`, so it scores a `mad` group as if it were `cw`.
+- **Connectivity reads no size model.** `.frs_run_connectivity` takes no
+  `params_method`; its one width test (`.frs_connected_waterbody`,
+  `spawn_connected_cw_min`) is 0 for SK/KO in every bundle, so it is
+  inert.
 
 ------------------------------------------------------------------------
 

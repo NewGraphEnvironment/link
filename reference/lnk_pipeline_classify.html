@@ -15,7 +15,7 @@ bundle."><meta property="og:image" content="https://newgraphenvironment.github.i
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.54.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.55.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -61,7 +61,8 @@ bundle.</p>
 <span>  <span class="va">loaded</span>,</span>
 <span>  <span class="va">schema</span>,</span>
 <span>  species <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  thresholds_csv <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  thresholds_csv <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  method_csv <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -104,6 +105,19 @@ with the species present in the AOI (via
 <code>NULL</code> uses the config's own <code>files$parameters_habitat_thresholds</code>,
 falling back (with a message) to the copy shipped with fresh when
 the config declares none.</p></dd>
+
+
+<dt id="arg-method-csv">method_csv<a class="anchor" aria-label="anchor" href="#arg-method-csv"></a></dt>
+<dd><p>Path to the per-watershed-group habitat model table
+(<code>watershed_group_code</code>, <code>model</code> = <code>"cw"</code> or <code>"mad"</code>), passed to
+<code><a href="https://newgraphenvironment.github.io/fresh/reference/frs_habitat_classify.html" class="external-link">fresh::frs_habitat_classify()</a></code> as <code>params_method</code>. Default <code>NULL</code> uses
+the config's own <code>files$parameters_habitat_method</code>, falling back (with a
+message) to fresh's all-<code>cw</code> copy when the config declares none. A group
+the table does not list classifies on channel width. A <code>mad</code> group
+classifies on <code>mad_m3s</code>, which the prepare phase joins onto the working
+streams table, and skips the stream-order rearing bypass. Read from the
+path, not from <code>loaded$parameters_habitat_method</code>, as the thresholds are,
+so editing <code>loaded</code> has no effect here.</p></dd>
 
 </dl></div>
     <div class="section level2">

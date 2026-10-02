@@ -16,7 +16,8 @@ lnk_pipeline_classify(
   loaded,
   schema,
   species = NULL,
-  thresholds_csv = NULL
+  thresholds_csv = NULL,
+  method_csv = NULL
 )
 ```
 
@@ -60,6 +61,20 @@ lnk_pipeline_classify(
   Path to the habitat thresholds CSV. Default `NULL` uses the config's
   own `files$parameters_habitat_thresholds`, falling back (with a
   message) to the copy shipped with fresh when the config declares none.
+
+- method_csv:
+
+  Path to the per-watershed-group habitat model table
+  (`watershed_group_code`, `model` = `"cw"` or `"mad"`), passed to
+  [`fresh::frs_habitat_classify()`](https://newgraphenvironment.github.io/fresh/reference/frs_habitat_classify.html)
+  as `params_method`. Default `NULL` uses the config's own
+  `files$parameters_habitat_method`, falling back (with a message) to
+  fresh's all-`cw` copy when the config declares none. A group the table
+  does not list classifies on channel width. A `mad` group classifies on
+  `mad_m3s`, which the prepare phase joins onto the working streams
+  table, and skips the stream-order rearing bypass. Read from the path,
+  not from `loaded$parameters_habitat_method`, as the thresholds are, so
+  editing `loaded` has no effect here.
 
 ## Value
 

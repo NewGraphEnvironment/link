@@ -62,10 +62,10 @@ that something was wrong), `oldest_days` and `message`.
 
 ## Details
 
-The other seven tables in `.lnk_input_primitives()` are bulk-restored
-FWA. They are never `ANALYZE`d, so they carry no vintage at all and are
-not an axis this can measure — including them would mean every host
-failing forever on data that is not the staleness risk.
+The FWA tables in `.lnk_input_primitives()` are bulk-restored FWA. They
+are never `ANALYZE`d, so they carry no vintage at all and are not an
+axis this can measure — including them would mean every host failing
+forever on data that is not the staleness risk.
 
 **Absence is not a pass**, but absence and ignorance are different
 failures and are reported as such. A table that does not exist is

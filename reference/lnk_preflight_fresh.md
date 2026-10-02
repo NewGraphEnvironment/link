@@ -15,6 +15,7 @@ export the symbols.
 lnk_preflight_fresh(
   required = .lnk_fresh_required(),
   required_internal = .lnk_fresh_required_internal(),
+  required_formals = .lnk_fresh_required_formals(),
   min_version = .lnk_fresh_floor(),
   quiet = FALSE
 )
@@ -32,6 +33,13 @@ lnk_preflight_fresh(
   Character vector of non-exported `fresh` objects reached via
   [`utils::getFromNamespace()`](https://rdrr.io/r/utils/getFromNamespace.html).
 
+- required_formals:
+
+  Named list mapping a `fresh` function to the arguments link passes it
+  that older releases lack. A symbol can be exported and still reject
+  the call: `frs_habitat_classify()` existed long before it took
+  `params_method`. Defaults to `.lnk_fresh_required_formals()`.
+
 - min_version:
 
   Minimum acceptable `fresh` version. Defaults to the floor declared in
@@ -45,7 +53,8 @@ lnk_preflight_fresh(
 ## Value
 
 Invisibly, a list with `ok`, `version`, `version_ok`, `missing`,
-`missing_internal` and `message`.
+`missing_internal`, `missing_formals` (`"fn(arg)"` strings) and
+`message`.
 
 ## Details
 
@@ -79,7 +88,7 @@ res <- lnk_preflight_fresh(quiet = TRUE)
 res$ok
 #> [1] TRUE
 res$version
-#> [1] "0.33.0"
+#> [1] "0.36.2"
 
 # A symbol fresh does not export fails, and is named in the report:
 bad <- lnk_preflight_fresh(required = "frs_not_a_real_export", quiet = TRUE)

@@ -15,7 +15,7 @@ therefore not enough — it has to export the symbols."><meta property="og:image
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.54.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.55.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -57,6 +57,7 @@ therefore not enough — it has to export the symbols.</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">lnk_preflight_fresh</span><span class="op">(</span></span>
 <span>  required <span class="op">=</span> <span class="fu">.lnk_fresh_required</span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  required_internal <span class="op">=</span> <span class="fu">.lnk_fresh_required_internal</span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  required_formals <span class="op">=</span> <span class="fu">.lnk_fresh_required_formals</span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  min_version <span class="op">=</span> <span class="fu">.lnk_fresh_floor</span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  quiet <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -76,6 +77,14 @@ run without. Defaults to the curated list in <code>.lnk_fresh_required()</code>.
 objects reached via <code><a href="https://rdrr.io/r/utils/getFromNamespace.html" class="external-link">utils::getFromNamespace()</a></code>.</p></dd>
 
 
+<dt id="arg-required-formals">required_formals<a class="anchor" aria-label="anchor" href="#arg-required-formals"></a></dt>
+<dd><p>Named list mapping a <code>fresh</code> function to the
+arguments link passes it that older releases lack. A symbol can be
+exported and still reject the call: <code>frs_habitat_classify()</code> existed
+long before it took <code>params_method</code>. Defaults to
+<code>.lnk_fresh_required_formals()</code>.</p></dd>
+
+
 <dt id="arg-min-version">min_version<a class="anchor" aria-label="anchor" href="#arg-min-version"></a></dt>
 <dd><p>Minimum acceptable <code>fresh</code> version. Defaults to the
 floor declared in link's own <code>DESCRIPTION</code>, so the pin lives in one
@@ -90,7 +99,8 @@ point on a cypher, where the log is all the operator gets.</p></dd>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>Invisibly, a list with <code>ok</code>, <code>version</code>, <code>version_ok</code>,
-<code>missing</code>, <code>missing_internal</code> and <code>message</code>.</p>
+<code>missing</code>, <code>missing_internal</code>, <code>missing_formals</code> (<code>"fn(arg)"</code>
+strings) and <code>message</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -123,7 +133,7 @@ exercises <code>fresh</code>'s own <code>Imports</code> resolution, which readin
 <span class="r-in"><span><span class="va">res</span><span class="op">$</span><span class="va">ok</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] TRUE</span>
 <span class="r-in"><span><span class="va">res</span><span class="op">$</span><span class="va">version</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "0.33.0"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "0.36.2"</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># A symbol fresh does not export fails, and is named in the report:</span></span></span>
 <span class="r-in"><span><span class="va">bad</span> <span class="op">&lt;-</span> <span class="fu">lnk_preflight_fresh</span><span class="op">(</span>required <span class="op">=</span> <span class="st">"frs_not_a_real_export"</span>, quiet <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
