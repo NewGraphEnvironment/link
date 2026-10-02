@@ -55,17 +55,17 @@ stream size, before any bundle moves a group.
   and record that.
 
 ## Phase 2: Harness, build side (`data-raw/habitat_variants_build.R`)
-- [ ] Add `--base=<bundle>` (default `default`). It replaces `lnk_config("default")`.
+- [x] Add `--base=<bundle>` (default `default`). It replaces `lnk_config("default")`.
   Thin bundles get `extends: <base>`, and the stamp records the base. Under #284's and
   #302's own `--variants`, a `--base` other than `default` stops.
-- [ ] The base is the row with an empty `step_from`, not the row with an empty `column`.
-- [ ] Allow a **model-only variant**: empty `column`, `model=mad`, `step_from` = base, no
+- [x] The base is the row with an empty `step_from`, not the row with an empty `column`.
+- [x] Allow a **model-only variant**: empty `column`, `model=mad`, `step_from` = base, no
   `set`.
   - Its thin bundle carries only a method table and is checked to differ from the base in
     0 threshold cells.
   - Any other empty-`column` row stops: one on `cw`, one with a `set`, or one stepping from
     a non-base variant.
-- [ ] Update the README for `--base`, model-only rows and `variants_300`.
+- [x] Update the README for `--base`, model-only rows and `variants_300`.
 
 ## Phase 3: Harness, score side (`data-raw/habitat_variants_score.R`)
 - [ ] Add `--base`, mirrored from the build. Use it in `cfg_of()` and the stamp.
