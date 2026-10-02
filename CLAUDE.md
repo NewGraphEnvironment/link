@@ -32,7 +32,7 @@ Experimental package — breaking all the time and loving the learning curve. St
 - **fresh 0.36.0 reversed `frs_db_conn()`'s precedence** (`PG*` first). `lnk_db_conn()`
   still reads `PG_*_SHARE` first; on a machine with both groups set they connect to
   different databases.
-- **`lnk_habitat_validate()` is cw-only**; a follow-up is drafted in the #286 archive.
+- **`lnk_habitat_validate()` is cw-only** (#299).
 
 ## Status (2026-09-29) — #284 step 5: BT `rear_gradient_max` 0.1349 scored and held
 
