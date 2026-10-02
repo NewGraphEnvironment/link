@@ -43,14 +43,15 @@ What exploration established:
   (`schema_core` already takes a list), i.e. habitat both models and every step keep.
 
 ## Phase 1: Measure — mad_m3s at observations (calibration WSGs)
-- [ ] Generalise `data-raw/query_habitat_thresholds_obs.R`: `--species=` (default
-      `CH,BT`, today's behaviour) and a `mad_m3s` column joined on
-      `linear_feature_id`; quantiles/selection/candidates for metric `mad_m3s`
-      alongside gradient and width. Pooling stays per `species_pooling.csv`.
-- [ ] Prove the default invocation still reproduces the committed
-      `data-raw/logs/habitat_thresholds_284/` outputs (allowing #293's 1-ulp noise).
-- [ ] Run for `BT,GR,KO,RB` into `data-raw/logs/habitat_thresholds_302/`, restricted to
-      discharge-covered WSGs; record coverage (share of obs with NULL `mad_m3s`).
+- [x] ~~Generalise `query_habitat_thresholds_obs.R`~~ — replaced (CH/BT-specific
+      throughout) by a sibling driver `data-raw/query_habitat_thresholds_mad.R` that uses
+      `lnk_habitat_validate()` as the instrument with every calibration WSG on `mad`;
+      decision rule fixed in its header and committed before the first full run
+      (P05; any-stage fallback for thin spawn cells; n ≥ 30; floor to 2 s.f.; max 9999)
+- [x] ~~Prove the #284 obs outputs reproduce~~ — moot: the #284 script is untouched
+- [ ] Run for `BT,GR,KO,RB` into `data-raw/logs/habitat_thresholds_302/` over every
+      discharge-covered `fresh_default` WSG; record coverage (share of obs with NULL
+      `mad_m3s`)
 
 ## Phase 2: FISS and literature
 - [ ] Extend `data-raw/query_habitat_thresholds_fiss.R` with `mad_m3s` at FISS sites

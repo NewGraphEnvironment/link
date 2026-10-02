@@ -38,7 +38,68 @@ run.
 
 Depends on #299 and #300. Relates to #284, #286.
 
+## Decisions (operator, 2026-10-02, mid-run after the plan review)
+
+- **Thin spawn cell** (spawn-staged n < 30): fill from the species' any-stage P05 on
+  spawn-tested segments, labelled `fallback: any stage`. Reason: BT and GR cluster
+  rearing on spawning (`cluster_rearing = TRUE`), so a NA spawn range would also wipe
+  their stream rearing under `mad`.
+- **n-floor of record:** `decision_expected_floor` (locations expected at the core's
+  rate in the band) decides; the found-count reading is reported beside it. A walk that
+  only loosens from a tight anchor is where the found-count floor cannot refuse.
+- **Underpowered first loosening step:** P05 lands, recorded as unscored (as #284's
+  step 1-4 verdict stood). KO, with no held-out group, lands the same way.
+
+## Plan review (Plan agent) — see `review-plan.md`
+
+Key mechanics confirmed by reading fresh 0.36.2:
+- `build_wb_pred` (`frs_habitat_predicates.R`) gates lake/wetland rearing with the rear
+  size window whenever one exists, under cw too; under `mad` with no rear range it is
+  polygon membership alone. So adding `rear_mad_min` makes `mad` mirror `cw` there.
+- `frs_params.R`: NA `*_mad_max` becomes `Inf` when `*_mad_min` is set.
+
+## Phase 1 instrument
+
+`data-raw/query_habitat_thresholds_mad.R` replaces "generalise the obs script": the obs
+script is CH/BT-specific throughout (presence, sets, UNION of `_ch`/`_bt`, candidates),
+while `lnk_habitat_validate()` already attaches pooled, staged observations to segments
+and returns `mad_m3s` on a `mad` group. Run with every calibration WSG on `mad`.
+
+Code-check round 1 (`review-round1.md`): the rear stream rule has no
+`in_waterbody: false`, so stream edges inside lakes/wetlands are tested unless the
+species' own L/W rule admits them — fixed with a per-stage segment class. Moved GR rear
+P05 on ADMS+PARS from 2.561 to 2.478 (rule value 2.5 → 2.4).
+
 ## Errors Encountered
 
 | Error | Resolution |
 |-------|------------|
+| Zotero MCP: missing `ZOTERO_LIBRARY_ID` / `ZOTERO_API_KEY` | Literature read from the local Zotero full-text caches (read-only sqlite); MCP env reported to the operator |
+| `stats::aggregate()` drops NA group keys (anchor `value_from` is NA) | `value_from` joined back after the aggregate |
+
+## Harness regression (2026-10-02)
+
+The modified `habitat_variants_score.R` (model/set, anchor, `_min` direction,
+method sha; before `--floor`) re-scored #284's committed build (`score284_*`, a
+scratch copy of `data-raw/logs/habitat_score_284/`). All nine outputs (verdict,
+bands, bands_pooled, totals, habitat_change, taper, elevation_adjusted,
+bridge_band, summary) equal the committed ones on every shared column; summary
+gains only the validator's `model` column (#299).
+
+## Lake / wetland rearing under a rear range (Gap 1, narrowed)
+
+fresh 0.36.2 `frs_habitat_classify.R`: `rearing` is the main rear predicate alone;
+`lake_rearing` and `wetland_rearing` are separate columns from `build_wb_pred()`. The
+main predicate's L/W rules inherit no thresholds (`.frs_rule_to_sql()`), so a
+`rear_mad_min` does **not** cut `rearing` in lakes/wetlands. It gates only the
+`lake_rearing` / `wetland_rearing` bucket columns (size AND membership), exactly as a
+channel width does under `cw`. Report those columns' km before/after; RUNBOOK §7's
+"inherit nothing under either model" is true of `rearing`, not of the bucket columns.
+
+## fresh: `wetland_ha_min` ignored by the rear predicate (code-check round 2)
+
+`.frs_rule_to_sql()` applies `lake_ha_min` (L = lakes + manmade) but not
+`wetland_ha_min`; the W rule admits every wetland size into `rearing`. Upstream defect,
+not worked around: the driver follows fresh as compiled (it now builds the waterbody
+admission from `fresh:::.frs_rule_to_sql()`). Issue drafted for operator review, not
+filed.
