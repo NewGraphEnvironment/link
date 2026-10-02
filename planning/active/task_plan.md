@@ -50,11 +50,11 @@ needs adding there.
 - [x] `lnk_pipeline_connect` stays as it is. `.frs_run_connectivity` is not method-aware (clustering is on gradient), so record that in findings rather than change it
 
 ## Phase 4: live verification (local docker fwapg, scratch schema)
-- [ ] State the run decisions (config, scratch schema, WSGs, species) before launching
-- [ ] **No-change proof.** Run ADMS with the `default` bundle at HEAD and on the branch, reclassifying on one prepared schema. `streams_habitat` must be byte-identical (digest). The all-`cw` table plus the extra `mad_m3s` column must move nothing
-- [ ] Repeat the no-change proof on a second, larger WSG (HORS or BULK)
-- [ ] **mad takes effect.** Run a thin bundle (`method_csv`) that sets one WSG with discharge coverage to `mad`. It must run, CO/CH/ST habitat must differ from cw, and BT must get no stream habitat from inheriting rules (fresh's documented behaviour). Record km by species in findings
-- [ ] A `mad` WSG with no discharge coverage (BULK has none): confirm and record what happens. Every segment fails the mad rule, so expect zero stream habitat. Surface this, and do not add a workaround
+- [x] State the run decisions (config, scratch schema, WSGs, species) before launching
+- [x] **No-change proof.** Run ADMS with the `default` bundle at HEAD and on the branch, reclassifying on one prepared schema. `streams_habitat` must be byte-identical (digest). The all-`cw` table plus the extra `mad_m3s` column must move nothing
+- [x] Repeat the no-change proof on a second, larger WSG (HORS or BULK)
+- [x] **mad takes effect.** Run a thin bundle (`method_csv`) that sets one WSG with discharge coverage to `mad`. It must run, CO/CH/ST habitat must differ from cw, and BT must get no stream habitat from inheriting rules (fresh's documented behaviour). Record km by species in findings
+- [x] A `mad` WSG with no discharge coverage (BULK has none): confirm and record what happens. Every segment fails the mad rule, so expect zero stream habitat. Surface this, and do not add a workaround
 
 ## Phase 5: docs + follow-ups
 - [ ] RUNBOOK §7 "Where habitat thresholds live": add the method table, the fallback, and that `mad_m3s` exists only in the working schema

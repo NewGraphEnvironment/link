@@ -1,0 +1,75 @@
+NOTICE:  relation "streams_blk_idx" already exists, skipping
+
+NOTICE:  relation "streams_blk_drm_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_lfid_idx" already exists, skipping
+
+NOTICE:  relation "streams_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_id_segment_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat" already exists, skipping
+
+NOTICE:  table "streams_acc_015" does not exist, skipping
+
+NOTICE:  table "streams_acc_02" does not exist, skipping
+
+NOTICE:  table "streams_acc_025" does not exist, skipping
+
+NOTICE:  table "streams_acc_025_ovr_bt" does not exist, skipping
+
+NOTICE:  table "streams_acc_015_ovr_ch" does not exist, skipping
+
+NOTICE:  table "streams_acc_015_ovr_co" does not exist, skipping
+
+NOTICE:  table "streams_acc_015_ovr_pk" does not exist, skipping
+
+NOTICE:  table "streams_acc_015_ovr_sk" does not exist, skipping
+
+NOTICE:  table "streams_acc_02_ovr_st" does not exist, skipping
+
+NOTICE:  relation "streams_habitat_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_id_segment_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_species_code_idx" already exists, skipping
+
+NOTICE:  schema "pg_temp" does not exist, skipping
+
+NOTICE:  table "frs_clusters_ch" does not exist, skipping
+
+NOTICE:  table "frs_clusters_co" does not exist, skipping
+
+NOTICE:  table "frs_clusters_sk" does not exist, skipping
+
+NOTICE:  table "frs_qual_spawn_sk" does not exist, skipping
+
+NOTICE:  table "frs_trace_lfid_sk" does not exist, skipping
+
+NOTICE:  table "frs_clusters_st" does not exist, skipping
+
+## reclassify BULK default zz286_bulk repo=br method_csv=<bundle/default> link=0.54.0 fresh=0.36.2
+ species_code     n n_spawn n_rear spawn_km rear_km
+           BT 87638    5553   9695   1853.4  3010.3
+           CH 87638    3854   6701   1264.1  2038.2
+           CO 87638    5375   7548   1813.7  2295.7
+           PK 87638    5447      0   1864.2     0.0
+           RB 87638    5445  10070   1818.7  3013.3
+           SK 87638     224    139     81.4    64.6
+           ST 87638    3955   8124   1295.5  2552.1
+                           digest
+ 12070f6142acfe491c041e7d42d2ace0
+ 13900c2faa6d5ec1564feb18e7e554c7
+ 23a1b679a66b4898efe102cdd6b8b020
+ 0755c74eb7ea6636a357a4ba26e2eba3
+ 11e053f8970b99879991deb384c35ebd
+ 63d3d58098baf8cae37e26fe573612c7
+ 74468447d499c3409bef399182451150

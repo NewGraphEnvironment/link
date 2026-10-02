@@ -90,6 +90,22 @@ independently found B1**, which was the one real bug.
 | AC1–AC3 invariants | `mad_check.R`: classify only, overlay off, stream vs waterbody split. |
 | AC4 verify loop | **added** (`test-lnk_config.R`). |
 
+## Phase 4 — live (2026-10-02)
+
+Full record: `data-raw/logs/params_method_286/README.md`.
+- **No change.** ADMS has 5 species and BULK has 7. On each, the per-species
+  `streams_habitat` digest after connect is identical across: branch; main + fresh
+  0.36.2; main + fresh 0.33.0; and (ADMS) main with `mad_m3s` dropped.
+- **mad on ADMS.** On streams, CH/CO/SK always sit within their MAD range, and BT/RB have
+  0 km. 63.5 km of BT rearing survives in wetland and 1050/1150 edges.
+  `.frs_rule_to_sql` turns inheritance off for L/W rules under both models, so this is
+  intended.
+- **Correction to my own first reading:** I reported "rear_out = 0 for all species" from
+  a `grep -A8` that cut off every row after BT. The re-run shows 222 CH and 128 CO
+  out-of-range rearing segments, all inside waterbodies.
+- **mad on BULK** (no discharge): 0 km of stream spawning and rearing for every species,
+  and no error.
+
 ## Follow-up issue draft (NOT filed — needs body review)
 
 **Title:** `lnk_habitat_validate()` scores `mad` watershed groups as if they were `cw`
