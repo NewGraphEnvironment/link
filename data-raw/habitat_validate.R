@@ -200,7 +200,8 @@ if (nrow(bundles) == 2L) {
 # totals' n_habitat; its reason is then the rear reason.
 stage_rows <- function(obs) {
   base <- data.frame(
-    species_code = obs$species_code, gradient = obs$gradient,
+    species_code = obs$species_code, model = obs$model,
+    gradient = obs$gradient,
     channel_width = obs$channel_width, edge_type = obs$edge_type,
     is_spawn = obs$is_spawn, is_rear = obs$is_rear,
     reason_any = ifelse(obs$spawning %in% TRUE, NA_character_,
@@ -209,7 +210,7 @@ stage_rows <- function(obs) {
     reason_rear = obs$miss_reason_rear, stringsAsFactors = FALSE)
   pick <- function(d, stage, col) {
     cbind(data.frame(stage = rep(stage, nrow(d))), d[, c("species_code",
-      "gradient", "channel_width", "edge_type")], reason = d[[col]])
+      "model", "gradient", "channel_width", "edge_type")], reason = d[[col]])
   }
   rbind(pick(base, "any", "reason_any"),
         pick(base[base$is_spawn, , drop = FALSE], "spawn", "reason_spawn"),
@@ -223,18 +224,24 @@ binned <- list()
 for (r in runs[vapply(runs, function(r) r$summary$buffer_m[1] == 0, TRUE)]) {
   d <- stage_rows(r$observations)
   d$reason[is.na(d$reason)] <- "captured"
+  # model: a mad group's width reasons are about discharge (#299).
   tab <- as.data.frame(table(stage = d$stage, species_code = d$species_code,
-                             reason = d$reason), stringsAsFactors = FALSE)
+                             model = d$model, reason = d$reason),
+                       stringsAsFactors = FALSE)
   tab <- tab[tab$Freq > 0, ]
   names(tab)[names(tab) == "Freq"] <- "n"
   misses[[length(misses) + 1L]] <- cbind(
     data.frame(bundle = rep(r$bundle, nrow(tab))), tab)
   m <- d[!d$reason %in% c("captured", "no_segment"), ]
   m$gradient_bin <- as.character(cut(m$gradient, breaks_g, right = TRUE))
-  m$width_bin <- ifelse(is.na(m$channel_width), "NULL",
+  # Width bins describe the cw size dimension only; a mad row keeps its
+  # count under "mad" so the binned table still sums to misses.csv.
+  m$width_bin <- ifelse(m$model %in% "mad", "mad",
+                 ifelse(is.na(m$channel_width), "NULL",
                         as.character(cut(m$channel_width, breaks_w,
-                                         right = FALSE)))
+                                         right = FALSE))))
   b <- as.data.frame(table(stage = m$stage, species_code = m$species_code,
+                           model = m$model,
                            reason = m$reason, gradient_bin = m$gradient_bin,
                            width_bin = m$width_bin, useNA = "ifany"),
                      stringsAsFactors = FALSE)

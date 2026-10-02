@@ -63,23 +63,23 @@ As landed (review-driven): `_nomad` relaxes size only and `_nomad_g` size + grad
 - [x] Unit test: `width_null` keys on the size value passed, so a mad row with NULL discharge and a width reads `width_null`
 
 ## Phase 4: Docs and driver
-- [ ] Roxygen: Miss reasons section (size dimension per model, `no_mad_threshold`, model from the bundle's method table, caveat that a schema built under a different method table is not detected); `@return` columns; `devtools::document()`
-- [ ] `data-raw/habitat_validate.R`: carry `model` into `misses.csv` / `misses_binned.csv`; bin width on cw rows only
-- [ ] RUNBOOK §7 bullet, `research/habitat_validation.md`, CLAUDE.md "cw-only (#299)" fact
-- [ ] Draft (not file) follow-up issue: tune and add MAD thresholds for BT/GR/KO/RB
+- [x] Roxygen: Miss reasons section (size dimension per model, `no_mad_threshold`, model from the bundle's method table, caveat that a schema built under a different method table is not detected); `@return` columns; `devtools::document()`
+- [x] `data-raw/habitat_validate.R`: carry `model` into `misses.csv` / `misses_binned.csv`; bin width on cw rows only
+- [x] RUNBOOK §7 bullet, `research/habitat_validation.md`, CLAUDE.md "cw-only (#299)" fact
+- [x] Draft (not file) follow-up issue: tune and add MAD thresholds for BT/GR/KO/RB
 
 ## Phase 5: Live verification (local docker fwapg)
 Run decisions: config `default` with a temp method table putting **ADMS** on `mad`;
 persist schema **`zz299_mad`** (scratch, dropped after); WSG ADMS only (no closure);
 species from config × presence; `mapping_code = TRUE` (validator needs `streams_access`);
 no `--refresh-primitives`.
-- [ ] cw no-change: validate ADMS on `fresh_default` with branch vs main — `observations` and `summary` identical apart from the new columns
-- [ ] mad: model ADMS into `zz299_mad`, validate CH/CO/BT; count locations where persisted `spawning`/`rearing` is TRUE but `pred_*` FALSE outside UHC — expect ~0 on branch, show main's count for contrast; tabulate reasons (BT → `no_mad_threshold`)
-- [ ] Log under `data-raw/logs/habitat_validate_299/` with env stamp
+- [x] cw no-change: validate ADMS on `fresh_default` with branch vs main — `observations` and `summary` identical apart from the new columns
+- [x] mad: model ADMS into `zz299_mad`, validate CH/CO/BT; count locations where persisted `spawning`/`rearing` is TRUE but `pred_*` FALSE outside UHC — expect ~0 on branch, show main's count for contrast; tabulate reasons (BT → `no_mad_threshold`). **As measured:** that count is 0 on main too (does not discriminate); the discriminating evidence is main's 24 + 27 BT `post_predicate` vs the branch's `no_mad_threshold` — README
+- [x] Log under `data-raw/logs/habitat_validate_299/` with env stamp
 
 ## Validation
 
-- [ ] Tests pass
-- [ ] `/code-check` clean on each commit
-- [ ] PWF checkboxes match landed work
+- [x] Tests pass (full suite 2394 / 0 failed / 0 skipped, 16 warnings = baseline)
+- [ ] `/code-check` clean on each commit — **partly**: Phase 1 round 1 Clean; Phases 1-3 rounds 2-3 (found + fixed 2, ended by enumeration); Phases 4-5 docs/evidence one round only (5 false claims, all fixed, rounds 2-3 not run)
+- [x] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion

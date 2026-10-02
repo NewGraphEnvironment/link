@@ -1,6 +1,6 @@
 # Habitat validation against fish observations
 
-**Verified:** 2026-09-27 · **Issues:** #283 (this), #284 (step 5 scores with it), #290 (pooling as data), #203 (full-key joins), fresh#218 · **Produced by:** `lnk_habitat_validate()` via `data-raw/habitat_validate.R` → `data-raw/logs/habitat_validate_283/` (link @ `0c19e0a`) · **Status:** baseline; #284 step 5 scored BT `rear_gradient_max` with it (see below)
+**Verified:** 2026-09-27; size model per group 2026-10-02 · **Issues:** #283 (this), #284 (step 5 scores with it), #290 (pooling as data), #203 (full-key joins), #299 (cw / mad per group), fresh#218 · **Produced by:** `lnk_habitat_validate()` via `data-raw/habitat_validate.R` → `data-raw/logs/habitat_validate_283/` (link @ `0c19e0a`) · **Status:** baseline; #284 step 5 scored BT `rear_gradient_max` with it (see below)
 
 ## What it measures
 
@@ -46,6 +46,20 @@ that both retained the same observations.
   uses. The habitat flags are gated by `streams_habitat.accessible`, which differs
   slightly, so spawning capture is not strictly a subset of accessible capture. #284
   used the latter.
+- **Size model per group (#299):** each WSG is re-tested on the model the bundle's
+  `parameters_habitat_method.csv` gives it, resolved by classify's own rule (fresh's
+  `.frs_habitat_models()`). A `mad` group's predicates test `mad_m3s`, joined from
+  `fwa_stream_networks_discharge` on `linear_feature_id` (the persist does not carry
+  it), and its size relaxation moves discharge, not width. The reason labels are
+  unchanged: `fails_width` / `width_null` mean "the group's size dimension", and the
+  `model` and `mad_m3s` columns split them. `no_mad_threshold` is a `mad` miss the
+  species' missing MAD range alone explains (BT, GR, KO, RB have none: fresh writes
+  `FALSE` for the size test, which no relaxation reaches); one that needs the gradient
+  relaxed too reads `fails_gradient_and_width`. MAD maxima bind (CH 100, CO 40, ST 60,
+  WCT 40 m³/s rearing), so on `mad` a big-river miss also reads `fails_width`; read
+  `mad_m3s` to tell it from a small one. The validator uses the method table of the
+  `cfg` it is given: a schema built under another table, or with
+  `lnk_pipeline_classify(method_csv =)`, is not detected.
 - **Buffer:** `buffer_m` credits habitat that starts within that distance *upstream* on
   the same stream, because points often mark the downstream end of a site. The UHC flags
   test the same window. The driver reports 0 and 100 m.

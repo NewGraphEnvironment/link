@@ -1,0 +1,57 @@
+## 1. cw no-change (fresh_default, ADMS)
+observations identical apart from new columns: TRUE 
+summary identical apart from `model`: TRUE 
+branch model column: cw 
+observations: 94 
+## 2. persisted TRUE, re-built predicate FALSE (zz299_mad, ADMS on mad)
+branch:
+ species_code  n spawn_true_pred_false rear_true_pred_false
+           BT 37                     0                    0
+           CH 11                     0                    0
+           CO 46                     0                    0
+main (cw predicates on a mad run):
+ species_code  n spawn_true_pred_false rear_true_pred_false
+           BT 37                     0                    0
+           CH 11                     0                    0
+           CO 46                     0                    0
+## 3. miss reasons on the mad run
+miss_reason_spawn 
+ species                   reason Freq_branch Freq_main
+      BT           fails_gradient           0         6
+      BT fails_gradient_and_width           8         2
+      BT              fails_width           0         2
+      BT         no_mad_threshold          27         0
+      BT           post_predicate           0        24
+      BT            rule_excludes           2         2
+      BT               width_null           0         1
+      CH                 captured           8         8
+      CH           fails_gradient           1         1
+      CH              fails_width           1         0
+      CH           post_predicate           0         1
+      CH            rule_excludes           1         1
+      CO                 captured          41        41
+      CO           fails_gradient           1         1
+      CO              fails_width           2         0
+      CO           not_accessible           1         1
+      CO            rule_excludes           1         1
+      CO               width_null           0         2
+miss_reason_rear 
+ species                   reason Freq_branch Freq_main
+      BT                 captured           2         2
+      BT           fails_gradient           0         3
+      BT fails_gradient_and_width           4         1
+      BT              fails_width           0         3
+      BT         no_mad_threshold          31         0
+      BT           post_predicate           0        27
+      BT               width_null           0         1
+      CH                 captured           9         9
+      CH           fails_gradient           1         1
+      CH           post_predicate           1         1
+      CO                 captured          38        38
+      CO           fails_gradient           3         3
+      CO              fails_width           4         0
+      CO           not_accessible           1         1
+      CO           post_predicate           0         2
+      CO               width_null           0         2
+mad_m3s present on 94 of 94 mad-group locations
+validate seconds: branch cw 12 main cw 15 branch mad 11 main mad 15 

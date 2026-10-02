@@ -32,7 +32,8 @@ Experimental package — breaking all the time and loving the learning curve. St
 - **fresh 0.36.0 reversed `frs_db_conn()`'s precedence** (`PG*` first). `lnk_db_conn()`
   still reads `PG_*_SHARE` first; on a machine with both groups set they connect to
   different databases.
-- **`lnk_habitat_validate()` is cw-only** (#299).
+- **`lnk_habitat_validate()` scores each group on its own model** (#299), from the
+  `cfg` it is given; `no_mad_threshold` names a species with no MAD range.
 
 ## Status (2026-09-29) — #284 step 5: BT `rear_gradient_max` 0.1349 scored and held
 
