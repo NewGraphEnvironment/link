@@ -91,9 +91,7 @@ lnk_pipeline_classify <- function(conn, aoi, cfg, loaded, schema,
   if (!nzchar(method_csv) || !file.exists(method_csv)) {
     stop("method_csv not found: ", method_csv, call. = FALSE)
   }
-  params_method <- utils::read.csv(method_csv, stringsAsFactors = FALSE,
-                                   colClasses = "character",
-                                   na.strings = character(0))
+  params_method <- .lnk_habitat_method_read(method_csv)
 
   species <- species %||% lnk_pipeline_species(cfg, loaded, aoi)
   if (length(species) == 0L) {
@@ -164,7 +162,7 @@ lnk_pipeline_classify <- function(conn, aoi, cfg, loaded, schema,
   #
   # Channel-width model only (#286): the bypass stands in for a width test,
   # and bcfp applies it inside its cw branch alone. A `mad` group skips it.
-  aoi_model <- params_method$model[match(aoi, params_method$watershed_group_code)]
+  aoi_model <- .lnk_wsg_model(params_method, aoi)
   species_bypass <- if (identical(aoi_model, "mad")) character(0) else species
   for (sp in species_bypass) {
     rear_rules <- params[[sp]][["rules"]][["rear"]]

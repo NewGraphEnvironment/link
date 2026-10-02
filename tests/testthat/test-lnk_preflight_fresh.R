@@ -54,13 +54,14 @@ test_that("a pre-0.35.0 frs_habitat_classify signature is caught (#286)", {
                                       verbose) {
     NULL
   }
+  ns$frs_habitat_predicates <- function(sp_params) NULL
   expect_identical(
     .lnk_fresh_missing_formals(ns, .lnk_fresh_required_formals()),
-    "frs_habitat_classify(params_method)")
+    c("frs_habitat_classify(params_method)", "frs_habitat_predicates(model)"))
   # And a function that is absent altogether reports its arguments too.
   expect_identical(
     .lnk_fresh_missing_formals(new.env(), .lnk_fresh_required_formals()),
-    "frs_habitat_classify(params_method)")
+    c("frs_habitat_classify(params_method)", "frs_habitat_predicates(model)"))
 })
 
 test_that("required formals name functions in the required export set", {
@@ -99,8 +100,11 @@ test_that("the required set names only symbols fresh actually exports", {
   expect_length(
     setdiff(.lnk_fresh_required(), getNamespaceExports(asNamespace("fresh"))),
     0L)
-  expect_true(exists(.lnk_fresh_required_internal(),
-                     envir = asNamespace("fresh"), inherits = FALSE))
+  # exists() reads only the first name, so test each one.
+  for (nm in .lnk_fresh_required_internal()) {
+    expect_true(exists(nm, envir = asNamespace("fresh"), inherits = FALSE),
+                info = nm)
+  }
 })
 
 test_that("every fresh:: call site in link is declared as required", {

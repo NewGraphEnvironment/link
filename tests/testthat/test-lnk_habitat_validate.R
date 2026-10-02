@@ -21,7 +21,7 @@ test_that(".lnk_habitat_miss_reason attributes each miss once, in order", {
   r <- link:::.lnk_habitat_miss_reason(
     captured      = c(TRUE, NA,   FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE),
     accessible    = c(TRUE, NA,   FALSE, TRUE,  TRUE,  TRUE,  TRUE,  TRUE,  TRUE,  TRUE),
-    channel_width = c(5,    NA,   5,     5,     5,     NA,    5,     5,     5,     5),
+    size          = c(5,    NA,   5,     5,     5,     NA,    5,     5,     5,     5),
     p             = c(TRUE, NA,   TRUE,  TRUE,  FALSE, FALSE, FALSE, FALSE, FALSE, FALSE),
     p_g           = c(TRUE, NA,   TRUE,  TRUE,  TRUE,  FALSE, FALSE, TRUE,  FALSE, FALSE),
     p_w           = c(TRUE, NA,   TRUE,  TRUE,  FALSE, TRUE,  TRUE,  TRUE,  FALSE, FALSE),
@@ -35,19 +35,42 @@ test_that(".lnk_habitat_miss_reason attributes each miss once, in order", {
 test_that(".lnk_habitat_miss_reason separates a gradient below the window from one above it", {
   r <- link:::.lnk_habitat_miss_reason(
     captured = c(FALSE, FALSE), accessible = c(TRUE, TRUE),
-    channel_width = c(5, 5), p = c(FALSE, FALSE), p_g = c(TRUE, TRUE),
+    size = c(5, 5), p = c(FALSE, FALSE), p_g = c(TRUE, TRUE),
     p_w = c(FALSE, FALSE), p_gw = c(TRUE, TRUE),
     gradient = c(-0.02, 0.2), gradient_min = c(0, 0))
   expect_identical(r, c("gradient_below_min", "fails_gradient"))
 })
 
+test_that(".lnk_habitat_miss_reason names a missing MAD range before rule_excludes (#299)", {
+  r <- link:::.lnk_habitat_miss_reason(
+    captured = c(FALSE, FALSE, FALSE, FALSE),
+    accessible = c(TRUE, TRUE, TRUE, TRUE),
+    size = c(1, 1, 1, NA), p = c(FALSE, FALSE, FALSE, FALSE),
+    p_g = c(FALSE, FALSE, FALSE, FALSE), p_w = c(FALSE, FALSE, FALSE, FALSE),
+    p_gw = c(FALSE, FALSE, FALSE, FALSE), p_nomad = c(TRUE, FALSE, NA, TRUE),
+    p_nomad_g = c(TRUE, TRUE, NA, TRUE))
+  # Passing with a range alone is the missing range; needing the gradient
+  # relaxed as well is cw's "both" reason; with no discharge to test, a
+  # range would not help and the value is what is missing.
+  expect_identical(r, c("no_mad_threshold", "fails_gradient_and_width",
+                        "rule_excludes", "width_null"))
+})
+
 test_that(".lnk_hv_relax fixes gradient and width without touching lookalike columns", {
   p <- "s.gradient BETWEEN 0 AND 0.05 AND s.channel_width >= 2 AND s.gradient_x > 1"
-  r <- link:::.lnk_hv_relax(p, gradient = 0, width = 2)
+  r <- link:::.lnk_hv_relax(p, gradient = 0, size = 2)
   expect_false(grepl("s\\.gradient ", r))
   expect_false(grepl("s\\.channel_width", r))
   expect_true(grepl("s.gradient_x", r, fixed = TRUE))
   expect_identical(link:::.lnk_hv_relax(p), p)
+})
+
+test_that(".lnk_hv_relax rewrites the size column it is given", {
+  p <- "s.mad_m3s BETWEEN 0.1 AND 40 AND s.channel_width >= 2 AND s.mad_m3s_x > 1"
+  r <- link:::.lnk_hv_relax(p, size = 0.1, size_col = "mad_m3s")
+  expect_false(grepl("s.mad_m3s ", r, fixed = TRUE))
+  expect_true(grepl("s.channel_width", r, fixed = TRUE))
+  expect_true(grepl("s.mad_m3s_x", r, fixed = TRUE))
 })
 
 test_that(".lnk_hv_stage_min takes the spawn gradient floor from parameters_fresh", {
@@ -57,28 +80,157 @@ test_that(".lnk_hv_stage_min takes the spawn gradient floor from parameters_fres
                 rear = list(gradient = c(0, 0.1), channel_width = c(1.5, 9999)))))
   m <- link:::.lnk_hv_stage_min(spp)
   expect_identical(m$spawn[["gradient"]], 0.0025)
-  expect_identical(m$spawn[["width"]], 4)
+  expect_identical(m$spawn[["size"]], 4)
   expect_identical(m$rear[["gradient"]], 0)
-  expect_identical(m$rear[["width"]], 1.5)
+  expect_identical(m$rear[["size"]], 1.5)
 })
 
-test_that("the predicate call stays on the channel-width model", {
-  # The validator relaxes s.channel_width, so it is cw-only. fresh >= 0.35.0
-  # accepts `model =`; passing it here needs the relaxation reworked first
-  # (#286 follow-up), and this pins that it has not happened by accident.
-  calls <- list()
-  walk <- function(e) {
-    if (is.call(e)) {
-      if (identical(e[[1]], quote(fresh::frs_habitat_predicates))) {
-        calls[[length(calls) + 1L]] <<- e
-      }
-      for (a in as.list(e)[-1]) if (!missing(a)) walk(a)
-    }
+test_that(".lnk_hv_stage_min takes MAD minimums on mad, 0 where a species has none (#299)", {
+  spp <- list(spawn_gradient_min = 0,
+              params_sp = list(ranges = list(
+                spawn = list(channel_width = c(4, 9999), mad_m3s = c(0.164, 9999)),
+                rear = list(channel_width = c(1.5, 9999)))))
+  m <- link:::.lnk_hv_stage_min(spp, "mad")
+  expect_identical(m$spawn[["size"]], 0.164)
+  expect_identical(m$rear[["size"]], 0)
+})
+
+# One species' predicate inputs from the default bundle, as the validator
+# assembles them.
+default_spp <- function(sp) {
+  cfg <- lnk_config("default")
+  params <- fresh::frs_params(csv = link:::.lnk_habitat_thresholds_csv(cfg),
+                              rules_yaml = cfg$rules)
+  link:::.lnk_hv_sp_params(
+    params, utils::read.csv(cfg$files$parameters_fresh$path), sp)
+}
+
+test_that("cw predicate expressions are the ones the validator built before #299", {
+  # The pre-#299 construction, inline: cw output must not move.
+  for (sp in c("BT", "CO")) {
+    spp <- default_spp(sp)
+    pr <- fresh::frs_habitat_predicates(spp)
+    mins <- link:::.lnk_hv_stage_min(spp)
+    stage_pred <- list(
+      spawn = pr$spawn,
+      rear = sprintf("(%s) OR (%s) OR (%s)", pr$rear, pr$lake_rear,
+                     pr$wetland_rear))
+    old <- unlist(lapply(c("spawn", "rear"), function(st) {
+      g <- mins[[st]][["gradient"]]
+      w <- mins[[st]][["size"]]
+      p <- stage_pred[[st]]
+      v <- c(p, link:::.lnk_hv_relax(p, gradient = g),
+             link:::.lnk_hv_relax(p, size = w),
+             link:::.lnk_hv_relax(p, gradient = g, size = w))
+      c(sprintf("coalesce((%s), false) AS pred_%s%s", v, st,
+                c("", "_g", "_w", "_gw")),
+        sprintf("NULL::boolean AS pred_%s%s", st, c("_nomad", "_nomad_g")))
+    }))
+    expect_identical(link:::.lnk_hv_stage_exprs(spp, "cw"), old, info = sp)
   }
-  walk(body(link:::.lnk_hv_predicates))
-  expect_length(calls, 1L)
-  expect_length(as.list(calls[[1]])[-1], 1L)
-  expect_null(names(as.list(calls[[1]])[-1]))
+})
+
+test_that("mad predicate expressions test and relax discharge, not width (#299)", {
+  e <- link:::.lnk_hv_stage_exprs(default_spp("CO"), "mad")
+  pick <- function(k) e[grepl(paste0(" AS ", k, "$"), e)]
+  expect_true(grepl("s.mad_m3s", pick("pred_spawn"), fixed = TRUE))
+  expect_false(any(grepl("s.channel_width", e, fixed = TRUE)))
+  # Relaxing the size leaves no discharge test behind.
+  expect_false(grepl("s.mad_m3s", pick("pred_spawn_w"), fixed = TRUE))
+  expect_false(grepl("s.mad_m3s", pick("pred_rear_gw"), fixed = TRUE))
+  expect_true(grepl("s.mad_m3s", pick("pred_rear_g"), fixed = TRUE))
+  # CO has MAD ranges for both stages: no missing-threshold test.
+  expect_identical(pick("pred_spawn_nomad"), "NULL::boolean AS pred_spawn_nomad")
+  expect_identical(pick("pred_rear_nomad_g"), "NULL::boolean AS pred_rear_nomad_g")
+})
+
+test_that(".lnk_hv_mad_missing follows fresh's branches, case by case (#299)", {
+  rule <- list(list(edge_types_explicit = 1000L))
+  ps <- function(rules, ranges) list(rules = rules, ranges = ranges)
+  g <- list(gradient = c(0, 0.1))
+  cw <- list(channel_width = c(1, 9999))
+  mad <- list(mad_m3s = c(0.1, 40))
+  f <- link:::.lnk_hv_mad_missing
+  # A MAD range: never missing.
+  expect_false(f(ps(list(rear = rule), list(rear = c(g, mad))), "rear"))
+  expect_false(f(ps(NULL, list(rear = c(g, mad))), "rear"))
+  # Rules path: missing, with or without a channel-width range.
+  expect_true(f(ps(list(rear = rule), list(rear = c(g, cw))), "rear"))
+  expect_true(f(ps(list(rear = rule), list(rear = g)), "rear"))
+  expect_true(f(ps(list(spawn = rule), list()), "spawn"))
+  # CSV path: spawning always tests size; rearing only with ranges.
+  expect_true(f(ps(NULL, list()), "spawn"))
+  expect_true(f(ps(NULL, list(rear = cw)), "rear"))
+  expect_false(f(ps(NULL, list()), "rear"))
+  # And against fresh: missing exactly where supplying a range changes the
+  # mad predicate AND the stage has habitat on cw. A stage FALSE on both
+  # models (CSV path, no rear ranges) has no threshold to miss; filling a
+  # range there would invent a test fresh never writes.
+  sp <- function(params_sp) list(species_code = "XX", spawn_gradient_min = 0,
+                                 spawn_gradient_max = 0.05,
+                                 params_sp = params_sp)
+  cases <- list(ps(list(rear = rule, spawn = rule), list(rear = g, spawn = g)),
+                ps(NULL, list(rear = cw)), ps(NULL, list()))
+  for (x in cases) for (st in c("spawn", "rear")) {
+    open <- x
+    open$ranges[[st]][["mad_m3s"]] <- c(0, 0)
+    a <- fresh::frs_habitat_predicates(sp(x), model = "mad")[[st]]
+    b <- fresh::frs_habitat_predicates(sp(open), model = "mad")[[st]]
+    cw_pred <- fresh::frs_habitat_predicates(sp(x), model = "cw")[[st]]
+    expect_identical(f(x, st), !identical(a, b) && !identical(cw_pred, "FALSE"),
+                     info = paste(st, a))
+  }
+})
+
+test_that("mad predicate expressions wrap exactly what classify embeds (#299)", {
+  for (sp in c("BT", "CO", "SK")) {
+    spp <- default_spp(sp)
+    pr <- fresh::frs_habitat_predicates(spp, model = "mad")
+    e <- link:::.lnk_hv_stage_exprs(spp, "mad")
+    expect_identical(e[1], sprintf("coalesce((%s), false) AS pred_spawn", pr$spawn),
+                     info = sp)
+    expect_identical(e[7], sprintf(
+      "coalesce((%s), false) AS pred_rear",
+      sprintf("(%s) OR (%s) OR (%s)", pr$rear, pr$lake_rear, pr$wetland_rear)),
+      info = sp)
+  }
+})
+
+test_that("no bundled rules set a rule-level gradient or mad window", {
+  # Relaxation moves the size to the stage's CSV minimum; a rule-level
+  # window with a higher floor would turn size misses into rule_excludes.
+  files <- list.files(system.file("extdata", "configs", package = "link"),
+                      pattern = "^rules\\.yaml$", recursive = TRUE,
+                      full.names = TRUE)
+  expect_gt(length(files), 0L)
+  key <- function(k) sprintf("^\\s*(-\\s*)?(%s):", k)
+  for (f in files) {
+    y <- readLines(f)
+    # The pattern can match: rule-level channel_width is the same shape.
+    expect_true(any(grepl(key("channel_width"), y)), info = f)
+    expect_false(any(grepl(key("gradient|mad"), y)), info = f)
+  }
+})
+
+test_that("a species with no MAD range gets a missing-threshold test on mad only (#299)", {
+  spp <- default_spp("BT")
+  e <- link:::.lnk_hv_stage_exprs(spp, "mad")
+  pick <- function(k) e[grepl(paste0(" AS ", k, "$"), e)]
+  for (st in c("spawn", "rear")) {
+    nm <- pick(paste0("pred_", st, "_nomad"))
+    expect_false(grepl("NULL::boolean", nm, fixed = TRUE), info = st)
+    expect_false(grepl("s.mad_m3s", nm, fixed = TRUE), info = st)
+    # The gradient is still tested; only _nomad_g relaxes it.
+    expect_true(grepl("s.gradient ", nm, fixed = TRUE), info = st)
+    expect_false(grepl("s.gradient ",
+                       pick(paste0("pred_", st, "_nomad_g")), fixed = TRUE),
+                 info = st)
+  }
+  # fresh writes FALSE for the absent size test, so no relaxation reaches it.
+  expect_true(grepl("AND FALSE", pick("pred_spawn_w"), fixed = TRUE))
+  expect_true(all(grepl("NULL::boolean",
+                        link:::.lnk_hv_stage_exprs(spp, "cw")[c(5, 6, 11, 12)],
+                        fixed = TRUE)))
 })
 
 test_that(".lnk_hv_spec admits observation species only where the model species is present", {
@@ -553,5 +705,114 @@ test_that("lnk_habitat_validate refuses a schema logged as another config's", {
   expect_identical(
     unique(v$summary$run_logged[v$summary$watershed_group_code == "BBBB"]),
     FALSE)
+})
+# -- mad groups (#299) --------------------------------------------------------
+
+# The fixture with AAAA's segments tied to real FWA lines, so the discharge
+# join has rows to find: seg 3 low discharge (inside CO rearing's MAD window,
+# below spawning's), seg 1 no discharge (but a channel width), the rest
+# high. Adds CO, with no modelled habitat, and two CO locations on AAAA
+# (seg 3, seg 1).
+local_mad_fixture <- function(conn, env = parent.frame()) {
+  s <- local_validate_fixture(conn, env)
+  if (!DBI::dbExistsTable(conn, DBI::Id(schema = "whse_basemapping",
+                                        table = "fwa_stream_networks_discharge"))) {
+    testthat::skip("no fwa_stream_networks_discharge in this database")
+  }
+  lf <- DBI::dbGetQuery(conn,
+    "SELECT
+       (SELECT linear_feature_id FROM whse_basemapping.fwa_stream_networks_discharge
+         WHERE mad_m3s BETWEEN 0.05 AND 0.1 ORDER BY linear_feature_id LIMIT 1) AS low,
+       (SELECT linear_feature_id FROM whse_basemapping.fwa_stream_networks_discharge
+         WHERE mad_m3s IS NULL ORDER BY linear_feature_id LIMIT 1) AS none,
+       (SELECT linear_feature_id FROM whse_basemapping.fwa_stream_networks_discharge
+         WHERE mad_m3s > 2 ORDER BY linear_feature_id LIMIT 1) AS high")
+  stmts <- strsplit(sprintf(
+    "ALTER TABLE %1$s.streams ADD COLUMN linear_feature_id bigint;
+     UPDATE %1$s.streams SET linear_feature_id = CASE
+       WHEN watershed_group_code = 'AAAA' AND id_segment = 3 THEN %2$s
+       WHEN watershed_group_code = 'AAAA' AND id_segment = 1 THEN %3$s
+       ELSE %4$s END;
+     ALTER TABLE %1$s.streams_access ADD COLUMN access_co integer DEFAULT 1;
+     CREATE TABLE %1$s.streams_habitat_co AS
+       SELECT id_segment, watershed_group_code, true AS accessible,
+              false AS spawning, false AS rearing, false AS lake_rearing,
+              false AS wetland_rearing
+         FROM %1$s.streams_habitat_bt;
+     INSERT INTO %1$s.observations
+       (observation_key, species_code, watershed_group_code, blue_line_key,
+        downstream_route_measure, match_type, source)
+     VALUES ('c1', 'CO', 'AAAA', 1, 200, 'A.', 'FISS'),
+            ('c2', 'CO', 'AAAA', 1, 20, 'A.', 'FISS')",
+    s, format(lf$low, scientific = FALSE), format(lf$none, scientific = FALSE),
+    format(lf$high, scientific = FALSE)), ";", fixed = TRUE)[[1]]
+  for (st in stmts) DBI::dbExecute(conn, st)
+  s
+}
+
+run_validate_mad <- function(conn, s, method = "watershed_group_code,model\nAAAA,mad") {
+  csv <- withr::local_tempfile(fileext = ".csv", .local_envir = parent.frame())
+  writeLines(method, csv)
+  cfg <- lnk_config("default")
+  cfg$files$parameters_habitat_method <- list(path = csv)
+  loaded <- validate_loaded()
+  loaded$wsg_species_presence$co <- c("t", "")
+  lnk_habitat_validate(conn, aoi = c("AAAA", "BBBB"), cfg = cfg,
+                       loaded = loaded, species = c("BT", "CO"), schema = s,
+                       observations = paste0(s, ".observations"))
+}
+
+test_that("a mad group is scored on discharge (#299)", {
+  conn <- validate_conn()
+  s <- local_mad_fixture(conn)
+  v <- run_validate_mad(conn, s)
+  obs <- v$observations
+  o <- function(k) obs[obs$observation_key == k, ]
+
+  expect_true(all(obs$model[obs$watershed_group_code == "AAAA"] == "mad"))
+  sm <- v$summary
+  expect_true(all(sm$model[sm$watershed_group_code == "AAAA"] == "mad"))
+  expect_true(all(sm$model[sm$watershed_group_code == "BBBB"] == "cw"))
+
+  # c1: discharge below CO spawning's minimum, inside rearing's window.
+  expect_true(o("c1")$mad_m3s >= 0.05 && o("c1")$mad_m3s <= 0.1)
+  expect_identical(o("c1")$miss_reason_spawn, "fails_width")
+  expect_identical(o("c1")$miss_reason_rear, "post_predicate")
+  # c2: a channel width but no discharge; width_null keys on discharge.
+  expect_true(is.na(o("c2")$mad_m3s))
+  expect_false(is.na(o("c2")$channel_width))
+  expect_identical(o("c2")$miss_reason_spawn, "width_null")
+  expect_identical(o("c2")$miss_reason_rear, "width_null")
+
+  # BT has no MAD thresholds. o10 fails on its NULL width under cw; under
+  # mad nothing but the missing range keeps it out. o9's 20 % gradient
+  # still fails, so it needs the gradient relaxed as well.
+  expect_identical(o("o10")$miss_reason_rear, "no_mad_threshold")
+  expect_identical(o("o9")$miss_reason_spawn, "fails_gradient_and_width")
+  expect_identical(o("o9")$miss_reason_rear, "fails_gradient_and_width")
+  # o2's segment is persisted spawning-free; under cw it passed the spawn
+  # predicate (post_predicate), under mad it cannot. Its line has no
+  # discharge, so a MAD range would not admit it either: the value is
+  # missing, not the threshold.
+  expect_false(o("o2")$pred_spawn)
+  expect_true(is.na(o("o2")$mad_m3s))
+  expect_identical(o("o2")$miss_reason_spawn, "width_null")
+  expect_identical(o("o1")$miss_reason_rear, "not_accessible")
+})
+
+test_that("the same fixture on cw keeps the cw reasons and reports no discharge (#299)", {
+  conn <- validate_conn()
+  s <- local_mad_fixture(conn)
+  v <- run_validate_mad(conn, s, method = "watershed_group_code,model\nAAAA,cw")
+  obs <- v$observations
+  o <- function(k) obs[obs$observation_key == k, ]
+  expect_true(all(obs$model == "cw"))
+  expect_true(all(is.na(obs$mad_m3s)))
+  expect_true(all(is.na(obs$pred_spawn_nomad)))
+  expect_identical(o("o9")$miss_reason_spawn, "fails_gradient")
+  expect_identical(o("o10")$miss_reason_rear, "width_null")
+  expect_identical(o("o2")$miss_reason_spawn, "post_predicate")
+  expect_false(any(c(obs$miss_reason_spawn, obs$miss_reason_rear) %in%
+                     "no_mad_threshold"))
 })
 # nolint end: indentation_linter

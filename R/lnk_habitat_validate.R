@@ -93,9 +93,15 @@
 #' the rear reason (compare them with `n_rearing_any`, not `n_rearing`).
 #' Both re-evaluate the bundle's own
 #' habitat predicates ([fresh::frs_habitat_predicates()] over `cfg$rules`
-#' and its thresholds CSV, channel-width model) on the segment, then again
-#' with the gradient and the channel width each moved to the stage's
-#' minimum:
+#' and its thresholds CSV) on the segment, then again with the gradient and
+#' the size each moved to the stage's minimum. The size is the one the group
+#' classified on: the model `cfg`'s `parameters_habitat_method.csv` gives
+#' the WSG, resolved as [lnk_pipeline_classify()] resolves it (an unlisted
+#' group is `cw`). On `cw` it is the channel width; on `mad` it is the mean
+#' annual discharge `mad_m3s`, joined from
+#' `whse_basemapping.fwa_stream_networks_discharge` on `linear_feature_id`
+#' because the persist does not carry it. The `width` labels below mean
+#' that size on either model; `model` and `mad_m3s` split them:
 #' - `NA` — captured; `no_segment` — the location attaches to no segment;
 #' - `not_accessible` — the segment's `access_<sp>` is not 1 or 2;
 #' - `fails_gradient` / `fails_width` / `width_null` — passes once that one
@@ -105,9 +111,20 @@
 #' - `fails_gradient_or_width` — either relaxation alone passes (through
 #'   different branches of the rule);
 #' - `fails_gradient_and_width` — passes only with both relaxed;
+#' - `no_mad_threshold` — a `mad` group where the species has no MAD range
+#'   for the stage (fresh then fails every inheriting stream rule outright)
+#'   and supplying one would admit the segment; a segment with no discharge
+#'   reads `width_null` instead, and one whose gradient also fails reads
+#'   `fails_gradient_and_width`;
 #' - `rule_excludes` — fails even then: edge type, waterbody or lake size;
 #' - `post_predicate` — passes the predicate but is not habitat: removed by
 #'   clustering (connectivity to spawning) or access gating.
+#'
+#' The method table is the one in `cfg`. A run classified with another
+#' (a swapped bundle file, or `lnk_pipeline_classify(method_csv =)`) is not
+#' detected, so swap it on the `cfg` passed here too. A rule-level size
+#' window in `rules.yaml` with a floor above the stage minimum would turn
+#' size misses into `rule_excludes`; no bundled rules set one.
 #'
 #' @param conn A [DBI::DBIConnection-class] object (from [lnk_db_conn()]).
 #' @param aoi Character vector of watershed group codes. Each must be
@@ -177,12 +194,15 @@
 #'     `accessible_km`, `spawning_km`, `rearing_km` from [lnk_rollup_wsg()].
 #'     With `absences`, also `n_absence`, `n_absence_accessible`,
 #'     `n_absence_spawning`, `n_absence_rearing` (stream) and
-#'     `n_absence_rearing_any` (the same on every stage).
+#'     `n_absence_rearing_any` (the same on every stage). `model` is the
+#'     WSG's habitat model (`cw` or `mad`).
 #'   - `observations`: one row per retained location, with its segment's
-#'     `gradient`, `channel_width`, `channel_width_source`, `edge_type`,
-#'     `stream_order`, `waterbody_type`, `access`, the capture flags,
-#'     `in_uhc_spawn`, `in_uhc_rear`, the predicate results, and the two miss
-#'     reasons.
+#'     `gradient`, `channel_width`, `channel_width_source`, `mad_m3s` (on
+#'     `mad` groups only, else `NA`), `edge_type`, `stream_order`,
+#'     `waterbody_type`, `access`, `model`, the capture flags,
+#'     `in_uhc_spawn`, `in_uhc_rear`, the predicate results (`pred_<stage>`,
+#'     relaxed `_g`, `_w`, `_gw`, and on `mad` groups for a species with no
+#'     MAD range `_nomad`, `_nomad_g`), and the two miss reasons.
 #'
 #' @examples
 #' \dontrun{
@@ -252,13 +272,22 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
 
   .lnk_hv_check_schema(conn, schema, aoi, species)
   logged <- .lnk_hv_check_log(conn, schema, aoi, cfg)
+  # The model each group classified on, from the bundle's method table and
+  # by classify's own rule.
+  method_csv <- .lnk_habitat_method_csv(cfg)
+  if (!nzchar(method_csv) || !file.exists(method_csv)) {
+    stop("method table not found: ", method_csv, call. = FALSE)
+  }
+  models <- stats::setNames(
+    .lnk_wsg_model(.lnk_habitat_method_read(method_csv), aoi), aoi)
+  if (any(models == "mad")) .lnk_hv_check_mad(conn, schema, models)
 
   spec <- .lnk_hv_spec(loaded$wsg_species_presence, aoi, species,
                        species_obs)
   obs <- .lnk_hv_obs(conn, schema, observations, spec, loaded, species,
-                     match_types, source_exclude, buffer_m)
+                     match_types, source_exclude, buffer_m, models)
   obs <- .lnk_hv_dedup(obs)
-  obs <- .lnk_hv_predicates(conn, schema, obs, cfg, loaded, species)
+  obs <- .lnk_hv_predicates(conn, schema, obs, cfg, loaded, species, models)
   obs <- .lnk_hv_reasons(obs)
 
   cost <- do.call(rbind, lapply(aoi, function(w) {
@@ -275,6 +304,7 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
 
   summary <- .lnk_hv_summary(obs, cost, abs_sum, aoi, species)
   summary$run_logged <- summary$watershed_group_code %in% logged
+  summary$model <- unname(models[summary$watershed_group_code])
   summary <- cbind(
     data.frame(
       schema = schema, config_name = cfg$name %||% NA_character_,
@@ -323,6 +353,27 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
     if (!DBI::dbExistsTable(conn, DBI::Id(schema = schema, table = tbl))) {
       stop(schema, ".", tbl, " does not exist", call. = FALSE)
     }
+  }
+  invisible(NULL)
+}
+
+#' Fail loud when a mad group cannot be scored: its discharge is joined on
+#' `linear_feature_id` from a table the persist does not carry.
+#' @noRd
+.lnk_hv_check_mad <- function(conn, schema, models) {
+  mad <- names(models)[models == "mad"]
+  tbl <- strsplit(.lnk_hv_discharge_tbl(), ".", fixed = TRUE)[[1]]
+  if (!DBI::dbExistsTable(conn, DBI::Id(schema = tbl[1], table = tbl[2]))) {
+    stop("the method table puts ", paste(mad, collapse = ", "),
+         " on mad, but ", .lnk_hv_discharge_tbl(), " does not exist",
+         call. = FALSE)
+  }
+  cols <- names(DBI::dbGetQuery(conn, sprintf(
+    "SELECT * FROM %s.streams LIMIT 0", schema)))
+  if (!"linear_feature_id" %in% cols) {
+    stop("the method table puts ", paste(mad, collapse = ", "),
+         " on mad, but ", schema, ".streams has no linear_feature_id to ",
+         "join discharge on", call. = FALSE)
   }
   invisible(NULL)
 }
@@ -520,7 +571,7 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
 #' Filter observations, attach each to its segment, and flag capture.
 #' @noRd
 .lnk_hv_obs <- function(conn, schema, observations, spec, loaded, species,
-                        match_types, source_exclude, buffer_m) {
+                        match_types, source_exclude, buffer_m, models) {
   s <- .lnk_hv_source(conn, observations)
   has <- function(cl) cl %in% s$cols
   opt <- function(cl, type) {
@@ -622,19 +673,29 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
   # The segment the model tests: the one STARTING within 1 m (upstream),
   # else the one containing the point. n_cand > 1 is the expected case of
   # a point just below a break.
+  # Discharge only when a group is on mad: the persist does not carry it,
+  # and a cw-only run should not depend on the discharge table.
+  mad_sql <- if (any(models == "mad")) {
+    sprintf("(SELECT d.mad_m3s FROM %s d
+               WHERE d.linear_feature_id = s.linear_feature_id)",
+            .lnk_hv_discharge_tbl())
+  } else {
+    "NULL::double precision"
+  }
   .lnk_hv_drop_temp(conn, "lnk_vd_att")
   .lnk_db_execute(conn, sprintf(
     "CREATE TEMP TABLE lnk_vd_att AS
      SELECT o.*, s.id_segment, s.n_cand, s.seg_drm, s.gradient,
-            s.channel_width, s.channel_width_source, s.edge_type,
+            s.channel_width, s.channel_width_source, s.mad_m3s, s.edge_type,
             s.stream_order, s.waterbody_key
        FROM pg_temp.lnk_vd_obs o
        LEFT JOIN LATERAL (
          SELECT s.id_segment, s.downstream_route_measure AS seg_drm,
                 s.gradient, s.channel_width, s.channel_width_source,
+                %2$s AS mad_m3s,
                 s.edge_type, s.stream_order, s.waterbody_key,
                 count(*) OVER ()::int AS n_cand
-           FROM %s.streams s
+           FROM %1$s.streams s
           WHERE s.blue_line_key = o.blue_line_key
             AND s.watershed_group_code = o.watershed_group_code
             AND (abs(s.downstream_route_measure - o.m) < 1
@@ -642,7 +703,7 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
                      AND o.m < s.upstream_route_measure))
           ORDER BY (abs(s.downstream_route_measure - o.m) < 1) DESC,
                    s.downstream_route_measure DESC
-          LIMIT 1) s ON true", schema))
+          LIMIT 1) s ON true", schema, mad_sql))
 
   buf <- format(buffer_m, scientific = FALSE)
   per_species <- paste(vapply(species, function(sp) {
@@ -697,6 +758,9 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
   out$spawning[none] <- NA
   out$rearing[none] <- NA
   out$rearing_any[none] <- NA
+  out$model <- unname(models[out$watershed_group_code])
+  # The size a cw group was not classified on is not reported for it.
+  out$mad_m3s[out$model != "mad"] <- NA_real_
   out
 }
 
@@ -751,49 +815,138 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
        params_sp = ps)
 }
 
+#' Mean annual discharge per FWA line, which the persist does not carry
+#' (#286); prepare joins the same table onto the working streams.
+#' @noRd
+.lnk_hv_discharge_tbl <- function() {
+  "whse_basemapping.fwa_stream_networks_discharge"
+}
+
+#' The size column a habitat model tests: channel width (`cw`) or mean
+#' annual discharge (`mad`).
+#' @noRd
+.lnk_hv_size_col <- function(model) {
+  if (identical(model, "mad")) "mad_m3s" else "channel_width"
+}
+
 #' The stage minimums the predicates test against, from the same inputs.
 #'
 #' Spawning's gradient floor is `spawn_gradient_min` (parameters_fresh),
 #' which fresh's spawn predicate uses directly; rearing's is the literal 0
-#' fresh writes into the rear predicate (`c(0, rear_g[2])`). Widths are the
-#' `ranges$<stage>$channel_width` minimums both predicates inherit. No
-#' bundled rules.yaml sets a rule-level gradient, and the rule-level
-#' `channel_width: [0, 9999]` on river polygons contains every minimum.
+#' fresh writes into the rear predicate (`c(0, rear_g[2])`). Sizes are the
+#' `ranges$<stage>$channel_width` (cw) or `ranges$<stage>$mad_m3s` (mad)
+#' minimums both predicates inherit; a species with no MAD range gets 0,
+#' which relaxes nothing because its mad predicate has no size test to
+#' relax. No bundled rules.yaml sets a rule-level gradient or `mad`, and the
+#' rule-level `channel_width: [0, 9999]` on river polygons (dropped under
+#' mad) contains every minimum.
 #' @noRd
-.lnk_hv_stage_min <- function(spp) {
+.lnk_hv_stage_min <- function(spp, model = "cw") {
   rng <- spp$params_sp$ranges
+  col <- .lnk_hv_size_col(model)
   list(
     spawn = c(gradient = spp$spawn_gradient_min,
-              width = rng$spawn$channel_width[1] %||% 0),
+              size = rng$spawn[[col]][1] %||% 0),
     rear = c(gradient = 0,
-             width = rng$rear$channel_width[1] %||% 0))
+             size = rng$rear[[col]][1] %||% 0))
 }
 
-#' A predicate with s.gradient and/or s.channel_width fixed to a value.
+#' A predicate with s.gradient and/or the size column fixed to a value.
 #' @noRd
-.lnk_hv_relax <- function(pred, gradient = NULL, width = NULL) {
+.lnk_hv_relax <- function(pred, gradient = NULL, size = NULL,
+                          size_col = "channel_width") {
   if (!is.null(gradient)) {
     pred <- gsub("\\bs\\.gradient\\b",
                  sprintf("(%s::double precision)", format(gradient, scientific = FALSE)),
                  pred, perl = TRUE)
   }
-  if (!is.null(width)) {
-    pred <- gsub("\\bs\\.channel_width\\b",
-                 sprintf("(%s::double precision)", format(width, scientific = FALSE)),
+  if (!is.null(size)) {
+    pred <- gsub(sprintf("\\bs\\.%s\\b", size_col),
+                 sprintf("(%s::double precision)", format(size, scientific = FALSE)),
                  pred, perl = TRUE)
   }
   pred
 }
 
+#' Whether fresh writes FALSE for a stage's size test under `mad` because
+#' the species has no MAD range there, following
+#' `frs_habitat_predicates()`'s own branches: a stage with rules gets FALSE
+#' on every rule that inherits thresholds (`rear: []` compiles to FALSE
+#' either way); without rules, the CSV path gives spawning a size test
+#' always and rearing one only when the stage has ranges.
+#' @noRd
+.lnk_hv_mad_missing <- function(params_sp, st) {
+  rng <- params_sp$ranges[[st]]
+  if (!is.null(rng[["mad_m3s"]])) return(FALSE)
+  !is.null(params_sp[["rules"]][[st]]) || st == "spawn" || !is.null(rng)
+}
+
+#' The predicate select expressions for one species on one habitat model.
+#'
+#' `pred_<stage>`, then with the gradient (`_g`), the size (`_w`) and both
+#' (`_gw`) moved to the stage minimum. The rear stage ORs stream, lake and
+#' wetland rearing, as `rearing_any` does. `pred_<stage>_nomad` is the
+#' predicate a `mad` group would have if the species had a MAD range for
+#' that stage, with the size relaxed (`_nomad_g`: gradient too): fresh
+#' writes FALSE in place of the size test of a species without one, which
+#' no relaxation reaches. NULL where the model is cw, the species has a
+#' MAD range, or fresh writes no size test for the stage at all (see
+#' `.lnk_hv_mad_missing()`).
+#' @noRd
+.lnk_hv_stage_exprs <- function(spp, model = "cw") {
+  size_col <- .lnk_hv_size_col(model)
+  stage_pred <- function(pr) {
+    list(spawn = pr$spawn,
+         rear = sprintf("(%s) OR (%s) OR (%s)", pr$rear, pr$lake_rear,
+                        pr$wetland_rear))
+  }
+  sp_pred <- stage_pred(fresh::frs_habitat_predicates(spp, model = model))
+  mins <- .lnk_hv_stage_min(spp, model)
+  no_range <- vapply(c("spawn", "rear"), function(st) {
+    model == "mad" && .lnk_hv_mad_missing(spp$params_sp, st)
+  }, logical(1))
+  open_pred <- NULL
+  if (any(no_range)) {
+    # Any range will do: the size test is relaxed away below.
+    open <- spp
+    for (st in names(no_range)[no_range]) {
+      open$params_sp$ranges[[st]][["mad_m3s"]] <- c(0, 0)
+    }
+    open_pred <- stage_pred(fresh::frs_habitat_predicates(open, model = model))
+  }
+  unlist(lapply(c("spawn", "rear"), function(st) {
+    g <- mins[[st]][["gradient"]]
+    w <- mins[[st]][["size"]]
+    p <- sp_pred[[st]]
+    v <- c(p,
+           .lnk_hv_relax(p, gradient = g),
+           .lnk_hv_relax(p, size = w, size_col = size_col),
+           .lnk_hv_relax(p, gradient = g, size = w, size_col = size_col))
+    nomad <- if (no_range[[st]]) {
+      o <- open_pred[[st]]
+      sprintf("coalesce((%s), false)",
+              c(.lnk_hv_relax(o, size = 0, size_col = size_col),
+                .lnk_hv_relax(o, gradient = g, size = 0, size_col = size_col)))
+    } else {
+      rep("NULL::boolean", 2L)
+    }
+    c(sprintf("coalesce((%s), false) AS pred_%s%s", v, st,
+              c("", "_g", "_w", "_gw")),
+      sprintf("%s AS pred_%s%s", nomad, st, c("_nomad", "_nomad_g")))
+  }))
+}
+
 #' Evaluate the bundle's habitat predicates on each observation's segment.
 #'
-#' Adds pred_<stage>, pred_<stage>_g (gradient relaxed), pred_<stage>_w
-#' (width relaxed) and pred_<stage>_gw. The rear stage ORs stream, lake and
-#' wetland rearing, as `rearing_any` does.
+#' Each segment is tested on its group's model (`models`, named by WSG), so
+#' a `mad` group reads `mad_m3s`, joined here from the discharge table
+#' because the persist does not carry it. Adds the columns of
+#' `.lnk_hv_stage_exprs()`.
 #' @noRd
-.lnk_hv_predicates <- function(conn, schema, obs, cfg, loaded, species) {
-  cols <- paste0("pred_", rep(c("spawn", "rear"), each = 4L),
-                 c("", "_g", "_w", "_gw"))
+.lnk_hv_predicates <- function(conn, schema, obs, cfg, loaded, species,
+                               models) {
+  cols <- paste0("pred_", rep(c("spawn", "rear"), each = 6L),
+                 c("", "_g", "_w", "_gw", "_nomad", "_nomad_g"))
   for (cl in cols) obs[[cl]] <- rep(NA, nrow(obs))
   obs$gradient_min_spawn <- rep(NA_real_, nrow(obs))
   obs$gradient_min_rear <- rep(NA_real_, nrow(obs))
@@ -804,6 +957,7 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
                               rules_yaml = cfg$rules)
   seg <- unique(att[, c("species_code", "id_segment",
                         "watershed_group_code")])
+  seg$model <- unname(models[seg$watershed_group_code])
   DBI::dbWriteTable(conn, "lnk_vd_seg", seg, temporary = TRUE,
                     overwrite = TRUE)
 
@@ -815,39 +969,34 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
     obs$gradient_min_rear[is_sp] <- mins$rear[["gradient"]]
   }
 
-  res <- lapply(species, function(sp) {
-    if (!any(seg$species_code == sp)) return(NULL)
+  combos <- unique(seg[, c("species_code", "model")])
+  res <- lapply(seq_len(nrow(combos)), function(j) {
+    sp <- combos$species_code[j]
+    model <- combos$model[j]
     spp <- .lnk_hv_sp_params(params, loaded$parameters_fresh, sp)
-    # Channel-width model only. fresh >= 0.35.0 takes `model = "mad"`, but the
-    # miss-reason relaxation below rewrites s.channel_width, so a bundle that
-    # puts a group on mad is scored here as if it were cw (#286 follow-up).
-    pr <- fresh::frs_habitat_predicates(spp)
-    mins <- .lnk_hv_stage_min(spp)
-    stage_pred <- list(
-      spawn = pr$spawn,
-      rear = sprintf("(%s) OR (%s) OR (%s)", pr$rear, pr$lake_rear,
-                     pr$wetland_rear))
-    exprs <- unlist(lapply(c("spawn", "rear"), function(st) {
-      g <- mins[[st]][["gradient"]]
-      w <- mins[[st]][["width"]]
-      p <- stage_pred[[st]]
-      v <- c(p,
-             .lnk_hv_relax(p, gradient = g),
-             .lnk_hv_relax(p, width = w),
-             .lnk_hv_relax(p, gradient = g, width = w))
-      sprintf("coalesce((%s), false) AS pred_%s%s", v, st,
-              c("", "_g", "_w", "_gw"))
-    }))
+    exprs <- .lnk_hv_stage_exprs(spp, model)
+    # A rule-level `mad:` reaches s.mad_m3s on a cw group too.
+    src <- if (any(grepl("\\bs\\.mad_m3s\\b", exprs, perl = TRUE))) {
+      # Every piece of a broken FWA line carries its line's discharge, as on
+      # the working table classify read.
+      sprintf("(SELECT s.*, d.mad_m3s FROM %s.streams s
+                 LEFT JOIN %s d
+                   ON d.linear_feature_id = s.linear_feature_id)",
+              schema, .lnk_hv_discharge_tbl())
+    } else {
+      paste0(schema, ".streams")
+    }
     DBI::dbGetQuery(conn, sprintf(
       "SELECT %s AS species_code, s.id_segment, s.watershed_group_code,
               %s
-         FROM %s.streams s
+         FROM %s s
          JOIN pg_temp.lnk_vd_seg k
            ON k.id_segment = s.id_segment
           AND k.watershed_group_code = s.watershed_group_code
-          AND k.species_code = %s",
+          AND k.species_code = %s
+          AND k.model = %s",
       .lnk_quote_literal(sp), paste(exprs, collapse = ",\n              "),
-      schema, .lnk_quote_literal(sp)))
+      src, .lnk_quote_literal(sp), .lnk_quote_literal(model)))
   })
   res <- do.call(rbind, res)
   key_o <- paste(obs$species_code, obs$id_segment, obs$watershed_group_code)
@@ -860,10 +1009,11 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
 
 #' Miss reason for one stage from its capture flag and predicate results.
 #' @noRd
-.lnk_habitat_miss_reason <- function(captured, accessible, channel_width,
+.lnk_habitat_miss_reason <- function(captured, accessible, size,
                                      p, p_g, p_w, p_gw,
                                      gradient = NA_real_,
-                                     gradient_min = NA_real_) {
+                                     gradient_min = NA_real_,
+                                     p_nomad = NA, p_nomad_g = NA) {
   below <- gradient < gradient_min
   out <- rep(NA_character_, length(captured))
   out[is.na(captured)] <- "no_segment"
@@ -876,11 +1026,17 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
   set(p, "post_predicate")
   set(p_g & !p_w & below, "gradient_below_min")
   set(p_g & !p_w, "fails_gradient")
-  set(p_w & !p_g & is.na(channel_width), "width_null")
+  set(p_w & !p_g & is.na(size), "width_null")
   set(p_w & !p_g, "fails_width")
   # Either relaxation alone passes (different OR-branches of the rule).
   set(p_g & p_w, "fails_gradient_or_width")
   set(p_gw, "fails_gradient_and_width")
+  # A mad group, and the species has no MAD range for the stage: passes
+  # with one, or with one and the gradient relaxed. A range would not admit
+  # a segment with no discharge, so that is the missing value, as on cw.
+  set(p_nomad & is.na(size), "width_null")
+  set(p_nomad, "no_mad_threshold")
+  set(p_nomad_g, "fails_gradient_and_width")
   set(rep(TRUE, length(out)), "rule_excludes")
   out
 }
@@ -888,14 +1044,18 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
 #' Add miss_reason_spawn / miss_reason_rear.
 #' @noRd
 .lnk_hv_reasons <- function(obs) {
+  # The size the group was classified on.
+  size <- ifelse(obs$model %in% "mad", obs$mad_m3s, obs$channel_width)
   obs$miss_reason_spawn <- .lnk_habitat_miss_reason(
-    obs$spawning, obs$accessible, obs$channel_width, obs$pred_spawn,
+    obs$spawning, obs$accessible, size, obs$pred_spawn,
     obs$pred_spawn_g, obs$pred_spawn_w, obs$pred_spawn_gw,
-    obs$gradient, obs$gradient_min_spawn)
+    obs$gradient, obs$gradient_min_spawn, obs$pred_spawn_nomad,
+    obs$pred_spawn_nomad_g)
   obs$miss_reason_rear <- .lnk_habitat_miss_reason(
-    obs$rearing_any, obs$accessible, obs$channel_width, obs$pred_rear,
+    obs$rearing_any, obs$accessible, size, obs$pred_rear,
     obs$pred_rear_g, obs$pred_rear_w, obs$pred_rear_gw,
-    obs$gradient, obs$gradient_min_rear)
+    obs$gradient, obs$gradient_min_rear, obs$pred_rear_nomad,
+    obs$pred_rear_nomad_g)
   obs
 }
 

@@ -11,6 +11,25 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
+## Status (2026-10-02) — the validator scores each group on its own model (#299)
+
+**`lnk_habitat_validate()` re-tests a `mad` group on discharge, not width.**
+- **One rule for the model:** fresh's `.frs_habitat_models()`, through `.lnk_wsg_model()`,
+  for classify and validator both. The method table is the one in the `cfg` you pass, so
+  swap it on that object; `lnk_pipeline_classify(method_csv =)` is invisible to it.
+- **Labels are shared** (`fails_width` means the group's size); `model` / `mad_m3s` split
+  them. **`no_mad_threshold`** is a `mad` miss a MAD range alone would admit.
+- Evidence: `data-raw/logs/habitat_validate_299/`; archive
+  `planning/archive/2026-10-issue-299-validate-mad/`.
+
+**Facts not worth re-deriving:**
+- **"Persisted TRUE, predicate FALSE" cannot catch a wrong model.** A cw predicate on a
+  `mad` run is looser, so the error shows as `post_predicate` (27 BT rearing misses on
+  ADMS), never as a disagreement.
+- **`no_mad_threshold` is a floor, not a count, and cannot score a fix**: same-cause
+  misses also read `width_null` / `fails_gradient_and_width`, and once a range exists the
+  label cannot fire. Score MAD thresholds with capture, cost and the band score.
+
 ## Status (2026-10-01) — per-WSG `cw`/`mad` habitat model threaded (#286)
 
 **Each bundle's `parameters_habitat_method.csv` reaches fresh as `params_method`.**
@@ -32,7 +51,8 @@ Experimental package — breaking all the time and loving the learning curve. St
 - **fresh 0.36.0 reversed `frs_db_conn()`'s precedence** (`PG*` first). `lnk_db_conn()`
   still reads `PG_*_SHARE` first; on a machine with both groups set they connect to
   different databases.
-- **`lnk_habitat_validate()` is cw-only** (#299).
+- **`lnk_habitat_validate()` scores each group on its own model** (#299), from the
+  `cfg` it is given; `no_mad_threshold` names a species with no MAD range.
 
 ## Status (2026-09-29) — #284 step 5: BT `rear_gradient_max` 0.1349 scored and held
 

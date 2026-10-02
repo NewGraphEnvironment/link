@@ -120,9 +120,12 @@ lnk_preflight_fresh <- function(required = .lnk_fresh_required(),
 
 # Arguments link passes that older fresh releases do not accept. The call
 # would fail with "unused argument" only once a WSG reached that phase.
-# R/lnk_pipeline_classify.R: params_method arrived in fresh 0.35.0 (#286).
+# R/lnk_pipeline_classify.R: params_method arrived in fresh 0.35.0 (#286);
+# R/lnk_habitat_validate.R: frs_habitat_predicates(model) in the same
+# release (#299).
 .lnk_fresh_required_formals <- function() {
-  list(frs_habitat_classify = "params_method")
+  list(frs_habitat_classify = "params_method",
+       frs_habitat_predicates = "model")
 }
 
 # "fn(arg)" for each required formal the namespace does not provide. A
@@ -149,10 +152,11 @@ lnk_preflight_fresh <- function(required = .lnk_fresh_required(),
   out
 }
 
-# Non-exported fresh objects link reaches via getFromNamespace().
-# R/lnk_pipeline_connect.R:101.
+# Non-exported fresh objects link reaches via getFromNamespace():
+# .frs_run_connectivity in lnk_pipeline_connect(), .frs_habitat_models in
+# .lnk_wsg_model() (R/lnk_config.R, #299).
 .lnk_fresh_required_internal <- function() {
-  ".frs_run_connectivity"
+  c(".frs_run_connectivity", ".frs_habitat_models")
 }
 
 # Every `fresh::sym` / `fresh:::sym` reached from link's own namespace,

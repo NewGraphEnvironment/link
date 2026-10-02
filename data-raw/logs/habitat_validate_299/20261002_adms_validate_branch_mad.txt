@@ -1,0 +1,1 @@
+## validate zz299_mad CH,CO,BT method=method_adms_mad.csv sha=be3be30 fresh=0.36.2 11 s, 94 locations

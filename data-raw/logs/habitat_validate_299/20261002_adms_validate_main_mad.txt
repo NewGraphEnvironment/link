@@ -1,0 +1,1 @@
+## validate zz299_mad CH,CO,BT method=- sha=4df1ffc fresh=0.36.2 15 s, 94 locations
