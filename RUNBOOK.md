@@ -772,15 +772,27 @@ dispatch.**
   fingerprints it.
 - **What `mad` changes** (fresh’s rules, after bcfishpass): stream rules
   that inherit thresholds test `mad_m3s` against `*_mad_min/max` instead
-  of channel width, so species with no MAD thresholds (BT, GR, KO, RB)
-  lose all stream habitat; the rule-level `channel_width` river-polygon
-  bypass is ignored; SK/KO lake rearing is polygon membership. **Lake,
-  wetland and `thresholds: false` rules inherit nothing under either
-  model**, so BT keeps its wetland and 1050/1150-edge rearing in a `mad`
-  group (ADMS: 63.5 km, all inside waterbodies). link also skips the
-  stream-order rearing bypass (`frs_order_child`) for a `mad` group —
-  bcfp applies it in its cw branch only. fresh does not implement bcfp’s
-  `stream_order >= 8` spawning bypass.
+  of channel width, so species with no MAD thresholds (BT, GR, KO and RB
+  in `default` and `bcfishpass`) lose all stream habitat; the rule-level
+  `channel_width` river-polygon bypass is ignored; SK/KO lake rearing is
+  polygon membership. **Lake, wetland and `thresholds: false` rules
+  inherit nothing under either model**, so BT keeps its wetland and
+  1050/1150-edge rearing in a `mad` group (ADMS: 63.5 km, all inside
+  waterbodies). That holds for the `rearing` flag. The separate
+  `lake_rearing` / `wetland_rearing` bucket columns (fresh’s
+  `build_wb_pred()`) are gated by the species’ rear size range whenever
+  it has one: by width under `cw`, and by discharge under `mad`. A
+  species with no rear MAD range keeps them on polygon membership alone.
+  fresh’s main predicate also ignores a W rule’s `wetland_ha_min` (only
+  `build_wb_pred()` applies it).
+- **`default_tuned` carries MAD ranges for BT, GR, KO and RB** (#302);
+  `default` and `bcfishpass` do not. They are inert until a group is
+  moved to `mad`. At the landed values a `mad` group keeps less stream
+  rearing than `cw` (held-out: at least −33 % BT and −82 % GR, −4 % RB).
+  Read `research/habitat_thresholds.md` before moving one. link also
+  skips the stream-order rearing bypass (`frs_order_child`) for a `mad`
+  group — bcfp applies it in its cw branch only. fresh does not
+  implement bcfp’s `stream_order >= 8` spawning bypass.
 - **Discharge coverage is uneven.** A segment with NULL `mad_m3s` fails
   every mad test, so a `mad` group without coverage loses all of its
   stream habitat with no error. BULK has none in the local fwapg. Check
