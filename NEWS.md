@@ -1,3 +1,12 @@
+# link 0.56.0
+
+**`lnk_habitat_validate()` scores each watershed group on the habitat model it was classified on** ([#299](https://github.com/NewGraphEnvironment/link/issues/299)). It reads the method table in the `cfg` it is given and resolves each group's model with fresh's own rule, which `lnk_pipeline_classify()` now shares.
+
+- **On a `mad` group,** predicates, size relaxation and `width_null` use mean annual discharge (`mad_m3s`), joined from `fwa_stream_networks_discharge` on `linear_feature_id` because the persist does not carry it. Before, they used channel width, which the classification never tested.
+- **Reason labels are unchanged** (`fails_width` means the group's size dimension). `observations` gains `model` and `mad_m3s`, and `summary` gains `model`.
+- **New reason `no_mad_threshold`:** a `mad` miss that a MAD range alone would admit, for the species that have none (BT, GR, KO, RB). Adding those thresholds is [#302](https://github.com/NewGraphEnvironment/link/issues/302).
+- **cw output is unchanged** apart from the new columns. A run classified with a different method table, or with `lnk_pipeline_classify(method_csv =)`, is not detected, so swap the table on the `cfg` you pass. `lnk_preflight_fresh()` now also checks `frs_habitat_predicates(model)`.
+
 # link 0.55.0
 
 **Each config can now choose channel width or discharge per watershed group** ([#286](https://github.com/NewGraphEnvironment/link/issues/286)). Bundles declare `parameters_habitat_method.csv` (`watershed_group_code`, `model` = `cw` or `mad`), which `lnk_pipeline_classify()` passes to fresh as `params_method`; a new `method_csv =` argument overrides it.
