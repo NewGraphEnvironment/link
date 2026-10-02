@@ -28,6 +28,22 @@ glacier-fed basins. That is measurable: compare `cw` and `mad` classification wh
 Thresholds in both currencies, with verbatim quotes, are in NewGraphEnvironment/knowledge#30 (`research/ip_models.md`).
 
 
+## Phase 1 — fresh pin (2026-10-01)
+
+- Installed fresh before this branch read `0.34.0`, a dev install, yet already had
+  `params_method`. That is a version string that is not the release: the reason the
+  preflight guard asserts the formal, not the version. Now `fresh 0.36.2` (`github`,
+  `v0.36.2`, `e3a37f0`).
+- `lnk_preflight_fresh()` gains `required_formals`, default
+  `list(frs_habitat_classify = "params_method")`. Stubbing
+  `.lnk_fresh_missing_formals` to return nothing turns 3 tests red, so the guard fires.
+- **fresh 0.36.0 `frs_db_conn()` order flip does bite here.** Inside R on this machine
+  both `PG*` and `PG_*_SHARE` are set, with the same host but a different port and
+  database. So a bare `fresh::frs_db_conn()` in `data-raw/wsg_vignette_data.R:204` would
+  have moved from the tunnel to the local fwapg. It is swapped to `lnk_db_conn()`, which
+  still reads `PG_*_SHARE` first. `lnk_db_conn()`'s roxygen claimed to work "identically
+  to `frs_db_conn()`", which is now false, so that is corrected too.
+
 ## Errors Encountered
 
 | Error | Resolution |

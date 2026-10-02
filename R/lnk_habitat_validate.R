@@ -818,8 +818,9 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
   res <- lapply(species, function(sp) {
     if (!any(seg$species_code == sp)) return(NULL)
     spp <- .lnk_hv_sp_params(params, loaded$parameters_fresh, sp)
-    # Channel-width model: the default, and the only one fresh@v0.33.0 (the
-    # pinned minimum) has; it takes no `model` argument.
+    # Channel-width model only. fresh >= 0.35.0 takes `model = "mad"`, but the
+    # miss-reason relaxation below rewrites s.channel_width, so a bundle that
+    # puts a group on mad is scored here as if it were cw (#286 follow-up).
     pr <- fresh::frs_habitat_predicates(spp)
     mins <- .lnk_hv_stage_min(spp)
     stage_pred <- list(

@@ -25,6 +25,11 @@
 #'   run without. Defaults to the curated list in `.lnk_fresh_required()`.
 #' @param required_internal Character vector of non-exported `fresh`
 #'   objects reached via [utils::getFromNamespace()].
+#' @param required_formals Named list mapping a `fresh` function to the
+#'   arguments link passes it that older releases lack. A symbol can be
+#'   exported and still reject the call: `frs_habitat_classify()` existed
+#'   long before it took `params_method`. Defaults to
+#'   `.lnk_fresh_required_formals()`.
 #' @param min_version Minimum acceptable `fresh` version. Defaults to the
 #'   floor declared in link's own `DESCRIPTION`, so the pin lives in one
 #'   place.
@@ -32,7 +37,8 @@
 #'   point on a cypher, where the log is all the operator gets.
 #'
 #' @return Invisibly, a list with `ok`, `version`, `version_ok`,
-#'   `missing`, `missing_internal` and `message`.
+#'   `missing`, `missing_internal`, `missing_formals` (`"fn(arg)"`
+#'   strings) and `message`.
 #'
 #' @family preflight
 #'
@@ -48,11 +54,15 @@
 #' bad$missing
 lnk_preflight_fresh <- function(required = .lnk_fresh_required(),
                                 required_internal = .lnk_fresh_required_internal(),
+                                required_formals = .lnk_fresh_required_formals(),
                                 min_version = .lnk_fresh_floor(),
                                 quiet = FALSE) {
   stopifnot(
     is.character(required), length(required) >= 1L, all(nzchar(required)),
     is.character(required_internal), all(nzchar(required_internal)),
+    is.list(required_formals),
+    length(required_formals) == 0L || !is.null(names(required_formals)),
+    all(nzchar(names(required_formals))),
     is.character(min_version), length(min_version) == 1L, nzchar(min_version),
     is.logical(quiet), length(quiet) == 1L, !is.na(quiet))
 
@@ -62,20 +72,25 @@ lnk_preflight_fresh <- function(required = .lnk_fresh_required(),
   if (is.null(ns)) {
     out <- list(ok = FALSE, version = NA_character_, version_ok = FALSE,
                 missing = required, missing_internal = required_internal,
+                missing_formals = .lnk_fresh_formals_label(required_formals),
                 message = "fresh is not installed or its namespace will not load")
   } else {
     missing <- setdiff(required, getNamespaceExports(ns))
     missing_internal <- required_internal[
       !vapply(required_internal, exists, logical(1),
               envir = ns, inherits = FALSE)]
+    missing_formals <- .lnk_fresh_missing_formals(ns, required_formals)
     version_ok <- !is.na(version) &&
       utils::compareVersion(version, min_version) >= 0L
     out <- list(
-      ok = length(missing) == 0L && length(missing_internal) == 0L && version_ok,
+      ok = length(missing) == 0L && length(missing_internal) == 0L &&
+        length(missing_formals) == 0L && version_ok,
       version = version, version_ok = version_ok,
       missing = missing, missing_internal = missing_internal,
+      missing_formals = missing_formals,
       message = .lnk_fresh_message(version, min_version, missing,
-                                   missing_internal, version_ok))
+                                   missing_internal, version_ok,
+                                   missing_formals))
   }
 
   if (!quiet) message(out$message)
@@ -101,6 +116,37 @@ lnk_preflight_fresh <- function(required = .lnk_fresh_required(),
     "frs_habitat_overlay", "frs_habitat_predicates", "frs_network_features",
     "frs_order_child",
     "frs_params", "frs_wsg_drainage", "frs_wsg_outlets")
+}
+
+# Arguments link passes that older fresh releases do not accept. The call
+# would fail with "unused argument" only once a WSG reached that phase.
+# R/lnk_pipeline_classify.R: params_method arrived in fresh 0.35.0 (#286).
+.lnk_fresh_required_formals <- function() {
+  list(frs_habitat_classify = "params_method")
+}
+
+# "fn(arg)" for each required formal the namespace does not provide. A
+# function that is itself absent reports every argument it was asked for;
+# the missing export is reported separately.
+.lnk_fresh_missing_formals <- function(ns, required_formals) {
+  out <- character(0)
+  for (fn in names(required_formals)) {
+    obj <- if (exists(fn, envir = ns, inherits = FALSE)) {
+      get(fn, envir = ns)
+    }
+    have <- if (is.function(obj)) names(formals(obj)) else character(0)
+    gone <- setdiff(required_formals[[fn]], have)
+    if (length(gone)) out <- c(out, sprintf("%s(%s)", fn, gone))
+  }
+  out
+}
+
+.lnk_fresh_formals_label <- function(required_formals) {
+  out <- character(0)
+  for (fn in names(required_formals)) {
+    out <- c(out, sprintf("%s(%s)", fn, required_formals[[fn]]))
+  }
+  out
 }
 
 # Non-exported fresh objects link reaches via getFromNamespace().
@@ -166,10 +212,12 @@ lnk_preflight_fresh <- function(required = .lnk_fresh_required(),
 }
 
 .lnk_fresh_message <- function(version, min_version, missing,
-                               missing_internal, version_ok) {
+                               missing_internal, version_ok,
+                               missing_formals = character(0)) {
   head <- sprintf("fresh %s (floor %s)",
                   if (is.na(version)) "NOT INSTALLED" else version, min_version)
-  if (length(missing) == 0L && length(missing_internal) == 0L && version_ok) {
+  if (length(missing) == 0L && length(missing_internal) == 0L &&
+      length(missing_formals) == 0L && version_ok) {
     return(paste0("[preflight] ", head, " - OK, all required symbols present"))
   }
   parts <- character(0)
@@ -183,6 +231,10 @@ lnk_preflight_fresh <- function(required = .lnk_fresh_required(),
   if (length(missing_internal)) {
     parts <- c(parts, sprintf("  missing internals: %s",
                               paste(missing_internal, collapse = ", ")))
+  }
+  if (length(missing_formals)) {
+    parts <- c(parts, sprintf("  missing arguments: %s",
+                              paste(missing_formals, collapse = ", ")))
   }
   parts <- c(parts,
     "  fix: pak::pkg_install(\"NewGraphEnvironment/fresh@<ref>\") at or above the floor")

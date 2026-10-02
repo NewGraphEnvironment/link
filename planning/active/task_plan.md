@@ -31,9 +31,9 @@ needs adding there.
 3. Provenance comes through `config_hash` only. No new log table and no new log column.
 
 ## Phase 1: fresh pin + capability guard
-- [ ] DESCRIPTION: `fresh (>= 0.35.0)`, `Remotes: NewGraphEnvironment/fresh@v0.36.2`. Reinstall fresh at the tag and confirm `params_method` is in `formals(fresh::frs_habitat_classify)`
-- [ ] `lnk_preflight_fresh()` (`R/lnk_preflight_fresh.R`): assert the `params_method` formal on `frs_habitat_classify` (a capability, not a version). Add a test that restores the defect and shows the guard fires
-- [ ] Check `data-raw/wsg_vignette_data.R`'s bare `fresh::frs_db_conn()` against the 0.36.0 behaviour change, and note the result in findings
+- [x] DESCRIPTION: `fresh (>= 0.35.0)`, `Remotes: NewGraphEnvironment/fresh@v0.36.2`. Reinstall fresh at the tag and confirm `params_method` is in `formals(fresh::frs_habitat_classify)`
+- [x] `lnk_preflight_fresh()` (`R/lnk_preflight_fresh.R`): assert the `params_method` formal on `frs_habitat_classify` (a capability, not a version). Add a test that restores the defect and shows the guard fires
+- [x] Check `data-raw/wsg_vignette_data.R`'s bare `fresh::frs_db_conn()` against the 0.36.0 behaviour change, and note the result in findings
 
 ## Phase 2: method table as bundle data
 - [ ] Add `parameters_habitat_method.csv` to `bcfishpass`, `default`, `default_extrabreaks` and `default_rearbreaks`: a frozen copy of `smnorris/bcfishpass@1fae4ea parameters/example_newgraph/parameters_habitat_method.csv` (188 groups, all `cw`). Diff it against fresh's bundled copy first and record the result. `default_tuned` inherits it through `extends`

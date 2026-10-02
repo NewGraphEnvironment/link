@@ -28,7 +28,7 @@
 #     `;DAM` tokens are correct. READ it; do not recompute (a standalone
 #     single-WSG re-run would diverge on those segments).
 #   * CONTEXT BASEMAPPING — the db_newgraph full catalog via
-#     fresh::frs_db_conn() (localhost:63333, dbname `bcfishpass`). reserves
+#     lnk_db_conn() (PG_*_SHARE: the 63333 tunnel, dbname `bcfishpass`). reserves
 #     (whse_admin_boundaries), parks (whse_tantalis), roads + railways
 #     (whse_basemapping.transport_line / gba_railway_tracks_sp) are not in
 #     the FWA-only local subset. These are the same `fetch_layer` queries
@@ -195,16 +195,19 @@ named_streams <- sf::st_zm(named_streams, drop = TRUE)
 
 # --- context basemapping from the db_newgraph full catalog (63333) ------------
 # reserves / parks / roads / railways are absent from the FWA-only local
-# subset. Pull them the way flooded + the Peace report do: frs_db_conn().
+# subset. Pull them the way flooded + the Peace report do. lnk_db_conn(), not
+# fresh::frs_db_conn(): from fresh 0.36.0 the latter reads PG* before
+# PG_*_SHARE, which on a machine with both set is the local fwapg, not the
+# tunnel this needs (#286).
 boundary_wkt <- sf::st_as_text(sf::st_union(sf::st_geometry(boundary)))
 intersect_clause <- function(geom_col = "geom") {
   sprintf("ST_Intersects(%s, ST_GeomFromText('%s', 3005))", geom_col, boundary_wkt)
 }
 
-conn_ctx <- try(fresh::frs_db_conn(), silent = TRUE)
+conn_ctx <- try(lnk_db_conn(), silent = TRUE)
 context_layers <- list()
 if (inherits(conn_ctx, "try-error") || is.null(conn_ctx)) {
-  message("[wsg_vignette_data] frs_db_conn() unavailable — context layers ",
+  message("[wsg_vignette_data] lnk_db_conn() unavailable — context layers ",
           "(reserves/parks/roads/railways) skipped. Bring up the 63333 ",
           "db_newgraph tunnel to ship them (soul/skills/db-newgraph).")
 } else {

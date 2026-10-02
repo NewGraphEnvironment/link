@@ -373,7 +373,7 @@ link is connectivity-system agnostic. Column names are configurable parameters w
 
 ## Database Connection
 
-Uses `PG_*_SHARE` env vars (Docker fwapg, same as `frs_db_conn()`) with fallback to standard `PG*` vars. DB is needed for match/score/habitat functions that operate via SQL. The override loading and validation can work with any PostgreSQL.
+Uses `PG_*_SHARE` env vars (Docker fwapg) with fallback to standard `PG*` vars. From fresh 0.36.0 `frs_db_conn()` reads them the other way round (`PG*` first), so on a machine that sets both the two connect to different databases (#286). DB is needed for match/score/habitat functions that operate via SQL. The override loading and validation can work with any PostgreSQL.
 
 ```r
 conn <- lnk_db_conn()  # reads PG_DB_SHARE, PG_HOST_SHARE, etc.

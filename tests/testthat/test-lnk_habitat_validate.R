@@ -62,9 +62,10 @@ test_that(".lnk_hv_stage_min takes the spawn gradient floor from parameters_fres
   expect_identical(m$rear[["width"]], 1.5)
 })
 
-test_that("the predicate call passes no argument fresh@v0.33.0 lacks", {
-  # DESCRIPTION pins fresh >= 0.33.0, whose frs_habitat_predicates() takes
-  # only `sp_params`; `model =` arrived later and would error there.
+test_that("the predicate call stays on the channel-width model", {
+  # The validator relaxes s.channel_width, so it is cw-only. fresh >= 0.35.0
+  # accepts `model =`; passing it here needs the relaxation reworked first
+  # (#286 follow-up), and this pins that it has not happened by accident.
   calls <- list()
   walk <- function(e) {
     if (is.call(e)) {
