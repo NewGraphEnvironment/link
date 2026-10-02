@@ -63,7 +63,7 @@ needs adding there.
 
 ## Validation
 
-- [ ] Tests pass
-- [ ] `/code-check` clean on each commit
-- [ ] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion
+- [x] Tests pass: full suite FAIL 0 / PASS 2298 / WARN 16 (the warning baseline). `devtools::check()` 0 errors; its 3 warnings and 3 notes are pre-existing, and no added line is non-ASCII. Lintr: the two brace lints on added lines are fixed; the rest follow the file's existing indent style or are stale-install object_usage
+- [x] `/code-check`: 3 rounds across the branch, not 3 per commit. Round 1 (Phase 1) was clean, round 2 (Phases 2–3) found B1, and round 3 (cumulative, mechanism-directed) was clean. Plus one Plan review. 4 review agents + 1 plan agent
+- [x] PWF checkboxes match landed work
+- [x] `/planning-archive` on completion
