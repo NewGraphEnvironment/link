@@ -46,18 +46,21 @@ Resolver is fresh's own `.frs_habitat_models()` via `getFromNamespace()` (added 
 - [x] Unit tests: unlisted group is cw, bad model value errors, classify still skips the bypass only for mad
 
 ## Phase 2: Model-aware predicates and relaxation
-- [ ] Test first: replace "the predicate call stays on the channel-width model" with a test that the call passes `model =`; unit tests for a new pure helper `.lnk_hv_stage_exprs(spp, model)` — mad exprs reference `s.mad_m3s` not `s.channel_width`, relaxed variants replace `s.mad_m3s`, cw exprs byte-identical to today's
-- [ ] `.lnk_hv_stage_min(spp, model)` reads `ranges$<stage>$mad_m3s` on mad (absent → 0)
-- [ ] `.lnk_hv_relax(pred, gradient, size, size_col)` rewrites the model's size column
-- [ ] `.lnk_hv_predicates()`: resolve each scored WSG's model, put it on `lnk_vd_seg`, run one query per species × model present; mad queries read `streams` LEFT JOINed to the discharge table on `linear_feature_id` (aliased so predicates still see `s.mad_m3s`)
-- [ ] `pred_<stage>_nomad`: on mad groups whose species lacks that stage's MAD range, the predicate rebuilt with the range filled and gradient + size relaxed; `NA` elsewhere
+
+As landed (review-driven): `_nomad` relaxes size only and `_nomad_g` size + gradient (→ `fails_gradient_and_width`); a `_nomad` miss with no discharge reads `width_null`; `.lnk_hv_mad_missing()` mirrors fresh's rules/CSV branches; the predicate query joins discharge whenever an expression references `s.mad_m3s`; `.lnk_hv_check_mad()` fails loud; preflight asserts `frs_habitat_predicates(model)`.
+
+- [x] Test first: replace "the predicate call stays on the channel-width model" with a test that the call passes `model =`; unit tests for a new pure helper `.lnk_hv_stage_exprs(spp, model)` — mad exprs reference `s.mad_m3s` not `s.channel_width`, relaxed variants replace `s.mad_m3s`, cw exprs byte-identical to today's
+- [x] `.lnk_hv_stage_min(spp, model)` reads `ranges$<stage>$mad_m3s` on mad (absent → 0)
+- [x] `.lnk_hv_relax(pred, gradient, size, size_col)` rewrites the model's size column
+- [x] `.lnk_hv_predicates()`: resolve each scored WSG's model, put it on `lnk_vd_seg`, run one query per species × model present; mad queries read `streams` LEFT JOINed to the discharge table on `linear_feature_id` (aliased so predicates still see `s.mad_m3s`)
+- [x] `pred_<stage>_nomad`: on mad groups whose species lacks that stage's MAD range, the predicate rebuilt with the range filled and gradient + size relaxed; `NA` elsewhere
 
 ## Phase 3: Miss reasons and output columns
-- [ ] `.lnk_hv_obs()` attaches `model` per WSG and `mad_m3s` (joined only when some scored group is mad, so a cw-only call issues no new query; `NA` otherwise)
-- [ ] `.lnk_habitat_miss_reason()` takes the size value (`channel_width` on cw, `mad_m3s` on mad) for `width_null`, and a `p_nomad` arm placed after `fails_gradient_and_width`, before `rule_excludes`
-- [ ] `summary` gains `model`
-- [ ] DB tests on the fixture: add `linear_feature_id` drawn from the live discharge table (skip if absent), a method table putting AAAA on mad; assert BT stream misses read `no_mad_threshold`, `mad_m3s` is populated, `model` columns, and every existing cw assertion unchanged
-- [ ] Unit test: `width_null` keys on the size value passed, so a mad row with NULL discharge and a width reads `width_null`
+- [x] `.lnk_hv_obs()` attaches `model` per WSG and `mad_m3s` (joined only when some scored group is mad, so a cw-only call issues no new query; `NA` otherwise)
+- [x] `.lnk_habitat_miss_reason()` takes the size value (`channel_width` on cw, `mad_m3s` on mad) for `width_null`, and a `p_nomad` arm placed after `fails_gradient_and_width`, before `rule_excludes`
+- [x] `summary` gains `model`
+- [x] DB tests on the fixture: add `linear_feature_id` drawn from the live discharge table (skip if absent), a method table putting AAAA on mad; assert BT stream misses read `no_mad_threshold`, `mad_m3s` is populated, `model` columns, and every existing cw assertion unchanged
+- [x] Unit test: `width_null` keys on the size value passed, so a mad row with NULL discharge and a width reads `width_null`
 
 ## Phase 4: Docs and driver
 - [ ] Roxygen: Miss reasons section (size dimension per model, `no_mad_threshold`, model from the bundle's method table, caveat that a schema built under a different method table is not detected); `@return` columns; `devtools::document()`

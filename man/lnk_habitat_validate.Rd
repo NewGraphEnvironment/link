@@ -101,12 +101,15 @@ records the WSG), \code{n_obs} (locations on a segment), \code{n_unattached},
 \code{accessible_km}, \code{spawning_km}, \code{rearing_km} from \code{\link[=lnk_rollup_wsg]{lnk_rollup_wsg()}}.
 With \code{absences}, also \code{n_absence}, \code{n_absence_accessible},
 \code{n_absence_spawning}, \code{n_absence_rearing} (stream) and
-\code{n_absence_rearing_any} (the same on every stage).
+\code{n_absence_rearing_any} (the same on every stage). \code{model} is the
+WSG's habitat model (\code{cw} or \code{mad}).
 \item \code{observations}: one row per retained location, with its segment's
-\code{gradient}, \code{channel_width}, \code{channel_width_source}, \code{edge_type},
-\code{stream_order}, \code{waterbody_type}, \code{access}, the capture flags,
-\code{in_uhc_spawn}, \code{in_uhc_rear}, the predicate results, and the two miss
-reasons.
+\code{gradient}, \code{channel_width}, \code{channel_width_source}, \code{mad_m3s} (on
+\code{mad} groups only, else \code{NA}), \code{edge_type}, \code{stream_order},
+\code{waterbody_type}, \code{access}, \code{model}, the capture flags,
+\code{in_uhc_spawn}, \code{in_uhc_rear}, the predicate results (\verb{pred_<stage>},
+relaxed \verb{_g}, \verb{_w}, \verb{_gw}, and on \code{mad} groups for a species with no
+MAD range \verb{_nomad}, \verb{_nomad_g}), and the two miss reasons.
 }
 }
 \description{
@@ -215,9 +218,15 @@ observed gradients are cut off at the access limit.
 the rear reason (compare them with \code{n_rearing_any}, not \code{n_rearing}).
 Both re-evaluate the bundle's own
 habitat predicates (\code{\link[fresh:frs_habitat_predicates]{fresh::frs_habitat_predicates()}} over \code{cfg$rules}
-and its thresholds CSV, channel-width model) on the segment, then again
-with the gradient and the channel width each moved to the stage's
-minimum:
+and its thresholds CSV) on the segment, then again with the gradient and
+the size each moved to the stage's minimum. The size is the one the group
+classified on: the model \code{cfg}'s \code{parameters_habitat_method.csv} gives
+the WSG, resolved as \code{\link[=lnk_pipeline_classify]{lnk_pipeline_classify()}} resolves it (an unlisted
+group is \code{cw}). On \code{cw} it is the channel width; on \code{mad} it is the mean
+annual discharge \code{mad_m3s}, joined from
+\code{whse_basemapping.fwa_stream_networks_discharge} on \code{linear_feature_id}
+because the persist does not carry it. The \code{width} labels below mean
+that size on either model; \code{model} and \code{mad_m3s} split them:
 \itemize{
 \item \code{NA} — captured; \code{no_segment} — the location attaches to no segment;
 \item \code{not_accessible} — the segment's \verb{access_<sp>} is not 1 or 2;
@@ -228,10 +237,21 @@ window (a negative gradient), not above it;
 \item \code{fails_gradient_or_width} — either relaxation alone passes (through
 different branches of the rule);
 \item \code{fails_gradient_and_width} — passes only with both relaxed;
+\item \code{no_mad_threshold} — a \code{mad} group where the species has no MAD range
+for the stage (fresh then fails every inheriting stream rule outright)
+and supplying one would admit the segment; a segment with no discharge
+reads \code{width_null} instead, and one whose gradient also fails reads
+\code{fails_gradient_and_width};
 \item \code{rule_excludes} — fails even then: edge type, waterbody or lake size;
 \item \code{post_predicate} — passes the predicate but is not habitat: removed by
 clustering (connectivity to spawning) or access gating.
 }
+
+The method table is the one in \code{cfg}. A run classified with another
+(a swapped bundle file, or \code{lnk_pipeline_classify(method_csv =)}) is not
+detected, so swap it on the \code{cfg} passed here too. A rule-level size
+window in \code{rules.yaml} with a floor above the stage minimum would turn
+size misses into \code{rule_excludes}; no bundled rules set one.
 }
 
 \examples{
