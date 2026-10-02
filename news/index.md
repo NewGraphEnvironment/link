@@ -1,35 +1,5 @@
 # Changelog
 
-## link 0.55.0
-
-**Each config can now choose channel width or discharge per watershed
-group**
-([\#286](https://github.com/NewGraphEnvironment/link/issues/286)).
-Bundles declare `parameters_habitat_method.csv` (`watershed_group_code`,
-`model` = `cw` or `mad`), which
-[`lnk_pipeline_classify()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_classify.md)
-passes to fresh as `params_method`; a new `method_csv =` argument
-overrides it.
-
-- **Outputs are unchanged.** Every shipped bundle is all `cw`, a frozen
-  copy of bcfishpass `example_newgraph`. It is deliberately outside
-  csv-sync, so moving a group to `mad` is a reviewed edit. ADMS and BULK
-  classify byte-identically before and after.
-- **Under `mad`** a group classifies on `mad_m3s`, which is joined onto
-  the working streams and never persisted, and it skips the stream-order
-  rearing bypass. Species with no MAD thresholds (BT, GR, KO, RB) lose
-  their stream habitat there. A group without discharge coverage loses
-  all of it, with no error.
-- **fresh \>= 0.35.0 is required** (pinned at v0.36.2).
-  [`lnk_preflight_fresh()`](https://newgraphenvironment.github.io/link/reference/lnk_preflight_fresh.md)
-  now checks for the `params_method` argument, so re-prep cypher images
-  before the next run. fresh 0.36.0 also reversed `frs_db_conn()`’s
-  env-var precedence;
-  [`lnk_db_conn()`](https://newgraphenvironment.github.io/link/reference/lnk_db_conn.md)
-  is unchanged.
-- **`config_hash` changes for every bundle,** and `log_input` now
-  fingerprints `fwa_stream_networks_discharge`.
-
 ## link 0.54.0
 
 **The calibrated BT rearing gradient in `default_tuned` is scored
