@@ -60,14 +60,14 @@ What exploration established:
       `habitat_thresholds_302/` (aggregates only)
 - [x] Literature review (`planning/active/literature.md`; local Zotero full texts; two
       key citations spot-checked against source text)
-- [ ] `research/habitat_thresholds.md` "MAD (discharge)" section: verdicts, method, the
+- [x] `research/habitat_thresholds.md` "MAD (discharge)" section: verdicts, method, the
       operator's Change 1 (thin-spawn fallback), literature, and the **scoring design
       fixed before any run** (expected-count floor of record; core = the mad rungs)
 
 ## Phase 3: Power check, then fix the scoring set
-- [ ] `data-raw/logs/habitat_score_302/power_windows.{R,txt}`: counts per MAD window on
+- [x] `data-raw/logs/habitat_score_302/power_windows.{R,txt}`: counts per MAD window on
       covered non-calibration WSGs before any build
-- [ ] `wsg_roles_302.csv` (held-out BT 7, GR 3, RB 6; PARS/KOTL in-sample; HERR/LNTH left
+- [x] `wsg_roles_302.csv` (held-out BT 7, GR 3, RB 6; PARS/KOTL in-sample; HERR/LNTH left
       out for their Fraser closures; 20-WSG closure); KO unscorable (no held-out WSG),
       lands unscored
 
@@ -76,7 +76,7 @@ What exploration established:
       rungs, `_min` direction, `--floor`, `--working-prefix` (derived from `--prefix`),
       core of a MAD ladder = its rungs, set restricted to `*_mad_*`, ladder consistency
       checks; #284 re-score reproduces its committed outputs
-- [ ] `variants_302.csv`: 6 ladders (BT/GR/RB × spawn/rear), anchor P10 → P05 → P02, the
+- [x] `variants_302.csv`: 6 ladders (BT/GR/RB × spawn/rear), anchor P10 → P05 → P02, the
       other stage's range held fixed in `set`
 - [ ] Pre-flight on one held-out WSG, then the full build into `score302_` (detached)
 
