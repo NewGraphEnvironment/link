@@ -78,16 +78,17 @@ What exploration established:
       checks; #284 re-score reproduces its committed outputs
 - [x] `variants_302.csv`: 6 ladders (BT/GR/RB × spawn/rear), anchor P10 → P05 → P02, the
       other stage's range held fixed in `set`
-- [ ] Pre-flight on one held-out WSG, then the full build into `score302_` (detached)
+- [x] Pre-flight on one held-out WSG, then the full build into `score302_` (detached)
 
 ## Phase 5: Score and land
-- [ ] `habitat_variants_score.R` over the ladders → `data-raw/logs/habitat_score_302/`
+- [x] `habitat_variants_score.R` over the ladders → `data-raw/logs/habitat_score_302/`
       (verdict.csv, both n-floor readings as in #284), plus capture/cost
       (`share_*`, `*_km`) before/after from `lnk_habitat_validate()`.
-- [ ] Land taken values in `default_tuned/parameters_habitat_thresholds.csv`; update its
+- [x] Land taken values in `default_tuned/parameters_habitat_thresholds.csv`; update its
       provenance checksums and `config.yaml` description; `default` untouched.
-- [ ] Results section in `research/habitat_thresholds.md`; RUNBOOK §7 note that
-      `default_tuned` now carries MAD ranges for all stream species; NEWS entry.
+- [x] Results section in `research/habitat_thresholds.md`; RUNBOOK §7 note that
+      `default_tuned` now carries MAD ranges, and the lake/wetland bucket correction;
+      NEWS is written by the release commit (`/gh-pr-merge`), as for v0.55/0.56
 
 ## Verification
 - `devtools::test()` (bundle/dictionary/provenance tests: `test-dictionaries.R`,
@@ -99,7 +100,7 @@ What exploration established:
 
 ## Validation
 
-- [ ] Tests pass
-- [ ] `/code-check` clean on each commit
+- [x] Tests pass (2378 pass / 0 fail / 16 warnings, the existing baseline)
+- [x] `/code-check` on each code commit: driver 3 rounds, harness 3 rounds, landing 3 rounds; the last of each harness/landing ended by enumeration (83 sites, 58 claims)
 - [ ] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion

@@ -207,11 +207,13 @@ readr::write_csv(
 # rear-tested segments (they calibrate rearing).
 stage_sets <- list(
   any = function(d) d[d$pred_set %in% tested_classes$rear, ],
-  spawn = function(d) d[d$is_spawn %in% TRUE &
-                          d$pred_set %in% tested_classes$spawn, ],
+  spawn = function(d) {
+    d[d$is_spawn %in% TRUE & d$pred_set %in% tested_classes$spawn, ]
+  },
   any_spawn = function(d) d[d$pred_set %in% tested_classes$spawn, ],
-  rear = function(d) d[d$is_rear %in% TRUE &
-                         d$pred_set %in% tested_classes$rear, ])
+  rear = function(d) {
+    d[d$is_rear %in% TRUE & d$pred_set %in% tested_classes$rear, ]
+  })
 tested <- obs |> filter(accessible_pt)
 
 coverage <- bind_rows(lapply(species, function(sp) {
@@ -298,7 +300,8 @@ sel <- bind_rows(lapply(species, function(sp) {
       tested_classes$rear
     a <- avail[avail$species_code == sp & avail$pred_set %in% cl, ] |>
       mutate(bin = bin_label(mad_m3s)) |>
-      group_by(bin) |> summarise(avail_km = sum(km), .groups = "drop")
+      group_by(bin) |>
+      summarise(avail_km = sum(km), .groups = "drop")
     d <- stage_sets[[st]](tested[tested$species_code == sp, ])
     u <- tibble(bin = bin_label(d$mad_m3s)) |> count(bin, name = "use_n")
     full_join(u, a, by = "bin") |>

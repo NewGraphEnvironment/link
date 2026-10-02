@@ -1,6 +1,6 @@
 # Habitat thresholds — gradient, channel width and discharge
 
-**Verified:** 2026-09-29 (CH/BT gradient and width), 2026-10-02 (MAD) · **Issues:** #284 (gradient and width), #302 (MAD, [below](#mad-discharge-ranges-for-bt-gr-ko-and-rb-302)), #290 (the pooling tracker), #283 (the validator, [`habitat_validation.md`](habitat_validation.md)), #282 (`default_tuned`); spawned knowledge#28 (habitat weights) · **Produced by:** `data-raw/query_habitat_thresholds_obs.R`, `data-raw/query_habitat_thresholds_fiss.R` → `data-raw/logs/habitat_thresholds_284/`; step 5 by `data-raw/habitat_variants_build.R` and `data-raw/habitat_variants_score.R` → `data-raw/logs/habitat_score_284/`; literature reviews archived with #284's and #302's PWFs (`literature.md`); MAD by `data-raw/query_habitat_thresholds_mad.R` → `data-raw/logs/habitat_thresholds_302/` and the same scoring scripts → `data-raw/logs/habitat_score_302/` · **Status:** BT `rear_gradient_max` 0.1349 **scored and held**; every other row unscored
+**Verified:** 2026-09-29 (CH/BT gradient and width), 2026-10-02 (MAD) · **Issues:** #284 (gradient and width), #302 (MAD, [below](#mad-discharge-ranges-for-bt-gr-ko-and-rb-302)), #290 (the pooling tracker), #283 (the validator, [`habitat_validation.md`](habitat_validation.md)), #282 (`default_tuned`); spawned knowledge#28 (habitat weights) · **Produced by:** `data-raw/query_habitat_thresholds_obs.R`, `data-raw/query_habitat_thresholds_fiss.R` → `data-raw/logs/habitat_thresholds_284/`; step 5 by `data-raw/habitat_variants_build.R` and `data-raw/habitat_variants_score.R` → `data-raw/logs/habitat_score_284/`; literature reviews archived with #284's and #302's PWFs (`literature.md`); MAD by `data-raw/query_habitat_thresholds_mad.R` → `data-raw/logs/habitat_thresholds_302/` and the same scoring scripts → `data-raw/logs/habitat_score_302/` · **Status:** BT `rear_gradient_max` 0.1349 **scored and held**; MAD ranges for BT, GR and RB **scored** (the rule refused loosening past P10 except RB spawning; size confound open), KO unscored; every other row unscored
 
 ## Verdict
 
@@ -18,7 +18,8 @@
 | BT | `spawn_gradient_min` | 0 | **keep** | medium |
 | BT | `cluster_bridge_gradient` | 0.05 | **keep** | medium |
 
-One value moves: BT rearing gradient loosens. Every other threshold the observations
+One gradient or width value moves: BT rearing gradient loosens. (`default_tuned` also
+carries MAD ranges from #302, [below](#mad-discharge-ranges-for-bt-gr-ko-and-rb-302).) Every other threshold the observations
 argued against was vetoed by the literature. `spawn_gradient_min` and
 `cluster_bridge_gradient` live in `parameters_fresh.csv`; both are kept, so
 `default_tuned` still inherits that file from `default`.
@@ -448,8 +449,9 @@ choice did not need making here. It is open for the next tuning.
 ## MAD (discharge) ranges for BT, GR, KO and RB (#302)
 
 Under the `mad` habitat model (#286), fresh tests a stream rule's size on mean annual
-discharge (`mad_m3s`) against `*_mad_min` / `*_mad_max`. BT, GR, KO and RB carry no MAD
-range in any bundle (inherited from bcfishpass `example_newgraph`), so in a `mad` group
+discharge (`mad_m3s`) against `*_mad_min` / `*_mad_max`. Before #302, BT, GR, KO and RB
+carried no MAD range in any bundle (inherited from bcfishpass `example_newgraph`; still
+none in `default` and `bcfishpass`), so in a `mad` group
 fresh fails every inheriting stream rule and they keep only waterbody habitat. The
 operator's direction (#299 plan gate, 2026-10-02) was to tune and add the ranges.
 
@@ -457,7 +459,24 @@ operator's direction (#299 plan gate, 2026-10-02) was to tune and add the ranges
 is all `cw`, so the ranges land in `default_tuned` without moving a segment. The only
 before/after evidence is the scoring harness, which puts the held-out groups on `mad`.
 
-### Verdict (candidates; scoring below)
+### Verdict
+
+| Species | Threshold | `default` | `default_tuned` | How |
+|---|---|---|---|---|
+| BT | `spawn_mad_min` | NA | **0.078** | scored: P10→P05 refused |
+| BT | `rear_mad_min` | NA | **0.078** | scored: P10→P05 refused |
+| GR | `spawn_mad_min` | NA | **0.96** | scored: P10→P05 refused |
+| GR | `rear_mad_min` | NA | **0.97** | scored: P10→P05 refused |
+| KO | `spawn_mad_min` | NA | **0.57** | candidate, unscored (no held-out WSG) |
+| RB | `spawn_mad_min` | NA | **0.011** | scored: P10→P05 taken, P05→P02 underpowered |
+| RB | `rear_mad_min` | NA | **0.019** | scored: P10→P05 refused |
+
+Every `*_mad_max` is 9999. Values are m³/s. They are inert until a group is moved to
+`mad`. **At these values a `mad` group keeps less stream rearing than `cw` does: on the
+held-out WSGs at least −33 % for BT and −82 % for GR, and −4 % for RB.** Stream size and
+sampling effort are not separated; see "Results".
+
+### Candidates (Phase 1, before scoring)
 
 | Species | Threshold | `default` | Rule value | Evidence | n | `cw` equivalent |
 |---|---|---|---|---|---|---|
@@ -517,19 +536,24 @@ candidate compares with what `cw` admits today, and is not evidence.
 ### Literature
 
 No source gives a fitted MAD minimum for these four species, and none supports a cap.
-Site evidence brackets the candidates (full table: #302's archived `literature.md`):
+Site evidence is set below beside the Phase 1 candidates and the values the scoring
+landed (full table: #302's archived `literature.md`):
 
 - **BT.**
   - Hagen et al. 2015 (Table 2, p. 31) found redds at spawning-time flows down to
     0.25–0.30 m³/s, in a survey that skipped streams under 2 m by design.
   - Isaak et al. 2015 (p. 2542) trims juvenile habitat below 0.0057 m³/s mean summer flow
     (about 1 m wetted).
-  - Both are consistent with 0.027, and neither is MAD.
+  - Neither is MAD, and Isaak's floor is a summer flow whose MAD equivalent is larger by
+    an unknown amount. Neither bounds the candidate 0.027 or the landed 0.078 closely.
 - **GR.**
   - No number for MAD.
   - Spawning is documented at 0.21–0.25 m³/s freshet flow in a constructed channel
     (House 2021, p. 76) and at about 400 m³/s in the Fond du Lac (p. 80). That rules
     out a cap.
+  - **The landed spawning minimum 0.96 sits above that small-stream site's freshet
+    flow.** Its MAD is not stated and is likely lower. On one constructed channel in the
+    NWT, the literature leans lower for GR spawning.
 - **KO.**
   - Spawning is documented at MAD 0.37–0.40 m³/s (Davidson Creek) and in a creek whose
     mouth MAD is 0.28 m³/s (AMEC 2015). In both, the upstream limit is put down to
@@ -539,7 +563,8 @@ Site evidence brackets the candidates (full table: #302's archived `literature.m
   - Spawning and rearing are documented at MAD of about 0.1 m³/s (AMEC 2015).
   - 0+ fish occur at 0.028 m³/s late-summer flow (Bustard 1988).
   - Juveniles are found down to 0.002 m³/s summer flow (via Sheer et al. 2009).
-  - Consistent with 0.0094–0.011.
+  - Consistent with the candidates (0.0094 rear, 0.011 spawn) and with the landed rearing
+    minimum 0.019.
 - **The existing bcfishpass MAD minima are mostly untraceable.** CH rearing 0.28 is
   documented (Agrawal 2005, via Sheer 2009). The spawning minima (CH 0.46, CO 0.164,
   SK 0.175, ST 0.447) were not found in the sources Rebellato et al. 2024 cites. WCT's
@@ -595,8 +620,9 @@ MAD (`data-raw/habitat_score/README.md`).
     `mad_m3s` ≥ 0.05, and about 17 % at ≥ 0.02.
   - `set` may hold only `*_mad_*` cells, so the bands differ from the core in discharge
     alone.
-- **Held-out WSGs** (`wsg_roles_302.csv`) are discharge-covered, outside the 55
-  calibration WSGs, and chosen as the densest per window before any build
+- **Held-out WSGs** (`wsg_roles_302.csv`) are discharge-covered and outside the 55
+  `fresh_default` WSGs, of which the 46 with discharge were the calibration set. They
+  were chosen as the densest per window before any build
   (`power_windows.txt`, counts only, upper bounds):
   - BT: REVL, ELKR, KOTR, UARL, MURR, UBTN, LHAF;
   - GR: UBTN, MURR, LHAF;
@@ -616,3 +642,90 @@ MAD (`data-raw/habitat_score/README.md`).
   - **An underpowered first step lands P05, marked unscored** (operator, 2026-10-02).
 - **KO is unscorable.** It is present in four discharge-covered WSGs, all of them
   calibration WSGs. Its candidate lands unscored, as CH did in #284.
+
+### Results, 2026-10-02
+
+The build ran at a clean `c2fed37` in 145 min, with every invariant asserted. The base
+recompute printed "There were 50 or more warnings", which were not recorded
+(`build_20261002_full.log`). It was a
+20-WSG closure, LHAF pre-flighted first, and 18 variants. The score ran under
+`--floor=expected` (`verdict.csv`, `bands_pooled.csv`, `elevation_adjusted.csv`,
+`habitat_change.csv`; logs `build_20261002_*.log`, `score_20261002.log`). The held-out
+WSGs are pooled throughout.
+
+| Step | Band km | Found | Expected at core rate | Ratio | Elevation-adjusted | Decision |
+|---|---|---|---|---|---|---|
+| BT rear P10→P05 | 2,037 | 45 | 297 | 0.15 | 0.16 | refuse |
+| BT spawn P10→P05 | 1,439 | 30 | 247 | 0.12 | 0.12 | refuse |
+| GR rear P10→P05 | 1,523 | 57 | 124 | 0.46 | 0.57 | refuse |
+| GR spawn P10→P05 | 1,378 | 52 | 113 | 0.46 | 0.54 | refuse |
+| RB rear P10→P05 | 1,032 | 19 | 138 | 0.14 | 0.16 | refuse |
+| RB spawn P10→P05 | 1,267 | 8 | 10.1 | 0.80 | 0.93 | take |
+| RB spawn P05→P02 | 630 | 1 | 5.0 | 0.20 | 0.23 | underpowered |
+
+The two floors agree on every step that decides a value, except RB spawning P10→P05.
+It is taken under the expected floor of record (10.1 expected) and underpowered under
+the found floor (8 found). Both land 0.011; they differ only in whether it counts as
+scored.
+
+**What the anchor costs.** The anchor's `removed` band is the habitat `cw` keeps and
+`mad` at P10 drops. Fish use it at 0.36 (BT rear), 0.48 (BT spawn), 0.50 (GR rear) and
+1.06 (RB rear) of the core rate.
+
+The band splits in two:
+
+- **What P05 and P02 restore.** This is most of the band by length. In the rearing
+  ladders it is BT 3,062 of 4,505 km, GR 3,099 of 3,893 and RB 569 of 864. In the
+  spawning ladders it is BT 1,961 of 2,752 and GR 1,769 of 2,241. Its use rate relative
+  to the core is BT rear 0.08, BT spawn 0.06, GR rear 0.36, GR spawn 0.47 and RB
+  rear 0.42.
+- **What no rung restores.** In the rearing ladders this is BT 1,444 km, GR 794 km and
+  RB 296 km. It is used at about the core rate for BT (0.97; 0.86 adjusted for
+  elevation) and above it for GR (1.06) and RB (2.30).
+
+The split is derived as the `removed` band in `bands_pooled.csv` minus the `removed` class
+in `elevation_adjusted.csv`. That class is the remainder, because the score labels each
+segment by the first step whose flags differ. What the remainder is made of was not
+written to any file. A review query on the rearing ladders found lines with no
+discharge (mostly inside waterbodies) and water below P02. It also found water at or
+above P02 that the rungs still drop: BT 146 km and GR 267 km.
+
+Stream rearing on the held-out WSGs, from `habitat_change.csv`:
+
+| Species | `cw` | `mad` P10 | `mad` P05 | `mad` P02 |
+|---|---|---|---|---|
+| BT | 12,991 km | 8,679 (−33 %) | 10,712 (−18 %) | 13,235 (+2 %) |
+| GR | 4,705 | 825 (−82 %) | 2,348 (−50 %) | 5,022 (+7 %) |
+| RB | 8,186 | 7,821 (−4 %) | 8,853 (+8 %) | 9,849 (+20 %) |
+
+These rearing rungs held spawning at its P05 candidate (BT 0.027, GR 0.095). The landed
+spawning ranges are tighter (0.078, 0.96), and BT and GR rearing clusters on spawning.
+So for BT and GR **the P10 row is a lower bound on the loss** at the landed values, which
+pair was never built. The spawning P10 rungs alone take BT rearing from 10,712 to
+10,215 km and GR rearing from 2,348 to 1,558 km. RB's P10 row is the landed pair.
+
+**Reading it.**
+- **By the rule fixed before the run, BT, GR and RB rearing and BT and GR spawning stay
+  at P10.** The P10 → P05 band for each is used at 0.12–0.46 of the rate of the larger
+  water the anchor keeps. RB spawning's band is used at 0.80, so it moves to P05.
+- **Elevation explains part of GR's gap, but not BT's or RB rearing's.**
+  - Adjusted for elevation, the GR steps read 0.57 (rear) and 0.54 (spawn), above the
+    0.5 line, so an elevation-adjusted rule would have taken them.
+  - The BT steps and RB rearing stay at 0.12–0.16.
+  - RB spawning rises from 0.80 to 0.93.
+- **Stream size and sampling effort are not separated by this design (inference).** The
+  core is the bigger water. If surveys cover large and small streams unevenly per km,
+  part of the gap is where people look, not where the fish are. Nothing here measures
+  that. The Biases section notes surveys avoid the largest rivers, which would cut the
+  other way. A core split by stream size, as the elevation classes split elevation
+  (#284), is the test. Until then the verdict stands as pre-registered.
+- **What it costs.** At P10 a `mad` group keeps at least a third less BT rearing, and at
+  least four-fifths less GR rearing, than `cw` does in the same WSGs. At P05 the losses
+  would be −18 % and −50 %. At P02 the losses vanish.
+- **Nothing switches today.** These values are inert while every group is on `cw`.
+  Moving a group to `mad` is the operator's call, and it should wait for that re-score.
+- **KO 0.57 is unscored, and the literature argues lower.** AMEC 2015 documents spawning
+  at MAD 0.37–0.40 in Davidson Creek. In Creek 661 it occurs at ≤ 0.283, above 0.105.
+  The candidate rests on 31 locations in one WSG.
+- **Clustering moved a little habitat the other way.** On the held-out WSGs, BT rear
+  moved 3.2 and 1.1 km against 2,037 and 2,523 km added, as in #284.

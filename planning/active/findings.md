@@ -125,3 +125,31 @@ filed.
   planned shape (model change only from base; `set` `*_mad_*` everywhere). All fixed.
   Taper's gradient bins on a MAD ladder are diagnostic only (accepted, not cited).
 - Final #284 regression (round-2 code): all ten outputs reproduce on every shared column.
+
+## Landing code-check (3 rounds, ended by enumeration)
+
+- Round 1 (`review-land-round1.md`): the "elevation-adjusted removed" figures described
+  only the residual no rung restores (the score labels a segment by the first step whose
+  flags differ), which undercut my "sampling-density" reading; −33/−82 % came from rungs
+  holding spawning at P05 (lower bounds for the landed pair); held-out vs all-roles km;
+  stale statements. All fixed.
+- Round 2 (`review-land-round2.md`), inside round 1's rewrite: whole ladder bands cited
+  as "the restored part" (they include habitat `cw` never had). Restored-part rates
+  derived from committed files (`bands_pooled` removed − `elevation_adjusted` residual):
+  BT rear 0.08, BT spawn 0.06, GR rear 0.36, GR spawn 0.47, RB rear 0.42. Range and
+  elevation sentences scoped; sampling stated as inference; literature set against the
+  landed values.
+- Round 3 (`review-land-round3.md`): **enumeration of 58 claims** with evidence and
+  population; 5 failing + 2 minor + 1 note, all fixed (BT residual at 0.97 of core, not
+  above; BT 146 km ≥ P02 dropped too; config.yaml limited to rearing; BT literature
+  bullet; README KO unscored; GR literature; "ran clean" vs 50+ warnings; RUNBOOK
+  scope).
+
+## Scoring result (2026-10-02)
+
+Every P10 → P05 loosening refused on the held-out WSGs except RB spawning. Landed:
+BT 0.078/0.078, GR 0.96/0.97, KO 0.57 (unscored), RB 0.011/0.019, maxima 9999. At P10 a
+`mad` group keeps at least 33 % (BT) and 82 % (GR) less stream rearing than `cw`; the
+restored small water is used sparsely by BT, moderately by GR and RB. Stream size vs
+sampling effort not separated — the next tuning, the operator's call before any group
+moves to `mad`.
