@@ -1,6 +1,6 @@
 # Habitat thresholds — gradient, channel width and discharge
 
-**Verified:** 2026-09-29 (CH/BT gradient and width), 2026-10-02 (MAD) · **Issues:** #284 (gradient and width), #302 (MAD, [below](#mad-discharge-ranges-for-bt-gr-ko-and-rb-302)), #290 (the pooling tracker), #283 (the validator, [`habitat_validation.md`](habitat_validation.md)), #282 (`default_tuned`); spawned knowledge#28 (habitat weights) · **Produced by:** `data-raw/query_habitat_thresholds_obs.R`, `data-raw/query_habitat_thresholds_fiss.R` → `data-raw/logs/habitat_thresholds_284/`; step 5 by `data-raw/habitat_variants_build.R` and `data-raw/habitat_variants_score.R` → `data-raw/logs/habitat_score_284/`; literature reviews archived with #284's and #302's PWFs (`literature.md`); MAD by `data-raw/query_habitat_thresholds_mad.R` → `data-raw/logs/habitat_thresholds_302/` and the same scoring scripts → `data-raw/logs/habitat_score_302/` · **Status:** BT `rear_gradient_max` 0.1349 **scored and held**; MAD ranges for BT, GR and RB **scored** (the rule refused loosening past P10 except RB spawning; size confound open), KO unscored; every other row unscored
+**Verified:** 2026-09-29 (CH/BT gradient and width), 2026-10-02 (MAD) · **Issues:** #284 (gradient and width), #302 (MAD, [below](#mad-discharge-ranges-for-bt-gr-ko-and-rb-302)), #300 (`cw` against `mad`), #290 (the pooling tracker), #283 (the validator, [`habitat_validation.md`](habitat_validation.md)), #282 (`default_tuned`); spawned knowledge#28 (habitat weights) · **Produced by:** `data-raw/query_habitat_thresholds_obs.R`, `data-raw/query_habitat_thresholds_fiss.R` → `data-raw/logs/habitat_thresholds_284/`; step 5 by `data-raw/habitat_variants_build.R` and `data-raw/habitat_variants_score.R` → `data-raw/logs/habitat_score_284/`; literature reviews archived with #284's and #302's PWFs (`literature.md`); MAD by `data-raw/query_habitat_thresholds_mad.R` → `data-raw/logs/habitat_thresholds_302/` and the same scoring scripts → `data-raw/logs/habitat_score_302/` · **Status:** BT `rear_gradient_max` 0.1349 **scored and held**; MAD ranges for BT, GR and RB **scored** (the rule refused loosening past P10 except RB spawning; size confound open), KO unscored; every other row unscored
 
 ## Verdict
 
@@ -729,3 +729,60 @@ pair was never built. The spawning P10 rungs alone take BT rearing from 10,712 t
   The candidate rests on 31 locations in one WSG.
 - **Clustering moved a little habitat the other way.** On the held-out WSGs, BT rear
   moved 3.2 and 1.1 km against 2,037 and 2,523 km added, as in #284.
+
+## `cw` against `mad`: which model's habitat do fish use? (#300)
+
+#302's anchor bands were scored against a core of `mad` rungs, and the landed spawning
+and rearing pair was never built, so they do not say which model is closer to where fish
+are. This section compares the two models directly, in `default_tuned`, at the landed
+ranges.
+
+### Scoring design, fixed 2026-10-02 before any run
+
+The #284 harness, extended for a **model-only variant** (`data-raw/habitat_score/README.md`):
+a variant that changes no threshold cell and puts its species' WSGs on `mad`.
+
+- **Base: `default_tuned` on `cw`** (`--base=default_tuned`, `variants_300.csv`), so the
+  `mad` side carries the landed ranges and BT `rear_gradient_max` 0.1349 on both sides.
+  Variants `bt_mad`, `gr_mad`, `rb_mad`, `ko_mad`: the same bundle, the species' WSGs on
+  `mad`. Spawning and rearing move together, as they would in a real switch, so BT and GR
+  rearing clusters on the landed spawning range.
+- **Core:** segments both models flag (base ∩ variant), per flag.
+- **Bands:** `cw`-only (the variant's `removed`) and `mad`-only (its `added`), per flag
+  (spawning, rearing). KO has no stream rearing range under either model; its rearing
+  bands are reported and read nothing.
+- **Held-out WSGs:** #302's (`wsg_roles_300.csv` = `wsg_roles_302.csv` plus KO). KO is
+  present only in KOTL and PARS, both in-sample: it is reported and decides nothing.
+- **Stream size: stream order**, in classes 1, 2, 3 and 4+ (operator, 2026-10-02).
+  Neither model tests order, so it sides with neither. Each segment of the base network
+  is core, `cw`-only or `mad`-only, with its order class.
+  - **Expected** locations in a band = Σ over classes of band km × the core's rate in
+    that class, the core's rate pooled over the held-out WSGs. A segment with no stream
+    order is its own class; a class with no core km takes the core's pooled rate. Both
+    are reported if they occur.
+  - **Size-adjusted ratio** = locations found ÷ expected.
+- **Rule, per species × flag, stage `any`, held-out WSGs pooled:**
+  - **The verdict of record is size-adjusted** (operator, 2026-10-02): a band is habitat
+    when expected ≥ 10 and the size-adjusted ratio ≥ 0.5. Expected < 10 is
+    "underpowered" and reads nothing.
+  - Written beside it: the unadjusted ratio and the #302 reading (expected at the
+    pooled core rate ≥ 10, ratio ≥ 0.5), and the found count.
+  - Spawn- and rear-staged rows are reported and decide nothing.
+- **Reading the two bands together:**
+
+  | `cw`-only | `mad`-only | Reading |
+  |---|---|---|
+  | habitat | not | `cw` is closer: `mad` drops habitat fish use and adds habitat they do not |
+  | not | habitat | `mad` is closer |
+  | habitat | habitat | each model misses habitat the other finds |
+  | not | not | the models disagree only on water fish use little; the choice moves little used habitat |
+
+  An underpowered band leaves its half of the reading open.
+- **Power, before any build.** From #302's P10 anchors (held-out, stage `any`): the
+  `cw`-only side is large (rearing BT 4,505 km, GR 3,893, RB 864), and the `mad`-only
+  side is thin (BT 193 km, 7 found; GR 14 km, 0 found; RB 500 km, 19 found). The
+  `mad`-only band is likely underpowered for BT and GR.
+- **Nothing switches on this.** The verdict informs a reviewed row edit of a bundle's
+  `parameters_habitat_method.csv`; it moves no group by itself.
+- Under `default` and `bcfishpass`, BT, GR, KO and RB have no MAD range, so on `mad`
+  they lose all stream habitat by construction. That needs no score.

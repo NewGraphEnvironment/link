@@ -34,3 +34,14 @@ Depends on #299 and #302 (both closed). Relates to #284, #286; fresh#237 (`wetla
 
 | Error | Resolution |
 |-------|------------|
+
+## KO presence in the closure (2026-10-02)
+
+`configs/default/overrides/wsg_species_presence.csv`: KO is present in KOTL and PARS only,
+both #302 in-sample (calibration) WSGs, so KO is reported in-sample and decides nothing.
+
+## Power from #302's P10 anchors (held-out, stage any)
+
+`cw`-only (removed) rearing: BT 4,505 km / 240 found, GR 3,893 / 158, RB 864 / 123.
+`mad`-only (added) rearing: BT 193 km / 7, GR 14 km / 0, RB 500 km / 19. The `mad`-only side
+is likely underpowered for BT and GR at the landed pair.

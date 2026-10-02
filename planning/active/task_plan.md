@@ -38,7 +38,7 @@ stream size, before any bundle moves a group.
 - The resume gate requires a clean log row at this HEAD.
 
 ## Phase 1: Rule and inputs, fixed before any code runs
-- [ ] `research/habitat_thresholds.md`, new section "cw vs mad (#300)": method and rule.
+- [x] `research/habitat_thresholds.md`, new section "cw vs mad (#300)": method and rule.
   - **Core:** habitat both the `cw` base and the `mad` variant keep.
   - **Bands:** `cw`-only and `mad`-only, for each flag (spawning and rearing).
   - **Stages:** the decision reads stage `any`; spawn and rear stages are reported.
@@ -47,10 +47,10 @@ stream size, before any bundle moves a group.
     only `mad`-only is, both, neither).
   - **Power:** from #302's anchor rows, `cw`-only is well powered (BT 4,505 km rearing).
     `mad`-only is thin (BT 193 km, GR 14 km), so expect "keep (expected < 10)" there.
-- [ ] `data-raw/habitat_score/variants_300.csv`: base `default_tuned` (cw), plus
+- [x] `data-raw/habitat_score/variants_300.csv`: base `default_tuned` (cw), plus
   model-only rows `bt_mad`, `gr_mad`, `rb_mad` and `ko_mad`. Each has an empty `column`,
   `model=mad` and `step_from=default_tuned`.
-- [ ] `data-raw/habitat_score/wsg_roles_300.csv`: `wsg_roles_302.csv`, plus KO
+- [x] `data-raw/habitat_score/wsg_roles_300.csv` (KO in KOTL and PARS, both in-sample): `wsg_roles_302.csv`, plus KO
   `in_sample` rows for any KO-present WSG in the closure. Leave KO out if there are none,
   and record that.
 

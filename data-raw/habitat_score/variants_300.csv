@@ -1,0 +1,6 @@
+variant,species_code,column,value,flag,obs_stage,step_from,equals_bundle,model,set
+default_tuned,,,,,,,default_tuned,cw,
+bt_mad,BT,,,,any,default_tuned,,mad,
+gr_mad,GR,,,,any,default_tuned,,mad,
+rb_mad,RB,,,,any,default_tuned,,mad,
+ko_mad,KO,,,,any,default_tuned,,mad,
