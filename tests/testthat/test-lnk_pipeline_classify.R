@@ -199,9 +199,12 @@ bypass_calls <- function(model) {
     .lnk_pipeline_classify_build_breaks = function(...) invisible(NULL)
   )
   called <- character(0)
+  bypass_rule <- list(channel_width_min_bypass =
+                        list(stream_order_parent_min = 5L))
   local_mocked_bindings(
-    frs_params = function(...) list(BT = list(rules = list(rear = list(
-      list(channel_width_min_bypass = list(stream_order_parent_min = 5L)))))),
+    frs_params = function(...) {
+      list(BT = list(rules = list(rear = list(bypass_rule))))
+    },
     frs_habitat_classify = function(...) invisible(NULL),
     frs_order_child = function(conn, ..., species) {
       called <<- c(called, species)

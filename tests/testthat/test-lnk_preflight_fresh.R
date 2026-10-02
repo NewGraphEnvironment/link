@@ -51,7 +51,9 @@ test_that("a pre-0.35.0 frs_habitat_classify signature is caught (#286)", {
   ns$frs_habitat_classify <- function(conn, table, to, species, params,
                                       params_fresh, gate, label_block,
                                       barrier_overrides, overwrite,
-                                      verbose) NULL
+                                      verbose) {
+    NULL
+  }
   expect_identical(
     .lnk_fresh_missing_formals(ns, .lnk_fresh_required_formals()),
     "frs_habitat_classify(params_method)")
