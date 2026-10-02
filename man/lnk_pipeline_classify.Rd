@@ -11,7 +11,8 @@ lnk_pipeline_classify(
   loaded,
   schema,
   species = NULL,
-  thresholds_csv = NULL
+  thresholds_csv = NULL,
+  method_csv = NULL
 )
 }
 \arguments{
@@ -37,6 +38,17 @@ with the species present in the AOI (via
 \code{NULL} uses the config's own \code{files$parameters_habitat_thresholds},
 falling back (with a message) to the copy shipped with fresh when
 the config declares none.}
+
+\item{method_csv}{Path to the per-watershed-group habitat model table
+(\code{watershed_group_code}, \code{model} = \code{"cw"} or \code{"mad"}), passed to
+\code{\link[fresh:frs_habitat_classify]{fresh::frs_habitat_classify()}} as \code{params_method}. Default \code{NULL} uses
+the config's own \code{files$parameters_habitat_method}, falling back (with a
+message) to fresh's all-\code{cw} copy when the config declares none. A group
+the table does not list classifies on channel width. A \code{mad} group
+classifies on \code{mad_m3s}, which the prepare phase joins onto the working
+streams table, and skips the stream-order rearing bypass. Read from the
+path, not from \code{loaded$parameters_habitat_method}, as the thresholds are,
+so editing \code{loaded} has no effect here.}
 }
 \value{
 \code{conn} invisibly, for pipe chaining.

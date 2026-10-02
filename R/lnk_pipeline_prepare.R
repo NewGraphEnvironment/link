@@ -691,6 +691,15 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
     cols = c("channel_width", "channel_width_source"),
     by = "linear_feature_id")
 
+  # Mean annual discharge, for watershed groups a bundle's
+  # parameters_habitat_method puts on the `mad` model (#286). Joined for
+  # every group so the column is always there; fresh reads it only for
+  # `mad` groups. Working table only: the persist shape does not carry it.
+  fresh::frs_col_join(conn, streams_tbl,
+    from = "whse_basemapping.fwa_stream_networks_discharge",
+    cols = "mad_m3s",
+    by = "linear_feature_id")
+
   fresh::frs_col_join(conn, streams_tbl,
     from = "whse_basemapping.fwa_stream_networks_order_parent",
     cols = "stream_order_parent",

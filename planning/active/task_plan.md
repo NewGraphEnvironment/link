@@ -44,10 +44,10 @@ needs adding there.
 - [x] `lnk_config_verify` / audit pass clean on all bundles
 
 ## Phase 3: thread through classify + `mad_m3s` on working streams
-- [ ] `.lnk_pipeline_prep_network()`: add `fresh::frs_col_join(..., from = "whse_basemapping.fwa_stream_networks_discharge", cols = "mad_m3s", by = "linear_feature_id")` next to the channel_width join. Check that `frs_break_apply` carries it through splits
-- [ ] `lnk_pipeline_classify()`: add a `method_csv = NULL` argument, mirroring `thresholds_csv`. Resolve it as `method_csv %||% .lnk_habitat_method_csv(cfg)`, read it, and pass `params_method =` to `frs_habitat_classify()`. Update the roxygen
-- [ ] Tests in `test-lnk_pipeline_classify.R`, following the #282 capture pattern with mocked `frs_habitat_classify`: the bundle's table is passed, the undeclared fallback uses fresh's copy and says so, and an explicit `method_csv` wins
-- [ ] `lnk_pipeline_connect` stays as it is. `.frs_run_connectivity` is not method-aware (clustering is on gradient), so record that in findings rather than change it
+- [x] `.lnk_pipeline_prep_network()`: add `fresh::frs_col_join(..., from = "whse_basemapping.fwa_stream_networks_discharge", cols = "mad_m3s", by = "linear_feature_id")` next to the channel_width join. Check that `frs_break_apply` carries it through splits
+- [x] `lnk_pipeline_classify()`: add a `method_csv = NULL` argument, mirroring `thresholds_csv`. Resolve it as `method_csv %||% .lnk_habitat_method_csv(cfg)`, read it, and pass `params_method =` to `frs_habitat_classify()`. Update the roxygen
+- [x] Tests in `test-lnk_pipeline_classify.R`, following the #282 capture pattern with mocked `frs_habitat_classify`: the bundle's table is passed, the undeclared fallback uses fresh's copy and says so, and an explicit `method_csv` wins
+- [x] `lnk_pipeline_connect` stays as it is. `.frs_run_connectivity` is not method-aware (clustering is on gradient), so record that in findings rather than change it
 
 ## Phase 4: live verification (local docker fwapg, scratch schema)
 - [ ] State the run decisions (config, scratch schema, WSGs, species) before launching

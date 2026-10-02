@@ -535,6 +535,33 @@ test_that(".lnk_pipeline_prep_network loads fresh.streams with FWA filters", {
   expect_match(joined, "ADD COLUMN id_segment integer")
 })
 
+test_that(".lnk_pipeline_prep_network joins mad_m3s onto the working streams (#286)", {
+  joins <- list()
+  local_mocked_bindings(.lnk_db_execute = function(conn, sql) invisible(NULL))
+  local_mocked_bindings(
+    frs_col_join = function(conn, table, from, cols, by, ...) {
+      joins[[length(joins) + 1L]] <<- list(table = table, from = from,
+                                           cols = cols, by = by)
+      invisible(NULL)
+    },
+    frs_col_generate = function(...) invisible(NULL),
+    .package = "fresh"
+  )
+  .lnk_pipeline_prep_network("mock-conn", aoi = "BULK", schema = "w_bulk")
+  mad <- Filter(function(j) identical(j$cols, "mad_m3s"), joins)
+  expect_length(mad, 1L)
+  expect_identical(mad[[1]]$table, "w_bulk.streams")
+  expect_identical(mad[[1]]$from,
+                   "whse_basemapping.fwa_stream_networks_discharge")
+  expect_identical(mad[[1]]$by, "linear_feature_id")
+})
+
+test_that("mad_m3s stays out of the persisted streams shape (#286)", {
+  # Decided in #286: working table only, so existing persist schemas need
+  # no migration.
+  expect_false("mad_m3s" %in% names(cols_streams))
+})
+
 # -- prep_overrides control pass-through (manifest-driven) -------------------
 
 test_that(".lnk_pipeline_prep_overrides passes control when manifest declares it", {

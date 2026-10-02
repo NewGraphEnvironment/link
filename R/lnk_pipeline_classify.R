@@ -34,6 +34,16 @@
 #'   `NULL` uses the config's own `files$parameters_habitat_thresholds`,
 #'   falling back (with a message) to the copy shipped with fresh when
 #'   the config declares none.
+#' @param method_csv Path to the per-watershed-group habitat model table
+#'   (`watershed_group_code`, `model` = `"cw"` or `"mad"`), passed to
+#'   [fresh::frs_habitat_classify()] as `params_method`. Default `NULL` uses
+#'   the config's own `files$parameters_habitat_method`, falling back (with a
+#'   message) to fresh's all-`cw` copy when the config declares none. A group
+#'   the table does not list classifies on channel width. A `mad` group
+#'   classifies on `mad_m3s`, which the prepare phase joins onto the working
+#'   streams table, and skips the stream-order rearing bypass. Read from the
+#'   path, not from `loaded$parameters_habitat_method`, as the thresholds are,
+#'   so editing `loaded` has no effect here.
 #'
 #' @return `conn` invisibly, for pipe chaining.
 #'
@@ -58,7 +68,8 @@
 #' }
 lnk_pipeline_classify <- function(conn, aoi, cfg, loaded, schema,
                                    species = NULL,
-                                   thresholds_csv = NULL) {
+                                   thresholds_csv = NULL,
+                                   method_csv = NULL) {
   .lnk_validate_identifier(schema, "schema")
   if (!is.character(aoi) || length(aoi) != 1L || !nzchar(aoi)) {
     stop("aoi must be a single non-empty string (watershed group code)",
@@ -76,6 +87,13 @@ lnk_pipeline_classify <- function(conn, aoi, cfg, loaded, schema,
   if (!nzchar(thresholds_csv) || !file.exists(thresholds_csv)) {
     stop("thresholds_csv not found: ", thresholds_csv, call. = FALSE)
   }
+  method_csv <- method_csv %||% .lnk_habitat_method_csv(cfg)
+  if (!nzchar(method_csv) || !file.exists(method_csv)) {
+    stop("method_csv not found: ", method_csv, call. = FALSE)
+  }
+  params_method <- utils::read.csv(method_csv, stringsAsFactors = FALSE,
+                                   colClasses = "character",
+                                   na.strings = character(0))
 
   species <- species %||% lnk_pipeline_species(cfg, loaded, aoi)
   if (length(species) == 0L) {
@@ -98,6 +116,7 @@ lnk_pipeline_classify <- function(conn, aoi, cfg, loaded, schema,
     species = species,
     params = params,
     params_fresh = loaded$parameters_fresh,
+    params_method = params_method,
     gate = TRUE,
     label_block = "blocked",
     barrier_overrides = paste0(schema, ".barrier_overrides"),
@@ -142,7 +161,12 @@ lnk_pipeline_classify <- function(conn, aoi, cfg, loaded, schema,
   # `rear[].channel_width_min_bypass = list(stream_order, stream_order_parent_min)`.
   # We detect that field's presence on any rear rule and call
   # `frs_order_child` with the embedded parent_order threshold.
-  for (sp in species) {
+  #
+  # Channel-width model only (#286): the bypass stands in for a width test,
+  # and bcfp applies it inside its cw branch alone. A `mad` group skips it.
+  aoi_model <- params_method$model[match(aoi, params_method$watershed_group_code)]
+  species_bypass <- if (identical(aoi_model, "mad")) character(0) else species
+  for (sp in species_bypass) {
     rear_rules <- params[[sp]][["rules"]][["rear"]]
     bypass <- NULL
     for (rr in rear_rules) {
