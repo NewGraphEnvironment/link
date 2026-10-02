@@ -14,10 +14,11 @@
 #' @return A [DBI::DBIConnection-class] object.
 #'
 #' @details
-#' Checks `PG_*_SHARE` first (the Docker fwapg convention shared with
-#' [fresh::frs_db_conn()]), then standard PostgreSQL variables (`PGHOST`,
-#' etc.). This means `lnk_db_conn()` works identically to `frs_db_conn()`
-#' when both packages connect to the same database.
+#' Checks `PG_*_SHARE` first, then standard PostgreSQL variables
+#' (`PGHOST`, etc.). This is the reverse of [fresh::frs_db_conn()] from
+#' fresh 0.36.0, which reads `PG*` first and `PG_*_SHARE` only when none
+#' of `PG*` is set. On a machine that sets both groups to different
+#' targets, the two functions connect to different databases.
 #'
 #' @examples
 #' \dontrun{

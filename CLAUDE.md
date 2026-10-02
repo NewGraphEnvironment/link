@@ -11,6 +11,29 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
+## Status (2026-10-01) — per-WSG `cw`/`mad` habitat model threaded (#286)
+
+**Each bundle's `parameters_habitat_method.csv` reaches fresh as `params_method`.**
+- **The table:** all `cw`, a frozen copy of bcfishpass `example_newgraph`. Putting a
+  group on `mad` is a reviewed row edit.
+- **`mad_m3s`:** on the working streams only, never persisted.
+- **fresh pin:** v0.36.2 (floor 0.35.0). Cyphers must be re-prepped before the next
+  dispatch: the preflight asserts the argument and hard-fails otherwise.
+- **Mechanics:** RUNBOOK §7 "Channel width or discharge, per watershed group". Evidence:
+  `data-raw/logs/params_method_286/`.
+
+**Facts not worth re-deriving:**
+- **Never give a bundle file `source: https://github.com/smnorris/bcfishpass` unless you
+  want it csv-synced.** `sync_bcfishpass_csvs.R` selects on that exact string and
+  auto-merges byte drift. A frozen copy uses another `source` plus `derived_from`.
+- **A `mad` group with no discharge loses all stream habitat silently.** BULK has none.
+  Waterbody rules (L/W, `thresholds: false`) inherit nothing under either model, so BT
+  keeps wetland rearing under `mad`.
+- **fresh 0.36.0 reversed `frs_db_conn()`'s precedence** (`PG*` first). `lnk_db_conn()`
+  still reads `PG_*_SHARE` first; on a machine with both groups set they connect to
+  different databases.
+- **`lnk_habitat_validate()` is cw-only**; a follow-up is drafted in the #286 archive.
+
 ## Status (2026-09-29) — #284 step 5: BT `rear_gradient_max` 0.1349 scored and held
 
 **Threshold variants are scored on one shared segmentation, never on two full runs.**
@@ -76,7 +99,8 @@ none. The `bcfishpass` copy is a frozen parity input. Runs log the values in
 `<persist>.log_parameters_habitat_thresholds`. `default_tuned` (thin,
 `extends: default`) is where #284's calibrated CH/BT values land. RUNBOOK §7
 "Where habitat thresholds live" has the details, including which columns are
-carried but never applied on link's rules path (MAD, edge types) and that
+carried but never applied on link's rules path (edge types; MAD only in groups a
+bundle's `parameters_habitat_method.csv` puts on `mad`, #286) and that
 `rear_lake_ha_min` needs a rules rebuild.
 
 **`extends:` was broken for provenance until a bundle actually used it.**
@@ -373,7 +397,7 @@ link is connectivity-system agnostic. Column names are configurable parameters w
 
 ## Database Connection
 
-Uses `PG_*_SHARE` env vars (Docker fwapg, same as `frs_db_conn()`) with fallback to standard `PG*` vars. DB is needed for match/score/habitat functions that operate via SQL. The override loading and validation can work with any PostgreSQL.
+Uses `PG_*_SHARE` env vars (Docker fwapg) with fallback to standard `PG*` vars. From fresh 0.36.0 `frs_db_conn()` reads them the other way round (`PG*` first), so on a machine that sets both the two connect to different databases (#286). DB is needed for match/score/habitat functions that operate via SQL. The override loading and validation can work with any PostgreSQL.
 
 ```r
 conn <- lnk_db_conn()  # reads PG_DB_SHARE, PG_HOST_SHARE, etc.

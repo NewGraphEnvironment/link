@@ -73,6 +73,10 @@
   fallback <- if (is.null(cfg$files$parameters_habitat_thresholds)) {
     suppressMessages(.lnk_habitat_thresholds_csv(cfg))
   }
+  # Same for the cw/mad method table (#286).
+  fallback_method <- if (is.null(cfg$files$parameters_habitat_method)) {
+    suppressMessages(.lnk_habitat_method_csv(cfg))
+  }
 
   # Name each file relative to the bundle that holds it, never by absolute
   # path, so the hash is the same on every host. Leaf files keep their plain
@@ -117,6 +121,16 @@
     rel <- c(rel, "fresh:parameters_habitat_thresholds.csv")
     digests <- c(digests, if (file.exists(fallback)) {
       digest::digest(file = fallback, algo = "sha256")
+    } else {
+      "MISSING"
+    })
+  }
+
+  if (length(fallback_method) == 1L && nzchar(fallback_method)) {
+    paths <- c(paths, fallback_method)
+    rel <- c(rel, "fresh:parameters_habitat_method.csv")
+    digests <- c(digests, if (file.exists(fallback_method)) {
+      digest::digest(file = fallback_method, algo = "sha256")
     } else {
       "MISSING"
     })
@@ -189,6 +203,9 @@
     table_name = c(
       "whse_basemapping.fwa_stream_networks_sp",
       "whse_basemapping.fwa_stream_networks_channel_width",
+      # mean annual discharge: drives classification for groups a bundle's
+      # parameters_habitat_method puts on `mad` (#286)
+      "whse_basemapping.fwa_stream_networks_discharge",
       "whse_basemapping.fwa_stream_networks_order_parent",
       "whse_basemapping.fwa_lakes_poly",
       "whse_basemapping.fwa_wetlands_poly",
@@ -206,7 +223,7 @@
       "fresh.modelled_stream_crossings"
     ),
     source = c(
-      rep(fwapg, 7L),
+      rep(fwapg, 8L),
       "bcfishobs",
       "bcdata bc2pg",
       "CABD",

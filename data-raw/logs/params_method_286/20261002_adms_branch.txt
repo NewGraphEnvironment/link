@@ -1,0 +1,118 @@
+NOTICE:  schema "zz286_adms" does not exist, skipping
+
+NOTICE:  schema "fresh" already exists, skipping
+
+NOTICE:  table "barriers_definite" does not exist, skipping
+
+NOTICE:  table "observations" does not exist, skipping
+
+NOTICE:  table "streams_blk" does not exist, skipping
+
+NOTICE:  table "gradient_barriers_raw" does not exist, skipping
+
+NOTICE:  table "natural_barriers" does not exist, skipping
+
+NOTICE:  table "barrier_overrides" does not exist, skipping
+
+NOTICE:  table "barriers_bt" does not exist, skipping
+
+NOTICE:  table "barriers_ch" does not exist, skipping
+
+NOTICE:  table "barriers_cm" does not exist, skipping
+
+NOTICE:  table "barriers_co" does not exist, skipping
+
+NOTICE:  table "barriers_pk" does not exist, skipping
+
+NOTICE:  table "barriers_sk" does not exist, skipping
+
+NOTICE:  table "barriers_st" does not exist, skipping
+
+NOTICE:  table "barriers_wct" does not exist, skipping
+
+NOTICE:  table "barriers_ko" does not exist, skipping
+
+NOTICE:  table "barriers_rb" does not exist, skipping
+
+NOTICE:  table "barriers_gr" does not exist, skipping
+
+NOTICE:  table "gradient_barriers_minimal" does not exist, skipping
+
+NOTICE:  table "streams" does not exist, skipping
+
+NOTICE:  table "streams_habitat" does not exist, skipping
+
+NOTICE:  table "cabd_exclusions" does not exist, skipping
+
+NOTICE:  table "cabd_blkey_xref" does not exist, skipping
+
+NOTICE:  table "cabd_passability_status_updates" does not exist, skipping
+
+NOTICE:  table "cabd_additions" does not exist, skipping
+
+NOTICE:  table "cabd_dams_raw" does not exist, skipping
+
+NOTICE:  table "dams" does not exist, skipping
+
+NOTICE:  table "pscis_modelledcrossings_streams_xref" does not exist, skipping
+
+NOTICE:  table "pscis_stream_candidates" does not exist, skipping
+
+NOTICE:  table "pscis_streams_150m" does not exist, skipping
+
+NOTICE:  table "pscis_picked" does not exist, skipping
+
+NOTICE:  table "pscis" does not exist, skipping
+
+NOTICE:  table "crossings_lookup" does not exist, skipping
+
+NOTICE:  table "barriers_anthropogenic" does not exist, skipping
+
+NOTICE:  table "barriers_pscis" does not exist, skipping
+
+NOTICE:  table "barriers_dams" does not exist, skipping
+
+NOTICE:  table "barriers_remediations" does not exist, skipping
+
+NOTICE:  table "observations_breaks" does not exist, skipping
+
+NOTICE:  table "habitat_endpoints" does not exist, skipping
+
+NOTICE:  table "crossings_breaks" does not exist, skipping
+
+NOTICE:  table "streams_breaks" does not exist, skipping
+
+NOTICE:  relation "streams_id_segment_idx" already exists, skipping
+
+NOTICE:  table "streams_acc_015" does not exist, skipping
+
+NOTICE:  table "streams_acc_025" does not exist, skipping
+
+NOTICE:  table "streams_acc_025_ovr_bt" does not exist, skipping
+
+NOTICE:  table "streams_acc_015_ovr_ch" does not exist, skipping
+
+NOTICE:  table "streams_acc_015_ovr_co" does not exist, skipping
+
+NOTICE:  table "streams_acc_015_ovr_sk" does not exist, skipping
+
+NOTICE:  table "frs_clusters_bt" does not exist, skipping
+
+NOTICE:  table "frs_clusters_ch" does not exist, skipping
+
+NOTICE:  table "frs_clusters_co" does not exist, skipping
+
+NOTICE:  table "frs_clusters_sk" does not exist, skipping
+
+NOTICE:  table "frs_qual_spawn_sk" does not exist, skipping
+
+NOTICE:  table "frs_trace_lfid_sk" does not exist, skipping
+
+## ADMS default zz286_adms  link=0.54.0 fresh=0.36.2  cfg_hash=sha256:576b4c168da028e839d4f5927960e24c5ff683f6d0eea91536389d49bedb60e1  1.7 min
+streams n=39423 digest=bbed26e41a4206c860a51af02e27ecc7
+ species_code     n n_spawn n_rear                           digest
+           BT 39423    1484   2393 18f2d027cf834ee330995ec62b71dd3b
+           CH 39423    1068   1470 ac5e427b0e480d50e99cd8404df65157
+           CO 39423    1238   1516 1a9669255ed036a8050187a82e986176
+           RB 39423    1242   2006 6662d822c956aeab9575b11f2ff791d0
+           SK 39423     912    360 3074c3b02d2b93fbbdb193e3da28c26e

@@ -8,7 +8,7 @@
 #' May inputs and three on August inputs, produced one consolidated table
 #' set, and said nothing about it anywhere (link#246).
 #'
-#' The other seven tables in `.lnk_input_primitives()` are bulk-restored
+#' The FWA tables in `.lnk_input_primitives()` are bulk-restored
 #' FWA. They are never `ANALYZE`d, so they carry no vintage at all and are
 #' not an axis this can measure — including them would mean every host
 #' failing forever on data that is not the staleness risk.

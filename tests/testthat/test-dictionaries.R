@@ -184,6 +184,59 @@ test_that("every bundle declares its own parameters_habitat_thresholds", {
   }
 })
 
+# -- dictionary_parameters_habitat_method (#286) ------------------------------
+
+test_that("dictionary_parameters_habitat_method has the expected shape", {
+  d <- dict_read("parameters_habitat_method")
+
+  expect_true(all(c("column", "type", "group", "owner", "consumed_by",
+                    "default_when_absent", "description",
+                    "related") %in% names(d)))
+  expect_false(any(duplicated(d$column)))
+  expect_true(all(filled(d$column)))
+  expect_true(all(filled(d$description)))
+  expect_true(all(filled(d$consumed_by)))
+  expect_true(all(d$owner %in% c("fresh", "link")))
+})
+
+test_that("dictionary_parameters_habitat_method matches every bundle's CSV", {
+  d <- dict_read("parameters_habitat_method")
+  for (b in bundle_names()) {
+    expect_setequal(bundle_cols(b, "parameters_habitat_method"), d$column)
+  }
+})
+
+test_that("every bundle declares its own parameters_habitat_method", {
+  # As for thresholds: the fallback to fresh's copy is for custom bundles.
+  for (b in bundle_names()) {
+    expect_false(
+      is.null(lnk_config(b)$files$parameters_habitat_method),
+      info = sprintf("bundle %s declares no parameters_habitat_method", b))
+  }
+})
+
+test_that("every bundle's method table is one valid row per group", {
+  # fresh rejects these at classify time, after a WSG's prepare and break
+  # phases have already run; catch them at the bundle.
+  for (b in bundle_names()) {
+    m <- read_csv_plain(lnk_config(b)$files$parameters_habitat_method$path)
+    expect_true(all(m$model %in% c("cw", "mad")), info = b)
+    expect_false(any(duplicated(m$watershed_group_code)), info = b)
+    expect_true(all(filled(m$watershed_group_code)), info = b)
+  }
+})
+
+test_that("dictionary_parameters_habitat_method matches fresh's method table", {
+  # Cross-package: the table is handed to fresh as params_method, so its
+  # columns are fresh's contract.
+  skip_if_not_installed("fresh")
+  canonical <- system.file("extdata", "parameters_habitat_method.csv",
+                           package = "fresh")
+  skip_if(!nzchar(canonical), "fresh's parameters_habitat_method.csv not found")
+  expect_setequal(dict_read("parameters_habitat_method")$column,
+                  names(read_csv_plain(canonical)))
+})
+
 # -- dictionary_species_pooling / dictionary_species_groups (#290) -----------
 
 # Only bundles that declare the file carry it; a bundle without a tracker pools

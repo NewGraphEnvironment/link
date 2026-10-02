@@ -11,6 +11,7 @@ Reproduces bcfishpass output exactly for regression. All five watershed groups (
 | `dimensions.csv` | Source of `rules.yaml` — species × habitat biology encoded for bcfishpass-match |
 | `parameters_fresh.csv` | Per-species fresh overrides (spawn_gradient_min, observation_threshold, etc.) |
 | `parameters_habitat_thresholds.csv` | Per-species gradient / channel-width / MAD / lake-area thresholds and edge types. Vendored from fresh (= bcfishpass `parameters/example_newgraph` + fresh's edge-type columns); provenance in `config.yaml`. **Frozen parity input** — not touched by the csv-sync workflow, so it changes only when someone changes it on purpose. |
+| `parameters_habitat_method.csv` | Per-watershed-group habitat size model, `cw` (channel width) or `mad` (mean annual discharge), handed to fresh by classify. All `cw`; a frozen copy of bcfishpass `parameters/example_newgraph`, not csv-synced, so moving a group to `mad` is a reviewed edit (update its `checksum` in `config.yaml`). Columns in `configs/dictionary_parameters_habitat_method.csv`. |
 | `overrides/` | Synced from `smnorris/bcfishpass/data/` — expert-curated corrections + confirmed habitat + observation exclusions. Redistributed under `LICENSE-bcfishpass` at the repo root. |
 
 The bundle is consumed via `lnk_config("bcfishpass")` (manifest only — paths + provenance) and `lnk_load_overrides(cfg)` (canonical-shape tibbles). `user_habitat_classification` routes through `crate::crt_ingest()` for variant-stable ingest; the rest fall through to local CSV reads.

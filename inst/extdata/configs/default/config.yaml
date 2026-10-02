@@ -25,6 +25,8 @@ files:
     path: parameters_fresh.csv
   parameters_habitat_thresholds:
     path: parameters_habitat_thresholds.csv
+  parameters_habitat_method:
+    path: parameters_habitat_method.csv
   species_pooling:
     path: species_pooling.csv
   species_groups:
@@ -142,6 +144,13 @@ provenance:
     synced: '2026-09-25'
     checksum: sha256:7b904a18c29c724737ff24a27750bf05d7bfa281aa4fc1f7ac27c00238db042d
     shape_checksum: sha256:8de9bc1fcc2c703176a57d8a982bd26da1c49a885af3053f00078003a7e9283f
+  parameters_habitat_method.csv:
+    source: link (frozen copy; not csv-synced, link#286). Moving a group to mad is a reviewed edit here
+    derived_from: smnorris/bcfishpass@1fae4ea parameters/example_newgraph/parameters_habitat_method.csv
+    upstream_sha: 1fae4eae67284fbe7950dbdb043b589a20b428e2
+    synced: '2026-10-01'
+    checksum: sha256:9802bb71bdd7f7d296e917d138567f096a69dab12dbc7c0f331e55206e5f6a0a
+    shape_checksum: sha256:cf285e3c204249a6b628424979ef780baa271add44cc8ea6512a44d6671a9eb5
   species_pooling.csv:
     source: link (hand-authored; link#290). The DV->BT pooling tracker, one row per decision
     synced: '2026-09-27'

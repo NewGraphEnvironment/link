@@ -4,6 +4,7 @@ test_that("lnk_preflight_fresh passes against the real required set", {
   expect_true(res$ok)
   expect_length(res$missing, 0L)
   expect_length(res$missing_internal, 0L)
+  expect_length(res$missing_formals, 0L)
   expect_true(res$version_ok)
 })
 
@@ -28,6 +29,43 @@ test_that("lnk_preflight_fresh fails when a required internal is absent", {
                              quiet = TRUE)
   expect_false(res$ok)
   expect_identical(res$missing_internal, ".frs_not_an_internal")
+})
+
+test_that("lnk_preflight_fresh fails when a required argument is absent (#286)", {
+  skip_if_not_installed("fresh")
+  absent <- "not_a_formal_of_frs_habitat_classify"
+  expect_false(absent %in% names(formals(fresh::frs_habitat_classify)))
+  res <- lnk_preflight_fresh(
+    required_formals = list(frs_habitat_classify = c("params_method", absent)),
+    quiet = TRUE)
+  expect_false(res$ok)
+  expect_identical(res$missing_formals,
+                   sprintf("frs_habitat_classify(%s)", absent))
+  expect_match(res$message, "missing arguments", fixed = TRUE)
+})
+
+test_that("a pre-0.35.0 frs_habitat_classify signature is caught (#286)", {
+  # The defect itself: a fresh that exports frs_habitat_classify without
+  # params_method. Built as a fake namespace so it needs no old install.
+  ns <- new.env()
+  ns$frs_habitat_classify <- function(conn, table, to, species, params,
+                                      params_fresh, gate, label_block,
+                                      barrier_overrides, overwrite,
+                                      verbose) {
+    NULL
+  }
+  expect_identical(
+    .lnk_fresh_missing_formals(ns, .lnk_fresh_required_formals()),
+    "frs_habitat_classify(params_method)")
+  # And a function that is absent altogether reports its arguments too.
+  expect_identical(
+    .lnk_fresh_missing_formals(new.env(), .lnk_fresh_required_formals()),
+    "frs_habitat_classify(params_method)")
+})
+
+test_that("required formals name functions in the required export set", {
+  expect_true(all(names(.lnk_fresh_required_formals()) %in%
+                    .lnk_fresh_required()))
 })
 
 test_that("lnk_preflight_fresh fails a version floor above the installed", {

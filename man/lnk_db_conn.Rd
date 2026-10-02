@@ -33,10 +33,11 @@ by fresh and fpr (Docker-hosted fwapg). Falls back to standard \verb{PG*}
 variables for local PostgreSQL.
 }
 \details{
-Checks \verb{PG_*_SHARE} first (the Docker fwapg convention shared with
-\code{\link[fresh:frs_db_conn]{fresh::frs_db_conn()}}), then standard PostgreSQL variables (\code{PGHOST},
-etc.). This means \code{lnk_db_conn()} works identically to \code{frs_db_conn()}
-when both packages connect to the same database.
+Checks \verb{PG_*_SHARE} first, then standard PostgreSQL variables
+(\code{PGHOST}, etc.). This is the reverse of \code{\link[fresh:frs_db_conn]{fresh::frs_db_conn()}} from
+fresh 0.36.0, which reads \verb{PG*} first and \verb{PG_*_SHARE} only when none
+of \verb{PG*} is set. On a machine that sets both groups to different
+targets, the two functions connect to different databases.
 }
 \examples{
 \dontrun{

@@ -1,0 +1,52 @@
+NOTICE:  relation "streams_blk_idx" already exists, skipping
+
+NOTICE:  relation "streams_blk_drm_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_lfid_idx" already exists, skipping
+
+NOTICE:  relation "streams_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_id_segment_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat" already exists, skipping
+
+NOTICE:  table "streams_acc_015" does not exist, skipping
+
+NOTICE:  table "streams_acc_025" does not exist, skipping
+
+NOTICE:  table "streams_acc_025_ovr_bt" does not exist, skipping
+
+NOTICE:  table "streams_acc_015_ovr_ch" does not exist, skipping
+
+NOTICE:  table "streams_acc_015_ovr_co" does not exist, skipping
+
+NOTICE:  table "streams_acc_015_ovr_sk" does not exist, skipping
+
+NOTICE:  relation "streams_habitat_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_id_segment_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_species_code_idx" already exists, skipping
+
+## mad_check ADMS zz286_adms method_csv=method_cw.csv link=0.54.0 fresh=0.36.2 (classify only, overlay off)
+ species_code spawn_km rear_km spawn_km_nowb rear_km_nowb lake_km wetland_km
+           BT    364.8   560.8         214.5        346.2   151.6       36.9
+           CH    278.1   368.0         128.3        169.8   137.8       29.9
+           CO    312.3   368.0         162.1        169.8   144.4       30.5
+           RB    307.0   439.3         172.7        251.9   147.9       29.0
+           SK    234.3   229.9          90.5          0.0   134.9        0.0
+ spawn_null_mad rear_null_mad spawn_out spawn_no_th rear_out rear_no_th
+              1             2         0        1484        0       2621
+              1             1       157           0      487          0
+              1             1       192           0      305          0
+              1             1         0        1242        0       2006
+              1             2       127           0        0        360
+[1] 0

@@ -338,6 +338,24 @@ print.lnk_config <- function(x, ...) {
   fresh_path
 }
 
+# Path to the per-watershed-group habitat model table (`cw` or `mad`) a
+# config runs with (#286). Same contract as the thresholds CSV above: the
+# bundle's own `files: parameters_habitat_method:`, else fresh's shipped copy
+# (all `cw`), with a message because that copy sits outside the config's
+# provenance.
+.lnk_habitat_method_csv <- function(cfg) {
+  path <- cfg$files$parameters_habitat_method$path
+  if (!is.null(path)) {
+    return(path)
+  }
+  fresh_path <- system.file("extdata", "parameters_habitat_method.csv",
+                            package = "fresh")
+  message("config '", cfg$name %||% "<unnamed>", "' declares no ",
+          "files$parameters_habitat_method; using fresh's copy: ",
+          fresh_path)
+  fresh_path
+}
+
 # Absolute path of a provenance entry. Keys are relative to the bundle that
 # declared them: the leaf for its own entries, `.dir` for inherited ones.
 .lnk_provenance_path <- function(cfg, rel) {

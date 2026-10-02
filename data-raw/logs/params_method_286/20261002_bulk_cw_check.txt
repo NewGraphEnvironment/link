@@ -1,0 +1,62 @@
+NOTICE:  relation "streams_blk_idx" already exists, skipping
+
+NOTICE:  relation "streams_blk_drm_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_lfid_idx" already exists, skipping
+
+NOTICE:  relation "streams_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_id_segment_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat" already exists, skipping
+
+NOTICE:  table "streams_acc_015" does not exist, skipping
+
+NOTICE:  table "streams_acc_02" does not exist, skipping
+
+NOTICE:  table "streams_acc_025" does not exist, skipping
+
+NOTICE:  table "streams_acc_025_ovr_bt" does not exist, skipping
+
+NOTICE:  table "streams_acc_015_ovr_ch" does not exist, skipping
+
+NOTICE:  table "streams_acc_015_ovr_co" does not exist, skipping
+
+NOTICE:  table "streams_acc_015_ovr_pk" does not exist, skipping
+
+NOTICE:  table "streams_acc_015_ovr_sk" does not exist, skipping
+
+NOTICE:  table "streams_acc_02_ovr_st" does not exist, skipping
+
+NOTICE:  relation "streams_habitat_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_id_segment_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_species_code_idx" already exists, skipping
+
+## mad_check BULK zz286_bulk method_csv=method_cw.csv link=0.54.0 fresh=0.36.2 (classify only, overlay off)
+ species_code spawn_km rear_km spawn_km_nowb rear_km_nowb lake_km wetland_km
+           BT   1853.4  3300.5        1403.1       2390.3    77.7      243.4
+           CH   1263.8  2398.6         815.0       1557.2    42.5      225.3
+           CO   1790.2  2398.6        1340.0       1557.2    85.9      228.5
+           PK   1862.0     0.0        1411.2          0.0     0.0        0.0
+           RB   1818.7  3013.3        1368.5       2116.9    77.2      234.5
+           SK   1111.3    64.6         669.9          0.0    32.1        0.0
+           ST   1291.2  2990.5         842.3       2101.9    58.4      235.5
+ spawn_null_mad rear_null_mad spawn_out spawn_no_th rear_out rear_no_th
+           5553         10981         0        5553        0      10981
+           3850          8019         0           0        0          0
+           5257          8019         0           0        0          0
+           5435             0         0           0        0          0
+           5445         10070         0        5445        0      10070
+           3583           139         0           0        0        139
+           3922          9863         0           0        0          0
+[1] 0

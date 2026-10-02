@@ -337,6 +337,31 @@ test_that("inherited provenance verifies against the parent's files", {
   expect_false(any(v$byte_drift | v$shape_drift))
 })
 
+test_that("every shipped bundle's provenance verifies clean", {
+  bundles <- basename(list.dirs(system.file("extdata", "configs",
+                                            package = "link"),
+                                recursive = FALSE))
+  expect_gt(length(bundles), 0L)
+  for (b in bundles) {
+    v <- lnk_config_verify(lnk_config(b))
+    expect_false(any(v$missing), info = b)
+    expect_false(any(v$byte_drift | v$shape_drift), info = b)
+  }
+})
+
+test_that("the method table is frozen, not enrolled in csv-sync (#286)", {
+  # data-raw/sync_bcfishpass_csvs.R syncs (and auto-merges) every bcfishpass
+  # bundle entry whose source is exactly the bcfishpass repo URL. A cw -> mad
+  # flip upstream would then change the model of `default` with no review.
+  for (b in c("bcfishpass", "default", "default_extrabreaks",
+              "default_rearbreaks")) {
+    src <- lnk_config(b)$provenance[["parameters_habitat_method.csv"]]$source
+    expect_false(is.null(src), info = b)
+    expect_false(identical(src, "https://github.com/smnorris/bcfishpass"),
+                 info = b)
+  }
+})
+
 test_that("a tuned threshold reaches frs_params; bcfishpass stays put", {
   skip_if_not_installed("fresh")
   bcfp_before <- lnk_config_verify(lnk_config("bcfishpass"))

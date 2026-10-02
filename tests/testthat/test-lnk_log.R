@@ -1221,6 +1221,38 @@ test_that(".lnk_config_hash ignores the fallback when the bundle declares its ow
   expect_match(.lnk_config_hash(cfg), "^sha256:")
 })
 
+test_that(".lnk_config_hash covers fresh's method table when the bundle has none", {
+  # #286: a fresh upgrade that moves a group to mad must move the hash.
+  cfg <- lnk_config("default")
+  cfg$files$parameters_habitat_method <- NULL
+  fake <- withr::local_tempfile(fileext = ".csv")
+  writeLines("watershed_group_code,model\nADMS,cw", fake)
+  local_mocked_bindings(.lnk_habitat_method_csv = function(cfg) fake)
+  h1 <- .lnk_config_hash(cfg)
+  writeLines("watershed_group_code,model\nADMS,mad", fake)
+  h2 <- .lnk_config_hash(cfg)
+  expect_false(identical(h1, h2))
+})
+
+test_that(".lnk_config_hash ignores the method fallback when the bundle declares one", {
+  cfg <- lnk_config("default")
+  local_mocked_bindings(.lnk_habitat_method_csv = function(cfg) {
+    stop("fallback consulted for a bundle that declares its own")
+  })
+  expect_match(.lnk_config_hash(cfg), "^sha256:")
+})
+
+test_that(".lnk_config_hash moves when a bundle's own method table moves", {
+  cfg <- lnk_config("default")
+  own <- withr::local_tempfile(fileext = ".csv")
+  writeLines("watershed_group_code,model\nADMS,cw", own)
+  cfg$files$parameters_habitat_method <- list(path = own)
+  h1 <- .lnk_config_hash(cfg)
+  writeLines("watershed_group_code,model\nADMS,mad", own)
+  h2 <- .lnk_config_hash(cfg)
+  expect_false(identical(h1, h2))
+})
+
 test_that(".lnk_config_hash does not depend on the host's collation locale", {
   # Byte order, not LC_COLLATE: en_US and C sort `user_barriers_definite.csv`
   # and `user_barriers_definite_control.csv` in opposite orders.
