@@ -149,10 +149,11 @@ lnk_preflight_fresh <- function(required = .lnk_fresh_required(),
   out
 }
 
-# Non-exported fresh objects link reaches via getFromNamespace().
-# R/lnk_pipeline_connect.R:101.
+# Non-exported fresh objects link reaches via getFromNamespace():
+# .frs_run_connectivity in lnk_pipeline_connect(), .frs_habitat_models in
+# .lnk_wsg_model() (R/lnk_config.R, #299).
 .lnk_fresh_required_internal <- function() {
-  ".frs_run_connectivity"
+  c(".frs_run_connectivity", ".frs_habitat_models")
 }
 
 # Every `fresh::sym` / `fresh:::sym` reached from link's own namespace,

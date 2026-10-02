@@ -284,6 +284,31 @@ test_that(".lnk_habitat_thresholds_csv falls back to fresh's copy, loudly", {
                                   package = "fresh"))
 })
 
+# -- habitat model per watershed group (#299) ---------------------------------
+
+test_that(".lnk_wsg_model resolves each group, unlisted groups on cw", {
+  skip_if_not_installed("fresh")
+  pm <- data.frame(watershed_group_code = c("ADMS", "BULK"),
+                   model = c("mad", "cw"), stringsAsFactors = FALSE)
+  expect_identical(.lnk_wsg_model(pm, c("BULK", "ADMS", "ZZZZ")),
+                   c("cw", "mad", "cw"))
+})
+
+test_that(".lnk_wsg_model rejects a model other than cw or mad", {
+  skip_if_not_installed("fresh")
+  pm <- data.frame(watershed_group_code = "ADMS", model = "MAD")
+  expect_error(.lnk_wsg_model(pm, "ADMS"), "must be \"cw\" or \"mad\"")
+})
+
+test_that(".lnk_habitat_method_read keeps a group coded NA as a code", {
+  csv <- withr::local_tempfile(fileext = ".csv")
+  writeLines("watershed_group_code,model\nNA,mad", csv)
+  pm <- .lnk_habitat_method_read(csv)
+  expect_identical(pm$watershed_group_code, "NA")
+  skip_if_not_installed("fresh")
+  expect_identical(.lnk_wsg_model(pm, "NA"), "mad")
+})
+
 # -- default_tuned: the first shipped thin bundle (#282) ----------------------
 
 test_that("default_tuned extends default and overrides only its thresholds", {

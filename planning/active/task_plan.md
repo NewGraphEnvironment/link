@@ -38,9 +38,12 @@ the channel-width model" pins today's behaviour and should change with it.
   follow-up issue body is drafted for review (not filed).
 
 ## Phase 1: Shared model resolution
-- [ ] Add `.lnk_habitat_method_read(path)` and `.lnk_wsg_model(params_method, wsg)` beside `.lnk_habitat_method_csv()` in `R/lnk_config.R` (character read as classify does; unlisted → `"cw"`; error on a model other than cw/mad)
-- [ ] `lnk_pipeline_classify()` uses both for its read and its `aoi_model` (behaviour-preserving)
-- [ ] Unit tests: unlisted group is cw, bad model value errors, classify still skips the bypass only for mad
+
+Resolver is fresh's own `.frs_habitat_models()` via `getFromNamespace()` (added to the preflight's required internals), not a link copy.
+
+- [x] Add `.lnk_habitat_method_read(path)` and `.lnk_wsg_model(params_method, wsg)` beside `.lnk_habitat_method_csv()` in `R/lnk_config.R` (character read as classify does; unlisted → `"cw"`; error on a model other than cw/mad)
+- [x] `lnk_pipeline_classify()` uses both for its read and its `aoi_model` (behaviour-preserving)
+- [x] Unit tests: unlisted group is cw, bad model value errors, classify still skips the bypass only for mad
 
 ## Phase 2: Model-aware predicates and relaxation
 - [ ] Test first: replace "the predicate call stays on the channel-width model" with a test that the call passes `model =`; unit tests for a new pure helper `.lnk_hv_stage_exprs(spp, model)` — mad exprs reference `s.mad_m3s` not `s.channel_width`, relaxed variants replace `s.mad_m3s`, cw exprs byte-identical to today's

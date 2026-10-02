@@ -356,6 +356,23 @@ print.lnk_config <- function(x, ...) {
   fresh_path
 }
 
+# A habitat method table read as classify hands it to fresh: every column
+# character, and no `na.strings`, so a group coded "NA" stays a code rather
+# than becoming a missing value that fresh would then resolve to cw.
+.lnk_habitat_method_read <- function(path) {
+  utils::read.csv(path, stringsAsFactors = FALSE, colClasses = "character",
+                  na.strings = character(0))
+}
+
+# The model (`cw` or `mad`) each watershed group classifies on, resolved by
+# fresh's own rule so classify and the validator cannot disagree with it:
+# an unlisted group is cw, and a model other than cw/mad or a duplicated
+# group code is an error. Unnamed, one per `wsg`.
+.lnk_wsg_model <- function(params_method, wsg) {
+  resolve <- utils::getFromNamespace(".frs_habitat_models", "fresh")
+  unname(resolve(wsg, params_method))
+}
+
 # Absolute path of a provenance entry. Keys are relative to the bundle that
 # declared them: the leaf for its own entries, `.dir` for inherited ones.
 .lnk_provenance_path <- function(cfg, rel) {

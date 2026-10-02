@@ -99,8 +99,11 @@ test_that("the required set names only symbols fresh actually exports", {
   expect_length(
     setdiff(.lnk_fresh_required(), getNamespaceExports(asNamespace("fresh"))),
     0L)
-  expect_true(exists(.lnk_fresh_required_internal(),
-                     envir = asNamespace("fresh"), inherits = FALSE))
+  # exists() reads only the first name, so test each one.
+  for (nm in .lnk_fresh_required_internal()) {
+    expect_true(exists(nm, envir = asNamespace("fresh"), inherits = FALSE),
+                info = nm)
+  }
 })
 
 test_that("every fresh:: call site in link is declared as required", {

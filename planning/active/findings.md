@@ -41,7 +41,7 @@ the channel-width model" pins today's behaviour and should change with it.
   decision); prepare joins it from `whse_basemapping.fwa_stream_networks_discharge` on
   `linear_feature_id` (`R/lnk_pipeline_prepare.R:697`).
 - Classify resolves the group model with `params_method$model[match(aoi, ...)]`
-  (`R/lnk_pipeline_classify.R:167`), unlisted → cw. Validator will share that, not
+  (`R/lnk_pipeline_classify.R:165`), unlisted → cw. Validator will share that, not
   re-derive it.
 - The stream-order rearing bypass is never modelled by the validator (no reference to
   it), so it cannot be credited on a mad group; a test pins that a mad order-1 child
