@@ -82,4 +82,4 @@ no `--refresh-primitives`.
 - [x] Tests pass (full suite 2394 / 0 failed / 0 skipped, 16 warnings = baseline)
 - [ ] `/code-check` clean on each commit — **partly**: Phase 1 round 1 Clean; Phases 1-3 rounds 2-3 (found + fixed 2, ended by enumeration); Phases 4-5 docs/evidence one round only (5 false claims, all fixed, rounds 2-3 not run)
 - [x] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion
+- [x] `/planning-archive` on completion
