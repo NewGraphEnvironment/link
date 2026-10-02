@@ -786,8 +786,16 @@ dispatch.**
   stream habitat with no error. BULK has none in the local fwapg. Check
   `count(mad_m3s)` before moving a group.
 - **[`lnk_habitat_validate()`](https://newgraphenvironment.github.io/link/reference/lnk_habitat_validate.md)
-  is still cw-only**: its miss-reason relaxation rewrites
-  `s.channel_width`, so it scores a `mad` group as if it were `cw`.
+  scores each group on its own model** (#299), from the `cfg` it is
+  handed, resolved by fresh’s `.frs_habitat_models()` (one rule for
+  classify and validator). A `mad` group’s predicates and size
+  relaxation read `mad_m3s`, joined from the discharge table on
+  `linear_feature_id`; reason labels are shared with `cw` and the
+  `model` / `mad_m3s` columns split them, plus `no_mad_threshold` for a
+  species with no MAD range. To score a run made with a swapped method
+  table, swap it on the same `cfg` object
+  (`cfg$files$parameters_habitat_method$path`) before validating:
+  `lnk_pipeline_classify(method_csv =)` is invisible to the validator.
 - **Connectivity reads no size model.** `.frs_run_connectivity` takes no
   `params_method`; its one width test (`.frs_connected_waterbody`,
   `spawn_connected_cw_min`) is 0 for SK/KO in every bundle, so it is

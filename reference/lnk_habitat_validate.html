@@ -23,7 +23,7 @@ false-positive check."><meta property="og:image" content="https://newgraphenviro
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.55.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.56.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -190,12 +190,15 @@ records the WSG), <code>n_obs</code> (locations on a segment), <code>n_unattache
 <code>accessible_km</code>, <code>spawning_km</code>, <code>rearing_km</code> from <code><a href="lnk_rollup_wsg.html">lnk_rollup_wsg()</a></code>.
 With <code>absences</code>, also <code>n_absence</code>, <code>n_absence_accessible</code>,
 <code>n_absence_spawning</code>, <code>n_absence_rearing</code> (stream) and
-<code>n_absence_rearing_any</code> (the same on every stage).</p></li>
+<code>n_absence_rearing_any</code> (the same on every stage). <code>model</code> is the
+WSG's habitat model (<code>cw</code> or <code>mad</code>).</p></li>
 <li><p><code>observations</code>: one row per retained location, with its segment's
-<code>gradient</code>, <code>channel_width</code>, <code>channel_width_source</code>, <code>edge_type</code>,
-<code>stream_order</code>, <code>waterbody_type</code>, <code>access</code>, the capture flags,
-<code>in_uhc_spawn</code>, <code>in_uhc_rear</code>, the predicate results, and the two miss
-reasons.</p></li>
+<code>gradient</code>, <code>channel_width</code>, <code>channel_width_source</code>, <code>mad_m3s</code> (on
+<code>mad</code> groups only, else <code>NA</code>), <code>edge_type</code>, <code>stream_order</code>,
+<code>waterbody_type</code>, <code>access</code>, <code>model</code>, the capture flags,
+<code>in_uhc_spawn</code>, <code>in_uhc_rear</code>, the predicate results (<code>pred_&lt;stage&gt;</code>,
+relaxed <code>_g</code>, <code>_w</code>, <code>_gw</code>, and on <code>mad</code> groups for a species with no
+MAD range <code>_nomad</code>, <code>_nomad_g</code>), and the two miss reasons.</p></li>
 </ul></div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -290,9 +293,15 @@ observed gradients are cut off at the access limit.</p></li>
 the rear reason (compare them with <code>n_rearing_any</code>, not <code>n_rearing</code>).
 Both re-evaluate the bundle's own
 habitat predicates (<code><a href="https://newgraphenvironment.github.io/fresh/reference/frs_habitat_predicates.html" class="external-link">fresh::frs_habitat_predicates()</a></code> over <code>cfg$rules</code>
-and its thresholds CSV, channel-width model) on the segment, then again
-with the gradient and the channel width each moved to the stage's
-minimum:</p><ul><li><p><code>NA</code> — captured; <code>no_segment</code> — the location attaches to no segment;</p></li>
+and its thresholds CSV) on the segment, then again with the gradient and
+the size each moved to the stage's minimum. The size is the one the group
+classified on: the model <code>cfg</code>'s <code>parameters_habitat_method.csv</code> gives
+the WSG, resolved as <code><a href="lnk_pipeline_classify.html">lnk_pipeline_classify()</a></code> resolves it (an unlisted
+group is <code>cw</code>). On <code>cw</code> it is the channel width; on <code>mad</code> it is the mean
+annual discharge <code>mad_m3s</code>, joined from
+<code>whse_basemapping.fwa_stream_networks_discharge</code> on <code>linear_feature_id</code>
+because the persist does not carry it. The <code>width</code> labels below mean
+that size on either model; <code>model</code> and <code>mad_m3s</code> split them:</p><ul><li><p><code>NA</code> — captured; <code>no_segment</code> — the location attaches to no segment;</p></li>
 <li><p><code>not_accessible</code> — the segment's <code>access_&lt;sp&gt;</code> is not 1 or 2;</p></li>
 <li><p><code>fails_gradient</code> / <code>fails_width</code> / <code>width_null</code> — passes once that one
 value is relaxed (<code>width_null</code> when the width is NULL);
@@ -301,10 +310,20 @@ window (a negative gradient), not above it;</p></li>
 <li><p><code>fails_gradient_or_width</code> — either relaxation alone passes (through
 different branches of the rule);</p></li>
 <li><p><code>fails_gradient_and_width</code> — passes only with both relaxed;</p></li>
+<li><p><code>no_mad_threshold</code> — a <code>mad</code> group where the species has no MAD range
+for the stage (fresh then fails every inheriting stream rule outright)
+and supplying one would admit the segment; a segment with no discharge
+reads <code>width_null</code> instead, and one whose gradient also fails reads
+<code>fails_gradient_and_width</code>;</p></li>
 <li><p><code>rule_excludes</code> — fails even then: edge type, waterbody or lake size;</p></li>
 <li><p><code>post_predicate</code> — passes the predicate but is not habitat: removed by
 clustering (connectivity to spawning) or access gating.</p></li>
-</ul></div>
+</ul><p>The method table is the one in <code>cfg</code>. A run classified with another
+(a swapped bundle file, or <code>lnk_pipeline_classify(method_csv =)</code>) is not
+detected, so swap it on the <code>cfg</code> passed here too. A rule-level size
+window in <code>rules.yaml</code> with a floor above the stage minimum would turn
+size misses into <code>rule_excludes</code>; no bundled rules set one.</p>
+    </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p><code><a href="lnk_rollup_wsg.html">lnk_rollup_wsg()</a></code>, <code><a href="lnk_compare_rollup.html">lnk_compare_rollup()</a></code></p>

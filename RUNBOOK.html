@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.55.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.56.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -476,7 +476,7 @@ mc_barrier (from barrier_sources flags, resident vs anadromous differ slightly):
 <li>
 <strong>Discharge coverage is uneven.</strong> A segment with NULL <code>mad_m3s</code> fails every mad test, so a <code>mad</code> group without coverage loses all of its stream habitat with no error. BULK has none in the local fwapg. Check <code>count(mad_m3s)</code> before moving a group.</li>
 <li>
-<strong><code><a href="reference/lnk_habitat_validate.html">lnk_habitat_validate()</a></code> is still cw-only</strong>: its miss-reason relaxation rewrites <code>s.channel_width</code>, so it scores a <code>mad</code> group as if it were <code>cw</code>.</li>
+<strong><code><a href="reference/lnk_habitat_validate.html">lnk_habitat_validate()</a></code> scores each group on its own model</strong> (#299), from the <code>cfg</code> it is handed, resolved by fresh’s <code>.frs_habitat_models()</code> (one rule for classify and validator). A <code>mad</code> group’s predicates and size relaxation read <code>mad_m3s</code>, joined from the discharge table on <code>linear_feature_id</code>; reason labels are shared with <code>cw</code> and the <code>model</code> / <code>mad_m3s</code> columns split them, plus <code>no_mad_threshold</code> for a species with no MAD range. To score a run made with a swapped method table, swap it on the same <code>cfg</code> object (<code>cfg$files$parameters_habitat_method$path</code>) before validating: <code>lnk_pipeline_classify(method_csv =)</code> is invisible to the validator.</li>
 <li>
 <strong>Connectivity reads no size model.</strong> <code>.frs_run_connectivity</code> takes no <code>params_method</code>; its one width test (<code>.frs_connected_waterbody</code>, <code>spawn_connected_cw_min</code>) is 0 for SK/KO in every bundle, so it is inert.</li>
 </ul><hr></div>

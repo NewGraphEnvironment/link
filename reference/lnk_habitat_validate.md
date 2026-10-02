@@ -141,13 +141,16 @@ A list of two data frames:
   [`lnk_rollup_wsg()`](https://newgraphenvironment.github.io/link/reference/lnk_rollup_wsg.md).
   With `absences`, also `n_absence`, `n_absence_accessible`,
   `n_absence_spawning`, `n_absence_rearing` (stream) and
-  `n_absence_rearing_any` (the same on every stage).
+  `n_absence_rearing_any` (the same on every stage). `model` is the
+  WSG's habitat model (`cw` or `mad`).
 
 - `observations`: one row per retained location, with its segment's
-  `gradient`, `channel_width`, `channel_width_source`, `edge_type`,
-  `stream_order`, `waterbody_type`, `access`, the capture flags,
-  `in_uhc_spawn`, `in_uhc_rear`, the predicate results, and the two miss
-  reasons.
+  `gradient`, `channel_width`, `channel_width_source`, `mad_m3s` (on
+  `mad` groups only, else `NA`), `edge_type`, `stream_order`,
+  `waterbody_type`, `access`, `model`, the capture flags,
+  `in_uhc_spawn`, `in_uhc_rear`, the predicate results (`pred_<stage>`,
+  relaxed `_g`, `_w`, `_gw`, and on `mad` groups for a species with no
+  MAD range `_nomad`, `_nomad_g`), and the two miss reasons.
 
 ## Details
 
@@ -250,9 +253,16 @@ capture there says nothing about thresholds.
 the rear reason (compare them with `n_rearing_any`, not `n_rearing`).
 Both re-evaluate the bundle's own habitat predicates
 ([`fresh::frs_habitat_predicates()`](https://newgraphenvironment.github.io/fresh/reference/frs_habitat_predicates.html)
-over `cfg$rules` and its thresholds CSV, channel-width model) on the
-segment, then again with the gradient and the channel width each moved
-to the stage's minimum:
+over `cfg$rules` and its thresholds CSV) on the segment, then again with
+the gradient and the size each moved to the stage's minimum. The size is
+the one the group classified on: the model `cfg`'s
+`parameters_habitat_method.csv` gives the WSG, resolved as
+[`lnk_pipeline_classify()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_classify.md)
+resolves it (an unlisted group is `cw`). On `cw` it is the channel
+width; on `mad` it is the mean annual discharge `mad_m3s`, joined from
+`whse_basemapping.fwa_stream_networks_discharge` on `linear_feature_id`
+because the persist does not carry it. The `width` labels below mean
+that size on either model; `model` and `mad_m3s` split them:
 
 - `NA` — captured; `no_segment` — the location attaches to no segment;
 
@@ -268,10 +278,22 @@ to the stage's minimum:
 
 - `fails_gradient_and_width` — passes only with both relaxed;
 
+- `no_mad_threshold` — a `mad` group where the species has no MAD range
+  for the stage (fresh then fails every inheriting stream rule outright)
+  and supplying one would admit the segment; a segment with no discharge
+  reads `width_null` instead, and one whose gradient also fails reads
+  `fails_gradient_and_width`;
+
 - `rule_excludes` — fails even then: edge type, waterbody or lake size;
 
 - `post_predicate` — passes the predicate but is not habitat: removed by
   clustering (connectivity to spawning) or access gating.
+
+The method table is the one in `cfg`. A run classified with another (a
+swapped bundle file, or `lnk_pipeline_classify(method_csv =)`) is not
+detected, so swap it on the `cfg` passed here too. A rule-level size
+window in `rules.yaml` with a floor above the stage minimum would turn
+size misses into `rule_excludes`; no bundled rules set one.
 
 ## See also
 
