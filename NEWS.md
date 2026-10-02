@@ -1,3 +1,12 @@
+# link 0.57.0
+
+**`default_tuned` gives BT, GR, KO and RB a mean-annual-discharge range, scored against held-out fish observations** ([#302](https://github.com/NewGraphEnvironment/link/issues/302)). Under the `mad` habitat model a species with no range loses every stream rule, and `default` gives these four none. The ranges are inert while every watershed group is on `cw`, which is every group today.
+
+- **The values** (m³/s, every maximum open): BT 0.078 for spawning and rearing, GR 0.96 spawning and 0.97 rearing, RB 0.011 spawning and 0.019 rearing, KO 0.57 spawning. KO's is unscored, because it has no held-out group.
+- **How they were set.** Each candidate is the 5th percentile of discharge at fish observations in 46 calibration groups (`data-raw/query_habitat_thresholds_mad.R`). Each was then scored on held-out groups under a rule fixed before the build. Every loosening past the 10th percentile was refused except RB spawning.
+- **Read before moving a group to `mad`.** At these values a `mad` group keeps at least a third less BT stream rearing than `cw`, and at least four-fifths less GR, on the held-out groups. Stream size and sampling effort are not yet separated. `research/habitat_thresholds.md`, "MAD (discharge)", has the numbers.
+- **The threshold-variant harness now scores discharge ladders.** It gains `model` and `set` columns, an anchor rung from `cw` to `mad`, downward `_min` steps and `--floor`. Re-scoring #284's build reproduces its outputs.
+
 # link 0.56.0
 
 **`lnk_habitat_validate()` scores each watershed group on the habitat model it was classified on** ([#299](https://github.com/NewGraphEnvironment/link/issues/299)). It reads the method table in the `cfg` it is given and resolves each group's model with fresh's own rule, which `lnk_pipeline_classify()` now shares.
