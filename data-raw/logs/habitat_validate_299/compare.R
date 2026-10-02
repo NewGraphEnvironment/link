@@ -45,19 +45,29 @@ cat("## 2. persisted TRUE, re-built predicate FALSE (zz299_mad, ADMS on mad)\n")
 cat("branch:\n"); print(disagree(bm$observations), row.names = FALSE)
 cat("main (cw predicates on a mad run):\n")
 print(disagree(mm$observations), row.names = FALSE)
-cat("\n## 3. miss reasons on the mad run\n")
-tab <- function(o, col) {
+cat("\n## 3. miss reasons on the mad run (locations)\n")
+# `all`: every location, against that stage's predicate. `staged`: only
+# locations whose records carry the stage, as the summary's stage rows and
+# the driver's misses.csv count them.
+tab <- function(o, col, keep) {
+  o <- o[keep(o), , drop = FALSE]
   as.data.frame(table(species = o$species_code,
                       reason = ifelse(is.na(o[[col]]), "captured", o[[col]])),
                 stringsAsFactors = FALSE)
 }
-for (col in c("miss_reason_spawn", "miss_reason_rear")) {
-  m <- merge(tab(bm$observations, col), tab(mm$observations, col),
+sets <- list(
+  spawn_all = list("miss_reason_spawn", function(o) rep(TRUE, nrow(o))),
+  spawn_staged = list("miss_reason_spawn", function(o) o$is_spawn %in% TRUE),
+  rear_all = list("miss_reason_rear", function(o) rep(TRUE, nrow(o))),
+  rear_staged = list("miss_reason_rear", function(o) o$is_rear %in% TRUE))
+for (nm in names(sets)) {
+  col <- sets[[nm]][[1]]; keep <- sets[[nm]][[2]]
+  m <- merge(tab(bm$observations, col, keep), tab(mm$observations, col, keep),
              by = c("species", "reason"), all = TRUE,
              suffixes = c("_branch", "_main"))
   m[is.na(m)] <- 0L
   m <- m[m$Freq_branch > 0 | m$Freq_main > 0, ]
-  cat(col, "\n"); print(m, row.names = FALSE)
+  cat(nm, "\n"); print(m, row.names = FALSE)
 }
 cat("\nmad_m3s present on", sum(!is.na(bm$observations$mad_m3s)), "of",
     nrow(bm$observations), "mad-group locations\n")
