@@ -57,9 +57,9 @@ needs adding there.
 - [x] A `mad` WSG with no discharge coverage (BULK has none): confirm and record what happens. Every segment fails the mad rule, so expect zero stream habitat. Surface this, and do not add a workaround
 
 ## Phase 5: docs + follow-ups
-- [ ] RUNBOOK §7 "Where habitat thresholds live": add the method table, the fallback, and that `mad_m3s` exists only in the working schema
-- [ ] NEWS entry (the version bump comes at merge, through `/gh-pr-merge`)
-- [ ] Draft the follow-up issue body in findings, for review and not filed: `lnk_habitat_validate()`'s width relaxation (`R/lnk_habitat_validate.R:759-781`) is channel-width only and gives wrong miss reasons for `mad` groups. `frs_habitat_predicates(model=)` exists to fix it
+- [x] RUNBOOK §7 "Where habitat thresholds live": add the method table, the fallback, and that `mad_m3s` exists only in the working schema
+- [x] NEWS text drafted in the PR body. This repo writes NEWS.md only in the `Release vX` commit `/gh-pr-merge` makes, so the branch does not touch it
+- [x] Draft the follow-up issue body in findings, for review and not filed: `lnk_habitat_validate()`'s width relaxation (`R/lnk_habitat_validate.R:759-781`) is channel-width only and gives wrong miss reasons for `mad` groups. `frs_habitat_predicates(model=)` exists to fix it
 
 ## Validation
 

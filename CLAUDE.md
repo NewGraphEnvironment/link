@@ -76,7 +76,8 @@ none. The `bcfishpass` copy is a frozen parity input. Runs log the values in
 `<persist>.log_parameters_habitat_thresholds`. `default_tuned` (thin,
 `extends: default`) is where #284's calibrated CH/BT values land. RUNBOOK §7
 "Where habitat thresholds live" has the details, including which columns are
-carried but never applied on link's rules path (MAD, edge types) and that
+carried but never applied on link's rules path (edge types; MAD only in groups a
+bundle's `parameters_habitat_method.csv` puts on `mad`, #286) and that
 `rear_lake_ha_min` needs a rules rebuild.
 
 **`extends:` was broken for provenance until a bundle actually used it.**
