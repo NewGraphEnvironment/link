@@ -3,12 +3,14 @@ description: |
   The `default` bundle with calibrated species habitat thresholds. Inherits
   everything from `default` (rules, dimensions, parameters_fresh, overrides,
   pipeline knobs) and overrides only `parameters_habitat_thresholds.csv` and
-  the persist schema. From link#284 it differs from default in one cell: BT
-  rear_gradient_max 0.1049 -> 0.1349 (BT and DV records pooled). Evidence, and the gradient and width
-  values that were examined and kept, are in
-  research/habitat_thresholds.md. The BT value was scored against held-out
-  fish observations (link#284 step 5) and held; the kept CH values are
-  unscored.
+  the persist schema. From link#284 it differs from default in BT
+  rear_gradient_max 0.1049 -> 0.1349 (BT and DV records pooled), scored
+  against held-out fish observations and held. From link#302 it carries mean
+  annual discharge ranges for the species default leaves without one (BT, GR
+  and RB spawning and rearing, KO spawning; maxima open), so a group put on
+  the `mad` model keeps stream habitat for them (less rearing than `cw` gives;
+  see the research doc); they move no output while every group is on `cw`. Evidence, and the values examined and kept, are in
+  research/habitat_thresholds.md.
 
 extends: default
 
@@ -21,9 +23,9 @@ pipeline:
 
 provenance:
   parameters_habitat_thresholds.csv:
-    source: link (hand-tuned from configs/default/parameters_habitat_thresholds.csv; link#284)
+    source: link (hand-tuned from configs/default/parameters_habitat_thresholds.csv; link#284, link#302)
     upstream_sha: 7f12d99115b7d20302d5ed043188cb870f90f83b
     upstream_version: fresh@v0.33.0
-    synced: '2026-09-26'
-    checksum: sha256:8ee57893239b74ac96420cc963e9b48e84c903442342d61efc718d7e187ff463
+    synced: '2026-10-02'
+    checksum: sha256:247a7088101cb3538c8a88f19d130cd4db3137aa0fcc6fa661656b29b284ab3e
     shape_checksum: sha256:8de9bc1fcc2c703176a57d8a982bd26da1c49a885af3053f00078003a7e9283f

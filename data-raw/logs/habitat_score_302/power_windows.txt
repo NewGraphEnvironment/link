@@ -1,0 +1,43 @@
+covered WSGs: 123 ; calibration: 55 
+BT present, covered, non-calibration: 60 ; calibration: 52 
+GR present, covered, non-calibration: 20 ; calibration: 19 
+KO present, covered, non-calibration: 0 ; calibration: 4 
+RB present, covered, non-calibration: 71 ; calibration: 55 
+
+all covered non-calibration WSGs:
+         p10_to_p05 p05_to_p02
+BT rear         141         70
+BT spawn        141         70
+GR rear         100         65
+GR spawn        100         65
+RB rear         419        221
+RB spawn        128         27
+KO spawn          0          0
+
+calibration WSGs:
+         p10_to_p05 p05_to_p02
+BT rear         147         93
+BT spawn        147         93
+GR rear          31         20
+GR spawn         31         20
+RB rear         416        223
+RB spawn         15          3
+KO spawn          2          0
+
+densest covered non-calibration WSGs per ladder, both windows together:
+  BT rear : HERR 46 REVL 26 ELKR 17 KOTR 17 UHAF 12 MURR 11 DRIR 8 UARL 8 CARR 7 USHU 7 
+  BT spawn : HERR 46 REVL 26 ELKR 17 KOTR 17 UHAF 12 MURR 11 DRIR 8 UARL 8 CARR 7 USHU 7 
+  GR rear : UBTN 45 MURR 36 LHAF 35 USIK 14 KISK 13 LSIK 10 MILL 5 UHAF 4 GATA 2 KAHN 1 
+  GR spawn : UBTN 45 MURR 36 LHAF 35 USIK 14 KISK 13 LSIK 10 MILL 5 UHAF 4 GATA 2 KAHN 1 
+  RB rear : SIML 63 OKAN 57 KETL 44 LNTH 39 MAHD 26 QUES 26 USHU 25 NAZR 23 MIDR 22 TAKL 19 
+  RB spawn : OKAN 28 SIML 28 KETL 27 LNTH 16 USHU 16 STUL 4 CARR 3 BONP 2 DEAD 2 GUIC 2 
+  KO spawn :  NA  NA  NA  NA  NA  NA  NA  NA  NA  NA 
+
+chosen held-out set (wsg_roles_302.csv):
+         p10_to_p05 p05_to_p02
+BT rear          67         14
+BT spawn         67         14
+GR rear          71         45
+GR spawn         71         45
+RB rear         103         64
+RB spawn         68         15

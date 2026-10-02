@@ -1,4 +1,6 @@
-# FISS site-level evidence for CH and BT habitat thresholds (link#284).
+# FISS site-level evidence for habitat thresholds: CH and BT gradient and
+# width (link#284), and the snapped segment's mean annual discharge for the
+# MAD ranges (link#302).
 #
 # Provincial FISS data submissions (the .xls behind FISS sample sites), as
 # parsed into per-WSG snapshots by the `knowledge` repo (scripts 0200-0220).
@@ -14,12 +16,17 @@
 #
 # Read-only against docker fwapg (:5432); temp tables only.
 #
-#   LNK_KNOWLEDGE_DIR=~/Projects/repo/knowledge Rscript data-raw/query_habitat_thresholds_fiss.R
+#   LNK_KNOWLEDGE_DIR=~/Projects/repo/knowledge Rscript data-raw/query_habitat_thresholds_fiss.R \
+#     [--species=CH,BT] [--out=data-raw/logs/habitat_thresholds_284]
 #
-# Writes to data-raw/logs/habitat_thresholds_284/:
+# --species takes any of CH, BT, GR, KO, RB (matched on the common name in the
+# FISS species list). The defaults reproduce #284's run.
+#
+# Writes to --out:
 #   (site rows only when LNK_FISS_SITES_OUT names a path: `knowledge` is a
 #   private repo and link is public, so only aggregates are committed here)
-#   fiss_presence.csv     presence vs absence against current cutoffs, per species
+#   fiss_presence.csv     presence vs absence against current cutoffs, per species,
+#                         plus the snapped segment's mad_m3s (`segment mad_m3s`)
 #   fiss_width_error.csv  measured vs segment channel width, by segment width source
 #   fiss_stamp.txt        knowledge SHA, WSGs, counts
 
@@ -29,7 +36,26 @@ suppressPackageStartupMessages({
   library(dplyr)
 })
 
-dir_out <- file.path("data-raw", "logs", "habitat_thresholds_284")
+opt <- function(name, default) {
+  a <- grep(paste0("^--", name, "="), commandArgs(trailingOnly = TRUE),
+            value = TRUE)
+  if (length(a) == 0L) default else sub(paste0("^--", name, "="), "", a[length(a)])
+}
+dir_out <- opt("out", file.path("data-raw", "logs", "habitat_thresholds_284"))
+# FISS lists species by common name.
+species_names <- c(CH = "Chinook", BT = "Bull Trout", GR = "Arctic Grayling",
+                   KO = "Kokanee", RB = "Rainbow Trout")
+species <- toupper(trimws(strsplit(opt("species", "CH,BT"), ",")[[1]]))
+# The default --out is #284's committed evidence; another species set must
+# not overwrite it.
+if (!any(grepl("^--out=", commandArgs(trailingOnly = TRUE))) &&
+    !identical(species, c("CH", "BT"))) {
+  stop("--species other than CH,BT needs an explicit --out", call. = FALSE)
+}
+if (!all(species %in% names(species_names))) {
+  stop("--species takes ", paste(names(species_names), collapse = ", "),
+       call. = FALSE)
+}
 fs::dir_create(dir_out)
 dir_knowledge <- Sys.getenv("LNK_KNOWLEDGE_DIR",
                             fs::path_expand("~/Projects/repo/knowledge"))
@@ -46,7 +72,7 @@ schema <- "fresh"
 cfg <- lnk_config("default")
 th <- readr::read_csv(cfg$files$parameters_habitat_thresholds$path,
                       show_col_types = FALSE) |>
-  filter(species_code %in% c("CH", "BT"))
+  filter(species_code %in% species)
 presence <- readr::read_csv(cfg$files$wsg_species_presence$path,
                             show_col_types = FALSE,
                             col_types = readr::cols(.default = "c"))
@@ -69,9 +95,11 @@ sites <- bind_rows(lapply(wsgs, function(w) {
     gradient = num(average_gradient_percent),
     effort_recorded = effort_recorded %in% "TRUE",
     nfc = nfc %in% "TRUE",
-    species_list,
-    ch = grepl("Chinook", species_list, ignore.case = TRUE),
-    bt = grepl("Bull Trout", species_list, ignore.case = TRUE))
+    species_list)
+for (sp in species) {
+  sites[[tolower(sp)]] <- grepl(species_names[[sp]], sites$species_list,
+                                ignore.case = TRUE)
+}
 
 # An absence is a site that was sampled with recorded effort (or an explicit
 # no-fish-captured) and did not catch the species.
@@ -93,11 +121,14 @@ snap <- dbGetQuery(conn, sprintf("
     FROM t_fiss)
   SELECT p.site_key, p.watershed_group_code, s.id_segment, s.gradient AS seg_gradient,
          s.channel_width AS seg_channel_width, s.channel_width_source,
-         s.stream_order, s.edge_type, s.dist_m
+         s.stream_order, s.edge_type, s.dist_m,
+         (SELECT d.mad_m3s FROM whse_basemapping.fwa_stream_networks_discharge d
+           WHERE d.linear_feature_id = s.linear_feature_id) AS seg_mad_m3s
   FROM p
   JOIN LATERAL (
     SELECT s.id_segment, s.gradient, s.channel_width, s.channel_width_source,
-           s.stream_order, s.edge_type, st_distance(s.geom, p.geom) AS dist_m
+           s.stream_order, s.edge_type, s.linear_feature_id,
+           st_distance(s.geom, p.geom) AS dist_m
     FROM %s.streams s
     WHERE s.watershed_group_code = p.watershed_group_code
       AND st_dwithin(s.geom, p.geom, 150)
@@ -146,11 +177,20 @@ pres_one <- function(sp) {
                 p95 = quantile(seg_channel_width, 0.95),
                 share_below_spawn_min = mean(seg_channel_width < t$spawn_channel_width_min),
                 share_below_rear_min = mean(seg_channel_width < t$rear_channel_width_min),
+                .groups = "drop"),
+    # Discharge is modelled, never measured at the site: the segment's value.
+    d |> filter(!is.na(seg_mad_m3s), dist_m <= 50) |>
+      group_by(outcome) |>
+      summarise(metric = "segment mad_m3s (snapped <= 50 m)", n = n(),
+                p05 = quantile(seg_mad_m3s, 0.05), p50 = median(seg_mad_m3s),
+                p95 = quantile(seg_mad_m3s, 0.95),
+                share_below_spawn_min = mean(seg_mad_m3s < t$spawn_mad_min),
+                share_below_rear_min = mean(seg_mad_m3s < t$rear_mad_min),
                 .groups = "drop")) |>
     mutate(species_code = sp, wsgs = paste(intersect(in_range, unique(d$watershed_group_code)),
                                            collapse = " "), .before = 1)
 }
-readr::write_csv(bind_rows(pres_one("CH"), pres_one("BT")),
+readr::write_csv(bind_rows(lapply(species, pres_one)),
                  file.path(dir_out, "fiss_presence.csv"), na = "")
 
 # -- modelled vs measured width at the same place ------------------------------
@@ -200,6 +240,7 @@ writeLines(c(
           git1(dir_knowledge, "rev-parse --short HEAD"),
           if (length(git1(dir_knowledge, "status --porcelain -- data"))) " (dirty data/)" else ""),
   sprintf("wsgs: %s", paste(toupper(wsgs), collapse = " ")),
+  sprintf("species: %s", paste(species, collapse = ",")),
   sprintf("schema snapped to: %s (nearest segment within 150 m, same WSG); last logged run per WSG: %s",
           schema, if (is.na(vintage)) "none logged" else vintage),
   sprintf("sites: %d; with measured channel width: %d; with gradient: %d; snapped: %d",

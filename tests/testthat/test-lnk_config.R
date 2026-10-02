@@ -328,7 +328,7 @@ test_that("default_tuned extends default and overrides only its thresholds", {
   expect_setequal(names(cfg$files), names(def$files))
 })
 
-test_that("default_tuned differs from default only in the #284 cells", {
+test_that("default_tuned differs from default only in the #284 and #302 cells", {
   # Every other value was examined and kept (research/habitat_thresholds.md);
   # a cell outside this list changing is an untracked calibration.
   rd <- function(cfg) {
@@ -348,9 +348,21 @@ test_that("default_tuned differs from default only in the #284 cells", {
   }))
   diffs <- diffs[order(diffs$species_code, diffs$column), ]
   rownames(diffs) <- NULL
-  expect_identical(diffs, data.frame(
-    species_code = "BT", column = "rear_gradient_max",
-    default = 0.1049, tuned = 0.1349))
+  # #302: MAD ranges where default has none (maxima open).
+  mad <- data.frame(
+    species_code = c(rep("BT", 4), rep("GR", 4), rep("KO", 2), rep("RB", 4)),
+    column = c("rear_mad_max", "rear_mad_min", "spawn_mad_max", "spawn_mad_min",
+               "rear_mad_max", "rear_mad_min", "spawn_mad_max", "spawn_mad_min",
+               "spawn_mad_max", "spawn_mad_min",
+               "rear_mad_max", "rear_mad_min", "spawn_mad_max", "spawn_mad_min"),
+    default = NA_real_,
+    tuned = c(9999, 0.078, 9999, 0.078, 9999, 0.97, 9999, 0.96, 9999, 0.57,
+              9999, 0.019, 9999, 0.011))
+  want <- rbind(data.frame(species_code = "BT", column = "rear_gradient_max",
+                           default = 0.1049, tuned = 0.1349), mad)
+  want <- want[order(want$species_code, want$column), ]
+  rownames(want) <- NULL
+  expect_equal(diffs, want)
 })
 
 test_that("inherited provenance verifies against the parent's files", {

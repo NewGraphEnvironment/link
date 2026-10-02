@@ -1,0 +1,204 @@
+08:46:47 base: default, 20 WSGs (focal REVL,ELKR,KOTR,UARL,MURR,UBTN,LHAF,PARS,KOTL,SIML,OKAN,KETL) into score302_default
+08:49:51 base KETL done in 3.1 min
+08:53:01 base LARL done in 3.1 min
+08:53:01 base LPCE: already persisted, skipped
+08:55:42 base OKAN done in 2.7 min
+08:59:49 base SIML done in 4.1 min
+09:04:47 base KOTL done in 4.9 min
+09:06:44 base LBTN done in 1.9 min
+09:09:33 base MURR done in 2.8 min
+09:11:47 base UARL done in 2.2 min
+09:11:47 base UPCE: already persisted, skipped
+09:13:43 base BULL done in 1.9 min
+09:13:43 base LHAF: already persisted, skipped
+09:17:09 base PCEA done in 3.4 min
+09:19:23 base REVL done in 2.2 min
+09:20:41 base UBTN done in 1.3 min
+Override validation: working_score302_elkr.pscis_fixes vs working_score302_elkr.crossings
+  Total overrides:  329
+  Valid (matched):  293
+  Orphans:          36  <-- not found in crossings
+  Duplicates:       0
+Updated 293 of 7306 rows (barrier_status)
+09:24:39 base ELKR done in 4.0 min
+09:26:00 base PARA done in 1.3 min
+09:28:58 base SMAR done in 3.0 min
+09:31:45 base KOTR done in 2.8 min
+Override validation: working_score302_pars.pscis_fixes vs working_score302_pars.crossings
+  Total overrides:  3
+  Valid (matched):  3
+  Orphans:          0
+  Duplicates:       0
+Updated 3 of 3961 rows (barrier_status)
+09:36:15 base PARS done in 4.5 min
+09:36:57 recompute REVL: streams_access unchanged
+09:37:44 recompute ELKR: streams_access unchanged
+09:38:18 recompute KOTR: streams_access unchanged
+09:38:59 recompute UARL: streams_access unchanged
+09:39:32 recompute MURR: streams_access unchanged
+09:39:42 recompute UBTN: streams_access unchanged
+09:40:03 recompute LHAF: streams_access unchanged
+09:41:11 recompute PARS: streams_access unchanged
+09:42:09 recompute KOTL: streams_access unchanged
+09:42:28 recompute SIML: streams_access unchanged
+09:43:04 recompute OKAN: streams_access unchanged
+09:43:29 recompute KETL: streams_access CHANGED
+There were 50 or more warnings (use warnings() to see the first 50)
+09:43:29 variant default into score302_default (REVL,ELKR,KOTR,UARL,MURR,UBTN,LHAF,PARS,KOTL,SIML,OKAN,KETL)
+09:43:59 variant default REVL done in 0.5 min (habitat 5d4e96a7)
+09:45:50 variant default ELKR done in 1.8 min (habitat f0efa1eb)
+09:46:48 variant default KOTR done in 1.0 min (habitat bd63e0e7)
+09:47:22 variant default UARL done in 0.6 min (habitat c57a77c8)
+09:48:40 variant default MURR done in 1.3 min (habitat fcd93bc9)
+09:49:12 variant default UBTN done in 0.5 min (habitat d2aa98fc)
+09:50:04 variant default LHAF done in 0.9 min (habitat c78deaba)
+09:52:08 variant default PARS done in 2.1 min (habitat 7ca7084c)
+09:53:51 variant default KOTL done in 1.7 min (habitat 1ddc4cc8)
+09:54:57 variant default SIML done in 1.1 min (habitat b9090b92)
+09:55:51 variant default OKAN done in 0.9 min (habitat b76b1223)
+09:56:57 variant default KETL done in 1.1 min (habitat 7a83e1e2)
+09:56:57 variant bt_rear_mad_p10 into score302_bt_rear_mad_p10 (REVL,ELKR,KOTR,UARL,MURR,UBTN,LHAF,PARS,KOTL)
+09:57:20 variant bt_rear_mad_p10 REVL done in 0.4 min (habitat 1b760c8c)
+09:58:16 variant bt_rear_mad_p10 ELKR done in 0.9 min (habitat 022ff5ca)
+09:58:53 variant bt_rear_mad_p10 KOTR done in 0.6 min (habitat 99ef96cd)
+09:59:17 variant bt_rear_mad_p10 UARL done in 0.4 min (habitat 0a52ac14)
+10:00:19 variant bt_rear_mad_p10 MURR done in 1.0 min (habitat 56fbf351)
+10:00:43 variant bt_rear_mad_p10 UBTN done in 0.4 min (habitat 4f05b7cc)
+10:01:26 variant bt_rear_mad_p10 LHAF done in 0.7 min (habitat f16f9494)
+10:03:04 variant bt_rear_mad_p10 PARS done in 1.6 min (habitat 76fca778)
+10:04:11 variant bt_rear_mad_p10 KOTL done in 1.1 min (habitat 3c965c3c)
+10:04:11 variant bt_rear_mad_p05 into score302_bt_rear_mad_p05 (REVL,ELKR,KOTR,UARL,MURR,UBTN,LHAF,PARS,KOTL)
+10:04:37 variant bt_rear_mad_p05 REVL done in 0.4 min (habitat e0b29fe9)
+10:05:43 variant bt_rear_mad_p05 ELKR done in 1.1 min (habitat f5978668)
+10:06:25 variant bt_rear_mad_p05 KOTR done in 0.7 min (habitat fc7e3f95)
+10:06:53 variant bt_rear_mad_p05 UARL done in 0.5 min (habitat 7a484932)
+10:08:00 variant bt_rear_mad_p05 MURR done in 1.1 min (habitat c358782b)
+10:08:24 variant bt_rear_mad_p05 UBTN done in 0.4 min (habitat f2d8081e)
+10:09:10 variant bt_rear_mad_p05 LHAF done in 0.8 min (habitat da96a90c)
+10:10:51 variant bt_rear_mad_p05 PARS done in 1.7 min (habitat e509969f)
+10:12:05 variant bt_rear_mad_p05 KOTL done in 1.2 min (habitat 138ec719)
+10:12:05 variant bt_rear_mad_p02 into score302_bt_rear_mad_p02 (REVL,ELKR,KOTR,UARL,MURR,UBTN,LHAF,PARS,KOTL)
+10:12:33 variant bt_rear_mad_p02 REVL done in 0.4 min (habitat 1b5168df)
+10:13:53 variant bt_rear_mad_p02 ELKR done in 1.3 min (habitat 66b437bf)
+10:14:40 variant bt_rear_mad_p02 KOTR done in 0.8 min (habitat cf9b96cc)
+10:15:09 variant bt_rear_mad_p02 UARL done in 0.5 min (habitat d05c45c7)
+10:16:22 variant bt_rear_mad_p02 MURR done in 1.2 min (habitat dfdb02f8)
+10:16:46 variant bt_rear_mad_p02 UBTN done in 0.4 min (habitat 4db816e9)
+10:17:35 variant bt_rear_mad_p02 LHAF done in 0.8 min (habitat 58f921a1)
+10:19:22 variant bt_rear_mad_p02 PARS done in 1.8 min (habitat 0c12e635)
+10:20:45 variant bt_rear_mad_p02 KOTL done in 1.4 min (habitat ab791338)
+10:20:45 variant bt_spawn_mad_p10 into score302_bt_spawn_mad_p10 (REVL,ELKR,KOTR,UARL,MURR,UBTN,LHAF,PARS,KOTL)
+10:21:10 variant bt_spawn_mad_p10 REVL done in 0.4 min (habitat 62b3858f)
+10:22:15 variant bt_spawn_mad_p10 ELKR done in 1.1 min (habitat 431ea915)
+10:22:57 variant bt_spawn_mad_p10 KOTR done in 0.7 min (habitat 5b5d309c)
+10:23:26 variant bt_spawn_mad_p10 UARL done in 0.5 min (habitat 96d62e0a)
+10:24:30 variant bt_spawn_mad_p10 MURR done in 1.1 min (habitat 91e38f6d)
+10:24:54 variant bt_spawn_mad_p10 UBTN done in 0.4 min (habitat 158f62b3)
+10:25:39 variant bt_spawn_mad_p10 LHAF done in 0.8 min (habitat 136aaebb)
+10:27:20 variant bt_spawn_mad_p10 PARS done in 1.7 min (habitat 4011945c)
+10:28:35 variant bt_spawn_mad_p10 KOTL done in 1.2 min (habitat 96d57d0a)
+10:28:35 variant bt_spawn_mad_p05 into score302_bt_spawn_mad_p05 (REVL,ELKR,KOTR,UARL,MURR,UBTN,LHAF,PARS,KOTL)
+10:29:00 variant bt_spawn_mad_p05 REVL done in 0.4 min (habitat e0b29fe9)
+10:30:07 variant bt_spawn_mad_p05 ELKR done in 1.1 min (habitat f5978668)
+10:30:50 variant bt_spawn_mad_p05 KOTR done in 0.7 min (habitat fc7e3f95)
+10:31:18 variant bt_spawn_mad_p05 UARL done in 0.5 min (habitat 7a484932)
+10:32:26 variant bt_spawn_mad_p05 MURR done in 1.1 min (habitat c358782b)
+10:32:51 variant bt_spawn_mad_p05 UBTN done in 0.4 min (habitat f2d8081e)
+10:33:35 variant bt_spawn_mad_p05 LHAF done in 0.7 min (habitat da96a90c)
+10:35:13 variant bt_spawn_mad_p05 PARS done in 1.6 min (habitat e509969f)
+10:36:26 variant bt_spawn_mad_p05 KOTL done in 1.2 min (habitat 138ec719)
+10:36:26 variant bt_spawn_mad_p02 into score302_bt_spawn_mad_p02 (REVL,ELKR,KOTR,UARL,MURR,UBTN,LHAF,PARS,KOTL)
+10:36:51 variant bt_spawn_mad_p02 REVL done in 0.4 min (habitat f13f7b0a)
+10:37:58 variant bt_spawn_mad_p02 ELKR done in 1.1 min (habitat ce061592)
+10:38:42 variant bt_spawn_mad_p02 KOTR done in 0.7 min (habitat 7951697e)
+10:39:10 variant bt_spawn_mad_p02 UARL done in 0.5 min (habitat 750d99f4)
+10:40:20 variant bt_spawn_mad_p02 MURR done in 1.2 min (habitat 07bd13cc)
+10:40:56 variant bt_spawn_mad_p02 UBTN done in 0.6 min (habitat 5a33e035)
+10:41:42 variant bt_spawn_mad_p02 LHAF done in 0.8 min (habitat 850f7eb1)
+10:43:25 variant bt_spawn_mad_p02 PARS done in 1.7 min (habitat deedde6c)
+10:44:40 variant bt_spawn_mad_p02 KOTL done in 1.2 min (habitat 818bb210)
+10:44:40 variant gr_rear_mad_p10 into score302_gr_rear_mad_p10 (MURR,UBTN,LHAF,PARS)
+10:44:54 variant gr_rear_mad_p10 MURR done in 0.2 min (habitat 0a52943f)
+10:45:00 variant gr_rear_mad_p10 UBTN done in 0.1 min (habitat c263b222)
+10:45:09 variant gr_rear_mad_p10 LHAF done in 0.2 min (habitat 1cc61aed)
+10:45:27 variant gr_rear_mad_p10 PARS done in 0.3 min (habitat 85f05553)
+10:45:27 variant gr_rear_mad_p05 into score302_gr_rear_mad_p05 (MURR,UBTN,LHAF,PARS)
+10:45:43 variant gr_rear_mad_p05 MURR done in 0.3 min (habitat 54fa76d4)
+10:45:50 variant gr_rear_mad_p05 UBTN done in 0.1 min (habitat 6545dcdc)
+10:46:01 variant gr_rear_mad_p05 LHAF done in 0.2 min (habitat bcc62bbc)
+10:46:25 variant gr_rear_mad_p05 PARS done in 0.4 min (habitat 95117b6c)
+10:46:25 variant gr_rear_mad_p02 into score302_gr_rear_mad_p02 (MURR,UBTN,LHAF,PARS)
+10:46:52 variant gr_rear_mad_p02 MURR done in 0.4 min (habitat 476bade9)
+10:47:12 variant gr_rear_mad_p02 UBTN done in 0.3 min (habitat 0aa2d103)
+10:47:29 variant gr_rear_mad_p02 LHAF done in 0.3 min (habitat 6282e584)
+10:48:20 variant gr_rear_mad_p02 PARS done in 0.8 min (habitat 78d380c2)
+10:48:20 variant gr_spawn_mad_p10 into score302_gr_spawn_mad_p10 (MURR,UBTN,LHAF,PARS)
+10:48:37 variant gr_spawn_mad_p10 MURR done in 0.3 min (habitat c5e82986)
+10:48:43 variant gr_spawn_mad_p10 UBTN done in 0.1 min (habitat ff2c6730)
+10:48:54 variant gr_spawn_mad_p10 LHAF done in 0.2 min (habitat 2c9f99e9)
+10:49:18 variant gr_spawn_mad_p10 PARS done in 0.4 min (habitat f8383c37)
+10:49:18 variant gr_spawn_mad_p05 into score302_gr_spawn_mad_p05 (MURR,UBTN,LHAF,PARS)
+10:49:33 variant gr_spawn_mad_p05 MURR done in 0.3 min (habitat 54fa76d4)
+10:49:40 variant gr_spawn_mad_p05 UBTN done in 0.1 min (habitat 6545dcdc)
+10:49:51 variant gr_spawn_mad_p05 LHAF done in 0.2 min (habitat bcc62bbc)
+10:50:15 variant gr_spawn_mad_p05 PARS done in 0.4 min (habitat 95117b6c)
+10:50:15 variant gr_spawn_mad_p02 into score302_gr_spawn_mad_p02 (MURR,UBTN,LHAF,PARS)
+10:50:31 variant gr_spawn_mad_p02 MURR done in 0.3 min (habitat ce9f42c3)
+10:50:41 variant gr_spawn_mad_p02 UBTN done in 0.2 min (habitat 05778017)
+10:50:52 variant gr_spawn_mad_p02 LHAF done in 0.2 min (habitat e64c523d)
+10:51:16 variant gr_spawn_mad_p02 PARS done in 0.4 min (habitat 8ad1d0dc)
+10:51:16 variant rb_rear_mad_p10 into score302_rb_rear_mad_p10 (REVL,ELKR,KOTR,PARS,KOTL,SIML,OKAN,KETL)
+10:51:28 variant rb_rear_mad_p10 REVL done in 0.2 min (habitat 5316d48c)
+10:51:54 variant rb_rear_mad_p10 ELKR done in 0.4 min (habitat b27a3901)
+10:52:10 variant rb_rear_mad_p10 KOTR done in 0.3 min (habitat 2317c1eb)
+10:52:49 variant rb_rear_mad_p10 PARS done in 0.6 min (habitat 2781814b)
+10:53:20 variant rb_rear_mad_p10 KOTL done in 0.5 min (habitat c23c89d0)
+10:53:51 variant rb_rear_mad_p10 SIML done in 0.5 min (habitat 7bbfb80a)
+10:54:10 variant rb_rear_mad_p10 OKAN done in 0.3 min (habitat bf8bbe61)
+10:54:43 variant rb_rear_mad_p10 KETL done in 0.5 min (habitat e1e0a930)
+10:54:43 variant rb_rear_mad_p05 into score302_rb_rear_mad_p05 (REVL,ELKR,KOTR,PARS,KOTL,SIML,OKAN,KETL)
+10:54:54 variant rb_rear_mad_p05 REVL done in 0.2 min (habitat 780835a8)
+10:55:20 variant rb_rear_mad_p05 ELKR done in 0.4 min (habitat e8f2ceab)
+10:55:37 variant rb_rear_mad_p05 KOTR done in 0.3 min (habitat 3163138f)
+10:56:17 variant rb_rear_mad_p05 PARS done in 0.7 min (habitat 538cbc25)
+10:56:49 variant rb_rear_mad_p05 KOTL done in 0.5 min (habitat 9730bf42)
+10:57:19 variant rb_rear_mad_p05 SIML done in 0.5 min (habitat efb6cd3a)
+10:57:39 variant rb_rear_mad_p05 OKAN done in 0.3 min (habitat 8967240f)
+10:58:11 variant rb_rear_mad_p05 KETL done in 0.5 min (habitat c6cc25ba)
+10:58:11 variant rb_rear_mad_p02 into score302_rb_rear_mad_p02 (REVL,ELKR,KOTR,PARS,KOTL,SIML,OKAN,KETL)
+10:58:22 variant rb_rear_mad_p02 REVL done in 0.2 min (habitat 42b29b28)
+10:58:48 variant rb_rear_mad_p02 ELKR done in 0.4 min (habitat 32a5eeb3)
+10:59:05 variant rb_rear_mad_p02 KOTR done in 0.3 min (habitat 416ecfa9)
+10:59:45 variant rb_rear_mad_p02 PARS done in 0.7 min (habitat c35be888)
+11:00:17 variant rb_rear_mad_p02 KOTL done in 0.5 min (habitat 40e03e8c)
+11:00:48 variant rb_rear_mad_p02 SIML done in 0.5 min (habitat 622162f4)
+11:01:06 variant rb_rear_mad_p02 OKAN done in 0.3 min (habitat 33b46efb)
+11:01:38 variant rb_rear_mad_p02 KETL done in 0.5 min (habitat 0e3f2dcc)
+11:01:38 variant rb_spawn_mad_p10 into score302_rb_spawn_mad_p10 (REVL,ELKR,KOTR,PARS,KOTL,SIML,OKAN,KETL)
+11:01:49 variant rb_spawn_mad_p10 REVL done in 0.2 min (habitat 47cbc241)
+11:02:15 variant rb_spawn_mad_p10 ELKR done in 0.4 min (habitat 1748cf9a)
+11:02:31 variant rb_spawn_mad_p10 KOTR done in 0.3 min (habitat 78c74929)
+11:03:13 variant rb_spawn_mad_p10 PARS done in 0.7 min (habitat dde6adb8)
+11:03:46 variant rb_spawn_mad_p10 KOTL done in 0.5 min (habitat 1afe90a9)
+11:04:17 variant rb_spawn_mad_p10 SIML done in 0.5 min (habitat 5911ef33)
+11:04:35 variant rb_spawn_mad_p10 OKAN done in 0.3 min (habitat b5e9b60c)
+11:05:09 variant rb_spawn_mad_p10 KETL done in 0.5 min (habitat 6257d200)
+11:05:09 variant rb_spawn_mad_p05 into score302_rb_spawn_mad_p05 (REVL,ELKR,KOTR,PARS,KOTL,SIML,OKAN,KETL)
+11:05:20 variant rb_spawn_mad_p05 REVL done in 0.2 min (habitat 780835a8)
+11:05:45 variant rb_spawn_mad_p05 ELKR done in 0.4 min (habitat e8f2ceab)
+11:06:02 variant rb_spawn_mad_p05 KOTR done in 0.3 min (habitat 3163138f)
+11:06:40 variant rb_spawn_mad_p05 PARS done in 0.6 min (habitat 538cbc25)
+11:07:11 variant rb_spawn_mad_p05 KOTL done in 0.5 min (habitat 9730bf42)
+11:07:42 variant rb_spawn_mad_p05 SIML done in 0.5 min (habitat efb6cd3a)
+11:08:00 variant rb_spawn_mad_p05 OKAN done in 0.3 min (habitat 8967240f)
+11:08:33 variant rb_spawn_mad_p05 KETL done in 0.5 min (habitat c6cc25ba)
+11:08:34 variant rb_spawn_mad_p02 into score302_rb_spawn_mad_p02 (REVL,ELKR,KOTR,PARS,KOTL,SIML,OKAN,KETL)
+11:08:45 variant rb_spawn_mad_p02 REVL done in 0.2 min (habitat a010b7c3)
+11:09:11 variant rb_spawn_mad_p02 ELKR done in 0.4 min (habitat 426a34d5)
+11:09:28 variant rb_spawn_mad_p02 KOTR done in 0.3 min (habitat 3ea83415)
+11:10:08 variant rb_spawn_mad_p02 PARS done in 0.7 min (habitat af222d7c)
+11:10:40 variant rb_spawn_mad_p02 KOTL done in 0.5 min (habitat 74f63225)
+11:11:10 variant rb_spawn_mad_p02 SIML done in 0.5 min (habitat d022813e)
+11:11:29 variant rb_spawn_mad_p02 OKAN done in 0.3 min (habitat 9cf8f8be)
+11:12:03 variant rb_spawn_mad_p02 KETL done in 0.6 min (habitat f58f5b58)
+11:12:04 build all done in 145.3 min

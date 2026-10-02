@@ -1,0 +1,22 @@
+---
+date: 2026-10-02 08:46 PDT
+step: all; focal: LHAF; variants: default,bt_rear_mad_p10,bt_rear_mad_p05,bt_rear_mad_p02,bt_spawn_mad_p10,bt_spawn_mad_p05,bt_spawn_mad_p02,gr_rear_mad_p10,gr_rear_mad_p05,gr_rear_mad_p02,gr_spawn_mad_p10,gr_spawn_mad_p05,gr_spawn_mad_p02,rb_rear_mad_p10,rb_rear_mad_p05,rb_rear_mad_p02,rb_spawn_mad_p10,rb_spawn_mad_p05,rb_spawn_mad_p02
+link: 0.56.0 @ c2fed37 (at launch)
+variants: data-raw/habitat_score/variants_302.csv (md5 8fb4319448c8770a104865b5ef878538); roles: data-raw/habitat_score/wsg_roles_302.csv (md5 30362be574435565700853e93830a58c)
+fresh: 0.36.2 @ e3a37f031cca31ccfab59f47d6e19dde4083cca5
+db: docker fwapg localhost:5432
+base run_uid(s) in score302_default.log: none
+bcfishobs.observations rows: 373050
+thresholds sha256 (12): default=7b904a18c29c, bt_rear_mad_p10=5edb649ad09e, bt_rear_mad_p05=6596c8fd33e1, bt_rear_mad_p02=ecfb429ec613, bt_spawn_mad_p10=ba9076accd45, bt_spawn_mad_p05=6596c8fd33e1, bt_spawn_mad_p02=5f89ccebed36, gr_rear_mad_p10=51159162d808, gr_rear_mad_p05=70c8fc91b06c, gr_rear_mad_p02=346d5023f95e, gr_spawn_mad_p10=c5ea280e19dc, gr_spawn_mad_p05=70c8fc91b06c, gr_spawn_mad_p02=2b9aed5cd157, rb_rear_mad_p10=7760f013a619, rb_rear_mad_p05=529bc0339450, rb_rear_mad_p02=1b776fe00e92, rb_spawn_mad_p10=489c09386d56, rb_spawn_mad_p05=529bc0339450, rb_spawn_mad_p02=42131b3a3d19
+
+---
+date: 2026-10-02 11:12 PDT
+step: all; focal: REVL,ELKR,KOTR,UARL,MURR,UBTN,LHAF,PARS,KOTL,SIML,OKAN,KETL; variants: default,bt_rear_mad_p10,bt_rear_mad_p05,bt_rear_mad_p02,bt_spawn_mad_p10,bt_spawn_mad_p05,bt_spawn_mad_p02,gr_rear_mad_p10,gr_rear_mad_p05,gr_rear_mad_p02,gr_spawn_mad_p10,gr_spawn_mad_p05,gr_spawn_mad_p02,rb_rear_mad_p10,rb_rear_mad_p05,rb_rear_mad_p02,rb_spawn_mad_p10,rb_spawn_mad_p05,rb_spawn_mad_p02
+link: 0.56.0 @ c2fed37 (at launch)
+variants: data-raw/habitat_score/variants_302.csv (md5 8fb4319448c8770a104865b5ef878538); roles: data-raw/habitat_score/wsg_roles_302.csv (md5 30362be574435565700853e93830a58c)
+fresh: 0.36.2 @ e3a37f031cca31ccfab59f47d6e19dde4083cca5
+db: docker fwapg localhost:5432
+base run_uid(s) in score302_default.log: none
+bcfishobs.observations rows: 373050
+thresholds sha256 (12): default=7b904a18c29c, bt_rear_mad_p10=5edb649ad09e, bt_rear_mad_p05=6596c8fd33e1, bt_rear_mad_p02=ecfb429ec613, bt_spawn_mad_p10=ba9076accd45, bt_spawn_mad_p05=6596c8fd33e1, bt_spawn_mad_p02=5f89ccebed36, gr_rear_mad_p10=51159162d808, gr_rear_mad_p05=70c8fc91b06c, gr_rear_mad_p02=346d5023f95e, gr_spawn_mad_p10=c5ea280e19dc, gr_spawn_mad_p05=70c8fc91b06c, gr_spawn_mad_p02=2b9aed5cd157, rb_rear_mad_p10=7760f013a619, rb_rear_mad_p05=529bc0339450, rb_rear_mad_p02=1b776fe00e92, rb_spawn_mad_p10=489c09386d56, rb_spawn_mad_p05=529bc0339450, rb_spawn_mad_p02=42131b3a3d19
+

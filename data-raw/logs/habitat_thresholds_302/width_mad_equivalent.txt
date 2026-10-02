@@ -1,0 +1,11 @@
+# mad_m3s on fresh_default stream segments (edges 1000/1100/2000/2300 outside waterbodies) with MODELLED
+# channel_width within +/-0.1 m of each current width minimum, discharge joined on linear_feature_id.
+# The BC-native discharge equivalent of the cw cutoffs. Run 2026-10-02, link @ a7f919e, docker fwapg.
+
+ w_bin |   n   |  q25   |  med   |  q75   
+-------+-------+--------+--------+--------
+ 1.5   | 36601 | 0.0144 | 0.0214 | 0.0276
+ 2.0   | 24509 | 0.0287 | 0.0412 | 0.0521
+ 4.0   |  5977 | 0.1426 | 0.2010 | 0.2448
+(3 rows)
+
