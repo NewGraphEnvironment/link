@@ -537,7 +537,7 @@ candidate compares with what `cw` admits today, and is not evidence.
 
 No source gives a fitted MAD minimum for these four species, and none supports a cap.
 Site evidence is set below beside the Phase 1 candidates and the values the scoring
-landed (full table: #302's archived `literature.md`):
+landed (full table: [`literature.md`](../planning/archive/2026-10-issue-302-mad-thresholds/literature.md), archived with #302's PWF):
 
 - **BT.**
   - Hagen et al. 2015 (Table 2, p. 31) found redds at spawning-time flows down to
