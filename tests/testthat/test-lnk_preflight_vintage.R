@@ -11,7 +11,7 @@ fresh_ages <- function() stats::setNames(rep(2, length(all_four)), all_four)
 
 
 test_that(".lnk_vintage_primitives selects the snapshot-loaded tables only", {
-  # The seven FWA tables are bulk-restored and never ANALYZEd, so including
+  # The FWA tables are bulk-restored and never ANALYZEd, so including
   # them would fail every host forever on data that is not the staleness risk.
   expect_setequal(all_four,
     c("bcfishobs.observations", "whse_fish.pscis_assessment_svw",

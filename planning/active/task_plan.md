@@ -36,12 +36,12 @@ needs adding there.
 - [x] Check `data-raw/wsg_vignette_data.R`'s bare `fresh::frs_db_conn()` against the 0.36.0 behaviour change, and note the result in findings
 
 ## Phase 2: method table as bundle data
-- [ ] Add `parameters_habitat_method.csv` to `bcfishpass`, `default`, `default_extrabreaks` and `default_rearbreaks`: a frozen copy of `smnorris/bcfishpass@1fae4ea parameters/example_newgraph/parameters_habitat_method.csv` (188 groups, all `cw`). Diff it against fresh's bundled copy first and record the result. `default_tuned` inherits it through `extends`
-- [ ] For each, add a `files: parameters_habitat_method:` entry and a provenance block (source, upstream_sha, synced, checksum, shape_checksum), the same as the thresholds entries
-- [ ] Add a `.lnk_habitat_method_csv(cfg)` resolver in `R/lnk_config.R`, next to `.lnk_habitat_thresholds_csv()`: the bundle's path, else fresh's copy with a message
-- [ ] `config_hash` (`R/lnk_log.R` ~L73/117): hash fresh's fallback as `fresh:parameters_habitat_method.csv` when the bundle declares none
-- [ ] Add `inst/extdata/configs/dictionary_parameters_habitat_method.csv` and its shape/coverage/no-absent-column tests in `test-dictionaries.R`, following the #282 block
-- [ ] `lnk_config_verify` / audit pass clean on all bundles
+- [x] Add `parameters_habitat_method.csv` to `bcfishpass`, `default`, `default_extrabreaks` and `default_rearbreaks`: a frozen copy of `smnorris/bcfishpass@1fae4ea parameters/example_newgraph/parameters_habitat_method.csv` (188 groups, all `cw`). Diff it against fresh's bundled copy first and record the result. `default_tuned` inherits it through `extends`
+- [x] For each, add a `files: parameters_habitat_method:` entry and a provenance block (source, upstream_sha, synced, checksum, shape_checksum), the same as the thresholds entries
+- [x] Add a `.lnk_habitat_method_csv(cfg)` resolver in `R/lnk_config.R`, next to `.lnk_habitat_thresholds_csv()`: the bundle's path, else fresh's copy with a message
+- [x] `config_hash` (`R/lnk_log.R` ~L73/117): hash fresh's fallback as `fresh:parameters_habitat_method.csv` when the bundle declares none
+- [x] Add `inst/extdata/configs/dictionary_parameters_habitat_method.csv` and its shape/coverage/no-absent-column tests in `test-dictionaries.R`, following the #282 block
+- [x] `lnk_config_verify` / audit pass clean on all bundles
 
 ## Phase 3: thread through classify + `mad_m3s` on working streams
 - [ ] `.lnk_pipeline_prep_network()`: add `fresh::frs_col_join(..., from = "whse_basemapping.fwa_stream_networks_discharge", cols = "mad_m3s", by = "linear_feature_id")` next to the channel_width join. Check that `frs_break_apply` carries it through splits

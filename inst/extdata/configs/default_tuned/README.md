@@ -5,6 +5,7 @@ The `default` bundle with calibrated species habitat thresholds. It is a **thin*
 | File / key | Role |
 |------|------|
 | `config.yaml` | Manifest. `extends: default`; persist schema `fresh_default_tuned`; declares its own `parameters_habitat_thresholds` |
+| `parameters_habitat_method.csv` (inherited) | Per-watershed-group `cw`/`mad` model, from `default` |
 | `parameters_habitat_thresholds.csv` | Per-species spawn/rear gradient max, channel-width min/max, MAD, lake-area floor and edge types, read by `lnk_pipeline_classify()` and `lnk_pipeline_connect()` |
 
 Everything else — `rules.yaml`, `dimensions.csv`, `parameters_fresh.csv`, `overrides/`, `break_order`, cluster settings — is inherited from `configs/default/` and resolves to that directory. `lnk_config("default_tuned")$chain` lists both.

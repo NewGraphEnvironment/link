@@ -7,3 +7,4 @@
 - Scaffolded PWF baseline from issue #286 with approved phases
 - Next: start Phase 1
 - Phase 1: fresh pin -> v0.36.2 (floor 0.35.0); `lnk_preflight_fresh(required_formals=)` asserts `frs_habitat_classify(params_method)`; vignette script off `frs_db_conn()` (fresh 0.36.0 precedence flip). Code-check round 1 clean; it flagged stale text (validator/test comments citing v0.33.0, CLAUDE.md `frs_db_conn` line, a skip message), fixed in the same commit
+- Phase 2: method CSV in the four base bundles (frozen, not csv-synced: B1 from the plan review and code-check round 2, found by both independently), resolver + config_hash fallback, dictionary + tests, discharge in `log_input` primitives, stale `*_mad_*` docs fixed, verify-clean loop over every bundle. Code-check rounds 2 (B1) and 3 (clean)
