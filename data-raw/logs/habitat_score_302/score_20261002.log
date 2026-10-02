@@ -1,0 +1,41 @@
+no FISS absence rule for: GR, RB; not assessed
+11:13:18 validating default (score302_default), buffer 0 m
+11:13:45 validating default (score302_default), buffer 100 m
+11:14:09 validating bt_rear_mad_p10 (score302_bt_rear_mad_p10), buffer 0 m
+11:14:20 validating bt_rear_mad_p10 (score302_bt_rear_mad_p10), buffer 100 m
+11:14:30 validating bt_rear_mad_p05 (score302_bt_rear_mad_p05), buffer 0 m
+11:14:41 validating bt_rear_mad_p05 (score302_bt_rear_mad_p05), buffer 100 m
+11:14:50 validating bt_rear_mad_p02 (score302_bt_rear_mad_p02), buffer 0 m
+11:15:01 validating bt_rear_mad_p02 (score302_bt_rear_mad_p02), buffer 100 m
+11:15:11 validating bt_spawn_mad_p10 (score302_bt_spawn_mad_p10), buffer 0 m
+11:15:22 validating bt_spawn_mad_p10 (score302_bt_spawn_mad_p10), buffer 100 m
+11:15:32 validating bt_spawn_mad_p05 (score302_bt_spawn_mad_p05), buffer 0 m
+11:15:43 validating bt_spawn_mad_p05 (score302_bt_spawn_mad_p05), buffer 100 m
+11:15:53 validating bt_spawn_mad_p02 (score302_bt_spawn_mad_p02), buffer 0 m
+11:16:04 validating bt_spawn_mad_p02 (score302_bt_spawn_mad_p02), buffer 100 m
+11:16:13 validating gr_rear_mad_p10 (score302_gr_rear_mad_p10), buffer 0 m
+11:16:16 validating gr_rear_mad_p10 (score302_gr_rear_mad_p10), buffer 100 m
+11:16:18 validating gr_rear_mad_p05 (score302_gr_rear_mad_p05), buffer 0 m
+11:16:21 validating gr_rear_mad_p05 (score302_gr_rear_mad_p05), buffer 100 m
+11:16:24 validating gr_rear_mad_p02 (score302_gr_rear_mad_p02), buffer 0 m
+11:16:26 validating gr_rear_mad_p02 (score302_gr_rear_mad_p02), buffer 100 m
+11:16:29 validating gr_spawn_mad_p10 (score302_gr_spawn_mad_p10), buffer 0 m
+11:16:32 validating gr_spawn_mad_p10 (score302_gr_spawn_mad_p10), buffer 100 m
+11:16:34 validating gr_spawn_mad_p05 (score302_gr_spawn_mad_p05), buffer 0 m
+11:16:37 validating gr_spawn_mad_p05 (score302_gr_spawn_mad_p05), buffer 100 m
+11:16:39 validating gr_spawn_mad_p02 (score302_gr_spawn_mad_p02), buffer 0 m
+11:16:42 validating gr_spawn_mad_p02 (score302_gr_spawn_mad_p02), buffer 100 m
+11:16:44 validating rb_rear_mad_p10 (score302_rb_rear_mad_p10), buffer 0 m
+11:16:57 validating rb_rear_mad_p10 (score302_rb_rear_mad_p10), buffer 100 m
+11:17:07 validating rb_rear_mad_p05 (score302_rb_rear_mad_p05), buffer 0 m
+11:17:19 validating rb_rear_mad_p05 (score302_rb_rear_mad_p05), buffer 100 m
+11:17:29 validating rb_rear_mad_p02 (score302_rb_rear_mad_p02), buffer 0 m
+11:17:41 validating rb_rear_mad_p02 (score302_rb_rear_mad_p02), buffer 100 m
+11:17:51 validating rb_spawn_mad_p10 (score302_rb_spawn_mad_p10), buffer 0 m
+11:18:04 validating rb_spawn_mad_p10 (score302_rb_spawn_mad_p10), buffer 100 m
+11:18:14 validating rb_spawn_mad_p05 (score302_rb_spawn_mad_p05), buffer 0 m
+11:18:26 validating rb_spawn_mad_p05 (score302_rb_spawn_mad_p05), buffer 100 m
+11:18:36 validating rb_spawn_mad_p02 (score302_rb_spawn_mad_p02), buffer 0 m
+11:18:47 validating rb_spawn_mad_p02 (score302_rb_spawn_mad_p02), buffer 100 m
+habitat moved against the step direction (km): bt_rear_mad_p02 1.621, bt_rear_mad_p05 3.455, bt_spawn_mad_p02 0, bt_spawn_mad_p05 0, gr_rear_mad_p02 0, gr_rear_mad_p05 0, gr_spawn_mad_p02 0, gr_spawn_mad_p05 0, rb_rear_mad_p02 0, rb_rear_mad_p05 0, rb_spawn_mad_p02 0, rb_spawn_mad_p05 0
+11:24:17 wrote data-raw/logs/habitat_score_302

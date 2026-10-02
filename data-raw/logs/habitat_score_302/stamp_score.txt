@@ -1,0 +1,30 @@
+date: 2026-10-02 11:24 PDT
+link: 0.56.0 @ c2fed37 (at launch)
+fresh: 0.36.2 @ e3a37f031cca31ccfab59f47d6e19dde4083cca5
+db: docker fwapg localhost:5432
+variants: data-raw/habitat_score/variants_302.csv (md5 8fb4319448c8770a104865b5ef878538): default,bt_rear_mad_p10,bt_rear_mad_p05,bt_rear_mad_p02,bt_spawn_mad_p10,bt_spawn_mad_p05,bt_spawn_mad_p02,gr_rear_mad_p10,gr_rear_mad_p05,gr_rear_mad_p02,gr_spawn_mad_p10,gr_spawn_mad_p05,gr_spawn_mad_p02,rb_rear_mad_p10,rb_rear_mad_p05,rb_rear_mad_p02,rb_spawn_mad_p10,rb_spawn_mad_p05,rb_spawn_mad_p02
+roles: data-raw/habitat_score/wsg_roles_302.csv (md5 30362be574435565700853e93830a58c)
+built default: thresholds sha256 7b904a18c29c; link c2fed37; 12 WSGs, 2026-10-02 09:43:59 PDT to 2026-10-02 09:56:57 PDT
+built bt_rear_mad_p10: thresholds sha256 5edb649ad09e; link c2fed37; 9 WSGs, 2026-10-02 09:57:20 PDT to 2026-10-02 10:04:11 PDT
+built bt_rear_mad_p05: thresholds sha256 6596c8fd33e1; link c2fed37; 9 WSGs, 2026-10-02 10:04:37 PDT to 2026-10-02 10:12:05 PDT
+built bt_rear_mad_p02: thresholds sha256 ecfb429ec613; link c2fed37; 9 WSGs, 2026-10-02 10:12:33 PDT to 2026-10-02 10:20:45 PDT
+built bt_spawn_mad_p10: thresholds sha256 ba9076accd45; link c2fed37; 9 WSGs, 2026-10-02 10:21:10 PDT to 2026-10-02 10:28:35 PDT
+built bt_spawn_mad_p05: thresholds sha256 6596c8fd33e1; link c2fed37; 9 WSGs, 2026-10-02 10:29:00 PDT to 2026-10-02 10:36:26 PDT
+built bt_spawn_mad_p02: thresholds sha256 5f89ccebed36; link c2fed37; 9 WSGs, 2026-10-02 10:36:51 PDT to 2026-10-02 10:44:40 PDT
+built gr_rear_mad_p10: thresholds sha256 51159162d808; link c2fed37; 4 WSGs, 2026-10-02 10:44:54 PDT to 2026-10-02 10:45:27 PDT
+built gr_rear_mad_p05: thresholds sha256 70c8fc91b06c; link c2fed37; 4 WSGs, 2026-10-02 10:45:43 PDT to 2026-10-02 10:46:25 PDT
+built gr_rear_mad_p02: thresholds sha256 346d5023f95e; link c2fed37; 4 WSGs, 2026-10-02 10:46:52 PDT to 2026-10-02 10:48:20 PDT
+built gr_spawn_mad_p10: thresholds sha256 c5ea280e19dc; link c2fed37; 4 WSGs, 2026-10-02 10:48:37 PDT to 2026-10-02 10:49:18 PDT
+built gr_spawn_mad_p05: thresholds sha256 70c8fc91b06c; link c2fed37; 4 WSGs, 2026-10-02 10:49:33 PDT to 2026-10-02 10:50:15 PDT
+built gr_spawn_mad_p02: thresholds sha256 2b9aed5cd157; link c2fed37; 4 WSGs, 2026-10-02 10:50:31 PDT to 2026-10-02 10:51:16 PDT
+built rb_rear_mad_p10: thresholds sha256 7760f013a619; link c2fed37; 8 WSGs, 2026-10-02 10:51:28 PDT to 2026-10-02 10:54:43 PDT
+built rb_rear_mad_p05: thresholds sha256 529bc0339450; link c2fed37; 8 WSGs, 2026-10-02 10:54:54 PDT to 2026-10-02 10:58:11 PDT
+built rb_rear_mad_p02: thresholds sha256 1b776fe00e92; link c2fed37; 8 WSGs, 2026-10-02 10:58:22 PDT to 2026-10-02 11:01:38 PDT
+built rb_spawn_mad_p10: thresholds sha256 489c09386d56; link c2fed37; 8 WSGs, 2026-10-02 11:01:49 PDT to 2026-10-02 11:05:09 PDT
+built rb_spawn_mad_p05: thresholds sha256 529bc0339450; link c2fed37; 8 WSGs, 2026-10-02 11:05:20 PDT to 2026-10-02 11:08:33 PDT
+built rb_spawn_mad_p02: thresholds sha256 42131b3a3d19; link c2fed37; 8 WSGs, 2026-10-02 11:08:45 PDT to 2026-10-02 11:12:03 PDT
+focal: REVL,ELKR,KOTR,UARL,MURR,UBTN,LHAF,PARS,KOTL,SIML,OKAN,KETL; species: BT,GR,RB; buffers: 0,100 m
+rule: n_band >= 10 and density_ratio >= 0.5 on held-out WSGs; floor of record: expected
+pooling: default species_pooling.csv (sha256 9c42964e0469): 11 WSG x species pairs pooled (BT<-DV)
+bcfishobs.observations rows: 373050
+absences: FISS snapshots COTR,LNTH,PINE,UNTH,UPCE; knowledge @ 37355a5

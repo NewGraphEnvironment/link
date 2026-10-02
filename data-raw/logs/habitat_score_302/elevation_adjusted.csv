@@ -1,0 +1,37 @@
+"species_code","column","role","class","km","n","expected","ratio_elevation_adjusted"
+"BT","rear_mad_min","held_out","bt_rear_mad_p02",2524.37686394164,10,337.842195962904,0.0295996181634399
+"BT","rear_mad_min","in_sample","bt_rear_mad_p02",961.913003835708,3,115.202150873565,0.0260411804575811
+"BT","rear_mad_min","held_out","bt_rear_mad_p05",2040.22316237396,45,278.183858335809,0.161763519526997
+"BT","rear_mad_min","in_sample","bt_rear_mad_p05",773.01413337546,9,88.9998382622182,0.101123779275683
+"BT","rear_mad_min","held_out","bt_rear_mad_p10 removed",1443.8520568258,205,238.045110847908,0.861181308323442
+"BT","rear_mad_min","in_sample","bt_rear_mad_p10 removed",103.688681863037,6,12.0276457394141,0.498850741865323
+"BT","spawn_mad_min","held_out","bt_spawn_mad_p02",2130.44727647381,7,353.077155531535,0.0198256950083954
+"BT","spawn_mad_min","in_sample","bt_spawn_mad_p02",623.673051778193,3,89.8270284415523,0.0333975202347032
+"BT","spawn_mad_min","held_out","bt_spawn_mad_p05",1439.42142688171,30,241.944608864457,0.123995323313059
+"BT","spawn_mad_min","in_sample","bt_spawn_mad_p05",475.938372291017,4,66.651727138128,0.0600134485894185
+"BT","spawn_mad_min","held_out","bt_spawn_mad_p10 removed",791.208720927696,205,145.519086140346,1.40874991341196
+"BT","spawn_mad_min","in_sample","bt_spawn_mad_p10 removed",90.6877415846769,6,11.9654826578578,0.501442371491781
+"GR","rear_mad_min","held_out","gr_rear_mad_p02",2673.42974017123,36,159.088832060499,0.226288668624519
+"GR","rear_mad_min","in_sample","gr_rear_mad_p02",591.942089371757,0,119.459822502372,0
+"GR","rear_mad_min","held_out","gr_rear_mad_p05",1522.66551097348,57,99.7772867494436,0.571272299106869
+"GR","rear_mad_min","in_sample","gr_rear_mad_p05",410.859589815811,1,65.1141921017094,0.0153576350672982
+"GR","rear_mad_min","held_out","gr_rear_mad_p10 removed",794.370059606797,68,61.3725907952276,1.10798646625307
+"GR","rear_mad_min","in_sample","gr_rear_mad_p10 removed",0.765749144346872,1,0.24165166231049,4.13818796212183
+"GR","spawn_mad_min","held_out","gr_spawn_mad_p02",2830.23670160721,33,183.710741287134,0.179630215243767
+"GR","spawn_mad_min","in_sample","gr_spawn_mad_p02",490.419609689241,0,100.533743511713,0
+"GR","spawn_mad_min","held_out","gr_spawn_mad_p05",1377.84085366754,52,95.95199138849,0.541937684122288
+"GR","spawn_mad_min","in_sample","gr_spawn_mad_p05",274.600101222565,0,44.3231306262848,0
+"GR","spawn_mad_min","held_out","gr_spawn_mad_p10 removed",471.555625374737,66,36.6405866431749,1.80128120334814
+"GR","spawn_mad_min","in_sample","gr_spawn_mad_p10 removed",0.712171176535357,1,0.228680521293631,4.37291289324978
+"RB","rear_mad_min","held_out","rb_rear_mad_p02",995.317411483088,32,112.911863608832,0.283406889030364
+"RB","rear_mad_min","in_sample","rb_rear_mad_p02",517.169799283349,6,56.1712390850308,0.106816230115866
+"RB","rear_mad_min","held_out","rb_rear_mad_p05",1031.79838162681,19,120.246878558732,0.158008259571744
+"RB","rear_mad_min","in_sample","rb_rear_mad_p05",604.520944347587,8,63.890828522825,0.125213589883906
+"RB","rear_mad_min","held_out","rb_rear_mad_p10 removed",295.722935602097,91,54.3880773029397,1.67316081966151
+"RB","rear_mad_min","in_sample","rb_rear_mad_p10 removed",91.0992682136116,28,12.7769868452129,2.19143999592444
+"RB","spawn_mad_min","held_out","rb_spawn_mad_p02",629.717656146995,1,4.34200141572338,0.23030853844929
+"RB","spawn_mad_min","in_sample","rb_spawn_mad_p02",356.841178791713,0,1.13131919841592,0
+"RB","spawn_mad_min","held_out","rb_spawn_mad_p05",1266.85623282684,8,8.58301011761076,0.932073933314545
+"RB","spawn_mad_min","in_sample","rb_spawn_mad_p05",743.410906270022,0,2.32848466969394,0
+"RB","spawn_mad_min","held_out","rb_spawn_mad_p10 removed",194.951603005084,1,2.03898659385083,0.490439713049511
+"RB","spawn_mad_min","in_sample","rb_spawn_mad_p10 removed",88.9831563525627,1,0.523435403665596,1.9104554124483
