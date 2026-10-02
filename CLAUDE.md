@@ -1376,6 +1376,12 @@ Draw a subsample to be design-weighted **uniformly** (`sample.int(n, k)`), or ke
 ### `system2(stdout = TRUE)` warns on a non-zero exit instead of raising, so a `tryCatch(error =)` around it never fires
 Read the exit status off the result: `st <- attr(out, "status")`, which is `NULL` on success.
 
+### Forked `parallel::mclapply()` workers segfault in `glm.fit` under macOS Accelerate BLAS
+Fit models in parallel on socket workers (`parallel::makeCluster()` with `parLapply()`), not forks: with R linked to Accelerate's vecLib, `mclapply` children segfault inside `glm.fit` (`address 0x110, cause 'invalid permissions'`), and `mclapply` returns try-errors with a warning rather than stopping.
+
+### `c(name = x)` keeps `x`'s own name, so a value from a named vector becomes `name.X`
+Strip the name before you label it: `c(axis = unname(v[1]))` or `c(axis = v[[1]])`.
+
 # Code Check — Shell
 Tool-level traps in bash, sed, git and `gh`, and in the host toolchain those commands depend on.
 
@@ -2491,6 +2497,8 @@ The claim is usually made by someone who knows the domain, at a moment before th
 looked. Not wrong so much as **unexamined**, which is what lets it survive into the
 plan. Then **bound what the probe closed**: reading a desktop plugin says nothing
 about the mobile app. An over-claimed probe is worse than none.
+
+*6 lines of evidence for this rule are in `conventions/karpathy.md`, which `/code-check` reads in full.*
 
 ### A real bug is not necessarily the reported bug
 
