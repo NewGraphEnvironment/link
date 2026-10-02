@@ -11,6 +11,29 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
+## Status (2026-10-01) — per-WSG `cw`/`mad` habitat model threaded (#286)
+
+**Each bundle's `parameters_habitat_method.csv` reaches fresh as `params_method`.**
+- **The table:** all `cw`, a frozen copy of bcfishpass `example_newgraph`. Putting a
+  group on `mad` is a reviewed row edit.
+- **`mad_m3s`:** on the working streams only, never persisted.
+- **fresh pin:** v0.36.2 (floor 0.35.0). Cyphers must be re-prepped before the next
+  dispatch: the preflight asserts the argument and hard-fails otherwise.
+- **Mechanics:** RUNBOOK §7 "Channel width or discharge, per watershed group". Evidence:
+  `data-raw/logs/params_method_286/`.
+
+**Facts not worth re-deriving:**
+- **Never give a bundle file `source: https://github.com/smnorris/bcfishpass` unless you
+  want it csv-synced.** `sync_bcfishpass_csvs.R` selects on that exact string and
+  auto-merges byte drift. A frozen copy uses another `source` plus `derived_from`.
+- **A `mad` group with no discharge loses all stream habitat silently.** BULK has none.
+  Waterbody rules (L/W, `thresholds: false`) inherit nothing under either model, so BT
+  keeps wetland rearing under `mad`.
+- **fresh 0.36.0 reversed `frs_db_conn()`'s precedence** (`PG*` first). `lnk_db_conn()`
+  still reads `PG_*_SHARE` first; on a machine with both groups set they connect to
+  different databases.
+- **`lnk_habitat_validate()` is cw-only**; a follow-up is drafted in the #286 archive.
+
 ## Status (2026-09-29) — #284 step 5: BT `rear_gradient_max` 0.1349 scored and held
 
 **Threshold variants are scored on one shared segmentation, never on two full runs.**
