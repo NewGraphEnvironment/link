@@ -45,3 +45,14 @@ both #302 in-sample (calibration) WSGs, so KO is reported in-sample and decides 
 `cw`-only (removed) rearing: BT 4,505 km / 240 found, GR 3,893 / 158, RB 864 / 123.
 `mad`-only (added) rearing: BT 193 km / 7, GR 14 km / 0, RB 500 km / 19. The `mad`-only side
 is likely underpowered for BT and GR at the landed pair.
+
+## Self-review notes, pending fix after code-check round 1
+
+- `model_size.csv` vs `model_bands_pooled.csv` consistency guard matches only one way
+  (chk -> mp); a pooled band with km > 0 and no per-segment rows would pass. Add the reverse.
+
+## Errors Encountered (continued)
+
+| Error | Resolution |
+|-------|------------|
+| #284 regression silently never ran: `cd … && S=… && export … && (A) & (B) & wait` backgrounded the whole `&&` list with (A), so (B) ran in the parent with no `S` and no cwd | `code-check-shell.md` "`&` binds to the whole `&&` list"; relaunched (B) as its own backgrounded call |

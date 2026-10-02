@@ -61,23 +61,23 @@ stream size, before any bundle moves a group.
 - [x] The base is the row with an empty `step_from`, not the row with an empty `column`.
 - [x] Allow a **model-only variant**: empty `column`, `model=mad`, `step_from` = base, no
   `set`.
-  - Its thin bundle carries only a method table and is checked to differ from the base in
-    0 threshold cells.
+  - Its thin bundle carries a byte copy of the base's thresholds and a method table, and is
+    checked to differ from the base in 0 threshold cells (plan corrected after review).
   - Any other empty-`column` row stops: one on `cw`, one with a `set`, or one stepping from
     a non-base variant.
 - [x] Update the README for `--base`, model-only rows and `variants_300`.
 
 ## Phase 3: Harness, score side (`data-raw/habitat_variants_score.R`)
-- [ ] Add `--base`, mirrored from the build. Use it in `cfg_of()` and the stamp.
-- [ ] The `built.csv` and bundle verification branches for model-only variants: 0
+- [x] Add `--base`, mirrored from the build. Use it in `cfg_of()` and the stamp.
+- [x] The `built.csv` and bundle verification branches for model-only variants: 0
   threshold cells differ, and the method table puts the WSGs on `mad`. Model-only
   variants are excluded from `steps`, so ladders, the walk, taper, elevation and bridge
   are unchanged.
-- [ ] New model-comparison section. Per model-only variant × flag × stage, call
+- [x] New model-comparison section. Per model-only variant × flag × stage, call
   `lnk_habitat_validate_band(schema = <variant>, schema_ref = <base>, schema_core = c(base, variant))`.
   - `added` = `mad`-only; `removed` = `cw`-only.
   - Write `model_bands.csv` and `model_bands_pooled.csv`.
-- [ ] Size control: classify each segment of the base network as core, `cw`-only or
+- [x] Size control: classify each segment of the base network as core, `cw`-only or
   `mad`-only, with its `stream_order` class.
   - Pool rates per class; expected = band km × the core's rate in the same class.
   - Write `model_size.csv` (rates by class) and `model_verdict.csv`.
@@ -87,23 +87,28 @@ stream size, before any bundle moves a group.
   Confirm the rows appear.
 
 ## Phase 4: Regression, before the build
-- [ ] Re-score #302 on the existing `score302_*` schemas
+- [x] Re-score #302 on the existing `score302_*` schemas
   (`--variants=variants_302.csv --base=default --prefix=score302_ --floor=expected`) into a
   scratch `--out`.
   - All committed `data-raw/logs/habitat_score_302/` outputs must reproduce, up to known
     double-precision ulps (#293).
   - Do the same for #284's `score284_*`.
-- [ ] Negative checks: each malformed `variants_300` shape stops with its message.
+- [x] Negative checks: each malformed `variants_300` shape stops with its message.
   - a model-only row on `cw`
   - a model-only row with a `set`
   - a model-only row stepping from a non-base variant
   - a mismatched `--base` between build and score
-- [ ] `/code-check`, with three review rounds, on the harness diff.
+- [x] `/code-check`, with three review rounds, on the harness diff.
+
+- [x] Plan-review additions (`review-plan.md`): thin order classes merged until the core
+  holds 10 locations; `model_reason.csv`; order 0 -> `unknown`; no row may step from a
+  model-only variant; model-only rows leave `obs_stage` / `equals_bundle` empty; pooling
+  read from the base; build `--step=bundles` and a byte-for-byte bundle regression.
 
 ## Phase 5: Build and score
 - [ ] Commit, then launch the build detached at a clean HEAD (`--variants=variants_300.csv
   --roles=wsg_roles_300.csv --base=default_tuned --prefix=score300_
-  --out=data-raw/logs/habitat_score_300`). Pre-flight LHAF first, then all.
+  --out=data-raw/logs/habitat_score_300`). Pre-flight PARS first (it carries BT, GR, RB and KO roles) and score it, then all.
 - [ ] Score with `--floor=expected`. Commit the logs and stamps under
   `data-raw/logs/habitat_score_300/`.
 

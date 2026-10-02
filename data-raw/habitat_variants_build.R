@@ -42,7 +42,9 @@
 #     [--wsgs=BULL]            focal subset (pre-flight); default: every
 #                              WSG in --roles
 #     [--only=default,x]       variant subset; default: all
-#     [--step=all|base|variants] [--prefix=score284_]
+#     [--step=all|base|variants|bundles] [--prefix=score284_]
+#                              (bundles: write the variant bundles to --out and
+#                              stop, touching no schema)
 #     [--working-prefix=working_<prefix>]  (working_score_ for score284_)
 #     [--out=data-raw/logs/habitat_score_284] [--allow-dirty]
 #     [--base=default]         the base bundle; it must be the base row's
@@ -80,8 +82,8 @@ path_variants <- opt("variants", file.path("data-raw", "habitat_score",
 path_roles <- opt("roles", file.path("data-raw", "habitat_score",
                                      "wsg_roles.csv"))
 step <- opt("step", "all")
-if (!step %in% c("all", "base", "variants")) {
-  stop("--step must be all, base or variants", call. = FALSE)
+if (!step %in% c("all", "base", "variants", "bundles")) {
+  stop("--step must be all, base, variants or bundles", call. = FALSE)
 }
 prefix <- opt("prefix", "score284_")
 # The working schemas a base run keeps for its focal WSGs. #284's are
@@ -198,11 +200,18 @@ local({
   r <- variants[variants$variant %in% model_only, ]
   bad <- r$variant[r$model != "mad" | r$step_from != base_variant |
                      is.na(r$species_code) | !is.na(r$value) |
-                     !is.na(r$flag) | lengths(sets[r$variant]) > 0L]
+                     !is.na(r$flag) | lengths(sets[r$variant]) > 0L |
+                     !is.na(r$obs_stage) | !is.na(r$equals_bundle)]
   if (length(bad) > 0L) {
     stop("a variant with no column must be model-only (on mad, stepping from ",
-         base_variant, ", with a species and no value, flag or set): ",
-         paste(bad, collapse = ", "), call. = FALSE)
+         base_variant, ", with a species and no value, flag, obs_stage, ",
+         "equals_bundle or set): ", paste(bad, collapse = ", "), call. = FALSE)
+  }
+  # Nothing steps from a model-only variant: it is not a ladder rung.
+  off <- variants$variant[variants$step_from %in% model_only]
+  if (length(off) > 0L) {
+    stop("no variant may step from a model-only variant: ",
+         paste(off, collapse = ", "), call. = FALSE)
   }
 })
 # The ladders must be well formed before anything runs: every step_from names
@@ -686,6 +695,14 @@ write_stamp <- function() {
 }
 
 t_all <- Sys.time()
+if (identical(step, "bundles")) {
+  for (v in setdiff(run_variants, base_variant)) {
+    write_bundle(as.list(variants[variants$variant == v, ]))
+  }
+  say("bundles written to %s", file.path(dir_out, "bundles"))
+  dbDisconnect(conn)
+  quit(save = "no")
+}
 if (step %in% c("all", "base")) run_base()
 if (step %in% c("all", "variants")) {
   # The base variant first: its digest check is what licenses the others.

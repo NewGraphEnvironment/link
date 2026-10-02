@@ -53,15 +53,20 @@ method table puts its WSGs on the variant's `model`.
 
 A row with an empty `column` that is not the base changes the habitat model and nothing
 else. It must be on `mad`, step from the base, name its species, and leave `value`,
-`flag` and `set` empty. Its bundle carries the base's thresholds unchanged and a method
+`flag`, `obs_stage`, `equals_bundle` and `set` empty. No row may step from it. Its bundle carries the base's thresholds unchanged and a method
 table putting every WSG with a role for its species on `mad`, so spawning and rearing
 switch together, as a real switch would.
 
 It is not a ladder step. The score compares it with the base in both flags: the core is
 the habitat both keep, the `removed` band is what only `cw` keeps and the `added` band
 what only `mad` keeps. Each band is read against the core within stream-order classes
-(1, 2, 3, 4+), and the decision of record is on the size-adjusted ratio. The outputs are
-`model_bands.csv`, `model_bands_pooled.csv`, `model_size.csv` and `model_verdict.csv`. The rule
+(1, 2, 3, 4+, merged upward while a class's core holds fewer than 10 locations), and the
+decision of record is on the size-adjusted ratio. The outputs are `model_bands.csv`,
+`model_bands_pooled.csv`, `model_size.csv`, `model_reason.csv` and `model_verdict.csv`.
+
+`habitat_variants_build.R --step=bundles` writes the variant bundles to `--out` and stops,
+touching no schema. It is how a harness change is checked against a committed build's
+bundles. The rule
 is in `research/habitat_thresholds.md`, "`cw` against `mad`".
 
 The inputs for #300 are `variants_300.csv` and `wsg_roles_300.csv` (#302's roles plus KO,

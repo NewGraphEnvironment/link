@@ -754,20 +754,40 @@ a variant that changes no threshold cell and puts its species' WSGs on `mad`.
 - **Held-out WSGs:** #302's (`wsg_roles_300.csv` = `wsg_roles_302.csv` plus KO). KO is
   present only in KOTL and PARS, both in-sample: it is reported and decides nothing.
 - **Stream size: stream order**, in classes 1, 2, 3 and 4+ (operator, 2026-10-02).
-  Neither model tests order, so it sides with neither. Each segment of the base network
-  is core, `cw`-only or `mad`-only, with its order class.
+  Neither model tests order, so it sides with neither: `rear_stream_order_bypass` is `no`
+  for BT, GR, KO and RB, and classify skips the bypass under `mad` anyway. Each segment of
+  the base network is core, `cw`-only or `mad`-only, with its order class.
   - **Expected** locations in a band = Σ over classes of band km × the core's rate in
-    that class, the core's rate pooled over the held-out WSGs. A segment with no stream
-    order is its own class; a class with no core km takes the core's pooled rate. Both
-    are reported if they occur.
+    that class, the core's rate pooled over the WSGs of one role (species × flag × stage
+    × role × class), from that stage's own observations.
+  - **Thin classes merge** (added after plan review, before any build). A core class can
+    be too thin to give a rate. #302's GR rearing anchor kept 30 km of core in orders 1–3
+    against 1,826 km of `cw`-only band there. So, walking up from order 1, a class joins
+    the next until the group's core holds at least 10 locations, and a short last group
+    joins the one before. If no class reaches 10, every ordered class is one group. The
+    adjustment is then the pooled ratio, which is what the data can support.
+  - Order 0 and NULL are `unknown`. They are priced at their own rate when their core
+    holds 10 locations, and at the core's pooled rate otherwise.
+  - `model_verdict.csv` reports the band km priced on a merged or a pooled rate, so a
+    size-adjusted ratio that rests on little size information says so.
   - **Size-adjusted ratio** = locations found ÷ expected.
+- **Why each band differs is reported, not scored** (`model_reason.csv`). A `cw`-only
+  segment has no discharge (`mad_null`), is outside the species' MAD range
+  (`outside_mad_range`), or is inside it and was dropped by connectivity or clustering
+  (`in_mad_range`). A `mad`-only segment has no width (`width_null`), is outside the width
+  range (`outside_width_range`), or is inside it (`in_width_range`). Plan review found
+  about 11 % of GR's order-4+ `cw`-only rearing has no discharge. A verdict that turns on
+  that share reads a gap in the discharge layer, not a threshold.
 - **Rule, per species × flag, stage `any`, held-out WSGs pooled:**
   - **The verdict of record is size-adjusted** (operator, 2026-10-02): a band is habitat
     when expected ≥ 10 and the size-adjusted ratio ≥ 0.5. Expected < 10 is
     "underpowered" and reads nothing.
   - Written beside it: the unadjusted ratio and the #302 reading (expected at the
     pooled core rate ≥ 10, ratio ≥ 0.5), and the found count.
-  - Spawn- and rear-staged rows are reported and decide nothing.
+  - Spawn- and rear-staged rows are reported and decide nothing. Stage `any` also
+    decides a spawning band. That is the evidence #302's spawning ladders used, apart
+    from RB, and a staged floor would leave most bands underpowered. The spawn-staged rows
+    sit beside it.
 - **Reading the two bands together:**
 
   | `cw`-only | `mad`-only | Reading |
@@ -777,7 +797,8 @@ a variant that changes no threshold cell and puts its species' WSGs on `mad`.
   | habitat | habitat | each model misses habitat the other finds |
   | not | not | the models disagree only on water fish use little; the choice moves little used habitat |
 
-  An underpowered band leaves its half of the reading open.
+  An underpowered band leaves its half of the reading open: the reading names the
+  decided half (for example "cw-only habitat; mad-only open").
 - **Power, before any build.** From #302's P10 anchors (held-out, stage `any`): the
   `cw`-only side is large (rearing BT 4,505 km, GR 3,893, RB 864), and the `mad`-only
   side is thin (BT 193 km, 7 found; GR 14 km, 0 found; RB 500 km, 19 found). The
@@ -786,3 +807,7 @@ a variant that changes no threshold cell and puts its species' WSGs on `mad`.
   `parameters_habitat_method.csv`; it moves no group by itself.
 - Under `default` and `bcfishpass`, BT, GR, KO and RB have no MAD range, so on `mad`
   they lose all stream habitat by construction. That needs no score.
+- **The `cw` base is not #302's.** `default_tuned` carries BT `rear_gradient_max`
+  0.1349, so #302's BT `cw` rearing (12,991 km under `default`) is not this run's.
+  Segments are not compared across builds; the PSCIS tie moves a segment between full
+  runs.
