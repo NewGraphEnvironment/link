@@ -55,7 +55,7 @@ What exploration established:
 - [x] BC-native width ↔ MAD equivalence (`width_mad_equivalent.txt`)
 
 ## Phase 2: FISS and literature
-- [ ] `query_habitat_thresholds_fiss.R`: `--species`, `--out`, snapped segment `mad_m3s`
+- [x] `query_habitat_thresholds_fiss.R`: `--species`, `--out`, snapped segment `mad_m3s`
       (defaults reproduce #284 on today's inputs); run for BT,GR,KO,RB into
       `habitat_thresholds_302/` (aggregates only)
 - [x] Literature review (`planning/active/literature.md`; local Zotero full texts; two
@@ -72,7 +72,7 @@ What exploration established:
       lands unscored
 
 ## Phase 4: mad dimension in the variants harness
-- [ ] `model` / `set` columns, method table per `mad` bundle, `method_sha256`, anchor
+- [x] `model` / `set` columns, method table per `mad` bundle, `method_sha256`, anchor
       rungs, `_min` direction, `--floor`, `--working-prefix` (derived from `--prefix`),
       core of a MAD ladder = its rungs, set restricted to `*_mad_*`, ladder consistency
       checks; #284 re-score reproduces its committed outputs

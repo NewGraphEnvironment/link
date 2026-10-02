@@ -22,7 +22,7 @@
 #     [--variants=data-raw/habitat_score/variants.csv] \
 #     [--roles=data-raw/habitat_score/wsg_roles.csv] \
 #     [--wsgs=...] [--buffers=0,100] [--prefix=score284_] \
-#     [--out=data-raw/logs/habitat_score_284]
+#     [--floor=found|expected] [--out=data-raw/logs/habitat_score_284]
 #
 # Absences come from LNK_KNOWLEDGE_DIR (the private `knowledge` repo) through
 # data-raw/habitat_validate_inputs.R, as habitat_validate.R reads them; only
@@ -72,6 +72,14 @@ path_roles <- opt("roles", file.path("data-raw", "habitat_score",
                                      "wsg_roles.csv"))
 prefix <- opt("prefix", "score284_")
 dir_out <- opt("out", file.path("data-raw", "logs", "habitat_score_284"))
+# The defaults are #284's committed run; another variants file must not
+# score into (and first clear) #284's outputs.
+if (!identical(path_variants, file.path("data-raw", "habitat_score", "variants.csv")) &&
+    !all(c("prefix", "out") %in% sub("^--([^=]+)=.*", "\\1",
+                                       commandArgs(trailingOnly = TRUE)))) {
+  stop("--variants other than #284's needs an explicit --prefix and --out",
+       call. = FALSE)
+}
 buffers <- as.numeric(split_csv(opt("buffers", "0,100")))
 if (anyNA(buffers) || !0 %in% buffers) {
   stop("--buffers must be numbers and include 0 (bands are buffer 0)",
@@ -79,12 +87,53 @@ if (anyNA(buffers) || !0 %in% buffers) {
 }
 n_min <- 10L
 ratio_min <- 0.5
+# Which n-floor is the verdict of record (both are always written): `found`
+# (locations found in the band, #284's) or `expected` (locations the band
+# would hold at the core's rate, link#302's: a walk that only loosens from a
+# tight anchor is where the found-count floor cannot refuse).
+floor_of_record <- opt("floor", "found")
+if (!floor_of_record %in% c("found", "expected")) {
+  stop("--floor must be found or expected", call. = FALSE)
+}
 
 variants <- utils::read.csv(path_variants, colClasses = "character",
                             na.strings = "")
 roles <- utils::read.csv(path_roles, colClasses = "character")
+# `model` and `set` are optional (link#302), as habitat_variants_build.R reads
+# them: an empty model is `cw`, an empty set changes nothing.
+for (k in c("model", "set")) {
+  if (!k %in% names(variants)) variants[[k]] <- NA_character_
+}
+variants$model[is.na(variants$model)] <- "cw"
 base_variant <- variants$variant[is.na(variants$column)]
-stopifnot(length(base_variant) == 1L)
+stopifnot(length(base_variant) == 1L,
+          all(variants$model %in% c("cw", "mad")),
+          identical(variants$model[variants$variant == base_variant], "cw"))
+n_set <- function(x) {
+  if (is.na(x) || !nzchar(trimws(x))) 0L else
+    length(strsplit(trimws(x), ";", fixed = TRUE)[[1]])
+}
+model_of <- function(v) variants$model[match(v, variants$variant)]
+# The same parse as habitat_variants_build.R: "col=value;col=value".
+parse_set <- function(x) {
+  if (is.na(x) || !nzchar(trimws(x))) return(stats::setNames(character(0), character(0)))
+  kv <- strsplit(trimws(strsplit(x, ";", fixed = TRUE)[[1]]), "=", fixed = TRUE)
+  stats::setNames(trimws(vapply(kv, `[`, "", 2L)), trimws(vapply(kv, `[`, "", 1L)))
+}
+# A ladder holds its `set` cells fixed, so a band is the step's own cell
+# only: every step but an anchor carries exactly its step_from's set.
+local({
+  for (v in variants$variant[!is.na(variants$column)]) {
+    f <- variants$step_from[variants$variant == v]
+    if (identical(f, base_variant) || model_of(v) != model_of(f)) next
+    a <- parse_set(variants$set[variants$variant == v])
+    b <- parse_set(variants$set[variants$variant == f])
+    if (!identical(a[order(names(a))], b[order(names(b))])) {
+      stop("step ", v, " changes its set cells from ", f,
+           ": a ladder holds them fixed", call. = FALSE)
+    }
+  }
+})
 # The ladders must be well formed before anything runs: every step_from names
 # a listed variant, and each variant is stepped from by at most one other, so
 # every ladder is one chain out from the base (no cycle, no branch below it).
@@ -115,7 +164,8 @@ focal <- toupper(split_csv(opt("wsgs")))
 if (length(focal) == 0L) focal <- unique(roles$watershed_group_code)
 roles <- roles[roles$watershed_group_code %in% focal, ]
 species <- sort(unique(roles$species_code))
-schema_of <- function(v) paste0(prefix, v)
+# paste0() with a zero-length argument returns the bare prefix, not nothing.
+schema_of <- function(v) if (length(v) == 0L) character(0) else paste0(prefix, v)
 outputs <- c("summary.csv", "totals.csv", "bands.csv", "bands_pooled.csv",
              "verdict.csv", "bridge_band.csv", "taper.csv", "elevation.csv",
              "elevation_adjusted.csv", "habitat_change.csv",
@@ -176,6 +226,31 @@ for (v in variants$variant) {
     stop("the thresholds bundle for ", v, " is not the one every scored WSG ",
          "of ", schema_of(v), " was built from", call. = FALSE)
   }
+  # The habitat model a schema was classified on is the bundle's method
+  # table; a built.csv from before link#302 carries no method sha, and its
+  # rows can only be cw.
+  sha_meth <- digest::digest(file = cfgs[[v]]$files$parameters_habitat_method$path,
+                             algo = "sha256")
+  meth_built <- if ("method_sha256" %in% names(b)) b$method_sha256 else
+    rep(NA_character_, nrow(b))
+  # The model --variants names must be the one the bundle's method table puts
+  # these WSGs on (unlisted is cw), whatever built.csv recorded: a pre-#302
+  # row carries no method sha, and a default that later moved a WSG to mad
+  # would otherwise score an old cw schema under mad.
+  meth <- utils::read.csv(cfgs[[v]]$files$parameters_habitat_method$path,
+                          colClasses = "character")
+  m_w <- meth$model[match(w_v, meth$watershed_group_code)]
+  m_w[is.na(m_w)] <- "cw"
+  if (!all(m_w == model_of(v))) {
+    stop(v, " is a ", model_of(v), " variant but its method table puts ",
+         paste(w_v[m_w != model_of(v)], collapse = ", "), " on another model",
+         call. = FALSE)
+  }
+  if (!all(meth_built %in% sha_meth |
+             (is.na(meth_built) & model_of(v) == "cw"))) {
+    stop("the method table for ", v, " is not the one every scored WSG of ",
+         schema_of(v), " was built from", call. = FALSE)
+  }
   if (identical(v, base_variant)) next
   r <- variants[variants$variant == v, ]
   thr <- utils::read.csv(path_thr, colClasses = "character")
@@ -183,7 +258,19 @@ for (v in variants$variant) {
     sum(!((a == b) %in% TRUE) & !(is.na(a) & is.na(b)))
   }, thr, thr_now))
   got <- as.numeric(thr[[r$column]][thr$species_code == r$species_code])
-  if (n_diff != 1L || !isTRUE(all.equal(got, as.numeric(r$value)))) {
+  # Every set cell must hold the value --variants gives it, not just count.
+  set_ok <- all(vapply(names(parse_set(r$set)), function(k) {
+    got_k <- thr[[k]][thr$species_code == r$species_code]
+    want_k <- parse_set(r$set)[[k]]
+    # Numbers compared as numbers; anything else (edge types) as text.
+    if (is.na(suppressWarnings(as.numeric(want_k)))) {
+      identical(got_k, want_k)
+    } else {
+      isTRUE(all.equal(as.numeric(got_k), as.numeric(want_k)))
+    }
+  }, logical(1)))
+  if (n_diff != 1L + n_set(r$set) || !set_ok ||
+      !isTRUE(all.equal(got, as.numeric(r$value)))) {
     stop("bundle ", v, " is not default with ", r$column, " = ", r$value,
          " for ", r$species_code, " (", n_diff, " cells differ; it holds ",
          got, ")", call. = FALSE)
@@ -337,12 +424,52 @@ value_of <- function(v, sp, column) {
 steps <- variants[!is.na(variants$column), ]
 steps$value_from <- mapply(value_of, steps$step_from, steps$species_code,
                            steps$column)
-steps$direction <- ifelse(num(steps$value) > steps$value_from, "added",
-                          "removed")
+# A step that changes the habitat model as well (the cw base to the first
+# `mad` rung of a MAD ladder, link#302) is the ladder's anchor, not a
+# threshold step: it is taken by construction, its bands are reported both
+# ways, and the walk starts beyond it.
+steps$model_step <- model_of(steps$variant) != model_of(steps$step_from)
+# A model change is a ladder's first step or nothing: mid-ladder it would be
+# force-taken and would put a rung of another model in the core.
+if (any(steps$model_step & steps$step_from != base_variant)) {
+  stop("a model change must step from ", base_variant, ": ",
+       paste(steps$variant[steps$model_step & steps$step_from != base_variant],
+             collapse = ", "), call. = FALSE)
+}
+# Raising a maximum adds habitat; lowering a minimum does (link#302's MAD
+# rungs are the first ladders on a `_min` column).
+loosens <- ifelse(grepl("_min$", steps$column),
+                  num(steps$value) < steps$value_from,
+                  num(steps$value) > steps$value_from)
+steps$direction <- ifelse(steps$model_step | loosens, "added", "removed")
 ladder_of <- function(sp, column) {
   c(base_variant, variants$variant[variants$species_code %in% sp &
                                      variants$column %in% column])
 }
+# The core: the habitat every schema of the ladder keeps. A MAD ladder's core
+# leaves out the cw base, which tests axes the `mad` rungs do not (a width
+# floor, and NULL widths fail), so the core and the bands are cut alike.
+core_of <- function(sp, column) {
+  l <- ladder_of(sp, column)
+  rungs <- l[-1L]
+  if (any(model_of(rungs) != "cw")) rungs else l
+}
+# Every step past an anchor reads the same species, column, flag and stage as
+# its step_from, or value_from is NA and the step drops out of the walk.
+local({
+  for (k in seq_len(nrow(steps))) {
+    f <- steps$step_from[k]
+    if (identical(f, base_variant)) next
+    a <- variants[variants$variant == steps$variant[k],
+                  c("species_code", "column", "flag", "obs_stage")]
+    b <- variants[variants$variant == f,
+                  c("species_code", "column", "flag", "obs_stage")]
+    if (!identical(unname(unlist(a)), unname(unlist(b)))) {
+      stop("step ", steps$variant[k], " reads a different species, column, ",
+           "flag or stage than its step_from ", f, call. = FALSE)
+    }
+  }
+})
 # A user_habitat_classification reach is forced to habitat under every
 # variant, so it would sit in the core and pull its density toward wherever
 # the confirmed reaches are. The band function does not exclude them; stop
@@ -364,7 +491,7 @@ bands <- list()
 for (k in seq_len(nrow(steps))) {
   s <- steps[k, ]
   w_sp <- roles$watershed_group_code[roles$species_code == s$species_code]
-  core <- schema_of(ladder_of(s$species_code, s$column))
+  core <- schema_of(core_of(s$species_code, s$column))
   for (st in stages) {
     b <- lnk_habitat_validate_band(
       conn, aoi = w_sp, species = s$species_code, flag = s$flag,
@@ -402,7 +529,8 @@ utils::write.csv(bands, file.path(dir_out, "bands.csv"), row.names = FALSE,
 # against-direction length stays in bands.csv; the run stops only when it is
 # more than 1 % of what the step moves the right way, which would mean the
 # ladder is not nested and the core is not "default outside every band".
-b_any <- bands[bands$stage == "any", ]
+b_any <- bands[bands$stage == "any" &
+                 !bands$variant %in% steps$variant[steps$model_step], ]
 with_km <- tapply(b_any$band_km[b_any$direction == b_any$step_direction],
                   b_any$variant[b_any$direction == b_any$step_direction], sum)
 against_km <- tapply(b_any$band_km[b_any$direction != b_any$step_direction],
@@ -416,11 +544,16 @@ if (any(share > 0.01, na.rm = TRUE)) {
 message("habitat moved against the step direction (km): ",
         paste(names(against_km), round(against_km, 3), collapse = ", "))
 
-key_b <- c("variant", "step_from", "column", "value_from", "value",
-           "step_direction", "obs_stage", "species_code", "flag", "role",
-           "direction", "stage")
+# value_from is NA for a ladder's anchor (default has no value), and
+# aggregate() drops a group whose key is NA, so it is joined back after.
+key_b <- c("variant", "step_from", "column", "value", "step_direction",
+           "obs_stage", "species_code", "flag", "role", "direction", "stage")
 pooled <- stats::aggregate(bands[c("band_km", "n_band", "core_km", "n_core")],
                            bands[key_b], sum)
+pooled <- cbind(pooled[1:3],
+                value_from = steps$value_from[match(pooled$variant,
+                                                    steps$variant)],
+                pooled[-(1:3)])
 pooled <- cbind(pooled, .lnk_hvb_density(pooled$n_band, pooled$band_km,
                                          pooled$n_core, pooled$core_km))
 pooled <- pooled[do.call(order, pooled[c("species_code", "column", "value",
@@ -441,6 +574,8 @@ rule$decision <- ifelse(
   rule$n_band < n_min, "keep (n < 10)",
   ifelse((rule$step_direction == "added") == rule$band_is_habitat,
          "take", "refuse"))
+is_anchor <- rule$variant %in% steps$variant[steps$model_step]
+rule$decision[is_anchor] <- "take (anchor: model change)"
 # Beside the rule, not in it: the same floor on the locations the band would
 # hold at the core's rate (core density x band km), which is set by the band's
 # length before any fish are counted. The rule's floor on the locations
@@ -452,6 +587,7 @@ band_is_dense <- !is.na(rule$density_ratio) & rule$density_ratio >= ratio_min
 rule$decision_expected_floor <- ifelse(
   is.na(rule$n_expected) | rule$n_expected < n_min, "keep (expected < 10)",
   ifelse((rule$step_direction == "added") == band_is_dense, "take", "refuse"))
+rule$decision_expected_floor[is_anchor] <- "take (anchor: model change)"
 # Walk each ladder out from default once, to its last step, and write that
 # one outcome on every row of the ladder. A ladder is the chain from default
 # to a tip (a variant no other variant steps from); a ladder that branches at
@@ -476,6 +612,7 @@ walk <- function(decision) {
   for (tip in tips) {
     chain <- chain_to(tip)
     dec <- decision[match(chain, rule$variant)]
+    dec[startsWith(dec, "take")] <- "take"
     stop_at <- which(dec != "take" | is.na(dec))[1]
     r <- rule[rule$variant == tip, ]
     if (is.na(stop_at)) {
@@ -487,6 +624,23 @@ walk <- function(decision) {
         value_of(base_variant, r$species_code, r$column)
       } else {
         num(variants$value[variants$variant == chain[stop_at - 1L]])
+      }
+    } else if (any(chain %in% steps$variant[steps$model_step])) {
+      # A MAD ladder has no prior verdict to stand (default has no range).
+      # Pre-registered (research/habitat_thresholds.md, #302): an
+      # underpowered first step past the anchor lands its own value, the
+      # calibrated candidate, unscored; a later one stops at the last value
+      # taken.
+      first <- stop_at >= 2L &&
+        chain[stop_at - 1L] %in% steps$variant[steps$model_step]
+      if (first) {
+        status <- paste("underpowered at", chain[stop_at],
+                        "- its value lands unscored")
+        value <- num(variants$value[variants$variant == chain[stop_at]])
+      } else {
+        status <- paste("underpowered at", chain[stop_at], "- stops at",
+                        chain[stop_at - 1L])
+        value <- num(variants$value[variants$variant == chain[stop_at - 1L]])
       }
     } else {
       status <- paste("underpowered at", chain[stop_at],
@@ -507,6 +661,14 @@ rule$walked_value <- w_rule$value
 w_exp <- walk(rule$decision_expected_floor)
 rule$walk_status_expected_floor <- w_exp$status
 rule$walked_value_expected_floor <- w_exp$value
+rule$floor_of_record <- rep(floor_of_record, nrow(rule))
+rule$decision_of_record <- if (floor_of_record == "found") rule$decision else
+  rule$decision_expected_floor
+rule$walked_value_of_record <- if (floor_of_record == "found") {
+  rule$walked_value
+} else {
+  rule$walked_value_expected_floor
+}
 utils::write.csv(rule, file.path(dir_out, "verdict.csv"), row.names = FALSE,
                  na = "")
 
@@ -531,11 +693,23 @@ for (k in seq_len(nrow(ladders))) {
   flag_of <- function(sch) {
     sprintf("coalesce(h%d.%s, false)", match(sch, sch_all), L$flag)
   }
-  band_case <- paste(sprintf("WHEN %s <> %s THEN %s",
-                             flag_of(schema_of(lad$variant)),
-                             flag_of(schema_of(lad$step_from)),
-                             DBI::dbQuoteString(conn, lad$variant)),
-                     collapse = " ")
+  # A segment goes to the first band whose flags differ, which is the
+  # verdict's band only on a nested ladder. A MAD ladder's anchor moves
+  # habitat both ways, so the threshold steps are labelled first and the
+  # anchor last, split by direction, as bands.csv counts them.
+  thr_steps <- lad[!lad$model_step, ]
+  anc <- lad[lad$model_step, ]
+  band_case <- paste(c(
+    sprintf("WHEN %s <> %s THEN %s", flag_of(schema_of(thr_steps$variant)),
+            flag_of(schema_of(thr_steps$step_from)),
+            DBI::dbQuoteString(conn, thr_steps$variant)),
+    if (nrow(anc) > 0L) {
+      sprintf("WHEN %1$s AND NOT %2$s THEN %3$s WHEN %2$s AND NOT %1$s THEN %4$s",
+              flag_of(schema_of(anc$variant)), flag_of(schema_of(anc$step_from)),
+              DBI::dbQuoteString(conn, paste(anc$variant, "added")),
+              DBI::dbQuoteString(conn, paste(anc$variant, "removed")))
+    }),
+    collapse = " ")
   d <- dbGetQuery(conn, sprintf(
     "SELECT s.watershed_group_code, s.id_segment, s.length_metre, s.gradient,
             (st_zmin(s.geom) + st_zmax(s.geom)) / 2 AS elevation,
@@ -544,7 +718,8 @@ for (k in seq_len(nrow(ladders))) {
        %2$s
       WHERE s.watershed_group_code = ANY($1)",
     schema_of(base_variant), joins,
-    paste(vapply(sch_all, flag_of, character(1)), collapse = " AND "),
+    paste(vapply(schema_of(core_of(L$species_code, L$column)), flag_of,
+                 character(1)), collapse = " AND "),
     band_case), params = list(paste0("{", paste(w_sp, collapse = ","), "}")))
   d <- d[!is.na(d$class), ]
   o <- obs_base[obs_base$species_code == L$species_code &
@@ -665,13 +840,16 @@ for (k in which(steps$flag == "rearing" & steps$direction == "added")) {
                        p.blue_line_key, p.downstream_route_measure,
                        p.wscode_ltree, p.localcode_ltree)) AS spawning_upstream,
             -- in the gradient window the step opens, or admitted through
-            -- connectivity (a cluster the step newly connects)
-            (b.gradient > $2 AND b.gradient <= $3) AS in_window,
+            -- connectivity (a cluster the step newly connects); NULL for a
+            -- step that is not a gradient step (a MAD rung, link#302)
+            CASE WHEN $4 THEN b.gradient > $2 AND b.gradient <= $3
+            END AS in_window,
             sum(b.length_metre) / 1000 AS km
        FROM band b
       GROUP BY 1, 2, 3", sv, sr, spl),
     params = list(paste0("{", paste(w_sp, collapse = ","), "}"),
-                  s$value_from, num(s$value)))
+                  s$value_from, num(s$value),
+                  grepl("_gradient_", s$column) && !s$model_step))
   if (nrow(d) > 0L) {
     bridge[[length(bridge) + 1L]] <- cbind(
       data.frame(variant = s$variant, step_from = s$step_from,
@@ -712,8 +890,8 @@ writeLines(c(
   sprintf("focal: %s; species: %s; buffers: %s m",
           paste(focal, collapse = ","), paste(species, collapse = ","),
           paste(buffers, collapse = ",")),
-  sprintf("rule: n_band >= %d and density_ratio >= %s on held-out WSGs",
-          n_min, ratio_min),
+  sprintf("rule: n_band >= %d and density_ratio >= %s on held-out WSGs; floor of record: %s",
+          n_min, ratio_min, floor_of_record),
   sprintf("pooling: %s", pool$note),
   sprintf("bcfishobs.observations rows: %s",
           dbGetQuery(conn, "SELECT count(*) FROM bcfishobs.observations")[[1]]),

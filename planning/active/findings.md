@@ -103,3 +103,25 @@ channel width does under `cw`. Report those columns' km before/after; RUNBOOK §
 not worked around: the driver follows fresh as compiled (it now builds the waterbody
 admission from `fresh:::.frs_rule_to_sql()`). Issue drafted for operator review, not
 filed.
+
+## Harness code-check (3 rounds, ended by enumeration)
+
+- Round 1 (`review-harness-round1.md`): taper/elevation band labels assumed a nested
+  ladder; core cut at default's gradient vs rungs carrying 0.1349; score checked only the
+  count of `set` cells; no set-fixed-along-ladder check; pre-#302 cw rows unchecked
+  against today's method table; `working_of()` ignored `--prefix`.
+- Round 2 (`review-harness-round2.md`), one inside round 1's fix: the cw base in a MAD
+  core cuts it on width (floor + NULL widths) that `mad` rungs never test → `core_of()`
+  = the rungs only; `set` restricted to `*_mad_*`; step/step_from consistency asserted;
+  working prefix derived from `--prefix`; text comparison for non-numeric set cells;
+  FISS `--out` guard.
+- #284 regression of the round-1 fixes **crashed** in taper: `schema_of(character(0))`
+  returned the bare prefix (paste0 zero-length trap) → `hNA` in SQL. Fixed in both
+  scripts; anchor branch built only when an anchor exists.
+- Round 3 (`review-harness-round3.md`): **enumeration of 83 derivation sites** (50 score,
+  29 build, 4 FISS) against #284's cw ladders and the six MAD ladders; every one ok or
+  one of: empty-`rule` crash (`rep()`), walk landing NA where the pre-registered rule
+  says P05 unscored, `--prefix`/`--out` defaults touching #284 state, guards scoped to the
+  planned shape (model change only from base; `set` `*_mad_*` everywhere). All fixed.
+  Taper's gradient bins on a MAD ladder are diagnostic only (accepted, not cited).
+- Final #284 regression (round-2 code): all ten outputs reproduce on every shared column.

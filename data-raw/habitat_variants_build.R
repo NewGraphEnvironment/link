@@ -8,7 +8,7 @@
 #
 #   base      lnk_pipeline_run() for `default` over the drainage closure of
 #             the focal WSGs, downstream first, into <prefix>default. The
-#             focal WSGs keep their working schema (working_score_<wsg>), and
+#             focal WSGs keep their working schema (<working-prefix><wsg>), and
 #             their access is re-settled against the whole closure
 #             (lnk_access(merge = TRUE), as wsg_recompute_one.R does).
 #   variants  per variant x focal WSG: re-run lnk_pipeline_classify() +
@@ -18,9 +18,12 @@
 #             habitat thresholds).
 #
 # Each variant is a thin bundle generated from --variants (one cell of
-# `default`'s parameters_habitat_thresholds.csv changed) into
-# <out>/bundles/<variant>/, and loaded by path, so a scored schema always has
-# a bundle on disk that says exactly what produced it.
+# `default`'s parameters_habitat_thresholds.csv changed, plus any cells its
+# optional `set` column fixes) into <out>/bundles/<variant>/, and loaded by
+# path, so a scored schema always has a bundle on disk that says exactly what
+# produced it. A variant whose optional `model` is `mad` (link#302) also
+# carries a parameters_habitat_method.csv putting every WSG with a role for
+# its species on `mad`; its working network must carry mad_m3s (#286).
 #
 # Invariants, asserted (the run stops on the first failure):
 #   - every variant schema carries the same streams as <prefix>default, per
@@ -37,6 +40,7 @@
 #                              WSG in --roles
 #     [--only=default,x]       variant subset; default: all
 #     [--step=all|base|variants] [--prefix=score284_]
+#     [--working-prefix=working_<prefix>]  (working_score_ for score284_)
 #     [--out=data-raw/logs/habitat_score_284] [--allow-dirty]
 #
 # Resumable: a base WSG whose streams_access is already in <prefix>default
@@ -75,10 +79,28 @@ if (!step %in% c("all", "base", "variants")) {
   stop("--step must be all, base or variants", call. = FALSE)
 }
 prefix <- opt("prefix", "score284_")
+# The working schemas a base run keeps for its focal WSGs. #284's are
+# working_score_<wsg>; a second scoring build needs its own, or its base run
+# overwrites the first build's networks for the WSGs they share.
+working_prefix <- opt("working-prefix",
+                      if (identical(prefix, "score284_")) "working_score_" else
+                        paste0("working_", prefix))
+if (!grepl("^working_[a-z0-9_]*_$", working_prefix)) {
+  stop("--working-prefix must start with 'working_', be lower-case and end in '_'",
+       call. = FALSE)
+}
 if (!grepl("^[a-z][a-z0-9_]*_$", prefix)) {
   stop("--prefix must be lower-case and end in '_'", call. = FALSE)
 }
 dir_out <- opt("out", file.path("data-raw", "logs", "habitat_score_284"))
+# The defaults are #284's committed run; another variants file must not build
+# into #284's schemas, working networks or logs.
+if (!identical(path_variants, file.path("data-raw", "habitat_score", "variants.csv")) &&
+    !all(c("prefix", "out") %in% sub("^--([^=]+)=.*", "\\1",
+                                       commandArgs(trailingOnly = TRUE)))) {
+  stop("--variants other than #284's needs an explicit --prefix and --out",
+       call. = FALSE)
+}
 
 # A scored schema must be traceable to committed code and inputs.
 dirty <- system(paste("git status --porcelain -- R inst/extdata/configs",
@@ -93,10 +115,17 @@ if (length(dirty) > 0L && !"--allow-dirty" %in% commandArgs(TRUE)) {
 variants <- utils::read.csv(path_variants, colClasses = "character",
                             na.strings = "")
 roles <- utils::read.csv(path_roles, colClasses = "character")
+cols_variants <- c("variant", "species_code", "column", "value", "flag",
+                   "obs_stage", "step_from", "equals_bundle")
+# `model` and `set` (link#302) are optional, so #284's file stays valid: an
+# absent or empty `model` is `cw`, an absent or empty `set` changes nothing.
+for (k in c("model", "set")) {
+  if (!k %in% names(variants)) variants[[k]] <- NA_character_
+}
+variants$model[is.na(variants$model)] <- "cw"
 stopifnot(
-  identical(names(variants), c("variant", "species_code", "column", "value",
-                               "flag", "obs_stage", "step_from",
-                               "equals_bundle")),
+  identical(setdiff(names(variants), c("model", "set")), cols_variants),
+  all(variants$model %in% c("cw", "mad")),
   !anyDuplicated(variants$variant),
   all(grepl("^[a-z][a-z0-9_]*$", variants$variant)),
   sum(is.na(variants$column)) == 1L,
@@ -104,6 +133,37 @@ stopifnot(
   all(roles$role %in% c("held_out", "in_sample"))
 )
 base_variant <- variants$variant[is.na(variants$column)]
+if (!identical(variants$model[variants$variant == base_variant], "cw")) {
+  stop("the base variant must be on the cw model", call. = FALSE)
+}
+# `set`: extra cells a variant fixes beside its `column`, as
+# "col=value;col=value" (a MAD rung's open maximum, the spawning range a
+# rearing ladder's clusters need). Parsed once, to a named character vector.
+parse_set <- function(x) {
+  if (is.na(x) || !nzchar(trimws(x))) return(stats::setNames(character(0), character(0)))
+  kv <- strsplit(trimws(strsplit(x, ";", fixed = TRUE)[[1]]), "=", fixed = TRUE)
+  if (!all(lengths(kv) == 2L)) stop("malformed set: ", x, call. = FALSE)
+  out <- stats::setNames(trimws(vapply(kv, `[`, "", 2L)),
+                         trimws(vapply(kv, `[`, "", 1L)))
+  if (anyDuplicated(names(out)) || !all(nzchar(names(out))) ||
+      !all(nzchar(out))) {
+    stop("malformed set: ", x, call. = FALSE)
+  }
+  out
+}
+sets <- stats::setNames(lapply(variants$set, parse_set), variants$variant)
+# `set` may fix only MAD cells: a core is cut at default's gradient and width,
+# so a set cell on either would make a band differ from the core on an axis
+# the step is not about.
+local({
+  bad <- vapply(variants$variant, function(v) {
+    !all(grepl("_mad_(min|max)$", names(sets[[v]])))
+  }, logical(1))
+  if (any(bad)) {
+    stop("set may name only *_mad_min / *_mad_max cells: ",
+         paste(variants$variant[bad], collapse = ", "), call. = FALSE)
+  }
+})
 # The ladders must be well formed before anything runs: every step_from names
 # a listed variant, and each variant is stepped from by at most one other, so
 # every ladder is one chain out from the base (no cycle, no branch below it).
@@ -142,8 +202,9 @@ if (length(setdiff(focal, roles$watershed_group_code)) > 0L) {
        paste(setdiff(focal, roles$watershed_group_code), collapse = ", "),
        call. = FALSE)
 }
-schema_of <- function(v) paste0(prefix, v)
-working_of <- function(w) paste0("working_score_", tolower(w))
+# paste0() with a zero-length argument returns the bare prefix, not nothing.
+schema_of <- function(v) if (length(v) == 0L) character(0) else paste0(prefix, v)
+working_of <- function(w) paste0(working_prefix, tolower(w))
 
 conn <- lnk_db_conn(dbname = "fwapg", host = "localhost", port = 5432L,
                     user = "postgres", password = "postgres")
@@ -155,6 +216,8 @@ cfg_default$pipeline$schema <- schema_of(base_variant)
 loaded <- suppressWarnings(lnk_load_overrides(cfg_default))
 path_thr_default <- cfg_default$files$parameters_habitat_thresholds$path
 thr_default <- utils::read.csv(path_thr_default, colClasses = "character")
+meth_default <- utils::read.csv(cfg_default$files$parameters_habitat_method$path,
+                                colClasses = "character")
 # Write a thresholds table in the shipped CSVs' shape: header and text columns
 # quoted, numbers bare, NA bare. Proven on `default` itself before any variant
 # is written, so a variant bundle differs from `default` in its one cell only.
@@ -185,46 +248,83 @@ write_bundle <- function(r) {
     stop("variant ", r$variant, ": species ", r$species_code,
          " not in default's thresholds", call. = FALSE)
   }
-  if (identical(thr[[r$column]][i], r$value)) {
-    stop("variant ", r$variant, " equals default: ", r$column, " is already ",
-         r$value, call. = FALSE)
+  cells <- c(stats::setNames(r$value, r$column), sets[[r$variant]])
+  if (anyDuplicated(names(cells)) || !all(names(cells) %in% names(thr))) {
+    stop("variant ", r$variant, ": set repeats its column or names no ",
+         "threshold column", call. = FALSE)
   }
-  thr[[r$column]][i] <- r$value
+  for (k in names(cells)) {
+    if (identical(thr[[k]][i], cells[[k]])) {
+      stop("variant ", r$variant, " equals default: ", k, " is already ",
+           cells[[k]], call. = FALSE)
+    }
+    thr[[k]][i] <- cells[[k]]
+  }
   n_diff <- sum(mapply(function(a, b) {
     sum(!((a == b) %in% TRUE) & !(is.na(a) & is.na(b)))
   }, thr, thr_default))
-  if (n_diff != 1L) {
+  if (n_diff != length(cells)) {
     stop("variant ", r$variant, " differs from default in ", n_diff,
-         " cells, not 1", call. = FALSE)
+         " cells, not ", length(cells), call. = FALSE)
   }
   d <- bundle_dir(r$variant)
   fs::dir_create(d)
   path_thr <- file.path(d, "parameters_habitat_thresholds.csv")
   write_thresholds(thr, path_thr)
+  files <- list(parameters_habitat_thresholds = list(
+    path = "parameters_habitat_thresholds.csv"))
+  # Its own entry, or the inherited one would verify default's copy.
+  prov <- list(parameters_habitat_thresholds.csv = list(
+    source = sprintf("link (generated from configs/default; %s row %s)",
+                     basename(path_variants), r$variant),
+    checksum = paste0("sha256:", digest::digest(file = path_thr,
+                                                algo = "sha256"))))
+  if (identical(r$model, "mad")) {
+    # Every WSG with a role for this species on `mad`, the rest as default.
+    path_meth <- file.path(d, "parameters_habitat_method.csv")
+    w_mad <- unique(roles$watershed_group_code[
+      roles$species_code == r$species_code])
+    meth <- meth_default
+    meth$model[meth$watershed_group_code %in% w_mad] <- "mad"
+    meth <- rbind(meth, data.frame(
+      watershed_group_code = setdiff(w_mad, meth$watershed_group_code),
+      model = rep("mad", length(setdiff(w_mad, meth$watershed_group_code)))))
+    meth <- meth[order(meth$watershed_group_code), ]
+    utils::write.csv(meth, path_meth, row.names = FALSE, quote = FALSE)
+    files$parameters_habitat_method <- list(
+      path = "parameters_habitat_method.csv")
+    prov$parameters_habitat_method.csv <- list(
+      source = sprintf("link (generated from configs/default; %s row %s)",
+                       basename(path_variants), r$variant),
+      checksum = paste0("sha256:", digest::digest(file = path_meth,
+                                                  algo = "sha256")))
+  }
   yaml::write_yaml(list(
     name = r$variant,
     description = sprintf(paste(
-      "link#284 step 5 scoring variant, generated by",
-      "data-raw/habitat_variants_build.R from %s: `default` with %s %s",
-      "%s -> %s."), basename(path_variants), r$species_code, r$column,
-      thr_default[[r$column]][i], r$value),
+      "Habitat-threshold scoring variant, generated by",
+      "data-raw/habitat_variants_build.R from %s: `default` on the %s model",
+      "with %s %s."), basename(path_variants), r$model, r$species_code,
+      paste(names(cells), cells, sep = " = ", collapse = ", ")),
     extends = "default",
-    files = list(parameters_habitat_thresholds = list(
-      path = "parameters_habitat_thresholds.csv")),
+    files = files,
     pipeline = list(schema = schema_of(r$variant)),
-    # Its own entry, or the inherited one would verify default's copy.
-    provenance = list(parameters_habitat_thresholds.csv = list(
-      source = sprintf("link (generated from configs/default; %s row %s)",
-                       basename(path_variants), r$variant),
-      checksum = paste0("sha256:", digest::digest(file = path_thr,
-                                                  algo = "sha256"))))),
+    provenance = prov),
     file.path(d, "config.yaml"))
   cfg <- lnk_config(normalizePath(d))
   ver <- lnk_config_verify(cfg)
-  ver <- ver[ver$file == "parameters_habitat_thresholds.csv", ]
-  if (nrow(ver) != 1L || isTRUE(ver$byte_drift)) {
-    stop("variant ", r$variant, ": its thresholds do not verify against ",
-         "its own provenance", call. = FALSE)
+  for (f in sub("$", ".csv", names(files))) {
+    vf <- ver[ver$file == f, ]
+    if (nrow(vf) != 1L || isTRUE(vf$byte_drift)) {
+      stop("variant ", r$variant, ": its ", f, " does not verify against ",
+           "its own provenance", call. = FALSE)
+    }
+  }
+  if (!identical(normalizePath(cfg$files$parameters_habitat_method$path),
+                 normalizePath(if (identical(r$model, "mad")) path_meth else
+                   cfg_default$files$parameters_habitat_method$path))) {
+    stop("variant ", r$variant, ": its method table did not resolve to the ",
+         "one written for it", call. = FALSE)
   }
   if (!is.na(r$equals_bundle)) {
     a <- tools::md5sum(cfg$files$parameters_habitat_thresholds$path)
@@ -255,12 +355,21 @@ record_built <- function(v, w) {
     thresholds_sha256 = digest::digest(
       file = cfgs[[v]]$files$parameters_habitat_thresholds$path,
       algo = "sha256"),
+    method_sha256 = digest::digest(
+      file = cfgs[[v]]$files$parameters_habitat_method$path,
+      algo = "sha256"),
     link_head = head_sha, dirty = length(dirty) > 0L,
     built_at = format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z"))
   old <- if (file.exists(path_built)) {
     utils::read.csv(path_built, colClasses = "character")
   } else {
     NULL
+  }
+  # A built.csv from before link#302 has no method column: its schemas were
+  # all built on default's method table, which is not recorded, so NA.
+  if (!is.null(old) && !"method_sha256" %in% names(old)) {
+    old$method_sha256 <- NA_character_
+    old <- old[names(row)]
   }
   keep <- !(old$variant == v & old$watershed_group_code == w)
   utils::write.csv(rbind(old[keep, , drop = FALSE], row), path_built,
@@ -434,6 +543,22 @@ run_variant <- function(v) {
   for (w in wsgs_v) {
     if (!dbExistsTable(conn, Id(schema = working_of(w), table = "streams"))) {
       stop(working_of(w), " is gone: run --step=base first", call. = FALSE)
+    }
+    # A `mad` variant classifies on the discharge prepare joined onto the
+    # working streams (#286). A working schema built before that join, or a
+    # WSG with no discharge, would classify every inheriting stream rule
+    # FALSE and read as a threshold verdict.
+    if (identical(variants$model[variants$variant == v], "mad")) {
+      has_col <- nrow(dbGetQuery(conn,
+        "SELECT 1 FROM information_schema.columns
+          WHERE table_schema = $1 AND table_name = 'streams'
+            AND column_name = 'mad_m3s'", params = list(working_of(w)))) > 0L
+      n_mad <- if (has_col) dbGetQuery(conn, sprintf(
+        "SELECT count(mad_m3s) AS n FROM %s.streams", working_of(w)))$n else 0
+      if (n_mad == 0) {
+        stop(working_of(w), ".streams carries no mad_m3s: rebuild the base ",
+             "(--step=base) at this HEAD", call. = FALSE)
+      }
     }
     t0 <- Sys.time()
     sp <- if (identical(v, base_variant)) NULL else sp_v
