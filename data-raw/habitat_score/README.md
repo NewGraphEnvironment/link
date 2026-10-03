@@ -1,7 +1,7 @@
 # habitat_score
 
 The inputs for scoring habitat-threshold variants against fish observations (#284 step 5,
-and the MAD ranges of #302).
+the MAD ranges of #302, and `cw` against `mad` in #300).
 The rule and the reasoning behind it are in `research/habitat_thresholds.md`, under
 "Scoring design". Two scripts use these files:
 
@@ -12,8 +12,11 @@ Everything species-specific is here, and neither script names a species.
 
 ## `variants.csv`
 
-One row per variant. The row with an empty `column` is the base, `default`. Every other
-row changes exactly one cell of `default`'s `parameters_habitat_thresholds.csv`.
+One row per variant. The row with an empty `step_from` is the base. Its `equals_bundle`
+names the bundle it is, and both scripts take that bundle as `--base` (default `default`;
+#300's is `default_tuned`), stopping when the two disagree. Every other row changes
+exactly one cell of the base's `parameters_habitat_thresholds.csv`, except a model-only
+row (below).
 
 | column | meaning |
 |---|---|
@@ -45,6 +48,29 @@ A `mad` variant's `set` may name only `*_mad_min` / `*_mad_max` cells, so the ru
 `set` cell holds its value, that a ladder holds `set` fixed past its anchor, that each step
 reads the same species, column, flag and stage as its `step_from`, and that each bundle's
 method table puts its WSGs on the variant's `model`.
+
+### Model-only variants (#300)
+
+A row with an empty `column` that is not the base changes the habitat model and nothing
+else. It must be on `mad`, step from the base, name its species, and leave `value`,
+`flag`, `obs_stage`, `equals_bundle` and `set` empty. No row may step from it. Its bundle carries the base's thresholds unchanged and a method
+table putting every WSG with a role for its species on `mad`, so spawning and rearing
+switch together, as a real switch would.
+
+It is not a ladder step. The score compares it with the base in both flags: the core is
+the habitat both keep, the `removed` band is what only `cw` keeps and the `added` band
+what only `mad` keeps. Each band is read against the core within stream-order classes
+(1, 2, 3, 4+, merged upward while a class's core holds fewer than 10 locations), and the
+decision of record is on the size-adjusted ratio. The outputs are `model_bands.csv`,
+`model_bands_pooled.csv`, `model_size.csv`, `model_reason.csv` and `model_verdict.csv`.
+
+`habitat_variants_build.R --step=bundles` writes the variant bundles to `--out` and stops,
+touching no schema. It is how a harness change is checked against a committed build's
+bundles. The rule
+is in `research/habitat_thresholds.md`, "`cw` against `mad`".
+
+The inputs for #300 are `variants_300.csv` and `wsg_roles_300.csv` (#302's roles plus KO,
+in-sample only).
 
 A second scoring run gets its own `--prefix`; its working networks are then
 `working_<prefix><wsg>` (#284's, under `score284_`, stay `working_score_<wsg>`).

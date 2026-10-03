@@ -1,0 +1,12 @@
+no FISS absence rule for: GR, KO, RB; not assessed
+15:19:58 validating default_tuned (score300_default_tuned), buffer 0 m
+15:20:07 validating default_tuned (score300_default_tuned), buffer 100 m
+15:20:17 validating bt_mad (score300_bt_mad), buffer 0 m
+15:20:20 validating bt_mad (score300_bt_mad), buffer 100 m
+15:20:23 validating gr_mad (score300_gr_mad), buffer 0 m
+15:20:25 validating gr_mad (score300_gr_mad), buffer 100 m
+15:20:26 validating rb_mad (score300_rb_mad), buffer 0 m
+15:20:30 validating rb_mad (score300_rb_mad), buffer 100 m
+15:20:34 validating ko_mad (score300_ko_mad), buffer 0 m
+15:20:36 validating ko_mad (score300_ko_mad), buffer 100 m
+15:20:54 wrote data-raw/logs/habitat_score_300
