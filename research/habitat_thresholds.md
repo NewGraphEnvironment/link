@@ -1,6 +1,6 @@
 # Habitat thresholds — gradient, channel width and discharge
 
-**Verified:** 2026-09-29 (CH/BT gradient and width), 2026-10-02 (MAD) · **Issues:** #284 (gradient and width), #302 (MAD, [below](#mad-discharge-ranges-for-bt-gr-ko-and-rb-302)), #300 (`cw` against `mad`), #290 (the pooling tracker), #283 (the validator, [`habitat_validation.md`](habitat_validation.md)), #282 (`default_tuned`); spawned knowledge#28 (habitat weights) · **Produced by:** `data-raw/query_habitat_thresholds_obs.R`, `data-raw/query_habitat_thresholds_fiss.R` → `data-raw/logs/habitat_thresholds_284/`; step 5 by `data-raw/habitat_variants_build.R` and `data-raw/habitat_variants_score.R` → `data-raw/logs/habitat_score_284/`; literature reviews archived with #284's and #302's PWFs (`literature.md`); MAD by `data-raw/query_habitat_thresholds_mad.R` → `data-raw/logs/habitat_thresholds_302/` and the same scoring scripts → `data-raw/logs/habitat_score_302/` · **Status:** BT `rear_gradient_max` 0.1349 **scored and held**; MAD ranges for BT, GR and RB **scored** (the rule refused loosening past P10 except RB spawning; size confound open), KO unscored; every other row unscored
+**Verified:** 2026-09-29 (CH/BT gradient and width), 2026-10-02 (MAD), 2026-10-03 (`cw` against `mad`) · **Issues:** #284 (gradient and width), #302 (MAD, [below](#mad-discharge-ranges-for-bt-gr-ko-and-rb-302)), #300 (`cw` against `mad`), #290 (the pooling tracker), #283 (the validator, [`habitat_validation.md`](habitat_validation.md)), #282 (`default_tuned`); spawned knowledge#28 (habitat weights) · **Produced by:** `data-raw/query_habitat_thresholds_obs.R`, `data-raw/query_habitat_thresholds_fiss.R` → `data-raw/logs/habitat_thresholds_284/`; step 5 by `data-raw/habitat_variants_build.R` and `data-raw/habitat_variants_score.R` → `data-raw/logs/habitat_score_284/`; literature reviews archived with #284's and #302's PWFs (`literature.md`); MAD by `data-raw/query_habitat_thresholds_mad.R` → `data-raw/logs/habitat_thresholds_302/` and the same scoring scripts → `data-raw/logs/habitat_score_302/`; `cw` against `mad` by the same scripts with `--base=default_tuned` → `data-raw/logs/habitat_score_300/` · **Status:** BT `rear_gradient_max` 0.1349 **scored and held**; MAD ranges for BT, GR and RB **scored** (the rule refused loosening past P10 except RB spawning), KO unscored; `cw` against `mad` **scored** (size-adjusted; `mad`'s most-used loss is main stems with no discharge); every other row unscored
 
 ## Verdict
 
@@ -473,8 +473,10 @@ before/after evidence is the scoring harness, which puts the held-out groups on 
 
 Every `*_mad_max` is 9999. Values are m³/s. They are inert until a group is moved to
 `mad`. **At these values a `mad` group keeps less stream rearing than `cw` does: on the
-held-out WSGs at least −33 % for BT and −82 % for GR, and −4 % for RB.** Stream size and
-sampling effort are not separated; see "Results".
+held-out WSGs −36 % for BT, −82 % for GR and −4 % for RB** (the landed pair, built in
+#300; #302's P10 rows were lower bounds). Most of what `mad` drops below its minimum is
+little-used small water. Its most-used loss is river-polygon main stems with no discharge
+value; see "`cw` against `mad`" below.
 
 ### Candidates (Phase 1, before scoring)
 
@@ -811,3 +813,93 @@ a variant that changes no threshold cell and puts its species' WSGs on `mad`.
   0.1349, so #302's BT `cw` rearing (12,991 km under `default`) is not this run's.
   Segments are not compared across builds; the PSCIS tie moves a segment between full
   runs.
+
+### Results, 2026-10-03
+
+The build ran at a clean `482c075`, in 68.2 min after the colima disk was grown (the first
+attempt stopped at a full volume; nothing was dropped). It covered the 20-WSG closure,
+with PARS pre-flighted first, and every invariant was asserted. The base's re-classify
+under `default_tuned` reproduced its own habitat digest. KETL's access changed on the
+closure recompute, as it did in #302's build. The score was run with `--floor=expected`.
+Logs and outputs are in `data-raw/logs/habitat_score_300/`.
+
+Band identity holds per WSG: `mad` km − `cw` km = `mad`-only km − `cw`-only km, within
+0.01 km (the rollup's rounding) on all 23 WSG × species pairs, both flags.
+
+**Of record (held-out, stage `any`, size-adjusted):**
+
+| Species | Flag | `cw`-only km | Found | Expected | Ratio (size-adj.) | Ratio (unadj.) | `mad`-only km | Found | Expected | Reading |
+|---|---|---|---|---|---|---|---|---|---|---|
+| BT | rearing | 4,993 | 246 | 347 | **0.71** | 0.33 | 170 | 8 | 6.7 | `cw`-only habitat; `mad`-only open |
+| BT | spawning | 2,752 | 225 | 325 | **0.69** | 0.47 | 145 | 6 | 14.3 (0.42) | `cw` closer |
+| GR | rearing | 3,893 | 158 | 322 | **0.49** | 0.49 | 14 | 0 | 1.2 | `cw`-only not habitat; `mad`-only open |
+| GR | spawning | 2,241 | 135 | 188 | **0.72** | 0.72 | 13 | 0 | 1.1 | `cw`-only habitat; `mad`-only open |
+| RB | rearing | 864 | 123 | 83 | **1.49** | 1.01 | 500 | 19 | 35 (0.54) | each misses habitat the other finds |
+| RB | spawning | 274 | 91 | 39 | **2.33** | 2.07 | 933 | 29 | 83 (0.35) | `cw` closer |
+
+On held-out groups, `mad` at the landed pair keeps this much habitat against `cw`
+(`habitat_change.csv`; the first build of the landed pair, which replaces #302's lower
+bounds):
+
+| Species | Rearing | Spawning |
+|---|---|---|
+| BT | 13,526 → 8,703 km (−35.7 %) | 8,983 → 6,376 km (−29.0 %) |
+| GR | 4,705 → 825 km (−82.5 %) | 3,042 → 813 km (−73.3 %) |
+| RB | 8,186 → 7,821 km (−4.5 %) | 5,522 → 6,181 km (+11.9 %) |
+
+`cw` here is `default_tuned`'s, with BT `rear_gradient_max` 0.1349. #302's 12,991 km BT
+figure was under `default`.
+
+**The `cw`-only band is two different kinds of water, and the verdict is carried by one of
+them** (`model_reason.csv`, `model_size.csv`):
+
+- **Water with no discharge value.** For BT rearing this is 504 of 4,993 km. 433 km of it
+  is edge type 1250, the main flow through double-line river polygons, and it is order 4+
+  almost entirely. It holds 204 of the band's 246 locations, at 40 per 100 km against the
+  core's 15. This is a gap in `fwa_stream_networks_discharge`, not a MAD threshold, and it
+  is the most-used water in the comparison. The same holds for every species: GR rearing
+  463 km at 14 per 100 km, RB rearing 178 km at 48, RB spawning 161 km at 53.
+- **Water below the MAD minimum.** For BT rearing this is 4,459 km holding 41 locations,
+  0.9 per 100 km. In orders 1–3, where most of it lies, `cw`-only rearing is used at 0.22
+  of the size-matched core (42 found, 192 expected). BT spawning is at 0.14, GR rearing at
+  0.18, RB rearing at 0.61 and RB spawning at 0.36.
+- The order 4+ part of the band is used at or above the core rate. BT rearing is 1.31, BT
+  spawning 1.36, RB rearing 3.31 and RB spawning 3.41; GR rearing and spawning are 0.77
+  and 0.78.
+
+**Reading it.**
+
+- **By the rule fixed before the run, `cw` is closer for BT spawning and RB spawning, and
+  `cw`-only habitat is used like habitat for BT rearing and GR spawning.** RB rearing
+  reads both ways. GR rearing falls just short: its `cw`-only band reads 0.49.
+- **What the verdict measures is mostly the discharge layer's gap on large rivers.**
+  `mad` drops river-polygon main stems because they carry no discharge, and those are
+  the most-used reaches. Below the MAD minimum, `mad` drops small water that fish use
+  at a fifth (BT) to three-fifths (RB rearing) of the rate of size-matched core. So there
+  are two separate questions. One is whether the minimum is right: it removes little-used
+  water, which is what a minimum should do. The other is whether discharge exists where
+  it is needed, and on main stems it does not.
+- **The size adjustment mattered for BT and RB and did nothing for GR.**
+  - It moved BT rearing from 0.33 to 0.71. The `cw`-only band is mostly small water,
+    priced at the small-water core rate.
+  - GR has almost no small-water core (30 km and no locations in orders 1–3), so every
+    class merged into one group. GR's adjusted ratio is the pooled ratio, and its 0.49
+    rests on no size control at all.
+- **The `mad`-only side decides little.** It is underpowered for BT rearing and for GR in
+  both flags. Where it is powered:
+  - RB rearing's 500 km read 0.54, mostly order 1–2 water with no channel width.
+  - RB spawning's 933 km read 0.35.
+  - BT spawning's 145 km read 0.42.
+  So `mad` adds little habitat fish use in proportion, except for the RB rearing it
+  finds where width is missing.
+- **Staged rows (reported, not decided).**
+  - GR rear-staged locations use `cw`-only rearing at 0.89 and spawning at 0.98, above the
+    any-stage 0.49 and 0.72.
+  - BT and GR spawn-staged locations are too few to read.
+- **KO (in-sample, PARS and KOTL)** loses 88 km of spawning under `mad` that holds
+  3 locations (11.9 expected, 0.25). It is reported, and decides nothing.
+- **Nothing switches.** Before any group moves to `mad`, the discharge gap on river-polygon
+  main stems needs a fill (for example a `cw` fallback where `mad_m3s` is NULL, or
+  discharge on edge type 1250). Without one, every species loses its most-used water on
+  those reaches. The province-wide per-segment discharge estimate in the `wet` package is
+  the natural source.

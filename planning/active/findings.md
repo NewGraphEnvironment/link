@@ -56,3 +56,19 @@ is likely underpowered for BT and GR at the landed pair.
 | Error | Resolution |
 |-------|------------|
 | #284 regression silently never ran: `cd … && S=… && export … && (A) & (B) & wait` backgrounded the whole `&&` list with (A), so (B) ran in the parent with no `S` and no cwd | `code-check-shell.md` "`&` binds to the whole `&&` list"; relaunched (B) as its own backgrounded call |
+
+## Results (2026-10-03)
+
+- Build `482c075`, 68.2 min (after the colima disk grew 200 → 300 GiB; the first attempt,
+  `build_20261002_full.log`, stopped at "No space left on device" after KETL). Score
+  `--floor=expected`. Band identity holds per WSG within 0.01 km (23 pairs, both flags).
+- Of record, size-adjusted (held-out, stage any): BT rear `cw`-only 0.71 (unadj 0.33),
+  BT spawn 0.69 / `mad`-only 0.42 → `cw` closer; GR rear 0.49 (all classes merged: no
+  small-water core), GR spawn 0.72; RB rear 1.49 / `mad`-only 0.54 → each misses; RB spawn
+  2.33 / 0.35 → `cw` closer. BT rear `mad`-only, GR `mad`-only underpowered.
+- Landed pair vs `cw`: BT rear −35.7 %, spawn −29.0 %; GR −82.5 % / −73.3 %; RB −4.5 % /
+  +11.9 %.
+- **Mechanism:** `cw`-only = (a) no discharge — BT rear 504 km, 433 km edge type 1250
+  (river-polygon main flow), 204 of 246 locations, 40/100 km vs core 15; (b) below the
+  MAD minimum — 4,459 km, 41 locations; orders 1–3 at 0.22 of the size-matched core.
+  Order 4+ `cw`-only is used at ≥ the core rate for BT and RB (1.31–3.41), 0.77 for GR.

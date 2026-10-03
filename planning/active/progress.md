@@ -37,3 +37,14 @@
 - Code-check round 3: Clean (named the mechanism: one quantity, two producers, coverage
   assumed equal; every reach checked). Loop ended at 3 rounds with no defect found inside
   a fix. Reports: `review-round{1,2,3}.md`.
+
+## Session 2026-10-03
+
+- PARS pre-flight build (17.6 min) and score passed end to end; base digest under
+  `default_tuned` reproduced (plan-review A1).
+- Full build hit a full fwapg volume (colima VM disk, 196 GB). The operator chose to grow
+  it; colima (not Docker Desktop: `docker context` is `colima`) restarted with
+  `--disk 300`, `fresh-db` came back (`unless-stopped`), five QGIS containers (restart
+  policy `no`) stayed stopped. Resumed at the same HEAD: KETL and the PARS closure reused.
+- Build 68.2 min, score exit 0. Results in `research/habitat_thresholds.md`, CLAUDE.md
+  status, RUNBOOK §7 (main-stem discharge gap).

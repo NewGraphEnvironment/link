@@ -1,0 +1,24 @@
+---
+date: 2026-10-02 15:19 PDT
+step: all; focal: PARS; variants: default_tuned,bt_mad,gr_mad,rb_mad,ko_mad
+link: 0.57.0 @ 482c075 (at launch)
+base: default_tuned
+variants: data-raw/habitat_score/variants_300.csv (md5 7684ecc6bbb596770b78420775678887); roles: data-raw/habitat_score/wsg_roles_300.csv (md5 74f96f95e0bbd65a5bab40c8e1f84ead)
+fresh: 0.36.2 @ e3a37f031cca31ccfab59f47d6e19dde4083cca5
+db: docker fwapg localhost:5432
+base run_uid(s) in score300_default_tuned.log: none
+bcfishobs.observations rows: 373050
+thresholds sha256 (12): default_tuned=247a7088101c, bt_mad=247a7088101c, gr_mad=247a7088101c, rb_mad=247a7088101c, ko_mad=247a7088101c
+
+---
+date: 2026-10-03 11:12 PDT
+step: all; focal: REVL,ELKR,KOTR,UARL,MURR,UBTN,LHAF,PARS,KOTL,SIML,OKAN,KETL; variants: default_tuned,bt_mad,gr_mad,rb_mad,ko_mad
+link: 0.57.0 @ 482c075 (at launch)
+base: default_tuned
+variants: data-raw/habitat_score/variants_300.csv (md5 7684ecc6bbb596770b78420775678887); roles: data-raw/habitat_score/wsg_roles_300.csv (md5 74f96f95e0bbd65a5bab40c8e1f84ead)
+fresh: 0.36.2 @ e3a37f031cca31ccfab59f47d6e19dde4083cca5
+db: docker fwapg localhost:5432
+base run_uid(s) in score300_default_tuned.log: none
+bcfishobs.observations rows: 373050
+thresholds sha256 (12): default_tuned=247a7088101c, bt_mad=247a7088101c, gr_mad=247a7088101c, rb_mad=247a7088101c, ko_mad=247a7088101c
+

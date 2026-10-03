@@ -83,7 +83,7 @@ stream size, before any bundle moves a group.
   - Write `model_size.csv` (rates by class) and `model_verdict.csv`.
   - `model_verdict.csv` holds both ratios and both floors, with the size-adjusted decision
     as the decision of record.
-- [ ] `habitat_change.csv` already covers model-only variants (km under `cw` vs `mad`).
+- [x] `habitat_change.csv` already covers model-only variants (km under `cw` vs `mad`).
   Confirm the rows appear.
 
 ## Phase 4: Regression, before the build
@@ -106,14 +106,14 @@ stream size, before any bundle moves a group.
   read from the base; build `--step=bundles` and a byte-for-byte bundle regression.
 
 ## Phase 5: Build and score
-- [ ] Commit, then launch the build detached at a clean HEAD (`--variants=variants_300.csv
+- [x] Commit, then launch the build detached at a clean HEAD (`--variants=variants_300.csv
   --roles=wsg_roles_300.csv --base=default_tuned --prefix=score300_
   --out=data-raw/logs/habitat_score_300`). Pre-flight PARS first (it carries BT, GR, RB and KO roles) and score it, then all.
-- [ ] Score with `--floor=expected`. Commit the logs and stamps under
+- [x] Score with `--floor=expected`. Commit the logs and stamps under
   `data-raw/logs/habitat_score_300/`.
 
 ## Phase 6: Read and record
-- [ ] Results go in the research section, per species × flag × stage:
+- [x] Results go in the research section, per species × flag × stage:
   - `cw`-only and `mad`-only km
   - found, expected, raw and size-adjusted ratios, and the decision
   - landed `cw` vs `mad` km (this replaces #302's lower bounds)
@@ -121,10 +121,11 @@ stream size, before any bundle moves a group.
   - one line that, under `default`, BT, GR, KO and RB lose all stream habitat on `mad` by
     construction
 - [ ] Update the issue #300 body with the outcome. Update CLAUDE.md status and NEWS.
+  (CLAUDE.md status and RUNBOOK §7 done; NEWS is written by `/gh-pr-merge`'s release step)
 
 ## Validation
 
-- [ ] Tests pass (regression re-scores reproduce #284 and #302)
+- [x] Tests pass (regression re-scores reproduce #284 and #302)
 - [ ] `/code-check` clean on each commit
 - [ ] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion

@@ -11,6 +11,40 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
+## Status (2026-10-03) — `cw` against `mad`, scored on observations (#300)
+
+**`mad`'s most-used loss is not a threshold: it is river-polygon main stems with no
+discharge.**
+- At `default_tuned`'s landed pair, `mad` keeps −36 % BT rearing, −82 % GR and −4 % RB
+  against `cw` on #302's held-out WSGs. This is the first build of the pair; #302's P10
+  rows were lower bounds.
+- `cw`-only water splits in two:
+  - **No `mad_m3s`.** For BT rearing, 504 km, mostly edge type 1250, holding 204 of 246
+    locations at 2.7× the core rate.
+  - **Below the MAD minimum.** For BT rearing, 4,459 km at 0.22 of the size-matched core.
+    The minimum removes little-used water; the discharge layer is missing on main stems.
+- Size-adjusted verdicts: `cw` is closer for BT and RB spawning. `cw`-only is used like
+  habitat for BT rearing (0.71) and GR spawning. GR rearing is 0.49, with no size control
+  possible (no small-water core). RB rearing reads both ways.
+- **Fill discharge on main stems before any group moves to `mad`.**
+- `research/habitat_thresholds.md`, "`cw` against `mad`"; archive
+  `planning/archive/2026-10-issue-300-cw-vs-mad/`.
+
+**Facts not worth re-deriving:**
+- **The harness compares models now.**
+  - `--base=<bundle>` (the base row's `equals_bundle`).
+  - Model-only variants: no column, on `mad`, stepping from the base.
+  - `model_{bands,size,reason,verdict}.csv`, with stream-order classes merged until the
+    core holds 10 locations.
+  - `--step=bundles` writes bundles only; #302's regenerate byte for byte.
+  - Re-scoring #284 and #302 reproduces their outputs.
+- **The local fwapg DB runs in colima, not Docker Desktop** (`docker context`: `colima`).
+  Its disk was grown 200 → 300 GiB on 2026-10-03 (`colima stop && colima start --disk
+  300`), which stops every container. `fresh-db` comes back (`unless-stopped`); other
+  containers do not.
+- **Size adjustment needs a small-water core.** BT's rearing ratio went 0.33 → 0.71, while
+  GR merged to a single class and stayed at its pooled ratio.
+
 ## Status (2026-10-02, late) — MAD ranges for BT, GR, KO and RB in `default_tuned` (#302)
 
 **`default_tuned` now carries mean-annual-discharge ranges for the four species
