@@ -120,15 +120,15 @@ stream size, before any bundle moves a group.
   - KO in-sample
   - one line that, under `default`, BT, GR, KO and RB lose all stream habitat on `mad` by
     construction
-- [ ] Update the issue #300 body with the outcome. Update CLAUDE.md status and NEWS.
+- [x] Update the issue #300 body with the outcome. Update CLAUDE.md status and NEWS.
   (CLAUDE.md status and RUNBOOK §7 done; NEWS is written by `/gh-pr-merge`'s release step)
 
 ## Validation
 
 - [x] Tests pass (regression re-scores reproduce #284 and #302)
-- [ ] `/code-check` clean on each commit
-- [ ] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion
+- [x] `/code-check` on the harness (3 rounds, `482c075`); the Phase 1 and results commits are docs/data/logs only and had no code-check run
+- [x] PWF checkboxes match landed work
+- [x] `/planning-archive` on completion
 
 ## Critical files
 - `data-raw/habitat_variants_build.R` (base at L135, `lnk_config("default")` at L214,
