@@ -788,15 +788,19 @@ dispatch.**
 - **`default_tuned` carries MAD ranges for BT, GR, KO and RB** (#302);
   `default` and `bcfishpass` do not. They are inert until a group is
   moved to `mad`. At the landed values a `mad` group keeps less stream
-  rearing than `cw` (held-out: at least −33 % BT and −82 % GR, −4 % RB).
-  Read `research/habitat_thresholds.md` before moving one. link also
-  skips the stream-order rearing bypass (`frs_order_child`) for a `mad`
-  group — bcfp applies it in its cw branch only. fresh does not
-  implement bcfp’s `stream_order >= 8` spawning bypass.
+  rearing than `cw` (held-out: −36 % BT, −82 % GR, −4 % RB; the landed
+  pair, built in \#300). Read `research/habitat_thresholds.md` before
+  moving one. link also skips the stream-order rearing bypass
+  (`frs_order_child`) for a `mad` group — bcfp applies it in its cw
+  branch only. fresh does not implement bcfp’s `stream_order >= 8`
+  spawning bypass.
 - **Discharge coverage is uneven.** A segment with NULL `mad_m3s` fails
   every mad test, so a `mad` group without coverage loses all of its
-  stream habitat with no error. BULK has none in the local fwapg. Check
-  `count(mad_m3s)` before moving a group.
+  stream habitat with no error. **Covered groups lose their
+  river-polygon main stems too** (edge type 1250 carries no discharge):
+  \#300 measured that as `mad`’s most-used loss (BT rearing, 504 km at
+  2.7× the core’s observation rate on held-out groups). BULK has none in
+  the local fwapg. Check `count(mad_m3s)` before moving a group.
 - **[`lnk_habitat_validate()`](https://newgraphenvironment.github.io/link/reference/lnk_habitat_validate.md)
   scores each group on its own model** (#299), from the `cfg` it is
   handed, resolved by fresh’s `.frs_habitat_models()` (one rule for
