@@ -15,7 +15,7 @@
     figures, #302's rule) to `data-raw/logs/habitat_thresholds_307/`:
     `width_mad_equivalent.csv` (per bin), `width_mad_conversion.csv` (per species x
     stage), and `stamp.txt`.
-- [ ] Run it on local docker fwapg. Compare with #302's 0.0214 / 0.0412 / 0.2010. If any
+- [x] Run it on local docker fwapg. Compare with #302's 0.0214 / 0.0412 / 0.2010. If any
   converted value differs from 0.021 / 0.041 / 0.20, the script's value wins, and the
   research section says why.
 

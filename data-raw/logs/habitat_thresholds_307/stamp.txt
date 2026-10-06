@@ -1,0 +1,7 @@
+date: 2026-10-06 15:19 PDT
+link: 0.58.0 @ f52c8f0
+fresh installed: 0.36.2 @ e3a37f031cca31ccfab59f47d6e19dde4083cca5
+db: docker fwapg localhost:5432
+schema: fresh_default; 55 WSGs persisted
+discharge rows: 2716652 (2003189 with mad_m3s)
+bin: modelled channel_width within +/- 0.1 m; edges 1000/1100/2000/2300; outside waterbodies
