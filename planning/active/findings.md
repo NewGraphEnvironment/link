@@ -73,11 +73,44 @@ Relates to #20, #302, NewGraphEnvironment/knowledge#29.
   - RUNBOOK §7 (~l.721);
   - `research/habitat_thresholds.md` l.453 and l.810;
   - CLAUDE.md status (#302 block).
-- **#302 bundle regeneration.** `--step=bundles` with `--base=default` builds from
+- **#302 bundle regeneration** (WRONG, corrected below by the plan review). `--step=bundles` with `--base=default` builds from
   `default`'s CSV, so a regenerated #302 bundle would now carry the new cells for
   non-focal species. Scores read only the focal species, so verdicts cannot move. Record
   it rather than engineer around it.
 
+
+## Plan review (Plan agent, 2026-10-06), triaged
+
+Fourteen points. Verified before acting:
+- **The #299 validator test also breaks**: `run_validate_mad()` uses `default` with BT.
+  Fixed with a `mad_none` option, plus a #307 test on `default`'s own range. Probed: o10
+  at 10.5 m³/s becomes `post_predicate`, and o9 becomes `fails_gradient`.
+- **Regenerating `rules.yaml` in place moves its checksum** through the `# Generated:` line.
+  Built to a tempfile from the old and the new CSV instead. The two are byte-identical,
+  and they differ from the committed file only in that date line.
+- **NATR holds only BT, DV, GR, KO and RB** (presence), so "other species unchanged"
+  cannot fail there. ADMS was added as the CH/CO/SK control.
+- **`reclassify.R` totals include waterbody rules and connect.** BT and RB rearing is
+  already non-zero under `mad` on main. The 0 → non-zero claim reads `mad_check`'s
+  `*_nowb`, on main and on the branch.
+- **The `mad_check` invariant fails by design on waterbody rows.** The L/W and
+  `thresholds: false` rules inherit no size test. Adapted to count `*_out_nowb` too.
+- **`lake_rearing` and `wetland_rearing` shrink for BT, GR and RB under `mad`.** fresh's
+  `build_wb_pred()` adds the rear range to the bucket columns. The reviewer measured NATR
+  read-only: of 557 km of lake lines, 234 are below 0.021; of 1,471 km of wetland
+  lines, 628 are below it. Predicted and measured in Phase 3.
+- **#302 ladders no longer regenerate on `--base=default`.** Checked at
+  `habitat_variants_build.R:303-311`: the harness stops with "variant … equals default:
+  `*_mad_max` is already 9999". #302 reproduces at v0.58.0 (`8cb4822`) only; to be pinned
+  in the docs. Verdicts are unaffected because they are already written; regeneration
+  is what breaks.
+- **`default_extrabreaks` and `default_rearbreaks`** carry the old CSV byte for byte (md5
+  `9193d791…`). They stay frozen as cw-only segmentation experiments, and the docs say so.
+- **The 46 vs 55 WSG concern is moot.** The producer reproduced #302's n exactly (36,601 /
+  24,509 / 5,977), and its medians to the 4th decimal. The 2 m median 0.04115 sits
+  0.00015 above the 0.041 floor boundary; that sensitivity will be stated.
+- **fresh turns an NA max into `Infinity`**, so a half-open range would work. The
+  "no half-open" test is a convention guard.
 
 ## Errors Encountered
 

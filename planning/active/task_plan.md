@@ -4,7 +4,7 @@
 
 
 ## Phase 1 — Producer for the width-to-MAD medians
-- [ ] `data-raw/query_width_mad_equivalent.R`:
+- [x] `data-raw/query_width_mad_equivalent.R`:
   - reproduces #302's query: `fresh_default` stream segments on edges
     1000/1100/2000/2300 outside waterbodies, modelled `channel_width` within ±0.1 m of each
     width minimum, `mad_m3s` joined from `fwa_stream_networks_discharge` on
@@ -12,8 +12,9 @@
   - takes the bins from `default`'s CSV (the distinct spawn/rear width minima of BT, GR,
     KO and RB), not hard-coded;
   - writes n, q25, median and q75 plus the converted minimum (floored to 2 significant
-    figures, #302's rule) with an `lnk_stamp`-style header to
-    `data-raw/logs/habitat_thresholds_307/width_mad_equivalent.{csv,txt}`.
+    figures, #302's rule) to `data-raw/logs/habitat_thresholds_307/`:
+    `width_mad_equivalent.csv` (per bin), `width_mad_conversion.csv` (per species x
+    stage), and `stamp.txt`.
 - [ ] Run it on local docker fwapg. Compare with #302's 0.0214 / 0.0412 / 0.2010. If any
   converted value differs from 0.021 / 0.041 / 0.20, the script's value wins, and the
   research section says why.
@@ -26,29 +27,39 @@
   - `source: link (fresh's copy plus MAD ranges converted from width minima, link#307)`;
   - keep fresh's `upstream_sha`/`version` in `derived_from`;
   - recompute `checksum` with the `lnk_config_verify` algorithm. The shape is unchanged.
-- [ ] `Rscript data-raw/build_rules.R` (or the equivalent `lnk_rules_build` call), then
-  confirm `git diff` of `default/rules.yaml` is empty.
+- [ ] Build `default`'s rules to a tempfile from the old and the new CSV and compare
+  them. Do not regenerate in place: the `# Generated:` date line would move the
+  provenance checksum.
 - [ ] Tests:
   - rewrite `test-lnk_config.R:331` for the new default/tuned difference set (7 minima
     plus BT `rear_gradient_max`);
   - add a test pinning `default`'s 14 MAD cells and asserting that every `*_mad_min` set
     by #307 has its `*_mad_max` set (no half-open range);
-  - repoint `test-lnk_habitat_validate.R:215` at `bcfishpass`.
+  - repoint `test-lnk_habitat_validate.R:215` at `bcfishpass`;
+  - give `run_validate_mad()` a `mad_none` option so the #299 end-to-end test keeps a
+    species with no range;
+  - add a #307 case on `default`'s own BT range (plan review, finding 1).
 - [ ] Full `devtools::test()` and fix any other fallout (each fix stated, none papered over).
 
-## Phase 3 — Rebuild NATR and diff
+## Phase 3 — Rebuild NATR (and ADMS as the CH/CO/SK control) and diff
 Scratch schema `zz307_natr` on local docker fwapg; nothing persisted. Main runs from a
 worktree at `origin/main`, the branch from a frozen copy. Logs and copied scripts go in
 `data-raw/logs/habitat_thresholds_307/`.
-- [ ] `verify_classify.R` setup → connect NATR under `default` (prepares segmentation once).
+- [ ] `verify_classify.R` setup → connect NATR and ADMS under `default` (prepares
+  segmentation once). NATR holds only BT, GR, KO and RB; ADMS adds CH, CO and SK, which
+  must not move.
 - [ ] `cw`: run `reclassify.R` on main and on the branch, and compare per-species digests.
   **Expect identical for every species.**
 - [ ] `mad`, with `method_natr_mad.csv` (NATR on `mad`):
   - run `reclassify.R` on main and on the branch;
   - **expect** BT/GR/KO/RB stream spawning and rearing km to go 0 → non-zero, and every
     other species' digest to be unchanged.
-- [ ] `mad_check.R` on the branch: fresh's invariants hold (no habitat segment outside
-  `[min, max]` or on NULL `mad_m3s`). Report stream, lake and wetland km per species.
+- [ ] `mad_check.R` on **main and on the branch**:
+  - stream km off waterbodies (`*_nowb`) is the measure of 0 → non-zero;
+  - the invariant holds on stream segments (`*_out_nowb` and `null_nowb` = 0);
+  - predict, then measure, the shrink in `lake_rearing` and `wetland_rearing` for BT,
+    GR and RB: fresh gates the bucket columns on the rear range once one exists (plan
+    review, finding 6).
 - [ ] Note that `default` has no `discharge_fill`, so NATR's edge-1250 main stems with no
   value still drop under `mad`. Report the NULL-discharge km rather than fix it (out of
   scope).
@@ -69,7 +80,16 @@ worktree at `origin/main`, the branch from a frozen copy. Logs and copied script
 - [ ] Update the `default_tuned` `config.yaml` description and `README.md`, RUNBOOK §7
   (~l.721), and the CLAUDE.md status (new #307 block; correct the #302 block's "the four
   species `default` leaves without one").
-- [ ] NEWS.md entry (the version bump is left to `/gh-pr-merge`).
+- [ ] Correct the remaining stale prose: `default/README.md:26` ("identical to fresh's
+  copy"), RUNBOOK l.710-711, `data-raw/habitat_score/README.md:36` (pin #302's ladders to
+  v0.58.0 `8cb4822`: `--base=default` now stops with "variant equals default").
+- [ ] State a literature decision rule before the check. These are width-equivalence
+  floors, and literature values describe typical use, so a mismatch reports but does not
+  move a value. Note that RB is now stricter in `default` than in `default_tuned`.
+- [ ] State that `default_extrabreaks` and `default_rearbreaks` stay frozen on the old
+  CSV: they are cw-only segmentation experiments.
+- [ ] NEWS.md entry, including that `config_hash` moves for `default` and
+  `default_tuned` (the version bump is left to `/gh-pr-merge`).
 - [ ] `lnk_config_verify(lnk_config("default"))` and `("default_tuned")` are clean;
   `audit_configs.R` §3c is clean.
 
