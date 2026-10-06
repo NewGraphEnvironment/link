@@ -699,7 +699,12 @@ next dispatch.**
   `whse_basemapping.fwa_stream_networks_discharge` on `linear_feature_id`) for
   every group, survives breaking, and is **never persisted** (`cols_streams` does
   not carry it). A DB without the discharge table now fails prepare for every
-  group. `log_input` fingerprints it.
+  group. `log_input` fingerprints it. Every reader goes through one builder,
+  `.lnk_discharge_sql()` (`R/lnk_discharge.R`): prepare, the validator and the
+  variants harness. The #302 calibration scripts read the raw table on purpose,
+  because the ranges were set with NULLs excluded. prepare writes `mad_m3s` as
+  `double precision` itself, because `frs_col_join()` types a subquery's columns
+  `text`.
 - **What `mad` changes** (fresh's rules, after bcfishpass): stream rules that
   inherit thresholds test `mad_m3s` against `*_mad_min/max` instead of channel
   width, so species with no MAD thresholds (BT, GR, KO and RB in `default` and
@@ -722,14 +727,36 @@ next dispatch.**
   fresh does not implement bcfp's `stream_order >= 8` spawning bypass.
 - **Discharge coverage is uneven.** A segment with NULL `mad_m3s` fails every mad
   test, so a `mad` group without coverage loses all of its stream habitat with no
-  error. **Covered groups lose their river-polygon main stems too** (edge type 1250
-  carries no discharge): #300 measured that as `mad`'s most-used loss (BT rearing,
-  504 km at 2.7× the core's observation rate on held-out groups). BULK has none in the local fwapg. Check `count(mad_m3s)` before moving a
-  group.
+  error. BULK has none in the local fwapg; 123 groups have any. Check
+  `count(mad_m3s)` before moving a group.
+- **River-polygon main stems are filled under `discharge_fill`** (#305;
+  `default_tuned` only, absent means off). Inside covered groups, 22 % of edge 1250
+  km has no value: rows missing from the table or rows with a NULL value, almost all
+  order 4+. #300 measured that gap as `mad`'s most-used loss. An edge 1250 line with
+  no value takes, in order:
+  1. the nearest valued line upstream on its `blue_line_key` (a lower bound);
+  2. else the nearest valued line downstream on it;
+  3. else the largest value on any line upstream of it, which reaches a river with
+     no value anywhere (the Beatton).
+
+  Never the receiving river downstream. `mad_m3s_source` names the tier.
+  - **Where it runs.** Only in groups the table covers (an uncovered group stays all
+    NULL, so `count(mad_m3s)` still detects one). Only where something reads
+    discharge: a `mad` group in `cfg`'s method table, or a rule-level `mad:`
+    (`.lnk_discharge_fill_applied()`). An all-`cw` `default_tuned` run fills nothing.
+  - **What stays NULL.** Other edge types are never filled. What is left is mostly
+    1,862 km of NULL-valued rows in 12 northern groups whose tributaries are NULL too.
+  - **Recorded state.** The applied state is logged per WSG
+    (`<schema>.log.discharge_fill`). The validator refuses a WSG logged with another
+    state than its `cfg` applies, and the variants harness carries the state in
+    `built.csv`.
+
+  `data-raw/logs/discharge_fill_305/`, research "`cw` against `mad`".
 - **`lnk_habitat_validate()` scores each group on its own model** (#299), from the
   `cfg` it is handed, resolved by fresh's `.frs_habitat_models()` (one rule for classify
   and validator). A `mad` group's predicates and size relaxation read `mad_m3s`, joined
-  from the discharge table on `linear_feature_id`; reason labels are shared with `cw`
+  from the discharge table on `linear_feature_id` (filled when `cfg` fills, scoped to
+  the scored lines); reason labels are shared with `cw`
   and the `model` / `mad_m3s` columns split them, plus `no_mad_threshold` for a species
   with no MAD range. To score a run made with a swapped method table, swap it on the
   same `cfg` object (`cfg$files$parameters_habitat_method$path`) before validating:

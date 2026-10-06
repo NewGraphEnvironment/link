@@ -41,7 +41,9 @@
 #'   message) to fresh's all-`cw` copy when the config declares none. A group
 #'   the table does not list classifies on channel width. A `mad` group
 #'   classifies on `mad_m3s`, which the prepare phase joins onto the working
-#'   streams table, and skips the stream-order rearing bypass. Read from the
+#'   streams table (filling edge 1250 main stems with no value when
+#'   `cfg$pipeline$discharge_fill` is set), and skips the stream-order
+#'   rearing bypass. Read from the
 #'   path, not from `loaded$parameters_habitat_method`, as the thresholds are,
 #'   so editing `loaded` has no effect here.
 #'

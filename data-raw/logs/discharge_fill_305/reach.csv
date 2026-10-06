@@ -1,0 +1,16 @@
+"state","tier","gap_class","km","n_lines"
+"absent","fill_downstream",">10 km",0.0852934985048745,2
+"absent","fill_tributary_max","",740.022773385664,1478
+"absent","fill_upstream",">10 km",3188.82886286826,9201
+"absent","fill_upstream","0-500 m",31.3531029907794,274
+"absent","fill_upstream","0.5-2 km",28.9335351819047,96
+"absent","fill_upstream","2-10 km",140.170428890252,423
+"absent","fill_upstream","adjacent",18.1626977013265,227
+"absent","none","",4.81790968158413,50
+"row_null","fill_downstream",">10 km",198.302417951468,201
+"row_null","fill_downstream","0-500 m",0.88929188880089,3
+"row_null","fill_downstream","0.5-2 km",4.2737611111614,11
+"row_null","fill_downstream","2-10 km",17.0806258465348,67
+"row_null","fill_downstream","adjacent",2.11927111617616,2
+"row_null","fill_tributary_max","",6.25260575278379,27
+"row_null","none","",1862.00069315761,7421

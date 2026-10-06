@@ -1,0 +1,6 @@
+date: 2026-10-06 09:10 PDT
+link: 0.57.1 @ 312e195
+fresh installed: 0.36.2 @ e3a37f031cca31ccfab59f47d6e19dde4083cca5
+db: docker fwapg localhost:5432
+discharge rows: 2716652 (2003189 with mad_m3s); 123 covered WSGs
+bands: score300_* schemas, held-out roles from data-raw/habitat_score/wsg_roles_300.csv; MAD minima from default_tuned

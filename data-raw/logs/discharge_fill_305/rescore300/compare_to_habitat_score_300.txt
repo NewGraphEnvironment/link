@@ -1,0 +1,12 @@
+only in second: model_fill.csv 
+base_habitat_digest.csv    byte-identical
+base_recompute.csv         byte-identical
+built.csv                  byte-identical
+habitat_change.csv         byte-identical
+model_bands_pooled.csv     byte-identical
+model_bands.csv            byte-identical
+model_reason.csv           numeric only; max rel 2.2e-15
+model_size.csv             numeric only; max rel 7.2e-15
+model_verdict.csv          numeric only; max rel 7.4e-15
+summary.csv                byte-identical
+totals.csv                 byte-identical

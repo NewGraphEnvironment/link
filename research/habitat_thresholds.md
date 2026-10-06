@@ -1,6 +1,6 @@
 # Habitat thresholds — gradient, channel width and discharge
 
-**Verified:** 2026-09-29 (CH/BT gradient and width), 2026-10-02 (MAD), 2026-10-03 (`cw` against `mad`) · **Issues:** #284 (gradient and width), #302 (MAD, [below](#mad-discharge-ranges-for-bt-gr-ko-and-rb-302)), #300 (`cw` against `mad`), #290 (the pooling tracker), #283 (the validator, [`habitat_validation.md`](habitat_validation.md)), #282 (`default_tuned`); spawned knowledge#28 (habitat weights) · **Produced by:** `data-raw/query_habitat_thresholds_obs.R`, `data-raw/query_habitat_thresholds_fiss.R` → `data-raw/logs/habitat_thresholds_284/`; step 5 by `data-raw/habitat_variants_build.R` and `data-raw/habitat_variants_score.R` → `data-raw/logs/habitat_score_284/`; literature reviews archived with #284's and #302's PWFs (`literature.md`); MAD by `data-raw/query_habitat_thresholds_mad.R` → `data-raw/logs/habitat_thresholds_302/` and the same scoring scripts → `data-raw/logs/habitat_score_302/`; `cw` against `mad` by the same scripts with `--base=default_tuned` → `data-raw/logs/habitat_score_300/` · **Status:** BT `rear_gradient_max` 0.1349 **scored and held**; MAD ranges for BT, GR and RB **scored** (the rule refused loosening past P10 except RB spawning), KO unscored; `cw` against `mad` **scored** (size-adjusted; `mad`'s most-used loss is main stems with no discharge); every other row unscored
+**Verified:** 2026-09-29 (CH/BT gradient and width), 2026-10-02 (MAD), 2026-10-03 (`cw` against `mad`), 2026-10-06 (discharge fill) · **Issues:** #284 (gradient and width), #302 (MAD, [below](#mad-discharge-ranges-for-bt-gr-ko-and-rb-302)), #300 (`cw` against `mad`), #305 (discharge fill on main stems), #290 (the pooling tracker), #283 (the validator, [`habitat_validation.md`](habitat_validation.md)), #282 (`default_tuned`); spawned knowledge#28 (habitat weights) · **Produced by:** `data-raw/query_habitat_thresholds_obs.R`, `data-raw/query_habitat_thresholds_fiss.R` → `data-raw/logs/habitat_thresholds_284/`; step 5 by `data-raw/habitat_variants_build.R` and `data-raw/habitat_variants_score.R` → `data-raw/logs/habitat_score_284/`; literature reviews archived with #284's and #302's PWFs (`literature.md`); MAD by `data-raw/query_habitat_thresholds_mad.R` → `data-raw/logs/habitat_thresholds_302/` and the same scoring scripts → `data-raw/logs/habitat_score_302/`; `cw` against `mad` by the same scripts with `--base=default_tuned` → `data-raw/logs/habitat_score_300/`, and with the fill → `data-raw/logs/habitat_score_305/`; the fill measured by `data-raw/discharge_fill_count.R` → `data-raw/logs/discharge_fill_305/` · **Status:** BT `rear_gradient_max` 0.1349 **scored and held**; MAD ranges for BT, GR and RB **scored** (the rule refused loosening past P10 except RB spawning), KO unscored; `cw` against `mad` **scored** (size-adjusted); with main stems filled (#305) `mad` drops only little-used water for BT, GR and RB spawning, and RB rearing reads both ways; every other row unscored
 
 ## Verdict
 
@@ -903,3 +903,153 @@ them** (`model_reason.csv`, `model_size.csv`):
   discharge on edge type 1250). Without one, every species loses its most-used water on
   those reaches. The province-wide per-segment discharge estimate in the `wet` package is
   the natural source.
+
+### Filling discharge on river-polygon main stems (#305)
+
+**Verified:** 2026-10-06 · **Produced by:** `data-raw/discharge_fill_count.R` →
+`data-raw/logs/discharge_fill_305/`, measuring the shipping SQL (`R/lnk_discharge.R`).
+
+#300 found that `mad`'s most-used loss is edge type 1250 (main flow through double-line
+river polygons) with no discharge. The fill is a bundle knob, `pipeline: discharge_fill`,
+set in `default_tuned` only. With it, an edge 1250 line with no value takes, in order:
+
+1. **`fill_upstream`**: the nearest valued line upstream on its own `blue_line_key`. Any
+   edge type and any WSG qualify; the line itself never does. Discharge grows downstream,
+   so this is a lower bound.
+2. **`fill_downstream`**: else the nearest valued line downstream on the same line, an
+   upper bound.
+3. **`fill_tributary_max`**: else the largest value on any line upstream of it
+   (`fwa_upstream()`), never its own `blue_line_key`. This is a lower bound, and it
+   reaches a river that has no value anywhere.
+
+The receiving river downstream is never used. The Beatton would take the Peace, orders of
+magnitude larger. Other edge types are not filled.
+
+Two gates decide where the fill runs at all:
+- **Only in groups the table covers** (any valued row). Without that, in a group with no
+  discharge, a stray headwater line upstream would give the Skeena's order-9 mouth in
+  LSKE 0.003 m³/s (round-2 review). "No discharge" would then read as "below the
+  minimum".
+- **Only for groups that read discharge**: on `mad` in the bundle's method table, or under
+  a rule-level `mad:`. An all-`cw` run of `default_tuned` fills nothing.
+
+A lower bound is safe against a MAD minimum: a filled value that clears it means the true
+one does. That is the test that matters for BT, GR and RB, whose maxima are open. It is
+not safe against a finite maximum: `default_tuned` rearing for CH (100 m³/s), CO (40), ST
+(60) and WCT (40), and WCT spawning (59.15). A filled main stem above one of those could
+be admitted. No group is on `mad` for those species.
+
+**The gap, in the 123 WSGs with any discharge** (`coverage_edge.csv`):
+- Edge 1250 is 28,122 km, of which 6,243 km (22 %) has no value. The issue's "most" holds
+  only province-wide, where the uncovered groups count.
+- 4,152 km of it is rows absent from the table and 2,091 km is rows with a NULL value.
+  Almost all of it is order 4+.
+- Every edge 1250 line sits in a waterbody fundamental watershed, and the absent ones
+  mostly do have a watershed in `fwa_streams_watersheds_lut` (4,098 of 4,152 km;
+  `root_cause.csv`). So the loss is downstream of the lookup, in fwapg's per-watershed
+  discharge step (`extras/discharge`). Those intermediate tables are not in the local
+  DB, and which step drops them is not established.
+- Edge 1000 NULLs (~9 % in every order) are rows with a NULL value on lines with no value
+  anywhere. They are out of scope.
+
+**Reach** (`reach.csv`):
+- Of the 4,152 km of absent edge 1250 rows, the fill reaches all but 4.8 km:
+  - 3,407 km by `fill_upstream`, 3,189 km of it from more than 10 km away;
+  - 740 km by `fill_tributary_max`;
+  - 0.1 km by `fill_downstream`.
+- Of the 2,091 km of NULL-value rows, only 229 km is reached: 223 km by
+  `fill_downstream` and 6 km by `fill_tributary_max`. The other 1,862 km, in 12 northern
+  groups, sits on lines whose tributaries are NULL too: the discharge layer has nothing
+  to offer there.
+
+**Accuracy** (`accuracy.csv`, `accuracy_min.csv`):
+- **Masking one valued line at a time says little.** Its neighbour usually shares its
+  fundamental watershed: median error 0.01 %, P90 1.6 %.
+- **Long gaps.** Taking the first valued line at least 10 km upstream instead (1-in-50
+  sample, 1,249 lines):
+  - median error −26 % and P90 77 %, under in 93 % of lines;
+  - against every species' MAD minimum it never admits a line the true value would
+    refuse (0 km gained);
+  - it refuses a line the true value would admit on 7.7 km of 399 for BT and 40 km of
+    375 for GR.
+- **Tributary tier.** Median −1.6 %, P90 72 %. It is under in 64 % of lines and over in
+  13 %, so it is mostly a lower bound but not always. It wrongly admits 0.56 km of 385 at
+  GR's minimum, and nothing for BT or RB.
+
+**On #300's held-out `cw`-only bands** (`band_reach.csv`, BT rearing):
+- All 433 km of its edge 1250 water with no discharge is filled, and all of it clears
+  BT's minimum. 103 km comes from `fill_upstream`.
+- 330 km is the Beatton River in UBTN, which has no row anywhere along its line, filled
+  by the tributary tier.
+- GR's 330 km of Beatton clears GR's 0.97 minimum on 193 km. Its upper reaches take
+  small tributaries' values.
+- What stays NULL is the 71 km of non-1250 water (BT rearing): edge 1000/1100 lines with
+  no value anywhere.
+
+**Not filled on purpose.** The #302 calibration scripts (`query_habitat_thresholds_mad.R`,
+`_fiss.R`) read the raw table. The ranges were set with NULL locations excluded, and a
+filled main stem would add locations the calibration never saw.
+
+**The fill off reproduces #300.** `built.csv` records each variant's fill, and a row
+from before #305 has none, so it reads as raw. Re-scoring #300's schemas with the
+#305 code (`312e195`) reproduces its outputs:
+- **Byte-identical:** `summary`, `totals`, `habitat_change`, `model_bands`,
+  `model_bands_pooled`, and the digests.
+- **Numeric difference only:** `model_reason`, `model_size` and `model_verdict` differ
+  by at most 7.4e-15 relative, the double-sum noise of #293.
+- **New file:** `model_fill.csv`, which shows only `modelled` or no discharge.
+
+Evidence: `data-raw/logs/discharge_fill_305/rescore300/`.
+
+#### Re-scored with the fill (2026-10-06)
+
+**The design** (fixed at the #305 plan gate):
+- The same comparison as #300, on #300's segmentation: `score300_default_tuned` and
+  `working_score300_*` are reused, and only the variants are rebuilt.
+- `variants_305.csv` holds #300's four `mad` variants, renamed `*_fill`, built under
+  `default_tuned`'s `discharge_fill`, with roles from `wsg_roles_300.csv`.
+- The difference from #300 is the fill and nothing else. The base re-classify reproduced
+  #300's habitat digest on all 12 focal WSGs.
+- Build 31.5 min at `312e195`; score `--floor=expected`. Logs:
+  `data-raw/logs/habitat_score_305/`.
+
+**Of record (held-out, stage `any`, size-adjusted), against #300:**
+
+| Species | Flag | `cw`-only km | Found | Expected | Ratio | #300 ratio | `mad`-only ratio | Reading | #300 reading |
+|---|---|---|---|---|---|---|---|---|---|
+| BT | rearing | 4,491 | 52 | 269 | **0.19** | 0.71 | 1.20 (underpowered) | `cw`-only not habitat; `mad`-only open | `cw`-only habitat |
+| BT | spawning | 2,319 | 31 | 249 | **0.13** | 0.69 | 0.41 | differ only on little-used water | `cw` closer |
+| GR | rearing | 3,611 | 101 | 409 | **0.25** | 0.49 | 0 (underpowered) | `cw`-only not habitat | same |
+| GR | spawning | 1,959 | 78 | 224 | **0.35** | 0.72 | 0 (underpowered) | `cw`-only not habitat | `cw`-only habitat |
+| RB | rearing | 731 | 38 | 60 | **0.64** | 1.49 | 0.54 | each misses habitat the other finds | same |
+| RB | spawning | 140 | 6 | 16 | **0.39** | 2.33 | 0.35 | differ only on little-used water | `cw` closer |
+
+**What `mad` keeps against `cw` on held-out groups** (`habitat_change.csv`):
+
+| Species | Rearing | Spawning |
+|---|---|---|
+| BT | 13,526 → 9,205 km (−32.0 %; #300 −35.7 %) | 8,983 → 6,809 km (−24.2 %; #300 −29.0 %) |
+| GR | 4,705 → 1,108 km (−76.5 %; #300 −82.5 %) | 3,042 → 1,096 km (−64.0 %; #300 −73.3 %) |
+| RB | 8,186 → 7,955 km (−2.8 %; #300 −4.5 %) | 5,522 → 6,315 km (+14.4 %; #300 +11.9 %) |
+
+**Reading it.**
+- **#300's `cw`-favouring verdicts were the discharge gap.** With main stems filled, the
+  edge 1250 water moves into the core, the core both models keep (`model_fill.csv`):
+  - BT rearing's `cw`-only band keeps 52 of its 246 locations.
+  - Every verdict that read "`cw` closer" or "`cw`-only habitat" (BT both flags, GR
+    spawning, RB spawning) now reads "`cw`-only not habitat" or "the models differ
+    only on little-used water".
+- **Below the MAD minimum is where the band now sits.** For BT rearing, 4,390 of 4,491
+  km is `outside_mad_range` on `modelled` discharge, used at 0.19 of the size-matched
+  core. The minimum removes little-used water, as #300 found for this part of the band.
+- **RB rearing still reads both ways.** `cw`-only 0.64 and `mad`-only 0.54, each with
+  power.
+- **What is left NULL is not main stem.**
+  - The `mad_null` share is 71 km for BT rearing (10 locations), 44 km for GR and 45 km
+    for RB: edge 1000/1100 lines with no value anywhere.
+  - GR loses 137 km of the Beatton (4 locations) on a `fill_tributary_max` value below
+    its 0.97 minimum. That is a lower bound, so the true discharge may clear it.
+- **Cost, against `cw`:** `mad` still keeps less stream habitat (BT rearing −32 %, GR
+  −76 %). The water it drops is now used at a fifth (BT) to a third (GR) of the
+  size-matched rate. Whether to move a group is a reviewed row edit of
+  `parameters_habitat_method.csv`. This informs it and moves nothing.

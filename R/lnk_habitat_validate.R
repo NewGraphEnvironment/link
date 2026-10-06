@@ -100,7 +100,11 @@
 #' group is `cw`). On `cw` it is the channel width; on `mad` it is the mean
 #' annual discharge `mad_m3s`, joined from
 #' `whse_basemapping.fwa_stream_networks_discharge` on `linear_feature_id`
-#' because the persist does not carry it. The `width` labels below mean
+#' because the persist does not carry it. When `cfg` fills discharge
+#' (`cfg$pipeline$discharge_fill`), it is filled as prepare filled it: edge
+#' 1250 lines with no value take one along the network (`mad_m3s_source`
+#' says which), and a `mad` group logged with the other fill state is an
+#' error. The `width` labels below mean
 #' that size on either model; `model` and `mad_m3s` split them:
 #' - `NA` — captured; `no_segment` — the location attaches to no segment;
 #' - `not_accessible` — the segment's `access_<sp>` is not 1 or 2;
@@ -197,8 +201,9 @@
 #'     `n_absence_rearing_any` (the same on every stage). `model` is the
 #'     WSG's habitat model (`cw` or `mad`).
 #'   - `observations`: one row per retained location, with its segment's
-#'     `gradient`, `channel_width`, `channel_width_source`, `mad_m3s` (on
-#'     `mad` groups only, else `NA`), `edge_type`, `stream_order`,
+#'     `gradient`, `channel_width`, `channel_width_source`, `mad_m3s` and
+#'     `mad_m3s_source` (`modelled` or the fill tier; on `mad` groups only,
+#'     else `NA`), `edge_type`, `stream_order`,
 #'     `waterbody_type`, `access`, `model`, the capture flags,
 #'     `in_uhc_spawn`, `in_uhc_rear`, the predicate results (`pred_<stage>`,
 #'     relaxed `_g`, `_w`, `_gw`, and on `mad` groups for a species with no
@@ -271,7 +276,6 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
   species_obs <- .lnk_hv_species_obs(species_obs)
 
   .lnk_hv_check_schema(conn, schema, aoi, species)
-  logged <- .lnk_hv_check_log(conn, schema, aoi, cfg)
   # The model each group classified on, from the bundle's method table and
   # by classify's own rule.
   method_csv <- .lnk_habitat_method_csv(cfg)
@@ -280,14 +284,19 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
   }
   models <- stats::setNames(
     .lnk_wsg_model(.lnk_habitat_method_read(method_csv), aoi), aoi)
+  logged <- .lnk_hv_check_log(conn, schema, aoi, cfg)
   if (any(models == "mad")) .lnk_hv_check_mad(conn, schema, models)
+  # Discharge as prepare wrote it onto the working streams (#305): filled
+  # when the bundle fills, scoped to the lines this schema scores.
+  disch <- .lnk_hv_discharge_src(conn, schema, aoi, cfg)
 
   spec <- .lnk_hv_spec(loaded$wsg_species_presence, aoi, species,
                        species_obs)
   obs <- .lnk_hv_obs(conn, schema, observations, spec, loaded, species,
-                     match_types, source_exclude, buffer_m, models)
+                     match_types, source_exclude, buffer_m, models, disch)
   obs <- .lnk_hv_dedup(obs)
-  obs <- .lnk_hv_predicates(conn, schema, obs, cfg, loaded, species, models)
+  obs <- .lnk_hv_predicates(conn, schema, obs, cfg, loaded, species, models,
+                            disch)
   obs <- .lnk_hv_reasons(obs)
 
   cost <- do.call(rbind, lapply(aoi, function(w) {
@@ -381,19 +390,25 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
 #' WSGs whose latest logged run is recorded, after checking the config.
 #'
 #' A schema is scored with `cfg`'s rules, so a WSG logged as built by a
-#' different config is an error. WSGs with no log row (built before the log
+#' different config is an error. So is a WSG logged with another discharge
+#' fill than `cfg` applies to it (`.lnk_discharge_fill_applied()`, #305): the
+#' validator would score it on discharge classify never read. A row from
+#' before the fill was logged (NULL) was built without it. WSGs with no log row (built before the log
 #' existed) are allowed and returned as unlogged.
 #' @noRd
 .lnk_hv_check_log <- function(conn, schema, aoi, cfg) {
   if (!DBI::dbExistsTable(conn, DBI::Id(schema = schema, table = "log"))) {
     return(character(0))
   }
+  has_fill <- "discharge_fill" %in% names(DBI::dbGetQuery(conn, sprintf(
+    "SELECT * FROM %s.log LIMIT 0", schema)))
   lg <- DBI::dbGetQuery(conn, sprintf(
     "SELECT DISTINCT ON (watershed_group_code)
-            watershed_group_code, config_name
+            watershed_group_code, config_name, %s AS discharge_fill
        FROM %s.log
       WHERE watershed_group_code = ANY($1)
-      ORDER BY watershed_group_code, date_start DESC", schema),
+      ORDER BY watershed_group_code, date_start DESC",
+    if (has_fill) "discharge_fill" else "NULL::boolean", schema),
     params = list(paste0("{", paste(aoi, collapse = ","), "}")))
   bad <- lg[!is.na(lg$config_name) & lg$config_name != cfg$name, ,
             drop = FALSE]
@@ -404,7 +419,61 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
                collapse = ", "),
          call. = FALSE)
   }
+  want <- vapply(lg$watershed_group_code, function(w) {
+    .lnk_discharge_fill_applied(cfg, w)
+  }, logical(1))
+  off <- (lg$discharge_fill %in% TRUE) != want
+  if (any(off)) {
+    stop(schema, ".log records a discharge_fill other than cfg '", cfg$name,
+         "' applies (logged/cfg): ",
+         paste(sprintf("%s (%s/%s)", lg$watershed_group_code[off],
+                       ifelse(lg$discharge_fill[off] %in% TRUE, "on", "off"),
+                       ifelse(want[off], "on", "off")), collapse = ", "),
+         call. = FALSE)
+  }
   lg$watershed_group_code
+}
+
+#' The discharge relation the validator reads, once per call
+#'
+#' As prepare wrote it, group by group: filled lines where
+#' `.lnk_discharge_fill_applied(cfg, w)` holds, the raw value elsewhere. A
+#' mixed aoi (a `mad` group beside a `cw` one) must not lend the `cw` group a
+#' fill prepare never applied there. Where no group applies the fill, the raw
+#' relation, so a cw-only run neither pays for the fill nor depends on the
+#' discharge table. Otherwise one indexed temp table: both reads look it up
+#' per row, and the fill's lateral lookups must not re-run per observation.
+#' @noRd
+.lnk_hv_discharge_src <- function(conn, schema, aoi, cfg) {
+  raw <- .lnk_discharge_sql(fill = FALSE)
+  fill_w <- aoi[vapply(aoi, function(w) .lnk_discharge_fill_applied(cfg, w),
+                       logical(1))]
+  if (length(fill_w) == 0L) return(raw)
+  # No linear_feature_id: nothing to join discharge on, and a mad group has
+  # already been refused by .lnk_hv_check_mad().
+  has_lf <- "linear_feature_id" %in% names(DBI::dbGetQuery(conn, sprintf(
+    "SELECT * FROM %s.streams LIMIT 0", schema)))
+  if (!has_lf) return(raw)
+  lines_of <- function(w) {
+    sprintf("SELECT linear_feature_id FROM %s.streams
+              WHERE watershed_group_code IN (%s)", schema,
+            paste(vapply(w, .lnk_quote_literal, ""), collapse = ", "))
+  }
+  raw_w <- setdiff(aoi, fill_w)
+  .lnk_hv_drop_temp(conn, "lnk_vd_discharge")
+  .lnk_db_execute(conn, sprintf(
+    "CREATE TEMP TABLE lnk_vd_discharge AS
+     SELECT * FROM %s f%s",
+    .lnk_discharge_sql(fill = TRUE, lines = lines_of(fill_w)),
+    if (length(raw_w) == 0L) "" else sprintf(
+      "\n     UNION ALL
+     SELECT r.* FROM %s r
+      WHERE r.linear_feature_id IN (%s)
+        AND r.linear_feature_id NOT IN (%s)",
+      raw, lines_of(raw_w), lines_of(fill_w))))
+  .lnk_db_execute(conn,
+    "CREATE INDEX ON pg_temp.lnk_vd_discharge (linear_feature_id)")
+  "pg_temp.lnk_vd_discharge"
 }
 
 #' Admitted (WSG, model species, observation species) triples.
@@ -571,7 +640,8 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
 #' Filter observations, attach each to its segment, and flag capture.
 #' @noRd
 .lnk_hv_obs <- function(conn, schema, observations, spec, loaded, species,
-                        match_types, source_exclude, buffer_m, models) {
+                        match_types, source_exclude, buffer_m, models,
+                        disch = .lnk_discharge_sql()) {
   s <- .lnk_hv_source(conn, observations)
   has <- function(cl) cl %in% s$cols
   opt <- function(cl, type) {
@@ -675,24 +745,25 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
   # a point just below a break.
   # Discharge only when a group is on mad: the persist does not carry it,
   # and a cw-only run should not depend on the discharge table.
-  mad_sql <- if (any(models == "mad")) {
-    sprintf("(SELECT d.mad_m3s FROM %s d
-               WHERE d.linear_feature_id = s.linear_feature_id)",
-            .lnk_hv_discharge_tbl())
-  } else {
-    "NULL::double precision"
+  disch_col <- function(col, type) {
+    if (!any(models == "mad")) return(paste0("NULL::", type))
+    sprintf("(SELECT d.%s FROM %s d
+               WHERE d.linear_feature_id = s.linear_feature_id)", col, disch)
   }
+  mad_sql <- disch_col("mad_m3s", "double precision")
+  mad_src_sql <- disch_col("mad_m3s_source", "text")
   .lnk_hv_drop_temp(conn, "lnk_vd_att")
   .lnk_db_execute(conn, sprintf(
     "CREATE TEMP TABLE lnk_vd_att AS
      SELECT o.*, s.id_segment, s.n_cand, s.seg_drm, s.gradient,
-            s.channel_width, s.channel_width_source, s.mad_m3s, s.edge_type,
+            s.channel_width, s.channel_width_source, s.mad_m3s,
+            s.mad_m3s_source, s.edge_type,
             s.stream_order, s.waterbody_key
        FROM pg_temp.lnk_vd_obs o
        LEFT JOIN LATERAL (
          SELECT s.id_segment, s.downstream_route_measure AS seg_drm,
                 s.gradient, s.channel_width, s.channel_width_source,
-                %2$s AS mad_m3s,
+                %2$s AS mad_m3s, %3$s AS mad_m3s_source,
                 s.edge_type, s.stream_order, s.waterbody_key,
                 count(*) OVER ()::int AS n_cand
            FROM %1$s.streams s
@@ -703,7 +774,7 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
                      AND o.m < s.upstream_route_measure))
           ORDER BY (abs(s.downstream_route_measure - o.m) < 1) DESC,
                    s.downstream_route_measure DESC
-          LIMIT 1) s ON true", schema, mad_sql))
+          LIMIT 1) s ON true", schema, mad_sql, mad_src_sql))
 
   buf <- format(buffer_m, scientific = FALSE)
   per_species <- paste(vapply(species, function(sp) {
@@ -761,6 +832,7 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
   out$model <- unname(models[out$watershed_group_code])
   # The size a cw group was not classified on is not reported for it.
   out$mad_m3s[out$model != "mad"] <- NA_real_
+  out$mad_m3s_source[out$model != "mad"] <- NA_character_
   out
 }
 
@@ -944,7 +1016,7 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
 #' `.lnk_hv_stage_exprs()`.
 #' @noRd
 .lnk_hv_predicates <- function(conn, schema, obs, cfg, loaded, species,
-                               models) {
+                               models, disch = .lnk_discharge_sql()) {
   cols <- paste0("pred_", rep(c("spawn", "rear"), each = 6L),
                  c("", "_g", "_w", "_gw", "_nomad", "_nomad_g"))
   for (cl in cols) obs[[cl]] <- rep(NA, nrow(obs))
@@ -982,7 +1054,7 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
       sprintf("(SELECT s.*, d.mad_m3s FROM %s.streams s
                  LEFT JOIN %s d
                    ON d.linear_feature_id = s.linear_feature_id)",
-              schema, .lnk_hv_discharge_tbl())
+              schema, disch)
     } else {
       paste0(schema, ".streams")
     }

@@ -11,6 +11,47 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
+## Status (2026-10-06) — discharge filled on river-polygon main stems (#305)
+
+**With main stems filled, `mad` drops only little-used water for BT, GR and RB spawning;
+RB rearing reads both ways.**
+- **The rule:** `pipeline: discharge_fill` is set in `default_tuned` only. An edge 1250
+  line with no `mad_m3s` takes:
+  1. the nearest valued line upstream on its `blue_line_key`;
+  2. else the nearest valued line downstream on it;
+  3. else the largest value on any upstream line.
+
+  Never the receiving river. The fill runs only in covered groups, and only where
+  something reads discharge. `.lnk_discharge_fill_applied()` is the one rule for prepare,
+  the run log, the validator and the harness.
+- **Re-scored on #300's segmentation** (variants only):
+  - BT rearing `cw`-only goes from 0.71 to **0.19** (52 found, 269 expected). BT
+    spawning goes to 0.13, GR to 0.25 / 0.35, RB spawning to 0.39, RB rearing to 0.64.
+  - `mad` still keeps −32 % BT and −76 % GR stream rearing against `cw`.
+  - #300's `cw`-favouring verdicts were the discharge gap.
+- **Not filled:** 1,862 km of NULL-value rows in 12 northern groups. The tributaries
+  there are NULL too.
+- `research/habitat_thresholds.md`, "Filling discharge on river-polygon main stems";
+  RUNBOOK §7. Archive: `planning/archive/2026-10-issue-305-discharge-fill/`.
+
+**Facts not worth re-deriving:**
+- **"Most edge 1250 has no discharge" holds only province-wide.** Inside the 123 covered
+  groups it is 22 % (6,243 of 28,122 km), and two-thirds of that is rows absent from the
+  table.
+  - The Beatton (UBTN) has no row anywhere along its line.
+  - A downstream-line fill would have given it the Peace's value.
+- **`frs_col_join()` types a subquery's columns `text`.** prepare adds `mad_m3s` as
+  `double precision` itself. Otherwise fresh's `BETWEEN` fails on the first `mad`
+  classify.
+- **The fill state is recorded, not re-derived:**
+  - `<schema>.log.discharge_fill` per WSG, which the validator checks;
+  - `built.csv` per variant × WSG, from which the score reads it.
+
+  A pre-#305 row reads as raw, which is why #300 re-scores within 7.4e-15.
+- **Masking one valued line tells nothing about long gaps.** Neighbours share a
+  fundamental watershed. At a 10 km gap the upstream fill runs −26 % (median), and it
+  never wrongly admits a line at any MAD minimum.
+
 ## Status (2026-10-03) — `cw` against `mad`, scored on observations (#300)
 
 **`mad`'s most-used loss is not a threshold: it is river-polygon main stems with no

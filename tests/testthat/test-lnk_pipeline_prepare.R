@@ -535,25 +535,38 @@ test_that(".lnk_pipeline_prep_network loads fresh.streams with FWA filters", {
   expect_match(joined, "ADD COLUMN id_segment integer")
 })
 
-test_that(".lnk_pipeline_prep_network joins mad_m3s onto the working streams (#286)", {
-  joins <- list()
-  local_mocked_bindings(.lnk_db_execute = function(conn, sql) invisible(NULL))
-  local_mocked_bindings(
-    frs_col_join = function(conn, table, from, cols, by, ...) {
-      joins[[length(joins) + 1L]] <<- list(table = table, from = from,
-                                           cols = cols, by = by)
+test_that(".lnk_pipeline_prep_network joins mad_m3s onto the working streams (#286, #305)", {
+  run <- function(fill) {
+    captured <- character(0)
+    local_mocked_bindings(.lnk_db_execute = function(conn, sql) {
+      captured <<- c(captured, sql)
       invisible(NULL)
-    },
-    frs_col_generate = function(...) invisible(NULL),
-    .package = "fresh"
-  )
-  .lnk_pipeline_prep_network("mock-conn", aoi = "BULK", schema = "w_bulk")
-  mad <- Filter(function(j) identical(j$cols, "mad_m3s"), joins)
-  expect_length(mad, 1L)
-  expect_identical(mad[[1]]$table, "w_bulk.streams")
-  expect_identical(mad[[1]]$from,
-                   "whse_basemapping.fwa_stream_networks_discharge")
-  expect_identical(mad[[1]]$by, "linear_feature_id")
+    })
+    local_mocked_bindings(
+      frs_col_join = function(...) invisible(NULL),
+      frs_col_generate = function(...) invisible(NULL),
+      .package = "fresh"
+    )
+    .lnk_pipeline_prep_network("mock-conn", aoi = "BULK", schema = "w_bulk",
+                               fill = fill)
+    captured
+  }
+  for (fill in c(FALSE, TRUE)) {
+    sql <- run(fill)
+    # Typed here: frs_col_join() types a subquery's columns text (#305).
+    add <- grep("ADD COLUMN IF NOT EXISTS mad_m3s double precision", sql,
+                fixed = TRUE, value = TRUE)
+    expect_length(add, 1L)
+    expect_match(add, "w_bulk.streams", fixed = TRUE)
+    expect_match(add, "mad_m3s_source text", fixed = TRUE)
+    upd <- grep("SET mad_m3s = d.mad_m3s", sql, fixed = TRUE, value = TRUE)
+    expect_length(upd, 1L)
+    expect_match(upd, "whse_basemapping.fwa_stream_networks_discharge",
+                 fixed = TRUE)
+    expect_match(upd, "d.linear_feature_id = t.linear_feature_id",
+                 fixed = TRUE)
+    expect_identical(grepl("LATERAL", upd, fixed = TRUE), fill)
+  }
 })
 
 test_that("mad_m3s stays out of the persisted streams shape (#286)", {

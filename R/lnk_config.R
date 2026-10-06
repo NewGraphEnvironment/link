@@ -47,7 +47,7 @@
 #'     dispatch ingest via [crate::crt_ingest()])
 #'   - `pipeline` — named list of pipeline knobs
 #'     (`apply_habitat_overlay`, `break_order`, `cluster`,
-#'     `spawn_connected`)
+#'     `spawn_connected`, `discharge_fill`)
 #'   - `provenance` — named list of per-file provenance metadata,
 #'     keyed by file path relative to `dir`. Drift detection against
 #'     these checksums lives in [lnk_config_verify()].

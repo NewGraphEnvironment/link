@@ -265,6 +265,10 @@ cols_log <- c(
   arg_dams               = "boolean",
   arg_mapping_code       = "boolean",
   arg_cleanup_working    = "boolean",
+  # Whether prepare filled edge 1250 mad_m3s for this WSG (#305): the
+  # bundle's discharge_fill, applied where something reads discharge
+  # (.lnk_discharge_fill_applied). The validator checks it against its cfg.
+  discharge_fill         = "boolean",
   schema_persist         = "text",
   species                = "text[]",
   wsg_upstream           = "text[]",
@@ -812,7 +816,7 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
             "fresh_version", "fresh_sha", "fresh_dirty", "fresh_sha_source",
             "crate_version", "fwapg_sha", "bcfishobs_sha",
             "arg_dams", "arg_mapping_code", "arg_cleanup_working",
-            "schema_persist", "wsg_upstream",
+            "discharge_fill", "schema_persist", "wsg_upstream",
             "bcfp_model_run_id", "bcfp_model_version", "bcfp_pin_source",
             "notes")
 
@@ -839,6 +843,7 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
     .lnk_log_lit(conn, dams),
     .lnk_log_lit(conn, mapping_code),
     .lnk_log_lit(conn, cleanup_working),
+    .lnk_log_lit(conn, .lnk_discharge_fill_applied(cfg, aoi)),
     .lnk_log_lit(conn, schema),
     .lnk_log_arr(conn, upstream),
     .lnk_log_lit(conn, if (is.null(bcfp)) NA else bcfp$model_run_id),
