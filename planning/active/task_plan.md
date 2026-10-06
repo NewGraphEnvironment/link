@@ -34,13 +34,13 @@
 ## Phase 1: Count and validate the fill
 - [x] `R/lnk_discharge.R`: the builder + candidates SQL (moved here from Phase 2 so the
   measurement runs the shipping SQL)
-- [ ] `data-raw/discharge_fill_count.R`: coverage by edge type × order × state, per-WSG
+- [x] `data-raw/discharge_fill_count.R`: coverage by edge type × order × state, per-WSG
   1250, held-out band reach (`score300_*`); log `data-raw/logs/discharge_fill_305/`
-- [ ] Root cause of absent 1250 rows (diagnosis only)
-- [ ] Fill accuracy: single-line masking, ≥ 10 km long-gap sample, tributary sample; MAD
+- [x] Root cause of absent 1250 rows (diagnosis only)
+- [x] Fill accuracy: single-line masking, ≥ 10 km long-gap sample, tributary sample; MAD
   minimum crossings
-- [ ] Fill reach per tier: covered WSGs and #300's `cw`-only bands
-- [ ] Results to `research/habitat_thresholds.md`; issue body corrected ("most" → numbers)
+- [x] Fill reach per tier: covered WSGs and #300's `cw`-only bands
+- [x] Results to `research/habitat_thresholds.md`; issue body corrected ("most" → numbers)
 
 ## Phase 2: Wire the fill (tests first)
 - [x] Tests: builder off = raw table; on: valued lines unchanged, 1250-only, absent-row line
@@ -61,7 +61,7 @@
   variant's cfg
 - [x] `habitat_variants_score.R`: each variant's fill from `built.csv` (absent = FALSE);
   `model_reason` reads the builder; `mad_m3s_source` split reported
-- [ ] Regression: re-scoring #300 (`score300_*`, its `built.csv`) reproduces
+- [x] Regression: re-scoring #300 (`score300_*`, its `built.csv`) reproduces
   `data-raw/logs/habitat_score_300/` — integer/character identical, numeric within 1e-12
   relative
 
@@ -72,16 +72,16 @@
   `--step=variants --prefix=score300_ --out=data-raw/logs/habitat_score_305`,
   #300's `base_habitat_digest.csv` copied in; score `--base=default_tuned --floor=expected`;
   roles `wsg_roles_300.csv`
-- [ ] Build variants (base re-classify digest must match #300's)
-- [ ] Score; diff `model_verdict`, `habitat_change`, `model_reason` against #300; how much
+- [x] Build variants (base re-classify digest must match #300's)
+- [x] Score; diff `model_verdict`, `habitat_change`, `model_reason` against #300; how much
   `mad_null` remains, and does any `cw`-only verdict change
-- [ ] Results to `research/habitat_thresholds.md`, CLAUDE.md status; archive README with
+- [x] Results to `research/habitat_thresholds.md`, CLAUDE.md status; archive README with
   Measurement + Evidence
 
 ## Validation
-- [ ] Tests pass (`devtools::test()`), lint clean
-- [ ] `/code-check` clean on each commit
-- [ ] PWF checkboxes match landed work
+- [x] Tests pass (`devtools::test()`: 2441 pass, 0 fail, 16 warnings as baseline); lint: no new non-indentation lints in touched files
+- [x] `/code-check` on the code commit `312e195` (4 rounds, enumeration-terminated); the results commit is logs and prose only
+- [x] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion, then `/gh-pr-push`
 
 ## Verification end-to-end

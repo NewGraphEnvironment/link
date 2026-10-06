@@ -1,0 +1,18 @@
+date: 2026-10-06 09:43 PDT
+link: 0.57.1 @ 312e195 (at launch)
+fresh: 0.36.2 @ e3a37f031cca31ccfab59f47d6e19dde4083cca5
+db: docker fwapg localhost:5432
+base: default_tuned
+variants: data-raw/habitat_score/variants_305.csv (md5 1f249125f87a23915ac2ca5d16ff8a47): default_tuned,bt_mad_fill,gr_mad_fill,rb_mad_fill,ko_mad_fill
+roles: data-raw/habitat_score/wsg_roles_300.csv (md5 74f96f95e0bbd65a5bab40c8e1f84ead)
+built default_tuned: thresholds sha256 247a7088101c; link 312e195; 12 WSGs, 2026-10-06 09:01:34 PDT to 2026-10-06 09:16:15 PDT
+built bt_mad_fill: thresholds sha256 247a7088101c; link 312e195; 9 WSGs, 2026-10-06 09:16:46 PDT to 2026-10-06 09:25:28 PDT
+built gr_mad_fill: thresholds sha256 247a7088101c; link 312e195; 4 WSGs, 2026-10-06 09:25:46 PDT to 2026-10-06 09:27:31 PDT
+built rb_mad_fill: thresholds sha256 247a7088101c; link 312e195; 8 WSGs, 2026-10-06 09:27:48 PDT to 2026-10-06 09:31:41 PDT
+built ko_mad_fill: thresholds sha256 247a7088101c; link 312e195; 2 WSGs, 2026-10-06 09:31:59 PDT to 2026-10-06 09:32:23 PDT
+focal: REVL,ELKR,KOTR,UARL,MURR,UBTN,LHAF,PARS,KOTL,SIML,OKAN,KETL; species: BT,GR,KO,RB; buffers: 0,100 m
+rule: n_band >= 10 and density_ratio >= 0.5 on held-out WSGs; floor of record: expected
+model-only rule (link#300): expected >= 10 and found / expected >= 0.5, expected per stream-order class (1, 2, 3, 4+; merged upward until the core holds 10); held-out WSGs, stage any
+pooling: default_tuned species_pooling.csv (sha256 9c42964e0469): 11 WSG x species pairs pooled (BT<-DV)
+bcfishobs.observations rows: 373050
+absences: FISS snapshots COTR,LNTH,PINE,UNTH,UPCE; knowledge @ f17cbef

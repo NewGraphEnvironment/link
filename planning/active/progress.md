@@ -15,3 +15,10 @@
 - Phase 2/3 code: prepare, log column, validator, default_tuned knob, RUNBOOK, harness.
 - /code-check: 4 rounds (R1 2 fixed; R2 2 fixed, one inside R1's fix; R3 1 fixed, inside R1's
   fix; R4 enumeration of 22 places, clean). Files `review-round{1..4}.md`.
+- Code commit `312e195`. Phase 1 re-run at that clean HEAD (`discharge_fill_305/stamp.txt`).
+- Phase 3 regression: #300 re-scored with the new code → byte-identical summary/totals/
+  habitat_change/model_bands*, model_reason/size/verdict ≤ 7.4e-15 rel
+  (`discharge_fill_305/rescore300/`).
+- Phase 4: `--step=variants` on `working_score300_*` (31.5 min, every base digest matched
+  #300's), score exit 0. BT rearing cw-only 0.71 → 0.19; #300's cw-favouring verdicts were
+  the discharge gap. Issue body edited (Decided section; "most" corrected).

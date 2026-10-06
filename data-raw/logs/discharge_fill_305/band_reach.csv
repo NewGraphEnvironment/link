@@ -1,0 +1,17 @@
+"species_code","flag","is_1250","tier","km","n_segments","km_clears_min"
+"BT","spawning",FALSE,"none",53.2019731948539,217,0
+"BT","spawning",TRUE,"fill_tributary_max",330.120154102288,513,330.120154102288
+"BT","spawning",TRUE,"fill_upstream",102.806262371099,663,102.806262371099
+"BT","rearing",FALSE,"none",70.9132617800914,278,0
+"BT","rearing",TRUE,"fill_tributary_max",330.138926063853,514,330.138926063853
+"BT","rearing",TRUE,"fill_upstream",102.898580494098,664,102.898580494098
+"GR","spawning",FALSE,"none",43.0383058476165,171,0
+"GR","spawning",TRUE,"fill_tributary_max",330.120154102288,513,193.065288575477
+"GR","spawning",TRUE,"fill_upstream",89.4457166779131,393,89.2598437639681
+"GR","rearing",FALSE,"none",43.7189087310475,175,0
+"GR","rearing",TRUE,"fill_tributary_max",330.120154102288,513,193.065288575477
+"GR","rearing",TRUE,"fill_upstream",89.5891041797396,394,89.4032312657945
+"RB","spawning",FALSE,"none",27.3222701412909,126,0
+"RB","spawning",TRUE,"fill_upstream",133.588551198475,534,133.588551198475
+"RB","rearing",FALSE,"none",44.5619250566076,178,0
+"RB","rearing",TRUE,"fill_upstream",133.588551198475,534,133.588551198475
