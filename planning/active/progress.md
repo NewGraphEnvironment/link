@@ -17,3 +17,8 @@
   re-checked against the CSV) and listed its reach; R4 recomputed every number, found 4 low
   leftovers. It ended on a repo-wide grep of the candidate phrasings: every remaining hit is
   fixed or dated history.
+- Phase 3: NATR + ADMS prepared once at main into zz307_* and re-classified from main and the
+  branch. cw digests identical (all species, both WSGs); under mad, BT/GR/KO/RB stream habitat
+  0 -> non-zero, CH/CO/SK identical on ADMS, stream invariant 0. Lake and wetland buckets
+  shrink as predicted. Within default, cw vs mad agree within about 5 %. NATR has no NULL
+  discharge on the modelled stream edges. `data-raw/logs/habitat_thresholds_307/README.md`.

@@ -1,0 +1,11 @@
+## reclassify NATR default zz307_natr repo=link_branch method_csv=/private/tmp/claude-501/-Users-airvine-Projects-repo-link/2ca77b0e-3594-4ac9-97c0-e5debb291980/scratchpad/frozen/method_natr_mad.csv link=0.58.0 fresh=0.36.2
+ species_code     n n_spawn n_rear spawn_km rear_km
+           BT 47299    3710  10404   1727.2  3547.0
+           GR 47299    1609   3178    742.6  1295.6
+           KO 47299     229    553    120.2   345.4
+           RB 47299    3517  11565   1640.2  3670.8
+                           digest
+ 816ea27fd556e17195744915f8f839d8
+ f919fe1e4040923b6bc7089b106d650d
+ 5247eb3d51927d48bdf786d26ecb8d39
+ 912a2eb76f485f8a5837c0bd8b9f2da8

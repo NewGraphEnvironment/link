@@ -1,0 +1,13 @@
+## reclassify ADMS default zz307_adms repo=link_branch method_csv=<bundle/default> link=0.58.0 fresh=0.36.2
+ species_code     n n_spawn n_rear spawn_km rear_km
+           BT 39422    1483   2392    364.8   531.6
+           CH 39422    1066   1467    278.1   353.1
+           CO 39422    1237   1515    314.0   362.9
+           RB 39422    1241   2005    307.0   439.3
+           SK 39422     911    360    218.2   229.9
+                           digest
+ 15529bf6d42fce6a922d9f1660d5a78b
+ 859a43436191cc559ee49bcef257b743
+ b7f072147b66049b0d6866d110076dd0
+ 19413f5f61574d8a584d9d553860d93e
+ c0f0ecc9329b1a9a78a6e517c2864e3f

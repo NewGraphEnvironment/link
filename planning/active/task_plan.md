@@ -46,25 +46,25 @@
 Scratch schema `zz307_natr` on local docker fwapg; nothing persisted. Main runs from a
 worktree at `origin/main`, the branch from a frozen copy. Logs and copied scripts go in
 `data-raw/logs/habitat_thresholds_307/`.
-- [ ] `verify_classify.R` setup → connect NATR and ADMS under `default` (prepares
+- [x] `verify_classify.R` setup → connect NATR and ADMS under `default` (prepares
   segmentation once). NATR holds only BT, GR, KO and RB; ADMS adds CH, CO and SK, which
   must not move.
-- [ ] `cw`: run `reclassify.R` on main and on the branch, and compare per-species digests.
+- [x] `cw`: run `reclassify.R` on main and on the branch, and compare per-species digests.
   **Expect identical for every species.**
-- [ ] `mad`, with `method_natr_mad.csv` (NATR on `mad`):
+- [x] `mad`, with `method_natr_mad.csv` (NATR on `mad`):
   - run `reclassify.R` on main and on the branch;
   - **expect** BT/GR/KO/RB stream spawning and rearing km to go 0 → non-zero, and every
     other species' digest to be unchanged.
-- [ ] `mad_check.R` on **main and on the branch**:
+- [x] `mad_check.R` on **main and on the branch**:
   - stream km off waterbodies (`*_nowb`) is the measure of 0 → non-zero;
   - the invariant holds on stream segments (`*_out_nowb` and `null_nowb` = 0);
   - predict, then measure, the shrink in `lake_rearing` and `wetland_rearing` for BT,
     GR and RB: fresh gates the bucket columns on the rear range once one exists (plan
     review, finding 6).
-- [ ] Note that `default` has no `discharge_fill`, so NATR's edge-1250 main stems with no
+- [x] Note that `default` has no `discharge_fill`, so NATR's edge-1250 main stems with no
   value still drop under `mad`. Report the NULL-discharge km rather than fix it (out of
   scope).
-- [ ] `README.md` in the log directory: method, stamp, results table.
+- [x] `README.md` in the log directory: method, stamp, results table.
 
 ## Phase 4 — Research, docs, NEWS
 - [ ] New section in `research/habitat_thresholds.md`, "`default`'s MAD ranges, converted
