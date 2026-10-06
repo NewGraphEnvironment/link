@@ -44,7 +44,7 @@ An `lnk_config` S3 list with these slots:
   [`crate::crt_ingest()`](https://newgraphenvironment.github.io/crate/reference/crt_ingest.html))
 
 - `pipeline` — named list of pipeline knobs (`apply_habitat_overlay`,
-  `break_order`, `cluster`, `spawn_connected`)
+  `break_order`, `cluster`, `spawn_connected`, `discharge_fill`)
 
 - `provenance` — named list of per-file provenance metadata, keyed by
   file path relative to `dir`. Drift detection against these checksums

@@ -145,12 +145,13 @@ A list of two data frames:
   WSG's habitat model (`cw` or `mad`).
 
 - `observations`: one row per retained location, with its segment's
-  `gradient`, `channel_width`, `channel_width_source`, `mad_m3s` (on
-  `mad` groups only, else `NA`), `edge_type`, `stream_order`,
-  `waterbody_type`, `access`, `model`, the capture flags,
-  `in_uhc_spawn`, `in_uhc_rear`, the predicate results (`pred_<stage>`,
-  relaxed `_g`, `_w`, `_gw`, and on `mad` groups for a species with no
-  MAD range `_nomad`, `_nomad_g`), and the two miss reasons.
+  `gradient`, `channel_width`, `channel_width_source`, `mad_m3s` and
+  `mad_m3s_source` (`modelled` or the fill tier; on `mad` groups only,
+  else `NA`), `edge_type`, `stream_order`, `waterbody_type`, `access`,
+  `model`, the capture flags, `in_uhc_spawn`, `in_uhc_rear`, the
+  predicate results (`pred_<stage>`, relaxed `_g`, `_w`, `_gw`, and on
+  `mad` groups for a species with no MAD range `_nomad`, `_nomad_g`),
+  and the two miss reasons.
 
 ## Details
 
@@ -261,8 +262,12 @@ the one the group classified on: the model `cfg`'s
 resolves it (an unlisted group is `cw`). On `cw` it is the channel
 width; on `mad` it is the mean annual discharge `mad_m3s`, joined from
 `whse_basemapping.fwa_stream_networks_discharge` on `linear_feature_id`
-because the persist does not carry it. The `width` labels below mean
-that size on either model; `model` and `mad_m3s` split them:
+because the persist does not carry it. When `cfg` fills discharge
+(`cfg$pipeline$discharge_fill`), it is filled as prepare filled it: edge
+1250 lines with no value take one along the network (`mad_m3s_source`
+says which), and a `mad` group logged with the other fill state is an
+error. The `width` labels below mean that size on either model; `model`
+and `mad_m3s` split them:
 
 - `NA` — captured; `no_segment` — the location attaches to no segment;
 

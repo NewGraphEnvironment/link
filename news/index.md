@@ -1,5 +1,39 @@
 # Changelog
 
+## link 0.58.0
+
+**Discharge is filled on river-polygon main stems, and `cw` against
+`mad` is re-scored with it**
+([\#305](https://github.com/NewGraphEnvironment/link/issues/305)).
+[\#300](https://github.com/NewGraphEnvironment/link/issues/300) found
+that `mad`’s most-used loss was edge type 1250 water with no `mad_m3s`,
+not a MAD threshold.
+
+- **The fill.** `pipeline: discharge_fill`, set in `default_tuned` only.
+  An edge 1250 line with no value takes the nearest valued line upstream
+  on its `blue_line_key`. Failing that it takes the nearest valued line
+  downstream, and failing that the largest value on any upstream line.
+  It never takes the receiving river’s value. It runs only in groups the
+  discharge table covers, and only where something reads discharge: a
+  `mad` group or a rule-level `mad`. `mad_m3s_source` names where each
+  value came from.
+- **One rule, recorded.** prepare, the run log (new `discharge_fill`
+  column),
+  [`lnk_habitat_validate()`](https://newgraphenvironment.github.io/link/reference/lnk_habitat_validate.md)
+  and the variants harness all decide the fill with the same rule. The
+  validator scores each group on the fill prepare applied there, refuses
+  a run logged with another state, and reports `mad_m3s_source`. prepare
+  now writes `mad_m3s` as `double precision` itself.
+- **What it changes.** On
+  [\#300](https://github.com/NewGraphEnvironment/link/issues/300)’s
+  held-out groups and segmentation, BT rearing’s `cw`-only band falls
+  from 0.71 to 0.19 of the size-matched core rate. BT and RB spawning
+  now read as the models differing only on little-used water. RB rearing
+  still reads both ways. `mad` keeps −32 % BT and −76 % GR stream
+  rearing against `cw`. Nothing is moved to `mad`;
+  `research/habitat_thresholds.md`, “Filling discharge on river-polygon
+  main stems”, has the numbers.
+
 ## link 0.57.1
 
 **The discharge (`mad`) habitat model is scored against channel width

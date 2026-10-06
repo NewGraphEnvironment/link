@@ -23,7 +23,7 @@ false-positive check."><meta property="og:image" content="https://newgraphenviro
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.57.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.58.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -193,8 +193,9 @@ With <code>absences</code>, also <code>n_absence</code>, <code>n_absence_accessi
 <code>n_absence_rearing_any</code> (the same on every stage). <code>model</code> is the
 WSG's habitat model (<code>cw</code> or <code>mad</code>).</p></li>
 <li><p><code>observations</code>: one row per retained location, with its segment's
-<code>gradient</code>, <code>channel_width</code>, <code>channel_width_source</code>, <code>mad_m3s</code> (on
-<code>mad</code> groups only, else <code>NA</code>), <code>edge_type</code>, <code>stream_order</code>,
+<code>gradient</code>, <code>channel_width</code>, <code>channel_width_source</code>, <code>mad_m3s</code> and
+<code>mad_m3s_source</code> (<code>modelled</code> or the fill tier; on <code>mad</code> groups only,
+else <code>NA</code>), <code>edge_type</code>, <code>stream_order</code>,
 <code>waterbody_type</code>, <code>access</code>, <code>model</code>, the capture flags,
 <code>in_uhc_spawn</code>, <code>in_uhc_rear</code>, the predicate results (<code>pred_&lt;stage&gt;</code>,
 relaxed <code>_g</code>, <code>_w</code>, <code>_gw</code>, and on <code>mad</code> groups for a species with no
@@ -300,7 +301,11 @@ the WSG, resolved as <code><a href="lnk_pipeline_classify.html">lnk_pipeline_cla
 group is <code>cw</code>). On <code>cw</code> it is the channel width; on <code>mad</code> it is the mean
 annual discharge <code>mad_m3s</code>, joined from
 <code>whse_basemapping.fwa_stream_networks_discharge</code> on <code>linear_feature_id</code>
-because the persist does not carry it. The <code>width</code> labels below mean
+because the persist does not carry it. When <code>cfg</code> fills discharge
+(<code>cfg$pipeline$discharge_fill</code>), it is filled as prepare filled it: edge
+1250 lines with no value take one along the network (<code>mad_m3s_source</code>
+says which), and a <code>mad</code> group logged with the other fill state is an
+error. The <code>width</code> labels below mean
 that size on either model; <code>model</code> and <code>mad_m3s</code> split them:</p><ul><li><p><code>NA</code> — captured; <code>no_segment</code> — the location attaches to no segment;</p></li>
 <li><p><code>not_accessible</code> — the segment's <code>access_&lt;sp&gt;</code> is not 1 or 2;</p></li>
 <li><p><code>fails_gradient</code> / <code>fails_width</code> / <code>width_null</code> — passes once that one
