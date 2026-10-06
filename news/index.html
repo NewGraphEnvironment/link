@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.58.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.57.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,16 +35,6 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
-    <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.58.0" id="link-0580">link 0.58.0<a class="anchor" aria-label="anchor" href="#link-0580"></a></h2>
-<p><strong>Discharge is filled on river-polygon main stems, and <code>cw</code> against <code>mad</code> is re-scored with it</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/305" class="external-link">#305</a>). <a href="https://github.com/NewGraphEnvironment/link/issues/300" class="external-link">#300</a> found that <code>mad</code>’s most-used loss was edge type 1250 water with no <code>mad_m3s</code>, not a MAD threshold.</p>
-<ul><li>
-<strong>The fill.</strong> <code>pipeline: discharge_fill</code>, set in <code>default_tuned</code> only. An edge 1250 line with no value takes the nearest valued line upstream on its <code>blue_line_key</code>. Failing that it takes the nearest valued line downstream, and failing that the largest value on any upstream line. It never takes the receiving river’s value. It runs only in groups the discharge table covers, and only where something reads discharge: a <code>mad</code> group or a rule-level <code>mad</code>. <code>mad_m3s_source</code> names where each value came from.</li>
-<li>
-<strong>One rule, recorded.</strong> prepare, the run log (new <code>discharge_fill</code> column), <code><a href="../reference/lnk_habitat_validate.html">lnk_habitat_validate()</a></code> and the variants harness all decide the fill with the same rule. The validator scores each group on the fill prepare applied there, refuses a run logged with another state, and reports <code>mad_m3s_source</code>. prepare now writes <code>mad_m3s</code> as <code>double precision</code> itself.</li>
-<li>
-<strong>What it changes.</strong> On <a href="https://github.com/NewGraphEnvironment/link/issues/300" class="external-link">#300</a>’s held-out groups and segmentation, BT rearing’s <code>cw</code>-only band falls from 0.71 to 0.19 of the size-matched core rate. BT and RB spawning now read as the models differing only on little-used water. RB rearing still reads both ways. <code>mad</code> keeps −32 % BT and −76 % GR stream rearing against <code>cw</code>. Nothing is moved to <code>mad</code>; <code>research/habitat_thresholds.md</code>, “Filling discharge on river-polygon main stems”, has the numbers.</li>
-</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.57.1" id="link-0571">link 0.57.1<a class="anchor" aria-label="anchor" href="#link-0571"></a></h2>
 <p><strong>The discharge (<code>mad</code>) habitat model is scored against channel width (<code>cw</code>) on fish observations</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/300" class="external-link">#300</a>). Package code is unchanged. The work is in the scoring harness, the research doc and RUNBOOK §7.</p>
