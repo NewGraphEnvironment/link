@@ -102,8 +102,8 @@ worktree at `origin/main`, the branch from a frozen copy. Logs and copied script
 - [x] `/code-check` on each code commit: producer, 3 rounds clean; Phase 2 plus docs, 4 rounds
   ending in an enumeration. The data-only commits (`a6f20cc`, `f1ed481`) had no separate
   round; `f1ed481`'s README and harness were in round 4's diff.
-- [ ] PWF checkboxes match landed work.
-- [ ] `/planning-archive` on completion, with a Measurement + Evidence archive README.
+- [x] PWF checkboxes match landed work.
+- [x] `/planning-archive` on completion, with a Measurement + Evidence archive README.
 
 
 ## Verification (end to end)
