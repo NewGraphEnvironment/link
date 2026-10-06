@@ -18,11 +18,16 @@
 #     value and the step 1-4 verdict in the bundle stands.
 # The literature veto is applied by hand in the research doc, not here.
 #
+# A model-only variant (link#300) is not a ladder step: it is compared with the
+# base in both flags, its bands read against the core within stream-order
+# classes ("cw against mad" in the research doc; model_*.csv below).
+#
 #   Rscript data-raw/habitat_variants_score.R \
 #     [--variants=data-raw/habitat_score/variants.csv] \
 #     [--roles=data-raw/habitat_score/wsg_roles.csv] \
 #     [--wsgs=...] [--buffers=0,100] [--prefix=score284_] \
 #     [--floor=found|expected] [--out=data-raw/logs/habitat_score_284]
+#     [--base=default]   the base bundle, as habitat_variants_build.R took it
 #
 # Absences come from LNK_KNOWLEDGE_DIR (the private `knowledge` repo) through
 # data-raw/habitat_validate_inputs.R, as habitat_validate.R reads them; only
@@ -46,6 +51,15 @@
 #                     the band's own elevation mix
 #   habitat_change.csv  per variant x WSG: stream-rearing and spawning km
 #                     against the base, and the change (km and %)
+#   model_bands.csv, model_bands_pooled.csv  per model-only variant x flag x
+#                     stage: cw-only (`removed`) and mad-only (`added`) bands
+#                     against the core both models keep (link#300)
+#   model_size.csv    the same, per stream-order class, with the rate group
+#                     each class is priced at
+#   model_reason.csv  why the other model leaves each band out (no discharge or
+#                     width, outside its size range, or inside it)
+#   model_verdict.csv the #300 rule: size-adjusted (of record), beside the
+#                     unadjusted ratio and the found count
 #   stamp_score.txt   environment stamp
 
 suppressPackageStartupMessages({
@@ -72,6 +86,7 @@ path_roles <- opt("roles", file.path("data-raw", "habitat_score",
                                      "wsg_roles.csv"))
 prefix <- opt("prefix", "score284_")
 dir_out <- opt("out", file.path("data-raw", "logs", "habitat_score_284"))
+base_bundle <- opt("base", "default")
 # The defaults are #284's committed run; another variants file must not
 # score into (and first clear) #284's outputs.
 if (!identical(path_variants, file.path("data-raw", "habitat_score", "variants.csv")) &&
@@ -105,10 +120,40 @@ for (k in c("model", "set")) {
   if (!k %in% names(variants)) variants[[k]] <- NA_character_
 }
 variants$model[is.na(variants$model)] <- "cw"
-base_variant <- variants$variant[is.na(variants$column)]
+# The base is the row that steps from nothing, as habitat_variants_build.R
+# reads it; it must be the --base bundle.
+base_variant <- variants$variant[is.na(variants$step_from)]
 stopifnot(length(base_variant) == 1L,
           all(variants$model %in% c("cw", "mad")),
-          identical(variants$model[variants$variant == base_variant], "cw"))
+          identical(variants$model[variants$variant == base_variant], "cw"),
+          is.na(variants$column[variants$variant == base_variant]))
+if (!identical(variants$equals_bundle[variants$variant == base_variant],
+               base_bundle)) {
+  stop("the base variant ", base_variant, " declares equals_bundle ",
+       variants$equals_bundle[variants$variant == base_variant],
+       ", not --base ", base_bundle, call. = FALSE)
+}
+# Model-only variants (link#300): no column, on mad, from the base.
+model_only <- variants$variant[is.na(variants$column) &
+                                 variants$variant != base_variant]
+local({
+  r <- variants[variants$variant %in% model_only, ]
+  bad <- r$variant[r$model != "mad" | r$step_from != base_variant |
+                     is.na(r$species_code) | !is.na(r$value) |
+                     !is.na(r$flag) | !is.na(r$set) | !is.na(r$obs_stage) |
+                     !is.na(r$equals_bundle)]
+  if (length(bad) > 0L) {
+    stop("a variant with no column must be model-only (on mad, stepping from ",
+         base_variant, ", with a species and no value, flag, obs_stage, ",
+         "equals_bundle or set): ", paste(bad, collapse = ", "), call. = FALSE)
+  }
+  # Nothing steps from a model-only variant: it is not a ladder rung.
+  off <- variants$variant[variants$step_from %in% model_only]
+  if (length(off) > 0L) {
+    stop("no variant may step from a model-only variant: ",
+         paste(off, collapse = ", "), call. = FALSE)
+  }
+})
 n_set <- function(x) {
   if (is.na(x) || !nzchar(trimws(x))) 0L else
     length(strsplit(trimws(x), ";", fixed = TRUE)[[1]])
@@ -138,7 +183,7 @@ local({
 # a listed variant, and each variant is stepped from by at most one other, so
 # every ladder is one chain out from the base (no cycle, no branch below it).
 local({
-  steps_from <- variants$step_from[!is.na(variants$column)]
+  steps_from <- variants$step_from[variants$variant != base_variant]
   if (!all(steps_from %in% variants$variant)) {
     stop("step_from names no listed variant: ",
          paste(setdiff(steps_from, variants$variant), collapse = ", "),
@@ -169,7 +214,8 @@ schema_of <- function(v) if (length(v) == 0L) character(0) else paste0(prefix, v
 outputs <- c("summary.csv", "totals.csv", "bands.csv", "bands_pooled.csv",
              "verdict.csv", "bridge_band.csv", "taper.csv", "elevation.csv",
              "elevation_adjusted.csv", "habitat_change.csv",
-             "stamp_score.txt")
+             "model_bands.csv", "model_bands_pooled.csv", "model_size.csv",
+             "model_reason.csv", "model_verdict.csv", "stamp_score.txt")
 unlink(file.path(dir_out, outputs))
 
 # Taken at launch: the code that runs is the code at the start.
@@ -182,9 +228,9 @@ dirty <- length(system(paste(
 conn <- lnk_db_conn(dbname = "fwapg", host = "localhost", port = 5432L,
                     user = "postgres", password = "postgres")
 
-# -- bundles: default, and the thin variant bundles the build wrote --------------
+# -- bundles: the base, and the thin variant bundles the build wrote --------------
 cfg_of <- function(v) {
-  if (identical(v, base_variant)) return(lnk_config("default"))
+  if (identical(v, base_variant)) return(lnk_config(base_bundle))
   d <- file.path(dir_out, "bundles", v)
   if (!dir.exists(d)) {
     stop("no bundle for ", v, " under ", dir_out,
@@ -196,8 +242,8 @@ cfgs <- stats::setNames(lapply(variants$variant, cfg_of), variants$variant)
 # The values below label every band, so they must be the ones each schema was
 # built from. built.csv (written by the build once a schema's checks pass)
 # names the bundle sha each schema came from; the bundle on disk must still be
-# that one, differ from the current default in exactly its own cell, and
-# carry the value --variants gives it.
+# that one, differ from the current base in exactly its own cells (none for a
+# model-only variant), and carry the value --variants gives it.
 path_built <- file.path(dir_out, "built.csv")
 if (!file.exists(path_built)) {
   stop("no ", path_built, ": run habitat_variants_build.R first", call. = FALSE)
@@ -257,6 +303,13 @@ for (v in variants$variant) {
   n_diff <- sum(mapply(function(a, b) {
     sum(!((a == b) %in% TRUE) & !(is.na(a) & is.na(b)))
   }, thr, thr_now))
+  if (v %in% model_only) {
+    if (n_diff != 0L) {
+      stop("model-only bundle ", v, " differs from ", base_bundle, " in ",
+           n_diff, " threshold cells, not 0", call. = FALSE)
+    }
+    next
+  }
   got <- as.numeric(thr[[r$column]][thr$species_code == r$species_code])
   # Every set cell must hold the value --variants gives it, not just count.
   set_ok <- all(vapply(names(parse_set(r$set)), function(k) {
@@ -304,8 +357,8 @@ source(file.path("data-raw", "habitat_validate_inputs.R"))
 absences <- hv_fiss_absences(conn, species)
 abs_note <- attr(absences, "reason")
 if (!is.null(abs_note)) absences <- NULL
-pool <- hv_pooling(data.frame(config = "default", stringsAsFactors = FALSE),
-                   list(focal), species, pooling_cfg = "default")
+pool <- hv_pooling(data.frame(config = base_bundle, stringsAsFactors = FALSE),
+                   list(focal), species, pooling_cfg = base_bundle)
 
 # -- validate every variant schema -------------------------------------------------------
 # A variant schema holds habitat only for its own species (the build
@@ -320,6 +373,11 @@ aoi_of <- function(sp) {
 }
 runs <- list()
 for (v in variants$variant) {
+  # A --wsgs subset can leave a variant's species with no focal WSG.
+  if (length(aoi_of(species_of(v))) == 0L) {
+    say("validating %s: no focal WSG for its species, skipped", v)
+    next
+  }
   for (b in buffers) {
     say("validating %s (%s), buffer %s m", v, schema_of(v), b)
     r <- do.call(lnk_habitat_validate, c(list(
@@ -410,6 +468,336 @@ if (!is.null(absences) && nrow(absences) > 0L) {
   }
 }
 
+# -- stamp -------------------------------------------------------------------------------------
+# A function, so a model-only run (link#300), which has no ladder, writes it too.
+write_stamp <- function() {
+  fresh_sha <- .lnk_pkg_git_sha("fresh")
+  writeLines(c(
+    sprintf("date: %s", format(Sys.time(), "%Y-%m-%d %H:%M %Z")),
+    sprintf("link: %s @ %s%s (at launch)", utils::packageVersion("link"),
+            head_sha, if (dirty) " (dirty)" else ""),
+    sprintf("fresh: %s @ %s", utils::packageVersion("fresh"),
+            if (is.na(fresh_sha)) "no recorded sha" else fresh_sha),
+    "db: docker fwapg localhost:5432",
+    sprintf("base: %s", base_bundle),
+    sprintf("variants: %s (md5 %s): %s", path_variants,
+            unname(tools::md5sum(path_variants)),
+            paste(variants$variant, collapse = ",")),
+    sprintf("roles: %s (md5 %s)", path_roles, unname(tools::md5sum(path_roles))),
+    # The build this score verified (built.csv rows for the scored WSGs).
+    vapply(variants$variant, function(v) {
+      b <- built[built$variant == v & built$watershed_group_code %in% focal, ]
+      sprintf("built %s: thresholds sha256 %s; link %s%s; %d WSGs, %s to %s", v,
+              substr(b$thresholds_sha256[1], 1, 12),
+              paste(unique(b$link_head), collapse = ","),
+              if (any(b$dirty %in% "TRUE")) " (dirty)" else "", nrow(b),
+              min(b$built_at), max(b$built_at))
+    }, character(1)),
+    sprintf("focal: %s; species: %s; buffers: %s m",
+            paste(focal, collapse = ","), paste(species, collapse = ","),
+            paste(buffers, collapse = ",")),
+    sprintf("rule: n_band >= %d and density_ratio >= %s on held-out WSGs; floor of record: %s",
+            n_min, ratio_min, floor_of_record),
+    if (length(model_only) > 0L) {
+      sprintf(paste("model-only rule (link#300): expected >= %d and found /",
+                    "expected >= %s, expected per stream-order class (1, 2, 3,",
+                    "4+; merged upward until the core holds %d); held-out",
+                    "WSGs, stage any"), n_min, ratio_min, n_min)
+    },
+    sprintf("pooling: %s", pool$note),
+    sprintf("bcfishobs.observations rows: %s",
+            dbGetQuery(conn, "SELECT count(*) FROM bcfishobs.observations")[[1]]),
+    if (!is.null(abs_note)) sprintf("absences: none (%s)", abs_note) else
+    if (is.null(absences)) "absences: none (LNK_KNOWLEDGE_DIR unset)" else
+      sprintf("absences: FISS snapshots %s; knowledge @ %s",
+              paste(attr(absences, "covered"), collapse = ","),
+              attr(absences, "knowledge_sha"))),
+    file.path(dir_out, "stamp_score.txt"))
+}
+
+# -- cw against mad: model-only variants (link#300) --------------------------------------
+# A model-only variant changes the habitat model and no threshold. Per flag, its
+# `removed` band is the habitat only cw keeps, its `added` band the habitat only
+# mad keeps, and the core the habitat both keep. Each band is then read against
+# the core within stream-order classes (neither model tests order), so a band
+# of smaller water is not held to the rate of bigger water.
+stages <- c("any", "spawn", "rear")
+order_levels <- c("1", "2", "3", "4+")
+# Order 0 and NULL are not a size: they go to `unknown`.
+order_class <- function(o) {
+  ifelse(is.na(o) | o < 1, "unknown", ifelse(o >= 4, "4+", as.character(o)))
+}
+# Rate groups: walking up from order 1, a class joins the next until the group's
+# core holds n_min locations; a short last group joins the one before. One group
+# is every ordered class together. Returns a group label per class.
+order_groups <- function(n_core) {
+  grp <- integer(length(n_core))
+  g <- 1L
+  acc <- 0
+  for (i in seq_along(n_core)) {
+    grp[i] <- g
+    acc <- acc + n_core[i]
+    if (acc >= n_min && i < length(n_core)) {
+      g <- g + 1L
+      acc <- 0
+    }
+  }
+  if (acc < n_min && g > 1L) grp[grp == g] <- g - 1L
+  vapply(grp, function(k) {
+    m <- order_levels[grp == k]
+    if (length(m) == 1L) m else paste0(m[1], "-", m[length(m)])
+  }, character(1))
+}
+mb_dir <- c(cw_only = "removed", mad_only = "added")
+if (length(model_only) > 0L) {
+  uhc <- loaded$user_habitat_classification
+  thr_base <- utils::read.csv(cfgs[[base_variant]]$files$parameters_habitat_thresholds$path)
+  mb <- list()
+  mseg <- list()
+  for (v in model_only) {
+    sp <- variants$species_code[variants$variant == v]
+    w_sp <- roles$watershed_group_code[roles$species_code == sp]
+    if (length(w_sp) == 0L) {
+      say("%s: no focal WSG for %s, not compared", v, sp)
+      next
+    }
+    # A user_habitat_classification reach is habitat under both models, so it
+    # would sit in the core; stop rather than score a biased core.
+    if (!is.null(uhc) && any(uhc$species_code == sp &
+                             (uhc$spawning %in% 1 | uhc$rearing %in% 1))) {
+      stop("user_habitat_classification reaches for ", sp, " would sit in the ",
+           "core of ", v, call. = FALSE)
+    }
+    sch_pair <- schema_of(c(base_variant, v))
+    for (fl in c("spawning", "rearing")) {
+      for (st in stages) {
+        b <- lnk_habitat_validate_band(
+          conn, aoi = w_sp, species = sp, flag = fl,
+          schema = schema_of(v), schema_ref = schema_of(base_variant),
+          observations = obs_base, stage = st, schema_core = sch_pair)
+        b$n_absence_band <- NA_integer_
+        if (!is.null(abs_obs) && identical(st, "any")) {
+          ab <- lnk_habitat_validate_band(
+            conn, aoi = w_sp, species = sp, flag = fl,
+            schema = schema_of(v), schema_ref = schema_of(base_variant),
+            observations = abs_obs, stage = "any", schema_core = sch_pair)
+          b$n_absence_band <- ifelse(
+            b$watershed_group_code %in% attr(absences, "covered"),
+            ab$n_band, NA_integer_)
+        }
+        mb[[length(mb) + 1L]] <- cbind(data.frame(variant = v), b)
+      }
+      # Per segment of the base network: core, cw-only or mad-only, its
+      # stream-order class, and why the other model leaves it out (reported
+      # only): no discharge or no width, outside that model's size range, or
+      # inside it (so connectivity or clustering dropped it). The band
+      # function above counts the same rows; that is checked below.
+      pre <- if (identical(fl, "spawning")) "spawn" else "rear"
+      t_sp <- thr_base[thr_base$species_code == sp, ]
+      d <- dbGetQuery(conn, sprintf(
+        "SELECT s.watershed_group_code, s.id_segment, s.length_metre,
+                s.stream_order,
+                CASE WHEN coalesce(b.%4$s, false) AND coalesce(m.%4$s, false)
+                       THEN 'core'
+                     WHEN coalesce(b.%4$s, false) THEN 'cw_only'
+                     WHEN coalesce(m.%4$s, false) THEN 'mad_only' END AS class,
+                CASE WHEN coalesce(b.%4$s, false) AND NOT coalesce(m.%4$s, false)
+                       THEN CASE WHEN q.mad_m3s IS NULL THEN 'mad_null'
+                                 WHEN q.mad_m3s < $2 OR q.mad_m3s > $3
+                                   THEN 'outside_mad_range'
+                                 ELSE 'in_mad_range' END
+                     WHEN coalesce(m.%4$s, false) AND NOT coalesce(b.%4$s, false)
+                       THEN CASE WHEN s.channel_width IS NULL THEN 'width_null'
+                                 WHEN s.channel_width < $4 OR s.channel_width > $5
+                                   THEN 'outside_width_range'
+                                 ELSE 'in_width_range' END END AS reason
+           FROM %1$s.streams s
+           LEFT JOIN %1$s.streams_habitat_%3$s b
+             ON b.id_segment = s.id_segment
+            AND b.watershed_group_code = s.watershed_group_code
+           LEFT JOIN %2$s.streams_habitat_%3$s m
+             ON m.id_segment = s.id_segment
+            AND m.watershed_group_code = s.watershed_group_code
+           LEFT JOIN %5$s q ON q.linear_feature_id = s.linear_feature_id
+          WHERE s.watershed_group_code = ANY($1)",
+        schema_of(base_variant), schema_of(v), tolower(sp), fl,
+        .lnk_hv_discharge_tbl()),
+        params = list(paste0("{", paste(w_sp, collapse = ","), "}"),
+                      t_sp[[paste0(pre, "_mad_min")]],
+                      t_sp[[paste0(pre, "_mad_max")]],
+                      t_sp[[paste0(pre, "_channel_width_min")]],
+                      t_sp[[paste0(pre, "_channel_width_max")]]))
+      d <- d[!is.na(d$class), ]
+      if (nrow(d) == 0L) next
+      o <- obs_base[obs_base$species_code == sp & !is.na(obs_base$id_segment) &
+                      obs_base$watershed_group_code %in% w_sp, ]
+      for (st in stages) {
+        os <- switch(st, any = o, spawn = o[o$is_spawn %in% TRUE, ],
+                     rear = o[o$is_rear %in% TRUE, ])
+        n_seg <- table(paste(os$watershed_group_code, os$id_segment))
+        n <- as.integer(n_seg[paste(d$watershed_group_code, d$id_segment)])
+        n[is.na(n)] <- 0L
+        mseg[[length(mseg) + 1L]] <- data.frame(
+          variant = v, species_code = sp, flag = fl, stage = st,
+          watershed_group_code = d$watershed_group_code, class = d$class,
+          order_class = order_class(d$stream_order),
+          reason = ifelse(is.na(d$reason), "", d$reason),
+          km = d$length_metre / 1000, n = n)
+      }
+    }
+  }
+  mb <- do.call(rbind, mb)
+  mb$role <- roles$role[match(paste(mb$watershed_group_code, mb$species_code),
+                              paste(roles$watershed_group_code,
+                                    roles$species_code))]
+  utils::write.csv(mb, file.path(dir_out, "model_bands.csv"), row.names = FALSE,
+                   na = "")
+  key_s <- c("variant", "species_code", "flag", "stage", "role")
+  key_m <- c(key_s, "direction")
+  mp <- stats::aggregate(mb[c("band_km", "n_band", "core_km", "n_core")],
+                         mb[key_m], sum)
+  mp <- cbind(mp, .lnk_hvb_density(mp$n_band, mp$band_km, mp$n_core,
+                                   mp$core_km))
+  mp <- mp[do.call(order, mp[key_m]), ]
+  utils::write.csv(mp, file.path(dir_out, "model_bands_pooled.csv"),
+                   row.names = FALSE, na = "")
+
+  mseg <- do.call(rbind, mseg)
+  mseg$role <- roles$role[match(paste(mseg$watershed_group_code,
+                                      mseg$species_code),
+                                paste(roles$watershed_group_code,
+                                      roles$species_code))]
+  ks <- function(d) do.call(paste, d[key_s])
+  # One fact derived twice: the per-segment split must reproduce the band
+  # function's pooled band and core km and counts, both ways, or the size
+  # adjustment reads other rows than the bands.
+  tot <- stats::aggregate(mseg[c("km", "n")], mseg[c(key_s, "class")], sum)
+  for (k in seq_len(nrow(mp))) {
+    r <- mp[k, ]
+    cls <- names(mb_dir)[mb_dir == r$direction]
+    t_b <- tot[ks(tot) == ks(r) & tot$class == cls, ]
+    t_c <- tot[ks(tot) == ks(r) & tot$class == "core", ]
+    km_b <- sum(t_b$km); n_b <- sum(t_b$n)
+    km_c <- sum(t_c$km); n_c <- sum(t_c$n)
+    if (abs(km_b - r$band_km) > 1e-6 || n_b != r$n_band ||
+        abs(km_c - r$core_km) > 1e-6 || n_c != r$n_core) {
+      stop("the per-segment split does not reproduce model_bands_pooled.csv ",
+           "for ", ks(r), " ", r$direction, call. = FALSE)
+    }
+  }
+
+  # Rates per stream-order class, pooled per role (sums, never averages of
+  # segment rates), and the rate each class is priced at: its rate group's
+  # (order_groups()), or the core's pooled rate for `unknown` short of n_min.
+  ms <- stats::aggregate(mseg[c("km", "n")],
+                         mseg[c(key_s, "class", "order_class")], sum)
+  ms$per_100km <- ifelse(ms$km > 0, 100 * ms$n / ms$km, NA_real_)
+  ms$rate_group <- NA_character_
+  ms$core_per_100km_used <- NA_real_
+  for (k in unique(ks(ms))) {
+    core <- ms[ks(ms) == k & ms$class == "core", ]
+    pooled_rate <- if (sum(core$km) > 0) 100 * sum(core$n) / sum(core$km) else NA_real_
+    km_o <- core$km[match(order_levels, core$order_class)]
+    n_o <- core$n[match(order_levels, core$order_class)]
+    km_o[is.na(km_o)] <- 0
+    n_o[is.na(n_o)] <- 0
+    grp <- order_groups(n_o)
+    rate_o <- vapply(grp, function(g) {
+      km_g <- sum(km_o[grp == g])
+      if (km_g > 0) 100 * sum(n_o[grp == g]) / km_g else pooled_rate
+    }, numeric(1))
+    i <- which(ks(ms) == k)
+    j <- match(ms$order_class[i], order_levels)
+    ms$rate_group[i] <- ifelse(is.na(j), "pooled", grp[j])
+    ms$core_per_100km_used[i] <- ifelse(is.na(j), pooled_rate, rate_o[j])
+    unk <- core[core$order_class == "unknown", ]
+    if (nrow(unk) == 1L && unk$n >= n_min && unk$km > 0) {
+      u <- i[ms$order_class[i] == "unknown"]
+      ms$rate_group[u] <- "unknown"
+      ms$core_per_100km_used[u] <- 100 * unk$n / unk$km
+    }
+  }
+  ms$ratio_to_core <- ifelse(!is.na(ms$core_per_100km_used) &
+                               ms$core_per_100km_used > 0,
+                             ms$per_100km / ms$core_per_100km_used, NA_real_)
+  ms <- ms[do.call(order, ms[c(key_s, "class", "order_class")]), ]
+  utils::write.csv(ms, file.path(dir_out, "model_size.csv"), row.names = FALSE,
+                   na = "")
+  # Why the other model leaves each band segment out (reported only).
+  mr <- stats::aggregate(mseg[mseg$class != "core", c("km", "n")],
+                         mseg[mseg$class != "core", c(key_s, "class", "reason")],
+                         sum)
+  mr <- mr[do.call(order, mr[c(key_s, "class", "reason")]), ]
+  utils::write.csv(mr, file.path(dir_out, "model_reason.csv"), row.names = FALSE,
+                   na = "")
+
+  # The rule: per band, expected = sum over order classes of band km x the
+  # rate its class is priced at; habitat when expected >= n_min and found /
+  # expected >= ratio_min (of record). Beside it, the #302 reading (expected
+  # at the pooled core rate) and the found count.
+  eb <- ms[ms$class != "core", ]
+  eb$expected <- eb$km * eb$core_per_100km_used / 100
+  eb$km_merged_rate <- ifelse(grepl("-", eb$rate_group), eb$km, 0)
+  eb$km_pooled_rate <- ifelse(eb$rate_group == "pooled", eb$km, 0)
+  mv <- stats::aggregate(eb[c("expected", "km_merged_rate", "km_pooled_rate")],
+                         eb[c(key_s, "class")], sum)
+  mv$direction <- unname(mb_dir[mv$class])
+  mv <- merge(mp, mv[c(key_s, "direction", "class", "expected",
+                       "km_merged_rate", "km_pooled_rate")],
+              by = key_m, all.x = TRUE)
+  miss <- is.na(mv$class)
+  mv$class[miss] <- names(mb_dir)[match(mv$direction[miss], mb_dir)]
+  for (k in c("expected", "km_merged_rate", "km_pooled_rate")) {
+    mv[[k]][miss] <- 0
+  }
+  decide <- function(expected, ratio) {
+    ifelse(is.na(expected) | expected < n_min, "underpowered",
+           ifelse(!is.na(ratio) & ratio >= ratio_min, "habitat", "not habitat"))
+  }
+  mv$ratio_size_adjusted <- ifelse(mv$expected > 0, mv$n_band / mv$expected,
+                                   NA_real_)
+  mv$decision_size_adjusted <- decide(mv$expected, mv$ratio_size_adjusted)
+  mv$n_expected_pooled <- mv$density_core * mv$band_km
+  mv$decision_pooled <- decide(mv$n_expected_pooled, mv$density_ratio)
+  mv$decision_found_floor <- ifelse(
+    mv$n_band < n_min, "underpowered",
+    ifelse(!is.na(mv$density_ratio) & mv$density_ratio >= ratio_min, "habitat",
+           "not habitat"))
+  mv$of_record <- mv$role %in% "held_out" & mv$stage == "any"
+  # The two bands of a variant x flag read together (the research doc's
+  # table); an underpowered band leaves only its own half open.
+  reading_of <- function(cw, mad) {
+    if (cw == "underpowered" && mad == "underpowered") return("open")
+    if (cw == "underpowered") return(paste0("mad-only ", mad, "; cw-only open"))
+    if (mad == "underpowered") return(paste0("cw-only ", cw, "; mad-only open"))
+    if (cw == "habitat" && mad != "habitat") return("cw closer")
+    if (cw != "habitat" && mad == "habitat") return("mad closer")
+    if (cw == "habitat") return("each misses habitat the other finds")
+    "the models differ only on little-used water"
+  }
+  mv$reading <- NA_character_
+  rd <- mv[mv$of_record, ]
+  for (k in unique(paste(rd$variant, rd$flag))) {
+    r <- rd[paste(rd$variant, rd$flag) == k, ]
+    cw <- r$decision_size_adjusted[r$class == "cw_only"]
+    mad <- r$decision_size_adjusted[r$class == "mad_only"]
+    if (length(cw) != 1L || length(mad) != 1L) next
+    mv$reading[mv$of_record & paste(mv$variant, mv$flag) == k] <-
+      reading_of(cw, mad)
+  }
+  mv <- mv[do.call(order, mv[c(key_s, "class")]), ]
+  utils::write.csv(mv, file.path(dir_out, "model_verdict.csv"),
+                   row.names = FALSE, na = "")
+}
+
+if (sum(!is.na(variants$column)) == 0L) {
+  # Model-only variants and no ladder: nothing below applies.
+  write_stamp()
+  dbDisconnect(conn)
+  say("wrote %s", dir_out)
+  quit(save = "no")
+}
+
 # -- bands, per ladder step ------------------------------------------------------------------
 num <- function(x) as.numeric(x)
 thr_default <- utils::read.csv(
@@ -486,7 +874,6 @@ if (!is.null(uhc)) {
     }
   }
 }
-stages <- c("any", "spawn", "rear")
 bands <- list()
 for (k in seq_len(nrow(steps))) {
   s <- steps[k, ]
@@ -865,41 +1252,6 @@ if (length(bridge) > 0L) {
                    row.names = FALSE, na = "")
 }
 
-# -- stamp -------------------------------------------------------------------------------------
-fresh_sha <- .lnk_pkg_git_sha("fresh")
-writeLines(c(
-  sprintf("date: %s", format(Sys.time(), "%Y-%m-%d %H:%M %Z")),
-  sprintf("link: %s @ %s%s (at launch)", utils::packageVersion("link"),
-          head_sha, if (dirty) " (dirty)" else ""),
-  sprintf("fresh: %s @ %s", utils::packageVersion("fresh"),
-          if (is.na(fresh_sha)) "no recorded sha" else fresh_sha),
-  "db: docker fwapg localhost:5432",
-  sprintf("variants: %s (md5 %s): %s", path_variants,
-          unname(tools::md5sum(path_variants)),
-          paste(variants$variant, collapse = ",")),
-  sprintf("roles: %s (md5 %s)", path_roles, unname(tools::md5sum(path_roles))),
-  # The build this score verified (built.csv rows for the scored WSGs).
-  vapply(variants$variant, function(v) {
-    b <- built[built$variant == v & built$watershed_group_code %in% focal, ]
-    sprintf("built %s: thresholds sha256 %s; link %s%s; %d WSGs, %s to %s", v,
-            substr(b$thresholds_sha256[1], 1, 12),
-            paste(unique(b$link_head), collapse = ","),
-            if (any(b$dirty %in% "TRUE")) " (dirty)" else "", nrow(b),
-            min(b$built_at), max(b$built_at))
-  }, character(1)),
-  sprintf("focal: %s; species: %s; buffers: %s m",
-          paste(focal, collapse = ","), paste(species, collapse = ","),
-          paste(buffers, collapse = ",")),
-  sprintf("rule: n_band >= %d and density_ratio >= %s on held-out WSGs; floor of record: %s",
-          n_min, ratio_min, floor_of_record),
-  sprintf("pooling: %s", pool$note),
-  sprintf("bcfishobs.observations rows: %s",
-          dbGetQuery(conn, "SELECT count(*) FROM bcfishobs.observations")[[1]]),
-  if (!is.null(abs_note)) sprintf("absences: none (%s)", abs_note) else
-  if (is.null(absences)) "absences: none (LNK_KNOWLEDGE_DIR unset)" else
-    sprintf("absences: FISS snapshots %s; knowledge @ %s",
-            paste(attr(absences, "covered"), collapse = ","),
-            attr(absences, "knowledge_sha"))),
-  file.path(dir_out, "stamp_score.txt"))
+write_stamp()
 dbDisconnect(conn)
 say("wrote %s", dir_out)
