@@ -903,3 +903,87 @@ them** (`model_reason.csv`, `model_size.csv`):
   discharge on edge type 1250). Without one, every species loses its most-used water on
   those reaches. The province-wide per-segment discharge estimate in the `wet` package is
   the natural source.
+
+### Filling discharge on river-polygon main stems (#305)
+
+**Verified:** 2026-10-06 · **Produced by:** `data-raw/discharge_fill_count.R` →
+`data-raw/logs/discharge_fill_305/`, measuring the shipping SQL (`R/lnk_discharge.R`).
+
+#300 found that `mad`'s most-used loss is edge type 1250 (main flow through double-line
+river polygons) with no discharge. The fill is a bundle knob, `pipeline: discharge_fill`,
+set in `default_tuned` only. With it, an edge 1250 line with no value takes, in order:
+
+1. **`fill_upstream`**: the nearest valued line upstream on its own `blue_line_key`. Any
+   edge type and any WSG qualify; the line itself never does. Discharge grows downstream,
+   so this is a lower bound.
+2. **`fill_downstream`**: else the nearest valued line downstream on the same line, an
+   upper bound.
+3. **`fill_tributary_max`**: else the largest value on any line upstream of it
+   (`fwa_upstream()`), never its own `blue_line_key`. This is a lower bound, and it
+   reaches a river that has no value anywhere.
+
+The receiving river downstream is never used. The Beatton would take the Peace, orders of
+magnitude larger. Other edge types are not filled.
+
+Two gates decide where the fill runs at all:
+- **Only in groups the table covers** (any valued row). Without that, in a group with no
+  discharge, a stray headwater line upstream would give the Skeena's order-9 mouth in
+  LSKE 0.003 m³/s (round-2 review). "No discharge" would then read as "below the
+  minimum".
+- **Only for groups that read discharge**: on `mad` in the bundle's method table, or under
+  a rule-level `mad:`. An all-`cw` run of `default_tuned` fills nothing.
+
+A lower bound is safe against a MAD minimum: a filled value that clears it means the true
+one does. That is the test that matters for BT, GR and RB, whose maxima are open. It is
+not safe against a finite maximum: `default_tuned` rearing for CH (100 m³/s), CO (40), ST
+(60) and WCT (40), and WCT spawning (59.15). A filled main stem above one of those could
+be admitted. No group is on `mad` for those species.
+
+**The gap, in the 123 WSGs with any discharge** (`coverage_edge.csv`):
+- Edge 1250 is 28,122 km, of which 6,243 km (22 %) has no value. The issue's "most" holds
+  only province-wide, where the uncovered groups count.
+- 4,152 km of it is rows absent from the table and 2,091 km is rows with a NULL value.
+  Almost all of it is order 4+.
+- Every edge 1250 line sits in a waterbody fundamental watershed, and the absent ones
+  mostly do have a watershed in `fwa_streams_watersheds_lut` (4,098 of 4,152 km;
+  `root_cause.csv`). So the loss is downstream of the lookup, in fwapg's per-watershed
+  discharge step (`extras/discharge`). Those intermediate tables are not in the local
+  DB, and which step drops them is not established.
+- Edge 1000 NULLs (~9 % in every order) are rows with a NULL value on lines with no value
+  anywhere. They are out of scope.
+
+**Reach** (`reach.csv`):
+- Of the 4,152 km of absent edge 1250 rows, the fill reaches all but 4.8 km: 3,407 km by
+  `fill_upstream`, most of it from more than 10 km away, and the rest through the
+  tributary tier.
+- Of the 2,091 km of NULL-value rows, only 223 km is reached (`fill_downstream`). The
+  other 1,862 km, in 12 northern groups, sits on lines whose tributaries are NULL too:
+  the discharge layer has nothing to offer there.
+
+**Accuracy** (`accuracy.csv`, `accuracy_min.csv`):
+- **Masking one valued line at a time says little.** Its neighbour usually shares its
+  fundamental watershed: median error 0.01 %, P90 1.6 %.
+- **Long gaps.** Taking the first valued line at least 10 km upstream instead (1-in-50
+  sample, 1,249 lines):
+  - median error −26 % and P90 77 %, under in 93 % of lines;
+  - against every species' MAD minimum it never admits a line the true value would
+    refuse (0 km gained);
+  - it refuses a line the true value would admit on 7.7 km of 399 for BT and 40 km of
+    375 for GR.
+- **Tributary tier.** Median −1.6 %, P90 72 %. It is under in 64 % of lines and over in
+  13 %, so it is mostly a lower bound but not always. It wrongly admits 0.56 km of 385 at
+  GR's minimum, and nothing for BT or RB.
+
+**On #300's held-out `cw`-only bands** (`band_reach.csv`, BT rearing):
+- All 433 km of its edge 1250 water with no discharge is filled, and all of it clears
+  BT's minimum. 103 km comes from `fill_upstream`.
+- 330 km is the Beatton River in UBTN, which has no row anywhere along its line, filled
+  by the tributary tier.
+- GR's 330 km of Beatton clears GR's 0.97 minimum on 193 km. Its upper reaches take
+  small tributaries' values.
+- What stays NULL is the 71 km of non-1250 water (BT rearing): edge 1000/1100 lines with
+  no value anywhere.
+
+**Not filled on purpose.** The #302 calibration scripts (`query_habitat_thresholds_mad.R`,
+`_fiss.R`) read the raw table. The ranges were set with NULL locations excluded, and a
+filled main stem would add locations the calibration never saw.

@@ -413,6 +413,10 @@ record_built <- function(v, w) {
     method_sha256 = digest::digest(
       file = cfgs[[v]]$files$parameters_habitat_method$path,
       algo = "sha256"),
+    # The discharge the variant classified on (#305): run_variant() refills
+    # the working streams to the fill the bundle applies to w before
+    # classify.
+    discharge_fill = .lnk_discharge_fill_applied(cfgs[[v]], w),
     link_head = head_sha, dirty = length(dirty) > 0L,
     built_at = format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z"))
   old <- if (file.exists(path_built)) {
@@ -424,8 +428,12 @@ record_built <- function(v, w) {
   # all built on default's method table, which is not recorded, so NA.
   if (!is.null(old) && !"method_sha256" %in% names(old)) {
     old$method_sha256 <- NA_character_
-    old <- old[names(row)]
   }
+  # Nor, before link#305, a fill column: those schemas were built raw.
+  if (!is.null(old) && !"discharge_fill" %in% names(old)) {
+    old$discharge_fill <- "FALSE"
+  }
+  if (!is.null(old)) old <- old[names(row)]
   keep <- !(old$variant == v & old$watershed_group_code == w)
   utils::write.csv(rbind(old[keep, , drop = FALSE], row), path_built,
                    row.names = FALSE)
@@ -599,6 +607,11 @@ run_variant <- function(v) {
     if (!dbExistsTable(conn, Id(schema = working_of(w), table = "streams"))) {
       stop(working_of(w), " is gone: run --step=base first", call. = FALSE)
     }
+    # The working streams carry the discharge of whichever bundle last
+    # touched them; set it to this variant's fill (#305) before classify, so
+    # a base built on one fill state can score variants on the other.
+    .lnk_discharge_join(conn, paste0(working_of(w), ".streams"), w,
+                        fill = .lnk_discharge_fill_applied(cfg, w))
     # A `mad` variant classifies on the discharge prepare joined onto the
     # working streams (#286). A working schema built before that join, or a
     # WSG with no discharge, would classify every inheriting stream rule

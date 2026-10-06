@@ -49,3 +49,7 @@ on `linear_feature_id`. "Covered" = a WSG with any non-NULL `mad_m3s` (123 WSGs)
 | Error | Resolution |
 |-------|------------|
 | `round(double precision, integer) does not exist` | cast to `::numeric` before `round(, n)` |
+| candidates query counted 2.4M "1250" lines | the builder returns every line (the fill coalesces over all); filter `edge_type = 1250` in the measurement |
+| `operator does not exist: bigint %% integer` | a `%%` written for sprintf reached SQL as an argument, not a template: single `%` |
+| `aggregate()` dropped the tributary tier from reach.csv | NA group value; set `gap_class` "" (code-check R1) |
+| `frs_col_join()` with a subquery `from` types columns `text` | prepare adds `mad_m3s double precision` itself (plan review B1) |

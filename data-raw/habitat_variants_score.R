@@ -58,6 +58,9 @@
 #                     each class is priced at
 #   model_reason.csv  why the other model leaves each band out (no discharge or
 #                     width, outside its size range, or inside it)
+#   model_fill.csv    model_reason split by mad_m3s_source: the discharge
+#                     table's own value, a fill tier, or none (link#305). A
+#                     variant's fill is the one built.csv records for it.
 #   model_verdict.csv the #300 rule: size-adjusted (of record), beside the
 #                     unadjusted ratio and the found count
 #   stamp_score.txt   environment stamp
@@ -215,7 +218,8 @@ outputs <- c("summary.csv", "totals.csv", "bands.csv", "bands_pooled.csv",
              "verdict.csv", "bridge_band.csv", "taper.csv", "elevation.csv",
              "elevation_adjusted.csv", "habitat_change.csv",
              "model_bands.csv", "model_bands_pooled.csv", "model_size.csv",
-             "model_reason.csv", "model_verdict.csv", "stamp_score.txt")
+             "model_reason.csv", "model_fill.csv", "model_verdict.csv",
+             "stamp_score.txt")
 unlink(file.path(dir_out, outputs))
 
 # Taken at launch: the code that runs is the code at the start.
@@ -297,6 +301,22 @@ for (v in variants$variant) {
     stop("the method table for ", v, " is not the one every scored WSG of ",
          schema_of(v), " was built from", call. = FALSE)
   }
+  # The discharge a variant was classified on (#305): built.csv records the
+  # fill per variant x WSG, and a row from before the fill was recorded was
+  # built on the raw table. The bundle's own knob is not what classify read:
+  # #300's bundles extend default_tuned, which fills now, but their schemas
+  # were built raw. So the score (validator and model_reason) takes the
+  # recorded state, which must be one per variant.
+  fill_built <- if ("discharge_fill" %in% names(b)) {
+    b$discharge_fill %in% "TRUE"
+  } else {
+    rep(FALSE, nrow(b))
+  }
+  if (length(unique(fill_built)) != 1L) {
+    stop(path_built, " records ", v, " with discharge filled in some WSGs ",
+         "and not others", call. = FALSE)
+  }
+  cfgs[[v]]$pipeline$discharge_fill <- fill_built[1]
   if (identical(v, base_variant)) next
   r <- variants[variants$variant == v, ]
   thr <- utils::read.csv(path_thr, colClasses = "character")
@@ -596,7 +616,7 @@ if (length(model_only) > 0L) {
       t_sp <- thr_base[thr_base$species_code == sp, ]
       d <- dbGetQuery(conn, sprintf(
         "SELECT s.watershed_group_code, s.id_segment, s.length_metre,
-                s.stream_order,
+                s.stream_order, q.mad_m3s_source,
                 CASE WHEN coalesce(b.%4$s, false) AND coalesce(m.%4$s, false)
                        THEN 'core'
                      WHEN coalesce(b.%4$s, false) THEN 'cw_only'
@@ -621,7 +641,9 @@ if (length(model_only) > 0L) {
            LEFT JOIN %5$s q ON q.linear_feature_id = s.linear_feature_id
           WHERE s.watershed_group_code = ANY($1)",
         schema_of(base_variant), schema_of(v), tolower(sp), fl,
-        .lnk_hv_discharge_tbl()),
+        # The discharge the variant classified on (built.csv, #305).
+        .lnk_discharge_sql(w_sp, fill = .lnk_discharge_fill_applied(cfgs[[v]],
+                                                                    w_sp))),
         params = list(paste0("{", paste(w_sp, collapse = ","), "}"),
                       t_sp[[paste0(pre, "_mad_min")]],
                       t_sp[[paste0(pre, "_mad_max")]],
@@ -642,6 +664,8 @@ if (length(model_only) > 0L) {
           watershed_group_code = d$watershed_group_code, class = d$class,
           order_class = order_class(d$stream_order),
           reason = ifelse(is.na(d$reason), "", d$reason),
+          mad_m3s_source = ifelse(is.na(d$mad_m3s_source), "",
+                                  d$mad_m3s_source),
           km = d$length_metre / 1000, n = n)
       }
     }
@@ -729,6 +753,15 @@ if (length(model_only) > 0L) {
                          sum)
   mr <- mr[do.call(order, mr[c(key_s, "class", "reason")]), ]
   utils::write.csv(mr, file.path(dir_out, "model_reason.csv"), row.names = FALSE,
+                   na = "")
+  # The same, split by where the discharge came from (#305): the table's own
+  # value, a fill tier, or none.
+  mf <- stats::aggregate(
+    mseg[mseg$class != "core", c("km", "n")],
+    mseg[mseg$class != "core", c(key_s, "class", "reason", "mad_m3s_source")],
+    sum)
+  mf <- mf[do.call(order, mf[c(key_s, "class", "reason", "mad_m3s_source")]), ]
+  utils::write.csv(mf, file.path(dir_out, "model_fill.csv"), row.names = FALSE,
                    na = "")
 
   # The rule: per band, expected = sum over order classes of band km x the

@@ -9,8 +9,10 @@ description: |
   annual discharge ranges for the species default leaves without one (BT, GR
   and RB spawning and rearing, KO spawning; maxima open), so a group put on
   the `mad` model keeps stream habitat for them (less rearing than `cw` gives;
-  see the research doc); they move no output while every group is on `cw`. Evidence, and the values examined and kept, are in
-  research/habitat_thresholds.md.
+  see the research doc); they move no output while every group is on `cw`. From
+  link#305 it fills discharge on river-polygon main stems that have none
+  (`pipeline: discharge_fill`), also read only by `mad` groups. Evidence, and
+  the values examined and kept, are in research/habitat_thresholds.md.
 
 extends: default
 
@@ -20,6 +22,15 @@ files:
 
 pipeline:
   schema: fresh_default_tuned
+  # discharge_fill — edge 1250 lines (main flow through double-line river
+  # polygons) with no value in fwa_stream_networks_discharge take one along
+  # the network: the nearest valued line upstream on the same blue_line_key,
+  # else downstream, else the largest value on any line upstream (link#305).
+  # Applied only to groups parameters_habitat_method puts on `mad` (or under
+  # a rule-level `mad:`), and only in groups the discharge table covers;
+  # without it those reaches fail every MAD test. Absent means false
+  # (default, bcfishpass). Logged per WSG in <schema>.log.discharge_fill.
+  discharge_fill: true
 
 provenance:
   parameters_habitat_thresholds.csv:

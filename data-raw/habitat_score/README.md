@@ -72,6 +72,19 @@ is in `research/habitat_thresholds.md`, "`cw` against `mad`".
 The inputs for #300 are `variants_300.csv` and `wsg_roles_300.csv` (#302's roles plus KO,
 in-sample only).
 
+**Discharge fill (#305).** The discharge a variant was classified on is the one its bundle
+fills (`pipeline: discharge_fill`). Before each variant classifies, the build rewrites
+`mad_m3s` on the working streams to that state, and `built.csv` records it per variant ×
+WSG. A row from before #305 has no column and was built raw. The score takes each
+variant's fill from `built.csv`, not from its bundle, and stops when a variant's rows
+disagree. `model_fill.csv` splits `model_reason.csv` by `mad_m3s_source`. So a base built
+under one fill state can score variants under the other, without a base rebuild.
+
+`variants_305.csv` holds #300's four `mad` variants, renamed `*_fill`. They are built with
+`--step=variants --prefix=score300_` on #300's working schemas, into new variant schemas
+(#300's are kept), with #300's `base_habitat_digest.csv` copied into `--out`. The diff
+against #300 is then the fill alone, on the same segmentation.
+
 A second scoring run gets its own `--prefix`; its working networks are then
 `working_<prefix><wsg>` (#284's, under `score284_`, stay `working_score_<wsg>`).
 

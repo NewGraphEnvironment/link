@@ -750,11 +750,13 @@ local_mad_fixture <- function(conn, env = parent.frame()) {
   s
 }
 
-run_validate_mad <- function(conn, s, method = "watershed_group_code,model\nAAAA,mad") {
+run_validate_mad <- function(conn, s, method = "watershed_group_code,model\nAAAA,mad",
+                             fill = FALSE) {
   csv <- withr::local_tempfile(fileext = ".csv", .local_envir = parent.frame())
   writeLines(method, csv)
   cfg <- lnk_config("default")
   cfg$files$parameters_habitat_method <- list(path = csv)
+  cfg$pipeline$discharge_fill <- fill
   loaded <- validate_loaded()
   loaded$wsg_species_presence$co <- c("t", "")
   lnk_habitat_validate(conn, aoi = c("AAAA", "BBBB"), cfg = cfg,
@@ -814,5 +816,97 @@ test_that("the same fixture on cw keeps the cw reasons and reports no discharge 
   expect_identical(o("o2")$miss_reason_spawn, "post_predicate")
   expect_false(any(c(obs$miss_reason_spawn, obs$miss_reason_rear) %in%
                      "no_mad_threshold"))
+})
+test_that("a mad group is scored on the discharge fill it was built with (#305)", {
+  conn <- validate_conn()
+  s <- local_mad_fixture(conn)
+  DBI::dbExecute(conn, sprintf(
+    "CREATE TABLE %s.log (watershed_group_code text, config_name text,
+                         date_start timestamptz, discharge_fill boolean)", s))
+  DBI::dbExecute(conn, sprintf(
+    "INSERT INTO %s.log VALUES ('AAAA', 'default', '2026-01-01', NULL),
+                               ('BBBB', 'default', '2026-01-01', NULL)", s))
+  # Logged before the fill existed (NULL): built raw, so a filling cfg is
+  # refused, for the mad group only (BBBB is cw: nothing applies there).
+  expect_error(run_validate_mad(conn, s, fill = TRUE),
+               "\\(logged/cfg\\): AAAA \\(off/on\\)$")
+  v <- run_validate_mad(conn, s)
+  o <- v$observations
+  expect_identical(o$mad_m3s_source[o$observation_key == "c1"], "modelled")
+  expect_true(all(is.na(o$mad_m3s_source[o$model == "cw"])))
+
+  DBI::dbExecute(conn, sprintf(
+    "UPDATE %s.log SET discharge_fill = true
+      WHERE watershed_group_code = 'AAAA'", s))
+  expect_error(run_validate_mad(conn, s), "AAAA \\(on/off\\)$")
+  # Built filled and scored filled: c1's valued line is unchanged, and c2's
+  # NULL line reads exactly what the builder (prepare's source) gives it.
+  f <- run_validate_mad(conn, s, fill = TRUE)$observations
+  expect_identical(f$mad_m3s[f$observation_key == "c1"],
+                   o$mad_m3s[o$observation_key == "c1"])
+  expect_identical(f$mad_m3s_source[f$observation_key == "c1"], "modelled")
+  want <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT d.mad_m3s, d.mad_m3s_source FROM %s d", link:::.lnk_discharge_sql(
+      fill = TRUE, lines = sprintf(
+        "SELECT linear_feature_id FROM %s.streams
+          WHERE watershed_group_code = 'AAAA' AND id_segment = 1", s))))
+  expect_identical(nrow(want), 1L)
+  expect_identical(f$mad_m3s[f$observation_key == "c2"], want$mad_m3s)
+  expect_identical(f$mad_m3s_source[f$observation_key == "c2"],
+                   want$mad_m3s_source)
+  # Unfilled, it was missing (c2 above reads width_null on the raw table).
+  expect_true(is.na(o$mad_m3s[o$observation_key == "c2"]))
+})
+test_that("a mixed aoi fills only the groups the fill applies to (#305)", {
+  conn <- validate_conn()
+  s <- local_mad_fixture(conn)
+  csv <- withr::local_tempfile(fileext = ".csv")
+  cfg <- lnk_config("default")
+  cfg$pipeline$discharge_fill <- TRUE
+  cfg$files$parameters_habitat_method <- list(path = csv)
+  # Point AAAA's segment 1 at an edge 1250 line the fill reaches: absent from
+  # the table, in a covered group, with a valued line upstream on its line.
+  lf <- DBI::dbGetQuery(conn,
+    "SELECT s.linear_feature_id
+       FROM whse_basemapping.fwa_stream_networks_sp s
+       LEFT JOIN whse_basemapping.fwa_stream_networks_discharge d
+         ON d.linear_feature_id = s.linear_feature_id
+      WHERE s.edge_type = 1250 AND d.linear_feature_id IS NULL
+        AND s.watershed_group_code IN (
+          SELECT watershed_group_code
+            FROM whse_basemapping.fwa_stream_networks_discharge
+           WHERE mad_m3s IS NOT NULL)
+        AND EXISTS (
+          SELECT 1 FROM whse_basemapping.fwa_stream_networks_sp s2
+            JOIN whse_basemapping.fwa_stream_networks_discharge d2
+              ON d2.linear_feature_id = s2.linear_feature_id
+           WHERE s2.blue_line_key = s.blue_line_key
+             AND s2.downstream_route_measure > s.downstream_route_measure
+             AND d2.mad_m3s IS NOT NULL)
+      ORDER BY s.linear_feature_id LIMIT 1")[[1]]
+  skip_if(length(lf) == 0L, "no fillable edge 1250 line")
+  DBI::dbExecute(conn, sprintf(
+    "UPDATE %s.streams SET linear_feature_id = %s
+      WHERE watershed_group_code = 'AAAA' AND id_segment = 1", s,
+    format(lf, scientific = FALSE)))
+  want <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT mad_m3s, mad_m3s_source FROM %s d",
+    link:::.lnk_discharge_sql(fill = TRUE, lines = format(lf, scientific = FALSE))))
+  expect_identical(want$mad_m3s_source, "fill_upstream")
+  read_lf <- function() {
+    DBI::dbGetQuery(conn, sprintf(
+      "SELECT mad_m3s, mad_m3s_source FROM %s d WHERE d.linear_feature_id = %s",
+      link:::.lnk_hv_discharge_src(conn, s, c("AAAA", "BBBB"), cfg),
+      format(lf, scientific = FALSE)))
+  }
+  # AAAA on mad: its line is filled, as prepare fills it.
+  writeLines("watershed_group_code,model\nAAAA,mad", csv)
+  expect_identical(read_lf(), want)
+  # AAAA on cw beside BBBB on mad: prepare never filled AAAA, so neither does
+  # the validator, though the call fills BBBB.
+  writeLines("watershed_group_code,model\nBBBB,mad", csv)
+  # The line is absent from the raw table, so the raw relation has no row
+  # for it: the join reads NULL, as prepare's did.
+  expect_identical(nrow(read_lf()), 0L)
 })
 # nolint end: indentation_linter

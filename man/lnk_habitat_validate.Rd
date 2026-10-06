@@ -104,8 +104,9 @@ With \code{absences}, also \code{n_absence}, \code{n_absence_accessible},
 \code{n_absence_rearing_any} (the same on every stage). \code{model} is the
 WSG's habitat model (\code{cw} or \code{mad}).
 \item \code{observations}: one row per retained location, with its segment's
-\code{gradient}, \code{channel_width}, \code{channel_width_source}, \code{mad_m3s} (on
-\code{mad} groups only, else \code{NA}), \code{edge_type}, \code{stream_order},
+\code{gradient}, \code{channel_width}, \code{channel_width_source}, \code{mad_m3s} and
+\code{mad_m3s_source} (\code{modelled} or the fill tier; on \code{mad} groups only,
+else \code{NA}), \code{edge_type}, \code{stream_order},
 \code{waterbody_type}, \code{access}, \code{model}, the capture flags,
 \code{in_uhc_spawn}, \code{in_uhc_rear}, the predicate results (\verb{pred_<stage>},
 relaxed \verb{_g}, \verb{_w}, \verb{_gw}, and on \code{mad} groups for a species with no
@@ -225,7 +226,11 @@ the WSG, resolved as \code{\link[=lnk_pipeline_classify]{lnk_pipeline_classify()
 group is \code{cw}). On \code{cw} it is the channel width; on \code{mad} it is the mean
 annual discharge \code{mad_m3s}, joined from
 \code{whse_basemapping.fwa_stream_networks_discharge} on \code{linear_feature_id}
-because the persist does not carry it. The \code{width} labels below mean
+because the persist does not carry it. When \code{cfg} fills discharge
+(\code{cfg$pipeline$discharge_fill}), it is filled as prepare filled it: edge
+1250 lines with no value take one along the network (\code{mad_m3s_source}
+says which), and a \code{mad} group logged with the other fill state is an
+error. The \code{width} labels below mean
 that size on either model; \code{model} and \code{mad_m3s} split them:
 \itemize{
 \item \code{NA} — captured; \code{no_segment} — the location attaches to no segment;

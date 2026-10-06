@@ -124,7 +124,8 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
   .lnk_pipeline_prep_natural(conn, aoi, cfg, loaded, schema)
   .lnk_pipeline_prep_overrides(conn, loaded, schema)
   .lnk_pipeline_prep_minimal(conn, aoi, cfg, loaded, schema, classes)
-  .lnk_pipeline_prep_network(conn, aoi, schema)
+  .lnk_pipeline_prep_network(conn, aoi, schema,
+                             fill = .lnk_discharge_fill_applied(cfg, aoi))
   .lnk_pipeline_prep_dams(conn, conn_tunnel, aoi, schema, loaded)
 
   invisible(conn)
@@ -669,7 +670,7 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
 #' upserts from here into the persistent `<persist_schema>.streams` after
 #' classify+connect.
 #' @noRd
-.lnk_pipeline_prep_network <- function(conn, aoi, schema) {
+.lnk_pipeline_prep_network <- function(conn, aoi, schema, fill = FALSE) {
   streams_tbl <- paste0(schema, ".streams")
   habitat_tbl <- paste0(schema, ".streams_habitat")
 
@@ -695,10 +696,9 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
   # parameters_habitat_method puts on the `mad` model (#286). Joined for
   # every group so the column is always there; fresh reads it only for
   # `mad` groups. Working table only: the persist shape does not carry it.
-  fresh::frs_col_join(conn, streams_tbl,
-    from = "whse_basemapping.fwa_stream_networks_discharge",
-    cols = "mad_m3s",
-    by = "linear_feature_id")
+  # With cfg$pipeline$discharge_fill, edge 1250 lines with no value are
+  # filled along the network (#305; .lnk_discharge_sql()).
+  .lnk_discharge_join(conn, streams_tbl, aoi, fill = fill)
 
   fresh::frs_col_join(conn, streams_tbl,
     from = "whse_basemapping.fwa_stream_networks_order_parent",
