@@ -1466,6 +1466,9 @@ Write `Rscript -e 'expr' a b`, not `Rscript -e 'expr' --args a b`.
 ### `read.delim()` quotes by default, so a `"` in a field silently swallows rows
 Read a TSV you wrote unquoted with `quote = "", na.strings = character(), comment.char = ""`.
 
+### duckdb in R: the query that autoloads `icu` binds unreliably, so `LOAD icu` before it
+Run `LOAD icu` on the connection before any query that needs it (`epoch()`, `year()`, a cast to `DATE` on a `TIMESTAMPTZ`), or use a function that needs no extension (`epoch_ms()`).
+
 # Code Check — Shell
 Tool-level traps in bash, sed, git and `gh`, and in the host toolchain those commands depend on.
 
@@ -2527,7 +2530,7 @@ would, X is not evidence.
 When the user pushes back on an inference, re-derive rather than defend. The
 conclusion often survives; the reasoning that reaches it is usually different.
 
-*5 lines of evidence for this rule are in `conventions/karpathy.md`, which `/code-check` reads in full.*
+*9 lines of evidence for this rule are in `conventions/karpathy.md`, which `/code-check` reads in full.*
 
 ### Documents that share an ancestor corroborate nothing
 
