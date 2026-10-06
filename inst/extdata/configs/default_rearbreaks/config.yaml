@@ -8,6 +8,9 @@ description: |
   to reproduce here while spawn shifts stay muted. Use against
   `fresh_default` and `fresh_default_extrabreaks` to attribute
   methodology shifts to the rear-max breaks specifically.
+  Its thresholds CSV is `default`'s as of v0.58.0, before link#307 gave
+  `default` MAD ranges for BT, GR, KO and RB, so on a group put on `mad` it
+  also differs from `default` in those cells; compare on `cw` groups only.
 
 # Non-tabular pipeline inputs (paths only)
 rules: rules.yaml

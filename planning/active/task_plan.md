@@ -20,17 +20,17 @@
   research section says why.
 
 ## Phase 2 — The cells, provenance, tests
-- [ ] Set the 7 minima (BT 0.041 / 0.021, GR 0.20 / 0.021, KO 0.041, RB 0.041 / 0.021)
+- [x] Set the 7 minima (BT 0.041 / 0.021, GR 0.20 / 0.021, KO 0.041, RB 0.041 / 0.021)
   and their 7 maxima (9999) in `inst/extdata/configs/default/parameters_habitat_thresholds.csv`.
   Keep the file's quoting and NA style byte-compatible.
-- [ ] Update `default/config.yaml` provenance:
+- [x] Update `default/config.yaml` provenance:
   - `source: link (fresh's copy plus MAD ranges converted from width minima, link#307)`;
   - keep fresh's `upstream_sha`/`version` in `derived_from`;
   - recompute `checksum` with the `lnk_config_verify` algorithm. The shape is unchanged.
-- [ ] Build `default`'s rules to a tempfile from the old and the new CSV and compare
+- [x] Build `default`'s rules to a tempfile from the old and the new CSV and compare
   them. Do not regenerate in place: the `# Generated:` date line would move the
   provenance checksum.
-- [ ] Tests:
+- [x] Tests:
   - rewrite `test-lnk_config.R:331` for the new default/tuned difference set (7 minima
     plus BT `rear_gradient_max`);
   - add a test pinning `default`'s 14 MAD cells and asserting that every `*_mad_min` set
@@ -39,7 +39,8 @@
   - give `run_validate_mad()` a `mad_none` option so the #299 end-to-end test keeps a
     species with no range;
   - add a #307 case on `default`'s own BT range (plan review, finding 1).
-- [ ] Full `devtools::test()` and fix any other fallout (each fix stated, none papered over).
+- [x] Full `devtools::test()` and fix any other fallout (each fix stated, none papered over).
+  FAIL 0 | WARN 16 | SKIP 0 | PASS 2449. The fallout was the #299 fixture test, fixed with `mad_none`.
 
 ## Phase 3 — Rebuild NATR (and ADMS as the CH/CO/SK control) and diff
 Scratch schema `zz307_natr` on local docker fwapg; nothing persisted. Main runs from a

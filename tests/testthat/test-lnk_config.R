@@ -348,21 +348,40 @@ test_that("default_tuned differs from default only in the #284 and #302 cells", 
   }))
   diffs <- diffs[order(diffs$species_code, diffs$column), ]
   rownames(diffs) <- NULL
-  # #302: MAD ranges where default has none (maxima open).
+  # #302: observed MAD minima, against default's width-converted ones (#307).
+  # Both bundles leave the maxima open, so only the minima differ.
   mad <- data.frame(
-    species_code = c(rep("BT", 4), rep("GR", 4), rep("KO", 2), rep("RB", 4)),
-    column = c("rear_mad_max", "rear_mad_min", "spawn_mad_max", "spawn_mad_min",
-               "rear_mad_max", "rear_mad_min", "spawn_mad_max", "spawn_mad_min",
-               "spawn_mad_max", "spawn_mad_min",
-               "rear_mad_max", "rear_mad_min", "spawn_mad_max", "spawn_mad_min"),
-    default = NA_real_,
-    tuned = c(9999, 0.078, 9999, 0.078, 9999, 0.97, 9999, 0.96, 9999, 0.57,
-              9999, 0.019, 9999, 0.011))
+    species_code = c(rep("BT", 2), rep("GR", 2), "KO", rep("RB", 2)),
+    column = c("rear_mad_min", "spawn_mad_min", "rear_mad_min", "spawn_mad_min",
+               "spawn_mad_min", "rear_mad_min", "spawn_mad_min"),
+    default = c(0.021, 0.041, 0.021, 0.2, 0.041, 0.021, 0.041),
+    tuned = c(0.078, 0.078, 0.97, 0.96, 0.57, 0.019, 0.011))
   want <- rbind(data.frame(species_code = "BT", column = "rear_gradient_max",
                            default = 0.1049, tuned = 0.1349), mad)
   want <- want[order(want$species_code, want$column), ]
   rownames(want) <- NULL
   expect_equal(diffs, want)
+})
+
+test_that("default's MAD ranges for BT, GR, KO and RB are its width minima converted (#307)", {
+  # Median mad_m3s at each width minimum (data-raw/query_width_mad_equivalent.R),
+  # floored to two significant figures; maxima open. KO rears in lakes only.
+  th <- utils::read.csv(lnk_config("default")$files$parameters_habitat_thresholds$path,
+                        stringsAsFactors = FALSE)
+  rownames(th) <- th$species_code
+  cols <- c("spawn_mad_min", "spawn_mad_max", "rear_mad_min", "rear_mad_max")
+  want <- data.frame(
+    spawn_mad_min = c(0.041, 0.2, 0.041, 0.041),
+    spawn_mad_max = 9999,
+    rear_mad_min = c(0.021, 0.021, NA, 0.021),
+    rear_mad_max = c(9999, 9999, NA, 9999),
+    row.names = c("BT", "GR", "KO", "RB"))
+  expect_equal(th[rownames(want), cols], want)
+  # No half-open range in any row: fresh tests BETWEEN min AND max.
+  for (st in c("spawn", "rear")) {
+    expect_identical(is.na(th[[paste0(st, "_mad_min")]]),
+                     is.na(th[[paste0(st, "_mad_max")]]), info = st)
+  }
 })
 
 test_that("inherited provenance verifies against the parent's files", {
