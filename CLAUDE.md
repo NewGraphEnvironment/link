@@ -1416,6 +1416,15 @@ Fit models in parallel on socket workers (`parallel::makeCluster()` with `parLap
 ### `c(name = x)` keeps `x`'s own name, so a value from a named vector becomes `name.X`
 Strip the name before you label it: `c(axis = unname(v[1]))` or `c(axis = v[[1]])`.
 
+### `trace(exit =)` also fires when the function raises, and `returnValue()` then has no value
+Give `returnValue()` a default and check its length: `trace(f, exit = quote(rec(returnValue(NULL))))`, then treat anything not length 1 as "no value".
+
+### `Rscript -e` supplies `--args` itself, so adding your own shifts every argument by one
+Write `Rscript -e 'expr' a b`, not `Rscript -e 'expr' --args a b`.
+
+### `read.delim()` quotes by default, so a `"` in a field silently swallows rows
+Read a TSV you wrote unquoted with `quote = "", na.strings = character(), comment.char = ""`.
+
 # Code Check — Shell
 Tool-level traps in bash, sed, git and `gh`, and in the host toolchain those commands depend on.
 
@@ -1758,6 +1767,9 @@ Coerce every field you do arithmetic on (`as.numeric(v$PROJ_AGE_1)`) right after
 
 ### The BC WFS caps an un-paged `GetFeature` at 10,000 features and still answers HTTP 200
 Hold any raw WFS read to the server's own count.
+
+### bcdata's error text does not carry a WFS failure's cause, so read it from the response
+To tell a throttle from any other bcdata failure, record the status off the request itself (wrap `crul:::crul_fetch`), not from the message.
 
 # Code Check Conventions
 Structured checklist for reviewing diffs before commit.
@@ -2515,7 +2527,7 @@ Five habits:
   sits in three documents is not fixed by repairing the one that was quoted; the other two
   still read as authoritative.
 
-*31 lines of evidence for this rule are in `conventions/karpathy.md`, which `/code-check` reads in full.*
+*39 lines of evidence for this rule are in `conventions/karpathy.md`, which `/code-check` reads in full.*
 
 ### "It can only be answered by testing" is a claim with an author
 
@@ -2659,7 +2671,7 @@ Sibling of *"An inventory is only complete relative to a boundary"* in `code-che
 step earlier: that one is about a search that was complete for the wrong scope, this is
 about never having searched the scope where the answer lived.
 
-*25 lines of evidence for this rule are in `conventions/karpathy.md`, which `/code-check` reads in full.*
+*26 lines of evidence for this rule are in `conventions/karpathy.md`, which `/code-check` reads in full.*
 
 #### The storage version: one store is not the world
 
