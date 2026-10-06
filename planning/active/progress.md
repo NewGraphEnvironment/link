@@ -22,3 +22,6 @@
   0 -> non-zero, CH/CO/SK identical on ADMS, stream invariant 0. Lake and wetland buckets
   shrink as predicted. Within default, cw vs mad agree within about 5 %. NATR has no NULL
   discharge on the modelled stream edges. `data-raw/logs/habitat_thresholds_307/README.md`.
+- Phase 4: research section, RUNBOOK §7, CLAUDE.md status, habitat_score README (#302
+  reproduces at v0.58.0 only), research README, habitat_validation, and dated qualifiers on
+  the #302 figures. NEWS deferred to the release step.

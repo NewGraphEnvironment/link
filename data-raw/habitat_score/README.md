@@ -34,7 +34,10 @@ row (below).
 ### MAD ladders (#302)
 
 A species with no MAD range has no "current value" to walk out from: under `mad` it has no
-stream habitat at all. So a MAD ladder starts with an **anchor**, a rung that steps from the
+stream habitat at all. (That was true of BT, GR, KO and RB in `default` until #307 gave it
+width-converted ranges. #302's ladders are built on `--base=default` and step each
+`*_mad_max` to 9999, which now equals the base, so the build stops with "variant … equals
+default". They regenerate at v0.58.0, `8cb4822`, and not after.) So a MAD ladder starts with an **anchor**, a rung that steps from the
 `cw` base straight to `mad` at the tightest candidate. The score marks it
 `take (anchor: model change)`, reports its bands both ways (what `mad` keeps that `cw` drops,
 and the reverse) and decides nothing with them. The walk then scores the loosening rungs

@@ -67,7 +67,7 @@ worktree at `origin/main`, the branch from a frozen copy. Logs and copied script
 - [x] `README.md` in the log directory: method, stamp, results table.
 
 ## Phase 4 — Research, docs, NEWS
-- [ ] New section in `research/habitat_thresholds.md`, "`default`'s MAD ranges, converted
+- [x] New section in `research/habitat_thresholds.md`, "`default`'s MAD ranges, converted
   from width (#307)":
   - the rule;
   - the values table (with `default_tuned`'s beside them);
@@ -78,25 +78,30 @@ worktree at `origin/main`, the branch from a frozen copy. Logs and copied script
 
   Also update the header line (Verified / Issues / Produced by) and fix the stale l.453
   and l.810 claims.
-- [ ] Update the `default_tuned` `config.yaml` description and `README.md`, RUNBOOK §7
+- [x] Update the `default_tuned` `config.yaml` description and `README.md`, RUNBOOK §7
   (~l.721), and the CLAUDE.md status (new #307 block; correct the #302 block's "the four
   species `default` leaves without one").
-- [ ] Correct the remaining stale prose: `default/README.md:26` ("identical to fresh's
+- [x] Correct the remaining stale prose: `default/README.md:26` ("identical to fresh's
   copy"), RUNBOOK l.710-711, `data-raw/habitat_score/README.md:36` (pin #302's ladders to
   v0.58.0 `8cb4822`: `--base=default` now stops with "variant equals default").
-- [ ] State a literature decision rule before the check. These are width-equivalence
+- [x] State a literature decision rule before the check. These are width-equivalence
   floors, and literature values describe typical use, so a mismatch reports but does not
   move a value. Note that RB is now stricter in `default` than in `default_tuned`.
-- [ ] State that `default_extrabreaks` and `default_rearbreaks` stay frozen on the old
+- [x] State that `default_extrabreaks` and `default_rearbreaks` stay frozen on the old
   CSV: they are cw-only segmentation experiments.
-- [ ] NEWS.md entry, including that `config_hash` moves for `default` and
-  `default_tuned` (the version bump is left to `/gh-pr-merge`).
-- [ ] `lnk_config_verify(lnk_config("default"))` and `("default_tuned")` are clean;
+- [ ] NEWS.md entry. Deferred: in this repo the release commit writes NEWS (`8cb4822`
+  "Release v0.58.0"), so the entry text, including that `config_hash` moves for `default`
+  and `default_tuned`, is carried in the PR body for `/gh-pr-merge`.
+- [x] `lnk_config_verify(lnk_config("default"))` and `("default_tuned")` are clean;
   `audit_configs.R` §3c is clean.
 
 ## Validation
-- [ ] Tests pass (`devtools::test()`), and `lintr::lint_package()` is clean on touched files.
-- [ ] `/code-check` clean on each commit.
+- [x] Tests pass (`devtools::test()`: FAIL 0 / PASS 2449). Lint on touched R files: only
+  `indentation_linter` hanging-indent notes, in the same idiom as the untouched code of
+  `test-lnk_config.R` (not restyled).
+- [x] `/code-check` on each code commit: producer, 3 rounds clean; Phase 2 plus docs, 4 rounds
+  ending in an enumeration. The data-only commits (`a6f20cc`, `f1ed481`) had no separate
+  round; `f1ed481`'s README and harness were in round 4's diff.
 - [ ] PWF checkboxes match landed work.
 - [ ] `/planning-archive` on completion, with a Measurement + Evidence archive README.
 

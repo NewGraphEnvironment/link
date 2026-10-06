@@ -53,7 +53,8 @@ that both retained the same observations.
   it), and its size relaxation moves discharge, not width. The reason labels are
   unchanged: `fails_width` / `width_null` mean "the group's size dimension", and the
   `model` and `mad_m3s` columns split them. `no_mad_threshold` is a `mad` miss the
-  species' missing MAD range alone explains (BT, GR, KO, RB have none: fresh writes
+  species' missing MAD range alone explains (BT, GR, KO and RB in `bcfishpass`; `default`
+  and `default_tuned` carry ranges for them since #307 and #302: fresh writes
   `FALSE` for the size test, which no relaxation reaches); one that needs the gradient
   relaxed too reads `fails_gradient_and_width`. MAD maxima bind (CH 100, CO 40, ST 60,
   WCT 40 m³/s rearing), so on `mad` a big-river miss also reads `fails_width`; read
