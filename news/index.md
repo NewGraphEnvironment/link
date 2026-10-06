@@ -1,5 +1,35 @@
 # Changelog
 
+## link 0.57.1
+
+**The discharge (`mad`) habitat model is scored against channel width
+(`cw`) on fish observations**
+([\#300](https://github.com/NewGraphEnvironment/link/issues/300)).
+Package code is unchanged. The work is in the scoring harness, the
+research doc and RUNBOOK §7.
+
+- **What `mad` costs.** At `default_tuned`’s ranges, on held-out groups,
+  `mad` keeps −36 % BT, −82 % GR and −4 % RB stream rearing against
+  `cw`. This is the first build of the landed ranges;
+  [\#302](https://github.com/NewGraphEnvironment/link/issues/302)’s
+  figures were lower bounds.
+- **What drives it is a gap in the discharge data, not a threshold.**
+  Most of the used water `mad` drops is river-polygon main stems (edge
+  type 1250), which carry no discharge value. Fish use those reaches at
+  2.7× the rate of habitat both models keep. Below its minimum, `mad`
+  drops small water fish use at about a fifth of the rate of comparable
+  small streams. Fill discharge on main stems before moving any group to
+  `mad`. `research/habitat_thresholds.md`, “`cw` against `mad`”, has the
+  per-species verdicts.
+- **The variants harness compares models.** `--base=<bundle>` sets the
+  base bundle. A model-only variant changes no threshold. A
+  size-adjusted score reads each model’s exclusive habitat within
+  stream-order classes. `--step=bundles` writes bundles without touching
+  the database. Re-scoring
+  [\#284](https://github.com/NewGraphEnvironment/link/issues/284) and
+  [\#302](https://github.com/NewGraphEnvironment/link/issues/302)
+  reproduces their outputs.
+
 ## link 0.57.0
 
 **`default_tuned` gives BT, GR, KO and RB a mean-annual-discharge range,
