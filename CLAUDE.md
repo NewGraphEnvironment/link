@@ -17,7 +17,13 @@ Experimental package — breaking all the time and loving the learning curve. St
 - **Bumping the pin moves `default`'s buckets with no config change.** BT on NATR: lake 309.9 → 521.4 km, wetland 683.9 → 1,287.3 km. The size test was the artifact #307 measured. Ladder at 0.5–10 km: fresh `data-raw/logs/bucket_connected_240/`.
 - **Opt-in keys:** on the first rear L / W rule only, `requires_connected: spawning` + a finite `connected_distance_max` (m). fresh refuses them anywhere else at rules load.
   - `lnk_rules_build()`'s `add_rc()` stamps `rear_requires_connected` on every rear rule. That is inert while the column is NA, and fails fresh's loader once it is not.
-  - Work for both: #310 (body updated).
+  - Work for both: #310.
+- **#310 revised 2026-10-07** (operator):
+  - CO keeps lake and wetland rearing with no size minimum. The first draft misread "No. Ditch minimum" as dropping CO lakes.
+  - Centrelines stay in `rearing` km by default.
+  - Rollups break out stream / lake / wetland km alongside lake and wetland ha, and say that km and ha overlap.
+  - Reservoirs count as lakes.
+  - SK/KO are unchanged: discarding their lake centrelines would remove all their spawning.
 
 **Facts not worth re-deriving:**
 - **fresh's older connectivity passes join habitat on `id_segment` alone** (fresh#242). link is safe because its habitat table is per-WSG; a shared `to_habitat` is not.
