@@ -1,42 +1,5 @@
 # Changelog
 
-## link 0.59.0
-
-**`default` gives BT, GR, KO and RB mean-annual-discharge ranges,
-converted from its own channel-width minima**
-([\#307](https://github.com/NewGraphEnvironment/link/issues/307)). A
-`default` group put on `mad` now keeps stream habitat for them instead
-of none, so `cw` and `mad` inside `default` test one stream size two
-ways. `default_tuned` keeps
-[\#302](https://github.com/NewGraphEnvironment/link/issues/302)’s
-observed ranges.
-
-- **The values.** Each width minimum maps to the median `mad_m3s` at
-  that modelled width, floored to two significant figures.
-  - Spawning 2 m → 0.041 m³/s, and GR’s 4 m → 0.20. Rearing 1.5 m →
-    0.021.
-  - Maxima are open. KO rearing is lake-only and stays unranged.
-  - `data-raw/query_width_mad_equivalent.R` produces them and reproduces
-    [\#302](https://github.com/NewGraphEnvironment/link/issues/302)’s
-    medians exactly.
-- **What moves.** Nothing under `cw`: every digest matches on NATR and
-  ADMS. Under `mad`, BT, GR, KO and RB stream habitat goes from 0 to,
-  for example, NATR BT 1,487 / 2,525 km spawning / rearing. Within
-  `default`, `mad` agrees with `cw` within about 5 %.
-- **A known artifact, not fixed here.** Under `mad` the `lake_rearing` /
-  `wetland_rearing` buckets shrink.
-  - fresh sizes a lake by the stream through it, and the buckets ignore
-    spawning connectivity.
-  - Fixes are in
-    [fresh#240](https://github.com/NewGraphEnvironment/fresh/issues/240)
-    and [\#310](https://github.com/NewGraphEnvironment/link/issues/310);
-    [\#310](https://github.com/NewGraphEnvironment/link/issues/310) also
-    drops CO lake rearing.
-- **`config_hash` changes for `default` and `default_tuned`.**
-  [\#302](https://github.com/NewGraphEnvironment/link/issues/302)’s MAD
-  ladders regenerate only at v0.58.0: on `--base=default` the variants
-  harness now stops with “variant … equals default”.
-
 ## link 0.58.0
 
 **Discharge is filled on river-polygon main stems, and `cw` against

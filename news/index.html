@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.59.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.58.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,26 +35,6 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
-    <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.59.0" id="link-0590">link 0.59.0<a class="anchor" aria-label="anchor" href="#link-0590"></a></h2>
-<p><strong><code>default</code> gives BT, GR, KO and RB mean-annual-discharge ranges, converted from its own channel-width minima</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/307" class="external-link">#307</a>). A <code>default</code> group put on <code>mad</code> now keeps stream habitat for them instead of none, so <code>cw</code> and <code>mad</code> inside <code>default</code> test one stream size two ways. <code>default_tuned</code> keeps <a href="https://github.com/NewGraphEnvironment/link/issues/302" class="external-link">#302</a>’s observed ranges.</p>
-<ul><li>
-<strong>The values.</strong> Each width minimum maps to the median <code>mad_m3s</code> at that modelled width, floored to two significant figures.
-<ul><li>Spawning 2 m → 0.041 m³/s, and GR’s 4 m → 0.20. Rearing 1.5 m → 0.021.</li>
-<li>Maxima are open. KO rearing is lake-only and stays unranged.</li>
-<li>
-<code>data-raw/query_width_mad_equivalent.R</code> produces them and reproduces <a href="https://github.com/NewGraphEnvironment/link/issues/302" class="external-link">#302</a>’s medians exactly.</li>
-</ul></li>
-<li>
-<strong>What moves.</strong> Nothing under <code>cw</code>: every digest matches on NATR and ADMS. Under <code>mad</code>, BT, GR, KO and RB stream habitat goes from 0 to, for example, NATR BT 1,487 / 2,525 km spawning / rearing. Within <code>default</code>, <code>mad</code> agrees with <code>cw</code> within about 5 %.</li>
-<li>
-<strong>A known artifact, not fixed here.</strong> Under <code>mad</code> the <code>lake_rearing</code> / <code>wetland_rearing</code> buckets shrink.
-<ul><li>fresh sizes a lake by the stream through it, and the buckets ignore spawning connectivity.</li>
-<li>Fixes are in <a href="https://github.com/NewGraphEnvironment/fresh/issues/240" class="external-link">fresh#240</a> and <a href="https://github.com/NewGraphEnvironment/link/issues/310" class="external-link">#310</a>; <a href="https://github.com/NewGraphEnvironment/link/issues/310" class="external-link">#310</a> also drops CO lake rearing.</li>
-</ul></li>
-<li>
-<strong><code>config_hash</code> changes for <code>default</code> and <code>default_tuned</code>.</strong> <a href="https://github.com/NewGraphEnvironment/link/issues/302" class="external-link">#302</a>’s MAD ladders regenerate only at v0.58.0: on <code>--base=default</code> the variants harness now stops with “variant … equals default”.</li>
-</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.58.0" id="link-0580">link 0.58.0<a class="anchor" aria-label="anchor" href="#link-0580"></a></h2>
 <p><strong>Discharge is filled on river-polygon main stems, and <code>cw</code> against <code>mad</code> is re-scored with it</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/305" class="external-link">#305</a>). <a href="https://github.com/NewGraphEnvironment/link/issues/300" class="external-link">#300</a> found that <code>mad</code>’s most-used loss was edge type 1250 water with no <code>mad_m3s</code>, not a MAD threshold.</p>
