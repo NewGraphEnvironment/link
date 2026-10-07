@@ -60,10 +60,12 @@ in both groups (`*_cw_main.txt`, `*_cw_branch.txt`).
 KO's spawning here is overstated, because `requires_connected` is applied only at
 connect. After connect it is 120.2 km (below).
 
-### `mad`: the lake and wetland buckets shrink, as predicted
+### `mad`: the lake and wetland buckets shrink, as predicted (an artifact)
 
 fresh gates `lake_rearing` / `wetland_rearing` on the species' rear size range once
-one exists (`build_wb_pred()`). Under `mad` that is now the discharge range:
+one exists (`build_wb_pred()`). Under `mad` that is now the discharge range. This sizes
+a lake by the flow through it rather than by its area. It is tracked as an artifact in
+fresh#240 and NewGraphEnvironment/link#310:
 
 | WSG | species | lake km | wetland km |
 |---|---|---|---|

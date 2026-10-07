@@ -32,7 +32,9 @@ inside `default` test one stream size two ways.**
 **Facts not worth re-deriving:**
 - **A rear range also gates `lake_rearing` / `wetland_rearing`.** On NATR under `mad`,
   BT lakes drop 521 → 304 km and wetlands 1,287 → 710 km. The `rearing` flag is not
-  gated.
+  gated. **This is an artifact:** a lake is sized by the flow through it, and the
+  buckets ignore spawning connectivity (16,651 of 16,652 BT `lake_rearing` rows are not
+  `rearing`). Fixes: fresh#240 and #310 (which also drops CO lakes).
 - **#302's ladders regenerate only at v0.58.0 (`8cb4822`).** Their rungs set
   `*_mad_max = 9999`, which `default` now carries, so `--base=default` stops with
   "variant … equals default".

@@ -49,6 +49,9 @@ converted from its width minima (#307)".
   `default_tuned`'s −32 % BT and −76 % GR rearing (#305).
 - **Lake and wetland buckets shrink under `mad`.** NATR BT lakes 521 → 304 km and
   wetlands 1,287 → 710 km. This was predicted by the plan review before it was measured.
+  On review the operator judged it an artifact: a lake should be sized by its area. That
+  led to fresh#240 and link#310, which also found the buckets ignore spawning
+  connectivity.
 - **Wrong turns kept:**
   - The plan said "regenerate `rules.yaml` and confirm no diff". That cannot pass: its
     `# Generated:` date moves the checksum. It was replaced by temp builds from the old

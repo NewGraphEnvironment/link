@@ -725,7 +725,8 @@ next dispatch.**
   `data-raw/query_width_mad_equivalent.R`); `default_tuned`'s are calibrated on
   fish observations (#302). Once a species has a rear range, its `lake_rearing` /
   `wetland_rearing` buckets are gated by it under `mad` (above), so they shrink
-  there. All are inert until a group is moved to `mad`. At
+  there. That is an artifact of sizing a polygon by the line through it, and the
+  buckets ignore spawning connectivity; fresh#240 and #310 fix both. All are inert until a group is moved to `mad`. At
   `default_tuned`'s values a `mad` group keeps less stream rearing than `cw`
   (held-out, with the #305 fill: −32 % BT, −76 % GR, −2.8 % RB); at `default`'s,
   the two models agree within about 5 % (NATR, ADMS; #307). Read `research/habitat_thresholds.md`

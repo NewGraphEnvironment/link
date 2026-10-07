@@ -1130,8 +1130,13 @@ table ([above](#literature)):
 - **The lake and wetland buckets shrink under `mad`.** Once a species has a rear range,
   fresh gates `lake_rearing` / `wetland_rearing` on it, and on discharge many lines
   inside lakes and wetlands sit below 0.021. NATR BT lake 521 → 304 km and wetland
-  1,287 → 710 km; RB is similar. The `rearing` flag itself is not gated this way. This
-  happens to any species once it has a rear range; CH and CO already worked this way.
+  1,287 → 710 km; RB is similar. The `rearing` flag itself is not gated this way. **This
+  is an artifact, not biology.** The test sizes a lake by the flow through it, when a
+  lake's size is its area, and bcfishpass never does it (`smnorris/bcfishpass@f8db4b9`:
+  SK lakes on area, CO wetlands with no size test). The buckets also ignore spawning
+  connectivity: in `fresh_default`, 16,651 of 16,652 BT `lake_rearing` rows are not
+  `rearing`. Fixes: fresh#240 (area-only buckets, connected to spawning) and #310
+  (`default`'s lake and wetland rules, CO lakes dropped).
 
 **Not done here.**
 - `default`'s CH, CO, SK and ST minima come from bcfishpass and are mostly untraceable
