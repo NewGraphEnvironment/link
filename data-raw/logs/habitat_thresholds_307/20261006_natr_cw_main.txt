@@ -1,0 +1,11 @@
+## reclassify NATR default zz307_natr repo=link_main method_csv=<bundle/default> link=0.58.0 fresh=0.36.2
+ species_code     n n_spawn n_rear spawn_km rear_km
+           BT 47299    4007  10656   1808.0  3496.3
+           GR 47299    1772   3376    785.0  1360.9
+           KO 47299     241    553    121.2   345.4
+           RB 47299    3807  11539   1720.7  3554.1
+                           digest
+ 0704cd60ce2b74d145c23fa304b73ead
+ d036927dc8b36da662af73579a160fef
+ b17ae162f9fe61ca58a8eac226b9e8be
+ dec7ce5a36e755060edec6fe612f06e5

@@ -1,0 +1,13 @@
+width minima to convert: 1.5, 2, 4 m
+ w_bin     n     q25  median     q75 mad_min
+   1.5 36601 0.01443 0.02140 0.02755   0.021
+   2.0 24509 0.02871 0.04115 0.05206   0.041
+   4.0  5977 0.14261 0.20103 0.24484   0.200
+ species_code stage width_min mad_median mad_min mad_max     parameter
+           BT spawn       2.0    0.04115   0.041    9999 spawn_mad_min
+           BT  rear       1.5    0.02140   0.021    9999  rear_mad_min
+           GR spawn       4.0    0.20103   0.200    9999 spawn_mad_min
+           GR  rear       1.5    0.02140   0.021    9999  rear_mad_min
+           KO spawn       2.0    0.04115   0.041    9999 spawn_mad_min
+           RB spawn       2.0    0.04115   0.041    9999 spawn_mad_min
+           RB  rear       1.5    0.02140   0.021    9999  rear_mad_min

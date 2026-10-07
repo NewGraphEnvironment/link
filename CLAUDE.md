@@ -11,6 +11,38 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
+## Status (2026-10-06, late) — `default`'s MAD ranges from its own width minima (#307)
+
+**`default` on `mad` now maps stream habitat for BT, GR, KO and RB, and `cw` and `mad`
+inside `default` test one stream size two ways.**
+- **The rule:** each width minimum is converted to discharge as the median `mad_m3s` at
+  that modelled width, floored to two significant figures:
+  - spawning 2 m → **0.041**; GR's 4 m → **0.20**;
+  - rearing 1.5 m → **0.021** m³/s;
+  - maxima open; KO rearing stays NA (lake-only).
+
+  Producer: `data-raw/query_width_mad_equivalent.R`. It reproduces #302's ad-hoc medians
+  exactly.
+- **`cw` moves nothing** (NATR and ADMS digests match main). Under `mad`, `default`'s two
+  models agree to within about 5 % for BT, GR, KO and RB. `default_tuned` keeps the
+  observed ranges, so biology and observation stay contrastable.
+- `research/habitat_thresholds.md`, "`default`'s MAD ranges"; evidence in
+  `data-raw/logs/habitat_thresholds_307/`.
+
+**Facts not worth re-deriving:**
+- **A rear range also gates `lake_rearing` / `wetland_rearing`.** On NATR under `mad`,
+  BT lakes drop 521 → 304 km and wetlands 1,287 → 710 km. The `rearing` flag is not
+  gated. **This is an artifact:** a lake is sized by the flow through it, and the
+  buckets ignore spawning connectivity (16,651 of 16,652 BT `lake_rearing` rows are not
+  `rearing`). Fixes: fresh#240 and #310 (which also drops CO lakes).
+- **#302's ladders regenerate only at v0.58.0 (`8cb4822`).** Their rungs set
+  `*_mad_max = 9999`, which `default` now carries, so `--base=default` stops with
+  "variant … equals default".
+- **Never regenerate `rules.yaml` in place to "check" it.** Its `# Generated:` date moves
+  the provenance checksum. Build to a tempfile and compare.
+- **Only NATR and PARS hold all four species**, so NATR is the one-WSG check. ADMS is the
+  CH/CO/SK control.
+
 ## Status (2026-10-06) — discharge filled on river-polygon main stems (#305)
 
 **With main stems filled, `mad` drops only little-used water for BT, GR and RB spawning;
@@ -77,7 +109,8 @@ discharge.**
   - Model-only variants: no column, on `mad`, stepping from the base.
   - `model_{bands,size,reason,verdict}.csv`, with stream-order classes merged until the
     core holds 10 locations.
-  - `--step=bundles` writes bundles only; #302's regenerate byte for byte.
+  - `--step=bundles` writes bundles only; #302's regenerate byte for byte at v0.58.0
+    (since #307, `--base=default` stops: "variant … equals default").
   - Re-scoring #284 and #302 reproduces their outputs.
 - **The local fwapg DB runs in colima, not Docker Desktop** (`docker context`: `colima`).
   Its disk was grown 200 → 300 GiB on 2026-10-03 (`colima stop && colima start --disk
@@ -89,7 +122,8 @@ discharge.**
 ## Status (2026-10-02, late) — MAD ranges for BT, GR, KO and RB in `default_tuned` (#302)
 
 **`default_tuned` now carries mean-annual-discharge ranges for the four species
-`default` leaves without one; they are inert while every group is on `cw`.**
+`default` then left without one (it has width-converted ones since #307); they are inert
+while every group is on `cw`.**
 - Values (m³/s, maxima open): BT 0.078 / 0.078, GR 0.96 spawn / 0.97 rear, RB 0.011 /
   0.019, KO 0.57 (unscored). Scored on held-out WSGs by a rule fixed before the build;
   every P10 → P05 loosening was refused except RB spawning.

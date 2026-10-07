@@ -1,0 +1,20 @@
+## mad_check ADMS zz307_adms method_csv=method_adms_mad.csv link=0.58.0 fresh=0.36.2 (classify only, overlay off)
+ species_code spawn_km rear_km spawn_km_nowb rear_km_nowb lake_km wetland_km
+           BT    370.9   589.0         219.0        371.5   158.5       44.9
+           CH    256.3   330.7         106.4        132.4    83.2       15.4
+           CO    290.8   331.2         140.1        172.3    80.8       33.2
+           RB    309.3   455.0         173.3        264.7   154.2       36.2
+           SK    226.2   229.9          81.8          0.0   229.9        0.0
+ spawn_null_mad rear_null_mad spawn_out spawn_no_th rear_out rear_no_th
+              0             0         0           0      200          0
+              0             0         0           0      222          0
+              0             0         0           0      128          0
+              0             0         0           0      167          0
+              0             2         0           0        0        360
+ spawn_out_nowb rear_out_nowb null_nowb
+              0             0         0
+              0             0         0
+              0             0         0
+              0             0         0
+              0             0         0
+[1] 0

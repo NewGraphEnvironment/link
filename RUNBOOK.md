@@ -707,21 +707,29 @@ next dispatch.**
   `text`.
 - **What `mad` changes** (fresh's rules, after bcfishpass): stream rules that
   inherit thresholds test `mad_m3s` against `*_mad_min/max` instead of channel
-  width, so species with no MAD thresholds (BT, GR, KO and RB in `default` and
-  `bcfishpass`) lose all stream habitat; the rule-level `channel_width` river-polygon bypass is ignored; SK/KO
+  width, so species with no MAD thresholds (BT, GR, KO and RB in `bcfishpass`)
+  lose all stream habitat; the rule-level `channel_width` river-polygon bypass is ignored; SK/KO
   lake rearing is polygon membership. **Lake, wetland and `thresholds: false`
   rules inherit nothing under either model**, so BT keeps its wetland and
-  1050/1150-edge rearing in a `mad` group (ADMS: 63.5 km, all inside
-  waterbodies). That holds for the `rearing` flag. The separate `lake_rearing` /
+  1050/1150-edge rearing in a `mad` group (ADMS, measured on `default` before #307
+  gave BT a range: 63.5 km, all inside waterbodies). That holds for the `rearing` flag. The separate `lake_rearing` /
   `wetland_rearing` bucket columns (fresh's `build_wb_pred()`) are gated by the
   species' rear size range whenever it has one: by width under `cw`, and by
   discharge under `mad`. A species with no rear MAD range keeps them on polygon
   membership alone. fresh's main predicate also ignores a W rule's
   `wetland_ha_min` (only `build_wb_pred()` applies it).
-- **`default_tuned` carries MAD ranges for BT, GR, KO and RB** (#302); `default`
-  and `bcfishpass` do not. They are inert until a group is moved to `mad`. At
-  the landed values a `mad` group keeps less stream rearing than `cw` (held-out:
-  −36 % BT, −82 % GR, −4 % RB; the landed pair, built in #300). Read `research/habitat_thresholds.md`
+- **`default` and `default_tuned` carry MAD ranges for BT, GR, KO and RB;
+  `bcfishpass` does not.** `default`'s are its own channel-width minima converted
+  to discharge (#307: spawning 2 m → 0.041, GR 4 m → 0.20, rearing 1.5 m → 0.021
+  m³/s, the median `mad_m3s` at that modelled width,
+  `data-raw/query_width_mad_equivalent.R`); `default_tuned`'s are calibrated on
+  fish observations (#302). Once a species has a rear range, its `lake_rearing` /
+  `wetland_rearing` buckets are gated by it under `mad` (above), so they shrink
+  there. That is an artifact of sizing a polygon by the line through it, and the
+  buckets ignore spawning connectivity; fresh#240 and #310 fix both. All are inert until a group is moved to `mad`. At
+  `default_tuned`'s values a `mad` group keeps less stream rearing than `cw`
+  (held-out, with the #305 fill: −32 % BT, −76 % GR, −2.8 % RB); at `default`'s,
+  the two models agree within about 5 % (NATR, ADMS; #307). Read `research/habitat_thresholds.md`
   before moving one. link also skips the stream-order rearing bypass
   (`frs_order_child`) for a `mad` group — bcfp applies it in its cw branch only.
   fresh does not implement bcfp's `stream_order >= 8` spawning bypass.

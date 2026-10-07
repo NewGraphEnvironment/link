@@ -97,8 +97,8 @@ test_that(".lnk_hv_stage_min takes MAD minimums on mad, 0 where a species has no
 
 # One species' predicate inputs from the default bundle, as the validator
 # assembles them.
-default_spp <- function(sp) {
-  cfg <- lnk_config("default")
+default_spp <- function(sp, bundle = "default") {
+  cfg <- lnk_config(bundle)
   params <- fresh::frs_params(csv = link:::.lnk_habitat_thresholds_csv(cfg),
                               rules_yaml = cfg$rules)
   link:::.lnk_hv_sp_params(
@@ -213,7 +213,9 @@ test_that("no bundled rules set a rule-level gradient or mad window", {
 })
 
 test_that("a species with no MAD range gets a missing-threshold test on mad only (#299)", {
-  spp <- default_spp("BT")
+  # bcfishpass gives BT no MAD range; default has one since #307.
+  spp <- default_spp("BT", bundle = "bcfishpass")
+  expect_true(is.na(spp$params_sp$spawn_mad_min) && is.na(spp$params_sp$rear_mad_min))
   e <- link:::.lnk_hv_stage_exprs(spp, "mad")
   pick <- function(k) e[grepl(paste0(" AS ", k, "$"), e)]
   for (st in c("spawn", "rear")) {
@@ -751,11 +753,21 @@ local_mad_fixture <- function(conn, env = parent.frame()) {
 }
 
 run_validate_mad <- function(conn, s, method = "watershed_group_code,model\nAAAA,mad",
-                             fill = FALSE) {
+                             fill = FALSE, mad_none = character(0)) {
   csv <- withr::local_tempfile(fileext = ".csv", .local_envir = parent.frame())
   writeLines(method, csv)
   cfg <- lnk_config("default")
   cfg$files$parameters_habitat_method <- list(path = csv)
+  if (length(mad_none) > 0L) {
+    # Species given no MAD range, as every bundle left BT before #307.
+    th <- utils::read.csv(cfg$files$parameters_habitat_thresholds$path,
+                          check.names = FALSE, stringsAsFactors = FALSE)
+    th[th$species_code %in% mad_none,
+       c("spawn_mad_min", "spawn_mad_max", "rear_mad_min", "rear_mad_max")] <- NA
+    th_csv <- withr::local_tempfile(fileext = ".csv", .local_envir = parent.frame())
+    utils::write.csv(th, th_csv, row.names = FALSE, na = "NA")
+    cfg$files$parameters_habitat_thresholds <- list(path = th_csv)
+  }
   cfg$pipeline$discharge_fill <- fill
   loaded <- validate_loaded()
   loaded$wsg_species_presence$co <- c("t", "")
@@ -767,7 +779,7 @@ run_validate_mad <- function(conn, s, method = "watershed_group_code,model\nAAAA
 test_that("a mad group is scored on discharge (#299)", {
   conn <- validate_conn()
   s <- local_mad_fixture(conn)
-  v <- run_validate_mad(conn, s)
+  v <- run_validate_mad(conn, s, mad_none = "BT")
   obs <- v$observations
   o <- function(k) obs[obs$observation_key == k, ]
 
@@ -800,6 +812,21 @@ test_that("a mad group is scored on discharge (#299)", {
   expect_true(is.na(o("o2")$mad_m3s))
   expect_identical(o("o2")$miss_reason_spawn, "width_null")
   expect_identical(o("o1")$miss_reason_rear, "not_accessible")
+})
+
+test_that("default's own BT MAD range scores the same fixture on discharge (#307)", {
+  conn <- validate_conn()
+  s <- local_mad_fixture(conn)
+  v <- run_validate_mad(conn, s)
+  obs <- v$observations
+  o <- function(k) obs[obs$observation_key == k, ]
+  # o10 and o9 sit at 10.5 m3/s, inside BT's range. o10 now passes its
+  # predicate, and o9 fails on its 20 % gradient alone.
+  expect_identical(o("o10")$miss_reason_rear, "post_predicate")
+  expect_identical(o("o9")$miss_reason_spawn, "fails_gradient")
+  expect_identical(o("o9")$miss_reason_rear, "fails_gradient")
+  expect_false(any(c(obs$miss_reason_spawn, obs$miss_reason_rear) %in%
+                     "no_mad_threshold"))
 })
 
 test_that("the same fixture on cw keeps the cw reasons and reports no discharge (#299)", {

@@ -136,13 +136,13 @@ provenance:
     checksum: sha256:00e8d1fa342a0a9ca404f7ea11894332868f812a4a1963979aa4750f54ef3ade
     shape_checksum: sha256:2350b190b48ca5e78b576450b72888d96cc922ffb2c7d4eb976e1fa8504f8ee0
   parameters_habitat_thresholds.csv:
-    source: https://github.com/NewGraphEnvironment/fresh
+    source: link (fresh's copy plus MAD ranges for BT, GR, KO and RB converted from the width minima; link#307)
     path: inst/extdata/parameters_habitat_thresholds.csv
     upstream_sha: 7f12d99115b7d20302d5ed043188cb870f90f83b
     upstream_version: fresh@v0.33.0
-    derived_from: smnorris/bcfishpass@4699d0f parameters/example_newgraph/parameters_habitat_thresholds.csv (+ fresh#104 edge_types columns)
-    synced: '2026-09-25'
-    checksum: sha256:7b904a18c29c724737ff24a27750bf05d7bfa281aa4fc1f7ac27c00238db042d
+    derived_from: NewGraphEnvironment/fresh@v0.33.0 inst/extdata/parameters_habitat_thresholds.csv, itself smnorris/bcfishpass@4699d0f parameters/example_newgraph/parameters_habitat_thresholds.csv (+ fresh#104 edge_types columns)
+    synced: '2026-10-06'
+    checksum: sha256:b397dda166684e9a036c289f085d936c1490b07b8b0e27144c8c740dc6add665
     shape_checksum: sha256:8de9bc1fcc2c703176a57d8a982bd26da1c49a885af3053f00078003a7e9283f
   parameters_habitat_method.csv:
     source: link (frozen copy; not csv-synced, link#286). Moving a group to mad is a reviewed edit here

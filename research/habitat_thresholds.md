@@ -1,6 +1,6 @@
 # Habitat thresholds — gradient, channel width and discharge
 
-**Verified:** 2026-09-29 (CH/BT gradient and width), 2026-10-02 (MAD), 2026-10-03 (`cw` against `mad`), 2026-10-06 (discharge fill) · **Issues:** #284 (gradient and width), #302 (MAD, [below](#mad-discharge-ranges-for-bt-gr-ko-and-rb-302)), #300 (`cw` against `mad`), #305 (discharge fill on main stems), #290 (the pooling tracker), #283 (the validator, [`habitat_validation.md`](habitat_validation.md)), #282 (`default_tuned`); spawned knowledge#28 (habitat weights) · **Produced by:** `data-raw/query_habitat_thresholds_obs.R`, `data-raw/query_habitat_thresholds_fiss.R` → `data-raw/logs/habitat_thresholds_284/`; step 5 by `data-raw/habitat_variants_build.R` and `data-raw/habitat_variants_score.R` → `data-raw/logs/habitat_score_284/`; literature reviews archived with #284's and #302's PWFs (`literature.md`); MAD by `data-raw/query_habitat_thresholds_mad.R` → `data-raw/logs/habitat_thresholds_302/` and the same scoring scripts → `data-raw/logs/habitat_score_302/`; `cw` against `mad` by the same scripts with `--base=default_tuned` → `data-raw/logs/habitat_score_300/`, and with the fill → `data-raw/logs/habitat_score_305/`; the fill measured by `data-raw/discharge_fill_count.R` → `data-raw/logs/discharge_fill_305/` · **Status:** BT `rear_gradient_max` 0.1349 **scored and held**; MAD ranges for BT, GR and RB **scored** (the rule refused loosening past P10 except RB spawning), KO unscored; `cw` against `mad` **scored** (size-adjusted); with main stems filled (#305) `mad` drops only little-used water for BT, GR and RB spawning, and RB rearing reads both ways; every other row unscored
+**Verified:** 2026-09-29 (CH/BT gradient and width), 2026-10-02 (MAD), 2026-10-03 (`cw` against `mad`), 2026-10-06 (discharge fill; `default`'s width-converted MAD ranges) · **Issues:** #284 (gradient and width), #302 (MAD, [below](#mad-discharge-ranges-for-bt-gr-ko-and-rb-302)), #300 (`cw` against `mad`), #305 (discharge fill on main stems), #307 (`default`'s MAD ranges from its width minima), #290 (the pooling tracker), #283 (the validator, [`habitat_validation.md`](habitat_validation.md)), #282 (`default_tuned`); spawned knowledge#28 (habitat weights) · **Produced by:** `data-raw/query_habitat_thresholds_obs.R`, `data-raw/query_habitat_thresholds_fiss.R` → `data-raw/logs/habitat_thresholds_284/`; step 5 by `data-raw/habitat_variants_build.R` and `data-raw/habitat_variants_score.R` → `data-raw/logs/habitat_score_284/`; literature reviews archived with #284's and #302's PWFs (`literature.md`); MAD by `data-raw/query_habitat_thresholds_mad.R` → `data-raw/logs/habitat_thresholds_302/` and the same scoring scripts → `data-raw/logs/habitat_score_302/`; `cw` against `mad` by the same scripts with `--base=default_tuned` → `data-raw/logs/habitat_score_300/`, and with the fill → `data-raw/logs/habitat_score_305/`; the fill measured by `data-raw/discharge_fill_count.R` → `data-raw/logs/discharge_fill_305/`; `default`'s width-to-discharge conversion by `data-raw/query_width_mad_equivalent.R` → `data-raw/logs/habitat_thresholds_307/` · **Status:** BT `rear_gradient_max` 0.1349 **scored and held**; MAD ranges for BT, GR and RB **scored** (the rule refused loosening past P10 except RB spawning), KO unscored; `cw` against `mad` **scored** (size-adjusted); with main stems filled (#305) `mad` drops only little-used water for BT, GR and RB spawning, and RB rearing reads both ways; `default`'s width-converted MAD ranges (#307) are a conversion, not a calibration, and unscored; every other row unscored
 
 ## Verdict
 
@@ -451,7 +451,8 @@ choice did not need making here. It is open for the next tuning.
 Under the `mad` habitat model (#286), fresh tests a stream rule's size on mean annual
 discharge (`mad_m3s`) against `*_mad_min` / `*_mad_max`. Before #302, BT, GR, KO and RB
 carried no MAD range in any bundle (inherited from bcfishpass `example_newgraph`; still
-none in `default` and `bcfishpass`), so in a `mad` group
+none in `bcfishpass`, and none in `default` until #307 converted its width minima,
+[below](#defaults-mad-ranges-converted-from-its-width-minima-307)), so in a `mad` group
 fresh fails every inheriting stream rule and they keep only waterbody habitat. The
 operator's direction (#299 plan gate, 2026-10-02) was to tune and add the ranges.
 
@@ -461,7 +462,7 @@ before/after evidence is the scoring harness, which puts the held-out groups on 
 
 ### Verdict
 
-| Species | Threshold | `default` | `default_tuned` | How |
+| Species | Threshold | `default` at #302 | `default_tuned` | How |
 |---|---|---|---|---|
 | BT | `spawn_mad_min` | NA | **0.078** | scored: P10→P05 refused |
 | BT | `rear_mad_min` | NA | **0.078** | scored: P10→P05 refused |
@@ -474,13 +475,16 @@ before/after evidence is the scoring harness, which puts the held-out groups on 
 Every `*_mad_max` is 9999. Values are m³/s. They are inert until a group is moved to
 `mad`. **At these values a `mad` group keeps less stream rearing than `cw` does: on the
 held-out WSGs −36 % for BT, −82 % for GR and −4 % for RB** (the landed pair, built in
-#300; #302's P10 rows were lower bounds). Most of what `mad` drops below its minimum is
+#300; #302's P10 rows were lower bounds; with #305's main-stem fill, −32 %, −76 % and
+−2.8 %, [below](#filling-discharge-on-river-polygon-main-stems-305)). (`default` at #302 had no
+range for these species; it has width-converted ones since #307,
+[below](#defaults-mad-ranges-converted-from-its-width-minima-307).) Most of what `mad` drops below its minimum is
 little-used small water. Its most-used loss is river-polygon main stems with no discharge
 value; see "`cw` against `mad`" below.
 
 ### Candidates (Phase 1, before scoring)
 
-| Species | Threshold | `default` | Rule value | Evidence | n | `cw` equivalent |
+| Species | Threshold | `default` at #302 | Rule value | Evidence | n | `cw` equivalent |
 |---|---|---|---|---|---|---|
 | BT | `spawn_mad_min` | NA | **0.027** | any stage, fallback (17 spawn-staged) | 2,592 | 2 m ≈ 0.041 |
 | BT | `rear_mad_min` | NA | **0.027** | any stage | 2,592 | 1.5 m ≈ 0.021 |
@@ -807,8 +811,9 @@ a variant that changes no threshold cell and puts its species' WSGs on `mad`.
   `mad`-only band is likely underpowered for BT and GR.
 - **Nothing switches on this.** The verdict informs a reviewed row edit of a bundle's
   `parameters_habitat_method.csv`; it moves no group by itself.
-- Under `default` and `bcfishpass`, BT, GR, KO and RB have no MAD range, so on `mad`
-  they lose all stream habitat by construction. That needs no score.
+- Under `default` and `bcfishpass` (as of this run; `default` gained width-converted
+  ranges in #307), BT, GR, KO and RB had no MAD range, so on `mad` they lost all stream
+  habitat by construction. That needs no score.
 - **The `cw` base is not #302's.** `default_tuned` carries BT `rear_gradient_max`
   0.1349, so #302's BT `cw` rearing (12,991 km under `default`) is not this run's.
   Segments are not compared across builds; the PSCIS tie moves a segment between full
@@ -1053,3 +1058,94 @@ Evidence: `data-raw/logs/discharge_fill_305/rescore300/`.
   −76 %). The water it drops is now used at a fifth (BT) to a third (GR) of the
   size-matched rate. Whether to move a group is a reviewed row edit of
   `parameters_habitat_method.csv`. This informs it and moves nothing.
+
+## `default`'s MAD ranges, converted from its width minima (#307)
+
+`default` sized BT, GR, KO and RB streams on channel width only. Under `mad` they kept no
+stream habitat at all, so comparing `cw` with `mad` inside `default` compared something
+with nothing. #307 converts `default`'s own width minima to discharge, so the two models
+test the same biological stream size two ways. `default_tuned` keeps #302's observed
+ranges, so the contrast between biology and observation survives.
+
+**The rule.** Each width minimum maps to the median `mad_m3s` on `fresh_default` stream
+segments, defined as follows:
+- stream edges 1000/1100/2000/2300, outside waterbodies;
+- modelled channel width within 0.1 m of the minimum;
+- discharge joined on `linear_feature_id`.
+
+The median is floored to two significant figures, #302's rounding. Maxima stay open
+(9999). A stage converts only where a stream rule inherits a size range, so KO rearing,
+which is lake-only, stays NA. Producer: `data-raw/query_width_mad_equivalent.R`, run at
+`f52c8f0`. It reproduces #302's ad-hoc query exactly: n 36,601 / 24,509 / 5,977, medians
+0.0214 / 0.04115 / 0.2010 (`data-raw/logs/habitat_thresholds_307/`).
+
+| Species | Stage | Width min | `default` (#307) | `default_tuned` (#302, observed) |
+|---|---|---|---|---|
+| BT | spawn | 2 m | **0.041** | 0.078 |
+| BT | rear | 1.5 m | **0.021** | 0.078 |
+| GR | spawn | 4 m | **0.20** | 0.96 |
+| GR | rear | 1.5 m | **0.021** | 0.97 |
+| KO | spawn | 2 m | **0.041** | 0.57 |
+| RB | spawn | 2 m | **0.041** | 0.011 |
+| RB | rear | 1.5 m | **0.021** | 0.019 |
+
+Values are m³/s. `default_tuned` is stricter for BT, GR and KO and looser for RB.
+
+**Sensitivity.** The 2 m median, 0.04115, sits 0.00015 above the floor's boundary, so a
+small shift in the population (more groups in `fresh_default`, a discharge refresh)
+could give 0.040. The values are pinned in the CSV and in a test, and the producer
+records the population, so such a drift shows up as a diff and is not applied silently.
+
+**Literature check.** The decision rule was fixed before the check: the cells are a width
+equivalence, not a habitat-use estimate. The literature gives sizes where each species
+was found using streams, so a mismatch is reported and moves no value. Against #302's
+table ([above](#literature)):
+- BT redds sit at spawning-time flows of 0.25–0.30 m³/s (Hagen et al. 2015). That survey
+  skipped streams under 2 m by design, so it cannot bound a 2 m floor. 0.041 is below
+  the use range, as a floor should be.
+- GR spawning occurs at 0.21–0.25 m³/s freshet flow in a constructed channel (House
+  2021). The 4 m floor's 0.20 sits just under it, and `default_tuned`'s 0.96 sits above
+  it. Of the two, the converted value is the one consistent with the only small-stream
+  record.
+- KO spawning occurs at MAD 0.28–0.40 m³/s, where migration sets the upstream limit, not
+  flow (AMEC 2015). 0.041 is well below it, as for BT.
+- RB spawns and rears at MAD of about 0.1 m³/s (AMEC 2015), and 0+ fish are found at 0.028
+  late-summer flow (Bustard 1988). 0.041 and 0.021 sit below or at those values, while
+  the observations (`default_tuned`) go lower still.
+- Woll et al. 2017's Alaskan width relation gives 0.021 / 0.040 / 0.17 m³/s at 1.5 / 2 /
+  4 m, an independent check on the BC medians.
+
+**Before and after** (NATR and ADMS, on held segmentation;
+`data-raw/logs/habitat_thresholds_307/README.md`):
+- **`cw` moves nothing.** Every species' `streams_habitat` digest matches main.
+- **Under `mad` the four species get stream habitat back.** For example, NATR BT goes
+  0 → 1,487 km spawning and 0 → 2,525 km rearing off waterbodies. CH, CO and SK on ADMS
+  are unchanged, digest for digest.
+- **Within `default`, `mad` and `cw` now agree to about 5 %** after connect:
+  - NATR: BT spawning −4.5 %, rearing +1.5 %; GR −5.4 % / −4.8 %; RB −4.7 % / +3.3 %.
+  - ADMS: BT +1.7 % / +5.0 %; RB +0.8 % / +3.6 %.
+
+  That agreement is the width-equivalence holding, not a validation. It sits against
+  `default_tuned`'s −32 % BT and −76 % GR stream rearing on held-out groups (#305).
+- **The lake and wetland buckets shrink under `mad`.** Once a species has a rear range,
+  fresh gates `lake_rearing` / `wetland_rearing` on it, and on discharge many lines
+  inside lakes and wetlands sit below 0.021. NATR BT lake 521 → 304 km and wetland
+  1,287 → 710 km; RB is similar. The `rearing` flag itself is not gated this way. **This
+  is an artifact, not biology.** The test sizes a lake by the flow through it, when a
+  lake's size is its area, and bcfishpass never does it (`smnorris/bcfishpass@f8db4b9`:
+  SK lakes on area, CO wetlands with no size test). The buckets also ignore spawning
+  connectivity: in `fresh_default`, 16,651 of 16,652 BT `lake_rearing` rows are not
+  `rearing`. Fixes: fresh#240 (area-only buckets, connected to spawning) and #310
+  (`default`'s lake and wetland rules, CO lakes dropped).
+
+**Not done here.**
+- `default`'s CH, CO, SK and ST minima come from bcfishpass and are mostly untraceable
+  (#302). Converting them the same way would give CO spawning 0.041 against its 0.164,
+  and would move existing `default` outputs; that is a separate decision.
+- `default` sets no `discharge_fill`, so a line with no `mad_m3s` still fails every MAD
+  test. NATR has none on its stream edges.
+- `default_extrabreaks` and `default_rearbreaks` keep the old CSV. They are `cw`
+  segmentation experiments.
+- #302's ladders (`--base=default`) regenerate only at v0.58.0 (`8cb4822`). Each rung
+  sets `*_mad_max = 9999`, which `default` now carries, so the build stops with "variant …
+  equals default". Their scores are unaffected.

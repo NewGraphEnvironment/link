@@ -6,10 +6,11 @@ description: |
   the persist schema. From link#284 it differs from default in BT
   rear_gradient_max 0.1049 -> 0.1349 (BT and DV records pooled), scored
   against held-out fish observations and held. From link#302 it carries mean
-  annual discharge ranges for the species default leaves without one (BT, GR
-  and RB spawning and rearing, KO spawning; maxima open), so a group put on
-  the `mad` model keeps stream habitat for them (less rearing than `cw` gives;
-  see the research doc); they move no output while every group is on `cw`. From
+  annual discharge minima for BT, GR and RB spawning and rearing and KO
+  spawning, calibrated on fish observations (maxima open). `default` carries
+  minima for the same species and stages, converted from its channel-width
+  minima (link#307); these are stricter for BT, GR and KO and looser for RB.
+  They move no output while every group is on `cw`. From
   link#305 it fills discharge on river-polygon main stems that have none
   (`pipeline: discharge_fill`), also read only by `mad` groups. Evidence, and
   the values examined and kept, are in research/habitat_thresholds.md.

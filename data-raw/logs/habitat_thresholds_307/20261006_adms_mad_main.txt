@@ -1,0 +1,13 @@
+## reclassify ADMS default zz307_adms repo=link_main method_csv=/private/tmp/claude-501/-Users-airvine-Projects-repo-link/2ca77b0e-3594-4ac9-97c0-e5debb291980/scratchpad/frozen/method_adms_mad.csv link=0.58.0 fresh=0.36.2
+ species_code     n n_spawn n_rear spawn_km rear_km
+           BT 39422       0      0      0.0     0.0
+           CH 39422     932   1232    256.4   317.5
+           CO 39422    1070   1363    292.4   317.8
+           RB 39422       0    387      0.0    52.9
+           SK 39422     802    360    208.3   229.9
+                           digest
+ c9eaa1e1a045b00e02f7b9ca4d3a0c7e
+ 1cd57b7bd4bb0889014f8c9a564c9abc
+ 7178003daa896454be07f7918435ece8
+ fa63055d2fe6d1a362b371f533544d67
+ 9616d0b5c044cc51211d6580c3c4f7cf

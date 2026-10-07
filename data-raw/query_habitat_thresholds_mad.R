@@ -1,7 +1,8 @@
 #!/usr/bin/env Rscript
 # query_habitat_thresholds_mad.R — mean annual discharge (mad_m3s) at fish
 # observation locations, against accessible availability, for the species
-# with no MAD range (link#302).
+# that had no MAD range in `default` (link#302; #307 since gave `default`
+# width-converted ranges, so a re-run's `current` column reads them).
 #
 # Under the `mad` habitat model (#286) a species with no `*_mad_min/max` in
 # parameters_habitat_thresholds.csv loses every stream rule that inherits
