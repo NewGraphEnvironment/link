@@ -11,6 +11,18 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
+## Status (2026-10-06, night) — fresh v0.37.0: area-only, spawning-connected buckets (fresh#240)
+
+**fresh v0.37.0 sizes `lake_rearing` / `wetland_rearing` by polygon area alone, and can keep a polygon only where it connects to spawning.** link still pins fresh v0.36.2; nothing here moves until the pin does.
+- **Bumping the pin moves `default`'s buckets with no config change.** BT on NATR: lake 309.9 → 521.4 km, wetland 683.9 → 1,287.3 km. The size test was the artifact #307 measured. Ladder at 0.5–10 km: fresh `data-raw/logs/bucket_connected_240/`.
+- **Opt-in keys:** on the first rear L / W rule only, `requires_connected: spawning` + a finite `connected_distance_max` (m). fresh refuses them anywhere else at rules load.
+  - `lnk_rules_build()`'s `add_rc()` stamps `rear_requires_connected` on every rear rule. That is inert while the column is NA, and fails fresh's loader once it is not.
+  - Work for both: #310 (body updated).
+
+**Facts not worth re-deriving:**
+- **fresh's older connectivity passes join habitat on `id_segment` alone** (fresh#242). link is safe because its habitat table is per-WSG; a shared `to_habitat` is not.
+- **A spawning-connectivity trace needs a GiST on `geom` and fresh statistics.** fresh's bucket pass now adds both: ~48 s → 2.5 s per species per WSG.
+
 ## Status (2026-10-06, late) — `default`'s MAD ranges from its own width minima (#307)
 
 **`default` on `mad` now maps stream habitat for BT, GR, KO and RB, and `cw` and `mad`
