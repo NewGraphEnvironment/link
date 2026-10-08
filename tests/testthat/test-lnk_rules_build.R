@@ -183,6 +183,94 @@ test_that("rear_wetland=no emits no waterbody_type: W rule", {
   expect_null(find_wb_rule(r$PK$rear, "W"))
 })
 
+# -- Wetland floor on the 1050/1150 carve-out (#311) --------------------------
+#
+# fresh >= 0.38.0 (fresh#237) gates a W rule's rear predicate on its
+# wetland_ha_min. A species declaring rear_wetland_ha_min gets the floor on
+# the wetland-flow carve-out too, so the declared floor bounds both wetland
+# rear rules (the stream rule still admits mainlines in smaller wetlands).
+# The floored carve-out comes AFTER the polygon W rule: fresh takes
+# the first W rule as the wetland_rearing bucket rule and as the
+# requires_connected anchor (.frs_find_waterbody_rule()).
+
+carve_rules <- function(rear) {
+  Filter(function(r) {
+    et <- r[["edge_types"]] %||% r[["edge_types_explicit"]]
+    isFALSE(r[["thresholds"]]) && !is.null(et) &&
+      (identical(et, "wetland") ||
+         identical(sort(as.integer(et)), c(1050L, 1150L)))
+  }, rear)
+}
+
+carve_dims <- function(ha_min, polygon = "yes") {
+  tibble::tibble(
+    species = "BT", spawn_lake = "no", spawn_stream = "yes",
+    rear_lake = "yes", rear_lake_only = "no", rear_no_fw = "no",
+    rear_stream = "yes", rear_wetland = "yes",
+    rear_wetland_polygon = polygon, rear_all_edges = "no",
+    river_skip_cw_min = "yes", rear_lake_ha_min = 10,
+    rear_wetland_ha_min = ha_min)
+}
+
+build_carve <- function(dims, edge_types) {
+  out <- withr::local_tempfile(fileext = ".yaml", .local_envir = parent.frame())
+  csv <- withr::local_tempfile(fileext = ".csv", .local_envir = parent.frame())
+  utils::write.csv(dims, csv, row.names = FALSE)
+  lnk_rules_build(csv, out, edge_types = edge_types)
+  get_rear_rules(out, "BT")
+}
+
+for (et_mode in c("explicit", "categories")) {
+  test_that(sprintf("rear_wetland_ha_min floors the carve-out (%s)", et_mode), {
+    rear <- build_carve(carve_dims(1), et_mode)
+    carve <- carve_rules(rear)
+    expect_length(carve, 1L)
+    expect_identical(carve[[1]]$waterbody_type, "W")
+    expect_equal(carve[[1]]$wetland_ha_min, 1)
+    expect_false(carve[[1]]$thresholds)
+
+    # The first W rule is still the polygon mainline rule
+    first_w <- find_wb_rule(rear, "W")
+    expect_setequal(as.integer(first_w$edge_types_explicit), c(1000L, 1100L))
+    expect_equal(first_w$wetland_ha_min, 1)
+
+    # ... and the floored carve-out sits after it
+    is_w <- vapply(rear, function(r) identical(r$waterbody_type, "W"),
+                   logical(1))
+    is_carve <- vapply(rear, function(r) isFALSE(r$thresholds), logical(1))
+    expect_lt(which(is_w & !is_carve), which(is_carve))
+  })
+}
+
+test_that("no rear_wetland_ha_min leaves the carve-out unfloored and in place", {
+  for (ha in list(NA, "", "not_a_number")) {
+    rear <- build_carve(carve_dims(ha), "explicit")
+    carve <- carve_rules(rear)
+    expect_length(carve, 1L)
+    expect_null(carve[[1]]$waterbody_type)
+    expect_null(carve[[1]]$wetland_ha_min)
+    # Unfloored carve-out keeps its position before the polygon W rule
+    is_carve <- vapply(rear, function(r) isFALSE(r$thresholds), logical(1))
+    is_w <- vapply(rear, function(r) identical(r$waterbody_type, "W"),
+                   logical(1))
+    expect_lt(which(is_carve), which(is_w))
+  }
+})
+
+test_that("rear_wetland_polygon=no keeps the carve-out unfloored: no W rule at all", {
+  # A floored carve-out would be the only W rule, and fresh would take it
+  # as the wetland_rearing bucket rule; polygon = no means no W rule.
+  rear <- build_carve(carve_dims(1, polygon = "no"), "explicit")
+  expect_null(find_wb_rule(rear, "W"))
+  carve <- carve_rules(rear)
+  expect_length(carve, 1L)
+  expect_null(carve[[1]]$wetland_ha_min)
+  # ... so the first L or W rule is still the lake rule
+  first_wb <- Filter(function(r) isTRUE(r$waterbody_type %in% c("L", "W")),
+                     rear)[[1]]
+  expect_identical(first_wb$waterbody_type, "L")
+})
+
 # -- Regression: non-numeric ha_min ------------------------------------------
 
 test_that("non-numeric rear_wetland_ha_min falls through: W rule without threshold", {
@@ -958,4 +1046,7 @@ test_that("default config rules.yaml retains 1050/1150 in dedicated wetland-rear
                info = "BT rear should include dedicated wetland rule")
   expect_setequal(as.integer(wetland_rule[["edge_types_explicit"]]),
                   c(1050L, 1150L))
+  # BT declares rear_wetland_ha_min = 1, so the carve-out carries it (#311)
+  expect_identical(wetland_rule[["waterbody_type"]], "W")
+  expect_equal(wetland_rule[["wetland_ha_min"]], 1)
 })

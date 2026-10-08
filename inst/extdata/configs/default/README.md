@@ -6,6 +6,7 @@ Documented departures from bcfishpass:
 
 - Intermittent streams included in the rearing set.
 - Wetland reaches (edge_type 1050/1150) as rearing habitat for species flagged `rear_wetland=yes` in dimensions.csv.
+- Both wetland rear rules require wetlands of at least `rear_wetland_ha_min` (1 ha; CO 0.5 ha): the 1050/1150 wetland-flow rule and the polygon rule for mainlines through wetlands (link#311). Mainlines in smaller wetlands can still rear through the stream rule, which has no waterbody test.
 - Lake rearing expanded beyond SK/KO to BT/CO/ST/WCT per literature.
 - `river_skip_cw_min=yes` — channel-width thresholds dropped on river-polygon segments where they're not meaningful.
 - Mean-annual-discharge minima for BT, GR, KO and RB, which bcfishpass leaves unranged: this bundle's own width minima converted to discharge (link#307). They act only in a group put on `mad`.

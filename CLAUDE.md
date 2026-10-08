@@ -11,9 +11,28 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
+## Status (2026-10-07) — fresh v0.39.0 pinned; a wetland floor bounds both wetland rear rules (#311)
+
+**link pins fresh v0.39.0 (floor 0.38.0).** A W rule's `wetland_ha_min` now gates `rearing` (fresh#237), and the buckets are area-only (fresh#240). `default*` outputs move with no config change.
+- **Operator call: a declared `rear_wetland_ha_min` bounds both wetland rear rules.** `lnk_rules_build()` also puts it on the 1050/1150 wetland-flow rule, as a `waterbody_type: W` rule. Mainlines (1000/1100) in sub-floor wetlands still rear through the stream rule, which has no waterbody test.
+  - That rule is emitted **after** the polygon W rule. fresh takes the first W rule as the bucket rule and the `requires_connected` anchor, and the first L/W rule for waterbody-connected spawning.
+  - The floor applies only when the polygon rule is also emitted, so `rear_wetland_polygon = no` still means no W rule.
+  - `bcfishpass` rules are unchanged.
+- **Measured on one segmentation** (ADMS, BULK, NATR, PARS; `data-raw/logs/wetland_floor_311/`):
+  - fresh alone reproduces five of its six published numbers exactly. The sixth, sub-floor wetland-flow km, fresh gives as an upper bound: 26.6 here against ~26.4.
+  - The floor removes 198.8 km of rearing. That is sub-floor wetland-flow rearing going to 0, plus rearing that `cluster_rearing` then disconnects (17.4 of BULK ST's 23.8 km).
+  - It removes 3 of 2,265 observation species-locations on rearing.
+  - Write-up: `research/habitat_thresholds.md`, "The wetland floor on `rearing`".
+- **Cyphers must be re-prepped for the new pin** before the next dispatch.
+
+**Facts not worth re-deriving:**
+- **`load_all()` errors, not warns, when the installed fresh is below DESCRIPTION's floor.** To measure an old fresh against new code, run the old code from a frozen `git worktree`, and install the new fresh only after the old runs finish (the library is shared).
+- **bcfishobs `match_type` is full text** ("A. matched - stream; …"). Filter on `left(match_type, 1)`. An `IN ('A','B')` probe matched nothing and read as "no observations on any rearing".
+- **In `edge_types = "categories"` mode the wetland-flow rule matches nothing.** `wetland` resolves to edge type 1700, which the FWA network does not carry. This predates #311; no shipped bundle uses categories.
+
 ## Status (2026-10-06, night) — fresh v0.37.0: area-only, spawning-connected buckets (fresh#240)
 
-**fresh v0.37.0 sizes `lake_rearing` / `wetland_rearing` by polygon area alone, and can keep a polygon only where it connects to spawning.** link still pins fresh v0.36.2; nothing here moves until the pin does.
+**fresh v0.37.0 sizes `lake_rearing` / `wetland_rearing` by polygon area alone, and can keep a polygon only where it connects to spawning.** link pins v0.39.0 since #311, so these buckets are live.
 - **Bumping the pin moves `default`'s buckets with no config change.** BT on NATR: lake 309.9 → 521.4 km, wetland 683.9 → 1,287.3 km. The size test was the artifact #307 measured. Ladder at 0.5–10 km: fresh `data-raw/logs/bucket_connected_240/`.
 - **Opt-in keys:** on the first rear L / W rule only, `requires_connected: spawning` + a finite `connected_distance_max` (m). fresh refuses them anywhere else at rules load.
   - `lnk_rules_build()`'s `add_rc()` stamps `rear_requires_connected` on every rear rule. That is inert while the column is NA, and fails fresh's loader once it is not.
@@ -48,11 +67,12 @@ inside `default` test one stream size two ways.**
   `data-raw/logs/habitat_thresholds_307/`.
 
 **Facts not worth re-deriving:**
-- **A rear range also gates `lake_rearing` / `wetland_rearing`.** On NATR under `mad`,
-  BT lakes drop 521 → 304 km and wetlands 1,287 → 710 km. The `rearing` flag is not
-  gated. **This is an artifact:** a lake is sized by the flow through it, and the
-  buckets ignore spawning connectivity (16,651 of 16,652 BT `lake_rearing` rows are not
-  `rearing`). Fixes: fresh#240 and #310 (which also drops CO lakes).
+- **Under fresh < 0.37.0 a rear range also gated `lake_rearing` / `wetland_rearing`.**
+  On NATR under `mad`, BT lakes dropped 521 → 304 km and wetlands 1,287 → 710 km. That
+  was an artifact (a lake sized by the flow through it), and fresh#240 removed it;
+  link pins v0.39.0 since #311. The buckets still ignore spawning connectivity, which is
+  #310: in pre-0.37 `fresh_default`, 16,651 of 16,652 BT `lake_rearing` rows were not
+  `rearing`.
 - **#302's ladders regenerate only at v0.58.0 (`8cb4822`).** Their rungs set
   `*_mad_max = 9999`, which `default` now carries, so `--base=default` stops with
   "variant … equals default".
@@ -156,9 +176,9 @@ while every group is on `cw`.**
   MAD ladder's core is its rungs only (the cw base cuts on width), `--floor`,
   `--working-prefix` derived from `--prefix`. #284's re-score reproduces all ten outputs.
 - **Build classifiers from fresh's compiled SQL, never from `rules.yaml`.** fresh's
-  main rear predicate ignores a W rule's `wetland_ha_min`, and its `L` rules include
-  reservoirs (fresh issue drafted, not filed). A rear size range gates the
-  `lake_rearing` / `wetland_rearing` bucket columns, never `rearing`.
+  `L` rules include reservoirs (fresh issue drafted, not filed). Before fresh 0.38.0 its
+  main rear predicate also ignored a W rule's `wetland_ha_min`, and before 0.37.0 a rear
+  size range gated the `lake_rearing` / `wetland_rearing` buckets (#311 pinned v0.39.0).
 - **`elevation_adjusted.csv`'s band classes are not the bands.** A segment takes the first
   step whose flags differ, so an anchor's `removed` class is only what no rung restores.
   Quote `bands_pooled.csv` for a band's rate.
@@ -188,8 +208,9 @@ while every group is on `cw`.**
 - **The table:** all `cw`, a frozen copy of bcfishpass `example_newgraph`. Putting a
   group on `mad` is a reviewed row edit.
 - **`mad_m3s`:** on the working streams only, never persisted.
-- **fresh pin:** v0.36.2 (floor 0.35.0). Cyphers must be re-prepped before the next
-  dispatch: the preflight asserts the argument and hard-fails otherwise.
+- **fresh pin:** v0.36.2 (floor 0.35.0) at the time; v0.39.0 (floor 0.38.0) since #311.
+  Cyphers must be re-prepped before the next dispatch: the preflight asserts the
+  argument and hard-fails otherwise.
 - **Mechanics:** RUNBOOK §7 "Channel width or discharge, per watershed group". Evidence:
   `data-raw/logs/params_method_286/`.
 

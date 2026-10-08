@@ -125,8 +125,8 @@ provenance:
   rules.yaml:
     generated_from: dimensions.csv
     generated_by: lnk_rules_build
-    generator_sha: 8f1890564b9148573535a679f2e5563aebe74207
-    checksum: sha256:68380b1d549aee7485281c79b1eb7bd1b6e2ff0fb8dbc079cf56e4bed8e40e8c
+    generator_sha: 0ca706b69a2d64f01b7424a5dc7c1cfb4538d3f5
+    checksum: sha256:99728919fadb52a402f33366a1e449a93674ec086926b667caebe6b667e698db
     shape_checksum: sha256:4fec0f2db7523d71ba7542e0d52217c91d9bab5b55d714b689f614380f5c2eb9
   dimensions.csv:
     source: link (hand-authored)

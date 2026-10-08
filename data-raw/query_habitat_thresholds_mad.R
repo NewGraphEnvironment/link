@@ -146,8 +146,10 @@ edges_stream <- c(1000L, 1100L, 2000L, 2300L)
 # Segments a species' own lake / wetland rear rule admits with no size test.
 # The SQL is fresh's own (.frs_rule_to_sql() over the L/W rear rules), so the
 # polygon tables, the area floors and the edges are whatever fresh compiles,
-# never a transcription of rules.yaml (which declares a wetland_ha_min that
-# fresh's rear predicate does not apply, and whose L rules reach reservoirs).
+# never a transcription of rules.yaml (whose wetland_ha_min fresh's rear
+# predicate ignored before fresh 0.38.0, and whose L rules reach reservoirs).
+# From #311 the W rules include the floored 1050/1150 carve-out; those lines
+# are classed before this predicate is read, so it admits nothing new here.
 wb_admit_sql <- function(sp) {
   r <- Filter(function(x) isTRUE(x$waterbody_type %in% c("L", "W")),
               rules[[sp]][["rear"]])

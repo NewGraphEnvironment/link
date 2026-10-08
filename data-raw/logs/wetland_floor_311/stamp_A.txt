@@ -1,0 +1,7 @@
+<lnk_stamp> default
+  aoi:        ADMS
+  started:    2026-10-07 17:58:39 PDT
+  link:       0.59.0
+  fresh:      0.36.2
+  provenance: 16 files (0 byte, 0 shape drifted)
+  db:         bcfishobs.observations=373,050
