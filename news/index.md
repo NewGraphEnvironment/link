@@ -38,7 +38,7 @@ count.
 - **Follow-ups:**
   - [\#319](https://github.com/NewGraphEnvironment/link/issues/319): one
     meaning of `rearing_km` everywhere.
-  - [\#320](https://github.com/NewGraphEnvironment/link/issues/320):
+  - [\#316](https://github.com/NewGraphEnvironment/link/issues/316):
     wetland construction flow lines.
   - [\#321](https://github.com/NewGraphEnvironment/link/issues/321):
     [`lnk_aggregate()`](https://newgraphenvironment.github.io/link/reference/lnk_aggregate.md)
