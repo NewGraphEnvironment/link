@@ -1356,6 +1356,9 @@ A package built from a `git worktree` ships `.git` (a file holding the developer
 ### A database driver's value is not a base R type — and it fails twice
 A column fetched through DBI does not arrive as the base type its SQL type suggests.
 
+### A value compared as `::text` in SQL has PostgreSQL's spelling, not R's
+Write native types from R and cast once in SQL.
+
 ### arrow dplyr backend: no grouped slice — bridge to duckdb
 - arrow's dplyr backend errors on grouped `slice_max`/`slice_min` (`arrow_not_supported("Slicing grouped data")`).
 
@@ -1560,6 +1563,18 @@ Join a URL with `paste(base, key, sep = "/")` or `file.path()`, never `fs::path(
 ### R's default curl user-agent fails on canada.ca, and the error names HTTP/2, not the agent
 Set a user-agent on every R fetch of a `canada.ca` page, because R's default fails there with an HTTP/2 error that never mentions the agent.
 
+### `climr::downscale()` returns its reference-period row even with `return_refperiod = FALSE`
+Keep only the observed series (`DATASET == "<obs_ts_dataset>"`, four-digit `PERIOD`) before averaging climr output over years.
+
+### A `function(...)` mock hides arguments the real callee no longer accepts
+Stubbing a callee with `function(...) invisible("mock")` accepts any argument name, so a wrapper still passing a parameter the callee dropped stays green while every real call errors with `unused argument`.
+
+### `expect_message(regexp = "...$")` never matches, because `message()` appends `"\n"`
+The condition message carries the trailing newline, so an end anchor fails and the test reports "did not throw a message" even though the message printed.
+
+### `load_all()` refuses an installed dependency below the `Imports:` floor, so measure old-against-new from a frozen worktree
+Run the old-dependency side of a before/after comparison from a `git worktree` of the pre-bump commit, and install the new version only after those runs finish.
+
 # Code Check — Shell
 Tool-level traps in bash, sed, git and `gh`, and in the host toolchain those commands depend on.
 
@@ -1714,6 +1729,9 @@ Count instead: `while :; do left=0; for i in $ids; do done_yet "$i" || left=$((l
 
 ### A failed `cd` lets every later command run in the directory you were already in
 Write `cd "$D" || exit 1` (or `cd "$D" && …`), never `cd "$D"; …`: without the guard, a missing directory prints one error and the rest of the line runs wherever the shell stood, including its file writes.
+
+### macOS `/bin/bash` 3.2 quote-matches a heredoc inside `$( )`, so an apostrophe in the body is a syntax error
+Pass multi-line text through a file (`--body-file`, `-F`) rather than `"$(cat <<'EOF' … EOF)"`: bash 3.2 scans the command substitution for balanced quotes before it sees the heredoc, so `it's` in a quoted heredoc body fails with ``unexpected EOF while looking for matching `''``, while …`
 
 # Code Check — Spatial
 terra, sf, bcdata, GDAL/OGR CLIs.
@@ -1926,6 +1944,9 @@ Delete the output before re-warping to the same path (`unlink(out)` before `sf::
 
 ### GDAL caches a failed `/vsicurl/` open, so an in-process retry sends no request
 Before retrying a `/vsicurl/` read in the same process, set `CPL_VSIL_CURL_NON_CACHED` to the URL's prefix.
+
+### THREDDS NCSS returns one time step unless the request says `temporal=all`
+Add `&temporal=all` (or an explicit `time_start`/`time_end`) to every NetCDF Subset Service grid request: without it NCSS answers with a single time step (the one nearest "now"), a valid NetCDF that passes a signature check, so assert the layer count after reading.
 
 # Code Check Conventions
 Structured checklist for reviewing diffs before commit.
