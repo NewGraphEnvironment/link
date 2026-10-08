@@ -63,17 +63,28 @@ slices <- function(x, d) {
     stop(d, " mixes pre-#310 (*_centerline) and post-#310 (rearing_lake / ",
          "rearing_wetland) rollups; re-run its pre-#310 WSGs", call. = FALSE)
   }
-  if (pre) "pre-#310" else "post-#310"
+  if (pre) return("pre-#310")
+  # #317 took lake connection lines (1450) out of rearing and
+  # rearing_lake km and reports them as rearing_lake_connection. A
+  # post-#310 rollup without that row counts them in both.
+  wsg_317 <- unique(x$wsg[x$habitat_type == "rearing_lake_connection"])
+  if (length(wsg_317) == 0L) return("post-#310")
+  if (!all(unique(x$wsg) %in% wsg_317)) {
+    stop(d, " mixes rollups from before #317 (lake connection lines in ",
+         "rearing km) and after; re-run its older WSGs", call. = FALSE)
+  }
+  "post-#317"
 }
 sa <- slices(a, DIR_A)
 sb <- slices(b, DIR_B)
 if (sa != sb) {
   stop(DIR_A, " is ", sa, " and ", DIR_B, " is ", sb, ": #310 renamed the ",
-       "lake / wetland slices and redefined rearing_stream; re-run the older ",
-       "one", call. = FALSE)
+       "lake / wetland slices and redefined rearing_stream, and #317 took ",
+       "lake connection lines out of rearing km; re-run the older one",
+       call. = FALSE)
 }
 keep <- c("spawning", "rearing", "rearing_stream",
-          "rearing_lake", "rearing_wetland",
+          "rearing_lake", "rearing_wetland", "rearing_lake_connection",
           "rearing_lake_centerline", "rearing_wetland_centerline")
 a <- a[a$unit == "km" & a$habitat_type %in% keep, ]
 b <- b[b$unit == "km" & b$habitat_type %in% keep, ]

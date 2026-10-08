@@ -11,6 +11,24 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
+## Status (2026-10-08) — lake connection lines kept out of rearing km (#317)
+
+**The compare rollups report FWA lake connectors (1450) as `rearing_lake_connection` km, outside `rearing` and `rearing_lake` km. fresh's `rearing` flag still carries them.**
+- **Why in the rollup, not the rule (operator):**
+  - The lines join each tributary mouth to the lake's main-flow line, so lake km grew with tributary count (Adams Lake: 148.8 km of 1450 against 62.8 km of 1200).
+  - `cluster_rearing` needs them to join inlet rearing to the lake. So the rules are unchanged and nothing re-classifies.
+- **One predicate, both sides:** `.lnk_sql_lake_connection()` (lake polygon, edge 1450, NULL-safe; 1400 is construction flow and stays in the km). It is used by the link side and the bcfishpass side of `lnk_compare_rollup()` / `lnk_compare_wsg()`. bcfishpass counts these lines in BT and SK rearing too.
+- **`lnk_rollup_wsg()`'s default `rearing_km` stays the flag total.** Code-check found that changing it leaked into the validator's cost and into `parity_crosssection.R` / `wsg_vignette_data.R`, which compare the flag.
+- **Measured** (ADMS, NATR; `data-raw/logs/lake_connection_317/`):
+  - ADMS CH vs bcfishpass +91.1 % → +38.9 %; CO +75.0 % → +28.7 %; BT +16.4 % → +2.0 %.
+  - SK rearing km fall 55–95 % (seven WSGs), the same on both sides, so SK parity is 0.0 % on six bcfishpass-config WSGs.
+  - KO falls 62 % on NATR, with no bcfishpass reference.
+  - Write-up: `research/habitat_thresholds.md`, "Lake connection lines".
+
+**Facts not worth re-deriving:**
+- **ADMS CH / CO stay above bcfishpass because bcfishpass has no CH / CO lake rearing there.** The residual is lake flow lines, #310's call, not a line-type artifact.
+- **`data-raw/compare_rollups.R` stops on a pre/post-#317 mix**, detected by the `rearing_lake_connection` row.
+
 ## Status (2026-10-07, late) — `default`'s lake and wetland rearing connected to spawning; lake centrelines rear (#310)
 
 **`default`'s buckets keep only polygons with same-species spawning within 10 km (SK and KO excepted), and lake centrelines count in `rearing`.**

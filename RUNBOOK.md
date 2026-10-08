@@ -765,6 +765,26 @@ next dispatch.**
     that is too far from spawning passes the predicate and then is not habitat.
     - `lake_rearing` / `wetland_rearing` are hectares of the same water; never add a km
       to a ha.
+- **Lake connection lines: in `rearing`, out of the km (link#317).**
+  - FWA connectors (1450, "Construction line, connection") join each tributary mouth to the lake's
+    main-flow line (1200), so a lake's line km grow with its tributary count. Adams Lake
+    holds 148.8 km of 1450 against 62.8 km of 1200.
+  - **Construction flow lines are not connectors.** 1400 ("other flow / inferred connection") is a
+    construction flow line like 1200 / 1300 and stays in the km.
+  - **The flag keeps them.** The L rule still admits 1450, so `cluster_rearing`
+    still joins inlet rearing to the lake. Nothing re-classifies.
+  - **The compare rollups leave them out.** `lnk_compare_rollup()` / `lnk_compare_wsg()` report
+    them as `rearing_lake_connection` (km), out of `rearing` and `rearing_lake` km, on the link
+    side and the bcfishpass side alike. bcfishpass counts them too, in BT and SK rearing, so
+    SK parity stays 0.0 %. One predicate: `.lnk_sql_lake_connection()`
+    (`R/lnk_rollup_wsg.R`), which is lake-polygon lines on 1450, NULL-safe.
+  - **`lnk_rollup_wsg()`'s default `rearing_km` is still the flag total.** So is anything that
+    sums `streams_habitat.rearing` directly: `lnk_aggregate()`, the validator's cost,
+    `data-raw/parity_crosssection.R` and `wsg_vignette_data.R`. Those compare the flag, not a
+    habitat report. Pass `connection` in `metrics` to split it.
+  - SK / KO lake rearing is mostly 1450, so their compare `rearing` km drop sharply: SK
+    55–95 % on seven measured WSGs (ADMS 159.1 of 229.9 km), KO 62 % on NATR. For SK the
+    drop is the same on the bcfishpass side; KO has no bcfishpass reference.
 - **`default` and `default_tuned` carry MAD ranges for BT, GR, KO and RB;
   `bcfishpass` does not.** `default`'s are its own channel-width minima converted
   to discharge (#307: spawning 2 m → 0.041, GR 4 m → 0.20, rearing 1.5 m → 0.021

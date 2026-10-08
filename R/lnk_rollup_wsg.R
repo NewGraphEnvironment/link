@@ -23,11 +23,22 @@
 #' tables fresh's lake and wetland rules read. Lakes and reservoirs
 #' (`fwa_lakes_poly`, `fwa_manmade_waterbodies_poly`) are `"lake"`,
 #' wetlands (`fwa_wetlands_poly`) `"wetland"`, and river polygons or no
-#' polygon `"stream"`. The three partition the network, so
-#' `rearing_stream_km + rearing_lake_km + rearing_wetland_km` built from
-#' them equals `rearing_km` (to rounding); see the examples. A lake's
+#' polygon `"stream"`. The three partition the network. A lake's
 #' centreline km and its polygon hectares describe the same water and are
 #' never added together.
+#'
+#' Each row also carries `connection` (bool): a line in a lake polygon on
+#' FWA edge type 1450 ("connection"), the connector lines that join each
+#' tributary mouth to the lake's main-flow line. fresh keeps them in
+#' `rearing`, where they connect inlet rearing to the lake, but they trace
+#' a join rather than a flow path, so a report of habitat km leaves them
+#' out and states them apart, as [lnk_compare_rollup()] does: there
+#' `rearing_stream_km + rearing_lake_km + rearing_wetland_km` (lake without
+#' connection lines) equals `rearing_km` (to rounding); see the examples.
+#' The default `rearing_km` here is every line flagged `rearing`,
+#' connection lines included, because the scoring and parity tools that
+#' call it with no `metrics` ([lnk_habitat_validate()],
+#' `data-raw/parity_crosssection.R`) compare the flag itself.
 #'
 #' Because the per-species columns are aliased to fixed names, the
 #' `metrics` SQL is written **once**, species-agnostic — mirroring
@@ -61,9 +72,10 @@
 #'   identifier whitelist.
 #' @param metrics Named character vector: names are output columns,
 #'   values are SQL aggregate expressions over the generic aliases
-#'   `length_metre`, `edge_type`, `waterbody`, `access`, `spawning`,
-#'   `rearing`. Default emits
-#'   `accessible_km`, `spawning_km`, `rearing_km`. Raw SQL — trusted
+#'   `length_metre`, `edge_type`, `waterbody`, `connection`, `access`,
+#'   `spawning`, `rearing`. Default emits
+#'   `accessible_km`, `spawning_km`, `rearing_km` (every line flagged
+#'   `rearing`, lake connection lines included). Raw SQL — trusted
 #'   caller input, like `frs_aggregate()`.
 #' @param where Character or `NULL`. Optional SQL predicate applied to the
 #'   per-species rows before aggregation (aliases available). Default
@@ -78,12 +90,17 @@
 #' # Coho accessible / spawning / rearing km for Morice, from persisted state.
 #' lnk_rollup_wsg(conn, aoi = "MORR", species = "CO")
 #'
-#' # Rearing km by the polygon the line sits in (stream / lake / wetland).
+#' # Rearing km by the polygon the line sits in (stream / lake / wetland),
+#' # with lake connection lines reported apart.
 #' lnk_rollup_wsg(conn, aoi = "MORR", species = "CO",
 #'   metrics = c(
-#'     rearing_km = "sum(length_metre) FILTER (WHERE rearing) / 1000",
-#'     rearing_lake_km =
-#'       "sum(length_metre) FILTER (WHERE rearing AND waterbody = 'lake') / 1000"))
+#'     rearing_km =
+#'       "sum(length_metre) FILTER (WHERE rearing AND NOT connection) / 1000",
+#'     rearing_lake_km = paste(
+#'       "sum(length_metre) FILTER (WHERE rearing AND waterbody = 'lake'",
+#'       "AND NOT connection) / 1000"),
+#'     rearing_lake_connection_km =
+#'       "sum(length_metre) FILTER (WHERE rearing AND connection) / 1000"))
 #'
 #' # Custom metric: count accessible segments per species.
 #' lnk_rollup_wsg(conn, aoi = "MORR", species = c("CO", "BT"),
@@ -146,6 +163,7 @@ lnk_rollup_wsg <- function(conn, aoi, species,
     sprintf(
       "SELECT %s AS species_code, s.watershed_group_code,
               s.length_metre, s.edge_type, %s AS waterbody,
+              %s AS connection,
               a.access_%s AS access, h.spawning, h.rearing
          FROM %s.streams s
          JOIN %s.streams_habitat_%s h
@@ -156,7 +174,8 @@ lnk_rollup_wsg <- function(conn, aoi, species,
           AND s.watershed_group_code = a.watershed_group_code
          %s
         WHERE s.watershed_group_code = %s",
-      sp_lit, .lnk_sql_waterbody_class(), tolower(sp),
+      sp_lit, .lnk_sql_waterbody_class(), .lnk_sql_lake_connection(),
+      tolower(sp),
       schema, schema, tolower(sp), schema, .lnk_sql_waterbody_join(), aoi_lit)
   }, character(1)), collapse = "\n      UNION ALL\n      ")
 
@@ -209,6 +228,29 @@ lnk_rollup_wsg <- function(conn, aoi, species,
 #' @noRd
 .lnk_sql_waterbody_class <- function() {
   "COALESCE(wb.waterbody, 'stream')"
+}
+
+#' Is a line a lake connection line? As SQL (#317)
+#'
+#' FWA connection lines (edge 1450, "Construction line, connection") join
+#' each tributary mouth to a lake's main-flow line (1200). They trace a
+#' join, not a flow path, so a lake's line km would grow with its
+#' tributary count: Adams Lake (ADMS) holds 62.8 km of 1200 and 148.8 km
+#' of 1450. They stay in fresh's `rearing` flag, where they join inlet
+#' rearing to the lake for `cluster_rearing`, and the rollups report them
+#' apart (`rearing_lake_connection_km`), out of `rearing_km`. Lake and
+#' reservoir polygons only; no 1450 line lies in a wetland polygon
+#' (province-wide, 2026-10-08). Connectors only: 1400 ("other flow / inferred connection") is
+#' a construction flow line and stays in the km, like 1200 / 1300;
+#' 1410 (network connector) does not occur in lake polygons. Never NULL:
+#' a NULL edge type would otherwise drop a line from both `NOT connection`
+#' and `connection` sums. Expects the streams table aliased `s` and
+#' [.lnk_sql_waterbody_join()]'s `wb`.
+#'
+#' @noRd
+.lnk_sql_lake_connection <- function() {
+  sprintf("COALESCE(%s = 'lake' AND s.edge_type = 1450, FALSE)",
+          .lnk_sql_waterbody_class())
 }
 
 #' Lake and reservoir polygons, for lake hectares (#310 decision 5)

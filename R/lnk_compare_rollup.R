@@ -41,9 +41,12 @@
 #'   (e.g. `c("BT","CO")`) to restrict the rollup to. Default `NULL`
 #'   discovers the set from PG.
 #'
-#' @return A tibble with one row per (species, habitat_type) — 8
-#'   habitat types per species (the 7 habitat km/ha types plus
-#'   `accessible` km, link#221). Columns: `wsg`, `species`,
+#' @return A tibble with one row per (species, habitat_type) — 9
+#'   habitat types per species (the 8 habitat km/ha types plus
+#'   `accessible` km, link#221). `rearing_lake_connection` is lake
+#'   connection lines (FWA edge 1450 in a lake polygon), reported
+#'   apart and left out of `rearing` and `rearing_lake` km on both sides
+#'   (#317); see [lnk_compare_wsg()]. Columns: `wsg`, `species`,
 #'   `habitat_type`, `unit` (`km` | `ha`), `link_value`, `ref_value`,
 #'   `diff_pct`. `accessible`'s `ref_value` is sourced tunnel-free from
 #'   `fresh.streams_vw_bcfp` for the salmon group (CH/CM/CO/PK/SK); other
@@ -196,8 +199,9 @@ lnk_compare_rollup <- function(conn, aoi, cfg,
   # Habitat km sums delegate to the single predicate-driven roll-up
   # primitive (link#221) so there is one per-(WSG, species) km query
   # builder. lnk_rollup_wsg exposes `length_metre` / `edge_type` /
-  # `waterbody` / `access` / `spawning` / `rearing` under generic aliases; the first
-  # five metrics reproduce the historical shape, and `accessible_km`
+  # `waterbody` / `connection` / `access` / `spawning` / `rearing` under
+  # generic aliases; the km metrics below are passed explicitly (the
+  # primitive's default rearing_km is the flag total), and `accessible_km`
   # (link#221) sums link's per-species access model
   # (`streams_access.access_<sp> IN (1,2)`, LEFT-joined by
   # lnk_rollup_wsg). It returns `wsg` + `species` + metrics — drop
@@ -211,15 +215,19 @@ lnk_compare_rollup <- function(conn, aoi, cfg,
     spawning_km =
       "round(COALESCE(sum(length_metre) FILTER (WHERE spawning), 0)::numeric / 1000, 2)", # nolint: line_length_linter
     rearing_km =
-      "round(COALESCE(sum(length_metre) FILTER (WHERE rearing), 0)::numeric / 1000, 2)", # nolint: line_length_linter
+      "round(COALESCE(sum(length_metre) FILTER (WHERE rearing AND NOT connection), 0)::numeric / 1000, 2)", # nolint: line_length_linter
     # Stream / lake / wetland by the polygon each line sits in (#310):
-    # they partition rearing_km. A lake's km and its ha overlap.
+    # they partition rearing_km. A lake's km and its ha overlap. Lake
+    # connection lines (#317) stay in fresh's `rearing` flag and are
+    # reported apart, out of rearing_km and rearing_lake_km.
     rearing_stream_km =
       "round(COALESCE(sum(length_metre) FILTER (WHERE rearing AND waterbody = 'stream'), 0)::numeric / 1000, 2)", # nolint: line_length_linter
     rearing_lake_km =
-      "round(COALESCE(sum(length_metre) FILTER (WHERE rearing AND waterbody = 'lake'), 0)::numeric / 1000, 2)", # nolint: line_length_linter
+      "round(COALESCE(sum(length_metre) FILTER (WHERE rearing AND waterbody = 'lake' AND NOT connection), 0)::numeric / 1000, 2)", # nolint: line_length_linter
     rearing_wetland_km =
       "round(COALESCE(sum(length_metre) FILTER (WHERE rearing AND waterbody = 'wetland'), 0)::numeric / 1000, 2)", # nolint: line_length_linter
+    rearing_lake_connection_km =
+      "round(COALESCE(sum(length_metre) FILTER (WHERE rearing AND connection), 0)::numeric / 1000, 2)", # nolint: line_length_linter
     accessible_km =
       "round(COALESCE(sum(length_metre) FILTER (WHERE access IN (1, 2)), 0)::numeric / 1000, 2)") # nolint: line_length_linter
 
