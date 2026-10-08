@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.61.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.62.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,40 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.62.0" id="link-0620">link 0.62.0<a class="anchor" aria-label="anchor" href="#link-0620"></a></h2>
+<p><strong>The compare rollups report lake connectors apart from rearing km</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/317" class="external-link">#317</a>). FWA 1450 lines (“Construction line, connection”) join each tributary mouth to a lake’s main-flow line, so lake km had grown with a lake’s tributary count.</p>
+<ul><li>
+<strong>Rollups.</strong>
+<ul><li>
+<code><a href="../reference/lnk_compare_rollup.html">lnk_compare_rollup()</a></code> / <code><a href="../reference/lnk_compare_wsg.html">lnk_compare_wsg()</a></code> gain a 9th habitat type, <code>rearing_lake_connection</code> (km).</li>
+<li>
+<code>rearing</code> and <code>rearing_lake</code> km leave 1450 lines in lake and reservoir polygons out, on the link side and the bcfishpass side alike. bcfishpass counts these lines too, in BT and SK rearing.</li>
+<li>Stream + lake + wetland still sums to <code>rearing</code>.</li>
+<li>1400 (“other flow / inferred connection”) is a construction flow line, not a connector, and stays in the km.</li>
+</ul></li>
+<li>
+<strong>The rules are unchanged.</strong> fresh’s <code>rearing</code> flag still carries the 1450 lines, so <code>cluster_rearing</code> still joins inlet rearing to the lake.</li>
+<li>
+<strong><code><a href="../reference/lnk_rollup_wsg.html">lnk_rollup_wsg()</a></code></strong> gains a <code>connection</code> alias. Its default <code>rearing_km</code> is still every line flagged <code>rearing</code>, which is what the validator’s cost and the parity scripts compare.</li>
+<li>
+<strong><code>data-raw/compare_rollups.R</code></strong> refuses to compare a directory that mixes pre- and post-0.62.0 rollups.</li>
+<li>
+<strong>What moves</strong> (ADMS, NATR; <code>data-raw/logs/lake_connection_317/</code>):
+<ul><li>Against bcfishpass, ADMS CH goes from +91.1 % to +38.9 %, CO from +75.0 % to +28.7 % and BT from +16.4 % to +2.0 %. CH and CO stay high because bcfishpass has no CH or CO lake rearing on ADMS.</li>
+<li>SK rearing km fall 55–95 %, identically on both sides, so SK parity is 0.0 % on six bcfishpass-config WSGs. KO falls 62 % on NATR.</li>
+<li>Write-up: <code>research/habitat_thresholds.md</code>, “Lake connection lines”.</li>
+</ul></li>
+<li>
+<strong>Follow-ups:</strong>
+<ul><li>
+<a href="https://github.com/NewGraphEnvironment/link/issues/319" class="external-link">#319</a>: one meaning of <code>rearing_km</code> everywhere.</li>
+<li>
+<a href="https://github.com/NewGraphEnvironment/link/issues/320" class="external-link">#320</a>: wetland construction flow lines.</li>
+<li>
+<a href="https://github.com/NewGraphEnvironment/link/issues/321" class="external-link">#321</a>: <code><a href="../reference/lnk_aggregate.html">lnk_aggregate()</a></code> counts only the crossing’s own line.</li>
+</ul></li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.61.0" id="link-0610">link 0.61.0<a class="anchor" aria-label="anchor" href="#link-0610"></a></h2>
 <p><strong>In <code>default</code>, lake and wetland rearing need same-species spawning within 10 km, and lake centrelines count in <code>rearing</code></strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/310" class="external-link">#310</a>). The rollups now split rearing km by the polygon each line sits in. That renames two rollup labels and redefines a third.</p>

@@ -1,5 +1,49 @@
 # Changelog
 
+## link 0.62.0
+
+**The compare rollups report lake connectors apart from rearing km**
+([\#317](https://github.com/NewGraphEnvironment/link/issues/317)). FWA
+1450 lines (“Construction line, connection”) join each tributary mouth
+to a lake’s main-flow line, so lake km had grown with a lake’s tributary
+count.
+
+- **Rollups.**
+  - [`lnk_compare_rollup()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_rollup.md)
+    /
+    [`lnk_compare_wsg()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_wsg.md)
+    gain a 9th habitat type, `rearing_lake_connection` (km).
+  - `rearing` and `rearing_lake` km leave 1450 lines in lake and
+    reservoir polygons out, on the link side and the bcfishpass side
+    alike. bcfishpass counts these lines too, in BT and SK rearing.
+  - Stream + lake + wetland still sums to `rearing`.
+  - 1400 (“other flow / inferred connection”) is a construction flow
+    line, not a connector, and stays in the km.
+- **The rules are unchanged.** fresh’s `rearing` flag still carries the
+  1450 lines, so `cluster_rearing` still joins inlet rearing to the
+  lake.
+- **[`lnk_rollup_wsg()`](https://newgraphenvironment.github.io/link/reference/lnk_rollup_wsg.md)**
+  gains a `connection` alias. Its default `rearing_km` is still every
+  line flagged `rearing`, which is what the validator’s cost and the
+  parity scripts compare.
+- **`data-raw/compare_rollups.R`** refuses to compare a directory that
+  mixes pre- and post-0.62.0 rollups.
+- **What moves** (ADMS, NATR; `data-raw/logs/lake_connection_317/`):
+  - Against bcfishpass, ADMS CH goes from +91.1 % to +38.9 %, CO from
+    +75.0 % to +28.7 % and BT from +16.4 % to +2.0 %. CH and CO stay
+    high because bcfishpass has no CH or CO lake rearing on ADMS.
+  - SK rearing km fall 55–95 %, identically on both sides, so SK parity
+    is 0.0 % on six bcfishpass-config WSGs. KO falls 62 % on NATR.
+  - Write-up: `research/habitat_thresholds.md`, “Lake connection lines”.
+- **Follow-ups:**
+  - [\#319](https://github.com/NewGraphEnvironment/link/issues/319): one
+    meaning of `rearing_km` everywhere.
+  - [\#320](https://github.com/NewGraphEnvironment/link/issues/320):
+    wetland construction flow lines.
+  - [\#321](https://github.com/NewGraphEnvironment/link/issues/321):
+    [`lnk_aggregate()`](https://newgraphenvironment.github.io/link/reference/lnk_aggregate.md)
+    counts only the crossing’s own line.
+
 ## link 0.61.0
 
 **In `default`, lake and wetland rearing need same-species spawning
