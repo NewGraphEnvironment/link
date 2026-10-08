@@ -1,6 +1,6 @@
 # Habitat thresholds — gradient, channel width and discharge
 
-**Verified:** 2026-09-29 (CH/BT gradient and width), 2026-10-02 (MAD), 2026-10-03 (`cw` against `mad`), 2026-10-06 (discharge fill; `default`'s width-converted MAD ranges) · **Issues:** #284 (gradient and width), #302 (MAD, [below](#mad-discharge-ranges-for-bt-gr-ko-and-rb-302)), #300 (`cw` against `mad`), #305 (discharge fill on main stems), #307 (`default`'s MAD ranges from its width minima), #290 (the pooling tracker), #283 (the validator, [`habitat_validation.md`](habitat_validation.md)), #282 (`default_tuned`); spawned knowledge#28 (habitat weights) · **Produced by:** `data-raw/query_habitat_thresholds_obs.R`, `data-raw/query_habitat_thresholds_fiss.R` → `data-raw/logs/habitat_thresholds_284/`; step 5 by `data-raw/habitat_variants_build.R` and `data-raw/habitat_variants_score.R` → `data-raw/logs/habitat_score_284/`; literature reviews archived with #284's and #302's PWFs (`literature.md`); MAD by `data-raw/query_habitat_thresholds_mad.R` → `data-raw/logs/habitat_thresholds_302/` and the same scoring scripts → `data-raw/logs/habitat_score_302/`; `cw` against `mad` by the same scripts with `--base=default_tuned` → `data-raw/logs/habitat_score_300/`, and with the fill → `data-raw/logs/habitat_score_305/`; the fill measured by `data-raw/discharge_fill_count.R` → `data-raw/logs/discharge_fill_305/`; `default`'s width-to-discharge conversion by `data-raw/query_width_mad_equivalent.R` → `data-raw/logs/habitat_thresholds_307/` · **Status:** BT `rear_gradient_max` 0.1349 **scored and held**; MAD ranges for BT, GR and RB **scored** (the rule refused loosening past P10 except RB spawning), KO unscored; `cw` against `mad` **scored** (size-adjusted); with main stems filled (#305) `mad` drops only little-used water for BT, GR and RB spawning, and RB rearing reads both ways; `default`'s width-converted MAD ranges (#307) are a conversion, not a calibration, and unscored; every other row unscored
+**Verified:** 2026-09-29 (CH/BT gradient and width), 2026-10-02 (MAD), 2026-10-03 (`cw` against `mad`), 2026-10-06 (discharge fill; `default`'s width-converted MAD ranges), 2026-10-07 (wetland floor on `rearing`) · **Issues:** #284 (gradient and width), #302 (MAD, [below](#mad-discharge-ranges-for-bt-gr-ko-and-rb-302)), #300 (`cw` against `mad`), #305 (discharge fill on main stems), #307 (`default`'s MAD ranges from its width minima), #311 (the wetland floor on `rearing`; fresh#237, fresh#240), #290 (the pooling tracker), #283 (the validator, [`habitat_validation.md`](habitat_validation.md)), #282 (`default_tuned`); spawned knowledge#28 (habitat weights) · **Produced by:** `data-raw/query_habitat_thresholds_obs.R`, `data-raw/query_habitat_thresholds_fiss.R` → `data-raw/logs/habitat_thresholds_284/`; step 5 by `data-raw/habitat_variants_build.R` and `data-raw/habitat_variants_score.R` → `data-raw/logs/habitat_score_284/`; literature reviews archived with #284's and #302's PWFs (`literature.md`); MAD by `data-raw/query_habitat_thresholds_mad.R` → `data-raw/logs/habitat_thresholds_302/` and the same scoring scripts → `data-raw/logs/habitat_score_302/`; `cw` against `mad` by the same scripts with `--base=default_tuned` → `data-raw/logs/habitat_score_300/`, and with the fill → `data-raw/logs/habitat_score_305/`; the fill measured by `data-raw/discharge_fill_count.R` → `data-raw/logs/discharge_fill_305/`; `default`'s width-to-discharge conversion by `data-raw/query_width_mad_equivalent.R` → `data-raw/logs/habitat_thresholds_307/`; the wetland floor by `data-raw/logs/wetland_floor_311/run.R`, `summarise.R` and `obs.R` (same directory) · **Status:** BT `rear_gradient_max` 0.1349 **scored and held**; MAD ranges for BT, GR and RB **scored** (the rule refused loosening past P10 except RB spawning), KO unscored; `cw` against `mad` **scored** (size-adjusted); with main stems filled (#305) `mad` drops only little-used water for BT, GR and RB spawning, and RB rearing reads both ways; `default`'s width-converted MAD ranges (#307) are a conversion, not a calibration, and unscored; every other row unscored
 
 ## Verdict
 
@@ -1136,7 +1136,10 @@ table ([above](#literature)):
   SK lakes on area, CO wetlands with no size test). The buckets also ignore spawning
   connectivity: in `fresh_default`, 16,651 of 16,652 BT `lake_rearing` rows are not
   `rearing`. Fixes: fresh#240 (area-only buckets, connected to spawning) and #310
-  (`default`'s lake and wetland rules, CO lakes dropped).
+  (`default`'s lake and wetland rules). *Update 2026-10-07 (#311):* link now pins fresh
+  v0.39.0, so the size gate is gone; the buckets are polygon area plus the rule's floor
+  under either model ([below](#the-wetland-floor-on-rearing-311)). Connectivity is
+  still #310's.
 
 **Not done here.**
 - `default`'s CH, CO, SK and ST minima come from bcfishpass and are mostly untraceable
@@ -1149,3 +1152,55 @@ table ([above](#literature)):
 - #302's ladders (`--base=default`) regenerate only at v0.58.0 (`8cb4822`). Each rung
   sets `*_mad_max = 9999`, which `default` now carries, so the build stops with "variant …
   equals default". Their scores are unaffected.
+
+## The wetland floor on `rearing` (#311)
+
+**Verified:** 2026-10-07 · **Issues:** #311; fresh#237 (the floor in the rear predicate),
+fresh#240 (area-only buckets) · **Produced by:** `data-raw/logs/wetland_floor_311/`
+(`run.R`, `summarise.R`, `obs.R`; README with the full tables)
+
+**What changed.**
+- **fresh v0.38.0 gates `rearing` on a W rule's `wetland_ha_min`.** Before, only the
+  `wetland_rearing` bucket used it.
+- **link pins v0.39.0**, so `default*` rearing narrows with no config change.
+- **The 1050/1150 wetland-flow rear rule has no floor of its own.** On NATR BT it held
+  26.6 km of rearing in wetlands under 1 ha.
+- **Operator call (2026-10-07): a declared `rear_wetland_ha_min` bounds all wetland
+  rearing.** `lnk_rules_build()` therefore puts it on the wetland-flow rule too, as a W
+  rule. That rule comes after the polygon rule, which keeps the first W rule (fresh's
+  bucket and `requires_connected` anchor) the same.
+- **Floors in `default`:** 1 ha for BT, CH, RB, ST and WCT; 0.5 ha for CO.
+
+**Measured** on one segmentation per WSG (NATR, PARS, BULK, ADMS). Three runs:
+- **A:** fresh 0.36.2 with the old rules.
+- **B:** 0.39.0 with the old rules.
+- **C:** 0.39.0 with the floored rules.
+
+What each step does:
+- **A → B: fresh alone.** It reproduces fresh's published numbers exactly. `rearing`
+  loses at most 75 segments / 3.6 km (PARS RB), and no observation location. The buckets
+  roughly double: NATR BT lake goes from 310 to 521 km and wetland from 684 to 1,287 km.
+- **B → C: the floor on the wetland-flow rule.**
+  - Wetland-flow rearing in sub-floor wetlands goes to 0.
+  - Rearing loss is largest on NATR RB (−46.7 km), NATR BT (−34.1 km), PARS RB
+    (−28.0 km), PARS BT (−26.2 km) and BULK ST (−23.8 km).
+  - Part of the loss is on other edges: rearing that `cluster_rearing` no longer
+    connects to spawning once the sub-floor wetland link is gone. That is 17.4 of BULK
+    ST's 23.8 km, and 6.8 of NATR BT's.
+  - Observations: 3 of 2,265 locations on rearing are lost.
+  - Against bcfishpass rearing km, the departure moves by at most 1.2 points. NATR BT
+    goes from +13.8 % to +12.7 %, PARS BT from +1.8 % to +0.6 %.
+
+**Reading.** Across the four WSGs the floor removes 198.8 km (2,078 segment-species) of
+rearing, and observations sit on 3 of those locations. So fish observations barely use
+the small-wetland rearing it removes. It also cuts some upstream rearing through
+connectivity. The floor's value itself (1 ha) was not calibrated here. BT's notes cite
+beaver complexes, which are often small, and those are exactly what the floor removes.
+Calibrating it on observations is open.
+
+**Caveats.**
+- Province-wide, 40 edge-1050 lines (about 6.6 km) have no `waterbody_key`. The W-typed
+  rule drops them.
+- In `edge_types = "categories"` mode the wetland-flow rule matches no FWA line at all.
+  That predates #311; no shipped bundle uses categories.
+

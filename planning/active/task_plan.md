@@ -40,19 +40,12 @@ The open bundle question was the `edge_types_explicit: [1050, 1150], thresholds:
 - [ ] Load every regenerated `rules.yaml` (default*, top-level, and `default_tuned` via `lnk_config()`) through `fresh::frs_params()` v0.39.0; each floored species' compiled `rear` predicate carries `1050, 1150 … area_ha >= <floor>`
 
 ## Phase 3: Measure on one segmentation
-Stamp the environment in each log header: link and fresh version + SHA, fwapg state, bcfishobs row count. Logs go to `data-raw/logs/wetland_floor_311/` with a README.
-- [ ] Prepare NATR, PARS, BULK and ADMS once each under `default` into scratch schemas, then re-classify/connect three ways (pattern: `data-raw/logs/habitat_thresholds_282/reclassify.R`):
-  - **A:** fresh v0.36.2 with the old rules;
-  - **B:** v0.39.0 with the old rules (the upstream movement only);
-  - **C:** v0.39.0 with the new rules (adds the carve-out floor).
-- [ ] Per WSG × species, report:
-  - `rearing` km and segments;
-  - `lake_rearing` / `wetland_rearing` km and ha;
-  - rearing km left in wetlands below the species' floor, which should be ≈0 under C for floored species.
-
-  Frame each as a departure from the bcfishpass reference.
-- [ ] Check A→B against fresh's published numbers: NATR BT −40 segments / −2.1 km rearing, PARS BT −60 / −3.1 km, BULK CO −2; NATR BT buckets 310 → 521 lake km and 684 → 1,287 wetland km. Investigate any large mismatch before going on
-- [ ] `lnk_habitat_validate()` on NATR BT and CO rearing, A against C: observation capture lost, and km cost
+Logs in `data-raw/logs/wetland_floor_311/` (README carries the tables; `measure.csv` stamps link/fresh SHAs and `cfg_hash` per row, `stamp_<run>.txt` the `lnk_stamp()`).
+- [x] Built NATR, PARS, BULK and ADMS once each under `default` into `zz311_<wsg>` (frozen worktree at `664ec2d`, fresh 0.36.2), then re-classified three ways: **A** fresh v0.36.2 + old rules; **B** v0.39.0 + old rules; **C** v0.39.0 + new rules (frozen worktree at `0ca706b`). Snapshots in `zz311_snap.<wsg>_<run>`
+- [x] Per WSG × species: `rearing` km/segments, bucket km/ha, sub-floor rearing (all edges, and 1050/1150 only), bcfishpass reference km (`summary.csv`). Sub-floor wetland-flow rearing is 0 under C for every floored species
+- [x] A→B matches fresh's published numbers exactly (NATR BT −40 / −2.124 km; PARS BT −60 / −3.128 km; BULK CO −2; NATR BT buckets 309.9 → 521.4 lake km, 683.9 → 1,287.3 wetland km)
+- [x] Observation exposure, *revised after plan review* to B vs C (the floor) and A vs B (fresh), with a direct query (`obs.R`) because `lnk_habitat_validate()` scores persisted schemas, not scratch working schemas: B→C loses 3 of 2,265 locations on rearing, A→B loses 0
+- [x] `research/habitat_thresholds.md`: new section "The wetland floor on `rearing` (#311)"; the #307 bucket bullet updated
 
 ## Phase 4: Docs and issue hygiene
 - [ ] `RUNBOOK.md` §7 (~line 720): `wetland_ha_min` now gates rearing; the carve-out is floored in default*; first-W-rule ordering
