@@ -783,32 +783,54 @@ dispatch.**
   polygon membership. **Lake, wetland and `thresholds: false` rules
   inherit nothing under either model**, so BT keeps its wetland and
   1050/1150-edge rearing in a `mad` group (ADMS, measured on `default`
-  before \#307 gave BT a range: 63.5 km, all inside waterbodies). That
-  holds for the `rearing` flag. The separate `lake_rearing` /
-  `wetland_rearing` bucket columns (fresh’s `build_wb_pred()`) are gated
-  by the species’ rear size range whenever it has one: by width under
-  `cw`, and by discharge under `mad`. A species with no rear MAD range
-  keeps them on polygon membership alone. fresh’s main predicate also
-  ignores a W rule’s `wetland_ha_min` (only `build_wb_pred()` applies
-  it).
+  before \#307 gave BT a range: 63.5 km, all inside waterbodies). The
+  separate `lake_rearing` / `wetland_rearing` bucket columns (fresh’s
+  `build_wb_pred()`) are polygon membership plus the rule’s area floor
+  under either model, from fresh 0.37.0 (fresh#240). Before that they
+  were gated by the species’ rear size range, which sized the line
+  through the polygon.
+- **A wetland floor bounds `rearing` as well as the bucket (fresh ≥
+  0.38.0, fresh#237; link#311).** fresh compiles a W rule’s
+  `wetland_ha_min` into the main rear predicate, and
+  [`lnk_rules_build()`](https://newgraphenvironment.github.io/link/reference/lnk_rules_build.md)
+  puts a declared `rear_wetland_ha_min` on both wetland rear rules: the
+  polygon mainline rule (1000/1100) and the 1050/1150 wetland-flow
+  carve-out, which then becomes `waterbody_type: W`.
+  - **Order is load-bearing.** fresh takes the **first** W rule in
+    `rear:` as the `wetland_rearing` bucket rule and as the
+    `requires_connected` anchor (`.frs_find_waterbody_rule()`), so the
+    floored carve-out is emitted after the polygon rule.
+  - A species with no floor keeps the unfloored carve-out in its old
+    place, so the `bcfishpass` rules are byte-identical.
+  - Nearly every 1050/1150 line sits in a `fwa_wetlands_poly` polygon.
+    The W type drops the exceptions: 40 edge-1050 lines (about 6.6 km)
+    province-wide with no `waterbody_key`, none of them in NATR, PARS,
+    ADMS or BULK.
+  - The floor bounds the two wetland rear rules, not every line in a
+    small wetland. The stream rule (`[1000, 1100, 2000, 2300]`, no
+    waterbody test) still admits mainlines in sub-floor wetlands (0–0.62
+    km per floored species on those four).
+  - fresh admits a `waterbody_key` when **any** of its polygons meets
+    the floor.
 - **`default` and `default_tuned` carry MAD ranges for BT, GR, KO and
   RB; `bcfishpass` does not.** `default`’s are its own channel-width
   minima converted to discharge (#307: spawning 2 m → 0.041, GR 4 m →
   0.20, rearing 1.5 m → 0.021 m³/s, the median `mad_m3s` at that
   modelled width, `data-raw/query_width_mad_equivalent.R`);
-  `default_tuned`’s are calibrated on fish observations (#302). Once a
-  species has a rear range, its `lake_rearing` / `wetland_rearing`
-  buckets are gated by it under `mad` (above), so they shrink there.
-  That is an artifact of sizing a polygon by the line through it, and
-  the buckets ignore spawning connectivity; fresh#240 and \#310 fix
-  both. All are inert until a group is moved to `mad`. At
-  `default_tuned`’s values a `mad` group keeps less stream rearing than
-  `cw` (held-out, with the \#305 fill: −32 % BT, −76 % GR, −2.8 % RB);
-  at `default`’s, the two models agree within about 5 % (NATR, ADMS;
-  \#307). Read `research/habitat_thresholds.md` before moving one. link
-  also skips the stream-order rearing bypass (`frs_order_child`) for a
-  `mad` group — bcfp applies it in its cw branch only. fresh does not
-  implement bcfp’s `stream_order >= 8` spawning bypass.
+  `default_tuned`’s are calibrated on fish observations (#302). Under
+  fresh \< 0.37.0 a rear range also gated the `lake_rearing` /
+  `wetland_rearing` buckets, so they shrank under `mad`. That was an
+  artifact of sizing a polygon by the line through it, and fresh#240
+  removed it (link pins fresh v0.39.0 from \#311). The buckets still
+  ignore spawning connectivity, which is \#310. All are inert until a
+  group is moved to `mad`. At `default_tuned`’s values a `mad` group
+  keeps less stream rearing than `cw` (held-out, with the \#305 fill:
+  −32 % BT, −76 % GR, −2.8 % RB); at `default`’s, the two models agree
+  within about 5 % (NATR, ADMS; \#307). Read
+  `research/habitat_thresholds.md` before moving one. link also skips
+  the stream-order rearing bypass (`frs_order_child`) for a `mad` group
+  — bcfp applies it in its cw branch only. fresh does not implement
+  bcfp’s `stream_order >= 8` spawning bypass.
 - **Discharge coverage is uneven.** A segment with NULL `mad_m3s` fails
   every mad test, so a `mad` group without coverage loses all of its
   stream habitat with no error. BULK has none in the local fwapg; 123
