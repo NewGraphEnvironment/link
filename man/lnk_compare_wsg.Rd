@@ -67,8 +67,12 @@ A list with two elements:
 \itemize{
 \item \code{rollup}: tibble with one row per (species, habitat_type) — 8
 habitat types: \code{spawning}, \code{rearing}, \code{lake_rearing},
-\code{wetland_rearing}, \code{rearing_stream}, \code{rearing_lake_centerline},
-\code{rearing_wetland_centerline}, \code{accessible} (km, link#221).
+\code{wetland_rearing}, \code{rearing_stream}, \code{rearing_lake},
+\code{rearing_wetland}, \code{accessible} (km, link#221). \code{rearing_stream},
+\code{rearing_lake} and \code{rearing_wetland} split \code{rearing} by the polygon
+each line sits in (#310); \code{lake_rearing} / \code{wetland_rearing} are
+polygon hectares. A lake's km and its ha describe the same water
+and are never added together.
 Columns: \code{wsg}, \code{species}, \code{habitat_type}, \code{unit} (\code{km} | \code{ha}),
 \code{link_value}, \code{ref_value}, \code{diff_pct}. \code{accessible}'s \code{ref_value}
 is \code{NA} until the tunnel-free reference path lands.
@@ -106,9 +110,12 @@ unless \code{cleanup_working = FALSE}.
 
 Rollup methodology mirrors what bcfp's \verb{habitat_linear_<sp>} measures:
 linear km from \code{length_metre} summed over rearing/spawning-flagged
-segments, with edge-type decomposition into stream / lake-centerline /
-wetland-centerline slices. Lake / wetland area in hectares uses
-\verb{DISTINCT waterbody_key} joins to \code{whse_basemapping.fwa_lakes_poly} /
+segments, split into stream / lake / wetland km by the polygon each line
+sits in (\code{waterbody_key} against the lake, reservoir and wetland
+polygon tables; lakes include reservoirs, river polygons count as
+stream). Lake /
+wetland area in hectares uses \verb{DISTINCT waterbody_key} joins to
+\code{whse_basemapping.fwa_lakes_poly} + \code{fwa_manmade_waterbodies_poly} /
 \code{fwa_wetlands_poly} to avoid double-counting multi-segment lakes.
 See \code{research/default_vs_bcfishpass.md} for the measurement-asymmetry
 decision (link reports both centerline km and polygon ha; bcfp credits

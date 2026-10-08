@@ -1,0 +1,5 @@
+"run","aoi","schema","snapshot","n_segments","link_sha","link_dirty","fresh","fresh_sha","cfg_hash","minutes"
+"A","ADMS","zz311_adms","zz310_snap.adms_A",39422,"865bd04",FALSE,"0.39.0","e247ca1","sha256:841c0cfaed61df13a1780a5693d5ed87a3efb9f51a001ea3beed68a92bb95950",0.5
+"A","NATR","zz311_natr","zz310_snap.natr_A",47300,"865bd04",FALSE,"0.39.0","e247ca1","sha256:841c0cfaed61df13a1780a5693d5ed87a3efb9f51a001ea3beed68a92bb95950",1.2
+"B","ADMS","zz311_adms","zz310_snap.adms_B",39422,"892a09f",FALSE,"0.39.0","e247ca1","sha256:7e9dffa4a5b84d99c30928ecaf5eda30e7ccf9342f1fc53a2d9a3ce2840eb66b",0.9
+"B","NATR","zz311_natr","zz310_snap.natr_B",47300,"892a09f",FALSE,"0.39.0","e247ca1","sha256:7e9dffa4a5b84d99c30928ecaf5eda30e7ccf9342f1fc53a2d9a3ce2840eb66b",1.9

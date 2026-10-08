@@ -33,7 +33,8 @@ identifier whitelist.}
 
 \item{metrics}{Named character vector: names are output columns,
 values are SQL aggregate expressions over the generic aliases
-\code{length_metre}, \code{access}, \code{spawning}, \code{rearing}. Default emits
+\code{length_metre}, \code{edge_type}, \code{waterbody}, \code{access}, \code{spawning},
+\code{rearing}. Default emits
 \code{accessible_km}, \code{spawning_km}, \code{rearing_km}. Raw SQL — trusted
 caller input, like \code{frs_aggregate()}.}
 
@@ -64,6 +65,17 @@ for a length roll-up. When a segment has no \code{streams_access} row
 phase). Length is never dropped by a missing access row, so the
 habitat metrics (\code{spawning_km}, \code{rearing_km}) are unaffected.
 
+Each row also carries \code{waterbody} (\code{"lake"}, \code{"wetland"} or \code{"stream"}):
+the polygon the line sits in, by \code{waterbody_key} against the polygon
+tables fresh's lake and wetland rules read. Lakes and reservoirs
+(\code{fwa_lakes_poly}, \code{fwa_manmade_waterbodies_poly}) are \code{"lake"},
+wetlands (\code{fwa_wetlands_poly}) \code{"wetland"}, and river polygons or no
+polygon \code{"stream"}. The three partition the network, so
+\code{rearing_stream_km + rearing_lake_km + rearing_wetland_km} built from
+them equals \code{rearing_km} (to rounding); see the examples. A lake's
+centreline km and its polygon hectares describe the same water and are
+never added together.
+
 Because the per-species columns are aliased to fixed names, the
 \code{metrics} SQL is written \strong{once}, species-agnostic — mirroring
 \code{fresh::frs_aggregate()}'s \code{metrics} / \code{where} shape. Adding a species
@@ -89,6 +101,13 @@ different (pre-gating) semantics and diverges from the access model
 conn <- lnk_db_conn()
 # Coho accessible / spawning / rearing km for Morice, from persisted state.
 lnk_rollup_wsg(conn, aoi = "MORR", species = "CO")
+
+# Rearing km by the polygon the line sits in (stream / lake / wetland).
+lnk_rollup_wsg(conn, aoi = "MORR", species = "CO",
+  metrics = c(
+    rearing_km = "sum(length_metre) FILTER (WHERE rearing) / 1000",
+    rearing_lake_km =
+      "sum(length_metre) FILTER (WHERE rearing AND waterbody = 'lake') / 1000"))
 
 # Custom metric: count accessible segments per species.
 lnk_rollup_wsg(conn, aoi = "MORR", species = c("CO", "BT"),

@@ -11,6 +11,26 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
+## Status (2026-10-07, late) — `default`'s lake and wetland rearing connected to spawning; lake centrelines rear (#310)
+
+**`default`'s buckets keep only polygons with same-species spawning within 10 km (SK and KO excepted), and lake centrelines count in `rearing`.**
+- **Rules (`lnk_rules_build()`):**
+  - `rear_lake_connected_distance_max` / `rear_wetland_connected_distance_max` stamp `requires_connected: spawning` on the **first** rear L / W rule only.
+  - The additive L rule admits lake and reservoir lines (`1000/1100/1200/1250/1300/1350/1400/1450/1475`) with `thresholds: false`.
+  - 10 km for BT, CH, CO, GR (lakes only), RB, ST and WCT. CO has no lake / wetland floor. SK / KO are unchanged, and the builder refuses connected rearing or an `area_only` spawning anchor for them.
+  - The retired `rear_requires_connected` columns stop the build if set.
+- **Rollups split `rearing` km by polygon** (`rearing_stream` / `rearing_lake` / `rearing_wetland`; the `*_centerline` labels are gone), matched against the polygon tables, not edge type.
+- **Measured on one segmentation** (ADMS, NATR; `data-raw/logs/lake_connected_310/`):
+  - Rearing rises 237–525 km per lake species other than SK / KO (0), almost all lake lines. Spawning is unchanged, and SK / KO are row-identical. Buckets move little (NATR BT wetland ha −2 %).
+  - Write-up: `research/habitat_thresholds.md`, "Lake and wetland rearing connected to spawning".
+- **Open for review:** Adams Lake alone puts 211.6 km on ADMS CH / CO, 149 km of it 1450 connection lines, which takes ADMS CH to +91 % against bcfishpass.
+
+**Facts not worth re-deriving:**
+- **fresh's `lake_rearing` bucket reads `fwa_lakes_poly` only**, while its rule compiler also reads reservoirs (fresh v0.39.0 `frs_habitat_predicates.R:205-211`). Reservoir lines rear but are never `lake_rearing`; the fresh issue is drafted.
+- **`fwa_waterbodies` has no row for ~23,000 km of lines inside lake / wetland / reservoir polygons.** Classify a line by the polygon tables, as fresh does.
+- **CT and DV have no thresholds row, so `default` emits no rules for them**; their dimension cells are inert.
+- **fresh anchors waterbody-connected spawning on the first rear L *or* W rule**, and the additive branch emits W before L.
+
 ## Status (2026-10-07) — fresh v0.39.0 pinned; a wetland floor bounds both wetland rear rules (#311)
 
 **link pins fresh v0.39.0 (floor 0.38.0).** A W rule's `wetland_ha_min` now gates `rearing` (fresh#237), and the buckets are area-only (fresh#240). `default*` outputs move with no config change.
@@ -35,7 +55,7 @@ Experimental package — breaking all the time and loving the learning curve. St
 **fresh v0.37.0 sizes `lake_rearing` / `wetland_rearing` by polygon area alone, and can keep a polygon only where it connects to spawning.** link pins v0.39.0 since #311, so these buckets are live.
 - **Bumping the pin moves `default`'s buckets with no config change.** BT on NATR: lake 309.9 → 521.4 km, wetland 683.9 → 1,287.3 km. The size test was the artifact #307 measured. Ladder at 0.5–10 km: fresh `data-raw/logs/bucket_connected_240/`.
 - **Opt-in keys:** on the first rear L / W rule only, `requires_connected: spawning` + a finite `connected_distance_max` (m). fresh refuses them anywhere else at rules load.
-  - `lnk_rules_build()`'s `add_rc()` stamps `rear_requires_connected` on every rear rule. That is inert while the column is NA, and fails fresh's loader once it is not.
+  - `lnk_rules_build()`'s `add_rc()` stamps `rear_requires_connected` on every rear rule. That is inert while the column is NA, and fails fresh's loader once it is not. *Fixed in #310: only the first rear L / W rule is stamped, from per-type columns.*
   - Work for both: #310.
 - **#310 revised 2026-10-07** (operator):
   - CO keeps lake and wetland rearing with no size minimum. The first draft misread "No. Ditch minimum" as dropping CO lakes.

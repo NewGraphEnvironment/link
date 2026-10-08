@@ -116,8 +116,8 @@ test_that("lnk_compare_rollup composes resolve → link-rollup → ref-rollup �
     list(km = data.frame(species_code = "BT",
                          spawning_km = 10, rearing_km = 20,
                          rearing_stream_km = 15,
-                         rearing_lake_centerline_km = 3,
-                         rearing_wetland_centerline_km = 2,
+                         rearing_lake_km = 3,
+                         rearing_wetland_km = 2,
                          accessible_km = 18,
                          stringsAsFactors = FALSE),
          lake_ha = data.frame(species_code = "BT", lake_rearing_ha = 100,
@@ -130,8 +130,8 @@ test_that("lnk_compare_rollup composes resolve → link-rollup → ref-rollup �
     data.frame(species_code = "BT",
                spawning_km = 11, rearing_km = 21,
                rearing_stream_km = 16,
-               rearing_lake_centerline_km = 3,
-               rearing_wetland_centerline_km = 2,
+               rearing_lake_km = 3,
+               rearing_wetland_km = 2,
                lake_rearing_ha = 105, wetland_rearing_ha = 50,
                stringsAsFactors = FALSE)
   }
@@ -164,4 +164,22 @@ test_that("lnk_compare_rollup composes resolve → link-rollup → ref-rollup �
   expect_equal(acc$unit, "km")
   expect_true(is.na(acc$ref_value))
   expect_true(is.na(acc$diff_pct))
+})
+
+test_that("link rollup splits rearing km by waterbody class, not edge type (#310)", {
+  captured <- NULL
+  local_mocked_bindings(lnk_rollup_wsg = function(..., metrics) {
+    captured <<- metrics
+    stop("captured")
+  })
+  cfg <- lnk_config("default")
+  expect_error(link:::.lnk_compare_rollup_link(DBI::ANSI(), cfg, "ADMS", "CO"),
+               "captured")
+  expect_true(all(c("rearing_km", "rearing_stream_km", "rearing_lake_km",
+                    "rearing_wetland_km") %in% names(captured)))
+  expect_false(any(grepl("centerline", names(captured))))
+  expect_match(captured[["rearing_stream_km"]], "waterbody = 'stream'")
+  expect_match(captured[["rearing_lake_km"]], "waterbody = 'lake'")
+  expect_match(captured[["rearing_wetland_km"]], "waterbody = 'wetland'")
+  expect_false(any(grepl("edge_type", captured)))
 })

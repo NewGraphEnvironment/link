@@ -198,7 +198,7 @@ carve_rules <- function(rear) {
     et <- r[["edge_types"]] %||% r[["edge_types_explicit"]]
     isFALSE(r[["thresholds"]]) && !is.null(et) &&
       (identical(et, "wetland") ||
-         identical(sort(as.integer(et)), c(1050L, 1150L)))
+         (is.numeric(et) && identical(sort(as.integer(et)), c(1050L, 1150L))))
   }, rear)
 }
 
@@ -237,7 +237,10 @@ for (et_mode in c("explicit", "categories")) {
     # ... and the floored carve-out sits after it
     is_w <- vapply(rear, function(r) identical(r$waterbody_type, "W"),
                    logical(1))
-    is_carve <- vapply(rear, function(r) isFALSE(r$thresholds), logical(1))
+    # The L rule is thresholds: false too (#310); the carve-out is the other one
+    is_carve <- vapply(rear, function(r) {
+      isFALSE(r$thresholds) && !identical(r$waterbody_type, "L")
+    }, logical(1))
     expect_lt(which(is_w & !is_carve), which(is_carve))
   })
 }
@@ -250,7 +253,10 @@ test_that("no rear_wetland_ha_min leaves the carve-out unfloored and in place", 
     expect_null(carve[[1]]$waterbody_type)
     expect_null(carve[[1]]$wetland_ha_min)
     # Unfloored carve-out keeps its position before the polygon W rule
-    is_carve <- vapply(rear, function(r) isFALSE(r$thresholds), logical(1))
+    # The L rule is thresholds: false too (#310); the carve-out is the other one
+    is_carve <- vapply(rear, function(r) {
+      isFALSE(r$thresholds) && !identical(r$waterbody_type, "L")
+    }, logical(1))
     is_w <- vapply(rear, function(r) identical(r$waterbody_type, "W"),
                    logical(1))
     expect_lt(which(is_carve), which(is_w))
@@ -636,7 +642,7 @@ test_that("absent area_only column omits the field (backward-compat)", {
   expect_null(l$area_only)
 })
 
-test_that("L / W polygon rules carry edge_types_explicit: [1000, 1100] filter", {
+test_that("W polygon rule keeps mainlines; L rule takes lake centrelines", {
   dims <- tibble::tribble(
     ~species, ~spawn_lake, ~spawn_stream, ~rear_lake, ~rear_lake_only,
     ~rear_no_fw, ~rear_stream, ~rear_wetland, ~rear_wetland_polygon,
@@ -649,7 +655,9 @@ test_that("L / W polygon rules carry edge_types_explicit: [1000, 1100] filter", 
   lnk_rules_build(csv, out, edge_types = "explicit")
 
   l <- find_wb_rule(get_rear_rules(out, "BT"), "L")
-  expect_setequal(as.integer(l$edge_types_explicit), c(1000L, 1100L))
+  expect_setequal(as.integer(l$edge_types_explicit),
+                  c(1000L, 1100L, 1200L, 1250L, 1300L, 1350L, 1400L,
+                    1450L, 1475L))
   w <- find_wb_rule(get_rear_rules(out, "BT"), "W")
   expect_setequal(as.integer(w$edge_types_explicit), c(1000L, 1100L))
 })
@@ -685,7 +693,9 @@ test_that("default bundle: rear_lake non-lake-only species carry edge_types filt
   for (sp in setdiff(names(r), c("SK", "KO"))) {
     l <- find_wb_rule(r[[sp]]$rear, "L")
     if (!is.null(l)) {
-      expect_setequal(as.integer(l$edge_types_explicit), c(1000L, 1100L))
+      expect_setequal(as.integer(l$edge_types_explicit),
+                      c(1000L, 1100L, 1200L, 1250L, 1300L, 1350L, 1400L,
+                        1450L, 1475L))
     }
     w <- find_wb_rule(r[[sp]]$rear, "W")
     if (!is.null(w)) {
@@ -1049,4 +1059,171 @@ test_that("default config rules.yaml retains 1050/1150 in dedicated wetland-rear
   # BT declares rear_wetland_ha_min = 1, so the carve-out carries it (#311)
   expect_identical(wetland_rule[["waterbody_type"]], "W")
   expect_equal(wetland_rule[["wetland_ha_min"]], 1)
+})
+
+# -- Lake centrelines and connected lake / wetland rearing (#310) -------------
+
+lake_cl_codes <- c(1000L, 1100L, 1200L, 1250L, 1300L, 1350L, 1400L, 1450L,
+                   1475L)
+
+conn_dims <- function(lake_cdm = NA, wetland_cdm = NA, wetland_ha = NA,
+                      sp = "BT", spawn_rc = "", lake_ao = "no",
+                      lake_only = "no") {
+  streams <- if (lake_only == "yes") "no" else "yes"
+  cols <- list(species = sp, spawn_lake = "no", spawn_stream = "yes",
+               rear_lake = "yes", rear_lake_only = lake_only,
+               rear_lake_area_only = lake_ao, rear_no_fw = "no",
+               rear_stream = streams, rear_wetland = streams,
+               rear_wetland_polygon = "yes", rear_all_edges = "no",
+               river_skip_cw_min = "yes",
+               spawn_requires_connected = spawn_rc,
+               rear_lake_connected_distance_max = lake_cdm,
+               rear_wetland_connected_distance_max = wetland_cdm,
+               rear_wetland_ha_min = wetland_ha)
+  as.data.frame(cols, stringsAsFactors = FALSE)
+}
+
+build_dims <- function(dims, edge_types = "explicit") {
+  out <- withr::local_tempfile(fileext = ".yaml", .local_envir = parent.frame())
+  csv <- withr::local_tempfile(fileext = ".csv", .local_envir = parent.frame())
+  utils::write.csv(dims, csv, row.names = FALSE, na = "")
+  suppressMessages(lnk_rules_build(csv, out, edge_types = edge_types))
+  out
+}
+
+test_that("additive L rear rule admits lake centrelines with no size test", {
+  l <- find_wb_rule(get_rear_rules(build_dims(conn_dims()), "BT"), "L")
+  expect_setequal(as.integer(l$edge_types_explicit), lake_cl_codes)
+  expect_false(l$thresholds)
+})
+
+test_that("categories mode: L rear rule uses the same explicit lake codes", {
+  rear <- get_rear_rules(build_dims(conn_dims(), "categories"), "BT")
+  l <- find_wb_rule(rear, "L")
+  expect_null(l[["edge_types"]])
+  expect_setequal(as.integer(l$edge_types_explicit), lake_cl_codes)
+  expect_false(l$thresholds)
+})
+
+test_that("connection distances stamp the first L and first W rear rule only", {
+  r <- get_rear_rules(build_dims(conn_dims(5000, 3000, wetland_ha = 1)), "BT")
+  stamped <- which(vapply(r, function(x) !is.null(x$requires_connected),
+                          logical(1)))
+  wt <- vapply(r, function(x) x$waterbody_type %||% "", character(1))
+  # The polygon W rule (1000/1100), not the floored 1050/1150 W rule after it.
+  expect_identical(wt[stamped], c("W", "L"))
+  w <- r[[stamped[1]]]
+  expect_setequal(as.integer(w$edge_types_explicit), c(1000L, 1100L))
+  expect_equal(w$requires_connected, "spawning")
+  expect_equal(w$connected_distance_max, 3000)
+  l <- r[[stamped[2]]]
+  expect_equal(l$requires_connected, "spawning")
+  expect_equal(l$connected_distance_max, 5000)
+  # The floored carve-out is a second W rule and carries nothing.
+  expect_equal(sum(wt == "W"), 2L)
+})
+
+test_that("blank connection distances stamp nothing", {
+  r <- get_rear_rules(build_dims(conn_dims()), "BT")
+  for (x in r) {
+    expect_null(x$requires_connected)
+    expect_null(x$connected_distance_max)
+  }
+})
+
+test_that("a non-positive or non-numeric connection distance errors", {
+  expect_error(build_dims(conn_dims(lake_cdm = 0)),
+               "rear_lake_connected_distance_max")
+  expect_error(build_dims(conn_dims(wetland_cdm = "far")),
+               "rear_wetland_connected_distance_max")
+})
+
+test_that("a distance on a species with no rule of that type errors", {
+  d <- conn_dims(wetland_cdm = 3000)
+  d$rear_wetland <- "no"
+  expect_error(build_dims(d), "no rear waterbody_type: W rule")
+})
+
+test_that("connected rearing is refused where spawning requires rearing", {
+  d <- conn_dims(lake_cdm = 3000, sp = "SK", spawn_rc = "rearing",
+                 lake_only = "yes")
+  expect_error(build_dims(d), "circular")
+})
+
+test_that("an area_only spawning anchor is refused where spawning requires rearing", {
+  # Additive branch, lake only (no wetland): the L rule is the anchor.
+  d <- conn_dims(sp = "SK", spawn_rc = "rearing", lake_ao = "yes")
+  d$rear_wetland <- "no"
+  expect_error(build_dims(d), "rear_lake_area_only")
+  # With a W polygon rule, W comes first and is the anchor: area_only on
+  # the lake is allowed, area_only on the wetland is not.
+  d <- conn_dims(sp = "SK", spawn_rc = "rearing", lake_ao = "yes")
+  expect_no_error(build_dims(d))
+  d <- conn_dims(sp = "SK", spawn_rc = "rearing")
+  d$rear_wetland_area_only <- "yes"
+  expect_error(build_dims(d), "rear_wetland_area_only")
+  # Lake-only branch never emits area_only, so the column is ignored.
+  d <- conn_dims(sp = "SK", spawn_rc = "rearing", lake_ao = "yes",
+                 lake_only = "yes")
+  l <- find_wb_rule(get_rear_rules(build_dims(d), "SK"), "L")
+  expect_null(l$area_only)
+})
+
+test_that("legacy rear_requires_connected columns: empty is ignored, set errors", {
+  d <- conn_dims()
+  d$rear_requires_connected <- NA
+  d$rear_connected_distance_max <- NA
+  expect_no_error(build_dims(d))
+  d$rear_requires_connected <- "spawning"
+  d$rear_connected_distance_max <- 3000
+  expect_error(build_dims(d), "rear_lake_connected_distance_max")
+})
+
+test_that("default bundle rules load through fresh's validators", {
+  skip_if_not(exists(".frs_validate_rear_connected",
+                     envir = asNamespace("fresh"), inherits = FALSE))
+  csv <- system.file("extdata", "configs", "default", "dimensions.csv",
+                     package = "link", mustWork = TRUE)
+  th <- system.file("extdata", "configs", "default",
+                    "parameters_habitat_thresholds.csv",
+                    package = "link", mustWork = TRUE)
+  out <- withr::local_tempfile(fileext = ".yaml")
+  suppressMessages(lnk_rules_build(csv, out, thresholds = th,
+                                   edge_types = "explicit"))
+  expect_no_error(fresh::frs_params(rules_yaml = out, csv = th))
+  # The committed rules.yaml is this build (up to its date line).
+  body <- function(f) {
+    grep("^# Generated:", readLines(f), value = TRUE, invert = TRUE)
+  }
+  expect_identical(body(out), body(sub("dimensions.csv$", "rules.yaml", csv)))
+  r <- yaml::read_yaml(out)
+  for (sp in c("BT", "CH", "CO", "GR", "RB", "ST", "WCT")) {
+    l <- find_wb_rule(r[[sp]]$rear, "L")
+    expect_equal(l$requires_connected, "spawning", info = sp)
+    expect_gt(l$connected_distance_max, 0)
+    w <- find_wb_rule(r[[sp]]$rear, "W")
+    if (sp != "GR") expect_equal(w$requires_connected, "spawning", info = sp)
+  }
+  # CT and DV have no thresholds row, so no rules (their distances are inert).
+  expect_null(r$CT)
+  expect_null(r$DV)
+  for (sp in c("SK", "KO")) {
+    for (x in r[[sp]]$rear) expect_null(x$requires_connected, info = sp)
+  }
+  # CO rears in lakes and wetlands of any size.
+  expect_null(find_wb_rule(r$CO$rear, "L")$lake_ha_min)
+  expect_null(find_wb_rule(r$CO$rear, "W")$wetland_ha_min)
+})
+
+test_that("bcfishpass rules.yaml is unchanged by a rebuild", {
+  dir <- system.file("extdata", "configs", "bcfishpass", package = "link",
+                     mustWork = TRUE)
+  out <- withr::local_tempfile(fileext = ".yaml")
+  th <- file.path(dir, "parameters_habitat_thresholds.csv")
+  suppressMessages(lnk_rules_build(file.path(dir, "dimensions.csv"), out,
+                                   thresholds = th, edge_types = "explicit"))
+  body <- function(f) {
+    grep("^# Generated:", readLines(f), value = TRUE, invert = TRUE)
+  }
+  expect_identical(body(out), body(file.path(dir, "rules.yaml")))
 })

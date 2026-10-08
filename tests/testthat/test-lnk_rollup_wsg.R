@@ -80,7 +80,9 @@ test_that(".lnk_rollup_wsg_sql builds one UNION ALL branch per species", {
   expect_match(sql, "'CO' AS species_code")
   expect_match(sql, "'BT' AS species_code")
   # One UNION ALL joining the two branches.
-  expect_equal(lengths(regmatches(sql, gregexpr("UNION ALL", sql))), 1L)
+  # Species branches join on a line of their own; the waterbody join's
+  # UNION ALLs are inline.
+  expect_equal(lengths(regmatches(sql, gregexpr("\n\\s*UNION ALL\n", sql))), 1L)
   # Full-PK join (#203) on both access and habitat.
   expect_match(sql, "s\\.watershed_group_code = a\\.watershed_group_code")
   expect_match(sql, "s\\.watershed_group_code = h\\.watershed_group_code")
@@ -109,4 +111,77 @@ test_that(".lnk_rollup_wsg_sql appends an optional where predicate", {
     schema = "fresh", metrics = metrics, where = "access IN (1, 2)")
   # Outer WHERE on the aggregated subquery, before GROUP BY.
   expect_match(sql_where, "per_species\\s*\\n\\s*WHERE access IN \\(1, 2\\)")
+})
+
+# ---------------------------------------------------------------------------
+# Waterbody class: stream / lake / wetland by polygon (#310)
+# ---------------------------------------------------------------------------
+
+test_that(".lnk_rollup_wsg_sql exposes each line's waterbody class", {
+  sql <- link:::.lnk_rollup_wsg_sql(
+    conn = DBI::ANSI(), aoi = "MORR", species = c("CO", "BT"),
+    schema = "fresh",
+    metrics = c(n = "count(*) FILTER (WHERE waterbody = 'lake')"),
+    where = NULL)
+  # One join per species branch, on the polygon tables fresh reads.
+  n_join <- gregexpr("\\) wb ON wb\\.waterbody_key = s\\.waterbody_key", sql)
+  expect_equal(lengths(regmatches(sql, n_join)), 2L)
+  expect_false(grepl("fwa_waterbodies", sql))
+  expect_equal(lengths(regmatches(sql, gregexpr("AS waterbody,", sql))), 2L)
+})
+
+test_that("waterbody class: lakes and reservoirs are lake, river polygons stream", {
+  j <- link:::.lnk_sql_waterbody_join()
+  expect_match(j, "'lake' AS waterbody\\s+FROM whse_basemapping\\.fwa_lakes_poly")
+  expect_match(j, "'lake'\\s+FROM whse_basemapping\\.fwa_manmade_waterbodies_poly")
+  expect_match(j, "'wetland'\\s+FROM whse_basemapping\\.fwa_wetlands_poly")
+  expect_false(grepl("rivers_poly", j))
+  expect_identical(link:::.lnk_sql_waterbody_class(),
+                   "COALESCE(wb.waterbody, 'stream')")
+})
+
+test_that("lake hectares read lake and reservoir polygons", {
+  polys <- link:::.lnk_sql_lake_polys()
+  expect_match(polys, "fwa_lakes_poly")
+  expect_match(polys, "fwa_manmade_waterbodies_poly")
+})
+
+test_that("stream + lake + wetland rearing km equal rearing km (live)", {
+  conn <- skip_if_no_db()
+  has <- DBI::dbGetQuery(conn, "
+    SELECT count(*) AS n FROM information_schema.tables
+     WHERE table_schema = 'fresh_default'
+       AND table_name IN ('streams', 'streams_habitat_bt', 'streams_access')")
+  skip_if_not(has$n == 3L, "fresh_default not persisted here")
+  # A group with BT rearing inside a polygon, so a fan-out would show.
+  aoi <- DBI::dbGetQuery(conn, "
+    SELECT s.watershed_group_code
+      FROM fresh_default.streams s
+      JOIN fresh_default.streams_habitat_bt h
+        ON s.id_segment = h.id_segment
+       AND s.watershed_group_code = h.watershed_group_code
+     WHERE h.rearing AND s.waterbody_key IN (
+       SELECT waterbody_key FROM whse_basemapping.fwa_wetlands_poly)
+     LIMIT 1")$watershed_group_code
+  skip_if(length(aoi) == 0L, "no BT rearing inside a polygon persisted")
+  m <- function(w) {
+    sprintf("sum(length_metre) FILTER (WHERE rearing%s)", w)
+  }
+  r <- lnk_rollup_wsg(conn, aoi = aoi, species = "BT",
+                      schema = "fresh_default",
+                      metrics = c(total = m(""),
+                                  stream = m(" AND waterbody = 'stream'"),
+                                  lake = m(" AND waterbody = 'lake'"),
+                                  wetland = m(" AND waterbody = 'wetland'")))
+  parts <- sum(r$stream, r$lake, r$wetland, na.rm = TRUE)
+  expect_equal(parts, r$total, tolerance = 1e-9)
+  # The join must not fan out: the total equals the sum with no polygon join.
+  direct <- DBI::dbGetQuery(conn, sprintf("
+    SELECT sum(s.length_metre) AS m
+      FROM fresh_default.streams s
+      JOIN fresh_default.streams_habitat_bt h
+        ON s.id_segment = h.id_segment
+       AND s.watershed_group_code = h.watershed_group_code
+     WHERE s.watershed_group_code = '%s' AND h.rearing", aoi))$m
+  expect_equal(r$total, as.numeric(direct), tolerance = 1e-9)
 })

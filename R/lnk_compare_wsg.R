@@ -53,8 +53,12 @@
 #' @return A list with two elements:
 #'   - `rollup`: tibble with one row per (species, habitat_type) — 8
 #'     habitat types: `spawning`, `rearing`, `lake_rearing`,
-#'     `wetland_rearing`, `rearing_stream`, `rearing_lake_centerline`,
-#'     `rearing_wetland_centerline`, `accessible` (km, link#221).
+#'     `wetland_rearing`, `rearing_stream`, `rearing_lake`,
+#'     `rearing_wetland`, `accessible` (km, link#221). `rearing_stream`,
+#'     `rearing_lake` and `rearing_wetland` split `rearing` by the polygon
+#'     each line sits in (#310); `lake_rearing` / `wetland_rearing` are
+#'     polygon hectares. A lake's km and its ha describe the same water
+#'     and are never added together.
 #'     Columns: `wsg`, `species`, `habitat_type`, `unit` (`km` | `ha`),
 #'     `link_value`, `ref_value`, `diff_pct`. `accessible`'s `ref_value`
 #'     is `NA` until the tunnel-free reference path lands.
@@ -72,9 +76,12 @@
 #'
 #' Rollup methodology mirrors what bcfp's `habitat_linear_<sp>` measures:
 #' linear km from `length_metre` summed over rearing/spawning-flagged
-#' segments, with edge-type decomposition into stream / lake-centerline /
-#' wetland-centerline slices. Lake / wetland area in hectares uses
-#' `DISTINCT waterbody_key` joins to `whse_basemapping.fwa_lakes_poly` /
+#' segments, split into stream / lake / wetland km by the polygon each line
+#' sits in (`waterbody_key` against the lake, reservoir and wetland
+#' polygon tables; lakes include reservoirs, river polygons count as
+#' stream). Lake /
+#' wetland area in hectares uses `DISTINCT waterbody_key` joins to
+#' `whse_basemapping.fwa_lakes_poly` + `fwa_manmade_waterbodies_poly` /
 #' `fwa_wetlands_poly` to avoid double-counting multi-segment lakes.
 #' See `research/default_vs_bcfishpass.md` for the measurement-asymmetry
 #' decision (link reports both centerline km and polygon ha; bcfp credits
@@ -213,7 +220,7 @@ lnk_compare_wsg <- function(conn, aoi, cfg, loaded,
 #' Compute link-side rollup queries (linear km + lake/wetland ha)
 #'
 #' Returns a list with three data.frames keyed by `species_code`:
-#'   - `km`: spawning_km + rearing_km + 3 rearing edge-type slices
+#'   - `km`: spawning_km + rearing_km + stream / lake / wetland rearing km
 #'   - `lake_ha`: DISTINCT-waterbody_key lake area in ha
 #'   - `wetland_ha`: DISTINCT-waterbody_key wetland area in ha
 #'
@@ -229,14 +236,11 @@ lnk_compare_wsg <- function(conn, aoi, cfg, loaded,
     collapse = ", ")
   aoi_lit <- DBI::dbQuoteLiteral(conn, aoi)
 
-  # Edge-type slices for the rearing decomposition. Stream / lake /
-  # wetland centerline are mutually exclusive; the implicit "other"
-  # (construction / connector / river-polygon interior) sums to
-  # rearing_km - sum(slices). See fresh::frs_edge_types for the
-  # canonical category map.
-  et_stream_sql  <- "(1000, 1050, 1100, 1150, 2000, 2100, 2300)"
-  et_lake_sql    <- "(1500, 1525)"
-  et_wetland_sql <- "(1700)"
+  # Rearing split by the polygon each line sits in (#310): stream / lake /
+  # wetland partition rearing_km.
+  wb_class <- .lnk_sql_waterbody_class() # nolint: object_usage_linter
+  wb_join <- .lnk_sql_waterbody_join() # nolint: object_usage_linter
+  lake_polys <- .lnk_sql_lake_polys() # nolint: object_usage_linter
 
   km <- DBI::dbGetQuery(conn, sprintf("
     SELECT h.species_code,
@@ -244,22 +248,22 @@ lnk_compare_wsg <- function(conn, aoi, cfg, loaded,
         / 1000, 2) AS spawning_km,
       round(SUM(CASE WHEN h.rearing  THEN s.length_metre ELSE 0 END)::numeric
         / 1000, 2) AS rearing_km,
-      round(SUM(CASE WHEN h.rearing AND s.edge_type IN %s
+      round(SUM(CASE WHEN h.rearing AND %s = 'stream'
                      THEN s.length_metre ELSE 0 END)::numeric / 1000, 2)
         AS rearing_stream_km,
-      round(SUM(CASE WHEN h.rearing AND s.edge_type IN %s
+      round(SUM(CASE WHEN h.rearing AND %s = 'lake'
                      THEN s.length_metre ELSE 0 END)::numeric / 1000, 2)
-        AS rearing_lake_centerline_km,
-      round(SUM(CASE WHEN h.rearing AND s.edge_type IN %s
+        AS rearing_lake_km,
+      round(SUM(CASE WHEN h.rearing AND %s = 'wetland'
                      THEN s.length_metre ELSE 0 END)::numeric / 1000, 2)
-        AS rearing_wetland_centerline_km
+        AS rearing_wetland_km
     FROM %s.streams s JOIN %s.streams_habitat h
       ON s.id_segment = h.id_segment
+    %s
     WHERE s.watershed_group_code = %s
       AND h.species_code IN (%s)
     GROUP BY h.species_code ORDER BY h.species_code",
-    et_stream_sql, et_lake_sql, et_wetland_sql,
-    schema, schema, aoi_lit, species_sql))  # nolint: indentation_linter
+    wb_class, wb_class, wb_class, schema, schema, wb_join, aoi_lit, species_sql))  # nolint: indentation_linter
 
   # Lake / wetland ha — require fresh >= 0.17.1 for the lake_rearing /
   # wetland_rearing flags on streams_habitat.
@@ -281,14 +285,14 @@ lnk_compare_wsg <- function(conn, aoi, cfg, loaded,
       SELECT DISTINCT h.species_code, l.waterbody_key, l.area_ha
       FROM %s.streams s
       JOIN %s.streams_habitat h ON s.id_segment = h.id_segment
-      JOIN whse_basemapping.fwa_lakes_poly l
+      JOIN %s l
         ON l.waterbody_key = s.waterbody_key
       WHERE s.watershed_group_code = %s
         AND h.species_code IN (%s)
         AND h.lake_rearing = TRUE
     ) sub
     GROUP BY species_code",
-    schema, schema, aoi_lit, species_sql))  # nolint: indentation_linter
+    schema, schema, lake_polys, aoi_lit, species_sql))  # nolint: indentation_linter
 
   wetland_ha <- DBI::dbGetQuery(conn, sprintf("
     SELECT species_code, round(SUM(area_ha)::numeric, 2) AS wetland_rearing_ha
@@ -378,9 +382,9 @@ lnk_compare_wsg <- function(conn, aoi, cfg, loaded,
 #'
 #' @noRd
 .lnk_compare_wsg_rollup_bcfishpass <- function(conn_ref, aoi, species) {
-  et_stream_sql  <- "(1000, 1050, 1100, 1150, 2000, 2100, 2300)"
-  et_lake_sql    <- "(1500, 1525)"
-  et_wetland_sql <- "(1700)"
+  wb_class <- .lnk_sql_waterbody_class() # nolint: object_usage_linter
+  wb_join <- .lnk_sql_waterbody_join() # nolint: object_usage_linter
+  lake_polys <- .lnk_sql_lake_polys() # nolint: object_usage_linter
   aoi_lit <- DBI::dbQuoteLiteral(conn_ref, aoi)
 
   ref_list <- lapply(species, function(sp) {
@@ -396,10 +400,10 @@ lnk_compare_wsg <- function(conn, aoi, cfg, loaded,
     } else {
       "0"
     }
-    slice_expr <- function(edge_in) {
+    slice_expr <- function(wb) {
       if (has_rear) {
-        sprintf("CASE WHEN h.rearing AND s.edge_type IN %s THEN s.length_metre ELSE 0 END", # nolint: line_length_linter
-                edge_in)
+        sprintf("CASE WHEN h.rearing AND %s = '%s' THEN s.length_metre ELSE 0 END", # nolint: line_length_linter
+                wb_class, wb)
       } else {
         "0"
       }
@@ -412,25 +416,26 @@ lnk_compare_wsg <- function(conn, aoi, cfg, loaded,
             / 1000, 2) AS spawning_km,
           round(SUM(%s)::numeric / 1000, 2) AS rearing_km,
           round(SUM(%s)::numeric / 1000, 2) AS rearing_stream_km,
-          round(SUM(%s)::numeric / 1000, 2) AS rearing_lake_centerline_km,
-          round(SUM(%s)::numeric / 1000, 2) AS rearing_wetland_centerline_km
+          round(SUM(%s)::numeric / 1000, 2) AS rearing_lake_km,
+          round(SUM(%s)::numeric / 1000, 2) AS rearing_wetland_km
         FROM bcfishpass.streams s
         JOIN bcfishpass.habitat_linear_%s h
           ON s.segmented_stream_id = h.segmented_stream_id
+        %s
         WHERE s.watershed_group_code = %s",
         DBI::dbQuoteLiteral(conn_ref, sp),
         rear_expr,
-        slice_expr(et_stream_sql),
-        slice_expr(et_lake_sql),
-        slice_expr(et_wetland_sql),
-        tolower(sp), aoi_lit))  # nolint: indentation_linter
+        slice_expr("stream"),
+        slice_expr("lake"),
+        slice_expr("wetland"),
+        tolower(sp), wb_join, aoi_lit))  # nolint: indentation_linter
     } else {
       data.frame(species_code                  = sp,
                  spawning_km                   = NA_real_,
                  rearing_km                    = NA_real_,
                  rearing_stream_km             = NA_real_,
-                 rearing_lake_centerline_km    = NA_real_,
-                 rearing_wetland_centerline_km = NA_real_)
+                 rearing_lake_km               = NA_real_,
+                 rearing_wetland_km            = NA_real_)
     }
 
     lake_ha <- if (has_table && has_rear) {
@@ -441,12 +446,12 @@ lnk_compare_wsg <- function(conn, aoi, cfg, loaded,
           FROM bcfishpass.streams s
           JOIN bcfishpass.habitat_linear_%s h
             ON s.segmented_stream_id = h.segmented_stream_id
-          JOIN whse_basemapping.fwa_lakes_poly l
+          JOIN %s l
             ON l.waterbody_key = s.waterbody_key
           WHERE s.watershed_group_code = %s
             AND h.rearing = TRUE
         ) sub",
-        tolower(sp), aoi_lit))  # nolint: indentation_linter
+        tolower(sp), lake_polys, aoi_lit))  # nolint: indentation_linter
     } else {
       data.frame(lake_rearing_ha = NA_real_)
     }
@@ -478,8 +483,8 @@ lnk_compare_wsg <- function(conn, aoi, cfg, loaded,
 #' Assemble long-format output tibble from link + ref rollup data
 #'
 #' Produces 8 rows per species (spawning, rearing, lake_rearing,
-#' wetland_rearing, rearing_stream, rearing_lake_centerline,
-#' rearing_wetland_centerline, accessible). `diff_pct = NA` when
+#' wetland_rearing, rearing_stream, rearing_lake, rearing_wetland,
+#' accessible). `diff_pct = NA` when
 #' `ref_value` is `NA` (species not modelled by reference, or — for
 #' `accessible` — the tunnel-free reference path not yet wired) or `0`
 #' (avoid div-by-zero even when the measurement is real).
@@ -489,15 +494,15 @@ lnk_compare_wsg <- function(conn, aoi, cfg, loaded,
                                              rollup_link, rollup_ref) {
   habitat_types <- c(
     "spawning", "rearing", "lake_rearing", "wetland_rearing",
-    "rearing_stream", "rearing_lake_centerline", "rearing_wetland_centerline",
+    "rearing_stream", "rearing_lake", "rearing_wetland",
     "accessible"
   )
   units <- c(
     spawning = "km", rearing = "km",
     lake_rearing = "ha", wetland_rearing = "ha",
     rearing_stream = "km",
-    rearing_lake_centerline = "km",
-    rearing_wetland_centerline = "km",
+    rearing_lake = "km",
+    rearing_wetland = "km",
     accessible = "km"
   )
   col_suffix <- c(
@@ -505,8 +510,8 @@ lnk_compare_wsg <- function(conn, aoi, cfg, loaded,
     lake_rearing = "lake_rearing_ha",
     wetland_rearing = "wetland_rearing_ha",
     rearing_stream = "rearing_stream_km",
-    rearing_lake_centerline = "rearing_lake_centerline_km",
-    rearing_wetland_centerline = "rearing_wetland_centerline_km",
+    rearing_lake = "rearing_lake_km",
+    rearing_wetland = "rearing_wetland_km",
     accessible = "accessible_km"
   )
 
@@ -529,8 +534,8 @@ lnk_compare_wsg <- function(conn, aoi, cfg, loaded,
     lake_rearing               = rollup_link$lake_ha,
     wetland_rearing            = rollup_link$wetland_ha,
     rearing_stream             = rollup_link$km,
-    rearing_lake_centerline    = rollup_link$km,
-    rearing_wetland_centerline = rollup_link$km,
+    rearing_lake               = rollup_link$km,
+    rearing_wetland            = rollup_link$km,
     accessible                 = rollup_link$km
   )
 

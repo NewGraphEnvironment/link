@@ -249,7 +249,9 @@ reads \code{width_null} instead, and one whose gradient also fails reads
 \code{fails_gradient_and_width};
 \item \code{rule_excludes} — fails even then: edge type, waterbody or lake size;
 \item \code{post_predicate} — passes the predicate but is not habitat: removed by
-clustering (connectivity to spawning) or access gating.
+clustering (connectivity to spawning), access gating, or a lake /
+wetland bucket's \code{requires_connected: spawning} test (link#310), which
+runs after the predicate the validator re-tests.
 }
 
 The method table is the one in \code{cfg}. A run classified with another

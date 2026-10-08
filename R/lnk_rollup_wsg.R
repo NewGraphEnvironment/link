@@ -18,6 +18,17 @@
 #' phase). Length is never dropped by a missing access row, so the
 #' habitat metrics (`spawning_km`, `rearing_km`) are unaffected.
 #'
+#' Each row also carries `waterbody` (`"lake"`, `"wetland"` or `"stream"`):
+#' the polygon the line sits in, by `waterbody_key` against the polygon
+#' tables fresh's lake and wetland rules read. Lakes and reservoirs
+#' (`fwa_lakes_poly`, `fwa_manmade_waterbodies_poly`) are `"lake"`,
+#' wetlands (`fwa_wetlands_poly`) `"wetland"`, and river polygons or no
+#' polygon `"stream"`. The three partition the network, so
+#' `rearing_stream_km + rearing_lake_km + rearing_wetland_km` built from
+#' them equals `rearing_km` (to rounding); see the examples. A lake's
+#' centreline km and its polygon hectares describe the same water and are
+#' never added together.
+#'
 #' Because the per-species columns are aliased to fixed names, the
 #' `metrics` SQL is written **once**, species-agnostic — mirroring
 #' `fresh::frs_aggregate()`'s `metrics` / `where` shape. Adding a species
@@ -50,7 +61,8 @@
 #'   identifier whitelist.
 #' @param metrics Named character vector: names are output columns,
 #'   values are SQL aggregate expressions over the generic aliases
-#'   `length_metre`, `access`, `spawning`, `rearing`. Default emits
+#'   `length_metre`, `edge_type`, `waterbody`, `access`, `spawning`,
+#'   `rearing`. Default emits
 #'   `accessible_km`, `spawning_km`, `rearing_km`. Raw SQL — trusted
 #'   caller input, like `frs_aggregate()`.
 #' @param where Character or `NULL`. Optional SQL predicate applied to the
@@ -65,6 +77,13 @@
 #' conn <- lnk_db_conn()
 #' # Coho accessible / spawning / rearing km for Morice, from persisted state.
 #' lnk_rollup_wsg(conn, aoi = "MORR", species = "CO")
+#'
+#' # Rearing km by the polygon the line sits in (stream / lake / wetland).
+#' lnk_rollup_wsg(conn, aoi = "MORR", species = "CO",
+#'   metrics = c(
+#'     rearing_km = "sum(length_metre) FILTER (WHERE rearing) / 1000",
+#'     rearing_lake_km =
+#'       "sum(length_metre) FILTER (WHERE rearing AND waterbody = 'lake') / 1000"))
 #'
 #' # Custom metric: count accessible segments per species.
 #' lnk_rollup_wsg(conn, aoi = "MORR", species = c("CO", "BT"),
@@ -126,7 +145,7 @@ lnk_rollup_wsg <- function(conn, aoi, species,
     sp_lit <- DBI::dbQuoteLiteral(conn, toupper(sp))
     sprintf(
       "SELECT %s AS species_code, s.watershed_group_code,
-              s.length_metre, s.edge_type,
+              s.length_metre, s.edge_type, %s AS waterbody,
               a.access_%s AS access, h.spawning, h.rearing
          FROM %s.streams s
          JOIN %s.streams_habitat_%s h
@@ -135,9 +154,10 @@ lnk_rollup_wsg <- function(conn, aoi, species,
          LEFT JOIN %s.streams_access a
            ON s.id_segment = a.id_segment
           AND s.watershed_group_code = a.watershed_group_code
+         %s
         WHERE s.watershed_group_code = %s",
-      sp_lit, tolower(sp),
-      schema, schema, tolower(sp), schema, aoi_lit)
+      sp_lit, .lnk_sql_waterbody_class(), tolower(sp),
+      schema, schema, tolower(sp), schema, .lnk_sql_waterbody_join(), aoi_lit)
   }, character(1)), collapse = "\n      UNION ALL\n      ")
 
   cols_metric <- paste(
@@ -158,3 +178,52 @@ lnk_rollup_wsg <- function(conn, aoi, species,
     cols_metric, per_species, where_clause)
 }
 # nolint end: indentation_linter
+
+
+#' Which polygon a stream line sits in: lake, wetland or stream
+#'
+#' One rule for every rollup (#310). A line is assigned by its
+#' `waterbody_key` against the polygon tables fresh's L / W rules read:
+#' `fwa_lakes_poly` and `fwa_manmade_waterbodies_poly` (reservoirs) are
+#' `"lake"`, `fwa_wetlands_poly` `"wetland"`, anything else (river
+#' polygons, no polygon) `"stream"`. Not edge type, and not
+#' `fwa_waterbodies`, which has no row for about 23,000 km of lines in
+#' lake, wetland and reservoir polygons (province-wide, 2026-10-07). The
+#' three tables share no key, so the join cannot fan out. Expects the
+#' streams table aliased `s`; the join adds `wb`.
+#'
+#' @noRd
+.lnk_sql_waterbody_join <- function() {
+  paste("LEFT JOIN (",
+        "SELECT DISTINCT waterbody_key, 'lake' AS waterbody",
+        "FROM whse_basemapping.fwa_lakes_poly",
+        "UNION ALL SELECT DISTINCT waterbody_key, 'lake'",
+        "FROM whse_basemapping.fwa_manmade_waterbodies_poly",
+        "UNION ALL SELECT DISTINCT waterbody_key, 'wetland'",
+        "FROM whse_basemapping.fwa_wetlands_poly",
+        ") wb ON wb.waterbody_key = s.waterbody_key")
+}
+
+#' The waterbody class of a line, as SQL (see .lnk_sql_waterbody_join())
+#'
+#' @noRd
+.lnk_sql_waterbody_class <- function() {
+  "COALESCE(wb.waterbody, 'stream')"
+}
+
+#' Lake and reservoir polygons, for lake hectares (#310 decision 5)
+#'
+#' Reservoirs count as lakes. fresh's rule compiler already reads both
+#' tables (`.frs_waterbody_tables("L")`), so reservoir lines reach
+#' `rearing` and `rearing_lake_km`; its `lake_rearing` bucket reads
+#' `fwa_lakes_poly` only (fresh v0.39.0), so until that changes no
+#' reservoir is flagged and this join adds no link-side hectares. The two
+#' tables' waterbody keys do not overlap.
+#'
+#' @noRd
+.lnk_sql_lake_polys <- function() {
+  paste("(SELECT waterbody_key, area_ha FROM whse_basemapping.fwa_lakes_poly",
+        "UNION ALL",
+        "SELECT waterbody_key, area_ha",
+        "FROM whse_basemapping.fwa_manmade_waterbodies_poly)")
+}

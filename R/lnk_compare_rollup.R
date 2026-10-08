@@ -192,16 +192,11 @@ lnk_compare_rollup <- function(conn, aoi, cfg,
   tn <- .lnk_table_names(cfg)
   aoi_lit <- DBI::dbQuoteLiteral(conn, aoi)
 
-  # Edge-type slices mirror the canonical fresh::frs_edge_types category
-  # map used by .lnk_compare_wsg_rollup_link (working-schema variant).
-  et_stream_sql  <- "(1000, 1050, 1100, 1150, 2000, 2100, 2300)"
-  et_lake_sql    <- "(1500, 1525)"
-  et_wetland_sql <- "(1700)"
 
   # Habitat km sums delegate to the single predicate-driven roll-up
   # primitive (link#221) so there is one per-(WSG, species) km query
   # builder. lnk_rollup_wsg exposes `length_metre` / `edge_type` /
-  # `access` / `spawning` / `rearing` under generic aliases; the first
+  # `waterbody` / `access` / `spawning` / `rearing` under generic aliases; the first
   # five metrics reproduce the historical shape, and `accessible_km`
   # (link#221) sums link's per-species access model
   # (`streams_access.access_<sp> IN (1,2)`, LEFT-joined by
@@ -217,15 +212,14 @@ lnk_compare_rollup <- function(conn, aoi, cfg,
       "round(COALESCE(sum(length_metre) FILTER (WHERE spawning), 0)::numeric / 1000, 2)", # nolint: line_length_linter
     rearing_km =
       "round(COALESCE(sum(length_metre) FILTER (WHERE rearing), 0)::numeric / 1000, 2)", # nolint: line_length_linter
-    rearing_stream_km = sprintf(
-      "round(COALESCE(sum(length_metre) FILTER (WHERE rearing AND edge_type IN %s), 0)::numeric / 1000, 2)", # nolint: line_length_linter
-      et_stream_sql),
-    rearing_lake_centerline_km = sprintf(
-      "round(COALESCE(sum(length_metre) FILTER (WHERE rearing AND edge_type IN %s), 0)::numeric / 1000, 2)", # nolint: line_length_linter
-      et_lake_sql),
-    rearing_wetland_centerline_km = sprintf(
-      "round(COALESCE(sum(length_metre) FILTER (WHERE rearing AND edge_type IN %s), 0)::numeric / 1000, 2)", # nolint: line_length_linter
-      et_wetland_sql),
+    # Stream / lake / wetland by the polygon each line sits in (#310):
+    # they partition rearing_km. A lake's km and its ha overlap.
+    rearing_stream_km =
+      "round(COALESCE(sum(length_metre) FILTER (WHERE rearing AND waterbody = 'stream'), 0)::numeric / 1000, 2)", # nolint: line_length_linter
+    rearing_lake_km =
+      "round(COALESCE(sum(length_metre) FILTER (WHERE rearing AND waterbody = 'lake'), 0)::numeric / 1000, 2)", # nolint: line_length_linter
+    rearing_wetland_km =
+      "round(COALESCE(sum(length_metre) FILTER (WHERE rearing AND waterbody = 'wetland'), 0)::numeric / 1000, 2)", # nolint: line_length_linter
     accessible_km =
       "round(COALESCE(sum(length_metre) FILTER (WHERE access IN (1, 2)), 0)::numeric / 1000, 2)") # nolint: line_length_linter
 
@@ -249,15 +243,16 @@ lnk_compare_rollup <- function(conn, aoi, cfg,
       sp_lit, tn$schema, tn$schema, tolower(sp), aoi_lit)  # nolint: indentation_linter
   }, character(1)), collapse = "\n        UNION ALL\n        ")
 
+  # Lakes and reservoirs, as fresh's lake bucket reads them (#310).
   lake_ha <- DBI::dbGetQuery(conn, sprintf("
     SELECT species_code, round(SUM(area_ha)::numeric, 2) AS lake_rearing_ha
     FROM (
       SELECT DISTINCT sub.species_code, l.waterbody_key, l.area_ha
       FROM (%s) sub
-      JOIN whse_basemapping.fwa_lakes_poly l
+      JOIN %s l
         ON l.waterbody_key = sub.waterbody_key
     ) joined
-    GROUP BY species_code", union_lake))
+    GROUP BY species_code", union_lake, .lnk_sql_lake_polys())) # nolint: object_usage_linter
 
   union_wetland <- paste(vapply(species, function(sp) {
     sp_lit <- DBI::dbQuoteLiteral(conn, sp)
