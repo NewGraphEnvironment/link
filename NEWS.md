@@ -1,3 +1,22 @@
+# link 0.60.0
+
+**link pins fresh v0.39.0, and a declared wetland floor bounds both wetland rear rules** ([#311](https://github.com/NewGraphEnvironment/link/issues/311)). `default*` outputs move with no config change. Cyphers must be re-prepped before the next dispatch.
+
+- **What fresh changes.**
+  - A W rule's `wetland_ha_min` now gates `rearing` ([fresh#237](https://github.com/NewGraphEnvironment/fresh/issues/237)).
+  - Lake and wetland buckets are sized by polygon area alone ([fresh#240](https://github.com/NewGraphEnvironment/fresh/issues/240)). On NATR BT the lake bucket goes from 310 to 521 km and the wetland bucket from 684 to 1,287 km.
+- **What link changes.** `lnk_rules_build()` puts a species' `rear_wetland_ha_min` on the 1050/1150 wetland-flow rear rule as well, as a `waterbody_type: W` rule.
+  - It goes after the polygon W rule, so fresh's bucket rule and its `requires_connected` anchor are unchanged.
+  - It applies only when the polygon rule is emitted.
+  - It affects BT, CH, CO, RB, ST and WCT. `bcfishpass` is unchanged.
+  - The stream rule still admits mainlines in smaller wetlands.
+- **What moves.** Measured on one segmentation per WSG (ADMS, BULK, NATR, PARS; `data-raw/logs/wetland_floor_311/`):
+  - The floor removes 198.8 km of rearing. That is sub-floor wetland-flow rearing going to 0, plus rearing it disconnects from spawning.
+  - It costs 3 of 2,265 observation species-locations.
+  - It moves the departure from bcfishpass by at most 1.1 points.
+  - Write-up: `research/habitat_thresholds.md`, "The wetland floor on `rearing`".
+- **`config_hash` changes for every `default*` bundle.**
+
 # link 0.59.0
 
 **`default` gives BT, GR, KO and RB mean-annual-discharge ranges, converted from its own channel-width minima** ([#307](https://github.com/NewGraphEnvironment/link/issues/307)). A `default` group put on `mad` now keeps stream habitat for them instead of none, so `cw` and `mad` inside `default` test one stream size two ways. `default_tuned` keeps #302's observed ranges.
