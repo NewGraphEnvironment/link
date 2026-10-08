@@ -80,14 +80,14 @@ Defaults I'm taking (stated, not asked):
 - [x] `data-raw/compare_rollups.R`: #317 guard (a directory mixing pre/post-#317 rollups stops) + `rearing_lake_connection` in `keep` (plan review)
 
 ## Phase 4: Docs
-- [ ] RUNBOOK §7 (:738-750): the rollup partition, the connection column, and the fact that `streams_habitat` still flags them
-- [ ] `research/habitat_thresholds.md`: new section "Lake connection lines kept out of km", with header line, Phase 1 numbers and log prefix; `research/default_vs_bcfishpass.md` if its ADMS figures move
-- [ ] `configs/default/README.md:10` + `dictionary_dimensions.csv` `rear_lake` row: lines in `rearing`, connection km reported apart
-- [ ] CLAUDE.md Status entry; issue #317 body edited with the decision and result
+- [x] RUNBOOK §7 (:738-750): the rollup partition, the connection column, and the fact that `streams_habitat` still flags them
+- [x] `research/habitat_thresholds.md`: new section "Lake connection lines kept out of km", with header line, Phase 1 numbers and log prefix; `research/default_vs_bcfishpass.md` if its ADMS figures move (they do not cite the #310 rearing figures; `bcfishpass_methodology.md:102` gained a #317 note instead)
+- [x] `configs/default/README.md:10` + `dictionary_dimensions.csv` `rear_lake` row: lines in `rearing`, connection km reported apart
+- [x] CLAUDE.md Status entry; issue #317 body edited with the decision and result
 
 ## Validation
 
-- [ ] Tests pass
-- [ ] `/code-check` clean on each commit
-- [ ] PWF checkboxes match landed work
+- [x] Tests pass
+- [x] `/code-check`: Phases 2–4 went through four rounds (r1: 3 findings, fixed by keeping the primitive default; r2 clean; r3: 2 doc findings, fixed; r4 clean on the fixes). Phase 1 (`data-raw/logs/` measurement scripts) was committed without a code-check; its numbers were re-verified against the evidence CSVs in r3 / r4.
+- [x] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion, then `/gh-pr-push` (no merge)

@@ -1,6 +1,6 @@
 # Habitat thresholds — gradient, channel width and discharge
 
-**Verified:** 2026-09-29 (CH/BT gradient and width), 2026-10-02 (MAD), 2026-10-03 (`cw` against `mad`), 2026-10-06 (discharge fill; `default`'s width-converted MAD ranges), 2026-10-07 (wetland floor on `rearing`; lake and wetland rearing connected to spawning) · **Issues:** #284 (gradient and width), #302 (MAD, [below](#mad-discharge-ranges-for-bt-gr-ko-and-rb-302)), #300 (`cw` against `mad`), #305 (discharge fill on main stems), #307 (`default`'s MAD ranges from its width minima), #311 (the wetland floor on `rearing`; fresh#237, fresh#240), #310 (lake and wetland rearing connected to spawning), #290 (the pooling tracker), #283 (the validator, [`habitat_validation.md`](habitat_validation.md)), #282 (`default_tuned`); spawned knowledge#28 (habitat weights) · **Produced by:** `data-raw/query_habitat_thresholds_obs.R`, `data-raw/query_habitat_thresholds_fiss.R` → `data-raw/logs/habitat_thresholds_284/`; step 5 by `data-raw/habitat_variants_build.R` and `data-raw/habitat_variants_score.R` → `data-raw/logs/habitat_score_284/`; literature reviews archived with #284's and #302's PWFs (`literature.md`); MAD by `data-raw/query_habitat_thresholds_mad.R` → `data-raw/logs/habitat_thresholds_302/` and the same scoring scripts → `data-raw/logs/habitat_score_302/`; `cw` against `mad` by the same scripts with `--base=default_tuned` → `data-raw/logs/habitat_score_300/`, and with the fill → `data-raw/logs/habitat_score_305/`; the fill measured by `data-raw/discharge_fill_count.R` → `data-raw/logs/discharge_fill_305/`; `default`'s width-to-discharge conversion by `data-raw/query_width_mad_equivalent.R` → `data-raw/logs/habitat_thresholds_307/`; the wetland floor by `data-raw/logs/wetland_floor_311/run.R`, `summarise.R` and `obs.R` (same directory) · **Status:** BT `rear_gradient_max` 0.1349 **scored and held**; MAD ranges for BT, GR and RB **scored** (the rule refused loosening past P10 except RB spawning), KO unscored; `cw` against `mad` **scored** (size-adjusted); with main stems filled (#305) `mad` drops only little-used water for BT, GR and RB spawning, and RB rearing reads both ways; `default`'s width-converted MAD ranges (#307) are a conversion, not a calibration, and unscored; every other row unscored
+**Verified:** 2026-09-29 (CH/BT gradient and width), 2026-10-02 (MAD), 2026-10-03 (`cw` against `mad`), 2026-10-06 (discharge fill; `default`'s width-converted MAD ranges), 2026-10-07 (wetland floor on `rearing`; lake and wetland rearing connected to spawning), 2026-10-08 (lake connection lines out of the km) · **Issues:** #284 (gradient and width), #302 (MAD, [below](#mad-discharge-ranges-for-bt-gr-ko-and-rb-302)), #300 (`cw` against `mad`), #305 (discharge fill on main stems), #307 (`default`'s MAD ranges from its width minima), #311 (the wetland floor on `rearing`; fresh#237, fresh#240), #310 (lake and wetland rearing connected to spawning), #317 (lake connection lines), #290 (the pooling tracker), #283 (the validator, [`habitat_validation.md`](habitat_validation.md)), #282 (`default_tuned`); spawned knowledge#28 (habitat weights) · **Produced by:** `data-raw/query_habitat_thresholds_obs.R`, `data-raw/query_habitat_thresholds_fiss.R` → `data-raw/logs/habitat_thresholds_284/`; step 5 by `data-raw/habitat_variants_build.R` and `data-raw/habitat_variants_score.R` → `data-raw/logs/habitat_score_284/`; literature reviews archived with #284's and #302's PWFs (`literature.md`); MAD by `data-raw/query_habitat_thresholds_mad.R` → `data-raw/logs/habitat_thresholds_302/` and the same scoring scripts → `data-raw/logs/habitat_score_302/`; `cw` against `mad` by the same scripts with `--base=default_tuned` → `data-raw/logs/habitat_score_300/`, and with the fill → `data-raw/logs/habitat_score_305/`; the fill measured by `data-raw/discharge_fill_count.R` → `data-raw/logs/discharge_fill_305/`; `default`'s width-to-discharge conversion by `data-raw/query_width_mad_equivalent.R` → `data-raw/logs/habitat_thresholds_307/`; the wetland floor by `data-raw/logs/wetland_floor_311/run.R`, `summarise.R` and `obs.R` (same directory) · **Status:** BT `rear_gradient_max` 0.1349 **scored and held**; MAD ranges for BT, GR and RB **scored** (the rule refused loosening past P10 except RB spawning), KO unscored; `cw` against `mad` **scored** (size-adjusted); with main stems filled (#305) `mad` drops only little-used water for BT, GR and RB spawning, and RB rearing reads both ways; `default`'s width-converted MAD ranges (#307) are a conversion, not a calibration, and unscored; every other row unscored
 
 ## Verdict
 
@@ -1276,10 +1276,65 @@ the branch; `data-raw/logs/lake_connected_310/`):
 - Adams Lake alone holds 211.6 km of ADMS's lake km. 148.8 km of that is 1450 connection lines
   joining tributaries to the main flow across the lake, so lake km run at about three times the
   main-flow length. Against bcfishpass, ADMS CH goes from +14 % to +91 % rearing and CO from
-  +3 % to +75 %. Whether connection lines belong in lake km is open.
+  +3 % to +75 %. Connection lines now stay out of the km ([below](#lake-connection-lines-in-rearing-out-of-the-km-317)).
 - The buckets move little at 10 km:
   - NATR BT lake 20,826 → 20,739 ha and wetland 17,128 → 16,772 ha;
   - CO on ADMS gains 52 lakes under 2 ha.
 - Lakes where ha and km disagree are rare (at most 14 polygons per species).
 
 **Uncalibrated.** Neither the value nor the per-species sameness is scored on observations.
+
+## Lake connection lines: in `rearing`, out of the km (#317)
+
+**Verified:** 2026-10-08 · **Issues:** #317 (from #310) · **Produced by:**
+`data-raw/logs/lake_connection_317/` (`measure.R`, `summarise.R` on #310's run-B snapshots;
+`rollup_check.R`; `parity_bcfishpass.R` on the bcfishpass-config persist)
+
+**The question.** #310 admitted every line in a lake polygon to `default`'s rear L rule. The FWA
+connection lines among them (1450, and 1400 inferred) join each tributary mouth to the lake's
+main-flow line (1200). They are not a flow path, so a lake's km grew with its tributary count.
+Should they count?
+
+**Two jobs, one flag.** fresh's `rearing` flag both decides connectivity, because
+`cluster_rearing` joins adjacent rearing segments and 1450 joins inlet rearing to the lake, and
+is what the rollups sum. Taking 1450 out of the rule would fix the km but could cut inlet
+rearing off from spawning past the lake.
+
+**Decision (operator, 2026-10-08): lake km are flow lines. Connection lines stay in the flag
+and the rollups report them apart.**
+- The rules are unchanged, nothing re-classifies, and clustering is untouched.
+- `rearing_lake` km are lake flow lines only, and `rearing` km leave connection lines out.
+- They are reported as `rearing_lake_connection` (km).
+- One predicate serves every site, `.lnk_sql_lake_connection()`: lake-polygon lines on 1400 / 1450.
+- **The rule applies on both sides.** bcfishpass counts connection lines too: BT 65.9 km on ADMS
+  and 88.1 km on NATR (`fresh.streams_vw_bcfp`), and SK the same lines link does.
+- `lnk_rollup_wsg()`'s default `rearing_km` stays the flag total. The validator's cost and the
+  parity scripts compare the flag itself.
+
+**Measured** (ADMS, NATR, #310 run B; km):
+
+| WSG | species | rearing old → new | connection | vs bcfp old → new |
+|---|---|---|---|---|
+| ADMS | BT | 784.9 → 620.7 | 164.2 | +16.4 % → +2.0 % |
+| ADMS | CH | 588.9 → 428.3 | 160.7 | +91.1 % → +38.9 % |
+| ADMS | CO | 614.5 → 451.9 | 162.6 | +75.0 % → +28.7 % |
+| ADMS | SK | 229.9 → 70.8 | 159.1 | 0.0 % → 0.0 % |
+| NATR | BT | 3,985.5 → 3,709.5 | 275.9 | +29.8 % → +24.3 % |
+| NATR | KO | 345.4 → 132.4 | 213.0 | — |
+
+- Nearly all of it is 1450; 1400 is at most 1.4 km.
+- **ADMS CH / CO stay above bcfishpass**, which has no CH or CO lake rearing there. What remains
+  is lake flow lines (Adams Lake's 62.8 km of 1200 among them): #310's position that lakes rear
+  CH and CO, not a line-type artifact.
+- **SK / KO rearing km fall sharply**, because their lake rearing is mostly 1450: SK by 55–95 %
+  on the seven WSGs measured (ADMS 69 %; on the bcfishpass config BULK 59 %, NECR 55 %, CHWK 77 %,
+  NASR 79 %, THOM 83 %, QUES 95 %), KO by 62 % on NATR. For SK it happens on both sides; KO has
+  no bcfishpass reference. On the bcfishpass config, SK rearing reads 0.0 % against the tunnel in
+  BULK, CHWK, NASR, NECR, QUES and THOM, with connection km equal on both sides to within 0.3 %.
+  The pinned CH / CO / ST bands (BBAR, THOM, MFRA) do not move.
+- Applying the rule to link alone would have read SK as −69 %.
+
+**What does not move:** the flags, spawning, the buckets, and anything that sums
+`streams_habitat.rearing` directly (`lnk_aggregate()`, `lnk_habitat_validate()`'s cost,
+`data-raw/parity_crosssection.R`). Connectivity of inlet rearing is untested here because it is
+unchanged; dropping 1450 from the rule would be the experiment that needs it.

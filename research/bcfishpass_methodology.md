@@ -99,7 +99,7 @@ Tracked separately. Not in any open issue today.
 
 ### 3. BT `rear_all_edges = yes` — kept because frs_network_segment already screens
 
-bcfp BT has no edge_type filter at all. We match in dimensions. Concern was that it would pull in dubious geometry (boundaries, island perimeter, bare shorelines). The MORR composition above shows those edge types are not in fresh.streams to begin with. The remaining `construction` and `connector` edges that DO make it in (1200, 1250, 1300, 1350, 1400, 1450) are real flow representations (river-polygon centerlines, network connectors) that BT plausibly uses.
+bcfp BT has no edge_type filter at all. We match in dimensions. Concern was that it would pull in dubious geometry (boundaries, island perimeter, bare shorelines). The MORR composition above shows those edge types are not in fresh.streams to begin with. The remaining `construction` and `connector` edges that DO make it in (1200, 1250, 1300, 1350, 1400, 1450) are real flow representations (river-polygon centerlines, network connectors) that BT plausibly uses. *(2026-10-08, link#317: inside lakes, 1400 / 1450 are connection lines joining each tributary mouth to the main-flow line, not flow paths. They stay in `rearing` for connectivity, and the compare rollups report them apart as `rearing_lake_connection`; see `research/habitat_thresholds.md`, "Lake connection lines".)*
 
 Default-bundle keeps this for now. Revisit if a future analysis surfaces over-credit on construction-line segments.
 

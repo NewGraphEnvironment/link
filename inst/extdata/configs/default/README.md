@@ -7,7 +7,7 @@ Documented departures from bcfishpass:
 - Intermittent streams included in the rearing set.
 - Wetland reaches (edge_type 1050/1150) as rearing habitat for species flagged `rear_wetland=yes` in dimensions.csv.
 - Both wetland rear rules require wetlands of at least `rear_wetland_ha_min` (1 ha for BT, CH, RB, ST and WCT; CO none): the 1050/1150 wetland-flow rule and the polygon rule for mainlines through wetlands (link#311). Mainlines in smaller wetlands can still rear through the stream rule, which has no waterbody test.
-- Lake rearing expanded beyond SK/KO to BT, CH, CO, GR, RB, ST and WCT. Lake and reservoir centrelines (FWA construction lines 1200/1250/1300/1350/1400/1450/1475) count in `rearing` km, with no channel-width test (link#310).
+- Lake rearing expanded beyond SK/KO to BT, CH, CO, GR, RB, ST and WCT. Lines in lake and reservoir polygons (FWA construction lines 1200/1250/1300/1350/1400/1450/1475) are `rearing`, with no channel-width test (link#310). The compare rollups report the 1400 / 1450 connection lines, which join tributaries to a lake's main-flow line, as `rearing_lake_connection` km, outside `rearing` km (link#317).
 - Lake and wetland rearing (`lake_rearing` / `wetland_rearing`, the hectares) count only polygons with same-species spawning on them or within 10 km up- or downstream (`rear_*_connected_distance_max`; link#310, fresh#240). SK and KO are unchanged: their spawning is anchored on their lake rearing.
 - CO rears in lakes and wetlands of any size (link#310).
 - `river_skip_cw_min=yes` — channel-width thresholds dropped on river-polygon segments where they're not meaningful.
