@@ -1306,7 +1306,7 @@ and the rollups report them apart.**
 - `rearing_lake` km are lake flow lines only, and `rearing` km leave connection lines out.
 - They are reported as `rearing_lake_connection` (km).
 - One predicate serves every site, `.lnk_sql_lake_connection()`: lake-polygon lines on 1450.
-- **Construction flow lines are not connectors.** 1400 ("other flow / inferred connection") is a construction flow line like 1200 / 1300 and stays in the km (operator, 2026-10-08). In wetlands it is usually the only line through the polygon (#320).
+- **Construction flow lines are not connectors.** 1400 ("other flow / inferred connection") is a construction flow line like 1200 / 1300 and stays in the km (operator, 2026-10-08). In wetlands it is usually the only line through the polygon (#316).
 - **The rule applies on both sides.** bcfishpass counts connection lines too: BT 65.9 km on ADMS
   and 88.1 km on NATR (`fresh.streams_vw_bcfp`), and SK the same lines link does.
 - `lnk_rollup_wsg()`'s default `rearing_km` stays the flag total. The validator's cost and the

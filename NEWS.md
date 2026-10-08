@@ -16,7 +16,7 @@
   - Write-up: `research/habitat_thresholds.md`, "Lake connection lines".
 - **Follow-ups:**
   - [#319](https://github.com/NewGraphEnvironment/link/issues/319): one meaning of `rearing_km` everywhere.
-  - [#320](https://github.com/NewGraphEnvironment/link/issues/320): wetland construction flow lines.
+  - [#316](https://github.com/NewGraphEnvironment/link/issues/316): wetland construction flow lines.
   - [#321](https://github.com/NewGraphEnvironment/link/issues/321): `lnk_aggregate()` counts only the crossing's own line.
 
 # link 0.61.0
