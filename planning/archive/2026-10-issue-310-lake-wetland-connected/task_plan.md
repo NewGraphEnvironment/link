@@ -83,8 +83,8 @@ main then `reclassify` at branch — the `data-raw/logs/wetland_floor_311/run.R`
 - [x] Draft (not file) fresh issues: (a) the lake bucket reads `fwa_lakes_poly` only — make `build_wb_pred` use `.frs_waterbody_tables("L")` (decision 5); (b) `.frs_run_connectivity()` 200 ha silent fallback for SK/KO when the L rule has no `lake_ha_min`. Drafts shown in the final report for body review.
 
 ## Validation
-- [ ] Tests pass (`devtools::test()`), lintr clean, `devtools::check()` for the release
-- [ ] `/code-check` clean on each commit
-- [ ] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion, then `/gh-pr-push` (merge is a separate instruction)
+- [x] Tests pass (`devtools::test()`: 0 failures, 16 warnings = baseline); `devtools::check()` 0 errors, 3 warnings / 2 notes all present on main; lintr +9 vs main, all in the new log scripts (left as they ran)
+- [x] `/code-check` on each code/data/docs commit (Phase 2: 3 rounds; Phase 3: 3; Phase 4: 4; Phases 5–6: 3, each loop ended clean or by enumeration). Not run on Phase 1's research-only commit (51752c1); its text was reviewed with Phase 3's round 3
+- [x] PWF checkboxes match landed work
+- [x] `/planning-archive` on completion, then `/gh-pr-push` (merge is a separate instruction)
 
