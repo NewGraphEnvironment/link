@@ -23,10 +23,10 @@ Experimental package — breaking all the time and loving the learning curve. St
 - **Measured on one segmentation** (ADMS, NATR; `data-raw/logs/lake_connected_310/`):
   - Rearing rises 237–525 km per lake species other than SK / KO (0), almost all lake lines. Spawning is unchanged, and SK / KO are row-identical. Buckets move little (NATR BT wetland ha −2 %).
   - Write-up: `research/habitat_thresholds.md`, "Lake and wetland rearing connected to spawning".
-- **Open for review:** Adams Lake alone puts 211.6 km on ADMS CH / CO, 149 km of it 1450 connection lines, which takes ADMS CH to +91 % against bcfishpass.
+- **Open (#317):** Adams Lake alone puts 211.6 km on ADMS CH / CO, 149 km of it 1450 connection lines, which takes ADMS CH to +91 % against bcfishpass.
 
 **Facts not worth re-deriving:**
-- **fresh's `lake_rearing` bucket reads `fwa_lakes_poly` only**, while its rule compiler also reads reservoirs (fresh v0.39.0 `frs_habitat_predicates.R:205-211`). Reservoir lines rear but are never `lake_rearing`; the fresh issue is drafted.
+- **fresh's `lake_rearing` bucket reads `fwa_lakes_poly` only**, while its rule compiler also reads reservoirs (fresh v0.39.0 `frs_habitat_predicates.R:205-211`). Reservoir lines rear but are never `lake_rearing` (fresh#250).
 - **`fwa_waterbodies` has no row for ~23,000 km of lines inside lake / wetland / reservoir polygons.** Classify a line by the polygon tables, as fresh does.
 - **CT and DV have no thresholds row, so `default` emits no rules for them**; their dimension cells are inert.
 - **fresh anchors waterbody-connected spawning on the first rear L *or* W rule**, and the additive branch emits W before L.
