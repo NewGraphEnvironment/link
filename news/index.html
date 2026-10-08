@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.61.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.60.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,45 +35,6 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
-    <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.61.0" id="link-0610">link 0.61.0<a class="anchor" aria-label="anchor" href="#link-0610"></a></h2>
-<p><strong>In <code>default</code>, lake and wetland rearing need same-species spawning within 10 km, and lake centrelines count in <code>rearing</code></strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/310" class="external-link">#310</a>). The rollups now split rearing km by the polygon each line sits in. That renames two rollup labels and redefines a third.</p>
-<ul><li>
-<strong>Rules.</strong>
-<ul><li>
-<code><a href="../reference/lnk_rules_build.html">lnk_rules_build()</a></code> reads <code>rear_lake_connected_distance_max</code> / <code>rear_wetland_connected_distance_max</code> and puts <code>requires_connected: spawning</code> on a species’ first rear L / W rule only, which is the rule fresh’s bucket reads (<a href="https://github.com/NewGraphEnvironment/fresh/issues/240" class="external-link">fresh#240</a>).</li>
-<li>The additive lake rule admits lake and reservoir lines (1000/1100/1200/1250/1300/1350/1400/1450/1475) with <code>thresholds: false</code>.</li>
-<li>The builder refuses connected rearing, and an <code>area_only</code> spawning anchor, for species whose spawning requires rearing.</li>
-<li>
-<strong>Breaking:</strong> the retired <code>rear_requires_connected</code> / <code>rear_connected_distance_max</code> columns stop the build when set.</li>
-</ul></li>
-<li>
-<strong><code>default</code>.</strong>
-<ul><li>The distance is 10 km for BT, CH, CO, GR (lakes only), RB, ST and WCT. CT and DV carry it too but get no rules, because neither has a thresholds row.</li>
-<li>CO has no lake or wetland size floor.</li>
-<li>SK, KO and <code>bcfishpass</code> are unchanged.</li>
-</ul></li>
-<li>
-<strong>Rollups (breaking).</strong>
-<ul><li>
-<code>rearing_lake_centerline</code> / <code>rearing_wetland_centerline</code> become <code>rearing_lake</code> / <code>rearing_wetland</code>.</li>
-<li>
-<code>rearing_stream</code> keeps its name but now means rearing outside lake, reservoir and wetland polygons. Lines are matched by <code>waterbody_key</code> against the polygon tables fresh reads, not by edge type.</li>
-<li>Lake hectares include reservoirs, and stream + lake + wetland = rearing.</li>
-<li>
-<code><a href="../reference/lnk_rollup_wsg.html">lnk_rollup_wsg()</a></code> gains a <code>waterbody</code> alias; its default metrics are unchanged.</li>
-<li>
-<code>data-raw/compare_rollups.R</code> refuses to compare a pre-0.61.0 directory with a later one.</li>
-</ul></li>
-<li>
-<strong>What moves.</strong> Measured on ADMS and NATR on one segmentation (<code>data-raw/logs/lake_connected_310/</code>):
-<ul><li>Spawning is unchanged, and SK / KO are row-identical.</li>
-<li>Rearing rises 237–525 km per lake species, almost all of it lake lines. Adams Lake’s 1450 connection lines take ADMS CH to +91 % against bcfishpass, and that inclusion is under review.</li>
-<li>Buckets move little (NATR BT wetland −2 %).</li>
-<li>Write-up: <code>research/habitat_thresholds.md</code>, “Lake and wetland rearing connected to spawning”.</li>
-</ul></li>
-<li><strong><code>config_hash</code> changes for every <code>default*</code> bundle.</strong></li>
-</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.60.0" id="link-0600">link 0.60.0<a class="anchor" aria-label="anchor" href="#link-0600"></a></h2>
 <p><strong>link pins fresh v0.39.0, and a declared wetland floor bounds both wetland rear rules</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/311" class="external-link">#311</a>). <code>default*</code> outputs move with no config change. Cyphers must be re-prepped before the next dispatch.</p>
