@@ -31,6 +31,8 @@ BT:
     - 1000
     - 1100
     wetland_ha_min: 1.0
+    requires_connected: spawning
+    connected_distance_max: 10000.0
   - waterbody_type: W
     edge_types_explicit:
     - 1050
@@ -41,7 +43,17 @@ BT:
     edge_types_explicit:
     - 1000
     - 1100
+    - 1200
+    - 1250
+    - 1300
+    - 1350
+    - 1400
+    - 1450
+    - 1475
+    thresholds: false
     lake_ha_min: 10.0
+    requires_connected: spawning
+    connected_distance_max: 10000.0
 CH:
   spawn:
   - edge_types_explicit:
@@ -69,6 +81,8 @@ CH:
     - 1000
     - 1100
     wetland_ha_min: 1.0
+    requires_connected: spawning
+    connected_distance_max: 10000.0
   - waterbody_type: W
     edge_types_explicit:
     - 1050
@@ -79,7 +93,17 @@ CH:
     edge_types_explicit:
     - 1000
     - 1100
+    - 1200
+    - 1250
+    - 1300
+    - 1350
+    - 1400
+    - 1450
+    - 1475
+    thresholds: false
     lake_ha_min: 100.0
+    requires_connected: spawning
+    connected_distance_max: 10000.0
 CM:
   spawn:
   - edge_types_explicit:
@@ -115,22 +139,30 @@ CO:
     channel_width:
     - 0.0
     - 9999.0
+  - edge_types_explicit:
+    - 1050
+    - 1150
+    thresholds: false
   - waterbody_type: W
     edge_types_explicit:
     - 1000
     - 1100
-    wetland_ha_min: 0.5
-  - waterbody_type: W
-    edge_types_explicit:
-    - 1050
-    - 1150
-    thresholds: false
-    wetland_ha_min: 0.5
+    requires_connected: spawning
+    connected_distance_max: 10000.0
   - waterbody_type: L
     edge_types_explicit:
     - 1000
     - 1100
-    lake_ha_min: 2.0
+    - 1200
+    - 1250
+    - 1300
+    - 1350
+    - 1400
+    - 1450
+    - 1475
+    thresholds: false
+    requires_connected: spawning
+    connected_distance_max: 10000.0
 PK:
   spawn:
   - edge_types_explicit:
@@ -198,6 +230,8 @@ ST:
     - 1000
     - 1100
     wetland_ha_min: 1.0
+    requires_connected: spawning
+    connected_distance_max: 10000.0
   - waterbody_type: W
     edge_types_explicit:
     - 1050
@@ -208,7 +242,17 @@ ST:
     edge_types_explicit:
     - 1000
     - 1100
+    - 1200
+    - 1250
+    - 1300
+    - 1350
+    - 1400
+    - 1450
+    - 1475
+    thresholds: false
     lake_ha_min: 60.0
+    requires_connected: spawning
+    connected_distance_max: 10000.0
 WCT:
   spawn:
   - edge_types_explicit:
@@ -236,6 +280,8 @@ WCT:
     - 1000
     - 1100
     wetland_ha_min: 1.0
+    requires_connected: spawning
+    connected_distance_max: 10000.0
   - waterbody_type: W
     edge_types_explicit:
     - 1050
@@ -246,7 +292,17 @@ WCT:
     edge_types_explicit:
     - 1000
     - 1100
+    - 1200
+    - 1250
+    - 1300
+    - 1350
+    - 1400
+    - 1450
+    - 1475
+    thresholds: false
     lake_ha_min: 10.0
+    requires_connected: spawning
+    connected_distance_max: 10000.0
 KO:
   spawn:
   - edge_types_explicit:
@@ -300,6 +356,8 @@ RB:
     - 1000
     - 1100
     wetland_ha_min: 1.0
+    requires_connected: spawning
+    connected_distance_max: 10000.0
   - waterbody_type: W
     edge_types_explicit:
     - 1050
@@ -310,7 +368,17 @@ RB:
     edge_types_explicit:
     - 1000
     - 1100
+    - 1200
+    - 1250
+    - 1300
+    - 1350
+    - 1400
+    - 1450
+    - 1475
+    thresholds: false
     lake_ha_min: 10.0
+    requires_connected: spawning
+    connected_distance_max: 10000.0
 GR:
   spawn:
   - edge_types_explicit:
@@ -337,5 +405,15 @@ GR:
     edge_types_explicit:
     - 1000
     - 1100
+    - 1200
+    - 1250
+    - 1300
+    - 1350
+    - 1400
+    - 1450
+    - 1475
+    thresholds: false
     lake_ha_min: 40.0
+    requires_connected: spawning
+    connected_distance_max: 10000.0
 

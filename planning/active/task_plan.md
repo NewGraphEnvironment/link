@@ -55,10 +55,10 @@ Facts that shape the plan:
 - [x] Confirm the lake edge set against `fwa_edge_type_codes` and province-wide occurrence (plan review G7): 1200/1300/1400/1450/1475 in lakes, + 1250/1350 in reservoirs; 1410 / 1425 excluded
 
 ## Phase 3: Bundle data
-- [ ] `configs/default/dimensions.csv` (+ `default_extrabreaks`, `default_rearbreaks`, top-level `parameters_habitat_dimensions.csv` mirror): add the two distance columns with Phase 1 values; CO blank `rear_lake_ha_min` / `rear_wetland_ha_min`; legacy columns left empty
-- [ ] `dictionary_dimensions.csv`: rows for the two new columns; legacy rows marked retired (test-dictionaries union coverage holds)
-- [ ] Regenerate default + top-level rules.yaml with `lnk_rules_build()` directly (build_rules.R / regen_provenance.R also rewrite bcfishpass's date line); copy default's to the two variants (byte-identical today); `git diff` matches intent; provenance in each touched `config.yaml`: rules.yaml checksum + generator_sha (Phase 2 commit), dimensions.csv checksum + shape_checksum + synced — one commit
-- [ ] Bundle test (fresh validators, connected keys on BT/CH/CO/GR/RB/ST/WCT, CT/DV absent, SK/KO untouched, CO unfloored)
+- [x] `configs/default/dimensions.csv` (+ `default_extrabreaks`, `default_rearbreaks`, top-level `parameters_habitat_dimensions.csv` mirror): add the two distance columns with Phase 1 values; CO blank `rear_lake_ha_min` / `rear_wetland_ha_min`; legacy columns left empty
+- [x] `dictionary_dimensions.csv`: rows for the two new columns; legacy rows marked retired (test-dictionaries union coverage holds)
+- [x] Regenerate default + top-level rules.yaml with `lnk_rules_build()` directly (build_rules.R / regen_provenance.R also rewrite bcfishpass's date line); copy default's to the two variants (byte-identical today); `git diff` matches intent; provenance in each touched `config.yaml`: rules.yaml checksum + generator_sha (Phase 2 commit), dimensions.csv checksum + shape_checksum + synced — one commit
+- [x] Bundle test (fresh validators, connected keys on BT/CH/CO/GR/RB/ST/WCT, CT/DV absent, SK/KO untouched, CO unfloored)
 
 ## Phase 4: Rollups (tests first)
 - [ ] `lnk_rollup_wsg()`: expose a `waterbody` alias (LEFT JOIN `whse_basemapping.fwa_waterbodies` on `waterbody_key`; L and X → lake, W → wetland, R/none → stream). Default metrics unchanged: `lnk_habitat_validate()` merges every default column into its summary (plan review G5)

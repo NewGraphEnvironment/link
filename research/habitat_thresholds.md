@@ -1138,8 +1138,8 @@ table ([above](#literature)):
   `rearing`. Fixes: fresh#240 (area-only buckets, connected to spawning) and #310
   (`default`'s lake and wetland rules). *Update 2026-10-07 (#311):* link now pins fresh
   v0.39.0, so the size gate is gone; the buckets are polygon area plus the rule's floor
-  under either model ([below](#the-wetland-floor-on-rearing-311)). Connectivity is
-  still #310's.
+  under either model ([below](#the-wetland-floor-on-rearing-311)). Connectivity landed
+  in #310 ([below](#lake-and-wetland-rearing-connected-to-spawning-310)).
 
 **Not done here.**
 - `default`'s CH, CO, SK and ST minima come from bcfishpass and are mostly untraceable
@@ -1170,7 +1170,8 @@ fresh#240 (area-only buckets) · **Produced by:** `data-raw/logs/wetland_floor_3
   W rule. Mainlines (1000/1100) in sub-floor wetlands still rear through the stream rule,
   which has no waterbody test (0–0.62 km per floored species under C). That rule comes after the polygon rule, which keeps the first W rule (fresh's
   bucket and `requires_connected` anchor) the same.
-- **Floors in `default`:** 1 ha for BT, CH, RB, ST and WCT; 0.5 ha for CO.
+- **Floors in `default`:** 1 ha for BT, CH, RB, ST and WCT; 0.5 ha for CO. *Update
+  2026-10-07 (#310): CO's floor is gone ([below](#lake-and-wetland-rearing-connected-to-spawning-310)).*
 
 **Measured** on one segmentation per WSG (NATR, PARS, BULK, ADMS). Three runs:
 - **A:** fresh 0.36.2 with the old rules.
@@ -1251,8 +1252,18 @@ Above 3 km the lake curve is flat (+0.6 %); wetlands still gain 6 % from 3 to 10
 - per-species and per-type columns exist so a calibrated value can replace it cell by cell.
 
 **Applies to** every species in `default`'s additive rear branch with lake or wetland rearing:
-BT, CH, CO, CT, DV, GR (lakes only), RB, ST and WCT (operator, 2026-10-07). SK and KO are not
-changed: their spawning is anchored to their lake rearing, so a rearing test anchored on
-spawning would be circular.
+BT, CH, CO, GR (lakes only), RB, ST and WCT (operator, 2026-10-07). CT and DV carry the same
+values, but they are inert: neither has a row in the bundle's thresholds CSV, so
+`lnk_rules_build()` emits no rules for them. SK and KO are not changed: their spawning is
+anchored to their lake rearing, so a rearing test anchored on spawning would be circular
+(the builder refuses it).
+
+**Hectares and centreline km follow different tests.** The distance filters only the
+`lake_rearing` / `wetland_rearing` bucket. Lake centrelines reach `rearing` through the L rule
+and then go through the rearing cluster pass like any stream: kept when spawning lies anywhere
+upstream (no distance), or downstream within the bridge limits. RB has
+`cluster_rearing = FALSE`, so its lake centreline km follow no spawning test at all. The
+divergence therefore runs both ways (ha kept with km dropped, and km kept with ha dropped);
+`data-raw/logs/lake_connected_310/` counts both.
 
 **Uncalibrated.** Neither the value nor the per-species sameness is scored on observations.

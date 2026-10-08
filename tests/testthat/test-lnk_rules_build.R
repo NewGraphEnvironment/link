@@ -1179,6 +1179,42 @@ test_that("legacy rear_requires_connected columns: empty is ignored, set errors"
   expect_error(build_dims(d), "rear_lake_connected_distance_max")
 })
 
+test_that("default bundle rules load through fresh's validators", {
+  skip_if_not(exists(".frs_validate_rear_connected",
+                     envir = asNamespace("fresh"), inherits = FALSE))
+  csv <- system.file("extdata", "configs", "default", "dimensions.csv",
+                     package = "link", mustWork = TRUE)
+  th <- system.file("extdata", "configs", "default",
+                    "parameters_habitat_thresholds.csv",
+                    package = "link", mustWork = TRUE)
+  out <- withr::local_tempfile(fileext = ".yaml")
+  suppressMessages(lnk_rules_build(csv, out, thresholds = th,
+                                   edge_types = "explicit"))
+  expect_no_error(fresh::frs_params(rules_yaml = out, csv = th))
+  # The committed rules.yaml is this build (up to its date line).
+  body <- function(f) {
+    grep("^# Generated:", readLines(f), value = TRUE, invert = TRUE)
+  }
+  expect_identical(body(out), body(sub("dimensions.csv$", "rules.yaml", csv)))
+  r <- yaml::read_yaml(out)
+  for (sp in c("BT", "CH", "CO", "GR", "RB", "ST", "WCT")) {
+    l <- find_wb_rule(r[[sp]]$rear, "L")
+    expect_equal(l$requires_connected, "spawning", info = sp)
+    expect_gt(l$connected_distance_max, 0)
+    w <- find_wb_rule(r[[sp]]$rear, "W")
+    if (sp != "GR") expect_equal(w$requires_connected, "spawning", info = sp)
+  }
+  # CT and DV have no thresholds row, so no rules (their distances are inert).
+  expect_null(r$CT)
+  expect_null(r$DV)
+  for (sp in c("SK", "KO")) {
+    for (x in r[[sp]]$rear) expect_null(x$requires_connected, info = sp)
+  }
+  # CO rears in lakes and wetlands of any size.
+  expect_null(find_wb_rule(r$CO$rear, "L")$lake_ha_min)
+  expect_null(find_wb_rule(r$CO$rear, "W")$wetland_ha_min)
+})
+
 test_that("bcfishpass rules.yaml is unchanged by a rebuild", {
   dir <- system.file("extdata", "configs", "bcfishpass", package = "link",
                      mustWork = TRUE)

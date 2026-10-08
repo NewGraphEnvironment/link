@@ -57,6 +57,7 @@ when present — keeps bcfishpass bundle at its 200 ha threshold for SK/KO
 while letting default express species-specific biology:
 
 - CO at 2 ha — uses small lakes and ponds extensively for overwintering.
+  *Since #310 (2026-10-07) CO has no lake or wetland floor.*
 - BT/WCT/RB/CT/DV at 10 ha — resident / sub-adult rearing in modest lakes.
 - GR at 40 ha — northern populations tend toward larger systems.
 - ST at 60 ha — ocean-typed; smaller lakes less likely.
@@ -265,7 +266,7 @@ differentiates:
 
 - bcfishpass bundle: 0 for BT/CH/CO/ST/WCT (no rear L rule); matches
   default only for SK (both declare L with 200 ha).
-- default bundle: each species reflects its threshold — CO (2 ha),
+- default bundle (before #310, which removed CO's floor): each species reflects its threshold — CO (2 ha),
   BT/WCT/RB/CT/DV (10 ha), GR (40 ha), ST (60 ha), CH (100 ha),
   SK/KO (200 ha).
 
@@ -284,7 +285,7 @@ Post-fix differentiation:
   nonzero `wetland_rearing_ha` (bcfishpass's "wetland-flow carve-out"
   for juvenile CO).
 - default bundle: BT/CH/CO/RB all nonzero per their thresholds
-  (CO at 0.5 ha, others at 1 ha). ADMS example: CO 816.71 ha
+  (CO at 0.5 ha until #310, which removed it; others at 1 ha). ADMS example: CO 816.71 ha
   (bit-identical to bcfishpass-bundle 817.06 ha, same rule).
 
 ### 2. Linear km inflates under `default` across all species and WSGs (rearing only — spawning aligned in v0.10.0)
