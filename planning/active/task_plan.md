@@ -34,9 +34,9 @@ Facts that shape the plan:
 - Distances: **I research and pick**, values + reasons reported in the PR for review before merge.
 
 ## Phase 1: Distances and literature (research)
-- [ ] Read fresh `data-raw/logs/bucket_connected_240/` (0.5–10 km ladder, NATR/PARS BT)
-- [ ] Literature pass (Zotero + lit-search): adfluvial lake use for BT, RB, GR, ST; CO off-channel / overwintering wetland and lake use; bcfp precedent SK 3 km
-- [ ] Pick per-species `rear_lake_connected_distance_max` / `rear_wetland_connected_distance_max` (m); write `research/habitat_thresholds.md` section "Lake and wetland rearing connected to spawning" with values, sources, ladder evidence
+- [x] Read fresh `data-raw/logs/bucket_connected_240/` (0.5–10 km ladder, NATR/PARS BT)
+- [x] Literature pass (Zotero library read from its local store; the Zotero MCP is unconfigured): adfluvial lake use for BT, RB, GR, ST; CO off-channel / overwintering wetland and lake use; bcfp precedent SK 3 km
+- [x] Pick per-species `rear_lake_connected_distance_max` / `rear_wetland_connected_distance_max` (m); write `research/habitat_thresholds.md` section "Lake and wetland rearing connected to spawning" with values, sources, ladder evidence
 
 ## Phase 2: Rules builder (tests first)
 - [ ] Tests in `tests/testthat/test-lnk_rules_build.R`:

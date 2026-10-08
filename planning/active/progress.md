@@ -6,3 +6,4 @@
 - Created branch `310-default-lake-and-wetland-rearing-connec` off main
 - Scaffolded PWF baseline from issue #310 with approved phases
 - Next: start Phase 1
+- Phase 1: distance 10,000 m for all species, lakes and wetlands; written to `research/habitat_thresholds.md` "Lake and wetland rearing connected to spawning (#310)". Zotero MCP lacks env vars; read the local library store read-only instead.

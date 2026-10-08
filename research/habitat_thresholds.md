@@ -1,6 +1,6 @@
 # Habitat thresholds — gradient, channel width and discharge
 
-**Verified:** 2026-09-29 (CH/BT gradient and width), 2026-10-02 (MAD), 2026-10-03 (`cw` against `mad`), 2026-10-06 (discharge fill; `default`'s width-converted MAD ranges), 2026-10-07 (wetland floor on `rearing`) · **Issues:** #284 (gradient and width), #302 (MAD, [below](#mad-discharge-ranges-for-bt-gr-ko-and-rb-302)), #300 (`cw` against `mad`), #305 (discharge fill on main stems), #307 (`default`'s MAD ranges from its width minima), #311 (the wetland floor on `rearing`; fresh#237, fresh#240), #290 (the pooling tracker), #283 (the validator, [`habitat_validation.md`](habitat_validation.md)), #282 (`default_tuned`); spawned knowledge#28 (habitat weights) · **Produced by:** `data-raw/query_habitat_thresholds_obs.R`, `data-raw/query_habitat_thresholds_fiss.R` → `data-raw/logs/habitat_thresholds_284/`; step 5 by `data-raw/habitat_variants_build.R` and `data-raw/habitat_variants_score.R` → `data-raw/logs/habitat_score_284/`; literature reviews archived with #284's and #302's PWFs (`literature.md`); MAD by `data-raw/query_habitat_thresholds_mad.R` → `data-raw/logs/habitat_thresholds_302/` and the same scoring scripts → `data-raw/logs/habitat_score_302/`; `cw` against `mad` by the same scripts with `--base=default_tuned` → `data-raw/logs/habitat_score_300/`, and with the fill → `data-raw/logs/habitat_score_305/`; the fill measured by `data-raw/discharge_fill_count.R` → `data-raw/logs/discharge_fill_305/`; `default`'s width-to-discharge conversion by `data-raw/query_width_mad_equivalent.R` → `data-raw/logs/habitat_thresholds_307/`; the wetland floor by `data-raw/logs/wetland_floor_311/run.R`, `summarise.R` and `obs.R` (same directory) · **Status:** BT `rear_gradient_max` 0.1349 **scored and held**; MAD ranges for BT, GR and RB **scored** (the rule refused loosening past P10 except RB spawning), KO unscored; `cw` against `mad` **scored** (size-adjusted); with main stems filled (#305) `mad` drops only little-used water for BT, GR and RB spawning, and RB rearing reads both ways; `default`'s width-converted MAD ranges (#307) are a conversion, not a calibration, and unscored; every other row unscored
+**Verified:** 2026-09-29 (CH/BT gradient and width), 2026-10-02 (MAD), 2026-10-03 (`cw` against `mad`), 2026-10-06 (discharge fill; `default`'s width-converted MAD ranges), 2026-10-07 (wetland floor on `rearing`; lake and wetland rearing connected to spawning) · **Issues:** #284 (gradient and width), #302 (MAD, [below](#mad-discharge-ranges-for-bt-gr-ko-and-rb-302)), #300 (`cw` against `mad`), #305 (discharge fill on main stems), #307 (`default`'s MAD ranges from its width minima), #311 (the wetland floor on `rearing`; fresh#237, fresh#240), #310 (lake and wetland rearing connected to spawning), #290 (the pooling tracker), #283 (the validator, [`habitat_validation.md`](habitat_validation.md)), #282 (`default_tuned`); spawned knowledge#28 (habitat weights) · **Produced by:** `data-raw/query_habitat_thresholds_obs.R`, `data-raw/query_habitat_thresholds_fiss.R` → `data-raw/logs/habitat_thresholds_284/`; step 5 by `data-raw/habitat_variants_build.R` and `data-raw/habitat_variants_score.R` → `data-raw/logs/habitat_score_284/`; literature reviews archived with #284's and #302's PWFs (`literature.md`); MAD by `data-raw/query_habitat_thresholds_mad.R` → `data-raw/logs/habitat_thresholds_302/` and the same scoring scripts → `data-raw/logs/habitat_score_302/`; `cw` against `mad` by the same scripts with `--base=default_tuned` → `data-raw/logs/habitat_score_300/`, and with the fill → `data-raw/logs/habitat_score_305/`; the fill measured by `data-raw/discharge_fill_count.R` → `data-raw/logs/discharge_fill_305/`; `default`'s width-to-discharge conversion by `data-raw/query_width_mad_equivalent.R` → `data-raw/logs/habitat_thresholds_307/`; the wetland floor by `data-raw/logs/wetland_floor_311/run.R`, `summarise.R` and `obs.R` (same directory) · **Status:** BT `rear_gradient_max` 0.1349 **scored and held**; MAD ranges for BT, GR and RB **scored** (the rule refused loosening past P10 except RB spawning), KO unscored; `cw` against `mad` **scored** (size-adjusted); with main stems filled (#305) `mad` drops only little-used water for BT, GR and RB spawning, and RB rearing reads both ways; `default`'s width-converted MAD ranges (#307) are a conversion, not a calibration, and unscored; every other row unscored
 
 ## Verdict
 
@@ -1205,3 +1205,54 @@ Calibrating it on observations is open.
 - In `edge_types = "categories"` mode the wetland-flow rule matches no FWA line at all.
   That predates #311; no shipped bundle uses categories.
 
+
+## Lake and wetland rearing connected to spawning (#310)
+
+**Verified:** 2026-10-07 · **Issues:** #310; fresh#240 (`requires_connected: spawning` on the
+first rear L / W rule) · **Produced by:** fresh `data-raw/logs/bucket_connected_240/` (the
+distance ladder); `data-raw/logs/lake_connected_310/` (this change on one segmentation)
+
+**The question.** In `default`, a species' `lake_rearing` / `wetland_rearing` bucket kept every
+accessible polygon over its size floor, whether or not that species spawns anywhere near it.
+fresh v0.37.0 lets the first rear L / W rule keep a polygon only where same-species spawning lies
+on it, or within `connected_distance_max` metres up- or downstream. The bundle has to state the
+distance (operator, 2026-10-06: "reasonable number stated in rules").
+
+**What the distance is for.** It is a test of whether a polygon sits in a species' spawning
+network, not a cap on how far fish move. Movement distances in the literature are all longer:
+- juvenile coho move up to 38 km downstream to winter rearing in beaver ponds, off-channel ponds
+  and side channels with the first fall freshets (Scarlett and Cederholm 1984, in Pollock et al.
+  2004), and move from the main river into ponds in autumn (Peterson 1980, 1982, in Swales and
+  Levings 1989);
+- adfluvial bull trout, rainbow trout and grayling rear in natal tributaries and move to lakes,
+  with spawning migrations of tens of kilometres (e.g. Lake Billy Chinook / Metolius bull trout;
+  Francois Lake rainbow recruitment from its tributaries).
+
+Any cap under ~10 km is therefore conservative for every species here. bcfishpass's only
+precedent is SK's 3 km between lake and spawning, which is a spawning-side test.
+
+**The ladder** (fresh, NATR BT, buckets area-only, km of polygon lines):
+
+| distance | lake km | wetland km |
+|---|---|---|
+| unconnected | 521.4 | 1,287.3 |
+| 0.5 km | 486.6 | 870.3 |
+| 1 km | 495.9 | 954.9 |
+| 3 km | 514.5 | 1,190.9 |
+| 10 km | 517.4 | 1,265.3 |
+
+Above 3 km the lake curve is flat (+0.6 %); wetlands still gain 6 % from 3 to 10 km.
+
+**Value: 10,000 m for every species, lakes and wetlands** (`rear_lake_connected_distance_max`,
+`rear_wetland_connected_distance_max` in `configs/default/dimensions.csv`). Reasons:
+- it is the largest distance measured, and still under every movement distance above;
+- the literature gives no basis for a different number per species, so one number keeps the
+  departure legible;
+- per-species and per-type columns exist so a calibrated value can replace it cell by cell.
+
+**Applies to** every species in `default`'s additive rear branch with lake or wetland rearing:
+BT, CH, CO, CT, DV, GR (lakes only), RB, ST and WCT (operator, 2026-10-07). SK and KO are not
+changed: their spawning is anchored to their lake rearing, so a rearing test anchored on
+spawning would be circular.
+
+**Uncalibrated.** Neither the value nor the per-species sameness is scored on observations.

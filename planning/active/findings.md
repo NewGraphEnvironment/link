@@ -134,3 +134,4 @@ Edge types inside waterbody polygons, NATR + ADMS + PARS + BULK
 
 | Error | Resolution |
 |-------|------------|
+| Zotero MCP: "Missing required environment variables ZOTERO_LIBRARY_ID and ZOTERO_API_KEY" | Read `~/Zotero/zotero.sqlite?immutable=1` + `pdftotext` on storage PDFs |
