@@ -16,8 +16,12 @@
 #   metric       string|array   "*" wildcard or habitat_type value(s)
 #                               (spawning, rearing, lake_rearing,
 #                                wetland_rearing, rearing_stream,
-#                                rearing_lake_centerline,
-#                                rearing_wetland_centerline)
+#                                rearing_lake, rearing_wetland;
+#                                before #310 the last two were
+#                                rearing_lake_centerline /
+#                                rearing_wetland_centerline, sliced by
+#                                edge type, and rearing_stream was
+#                                edge-type based too)
 #   pattern      string         link_gt_bcfp | link_lt_bcfp |
 #                               bcfp_only | link_only
 #   diff_range   [min, max]     optional, absolute |diff_pct| range
@@ -53,15 +57,13 @@ entries:
       - research/provincial_parity_2026_05_11.md#intentional-divergences
     status: INTENTIONAL
 
-  - id: lake-wetland-centerline-zero-bcfp
-    wsg: "*"
-    species: "*"
-    metric: [rearing_lake_centerline, rearing_wetland_centerline]
-    pattern: link_only
-    class: MEASUREMENT_ASYMMETRY
-    mechanism: bcfp does not materialize rearing centerline slices; link reports both
-    refs: [research/default_vs_bcfishpass.md]
-    status: INTENTIONAL
+  # Retired with #310: `lake-wetland-centerline-zero-bcfp` (link_only on
+  # rearing_lake_centerline / rearing_wetland_centerline). Those slices were
+  # edge types 1500/1525/1700, near zero on the bcfp side. #310 splits
+  # rearing by polygon, and bcfp's rearing inside polygons is large (BT about
+  # 12,100 km in lakes and 11,000 km in wetlands on the bcfishpass-config
+  # persist, 2026-10-07). So rearing_lake / rearing_wetland are compared like
+  # any other metric until a measured entry replaces this one.
 
   # ---------------------------------------------------------------------------
   # Class A — bcfp-side staleness. link is correct; bcfp's

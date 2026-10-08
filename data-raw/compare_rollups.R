@@ -50,7 +50,30 @@ cat(sprintf("Experiment rows: %d  (%d WSGs, %s)\n",
             nrow(b), length(unique(b$wsg)), DIR_B))
 
 # Restrict to km comparisons + spawn/rear (the methodology-delta primitives).
+# rearing_lake / rearing_wetland replaced the *_centerline labels in #310
+# (split by polygon, not edge type; rearing_stream changed meaning too), so
+# a pre-#310 directory and a post-#310 one cannot be compared.
+# Each directory is empty, pre, post or mixed (a resumed run leaves cached
+# pre-#310 RDS beside new ones); only pre/pre and post/post compare.
+slices <- function(x, d) {
+  if (is.null(x) || nrow(x) == 0L) stop("no rollup RDS in ", d, call. = FALSE)
+  pre  <- any(grepl("_centerline$", x$habitat_type))
+  post <- any(x$habitat_type %in% c("rearing_lake", "rearing_wetland"))
+  if (pre && post) {
+    stop(d, " mixes pre-#310 (*_centerline) and post-#310 (rearing_lake / ",
+         "rearing_wetland) rollups; re-run its pre-#310 WSGs", call. = FALSE)
+  }
+  if (pre) "pre-#310" else "post-#310"
+}
+sa <- slices(a, DIR_A)
+sb <- slices(b, DIR_B)
+if (sa != sb) {
+  stop(DIR_A, " is ", sa, " and ", DIR_B, " is ", sb, ": #310 renamed the ",
+       "lake / wetland slices and redefined rearing_stream; re-run the older ",
+       "one", call. = FALSE)
+}
 keep <- c("spawning", "rearing", "rearing_stream",
+          "rearing_lake", "rearing_wetland",
           "rearing_lake_centerline", "rearing_wetland_centerline")
 a <- a[a$unit == "km" & a$habitat_type %in% keep, ]
 b <- b[b$unit == "km" & b$habitat_type %in% keep, ]

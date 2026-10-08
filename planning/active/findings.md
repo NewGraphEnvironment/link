@@ -141,3 +141,11 @@ Edge types inside waterbody polygons, NATR + ADMS + PARS + BULK
 Full review in `review-plan.md`. Verified before acting: B1 (fresh lake bucket = `fwa_lakes_poly` only, `git show v0.39.0:R/frs_habitat_predicates.R`), B2 (CT/DV absent from `default/rules.yaml`), G1 (`cluster_rearing` FALSE for RB, CT, DV, CM, PK in `default/parameters_fresh.csv`).
 
 Province-wide edge types inside lake (L) / reservoir (X) polygons, km: L 1200 54,402 · 1450 44,528 · 1400 6,225 · 1475 2,127 · 1300 478 · 1000/1250 ~0; X 1200 64 · 1400 126 · 1450 30 · 1250 13 · 1350 11 · 1300 1. Lake rule set widened to add 1250 / 1350.
+
+## `fwa_waterbodies` misses polygon lines (2026-10-07)
+
+Province-wide, lines whose `waterbody_key` is in a polygon table but has no `fwa_waterbodies` row: lakes 83,922 segments / 5,649 km, wetlands 125,384 / 17,757 km, reservoirs 1,443 / 101 km (fwapg builds `fwa_waterbodies` only from lines with a non-NULL localcode and a non-999 wscode). fresh's rules read the polygon tables, so the rollup's class does too. `fwa_lakes_poly`, `fwa_manmade_waterbodies_poly` and `fwa_wetlands_poly` share no `waterbody_key`; each is indexed on it.
+
+## Adams Lake and 1450 connection lines (2026-10-07)
+
+ADMS CH / CO lake km: Adams Lake (13,229 ha) holds 211.6 km of rearing lines, 62.8 km of 1200 main flow and 148.8 km of 1450 connection lines. NATR BT lake km: 275.0 km of 1450, 227.6 km of 1200. The issue names 1450; whether connection lines belong in lake km is left for review.

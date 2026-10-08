@@ -168,8 +168,8 @@ test_that("lnk_compare_wsg composes lnk_pipeline_run then lnk_compare_rollup (ro
       wsg = aoi, species = "BT",
       habitat_type = c("spawning", "rearing", "lake_rearing",
                        "wetland_rearing", "rearing_stream",
-                       "rearing_lake_centerline",
-                       "rearing_wetland_centerline", "accessible"),
+                       "rearing_lake",
+                       "rearing_wetland", "accessible"),
       unit = c("km", "km", "ha", "ha", "km", "km", "km", "km"),
       link_value = 1, ref_value = 1, diff_pct = 0)
   }
@@ -214,8 +214,8 @@ test_that(".lnk_compare_wsg_assemble_rollup produces 8 rows per species + correc
       spawning_km = c(100, 50),
       rearing_km = c(200, 100),
       rearing_stream_km = c(150, 80),
-      rearing_lake_centerline_km = c(30, 10),
-      rearing_wetland_centerline_km = c(20, 10),
+      rearing_lake_km = c(30, 10),
+      rearing_wetland_km = c(20, 10),
       accessible_km = c(180, 90),
       stringsAsFactors = FALSE
     ),
@@ -231,8 +231,8 @@ test_that(".lnk_compare_wsg_assemble_rollup produces 8 rows per species + correc
     spawning_km = c(99, 49),                # +1.0% / +2.04%
     rearing_km = c(198, 98),                # +1.0% / +2.04%
     rearing_stream_km = c(148, 79),
-    rearing_lake_centerline_km = c(30, 10),  # 0% diff
-    rearing_wetland_centerline_km = c(20, 10),  # 0% diff
+    rearing_lake_km = c(30, 10),  # 0% diff
+    rearing_wetland_km = c(20, 10),  # 0% diff
     lake_rearing_ha = c(1000, 500),         # 0% diff
     wetland_rearing_ha = c(500, 250),       # 0% diff
     stringsAsFactors = FALSE
@@ -274,8 +274,8 @@ test_that(".lnk_compare_wsg_assemble_rollup handles NA ref values (not modelled)
   link_data <- list(
     km = data.frame(species_code = "RB", spawning_km = 100, rearing_km = 200,
                     rearing_stream_km = 180,
-                    rearing_lake_centerline_km = 15,
-                    rearing_wetland_centerline_km = 5,
+                    rearing_lake_km = 15,
+                    rearing_wetland_km = 5,
                     accessible_km = 190,
                     stringsAsFactors = FALSE),
     lake_ha = data.frame(species_code = "RB", lake_rearing_ha = 0,
@@ -289,8 +289,8 @@ test_that(".lnk_compare_wsg_assemble_rollup handles NA ref values (not modelled)
     spawning_km = NA_real_,
     rearing_km = NA_real_,
     rearing_stream_km = NA_real_,
-    rearing_lake_centerline_km = NA_real_,
-    rearing_wetland_centerline_km = NA_real_,
+    rearing_lake_km = NA_real_,
+    rearing_wetland_km = NA_real_,
     lake_rearing_ha = NA_real_,
     wetland_rearing_ha = NA_real_,
     stringsAsFactors = FALSE
@@ -424,8 +424,8 @@ test_that(".lnk_compare_wsg_assemble_rollup handles zero ref values (avoid div-b
   link_data <- list(
     km = data.frame(species_code = "BT", spawning_km = 100, rearing_km = 200,
                     rearing_stream_km = 180,
-                    rearing_lake_centerline_km = 0,
-                    rearing_wetland_centerline_km = 0,
+                    rearing_lake_km = 0,
+                    rearing_wetland_km = 0,
                     accessible_km = 190,
                     stringsAsFactors = FALSE),
     lake_ha = data.frame(species_code = "BT", lake_rearing_ha = 0,
@@ -436,8 +436,8 @@ test_that(".lnk_compare_wsg_assemble_rollup handles zero ref values (avoid div-b
   ref_data <- data.frame(
     species_code = "BT",
     spawning_km = 100, rearing_km = 200, rearing_stream_km = 180,
-    rearing_lake_centerline_km = 0,
-    rearing_wetland_centerline_km = 0,
+    rearing_lake_km = 0,
+    rearing_wetland_km = 0,
     lake_rearing_ha = 0,
     wetland_rearing_ha = 0,
     stringsAsFactors = FALSE

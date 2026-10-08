@@ -61,11 +61,11 @@ Facts that shape the plan:
 - [x] Bundle test (fresh validators, connected keys on BT/CH/CO/GR/RB/ST/WCT, CT/DV absent, SK/KO untouched, CO unfloored)
 
 ## Phase 4: Rollups (tests first)
-- [ ] `lnk_rollup_wsg()`: expose a `waterbody` alias (LEFT JOIN `whse_basemapping.fwa_waterbodies` on `waterbody_key`; L and X → lake, W → wetland, R/none → stream). Default metrics unchanged: `lnk_habitat_validate()` merges every default column into its summary (plan review G5)
-- [ ] Persist path `.lnk_compare_rollup_link()` and working path `.lnk_compare_wsg_rollup_link()`: replace edge-type slices with the waterbody_key partition; `lake_rearing_ha` joins lakes ∪ manmade polygons
-- [ ] bcfp reference side (`.lnk_compare_wsg_rollup_bcfishpass`): same partition (bcfishpass.streams.waterbody_key) and lakes ∪ manmade for ha, so diff columns stay like-for-like
-- [ ] Consumers of the renamed labels: `research/bcfp_divergence_taxonomy.yml` (schema comment, `lake-wetland-centerline-zero-bcfp`), `data-raw/compare_rollups.R` keep-list; `data-raw/exp_gradient_extra_breaks.R` left as a frozen experiment
-- [ ] Tests: SQL-text tests for the partition; invariant stream + lake + wetland = `rearing_km` (live-DB test, skipped without DB); roxygen states km and ha pairs overlap and are never added; `devtools::document()`
+- [x] `lnk_rollup_wsg()`: expose a `waterbody` alias (LEFT JOIN on `waterbody_key` to the polygon tables fresh reads: lakes + manmade → lake, wetlands → wetland, else stream; not `fwa_waterbodies`, which misses ~23,000 km of polygon lines). Default metrics unchanged: `lnk_habitat_validate()` merges every default column into its summary (plan review G5)
+- [x] Persist path `.lnk_compare_rollup_link()` and working path `.lnk_compare_wsg_rollup_link()`: replace edge-type slices with the waterbody_key partition; `lake_rearing_ha` joins lakes ∪ manmade polygons
+- [x] bcfp reference side (`.lnk_compare_wsg_rollup_bcfishpass`): same partition (bcfishpass.streams.waterbody_key) and lakes ∪ manmade for ha, so diff columns stay like-for-like
+- [x] Consumers of the renamed labels: `research/bcfp_divergence_taxonomy.yml` (schema comment, `lake-wetland-centerline-zero-bcfp`), `data-raw/compare_rollups.R` keep-list; `data-raw/exp_gradient_extra_breaks.R` left as a frozen experiment
+- [x] Tests: SQL-text tests for the partition; invariant stream + lake + wetland = `rearing_km` (live-DB test, skipped without DB); roxygen states km and ha pairs overlap and are never added; `devtools::document()`
 
 ## Phase 5: Validation on one segmentation
 Run decisions: config `default` (link's own), scratch working schemas only (never persist to
