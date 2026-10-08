@@ -60,5 +60,5 @@ Logs in `data-raw/logs/wetland_floor_311/` (README carries the tables; `measure.
 
 - [x] Tests pass (`devtools::test()`: 0 failures; `devtools::check()`: 0 errors, 3 warnings + 2 notes, all in files this branch does not touch; `lintr` on `R/lnk_rules_build.R`: no new lints, 23 → 21)
 - [x] `/code-check` on each code commit (Phase 2: 3 clean rounds; Phase 3 scripts: checked post-commit, fixes in the Phase 4 commit)
-- [ ] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion
+- [x] PWF checkboxes match landed work
+- [x] `/planning-archive` on completion
