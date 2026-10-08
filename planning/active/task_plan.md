@@ -25,17 +25,19 @@ The open bundle question was the `edge_types_explicit: [1050, 1150], thresholds:
 - [ ] `devtools::test()` is green against v0.39.0
 
 ## Phase 2: Floor the wetland-flow carve-out (tests first)
-- [ ] Tests in `tests/testthat/test-lnk_rules_build.R`:
+- [x] Tests in `tests/testthat/test-lnk_rules_build.R`:
   - `rear_wetland_ha_min` set → the carve-out carries `waterbody_type: W`, `wetland_ha_min`, edges 1050/1150, `thresholds: false`, and comes after the polygon W rule;
   - blank, absent or non-numeric → the carve-out is unchanged, with no `waterbody_type` and its current position;
   - the first W rule in the rear list is the polygon rule (edges 1000/1100);
-  - the `edge_types = "categories"` branch gets the same treatment;
-  - `rear_wetland_polygon = no` + floor set → floored carve-out alone, with the bucket consequence stated in the test.
-- [ ] Update the existing guards near `test-lnk_rules_build.R:441,842,942` so they still find the dedicated carve-out
-- [ ] `R/lnk_rules_build.R`: emit the floored carve-out after the polygon rule when `rwhm` is finite; otherwise keep the current emission. Comment why the order matters (first W rule = bucket + `requires_connected` anchor)
-- [ ] `Rscript data-raw/build_rules.R`, then `git diff` every `rules.yaml`. The default* diffs are only the moved and floored carve-outs for BT, CH, CO, RB, ST and WCT; `bcfishpass/rules.yaml` is byte-identical; provenance checksums are updated
-- [ ] `configs/dictionary_dimensions.csv`: the `rear_wetland_ha_min` description says it bounds both wetland rear rules
-- [ ] Load every regenerated `rules.yaml` through `fresh::frs_params()` (v0.39.0)
+  - the `edge_types = "categories"` branch gets the same treatment (cosmetic: that carve-out matches no lines, see findings);
+  - *revised after plan review:* `rear_wetland_polygon = no` + floor set → carve-out stays **unfloored**, so there is no W rule and the first L/W rule is still L. A floored carve-out there would become fresh's bucket rule. Mutation-checked: an unconditional floor turns 3 assertions red.
+- [x] Existing guard near `test-lnk_rules_build.R:942` (shipped default rules) also asserts BT's carve-out carries `waterbody_type: W` + `wetland_ha_min: 1`; the guards at :441 and :842 need no change
+- [x] `R/lnk_rules_build.R`: emit the floored carve-out after the polygon rule when `rwhm` is finite and the polygon rule is emitted; otherwise keep the current emission. Comment says why the order matters (first W rule = bucket + `requires_connected` anchor; first L/W = waterbody-connected spawning)
+- [x] Built to tempfiles and diffed first (`build_rules.R` regenerates only `default`, `bcfishpass` and the top-level yaml). The default* and top-level diffs are only the moved and floored carve-outs for BT, CH, CO, RB, ST and WCT (CT/DV are skipped by the builder) plus the `# Generated:` line. `bcfishpass` differs only in that line, so it was not written. `default/rules.yaml` was copied into `default_extrabreaks` and `default_rearbreaks` (byte-identical copies before and after); `checksum` updated in all three `config.yaml`; `lnk_config_verify()` reports 0 drift on all five bundles
+- [ ] `generator_sha` in the three `config.yaml` → this commit's SHA (follow-up commit; a commit cannot name itself)
+- [x] `inst/extdata/configs/dictionary_dimensions.csv`: `rear_wetland_ha_min`, `rear_wetland` and `rear_wetland_polygon` rows describe the floor, its placement and the polygon = no case
+- [x] `data-raw/query_habitat_thresholds_mad.R`: stale comment ("fresh's rear predicate does not apply wetland_ha_min") reworded
+- [ ] Load every regenerated `rules.yaml` (default*, top-level, and `default_tuned` via `lnk_config()`) through `fresh::frs_params()` v0.39.0; each floored species' compiled `rear` predicate carries `1050, 1150 … area_ha >= <floor>`
 
 ## Phase 3: Measure on one segmentation
 Stamp the environment in each log header: link and fresh version + SHA, fwapg state, bcfishobs row count. Logs go to `data-raw/logs/wetland_floor_311/` with a README.

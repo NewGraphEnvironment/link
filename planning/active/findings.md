@@ -16,7 +16,18 @@ Open question for the bundle: the `edge_types_explicit: [1050, 1150], thresholds
 - fresh's bucket and `requires_connected` anchor = first W rule (`.frs_find_waterbody_rule`, fresh@v0.38.0 `R/frs_habitat_predicates.R:205`).
 - `requires_connected` in link's rules.yaml appears only on SK/KO spawn rules → loads under fresh ≥0.37.
 
+## Plan review (Plan agent, 2026-10-07) — what changed because of it
+
+- **`rear_wetland_polygon = no` + floor** would have made the floored carve-out the only W rule, so fresh's `wetland_rearing` bucket would flip FALSE → every line in a wetland ≥ floor, and with `rear_lake = yes` the first L/W rule (waterbody-connected spawning, `frs_habitat.R:1252-1262`) would change. Fixed: floor only when the polygon rule is emitted.
+- **Province-wide, 40 edge-1050 lines (~6.6 km) have a NULL `waterbody_key`** (BABL 12, LDEN 12, …); the floored carve-out drops them. None point at a non-wetland key; 1150 has none. The four sampled WSGs had none.
+- **The `categories` carve-out matches nothing:** `edge_types: [wetland]` resolves to 1700 only, which `fwa_stream_networks_sp` does not carry; 1050/1150 are category `stream` and enter through the stream rule with thresholds. No shipped bundle uses categories. Pre-existing; issue drafted, not filed.
+- **Sub-floor acceptance must be 1050/1150-only:** the stream rule (`[1000, 1100, 2000, 2300]`, no `in_waterbody` filter in default) admits mainlines in sub-floor wetlands by design. `run.R` carries `rear_km_subfloor_wetflow`.
+- **Score the floor B vs C, the upstream movement A vs B** (the validator's rear stage ORs the buckets, which #240 widened).
+- fresh's bundled `inst/extdata/parameters_habitat_rules.yaml` mirrors link's and will now diverge (still unfloored).
+- `load_all()` **errors** (not warns) when the installed fresh is below the Imports floor, so tests run from a scratch copy with the old floor until v0.39.0 is installed.
+
 ## Errors Encountered
 
 | Error | Resolution |
 |-------|------------|
+| `run.R`: `data.frame()` "differing number of rows: 1, 5" | `count(*)` arrives as integer64, which `data.frame()` does not recycle; coerce with `as.numeric()` |

@@ -1,5 +1,5 @@
 # Generated from dimensions.csv
-# Generated: 2026-05-02
+# Generated: 2026-10-07
 # Edge types: explicit
 #
 # DO NOT EDIT — edit the CSV and re-run lnk_rules_build()
@@ -26,14 +26,16 @@ BT:
     channel_width:
     - 0.0
     - 9999.0
-  - edge_types_explicit:
-    - 1050
-    - 1150
-    thresholds: false
   - waterbody_type: W
     edge_types_explicit:
     - 1000
     - 1100
+    wetland_ha_min: 1.0
+  - waterbody_type: W
+    edge_types_explicit:
+    - 1050
+    - 1150
+    thresholds: false
     wetland_ha_min: 1.0
   - waterbody_type: L
     edge_types_explicit:
@@ -62,14 +64,16 @@ CH:
     channel_width:
     - 0.0
     - 9999.0
-  - edge_types_explicit:
-    - 1050
-    - 1150
-    thresholds: false
   - waterbody_type: W
     edge_types_explicit:
     - 1000
     - 1100
+    wetland_ha_min: 1.0
+  - waterbody_type: W
+    edge_types_explicit:
+    - 1050
+    - 1150
+    thresholds: false
     wetland_ha_min: 1.0
   - waterbody_type: L
     edge_types_explicit:
@@ -111,14 +115,16 @@ CO:
     channel_width:
     - 0.0
     - 9999.0
-  - edge_types_explicit:
-    - 1050
-    - 1150
-    thresholds: false
   - waterbody_type: W
     edge_types_explicit:
     - 1000
     - 1100
+    wetland_ha_min: 0.5
+  - waterbody_type: W
+    edge_types_explicit:
+    - 1050
+    - 1150
+    thresholds: false
     wetland_ha_min: 0.5
   - waterbody_type: L
     edge_types_explicit:
@@ -187,14 +193,16 @@ ST:
     channel_width:
     - 0.0
     - 9999.0
-  - edge_types_explicit:
-    - 1050
-    - 1150
-    thresholds: false
   - waterbody_type: W
     edge_types_explicit:
     - 1000
     - 1100
+    wetland_ha_min: 1.0
+  - waterbody_type: W
+    edge_types_explicit:
+    - 1050
+    - 1150
+    thresholds: false
     wetland_ha_min: 1.0
   - waterbody_type: L
     edge_types_explicit:
@@ -223,14 +231,16 @@ WCT:
     channel_width:
     - 0.0
     - 9999.0
-  - edge_types_explicit:
-    - 1050
-    - 1150
-    thresholds: false
   - waterbody_type: W
     edge_types_explicit:
     - 1000
     - 1100
+    wetland_ha_min: 1.0
+  - waterbody_type: W
+    edge_types_explicit:
+    - 1050
+    - 1150
+    thresholds: false
     wetland_ha_min: 1.0
   - waterbody_type: L
     edge_types_explicit:
@@ -285,14 +295,16 @@ RB:
     channel_width:
     - 0.0
     - 9999.0
-  - edge_types_explicit:
-    - 1050
-    - 1150
-    thresholds: false
   - waterbody_type: W
     edge_types_explicit:
     - 1000
     - 1100
+    wetland_ha_min: 1.0
+  - waterbody_type: W
+    edge_types_explicit:
+    - 1050
+    - 1150
+    thresholds: false
     wetland_ha_min: 1.0
   - waterbody_type: L
     edge_types_explicit:

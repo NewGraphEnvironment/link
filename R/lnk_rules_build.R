@@ -328,14 +328,15 @@ lnk_rules_build <- function(csv,
         rear_rules[[length(rear_rules) + 1]] <- add_rc(river_rule_r, rear_rc, rear_cdm)
       }
       if (d$rear_wetland) {
+        rwhm <- resolve_ha_min(
+          if (has_rwhm) d$rear_wetland_ha_min else NULL,
+          NA_real_)
         # Edge-type rule: include wetland-flow streams / shoreline segments
         # in the `rearing` flag (rearing km total).
-        if (edge_types == "categories") {
-          rear_rules[[length(rear_rules) + 1]] <- add_rc(list(
-            edge_types = c("wetland"), thresholds = FALSE), rear_rc, rear_cdm)
+        carve_rule <- if (edge_types == "categories") {
+          list(edge_types = c("wetland"), thresholds = FALSE)
         } else {
-          rear_rules[[length(rear_rules) + 1]] <- add_rc(list(
-            edge_types_explicit = c(1050L, 1150L), thresholds = FALSE), rear_rc, rear_cdm)
+          list(edge_types_explicit = c(1050L, 1150L), thresholds = FALSE)
         }
         # Waterbody rule: sets the separate `wetland_rearing` flag in
         # fresh.streams_habitat so polygon-area rollups (ha) can be
@@ -345,6 +346,18 @@ lnk_rules_build <- function(csv,
         # matches bcfishpass's per-species access SQL (which has the
         # 1050/1150 carve-out but no wetland-polygon predicate).
         emit_polygon <- !has_rwp || isTRUE(d$rear_wetland_polygon)
+        # A declared rear_wetland_ha_min bounds this rule too (#311), as a
+        # W rule with the floor (fresh >= 0.38.0 gates `rearing` on it,
+        # fresh#237). Only alongside the polygon rule: without it the
+        # floored carve-out would be the only W rule, so fresh would make
+        # it the wetland_rearing bucket rule and rear_wetland_polygon = no
+        # would stop meaning "no W rule". The type also drops the few 1050
+        # lines with no waterbody_key (40 province-wide, 2026-10-07).
+        # Unfloored, the carve-out keeps its place.
+        carve_floored <- !is.na(rwhm) && emit_polygon
+        if (!carve_floored) {
+          rear_rules[[length(rear_rules) + 1]] <- add_rc(carve_rule, rear_rc, rear_cdm)
+        }
         if (emit_polygon) {
           # Polygon rule restricted to mainlines (1000 main flow,
           # 1100 secondary flow). Without the edge filter the rule
@@ -357,12 +370,18 @@ lnk_rules_build <- function(csv,
           wetland_rule <- list(
             waterbody_type = "W",
             edge_types_explicit = c(1000L, 1100L))
-          rwhm <- resolve_ha_min(
-            if (has_rwhm) d$rear_wetland_ha_min else NULL,
-            NA_real_)
           if (!is.na(rwhm)) wetland_rule$wetland_ha_min <- rwhm
           wetland_rule <- add_ao(wetland_rule, rear_wao)
           rear_rules[[length(rear_rules) + 1]] <- add_rc(wetland_rule, rear_rc, rear_cdm)
+        }
+        # The floored carve-out goes after the polygon rule: fresh takes
+        # the FIRST W rule as the wetland_rearing bucket rule and as the
+        # requires_connected anchor (.frs_find_waterbody_rule()), and the
+        # first L or W rule for waterbody-connected spawning.
+        if (carve_floored) {
+          carve_rule <- c(list(waterbody_type = "W"), carve_rule,
+                          list(wetland_ha_min = rwhm))
+          rear_rules[[length(rear_rules) + 1]] <- add_rc(carve_rule, rear_rc, rear_cdm)
         }
       }
       if (d$rear_lake) {
