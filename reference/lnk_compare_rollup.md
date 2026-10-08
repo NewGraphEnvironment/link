@@ -54,8 +54,12 @@ lnk_compare_rollup(
 
 ## Value
 
-A tibble with one row per (species, habitat_type) — 8 habitat types per
-species (the 7 habitat km/ha types plus `accessible` km, link#221).
+A tibble with one row per (species, habitat_type) — 9 habitat types per
+species (the 8 habitat km/ha types plus `accessible` km, link#221).
+`rearing_lake_connection` is lake connection lines (FWA edge 1450 in a
+lake polygon), reported apart and left out of `rearing` and
+`rearing_lake` km on both sides (#317); see
+[`lnk_compare_wsg()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_wsg.md).
 Columns: `wsg`, `species`, `habitat_type`, `unit` (`km` \| `ha`),
 `link_value`, `ref_value`, `diff_pct`. `accessible`'s `ref_value` is
 sourced tunnel-free from `fresh.streams_vw_bcfp` for the salmon group

@@ -57,9 +57,10 @@ lnk_rollup_wsg(
 
   Named character vector: names are output columns, values are SQL
   aggregate expressions over the generic aliases `length_metre`,
-  `edge_type`, `waterbody`, `access`, `spawning`, `rearing`. Default
-  emits `accessible_km`, `spawning_km`, `rearing_km`. Raw SQL — trusted
-  caller input, like `frs_aggregate()`.
+  `edge_type`, `waterbody`, `connection`, `access`, `spawning`,
+  `rearing`. Default emits `accessible_km`, `spawning_km`, `rearing_km`
+  (every line flagged `rearing`, lake connection lines included). Raw
+  SQL — trusted caller input, like `frs_aggregate()`.
 
 - where:
 
@@ -86,11 +87,24 @@ the polygon the line sits in, by `waterbody_key` against the polygon
 tables fresh's lake and wetland rules read. Lakes and reservoirs
 (`fwa_lakes_poly`, `fwa_manmade_waterbodies_poly`) are `"lake"`,
 wetlands (`fwa_wetlands_poly`) `"wetland"`, and river polygons or no
-polygon `"stream"`. The three partition the network, so
-`rearing_stream_km + rearing_lake_km + rearing_wetland_km` built from
-them equals `rearing_km` (to rounding); see the examples. A lake's
-centreline km and its polygon hectares describe the same water and are
-never added together.
+polygon `"stream"`. The three partition the network. A lake's centreline
+km and its polygon hectares describe the same water and are never added
+together.
+
+Each row also carries `connection` (bool): a line in a lake polygon on
+FWA edge type 1450 ("connection"), the connector lines that join each
+tributary mouth to the lake's main-flow line. fresh keeps them in
+`rearing`, where they connect inlet rearing to the lake, but they trace
+a join rather than a flow path, so a report of habitat km leaves them
+out and states them apart, as
+[`lnk_compare_rollup()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_rollup.md)
+does: there `rearing_stream_km + rearing_lake_km + rearing_wetland_km`
+(lake without connection lines) equals `rearing_km` (to rounding); see
+the examples. The default `rearing_km` here is every line flagged
+`rearing`, connection lines included, because the scoring and parity
+tools that call it with no `metrics`
+([`lnk_habitat_validate()`](https://newgraphenvironment.github.io/link/reference/lnk_habitat_validate.md),
+`data-raw/parity_crosssection.R`) compare the flag itself.
 
 Because the per-species columns are aliased to fixed names, the
 `metrics` SQL is written **once**, species-agnostic — mirroring
@@ -140,12 +154,17 @@ conn <- lnk_db_conn()
 # Coho accessible / spawning / rearing km for Morice, from persisted state.
 lnk_rollup_wsg(conn, aoi = "MORR", species = "CO")
 
-# Rearing km by the polygon the line sits in (stream / lake / wetland).
+# Rearing km by the polygon the line sits in (stream / lake / wetland),
+# with lake connection lines reported apart.
 lnk_rollup_wsg(conn, aoi = "MORR", species = "CO",
   metrics = c(
-    rearing_km = "sum(length_metre) FILTER (WHERE rearing) / 1000",
-    rearing_lake_km =
-      "sum(length_metre) FILTER (WHERE rearing AND waterbody = 'lake') / 1000"))
+    rearing_km =
+      "sum(length_metre) FILTER (WHERE rearing AND NOT connection) / 1000",
+    rearing_lake_km = paste(
+      "sum(length_metre) FILTER (WHERE rearing AND waterbody = 'lake'",
+      "AND NOT connection) / 1000"),
+    rearing_lake_connection_km =
+      "sum(length_metre) FILTER (WHERE rearing AND connection) / 1000"))
 
 # Custom metric: count accessible segments per species.
 lnk_rollup_wsg(conn, aoi = "MORR", species = c("CO", "BT"),

@@ -139,13 +139,17 @@ deprecation warning when supplied.</p></dd>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A list with two elements:</p><ul><li><p><code>rollup</code>: tibble with one row per (species, habitat_type) — 8
+    <p>A list with two elements:</p><ul><li><p><code>rollup</code>: tibble with one row per (species, habitat_type) — 9
 habitat types: <code>spawning</code>, <code>rearing</code>, <code>lake_rearing</code>,
 <code>wetland_rearing</code>, <code>rearing_stream</code>, <code>rearing_lake</code>,
-<code>rearing_wetland</code>, <code>accessible</code> (km, link#221). <code>rearing_stream</code>,
-<code>rearing_lake</code> and <code>rearing_wetland</code> split <code>rearing</code> by the polygon
-each line sits in (#310); <code>lake_rearing</code> / <code>wetland_rearing</code> are
-polygon hectares. A lake's km and its ha describe the same water
+<code>rearing_wetland</code>, <code>rearing_lake_connection</code>, <code>accessible</code> (km,
+link#221). <code>rearing_stream</code>, <code>rearing_lake</code> and <code>rearing_wetland</code>
+split <code>rearing</code> by the polygon each line sits in (#310).
+<code>rearing_lake_connection</code> is lake-polygon lines on FWA edge 1450
+(connectors), which join tributaries to a lake's main-flow line: they stay
+in fresh's <code>rearing</code> flag but are left out of <code>rearing</code> and
+<code>rearing_lake</code> km, on both sides (#317). <code>lake_rearing</code> /
+<code>wetland_rearing</code> are polygon hectares. A lake's km and its ha describe the same water
 and are never added together.
 Columns: <code>wsg</code>, <code>species</code>, <code>habitat_type</code>, <code>unit</code> (<code>km</code> | <code>ha</code>),
 <code>link_value</code>, <code>ref_value</code>, <code>diff_pct</code>. <code>accessible</code>'s <code>ref_value</code>

@@ -105,9 +105,10 @@ identifier whitelist.</p></dd>
 <dt id="arg-metrics">metrics<a class="anchor" aria-label="anchor" href="#arg-metrics"></a></dt>
 <dd><p>Named character vector: names are output columns,
 values are SQL aggregate expressions over the generic aliases
-<code>length_metre</code>, <code>edge_type</code>, <code>waterbody</code>, <code>access</code>, <code>spawning</code>,
-<code>rearing</code>. Default emits
-<code>accessible_km</code>, <code>spawning_km</code>, <code>rearing_km</code>. Raw SQL — trusted
+<code>length_metre</code>, <code>edge_type</code>, <code>waterbody</code>, <code>connection</code>, <code>access</code>,
+<code>spawning</code>, <code>rearing</code>. Default emits
+<code>accessible_km</code>, <code>spawning_km</code>, <code>rearing_km</code> (every line flagged
+<code>rearing</code>, lake connection lines included). Raw SQL — trusted
 caller input, like <code>frs_aggregate()</code>.</p></dd>
 
 
@@ -136,11 +137,21 @@ the polygon the line sits in, by <code>waterbody_key</code> against the polygon
 tables fresh's lake and wetland rules read. Lakes and reservoirs
 (<code>fwa_lakes_poly</code>, <code>fwa_manmade_waterbodies_poly</code>) are <code>"lake"</code>,
 wetlands (<code>fwa_wetlands_poly</code>) <code>"wetland"</code>, and river polygons or no
-polygon <code>"stream"</code>. The three partition the network, so
-<code>rearing_stream_km + rearing_lake_km + rearing_wetland_km</code> built from
-them equals <code>rearing_km</code> (to rounding); see the examples. A lake's
+polygon <code>"stream"</code>. The three partition the network. A lake's
 centreline km and its polygon hectares describe the same water and are
 never added together.</p>
+<p>Each row also carries <code>connection</code> (bool): a line in a lake polygon on
+FWA edge type 1450 ("connection"), the connector lines that join each
+tributary mouth to the lake's main-flow line. fresh keeps them in
+<code>rearing</code>, where they connect inlet rearing to the lake, but they trace
+a join rather than a flow path, so a report of habitat km leaves them
+out and states them apart, as <code><a href="lnk_compare_rollup.html">lnk_compare_rollup()</a></code> does: there
+<code>rearing_stream_km + rearing_lake_km + rearing_wetland_km</code> (lake without
+connection lines) equals <code>rearing_km</code> (to rounding); see the examples.
+The default <code>rearing_km</code> here is every line flagged <code>rearing</code>,
+connection lines included, because the scoring and parity tools that
+call it with no <code>metrics</code> (<code><a href="lnk_habitat_validate.html">lnk_habitat_validate()</a></code>,
+<code>data-raw/parity_crosssection.R</code>) compare the flag itself.</p>
 <p>Because the per-species columns are aliased to fixed names, the
 <code>metrics</code> SQL is written <strong>once</strong>, species-agnostic — mirroring
 <code><a href="https://newgraphenvironment.github.io/fresh/reference/frs_aggregate.html" class="external-link">fresh::frs_aggregate()</a></code>'s <code>metrics</code> / <code>where</code> shape. Adding a species
@@ -182,12 +193,17 @@ different (pre-gating) semantics and diverges from the access model
 <span class="r-in"><span><span class="co"># Coho accessible / spawning / rearing km for Morice, from persisted state.</span></span></span>
 <span class="r-in"><span><span class="fu">lnk_rollup_wsg</span><span class="op">(</span><span class="va">conn</span>, aoi <span class="op">=</span> <span class="st">"MORR"</span>, species <span class="op">=</span> <span class="st">"CO"</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Rearing km by the polygon the line sits in (stream / lake / wetland).</span></span></span>
+<span class="r-in"><span><span class="co"># Rearing km by the polygon the line sits in (stream / lake / wetland),</span></span></span>
+<span class="r-in"><span><span class="co"># with lake connection lines reported apart.</span></span></span>
 <span class="r-in"><span><span class="fu">lnk_rollup_wsg</span><span class="op">(</span><span class="va">conn</span>, aoi <span class="op">=</span> <span class="st">"MORR"</span>, species <span class="op">=</span> <span class="st">"CO"</span>,</span></span>
 <span class="r-in"><span>  metrics <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span></span>
-<span class="r-in"><span>    rearing_km <span class="op">=</span> <span class="st">"sum(length_metre) FILTER (WHERE rearing) / 1000"</span>,</span></span>
-<span class="r-in"><span>    rearing_lake_km <span class="op">=</span></span></span>
-<span class="r-in"><span>      <span class="st">"sum(length_metre) FILTER (WHERE rearing AND waterbody = 'lake') / 1000"</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span>    rearing_km <span class="op">=</span></span></span>
+<span class="r-in"><span>      <span class="st">"sum(length_metre) FILTER (WHERE rearing AND NOT connection) / 1000"</span>,</span></span>
+<span class="r-in"><span>    rearing_lake_km <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>      <span class="st">"sum(length_metre) FILTER (WHERE rearing AND waterbody = 'lake'"</span>,</span></span>
+<span class="r-in"><span>      <span class="st">"AND NOT connection) / 1000"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>    rearing_lake_connection_km <span class="op">=</span></span></span>
+<span class="r-in"><span>      <span class="st">"sum(length_metre) FILTER (WHERE rearing AND connection) / 1000"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Custom metric: count accessible segments per species.</span></span></span>
 <span class="r-in"><span><span class="fu">lnk_rollup_wsg</span><span class="op">(</span><span class="va">conn</span>, aoi <span class="op">=</span> <span class="st">"MORR"</span>, species <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"CO"</span>, <span class="st">"BT"</span><span class="op">)</span>,</span></span>

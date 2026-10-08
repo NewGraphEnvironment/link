@@ -98,16 +98,20 @@ lnk_compare_wsg(
 
 A list with two elements:
 
-- `rollup`: tibble with one row per (species, habitat_type) — 8 habitat
+- `rollup`: tibble with one row per (species, habitat_type) — 9 habitat
   types: `spawning`, `rearing`, `lake_rearing`, `wetland_rearing`,
-  `rearing_stream`, `rearing_lake`, `rearing_wetland`, `accessible` (km,
-  link#221). `rearing_stream`, `rearing_lake` and `rearing_wetland`
-  split `rearing` by the polygon each line sits in (#310);
-  `lake_rearing` / `wetland_rearing` are polygon hectares. A lake's km
-  and its ha describe the same water and are never added together.
-  Columns: `wsg`, `species`, `habitat_type`, `unit` (`km` \| `ha`),
-  `link_value`, `ref_value`, `diff_pct`. `accessible`'s `ref_value` is
-  `NA` until the tunnel-free reference path lands.
+  `rearing_stream`, `rearing_lake`, `rearing_wetland`,
+  `rearing_lake_connection`, `accessible` (km, link#221).
+  `rearing_stream`, `rearing_lake` and `rearing_wetland` split `rearing`
+  by the polygon each line sits in (#310). `rearing_lake_connection` is
+  lake-polygon lines on FWA edge 1450 (connectors), which join
+  tributaries to a lake's main-flow line: they stay in fresh's `rearing`
+  flag but are left out of `rearing` and `rearing_lake` km, on both
+  sides (#317). `lake_rearing` / `wetland_rearing` are polygon hectares.
+  A lake's km and its ha describe the same water and are never added
+  together. Columns: `wsg`, `species`, `habitat_type`, `unit` (`km` \|
+  `ha`), `link_value`, `ref_value`, `diff_pct`. `accessible`'s
+  `ref_value` is `NA` until the tunnel-free reference path lands.
 
 - `mapping_code`: tibble with one row per species — segment-level match
   stats vs `bcfishpass.streams_mapping_code`. Columns: `wsg`, `species`,
