@@ -118,6 +118,7 @@ test_that("lnk_compare_rollup composes resolve → link-rollup → ref-rollup �
                          rearing_stream_km = 15,
                          rearing_lake_km = 3,
                          rearing_wetland_km = 2,
+                         rearing_lake_connection_km = 4,
                          accessible_km = 18,
                          stringsAsFactors = FALSE),
          lake_ha = data.frame(species_code = "BT", lake_rearing_ha = 100,
@@ -132,6 +133,7 @@ test_that("lnk_compare_rollup composes resolve → link-rollup → ref-rollup �
                rearing_stream_km = 16,
                rearing_lake_km = 3,
                rearing_wetland_km = 2,
+               rearing_lake_connection_km = 1,
                lake_rearing_ha = 105, wetland_rearing_ha = 50,
                stringsAsFactors = FALSE)
   }
@@ -149,8 +151,8 @@ test_that("lnk_compare_rollup composes resolve → link-rollup → ref-rollup �
   )
 
   expect_equal(calls, c("resolve", "link", "ref"))
-  # 8 habitat types × 1 species (7 habitat + accessible, link#221)
-  expect_equal(nrow(result), 8L)
+  # 9 habitat types × 1 species (8 habitat + accessible, link#221)
+  expect_equal(nrow(result), 9L)
   expect_named(result, c("wsg", "species", "habitat_type", "unit",
                          "link_value", "ref_value", "diff_pct"))
   expect_setequal(unique(result$species), "BT")
@@ -164,6 +166,11 @@ test_that("lnk_compare_rollup composes resolve → link-rollup → ref-rollup �
   expect_equal(acc$unit, "km")
   expect_true(is.na(acc$ref_value))
   expect_true(is.na(acc$diff_pct))
+
+  # Lake connection lines are their own row, compared like the others.
+  lc <- result[result$habitat_type == "rearing_lake_connection", ]
+  expect_equal(c(lc$link_value, lc$ref_value, lc$diff_pct), c(4, 1, 300))
+  expect_equal(lc$unit, "km")
 })
 
 test_that("link rollup splits rearing km by waterbody class, not edge type (#310)", {
@@ -182,4 +189,25 @@ test_that("link rollup splits rearing km by waterbody class, not edge type (#310
   expect_match(captured[["rearing_lake_km"]], "waterbody = 'lake'")
   expect_match(captured[["rearing_wetland_km"]], "waterbody = 'wetland'")
   expect_false(any(grepl("edge_type", captured)))
+})
+
+test_that("link rollup reports lake connection lines apart from rearing km (#317)", {
+  captured <- NULL
+  local_mocked_bindings(lnk_rollup_wsg = function(..., metrics) {
+    captured <<- metrics
+    stop("captured")
+  })
+  cfg <- lnk_config("default")
+  expect_error(link:::.lnk_compare_rollup_link(DBI::ANSI(), cfg, "ADMS", "CO"),
+               "captured")
+  expect_match(captured[["rearing_km"]], "WHERE rearing AND NOT connection",
+               fixed = TRUE)
+  expect_match(captured[["rearing_lake_km"]],
+               "waterbody = 'lake' AND NOT connection", fixed = TRUE)
+  expect_match(captured[["rearing_lake_connection_km"]],
+               "WHERE rearing AND connection)", fixed = TRUE)
+  # Stream and wetland lines are never connection lines (lakes only).
+  expect_false(grepl("connection", captured[["rearing_stream_km"]]))
+  expect_false(grepl("connection", captured[["rearing_wetland_km"]]))
+  expect_false(grepl("connection", captured[["spawning_km"]]))
 })

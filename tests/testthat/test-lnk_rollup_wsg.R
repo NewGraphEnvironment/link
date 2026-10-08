@@ -140,6 +140,39 @@ test_that("waterbody class: lakes and reservoirs are lake, river polygons stream
                    "COALESCE(wb.waterbody, 'stream')")
 })
 
+# ---------------------------------------------------------------------------
+# Lake connection lines: in `rearing`, out of the km (#317)
+# ---------------------------------------------------------------------------
+
+test_that("a lake connection line is a lake-polygon line on edge 1400 or 1450", {
+  p <- link:::.lnk_sql_lake_connection()
+  expect_identical(
+    p, paste0("COALESCE(COALESCE(wb.waterbody, 'stream') = 'lake' ",
+              "AND s.edge_type IN (1400, 1450), FALSE)"))
+  # Scoped to lakes: the 1200 main-flow line and wetland lines are not it.
+  expect_false(grepl("1200", p))
+  expect_false(grepl("wetland", p))
+})
+
+test_that(".lnk_rollup_wsg_sql exposes each line's lake-connection flag", {
+  sql <- link:::.lnk_rollup_wsg_sql(
+    conn = DBI::ANSI(), aoi = "MORR", species = c("CO", "BT"),
+    schema = "fresh",
+    metrics = c(n = "count(*) FILTER (WHERE connection)"),
+    where = NULL)
+  expect_equal(lengths(regmatches(sql, gregexpr("AS connection,", sql))), 2L)
+  expect_match(sql, link:::.lnk_sql_lake_connection(), fixed = TRUE)
+})
+
+test_that("default rearing_km is the flag, connection lines included", {
+  # The validator's cost and the parity scripts compare the `rearing`
+  # flag itself, so the primitive's default stays the flag total; the
+  # compare family leaves connection lines out explicitly.
+  m <- eval(formals(lnk_rollup_wsg)$metrics)
+  expect_match(m[["rearing_km"]], "FILTER (WHERE rearing)::", fixed = TRUE)
+  expect_false(any(grepl("connection", m)))
+})
+
 test_that("lake hectares read lake and reservoir polygons", {
   polys <- link:::.lnk_sql_lake_polys()
   expect_match(polys, "fwa_lakes_poly")
@@ -170,11 +203,17 @@ test_that("stream + lake + wetland rearing km equal rearing km (live)", {
   r <- lnk_rollup_wsg(conn, aoi = aoi, species = "BT",
                       schema = "fresh_default",
                       metrics = c(total = m(""),
+                                  rearing = m(" AND NOT connection"),
                                   stream = m(" AND waterbody = 'stream'"),
-                                  lake = m(" AND waterbody = 'lake'"),
-                                  wetland = m(" AND waterbody = 'wetland'")))
+                                  lake = m(" AND waterbody = 'lake' AND NOT connection"), # nolint: line_length_linter
+                                  wetland = m(" AND waterbody = 'wetland'"),
+                                  connection = m(" AND connection")))
+  # The three classes partition rearing km, which leaves connection lines
+  # out (#317); adding them back gives every line flagged `rearing`.
   parts <- sum(r$stream, r$lake, r$wetland, na.rm = TRUE)
-  expect_equal(parts, r$total, tolerance = 1e-9)
+  expect_equal(parts, r$rearing, tolerance = 1e-9)
+  expect_equal(sum(r$rearing, r$connection, na.rm = TRUE), r$total,
+               tolerance = 1e-9)
   # The join must not fan out: the total equals the sum with no polygon join.
   direct <- DBI::dbGetQuery(conn, sprintf("
     SELECT sum(s.length_metre) AS m

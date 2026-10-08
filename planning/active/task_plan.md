@@ -58,24 +58,26 @@ Defaults I'm taking (stated, not asked):
   - `rearing_lake_km` old and new;
   - `rearing_lake_connection_km`, split 1400 / 1450;
   - check that stream + lake + wetland equals the new total.
-- [x] Same rule on the reference (local `fresh.streams_vw_bcfp`, `rearing_<sp> IN (1,2)`): bcfp's own connection km per species, and `diff_pct` old → new per cell (ADMS CH / CO expected back near +14 % / +3 %; SK / KO movement on both sides named)
+- [x] Same rule on the reference (local `fresh.streams_vw_bcfp`, `rearing_<sp> IN (1,2)`): bcfp's own connection km per species, and `diff_pct` old → new per cell (expected ADMS CH / CO near +14 % / +3 %; measured +38.9 % / +28.7 %: bcfp has no CH / CO lake rearing, the residual is lake flow lines. SK / KO named)
 - [x] Log README with stamp, results table, and the Adams Lake line
 
 ## Phase 2: One predicate, tests first
-- [ ] Tests (fail first) in `test-lnk_rollup_wsg.R`:
+- [x] Tests (fail first) in `test-lnk_rollup_wsg.R`:
   - the SQL carries a `connection` alias;
-  - the default `rearing_km` excludes it;
+  - ~~the default `rearing_km` excludes it~~ **revised after code-check round 1 + plan review:** the default `rearing_km` stays the flag total (the validator's cost, `parity_crosssection.R` and `wsg_vignette_data.R` compare the flag itself); the compare family excludes connection lines explicitly;
   - the connection predicate names lake + 1400 / 1450.
-- [ ] Add `.lnk_sql_lake_connection()` beside `.lnk_sql_waterbody_class()` in `R/lnk_rollup_wsg.R`, so one rule serves every site. Expose it as a `connection` alias in `.lnk_rollup_wsg_sql()`. The default `rearing_km` becomes `rearing AND NOT connection`.
-- [ ] Roxygen for `lnk_rollup_wsg()`: the `connection` alias, the new partition sentence, and an example with `rearing_lake_connection_km`; `devtools::document()`
+- [x] Add `.lnk_sql_lake_connection()` beside `.lnk_sql_waterbody_class()` in `R/lnk_rollup_wsg.R`, so one rule serves every site. Expose it as a `connection` alias in `.lnk_rollup_wsg_sql()`. The default `rearing_km` stays the flag (see above). Predicate NULL-safe (`COALESCE(..., FALSE)`).
+- [x] Roxygen for `lnk_rollup_wsg()`: the `connection` alias, the new partition sentence, and an example with `rearing_lake_connection_km`; `devtools::document()`
 
 ## Phase 3: Thread through the compare family
-- [ ] Tests first in `test-lnk_compare_rollup.R` / `test-lnk_compare_wsg.R`: the new column / metric row exists; `rearing_km` and `rearing_lake_km` exclude connection lines; the parts still sum
-- [ ] `lnk_compare_rollup.R` `km_metrics`: `rearing_km` and `rearing_lake_km` exclude connections; add `rearing_lake_connection_km`
-- [ ] `lnk_compare_wsg.R`: the link side and the bcfishpass side get the same predicate; add the `rearing_lake_connection` metric (km) to the long-format map; update `@return` docs
-- [ ] `research/bcfp_divergence_taxonomy.yml`: header comment + any `metric:` list that needs the new slice
-- [ ] Live check on `zz311_adms` / `zz311_natr` via `.lnk_compare_wsg_rollup_link()`: parts minus total ≤ 0.01; `rearing_km + connection` equals Phase 1's flag total; numbers equal Phase 1's measure. One persisted WSG through `lnk_compare_rollup()` (`fresh_default`, ADMS) as well.
-- [ ] `devtools::test()`, `lintr::lint_package()`
+- [x] Tests first in `test-lnk_compare_rollup.R` / `test-lnk_compare_wsg.R`: the new column / metric row exists; `rearing_km` and `rearing_lake_km` exclude connection lines; the parts still sum
+- [x] `lnk_compare_rollup.R` `km_metrics`: `rearing_km` and `rearing_lake_km` exclude connections; add `rearing_lake_connection_km`
+- [x] `lnk_compare_wsg.R`: the link side and the bcfishpass side get the same predicate; add the `rearing_lake_connection` metric (km) to the long-format map; update `@return` docs
+- [x] `research/bcfp_divergence_taxonomy.yml`: header comment + any `metric:` list that needs the new slice
+- [x] Live check on `zz311_adms` / `zz311_natr` via `.lnk_compare_wsg_rollup_link()`: parts minus total ≤ 0.01; `rearing_km + connection` equals Phase 1's flag total; numbers equal Phase 1's measure. One persisted WSG through `lnk_compare_rollup()` (`fresh_default`, ADMS) as well.
+- [x] `devtools::test()`, `lintr::lint_package()`
+
+- [x] `data-raw/compare_rollups.R`: #317 guard (a directory mixing pre/post-#317 rollups stops) + `rearing_lake_connection` in `keep` (plan review)
 
 ## Phase 4: Docs
 - [ ] RUNBOOK §7 (:738-750): the rollup partition, the connection column, and the fact that `streams_habitat` still flags them

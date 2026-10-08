@@ -16,8 +16,21 @@
 #   metric       string|array   "*" wildcard or habitat_type value(s)
 #                               (spawning, rearing, lake_rearing,
 #                                wetland_rearing, rearing_stream,
-#                                rearing_lake, rearing_wetland;
-#                                before #310 the last two were
+#                                rearing_lake, rearing_wetland,
+#                                rearing_lake_connection;
+#                                since #317 rearing and rearing_lake
+#                                leave out lake connection lines
+#                                (edge 1400 / 1450 in a lake
+#                                polygon) on both sides, and
+#                                rearing_lake_connection carries
+#                                them. bcfishpass counts them too
+#                                (SK, BT), so on the bcfishpass
+#                                config the slice compares like
+#                                any other metric (SK 0.0 % on
+#                                BULK, CHWK, NASR, NECR, QUES,
+#                                THOM, 2026-10-08:
+#                                data-raw/logs/lake_connection_317/).
+#                                Before #310 the last two were
 #                                rearing_lake_centerline /
 #                                rearing_wetland_centerline, sliced by
 #                                edge type, and rearing_stream was

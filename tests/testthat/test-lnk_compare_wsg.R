@@ -169,8 +169,9 @@ test_that("lnk_compare_wsg composes lnk_pipeline_run then lnk_compare_rollup (ro
       habitat_type = c("spawning", "rearing", "lake_rearing",
                        "wetland_rearing", "rearing_stream",
                        "rearing_lake",
-                       "rearing_wetland", "accessible"),
-      unit = c("km", "km", "ha", "ha", "km", "km", "km", "km"),
+                       "rearing_wetland", "rearing_lake_connection",
+                       "accessible"),
+      unit = c("km", "km", "ha", "ha", "km", "km", "km", "km", "km"),
       link_value = 1, ref_value = 1, diff_pct = 0)
   }
 
@@ -200,14 +201,14 @@ test_that("lnk_compare_wsg composes lnk_pipeline_run then lnk_compare_rollup (ro
   expect_named(result, c("rollup", "mapping_code"))
   expect_null(result$mapping_code)
   expect_s3_class(result$rollup, "tbl_df")
-  expect_equal(nrow(result$rollup), 8L)
+  expect_equal(nrow(result$rollup), 9L)
 })
 
 # ---------------------------------------------------------------------------
 # Rollup tibble shape + diff_pct computation
 # ---------------------------------------------------------------------------
 
-test_that(".lnk_compare_wsg_assemble_rollup produces 8 rows per species + correct diff_pct", {
+test_that(".lnk_compare_wsg_assemble_rollup produces 9 rows per species + correct diff_pct", {
   link_data <- list(
     km = data.frame(
       species_code = c("BT","CH"),
@@ -216,6 +217,7 @@ test_that(".lnk_compare_wsg_assemble_rollup produces 8 rows per species + correc
       rearing_stream_km = c(150, 80),
       rearing_lake_km = c(30, 10),
       rearing_wetland_km = c(20, 10),
+      rearing_lake_connection_km = c(12, 6),
       accessible_km = c(180, 90),
       stringsAsFactors = FALSE
     ),
@@ -233,6 +235,7 @@ test_that(".lnk_compare_wsg_assemble_rollup produces 8 rows per species + correc
     rearing_stream_km = c(148, 79),
     rearing_lake_km = c(30, 10),  # 0% diff
     rearing_wetland_km = c(20, 10),  # 0% diff
+    rearing_lake_connection_km = c(10, 6),  # +20% / 0%
     lake_rearing_ha = c(1000, 500),         # 0% diff
     wetland_rearing_ha = c(500, 250),       # 0% diff
     stringsAsFactors = FALSE
@@ -243,8 +246,8 @@ test_that(".lnk_compare_wsg_assemble_rollup produces 8 rows per species + correc
     rollup_link = link_data, rollup_ref = ref_data
   )
 
-  # 8 habitat types × 2 species (7 habitat + accessible, link#221)
-  expect_equal(nrow(out), 16L)
+  # 9 habitat types × 2 species (8 habitat + accessible, link#221)
+  expect_equal(nrow(out), 18L)
   expect_named(out, c("wsg", "species", "habitat_type", "unit",
                        "link_value", "ref_value", "diff_pct"))
   expect_setequal(unique(out$wsg), "TEST")
@@ -268,6 +271,72 @@ test_that(".lnk_compare_wsg_assemble_rollup produces 8 rows per species + correc
   expect_equal(bt_lake$ref_value, 1000)
   expect_equal(bt_lake$diff_pct, 0)
   expect_equal(bt_lake$unit, "ha")
+
+  bt_lc <- out[out$species == "BT" &
+                 out$habitat_type == "rearing_lake_connection", ]
+  expect_equal(c(bt_lc$link_value, bt_lc$ref_value, bt_lc$diff_pct),
+               c(12, 10, 20))
+  expect_equal(bt_lc$unit, "km")
+})
+
+# ---------------------------------------------------------------------------
+# Lake connection lines: in `rearing`, out of the km, both sides (#317)
+# ---------------------------------------------------------------------------
+
+test_that("link-side rollup SQL leaves lake connection lines out of rearing km", {
+  sql <- NULL
+  with_mocked_bindings(
+    dbGetQuery = function(conn, statement, ...) {
+      sql <<- statement
+      stop("captured")
+    },
+    .package = "DBI",
+    expect_error(link:::.lnk_compare_wsg_rollup_link(
+      DBI::ANSI(), "ADMS", "working_adms", "CO"), "captured")
+  )
+  lc <- link:::.lnk_sql_lake_connection()
+  flat <- gsub("\\s+", " ", sql)
+  expect_match(flat, paste("WHEN h.rearing AND NOT", lc,
+                           "THEN s.length_metre ELSE 0 END)::numeric / 1000, 2) AS rearing_km"),
+               fixed = TRUE)
+  expect_match(flat, paste("= 'lake' AND NOT", lc,
+                           "THEN s.length_metre ELSE 0 END)::numeric / 1000, 2) AS rearing_lake_km"),
+               fixed = TRUE)
+  expect_match(flat, paste("WHEN h.rearing AND", lc,
+                           "THEN s.length_metre ELSE 0 END)::numeric / 1000, 2) AS rearing_lake_connection_km"),
+               fixed = TRUE)
+  expect_match(flat, "FROM working_adms.streams s JOIN working_adms.streams_habitat h",
+               fixed = TRUE)
+  expect_match(flat, "h.species_code IN ('CO')", fixed = TRUE)
+})
+
+test_that("bcfishpass-side rollup SQL applies the same lake-connection rule", {
+  sql <- character()
+  with_mocked_bindings(
+    dbGetQuery = function(conn, statement, ...) {
+      sql <<- c(sql, statement)
+      if (grepl("information_schema", statement)) {
+        return(data.frame(column_name = c("segmented_stream_id", "spawning",
+                                          "rearing")))
+      }
+      stop("captured")
+    },
+    .package = "DBI",
+    expect_error(link:::.lnk_compare_wsg_rollup_bcfishpass(
+      DBI::ANSI(), "ADMS", "BT"), "captured")
+  )
+  lc <- link:::.lnk_sql_lake_connection()
+  flat <- gsub("\\s+", " ", sql[length(sql)])
+  expect_match(flat, paste0("SUM(CASE WHEN h.rearing AND NOT ", lc,
+                            " THEN s.length_metre ELSE 0 END)::numeric / 1000, 2) AS rearing_km"),
+               fixed = TRUE)
+  expect_match(flat, paste0("= 'lake' AND NOT ", lc,
+                            " THEN s.length_metre ELSE 0 END)::numeric / 1000, 2) AS rearing_lake_km"),
+               fixed = TRUE)
+  expect_match(flat, paste0("SUM(CASE WHEN h.rearing AND ", lc,
+                            " THEN s.length_metre ELSE 0 END)::numeric / 1000, 2) AS rearing_lake_connection_km"),
+               fixed = TRUE)
+  expect_match(flat, "FROM bcfishpass.streams s", fixed = TRUE)
 })
 
 test_that(".lnk_compare_wsg_assemble_rollup handles NA ref values (not modelled)", {
@@ -276,6 +345,7 @@ test_that(".lnk_compare_wsg_assemble_rollup handles NA ref values (not modelled)
                     rearing_stream_km = 180,
                     rearing_lake_km = 15,
                     rearing_wetland_km = 5,
+                    rearing_lake_connection_km = 0,
                     accessible_km = 190,
                     stringsAsFactors = FALSE),
     lake_ha = data.frame(species_code = "RB", lake_rearing_ha = 0,
@@ -426,6 +496,7 @@ test_that(".lnk_compare_wsg_assemble_rollup handles zero ref values (avoid div-b
                     rearing_stream_km = 180,
                     rearing_lake_km = 0,
                     rearing_wetland_km = 0,
+                    rearing_lake_connection_km = 0,
                     accessible_km = 190,
                     stringsAsFactors = FALSE),
     lake_ha = data.frame(species_code = "BT", lake_rearing_ha = 0,
