@@ -57,9 +57,9 @@ lnk_rollup_wsg(
 
   Named character vector: names are output columns, values are SQL
   aggregate expressions over the generic aliases `length_metre`,
-  `access`, `spawning`, `rearing`. Default emits `accessible_km`,
-  `spawning_km`, `rearing_km`. Raw SQL — trusted caller input, like
-  `frs_aggregate()`.
+  `edge_type`, `waterbody`, `access`, `spawning`, `rearing`. Default
+  emits `accessible_km`, `spawning_km`, `rearing_km`. Raw SQL — trusted
+  caller input, like `frs_aggregate()`.
 
 - where:
 
@@ -80,6 +80,17 @@ resolves to 0 — build it via `lnk_pipeline_run(mapping_code = TRUE)` (or
 the unconditional access phase). Length is never dropped by a missing
 access row, so the habitat metrics (`spawning_km`, `rearing_km`) are
 unaffected.
+
+Each row also carries `waterbody` (`"lake"`, `"wetland"` or `"stream"`):
+the polygon the line sits in, by `waterbody_key` against the polygon
+tables fresh's lake and wetland rules read. Lakes and reservoirs
+(`fwa_lakes_poly`, `fwa_manmade_waterbodies_poly`) are `"lake"`,
+wetlands (`fwa_wetlands_poly`) `"wetland"`, and river polygons or no
+polygon `"stream"`. The three partition the network, so
+`rearing_stream_km + rearing_lake_km + rearing_wetland_km` built from
+them equals `rearing_km` (to rounding); see the examples. A lake's
+centreline km and its polygon hectares describe the same water and are
+never added together.
 
 Because the per-species columns are aliased to fixed names, the
 `metrics` SQL is written **once**, species-agnostic — mirroring
@@ -128,6 +139,13 @@ if (FALSE) { # \dontrun{
 conn <- lnk_db_conn()
 # Coho accessible / spawning / rearing km for Morice, from persisted state.
 lnk_rollup_wsg(conn, aoi = "MORR", species = "CO")
+
+# Rearing km by the polygon the line sits in (stream / lake / wetland).
+lnk_rollup_wsg(conn, aoi = "MORR", species = "CO",
+  metrics = c(
+    rearing_km = "sum(length_metre) FILTER (WHERE rearing) / 1000",
+    rearing_lake_km =
+      "sum(length_metre) FILTER (WHERE rearing AND waterbody = 'lake') / 1000"))
 
 # Custom metric: count accessible segments per species.
 lnk_rollup_wsg(conn, aoi = "MORR", species = c("CO", "BT"),

@@ -26,6 +26,13 @@ lnk_rules_build(
   `spawn_stream`, `rear_lake`, `rear_lake_only`, `rear_no_fw`,
   `rear_stream`, `rear_wetland`. Optional columns: `river_skip_cw_min`
   (yes/no — skip channel_width_min on river polygon segments), `notes`.
+  `rear_lake_connected_distance_max` /
+  `rear_wetland_connected_distance_max` (metres) keep a species' lake /
+  wetland rearing bucket only where same-species spawning lies within
+  that distance (`requires_connected: spawning` on its first rear L / W
+  rule). The additive lake rule admits lake centrelines (FWA
+  construction lines) with no channel-width test. See
+  `configs/dictionary_dimensions.csv` for every column.
 
 - to:
 

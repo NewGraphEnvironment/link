@@ -23,7 +23,7 @@ false-positive check."><meta property="og:image" content="https://newgraphenviro
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.60.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.61.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -322,7 +322,9 @@ reads <code>width_null</code> instead, and one whose gradient also fails reads
 <code>fails_gradient_and_width</code>;</p></li>
 <li><p><code>rule_excludes</code> — fails even then: edge type, waterbody or lake size;</p></li>
 <li><p><code>post_predicate</code> — passes the predicate but is not habitat: removed by
-clustering (connectivity to spawning) or access gating.</p></li>
+clustering (connectivity to spawning), access gating, or a lake /
+wetland bucket's <code>requires_connected: spawning</code> test (link#310), which
+runs after the predicate the validator re-tests.</p></li>
 </ul><p>The method table is the one in <code>cfg</code>. A run classified with another
 (a swapped bundle file, or <code>lnk_pipeline_classify(method_csv =)</code>) is not
 detected, so swap it on the <code>cfg</code> passed here too. A rule-level size

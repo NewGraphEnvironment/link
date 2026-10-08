@@ -100,11 +100,14 @@ A list with two elements:
 
 - `rollup`: tibble with one row per (species, habitat_type) — 8 habitat
   types: `spawning`, `rearing`, `lake_rearing`, `wetland_rearing`,
-  `rearing_stream`, `rearing_lake_centerline`,
-  `rearing_wetland_centerline`, `accessible` (km, link#221). Columns:
-  `wsg`, `species`, `habitat_type`, `unit` (`km` \| `ha`), `link_value`,
-  `ref_value`, `diff_pct`. `accessible`'s `ref_value` is `NA` until the
-  tunnel-free reference path lands.
+  `rearing_stream`, `rearing_lake`, `rearing_wetland`, `accessible` (km,
+  link#221). `rearing_stream`, `rearing_lake` and `rearing_wetland`
+  split `rearing` by the polygon each line sits in (#310);
+  `lake_rearing` / `wetland_rearing` are polygon hectares. A lake's km
+  and its ha describe the same water and are never added together.
+  Columns: `wsg`, `species`, `habitat_type`, `unit` (`km` \| `ha`),
+  `link_value`, `ref_value`, `diff_pct`. `accessible`'s `ref_value` is
+  `NA` until the tunnel-free reference path lands.
 
 - `mapping_code`: tibble with one row per species — segment-level match
   stats vs `bcfishpass.streams_mapping_code`. Columns: `wsg`, `species`,
@@ -135,9 +138,11 @@ Drops the `<schema>` working schema at end unless
 
 Rollup methodology mirrors what bcfp's `habitat_linear_<sp>` measures:
 linear km from `length_metre` summed over rearing/spawning-flagged
-segments, with edge-type decomposition into stream / lake-centerline /
-wetland-centerline slices. Lake / wetland area in hectares uses
-`DISTINCT waterbody_key` joins to `whse_basemapping.fwa_lakes_poly` /
+segments, split into stream / lake / wetland km by the polygon each line
+sits in (`waterbody_key` against the lake, reservoir and wetland polygon
+tables; lakes include reservoirs, river polygons count as stream). Lake
+/ wetland area in hectares uses `DISTINCT waterbody_key` joins to
+`whse_basemapping.fwa_lakes_poly` + `fwa_manmade_waterbodies_poly` /
 `fwa_wetlands_poly` to avoid double-counting multi-segment lakes. See
 `research/default_vs_bcfishpass.md` for the measurement-asymmetry
 decision (link reports both centerline km and polygon ha; bcfp credits

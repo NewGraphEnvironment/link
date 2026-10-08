@@ -11,7 +11,7 @@ of truth; the YAML is the derived artifact."><meta property="og:image" content="
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.60.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.61.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -66,7 +66,13 @@ of truth; the YAML is the derived artifact.</p>
 <code>spawn_lake</code>, <code>spawn_stream</code>, <code>rear_lake</code>, <code>rear_lake_only</code>,
 <code>rear_no_fw</code>, <code>rear_stream</code>, <code>rear_wetland</code>. Optional columns:
 <code>river_skip_cw_min</code> (yes/no — skip channel_width_min on river
-polygon segments), <code>notes</code>.</p></dd>
+polygon segments), <code>notes</code>. <code>rear_lake_connected_distance_max</code> /
+<code>rear_wetland_connected_distance_max</code> (metres) keep a species' lake /
+wetland rearing bucket only where same-species spawning lies within
+that distance (<code>requires_connected: spawning</code> on its first rear L / W
+rule). The additive lake rule admits lake centrelines (FWA
+construction lines) with no channel-width test. See
+<code>configs/dictionary_dimensions.csv</code> for every column.</p></dd>
 
 
 <dt id="arg-to">to<a class="anchor" aria-label="anchor" href="#arg-to"></a></dt>

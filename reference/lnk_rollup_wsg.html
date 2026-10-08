@@ -21,7 +21,7 @@ then aggregates by (watershed_group_code, species_code)."><meta property="og:ima
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.60.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.61.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -105,7 +105,8 @@ identifier whitelist.</p></dd>
 <dt id="arg-metrics">metrics<a class="anchor" aria-label="anchor" href="#arg-metrics"></a></dt>
 <dd><p>Named character vector: names are output columns,
 values are SQL aggregate expressions over the generic aliases
-<code>length_metre</code>, <code>access</code>, <code>spawning</code>, <code>rearing</code>. Default emits
+<code>length_metre</code>, <code>edge_type</code>, <code>waterbody</code>, <code>access</code>, <code>spawning</code>,
+<code>rearing</code>. Default emits
 <code>accessible_km</code>, <code>spawning_km</code>, <code>rearing_km</code>. Raw SQL — trusted
 caller input, like <code>frs_aggregate()</code>.</p></dd>
 
@@ -130,6 +131,16 @@ for a length roll-up. When a segment has no <code>streams_access</code> row
 <code>lnk_pipeline_run(mapping_code = TRUE)</code> (or the unconditional access
 phase). Length is never dropped by a missing access row, so the
 habitat metrics (<code>spawning_km</code>, <code>rearing_km</code>) are unaffected.</p>
+<p>Each row also carries <code>waterbody</code> (<code>"lake"</code>, <code>"wetland"</code> or <code>"stream"</code>):
+the polygon the line sits in, by <code>waterbody_key</code> against the polygon
+tables fresh's lake and wetland rules read. Lakes and reservoirs
+(<code>fwa_lakes_poly</code>, <code>fwa_manmade_waterbodies_poly</code>) are <code>"lake"</code>,
+wetlands (<code>fwa_wetlands_poly</code>) <code>"wetland"</code>, and river polygons or no
+polygon <code>"stream"</code>. The three partition the network, so
+<code>rearing_stream_km + rearing_lake_km + rearing_wetland_km</code> built from
+them equals <code>rearing_km</code> (to rounding); see the examples. A lake's
+centreline km and its polygon hectares describe the same water and are
+never added together.</p>
 <p>Because the per-species columns are aliased to fixed names, the
 <code>metrics</code> SQL is written <strong>once</strong>, species-agnostic — mirroring
 <code><a href="https://newgraphenvironment.github.io/fresh/reference/frs_aggregate.html" class="external-link">fresh::frs_aggregate()</a></code>'s <code>metrics</code> / <code>where</code> shape. Adding a species
@@ -170,6 +181,13 @@ different (pre-gating) semantics and diverges from the access model
 <span class="r-in"><span><span class="va">conn</span> <span class="op">&lt;-</span> <span class="fu"><a href="lnk_db_conn.html">lnk_db_conn</a></span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="co"># Coho accessible / spawning / rearing km for Morice, from persisted state.</span></span></span>
 <span class="r-in"><span><span class="fu">lnk_rollup_wsg</span><span class="op">(</span><span class="va">conn</span>, aoi <span class="op">=</span> <span class="st">"MORR"</span>, species <span class="op">=</span> <span class="st">"CO"</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Rearing km by the polygon the line sits in (stream / lake / wetland).</span></span></span>
+<span class="r-in"><span><span class="fu">lnk_rollup_wsg</span><span class="op">(</span><span class="va">conn</span>, aoi <span class="op">=</span> <span class="st">"MORR"</span>, species <span class="op">=</span> <span class="st">"CO"</span>,</span></span>
+<span class="r-in"><span>  metrics <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>    rearing_km <span class="op">=</span> <span class="st">"sum(length_metre) FILTER (WHERE rearing) / 1000"</span>,</span></span>
+<span class="r-in"><span>    rearing_lake_km <span class="op">=</span></span></span>
+<span class="r-in"><span>      <span class="st">"sum(length_metre) FILTER (WHERE rearing AND waterbody = 'lake') / 1000"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Custom metric: count accessible segments per species.</span></span></span>
 <span class="r-in"><span><span class="fu">lnk_rollup_wsg</span><span class="op">(</span><span class="va">conn</span>, aoi <span class="op">=</span> <span class="st">"MORR"</span>, species <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"CO"</span>, <span class="st">"BT"</span><span class="op">)</span>,</span></span>
