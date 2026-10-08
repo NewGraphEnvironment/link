@@ -53,13 +53,13 @@ Defaults I'm taking (stated, not asked):
 - Long-format metric map at `R/lnk_compare_wsg.R:495-515`; taxonomy metrics in `research/bcfp_divergence_taxonomy.yml`
 
 ## Phase 1: Measure before code
-- [ ] `data-raw/logs/lake_connection_317/measure.R` over the existing #310 run-B snapshots (`zz310_snap.{adms,natr}_b` against `zz311_{adms,natr}.streams`, edge_type on the streams table). Per WSG × species, from the flag:
+- [x] `data-raw/logs/lake_connection_317/measure.R` over the existing #310 run-B snapshots (`zz310_snap.{adms,natr}_b` against `zz311_{adms,natr}.streams`, edge_type on the streams table). Per WSG × species, from the flag:
   - `rearing_km` old and new;
   - `rearing_lake_km` old and new;
   - `rearing_lake_connection_km`, split 1400 / 1450;
   - check that stream + lake + wetland equals the new total.
-- [ ] Same rule on the reference (local `fresh.streams_vw_bcfp`, `rearing_<sp> IN (1,2)`): bcfp's own connection km per species, and `diff_pct` old → new per cell (ADMS CH / CO expected back near +14 % / +3 %; SK / KO movement on both sides named)
-- [ ] Log README with stamp, results table, and the Adams Lake line
+- [x] Same rule on the reference (local `fresh.streams_vw_bcfp`, `rearing_<sp> IN (1,2)`): bcfp's own connection km per species, and `diff_pct` old → new per cell (ADMS CH / CO expected back near +14 % / +3 %; SK / KO movement on both sides named)
+- [x] Log README with stamp, results table, and the Adams Lake line
 
 ## Phase 2: One predicate, tests first
 - [ ] Tests (fail first) in `test-lnk_rollup_wsg.R`:

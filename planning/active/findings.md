@@ -31,3 +31,10 @@ Relates to #310.
 
 | Error | Resolution |
 |-------|------------|
+
+## Phase 1 measurement (2026-10-08)
+
+See `data-raw/logs/lake_connection_317/README.md`. Key points:
+- Connection km ≈ all edge 1450; 1400 contributes ≤ 1.4 km on these WSGs.
+- bcfishpass reference rearing (`fresh.streams_vw_bcfp`) also contains 1450 lake lines: BT 65.9 km ADMS / 88.1 km NATR, SK 159.1 km ADMS. The rule therefore applies symmetrically, or SK parity reads −69 %.
+- ADMS CH / CO remain +38.9 % / +28.7 %: bcfp has zero CH / CO lake rearing on ADMS; the residual is lake flow lines (#310's call that lakes rear CH / CO), not a line-type artifact.
