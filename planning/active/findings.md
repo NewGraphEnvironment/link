@@ -135,3 +135,9 @@ Edge types inside waterbody polygons, NATR + ADMS + PARS + BULK
 | Error | Resolution |
 |-------|------------|
 | Zotero MCP: "Missing required environment variables ZOTERO_LIBRARY_ID and ZOTERO_API_KEY" | Read `~/Zotero/zotero.sqlite?immutable=1` + `pdftotext` on storage PDFs |
+
+## Plan review triage (2026-10-07)
+
+Full review in `review-plan.md`. Verified before acting: B1 (fresh lake bucket = `fwa_lakes_poly` only, `git show v0.39.0:R/frs_habitat_predicates.R`), B2 (CT/DV absent from `default/rules.yaml`), G1 (`cluster_rearing` FALSE for RB, CT, DV, CM, PK in `default/parameters_fresh.csv`).
+
+Province-wide edge types inside lake (L) / reservoir (X) polygons, km: L 1200 54,402 · 1450 44,528 · 1400 6,225 · 1475 2,127 · 1300 478 · 1000/1250 ~0; X 1200 64 · 1400 126 · 1450 30 · 1250 13 · 1350 11 · 1300 1. Lake rule set widened to add 1250 / 1350.

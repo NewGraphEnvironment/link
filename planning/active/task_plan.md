@@ -21,8 +21,13 @@ Facts that shape the plan:
 - `bcfishpass` has only SK's lake-only L rule and zero W rules, so changes confined to the
   additive rear branch leave its `rules.yaml` byte-identical.
 - CO's fallback in the bundle thresholds CSV is NA, so blanking the dims cells removes the floor.
-- fresh's `.frs_waterbody_tables("L")` already includes `fwa_manmade_waterbodies_poly`
-  (decision 5 is true in fresh; link's ha rollup joins only `fwa_lakes_poly` — that is the gap).
+- fresh's `.frs_waterbody_tables("L")` includes `fwa_manmade_waterbodies_poly`, but only the
+  rule compiler (`rearing`) and the SK/KO spawning pass use it. **The lake bucket reads
+  `fwa_lakes_poly` only** (fresh v0.39.0 `R/frs_habitat_predicates.R:205-211`; plan review B1),
+  so decision 5 needs a fresh change. link's ha join takes lakes ∪ manmade (adds 0 until fresh
+  changes); the fresh issue is drafted for body review.
+- CT and DV have no thresholds row, so `lnk_rules_build()` skips them (plan review B2); their
+  distance cells are inert.
 - `default_extrabreaks` / `default_rearbreaks` carry copies of default's dims (cols 1-31
   identical) and their own `rules.yaml`; #311 kept them in step, so this does too.
   `default_tuned` inherits.
@@ -39,25 +44,27 @@ Facts that shape the plan:
 - [x] Pick per-species `rear_lake_connected_distance_max` / `rear_wetland_connected_distance_max` (m); write `research/habitat_thresholds.md` section "Lake and wetland rearing connected to spawning" with values, sources, ladder evidence
 
 ## Phase 2: Rules builder (tests first)
-- [ ] Tests in `tests/testthat/test-lnk_rules_build.R`:
+- [x] Tests in `tests/testthat/test-lnk_rules_build.R`:
   - additive L rule carries `edge_types_explicit: [1200, 1300, 1400, 1450, 1475]` + `thresholds: false`; with `area_only: true` the rule feeds only the bucket, so the edge set is moot there
   - `requires_connected: spawning` + `connected_distance_max` on the first L and first W rear rule only; the floored 1050/1150 W rule and stream/river rules never carry it
-  - result loads through fresh's `frs_params()` validators (no "requires_connected must be on the first" error)
+  - result loads through fresh's `frs_params()` validators (no "requires_connected must be on the first" error) — test lands with Phase 3, since it reads the bundle's values
   - `area_only = yes` on the lake rule of a species with `spawn_requires_connected: rearing` (SK/KO) errors at build
   - legacy `rear_requires_connected` / `rear_connected_distance_max`: ignored when empty, error naming the new columns when set
   - bcfishpass `rules.yaml` rebuilt to a tempfile equals the committed one
-- [ ] `R/lnk_rules_build.R`: new per-type columns read; `add_rc()` replaced by first-L / first-W stamping; lake edge set + `thresholds: false`; SK/KO area_only refusal; legacy-column guard
-- [ ] Confirm the lake edge set against `fwa_edge_type_codes` (1300 "secondary flow", 1400 "other flow/inferred connection" included; 1410 connector, 1425 subsurface excluded) and record in findings
+- [x] `R/lnk_rules_build.R`: new per-type columns read; `add_rc()` replaced by first-L / first-W stamping; lake edge set + `thresholds: false`; SK/KO area_only refusal; legacy-column guard
+- [x] Confirm the lake edge set against `fwa_edge_type_codes` and province-wide occurrence (plan review G7): 1200/1300/1400/1450/1475 in lakes, + 1250/1350 in reservoirs; 1410 / 1425 excluded
 
 ## Phase 3: Bundle data
 - [ ] `configs/default/dimensions.csv` (+ `default_extrabreaks`, `default_rearbreaks`, top-level `parameters_habitat_dimensions.csv` mirror): add the two distance columns with Phase 1 values; CO blank `rear_lake_ha_min` / `rear_wetland_ha_min`; legacy columns left empty
 - [ ] `dictionary_dimensions.csv`: rows for the two new columns; legacy rows marked retired (test-dictionaries union coverage holds)
-- [ ] `data-raw/build_rules.R` → regenerate all rules.yaml; `git diff` matches intent (L edges, connected keys, CO floors gone; bcfishpass untouched); update provenance checksums in each touched `config.yaml`
+- [ ] Regenerate default + top-level rules.yaml with `lnk_rules_build()` directly (build_rules.R / regen_provenance.R also rewrite bcfishpass's date line); copy default's to the two variants (byte-identical today); `git diff` matches intent; provenance in each touched `config.yaml`: rules.yaml checksum + generator_sha (Phase 2 commit), dimensions.csv checksum + shape_checksum + synced — one commit
+- [ ] Bundle test (fresh validators, connected keys on BT/CH/CO/GR/RB/ST/WCT, CT/DV absent, SK/KO untouched, CO unfloored)
 
 ## Phase 4: Rollups (tests first)
-- [ ] `lnk_rollup_wsg()`: expose `waterbody_type` alias (LEFT JOIN `whse_basemapping.fwa_waterbodies` on `waterbody_key`; L and X → lake, W → wetland, R/none → stream); default metrics gain `rearing_stream_km`, `rearing_lake_km`, `rearing_wetland_km`
+- [ ] `lnk_rollup_wsg()`: expose a `waterbody` alias (LEFT JOIN `whse_basemapping.fwa_waterbodies` on `waterbody_key`; L and X → lake, W → wetland, R/none → stream). Default metrics unchanged: `lnk_habitat_validate()` merges every default column into its summary (plan review G5)
 - [ ] Persist path `.lnk_compare_rollup_link()` and working path `.lnk_compare_wsg_rollup_link()`: replace edge-type slices with the waterbody_key partition; `lake_rearing_ha` joins lakes ∪ manmade polygons
 - [ ] bcfp reference side (`.lnk_compare_wsg_rollup_bcfishpass`): same partition (bcfishpass.streams.waterbody_key) and lakes ∪ manmade for ha, so diff columns stay like-for-like
+- [ ] Consumers of the renamed labels: `research/bcfp_divergence_taxonomy.yml` (schema comment, `lake-wetland-centerline-zero-bcfp`), `data-raw/compare_rollups.R` keep-list; `data-raw/exp_gradient_extra_breaks.R` left as a frozen experiment
 - [ ] Tests: SQL-text tests for the partition; invariant stream + lake + wetland = `rearing_km` (live-DB test, skipped without DB); roxygen states km and ha pairs overlap and are never added; `devtools::document()`
 
 ## Phase 5: Validation on one segmentation
@@ -65,14 +72,15 @@ Run decisions: config `default` (link's own), scratch working schemas only (neve
 `fresh` / `fresh_default`), WSGs NATR (all lake species) and ADMS (CO control), build once at
 main then `reclassify` at branch — the `data-raw/logs/wetland_floor_311/run.R` pattern, new dir
 `data-raw/logs/lake_connected_310/` with stamps.
-- [ ] Measure and diff: rearing rises by lake-centreline km for lake species; CO gains sub-2 ha lakes / sub-0.5 ha wetlands; lake/wetland ha drop where disconnected; stream+lake+wetland = total; SK/KO spawning unchanged
-- [ ] Count the "known divergence" (ha kept, centreline km dropped) per species; note whether it warrants its own issue
+- [ ] Roll the scratch schemas up through `.lnk_compare_wsg_rollup_link()` so the new partition and invariant run on new-rule data (plan review O2)
+- [ ] Measure and diff: rearing rises by lake-centreline km for lake species, with `rearing_stream_km`'s own change reported separately (lake lines can join inlet/outlet clusters, G2); CO gains sub-2 ha lakes / sub-0.5 ha wetlands; lake/wetland ha drop where disconnected; stream+lake+wetland = total; SK/KO spawning unchanged
+- [ ] Count the "known divergence" both ways (ha kept / km dropped, and km kept / ha dropped — RB, CT, DV have `cluster_rearing = FALSE`, so their lake km follow no spawning test, G1) per species; note whether it warrants its own issue
 - [ ] Log README with numbers + units
 
 ## Phase 6: Docs and upstream drafts
 - [ ] `configs/default/README.md` departures list; RUNBOOK §7; `research/habitat_thresholds.md` #307 section (bucket shrink under `mad` was the fresh#240 artifact); CLAUDE.md status; NEWS entry
 - [ ] Draft (not file) link follow-up: wetland construction lines (1200/1300/1400) not admitted to wetland rearing
-- [ ] Draft (not file) fresh issue: `.frs_run_connectivity()` 200 ha silent fallback for SK/KO when the L rule has no `lake_ha_min`; reservoir-in-bucket is already true in fresh — draft only a doc note if `frs_habitat()` docs don't say so. Drafts shown in the final report for body review.
+- [ ] Draft (not file) fresh issues: (a) the lake bucket reads `fwa_lakes_poly` only — make `build_wb_pred` use `.frs_waterbody_tables("L")` (decision 5); (b) `.frs_run_connectivity()` 200 ha silent fallback for SK/KO when the L rule has no `lake_ha_min`. Drafts shown in the final report for body review.
 
 ## Validation
 - [ ] Tests pass (`devtools::test()`), lintr clean, `devtools::check()` for the release

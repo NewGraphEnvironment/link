@@ -8,7 +8,13 @@
 #'   `spawn_lake`, `spawn_stream`, `rear_lake`, `rear_lake_only`,
 #'   `rear_no_fw`, `rear_stream`, `rear_wetland`. Optional columns:
 #'   `river_skip_cw_min` (yes/no — skip channel_width_min on river
-#'   polygon segments), `notes`.
+#'   polygon segments), `notes`. `rear_lake_connected_distance_max` /
+#'   `rear_wetland_connected_distance_max` (metres) keep a species' lake /
+#'   wetland rearing bucket only where same-species spawning lies within
+#'   that distance (`requires_connected: spawning` on its first rear L / W
+#'   rule). The additive lake rule admits lake centrelines (FWA
+#'   construction lines) with no channel-width test. See
+#'   `configs/dictionary_dimensions.csv` for every column.
 #' @param to Path to write the output YAML.
 #' @param thresholds Path to the habitat thresholds CSV (from fresh).
 #'   Used to look up `rear_lake_ha_min` per species. Default uses the
@@ -104,9 +110,42 @@ lnk_rules_build <- function(csv,
 
   # Optional: requires_connected columns (value is the habitat type, not yes/no)
   has_spawn_rc <- "spawn_requires_connected" %in% names(dimensions)
-  has_rear_rc <- "rear_requires_connected" %in% names(dimensions)
   has_spawn_cdm <- "spawn_connected_distance_max" %in% names(dimensions)
-  has_rear_cdm <- "rear_connected_distance_max" %in% names(dimensions)
+
+  # Retired (#310): one rear connection test stamped on every rear rule,
+  # which fresh >= 0.37.0 refuses everywhere but the first rear L / W rule.
+  # Empty columns are ignored so older bundles still build; a value stops.
+  cols_rear_rc_legacy <- c("rear_requires_connected",
+                           "rear_connected_distance_max")
+  cols_rear_rc_legacy <- intersect(cols_rear_rc_legacy, names(dimensions))
+  for (col in cols_rear_rc_legacy) {
+    v <- trimws(as.character(dimensions[[col]]))
+    if (any(!is.na(v) & nzchar(v))) {
+      stop(col, " is retired (#310): connect lake / wetland rearing to ",
+           "spawning with rear_lake_connected_distance_max / ",
+           "rear_wetland_connected_distance_max instead", call. = FALSE)
+    }
+  }
+
+  # Optional: lake / wetland rearing connected to same-species spawning
+  # (#310, fresh#240). A distance (m) puts `requires_connected: spawning`
+  # + `connected_distance_max` on the species' first rear L / W rule,
+  # which is the one fresh's lake_rearing / wetland_rearing bucket reads.
+  read_cdm <- function(col) {
+    if (!col %in% names(dimensions)) return(rep(NA_real_, nrow(dimensions)))
+    raw <- trimws(as.character(dimensions[[col]]))
+    raw[is.na(raw)] <- ""
+    n <- suppressWarnings(as.numeric(raw))
+    bad <- nzchar(raw) & (is.na(n) | !is.finite(n) | n <= 0)
+    if (any(bad)) {
+      stop(col, " must be a number > 0 (metres) or blank; got '",
+           paste(raw[bad], collapse = "', '"), "' for ",
+           paste(dimensions$species[bad], collapse = ", "), call. = FALSE)
+    }
+    n
+  }
+  rear_lake_cdm_all    <- read_cdm("rear_lake_connected_distance_max")
+  rear_wetland_cdm_all <- read_cdm("rear_wetland_connected_distance_max")
 
   # Optional: rear_lake_ha_min in dimensions overrides the shared thresholds CSV
   has_rlhm <- "rear_lake_ha_min" %in% names(dimensions)
@@ -173,6 +212,19 @@ lnk_rules_build <- function(csv,
   } else {
     list(edge_types_explicit = c(1000L, 1100L, 2000L, 2300L))
   }
+  # Lines inside a lake or reservoir polygon (#310). Lakes carry FWA
+  # construction lines, not mainlines. Province-wide (2026-10-07), lake
+  # polygons hold 1200 (main flow, 54,402 km), 1450 (connection, 44,528),
+  # 1400 (inferred connection, 6,225), 1475 (lake arm, 2,127) and 1300
+  # (secondary flow, 478); reservoirs add 1250 / 1350 (double-line river
+  # flow, 24 km). 1000 / 1100 are kept for the odd mainline. 1410
+  # (network connector) and 1425 (subsurface) are left out. Codes in
+  # either mode: fresh's categories cannot express this set ("connector"
+  # holds 1410, "construction" 1550 lakeshore lines and delimiters), and
+  # the W polygon rule already uses explicit codes in both modes.
+  lake_edges <- list(edge_types_explicit = c(1000L, 1100L, 1200L, 1250L,
+                                             1300L, 1350L, 1400L, 1450L,
+                                             1475L))
 
   # --- Build rules per species ---
   species_rules <- list()
@@ -199,12 +251,25 @@ lnk_rules_build <- function(csv,
     # requires_connected values for this species (empty string or NA = none)
     spawn_rc <- if (has_spawn_rc) trimws(as.character(d$spawn_requires_connected)) else ""
     if (is.na(spawn_rc)) spawn_rc <- ""
-    rear_rc <- if (has_rear_rc) trimws(as.character(d$rear_requires_connected)) else ""
-    if (is.na(rear_rc)) rear_rc <- ""
     spawn_cdm <- if (has_spawn_cdm) as.numeric(d$spawn_connected_distance_max) else NA_real_
-    rear_cdm <- if (has_rear_cdm) as.numeric(d$rear_connected_distance_max) else NA_real_
+    rear_lake_cdm    <- rear_lake_cdm_all[i]
+    rear_wetland_cdm <- rear_wetland_cdm_all[i]
 
-    # Helper: annotate rule with requires_connected and optional distance max
+    # A species whose spawning requires connected rearing (SK, KO) anchors
+    # spawning on its lake rearing. Lake rearing that in turn required
+    # spawning would be circular (#310 decision 6). The area_only half of
+    # the rule is checked once the rear rules exist, below.
+    if (identical(spawn_rc, "rearing")) {
+      if (!is.na(rear_lake_cdm) || !is.na(rear_wetland_cdm)) {
+        stop(sp, ": spawn_requires_connected = rearing, so its lake / ",
+             "wetland rearing cannot also require connected spawning ",
+             "(circular); blank its rear_*_connected_distance_max",
+             call. = FALSE)
+      }
+    }
+
+    # Helper: annotate a spawn rule with requires_connected and optional
+    # distance max (rear connection is stamped once, after the rules exist)
     add_rc <- function(rule, rc_value, cdm_value = NA_real_) {
       if (nchar(rc_value) > 0) {
         rule$requires_connected <- rc_value
@@ -280,7 +345,7 @@ lnk_rules_build <- function(csv,
         if (has_rlhm) d$rear_lake_ha_min else NULL,
         th$rear_lake_ha_min)
       if (!is.na(rlhm)) lake_rule$lake_ha_min <- rlhm
-      rear_rules[[1]] <- add_rc(lake_rule, rear_rc, rear_cdm)
+      rear_rules[[1]] <- lake_rule
     } else {
       # Stream order bypass: first-order streams with parent order
       # >= stream_order_parent_min bypass rearing channel_width_min.
@@ -318,14 +383,14 @@ lnk_rules_build <- function(csv,
       if (has_all_edges && d$rear_all_edges) {
         rule <- list()
         if (!is.null(soe_bypass)) rule$channel_width_min_bypass <- soe_bypass
-        rear_rules[[length(rear_rules) + 1]] <- add_rc(rule, rear_rc, rear_cdm)
+        rear_rules[[length(rear_rules) + 1]] <- rule
       } else if (d$rear_stream) {
         stream_rule <- add_iw(stream_edges, rear_iw)
         if (!is.null(soe_bypass)) stream_rule$channel_width_min_bypass <- soe_bypass
-        rear_rules[[length(rear_rules) + 1]] <- add_rc(stream_rule, rear_rc, rear_cdm)
+        rear_rules[[length(rear_rules) + 1]] <- stream_rule
         river_rule_r <- river_rule
         if (!is.null(soe_bypass)) river_rule_r$channel_width_min_bypass <- soe_bypass
-        rear_rules[[length(rear_rules) + 1]] <- add_rc(river_rule_r, rear_rc, rear_cdm)
+        rear_rules[[length(rear_rules) + 1]] <- river_rule_r
       }
       if (d$rear_wetland) {
         rwhm <- resolve_ha_min(
@@ -356,7 +421,7 @@ lnk_rules_build <- function(csv,
         # Unfloored, the carve-out keeps its place.
         carve_floored <- !is.na(rwhm) && emit_polygon
         if (!carve_floored) {
-          rear_rules[[length(rear_rules) + 1]] <- add_rc(carve_rule, rear_rc, rear_cdm)
+          rear_rules[[length(rear_rules) + 1]] <- carve_rule
         }
         if (emit_polygon) {
           # Polygon rule restricted to mainlines (1000 main flow,
@@ -372,7 +437,7 @@ lnk_rules_build <- function(csv,
             edge_types_explicit = c(1000L, 1100L))
           if (!is.na(rwhm)) wetland_rule$wetland_ha_min <- rwhm
           wetland_rule <- add_ao(wetland_rule, rear_wao)
-          rear_rules[[length(rear_rules) + 1]] <- add_rc(wetland_rule, rear_rc, rear_cdm)
+          rear_rules[[length(rear_rules) + 1]] <- wetland_rule
         }
         # The floored carve-out goes after the polygon rule: fresh takes
         # the FIRST W rule as the wetland_rearing bucket rule and as the
@@ -381,21 +446,60 @@ lnk_rules_build <- function(csv,
         if (carve_floored) {
           carve_rule <- c(list(waterbody_type = "W"), carve_rule,
                           list(wetland_ha_min = rwhm))
-          rear_rules[[length(rear_rules) + 1]] <- add_rc(carve_rule, rear_rc, rear_cdm)
+          rear_rules[[length(rear_rules) + 1]] <- carve_rule
         }
       }
       if (d$rear_lake) {
-        # Same shape as the W polygon rule above — mainlines-only edge
-        # filter on the L rule, optional area_only flag.
-        lake_rule <- list(
-          waterbody_type = "L",
-          edge_types_explicit = c(1000L, 1100L))
+        # Lake centrelines count toward `rearing` (#310), with no
+        # channel-width or discharge test: lake lines often have no
+        # width, and the polygon is the habitat. fresh already skips
+        # threshold inheritance on L / W rules; `thresholds: false` states
+        # it in the rules. area_only keeps the rule out of `rearing`.
+        lake_rule <- c(list(waterbody_type = "L"), lake_edges,
+                       list(thresholds = FALSE))
         rlhm <- resolve_ha_min(
           if (has_rlhm) d$rear_lake_ha_min else NULL,
           th$rear_lake_ha_min)
         if (!is.na(rlhm)) lake_rule$lake_ha_min <- rlhm
         lake_rule <- add_ao(lake_rule, rear_lao)
-        rear_rules[[length(rear_rules) + 1]] <- add_rc(lake_rule, rear_rc, rear_cdm)
+        rear_rules[[length(rear_rules) + 1]] <- lake_rule
+      }
+    }
+
+    # Connected lake / wetland rearing (#310): only the first rear rule of
+    # each waterbody type, which fresh reads for the bucket and refuses
+    # `requires_connected` on any later one (.frs_validate_rear_connected).
+    for (wt in c("L", "W")) {
+      cdm <- if (wt == "L") rear_lake_cdm else rear_wetland_cdm
+      if (is.na(cdm)) next
+      is_wt <- vapply(rear_rules, function(r) {
+        identical(r[["waterbody_type"]], wt)
+      }, logical(1))
+      idx <- which(is_wt)
+      if (length(idx) == 0L) {
+        stop(sp, ": ", if (wt == "L") "rear_lake" else "rear_wetland",
+             "_connected_distance_max is set but the species has no rear ",
+             "waterbody_type: ", wt, " rule to carry it", call. = FALSE)
+      }
+      rear_rules[[idx[1]]]$requires_connected <- "spawning"
+      rear_rules[[idx[1]]]$connected_distance_max <- cdm
+    }
+
+    # fresh anchors waterbody-connected spawning on the species' first
+    # rear L or W rule (.frs_run_connectivity()) and reads `rearing` there.
+    # An area_only anchor is not `rearing`, so spawning would lose it.
+    # Read the anchor the way fresh does rather than assume it is the lake.
+    if (identical(spawn_rc, "rearing")) {
+      is_anchor <- vapply(rear_rules, function(r) {
+        isTRUE(r[["waterbody_type"]] %in% c("L", "W"))
+      }, logical(1))
+      anchor <- rear_rules[which(is_anchor)[1]][[1]]
+      if (!is.null(anchor) && isTRUE(anchor[["area_only"]])) {
+        stop(sp, ": rear_", if (anchor$waterbody_type == "L") "lake" else
+               "wetland", "_area_only = yes would take its spawning anchor ",
+             "(the first rear waterbody_type: ", anchor$waterbody_type,
+             " rule) out of rearing (spawn_requires_connected = rearing)",
+             call. = FALSE)
       }
     }
 
