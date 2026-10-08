@@ -1,5 +1,56 @@
 # Changelog
 
+## link 0.61.0
+
+**In `default`, lake and wetland rearing need same-species spawning
+within 10 km, and lake centrelines count in `rearing`**
+([\#310](https://github.com/NewGraphEnvironment/link/issues/310)). The
+rollups now split rearing km by the polygon each line sits in. That
+renames two rollup labels and redefines a third.
+
+- **Rules.**
+  - [`lnk_rules_build()`](https://newgraphenvironment.github.io/link/reference/lnk_rules_build.md)
+    reads `rear_lake_connected_distance_max` /
+    `rear_wetland_connected_distance_max` and puts
+    `requires_connected: spawning` on a species’ first rear L / W rule
+    only, which is the rule fresh’s bucket reads
+    ([fresh#240](https://github.com/NewGraphEnvironment/fresh/issues/240)).
+  - The additive lake rule admits lake and reservoir lines
+    (1000/1100/1200/1250/1300/1350/1400/1450/1475) with
+    `thresholds: false`.
+  - The builder refuses connected rearing, and an `area_only` spawning
+    anchor, for species whose spawning requires rearing.
+  - **Breaking:** the retired `rear_requires_connected` /
+    `rear_connected_distance_max` columns stop the build when set.
+- **`default`.**
+  - The distance is 10 km for BT, CH, CO, GR (lakes only), RB, ST and
+    WCT. CT and DV carry it too but get no rules, because neither has a
+    thresholds row.
+  - CO has no lake or wetland size floor.
+  - SK, KO and `bcfishpass` are unchanged.
+- **Rollups (breaking).**
+  - `rearing_lake_centerline` / `rearing_wetland_centerline` become
+    `rearing_lake` / `rearing_wetland`.
+  - `rearing_stream` keeps its name but now means rearing outside lake,
+    reservoir and wetland polygons. Lines are matched by `waterbody_key`
+    against the polygon tables fresh reads, not by edge type.
+  - Lake hectares include reservoirs, and stream + lake + wetland =
+    rearing.
+  - [`lnk_rollup_wsg()`](https://newgraphenvironment.github.io/link/reference/lnk_rollup_wsg.md)
+    gains a `waterbody` alias; its default metrics are unchanged.
+  - `data-raw/compare_rollups.R` refuses to compare a pre-0.61.0
+    directory with a later one.
+- **What moves.** Measured on ADMS and NATR on one segmentation
+  (`data-raw/logs/lake_connected_310/`):
+  - Spawning is unchanged, and SK / KO are row-identical.
+  - Rearing rises 237–525 km per lake species, almost all of it lake
+    lines. Adams Lake’s 1450 connection lines take ADMS CH to +91 %
+    against bcfishpass, and that inclusion is under review.
+  - Buckets move little (NATR BT wetland −2 %).
+  - Write-up: `research/habitat_thresholds.md`, “Lake and wetland
+    rearing connected to spawning”.
+- **`config_hash` changes for every `default*` bundle.**
+
 ## link 0.60.0
 
 **link pins fresh v0.39.0, and a declared wetland floor bounds both
