@@ -122,7 +122,9 @@
 #'   `fails_gradient_and_width`;
 #' - `rule_excludes` — fails even then: edge type, waterbody or lake size;
 #' - `post_predicate` — passes the predicate but is not habitat: removed by
-#'   clustering (connectivity to spawning) or access gating.
+#'   clustering (connectivity to spawning), access gating, or a lake /
+#'   wetland bucket's `requires_connected: spawning` test (link#310), which
+#'   runs after the predicate the validator re-tests.
 #'
 #' The method table is the one in `cfg`. A run classified with another
 #' (a swapped bundle file, or `lnk_pipeline_classify(method_csv =)`) is not

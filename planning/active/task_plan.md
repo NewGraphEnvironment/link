@@ -72,15 +72,15 @@ Run decisions: config `default` (link's own), scratch working schemas only (neve
 `fresh` / `fresh_default`), WSGs NATR (all lake species) and ADMS (CO control), build once at
 main then `reclassify` at branch — the `data-raw/logs/wetland_floor_311/run.R` pattern, new dir
 `data-raw/logs/lake_connected_310/` with stamps.
-- [ ] Roll the scratch schemas up through `.lnk_compare_wsg_rollup_link()` so the new partition and invariant run on new-rule data (plan review O2)
-- [ ] Measure and diff: rearing rises by lake-centreline km for lake species, with `rearing_stream_km`'s own change reported separately (lake lines can join inlet/outlet clusters, G2); CO gains sub-2 ha lakes / sub-0.5 ha wetlands; lake/wetland ha drop where disconnected; stream+lake+wetland = total; SK/KO spawning unchanged
-- [ ] Count the "known divergence" both ways (ha kept / km dropped, and km kept / ha dropped — RB, CT, DV have `cluster_rearing = FALSE`, so their lake km follow no spawning test, G1) per species; note whether it warrants its own issue
-- [ ] Log README with numbers + units
+- [x] Roll the scratch schemas up through `.lnk_compare_wsg_rollup_link()` so the new partition and invariant run on new-rule data (plan review O2)
+- [x] Measure and diff: rearing rises by lake-centreline km for lake species, with `rearing_stream_km`'s own change reported separately (lake lines can join inlet/outlet clusters, G2); CO gains sub-2 ha lakes / sub-0.5 ha wetlands; lake/wetland ha drop where disconnected; stream+lake+wetland = total; SK/KO spawning unchanged
+- [x] Count the "known divergence" both ways (ha kept / km dropped, and km kept / ha dropped — RB, CT, DV have `cluster_rearing = FALSE`, so their lake km follow no spawning test, G1) per species; note whether it warrants its own issue
+- [x] Log README with numbers + units
 
 ## Phase 6: Docs and upstream drafts
-- [ ] `configs/default/README.md` departures list; RUNBOOK §7; `research/habitat_thresholds.md` #307 section (bucket shrink under `mad` was the fresh#240 artifact); CLAUDE.md status; NEWS entry
-- [ ] Draft (not file) link follow-up: wetland construction lines (1200/1300/1400) not admitted to wetland rearing
-- [ ] Draft (not file) fresh issues: (a) the lake bucket reads `fwa_lakes_poly` only — make `build_wb_pred` use `.frs_waterbody_tables("L")` (decision 5); (b) `.frs_run_connectivity()` 200 ha silent fallback for SK/KO when the L rule has no `lake_ha_min`. Drafts shown in the final report for body review.
+- [x] `configs/default/README.md` departures list; RUNBOOK §7 (plus the validator's `post_predicate` note); `research/habitat_thresholds.md` #307 / #311 notes and measured results; `default_vs_bcfishpass.md` CO notes; CLAUDE.md status. NEWS + version bump left to `/gh-pr-merge`
+- [x] Draft (not file) link follow-up: wetland construction lines (1200/1300/1400) not admitted to wetland rearing
+- [x] Draft (not file) fresh issues: (a) the lake bucket reads `fwa_lakes_poly` only — make `build_wb_pred` use `.frs_waterbody_tables("L")` (decision 5); (b) `.frs_run_connectivity()` 200 ha silent fallback for SK/KO when the L rule has no `lake_ha_min`. Drafts shown in the final report for body review.
 
 ## Validation
 - [ ] Tests pass (`devtools::test()`), lintr clean, `devtools::check()` for the release

@@ -1266,4 +1266,20 @@ upstream (no distance), or downstream within the bridge limits. RB has
 divergence therefore runs both ways (ha kept with km dropped, and km kept with ha dropped);
 `data-raw/logs/lake_connected_310/` counts both.
 
+**Measured** on one segmentation (ADMS, NATR; #311's scratch builds re-classified at main and at
+the branch; `data-raw/logs/lake_connected_310/`):
+- Spawning is unchanged for every species, and SK / KO are row-identical.
+- Rearing rises by the lake centrelines:
+  - +237 to +255 km per species on ADMS (SK and KO: 0);
+  - +408 to +525 km on NATR (BT +525.4, of which 508.6 are lake lines and 10.5 are stream rearing
+    that lake lines reconnect to a cluster).
+- Adams Lake alone holds 211.6 km of ADMS's lake km. 148.8 km of that is 1450 connection lines
+  joining tributaries to the main flow across the lake, so lake km run at about three times the
+  main-flow length. Against bcfishpass, ADMS CH goes from +14 % to +91 % rearing and CO from
+  +3 % to +75 %. Whether connection lines belong in lake km is open.
+- The buckets move little at 10 km:
+  - NATR BT lake 20,826 → 20,739 ha and wetland 17,128 → 16,772 ha;
+  - CO on ADMS gains 52 lakes under 2 ha.
+- Lakes where ha and km disagree are rare (at most 14 polygons per species).
+
 **Uncalibrated.** Neither the value nor the per-species sameness is scored on observations.
