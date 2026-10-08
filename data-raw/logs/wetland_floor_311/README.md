@@ -20,11 +20,11 @@ So A → B is fresh's movement on its own: fresh#240's area-only buckets plus fr
 
 - `run.R`: build (`setup` .. `connect`) or re-classify (`classify` + `connect`). It measures `<schema>.streams_habitat`, appends to `measure.csv`, and snapshots the table to `zz311_snap.<wsg>_<run>`.
 - `summarise.R` → `summary.csv`: A → B and B → C per WSG × species, plus the bcfishpass reference. The reference is rearing km from the local `fresh.streams_vw_bcfp` snapshot, `rearing_<sp> IN (1, 2)`.
-- `obs.R` → `obs_AB.csv`, `obs_BC.csv`: observation locations on rearing, and on rearing that is lost or gained. It uses the validator's default filters: match-type class A/B, no Releases Database, BT pooled with DV.
+- `obs.R` → `obs_AB.csv`, `obs_BC.csv`: observation species-locations on rearing, and on rearing that is lost or gained. A species-location is a distinct location per species, summed over species. It takes three of the validator's default filters (match-type class A/B, no source starting "Releases Database", BT pooled with DV), but not its observation exclusions or its per-metre de-duplication.
 
 ## Results
 
-**A → B reproduces fresh's published numbers exactly.** fresh's figures come from persisted `fresh_default`; these are from scratch builds.
+**A → B reproduces five of fresh's six published numbers exactly.** The sixth is the sub-floor wetland-flow km, which fresh gives as an upper bound. fresh's figures come from persisted `fresh_default`; these are from scratch builds, whose segmentation differs slightly (NATR BT: 10,657 rearing segments here under A).
 
 | check | fresh published | here |
 |---|---|---|
@@ -35,7 +35,7 @@ So A → B is fresh's movement on its own: fresh#240's area-only buckets plus fr
 | NATR BT wetland bucket | 683.9 → 1,287.3 km | 683.899 → 1,287.263 |
 | NATR BT wetland-flow rearing in wetlands < 1 ha | ~26.4 km (upper bound) | 26.605 km |
 
-The A → B rearing loss is small everywhere: at most 75 segments / 3.6 km (PARS RB). No observation location on rearing is lost.
+The A → B rearing loss is small everywhere: at most 75 segments / 3.6 km (PARS RB). No observation species-location on rearing is lost.
 
 **B → C: the floored carve-out.**
 - **Wetland-flow rearing in sub-floor wetlands goes to 0** for every floored species. Under A it was 26.6 km on NATR BT, 46.7 km on NATR RB, 19.1 km on PARS BT and 18.0 km on BULK RB.
@@ -58,9 +58,9 @@ The A → B rearing loss is small everywhere: at most 75 segments / 3.6 km (PARS
 - **The "other edges" column is the rearing connectivity pass.** C changes only the rule for edges 1050/1150, so a segment on any other edge has the same predicate in B and C. When it flips, `cluster_rearing` has dropped it, because the sub-floor wetland link that connected it to spawning is gone.
 - For the same reason, wetland-flow km lost can exceed the A sub-floor figure (NATR BT 27.3 against 26.6).
 - No segment gains rearing.
-- **Observations:** 3 locations stop rearing out of 2,265 on rearing in B (BULK BT 1, NATR RB 1, PARS BT 1). Every other species and WSG loses 0.
+- **Observations:** 3 species-locations stop rearing out of 2,265 on rearing in B (BULK BT 1, NATR RB 1, PARS BT 1). Every other species and WSG loses 0.
 
-**Against bcfishpass** (rearing km, `summary.csv`): the floor moves the departure by at most 1.2 points. NATR BT goes from +13.8 % to +12.7 %, PARS BT from +1.8 % to +0.6 %, BULK ST from +13.8 % to +12.8 %, and ADMS BT from −21.2 % to −21.4 %. bcfishpass carries no RB rearing column.
+**Against bcfishpass** (rearing km, `summary.csv`, B → C): the floor moves the departure by at most 1.1 points. NATR BT goes from +13.8 % to +12.7 %, PARS BT from +1.7 % to +0.6 %, BULK ST from +13.8 % to +12.8 %, and ADMS BT from −21.2 % to −21.4 %. A → B moves it by at most 0.1. bcfishpass carries no RB rearing column.
 
 ## Caveats
 

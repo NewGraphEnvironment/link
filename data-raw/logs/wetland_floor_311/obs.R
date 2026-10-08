@@ -2,8 +2,12 @@
 # Observation exposure of a rearing change, read from run.R's snapshots
 # (zz311_snap.<aoi>_<run>): per species, the observations on segments
 # rearing under <from_run> and on those that stop rearing under <to_run>.
-# Same filters as lnk_habitat_validate()'s defaults: match-type class A/B (first character), no
-# "Releases Database", BT pooled with DV. An observation sits on the
+# Filters taken from lnk_habitat_validate()'s defaults: match-type class A/B
+# (first character), no source starting "Releases Database" (stocking records
+# read "Releases Database: release_id NNNN"), BT pooled with DV. Not applied:
+# the validator's observation exclusions and its per-metre de-duplication. Counts are
+# species-locations: distinct locations per species, summed over species.
+# An observation sits on the
 # segment whose [downstream, upstream) measure range holds it (observations
 # are break points; the segment starting there is the one upstream).
 args <- commandArgs(trailingOnly = TRUE)
@@ -33,7 +37,7 @@ for (aoi in aois) {
         WHERE o.watershed_group_code = '%5$s'
           AND o.species_code IN (%6$s)
           AND left(o.match_type, 1) IN ('A', 'B')
-          AND o.source IS DISTINCT FROM 'Releases Database')
+          AND left(coalesce(o.source, ''), 17) <> 'Releases Database')
       SELECT count(*) FILTER (WHERE seg.r_from) AS n_obs_rear_from,
              count(*) FILTER (WHERE seg.r_from AND NOT seg.r_to) AS n_obs_lost,
              count(*) FILTER (WHERE NOT seg.r_from AND seg.r_to) AS n_obs_gained

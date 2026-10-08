@@ -1163,11 +1163,12 @@ fresh#240 (area-only buckets) · **Produced by:** `data-raw/logs/wetland_floor_3
 - **fresh v0.38.0 gates `rearing` on a W rule's `wetland_ha_min`.** Before, only the
   `wetland_rearing` bucket used it.
 - **link pins v0.39.0**, so `default*` rearing narrows with no config change.
-- **The 1050/1150 wetland-flow rear rule has no floor of its own.** On NATR BT it held
+- **The 1050/1150 wetland-flow rear rule had no floor of its own.** On NATR BT it held
   26.6 km of rearing in wetlands under 1 ha.
-- **Operator call (2026-10-07): a declared `rear_wetland_ha_min` bounds all wetland
-  rearing.** `lnk_rules_build()` therefore puts it on the wetland-flow rule too, as a W
-  rule. That rule comes after the polygon rule, which keeps the first W rule (fresh's
+- **Operator call (2026-10-07): a declared `rear_wetland_ha_min` bounds both wetland
+  rear rules.** `lnk_rules_build()` therefore puts it on the wetland-flow rule too, as a
+  W rule. Mainlines (1000/1100) in sub-floor wetlands still rear through the stream rule,
+  which has no waterbody test (0–0.62 km per floored species under C). That rule comes after the polygon rule, which keeps the first W rule (fresh's
   bucket and `requires_connected` anchor) the same.
 - **Floors in `default`:** 1 ha for BT, CH, RB, ST and WCT; 0.5 ha for CO.
 
@@ -1177,8 +1178,8 @@ fresh#240 (area-only buckets) · **Produced by:** `data-raw/logs/wetland_floor_3
 - **C:** 0.39.0 with the floored rules.
 
 What each step does:
-- **A → B: fresh alone.** It reproduces fresh's published numbers exactly. `rearing`
-  loses at most 75 segments / 3.6 km (PARS RB), and no observation location. The buckets
+- **A → B: fresh alone.** It reproduces five of fresh's six published numbers exactly; the sixth, sub-floor wetland-flow km, fresh gives as an upper bound (26.6 here, ~26.4 there). `rearing`
+  loses at most 75 segments / 3.6 km (PARS RB), and no observation species-location. The buckets
   roughly double: NATR BT lake goes from 310 to 521 km and wetland from 684 to 1,287 km.
 - **B → C: the floor on the wetland-flow rule.**
   - Wetland-flow rearing in sub-floor wetlands goes to 0.
@@ -1187,12 +1188,12 @@ What each step does:
   - Part of the loss is on other edges: rearing that `cluster_rearing` no longer
     connects to spawning once the sub-floor wetland link is gone. That is 17.4 of BULK
     ST's 23.8 km, and 6.8 of NATR BT's.
-  - Observations: 3 of 2,265 locations on rearing are lost.
-  - Against bcfishpass rearing km, the departure moves by at most 1.2 points. NATR BT
-    goes from +13.8 % to +12.7 %, PARS BT from +1.8 % to +0.6 %.
+  - Observations: 3 of 2,265 species-locations on rearing are lost.
+  - Against bcfishpass rearing km, the floor moves the departure by at most 1.1 points.
+    NATR BT goes from +13.8 % to +12.7 %, PARS BT from +1.7 % to +0.6 %.
 
 **Reading.** Across the four WSGs the floor removes 198.8 km (2,078 segment-species) of
-rearing, and observations sit on 3 of those locations. So fish observations barely use
+rearing, and observations sit on 3 of those species-locations. So fish observations barely use
 the small-wetland rearing it removes. It also cuts some upstream rearing through
 connectivity. The floor's value itself (1 ha) was not calibrated here. BT's notes cite
 beaver complexes, which are often small, and those are exactly what the floor removes.

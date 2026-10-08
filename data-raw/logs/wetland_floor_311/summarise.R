@@ -46,7 +46,7 @@ wide$d_rear_km_AB <- num(wide$rear_km_B) - num(wide$rear_km_A)
 wide$d_n_rear_AB <- num(wide$n_rear_B) - num(wide$n_rear_A)
 wide$d_rear_km_BC <- num(wide$rear_km_C) - num(wide$rear_km_B)
 wide$d_n_rear_BC <- num(wide$n_rear_C) - num(wide$n_rear_B)
-for (r in c("A", "C")) {
+for (r in c("A", "B", "C")) {
   wide[[paste0("vs_bcfp_pct_", r)]] <- round(
     100 * (num(wide[[paste0("rear_km_", r)]]) - wide$bcfp_rear_km) /
       wide$bcfp_rear_km, 1)
@@ -59,5 +59,5 @@ show <- c(key, "n_rear_A", "rear_km_A", "d_n_rear_AB", "d_rear_km_AB",
           "d_n_rear_BC", "d_rear_km_BC", "rear_km_subfloor_wetflow_C",
           "lake_rear_km_A", "lake_rear_km_B", "wetland_rear_km_A",
           "wetland_rear_km_B", "wetland_rear_km_C", "bcfp_rear_km",
-          "vs_bcfp_pct_A", "vs_bcfp_pct_C")
+          "vs_bcfp_pct_A", "vs_bcfp_pct_B", "vs_bcfp_pct_C")
 print(wide[, show], row.names = FALSE)

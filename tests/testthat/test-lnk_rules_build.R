@@ -187,8 +187,9 @@ test_that("rear_wetland=no emits no waterbody_type: W rule", {
 #
 # fresh >= 0.38.0 (fresh#237) gates a W rule's rear predicate on its
 # wetland_ha_min. A species declaring rear_wetland_ha_min gets the floor on
-# the wetland-flow carve-out too, so the declared floor bounds all wetland
-# rearing. The floored carve-out comes AFTER the polygon W rule: fresh takes
+# the wetland-flow carve-out too, so the declared floor bounds both wetland
+# rear rules (the stream rule still admits mainlines in smaller wetlands).
+# The floored carve-out comes AFTER the polygon W rule: fresh takes
 # the first W rule as the wetland_rearing bucket rule and as the
 # requires_connected anchor (.frs_find_waterbody_rule()).
 
