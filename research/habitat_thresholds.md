@@ -1291,7 +1291,7 @@ the branch; `data-raw/logs/lake_connected_310/`):
 `rollup_check.R`; `parity_bcfishpass.R` on the bcfishpass-config persist)
 
 **The question.** #310 admitted every line in a lake polygon to `default`'s rear L rule. The FWA
-connection lines among them (1450, and 1400 inferred) join each tributary mouth to the lake's
+connectors among them (1450, "Construction line, connection") join each tributary mouth to the lake's
 main-flow line (1200). They are not a flow path, so a lake's km grew with its tributary count.
 Should they count?
 
@@ -1305,7 +1305,8 @@ and the rollups report them apart.**
 - The rules are unchanged, nothing re-classifies, and clustering is untouched.
 - `rearing_lake` km are lake flow lines only, and `rearing` km leave connection lines out.
 - They are reported as `rearing_lake_connection` (km).
-- One predicate serves every site, `.lnk_sql_lake_connection()`: lake-polygon lines on 1400 / 1450.
+- One predicate serves every site, `.lnk_sql_lake_connection()`: lake-polygon lines on 1450.
+- **Construction flow lines are not connectors.** 1400 ("other flow / inferred connection") is a construction flow line like 1200 / 1300 and stays in the km (operator, 2026-10-08). In wetlands it is usually the only line through the polygon (#320).
 - **The rule applies on both sides.** bcfishpass counts connection lines too: BT 65.9 km on ADMS
   and 88.1 km on NATR (`fresh.streams_vw_bcfp`), and SK the same lines link does.
 - `lnk_rollup_wsg()`'s default `rearing_km` stays the flag total. The validator's cost and the
@@ -1319,10 +1320,10 @@ and the rollups report them apart.**
 | ADMS | CH | 588.9 → 428.3 | 160.7 | +91.1 % → +38.9 % |
 | ADMS | CO | 614.5 → 451.9 | 162.6 | +75.0 % → +28.7 % |
 | ADMS | SK | 229.9 → 70.8 | 159.1 | 0.0 % → 0.0 % |
-| NATR | BT | 3,985.5 → 3,709.5 | 275.9 | +29.8 % → +24.3 % |
+| NATR | BT | 3,985.5 → 3,710.4 | 275.0 | +29.8 % → +24.4 % |
 | NATR | KO | 345.4 → 132.4 | 213.0 | — |
 
-- Nearly all of it is 1450; 1400 is at most 1.4 km.
+- Lake 1400 is at most 1.4 km of rearing (NATR RB), so leaving it in moves only NATR BT and RB.
 - **ADMS CH / CO stay above bcfishpass**, which has no CH or CO lake rearing there. What remains
   is lake flow lines (Adams Lake's 62.8 km of 1200 among them): #310's position that lakes rear
   CH and CO, not a line-type artifact.

@@ -28,7 +28,7 @@
 #' never added together.
 #'
 #' Each row also carries `connection` (bool): a line in a lake polygon on
-#' FWA edge type 1450 or 1400, the connection lines that join each
+#' FWA edge type 1450 ("connection"), the connector lines that join each
 #' tributary mouth to the lake's main-flow line. fresh keeps them in
 #' `rearing`, where they connect inlet rearing to the lake, but they trace
 #' a join rather than a flow path, so a report of habitat km leaves them
@@ -232,21 +232,24 @@ lnk_rollup_wsg <- function(conn, aoi, species,
 
 #' Is a line a lake connection line? As SQL (#317)
 #'
-#' FWA connection lines (edge 1450, and 1400 inferred connections) join
+#' FWA connection lines (edge 1450, "Construction line, connection") join
 #' each tributary mouth to a lake's main-flow line (1200). They trace a
 #' join, not a flow path, so a lake's line km would grow with its
 #' tributary count: Adams Lake (ADMS) holds 62.8 km of 1200 and 148.8 km
 #' of 1450. They stay in fresh's `rearing` flag, where they join inlet
 #' rearing to the lake for `cluster_rearing`, and the rollups report them
 #' apart (`rearing_lake_connection_km`), out of `rearing_km`. Lake and
-#' reservoir polygons only; no rule admits construction lines in a
-#' wetland. Never NULL: a NULL edge type would otherwise drop a line from
-#' both `NOT connection` and `connection` sums. Expects the streams table aliased `s` and
+#' reservoir polygons only; no 1450 line lies in a wetland polygon
+#' (province-wide, 2026-10-08). Connectors only: 1400 ("other flow / inferred connection") is
+#' a construction flow line and stays in the km, like 1200 / 1300;
+#' 1410 (network connector) does not occur in lake polygons. Never NULL:
+#' a NULL edge type would otherwise drop a line from both `NOT connection`
+#' and `connection` sums. Expects the streams table aliased `s` and
 #' [.lnk_sql_waterbody_join()]'s `wb`.
 #'
 #' @noRd
 .lnk_sql_lake_connection <- function() {
-  sprintf("COALESCE(%s = 'lake' AND s.edge_type IN (1400, 1450), FALSE)",
+  sprintf("COALESCE(%s = 'lake' AND s.edge_type = 1450, FALSE)",
           .lnk_sql_waterbody_class())
 }
 

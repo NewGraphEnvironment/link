@@ -76,7 +76,7 @@ centreline km and its polygon hectares describe the same water and are
 never added together.
 
 Each row also carries \code{connection} (bool): a line in a lake polygon on
-FWA edge type 1450 or 1400, the connection lines that join each
+FWA edge type 1450 ("connection"), the connector lines that join each
 tributary mouth to the lake's main-flow line. fresh keeps them in
 \code{rearing}, where they connect inlet rearing to the lake, but they trace
 a join rather than a flow path, so a report of habitat km leaves them

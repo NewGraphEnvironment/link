@@ -144,13 +144,15 @@ test_that("waterbody class: lakes and reservoirs are lake, river polygons stream
 # Lake connection lines: in `rearing`, out of the km (#317)
 # ---------------------------------------------------------------------------
 
-test_that("a lake connection line is a lake-polygon line on edge 1400 or 1450", {
+test_that("a lake connection line is a lake-polygon line on edge 1450", {
   p <- link:::.lnk_sql_lake_connection()
   expect_identical(
     p, paste0("COALESCE(COALESCE(wb.waterbody, 'stream') = 'lake' ",
-              "AND s.edge_type IN (1400, 1450), FALSE)"))
-  # Scoped to lakes: the 1200 main-flow line and wetland lines are not it.
+              "AND s.edge_type = 1450, FALSE)"))
+  # Connectors only, in lakes: construction flow lines (1200, and 1400
+  # "other flow / inferred connection") and wetland lines are not it.
   expect_false(grepl("1200", p))
+  expect_false(grepl("1400", p))
   expect_false(grepl("wetland", p))
 })
 

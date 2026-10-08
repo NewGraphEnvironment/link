@@ -64,7 +64,7 @@ slices <- function(x, d) {
          "rearing_wetland) rollups; re-run its pre-#310 WSGs", call. = FALSE)
   }
   if (pre) return("pre-#310")
-  # #317 took lake connection lines (1400 / 1450) out of rearing and
+  # #317 took lake connection lines (1450) out of rearing and
   # rearing_lake km and reports them as rearing_lake_connection. A
   # post-#310 rollup without that row counts them in both.
   wsg_317 <- unique(x$wsg[x$habitat_type == "rearing_lake_connection"])

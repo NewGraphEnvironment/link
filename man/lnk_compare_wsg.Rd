@@ -71,8 +71,8 @@ habitat types: \code{spawning}, \code{rearing}, \code{lake_rearing},
 \code{rearing_wetland}, \code{rearing_lake_connection}, \code{accessible} (km,
 link#221). \code{rearing_stream}, \code{rearing_lake} and \code{rearing_wetland}
 split \code{rearing} by the polygon each line sits in (#310).
-\code{rearing_lake_connection} is lake-polygon lines on FWA edge 1400 /
-1450, which join tributaries to a lake's main-flow line: they stay
+\code{rearing_lake_connection} is lake-polygon lines on FWA edge 1450
+(connectors), which join tributaries to a lake's main-flow line: they stay
 in fresh's \code{rearing} flag but are left out of \code{rearing} and
 \code{rearing_lake} km, on both sides (#317). \code{lake_rearing} /
 \code{wetland_rearing} are polygon hectares. A lake's km and its ha describe the same water

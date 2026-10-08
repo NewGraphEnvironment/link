@@ -20,7 +20,7 @@
 #                                rearing_lake_connection;
 #                                since #317 rearing and rearing_lake
 #                                leave out lake connection lines
-#                                (edge 1400 / 1450 in a lake
+#                                (edge 1450 connectors in a lake
 #                                polygon) on both sides, and
 #                                rearing_lake_connection carries
 #                                them. bcfishpass counts them too

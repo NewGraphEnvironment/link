@@ -13,11 +13,11 @@ Experimental package — breaking all the time and loving the learning curve. St
 
 ## Status (2026-10-08) — lake connection lines kept out of rearing km (#317)
 
-**The compare rollups report FWA lake connection lines (1400 / 1450) as `rearing_lake_connection` km, outside `rearing` and `rearing_lake` km. fresh's `rearing` flag still carries them.**
+**The compare rollups report FWA lake connectors (1450) as `rearing_lake_connection` km, outside `rearing` and `rearing_lake` km. fresh's `rearing` flag still carries them.**
 - **Why in the rollup, not the rule (operator):**
   - The lines join each tributary mouth to the lake's main-flow line, so lake km grew with tributary count (Adams Lake: 148.8 km of 1450 against 62.8 km of 1200).
   - `cluster_rearing` needs them to join inlet rearing to the lake. So the rules are unchanged and nothing re-classifies.
-- **One predicate, both sides:** `.lnk_sql_lake_connection()` (lake polygon, edge 1400 / 1450, NULL-safe). It is used by the link side and the bcfishpass side of `lnk_compare_rollup()` / `lnk_compare_wsg()`. bcfishpass counts these lines in BT and SK rearing too.
+- **One predicate, both sides:** `.lnk_sql_lake_connection()` (lake polygon, edge 1450, NULL-safe; 1400 is construction flow and stays in the km). It is used by the link side and the bcfishpass side of `lnk_compare_rollup()` / `lnk_compare_wsg()`. bcfishpass counts these lines in BT and SK rearing too.
 - **`lnk_rollup_wsg()`'s default `rearing_km` stays the flag total.** Code-check found that changing it leaked into the validator's cost and into `parity_crosssection.R` / `wsg_vignette_data.R`, which compare the flag.
 - **Measured** (ADMS, NATR; `data-raw/logs/lake_connection_317/`):
   - ADMS CH vs bcfishpass +91.1 % → +38.9 %; CO +75.0 % → +28.7 %; BT +16.4 % → +2.0 %.

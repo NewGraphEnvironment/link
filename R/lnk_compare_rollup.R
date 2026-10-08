@@ -44,7 +44,7 @@
 #' @return A tibble with one row per (species, habitat_type) — 9
 #'   habitat types per species (the 8 habitat km/ha types plus
 #'   `accessible` km, link#221). `rearing_lake_connection` is lake
-#'   connection lines (FWA edge 1400 / 1450 in a lake polygon), reported
+#'   connection lines (FWA edge 1450 in a lake polygon), reported
 #'   apart and left out of `rearing` and `rearing_lake` km on both sides
 #'   (#317); see [lnk_compare_wsg()]. Columns: `wsg`, `species`,
 #'   `habitat_type`, `unit` (`km` | `ha`), `link_value`, `ref_value`,

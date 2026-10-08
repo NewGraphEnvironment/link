@@ -1,10 +1,10 @@
 # #317: lake connection lines reported apart from rearing km
 
-Local docker fwapg (:5432), 2026-10-08. link 0.61.0 at `1161b59` (main plus the PWF baseline), fresh 0.39.0 (`e247ca1`). `stamp.txt` holds `lnk_stamp()`.
+Local docker fwapg (:5432), 2026-10-08, fresh 0.39.0 (`e247ca1`). First measured at link `1161b59` with 1400 + 1450 as connectors; re-run on the commit that narrowed the predicate to 1450 (`git log -1 -- data-raw/logs/lake_connection_317/measure.csv` names it). `measure.R` errors before `c1760d1` (no `.lnk_sql_lake_connection()`) and reproduces these numbers only from the narrowing commit on; between the two it runs with the old 1400 + 1450 predicate. `stamp.txt` holds `lnk_stamp()`.
 
 Nothing was re-classified. The rule is a rollup rule, so it is measured on #310's run-B snapshots (`zz310_snap.{adms,natr}_b`, the `default` bundle at `892a09f`, identical to v0.61.0's rules) on their own segmentation (`zz311_{adms,natr}.streams`).
 
-**The rule.** A connection line is a line in a lake or reservoir polygon (`.lnk_sql_waterbody_class()` = `lake`) on edge type 1400 or 1450. It stays in fresh's `rearing` flag, where it joins inlet rearing to the lake for `cluster_rearing`. In the km:
+**The rule.** A connection line is a line in a lake or reservoir polygon (`.lnk_sql_waterbody_class()` = `lake`) on edge type 1450 ("Construction line, connection"): a connector. 1400 ("other flow / inferred connection") is a construction flow line, not a connector, so it stays in the km (operator, 2026-10-08). A connector stays in fresh's `rearing` flag, where it joins inlet rearing to the lake for `cluster_rearing`. In the km:
 - `rear_km` excludes connection lines;
 - `rear_lake_km` is lake flow lines only;
 - `rear_connection_km` holds the connection lines.
@@ -25,12 +25,12 @@ So `stream + lake + wetland = rear_km`, and `rear_km + connection = rear_flag_km
 | ADMS | CO | 614.5 | 451.9 | 162.6 | 250.2 → 87.6 | +75.0 % → +28.7 % |
 | ADMS | RB | 684.1 | 521.9 | 162.2 | 246.7 → 84.5 | — |
 | ADMS | SK | 229.9 | 70.8 | 159.1 | 229.9 → 70.8 | 0.0 % → 0.0 % |
-| NATR | BT | 3,985.5 | 3,709.5 | 275.9 | 508.6 → 232.6 | +29.8 % → +24.3 % |
+| NATR | BT | 3,985.5 | 3,710.4 | 275.0 | 508.6 → 233.6 | +29.8 % → +24.4 % |
 | NATR | GR | 1,769.2 | 1,533.7 | 235.5 | 402.3 → 166.8 | — |
 | NATR | KO | 345.4 | 132.4 | 213.0 | 345.4 → 132.4 | — |
-| NATR | RB | 4,004.8 | 3,736.3 | 268.5 | 500.1 → 231.6 | — |
+| NATR | RB | 4,004.8 | 3,737.7 | 267.1 | 500.1 → 233.0 | — |
 
-- **Nearly all of it is 1450.** 1400 is 0.9 km (NATR BT) and 1.4 km (NATR RB), and zero elsewhere.
+- **Connectors only.** The first cut also took out 1400; it was narrowed to 1450 before merge. Lake 1400 is 0.9 km (NATR BT) and 1.4 km (NATR RB) of rearing and zero elsewhere (`rear_lake_1400_km`), so only those two rows moved.
 - **Adams Lake:** 148.8 km of 1450 and 62.8 km of 1200 for every ADMS species that rears there. The 1450 leaves the km; the 1200 stays.
 - **ADMS CH and CO stay well above bcfishpass** (+38.9 % / +28.7 %). bcfishpass has no CH or CO lake rearing at all on ADMS, so the remaining gap is lake flow lines, Adams's 62.8 km of 1200 among them. That is the #310 decision that lakes rear CH / CO, not a line-type artifact.
 - **bcfishpass counts connection lines too.** Its BT rearing holds 65.9 km (ADMS) and 88.1 km (NATR) of 1450, and its SK rearing holds the same 159.1 km link does. Applying the rule to both sides keeps SK at 0.0 %. Applying it to link alone would have read SK as −69 %.

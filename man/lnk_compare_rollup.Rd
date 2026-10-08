@@ -37,7 +37,7 @@ discovers the set from PG.}
 A tibble with one row per (species, habitat_type) — 9
 habitat types per species (the 8 habitat km/ha types plus
 \code{accessible} km, link#221). \code{rearing_lake_connection} is lake
-connection lines (FWA edge 1400 / 1450 in a lake polygon), reported
+connection lines (FWA edge 1450 in a lake polygon), reported
 apart and left out of \code{rearing} and \code{rearing_lake} km on both sides
 (#317); see \code{\link[=lnk_compare_wsg]{lnk_compare_wsg()}}. Columns: \code{wsg}, \code{species},
 \code{habitat_type}, \code{unit} (\code{km} | \code{ha}), \code{link_value}, \code{ref_value},

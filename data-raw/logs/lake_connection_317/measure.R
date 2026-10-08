@@ -1,6 +1,8 @@
 # Usage: Rscript measure.R <repo> <out_dir>
-# #317: rearing km with lake connection lines (edge 1400 / 1450 inside a
-# lake or reservoir polygon) reported apart from the total. Reads #310's
+# #317: rearing km with lake connection lines (edge 1450, connectors, inside
+# a lake or reservoir polygon) reported apart from the total. 1400 ("other
+# flow / inferred connection") is a construction flow line and stays in the km;
+# its lake km are reported for reference. Reads #310's
 # run-B snapshots (zz310_snap.<wsg>_b, default at link 892a09f, fresh 0.39.0)
 # on their own segmentation (zz311_<wsg>.streams); nothing is re-classified.
 # The bcfishpass side applies the same rule to the local
@@ -16,7 +18,7 @@ writeLines(utils::capture.output(print(lnk_stamp(lnk_config("default"), conn = c
 
 wb_join <- .lnk_sql_waterbody_join()
 wb_class <- .lnk_sql_waterbody_class()
-conn_pred <- sprintf("(%s = 'lake' AND s.edge_type IN (1400, 1450))", wb_class)
+conn_pred <- .lnk_sql_lake_connection()
 
 km_cols <- function(flag) sprintf("
   sum(s.length_metre) FILTER (WHERE %1$s) / 1000 AS rear_flag_km,
@@ -26,8 +28,7 @@ km_cols <- function(flag) sprintf("
   sum(s.length_metre) FILTER (WHERE %1$s AND %3$s = 'lake' AND NOT %2$s) / 1000 AS rear_lake_km,
   sum(s.length_metre) FILTER (WHERE %1$s AND %3$s = 'wetland') / 1000 AS rear_wetland_km,
   sum(s.length_metre) FILTER (WHERE %1$s AND %2$s) / 1000 AS rear_connection_km,
-  sum(s.length_metre) FILTER (WHERE %1$s AND %2$s AND s.edge_type = 1400) / 1000 AS rear_connection_1400_km,
-  sum(s.length_metre) FILTER (WHERE %1$s AND %2$s AND s.edge_type = 1450) / 1000 AS rear_connection_1450_km",
+  sum(s.length_metre) FILTER (WHERE %1$s AND %3$s = 'lake' AND s.edge_type = 1400) / 1000 AS rear_lake_1400_km",
   flag, conn_pred, wb_class)
 
 num <- function(d) {

@@ -57,8 +57,8 @@
 #'     `rearing_wetland`, `rearing_lake_connection`, `accessible` (km,
 #'     link#221). `rearing_stream`, `rearing_lake` and `rearing_wetland`
 #'     split `rearing` by the polygon each line sits in (#310).
-#'     `rearing_lake_connection` is lake-polygon lines on FWA edge 1400 /
-#'     1450, which join tributaries to a lake's main-flow line: they stay
+#'     `rearing_lake_connection` is lake-polygon lines on FWA edge 1450
+#'     (connectors), which join tributaries to a lake's main-flow line: they stay
 #'     in fresh's `rearing` flag but are left out of `rearing` and
 #'     `rearing_lake` km, on both sides (#317). `lake_rearing` /
 #'     `wetland_rearing` are polygon hectares. A lake's km and its ha describe the same water
