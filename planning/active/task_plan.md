@@ -19,10 +19,10 @@ The open bundle question was the `edge_types_explicit: [1050, 1150], thresholds:
 - `lnk_habitat_validate()` builds its predicates from fresh's compiled SQL, so it follows the change with no code edit.
 
 ## Phase 1: Pin fresh v0.39.0
-- [ ] `DESCRIPTION`: `Remotes: NewGraphEnvironment/fresh@v0.39.0`, `Imports: fresh (>= 0.38.0)`
-- [ ] Install fresh v0.39.0 locally. `frs_params()` loads every bundle's `rules.yaml` (bcfishpass, default, default_extrabreaks, default_rearbreaks) with no loader error
-- [ ] `lnk_preflight_fresh()` symbol/formal lists still hold, and the drift guard `.lnk_fresh_callsites()` is green
-- [ ] `devtools::test()` is green against v0.39.0
+- [x] `DESCRIPTION`: `Remotes: NewGraphEnvironment/fresh@v0.39.0`, `Imports: fresh (>= 0.38.0)`
+- [x] Install fresh v0.39.0 locally (`e247ca1`, after run A). `frs_params()` loads every bundle's `rules.yaml` (bcfishpass, default, default_extrabreaks, default_rearbreaks, default_tuned, top-level) with no loader error
+- [x] `lnk_preflight_fresh()`: "fresh 0.39.0 (floor 0.38.0) - OK, all required symbols present"; drift-guard test green in the suite
+- [x] `devtools::test()` against v0.39.0: 0 failures, 16 warnings (the pre-existing "incomplete final line" on a bcfishpass override CSV)
 
 ## Phase 2: Floor the wetland-flow carve-out (tests first)
 - [x] Tests in `tests/testthat/test-lnk_rules_build.R`:
@@ -34,10 +34,10 @@ The open bundle question was the `edge_types_explicit: [1050, 1150], thresholds:
 - [x] Existing guard near `test-lnk_rules_build.R:942` (shipped default rules) also asserts BT's carve-out carries `waterbody_type: W` + `wetland_ha_min: 1`; the guards at :441 and :842 need no change
 - [x] `R/lnk_rules_build.R`: emit the floored carve-out after the polygon rule when `rwhm` is finite and the polygon rule is emitted; otherwise keep the current emission. Comment says why the order matters (first W rule = bucket + `requires_connected` anchor; first L/W = waterbody-connected spawning)
 - [x] Built to tempfiles and diffed first (`build_rules.R` regenerates only `default`, `bcfishpass` and the top-level yaml). The default* and top-level diffs are only the moved and floored carve-outs for BT, CH, CO, RB, ST and WCT (CT/DV are skipped by the builder) plus the `# Generated:` line. `bcfishpass` differs only in that line, so it was not written. `default/rules.yaml` was copied into `default_extrabreaks` and `default_rearbreaks` (byte-identical copies before and after); `checksum` updated in all three `config.yaml`; `lnk_config_verify()` reports 0 drift on all five bundles
-- [ ] `generator_sha` in the three `config.yaml` → this commit's SHA (follow-up commit; a commit cannot name itself)
+- [x] `generator_sha` in the three `config.yaml` → `0ca706b` (Phase 4 commit)
 - [x] `inst/extdata/configs/dictionary_dimensions.csv`: `rear_wetland_ha_min`, `rear_wetland` and `rear_wetland_polygon` rows describe the floor, its placement and the polygon = no case
 - [x] `data-raw/query_habitat_thresholds_mad.R`: stale comment ("fresh's rear predicate does not apply wetland_ha_min") reworded
-- [ ] Load every regenerated `rules.yaml` (default*, top-level, and `default_tuned` via `lnk_config()`) through `fresh::frs_params()` v0.39.0; each floored species' compiled `rear` predicate carries `1050, 1150 … area_ha >= <floor>`
+- [x] Load every regenerated `rules.yaml` (default*, top-level, and `default_tuned` via `lnk_config()`) through `fresh::frs_params()` v0.39.0; the floored clause compiles for BT CH CO RB ST WCT in every default* bundle and the top-level copy, none in bcfishpass
 
 ## Phase 3: Measure on one segmentation
 Logs in `data-raw/logs/wetland_floor_311/` (README carries the tables; `measure.csv` stamps link/fresh SHAs and `cfg_hash` per row, `stamp_<run>.txt` the `lnk_stamp()`).
@@ -48,31 +48,17 @@ Logs in `data-raw/logs/wetland_floor_311/` (README carries the tables; `measure.
 - [x] `research/habitat_thresholds.md`: new section "The wetland floor on `rearing` (#311)"; the #307 bucket bullet updated
 
 ## Phase 4: Docs and issue hygiene
-- [ ] `RUNBOOK.md` §7 (~line 720): `wetland_ha_min` now gates rearing; the carve-out is floored in default*; first-W-rule ordering
-- [ ] `CLAUDE.md`:
-  - new Status entry;
-  - correct the stale facts ("fresh's main rear predicate ignores a W rule's `wetland_ha_min`", and "link still pins fresh v0.36.2");
-  - note that cyphers need a re-prep for the new pin.
-- [ ] Departures list in `configs/default/README.md`. Add a `research/habitat_thresholds.md` section with the measurement
-- [ ] Edit the #310 body:
-  - decision 7 and the "Not in scope" bullet are stale;
-  - the ≥0.37 pin precondition is now met;
-  - the floored carve-out sits after the polygon rule, so `add_rc()`'s first-W anchor is still the polygon rule.
-- [ ] Edit the #311 body with the outcome
-- [ ] NEWS entry (minor bump, because outputs move) as the final commit before the PR
-
-
-## Critical files
-- `DESCRIPTION`
-- `R/lnk_rules_build.R` (rear wetland block, lines 330-366)
-- `tests/testthat/test-lnk_rules_build.R`
-- `inst/extdata/configs/{default,default_extrabreaks,default_rearbreaks}/rules.yaml` (generated) and `config.yaml` provenance
-- `inst/extdata/configs/dictionary_dimensions.csv`
-- `RUNBOOK.md`, `CLAUDE.md`, `research/habitat_thresholds.md`, `configs/default/README.md`, `NEWS.md`
+- [x] `RUNBOOK.md` §7: buckets area-only since fresh 0.37.0; `wetland_ha_min` gates rearing; the carve-out floor, its order, the polygon = no case, the 40 NULL-key lines, and the stream-rule caveat
+- [x] `CLAUDE.md`: new Status entry; stale facts corrected (pin, `wetland_ha_min` ignored, rear range gating buckets, in two entries); cyphers need a re-prep
+- [x] `configs/default/README.md` departures list; `research/habitat_thresholds.md` section (Phase 3 commit, corrected here)
+- [x] #310 body: decision 7 superseded, "Not in scope" bullet struck, pin precondition met, `add_rc()` must stamp only the first (polygon) W rule
+- [x] #311 body: Outcome section
+- [x] NEWS entry and version bump: **deferred to `/gh-pr-merge`**, which writes the release commit on main after the merge (repo practice: `885e044 Release v0.59.0` follows merge `d6f8fd1`)
+- [x] `/code-check` on the Phase 3 scripts + Phase 1/4 diff (Phase 3 was committed before it ran): round 1 five findings, round 2 eight (one class inside round 1's fixes), all fixed; ended by enumerating the four defect classes round 2 named across every touched doc and both issue bodies
 
 ## Validation
 
-- [ ] Tests pass
-- [ ] `/code-check` clean on each commit
+- [x] Tests pass (`devtools::test()`: 0 failures; `devtools::check()`: 0 errors, 3 warnings + 2 notes, all in files this branch does not touch; `lintr` on `R/lnk_rules_build.R`: no new lints, 23 → 21)
+- [x] `/code-check` on each code commit (Phase 2: 3 clean rounds; Phase 3 scripts: checked post-commit, fixes in the Phase 4 commit)
 - [ ] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
