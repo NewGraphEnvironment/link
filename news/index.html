@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.59.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.60.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,30 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.60.0" id="link-0600">link 0.60.0<a class="anchor" aria-label="anchor" href="#link-0600"></a></h2>
+<p><strong>link pins fresh v0.39.0, and a declared wetland floor bounds both wetland rear rules</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/311" class="external-link">#311</a>). <code>default*</code> outputs move with no config change. Cyphers must be re-prepped before the next dispatch.</p>
+<ul><li>
+<strong>What fresh changes.</strong>
+<ul><li>A W rule’s <code>wetland_ha_min</code> now gates <code>rearing</code> (<a href="https://github.com/NewGraphEnvironment/fresh/issues/237" class="external-link">fresh#237</a>).</li>
+<li>Lake and wetland buckets are sized by polygon area alone (<a href="https://github.com/NewGraphEnvironment/fresh/issues/240" class="external-link">fresh#240</a>). On NATR BT the lake bucket goes from 310 to 521 km and the wetland bucket from 684 to 1,287 km.</li>
+</ul></li>
+<li>
+<strong>What link changes.</strong> <code><a href="../reference/lnk_rules_build.html">lnk_rules_build()</a></code> puts a species’ <code>rear_wetland_ha_min</code> on the 1050/1150 wetland-flow rear rule as well, as a <code>waterbody_type: W</code> rule.
+<ul><li>It goes after the polygon W rule, so fresh’s bucket rule and its <code>requires_connected</code> anchor are unchanged.</li>
+<li>It applies only when the polygon rule is emitted.</li>
+<li>It affects BT, CH, CO, RB, ST and WCT. <code>bcfishpass</code> is unchanged.</li>
+<li>The stream rule still admits mainlines in smaller wetlands.</li>
+</ul></li>
+<li>
+<strong>What moves.</strong> Measured on one segmentation per WSG (ADMS, BULK, NATR, PARS; <code>data-raw/logs/wetland_floor_311/</code>):
+<ul><li>The floor removes 198.8 km of rearing. That is sub-floor wetland-flow rearing going to 0, plus rearing it disconnects from spawning.</li>
+<li>It costs 3 of 2,265 observation species-locations.</li>
+<li>It moves the departure from bcfishpass by at most 1.1 points.</li>
+<li>Write-up: <code>research/habitat_thresholds.md</code>, “The wetland floor on <code>rearing</code>”.</li>
+</ul></li>
+<li><strong><code>config_hash</code> changes for every <code>default*</code> bundle.</strong></li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.59.0" id="link-0590">link 0.59.0<a class="anchor" aria-label="anchor" href="#link-0590"></a></h2>
 <p><strong><code>default</code> gives BT, GR, KO and RB mean-annual-discharge ranges, converted from its own channel-width minima</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/307" class="external-link">#307</a>). A <code>default</code> group put on <code>mad</code> now keeps stream habitat for them instead of none, so <code>cw</code> and <code>mad</code> inside <code>default</code> test one stream size two ways. <code>default_tuned</code> keeps <a href="https://github.com/NewGraphEnvironment/link/issues/302" class="external-link">#302</a>’s observed ranges.</p>
