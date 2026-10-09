@@ -1347,12 +1347,13 @@ unchanged; dropping 1450 from the rule would be the experiment that needs it.
 `data-raw/logs/lake_connection_319/` (`parity_crosssection_{before,after}.txt`,
 `score_schemas_connection_km.csv`)
 
-**Decision (operator, 2026-10-08): one meaning in every WSG rollup.** `lnk_rollup_wsg()`'s default
+**Decision (operator, 2026-10-08): one meaning in link's WSG rollups.** `lnk_rollup_wsg()`'s default
 `rearing_km` leaves lake connection lines out and its default `rearing_lake_connection_km`
 carries them, so the validator's cost reads the split too. `parity_crosssection.R` and
 `wsg_vignette_data.R` apply `.lnk_sql_lake_connection()` to `fresh.streams_vw_bcfp`. The
-exception is `lnk_aggregate()`: its per-crossing default `rearing_km` still sums the flag,
-connection lines included.
+exceptions are `lnk_aggregate()`, whose per-crossing default `rearing_km` still sums the flag,
+connection lines included, and the older one-off scripts with their own SQL
+(`data-raw/compare_adms.R`, `data-raw/exp_gradient_extra_breaks.R`).
 
 **Capture still reads the flag.** bcfishobs A / B records inside a lake or reservoir polygon
 (local fwapg, 2026-10-08):
@@ -1380,7 +1381,9 @@ are evidence for the lake, not the line, so capture keeps them and cost does not
 25 / 25 pairs pass both times; accessible and spawning do not move. PCEA's gap widens because
 link carries 8.2 km fewer connection lines in BT rearing than bcfishpass there.
 
-**Earlier scores keep their numbers for the species they scored.** BT, CH, GR and RB rear on no
-connection line in any #284 / #300 / #302 / #305 score schema, and #284's `habitat_change.csv`
-reproduces 36 / 36 under the new default. SK and KO do (KO KOTL about 310 km), so #300's and
-#305's in-sample KO cost rows would move on a re-score; no verdict reads them.
+**The #284–#305 scores keep their numbers for the species they scored.** BT, CH, GR and RB rear
+on no connection line in any #284 / #300 / #302 / #305 score schema, and #284's
+`habitat_change.csv` reproduces 36 / 36 under the new default. SK and KO do (KO KOTL about
+310 km), so #300's and #305's in-sample KO cost rows would move on a re-score; no verdict
+reads them. **The #283 baseline does move for BT**: it scored the bcfishpass config, whose BT
+rear rule admits connection lines (see `research/habitat_validation.md`, "Baseline").

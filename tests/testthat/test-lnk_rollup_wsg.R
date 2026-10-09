@@ -167,9 +167,9 @@ test_that(".lnk_rollup_wsg_sql exposes each line's lake-connection flag", {
 })
 
 test_that("default rearing_km leaves connection lines out, reported apart", {
-  # One meaning of rearing_km in every output (#319): the compare family,
-  # the validator's cost and the parity scripts all leave lake connection
-  # lines out and carry them as rearing_lake_connection_km.
+  # One meaning of rearing_km in link's WSG rollups (#319): the compare
+  # family, the validator's cost and the parity scripts all leave lake
+  # connection lines out and carry them as rearing_lake_connection_km.
   m <- eval(formals(lnk_rollup_wsg)$metrics)
   expect_identical(names(m), c("accessible_km", "spawning_km", "rearing_km",
                                "rearing_lake_connection_km"))
@@ -177,8 +177,8 @@ test_that("default rearing_km leaves connection lines out, reported apart", {
                "FILTER (WHERE rearing AND NOT connection)::", fixed = TRUE)
   expect_match(m[["rearing_lake_connection_km"]],
                "FILTER (WHERE rearing AND connection)", fixed = TRUE)
-  # 0, not NULL, where a group has no connection lines, so the two always
-  # sum to the flag total.
+  # 0, not NULL, where a group has no connection lines, so the two sum to
+  # the flag total wherever rearing_km is not NA.
   expect_match(m[["rearing_lake_connection_km"]], "COALESCE(", fixed = TRUE)
   # Access and spawning are unchanged.
   acc <- "round(sum(length_metre) FILTER (WHERE access IN (1, 2))::numeric / 1000, 2)"

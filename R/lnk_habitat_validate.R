@@ -80,16 +80,16 @@
 #' - **Thresholds set from these observations score in-sample.** A cutoff
 #'   calibrated on the same records (e.g. a use quantile) is partly
 #'   guaranteed its capture; hold records out to score it fairly.
-#' - `rearing` is fresh's `rearing` flag: every line the bundle's rear rules
-#'   admit, so stream lines, wetland flow lines and mainlines in wetland
-#'   polygons, and lake and reservoir lines where a lake rule admits them
-#'   (`default` since link#310; `bcfishpass` for BT and SK). `rearing_any`
-#'   adds the lake and wetland buckets.
+#' - `rearing` is fresh's `rearing` flag: lines the bundle's rear rules
+#'   admit that also survive its connectivity passes, which can include lines
+#'   in wetland, lake and reservoir polygons (read `rules.yaml` for which). `rearing_any` adds the lake and wetland
+#'   buckets.
 #' - **Capture and cost read lake connection lines differently.** Capture
 #'   reads the flag, connection lines included. Cost does not: `rearing_km`
 #'   leaves lake connection lines (FWA edge 1450 in a lake or reservoir
-#'   polygon) out and `rearing_lake_connection_km` carries them, as every
-#'   link rollup does ([lnk_rollup_wsg()]). The lines join each tributary
+#'   polygon) out and `rearing_lake_connection_km` carries them, as
+#'   [lnk_rollup_wsg()]'s default and [lnk_compare_rollup()] do. The lines
+#'   join each tributary
 #'   mouth to the lake's main-flow line, so their km grow with a lake's
 #'   tributary count, not its habitat. A fish in a lake is matched to
 #'   whichever line is nearest, and about half the in-lake records sit on a
@@ -224,7 +224,7 @@
 #'     `accessible_km`, `spawning_km`, `rearing_km` (lake connection lines
 #'     left out) and `rearing_lake_connection_km` from [lnk_rollup_wsg()].
 #'     With `absences`, also `n_absence`, `n_absence_accessible`,
-#'     `n_absence_spawning`, `n_absence_rearing` (stream) and
+#'     `n_absence_spawning`, `n_absence_rearing` (the `rearing` flag) and
 #'     `n_absence_rearing_any` (the same on every stage). `model` is the
 #'     WSG's habitat model (`cw` or `mad`).
 #'   - `observations`: one row per retained location, with its segment's

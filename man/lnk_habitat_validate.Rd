@@ -101,7 +101,7 @@ records the WSG), \code{n_obs} (locations on a segment), \code{n_unattached},
 \code{accessible_km}, \code{spawning_km}, \code{rearing_km} (lake connection lines
 left out) and \code{rearing_lake_connection_km} from \code{\link[=lnk_rollup_wsg]{lnk_rollup_wsg()}}.
 With \code{absences}, also \code{n_absence}, \code{n_absence_accessible},
-\code{n_absence_spawning}, \code{n_absence_rearing} (stream) and
+\code{n_absence_spawning}, \code{n_absence_rearing} (the \code{rearing} flag) and
 \code{n_absence_rearing_any} (the same on every stage). \code{model} is the
 WSG's habitat model (\code{cw} or \code{mad}).
 \item \code{observations}: one row per retained location, with its segment's
@@ -204,16 +204,16 @@ the part of the score the observations did not decide.
 \item \strong{Thresholds set from these observations score in-sample.} A cutoff
 calibrated on the same records (e.g. a use quantile) is partly
 guaranteed its capture; hold records out to score it fairly.
-\item \code{rearing} is fresh's \code{rearing} flag: every line the bundle's rear rules
-admit, so stream lines, wetland flow lines and mainlines in wetland
-polygons, and lake and reservoir lines where a lake rule admits them
-(\code{default} since link#310; \code{bcfishpass} for BT and SK). \code{rearing_any}
-adds the lake and wetland buckets.
+\item \code{rearing} is fresh's \code{rearing} flag: lines the bundle's rear rules
+admit that also survive its connectivity passes, which can include lines
+in wetland, lake and reservoir polygons (read \code{rules.yaml} for which). \code{rearing_any} adds the lake and wetland
+buckets.
 \item \strong{Capture and cost read lake connection lines differently.} Capture
 reads the flag, connection lines included. Cost does not: \code{rearing_km}
 leaves lake connection lines (FWA edge 1450 in a lake or reservoir
-polygon) out and \code{rearing_lake_connection_km} carries them, as every
-link rollup does (\code{\link[=lnk_rollup_wsg]{lnk_rollup_wsg()}}). The lines join each tributary
+polygon) out and \code{rearing_lake_connection_km} carries them, as
+\code{\link[=lnk_rollup_wsg]{lnk_rollup_wsg()}}'s default and \code{\link[=lnk_compare_rollup]{lnk_compare_rollup()}} do. The lines
+join each tributary
 mouth to the lake's main-flow line, so their km grow with a lake's
 tributary count, not its habitat. A fish in a lake is matched to
 whichever line is nearest, and about half the in-lake records sit on a

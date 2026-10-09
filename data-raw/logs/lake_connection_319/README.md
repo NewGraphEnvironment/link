@@ -1,4 +1,4 @@
-# lake_connection_319 — rearing_km leaves lake connection lines out everywhere (#319)
+# lake_connection_319 — rearing_km leaves lake connection lines out of link's WSG rollups (#319)
 
 Stamp: 2026-10-09T04:53Z · link 0.62.0 @ 6328567 (branch, uncommitted Phase 3 edits) · fresh 0.39.0 · local docker fwapg (localhost:5432), schema `fresh` (bcfishpass config) vs `fresh.streams_vw_bcfp`
 
@@ -37,14 +37,23 @@ files come from flags.
 
 | file | what |
 |---|---|
-| `score_schemas_connection_km.R` / `.csv` | rearing on lake connection lines in every `score284_` / `score300_` / `score302_` / `score305_` schema |
+| `score_schemas_connection_km.R` / `.csv` | rearing on lake connection lines in every `score284_` / `score300_` / `score302_` schema (none is named `score305_`: #305's variants are `score300_*_fill`) |
 | `habitat_change_284_check.R` | recomputes #284's `habitat_change.csv` km with the new default |
 
-- **BT, CH, GR and RB: 0 km of rearing on connection lines in every score schema**, as #319
-  predicted (they reared on lake lines only from #310). All 36 rows of #284's
+- **The #283 validator baseline does move, for BT.** It scored `fresh` (bcfishpass config),
+  where BT's rear rule admits every edge, connection lines included. On its 51 shared WSGs
+  the `fresh` BT flag total is 76,872.28 km (the committed `totals_shared.csv` reads
+  76,872.29, so the schema has not drifted), 2,503.43 km of it connection lines: `rearing_km`
+  now reads 74,368.85. `fresh_default` BT is 75,280.2 km with none. So `default` carries
+  about 911 km *more* BT rearing cost, where #283 recorded 1,592 km *less*. CH has no
+  connection lines on either side.
+
+- **Score schemas: BT, CH, GR and RB rear on 0 km of connection lines in every one**, as #319
+  predicted (in `default`, they reared on lake lines only from #310; every score schema is
+  `default`-based). All 36 rows of #284's
   `habitat_change.csv` reproduce exactly (`identical()` on `rearing_km`, `rearing_km_base`,
   `spawning_km`).
-- **SK and KO are not 0** (their L rule always admitted lake lines): KO KOTL ~307–310 km and PARS
+- **SK and KO are not 0** (`default`'s SK / KO L rule admitted lake lines before #310): KO KOTL ~307–310 km and PARS
   5.7 km, SK up to 641.8 km (BABL). Only #300 and #305 carry KO cost rows (in-sample, KO
   unscored): `lnk_rollup_wsg()` at this HEAD gives KOTL KO base `rearing_km` 259.06 km (was
   568.63) and `ko_mad` 254.67 km (was 561.54), so its change −7.09 km becomes −4.39 km. No verdict reads them. The committed files

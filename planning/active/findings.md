@@ -80,3 +80,7 @@ It rebuilds `pars.gpkg` (context layers over the tunnel, skipped if it is down) 
 | Re-score: "no bundle for bt_rear_0p1249 under <out>" | the script reads variant bundles from `--out`; copy the run's log dir there first |
 | Re-score: "thresholds bundle for default is not the one ... built from" | bundle drift since #307; replaced by the direct check above |
 | `lnk_rollup_wsg()` minutes on score284 MORR | stale stats; `ANALYZE` |
+
+## #283 baseline moves for BT (code-check round 3, 2026-10-09)
+
+Step 4 enumerated the score schemas only. The #283 validator baseline scored `fresh` (bcfishpass config), whose BT rear rule admits every edge, connection lines included: on its 51 shared WSGs 2,503.43 of 76,872.28 BT km are connection lines, so `rearing_km` now reads 74,368.85 against `fresh_default`'s 75,280.2 (none). #283's "default has 1,592 km less BT rearing" becomes about 911 km more; the gap was those lines. CH: 0 on both sides. Written into `research/habitat_validation.md` beside the original bullet.

@@ -8,9 +8,9 @@ For a persisted run (one bundle's schema), per WSG × species × stage (`any`, `
 `rear`):
 
 - **Capture:** the share of observation locations on segments the run models as
-  accessible, spawning, rearing (the `rearing` flag: every line the bundle's rear rules
-  admit, wetland and lake lines included where they admit them), or any rearing (the flag
-  plus the lake and wetland buckets).
+  accessible, spawning, rearing (the `rearing` flag: lines the bundle's rear rules admit
+  and its connectivity passes keep, wetland and lake lines included where the rules admit
+  them), or any rearing (the flag plus the lake and wetland buckets).
 - **Cost:** `accessible_km`, `spawning_km` and `rearing_km` from `lnk_rollup_wsg()`, so
   capture cannot be raised by calling more of the network habitat. Since #319 (2026-10-09)
   `rearing_km` leaves lake connection lines (FWA edge 1450 in a lake or reservoir polygon)
@@ -101,7 +101,7 @@ that both retained the same observations.
 
 `totals_shared.csv`. Shares are % of observation locations (n_obs).
 
-| species | stage | n | bundle | spawning | stream rearing | any rearing | spawning outside UHC | spawning km | rearing km |
+| species | stage | n | bundle | spawning | rearing (flag) | any rearing | spawning outside UHC | spawning km | rearing km |
 |---|---|---|---|---|---|---|---|---|---|
 | CH | any | 1,734 | bcfishpass | 82.1 | 86.6 | 86.6 | 76.7 | 15,640 | 21,570 |
 | CH | any | 1,734 | default | 85.2 | 87.7 | 88.8 | 76.9 | 15,959 | 27,602 |
@@ -121,6 +121,11 @@ BT has no `user_habitat_classification` rows, so its outside-UHC share is its sh
 - **BT:** `default` captures slightly more rear-staged locations (66.1 vs 64.5 % on any
   rearing) with 1,592 km *less* rearing. That is the edge-type rule (bcfishpass's BT
   `rear: []` tests any edge), not the thresholds, which are the same in both bundles.
+  - **Re-read under #319's cost (2026-10-09):** 2,503 km of the bcfishpass bundle's 76,872 km
+    is lake connection lines, which `rearing_km` now leaves out (74,369 km), while
+    `default`'s 75,280 km has none. So `default` carries about 911 km *more* BT rearing, and
+    the 1,592 km gap was those lines. Capture is unchanged. CH has no connection lines on
+    either side. Evidence: `data-raw/logs/lake_connection_319/README.md`.
 - **CH:** `default` models 6,032 km (28 %) more rearing for 1.1 points more stream
   rearing capture on the any stage (2.2 with lake and wetland rearing). That is the cost
   column doing its job.
