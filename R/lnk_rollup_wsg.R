@@ -31,14 +31,13 @@
 #' FWA edge type 1450 ("connection"), the connector lines that join each
 #' tributary mouth to the lake's main-flow line. fresh keeps them in
 #' `rearing`, where they connect inlet rearing to the lake, but they trace
-#' a join rather than a flow path, so a report of habitat km leaves them
-#' out and states them apart, as [lnk_compare_rollup()] does: there
-#' `rearing_stream_km + rearing_lake_km + rearing_wetland_km` (lake without
-#' connection lines) equals `rearing_km` (to rounding); see the examples.
-#' The default `rearing_km` here is every line flagged `rearing`,
-#' connection lines included, because the scoring and parity tools that
-#' call it with no `metrics` ([lnk_habitat_validate()],
-#' `data-raw/parity_crosssection.R`) compare the flag itself.
+#' a join rather than a flow path, so habitat km leave them out and state
+#' them apart. The default `rearing_km` is every line flagged `rearing`
+#' except connection lines, and `rearing_lake_connection_km` carries those
+#' (0 where there are none), so the two sum to the flag total (to
+#' rounding). [lnk_compare_rollup()] reads the same split, and there
+#' `rearing_stream_km + rearing_lake_km + rearing_wetland_km` equals
+#' `rearing_km`; see the examples.
 #'
 #' Because the per-species columns are aliased to fixed names, the
 #' `metrics` SQL is written **once**, species-agnostic — mirroring
@@ -74,9 +73,10 @@
 #'   values are SQL aggregate expressions over the generic aliases
 #'   `length_metre`, `edge_type`, `waterbody`, `connection`, `access`,
 #'   `spawning`, `rearing`. Default emits
-#'   `accessible_km`, `spawning_km`, `rearing_km` (every line flagged
-#'   `rearing`, lake connection lines included). Raw SQL — trusted
-#'   caller input, like `frs_aggregate()`.
+#'   `accessible_km`, `spawning_km`, `rearing_km` (lines flagged `rearing`,
+#'   lake connection lines left out) and `rearing_lake_connection_km` (the
+#'   connection lines flagged `rearing`). Raw SQL — trusted caller input,
+#'   like `frs_aggregate()`.
 #' @param where Character or `NULL`. Optional SQL predicate applied to the
 #'   per-species rows before aggregation (aliases available). Default
 #'   `NULL`.
@@ -90,17 +90,17 @@
 #' # Coho accessible / spawning / rearing km for Morice, from persisted state.
 #' lnk_rollup_wsg(conn, aoi = "MORR", species = "CO")
 #'
-#' # Rearing km by the polygon the line sits in (stream / lake / wetland),
-#' # with lake connection lines reported apart.
+#' # Rearing km by the polygon the line sits in (stream / lake / wetland);
+#' # lake connection lines are in none of them, as in the default.
 #' lnk_rollup_wsg(conn, aoi = "MORR", species = "CO",
 #'   metrics = c(
-#'     rearing_km =
-#'       "sum(length_metre) FILTER (WHERE rearing AND NOT connection) / 1000",
+#'     rearing_stream_km =
+#'       "sum(length_metre) FILTER (WHERE rearing AND waterbody = 'stream') / 1000",
 #'     rearing_lake_km = paste(
 #'       "sum(length_metre) FILTER (WHERE rearing AND waterbody = 'lake'",
 #'       "AND NOT connection) / 1000"),
-#'     rearing_lake_connection_km =
-#'       "sum(length_metre) FILTER (WHERE rearing AND connection) / 1000"))
+#'     rearing_wetland_km =
+#'       "sum(length_metre) FILTER (WHERE rearing AND waterbody = 'wetland') / 1000"))
 #'
 #' # Custom metric: count accessible segments per species.
 #' lnk_rollup_wsg(conn, aoi = "MORR", species = c("CO", "BT"),
@@ -120,7 +120,9 @@ lnk_rollup_wsg <- function(conn, aoi, species,
                              spawning_km =
                                "round(sum(length_metre) FILTER (WHERE spawning)::numeric / 1000, 2)", # nolint: line_length_linter
                              rearing_km =
-                               "round(sum(length_metre) FILTER (WHERE rearing)::numeric / 1000, 2)" # nolint: line_length_linter
+                               "round(sum(length_metre) FILTER (WHERE rearing AND NOT connection)::numeric / 1000, 2)", # nolint: line_length_linter
+                             rearing_lake_connection_km =
+                               "round(COALESCE(sum(length_metre) FILTER (WHERE rearing AND connection), 0)::numeric / 1000, 2)" # nolint: line_length_linter
                            ),
                            where = NULL) {
   stopifnot(

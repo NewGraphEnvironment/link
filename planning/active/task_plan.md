@@ -3,10 +3,10 @@
 **If done:** `rearing_km` means one thing in every link output: habitat km with lake connection lines reported apart.
 
 ## Phase 1: `lnk_rollup_wsg()` default (`R/lnk_rollup_wsg.R`)
-- [ ] Tests first (`tests/testthat/test-lnk_rollup_wsg.R`): replace "default rearing_km is the flag, connection lines included" with a test that the default `rearing_km` filters `rearing AND NOT connection`, a default `rearing_lake_connection_km` filters `rearing AND connection` (COALESCEd to 0, so the two sum to the flag total even with no connectors), and `accessible_km` / `spawning_km` are unchanged
-- [ ] Change the default `metrics`; `rearing_km` keeps its existing round/no-COALESCE shape so outputs where nothing changes stay byte-identical
-- [ ] Roxygen: rewrite the `connection` paragraph and `@param metrics` (default now leaves connectors out and reports them apart; flag total = sum of the two); trim the example that re-derives the split; `devtools::document()`
-- [ ] Live test (skip_if_no_db, like the existing one): default `rearing_km + rearing_lake_connection_km` equals the flag total on one group
+- [x] Tests first (`tests/testthat/test-lnk_rollup_wsg.R`): replace "default rearing_km is the flag, connection lines included" with a test that the default `rearing_km` filters `rearing AND NOT connection`, a default `rearing_lake_connection_km` filters `rearing AND connection` (COALESCEd to 0, so the two sum to the flag total even with no connectors), and `accessible_km` / `spawning_km` are unchanged
+- [x] Change the default `metrics`; `rearing_km` keeps its existing round/no-COALESCE shape so outputs where nothing changes stay byte-identical
+- [x] Roxygen: rewrite the `connection` paragraph and `@param metrics` (default now leaves connectors out and reports them apart; flag total = sum of the two); trim the example that re-derives the split; `devtools::document()`
+- [x] Live test (skip_if_no_db, like the existing one): default `rearing_km + rearing_lake_connection_km` equals the flag total on one group
 
 ## Phase 2: `lnk_habitat_validate()` (`R/lnk_habitat_validate.R`)
 - [ ] Capture unchanged (`rearing` / `rearing_any` read the flag). Cost picks up the new default via `lnk_rollup_wsg()` and `.lnk_hv_summary()`'s merge — confirm `rearing_lake_connection_km` lands in `summary` (offline test with a mocked `lnk_rollup_wsg`, or assert in the live test if one exists)

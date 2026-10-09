@@ -12,7 +12,10 @@ lnk_rollup_wsg(
   metrics = c(accessible_km =
     "round(sum(length_metre) FILTER (WHERE access IN (1, 2))::numeric / 1000, 2)",
     spawning_km = "round(sum(length_metre) FILTER (WHERE spawning)::numeric / 1000, 2)",
-    rearing_km = "round(sum(length_metre) FILTER (WHERE rearing)::numeric / 1000, 2)"),
+    rearing_km =
+    "round(sum(length_metre) FILTER (WHERE rearing AND NOT connection)::numeric / 1000, 2)",
+    rearing_lake_connection_km =
+    "round(COALESCE(sum(length_metre) FILTER (WHERE rearing AND connection), 0)::numeric / 1000, 2)"),
   where = NULL
 )
 }
@@ -35,9 +38,10 @@ identifier whitelist.}
 values are SQL aggregate expressions over the generic aliases
 \code{length_metre}, \code{edge_type}, \code{waterbody}, \code{connection}, \code{access},
 \code{spawning}, \code{rearing}. Default emits
-\code{accessible_km}, \code{spawning_km}, \code{rearing_km} (every line flagged
-\code{rearing}, lake connection lines included). Raw SQL — trusted
-caller input, like \code{frs_aggregate()}.}
+\code{accessible_km}, \code{spawning_km}, \code{rearing_km} (lines flagged \code{rearing},
+lake connection lines left out) and \code{rearing_lake_connection_km} (the
+connection lines flagged \code{rearing}). Raw SQL — trusted caller input,
+like \code{frs_aggregate()}.}
 
 \item{where}{Character or \code{NULL}. Optional SQL predicate applied to the
 per-species rows before aggregation (aliases available). Default
@@ -79,14 +83,13 @@ Each row also carries \code{connection} (bool): a line in a lake polygon on
 FWA edge type 1450 ("connection"), the connector lines that join each
 tributary mouth to the lake's main-flow line. fresh keeps them in
 \code{rearing}, where they connect inlet rearing to the lake, but they trace
-a join rather than a flow path, so a report of habitat km leaves them
-out and states them apart, as \code{\link[=lnk_compare_rollup]{lnk_compare_rollup()}} does: there
-\code{rearing_stream_km + rearing_lake_km + rearing_wetland_km} (lake without
-connection lines) equals \code{rearing_km} (to rounding); see the examples.
-The default \code{rearing_km} here is every line flagged \code{rearing},
-connection lines included, because the scoring and parity tools that
-call it with no \code{metrics} (\code{\link[=lnk_habitat_validate]{lnk_habitat_validate()}},
-\code{data-raw/parity_crosssection.R}) compare the flag itself.
+a join rather than a flow path, so habitat km leave them out and state
+them apart. The default \code{rearing_km} is every line flagged \code{rearing}
+except connection lines, and \code{rearing_lake_connection_km} carries those
+(0 where there are none), so the two sum to the flag total (to
+rounding). \code{\link[=lnk_compare_rollup]{lnk_compare_rollup()}} reads the same split, and there
+\code{rearing_stream_km + rearing_lake_km + rearing_wetland_km} equals
+\code{rearing_km}; see the examples.
 
 Because the per-species columns are aliased to fixed names, the
 \code{metrics} SQL is written \strong{once}, species-agnostic — mirroring
@@ -114,17 +117,17 @@ conn <- lnk_db_conn()
 # Coho accessible / spawning / rearing km for Morice, from persisted state.
 lnk_rollup_wsg(conn, aoi = "MORR", species = "CO")
 
-# Rearing km by the polygon the line sits in (stream / lake / wetland),
-# with lake connection lines reported apart.
+# Rearing km by the polygon the line sits in (stream / lake / wetland);
+# lake connection lines are in none of them, as in the default.
 lnk_rollup_wsg(conn, aoi = "MORR", species = "CO",
   metrics = c(
-    rearing_km =
-      "sum(length_metre) FILTER (WHERE rearing AND NOT connection) / 1000",
+    rearing_stream_km =
+      "sum(length_metre) FILTER (WHERE rearing AND waterbody = 'stream') / 1000",
     rearing_lake_km = paste(
       "sum(length_metre) FILTER (WHERE rearing AND waterbody = 'lake'",
       "AND NOT connection) / 1000"),
-    rearing_lake_connection_km =
-      "sum(length_metre) FILTER (WHERE rearing AND connection) / 1000"))
+    rearing_wetland_km =
+      "sum(length_metre) FILTER (WHERE rearing AND waterbody = 'wetland') / 1000"))
 
 # Custom metric: count accessible segments per species.
 lnk_rollup_wsg(conn, aoi = "MORR", species = c("CO", "BT"),
