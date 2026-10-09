@@ -87,7 +87,8 @@ a join rather than a flow path, so habitat km leave them out and state
 them apart. The default \code{rearing_km} is every line flagged \code{rearing}
 except connection lines, and \code{rearing_lake_connection_km} carries those
 (0 where there are none), so the two sum to the flag total (to
-rounding). \code{\link[=lnk_compare_rollup]{lnk_compare_rollup()}} reads the same split, and there
+rounding; \code{rearing_km} is \code{NA}, not 0, in a group whose only rearing is
+connection lines). \code{\link[=lnk_compare_rollup]{lnk_compare_rollup()}} reads the same split, and there
 \code{rearing_stream_km + rearing_lake_km + rearing_wetland_km} equals
 \code{rearing_km}; see the examples.
 

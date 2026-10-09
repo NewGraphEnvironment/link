@@ -200,8 +200,8 @@ lnk_compare_rollup <- function(conn, aoi, cfg,
   # primitive (link#221) so there is one per-(WSG, species) km query
   # builder. lnk_rollup_wsg exposes `length_metre` / `edge_type` /
   # `waterbody` / `connection` / `access` / `spawning` / `rearing` under
-  # generic aliases; the km metrics below are passed explicitly (the
-  # primitive's default rearing_km is the flag total), and `accessible_km`
+  # generic aliases; the km metrics below are passed explicitly (they
+  # COALESCE to 0 and split rearing by polygon), and `accessible_km`
   # (link#221) sums link's per-species access model
   # (`streams_access.access_<sp> IN (1,2)`, LEFT-joined by
   # lnk_rollup_wsg). It returns `wsg` + `species` + metrics — drop

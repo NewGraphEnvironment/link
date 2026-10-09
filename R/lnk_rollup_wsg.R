@@ -35,7 +35,8 @@
 #' them apart. The default `rearing_km` is every line flagged `rearing`
 #' except connection lines, and `rearing_lake_connection_km` carries those
 #' (0 where there are none), so the two sum to the flag total (to
-#' rounding). [lnk_compare_rollup()] reads the same split, and there
+#' rounding; `rearing_km` is `NA`, not 0, in a group whose only rearing is
+#' connection lines). [lnk_compare_rollup()] reads the same split, and there
 #' `rearing_stream_km + rearing_lake_km + rearing_wetland_km` equals
 #' `rearing_km`; see the examples.
 #'

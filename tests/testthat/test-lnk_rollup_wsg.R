@@ -181,12 +181,10 @@ test_that("default rearing_km leaves connection lines out, reported apart", {
   # sum to the flag total.
   expect_match(m[["rearing_lake_connection_km"]], "COALESCE(", fixed = TRUE)
   # Access and spawning are unchanged.
-  expect_identical(
-    m[["accessible_km"]],
-    "round(sum(length_metre) FILTER (WHERE access IN (1, 2))::numeric / 1000, 2)")
-  expect_identical(
-    m[["spawning_km"]],
-    "round(sum(length_metre) FILTER (WHERE spawning)::numeric / 1000, 2)")
+  acc <- "round(sum(length_metre) FILTER (WHERE access IN (1, 2))::numeric / 1000, 2)"
+  spawn <- "round(sum(length_metre) FILTER (WHERE spawning)::numeric / 1000, 2)"
+  expect_identical(m[["accessible_km"]], acc)
+  expect_identical(m[["spawning_km"]], spawn)
 })
 
 test_that("lake hectares read lake and reservoir polygons", {
