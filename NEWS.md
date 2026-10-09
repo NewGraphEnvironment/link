@@ -1,3 +1,14 @@
+# link 0.63.0
+
+**`rearing_km` leaves lake connection lines out of link's WSG rollups** ([#319](https://github.com/NewGraphEnvironment/link/issues/319)). Before this, `lnk_rollup_wsg()`'s default counted them and the compare rollups did not, so two `rearing_km` columns could differ by 55–95 % for SK.
+
+- **`lnk_rollup_wsg()`.** The default `rearing_km` no longer counts FWA 1450 lines in lake and reservoir polygons. A new default `rearing_lake_connection_km` (0 where there are none) carries them, so the two sum to the flag total.
+- **`lnk_habitat_validate()`.** Cost takes the split. Capture still reads the `rearing` flag, because about half of in-lake fish records sit on a connection line (table in the roxygen).
+- **Parity scripts.** `parity_crosssection.R` and `wsg_vignette_data.R` apply the same rule to the bcfishpass view. The cross-section passes 25/25 before and after, and `pars_accessible.rds` is regenerated.
+- **Breaking for anyone reading `rearing_km` as the flag total.** On the bcfishpass config, BT rearing cost falls by 2,503 km over #283's 51 WSGs, so `default` now carries about 911 km more BT rearing than the bcfishpass config, not 1,592 km less. The #284 scores reproduce (`habitat_change.csv` 36 / 36).
+- **Unchanged:** the rules and flags, so segment-level replication of bcfishpass is untouched. bcfishpass's own published rearing km (`smnorris/bcfishpass@620dbe4`) equal `rearing_km + rearing_lake_connection_km`. `lnk_aggregate()` still sums the flag.
+- Write-up: `research/habitat_thresholds.md`, "One meaning of `rearing_km` (#319)".
+
 # link 0.62.0
 
 **The compare rollups report lake connectors apart from rearing km** ([#317](https://github.com/NewGraphEnvironment/link/issues/317)). FWA 1450 lines ("Construction line, connection") join each tributary mouth to a lake's main-flow line, so lake km had grown with a lake's tributary count.
