@@ -59,11 +59,6 @@ Measured now (read-only, local fwapg, `fresh` schema), connection km in BT reari
 Symmetric, so parity should hold; FINA/PCEA BT rearing km drop ~14–19 % on both sides. PARS moves
 9.77 km, so the vignette's `pars_accessible.rds` changes.
 
-## Errors Encountered
-
-| Error | Resolution |
-|-------|------------|
-
 ## Parity after #319 (2026-10-09)
 
 See `data-raw/logs/lake_connection_319/README.md`. PCEA BT is the one asymmetric group: link carries 367.7 km of connection lines in BT rearing, bcfishpass 375.9, so its rearing diff widens +1.10 → +1.87 %. PARS `fresh` spawning moved 0.02 km since the July vignette artifact with no code change (input drift).

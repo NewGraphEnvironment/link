@@ -10,7 +10,10 @@ For a persisted run (one bundle's schema), per WSG × species × stage (`any`, `
 - **Capture:** the share of observation locations on segments the run models as
   accessible, spawning, stream rearing, or any rearing (stream, lake or wetland).
 - **Cost:** `accessible_km`, `spawning_km` and `rearing_km` from `lnk_rollup_wsg()`, so
-  capture cannot be raised by calling more of the network habitat.
+  capture cannot be raised by calling more of the network habitat. Since #319 (2026-10-09)
+  `rearing_km` leaves lake connection lines (FWA edge 1450 in a lake or reservoir polygon)
+  out and `rearing_lake_connection_km` carries them, while capture still reads the `rearing`
+  flag: about half of in-lake records sit on a connection line, and are lake evidence.
 - **Misses:** why each missed location's segment is not habitat. The bundle's own
   predicates (`fresh::frs_habitat_predicates()` over its `rules.yaml` and thresholds) are
   re-evaluated with the gradient, then the width, relaxed to the stage minimum.

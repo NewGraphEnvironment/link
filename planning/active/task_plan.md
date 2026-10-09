@@ -26,9 +26,9 @@
 - [x] Downstream readers (`habitat_variants_score.R`, `species_pooling_evidence.R`): confirm no change needed given the step above
 
 ## Phase 5: docs
-- [ ] RUNBOOK §7 lake-connection passage (`RUNBOOK.md:781-784`): default `rearing_km` now leaves connectors out everywhere; `lnk_aggregate()` stays the flag (not in scope, own issue)
-- [ ] `research/habitat_validation.md` cost line; `research/habitat_thresholds.md` "Lake connection lines": one meaning, the parity numbers from Phase 3
-- [ ] NEWS entry drafted for the release (version bump left to `/gh-pr-merge`)
+- [x] RUNBOOK §7 lake-connection passage (`RUNBOOK.md:781-784`): default `rearing_km` now leaves connectors out everywhere; `lnk_aggregate()` stays the flag (not in scope, own issue)
+- [x] `research/habitat_validation.md` cost line; `research/habitat_thresholds.md` "Lake connection lines": one meaning, the parity numbers from Phase 3
+- [x] NEWS: drafted in the PR body; `/gh-pr-merge` writes NEWS and bumps the version
 
 ## Validation
 - [ ] Tests pass (`devtools::test()`), `lintr::lint_package()` clean
