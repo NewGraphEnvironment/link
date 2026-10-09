@@ -334,6 +334,10 @@ test_that("lnk_habitat_validate validates its arguments before touching the DB",
 #   seg 3 200-300  gradient 0.01  width 5    access 1  spawning, rearing
 #   seg 4 300-400  gradient 0.20  width 5    access 1  -
 #   seg 5 400-500  gradient 0.01  width NULL access 1  -
+# BBBB, blue_line_key 2 (BT absent, so no observation scores here):
+#   seg 1   0-100  spawning, rearing
+#   seg 2 100-200  spawning, rearing; a lake connection line (edge 1450 in
+#                  a lake polygon), so cost splits it out of rearing_km
 local_validate_fixture <- function(conn, env = parent.frame()) {
   s <- "zz_lnk_validate_probe"
   DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", s))
@@ -343,6 +347,9 @@ local_validate_fixture <- function(conn, env = parent.frame()) {
         silent = TRUE), envir = env)
   wsg <- c(rep("AAAA", 5), "BBBB", "BBBB")
   ids <- c(1:5, 1L, 2L)
+  lake_key <- DBI::dbGetQuery(conn, "
+    SELECT waterbody_key FROM whse_basemapping.fwa_lakes_poly
+     ORDER BY waterbody_key LIMIT 1")$waterbody_key
   DBI::dbWriteTable(conn, DBI::Id(schema = s, table = "streams"), data.frame(
     id_segment = ids, watershed_group_code = wsg,
     blue_line_key = c(rep(1L, 5), 2L, 2L),
@@ -352,8 +359,8 @@ local_validate_fixture <- function(conn, env = parent.frame()) {
     gradient = c(0.01, 0.08, 0.01, 0.20, 0.01, 0.01, 0.01),
     channel_width = c(5, 5, 5, 5, NA, 5, 5),
     channel_width_source = "MODELLED",
-    edge_type = 1000L, stream_order = 3L,
-    waterbody_key = NA_integer_))
+    edge_type = c(rep(1000L, 6), 1450L), stream_order = 3L,
+    waterbody_key = c(rep(NA_integer_, 6), as.integer(lake_key))))
   DBI::dbWriteTable(conn, DBI::Id(schema = s, table = "streams_access"),
                     data.frame(
     id_segment = ids, watershed_group_code = wsg,
@@ -479,6 +486,12 @@ test_that("lnk_habitat_validate scores a fixture run on the full key", {
   expect_identical(nrow(b), 3L)
   expect_true(all(b$n_obs == 0L))
   expect_true(all(is.na(b$share_rearing)))
+  # Cost leaves the lake connection line out of rearing_km and carries it
+  # apart (#319); AAAA has none.
+  expect_equal(b$rearing_km, rep(0.1, 3))
+  expect_equal(b$rearing_lake_connection_km, rep(0.1, 3))
+  expect_equal(a_any$rearing_km, 0.2)
+  expect_equal(a_any$rearing_lake_connection_km, 0)
   expect_identical(unique(sm$schema), s)
   expect_identical(unique(sm$config_name), "default")
   expect_identical(unique(sm$buffer_m), 0)

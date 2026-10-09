@@ -1309,8 +1309,9 @@ and the rollups report them apart.**
 - **Construction flow lines are not connectors.** 1400 ("other flow / inferred connection") is a construction flow line like 1200 / 1300 and stays in the km (operator, 2026-10-08). In wetlands it is usually the only line through the polygon (#316).
 - **The rule applies on both sides.** bcfishpass counts connection lines too: BT 65.9 km on ADMS
   and 88.1 km on NATR (`fresh.streams_vw_bcfp`), and SK the same lines link does.
-- `lnk_rollup_wsg()`'s default `rearing_km` stays the flag total. The validator's cost and the
-  parity scripts compare the flag itself.
+- `lnk_rollup_wsg()`'s default `rearing_km` stayed the flag total at #317, because the
+  validator's cost and the parity scripts compared the flag. #319 closed that: see "One meaning
+  of `rearing_km`" below.
 
 **Measured** (ADMS, NATR, #310 run B; km):
 
@@ -1336,6 +1337,72 @@ and the rollups report them apart.**
 - Applying the rule to link alone would have read SK as −69 %.
 
 **What does not move:** the flags, spawning, the buckets, and anything that sums
-`streams_habitat.rearing` directly (`lnk_aggregate()`, `lnk_habitat_validate()`'s cost,
-`data-raw/parity_crosssection.R`). Connectivity of inlet rearing is untested here because it is
+`streams_habitat.rearing` directly (`lnk_aggregate()`; at #317 also `lnk_habitat_validate()`'s
+cost and `data-raw/parity_crosssection.R`, which #319 moved onto the split). Connectivity of inlet rearing is untested here because it is
 unchanged; dropping 1450 from the rule would be the experiment that needs it.
+
+### One meaning of `rearing_km` (#319)
+
+**Verified:** 2026-10-09 · **Issues:** #319 (from #317) · **Produced by:**
+`data-raw/logs/lake_connection_319/` (`parity_crosssection_{before,after}.txt`,
+`score_schemas_connection_km.csv`)
+
+**Decision (operator, 2026-10-08): one meaning in link's WSG rollups.** `lnk_rollup_wsg()`'s default
+`rearing_km` leaves lake connection lines out and its default `rearing_lake_connection_km`
+carries them, so the validator's cost reads the split too. `parity_crosssection.R` and
+`wsg_vignette_data.R` apply `.lnk_sql_lake_connection()` to `fresh.streams_vw_bcfp`. The
+exceptions are `lnk_aggregate()`, whose per-crossing default `rearing_km` still sums the flag,
+connection lines included, and the older one-off scripts with their own SQL
+(`data-raw/compare_adms.R`, `data-raw/exp_gradient_extra_breaks.R`).
+
+**Capture still reads the flag.** bcfishobs A / B records inside a lake or reservoir polygon
+(local fwapg, 2026-10-08):
+
+| species | in a lake | on 1450 | on 1200 |
+|---|---|---|---|
+| BT | 146 | 94 | 44 |
+| CO | 445 | 124 | 301 |
+| RB | 1,357 | 710 | 624 |
+| KO | 354 | 282 | 67 |
+| SK | 270 | 128 | 139 |
+
+About half sit on a connection line, because a lake fish is matched to the nearest line. They
+are evidence for the lake, not the line, so capture keeps them and cost does not.
+
+**Parity cross-section** (bcfishpass config, BT rearing km, link / bcfp):
+
+| WSG | before | after | connection km (link / bcfp) |
+|---|---|---|---|
+| FINA | 2845.6 / 2858.5 (−0.45 %) | 2452.1 / 2464.9 (−0.52 %) | 393.6 / 393.6 |
+| PARS | 2575.1 / 2588.9 (−0.53 %) | 2565.3 / 2579.2 (−0.54 %) | 9.8 / 9.8 |
+| PCEA | 2023.5 / 2001.4 (+1.10 %) | 1655.8 / 1625.5 (+1.87 %) | 367.7 / 375.9 |
+| LKEL | 222.8 / 221.1 (+0.75 %) | 211.3 / 209.7 (+0.79 %) | 11.5 / 11.5 |
+
+25 / 25 pairs pass both times; accessible and spawning do not move. PCEA's gap widens because
+link carries 8.2 km fewer connection lines in BT rearing than bcfishpass there.
+
+**Upstream bcfishpass counts connection lines as rearing and has no rule that sets them apart**
+(read at `smnorris/bcfishpass@620dbe4`, which is model run 142, 2026-10-07,
+`v0.7.15-50-g620dbe43`, the tunnel's current reference):
+- **SK** (`model/02_habitat_linear/sql/load_habitat_linear_sk.sql:6-28`): rearing is every
+  segment in a lake or reservoir of at least `rear_lake_ha_min`, whatever its edge type.
+- **BT** (`load_habitat_linear_bt.sql`, from its "REARING ON SPAWNING STREAMS" block): rearing is
+  a gradient plus channel-width / MAD test, with no waterbody or edge-type filter.
+- **Published totals:** the per-crossing totals (`load_crossings_upstream_habitat_01.sql:73-86`,
+  `bt_rearing_km`, `sk_rearing_km`, ...) sum `length_metre` where `rearing_<sp> > 0`. The WCRP
+  views also sum the flag; their only edge-type special case is wetland flow (1050), at half
+  length.
+- No SQL in the repo names edge 1450.
+- These rearing files last changed upstream on 2026-04-16 (`50688d5`), before the local
+  `fresh.streams_vw_bcfp` snapshot, so the snapshot and the tunnel agree on them.
+
+So link on the `bcfishpass` config still reproduces bcfishpass at segment level: the flags are
+untouched. A bcfishpass-published rearing km equals link's
+`rearing_km + rearing_lake_connection_km`.
+
+**The #284–#305 scores keep their numbers for the species they scored.** BT, CH, GR and RB rear
+on no connection line in any #284 / #300 / #302 / #305 score schema, and #284's
+`habitat_change.csv` reproduces 36 / 36 under the new default. SK and KO do (KO KOTL about
+310 km), so #300's and #305's in-sample KO cost rows would move on a re-score; no verdict
+reads them. **The #283 baseline does move for BT**: it scored the bcfishpass config, whose BT
+rear rule admits connection lines (see `research/habitat_validation.md`, "Baseline").

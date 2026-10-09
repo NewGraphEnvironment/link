@@ -25,8 +25,8 @@ schema.}
 \item{species}{Character vector of model species codes. Each must name
 \verb{<schema>.streams_habitat_<sp>} in every schema.}
 
-\item{flag}{\code{"spawning"} or \code{"rearing"} (stream rearing, the flag the
-rearing thresholds govern).}
+\item{flag}{\code{"spawning"} or \code{"rearing"} (fresh's \code{rearing} flag, which
+the rearing thresholds govern on stream lines).}
 
 \item{schema}{Persist schema with the step taken.}
 

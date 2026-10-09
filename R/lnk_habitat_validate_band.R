@@ -33,8 +33,8 @@
 #'   schema.
 #' @param species Character vector of model species codes. Each must name
 #'   `<schema>.streams_habitat_<sp>` in every schema.
-#' @param flag `"spawning"` or `"rearing"` (stream rearing, the flag the
-#'   rearing thresholds govern).
+#' @param flag `"spawning"` or `"rearing"` (fresh's `rearing` flag, which
+#'   the rearing thresholds govern on stream lines).
 #' @param schema Persist schema with the step taken.
 #' @param schema_ref Persist schema the step is taken from.
 #' @param observations The `observations` data frame from

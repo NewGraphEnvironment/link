@@ -80,8 +80,32 @@
 #' - **Thresholds set from these observations score in-sample.** A cutoff
 #'   calibrated on the same records (e.g. a use quantile) is partly
 #'   guaranteed its capture; hold records out to score it fairly.
-#' - `rearing` is stream rearing, the flag thresholds govern and that
-#'   `rearing_km` costs. `rearing_any` adds lake and wetland rearing.
+#' - `rearing` is fresh's `rearing` flag: lines the bundle's rear rules
+#'   admit that also survive its connectivity passes, which can include lines
+#'   in wetland, lake and reservoir polygons (read `rules.yaml` for which). `rearing_any` adds the lake and wetland
+#'   buckets.
+#' - **Capture and cost read lake connection lines differently.** Capture
+#'   reads the flag, connection lines included. Cost does not: `rearing_km`
+#'   leaves lake connection lines (FWA edge 1450 in a lake or reservoir
+#'   polygon) out and `rearing_lake_connection_km` carries them, as
+#'   [lnk_rollup_wsg()]'s default and [lnk_compare_rollup()] do. The lines
+#'   join each tributary
+#'   mouth to the lake's main-flow line, so their km grow with a lake's
+#'   tributary count, not its habitat. A fish in a lake is matched to
+#'   whichever line is nearest, and about half the in-lake records sit on a
+#'   connection line (bcfishobs, match types A and B, local fwapg,
+#'   2026-10-08):
+#'
+#'   | species | in a lake | on 1450 | on 1200 |
+#'   |---|---|---|---|
+#'   | BT | 146 | 94 | 44 |
+#'   | CO | 445 | 124 | 301 |
+#'   | RB | 1,357 | 710 | 624 |
+#'   | KO | 354 | 282 | 67 |
+#'   | SK | 270 | 128 | 139 |
+#'
+#'   Those records are evidence for the lake, not the line, so capture keeps
+#'   them.
 #' - Known biases, reported rather than corrected: observation points often
 #'   sit at the downstream end of a site (see `buffer_m`); sampling clusters
 #'   near road access; and fish are only observed where they have access, so
@@ -197,9 +221,10 @@
 #'     `n_rearing_any`, `n_habitat` (spawning or any rearing), the matching
 #'     `share_*` (of `n_obs`; `NA` when `n_obs` is 0), `n_in_uhc_spawn`,
 #'     `n_in_uhc_rear`, the `*_outside_uhc` counts and shares, and cost
-#'     `accessible_km`, `spawning_km`, `rearing_km` from [lnk_rollup_wsg()].
+#'     `accessible_km`, `spawning_km`, `rearing_km` (lake connection lines
+#'     left out) and `rearing_lake_connection_km` from [lnk_rollup_wsg()].
 #'     With `absences`, also `n_absence`, `n_absence_accessible`,
-#'     `n_absence_spawning`, `n_absence_rearing` (stream) and
+#'     `n_absence_spawning`, `n_absence_rearing` (the `rearing` flag) and
 #'     `n_absence_rearing_any` (the same on every stage). `model` is the
 #'     WSG's habitat model (`cw` or `mad`).
 #'   - `observations`: one row per retained location, with its segment's

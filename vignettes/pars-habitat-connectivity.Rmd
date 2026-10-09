@@ -244,7 +244,9 @@ output, produced whether or not there is anything to compare against. Below,
 those totals sit next to the same quantities from the bcfishpass habitat model.
 Because `link` breaks streams at every gradient frontier, a reach never straddles
 the accessibility boundary, so the accessible total matches bcfishpass to a
-rounding error.
+rounding error. Rearing km leave out, on both sides, the lake connection lines
+(FWA edge type 1450) that join each tributary mouth to a lake's main-flow line:
+they trace a join, not habitat.
 
 ```{r accessible-table, echo = FALSE}
 atab <- accessible

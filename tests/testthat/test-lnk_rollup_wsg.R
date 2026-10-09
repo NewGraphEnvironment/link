@@ -166,13 +166,25 @@ test_that(".lnk_rollup_wsg_sql exposes each line's lake-connection flag", {
   expect_match(sql, link:::.lnk_sql_lake_connection(), fixed = TRUE)
 })
 
-test_that("default rearing_km is the flag, connection lines included", {
-  # The validator's cost and the parity scripts compare the `rearing`
-  # flag itself, so the primitive's default stays the flag total; the
-  # compare family leaves connection lines out explicitly.
+test_that("default rearing_km leaves connection lines out, reported apart", {
+  # One meaning of rearing_km in link's WSG rollups (#319): the compare
+  # family, the validator's cost and the parity scripts all leave lake
+  # connection lines out and carry them as rearing_lake_connection_km.
   m <- eval(formals(lnk_rollup_wsg)$metrics)
-  expect_match(m[["rearing_km"]], "FILTER (WHERE rearing)::", fixed = TRUE)
-  expect_false(any(grepl("connection", m)))
+  expect_identical(names(m), c("accessible_km", "spawning_km", "rearing_km",
+                               "rearing_lake_connection_km"))
+  expect_match(m[["rearing_km"]],
+               "FILTER (WHERE rearing AND NOT connection)::", fixed = TRUE)
+  expect_match(m[["rearing_lake_connection_km"]],
+               "FILTER (WHERE rearing AND connection)", fixed = TRUE)
+  # 0, not NULL, where a group has no connection lines, so the two sum to
+  # the flag total wherever rearing_km is not NA.
+  expect_match(m[["rearing_lake_connection_km"]], "COALESCE(", fixed = TRUE)
+  # Access and spawning are unchanged.
+  acc <- "round(sum(length_metre) FILTER (WHERE access IN (1, 2))::numeric / 1000, 2)"
+  spawn <- "round(sum(length_metre) FILTER (WHERE spawning)::numeric / 1000, 2)"
+  expect_identical(m[["accessible_km"]], acc)
+  expect_identical(m[["spawning_km"]], spawn)
 })
 
 test_that("lake hectares read lake and reservoir polygons", {
@@ -225,4 +237,10 @@ test_that("stream + lake + wetland rearing km equal rearing km (live)", {
        AND s.watershed_group_code = h.watershed_group_code
      WHERE s.watershed_group_code = '%s' AND h.rearing", aoi))$m
   expect_equal(r$total, as.numeric(direct), tolerance = 1e-9)
+  # The default metrics split the same flag total in two (#319).
+  d <- lnk_rollup_wsg(conn, aoi = aoi, species = "BT",
+                      schema = "fresh_default")
+  # Each column is rounded to 0.01 km, so the sum is within 0.01 km.
+  expect_lt(abs(sum(d$rearing_km, d$rearing_lake_connection_km,
+                    na.rm = TRUE) - r$total / 1000), 0.0101)
 })
