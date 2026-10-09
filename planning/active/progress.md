@@ -8,3 +8,4 @@
 - Next: start Phase 1
 - Parity baseline on unchanged code: `data-raw/logs/lake_connection_319/parity_crosssection_before.txt` (25/25 PASS, 13 s)
 - Phase 1: default `rearing_km` = `rearing AND NOT connection`; new default `rearing_lake_connection_km` (COALESCE 0). Tests red first (3), then green; live test ran on fresh_default (192 pass in rollup+compare files)
+- Phase 2: validator fixture gains a lake connection line (BBBB seg 2, edge 1450 in the lowest-keyed lake polygon); cost asserts rearing_km 0.1 + connection 0.1 there, 0.2 + 0 on AAAA; capture unchanged. 254 pass. Roxygen: `rearing` is the flag (not "stream rearing" since #310), capture/cost split documented with the in-lake observation table. Driver `habitat_validate.R` sums and compares the new column

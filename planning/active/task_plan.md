@@ -9,10 +9,10 @@
 - [x] Live test (skip_if_no_db, like the existing one): default `rearing_km + rearing_lake_connection_km` equals the flag total on one group
 
 ## Phase 2: `lnk_habitat_validate()` (`R/lnk_habitat_validate.R`)
-- [ ] Capture unchanged (`rearing` / `rearing_any` read the flag). Cost picks up the new default via `lnk_rollup_wsg()` and `.lnk_hv_summary()`'s merge — confirm `rearing_lake_connection_km` lands in `summary` (offline test with a mocked `lnk_rollup_wsg`, or assert in the live test if one exists)
-- [ ] Fix lines 83-84: `rearing` is not "stream rearing" since #310; say it is the `rearing` flag (stream, lake and reservoir lines), `rearing_km` costs it without connection lines and `rearing_lake_connection_km` carries those
-- [ ] Add the "where lake fish sit" table (bcfishobs A/B in a lake polygon: share on 1450 vs 1200) to "Reading the numbers" as the reason capture and cost differ for lakes; update `@return` cost list
-- [ ] `data-raw/habitat_validate.R`: add `rearing_lake_connection_km` to `cols_km` (line 163) so the driver's sums don't silently drop it
+- [x] Capture unchanged (`rearing` / `rearing_any` read the flag). Cost picks up the new default via `lnk_rollup_wsg()` and `.lnk_hv_summary()`'s merge — confirm `rearing_lake_connection_km` lands in `summary` (offline test with a mocked `lnk_rollup_wsg`, or assert in the live test if one exists)
+- [x] Fix lines 83-84: `rearing` is not "stream rearing" since #310; say it is the `rearing` flag (stream, lake and reservoir lines), `rearing_km` costs it without connection lines and `rearing_lake_connection_km` carries those
+- [x] Add the "where lake fish sit" table (bcfishobs A/B in a lake polygon: share on 1450 vs 1200) to "Reading the numbers" as the reason capture and cost differ for lakes; update `@return` cost list
+- [x] `data-raw/habitat_validate.R`: add `rearing_lake_connection_km` to `cols_km` (line 163) so the driver's sums don't silently drop it
 
 ## Phase 3: parity scripts apply the same predicate on the bcfp side
 - [ ] `data-raw/parity_crosssection.R`: `bcfp_rollup()` reads `fresh.streams_vw_bcfp s` + `link:::.lnk_sql_waterbody_join()` and filters `rearing_<sp> IN (1,2) AND NOT link:::.lnk_sql_lake_connection()` (view carries `edge_type`, `waterbody_key` — checked); update header comment

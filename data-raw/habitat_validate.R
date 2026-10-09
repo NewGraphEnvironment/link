@@ -160,7 +160,8 @@ utils::write.csv(summary, file.path(dir_out, "summary.csv"), row.names = FALSE,
 
 # -- totals over WSGs ------------------------------------------------------------
 cols_n <- grep("^n_", names(summary), value = TRUE)
-cols_km <- c("accessible_km", "spawning_km", "rearing_km")
+cols_km <- c("accessible_km", "spawning_km", "rearing_km",
+             "rearing_lake_connection_km")
 key <- c("schema", "config_name", "buffer_m", "species_code", "stage")
 make_totals <- function(s) {
   grp <- interaction(s[key], drop = TRUE, lex.order = TRUE)
@@ -273,7 +274,8 @@ if (nrow(bundles) == 2L) {
                 "n_rearing_any", "share_accessible", "share_spawning",
                 "share_rearing", "share_rearing_any",
                 "share_spawning_outside_uhc", "share_rearing_any_outside_uhc",
-                "accessible_km", "spawning_km", "rearing_km")
+                "accessible_km", "spawning_km", "rearing_km",
+                "rearing_lake_connection_km")
   by <- c("watershed_group_code", "species_code", "stage", "buffer_m")
   a <- summary[summary$schema == bundles$schema[1] &
                  summary$watershed_group_code %in% shared, c(by, cols_cmp)]
