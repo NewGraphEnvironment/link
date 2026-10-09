@@ -855,7 +855,8 @@ dispatch.**
     is not habitat.
     - `lake_rearing` / `wetland_rearing` are hectares of the same water;
       never add a km to a ha.
-- **Lake connection lines: in `rearing`, out of the km (link#317).**
+- **Lake connection lines: in `rearing`, out of the km (link#317,
+  \#319).**
   - FWA connectors (1450, “Construction line, connection”) join each
     tributary mouth to the lake’s main-flow line (1200), so a lake’s
     line km grow with its tributary count. Adams Lake holds 148.8 km of
@@ -876,13 +877,26 @@ dispatch.**
     0.0 %. One predicate: `.lnk_sql_lake_connection()`
     (`R/lnk_rollup_wsg.R`), which is lake-polygon lines on 1450,
     NULL-safe.
-  - **[`lnk_rollup_wsg()`](https://newgraphenvironment.github.io/link/reference/lnk_rollup_wsg.md)’s
-    default `rearing_km` is still the flag total.** So is anything that
-    sums `streams_habitat.rearing` directly:
-    [`lnk_aggregate()`](https://newgraphenvironment.github.io/link/reference/lnk_aggregate.md),
-    the validator’s cost, `data-raw/parity_crosssection.R` and
-    `wsg_vignette_data.R`. Those compare the flag, not a habitat report.
-    Pass `connection` in `metrics` to split it.
+  - **`rearing_km` means one thing in link’s WSG rollups (#319).**
+    [`lnk_rollup_wsg()`](https://newgraphenvironment.github.io/link/reference/lnk_rollup_wsg.md)’s
+    default `rearing_km` leaves them out and its default
+    `rearing_lake_connection_km` carries them (0 where there are none),
+    so the two sum to the flag total (to rounding; `rearing_km` is NA in
+    a group whose only rearing is connection lines). That reaches the
+    validator’s cost, and `data-raw/parity_crosssection.R` /
+    `wsg_vignette_data.R` apply the same predicate to
+    `fresh.streams_vw_bcfp`, which carries `edge_type` and
+    `waterbody_key`.
+  - **Capture still reads the flag.** About half of in-lake fish records
+    (bcfishobs A / B) sit on a 1450 line, because a lake fish is matched
+    to the nearest line, so they are evidence for the lake.
+    [`lnk_habitat_validate()`](https://newgraphenvironment.github.io/link/reference/lnk_habitat_validate.md)’s
+    roxygen carries the table.
+  - **[`lnk_aggregate()`](https://newgraphenvironment.github.io/link/reference/lnk_aggregate.md)
+    still sums the flag**, connection lines included: it is
+    per-crossing, link-side SQL over boolean habitat columns, with no
+    connection split. So do the older one-off scripts with their own SQL
+    (`data-raw/compare_adms.R`, `data-raw/exp_gradient_extra_breaks.R`).
   - SK / KO lake rearing is mostly 1450, so their compare `rearing` km
     drop sharply: SK 55–95 % on seven measured WSGs (ADMS 159.1 of 229.9
     km), KO 62 % on NATR. For SK the drop is the same on the bcfishpass

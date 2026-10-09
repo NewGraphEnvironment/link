@@ -42,8 +42,8 @@ lnk_habitat_validate_band(
 
 - flag:
 
-  `"spawning"` or `"rearing"` (stream rearing, the flag the rearing
-  thresholds govern).
+  `"spawning"` or `"rearing"` (fresh's `rearing` flag, which the rearing
+  thresholds govern on stream lines).
 
 - schema:
 

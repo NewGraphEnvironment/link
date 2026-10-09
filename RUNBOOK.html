@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.62.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.63.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -507,7 +507,7 @@ mc_barrier (from barrier_sources flags, resident vs anadromous differ slightly):
 </ul></li>
 </ul></li>
 <li>
-<strong>Lake connection lines: in <code>rearing</code>, out of the km (link#317).</strong>
+<strong>Lake connection lines: in <code>rearing</code>, out of the km (link#317, #319).</strong>
 <ul><li>FWA connectors (1450, “Construction line, connection”) join each tributary mouth to the lake’s main-flow line (1200), so a lake’s line km grow with its tributary count. Adams Lake holds 148.8 km of 1450 against 62.8 km of 1200.</li>
 <li>
 <strong>Construction flow lines are not connectors.</strong> 1400 (“other flow / inferred connection”) is a construction flow line like 1200 / 1300 and stays in the km.</li>
@@ -516,7 +516,11 @@ mc_barrier (from barrier_sources flags, resident vs anadromous differ slightly):
 <li>
 <strong>The compare rollups leave them out.</strong> <code><a href="reference/lnk_compare_rollup.html">lnk_compare_rollup()</a></code> / <code><a href="reference/lnk_compare_wsg.html">lnk_compare_wsg()</a></code> report them as <code>rearing_lake_connection</code> (km), out of <code>rearing</code> and <code>rearing_lake</code> km, on the link side and the bcfishpass side alike. bcfishpass counts them too, in BT and SK rearing, so SK parity stays 0.0 %. One predicate: <code>.lnk_sql_lake_connection()</code> (<code>R/lnk_rollup_wsg.R</code>), which is lake-polygon lines on 1450, NULL-safe.</li>
 <li>
-<strong><code><a href="reference/lnk_rollup_wsg.html">lnk_rollup_wsg()</a></code>’s default <code>rearing_km</code> is still the flag total.</strong> So is anything that sums <code>streams_habitat.rearing</code> directly: <code><a href="reference/lnk_aggregate.html">lnk_aggregate()</a></code>, the validator’s cost, <code>data-raw/parity_crosssection.R</code> and <code>wsg_vignette_data.R</code>. Those compare the flag, not a habitat report. Pass <code>connection</code> in <code>metrics</code> to split it.</li>
+<strong><code>rearing_km</code> means one thing in link’s WSG rollups (#319).</strong> <code><a href="reference/lnk_rollup_wsg.html">lnk_rollup_wsg()</a></code>’s default <code>rearing_km</code> leaves them out and its default <code>rearing_lake_connection_km</code> carries them (0 where there are none), so the two sum to the flag total (to rounding; <code>rearing_km</code> is NA in a group whose only rearing is connection lines). That reaches the validator’s cost, and <code>data-raw/parity_crosssection.R</code> / <code>wsg_vignette_data.R</code> apply the same predicate to <code>fresh.streams_vw_bcfp</code>, which carries <code>edge_type</code> and <code>waterbody_key</code>.</li>
+<li>
+<strong>Capture still reads the flag.</strong> About half of in-lake fish records (bcfishobs A / B) sit on a 1450 line, because a lake fish is matched to the nearest line, so they are evidence for the lake. <code><a href="reference/lnk_habitat_validate.html">lnk_habitat_validate()</a></code>’s roxygen carries the table.</li>
+<li>
+<strong><code><a href="reference/lnk_aggregate.html">lnk_aggregate()</a></code> still sums the flag</strong>, connection lines included: it is per-crossing, link-side SQL over boolean habitat columns, with no connection split. So do the older one-off scripts with their own SQL (<code>data-raw/compare_adms.R</code>, <code>data-raw/exp_gradient_extra_breaks.R</code>).</li>
 <li>SK / KO lake rearing is mostly 1450, so their compare <code>rearing</code> km drop sharply: SK 55–95 % on seven measured WSGs (ADMS 159.1 of 229.9 km), KO 62 % on NATR. For SK the drop is the same on the bcfishpass side; KO has no bcfishpass reference.</li>
 </ul></li>
 <li>

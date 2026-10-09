@@ -164,13 +164,16 @@ produced whether or not there is anything to compare against. Below,
 those totals sit next to the same quantities from the bcfishpass habitat
 model. Because `link` breaks streams at every gradient frontier, a reach
 never straddles the accessibility boundary, so the accessible total
-matches bcfishpass to a rounding error.
+matches bcfishpass to a rounding error. Rearing km leave out, on both
+sides, the lake connection lines (FWA edge type 1450) that join each
+tributary mouth to a lake’s main-flow line: they trace a join, not
+habitat.
 
 | metric     | link km | bcfishpass km | diff % |
 |:-----------|--------:|--------------:|-------:|
 | accessible | 6822.47 |       6822.88 |  -0.01 |
-| spawning   | 1683.38 |       1667.92 |   0.93 |
-| rearing    | 2575.06 |       2588.91 |  -0.53 |
+| spawning   | 1683.36 |       1667.92 |   0.93 |
+| rearing    | 2565.31 |       2579.15 |  -0.54 |
 
 Bull-trout accessible / spawning / rearing habitat (km) in PARS: link’s
 roll-up vs the local bcfishpass snapshot. Accessible habitat matches to

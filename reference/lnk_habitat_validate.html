@@ -23,7 +23,7 @@ false-positive check."><meta property="og:image" content="https://newgraphenviro
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.62.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.63.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -187,9 +187,10 @@ records the WSG), <code>n_obs</code> (locations on a segment), <code>n_unattache
 <code>n_rearing_any</code>, <code>n_habitat</code> (spawning or any rearing), the matching
 <code>share_*</code> (of <code>n_obs</code>; <code>NA</code> when <code>n_obs</code> is 0), <code>n_in_uhc_spawn</code>,
 <code>n_in_uhc_rear</code>, the <code>*_outside_uhc</code> counts and shares, and cost
-<code>accessible_km</code>, <code>spawning_km</code>, <code>rearing_km</code> from <code><a href="lnk_rollup_wsg.html">lnk_rollup_wsg()</a></code>.
+<code>accessible_km</code>, <code>spawning_km</code>, <code>rearing_km</code> (lake connection lines
+left out) and <code>rearing_lake_connection_km</code> from <code><a href="lnk_rollup_wsg.html">lnk_rollup_wsg()</a></code>.
 With <code>absences</code>, also <code>n_absence</code>, <code>n_absence_accessible</code>,
-<code>n_absence_spawning</code>, <code>n_absence_rearing</code> (stream) and
+<code>n_absence_spawning</code>, <code>n_absence_rearing</code> (the <code>rearing</code> flag) and
 <code>n_absence_rearing_any</code> (the same on every stage). <code>model</code> is the
 WSG's habitat model (<code>cw</code> or <code>mad</code>).</p></li>
 <li><p><code>observations</code>: one row per retained location, with its segment's
@@ -278,8 +279,22 @@ the part of the score the observations did not decide.</p></li>
 <li><p><strong>Thresholds set from these observations score in-sample.</strong> A cutoff
 calibrated on the same records (e.g. a use quantile) is partly
 guaranteed its capture; hold records out to score it fairly.</p></li>
-<li><p><code>rearing</code> is stream rearing, the flag thresholds govern and that
-<code>rearing_km</code> costs. <code>rearing_any</code> adds lake and wetland rearing.</p></li>
+<li><p><code>rearing</code> is fresh's <code>rearing</code> flag: lines the bundle's rear rules
+admit that also survive its connectivity passes, which can include lines
+in wetland, lake and reservoir polygons (read <code>rules.yaml</code> for which). <code>rearing_any</code> adds the lake and wetland
+buckets.</p></li>
+<li><p><strong>Capture and cost read lake connection lines differently.</strong> Capture
+reads the flag, connection lines included. Cost does not: <code>rearing_km</code>
+leaves lake connection lines (FWA edge 1450 in a lake or reservoir
+polygon) out and <code>rearing_lake_connection_km</code> carries them, as
+<code><a href="lnk_rollup_wsg.html">lnk_rollup_wsg()</a></code>'s default and <code><a href="lnk_compare_rollup.html">lnk_compare_rollup()</a></code> do. The lines
+join each tributary
+mouth to the lake's main-flow line, so their km grow with a lake's
+tributary count, not its habitat. A fish in a lake is matched to
+whichever line is nearest, and about half the in-lake records sit on a
+connection line (bcfishobs, match types A and B, local fwapg,
+2026-10-08):</p><table class="table table"><tr><td>species</td><td>in a lake</td><td>on 1450</td><td>on 1200</td></tr><tr><td>BT</td><td>146</td><td>94</td><td>44</td></tr><tr><td>CO</td><td>445</td><td>124</td><td>301</td></tr><tr><td>RB</td><td>1,357</td><td>710</td><td>624</td></tr><tr><td>KO</td><td>354</td><td>282</td><td>67</td></tr><tr><td>SK</td><td>270</td><td>128</td><td>139</td></tr></table><p>Those records are evidence for the lake, not the line, so capture keeps
+them.</p></li>
 <li><p>Known biases, reported rather than corrected: observation points often
 sit at the downstream end of a site (see <code>buffer_m</code>); sampling clusters
 near road access; and fish are only observed where they have access, so
