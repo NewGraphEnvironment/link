@@ -114,15 +114,18 @@ message("[wsg_vignette_data] parity rows: ", nrow(parity),
 # with the IN (1,2) predicate (bcfp codes access/spawn/rear 0/1/2/3, so a bare
 # `= 1` under-counts). Same computation as the #223 proof
 # (data-raw/parity_crosssection.R). accessible_km is the #223 target and matches
-# exactly; spawning/rearing agree within habitat-methodology tolerance.
+# exactly; spawning/rearing agree within habitat-methodology tolerance. Rearing
+# leaves lake connection lines (edge 1450 in a lake/reservoir polygon) out on
+# both sides, by the predicate lnk_rollup_wsg()'s default uses (link#317, #319).
 metrics_km <- c("accessible_km", "spawning_km", "rearing_km")
 acc_link <- lnk_rollup_wsg(conn, aoi = aoi, species = "BT", schema = "fresh")
 acc_bcfp <- DBI::dbGetQuery(conn, sprintf(
   "SELECT
      round((coalesce(sum(length_metre) FILTER (WHERE access_bt   IN (1,2)),0)/1000)::numeric,2) AS accessible_km,
      round((coalesce(sum(length_metre) FILTER (WHERE spawning_bt IN (1,2)),0)/1000)::numeric,2) AS spawning_km,
-     round((coalesce(sum(length_metre) FILTER (WHERE rearing_bt  IN (1,2)),0)/1000)::numeric,2) AS rearing_km
-   FROM fresh.streams_vw_bcfp WHERE watershed_group_code = %s",
+     round((coalesce(sum(length_metre) FILTER (WHERE rearing_bt  IN (1,2) AND NOT %s),0)/1000)::numeric,2) AS rearing_km
+   FROM fresh.streams_vw_bcfp s %s WHERE s.watershed_group_code = %s",
+  link:::.lnk_sql_lake_connection(), link:::.lnk_sql_waterbody_join(),
   DBI::dbQuoteLiteral(conn, aoi)))
 .link_v <- as.numeric(unlist(acc_link[1, metrics_km]))
 .bcfp_v <- as.numeric(unlist(acc_bcfp[1, metrics_km]))

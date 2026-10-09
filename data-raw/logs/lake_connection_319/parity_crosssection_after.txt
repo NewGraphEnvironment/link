@@ -1,0 +1,44 @@
+
+============ accessible + spawn + rear parity (link vs bcfp, tunnel-free) ============
+  wsg sp     metric   link   bcfp diff_pct   ok
+ FINA BT accessible 6084.0 6085.2    -0.02 TRUE
+ FINA BT   spawning 1277.6 1266.1     0.91 TRUE
+ FINA BT    rearing 2452.1 2464.9    -0.52 TRUE
+ PARS BT accessible 6822.5 6822.9    -0.01 TRUE
+ PARS BT   spawning 1683.4 1667.9     0.93 TRUE
+ PARS BT    rearing 2565.3 2579.2    -0.54 TRUE
+ PCEA BT accessible 5003.0 5003.4    -0.01 TRUE
+ PCEA BT   spawning  925.7  918.5     0.79 TRUE
+ PCEA BT    rearing 1655.8 1625.5     1.87 TRUE
+ LKEL BT accessible  401.0  401.0     0.00 TRUE
+ LKEL BT   spawning  144.7  144.7     0.06 TRUE
+ LKEL BT    rearing  211.3  209.7     0.79 TRUE
+ LKEL ST accessible  365.4  365.4     0.00 TRUE
+ LKEL ST   spawning  108.0  108.1    -0.04 TRUE
+ LKEL ST    rearing  156.8  155.3     0.96 TRUE
+ LKEL CO accessible  328.2  328.2     0.00 TRUE
+ LKEL CO   spawning  139.2  139.2     0.04 TRUE
+ LKEL CO    rearing  168.3  166.4     1.14 TRUE
+ LKEL CH accessible  328.2  328.2     0.00 TRUE
+ LKEL CH   spawning  106.5  106.5    -0.01 TRUE
+ LKEL CH    rearing  123.8  122.2     1.33 TRUE
+ LKEL CM accessible  328.2  328.2     0.00 TRUE
+ LKEL CM   spawning  142.4  142.3     0.02 TRUE
+ LKEL PK accessible  328.2  328.2     0.00 TRUE
+ LKEL PK   spawning  142.4  142.3     0.02 TRUE
+
+==== summary by metric (accessible tol 1 %, habitat tol 5 %) ====
+  accessible :  9 pairs / 4 WSGs / 6 species, max |diff|  0.02%, within-tol 9/9
+  spawning   :  9 pairs / 4 WSGs / 6 species, max |diff|  0.93%, within-tol 9/9
+  rearing    :  7 pairs / 4 WSGs / 4 species, max |diff|  1.87%, within-tol 7/7
+
+  link-absent (bcfp models species, link does not — #189 residence, excluded):
+    LKEL SK accessible (bcfp 328, link 0) 
+
+==== structural: FINA blk 359209845 BT frontier 3834.78 ====
+  pass: no segment straddles the frontier
+  pass: segment at frontier is BT-blocked
+  pass: accessible BT reach tops at frontier
+
+OVERALL: 25/25 parity pairs within tolerance (0 over: 0 accessible, 0 habitat non-parked)  — PASS
+exit 0

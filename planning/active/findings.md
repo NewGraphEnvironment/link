@@ -63,3 +63,11 @@ Symmetric, so parity should hold; FINA/PCEA BT rearing km drop ~14–19 % on bot
 
 | Error | Resolution |
 |-------|------------|
+
+## Parity after #319 (2026-10-09)
+
+See `data-raw/logs/lake_connection_319/README.md`. PCEA BT is the one asymmetric group: link carries 367.7 km of connection lines in BT rearing, bcfishpass 375.9, so its rearing diff widens +1.10 → +1.87 %. PARS `fresh` spawning moved 0.02 km since the July vignette artifact with no code change (input drift).
+
+## Why not a full `wsg_vignette_data.R` run
+
+It rebuilds `pars.gpkg` (context layers over the tunnel, skipped if it is down) and `pars_parity.rds` from current `fresh` / `fresh_default` state, both moved by #310 and earlier. Only `pars_accessible.rds` reads `rearing_km`, so only it was regenerated.

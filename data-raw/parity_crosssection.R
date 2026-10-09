@@ -10,7 +10,9 @@
 #      on the full PK, accessible = access_<sp> IN (1,2).
 #      bcfp side = tunnel-free fresh.streams_vw_bcfp, IN (1,2) predicate (bcfp codes
 #      access/spawning/rearing 0/1/2/3; a bare `= 1` UNDER-counts). No rearing_cm/_pk
-#      (chum/pink don't rear in freshwater).
+#      (chum/pink don't rear in freshwater). Rearing leaves lake connection lines
+#      (edge 1450 in a lake/reservoir polygon) out on both sides, by the one
+#      predicate lnk_rollup_wsg()'s default uses (link#317, #319).
 #   2. STRUCTURAL — the #223 mechanism proof on the canonical evidence segment
 #      (FINA blk 359209845, BT frontier 3834.78): streams break at the frontier, the
 #      reach above is BT-blocked, the accessible reach tops out at the frontier.
@@ -52,11 +54,16 @@ frontier_blk <- 359209845L
 frontier_m   <- 3834.78
 frontier_eps <- 1.0
 
+# the link side's lake-connection rule, on the view (it carries edge_type and
+# waterbody_key); expects the view aliased `s`
+lake_conn <- link:::.lnk_sql_lake_connection()
+wb_join   <- link:::.lnk_sql_waterbody_join()
+
 bcfp_rollup <- function(w) {
   cols <- unlist(lapply(species, function(sp) {
     r <- if (sp %in% rear_sp) {
-      sprintf(paste0("round((coalesce(sum(length_metre) FILTER (WHERE rearing_%s IN (1,2)),0)",
-                     "/1000)::numeric,2) rear_%s"), sp, sp)
+      sprintf(paste0("round((coalesce(sum(length_metre) FILTER (WHERE rearing_%s IN (1,2) AND NOT %s),0)",
+                     "/1000)::numeric,2) rear_%s"), sp, lake_conn, sp)
     } else {
       "NULL::numeric rear_x"
     }
@@ -65,7 +72,8 @@ bcfp_rollup <- function(w) {
             sp, sp, sp, sp, r)
   }))
   DBI::dbGetQuery(conn, glue(
-    "select {paste(cols, collapse=',')} from fresh.streams_vw_bcfp where watershed_group_code = '{w}'"))
+    "select {paste(cols, collapse=',')} from fresh.streams_vw_bcfp s {wb_join}
+      where s.watershed_group_code = '{w}'"))
 }
 num <- function(x) {
   x <- suppressWarnings(as.numeric(x[1]))

@@ -15,10 +15,10 @@
 - [x] `data-raw/habitat_validate.R`: add `rearing_lake_connection_km` to `cols_km` (line 163) so the driver's sums don't silently drop it
 
 ## Phase 3: parity scripts apply the same predicate on the bcfp side
-- [ ] `data-raw/parity_crosssection.R`: `bcfp_rollup()` reads `fresh.streams_vw_bcfp s` + `link:::.lnk_sql_waterbody_join()` and filters `rearing_<sp> IN (1,2) AND NOT link:::.lnk_sql_lake_connection()` (view carries `edge_type`, `waterbody_key` — checked); update header comment
-- [ ] `data-raw/wsg_vignette_data.R`: same on its BT bcfp query; comment
-- [ ] Run `parity_crosssection.R` on its default WSGs (FINA PARS PCEA LKEL); record before/after per pair in `data-raw/logs/lake_connection_319/` with an environment stamp. Expect accessible/spawning unchanged, rearing moving alike on both sides
-- [ ] Re-run `wsg_vignette_data.R` (its segmentation-parity guard decides whether it can). If the guard refuses, stop on that step and report rather than force; otherwise check the vignette prose still matches the new `pars_accessible.rds` (no hard-coded km to fix, or fix them)
+- [x] `data-raw/parity_crosssection.R`: `bcfp_rollup()` reads `fresh.streams_vw_bcfp s` + `link:::.lnk_sql_waterbody_join()` and filters `rearing_<sp> IN (1,2) AND NOT link:::.lnk_sql_lake_connection()` (view carries `edge_type`, `waterbody_key` — checked); update header comment
+- [x] `data-raw/wsg_vignette_data.R`: same on its BT bcfp query; comment
+- [x] Run `parity_crosssection.R` on its default WSGs (FINA PARS PCEA LKEL); record before/after per pair in `data-raw/logs/lake_connection_319/` with an environment stamp. Expect accessible/spawning unchanged, rearing moving alike on both sides
+- [x] Regenerated `pars_accessible.rds` only (the accessible-km block of `wsg_vignette_data.R`, evaluated by `data-raw/logs/lake_connection_319/vignette_accessible_only.R`), not the whole script: a full run would also rebuild the gpkg and the mapping-code parity from model state that has moved since July. Vignette prose reads the rds; one sentence added saying rearing km leave connection lines out
 
 ## Phase 4: reproducibility check (#284 re-score)
 - [ ] Re-run `data-raw/habitat_variants_score.R` with #284's recorded args (from `data-raw/logs/habitat_score_284/stamp_score.txt`) into a scratch `--out`, against the existing `score284_*` schemas
