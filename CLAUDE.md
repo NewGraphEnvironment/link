@@ -11,6 +11,25 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
+## Status (2026-10-09) — `rearing_km` means one thing in link's WSG rollups (#319)
+
+**`lnk_rollup_wsg()`'s default `rearing_km` leaves lake connection lines out, and a new default `rearing_lake_connection_km` (0 where there are none) carries them.**
+- **What follows:**
+  - `lnk_habitat_validate()`'s cost has the same split.
+  - `parity_crosssection.R` and `wsg_vignette_data.R` apply `.lnk_sql_lake_connection()` to `fresh.streams_vw_bcfp`.
+  - **Capture still reads the `rearing` flag.** About half of in-lake fish records (bcfishobs A / B) sit on a 1450 line, so they are lake evidence.
+  - **Still on the flag:** `lnk_aggregate()` (per crossing) and the older one-off scripts with their own SQL (`compare_adms.R`, `exp_gradient_extra_breaks.R`).
+- **Measured** (`data-raw/logs/lake_connection_319/`):
+  - Cross-section 25/25 pass before and after; FINA BT rearing −393.6 km on both sides.
+  - #284's `habitat_change.csv` reproduces 36 / 36.
+  - **The #283 baseline flips for BT:** the bcfishpass config's BT cost loses 2,503 km of connection lines (76,872 → 74,369 km), so `default`'s 75,280 km is now ~911 km *more*, not 1,592 km less.
+  - Write-up: `research/habitat_thresholds.md`, "One meaning of `rearing_km` (#319)".
+
+**Facts not worth re-deriving:**
+- **No #284 / #300 / #302 re-score runs at any HEAD after #307.** The variant bundles `extends: default` by name, and `default`'s thresholds moved, so the score script's guard stops. Check a cost change directly with `lnk_rollup_wsg()` on the `score*` schemas.
+- **SK / KO rear on connection lines in the score schemas, BT / CH / GR / RB do not.** A re-score would move #300's and #305's in-sample KO cost (KOTL 568.63 → 259.06 km); no verdict reads it.
+- **A rollup that hangs on one WSG is stale planner statistics, not the SQL.** `score284_bt_rear_0p*` MORR estimated 1 row until `ANALYZE`. And killing an R client leaves its backend query running: cancel it with `pg_cancel_backend`.
+
 ## Status (2026-10-08) — lake connection lines kept out of rearing km (#317)
 
 **The compare rollups report FWA lake connectors (1450) as `rearing_lake_connection` km, outside `rearing` and `rearing_lake` km. fresh's `rearing` flag still carries them.**
@@ -18,7 +37,7 @@ Experimental package — breaking all the time and loving the learning curve. St
   - The lines join each tributary mouth to the lake's main-flow line, so lake km grew with tributary count (Adams Lake: 148.8 km of 1450 against 62.8 km of 1200).
   - `cluster_rearing` needs them to join inlet rearing to the lake. So the rules are unchanged and nothing re-classifies.
 - **One predicate, both sides:** `.lnk_sql_lake_connection()` (lake polygon, edge 1450, NULL-safe; 1400 is construction flow and stays in the km). It is used by the link side and the bcfishpass side of `lnk_compare_rollup()` / `lnk_compare_wsg()`. bcfishpass counts these lines in BT and SK rearing too.
-- **`lnk_rollup_wsg()`'s default `rearing_km` stays the flag total.** Code-check found that changing it leaked into the validator's cost and into `parity_crosssection.R` / `wsg_vignette_data.R`, which compare the flag.
+- **`lnk_rollup_wsg()`'s default `rearing_km` stayed the flag total here.** #319 changed that; see the status above.
 - **Measured** (ADMS, NATR; `data-raw/logs/lake_connection_317/`):
   - ADMS CH vs bcfishpass +91.1 % → +38.9 %; CO +75.0 % → +28.7 %; BT +16.4 % → +2.0 %.
   - SK rearing km fall 55–95 % (seven WSGs), the same on both sides, so SK parity is 0.0 % on six bcfishpass-config WSGs.

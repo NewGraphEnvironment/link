@@ -31,10 +31,10 @@
 - [x] NEWS: drafted in the PR body; `/gh-pr-merge` writes NEWS and bumps the version
 
 ## Validation
-- [ ] Tests pass (`devtools::test()`), `lintr::lint_package()` clean
-- [ ] `/code-check` clean (each commit, or once over the branch with `/code-check branch`)
-- [ ] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion (CLAUDE.md status update there)
+- [x] Tests pass: full `devtools::test()` FAIL 0 / PASS 2594 / WARN 16 (baseline 16) at `de2a793`; the two changed test files re-run green after each code-check round (309 pass). `lintr`: changed R files 0; `test-lnk_rollup_wsg.R` at main's 20 (all pre-existing indentation)
+- [x] `/code-check branch`: 3 rounds (0 / 4 / 4 findings; round 3 found one inside round 2's fix), ended by enumeration of 58 closed-set claim lines (`review-enumeration.md`)
+- [x] PWF checkboxes match landed work
+- [x] `/planning-archive` on completion (CLAUDE.md status update there)
 
 ## Not in scope
 `lnk_aggregate()` (sums the flag, own issue); the rules (1450 stays in the L rule; 1400 stays in km).
