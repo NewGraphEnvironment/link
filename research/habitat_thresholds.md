@@ -1381,6 +1381,25 @@ are evidence for the lake, not the line, so capture keeps them and cost does not
 25 / 25 pairs pass both times; accessible and spawning do not move. PCEA's gap widens because
 link carries 8.2 km fewer connection lines in BT rearing than bcfishpass there.
 
+**Upstream bcfishpass counts connection lines as rearing and has no rule that sets them apart**
+(read at `smnorris/bcfishpass@620dbe4`, which is model run 142, 2026-10-07,
+`v0.7.15-50-g620dbe43`, the tunnel's current reference):
+- **SK** (`model/02_habitat_linear/sql/load_habitat_linear_sk.sql:6-28`): rearing is every
+  segment in a lake or reservoir of at least `rear_lake_ha_min`, whatever its edge type.
+- **BT** (`load_habitat_linear_bt.sql`, from its "REARING ON SPAWNING STREAMS" block): rearing is
+  a gradient plus channel-width / MAD test, with no waterbody or edge-type filter.
+- **Published totals:** the per-crossing totals (`load_crossings_upstream_habitat_01.sql:73-86`,
+  `bt_rearing_km`, `sk_rearing_km`, ...) sum `length_metre` where `rearing_<sp> > 0`. The WCRP
+  views also sum the flag; their only edge-type special case is wetland flow (1050), at half
+  length.
+- No SQL in the repo names edge 1450.
+- These rearing files last changed upstream on 2026-04-16 (`50688d5`), before the local
+  `fresh.streams_vw_bcfp` snapshot, so the snapshot and the tunnel agree on them.
+
+So link on the `bcfishpass` config still reproduces bcfishpass at segment level: the flags are
+untouched. A bcfishpass-published rearing km equals link's
+`rearing_km + rearing_lake_connection_km`.
+
 **The #284–#305 scores keep their numbers for the species they scored.** BT, CH, GR and RB rear
 on no connection line in any #284 / #300 / #302 / #305 score schema, and #284's
 `habitat_change.csv` reproduces 36 / 36 under the new default. SK and KO do (KO KOTL about
