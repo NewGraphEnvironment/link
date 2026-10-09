@@ -10,7 +10,7 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/NewGraphEnvironment/link/blob/main/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/NewGraphEnvironment/link/blob/v0.63.0/DESCRIPTION)
 
 Irvine A (2026). *link: Stream Network Habitat Interpretation
 (Experimental)*. R package version 0.63.0,
