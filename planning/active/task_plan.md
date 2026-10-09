@@ -21,9 +21,9 @@
 - [x] Regenerated `pars_accessible.rds` only (the accessible-km block of `wsg_vignette_data.R`, evaluated by `data-raw/logs/lake_connection_319/vignette_accessible_only.R`), not the whole script: a full run would also rebuild the gpkg and the mapping-code parity from model state that has moved since July. Vignette prose reads the rds; one sentence added saying rearing km leave connection lines out
 
 ## Phase 4: reproducibility check (#284 re-score)
-- [ ] Re-run `data-raw/habitat_variants_score.R` with #284's recorded args (from `data-raw/logs/habitat_score_284/stamp_score.txt`) into a scratch `--out`, against the existing `score284_*` schemas
-- [ ] Compare `habitat_change.csv` and `verdict.csv` byte-for-byte with the committed ones; `summary.csv` equal apart from the new column. Expected exact (pre-#310 schemas: connection km 0); if not, record per-WSG/species where 1450 rearing exists and treat it as a finding in findings.md before going further
-- [ ] Downstream readers (`habitat_variants_score.R`, `species_pooling_evidence.R`): confirm no change needed given the step above
+- [x] Re-run `data-raw/habitat_variants_score.R` for #284 — **refused by the script**: since #307 the variant bundles extend a `default` whose thresholds changed (state on main, not #319). Replaced by a direct check: connection km in every score schema, and #284's `habitat_change.csv` recomputed with the new default
+- [x] #284 `habitat_change.csv`: 36/36 rows reproduce exactly; `verdict.csv` reads no cost. BT/CH/GR/RB connection km 0 in every score schema. **Finding:** SK/KO are not 0, and #300/#305 carry KO cost rows that a re-score would move (KOTL KO base 568.63 → 259.05 km); no verdict reads them
+- [x] Downstream readers (`habitat_variants_score.R`, `species_pooling_evidence.R`): confirm no change needed given the step above
 
 ## Phase 5: docs
 - [ ] RUNBOOK §7 lake-connection passage (`RUNBOOK.md:781-784`): default `rearing_km` now leaves connectors out everywhere; `lnk_aggregate()` stays the flag (not in scope, own issue)

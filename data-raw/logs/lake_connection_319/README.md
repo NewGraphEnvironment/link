@@ -24,3 +24,29 @@ lines in BT rearing than bcfishpass there.
 `pars_accessible.rds`: rearing 2575.06 / 2588.91 → 2565.31 / 2579.15. Spawning link km read
 1683.38 in the July artifact and 1683.36 now, with no spawning code change: PARS `fresh` state
 moved 0.02 km since then (input drift, not this change).
+
+## Reproducibility (#284 and the later score schemas)
+
+A full `habitat_variants_score.R` re-score of #284 cannot run at any HEAD after #307: the variant
+bundles `extends: default` by name, `default`'s thresholds have changed, and the script stops
+("the thresholds bundle for default is not the one every scored WSG ... was built from"). This
+is the state on main, not a #319 effect. In that script only `totals.csv` and
+`habitat_change.csv` read `rearing_km`; `verdict.csv` and the band files come from flags.
+
+| file | what |
+|---|---|
+| `score_schemas_connection_km.R` / `.csv` | rearing on lake connection lines in every `score284_` / `score300_` / `score302_` / `score305_` schema |
+| `habitat_change_284_check.R` | recomputes #284's `habitat_change.csv` km with the new default |
+
+- **BT, CH, GR and RB: 0 km of rearing on connection lines in every score schema**, as #319
+  predicted (they reared on lake lines only from #310). All 36 rows of #284's
+  `habitat_change.csv` reproduce exactly (`identical()` on `rearing_km`, `rearing_km_base`,
+  `spawning_km`).
+- **SK and KO are not 0** (their L rule always admitted lake lines): KO KOTL ~307–310 km and PARS
+  5.7 km, SK up to 641.8 km (BABL). Only #300 and #305 carry KO cost rows (in-sample, KO
+  unscored): re-scored now, KOTL KO base `rearing_km` would read 568.63 − 309.58 = 259.05 km,
+  and `ko_mad`'s change −7.09 km becomes −4.38 km. No verdict reads them. The committed files
+  keep the meaning they were written with.
+- MORR in `score284_bt_rear_0p*` had no planner statistics (estimated 1 row), so the rollup's
+  polygon join ran for minutes; `ANALYZE` on the three tables of each score284 schema brought it
+  to under a second. DB state, not code.

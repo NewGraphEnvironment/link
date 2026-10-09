@@ -71,3 +71,17 @@ See `data-raw/logs/lake_connection_319/README.md`. PCEA BT is the one asymmetric
 ## Why not a full `wsg_vignette_data.R` run
 
 It rebuilds `pars.gpkg` (context layers over the tunnel, skipped if it is down) and `pars_parity.rds` from current `fresh` / `fresh_default` state, both moved by #310 and earlier. Only `pars_accessible.rds` reads `rearing_km`, so only it was regenerated.
+
+## Step 4: reproducibility (2026-10-09)
+
+- `habitat_variants_score.R` will not re-score #284 at any post-#307 HEAD: the thin variant bundles `extends: default` by name, and `default`'s thresholds changed in #307, so its guard stops. Pre-existing; CLAUDE.md already records the same for #302 ("regenerate only at v0.58.0").
+- Direct check instead (`data-raw/logs/lake_connection_319/README.md`): BT/CH/GR/RB rear on no connection line in any score schema; #284 `habitat_change.csv` reproduces 36/36. SK and KO do rear on them (KO KOTL ~310 km, SK BABL 642 km), and #300/#305's KO cost rows would move on a re-score (in-sample, unscored, no verdict). The issue's "exact" expectation holds for every scored species and fails for KO — recorded, not acted on.
+- `score284_bt_rear_0p*` MORR had no planner statistics; the rollup's polygon join took minutes until `ANALYZE`. Killing an R client does not cancel its backend query, which first read as general slowness.
+
+## Errors Encountered
+
+| Error | Resolution |
+|-------|------------|
+| Re-score: "no bundle for bt_rear_0p1249 under <out>" | the script reads variant bundles from `--out`; copy the run's log dir there first |
+| Re-score: "thresholds bundle for default is not the one ... built from" | bundle drift since #307; replaced by the direct check above |
+| `lnk_rollup_wsg()` minutes on score284 MORR | stale stats; `ANALYZE` |
