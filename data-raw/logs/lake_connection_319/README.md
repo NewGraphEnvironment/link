@@ -30,8 +30,10 @@ moved 0.02 km since then (input drift, not this change).
 A full `habitat_variants_score.R` re-score of #284 cannot run at any HEAD after #307: the variant
 bundles `extends: default` by name, `default`'s thresholds have changed, and the script stops
 ("the thresholds bundle for default is not the one every scored WSG ... was built from"). This
-is the state on main, not a #319 effect. In that script only `totals.csv` and
-`habitat_change.csv` read `rearing_km`; `verdict.csv` and the band files come from flags.
+is the state on main, not a #319 effect. In that script `summary.csv`, `totals.csv` and
+`habitat_change.csv` carry `rearing_km` (a re-score now also adds `rearing_lake_connection_km`
+to `summary.csv`, so its shape changes even where values do not); `verdict.csv` and the band
+files come from flags.
 
 | file | what |
 |---|---|
@@ -44,8 +46,8 @@ is the state on main, not a #319 effect. In that script only `totals.csv` and
   `spawning_km`).
 - **SK and KO are not 0** (their L rule always admitted lake lines): KO KOTL ~307–310 km and PARS
   5.7 km, SK up to 641.8 km (BABL). Only #300 and #305 carry KO cost rows (in-sample, KO
-  unscored): re-scored now, KOTL KO base `rearing_km` would read 568.63 − 309.58 = 259.05 km,
-  and `ko_mad`'s change −7.09 km becomes −4.38 km. No verdict reads them. The committed files
+  unscored): `lnk_rollup_wsg()` at this HEAD gives KOTL KO base `rearing_km` 259.06 km (was
+  568.63) and `ko_mad` 254.67 km (was 561.54), so its change −7.09 km becomes −4.39 km. No verdict reads them. The committed files
   keep the meaning they were written with.
 - MORR in `score284_bt_rear_0p*` had no planner statistics (estimated 1 row), so the rollup's
   polygon join ran for minutes; `ANALYZE` on the three tables of each score284 schema brought it

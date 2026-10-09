@@ -778,7 +778,7 @@ next dispatch.**
     side and the bcfishpass side alike. bcfishpass counts them too, in BT and SK rearing, so
     SK parity stays 0.0 %. One predicate: `.lnk_sql_lake_connection()`
     (`R/lnk_rollup_wsg.R`), which is lake-polygon lines on 1450, NULL-safe.
-  - **`rearing_km` means one thing everywhere (#319).** `lnk_rollup_wsg()`'s default
+  - **`rearing_km` means one thing in every WSG rollup (#319).** `lnk_rollup_wsg()`'s default
     `rearing_km` leaves them out and its default `rearing_lake_connection_km` carries them
     (0 where there are none), so the two sum to the flag total. That reaches the validator's
     cost, and `data-raw/parity_crosssection.R` / `wsg_vignette_data.R` apply the same predicate

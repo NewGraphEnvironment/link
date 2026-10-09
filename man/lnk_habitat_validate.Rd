@@ -204,9 +204,11 @@ the part of the score the observations did not decide.
 \item \strong{Thresholds set from these observations score in-sample.} A cutoff
 calibrated on the same records (e.g. a use quantile) is partly
 guaranteed its capture; hold records out to score it fairly.
-\item \code{rearing} is fresh's \code{rearing} flag: stream lines, and since \code{default}'s
-lake rule (link#310) lake and reservoir lines too. \code{rearing_any} adds
-the lake and wetland buckets.
+\item \code{rearing} is fresh's \code{rearing} flag: every line the bundle's rear rules
+admit, so stream lines, wetland flow lines and mainlines in wetland
+polygons, and lake and reservoir lines where a lake rule admits them
+(\code{default} since link#310; \code{bcfishpass} for BT and SK). \code{rearing_any}
+adds the lake and wetland buckets.
 \item \strong{Capture and cost read lake connection lines differently.} Capture
 reads the flag, connection lines included. Cost does not: \code{rearing_km}
 leaves lake connection lines (FWA edge 1450 in a lake or reservoir

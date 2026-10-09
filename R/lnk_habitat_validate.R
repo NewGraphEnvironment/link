@@ -80,9 +80,11 @@
 #' - **Thresholds set from these observations score in-sample.** A cutoff
 #'   calibrated on the same records (e.g. a use quantile) is partly
 #'   guaranteed its capture; hold records out to score it fairly.
-#' - `rearing` is fresh's `rearing` flag: stream lines, and since `default`'s
-#'   lake rule (link#310) lake and reservoir lines too. `rearing_any` adds
-#'   the lake and wetland buckets.
+#' - `rearing` is fresh's `rearing` flag: every line the bundle's rear rules
+#'   admit, so stream lines, wetland flow lines and mainlines in wetland
+#'   polygons, and lake and reservoir lines where a lake rule admits them
+#'   (`default` since link#310; `bcfishpass` for BT and SK). `rearing_any`
+#'   adds the lake and wetland buckets.
 #' - **Capture and cost read lake connection lines differently.** Capture
 #'   reads the flag, connection lines included. Cost does not: `rearing_km`
 #'   leaves lake connection lines (FWA edge 1450 in a lake or reservoir

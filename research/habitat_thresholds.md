@@ -1347,10 +1347,12 @@ unchanged; dropping 1450 from the rule would be the experiment that needs it.
 `data-raw/logs/lake_connection_319/` (`parity_crosssection_{before,after}.txt`,
 `score_schemas_connection_km.csv`)
 
-**Decision (operator, 2026-10-08): one meaning everywhere.** `lnk_rollup_wsg()`'s default
+**Decision (operator, 2026-10-08): one meaning in every WSG rollup.** `lnk_rollup_wsg()`'s default
 `rearing_km` leaves lake connection lines out and its default `rearing_lake_connection_km`
 carries them, so the validator's cost reads the split too. `parity_crosssection.R` and
-`wsg_vignette_data.R` apply `.lnk_sql_lake_connection()` to `fresh.streams_vw_bcfp`.
+`wsg_vignette_data.R` apply `.lnk_sql_lake_connection()` to `fresh.streams_vw_bcfp`. The
+exception is `lnk_aggregate()`: its per-crossing default `rearing_km` still sums the flag,
+connection lines included.
 
 **Capture still reads the flag.** bcfishobs A / B records inside a lake or reservoir polygon
 (local fwapg, 2026-10-08):

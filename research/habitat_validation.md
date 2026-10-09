@@ -8,7 +8,9 @@ For a persisted run (one bundle's schema), per WSG × species × stage (`any`, `
 `rear`):
 
 - **Capture:** the share of observation locations on segments the run models as
-  accessible, spawning, stream rearing, or any rearing (stream, lake or wetland).
+  accessible, spawning, rearing (the `rearing` flag: every line the bundle's rear rules
+  admit, wetland and lake lines included where they admit them), or any rearing (the flag
+  plus the lake and wetland buckets).
 - **Cost:** `accessible_km`, `spawning_km` and `rearing_km` from `lnk_rollup_wsg()`, so
   capture cannot be raised by calling more of the network habitat. Since #319 (2026-10-09)
   `rearing_km` leaves lake connection lines (FWA edge 1450 in a lake or reservoir polygon)
