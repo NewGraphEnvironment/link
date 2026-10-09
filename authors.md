@@ -10,16 +10,16 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/NewGraphEnvironment/link/blob/v0.63.0/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/NewGraphEnvironment/link/blob/main/DESCRIPTION)
 
 Irvine A (2026). *link: Stream Network Habitat Interpretation
-(Experimental)*. R package version 0.63.0,
+(Experimental)*. R package version 0.62.0,
 <https://github.com/NewGraphEnvironment/link>.
 
     @Manual{,
       title = {link: Stream Network Habitat Interpretation (Experimental)},
       author = {Allan Irvine},
       year = {2026},
-      note = {R package version 0.63.0},
+      note = {R package version 0.62.0},
       url = {https://github.com/NewGraphEnvironment/link},
     }

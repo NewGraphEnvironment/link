@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.63.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.62.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,24 +32,9 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/v0.63.0/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
-    <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.63.0" id="link-0630">link 0.63.0<a class="anchor" aria-label="anchor" href="#link-0630"></a></h2>
-<p><strong><code>rearing_km</code> leaves lake connection lines out of link’s WSG rollups</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/319" class="external-link">#319</a>). Before this, <code><a href="../reference/lnk_rollup_wsg.html">lnk_rollup_wsg()</a></code>’s default counted them and the compare rollups did not, so two <code>rearing_km</code> columns could differ by 55–95 % for SK.</p>
-<ul><li>
-<strong><code><a href="../reference/lnk_rollup_wsg.html">lnk_rollup_wsg()</a></code>.</strong> The default <code>rearing_km</code> no longer counts FWA 1450 lines in lake and reservoir polygons. A new default <code>rearing_lake_connection_km</code> (0 where there are none) carries them, so the two sum to the flag total.</li>
-<li>
-<strong><code><a href="../reference/lnk_habitat_validate.html">lnk_habitat_validate()</a></code>.</strong> Cost takes the split. Capture still reads the <code>rearing</code> flag, because about half of in-lake fish records sit on a connection line (table in the roxygen).</li>
-<li>
-<strong>Parity scripts.</strong> <code>parity_crosssection.R</code> and <code>wsg_vignette_data.R</code> apply the same rule to the bcfishpass view. The cross-section passes 25/25 before and after, and <code>pars_accessible.rds</code> is regenerated.</li>
-<li>
-<strong>Breaking for anyone reading <code>rearing_km</code> as the flag total.</strong> On the bcfishpass config, BT rearing cost falls by 2,503 km over <a href="https://github.com/NewGraphEnvironment/link/issues/283" class="external-link">#283</a>’s 51 WSGs, so <code>default</code> now carries about 911 km more BT rearing than the bcfishpass config, not 1,592 km less. The <a href="https://github.com/NewGraphEnvironment/link/issues/284" class="external-link">#284</a> scores reproduce (<code>habitat_change.csv</code> 36 / 36).</li>
-<li>
-<strong>Unchanged:</strong> the rules and flags, so segment-level replication of bcfishpass is untouched. bcfishpass’s own published rearing km (<code>smnorris/bcfishpass@620dbe4</code>) equal <code>rearing_km + rearing_lake_connection_km</code>. <code><a href="../reference/lnk_aggregate.html">lnk_aggregate()</a></code> still sums the flag.</li>
-<li>Write-up: <code>research/habitat_thresholds.md</code>, “One meaning of <code>rearing_km</code> (<a href="https://github.com/NewGraphEnvironment/link/issues/319" class="external-link">#319</a>)”.</li>
-</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.62.0" id="link-0620">link 0.62.0<a class="anchor" aria-label="anchor" href="#link-0620"></a></h2>
 <p><strong>The compare rollups report lake connectors apart from rearing km</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/317" class="external-link">#317</a>). FWA 1450 lines (“Construction line, connection”) join each tributary mouth to a lake’s main-flow line, so lake km had grown with a lake’s tributary count.</p>
