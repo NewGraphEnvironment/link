@@ -16,7 +16,7 @@ renamed.
 | [`bcfishpass_methodology.md`](bcfishpass_methodology.md) | bcfishpass methodology, the canonical reference |
 | [`bcfishpass_comparison.md`](bcfishpass_comparison.md) | How link's output is compared with bcfishpass |
 | [`bcfp_table_map.md`](bcfp_table_map.md) | bcfp ↔ link table relationships |
-| [`bcfp_segmentation_parity.md`](bcfp_segmentation_parity.md) | link breaks streams at every 15 / 20 % gradient position where bcfishpass does not, and how that moves BT spawning and rearing both ways (#324) |
+| [`bcfp_segmentation_parity.md`](bcfp_segmentation_parity.md) | Where streams break, bcfishpass and link step by step: bcfishpass's five access scripts, link's break set, how it drifted (#45, #223), why parity numbers missed it, and what it does to BT habitat (#324) |
 | [`bcfp_view_column_coding.md`](bcfp_view_column_coding.md) | `streams_vw_bcfp` column coding and the parity predicates |
 | [`bcfp_compare_mapping_code.md`](bcfp_compare_mapping_code.md) | mapping_code comparison: enrich + score |
 | [`bcfp_divergence_taxonomy.yml`](bcfp_divergence_taxonomy.yml) | Taxonomy that `lnk_parity_annotate()` tags divergences with |

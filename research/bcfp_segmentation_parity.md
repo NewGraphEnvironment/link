@@ -1,9 +1,81 @@
-# Segmentation parity with bcfishpass, and what it does to BT habitat
+# Where streams break: bcfishpass and link, step by step
 
-**Verified:** 2026-10-11 · **Issues:** #324 (from #319) · **Produced by:**
-`data-raw/habitat_diff_segments.R`, `data-raw/logs/rearing_diff_324/mechanism.R` and
-`breaks.R` → `data-raw/logs/rearing_diff_324/` · **Status:** explained and annotated
-(`research/bcfp_divergence_taxonomy.yml`, class `SEGMENTATION`); no code change
+**Verified:** 2026-10-11 · **Issues:** #324 (from #319); history #29, #45, #96, #223, fresh#160 ·
+**Produced by:** a read of `smnorris/bcfishpass@620dbe4` (`model/01_access/`,
+`.github/workflows/ng-prod.yaml`), `data-raw/habitat_diff_segments.R`,
+`data-raw/logs/rearing_diff_324/mechanism.R` and `breaks.R` → `data-raw/logs/rearing_diff_324/`,
+and the planning archives cited below · **Status:** the difference is explained; matching it is
+decided and not yet built
+
+## How bcfishpass breaks streams
+
+`01_model_access_natural.sh`, run by `ng-prod.yaml` (the build our reference snapshot comes
+from) with five models: `bt ch_cm_co_pk_sk ct_dv_rb st wct`. The CWF test workflow runs four,
+without `ct_dv_rb`.
+
+1. For each model, `model_access_<model>.sql` builds that model's barriers: its gradient
+   classes, falls and subsurface flow, minus the barriers its own observation and habitat rules
+   lift, in the groups its own rule allows.
+2. It deletes every barrier with another barrier of the same model downstream, leaving the
+   downstream-most per flow path. This runs **after** step 1's lifts.
+3. `break_streams()` cuts the network at observations, then at each model's remaining barriers,
+   then at `user_habitat_classification` endpoints, then at crossings.
+
+The five scripts differ, and each difference changes where streams break:
+
+| model | gradient classes | groups built in | observations that lift a barrier | lifts at | since | control table | habitat lifts |
+|---|---|---|---|---|---|---|---|
+| `bt` | 25, 30 % | BT present | BT, CH, CM, CO, PK, SK, ST | ≥ 1 | any date | no | BT + salmon + ST |
+| `ch_cm_co_pk_sk` | 15, 20, 25, 30 % | any of CH, CM, CO, PK, SK present | CH, CM, CO, PK, SK | ≥ 5 | 1990 | yes | salmon |
+| `st` | 20, 25, 30 % | ST present | salmon + ST | ≥ 5 | 1990 | yes | salmon + ST |
+| `wct` | 20, 25, 30 % | WCT present | WCT | ≥ 1 | any date | no | none |
+| `ct_dv_rb` | 25, 30 % | a fixed list of 14 groups (CCIRA, LDEN / UDEN, COWN), not presence | BT, DV, CT, RB | ≥ 1 | any date | no | any species |
+
+## How link breaks them today
+
+`.lnk_pipeline_prep_minimal()` (`R/lnk_pipeline_prepare.R`), then `lnk_pipeline_break()`:
+
+1. **Lifts match bcfishpass's per script.** The bcfishpass bundle's `parameters_fresh.csv`
+   carries each row of the table above: `observation_threshold`, `observation_date_min`,
+   `observation_species`, `observation_control_apply`. The five salmon rows are identical, so
+   per-species sets equal bcfishpass's pooled model. Built in #25, #44, #48, #88 and #90.
+2. **Groups: no filter.** A break set is built for every species in `cfg$species`, whatever is
+   present. bcfishpass filters per model (the "groups built in" column). link has no `ct_dv_rb`
+   model, so in those 14 groups it would miss that model's breaks.
+3. **No reduction.** Every position of every species' set breaks the network. bcfishpass keeps
+   only the downstream-most position after lifts.
+
+## Where they differ, and since when
+
+| date | change | what it did to the breaks |
+|---|---|---|
+| 2026-04 (bcfishpass comparison, fresh#160) | per-model downstream-most reduction adopted (ADMS 27,443 → 677 barriers) | close to bcfishpass, but the reduction ran **before** lifts |
+| 2026-05-01 (#96) | falls added to `break_order` | fixed a fall that bcfishpass breaks at (HORS blk 356357296). That case is consistent with step 2: the fall below it is lifted by the observations between them |
+| 2026-05-03 (#45) | per-species derivation; presence filter deliberately **not** applied, to stay bit-identical with link's own previous build | the pre-#45 hardcoded models were already unfiltered, so link never filtered by presence |
+| 2026-07-03 (#223) | reduction dropped: every position breaks | fixed access (a reduction before lifts let a lifted mainstem barrier prune real tributary frontiers), but doubled segments: FINA 26k → 70k, PARS 48k → 97k, PCEA 34k → 106k, LKEL 3.4k → 7.4k |
+| 2026-10-11 (#324) | first direct comparison of break positions | link holds all but 1 of bcfishpass's 24,393 PCEA breaks, plus 68,118 extra |
+
+Before #223, LKEL had 3,376 link segments against bcfishpass's 3,360 today. That is the
+segmentation match the earlier work achieved. #223 called its break set "matching bcfishpass,
+which segments at every gradient barrier" (`R/lnk_pipeline_prepare.R` comment, NEWS 0.44.0).
+Neither half was measured, and step 2 above contradicts the second.
+
+## Why the parity numbers never showed it
+
+- **Mapping-code parity is an exact-key inner join** (`R/lnk_compare_mapping_code.R`, merge on
+  `blue_line_key` + `downstream_route_measure`). Each bcfishpass segment joins only the link piece
+  starting at the same measure, and link's extra pieces drop out. PARS BT 98.91 % after #223 is
+  43,600 joined rows of link's 97,538 segments.
+- **`accessible_km` sums each side whole**, and agrees within 0.05 % (44 / 44). Extra breaks do not
+  move access.
+- **#223's habitat check ran on LKEL only**, where salmon are present and the extra breaks move
+  1.4 km. In PCEA, FINA and PARS they move 71–85 km of BT rearing both ways (below).
+
+Only an overlap join, which reconciles both networks, sees segment-level disagreement.
+
+---
+
+The rest of this document is #324's measurement of what the difference does to BT habitat.
 
 Reference: local `fresh.streams_vw_bcfp`, against the `fresh` schema (bcfishpass config),
 which PCEA last modelled at link 0.50.0 / fresh 0.33.0 (2026-09-02). Upstream SQL read at
@@ -65,8 +137,8 @@ the same cluster would explain it, but that is not shown, so it is not counted a
   into the network (#223): every 15 / 20 / 25 / 30 % gradient position breaks it.
 - **Why bcfishpass does not.** Its 15 % (CH / CM / CO / PK / SK) and 20 % (ST, WCT) models build
   barriers only in groups where their species are present (`model_access_ch_cm_co_pk_sk.sql:146-150`;
-  `model_access_bt.sql:148-152` filters BT the same way, while `model_access_ct_dv_rb.sql` has no
-  presence filter but is a 25 / 30 % model), and it deletes non-minimal barriers before
+  `model_access_bt.sql:148-152` filters BT the same way, while `model_access_ct_dv_rb.sql` builds
+  only in a fixed list of 14 groups, none of them these), and it deletes non-minimal barriers before
   `break_streams()` (`01_model_access_natural.sh`). None of those 15 / 20 % species is present in
   PCEA, FINA or PARS (they hold BT, DV, GR and RB, and PARS KO), so bcfishpass never breaks at a 15
   or 20 % position there. This document calls such groups **BT-only**. In LKEL, where CH, CO and ST
@@ -143,8 +215,9 @@ the same cluster would explain it, but that is not shown, so it is not counted a
 
 The `bcfishpass` config is there to match bcfishpass step by step wherever link can.
 
-- **Both configs break where bcfishpass does:** per species present, the access barrier set after
-  observation overrides, reduced to the downstream-most position per flow path
+- **Both configs break where bcfishpass does:** in the groups each model's own rule allows (the
+  "groups built in" column above), the access barrier set after observation and habitat lifts,
+  reduced to the downstream-most position per flow path
   (`01_model_access_natural.sh`: build per model, delete non-minimal, then `break_streams()`).
   A break above a species' first barrier changes nothing for that species, so there is no reason
   for `default` to differ, and keeping both on one segmentation keeps the PARS vignette join on
