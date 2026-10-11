@@ -141,7 +141,7 @@
 <td>cross-WSG source of truth</td>
 <td>YES (<code>id_barrier</code>)</td>
 </tr></tbody></table><p><code>barriers_&lt;sp&gt;_unified</code> is a <strong>view over the persist <code>barriers</code> table</strong>, filtered <code>WHERE '&lt;SP&gt;' = ANY(blocks_species)</code>. Because it reads persist (province-wide), it sees <strong>cross-WSG</strong> barriers — this is the link#152 fix (PARS drains through dams in PCEA/UPCE; those dams are only visible via persist, never in PARS-local tables).</p>
-<p><code>barriers_&lt;sp&gt;_min</code> (gradient + falls, minimal-reduced) is a <strong>break-spec</strong> — it has NO id column, so it <strong>cannot</strong> feed <code>frs_network_features</code> / <code>barriers_per_sp</code>. (Tried in #196; failed with <code>barriers_bt_min_id does not exist</code>.) <code>barriers_per_sp</code> mechanically requires the <em>feature view</em> shape.</p>
+<p><code>barriers_&lt;sp&gt;_min</code> was a <strong>break-spec</strong> (gradient + falls; minimal-reduced until #223, every position since; how this compares with bcfishpass is <code>research/bcfp_segmentation_parity.md</code>) — it has NO id column, so it <strong>cannot</strong> feed <code>frs_network_features</code> / <code>barriers_per_sp</code>. (Tried in #196; failed with <code>barriers_bt_min_id does not exist</code>.) <code>barriers_per_sp</code> mechanically requires the <em>feature view</em> shape.</p>
 <hr></div>
 </div>
 <div class="section level2">

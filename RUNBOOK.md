@@ -134,9 +134,11 @@ filtered `WHERE '<SP>' = ANY(blocks_species)`. Because it reads persist
 fix (PARS drains through dams in PCEA/UPCE; those dams are only visible
 via persist, never in PARS-local tables).
 
-`barriers_<sp>_min` (gradient + falls, minimal-reduced) is a
-**break-spec** — it has NO id column, so it **cannot** feed
-`frs_network_features` / `barriers_per_sp`. (Tried in \#196; failed with
+`barriers_<sp>_min` was a **break-spec** (gradient + falls;
+minimal-reduced until \#223, every position since; how this compares
+with bcfishpass is `research/bcfp_segmentation_parity.md`) — it has NO
+id column, so it **cannot** feed `frs_network_features` /
+`barriers_per_sp`. (Tried in \#196; failed with
 `barriers_bt_min_id does not exist`.) `barriers_per_sp` mechanically
 requires the *feature view* shape.
 
