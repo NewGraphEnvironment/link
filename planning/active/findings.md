@@ -45,7 +45,7 @@ Pieces from `data-raw/habitat_diff_segments.R`, attributed by
   PCEA is BT-only, so bcfp does not break at the 15 / 20 % positions at all.
 - **Cascade, row level:** blk 359497146: link breaks at 3,050.8 m (a 15 % position); its
   2,771–3,051 piece is 4.3 % and spawns (≤ 0.0549), bcfp's 2,771–3,329 segment is 7.2 % and
-  does not; link then rears 2.75 km downstream through the cluster rule, bcfp rears nothing on
+  does not; link then rears 2.75 km on the blk (2.47 km downstream of that piece) through the cluster rule, bcfp rears nothing on
   the blk.
 - **Spawning** disagrees too (link 925.7 / bcfp 918.5): 9.3 km link-only, 7.3 of it on the
   spawn-gradient split; 2.05 km bcfp-only, all of it on the split.

@@ -3,7 +3,9 @@
 # A break is a segment's downstream_route_measure > 0.5 m (0 is the line's own
 # start). Matched within 1 m on the same blue_line_key. Each link break is labelled
 # by the `fresh.barriers` position it sits on (gradient positions by the species
-# they block: BT = 25/30 % class, ST but not BT = 20 %, salmon only = 15 %).
+# they block: BT = 25/30 % class, ST but not BT = 20 %, salmon only = 15 %), else
+# FWA_BASE_SEGMENT when it is the start of a whole fwa_stream_networks_sp line,
+# else none (observation / crossing / habitat endpoint).
 # Writes <wsg>_breaks.csv beside this script.
 #
 # Usage: Rscript data-raw/logs/rearing_diff_324/breaks.R [WSG ...]   (default PCEA)
@@ -21,7 +23,7 @@ for (w in wsgs) {
   stopifnot(grepl("^[A-Z]{4}$", w))
   lit <- DBI::dbQuoteLiteral(conn, w)
   x("DROP TABLE IF EXISTS pg_temp.lb"); x("DROP TABLE IF EXISTS pg_temp.bb")
-  x("DROP TABLE IF EXISTS pg_temp.br")
+  x("DROP TABLE IF EXISTS pg_temp.br"); x("DROP TABLE IF EXISTS pg_temp.fb")
   x(sprintf("CREATE TEMP TABLE lb AS SELECT blue_line_key blk, downstream_route_measure m
              FROM fresh.streams WHERE watershed_group_code = %s AND downstream_route_measure > 0.5", lit))
   x(sprintf("CREATE TEMP TABLE bb AS SELECT blue_line_key blk, downstream_route_measure m
@@ -32,11 +34,17 @@ for (w in wsgs) {
                     WHEN 'ST' = ANY(blocks_species) THEN 'GRADIENT_20'
                     ELSE 'GRADIENT_15' END AS cls
              FROM fresh.barriers WHERE watershed_group_code = %s", lit))
-  for (t in c("lb", "bb", "br")) { x(sprintf("CREATE INDEX ON %s (blk, m)", t)); x(sprintf("ANALYZE %s", t)) }
+  x(sprintf("CREATE TEMP TABLE fb AS SELECT blue_line_key blk, downstream_route_measure m
+             FROM whse_basemapping.fwa_stream_networks_sp WHERE watershed_group_code = %s", lit))
+  for (t in c("lb", "bb", "br", "fb")) { x(sprintf("CREATE INDEX ON %s (blk, m)", t)); x(sprintf("ANALYZE %s", t)) }
   link <- DBI::dbGetQuery(conn, "
-    SELECT in_bcfp, coalesce(cls, 'none (observation / crossing / endpoint)') AS position, count(*) AS n
+    SELECT in_bcfp,
+           coalesce(cls, CASE WHEN fwa THEN 'FWA_BASE_SEGMENT' END,
+                    'none (observation / crossing / endpoint)') AS position,
+           count(*) AS n
     FROM (SELECT exists(SELECT 1 FROM bb WHERE bb.blk = lb.blk AND bb.m BETWEEN lb.m - 1 AND lb.m + 1) AS in_bcfp,
-                 (SELECT min(cls) FROM br WHERE br.blk = lb.blk AND br.m BETWEEN lb.m - 1 AND lb.m + 1) AS cls
+                 (SELECT min(cls) FROM br WHERE br.blk = lb.blk AND br.m BETWEEN lb.m - 1 AND lb.m + 1) AS cls,
+                 exists(SELECT 1 FROM fb WHERE fb.blk = lb.blk AND fb.m BETWEEN lb.m - 1 AND lb.m + 1) AS fwa
           FROM lb) z
     GROUP BY 1, 2 ORDER BY 1, 3 DESC")
   bcfp <- DBI::dbGetQuery(conn, "

@@ -6,9 +6,10 @@
 "PARS","link",FALSE,"FALLS",16
 "PARS","link",FALSE,"none (observation / crossing / endpoint)",14
 "PARS","link",FALSE,"PSCIS",9
-"PARS","link",TRUE,"none (observation / crossing / endpoint)",22049
+"PARS","link",TRUE,"FWA_BASE_SEGMENT",21229
 "PARS","link",TRUE,"GRADIENT_25_30",4272
 "PARS","link",TRUE,"MODELLED_CROSSINGS",3166
+"PARS","link",TRUE,"none (observation / crossing / endpoint)",820
 "PARS","link",TRUE,"GRADIENT_15",417
 "PARS","link",TRUE,"PSCIS",402
 "PARS","link",TRUE,"GRADIENT_20",324

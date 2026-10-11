@@ -1,5 +1,5 @@
-run: 2026-10-11T18:30Z (UTC)
-script: data-raw/habitat_diff_segments.R PCEA bt fresh spawning @ link 0.63.0 (ffb8e23)
+run: 2026-10-11T18:46Z (UTC)
+script: data-raw/habitat_diff_segments.R PCEA bt fresh spawning @ link 0.63.0 (9f579fe)
 db: local docker fwapg localhost:5432; fresh.streams_vw_bcfp rows 4272365
 fresh.log latest PCEA row: run_id=cypherjob1-20260902T000616.316-f1742a date_end=2026-09-02 00:09:53.460423 link_version=0.50.0 link_sha=689146867a5f00f94ec2e8085ddae36996e64379 fresh_version=0.33.0 config_name=bcfishpass
 network km link 14315.69 bcfp 14315.69; spawning flag km link 925.72 bcfp 918.48

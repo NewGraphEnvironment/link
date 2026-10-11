@@ -11,8 +11,10 @@
 # piece carries both sides' segment attributes and its overlap length.
 #
 # Asserts before writing anything:
-#   - the overlap total equals each side's network km in the WSG (to 1 m)
+#   - the overlap total equals each side's network km in the WSG
 #   - link-only minus bcfp-only equals the two sides' flag totals' difference
+#   both to within 1 m per 1,000 link segments (PCEA: 106 m), which allows
+#   length_metre-against-measure rounding
 #
 # Writes to data-raw/logs/rearing_diff_324/ (override with LNK_OUT):
 #   <wsg>_<sp>[_spawning]_summary.csv  agreement classes (km), with and without lake connection lines
@@ -20,14 +22,12 @@
 #   <wsg>_<sp>[_spawning]_stamp.txt    environment stamp
 # (the class columns compare `flag`; both sides' spawning and rearing ride along)
 #
-# Usage: [LNK_LOAD=loadall] Rscript data-raw/habitat_diff_segments.R [WSG] [species] [schema] [flag]
+# Loads the source tree (pkgload::load_all), never the installed link.
+#
+# Usage: Rscript data-raw/habitat_diff_segments.R [WSG] [species] [schema] [flag]
 #        defaults: PCEA bt fresh rearing
 
-if (identical(Sys.getenv("LNK_LOAD"), "loadall")) {
-  suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
-} else {
-  suppressPackageStartupMessages(library(link))
-}
+suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
 suppressPackageStartupMessages(library(DBI))
 
 args   <- commandArgs(trailingOnly = TRUE)
@@ -141,7 +141,7 @@ summ <- q("
          count(DISTINCT blk) AS n_blk, count(*) AS n_piece
   FROM rd_piece GROUP BY class ORDER BY class")
 pieces <- q("SELECT * FROM rd_piece WHERE class IN ('link_only', 'bcfp_only')
-             ORDER BY class, blk, dm")
+             ORDER BY class, blk, dm, id_segment, segmented_stream_id")
 pieces[] <- lapply(pieces, function(v) if (is.double(v)) round(v, 4) else v)
 
 stem <- file.path(out, sprintf("%s_%s%s", tolower(wsg), sp,

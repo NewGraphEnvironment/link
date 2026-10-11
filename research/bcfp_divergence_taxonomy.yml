@@ -171,6 +171,24 @@ entries:
       - data-raw/logs/rearing_diff_324/
     status: INTENTIONAL
 
+  # bcfishpass rears order-1 lines with parent order >= 5 whatever their width
+  # (load_habitat_linear_bt.sql @620dbe4); the bcfishpass bundle sets
+  # rear_stream_order_bypass = no. In PCEA that is the whole connection-line gap
+  # #319 measured: 8.38 km on two 1450 lines in a lake on an order-9 stem.
+  - id: pcea-bt-connection-width-exception
+    wsg: PCEA
+    species: BT
+    metric: rearing_lake_connection
+    pattern: link_lt_bcfp
+    diff_range: [0, 5]
+    class: B
+    mechanism: bcfishpass rears order-1 connection lines on an order-9 stem whatever their width; the bcfishpass bundle declines that exception (rear_stream_order_bypass = no)
+    refs:
+      - https://github.com/NewGraphEnvironment/link/issues/324
+      - research/bcfp_segmentation_parity.md
+      - data-raw/logs/rearing_diff_324/
+    status: INTENTIONAL
+
   # ---------------------------------------------------------------------------
   # Class C — SK new-geographies. Three open fresh mechanisms feed this
   # (multi-lake topology, lake-adjacency knob, upstream-spawn cluster gate).

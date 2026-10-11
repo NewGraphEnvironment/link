@@ -8,7 +8,8 @@
 Reference: local `fresh.streams_vw_bcfp`, against the `fresh` schema (bcfishpass config),
 which PCEA last modelled at link 0.50.0 / fresh 0.33.0 (2026-09-02). Upstream SQL read at
 `smnorris/bcfishpass@620dbe4` (model run 142, `v0.7.15-50-g620dbe43`); the access and BT
-habitat files it cites last changed on 2026-04-16 (`50688d5`), before the snapshot.
+habitat files it cites last changed on or before 2026-04-16 (`50688d5`;
+`01_model_access_natural.sh` on 2026-01-05, `9fdcbc7`), before the snapshot.
 
 ## The question
 
@@ -38,7 +39,7 @@ BT rearing flag km, link − bcfp, by mechanism (bcfishpass config):
 | LKEL | +0.08 | +1.34 | 0 | +0.24 | +1.66 | 1.7 |
 
 Gross is link-only plus bcfp-only km. Each mechanism moves km both ways; the table nets them.
-Connectivity on a `blue_line_key` with no gradient split of its own is at most 1.35 km per WSG,
+Connectivity on a `blue_line_key` with no gradient split of its own is at most 1.54 km per WSG (gross),
 and nothing is left unattributed.
 
 ### Segmentation is the cause
@@ -71,8 +72,8 @@ and nothing is left unattributed.
   carries along the stream:
   - **Joining** (PCEA blk 359497146): link breaks at 3,050.8 m, a 15 % position. Its
     2,771–3,051 m piece is 4.3 % and spawns; bcfishpass's 2,771–3,329 m segment is 7.2 % and
-    does not. link then rears 2.75 km downstream through the cluster rule, and bcfishpass rears
-    nothing on that stream.
+    does not. link then rears 2.75 km on the stream, 2.47 km of it downstream of that piece
+    through the cluster rule, and bcfishpass rears nothing on that stream.
   - **Cutting** (FINA blk 359421737): link carves 1,036–1,267 m (13.6 %) out of bcfishpass's
     393–1,267 m segment (10.2 %, rears). That splits the cluster, and 5.4 km of rearing above
     it loses its connection to the 0.39 km of spawning at the mouth.
