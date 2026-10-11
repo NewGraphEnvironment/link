@@ -3,14 +3,14 @@
 **If done:** we know why link on the `bcfishpass` config flags different BT rearing segments than bcfishpass in PCEA, and either fix it or record it as an annotated divergence. **If never:** a segment-level replication gap stays unexplained. Today it is within the 5 % parity tolerance (+1.87 %).
 
 ## Phase 1: Segment-level diff instrument
-- [ ] `data-raw/rearing_diff_segments.R` (args: WSG, species; default PCEA bt): interval-overlap
+- [x] `data-raw/rearing_diff_segments.R` (args: WSG, species; default PCEA bt): interval-overlap
       join of `fresh.streams` × `streams_habitat_<sp>` (full PK join) against
       `fresh.streams_vw_bcfp` (`rearing_<sp> IN (1,2)`), carrying both sides' edge type,
       gradient, channel width, waterbody/lake-connection (`.lnk_sql_lake_connection()`),
       access, spawning
-- [ ] Assert reconciliation inside the script: overlap total = both sides' network km, and
+- [x] Assert reconciliation inside the script: overlap total = both sides' network km, and
       link-only − bcfp-only = the parity-cross-section rearing diff (incl. connection lines)
-- [ ] Stamped output to `data-raw/logs/rearing_diff_324/` (link/fresh SHA, run time, view row count)
+- [x] Stamped output to `data-raw/logs/rearing_diff_324/` (link/fresh SHA, run time, view row count)
 
 ## Phase 2: Bucket and explain PCEA
 - [ ] Bucket each flow by edge type, waterbody, gradient (link segment vs bcfp segment),

@@ -1,0 +1,5 @@
+run: 2026-10-11T18:28Z (UTC)
+script: data-raw/rearing_diff_segments.R PCEA bt fresh @ link 0.63.0 (402d452)
+db: local docker fwapg localhost:5432; fresh.streams_vw_bcfp rows 4272365
+fresh.log latest PCEA row: run_id=cypherjob1-20260902T000616.316-f1742a date_end=2026-09-02 00:09:53.460423 link_version=0.50.0 link_sha=689146867a5f00f94ec2e8085ddae36996e64379 fresh_version=0.33.0 config_name=bcfishpass
+network km link 14315.69 bcfp 14315.69; rearing flag km link 2023.48 bcfp 2001.37
