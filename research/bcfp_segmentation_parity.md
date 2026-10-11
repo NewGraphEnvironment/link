@@ -138,3 +138,33 @@ the same cluster would explain it, but that is not shown, so it is not counted a
 - **The `default` config shares the break set,** so its BT habitat is computed on the finer
   segments too. That reads truer to the reach, but it is a choice, and it moves numbers against
   bcfishpass both ways.
+
+## Decided (2026-10-11, operator; not yet implemented)
+
+- **Both configs filter the break set by species presence.** A 15 or 20 % position breaks a
+  stream only where a species with that access threshold is present. With no such fish, the break
+  gates nothing; it is a side effect of the config listing all eight species. Filtering both
+  configs keeps `fresh` and `fresh_default` on one segmentation, which the PARS vignette join on
+  `id_segment` relies on (`data-raw/wsg_vignette_data.R`, segmentation-parity guard).
+- **Spawning size minimum: the `bcfishpass` config takes bcfishpass's strict `>`; `default`
+  keeps `>=`** (a segment at exactly the minimum spawns). Recorded as an intentional departure in
+  `research/default_vs_bcfishpass.md`, §6.
+- Still open: every position versus the downstream-most per model (below), which matters only
+  where salmon are present (LKEL 1.4 km).
+
+## What #223 matched, and what it asserted
+
+#223 (`planning/archive/2026-07-issue-221-223-accessible-km-parity/`) went through segmentation
+in depth, but its question was the opposite one: link had **too few** breaks. fresh's
+`frs_barriers_minimal()` had reduced PCEA's gradient break positions to 32 and FINA's to 11, so
+a segment straddled BT's barrier and its whole reach read accessible (FINA BT `accessible_km`
++23.6 %). The fix fed every per-model position in (PCEA 32 → 82,931 positions).
+
+- **Measured:** `accessible_km` within 0.05 % on 11 WSGs × 8 species. Spawning and rearing km were
+  byte-identical before and after on **LKEL only**, a group with salmon present, where the extra
+  breaks move 1.4 km.
+- **Asserted, not measured:** that the new break set "matches bcfishpass" (the archive README, the
+  `R/lnk_pipeline_prepare.R` comment, and the #223 status in `CLAUDE.md`, "bcfp-matching"). Nobody
+  compared break positions until #324. The new set is a superset of bcfishpass's breaks (24,392
+  of 24,393 in PCEA), with 68,118 extra in PCEA, and in BT-only groups the extra 15 / 20 %
+  breaks move BT habitat 71–85 km both ways.
