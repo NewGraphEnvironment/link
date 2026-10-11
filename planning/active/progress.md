@@ -48,5 +48,5 @@
 | 6 | 2 | 2 | 0 | n |
 
 Ended by enumeration: round 6 recomputed both rollup scopes from the DB and walked every claim site
-against the ledger. Ten reviewer spawns in all (the first-session plan review, which never returned,
-plus these six rounds and none re-run).
+against the ledger. Seven reviewer spawns in all: the first-session plan review, which never returned, plus these
+six rounds.
