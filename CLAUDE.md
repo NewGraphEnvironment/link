@@ -28,6 +28,8 @@ Experimental package — breaking all the time and loving the learning curve. St
 - **Never join link and `streams_vw_bcfp` on an exact `(blue_line_key, downstream_route_measure)`.** link has about 2.8× the segments (PCEA 106,079 vs 37,957), and its breaks hold all but a handful of bcfishpass's (PCEA 24,392 / 24,393; PARS 30,699 / 30,733). Join on measure overlap, and drop pieces under 1 cm: within each side a segment's upstream measure can overshoot the next one's start by up to 3.93 mm (from FWA), and the sliver pairs the reach above that break with the reach below it.
 - **The 15 / 20 % breaks do not come from the orphan-class path.** The bcfishpass bundle models all eight species, so CH (0.15) and ST (0.20) build their own per-model break sets in every group.
 - **bcfishpass's order-1 width exception covers BT, CH, CO, ST and WCT rearing** at `@620dbe4`, not CH alone. The CH-only note under "Older closed" (#23) is stale.
+- **bcfishpass's five access scripts differ** (groups built in, which observations lift, how many, date cut, control table), and each reduces its barriers to the downstream-most *after* its lifts. `ct_dv_rb` runs only in a fixed list of 14 groups and only in `ng-prod`. The table and link's break history are `research/bcfp_segmentation_parity.md`; read it before touching breaks.
+- **Mapping-code parity cannot see segmentation.** `lnk_compare_mapping_code()` is an exact-key inner join, so link's extra pieces drop out (PARS 43,600 joined of 97,538). The "#223 matches bcfishpass" claim (status below, code comment) was never measured.
 
 ## Status (2026-10-09) — `rearing_km` means one thing in link's WSG rollups (#319)
 
