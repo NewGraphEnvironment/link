@@ -35,3 +35,18 @@
 - #324 body: "Answer" section added. CLAUDE.md status. RUNBOOK unchanged (no mechanics changed).
 - Follow-up issue drafted in the scratchpad (segment where bcfishpass does; stale bypass status;
   access residual); not filed — needs body review.
+
+## Session 2026-10-11 (code-check, branch mode)
+
+| Round | Findings | Fixed | Accepted | Inside previous fix? |
+|---|---|---|---|---|
+| 1 | 7 | 7 | 0 | — |
+| 2 | 2 | 2 | 0 | y (restated connectivity bound) |
+| 3 | 7 | 7 | 0 | y (sliver cause) |
+| 4 | 8 | 8 | 0 | y (split test; leftover sentence) |
+| 5 | 6 | 6 | 0 | y (scope of round-4 figures) |
+| 6 | 2 | 2 | 0 | n |
+
+Ended by enumeration: round 6 recomputed both rollup scopes from the DB and walked every claim site
+against the ledger. Ten reviewer spawns in all (the first-session plan review, which never returned,
+plus these six rounds and none re-run).

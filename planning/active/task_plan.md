@@ -37,7 +37,7 @@
 
 ## Validation
 
-- [ ] Tests pass
-- [ ] `/code-check` clean (each commit, or once over the branch with `/code-check branch`)
-- [ ] PWF checkboxes match landed work
+- [x] Tests pass (no R/, tests/ or inst/ change; `test-lnk_parity_annotate.R` 55 / 0 against the edited taxonomy)
+- [x] `/code-check branch`: six rounds, ended by enumeration (claim ledger `review-enumeration.md`, round 6 full sweep)
+- [x] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
