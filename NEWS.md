@@ -1,3 +1,12 @@
+# link 0.63.1
+
+**PCEA's +1.87 % BT rearing against bcfishpass is explained: link breaks streams where bcfishpass does not** ([#324](https://github.com/NewGraphEnvironment/link/issues/324)). No package code changes.
+
+- **Where streams break.** bcfishpass reduces each access model's barriers to the downstream-most per flow path after its observation and habitat lifts, and builds a model only where its species are present. link breaks at every gradient position of every configured species. In groups with no 15 / 20 % species present (PCEA, FINA, PARS) that moves 71–85 km of BT rearing both ways, netting +26.2 / −13.0 / +9.8 km.
+- **Two rule differences beside it:** bcfishpass's order-1 rearing exception (PARS −24.8 km; the bundle declines it) and its strict `>` on the spawning width minimum (1.8–5.3 km of link-only BT spawning at exactly 2.0 m).
+- **Follow-ups:** [#326](https://github.com/NewGraphEnvironment/link/issues/326) (break only where a present species' access changes, both configs) and [#327](https://github.com/NewGraphEnvironment/link/issues/327) (`default`'s order-1 position).
+- Write-up: `research/bcfp_segmentation_parity.md`, which lines up bcfishpass's five access scripts against link's break set; RUNBOOK §2 points to it. Instrument: `data-raw/habitat_diff_segments.R`.
+
 # link 0.63.0
 
 **`rearing_km` leaves lake connection lines out of link's WSG rollups** ([#319](https://github.com/NewGraphEnvironment/link/issues/319)). Before this, `lnk_rollup_wsg()`'s default counted them and the compare rollups did not, so two `rearing_km` columns could differ by 55–95 % for SK.
