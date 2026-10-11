@@ -19,7 +19,7 @@ and every quantitative claim below was re-checked against the regenerated artifa
 | 2.75 km / 2.47 km downstream (blk 359497146) | research doc, findings | round-2 reviewer's DB check | matches |
 | 5.4 km / 0.39 km (blk 359421737) | research doc, findings | row-level query, Phase 3 | matches |
 | 0.5–1.9 % WSG-level | research doc, draft issue | `lake_connection_319/parity_crosssection_after.txt` | matches |
-| segmentation moves 74–87 km per BT-only group, nets +29.91 / −13.10 / +10.01; LKEL 1.4 | research doc, taxonomy, CLAUDE.md, issue body, draft issue | `segmentation_gross` 74.85 / 73.50 / 86.87 / 1.44, `segmentation_net` | replaces the all-mechanism gross (round 4) |
+| segmentation moves 71–85 km of the `rearing` row per BT-only group, nets +26.22 / −13.04 / +9.81; LKEL 1.4 | research doc, CLAUDE.md, issue body, draft issue | `*_bt_mechanism_net.csv` scope `rearing`: segmentation_gross 70.78 / 73.43 / 84.85 / 1.44 | superseded twice (rounds 4, 5) |
 | 715 of 1,258 slivers | script comment, log README | `ec7b838` pieces CSV | matches |
 | PCEA rearing_lake_connection −2.18 % | taxonomy entry | 367.69 / 375.89 | matches |
 
@@ -68,3 +68,25 @@ older document or a generalisation from PCEA, with no probe. Each one in the cha
 | `pars-bt-rearing-width-exception` (PARS rearing) | B / INTENTIONAL | width exception −24.78 drives the sign; the bundle sets the bypass to `no` |
 | `bt-spawning-segmentation-and-width` (PCEA / FINA / PARS spawning) | SEGMENTATION / NEEDS_INVESTIGATION | the width rule (25–39 % of the spawning net) is an open decision |
 | `pcea-bt-connection-width-exception` (PCEA connection row) | B / INTENTIONAL | bundle setting |
+
+## Round 5: scope
+
+Every figure is now tied to a scope: the rearing **flag** (connection lines in, what the pieces are
+built from), the rollup's **`rearing`** row (connection lines out, #319) or its **`rearing_stream`**
+slice. `mechanism.R` writes all three; the `rearing` scope reconciles to the parity cross-section
+(PCEA +30.33 = 1,655.8 − 1,625.5; FINA −12.88; PARS −13.83; LKEL +1.65).
+
+| claim | verdict |
+|---|---|
+| PCEA rearing row = +29.9 segmentation − 9.6 width + 1.8 access | **wrong scope** (flag); rearing row is +26.22 / −1.22 / +1.80 / +3.52 other = +30.33. Taxonomy text now carries no figures |
+| PARS rearing_stream −24.8 / +10.0 | **wrong scope**; −22.77 / +9.27 in the slice. Taxonomy text carries no figures |
+| FINA negative "where cutting outweighs joining" | **misattributed**; PARS's connectivity is negative too. Reworded: gradient flips positive in all three, connectivity negative in FINA and PARS, and only in FINA does it outweigh them |
+| fresh's width test is `size_sql()` | **wrong code**; the bundle's rules go through `.frs_rules_to_sql()` (`channel_width BETWEEN`, fresh `R/utils.R:316`) |
+| connectivity_other counted as segmentation and called unexplained | split out: `connectivity_other` column, not in `segmentation_*` |
+| log README taxonomy index | listed all five entries |
+
+### Categorical fields after round 5
+
+Unchanged ids, classes and statuses (table above). Mechanism strings now name parts and signs only and
+point to `<wsg>_bt_mechanism_net.csv`; the one figure left in the taxonomy (8.37 km in the
+`pcea-bt-connection-width-exception` comment) is that row's own scope.

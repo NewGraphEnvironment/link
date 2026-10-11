@@ -1,2 +1,4 @@
-"wsg","rear_gradient","connectivity","connectivity_other_gross","cw_order_bypass","access","other","net","gross","segmentation_net","segmentation_gross"
-"FINA",12.21,-25.31,0.06,0,0.23,0,-12.88,73.72,-13.1,73.5
+"wsg","scope","rear_gradient","connectivity_split","connectivity_other","connectivity_other_gross","cw_order_bypass","access","other","net","gross","segmentation_net","segmentation_gross"
+"FINA","flag",12.21,-25.25,-0.06,0.06,0,0.23,0,-12.88,73.72,-13.04,73.43
+"FINA","rearing",12.21,-25.25,-0.06,0.06,0,0.23,0,-12.88,73.72,-13.04,73.43
+"FINA","rearing_stream",12.21,-25.25,0,0,0,0,0,-13.04,73.43,-13.04,73.43

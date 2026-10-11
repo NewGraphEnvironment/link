@@ -1,2 +1,4 @@
-"wsg","rear_gradient","connectivity","connectivity_other_gross","cw_order_bypass","access","other","net","gross","segmentation_net","segmentation_gross"
-"PCEA",21.72,8.19,4.01,-9.59,1.8,0,22.11,86.24,29.91,74.85
+"wsg","scope","rear_gradient","connectivity_split","connectivity_other","connectivity_other_gross","cw_order_bypass","access","other","net","gross","segmentation_net","segmentation_gross"
+"PCEA","flag",21.72,4.57,3.62,4.01,-9.59,1.8,0,22.11,86.24,26.28,70.84
+"PCEA","rearing",21.72,4.51,3.52,3.91,-1.22,1.8,0,30.33,77.7,26.22,70.78
+"PCEA","rearing_stream",21.72,4.21,3.52,3.91,-1,1.8,0,30.25,76.81,25.93,70.1

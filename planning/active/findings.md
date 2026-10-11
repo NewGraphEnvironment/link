@@ -72,7 +72,7 @@ Net km by mechanism (link − bcfp), BT rearing, bcfishpass config:
 | LKEL | +0.07 | +1.34 | 0 | +0.24 | +1.65 | 1.7 |
 
 - Not PCEA-specific: the same two-way gradient split and its connectivity cascade run in FINA
-  and PARS. Segmentation alone nets +29.91 (PCEA), −13.10 (FINA), +10.01 (PARS) km; PARS's
+  and PARS. On the `rearing` row segmentation alone nets +26.22 (PCEA), −13.04 (FINA), +9.81 (PARS) km; PARS's
   whole-group net is negative only through the width exception (−24.78). (Corrected in
   code-check round 4.)
 - FINA blk 359421737 shows the cutting direction: link carves 1,036–1,267 m (13.6 %) out of

@@ -63,22 +63,36 @@ names(n)[names(n) == "blk"] <- "n_blk"
 out <- merge(out, n)
 out <- out[order(out$class, -out$km), ]
 
-# net km per mechanism family (link - bcfp) from unrounded lengths: the table
-# research/bcfp_segmentation_parity.md quotes
-fam <- sub("^connectivity_.*", "connectivity", p$mechanism)
-sgn <- ifelse(p$class == "link_only", 1, -1) * p$len
-net <- data.frame(
-  wsg = toupper(wsg),
-  rear_gradient = sum(sgn[fam == "rear_gradient"]),
-  connectivity = sum(sgn[fam == "connectivity"]),
-  connectivity_other_gross = sum(p$len[p$mechanism == "connectivity_other"]),
-  cw_order_bypass = sum(sgn[fam == "cw_order_bypass"]),
-  access = sum(sgn[fam == "access"]),
-  other = sum(sgn[fam == "other"]),
-  net = sum(sgn), gross = sum(p$len),
-  segmentation_net = sum(sgn[fam %in% c("rear_gradient", "connectivity")]),
-  segmentation_gross = sum(p$len[fam %in% c("rear_gradient", "connectivity")]))
-net[-1] <- lapply(net[-1], function(v) round(v / 1000, 2))
+# net km per mechanism (link - bcfp) from unrounded lengths, for three scopes:
+#   flag            the rearing flag, as the pieces are built
+#   rearing         the rollup's `rearing` row: lake connection lines out (#319),
+#                   each side by its own segment's lake_conn
+#   rearing_stream  the rollup's stream slice: each side's segment outside any
+#                   lake, reservoir or wetland polygon
+# segmentation = rear_gradient + connectivity_split_on_blk; connectivity_other is
+# kept apart, because no gradient split on its own stream ties it to segmentation.
+sgn  <- ifelse(p$class == "link_only", 1, -1) * p$len
+keep <- list(
+  flag           = rep(TRUE, nrow(p)),
+  rearing        = ifelse(p$class == "link_only", !p$l_lake_conn, !p$b_lake_conn),
+  rearing_stream = ifelse(p$class == "link_only", p$l_wb == "stream", p$b_wb == "stream"))
+net <- do.call(rbind, lapply(names(keep), function(sc) {
+  k <- keep[[sc]]
+  m <- function(x) sum(sgn[k & p$mechanism %in% x])
+  data.frame(
+    wsg = toupper(wsg), scope = sc,
+    rear_gradient = m("rear_gradient"),
+    connectivity_split = m("connectivity_split_on_blk"),
+    connectivity_other = m("connectivity_other"),
+    connectivity_other_gross = sum(p$len[k & p$mechanism == "connectivity_other"]),
+    cw_order_bypass = m("cw_order_bypass"),
+    access = m("access"),
+    other = m("other"),
+    net = sum(sgn[k]), gross = sum(p$len[k]),
+    segmentation_net = m(c("rear_gradient", "connectivity_split_on_blk")),
+    segmentation_gross = sum(p$len[k & p$mechanism %in% c("rear_gradient", "connectivity_split_on_blk")]))
+}))
+net[-(1:2)] <- lapply(net[-(1:2)], function(v) round(v / 1000, 2))
 
 # spawning disagreement, first match wins:
 #   spawn_gradient   the two segments' gradients sit either side of spawn_gradient_max

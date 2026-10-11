@@ -34,19 +34,25 @@ one mechanism, first match wins.
 
 ## Result
 
-BT rearing flag km, link − bcfp, by mechanism (bcfishpass config):
+BT `rearing` km, link − bcfp, by mechanism (bcfishpass config). This is the rollup's `rearing`
+row, which leaves lake connection lines out (#319); each total reconciles to the parity
+cross-section (PCEA 1,655.8 − 1,625.5 = +30.3 km):
 
-| WSG | rear gradient | connectivity | width exception | access | net | gross | segmentation net | segmentation gross |
+| WSG | rear gradient | connectivity, split stream | connectivity, other | width exception | access | net | segmentation net | segmentation gross |
 |---|---|---|---|---|---|---|---|---|
-| PCEA | +21.72 | +8.19 | −9.59 | +1.80 | +22.11 | 86.2 | +29.91 | 74.9 |
-| FINA | +12.21 | −25.31 | 0 | +0.23 | −12.88 | 73.7 | −13.10 | 73.5 |
-| PARS | +19.28 | −9.27 | −24.78 | +0.94 | −13.83 | 112.6 | +10.01 | 86.9 |
-| LKEL | +0.07 | +1.34 | 0 | +0.24 | +1.65 | 1.7 | +1.41 | 1.4 |
+| PCEA | +21.72 | +4.51 | +3.52 | −1.22 | +1.80 | +30.33 | +26.22 | 70.8 |
+| FINA | +12.21 | −25.25 | −0.06 | 0 | +0.23 | −12.88 | −13.04 | 73.4 |
+| PARS | +19.28 | −9.48 | +0.21 | −24.78 | +0.94 | −13.83 | +9.81 | 84.9 |
+| LKEL | +0.07 | +1.34 | 0 | 0 | +0.24 | +1.65 | +1.41 | 1.4 |
 
-From `<wsg>_bt_mechanism_net.csv`. Gross is link-only plus bcfp-only km; segmentation is rear
-gradient plus connectivity. Rear gradient and connectivity move km both ways; the table nets them.
-Connectivity on a `blue_line_key` with no gradient split of its own is at most 4.01 km per WSG
-(gross, PCEA), and nothing is left unattributed.
+From `<wsg>_bt_mechanism_net.csv`, scope `rearing`; the same file has the `flag` scope (connection
+lines in) and the `rearing_stream` slice. Segmentation is rear gradient plus connectivity on a
+stream that carries its own gradient split. Rear gradient and connectivity move km both ways; the
+table nets them.
+
+**Connectivity, other** (≤ 3.91 km gross per group, PCEA) is rearing where both segments pass the
+thresholds and the stream carries no gradient split of its own. A split on a neighbouring stream of
+the same cluster would explain it, but that is not shown, so it is not counted as segmentation.
 
 ### Segmentation is the cause
 
@@ -76,7 +82,8 @@ Connectivity on a `blue_line_key` with no gradient split of its own is at most 4
   In PCEA (link 925.7 / bcfp 918.5 km), 7.30 of the 9.29 link-only km and all 2.05 bcfp-only km
   are spawn-gradient flips at 0.0549. Another 1.78 km lie on segments whose width is exactly
   2.0 m: bcfishpass spawns on width > `spawn_channel_width_min` (`load_habitat_linear_bt.sql:27`),
-  fresh on width ≥ it (`frs_habitat_predicates.R`, `size_sql()`). The width rule is 4.54 km in
+  fresh on width ≥ it (`channel_width BETWEEN`, `.frs_rules_to_sql()` in fresh `R/utils.R`, the
+  same at v0.33.0, which built these groups). The width rule is 4.54 km in
   FINA and 5.27 km in PARS. The last 0.21 km in PCEA is the access residual below. Rearing's width
   test is `>=` on both sides.
 - **Connectivity.** Both sides keep rearing only in clusters connected to spawning, so a flip
@@ -88,9 +95,11 @@ Connectivity on a `blue_line_key` with no gradient split of its own is at most 4
   - **Cutting** (FINA blk 359421737): link carves 1,036–1,267 m (13.6 %) out of bcfishpass's
     393–1,267 m segment (10.2 %, rears). That splits the cluster, and 5.5 km of rearing above
     it loses its connection to the 0.39 km of spawning at the mouth.
-- Segmentation's net sign varies by group: positive in PCEA (+29.91) and PARS (+10.01), negative
-  in FINA (−13.10), where cutting outweighs joining. PARS's whole-group net is negative only
-  because of the width exception below.
+- The parts carry different signs. Rear-gradient flips are positive in all three BT-only groups
+  (+21.72, +12.21, +19.28). Connectivity on split streams is positive in PCEA (+4.51) and negative
+  in FINA (−25.25) and PARS (−9.48). In FINA connectivity outweighs the gradient flips, so its
+  segmentation net is negative; PARS's whole-group net is negative only because of the width
+  exception below.
 
 ### Two smaller mechanisms
 
@@ -99,10 +108,12 @@ Connectivity on a `blue_line_key` with no gradient split of its own is at most 4
   The exception sits inside `channel_width <= max`, so a NULL width is never admitted: of PCEA's
   3,306 such bcfishpass segments, 3,236 have no width and none of them rears. The bcfishpass
   bundle sets `rear_stream_order_bypass = no` (`dimensions.csv`).
-  - In PCEA it accounts for the connection-line gap: 8.37 km on two 1450 lines (blks 359386479,
-    359555604) in a lake on an order-9 stem, plus 1.22 km elsewhere (0.99 km of edge 1000,
-    0.21 km of edge 1050 in a wetland, 0.02 km of a 1450 line outside a lake).
-  - In PARS it is 24.78 km on 54 lines, none of them connection lines.
+  - In PCEA it accounts for the connection-line gap (the `rearing_lake_connection` row): 8.37 km
+    on two 1450 lines (blks 359386479, 359555604) in a lake on an order-9 stem. In the `rearing`
+    row it is the other 1.22 km (0.99 km of edge 1000, 0.21 km of edge 1050 in a wetland,
+    0.02 km of a 1450 line outside a lake).
+  - In PARS it is 24.78 km on 54 lines, none of them connection lines (22.77 km of it in the
+    stream slice; the rest is on lake and wetland lines).
   - The taxonomy's `hors-class-stream-order-bypass` entry still calls this fresh-deferred.
     fresh#158 is closed and `lnk_rules_build()` supports the bypass; the bundle declines it.
     Whether it should is open. fresh's `frs_order_child()` has no width test, so taking it as
@@ -115,9 +126,9 @@ Connectivity on a `blue_line_key` with no gradient split of its own is at most 4
 ## What this means
 
 - At WSG level, link on the bcfishpass config reproduces BT rearing to within 0.5–1.9 % in these
-  four groups. Under that, segmentation alone moves 74–87 km per BT-only group in both
-  directions (LKEL, with salmon present: 1.4 km); the width exception and the access residual
-  add the rest of the gross.
+  four groups. Under that, segmentation alone moves 71–85 km of the `rearing` row per BT-only
+  group in both directions (LKEL, with salmon present: 1.4 km); the width exception, the access
+  residual and unattributed connectivity add the rest.
 - **For segment-level parity in BT-only groups,** link would have to break where bcfishpass
   does: presence-filtered models and minimal positions. That re-segments every group, touches
   #223's access fix, and gives up the presence-independent break set. It is not done here.
