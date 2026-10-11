@@ -133,6 +133,45 @@ entries:
     status: INTENTIONAL_FRESH_DEFERRED
 
   # ---------------------------------------------------------------------------
+  # Class SEGMENTATION — link breaks streams at every 15 / 20 / 25 / 30 %
+  # gradient position of every configured species (#223; not filtered by WSG
+  # presence, R/lnk_pipeline_prepare.R). bcfishpass breaks at the minimal
+  # positions of models built only where their species are present, so in a
+  # BT-only group it never breaks at 15 / 20 %. A segment's gradient then
+  # differs between the two, flipping spawn / rear gradient tests both ways,
+  # and the flips join or cut rearing clusters. Measured on PCEA, FINA, PARS
+  # (BT rearing gross disagreement 74-113 km, net +22 / -13 / -14 km) and
+  # LKEL (1.7 km) on the bcfishpass config, 2026-10-11.
+  # ---------------------------------------------------------------------------
+  - id: bt-gradient-segmentation-over
+    wsg: [PCEA, FINA, PARS]
+    species: BT
+    metric: [spawning, rearing, rearing_stream]
+    pattern: link_gt_bcfp
+    diff_range: [0, 3]
+    class: SEGMENTATION
+    mechanism: link segments BT-only groups at every 15 / 20 % gradient position, bcfishpass does not; the finer segments' gradients flip spawn / rear tests and cluster connectivity both ways, and here the link side wins
+    refs:
+      - https://github.com/NewGraphEnvironment/link/issues/324
+      - research/bcfp_segmentation_parity.md
+      - data-raw/logs/rearing_diff_324/
+    status: INTENTIONAL
+
+  - id: bt-gradient-segmentation-under
+    wsg: [PCEA, FINA, PARS]
+    species: BT
+    metric: [rearing, rearing_stream]
+    pattern: link_lt_bcfp
+    diff_range: [0, 3]
+    class: SEGMENTATION
+    mechanism: link segments BT-only groups at every 15 / 20 % gradient position, bcfishpass does not; the finer segments' gradients flip rear tests and cut rearing clusters both ways, and here the bcfishpass side wins (PARS adds bcfishpass's order-1 width exception, -24.8 km)
+    refs:
+      - https://github.com/NewGraphEnvironment/link/issues/324
+      - research/bcfp_segmentation_parity.md
+      - data-raw/logs/rearing_diff_324/
+    status: INTENTIONAL
+
+  # ---------------------------------------------------------------------------
   # Class C — SK new-geographies. Three open fresh mechanisms feed this
   # (multi-lake topology, lake-adjacency knob, upstream-spawn cluster gate).
   # Each row needs individual inspection — some are stale-bcfp, some
