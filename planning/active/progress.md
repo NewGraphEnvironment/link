@@ -26,3 +26,12 @@
   phases 1–3 are done and the branch gets `/code-check`.
 - Decision under the approved plan: the segmentation is #223's deliberate design and changing it
   re-segments every WSG, so it is a larger change: annotate here, draft an issue for review.
+
+## Session 2026-10-11 (Phase 4)
+
+- Taxonomy class `SEGMENTATION` (`bt-gradient-segmentation-over` / `-under`); `lnk_parity_annotate()`
+  tags PCEA / FINA / PARS BT rearing and PCEA spawning with it.
+- `research/bcfp_segmentation_parity.md` + research README row; log README with Measurement / Evidence.
+- #324 body: "Answer" section added. CLAUDE.md status. RUNBOOK unchanged (no mechanics changed).
+- Follow-up issue drafted in the scratchpad (segment where bcfishpass does; stale bypass status;
+  access residual); not filed — needs body review.

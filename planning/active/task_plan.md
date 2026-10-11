@@ -28,12 +28,12 @@
       or PCEA-specific?
 
 ## Phase 4: Resolve and record
-- [ ] If an annotated divergence: entry in `research/bcfp_divergence_taxonomy.yml`
+- [x] If an annotated divergence: entry in `research/bcfp_divergence_taxonomy.yml`
       (mechanism, sign, km), `research/` write-up with Verified / Issues / Produced-by header,
       log README with Measurement + Evidence
-- [ ] If a link defect: fix + test here when it is small and in link; a fresh defect or a
+- [x] (n/a — not a defect: #223's deliberate break set; follow-up issue drafted for review, not filed) If a link defect: fix + test here when it is small and in link; a fresh defect or a
       larger change gets its own issue with the repro (drafted for review), named in the PR
-- [ ] Edit #324's body with the finding; CLAUDE.md status; RUNBOOK only if mechanics change
+- [x] Edit #324's body with the finding; CLAUDE.md status; RUNBOOK only if mechanics change
 
 ## Validation
 
