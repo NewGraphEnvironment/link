@@ -27,11 +27,13 @@ Pieces from `data-raw/habitat_diff_segments.R`, attributed by
 | mechanism | link-only | bcfp-only | net |
 |---|---|---|---|
 | rear gradient: the two segments' gradients sit either side of 0.1049 | 35.93 | 14.21 | +21.72 |
-| connectivity, blk also carries a gradient split | 15.11 | 8.07 | +7.04 |
-| connectivity, other | 1.35 | 0.19 | +1.16 |
+| connectivity, blk also carries a gradient split | 12.69 | 8.07 | +4.62 |
+| connectivity, other | 3.77 | 0.19 | +3.58 |
 | bcfp's order-1 / parent ≥ 5 width exception | 0 | 9.59 | −9.59 |
 | link classify-time access TRUE, streams_access 0 | 1.80 | 0 | +1.80 |
-| total | 54.18 | 32.06 | +22.12 |
+| total | 54.18 | 32.06 | +22.11 |
+
+(Connectivity rows after dropping sub-centimetre slivers, code-check round 2.)
 
 - **Segmentation:** link's PCEA breaks are a superset of bcfp's (24,392 of 24,393 bcfp breaks
   present within 1 m). The 68,101 extra link breaks are all gradient positions
@@ -49,7 +51,7 @@ Pieces from `data-raw/habitat_diff_segments.R`, attributed by
   the blk.
 - **Spawning** disagrees too (link 925.7 / bcfp 918.5): 9.3 km link-only, 7.3 of it on the
   spawn-gradient split; 2.05 km bcfp-only, all of it on the split.
-- **Connection-line gap (−8.2 km) is bcfp's width exception:** 8.38 km on two 1450 lines
+- **Connection-line gap (−8.2 km) is bcfp's width exception:** 8.37 km on two 1450 lines
   (blks 359386479, 359555604) in a lake on an order-9 stem, order 1, width < 1.5 m. The
   bcfishpass bundle sets `rear_stream_order_bypass = no` for BT (`dimensions.csv`); fresh#158
   is closed and `lnk_rules_build()` supports the bypass, so the taxonomy's
@@ -64,10 +66,10 @@ Net km by mechanism (link − bcfp), BT rearing, bcfishpass config:
 
 | WSG | rear gradient | connectivity | width exception | access | net | gross (link-only + bcfp-only) |
 |---|---|---|---|---|---|---|
-| PCEA | +21.72 | +8.20 | −9.59 | +1.80 | +22.12 | 86.2 |
-| FINA | +12.21 | −25.32 | 0 | +0.23 | −12.88 | 73.7 |
+| PCEA | +21.72 | +8.19 | −9.59 | +1.80 | +22.11 | 86.2 |
+| FINA | +12.21 | −25.31 | 0 | +0.23 | −12.88 | 73.7 |
 | PARS | +19.28 | −9.27 | −24.78 | +0.94 | −13.83 | 112.6 |
-| LKEL | +0.08 | +1.34 | 0 | +0.24 | +1.66 | 1.7 |
+| LKEL | +0.07 | +1.34 | 0 | +0.24 | +1.65 | 1.7 |
 
 - Not PCEA-specific: the same two-way gradient split and its connectivity cascade run in FINA
   and PARS, where the connectivity side wins and the net is negative. PCEA is where the

@@ -1,5 +1,4 @@
 "class","spawn_gradient_split","km"
-"bcfp_only",FALSE,0
 "link_only",FALSE,0.02
 "bcfp_only",TRUE,0.01
 "link_only",TRUE,0.09

@@ -87,6 +87,11 @@ x("ANALYZE rd_link")
 x("ANALYZE rd_bcfp")
 
 # ---- overlap pieces ------------------------------------------------------------
+# Where both sides break at one position their measures can differ by a fraction
+# of a millimetre, which makes a sliver pairing the reach above the break on one
+# side with the reach below it on the other. Pieces under 1 cm are such slivers
+# (PCEA: 715 of 1,258 disagreeing rearing pieces); they are dropped, and the
+# reconciliation below allows for their length.
 x(sprintf("
   CREATE TEMP TABLE rd_piece AS
   SELECT l.blk,
@@ -108,7 +113,8 @@ x(sprintf("
          b.spawning AS b_spawn, b.rearing_code AS b_rearing_code, b.access AS b_access
   FROM rd_link l
   JOIN rd_bcfp b
-    ON b.blk = l.blk AND l.dm < b.um AND b.dm < l.um", flag))
+    ON b.blk = l.blk AND l.dm < b.um AND b.dm < l.um
+   AND least(l.um, b.um) - greatest(l.dm, b.dm) >= 0.01", flag))
 
 # ---- reconciliation ------------------------------------------------------------
 tot <- q(sprintf("

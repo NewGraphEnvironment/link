@@ -2,7 +2,8 @@
 # mechanism.R — attribute every piece where link's BT rearing flag and bcfishpass's
 # disagree to one mechanism (#324). Reads the pieces written by
 # data-raw/habitat_diff_segments.R (rearing and spawning) and the bcfishpass
-# bundle's thresholds; writes <wsg>_<sp>_mechanism.csv beside them.
+# bundle's thresholds; writes <wsg>_<sp>_mechanism.csv, _mechanism_net.csv and
+# _spawning_mechanism.csv beside them.
 #
 # Mechanisms, first match wins:
 #   cw_order_bypass   bcfp-only, bcfp segment fails the width minimum but is order 1
@@ -58,6 +59,21 @@ names(n)[names(n) == "blk"] <- "n_blk"
 out <- merge(out, n)
 out <- out[order(out$class, -out$km), ]
 
+# net km per mechanism family (link - bcfp) from unrounded lengths: the table
+# research/bcfp_segmentation_parity.md quotes
+fam <- sub("^connectivity_.*", "connectivity", p$mechanism)
+sgn <- ifelse(p$class == "link_only", 1, -1) * p$len
+net <- data.frame(
+  wsg = toupper(wsg),
+  rear_gradient = sum(sgn[fam == "rear_gradient"]),
+  connectivity = sum(sgn[fam == "connectivity"]),
+  connectivity_other_gross = sum(p$len[p$mechanism == "connectivity_other"]),
+  cw_order_bypass = sum(sgn[fam == "cw_order_bypass"]),
+  access = sum(sgn[fam == "access"]),
+  other = sum(sgn[fam == "other"]),
+  net = sum(sgn), gross = sum(p$len))
+net[-1] <- lapply(net[-1], function(v) round(v / 1000, 2))
+
 # spawning disagreement: share explained by the spawn gradient threshold alone
 sg <- thr$spawn_gradient_max
 s_grad <- (!is.na(s$l_gradient) & s$l_gradient <= sg) != (!is.na(s$b_gradient) & s$b_gradient <= sg)
@@ -68,7 +84,10 @@ names(spawn) <- c("class", "spawn_gradient_split", "km")
 utils::write.csv(out, file.path(dir, sprintf("%s_%s_mechanism.csv", wsg, sp)), row.names = FALSE)
 utils::write.csv(spawn, file.path(dir, sprintf("%s_%s_spawning_mechanism.csv", wsg, sp)),
                  row.names = FALSE)
+utils::write.csv(net, file.path(dir, sprintf("%s_%s_mechanism_net.csv", wsg, sp)), row.names = FALSE)
 cat(sprintf("%s %s rearing disagreement by mechanism (km):\n", toupper(wsg), toupper(sp)))
 print(out, row.names = FALSE)
 cat("\nspawning disagreement, split by the spawn gradient threshold (km):\n")
 print(spawn, row.names = FALSE)
+cat("\nnet km by mechanism family (link - bcfp):\n")
+print(net, row.names = FALSE)

@@ -174,7 +174,7 @@ entries:
   # bcfishpass rears order-1 lines with parent order >= 5 whatever their width
   # (load_habitat_linear_bt.sql @620dbe4); the bcfishpass bundle sets
   # rear_stream_order_bypass = no. In PCEA that is the whole connection-line gap
-  # #319 measured: 8.38 km on two 1450 lines in a lake on an order-9 stem.
+  # #319 measured: 8.37 km on two 1450 lines in a lake on an order-9 stem.
   - id: pcea-bt-connection-width-exception
     wsg: PCEA
     species: BT

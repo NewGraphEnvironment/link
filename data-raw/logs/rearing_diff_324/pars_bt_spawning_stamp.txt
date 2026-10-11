@@ -1,5 +1,5 @@
-run: 2026-10-11T18:46Z (UTC)
-script: data-raw/habitat_diff_segments.R PARS bt fresh spawning @ link 0.63.0 (9f579fe)
+run: 2026-10-11T18:53Z (UTC)
+script: data-raw/habitat_diff_segments.R PARS bt fresh spawning @ link 0.63.0 (ec7b838)
 db: local docker fwapg localhost:5432; fresh.streams_vw_bcfp rows 4272365
 fresh.log latest PARS row: run_id=cypherjob1-20260902T001510.109-2ee0ef date_end=2026-09-02 00:19:54.746191 link_version=0.50.0 link_sha=689146867a5f00f94ec2e8085ddae36996e64379 fresh_version=0.33.0 config_name=bcfishpass
 network km link 13867.47 bcfp 13867.47; spawning flag km link 1683.36 bcfp 1667.92

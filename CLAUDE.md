@@ -25,7 +25,7 @@ Experimental package — breaking all the time and loving the learning curve. St
   - a 1.8 km access residual.
 
 **Facts not worth re-deriving:**
-- **Never join link and `streams_vw_bcfp` on an exact `(blue_line_key, downstream_route_measure)`.** link has about 2.8× the segments (PCEA 106,079 vs 37,957), and its breaks are a superset of bcfishpass's. Join on measure overlap.
+- **Never join link and `streams_vw_bcfp` on an exact `(blue_line_key, downstream_route_measure)`.** link has about 2.8× the segments (PCEA 106,079 vs 37,957), and its breaks are a superset of bcfishpass's. Join on measure overlap, and drop pieces under 1 cm: where both sides break at one position the measures differ by a fraction of a millimetre, and the sliver pairs the reach above the break with the reach below it.
 - **The 15 / 20 % breaks do not come from the orphan-class path.** The bcfishpass bundle models all eight species, so CH (0.15) and ST (0.20) build their own per-model break sets in every group.
 - **bcfishpass's order-1 width exception covers BT, CH, CO, ST and WCT rearing** at `@620dbe4`, not CH alone. The CH-only note under "Older closed" (#23) is stale.
 

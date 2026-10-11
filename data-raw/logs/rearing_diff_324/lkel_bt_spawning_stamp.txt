@@ -1,5 +1,5 @@
-run: 2026-10-11T18:46Z (UTC)
-script: data-raw/habitat_diff_segments.R LKEL bt fresh spawning @ link 0.63.0 (9f579fe)
+run: 2026-10-11T18:54Z (UTC)
+script: data-raw/habitat_diff_segments.R LKEL bt fresh spawning @ link 0.63.0 (ec7b838)
 db: local docker fwapg localhost:5432; fresh.streams_vw_bcfp rows 4272365
 fresh.log latest LKEL row: none
 network km link 1115.38 bcfp 1115.38; spawning flag km link 144.74 bcfp 144.65

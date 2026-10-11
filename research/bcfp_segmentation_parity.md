@@ -24,7 +24,9 @@ same 14,315.7 km), so an exact `(blue_line_key, downstream_route_measure)` join 
 `habitat_diff_segments.R` cuts both networks into their measure-interval overlaps per
 `blue_line_key` and carries each side's segment attributes onto every piece. It stops unless
 the pieces cover both networks and link-only minus bcfp-only equals the flag-total difference
-(PCEA: coverage gap 14.8 m, flag gap 0.0 m). `mechanism.R` then gives each disagreeing piece
+(PCEA: coverage gap 0.0 m, flag gap 0.0 m). Pieces under 1 cm are dropped: where both sides
+break at one position their measures differ by a fraction of a millimetre, and the sliver pairs
+the reach above the break on one side with the reach below it on the other. `mechanism.R` then gives each disagreeing piece
 one mechanism, first match wins.
 
 ## Result
@@ -33,13 +35,13 @@ BT rearing flag km, link − bcfp, by mechanism (bcfishpass config):
 
 | WSG | rear gradient | connectivity | width exception | access | net | gross |
 |---|---|---|---|---|---|---|
-| PCEA | +21.72 | +8.20 | −9.59 | +1.80 | +22.12 | 86.2 |
-| FINA | +12.21 | −25.32 | 0 | +0.23 | −12.88 | 73.7 |
+| PCEA | +21.72 | +8.19 | −9.59 | +1.80 | +22.11 | 86.2 |
+| FINA | +12.21 | −25.31 | 0 | +0.23 | −12.88 | 73.7 |
 | PARS | +19.28 | −9.27 | −24.78 | +0.94 | −13.83 | 112.6 |
-| LKEL | +0.08 | +1.34 | 0 | +0.24 | +1.66 | 1.7 |
+| LKEL | +0.07 | +1.34 | 0 | +0.24 | +1.65 | 1.7 |
 
-Gross is link-only plus bcfp-only km. Each mechanism moves km both ways; the table nets them.
-Connectivity on a `blue_line_key` with no gradient split of its own is at most 1.54 km per WSG (gross),
+From `<wsg>_bt_mechanism_net.csv`. Gross is link-only plus bcfp-only km. Rear gradient and connectivity move km both ways; the table nets them.
+Connectivity on a `blue_line_key` with no gradient split of its own is at most 3.96 km per WSG (gross, PCEA),
 and nothing is left unattributed.
 
 ### Segmentation is the cause
@@ -58,7 +60,7 @@ and nothing is left unattributed.
   where CH, CO and ST are present, it breaks at their minimal positions.
 - The 25 / 30 % extras lie above BT's own frontier, so they do not touch BT habitat. (The
   comment at `R/lnk_pipeline_prepare.R` that bcfishpass "segments at every gradient barrier"
-  does not hold for these: 29,959 of PCEA's 35,022 BT-blocking link breaks have no bcfishpass
+  does not hold for these: 29,959 of PCEA's 35,022 link breaks at 25 / 30 % positions have no bcfishpass
   break.)
 
 ### How finer segments move habitat
@@ -85,7 +87,7 @@ and nothing is left unattributed.
 - **bcfishpass's width exception.** Its BT, CH, CO, ST and WCT rearing admits an order-1 line
   with parent order ≥ 5 whatever its channel width (`load_habitat_linear_bt.sql`). The
   bcfishpass bundle sets `rear_stream_order_bypass = no` (`dimensions.csv`).
-  - In PCEA this is the whole connection-line gap: 8.38 km on two 1450 lines (blks 359386479,
+  - In PCEA this is the whole connection-line gap: 8.37 km on two 1450 lines (blks 359386479,
     359555604) in a lake on an order-9 stem, plus 1.2 km of stream.
   - In PARS it is 24.78 km on 54 lines, none of them connection lines.
   - The taxonomy's `hors-class-stream-order-bypass` entry still calls this fresh-deferred.
