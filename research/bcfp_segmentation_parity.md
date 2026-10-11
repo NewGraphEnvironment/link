@@ -141,16 +141,23 @@ the same cluster would explain it, but that is not shown, so it is not counted a
 
 ## Decided (2026-10-11, operator; not yet implemented)
 
-- **Both configs filter the break set by species presence.** A 15 or 20 % position breaks a
-  stream only where a species with that access threshold is present. With no such fish, the break
-  gates nothing; it is a side effect of the config listing all eight species. Filtering both
-  configs keeps `fresh` and `fresh_default` on one segmentation, which the PARS vignette join on
-  `id_segment` relies on (`data-raw/wsg_vignette_data.R`, segmentation-parity guard).
+The `bcfishpass` config is there to match bcfishpass step by step wherever link can.
+
+- **Both configs break where bcfishpass does:** per species present, the access barrier set after
+  observation overrides, reduced to the downstream-most position per flow path
+  (`01_model_access_natural.sh`: build per model, delete non-minimal, then `break_streams()`).
+  A break above a species' first barrier changes nothing for that species, so there is no reason
+  for `default` to differ, and keeping both on one segmentation keeps the PARS vignette join on
+  `id_segment` valid (`data-raw/wsg_vignette_data.R`). #223's failure was reducing the
+  pre-override set (below), not reducing as such.
+- **The `bcfishpass` config takes bcfishpass's order-1 width exception.** fwapg models no width
+  on order 1 (`stream_order > 1` in its channel width SQL; PARS order 1: 552 field-measured,
+  4 river-polygon, 19,184 NULL, 0 modelled), so in practice the exception admits order-1 lines
+  only on a measured width. Whether `default` takes it, on measured widths only, is a separate
+  decision.
 - **Spawning size minimum: the `bcfishpass` config takes bcfishpass's strict `>`; `default`
   keeps `>=`** (a segment at exactly the minimum spawns). Recorded as an intentional departure in
   `research/default_vs_bcfishpass.md`, §6.
-- Still open: every position versus the downstream-most per model (below), which matters only
-  where salmon are present (LKEL 1.4 km).
 
 ## What #223 matched, and what it asserted
 
@@ -158,7 +165,9 @@ the same cluster would explain it, but that is not shown, so it is not counted a
 in depth, but its question was the opposite one: link had **too few** breaks. fresh's
 `frs_barriers_minimal()` had reduced PCEA's gradient break positions to 32 and FINA's to 11, so
 a segment straddled BT's barrier and its whole reach read accessible (FINA BT `accessible_km`
-+23.6 %). The fix fed every per-model position in (PCEA 32 → 82,931 positions).
++23.6 %). The reduction ran on the gradient + falls set before observation overrides, so mainstem
+barriers that the overrides remove still pruned the tributary frontiers upstream of them (FINA blk
+359209845); bcfishpass reduces after. The fix fed every per-model position in (PCEA 32 → 82,931 positions).
 
 - **Measured:** `accessible_km` within 0.05 % on 11 WSGs × 8 species. Spawning and rearing km were
   byte-identical before and after on **LKEL only**, a group with salmon present, where the extra
