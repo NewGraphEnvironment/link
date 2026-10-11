@@ -63,11 +63,14 @@ the same cluster would explain it, but that is not shown, so it is not counted a
 - **Why link has them.** `.lnk_pipeline_prep_minimal()` builds a break set for every species
   the config models, deliberately not filtered by WSG presence, and feeds the raw positions
   into the network (#223): every 15 / 20 / 25 / 30 % gradient position breaks it.
-- **Why bcfishpass does not.** It builds a model's barriers only in groups where that model's
-  species are present (`model_access_ch_cm_co_pk_sk.sql:146-150`, `model_access_bt.sql:148-152`),
-  and it deletes non-minimal barriers before `break_streams()` (`01_model_access_natural.sh`).
-  PCEA, FINA and PARS are BT-only, so it never breaks at a 15 or 20 % position there. In LKEL,
-  where CH, CO and ST are present, it breaks at their minimal positions.
+- **Why bcfishpass does not.** Its 15 % (CH / CM / CO / PK / SK) and 20 % (ST, WCT) models build
+  barriers only in groups where their species are present (`model_access_ch_cm_co_pk_sk.sql:146-150`;
+  `model_access_bt.sql:148-152` filters BT the same way, while `model_access_ct_dv_rb.sql` has no
+  presence filter but is a 25 / 30 % model), and it deletes non-minimal barriers before
+  `break_streams()` (`01_model_access_natural.sh`). None of those 15 / 20 % species is present in
+  PCEA, FINA or PARS (they hold BT, DV, GR and RB, and PARS KO), so bcfishpass never breaks at a 15
+  or 20 % position there. This document calls such groups **BT-only**. In LKEL, where CH, CO and ST
+  are present, it breaks at their minimal positions.
 - The 25 / 30 % extras lie above BT's own frontier, so they do not touch BT habitat. (The
   comment at `R/lnk_pipeline_prepare.R` that bcfishpass "segments at every gradient barrier"
   does not hold for these: 29,959 of PCEA's 35,022 link breaks at 25 / 30 % positions have no bcfishpass
@@ -108,8 +111,8 @@ the same cluster would explain it, but that is not shown, so it is not counted a
   The exception sits inside `channel_width <= max`, so a NULL width is never admitted: of PCEA's
   3,306 such bcfishpass segments, 3,236 have no width and none of them rears. The bcfishpass
   bundle sets `rear_stream_order_bypass = no` (`dimensions.csv`).
-  - In PCEA it accounts for the connection-line gap (the `rearing_lake_connection` row): 8.37 km
-    on two 1450 lines (blks 359386479, 359555604) in a lake on an order-9 stem. In the `rearing`
+  - In PCEA it is −8.37 km on the connection lines (the `rearing_lake_connection` row), offset by
+    +0.17 km of link-only rearing there, which nets the row's −8.21 km: two 1450 lines (blks 359386479, 359555604) in a lake on an order-9 stem. In the `rearing`
     row it is the other 1.22 km (0.99 km of edge 1000, 0.21 km of edge 1050 in a wetland,
     0.02 km of a 1450 line outside a lake).
   - In PARS it is 24.78 km on 54 lines, none of them connection lines (22.77 km of it in the

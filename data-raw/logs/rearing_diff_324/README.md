@@ -15,7 +15,7 @@ Write-up: `research/bcfp_segmentation_parity.md`. Taxonomy: `bt-gradient-segment
 BT rearing flag km, link − bcfp: PCEA +22.11 (gross 86.2), FINA −12.88 (73.7), PARS −13.83 (112.6),
 LKEL +1.65 (1.7) (`<wsg>_bt_mechanism_net.csv`). In every group the disagreement is attributed: rear-gradient flips and the
 cluster connectivity they join or cut (both from link breaking at every 15 / 20 % gradient
-position, which bcfishpass does not in BT-only groups), bcfishpass's order-1 width exception
+position, which bcfishpass does not in groups with no 15 / 20 % species present), bcfishpass's order-1 width exception
 (PCEA −9.59, of which 8.37 km is on the connection lines #319 measured; PARS −24.78), and an access
 residual (≤ 1.8 km). Spawning adds a width rule: bcfishpass spawns on width > 2.0 m, fresh on ≥ 2.0 m
 (PCEA 1.78, FINA 4.54, PARS 5.27 km).

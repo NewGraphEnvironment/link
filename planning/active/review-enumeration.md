@@ -90,3 +90,17 @@ slice. `mechanism.R` writes all three; the `rearing` scope reconciles to the par
 Unchanged ids, classes and statuses (table above). Mechanism strings now name parts and signs only and
 point to `<wsg>_bt_mechanism_net.csv`; the one figure left in the taxonomy (8.37 km in the
 `pcea-bt-connection-width-exception` comment) is that row's own scope.
+
+## Round 6: full claim sweep (terminating)
+
+Round 6 recomputed the `rearing` and `rearing_stream` scopes from the DB (`lnk_rollup_wsg()`, and
+`.lnk_sql_lake_connection()` on the view) for all four groups. They match the CSV to 0.01 km. It walked
+every claim site and found two false statements, neither inside round 5's fix:
+
+| claim | verdict |
+|---|---|
+| the −8.2 km connection row *is* the width exception | **imprecise**; the exception is −8.37 km, offset by +0.17 km of link-only rearing on connection lines, giving the row's −8.21 km. Reworded in research, taxonomy, CLAUDE.md, issue body |
+| bcfishpass builds every model only where its species are present; PCEA / FINA / PARS are "BT-only" | **overstated**; `model_access_ct_dv_rb.sql` has no presence filter (a 25 / 30 % model), and those groups hold DV, GR, RB (PARS KO). "BT-only" is now defined as no 15 / 20 % species present, everywhere it is used |
+
+The loop ends here by enumeration: round 6 checked every claim site and every row of this ledger against
+the artifacts and the DB. The two statements it found are fixed and are wording only.

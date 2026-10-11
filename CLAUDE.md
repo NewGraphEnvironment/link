@@ -15,10 +15,10 @@ Experimental package — breaking all the time and loving the learning curve. St
 
 **PCEA's +1.87 % BT rearing is segmentation, annotated (taxonomy class `SEGMENTATION`); no code changed.**
 - **Mechanism:** link breaks streams at every 15 / 20 % gradient position, for every species in `cfg$species` and whatever is present (`.lnk_pipeline_prep_minimal()`, #223). bcfishpass builds the CH / ST models only where those species are present, and breaks at minimal positions.
-  - In BT-only groups, link's finer segments flip BT spawn and rear gradient tests both ways, and the flips join or cut rearing clusters.
+  - In "BT-only" groups (no CH, CM, CO, PK, SK, ST or WCT present; DV, GR, RB may be), link's finer segments flip BT spawn and rear gradient tests both ways, and the flips join or cut rearing clusters.
   - On the `rearing` row, segmentation alone moves 71–85 km per BT-only group in both directions (PCEA, FINA, PARS), netting +26.2 / −13.0 / +9.8 km; LKEL, which has salmon, 1.4 km. PARS's row (−13.8 km) is negative only because of bcfishpass's width exception (−24.8 km). Figures per scope (flag, `rearing`, `rearing_stream`) are in `*_bt_mechanism_net.csv`.
 - **Spawning also has a width rule:** bcfishpass spawns on width > `spawn_channel_width_min`, fresh on ≥ (PCEA 1.78, FINA 4.54, PARS 5.27 km of link-only BT spawning, all at exactly 2.0 m).
-- **#319's −8.2 km on PCEA connection lines** is bcfishpass's order-1 / parent ≥ 5 width exception (a known width below the minimum; NULL widths are never admitted, and fresh's `frs_order_child()` has no width test). The bcfishpass bundle sets `rear_stream_order_bypass = no`, which also accounts for PARS −24.8 km.
+- **#319's −8.2 km on PCEA connection lines** is bcfishpass's order-1 / parent ≥ 5 width exception, −8.37 km, offset by +0.17 km of link-only rearing on those lines (a known width below the minimum; NULL widths are never admitted, and fresh's `frs_order_child()` has no width test). The bcfishpass bundle sets `rear_stream_order_bypass = no`, which also accounts for PARS −24.8 km.
 - **Tool:** `data-raw/habitat_diff_segments.R <WSG> <sp> <schema> <rearing|spawning>`. It joins on measure-interval overlap per `blue_line_key` and asserts that it reconciles. Write-up: `research/bcfp_segmentation_parity.md`.
 - **Open, follow-up drafted, not filed:**
   - whether the bcfishpass config should break where bcfishpass does;

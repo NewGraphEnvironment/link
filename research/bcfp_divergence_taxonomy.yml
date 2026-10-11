@@ -136,8 +136,10 @@ entries:
   # Class SEGMENTATION — link breaks streams at every 15 / 20 / 25 / 30 %
   # gradient position of every configured species (#223; not filtered by WSG
   # presence, R/lnk_pipeline_prepare.R). bcfishpass breaks at the minimal
-  # positions of models built only where their species are present, so in a
-  # BT-only group it never breaks at 15 / 20 %. A segment's gradient then
+  # positions of its 15 / 20 % models (CH / CM / CO / PK / SK, ST, WCT) only
+  # where those species are present, so in a "BT-only" group (none of them
+  # present; PCEA, FINA, PARS also hold DV, GR, RB) it never breaks at
+  # 15 / 20 %. A segment's gradient then
   # differs between the two, flipping spawn / rear gradient tests both ways,
   # and the flips join or cut rearing clusters. Measured on PCEA, FINA, PARS
   # and LKEL, bcfishpass config, 2026-10-11; the km per mechanism, for the
@@ -153,7 +155,7 @@ entries:
     pattern: link_gt_bcfp
     diff_range: [0, 3]
     class: SEGMENTATION
-    mechanism: link segments BT-only groups at every 15 / 20 % gradient position, bcfishpass does not; the finer segments' gradients flip rear tests and join or cut rearing clusters, and here the sum is positive. Smaller parts are bcfishpass's order-1 width exception (negative), an access residual whose cause is not established, and connectivity not tied to a split on its own stream (pcea_bt_mechanism_net.csv)
+    mechanism: link segments groups with no 15 / 20 % species at every 15 / 20 % gradient position, bcfishpass does not; the finer segments' gradients flip rear tests and join or cut rearing clusters, and here the sum is positive. Smaller parts are bcfishpass's order-1 width exception (negative), an access residual whose cause is not established, and connectivity not tied to a split on its own stream (pcea_bt_mechanism_net.csv)
     refs:
       - https://github.com/NewGraphEnvironment/link/issues/324
       - research/bcfp_segmentation_parity.md
@@ -167,7 +169,7 @@ entries:
     pattern: link_lt_bcfp
     diff_range: [0, 3]
     class: SEGMENTATION
-    mechanism: link segments BT-only groups at every 15 / 20 % gradient position, bcfishpass does not; here the rearing clusters the finer segments cut outweigh the rear-gradient flips they add (fina_bt_mechanism_net.csv)
+    mechanism: link segments groups with no 15 / 20 % species at every 15 / 20 % gradient position, bcfishpass does not; here the rearing clusters the finer segments cut outweigh the rear-gradient flips they add (fina_bt_mechanism_net.csv)
     refs:
       - https://github.com/NewGraphEnvironment/link/issues/324
       - research/bcfp_segmentation_parity.md
@@ -211,8 +213,9 @@ entries:
   # bcfishpass rears order-1 lines with parent order >= 5 whose known width is
   # below the minimum (load_habitat_linear_bt.sql @620dbe4; a NULL width is not
   # admitted); the bcfishpass bundle sets rear_stream_order_bypass = no. In PCEA
-  # that accounts for the connection-line gap #319 measured: 8.37 km on two 1450
-  # lines in a lake on an order-9 stem.
+  # that is -8.37 km on two 1450 lines in a lake on an order-9 stem, offset by
+  # +0.17 km of link-only rearing on connection lines: the row #319 measured
+  # nets -8.21 km.
   - id: pcea-bt-connection-width-exception
     wsg: PCEA
     species: BT
