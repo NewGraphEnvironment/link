@@ -1,0 +1,18 @@
+"wsg","side","in_other","position","n"
+"LKEL","link",FALSE,"GRADIENT_25_30",2254
+"LKEL","link",FALSE,"GRADIENT_20",1044
+"LKEL","link",FALSE,"GRADIENT_15",776
+"LKEL","link",FALSE,"none (observation / crossing / endpoint)",9
+"LKEL","link",FALSE,"FALLS",5
+"LKEL","link",FALSE,"MODELLED_CROSSINGS",3
+"LKEL","link",TRUE,"none (observation / crossing / endpoint)",1622
+"LKEL","link",TRUE,"MODELLED_CROSSINGS",323
+"LKEL","link",TRUE,"GRADIENT_25_30",268
+"LKEL","link",TRUE,"GRADIENT_20",177
+"LKEL","link",TRUE,"GRADIENT_15",138
+"LKEL","link",TRUE,"SUBSURFACE_FLOW",14
+"LKEL","link",TRUE,"FALLS",5
+"LKEL","link",TRUE,"PSCIS",1
+"LKEL","link",TRUE,"CABD",1
+"LKEL","bcfp",TRUE,"all",2549
+"LKEL","bcfp",FALSE,"all",5
