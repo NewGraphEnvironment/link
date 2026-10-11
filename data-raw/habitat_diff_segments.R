@@ -87,11 +87,13 @@ x("ANALYZE rd_link")
 x("ANALYZE rd_bcfp")
 
 # ---- overlap pieces ------------------------------------------------------------
-# Where both sides break at one position their measures can differ by a fraction
-# of a millimetre, which makes a sliver pairing the reach above the break on one
-# side with the reach below it on the other. Pieces under 1 cm are such slivers
-# (PCEA: 715 of 1,258 disagreeing rearing pieces); they are dropped, and the
-# reconciliation below allows for their length.
+# Within each side, a segment's upstream measure can overshoot the next segment's
+# downstream measure (inherited from FWA: PCEA 8,806 times in link and 8,805 in
+# bcfp, by up to 3.93 mm). Each overshoot makes a sliver pairing the reach above
+# that break on one side with the reach below it on the other. Pieces under 1 cm
+# are such slivers (PCEA: 715 of 1,258 disagreeing rearing pieces; none of either
+# side's segments is under 1 cm); they are dropped, and the reconciliation below
+# allows for their length.
 x(sprintf("
   CREATE TEMP TABLE rd_piece AS
   SELECT l.blk,

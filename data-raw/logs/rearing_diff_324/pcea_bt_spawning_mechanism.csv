@@ -1,4 +1,5 @@
-"class","spawn_gradient_split","km"
-"link_only",FALSE,1.99
-"bcfp_only",TRUE,2.05
-"link_only",TRUE,7.3
+"class","mechanism","km"
+"bcfp_only","spawn_gradient",2.05
+"link_only","spawn_gradient",7.3
+"link_only","spawn_width_min",1.78
+"link_only","access",0.21

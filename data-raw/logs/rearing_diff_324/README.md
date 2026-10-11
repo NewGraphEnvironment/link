@@ -16,7 +16,9 @@ BT rearing flag km, link − bcfp: PCEA +22.11 (gross 86.2), FINA −12.88 (73.7
 LKEL +1.65 (1.7) (`<wsg>_bt_mechanism_net.csv`). In every group the disagreement is attributed: rear-gradient flips and the
 cluster connectivity they join or cut (both from link breaking at every 15 / 20 % gradient
 position, which bcfishpass does not in BT-only groups), bcfishpass's order-1 width exception
-(PCEA −9.59, the whole connection-line gap of #319; PARS −24.78), and an access residual (≤ 1.8 km).
+(PCEA −9.59, of which 8.37 km is on the connection lines #319 measured; PARS −24.78), and an access
+residual (≤ 1.8 km). Spawning adds a width rule: bcfishpass spawns on width > 2.0 m, fresh on ≥ 2.0 m
+(PCEA 1.78, FINA 4.54, PARS 5.27 km).
 Moved #324 from "unexplained" to an annotated divergence.
 
 ## Evidence
@@ -33,8 +35,10 @@ Moved #324 from "unexplained" to an annotated divergence.
   21.4 km of FINA unexplained. Row-level on blk 359421737 showed a rear-gradient flip cutting the
   cluster, so the split now counts any gradient flip on the stream; unexplained connectivity fell to
   ≤ 1.54 km per group (gross).
-- That bound was still wrong: 715 of PCEA's 1,258 disagreeing pieces were sub-centimetre slivers where
-  both sides break at one position with measures a fraction of a millimetre apart, each pairing the reach
-  above a break with the reach below it. They counted as gradient splits on their stream. The script now
+- That bound was still wrong: 715 of PCEA's 1,258 disagreeing pieces were sub-centimetre slivers, each
+  pairing the reach above a break with the reach below it. Round 2 put them down to the two sides'
+  measures differing at a shared break; round 3 found the measures identical there (24,350 of 24,393
+  PCEA bcfp breaks start a link segment at the same measure) and the cause within each side: a segment's
+  upstream measure overshoots the next one's start by up to 3.93 mm, inherited from FWA. They counted as gradient splits on their stream. The script now
   drops pieces under 1 cm; unexplained connectivity is ≤ 3.96 km per group (gross, PCEA), and the net
   table moved by at most 0.01 km.

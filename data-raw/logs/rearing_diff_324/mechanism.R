@@ -16,8 +16,8 @@
 #   connectivity      both segments pass the rearing thresholds; the flags differ
 #                     through cluster connectivity to spawning. Split by whether the
 #                     same blue_line_key also carries a gradient split (a rear_gradient
-#                     piece, or a spawning disagreement): the split joins or cuts the
-#                     cluster there
+#                     piece, or a spawning disagreement of either kind below): the
+#                     split joins or cuts the cluster there
 #   other
 #
 # Usage: Rscript data-raw/logs/rearing_diff_324/mechanism.R [wsg] [sp]
@@ -74,12 +74,22 @@ net <- data.frame(
   net = sum(sgn), gross = sum(p$len))
 net[-1] <- lapply(net[-1], function(v) round(v / 1000, 2))
 
-# spawning disagreement: share explained by the spawn gradient threshold alone
+# spawning disagreement, first match wins:
+#   spawn_gradient   the two segments' gradients sit either side of spawn_gradient_max
+#   spawn_width_min  bcfp's width is exactly spawn_channel_width_min: bcfishpass spawns
+#                    on width > min (load_habitat_linear_bt.sql), fresh on >= min
+#   access           link's own access code is 0
+#   other
 sg <- thr$spawn_gradient_max
+sw <- thr$spawn_channel_width_min
 s_grad <- (!is.na(s$l_gradient) & s$l_gradient <= sg) != (!is.na(s$b_gradient) & s$b_gradient <= sg)
-spawn <- stats::aggregate(len ~ class + s_grad, transform(s, s_grad = s_grad),
-                          function(v) round(sum(v) / 1000, 2))
-names(spawn) <- c("class", "spawn_gradient_split", "km")
+s_width <- !is.na(s$b_cw) & abs(s$b_cw - sw) < 1e-9
+s_acc <- !is.na(s$l_access) & s$l_access == 0
+s$mechanism <- ifelse(s_grad, "spawn_gradient", ifelse(s_width, "spawn_width_min",
+                ifelse(s_acc, "access", "other")))
+spawn <- stats::aggregate(len ~ class + mechanism, s, function(v) round(sum(v) / 1000, 2))
+names(spawn)[names(spawn) == "len"] <- "km"
+spawn <- spawn[order(spawn$class, -spawn$km), ]
 
 utils::write.csv(out, file.path(dir, sprintf("%s_%s_mechanism.csv", wsg, sp)), row.names = FALSE)
 utils::write.csv(spawn, file.path(dir, sprintf("%s_%s_spawning_mechanism.csv", wsg, sp)),
@@ -87,7 +97,7 @@ utils::write.csv(spawn, file.path(dir, sprintf("%s_%s_spawning_mechanism.csv", w
 utils::write.csv(net, file.path(dir, sprintf("%s_%s_mechanism_net.csv", wsg, sp)), row.names = FALSE)
 cat(sprintf("%s %s rearing disagreement by mechanism (km):\n", toupper(wsg), toupper(sp)))
 print(out, row.names = FALSE)
-cat("\nspawning disagreement, split by the spawn gradient threshold (km):\n")
+cat("\nspawning disagreement by mechanism (km):\n")
 print(spawn, row.names = FALSE)
 cat("\nnet km by mechanism family (link - bcfp):\n")
 print(net, row.names = FALSE)

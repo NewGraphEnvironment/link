@@ -35,7 +35,7 @@ Pieces from `data-raw/habitat_diff_segments.R`, attributed by
 
 (Connectivity rows after dropping sub-centimetre slivers, code-check round 2.)
 
-- **Segmentation:** link's PCEA breaks are a superset of bcfp's (24,392 of 24,393 bcfp breaks
+- **Segmentation:** link's PCEA breaks hold all but one of bcfp's (24,392 of 24,393 bcfp breaks
   present within 1 m). The 68,101 extra link breaks are all gradient positions
   (29,959 at 25/30 % — above BT's frontier, so habitat-inert —, 19,888 at 20 %, 18,254 at
   15 %), plus 15 falls and 2 crossings.
@@ -45,7 +45,7 @@ Pieces from `data-raw/habitat_diff_segments.R`, attributed by
   are present (`model_access_ch_cm_co_pk_sk.sql:146-150`, `model_access_bt.sql:148-152` @620dbe4)
   and deletes non-minimal barriers before `break_streams()` (`01_model_access_natural.sh`).
   PCEA is BT-only, so bcfp does not break at the 15 / 20 % positions at all.
-- **Cascade, row level:** blk 359497146: link breaks at 3,050.8 m (a 15 % position); its
+- **Cascade, row level:** blk 359497146: link breaks at 3,051 m (a 15 % position at 3,050.8 m); its
   2,771–3,051 piece is 4.3 % and spawns (≤ 0.0549), bcfp's 2,771–3,329 segment is 7.2 % and
   does not; link then rears 2.75 km on the blk (2.47 km downstream of that piece) through the cluster rule, bcfp rears nothing on
   the blk.
@@ -75,7 +75,7 @@ Net km by mechanism (link − bcfp), BT rearing, bcfishpass config:
   and PARS, where the connectivity side wins and the net is negative. PCEA is where the
   gradient side wins.
 - FINA blk 359421737 shows the cutting direction: link carves 1,036–1,267 m (13.6 %) out of
-  bcfp's 393–1,267 m segment (10.2 %, rears), which splits the cluster; 5.4 km of rearing
+  bcfp's 393–1,267 m segment (10.2 %, rears), which splits the cluster; 5.5 km of rearing
   above loses its connection to the 0.39 km of spawning at the mouth.
 - LKEL (CH / CO / ST present) nearly agrees, though link still has 1,820 extra 15 / 20 %
   breaks there: bcfp breaks at the minimal salmon / ST positions, and the extras sit mostly

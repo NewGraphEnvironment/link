@@ -46,7 +46,7 @@ for (w in wsgs) {
                  (SELECT min(cls) FROM br WHERE br.blk = lb.blk AND br.m BETWEEN lb.m - 1 AND lb.m + 1) AS cls,
                  exists(SELECT 1 FROM fb WHERE fb.blk = lb.blk AND fb.m BETWEEN lb.m - 1 AND lb.m + 1) AS fwa
           FROM lb) z
-    GROUP BY 1, 2 ORDER BY 1, 3 DESC")
+    GROUP BY 1, 2 ORDER BY 1, 3 DESC, 2")
   bcfp <- DBI::dbGetQuery(conn, "
     SELECT count(*) AS n_bcfp,
            count(*) FILTER (WHERE NOT exists(SELECT 1 FROM lb WHERE lb.blk = bb.blk

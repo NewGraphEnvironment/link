@@ -14,8 +14,9 @@ habitat files it cites last changed on or before 2026-04-16 (`50688d5`;
 ## The question
 
 After #319, PCEA BT rearing read +1.87 % against bcfishpass, with lake connection lines
-−8.2 km and everything else +30.3 km. Mapping-code parity there is ~100 %, so access agrees
-and the difference is in the `rearing` flag.
+−8.2 km and everything else +30.3 km. Accessible km agree (PCEA BT 5,003.0 / 5,003.4,
+−0.01 %, `data-raw/logs/lake_connection_319/parity_crosssection_after.txt`), so the difference
+is in the `rearing` flag.
 
 ## Method
 
@@ -25,8 +26,10 @@ same 14,315.7 km), so an exact `(blue_line_key, downstream_route_measure)` join 
 `blue_line_key` and carries each side's segment attributes onto every piece. It stops unless
 the pieces cover both networks and link-only minus bcfp-only equals the flag-total difference
 (PCEA: coverage gap 0.0 m, flag gap 0.0 m). Pieces under 1 cm are dropped: where both sides
-break at one position their measures differ by a fraction of a millimetre, and the sliver pairs
-the reach above the break on one side with the reach below it on the other. `mechanism.R` then gives each disagreeing piece
+Within each side a segment's upstream measure can overshoot the next segment's start, by up to
+3.93 mm (PCEA: 8,806 times in link, 8,805 in bcfishpass, inherited from FWA), and each overshoot
+makes a sliver that pairs the reach above that break on one side with the reach below it on the
+other. No segment on either side is under 1 cm. `mechanism.R` then gives each disagreeing piece
 one mechanism, first match wins.
 
 ## Result
@@ -46,7 +49,7 @@ and nothing is left unattributed.
 
 ### Segmentation is the cause
 
-- **link's breaks are a superset of bcfishpass's.** Of bcfishpass's breaks, 24,392 / 24,393
+- **link's breaks hold almost all of bcfishpass's.** Of bcfishpass's breaks, 24,392 / 24,393
   (PCEA), 20,378 / 20,392 (FINA), 30,699 / 30,733 (PARS) and 2,549 / 2,554 (LKEL) have a link
   break within 1 m. PCEA's 68,118 extra link breaks are gradient positions: 29,959 at
   25 / 30 %, 19,888 at 20 % and 18,254 at 15 %, plus 15 falls and 2 crossings.
@@ -68,16 +71,21 @@ and nothing is left unattributed.
 - **Rear gradient.** A threshold is tested on a segment's average gradient. Where link splits
   one bcfishpass segment, its pieces sit either side of the average, so some pass
   `rear_gradient_max` (0.1049) where the parent failed, and some fail where it passed.
-- **Spawning** moves the same way (PCEA link 925.7 / bcfp 918.5 km; 7.3 of the 9.3 link-only km
-  and all 2.05 bcfp-only km are spawn-gradient flips at 0.0549).
+- **Spawning** moves the same way, plus one rule difference (`<wsg>_bt_spawning_mechanism.csv`).
+  In PCEA (link 925.7 / bcfp 918.5 km), 7.30 of the 9.29 link-only km and all 2.05 bcfp-only km
+  are spawn-gradient flips at 0.0549. Another 1.78 km lie on segments whose width is exactly
+  2.0 m: bcfishpass spawns on width > `spawn_channel_width_min` (`load_habitat_linear_bt.sql:27`),
+  fresh on width ≥ it (`frs_habitat_predicates.R`, `size_sql()`). The width rule is 4.54 km in
+  FINA and 5.27 km in PARS. The last 0.21 km in PCEA is the access residual below. Rearing's width
+  test is `>=` on both sides.
 - **Connectivity.** Both sides keep rearing only in clusters connected to spawning, so a flip
   carries along the stream:
-  - **Joining** (PCEA blk 359497146): link breaks at 3,050.8 m, a 15 % position. Its
+  - **Joining** (PCEA blk 359497146): link breaks at 3,051 m, at a 15 % position (3,050.8 m). Its
     2,771–3,051 m piece is 4.3 % and spawns; bcfishpass's 2,771–3,329 m segment is 7.2 % and
     does not. link then rears 2.75 km on the stream, 2.47 km of it downstream of that piece
     through the cluster rule, and bcfishpass rears nothing on that stream.
   - **Cutting** (FINA blk 359421737): link carves 1,036–1,267 m (13.6 %) out of bcfishpass's
-    393–1,267 m segment (10.2 %, rears). That splits the cluster, and 5.4 km of rearing above
+    393–1,267 m segment (10.2 %, rears). That splits the cluster, and 5.5 km of rearing above
     it loses its connection to the 0.39 km of spawning at the mouth.
 - The net sign is incidental. In PCEA the gradient side wins; in FINA and PARS the cutting
   side does.
@@ -87,7 +95,7 @@ and nothing is left unattributed.
 - **bcfishpass's width exception.** Its BT, CH, CO, ST and WCT rearing admits an order-1 line
   with parent order ≥ 5 whatever its channel width (`load_habitat_linear_bt.sql`). The
   bcfishpass bundle sets `rear_stream_order_bypass = no` (`dimensions.csv`).
-  - In PCEA this is the whole connection-line gap: 8.37 km on two 1450 lines (blks 359386479,
+  - In PCEA it accounts for the connection-line gap: 8.37 km on two 1450 lines (blks 359386479,
     359555604) in a lake on an order-9 stem, plus 1.2 km of stream.
   - In PARS it is 24.78 km on 54 lines, none of them connection lines.
   - The taxonomy's `hors-class-stream-order-bypass` entry still calls this fresh-deferred.

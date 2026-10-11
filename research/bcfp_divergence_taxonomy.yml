@@ -150,7 +150,7 @@ entries:
     pattern: link_gt_bcfp
     diff_range: [0, 3]
     class: SEGMENTATION
-    mechanism: link segments BT-only groups at every 15 / 20 % gradient position, bcfishpass does not; the finer segments' gradients flip spawn / rear tests and cluster connectivity both ways, and here the link side wins
+    mechanism: link segments BT-only groups at every 15 / 20 % gradient position, bcfishpass does not; the finer segments' gradients flip spawn / rear tests and cluster connectivity both ways, and here the link side wins. Spawning adds a width rule (bcfishpass spawns on width > 2.0 m, fresh on >= 2.0 m: PCEA 1.78, FINA 4.54, PARS 5.27 km)
     refs:
       - https://github.com/NewGraphEnvironment/link/issues/324
       - research/bcfp_segmentation_parity.md

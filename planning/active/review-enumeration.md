@@ -22,3 +22,28 @@ and every quantitative claim below was re-checked against the regenerated artifa
 | 74–113 km gross per BT-only group | research doc, taxonomy, CLAUDE.md, draft issue | gross column 73.72–112.59 | matches (rounded) |
 | 715 of 1,258 slivers | script comment, log README | `ec7b838` pieces CSV | matches |
 | PCEA rearing_lake_connection −2.18 % | taxonomy entry | 367.69 / 375.89 | matches |
+
+## Causal and factual claims (after round 3)
+
+Round 3 widened the mechanism: causal and qualitative statements taken from a reviewer's narrative, an
+older document or a generalisation from PCEA, with no probe. Each one in the changed docs, probed:
+
+| claim | probe | verdict |
+|---|---|---|
+| slivers come from measures differing at a shared break | segment overlap within each side (8,806 link / 8,805 bcfp, ≤ 3.93 mm); 24,350 / 24,393 shared breaks identical | **wrong**, corrected in script, research, CLAUDE.md, log README |
+| mapping-code parity ⇒ access agrees | the table predates #223; accessible km 5,003.0 / 5,003.4 | **wrong reasoning**, now cites accessible km (research, issue body) |
+| spawning disagreement is segmentation | `*_bt_spawning_mechanism.csv`: width = 2.0 exactly (bcfp `>`, fresh `>=`) is 1.78 / 4.54 / 5.27 km | **incomplete**, width rule added everywhere spawning is claimed |
+| link's breaks are a superset of bcfp's | `*_breaks.csv`: 1 / 14 / 34 / 5 bcfp breaks unmatched | **overstated**, reworded "all but a handful" with counts |
+| −9.59 km is "the whole" connection gap | 8.37 connection + 1.22 stream | **overstated** in log README; research says "accounts for" |
+| link breaks at 3,050.8 m | segment boundary 3,051; barrier 3,050.8 | corrected |
+| 5.4 km above the cut | 5,451.6 m | corrected to 5.5 |
+| bundle models all 8 species | `lnk_config("bcfishpass")$species` | holds |
+| prep loop is presence-unfiltered, raw positions | `R/lnk_pipeline_prepare.R` comments + code | holds |
+| bcfp builds models only where species present; deletes non-minimal before breaking | `@620dbe4` SQL / shell, read | holds |
+| PCEA / FINA / PARS BT-only; LKEL has CH / CO / ST | `wsg_species_presence` | holds |
+| 25 / 30 % extras do not touch BT habitat | PCEA: 1 BT-accessible segment (10 m) starts at one, no habitat | holds |
+| rearing width test is `>=` on both sides | bcfp `cw.channel_width >= t.rear_channel_width_min`; fresh `size_sql()` | holds |
+| width exception covers BT / CH / CO / ST / WCT; SK has none | `git grep` @620dbe4 | holds |
+| fresh#158 closed; `lnk_rules_build()` supports the bypass | `gh issue view`; `R/lnk_rules_build.R:89` | holds |
+| access residual sits at a subsurface-flow / falls barrier | `fresh.barriers` at the segments' DRM | holds; cause not established (stated) |
+| `default` shares the break set | `lnk_config("default")`: CH / ST modelled, `gradient_classes` NULL → default classes | holds |

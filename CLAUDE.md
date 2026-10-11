@@ -17,15 +17,17 @@ Experimental package — breaking all the time and loving the learning curve. St
 - **Mechanism:** link breaks streams at every 15 / 20 % gradient position, for every species in `cfg$species` and whatever is present (`.lnk_pipeline_prep_minimal()`, #223). bcfishpass builds the CH / ST models only where those species are present, and breaks at minimal positions.
   - In BT-only groups, link's finer segments flip BT spawn and rear gradient tests both ways, and the flips join or cut rearing clusters.
   - Gross disagreement is 74–113 km per BT-only group (PCEA, FINA, PARS); the net is +22 / −13 / −14 km. LKEL, which has salmon, disagrees on 1.7 km.
+- **Spawning also has a width rule:** bcfishpass spawns on width > `spawn_channel_width_min`, fresh on ≥ (PCEA 1.78, FINA 4.54, PARS 5.27 km of link-only BT spawning, all at exactly 2.0 m).
 - **#319's −8.2 km on PCEA connection lines** is bcfishpass's order-1 / parent ≥ 5 width exception. The bcfishpass bundle sets `rear_stream_order_bypass = no`, which also accounts for PARS −24.8 km.
 - **Tool:** `data-raw/habitat_diff_segments.R <WSG> <sp> <schema> <rearing|spawning>`. It joins on measure-interval overlap per `blue_line_key` and asserts that it reconciles. Write-up: `research/bcfp_segmentation_parity.md`.
 - **Open, follow-up drafted, not filed:**
   - whether the bcfishpass config should break where bcfishpass does;
   - the taxonomy's stale `hors-class-stream-order-bypass` status (fresh#158 is closed; the bundle declines the bypass);
-  - a 1.8 km access residual.
+  - a 1.8 km access residual;
+  - whether the bcfishpass config should spawn on width > min, as bcfishpass does.
 
 **Facts not worth re-deriving:**
-- **Never join link and `streams_vw_bcfp` on an exact `(blue_line_key, downstream_route_measure)`.** link has about 2.8× the segments (PCEA 106,079 vs 37,957), and its breaks are a superset of bcfishpass's. Join on measure overlap, and drop pieces under 1 cm: where both sides break at one position the measures differ by a fraction of a millimetre, and the sliver pairs the reach above the break with the reach below it.
+- **Never join link and `streams_vw_bcfp` on an exact `(blue_line_key, downstream_route_measure)`.** link has about 2.8× the segments (PCEA 106,079 vs 37,957), and its breaks hold all but a handful of bcfishpass's (PCEA 24,392 / 24,393; PARS 30,699 / 30,733). Join on measure overlap, and drop pieces under 1 cm: within each side a segment's upstream measure can overshoot the next one's start by up to 3.93 mm (from FWA), and the sliver pairs the reach above that break with the reach below it.
 - **The 15 / 20 % breaks do not come from the orphan-class path.** The bcfishpass bundle models all eight species, so CH (0.15) and ST (0.20) build their own per-model break sets in every group.
 - **bcfishpass's order-1 width exception covers BT, CH, CO, ST and WCT rearing** at `@620dbe4`, not CH alone. The CH-only note under "Older closed" (#23) is stale.
 
