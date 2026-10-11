@@ -20,11 +20,9 @@ Experimental package — breaking all the time and loving the learning curve. St
 - **Spawning also has a width rule:** bcfishpass spawns on width > `spawn_channel_width_min`, fresh on ≥ (PCEA 1.78, FINA 4.54, PARS 5.27 km of link-only BT spawning, all at exactly 2.0 m).
 - **#319's −8.2 km on PCEA connection lines** is bcfishpass's order-1 / parent ≥ 5 width exception, −8.37 km, offset by +0.17 km of link-only rearing on those lines (a known width below the minimum; NULL widths are never admitted, and fresh's `frs_order_child()` has no width test). The bcfishpass bundle sets `rear_stream_order_bypass = no`, which also accounts for PARS −24.8 km.
 - **Tool:** `data-raw/habitat_diff_segments.R <WSG> <sp> <schema> <rearing|spawning>`. It joins on measure-interval overlap per `blue_line_key` and asserts that it reconciles. Write-up: `research/bcfp_segmentation_parity.md`.
-- **Open, follow-up drafted, not filed:**
-  - whether the bcfishpass config should break where bcfishpass does;
-  - the taxonomy's stale `hors-class-stream-order-bypass` status (fresh#158 is closed; the bundle declines the bypass);
-  - a 1.8 km access residual;
-  - whether the bcfishpass config should spawn on width > min, as bcfishpass does.
+- **Follow-up filed as #326** (break only where a present species' access changes, both configs; order-1 exception and optional strict spawning `>` in the bcfishpass config). Still open besides it:
+  - a 1.8 km PCEA access residual;
+  - whether `default` takes the order-1 exception on measured widths only (issue drafted, not filed).
 
 **Facts not worth re-deriving:**
 - **Never join link and `streams_vw_bcfp` on an exact `(blue_line_key, downstream_route_measure)`.** link has about 2.8× the segments (PCEA 106,079 vs 37,957), and its breaks hold all but a handful of bcfishpass's (PCEA 24,392 / 24,393; PARS 30,699 / 30,733). Join on measure overlap, and drop pieces under 1 cm: within each side a segment's upstream measure can overshoot the next one's start by up to 3.93 mm (from FWA), and the sliver pairs the reach above that break with the reach below it.

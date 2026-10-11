@@ -5,7 +5,7 @@
 `.github/workflows/ng-prod.yaml`), `data-raw/habitat_diff_segments.R`,
 `data-raw/logs/rearing_diff_324/mechanism.R` and `breaks.R` → `data-raw/logs/rearing_diff_324/`,
 and the planning archives cited below · **Status:** the difference is explained; matching it is
-decided and not yet built
+decided and tracked in #326
 
 ## How bcfishpass breaks streams
 
