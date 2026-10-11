@@ -1,0 +1,43 @@
+# Task: PCEA: link (bcfishpass config) flags different BT rearing segments than bcfishpass (−8.2 km connection, +30.3 km other) (#324)
+
+**If done:** we know why link on the `bcfishpass` config flags different BT rearing segments than bcfishpass in PCEA, and either fix it or record it as an annotated divergence. **If never:** a segment-level replication gap stays unexplained. Today it is within the 5 % parity tolerance (+1.87 %).
+
+## Phase 1: Segment-level diff instrument
+- [x] `data-raw/rearing_diff_segments.R` (renamed `habitat_diff_segments.R` in Phase 2, with a `flag` arg for spawning) (args: WSG, species; default PCEA bt): interval-overlap
+      join of `fresh.streams` × `streams_habitat_<sp>` (full PK join) against
+      `fresh.streams_vw_bcfp` (`rearing_<sp> IN (1,2)`), carrying both sides' edge type,
+      gradient, channel width, waterbody/lake-connection (`.lnk_sql_lake_connection()`),
+      access, spawning
+- [x] Assert reconciliation inside the script: overlap total = both sides' network km, and
+      link-only − bcfp-only = the parity-cross-section rearing diff (incl. connection lines)
+- [x] Stamped output to `data-raw/logs/rearing_diff_324/` (link/fresh SHA, run time, view row count)
+
+## Phase 2: Bucket and explain PCEA
+- [x] Bucket each flow by edge type, waterbody, gradient (link segment vs bcfp segment),
+      channel width, access code, spawning / cluster context
+- [x] Test the segment-granularity gradient hypothesis directly (link sub-segment gradients
+      under a bcfp segment vs that segment's gradient)
+- [x] Explain the −8.2 km connection gap (the single 5.5 km blk, `access_bt = 2`; read
+      `research/bcfp_view_column_coding.md` for code 2)
+- [x] Row-level spot check of the largest blk in each bucket against the rules
+      (`configs/bcfishpass/rules.yaml`, fresh's compiled SQL) and bcfp's `load_habitat_linear_bt.sql`
+      at `smnorris/bcfishpass@620dbe4`
+
+## Phase 3: Controls
+- [x] Same diff on FINA, PARS, LKEL: are the gross flows present there and cancelling,
+      or PCEA-specific?
+
+## Phase 4: Resolve and record
+- [x] If an annotated divergence: entry in `research/bcfp_divergence_taxonomy.yml`
+      (mechanism, sign, km), `research/` write-up with Verified / Issues / Produced-by header,
+      log README with Measurement + Evidence
+- [x] (n/a — not a defect: #223's deliberate break set; follow-up issue drafted for review, not filed) If a link defect: fix + test here when it is small and in link; a fresh defect or a
+      larger change gets its own issue with the repro (drafted for review), named in the PR
+- [x] Edit #324's body with the finding; CLAUDE.md status; RUNBOOK only if mechanics change
+
+## Validation
+
+- [x] Tests pass (no R/, tests/ or inst/ change; `test-lnk_parity_annotate.R` 55 / 0 against the edited taxonomy)
+- [x] `/code-check branch`: six rounds, ended by enumeration (claim ledger `review-enumeration.md`, round 6 full sweep)
+- [x] PWF checkboxes match landed work
+- [ ] `/planning-archive` on completion

@@ -108,6 +108,10 @@ default currently ships with `spawn_gradient_min = 0` (same as bcfishpass). A no
 
 `river_skip_cw_min = yes` in default dimensions CSV. Channel-width thresholds are applied to stream-type segments (single-thread channel) but meaningless on river polygons (multi-thread, braided, anabranching) where the channel_width attribute is a poor proxy.
 
+### 6. A spawning width (or discharge) exactly at the minimum spawns
+
+Decided 2026-10-11 (operator, #324). bcfishpass spawns on width strictly greater than `spawn_channel_width_min`, and discharge strictly greater than `spawn_mad_min`, for every species (`load_habitat_linear_<sp>.sql`, `smnorris/bcfishpass@f8db4b9`). `default` keeps the tie: a segment at exactly the minimum spawns (fresh's `>=`). The `bcfishpass` config, which exists to reproduce bcfishpass, takes the strict `>` (not yet implemented; it needs a fresh option for a strict lower bound). The tie is not small: 5,670 segments in `fresh.streams` sit at exactly 2.0 m, because widths carry two decimals. In BT on the `bcfishpass` config it is 1.78 km (PCEA), 4.54 km (FINA) and 5.27 km (PARS) of spawning (`research/bcfp_segmentation_parity.md`).
+
 ## Results
 
 Numbers populate from `tar_read(rollup)` after the first clean `tar_destroy + tar_make()`. Table format: one block per WSG, rows = species × habitat_type, columns = bcfishpass bundle value / default bundle value / diff (default − bcfishpass) with unit suffix.

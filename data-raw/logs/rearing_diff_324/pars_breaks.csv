@@ -1,0 +1,19 @@
+"wsg","side","in_other","position","n"
+"PARS","link",FALSE,"GRADIENT_25_30",22028
+"PARS","link",FALSE,"GRADIENT_20",16189
+"PARS","link",FALSE,"GRADIENT_15",15543
+"PARS","link",FALSE,"MODELLED_CROSSINGS",94
+"PARS","link",FALSE,"FALLS",16
+"PARS","link",FALSE,"none (observation / crossing / endpoint)",14
+"PARS","link",FALSE,"PSCIS",9
+"PARS","link",TRUE,"FWA_BASE_SEGMENT",21229
+"PARS","link",TRUE,"GRADIENT_25_30",4272
+"PARS","link",TRUE,"MODELLED_CROSSINGS",3166
+"PARS","link",TRUE,"none (observation / crossing / endpoint)",820
+"PARS","link",TRUE,"GRADIENT_15",417
+"PARS","link",TRUE,"PSCIS",402
+"PARS","link",TRUE,"GRADIENT_20",324
+"PARS","link",TRUE,"SUBSURFACE_FLOW",68
+"PARS","link",TRUE,"FALLS",21
+"PARS","bcfp",TRUE,"all",30699
+"PARS","bcfp",FALSE,"all",34

@@ -1,0 +1,9 @@
+"class","mechanism","km","n_blk"
+"bcfp_only","cw_order_bypass",24.78,54
+"bcfp_only","rear_gradient",20.88,146
+"bcfp_only","connectivity_split_on_blk",16.64,27
+"bcfp_only","connectivity_other",0.91,3
+"link_only","rear_gradient",40.16,166
+"link_only","connectivity_split_on_blk",7.16,9
+"link_only","connectivity_other",1.11,2
+"link_only","access",0.94,3

@@ -1,0 +1,18 @@
+"wsg","side","in_other","position","n"
+"PCEA","link",FALSE,"GRADIENT_25_30",29959
+"PCEA","link",FALSE,"GRADIENT_20",19888
+"PCEA","link",FALSE,"GRADIENT_15",18254
+"PCEA","link",FALSE,"FALLS",15
+"PCEA","link",FALSE,"MODELLED_CROSSINGS",2
+"PCEA","link",TRUE,"FWA_BASE_SEGMENT",15931
+"PCEA","link",TRUE,"GRADIENT_25_30",5063
+"PCEA","link",TRUE,"MODELLED_CROSSINGS",1983
+"PCEA","link",TRUE,"GRADIENT_15",506
+"PCEA","link",TRUE,"GRADIENT_20",411
+"PCEA","link",TRUE,"none (observation / crossing / endpoint)",334
+"PCEA","link",TRUE,"SUBSURFACE_FLOW",142
+"PCEA","link",TRUE,"PSCIS",16
+"PCEA","link",TRUE,"FALLS",10
+"PCEA","link",TRUE,"CABD",1
+"PCEA","bcfp",TRUE,"all",24392
+"PCEA","bcfp",FALSE,"all",1

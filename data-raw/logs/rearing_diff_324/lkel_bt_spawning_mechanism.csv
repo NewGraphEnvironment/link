@@ -1,0 +1,4 @@
+"class","mechanism","km"
+"bcfp_only","spawn_gradient",0.01
+"link_only","spawn_gradient",0.09
+"link_only","spawn_width_min",0.02
