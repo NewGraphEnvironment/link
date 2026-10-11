@@ -6,8 +6,10 @@
 # _spawning_mechanism.csv beside them.
 #
 # Mechanisms, first match wins:
-#   cw_order_bypass   bcfp-only, bcfp segment fails the width minimum but is order 1
-#                     with parent order >= 5: bcfishpass's rearing exception
+#   cw_order_bypass   bcfp-only, bcfp segment has a known width below the minimum but
+#                     is order 1 with parent order >= 5: bcfishpass's rearing exception
+#                     (a NULL width fails its `channel_width <= max` test, so it is never
+#                     admitted)
 #                     (load_habitat_linear_bt.sql), which the bcfishpass bundle
 #                     declines (dimensions.csv rear_stream_order_bypass = no)
 #   rear_gradient     the two sides' segment gradients fall on opposite sides of
@@ -16,8 +18,8 @@
 #   connectivity      both segments pass the rearing thresholds; the flags differ
 #                     through cluster connectivity to spawning. Split by whether the
 #                     same blue_line_key also carries a gradient split (a rear_gradient
-#                     piece, or a spawning disagreement of either kind below): the
-#                     split joins or cuts the cluster there
+#                     piece, or a spawn_gradient piece): the split joins or cuts the
+#                     cluster there
 #   other
 #
 # Usage: Rscript data-raw/logs/rearing_diff_324/mechanism.R [wsg] [sp]
@@ -38,13 +40,15 @@ s <- utils::read.csv(file.path(dir, sprintf("%s_%s_spawning_pieces.csv", wsg, sp
 pass_g <- function(g) !is.na(g) & g <= rg
 pass_c <- function(w) !is.na(w) & w >= rc
 
-bypass <- p$class == "bcfp_only" & !pass_c(p$b_cw) &
+bypass <- p$class == "bcfp_only" & !is.na(p$b_cw) & p$b_cw < rc &
   !is.na(p$b_order) & p$b_order == 1 & !is.na(p$b_order_parent) & p$b_order_parent >= 5
 grad   <- pass_g(p$l_gradient) != pass_g(p$b_gradient)
 acc    <- !is.na(p$l_access) & p$l_access == 0
 conn   <- pass_g(p$l_gradient) & pass_g(p$b_gradient) & pass_c(p$l_cw) &
   (pass_c(p$b_cw) | bypass)
-split_blk <- p$blk %in% unique(c(s$blk, p$blk[grad & !bypass]))
+sg <- thr$spawn_gradient_max
+s_grad <- (!is.na(s$l_gradient) & s$l_gradient <= sg) != (!is.na(s$b_gradient) & s$b_gradient <= sg)
+split_blk <- p$blk %in% unique(c(s$blk[s_grad], p$blk[grad & !bypass]))
 
 p$mechanism <- ifelse(bypass, "cw_order_bypass",
                ifelse(grad, "rear_gradient",
@@ -71,7 +75,9 @@ net <- data.frame(
   cw_order_bypass = sum(sgn[fam == "cw_order_bypass"]),
   access = sum(sgn[fam == "access"]),
   other = sum(sgn[fam == "other"]),
-  net = sum(sgn), gross = sum(p$len))
+  net = sum(sgn), gross = sum(p$len),
+  segmentation_net = sum(sgn[fam %in% c("rear_gradient", "connectivity")]),
+  segmentation_gross = sum(p$len[fam %in% c("rear_gradient", "connectivity")]))
 net[-1] <- lapply(net[-1], function(v) round(v / 1000, 2))
 
 # spawning disagreement, first match wins:
@@ -80,9 +86,7 @@ net[-1] <- lapply(net[-1], function(v) round(v / 1000, 2))
 #                    on width > min (load_habitat_linear_bt.sql), fresh on >= min
 #   access           link's own access code is 0
 #   other
-sg <- thr$spawn_gradient_max
 sw <- thr$spawn_channel_width_min
-s_grad <- (!is.na(s$l_gradient) & s$l_gradient <= sg) != (!is.na(s$b_gradient) & s$b_gradient <= sg)
 s_width <- !is.na(s$b_cw) & abs(s$b_cw - sw) < 1e-9
 s_acc <- !is.na(s$l_access) & s$l_access == 0
 s$mechanism <- ifelse(s_grad, "spawn_gradient", ifelse(s_width, "spawn_width_min",

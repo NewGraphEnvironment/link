@@ -139,18 +139,21 @@ entries:
   # positions of models built only where their species are present, so in a
   # BT-only group it never breaks at 15 / 20 %. A segment's gradient then
   # differs between the two, flipping spawn / rear gradient tests both ways,
-  # and the flips join or cut rearing clusters. Measured on PCEA, FINA, PARS
-  # (BT rearing gross disagreement 74-113 km, net +22 / -13 / -14 km) and
-  # LKEL (1.7 km) on the bcfishpass config, 2026-10-11.
+  # and the flips join or cut rearing clusters. Segmentation alone moves
+  # 74-87 km of BT rearing per BT-only group (PCEA, FINA, PARS; net +29.9 /
+  # -13.1 / +10.0 km) and 1.4 km in LKEL, bcfishpass config, 2026-10-11
+  # (data-raw/logs/rearing_diff_324/*_bt_mechanism_net.csv).
+  # Status INTENTIONAL: the break set is #223's deliberate design; whether the
+  # bcfishpass config should match bcfishpass's is a separate, open question.
   # ---------------------------------------------------------------------------
   - id: bt-gradient-segmentation-over
-    wsg: [PCEA, FINA, PARS]
+    wsg: PCEA
     species: BT
-    metric: [spawning, rearing, rearing_stream]
+    metric: [rearing, rearing_stream]
     pattern: link_gt_bcfp
     diff_range: [0, 3]
     class: SEGMENTATION
-    mechanism: link segments BT-only groups at every 15 / 20 % gradient position, bcfishpass does not; the finer segments' gradients flip spawn / rear tests and cluster connectivity both ways, and here the link side wins. Spawning adds a width rule (bcfishpass spawns on width > 2.0 m, fresh on >= 2.0 m: PCEA 1.78, FINA 4.54, PARS 5.27 km)
+    mechanism: link segments BT-only groups at every 15 / 20 % gradient position, bcfishpass does not; the finer segments' gradients flip rear tests and join or cut rearing clusters (net +29.9 km), less bcfishpass's order-1 width exception (-9.6 km), plus a 1.8 km access residual whose cause is not established
     refs:
       - https://github.com/NewGraphEnvironment/link/issues/324
       - research/bcfp_segmentation_parity.md
@@ -158,23 +161,57 @@ entries:
     status: INTENTIONAL
 
   - id: bt-gradient-segmentation-under
-    wsg: [PCEA, FINA, PARS]
+    wsg: FINA
     species: BT
     metric: [rearing, rearing_stream]
     pattern: link_lt_bcfp
     diff_range: [0, 3]
     class: SEGMENTATION
-    mechanism: link segments BT-only groups at every 15 / 20 % gradient position, bcfishpass does not; the finer segments' gradients flip rear tests and cut rearing clusters both ways, and here the bcfishpass side wins (PARS adds bcfishpass's order-1 width exception, -24.8 km)
+    mechanism: link segments BT-only groups at every 15 / 20 % gradient position, bcfishpass does not; here the finer segments cut more rearing clusters than they join (net -13.1 km)
     refs:
       - https://github.com/NewGraphEnvironment/link/issues/324
       - research/bcfp_segmentation_parity.md
       - data-raw/logs/rearing_diff_324/
     status: INTENTIONAL
 
-  # bcfishpass rears order-1 lines with parent order >= 5 whatever their width
-  # (load_habitat_linear_bt.sql @620dbe4); the bcfishpass bundle sets
-  # rear_stream_order_bypass = no. In PCEA that is the whole connection-line gap
-  # #319 measured: 8.37 km on two 1450 lines in a lake on an order-9 stem.
+  # PARS's BT rearing row is negative because of bcfishpass's order-1 width
+  # exception (-24.8 km); segmentation alone nets +10.0 km there.
+  - id: pars-bt-rearing-width-exception
+    wsg: PARS
+    species: BT
+    metric: [rearing, rearing_stream]
+    pattern: link_lt_bcfp
+    diff_range: [0, 3]
+    class: B
+    mechanism: bcfishpass rears order-1 lines with parent order >= 5 whose width is below the minimum (-24.8 km on 54 lines); the bcfishpass bundle sets rear_stream_order_bypass = no. Segmentation nets +10.0 km against it
+    refs:
+      - https://github.com/NewGraphEnvironment/link/issues/324
+      - research/bcfp_segmentation_parity.md
+      - data-raw/logs/rearing_diff_324/
+    status: INTENTIONAL
+
+  # Spawning: gradient flips from segmentation, plus a width test that differs.
+  # bcfishpass spawns on width > spawn_channel_width_min, fresh on >= it. Open:
+  # whether the bcfishpass config should match.
+  - id: bt-spawning-segmentation-and-width
+    wsg: [PCEA, FINA, PARS]
+    species: BT
+    metric: spawning
+    pattern: link_gt_bcfp
+    diff_range: [0, 3]
+    class: SEGMENTATION
+    mechanism: spawn-gradient flips from link's finer segments, plus bcfishpass spawning only on width > 2.0 m where fresh takes >= 2.0 m (PCEA 1.78, FINA 4.54, PARS 5.27 km of link-only spawning)
+    refs:
+      - https://github.com/NewGraphEnvironment/link/issues/324
+      - research/bcfp_segmentation_parity.md
+      - data-raw/logs/rearing_diff_324/
+    status: NEEDS_INVESTIGATION
+
+  # bcfishpass rears order-1 lines with parent order >= 5 whose known width is
+  # below the minimum (load_habitat_linear_bt.sql @620dbe4; a NULL width is not
+  # admitted); the bcfishpass bundle sets rear_stream_order_bypass = no. In PCEA
+  # that accounts for the connection-line gap #319 measured: 8.37 km on two 1450
+  # lines in a lake on an order-9 stem.
   - id: pcea-bt-connection-width-exception
     wsg: PCEA
     species: BT
@@ -182,7 +219,7 @@ entries:
     pattern: link_lt_bcfp
     diff_range: [0, 5]
     class: B
-    mechanism: bcfishpass rears order-1 connection lines on an order-9 stem whatever their width; the bcfishpass bundle declines that exception (rear_stream_order_bypass = no)
+    mechanism: bcfishpass rears order-1 connection lines on an order-9 stem whose width is below the minimum; the bcfishpass bundle declines that exception (rear_stream_order_bypass = no)
     refs:
       - https://github.com/NewGraphEnvironment/link/issues/324
       - research/bcfp_segmentation_parity.md

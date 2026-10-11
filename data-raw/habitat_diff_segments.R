@@ -92,8 +92,8 @@ x("ANALYZE rd_bcfp")
 # bcfp, by up to 3.93 mm). Each overshoot makes a sliver pairing the reach above
 # that break on one side with the reach below it on the other. Pieces under 1 cm
 # are such slivers (PCEA: 715 of 1,258 disagreeing rearing pieces; none of either
-# side's segments is under 1 cm); they are dropped, and the reconciliation below
-# allows for their length.
+# side's segments is under 1 cm). Dropping them removes a double count, so the
+# coverage check below closes to 0.0 m.
 x(sprintf("
   CREATE TEMP TABLE rd_piece AS
   SELECT l.blk,

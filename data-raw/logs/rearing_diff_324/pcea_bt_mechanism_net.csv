@@ -1,2 +1,2 @@
-"wsg","rear_gradient","connectivity","connectivity_other_gross","cw_order_bypass","access","other","net","gross"
-"PCEA",21.72,8.19,3.96,-9.59,1.8,0,22.11,86.24
+"wsg","rear_gradient","connectivity","connectivity_other_gross","cw_order_bypass","access","other","net","gross","segmentation_net","segmentation_gross"
+"PCEA",21.72,8.19,4.01,-9.59,1.8,0,22.11,86.24,29.91,74.85

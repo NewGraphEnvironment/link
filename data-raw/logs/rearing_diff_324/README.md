@@ -40,5 +40,6 @@ Moved #324 from "unexplained" to an annotated divergence.
   measures differing at a shared break; round 3 found the measures identical there (24,350 of 24,393
   PCEA bcfp breaks start a link segment at the same measure) and the cause within each side: a segment's
   upstream measure overshoots the next one's start by up to 3.93 mm, inherited from FWA. They counted as gradient splits on their stream. The script now
-  drops pieces under 1 cm; unexplained connectivity is ≤ 3.96 km per group (gross, PCEA), and the net
+  drops pieces under 1 cm; unexplained connectivity is ≤ 4.01 km per group (gross, PCEA, once round 4
+  counted only gradient spawning flips as splits), and the net
   table moved by at most 0.01 km.
