@@ -31,11 +31,11 @@ Build watershed group **DUNC** (Duncan Lake, Lardeau River) into `fresh_default`
 
 - [x] Edit the #328 body: outcome, DUNC's vintage beside the other three, and the answer to "Also observed"
 - [x] Short CLAUDE.md status entry: `fresh_default` is mixed-vintage; read the log per group
-- [x] Final report notes that floodplains `columbia.yml`'s `network_source` header (link 0.45.1) no longer holds for DUNC
+- [x] README ("For floodplains") notes that floodplains `columbia.yml`'s `network_source` header (link 0.45.1) no longer holds for DUNC
 
 ## Validation
 
 - [x] DB checks in Phase 2 pass
-- [ ] `/code-check branch` clean
-- [ ] PWF checkboxes match landed work
+- [x] `/code-check branch` clean
+- [x] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion

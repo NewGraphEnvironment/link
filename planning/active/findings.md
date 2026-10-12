@@ -38,7 +38,7 @@ Relates: NewGraphEnvironment/floodplains#104, NewGraphEnvironment/floodplains#12
 - `fresh_default` holds 55 groups; most predate the log and #223 segmentation.
 - `lnk_wsg_downstream_check(DUNC, default)`: pass, 6 dams downstream, all in KOTL.
 - `lnk_pipeline_species(default, DUNC)`: BT WCT RB.
-- DUNC in `fresh`: 26,827 segments, built in the 2026-04-30 parity run. That predates `streams_access` (v0.40.0, 2026-05-19) and the log tables (#127, 2026-08-06). In `fresh`, 98 groups have streams, 59 have `streams_access`, 39 have log rows.
+- DUNC in `fresh`: 26,827 segments, built in the 2026-05-13 trifecta provincial run (link 0.36.0; corrected by code-check round 3; the issue's 2026-04-30 run used link 0.20.0, which predates per-species persist tables). That predates `streams_access` (v0.40.0, 2026-05-19) and the log tables (#127, 2026-08-06). In `fresh`, 98 groups have streams, 59 have `streams_access`, 39 have log rows.
 - floodplains `config/regions/columbia.yml` grabs the network from `fresh_default` and cites link 0.45.1; floodplains#125 keeps the published KOTL/LARL/SLOC bt_ff04 items.
 
 ## Errors Encountered
