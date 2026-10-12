@@ -1,0 +1,90 @@
+== stamp
+date_utc: 2026-10-12 15:37:03 UTC 
+link HEAD: 8215d2d072f21c6c915612234b41ef3e47da747e 
+fresh: 0.39.0 e247ca19a7803982dc7e5f55dbbf377dfc85d007 
+
+== log row
+                 1                                                                        
+run_id           "m1-20261012T153135.985-b33d3a"                                          
+run_uid          NA                                                                       
+run_label        "dunc_default_328"                                                       
+config_name      "default"                                                                
+config_hash      "sha256:7e9dffa4a5b84d99c30928ecaf5eda30e7ccf9342f1fc53a2d9a3ce2840eb66b"
+config_drift     "FALSE"                                                                  
+link_version     "0.63.1"                                                                 
+link_sha         "8215d2d072f21c6c915612234b41ef3e47da747e"                               
+link_dirty       "FALSE"                                                                  
+fresh_version    "0.39.0"                                                                 
+fresh_sha        "e247ca19a7803982dc7e5f55dbbf377dfc85d007"                               
+fwapg_sha        "f9718cb739d376155641f484456eb2a93ce2f481"                               
+schema_persist   "fresh_default"                                                          
+species          "{BT,WCT,RB}"                                                            
+arg_dams         "TRUE"                                                                   
+arg_mapping_code "TRUE"                                                                   
+date_start       "2026-10-12 15:31:35"                                                    
+date_end         "2026-10-12 15:33:45"                                                    
+[PASS] exactly one fresh_default.log row for DUNC
+[PASS] config_name = default
+[PASS] run closed (date_end set)
+[PASS] link_dirty = f
+[PASS] link_sha = the build commit
+[PASS] schema_persist = fresh_default
+[PASS] config_hash and fwapg_sha recorded
+
+== FWA inputs: DUNC against KOTL (fwapg_sha is the fwapg checkout, not the data)
+                                         table_name row_count_kotl
+                    whse_basemapping.fwa_lakes_poly         386429
+                   whse_basemapping.fwa_rivers_poly          37083
+ whse_basemapping.fwa_stream_networks_channel_width        4907429
+  whse_basemapping.fwa_stream_networks_order_parent        1509493
+            whse_basemapping.fwa_stream_networks_sp        4907804
+                 whse_basemapping.fwa_wetlands_poly         374560
+ size_bytes_kotl row_count_dunc size_bytes_dunc
+       583475200         386429       583475200
+       140730368          37083       140730368
+       341557248        4907429       341557248
+        89153536        1509493        89153536
+     10287677440        4907804     10287677440
+       856981504         374560       856981504
+[PASS] 6 FWA tables logged for both carry the same fingerprint
+
+== nothing written to fresh
+[PASS] no DUNC row added to fresh.log
+
+== streams
+fresh_default: 63067 segments, 3493.0 km order>=2
+fresh:         26827 segments, 3493.0 km order>=2
+FWA:           22627 lines,    3493.0 km order>=2
+[PASS] fresh_default.streams holds DUNC
+[PASS] order>=2 km matches raw FWA and fresh.streams to the km
+
+== habitat, access, mapping_code (full-PK joins)
+[PASS] streams_habitat_bt: 63067 of 63067 segments
+[PASS] streams_habitat_wct: 63067 of 63067 segments
+[PASS] streams_habitat_rb: 63067 of 63067 segments
+BT segments: 2918 spawning, 4528 rearing, 9887 accessible
+[PASS] streams_habitat_bt carries non-zero flags
+WCT segments: 2418 spawning, 3537 rearing, 6329 accessible
+[PASS] streams_habitat_wct carries non-zero flags
+RB segments: 2916 spawning, 4344 rearing, 9792 accessible
+[PASS] streams_habitat_rb carries non-zero flags
+[PASS] streams_access: 63067 of 63067 segments
+[PASS] streams_mapping_code: 63067 of 63067 segments
+
+== context, not parity: link default against the bcfishpass reference view
+   (default differs from bcfishpass by design; the view has no rb columns)
+ species     metric link_default bcfishpass diff_pct
+      BT accessible      1410.08     1381.9      2.0
+      BT   spawning       543.14      538.4      0.9
+      BT    rearing       815.48      798.3      2.2
+     WCT accessible      1125.57     1111.2      1.3
+     WCT   spawning       474.46      472.5      0.4
+     WCT    rearing       664.07      567.6     17.0
+
+link default, all species:
+  wsg species accessible_km spawning_km rearing_km rearing_lake_connection_km
+ DUNC      BT       1410.08      543.14     815.48                     201.76
+ DUNC      RB       1403.24      543.10     777.04                     201.76
+ DUNC     WCT       1125.57      474.46     664.07                     201.76
+
+== 0 check(s) failed

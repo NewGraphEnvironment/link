@@ -45,3 +45,5 @@ Relates: NewGraphEnvironment/floodplains#104, NewGraphEnvironment/floodplains#12
 
 | Error | Resolution |
 |-------|------------|
+| Full-PK join of new DUNC rows stalled >2 min | `pg_cancel_backend`, `ANALYZE` the six touched `fresh_default` tables (CLAUDE.md #319 note) |
+| `sprintf("%d")` on a Postgres `count(*)` (bigint arrives as double) | cast `count(*)::int` in SQL |

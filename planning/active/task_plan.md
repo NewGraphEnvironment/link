@@ -14,18 +14,18 @@ Build watershed group **DUNC** (Duncan Lake, Lardeau River) into `fresh_default`
 
 ## Phase 1: Run DUNC
 
-- [ ] Pre-flight: no active backends on fwapg, no `working_dunc` schema, tree clean at the baseline commit, installed fresh = 0.39.0 (`e247ca1`)
-- [ ] Run `wsg_run_one.R DUNC default` with the env above, in the background, output teed to the scratchpad, start time from `date -u`
-- [ ] Confirm the exit from DB state, not from the wrapper (Phase 2)
+- [x] Pre-flight: no active backends on fwapg, no `working_dunc` schema, tree clean at the baseline commit, installed fresh = 0.39.0 (`e247ca1`)
+- [x] Run `wsg_run_one.R DUNC default` with the env above, in the background, output teed to the scratchpad, start time from `date -u`
+- [x] Confirm the exit from DB state, not from the wrapper (Phase 2)
 
 ## Phase 2: Verify against "Done when"
 
-- [ ] `fresh_default.streams` has DUNC; order >= 2 km matches `fresh.streams` DUNC (3,493 km) to the km (segment count differs by design)
-- [ ] `streams_habitat_bt` / `_wct` / `_rb` row counts equal `streams` for DUNC, on the full PK
-- [ ] `streams_access` and `streams_mapping_code` hold DUNC
-- [ ] `fresh_default.log` row for DUNC carries config_name, config_hash, clean link_sha = HEAD, fresh_sha, fwapg_sha, schema_persist, run_label, run_uid, date_end
-- [ ] Parity sanity (informational): DUNC BT/WCT accessible / spawning / rearing km against `fresh.streams_vw_bcfp` (`IN (1,2)`, lake connection lines out on both sides)
-- [ ] `data-raw/logs/dunc_default_328/`: run log, verification output with environment stamp, README
+- [x] `fresh_default.streams` has DUNC; order >= 2 km matches `fresh.streams` DUNC (3,493 km) to the km (segment count differs by design)
+- [x] `streams_habitat_bt` / `_wct` / `_rb` row counts equal `streams` for DUNC, on the full PK
+- [x] `streams_access` and `streams_mapping_code` hold DUNC
+- [x] `fresh_default.log` row for DUNC carries config_name, config_hash, clean link_sha = HEAD, fresh_sha, fwapg_sha, schema_persist, run_label, run_uid, date_end
+- [x] Context, not parity (informational): DUNC BT/WCT accessible / spawning / rearing km against `fresh.streams_vw_bcfp` (`IN (1,2)`, lake connection lines out on both sides)
+- [x] `data-raw/logs/dunc_default_328/`: run log, verification output with environment stamp, README
 
 ## Phase 3: Record
 
