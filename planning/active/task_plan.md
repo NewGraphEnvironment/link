@@ -2,7 +2,7 @@
 
 Build watershed group **DUNC** (Duncan Lake, Lardeau River) into `fresh_default` under config `default`, so the floodplains Columbia region (KOTL, LARL, SLOC, DUNC) reads one schema (floodplains#104, #125).
 
-**Decided (operator, 2026-10-12): DUNC alone at HEAD.** KOTL/LARL/SLOC stay as built 2026-08-27 (fresh v0.33.0; KOTL/SLOC link `322389a`, config_hash `3cfde7…`; LARL `8c8c29b` dirty, `44e452…`; their bt_ff04 items are published from that build). DUNC is link v0.63.1 / fresh v0.39.0, so its habitat flags come from current `default` rules (#282, #307, #310, #311). The log rows record the difference. A run, not a code change: no version bump.
+**Decided (operator, 2026-10-12): DUNC alone at HEAD.** KOTL/LARL/SLOC stay as built 2026-08-27 (fresh v0.33.0; KOTL/SLOC link `322389a`, config_hash `3cfde7…`; LARL `8c8c29b` dirty, `44e452…`; their bt_ff04 items are published from that build). DUNC is link v0.63.1 / fresh v0.39.0, so its habitat flags can differ by #310, #311 and fresh 0.33 → 0.39 (fresh#237, #240); #282/#307 changed only MAD columns, inert for a `cw` group. The log rows record the difference. A run, not a code change: no version bump.
 
 ## Run decisions
 
