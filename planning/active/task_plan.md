@@ -2,7 +2,7 @@
 
 Build watershed group **DUNC** (Duncan Lake, Lardeau River) into `fresh_default` under config `default`, so the floodplains Columbia region (KOTL, LARL, SLOC, DUNC) reads one schema (floodplains#104, #125).
 
-**Decided (operator, 2026-10-12): DUNC alone at HEAD.** KOTL/LARL/SLOC stay as built 2026-08-27 (link `322389a`, fresh v0.33.0, config_hash `3cfde7…`; their bt_ff04 items are published from that build). DUNC is link v0.63.1 / fresh v0.39.0, so its habitat flags come from current `default` rules (#282, #307, #310, #311). The log rows record the difference. A run, not a code change: no version bump.
+**Decided (operator, 2026-10-12): DUNC alone at HEAD.** KOTL/LARL/SLOC stay as built 2026-08-27 (fresh v0.33.0; KOTL/SLOC link `322389a`, config_hash `3cfde7…`; LARL `8c8c29b` dirty, `44e452…`; their bt_ff04 items are published from that build). DUNC is link v0.63.1 / fresh v0.39.0, so its habitat flags come from current `default` rules (#282, #307, #310, #311). The log rows record the difference. A run, not a code change: no version bump.
 
 ## Run decisions
 
@@ -23,7 +23,7 @@ Build watershed group **DUNC** (Duncan Lake, Lardeau River) into `fresh_default`
 - [x] `fresh_default.streams` has DUNC; order >= 2 km matches `fresh.streams` DUNC (3,493 km) to the km (segment count differs by design)
 - [x] `streams_habitat_bt` / `_wct` / `_rb` row counts equal `streams` for DUNC, on the full PK
 - [x] `streams_access` and `streams_mapping_code` hold DUNC
-- [x] `fresh_default.log` row for DUNC carries config_name, config_hash, clean link_sha = HEAD, fresh_sha, fwapg_sha, schema_persist, run_label, run_uid, date_end
+- [x] `fresh_default.log` row for DUNC carries config_name, config_hash, link_sha = build commit `8215d2d` with link_dirty f, fresh_sha, fwapg_sha, schema_persist, run_label, date_end (`run_uid` NULL by design: a direct run has no dispatch)
 - [x] Context, not parity (informational): DUNC BT/WCT accessible / spawning / rearing km against `fresh.streams_vw_bcfp` (`IN (1,2)`, lake connection lines out on both sides)
 - [x] `data-raw/logs/dunc_default_328/`: run log, verification output with environment stamp, README
 

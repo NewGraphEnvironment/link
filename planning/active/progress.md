@@ -10,3 +10,4 @@
 - Phase 1: pre-flight clean; ran DUNC 15:31:35–15:33:45 UTC (2.2 min), exit 0
 - Phase 2: `verify.R` 19/19 pass, after `ANALYZE` on the six touched tables (the first full-PK join stalled on stale statistics). FWA fingerprints identical to KOTL's; `fwapg_sha` differs only because the fwapg checkout moved.
 - Phase 3: #328 body edited (outcome, vintage, FWA fingerprint, Also-observed answer); CLAUDE.md status entry with the measured segments-per-FWA-line split (49 of 56 groups sparse)
+- code-check round 1: 3 doc findings fixed (CHWK missing from the CLAUDE.md density split; Phase 2 box overstated link_sha/run_uid; LARL's build commit). My own first fix misquoted the dense floor (2.9; PARS is 2.62), corrected before commit.
