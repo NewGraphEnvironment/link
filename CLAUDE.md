@@ -11,6 +11,16 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
+## Status (2026-10-12) — DUNC built into `fresh_default`; that schema is mixed-vintage (#328)
+
+**DUNC is in `fresh_default` under `default` (link 0.63.1, fresh 0.39.0), for the floodplains Columbia region. Its neighbours KOTL, LARL and SLOC are August builds (link 0.45.1, fresh 0.33.0).** The operator chose a HEAD build over rebuilding all four, because those three groups' published floodplains items come from the August build. Evidence: `data-raw/logs/dunc_default_328/`.
+
+**Facts not worth re-deriving:**
+- **`fresh_default` is not one build.** Of its 56 groups, only PINE, KOTL, LARL, SLOC (August) and DUNC have log rows. The rest predate the log tables (#127). 49 of the 56 have under 1.5 segments per FWA line, which is pre-#223 segmentation; only PARS, PINE and the four Columbia groups are dense (2026-10-12). Read `<schema>.log` per group before comparing flags across groups.
+- **`fwapg_sha` is the local fwapg checkout's HEAD, not an FWA data version.** It moves on unrelated fwapg commits. Compare `<schema>.log_input` fingerprints to tell whether two builds read the same FWA data.
+- **A single-WSG build of `default` needs `LNK_SCHEMA=fresh_default`.** `default`'s YAML schema is `fresh`. A direct `wsg_run_one.R` run logs `run_uid` NULL, because `study_area_run.sh` sets it per dispatch.
+- **Groups missing from `fresh.streams_access` / `fresh.log` are stale, not broken.** They last ran before v0.40.0 or #127 (59 and 39 of 98 groups have them).
+
 ## Status (2026-10-11) — BT habitat disagrees with bcfishpass segment by segment because of where streams break (#324)
 
 **PCEA's +1.87 % BT rearing is segmentation, annotated (taxonomy class `SEGMENTATION`); no code changed.**
