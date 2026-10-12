@@ -38,4 +38,4 @@ Build watershed group **DUNC** (Duncan Lake, Lardeau River) into `fresh_default`
 - [x] DB checks in Phase 2 pass
 - [x] `/code-check branch` clean
 - [x] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion
+- [x] `/planning-archive` on completion
