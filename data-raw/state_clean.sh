@@ -16,6 +16,8 @@
 #   - bcfishobs, cabd, whse_fish (today's loaded primitives — refreshed by
 #     snapshot_bcfp.sh on its next run anyway)
 #   - bcfishpass_ref (reference data; not pipeline output)
+#   - provenance (what is loaded here and from which artifact version;
+#     link#265. Not pipeline output, and #270 loader rows cannot be re-made)
 #
 # Usage:
 #   bash data-raw/state_clean.sh [flags]
