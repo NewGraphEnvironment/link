@@ -17,6 +17,18 @@
 #   6. Stamp data-raw/logs/bcfp_baselines.csv with the bcfp build identifier
 #      from s3://fresh-bc/bcfishpass/log.json (link#117 ledger).
 #
+# Source-artifact identity (link#265). Steps 1-4 each write a row into
+# fresh.log_source_artifact (recorded_by = 'loader') via
+# data-raw/artifact_record.R. The two object-store fetches (3, 4) HEAD the
+# object first and then read THAT version (`?versionId=`), so the recorded
+# version id is the one loaded by construction -- the store is versioned but
+# cannot be listed, so a version not written down now cannot be named later.
+# PSCIS and CABD have no version handle (kind 'api'); their rows carry the URL
+# and load time only. The host's loader rows are cleared before the first
+# load, so a snapshot that dies half way leaves its tables unstamped (the
+# vintage gate fails on that) rather than naming a version no longer loaded.
+# A failure to record is a failure of the snapshot.
+#
 # Prereqs:
 #   - Local Postgres with PostGIS. Connection via PG* env vars or ~/.pgpass.
 #   - Python `bcdata` CLI (`uv tool install bcdata==0.16.0.post1`).
@@ -127,6 +139,46 @@ if [ -z "${DATABASE_URL:-}" ]; then
 fi
 PSQL="psql $DATABASE_URL -v ON_ERROR_STOP=1"
 
+# One scratch dir and ONE EXIT trap for the whole script (a second `trap ...
+# EXIT` would replace the first).
+WORKDIR=$(mktemp -d)
+trap 'rm -rf "$WORKDIR"' EXIT
+
+BCHAMP="https://nrs.objectstore.gov.bc.ca/bchamp"
+MANIFEST="$WORKDIR/artifacts.tsv"
+printf 'table_name\turl\tversion_id\tetag\tlast_modified\tloaded_at\tnotes\n' > "$MANIFEST"
+
+# artifact_head URL -> sets A_VERSION, A_ETAG, A_LASTMOD, A_NOTE.
+# Never fails the script: an unreachable store records an honest NULL.
+artifact_head() {
+  local hdr status
+  A_VERSION=""; A_ETAG=""; A_LASTMOD=""; A_NOTE=""
+  if ! hdr=$(curl -sI --max-time 30 "$1" | tr -d '\r'); then
+    A_NOTE="HEAD failed; load unpinned"
+    return 0
+  fi
+  status=$(printf '%s\n' "$hdr" | awk 'NR == 1 { print $2 }')
+  if [ "$status" != "200" ]; then
+    A_NOTE="HEAD returned HTTP ${status:-none}; load unpinned"
+    return 0
+  fi
+  A_VERSION=$(printf '%s\n' "$hdr" | awk -F': ' 'tolower($1) == "x-amz-version-id" { print $2; exit }')
+  A_ETAG=$(printf '%s\n' "$hdr" | awk -F': ' 'tolower($1) == "etag" { gsub(/"/, "", $2); print $2; exit }')
+  A_LASTMOD=$(printf '%s\n' "$hdr" | awk -F': ' 'tolower($1) == "last-modified" { print $2; exit }')
+  [ -n "$A_VERSION" ] || A_NOTE="HEAD gave no version id; load unpinned"
+  return 0
+}
+
+# artifact_row TABLE URL VERSION ETAG LASTMOD NOTE -> one manifest line,
+# stamped with the time the load finished.
+artifact_row() {
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$1" "$2" "$3" "$4" "$5" \
+    "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$6" >> "$MANIFEST"
+}
+
+# Clear this host's loader rows before loading anything.
+DATABASE_URL="$DATABASE_URL" Rscript data-raw/artifact_record.R --clear
+
 # Ensure required schemas exist.
 $PSQL -c "CREATE SCHEMA IF NOT EXISTS whse_fish;"
 $PSQL -c "CREATE SCHEMA IF NOT EXISTS cabd;"
@@ -146,10 +198,15 @@ for tbl in pscis_assessment_svw \
   $PSQL -c "DROP TABLE IF EXISTS whse_fish.${tbl};"
   bcdata bc2pg "whse_fish.${tbl}" --db_url "$DATABASE_URL"
 done
+# Only the assessment view is a model primitive (.lnk_input_primitives()).
+artifact_row whse_fish.pscis_assessment_svw \
+  "https://openmaps.gov.bc.ca/geo/pub/wfs?typeName=WHSE_FISH.PSCIS_ASSESSMENT_SVW" \
+  "" "" "" "bcdata bc2pg; no version handle"
 
 # -----------------------------------------
 # 2. CABD dams (public API; same URL as bcfp's jobs/load_weekly)
 # -----------------------------------------
+CABD_URL="https://cabd-web.azurewebsites.net/cabd-api/features/dams?filter=province_territory_code:eq:bc&filter=use_analysis:eq:true"
 ogr2ogr -f PostgreSQL \
   "PG:$DATABASE_URL" \
   -overwrite \
@@ -157,18 +214,23 @@ ogr2ogr -f PostgreSQL \
   --config PG_USE_COPY=YES \
   -nln cabd.dams \
   -lco GEOMETRY_NAME=geom \
-  "https://cabd-web.azurewebsites.net/cabd-api/features/dams?filter=province_territory_code:eq:bc&filter=use_analysis:eq:true" \
+  "$CABD_URL" \
   OGRGeoJSON
+artifact_row cabd.dams "$CABD_URL" "" "" "" "CABD API; no version handle"
 
 # -----------------------------------------
 # 3. bchamp modelled_stream_crossings (gpkg.zip)
 # -----------------------------------------
-TMPDIR_MSC=$(mktemp -d)
-trap "rm -rf $TMPDIR_MSC" EXIT
+TMPDIR_MSC="$WORKDIR/msc"
+mkdir -p "$TMPDIR_MSC"
 
+MSC_URL="$BCHAMP/modelled_stream_crossings.gpkg.zip"
+artifact_head "$MSC_URL"
+MSC_FETCH="$MSC_URL"
+[ -z "$A_VERSION" ] || MSC_FETCH="$MSC_URL?versionId=$A_VERSION"
 curl -fsSL \
   -o "$TMPDIR_MSC/modelled_stream_crossings.gpkg.zip" \
-  https://nrs.objectstore.gov.bc.ca/bchamp/modelled_stream_crossings.gpkg.zip
+  "$MSC_FETCH"
 
 unzip -qun "$TMPDIR_MSC/modelled_stream_crossings.gpkg.zip" -d "$TMPDIR_MSC"
 
@@ -179,6 +241,8 @@ ogr2ogr -f PostgreSQL \
   -nln fresh.modelled_stream_crossings \
   "$TMPDIR_MSC/modelled_stream_crossings.gpkg" \
   modelled_stream_crossings
+artifact_row fresh.modelled_stream_crossings "$MSC_URL" \
+  "$A_VERSION" "$A_ETAG" "$A_LASTMOD" "$A_NOTE"
 
 # -----------------------------------------
 # 4. bchamp observations (parquet) -- matches bcfp's jobs/load_observations
@@ -223,14 +287,28 @@ $PSQL -c "CREATE TABLE bcfishobs.observations (
   distance_to_stream double precision,
   geom geometry(PointZ, 3005)
 );"
+OBS_URL="$BCHAMP/bcfishobs/observations.parquet"
+artifact_head "$OBS_URL"
+OBS_FETCH="$OBS_URL"
+[ -z "$A_VERSION" ] || OBS_FETCH="$OBS_URL?versionId=$A_VERSION"
 ogr2ogr -f PostgreSQL \
   "PG:$DATABASE_URL" \
   -append \
   --config OGR_TRUNCATE=YES \
   --config PG_USE_COPY=YES \
   -nln bcfishobs.observations \
-  /vsicurl/https://nrs.objectstore.gov.bc.ca/bchamp/bcfishobs/observations.parquet \
+  "/vsicurl/$OBS_FETCH" \
   observations
+artifact_row bcfishobs.observations "$OBS_URL" \
+  "$A_VERSION" "$A_ETAG" "$A_LASTMOD" "$A_NOTE"
+
+# -----------------------------------------
+# Record what steps 1-4 loaded (link#265). Fatal on failure.
+# -----------------------------------------
+if ! DATABASE_URL="$DATABASE_URL" Rscript data-raw/artifact_record.R "$MANIFEST"; then
+  echo "FATAL: source-artifact record failed; primitives loaded but unrecorded" >&2
+  exit 1
+fi
 
 # -----------------------------------------
 # 5. (optional) Simon's bcfp output views for parity comparison

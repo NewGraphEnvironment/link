@@ -75,11 +75,11 @@ Naming (adjust at approval if wanted): the exported `lnk_artifact_record()` and 
 - [x] Added `lnk_artifact_read()`: one row per expected artifact, with `status = missing` where none is recorded (acceptance: a missing row is reported, not skipped).
 
 ## Phase 3: `snapshot_bcfp.sh` writes `loader` rows
-- [ ] For the two object sources (observations parquet, modelled-crossings zip), HEAD first, then pin the fetch to
+- [x] For the two object sources (observations parquet, modelled-crossings zip), HEAD first, then pin the fetch to
   `?versionId=<id>`. That is `ogr2ogr /vsicurl/…?versionId=` for the parquet and `curl` for the zip. If the HEAD fails,
   load unpinned and record a NULL version, with a note.
-- [ ] PSCIS and CABD get `kind = api` rows, with their URL and `loaded_at`.
-- [ ] Bash writes a TSV manifest (table, url, kind, version, etag, last_modified, loaded_at).
+- [x] PSCIS and CABD get `kind = api` rows, with their URL and `loaded_at`.
+- [x] Bash writes a TSV manifest (table, url, kind, version, etag, last_modified, loaded_at).
   - One `Rscript data-raw/artifact_record.R <manifest>` call then runs `lnk_artifact_record(recorded_by = "loader")`.
   - **If it fails, the snapshot exits non-zero.** Provenance is the point, and `cypher_prep.sh` already treats a snapshot
     failure as FATAL.
