@@ -11,6 +11,23 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
+## Status (2026-10-13) — source-artifact identity recorded; the vintage gate reads load stamps (#265, #247)
+
+**`provenance.source_artifact` records which version of which object each primitive was loaded from, and each run copies the rows it read into `log_input.artifact_*`.**
+- **Why now:** the bchamp store is versioned, but `?versions` is AccessDenied, so a version id not written down at load time can never be named. The 217-WSG run is next.
+- **`recorded_by`:**
+  - `loader` is written by `snapshot_bcfp.sh`, pinned to the version it heads.
+  - `probe` is a HEAD after the fact, for FWA. It is never a baseline, and loader rows for FWA are #270.
+- **The gate:** `lnk_preflight_vintage()` judges the four snapshot primitives on their load stamp. An unstamped host fails, so the dispatcher needs one `snapshot_bcfp.sh --force` after this lands.
+- **Its own schema, `provenance`:** the table describes the database, not a run. Run logs stay in each persist schema beside their results; `state_clean.sh` drops `fresh` but not `provenance`.
+- **Mechanics:** RUNBOOK §6b and §8d.
+
+**Facts not worth re-deriving:**
+- **`httr::parse_http_date()` is all-or-nothing:** one NA in the vector makes every element NA. That blanked `last_modified` on the first live snapshot. Use `.lnk_http_date()`.
+- **RPostgres does not expand a connection URI given as `dbname`.** `data-raw/artifact_record.R` parses `DATABASE_URL` itself, from the environment, never argv.
+- **GDAL sends `?versionId=` on every range GET** of a `/vsicurl/` URL that carries it (`CPL_CURL_VERBOSE=YES`). A bad id is a 404, not a silent fallback.
+- **`fwapg_sha` is the checkout's HEAD at run time** (the dispatcher's, on cyphers). It is not the loader's commit and not a data version.
+
 ## Status (2026-10-12) — DUNC built into `fresh_default`; that schema is mixed-vintage (#328)
 
 **DUNC is in `fresh_default` under `default` (link 0.63.1, fresh 0.39.0), for the floodplains Columbia region. Its neighbours KOTL, LARL and SLOC are August builds (link 0.45.1, fresh 0.33.0).** The operator chose a HEAD build over rebuilding all four, because those three groups' published floodplains items come from the August build. Evidence: `data-raw/logs/dunc_default_328/`.

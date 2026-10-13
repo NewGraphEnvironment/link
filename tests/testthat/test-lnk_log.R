@@ -395,32 +395,8 @@ test_that("every primitive names a table that actually exists", {
 
 # --- Phase 3: write path ----------------------------------------------------
 
-fake_conn <- function() structure(list(), class = "DBIConnection")
-
-# Capture SQL AND stub the DBI probes the write path makes.
-capture_write <- function(expr, probe_rows = 0L, query_result = NULL) {
-  captured <- character()
-  testthat::local_mocked_bindings(
-    .lnk_db_execute = function(conn, sql) {
-      captured <<- c(captured, sql)
-      invisible(conn)
-    }
-  )
-  testthat::with_mocked_bindings(
-    dbGetQuery = function(conn, statement, ...) {
-      if (!is.null(query_result)) return(query_result)
-      if (probe_rows > 0L) data.frame(x = seq_len(probe_rows)) else
-        data.frame()
-    },
-    dbQuoteLiteral = function(conn, x, ...) {
-      if (is.logical(x)) return(if (isTRUE(x)) "TRUE" else "FALSE")
-      paste0("'", gsub("'", "''", as.character(x)), "'")
-    },
-    .package = "DBI",
-    force(expr)
-  )
-  captured
-}
+# fake_conn() and capture_write() live in setup.R (shared with
+# test-lnk_artifact.R).
 
 test_that(".lnk_log_run_start opens a row with date_start and NULL date_end", {
   cfg <- lnk_config("default")

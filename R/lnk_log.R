@@ -195,10 +195,25 @@
 #' data actually comes from — a fact that lives in the loader scripts, not the
 #' database, and which nothing else records.
 #'
-#' @return A data.frame with `table_name` and `source`.
+#' `kind` and `url` say what artifact a primitive is read from, which is what
+#' `provenance.source_artifact` records an identity for (link#265):
+#'
+#' - `object` — a fetch from the versioned bchamp object store. A `HEAD`
+#'   returns a version id, an ETag and `Last-Modified`, so a NULL identity on
+#'   an `object` row is a gap.
+#' - `api` — a service with no version handle (PSCIS through `bcdata bc2pg`,
+#'   CABD's GeoJSON API). NULL identity there is permanent and correct.
+#' - `derived` — built inside the database from other primitives. `url` names
+#'   the SQL that builds it, not a fetch.
+#'
+#' `url` is a template: `{wsg}` expands to a watershed group code, because
+#' fwapg loads the stream network one object per group.
+#'
+#' @return A data.frame with `table_name`, `source`, `kind` and `url`.
 #' @noRd
 .lnk_input_primitives <- function() {
   fwapg <- "fwapg/load.sh <- nrs.objectstore.gov.bc.ca/bchamp/fwapg"
+  bchamp <- "https://nrs.objectstore.gov.bc.ca/bchamp"
   data.frame(
     table_name = c(
       "whse_basemapping.fwa_stream_networks_sp",
@@ -228,6 +243,33 @@
       "bcdata bc2pg",
       "CABD",
       "snapshot_bcfp.sh <- bchamp objectstore"
+    ),
+    kind = c(
+      "object", "object", "object", "derived",
+      "object", "object", "object", "object",
+      "object", "api", "api", "object"
+    ),
+    # The artifact each primitive is read from. snapshot_bcfp.sh records
+    # against these (lnk_artifact_record() refuses a URL not listed here), so
+    # a loader moving to a new URL fails the snapshot rather than drifting.
+    # The two `api` rows name the service rather than a fetched object: PSCIS
+    # is the BC WFS layer `bcdata bc2pg` pages through, CABD the GeoJSON query
+    # snapshot_bcfp.sh passes to ogr2ogr.
+    url = c(
+      paste0(bchamp, "/fwapg/fwa_stream_networks_sp/{wsg}.parquet"),
+      paste0(bchamp, "/fwapg/fwa_stream_networks_channel_width.csv.gz"),
+      paste0(bchamp, "/fwapg/fwa_stream_networks_discharge.csv.gz"),
+      "fwapg/load/fwa_stream_networks_order_parent.sql",
+      paste0(bchamp, "/fwapg/fwa_lakes_poly.parquet"),
+      paste0(bchamp, "/fwapg/fwa_wetlands_poly.parquet"),
+      paste0(bchamp, "/fwapg/fwa_rivers_poly.parquet"),
+      paste0(bchamp, "/fwapg/fwa_obstructions_sp.parquet"),
+      paste0(bchamp, "/bcfishobs/observations.parquet"),
+      "https://openmaps.gov.bc.ca/geo/pub/wfs?typeName=WHSE_FISH.PSCIS_ASSESSMENT_SVW",
+      paste0("https://cabd-web.azurewebsites.net/cabd-api/features/dams",
+             "?filter=province_territory_code:eq:bc",
+             "&filter=use_analysis:eq:true"),
+      paste0(bchamp, "/modelled_stream_crossings.gpkg.zip")
     ),
     stringsAsFactors = FALSE
   )
@@ -337,7 +379,20 @@ cols_log_input <- c(
   size_bytes             = "bigint",
   last_analyze           = "timestamptz",
   source                 = "text",
-  source_at              = "timestamptz"
+  source_at              = "timestamptz",
+  # The artifact this primitive was read from (link#265), copied from
+  # provenance.source_artifact at run open so it travels with the run -- a
+  # cypher's database is burned, its log_input rows are consolidated home.
+  # artifact_url and artifact_kind come from the dictionary and are always
+  # set; the identity columns are NULL where this host recorded none, and
+  # artifact_recorded_by says how strong the record is ('loader' / 'probe').
+  artifact_url           = "text",
+  artifact_kind          = "text",
+  artifact_version_id    = "text",
+  artifact_etag          = "text",
+  artifact_last_modified = "timestamptz",
+  artifact_loaded_at     = "timestamptz",
+  artifact_recorded_by   = "text"
 )
 
 
@@ -648,11 +703,42 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
       "SELECT 1 FROM information_schema.tables
         WHERE table_schema = 'bcdata' AND table_name = 'log' LIMIT 1")) > 0L
 
+    # The stream network is one object per group; this run reads its own.
+    urls <- sub("{wsg}", aoi, prims$url, fixed = TRUE)
     values <- paste(vapply(seq_len(nrow(prims)), function(i) {
-      sprintf("(%s, %s)",
+      sprintf("(%s, %s, %s, %s)",
               DBI::dbQuoteLiteral(conn, prims$table_name[i]),
-              DBI::dbQuoteLiteral(conn, prims$source[i]))
+              DBI::dbQuoteLiteral(conn, prims$source[i]),
+              DBI::dbQuoteLiteral(conn, urls[i]),
+              DBI::dbQuoteLiteral(conn, prims$kind[i]))
     }, character(1)), collapse = ", ")
+
+    # A host that has never recorded an artifact has no table; its rows are
+    # still written, with NULL identity, so absence is visible per run.
+    loc <- .lnk_artifact_location()
+    has_artifacts <- nrow(DBI::dbGetQuery(conn, sprintf(
+      "SELECT 1 FROM information_schema.tables
+        WHERE table_schema = %s AND table_name = %s LIMIT 1",
+      DBI::dbQuoteLiteral(conn, loc$schema),
+      DBI::dbQuoteLiteral(conn, loc$table)))) > 0L
+    if (has_artifacts) {
+      art_cols <- paste("a.version_id, a.etag, a.last_modified, a.loaded_at,",
+                        "a.recorded_by")
+      # c.oid: the record lives outside the table it describes and can
+      # outlive it (a dropped `fresh`); never stamp a table the run cannot see.
+      art_join <- sprintf(
+        "LEFT JOIN %s a
+           ON a.table_name = p.tbl AND a.url = p.url AND a.host = %s
+          AND c.oid IS NOT NULL",
+        .lnk_artifact_table(), DBI::dbQuoteLiteral(conn, .lnk_host()))
+    } else {
+      art_cols <- paste(
+        "NULL::text AS artifact_version_id, NULL::text AS artifact_etag,",
+        "NULL::timestamptz AS artifact_last_modified,",
+        "NULL::timestamptz AS artifact_loaded_at,",
+        "NULL::text AS artifact_recorded_by")
+      art_join <- ""
+    }
 
     src_at <- if (has_bcdata) {
       "(SELECT b.latest_download FROM bcdata.log b WHERE b.table_name = p.tbl)"
@@ -664,24 +750,28 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
     sql <- sprintf(
       "INSERT INTO %s.log_input
          (run_id, watershed_group_code, table_name, row_count,
-          row_count_estimated, size_bytes, last_analyze, source, source_at)
+          row_count_estimated, size_bytes, last_analyze, source, source_at,
+          artifact_url, artifact_kind, artifact_version_id, artifact_etag,
+          artifact_last_modified, artifact_loaded_at, artifact_recorded_by)
        SELECT %s, %s, p.tbl,
               nullif(c.reltuples, -1)::bigint,
               CASE WHEN nullif(c.reltuples, -1) IS NULL THEN NULL ELSE TRUE END,
               pg_total_relation_size(c.oid),
               s.last_autoanalyze,
               p.src,
-              %s
-         FROM (VALUES %s) AS p(tbl, src)
+              %s,
+              p.url, p.kind, %s
+         FROM (VALUES %s) AS p(tbl, src, url, kind)
          LEFT JOIN pg_class c
            ON c.oid = to_regclass(p.tbl)
          LEFT JOIN pg_stat_user_tables s
            ON s.relid = c.oid
+         %s
        ON CONFLICT (run_id, table_name) DO NOTHING",
       schema,
       DBI::dbQuoteLiteral(conn, run_id),
       DBI::dbQuoteLiteral(conn, aoi),
-      src_at, values)
+      src_at, art_cols, values, art_join)
     # nolint end: indentation_linter
 
     .lnk_db_execute(conn, sql)
@@ -1178,15 +1268,20 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
 }
 
 
-#' git SHA of the fwapg checkout that loaded the FWA primitives.
+#' git SHA of the fwapg checkout's HEAD when the model runs.
 #'
-#' The stream network is the most load-bearing input the pipeline has and it
-#' carries **no** provenance in the database: `bcdata.log` records only `bc2pg`
-#' downloads (which FWA is not), and `pg_stat_user_tables` for
-#' `fwa_stream_networks_sp` is empty because it is bulk-restored and never
-#' analyzed. It is loaded by fwapg's own `load.sh` from
-#' `nrs.objectstore.gov.bc.ca/bchamp/fwapg/...parquet`, so the fwapg checkout's
-#' commit is the closest thing to a version for it.
+#' **Not** the commit that ran `load.sh`, and not a version of the FWA data. It
+#' is read at run time, so it moves on any fwapg commit even when nothing was
+#' reloaded: PINE/KOTL/LARL/SLOC (2026-08) logged `e6e1eb0` and DUNC
+#' (2026-10-12) `f9718cb`, 70 commits apart, over identical FWA tables (#265).
+#' On a cypher it is the dispatcher's checkout, exported as `FWAPG_GIT_SHA`
+#' by `data-raw/study_area_run.sh`. Values already logged are left as they are;
+#' this is what the column has always recorded.
+#'
+#' Which FWA data a run read is recorded per artifact instead:
+#' `provenance.source_artifact` and `log_input.artifact_*` (version id, ETag,
+#' `Last-Modified`; link#265). The fwapg commit that ran `load.sh` belongs
+#' beside those, captured at load time (link#270).
 #'
 #' Three-tier, mirroring [.lnk_pkg_git_sha()]: `FWAPG_GIT_SHA` env var, then a
 #' `.git` walk of `FWAPG_DIR` (or the conventional `../../fwapg` sibling

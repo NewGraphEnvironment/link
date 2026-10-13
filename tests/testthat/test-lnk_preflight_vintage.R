@@ -151,3 +151,103 @@ test_that("a frame without table_exists still works (rows taken to exist)", {
   expect_true(lnk_preflight_vintage(vintage = x, now = now,
                                     max_age_days = 7, quiet = TRUE)$ok)
 })
+
+
+# --- the load stamp (link#265, absorbing #247) --------------------------------
+
+stamp_of <- function(ages) {
+  data.frame(table_name = names(ages),
+             loaded_at = now - unname(ages) * 86400,
+             stringsAsFactors = FALSE)
+}
+
+test_that("a host with a stamp for every primitive passes on stamp age", {
+  res <- lnk_preflight_vintage(vintage = v(fresh_ages()),
+                               stamp = stamp_of(fresh_ages()), now = now,
+                               max_age_days = 7, quiet = TRUE)
+  expect_true(res$ok)
+  expect_length(res$unstamped, 0L)
+  expect_true(all(res$judged_by == "stamp"))
+  expect_match(res$message, "load stamp", fixed = TRUE)
+})
+
+test_that("a host with NO stamp fails, and says how to fix it", {
+  # #247's acceptance: absence of a stamp is FATAL, not a fallback to the
+  # statistics inference -- even when that inference says everything is fresh.
+  empty <- stamp_of(stats::setNames(numeric(0), character(0)))
+  res <- lnk_preflight_vintage(vintage = v(fresh_ages()), stamp = empty,
+                               now = now, max_age_days = 7, quiet = TRUE)
+  expect_false(res$ok)
+  expect_setequal(res$unstamped, all_four)
+  expect_length(res$stale, 0L)
+  expect_match(res$message, "no load stamp", fixed = TRUE)
+  expect_match(res$message, "snapshot_bcfp.sh", fixed = TRUE)
+})
+
+test_that("one unstamped primitive fails the gate and is named", {
+  ages <- fresh_ages()
+  res <- lnk_preflight_vintage(vintage = v(ages),
+                               stamp = stamp_of(ages[-1]), now = now,
+                               max_age_days = 7, quiet = TRUE)
+  expect_false(res$ok)
+  expect_identical(res$unstamped, names(ages)[1])
+  expect_identical(unname(res$judged_by[names(ages)[1]]), "none")
+})
+
+test_that("the stamp's age overrides the statistics' age", {
+  # Autoanalyze can make pg_stat read too-new (#247). A stamp 30 d old fails
+  # even though statistics say 2 d...
+  ages <- fresh_ages()
+  st <- ages
+  st[["cabd.dams"]] <- 30
+  res <- lnk_preflight_vintage(vintage = v(ages), stamp = stamp_of(st),
+                               now = now, max_age_days = 7, quiet = TRUE)
+  expect_false(res$ok)
+  expect_identical(res$stale, "cabd.dams")
+  # ...and a fresh stamp passes even though statistics say 99 d.
+  ages[["cabd.dams"]] <- 99
+  res2 <- lnk_preflight_vintage(vintage = v(ages),
+                                stamp = stamp_of(fresh_ages()), now = now,
+                                max_age_days = 7, quiet = TRUE)
+  expect_true(res2$ok)
+})
+
+test_that("a stamp does not rescue a table that does not exist", {
+  vv <- v(fresh_ages())
+  vv$table_exists <- vv$table_name != "cabd.dams"
+  res <- lnk_preflight_vintage(vintage = vv, stamp = stamp_of(fresh_ages()),
+                               now = now, max_age_days = 7, quiet = TRUE)
+  expect_false(res$ok)
+  expect_identical(res$absent, "cabd.dams")
+})
+
+test_that("without a connection the stamp is reported as not consulted", {
+  res <- lnk_preflight_vintage(vintage = v(fresh_ages()), now = now,
+                               max_age_days = 7, quiet = TRUE)
+  expect_true(res$ok)
+  expect_true(all(res$judged_by == "pg_stat"))
+  expect_match(res$message, "load stamp not consulted", fixed = TRUE)
+})
+
+test_that(".lnk_vintage_stamp reads loader rows only, for this host", {
+  conn <- skip_if_no_db()
+  host <- paste0("test265vs-", Sys.getpid())
+  withr::defer(DBI::dbExecute(conn, sprintf(
+    "DELETE FROM provenance.source_artifact WHERE host = %s",
+    DBI::dbQuoteLiteral(conn, host))))
+  withr::local_envvar(LNK_HOST_ALIAS = host)
+  p <- .lnk_input_primitives()
+  lnk_artifact_record(conn, data.frame(
+    table_name = "cabd.dams", url = p$url[p$table_name == "cabd.dams"],
+    loaded_at = now), recorded_by = "loader")
+  lnk_artifact_record(conn, data.frame(
+    table_name = "bcfishobs.observations",
+    url = p$url[p$table_name == "bcfishobs.observations"],
+    loaded_at = now), recorded_by = "probe")
+  st <- .lnk_vintage_stamp(conn, all_four)
+  expect_identical(st$table_name, "cabd.dams")   # the probe is not a stamp
+  expect_equal(st$loaded_at, now)
+  # A host with no rows at all: an empty frame, which the gate fails on.
+  withr::local_envvar(LNK_HOST_ALIAS = paste0(host, "-none"))
+  expect_identical(nrow(.lnk_vintage_stamp(conn, all_four)), 0L)
+})
