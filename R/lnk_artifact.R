@@ -154,7 +154,12 @@ cols_source_artifact <- c(
 #' thing that did the load (`data-raw/snapshot_bcfp.sh` pins each fetch to the
 #' version it records). `"probe"` rows come from a `HEAD` after the fact and
 #' say only that the version is current now. **A probe never overwrites a
-#' loader row**, so weaker evidence cannot replace stronger.
+#' loader row**, so weaker evidence cannot replace stronger. Nor does a probe
+#' overwrite an earlier probe that named a **different** version while the
+#' table's row count is unchanged: the earlier probe was taken closer to the
+#' load, and the store moving on since says nothing about what is loaded here.
+#' A changed row count is taken as a reload, and the newer probe replaces it.
+#' A loader row always replaces whatever is there.
 #'
 #' Every `url` must be one [lnk_artifact_record()] knows for that table — the
 #' primitives dictionary's URL, with `{wsg}` expanded. A loader that fetches
@@ -277,17 +282,19 @@ lnk_artifact_record <- function(conn, artifacts,
   set_cols <- c("kind", "version_id", "etag", "last_modified", "n_rows",
                 "loaded_at", "recorded_at", "recorded_by", "notes")
   .lnk_db_execute(conn, sprintf(
-    "INSERT INTO %s
+    "INSERT INTO %s AS t
        (host, table_name, url, kind, version_id, etag, last_modified, n_rows,
         loaded_at, recorded_at, recorded_by, notes)
      VALUES
        %s
      ON CONFLICT (host, table_name, url) DO UPDATE SET %s
-     WHERE %s.recorded_by = 'probe'
-        OR EXCLUDED.recorded_by = 'loader'",
+     WHERE EXCLUDED.recorded_by = 'loader'
+        OR (t.recorded_by = 'probe'
+            AND (t.version_id IS NULL
+                 OR t.version_id = EXCLUDED.version_id
+                 OR t.n_rows IS DISTINCT FROM EXCLUDED.n_rows))",
     tbl, values,
-    paste(sprintf("%s = EXCLUDED.%s", set_cols, set_cols), collapse = ", "),
-    .lnk_artifact_location()$table))
+    paste(sprintf("%s = EXCLUDED.%s", set_cols, set_cols), collapse = ", ")))
 
   invisible(a)
 }
@@ -411,13 +418,16 @@ lnk_artifact_read <- function(conn, host = .lnk_host()) {
   } else {
     NULL
   }
-  if (is.null(have) || nrow(have) == 0L) {
-    out <- expected
-    for (nm in c("version_id", "etag", "recorded_by", "notes")) {
-      out[[nm]] <- rep(NA_character_, nrow(out))
-    }
-    out$status <- rep("missing", nrow(out))
-    return(out)
+  if (is.null(have)) {
+    # Same columns and types as a real read, with no rows, so an all-missing
+    # host and a recorded one bind together.
+    na_t <- as.POSIXct(character(0), tz = "UTC")
+    have <- data.frame(table_name = character(0), url = character(0),
+                       version_id = character(0), etag = character(0),
+                       last_modified = na_t, n_rows = numeric(0),
+                       loaded_at = na_t, recorded_at = na_t,
+                       recorded_by = character(0), notes = character(0),
+                       stringsAsFactors = FALSE)
   }
   out <- merge(expected, have, by = c("table_name", "url"), all.x = TRUE,
                sort = FALSE)
@@ -504,4 +514,3 @@ lnk_artifact_read <- function(conn, host = .lnk_host()) {
   }
   n
 }
-

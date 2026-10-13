@@ -463,8 +463,9 @@ EXCEPT SELECT watershed_group_code FROM <persist>.log;
   **when the model runs** (on cyphers, the dispatcher's, exported as
   `FWAPG_GIT_SHA`), not the commit that ran `load.sh`, and it moves on any
   fwapg commit. To tell whether two runs read the same FWA data, compare
-  `log_input`'s `artifact_version_id` / `artifact_etag` (below), or its row
-  counts and sizes for runs older than link#265.
+  `log_input`'s row counts and sizes, and `artifact_version_id` /
+  `artifact_etag` beside them (below; for FWA these are probe rows, which are
+  evidence and not proof).
 - **Source-artifact identity (link#265).** `fresh.log_source_artifact` holds,
   per host and primitive artifact, the object store's version id, ETag and
   `Last-Modified`, and `recorded_by` says how strong the record is:
@@ -473,9 +474,14 @@ EXCEPT SELECT watershed_group_code FROM <persist>.log;
     loaded one by construction. A snapshot that cannot record fails.
   - `probe`: a HEAD after the fact (`lnk_artifact_probe()`, run soft at the
     end of every snapshot), used for the FWA tables because `load.sh` records
-    nothing (loader rows for those are link#270). It says "current now", never
-    "what was loaded", never overwrites a loader row, and is **not a baseline**
-    for change detection (link#273 must read loader rows only).
+    nothing (loader rows for those are link#270). It says "current at the
+    first probe", never "what was loaded". It never overwrites a loader row.
+    It keeps the earliest probe while the row count is unchanged, and it is
+    **not a baseline** for change detection (link#273 must read loader rows
+    only). **So an equal FWA `artifact_version_id` on two runs is evidence,
+    not proof, that they read the same data.** A reload that keeps the row
+    count is invisible to it. Check `row_count` / `size_bytes` beside it until
+    #270 writes loader rows.
   - `kind` is `object` (versioned; a NULL identity is a gap), `api` (PSCIS,
     CABD: no version handle, NULL is permanent) or `derived` (`order_parent`).
 

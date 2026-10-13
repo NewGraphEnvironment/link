@@ -66,8 +66,9 @@ conn <- DBI::dbConnect(
   port = if (nzchar(m[8])) as.integer(m[8]) else 5432L,
   dbname = utils::URLdecode(m[9]))
 
-snapshot_tables <- c("bcfishobs.observations", "whse_fish.pscis_assessment_svw",
-                     "cabd.dams", "fresh.modelled_stream_crossings")
+# The same set the vintage gate judges, from the same dictionary: a second
+# copy here would let a new primitive be gated but never cleared or checked.
+snapshot_tables <- link:::.lnk_vintage_primitives()
 
 if (identical(args[1], "--clear")) {
   link:::.lnk_artifact_create(conn)

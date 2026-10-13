@@ -141,9 +141,8 @@ test_that("a probe never overwrites a loader row", {
   expect_length(ins, 1L)
   expect_match(ins, "ON CONFLICT (host, table_name, url) DO UPDATE",
                fixed = TRUE)
-  expect_match(ins, "WHERE log_source_artifact.recorded_by = 'probe'",
-               fixed = TRUE)
-  expect_match(ins, "OR EXCLUDED.recorded_by = 'loader'", fixed = TRUE)
+  expect_match(ins, "WHERE EXCLUDED.recorded_by = 'loader'", fixed = TRUE)
+  expect_match(ins, "OR (t.recorded_by = 'probe'", fixed = TRUE)
   expect_match(ins, "'probe'", fixed = TRUE)
   expect_match(ins, "'1776306166790'", fixed = TRUE)
   # n_rows is a bigint literal, never scientific notation.
@@ -168,11 +167,44 @@ test_that("the probe-vs-loader rule holds in a real database", {
   expect_identical(get()$version_id, "L1")       # probe did not clobber
   lnk_artifact_record(conn, one("L2"), "loader", host = host)
   expect_identical(get()$version_id, "L2")       # loader replaces loader
+
+  # Probe over probe. The earlier probe is closer to the load, so a newer
+  # version with the same row count does NOT replace it -- the store moving on
+  # says nothing about what is loaded here.
   DBI::dbExecute(conn, sprintf(
     "UPDATE fresh.log_source_artifact SET recorded_by = 'probe'
       WHERE host = %s", DBI::dbQuoteLiteral(conn, host)))
   lnk_artifact_record(conn, one("P2"), "probe", host = host)
-  expect_identical(get()$version_id, "P2")       # probe replaces probe
+  expect_identical(get()$version_id, "L2")
+  # The same version refreshes (recorded_at moves)...
+  before <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT recorded_at FROM fresh.log_source_artifact WHERE host = %s",
+    DBI::dbQuoteLiteral(conn, host)))$recorded_at
+  lnk_artifact_record(conn, one("L2"), "probe", host = host)
+  after <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT recorded_at FROM fresh.log_source_artifact WHERE host = %s",
+    DBI::dbQuoteLiteral(conn, host)))$recorded_at
+  expect_true(after > before)
+  # ...and a changed row count reads as a reload, so the newer probe wins.
+  DBI::dbExecute(conn, sprintf(
+    "UPDATE fresh.log_source_artifact SET n_rows = -1 WHERE host = %s",
+    DBI::dbQuoteLiteral(conn, host)))
+  lnk_artifact_record(conn, one("P3"), "probe", host = host)
+  expect_identical(get()$version_id, "P3")
+})
+
+test_that("lnk_artifact_read has one shape, recorded or not", {
+  local_mocked_bindings(
+    .lnk_artifact_wsgs = function(conn) "BULK",
+    .lnk_artifact_exists = function(conn, tables) FALSE)
+  a <- lnk_artifact_read(structure(list(), class = "DBIConnection"),
+                         host = "nobody")
+  expect_identical(nrow(a), nrow(.lnk_input_primitives()))
+  expect_true(all(a$status == "missing"))
+  expect_true(all(c("version_id", "etag", "last_modified", "n_rows",
+                    "loaded_at", "recorded_at", "recorded_by", "notes")
+                  %in% names(a)))
+  expect_s3_class(a$loaded_at, "POSIXct")
 })
 
 test_that("a URL the dictionary does not know stops the record", {

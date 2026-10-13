@@ -41,7 +41,12 @@ recorded.
 thing that did the load (\code{data-raw/snapshot_bcfp.sh} pins each fetch to the
 version it records). \code{"probe"} rows come from a \code{HEAD} after the fact and
 say only that the version is current now. \strong{A probe never overwrites a
-loader row}, so weaker evidence cannot replace stronger.
+loader row}, so weaker evidence cannot replace stronger. Nor does a probe
+overwrite an earlier probe that named a \strong{different} version while the
+table's row count is unchanged: the earlier probe was taken closer to the
+load, and the store moving on since says nothing about what is loaded here.
+A changed row count is taken as a reload, and the newer probe replaces it.
+A loader row always replaces whatever is there.
 
 Every \code{url} must be one \code{\link[=lnk_artifact_record]{lnk_artifact_record()}} knows for that table — the
 primitives dictionary's URL, with \code{{wsg}} expanded. A loader that fetches

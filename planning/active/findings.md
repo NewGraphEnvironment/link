@@ -252,3 +252,21 @@ Version pin: link@v0.49.0, `NewGraphEnvironment/fwapg@e6e1eb0` (fork of
 
 | Error | Resolution |
 |-------|------------|
+
+## Full suite on the branch (2026-10-13 04:26-04:30Z)
+
+2718 expectations: 2 failed and 2 errored. All four also fail on `origin/main` against the same DB (checked from a worktree), so none comes from this branch:
+
+- **`test-lnk_wsg_resolve.R`** closure-mode tests (2 errors). They need the `:63333` bcfp tunnel, which refused the connection.
+- **`test-lnk_pipeline_prepare.R:958-959`**, the prep_dams golden (2 failures): 7 dams against the golden's 8.
+  - The golden reads live `cabd.dams`, which this session's verification snapshot reloaded with current CABD data, so it depends on input vintage.
+  - Whether it passed before the reload is unknown.
+
+Lint: the `object_usage_linter` hits on the new internal helpers come from lintr resolving against the installed package (code-check-r.md). The real lints are the brace and trailing-blank ones.
+
+## Errors Encountered (session)
+
+| Error | Resolution |
+|-------|------------|
+| `last_modified` NULL on both loader rows of the first live snapshot | `httr::parse_http_date()` is all-or-nothing on a vector with an NA; added `.lnk_http_date()`, which parses element by element |
+| `database "postgresql://…" does not exist` | RPostgres does not expand a URI given as `dbname`; `artifact_record.R` parses `DATABASE_URL` itself |
