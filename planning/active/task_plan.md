@@ -62,8 +62,8 @@ Naming (adjust at approval if wanted): the exported `lnk_artifact_record()` and 
 - [x] `.lnk_artifact_head(url)`, using `httr::HEAD` with a timeout. It returns `version_id`, `etag`, `last_modified` and
   the HTTP status. **It never errors**: an unreachable URL or a non-200 gives NAs plus a status in `notes`.
 - [x] `lnk_artifact_record(conn, artifacts, recorded_by, host)` upserts rows and computes `n_rows` from the DB.
-  - **A `probe` never overwrites a `loader` row** (`ON CONFLICT … DO UPDATE … WHERE recorded_by = 'probe'`), so weaker
-    evidence cannot replace stronger.
+  - **A `probe` never overwrites a `loader` row** (`ON CONFLICT … DO UPDATE … WHERE existing.recorded_by = 'probe' OR
+    EXCLUDED.recorded_by = 'loader'`), so weaker evidence cannot replace stronger and a loader still refreshes a loader.
   - A missing primitive is reported as missing, not skipped.
 - [x] `lnk_artifact_probe(conn, tables)` HEADs the FWA `object` URLs and writes `probe` rows. It takes the per-WSG stream
   objects from the distinct `watershed_group_code`s **loaded in the DB**, not from a copy of `load.sh`'s dispatch.
@@ -86,13 +86,13 @@ Naming (adjust at approval if wanted): the exported `lnk_artifact_record()` and 
   - This is unlike the soft-fail ledger step.
 
 ## Phase 4: Each run carries its artifacts (`log_input`)
-- [ ] `cols_log_input` gains `artifact_url`, `artifact_kind`, `artifact_version_id`, `artifact_etag`,
-  `artifact_last_modified` and `artifact_recorded_by`. They are added through the existing `ADD COLUMN IF NOT EXISTS`
+- [x] `cols_log_input` gains `artifact_url`, `artifact_kind`, `artifact_version_id`, `artifact_etag`,
+  `artifact_last_modified`, `artifact_loaded_at` (review G1) and `artifact_recorded_by`. They are added through the existing `ADD COLUMN IF NOT EXISTS`
   path.
-- [ ] `.lnk_log_inputs()` (`R/lnk_log.R:643`) LEFT JOINs `fresh.log_source_artifact` for this host. For
+- [x] `.lnk_log_inputs()` (`R/lnk_log.R:643`) LEFT JOINs `fresh.log_source_artifact` for this host. For
   `fwa_stream_networks_sp` it uses the run's own `<WSG>.parquet` URL. A missing table gives NULLs (it still soft-fails;
   logging never kills a run).
-- [ ] DB test: a stamped and an unstamped host both write a `log_input` row, with identity filled or NULL.
+- [x] DB test: a stamped and an unstamped host both write a `log_input` row, with identity filled or NULL.
 
 ## Phase 5: Vintage gate prefers the stamp (#247)
 - [ ] `lnk_preflight_vintage()` reads `loaded_at` from `fresh.log_source_artifact` for this host for the four snapshot
@@ -106,10 +106,21 @@ Naming (adjust at approval if wanted): the exported `lnk_artifact_record()` and 
 - [ ] Correct the `.lnk_fwapg_sha()` roxygen (`R/lnk_log.R:1181`) and the `fwapg_sha` line in `lnk_stamp()`
   (`R/lnk_stamp.R:43`): they now say it is the checkout's HEAD at run time, not the loader's commit. Already-logged
   values are left alone.
-- [ ] `R/lnk_pipeline_break.R:25` still names `fwa_obstacles_sp`; correct it.
+- [ ] `R/lnk_pipeline_break.R:25` still names `fwa_obstacles_sp`. Falls actually come from `fresh`'s `falls.csv`
+  (`R/lnk_pipeline_prepare.R:171`), so name that, not `fwa_obstructions_sp` (review, Scope 1).
 - [ ] RUNBOOK §8d: the stamp becomes the gate's primary source, plus a note on `recorded_by` / `kind`. Add NEWS and a
   CLAUDE.md status entry.
 - [ ] Mark #247 superseded in the PR body; leave a pointer on #270 that the table exists.
+
+## Review fixes (Plan agent, 2026-10-13)
+- [x] The table location comes from one function (`.lnk_artifact_location()`), so a move is one line (review B1 / G3).
+- [x] Reuse `.lnk_regex_escape`; normalise ETags in `lnk_artifact_record()`; the probe stops after `max_fail` consecutive
+  failures and has a connect timeout; `lnk_artifact_probe()` is documented as never a baseline for #273.
+- [x] Probe call site: `snapshot_bcfp.sh` runs `artifact_record.R --probe` after recording (soft-fail).
+- [x] `.lnk_http_date()`: `httr::parse_http_date()` is all-or-nothing, which blanked `last_modified` on both loader rows of
+  the first live run. Element-wise parse, a regression test, and the recorder refuses a version id without its date.
+- [ ] Open for the user: B1, the table's schema (`fresh` is dropped by `state_clean.sh`'s default mode) and whether `host`
+  belongs in the key.
 
 ## Verification (live, local docker fwapg)
 - `devtools::test()`, `lintr::lint_package()`, `devtools::document()`.

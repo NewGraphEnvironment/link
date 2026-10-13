@@ -247,3 +247,136 @@ test_that("lnk_artifact_probe HEADs objects only and survives a dead URL", {
   expect_true(is.na(dead$version_id))
   expect_match(dead$notes, "timeout")
 })
+
+
+# --- each run carries its artifacts (log_input) ------------------------------
+
+test_that("log_input names the artifact each primitive is read from", {
+  sql <- capture_write(.lnk_log_inputs(fake_conn(), "s", "run-1", "BULK"))
+  ins <- grep("INSERT INTO s\\.log_input", sql, value = TRUE)
+  expect_length(ins, 1L)
+  for (col in c("artifact_url", "artifact_kind", "artifact_version_id",
+                "artifact_etag", "artifact_last_modified",
+                "artifact_recorded_by")) {
+    expect_match(ins, col, fixed = TRUE)
+  }
+  # The stream network is read from the run's own group's object.
+  expect_match(ins, "fwa_stream_networks_sp/BULK.parquet", fixed = TRUE)
+  expect_no_match(ins, "{wsg}", fixed = TRUE)
+})
+
+test_that("log_input leaves identity NULL when no artifact table exists", {
+  # capture_write's dbGetQuery returns no rows, so the existence probe reads
+  # "absent": the row is still written, with NULL identity, not skipped.
+  sql <- capture_write(.lnk_log_inputs(fake_conn(), "s", "run-1", "BULK"))
+  ins <- grep("INSERT INTO s\\.log_input", sql, value = TRUE)
+  expect_no_match(ins, "log_source_artifact", fixed = TRUE)
+  expect_match(ins, "NULL::text AS artifact_version_id", fixed = TRUE)
+})
+
+test_that("log_input joins this host's artifact rows when they exist", {
+  sql <- capture_write(.lnk_log_inputs(fake_conn(), "s", "run-1", "BULK"),
+                       probe_rows = 1L)
+  ins <- grep("INSERT INTO s\\.log_input", sql, value = TRUE)
+  expect_match(ins, "LEFT JOIN fresh.log_source_artifact a", fixed = TRUE)
+  expect_match(ins, "a.url = p.url", fixed = TRUE)
+  expect_match(ins, sprintf("a.host = '%s'", .lnk_host()), fixed = TRUE)
+})
+
+test_that("log_input carries identity from a real artifact table", {
+  conn <- skip_if_no_db()
+  host <- paste0("test265li-", Sys.getpid())
+  schema <- paste0("zz_test265_", Sys.getpid())
+  withr::defer({
+    DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", schema))
+    DBI::dbExecute(conn, sprintf(
+      "DELETE FROM fresh.log_source_artifact WHERE host = %s",
+      DBI::dbQuoteLiteral(conn, host)))
+  })
+  withr::local_envvar(LNK_HOST_ALIAS = host)
+  p <- .lnk_input_primitives()
+  sp <- "whse_basemapping.fwa_stream_networks_sp"
+  lnk_artifact_record(conn, data.frame(
+    table_name = sp,
+    url = sub("{wsg}", "BULK", p$url[p$table_name == sp], fixed = TRUE),
+    version_id = "v-bulk", etag = "e-bulk"), recorded_by = "probe")
+  .lnk_log_create_tables(conn, schema)
+  expect_true(.lnk_log_inputs(conn, schema, "run-265", "BULK"))
+  li <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT table_name, artifact_url, artifact_kind, artifact_version_id,
+            artifact_recorded_by
+       FROM %s.log_input WHERE run_id = 'run-265'", schema))
+  expect_identical(nrow(li), nrow(p))   # every primitive, recorded or not
+  row <- li[li$table_name == sp, ]
+  expect_identical(row$artifact_version_id, "v-bulk")
+  expect_identical(row$artifact_recorded_by, "probe")
+  # Unrecorded primitives keep a row, with NULL identity and the URL the run
+  # expected to read.
+  dams <- li[li$table_name == "cabd.dams", ]
+  expect_true(is.na(dams$artifact_recorded_by))
+  expect_identical(dams$artifact_kind, "api")
+  expect_identical(dams$artifact_url, p$url[p$table_name == "cabd.dams"])
+  # The real table name, which link#271 fixed, is fingerprinted.
+  obs <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT row_count FROM %s.log_input
+      WHERE run_id = 'run-265'
+        AND table_name = 'whse_basemapping.fwa_obstructions_sp'", schema))
+  expect_false(is.na(obs$row_count))
+})
+
+
+# --- review fixes -------------------------------------------------------------
+
+test_that("a round row count and a quoted ETag record as one canonical form", {
+  local_mocked_bindings(
+    .lnk_artifact_count = function(conn, a) rep(1e5, nrow(a)))
+  fc <- structure(list(), class = "DBIConnection")
+  sql <- character()
+  local_mocked_bindings(
+    .lnk_db_execute = function(conn, s) {
+      sql <<- c(sql, s)
+      invisible(conn)
+    },
+    .lnk_artifact_exists = function(conn, tables) rep(TRUE, length(tables)))
+  with_mocked_bindings(
+    dbQuoteLiteral = function(conn, x, ...) paste0("'", x, "'"),
+    .package = "DBI",
+    lnk_artifact_record(fc, data.frame(
+      table_name = "cabd.dams", url = prim_url("cabd.dams"),
+      etag = "\"abc-18\""), host = "m1"))
+  ins <- grep("INSERT INTO", sql, value = TRUE)
+  # as.character(1e5) is "1e+05", which Postgres refuses as a bigint.
+  expect_match(ins, "'100000'::bigint", fixed = TRUE)
+  expect_match(ins, "'abc-18'", fixed = TRUE)
+  expect_no_match(ins, "\"abc-18\"", fixed = TRUE)
+})
+
+test_that("the probe stops asking after consecutive failures", {
+  calls <- 0L
+  local_mocked_bindings(
+    .lnk_artifact_wsgs = function(conn) c("AAAA", "BBBB", "CCCC", "DDDD"),
+    .lnk_artifact_head = function(url, ...) {
+      calls <<- calls + 1L
+      .lnk_artifact_head_na("HEAD failed: timeout")
+    },
+    lnk_artifact_record = function(conn, artifacts, recorded_by, host) {
+      invisible(artifacts)
+    })
+  a <- suppressMessages(lnk_artifact_probe(
+    structure(list(), class = "DBIConnection"),
+    tables = "whse_basemapping.fwa_stream_networks_sp", max_fail = 2L))
+  expect_identical(calls, 2L)
+  expect_identical(nrow(a), 4L)
+  expect_true(all(is.na(a$version_id)))
+  expect_identical(sum(grepl("not probed", a$notes)), 2L)
+})
+
+test_that("HTTP dates parse element by element, NA beside a value", {
+  # httr::parse_http_date(c(<date>, NA)) is NA for BOTH elements; that blanked
+  # last_modified on the first live snapshot, whose api rows carry no date.
+  x <- c("Tue, 22 Sep 2026 06:07:10 GMT", NA, "")
+  got <- .lnk_http_date(x)
+  expect_equal(got[1], as.POSIXct("2026-09-22 06:07:10", tz = "UTC"))
+  expect_true(all(is.na(got[2:3])))
+  expect_identical(attr(got, "tzone"), "UTC")
+})

@@ -249,9 +249,12 @@
       "object", "object", "object", "object",
       "object", "api", "api", "object"
     ),
-    # These must match the URLs the loaders fetch. snapshot_bcfp.sh's loads
-    # are checked against them when it records (lnk_artifact_record()), so a
-    # loader moving to a new URL fails the snapshot rather than drifting.
+    # The artifact each primitive is read from. snapshot_bcfp.sh records
+    # against these (lnk_artifact_record() refuses a URL not listed here), so
+    # a loader moving to a new URL fails the snapshot rather than drifting.
+    # The two `api` rows name the service rather than a fetched object: PSCIS
+    # is the BC WFS layer `bcdata bc2pg` pages through, CABD the GeoJSON query
+    # snapshot_bcfp.sh passes to ogr2ogr.
     url = c(
       paste0(bchamp, "/fwapg/fwa_stream_networks_sp/{wsg}.parquet"),
       paste0(bchamp, "/fwapg/fwa_stream_networks_channel_width.csv.gz"),
@@ -376,7 +379,20 @@ cols_log_input <- c(
   size_bytes             = "bigint",
   last_analyze           = "timestamptz",
   source                 = "text",
-  source_at              = "timestamptz"
+  source_at              = "timestamptz",
+  # The artifact this primitive was read from (link#265), copied from
+  # fresh.log_source_artifact at run open so it travels with the run -- a
+  # cypher's database is burned, its log_input rows are consolidated home.
+  # artifact_url and artifact_kind come from the dictionary and are always
+  # set; the identity columns are NULL where this host recorded none, and
+  # artifact_recorded_by says how strong the record is ('loader' / 'probe').
+  artifact_url           = "text",
+  artifact_kind          = "text",
+  artifact_version_id    = "text",
+  artifact_etag          = "text",
+  artifact_last_modified = "timestamptz",
+  artifact_loaded_at     = "timestamptz",
+  artifact_recorded_by   = "text"
 )
 
 
@@ -687,11 +703,39 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
       "SELECT 1 FROM information_schema.tables
         WHERE table_schema = 'bcdata' AND table_name = 'log' LIMIT 1")) > 0L
 
+    # The stream network is one object per group; this run reads its own.
+    urls <- sub("{wsg}", aoi, prims$url, fixed = TRUE)
     values <- paste(vapply(seq_len(nrow(prims)), function(i) {
-      sprintf("(%s, %s)",
+      sprintf("(%s, %s, %s, %s)",
               DBI::dbQuoteLiteral(conn, prims$table_name[i]),
-              DBI::dbQuoteLiteral(conn, prims$source[i]))
+              DBI::dbQuoteLiteral(conn, prims$source[i]),
+              DBI::dbQuoteLiteral(conn, urls[i]),
+              DBI::dbQuoteLiteral(conn, prims$kind[i]))
     }, character(1)), collapse = ", ")
+
+    # A host that has never recorded an artifact has no table; its rows are
+    # still written, with NULL identity, so absence is visible per run.
+    loc <- .lnk_artifact_location()
+    has_artifacts <- nrow(DBI::dbGetQuery(conn, sprintf(
+      "SELECT 1 FROM information_schema.tables
+        WHERE table_schema = %s AND table_name = %s LIMIT 1",
+      DBI::dbQuoteLiteral(conn, loc$schema),
+      DBI::dbQuoteLiteral(conn, loc$table)))) > 0L
+    if (has_artifacts) {
+      art_cols <- paste("a.version_id, a.etag, a.last_modified, a.loaded_at,",
+                        "a.recorded_by")
+      art_join <- sprintf(
+        "LEFT JOIN %s a
+           ON a.table_name = p.tbl AND a.url = p.url AND a.host = %s",
+        .lnk_artifact_table(), DBI::dbQuoteLiteral(conn, .lnk_host()))
+    } else {
+      art_cols <- paste(
+        "NULL::text AS artifact_version_id, NULL::text AS artifact_etag,",
+        "NULL::timestamptz AS artifact_last_modified,",
+        "NULL::timestamptz AS artifact_loaded_at,",
+        "NULL::text AS artifact_recorded_by")
+      art_join <- ""
+    }
 
     src_at <- if (has_bcdata) {
       "(SELECT b.latest_download FROM bcdata.log b WHERE b.table_name = p.tbl)"
@@ -703,24 +747,28 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
     sql <- sprintf(
       "INSERT INTO %s.log_input
          (run_id, watershed_group_code, table_name, row_count,
-          row_count_estimated, size_bytes, last_analyze, source, source_at)
+          row_count_estimated, size_bytes, last_analyze, source, source_at,
+          artifact_url, artifact_kind, artifact_version_id, artifact_etag,
+          artifact_last_modified, artifact_loaded_at, artifact_recorded_by)
        SELECT %s, %s, p.tbl,
               nullif(c.reltuples, -1)::bigint,
               CASE WHEN nullif(c.reltuples, -1) IS NULL THEN NULL ELSE TRUE END,
               pg_total_relation_size(c.oid),
               s.last_autoanalyze,
               p.src,
-              %s
-         FROM (VALUES %s) AS p(tbl, src)
+              %s,
+              p.url, p.kind, %s
+         FROM (VALUES %s) AS p(tbl, src, url, kind)
          LEFT JOIN pg_class c
            ON c.oid = to_regclass(p.tbl)
          LEFT JOIN pg_stat_user_tables s
            ON s.relid = c.oid
+         %s
        ON CONFLICT (run_id, table_name) DO NOTHING",
       schema,
       DBI::dbQuoteLiteral(conn, run_id),
       DBI::dbQuoteLiteral(conn, aoi),
-      src_at, values)
+      src_at, art_cols, values, art_join)
     # nolint end: indentation_linter
 
     .lnk_db_execute(conn, sql)

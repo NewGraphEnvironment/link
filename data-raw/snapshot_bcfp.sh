@@ -309,6 +309,11 @@ if ! DATABASE_URL="$DATABASE_URL" Rscript data-raw/artifact_record.R "$MANIFEST"
   echo "FATAL: source-artifact record failed; primitives loaded but unrecorded" >&2
   exit 1
 fi
+# The FWA primitives come from fwapg's load.sh, which records nothing; a probe
+# records which versions are current now (recorded_by = 'probe'). Soft: the
+# snapshot did not load these tables, so a failure here is not its failure.
+DATABASE_URL="$DATABASE_URL" Rscript data-raw/artifact_record.R --probe \
+  || echo "WARNING: FWA artifact probe failed; FWA identity left as it was" >&2
 
 # -----------------------------------------
 # 5. (optional) Simon's bcfp output views for parity comparison

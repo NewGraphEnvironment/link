@@ -35,10 +35,17 @@ cols_source_artifact <- c(
   notes                  = "text"
 )
 
-# Where the table lives. A constant rather than an argument: the gate, the run
-# log and the loader must all read the same table, and a per-call schema is a
-# way for them to disagree.
-.lnk_artifact_table <- function() "fresh.log_source_artifact"
+# Where the table lives. One function rather than an argument: the gate, the
+# run log and the loader must all read the same table, and a per-call schema is
+# a way for them to disagree. Everything that names the table goes through
+# here, so moving it is a one-line change.
+.lnk_artifact_location <- function() {
+  list(schema = "fresh", table = "log_source_artifact")
+}
+.lnk_artifact_table <- function() {
+  l <- .lnk_artifact_location()
+  paste(l$schema, l$table, sep = ".")
+}
 
 
 #' Create `fresh.log_source_artifact`. Idempotent.
@@ -49,7 +56,8 @@ cols_source_artifact <- c(
 #'
 #' @noRd
 .lnk_artifact_create <- function(conn) {
-  .lnk_db_execute(conn, "CREATE SCHEMA IF NOT EXISTS fresh")
+  loc <- .lnk_artifact_location()
+  .lnk_db_execute(conn, sprintf("CREATE SCHEMA IF NOT EXISTS %s", loc$schema))
   .lnk_db_execute(conn, sprintf(
     "CREATE TABLE IF NOT EXISTS %s (\n  %s\n)",
     .lnk_artifact_table(),
@@ -59,7 +67,7 @@ cols_source_artifact <- c(
   # first version, so only the types are aligned.
   cols <- sub("\\s+CHECK .*$", "", cols_source_artifact)
   names(cols) <- names(cols_source_artifact)
-  .lnk_log_align_columns(conn, "fresh", "log_source_artifact", cols)
+  .lnk_log_align_columns(conn, loc$schema, loc$table, cols)
   invisible(conn)
 }
 
@@ -106,7 +114,8 @@ cols_source_artifact <- c(
                last_modified = as.POSIXct(NA, tz = "UTC"),
                status = status, notes = why, stringsAsFactors = FALSE)
   }
-  r <- tryCatch(httr::HEAD(url, httr::timeout(timeout)),
+  r <- tryCatch(httr::HEAD(url, httr::timeout(timeout),
+                           httr::config(connecttimeout = 10)),
                 error = function(e) e)
   if (inherits(r, "error")) {
     return(na_row(NA_integer_,
@@ -125,9 +134,8 @@ cols_source_artifact <- c(
   lm <- hv("last-modified")
   data.frame(
     version_id    = hv("x-amz-version-id"),
-    etag          = if (is.na(etag)) NA_character_ else gsub('"', "", etag),
-    last_modified = if (is.na(lm)) as.POSIXct(NA, tz = "UTC") else
-      as.POSIXct(httr::parse_http_date(lm), tz = "UTC"),
+    etag          = .lnk_etag_normalise(etag),
+    last_modified = .lnk_http_date(lm),
     status        = status,
     notes         = NA_character_,
     stringsAsFactors = FALSE)
@@ -161,7 +169,8 @@ cols_source_artifact <- c(
 #'   live in.
 #' @param artifacts A data frame with `table_name` and `url`, and optionally
 #'   `version_id`, `etag`, `last_modified`, `loaded_at` and `notes`. `kind`
-#'   is taken from the dictionary.
+#'   is taken from the dictionary. `last_modified` may be POSIXct or the raw
+#'   HTTP header string (`"Thu, 16 Apr 2026 02:22:39 GMT"`).
 #' @param recorded_by `"loader"` or `"probe"`.
 #' @param host Host label. Defaults to `LNK_HOST_ALIAS`, else the node name —
 #'   the same label the run log uses.
@@ -202,7 +211,7 @@ lnk_artifact_record <- function(conn, artifacts,
   }
   ok_url <- vapply(seq_len(nrow(artifacts)), function(i) {
     tmpl <- prims$url[prims$table_name == artifacts$table_name[i]]
-    rx <- paste0("^", gsub("\\{wsg\\}", "[A-Z]{4}", .lnk_rx_escape(tmpl),
+    rx <- paste0("^", gsub("\\{wsg\\}", "[A-Z]{4}", .lnk_regex_escape(tmpl),
                            fixed = TRUE), "$")
     grepl(rx, artifacts$url[i])
   }, logical(1))
@@ -223,7 +232,7 @@ lnk_artifact_record <- function(conn, artifacts,
     kind          = prims$kind[match(artifacts$table_name, prims$table_name)],
     version_id    = as.character(fill("version_id", NA_character_)),
     etag          = as.character(fill("etag", NA_character_)),
-    last_modified = as.POSIXct(fill("last_modified", NA), tz = "UTC"),
+    last_modified = .lnk_http_date(fill("last_modified", NA)),
     loaded_at     = as.POSIXct(fill("loaded_at", NA), tz = "UTC"),
     notes         = as.character(fill("notes", NA_character_)),
     stringsAsFactors = FALSE)
@@ -231,6 +240,9 @@ lnk_artifact_record <- function(conn, artifacts,
   for (nm in c("version_id", "etag", "notes")) {
     a[[nm]][!is.na(a[[nm]]) & !nzchar(a[[nm]])] <- NA_character_
   }
+  # One spelling of an ETag, whichever writer supplied it, or a loader's
+  # and a probe's ETag for the same bytes would never compare equal.
+  a$etag <- .lnk_etag_normalise(a$etag)
 
   a$n_rows <- .lnk_artifact_count(conn, a)
   tbls <- unique(a$table_name)
@@ -271,10 +283,11 @@ lnk_artifact_record <- function(conn, artifacts,
      VALUES
        %s
      ON CONFLICT (host, table_name, url) DO UPDATE SET %s
-     WHERE log_source_artifact.recorded_by = 'probe'
+     WHERE %s.recorded_by = 'probe'
         OR EXCLUDED.recorded_by = 'loader'",
     tbl, values,
-    paste(sprintf("%s = EXCLUDED.%s", set_cols, set_cols), collapse = ", ")))
+    paste(sprintf("%s = EXCLUDED.%s", set_cols, set_cols), collapse = ", "),
+    .lnk_artifact_location()$table))
 
   invisible(a)
 }
@@ -288,7 +301,10 @@ lnk_artifact_record <- function(conn, artifacts,
 #' **now**, not which one was loaded. It exists because fwapg's `load.sh`
 #' records nothing, and a version that is not written down before the store
 #' moves on can never be named (link#270 is the loader-side record). A probe
-#' never overwrites a `loader` row.
+#' never overwrites a `loader` row. A probe row is **not a baseline**: anything
+#' that compares a recorded ETag against the store to decide whether a source
+#' changed (link#273) must read `loader` rows only, because a probe's ETag is by
+#' construction whatever the store held when the probe ran.
 #'
 #' The stream network is one object per watershed group. The groups probed
 #' are the ones **loaded in this database**, not a copy of `load.sh`'s
@@ -301,6 +317,8 @@ lnk_artifact_record <- function(conn, artifacts,
 #' @param tables Primitives to probe. Defaults to every FWA primitive (those
 #'   loaded by fwapg).
 #' @param host Host label; see [lnk_artifact_record()].
+#' @param max_fail Stop sending `HEAD`s after this many consecutive failures
+#'   (no response at all); the rest are recorded with no identity and a note.
 #'
 #' @return Invisibly, the probed rows, with the HTTP `status` of each `HEAD`.
 #'
@@ -318,7 +336,8 @@ lnk_artifact_record <- function(conn, artifacts,
 #'                     user = "postgres", password = "postgres")
 #' lnk_artifact_probe(conn)
 #' }
-lnk_artifact_probe <- function(conn, tables = NULL, host = .lnk_host()) {
+lnk_artifact_probe <- function(conn, tables = NULL, host = .lnk_host(),
+                               max_fail = 5L) {
   prims <- .lnk_input_primitives()
   if (is.null(tables)) {
     tables <- prims$table_name[startsWith(prims$source, "fwapg/")]
@@ -332,10 +351,22 @@ lnk_artifact_probe <- function(conn, tables = NULL, host = .lnk_host()) {
   }
   a <- .lnk_artifact_expand(prims, wsg)
 
-  heads <- lapply(seq_len(nrow(a)), function(i) {
-    if (a$kind[i] == "object") .lnk_artifact_head(a$url[i]) else
-      .lnk_artifact_head_na()
-  })
+  # Sequential HEADs, so a store that black-holes requests would cost
+  # n x timeout. Stop asking after `max_fail` consecutive failures and record
+  # the rest as not probed -- an honest NULL, with the reason.
+  heads <- vector("list", nrow(a))
+  fails <- 0L
+  for (i in seq_len(nrow(a))) {
+    if (a$kind[i] != "object") {
+      heads[[i]] <- .lnk_artifact_head_na()
+    } else if (fails >= max_fail) {
+      heads[[i]] <- .lnk_artifact_head_na(sprintf(
+        "not probed: %d consecutive HEAD failures before it", max_fail))
+    } else {
+      heads[[i]] <- .lnk_artifact_head(a$url[i])
+      fails <- if (is.na(heads[[i]]$status)) fails + 1L else 0L
+    }
+  }
   a <- cbind(a, do.call(rbind, heads))
   lnk_artifact_record(conn, a, recorded_by = "probe", host = host)
   n_bad <- sum(a$kind == "object" & is.na(a$version_id))
@@ -397,11 +428,34 @@ lnk_artifact_read <- function(conn, host = .lnk_host()) {
 
 # --- internals --------------------------------------------------------------
 
-.lnk_artifact_head_na <- function() {
+.lnk_artifact_head_na <- function(notes = NA_character_) {
   data.frame(version_id = NA_character_, etag = NA_character_,
              last_modified = as.POSIXct(NA, tz = "UTC"),
-             status = NA_integer_, notes = NA_character_,
+             status = NA_integer_, notes = notes,
              stringsAsFactors = FALSE)
+}
+
+# HTTP dates, element by element. httr::parse_http_date() is all-or-nothing:
+# one NA or unparseable element makes it return NA for EVERY element, which
+# silently blanked last_modified on both loader rows of the first live
+# snapshot (the api rows carry none). POSIXct input passes through.
+.lnk_http_date <- function(x) {
+  if (inherits(x, "POSIXct")) return(as.POSIXct(x, tz = "UTC"))
+  out <- rep(as.POSIXct(NA, tz = "UTC"), length(x))
+  x <- as.character(x)
+  ok <- !is.na(x) & nzchar(x)
+  for (i in which(ok)) {
+    out[i] <- as.POSIXct(httr::parse_http_date(x[i]), tz = "UTC")
+  }
+  out
+}
+
+# ETags arrive quoted from HTTP ("abc-18") and unquoted from a shell that
+# stripped them. Store one form.
+.lnk_etag_normalise <- function(x) {
+  x <- gsub('"', "", x, fixed = TRUE)
+  x[!is.na(x) & !nzchar(x)] <- NA_character_
+  x
 }
 
 # Watershed groups whose stream network is loaded here.
@@ -451,4 +505,3 @@ lnk_artifact_read <- function(conn, host = .lnk_host()) {
   n
 }
 
-.lnk_rx_escape <- function(x) gsub("([][{}()+*^$|\\\\?.])", "\\\\\\1", x)

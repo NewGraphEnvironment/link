@@ -8,6 +8,13 @@
 #       UNSTAMPED, which the vintage gate fails on, instead of leaving a row
 #       that names a version the database no longer holds.
 #
+#   Rscript data-raw/artifact_record.R --probe
+#       After the loads: HEAD the FWA primitives' artifacts and record what is
+#       current now (recorded_by = 'probe' -- weaker, and labelled weaker;
+#       fwapg's load.sh records nothing itself, link#270). snapshot_bcfp.sh
+#       treats a failure here as a warning: the FWA tables were not loaded by
+#       the snapshot, so a probe failure says nothing about what it loaded.
+#
 #   Rscript data-raw/artifact_record.R <manifest.tsv>
 #       After the loads: record each manifest row with recorded_by = 'loader'.
 #       Manifest columns (tab-separated, unquoted, header row):
@@ -27,7 +34,8 @@
 
 args <- commandArgs(trailingOnly = TRUE)
 if (length(args) != 1L) {
-  stop("usage: artifact_record.R --clear | <manifest.tsv>", call. = FALSE)
+  stop("usage: artifact_record.R --clear | --probe | <manifest.tsv>",
+       call. = FALSE)
 }
 
 desc <- "DESCRIPTION"
@@ -77,6 +85,12 @@ if (identical(args[1], "--clear")) {
   quit(status = 0L)
 }
 
+if (identical(args[1], "--probe")) {
+  lnk_artifact_probe(conn)
+  DBI::dbDisconnect(conn)
+  quit(status = 0L)
+}
+
 man <- utils::read.delim(args[1], quote = "", na.strings = "",
                          comment.char = "", colClasses = "character")
 need <- c("table_name", "url", "version_id", "etag", "last_modified",
@@ -89,10 +103,7 @@ if (!setequal(man$table_name, snapshot_tables)) {
   stop("manifest does not cover exactly the snapshot primitives; has: ",
        paste(man$table_name, collapse = ", "), call. = FALSE)
 }
-man$last_modified <- as.POSIXct(
-  ifelse(is.na(man$last_modified), NA_real_,
-         as.numeric(httr::parse_http_date(man$last_modified))),
-  origin = "1970-01-01", tz = "UTC")
+# last_modified stays the raw HTTP date; lnk_artifact_record() parses it.
 man$loaded_at <- as.POSIXct(man$loaded_at, format = "%Y-%m-%dT%H:%M:%SZ",
                             tz = "UTC")
 if (anyNA(man$loaded_at)) stop("manifest has an unparseable loaded_at",
@@ -102,7 +113,7 @@ lnk_artifact_record(conn, man, recorded_by = "loader")
 # Read back rather than trusting the INSERT: the snapshot is only recorded if
 # every one of its primitives has a loader row for this host now.
 out <- DBI::dbGetQuery(conn, sprintf(
-  "SELECT table_name, version_id, etag, n_rows, loaded_at
+  "SELECT table_name, version_id, etag, last_modified, n_rows, loaded_at
      FROM %s WHERE host = %s AND recorded_by = 'loader'
     ORDER BY table_name",
   link:::.lnk_artifact_table(), DBI::dbQuoteLiteral(conn, link:::.lnk_host())))
@@ -113,5 +124,12 @@ missing <- setdiff(snapshot_tables, out$table_name)
 if (length(missing)) {
   stop("snapshot primitives left unrecorded: ",
        paste(missing, collapse = ", "), call. = FALSE)
+}
+# A version id with no Last-Modified means a header was lost between the
+# HEAD and the record -- the defect the first live run had.
+lost <- out$table_name[!is.na(out$version_id) & is.na(out$last_modified)]
+if (length(lost)) {
+  stop("recorded a version id without its Last-Modified: ",
+       paste(lost, collapse = ", "), call. = FALSE)
 }
 cat("artifact_record: recorded", nrow(man), "loader rows\n")
