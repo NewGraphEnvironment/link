@@ -348,6 +348,11 @@ test_that("log_input carries identity from a real artifact table", {
   expect_true(is.na(dams$artifact_recorded_by))
   expect_identical(dams$artifact_kind, "api")
   expect_identical(dams$artifact_url, p$url[p$table_name == "cabd.dams"])
+  # A real read binds with an empty one: n_rows is a double on both paths,
+  # never integer64 (RPostgres's bigint), which rbinds silently wrong.
+  rd <- lnk_artifact_read(conn)
+  expect_type(rd$n_rows, "double")
+  expect_false(inherits(rd$n_rows, "integer64"))
   # The real table name, which link#271 fixed, is fingerprinted.
   obs <- DBI::dbGetQuery(conn, sprintf(
     "SELECT row_count FROM %s.log_input

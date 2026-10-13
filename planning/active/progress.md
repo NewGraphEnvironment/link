@@ -29,3 +29,6 @@
   - `lnk_artifact_read()` has one shape whether or not anything is recorded.
   - Mutation of the keep-earliest rule fails 1 test; restored.
 - Full suite on the branch: 2718 expectations, 2 failed and 2 errored. All four also fail on origin/main against this DB (tunnel down; the prep_dams golden reads live `cabd.dams`, reloaded by verification). See findings.md.
+- Round 2: 2 fragile findings, both fixed. **One sat inside round 1's fix #3**, so from here only an enumeration ends the loop.
+  - `lnk_artifact_read()`'s real path returned `n_rows` as integer64 against the numeric empty frame; now `::float8`. A DB test was added, and its mutation fails it.
+  - `study_area_run.sh` now aligns the destination's log tables before `schema_consolidate()`, so a dispatcher that modelled nothing cannot drop the cyphers' `artifact_*` columns.

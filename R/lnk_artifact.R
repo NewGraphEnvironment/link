@@ -411,7 +411,10 @@ lnk_artifact_read <- function(conn, host = .lnk_host()) {
   expected <- .lnk_artifact_expand(prims, .lnk_artifact_wsgs(conn))
   have <- if (.lnk_artifact_exists(conn, .lnk_artifact_table())) {
     DBI::dbGetQuery(conn, sprintf(
-      "SELECT table_name, url, version_id, etag, last_modified, n_rows,
+      # n_rows as float8: RPostgres returns bigint as integer64, which binds
+      # silently wrong against the numeric empty frame below.
+      "SELECT table_name, url, version_id, etag, last_modified,
+              n_rows::float8 AS n_rows,
               loaded_at, recorded_at, recorded_by, notes
          FROM %s WHERE host = %s",
       .lnk_artifact_table(), DBI::dbQuoteLiteral(conn, host)))
