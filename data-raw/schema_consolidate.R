@@ -104,6 +104,15 @@ schema_consolidate <- function(schema,
   log <- function(...) if (verbose) cat(sprintf("[%s] %s\n",
     format(Sys.time(), "%H:%M:%S"), paste0(...)))
 
+  # 0. Bring the destination's log tables up to this link's columns. Each
+  #    table below is COPYed over the columns BOTH sides share, so a source
+  #    carrying a column the destination lacks -- e.g. log_input.artifact_*
+  #    (link#265), when the destination host modelled nothing at this link
+  #    version -- loses it, and a cypher is burned right after. Here rather
+  #    than in each caller: both drivers consolidate through this function.
+  #    Fails loud: consolidating anyway would drop columns silently.
+  link:::.lnk_log_create_tables(dest_conn, schema)
+
   # 1. Backup destination (rollback safety net).
   if (backup) {
     backup_path <- sprintf("/tmp/%s_pre_consolidate_%s.dump", schema, ts)

@@ -136,7 +136,7 @@ Naming (adjust at approval if wanted): the exported `lnk_artifact_record()` and 
   non-NULL.
 
 ## Validation
-- [ ] Tests pass
-- [ ] `/code-check` clean (each commit, or once over the branch with `/code-check branch`)
-- [ ] PWF checkboxes match landed work
+- [x] Tests pass (branch suite: 2718 expectations; 4 fail identically on origin/main against this DB, from the tunnel being down and live `cabd.dams`; see findings.md)
+- [x] `/code-check branch`: 3 rounds, 6 findings fixed. The loop ended by enumeration (round 3: 19 places, 18 held; the last fixed in the shared `schema_consolidate()`)
+- [x] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion

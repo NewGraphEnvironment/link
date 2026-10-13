@@ -32,3 +32,8 @@
 - Round 2: 2 fragile findings, both fixed. **One sat inside round 1's fix #3**, so from here only an enumeration ends the loop.
   - `lnk_artifact_read()`'s real path returned `n_rows` as integer64 against the numeric empty frame; now `::float8`. A DB test was added, and its mutation fails it.
   - `study_area_run.sh` now aligns the destination's log tables before `schema_consolidate()`, so a dispatcher that modelled nothing cannot drop the cyphers' `artifact_*` columns.
+- Round 3 was asked for the mechanism and an enumeration. The mechanism: one fact in two places kept in step by hand, with no single source or guard. It walked 19 places; 18 hold.
+  - The one that did not: `wsgs_run_pipeline.sh`, the second caller of `schema_consolidate()`, had not received round 2's fix (code-check.md, "A fix lands in one of two callers that share a harness").
+  - Fixed at the shared function: `schema_consolidate()` now aligns the destination's log tables first, and the per-caller copy in `study_area_run.sh` is removed.
+  - Callers measured by grep: exactly 2, and both go through the function.
+  - Loop ended by enumeration (19 places plus a 2-caller count), not by a reviewer's "clean". Agents spent: 1 plan review and 3 code-check rounds.

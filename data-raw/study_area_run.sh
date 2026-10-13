@@ -1289,15 +1289,6 @@ if [ "$N_CY" -gt 0 ]; then
     ( cd "$REPO_ROOT" && Rscript -e "
 suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
 source('data-raw/schema_consolidate.R')
-# Bring the destination's log tables up to this link's columns FIRST.
-# Consolidate copies only the columns both sides share, so a dispatcher that
-# modelled nothing this run (every focal WSG species-skipped) would otherwise
-# drop the cyphers' newer log_input columns -- e.g. artifact_* (link#265) --
-# and the cyphers are burned after this.
-lc <- lnk_db_conn(dbname = 'fwapg', host = 'localhost', port = 5432L,
-                  user = 'postgres', password = 'postgres')
-link:::.lnk_log_create_tables(lc, '$SCHEMA')
-DBI::dbDisconnect(lc)
 res <- schema_consolidate(schema = '$SCHEMA', sources = $SRC_R, backup = TRUE)
 print(res)
 ok <- all(vapply(res\$sources, function(s) isTRUE(s\$ok), logical(1)))
