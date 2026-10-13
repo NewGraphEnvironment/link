@@ -2703,6 +2703,9 @@ Take a segment's top from the next segment's `downstream_route_measure`, and com
 ### FWA main flow is not edge type 1000 alone
 Select main flow with `edge_type IN (1000, 1050, 1200, 1250, 1450)`, and test what the layer is for rather than that it is non-empty: 1000 is single-line stream only, so a filter built on it draws no large river.
 
+### terra: `focal(na.rm = TRUE)` drops NA cells from the vote, so where you fill NA around a filter changes its output
+Fill NA with the value you mean (`ifel(is.na(x), 0L, x)`) **before** a `focal()` majority or min/max filter, not after it, whenever those cells should count.
+
 # Code Check Conventions
 Structured checklist for reviewing diffs before commit.
 
@@ -3725,7 +3728,7 @@ repeating itself.
 
 When a failure does generalize, it graduates to the convention that owns its
 class: the `code-check*.md` family for a bug class in a diff — `code-check.md` for a
-mechanism, `-shell`, `-r`, `-spatial` or `-infra` for a tool quirk — `ci-monitoring.md` for CI
+mechanism, `-shell`, `-r`, `-python`, `-spatial` or `-infra` for a tool quirk — `ci-monitoring.md` for CI
 behaviour, the domain convention otherwise.
 
 ## Skills
