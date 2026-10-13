@@ -81,6 +81,18 @@ into `log_input.artifact_*`. Three facts measured while building that:
   writes `loader` rows (link#270). A probe is never a baseline for change
   detection (link#273).
 
+## PSCIS and CABD have no version handle, and the catalogue's dates are not one
+
+PSCIS loads from the BC Data Catalogue (`bcdata bc2pg`, WFS) and CABD from the
+CABD API. Neither returns anything like a version id. The catalogue does carry
+dates, but they move whether or not the content did: on 2026-10-13 all four
+PSCIS records showed `record_last_modified` 2026-10-13 and every resource's
+`last_modified` 2026-10-13T03:23:22 (`package_search` on the CKAN API). So a
+catalogue date cannot tell two loads apart. `provenance.source_artifact`
+records these as `kind = api`: URL, load time and row count only.
+`bcdata.log` (written by the upstream loader) holds `latest_download` per
+table, which is the same fact again.
+
 ## The FWA artifacts have no single URL convention
 
 This is what makes a link-side probe insufficient. `load.sh` has **five** loading
