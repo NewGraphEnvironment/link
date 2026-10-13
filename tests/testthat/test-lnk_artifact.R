@@ -41,7 +41,7 @@ test_that("the DDL keys on host, table and url, and constrains the labels", {
     invisible(conn)
   })
   .lnk_artifact_create(structure(list(), class = "DBIConnection"))
-  ddl <- grep("CREATE TABLE IF NOT EXISTS fresh.log_source_artifact", sql,
+  ddl <- grep("CREATE TABLE IF NOT EXISTS provenance.source_artifact", sql,
               value = TRUE)
   expect_length(ddl, 1L)
   expect_match(ddl, "PRIMARY KEY (host, table_name, url)", fixed = TRUE)
@@ -137,7 +137,7 @@ test_that("a probe never overwrites a loader row", {
     table_name = "whse_basemapping.fwa_obstructions_sp",
     url = prim_url("whse_basemapping.fwa_obstructions_sp"),
     version_id = "1776306166790"), recorded_by = "probe", host = "m1"))
-  ins <- grep("INSERT INTO fresh.log_source_artifact", sql, value = TRUE)
+  ins <- grep("INSERT INTO provenance.source_artifact", sql, value = TRUE)
   expect_length(ins, 1L)
   expect_match(ins, "ON CONFLICT (host, table_name, url) DO UPDATE",
                fixed = TRUE)
@@ -153,13 +153,13 @@ test_that("the probe-vs-loader rule holds in a real database", {
   conn <- skip_if_no_db()
   host <- paste0("test265-", Sys.getpid())
   withr::defer(DBI::dbExecute(conn, sprintf(
-    "DELETE FROM fresh.log_source_artifact WHERE host = %s",
+    "DELETE FROM provenance.source_artifact WHERE host = %s",
     DBI::dbQuoteLiteral(conn, host))))
   tbl <- "whse_basemapping.fwa_obstructions_sp"
   one <- function(v) data.frame(table_name = tbl, url = prim_url(tbl),
                                 version_id = v)
   get <- function() DBI::dbGetQuery(conn, sprintf(
-    "SELECT version_id, recorded_by FROM fresh.log_source_artifact
+    "SELECT version_id, recorded_by FROM provenance.source_artifact
       WHERE host = %s", DBI::dbQuoteLiteral(conn, host)))
 
   lnk_artifact_record(conn, one("L1"), "loader", host = host)
@@ -172,22 +172,22 @@ test_that("the probe-vs-loader rule holds in a real database", {
   # version with the same row count does NOT replace it -- the store moving on
   # says nothing about what is loaded here.
   DBI::dbExecute(conn, sprintf(
-    "UPDATE fresh.log_source_artifact SET recorded_by = 'probe'
+    "UPDATE provenance.source_artifact SET recorded_by = 'probe'
       WHERE host = %s", DBI::dbQuoteLiteral(conn, host)))
   lnk_artifact_record(conn, one("P2"), "probe", host = host)
   expect_identical(get()$version_id, "L2")
   # The same version refreshes (recorded_at moves)...
   before <- DBI::dbGetQuery(conn, sprintf(
-    "SELECT recorded_at FROM fresh.log_source_artifact WHERE host = %s",
+    "SELECT recorded_at FROM provenance.source_artifact WHERE host = %s",
     DBI::dbQuoteLiteral(conn, host)))$recorded_at
   lnk_artifact_record(conn, one("L2"), "probe", host = host)
   after <- DBI::dbGetQuery(conn, sprintf(
-    "SELECT recorded_at FROM fresh.log_source_artifact WHERE host = %s",
+    "SELECT recorded_at FROM provenance.source_artifact WHERE host = %s",
     DBI::dbQuoteLiteral(conn, host)))$recorded_at
   expect_true(after > before)
   # ...and a changed row count reads as a reload, so the newer probe wins.
   DBI::dbExecute(conn, sprintf(
-    "UPDATE fresh.log_source_artifact SET n_rows = -1 WHERE host = %s",
+    "UPDATE provenance.source_artifact SET n_rows = -1 WHERE host = %s",
     DBI::dbQuoteLiteral(conn, host)))
   lnk_artifact_record(conn, one("P3"), "probe", host = host)
   expect_identical(get()$version_id, "P3")
@@ -302,7 +302,7 @@ test_that("log_input leaves identity NULL when no artifact table exists", {
   # "absent": the row is still written, with NULL identity, not skipped.
   sql <- capture_write(.lnk_log_inputs(fake_conn(), "s", "run-1", "BULK"))
   ins <- grep("INSERT INTO s\\.log_input", sql, value = TRUE)
-  expect_no_match(ins, "log_source_artifact", fixed = TRUE)
+  expect_no_match(ins, "provenance.source_artifact", fixed = TRUE)
   expect_match(ins, "NULL::text AS artifact_version_id", fixed = TRUE)
 })
 
@@ -310,7 +310,7 @@ test_that("log_input joins this host's artifact rows when they exist", {
   sql <- capture_write(.lnk_log_inputs(fake_conn(), "s", "run-1", "BULK"),
                        probe_rows = 1L)
   ins <- grep("INSERT INTO s\\.log_input", sql, value = TRUE)
-  expect_match(ins, "LEFT JOIN fresh.log_source_artifact a", fixed = TRUE)
+  expect_match(ins, "LEFT JOIN provenance.source_artifact a", fixed = TRUE)
   expect_match(ins, "a.url = p.url", fixed = TRUE)
   expect_match(ins, sprintf("a.host = '%s'", .lnk_host()), fixed = TRUE)
 })
@@ -322,7 +322,7 @@ test_that("log_input carries identity from a real artifact table", {
   withr::defer({
     DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", schema))
     DBI::dbExecute(conn, sprintf(
-      "DELETE FROM fresh.log_source_artifact WHERE host = %s",
+      "DELETE FROM provenance.source_artifact WHERE host = %s",
       DBI::dbQuoteLiteral(conn, host)))
   })
   withr::local_envvar(LNK_HOST_ALIAS = host)

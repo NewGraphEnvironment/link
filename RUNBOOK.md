@@ -466,7 +466,7 @@ EXCEPT SELECT watershed_group_code FROM <persist>.log;
   `log_input`'s row counts and sizes, and `artifact_version_id` /
   `artifact_etag` beside them (below; for FWA these are probe rows, which are
   evidence and not proof).
-- **Source-artifact identity (link#265).** `fresh.log_source_artifact` holds,
+- **Source-artifact identity (link#265).** `provenance.source_artifact` holds,
   per host and primitive artifact, the object store's version id, ETag and
   `Last-Modified`, and `recorded_by` says how strong the record is:
   - `loader`: written by `snapshot_bcfp.sh`, which HEADs each object and then
@@ -492,9 +492,11 @@ EXCEPT SELECT watershed_group_code FROM <persist>.log;
   carries the identity home from a cypher before it is burned.
   `lnk_artifact_read()` lists every expected artifact, `missing` where
   nothing is recorded.
-  - **`state_clean.sh`'s default mode drops `fresh`, and this table with it.**
-    The snapshot rows come back when it re-runs the snapshot. The probe rows
-    come back on the next snapshot.
+  - **Its own schema, `provenance`, because it describes the database, not a
+    run.** Run logs live beside their results (`<schema>.log*`, one set per
+    persist schema). This table is what is loaded here, read by runs into
+    every schema, and `state_clean.sh` drops `fresh` but not `provenance`, so
+    loader rows that cannot be re-created (link#270's FWA rows) survive it.
 - `log` and `log_input` carry `watershed_group_code` so `schema_consolidate.R`
   auto-discovers them; `log_parameters_fresh` / `log_parameters_habitat_thresholds` /
   `log_dimensions` deliberately
@@ -1004,7 +1006,7 @@ the fresh assertion) and re-checks exactly once.
 
 `lnk_preflight_vintage()` (via `data-raw/host_vintage.R`) judges each snapshot
 primitive on its **load stamp**: the newest `loader` row's `loaded_at` in
-`fresh.log_source_artifact` for this host (`.lnk_host()`, so
+`provenance.source_artifact` for this host (`.lnk_host()`, so
 `LNK_HOST_ALIAS` if set). A table with no stamp **fails** as `unstamped`, even
 when its statistics say it is fresh. Statistics are an inference that can read
 too-new, and a host that never recorded a load should say so on its first run.

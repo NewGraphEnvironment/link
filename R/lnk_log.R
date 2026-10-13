@@ -196,7 +196,7 @@
 #' database, and which nothing else records.
 #'
 #' `kind` and `url` say what artifact a primitive is read from, which is what
-#' `fresh.log_source_artifact` records an identity for (link#265):
+#' `provenance.source_artifact` records an identity for (link#265):
 #'
 #' - `object` — a fetch from the versioned bchamp object store. A `HEAD`
 #'   returns a version id, an ETag and `Last-Modified`, so a NULL identity on
@@ -381,7 +381,7 @@ cols_log_input <- c(
   source                 = "text",
   source_at              = "timestamptz",
   # The artifact this primitive was read from (link#265), copied from
-  # fresh.log_source_artifact at run open so it travels with the run -- a
+  # provenance.source_artifact at run open so it travels with the run -- a
   # cypher's database is burned, its log_input rows are consolidated home.
   # artifact_url and artifact_kind come from the dictionary and are always
   # set; the identity columns are NULL where this host recorded none, and
@@ -1276,7 +1276,7 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
 #' this is what the column has always recorded.
 #'
 #' Which FWA data a run read is recorded per artifact instead:
-#' `fresh.log_source_artifact` and `log_input.artifact_*` (version id, ETag,
+#' `provenance.source_artifact` and `log_input.artifact_*` (version id, ETag,
 #' `Last-Modified`; link#265). The fwapg commit that ran `load.sh` belongs
 #' beside those, captured at load time (link#270).
 #'

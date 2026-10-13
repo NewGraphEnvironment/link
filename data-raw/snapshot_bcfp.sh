@@ -18,7 +18,7 @@
 #      from s3://fresh-bc/bcfishpass/log.json (link#117 ledger).
 #
 # Source-artifact identity (link#265). Steps 1-4 each write a row into
-# fresh.log_source_artifact (recorded_by = 'loader') via
+# provenance.source_artifact (recorded_by = 'loader') via
 # data-raw/artifact_record.R. The two object-store fetches (3, 4) HEAD the
 # object first and then read THAT version (`?versionId=`), so the recorded
 # version id is the one loaded by construction -- the store is versioned but

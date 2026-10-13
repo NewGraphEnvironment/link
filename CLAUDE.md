@@ -13,12 +13,13 @@ Experimental package — breaking all the time and loving the learning curve. St
 
 ## Status (2026-10-13) — source-artifact identity recorded; the vintage gate reads load stamps (#265, #247)
 
-**`fresh.log_source_artifact` records which version of which object each primitive was loaded from, and each run copies the rows it read into `log_input.artifact_*`.**
+**`provenance.source_artifact` records which version of which object each primitive was loaded from, and each run copies the rows it read into `log_input.artifact_*`.**
 - **Why now:** the bchamp store is versioned, but `?versions` is AccessDenied, so a version id not written down at load time can never be named. The 217-WSG run is next.
 - **`recorded_by`:**
   - `loader` is written by `snapshot_bcfp.sh`, pinned to the version it heads.
   - `probe` is a HEAD after the fact, for FWA. It is never a baseline, and loader rows for FWA are #270.
 - **The gate:** `lnk_preflight_vintage()` judges the four snapshot primitives on their load stamp. An unstamped host fails, so the dispatcher needs one `snapshot_bcfp.sh --force` after this lands.
+- **Its own schema, `provenance`:** the table describes the database, not a run. Run logs stay in each persist schema beside their results; `state_clean.sh` drops `fresh` but not `provenance`.
 - **Mechanics:** RUNBOOK §6b and §8d.
 
 **Facts not worth re-deriving:**

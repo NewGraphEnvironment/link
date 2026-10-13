@@ -43,7 +43,7 @@
 #'   - `fwapg_sha` — git SHA of the `fwapg` checkout's HEAD at stamp time.
 #'     Not the commit that loaded the FWA primitives and not a data version
 #'     (it moves on unrelated fwapg commits); the loaded artifacts are
-#'     recorded in `fresh.log_source_artifact` (link#265)
+#'     recorded in `provenance.source_artifact` (link#265)
 #'   - `bcfishobs_sha` — git SHA of the `bcfishobs` checkout that matched
 #'     observations onto the network. A model input, not a reference
 #'     dataset: it decides which barriers are skipped, and so which

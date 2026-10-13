@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-# artifact_record.R — snapshot_bcfp.sh's writer for fresh.log_source_artifact
+# artifact_record.R — snapshot_bcfp.sh's writer for provenance.source_artifact
 # (link#265). Two modes:
 #
 #   Rscript data-raw/artifact_record.R --clear

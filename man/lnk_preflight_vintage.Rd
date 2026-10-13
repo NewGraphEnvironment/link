@@ -68,7 +68,7 @@ to different places. Conflating them cost a pilot run, which reported
 
 \strong{The load stamp is the primary source} (link#265, absorbing #247).
 \code{snapshot_bcfp.sh} records each primitive it loads in
-\code{fresh.log_source_artifact} (\code{recorded_by = 'loader'}, with \code{loaded_at}).
+\code{provenance.source_artifact} (\code{recorded_by = 'loader'}, with \code{loaded_at}).
 When the gate has a connection it judges each table on that stamp, and a
 table with \strong{no stamp for this host fails} (\code{unstamped}) — even when the
 statistics below say it is fresh. That is #247's point: statistics are an

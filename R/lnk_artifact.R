@@ -38,9 +38,11 @@ cols_source_artifact <- c(
 # Where the table lives. One function rather than an argument: the gate, the
 # run log and the loader must all read the same table, and a per-call schema is
 # a way for them to disagree. Everything that names the table goes through
-# here, so moving it is a one-line change.
+# here, so moving it is a one-line change. Its own schema, not `fresh`: it
+# describes the database rather than a run, and `fresh` is a persist schema
+# that state_clean.sh drops.
 .lnk_artifact_location <- function() {
-  list(schema = "fresh", table = "log_source_artifact")
+  list(schema = "provenance", table = "source_artifact")
 }
 .lnk_artifact_table <- function() {
   l <- .lnk_artifact_location()
@@ -48,7 +50,7 @@ cols_source_artifact <- c(
 }
 
 
-#' Create `fresh.log_source_artifact`. Idempotent.
+#' Create `provenance.source_artifact`. Idempotent.
 #'
 #' Same shape discipline as [.lnk_log_create_tables()]: DDL from
 #' `cols_source_artifact`, then `ADD COLUMN IF NOT EXISTS` so a table created
@@ -144,7 +146,7 @@ cols_source_artifact <- c(
 
 #' Record source-artifact identity for DB primitives
 #'
-#' Upserts rows into `fresh.log_source_artifact`, the table that says which
+#' Upserts rows into `provenance.source_artifact`, the table that says which
 #' version of which object each primitive in this database was loaded from
 #' (link#265). The bchamp object store is versioned but cannot be listed, so a
 #' version id not recorded at load time is gone for good; this is where it is

@@ -233,7 +233,7 @@ test_that(".lnk_vintage_stamp reads loader rows only, for this host", {
   conn <- skip_if_no_db()
   host <- paste0("test265vs-", Sys.getpid())
   withr::defer(DBI::dbExecute(conn, sprintf(
-    "DELETE FROM fresh.log_source_artifact WHERE host = %s",
+    "DELETE FROM provenance.source_artifact WHERE host = %s",
     DBI::dbQuoteLiteral(conn, host))))
   withr::local_envvar(LNK_HOST_ALIAS = host)
   p <- .lnk_input_primitives()

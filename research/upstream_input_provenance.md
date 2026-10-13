@@ -54,7 +54,7 @@ provenance that cannot be retrofitted. It is also a concrete instance of
 
 ### Recording it (link#265, 2026-10-13)
 
-`fresh.log_source_artifact` now records it, and each run copies what it read
+`provenance.source_artifact` now records it, and each run copies what it read
 into `log_input.artifact_*`. Three facts measured while building that:
 
 - **A loader can pin its read to the version it recorded.** GDAL keeps a

@@ -23,7 +23,7 @@
 #'
 #' **The load stamp is the primary source** (link#265, absorbing #247).
 #' `snapshot_bcfp.sh` records each primitive it loads in
-#' `fresh.log_source_artifact` (`recorded_by = 'loader'`, with `loaded_at`).
+#' `provenance.source_artifact` (`recorded_by = 'loader'`, with `loaded_at`).
 #' When the gate has a connection it judges each table on that stamp, and a
 #' table with **no stamp for this host fails** (`unstamped`) — even when the
 #' statistics below say it is fresh. That is #247's point: statistics are an

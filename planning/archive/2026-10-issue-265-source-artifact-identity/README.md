@@ -1,7 +1,7 @@
 ## Outcome
 
 The DB primitives now carry source-artifact identity.
-- **The table:** `fresh.log_source_artifact` holds, per host and artifact, the object store's version id, ETag and `Last-Modified`.
+- **The table:** `provenance.source_artifact` holds, per host and artifact, the object store's version id, ETag and `Last-Modified`.
   - `kind`: `object`, `api` or `derived`.
   - `recorded_by`: `loader` or `probe`. A probe never overwrites a loader row, and keeps the earliest probe while the row count is unchanged.
 - **The snapshot:** `snapshot_bcfp.sh` writes `loader` rows, pinning each object fetch to the version it heads (`?versionId=`). A failure to record fails the snapshot. It then probes the FWA artifacts as a soft step.
@@ -14,7 +14,7 @@ What was learned:
 - The live runs found a defect the unit tests could not reach. `httr::parse_http_date()` is all-or-nothing, so one NA blanks every element.
 - The review loop ended by enumeration, not by a quiet round. Round 2 found a defect inside round 1's fix; round 3 named the mechanism and walked 19 places. The last open place was a fix that had landed in one of two callers of `schema_consolidate()`, so it moved into the shared function.
 
-**Open for the operator:** the table's schema. `state_clean.sh`'s default mode drops `fresh`, and #270's future FWA loader rows would go with it. The question of whether `host` belongs in the key goes with it. Every reference to the location goes through `.lnk_artifact_location()`.
+**Schema, decided after the PR opened:** the operator moved the table from `fresh.log_source_artifact` to `provenance.source_artifact`. `fresh` is a persist schema that `state_clean.sh` drops; this table describes the database, not a run, and #270's future FWA loader rows could not be re-created. `host` stays in the key.
 
 ## Measurement
 
@@ -36,6 +36,6 @@ m1, local docker fwapg, 2026-10-13 04:17–04:25Z.
 
 ## Evidence
 
-Live outputs are in the DB, not in committed logs: `fresh.log_source_artifact WHERE host = 'm1'`. The ledger row is `data-raw/logs/bcfp_baselines.csv` (`snapshot-20261013`). Reviews are `review-round{1,2,3}.md` in this directory. The research verdict is `research/upstream_input_provenance.md`.
+Live outputs are in the DB, not in committed logs: `provenance.source_artifact WHERE host = 'm1'`. The ledger row is `data-raw/logs/bcfp_baselines.csv` (`snapshot-20261013`). Reviews are `review-round{1,2,3}.md` in this directory. The research verdict is `research/upstream_input_provenance.md`.
 
 Closed by: PR (see branch `265-record-source-artifact-identity-for-the`)

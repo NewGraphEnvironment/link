@@ -30,7 +30,7 @@ Invisibly, the rows as recorded (before the probe-vs-loader rule is
 applied by the database).
 }
 \description{
-Upserts rows into \code{fresh.log_source_artifact}, the table that says which
+Upserts rows into \code{provenance.source_artifact}, the table that says which
 version of which object each primitive in this database was loaded from
 (link#265). The bchamp object store is versioned but cannot be listed, so a
 version id not recorded at load time is gone for good; this is where it is
