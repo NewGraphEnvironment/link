@@ -17,7 +17,8 @@ live in.}
 
 \item{artifacts}{A data frame with \code{table_name} and \code{url}, and optionally
 \code{version_id}, \code{etag}, \code{last_modified}, \code{loaded_at} and \code{notes}. \code{kind}
-is taken from the dictionary.}
+is taken from the dictionary. \code{last_modified} may be POSIXct or the raw
+HTTP header string (\code{"Thu, 16 Apr 2026 02:22:39 GMT"}).}
 
 \item{recorded_by}{\code{"loader"} or \code{"probe"}.}
 

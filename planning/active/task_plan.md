@@ -95,22 +95,24 @@ Naming (adjust at approval if wanted): the exported `lnk_artifact_record()` and 
 - [x] DB test: a stamped and an unstamped host both write a `log_input` row, with identity filled or NULL.
 
 ## Phase 5: Vintage gate prefers the stamp (#247)
-- [ ] `lnk_preflight_vintage()` reads `loaded_at` from `fresh.log_source_artifact` for this host for the four snapshot
+- [x] `lnk_preflight_vintage()` reads `loaded_at` from `fresh.log_source_artifact` for this host for the four snapshot
   primitives.
   - **An absent stamp is FATAL**, reported as `unstamped` and kept distinct from `absent` and `unknown`. The message
     carries the remediation command and shows the pg_stat-inferred age for context.
   - The message says which predicate judged each table.
-- [ ] Tests in both directions (a host with a stamp, and one without), plus the existing tests kept green.
+- [x] Tests in both directions (a host with a stamp, and one without), plus the existing tests kept green.
 
 ## Phase 6: Docs
-- [ ] Correct the `.lnk_fwapg_sha()` roxygen (`R/lnk_log.R:1181`) and the `fwapg_sha` line in `lnk_stamp()`
+- [x] Correct the `.lnk_fwapg_sha()` roxygen (`R/lnk_log.R:1181`) and the `fwapg_sha` line in `lnk_stamp()`
   (`R/lnk_stamp.R:43`): they now say it is the checkout's HEAD at run time, not the loader's commit. Already-logged
   values are left alone.
-- [ ] `R/lnk_pipeline_break.R:25` still names `fwa_obstacles_sp`. Falls actually come from `fresh`'s `falls.csv`
+- [x] `R/lnk_pipeline_break.R:25` still names `fwa_obstacles_sp`. Falls actually come from `fresh`'s `falls.csv`
   (`R/lnk_pipeline_prepare.R:171`), so name that, not `fwa_obstructions_sp` (review, Scope 1).
-- [ ] RUNBOOK §8d: the stamp becomes the gate's primary source, plus a note on `recorded_by` / `kind`. Add NEWS and a
-  CLAUDE.md status entry.
-- [ ] Mark #247 superseded in the PR body; leave a pointer on #270 that the table exists.
+- [x] RUNBOOK §6b (`fwapg_sha` is not FWA provenance; the artifact table) and §8d (the gate reads stamps; rollout
+  needs `--force` on the dispatcher), plus a CLAUDE.md status entry. NEWS is left to `/gh-pr-merge`'s release
+  bookkeeping, which writes it on this repo.
+- [ ] Mark #247 superseded in the PR body; leave a pointer on #270 that the table exists (at PR time).
+- [x] #265's body edited: 12 primitives, and the loader-commit box moved to #270.
 
 ## Review fixes (Plan agent, 2026-10-13)
 - [x] The table location comes from one function (`.lnk_artifact_location()`), so a move is one line (review B1 / G3).

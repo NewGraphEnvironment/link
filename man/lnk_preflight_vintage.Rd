@@ -10,6 +10,7 @@ lnk_preflight_vintage(
   tables = .lnk_vintage_primitives(),
   now = Sys.time(),
   vintage = .lnk_vintage_read(conn, tables),
+  stamp = .lnk_vintage_stamp(conn, tables),
   quiet = FALSE
 )
 }
@@ -29,12 +30,18 @@ optionally \code{table_exists}. Defaults to reading \code{conn}; pass directly t
 test, or to judge a stamp collected on another host. Rows in a frame
 without \code{table_exists} are taken to exist.}
 
+\item{stamp}{A data frame with \code{table_name} and \code{loaded_at}: this host's
+load stamps. Defaults to reading \code{conn}; \code{NULL} (the default when \code{conn}
+is \code{NULL}) means "not consulted" and leaves the statistics to decide.
+A data frame with no row for a table makes that table \code{unstamped}.}
+
 \item{quiet}{Suppress the human-readable report.}
 }
 \value{
 Invisibly, a list with \code{ok}, \code{vintage}, \code{stale}, \code{absent},
 \code{unknown}, \code{missing} (the union of the last two, kept for callers that
-only care that something was wrong), \code{oldest_days} and \code{message}.
+only care that something was wrong), \code{unstamped}, \code{judged_by} (per
+table: \code{"stamp"}, \code{"pg_stat"} or \code{"none"}), \code{oldest_days} and \code{message}.
 }
 \description{
 \code{snapshot_bcfp.sh} loads four primitives from public sources into each
@@ -58,6 +65,22 @@ Both fail, in the same direction as a stale one — a query returning
 nothing must never read as "nothing is stale" — but they send an operator
 to different places. Conflating them cost a pilot run, which reported
 \verb{never loaded / absent} for a table that was present and healthy.
+
+\strong{The load stamp is the primary source} (link#265, absorbing #247).
+\code{snapshot_bcfp.sh} records each primitive it loads in
+\code{fresh.log_source_artifact} (\code{recorded_by = 'loader'}, with \code{loaded_at}).
+When the gate has a connection it judges each table on that stamp, and a
+table with \strong{no stamp for this host fails} (\code{unstamped}) — even when the
+statistics below say it is fresh. That is #247's point: statistics are an
+inference that can read too-new (autoanalyze fires on ordinary writes), and
+a host that never recorded a load should say so on its first run rather
+than pass on an inference. The statistics age is still shown beside an
+unstamped table, as context. A stamp never rescues a table that does not
+exist. \code{probe} rows are not stamps: a probe did not load anything.
+
+Without a connection (a \code{vintage} frame judged offline) there is no stamp
+to read, the statistics decide, and the message says the stamp was not
+consulted.
 
 Two statistics quirks make this fiddlier than it looks. \code{last_analyze}
 alone is unusable: measured across all ten primitives it is NULL on every

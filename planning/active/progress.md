@@ -19,3 +19,7 @@
   - GDAL's requests carry `?versionId=` (`CPL_CURL_VERBOSE`: HEAD + GETs).
 - Phase 4: `log_input` gains the `artifact_*` columns, including `loaded_at`. A DB test covers a scratch schema with a probe row; 12 rows, with identity on the stream row.
 - Live probe on m1, 04:21Z: 252 FWA artifacts in 17 s, every one with a version id. Last-Modified is 2026-04-16 for the parquet tables and 2026-01-16 for channel_width / discharge.
+
+- Phase 5: `lnk_preflight_vintage(stamp =)` judges on the newest loader `loaded_at`; unstamped is FATAL; the message names the source per table. Mutation: dropping `unstamped` from `ok` fails 2 tests; restored.
+- Live, m1, 04:23-04:25Z: snapshot re-run exit 0. Both loader rows now carry `last_modified` (obs 2026-09-22, crossings 2026-10-06). `host_vintage.R` exits 0 for this host, judged by 4 stamps. With `LNK_HOST_ALIAS=nostamp265` it exits 1, `unstamped` x4, statistics age shown as context.
+- Phase 6: `fwapg_sha` roxygen and `lnk_stamp()` corrected (70 commits, verified `git rev-list --count e6e1eb0..f9718cb`). The falls doc line now names `falls.csv`. RUNBOOK §6b / §8d and the CLAUDE.md status updated. #265 body edited.

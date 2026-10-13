@@ -4,7 +4,7 @@
 \alias{lnk_artifact_probe}
 \title{Probe the FWA primitives' artifacts and record what is current now}
 \usage{
-lnk_artifact_probe(conn, tables = NULL, host = .lnk_host())
+lnk_artifact_probe(conn, tables = NULL, host = .lnk_host(), max_fail = 5L)
 }
 \arguments{
 \item{conn}{A \link[DBI:DBIConnection-class]{DBI::DBIConnection} to the database the primitives
@@ -14,6 +14,9 @@ live in.}
 loaded by fwapg).}
 
 \item{host}{Host label; see \code{\link[=lnk_artifact_record]{lnk_artifact_record()}}.}
+
+\item{max_fail}{Stop sending \code{HEAD}s after this many consecutive failures
+(no response at all); the rest are recorded with no identity and a note.}
 }
 \value{
 Invisibly, the probed rows, with the HTTP \code{status} of each \code{HEAD}.
@@ -25,7 +28,10 @@ This is the weaker kind of record: it says which version is current
 \strong{now}, not which one was loaded. It exists because fwapg's \code{load.sh}
 records nothing, and a version that is not written down before the store
 moves on can never be named (link#270 is the loader-side record). A probe
-never overwrites a \code{loader} row.
+never overwrites a \code{loader} row. A probe row is \strong{not a baseline}: anything
+that compares a recorded ETag against the store to decide whether a source
+changed (link#273) must read \code{loader} rows only, because a probe's ETag is by
+construction whatever the store held when the probe ran.
 }
 \details{
 The stream network is one object per watershed group. The groups probed

@@ -1265,15 +1265,20 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
 }
 
 
-#' git SHA of the fwapg checkout that loaded the FWA primitives.
+#' git SHA of the fwapg checkout's HEAD when the model runs.
 #'
-#' The stream network is the most load-bearing input the pipeline has and it
-#' carries **no** provenance in the database: `bcdata.log` records only `bc2pg`
-#' downloads (which FWA is not), and `pg_stat_user_tables` for
-#' `fwa_stream_networks_sp` is empty because it is bulk-restored and never
-#' analyzed. It is loaded by fwapg's own `load.sh` from
-#' `nrs.objectstore.gov.bc.ca/bchamp/fwapg/...parquet`, so the fwapg checkout's
-#' commit is the closest thing to a version for it.
+#' **Not** the commit that ran `load.sh`, and not a version of the FWA data. It
+#' is read at run time, so it moves on any fwapg commit even when nothing was
+#' reloaded: PINE/KOTL/LARL/SLOC (2026-08) logged `e6e1eb0` and DUNC
+#' (2026-10-12) `f9718cb`, 70 commits apart, over identical FWA tables (#265).
+#' On a cypher it is the dispatcher's checkout, exported as `FWAPG_GIT_SHA`
+#' by `data-raw/study_area_run.sh`. Values already logged are left as they are;
+#' this is what the column has always recorded.
+#'
+#' Which FWA data a run read is recorded per artifact instead:
+#' `fresh.log_source_artifact` and `log_input.artifact_*` (version id, ETag,
+#' `Last-Modified`; link#265). The fwapg commit that ran `load.sh` belongs
+#' beside those, captured at load time (link#270).
 #'
 #' Three-tier, mirroring [.lnk_pkg_git_sha()]: `FWAPG_GIT_SHA` env var, then a
 #' `.git` walk of `FWAPG_DIR` (or the conventional `../../fwapg` sibling

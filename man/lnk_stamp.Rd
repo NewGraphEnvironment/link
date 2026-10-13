@@ -38,8 +38,10 @@ An \code{lnk_stamp} S3 list with these slots:
 \item \code{config_dir} — \code{cfg$dir}
 \item \code{provenance} — output of \code{\link[=lnk_config_verify]{lnk_config_verify()}} called on \code{cfg}
 at stamp time (carries observed checksums + drift status)
-\item \code{fwapg_sha} — git SHA of the \code{fwapg} checkout that loaded the FWA
-primitives
+\item \code{fwapg_sha} — git SHA of the \code{fwapg} checkout's HEAD at stamp time.
+Not the commit that loaded the FWA primitives and not a data version
+(it moves on unrelated fwapg commits); the loaded artifacts are
+recorded in \code{fresh.log_source_artifact} (link#265)
 \item \code{bcfishobs_sha} — git SHA of the \code{bcfishobs} checkout that matched
 observations onto the network. A model input, not a reference
 dataset: it decides which barriers are skipped, and so which
