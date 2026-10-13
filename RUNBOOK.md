@@ -491,7 +491,8 @@ EXCEPT SELECT watershed_group_code FROM <persist>.log;
   (the stream network row names the run's own `<WSG>.parquet`), which is what
   carries the identity home from a cypher before it is burned.
   `lnk_artifact_read()` lists every expected artifact, `missing` where
-  nothing is recorded.
+  nothing is recorded and `table_absent` where the record outlived its table
+  (a `fresh` dropped by `state_clean.sh`; the next snapshot clears it).
   - **Its own schema, `provenance`, because it describes the database, not a
     run.** Run logs live beside their results (`<schema>.log*`, one set per
     persist schema). This table is what is loaded here, read by runs into

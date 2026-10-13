@@ -13,13 +13,16 @@ lnk_artifact_read(conn, host = .lnk_host())
 }
 \value{
 A data frame: the recorded columns plus \code{status}
-(\code{"recorded"} / \code{"missing"}).
+(\code{"recorded"} / \code{"missing"} / \code{"table_absent"}).
 }
 \description{
 Reports every primitive this host should have a record for, with
 \code{status = "missing"} where it has none — a missing record is reported, not
-silently left out. The stream network expands to one expected artifact per
-watershed group loaded in this database.
+silently left out. A record whose table no longer exists (dropped since it
+was loaded, e.g. by \code{state_clean.sh}) reads \code{"table_absent"}: the record
+outlives the table, and names a load the database no longer holds. The
+stream network expands to one expected artifact per watershed group loaded
+in this database.
 }
 \examples{
 \dontrun{

@@ -196,7 +196,7 @@ test_that("the probe-vs-loader rule holds in a real database", {
 test_that("lnk_artifact_read has one shape, recorded or not", {
   local_mocked_bindings(
     .lnk_artifact_wsgs = function(conn) "BULK",
-    .lnk_artifact_exists = function(conn, tables) FALSE)
+    .lnk_artifact_exists = function(conn, tables) rep(FALSE, length(tables)))
   a <- lnk_artifact_read(structure(list(), class = "DBIConnection"),
                          host = "nobody")
   expect_identical(nrow(a), nrow(.lnk_input_primitives()))
@@ -205,6 +205,33 @@ test_that("lnk_artifact_read has one shape, recorded or not", {
                     "loaded_at", "recorded_at", "recorded_by", "notes")
                   %in% names(a)))
   expect_s3_class(a$loaded_at, "POSIXct")
+})
+
+test_that("a record whose table was dropped reads table_absent", {
+  # The record lives in `provenance`, outside the schema it describes, so a
+  # `state_clean.sh` drop of `fresh` leaves it naming a load that is gone.
+  conn <- skip_if_no_db()
+  host <- paste0("test265ta-", Sys.getpid())
+  withr::defer(DBI::dbExecute(conn, sprintf(
+    "DELETE FROM provenance.source_artifact WHERE host = %s",
+    DBI::dbQuoteLiteral(conn, host))))
+  gone <- "fresh.modelled_stream_crossings"
+  kept <- "whse_basemapping.fwa_obstructions_sp"
+  for (tbl in c(gone, kept)) {
+    lnk_artifact_record(conn, data.frame(table_name = tbl, url = prim_url(tbl),
+                                         version_id = "v1"),
+                        "loader", host = host)
+  }
+  real_exists <- .lnk_artifact_exists
+  local_mocked_bindings(.lnk_artifact_exists = function(conn, tables) {
+    e <- real_exists(conn, tables)
+    e[tables == gone] <- FALSE
+    e
+  })
+  a <- lnk_artifact_read(conn, host = host)
+  expect_identical(a$status[a$table_name == gone], "table_absent")
+  expect_identical(a$status[a$table_name == kept], "recorded")
+  expect_identical(a$version_id[a$table_name == gone], "v1")
 })
 
 test_that("a URL the dictionary does not know stops the record", {

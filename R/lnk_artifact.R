@@ -389,14 +389,17 @@ lnk_artifact_probe <- function(conn, tables = NULL, host = .lnk_host(),
 #'
 #' Reports every primitive this host should have a record for, with
 #' `status = "missing"` where it has none — a missing record is reported, not
-#' silently left out. The stream network expands to one expected artifact per
-#' watershed group loaded in this database.
+#' silently left out. A record whose table no longer exists (dropped since it
+#' was loaded, e.g. by `state_clean.sh`) reads `"table_absent"`: the record
+#' outlives the table, and names a load the database no longer holds. The
+#' stream network expands to one expected artifact per watershed group loaded
+#' in this database.
 #'
 #' @param conn A [DBI::DBIConnection-class].
 #' @param host Host label; see [lnk_artifact_record()].
 #'
 #' @return A data frame: the recorded columns plus `status`
-#'   (`"recorded"` / `"missing"`).
+#'   (`"recorded"` / `"missing"` / `"table_absent"`).
 #'
 #' @family provenance
 #' @export
@@ -436,7 +439,13 @@ lnk_artifact_read <- function(conn, host = .lnk_host()) {
   }
   out <- merge(expected, have, by = c("table_name", "url"), all.x = TRUE,
                sort = FALSE)
-  out$status <- ifelse(is.na(out$recorded_by), "missing", "recorded")
+  # The record lives outside the schemas it describes, so it can outlive a
+  # dropped table; say so rather than report the old load as current.
+  tbls <- unique(out$table_name)
+  present <- tbls[.lnk_artifact_exists(conn, tbls)]
+  out$status <- ifelse(is.na(out$recorded_by), "missing",
+                       ifelse(out$table_name %in% present, "recorded",
+                              "table_absent"))
   out[order(out$table_name, out$url), , drop = FALSE]
 }
 
