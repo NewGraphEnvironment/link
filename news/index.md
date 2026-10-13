@@ -1,5 +1,45 @@
 # Changelog
 
+## link 0.64.0
+
+**Each DB primitive now records which version of which object it was
+loaded from, and the vintage gate fails a host that has not recorded its
+loads**
+([\#265](https://github.com/NewGraphEnvironment/link/issues/265),
+absorbing
+[\#247](https://github.com/NewGraphEnvironment/link/issues/247)). The
+bchamp object store is versioned but cannot be listed, so a version id
+not written down at load time can never be named afterwards.
+
+- **`provenance.source_artifact`** holds, per host and artifact, the
+  object store’s version id, ETag and `Last-Modified`, with `kind`
+  (`object` / `api` / `derived`) and `recorded_by` (`loader` / `probe`).
+  It sits in its own schema because it describes the database, not a
+  run; `state_clean.sh` drops `fresh` but not `provenance`.
+- **`snapshot_bcfp.sh` writes `loader` rows** and reads exactly the
+  version it recorded (`?versionId=`). A snapshot that cannot record
+  fails. PSCIS and CABD have no version handle: load time and row count
+  only.
+- **New exports:**
+  [`lnk_artifact_record()`](https://newgraphenvironment.github.io/link/reference/lnk_artifact_record.md),
+  [`lnk_artifact_probe()`](https://newgraphenvironment.github.io/link/reference/lnk_artifact_probe.md)
+  (HEADs the FWA artifacts after the fact; never overwrites a loader
+  row) and
+  [`lnk_artifact_read()`](https://newgraphenvironment.github.io/link/reference/lnk_artifact_read.md)
+  (`recorded` / `missing` / `table_absent`).
+- **Each run carries what it read** in `<schema>.log_input.artifact_*`,
+  so a cypher’s provenance comes home before it is burned.
+  `schema_consolidate.R` aligns the destination’s log tables first.
+- **Breaking for operators:
+  [`lnk_preflight_vintage()`](https://newgraphenvironment.github.io/link/reference/lnk_preflight_vintage.md)
+  fails an unstamped snapshot primitive** even when statistics say it is
+  fresh. Each host needs one
+  `bash data-raw/snapshot_bcfp.sh --with-bcfp-views --force` after
+  upgrading.
+- **`fwapg_sha` documented as what it is:** the checkout’s HEAD at run
+  time, not the commit that loaded the data. Recording that commit is
+  [\#270](https://github.com/NewGraphEnvironment/link/issues/270).
+
 ## link 0.63.1
 
 **PCEA’s +1.87 % BT rearing against bcfishpass is explained: link breaks

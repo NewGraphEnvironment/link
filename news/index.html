@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.63.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.64.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,9 +32,25 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/v0.64.0/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.64.0" id="link-0640">link 0.64.0<a class="anchor" aria-label="anchor" href="#link-0640"></a></h2>
+<p><strong>Each DB primitive now records which version of which object it was loaded from, and the vintage gate fails a host that has not recorded its loads</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/265" class="external-link">#265</a>, absorbing <a href="https://github.com/NewGraphEnvironment/link/issues/247" class="external-link">#247</a>). The bchamp object store is versioned but cannot be listed, so a version id not written down at load time can never be named afterwards.</p>
+<ul><li>
+<strong><code>provenance.source_artifact</code></strong> holds, per host and artifact, the object store’s version id, ETag and <code>Last-Modified</code>, with <code>kind</code> (<code>object</code> / <code>api</code> / <code>derived</code>) and <code>recorded_by</code> (<code>loader</code> / <code>probe</code>). It sits in its own schema because it describes the database, not a run; <code>state_clean.sh</code> drops <code>fresh</code> but not <code>provenance</code>.</li>
+<li>
+<strong><code>snapshot_bcfp.sh</code> writes <code>loader</code> rows</strong> and reads exactly the version it recorded (<code>?versionId=</code>). A snapshot that cannot record fails. PSCIS and CABD have no version handle: load time and row count only.</li>
+<li>
+<strong>New exports:</strong> <code><a href="../reference/lnk_artifact_record.html">lnk_artifact_record()</a></code>, <code><a href="../reference/lnk_artifact_probe.html">lnk_artifact_probe()</a></code> (HEADs the FWA artifacts after the fact; never overwrites a loader row) and <code><a href="../reference/lnk_artifact_read.html">lnk_artifact_read()</a></code> (<code>recorded</code> / <code>missing</code> / <code>table_absent</code>).</li>
+<li>
+<strong>Each run carries what it read</strong> in <code>&lt;schema&gt;.log_input.artifact_*</code>, so a cypher’s provenance comes home before it is burned. <code>schema_consolidate.R</code> aligns the destination’s log tables first.</li>
+<li>
+<strong>Breaking for operators: <code><a href="../reference/lnk_preflight_vintage.html">lnk_preflight_vintage()</a></code> fails an unstamped snapshot primitive</strong> even when statistics say it is fresh. Each host needs one <code>bash data-raw/snapshot_bcfp.sh --with-bcfp-views --force</code> after upgrading.</li>
+<li>
+<strong><code>fwapg_sha</code> documented as what it is:</strong> the checkout’s HEAD at run time, not the commit that loaded the data. Recording that commit is <a href="https://github.com/NewGraphEnvironment/link/issues/270" class="external-link">#270</a>.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.63.1" id="link-0631">link 0.63.1<a class="anchor" aria-label="anchor" href="#link-0631"></a></h2>
 <p><strong>PCEA’s +1.87 % BT rearing against bcfishpass is explained: link breaks streams where bcfishpass does not</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/324" class="external-link">#324</a>). No package code changes.</p>
