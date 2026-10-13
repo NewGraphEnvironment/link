@@ -340,6 +340,40 @@ test_that("log_input joins this host's artifact rows when they exist", {
   expect_match(ins, "LEFT JOIN provenance.source_artifact a", fixed = TRUE)
   expect_match(ins, "a.url = p.url", fixed = TRUE)
   expect_match(ins, sprintf("a.host = '%s'", .lnk_host()), fixed = TRUE)
+  expect_match(ins, "AND c.oid IS NOT NULL", fixed = TRUE)
+})
+
+test_that("log_input does not stamp a table that no longer exists", {
+  # The record outlives its table (a `fresh` dropped by state_clean.sh): the
+  # run must not carry a version id for a table it cannot read.
+  conn <- skip_if_no_db()
+  host <- paste0("test265gone-", Sys.getpid())
+  schema <- paste0("zz_test265g_", Sys.getpid())
+  withr::defer({
+    DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", schema))
+    DBI::dbExecute(conn, sprintf(
+      "DELETE FROM provenance.source_artifact WHERE host = %s",
+      DBI::dbQuoteLiteral(conn, host)))
+  })
+  withr::local_envvar(LNK_HOST_ALIAS = host)
+  real <- .lnk_input_primitives()
+  gone <- paste0(schema, "_absent.t")
+  fake <- data.frame(table_name = gone, source = "test", kind = "object",
+                     url = "https://example.invalid/gone.parquet")
+  local_mocked_bindings(.lnk_input_primitives = function() rbind(real, fake))
+  lnk_artifact_record(conn, data.frame(
+    table_name = gone, url = "https://example.invalid/gone.parquet",
+    version_id = "v-gone"), recorded_by = "loader")
+  .lnk_log_create_tables(conn, schema)
+  expect_true(.lnk_log_inputs(conn, schema, "run-gone", "BULK"))
+  row <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT artifact_url, artifact_version_id, row_count
+       FROM %s.log_input WHERE run_id = 'run-gone' AND table_name = %s",
+    schema, DBI::dbQuoteLiteral(conn, gone)))
+  expect_identical(nrow(row), 1L)
+  expect_true(is.na(row$row_count))
+  expect_true(is.na(row$artifact_version_id))
+  expect_identical(row$artifact_url, "https://example.invalid/gone.parquet")
 })
 
 test_that("log_input carries identity from a real artifact table", {

@@ -724,9 +724,12 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
     if (has_artifacts) {
       art_cols <- paste("a.version_id, a.etag, a.last_modified, a.loaded_at,",
                         "a.recorded_by")
+      # c.oid: the record lives outside the table it describes and can
+      # outlive it (a dropped `fresh`); never stamp a table the run cannot see.
       art_join <- sprintf(
         "LEFT JOIN %s a
-           ON a.table_name = p.tbl AND a.url = p.url AND a.host = %s",
+           ON a.table_name = p.tbl AND a.url = p.url AND a.host = %s
+          AND c.oid IS NOT NULL",
         .lnk_artifact_table(), DBI::dbQuoteLiteral(conn, .lnk_host()))
     } else {
       art_cols <- paste(

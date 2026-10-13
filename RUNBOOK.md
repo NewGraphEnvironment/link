@@ -492,7 +492,13 @@ EXCEPT SELECT watershed_group_code FROM <persist>.log;
   carries the identity home from a cypher before it is burned.
   `lnk_artifact_read()` lists every expected artifact, `missing` where
   nothing is recorded and `table_absent` where the record outlived its table
-  (a `fresh` dropped by `state_clean.sh`; the next snapshot clears it).
+  (a `fresh` dropped by `state_clean.sh`). Only `snapshot_bcfp.sh --force`
+  clears it: without `--force` a current ledger row exits before `--clear`.
+  `log_input` never copies identity for a table the run cannot see.
+  - **Restoring a schema alone (e.g. `schema_consolidate.R`'s
+    `pg_dump --schema=fresh` backup) restores the table but not its record.**
+    The record then names the later load. Re-run `snapshot_bcfp.sh --force`
+    after any such restore.
   - **Its own schema, `provenance`, because it describes the database, not a
     run.** Run logs live beside their results (`<schema>.log*`, one set per
     persist schema). This table is what is loaded here, read by runs into

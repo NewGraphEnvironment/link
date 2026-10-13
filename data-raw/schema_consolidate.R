@@ -116,7 +116,9 @@ schema_consolidate <- function(schema,
   # 1. Backup destination (rollback safety net).
   if (backup) {
     backup_path <- sprintf("/tmp/%s_pre_consolidate_%s.dump", schema, ts)
-    log("backup local ", schema, " -> ", backup_path)
+    log("backup local ", schema, " -> ", backup_path,
+        " (provenance.source_artifact is not in it: after restoring, re-run",
+        " snapshot_bcfp.sh --force so the load records match the tables)")
     cmd <- sprintf(
       "PGHOST=localhost PGPORT=5432 PGDATABASE=fwapg PGUSER=postgres PGPASSWORD=postgres pg_dump --schema=%s -Fc -f %s",
       schema, backup_path)

@@ -16,6 +16,8 @@ What was learned:
 
 **Schema, decided after the PR opened:** the operator moved the table from `fresh.log_source_artifact` to `provenance.source_artifact`. `fresh` is a persist schema that `state_clean.sh` drops; this table describes the database, not a run, and #270's future FWA loader rows could not be re-created. `host` stays in the key.
 
+The move had its own three review rounds (`review-move-round{1,2,3}.md`). Living outside `fresh`, a record can now outlive its table. Round 2 found `lnk_artifact_read()` reporting such a record as `recorded` (now `table_absent`); round 3 named that mechanism, enumerated every reader and every way a table disappears, and found the same gap in `.lnk_log_inputs()` (now joins only on a table that exists). Left open, documented in RUNBOOK §6b: a restore of `fresh` alone brings back an older table under a newer record, which only `snapshot_bcfp.sh --force` corrects.
+
 ## Measurement
 
 m1, local docker fwapg, 2026-10-13 04:17–04:25Z.
