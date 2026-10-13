@@ -2,6 +2,10 @@
 
 Measured 2026-09-01 while scoping link#262's follow-ups (link#264, link#265).
 Neither fact is visible from the code, and both cost real probing.
+**Verified:** 2026-10-13 (the object-store sections and "What pins each input
+today") · **Issues:** link#262, #264, #265, #270, #273 · **Produced by:**
+`curl -I` probes; `data-raw/snapshot_bcfp.sh` and `lnk_artifact_probe()` live
+on m1, 2026-10-13 (`planning/archive/2026-10-issue-265-source-artifact-identity/`).
 
 ## fwapg and bcfishobs are **forks** of `smnorris/*`
 
@@ -47,6 +51,35 @@ name and can never enumerate the ones we did not record, so a version-id not
 recorded *at load time* is gone. Same argument as link#262 one layer down:
 provenance that cannot be retrofitted. It is also a concrete instance of
 `CLAUDE.md`'s "Public bucket ≠ listable: GetObject vs ListBucket".
+
+### Recording it (link#265, 2026-10-13)
+
+`fresh.log_source_artifact` now records it, and each run copies what it read
+into `log_input.artifact_*`. Three facts measured while building that:
+
+- **A loader can pin its read to the version it recorded.** GDAL keeps a
+  query string on a `/vsicurl/` URL and sends `?versionId=` on the HEAD and
+  every range GET (`CPL_CURL_VERBOSE=YES`). A bad id is a 404, not a fallback
+  to the current object, and the layer name still comes from the basename. So
+  `snapshot_bcfp.sh`'s HEAD-then-read-that-version makes "recorded" equal
+  "loaded" by construction. It also stops a mid-read replacement mixing two
+  versions across range requests.
+- **The store's vintages, 2026-10-13.**
+  - The FWA parquets and all 246 per-group stream-network objects are dated
+    2026-04-16.
+  - `channel_width` / `discharge` `.csv.gz`: 2026-01-16.
+  - `bcfishobs/observations.parquet`: 2026-09-22.
+  - `modelled_stream_crossings.gpkg.zip`: 2026-10-06.
+
+  Every one of the 252 FWA artifacts answered a HEAD with a version id (17 s
+  for all).
+- **A probe is weaker than it looks.** A HEAD after the fact says what is
+  current *now*. `lnk_artifact_probe()` keeps the earliest probe while the
+  row count is unchanged, so a store that moved on does not relabel what is
+  loaded. A reload that keeps the row count is still invisible to it. An equal
+  FWA version id on two runs is evidence, not proof, until fwapg's loader
+  writes `loader` rows (link#270). A probe is never a baseline for change
+  detection (link#273).
 
 ## The FWA artifacts have no single URL convention
 
@@ -98,8 +131,10 @@ restatements, which is why agreeing copies are not corroboration.
 | input | pinned by | resolvable? |
 |---|---|---|
 | bcfishpass | `bcfp_model_version` + `bcfp_pin_source` | yes — link#262 |
-| fwapg | `fwapg_sha` | yes, but only *because* the fork is 0-ahead |
-| **bcfishobs** | **nothing** | **no** — a row count and the literal string `bcfishobs` |
+| fwapg (the code) | `fwapg_sha` | yes, but only *because* the fork is 0-ahead. It is the checkout's HEAD **at run time** (the dispatcher's, on cyphers), not the commit that ran `load.sh`: 70 commits apart over identical FWA tables (link#265) |
+| FWA (the data) | `log_input.artifact_*`, `probe` rows | evidence, not proof (above); `loader` rows are link#270 |
+| snapshot primitives (observations, crossings, PSCIS, CABD) | `log_input.artifact_*`, `loader` rows | yes for the two object fetches (version id). PSCIS and CABD are `api`, with no version handle: load time and row count only |
+| **bcfishobs** (the code) | `bcfishobs_sha` | yes since link#264 |
 
 `bcfishobs` is a *pipeline*, not a dataset: it matches observations onto the
 stream network, and `lnk_barrier_overrides()` counts those upstream of each
@@ -112,4 +147,6 @@ different matching → different barriers → different access. Tracked in link#
   `fresh_dirty` never set; `bcfishobs` unpinned
 - link#265 — record source-artifact identity (this document is its evidence base)
 - link#266 — link and `flooded` select the bcfp reference build by different rules
-- link#247 — `snapshot_stamp`, superseded in scope by #265
+- link#247 — `snapshot_stamp`, absorbed by #265 (the vintage gate reads load stamps)
+- link#270 — `loader` rows for the FWA tables, from a wrapper around `load.sh`
+- link#273 — change detection: compare a recorded loader ETag with a HEAD now
