@@ -195,10 +195,25 @@
 #' data actually comes from — a fact that lives in the loader scripts, not the
 #' database, and which nothing else records.
 #'
-#' @return A data.frame with `table_name` and `source`.
+#' `kind` and `url` say what artifact a primitive is read from, which is what
+#' `fresh.log_source_artifact` records an identity for (link#265):
+#'
+#' - `object` — a fetch from the versioned bchamp object store. A `HEAD`
+#'   returns a version id, an ETag and `Last-Modified`, so a NULL identity on
+#'   an `object` row is a gap.
+#' - `api` — a service with no version handle (PSCIS through `bcdata bc2pg`,
+#'   CABD's GeoJSON API). NULL identity there is permanent and correct.
+#' - `derived` — built inside the database from other primitives. `url` names
+#'   the SQL that builds it, not a fetch.
+#'
+#' `url` is a template: `{wsg}` expands to a watershed group code, because
+#' fwapg loads the stream network one object per group.
+#'
+#' @return A data.frame with `table_name`, `source`, `kind` and `url`.
 #' @noRd
 .lnk_input_primitives <- function() {
   fwapg <- "fwapg/load.sh <- nrs.objectstore.gov.bc.ca/bchamp/fwapg"
+  bchamp <- "https://nrs.objectstore.gov.bc.ca/bchamp"
   data.frame(
     table_name = c(
       "whse_basemapping.fwa_stream_networks_sp",
@@ -228,6 +243,30 @@
       "bcdata bc2pg",
       "CABD",
       "snapshot_bcfp.sh <- bchamp objectstore"
+    ),
+    kind = c(
+      "object", "object", "object", "derived",
+      "object", "object", "object", "object",
+      "object", "api", "api", "object"
+    ),
+    # These must match the URLs the loaders fetch. snapshot_bcfp.sh's loads
+    # are checked against them when it records (lnk_artifact_record()), so a
+    # loader moving to a new URL fails the snapshot rather than drifting.
+    url = c(
+      paste0(bchamp, "/fwapg/fwa_stream_networks_sp/{wsg}.parquet"),
+      paste0(bchamp, "/fwapg/fwa_stream_networks_channel_width.csv.gz"),
+      paste0(bchamp, "/fwapg/fwa_stream_networks_discharge.csv.gz"),
+      "fwapg/load/fwa_stream_networks_order_parent.sql",
+      paste0(bchamp, "/fwapg/fwa_lakes_poly.parquet"),
+      paste0(bchamp, "/fwapg/fwa_wetlands_poly.parquet"),
+      paste0(bchamp, "/fwapg/fwa_rivers_poly.parquet"),
+      paste0(bchamp, "/fwapg/fwa_obstructions_sp.parquet"),
+      paste0(bchamp, "/bcfishobs/observations.parquet"),
+      "https://openmaps.gov.bc.ca/geo/pub/wfs?typeName=WHSE_FISH.PSCIS_ASSESSMENT_SVW",
+      paste0("https://cabd-web.azurewebsites.net/cabd-api/features/dams",
+             "?filter=province_territory_code:eq:bc",
+             "&filter=use_analysis:eq:true"),
+      paste0(bchamp, "/modelled_stream_crossings.gpkg.zip")
     ),
     stringsAsFactors = FALSE
   )

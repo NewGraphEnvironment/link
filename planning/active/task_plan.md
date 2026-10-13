@@ -42,12 +42,12 @@ Naming (adjust at approval if wanted): the exported `lnk_artifact_record()` and 
 `fresh.log_source_artifact`, as the issue proposed.
 
 ## Phase 1: Dictionary and DDL
-- [ ] `.lnk_input_primitives()` (`R/lnk_log.R:200`) gains `kind` and `url` columns.
+- [x] `.lnk_input_primitives()` (`R/lnk_log.R:200`) gains `kind` and `url` columns.
   - The URL template is per table: `{wsg}` for `fwa_stream_networks_sp`, `.csv.gz` for channel_width and discharge, and
     NA for `order_parent`.
   - PSCIS and CABD carry their API URLs.
   - This stays the single list (no second list of URLs).
-- [ ] `cols_source_artifact` named vector:
+- [x] `cols_source_artifact` named vector:
   - `host`, `table_name`, `url`, `kind`, `version_id`, `etag`, `last_modified`, `n_rows`, `loaded_at`, `recorded_at`,
     `recorded_by` and `notes`;
   - PK `(host, table_name, url)`;
@@ -55,23 +55,24 @@ Naming (adjust at approval if wanted): the exported `lnk_artifact_record()` and 
 
   `.lnk_source_artifact_create(conn)` builds the DDL from that vector. It creates the `fresh` schema if absent and uses
   `ADD COLUMN IF NOT EXISTS`, following the `.lnk_log_create_tables()` pattern.
-- [ ] Tests: the dictionary's shape (12 rows; every `object` row has a URL; `derived` has none), and that the DDL is
+- [x] Tests: the dictionary's shape (12 rows; every `object` row has a URL; `derived` has none), and that the DDL is
   idempotent.
 
 ## Phase 2: HEAD helper, record and probe
-- [ ] `.lnk_artifact_head(url)`, using `httr::HEAD` with a timeout. It returns `version_id`, `etag`, `last_modified` and
+- [x] `.lnk_artifact_head(url)`, using `httr::HEAD` with a timeout. It returns `version_id`, `etag`, `last_modified` and
   the HTTP status. **It never errors**: an unreachable URL or a non-200 gives NAs plus a status in `notes`.
-- [ ] `lnk_artifact_record(conn, artifacts, recorded_by, host)` upserts rows and computes `n_rows` from the DB.
+- [x] `lnk_artifact_record(conn, artifacts, recorded_by, host)` upserts rows and computes `n_rows` from the DB.
   - **A `probe` never overwrites a `loader` row** (`ON CONFLICT … DO UPDATE … WHERE recorded_by = 'probe'`), so weaker
     evidence cannot replace stronger.
   - A missing primitive is reported as missing, not skipped.
-- [ ] `lnk_artifact_probe(conn, tables)` HEADs the FWA `object` URLs and writes `probe` rows. It takes the per-WSG stream
+- [x] `lnk_artifact_probe(conn, tables)` HEADs the FWA `object` URLs and writes `probe` rows. It takes the per-WSG stream
   objects from the distinct `watershed_group_code`s **loaded in the DB**, not from a copy of `load.sh`'s dispatch.
   `order_parent` gets a `derived` row with NULL identity.
-- [ ] Tests:
+- [x] Tests:
   - mocked HEAD (200, 404, unreachable): an honest NULL row, no error;
   - the probe-does-not-clobber-loader rule;
   - a runnable `@examples` on both exports.
+- [x] Added `lnk_artifact_read()`: one row per expected artifact, with `status = missing` where none is recorded (acceptance: a missing row is reported, not skipped).
 
 ## Phase 3: `snapshot_bcfp.sh` writes `loader` rows
 - [ ] For the two object sources (observations parquet, modelled-crossings zip), HEAD first, then pin the fetch to

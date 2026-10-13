@@ -1,0 +1,249 @@
+# link#265 -- source-artifact identity for the DB primitives.
+
+# --- the dictionary ---------------------------------------------------------
+
+test_that("every primitive declares a kind and an artifact URL", {
+  p <- .lnk_input_primitives()
+  expect_true(all(c("kind", "url") %in% names(p)))
+  expect_true(all(p$kind %in% c("object", "api", "derived")))
+  expect_false(any(is.na(p$url) | !nzchar(p$url)))
+  # Every object is a fetch from the bchamp store; that is what makes a
+  # HEAD's version id meaningful.
+  obj <- p$url[p$kind == "object"]
+  expect_true(all(startsWith(obj, "https://nrs.objectstore.gov.bc.ca/bchamp/")))
+  # A derived table names the SQL that builds it, not a fetch.
+  expect_false(any(grepl("^https?://", p$url[p$kind == "derived"])))
+  expect_identical(p$table_name[p$kind == "derived"],
+                   "whse_basemapping.fwa_stream_networks_order_parent")
+  expect_setequal(p$table_name[p$kind == "api"],
+                  c("whse_fish.pscis_assessment_svw", "cabd.dams"))
+})
+
+test_that("the stream network expands to one artifact per watershed group", {
+  p <- .lnk_input_primitives()
+  e <- .lnk_artifact_expand(p, c("BULK", "MORR"))
+  s <- e$url[e$table_name == "whse_basemapping.fwa_stream_networks_sp"]
+  expect_identical(s, c(
+    "https://nrs.objectstore.gov.bc.ca/bchamp/fwapg/fwa_stream_networks_sp/BULK.parquet",
+    "https://nrs.objectstore.gov.bc.ca/bchamp/fwapg/fwa_stream_networks_sp/MORR.parquet"))
+  expect_identical(nrow(e), nrow(p) + 1L)
+  # No groups: the template has nothing to expand into, so it drops out
+  # rather than emitting a URL with a literal {wsg} in it.
+  e0 <- .lnk_artifact_expand(p)
+  expect_false(any(grepl("{wsg}", e0$url, fixed = TRUE)))
+  expect_identical(nrow(e0), nrow(p) - 1L)
+})
+
+test_that("the DDL keys on host, table and url, and constrains the labels", {
+  sql <- character()
+  local_mocked_bindings(.lnk_db_execute = function(conn, s) {
+    sql <<- c(sql, s)
+    invisible(conn)
+  })
+  .lnk_artifact_create(structure(list(), class = "DBIConnection"))
+  ddl <- grep("CREATE TABLE IF NOT EXISTS fresh.log_source_artifact", sql,
+              value = TRUE)
+  expect_length(ddl, 1L)
+  expect_match(ddl, "PRIMARY KEY (host, table_name, url)", fixed = TRUE)
+  expect_match(ddl, "recorded_by IN ('loader', 'probe')", fixed = TRUE)
+  expect_match(ddl, "kind IN ('object', 'api', 'derived')", fixed = TRUE)
+  # The align pass must not try to ADD a CHECK through ADD COLUMN.
+  alters <- grep("ADD COLUMN IF NOT EXISTS", sql, value = TRUE)
+  expect_length(alters, length(cols_source_artifact))
+  expect_false(any(grepl("CHECK|NOT NULL", alters)))
+})
+
+
+# --- HEAD -------------------------------------------------------------------
+
+fake_response <- function(status, headers = list()) {
+  structure(list(status_code = status, headers = headers),
+            class = "response")
+}
+
+test_that(".lnk_artifact_head reads the three identity handles", {
+  local_mocked_bindings(
+    HEAD = function(url, ...) fake_response(200L, list(
+      `x-amz-version-id` = "1776306159523",
+      etag = "\"da5ba121842036c6f494a1eef0ac41f4-18\"",
+      `last-modified` = "Thu, 16 Apr 2026 02:22:39 GMT")),
+    status_code = function(r) r$status_code,
+    headers = function(r) r$headers,
+    .package = "httr")
+  h <- .lnk_artifact_head("https://example.invalid/x.parquet")
+  expect_identical(h$version_id, "1776306159523")
+  expect_identical(h$etag, "da5ba121842036c6f494a1eef0ac41f4-18")
+  expect_equal(h$last_modified,
+               as.POSIXct("2026-04-16 02:22:39", tz = "UTC"))
+  expect_identical(h$status, 200L)
+  expect_true(is.na(h$notes))
+})
+
+test_that(".lnk_artifact_head records an honest NULL on 404, never errors", {
+  local_mocked_bindings(
+    HEAD = function(url, ...) fake_response(404L),
+    status_code = function(r) r$status_code,
+    .package = "httr")
+  h <- .lnk_artifact_head("https://example.invalid/missing.parquet")
+  expect_true(is.na(h$version_id))
+  expect_true(is.na(h$etag))
+  expect_identical(h$status, 404L)
+  expect_match(h$notes, "HTTP 404")
+})
+
+test_that(".lnk_artifact_head records an honest NULL when unreachable", {
+  local_mocked_bindings(
+    HEAD = function(url, ...) stop("Could not resolve host: example.invalid"),
+    .package = "httr")
+  expect_no_error(h <- .lnk_artifact_head("https://example.invalid/x"))
+  expect_true(is.na(h$version_id))
+  expect_true(is.na(h$status))
+  expect_match(h$notes, "Could not resolve host")
+})
+
+
+# --- record -----------------------------------------------------------------
+
+capture_record <- function(expr, exists = TRUE) {
+  sql <- character()
+  local_mocked_bindings(
+    .lnk_db_execute = function(conn, s) {
+      sql <<- c(sql, s)
+      invisible(conn)
+    },
+    .lnk_artifact_exists = function(conn, tables) rep(exists, length(tables)),
+    .lnk_artifact_count = function(conn, a) {
+      if (exists) rep(32541, nrow(a)) else rep(NA_real_, nrow(a))
+    },
+    .env = parent.frame()
+  )
+  testthat::with_mocked_bindings(
+    dbQuoteLiteral = function(conn, x, ...) {
+      paste0("'", gsub("'", "''", as.character(x)), "'")
+    },
+    .package = "DBI",
+    force(expr))
+  sql
+}
+
+prim_url <- function(tbl) {
+  p <- .lnk_input_primitives()
+  p$url[p$table_name == tbl]
+}
+
+test_that("a probe never overwrites a loader row", {
+  fc <- structure(list(), class = "DBIConnection")
+  sql <- capture_record(lnk_artifact_record(fc, data.frame(
+    table_name = "whse_basemapping.fwa_obstructions_sp",
+    url = prim_url("whse_basemapping.fwa_obstructions_sp"),
+    version_id = "1776306166790"), recorded_by = "probe", host = "m1"))
+  ins <- grep("INSERT INTO fresh.log_source_artifact", sql, value = TRUE)
+  expect_length(ins, 1L)
+  expect_match(ins, "ON CONFLICT (host, table_name, url) DO UPDATE",
+               fixed = TRUE)
+  expect_match(ins, "WHERE log_source_artifact.recorded_by = 'probe'",
+               fixed = TRUE)
+  expect_match(ins, "OR EXCLUDED.recorded_by = 'loader'", fixed = TRUE)
+  expect_match(ins, "'probe'", fixed = TRUE)
+  expect_match(ins, "'1776306166790'", fixed = TRUE)
+  # n_rows is a bigint literal, never scientific notation.
+  expect_match(ins, "'32541'::bigint", fixed = TRUE)
+})
+
+test_that("the probe-vs-loader rule holds in a real database", {
+  conn <- skip_if_no_db()
+  host <- paste0("test265-", Sys.getpid())
+  withr::defer(DBI::dbExecute(conn, sprintf(
+    "DELETE FROM fresh.log_source_artifact WHERE host = %s",
+    DBI::dbQuoteLiteral(conn, host))))
+  tbl <- "whse_basemapping.fwa_obstructions_sp"
+  one <- function(v) data.frame(table_name = tbl, url = prim_url(tbl),
+                                version_id = v)
+  get <- function() DBI::dbGetQuery(conn, sprintf(
+    "SELECT version_id, recorded_by FROM fresh.log_source_artifact
+      WHERE host = %s", DBI::dbQuoteLiteral(conn, host)))
+
+  lnk_artifact_record(conn, one("L1"), "loader", host = host)
+  lnk_artifact_record(conn, one("P1"), "probe", host = host)
+  expect_identical(get()$version_id, "L1")       # probe did not clobber
+  lnk_artifact_record(conn, one("L2"), "loader", host = host)
+  expect_identical(get()$version_id, "L2")       # loader replaces loader
+  DBI::dbExecute(conn, sprintf(
+    "UPDATE fresh.log_source_artifact SET recorded_by = 'probe'
+      WHERE host = %s", DBI::dbQuoteLiteral(conn, host)))
+  lnk_artifact_record(conn, one("P2"), "probe", host = host)
+  expect_identical(get()$version_id, "P2")       # probe replaces probe
+})
+
+test_that("a URL the dictionary does not know stops the record", {
+  fc <- structure(list(), class = "DBIConnection")
+  expect_error(capture_record(lnk_artifact_record(fc, data.frame(
+    table_name = "cabd.dams", url = "https://example.invalid/dams.geojson"),
+    host = "m1")), "does not match the primitives dictionary")
+  expect_error(capture_record(lnk_artifact_record(fc, data.frame(
+    table_name = "whse_basemapping.fwa_obstacles_sp", url = "x"),
+    host = "m1")), "not a primitive")
+  # The {wsg} slot takes a group code and nothing else.
+  sp <- prim_url("whse_basemapping.fwa_stream_networks_sp")
+  expect_no_error(capture_record(lnk_artifact_record(fc, data.frame(
+    table_name = "whse_basemapping.fwa_stream_networks_sp",
+    url = sub("{wsg}", "BULK", sp, fixed = TRUE)), host = "m1")))
+  expect_error(capture_record(lnk_artifact_record(fc, data.frame(
+    table_name = "whse_basemapping.fwa_stream_networks_sp",
+    url = sub("{wsg}", "../x", sp, fixed = TRUE)), host = "m1")),
+    "does not match")
+})
+
+test_that("an absent primitive is recorded with NULL rows and a note", {
+  fc <- structure(list(), class = "DBIConnection")
+  sql <- capture_record(lnk_artifact_record(fc, data.frame(
+    table_name = "cabd.dams", url = prim_url("cabd.dams")), host = "m1"),
+    exists = FALSE)
+  ins <- grep("INSERT INTO", sql, value = TRUE)
+  expect_match(ins, "NULL::bigint", fixed = TRUE)
+  expect_match(ins, "table absent at record time", fixed = TRUE)
+})
+
+
+# --- probe ------------------------------------------------------------------
+
+test_that("lnk_artifact_probe HEADs objects only and survives a dead URL", {
+  heads <- character()
+  recorded <- NULL
+  local_mocked_bindings(
+    .lnk_artifact_wsgs = function(conn) c("BULK", "MORR"),
+    .lnk_artifact_head = function(url, ...) {
+      heads <<- c(heads, url)
+      if (grepl("MORR", url)) {
+        data.frame(version_id = NA_character_, etag = NA_character_,
+                   last_modified = as.POSIXct(NA, tz = "UTC"),
+                   status = NA_integer_, notes = "HEAD failed: timeout",
+                   stringsAsFactors = FALSE)
+      } else {
+        data.frame(version_id = "v1", etag = "e1",
+                   last_modified = as.POSIXct("2026-04-16", tz = "UTC"),
+                   status = 200L, notes = NA_character_,
+                   stringsAsFactors = FALSE)
+      }
+    },
+    lnk_artifact_record = function(conn, artifacts, recorded_by, host) {
+      recorded <<- list(a = artifacts, by = recorded_by)
+      invisible(artifacts)
+    })
+  expect_message(a <- lnk_artifact_probe(structure(list(),
+                                                   class = "DBIConnection")),
+                 "1 without a version id")
+  expect_identical(recorded$by, "probe")
+  # 8 FWA primitives, the stream network expanded to 2 groups.
+  expect_identical(nrow(a), 9L)
+  # The derived table is recorded but never HEADed.
+  expect_false(any(grepl("order_parent", heads)))
+  op <- a[a$table_name == "whse_basemapping.fwa_stream_networks_order_parent", ]
+  expect_identical(op$kind, "derived")
+  expect_true(is.na(op$version_id))
+  # Only fwapg primitives by default; the snapshot four are the loader's.
+  expect_false(any(a$table_name %in% c("cabd.dams", "bcfishobs.observations")))
+  dead <- a[grepl("MORR", a$url), ]
+  expect_true(is.na(dead$version_id))
+  expect_match(dead$notes, "timeout")
+})
