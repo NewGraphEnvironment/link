@@ -503,10 +503,60 @@ EXCEPT SELECT watershed_group_code FROM <persist>.log;
 - **`bcdata.log` covers only `bc2pg` downloads — not FWA.** The stream
   network is loaded by fwapg’s own `load.sh` from bchamp objectstore
   parquet, and `pg_stat_user_tables` for it is empty (bulk-restored,
-  never analyzed). Its only real provenance is `fwapg_sha`, resolved
-  from `FWAPG_GIT_SHA` or a `.git` walk of `FWAPG_DIR`. Teaching
-  `snapshot_bcfp.sh` to stamp load events is the open follow-up that
-  fills `log_input.source_at`.
+  never analyzed).
+- **`fwapg_sha` is not FWA provenance.** It is the HEAD of the fwapg
+  checkout **when the model runs** (on cyphers, the dispatcher’s,
+  exported as `FWAPG_GIT_SHA`), not the commit that ran `load.sh`, and
+  it moves on any fwapg commit. To tell whether two runs read the same
+  FWA data, compare `log_input`’s row counts and sizes, and
+  `artifact_version_id` / `artifact_etag` beside them (below; for FWA
+  these are probe rows, which are evidence and not proof).
+- **Source-artifact identity (link#265).** `provenance.source_artifact`
+  holds, per host and primitive artifact, the object store’s version id,
+  ETag and `Last-Modified`, and `recorded_by` says how strong the record
+  is:
+  - `loader`: written by `snapshot_bcfp.sh`, which HEADs each object and
+    then reads **that version** (`?versionId=`), so the recorded version
+    is the loaded one by construction. A snapshot that cannot record
+    fails.
+  - `probe`: a HEAD after the fact
+    ([`lnk_artifact_probe()`](https://newgraphenvironment.github.io/link/reference/lnk_artifact_probe.md),
+    run soft at the end of every snapshot), used for the FWA tables
+    because `load.sh` records nothing (loader rows for those are
+    link#270). It says “current at the first probe”, never “what was
+    loaded”. It never overwrites a loader row. It keeps the earliest
+    probe while the row count is unchanged, and it is **not a baseline**
+    for change detection (link#273 must read loader rows only). **So an
+    equal FWA `artifact_version_id` on two runs is evidence, not proof,
+    that they read the same data.** A reload that keeps the row count is
+    invisible to it. Check `row_count` / `size_bytes` beside it until
+    \#270 writes loader rows.
+  - `kind` is `object` (versioned; a NULL identity is a gap), `api`
+    (PSCIS, CABD: no version handle, NULL is permanent) or `derived`
+    (`order_parent`).
+
+  The bucket is versioned but cannot be listed (`?versions` is
+  AccessDenied), so an id not recorded at load time is gone for good. At
+  run open `.lnk_log_inputs()` copies this host’s rows into
+  `log_input.artifact_*` (the stream network row names the run’s own
+  `<WSG>.parquet`), which is what carries the identity home from a
+  cypher before it is burned.
+  [`lnk_artifact_read()`](https://newgraphenvironment.github.io/link/reference/lnk_artifact_read.md)
+  lists every expected artifact, `missing` where nothing is recorded and
+  `table_absent` where the record outlived its table (a `fresh` dropped
+  by `state_clean.sh`). Only `snapshot_bcfp.sh --force` clears it:
+  without `--force` a current ledger row exits before `--clear`.
+  `log_input` never copies identity for a table the run cannot see.
+  - **Restoring a schema alone (e.g. `schema_consolidate.R`’s
+    `pg_dump --schema=fresh` backup) restores the table but not its
+    record.** The record then names the later load. Re-run
+    `snapshot_bcfp.sh --force` after any such restore.
+  - **Its own schema, `provenance`, because it describes the database,
+    not a run.** Run logs live beside their results (`<schema>.log*`,
+    one set per persist schema). This table is what is loaded here, read
+    by runs into every schema, and `state_clean.sh` drops `fresh` but
+    not `provenance`, so loader rows that cannot be re-created
+    (link#270’s FWA rows) survive it.
 - `log` and `log_input` carry `watershed_group_code` so
   `schema_consolidate.R` auto-discovers them; `log_parameters_fresh` /
   `log_parameters_habitat_thresholds` / `log_dimensions` deliberately do
@@ -1097,13 +1147,34 @@ only with a written justification — the same position
 remediation, not a skip: it re-runs the cyphers’ install stage (which
 re-runs the fresh assertion) and re-checks exactly once.
 
+### The vintage gate reads load stamps (link#265, absorbing \#247)
+
+[`lnk_preflight_vintage()`](https://newgraphenvironment.github.io/link/reference/lnk_preflight_vintage.md)
+(via `data-raw/host_vintage.R`) judges each snapshot primitive on its
+**load stamp**: the newest `loader` row’s `loaded_at` in
+`provenance.source_artifact` for this host (`.lnk_host()`, so
+`LNK_HOST_ALIAS` if set). A table with no stamp **fails** as
+`unstamped`, even when its statistics say it is fresh. Statistics are an
+inference that can read too-new, and a host that never recorded a load
+should say so on its first run. The statistics age is printed beside an
+unstamped table as context. The message says which source judged each
+table.
+
+**Rollout.** Every host is unstamped until it snapshots with this code.
+The cyphers snapshot during prep. The dispatcher only does under
+`--refresh-primitives`, so the first dispatcher preflight after this
+lands fails until
+`bash data-raw/snapshot_bcfp.sh --with-bcfp-views --force` has run.
+`--force` matters: the ledger skip guard (link#276) exits before
+anything is loaded or recorded.
+
 ### Three things that look like checks and are not
 
 | looks like | actually |
 |----|----|
 | a provisioning tool’s `plan` proves its credential | against a zero-resource workspace it plans without contacting the provider at all. The orchestrator and the provisioner also use *separate* credentials, which expire independently. Probe each against the provider’s account endpoint. Details are infrastructure — see rtj |
 | comparing `link_sha` across hosts | it is a real SHA on the `load_all` dispatcher and `NA` on every pak-installed cypher, so it can only ever fail. Key on **`repo_sha`**, read on each host from the checkout it installed from. `fresh_sha` was excluded alongside it on the grounds that it was `NA` everywhere and could only ever pass — that half was measured false on 2026-09-01 and the field is a real key since link#264 |
-| `max(last_analyze)` for vintage | NULL on all ten primitives, measured. Empty in bash reads as “nothing to see”. Use `GREATEST(last_analyze, last_autoanalyze)` |
+| `max(last_analyze)` for vintage | NULL on all ten primitives, measured. Empty in bash reads as “nothing to see”. Use `GREATEST(last_analyze, last_autoanalyze)`, and since link#265 only as context beside the load stamp |
 
 ### The prep sentinel
 

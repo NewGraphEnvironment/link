@@ -137,6 +137,15 @@ Redistributed bcfishpass override data carries its own license — see
 - [`lnk_aggregate()`](https://newgraphenvironment.github.io/link/reference/lnk_aggregate.md)
   : Compute upstream habitat per crossing
 
+- [`lnk_artifact_probe()`](https://newgraphenvironment.github.io/link/reference/lnk_artifact_probe.md)
+  : Probe the FWA primitives' artifacts and record what is current now
+
+- [`lnk_artifact_read()`](https://newgraphenvironment.github.io/link/reference/lnk_artifact_read.md)
+  : Read the recorded source artifacts, one row per expected artifact
+
+- [`lnk_artifact_record()`](https://newgraphenvironment.github.io/link/reference/lnk_artifact_record.md)
+  : Record source-artifact identity for DB primitives
+
 - [`lnk_barrier_overrides()`](https://newgraphenvironment.github.io/link/reference/lnk_barrier_overrides.md)
   : Build barrier override list from evidence sources
 

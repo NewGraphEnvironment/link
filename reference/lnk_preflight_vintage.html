@@ -66,6 +66,7 @@ set, and said nothing about it anywhere (link#246).</p>
 <span>  tables <span class="op">=</span> <span class="fu">.lnk_vintage_primitives</span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  now <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.time</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  vintage <span class="op">=</span> <span class="fu">.lnk_vintage_read</span><span class="op">(</span><span class="va">conn</span>, <span class="va">tables</span><span class="op">)</span>,</span>
+<span>  stamp <span class="op">=</span> <span class="fu">.lnk_vintage_stamp</span><span class="op">(</span><span class="va">conn</span>, <span class="va">tables</span><span class="op">)</span>,</span>
 <span>  quiet <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -99,6 +100,13 @@ test, or to judge a stamp collected on another host. Rows in a frame
 without <code>table_exists</code> are taken to exist.</p></dd>
 
 
+<dt id="arg-stamp">stamp<a class="anchor" aria-label="anchor" href="#arg-stamp"></a></dt>
+<dd><p>A data frame with <code>table_name</code> and <code>loaded_at</code>: this host's
+load stamps. Defaults to reading <code>conn</code>; <code>NULL</code> (the default when <code>conn</code>
+is <code>NULL</code>) means "not consulted" and leaves the statistics to decide.
+A data frame with no row for a table makes that table <code>unstamped</code>.</p></dd>
+
+
 <dt id="arg-quiet">quiet<a class="anchor" aria-label="anchor" href="#arg-quiet"></a></dt>
 <dd><p>Suppress the human-readable report.</p></dd>
 
@@ -107,7 +115,8 @@ without <code>table_exists</code> are taken to exist.</p></dd>
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>Invisibly, a list with <code>ok</code>, <code>vintage</code>, <code>stale</code>, <code>absent</code>,
 <code>unknown</code>, <code>missing</code> (the union of the last two, kept for callers that
-only care that something was wrong), <code>oldest_days</code> and <code>message</code>.</p>
+only care that something was wrong), <code>unstamped</code>, <code>judged_by</code> (per
+table: <code>"stamp"</code>, <code>"pg_stat"</code> or <code>"none"</code>), <code>oldest_days</code> and <code>message</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -122,6 +131,20 @@ Both fail, in the same direction as a stale one — a query returning
 nothing must never read as "nothing is stale" — but they send an operator
 to different places. Conflating them cost a pilot run, which reported
 <code>never loaded / absent</code> for a table that was present and healthy.</p>
+<p><strong>The load stamp is the primary source</strong> (link#265, absorbing #247).
+<code>snapshot_bcfp.sh</code> records each primitive it loads in
+<code>provenance.source_artifact</code> (<code>recorded_by = 'loader'</code>, with <code>loaded_at</code>).
+When the gate has a connection it judges each table on that stamp, and a
+table with <strong>no stamp for this host fails</strong> (<code>unstamped</code>) — even when the
+statistics below say it is fresh. That is #247's point: statistics are an
+inference that can read too-new (autoanalyze fires on ordinary writes), and
+a host that never recorded a load should say so on its first run rather
+than pass on an inference. The statistics age is still shown beside an
+unstamped table, as context. A stamp never rescues a table that does not
+exist. <code>probe</code> rows are not stamps: a probe did not load anything.</p>
+<p>Without a connection (a <code>vintage</code> frame judged offline) there is no stamp
+to read, the statistics decide, and the message says the stamp was not
+consulted.</p>
 <p>Two statistics quirks make this fiddlier than it looks. <code>last_analyze</code>
 alone is unusable: measured across all ten primitives it is NULL on every
 one and only <code>last_autoanalyze</code> is populated, so the query takes

@@ -17,6 +17,7 @@ lnk_preflight_vintage(
   tables = .lnk_vintage_primitives(),
   now = Sys.time(),
   vintage = .lnk_vintage_read(conn, tables),
+  stamp = .lnk_vintage_stamp(conn, tables),
   quiet = FALSE
 )
 ```
@@ -50,6 +51,13 @@ lnk_preflight_vintage(
   to judge a stamp collected on another host. Rows in a frame without
   `table_exists` are taken to exist.
 
+- stamp:
+
+  A data frame with `table_name` and `loaded_at`: this host's load
+  stamps. Defaults to reading `conn`; `NULL` (the default when `conn` is
+  `NULL`) means "not consulted" and leaves the statistics to decide. A
+  data frame with no row for a table makes that table `unstamped`.
+
 - quiet:
 
   Suppress the human-readable report.
@@ -58,7 +66,8 @@ lnk_preflight_vintage(
 
 Invisibly, a list with `ok`, `vintage`, `stale`, `absent`, `unknown`,
 `missing` (the union of the last two, kept for callers that only care
-that something was wrong), `oldest_days` and `message`.
+that something was wrong), `unstamped`, `judged_by` (per table:
+`"stamp"`, `"pg_stat"` or `"none"`), `oldest_days` and `message`.
 
 ## Details
 
@@ -75,6 +84,23 @@ nothing must never read as "nothing is stale" — but they send an
 operator to different places. Conflating them cost a pilot run, which
 reported `never loaded / absent` for a table that was present and
 healthy.
+
+**The load stamp is the primary source** (link#265, absorbing \#247).
+`snapshot_bcfp.sh` records each primitive it loads in
+`provenance.source_artifact` (`recorded_by = 'loader'`, with
+`loaded_at`). When the gate has a connection it judges each table on
+that stamp, and a table with **no stamp for this host fails**
+(`unstamped`) — even when the statistics below say it is fresh. That is
+\#247's point: statistics are an inference that can read too-new
+(autoanalyze fires on ordinary writes), and a host that never recorded a
+load should say so on its first run rather than pass on an inference.
+The statistics age is still shown beside an unstamped table, as context.
+A stamp never rescues a table that does not exist. `probe` rows are not
+stamps: a probe did not load anything.
+
+Without a connection (a `vintage` frame judged offline) there is no
+stamp to read, the statistics decide, and the message says the stamp was
+not consulted.
 
 Two statistics quirks make this fiddlier than it looks. `last_analyze`
 alone is unusable: measured across all ten primitives it is NULL on
