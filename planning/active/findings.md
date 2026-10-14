@@ -113,3 +113,15 @@ Relates to #305, #307, #203, #226, NewGraphEnvironment/wet#7, NewGraphEnvironmen
 
 | Error | Resolution |
 |-------|------------|
+
+## Logged thresholds coverage (2026-10-14)
+
+| schema | config_hash | groups | thresholds rows | parameters_fresh rows |
+|---|---|---|---|---|
+| fresh_default | 3cfde7bf… (KOTL, SLOC) | 2 | 0 | 13 |
+| fresh_default | 44e452e9… (LARL) | 1 | 0 | 13 |
+| fresh_default | 7e9dffa4… (DUNC) | 1 | 11 | 13 |
+| fresh_default | bf4fccd1… (PINE) | 1 | 0 | 13 |
+| fresh | 19e3a056… (39 groups) | 39 | table absent | — |
+
+Today's `default` bundle hashes to `7e9dffa4…`, which is DUNC's, so DUNC's bundle files can be published under `config/<hash>/`; no other logged build's can.

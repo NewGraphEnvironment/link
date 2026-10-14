@@ -16,16 +16,16 @@
 
 ## Phase 1: Column contract and the per-part row query
 
-- [ ] `inst/extdata/schemas/habitat_fwa_v1_segment.yaml` in crate's shape, with columns as the issue lists them. Ratios are defined as follows:
+- [x] `inst/extdata/schemas/habitat_fwa_v1_segment.yaml` in crate's shape, with columns as the issue lists them. Ratios are defined as follows:
   - `spawning_ratio_{cw,mad,gradient}` and `rearing_ratio_{cw,mad,gradient}`: size ÷ the stage's `*_min`, and gradient ÷ `*_gradient_max`.
   - `accessible_ratio_gradient`: gradient ÷ `access_gradient_max`.
   - No ratios for lake or wetland rearing (area-only).
   - A ratio is NULL when its threshold is NA or 0.
-- [ ] `.lnk_export_rows(conn, schema, wsg, sp, log_row)` (new `R/lnk_scenario_export.R`). It runs one SQL query:
+- [x] `.lnk_export_rows(conn, schema, wsg, sp, log_row)` (new `R/lnk_scenario_export.R`). It runs one SQL query:
   - `streams` LEFT JOIN `streams_habitat_<sp>` on the full key `(id_segment, watershed_group_code)`; an absent species gives FALSE.
   - LEFT JOIN `.lnk_discharge_sql()` on `linear_feature_id`.
   - Thresholds from `<schema>.log_parameters_habitat_thresholds` and `log_parameters_fresh` at the log row's `config_hash`, which are the values the run used, cast from text.
-- [ ] Tests (`skip_if_no_db()`, a throwaway fixture schema; pattern from `tests/testthat/setup.R`):
+- [x] Tests (`skip_if_no_db()`, a throwaway fixture schema; pattern from `tests/testthat/setup.R`):
   - two groups sharing an `id_segment` do not fan out;
   - an absent species gives FALSE in every row;
   - the ratio arithmetic is correct, and a NULL threshold gives a NULL ratio;

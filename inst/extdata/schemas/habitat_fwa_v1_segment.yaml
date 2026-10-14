@@ -1,0 +1,132 @@
+file: habitat/fwa/v1/segment
+description: >
+  Habitat flags per link stream segment, for one link config and one species,
+  published by lnk_scenario_export() (NewGraphEnvironment/link#308) as
+  Hive-partitioned parquet under habitat/fwa/v1/segment/. The dataset ID
+  follows wet's <variable>/<network>/<version>/<unit>; the fwapg table
+  (habitat.fwa_v1_segment) derives from it.
+
+  One row per segment, config and species. The path carries two Hive keys
+  that are not columns in the files: `config` (the link config name, as
+  logged in <schema>.log.config_name) and `species` (species code). A reader
+  that enables Hive partitioning gets them back as columns.
+
+  A segment is an FWA line split at link's break points, which differ by
+  config, so the key is the FWA position (blue_line_key,
+  downstream_route_measure, upstream_route_measure), never linear_feature_id
+  or link's per-group id_segment. Cut a segment's line from the FWA blue line
+  at the two measures.
+
+  Each part file holds one FWA top-level drainage (the first field of the
+  group's outlet fwa_watershed_code), sorted by watershed_group_code,
+  blue_line_key and downstream_route_measure.
+
+  Every segment of an exported group has a row for every species the config
+  models there; a species with no habitat in the group reads FALSE. The
+  manifest's run rows list the species each group modelled.
+
+canonical:
+  shape: long
+  cols:
+    - name: blue_line_key
+      type: integer
+      required: true
+      notes: FWA blue line (key).
+    - name: downstream_route_measure
+      type: double
+      required: true
+      notes: Segment start along the blue line, m (key).
+    - name: upstream_route_measure
+      type: double
+      required: true
+      notes: Segment end along the blue line, m (key).
+    - name: linear_feature_id
+      type: integer
+      required: true
+      notes: The FWA line the segment was cut from. Not unique.
+    - name: watershed_group_code
+      type: string
+      required: true
+      notes: FWA watershed group, four letters (e.g. BULK).
+    - name: stream_order
+      type: integer
+      required: true
+      notes: FWA stream order.
+    - name: edge_type
+      type: integer
+      required: true
+      notes: FWA edge type (1000 stream, 1250 river main flow, 1450 lake connector, ...).
+    - name: length_metre
+      type: double
+      required: true
+      notes: Segment length, m.
+    - name: gradient
+      type: double
+      required: true
+      notes: Segment gradient, rise over run (0.05 is 5 %).
+    - name: channel_width
+      type: double
+      required: true
+      notes: Channel width, m, as the run read it. NA where none.
+    - name: channel_width_source
+      type: string
+      required: true
+      notes: Where channel_width came from (FIELD_MEASUREMENT, MODELLED, ...).
+    - name: mad_m3s
+      type: double
+      required: true
+      notes: >
+        Mean annual discharge, m3/s, from the discharge the run classified on,
+        with the run's logged fill applied. The manifest names the table.
+    - name: mad_m3s_source
+      type: string
+      required: true
+      notes: modelled, fill_upstream, fill_downstream, fill_tributary_max, or NA.
+    - name: accessible
+      type: logical
+      required: true
+      notes: Accessible to the species.
+    - name: spawning
+      type: logical
+      required: true
+      notes: Spawning habitat.
+    - name: rearing
+      type: logical
+      required: true
+      notes: Rearing habitat (lake connection lines included, as the flag carries them).
+    - name: lake_rearing
+      type: logical
+      required: true
+      notes: Inside a lake rearing polygon.
+    - name: wetland_rearing
+      type: logical
+      required: true
+      notes: Inside a wetland rearing polygon.
+    - name: accessible_ratio_gradient
+      type: double
+      required: true
+      notes: gradient / access_gradient_max. Above 1 is steeper than access allows.
+    - name: spawning_ratio_cw
+      type: double
+      required: true
+      notes: channel_width / spawn_channel_width_min. NA where either is NA or the minimum is 0.
+    - name: spawning_ratio_mad
+      type: double
+      required: true
+      notes: mad_m3s / spawn_mad_min. NA where either is NA or the minimum is 0.
+    - name: spawning_ratio_gradient
+      type: double
+      required: true
+      notes: gradient / spawn_gradient_max.
+    - name: rearing_ratio_cw
+      type: double
+      required: true
+      notes: channel_width / rear_channel_width_min.
+    - name: rearing_ratio_mad
+      type: double
+      required: true
+      notes: mad_m3s / rear_mad_min.
+    - name: rearing_ratio_gradient
+      type: double
+      required: true
+      notes: gradient / rear_gradient_max.
