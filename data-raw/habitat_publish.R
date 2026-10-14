@@ -140,7 +140,11 @@ if (identical(Sys.getenv("LNK_PUBLISH"), "1")) {
   # parts deleted. (b) Each write-once key is absent or already these bytes.
   live <- paste(prefix, "manifest.json", sep = "/")
   if (!is.na(etag(live))) {
-    live_cfg <- attr(lnk_catalog(paste0(target, "/manifest.json")), "configs")
+    live_cat <- lnk_catalog(paste0(target, "/manifest.json"))
+    live_cfg <- attr(live_cat, "configs")
+    live_parts <- lapply(seq_len(nrow(live_cat)), function(i) {
+      as.list(live_cat[i, c("config", "species", "wsgs")])
+    })
     local_at <- vapply(m$configs, function(x) x$exported %||% "",
                        character(1))
     names(local_at) <- vapply(m$configs, function(x) x$config, character(1))
@@ -149,6 +153,17 @@ if (identical(Sys.getenv("LNK_PUBLISH"), "1")) {
         stop("the published tree holds config ", x$config, " and this root ",
              "does not; build into a root seeded from the bucket ",
              "(aws s3 sync) so the publish keeps it", call. = FALSE)
+      }
+      # the root must publish every group:species the bucket does for it,
+      # unless the operator means to remove some (LNK_PUBLISH_NARROW=1)
+      lost <- setdiff(.lnk_manifest_pairs(live_parts, x$config),
+                      .lnk_manifest_pairs(m$parts, x$config))
+      if (length(lost) > 0L && !identical(Sys.getenv("LNK_PUBLISH_NARROW"),
+                                          "1")) {
+        stop("config ", x$config, ": this root drops ", length(lost),
+             " published group:species pair(s) (",
+             paste(utils::head(lost, 5L), collapse = ", "),
+             "). Set LNK_PUBLISH_NARROW=1 to remove them.", call. = FALSE)
       }
       # ISO 8601 UTC strings of one format compare as text
       if (local_at[[x$config]] < (x$exported %||% "")) {

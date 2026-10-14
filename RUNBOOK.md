@@ -726,6 +726,14 @@ and deletes only under `segment/`. A root rebuilt on another host re-serialises
 provenance to other bytes, so seed it from the bucket (`aws s3 sync`) before
 building; PUBLISH refuses rather than overwrite.
 
+**An export replaces each config it names, wholesale**, so one that would drop
+a group or species the root holds for that config stops unless
+`narrow = TRUE`; PUBLISH has the same check against the live manifest
+(`LNK_PUBLISH_NARROW=1` to remove pairs on purpose). Named `wsgs` and
+`wsgs = NULL` both take each group from whichever of the config's schemas holds
+a finished build of it, and stop only when a named group, or the config as a
+whole, has none.
+
 `provenance.source_artifact` is upserted as primitives reload, so the export
 stores it as a content-addressed snapshot of this database's record at export
 time; what a run actually read is its `log_input.artifact_*` (#265).

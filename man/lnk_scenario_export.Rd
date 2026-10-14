@@ -10,7 +10,8 @@ lnk_scenario_export(
   root,
   wsgs = NULL,
   species = NULL,
-  shared_segmentation = FALSE
+  shared_segmentation = FALSE,
+  narrow = FALSE
 )
 }
 \arguments{
@@ -32,6 +33,10 @@ modelled in the exported groups.}
 \item{shared_segmentation}{If \code{TRUE}, stop unless every schema exported
 holds the same segmentation in the groups they share. Set it when the
 configs are variants meant to be compared segment for segment.}
+
+\item{narrow}{An export replaces each config it names. By default it stops
+if that would drop a group or species the root already holds for the
+config; \code{TRUE} allows the removal.}
 }
 \value{
 The manifest path, invisibly.

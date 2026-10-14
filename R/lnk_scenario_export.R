@@ -715,6 +715,9 @@
 #' @param shared_segmentation If `TRUE`, stop unless every schema exported
 #'   holds the same segmentation in the groups they share. Set it when the
 #'   configs are variants meant to be compared segment for segment.
+#' @param narrow An export replaces each config it names. By default it stops
+#'   if that would drop a group or species the root already holds for the
+#'   config; `TRUE` allows the removal.
 #' @return The manifest path, invisibly.
 #' @family export
 #' @export
@@ -729,7 +732,8 @@
 #' cat[, c("config", "species", "code", "rows", "md5")]
 #' }
 lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
-                                species = NULL, shared_segmentation = FALSE) {
+                                species = NULL, shared_segmentation = FALSE,
+                                narrow = FALSE) {
   stopifnot(
     inherits(conn, "DBIConnection"),
     is.character(configs), length(configs) > 0L,
@@ -737,7 +741,8 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
     is.character(root), length(root) == 1L, nzchar(root),
     is.null(wsgs) || is.character(wsgs),
     is.null(species) || is.character(species),
-    is.logical(shared_segmentation), length(shared_segmentation) == 1L
+    is.logical(shared_segmentation), length(shared_segmentation) == 1L,
+    is.logical(narrow), length(narrow) == 1L
   )
   for (s in configs) .lnk_validate_identifier(s, "schema")
   if (!is.null(species)) species <- toupper(species)
@@ -770,7 +775,7 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
     w <- if (is.null(wsgs)) NULL else intersect(wsgs, held[[i]])
     if (!is.null(wsgs) && length(w) == 0L) return(NULL)
     r <- .lnk_export_runs(conn, configs[[i]], names(configs)[i], w,
-                          strict = is.null(wsgs))
+                          strict = FALSE)
     r$schema_export <- rep(configs[[i]], nrow(r))
     r$config_export <- rep(names(configs)[i], nrow(r))
     r
@@ -792,6 +797,29 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
       }
     }
   }
+  # a config must export something, from one schema or another
+  for (cf in unique(names(configs))) {
+    n <- sum(vapply(runs[names(configs) == cf], function(r) {
+      if (is.null(r)) 0L else nrow(r)
+    }, integer(1)))
+    if (n == 0L) {
+      stop("config '", cf, "': no group has a finished build of it in ",
+           paste(configs[names(configs) == cf], collapse = ", "),
+           call. = FALSE)
+    }
+  }
+  # every schema's reasons, kept before schemas that exported nothing drop out
+  skipped_all <- lapply(stats::setNames(nm = unique(names(configs))),
+                        function(cf) {
+    idx <- which(names(configs) == cf)
+    do.call(rbind, lapply(idx, function(i) {
+      sk <- attr(runs[[i]], "skipped")
+      if (length(sk) == 0L) return(NULL)
+      data.frame(wsg = names(sk), schema = configs[[i]],
+                 reason = unlist(sk, use.names = FALSE),
+                 stringsAsFactors = FALSE)
+    }))
+  })
   keep_schema <- vapply(runs, function(r) !is.null(r) && nrow(r) > 0L,
                         logical(1))
   configs <- configs[keep_schema]
@@ -839,10 +867,7 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
     r_set <- runs[names(configs) == cf]
     r_cf <- do.call(rbind, r_set)
     rc_cf <- do.call(rbind, lapply(r_set, attr, "recompute"))
-    skipped <- unlist(lapply(r_set, attr, "skipped"))
-    # always a JSON object, `{}` when nothing was skipped
-    skipped <- if (length(skipped) > 0L) as.list(skipped) else
-      structure(list(), names = character(0))
+    skipped <- .lnk_export_skipped(skipped_all[[cf]], r_cf$watershed_group_code)
     sp_wsg <- lapply(r_cf$species, .lnk_pg_array)
     if (!is.null(species)) sp_wsg <- lapply(sp_wsg, intersect, species)
     names(sp_wsg) <- r_cf$watershed_group_code
@@ -947,6 +972,25 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
     )
   }
 
+  # An export replaces a config wholesale, so one that holds fewer groups or
+  # species than the root already publishes for it would drop the rest.
+  if (!narrow && file.exists(file.path(root, "manifest.json"))) {
+    old_parts <- jsonlite::fromJSON(file.path(root, "manifest.json"),
+                                    simplifyVector = FALSE)$parts
+    new_parts <- lapply(parts[-1], function(x) as.list(x))
+    for (cf in unique(names(configs))) {
+      lost <- setdiff(.lnk_manifest_pairs(old_parts, cf),
+                      .lnk_manifest_pairs(new_parts, cf))
+      if (length(lost) > 0L) {
+        stop("config '", cf, "': this export drops ", length(lost),
+             " group:species pair(s) the root holds (",
+             paste(utils::head(lost, 5L), collapse = ", "),
+             if (length(lost) > 5L) ", ..." else "",
+             "). Export them too, or pass narrow = TRUE to remove them.",
+             call. = FALSE)
+      }
+    }
+  }
   for (cf in unique(names(configs))) {
     dest <- file.path(root, "segment", paste0("config=", cf))
     unlink(dest, recursive = TRUE)
@@ -964,6 +1008,31 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
   files <- files[order(files$key, method = "radix"), , drop = FALSE]
   cfg_entries <- unname(cfg_entries[order(names(cfg_entries), method = "radix")])
   invisible(.lnk_manifest_write(root, parts, files, cfg_entries, built))
+}
+
+#' Groups no schema of a config exported, one reason each (`schema: reason`,
+#' joined where several schemas hold the group); a JSON object, `{}` when none.
+#' @noRd
+.lnk_export_skipped <- function(sk, exported) {
+  empty <- structure(list(), names = character(0))
+  if (is.null(sk) || nrow(sk) == 0L) return(empty)
+  sk <- sk[!sk$wsg %in% exported, , drop = FALSE]
+  if (nrow(sk) == 0L) return(empty)
+  w <- sort(unique(sk$wsg))
+  stats::setNames(lapply(w, function(g) {
+    x <- sk[sk$wsg == g, , drop = FALSE]
+    paste(sprintf("%s: %s", x$schema, x$reason), collapse = "; ")
+  }), w)
+}
+
+#' (group, species) pairs a manifest's parts hold for a config.
+#' @noRd
+.lnk_manifest_pairs <- function(parts, config) {
+  p <- Filter(function(x) identical(x$config, config), parts)
+  unique(unlist(lapply(p, function(x) {
+    paste(strsplit(x$wsgs %||% "", ",", fixed = TRUE)[[1]], x$species,
+          sep = ":")
+  })))
 }
 
 #' The habitat model (`cw` or `mad`) each build classified on.

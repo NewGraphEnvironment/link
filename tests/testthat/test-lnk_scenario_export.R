@@ -373,9 +373,10 @@ test_that("named groups may come from different schemas of one config", {
   # a dispatch across two schemas: each build's evidence from its own schema
   expect_true(file.exists(file.path(
     root, "provenance/run_uid=U1/run_id=r2c/log.parquet")))
-  # a narrower export of the same builds writes nothing new and stops nowhere
+  # a narrower export of the same builds writes no new provenance
   expect_no_error(lnk_scenario_export(
-    conn, c(testcfg = schema, testcfg = s2), root, wsgs = "ADMS"))
+    conn, c(testcfg = schema, testcfg = s2), root, wsgs = "ADMS",
+    narrow = TRUE))
   expect_no_error(lnk_scenario_export(
     conn, c(testcfg = schema, testcfg = s2), root, wsgs = c("ADMS", "BULK")))
   expect_error(lnk_scenario_export(conn, c(testcfg = schema, testcfg = s2),
@@ -497,5 +498,64 @@ test_that("skipped groups are a JSON object, empty or not, and the export is dat
     schema))
   p <- suppressMessages(lnk_scenario_export(conn, c(testcfg = schema), root))
   cf <- jsonlite::fromJSON(p, simplifyVector = FALSE)$configs[[1]]
-  expect_identical(cf$skipped$BABL, "no log row")
+  expect_identical(cf$skipped$BABL, paste0(schema, ": no log row"))
+})
+
+test_that("an export that would drop a group or species the root holds is refused", {
+  skip_if_not_installed("duckdb")
+  conn <- skip_if_no_db()
+  schema <- local_export_fixture(conn)
+  local_export_discharge(schema)
+  root <- withr::local_tempdir()
+  p <- lnk_scenario_export(conn, c(testcfg = schema), root)
+  before <- readLines(p)
+  expect_error(lnk_scenario_export(conn, c(testcfg = schema), root,
+                                   wsgs = "ADMS"), "drops 2 group:species")
+  expect_error(lnk_scenario_export(conn, c(testcfg = schema), root,
+                                   species = "BT"), "BULK:CO")
+  expect_identical(readLines(p), before)
+  p <- lnk_scenario_export(conn, c(testcfg = schema), root, wsgs = "ADMS",
+                           narrow = TRUE)
+  expect_identical(lnk_catalog(p)$wsgs, "ADMS")
+})
+
+test_that("skipped lists only groups no schema exported, keyed by group", {
+  skip_if_not_installed("duckdb")
+  conn <- skip_if_no_db()
+  schema <- local_export_fixture(conn)
+  local_export_discharge(schema)
+  root <- withr::local_tempdir()
+  # s2 holds ADMS as another config's build, and an unlogged BABL;
+  # schema also holds an unlogged BABL
+  s2 <- paste0(schema, "_e")
+  withr::defer(DBI::dbExecute(conn, sprintf(
+    "DROP SCHEMA IF EXISTS %s CASCADE", s2)))
+  link:::.lnk_log_create_tables(conn, s2)
+  DBI::dbExecute(conn, sprintf(
+    "CREATE TABLE %s.streams AS SELECT * FROM %s.streams
+      WHERE watershed_group_code = 'ADMS'", s2, schema))
+  for (sch in c(schema, s2)) {
+    DBI::dbExecute(conn, sprintf(
+      "INSERT INTO %s.streams (id_segment, watershed_group_code,
+                               blue_line_key, downstream_route_measure,
+                               upstream_route_measure, length_metre)
+       VALUES (1, 'BABL', 40, 0, 60, 60)", sch))
+  }
+  DBI::dbExecute(conn, sprintf(
+    "INSERT INTO %s.log (run_id, watershed_group_code, date_start, date_end,
+                         config_name, config_hash)
+     VALUES ('x1', 'ADMS', '2026-10-01T00:00:00Z', '2026-10-01T01:00:00Z',
+             'othercfg', 'sha256:B')", s2))
+  # with wsgs = NULL, a schema holding no build of the config is skipped,
+  # not fatal
+  p <- suppressMessages(
+    lnk_scenario_export(conn, c(testcfg = schema, testcfg = s2), root))
+  sk <- jsonlite::fromJSON(p, simplifyVector = FALSE)$configs[[1]]$skipped
+  expect_identical(names(sk), "BABL")
+  expect_match(sk$BABL, paste0(schema, ": no log row; ", s2, ": no log row"),
+               fixed = TRUE)
+  # a config with no build in any of its schemas still stops
+  expect_error(suppressMessages(
+    lnk_scenario_export(conn, c(nocfg = s2), withr::local_tempdir())),
+    "no group has a finished build")
 })
