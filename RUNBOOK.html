@@ -410,6 +410,40 @@ The bucket is versioned but cannot be listed (<code>?versions</code> is AccessDe
 <hr></div>
 </div>
 <div class="section level2">
+<h2 id="id_6d-publishing-habitat-export-catalog-load-link308">6d. Publishing habitat: export, catalog, load (link#308)<a class="anchor" aria-label="anchor" href="#id_6d-publishing-habitat-export-catalog-load-link308"></a></h2>
+<p><code><a href="reference/lnk_scenario_export.html">lnk_scenario_export()</a></code> → <code>manifest.json</code> → <code><a href="reference/lnk_catalog.html">lnk_catalog()</a></code> → <code><a href="reference/lnk_db_load.html">lnk_db_load()</a></code>, on the pattern wet set for discharge (NewGraphEnvironment/wet#7). Driver: <code>data-raw/habitat_publish.R</code> (BUILD, then <code>LNK_PUBLISH=1</code> to upload).</p>
+<pre><code>s3://fresh-bc/habitat/fwa/v1/            (private until opened; read with credentials)
+  manifest.json
+  segment/config=&lt;config&gt;/species=&lt;sp&gt;/part-&lt;code&gt;.parquet
+  provenance/run_uid=&lt;uid&gt;/run_id=&lt;id&gt;/   log, log_input      one finished build
+  provenance/run_id=&lt;id&gt;/                  log, log_input      a build outside a dispatch
+  provenance/config_hash=&lt;hex&gt;/            log_parameters_habitat_thresholds, log_parameters_fresh
+  provenance/recompute_id=&lt;id&gt;/log_recompute.parquet
+  provenance/source_artifact/&lt;md5&gt;.parquet       this database's record at export, by content
+  config/sha256-&lt;hex&gt;/&lt;the files config_hash was computed over&gt;</code></pre>
+<p><strong>The key is FWA position, <code>(blue_line_key, downstream_route_measure, upstream_route_measure)</code>.</strong> Break points differ by config, so <code>linear_feature_id</code> repeats and <code>id_segment</code> is per group (#203). <code>(blue_line_key, downstream_route_measure)</code> is unique within a persist schema across groups (measured 2026-10-14: 0 duplicates in 1.83 M <code>fresh_default</code> and 3.80 M <code>fresh</code> segments), so the loaded table’s PK is <code>(config, species, blue_line_key, downstream_route_measure)</code> and a duplicate fails the load. Neighbouring measures do not abut exactly (sub-cm float slop); never join on equality of one segment’s upstream to the next one’s downstream.</p>
+<p><strong>What a group must have to be exported.</strong> Its latest <code>&lt;schema&gt;.log</code> row (by <code>date_start</code>) is a finished build (<code>date_end</code> set) of the config, for this schema. Anything else — no row, another config’s newer build, an open row — leaves the group out (<code>wsgs = NULL</code>, listed in the manifest’s <code>skipped</code>) or stops (named <code>wsgs</code>; a group is taken from whichever of the config’s schemas holds its build). Provenance is keyed per finished build, never per dispatch: a dispatch’s set of rows grows as its other groups close and depends on which schemas an export reads, while one build’s log row does not change. A NULL <code>run_uid</code> (a direct <code>wsg_run_one.R</code> run) is kept under <code>provenance/run_id=&lt;run_id&gt;/</code>. Each config entry carries <code>exported</code>, which the regressions judgement below reads.</p>
+<p><strong>What each column means, and where it does not mean what it looks like:</strong></p>
+<ul><li>
+<strong>Species rows</strong> exist only for the species the group’s build logged. A modelled species with no habitat reads FALSE; an unmodelled one has no rows.</li>
+<li>
+<strong><code>accessible</code> is fresh’s classification flag; <code>has_barriers_dnstr</code> is link’s <code>streams_access</code></strong> (what mapping_code and <code><a href="reference/lnk_rollup_wsg.html">lnk_rollup_wsg()</a></code>’s <code>accessible_km</code> read). The export carries both because they disagree, for two reasons:
+<ul><li>
+<strong>The segment that starts at a barrier.</strong> <code>accessible</code> counts it, link’s access table puts the barrier downstream of it. Measured 2026-10-14 on DUNC BT, never recomputed: 229 segments (85 km) flagged accessible with a BT barrier downstream, 228 of them starting exactly at a BT-blocking barrier. Across the pilot’s 150 config × species × group rows, every row has some; the flag runs 4,292 km over <code>accessible_km</code> in all. The convention question is #336.</li>
+<li>
+<strong>The cross-group recompute</strong> (<code>wsg_recompute_one.R</code>, <code>lnk_access(merge = TRUE)</code>) rewrites <code>streams_access</code>, never <code>streams_habitat_&lt;sp&gt;</code>, so a barrier in another group that arrived after classification shows only in <code>has_barriers_dnstr</code>.</li>
+</ul></li>
+<li>
+<strong><code>mad_m3s</code></strong> is read at export from the table the run classified on, with the run’s logged <code>discharge_fill</code>. It agrees with the flags while that table is unchanged.</li>
+<li>
+<strong>Ratios</strong> are against the thresholds the run <em>logged</em> at its <code>config_hash</code>. Builds before #282 logged none, so their spawning/rearing ratios are NA and <code>thresholds_logged</code> says so (2026-10-14: only DUNC in <code>fresh_default</code>; <code>fresh</code> has no thresholds log table at all). They compare with the CSV thresholds, not the rule that fired (river polygons spawn on any width), and no upper bound is in any ratio.</li>
+</ul><p><strong>Write-once vs replaced.</strong> <code>segment/</code> and <code>manifest.json</code> are replaced per config, and only once every config of the export has succeeded (parts are staged under <code>.staging/</code>); an export carries forward the configs it does not name from the root’s manifest (after checking their md5s), so build into the root that was published. <code>provenance/</code> and <code>config/</code> are never overwritten or deleted. A provenance file that exists must hold the same <em>record</em>, not the same bytes: Parquet’s footer names the duckdb version, and a log column added since (all NA) is not a change; a different record stops the export (a changed record is a changed build). PUBLISH makes every check before its first write (the root must not lose anything live, per the judgement below; each write-once key absent or already these bytes), then puts new write-once keys with <code>--if-none-match</code> and deletes only under <code>segment/</code>. A root rebuilt on another host re-serialises provenance to other bytes, so seed it from the bucket (<code>aws s3 sync</code>) before building; PUBLISH refuses rather than overwrite.</p>
+<p><strong>An export replaces each config it names, wholesale</strong>, so it stops when that would drop a config’s group:species pair the root holds, put an older build of a group (earlier <code>date_start</code>, other <code>run_id</code>) in place of a newer one, drop a recompute of the same build, or put an older export of the config (by <code>exported</code>) whose parts differ in place of a newer one (the same builds read at an earlier state of <code>streams_access</code>, the discharge table, or the export code); <code>replace = TRUE</code> (<code>--replace</code>) allows it. PUBLISH runs the same judgement, <code>.lnk_manifest_regressions()</code>, against the live manifest (<code>LNK_PUBLISH_REPLACE=1</code>). Each config entry records the link that exported it (<code>exported_by</code>: version, sha, dirty, contract md5), because carried-forward configs keep the link that computed them. Named <code>wsgs</code> and <code>wsgs = NULL</code> both take each group from whichever of the config’s schemas holds a finished build of it, and stop only when a named group, or the config as a whole, has none.</p>
+<p><code>provenance.source_artifact</code> is upserted as primitives reload, so the export stores it as a content-addressed snapshot of this database’s record at export time; what a run actually read is its <code>log_input.artifact_*</code> (#265).</p>
+<p><strong>Bundle files are published only when today’s bundle hashes as the build did.</strong> Otherwise the manifest’s <code>bundles[]</code> entry says the bundle has changed, and the run’s own <code>log_parameters_*</code> snapshots under <code>provenance/</code> are the record.</p>
+<p><strong>Not yet:</strong> public read, versioning and PUBLISH gates on <code>run_uid</code> / <code>link_dirty</code> (#334); discharge from wet’s <code>discharge.fwa_v1_segment_monthly</code> (#331); the desktop GeoPackage (#332); registering the column contract in crate (#333; until then it is <code>inst/extdata/schemas/habitat_fwa_v1_segment.yaml</code>, in crate’s shape); the webmap (#335).</p>
+</div>
+<div class="section level2">
 <h2 id="id_7-where-every-rule-lives">7. Where every rule lives<a class="anchor" aria-label="anchor" href="#id_7-where-every-rule-lives"></a></h2>
 <table class="table"><colgroup><col width="33%"><col width="33%"><col width="33%"></colgroup><thead><tr><th>Rule</th>
 <th>File</th>
@@ -641,23 +675,23 @@ Never the receiving river downstream. <code>mad_m3s_source</code> names the tier
 </div>
 <div class="section level2">
 <h2 id="id_8-fast-verification-recipes">8. Fast verification recipes<a class="anchor" aria-label="anchor" href="#id_8-fast-verification-recipes"></a></h2>
-<div class="sourceCode" id="cb9"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="co"># What does bcfp emit for a WSG's mapping_code (local snapshot, no tunnel)?</span></span>
-<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="ex">docker</span> exec fresh-db psql <span class="at">-U</span> postgres <span class="at">-d</span> fwapg <span class="at">-c</span> <span class="dt">\</span></span>
-<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>  <span class="st">"SELECT mapping_code_bt, count(*) FROM fresh.streams_vw_bcfp</span></span>
-<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="st">   WHERE watershed_group_code='PARS' GROUP BY 1 ORDER BY 2 DESC;"</span></span>
-<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a></span>
-<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a><span class="co"># What does link emit (after a mapping_code=TRUE run)?</span></span>
-<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a><span class="ex">docker</span> exec fresh-db psql <span class="at">-U</span> postgres <span class="at">-d</span> fwapg <span class="at">-c</span> <span class="dt">\</span></span>
-<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a>  <span class="st">"SELECT mapping_code_bt, count(*) FROM fresh_default.streams_mapping_code</span></span>
-<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a><span class="st">   WHERE watershed_group_code='PARS' GROUP BY 1 ORDER BY 2 DESC;"</span></span>
-<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a></span>
-<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a><span class="co"># Inspect a barrier view's shape / blocks_species</span></span>
-<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a><span class="ex">docker</span> exec fresh-db psql <span class="at">-U</span> postgres <span class="at">-d</span> fwapg <span class="at">-c</span> <span class="dt">\</span></span>
-<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a>  <span class="st">"SELECT pg_get_viewdef('fresh_default.barriers_bt_unified', true);"</span></span>
-<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a></span>
-<span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a><span class="co"># Single-WSG tunnel-free build (the headline path)</span></span>
-<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a><span class="fu">bash</span> data-raw/wsgs_run_m4_offline.sh <span class="at">--wsgs</span><span class="op">=</span>PARS <span class="at">--config</span><span class="op">=</span>default <span class="dt">\</span></span>
-<span id="cb9-17"><a href="#cb9-17" tabindex="-1"></a>  <span class="at">--schema</span><span class="op">=</span>fresh_default <span class="at">--force</span> <span class="at">--mapping-code</span></span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="co"># What does bcfp emit for a WSG's mapping_code (local snapshot, no tunnel)?</span></span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a><span class="ex">docker</span> exec fresh-db psql <span class="at">-U</span> postgres <span class="at">-d</span> fwapg <span class="at">-c</span> <span class="dt">\</span></span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a>  <span class="st">"SELECT mapping_code_bt, count(*) FROM fresh.streams_vw_bcfp</span></span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a><span class="st">   WHERE watershed_group_code='PARS' GROUP BY 1 ORDER BY 2 DESC;"</span></span>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a></span>
+<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a><span class="co"># What does link emit (after a mapping_code=TRUE run)?</span></span>
+<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a><span class="ex">docker</span> exec fresh-db psql <span class="at">-U</span> postgres <span class="at">-d</span> fwapg <span class="at">-c</span> <span class="dt">\</span></span>
+<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a>  <span class="st">"SELECT mapping_code_bt, count(*) FROM fresh_default.streams_mapping_code</span></span>
+<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a><span class="st">   WHERE watershed_group_code='PARS' GROUP BY 1 ORDER BY 2 DESC;"</span></span>
+<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a></span>
+<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a><span class="co"># Inspect a barrier view's shape / blocks_species</span></span>
+<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a><span class="ex">docker</span> exec fresh-db psql <span class="at">-U</span> postgres <span class="at">-d</span> fwapg <span class="at">-c</span> <span class="dt">\</span></span>
+<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a>  <span class="st">"SELECT pg_get_viewdef('fresh_default.barriers_bt_unified', true);"</span></span>
+<span id="cb10-14"><a href="#cb10-14" tabindex="-1"></a></span>
+<span id="cb10-15"><a href="#cb10-15" tabindex="-1"></a><span class="co"># Single-WSG tunnel-free build (the headline path)</span></span>
+<span id="cb10-16"><a href="#cb10-16" tabindex="-1"></a><span class="fu">bash</span> data-raw/wsgs_run_m4_offline.sh <span class="at">--wsgs</span><span class="op">=</span>PARS <span class="at">--config</span><span class="op">=</span>default <span class="dt">\</span></span>
+<span id="cb10-17"><a href="#cb10-17" tabindex="-1"></a>  <span class="at">--schema</span><span class="op">=</span>fresh_default <span class="at">--force</span> <span class="at">--mapping-code</span></span></code></pre></div>
 <p>Local docker fwapg: <code>host=localhost port=5432 dbname=fwapg user=postgres password=postgres</code> (compose at <code>~/Projects/repo/fresh/docker/</code>).</p>
 </div>
 </div>

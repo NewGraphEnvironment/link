@@ -25,12 +25,14 @@
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_baseline_read.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_bucket_get.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_bucket_log.html</loc></url>
+<url><loc>https://newgraphenvironment.github.io/link/reference/lnk_catalog.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_compare_mapping_code.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_compare_rollup.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_compare_wsg.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_config.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_config_verify.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_db_conn.html</loc></url>
+<url><loc>https://newgraphenvironment.github.io/link/reference/lnk_db_load.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_fanout_judge.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_habitat_validate.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_habitat_validate_band.html</loc></url>
@@ -63,6 +65,7 @@
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_presence.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_rollup_wsg.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_rules_build.html</loc></url>
+<url><loc>https://newgraphenvironment.github.io/link/reference/lnk_scenario_export.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_score.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_source.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/link/reference/lnk_species_pooling.html</loc></url>

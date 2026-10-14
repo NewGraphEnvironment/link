@@ -51,6 +51,9 @@
 
   Read the build-identifier `log.json` from a bucket prefix
 
+- [`lnk_catalog()`](https://newgraphenvironment.github.io/link/reference/lnk_catalog.md)
+  : Read a habitat export's manifest
+
 - [`lnk_compare_mapping_code()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_mapping_code.md)
   : Compare one watershed group's persisted mapping_code tokens against
   a reference
@@ -69,6 +72,9 @@
 
 - [`lnk_db_conn()`](https://newgraphenvironment.github.io/link/reference/lnk_db_conn.md)
   : Connect to FWA PostgreSQL database
+
+- [`lnk_db_load()`](https://newgraphenvironment.github.io/link/reference/lnk_db_load.md)
+  : Load a habitat export into PostgreSQL
 
 - [`lnk_fanout_judge()`](https://newgraphenvironment.github.io/link/reference/lnk_fanout_judge.md)
   : Judge the outcome of a parallel fan-out
@@ -165,6 +171,9 @@
 
 - [`lnk_rules_build()`](https://newgraphenvironment.github.io/link/reference/lnk_rules_build.md)
   : Build habitat eligibility rules YAML from dimensions CSV
+
+- [`lnk_scenario_export()`](https://newgraphenvironment.github.io/link/reference/lnk_scenario_export.md)
+  : Publish link's habitat flags per config as Parquet + manifest
 
 - [`lnk_score()`](https://newgraphenvironment.github.io/link/reference/lnk_score.md)
   : Score crossings
