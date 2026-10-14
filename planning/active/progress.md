@@ -20,3 +20,17 @@
   - Export tests 109 pass.
 - Phase 3: `lnk_catalog()` (local, https, s3:// through the `aws` CLI with the caller's credentials) and `lnk_db_load()` (one transaction, md5-checked parts, config-wide replace, PK `(config, species, blue_line_key, downstream_route_measure)`, `table =` for tests). Catalog 15, loader 19 tests pass, including mid-load rollback and cache reuse.
 - Full suite at `07fb08d0`: 2,860 pass, 2 fail + 2 error. All four reproduce identically on `origin/main` in a worktree (`test-lnk_pipeline_prepare.R` dams golden 2 fail; `test-lnk_wsg_resolve.R` closure 2 error), plus `test-lnk_db_conn.R` reaching a refused tunnel port. Environmental and pre-existing, none in files this branch touches.
+- `/code-check branch`: five rounds. Ended by enumeration, not by a quiet round: round 5 enumerated the mechanism's 24 places, and the one finding left (3 places) is fixed, tested and mutation-proven.
+
+  | Round | Findings | Fixed | Accepted | Inside previous fix? |
+  |---|---|---|---|---|
+  | 1 | 7 | 7 | 0 | — |
+  | 2 | 5 | 5 | 0 | y (2) |
+  | 3 | 3 | 3 | 0 | y (3) |
+  | 4 | 4 | 4 | 0 | y (2) |
+  | 5 | 1 (3 places) | 1 | 0 | y |
+
+  - The mechanism, named in round 3: what one call or one root can see (the schemas and groups passed, the local manifest, the exporting clock) was stored or compared as if it were a property of the build or the published config.
+  - The terminal fix: one judgement, `.lnk_manifest_regressions()`, shared by the export and PUBLISH. It flags a lost config, a lost group:species pair, an older build, a missed recompute, and an older export whose parts differ.
+  - Mutation table (findings.md) plus 6 more mutations on rounds 4–5's clauses: every guard goes red when restored.
+- Pilot rebuild at `b59f61a5`: 22 parts byte-identical to the first build; 156 provenance/bundle files.

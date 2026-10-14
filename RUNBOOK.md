@@ -679,8 +679,8 @@ holds its build). Provenance is keyed per finished build, never per dispatch:
 a dispatch's set of rows grows as its other groups close and depends on which
 schemas an export reads, while one build's log row does not change. A NULL
 `run_uid` (a direct `wsg_run_one.R` run) is kept under
-`provenance/run_id=<run_id>/`. Each config entry carries `exported`, and
-PUBLISH refuses to replace a published config with an older export of it.
+`provenance/run_id=<run_id>/`. Each config entry carries `exported`, which the
+regressions judgement below reads.
 
 **What each column means, and where it does not mean what it looks like:**
 
@@ -720,15 +720,19 @@ deleted. A provenance file that exists must hold the same *record*, not the
 same bytes: Parquet's footer names the duckdb version, and a log column added
 since (all NA) is not a change; a different record stops the export (a changed
 record is a changed build). PUBLISH makes every check before its first write
-(the live manifest's configs must all be in the root; each write-once key absent
-or already these bytes), then puts new write-once keys with `--if-none-match`
+(the root must not lose anything live, per the judgement below; each
+write-once key absent or already these bytes), then puts new write-once keys with `--if-none-match`
 and deletes only under `segment/`. A root rebuilt on another host re-serialises
 provenance to other bytes, so seed it from the bucket (`aws s3 sync`) before
 building; PUBLISH refuses rather than overwrite.
 
 **An export replaces each config it names, wholesale**, so it stops when that
-would drop a config's group:species pair the root holds, or put an older build
-of a group (earlier `date_start`, other `run_id`) in place of a newer one;
+would drop a config's group:species pair the root holds, put an older build
+of a group (earlier `date_start`, other `run_id`) in place of a newer one, drop
+a recompute of the same build, or put an older export of the config (by
+`exported`) whose parts differ in place of a newer one (the same builds read
+at an earlier state of `streams_access`, the discharge table, or the export
+code);
 `replace = TRUE` (`--replace`) allows it. PUBLISH runs the same judgement,
 `.lnk_manifest_regressions()`, against the live manifest
 (`LNK_PUBLISH_REPLACE=1`). Each config entry records the link that exported it

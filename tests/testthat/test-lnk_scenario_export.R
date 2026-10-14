@@ -640,3 +640,38 @@ test_that("the regressions judgement names lost configs, pairs and older builds"
     run("BULK", "r2", "2026-10-01T00:00:00.000Z"))
   expect_length(link:::.lnk_manifest_regressions(old, newer, "a"), 0L)
 })
+
+test_that("a stale export of the same builds is caught: a missed recompute, an older export with other parts", {
+  skip_if_not_installed("duckdb")
+  conn <- skip_if_no_db()
+  schema <- local_export_fixture(conn)
+  local_export_discharge(schema)
+  stale <- withr::local_tempdir()
+  live <- withr::local_tempdir()
+  ps <- lnk_scenario_export(conn, c(testcfg = schema), stale)
+  # the same builds, later: another recompute rewrote streams_access
+  DBI::dbExecute(conn, sprintf(
+    "INSERT INTO %s.log_recompute (recompute_id, watershed_group_code,
+                                   date_start, date_end)
+     VALUES ('rc2', 'ADMS', '2026-10-03T00:00:00Z', '2026-10-03T00:10:00Z')",
+    schema))
+  DBI::dbExecute(conn, sprintf(
+    "UPDATE %s.streams_access SET has_barriers_bt_dnstr = true", schema))
+  pl <- lnk_scenario_export(conn, c(testcfg = schema), live)
+  rd <- function(p) jsonlite::fromJSON(p, simplifyVector = FALSE)
+  got <- link:::.lnk_manifest_regressions(rd(pl), rd(ps), "testcfg")
+  expect_true(any(grepl("misses a recompute the other holds in ADMS", got)))
+  expect_true(any(grepl("before the .* export it would replace", got)))
+  # the newer state over the older is no regression
+  expect_length(link:::.lnk_manifest_regressions(rd(ps), rd(pl), "testcfg"),
+                0L)
+  # an older export with the same parts is not a regression either
+  same <- rd(pl)
+  same$configs[[1]]$exported <- "2000-01-01T00:00:00.000Z"
+  expect_length(link:::.lnk_manifest_regressions(rd(pl), same, "testcfg"), 0L)
+  # and the export into the live root refuses the stale state
+  DBI::dbExecute(conn, sprintf("DELETE FROM %s.log_recompute
+                                 WHERE recompute_id = 'rc2'", schema))
+  expect_error(lnk_scenario_export(conn, c(testcfg = schema), live),
+               "misses a recompute")
+})

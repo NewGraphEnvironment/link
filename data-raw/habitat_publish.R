@@ -139,9 +139,10 @@ if (identical(Sys.getenv("LNK_PUBLISH"), "1")) {
   }
 
   # Every check before the first write, so a refusal leaves the bucket as it
-  # was. (a) The live manifest's configs must all be in this root: the root is
-  # the whole published tree, and a config it lacks would be dropped and its
-  # parts deleted. (b) Each write-once key is absent or already these bytes.
+  # was. (a) The root must not lose anything live (.lnk_manifest_regressions:
+  # a config, a pair, a newer build or recompute, a newer export); the root is
+  # the whole published tree. (b) Each write-once key is absent or already
+  # these bytes.
   live <- paste(prefix, "manifest.json", sep = "/")
   if (!is.na(etag(live))) {
     live_cfg <- attr(lnk_catalog(paste0(target, "/manifest.json")), "configs")

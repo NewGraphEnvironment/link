@@ -956,8 +956,8 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
     })
     cfg_entries[[cf]] <- list(
       config = cf,
-      # when this config's parts were exported; PUBLISH refuses to replace a
-      # published config with an older export of it
+      # when this config's parts were exported; .lnk_manifest_regressions()
+      # refuses an older export whose parts differ
       exported = format(built, "%Y-%m-%dT%H:%M:%OS3Z", tz = "UTC"),
       # the link that computed these parts' derived columns; the manifest's
       # top-level provenance names only the last export into the root
@@ -1062,11 +1062,20 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
       date_start = vapply(r, function(x) x$date_start %||% NA_character_,
                           character(1)),
       stringsAsFactors = FALSE)
+    r$recompute_keys <- lapply(entry$runs, function(x) {
+      as.character(unlist(x$recompute_keys))
+    })
   }
-  data.frame(wsg = as.character(r$watershed_group_code),
-             run_id = as.character(r$run_id),
-             date_start = as.character(r$date_start),
-             stringsAsFactors = FALSE)
+  out <- data.frame(wsg = as.character(r$watershed_group_code),
+                    run_id = as.character(r$run_id),
+                    date_start = as.character(r$date_start),
+                    stringsAsFactors = FALSE)
+  out$recompute_keys <- if (is.null(r$recompute_keys)) {
+    rep(list(character(0)), nrow(out))
+  } else {
+    lapply(r$recompute_keys, function(x) as.character(unlist(x)))
+  }
+  out
 }
 
 #' What replacing `old` with `new` would lose, per config.
@@ -1078,7 +1087,12 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
 #' - absent from `new`;
 #' - a group:species pair `old` holds and `new` does not;
 #' - a group whose build in `new` started before the one in `old` (a
-#'   different `run_id` with an earlier `date_start`).
+#'   different `run_id` with an earlier `date_start`);
+#' - a group with the same build in both whose `new` export misses a
+#'   recompute `old` had (the recompute rewrites `has_barriers_dnstr`);
+#' - an export of the config older than `old`'s (`exported`) whose parts
+#'   differ: the same builds read at an earlier state (recompute, discharge
+#'   table, export code), which no build identity shows.
 #'
 #' @param old,new Manifests as lists: `parts` (each with `config`, `species`,
 #'   `wsgs`) and `configs` (each with `config` and `runs`).
@@ -1117,6 +1131,28 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
       out <- c(out, sprintf(
         "config '%s' replaces a newer build with an older one in %s", cf,
         paste(older, collapse = ", ")))
+    }
+    same <- m[m$run_id_old == m$run_id_new, , drop = FALSE]
+    fewer <- same$wsg[vapply(seq_len(nrow(same)), function(i) {
+      length(setdiff(same$recompute_keys_old[[i]],
+                     same$recompute_keys_new[[i]])) > 0L
+    }, logical(1))]
+    if (length(fewer) > 0L) {
+      out <- c(out, sprintf(
+        "config '%s' misses a recompute the other holds in %s", cf,
+        paste(fewer, collapse = ", ")))
+    }
+    md5s <- function(mf) {
+      p <- Filter(function(x) identical(x$config, cf), mf$parts)
+      sort(vapply(p, function(x) as.character(x$md5 %||% NA), character(1)))
+    }
+    eo <- o[[1]]$exported %||% NA_character_
+    en <- n[[1]]$exported %||% NA_character_
+    if (!is.na(eo) && !is.na(en) && en < eo &&
+        !identical(md5s(old), md5s(new))) {
+      out <- c(out, sprintf(
+        "config '%s' was exported at %s, before the %s export it would replace, and its parts differ",
+        cf, en, eo))
     }
   }
   out

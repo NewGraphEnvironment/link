@@ -152,3 +152,7 @@ Each guard's defect restored in a copy; the count is failing + erroring tests in
 | no staging (parts written in place) | 11 |
 | one-element manifest arrays unboxed | 1 |
 | carried-forward part's md5 unchecked | 1 |
+
+## Reproducibility (2026-10-14)
+
+The pilot BUILD rerun at `b59f61a5` (18:35Z, per-build provenance layout) into a fresh root gives 22 parts **byte-identical** to the first pilot build (16:30Z, before the code-check rounds). Same database state, duckdb 1.5.2, one writer thread. The provenance tree grew from 102 to 156 files because it is now one directory per build plus one per config hash.

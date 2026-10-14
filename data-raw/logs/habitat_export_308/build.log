@@ -1,0 +1,6 @@
+2026-10-14T18:35:13Z BUILD default:fresh_default,bcfishpass:fresh -> /private/tmp/claude-501/-Users-airvine-Projects-repo-link/9f866a6e-4671-43a3-a34c-53530a3df1a0/scratchpad/habitat_final/fwa/v1
+fresh_default: 51 of 56 groups not exported (ADMS: no log row; BBAR: no log row; BULK: no log row; CARP: no log row; CHES: no log row); ...
+fresh: 59 of 98 groups not exported (ALBN: no log row; BONP: no log row; BRKS: no log row; CARR: no log row; CHES: no log row); ...
+2026-10-14T18:36:26Z built 22 parts and 156 provenance/bundle files in 1.2 mins; all verify
+2026-10-14T18:36:26Z report in data-raw/logs/habitat_export_308
+exit 0
