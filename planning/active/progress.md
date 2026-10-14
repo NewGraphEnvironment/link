@@ -18,3 +18,4 @@
   - G4: refuse a build logged for another `schema_persist`.
   - G8: `source_artifact` scoped as this database's record.
   - Export tests 109 pass.
+- Phase 3: `lnk_catalog()` (local, https, s3:// through the `aws` CLI with the caller's credentials) and `lnk_db_load()` (one transaction, md5-checked parts, config-wide replace, PK `(config, species, blue_line_key, downstream_route_measure)`, `table =` for tests). Catalog 15, loader 19 tests pass, including mid-load rollback and cache reuse.

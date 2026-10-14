@@ -85,4 +85,9 @@ cat <- lnk_catalog(file.path(root, "manifest.json"))
 cat[, c("config", "species", "code", "rows", "md5")]
 }
 }
+\seealso{
+Other export: 
+\code{\link{lnk_catalog}()},
+\code{\link{lnk_db_load}()}
+}
 \concept{export}

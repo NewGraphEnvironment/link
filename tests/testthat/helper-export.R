@@ -127,3 +127,26 @@ read_parquet_duck <- function(path, sql = "SELECT * FROM read_parquet(%s, hive_p
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE))
   DBI::dbGetQuery(con, sprintf(sql, DBI::dbQuoteString(con, path)))
 }
+
+# A one-part export tree written without a database: synthetic rows in the
+# column contract, a manifest from the export's own writer.
+local_export_tree <- function(env = parent.frame(), n = 3L, config = "cfgx",
+                              species = "BT", root = NULL) {
+  if (is.null(root)) root <- withr::local_tempdir(.local_envir = env)
+  cols <- link:::.lnk_export_cols()
+  rows <- as.data.frame(lapply(cols, function(t) {
+    switch(t, integer = seq_len(n), double = as.double(seq_len(n)) * 10,
+           string = rep("ADMS", n), logical = rep(c(TRUE, FALSE), length.out = n))
+  }), stringsAsFactors = FALSE)
+  names(rows) <- names(cols)
+  key <- sprintf("segment/config=%s/species=%s/part-100.parquet", config, species)
+  link:::.lnk_parquet_write(rows, file.path(root, key))
+  e <- link:::.lnk_file_entry(root, key)
+  parts <- data.frame(key = key, dataset = "habitat/fwa/v1/segment",
+                      config = config, species = species, code = "100",
+                      drainage = "Fraser", wsgs = "ADMS", rows = n,
+                      bytes = e$bytes, md5 = e$md5, stringsAsFactors = FALSE)
+  link:::.lnk_manifest_write(root, parts, NULL,
+                             list(list(config = config, runs = list())))
+  root
+}

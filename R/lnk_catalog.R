@@ -84,18 +84,24 @@ lnk_catalog <- function(manifest) {
 #' is private. A failed copy stops with aws's own message.
 #' @noRd
 .lnk_s3_cp <- function(src, dest) {
-  if (!nzchar(Sys.which("aws"))) {
-    stop("reading ", src, " needs the aws command line", call. = FALSE)
-  }
-  out <- suppressWarnings(system2(
-    "aws", c("s3", "cp", shQuote(src), shQuote(dest), "--only-show-errors"),
-    stdout = TRUE, stderr = TRUE))
+  out <- .lnk_aws(c("s3", "cp", shQuote(src), shQuote(dest),
+                    "--only-show-errors"))
   st <- attr(out, "status")
   if (!is.null(st) && st != 0L) {
     stop("aws s3 cp ", src, " failed (exit ", st, "): ",
          paste(out, collapse = " "), call. = FALSE)
   }
   invisible(dest)
+}
+
+#' Run the `aws` command line; output and exit status as `system2()` gives
+#' them (status in `attr(, "status")`, NULL on success).
+#' @noRd
+.lnk_aws <- function(args) {
+  if (!nzchar(Sys.which("aws"))) {
+    stop("this needs the aws command line on PATH", call. = FALSE)
+  }
+  suppressWarnings(system2("aws", args, stdout = TRUE, stderr = TRUE))
 }
 
 #' Download `src` (https:// or s3://) to `dest`, or copy a local file.

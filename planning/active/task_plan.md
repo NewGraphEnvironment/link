@@ -54,15 +54,15 @@
 
 ## Phase 3: `lnk_catalog()` + `lnk_db_load()`
 
-- [ ] `lnk_catalog(manifest)` (exported).
+- [x] `lnk_catalog(manifest)` (exported).
   - It accepts a local path, `https://` (httr, as `lnk_bucket_get()` does), or `s3://`, the latter through the credentialed `aws s3 cp` via `system2()` with its status checked, because the bucket is private.
   - It returns one row per part. `href` resolves relative to the manifest. The hive fields are parsed from the key, as in wet's `wet_part_parse()`.
   - It carries the `configs` provenance as an attribute.
-- [ ] `lnk_db_load(conn, catalog, configs = NULL, cache_dir = tools::R_user_dir("link", "cache"))` (exported).
+- [x] `lnk_db_load(conn, catalog, configs = NULL, cache_dir = tools::R_user_dir("link", "cache"))` (exported).
   - Fetch: each part is fetched to `<dest>.part`, its size and md5 checked against the manifest, then renamed. A cached part is reused while its md5 matches.
   - Load: in one transaction, create `habitat.fwa_v1_segment` (`config` and `species` prepended), refuse a column mismatch, `DELETE` the configs being loaded, `dbAppendTable` in chunks read by duckdb, and check row counts.
   - Then, on create: PK `(config, species, blue_line_key, downstream_route_measure)`, an index on `blue_line_key`, `ANALYZE`, and `COMMENT ON TABLE` naming the manifest and the build.
-- [ ] Tests:
+- [x] Tests:
   - an md5 mismatch is refused and the earlier rows survive;
   - an `s3://` fetch calls `aws` (mocked);
   - export → catalog → load round-trips on the fixture;
