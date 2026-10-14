@@ -1,0 +1,8 @@
+link 0.64.0 @ d0fcb4cdef6ed1ef349584fbee45c014eaf40181
+manifest <scratch>/habitat_final/fwa/v1/manifest.json built 2026-10-14T18:35:15Z: 22 parts, 9,876,720 rows, 218.9 MB
+load: not re-run (--reuse-csv); duplicate keys: 0
+config x species x group rows compared: 150
+spawning km beyond rounding of lnk_rollup_wsg: 0 of 150 (max |diff| 0.00)
+rearing flag km beyond rounding of lnk_rollup_wsg: 0 of 150 (max |diff| 0.01)
+km with no barrier downstream vs rollup accessible_km (access 1/2) beyond rounding: 0 of 150
+groups x species with segments flagged accessible and a barrier downstream in streams_access (#336): 150 (24,467 segments, 4292.1 km of accessible flag over rollup)

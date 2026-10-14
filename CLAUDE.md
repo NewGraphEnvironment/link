@@ -11,6 +11,19 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
+## Status (2026-10-14) — habitat exported per config as Parquet + manifest; nothing published yet (#308)
+
+**`lnk_scenario_export()` → `manifest.json` → `lnk_catalog()` → `lnk_db_load()`, on wet#7's pattern; driver `data-raw/habitat_publish.R` (BUILD, then `LNK_PUBLISH=1`).** Mechanics: RUNBOOK §6d. PUBLISH to `s3://fresh-bc/habitat/fwa/v1/` (private) has not been run.
+
+**Facts not worth re-deriving:**
+- **`accessible` (fresh's flag) and `streams_access.has_barriers_<sp>_dnstr` disagree on the segment that starts at a barrier.** DUNC BT, never recomputed: 228 of 229 disagreeing segments start exactly at a BT-blocking barrier; 4,292 km across the pilot's 150 config × species × group rows. The export ships both; #336.
+- **Only builds after #282 logged thresholds.** In local `fresh_default` that is DUNC alone, and `fresh` has no `log_parameters_habitat_thresholds` table, so exported spawning / rearing ratios are NA there (`thresholds_logged` in the manifest).
+- **`(blue_line_key, downstream_route_measure)` is unique within a persist schema across groups** (0 duplicates in 1.83 M / 3.80 M segments), so it is the loaded table's key with `config, species`.
+- **Provenance is keyed per finished build, never per dispatch.** A dispatch's log rows grow as its groups close and depend on which schemas an export reads.
+- **An export replaces each config wholesale.** `.lnk_manifest_regressions()` is the one judgement, for both BUILD and PUBLISH, of what that would lose. It checks config, pairs, newer builds, recomputes, and newer exports with other parts. `replace = TRUE` / `LNK_PUBLISH_REPLACE=1` override it.
+- **Parts are byte-reproducible.** duckdb with one thread wrote identical parts two builds apart; provenance write-once compares records, not bytes, because the footer names the duckdb version.
+- Follow-ups: #331 discharge from wet, #332 GeoPackage, #333 crate registration, #334 publish gates / versioning / public read, #335 webmap.
+
 ## Status (2026-10-13) — source-artifact identity recorded; the vintage gate reads load stamps (#265, #247)
 
 **`provenance.source_artifact` records which version of which object each primitive was loaded from, and each run copies the rows it read into `log_input.artifact_*`.**

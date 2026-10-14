@@ -50,6 +50,32 @@
 #' @return A single string, `"sha256:<hex>"`.
 #' @noRd
 .lnk_config_hash <- function(cfg) {
+  f <- .lnk_config_files(cfg)
+  # radix: byte order, not LC_COLLATE, or the hash differs between hosts whose
+  # locales sort `_control.csv` and `.csv` differently.
+  ord <- order(f$rel, method = "radix")
+  payload <- paste(
+    c(
+      paste0("name=", cfg$name),
+      paste0("species=", paste(sort(cfg$species), collapse = ";")),
+      paste0(f$rel[ord], "=", f$digest[ord])
+    ),
+    collapse = "\n"
+  )
+
+  paste0("sha256:", digest::digest(payload, algo = "sha256", serialize = FALSE))
+}
+
+#' The files a config hash covers: host-independent name, path and digest.
+#'
+#' One list for [.lnk_config_hash()] and for the habitat export, which
+#' publishes these files beside the data so a `config_hash` resolves to bytes
+#' (#308).
+#'
+#' @param cfg An `lnk_config` object.
+#' @return A data frame `rel`, `path`, `digest` (sha256 hex, or `MISSING`).
+#' @noRd
+.lnk_config_files <- function(cfg) {
   if (!inherits(cfg, "lnk_config")) {
     stop("cfg must be an lnk_config object", call. = FALSE)
   }
@@ -136,19 +162,8 @@
     })
   }
 
-  # radix: byte order, not LC_COLLATE, or the hash differs between hosts whose
-  # locales sort `_control.csv` and `.csv` differently.
-  ord <- order(rel, method = "radix")
-  payload <- paste(
-    c(
-      paste0("name=", cfg$name),
-      paste0("species=", paste(sort(cfg$species), collapse = ";")),
-      paste0(rel[ord], "=", digests[ord])
-    ),
-    collapse = "\n"
-  )
-
-  paste0("sha256:", digest::digest(payload, algo = "sha256", serialize = FALSE))
+  data.frame(rel = rel, path = paths, digest = digests,
+             stringsAsFactors = FALSE)
 }
 
 

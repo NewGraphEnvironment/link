@@ -642,6 +642,121 @@ does not interpolate its variables inside a dollar-quoted string.
 
 ---
 
+## 6d. Publishing habitat: export, catalog, load (link#308)
+
+`lnk_scenario_export()` → `manifest.json` → `lnk_catalog()` → `lnk_db_load()`,
+on the pattern wet set for discharge (NewGraphEnvironment/wet#7). Driver:
+`data-raw/habitat_publish.R` (BUILD, then `LNK_PUBLISH=1` to upload).
+
+```
+s3://fresh-bc/habitat/fwa/v1/            (private until opened; read with credentials)
+  manifest.json
+  segment/config=<config>/species=<sp>/part-<code>.parquet
+  provenance/run_uid=<uid>/run_id=<id>/   log, log_input      one finished build
+  provenance/run_id=<id>/                  log, log_input      a build outside a dispatch
+  provenance/config_hash=<hex>/            log_parameters_habitat_thresholds, log_parameters_fresh
+  provenance/recompute_id=<id>/log_recompute.parquet
+  provenance/source_artifact/<md5>.parquet       this database's record at export, by content
+  config/sha256-<hex>/<the files config_hash was computed over>
+```
+
+**The key is FWA position, `(blue_line_key, downstream_route_measure,
+upstream_route_measure)`.** Break points differ by config, so `linear_feature_id`
+repeats and `id_segment` is per group (#203). `(blue_line_key,
+downstream_route_measure)` is unique within a persist schema across groups
+(measured 2026-10-14: 0 duplicates in 1.83 M `fresh_default` and 3.80 M `fresh`
+segments), so the loaded table's PK is `(config, species, blue_line_key,
+downstream_route_measure)` and a duplicate fails the load. Neighbouring measures
+do not abut exactly (sub-cm float slop); never join on equality of one segment's
+upstream to the next one's downstream.
+
+**What a group must have to be exported.** Its latest `<schema>.log` row (by
+`date_start`) is a finished build (`date_end` set) of the config, for this
+schema. Anything else — no row, another config's newer build, an open row —
+leaves the group out (`wsgs = NULL`, listed in the manifest's `skipped`) or
+stops (named `wsgs`; a group is taken from whichever of the config's schemas
+holds its build). Provenance is keyed per finished build, never per dispatch:
+a dispatch's set of rows grows as its other groups close and depends on which
+schemas an export reads, while one build's log row does not change. A NULL
+`run_uid` (a direct `wsg_run_one.R` run) is kept under
+`provenance/run_id=<run_id>/`. Each config entry carries `exported`, which the
+regressions judgement below reads.
+
+**What each column means, and where it does not mean what it looks like:**
+
+- **Species rows** exist only for the species the group's build logged. A
+  modelled species with no habitat reads FALSE; an unmodelled one has no rows.
+- **`accessible` is fresh's classification flag; `has_barriers_dnstr` is
+  link's `streams_access`** (what mapping_code and `lnk_rollup_wsg()`'s
+  `accessible_km` read). The export carries both because they disagree, for
+  two reasons:
+  - **The segment that starts at a barrier.** `accessible` counts it, link's
+    access table puts the barrier downstream of it. Measured 2026-10-14 on DUNC
+    BT, never recomputed: 229 segments (85 km) flagged accessible with a BT
+    barrier downstream, 228 of them starting exactly at a BT-blocking barrier.
+    Across the pilot's 150 config × species × group rows, every row has some;
+    the flag runs 4,292 km over `accessible_km` in all. The convention
+    question is #336.
+  - **The cross-group recompute** (`wsg_recompute_one.R`,
+    `lnk_access(merge = TRUE)`) rewrites `streams_access`, never
+    `streams_habitat_<sp>`, so a barrier in another group that arrived after
+    classification shows only in `has_barriers_dnstr`.
+- **`mad_m3s`** is read at export from the table the run classified on, with
+  the run's logged `discharge_fill`. It agrees with the flags while that table
+  is unchanged.
+- **Ratios** are against the thresholds the run *logged* at its
+  `config_hash`. Builds before #282 logged none, so their spawning/rearing
+  ratios are NA and `thresholds_logged` says so (2026-10-14: only DUNC in
+  `fresh_default`; `fresh` has no thresholds log table at all). They compare
+  with the CSV thresholds, not the rule that fired (river polygons spawn on
+  any width), and no upper bound is in any ratio.
+
+**Write-once vs replaced.** `segment/` and `manifest.json` are replaced per
+config, and only once every config of the export has succeeded (parts are
+staged under `.staging/`); an export carries forward the configs it does not
+name from the root's manifest (after checking their md5s), so build into the
+root that was published. `provenance/` and `config/` are never overwritten or
+deleted. A provenance file that exists must hold the same *record*, not the
+same bytes: Parquet's footer names the duckdb version, and a log column added
+since (all NA) is not a change; a different record stops the export (a changed
+record is a changed build). PUBLISH makes every check before its first write
+(the root must not lose anything live, per the judgement below; each
+write-once key absent or already these bytes), then puts new write-once keys with `--if-none-match`
+and deletes only under `segment/`. A root rebuilt on another host re-serialises
+provenance to other bytes, so seed it from the bucket (`aws s3 sync`) before
+building; PUBLISH refuses rather than overwrite.
+
+**An export replaces each config it names, wholesale**, so it stops when that
+would drop a config's group:species pair the root holds, put an older build
+of a group (earlier `date_start`, other `run_id`) in place of a newer one, drop
+a recompute of the same build, or put an older export of the config (by
+`exported`) whose parts differ in place of a newer one (the same builds read
+at an earlier state of `streams_access`, the discharge table, or the export
+code);
+`replace = TRUE` (`--replace`) allows it. PUBLISH runs the same judgement,
+`.lnk_manifest_regressions()`, against the live manifest
+(`LNK_PUBLISH_REPLACE=1`). Each config entry records the link that exported it
+(`exported_by`: version, sha, dirty, contract md5), because carried-forward
+configs keep the link that computed them. Named `wsgs` and
+`wsgs = NULL` both take each group from whichever of the config's schemas holds
+a finished build of it, and stop only when a named group, or the config as a
+whole, has none.
+
+`provenance.source_artifact` is upserted as primitives reload, so the export
+stores it as a content-addressed snapshot of this database's record at export
+time; what a run actually read is its `log_input.artifact_*` (#265).
+
+**Bundle files are published only when today's bundle hashes as the build
+did.** Otherwise the manifest's `bundles[]` entry says the bundle has changed,
+and the run's own `log_parameters_*` snapshots under `provenance/` are the
+record.
+
+**Not yet:** public read, versioning and PUBLISH gates on `run_uid` /
+`link_dirty` (#334); discharge from wet's `discharge.fwa_v1_segment_monthly`
+(#331); the desktop GeoPackage (#332); registering the column contract in crate
+(#333; until then it is `inst/extdata/schemas/habitat_fwa_v1_segment.yaml`, in
+crate's shape); the webmap (#335).
+
 ## 7. Where every rule lives
 
 | Rule | File | Drives |
