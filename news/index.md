@@ -1,5 +1,61 @@
 # Changelog
 
+## link 0.65.0
+
+**Habitat flags export per config as Parquet + manifest, keyed by FWA
+position, with a write-once provenance tree and a loader into
+PostgreSQL**
+([\#308](https://github.com/NewGraphEnvironment/link/issues/308)). The
+pattern is NewGraphEnvironment/wet#7’s for discharge. Nothing is
+published yet: `habitat/` on the bucket is private and PUBLISH waits on
+the operator.
+
+- **New exports:**
+  - [`lnk_scenario_export()`](https://newgraphenvironment.github.io/link/reference/lnk_scenario_export.md)
+    writes one row per segment × config × species, keyed
+    `(blue_line_key, downstream_route_measure, upstream_route_measure)`,
+    with the flags, the width / discharge / gradient the build tested,
+    and ratios to the thresholds the build logged.
+  - [`lnk_catalog()`](https://newgraphenvironment.github.io/link/reference/lnk_catalog.md)
+    reads the manifest from a local path, https, or `s3://` (through the
+    aws CLI).
+  - [`lnk_db_load()`](https://newgraphenvironment.github.io/link/reference/lnk_db_load.md)
+    loads parts into `habitat.fwa_v1_segment`, checking md5s first.
+  - Driver: `data-raw/habitat_publish.R`, BUILD then `LNK_PUBLISH=1`.
+    Mechanics: RUNBOOK §6d.
+- **Only finished, logged builds are exported.** Provenance is written
+  once per build, per config hash and per recompute. Bundle files are
+  published only when today’s bundle hashes as the build did.
+- **One judgement, `.lnk_manifest_regressions()`, guards both BUILD and
+  PUBLISH.** It refuses a tree that would lose a live config, a
+  group:species pair, a newer build or recompute, or a newer export.
+  Override: `replace = TRUE` / `LNK_PUBLISH_REPLACE=1`.
+- **`has_barriers_dnstr` ships beside `accessible`**, because fresh’s
+  flag and link’s access table disagree on the segment that starts at a
+  barrier:
+  [\#336](https://github.com/NewGraphEnvironment/link/issues/336).
+- **Pilot on local fwapg:**
+  - Scope: `default` on 5 logged groups and `bcfishpass` on 39. 22
+    parts, 9.9 M rows, byte-identical across two builds.
+  - Spawning km and barrier-based accessible km match
+    [`lnk_rollup_wsg()`](https://newgraphenvironment.github.io/link/reference/lnk_rollup_wsg.md)
+    exactly in 150 config × species × group rows.
+  - Ratios are NA for builds before
+    [\#282](https://github.com/NewGraphEnvironment/link/issues/282),
+    which logged no thresholds.
+- **`duckdb` joins Suggests.**
+- **Follow-ups:**
+  [\#331](https://github.com/NewGraphEnvironment/link/issues/331)
+  (discharge from wet),
+  [\#332](https://github.com/NewGraphEnvironment/link/issues/332)
+  (GeoPackage),
+  [\#333](https://github.com/NewGraphEnvironment/link/issues/333) (crate
+  registration),
+  [\#334](https://github.com/NewGraphEnvironment/link/issues/334)
+  (publish gates, versioning, public read),
+  [\#335](https://github.com/NewGraphEnvironment/link/issues/335)
+  (webmap).
+
 ## link 0.64.0
 
 **Each DB primitive now records which version of which object it was

@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.64.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.65.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,35 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.65.0" id="link-0650">link 0.65.0<a class="anchor" aria-label="anchor" href="#link-0650"></a></h2>
+<p><strong>Habitat flags export per config as Parquet + manifest, keyed by FWA position, with a write-once provenance tree and a loader into PostgreSQL</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/308" class="external-link">#308</a>). The pattern is NewGraphEnvironment/wet#7’s for discharge. Nothing is published yet: <code>habitat/</code> on the bucket is private and PUBLISH waits on the operator.</p>
+<ul><li>
+<strong>New exports:</strong>
+<ul><li>
+<code><a href="../reference/lnk_scenario_export.html">lnk_scenario_export()</a></code> writes one row per segment × config × species, keyed <code>(blue_line_key, downstream_route_measure, upstream_route_measure)</code>, with the flags, the width / discharge / gradient the build tested, and ratios to the thresholds the build logged.</li>
+<li>
+<code><a href="../reference/lnk_catalog.html">lnk_catalog()</a></code> reads the manifest from a local path, https, or <code>s3://</code> (through the aws CLI).</li>
+<li>
+<code><a href="../reference/lnk_db_load.html">lnk_db_load()</a></code> loads parts into <code>habitat.fwa_v1_segment</code>, checking md5s first.</li>
+<li>Driver: <code>data-raw/habitat_publish.R</code>, BUILD then <code>LNK_PUBLISH=1</code>. Mechanics: RUNBOOK §6d.</li>
+</ul></li>
+<li>
+<strong>Only finished, logged builds are exported.</strong> Provenance is written once per build, per config hash and per recompute. Bundle files are published only when today’s bundle hashes as the build did.</li>
+<li>
+<strong>One judgement, <code>.lnk_manifest_regressions()</code>, guards both BUILD and PUBLISH.</strong> It refuses a tree that would lose a live config, a group:species pair, a newer build or recompute, or a newer export. Override: <code>replace = TRUE</code> / <code>LNK_PUBLISH_REPLACE=1</code>.</li>
+<li>
+<strong><code>has_barriers_dnstr</code> ships beside <code>accessible</code></strong>, because fresh’s flag and link’s access table disagree on the segment that starts at a barrier: <a href="https://github.com/NewGraphEnvironment/link/issues/336" class="external-link">#336</a>.</li>
+<li>
+<strong>Pilot on local fwapg:</strong>
+<ul><li>Scope: <code>default</code> on 5 logged groups and <code>bcfishpass</code> on 39. 22 parts, 9.9 M rows, byte-identical across two builds.</li>
+<li>Spawning km and barrier-based accessible km match <code><a href="../reference/lnk_rollup_wsg.html">lnk_rollup_wsg()</a></code> exactly in 150 config × species × group rows.</li>
+<li>Ratios are NA for builds before <a href="https://github.com/NewGraphEnvironment/link/issues/282" class="external-link">#282</a>, which logged no thresholds.</li>
+</ul></li>
+<li><strong><code>duckdb</code> joins Suggests.</strong></li>
+<li>
+<strong>Follow-ups:</strong> <a href="https://github.com/NewGraphEnvironment/link/issues/331" class="external-link">#331</a> (discharge from wet), <a href="https://github.com/NewGraphEnvironment/link/issues/332" class="external-link">#332</a> (GeoPackage), <a href="https://github.com/NewGraphEnvironment/link/issues/333" class="external-link">#333</a> (crate registration), <a href="https://github.com/NewGraphEnvironment/link/issues/334" class="external-link">#334</a> (publish gates, versioning, public read), <a href="https://github.com/NewGraphEnvironment/link/issues/335" class="external-link">#335</a> (webmap).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.64.0" id="link-0640">link 0.64.0<a class="anchor" aria-label="anchor" href="#link-0640"></a></h2>
 <p><strong>Each DB primitive now records which version of which object it was loaded from, and the vintage gate fails a host that has not recorded its loads</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/265" class="external-link">#265</a>, absorbing <a href="https://github.com/NewGraphEnvironment/link/issues/247" class="external-link">#247</a>). The bchamp object store is versioned but cannot be listed, so a version id not written down at load time can never be named afterwards.</p>
