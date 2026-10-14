@@ -1,3 +1,4 @@
+# nolint start: indentation_linter
 #' Read a habitat export's manifest
 #'
 #' The manifest written by [lnk_scenario_export()] is the only index of a
@@ -140,3 +141,4 @@ lnk_catalog <- function(manifest) {
   .lnk_fetch_file(src, tmp)
   paste(readLines(tmp, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
 }
+# nolint end: indentation_linter

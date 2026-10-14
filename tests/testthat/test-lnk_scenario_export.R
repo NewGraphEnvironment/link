@@ -302,3 +302,18 @@ test_that("re-exporting one config keeps the other config's parts, and refuses a
   expect_error(lnk_scenario_export(conn, c(testcfg = schema), root),
                "missing or changed")
 })
+
+test_that("a log from before a column existed reads it as NA", {
+  skip_if_not_installed("duckdb")
+  conn <- skip_if_no_db()
+  schema <- local_export_fixture(conn)
+  local_export_discharge(schema)
+  root <- withr::local_tempdir()
+  DBI::dbExecute(conn, sprintf(
+    "ALTER TABLE %s.log DROP COLUMN discharge_fill, DROP COLUMN run_uid",
+    schema))
+  p <- lnk_scenario_export(conn, c(testcfg = schema), root)
+  m <- jsonlite::fromJSON(p, simplifyVector = FALSE)
+  expect_true(all(vapply(m$configs[[1]]$discharge$fill, is.null, logical(1))))
+  expect_true(file.exists(file.path(root, "provenance/run_id=r1/log.parquet")))
+})

@@ -642,6 +642,76 @@ does not interpolate its variables inside a dollar-quoted string.
 
 ---
 
+## 6d. Publishing habitat: export, catalog, load (link#308)
+
+`lnk_scenario_export()` → `manifest.json` → `lnk_catalog()` → `lnk_db_load()`,
+on the pattern wet set for discharge (NewGraphEnvironment/wet#7). Driver:
+`data-raw/habitat_publish.R` (BUILD, then `LNK_PUBLISH=1` to upload).
+
+```
+s3://fresh-bc/habitat/fwa/v1/            (private until opened; read with credentials)
+  manifest.json
+  segment/config=<config>/species=<sp>/part-<code>.parquet
+  provenance/run_uid=<uid>/  | run_id=<id>/   log, log_input, log_parameters_*, source_artifact
+  provenance/recompute_id=<id>/log_recompute.parquet
+  config/sha256-<hex>/<the files config_hash was computed over>
+```
+
+**The key is FWA position, `(blue_line_key, downstream_route_measure,
+upstream_route_measure)`.** Break points differ by config, so `linear_feature_id`
+repeats and `id_segment` is per group (#203). `(blue_line_key,
+downstream_route_measure)` is unique within a persist schema across groups
+(measured 2026-10-14: 0 duplicates in 1.83 M `fresh_default` and 3.80 M `fresh`
+segments), so the loaded table's PK is `(config, species, blue_line_key,
+downstream_route_measure)` and a duplicate fails the load. Neighbouring measures
+do not abut exactly (sub-cm float slop); never join on equality of one segment's
+upstream to the next one's downstream.
+
+**What a group must have to be exported.** Its latest `<schema>.log` row (by
+`date_start`) is a finished build (`date_end` set) of the config, for this
+schema. Anything else — no row, another config's newer build, an open row —
+leaves the group out (`wsgs = NULL`, listed in the manifest's `skipped`) or
+stops (named `wsgs`). A NULL `run_uid` (a direct `wsg_run_one.R` run) is kept
+under `provenance/run_id=<run_id>/`.
+
+**What each column means, and where it does not mean what it looks like:**
+
+- **Species rows** exist only for the species the group's build logged. A
+  modelled species with no habitat reads FALSE; an unmodelled one has no rows.
+- **`accessible` and the habitat flags are classification-time.** The
+  cross-group recompute (`wsg_recompute_one.R`, `lnk_access(merge = TRUE)`)
+  rewrites `streams_access`, not `streams_habitat_<sp>`. So the export carries
+  `has_barriers_dnstr` from `streams_access` beside them; where a barrier in
+  another group arrived later, the two disagree.
+- **`mad_m3s`** is read at export from the table the run classified on, with
+  the run's logged `discharge_fill`. It agrees with the flags while that table
+  is unchanged.
+- **Ratios** are against the thresholds the run *logged* at its
+  `config_hash`. Builds before #282 logged none, so their spawning/rearing
+  ratios are NA and `thresholds_logged` says so (2026-10-14: only DUNC in
+  `fresh_default`; `fresh` has no thresholds log table at all). They compare
+  with the CSV thresholds, not the rule that fired (river polygons spawn on
+  any width), and no upper bound is in any ratio.
+
+**Write-once vs replaced.** `segment/` and `manifest.json` are replaced per
+config; an export carries forward the configs it does not name from the root's
+manifest (after checking their md5s), so build into the root that was
+published. `provenance/` and `config/` are never overwritten or deleted: a file
+that exists with other bytes stops the export (a changed record is a changed
+build), and PUBLISH puts them only where absent and deletes only under
+`segment/`.
+
+**Bundle files are published only when today's bundle hashes as the build
+did.** Otherwise the manifest's `bundles[]` entry says the bundle has changed,
+and the run's own `log_parameters_*` snapshots under `provenance/` are the
+record.
+
+**Not yet:** public read, versioning and PUBLISH gates on `run_uid` /
+`link_dirty` (#334); discharge from wet's `discharge.fwa_v1_segment_monthly`
+(#331); the desktop GeoPackage (#332); registering the column contract in crate
+(#333; until then it is `inst/extdata/schemas/habitat_fwa_v1_segment.yaml`, in
+crate's shape); the webmap (#335).
+
 ## 7. Where every rule lives
 
 | Rule | File | Drives |

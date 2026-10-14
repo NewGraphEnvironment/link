@@ -6,6 +6,7 @@
 # it. Readers go through the manifest (lnk_catalog()), and lnk_db_load() puts
 # the rows in fwapg.
 
+# nolint start: indentation_linter
 #' Dataset ID of the habitat segment export.
 #' @noRd
 .lnk_export_dataset <- function() "habitat/fwa/v1/segment"
@@ -212,7 +213,9 @@
     if (has_acc) {
       sprintf("LEFT JOIN %s a ON a.id_segment = s.id_segment
                 AND a.watershed_group_code = s.watershed_group_code", acc_tbl)
-    } else "",
+    } else {
+      ""
+    },
     .lnk_discharge_sql(wsg = wsg, fill = fill),
     DBI::dbQuoteLiteral(conn, wsg))
 
@@ -266,6 +269,9 @@
        FROM %s.log
       ORDER BY watershed_group_code, date_start DESC, run_id DESC", schema)))
   log$watershed_group_code <- as.character(log$watershed_group_code)
+  # A log written before a column existed (e.g. `discharge_fill`, #305) reads
+  # it as NA, which is what an older build means by it.
+  for (n in setdiff(names(cols_log), names(log))) log[[n]] <- rep(NA, nrow(log))
 
   why <- vapply(held, function(w) {
     r <- log[log$watershed_group_code == w, , drop = FALSE]
@@ -368,9 +374,10 @@
   DBI::dbExecute(con, "SET threads = 1")
   duckdb::duckdb_register(con, "lnk_df", .lnk_df_plain(df))
   tmp <- paste0(path, ".tmp")
-  ord <- if (length(order_by) > 0L) {
-    paste(" ORDER BY", paste(order_by, collapse = ", "))
-  } else ""
+  ord <- ""
+  if (length(order_by) > 0L) {
+    ord <- paste(" ORDER BY", paste(order_by, collapse = ", "))
+  }
   DBI::dbExecute(con, sprintf(
     "COPY (SELECT * FROM lnk_df%s) TO %s (FORMAT parquet, COMPRESSION zstd)",
     ord, DBI::dbQuoteString(con, tmp)))
@@ -439,7 +446,6 @@
                  character(1))
   out <- list()
   for (k in unique(keys)) {
-    r <- runs[keys == k, , drop = FALSE]
     field <- sub("=.*$", "", k)
     val <- sub("^[^=]*=", "", k)
     log <- .lnk_df_plain(DBI::dbGetQuery(conn, sprintf(
@@ -898,3 +904,4 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
   names(keep_cfg) <- vapply(keep_cfg, function(x) x$config, character(1))
   list(parts = parts, files = files, configs = keep_cfg)
 }
+# nolint end: indentation_linter

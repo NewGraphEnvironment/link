@@ -1,3 +1,4 @@
+# nolint start: indentation_linter
 #' Load a habitat export into PostgreSQL
 #'
 #' Fetches the parts a catalog lists, checks each one's size and md5 against
@@ -178,3 +179,4 @@ lnk_db_load <- function(conn, catalog, configs = NULL,
   if (!file.rename(tmp, dest)) stop("could not move ", tmp, call. = FALSE)
   dest
 }
+# nolint end: indentation_linter
