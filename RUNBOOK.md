@@ -652,8 +652,9 @@ on the pattern wet set for discharge (NewGraphEnvironment/wet#7). Driver:
 s3://fresh-bc/habitat/fwa/v1/            (private until opened; read with credentials)
   manifest.json
   segment/config=<config>/species=<sp>/part-<code>.parquet
-  provenance/run_uid=<uid>/  | run_id=<id>/   log, log_input, log_parameters_*, source_artifact
+  provenance/run_uid=<uid>/  | run_id=<id>/   log, log_input, log_parameters_*
   provenance/recompute_id=<id>/log_recompute.parquet
+  provenance/source_artifact/<md5>.parquet       this database's record at export, by content
   config/sha256-<hex>/<the files config_hash was computed over>
 ```
 
@@ -694,12 +695,23 @@ under `provenance/run_id=<run_id>/`.
   any width), and no upper bound is in any ratio.
 
 **Write-once vs replaced.** `segment/` and `manifest.json` are replaced per
-config; an export carries forward the configs it does not name from the root's
-manifest (after checking their md5s), so build into the root that was
-published. `provenance/` and `config/` are never overwritten or deleted: a file
-that exists with other bytes stops the export (a changed record is a changed
-build), and PUBLISH puts them only where absent and deletes only under
-`segment/`.
+config, and only once every config of the export has succeeded (parts are
+staged under `.staging/`); an export carries forward the configs it does not
+name from the root's manifest (after checking their md5s), so build into the
+root that was published. `provenance/` and `config/` are never overwritten or
+deleted. A provenance file that exists must hold the same *record*, not the
+same bytes: Parquet's footer names the duckdb version, and a log column added
+since (all NA) is not a change; a different record stops the export (a changed
+record is a changed build). PUBLISH makes every check before its first write
+(the live manifest's configs must all be in the root; each write-once key absent
+or already these bytes), then puts new write-once keys with `--if-none-match`
+and deletes only under `segment/`. A root rebuilt on another host re-serialises
+provenance to other bytes, so seed it from the bucket (`aws s3 sync`) before
+building; PUBLISH refuses rather than overwrite.
+
+`provenance.source_artifact` is upserted as primitives reload, so the export
+stores it as a content-addressed snapshot of this database's record at export
+time; what a run actually read is its `log_input.artifact_*` (#265).
 
 **Bundle files are published only when today's bundle hashes as the build
 did.** Otherwise the manifest's `bundles[]` entry says the bundle has changed,

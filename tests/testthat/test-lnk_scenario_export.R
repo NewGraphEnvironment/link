@@ -317,3 +317,121 @@ test_that("a log from before a column existed reads it as NA", {
   expect_true(all(vapply(m$configs[[1]]$discharge$fill, is.null, logical(1))))
   expect_true(file.exists(file.path(root, "provenance/run_id=r1/log.parquet")))
 })
+
+test_that("one-element vectors stay JSON arrays in the manifest", {
+  skip_if_not_installed("duckdb")
+  conn <- skip_if_no_db()
+  schema <- local_export_fixture(conn)
+  local_export_discharge(schema)
+  root <- withr::local_tempdir()
+  p <- lnk_scenario_export(conn, c(testcfg = schema), root, wsgs = "ADMS")
+  cf <- jsonlite::fromJSON(p, simplifyVector = FALSE)$configs[[1]]
+  for (f in c("wsgs", "species", "schema_persist", "run_uids",
+              "config_hashes")) {
+    expect_true(is.list(cf[[f]]), info = f)
+  }
+  expect_true(is.list(cf$runs[[1]]$species))
+  expect_true(is.list(cf$runs[[1]]$recompute_keys))
+})
+
+test_that("named groups may come from different schemas of one config", {
+  skip_if_not_installed("duckdb")
+  conn <- skip_if_no_db()
+  schema <- local_export_fixture(conn)
+  local_export_discharge(schema)
+  root <- withr::local_tempdir()
+  s2 <- paste0(schema, "_c")
+  withr::defer(DBI::dbExecute(conn, sprintf(
+    "DROP SCHEMA IF EXISTS %s CASCADE", s2)))
+  link:::.lnk_log_create_tables(conn, s2)
+  DBI::dbExecute(conn, sprintf(
+    "CREATE TABLE %s.streams AS SELECT * FROM %s.streams
+      WHERE watershed_group_code = 'BULK'", s2, schema))
+  DBI::dbExecute(conn, sprintf(
+    "CREATE TABLE %s.streams_habitat_co AS SELECT * FROM %s.streams_habitat_co",
+    s2, schema))
+  DBI::dbExecute(conn, sprintf(
+    "INSERT INTO %s.log SELECT * FROM %s.log WHERE run_id = 'r2'", s2, schema))
+  DBI::dbExecute(conn, sprintf(
+    "UPDATE %s.log SET run_id = 'r2c', schema_persist = '%s'", s2, s2))
+  DBI::dbExecute(conn, sprintf(
+    "DELETE FROM %s.streams WHERE watershed_group_code = 'BULK'", schema))
+
+  p <- lnk_scenario_export(conn, c(testcfg = schema, testcfg = s2), root,
+                           wsgs = c("ADMS", "BULK"))
+  cf <- jsonlite::fromJSON(p, simplifyVector = FALSE)$configs[[1]]
+  expect_setequal(unlist(cf$wsgs), c("ADMS", "BULK"))
+  expect_setequal(unlist(cf$schema_persist), c(schema, s2))
+  # one dispatch across two schemas: its evidence is gathered from both
+  u1 <- read_parquet_duck(file.path(root, "provenance/run_uid=U1/log.parquet"))
+  expect_setequal(u1$run_id, c("r1", "r2", "r2c"))
+  expect_error(lnk_scenario_export(conn, c(testcfg = schema, testcfg = s2),
+                                   root, wsgs = "ZZZZ"), "not in streams")
+})
+
+test_that("a failed export leaves the previous parts and manifest in place", {
+  skip_if_not_installed("duckdb")
+  conn <- skip_if_no_db()
+  schema <- local_export_fixture(conn)
+  local_export_discharge(schema)
+  root <- withr::local_tempdir()
+  p <- lnk_scenario_export(conn, c(testcfg = schema), root)
+  before <- readLines(p)
+  DBI::dbExecute(conn, sprintf(
+    "DELETE FROM %s.streams_habitat_bt WHERE watershed_group_code = 'LFRA'",
+    schema))
+  expect_error(lnk_scenario_export(conn, c(testcfg = schema), root),
+               "has no rows for it")
+  expect_identical(readLines(p), before)
+  cat <- lnk_catalog(p)
+  expect_true(all(unname(tools::md5sum(cat$href)) == cat$md5))
+  expect_false(dir.exists(file.path(root, ".staging")))
+})
+
+test_that("write-once compares records, not bytes", {
+  skip_if_not_installed("duckdb")
+  conn <- skip_if_no_db()
+  schema <- local_export_fixture(conn)
+  local_export_discharge(schema)
+  root <- withr::local_tempdir()
+  lnk_scenario_export(conn, c(testcfg = schema), root)
+  f <- file.path(root, "provenance/run_id=r3/log.parquet")
+
+  # the same record in other bytes (another writer, another version)
+  con <- DBI::dbConnect(duckdb::duckdb())
+  DBI::dbExecute(con, sprintf(
+    "COPY (SELECT * FROM read_parquet(%s)) TO %s (FORMAT parquet,
+                                                   COMPRESSION snappy)",
+    DBI::dbQuoteString(con, f), DBI::dbQuoteString(con, paste0(f, ".x"))))
+  DBI::dbDisconnect(con, shutdown = TRUE)
+  file.rename(paste0(f, ".x"), f)
+  md5 <- unname(tools::md5sum(f))
+
+  # and a log column added since the record was written
+  DBI::dbExecute(conn, sprintf("ALTER TABLE %s.log ADD COLUMN later text",
+                               schema))
+  expect_no_error(lnk_scenario_export(conn, c(testcfg = schema), root))
+  expect_identical(unname(tools::md5sum(f)), md5)
+
+  # a filled-in new column is a changed record
+  DBI::dbExecute(conn, sprintf("UPDATE %s.log SET later = 'x'", schema))
+  expect_error(lnk_scenario_export(conn, c(testcfg = schema), root),
+               "different content")
+})
+
+test_that("the source_artifact snapshot is stored by content, outside the run", {
+  skip_if_not_installed("duckdb")
+  conn <- skip_if_no_db()
+  skip_if_not(link:::.lnk_table_exists(conn, link:::.lnk_artifact_table()))
+  schema <- local_export_fixture(conn)
+  local_export_discharge(schema)
+  root <- withr::local_tempdir()
+  p <- lnk_scenario_export(conn, c(testcfg = schema), root)
+  cf <- jsonlite::fromJSON(p, simplifyVector = FALSE)$configs[[1]]
+  k <- cf$discharge$source_artifact_snapshot
+  expect_match(k, "^provenance/source_artifact/[0-9a-f]{32}\\.parquet$")
+  expect_identical(unname(tools::md5sum(file.path(root, k))),
+                   sub("^.*/([0-9a-f]{32})\\.parquet$", "\\1", k))
+  expect_false(file.exists(file.path(root,
+                                     "provenance/run_uid=U1/source_artifact.parquet")))
+})

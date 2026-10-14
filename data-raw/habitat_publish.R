@@ -22,9 +22,11 @@
 #   1. The local tree must still match its manifest (every part and file).
 #   2. Parts go up with put-object --content-md5, so S3 refuses a body that
 #      does not hash to the manifest's md5.
-#   3. provenance/ and config/ are written once: an absent key is put, an
-#      existing one must already carry the same md5 (its single-PUT ETag), and
-#      a different one stops the publish. They are never deleted.
+#   3. Before anything is written: the live manifest's configs must all be in
+#      this root, and each provenance/ and config/ key must be absent or carry
+#      the same md5 (its single-PUT ETag under the bucket's SSE-S3). Absent
+#      keys are then put with --if-none-match, so they are written once and
+#      never deleted.
 #   4. manifest.json goes up last, no-cache.
 #   5. Keys under segment/ that the manifest no longer names are deleted.
 #      Nothing outside segment/ is ever deleted.
@@ -132,26 +134,47 @@ if (identical(Sys.getenv("LNK_PUBLISH"), "1")) {
          call. = FALSE)
   }
 
+  # Every check before the first write, so a refusal leaves the bucket as it
+  # was. (a) The live manifest's configs must all be in this root: the root is
+  # the whole published tree, and a config it lacks would be dropped and its
+  # parts deleted. (b) Each write-once key is absent or already these bytes.
+  live <- paste(prefix, "manifest.json", sep = "/")
+  if (!is.na(etag(live))) {
+    live_cfg <- vapply(attr(lnk_catalog(paste0(target, "/manifest.json")),
+                            "configs"), function(x) x$config, character(1))
+    local_cfg <- vapply(m$configs, function(x) x$config, character(1))
+    lost <- setdiff(live_cfg, local_cfg)
+    if (length(lost) > 0L) {
+      stop("the published tree holds config ", paste(lost, collapse = ", "),
+           " and this root does not; build into a root seeded from the ",
+           "bucket (aws s3 sync) so the publish keeps it", call. = FALSE)
+    }
+  }
+  new_files <- Filter(function(f) {
+    e <- etag(paste(prefix, f$key, sep = "/"))
+    if (!is.na(e) && !identical(e, f$md5)) {
+      stop(f$key, " is already published with ETag ", e, ", not md5 ", f$md5,
+           ". provenance/ and config/ are written once; seed the root's ",
+           "copies from the bucket (aws s3 sync) rather than rebuilding them.",
+           call. = FALSE)
+    }
+    is.na(e)
+  }, m$files)
+
+  for (f in new_files) {
+    type <- "text/plain"
+    if (grepl("\\.parquet$", f$key)) type <- "application/vnd.apache.parquet"
+    # the write is the check: S3 refuses it (412) if the key appeared since
+    put(file.path(root, f$key), paste(prefix, f$key, sep = "/"), type, f$md5,
+        "--if-none-match", "*")
+  }
+  stamp(length(new_files), " of ", length(m$files),
+        " provenance/bundle files new")
   for (p in m$parts) {
     put(file.path(root, p$key), paste(prefix, p$key, sep = "/"),
         "application/vnd.apache.parquet", p$md5)
     stamp("put ", p$key)
   }
-  n_new <- 0L
-  for (f in m$files) {
-    key <- paste(prefix, f$key, sep = "/")
-    e <- etag(key)
-    if (is.na(e)) {
-      type <- "text/plain"
-      if (grepl("\\.parquet$", f$key)) type <- "application/vnd.apache.parquet"
-      put(file.path(root, f$key), key, type, f$md5)
-      n_new <- n_new + 1L
-    } else if (!identical(e, f$md5)) {
-      stop(f$key, " is already published with ETag ", e, ", not md5 ", f$md5,
-           ". provenance/ and config/ are written once.", call. = FALSE)
-    }
-  }
-  stamp(n_new, " of ", length(m$files), " provenance/bundle files new")
 
   f_man <- file.path(root, "manifest.json")
   put(f_man, paste(prefix, "manifest.json", sep = "/"), "application/json",

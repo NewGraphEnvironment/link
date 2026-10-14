@@ -42,7 +42,11 @@ lnk_catalog <- function(manifest) {
   parts <- m$parts
   if (length(parts) == 0L) stop("manifest lists no parts: ", manifest,
                                 call. = FALSE)
-  base <- sub("/[^/]*$", "", manifest)
+  base <- if (startsWith(manifest, "s3://") || grepl("^https?://", manifest)) {
+    sub("/[^/]*$", "", manifest)
+  } else {
+    dirname(manifest)
+  }
   out <- do.call(rbind, lapply(parts, function(p) {
     h <- .lnk_part_parse(p$key)
     md5 <- as.character(p$md5 %||% NA_character_)

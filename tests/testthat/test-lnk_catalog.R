@@ -58,3 +58,11 @@ test_that("a failed aws copy stops with its exit status", {
   expect_error(lnk_catalog("s3://fresh-bc/habitat/fwa/v1/manifest.json"),
                "exit 1.*403")
 })
+
+test_that("a bare manifest filename resolves parts beside it", {
+  skip_if_not_installed("duckdb")
+  root <- local_export_tree()
+  withr::local_dir(root)
+  cat <- lnk_catalog("manifest.json")
+  expect_true(file.exists(cat$href))
+})

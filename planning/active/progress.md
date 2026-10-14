@@ -19,3 +19,4 @@
   - G8: `source_artifact` scoped as this database's record.
   - Export tests 109 pass.
 - Phase 3: `lnk_catalog()` (local, https, s3:// through the `aws` CLI with the caller's credentials) and `lnk_db_load()` (one transaction, md5-checked parts, config-wide replace, PK `(config, species, blue_line_key, downstream_route_measure)`, `table =` for tests). Catalog 15, loader 19 tests pass, including mid-load rollback and cache reuse.
+- Full suite at `07fb08d0`: 2,860 pass, 2 fail + 2 error. All four reproduce identically on `origin/main` in a worktree (`test-lnk_pipeline_prepare.R` dams golden 2 fail; `test-lnk_wsg_resolve.R` closure 2 error), plus `test-lnk_db_conn.R` reaching a refused tunnel port. Environmental and pre-existing, none in files this branch touches.

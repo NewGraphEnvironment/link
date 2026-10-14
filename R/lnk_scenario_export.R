@@ -395,12 +395,15 @@
              md5 = unname(tools::md5sum(p)), stringsAsFactors = FALSE)
 }
 
-#' Write once: a file that exists must already hold these bytes.
+#' Write once: a file that exists must already hold this record.
 #'
 #' Provenance and bundle files are evidence and are never overwritten. A new
-#' copy is written beside the old, compared, and dropped when identical.
+#' copy is written beside the old and compared; the old bytes are kept when it
+#' matches. `same` compares content where bytes are not stable: Parquet's
+#' footer names the writer's version, so a duckdb upgrade or another host
+#' re-serialises an unchanged record to other bytes.
 #' @noRd
-.lnk_write_once <- function(path, write) {
+.lnk_write_once <- function(path, write, same = NULL) {
   if (!file.exists(path)) {
     write(path)
     return(invisible(path))
@@ -408,12 +411,70 @@
   tmp <- paste0(path, ".new")
   on.exit(unlink(tmp), add = TRUE)
   write(tmp)
-  if (!identical(unname(tools::md5sum(tmp)), unname(tools::md5sum(path)))) {
-    stop(path, " is already written with different content. Provenance is ",
-         "written once; a changed record means a changed build, which needs ",
-         "its own run.", call. = FALSE)
+  if (identical(unname(tools::md5sum(tmp)), unname(tools::md5sum(path))) ||
+      (!is.null(same) && isTRUE(same(path, tmp)))) {
+    return(invisible(path))
   }
-  invisible(path)
+  stop(path, " is already written with different content. Provenance is ",
+       "written once; a changed record means a changed build, which needs ",
+       "its own run.", call. = FALSE)
+}
+
+#' Do two Parquet files hold the same record?
+#'
+#' Same rows in the same order on every column of the old file, and any
+#' column only the new one has is entirely NA: a log column added since the
+#' record was written (`.lnk_log_align_columns()`) is not a changed record.
+#' @noRd
+.lnk_parquet_same <- function(old, new) {
+  con <- DBI::dbConnect(duckdb::duckdb())
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  rd <- function(f) {
+    DBI::dbGetQuery(con, sprintf(
+      "SELECT * FROM read_parquet(%s, hive_partitioning = false)",
+      DBI::dbQuoteString(con, f)))
+  }
+  a <- rd(old)
+  b <- rd(new)
+  if (nrow(a) != nrow(b) || !all(names(a) %in% names(b))) return(FALSE)
+  extra <- setdiff(names(b), names(a))
+  if (!all(vapply(b[extra], function(x) all(is.na(x)), logical(1)))) {
+    return(FALSE)
+  }
+  isTRUE(all.equal(a, b[names(a)], check.attributes = FALSE))
+}
+
+#' Snapshot of `provenance.source_artifact` for the hosts a config's builds
+#' ran on, stored by content.
+#'
+#' The table is upserted as primitives are reloaded, so it is this database's
+#' record at export time, not the run's (that is `log_input.artifact_*`,
+#' #265). Keyed by the md5 of its bytes, each distinct snapshot is kept and
+#' none is ever overwritten.
+#' @return One file entry, or NULL where the table is absent.
+#' @noRd
+.lnk_export_source_artifact <- function(conn, hosts, root) {
+  sa <- .lnk_artifact_table()
+  if (!.lnk_table_exists(conn, sa)) return(NULL)
+  rows <- .lnk_df_plain(DBI::dbGetQuery(conn, sprintf(
+    "SELECT * FROM %s WHERE host = ANY($1) ORDER BY host, table_name, url",
+    sa), params = list(paste0("{", paste(unique(stats::na.omit(hosts)),
+                                         collapse = ","), "}"))))
+  dir <- file.path(root, "provenance", "source_artifact")
+  tmp <- file.path(dir, ".snapshot.parquet")
+  on.exit(unlink(tmp), add = TRUE)
+  .lnk_parquet_write(rows, tmp)
+  key <- sprintf("provenance/source_artifact/%s.parquet",
+                 unname(tools::md5sum(tmp)))
+  if (!file.exists(file.path(root, key)) &&
+      !file.rename(tmp, file.path(root, key))) {
+    stop("could not move the source_artifact snapshot into place",
+         call. = FALSE)
+  }
+  e <- .lnk_file_entry(root, key)
+  e$kind <- "provenance"
+  e$run_key <- NA_character_
+  e
 }
 
 #' Provenance key of a run: `run_uid=<uid>`, or `run_id=<id>` for a run that
@@ -434,51 +495,71 @@
 
 #' Write each run's evidence under `provenance/<run key>/`.
 #'
-#' A dispatch's rows come whole (every group of that `run_uid` in the schema's
-#' log, not only the exported ones), with its `log_input`, the threshold and
-#' `parameters_fresh` snapshots at its config hashes, and the
-#' `provenance.source_artifact` rows of its hosts.
+#' A dispatch's rows come whole: every group of that `run_uid` in every schema
+#' of the config (a dispatch can span schemas, and its groups need not all be
+#' exported), with its `log_input` and the threshold and `parameters_fresh`
+#' snapshots at its config hashes.
+#' @param schemas The config's persist schemas.
 #' @return A data frame of written files: `key`, `kind`, `run_key`, `bytes`,
 #'   `md5`.
 #' @noRd
-.lnk_export_provenance <- function(conn, schema, runs, root) {
+.lnk_export_provenance <- function(conn, schemas, runs, root) {
   keys <- vapply(seq_len(nrow(runs)), function(i) .lnk_run_key(runs[i, ]),
                  character(1))
+  # rows of one table across the schemas, columns aligned by name
+  gather <- function(sql_of, params_of) {
+    got <- lapply(schemas, function(sch) {
+      sql <- sql_of(sch)
+      if (is.null(sql)) return(NULL)
+      .lnk_df_plain(DBI::dbGetQuery(conn, sql, params = params_of(sch)))
+    })
+    got <- Filter(function(x) !is.null(x) && nrow(x) > 0L, got)
+    if (length(got) == 0L) {
+      sch <- schemas[[1]]
+      sql <- sql_of(sch)
+      if (is.null(sql)) return(NULL)
+      return(.lnk_df_plain(DBI::dbGetQuery(conn, sql, params = params_of(sch))))
+    }
+    cols <- unique(unlist(lapply(got, names)))
+    do.call(rbind, lapply(got, function(x) {
+      for (n in setdiff(cols, names(x))) x[[n]] <- rep(NA, nrow(x))
+      x[cols]
+    }))
+  }
   out <- list()
   for (k in unique(keys)) {
     field <- sub("=.*$", "", k)
     val <- sub("^[^=]*=", "", k)
-    log <- .lnk_df_plain(DBI::dbGetQuery(conn, sprintf(
-      "SELECT * FROM %s.log WHERE %s = $1 ORDER BY watershed_group_code, run_id",
-      schema, field), params = list(val)))
-    tabs <- list(log = log)
-    tabs$log_input <- .lnk_df_plain(DBI::dbGetQuery(conn, sprintf(
-      "SELECT * FROM %s.log_input WHERE run_id = ANY($1)
-        ORDER BY run_id, table_name", schema),
-      params = list(paste0("{", paste(log$run_id, collapse = ","), "}"))))
+    log <- gather(function(sch) sprintf(
+      "SELECT * FROM %s.log WHERE %s = $1", sch, field),
+      function(sch) list(val))
+    log <- log[order(log$watershed_group_code, log$run_id), , drop = FALSE]
+    ids <- paste0("{", paste(log$run_id, collapse = ","), "}")
     hashes <- paste0("{", paste(unique(stats::na.omit(log$config_hash)),
                                 collapse = ","), "}")
+    tabs <- list(log = log)
+    tabs$log_input <- gather(function(sch) sprintf(
+      "SELECT * FROM %s.log_input WHERE run_id = ANY($1)", sch),
+      function(sch) list(ids))
+    tabs$log_input <- tabs$log_input[order(tabs$log_input$run_id,
+                                           tabs$log_input$table_name), ,
+                                     drop = FALSE]
     for (t in c("log_parameters_habitat_thresholds", "log_parameters_fresh")) {
-      if (.lnk_table_exists(conn, paste0(schema, ".", t))) {
-        tabs[[t]] <- .lnk_df_plain(DBI::dbGetQuery(conn, sprintf(
-          "SELECT * FROM %s.%s WHERE config_hash = ANY($1)
-            ORDER BY config_hash, species_code", schema, t),
-          params = list(hashes)))
+      x <- gather(function(sch) {
+        if (!.lnk_table_exists(conn, paste0(sch, ".", t))) return(NULL)
+        sprintf("SELECT * FROM %s.%s WHERE config_hash = ANY($1)", sch, t)
+      }, function(sch) list(hashes))
+      if (!is.null(x)) {
+        x <- unique(x)
+        tabs[[t]] <- x[order(x$config_hash, x$species_code), , drop = FALSE]
       }
     }
-    sa <- .lnk_artifact_table()
-    if (.lnk_table_exists(conn, sa)) {
-      hosts <- paste0("{", paste(unique(stats::na.omit(log$host)),
-                                 collapse = ","), "}")
-      tabs$source_artifact <- .lnk_df_plain(DBI::dbGetQuery(conn, sprintf(
-        "SELECT * FROM %s WHERE host = ANY($1) ORDER BY host, table_name, url",
-        sa), params = list(hosts)))
-    }
     for (t in names(tabs)) {
+      rownames(tabs[[t]]) <- NULL
       key <- sprintf("provenance/%s/%s.parquet", k, t)
       .lnk_write_once(file.path(root, key), function(p) {
         .lnk_parquet_write(tabs[[t]], p)
-      })
+      }, same = .lnk_parquet_same)
       e <- .lnk_file_entry(root, key)
       e$kind <- "provenance"
       e$run_key <- k
@@ -669,13 +750,37 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
     stop("lnk_scenario_export() needs the duckdb package", call. = FALSE)
   }
 
-  # one finished build per group, per schema
+  # one finished build per group, per schema. Named groups are asked of the
+  # schemas of a config that hold them; each must be held by one of them.
+  held <- lapply(configs, function(s) {
+    .lnk_validate_identifier(s, "schema")
+    DBI::dbGetQuery(conn, sprintf(
+      "SELECT DISTINCT watershed_group_code::text AS w FROM %s.streams", s))$w
+  })
+  if (!is.null(wsgs)) {
+    for (cf in unique(names(configs))) {
+      nowhere <- setdiff(wsgs, unlist(held[names(configs) == cf]))
+      if (length(nowhere) > 0L) {
+        stop("config '", cf, "': ", paste(nowhere, collapse = ", "),
+             " not in streams of ",
+             paste(configs[names(configs) == cf], collapse = ", "),
+             call. = FALSE)
+      }
+    }
+  }
+  keep_schema <- vapply(seq_along(configs), function(i) {
+    is.null(wsgs) || any(wsgs %in% held[[i]])
+  }, logical(1))
   runs <- lapply(seq_along(configs), function(i) {
-    r <- .lnk_export_runs(conn, configs[[i]], names(configs)[i], wsgs)
+    if (!keep_schema[i]) return(NULL)
+    w <- if (is.null(wsgs)) NULL else intersect(wsgs, held[[i]])
+    r <- .lnk_export_runs(conn, configs[[i]], names(configs)[i], w)
     r$schema_export <- configs[[i]]
     r$config_export <- names(configs)[i]
     r
   })
+  configs <- configs[keep_schema]
+  runs <- runs[keep_schema]
   # a group comes from one schema per config
   for (cf in unique(names(configs))) {
     w <- unlist(lapply(runs[names(configs) == cf],
@@ -687,9 +792,9 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
     }
   }
   # a dispatch belongs to one config
-  uid <- do.call(rbind, lapply(runs, function(r) {
-    unique(r[!is.na(r$run_uid), c("run_uid", "config_export"), drop = FALSE])
-  }))
+  uid <- unique(do.call(rbind, lapply(runs, function(r) {
+    r[!is.na(r$run_uid), c("run_uid", "config_export"), drop = FALSE]
+  })))
   if (!is.null(uid) && anyDuplicated(uid$run_uid) > 0L) {
     stop("run_uid shared across configs: ",
          paste(unique(uid$run_uid[duplicated(uid$run_uid)]), collapse = ", "),
@@ -705,9 +810,11 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
 
   dir.create(root, recursive = TRUE, showWarnings = FALSE)
   prev <- .lnk_manifest_previous(root, unique(names(configs)))
-  for (cf in unique(names(configs))) {
-    unlink(file.path(root, "segment", paste0("config=", cf)), recursive = TRUE)
-  }
+  # New parts are written to a staging tree and swapped in only once every
+  # config has succeeded, so a failure leaves the published tree as it was.
+  stage <- file.path(root, ".staging")
+  unlink(stage, recursive = TRUE)
+  on.exit(unlink(stage, recursive = TRUE), add = TRUE)
 
   parts <- list(prev$parts)
   files <- list(prev$files)
@@ -738,11 +845,11 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
         }))
         key <- sprintf("segment/config=%s/species=%s/part-%s.parquet",
                        cf, sp, code)
-        .lnk_parquet_write(rows, file.path(root, key),
+        .lnk_parquet_write(rows, file.path(stage, key),
                            order_by = c("watershed_group_code",
                                         "blue_line_key",
                                         "downstream_route_measure"))
-        e <- .lnk_file_entry(root, key)
+        e <- .lnk_file_entry(stage, key)
         parts[[length(parts) + 1L]] <- data.frame(
           key = key, dataset = .lnk_export_dataset(), config = cf,
           species = sp, code = code,
@@ -754,14 +861,13 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
       }
     }
 
-    prov <- do.call(rbind, lapply(unique(r_cf$schema_export), function(s) {
-      .lnk_export_provenance(conn, s, r_cf[r_cf$schema_export == s, ,
-                                           drop = FALSE], root)
-    }))
+    prov <- .lnk_export_provenance(conn, unique(r_cf$schema_export), r_cf,
+                                   root)
     rc_files <- .lnk_export_recompute_files(rc_cf, root)
+    sa_file <- .lnk_export_source_artifact(conn, r_cf$host, root)
     hashes <- unique(r_cf$config_hash)
     bnd <- .lnk_export_bundle(cf, hashes, root)
-    files[[length(files) + 1L]] <- rbind(prov, rc_files, bnd$files)
+    files[[length(files) + 1L]] <- rbind(prov, rc_files, sa_file, bnd$files)
 
     thr_logged <- vapply(hashes, function(h) {
       any(vapply(unique(r_cf$schema_export), function(s) {
@@ -781,8 +887,9 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
     }
     keep <- setdiff(names(r_cf), c("schema_export", "config_export"))
     run_rows <- .lnk_json_rows(r_cf[, keep, drop = FALSE])
-    run_rows$species <- lapply(r_cf$species, .lnk_pg_array)
-    run_rows$wsg_upstream <- lapply(r_cf$wsg_upstream, .lnk_pg_array)
+    run_rows$species <- lapply(r_cf$species, function(x) I(.lnk_pg_array(x)))
+    run_rows$wsg_upstream <- lapply(r_cf$wsg_upstream,
+                                    function(x) I(.lnk_pg_array(x)))
     run_rows$model <- .lnk_export_model(cf, r_cf)
     run_rows$provenance_key <- vapply(seq_len(nrow(r_cf)), function(i) {
       paste0("provenance/", .lnk_run_key(r_cf[i, ]))
@@ -790,23 +897,24 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
     run_rows$recompute_keys <- lapply(r_cf$watershed_group_code, function(w) {
       ids <- if (is.null(rc_cf)) character(0) else
         rc_cf$recompute_id[rc_cf$watershed_group_code == w]
-      if (length(ids) == 0L) character(0) else
-        paste0("provenance/recompute_id=", ids)
+      I(if (length(ids) == 0L) character(0) else
+        paste0("provenance/recompute_id=", ids))
     })
     cfg_entries[[cf]] <- list(
       config = cf,
-      schema_persist = unique(r_cf$schema_export),
-      wsgs = r_cf$watershed_group_code,
-      species = sp_cf,
+      schema_persist = I(unique(r_cf$schema_export)),
+      wsgs = I(r_cf$watershed_group_code),
+      species = I(sp_cf),
       skipped = skipped,
-      run_uids = sort(unique(stats::na.omit(r_cf$run_uid))),
-      config_hashes = hashes,
+      run_uids = I(sort(unique(as.character(stats::na.omit(r_cf$run_uid))))),
+      config_hashes = I(unname(hashes)),
       thresholds_logged = as.list(thr_logged),
       discharge = list(
         table = dtbl,
         fill = stats::setNames(as.list(as.logical(r_cf$discharge_fill)),
                                r_cf$watershed_group_code),
         source_artifact = d_art,
+        source_artifact_snapshot = if (is.null(sa_file)) NULL else sa_file$key,
         source_artifact_scope = paste(
           "provenance.source_artifact rows of the exporting database at",
           "export time, not a record of the hosts the builds ran on")),
@@ -815,6 +923,16 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
     )
   }
 
+  for (cf in unique(names(configs))) {
+    dest <- file.path(root, "segment", paste0("config=", cf))
+    unlink(dest, recursive = TRUE)
+    src <- file.path(stage, "segment", paste0("config=", cf))
+    dir.create(dirname(dest), recursive = TRUE, showWarnings = FALSE)
+    if (!file.rename(src, dest)) {
+      stop("could not move the staged parts of config '", cf, "' into place",
+           call. = FALSE)
+    }
+  }
   parts <- do.call(rbind, parts)
   parts <- parts[order(parts$key, method = "radix"), , drop = FALSE]
   files <- do.call(rbind, files)
@@ -856,7 +974,7 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
     key <- sprintf("provenance/%s/log_recompute.parquet", k)
     .lnk_write_once(file.path(root, key), function(p) {
       .lnk_parquet_write(rc[i, , drop = FALSE], p)
-    })
+    }, same = .lnk_parquet_same)
     e <- .lnk_file_entry(root, key)
     e$kind <- "provenance"
     e$run_key <- k

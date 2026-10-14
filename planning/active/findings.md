@@ -113,6 +113,10 @@ Relates to #305, #307, #203, #226, NewGraphEnvironment/wet#7, NewGraphEnvironmen
 
 | Error | Resolution |
 |-------|------------|
+| duckdb `read_parquet()` on a hive path adds `config`/`species` columns | Read with `hive_partitioning = false` when the hive values come from the manifest (as wet does) |
+| Copying a schema's log into another schema reuses `run_id`s, so both write `provenance/run_id=<id>/` | Correct refusal by the write-once guard; fixture uses distinct ids |
+| Pilot BUILD: `names attribute [39] must be the same length as the vector [0]` | `fresh.log` predates `discharge_fill` (#305); `.lnk_export_runs()` now adds any `cols_log` column a log lacks as NA |
+| `sprintf("%d", <double>)` in verify.R's summary | counts from `sum()` of numerics are double; formatted with `%s` |
 
 ## Logged thresholds coverage (2026-10-14)
 
@@ -125,5 +129,11 @@ Relates to #305, #307, #203, #226, NewGraphEnvironment/wet#7, NewGraphEnvironmen
 | fresh | 19e3a056… (39 groups) | 39 | table absent | — |
 
 Today's `default` bundle hashes to `7e9dffa4…`, which is DUNC's, so DUNC's bundle files can be published under `config/<hash>/`; no other logged build's can.
-| duckdb `read_parquet()` on a hive path adds `config`/`species` columns | Read with `hive_partitioning = false` when the hive values come from the manifest (as wet does) |
-| Copying a schema's log into another schema reuses `run_id`s, so both write `provenance/run_id=<id>/` | Correct refusal by the write-once guard; fixture uses distinct ids |
+
+## Pilot (2026-10-14, local fwapg)
+
+- BUILD `default:fresh_default,bcfishpass:fresh`, every finished build: 5 + 39 groups, 22 parts, 9,876,720 rows, 219 MB, 102 provenance/bundle files, about 1 min. All verify against the manifest.
+  - Runs: default 1/5 with logged thresholds (DUNC) and 1/5 with a resolvable model (DUNC: cw); bcfishpass 0/39 thresholds, 0/39 model (bundle hash moved since the build), 39/39 with a recompute after the build, 38/39 with a `run_uid`.
+- Load + compare (`data-raw/logs/habitat_export_308/verify.R`) against `lnk_rollup_wsg()` per config × species × group (140 rows): spawning km identical everywhere, rearing flag km within 0.01 km (the rollup rounds rearing and connection separately, then adds).
+- **G1 measured on real data:** km with `has_barriers_dnstr = FALSE` equals the rollup's `accessible_km` (access 1/2, post-recompute), while the classification-time `accessible` flag runs higher where a barrier in another group arrived later. SETN CH: 1,587.6 km flagged accessible vs 1,497.2 km with no barrier downstream (511 segments). So shipping both columns matters.
+- `lnk_rollup_wsg()` is slow on the big `fresh` schema (minutes per group × species), which made the verify run about 75 min; the export itself is not.
