@@ -70,10 +70,10 @@
 
 ## Phase 4: BUILD/PUBLISH script + pilot build
 
-- [ ] `data-raw/habitat_publish.R` in wet's two modes:
+- [x] `data-raw/habitat_publish.R` in wet's two modes:
   - **BUILD:** runs `lnk_scenario_export()` to a local root, then verifies it.
   - **PUBLISH (`LNK_PUBLISH=1`):** refuses unless the local tree verifies. It then uploads each part with `aws s3api put-object --content-md5`, puts the manifest last with `no-cache`, and deletes keys the manifest no longer names. The target is `s3://fresh-bc/habitat/fwa/v1/` under the bucket's private default.
-- [ ] Pilot BUILD (local only): `default` on its 5 logged groups and `bcfishpass` on a few logged ones, then `lnk_db_load()` into local fwapg. Two checks:
+- [x] Pilot BUILD (local only): `default` on its 5 logged groups and `bcfishpass` on a few logged ones, then `lnk_db_load()` into local fwapg. Two checks:
   - against a direct persist query, per-config km of spawning and rearing match;
   - no duplicate keys.
 
@@ -81,8 +81,8 @@
 
 ## Phase 5: Docs and follow-ups
 
-- [ ] RUNBOOK section on the export, catalog and load; `NEWS.md`; `duckdb` in Suggests; runnable `@examples` built on a temp tree.
-- [ ] File follow-ups:
+- [x] RUNBOOK section on the export, catalog and load; `NEWS.md`; `duckdb` in Suggests; runnable `@examples` built on a temp tree.
+- [x] File follow-ups (filed #331 discharge, #332 GeoPackage, #333 crate, #334 publish gates, #335 webmap; plus #336 from the pilot):
   - pipeline discharge from wet;
   - desktop GeoPackage;
   - crate registration of the schema;
@@ -91,8 +91,8 @@
 
 ## Validation
 
-- [ ] Tests pass (`devtools::test()`), `lintr::lint_package()`, `devtools::document()`, `devtools::check()`
-- [ ] `/code-check branch` clean (three-round floor)
-- [ ] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion
+- [x] Tests pass (`devtools::test()`), `lintr::lint_package()`, `devtools::document()`, `devtools::check()`: 2,896 pass under check; 5 fail/error, all environmental and identical on `origin/main`; no check warning or note names a file this branch adds
+- [x] `/code-check branch`: five rounds, ended by enumeration (24 places)
+- [x] PWF checkboxes match landed work
+- [x] `/planning-archive` on completion
 
