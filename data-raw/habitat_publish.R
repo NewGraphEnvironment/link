@@ -140,14 +140,23 @@ if (identical(Sys.getenv("LNK_PUBLISH"), "1")) {
   # parts deleted. (b) Each write-once key is absent or already these bytes.
   live <- paste(prefix, "manifest.json", sep = "/")
   if (!is.na(etag(live))) {
-    live_cfg <- vapply(attr(lnk_catalog(paste0(target, "/manifest.json")),
-                            "configs"), function(x) x$config, character(1))
-    local_cfg <- vapply(m$configs, function(x) x$config, character(1))
-    lost <- setdiff(live_cfg, local_cfg)
-    if (length(lost) > 0L) {
-      stop("the published tree holds config ", paste(lost, collapse = ", "),
-           " and this root does not; build into a root seeded from the ",
-           "bucket (aws s3 sync) so the publish keeps it", call. = FALSE)
+    live_cfg <- attr(lnk_catalog(paste0(target, "/manifest.json")), "configs")
+    local_at <- vapply(m$configs, function(x) x$exported %||% "",
+                       character(1))
+    names(local_at) <- vapply(m$configs, function(x) x$config, character(1))
+    for (x in live_cfg) {
+      if (!x$config %in% names(local_at)) {
+        stop("the published tree holds config ", x$config, " and this root ",
+             "does not; build into a root seeded from the bucket ",
+             "(aws s3 sync) so the publish keeps it", call. = FALSE)
+      }
+      # ISO 8601 UTC strings of one format compare as text
+      if (local_at[[x$config]] < (x$exported %||% "")) {
+        stop("config ", x$config, " was published from an export of ",
+             x$exported, "; this root's is older (", local_at[[x$config]],
+             "). Seed the root from the bucket before publishing.",
+             call. = FALSE)
+      }
     }
   }
   new_files <- Filter(function(f) {

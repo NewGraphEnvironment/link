@@ -253,9 +253,13 @@
 #'
 #' @param wsgs `NULL` for every exportable group the schema holds (others are
 #'   named in a message), or the groups to export (any that fails stops).
+#' @param strict With named `wsgs`, `FALSE` skips a group this schema cannot
+#'   export instead of stopping (another schema of the config may hold its
+#'   build); the caller checks that every named group was exported somewhere.
 #' @return The log rows, one per group, sorted by group.
 #' @noRd
-.lnk_export_runs <- function(conn, schema, config, wsgs = NULL) {
+.lnk_export_runs <- function(conn, schema, config, wsgs = NULL,
+                             strict = TRUE) {
   .lnk_validate_identifier(schema, "schema")
   if (!.lnk_table_exists(conn, paste0(schema, ".log"))) {
     stop(schema, " has no log table: nothing records which build it holds",
@@ -299,6 +303,8 @@
         if (length(skip) > 5L) "; ..." else "")
     }
     wsgs <- names(why)[!nzchar(why)]
+  } else if (!strict) {
+    wsgs <- intersect(wsgs, names(why)[!nzchar(why)])
   } else {
     absent <- setdiff(wsgs, held)
     bad <- why[intersect(wsgs, held)]
@@ -310,7 +316,7 @@
            call. = FALSE)
     }
   }
-  if (length(wsgs) == 0L) {
+  if (length(wsgs) == 0L && strict) {
     stop(schema, ": no group has a finished build of config '", config, "'",
          call. = FALSE)
   }
@@ -477,93 +483,81 @@
   e
 }
 
-#' Provenance key of a run: `run_uid=<uid>`, or `run_id=<id>` for a run that
-#' belonged to no dispatch.
+#' Provenance key of one build: `run_uid=<uid>/run_id=<id>`, or `run_id=<id>`
+#' for a build that belonged to no dispatch.
+#'
+#' Keyed per build, not per dispatch: a finished build's log row and inputs do
+#' not change, while a dispatch's set of rows grows as its other groups close
+#' and depends on which schemas an export reads.
 #' @noRd
 .lnk_run_key <- function(run) {
   uid <- as.character(run$run_uid[[1]])
-  k <- if (is.na(uid) || !nzchar(uid)) {
-    paste0("run_id=", run$run_id[[1]])
-  } else {
-    paste0("run_uid=", uid)
-  }
-  if (!grepl("^run_(uid|id)=[A-Za-z0-9_.:+-]+$", k)) {
-    stop("run identifier not usable in a path: ", k, call. = FALSE)
-  }
-  k
+  id <- as.character(run$run_id[[1]])
+  ok <- function(x) grepl("^[A-Za-z0-9_.:+-]+$", x)
+  if (!ok(id)) stop("run_id not usable in a path: ", id, call. = FALSE)
+  if (is.na(uid) || !nzchar(uid)) return(paste0("run_id=", id))
+  if (!ok(uid)) stop("run_uid not usable in a path: ", uid, call. = FALSE)
+  paste0("run_uid=", uid, "/run_id=", id)
 }
 
-#' Write each run's evidence under `provenance/<run key>/`.
+#' Provenance key of a config hash's parameter snapshots.
+#' @noRd
+.lnk_hash_key <- function(hash) {
+  hex <- sub("^sha256:", "", hash)
+  if (!grepl("^[A-Za-z0-9]+$", hex)) {
+    stop("config_hash not usable in a path: ", hash, call. = FALSE)
+  }
+  paste0("config_hash=", hex)
+}
+
+#' Write each build's evidence, once, under keys that cannot change.
 #'
-#' A dispatch's rows come whole: every group of that `run_uid` in every schema
-#' of the config (a dispatch can span schemas, and its groups need not all be
-#' exported), with its `log_input` and the threshold and `parameters_fresh`
-#' snapshots at its config hashes.
-#' @param schemas The config's persist schemas.
+#' Per build (`provenance/<run key>/`): its `log` row and its `log_input`
+#' rows. Per config hash (`provenance/config_hash=<hex>/`): the
+#' `log_parameters_habitat_thresholds` and `log_parameters_fresh` snapshots
+#' the build classified on. A dispatch is the set of builds sharing a
+#' `run_uid`, listed in the manifest.
+#' @param runs Log rows with `schema_export`.
 #' @return A data frame of written files: `key`, `kind`, `run_key`, `bytes`,
 #'   `md5`.
 #' @noRd
-.lnk_export_provenance <- function(conn, schemas, runs, root) {
-  keys <- vapply(seq_len(nrow(runs)), function(i) .lnk_run_key(runs[i, ]),
-                 character(1))
-  # rows of one table across the schemas, columns aligned by name
-  gather <- function(sql_of, params_of) {
-    got <- lapply(schemas, function(sch) {
-      sql <- sql_of(sch)
-      if (is.null(sql)) return(NULL)
-      .lnk_df_plain(DBI::dbGetQuery(conn, sql, params = params_of(sch)))
-    })
-    got <- Filter(function(x) !is.null(x) && nrow(x) > 0L, got)
-    if (length(got) == 0L) {
-      sch <- schemas[[1]]
-      sql <- sql_of(sch)
-      if (is.null(sql)) return(NULL)
-      return(.lnk_df_plain(DBI::dbGetQuery(conn, sql, params = params_of(sch))))
-    }
-    cols <- unique(unlist(lapply(got, names)))
-    do.call(rbind, lapply(got, function(x) {
-      for (n in setdiff(cols, names(x))) x[[n]] <- rep(NA, nrow(x))
-      x[cols]
-    }))
-  }
+.lnk_export_provenance <- function(conn, runs, root) {
   out <- list()
-  for (k in unique(keys)) {
-    field <- sub("=.*$", "", k)
-    val <- sub("^[^=]*=", "", k)
-    log <- gather(function(sch) sprintf(
-      "SELECT * FROM %s.log WHERE %s = $1", sch, field),
-      function(sch) list(val))
-    log <- log[order(log$watershed_group_code, log$run_id), , drop = FALSE]
-    ids <- paste0("{", paste(log$run_id, collapse = ","), "}")
-    hashes <- paste0("{", paste(unique(stats::na.omit(log$config_hash)),
-                                collapse = ","), "}")
-    tabs <- list(log = log)
-    tabs$log_input <- gather(function(sch) sprintf(
-      "SELECT * FROM %s.log_input WHERE run_id = ANY($1)", sch),
-      function(sch) list(ids))
-    tabs$log_input <- tabs$log_input[order(tabs$log_input$run_id,
-                                           tabs$log_input$table_name), ,
-                                     drop = FALSE]
+  put <- function(df, key, run_key) {
+    rownames(df) <- NULL
+    .lnk_write_once(file.path(root, key), function(p) {
+      .lnk_parquet_write(df, p)
+    }, same = .lnk_parquet_same)
+    e <- .lnk_file_entry(root, key)
+    e$kind <- "provenance"
+    e$run_key <- run_key
+    out[[length(out) + 1L]] <<- e
+  }
+  for (i in seq_len(nrow(runs))) {
+    sch <- runs$schema_export[[i]]
+    id <- runs$run_id[[i]]
+    k <- .lnk_run_key(runs[i, ])
+    put(.lnk_df_plain(DBI::dbGetQuery(conn, sprintf(
+      "SELECT * FROM %s.log WHERE run_id = $1", sch), params = list(id))),
+      sprintf("provenance/%s/log.parquet", k), k)
+    put(.lnk_df_plain(DBI::dbGetQuery(conn, sprintf(
+      "SELECT * FROM %s.log_input WHERE run_id = $1 ORDER BY table_name", sch),
+      params = list(id))),
+      sprintf("provenance/%s/log_input.parquet", k), k)
+  }
+  hashes <- unique(runs[, c("config_hash", "schema_export")])
+  for (h in unique(hashes$config_hash)) {
+    k <- .lnk_hash_key(h)
     for (t in c("log_parameters_habitat_thresholds", "log_parameters_fresh")) {
-      x <- gather(function(sch) {
-        if (!.lnk_table_exists(conn, paste0(sch, ".", t))) return(NULL)
-        sprintf("SELECT * FROM %s.%s WHERE config_hash = ANY($1)", sch, t)
-      }, function(sch) list(hashes))
-      if (!is.null(x)) {
-        x <- unique(x)
-        tabs[[t]] <- x[order(x$config_hash, x$species_code), , drop = FALSE]
-      }
-    }
-    for (t in names(tabs)) {
-      rownames(tabs[[t]]) <- NULL
-      key <- sprintf("provenance/%s/%s.parquet", k, t)
-      .lnk_write_once(file.path(root, key), function(p) {
-        .lnk_parquet_write(tabs[[t]], p)
-      }, same = .lnk_parquet_same)
-      e <- .lnk_file_entry(root, key)
-      e$kind <- "provenance"
-      e$run_key <- k
-      out[[length(out) + 1L]] <- e
+      got <- lapply(hashes$schema_export[hashes$config_hash == h], function(s) {
+        if (!.lnk_table_exists(conn, paste0(s, ".", t))) return(NULL)
+        .lnk_df_plain(DBI::dbGetQuery(conn, sprintf(
+          "SELECT * FROM %s.%s WHERE config_hash = $1 ORDER BY species_code",
+          s, t), params = list(h)))
+      })
+      got <- Filter(function(x) !is.null(x) && nrow(x) > 0L, got)
+      if (length(got) == 0L) next
+      put(got[[1]], sprintf("provenance/%s/%s.parquet", k, t), k)
     }
   }
   do.call(rbind, out)
@@ -682,7 +676,8 @@
 #' ```
 #' <root>/manifest.json
 #' <root>/segment/config=<config>/species=<sp>/part-<code>.parquet
-#' <root>/provenance/run_uid=<uid>/{log,log_input,...}.parquet
+#' <root>/provenance/run_uid=<uid>/run_id=<id>/{log,log_input}.parquet
+#' <root>/provenance/config_hash=<hex>/log_parameters_*.parquet
 #' <root>/config/sha256-<hex>/<bundle files>
 #' ```
 #'
@@ -693,8 +688,8 @@
 #'   segment's line from the FWA blue line at its measures.
 #' - **Which groups.** A group is exported only when its latest log row is a
 #'   finished build of the config; there is no other record of the thresholds
-#'   or bundle behind its flags. A build outside a dispatch (`run_uid` NULL)
-#'   is kept under `provenance/run_id=<run_id>/`.
+#'   or bundle behind its flags. Provenance is keyed per build; a build outside
+#'   a dispatch (`run_uid` NULL) is kept under `provenance/run_id=<run_id>/`.
 #' - **Species.** Every segment has a row for every species the config models
 #'   in the exported groups; a species with no habitat in a group reads FALSE.
 #' - **Discharge.** `mad_m3s` is the discharge the run classified on, with its
@@ -768,17 +763,37 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
       }
     }
   }
-  keep_schema <- vapply(seq_along(configs), function(i) {
-    is.null(wsgs) || any(wsgs %in% held[[i]])
-  }, logical(1))
+  # A named group is asked of every schema of its config that holds it, and
+  # skipped where that copy is not a finished build of the config (a schema
+  # may hold another config's build of it); it must be exported by one.
   runs <- lapply(seq_along(configs), function(i) {
-    if (!keep_schema[i]) return(NULL)
     w <- if (is.null(wsgs)) NULL else intersect(wsgs, held[[i]])
-    r <- .lnk_export_runs(conn, configs[[i]], names(configs)[i], w)
-    r$schema_export <- configs[[i]]
-    r$config_export <- names(configs)[i]
+    if (!is.null(wsgs) && length(w) == 0L) return(NULL)
+    r <- .lnk_export_runs(conn, configs[[i]], names(configs)[i], w,
+                          strict = is.null(wsgs))
+    r$schema_export <- rep(configs[[i]], nrow(r))
+    r$config_export <- rep(names(configs)[i], nrow(r))
     r
   })
+  if (!is.null(wsgs)) {
+    for (cf in unique(names(configs))) {
+      idx <- which(names(configs) == cf)
+      got <- unlist(lapply(runs[idx], function(r) r$watershed_group_code))
+      miss <- setdiff(wsgs, got)
+      if (length(miss) > 0L) {
+        why <- unlist(lapply(idx, function(i) {
+          sk <- attr(runs[[i]], "skipped")
+          sk <- sk[intersect(names(sk), miss)]
+          if (length(sk) == 0L) return(NULL)
+          sprintf("%s in %s (%s)", names(sk), configs[[i]], unlist(sk))
+        }))
+        stop("config '", cf, "': cannot export ", paste(why, collapse = ", "),
+             call. = FALSE)
+      }
+    }
+  }
+  keep_schema <- vapply(runs, function(r) !is.null(r) && nrow(r) > 0L,
+                        logical(1))
   configs <- configs[keep_schema]
   runs <- runs[keep_schema]
   # a group comes from one schema per config
@@ -808,6 +823,7 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
     .lnk_hvb_check_segmentation(conn, unique(unname(configs)), common)
   }
 
+  built <- Sys.time()
   dir.create(root, recursive = TRUE, showWarnings = FALSE)
   prev <- .lnk_manifest_previous(root, unique(names(configs)))
   # New parts are written to a staging tree and swapped in only once every
@@ -823,7 +839,10 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
     r_set <- runs[names(configs) == cf]
     r_cf <- do.call(rbind, r_set)
     rc_cf <- do.call(rbind, lapply(r_set, attr, "recompute"))
-    skipped <- do.call(c, lapply(r_set, attr, "skipped"))
+    skipped <- unlist(lapply(r_set, attr, "skipped"))
+    # always a JSON object, `{}` when nothing was skipped
+    skipped <- if (length(skipped) > 0L) as.list(skipped) else
+      structure(list(), names = character(0))
     sp_wsg <- lapply(r_cf$species, .lnk_pg_array)
     if (!is.null(species)) sp_wsg <- lapply(sp_wsg, intersect, species)
     names(sp_wsg) <- r_cf$watershed_group_code
@@ -861,8 +880,7 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
       }
     }
 
-    prov <- .lnk_export_provenance(conn, unique(r_cf$schema_export), r_cf,
-                                   root)
+    prov <- .lnk_export_provenance(conn, r_cf, root)
     rc_files <- .lnk_export_recompute_files(rc_cf, root)
     sa_file <- .lnk_export_source_artifact(conn, r_cf$host, root)
     hashes <- unique(r_cf$config_hash)
@@ -894,6 +912,9 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
     run_rows$provenance_key <- vapply(seq_len(nrow(r_cf)), function(i) {
       paste0("provenance/", .lnk_run_key(r_cf[i, ]))
     }, character(1))
+    run_rows$parameters_key <- paste0("provenance/",
+                                      vapply(r_cf$config_hash, .lnk_hash_key,
+                                             character(1), USE.NAMES = FALSE))
     run_rows$recompute_keys <- lapply(r_cf$watershed_group_code, function(w) {
       ids <- if (is.null(rc_cf)) character(0) else
         rc_cf$recompute_id[rc_cf$watershed_group_code == w]
@@ -902,6 +923,9 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
     })
     cfg_entries[[cf]] <- list(
       config = cf,
+      # when this config's parts were exported; PUBLISH refuses to replace a
+      # published config with an older export of it
+      exported = format(built, "%Y-%m-%dT%H:%M:%OS3Z", tz = "UTC"),
       schema_persist = I(unique(r_cf$schema_export)),
       wsgs = I(r_cf$watershed_group_code),
       species = I(sp_cf),
@@ -939,7 +963,7 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
   files <- files[!duplicated(files$key), , drop = FALSE]
   files <- files[order(files$key, method = "radix"), , drop = FALSE]
   cfg_entries <- unname(cfg_entries[order(names(cfg_entries), method = "radix")])
-  invisible(.lnk_manifest_write(root, parts, files, cfg_entries))
+  invisible(.lnk_manifest_write(root, parts, files, cfg_entries, built))
 }
 
 #' The habitat model (`cw` or `mad`) each build classified on.

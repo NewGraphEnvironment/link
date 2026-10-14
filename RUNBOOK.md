@@ -652,7 +652,9 @@ on the pattern wet set for discharge (NewGraphEnvironment/wet#7). Driver:
 s3://fresh-bc/habitat/fwa/v1/            (private until opened; read with credentials)
   manifest.json
   segment/config=<config>/species=<sp>/part-<code>.parquet
-  provenance/run_uid=<uid>/  | run_id=<id>/   log, log_input, log_parameters_*
+  provenance/run_uid=<uid>/run_id=<id>/   log, log_input      one finished build
+  provenance/run_id=<id>/                  log, log_input      a build outside a dispatch
+  provenance/config_hash=<hex>/            log_parameters_habitat_thresholds, log_parameters_fresh
   provenance/recompute_id=<id>/log_recompute.parquet
   provenance/source_artifact/<md5>.parquet       this database's record at export, by content
   config/sha256-<hex>/<the files config_hash was computed over>
@@ -672,18 +674,33 @@ upstream to the next one's downstream.
 `date_start`) is a finished build (`date_end` set) of the config, for this
 schema. Anything else — no row, another config's newer build, an open row —
 leaves the group out (`wsgs = NULL`, listed in the manifest's `skipped`) or
-stops (named `wsgs`). A NULL `run_uid` (a direct `wsg_run_one.R` run) is kept
-under `provenance/run_id=<run_id>/`.
+stops (named `wsgs`; a group is taken from whichever of the config's schemas
+holds its build). Provenance is keyed per finished build, never per dispatch:
+a dispatch's set of rows grows as its other groups close and depends on which
+schemas an export reads, while one build's log row does not change. A NULL
+`run_uid` (a direct `wsg_run_one.R` run) is kept under
+`provenance/run_id=<run_id>/`. Each config entry carries `exported`, and
+PUBLISH refuses to replace a published config with an older export of it.
 
 **What each column means, and where it does not mean what it looks like:**
 
 - **Species rows** exist only for the species the group's build logged. A
   modelled species with no habitat reads FALSE; an unmodelled one has no rows.
-- **`accessible` and the habitat flags are classification-time.** The
-  cross-group recompute (`wsg_recompute_one.R`, `lnk_access(merge = TRUE)`)
-  rewrites `streams_access`, not `streams_habitat_<sp>`. So the export carries
-  `has_barriers_dnstr` from `streams_access` beside them; where a barrier in
-  another group arrived later, the two disagree.
+- **`accessible` is fresh's classification flag; `has_barriers_dnstr` is
+  link's `streams_access`** (what mapping_code and `lnk_rollup_wsg()`'s
+  `accessible_km` read). The export carries both because they disagree, for
+  two reasons:
+  - **The segment that starts at a barrier.** `accessible` counts it, link's
+    access table puts the barrier downstream of it. Measured 2026-10-14 on DUNC
+    BT, never recomputed: 229 segments (85 km) flagged accessible with a BT
+    barrier downstream, 228 of them starting exactly at a BT-blocking barrier.
+    Across the pilot's 150 config × species × group rows, every row has some;
+    the flag runs 4,292 km over `accessible_km` in all. The convention
+    question is #336.
+  - **The cross-group recompute** (`wsg_recompute_one.R`,
+    `lnk_access(merge = TRUE)`) rewrites `streams_access`, never
+    `streams_habitat_<sp>`, so a barrier in another group that arrived after
+    classification shows only in `has_barriers_dnstr`.
 - **`mad_m3s`** is read at export from the table the run classified on, with
   the run's logged `discharge_fill`. It agrees with the flags while that table
   is unchanged.

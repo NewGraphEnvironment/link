@@ -137,3 +137,18 @@ Today's `default` bundle hashes to `7e9dffa4…`, which is DUNC's, so DUNC's bun
 - Load + compare (`data-raw/logs/habitat_export_308/verify.R`) against `lnk_rollup_wsg()` per config × species × group (140 rows): spawning km identical everywhere, rearing flag km within 0.01 km (the rollup rounds rearing and connection separately, then adds).
 - **G1 measured on real data:** km with `has_barriers_dnstr = FALSE` equals the rollup's `accessible_km` (access 1/2, post-recompute), while the classification-time `accessible` flag runs higher where a barrier in another group arrived later. SETN CH: 1,587.6 km flagged accessible vs 1,497.2 km with no barrier downstream (511 segments). So shipping both columns matters.
 - `lnk_rollup_wsg()` is slow on the big `fresh` schema (minutes per group × species), which made the verify run about 75 min; the export itself is not.
+
+## Mutation table (2026-10-14, at `af9225f7`, scratch copy)
+
+Each guard's defect restored in a copy; the count is failing + erroring tests in that guard's file.
+
+| guard restored to the bug | red tests |
+|---|---|
+| habitat join on `id_segment` only (fan-out, #203) | 12 |
+| a group with no log row accepted | 1 |
+| a logged species with no habitat rows read as FALSE | 4 |
+| write-once accepts any content | 2 |
+| part md5 check skipped in `lnk_db_load()` | 3 |
+| no staging (parts written in place) | 11 |
+| one-element manifest arrays unboxed | 1 |
+| carried-forward part's md5 unchecked | 1 |

@@ -48,7 +48,8 @@ into PostgreSQL.
 \details{
 \if{html}{\out{<div class="sourceCode">}}\preformatted{<root>/manifest.json
 <root>/segment/config=<config>/species=<sp>/part-<code>.parquet
-<root>/provenance/run_uid=<uid>/\{log,log_input,...\}.parquet
+<root>/provenance/run_uid=<uid>/run_id=<id>/\{log,log_input\}.parquet
+<root>/provenance/config_hash=<hex>/log_parameters_*.parquet
 <root>/config/sha256-<hex>/<bundle files>
 }\if{html}{\out{</div>}}
 
@@ -59,8 +60,8 @@ Rules the export holds to:
 segment's line from the FWA blue line at its measures.
 \item \strong{Which groups.} A group is exported only when its latest log row is a
 finished build of the config; there is no other record of the thresholds
-or bundle behind its flags. A build outside a dispatch (\code{run_uid} NULL)
-is kept under \verb{provenance/run_id=<run_id>/}.
+or bundle behind its flags. Provenance is keyed per build; a build outside
+a dispatch (\code{run_uid} NULL) is kept under \verb{provenance/run_id=<run_id>/}.
 \item \strong{Species.} Every segment has a row for every species the config models
 in the exported groups; a species with no habitat in a group reads FALSE.
 \item \strong{Discharge.} \code{mad_m3s} is the discharge the run classified on, with its

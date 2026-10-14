@@ -139,7 +139,7 @@ test_that("the export writes one part per drainage, md5s that match, and FALSE f
     expect_identical(unname(tools::md5sum(file.path(root, x$key))), x$md5,
                      info = x$key)
   }
-  expect_true("provenance/run_uid=U1/log.parquet" %in% fk)
+  expect_true("provenance/run_uid=U1/run_id=r1/log.parquet" %in% fk)
 })
 
 test_that("provenance is keyed by run_uid, or by run_id outside a dispatch, and is written once", {
@@ -150,16 +150,24 @@ test_that("provenance is keyed by run_uid, or by run_id outside a dispatch, and 
   root <- withr::local_tempdir()
 
   p <- lnk_scenario_export(conn, c(testcfg = schema), root)
-  u1 <- read_parquet_duck(file.path(root, "provenance/run_uid=U1/log.parquet"))
-  expect_setequal(u1$run_id, c("r1", "r2"))
+  # one directory per build, under its dispatch where it had one
+  r1 <- read_parquet_duck(file.path(
+    root, "provenance/run_uid=U1/run_id=r1/log.parquet"))
+  expect_identical(r1$run_id, "r1")
   r3 <- read_parquet_duck(file.path(root, "provenance/run_id=r3/log.parquet"))
   expect_identical(r3$run_id, "r3")
-  inp <- read_parquet_duck(file.path(root,
-                                     "provenance/run_uid=U1/log_input.parquet"))
+  inp <- read_parquet_duck(file.path(
+    root, "provenance/run_uid=U1/run_id=r1/log_input.parquet"))
   expect_identical(inp$run_id, "r1")
+  thr <- read_parquet_duck(file.path(root, paste0(
+    "provenance/", link:::.lnk_hash_key("sha256:A"),
+    "/log_parameters_habitat_thresholds.parquet")))
+  expect_identical(thr$species_code, "BT")
   m <- jsonlite::fromJSON(p, simplifyVector = FALSE)
   pk <- vapply(m$configs[[1]]$runs, function(x) x$provenance_key, character(1))
-  expect_setequal(pk, c("provenance/run_uid=U1", "provenance/run_id=r3"))
+  expect_setequal(pk, c("provenance/run_uid=U1/run_id=r1",
+                        "provenance/run_uid=U1/run_id=r2",
+                        "provenance/run_id=r3"))
 
   # the same build exports again cleanly...
   expect_no_error(lnk_scenario_export(conn, c(testcfg = schema), root))
@@ -182,7 +190,7 @@ test_that("a group with no finished build of the config is refused", {
     schema))
 
   expect_error(lnk_scenario_export(conn, c(testcfg = schema), root,
-                                   wsgs = "BABL"), "BABL \\(no log row\\)")
+                                   wsgs = "BABL"), "BABL in .*\\(no log row\\)")
   expect_message(lnk_scenario_export(conn, c(testcfg = schema), root),
                  "BABL: no log row")
   expect_error(lnk_scenario_export(conn, c(testcfg = schema), root,
@@ -362,9 +370,14 @@ test_that("named groups may come from different schemas of one config", {
   cf <- jsonlite::fromJSON(p, simplifyVector = FALSE)$configs[[1]]
   expect_setequal(unlist(cf$wsgs), c("ADMS", "BULK"))
   expect_setequal(unlist(cf$schema_persist), c(schema, s2))
-  # one dispatch across two schemas: its evidence is gathered from both
-  u1 <- read_parquet_duck(file.path(root, "provenance/run_uid=U1/log.parquet"))
-  expect_setequal(u1$run_id, c("r1", "r2", "r2c"))
+  # a dispatch across two schemas: each build's evidence from its own schema
+  expect_true(file.exists(file.path(
+    root, "provenance/run_uid=U1/run_id=r2c/log.parquet")))
+  # a narrower export of the same builds writes nothing new and stops nowhere
+  expect_no_error(lnk_scenario_export(
+    conn, c(testcfg = schema, testcfg = s2), root, wsgs = "ADMS"))
+  expect_no_error(lnk_scenario_export(
+    conn, c(testcfg = schema, testcfg = s2), root, wsgs = c("ADMS", "BULK")))
   expect_error(lnk_scenario_export(conn, c(testcfg = schema, testcfg = s2),
                                    root, wsgs = "ZZZZ"), "not in streams")
 })
@@ -396,6 +409,7 @@ test_that("write-once compares records, not bytes", {
   root <- withr::local_tempdir()
   lnk_scenario_export(conn, c(testcfg = schema), root)
   f <- file.path(root, "provenance/run_id=r3/log.parquet")
+  expect_true(file.exists(f))
 
   # the same record in other bytes (another writer, another version)
   con <- DBI::dbConnect(duckdb::duckdb())
@@ -434,4 +448,54 @@ test_that("the source_artifact snapshot is stored by content, outside the run", 
                    sub("^.*/([0-9a-f]{32})\\.parquet$", "\\1", k))
   expect_false(file.exists(file.path(root,
                                      "provenance/run_uid=U1/source_artifact.parquet")))
+})
+
+test_that("a named group is taken from the schema holding its build of the config", {
+  skip_if_not_installed("duckdb")
+  conn <- skip_if_no_db()
+  schema <- local_export_fixture(conn)
+  local_export_discharge(schema)
+  root <- withr::local_tempdir()
+  # a second schema holds ADMS too, but as another config's build
+  s2 <- paste0(schema, "_d")
+  withr::defer(DBI::dbExecute(conn, sprintf(
+    "DROP SCHEMA IF EXISTS %s CASCADE", s2)))
+  link:::.lnk_log_create_tables(conn, s2)
+  DBI::dbExecute(conn, sprintf(
+    "CREATE TABLE %s.streams AS SELECT * FROM %s.streams
+      WHERE watershed_group_code = 'ADMS'", s2, schema))
+  DBI::dbExecute(conn, sprintf(
+    "INSERT INTO %s.log (run_id, watershed_group_code, date_start, date_end,
+                         config_name, config_hash)
+     VALUES ('x1', 'ADMS', '2026-10-01T00:00:00Z', '2026-10-01T01:00:00Z',
+             'othercfg', 'sha256:B')", s2))
+  p <- lnk_scenario_export(conn, c(testcfg = schema, testcfg = s2), root,
+                           wsgs = "ADMS")
+  cf <- jsonlite::fromJSON(p, simplifyVector = FALSE)$configs[[1]]
+  expect_identical(unlist(cf$schema_persist), schema)
+  # held, but by no schema as a finished build of the config: refused
+  DBI::dbExecute(conn, sprintf(
+    "DELETE FROM %s.log WHERE watershed_group_code = 'ADMS'", schema))
+  expect_error(lnk_scenario_export(conn, c(testcfg = schema, testcfg = s2),
+                                   root, wsgs = "ADMS"),
+               "cannot export ADMS in .*(no log row|latest build is config)")
+})
+
+test_that("skipped groups are a JSON object, empty or not, and the export is dated", {
+  skip_if_not_installed("duckdb")
+  conn <- skip_if_no_db()
+  schema <- local_export_fixture(conn)
+  local_export_discharge(schema)
+  root <- withr::local_tempdir()
+  p <- lnk_scenario_export(conn, c(testcfg = schema), root)
+  expect_match(paste(readLines(p), collapse = "\n"), '"skipped": \\{\\}')
+  cf <- jsonlite::fromJSON(p, simplifyVector = FALSE)$configs[[1]]
+  expect_match(cf$exported, "^\\d{4}-\\d{2}-\\d{2}T.*Z$")
+  DBI::dbExecute(conn, sprintf(
+    "INSERT INTO %s.streams VALUES
+       (1, 'BABL', 401, 1000, 40, 2, 3.0, 'MODELLED', 0.03, 0, 60, 60)",
+    schema))
+  p <- suppressMessages(lnk_scenario_export(conn, c(testcfg = schema), root))
+  cf <- jsonlite::fromJSON(p, simplifyVector = FALSE)$configs[[1]]
+  expect_identical(cf$skipped$BABL, "no log row")
 })
