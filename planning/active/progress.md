@@ -8,3 +8,5 @@
 - Next: Phase 1
 - Phase 1: column contract YAML + `.lnk_export_rows()`; live smoke DUNC BT 63,067 rows in 0.3 s. Fixture tests 30 pass.
   - Finding: only DUNC's `config_hash` has logged thresholds in `fresh_default`; `fresh` has no `log_parameters_habitat_thresholds` table at all (built before #282). Ratios there are NA by design, not a fallback to today's bundle.
+- Phase 2: `lnk_scenario_export()` + manifest + provenance tree + bundle publish. `.lnk_config_hash()` split into `.lnk_config_files()` (hashes of default/bcfishpass/default_tuned unchanged; log/config/stamp tests 520 pass). Smoke: DUNC+KOTL BT/RB → part-300; DUNC's bundle published (hash matches today's `default`), KOTL's recorded as changed. Export tests 93 pass.
+  - Deviations from the plan, both small: provenance also carries `log_parameters_fresh.parquet` (the source of `access_gradient_max` for `accessible_ratio_gradient`); bundle prefix is `config/sha256-<hex>/` (no colon in keys); a latest build that did not finish (`date_end` NULL) is refused like an unlogged one.

@@ -33,20 +33,20 @@
 
 ## Phase 2: `lnk_scenario_export()` + manifest
 
-- [ ] `lnk_scenario_export(conn, configs = c(default = "fresh_default"), root, wsgs = NULL, species = NULL)` (exported).
+- [x] `lnk_scenario_export(conn, configs = c(default = "fresh_default"), root, wsgs = NULL, species = NULL)` (exported).
   - **Guards:**
     - each WSG's latest log row matches the config, or the export refuses;
     - several schemas for one config pass `.lnk_hvb_check_segmentation()` (`R/lnk_habitat_validate_band.R:251`);
     - the habitat key set equals the streams key set.
   - **Write:** each part `segment/config=<c>/species=<sp>/part-<code>.parquet`, where `code` is the first segment of `wscode_outlet` and `drainage` is the region, both from `inst/extdata/wsg_regions.csv`. Each part is written through duckdb (Suggests, `requireNamespace`-guarded): sorted by `watershed_group_code, blue_line_key, downstream_route_measure`, zstd, written to `.tmp` and then renamed.
   - **Provenance tree:** `provenance/run_uid=<uid>|run_id=<id>/{log,log_input,log_parameters_habitat_thresholds,source_artifact}.parquet`, plus `config/<config_hash>/` bundle files when the hash matches.
-- [ ] `.lnk_manifest_write()`, in wet's shape:
+- [x] `.lnk_manifest_write()`, in wet's shape:
   - top level: `manifest_version`, `id = "habitat/fwa/v1"`, `built`, `provenance{link_version, link_sha}`, `datasets[{dataset, schema}]`;
   - `configs[{config, schema_persist, runs[log rows as read], config_hashes, discharge{table, fill, source_artifact}, bundle}]`;
   - `parts[{key, dataset, config, species, code, drainage, rows, bytes, md5}]`.
 
   Written with `jsonlite::write_json(auto_unbox, digits = NA, null/na = "null")` to a temp file and renamed into place. md5 via `tools::md5sum()`.
-- [ ] Tests:
+- [x] Tests:
   - an unlogged group is refused;
   - a segmentation mismatch is refused;
   - manifest md5s and row counts round-trip against the files;

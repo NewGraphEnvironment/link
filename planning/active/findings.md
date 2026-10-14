@@ -125,3 +125,5 @@ Relates to #305, #307, #203, #226, NewGraphEnvironment/wet#7, NewGraphEnvironmen
 | fresh | 19e3a056… (39 groups) | 39 | table absent | — |
 
 Today's `default` bundle hashes to `7e9dffa4…`, which is DUNC's, so DUNC's bundle files can be published under `config/<hash>/`; no other logged build's can.
+| duckdb `read_parquet()` on a hive path adds `config`/`species` columns | Read with `hive_partitioning = false` when the hive values come from the manifest (as wet does) |
+| Copying a schema's log into another schema reuses `run_id`s, so both write `provenance/run_id=<id>/` | Correct refusal by the write-once guard; fixture uses distinct ids |

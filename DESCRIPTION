@@ -38,6 +38,7 @@ Suggests:
     bcdata,
     bookdown,
     dplyr,
+    duckdb,
     gq,
     knitr,
     lintr,

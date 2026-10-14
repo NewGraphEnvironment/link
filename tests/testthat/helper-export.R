@@ -98,3 +98,9 @@ export_run <- function(conn, schema, wsg) {
     "SELECT * FROM %s.log WHERE watershed_group_code = $1
       ORDER BY date_start DESC LIMIT 1", schema), params = list(wsg))
 }
+
+read_parquet_duck <- function(path, sql = "SELECT * FROM read_parquet(%s, hive_partitioning = false)") {
+  con <- DBI::dbConnect(duckdb::duckdb())
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE))
+  DBI::dbGetQuery(con, sprintf(sql, DBI::dbQuoteString(con, path)))
+}
