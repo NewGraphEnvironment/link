@@ -726,10 +726,14 @@ and deletes only under `segment/`. A root rebuilt on another host re-serialises
 provenance to other bytes, so seed it from the bucket (`aws s3 sync`) before
 building; PUBLISH refuses rather than overwrite.
 
-**An export replaces each config it names, wholesale**, so one that would drop
-a group or species the root holds for that config stops unless
-`narrow = TRUE`; PUBLISH has the same check against the live manifest
-(`LNK_PUBLISH_NARROW=1` to remove pairs on purpose). Named `wsgs` and
+**An export replaces each config it names, wholesale**, so it stops when that
+would drop a config's group:species pair the root holds, or put an older build
+of a group (earlier `date_start`, other `run_id`) in place of a newer one;
+`replace = TRUE` (`--replace`) allows it. PUBLISH runs the same judgement,
+`.lnk_manifest_regressions()`, against the live manifest
+(`LNK_PUBLISH_REPLACE=1`). Each config entry records the link that exported it
+(`exported_by`: version, sha, dirty, contract md5), because carried-forward
+configs keep the link that computed them. Named `wsgs` and
 `wsgs = NULL` both take each group from whichever of the config's schemas holds
 a finished build of it, and stop only when a named group, or the config as a
 whole, has none.

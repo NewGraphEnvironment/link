@@ -22,14 +22,25 @@ test_that("a manifest with a bad md5, key or version is refused", {
     x <- f(m)
     jsonlite::write_json(x, mp, auto_unbox = TRUE, null = "null")
   }
-  edit(function(x) { x$parts[[1]]$md5 <- "nope"; x })
+  edit(function(x) {
+    x$parts[[1]]$md5 <- "nope"
+    x
+  })
   expect_error(lnk_catalog(mp), "no valid md5")
-  edit(function(x) { x$parts[[1]]$key <- "segment/part-100.parquet"; x })
+  edit(function(x) {
+    x$parts[[1]]$key <- "segment/part-100.parquet"
+    x
+  })
   expect_error(lnk_catalog(mp), "not a habitat part key")
-  edit(function(x) { x$parts[[1]]$key <-
-    "segment/config=cfgx/species=bt/part-100.parquet"; x })
+  edit(function(x) {
+    x$parts[[1]]$key <- "segment/config=cfgx/species=bt/part-100.parquet"
+    x
+  })
   expect_error(lnk_catalog(mp), "not a habitat part key")
-  edit(function(x) { x$manifest_version <- 2L; x })
+  edit(function(x) {
+    x$manifest_version <- 2L
+    x
+  })
   expect_error(lnk_catalog(mp), "unsupported manifest_version")
   expect_error(lnk_catalog(file.path(root, "absent.json")), "no such file")
 })

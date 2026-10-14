@@ -376,7 +376,7 @@ test_that("named groups may come from different schemas of one config", {
   # a narrower export of the same builds writes no new provenance
   expect_no_error(lnk_scenario_export(
     conn, c(testcfg = schema, testcfg = s2), root, wsgs = "ADMS",
-    narrow = TRUE))
+    replace = TRUE))
   expect_no_error(lnk_scenario_export(
     conn, c(testcfg = schema, testcfg = s2), root, wsgs = c("ADMS", "BULK")))
   expect_error(lnk_scenario_export(conn, c(testcfg = schema, testcfg = s2),
@@ -515,7 +515,7 @@ test_that("an export that would drop a group or species the root holds is refuse
                                    species = "BT"), "BULK:CO")
   expect_identical(readLines(p), before)
   p <- lnk_scenario_export(conn, c(testcfg = schema), root, wsgs = "ADMS",
-                           narrow = TRUE)
+                           replace = TRUE)
   expect_identical(lnk_catalog(p)$wsgs, "ADMS")
 })
 
@@ -558,4 +558,85 @@ test_that("skipped lists only groups no schema exported, keyed by group", {
   expect_error(suppressMessages(
     lnk_scenario_export(conn, c(nocfg = s2), withr::local_tempdir())),
     "no group has a finished build")
+})
+
+test_that("an older build of a group does not replace a newer one", {
+  skip_if_not_installed("duckdb")
+  conn <- skip_if_no_db()
+  schema <- local_export_fixture(conn)
+  local_export_discharge(schema)
+  root <- withr::local_tempdir()
+  lnk_scenario_export(conn, c(testcfg = schema), root)
+  # a sibling schema holds an earlier finished build of every group
+  s2 <- paste0(schema, "_old")
+  withr::defer(DBI::dbExecute(conn, sprintf(
+    "DROP SCHEMA IF EXISTS %s CASCADE", s2)))
+  link:::.lnk_log_create_tables(conn, s2)
+  for (t in c("streams", "streams_habitat_bt", "streams_habitat_co",
+              "discharge")) {
+    DBI::dbExecute(conn, sprintf(
+      "CREATE TABLE %s.%s AS SELECT * FROM %s.%s", s2, t, schema, t))
+  }
+  DBI::dbExecute(conn, sprintf(
+    "INSERT INTO %s.log SELECT * FROM %s.log WHERE run_id <> 'r0'", s2, schema))
+  DBI::dbExecute(conn, sprintf(
+    "UPDATE %s.log SET run_id = run_id || 'old', schema_persist = '%s',
+                        date_start = date_start - interval '30 days'",
+    s2, s2))
+  expect_error(lnk_scenario_export(conn, c(testcfg = s2), root),
+               "older one in ADMS, BULK, LFRA")
+  expect_no_error(lnk_scenario_export(conn, c(testcfg = s2), root,
+                                      replace = TRUE))
+})
+
+test_that("each config records the link that exported it, and skipped is scoped to named groups", {
+  skip_if_not_installed("duckdb")
+  conn <- skip_if_no_db()
+  schema <- local_export_fixture(conn)
+  local_export_discharge(schema)
+  root <- withr::local_tempdir()
+  DBI::dbExecute(conn, sprintf(
+    "INSERT INTO %s.streams (id_segment, watershed_group_code, blue_line_key,
+                             downstream_route_measure, upstream_route_measure,
+                             length_metre)
+     VALUES (1, 'BABL', 40, 0, 60, 60)", schema))
+  p <- lnk_scenario_export(conn, c(testcfg = schema), root, wsgs = "ADMS")
+  cf <- jsonlite::fromJSON(p, simplifyVector = FALSE)$configs[[1]]
+  expect_identical(cf$exported_by$link_version,
+                   as.character(utils::packageVersion("link")))
+  expect_match(cf$exported_by$contract_md5, "^[0-9a-f]{32}$")
+  # BABL was not asked for, so it is not reported as skipped
+  expect_length(cf$skipped, 0L)
+})
+
+test_that("the regressions judgement names lost configs, pairs and older builds", {
+  part <- function(cf, sp, w) list(config = cf, species = sp, wsgs = w)
+  run <- function(w, id, d) {
+    list(watershed_group_code = w, run_id = id, date_start = d)
+  }
+  old <- list(
+    parts = list(part("a", "BT", "ADMS,BULK"), part("b", "CO", "ADMS")),
+    configs = list(list(config = "a", runs = list(
+                     run("ADMS", "r1", "2026-10-01T00:00:00.000Z"),
+                     run("BULK", "r2", "2026-10-01T00:00:00.000Z"))),
+                   list(config = "b", runs = list(
+                     run("ADMS", "r9", "2026-10-01T00:00:00.000Z")))))
+  same <- link:::.lnk_manifest_regressions(old, old, c("a", "b"))
+  expect_length(same, 0L)
+  new <- list(
+    parts = list(part("a", "BT", "ADMS")),
+    configs = list(list(config = "a", runs = list(
+      run("ADMS", "r0", "2026-09-01T00:00:00.000Z")))))
+  got <- link:::.lnk_manifest_regressions(old, new, c("a", "b"))
+  expect_length(got, 3L)
+  expect_match(got[1], "drops 1 group:species pair\\(s\\) \\(BULK:BT\\)")
+  expect_match(got[2], "older one in ADMS")
+  expect_match(got[3], "config 'b' is dropped")
+  # a newer build of the same group is no regression
+  newer <- new
+  newer$parts <- old$parts[1]
+  newer$configs[[1]]$runs <- list(
+    run("ADMS", "r5", "2026-10-05T00:00:00.000Z"),
+    run("BULK", "r2", "2026-10-01T00:00:00.000Z"))
+  expect_length(link:::.lnk_manifest_regressions(old, newer, "a"), 0L)
 })

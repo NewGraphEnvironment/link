@@ -8,7 +8,10 @@
 #
 #   Rscript data-raw/habitat_publish.R --root=<dir> \
 #     --configs=default:fresh_default[,bcfishpass:fresh] \
-#     [--wsgs=DUNC,KOTL] [--species=BT,RB] [--report=<dir>]
+#     [--wsgs=DUNC,KOTL] [--species=BT,RB] [--replace] [--report=<dir>]
+#
+# --wsgs / --species into a root that already holds more of a config stop
+# unless --replace: an export replaces each config it names wholesale.
 #
 # A root holds every config published to it. An export replaces only the
 # configs it names and carries the others forward from the root's manifest,
@@ -22,11 +25,12 @@
 #   1. The local tree must still match its manifest (every part and file).
 #   2. Parts go up with put-object --content-md5, so S3 refuses a body that
 #      does not hash to the manifest's md5.
-#   3. Before anything is written: the live manifest's configs must all be in
-#      this root, and each provenance/ and config/ key must be absent or carry
-#      the same md5 (its single-PUT ETag under the bucket's SSE-S3). Absent
-#      keys are then put with --if-none-match, so they are written once and
-#      never deleted.
+#   3. Before anything is written: this root must not lose anything live
+#      (a config, a group:species pair, or a group's newer build;
+#      LNK_PUBLISH_REPLACE=1 to remove or roll back on purpose), and each
+#      provenance/ and config/ key must be absent or carry the same md5 (its
+#      single-PUT ETag under the bucket's SSE-S3). Absent keys are then put
+#      with --if-none-match, so they are written once and never deleted.
 #   4. manifest.json goes up last, no-cache.
 #   5. Keys under segment/ that the manifest no longer names are deleted.
 #      Nothing outside segment/ is ever deleted.
@@ -140,38 +144,18 @@ if (identical(Sys.getenv("LNK_PUBLISH"), "1")) {
   # parts deleted. (b) Each write-once key is absent or already these bytes.
   live <- paste(prefix, "manifest.json", sep = "/")
   if (!is.na(etag(live))) {
-    live_cat <- lnk_catalog(paste0(target, "/manifest.json"))
-    live_cfg <- attr(live_cat, "configs")
-    live_parts <- lapply(seq_len(nrow(live_cat)), function(i) {
-      as.list(live_cat[i, c("config", "species", "wsgs")])
-    })
-    local_at <- vapply(m$configs, function(x) x$exported %||% "",
-                       character(1))
-    names(local_at) <- vapply(m$configs, function(x) x$config, character(1))
-    for (x in live_cfg) {
-      if (!x$config %in% names(local_at)) {
-        stop("the published tree holds config ", x$config, " and this root ",
-             "does not; build into a root seeded from the bucket ",
-             "(aws s3 sync) so the publish keeps it", call. = FALSE)
-      }
-      # the root must publish every group:species the bucket does for it,
-      # unless the operator means to remove some (LNK_PUBLISH_NARROW=1)
-      lost <- setdiff(.lnk_manifest_pairs(live_parts, x$config),
-                      .lnk_manifest_pairs(m$parts, x$config))
-      if (length(lost) > 0L && !identical(Sys.getenv("LNK_PUBLISH_NARROW"),
-                                          "1")) {
-        stop("config ", x$config, ": this root drops ", length(lost),
-             " published group:species pair(s) (",
-             paste(utils::head(lost, 5L), collapse = ", "),
-             "). Set LNK_PUBLISH_NARROW=1 to remove them.", call. = FALSE)
-      }
-      # ISO 8601 UTC strings of one format compare as text
-      if (local_at[[x$config]] < (x$exported %||% "")) {
-        stop("config ", x$config, " was published from an export of ",
-             x$exported, "; this root's is older (", local_at[[x$config]],
-             "). Seed the root from the bucket before publishing.",
-             call. = FALSE)
-      }
+    live_cfg <- attr(lnk_catalog(paste0(target, "/manifest.json")), "configs")
+    live_m <- jsonlite::fromJSON(.lnk_fetch_text(paste0(target,
+                                                         "/manifest.json")),
+                                 simplifyVector = FALSE)
+    lost <- .lnk_manifest_regressions(
+      live_m, m, vapply(live_cfg, function(x) x$config, character(1)))
+    if (length(lost) > 0L && !identical(Sys.getenv("LNK_PUBLISH_REPLACE"),
+                                        "1")) {
+      stop("this root would replace what is published: ",
+           paste(lost, collapse = "; "), ". Seed the root from the bucket ",
+           "(aws s3 sync) and re-export, or set LNK_PUBLISH_REPLACE=1.",
+           call. = FALSE)
     }
   }
   new_files <- Filter(function(f) {
@@ -254,7 +238,8 @@ t0 <- Sys.time()
 stamp("BUILD ", paste(names(configs), configs, sep = ":", collapse = ","),
       " -> ", root)
 lnk_scenario_export(conn, configs, root, wsgs = split_csv(opt("wsgs")),
-                    species = split_csv(opt("species")))
+                    species = split_csv(opt("species")),
+                    replace = "--replace" %in% commandArgs(trailingOnly = TRUE))
 DBI::dbDisconnect(conn)
 
 v <- verify_tree(root)

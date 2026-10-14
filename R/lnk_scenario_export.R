@@ -715,9 +715,10 @@
 #' @param shared_segmentation If `TRUE`, stop unless every schema exported
 #'   holds the same segmentation in the groups they share. Set it when the
 #'   configs are variants meant to be compared segment for segment.
-#' @param narrow An export replaces each config it names. By default it stops
-#'   if that would drop a group or species the root already holds for the
-#'   config; `TRUE` allows the removal.
+#' @param replace An export replaces each config it names. By default it
+#'   stops if that would drop a group or species the root already holds for
+#'   the config, or put an older build of a group in place of a newer one;
+#'   `TRUE` allows it.
 #' @return The manifest path, invisibly.
 #' @family export
 #' @export
@@ -733,7 +734,7 @@
 #' }
 lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
                                 species = NULL, shared_segmentation = FALSE,
-                                narrow = FALSE) {
+                                replace = FALSE) {
   stopifnot(
     inherits(conn, "DBIConnection"),
     is.character(configs), length(configs) > 0L,
@@ -742,7 +743,7 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
     is.null(wsgs) || is.character(wsgs),
     is.null(species) || is.character(species),
     is.logical(shared_segmentation), length(shared_segmentation) == 1L,
-    is.logical(narrow), length(narrow) == 1L
+    is.logical(replace), length(replace) == 1L
   )
   for (s in configs) .lnk_validate_identifier(s, "schema")
   if (!is.null(species)) species <- toupper(species)
@@ -852,6 +853,12 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
   }
 
   built <- Sys.time()
+  exported_by <- list(
+    link_version = as.character(utils::packageVersion("link")),
+    link_sha = .lnk_pkg_git_sha("link"),
+    link_dirty = .lnk_pkg_git_dirty("link"),
+    contract_md5 = unname(tools::md5sum(system.file(
+      "extdata", "schemas", "habitat_fwa_v1_segment.yaml", package = "link"))))
   dir.create(root, recursive = TRUE, showWarnings = FALSE)
   prev <- .lnk_manifest_previous(root, unique(names(configs)))
   # New parts are written to a staging tree and swapped in only once every
@@ -867,7 +874,8 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
     r_set <- runs[names(configs) == cf]
     r_cf <- do.call(rbind, r_set)
     rc_cf <- do.call(rbind, lapply(r_set, attr, "recompute"))
-    skipped <- .lnk_export_skipped(skipped_all[[cf]], r_cf$watershed_group_code)
+    skipped <- .lnk_export_skipped(skipped_all[[cf]], r_cf$watershed_group_code,
+                                   named = wsgs)
     sp_wsg <- lapply(r_cf$species, .lnk_pg_array)
     if (!is.null(species)) sp_wsg <- lapply(sp_wsg, intersect, species)
     names(sp_wsg) <- r_cf$watershed_group_code
@@ -951,6 +959,9 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
       # when this config's parts were exported; PUBLISH refuses to replace a
       # published config with an older export of it
       exported = format(built, "%Y-%m-%dT%H:%M:%OS3Z", tz = "UTC"),
+      # the link that computed these parts' derived columns; the manifest's
+      # top-level provenance names only the last export into the root
+      exported_by = exported_by,
       schema_persist = I(unique(r_cf$schema_export)),
       wsgs = I(r_cf$watershed_group_code),
       species = I(sp_cf),
@@ -972,23 +983,19 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
     )
   }
 
-  # An export replaces a config wholesale, so one that holds fewer groups or
-  # species than the root already publishes for it would drop the rest.
-  if (!narrow && file.exists(file.path(root, "manifest.json"))) {
-    old_parts <- jsonlite::fromJSON(file.path(root, "manifest.json"),
-                                    simplifyVector = FALSE)$parts
-    new_parts <- lapply(parts[-1], function(x) as.list(x))
-    for (cf in unique(names(configs))) {
-      lost <- setdiff(.lnk_manifest_pairs(old_parts, cf),
-                      .lnk_manifest_pairs(new_parts, cf))
-      if (length(lost) > 0L) {
-        stop("config '", cf, "': this export drops ", length(lost),
-             " group:species pair(s) the root holds (",
-             paste(utils::head(lost, 5L), collapse = ", "),
-             if (length(lost) > 5L) ", ..." else "",
-             "). Export them too, or pass narrow = TRUE to remove them.",
-             call. = FALSE)
-      }
+  # An export replaces each config it names wholesale: refuse one that would
+  # drop a group or species the root holds for it, or put an older build of a
+  # group in place of a newer one.
+  if (!replace && file.exists(file.path(root, "manifest.json"))) {
+    old_m <- jsonlite::fromJSON(file.path(root, "manifest.json"),
+                                simplifyVector = FALSE)
+    new_m <- list(parts = lapply(parts[-1], as.list),
+                  configs = unname(cfg_entries))
+    lost <- .lnk_manifest_regressions(old_m, new_m, unique(names(configs)))
+    if (length(lost) > 0L) {
+      stop("this export would replace what the root holds: ",
+           paste(lost, collapse = "; "),
+           ". Export them too, or pass replace = TRUE.", call. = FALSE)
     }
   }
   for (cf in unique(names(configs))) {
@@ -1010,13 +1017,16 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
   invisible(.lnk_manifest_write(root, parts, files, cfg_entries, built))
 }
 
-#' Groups no schema of a config exported, one reason each (`schema: reason`,
-#' joined where several schemas hold the group); a JSON object, `{}` when none.
+#' Groups the export asked for and no schema of the config exported, one
+#' reason each (`schema: reason`, joined where several schemas hold the group);
+#' a JSON object, `{}` when none. Asked for: every held group under
+#' `wsgs = NULL`, the named ones otherwise.
 #' @noRd
-.lnk_export_skipped <- function(sk, exported) {
+.lnk_export_skipped <- function(sk, exported, named = NULL) {
   empty <- structure(list(), names = character(0))
   if (is.null(sk) || nrow(sk) == 0L) return(empty)
   sk <- sk[!sk$wsg %in% exported, , drop = FALSE]
+  if (!is.null(named)) sk <- sk[sk$wsg %in% named, , drop = FALSE]
   if (nrow(sk) == 0L) return(empty)
   w <- sort(unique(sk$wsg))
   stats::setNames(lapply(w, function(g) {
@@ -1033,6 +1043,83 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
     paste(strsplit(x$wsgs %||% "", ",", fixed = TRUE)[[1]], x$species,
           sep = ":")
   })))
+}
+
+#' The build behind each group of a config entry: `run_id` and `date_start`,
+#' from the entry's runs (a data frame while exporting, a list once read).
+#' @noRd
+.lnk_entry_builds <- function(entry) {
+  r <- entry$runs
+  if (is.null(r) || length(r) == 0L) {
+    return(data.frame(wsg = character(0), run_id = character(0),
+                      date_start = character(0)))
+  }
+  if (!is.data.frame(r)) {
+    r <- data.frame(
+      watershed_group_code = vapply(r, function(x) x$watershed_group_code,
+                                    character(1)),
+      run_id = vapply(r, function(x) x$run_id, character(1)),
+      date_start = vapply(r, function(x) x$date_start %||% NA_character_,
+                          character(1)),
+      stringsAsFactors = FALSE)
+  }
+  data.frame(wsg = as.character(r$watershed_group_code),
+             run_id = as.character(r$run_id),
+             date_start = as.character(r$date_start),
+             stringsAsFactors = FALSE)
+}
+
+#' What replacing `old` with `new` would lose, per config.
+#'
+#' The one judgement of "does this tree still cover what was there", used by
+#' the export (against the root it writes) and by PUBLISH (against the live
+#' bucket), so the two cannot disagree. For each config of `old` named in
+#' `configs`:
+#' - absent from `new`;
+#' - a group:species pair `old` holds and `new` does not;
+#' - a group whose build in `new` started before the one in `old` (a
+#'   different `run_id` with an earlier `date_start`).
+#'
+#' @param old,new Manifests as lists: `parts` (each with `config`, `species`,
+#'   `wsgs`) and `configs` (each with `config` and `runs`).
+#' @param configs Configs to judge.
+#' @return Character: one line per problem; empty when nothing is lost.
+#' @noRd
+.lnk_manifest_regressions <- function(old, new, configs) {
+  cfg_of <- function(m, cf) {
+    Filter(function(x) identical(x$config, cf), m$configs)
+  }
+  out <- character(0)
+  for (cf in configs) {
+    o <- cfg_of(old, cf)
+    if (length(o) == 0L) next
+    n <- cfg_of(new, cf)
+    if (length(n) == 0L) {
+      out <- c(out, sprintf("config '%s' is dropped", cf))
+      next
+    }
+    lost <- setdiff(.lnk_manifest_pairs(old$parts, cf),
+                    .lnk_manifest_pairs(new$parts, cf))
+    if (length(lost) > 0L) {
+      out <- c(out, sprintf(
+        "config '%s' drops %d group:species pair(s) (%s%s)", cf, length(lost),
+        paste(utils::head(lost, 5L), collapse = ", "),
+        if (length(lost) > 5L) ", ..." else ""))
+    }
+    ob <- .lnk_entry_builds(o[[1]])
+    nb <- .lnk_entry_builds(n[[1]])
+    m <- merge(ob, nb, by = "wsg", suffixes = c("_old", "_new"))
+    # ISO 8601 UTC strings of one format compare as text
+    older <- m$wsg[m$run_id_old != m$run_id_new &
+                     !is.na(m$date_start_old) & !is.na(m$date_start_new) &
+                     m$date_start_new < m$date_start_old]
+    if (length(older) > 0L) {
+      out <- c(out, sprintf(
+        "config '%s' replaces a newer build with an older one in %s", cf,
+        paste(older, collapse = ", ")))
+    }
+  }
+  out
 }
 
 #' The habitat model (`cw` or `mad`) each build classified on.
