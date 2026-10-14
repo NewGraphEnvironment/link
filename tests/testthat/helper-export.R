@@ -2,8 +2,9 @@
 #
 # Three real watershed groups, so the drainage lookup resolves: ADMS and LFRA
 # drain to the Fraser (code 100), BULK to the Skeena (400). ADMS and BULK share
-# id_segment 1 and 2, so a join on id_segment alone fans out. BT has habitat
-# rows in ADMS and LFRA only; BULK modelled no BT, so it must read FALSE.
+# id_segment 1 and 2, so a join on id_segment alone fans out. ADMS and LFRA
+# modelled BT; BULK modelled CO and found none, so its CO rows read FALSE.
+# streams_access covers ADMS only, as a build without mapping_code leaves it.
 # Discharge comes from a fixture table, swapped in by mocking
 # .lnk_hv_discharge_tbl().
 local_export_fixture <- function(conn, env = parent.frame()) {
@@ -46,6 +47,22 @@ local_export_fixture <- function(conn, env = parent.frame()) {
        (1, 'LFRA', true,  false, true,  false, true)", schema))
 
   DBI::dbExecute(conn, sprintf(
+    "CREATE TABLE %s.streams_habitat_co (LIKE %s.streams_habitat_bt
+                                          INCLUDING ALL)", schema, schema))
+  DBI::dbExecute(conn, sprintf(
+    "INSERT INTO %s.streams_habitat_co VALUES
+       (1, 'BULK', false, false, false, false, false),
+       (2, 'BULK', false, false, false, false, false)", schema))
+  DBI::dbExecute(conn, sprintf(
+    "CREATE TABLE %s.streams_access (
+       id_segment integer, watershed_group_code varchar(4),
+       has_barriers_bt_dnstr boolean, access_bt integer,
+       PRIMARY KEY (id_segment, watershed_group_code))", schema))
+  DBI::dbExecute(conn, sprintf(
+    "INSERT INTO %s.streams_access VALUES
+       (1, 'ADMS', false, 1), (2, 'ADMS', true, 0)", schema))
+
+  DBI::dbExecute(conn, sprintf(
     "CREATE TABLE %s.discharge (linear_feature_id bigint,
                                 mad_m3s double precision)", schema))
   DBI::dbExecute(conn, sprintf(
@@ -77,6 +94,12 @@ local_export_fixture <- function(conn, env = parent.frame()) {
         'h2', 'othercfg', 'sha256:B', NULL, '%1$s', '{BT}', 'old'),
        ('r3', 'LFRA', '2026-09-01T00:00:00Z', '2026-09-01T01:00:00Z', NULL,
         'h2', 'testcfg', 'sha256:B', NULL, '%1$s', '{BT}', 'def')",
+    schema))
+  DBI::dbExecute(conn, sprintf(
+    "INSERT INTO %s.log_recompute (recompute_id, watershed_group_code,
+                                   date_start, date_end, run_uid)
+     VALUES ('rc1', 'ADMS', '2026-10-02T00:00:00Z', '2026-10-02T00:10:00Z', 'U1'),
+            ('rc0', 'ADMS', '2026-09-02T00:00:00Z', '2026-09-02T00:10:00Z', NULL)",
     schema))
   DBI::dbExecute(conn, sprintf(
     "INSERT INTO %s.log_input (run_id, table_name) VALUES

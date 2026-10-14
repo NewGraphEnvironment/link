@@ -21,9 +21,20 @@ description: >
   group's outlet fwa_watershed_code), sorted by watershed_group_code,
   blue_line_key and downstream_route_measure.
 
-  Every segment of an exported group has a row for every species the config
-  models there; a species with no habitat in the group reads FALSE. The
-  manifest's run rows list the species each group modelled.
+  A group has rows for the species its build modelled (the log row's
+  species), every segment of the group for each: a modelled species with no
+  habitat reads FALSE. A species the build did not model has no rows, so a
+  join for it finds nothing rather than FALSE.
+
+  Ratios are taken against the thresholds the build logged at its
+  config_hash (<schema>.log_parameters_habitat_thresholds and
+  log_parameters_fresh), never today's bundle; where the build logged none
+  (link before #282) the spawning and rearing ratios are NA, and the
+  manifest's thresholds_logged says so. They compare a segment with the
+  CSV thresholds, not with the rule that classified it: rules can override
+  (river polygons spawn on any width), upper bounds are not in any ratio, and
+  a lake-only rearer (SK, KO) still gets a rearing_ratio_cw that means
+  nothing for it.
 
 canonical:
   shape: long
@@ -76,8 +87,10 @@ canonical:
       type: double
       required: true
       notes: >
-        Mean annual discharge, m3/s, from the discharge the run classified on,
-        with the run's logged fill applied. The manifest names the table.
+        Mean annual discharge, m3/s, from the discharge table the run
+        classified on, read at export with the run's logged fill. It agrees
+        with the flags while that table is unchanged since the build; the
+        manifest names the table and this database's record of its version.
     - name: mad_m3s_source
       type: string
       required: true
@@ -102,10 +115,23 @@ canonical:
       type: logical
       required: true
       notes: Inside a wetland rearing polygon.
+    - name: has_barriers_dnstr
+      type: logical
+      required: true
+      notes: >
+        A barrier to the species lies downstream, after the cross-group
+        recompute (<schema>.streams_access.has_barriers_<sp>_dnstr, the output
+        that ships). accessible and the habitat flags were classified before
+        that recompute, so where a barrier in another group was added later
+        the two can disagree. NA where the build wrote no streams_access.
     - name: accessible_ratio_gradient
       type: double
       required: true
-      notes: gradient / access_gradient_max. Above 1 is steeper than access allows.
+      notes: >
+        gradient / access_gradient_max, the segment's own gradient against
+        the species' access threshold. Access is set by barriers downstream,
+        not by this ratio: a segment above 1 is itself a gradient barrier
+        position, and one below 1 can still be inaccessible.
     - name: spawning_ratio_cw
       type: double
       required: true

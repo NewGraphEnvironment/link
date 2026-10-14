@@ -99,9 +99,11 @@
 
 #' The export rows of one species in one watershed group.
 #'
-#' One query: `streams` LEFT JOIN `streams_habitat_<sp>` on the full persist
-#' key, so a group sharing an `id_segment` with another cannot fan out (#203)
-#' and a species with no rows in the group reads FALSE. Discharge is the
+#' One query: `streams` LEFT JOIN `streams_habitat_<sp>` and `streams_access`
+#' on the full persist key, so a group sharing an `id_segment` with another
+#' cannot fan out (#203). The species must be one the build modelled: a
+#' habitat table with no rows for the group stops, rather than reading FALSE
+#' for a species that was never classified there. Discharge is the
 #' subquery the run classified on, with the run's logged fill. Ratios use the
 #' thresholds the run logged at its `config_hash`, so they agree with the
 #' flags; where the run logged none (builds before #282), they are NA.
@@ -121,7 +123,16 @@
   if (!grepl("^[A-Z]{2,3}$", sp)) stop("sp must be a species code", call. = FALSE)
 
   hab <- sprintf("%s.streams_habitat_%s", schema, tolower(sp))
-  has_hab <- .lnk_table_exists(conn, hab)
+  if (!.lnk_table_exists(conn, hab) || nrow(DBI::dbGetQuery(conn, sprintf(
+    "SELECT 1 FROM %s WHERE watershed_group_code = $1 LIMIT 1", hab),
+    params = list(wsg))) == 0L) {
+    stop(sprintf("%s %s: the build logged %s but %s has no rows for it",
+                 schema, wsg, sp, hab), call. = FALSE)
+  }
+  acc_tbl <- paste0(schema, ".streams_access")
+  acc_col <- sprintf("has_barriers_%s_dnstr", tolower(sp))
+  has_acc <- .lnk_table_exists(conn, acc_tbl) &&
+    acc_col %in% .lnk_table_columns(conn, acc_tbl)
   has_thr <- .lnk_table_exists(
     conn, paste0(schema, ".log_parameters_habitat_thresholds"))
   has_fresh <- .lnk_table_exists(conn, paste0(schema, ".log_parameters_fresh"))
@@ -149,10 +160,7 @@
   } else {
     "SELECT NULL::double precision AS access_gradient_max"
   }
-  flag <- function(f) {
-    if (has_hab) sprintf("coalesce(h.%s, false) AS %s", f, f) else
-      sprintf("false AS %s", f)
-  }
+  flag <- function(f) sprintf("coalesce(h.%s, false) AS %s", f, f)
   ratio <- function(num, den, as) {
     sprintf("%s / nullif(%s, 0) AS %s", num, den, as)
   }
@@ -176,10 +184,13 @@
             d.mad_m3s::double precision AS mad_m3s,
             d.mad_m3s_source::text AS mad_m3s_source,
             %s, %s, %s, %s, %s,
+            %s AS has_barriers_dnstr,
             %s,
             %s, %s, %s,
             %s, %s, %s
        FROM %s.streams s
+       LEFT JOIN %s h ON h.id_segment = s.id_segment
+        AND h.watershed_group_code = s.watershed_group_code
        %s
        LEFT JOIN %s d ON d.linear_feature_id = s.linear_feature_id
        LEFT JOIN thr ON true
@@ -189,6 +200,7 @@
     thr, acc,
     flag("accessible"), flag("spawning"), flag("rearing"),
     flag("lake_rearing"), flag("wetland_rearing"),
+    if (has_acc) paste0("a.", acc_col) else "NULL::boolean",
     ratio("s.gradient", "acc.access_gradient_max", "accessible_ratio_gradient"),
     ratio("s.channel_width", "thr.spawn_channel_width_min", "spawning_ratio_cw"),
     ratio("d.mad_m3s", "thr.spawn_mad_min", "spawning_ratio_mad"),
@@ -196,10 +208,10 @@
     ratio("s.channel_width", "thr.rear_channel_width_min", "rearing_ratio_cw"),
     ratio("d.mad_m3s", "thr.rear_mad_min", "rearing_ratio_mad"),
     ratio("s.gradient", "thr.rear_gradient_max", "rearing_ratio_gradient"),
-    schema,
-    if (has_hab) {
-      sprintf("LEFT JOIN %s h ON h.id_segment = s.id_segment
-                AND h.watershed_group_code = s.watershed_group_code", hab)
+    schema, hab,
+    if (has_acc) {
+      sprintf("LEFT JOIN %s a ON a.id_segment = s.id_segment
+                AND a.watershed_group_code = s.watershed_group_code", acc_tbl)
     } else "",
     .lnk_discharge_sql(wsg = wsg, fill = fill),
     DBI::dbQuoteLiteral(conn, wsg))
@@ -263,6 +275,10 @@
     }
     if (is.na(r$date_end[[1]])) return("latest build did not finish")
     if (is.na(r$config_hash[[1]])) return("latest build logged no config_hash")
+    sp <- r$schema_persist[[1]]
+    if (!is.null(sp) && !is.na(sp) && !identical(sp, schema)) {
+      return(sprintf("latest build logged schema '%s'", sp))
+    }
     ""
   }, character(1))
 
@@ -293,7 +309,33 @@
          call. = FALSE)
   }
   out <- log[log$watershed_group_code %in% wsgs, , drop = FALSE]
-  out[order(out$watershed_group_code), , drop = FALSE]
+  out <- out[order(out$watershed_group_code), , drop = FALSE]
+  skip <- why[nzchar(why) & !names(why) %in% wsgs]
+  attr(out, "skipped") <- as.list(skip)
+  attr(out, "recompute") <- .lnk_export_recompute(conn, schema, out)
+  out
+}
+
+#' Finished recomputes of each group after its build.
+#'
+#' The cross-group recompute rewrites `streams_access`, which is where
+#' `has_barriers_dnstr` comes from, so it is part of what the export reads.
+#' @return `<schema>.log_recompute` rows, or NULL where the table is absent.
+#' @noRd
+.lnk_export_recompute <- function(conn, schema, runs) {
+  if (!.lnk_table_exists(conn, paste0(schema, ".log_recompute"))) return(NULL)
+  rc <- .lnk_df_plain(DBI::dbGetQuery(conn, sprintf(
+    "SELECT * FROM %s.log_recompute
+      WHERE watershed_group_code = ANY($1) AND date_end IS NOT NULL
+      ORDER BY watershed_group_code, date_start", schema),
+    params = list(paste0("{", paste(runs$watershed_group_code,
+                                    collapse = ","), "}"))))
+  rc$watershed_group_code <- as.character(rc$watershed_group_code)
+  after <- vapply(seq_len(nrow(rc)), function(i) {
+    w <- runs$date_start[runs$watershed_group_code == rc$watershed_group_code[i]]
+    length(w) == 1L && rc$date_start[i] > w
+  }, logical(1))
+  rc[after, , drop = FALSE]
 }
 
 #' FWA top-level drainage of each group: the first field of its outlet's
@@ -656,23 +698,34 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
   }
 
   dir.create(root, recursive = TRUE, showWarnings = FALSE)
-  unlink(file.path(root, "segment"), recursive = TRUE)
-
-  parts <- list()
-  files <- list()
-  cfg_entries <- list()
+  prev <- .lnk_manifest_previous(root, unique(names(configs)))
   for (cf in unique(names(configs))) {
-    r_cf <- do.call(rbind, runs[names(configs) == cf])
-    sp_cf <- sort(unique(unlist(lapply(r_cf$species, .lnk_pg_array))))
-    if (!is.null(species)) sp_cf <- species
+    unlink(file.path(root, "segment", paste0("config=", cf)), recursive = TRUE)
+  }
+
+  parts <- list(prev$parts)
+  files <- list(prev$files)
+  cfg_entries <- prev$configs
+  for (cf in unique(names(configs))) {
+    r_set <- runs[names(configs) == cf]
+    r_cf <- do.call(rbind, r_set)
+    rc_cf <- do.call(rbind, lapply(r_set, attr, "recompute"))
+    skipped <- do.call(c, lapply(r_set, attr, "skipped"))
+    sp_wsg <- lapply(r_cf$species, .lnk_pg_array)
+    if (!is.null(species)) sp_wsg <- lapply(sp_wsg, intersect, species)
+    names(sp_wsg) <- r_cf$watershed_group_code
+    sp_cf <- sort(unique(unlist(sp_wsg)))
     if (length(sp_cf) == 0L) {
-      stop("config '", cf, "': the exported builds modelled no species",
-           call. = FALSE)
+      stop("config '", cf, "': the exported builds modelled none of the ",
+           "species asked for", call. = FALSE)
     }
     dr <- .lnk_wsg_drainage(r_cf$watershed_group_code)
     for (sp in sp_cf) {
       for (code in sort(unique(dr$code))) {
         w_code <- sort(dr$watershed_group_code[dr$code == code])
+        w_code <- w_code[vapply(w_code, function(w) sp %in% sp_wsg[[w]],
+                                logical(1))]
+        if (length(w_code) == 0L) next
         rows <- do.call(rbind, lapply(w_code, function(w) {
           run <- r_cf[r_cf$watershed_group_code == w, , drop = FALSE]
           .lnk_export_rows(conn, run$schema_export[[1]], w, sp, run)
@@ -699,9 +752,10 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
       .lnk_export_provenance(conn, s, r_cf[r_cf$schema_export == s, ,
                                            drop = FALSE], root)
     }))
+    rc_files <- .lnk_export_recompute_files(rc_cf, root)
     hashes <- unique(r_cf$config_hash)
     bnd <- .lnk_export_bundle(cf, hashes, root)
-    files[[length(files) + 1L]] <- rbind(prov, bnd$files)
+    files[[length(files) + 1L]] <- rbind(prov, rc_files, bnd$files)
 
     thr_logged <- vapply(hashes, function(h) {
       any(vapply(unique(r_cf$schema_export), function(s) {
@@ -723,29 +777,124 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
     run_rows <- .lnk_json_rows(r_cf[, keep, drop = FALSE])
     run_rows$species <- lapply(r_cf$species, .lnk_pg_array)
     run_rows$wsg_upstream <- lapply(r_cf$wsg_upstream, .lnk_pg_array)
+    run_rows$model <- .lnk_export_model(cf, r_cf)
     run_rows$provenance_key <- vapply(seq_len(nrow(r_cf)), function(i) {
       paste0("provenance/", .lnk_run_key(r_cf[i, ]))
     }, character(1))
-    cfg_entries[[length(cfg_entries) + 1L]] <- list(
+    run_rows$recompute_keys <- lapply(r_cf$watershed_group_code, function(w) {
+      ids <- if (is.null(rc_cf)) character(0) else
+        rc_cf$recompute_id[rc_cf$watershed_group_code == w]
+      if (length(ids) == 0L) character(0) else
+        paste0("provenance/recompute_id=", ids)
+    })
+    cfg_entries[[cf]] <- list(
       config = cf,
       schema_persist = unique(r_cf$schema_export),
       wsgs = r_cf$watershed_group_code,
       species = sp_cf,
+      skipped = skipped,
       run_uids = sort(unique(stats::na.omit(r_cf$run_uid))),
       config_hashes = hashes,
       thresholds_logged = as.list(thr_logged),
-      discharge = list(table = dtbl,
-                       fill = stats::setNames(
-                         as.list(as.logical(r_cf$discharge_fill)),
-                         r_cf$watershed_group_code),
-                       source_artifact = d_art),
+      discharge = list(
+        table = dtbl,
+        fill = stats::setNames(as.list(as.logical(r_cf$discharge_fill)),
+                               r_cf$watershed_group_code),
+        source_artifact = d_art,
+        source_artifact_scope = paste(
+          "provenance.source_artifact rows of the exporting database at",
+          "export time, not a record of the hosts the builds ran on")),
       bundles = bnd$bundles,
       runs = run_rows
     )
   }
 
   parts <- do.call(rbind, parts)
+  parts <- parts[order(parts$key, method = "radix"), , drop = FALSE]
   files <- do.call(rbind, files)
   files <- files[!duplicated(files$key), , drop = FALSE]
+  files <- files[order(files$key, method = "radix"), , drop = FALSE]
+  cfg_entries <- unname(cfg_entries[order(names(cfg_entries), method = "radix")])
   invisible(.lnk_manifest_write(root, parts, files, cfg_entries))
+}
+
+#' The habitat model (`cw` or `mad`) each build classified on.
+#'
+#' Not logged per group; resolvable from the bundle's method table only when
+#' today's bundle is the one the build hashed, so NA otherwise.
+#' @noRd
+.lnk_export_model <- function(config, runs) {
+  cfg <- tryCatch(suppressMessages(lnk_config(config)),
+                  error = function(e) NULL)
+  out <- rep(NA_character_, nrow(runs))
+  if (is.null(cfg)) return(out)
+  ok <- runs$config_hash == .lnk_config_hash(cfg)
+  if (any(ok)) {
+    method <- .lnk_habitat_method_read(
+      suppressMessages(.lnk_habitat_method_csv(cfg)))
+    out[ok] <- .lnk_wsg_model(method, runs$watershed_group_code[ok])
+  }
+  out
+}
+
+#' Write each recompute's log row under `provenance/recompute_id=<id>/`.
+#' @noRd
+.lnk_export_recompute_files <- function(rc, root) {
+  if (is.null(rc) || nrow(rc) == 0L) return(NULL)
+  do.call(rbind, lapply(seq_len(nrow(rc)), function(i) {
+    id <- rc$recompute_id[i]
+    if (!grepl("^[A-Za-z0-9_.:+-]+$", id)) {
+      stop("recompute_id not usable in a path: ", id, call. = FALSE)
+    }
+    k <- paste0("recompute_id=", id)
+    key <- sprintf("provenance/%s/log_recompute.parquet", k)
+    .lnk_write_once(file.path(root, key), function(p) {
+      .lnk_parquet_write(rc[i, , drop = FALSE], p)
+    })
+    e <- .lnk_file_entry(root, key)
+    e$kind <- "provenance"
+    e$run_key <- k
+    e
+  }))
+}
+
+#' What an existing manifest in `root` keeps for the configs not re-exported.
+#'
+#' A tree holds every config published to it, and an export replaces only the
+#' configs it names. So the previous manifest's parts and entries for the
+#' others are carried forward, after checking each part is still on disk with
+#' the md5 the manifest records. Provenance and bundle files are kept for all
+#' configs: they are written once and never removed.
+#' @noRd
+.lnk_manifest_previous <- function(root, configs) {
+  path <- file.path(root, "manifest.json")
+  empty <- list(parts = NULL, files = NULL, configs = list())
+  if (!file.exists(path)) return(empty)
+  m <- jsonlite::fromJSON(path, simplifyVector = FALSE)
+  keep_parts <- Filter(function(p) !p$config %in% configs, m$parts)
+  parts <- if (length(keep_parts) > 0L) {
+    do.call(rbind, lapply(keep_parts, function(p) {
+      f <- file.path(root, p$key)
+      if (!file.exists(f) || !identical(unname(tools::md5sum(f)), p$md5)) {
+        stop("the manifest in ", root, " lists ", p$key, ", which is ",
+             "missing or changed; re-export config '", p$config,
+             "' or start from an empty root", call. = FALSE)
+      }
+      data.frame(key = p$key, dataset = p$dataset, config = p$config,
+                 species = p$species, code = p$code,
+                 drainage = p$drainage %||% NA_character_,
+                 wsgs = p$wsgs %||% NA_character_, rows = p$rows,
+                 bytes = p$bytes, md5 = p$md5, stringsAsFactors = FALSE)
+    }))
+  }
+  files <- if (length(m$files) > 0L) {
+    do.call(rbind, lapply(m$files, function(f) {
+      data.frame(key = f$key, bytes = f$bytes, md5 = f$md5, kind = f$kind,
+                 run_key = f$run_key %||% NA_character_,
+                 stringsAsFactors = FALSE)
+    }))
+  }
+  keep_cfg <- Filter(function(x) !x$config %in% configs, m$configs)
+  names(keep_cfg) <- vapply(keep_cfg, function(x) x$config, character(1))
+  list(parts = parts, files = files, configs = keep_cfg)
 }
