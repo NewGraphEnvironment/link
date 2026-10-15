@@ -61,7 +61,7 @@ link is three things, and the descriptions carry all three:
 How this is said (operator, revised):
 - **bcfishpass gets a real acknowledgement, in its own short body section: "Data and methods it builds on".** It states the dependency link actually has (verified in `config.yaml` and `NOTICE.md`):
   - link's connectivity model follows bcfishpass's method;
-  - **every** config, `default` included, reads seven of its community-maintained override CSVs (crossing fixes, PSCIS barrier status, xref, definite barriers + control, habitat confirmations, misc crossings), synced daily from upstream with the SHA and checksums recorded, so corrections stay centralised;
+  - **every** config, `default` included, reads seven of its community-maintained override CSVs (crossing fixes, PSCIS barrier status, xref, definite barriers + control, habitat confirmations, misc crossings), synced weekly from upstream (corrected 2026-10-14: the workflow's cron is Wednesdays; "daily" was wrong) with the SHA and checksums recorded, so corrections stay centralised;
   - the comparison bundle carries 10 more (CABD edits, observation exclusions, species presence, and others);
   - observations come from bcfishobs, and the network from fwapg;
   - the `bcfishpass` bundle reproduces its classification so link can be checked against it. This is mentioned once, here.
@@ -80,7 +80,7 @@ Starting draft, to be refined in Phase 2. Every clause must check against code:
 
 ## Phase 2: Descriptions first: DESCRIPTION Title + Description, README opening
 - [ ] Draft the Title, the Description and the README opening paragraph together, so all three say one thing
-- [ ] Restore intrinsic habitat potential, and state plainly that the package is experimental
+- [x] Restore intrinsic habitat potential, and state plainly that the package is experimental
 - [ ] Name the decision it informs: which crossings to fix, and what fixing them opens up
 - [ ] Check each claim against code (an export, a config bundle, a vignette) before writing it. No adjectives that cannot be checked
 
@@ -120,7 +120,7 @@ Verified 2026-10-14:
 - Tested in memory: `cff_create(authors_roles = c("aut", "cre", "cph"))` writes the company as a CFF entity author (`- name: New Graph Environment Ltd.`). Zenodo maps CFF authors to its creators.
 
 Tasks:
-- [ ] DESCRIPTION Authors@R:
+- [x] DESCRIPTION Authors@R:
   - fix the ORCID to `0000-0002-3495-2128` and the email to `al@newgraphenvironment.com`;
   - add `person("New Graph Environment Ltd.", role = c("cph", "fnd"))`
 - [ ] Add CITATION.cff and `update-citation-cff.yaml` through the `/citation-cff` skill, with `authors_roles = c("aut", "cre", "cph")` so the company is a credited author. References are stripped, as the skill already does

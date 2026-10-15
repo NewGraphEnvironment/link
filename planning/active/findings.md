@@ -91,3 +91,13 @@ Sources: the two surveys above; soul `writing.md`; `r-packages.md` §README; web
 **Leave out.** Roadmaps (link the issues instead), changelogs (NEWS), function tables (pkgdown), version strings in prose, counts of published things, internal hosts or private repos.
 
 **Open.** A canonical ecosystem table in soul generated into each README; README.Rmd vs README.md where examples cannot run without a database.
+
+## Corrections made while writing
+
+| Claim drafted | Code says | Resolution |
+|---|---|---|
+| bcfishpass CSVs synced daily | `sync-bcfishpass-csvs.yml` cron `0 11 * * WED`: weekly | README says weekly; CLAUDE.md's "daily csv-sync" (#76 note) is historical |
+| discharge gaps filled (all configs) | `discharge_fill: true` only in `default_tuned` | README scopes it to `default_tuned` |
+| connected lake/wetland rearing (all configs) | `default` dimensions, SK/KO excepted | README scopes it to `default` |
+| `bcfishpass` config "reproduces" the classification | parity is close, not exact (segmentation, #324) | README: "applies bcfishpass's own rules and thresholds" |
+| link ORCID `0009-0003-7697-6064` | fails R's checksum | DESCRIPTION uses `0000-0002-3495-2128`, as fresh/flooded/drift/gq |

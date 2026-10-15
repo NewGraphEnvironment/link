@@ -1,15 +1,23 @@
 Package: link
-Title: Stream Network Habitat Interpretation (Experimental)
+Title: Intrinsic Habitat Potential and Fish Passage Connectivity for Stream
+    Networks
 Version: 0.65.0
 Date: 2026-10-14
 Authors@R: c(
-    person("Allan", "Irvine", , "airvine@newgraphenvironment.com",
+    person("Allan", "Irvine", , "al@newgraphenvironment.com",
            role = c("aut", "cre"),
-           comment = c(ORCID = "0009-0003-7697-6064")),
-    person("Simon", "Norris", role = "ctb"))
-Description: Experimental tooling for interpreting field and modelled
-    inputs as per-segment habitat classifications on stream networks.
-    Pairs with 'fresh'. Under active development; APIs and outputs
+           comment = c(ORCID = "0000-0002-3495-2128")),
+    person("Simon", "Norris", role = "ctb"),
+    person("New Graph Environment Ltd.", role = c("cph", "fnd")))
+Description: Models where fish habitat could be on a stream network and
+    whether fish can reach it. For each species it classifies stream, lake
+    and wetland reaches as spawning or rearing habitat from gradient and
+    channel width or discharge, then resolves access past road crossings,
+    dams, falls and steep gradients, using fish observations and habitat
+    confirmations as evidence of passage. Every rule and threshold is a
+    row in a config bundle, and every run records its inputs, so a result
+    traces back to the rule that produced it. Runs on the British Columbia
+    Freshwater Atlas through 'fresh'. Experimental: APIs and outputs
     change without notice.
 License: MIT + file LICENSE
 URL: https://github.com/NewGraphEnvironment/link,
