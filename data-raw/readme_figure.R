@@ -68,7 +68,7 @@ plot(sf::st_geometry(aoi), col = NA, border = "black", lwd = 1.2, add = TRUE)
 
 legend("topright", inset = c(0.01, 0.02), title = "Arctic grayling",
        title.adj = 0,
-       legend = c(label_for(keys), "Not classified for grayling",
+       legend = c(label_for(keys), "Above a natural barrier to grayling",
                   "Waterbodies"),
        col = c(unname(cls$values[keys]), "#cfcfcf", "#2171B5"),
        lwd = c(pmax(unname(cls$widths[keys]) * 1.6, 1), 1, NA),

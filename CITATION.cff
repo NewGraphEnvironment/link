@@ -12,11 +12,12 @@ title: 'link: Intrinsic Habitat Potential and Fish Passage Connectivity for Stre
 version: 0.65.0
 abstract: 'Models where fish habitat could be on a stream network and whether fish
   can reach it. For each species it classifies stream, lake and wetland reaches as
-  spawning or rearing habitat from gradient and channel width or discharge, then resolves
-  access past road crossings, dams, falls and steep gradients, using fish observations
-  and habitat confirmations as evidence of passage. Every rule and threshold is a
-  row in a config bundle, and every run records its inputs, so a result traces back
-  to the rule that produced it. Runs on the British Columbia Freshwater Atlas through
+  spawning or rearing habitat from gradient and channel width or discharge. It resolves
+  which reaches each species can reach past falls and steep gradients, using fish
+  observations and habitat confirmations as evidence of passage, and records the road
+  and rail crossings and dams below each reach. Every rule and threshold is a row
+  in a config bundle, and every run records its inputs, so a result traces back to
+  the rule that produced it. Runs on the British Columbia Freshwater Atlas through
   ''fresh''. Experimental: APIs and outputs change without notice.'
 authors:
 - family-names: Irvine
