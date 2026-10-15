@@ -110,11 +110,11 @@ Starting draft, to be refined in Phase 2. Every clause must check against code:
   No product names in the body
 - [x] "Data and methods it builds on" section, as framed above. Correct NOTICE.md's bcfishpass software row. Keep License / NOTICE
 
-## Phase 3b: Citation with company credit (operator, for Zenodo; soul#40, soul#39)
+## Phase 3b: Citation with company credit (operator, for Zenodo)
 
 Verified 2026-10-14:
 - link's DESCRIPTION does not name New Graph Environment Ltd., although LICENSE does.
-- Its ORCID `0009-0003-7697-6064` fails R's checksum ("Invalid ORCID iD"). fresh, flooded, drift and gq all carry `0000-0002-3495-2128`, which is also the ORCID soul#40's Zenodo setup uses. Its email `airvine@` differs from the `al@` the others use.
+- Its ORCID `0009-0003-7697-6064` fails R's checksum ("Invalid ORCID iD"). fresh, flooded, drift and gq all carry `0000-0002-3495-2128`, which is also the ORCID an internal conventions issue's Zenodo setup uses. Its email `airvine@` differs from the `al@` the others use.
 - link has no CITATION.cff and no `update-citation-cff.yaml`.
 - Across the fleet the company is `cph`, but cffr's default `authors_roles = c("aut", "cre")` drops it. Only crate and ngr carry it in their CFF.
 - Tested in memory: `cff_create(authors_roles = c("aut", "cre", "cph"))` writes the company as a CFF entity author (`- name: New Graph Environment Ltd.`). Zenodo maps CFF authors to its creators.

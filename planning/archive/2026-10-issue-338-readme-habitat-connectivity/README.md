@@ -12,7 +12,7 @@ What was learned: a description checked against NAMESPACE, NEWS and CLAUDE.md is
 - "habitat upstream of each crossing": `lnk_aggregate()` sums only along the crossing's own stream line, and nothing calls it;
 - "which barrier": no barrier id is persisted per reach.
 
-This is the first application of the README convention drafted in soul#416. The pkgdown index stayed auto-generated (the prefix families already group it), and the fresh pin bump moved to #339.
+This is the first application of the README convention drafted in the internal conventions repo. The pkgdown index stayed auto-generated (the prefix families already group it), and the fresh pin bump moved to #339.
 
 ## Measurement
 

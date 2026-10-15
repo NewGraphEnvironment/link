@@ -13,7 +13,7 @@ Experimental package — breaking all the time and loving the learning curve. St
 
 ## Status (2026-10-14, late) — README and descriptions rewritten against the code (#338)
 
-**The README, DESCRIPTION, CITATION.cff and Rd lead with three things: intrinsic habitat potential, connectivity, and rules kept as data.** A figure of real output (`data-raw/readme_figure.R` → `man/figures/readme-pars.png`) shows grayling in PARS. bcfishpass is named in "Data and methods it builds on". CITATION.cff credits the company (`authors_roles` includes `cph`; the CRAN `doi` / `repository` are dropped, because CRAN's `link` is another package). This is the first application of the README convention drafted in soul#416.
+**The README, DESCRIPTION, CITATION.cff and Rd lead with three things: intrinsic habitat potential, connectivity, and rules kept as data.** A figure of real output (`data-raw/readme_figure.R` → `man/figures/readme-pars.png`) shows grayling in PARS. bcfishpass is named in "Data and methods it builds on". CITATION.cff credits the company (`authors_roles` includes `cph`; the CRAN `doi` / `repository` are dropped, because CRAN's `link` is another package). This is the first application of the README convention drafted in the internal conventions repo.
 
 **Facts not worth re-deriving:**
 - **Access is resolved past natural barriers only:** gradient, falls, subsurface flow and user-definite barriers. Crossings and dams only mark the barrier below a reach; they never block it.

@@ -50,7 +50,7 @@ man/figures/readme-pars.png.
     figure directly above shows on most reaches. The rollup numbers the example prints are
     not affected.
 
-- **[convention / public text] .github/workflows/update-citation-cff.yaml:28: the comment cites `soul#365`.**
+- **[convention / public text] .github/workflows/update-citation-cff.yaml:28: the comment cites `an internal conventions issue`.**
   `NewGraphEnvironment/soul` is PRIVATE (`gh repo view`) and link is PUBLIC. The
   feature-workflow convention says "No links to private repos, and no
   `owner/private-repo#N`, not even as provenance." The comment explains itself without
