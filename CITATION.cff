@@ -7,19 +7,16 @@ cff-version: 1.2.0
 message: 'To cite package "link" in publications use:'
 type: software
 license: MIT
-title: 'link: Intrinsic Habitat Potential and Fish Passage Connectivity for Stream
-  Networks'
+title: 'link: Develop, Test and Communicate Intrinsic Habitat Models for Stream Networks'
 version: 0.65.0
-abstract: 'Models where fish habitat could be on a stream network and whether fish
-  can reach it. For each species it classifies stream reaches, lakes and wetlands
-  as spawning or rearing habitat from rules on gradient, channel size and waterbody
-  type. It resolves which reaches each species can reach past falls and steep gradients,
-  using fish observations and habitat confirmations as evidence of passage, and marks
-  each of those reaches with the kind of human-made barrier below it, if any: a road
-  or rail crossing, or a dam. Every rule and threshold is a row in a config bundle,
-  and every run records its inputs, so a result traces back to the rule that produced
-  it. Runs on the British Columbia Freshwater Atlas through ''fresh''. Experimental:
-  APIs and outputs change without notice.'
+abstract: 'Tools for developing, testing and communicating intrinsic habitat models
+  on stream networks: where each fish species could spawn and rear, and which of that
+  habitat fish can reach. Current models rate habitat from stream gradient, channel
+  width and discharge, resolve access past natural barriers, and record the road and
+  rail crossings and dams below each reach. Every rule and threshold is a row in a
+  config, so models can be changed, compared, checked against fish observations and
+  traced to the rules that produced them. Runs on the British Columbia Freshwater
+  Atlas through ''fresh''. Experimental: APIs and outputs change without notice.'
 authors:
 - family-names: Irvine
   given-names: Allan

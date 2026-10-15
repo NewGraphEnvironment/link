@@ -1,14 +1,14 @@
 # link <img src="man/figures/logo.png" align="right" height="139" alt="link hex sticker" />
 
-> Intrinsic habitat potential and fish passage connectivity for stream networks
+> Develop, test and communicate intrinsic habitat models for stream networks
 
-link models where fish habitat could be on a stream network and whether fish can reach it. For each species it classifies stream reaches, lakes and wetlands as spawning or rearing habitat from rules on gradient, channel size and waterbody type. It resolves which reaches each species can reach past falls and steep gradients, using fish observations and habitat confirmations as evidence of passage, and marks each of those reaches with the kind of human-made barrier below it, if any: a road or rail crossing, or a dam. The result shows a restoration program where a human-made barrier stands between fish and habitat they could otherwise reach, and what kind of barrier it is. It runs on the British Columbia Freshwater Atlas through [fresh](https://github.com/NewGraphEnvironment/fresh).
+link is a tool for building models of where each fish species could spawn and rear on a stream network, and which of that habitat fish can reach. Current models rate habitat from stream gradient, channel width and discharge, resolve access past natural barriers such as falls and steep gradients, and record the road and rail crossings and dams that sit below. Its value is flexibility: every rule and threshold is a row in a config, so a model can be changed, run beside another, checked against fish observations and traced back to the rules that produced it.
 
 > Experimental: APIs and outputs change without notice.
 
 <img src="man/figures/readme-pars.png" alt="Map of the Parsnip River watershed group with stream reaches coloured by Arctic grayling spawning, rearing and access, and by the barrier type below each reach" width="100%" />
 
-*Arctic grayling in the Parsnip River watershed group, from link's `default` config. Every reach drains to Williston Reservoir behind the W.A.C. Bennett Dam, so most carry "dam below" (purple). Orange and red reaches sit above a road or rail crossing modelled or assessed as a barrier: habitat grayling could reach but for that crossing. Grey reaches lie above a natural barrier to grayling. Made by `data-raw/readme_figure.R` from the vignette's cached data.*
+*Arctic grayling habitat in the Parsnip River watershed group. Purple reaches drain to Williston Reservoir behind the W.A.C. Bennett Dam. Orange and red reaches sit above a road or rail crossing that is a barrier. Grey reaches lie above a natural barrier to grayling.*
 
 ## Installation
 
@@ -16,71 +16,67 @@ link models where fish habitat could be on a stream network and whether fish can
 pak::pak("NewGraphEnvironment/link")
 ```
 
-## Setup
-
-link reads and writes a PostgreSQL database holding the Freshwater Atlas through [fwapg](https://github.com/smnorris/fwapg), the same setup fresh uses (see fresh's `docker/` for a local one). A run also reads PSCIS crossing assessments, CABD dams, modelled stream crossings and fish observations from that database; [`data-raw/snapshot_bcfp.sh`](https://github.com/NewGraphEnvironment/link/blob/main/data-raw/snapshot_bcfp.sh) in this repository loads them. `lnk_db_conn()` connects from the `PG_*_SHARE` environment variables, falling back to the standard `PG*` ones.
-
-Model watershed groups from the downstream end first: a group's access and barrier codes read what is already persisted for the groups below it, and `lnk_wsg_downstream_check()` checks that the dams below a group are in place.
+link runs against a PostgreSQL database holding the BC Freshwater Atlas through [fwapg](https://github.com/smnorris/fwapg), set up as for [fresh](https://github.com/NewGraphEnvironment/fresh).
 
 ## Example
 
-Model one watershed group under link's `default` config, then read back kilometres of accessible, spawning and rearing habitat per species. Not run here: it needs the database above.
+A model is a config, and its rules are tables you can read and edit:
 
 ```r
 library(link)
 
-conn   <- lnk_db_conn()
 cfg    <- lnk_config("default")
-cfg$pipeline$schema <- "fresh_default"   # where this config's results persist
 loaded <- lnk_load_overrides(cfg)
 
+th <- loaded$parameters_habitat_thresholds
+th[th$species_code %in% c("BT", "GR"),
+   c("species_code", "spawn_gradient_max", "spawn_channel_width_min",
+     "rear_gradient_max", "rear_channel_width_min")]
+#>   species_code spawn_gradient_max spawn_channel_width_min rear_gradient_max rear_channel_width_min
+#> 1           BT             0.0549                       2            0.1049                    1.5
+#> 2           GR             0.0249                       4            0.0349                    1.5
+```
+
+Run it for a watershed group, then sum the habitat each species can reach:
+
+```r
+conn <- lnk_db_conn()
+cfg$pipeline$schema <- "fresh_default"
 lnk_pipeline_run(conn, aoi = "PARS", cfg = cfg, loaded = loaded,
                  mapping_code = TRUE)
 
 lnk_rollup_wsg(conn, aoi = "PARS", species = c("BT", "GR"),
                schema = "fresh_default")
+#>    wsg species accessible_km spawning_km rearing_km rearing_lake_connection_km
+#> 1 PARS      BT       6883.03     1685.38    2635.01                          0
+#> 2 PARS      GR       4442.31      983.86    1366.32                          0
 ```
 
-## What it does
+Change a threshold, run again, and compare. Each run records its inputs, its parameters and the source versions its data was loaded from, in log tables beside its results.
 
-**Intrinsic habitat potential.** Each species' spawning and rearing rules come from gradient, channel width or mean annual discharge, the type of waterbody and, for some species, its size. Rearing is reported in kilometres separately for streams, lakes and wetlands, and lakes and wetlands also by area. In `default`, a lake or wetland counts towards that area only where the same species spawns on or near it (sockeye and kokanee excepted). For watershed groups modelled on discharge, `default_tuned` fills discharge gaps on the main stems of large rivers. `lnk_pipeline_run()` runs the whole sequence for a watershed group; it is built from exported functions (the `lnk_pipeline_*()` phases and others) that can be run and inspected one at a time.
+## Learn more
 
-**Connectivity.** Access is resolved per species from natural barriers, so a barrier blocks only the species it should: a 15 % gradient stops salmon and grayling but not bull trout. Fish observations and habitat confirmations upstream lift a natural barrier where they show fish get past it (`lnk_barrier_overrides()`). Each reach a species can reach is then marked with the kind of human-made barrier below it, if any: a crossing modelled or assessed as a barrier, a crossing since remediated, or a dam. So a map shows where human-made barriers cut fish off from habitat they could otherwise reach. During a run, PSCIS crossing assessments are matched to modelled crossings on the same stream, with a hand-curated table correcting GPS error; `lnk_match()` matches other crossing inventories by network position. `lnk_mapping_code()` gives each reach a species can reach a code for its habitat and the barrier below it, ready to style in QGIS.
-
-**Rules kept as data.** Thresholds, rules, species and the observations that count as evidence for each species are CSVs in a config bundle, each with a data dictionary (`lnk_config()`). `default` holds link's biological defaults and `default_tuned` values being calibrated against fish observations. Both model rainbow trout, kokanee and Arctic grayling alongside salmon, steelhead, bull trout and westslope cutthroat trout. Most method changes are a reviewed row edit, not a code change.
-
-**Checked against fish.** `lnk_habitat_validate()` scores a run against fish observations: how many land on habitat the model calls accessible, spawning or rearing, what that costs in kilometres, and why each miss was missed. `lnk_habitat_validate_band()` scores a threshold change on the reaches it moves. `lnk_species_pooling()` resolves which observation species count as evidence for which model species, region by region.
-
-**Provenance and export.** Each run records its inputs, its parameters and the source versions its data was loaded from, in log tables beside its results (`lnk_log_read()`, `lnk_artifact_record()`). `lnk_scenario_export()` writes results per config and species as Parquet with a manifest, which `lnk_catalog()` reads and `lnk_db_load()` loads into another database.
-
-## Documentation
-
-- [Reference](https://newgraphenvironment.github.io/link/reference/): every exported function, grouped by name.
-- [Bull trout and Arctic grayling in the Parsnip River](https://newgraphenvironment.github.io/link/articles/pars-habitat-connectivity.html): a full run for one watershed group, its maps for both species, and how its numbers compare with the reference model's.
+- [Bull trout and Arctic grayling in the Parsnip River](https://newgraphenvironment.github.io/link/articles/pars-habitat-connectivity.html): a full run for one watershed group, with maps for both species.
+- [Function reference](https://newgraphenvironment.github.io/link/reference/)
 
 ## Ecosystem
 
 | Package | Role |
 |---|---|
-| **link** | Intrinsic habitat potential and fish passage connectivity, per species (this package) |
+| **link** | Intrinsic habitat models: develop, test and communicate (this package) |
 | [fresh](https://github.com/NewGraphEnvironment/fresh) | Stream network modelling engine: segment, classify, cluster, aggregate |
 | [wet](https://github.com/NewGraphEnvironment/wet) | Stream flow and water temperature for BC's Freshwater Atlas |
-| [crate](https://github.com/NewGraphEnvironment/crate) | Canonical schemas and validation for input data |
-| [gq](https://github.com/NewGraphEnvironment/gq) | Shared map symbology, used for the habitat and access codes |
-
-Discharge comes from fwapg's modelled table today. wet's per-segment flow is not yet read ([#331](https://github.com/NewGraphEnvironment/link/issues/331)).
+| [gq](https://github.com/NewGraphEnvironment/gq) | Shared map symbology |
 
 ## Data and methods it builds on
 
-link's connectivity model follows the method of [bcfishpass](https://github.com/smnorris/bcfishpass), built by Simon Norris and maintained with contributions from many groups. link's configs read bcfishpass's community-maintained correction data: crossing structure fixes, PSCIS barrier status, PSCIS-to-modelled crossing matches, definite barriers and their controls, and habitat confirmations. The copies in the `default` and `bcfishpass` configs are synced from bcfishpass weekly, with the upstream commit and checksums recorded, so corrections stay in one place; `default_tuned` inherits them from `default`. The `bcfishpass` config applies bcfishpass's own rules and thresholds, so link's results can be checked against the method they come from. Fish observations come from [bcfishobs](https://github.com/smnorris/bcfishobs), and the stream network from [fwapg](https://github.com/smnorris/fwapg) and the [BC Freshwater Atlas](https://www2.gov.bc.ca/gov/content/data/geographic-data-services/topographic-data/freshwater).
+link's access model follows the method of [bcfishpass](https://github.com/smnorris/bcfishpass), built by Simon Norris and maintained with contributions from many groups. link also reads bcfishpass's community-maintained corrections to crossings, barriers and habitat, synced weekly into the `default` and `bcfishpass` configs so they stay in one place. A `bcfishpass` config applies bcfishpass's own rules, so results can be checked against the method they come from. Fish observations come from [bcfishobs](https://github.com/smnorris/bcfishobs), and the stream network from [fwapg](https://github.com/smnorris/fwapg) and the [BC Freshwater Atlas](https://www2.gov.bc.ca/gov/content/data/geographic-data-services/topographic-data/freshwater).
 
 ## Citation
 
 ```r
 citation("link")
 ```
-
-Citation metadata is in [`CITATION.cff`](https://github.com/NewGraphEnvironment/link/blob/main/CITATION.cff).
 
 ## License
 
