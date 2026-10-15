@@ -133,16 +133,16 @@ Tasks:
 - [x] Edit link#338's body: the pkgdown task is dropped (prefix families already group), the pin bump moves to its own issue, and the convention issue is linked
 
 ## Validation
-- [ ] Build the site locally (`pkgdown::build_site()`, or `build_home()`). Read the rendered home page; the figure and all links resolve
-- [ ] `devtools::check()` clean on DESCRIPTION
-- [ ] Grep the README and DESCRIPTION: every function named is exported, there is no version string in prose, and there is no "will / by design / designed to"
-- [ ] `/code-check` clean (once over the branch)
-- [ ] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion
+- [x] Build the site locally (`pkgdown::build_home()` to scratch). The figure path resolves (the live site serves `man/figures` at `reference/figures`), and README links return 200
+- [x] `devtools::check()`: DESCRIPTION meta-information OK. The remaining 1 ERROR / 3 WARNINGs / 3 NOTEs are pre-existing on main: DB-bound tests, non-ASCII and Rd notes in untouched files
+- [x] Grep the README and DESCRIPTION: every function named is exported, there is no version string in prose, and there is no "will / by design / designed to"
+- [x] `/code-check` (once over the branch): 4 rounds. Ended on an enumeration of every published claim (79), then of every changed sentence (13), then a check by hand of the final 6
+- [x] PWF checkboxes match landed work
+- [x] `/planning-archive` on completion
 
 ## Validation (skill frame)
 
-- [ ] Tests pass
-- [ ] `/code-check` clean (once over the branch with `/code-check branch`)
-- [ ] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion
+- [ ] Tests pass. No R code changed; the 5 failures in `devtools::check()` are DB-bound and pre-existing (tunnel down). Not re-run against a live DB
+- [x] `/code-check` clean (once over the branch with `/code-check branch`)
+- [x] PWF checkboxes match landed work
+- [x] `/planning-archive` on completion
