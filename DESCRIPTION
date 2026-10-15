@@ -1,6 +1,6 @@
 Package: link
-Title: Develop, Test and Communicate Intrinsic Habitat Models for Stream
-    Networks
+Title: Develop, Test and Communicate Intrinsic Habitat and Connectivity
+    Models for the BC Freshwater Atlas Stream Network
 Version: 0.65.1
 Date: 2026-10-15
 Authors@R: c(

@@ -1,6 +1,6 @@
 # link <img src="man/figures/logo.png" align="right" height="139" alt="link hex sticker" />
 
-> Develop, test and communicate intrinsic habitat models for stream networks
+> Develop, test and communicate intrinsic habitat and connectivity models for the BC Freshwater Atlas stream network
 
 link is a tool for building models of where each fish species could spawn and rear on a stream network, and which of that habitat fish can reach. Current models rate habitat from stream gradient, channel width and discharge, resolve access past natural barriers such as falls and steep gradients, and record the road and rail crossings and dams that sit below. Its value is flexibility: every rule and threshold is a row in a config, so a model can be changed, run beside another, checked against fish observations and traced back to the rules that produced it.
 

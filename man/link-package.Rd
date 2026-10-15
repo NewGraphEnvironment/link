@@ -4,7 +4,7 @@
 \name{link-package}
 \alias{link}
 \alias{link-package}
-\title{link: Develop, Test and Communicate Intrinsic Habitat Models for Stream Networks}
+\title{link: Develop, Test and Communicate Intrinsic Habitat and Connectivity Models for the BC Freshwater Atlas Stream Network}
 \description{
 \if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
 
