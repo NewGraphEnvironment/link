@@ -8,7 +8,7 @@
 \description{
 \if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
 
-Tools for developing, testing and communicating intrinsic habitat models on stream networks: where each fish species could spawn and rear, and which of that habitat fish can reach. Current models rate habitat from stream gradient, channel width and discharge, resolve access past natural barriers, and record the road and rail crossings and dams below each reach. Every rule and threshold is a row in a config, so models can be changed, compared, checked against fish observations and traced to the rules that produced them. Runs on the British Columbia Freshwater Atlas through 'fresh'. Experimental: APIs and outputs change without notice.
+Tools for developing, testing and communicating intrinsic habitat models on stream networks: where each fish species could spawn and rear, and which of that habitat fish can reach. Current models rate habitat from stream gradient, channel width and discharge, resolve access past natural barriers, and record the road and rail crossings and dams below each reach. Every rule and threshold is a row in a config, so models can be changed, compared, checked against fish observations and traced to the rules that produced them. Runs on the British Columbia Freshwater Atlas through 'fresh'. Under active development.
 }
 \seealso{
 Useful links:

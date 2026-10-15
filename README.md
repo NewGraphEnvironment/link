@@ -1,10 +1,12 @@
 # link <img src="man/figures/logo.png" align="right" height="139" alt="link hex sticker" />
 
+<!-- badges: start -->
+[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+<!-- badges: end -->
+
 > Develop, test and communicate intrinsic habitat and connectivity models for the BC Freshwater Atlas stream network
 
 link is a tool for building models of where each fish species could spawn and rear on a stream network, and which of that habitat fish can reach. Current models rate habitat from stream gradient, channel width and discharge, resolve access past natural barriers such as falls and steep gradients, and record the road and rail crossings and dams that sit below. Its value is flexibility: every rule and threshold is a row in a config, so a model can be changed, run beside another, checked against fish observations and traced back to the rules that produced it.
-
-> Experimental: APIs and outputs change without notice.
 
 <img src="man/figures/readme-pars.png" alt="Map of the Parsnip River watershed group with stream reaches coloured by Arctic grayling spawning, rearing and access, and by the barrier type below each reach" width="100%" />
 
@@ -15,6 +17,8 @@ link is a tool for building models of where each fish species could spawn and re
 ```r
 pak::pak("NewGraphEnvironment/link")
 ```
+
+link is under active development and its functions change between releases (see [NEWS](https://newgraphenvironment.github.io/link/news/index.html)). Pin a release for reproducible work: `pak::pak("NewGraphEnvironment/link@vX.Y.Z")`.
 
 link runs against a PostgreSQL database holding the BC Freshwater Atlas through [fwapg](https://github.com/smnorris/fwapg), set up as for [fresh](https://github.com/NewGraphEnvironment/fresh).
 

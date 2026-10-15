@@ -17,8 +17,8 @@ Description: Tools for developing, testing and communicating intrinsic
     crossings and dams below each reach. Every rule and threshold is a row
     in a config, so models can be changed, compared, checked against fish
     observations and traced to the rules that produced them. Runs on the
-    British Columbia Freshwater Atlas through 'fresh'. Experimental: APIs
-    and outputs change without notice.
+    British Columbia Freshwater Atlas through 'fresh'. Under active
+    development.
 License: MIT + file LICENSE
 URL: https://github.com/NewGraphEnvironment/link,
     https://newgraphenvironment.github.io/link/
