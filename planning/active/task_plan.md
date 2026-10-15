@@ -79,14 +79,14 @@ Starting draft, to be refined in Phase 2. Every clause must check against code:
 > **README opening, in addition:** what it informs. Which crossings to fix, how much spawning and rearing habitat each would open (`lnk_aggregate()`), and maps of access and habitat per species (`lnk_mapping_code()`).
 
 ## Phase 2: Descriptions first: DESCRIPTION Title + Description, README opening
-- [ ] Draft the Title, the Description and the README opening paragraph together, so all three say one thing
+- [x] Draft the Title, the Description and the README opening paragraph together, so all three say one thing
 - [x] Restore intrinsic habitat potential, and state plainly that the package is experimental
-- [ ] Name the decision it informs: which crossings to fix, and what fixing them opens up
-- [ ] Check each claim against code (an export, a config bundle, a vignette) before writing it. No adjectives that cannot be checked
+- [x] Name the decision it informs: which crossings to fix, and what fixing them opens up
+- [x] Check each claim against code (an export, a config bundle, a vignette) before writing it. No adjectives that cannot be checked
 
 ## Phase 3: README body
-- [ ] **Show:** one figure, `man/figures/readme-pars.png`, made by `data-raw/readme_figure.R` from the cached `inst/vignette-data/pars.gpkg`, reusing the vignette's mapping_code styling (gq registry). It shows habitat potential, access and the barriers in the way for one species in the Parsnip. Self-review it against the cartography checks at the published width
-- [ ] **"What it does", grouped by purpose, not a function table.** Each group names its entry function:
+- [x] **Show:** one figure, `man/figures/readme-pars.png`, made by `data-raw/readme_figure.R` from the cached `inst/vignette-data/pars.gpkg`, reusing the vignette's mapping_code styling (gq registry). It shows habitat potential, access and the barriers in the way for one species in the Parsnip. Self-review it against the cartography checks at the published width
+- [x] **"What it does", grouped by purpose, not a function table.** Each group names its entry function:
   - config bundles: `default` and `default_tuned` (biological defaults and calibrated values), plus a comparison bundle, which Acknowledgements names;
   - species added by config, such as Arctic grayling;
   - habitat checked against fish observations (`lnk_habitat_validate()`) and species pooling;
@@ -94,21 +94,21 @@ Starting draft, to be refined in Phase 2. Every clause must check against code:
   - run provenance;
   - Parquet export with a manifest (`lnk_scenario_export()` → `lnk_catalog()` → `lnk_db_load()`);
   - rollups and mapping code
-- [ ] Setup: the fwapg / fresh prerequisite and `lnk_db_conn()`. The example code is shown unrun, with its assumptions stated (the RPostgres pattern)
-- [ ] Documentation: link the vignette with one line on what it shows, and link the pkgdown reference
-- [ ] Remove "network-agnostic by design" and the Roadmap section. Say what runs today: the Freshwater Atlas, through fresh
-- [ ] Ecosystem table:
+- [x] Setup: the fwapg / fresh prerequisite and `lnk_db_conn()`. The example code is shown unrun, with its assumptions stated (the RPostgres pattern)
+- [x] Documentation: link the vignette with one line on what it shows, and link the pkgdown reference
+- [x] Remove "network-agnostic by design" and the Roadmap section. Say what runs today: the Freshwater Atlas, through fresh
+- [x] Ecosystem table:
   - add wet;
   - state the current discharge wiring (fwapg's table, read through link; reading it from wet is #331);
   - word the roles to match the sibling READMEs
-- [ ] "Connectivity" section:
+- [x] "Connectivity" section:
   - per-species access, where each barrier type blocks only the species it should (`lnk_barrier_overrides()`, the pipeline);
   - per-crossing upstream habitat (`lnk_aggregate()`);
   - access codes for maps (`lnk_mapping_code()`);
   - crossings matched across inventories (`lnk_match()`).
 
   No product names in the body
-- [ ] "Data and methods it builds on" section, as framed above. Correct NOTICE.md's bcfishpass software row. Keep License / NOTICE
+- [x] "Data and methods it builds on" section, as framed above. Correct NOTICE.md's bcfishpass software row. Keep License / NOTICE
 
 ## Phase 3b: Citation with company credit (operator, for Zenodo; soul#40, soul#39)
 
