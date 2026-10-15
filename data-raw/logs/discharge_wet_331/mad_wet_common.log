@@ -1,0 +1,30 @@
+47 calibration WSGs: ADMS BBAR CARP CHES CHWK COTR CRKD DOGC DUNC FINA FINL FIRE FOXR FRAN FRCN HARR INGR KOTL LARL LBTN LCHL LFRA LOMI LPCE LSAL MESI MFRA MORK NARC NATR NECR OSPK PARA PARS PCEA PINE SALR SETN SLOC TABR TOOD TWAC UFRA UNRS UOMI UPCE WILL
+Warning message:
+fresh_default.log records a discharge_source other than cfg 'default' reads (wet), so these flags were not classified on the discharge they are scored on: DUNC (fwapg), KOTL (fwapg), LARL (fwapg), PINE (fwapg), SLOC (fwapg) 
+   species_code     parameter evidence_set           evidence_role current    n
+1            BT spawn_mad_min        spawn                 primary   0.041   17
+2            BT spawn_mad_min    any_spawn     fallback: any stage   0.041 3115
+3            BT  rear_mad_min          any                 primary   0.021 3116
+4            BT  rear_mad_min         rear comparison: rear-staged   0.021  186
+5            GR spawn_mad_min        spawn                 primary   0.200    7
+6            GR spawn_mad_min    any_spawn     fallback: any stage   0.200  747
+7            GR  rear_mad_min          any                 primary   0.021  749
+8            GR  rear_mad_min         rear comparison: rear-staged   0.021  259
+9            KO spawn_mad_min        spawn                 primary   0.041   31
+10           RB spawn_mad_min        spawn                 primary   0.041   60
+11           RB  rear_mad_min          any                 primary   0.021 5221
+12           RB  rear_mad_min         rear comparison: rear-staged   0.021 2842
+           p05 rule_value rule_max    rule_says decides
+1  0.018865667         NA       NA insufficient   FALSE
+2  0.036401333     0.0360     9999          set    TRUE
+3  0.036464583     0.0360     9999          set    TRUE
+4  0.005952292     0.0059     9999          set   FALSE
+5  0.640483083         NA       NA insufficient   FALSE
+6  0.113557500     0.1100     9999          set    TRUE
+7  0.113557500     0.1100     9999          set    TRUE
+8  0.106191833     0.1000     9999          set   FALSE
+9  0.490155000     0.4900     9999          set    TRUE
+10 0.009050500     0.0090     9999          set    TRUE
+11 0.012136667     0.0120     9999          set    TRUE
+12 0.010052500     0.0100     9999          set   FALSE
+wrote data-raw/logs/discharge_wet_331/mad_wet_common

@@ -1,0 +1,13 @@
+species_code,parameter,evidence_set,evidence_role,current,n,p05,rule_value,rule_max,rule_says,decides
+BT,spawn_mad_min,spawn,primary,0.041,17,0.018865666666666666,,,insufficient,FALSE
+BT,spawn_mad_min,any_spawn,fallback: any stage,0.041,3115,0.036401333333333355,0.036,9999,set,TRUE
+BT,rear_mad_min,any,primary,0.021,3116,0.036464583333333335,0.036,9999,set,TRUE
+BT,rear_mad_min,rear,comparison: rear-staged,0.021,186,0.0059522916666666665,0.0059,9999,set,FALSE
+GR,spawn_mad_min,spawn,primary,0.2,7,0.6404830833333334,,,insufficient,FALSE
+GR,spawn_mad_min,any_spawn,fallback: any stage,0.2,747,0.1135575,0.11,9999,set,TRUE
+GR,rear_mad_min,any,primary,0.021,749,0.1135575,0.11,9999,set,TRUE
+GR,rear_mad_min,rear,comparison: rear-staged,0.021,259,0.10619183333333335,0.1,9999,set,FALSE
+KO,spawn_mad_min,spawn,primary,0.041,31,0.490155,0.49,9999,set,TRUE
+RB,spawn_mad_min,spawn,primary,0.041,60,0.009050500000000001,0.009,9999,set,TRUE
+RB,rear_mad_min,any,primary,0.021,5221,0.012136666666666667,0.012,9999,set,TRUE
+RB,rear_mad_min,rear,comparison: rear-staged,0.021,2842,0.0100525,0.01,9999,set,FALSE

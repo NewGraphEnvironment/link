@@ -1,0 +1,13 @@
+species_code,parameter,evidence_set,evidence_role,current,n,p05,rule_value,rule_max,rule_says,decides
+BT,spawn_mad_min,spawn,primary,0.041,17,0.018557999999999998,,,insufficient,FALSE
+BT,spawn_mad_min,any_spawn,fallback: any stage,0.041,2802,0.028183000000000007,0.028,9999,set,TRUE
+BT,rear_mad_min,any,primary,0.021,2803,0.028215999999999998,0.028,9999,set,TRUE
+BT,rear_mad_min,rear,comparison: rear-staged,0.021,186,0.0066675,0.0066,9999,set,FALSE
+GR,spawn_mad_min,spawn,primary,0.2,7,0.611179,,,insufficient,FALSE
+GR,spawn_mad_min,any_spawn,fallback: any stage,0.2,540,0.09513500000000003,0.095,9999,set,TRUE
+GR,rear_mad_min,any,primary,0.021,542,0.09561,0.095,9999,set,TRUE
+GR,rear_mad_min,rear,comparison: rear-staged,0.021,223,0.09102500000000008,0.091,9999,set,FALSE
+KO,spawn_mad_min,spawn,primary,0.041,31,0.57764,0.57,9999,set,TRUE
+RB,spawn_mad_min,spawn,primary,0.041,55,0.01103,0.011,9999,set,TRUE
+RB,rear_mad_min,any,primary,0.021,4671,0.00955,0.0095,9999,set,TRUE
+RB,rear_mad_min,rear,comparison: rear-staged,0.021,2633,0.008206000000000001,0.0082,9999,set,FALSE

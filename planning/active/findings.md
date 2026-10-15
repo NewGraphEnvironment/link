@@ -57,3 +57,34 @@ Relates to #308, #305, #302, #300, #342, NewGraphEnvironment/wet#7.
 | S3 `default_extrabreaks` / `default_rearbreaks` | stay fwapg (`extends: ~`, untouched) |
 | S6 wet's `source` in `mad_m3s_source` | not done: it would change the export contract's value domain; `modelled` stays |
 | A2 / A3 / A4 / A6 | acceptance reworded in the plan |
+
+## Phase 3: discharge numbers on wet (`data-raw/logs/discharge_wet_331/`, 2026-10-15)
+
+**Width-converted minima** (median `mad_m3s` at the width minimum, floored to 2 s.f.; `width_*`):
+
+| | fwapg at HEAD | wet | fwapg, common lines | wet, common lines | `default` (#307) |
+|---|---|---|---|---|---|
+| spawn, 2 m (BT, KO, RB) | 0.042 | 0.043 | 0.042 | 0.041 | 0.041 |
+| rear, 1.5 m (BT, GR, RB) | 0.021 | 0.023 | 0.021 | 0.022 | 0.021 |
+| GR spawn, 4 m | 0.20 | 0.20 | 0.20 | 0.19 | 0.20 |
+
+`default` keeps its values (operator); the source barely moves them. HEAD's fwapg spawn value is 0.042 against #307's 0.041: `fresh_default` gained DUNC since.
+
+**BT at observations** (`mad_*`; P05 is the fixed rule's value, P10 / P02 the ladder's other rungs):
+
+| | calibration WSGs | BT rows with no discharge | rear (any stage): n, P10 / P05 / P02 | spawn: deciding set, n, P10 / P05 / P02 |
+|---|---|---|---|---|
+| #302 committed (fwapg) | 46 | 10.7 % | 2,592: 0.078 / 0.027 / 0.0085 | any-stage fallback (17 spawn-staged) |
+| fwapg at HEAD | 47 | 10.2 % | 2,803: 0.084 / 0.028 / 0.0089 | any-stage fallback, 2,802: 0.084 / 0.028 / 0.0089 |
+| wet | 56 | 0.17 % | 4,199: 0.044 / 0.021 / 0.0082 | **spawn-staged, 58**: 0.013 / 0.0064 / 0.0020 |
+| wet on fwapg's 47 WSGs | 47 | 0.19 % | 3,116: 0.091 / 0.036 / 0.014 | any-stage fallback, 3,115 (17 spawn-staged) |
+
+- wet adds nine Skeena groups (BULK, KISP, KLUM, LKEL, LSKE, MORR, MSKE, USKE, ZYMO), where fwapg has no discharge. They bring 41 of the 58 spawn-staged BT locations, so spawning is decided on spawn-staged evidence for the first time (the rule's floor is 30), and its percentiles are far lower than the any-stage fallback.
+- On the same 47 groups, wet reads higher than fwapg at BT locations (P05 0.036 against 0.028): the lines fwapg left empty, now valued, sit in larger water.
+- Over all 56 groups, the Skeena locations pull the rearing percentiles down (P10 0.044 against 0.084).
+- By wet's own source (`mad_wet/bt_quantiles_by_wet_source.csv`): 4,023 of 4,198 rearing locations are PCIC routed, with percentiles matching the pooled ones; 175 are wet's water balance (P05 0.022, median 0.53 against 1.24). Spawning is 57 of 58 PCIC routed.
+- **Fill reach** (`fill_reach_1250.csv`): edge 1250 km with no value, #302's nine BT score groups 506 → 5; `fresh_default`'s 56 groups 5,967 → 29. On wet the #305 fill has almost nothing to fill, so no fill-off scoring variant.
+
+Ladder rungs for Build A, floored to 2 s.f. as #302's rule does:
+- wet: rear 0.043 / 0.020 / 0.0081; spawn 0.012 / 0.0063 / 0.0019.
+- fwapg at HEAD, on the same segmentation, for a same-day comparison: rear and spawn 0.083 / 0.028 / 0.0089.

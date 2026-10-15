@@ -58,12 +58,12 @@ Every group is on `cw` today, so MAD ranges are inert in classification. Switchi
 
 ## Phase 3: Re-derive the discharge numbers on wet
 - [x] `query_habitat_thresholds_mad.R` and `query_width_mad_equivalent.R` take `--discharge-source=fwapg|wet`. They read through `.lnk_discharge_rel()`, never a hard-coded name, and stamp the source and the wet table's load comment. The committed #302 / #307 outputs cannot be reproduced (bcfishobs, fresh and the calibration set have moved since; review B3), so each is re-run on fwapg at HEAD as today's baseline, beside wet on the same day, with drift from the committed values reported separately.
-- [ ] Run both on both sources into `data-raw/logs/discharge_wet_331/`:
+- [x] Run both on both sources into `data-raw/logs/discharge_wet_331/`:
   - BT P10 / P05 / P02 for spawning and rearing on the calibration WSGs;
   - the width-converted minima (BT, GR, KO, RB), recorded only (`default` keeps fwapg's).
 
   Report wet against fwapg on the lines both value, as well as on each full set (wet values more lines, and adds nine WSGs to the calibration set), and split by wet's `source` (`pcic_routed` / `wet_balance`: two models, forcings and normal periods).
-- [ ] Measure the fill's reach on wet before paying for fill-on scoring (review S2): edge 1250 lines with no annual pick in the held-out and calibration WSGs.
+- [x] Measure the fill's reach on wet before paying for fill-on scoring (review S2): edge 1250 lines with no annual pick in the held-out and calibration WSGs.
 
 ## Phase 4: Re-score BT on wet's discharge
 - [ ] Commit Phases 1–3 first: the harness refuses a dirty tree, and nothing in the repo is edited while a build runs (review O3).

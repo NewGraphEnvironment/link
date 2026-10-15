@@ -1,0 +1,28 @@
+47 calibration WSGs: ADMS BBAR CARP CHES CHWK COTR CRKD DOGC DUNC FINA FINL FIRE FOXR FRAN FRCN HARR INGR KOTL LARL LBTN LCHL LFRA LOMI LPCE LSAL MESI MFRA MORK NARC NATR NECR OSPK PARA PARS PCEA PINE SALR SETN SLOC TABR TOOD TWAC UFRA UNRS UOMI UPCE WILL
+   species_code     parameter evidence_set           evidence_role current    n
+1            BT spawn_mad_min        spawn                 primary   0.041   17
+2            BT spawn_mad_min    any_spawn     fallback: any stage   0.041 2802
+3            BT  rear_mad_min          any                 primary   0.021 2803
+4            BT  rear_mad_min         rear comparison: rear-staged   0.021  186
+5            GR spawn_mad_min        spawn                 primary   0.200    7
+6            GR spawn_mad_min    any_spawn     fallback: any stage   0.200  540
+7            GR  rear_mad_min          any                 primary   0.021  542
+8            GR  rear_mad_min         rear comparison: rear-staged   0.021  223
+9            KO spawn_mad_min        spawn                 primary   0.041   31
+10           RB spawn_mad_min        spawn                 primary   0.041   55
+11           RB  rear_mad_min          any                 primary   0.021 4671
+12           RB  rear_mad_min         rear comparison: rear-staged   0.021 2633
+         p05 rule_value rule_max    rule_says decides
+1  0.0185580         NA       NA insufficient   FALSE
+2  0.0281830     0.0280     9999          set    TRUE
+3  0.0282160     0.0280     9999          set    TRUE
+4  0.0066675     0.0066     9999          set   FALSE
+5  0.6111790         NA       NA insufficient   FALSE
+6  0.0951350     0.0950     9999          set    TRUE
+7  0.0956100     0.0950     9999          set    TRUE
+8  0.0910250     0.0910     9999          set   FALSE
+9  0.5776400     0.5700     9999          set    TRUE
+10 0.0110300     0.0110     9999          set    TRUE
+11 0.0095500     0.0095     9999          set    TRUE
+12 0.0082060     0.0082     9999          set   FALSE
+wrote data-raw/logs/discharge_wet_331/mad_fwapg
