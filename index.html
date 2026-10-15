@@ -5,14 +5,14 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Stream Network Habitat Interpretation (Experimental) • link</title>
+<title>Develop, Test and Communicate Intrinsic Habitat Models for Stream Networks • link</title>
 <script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Stream Network Habitat Interpretation (Experimental)">
-<meta name="description" content="Experimental tooling for interpreting field and modelled inputs as per-segment habitat classifications on stream networks. Pairs with fresh. Under active development; APIs and outputs change without notice.">
-<meta property="og:description" content="Experimental tooling for interpreting field and modelled inputs as per-segment habitat classifications on stream networks. Pairs with fresh. Under active development; APIs and outputs change without notice.">
+<script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Develop, Test and Communicate Intrinsic Habitat Models for Stream Networks">
+<meta name="description" content="Tools for developing, testing and communicating intrinsic habitat models on stream networks: where each fish species could spawn and rear, and which of that habitat fish can reach. Current models rate habitat from stream gradient, channel width and discharge, resolve access past natural barriers, and record the road and rail crossings and dams below each reach. Every rule and threshold is a row in a config, so models can be changed, compared, checked against fish observations and traced to the rules that produced them. Runs on the British Columbia Freshwater Atlas through fresh. Experimental: APIs and outputs change without notice.">
+<meta property="og:description" content="Tools for developing, testing and communicating intrinsic habitat models on stream networks: where each fish species could spawn and rear, and which of that habitat fish can reach. Current models rate habitat from stream gradient, channel width and discharge, resolve access past natural barriers, and record the road and rail crossings and dams below each reach. Every rule and threshold is a row in a config, so models can be changed, compared, checked against fish observations and traced to the rules that produced them. Runs on the British Columbia Freshwater Atlas through fresh. Experimental: APIs and outputs change without notice.">
 <meta property="og:image" content="https://newgraphenvironment.github.io/link/logo.png">
 </head>
 <body>
@@ -59,72 +59,59 @@
 </h1>
 </div>
 <blockquote>
-<p>Stream Network Habitat Interpretation</p>
+<p>Develop, test and communicate intrinsic habitat models for stream networks</p>
 </blockquote>
-<p>An interpretation layer between field/modelled evidence and stream-network habitat modelling. Loads override CSVs through a canonical schema, snaps points to the network, matches records across data systems, resolves per-species barrier connectivity from observations and confirmations, and orchestrates a multi-phase pipeline that produces per-segment habitat outputs. Pairs with <a href="https://github.com/NewGraphEnvironment/fresh" class="external-link">fresh</a> for the modelling engine. Currently reproduces <a href="https://github.com/smnorris/bcfishpass" class="external-link">bcfishpass</a>’s fish-passage classification method on BC’s Freshwater Atlas; interpretation logic is network-agnostic by design.</p>
+<p>link is a tool for building models of where each fish species could spawn and rear on a stream network, and which of that habitat fish can reach. Current models rate habitat from stream gradient, channel width and discharge, resolve access past natural barriers such as falls and steep gradients, and record the road and rail crossings and dams that sit below. Its value is flexibility: every rule and threshold is a row in a config, so a model can be changed, run beside another, checked against fish observations and traced back to the rules that produced it.</p>
 <blockquote>
-<p>Experimental — APIs and outputs change without notice as the package consolidates.</p>
+<p>Experimental: APIs and outputs change without notice.</p>
 </blockquote>
+<p><img src="reference/figures/readme-pars.png" alt="Map of the Parsnip River watershed group with stream reaches coloured by Arctic grayling spawning, rearing and access, and by the barrier type below each reach" width="100%"></p>
+<p><em>Arctic grayling habitat in the Parsnip River watershed group. Purple reaches drain to Williston Reservoir behind the W.A.C. Bennett Dam. Orange and red reaches sit above a road or rail crossing that is a barrier. Grey reaches lie above a natural barrier to grayling.</em></p>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"NewGraphEnvironment/link"</span><span class="op">)</span></span></code></pre></div>
+<p>link runs against a PostgreSQL database holding the BC Freshwater Atlas through <a href="https://github.com/smnorris/fwapg" class="external-link">fwapg</a>, set up as for <a href="https://github.com/NewGraphEnvironment/fresh" class="external-link">fresh</a>.</p>
 </div>
 <div class="section level2">
-<h2 id="prerequisites">Prerequisites<a class="anchor" aria-label="anchor" href="#prerequisites"></a>
+<h2 id="example">Example<a class="anchor" aria-label="anchor" href="#example"></a>
 </h2>
-<p>PostgreSQL with <a href="https://github.com/smnorris/fwapg" class="external-link">fwapg</a> loaded (same prerequisite as <code>fresh</code>; see <code>fresh</code>’s <code>docker/</code> for a local setup). Connection via <code><a href="reference/lnk_db_conn.html">lnk_db_conn()</a></code> or direct <code><a href="https://dbi.r-dbi.org/reference/dbConnect.html" class="external-link">DBI::dbConnect()</a></code>.</p>
+<p>A model is a config, and its rules are tables you can read and edit:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/NewGraphEnvironment/link" class="external-link">link</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">cfg</span>    <span class="op">&lt;-</span> <span class="fu"><a href="reference/lnk_config.html">lnk_config</a></span><span class="op">(</span><span class="st">"default"</span><span class="op">)</span></span>
+<span><span class="va">loaded</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/lnk_load_overrides.html">lnk_load_overrides</a></span><span class="op">(</span><span class="va">cfg</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">th</span> <span class="op">&lt;-</span> <span class="va">loaded</span><span class="op">$</span><span class="va">parameters_habitat_thresholds</span></span>
+<span><span class="va">th</span><span class="op">[</span><span class="va">th</span><span class="op">$</span><span class="va">species_code</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"BT"</span>, <span class="st">"GR"</span><span class="op">)</span>,</span>
+<span>   <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"species_code"</span>, <span class="st">"spawn_gradient_max"</span>, <span class="st">"spawn_channel_width_min"</span>,</span>
+<span>     <span class="st">"rear_gradient_max"</span>, <span class="st">"rear_channel_width_min"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt;   species_code spawn_gradient_max spawn_channel_width_min rear_gradient_max rear_channel_width_min</span></span>
+<span><span class="co">#&gt; 1           BT             0.0549                       2            0.1049                    1.5</span></span>
+<span><span class="co">#&gt; 2           GR             0.0249                       4            0.0349                    1.5</span></span></code></pre></div>
+<p>Run it for a watershed group, then sum the habitat each species can reach:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">conn</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/lnk_db_conn.html">lnk_db_conn</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">cfg</span><span class="op">$</span><span class="va">pipeline</span><span class="op">$</span><span class="va">schema</span> <span class="op">&lt;-</span> <span class="st">"fresh_default"</span></span>
+<span><span class="fu"><a href="reference/lnk_pipeline_run.html">lnk_pipeline_run</a></span><span class="op">(</span><span class="va">conn</span>, aoi <span class="op">=</span> <span class="st">"PARS"</span>, cfg <span class="op">=</span> <span class="va">cfg</span>, loaded <span class="op">=</span> <span class="va">loaded</span>,</span>
+<span>                 mapping_code <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="reference/lnk_rollup_wsg.html">lnk_rollup_wsg</a></span><span class="op">(</span><span class="va">conn</span>, aoi <span class="op">=</span> <span class="st">"PARS"</span>, species <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"BT"</span>, <span class="st">"GR"</span><span class="op">)</span>,</span>
+<span>               schema <span class="op">=</span> <span class="st">"fresh_default"</span><span class="op">)</span></span>
+<span><span class="co">#&gt;    wsg species accessible_km spawning_km rearing_km rearing_lake_connection_km</span></span>
+<span><span class="co">#&gt; 1 PARS      BT       6883.03     1685.38    2635.01                          0</span></span>
+<span><span class="co">#&gt; 2 PARS      GR       4442.31      983.86    1366.32                          0</span></span></code></pre></div>
+<p>Change a threshold, run again, and compare. Each run records its inputs, its parameters and the source versions its data was loaded from, in log tables beside its results.</p>
 </div>
 <div class="section level2">
-<h2 id="what-link-does">What link does<a class="anchor" aria-label="anchor" href="#what-link-does"></a>
+<h2 id="learn-more">Learn more<a class="anchor" aria-label="anchor" href="#learn-more"></a>
 </h2>
-<p>link sits between raw evidence — PSCIS crossings, fish observations, habitat confirmations, falls, user-defined barriers — and the habitat-modelling engine:</p>
-<ol style="list-style-type: decimal">
-<li>
-<strong>Load</strong> override CSVs (<code><a href="reference/lnk_load.html">lnk_load()</a></code>, <code><a href="reference/lnk_load_overrides.html">lnk_load_overrides()</a></code>) with canonical-schema validation via <a href="https://github.com/NewGraphEnvironment/crate" class="external-link">crate</a>.</li>
-<li>
-<strong>Snap</strong> points to the network (<code><a href="reference/lnk_points_snap.html">lnk_points_snap()</a></code>).</li>
-<li>
-<strong>Match</strong> crossings across data systems by network position (<code><a href="reference/lnk_match.html">lnk_match()</a></code>) within a configurable in-stream distance tolerance — linking PSCIS, MoTI, operator-submitted, and provincial inventories.</li>
-<li>
-<strong>Resolve</strong> per-species barrier overrides from evidence (<code><a href="reference/lnk_barrier_overrides.html">lnk_barrier_overrides()</a></code>): which gradient or falls barriers to skip given upstream observations + habitat confirmations.</li>
-<li>
-<strong>Orchestrate</strong> the pipeline (<code>lnk_pipeline_*()</code>, or <code><a href="reference/lnk_pipeline_run.html">lnk_pipeline_run()</a></code> end-to-end) that produces per-watershed-group habitat outputs reproducing bcfishpass.</li>
-<li>
-<strong>Compare</strong> runs across configurations (<code>lnk_compare_*()</code>, <code><a href="reference/lnk_parity_annotate.html">lnk_parity_annotate()</a></code>, <code>lnk_baseline_*()</code>) for province-wide parity audits and reproducibility checks.</li>
-</ol>
-</div>
-<div class="section level2">
-<h2 id="the-pipeline">The pipeline<a class="anchor" aria-label="anchor" href="#the-pipeline"></a>
-</h2>
-<p>For a given watershed group:</p>
-<pre><code>load → setup → prepare → break → access → classify → connect → crossings → persist</code></pre>
-<p>Each phase is a callable function (<code>lnk_pipeline_&lt;phase&gt;()</code>), so a user can stop, inspect, resume, or rebuild from any phase. <code><a href="reference/lnk_pipeline_run.html">lnk_pipeline_run()</a></code> chains them end-to-end. <code><a href="reference/lnk_baseline_current.html">lnk_baseline_current()</a></code> captures a known-good run as a reference for diffing future runs.</p>
-</div>
-<div class="section level2">
-<h2 id="using-with-fresh">Using with fresh<a class="anchor" aria-label="anchor" href="#using-with-fresh"></a>
-</h2>
-<p><a href="https://github.com/NewGraphEnvironment/fresh" class="external-link">fresh</a> is the modelling engine — it segments, classifies, and aggregates on the network. link prepares fresh’s two key inputs:</p>
 <ul>
 <li>
-<strong>Break sources</strong> for <code>frs_network_segment()</code> — per-table specs assembled via <code><a href="reference/lnk_source.html">lnk_source()</a></code>.</li>
-<li>
-<strong>Barrier overrides</strong> for <code>frs_habitat_classify()</code> — a per-species skip list produced by <code><a href="reference/lnk_barrier_overrides.html">lnk_barrier_overrides()</a></code>.</li>
-</ul>
-<p>The two together reproduce bcfishpass on the Freshwater Atlas.</p>
-</div>
-<div class="section level2">
-<h2 id="roadmap">Roadmap<a class="anchor" aria-label="anchor" href="#roadmap"></a>
-</h2>
-<p>link is currently FWA-grounded through its dependency on <code>fresh</code>. The interpretation logic — what counts as evidence of a passable barrier, how observations resolve override decisions, how cross-system crossings are matched — is network-agnostic by design. Active design work:</p>
-<ul>
-<li>
-<strong>Network agnosticism</strong> inherited from <code>fresh</code>’s in-flight <code>spyda</code> topology engine (<a href="https://github.com/NewGraphEnvironment/fresh/issues/41" class="external-link">fresh#41</a>) and configurable column names (<a href="https://github.com/NewGraphEnvironment/fresh/issues/44" class="external-link">fresh#44</a>).</li>
-<li>
-<strong>Crossing-connectivity scoring</strong> — <code><a href="reference/lnk_score.html">lnk_score()</a></code> framework for combining multiple connectivity signals into a prioritization output.</li>
-<li>
-<strong>Province-wide parity audits</strong> — <code>lnk_compare_*()</code> machinery for systematic comparison of pipeline variants and reproduction of an authoritative reference run.</li>
+<a href="https://newgraphenvironment.github.io/link/articles/pars-habitat-connectivity.html">Bull trout and Arctic grayling in the Parsnip River</a>: a full run for one watershed group, with maps for both species.</li>
+<li><a href="https://newgraphenvironment.github.io/link/reference/">Function reference</a></li>
 </ul>
 </div>
 <div class="section level2">
@@ -142,23 +129,38 @@
 <tbody>
 <tr>
 <td><strong>link</strong></td>
-<td>Stream-network habitat interpretation (this package) — interprets evidence, drives the modelling engine</td>
+<td>Intrinsic habitat models: develop, test and communicate (this package)</td>
 </tr>
 <tr>
 <td><a href="https://github.com/NewGraphEnvironment/fresh" class="external-link">fresh</a></td>
-<td>Stream-network modelling engine — segment, classify, cluster, aggregate</td>
+<td>Stream network modelling engine: segment, classify, cluster, aggregate</td>
 </tr>
 <tr>
-<td><a href="https://github.com/NewGraphEnvironment/crate" class="external-link">crate</a></td>
-<td>Canonical schema + validation for input CSVs</td>
+<td><a href="https://github.com/NewGraphEnvironment/wet" class="external-link">wet</a></td>
+<td>Stream flow and water temperature for BC’s Freshwater Atlas</td>
+</tr>
+<tr>
+<td><a href="https://github.com/NewGraphEnvironment/gq" class="external-link">gq</a></td>
+<td>Shared map symbology</td>
 </tr>
 </tbody>
 </table>
 </div>
 <div class="section level2">
+<h2 id="data-and-methods-it-builds-on">Data and methods it builds on<a class="anchor" aria-label="anchor" href="#data-and-methods-it-builds-on"></a>
+</h2>
+<p>link’s access model follows the method of <a href="https://github.com/smnorris/bcfishpass" class="external-link">bcfishpass</a>, built by Simon Norris and maintained with contributions from many groups. link also reads bcfishpass’s community-maintained corrections to crossings, barriers and habitat, synced weekly into the <code>default</code> and <code>bcfishpass</code> configs so they stay in one place. A <code>bcfishpass</code> config applies bcfishpass’s own rules, so results can be checked against the method they come from. Fish observations come from <a href="https://github.com/smnorris/bcfishobs" class="external-link">bcfishobs</a>, and the stream network from <a href="https://github.com/smnorris/fwapg" class="external-link">fwapg</a> and the <a href="https://www2.gov.bc.ca/gov/content/data/geographic-data-services/topographic-data/freshwater" class="external-link">BC Freshwater Atlas</a>.</p>
+</div>
+<div class="section level2">
+<h2 id="citation">Citation<a class="anchor" aria-label="anchor" href="#citation"></a>
+</h2>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/citation.html" class="external-link">citation</a></span><span class="op">(</span><span class="st">"link"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
 <h2 id="license">License<a class="anchor" aria-label="anchor" href="#license"></a>
 </h2>
-<p>MIT (see <a href="LICENSE"><code>LICENSE</code></a>). Redistributed bcfishpass override data carries its own license — see <a href="NOTICE.html"><code>NOTICE.md</code></a> and <a href="LICENSE-bcfishpass"><code>LICENSE-bcfishpass</code></a>.</p>
+<p>MIT (see <a href="LICENSE"><code>LICENSE</code></a>). Redistributed bcfishpass data carries its own license: see <a href="NOTICE.html"><code>NOTICE.md</code></a> and <a href="LICENSE-bcfishpass"><code>LICENSE-bcfishpass</code></a>.</p>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="links">
@@ -189,7 +191,8 @@
 <div class="developers">
 <h2 data-toc-skip>Developers</h2>
 <ul class="list-unstyled">
-<li>Allan Irvine <br><small class="roles"> Author, maintainer </small> <a href="https://orcid.org/0009-0003-7697-6064" target="orcid.widget" aria-label="ORCID" class="external-link"><span class="fab fa-orcid orcid" aria-hidden="true"></span></a>  </li>
+<li>Allan Irvine <br><small class="roles"> Author, maintainer </small> <a href="https://orcid.org/0000-0002-3495-2128" target="orcid.widget" aria-label="ORCID" class="external-link"><span class="fab fa-orcid orcid" aria-hidden="true"></span></a>  </li>
+<li>New Graph Environment Ltd. <br><small class="roles"> Copyright holder, funder </small>   </li>
 <li><a href="authors.html">More about authors...</a></li>
 </ul>
 </div>
@@ -201,7 +204,7 @@
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Allan Irvine.</p>
+  <p>Developed by Allan Irvine, New Graph Environment Ltd..</p>
 </div>
 
 <div class="pkgdown-footer-right">

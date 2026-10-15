@@ -1,21 +1,27 @@
 # link
 
-> Stream Network Habitat Interpretation
+> Develop, test and communicate intrinsic habitat models for stream
+> networks
 
-An interpretation layer between field/modelled evidence and
-stream-network habitat modelling. Loads override CSVs through a
-canonical schema, snaps points to the network, matches records across
-data systems, resolves per-species barrier connectivity from
-observations and confirmations, and orchestrates a multi-phase pipeline
-that produces per-segment habitat outputs. Pairs with
-[fresh](https://github.com/NewGraphEnvironment/fresh) for the modelling
-engine. Currently reproduces
-[bcfishpass](https://github.com/smnorris/bcfishpass)’s fish-passage
-classification method on BC’s Freshwater Atlas; interpretation logic is
-network-agnostic by design.
+link is a tool for building models of where each fish species could
+spawn and rear on a stream network, and which of that habitat fish can
+reach. Current models rate habitat from stream gradient, channel width
+and discharge, resolve access past natural barriers such as falls and
+steep gradients, and record the road and rail crossings and dams that
+sit below. Its value is flexibility: every rule and threshold is a row
+in a config, so a model can be changed, run beside another, checked
+against fish observations and traced back to the rules that produced it.
 
-> Experimental — APIs and outputs change without notice as the package
-> consolidates.
+> Experimental: APIs and outputs change without notice.
+
+![Map of the Parsnip River watershed group with stream reaches coloured
+by Arctic grayling spawning, rearing and access, and by the barrier type
+below each reach](reference/figures/readme-pars.png)
+
+*Arctic grayling habitat in the Parsnip River watershed group. Purple
+reaches drain to Williston Reservoir behind the W.A.C. Bennett Dam.
+Orange and red reaches sit above a road or rail crossing that is a
+barrier. Grey reaches lie above a natural barrier to grayling.*
 
 ## Installation
 
@@ -24,105 +30,94 @@ network-agnostic by design.
 pak::pak("NewGraphEnvironment/link")
 ```
 
-## Prerequisites
+link runs against a PostgreSQL database holding the BC Freshwater Atlas
+through [fwapg](https://github.com/smnorris/fwapg), set up as for
+[fresh](https://github.com/NewGraphEnvironment/fresh).
 
-PostgreSQL with [fwapg](https://github.com/smnorris/fwapg) loaded (same
-prerequisite as `fresh`; see `fresh`’s `docker/` for a local setup).
-Connection via
-[`lnk_db_conn()`](https://newgraphenvironment.github.io/link/reference/lnk_db_conn.md)
-or direct
-[`DBI::dbConnect()`](https://dbi.r-dbi.org/reference/dbConnect.html).
+## Example
 
-## What link does
+A model is a config, and its rules are tables you can read and edit:
 
-link sits between raw evidence — PSCIS crossings, fish observations,
-habitat confirmations, falls, user-defined barriers — and the
-habitat-modelling engine:
+``` r
 
-1.  **Load** override CSVs
-    ([`lnk_load()`](https://newgraphenvironment.github.io/link/reference/lnk_load.md),
-    [`lnk_load_overrides()`](https://newgraphenvironment.github.io/link/reference/lnk_load_overrides.md))
-    with canonical-schema validation via
-    [crate](https://github.com/NewGraphEnvironment/crate).
-2.  **Snap** points to the network
-    ([`lnk_points_snap()`](https://newgraphenvironment.github.io/link/reference/lnk_points_snap.md)).
-3.  **Match** crossings across data systems by network position
-    ([`lnk_match()`](https://newgraphenvironment.github.io/link/reference/lnk_match.md))
-    within a configurable in-stream distance tolerance — linking PSCIS,
-    MoTI, operator-submitted, and provincial inventories.
-4.  **Resolve** per-species barrier overrides from evidence
-    ([`lnk_barrier_overrides()`](https://newgraphenvironment.github.io/link/reference/lnk_barrier_overrides.md)):
-    which gradient or falls barriers to skip given upstream
-    observations + habitat confirmations.
-5.  **Orchestrate** the pipeline (`lnk_pipeline_*()`, or
-    [`lnk_pipeline_run()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_run.md)
-    end-to-end) that produces per-watershed-group habitat outputs
-    reproducing bcfishpass.
-6.  **Compare** runs across configurations (`lnk_compare_*()`,
-    [`lnk_parity_annotate()`](https://newgraphenvironment.github.io/link/reference/lnk_parity_annotate.md),
-    `lnk_baseline_*()`) for province-wide parity audits and
-    reproducibility checks.
+library(link)
 
-## The pipeline
+cfg    <- lnk_config("default")
+loaded <- lnk_load_overrides(cfg)
 
-For a given watershed group:
+th <- loaded$parameters_habitat_thresholds
+th[th$species_code %in% c("BT", "GR"),
+   c("species_code", "spawn_gradient_max", "spawn_channel_width_min",
+     "rear_gradient_max", "rear_channel_width_min")]
+#>   species_code spawn_gradient_max spawn_channel_width_min rear_gradient_max rear_channel_width_min
+#> 1           BT             0.0549                       2            0.1049                    1.5
+#> 2           GR             0.0249                       4            0.0349                    1.5
+```
 
-    load → setup → prepare → break → access → classify → connect → crossings → persist
+Run it for a watershed group, then sum the habitat each species can
+reach:
 
-Each phase is a callable function (`lnk_pipeline_<phase>()`), so a user
-can stop, inspect, resume, or rebuild from any phase.
-[`lnk_pipeline_run()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_run.md)
-chains them end-to-end.
-[`lnk_baseline_current()`](https://newgraphenvironment.github.io/link/reference/lnk_baseline_current.md)
-captures a known-good run as a reference for diffing future runs.
+``` r
 
-## Using with fresh
+conn <- lnk_db_conn()
+cfg$pipeline$schema <- "fresh_default"
+lnk_pipeline_run(conn, aoi = "PARS", cfg = cfg, loaded = loaded,
+                 mapping_code = TRUE)
 
-[fresh](https://github.com/NewGraphEnvironment/fresh) is the modelling
-engine — it segments, classifies, and aggregates on the network. link
-prepares fresh’s two key inputs:
+lnk_rollup_wsg(conn, aoi = "PARS", species = c("BT", "GR"),
+               schema = "fresh_default")
+#>    wsg species accessible_km spawning_km rearing_km rearing_lake_connection_km
+#> 1 PARS      BT       6883.03     1685.38    2635.01                          0
+#> 2 PARS      GR       4442.31      983.86    1366.32                          0
+```
 
-- **Break sources** for `frs_network_segment()` — per-table specs
-  assembled via
-  [`lnk_source()`](https://newgraphenvironment.github.io/link/reference/lnk_source.md).
-- **Barrier overrides** for `frs_habitat_classify()` — a per-species
-  skip list produced by
-  [`lnk_barrier_overrides()`](https://newgraphenvironment.github.io/link/reference/lnk_barrier_overrides.md).
+Change a threshold, run again, and compare. Each run records its inputs,
+its parameters and the source versions its data was loaded from, in log
+tables beside its results.
 
-The two together reproduce bcfishpass on the Freshwater Atlas.
+## Learn more
 
-## Roadmap
-
-link is currently FWA-grounded through its dependency on `fresh`. The
-interpretation logic — what counts as evidence of a passable barrier,
-how observations resolve override decisions, how cross-system crossings
-are matched — is network-agnostic by design. Active design work:
-
-- **Network agnosticism** inherited from `fresh`’s in-flight `spyda`
-  topology engine
-  ([fresh#41](https://github.com/NewGraphEnvironment/fresh/issues/41))
-  and configurable column names
-  ([fresh#44](https://github.com/NewGraphEnvironment/fresh/issues/44)).
-- **Crossing-connectivity scoring** —
-  [`lnk_score()`](https://newgraphenvironment.github.io/link/reference/lnk_score.md)
-  framework for combining multiple connectivity signals into a
-  prioritization output.
-- **Province-wide parity audits** — `lnk_compare_*()` machinery for
-  systematic comparison of pipeline variants and reproduction of an
-  authoritative reference run.
+- [Bull trout and Arctic grayling in the Parsnip
+  River](https://newgraphenvironment.github.io/link/articles/pars-habitat-connectivity.html):
+  a full run for one watershed group, with maps for both species.
+- [Function
+  reference](https://newgraphenvironment.github.io/link/reference/)
 
 ## Ecosystem
 
 | Package | Role |
 |----|----|
-| **link** | Stream-network habitat interpretation (this package) — interprets evidence, drives the modelling engine |
-| [fresh](https://github.com/NewGraphEnvironment/fresh) | Stream-network modelling engine — segment, classify, cluster, aggregate |
-| [crate](https://github.com/NewGraphEnvironment/crate) | Canonical schema + validation for input CSVs |
+| **link** | Intrinsic habitat models: develop, test and communicate (this package) |
+| [fresh](https://github.com/NewGraphEnvironment/fresh) | Stream network modelling engine: segment, classify, cluster, aggregate |
+| [wet](https://github.com/NewGraphEnvironment/wet) | Stream flow and water temperature for BC’s Freshwater Atlas |
+| [gq](https://github.com/NewGraphEnvironment/gq) | Shared map symbology |
+
+## Data and methods it builds on
+
+link’s access model follows the method of
+[bcfishpass](https://github.com/smnorris/bcfishpass), built by Simon
+Norris and maintained with contributions from many groups. link also
+reads bcfishpass’s community-maintained corrections to crossings,
+barriers and habitat, synced weekly into the `default` and `bcfishpass`
+configs so they stay in one place. A `bcfishpass` config applies
+bcfishpass’s own rules, so results can be checked against the method
+they come from. Fish observations come from
+[bcfishobs](https://github.com/smnorris/bcfishobs), and the stream
+network from [fwapg](https://github.com/smnorris/fwapg) and the [BC
+Freshwater
+Atlas](https://www2.gov.bc.ca/gov/content/data/geographic-data-services/topographic-data/freshwater).
+
+## Citation
+
+``` r
+
+citation("link")
+```
 
 ## License
 
 MIT (see
 [`LICENSE`](https://newgraphenvironment.github.io/link/LICENSE)).
-Redistributed bcfishpass override data carries its own license — see
+Redistributed bcfishpass data carries its own license: see
 [`NOTICE.md`](https://newgraphenvironment.github.io/link/NOTICE.md) and
 [`LICENSE-bcfishpass`](https://newgraphenvironment.github.io/link/LICENSE-bcfishpass).
