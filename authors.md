@@ -12,7 +12,7 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/NewGraphEnvironment/link/blob/v0.65.1/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/NewGraphEnvironment/link/blob/main/DESCRIPTION)
 
 Irvine A (2026). *link: Develop, Test and Communicate Intrinsic Habitat
 Models for Stream Networks*. R package version 0.65.1,
