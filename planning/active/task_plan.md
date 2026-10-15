@@ -57,7 +57,7 @@ Every group is on `cw` today, so MAD ranges are inert in classification. Switchi
 - [x] Verify by scripted `--step=bundles` runs (the guard is inline in a `data-raw/` script, so testthat cannot reach it; review G7): `variants_302.csv` regenerates at HEAD and each bundle differs from `default` in exactly its intended cells; a crafted no-op rung still stops; a crafted base row with a source is refused.
 
 ## Phase 3: Re-derive the discharge numbers on wet
-- [ ] `query_habitat_thresholds_mad.R` and `query_width_mad_equivalent.R` take `--discharge-source=fwapg|wet`. They read through `.lnk_discharge_rel()`, never a hard-coded name, and stamp the source and the wet table's load comment. The committed #302 / #307 outputs cannot be reproduced (bcfishobs, fresh and the calibration set have moved since; review B3), so each is re-run on fwapg at HEAD as today's baseline, beside wet on the same day, with drift from the committed values reported separately.
+- [x] `query_habitat_thresholds_mad.R` and `query_width_mad_equivalent.R` take `--discharge-source=fwapg|wet`. They read through `.lnk_discharge_rel()`, never a hard-coded name, and stamp the source and the wet table's load comment. The committed #302 / #307 outputs cannot be reproduced (bcfishobs, fresh and the calibration set have moved since; review B3), so each is re-run on fwapg at HEAD as today's baseline, beside wet on the same day, with drift from the committed values reported separately.
 - [ ] Run both on both sources into `data-raw/logs/discharge_wet_331/`:
   - BT P10 / P05 / P02 for spawning and rearing on the calibration WSGs;
   - the width-converted minima (BT, GR, KO, RB), recorded only (`default` keeps fwapg's).

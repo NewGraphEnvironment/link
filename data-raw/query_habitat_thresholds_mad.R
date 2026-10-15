@@ -54,6 +54,7 @@
 #
 #   Rscript data-raw/query_habitat_thresholds_mad.R \
 #     [--species=BT,GR,KO,RB] [--schema=fresh_default] [--wsgs=ADMS,...]
+#     [--discharge-source=fwapg|wet]  (link#331; default fwapg, #302's)
 #     [--out=data-raw/logs/habitat_thresholds_302]
 #
 # Writes to --out:
@@ -95,12 +96,18 @@ species <- split_csv(opt("species", "BT,GR,KO,RB"))
 schema <- opt("schema", "fresh_default")
 dir_out <- opt("out", file.path("data-raw", "logs", "habitat_thresholds_302"))
 wsgs_arg <- split_csv(opt("wsgs"))
+# Where discharge is read from (link#331): `fwapg` (#302's source) or `wet`'s
+# annual pick, through the relation the pipeline reads (.lnk_discharge_rel()).
+src <- .lnk_discharge_source_check(opt("discharge-source", "fwapg"),
+                                   "--discharge-source")
+rel <- .lnk_discharge_rel(src)
 fs::dir_create(dir_out)
 
 conn <- lnk_db_conn(dbname = "fwapg", host = "localhost", port = 5432L,
                     user = "postgres", password = "postgres")
 
 cfg <- lnk_config("default")
+cfg$pipeline$discharge_source <- src
 loaded <- suppressWarnings(lnk_load_overrides(cfg))
 th <- utils::read.csv(cfg$files$parameters_habitat_thresholds$path)
 
@@ -108,10 +115,10 @@ th <- utils::read.csv(cfg$files$parameters_habitat_thresholds$path)
 wsg_cal <- dbGetQuery(conn, sprintf("
   SELECT DISTINCT s.watershed_group_code
     FROM %s.streams s
-   WHERE EXISTS (SELECT 1 FROM whse_basemapping.fwa_stream_networks_discharge d
+   WHERE EXISTS (SELECT 1 FROM %s d
                   WHERE d.linear_feature_id = s.linear_feature_id
                     AND d.mad_m3s IS NOT NULL)
-   ORDER BY 1", schema))$watershed_group_code
+   ORDER BY 1", schema, rel))$watershed_group_code
 if (length(wsgs_arg) > 0L) {
   if (!all(wsgs_arg %in% wsg_cal)) {
     stop("--wsgs not persisted in ", schema, " with discharge: ",
@@ -283,11 +290,11 @@ avail <- bind_rows(lapply(species, function(sp) {
            d.mad_m3s, sum(s.length_metre) / 1000 AS km
       FROM %2$s.streams s
       JOIN %2$s.streams_access a USING (id_segment, watershed_group_code)
-      LEFT JOIN whse_basemapping.fwa_stream_networks_discharge d
+      LEFT JOIN %5$s d
         ON d.linear_feature_id = s.linear_feature_id
      WHERE a.access_%3$s IN (1, 2)
        AND s.watershed_group_code = ANY($1)
-     GROUP BY 1, 2, 3", sp, schema, tolower(sp), seg_class_sql(sp)),
+     GROUP BY 1, 2, 3", sp, schema, tolower(sp), seg_class_sql(sp), rel),
     params = list(paste0("{", paste(w, collapse = ","), "}")))
 }))
 
@@ -386,9 +393,14 @@ writeLines(c(
           schema, length(wsg_cal), paste(wsg_cal, collapse = " ")),
   sprintf("bcfishobs.observations rows: %s",
           dbGetQuery(conn, "SELECT count(*) FROM bcfishobs.observations")[[1]]),
+  sprintf("discharge source: %s (%s)", src, .lnk_discharge_tbl(src)),
   sprintf("discharge rows: %s (%s with mad_m3s)",
-          dbGetQuery(conn, "SELECT count(*) FROM whse_basemapping.fwa_stream_networks_discharge")[[1]],
-          dbGetQuery(conn, "SELECT count(mad_m3s) FROM whse_basemapping.fwa_stream_networks_discharge")[[1]]),
+          dbGetQuery(conn, sprintf("SELECT count(*) FROM %s d", rel))[[1]],
+          dbGetQuery(conn, sprintf("SELECT count(mad_m3s) FROM %s d",
+                                   rel))[[1]]),
+  sprintf("discharge table comment: %s", dbGetQuery(conn,
+    "SELECT obj_description($1::regclass, 'pg_class')",
+    params = list(.lnk_discharge_tbl(src)))[[1]]),
   sprintf("pooling: default species_pooling.csv; %s",
           if (nrow(pooled) == 0L) "none" else
             paste(unique(paste0(pooled$species_code, "<-", pooled$obs_species)),

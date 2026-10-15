@@ -27,6 +27,9 @@
 #
 #   Rscript data-raw/query_width_mad_equivalent.R \
 #     [--species=BT,GR,KO,RB] [--schema=fresh_default]
+#     [--discharge-source=fwapg|wet]  (link#331; default fwapg, #307's)
+#     [--common]   only lines both sources value, so a fwapg/wet comparison
+#                  is on one set of lines (link#331)
 #     [--out=data-raw/logs/habitat_thresholds_307]
 #
 # Writes to --out:
@@ -55,6 +58,10 @@ split_csv <- function(x) {
 species <- split_csv(opt("species", "BT,GR,KO,RB"))
 schema <- opt("schema", "fresh_default")
 dir_out <- opt("out", file.path("data-raw", "logs", "habitat_thresholds_307"))
+src <- .lnk_discharge_source_check(opt("discharge-source", "fwapg"),
+                                   "--discharge-source")
+rel <- .lnk_discharge_rel(src)
+common <- "--common" %in% commandArgs(trailingOnly = TRUE)
 fs::dir_create(dir_out)
 half_bin <- 0.1
 edges_stream <- c(1000L, 1100L, 2000L, 2300L)
@@ -105,15 +112,23 @@ q <- sprintf("
     FROM bins b
     JOIN %s.streams s
       ON s.channel_width BETWEEN b.w_bin - %s AND b.w_bin + %s
-    JOIN whse_basemapping.fwa_stream_networks_discharge d
+    JOIN %s d
       ON d.linear_feature_id = s.linear_feature_id
    WHERE s.edge_type IN (%s)
      AND s.waterbody_key IS NULL
      AND s.channel_width_source = 'MODELLED'
-     AND d.mad_m3s IS NOT NULL
+     AND d.mad_m3s IS NOT NULL%s
    GROUP BY b.w_bin ORDER BY b.w_bin",
   paste0("(", widths, "::double precision)", collapse = ", "), schema,
-  half_bin, half_bin, paste(edges_stream, collapse = ", "))
+  half_bin, half_bin, rel, paste(edges_stream, collapse = ", "),
+  if (!common) "" else sprintf("
+     AND EXISTS (SELECT 1 FROM %s f
+                  WHERE f.linear_feature_id = s.linear_feature_id
+                    AND f.mad_m3s IS NOT NULL)
+     AND EXISTS (SELECT 1 FROM %s w
+                  WHERE w.linear_feature_id = s.linear_feature_id
+                    AND w.mad_m3s IS NOT NULL)",
+    .lnk_discharge_rel("fwapg"), .lnk_discharge_rel("wet")))
 bins <- dbGetQuery(conn, q)
 if (!setequal(bins$w_bin, widths)) {
   stop("a width bin returned no segments: ",
@@ -153,9 +168,15 @@ writeLines(c(
           dbGetQuery(conn, sprintf(
             "SELECT count(DISTINCT watershed_group_code) FROM %s.streams",
             schema))[[1]]),
+  sprintf("discharge source: %s (%s)%s", src, .lnk_discharge_tbl(src),
+          if (common) "; lines both sources value only" else ""),
   sprintf("discharge rows: %s (%s with mad_m3s)",
-          dbGetQuery(conn, "SELECT count(*) FROM whse_basemapping.fwa_stream_networks_discharge")[[1]],
-          dbGetQuery(conn, "SELECT count(mad_m3s) FROM whse_basemapping.fwa_stream_networks_discharge")[[1]]),
+          dbGetQuery(conn, sprintf("SELECT count(*) FROM %s d", rel))[[1]],
+          dbGetQuery(conn, sprintf("SELECT count(mad_m3s) FROM %s d",
+                                   rel))[[1]]),
+  sprintf("discharge table comment: %s", dbGetQuery(conn,
+    "SELECT obj_description($1::regclass, 'pg_class')",
+    params = list(.lnk_discharge_tbl(src)))[[1]]),
   sprintf("bin: modelled channel_width within +/- %s m; edges %s; outside waterbodies",
           half_bin, paste(edges_stream, collapse = "/"))),
   file.path(dir_out, "stamp.txt"))
