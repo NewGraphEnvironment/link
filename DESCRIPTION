@@ -1,8 +1,8 @@
 Package: link
 Title: Develop, Test and Communicate Intrinsic Habitat Models for Stream
     Networks
-Version: 0.65.0
-Date: 2026-10-14
+Version: 0.65.1
+Date: 2026-10-15
 Authors@R: c(
     person("Allan", "Irvine", , "al@newgraphenvironment.com",
            role = c("aut", "cre"),
