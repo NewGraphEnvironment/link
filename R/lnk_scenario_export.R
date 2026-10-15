@@ -940,6 +940,9 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
           ORDER BY table_name, host, url", sa),
         params = list(paste0("{", paste(dtbl, collapse = ","), "}")))))
     }
+    d_wet <- if (any(d_src == "wet")) {
+      .lnk_export_wet_load(conn, r_cf[d_src == "wet", , drop = FALSE])
+    }
     keep <- setdiff(names(r_cf), c("schema_export", "config_export"))
     run_rows <- .lnk_json_rows(r_cf[, keep, drop = FALSE])
     run_rows$species <- lapply(r_cf$species, function(x) I(.lnk_pg_array(x)))
@@ -983,7 +986,8 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
         source_artifact_snapshot = if (is.null(sa_file)) NULL else sa_file$key,
         source_artifact_scope = paste(
           "provenance.source_artifact rows of the exporting database at",
-          "export time, not a record of the hosts the builds ran on")),
+          "export time, not a record of the hosts the builds ran on"),
+        wet_load = d_wet),
       bundles = bnd$bundles,
       runs = run_rows
     )
@@ -1162,6 +1166,47 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
     }
   }
   out
+}
+
+#' Which load of wet's discharge the builds read, against the one exported
+#'
+#' wet's loader writes the manifest it loaded from, its build time and its
+#' commit into the table's comment, and a run copies that comment into
+#' `<schema>.log_input` at open (link#331). The export reads `mad_m3s` from
+#' the table as it is now, so its values agree with the flags only while
+#' those match: `matches` says whether every build logged the load the
+#' exporting database carries. The comparison drops the `; subset ...` wet
+#' appends to a partial load (`months` / `pick_only`): a host loaded with the
+#' annual pick only and one with every month hold the same annual values from
+#' the same build. A build from before the comment was logged reads NA, and
+#' `matches` is then NA.
+#' @noRd
+.lnk_export_wet_load <- function(conn, runs) {
+  tbl <- .lnk_discharge_tbl("wet")
+  logged <- unlist(lapply(unique(runs$schema_export), function(s) {
+    t <- paste0(s, ".log_input")
+    if (!.lnk_table_exists(conn, t)) return(NA_character_)
+    has <- "table_comment" %in% names(DBI::dbGetQuery(conn, sprintf(
+      "SELECT * FROM %s LIMIT 0", t)))
+    if (!has) return(NA_character_)
+    ids <- runs$run_id[runs$schema_export == s]
+    got <- DBI::dbGetQuery(conn, sprintf(
+      "SELECT run_id, table_comment FROM %s
+        WHERE table_name = $1 AND run_id = ANY($2)", t),
+      params = list(tbl, paste0("{", paste(ids, collapse = ","), "}")))
+    got$table_comment[match(ids, got$run_id)]
+  }))
+  current <- DBI::dbGetQuery(conn,
+    "SELECT obj_description(to_regclass($1), 'pg_class') AS c",
+    params = list(tbl))$c
+  uniq <- sort(unique(logged), na.last = TRUE)
+  build <- function(x) sub("; subset .*$", "", x)
+  list(
+    table = tbl,
+    logged = I(as.list(uniq)),
+    current = current,
+    matches = if (anyNA(logged) || is.na(current)) NA else
+      all(build(logged) == build(current)))
 }
 
 #' The discharge source a logged build read (#331)

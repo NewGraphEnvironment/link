@@ -411,7 +411,11 @@ cols_log_input <- c(
   artifact_etag          = "text",
   artifact_last_modified = "timestamptz",
   artifact_loaded_at     = "timestamptz",
-  artifact_recorded_by   = "text"
+  artifact_recorded_by   = "text",
+  # The table's comment (obj_description) at run open (link#331). wet's
+  # loader writes the manifest it loaded from, its build time and commit
+  # there, the only record of which published version is in the table.
+  table_comment          = "text"
 )
 
 
@@ -687,6 +691,32 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
 }
 
 
+#' The primitives a run fingerprints: `.lnk_input_primitives()`, plus wet's
+#' discharge table when `cfg` reads it (link#331)
+#'
+#' wet is not in `.lnk_input_primitives()`: that list is also the vintage
+#' gate's and `snapshot_bcfp.sh`'s, and a host running a config that does not
+#' read wet must not fail either for want of it. wet's table is a published,
+#' versioned dataset, loaded by `wet::wet_db_load()`, not a snapshot that ages.
+#' @noRd
+.lnk_input_primitives_run <- function(cfg = NULL) {
+  prims <- .lnk_input_primitives()
+  if (is.null(cfg) || !identical(.lnk_discharge_source(cfg), "wet")) {
+    return(prims)
+  }
+  rbind(prims, data.frame(
+    table_name = .lnk_discharge_tbl("wet"),
+    source = "wet::wet_db_load() <- fresh-bc/discharge/fwa/v1",
+    kind = "object",
+    url = .lnk_discharge_wet_manifest()))
+}
+
+#' The manifest wet's discharge is published under
+#' @noRd
+.lnk_discharge_wet_manifest <- function() {
+  "https://fresh-bc.s3.us-west-2.amazonaws.com/discharge/fwa/v1/manifest.json"
+}
+
 #' Record fingerprints of the DB primitives this run read.
 #'
 #' Reads provenance that already exists rather than recomputing it. Three
@@ -714,9 +744,9 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
 #' Soft-fails: provenance logging must never kill a modelling run.
 #'
 #' @noRd
-.lnk_log_inputs <- function(conn, schema, run_id, aoi) {
+.lnk_log_inputs <- function(conn, schema, run_id, aoi, cfg = NULL) {
   tryCatch({
-    prims <- .lnk_input_primitives()
+    prims <- .lnk_input_primitives_run(cfg)
 
     has_bcdata <- nrow(DBI::dbGetQuery(conn,
       "SELECT 1 FROM information_schema.tables
@@ -771,7 +801,8 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
          (run_id, watershed_group_code, table_name, row_count,
           row_count_estimated, size_bytes, last_analyze, source, source_at,
           artifact_url, artifact_kind, artifact_version_id, artifact_etag,
-          artifact_last_modified, artifact_loaded_at, artifact_recorded_by)
+          artifact_last_modified, artifact_loaded_at, artifact_recorded_by,
+          table_comment)
        SELECT %s, %s, p.tbl,
               nullif(c.reltuples, -1)::bigint,
               CASE WHEN nullif(c.reltuples, -1) IS NULL THEN NULL ELSE TRUE END,
@@ -779,7 +810,8 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
               s.last_autoanalyze,
               p.src,
               %s,
-              p.url, p.kind, %s
+              p.url, p.kind, %s,
+              obj_description(c.oid, 'pg_class')
          FROM (VALUES %s) AS p(tbl, src, url, kind)
          LEFT JOIN pg_class c
            ON c.oid = to_regclass(p.tbl)

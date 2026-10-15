@@ -90,6 +90,7 @@ lnk_preflight_parity(drift, n_expected = 2, quiet = TRUE)$offenders
 \seealso{
 Other preflight: 
 \code{\link{lnk_fanout_judge}()},
+\code{\link{lnk_preflight_discharge}()},
 \code{\link{lnk_preflight_fresh}()},
 \code{\link{lnk_preflight_stamp}()},
 \code{\link{lnk_preflight_vintage}()}

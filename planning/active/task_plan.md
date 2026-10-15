@@ -81,9 +81,9 @@ Every group is on `cw` today, so MAD ranges are inert in classification. Switchi
 - [ ] File a follow-up for GR / RB / KO `default_tuned` MAD on wet.
 
 ## Phase 6: Provenance and host prep (lands with Phase 5: a host running `default_tuned` needs wet's table, review B1)
-- [ ] `log_input` fingerprints the wet table, and records its load comment (wet's manifest URL, build time and commit; `wet_db_load()` keeps no per-part record, review G5), only for runs whose config reads wet. The vintage gate does not age-check wet (a static published dataset, review G6) and checks it only for configs that read it.
-- [ ] The export manifest records, per config that read wet, the load comment logged at classify and the one in the exporting database, and flags a mismatch.
-- [ ] Dispatcher / cypher prep: on a host that will run a wet-reading config, load wet's annual pick (`wet_db_load(months = 0, pick_only = TRUE)`, about 4.5 M rows) or fail loud. Add `wet` to Suggests / Remotes.
+- [x] `log_input` fingerprints the wet table, and records its load comment (wet's manifest URL, build time and commit; `wet_db_load()` keeps no per-part record, review G5), only for runs whose config reads wet. The vintage gate does not age-check wet (a static published dataset, review G6) and checks it only for configs that read it.
+- [x] The export manifest records, per config that read wet, the load comment logged at classify and the one in the exporting database, and flags a mismatch.
+- [x] Dispatcher / cypher prep: on a host that will run a wet-reading config, load wet's annual pick (`wet_db_load(months = 0, pick_only = TRUE)`, about 4.5 M rows) or fail loud. Add `wet` to Suggests / Remotes.
 - [ ] Per-part md5s of the loaded wet parts: needs a load record from wet; file in wet if it does not exist.
 
 ## Verification

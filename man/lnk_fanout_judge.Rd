@@ -102,6 +102,7 @@ bad$missing
 \code{\link[=lnk_preflight_parity]{lnk_preflight_parity()}}
 
 Other preflight: 
+\code{\link{lnk_preflight_discharge}()},
 \code{\link{lnk_preflight_fresh}()},
 \code{\link{lnk_preflight_parity}()},
 \code{\link{lnk_preflight_stamp}()},

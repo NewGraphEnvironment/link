@@ -1010,6 +1010,21 @@ next dispatch.**
     on an older row, which read fwapg). The validator refuses a WSG whose logged source
     differs from its `cfg` where classify reads discharge, and the export's manifest
     names the source per WSG.
+  - **Every host that runs a wet config needs wet's table**, `cw` groups included,
+    because prepare joins discharge for every group; prepare stops with the load
+    command when it is missing. `lnk_preflight_discharge(conn, cfg)` checks a database.
+    `data-raw/discharge_wet_load.R` loads the annual pick only (`months = 0,
+    pick_only = TRUE`, about 4.5 M rows) and skips a host that already has it.
+    `study_area_run.sh` gates the dispatcher on the config's source and passes it to
+    `cypher_prep.sh` (`CYPHER_PREP_DISCHARGE=wet`), which installs wet at its
+    DESCRIPTION pin and loads it after the snapshot.
+  - **Which load a build read.** wet's loader writes its manifest URL, build time and
+    commit into the table's comment; `log_input.table_comment` copies it at run open,
+    and a wet run adds wet's table to its fingerprinted inputs. The export manifest's
+    `discharge.wet_load` sets the logged loads beside the exporting database's and
+    says whether they match (by build, ignoring wet's `; subset` suffix). wet's table
+    is not a vintage-gate primitive: it is a published, versioned dataset, and a host
+    running an fwapg config must not need it.
 - **`lnk_habitat_validate()` scores each group on its own model** (#299), from the
   `cfg` it is handed, resolved by fresh's `.frs_habitat_models()` (one rule for classify
   and validator). A `mad` group's predicates and size relaxation read `mad_m3s`, joined

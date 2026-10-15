@@ -53,6 +53,12 @@
 # branch. Default is `main` — every host runs released code unless the
 # operator explicitly opts into testing a branch.
 #
+# Discharge: CYPHER_PREP_DISCHARGE=fwapg (default) | wet  (link#331)
+#   `wet` when the run's config reads `pipeline: discharge_source: wet`:
+#   installs wet at the pin in link's DESCRIPTION Remotes and loads its annual
+#   pick (data-raw/discharge_wet_load.R) after the snapshot. prepare joins
+#   discharge for every group, so without it every WSG on the host fails.
+#
 # Stage: CYPHER_PREP_STAGE=all (default) | install
 #   `install` stops after the package install + assertion, skipping the
 #   snapshot and persist_init. That is the remediation path used by
@@ -256,6 +262,32 @@ if ! bash snapshot_bcfp.sh > "$TMP_SNAP_LOG" 2>&1; then
 fi
 tail -5 "$TMP_SNAP_LOG"
 rm -f "$TMP_SNAP_LOG"
+
+# wet's discharge, for a config that reads it (link#331). One pin: the wet
+# entry in link's DESCRIPTION Remotes. Same tempfile + exit-check pattern.
+if [ "${CYPHER_PREP_DISCHARGE:-fwapg}" = "wet" ]; then
+  WET_REF=$(awk '/^Remotes:/{r=1;next} r && /^[^ ]/{r=0} r' ../DESCRIPTION \
+    | tr -d ' ,' | grep '^NewGraphEnvironment/wet@' || true)
+  if [ -z "$WET_REF" ]; then
+    echo "FATAL: no NewGraphEnvironment/wet@ pin in DESCRIPTION Remotes" >&2
+    exit 1
+  fi
+  TMP_WET_LOG=$(mktemp)
+  if ! Rscript -e "pak::pkg_install(commandArgs(TRUE)[1], upgrade = FALSE, ask = FALSE)" \
+       "$WET_REF" > "$TMP_WET_LOG" 2>&1 \
+     || ! Rscript discharge_wet_load.R >> "$TMP_WET_LOG" 2>&1 \
+     || ! grep -q '^discharge_wet_load: complete$' "$TMP_WET_LOG"; then
+    echo "FATAL: wet discharge load ($WET_REF) failed; full log:" >&2
+    cat "$TMP_WET_LOG" >&2
+    rm -f "$TMP_WET_LOG"
+    exit 1
+  fi
+  tail -3 "$TMP_WET_LOG"
+  rm -f "$TMP_WET_LOG"
+elif [ "${CYPHER_PREP_DISCHARGE:-fwapg}" != "fwapg" ]; then
+  echo "FATAL: CYPHER_PREP_DISCHARGE must be fwapg or wet" >&2
+  exit 1
+fi
 
 # DDL fix: lnk_persist_init detects unexpected GENERATED ALWAYS columns
 # in fresh.streams (cypher snapshot artifact) and DROPs the offending

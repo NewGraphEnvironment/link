@@ -693,3 +693,42 @@ test_that("a stale export of the same builds is caught: a missed recompute, an o
   expect_error(lnk_scenario_export(conn, c(testcfg = schema), live),
                "misses a recompute")
 })
+
+test_that("a wet build's manifest says whether its load matches the export's", {
+  skip_if_not_installed("duckdb")
+  conn <- skip_if_no_db()
+  schema <- local_export_fixture(conn)
+  local_export_discharge(schema)
+  root <- withr::local_tempdir()
+  testthat::local_mocked_bindings(
+    .lnk_discharge_tbl = function(source = "fwapg") paste0(schema, ".discharge"),
+    .package = "link")
+  DBI::dbExecute(conn, sprintf(
+    "COMMENT ON TABLE %s.discharge IS 'load A'", schema))
+  DBI::dbExecute(conn, sprintf(
+    "UPDATE %s.log SET discharge_source = 'wet'
+      WHERE watershed_group_code = 'ADMS'", schema))
+  # ADMS's newest build is r1; it logged load A.
+  DBI::dbExecute(conn, sprintf(
+    "INSERT INTO %s.log_input (run_id, watershed_group_code, table_name,
+                               table_comment)
+     VALUES ('r1', 'ADMS', '%1$s.discharge', 'load A')", schema))
+  wl <- function() {
+    p <- lnk_scenario_export(conn, c(testcfg = schema), root, replace = TRUE)
+    jsonlite::fromJSON(p, simplifyVector = FALSE)$configs[[1]]$discharge$wet_load
+  }
+  a <- wl()
+  expect_identical(unlist(a$logged), "load A")
+  expect_identical(a$current, "load A")
+  expect_true(a$matches)
+  DBI::dbExecute(conn, sprintf(
+    "COMMENT ON TABLE %s.discharge IS 'load B'", schema))
+  b <- wl()
+  expect_identical(b$current, "load B")
+  expect_false(b$matches)
+  # The same build loaded as the annual pick only is the same load.
+  DBI::dbExecute(conn, sprintf(
+    "COMMENT ON TABLE %s.discharge IS 'load A; subset month IN (0) AND pick'",
+    schema))
+  expect_true(wl()$matches)
+})

@@ -41,7 +41,8 @@ Imports:
 Remotes:
     NewGraphEnvironment/crate,
     NewGraphEnvironment/fresh@v0.39.0,
-    NewGraphEnvironment/gq
+    NewGraphEnvironment/gq,
+    NewGraphEnvironment/wet@v0.4.7
 Suggests:
     bcdata,
     bookdown,
@@ -56,6 +57,7 @@ Suggests:
     tarchetypes,
     targets,
     testthat (>= 3.0.0),
+    wet (>= 0.4.7),
     withr
 VignetteBuilder: knitr
 Config/testthat/edition: 3

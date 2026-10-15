@@ -314,6 +314,10 @@
 .lnk_discharge_join <- function(conn, table, aoi, fill = FALSE,
                                 source = "fwapg") {
   .lnk_validate_identifier(table, "table")
+  # Fail with the way to load it, not with a missing-relation error (#331).
+  chk <- lnk_preflight_discharge(
+    conn, list(pipeline = list(discharge_source = source)), quiet = TRUE)
+  if (!chk$ok) stop(chk$message, call. = FALSE)
   .lnk_db_execute(conn, sprintf(
     "ALTER TABLE %s
        ADD COLUMN IF NOT EXISTS mad_m3s double precision,
