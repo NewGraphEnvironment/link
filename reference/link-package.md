@@ -8,8 +8,7 @@ natural barriers, and record the road and rail crossings and dams below
 each reach. Every rule and threshold is a row in a config, so models can
 be changed, compared, checked against fish observations and traced to
 the rules that produced them. Runs on the British Columbia Freshwater
-Atlas through 'fresh'. Experimental: APIs and outputs change without
-notice.
+Atlas through 'fresh'. Under active development.
 
 ## See also
 

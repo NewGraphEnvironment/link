@@ -11,8 +11,8 @@
 <script src="deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Develop, Test and Communicate Intrinsic Habitat and Connectivity Models for the BC Freshwater Atlas Stream Network">
-<meta name="description" content="Tools for developing, testing and communicating intrinsic habitat models on stream networks: where each fish species could spawn and rear, and which of that habitat fish can reach. Current models rate habitat from stream gradient, channel width and discharge, resolve access past natural barriers, and record the road and rail crossings and dams below each reach. Every rule and threshold is a row in a config, so models can be changed, compared, checked against fish observations and traced to the rules that produced them. Runs on the British Columbia Freshwater Atlas through fresh. Experimental: APIs and outputs change without notice.">
-<meta property="og:description" content="Tools for developing, testing and communicating intrinsic habitat models on stream networks: where each fish species could spawn and rear, and which of that habitat fish can reach. Current models rate habitat from stream gradient, channel width and discharge, resolve access past natural barriers, and record the road and rail crossings and dams below each reach. Every rule and threshold is a row in a config, so models can be changed, compared, checked against fish observations and traced to the rules that produced them. Runs on the British Columbia Freshwater Atlas through fresh. Experimental: APIs and outputs change without notice.">
+<meta name="description" content="Tools for developing, testing and communicating intrinsic habitat models on stream networks: where each fish species could spawn and rear, and which of that habitat fish can reach. Current models rate habitat from stream gradient, channel width and discharge, resolve access past natural barriers, and record the road and rail crossings and dams below each reach. Every rule and threshold is a row in a config, so models can be changed, compared, checked against fish observations and traced to the rules that produced them. Runs on the British Columbia Freshwater Atlas through fresh. Under active development.">
+<meta property="og:description" content="Tools for developing, testing and communicating intrinsic habitat models on stream networks: where each fish species could spawn and rear, and which of that habitat fish can reach. Current models rate habitat from stream gradient, channel width and discharge, resolve access past natural barriers, and record the road and rail crossings and dams below each reach. Every rule and threshold is a row in a config, so models can be changed, compared, checked against fish observations and traced to the rules that produced them. Runs on the British Columbia Freshwater Atlas through fresh. Under active development.">
 <meta property="og:image" content="https://newgraphenvironment.github.io/link/logo.png">
 </head>
 <body>
@@ -58,13 +58,12 @@
 <img src="logo.png" class="logo" alt=""><h1 id="link-">link <a class="anchor" aria-label="anchor" href="#link-"></a>
 </h1>
 </div>
+<!-- badges: start -->
+
 <blockquote>
 <p>Develop, test and communicate intrinsic habitat and connectivity models for the BC Freshwater Atlas stream network</p>
 </blockquote>
 <p>link is a tool for building models of where each fish species could spawn and rear on a stream network, and which of that habitat fish can reach. Current models rate habitat from stream gradient, channel width and discharge, resolve access past natural barriers such as falls and steep gradients, and record the road and rail crossings and dams that sit below. Its value is flexibility: every rule and threshold is a row in a config, so a model can be changed, run beside another, checked against fish observations and traced back to the rules that produced it.</p>
-<blockquote>
-<p>Experimental: APIs and outputs change without notice.</p>
-</blockquote>
 <p><img src="reference/figures/readme-pars.png" alt="Map of the Parsnip River watershed group with stream reaches coloured by Arctic grayling spawning, rearing and access, and by the barrier type below each reach" width="100%"></p>
 <p><em>Arctic grayling habitat in the Parsnip River watershed group. Purple reaches drain to Williston Reservoir behind the W.A.C. Bennett Dam. Orange and red reaches sit above a road or rail crossing that is a barrier. Grey reaches lie above a natural barrier to grayling.</em></p>
 <div class="section level2">
@@ -72,6 +71,7 @@
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"NewGraphEnvironment/link"</span><span class="op">)</span></span></code></pre></div>
+<p>link is under active development and its functions change between releases (see <a href="https://newgraphenvironment.github.io/link/news/index.html">NEWS</a>). Pin a release for reproducible work: <code>pak::pak("NewGraphEnvironment/link@vX.Y.Z")</code>.</p>
 <p>link runs against a PostgreSQL database holding the BC Freshwater Atlas through <a href="https://github.com/smnorris/fwapg" class="external-link">fwapg</a>, set up as for <a href="https://github.com/NewGraphEnvironment/fresh" class="external-link">fresh</a>.</p>
 </div>
 <div class="section level2">
@@ -197,7 +197,12 @@
 </ul>
 </div>
 
-
+<div class="dev-status">
+<h2 data-toc-skip>Dev status</h2>
+<ul class="list-unstyled">
+<li><a href="https://lifecycle.r-lib.org/articles/stages.html#experimental" class="external-link"><img src="https://img.shields.io/badge/lifecycle-experimental-orange.svg" alt="Lifecycle: experimental"></a></li>
+</ul>
+</div>
 
   </aside>
 </div>

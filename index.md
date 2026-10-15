@@ -12,8 +12,6 @@ sit below. Its value is flexibility: every rule and threshold is a row
 in a config, so a model can be changed, run beside another, checked
 against fish observations and traced back to the rules that produced it.
 
-> Experimental: APIs and outputs change without notice.
-
 ![Map of the Parsnip River watershed group with stream reaches coloured
 by Arctic grayling spawning, rearing and access, and by the barrier type
 below each reach](reference/figures/readme-pars.png)
@@ -29,6 +27,12 @@ barrier. Grey reaches lie above a natural barrier to grayling.*
 
 pak::pak("NewGraphEnvironment/link")
 ```
+
+link is under active development and its functions change between
+releases (see
+[NEWS](https://newgraphenvironment.github.io/link/news/index.html)). Pin
+a release for reproducible work:
+`pak::pak("NewGraphEnvironment/link@vX.Y.Z")`.
 
 link runs against a PostgreSQL database holding the BC Freshwater Atlas
 through [fwapg](https://github.com/smnorris/fwapg), set up as for
