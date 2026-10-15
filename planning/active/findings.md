@@ -47,3 +47,47 @@ The New Graph website will describe this package from its README (NewGraphEnviro
 
 | Error | Resolution |
 |-------|------------|
+
+## Research: exemplar READMEs and guides (2026-10-14)
+
+Read raw: dplyr, dbplyr, httr2, sf, terra, targets, osmdata, duckdb (R), RPostgres, polars, ruff, ripgrep; guides r-pkgs.org (https://r-pkgs.org/other-markdown.html), rOpenSci devguide (https://devguide.ropensci.org/pkg_building.html#readme), Art of README (fork https://github.com/bradparks/art-of-readme; hackergrrl original 404s), makeareadme.com.
+
+- **Order:** name + logo → badges → 1–3 sentence pitch → install → usage with output → docs links → help / citation. R exemplars run 92–249 lines.
+- **Opening:** what it is, what problem it solves, what it builds on. dbplyr: "dbplyr is the database backend for dplyr. It allows you to use remote database tables as if they are in-memory data frames by automatically converting dplyr code into SQL." targets opens on the problem class first. rOpenSci: answer "what does it do? why should a potential user care?"; name the external source in a clause ("…, an online repository of Goober sightings in South America").
+- **Example:** one example whose output is the payoff (dbplyr `show_query()`, httr2 `req_dry_run()`). makeareadme: "Use examples liberally, and show the expected output if you can."
+- **Docs:** one line per vignette saying what it is for (targets; rOpenSci "descriptive links to all vignettes").
+- **Related packages and non-goals:** osmdata "Other approaches"; duckdb "Goals and non-goals"; ripgrep "Why shouldn't I use ripgrep?".
+- **Left out by every R exemplar:** function tables, roadmaps, changelogs. Art of README: "The ideal README is as short as it can be without being any shorter."
+- **Heavy setup:** run against a stand-in (dbplyr's in-memory SQLite), show code unrun with assumptions stated (RPostgres), or lead with a figure / screenshot (ripgrep, ruff). rOpenSci: list "Any additional setup required".
+
+## Research: NGE package READMEs (21 surveyed, 2026-10-14)
+
+- **Strongest:** flooded (plain opening; a section on the restoration decision it serves), wet (scope accurate to today; admits what is not built), crate (problem stated plainly; real output; "What crate handles today"). cred's opening is a model.
+- **Weakest:** fpr (no structure, dated text), xciter / rake (no stated purpose), spacehakr (stale function table, WKT wall, no "why").
+- **Recurring defects:** roadmaps listing shipped work (link lists `lnk_score()`; gq lists `gq_tmap_legend()`); "by design / designed to / agnostic" ahead of the code (fresh, link); function tables or lists (spacehakr, roli, ngr, cd, rfp, fresh); version strings in prose (fly, fpr, crate, trap); vignette lists out of step (wet says "both", has 3); no license section (drift, cd, crate, fly, trap, fpr, breaks, diggs); inconsistent badges.
+- **Ecosystem tables disagree:** fresh is "modelling engine" in three READMEs and "data layer" / "FWA queries" in four; membership differs per package; pipelines conflict on whether breaks sits in the land-cover chain. Proposal: one canonical table, generated into each README.
+
+## README convention draft v0
+
+Sources: the two surveys above; soul `writing.md`; `r-packages.md` §README; website#53 copy rules; operator direction 2026-10-14.
+
+**Voice.** Technical, honest, plain. Present tense: what it does today. Show, don't tell — every claim is something a reader can check (a figure of real output, a function, a vignette, a measured result). No adjectives that cannot be checked, no comparative boasting, no claims ahead of the code ("will", "by design", "designed to").
+
+**Descriptions come first.** DESCRIPTION `Title` / `Description` (or pyproject `description`) and the README's opening paragraph are what people see — GitHub cards, pkgdown, the website. Write them together so they say one thing, and check each clause against code.
+
+**Order.**
+1. Name, hex sticker (same size and place in every repo), one-line tagline.
+2. Opening, 1–3 sentences: what it does, on what data, and what restoration planning, implementation or monitoring decision it informs.
+3. Show: a figure (spatial / visual outputs) or a short example with its real printed output (data / plumbing packages). Never a decorative image.
+4. Install, then Setup (database, env vars, credentials) stated as a step.
+5. What it does, grouped by purpose, naming an entry function per group. Not a function table.
+6. Documentation: pkgdown link plus one line per vignette on what it shows. Keep the list in step with `vignettes/`, or link the articles index only.
+7. Ecosystem / related packages: roles worded the same in every repo.
+8. Data and methods it builds on: name what the package actually reads or follows, and from whom.
+9. Citation (from CITATION.cff, company as an author), License, NOTICE where data is redistributed.
+
+**Figures.** Produced by the package from a committed `data-raw/readme_*.R`; saved at `man/figures/readme-*.png` (the website reuses it); styled through gq; passes `cartography.md` checks 1–12 at its published width; a one- or two-sentence caption saying what it shows.
+
+**Leave out.** Roadmaps (link the issues instead), changelogs (NEWS), function tables (pkgdown), version strings in prose, counts of published things, internal hosts or private repos.
+
+**Open.** A canonical ecosystem table in soul generated into each README; README.Rmd vs README.md where examples cannot run without a database.

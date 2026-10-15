@@ -43,8 +43,8 @@ Operator direction (2026-10-14): learn from the best READMEs and our best packag
 - carries a one- or two-sentence caption saying what it shows.
 
 ## Phase 1: Findings + convention draft v0
-- [ ] Fold both research reports, with their cited sources, into `planning/active/findings.md`
-- [ ] Write "README convention draft v0" in findings.md. It merges the exemplar checklist, soul `writing.md`, #53's copy rules (plain language, present tense, no published counts, say what the models are) and the operator's voice (descriptions first; technical and honest; show, don't tell; no comparative boasting)
+- [x] Fold both research reports, with their cited sources, into `planning/active/findings.md`
+- [x] Write "README convention draft v0" in findings.md. It merges the exemplar checklist, soul `writing.md`, #53's copy rules (plain language, present tense, no published counts, say what the models are) and the operator's voice (descriptions first; technical and honest; show, don't tell; no comparative boasting)
 
 ## Framing (operator, 2026-10-14)
 
