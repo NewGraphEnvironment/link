@@ -4,11 +4,11 @@
 \name{link-package}
 \alias{link}
 \alias{link-package}
-\title{link: Stream Network Habitat Interpretation (Experimental)}
+\title{link: Intrinsic Habitat Potential and Fish Passage Connectivity for Stream Networks}
 \description{
 \if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
 
-Experimental tooling for interpreting field and modelled inputs as per-segment habitat classifications on stream networks. Pairs with 'fresh'. Under active development; APIs and outputs change without notice.
+Models where fish habitat could be on a stream network and whether fish can reach it. For each species it classifies stream, lake and wetland reaches as spawning or rearing habitat from gradient and channel width or discharge, then resolves access past road crossings, dams, falls and steep gradients, using fish observations and habitat confirmations as evidence of passage. Every rule and threshold is a row in a config bundle, and every run records its inputs, so a result traces back to the rule that produced it. Runs on the British Columbia Freshwater Atlas through 'fresh'. Experimental: APIs and outputs change without notice.
 }
 \seealso{
 Useful links:
@@ -20,11 +20,12 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Allan Irvine \email{airvine@newgraphenvironment.com} (\href{https://orcid.org/0009-0003-7697-6064}{ORCID})
+\strong{Maintainer}: Allan Irvine \email{al@newgraphenvironment.com} (\href{https://orcid.org/0000-0002-3495-2128}{ORCID})
 
 Other contributors:
 \itemize{
   \item Simon Norris [contributor]
+  \item New Graph Environment Ltd. [copyright holder, funder]
 }
 
 }

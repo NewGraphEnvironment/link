@@ -18,7 +18,9 @@ pak::pak("NewGraphEnvironment/link")
 
 ## Setup
 
-link reads and writes a PostgreSQL database holding the Freshwater Atlas through [fwapg](https://github.com/smnorris/fwapg), the same setup fresh uses (see fresh's `docker/` for a local one). `lnk_db_conn()` connects from the `PG_*_SHARE` environment variables, falling back to the standard `PG*` ones.
+link reads and writes a PostgreSQL database holding the Freshwater Atlas through [fwapg](https://github.com/smnorris/fwapg), the same setup fresh uses (see fresh's `docker/` for a local one). A run also reads PSCIS crossing assessments, CABD dams, modelled stream crossings and fish observations from that database; [`data-raw/snapshot_bcfp.sh`](https://github.com/NewGraphEnvironment/link/blob/main/data-raw/snapshot_bcfp.sh) in this repository loads them. `lnk_db_conn()` connects from the `PG_*_SHARE` environment variables, falling back to the standard `PG*` ones.
+
+Model watershed groups from the downstream end first: access reads the barriers already persisted for the groups below, and `lnk_wsg_downstream_check()` checks that the dams below a group are already persisted.
 
 ## Example
 
@@ -41,7 +43,7 @@ lnk_rollup_wsg(conn, aoi = "PARS", species = c("BT", "GR"),
 
 ## What it does
 
-**Intrinsic habitat potential.** Each species' spawning and rearing rules come from gradient, channel width or mean annual discharge, and the size of lakes and wetlands. Rearing is reported separately for streams, lakes and wetlands, and in `default` lake and wetland rearing counts only where it connects to the same species' spawning (sockeye and kokanee excepted). `default_tuned` also fills discharge gaps on the main stems of large rivers from the nearest valued reach on the same river. `lnk_pipeline_run()` runs the whole sequence for a watershed group; each phase is its own `lnk_pipeline_*()` call, so a run can be stopped, inspected and resumed.
+**Intrinsic habitat potential.** Each species' spawning and rearing rules come from gradient, channel width or mean annual discharge, and the size of lakes and wetlands. Rearing is reported in kilometres separately for streams, lakes and wetlands, and lakes and wetlands also by area. In `default`, a lake or wetland counts towards that area only where the same species spawns on or near it (sockeye and kokanee excepted). For watershed groups modelled on discharge, `default_tuned` fills discharge gaps on the main stems of large rivers. `lnk_pipeline_run()` runs the whole sequence for a watershed group; each phase is its own `lnk_pipeline_*()` call, so a run can be stopped, inspected and resumed.
 
 **Connectivity.** Access is resolved per species, so a barrier blocks only the species it should: a 15 % gradient stops salmon but not bull trout. Fish observations and habitat confirmations upstream lift a barrier where they show fish get past it (`lnk_barrier_overrides()`). Crossings from different inventories are matched by network position (`lnk_match()`). For each crossing, `lnk_aggregate()` sums the habitat upstream of it, and `lnk_mapping_code()` gives every segment a code for habitat and the barrier type below it, ready to style in QGIS.
 
@@ -78,7 +80,7 @@ link's connectivity model follows the method of [bcfishpass](https://github.com/
 citation("link")
 ```
 
-Citation metadata is in [`CITATION.cff`](CITATION.cff).
+Citation metadata is in [`CITATION.cff`](https://github.com/NewGraphEnvironment/link/blob/main/CITATION.cff).
 
 ## License
 

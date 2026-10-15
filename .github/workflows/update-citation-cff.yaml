@@ -26,7 +26,7 @@ jobs:
 
       # authors_roles adds the company (cph) as a credited author for Zenodo.
       # doi and repository are dropped: CRAN has an unrelated package named
-      # link, and cffr would otherwise point the citation at it (soul#365).
+      # link, and cffr would otherwise point the citation at it.
       - name: Update CITATION.cff
         run: |
           Rscript -e 'x <- cffr::cff_create(authors_roles = c("aut", "cre", "cph")); x$references <- NULL; x$doi <- NULL; x$repository <- NULL; cffr::cff_write(x = x)'
