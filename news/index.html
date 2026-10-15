@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.65.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.65.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,20 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.65.1" id="link-0651">link 0.65.1<a class="anchor" aria-label="anchor" href="#link-0651"></a></h2>
+<p><strong>The README, DESCRIPTION, CITATION.cff and package help describe link as a tool for developing, testing and communicating intrinsic habitat models</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/338" class="external-link">#338</a>). The point of it is flexibility: every rule and threshold is a row in a config.</p>
+<ul><li>
+<strong>A short example:</strong> a config’s thresholds, then a run’s per-species rollup, each shown with its real output.</li>
+<li>
+<strong>A figure of real output:</strong> Arctic grayling in the Parsnip, made by <code>data-raw/readme_figure.R</code> from the cached vignette data.</li>
+<li>
+<strong>Data and methods it builds on:</strong> a section acknowledging bcfishpass (its method and community correction data), bcfishobs and fwapg. The bcfishpass row in NOTICE now matches.</li>
+<li>
+<strong>Removed:</strong> the roadmap, the “network-agnostic by design” claim, the feature list and the function references.</li>
+<li>
+<strong>CITATION.cff and its update workflow are new.</strong> New Graph Environment Ltd. is credited as an author for Zenodo. The ORCID, which failed R’s checksum, is corrected, and the cffr DOI and repository fields that pointed to an unrelated CRAN package named <code>link</code> are dropped.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.65.0" id="link-0650">link 0.65.0<a class="anchor" aria-label="anchor" href="#link-0650"></a></h2>
 <p><strong>Habitat flags export per config as Parquet + manifest, keyed by FWA position, with a write-once provenance tree and a loader into PostgreSQL</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/308" class="external-link">#308</a>). The pattern is NewGraphEnvironment/wet#7’s for discharge. Nothing is published yet: <code>habitat/</code> on the bucket is private and PUBLISH waits on the operator.</p>

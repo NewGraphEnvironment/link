@@ -15,13 +15,13 @@ Source:
 [`DESCRIPTION`](https://github.com/NewGraphEnvironment/link/blob/main/DESCRIPTION)
 
 Irvine A (2026). *link: Develop, Test and Communicate Intrinsic Habitat
-Models for Stream Networks*. R package version 0.65.0,
+Models for Stream Networks*. R package version 0.65.1,
 <https://github.com/NewGraphEnvironment/link>.
 
     @Manual{,
       title = {link: Develop, Test and Communicate Intrinsic Habitat Models for Stream Networks},
       author = {Allan Irvine},
       year = {2026},
-      note = {R package version 0.65.0},
+      note = {R package version 0.65.1},
       url = {https://github.com/NewGraphEnvironment/link},
     }

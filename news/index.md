@@ -1,5 +1,29 @@
 # Changelog
 
+## link 0.65.1
+
+**The README, DESCRIPTION, CITATION.cff and package help describe link
+as a tool for developing, testing and communicating intrinsic habitat
+models**
+([\#338](https://github.com/NewGraphEnvironment/link/issues/338)). The
+point of it is flexibility: every rule and threshold is a row in a
+config.
+
+- **A short example:** a config’s thresholds, then a run’s per-species
+  rollup, each shown with its real output.
+- **A figure of real output:** Arctic grayling in the Parsnip, made by
+  `data-raw/readme_figure.R` from the cached vignette data.
+- **Data and methods it builds on:** a section acknowledging bcfishpass
+  (its method and community correction data), bcfishobs and fwapg. The
+  bcfishpass row in NOTICE now matches.
+- **Removed:** the roadmap, the “network-agnostic by design” claim, the
+  feature list and the function references.
+- **CITATION.cff and its update workflow are new.** New Graph
+  Environment Ltd. is credited as an author for Zenodo. The ORCID, which
+  failed R’s checksum, is corrected, and the cffr DOI and repository
+  fields that pointed to an unrelated CRAN package named `link` are
+  dropped.
+
 ## link 0.65.0
 
 **Habitat flags export per config as Parquet + manifest, keyed by FWA
