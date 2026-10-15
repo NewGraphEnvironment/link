@@ -127,10 +127,10 @@ Tasks:
 - [ ] Zenodo switch-on for link is an operator step: Zenodo login → GitHub → enable the repo. It is noted in the final report, not done here
 
 ## Phase 4: Issues
-- [ ] soul: edit #40's body. Company credit in Zenodo needs `cph` in cffr's `authors_roles` in the `/citation-cff` skill and its workflow template, plus a fleet sweep: company in Authors@R, ORCID consistency, regenerate CFFs. Link #39
-- [ ] File the soul issue: convention draft v0, link#338 as the worked example, the 12 sibling issues as the next applications, and an open question on a canonical ecosystem table
-- [ ] File the link issue for the fresh v0.40.0 pin bump
-- [ ] Edit link#338's body: the pkgdown task is dropped (prefix families already group), the pin bump moves to its own issue, and the convention issue is linked
+- [x] soul: edit #40's body. Company credit in Zenodo needs `cph` in cffr's `authors_roles` in the `/citation-cff` skill and its workflow template, plus a fleet sweep: company in Authors@R, ORCID consistency, regenerate CFFs. Link #39
+- [x] File the soul issue: convention draft v0, link#338 as the worked example, the 12 sibling issues as the next applications, and an open question on a canonical ecosystem table
+- [x] File the link issue for the fresh v0.40.0 pin bump
+- [x] Edit link#338's body: the pkgdown task is dropped (prefix families already group), the pin bump moves to its own issue, and the convention issue is linked
 
 ## Validation
 - [ ] Build the site locally (`pkgdown::build_site()`, or `build_home()`). Read the rendered home page; the figure and all links resolve
