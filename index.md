@@ -1,7 +1,7 @@
 # link
 
-> Develop, test and communicate intrinsic habitat models for stream
-> networks
+> Develop, test and communicate intrinsic habitat and connectivity
+> models for the BC Freshwater Atlas stream network
 
 link is a tool for building models of where each fish species could
 spawn and rear on a stream network, and which of that habitat fish can

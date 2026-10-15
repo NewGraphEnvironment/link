@@ -1,4 +1,4 @@
-# link: Develop, Test and Communicate Intrinsic Habitat Models for Stream Networks
+# link: Develop, Test and Communicate Intrinsic Habitat and Connectivity Models for the BC Freshwater Atlas Stream Network
 
 Tools for developing, testing and communicating intrinsic habitat models
 on stream networks: where each fish species could spawn and rear, and
