@@ -101,3 +101,4 @@ Sources: the two surveys above; soul `writing.md`; `r-packages.md` §README; web
 | connected lake/wetland rearing (all configs) | `default` dimensions, SK/KO excepted | README scopes it to `default` |
 | `bcfishpass` config "reproduces" the classification | parity is close, not exact (segmentation, #324) | README: "applies bcfishpass's own rules and thresholds" |
 | link ORCID `0009-0003-7697-6064` | fails R's checksum | DESCRIPTION uses `0000-0002-3495-2128`, as fresh/flooded/drift/gq |
+| cffr output for link | `doi: 10.32614/CRAN.package.link` and `repository: https://CRAN.R-project.org/package=link`, an unrelated CRAN package (soul#365) | One-off and workflow drop both (`x$doi <- NULL; x$repository <- NULL`); company enters via `authors_roles = c("aut", "cre", "cph")` |

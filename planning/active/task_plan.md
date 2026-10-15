@@ -123,7 +123,7 @@ Tasks:
 - [x] DESCRIPTION Authors@R:
   - fix the ORCID to `0000-0002-3495-2128` and the email to `al@newgraphenvironment.com`;
   - add `person("New Graph Environment Ltd.", role = c("cph", "fnd"))`
-- [ ] Add CITATION.cff and `update-citation-cff.yaml` through the `/citation-cff` skill, with `authors_roles = c("aut", "cre", "cph")` so the company is a credited author. References are stripped, as the skill already does
+- [x] Add CITATION.cff and `update-citation-cff.yaml` through the `/citation-cff` skill, with `authors_roles = c("aut", "cre", "cph")` so the company is a credited author. References are stripped, as the skill already does
 - [ ] Zenodo switch-on for link is an operator step: Zenodo login → GitHub → enable the repo. It is noted in the final report, not done here
 
 ## Phase 4: Issues
