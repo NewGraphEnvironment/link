@@ -318,12 +318,30 @@ test_that("a log from before a column existed reads it as NA", {
   local_export_discharge(schema)
   root <- withr::local_tempdir()
   DBI::dbExecute(conn, sprintf(
-    "ALTER TABLE %s.log DROP COLUMN discharge_fill, DROP COLUMN run_uid",
+    "ALTER TABLE %s.log DROP COLUMN discharge_fill, DROP COLUMN run_uid,
+                       DROP COLUMN discharge_source",
     schema))
   p <- lnk_scenario_export(conn, c(testcfg = schema), root)
   m <- jsonlite::fromJSON(p, simplifyVector = FALSE)
   expect_true(all(vapply(m$configs[[1]]$discharge$fill, is.null, logical(1))))
+  # and a build from before #331 read fwapg
+  expect_true(all(unlist(m$configs[[1]]$discharge$source) == "fwapg"))
   expect_true(file.exists(file.path(root, "provenance/run_id=r1/log.parquet")))
+})
+
+test_that("the manifest records the discharge source each build read (#331)", {
+  skip_if_not_installed("duckdb")
+  conn <- skip_if_no_db()
+  schema <- local_export_fixture(conn)
+  local_export_discharge(schema)
+  root <- withr::local_tempdir()
+  DBI::dbExecute(conn, sprintf(
+    "UPDATE %s.log SET discharge_source = 'wet'
+      WHERE watershed_group_code = 'ADMS'", schema))
+  p <- lnk_scenario_export(conn, c(testcfg = schema), root)
+  d <- jsonlite::fromJSON(p, simplifyVector = FALSE)$configs[[1]]$discharge
+  expect_identical(d$source$ADMS, "wet")
+  expect_identical(d$source$BULK, "fwapg")
 })
 
 test_that("one-element vectors stay JSON arrays in the manifest", {

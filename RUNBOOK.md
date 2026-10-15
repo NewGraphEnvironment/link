@@ -995,6 +995,21 @@ next dispatch.**
     `built.csv`.
 
   `data-raw/logs/discharge_fill_305/`, research "`cw` against `mad`".
+- **Where discharge is read from is a bundle setting, `discharge_source`** (#331).
+  `fwapg` (the default, and what every run before #331 read) is
+  `whse_basemapping.fwa_stream_networks_discharge`. `wet` is the annual pick of wet's
+  published `discharge.fwa_v1_segment_monthly` (`scenario = 'historical'`,
+  `month = 0`, `pick`), which values about 4.5 M lines against fwapg's 2.7 M
+  (PCIC's routed model where it has one, wet's water balance elsewhere). Load it into
+  a database once with `wet::wet_db_load(conn, wet::wet_catalog())` before a run
+  reads it.
+  - **One relation.** `.lnk_discharge_rel(source)` has fwapg's shape
+    (`linear_feature_id, watershed_group_code, mad_m3s`), and prepare, the fill, the
+    validator, the export and the variants harness all read through it.
+  - **Recorded state.** It is logged per WSG (`<schema>.log.discharge_source`; NULL
+    on an older row, which read fwapg). The validator refuses a WSG whose logged source
+    differs from its `cfg` where classify reads discharge, and the export's manifest
+    names the source per WSG.
 - **`lnk_habitat_validate()` scores each group on its own model** (#299), from the
   `cfg` it is handed, resolved by fresh's `.frs_habitat_models()` (one rule for classify
   and validator). A `mad` group's predicates and size relaxation read `mad_m3s`, joined

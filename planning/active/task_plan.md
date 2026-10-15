@@ -29,59 +29,62 @@ Every group is on `cw` today, so MAD ranges are inert in classification. Switchi
 
 1. **The source is a bundle setting, not a switch:** `pipeline: discharge_source: fwapg | wet`, with fwapg when absent. Every run before this change still reproduces, and one scoring build can score both sources on the same segmentation.
 2. **The run log records it:** a new `<schema>.log.discharge_source` column. A row written before it existed reads as `fwapg`, as `discharge_fill` reads as FALSE.
-3. **At the end, `default` and `default_tuned` set `discharge_source: wet`,** with `default`'s minima recomputed on wet and `default_tuned`'s BT re-tuned on wet. The `bcfishpass` bundle stays on fwapg (it is a parity instrument). The other species' `default_tuned` MAD values (GR, RB, KO) were fitted to fwapg. Re-tuning them is out of scope; they get a note in `research/` and a follow-up issue.
+3. **Revised 2026-10-15 (operator, after plan review B1/S4): only `default_tuned` sets `discharge_source: wet`,** with BT re-tuned on wet, as the issue says ("land any changed value in `default_tuned` only"). `default` stays on fwapg, and its width-converted minima stay as they are; their wet equivalents are measured and recorded in `research/`. The reason: prepare joins discharge for every group, so any bundle that reads wet needs wet's table on every host that runs it. `bcfishpass` stays on fwapg. GR / RB / KO `default_tuned` MAD values were fitted to fwapg; re-tuning them is a follow-up issue.
+5. **wet's 0 m³/s reads as no value** (operator, 2026-10-15): `nullif(q_m3s, 0)`. 29,491 picks are 0 (22,453 `wet_balance`, 7,038 `pcic_routed`). A 0 at a fish location would floor a rung to no minimum at all; as no value, any MAD test fails the line, and an edge 1250 line can be filled.
+6. **A source mismatch in the validator is a warning, not an error** (review B2). Which model a build classified on is not logged. `query_habitat_thresholds_mad.R` measures wet at observations on `cw` builds, through the validator, with a method table that puts every group on `mad`.
 4. **Unblock the harness by relaxing the guard,** not by editing #302's file. A `set` cell that already equals the base is dropped with a message. The run still stops when the variant's own `column` cell equals the base, or when nothing at all changes. The guard keeps its purpose (no rung that changes nothing), and #302's and #342's files work at HEAD.
 
 ## Phase 1: Discharge source as a bundle setting
-- [ ] `R/lnk_discharge.R`: add `.lnk_discharge_source(cfg)` (`fwapg` | `wet`, validated, default `fwapg`) and `.lnk_discharge_tbl(source)` (the table to check and fingerprint). Add `.lnk_discharge_rel(source)` (the relation to read: the fwapg table name, or the wet subquery with the `historical`, `month = 0`, `pick` predicate matching the partial index). `.lnk_hv_discharge_tbl()` becomes `.lnk_discharge_tbl("fwapg")` or is removed with its callers repointed.
-- [ ] Thread `source` through `.lnk_discharge_sql()`, `.lnk_discharge_candidates_sql()` and `.lnk_discharge_join()`, as `fill` is threaded.
-- [ ] Callers:
+- [x] `R/lnk_discharge.R`: add `.lnk_discharge_source(cfg)` (`fwapg` | `wet`, validated, default `fwapg`) and `.lnk_discharge_tbl(source)` (the table to check and fingerprint). Add `.lnk_discharge_rel(source)` (the relation to read: the fwapg table name, or the wet subquery with the `historical`, `month = 0`, `pick` predicate matching the partial index). `.lnk_hv_discharge_tbl()` becomes `.lnk_discharge_tbl("fwapg")` or is removed with its callers repointed.
+- [x] Thread `source` through `.lnk_discharge_sql()`, `.lnk_discharge_candidates_sql()` and `.lnk_discharge_join()`, as `fill` is threaded.
+- [x] Callers:
   - prepare (from `cfg`);
   - the validator (from `cfg`; the existence check names the right table);
   - the export (from the run log row; the artifact lookup at `:932` uses the run's table);
   - the harness build and score (from `cfg` / `built.csv`).
-- [ ] `R/lnk_log.R`: add the `discharge_source` log column, written with the run. The validator stops on a log/cfg mismatch, as it does for `discharge_fill`. The export reads a missing column or NULL as `fwapg`.
-- [ ] Tests (`tests/testthat/test-lnk_discharge.R` and siblings):
+- [x] `R/lnk_log.R`: add the `discharge_source` log column, written with the run. The validator stops on a log/cfg mismatch, as it does for `discharge_fill`. The export reads a missing column or NULL as `fwapg`.
+- [x] Tests (`tests/testthat/test-lnk_discharge.R` and siblings):
   - the SQL for both sources;
   - setting validation and the fwapg default;
   - against the DB, one WSG's wet values through `.lnk_discharge_join()` equal a direct read of the wet table (skips if absent);
   - a pre-change log row reads as fwapg in the validator and the export;
   - the `fwapg` path's SQL is byte-identical to today's.
-- [ ] RUNBOOK §7 (discharge) and the `dictionary` / config docs name the new setting.
+- [x] RUNBOOK §7 (discharge), `lnk_config()`'s roxygen, the export schema's `mad_m3s` notes and the validator / classify docs name the new setting. `lnk_config()` refuses an unknown `discharge_source` at load (review G2).
 
 ## Phase 2: Unblock the scoring harness
-- [ ] `habitat_variants_build.R:311`: drop `set` cells equal to the base, with a message. Stop if the variant's own `column` cell equals the base, or if the variant changes nothing (model included).
-- [ ] The harness carries `discharge_source` per variant: an optional `discharge_source` column in the variants CSV (default: the base bundle's), written into the thin bundle's `config.yaml`, recorded in `built.csv`, read back by the score. Old variants files stay valid.
-- [ ] Verify: `--step=bundles` on `variants_302.csv` runs at HEAD, and each bundle differs from `default` in exactly its intended cells. A test or assertion covers the guard: it still stops on a rung whose own cell equals the base.
+- [x] `habitat_variants_build.R:311`: drop `set` cells equal to the base, with a message. Stop if the variant's own `column` cell equals the base, or if the variant changes nothing (model included).
+- [x] The harness carries `discharge_source` and `discharge_fill` per variant (review G4): optional columns in the variants CSV, resolved against the base bundle and written explicitly into every thin bundle's `config.yaml`, never inherited (review G3d). Recorded in `built.csv`, read back by the score. The base row may set neither. Old variants files stay valid.
+- [x] Verify by scripted `--step=bundles` runs (the guard is inline in a `data-raw/` script, so testthat cannot reach it; review G7): `variants_302.csv` regenerates at HEAD and each bundle differs from `default` in exactly its intended cells; a crafted no-op rung still stops; a crafted base row with a source is refused.
 
 ## Phase 3: Re-derive the discharge numbers on wet
-- [ ] `query_habitat_thresholds_mad.R` and `query_width_mad_equivalent.R` take `--discharge-source=fwapg|wet`. They read through `.lnk_discharge_rel()`, never a hard-coded name, and stamp the source and the wet manifest. Re-running `fwapg` reproduces the committed #302 / #307 outputs.
-- [ ] Run both on wet into `data-raw/logs/discharge_wet_331/`:
+- [ ] `query_habitat_thresholds_mad.R` and `query_width_mad_equivalent.R` take `--discharge-source=fwapg|wet`. They read through `.lnk_discharge_rel()`, never a hard-coded name, and stamp the source and the wet table's load comment. The committed #302 / #307 outputs cannot be reproduced (bcfishobs, fresh and the calibration set have moved since; review B3), so each is re-run on fwapg at HEAD as today's baseline, beside wet on the same day, with drift from the committed values reported separately.
+- [ ] Run both on both sources into `data-raw/logs/discharge_wet_331/`:
   - BT P10 / P05 / P02 for spawning and rearing on the calibration WSGs;
-  - `default`'s width-converted minima (BT, GR, KO, RB).
+  - the width-converted minima (BT, GR, KO, RB), recorded only (`default` keeps fwapg's).
 
-  Report each against its fwapg value.
+  Report wet against fwapg on the lines both value, as well as on each full set (wet values more lines, and adds nine WSGs to the calibration set), and split by wet's `source` (`pcic_routed` / `wet_balance`: two models, forcings and normal periods).
+- [ ] Measure the fill's reach on wet before paying for fill-on scoring (review S2): edge 1250 lines with no annual pick in the held-out and calibration WSGs.
 
 ## Phase 4: Re-score BT on wet's discharge
-- [ ] `data-raw/habitat_score/variants_331.csv` for BT only:
-  - the `default` base on `cw`;
-  - the P10 → P05 → P02 ladders for spawn and rear on wet values, with `discharge_source: wet`;
-  - model-only `cw`-vs-`mad` variants at the landed pair (#300's shape), with and without the #305 fill, on both sources;
-  - roles from `wsg_roles_302.csv` (BT rows).
-- [ ] State the run decisions before launch (config `default`, prefix `score331_`, closure, species BT), then build detached. Score with #302's fixed rule and #300's size-adjusted comparison.
+- [ ] Commit Phases 1–3 first: the harness refuses a dirty tree, and nothing in the repo is edited while a build runs (review O3).
+- [ ] Build A, the ladder, `variants_331.csv` (BT only): the `default` base on `cw`; the P10 → P05 → P02 ladders for spawn and rear on wet's values, with `discharge_source: wet`; roles from `wsg_roles_302.csv` (BT rows). Prefix `score331_`.
+- [ ] Build B, `cw` against `mad`, `variants_331_model.csv`, on base `default_tuned` as #300 / #305 were (review O2): model-only BT variants on fwapg and on wet, fill as `default_tuned` sets it (on), plus fill off on wet only if the fill's reach measured in Phase 3 is material. Prefix `score331m_`. Build B runs after Phase 5 lands `default_tuned`'s wet values, so it tests the pair that ships (review O1).
+- [ ] State the run decisions before launch (config, prefix, closure, species BT), then build detached. Score with #302's fixed rule and #300's size-adjusted comparison.
 - [ ] Write a "MAD on wet's discharge (#331)" section in `research/habitat_thresholds.md`:
   - whether BT's 0.078 moves;
   - `mad` vs `cw` on wet against #300 / #305's figures (BT rearing `cw`-only 0.19; −32 % stream rearing);
   - whether the #305 fill still matters on wet.
 
 ## Phase 5: Land the values
-- [ ] `default`: recomputed width-converted minima from Phase 3, plus `discharge_source: wet`. `default_tuned`: BT's re-tuned values (if they move), plus `discharge_source: wet`. Follow the config change workflow: regenerate `rules.yaml` to a tempfile and diff it. On NATR and ADMS, `cw` digests must equal main's, since every group is on `cw`.
+- [ ] `default_tuned`: BT's re-tuned values (if they move), plus `discharge_source: wet`, documented in its `config.yaml`. `default` unchanged. Regenerate `rules.yaml` to a tempfile and diff it. Check that `cw` classification does not move: prepare once and re-classify on the same schema under both sources (`habitat_thresholds_282/reclassify.R`'s method; two full runs differ by one segment through the PSCIS tie, review A2), compare per `linear_feature_id` (review A3).
+- [ ] NEWS: `default_tuned`'s `config_hash` changes, and new `default_tuned` builds export wet's `mad_m3s` / `*_ratio_mad` (review S5).
 - [ ] File a follow-up for GR / RB / KO `default_tuned` MAD on wet.
 
-## Phase 6: Provenance and host prep (separable into its own issue if Phases 1–5 should ship first)
-- [ ] Add the wet table to `.lnk_input_primitives()` (`R/lnk_log.R:229`) so `log_input` fingerprints it, with its published URL. Make `lnk_artifact_record()` / `snapshot_bcfp.sh` able to record a `wet_db_load()` load against the manifest.
-- [ ] The export manifest records the wet dataset ID and part md5s for configs that read wet.
-- [ ] `lnk_preflight_vintage()` and the dispatcher prep load or check the wet table on any host that runs a wet-reading config.
+## Phase 6: Provenance and host prep (lands with Phase 5: a host running `default_tuned` needs wet's table, review B1)
+- [ ] `log_input` fingerprints the wet table, and records its load comment (wet's manifest URL, build time and commit; `wet_db_load()` keeps no per-part record, review G5), only for runs whose config reads wet. The vintage gate does not age-check wet (a static published dataset, review G6) and checks it only for configs that read it.
+- [ ] The export manifest records, per config that read wet, the load comment logged at classify and the one in the exporting database, and flags a mismatch.
+- [ ] Dispatcher / cypher prep: on a host that will run a wet-reading config, load wet's annual pick (`wet_db_load(months = 0, pick_only = TRUE)`, about 4.5 M rows) or fail loud. Add `wet` to Suggests / Remotes.
+- [ ] Per-part md5s of the loaded wet parts: needs a load record from wet; file in wet if it does not exist.
 
 ## Verification
 - `devtools::test()` and `lintr::lint_package()` clean. `devtools::check()` before the release bump.

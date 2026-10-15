@@ -4,6 +4,7 @@
 #' prepare (onto the working streams), the validator and the scoring harness,
 #' so a filled value cannot differ between classify and the score (#305).
 #'
+#' Read from the bundle's source (`.lnk_discharge_source()`, #331). fwapg's
 #' `whse_basemapping.fwa_stream_networks_discharge` has no value on part of
 #' the main flow through double-line river polygons (edge type 1250): in the
 #' WSGs it covers, 22 % of edge 1250 km, almost all of it order 4+. Under the
@@ -37,6 +38,8 @@
 #' @param lines Optional SQL subquery returning `linear_feature_id`s, scoping
 #'   the lines instead of (or as well as) `wsg`. The validator scopes by the
 #'   lines of the schema it scores, not by FWA's group.
+#' @param source Character. Where the discharge is read from:
+#'   `.lnk_discharge_source()`'s values. The fill reads the same source.
 #'
 #' With `fill = TRUE`, `wsg` or `lines` is required (the fill is a per-line
 #' lateral lookup); with `fill = FALSE` both are ignored and the subquery is
@@ -44,8 +47,9 @@
 #' either way, so a line's filled value does not depend on the scope.
 #' @return A parenthesised SQL subquery, usable as `FROM <it> d`.
 #' @noRd
-.lnk_discharge_sql <- function(wsg = NULL, fill = FALSE, lines = NULL) {
-  tbl <- .lnk_hv_discharge_tbl()
+.lnk_discharge_sql <- function(wsg = NULL, fill = FALSE, lines = NULL,
+                              source = "fwapg") {
+  tbl <- .lnk_discharge_rel(source)
   if (!isTRUE(fill)) {
     return(sprintf(
       "(SELECT linear_feature_id, mad_m3s,
@@ -63,7 +67,8 @@
                   WHEN c.mad_m3s_trib IS NOT NULL THEN 'fill_tributary_max'
              END AS mad_m3s_source
         FROM %s c)",
-    .lnk_discharge_candidates_sql(wsg, targets = "null", lines = lines))
+    .lnk_discharge_candidates_sql(wsg, targets = "null", lines = lines,
+                                  source = source))
 }
 
 #' Fill candidates per line: the table's value and both neighbours
@@ -94,7 +99,7 @@
 .lnk_discharge_candidates_sql <- function(wsg = NULL,
                                           targets = c("null", "all"),
                                           where = NULL, tributary = TRUE,
-                                          lines = NULL) {
+                                          lines = NULL, source = "fwapg") {
   targets <- match.arg(targets)
   if (!is.null(wsg) && (length(wsg) == 0L || anyNA(wsg) ||
                           !all(nzchar(wsg)))) {
@@ -110,7 +115,7 @@
       paste(vapply(wsg, .lnk_quote_literal, ""), collapse = ", ")),
     if (!is.null(lines)) sprintf("s.linear_feature_id IN (%s)", lines),
     if (!is.null(where)) sprintf("(%s)", where))
-  tbl <- .lnk_hv_discharge_tbl()
+  tbl <- .lnk_discharge_rel(source)
   gate <- if (identical(targets, "null")) {
     "s.edge_type = 1250 AND cov.covered AND d.mad_m3s IS NULL"
   } else {
@@ -177,6 +182,74 @@
     tbl, gate, paste(scope, collapse = "\n         AND "), gate_trib)
 }
 
+#' Where a bundle reads discharge from (`cfg$pipeline$discharge_source`, #331)
+#'
+#' `fwapg` is `whse_basemapping.fwa_stream_networks_discharge`, which every
+#' run before #331 read. `wet` is the annual pick of wet's published
+#' `discharge.fwa_v1_segment_monthly` (`historical`, `month = 0`, `pick`),
+#' loaded with `wet::wet_db_load()`. Absent means `fwapg`, so a bundle that
+#' says nothing reads what it always read.
+#'
+#' wet's annual value is 0 on about 29,500 lines (mostly its water balance,
+#' where evaporation takes all the runoff). link reads a 0 as no value
+#' (operator, 2026-10-15): a line the model calls dry has no discharge to
+#' size habitat by, a 0 at a fish location would floor an observed minimum
+#' to no minimum at all, and an edge 1250 line at 0 can then be filled.
+#'
+#' @param cfg An `lnk_config`.
+#' @return `"fwapg"` or `"wet"`.
+#' @noRd
+.lnk_discharge_source <- function(cfg) {
+  v <- cfg$pipeline$discharge_source
+  if (is.null(v)) return("fwapg")
+  .lnk_discharge_source_check(v, paste0("cfg '", cfg$name, "'"))
+}
+
+#' Validate a discharge source value
+#' @noRd
+.lnk_discharge_source_check <- function(v, what = "discharge_source") {
+  ok <- names(.lnk_discharge_sources())
+  if (!is.character(v) || length(v) != 1L || is.na(v) || !v %in% ok) {
+    stop(what, ": discharge_source must be one of ",
+         paste(ok, collapse = ", "), call. = FALSE)
+  }
+  v
+}
+
+#' The discharge sources: the table each reads, and the relation over it
+#'
+#' Each relation has fwapg's shape, `(linear_feature_id,
+#' watershed_group_code, mad_m3s)` with one row per line, so it can stand
+#' wherever the table name stood (`FROM <rel> d`, `JOIN <rel> d2`). wet's
+#' predicate is its partial index's (`month = 0 AND pick`), so a lookup by
+#' `linear_feature_id` uses it.
+#' @noRd
+.lnk_discharge_sources <- function() {
+  list(
+    fwapg = list(
+      table = "whse_basemapping.fwa_stream_networks_discharge",
+      rel = "whse_basemapping.fwa_stream_networks_discharge"),
+    wet = list(
+      table = "discharge.fwa_v1_segment_monthly",
+      rel = paste0(
+        "(SELECT linear_feature_id, watershed_group_code,",
+        " nullif(q_m3s, 0) AS mad_m3s",
+        " FROM discharge.fwa_v1_segment_monthly",
+        " WHERE scenario = 'historical' AND month = 0 AND pick)")))
+}
+
+#' The table a discharge source is stored in (to check, fingerprint, record)
+#' @noRd
+.lnk_discharge_tbl <- function(source = "fwapg") {
+  .lnk_discharge_sources()[[.lnk_discharge_source_check(source)]]$table
+}
+
+#' The relation a discharge source is read through
+#' @noRd
+.lnk_discharge_rel <- function(source = "fwapg") {
+  .lnk_discharge_sources()[[.lnk_discharge_source_check(source)]]$rel
+}
+
 #' Whether a bundle fills discharge (`cfg$pipeline$discharge_fill`, #305)
 #'
 #' Absent means `FALSE`: only `default_tuned` sets it, so `default`,
@@ -201,10 +274,27 @@
 #' @param aoi Character. Watershed groups; `TRUE` when any of them applies.
 #' @noRd
 .lnk_discharge_fill_applied <- function(cfg, aoi) {
-  if (!.lnk_discharge_fill(cfg)) return(FALSE)
-  if (.lnk_rules_read_mad(cfg)) return(TRUE)
+  .lnk_discharge_fill(cfg) && .lnk_discharge_read(cfg, aoi)
+}
+
+#' Whether classification reads discharge in any of these watershed groups
+#'
+#' `cfg`'s method table puts one on `mad`, or the rules carry a rule-level
+#' `mad:`. Where it does not, neither the fill nor the source can move a
+#' habitat flag, so the validator's log checks skip those groups.
+#' @noRd
+.lnk_discharge_read <- function(cfg, aoi) {
+  any(.lnk_discharge_read_each(cfg, aoi))
+}
+
+#' `.lnk_discharge_read()` per watershed group, reading the rules and the
+#' method table once
+#' @noRd
+.lnk_discharge_read_each <- function(cfg, aoi) {
+  if (length(aoi) == 0L) return(logical(0))
+  if (.lnk_rules_read_mad(cfg)) return(rep(TRUE, length(aoi)))
   meth <- suppressMessages(.lnk_habitat_method_csv(cfg))
-  any(.lnk_wsg_model(.lnk_habitat_method_read(meth), aoi) == "mad")
+  .lnk_wsg_model(.lnk_habitat_method_read(meth), aoi) == "mad"
 }
 
 #' Write `mad_m3s` and `mad_m3s_source` onto a streams table
@@ -219,9 +309,10 @@
 #' @param table Schema-qualified streams table carrying `linear_feature_id`
 #'   and `watershed_group_code`.
 #' @param aoi Character. Watershed groups of `table` to write.
-#' @param fill Logical. See `.lnk_discharge_sql()`.
+#' @param fill,source See `.lnk_discharge_sql()`.
 #' @noRd
-.lnk_discharge_join <- function(conn, table, aoi, fill = FALSE) {
+.lnk_discharge_join <- function(conn, table, aoi, fill = FALSE,
+                                source = "fwapg") {
   .lnk_validate_identifier(table, "table")
   .lnk_db_execute(conn, sprintf(
     "ALTER TABLE %s
@@ -236,7 +327,7 @@
        FROM %s d
       WHERE d.linear_feature_id = t.linear_feature_id
         AND t.watershed_group_code IN (%s)",
-    table, .lnk_discharge_sql(aoi, fill = fill), aoi_sql))
+    table, .lnk_discharge_sql(aoi, fill = fill, source = source), aoi_sql))
   invisible(NULL)
 }
 

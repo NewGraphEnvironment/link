@@ -47,7 +47,8 @@
 #'     dispatch ingest via [crate::crt_ingest()])
 #'   - `pipeline` — named list of pipeline knobs
 #'     (`apply_habitat_overlay`, `break_order`, `cluster`,
-#'     `spawn_connected`, `discharge_fill`)
+#'     `spawn_connected`, `discharge_fill`, `discharge_source`). A
+#'     `discharge_source` other than `fwapg` or `wet` is an error at load.
 #'   - `provenance` — named list of per-file provenance metadata,
 #'     keyed by file path relative to `dir`. Drift detection against
 #'     these checksums lives in [lnk_config_verify()].
@@ -124,7 +125,8 @@ lnk_config <- function(name_or_path) {
     dimensions = dimensions_path,
     species = rules_species,
     files = files,
-    pipeline = manifest$pipeline %||% list(),
+    pipeline = .lnk_config_pipeline_check(manifest$pipeline %||% list(),
+                                          manifest$name),
     provenance = manifest$provenance,
     extends = manifest$extends,
     chain = resolved$chain
@@ -377,4 +379,14 @@ print.lnk_config <- function(x, ...) {
 # declared them: the leaf for its own entries, `.dir` for inherited ones.
 .lnk_provenance_path <- function(cfg, rel) {
   file.path(cfg$provenance[[rel]][[".dir"]] %||% cfg$dir, rel)
+}
+
+# Pipeline knobs with a closed set of values are checked when the manifest
+# loads, so a bad value fails here, not at the first prepare (#331).
+.lnk_config_pipeline_check <- function(pipeline, name) {
+  if (!is.null(pipeline$discharge_source)) {
+    .lnk_discharge_source_check(pipeline$discharge_source,
+                                paste0("config '", name, "'"))
+  }
+  pipeline
 }

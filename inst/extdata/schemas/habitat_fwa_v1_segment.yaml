@@ -87,10 +87,12 @@ canonical:
       type: double
       required: true
       notes: >
-        Mean annual discharge, m3/s, from the discharge table the run
-        classified on, read at export with the run's logged fill. It agrees
-        with the flags while that table is unchanged since the build; the
-        manifest names the table and this database's record of its version.
+        Mean annual discharge, m3/s, from the discharge source the run
+        classified on (fwapg, or wet's annual pick, where 0 reads as no
+        value), read at export with the run's logged source and fill. It
+        agrees with the flags while that table is unchanged since the build;
+        the manifest names the source per group, the table and this
+        database's record of its version.
     - name: mad_m3s_source
       type: string
       required: true

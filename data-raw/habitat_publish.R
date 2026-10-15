@@ -269,6 +269,8 @@ if (!is.null(report)) {
                  thresholds_logged = isTRUE(cf$thresholds_logged[[
                    r$config_hash]]),
                  discharge_fill = r$discharge_fill %||% NA,
+                 # NULL on a run from before #331, which read fwapg
+                 discharge_source = r$discharge_source %||% "fwapg",
                  model = r$model %||% NA_character_,
                  link_dirty = r$link_dirty %||% NA,
                  recomputes = length(r$recompute_keys),

@@ -68,7 +68,7 @@ order_class <- "CASE WHEN s.stream_order >= 4 THEN '4+'
                      ELSE coalesce(s.stream_order::text, 'unknown') END"
 state <- "CASE WHEN d.linear_feature_id IS NULL THEN 'absent'
                WHEN d.mad_m3s IS NULL THEN 'row_null' ELSE 'valued' END"
-tbl <- .lnk_hv_discharge_tbl()
+tbl <- .lnk_discharge_tbl()
 
 covered <- dbGetQuery(conn, sprintf(
   "SELECT watershed_group_code FROM %s GROUP BY 1 HAVING count(mad_m3s) > 0

@@ -166,6 +166,7 @@
     sprintf("%s / nullif(%s, 0) AS %s", num, den, as)
   }
   fill <- isTRUE(as.logical(run$discharge_fill[[1]]))
+  source <- .lnk_export_discharge_source(run$discharge_source[[1]])
 
   sql <- sprintf(
     "WITH thr AS (%s), acc AS (%s)
@@ -216,7 +217,7 @@
     } else {
       ""
     },
-    .lnk_discharge_sql(wsg = wsg, fill = fill),
+    .lnk_discharge_sql(wsg = wsg, fill = fill, source = source),
     DBI::dbQuoteLiteral(conn, wsg))
 
   out <- .lnk_df_plain(DBI::dbGetQuery(conn, sql))
@@ -929,12 +930,15 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
       }, logical(1)))
     }, logical(1))
 
-    dtbl <- .lnk_hv_discharge_tbl()
+    d_src <- vapply(r_cf$discharge_source, .lnk_export_discharge_source,
+                    character(1), USE.NAMES = FALSE)
+    dtbl <- sort(unique(vapply(d_src, .lnk_discharge_tbl, character(1))))
     sa <- .lnk_artifact_table()
     d_art <- if (.lnk_table_exists(conn, sa)) {
       .lnk_json_rows(.lnk_df_plain(DBI::dbGetQuery(conn, sprintf(
-        "SELECT * FROM %s WHERE table_name = $1 ORDER BY host, url", sa),
-        params = list(dtbl))))
+        "SELECT * FROM %s WHERE table_name = ANY($1)
+          ORDER BY table_name, host, url", sa),
+        params = list(paste0("{", paste(dtbl, collapse = ","), "}")))))
     }
     keep <- setdiff(names(r_cf), c("schema_export", "config_export"))
     run_rows <- .lnk_json_rows(r_cf[, keep, drop = FALSE])
@@ -970,7 +974,9 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
       config_hashes = I(unname(hashes)),
       thresholds_logged = as.list(thr_logged),
       discharge = list(
-        table = dtbl,
+        # one table when every build read one source; several otherwise
+        table = if (length(dtbl) == 1L) dtbl else I(dtbl),
+        source = stats::setNames(as.list(d_src), r_cf$watershed_group_code),
         fill = stats::setNames(as.list(as.logical(r_cf$discharge_fill)),
                                r_cf$watershed_group_code),
         source_artifact = d_art,
@@ -1156,6 +1162,16 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
     }
   }
   out
+}
+
+#' The discharge source a logged build read (#331)
+#'
+#' NA (a log row from before `discharge_source` was logged) is `fwapg`, which
+#' every such build read.
+#' @noRd
+.lnk_export_discharge_source <- function(x) {
+  if (is.null(x) || length(x) == 0L || is.na(x)) return("fwapg")
+  .lnk_discharge_source_check(as.character(x), "log row")
 }
 
 #' The habitat model (`cw` or `mad`) each build classified on.

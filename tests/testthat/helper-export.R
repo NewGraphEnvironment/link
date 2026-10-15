@@ -6,7 +6,7 @@
 # modelled BT; BULK modelled CO and found none, so its CO rows read FALSE.
 # streams_access covers ADMS only, as a build without mapping_code leaves it.
 # Discharge comes from a fixture table, swapped in by mocking
-# .lnk_hv_discharge_tbl().
+# .lnk_discharge_tbl() and .lnk_discharge_rel().
 local_export_fixture <- function(conn, env = parent.frame()) {
   schema <- paste0("lnk_test_export_", Sys.getpid())
   DBI::dbExecute(conn, "SET client_min_messages TO warning")
@@ -112,7 +112,8 @@ local_export_fixture <- function(conn, env = parent.frame()) {
 # Swap the export's discharge table for the fixture's.
 local_export_discharge <- function(schema, env = parent.frame()) {
   testthat::local_mocked_bindings(
-    .lnk_hv_discharge_tbl = function() paste0(schema, ".discharge"),
+    .lnk_discharge_tbl = function(source = "fwapg") paste0(schema, ".discharge"),
+    .lnk_discharge_rel = function(source = "fwapg") paste0(schema, ".discharge"),
     .package = "link", .env = env)
 }
 

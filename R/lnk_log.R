@@ -326,6 +326,10 @@ cols_log <- c(
   # bundle's discharge_fill, applied where something reads discharge
   # (.lnk_discharge_fill_applied). The validator checks it against its cfg.
   discharge_fill         = "boolean",
+  # Where prepare read mad_m3s from (#331): the bundle's discharge_source,
+  # `fwapg` or `wet` (.lnk_discharge_source). NULL on a row from before it
+  # was logged, which read fwapg. The validator checks it against its cfg.
+  discharge_source       = "text",
   schema_persist         = "text",
   species                = "text[]",
   wsg_upstream           = "text[]",
@@ -921,7 +925,8 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
             "fresh_version", "fresh_sha", "fresh_dirty", "fresh_sha_source",
             "crate_version", "fwapg_sha", "bcfishobs_sha",
             "arg_dams", "arg_mapping_code", "arg_cleanup_working",
-            "discharge_fill", "schema_persist", "wsg_upstream",
+            "discharge_fill", "discharge_source", "schema_persist",
+            "wsg_upstream",
             "bcfp_model_run_id", "bcfp_model_version", "bcfp_pin_source",
             "notes")
 
@@ -949,6 +954,7 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
     .lnk_log_lit(conn, mapping_code),
     .lnk_log_lit(conn, cleanup_working),
     .lnk_log_lit(conn, .lnk_discharge_fill_applied(cfg, aoi)),
+    .lnk_log_lit(conn, .lnk_discharge_source(cfg)),
     .lnk_log_lit(conn, schema),
     .lnk_log_arr(conn, upstream),
     .lnk_log_lit(conn, if (is.null(bcfp)) NA else bcfp$model_run_id),

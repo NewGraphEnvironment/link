@@ -88,6 +88,17 @@ under one fill state can score variants under the other, without a base rebuild.
 (#300's are kept), with #300's `base_habitat_digest.csv` copied into `--out`. The diff
 against #300 is then the fill alone, on the same segmentation.
 
+**Discharge source, and a variant's own fill (#331).** Two optional columns,
+`discharge_source` (`fwapg` or `wet`) and `discharge_fill` (`TRUE` or `FALSE`), are
+written into a variant bundle's `pipeline:`. Empty inherits the base bundle's; the base row
+leaves both empty. The build rejoins `mad_m3s` from the variant's source and fill before
+it classifies, and `built.csv` records both (a row from before #331 read `fwapg`). So one
+segmentation scores both sources and both fill states.
+
+**A `set` cell the base already carries is dropped (#331)**, with a message. #302's rungs
+fix `*_mad_max = 9999`, which `default` has carried since #307, so before #331 the build
+stopped on them. A rung whose own `column` cell equals the base still stops the build.
+
 A second scoring run gets its own `--prefix`; its working networks are then
 `working_<prefix><wsg>` (#284's, under `score284_`, stay `working_score_<wsg>`).
 

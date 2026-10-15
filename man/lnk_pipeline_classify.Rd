@@ -46,7 +46,7 @@ the config's own \code{files$parameters_habitat_method}, falling back (with a
 message) to fresh's all-\code{cw} copy when the config declares none. A group
 the table does not list classifies on channel width. A \code{mad} group
 classifies on \code{mad_m3s}, which the prepare phase joins onto the working
-streams table (filling edge 1250 main stems with no value when
+streams table from \code{cfg$pipeline$discharge_source} (filling edge 1250 main stems with no value when
 \code{cfg$pipeline$discharge_fill} is set), and skips the stream-order
 rearing bypass. Read from the
 path, not from \code{loaded$parameters_habitat_method}, as the thresholds are,

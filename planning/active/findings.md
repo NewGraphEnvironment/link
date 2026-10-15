@@ -27,3 +27,33 @@ Out of scope: a spawning-season discharge rule from wet's monthly values. That i
 Relates to #308, #305, #302, #300, #342, NewGraphEnvironment/wet#7.
 
 
+
+## wet's table, measured 2026-10-15 (local fwapg, PG 17.5)
+
+- Annual picks (`historical`, `month = 0`, `pick`): 4,532,843, one per `linear_feature_id`; only `historical` carries picks. `watershed_group_code` on every pick (246 WSGs). No NULL `q_m3s` among picks: wet's "no value" is an absent row (fwapg has 713 k NULL-valued rows of 2.72 M).
+- Two normal periods in one pick: `pcic_routed` 1951-2012, `wet_balance` 1981-2010.
+- 29,491 picks are exactly 0 (22,453 `wet_balance`, 7,038 `pcic_routed`); fwapg has 559 at or below 0. Operator: read 0 as no value (`nullif`).
+- The wet relation plans as a nested loop over the partial index (plan review: BULK join 0.2 s).
+- fwapg SQL from `.lnk_discharge_sql()` / `.lnk_discharge_candidates_sql()` is byte-identical to main's for every argument shape (checked by sourcing main's file beside HEAD).
+
+## Plan review (`review-plan.md`), triage
+
+| Finding | Disposition |
+|---|---|
+| B1 a wet bundle needs wet on every host | operator: only `default_tuned` reads wet; Phase 6 lands with Phase 5 |
+| B2 validator check breaks the MAD instrument | source mismatch is a warning; docs say why |
+| B3 #302 / #307 outputs not reproducible | re-run fwapg at HEAD as the baseline |
+| G1 missed callers / docs | `discharge_fill_count.R` repointed; publish `runs.csv` carries the source; validator / classify / config / export-schema docs updated; orphan roxygen removed. `query_habitat_thresholds_fiss.R` and `logs/habitat_score_302/power_windows.R` stay fwapg (historical producers, not re-run here) |
+| G2 no pipeline key validation | `lnk_config()` refuses an unknown `discharge_source` |
+| G3 harness under-specified | (a,b,c,e) done; (d) resolved source and fill written into every bundle; (f) a model-only variant must be `mad`, so a source-only `cw` variant cannot exist |
+| G4 fill per variant | `discharge_fill` column |
+| G5 per-part md5s | no load record exists; Phase 6 logs the table comment, wet issue for a load record |
+| G6 vintage gate | Phase 6: wet checked only for configs that read it, not age-checked |
+| G7 guard not testable | scripted `--step=bundles` runs, recorded in progress |
+| G8 per-WSG rules read | `.lnk_discharge_read_each()` reads rules and method once |
+| O1 / O2 | Build B on `default_tuned`, after Phase 5 |
+| O3 | commit before any build |
+| S2 fill reach | measured in Phase 3 before scoring fill off |
+| S3 `default_extrabreaks` / `default_rearbreaks` | stay fwapg (`extends: ~`, untouched) |
+| S6 wet's `source` in `mad_m3s_source` | not done: it would change the export contract's value domain; `modelled` stays |
+| A2 / A3 / A4 / A6 | acceptance reworded in the plan |

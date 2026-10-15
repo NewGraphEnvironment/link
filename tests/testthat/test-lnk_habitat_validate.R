@@ -766,7 +766,8 @@ local_mad_fixture <- function(conn, env = parent.frame()) {
 }
 
 run_validate_mad <- function(conn, s, method = "watershed_group_code,model\nAAAA,mad",
-                             fill = FALSE, mad_none = character(0)) {
+                             fill = FALSE, mad_none = character(0),
+                             source = NULL) {
   csv <- withr::local_tempfile(fileext = ".csv", .local_envir = parent.frame())
   writeLines(method, csv)
   cfg <- lnk_config("default")
@@ -782,6 +783,7 @@ run_validate_mad <- function(conn, s, method = "watershed_group_code,model\nAAAA
     cfg$files$parameters_habitat_thresholds <- list(path = th_csv)
   }
   cfg$pipeline$discharge_fill <- fill
+  cfg$pipeline$discharge_source <- source
   loaded <- validate_loaded()
   loaded$wsg_species_presence$co <- c("t", "")
   lnk_habitat_validate(conn, aoi = c("AAAA", "BBBB"), cfg = cfg,
@@ -896,6 +898,28 @@ test_that("a mad group is scored on the discharge fill it was built with (#305)"
                    want$mad_m3s_source)
   # Unfilled, it was missing (c2 above reads width_null on the raw table).
   expect_true(is.na(o$mad_m3s[o$observation_key == "c2"]))
+})
+test_that("a mad group is scored on the discharge source it was built with (#331)", {
+  conn <- validate_conn()
+  s <- local_mad_fixture(conn)
+  DBI::dbExecute(conn, sprintf(
+    "CREATE TABLE %s.log (watershed_group_code text, config_name text,
+                         date_start timestamptz, discharge_fill boolean)", s))
+  DBI::dbExecute(conn, sprintf(
+    "INSERT INTO %s.log VALUES ('AAAA', 'default', '2026-01-01', NULL),
+                               ('BBBB', 'default', '2026-01-01', NULL)", s))
+  # No discharge_source column: logged before #331, so read fwapg. A cfg
+  # reading wet is warned about, for the mad group only (BBBB is cw). A
+  # warning, not an error: query_habitat_thresholds_mad.R measures wet at
+  # observations on cw builds this way.
+  expect_warning(run_validate_mad(conn, s, source = "wet"),
+                 "scored on: AAAA \\(fwapg\\)$")
+  expect_no_warning(run_validate_mad(conn, s, source = "fwapg"))
+  DBI::dbExecute(conn, sprintf(
+    "ALTER TABLE %s.log ADD COLUMN discharge_source text", s))
+  DBI::dbExecute(conn, sprintf(
+    "UPDATE %s.log SET discharge_source = 'wet'", s))
+  expect_warning(run_validate_mad(conn, s), "AAAA \\(wet\\)$")
 })
 test_that("a mixed aoi fills only the groups the fill applies to (#305)", {
   conn <- validate_conn()
