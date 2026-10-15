@@ -8,7 +8,7 @@
 \description{
 \if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
 
-Models where fish habitat could be on a stream network and whether fish can reach it. For each species it classifies stream, lake and wetland reaches as spawning or rearing habitat from gradient and channel width or discharge. It resolves which reaches each species can reach past falls and steep gradients, using fish observations and habitat confirmations as evidence of passage, and records the road and rail crossings and dams below each reach. Every rule and threshold is a row in a config bundle, and every run records its inputs, so a result traces back to the rule that produced it. Runs on the British Columbia Freshwater Atlas through 'fresh'. Experimental: APIs and outputs change without notice.
+Models where fish habitat could be on a stream network and whether fish can reach it. For each species it classifies stream reaches as spawning or rearing habitat from gradient and channel width or discharge, and lake and wetland rearing habitat by area. It resolves which reaches each species can reach past falls and steep gradients, using fish observations and habitat confirmations as evidence of passage, and marks each of those reaches with the kind of human-made barrier below it: a road or rail crossing, or a dam. Every rule and threshold is a row in a config bundle, and every run records its inputs, so a result traces back to the rule that produced it. Runs on the British Columbia Freshwater Atlas through 'fresh'. Experimental: APIs and outputs change without notice.
 }
 \seealso{
 Useful links:
