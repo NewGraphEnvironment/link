@@ -1,0 +1,34 @@
+# ------------------------------------------------
+# CITATION.cff file created with {cffr} R package
+# See also: https://docs.ropensci.org/cffr/
+# ------------------------------------------------
+ 
+cff-version: 1.2.0
+message: 'To cite package "link" in publications use:'
+type: software
+license: MIT
+title: 'link: Develop, Test and Communicate Intrinsic Habitat Models for Stream Networks'
+version: 0.65.0
+abstract: 'Tools for developing, testing and communicating intrinsic habitat models
+  on stream networks: where each fish species could spawn and rear, and which of that
+  habitat fish can reach. Current models rate habitat from stream gradient, channel
+  width and discharge, resolve access past natural barriers, and record the road and
+  rail crossings and dams below each reach. Every rule and threshold is a row in a
+  config, so models can be changed, compared, checked against fish observations and
+  traced to the rules that produced them. Runs on the British Columbia Freshwater
+  Atlas through ''fresh''. Experimental: APIs and outputs change without notice.'
+authors:
+- family-names: Irvine
+  given-names: Allan
+  email: al@newgraphenvironment.com
+  orcid: https://orcid.org/0000-0002-3495-2128
+- name: New Graph Environment Ltd.
+repository-code: https://github.com/NewGraphEnvironment/link
+url: https://newgraphenvironment.github.io/link/
+date-released: '2026-10-14'
+contact:
+- family-names: Irvine
+  given-names: Allan
+  email: al@newgraphenvironment.com
+  orcid: https://orcid.org/0000-0002-3495-2128
+

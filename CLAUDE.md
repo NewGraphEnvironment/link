@@ -11,6 +11,18 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
+## Status (2026-10-14, late) — README and descriptions rewritten against the code (#338)
+
+**The README, DESCRIPTION, CITATION.cff and Rd describe link as a tool for developing, testing and communicating intrinsic habitat models, whose value is flexibility (rules are config rows).** Operator, 2026-10-15: a high-level summary and a little code with real output, not a feature list or function references, and nothing that isn't fully built (no life stage yet). A figure of real output (`data-raw/readme_figure.R` → `man/figures/readme-pars.png`) shows grayling in PARS. bcfishpass is named in "Data and methods it builds on". CITATION.cff credits the company (`authors_roles` includes `cph`; the CRAN `doi` / `repository` are dropped, because CRAN's `link` is another package). This is the first application of the README convention drafted in the internal conventions repo.
+
+**Facts not worth re-deriving:**
+- **Access is resolved past natural barriers only:** gradient, falls, subsurface flow and user-definite barriers. Crossings and dams only mark the barrier below a reach; they never block it.
+- **Mapping codes carry the barrier's kind, never its id.**
+- **Lake and wetland area for CO has no minimum.**
+- **The bcfishpass CSV sync is weekly (Wednesdays), not daily,** and covers only the `bcfishpass` and `default` bundles. `default_extrabreaks` and `default_rearbreaks` are `extends: ~` and hold older copies of their own.
+- **`user_crossings_misc` never reaches output.** `.lnk_crossings_union()` rebuilds `crossings` without it.
+- **Code-check took four rounds to get 18 published claims right.** Archive: `planning/archive/2026-10-issue-338-readme-habitat-connectivity/`.
+
 ## Status (2026-10-14) — habitat exported per config as Parquet + manifest; nothing published yet (#308)
 
 **`lnk_scenario_export()` → `manifest.json` → `lnk_catalog()` → `lnk_db_load()`, on wet#7's pattern; driver `data-raw/habitat_publish.R` (BUILD, then `LNK_PUBLISH=1`).** Mechanics: RUNBOOK §6d. PUBLISH to `s3://fresh-bc/habitat/fwa/v1/` (private) has not been run.
@@ -787,7 +799,7 @@ Six-phase bcfishpass-reproducing pipeline, driven by `lnk_config()` + `lnk_load_
 
 ### Bridge to fresh
 - `lnk_source(conn, crossings, label_col, label_map)` — returns `list(table, label_col, label_map)` that plugs directly into `frs_habitat(break_sources = list(...))`. `label_map` translates link severity → fresh access labels (`high → blocked`, `moderate → potential`).
-- `lnk_aggregate(conn, crossings, habitat, cols_sum)` — per-crossing upstream habitat rollup from fresh output. Sums spawning_km, rearing_km (or custom metrics).
+- `lnk_aggregate(conn, crossings, habitat, cols_sum)` — sums habitat on the crossing's **own stream line** above it (same `blue_line_key`, higher measure). There is no network walk, it is not per species, it cannot read the persisted `streams_habitat_<sp>` (no key, measure or length columns there), and nothing calls it (measured in #338). It is not a per-crossing upstream rollup.
 
 ## Integration with fresh
 

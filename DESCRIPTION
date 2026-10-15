@@ -1,16 +1,24 @@
 Package: link
-Title: Stream Network Habitat Interpretation (Experimental)
+Title: Develop, Test and Communicate Intrinsic Habitat Models for Stream
+    Networks
 Version: 0.65.0
 Date: 2026-10-14
 Authors@R: c(
-    person("Allan", "Irvine", , "airvine@newgraphenvironment.com",
+    person("Allan", "Irvine", , "al@newgraphenvironment.com",
            role = c("aut", "cre"),
-           comment = c(ORCID = "0009-0003-7697-6064")),
-    person("Simon", "Norris", role = "ctb"))
-Description: Experimental tooling for interpreting field and modelled
-    inputs as per-segment habitat classifications on stream networks.
-    Pairs with 'fresh'. Under active development; APIs and outputs
-    change without notice.
+           comment = c(ORCID = "0000-0002-3495-2128")),
+    person("Simon", "Norris", role = "ctb"),
+    person("New Graph Environment Ltd.", role = c("cph", "fnd")))
+Description: Tools for developing, testing and communicating intrinsic
+    habitat models on stream networks: where each fish species could spawn
+    and rear, and which of that habitat fish can reach. Current models
+    rate habitat from stream gradient, channel width and discharge,
+    resolve access past natural barriers, and record the road and rail
+    crossings and dams below each reach. Every rule and threshold is a row
+    in a config, so models can be changed, compared, checked against fish
+    observations and traced to the rules that produced them. Runs on the
+    British Columbia Freshwater Atlas through 'fresh'. Experimental: APIs
+    and outputs change without notice.
 License: MIT + file LICENSE
 URL: https://github.com/NewGraphEnvironment/link,
     https://newgraphenvironment.github.io/link/
