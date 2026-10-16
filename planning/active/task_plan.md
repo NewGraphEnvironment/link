@@ -96,6 +96,6 @@ Every group is on `cw` today, so MAD ranges are inert in classification. Switchi
 ## Validation
 
 - [ ] Tests pass
-- [ ] `/code-check` clean (each commit, or once over the branch with `/code-check branch`)
+- [x] `/code-check` clean (once over the branch with `/code-check branch`): three rounds, ended by enumeration; see findings
 - [ ] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion

@@ -88,3 +88,15 @@ Relates to #308, #305, #302, #300, #342, NewGraphEnvironment/wet#7.
 Ladder rungs for Build A, floored to 2 s.f. as #302's rule does:
 - wet: rear 0.043 / 0.020 / 0.0081; spawn 0.012 / 0.0063 / 0.0019.
 - fwapg at HEAD, on the same segmentation, for a same-day comparison: rear and spawn 0.083 / 0.028 / 0.0089.
+
+## Code-check (`/code-check branch`, 2026-10-16 UTC)
+
+| Round | Findings | Fixed | Accepted | Inside previous fix? |
+|---|---|---|---|---|
+| 1 | 5 (1 bug: the score counted set cells the build dropped, so it would refuse every #331 and #302 variant; 4 fragile) | 5 | 0 | — |
+| 2 | 3 fragile | 3 | 0 | yes: an empty load id disabled round 1's cross-host check; round 1 missed `wsgs_run_pipeline.sh`; round 1's message pointed at a destructive `--force` |
+| 3 | 3 (mechanism + enumeration) | 3 | 0 | no |
+
+Ended by enumeration (round 3): the mechanism was a host requirement owned by the config but enforced by one orchestrator and passed down as optional signals that fail open. Every entry point that runs prepare on a host, classified: `study_area_run.sh` checks before work; `wsgs_run_pipeline.sh` and `wsgs_dispatch.sh` refuse a wet config; `wsgs_run_host.R` (behind `wsgs_dispatch.sh`, `trifecta_smoke.sh`, `wsgs_run_m4_offline.sh`) stops the host before its loop; `wsg_run_one.R` and `habitat_variants_build.R` stop at prepare with the load command; the recompute scripts never reach prepare; three producers hard-code fwapg configs. Round 3's other two: the planned Phase 5 classify check re-joins discharge between passes; the `default_tuned` comment no longer claims a re-tune before it lands. Reviews: `review-round1.md` … `review-round3.md`.
+
+Not fixed, recorded: reloading the dispatcher from the full catalogue (the remedy for a cross-host mismatch) makes `wet_load.matches` FALSE for every earlier wet build on it, which is correct: those builds read another load.
