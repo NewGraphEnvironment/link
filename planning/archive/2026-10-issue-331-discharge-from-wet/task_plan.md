@@ -95,7 +95,7 @@ Every group is on `cw` today, so MAD ranges are inert in classification. Switchi
 
 ## Validation
 
-- [ ] Tests pass
-- [x] `/code-check` clean (once over the branch with `/code-check branch`): three rounds, ended by enumeration; see findings
-- [ ] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion
+- [x] Tests pass, apart from 5 failures outside this change: full suite at `5bd9b325` 2962 pass, 7 fail; this branch's 2 fixed in `deefda33`; 3 need the :63333 tunnel (down); 2 are the golden dams pin (`cabd.dams` 2,594 → 2,592 rows). `devtools::check(--no-tests)` 0 errors; its 3 warnings and 4 notes are all on main.
+- [x] `/code-check` clean (once over the branch with `/code-check branch`): three rounds, ended by enumeration; see findings. Rounds 4–5 on the post-review diff (Phase 5 values and the write-up): no code defects, 16 published claims narrowed; round 5 found copies the round 4 fixes missed, so it ended by grepping each claim class across the tracked text (`review-round4.md`, `review-round5.md`).
+- [x] PWF checkboxes match landed work
+- [x] `/planning-archive` on completion
