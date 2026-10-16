@@ -27,7 +27,8 @@ files:
 pipeline:
   schema: fresh_default_tuned
   # discharge_fill — edge 1250 lines (main flow through double-line river
-  # polygons) with no value in fwa_stream_networks_discharge take one along
+  # polygons) with no value in the bundle's discharge_source (here wet's
+  # annual pick, its 0 read as no value) take one along
   # the network: the nearest valued line upstream on the same blue_line_key,
   # else downstream, else the largest value on any line upstream (link#305).
   # Applied only to groups parameters_habitat_method puts on `mad` (or under

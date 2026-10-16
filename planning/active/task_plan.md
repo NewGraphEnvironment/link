@@ -4,7 +4,7 @@
 
 ## Context
 
-Every MAD threshold link has was fitted to fwapg's `whse_basemapping.fwa_stream_networks_discharge`. That covers 2.72 M lines; wet's published `discharge.fwa_v1_segment_monthly` (loaded locally 2026-10-15) gives an annual value to 4.53 M lines (3.15 M PCIC routed, 1.38 M wet water balance). #300 and #305 found that most of `mad`'s loss against `cw` was water with no discharge, not water below the minimum, so the source matters before any group moves to `mad`. The operator asked to redo the BT tuning (#302, #300) on wet's values. #331 carries that, plus the export provenance.
+Every MAD threshold link has was fitted to fwapg's `whse_basemapping.fwa_stream_networks_discharge`. That has 2.72 M rows, 2.00 M with a value; wet's published `discharge.fwa_v1_segment_monthly` (loaded locally 2026-10-15) has an annual pick for 4.53 M lines (3.15 M PCIC routed, 1.38 M wet water balance), 4.50 M of them above 0. #300 and #305 found that most of `mad`'s loss against `cw` was water with no discharge, not water below the minimum, so the source matters before any group moves to `mad`. The operator asked to redo the BT tuning (#302, #300) on wet's values. #331 carries that, plus the export provenance.
 
 Every group is on `cw` today, so MAD ranges are inert in classification. Switching a bundle's source moves only the export's `*_ratio_mad` columns and any rule-level `mad:` test.
 

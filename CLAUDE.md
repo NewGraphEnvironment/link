@@ -13,7 +13,7 @@ Experimental package — breaking all the time and loving the learning curve. St
 
 ## Status (2026-10-16) — `default_tuned` reads wet's discharge; BT's MAD minima 0.043 / 0.043 (#331)
 
-**A bundle picks its discharge with `pipeline: discharge_source: fwapg | wet`.** `default_tuned` reads wet's `discharge.fwa_v1_segment_monthly` (annual pick, 0 read as no value); `default` and `bcfishpass` stay on fwapg. Logged per WSG in `<schema>.log.discharge_source`, named in the export manifest (`discharge.wet_load`), checked by `lnk_preflight_discharge()`. Mechanics: RUNBOOK §7. Write-up: `research/habitat_thresholds.md`, "MAD on wet's discharge (#331)".
+**A bundle picks its discharge with `pipeline: discharge_source: fwapg | wet`.** `default_tuned` reads wet's `discharge.fwa_v1_segment_monthly` (annual pick, 0 read as no value); `default` and `bcfishpass` stay on fwapg. Logged per WSG in `<schema>.log.discharge_source`, named per group in the export manifest (`discharge.source`, with `discharge.wet_load` naming the wet build when a group read wet), checked by `lnk_preflight_discharge()`. Mechanics: RUNBOOK §7. Write-up: `research/habitat_thresholds.md`, "MAD on wet's discharge (#331)".
 - **BT 0.078 / 0.078 → 0.043 / 0.043.** Rearing scored on held-out groups (P10 → P05 refused). Spawning on any-stage records (operator): the held-out core holds 3 spawning-staged locations.
 - **At these values `mad` is the closer model for BT** (Build B): `cw`-only rearing used at 0.18 of the size-matched core, `mad`-only at 1.64; `mad` keeps −19.8 % rearing against `cw`.
 - **Nothing moves while every group is on `cw`** (NATR: 0 of 189,200 habitat rows).
@@ -217,9 +217,9 @@ inside `default` test one stream size two ways.**
   link pins v0.39.0 since #311. The buckets still ignore spawning connectivity, which is
   #310: in pre-0.37 `fresh_default`, 16,651 of 16,652 BT `lake_rearing` rows were not
   `rearing`.
-- **#302's ladders regenerate only at v0.58.0 (`8cb4822`).** Their rungs set
-  `*_mad_max = 9999`, which `default` now carries, so `--base=default` stops with
-  "variant … equals default".
+- **#302's ladders reproduce their committed bundles byte for byte only at v0.58.0
+  (`8cb4822`).** Their rungs set `*_mad_max = 9999`, which `default` now carries. From #307
+  to #331 `--base=default` stopped on it; since #331 the build drops the cell and builds.
 - **Never regenerate `rules.yaml` in place to "check" it.** Its `# Generated:` date moves
   the provenance checksum. Build to a tempfile and compare.
 - **Only NATR and PARS hold all four species**, so NATR is the one-WSG check. ADMS is the
@@ -292,7 +292,7 @@ discharge.**
   - `model_{bands,size,reason,verdict}.csv`, with stream-order classes merged until the
     core holds 10 locations.
   - `--step=bundles` writes bundles only; #302's regenerate byte for byte at v0.58.0
-    (since #307, `--base=default` stops: "variant … equals default").
+    (from #307 to #331, `--base=default` stopped: "variant … equals default").
   - Re-scoring #284 and #302 reproduces their outputs.
 - **The local fwapg DB runs in colima, not Docker Desktop** (`docker context`: `colima`).
   Its disk was grown 200 → 300 GiB on 2026-10-03 (`colima stop && colima start --disk

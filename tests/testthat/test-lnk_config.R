@@ -348,7 +348,7 @@ test_that("default_tuned differs from default only in the #284 and #302 cells", 
   }))
   diffs <- diffs[order(diffs$species_code, diffs$column), ]
   rownames(diffs) <- NULL
-  # #302: observed MAD minima (BT re-scored on wet, #331), against default's
+  # #302: observed MAD minima (BT re-set on wet, #331), against default's
   # width-converted ones (#307).
   # Both bundles leave the maxima open, so only the minima differ.
   mad <- data.frame(

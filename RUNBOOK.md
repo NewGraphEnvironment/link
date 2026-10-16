@@ -999,7 +999,7 @@ next dispatch.**
   `fwapg` (the default, and what every run before #331 read) is
   `whse_basemapping.fwa_stream_networks_discharge`. `wet` is the annual pick of wet's
   published `discharge.fwa_v1_segment_monthly` (`scenario = 'historical'`,
-  `month = 0`, `pick`), which values about 4.5 M lines against fwapg's 2.7 M
+  `month = 0`, `pick`), which values about 4.5 M lines against fwapg's 2.0 M (rows 4.53 M and 2.72 M)
   (PCIC's routed model where it has one, wet's water balance elsewhere). Load it into
   a database once with `wet::wet_db_load(conn, wet::wet_catalog())` before a run
   reads it.
