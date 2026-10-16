@@ -93,3 +93,14 @@ test_that("log_input records wet's table and its load comment for a wet run", {
   expect_identical(li$table_comment, want)
   expect_match(li$artifact_url, "discharge/fwa/v1/manifest.json", fixed = TRUE)
 })
+
+test_that("a wet load is named by its build, not by how much of it was loaded", {
+  full <- paste("wet_db_load(): discharge/fwa/v1/segment_monthly, scenario",
+                "historical last loaded from https://x/manifest.json",
+                "(built 2026-10-15T02:06:57Z, wet acb820f)")
+  pick <- paste0(full, "; subset month IN (0) AND pick")
+  expect_identical(link:::.lnk_discharge_wet_load_id(pick), full)
+  expect_identical(link:::.lnk_discharge_wet_load_id(full), full)
+  expect_identical(link:::.lnk_discharge_wet_load_id(NA_character_),
+                   NA_character_)
+})

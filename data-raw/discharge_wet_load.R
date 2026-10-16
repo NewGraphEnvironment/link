@@ -9,10 +9,20 @@
 # writes the manifest, build time and commit into the table's comment, which
 # every run copies into <schema>.log_input.
 #
-#   Rscript data-raw/discharge_wet_load.R [--force]
+#   Rscript data-raw/discharge_wet_load.R [--force] [--expect-load=<id>]
 #
 # Idempotent: exits 0 without loading when lnk_preflight_discharge() already
-# passes, unless --force. Connects with the PG* environment (PGHOST, PGPORT,
+# passes, unless --force.
+#
+# --force replaces the whole `historical` scenario with the annual pick: on a
+# host holding every month and source (103 M rows) it leaves only the pick.
+#
+# --expect-load: the load every host in a run must hold, the dispatcher's
+# table comment without wet's `; subset` suffix
+# (link:::.lnk_discharge_wet_load_id()). The published manifest can move on
+# between loads, so a host is reloaded when it holds another load, and the
+# script fails when the published one is not the expected one either: the
+# hosts would classify on different discharge. Connects with the PG* environment (PGHOST, PGPORT,
 # PGDATABASE, PGUSER, PGPASSWORD), as snapshot_bcfp.sh does; default local
 # fwapg. Prints "discharge_wet_load: complete" as its last line on success.
 
@@ -38,8 +48,15 @@ conn <- DBI::dbConnect(RPostgres::Postgres(),
   password = env("PGPASSWORD", "postgres"))
 cfg <- list(name = "wet", pipeline = list(discharge_source = "wet"))
 
+args <- commandArgs(trailingOnly = TRUE)
+expect <- sub("^--expect-load=", "", grep("^--expect-load=", args, value = TRUE))
+expect <- if (length(expect) == 1L && nzchar(expect)) expect else NA_character_
+held <- function(res) link:::.lnk_discharge_wet_load_id(res$comment)
+
 before <- lnk_preflight_discharge(conn, cfg, quiet = TRUE)
-if (before$ok && !"--force" %in% commandArgs(trailingOnly = TRUE)) {
+current <- before$ok &&
+  (is.na(expect) || identical(held(before), expect))
+if (current && !"--force" %in% args) {
   message("already loaded: ", before$comment)
 } else {
   t0 <- Sys.time()
@@ -50,4 +67,11 @@ if (before$ok && !"--force" %in% commandArgs(trailingOnly = TRUE)) {
 after <- lnk_preflight_discharge(conn, cfg)
 DBI::dbDisconnect(conn)
 if (!after$ok) quit(status = 1L)
+if (!is.na(expect) && !identical(held(after), expect)) {
+  message("FAIL this host holds a different wet load from the dispatcher:\n",
+          "  here:       ", held(after), "\n  dispatcher: ", expect, "\n",
+          "Reload the dispatcher (data-raw/discharge_wet_load.R --force) ",
+          "so every host classifies on the same discharge.")
+  quit(status = 1L)
+}
 cat("discharge_wet_load: complete\n")

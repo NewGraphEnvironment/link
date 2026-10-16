@@ -275,6 +275,23 @@ case "$DISCHARGE" in
   fwapg|wet) ;;
   *) echo "FATAL: could not resolve the discharge source of --config=$CONFIG"; exit 1 ;;
 esac
+# The wet load the dispatcher holds; every cypher must hold the same one
+# (cypher_prep.sh), or hosts classify on different discharge. Empty when the
+# dispatcher has none, which its discharge gate then fails.
+WET_LOAD=""
+if [ "$DISCHARGE" = "wet" ]; then
+  WET_LOAD=$(cd "$REPO_ROOT" && LNK_LOAD=loadall Rscript -e '
+suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
+conn <- lnk_db_conn(dbname = "fwapg", host = "localhost", port = 5432L,
+                    user = "postgres", password = "postgres")
+res <- lnk_preflight_discharge(conn, lnk_config(commandArgs(TRUE)[1]),
+                               quiet = TRUE)
+if (res$ok) cat(link:::.lnk_discharge_wet_load_id(res$comment))' \
+    "$CONFIG" 2>/dev/null || true)
+  case "$WET_LOAD" in
+    *"'"*) echo "FATAL: the wet table comment holds a quote: $WET_LOAD"; exit 1 ;;
+  esac
+fi
 
 # --- run identity (link#262) ---
 # Minted ONCE, here, before anything forks. $TS is already the run's own
@@ -646,7 +663,11 @@ q(status = if (res$ok) 0L else 1L)' "$CONFIG" 2>&1 | sed 's/^/    /'; exit "${PI
     echo "  ✓ discharge ($DISCHARGE) loaded on the dispatcher"
   else
     echo "  ✗ discharge ($DISCHARGE) not loaded on the dispatcher —"
-    echo "    LNK_LOAD=loadall Rscript data-raw/discharge_wet_load.R"
+    if [ "$DISCHARGE" = "wet" ]; then
+      echo "    LNK_LOAD=loadall Rscript data-raw/discharge_wet_load.R"
+    else
+      echo "    fwapg's fwa_stream_networks_discharge is loaded by fwapg (load.sh)"
+    fi
     fail=1
   fi
 
@@ -974,7 +995,7 @@ if [ "$N_CY" -gt 0 ]; then
         exit 1
       fi
       scp -q "$REPO_ROOT/data-raw/cypher_prep.sh" "cypher@$IP:/tmp/cypher_prep.sh" \
-        && ssh "cypher@$IP" "CYPHER_PREP_BRANCH='$LINK_BRANCH' CYPHER_PREP_DISCHARGE='$DISCHARGE' bash /tmp/cypher_prep.sh" ) > "$LOG_DIR/${TS}_prep_$WS.log" 2>&1 &
+        && ssh "cypher@$IP" "CYPHER_PREP_BRANCH='$LINK_BRANCH' CYPHER_PREP_DISCHARGE='$DISCHARGE' CYPHER_PREP_WET_LOAD='$WET_LOAD' bash /tmp/cypher_prep.sh" ) > "$LOG_DIR/${TS}_prep_$WS.log" 2>&1 &
   done
   wait
   # Grep the ANCHORED "=== READY" (cypher_prep.sh's last line), not

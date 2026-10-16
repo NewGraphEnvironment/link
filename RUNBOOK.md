@@ -1007,9 +1007,10 @@ next dispatch.**
     (`linear_feature_id, watershed_group_code, mad_m3s`), and prepare, the fill, the
     validator, the export and the variants harness all read through it.
   - **Recorded state.** It is logged per WSG (`<schema>.log.discharge_source`; NULL
-    on an older row, which read fwapg). The validator refuses a WSG whose logged source
-    differs from its `cfg` where classify reads discharge, and the export's manifest
-    names the source per WSG.
+    on an older row, which read fwapg). The validator warns about a WSG whose logged
+    source differs from its `cfg` where `cfg` reads discharge (a warning, because the
+    MAD producer measures wet at observations on `cw` builds through the validator),
+    and the export's manifest names the source per WSG.
   - **Every host that runs a wet config needs wet's table**, `cw` groups included,
     because prepare joins discharge for every group; prepare stops with the load
     command when it is missing. `lnk_preflight_discharge(conn, cfg)` checks a database.

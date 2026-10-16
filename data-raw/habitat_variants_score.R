@@ -354,7 +354,14 @@ for (v in variants$variant) {
       isTRUE(all.equal(as.numeric(got_k), as.numeric(want_k)))
     }
   }, logical(1)))
-  if (n_diff != 1L + n_set(r$set) || !set_ok ||
+  # The build drops a set cell the base already carries (link#331), so only
+  # the set cells that move count; set_ok still checks every one's value.
+  set_v <- parse_set(r$set)
+  i_now <- thr_now$species_code == r$species_code
+  n_set_moved <- sum(vapply(names(set_v), function(k) {
+    !identical(thr_now[[k]][i_now], set_v[[k]])
+  }, logical(1)))
+  if (n_diff != 1L + n_set_moved || !set_ok ||
       !isTRUE(all.equal(got, as.numeric(r$value)))) {
     stop("bundle ", v, " is not default with ", r$column, " = ", r$value,
          " for ", r$species_code, " (", n_diff, " cells differ; it holds ",

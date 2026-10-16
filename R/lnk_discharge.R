@@ -238,6 +238,18 @@
         " WHERE scenario = 'historical' AND month = 0 AND pick)")))
 }
 
+#' Which published load of wet's discharge a table comment names
+#'
+#' wet's loader writes `... last loaded from <manifest> (built <time>, wet
+#' <commit>)` into the table comment, and appends `; subset ...` to a partial
+#' load (`months` / `pick_only`). The load is the comment without that
+#' suffix: an annual-pick load and a full one of the same build hold the same
+#' annual values.
+#' @noRd
+.lnk_discharge_wet_load_id <- function(comment) {
+  sub("; subset .*$", "", comment)
+}
+
 #' The table a discharge source is stored in (to check, fingerprint, record)
 #' @noRd
 .lnk_discharge_tbl <- function(source = "fwapg") {

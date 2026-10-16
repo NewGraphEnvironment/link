@@ -58,6 +58,8 @@
 #   installs wet at the pin in link's DESCRIPTION Remotes and loads its annual
 #   pick (data-raw/discharge_wet_load.R) after the snapshot. prepare joins
 #   discharge for every group, so without it every WSG on the host fails.
+#   CYPHER_PREP_WET_LOAD: the dispatcher's load; the cypher must hold the same
+#   one, or the prep fails.
 #
 # Stage: CYPHER_PREP_STAGE=all (default) | install
 #   `install` stops after the package install + assertion, skipping the
@@ -275,7 +277,8 @@ if [ "${CYPHER_PREP_DISCHARGE:-fwapg}" = "wet" ]; then
   TMP_WET_LOG=$(mktemp)
   if ! Rscript -e "pak::pkg_install(commandArgs(TRUE)[1], upgrade = FALSE, ask = FALSE)" \
        "$WET_REF" > "$TMP_WET_LOG" 2>&1 \
-     || ! Rscript discharge_wet_load.R >> "$TMP_WET_LOG" 2>&1 \
+     || ! Rscript discharge_wet_load.R --expect-load="${CYPHER_PREP_WET_LOAD:-}" \
+          >> "$TMP_WET_LOG" 2>&1 \
      || ! grep -q '^discharge_wet_load: complete$' "$TMP_WET_LOG"; then
     echo "FATAL: wet discharge load ($WET_REF) failed; full log:" >&2
     cat "$TMP_WET_LOG" >&2

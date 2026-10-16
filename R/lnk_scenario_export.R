@@ -1200,7 +1200,7 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
     "SELECT obj_description(to_regclass($1), 'pg_class') AS c",
     params = list(tbl))$c
   uniq <- sort(unique(logged), na.last = TRUE)
-  build <- function(x) sub("; subset .*$", "", x)
+  build <- .lnk_discharge_wet_load_id
   list(
     table = tbl,
     logged = I(as.list(uniq)),
