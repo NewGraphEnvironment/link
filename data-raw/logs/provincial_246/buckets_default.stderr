@@ -1,0 +1,9 @@
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+focal: 246 WSGs | config: default | hosts: 4
+resolving per-WSG drainage closures ...
+union-find: 246 focal WSGs -> 62 drainage-independent components
+resolving modelable DS-first sets per component ...
+verifying DS-first order within each host ...
+wrote /Users/airvine/Projects/repo/link/research/study_areas.md

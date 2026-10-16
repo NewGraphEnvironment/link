@@ -6,14 +6,14 @@ run, its code and its inputs, so threshold calibration can be scored wherever a 
 provenance on 5, and every calibration drops the groups it does not cover.
 
 ### Phase 1 — Bodies and room (no spend)
-- [ ] Correct #246 and #346 to 241 groups under `default`, and name the 24 groups that `default` adds
+- [x] Correct #246 and #346 to 241 groups under `default`, and name the 24 groups that `default` adds
 - [ ] Operator grows colima: `colima stop && colima start --disk 600` (bare command handed over). `fresh-db` comes back
       healthy and `df` shows ≥ 300 G free
 
 ### Phase 2 — Re-baseline at HEAD (issue Phase 3)
-- [ ] Generate the 241-group split: `study_area_buckets.R --config=default --hosts=4 --focal=<all 246> --write`.
+- [x] Generate the 241-group split: `study_area_buckets.R --config=default --hosts=4 --focal=<all 246> --write`.
       The disjoint-closure and downstream-first assertions pass, with host speeds from measured rates (#259)
-- [ ] Setdiff: every group in `fresh_default` is in the 241 (re-run at HEAD, recorded in `findings.md`)
+- [x] Setdiff: every group in `fresh_default` is in the 241 (re-run at HEAD, recorded in `findings.md`)
 - [ ] State the decision set in `progress.md`:
   - config `default`, schema `fresh_default`, 241 groups, species per host;
   - flags `--refresh-primitives` and `--recompute-jobs=4`;

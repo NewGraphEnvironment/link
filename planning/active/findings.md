@@ -121,6 +121,19 @@ The plan below follows the body's Phases 3–5, with the operator's decisions an
 - `study_area_run.sh` runs dispatcher-only when `--cy-workspaces` is empty, which serves both the pilot and the
   parity check.
 
+## 241-group split (2026-10-16)
+
+- `study_area_buckets.R --hosts=4 --config=default --focal=<all 246> --write`: 246 focal → 62 components, 241 modelable,
+  5 dropped by species presence. The overlap, drainage-closed and DS-first assertions all `stop()` on failure; exit 0.
+  Report: `data-raw/logs/provincial_246/buckets_default.md`.
+- Host speeds left at the default 0.45, which is the measured dispatcher:cypher ratio (1 / 2.23, 2026-08-31 pilots).
+  #259's open question (per-group weight ∝ segments has R² 0.64) is not settled by this run; per-WSG times from it are
+  new data for #259.
+- The generator had typed "not all of BC ... 217 are modelable" into its output; now computed from the focal set and
+  config.
+- Setdiff: all 56 groups in `fresh_default.streams` are in the 241 (and all 98 in `fresh.streams` in bcfishpass's 217).
+  No orphan rows can survive.
+
 ## Errors Encountered
 
 | Error | Resolution |
