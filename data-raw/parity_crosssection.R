@@ -27,6 +27,10 @@
 #   LNK_SCHEMA      link-side persist schema (default `fresh`), e.g. a scratch
 #                   schema for a parity build beside a province-wide run (link#246).
 #                   The bcfp side is always fresh.streams_vw_bcfp.
+#   LNK_CONFIG      the config the link side was built with (default
+#                   `bcfishpass`). A species link reports as absent is excused
+#                   only where that config does not model it in the group;
+#                   anywhere else it is a failure.
 #   LNK_PARITY_OUT  also write the sweep, annotated by lnk_parity_annotate()
 #                   against research/bcfp_divergence_taxonomy.yml, to this CSV.
 
@@ -44,6 +48,10 @@ conn <- lnk_db_conn(dbname = "fwapg", host = "localhost", port = 5432L,
                     user = "postgres", password = "postgres")
 on.exit(try(DBI::dbDisconnect(conn), silent = TRUE), add = TRUE)
 
+cfg_name    <- Sys.getenv("LNK_CONFIG")
+if (!nzchar(cfg_name)) cfg_name <- "bcfishpass"
+cfg         <- lnk_config(cfg_name)
+loaded      <- lnk_load_overrides(cfg)
 schema      <- Sys.getenv("LNK_SCHEMA")
 if (!nzchar(schema)) schema <- "fresh"
 args        <- commandArgs(trailingOnly = TRUE)
@@ -91,6 +99,7 @@ num <- function(x) {
 # ---- 1. parity sweep ------------------------------------------------------
 rows <- list()
 absent <- character(0)
+missing <- character(0)
 no_link <- character(0)
 for (w in wsgs) {
   lk <- lnk_rollup_wsg(conn, aoi = w, species = species, schema = schema)
@@ -100,6 +109,7 @@ for (w in wsgs) {
     next
   }
   bc <- bcfp_rollup(w)
+  modelled <- tolower(lnk_pipeline_species(cfg, loaded, w))
   for (sp in species) {
     sp_up <- toupper(sp)
     lk_row <- lk[lk$species == sp_up, ]
@@ -109,7 +119,11 @@ for (w in wsgs) {
       lkv <- if (nrow(lk_row)) num(lk_row[[col_map[m]]]) else 0
       if (max(lkv, bcv) < present_min) next
       if (lkv < present_min && bcv >= present_min) {
-        absent <- c(absent, sprintf("%s %s %s (bcfp %.0f, link 0)", w, sp_up, m, bcv))
+        msg <- sprintf("%s %s %s (bcfp %.0f, link %.1f)", w, sp_up, m, bcv, lkv)
+        # Excused only where the config does not model the species here
+        # (presence). A modelled species at zero is a dropped table, a
+        # missing access row or a barrier bug, and must fail.
+        if (sp %in% modelled) missing <- c(missing, msg) else absent <- c(absent, msg)
         next
       }
       pct <- 100 * (lkv - bcv) / bcv
@@ -160,8 +174,12 @@ for (m in c("accessible", "spawning", "rearing")) {
               max(abs(sub$diff_pct)), sum(sub$ok), nrow(sub), over))
 }
 if (length(absent)) {
-  cat("\n  link-absent (bcfp models species, link does not — #189 residence, excluded):\n")
+  cat(sprintf("\n  link-absent (bcfp models species, %s does not model it in the group; excluded):\n", cfg_name))
   for (a in absent) cat("   ", a, "\n")
+}
+if (length(missing)) {
+  cat(sprintf("\n  FAIL: %s models the species in the group and link reports none:\n", cfg_name))
+  for (a in missing) cat("   ", a, "\n")
 }
 
 # ---- 2. structural checks: canonical #223 evidence segment ----------------
@@ -198,7 +216,8 @@ acc_fail <- tab[tab$metric == "accessible" & !tab$ok, ]
 hab_fail <- tab[tab$metric != "accessible" & !tab$ok & !tab$parked, ]
 cat(sprintf("\nOVERALL: %d/%d parity pairs within tolerance (%d over: %d accessible, %d habitat non-parked)",
             sum(tab$ok), nrow(tab), sum(!tab$ok), nrow(acc_fail), nrow(hab_fail)))
-n_fail <- nrow(acc_fail) + nrow(hab_fail) + length(struct_fail) + length(no_link)
+n_fail <- nrow(acc_fail) + nrow(hab_fail) + length(struct_fail) + length(no_link) +
+  length(missing)
 if (n_fail == 0L) {
   cat("  — PASS\n")
   quit(status = 0)

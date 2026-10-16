@@ -73,7 +73,10 @@ BEGIN
       WHERE l.run_uid = $1
         AND i.table_name IN ('bcfishobs.observations', 'fresh.modelled_stream_crossings')
       GROUP BY i.table_name
-      HAVING count(DISTINCT coalesce(i.artifact_version_id, '<NULL>')) <> 1) x$q$, s)
+      -- one version across hosts, AND every row carries one: all-NULL on
+      -- every host would otherwise read as agreement (code-check round 3)
+      HAVING count(DISTINCT coalesce(i.artifact_version_id, '<NULL>')) <> 1
+          OR count(i.artifact_version_id) <> count(*)) x$q$, s)
     INTO n USING ru;
   IF n > 0 THEN fails := fails || format('%s loader tables read at different versions across hosts', n); END IF;
   -- row_count is the table-wide reltuples estimate, logged per group. The
