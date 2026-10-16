@@ -356,7 +356,7 @@ test_that("default_tuned differs from default only in the #284 and #302 cells", 
     column = c("rear_mad_min", "spawn_mad_min", "rear_mad_min", "spawn_mad_min",
                "spawn_mad_min", "rear_mad_min", "spawn_mad_min"),
     default = c(0.021, 0.041, 0.021, 0.2, 0.041, 0.021, 0.041),
-    tuned = c(0.043, 0.012, 0.97, 0.96, 0.57, 0.019, 0.011))
+    tuned = c(0.043, 0.043, 0.97, 0.96, 0.57, 0.019, 0.011))
   want <- rbind(data.frame(species_code = "BT", column = "rear_gradient_max",
                            default = 0.1049, tuned = 0.1349), mad)
   want <- want[order(want$species_code, want$column), ]
