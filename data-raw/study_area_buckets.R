@@ -425,7 +425,14 @@ if (do_write) {
   for (h in seq_len(n_hosts)) {
     wr(sprintf("  --focal=%s \\", paste(sort(host_focal[[h]]), collapse = ",")))
   }
-  wr("  --config=bcfishpass")
+  # The config this split was derived for. Any config but bcfishpass also
+  # needs --schema= (the driver's guard); a pasted bcfishpass line would
+  # overwrite `fresh` (link#246).
+  if (identical(config, "bcfishpass")) {
+    wr("  --config=bcfishpass")
+  } else {
+    wr(sprintf("  --config=%s --schema=<persist schema>", config))
+  }
   wr("```")
   wr("")
   wr("## Downstream-first order per host")

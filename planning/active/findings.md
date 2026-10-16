@@ -134,6 +134,27 @@ The plan below follows the body's Phases 3–5, with the operator's decisions an
 - Setdiff: all 56 groups in `fresh_default.streams` are in the 241 (and all 98 in `fresh.streams` in bcfishpass's 217).
   No orphan rows can survive.
 
+## Host speeds (2026-10-16)
+
+From `fresh.log`, run `20260901_234743-6628379d` (bcfishpass, link 0.50.0):
+
+| host | groups | minutes | min per 1k source segments | min per 1k persisted |
+|---|---|---|---|---|
+| m1 | 19 | 88.1 | 0.219 | 0.093 |
+| cypher-job1 | 9 | 24.5 | 0.113 | 0.048 |
+| cypher-job2 | 6 | 35.4 | 0.220 | 0.082 |
+
+`default` on m1 at link 0.63.1 (DUNC, 2026-10-12): 0.096 min per 1k source. The 0.45 default came from one 7-minute
+pilot. At 0.45, m1 would take 2.06 M segments (~7.5 h) while cloud hosts idled and billed. With equal speeds, each host
+takes ~1.21 M source segments, so modelling should run ~2–4.4 h per host.
+
+## Disk (revised by review 1, A5)
+
+`wsg_run_one.R` keeps `working_<wsg>` (`cleanup_working = FALSE`), at ~35 KB per source segment (measured on
+`working_score331_*`). The persist is ~5.9 KB per source segment (`fresh_default` 7.3 GB / 1.24 M). For m1's
+1.21 M segments, that is ~42 GB of working schemas plus ~21 GB of persist growth for all 241, so ~65 GB against
+26 GB free.
+
 ## Errors Encountered
 
 | Error | Resolution |

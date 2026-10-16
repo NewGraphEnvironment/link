@@ -18,24 +18,36 @@ provenance on 5, and every calibration drops the groups it does not cover.
   - config `default`, schema `fresh_default`, 241 groups, species per host;
   - flags `--refresh-primitives` and `--recompute-jobs=4`;
   - the run label
-- [ ] Commit and push; `study_area_run.sh --preflight-only --config=default --schema=fresh_default` passes every gate
-- [ ] One-host pilot at HEAD, dispatcher only, `--config=default` into a scratch schema, on one small group, so
-      nothing between 0.47 and 0.66 breaks the paid run. The pilot also takes `--refresh-primitives`, so the vintage
-      gate passes at its 7-day default
+- [x] Fix what review 1 (`review-1.md`) confirmed before any spend (one commit):
+  - the driver resolves buckets with the run's config and the source tree (B1);
+  - cloud-host prep initialises the run's config and schema (G1);
+  - ssh keepalives on the per-bucket session (G3);
+  - a bash ≥ 4 guard (A2);
+  - the generator emits its own config in the launch command (G4);
+  - `parity_crosssection.R` takes `LNK_SCHEMA`, writes an annotated CSV and fails on a group it has no rows for (B3)
+- [x] Re-pack at equal host speeds (`--host-speeds=1,1,1,1`): the 34-group run measured cloud hosts at or above m1's
+      rate, not 0.45 (A1)
+- [ ] Commit and push; `study_area_run.sh --preflight-only --cy-workspaces=job1,job2,job3 --config=default
+      --schema=fresh_default` passes every gate, run with `/opt/homebrew/bin/bash` (A-3)
+- [ ] Record the `fresh.streams_vw_bcfp` row count (4,272,365 / 188 groups) before the refresh, and again after (A4)
+- [ ] Pilot at HEAD on m1 + job1 into a scratch schema: m1 `--focal=KAKC`, job1 `--focal=TSEA` (`default`-only groups,
+      so it exercises the B1 fix, cloud-host prep at 0.66 and 11-species consolidate). It takes `--refresh-primitives`,
+      so the vintage gate passes, and it checks free disk on the cloud host (A5)
 - [ ] Optional: drop the orphan `working_*` / `zz_lnk_mc_scratch_*` debris with `state_clean.sh --schemas=` scoped to
       the orphans (never the unscoped mode)
 
 ### Phase 3 — The run (issue Phase 4)
 - [ ] Launch detached on the same day as the refresh:
-      `study_area_run.sh --cy-workspaces=job1,job2,job3 --focal=×4 --config=default --schema=fresh_default
-      --run-label="provincial 241 default (#246)"`. The repo stays frozen until the driver exits
+      `/opt/homebrew/bin/bash data-raw/study_area_run.sh --cy-workspaces=job1,job2,job3 --focal=×4 --config=default
+      --schema=fresh_default --run-label=provincial-241-default-246` under `caffeinate`, output under
+      `data-raw/logs/`. The repo stays untouched until the driver exits (A3)
 - [ ] Wait on the driver PID and the log's final verdict, not the wrapper. Report times in Vancouver time
 - [ ] Post-consolidate recompute across all 241 (in the driver)
 - [ ] Record the run_uid, wall clock per host and for the recompute, the cost, and the DB growth
-- [ ] Parity check at the same code, dispatcher only:
+- [ ] Parity check at the same code, dispatcher only, after the main run (never overlapping it, O3):
   - `--config=bcfishpass --schema=<scratch>` on the closure of ADMS, BULK, BABL and ELKR;
-  - `lnk_parity_annotate()` against the local `fresh.streams_vw_bcfp`;
-  - read the compare log for groups that error silently (#167), and count the UNEXPLAINED rows
+  - `LNK_SCHEMA=<scratch> LNK_PARITY_OUT=… parity_crosssection.R` against `fresh.streams_vw_bcfp`, annotated;
+  - count UNEXPLAINED rows, and read the compare log for groups that error silently (#167)
 
 ### Phase 4 — Verify provenance (issue Phase 5)
 - [ ] `fresh_default.log`:
@@ -45,9 +57,11 @@ provenance on 5, and every calibration drops the groups it does not cover.
 - [ ] `fresh_default.log_input`:
   - per-primitive row counts and `source_at`;
   - `config_drift` FALSE;
-  - `artifact_*` version ids identical across all four hosts
+  - loader version ids for bcfishobs and crossings identical across hosts, and `row_count` per table compared
+    across hosts (FWA rows are probes and `api` sources are NULL by design; the record states this, A-4)
 - [ ] `log_parameters_fresh` / `log_dimensions` populated for this run (confirm, don't assume)
-- [ ] `study_area_verify.sql -v run_uid=… -v expected_n=241` passes
+- [ ] `study_area_verify.sql -v schema=fresh_default -v run_uid=… -v expected_n=241` passes; the checks it does not make
+      (config hash and drift, `log_input`, parameter logs, newest row) get their own SQL (A-1, A-2)
 - [ ] Commit the run logs under one campaign prefix, `data-raw/logs/provincial_246/`
 
 ### Phase 5 — Record
