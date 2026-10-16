@@ -39,7 +39,7 @@ provenance on 5, and every calibration drops the groups it does not cover.
 ### Phase 3 — The run (issue Phase 4)
 - [ ] Launch detached on the same day as the refresh:
       `/opt/homebrew/bin/bash data-raw/study_area_run.sh --cy-workspaces=job1,job2,job3 --focal=×4 --config=default
-      --schema=fresh_default --run-label=provincial-241-default-246` under `caffeinate`, output under
+      --schema=fresh_default --refresh-primitives --run-label=provincial-241-default-246` under `caffeinate`, output under
       `data-raw/logs/`. The repo stays untouched until the driver exits (A3)
 - [ ] Wait on the driver PID and the log's final verdict, not the wrapper. Report times in Vancouver time
 - [ ] Post-consolidate recompute across all 241 (in the driver)

@@ -88,6 +88,21 @@ BEGIN
       GROUP BY i.table_name HAVING count(DISTINCT i.row_count) > 1) x$q$, s)
     INTO n USING ru;
   IF n > 0 THEN fails := fails || format('%s snapshot-loaded tables with differing row_count across hosts', n); END IF;
+  -- count(DISTINCT) skips NULLs, and a cypher's first group can log NULL
+  -- (table not yet analyzed: LSKE on job2, 2026-09-01). So a host whose rows
+  -- for a table are ALL NULL, or that logged the table not at all, must fail
+  -- on its own; a single NULL among values is fine.
+  EXECUTE format($q$
+    SELECT count(*) FROM (
+      SELECT h.host, t.table_name
+      FROM (SELECT DISTINCT l.host FROM %1$I.log l WHERE l.run_uid = $1) h
+      CROSS JOIN (SELECT DISTINCT i.table_name FROM %1$I.log_input i JOIN %1$I.log l USING (run_id)
+                  WHERE l.run_uid = $1 AND i.table_name NOT LIKE 'whse_basemapping.%%') t
+      LEFT JOIN (%1$I.log_input i JOIN %1$I.log l USING (run_id))
+        ON l.run_uid = $1 AND l.host = h.host AND i.table_name = t.table_name
+      GROUP BY h.host, t.table_name HAVING count(i.row_count) = 0) x$q$, s)
+    INTO n USING ru;
+  IF n > 0 THEN fails := fails || format('%s (host, snapshot-loaded table) pairs with no row_count at all', n); END IF;
 
   IF array_length(fails, 1) > 0 THEN
     RAISE EXCEPTION 'verify_extra FAILED for % in %: %', ru, s, array_to_string(fails, '; ');

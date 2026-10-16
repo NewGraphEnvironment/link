@@ -155,6 +155,15 @@ takes ~1.21 M source segments, so modelling should run ~2–4.4 h per host.
 1.21 M segments, that is ~42 GB of working schemas plus ~21 GB of persist growth for all 241, so ~65 GB against
 26 GB free.
 
+## Cross-host input identity is judged only after the spend (code-check round 2)
+
+`preflight_hosts()` checks cloud-host vintage by age and parity by code stamp. Neither compares
+`provenance.source_artifact` version ids or row counts between hosts. Cloud hosts snapshot at prep, while the
+dispatcher's load can be up to 7 days old, so an upstream change in that window passes every gate. It then fails
+`verify_extra.sql` after the run (`cabd.dams` just moved 2,594 → 2,592). For this run: `--refresh-primitives` on the
+main run itself, so the loads are minutes apart. The lasting fix belongs with #276: compare `source_artifact` across
+hosts in `preflight_hosts()`.
+
 ## Errors Encountered
 
 | Error | Resolution |
