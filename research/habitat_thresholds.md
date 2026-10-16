@@ -1157,6 +1157,54 @@ table ([above](#literature)):
 
 ## MAD on wet's discharge (#331)
 
+### In plain language
+
+**What we asked.** Our habitat model can decide whether a stream is big enough for bull
+trout in two ways: by its width, or by how much water flows through it. We had set the flow
+cut-off (0.078 m³/s) using an older flow dataset (fwapg's). A newer, more complete one (wet)
+is now available, so we re-did the work on it.
+
+**What we found.**
+- **The new cut-off is 0.043 m³/s, about half the old one,** for both spawning and rearing.
+- **It moved because the new dataset covers more of the province, not because the two
+  datasets disagree.** Where both have a flow value, they match almost exactly. The new one
+  adds nine Skeena watershed groups the old one never covered, where bull trout use smaller
+  water, and that pulls the number down.
+- **At the new cut-off, flow is the better test for bull trout.** Streams the width test
+  keeps but the flow test drops hold very few bull trout (about a fifth of the normal rate).
+  Streams only the flow test keeps hold more than the normal rate for rearing, and somewhat
+  less (about 70 %) for spawning. Switching a watershed from
+  width to flow would keep about 20 % less rearing habitat, but the habitat dropped is
+  habitat fish rarely use.
+- **Nothing changes yet.** Every watershed still uses the width test, so no map or number
+  moves until someone decides to switch a watershed to flow.
+
+**How we did it.** We took every bull trout observation location in the watershed groups we
+had already modelled, read the flow at each, and set the cut-off where about the smallest
+10 % of them fall. We then checked that cut-off against seven watershed groups held back
+from the setup, asking whether fish actually use the extra streams a looser cut-off would
+add. They did not, so the cut-off held.
+
+**Limits.**
+- **Coverage.** The cut-off comes from 53 watershed groups, about a third of the 158 groups
+  in BC where `default` marks bull trout present (246 groups in the province). It was checked
+  on 7 other groups, 4 in the Columbia and 3 in the Peace.
+- **No Skeena check.** None of the checking groups is in the Skeena, yet that is where most
+  of the change came from. We cannot yet say the value is right there.
+- **Spawning was not tested on its own.** Only a handful of observations are recorded as
+  spawning: 3 in the checking groups, too few to test. Spawning uses the same cut-off as
+  rearing, a judgement call rather than a tested result.
+- **Dolly Varden are counted as bull trout** in the Fraser, Columbia, Mackenzie (Peace) and
+  the Skeena above Hazelton, where the two are hard to tell apart and are usually the same
+  fish; not in the lower Skeena or on the coast. About 44 % of the observation locations
+  used (1,970 of 4,504) carry a Dolly Varden record.
+- **Observations show where people looked, not just where fish are.** Well-sampled streams
+  count for more, and that bias is not removed.
+- **Only bull trout was redone.** Grayling, rainbow and kokanee still use cut-offs set on the
+  old dataset (#343).
+
+The detail follows.
+
 `default_tuned` reads mean annual discharge from wet's published product
 (`discharge.fwa_v1_segment_monthly`, `historical`, `month = 0`, `pick`; 0 m³/s read as no
 value) instead of fwapg's `fwa_stream_networks_discharge` (`pipeline: discharge_source:
