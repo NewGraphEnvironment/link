@@ -516,7 +516,9 @@ test_that(".lnk_pipeline_prep_network loads fresh.streams with FWA filters", {
     .lnk_db_execute = function(conn, sql) {
       captured <<- c(captured, sql)
       invisible(NULL)
-    }
+    },
+    # The discharge join checks its source table first (#331).
+    lnk_preflight_discharge = function(...) invisible(list(ok = TRUE))
   )
   local_mocked_bindings(
     frs_col_join = function(...) invisible(NULL),
@@ -538,10 +540,14 @@ test_that(".lnk_pipeline_prep_network loads fresh.streams with FWA filters", {
 test_that(".lnk_pipeline_prep_network joins mad_m3s onto the working streams (#286, #305)", {
   run <- function(fill) {
     captured <- character(0)
-    local_mocked_bindings(.lnk_db_execute = function(conn, sql) {
-      captured <<- c(captured, sql)
-      invisible(NULL)
-    })
+    local_mocked_bindings(
+      .lnk_db_execute = function(conn, sql) {
+        captured <<- c(captured, sql)
+        invisible(NULL)
+      },
+      # The discharge join checks its source table first (#331).
+      lnk_preflight_discharge = function(...) invisible(list(ok = TRUE))
+    )
     local_mocked_bindings(
       frs_col_join = function(...) invisible(NULL),
       frs_col_generate = function(...) invisible(NULL),
