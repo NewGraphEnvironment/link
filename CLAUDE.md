@@ -1382,7 +1382,7 @@ check is almost always to read the thing the prose describes.
   keeps finding them, list every quantified or inherited claim with a measured verdict
   (`code-check.md`, "A guard's scope, escape hatches, and remedies").
 
-*80 lines of evidence for this rule are in `conventions/agent-operations.md`.*
+*91 lines of evidence for this rule are in `conventions/agent-operations.md`.*
 
 ### "It can only be answered by testing" is a claim with an author
 
@@ -1461,7 +1461,7 @@ which indexes **default branches only**: a file on a feature branch needs
 `gh api repos/<owner>/<repo>/contents/<path>?ref=<branch>`. `s3cmd ls` and `aws s3 ls` each
 list only their own provider's buckets; the backup script names the rest.
 
-*12 lines of evidence for this rule are in `conventions/agent-operations.md`.*
+*16 lines of evidence for this rule are in `conventions/agent-operations.md`.*
 
 #### The temporal version: what you build against may be about to change
 
@@ -2879,46 +2879,6 @@ Before reporting that a spreadsheet value is off by a factor, check the cell's *
 Never strip non-digits to clean a number extracted from PDF text: corrupted glyphs (an `O` for a `0`, a Private Use Area micron sign) become plausible wrong values, so anchor on the label and check against an independent identity.
 
 
-# Comms Conventions
-
-This repo has a `comms/` directory — you're in the cross-repo Claude-to-Claude messaging system. Full protocol in `comms/README.md`. Peer list (who to scan) in `soul/conventions/comms_peers.md` (internal-only). Load-bearing behaviors below.
-
-## On Session Start
-
-1. **Inbound scan.** `<this-repo>/comms/*/` — files with `status: open` and mtime newer than your last `comms/` commit are mail for you.
-2. **Outbound scan.** For each peer in `comms_peers.md`, check `<peer>/comms/<this-repo>/*.md` — files with `from: <this-repo>, status: open` are your un-answered sent mail.
-
-If either surfaces open threads, raise to the user before starting other work.
-
-## Commit Prefix
-
-- `comms(→peer):` — you committed a file in peer's repo (outbound)
-- `comms(←peer):` — you committed a file in your own repo (inbound reply)
-- `comms:` — meta (close, reopen, rename, README update)
-
-Arrow points to the repo whose `comms/` contains the file you committed.
-
-## Non-negotiables
-
-- One commit per appended message.
-- **Push immediately.** Un-pushed comms is invisible to the other Claude.
-- Code + comms = separate commits.
-- Status flips bundle with the triggering message.
-- **Use `git commit --only <file>`** for any commit in a peer's repo (thread files). Immune to index races from parallel sessions.
-
-## Propagation: soul publishes, peers pull
-
-Soul is the source of truth for `comms/README.md`. Peers sync by running `/comms-init` in their own repo, from their own Claude session. **Do not push README updates into a peer's repo from another session** — cross-session index races can bundle unrelated staged files into misleading commits.
-
-Within your own session, the only things you commit into a peer's repo are **thread files** (hosted in the receiver's repo per the receiver-hosts rule). Everything else — README syncs, infra — the peer-Claude pulls itself.
-
-### Cross-repo thread commits: which branch?
-
-Commit on peer's **current branch** — whatever they've got checked out. Don't stash, switch, or force main.
-
-If peer isn't on main, surface to the user: _"thread landing on `<peer>`:`<branch>`, won't hit main until PR merges. Continue or hold?"_ If peer has complicated local state (mid-rebase, partial merge), defer to the user.
-
-
 # NGE Feature Workflow
 
 For non-trivial issue-driven work, follow this checklist. Each step exists for a reason — skipping leads to rework, broken builds, and avoidable bugs that we've hit repeatedly.
@@ -3793,8 +3753,8 @@ Based on [R Packages (2e)](https://r-pkgs.org/) by Hadley Wickham and Jenny Brya
 
 **Reference packages:** When starting a new package, study these existing
 packages for patterns: `flooded`, `gq`. They demonstrate the conventions below
-in practice (DESCRIPTION fields, README layout, NEWS.md style, pkgdown setup,
-test structure, hex sticker, etc.).
+in practice (DESCRIPTION fields, NEWS.md style, pkgdown setup, test structure,
+hex sticker, etc.). README layout is `readme.md`, with `link` as its worked example.
 
 ## Style
 
@@ -4084,12 +4044,8 @@ run interactively. This is the reproducible recipe for the package scaffold.
 
 ## README
 
-Keep the README lean:
-- Hex sticker, one-line description, install, example showing *why* it's
-  useful
-- Link to pkgdown vignette and function reference — don't duplicate them
-- Don't maintain a function table — it's just another thing to keep updated
-  and pkgdown's reference page is the single source of truth
+What a README says, in what order, and what stays out of it is `readme.md`, which loads
+wherever this file does.
 
 ## LLM Workflow
 
@@ -4113,6 +4069,38 @@ When an LLM assistant modifies R package code:
    ```bash
    Rscript -e 'devtools::check()' 2>&1 | grep -E "(ERROR|WARNING|NOTE|errors|warnings|notes)" | tail -10
    ```
+
+# Writing a README
+A README tells a stranger what a package is, why it is worth their time, and how to try it, in that order and in the fewest words that stay true.
+
+*Index only: each rule's heading and first sentence. The full text is `~/Projects/repo/soul/conventions/readme.md`; read it before writing or reviewing code in its area.*
+
+### Open with what the package is and why it is valuable, not with a list of features
+Open with one to three sentences on what the package is, what data it works on, and why that is valuable, with the restoration planning, implementation or monitoring decision it informs where there is one.
+
+### Write the tagline, the description field, the GitHub About and the opening together
+Change the README tagline, the DESCRIPTION `Title` (or a Python package's pyproject `description`) and the GitHub About text together so they say the same thing, and keep the DESCRIPTION `Description` and the README opening in step with each other.
+
+### Show a little code and its real output, a figure of real output, or both
+Show the package working instead of listing what it can do: a figure of real output where the output is spatial or visual, a short example with the output it really prints, or both.
+
+### Describe nothing that is not fully built
+Leave out every capability that has not shipped, including partly built ones and those framed as a target, a next iteration or a roadmap; add each one when it ships.
+
+### Check each claim against the code path a run takes
+Before a README sentence is published, find the code path a real run takes for it, and check that every "every", "each", "both" or plural holds for every member of the set it names.
+
+### Sections run in a fixed order
+Order a README as: name, hex sticker, a lifecycle badge while unstable, and tagline; the opening; the figure; Installation; the example; Learn more; Ecosystem; Data and methods it builds on; Citation, License and NOTICE.
+
+### State development status with a lifecycle badge, not a warning in the prose
+Mark an unstable installable package with a lifecycle badge under the title, and after the install command say that functions change between releases, link NEWS, and show how to pin a release.
+
+### A README figure of output is made by committed code
+Make every README figure of the package's output from a committed script that runs on real data, check it at its published width, give it alt text and a short caption saying what it shows, and style a map through gq.
+
+### Leave out what another file already keeps
+Leave out roadmaps, changelogs, function tables, version strings in prose, counts of published things, and internal hosts or private repos, because each is kept somewhere else and goes stale in a README.
 
 # Writing for the Reader
 A vignette or a report is written for someone who wants to use what it describes, so it answers their questions in their order and carries nothing that served only its authors.
