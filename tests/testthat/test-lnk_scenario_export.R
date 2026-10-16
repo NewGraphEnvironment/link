@@ -318,12 +318,30 @@ test_that("a log from before a column existed reads it as NA", {
   local_export_discharge(schema)
   root <- withr::local_tempdir()
   DBI::dbExecute(conn, sprintf(
-    "ALTER TABLE %s.log DROP COLUMN discharge_fill, DROP COLUMN run_uid",
+    "ALTER TABLE %s.log DROP COLUMN discharge_fill, DROP COLUMN run_uid,
+                       DROP COLUMN discharge_source",
     schema))
   p <- lnk_scenario_export(conn, c(testcfg = schema), root)
   m <- jsonlite::fromJSON(p, simplifyVector = FALSE)
   expect_true(all(vapply(m$configs[[1]]$discharge$fill, is.null, logical(1))))
+  # and a build from before #331 read fwapg
+  expect_true(all(unlist(m$configs[[1]]$discharge$source) == "fwapg"))
   expect_true(file.exists(file.path(root, "provenance/run_id=r1/log.parquet")))
+})
+
+test_that("the manifest records the discharge source each build read (#331)", {
+  skip_if_not_installed("duckdb")
+  conn <- skip_if_no_db()
+  schema <- local_export_fixture(conn)
+  local_export_discharge(schema)
+  root <- withr::local_tempdir()
+  DBI::dbExecute(conn, sprintf(
+    "UPDATE %s.log SET discharge_source = 'wet'
+      WHERE watershed_group_code = 'ADMS'", schema))
+  p <- lnk_scenario_export(conn, c(testcfg = schema), root)
+  d <- jsonlite::fromJSON(p, simplifyVector = FALSE)$configs[[1]]$discharge
+  expect_identical(d$source$ADMS, "wet")
+  expect_identical(d$source$BULK, "fwapg")
 })
 
 test_that("one-element vectors stay JSON arrays in the manifest", {
@@ -674,4 +692,43 @@ test_that("a stale export of the same builds is caught: a missed recompute, an o
                                  WHERE recompute_id = 'rc2'", schema))
   expect_error(lnk_scenario_export(conn, c(testcfg = schema), live),
                "misses a recompute")
+})
+
+test_that("a wet build's manifest says whether its load matches the export's", {
+  skip_if_not_installed("duckdb")
+  conn <- skip_if_no_db()
+  schema <- local_export_fixture(conn)
+  local_export_discharge(schema)
+  root <- withr::local_tempdir()
+  testthat::local_mocked_bindings(
+    .lnk_discharge_tbl = function(source = "fwapg") paste0(schema, ".discharge"),
+    .package = "link")
+  DBI::dbExecute(conn, sprintf(
+    "COMMENT ON TABLE %s.discharge IS 'load A'", schema))
+  DBI::dbExecute(conn, sprintf(
+    "UPDATE %s.log SET discharge_source = 'wet'
+      WHERE watershed_group_code = 'ADMS'", schema))
+  # ADMS's newest build is r1; it logged load A.
+  DBI::dbExecute(conn, sprintf(
+    "INSERT INTO %s.log_input (run_id, watershed_group_code, table_name,
+                               table_comment)
+     VALUES ('r1', 'ADMS', '%1$s.discharge', 'load A')", schema))
+  wl <- function() {
+    p <- lnk_scenario_export(conn, c(testcfg = schema), root, replace = TRUE)
+    jsonlite::fromJSON(p, simplifyVector = FALSE)$configs[[1]]$discharge$wet_load
+  }
+  a <- wl()
+  expect_identical(unlist(a$logged), "load A")
+  expect_identical(a$current, "load A")
+  expect_true(a$matches)
+  DBI::dbExecute(conn, sprintf(
+    "COMMENT ON TABLE %s.discharge IS 'load B'", schema))
+  b <- wl()
+  expect_identical(b$current, "load B")
+  expect_false(b$matches)
+  # The same build loaded as the annual pick only is the same load.
+  DBI::dbExecute(conn, sprintf(
+    "COMMENT ON TABLE %s.discharge IS 'load A; subset month IN (0) AND pick'",
+    schema))
+  expect_true(wl()$matches)
 })

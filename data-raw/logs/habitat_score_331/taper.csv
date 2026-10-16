@@ -1,0 +1,47 @@
+"species_code","column","role","taper_class","km","n","per_100km","ratio_to_core"
+"BT","rear_mad_min","held_out","band bt_rear_fwapg_p02",198.658297552648,1,0.503376910161521,0.0369403268191329
+"BT","rear_mad_min","held_out","band bt_rear_fwapg_p05",1289.16924220998,31,2.40464936526547,0.176465252269565
+"BT","rear_mad_min","held_out","band bt_rear_fwapg_p10 added",8.7577225382563,1,11.4184937423138,0.837946441540097
+"BT","rear_mad_min","held_out","band bt_rear_fwapg_p10 removed",627.403699322743,198,31.5586280753099,2.31593069036746
+"BT","rear_mad_min","held_out","band bt_rear_wet_p02",2399.47481482221,14,0.583461010447711,0.0428173004702263
+"BT","rear_mad_min","held_out","band bt_rear_wet_p05",1774.41217409866,21,1.18349052754145,0.0868504812044338
+"BT","rear_mad_min","held_out","band bt_rear_wet_p10 added",147.483708651335,6,4.06824594720801,0.298548327976059
+"BT","rear_mad_min","held_out","band bt_rear_wet_p10 removed",527.623347887225,2,0.379058282391908,0.0278172012907052
+"BT","rear_mad_min","held_out","core (-Inf,0.02]",6404.23142544362,750,11.7110071478725,0.859412544935362
+"BT","rear_mad_min","held_out","core (0.02,0.05]",1742.15998871451,368,21.123203516546,1.55012680481885
+"BT","rear_mad_min","held_out","core (0.05,0.08]",876.230353762055,126,14.3797803236358,1.05526052947481
+"BT","rear_mad_min","held_out","core (0.08, Inf]",370.661351346896,36,9.71236949015172,0.712742471718174
+"BT","rear_mad_min","in_sample","band bt_rear_fwapg_p02",69.5759319374801,0,0,0
+"BT","rear_mad_min","in_sample","band bt_rear_fwapg_p05",497.359716225864,7,1.40743203995659,0.141539521800864
+"BT","rear_mad_min","in_sample","band bt_rear_fwapg_p10 added",0.21119812164486,0,0,0
+"BT","rear_mad_min","in_sample","band bt_rear_fwapg_p10 removed",91.014256607855,5,5.49364482703304,0.552472758674748
+"BT","rear_mad_min","in_sample","band bt_rear_wet_p02",828.475749612694,0,0,0
+"BT","rear_mad_min","in_sample","band bt_rear_wet_p05",656.903471306959,6,0.91337620549676,0.0918544041062803
+"BT","rear_mad_min","in_sample","band bt_rear_wet_p10 added",68.6912048606481,1,1.45579044948865,0.146402723693319
+"BT","rear_mad_min","in_sample","band bt_rear_wet_p10 removed",12.7992796589735,1,7.81293968601508,0.785714489668485
+"BT","rear_mad_min","in_sample","core (-Inf,0.02]",2556.89275272133,248,9.69927267133322,0.975415065695844
+"BT","rear_mad_min","in_sample","core (0.02,0.05]",912.440874901121,100,10.9596142337263,1.10216231670512
+"BT","rear_mad_min","in_sample","core (0.05,0.08]",522.51726086233,51,9.76044311260316,0.981566719743709
+"BT","rear_mad_min","in_sample","core (0.08, Inf]",252.02565434329,23,9.12605506766037,0.917768981758324
+"BT","spawn_mad_min","held_out","band bt_spawn_fwapg_p02",1590.97294526186,6,0.377127720359346,0.0217401703236706
+"BT","spawn_mad_min","held_out","band bt_spawn_fwapg_p05",1437.03186167902,32,2.22681214337248,0.128368382015533
+"BT","spawn_mad_min","held_out","band bt_spawn_fwapg_p10 added",4.76046566078797,0,0,0
+"BT","spawn_mad_min","held_out","band bt_spawn_fwapg_p10 removed",543.643504878424,204,37.5245906866157,2.16316899769585
+"BT","spawn_mad_min","held_out","band bt_spawn_wet_p02",2740.74346096994,4,0.145945801092395,0.00841329449542961
+"BT","spawn_mad_min","held_out","band bt_spawn_wet_p05",1448.46889385444,4,0.276153669365713,0.0159193490253028
+"BT","spawn_mad_min","held_out","band bt_spawn_wet_p10 added",121.338909484441,7,5.76896564320747,0.332561858765591
+"BT","spawn_mad_min","held_out","band bt_spawn_wet_p10 removed",19.733271814702,1,5.06758336574964,0.292129481746453
+"BT","spawn_mad_min","held_out","core (-Inf,0.02]",4453.31276725322,697,15.651269884417,0.902244132955125
+"BT","spawn_mad_min","held_out","core (0.02,0.05]",1648.39918668341,366,22.2033596568556,1.27995051712934
+"BT","spawn_mad_min","held_out","core (0.05,0.08]",193.308197546046,29,15.0019504439754,0.86481300692647
+"BT","spawn_mad_min","in_sample","band bt_spawn_fwapg_p02",501.186047948889,3,0.598580110575213,0.0434861839362289
+"BT","spawn_mad_min","in_sample","band bt_spawn_fwapg_p05",466.063629287053,4,0.858251909963212,0.0623510533693056
+"BT","spawn_mad_min","in_sample","band bt_spawn_fwapg_p10 added",0.163786371626786,0,0,0
+"BT","spawn_mad_min","in_sample","band bt_spawn_fwapg_p10 removed",84.8806930724454,5,5.8906210812069,0.427947115699902
+"BT","spawn_mad_min","in_sample","band bt_spawn_wet_p02",312.285727048458,0,0,0
+"BT","spawn_mad_min","in_sample","band bt_spawn_wet_p05",311.53967808622,1,0.320986400879327,0.0233193075129959
+"BT","spawn_mad_min","in_sample","band bt_spawn_wet_p10 added",30.7413159593662,0,0,0
+"BT","spawn_mad_min","in_sample","band bt_spawn_wet_p10 removed",6.59366833380798,1,15.1660646149376,1.10179784423532
+"BT","spawn_mad_min","in_sample","core (-Inf,0.02]",1500.12690640112,234,15.5986802850818,1.13322689487235
+"BT","spawn_mad_min","in_sample","core (0.02,0.05]",875.116016752161,100,11.4270563086175,0.830163020299261
+"BT","spawn_mad_min","in_sample","core (0.05,0.08]",87.5546362603109,5,5.71071985855138,0.414877490564458

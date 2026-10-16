@@ -1,0 +1,25 @@
+"species_code","column","role","class","elev_class","km","n","per_100km","core_per_100km","ratio_to_core"
+"BT","spawn_mad_min","held_out","bt_spawn_wet_p02","low",531.486795569383,3,0.564454286542734,18.9255603641594,0.0298249708691152
+"BT","spawn_mad_min","held_out","bt_spawn_wet_p02","mid",1084.09823747322,1,0.0922425630292293,12.2007497797064,0.00756040117982397
+"BT","spawn_mad_min","held_out","bt_spawn_wet_p02","high",1125.15842792734,0,0,9.18342254028457,0
+"BT","spawn_mad_min","held_out","bt_spawn_wet_p05","low",299.616253782704,2,0.667520528258956,18.9255603641594,0.0352708461686073
+"BT","spawn_mad_min","held_out","bt_spawn_wet_p05","mid",536.888920232532,0,0,12.2007497797064,0
+"BT","spawn_mad_min","held_out","bt_spawn_wet_p05","high",611.963719839208,2,0.326816759746067,9.18342254028457,0.0355876862152899
+"BT","spawn_mad_min","held_out","bt_spawn_wet_p10 removed","low",11.7871293730797,0,0,18.9255603641594,0
+"BT","spawn_mad_min","held_out","bt_spawn_wet_p10 removed","mid",7.13474647260623,0,0,12.2007497797064,0
+"BT","spawn_mad_min","held_out","bt_spawn_wet_p10 removed","high",3.06985985556198,1,32.5747769295786,9.18342254028457,3.5471281852364
+"BT","spawn_mad_min","held_out","core","low",3328.83142098701,630,18.9255603641594,18.9255603641594,1
+"BT","spawn_mad_min","held_out","core","mid",3327.66434301688,406,12.2007497797064,12.2007497797064,1
+"BT","spawn_mad_min","held_out","core","high",3321.20185760884,305,9.18342254028457,9.18342254028457,1
+"BT","spawn_mad_min","in_sample","bt_spawn_wet_p02","low",72.7770314478069,0,0,9.49426484082415,0
+"BT","spawn_mad_min","in_sample","bt_spawn_wet_p02","mid",148.06090848426,0,0,11.058517671662,0
+"BT","spawn_mad_min","in_sample","bt_spawn_wet_p02","high",91.44778711639,0,0,9.26074715853967,0
+"BT","spawn_mad_min","in_sample","bt_spawn_wet_p05","low",87.7886787426827,0,0,9.49426484082415,0
+"BT","spawn_mad_min","in_sample","bt_spawn_wet_p05","mid",130.638256601585,1,0.765472554528768,11.058517671662,0.0692201773561684
+"BT","spawn_mad_min","in_sample","bt_spawn_wet_p05","high",93.1127427419529,0,0,9.26074715853967,0
+"BT","spawn_mad_min","in_sample","bt_spawn_wet_p10 removed","low",3.74965272372687,1,26.6691364155472,9.49426484082415,2.80897329731874
+"BT","spawn_mad_min","in_sample","bt_spawn_wet_p10 removed","mid",5.63023718588968,0,0,11.058517671662,0
+"BT","spawn_mad_min","in_sample","bt_spawn_wet_p10 removed","high",0.106461036936854,0,0,9.26074715853967,0
+"BT","spawn_mad_min","in_sample","core","low",1179.65953001873,112,9.49426484082415,9.49426484082415,1
+"BT","spawn_mad_min","in_sample","core","mid",1175.5644278901,130,11.058517671662,11.058517671662,1
+"BT","spawn_mad_min","in_sample","core","high",1177.01086244955,109,9.26074715853967,9.26074715853967,1

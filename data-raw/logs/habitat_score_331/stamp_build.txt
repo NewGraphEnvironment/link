@@ -1,0 +1,12 @@
+---
+date: 2026-10-15 21:08 PDT
+step: all; focal: REVL,ELKR,KOTR,UARL,MURR,UBTN,LHAF,PARS,KOTL; variants: default,bt_rear_wet_p10,bt_rear_wet_p05,bt_rear_wet_p02,bt_spawn_wet_p10,bt_spawn_wet_p05,bt_spawn_wet_p02,bt_rear_fwapg_p10,bt_rear_fwapg_p05,bt_rear_fwapg_p02,bt_spawn_fwapg_p10,bt_spawn_fwapg_p05,bt_spawn_fwapg_p02
+link: 0.65.1 @ 5c57db98 (at launch)
+base: default
+variants: data-raw/habitat_score/variants_331.csv (md5 7044c36d63b8ba881d5158ff4bc321f1); roles: data-raw/habitat_score/wsg_roles_331.csv (md5 87c12a5916b1ad2079099fbd8e09e232)
+fresh: 0.39.0 @ e247ca19a7803982dc7e5f55dbbf377dfc85d007
+db: docker fwapg localhost:5432
+base run_uid(s) in score331_default.log: none
+bcfishobs.observations rows: 375962
+thresholds sha256 (12): default=b397dda16668, bt_rear_wet_p10=0939abd87c4d, bt_rear_wet_p05=d4c18e56e124, bt_rear_wet_p02=0062f435c96f, bt_spawn_wet_p10=e4abc81a1afa, bt_spawn_wet_p05=d4c18e56e124, bt_spawn_wet_p02=ef5cc0e00a53, bt_rear_fwapg_p10=b37bb751afd5, bt_rear_fwapg_p05=6babcc640b32, bt_rear_fwapg_p02=6df59655d4a1, bt_spawn_fwapg_p10=967e26bb7033, bt_spawn_fwapg_p05=6babcc640b32, bt_spawn_fwapg_p02=16bb1843df85
+

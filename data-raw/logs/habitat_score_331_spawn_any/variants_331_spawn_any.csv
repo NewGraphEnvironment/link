@@ -1,0 +1,5 @@
+variant,species_code,column,value,flag,obs_stage,step_from,equals_bundle,model,set,discharge_source,discharge_fill
+default,,,,,,,default,cw,,,
+bt_spawn_wet_p10,BT,spawn_mad_min,0.012,spawning,any,default,,mad,spawn_mad_max=9999;rear_mad_min=0.020;rear_mad_max=9999,wet,
+bt_spawn_wet_p05,BT,spawn_mad_min,0.0063,spawning,any,bt_spawn_wet_p10,,mad,spawn_mad_max=9999;rear_mad_min=0.020;rear_mad_max=9999,wet,
+bt_spawn_wet_p02,BT,spawn_mad_min,0.0019,spawning,any,bt_spawn_wet_p05,,mad,spawn_mad_max=9999;rear_mad_min=0.020;rear_mad_max=9999,wet,

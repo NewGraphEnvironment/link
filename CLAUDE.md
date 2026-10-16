@@ -11,6 +11,21 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
+## Status (2026-10-16) — `default_tuned` reads wet's discharge; BT's MAD minima 0.043 / 0.043 (#331)
+
+**A bundle picks its discharge with `pipeline: discharge_source: fwapg | wet`.** `default_tuned` reads wet's `discharge.fwa_v1_segment_monthly` (annual pick, 0 read as no value); `default` and `bcfishpass` stay on fwapg. Logged per WSG in `<schema>.log.discharge_source`, named per group in the export manifest (`discharge.source`, with `discharge.wet_load` naming the wet build when a group read wet), checked by `lnk_preflight_discharge()`. Mechanics: RUNBOOK §7. Write-up: `research/habitat_thresholds.md`, "MAD on wet's discharge (#331)".
+- **BT 0.078 / 0.078 → 0.043 / 0.043.** Rearing scored on held-out groups (P10 → P05 refused). Spawning on any-stage records (operator): the held-out core holds 3 spawning-staged locations.
+- **At these values `mad` is the closer model for BT** (Build B): `cw`-only rearing used at 0.18 of the size-matched core, `mad`-only at 1.64; `mad` keeps −19.8 % rearing against `cw`.
+- **Nothing moves while every group is on `cw`** (NATR: 0 of 189,200 habitat rows).
+- GR, KO and RB keep fwapg-fitted values: #343.
+
+**Facts not worth re-deriving:**
+- **wet's lower BT percentiles are coverage, not the source.** On locations both value, P10 is 0.075 (wet) / 0.076 (fwapg). wet adds nine Skeena groups fwapg carries no discharge for (BULK, MORR, KISP, …), on smaller water (P10 0.019), and 41 of the 58 spawning-staged BT locations the producer tests are there. No held-out group is in the Skeena.
+- **Score MAD ladders with `--floor=expected`.** `habitat_variants_score.R` defaults to `found`, and #302's floor of record is `expected`. The two differ on a band with under 10 locations found and 10 or more expected (#331's fwapg spawning P05 → P02: `keep` against `refuse`).
+- **`data-raw/discharge_wet_load.R` loads the annual pick only, and reloads when given `--force` or an `--expect-load` that differs from the table comment.** On a host holding wet's full load (every month and source: 102.8 M rows, 20 GB, 15.5 min) either one replaces it with the pick. Reload a full host with `wet::wet_db_load(conn, wet::wet_catalog())`.
+- **The fwapg DB volume filled during #331** (295 GB). 62 stale `working_<wsg>` / `zz311_*` schemas were dropped; every `score*` schema was kept. A full disk shows as `could not extend file` mid-build.
+- **The golden dams test pins 8 ADMS dams; `cabd.dams` now gives 7** (2,594 → 2,592 rows). Re-pin deliberately.
+
 ## Status (2026-10-14, late) — README and descriptions rewritten against the code (#338)
 
 **The README, DESCRIPTION, CITATION.cff and Rd describe link as a tool for developing, testing and communicating intrinsic habitat models, whose value is flexibility (rules are config rows).** Operator, 2026-10-15: a high-level summary and a little code with real output, not a feature list or function references, and nothing that isn't fully built (no life stage yet). A figure of real output (`data-raw/readme_figure.R` → `man/figures/readme-pars.png`) shows grayling in PARS. bcfishpass is named in "Data and methods it builds on". CITATION.cff credits the company (`authors_roles` includes `cph`; the CRAN `doi` / `repository` are dropped, because CRAN's `link` is another package). This is the first application of the README convention drafted in the internal conventions repo.
@@ -202,9 +217,9 @@ inside `default` test one stream size two ways.**
   link pins v0.39.0 since #311. The buckets still ignore spawning connectivity, which is
   #310: in pre-0.37 `fresh_default`, 16,651 of 16,652 BT `lake_rearing` rows were not
   `rearing`.
-- **#302's ladders regenerate only at v0.58.0 (`8cb4822`).** Their rungs set
-  `*_mad_max = 9999`, which `default` now carries, so `--base=default` stops with
-  "variant … equals default".
+- **#302's ladders reproduce their committed bundles byte for byte only at v0.58.0
+  (`8cb4822`).** Their rungs set `*_mad_max = 9999`, which `default` now carries. From #307
+  to #331 `--base=default` stopped on it; since #331 the build drops the cell and builds.
 - **Never regenerate `rules.yaml` in place to "check" it.** Its `# Generated:` date moves
   the provenance checksum. Build to a tempfile and compare.
 - **Only NATR and PARS hold all four species**, so NATR is the one-WSG check. ADMS is the
@@ -277,7 +292,7 @@ discharge.**
   - `model_{bands,size,reason,verdict}.csv`, with stream-order classes merged until the
     core holds 10 locations.
   - `--step=bundles` writes bundles only; #302's regenerate byte for byte at v0.58.0
-    (since #307, `--base=default` stops: "variant … equals default").
+    (from #307 to #331, `--base=default` stopped: "variant … equals default").
   - Re-scoring #284 and #302 reproduces their outputs.
 - **The local fwapg DB runs in colima, not Docker Desktop** (`docker context`: `colima`).
   Its disk was grown 200 → 300 GiB on 2026-10-03 (`colima stop && colima start --disk

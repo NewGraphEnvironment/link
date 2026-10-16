@@ -53,6 +53,7 @@ s[["fresh_version"]]
 \seealso{
 Other preflight: 
 \code{\link{lnk_fanout_judge}()},
+\code{\link{lnk_preflight_discharge}()},
 \code{\link{lnk_preflight_fresh}()},
 \code{\link{lnk_preflight_parity}()},
 \code{\link{lnk_preflight_vintage}()}

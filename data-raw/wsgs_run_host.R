@@ -233,6 +233,17 @@ probe_conn <- DBI::dbConnect(RPostgres::Postgres(),
   user = "postgres", password = "postgres")
 on.exit(try(DBI::dbDisconnect(probe_conn), silent = TRUE), add = TRUE)
 
+# prepare joins the config's discharge onto every WSG (link#331). Without the
+# table every WSG would write an error stub and this host would exit 0, so
+# check once, before the loop, and stop the host.
+local({
+  res <- lnk_preflight_discharge(probe_conn, cfg)
+  if (!res$ok) {
+    message("FATAL: ", res$message)
+    quit(status = 1L)
+  }
+})
+
 # RDS files saved when a WSG errors are stubs of shape
 # list(error = "<message>", elapsed_s = <numeric>). These do NOT
 # represent a successful comparison; resume logic must treat them

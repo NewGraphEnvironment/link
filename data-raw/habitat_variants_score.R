@@ -317,6 +317,18 @@ for (v in variants$variant) {
          "and not others", call. = FALSE)
   }
   cfgs[[v]]$pipeline$discharge_fill <- fill_built[1]
+  # Likewise the source (#331); a row from before it was recorded read fwapg.
+  src_built <- if ("discharge_source" %in% names(b)) {
+    ifelse(is.na(b$discharge_source) | !nzchar(b$discharge_source), "fwapg",
+           b$discharge_source)
+  } else {
+    rep("fwapg", nrow(b))
+  }
+  if (length(unique(src_built)) != 1L) {
+    stop(path_built, " records ", v, " with more than one discharge source",
+         call. = FALSE)
+  }
+  cfgs[[v]]$pipeline$discharge_source <- src_built[1]
   if (identical(v, base_variant)) next
   r <- variants[variants$variant == v, ]
   thr <- utils::read.csv(path_thr, colClasses = "character")
@@ -342,7 +354,14 @@ for (v in variants$variant) {
       isTRUE(all.equal(as.numeric(got_k), as.numeric(want_k)))
     }
   }, logical(1)))
-  if (n_diff != 1L + n_set(r$set) || !set_ok ||
+  # The build drops a set cell the base already carries (link#331), so only
+  # the set cells that move count; set_ok still checks every one's value.
+  set_v <- parse_set(r$set)
+  i_now <- thr_now$species_code == r$species_code
+  n_set_moved <- sum(vapply(names(set_v), function(k) {
+    !identical(thr_now[[k]][i_now], set_v[[k]])
+  }, logical(1)))
+  if (n_diff != 1L + n_set_moved || !set_ok ||
       !isTRUE(all.equal(got, as.numeric(r$value)))) {
     stop("bundle ", v, " is not default with ", r$column, " = ", r$value,
          " for ", r$species_code, " (", n_diff, " cells differ; it holds ",
@@ -643,7 +662,8 @@ if (length(model_only) > 0L) {
         schema_of(base_variant), schema_of(v), tolower(sp), fl,
         # The discharge the variant classified on (built.csv, #305).
         .lnk_discharge_sql(w_sp, fill = .lnk_discharge_fill_applied(cfgs[[v]],
-                                                                    w_sp))),
+                                                                    w_sp),
+                           source = .lnk_discharge_source(cfgs[[v]]))),
         params = list(paste0("{", paste(w_sp, collapse = ","), "}"),
                       t_sp[[paste0(pre, "_mad_min")]],
                       t_sp[[paste0(pre, "_mad_max")]],

@@ -98,6 +98,23 @@ DISPATCH_FLAGS=""
 [ -n "$FORCE_FLAG" ]  && DISPATCH_FLAGS="$DISPATCH_FLAGS $FORCE_FLAG"
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
+# This orchestrator loads only fwapg's discharge on its hosts (link#331). A
+# config that reads wet's (`pipeline: discharge_source: wet`) needs wet's
+# table on every host and one load across them, which study_area_run.sh
+# checks and cypher_prep.sh provides; here every non-dispatcher WSG would
+# stop at prepare. Refuse it rather than run half a pipeline.
+# The checkout, not the installed link, which can predate the setting.
+DISCHARGE=$(cd "$REPO_ROOT" && Rscript -e '
+suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
+cat(link:::.lnk_discharge_source(lnk_config(commandArgs(TRUE)[1])))' \
+  "${CONFIG_NAME:-bcfishpass}" 2>/dev/null || true)
+if [ "$DISCHARGE" != "fwapg" ]; then
+  echo "FATAL: --config=${CONFIG_NAME:-bcfishpass} reads discharge from '${DISCHARGE:-unknown}'." >&2
+  echo "  wsgs_run_pipeline.sh prepares hosts for fwapg's discharge only;" >&2
+  echo "  run it with data-raw/study_area_run.sh, which loads wet on every host." >&2
+  exit 1
+fi
 cd "$REPO_ROOT"
 TS="$(date -u +%Y%m%d_%H%M%S)"
 LOG_DIR="$REPO_ROOT/data-raw/logs/wsgs_run_pipeline"

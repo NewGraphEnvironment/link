@@ -132,12 +132,20 @@ cols_variants <- c("variant", "species_code", "column", "value", "flag",
                    "obs_stage", "step_from", "equals_bundle")
 # `model` and `set` (link#302) are optional, so #284's file stays valid: an
 # absent or empty `model` is `cw`, an absent or empty `set` changes nothing.
-for (k in c("model", "set")) {
+# `discharge_source` and `discharge_fill` (link#331) are optional too: empty
+# inherits the base bundle's, a value is written into the variant bundle's
+# `pipeline:`, so one segmentation can score both sources and both fills.
+cols_optional <- c("model", "set", "discharge_source", "discharge_fill")
+for (k in cols_optional) {
   if (!k %in% names(variants)) variants[[k]] <- NA_character_
 }
 variants$model[is.na(variants$model)] <- "cw"
 stopifnot(
-  identical(setdiff(names(variants), c("model", "set")), cols_variants),
+  identical(setdiff(names(variants), cols_optional), cols_variants),
+  all(is.na(variants$discharge_source) |
+        variants$discharge_source %in% c("fwapg", "wet")),
+  all(is.na(variants$discharge_fill) |
+        variants$discharge_fill %in% c("TRUE", "FALSE")),
   all(variants$model %in% c("cw", "mad")),
   !anyDuplicated(variants$variant),
   all(grepl("^[a-z][a-z0-9_]*$", variants$variant)),
@@ -148,6 +156,12 @@ stopifnot(
 # The base is the one row that steps from nothing (a model-only variant,
 # link#300, also leaves `column` empty).
 base_variant <- variants$variant[is.na(variants$step_from)]
+# The base is modelled with the base bundle as it ships, so it sets neither.
+if (!all(is.na(unlist(variants[variants$variant == base_variant,
+                               c("discharge_source", "discharge_fill")])))) {
+  stop("the base variant takes its discharge from --base; leave its ",
+       "discharge_source and discharge_fill empty", call. = FALSE)
+}
 if (!is.na(variants$column[variants$variant == base_variant])) {
   stop("the base variant changes no threshold: its column must be empty",
        call. = FALSE)
@@ -306,13 +320,23 @@ write_bundle <- function(r) {
     stop("variant ", r$variant, ": set repeats its column or names no ",
          "threshold column", call. = FALSE)
   }
-  for (k in names(cells)) {
-    if (identical(thr[[k]][i], cells[[k]])) {
-      stop("variant ", r$variant, " equals ", base_bundle, ": ", k, " is already ",
-           cells[[k]], call. = FALSE)
-    }
-    thr[[k]][i] <- cells[[k]]
+  # The rung's own cell must move: a rung that changes nothing is not a step.
+  # A `set` cell the base already carries is dropped (link#331): #302's rungs
+  # fix `*_mad_max = 9999`, which `default` has carried since #307.
+  if (!is_model_only && identical(thr[[r$column]][i], r$value)) {
+    stop("variant ", r$variant, " equals ", base_bundle, ": ", r$column,
+         " is already ", r$value, call. = FALSE)
   }
+  same <- names(cells)[vapply(names(cells), function(k) {
+    identical(thr[[k]][i], cells[[k]])
+  }, logical(1))]
+  if (length(same) > 0L) {
+    say("variant %s: %s already %s in %s, dropped from its set", r$variant,
+        paste(same, collapse = ", "),
+        paste(cells[same], collapse = ", "), base_bundle)
+    cells <- cells[setdiff(names(cells), same)]
+  }
+  for (k in names(cells)) thr[[k]][i] <- cells[[k]]
   n_diff <- sum(mapply(function(a, b) {
     sum(!((a == b) %in% TRUE) & !(is.na(a) & is.na(b)))
   }, thr, thr_base))
@@ -363,7 +387,21 @@ write_bundle <- function(r) {
         paste(names(cells), cells, sep = " = ", collapse = ", ")),
     extends = base_bundle,
     files = files,
-    pipeline = list(schema = schema_of(r$variant)),
+    # Resolved and written, never inherited (link#331): the bundle extends
+    # its base by name, so an inherited value would follow the base if it
+    # later moved, and the bundle would no longer say what it was built on.
+    pipeline = list(
+      schema = schema_of(r$variant),
+      discharge_source = if (is.na(r$discharge_source)) {
+        .lnk_discharge_source(cfg_base)
+      } else {
+        r$discharge_source
+      },
+      discharge_fill = if (is.na(r$discharge_fill)) {
+        .lnk_discharge_fill(cfg_base)
+      } else {
+        as.logical(r$discharge_fill)
+      }),
     provenance = prov),
     file.path(d, "config.yaml"))
   cfg <- lnk_config(normalizePath(d))
@@ -417,6 +455,8 @@ record_built <- function(v, w) {
     # the working streams to the fill the bundle applies to w before
     # classify.
     discharge_fill = .lnk_discharge_fill_applied(cfgs[[v]], w),
+    # and its source (#331): run_variant() rejoins from it.
+    discharge_source = .lnk_discharge_source(cfgs[[v]]),
     link_head = head_sha, dirty = length(dirty) > 0L,
     built_at = format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z"))
   old <- if (file.exists(path_built)) {
@@ -432,6 +472,10 @@ record_built <- function(v, w) {
   # Nor, before link#305, a fill column: those schemas were built raw.
   if (!is.null(old) && !"discharge_fill" %in% names(old)) {
     old$discharge_fill <- "FALSE"
+  }
+  # Nor, before link#331, a source column: those schemas read fwapg.
+  if (!is.null(old) && !"discharge_source" %in% names(old)) {
+    old$discharge_source <- "fwapg"
   }
   if (!is.null(old)) old <- old[names(row)]
   keep <- !(old$variant == v & old$watershed_group_code == w)
@@ -608,10 +652,11 @@ run_variant <- function(v) {
       stop(working_of(w), " is gone: run --step=base first", call. = FALSE)
     }
     # The working streams carry the discharge of whichever bundle last
-    # touched them; set it to this variant's fill (#305) before classify, so
-    # a base built on one fill state can score variants on the other.
+    # touched them; set it to this variant's fill (#305) and source (#331)
+    # before classify, so a base built on one can score variants on another.
     .lnk_discharge_join(conn, paste0(working_of(w), ".streams"), w,
-                        fill = .lnk_discharge_fill_applied(cfg, w))
+                        fill = .lnk_discharge_fill_applied(cfg, w),
+                        source = .lnk_discharge_source(cfg))
     # A `mad` variant classifies on the discharge prepare joined onto the
     # working streams (#286). A working schema built before that join, or a
     # WSG with no discharge, would classify every inheriting stream rule

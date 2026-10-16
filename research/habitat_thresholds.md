@@ -1,6 +1,6 @@
 # Habitat thresholds — gradient, channel width and discharge
 
-**Verified:** 2026-09-29 (CH/BT gradient and width), 2026-10-02 (MAD), 2026-10-03 (`cw` against `mad`), 2026-10-06 (discharge fill; `default`'s width-converted MAD ranges), 2026-10-07 (wetland floor on `rearing`; lake and wetland rearing connected to spawning), 2026-10-08 (lake connection lines out of the km) · **Issues:** #284 (gradient and width), #302 (MAD, [below](#mad-discharge-ranges-for-bt-gr-ko-and-rb-302)), #300 (`cw` against `mad`), #305 (discharge fill on main stems), #307 (`default`'s MAD ranges from its width minima), #311 (the wetland floor on `rearing`; fresh#237, fresh#240), #310 (lake and wetland rearing connected to spawning), #317 (lake connection lines), #290 (the pooling tracker), #283 (the validator, [`habitat_validation.md`](habitat_validation.md)), #282 (`default_tuned`); spawned knowledge#28 (habitat weights) · **Produced by:** `data-raw/query_habitat_thresholds_obs.R`, `data-raw/query_habitat_thresholds_fiss.R` → `data-raw/logs/habitat_thresholds_284/`; step 5 by `data-raw/habitat_variants_build.R` and `data-raw/habitat_variants_score.R` → `data-raw/logs/habitat_score_284/`; literature reviews archived with #284's and #302's PWFs (`literature.md`); MAD by `data-raw/query_habitat_thresholds_mad.R` → `data-raw/logs/habitat_thresholds_302/` and the same scoring scripts → `data-raw/logs/habitat_score_302/`; `cw` against `mad` by the same scripts with `--base=default_tuned` → `data-raw/logs/habitat_score_300/`, and with the fill → `data-raw/logs/habitat_score_305/`; the fill measured by `data-raw/discharge_fill_count.R` → `data-raw/logs/discharge_fill_305/`; `default`'s width-to-discharge conversion by `data-raw/query_width_mad_equivalent.R` → `data-raw/logs/habitat_thresholds_307/`; the wetland floor by `data-raw/logs/wetland_floor_311/run.R`, `summarise.R` and `obs.R` (same directory) · **Status:** BT `rear_gradient_max` 0.1349 **scored and held**; MAD ranges for BT, GR and RB **scored** (the rule refused loosening past P10 except RB spawning), KO unscored; `cw` against `mad` **scored** (size-adjusted); with main stems filled (#305) `mad` drops only little-used water for BT, GR and RB spawning, and RB rearing reads both ways; `default`'s width-converted MAD ranges (#307) are a conversion, not a calibration, and unscored; every other row unscored
+**Verified:** 2026-09-29 (CH/BT gradient and width), 2026-10-02 (MAD), 2026-10-03 (`cw` against `mad`), 2026-10-06 (discharge fill; `default`'s width-converted MAD ranges), 2026-10-07 (wetland floor on `rearing`; lake and wetland rearing connected to spawning), 2026-10-08 (lake connection lines out of the km), 2026-10-16 (MAD on wet's discharge) · **Issues:** #284 (gradient and width), #302 (MAD, [below](#mad-discharge-ranges-for-bt-gr-ko-and-rb-302)), #300 (`cw` against `mad`), #305 (discharge fill on main stems), #307 (`default`'s MAD ranges from its width minima), #311 (the wetland floor on `rearing`; fresh#237, fresh#240), #310 (lake and wetland rearing connected to spawning), #317 (lake connection lines), #331 (MAD on wet's discharge, [below](#mad-on-wets-discharge-331)), #343 (GR, KO and RB on wet), #290 (the pooling tracker), #283 (the validator, [`habitat_validation.md`](habitat_validation.md)), #282 (`default_tuned`); spawned knowledge#28 (habitat weights) · **Produced by:** `data-raw/query_habitat_thresholds_obs.R`, `data-raw/query_habitat_thresholds_fiss.R` → `data-raw/logs/habitat_thresholds_284/`; step 5 by `data-raw/habitat_variants_build.R` and `data-raw/habitat_variants_score.R` → `data-raw/logs/habitat_score_284/`; literature reviews archived with #284's and #302's PWFs (`literature.md`); MAD by `data-raw/query_habitat_thresholds_mad.R` → `data-raw/logs/habitat_thresholds_302/` and the same scoring scripts → `data-raw/logs/habitat_score_302/`; `cw` against `mad` by the same scripts with `--base=default_tuned` → `data-raw/logs/habitat_score_300/`, and with the fill → `data-raw/logs/habitat_score_305/`; the fill measured by `data-raw/discharge_fill_count.R` → `data-raw/logs/discharge_fill_305/`; `default`'s width-to-discharge conversion by `data-raw/query_width_mad_equivalent.R` → `data-raw/logs/habitat_thresholds_307/`; the wetland floor by `data-raw/logs/wetland_floor_311/run.R`, `summarise.R` and `obs.R` (same directory); MAD on wet by the same producers with `--discharge-source` → `data-raw/logs/discharge_wet_331/` and the scoring scripts → `data-raw/logs/habitat_score_331*/` · **Status:** BT `rear_gradient_max` 0.1349 **scored and held**; MAD ranges for BT, GR and RB **scored** at #302 (the rule refused loosening past P10 except RB spawning), KO unscored; `cw` against `mad` **scored** (size-adjusted); with main stems filled (#305) `mad` drops only little-used water for BT, GR and RB spawning, and RB rearing reads both ways; `default`'s width-converted MAD ranges (#307) are a conversion, not a calibration, and unscored; `default_tuned` reads wet's discharge and BT's MAD minima are **0.043 / 0.043** (#331: rearing scored; spawning set to the same any-stage percentile, unscored), at which `mad` is the closer model for BT; every other row unscored
 
 ## Verdict
 
@@ -473,7 +473,8 @@ before/after evidence is the scoring harness, which puts the held-out groups on 
 | RB | `rear_mad_min` | NA | **0.019** | scored: P10→P05 refused |
 
 Every `*_mad_max` is 9999. Values are m³/s. They are inert until a group is moved to
-`mad`. **At these values a `mad` group keeps less stream rearing than `cw` does: on the
+`mad`. **BT's are superseded:** `default_tuned` reads wet's discharge since #331, and BT's
+minima are 0.043 / 0.043 on it ([below](#mad-on-wets-discharge-331)). **At these values a `mad` group keeps less stream rearing than `cw` does: on the
 held-out WSGs −36 % for BT, −82 % for GR and −4 % for RB** (the landed pair, built in
 #300; #302's P10 rows were lower bounds; with #305's main-stem fill, −32 %, −76 % and
 −2.8 %, [below](#filling-discharge-on-river-polygon-main-stems-305)). (`default` at #302 had no
@@ -1149,9 +1150,200 @@ table ([above](#literature)):
   test. NATR has none on its stream edges.
 - `default_extrabreaks` and `default_rearbreaks` keep the old CSV. They are `cw`
   segmentation experiments.
-- #302's ladders (`--base=default`) regenerate only at v0.58.0 (`8cb4822`). Each rung
-  sets `*_mad_max = 9999`, which `default` now carries, so the build stops with "variant …
-  equals default". Their scores are unaffected.
+- #302's ladders (`--base=default`) reproduce their committed bundles byte for byte only at
+  v0.58.0 (`8cb4822`). Each rung sets `*_mad_max = 9999`, which `default` now carries; from
+  #307 to #331 the build stopped on it ("variant … equals default"), and since #331 it drops
+  the cell and builds on today's `default`. Their scores are unaffected.
+
+## MAD on wet's discharge (#331)
+
+### In plain language
+
+**What we asked.** Our habitat model can decide whether a stream is big enough for bull
+trout in two ways: by its width, or by how much water flows through it. We had set the flow
+cut-off (0.078 m³/s) using an older flow dataset (fwapg's). A newer, more complete one (wet)
+is now available, so we re-did the work on it.
+
+**What we found.**
+- **The new cut-off is 0.043 m³/s, about half the old one,** for both spawning and rearing.
+- **It moved because the new dataset covers more of the province, not because the two
+  datasets disagree.** Where both have a flow value, they match almost exactly. The new one
+  adds nine Skeena watershed groups the old one never covered, where bull trout use smaller
+  water, and that pulls the number down.
+- **At the new cut-off, flow is the better test for bull trout.** Streams the width test
+  keeps but the flow test drops hold very few bull trout (about a fifth of the normal rate).
+  Streams only the flow test keeps hold more than the normal rate for rearing, and somewhat
+  less (about 70 %) for spawning. Switching a watershed from
+  width to flow would keep about 20 % less rearing habitat, but the habitat dropped is
+  habitat fish rarely use.
+- **Nothing changes yet.** Every watershed still uses the width test, so no map or number
+  moves until someone decides to switch a watershed to flow.
+
+**How we did it.** We took every bull trout observation location in the watershed groups we
+had already modelled, read the flow at each, and set the cut-off where about the smallest
+10 % of them fall. We then checked that cut-off against seven watershed groups held back
+from the setup, asking whether fish actually use the extra streams a looser cut-off would
+add. They did not, so the cut-off held.
+
+**Limits.**
+- **Coverage.** The cut-off comes from 53 watershed groups, about a third of the 158 groups
+  in BC where `default` marks bull trout present (246 groups in the province). It was checked
+  on 7 other groups, 4 in the Columbia and 3 in the Peace.
+- **No Skeena check.** None of the checking groups is in the Skeena, yet that is where most
+  of the change came from. We cannot yet say the value is right there.
+- **Spawning was not tested on its own.** Only a handful of observations are recorded as
+  spawning: 3 in the checking groups, too few to test. Spawning uses the same cut-off as
+  rearing, a judgement call rather than a tested result.
+- **Dolly Varden are counted as bull trout** in the Fraser, Columbia, Mackenzie (Peace) and
+  the Skeena above Hazelton, where the two are hard to tell apart and are usually the same
+  fish; not in the lower Skeena or on the coast. About 44 % of the observation locations
+  used (1,970 of 4,504) carry a Dolly Varden record.
+- **Observations show where people looked, not just where fish are.** Well-sampled streams
+  count for more, and that bias is not removed.
+- **Only bull trout was redone.** Grayling, rainbow and kokanee still use cut-offs set on the
+  old dataset (#343).
+
+The detail follows.
+
+`default_tuned` reads mean annual discharge from wet's published product
+(`discharge.fwa_v1_segment_monthly`, `historical`, `month = 0`, `pick`; 0 m³/s read as no
+value) instead of fwapg's `fwa_stream_networks_discharge` (`pipeline: discharge_source:
+wet`). `default` and `bcfishpass` stay on fwapg. wet gives an annual value to 4.50 M lines
+against fwapg's 2.00 M (rows 4.53 M and 2.72 M; wet's 29,491 zeros and fwapg's 713 k NULLs
+carry none). BT's rearing minimum was re-scored on it, and spawning takes the same value. **Nothing moves while every group is on `cw`**: on NATR, one
+prepare under `default_tuned` re-joined from each source changed `mad_m3s` on 189,092 of
+189,200 rows and no habitat flag (`data-raw/logs/discharge_wet_331/cw_unchanged_natr.csv`).
+
+### Verdict
+
+| Species | Threshold | `default` | `default_tuned` before | `default_tuned` | How |
+|---|---|---|---|---|---|
+| BT | `spawn_mad_min` | 0.041 | 0.078 | **0.043** | the any-stage P10, as rearing (operator); unscored as a spawning rung |
+| BT | `rear_mad_min` | 0.021 | 0.078 | **0.043** | scored: P10 → P05 refused |
+
+GR, KO and RB keep #302's fwapg-fitted values; re-tuning them on wet is #343.
+`default`'s width-converted minima do not move on wet (BT spawning 2 m: 0.043 on wet,
+0.042 on fwapg; rearing 1.5 m: 0.023 and 0.021), so `default` stays on fwapg.
+
+### Why the values move: coverage, not the source
+
+On the BT observation locations both sources value, they agree
+(`data-raw/logs/discharge_wet_331/source_vs_coverage.*`):
+
+| Locations (BT, any stage) | n | P05 | P10 | P50 |
+|---|---|---|---|---|
+| valued by both, fwapg | 2,999 | 0.024 | 0.076 | 1.34 |
+| valued by both, wet | 2,999 | 0.028 | 0.075 | 1.35 |
+| valued by wet only, groups both cover | 320 | 0.091 | 0.12 | 186 |
+| groups fwapg does not cover (wet) | 1,178 | 0.011 | 0.019 | 0.23 |
+
+- The 320 locations only wet values in shared groups are main stems (median width 203 m),
+  the edge 1250 water #305 filled. They sit far above any minimum.
+- The 1,178 are in nine Skeena groups fwapg carries no discharge for (BULK 468, MORR 357,
+  KISP 195, MSKE 69, USKE 32, KLUM 30, ZYMO 19, LSKE 8, LKEL 1). Their water is smaller,
+  and they pull the pooled percentiles down: wet's calibration P10 is 0.044 against
+  fwapg's 0.084 (on the 47 calibration groups both cover, wet's is 0.091).
+- **Spawning-staged locations are mostly Skeena.** The producer tests 58 spawning-staged BT
+  locations on wet (fwapg 17), 41 of them in the Skeena (MORR and BULK hold most). Their
+  P10 is 0.013. No held-out group is in the Skeena.
+
+The values are PCIC-routed in the Skeena groups as in the held-out ones, so this is not
+wet's water balance.
+
+### Scoring (Build A), fixed rule of #302
+
+- **Design.** `variants_331.csv`: the `default` base on `cw`; BT P10 → P05 → P02 ladders
+  for spawning and rearing on wet (`discharge_source: wet`), and the same ladders at
+  fwapg's percentiles as a control (`discharge_source: fwapg`), one segmentation. Roles
+  `wsg_roles_331.csv` (#302's BT rows). Rungs carry `default`'s gradient cutoffs. Score
+  `--floor=expected` (#302's floor of record). Build 199.5 min at `5c57db98`; logs
+  `data-raw/logs/habitat_score_331/`.
+- The harness first had to accept #302-shaped rungs again: a `set` cell the base already
+  carries (`*_mad_max = 9999` since #307) is dropped with a message; a rung whose own cell
+  equals the base still stops the build.
+
+**Held-out verdicts:**
+
+| Ladder | Source | Stage | Step | Band km | Found | Expected | Ratio | Decision |
+|---|---|---|---|---|---|---|---|---|
+| rearing | wet | any | P10 0.043 → P05 0.020 | 1,772 | 21 | 241 | 0.09 | refuse |
+| rearing | fwapg | any | P10 0.083 → P05 0.028 | 2,050 | 48 | 279 | 0.17 | refuse |
+| spawning | fwapg | any | P10 0.083 → P05 0.028 | 1,442 | 32 | 250 | 0.13 | refuse |
+| spawning | wet | spawn | P10 0.012 → P05 0.0063 | 1,448 | 0 | 0.7 | — | underpowered |
+| spawning | wet | any | P10 0.012 → P05 0.0063 | 1,448 | 4 | 195 | 0.02 | refuse |
+
+- **Rearing on wet walks to its P10, 0.043.** The fwapg control reproduces #302's reading
+  (P10, 0.083 here against #302's 0.078 at an older build).
+- **Spawning on wet could not be read on its own stage.** The held-out core holds 3
+  spawning-staged locations, so every step is underpowered, and the rule would land P05
+  (0.0063) unscored. On any-stage records the step to P05 is refused hard (ratio 0.02).
+  `data-raw/logs/habitat_score_331_spawn_any/` re-scores the same build on any-stage
+  records.
+- **The landed spawning value is the any-stage P10, 0.043** (operator, 2026-10-16), equal
+  to rearing as #302's 0.078 / 0.078 were. The spawning-staged P10 (0.012) is a mostly
+  Skeena percentile, and no held-out group can test it. The any-stage value is unscored as
+  a spawning rung; the rearing ladder scored the same value. It was first chosen as
+  0.012, before the Skeena split was measured.
+
+**What `cw` keeps that `mad` drops**, at each source's P10 anchor (BT rearing, held out,
+bands against the ladder's core):
+
+| Source | Anchor | `cw`-only km | Locations | Ratio to core |
+|---|---|---|---|---|
+| fwapg | 0.083 | 4,597 | 243 | 0.39 |
+| wet | 0.043 | 2,815 | 19 | 0.05 |
+
+On fwapg the water `mad` drops still holds main stems with no value (#300, #305 before its
+fill); on wet it is little-used small water.
+
+### `cw` against `mad` on `default_tuned` (Build B)
+
+**The design.** #300's comparison on `default_tuned` as it now ships (BT 0.043 / 0.043,
+fill on): the base on `cw`, and two model-only variants putting the BT groups on `mad`,
+one reading wet (what a group moved to `mad` would get) and one reading fwapg at the same
+thresholds, as a control on the same segmentation. The fill off was not scored: on wet it
+reaches 5 km of #302's groups' edge 1250 (fwapg 506 km). `variants_331_model.csv`, roles
+`wsg_roles_331.csv`, build 79.4 min at `5bd9b325`, score `--floor=expected`; logs
+`data-raw/logs/habitat_score_331m/` (a first run died on a full disk:
+`habitat_score_331m_diskfull/`).
+
+**Of record (held-out, stage `any`, size-adjusted):**
+
+| Source | Flag | `cw`-only km | Found | Expected | Ratio | `mad`-only km | Found | Expected | Ratio | Reading |
+|---|---|---|---|---|---|---|---|---|---|---|
+| wet | rearing | 3,109 | 22 | 124 | **0.18** | 364 | 17 | 10 | **1.64** | `mad` closer |
+| wet | spawning | 1,496 | 15 | 107 | **0.14** | 267 | 13 | 19 | **0.69** | `mad` closer |
+| fwapg | rearing | 3,269 | 21 | 141 | 0.15 | 314 | 17 | 10 | 1.65 | `mad` closer |
+| fwapg | spawning | 1,633 | 17 | 129 | 0.13 | 239 | 13 | 18 | 0.72 | `mad` closer |
+
+**What `mad` keeps against `cw` on held-out groups** (`habitat_change.csv`):
+
+| Source | Rearing | Spawning |
+|---|---|---|
+| wet | 13,881 → 11,136 km (**−19.8 %**) | 8,983 → 7,754 km (**−13.7 %**) |
+| fwapg | 13,881 → 10,925 km (−21.3 %) | 8,983 → 7,589 km (−15.5 %) |
+
+**Reading it.**
+- **At the shipped values `mad` is the closer model for BT.** What only `cw` keeps is used
+  at under a fifth of the size-matched core rate. What only `mad` keeps is used above it
+  for rearing (1.64) and at 0.69 of it for spawning. For rearing, #305 (fwapg, 0.078) read
+  "`cw`-only not habitat" with `mad`-only underpowered; at 0.043 the `mad`-only rearing band
+  has power for the first time, and reads habitat. Spawning's `mad`-only band had power in
+  #300 and #305 and read "not habitat" (0.42, 0.41); at 0.043 it reads habitat (0.69).
+- **The source barely matters at the same thresholds.** wet and fwapg differ by 1.5 points
+  of rearing. What wet changes is the water with no value: `mad_null` in the `cw`-only
+  rearing band is 6 km (1 location) on wet against 71 km (10) on fwapg. Of the rest,
+  3,091 km (20 locations) is below the minimum and 12 km (1) inside the range.
+- **The cost falls from about a third to about a fifth:** #305 measured −32 % BT rearing at
+  0.078 on fwapg (base 13,526 km at that HEAD); here −19.8 % at 0.043 on wet. Most of the
+  change is the lower minimum, not the source.
+- Whether to move a group to `mad` is still a reviewed row edit of
+  `parameters_habitat_method.csv`. This informs it and moves nothing.
+
+### Not done
+
+- GR, KO and RB on wet: #343.
+- A held-out group in the Skeena, which would let the spawning-staged value be scored.
 
 ## The wetland floor on `rearing` (#311)
 

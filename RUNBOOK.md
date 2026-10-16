@@ -995,6 +995,37 @@ next dispatch.**
     `built.csv`.
 
   `data-raw/logs/discharge_fill_305/`, research "`cw` against `mad`".
+- **Where discharge is read from is a bundle setting, `discharge_source`** (#331).
+  `fwapg` (the default, and what every run before #331 read) is
+  `whse_basemapping.fwa_stream_networks_discharge`. `wet` is the annual pick of wet's
+  published `discharge.fwa_v1_segment_monthly` (`scenario = 'historical'`,
+  `month = 0`, `pick`), which values about 4.5 M lines against fwapg's 2.0 M (rows 4.53 M and 2.72 M)
+  (PCIC's routed model where it has one, wet's water balance elsewhere). Load it into
+  a database once with `wet::wet_db_load(conn, wet::wet_catalog())` before a run
+  reads it.
+  - **One relation.** `.lnk_discharge_rel(source)` has fwapg's shape
+    (`linear_feature_id, watershed_group_code, mad_m3s`), and prepare, the fill, the
+    validator, the export and the variants harness all read through it.
+  - **Recorded state.** It is logged per WSG (`<schema>.log.discharge_source`; NULL
+    on an older row, which read fwapg). The validator warns about a WSG whose logged
+    source differs from its `cfg` where `cfg` reads discharge (a warning, because the
+    MAD producer measures wet at observations on `cw` builds through the validator),
+    and the export's manifest names the source per WSG.
+  - **Every host that runs a wet config needs wet's table**, `cw` groups included,
+    because prepare joins discharge for every group; prepare stops with the load
+    command when it is missing. `lnk_preflight_discharge(conn, cfg)` checks a database.
+    `data-raw/discharge_wet_load.R` loads the annual pick only (`months = 0,
+    pick_only = TRUE`, about 4.5 M rows) and skips a host that already has it.
+    `study_area_run.sh` gates the dispatcher on the config's source and passes it to
+    `cypher_prep.sh` (`CYPHER_PREP_DISCHARGE=wet`), which installs wet at its
+    DESCRIPTION pin and loads it after the snapshot.
+  - **Which load a build read.** wet's loader writes its manifest URL, build time and
+    commit into the table's comment; `log_input.table_comment` copies it at run open,
+    and a wet run adds wet's table to its fingerprinted inputs. The export manifest's
+    `discharge.wet_load` sets the logged loads beside the exporting database's and
+    says whether they match (by build, ignoring wet's `; subset` suffix). wet's table
+    is not a vintage-gate primitive: it is a published, versioned dataset, and a host
+    running an fwapg config must not need it.
 - **`lnk_habitat_validate()` scores each group on its own model** (#299), from the
   `cfg` it is handed, resolved by fresh's `.frs_habitat_models()` (one rule for classify
   and validator). A `mad` group's predicates and size relaxation read `mad_m3s`, joined

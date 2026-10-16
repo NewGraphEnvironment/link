@@ -249,9 +249,10 @@ the size each moved to the stage's minimum. The size is the one the group
 classified on: the model \code{cfg}'s \code{parameters_habitat_method.csv} gives
 the WSG, resolved as \code{\link[=lnk_pipeline_classify]{lnk_pipeline_classify()}} resolves it (an unlisted
 group is \code{cw}). On \code{cw} it is the channel width; on \code{mad} it is the mean
-annual discharge \code{mad_m3s}, joined from
-\code{whse_basemapping.fwa_stream_networks_discharge} on \code{linear_feature_id}
-because the persist does not carry it. When \code{cfg} fills discharge
+annual discharge \code{mad_m3s}, joined on \code{linear_feature_id} from the
+discharge source \code{cfg} reads (\code{cfg$pipeline$discharge_source}: fwapg's
+\code{whse_basemapping.fwa_stream_networks_discharge} by default, or wet's
+annual pick) because the persist does not carry it. When \code{cfg} fills discharge
 (\code{cfg$pipeline$discharge_fill}), it is filled as prepare filled it: edge
 1250 lines with no value take one along the network (\code{mad_m3s_source}
 says which), and a \code{mad} group logged with the other fill state is an

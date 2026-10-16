@@ -164,7 +164,7 @@ lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
     }, add = TRUE)
     .lnk_log_config_snapshot(conn, run_log$schema, cfg, loaded,
                              run_log$config_hash)
-    .lnk_log_inputs(conn, run_log$schema, run_log$run_id, aoi)
+    .lnk_log_inputs(conn, run_log$schema, run_log$run_id, aoi, cfg = cfg)
   }
 
   # Defensive reset of per-WSG staging from any prior partial run.

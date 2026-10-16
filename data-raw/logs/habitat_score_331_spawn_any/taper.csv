@@ -1,0 +1,13 @@
+"species_code","column","role","taper_class","km","n","per_100km","ratio_to_core"
+"BT","spawn_mad_min","held_out","band bt_spawn_wet_p02",2740.74346096994,4,0.145945801092395,0.0108590833142726
+"BT","spawn_mad_min","held_out","band bt_spawn_wet_p05",1448.46889385444,4,0.276153669365713,0.0205471872485452
+"BT","spawn_mad_min","held_out","band bt_spawn_wet_p10 removed",21.9917357012479,1,4.54716268685993,0.338331203025866
+"BT","spawn_mad_min","held_out","core (-Inf,0.02]",6636.02673036284,928,13.9842715785634,1.04049838381371
+"BT","spawn_mad_min","held_out","core (0.02,0.05]",2981.50673970384,380,12.7452336410867,0.948307885067633
+"BT","spawn_mad_min","held_out","core (0.05,0.08]",360.164151546114,33,9.16248878694269,0.681734098266456
+"BT","spawn_mad_min","in_sample","band bt_spawn_wet_p02",312.285727048458,0,0,0
+"BT","spawn_mad_min","in_sample","band bt_spawn_wet_p05",311.53967808622,1,0.320986400879327,0.0323019755569081
+"BT","spawn_mad_min","in_sample","band bt_spawn_wet_p10 removed",9.4863509465534,1,10.5414611543896,1.06082382185158
+"BT","spawn_mad_min","in_sample","core (-Inf,0.02]",1948.2585526738,239,12.2673656261894,1.23450757888586
+"BT","spawn_mad_min","in_sample","core (0.02,0.05]",1405.31852213958,107,7.61393223773171,0.766216426494734
+"BT","spawn_mad_min","in_sample","core (0.05,0.08]",178.657745545024,5,2.79864720376198,0.281637581282812

@@ -122,9 +122,10 @@
 #' classified on: the model `cfg`'s `parameters_habitat_method.csv` gives
 #' the WSG, resolved as [lnk_pipeline_classify()] resolves it (an unlisted
 #' group is `cw`). On `cw` it is the channel width; on `mad` it is the mean
-#' annual discharge `mad_m3s`, joined from
-#' `whse_basemapping.fwa_stream_networks_discharge` on `linear_feature_id`
-#' because the persist does not carry it. When `cfg` fills discharge
+#' annual discharge `mad_m3s`, joined on `linear_feature_id` from the
+#' discharge source `cfg` reads (`cfg$pipeline$discharge_source`: fwapg's
+#' `whse_basemapping.fwa_stream_networks_discharge` by default, or wet's
+#' annual pick) because the persist does not carry it. When `cfg` fills discharge
 #' (`cfg$pipeline$discharge_fill`), it is filled as prepare filled it: edge
 #' 1250 lines with no value take one along the network (`mad_m3s_source`
 #' says which), and a `mad` group logged with the other fill state is an
@@ -312,7 +313,9 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
   models <- stats::setNames(
     .lnk_wsg_model(.lnk_habitat_method_read(method_csv), aoi), aoi)
   logged <- .lnk_hv_check_log(conn, schema, aoi, cfg)
-  if (any(models == "mad")) .lnk_hv_check_mad(conn, schema, models)
+  if (any(models == "mad")) {
+    .lnk_hv_check_mad(conn, schema, models, .lnk_discharge_source(cfg))
+  }
   # Discharge as prepare wrote it onto the working streams (#305): filled
   # when the bundle fills, scoped to the lines this schema scores.
   disch <- .lnk_hv_discharge_src(conn, schema, aoi, cfg)
@@ -396,12 +399,13 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
 #' Fail loud when a mad group cannot be scored: its discharge is joined on
 #' `linear_feature_id` from a table the persist does not carry.
 #' @noRd
-.lnk_hv_check_mad <- function(conn, schema, models) {
+.lnk_hv_check_mad <- function(conn, schema, models, source = "fwapg") {
   mad <- names(models)[models == "mad"]
-  tbl <- strsplit(.lnk_hv_discharge_tbl(), ".", fixed = TRUE)[[1]]
+  dtbl <- .lnk_discharge_tbl(source)
+  tbl <- strsplit(dtbl, ".", fixed = TRUE)[[1]]
   if (!DBI::dbExistsTable(conn, DBI::Id(schema = tbl[1], table = tbl[2]))) {
     stop("the method table puts ", paste(mad, collapse = ", "),
-         " on mad, but ", .lnk_hv_discharge_tbl(), " does not exist",
+         " on mad, but ", dtbl, " does not exist",
          call. = FALSE)
   }
   cols <- names(DBI::dbGetQuery(conn, sprintf(
@@ -420,22 +424,35 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
 #' different config is an error. So is a WSG logged with another discharge
 #' fill than `cfg` applies to it (`.lnk_discharge_fill_applied()`, #305): the
 #' validator would score it on discharge classify never read. A row from
-#' before the fill was logged (NULL) was built without it. WSGs with no log row (built before the log
+#' before the fill was logged (NULL) was built without it.
+#'
+#' A WSG logged with another discharge source than `cfg` reads
+#' (`.lnk_discharge_source()`, #331; NULL is a row from before #331, which
+#' read `fwapg`) is a warning, where `cfg` reads discharge there. It is not an
+#' error because measuring discharge at observations on a `cw` build, with a
+#' method table that puts every group on `mad`
+#' (`data-raw/query_habitat_thresholds_mad.R`), is the validator's job too,
+#' and that build never read discharge. Which model a build classified on is
+#' not logged, so the two cases cannot be told apart here (#299). WSGs with no log row (built before the log
 #' existed) are allowed and returned as unlogged.
 #' @noRd
 .lnk_hv_check_log <- function(conn, schema, aoi, cfg) {
   if (!DBI::dbExistsTable(conn, DBI::Id(schema = schema, table = "log"))) {
     return(character(0))
   }
-  has_fill <- "discharge_fill" %in% names(DBI::dbGetQuery(conn, sprintf(
+  log_cols <- names(DBI::dbGetQuery(conn, sprintf(
     "SELECT * FROM %s.log LIMIT 0", schema)))
+  has_fill <- "discharge_fill" %in% log_cols
+  has_source <- "discharge_source" %in% log_cols
   lg <- DBI::dbGetQuery(conn, sprintf(
     "SELECT DISTINCT ON (watershed_group_code)
-            watershed_group_code, config_name, %s AS discharge_fill
+            watershed_group_code, config_name, %s AS discharge_fill,
+            %s AS discharge_source
        FROM %s.log
       WHERE watershed_group_code = ANY($1)
       ORDER BY watershed_group_code, date_start DESC",
-    if (has_fill) "discharge_fill" else "NULL::boolean", schema),
+    if (has_fill) "discharge_fill" else "NULL::boolean",
+    if (has_source) "discharge_source" else "NULL::text", schema),
     params = list(paste0("{", paste(aoi, collapse = ","), "}")))
   bad <- lg[!is.na(lg$config_name) & lg$config_name != cfg$name, ,
             drop = FALSE]
@@ -458,6 +475,19 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
                        ifelse(want[off], "on", "off")), collapse = ", "),
          call. = FALSE)
   }
+  logged_src <- ifelse(is.na(lg$discharge_source), "fwapg",
+                       lg$discharge_source)
+  # Only where cfg reads discharge: elsewhere the source moves no flag.
+  reads <- .lnk_discharge_read_each(cfg, lg$watershed_group_code)
+  src_off <- reads & logged_src != .lnk_discharge_source(cfg)
+  if (any(src_off)) {
+    warning(schema, ".log records a discharge_source other than cfg '",
+            cfg$name, "' reads (", .lnk_discharge_source(cfg), "), so these ",
+            "flags were not classified on the discharge they are scored on: ",
+            paste(sprintf("%s (%s)", lg$watershed_group_code[src_off],
+                          logged_src[src_off]), collapse = ", "),
+            call. = FALSE)
+  }
   lg$watershed_group_code
 }
 
@@ -472,7 +502,8 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
 #' per row, and the fill's lateral lookups must not re-run per observation.
 #' @noRd
 .lnk_hv_discharge_src <- function(conn, schema, aoi, cfg) {
-  raw <- .lnk_discharge_sql(fill = FALSE)
+  source <- .lnk_discharge_source(cfg)
+  raw <- .lnk_discharge_sql(fill = FALSE, source = source)
   fill_w <- aoi[vapply(aoi, function(w) .lnk_discharge_fill_applied(cfg, w),
                        logical(1))]
   if (length(fill_w) == 0L) return(raw)
@@ -491,7 +522,8 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
   .lnk_db_execute(conn, sprintf(
     "CREATE TEMP TABLE lnk_vd_discharge AS
      SELECT * FROM %s f%s",
-    .lnk_discharge_sql(fill = TRUE, lines = lines_of(fill_w)),
+    .lnk_discharge_sql(fill = TRUE, lines = lines_of(fill_w),
+                       source = source),
     if (length(raw_w) == 0L) "" else sprintf(
       "\n     UNION ALL
      SELECT r.* FROM %s r
@@ -912,13 +944,6 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
        spawn_gradient_max = ps$spawn_gradient_max,
        spawn_gradient_min = if (is.null(gmin) || is.na(gmin)) 0 else gmin,
        params_sp = ps)
-}
-
-#' Mean annual discharge per FWA line, which the persist does not carry
-#' (#286); prepare joins the same table onto the working streams.
-#' @noRd
-.lnk_hv_discharge_tbl <- function() {
-  "whse_basemapping.fwa_stream_networks_discharge"
 }
 
 #' The size column a habitat model tests: channel width (`cw`) or mean

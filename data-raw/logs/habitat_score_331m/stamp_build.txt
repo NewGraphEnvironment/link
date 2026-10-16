@@ -1,0 +1,12 @@
+---
+date: 2026-10-16 07:53 PDT
+step: all; focal: REVL,ELKR,KOTR,UARL,MURR,UBTN,LHAF,PARS,KOTL; variants: default_tuned,bt_mad_wet,bt_mad_fwapg
+link: 0.65.1 @ 5bd9b325 (at launch)
+base: default_tuned
+variants: data-raw/habitat_score/variants_331_model.csv (md5 a55514a14666519416dba7abd453794e); roles: data-raw/habitat_score/wsg_roles_331.csv (md5 87c12a5916b1ad2079099fbd8e09e232)
+fresh: 0.39.0 @ e247ca19a7803982dc7e5f55dbbf377dfc85d007
+db: docker fwapg localhost:5432
+base run_uid(s) in score331m_default_tuned.log: none
+bcfishobs.observations rows: 375962
+thresholds sha256 (12): default_tuned=4c225d100976, bt_mad_wet=4c225d100976, bt_mad_fwapg=4c225d100976
+

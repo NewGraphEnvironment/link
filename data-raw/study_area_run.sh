@@ -265,6 +265,37 @@ fi
 [ -n "$SCHEMA" ] || { echo "FATAL: could not resolve persist schema for --config=$CONFIG"; exit 1; }
 export LNK_SCHEMA="$SCHEMA"
 
+# Where the config reads discharge (link#331): every host needs that table,
+# because prepare joins discharge for every group. The dispatcher's gate
+# checks its own database; cypher_prep loads wet's on each cypher.
+DISCHARGE=$(cd "$REPO_ROOT" && LNK_LOAD=loadall Rscript -e '
+suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
+cat(link:::.lnk_discharge_source(lnk_config(commandArgs(TRUE)[1])))' "$CONFIG" 2>/dev/null || true)
+case "$DISCHARGE" in
+  fwapg|wet) ;;
+  *) echo "FATAL: could not resolve the discharge source of --config=$CONFIG"; exit 1 ;;
+esac
+# The wet load the dispatcher holds; every cypher must hold the same one
+# (cypher_prep.sh), or hosts classify on different discharge. Empty when the
+# dispatcher has none, which its discharge gate then fails.
+WET_LOAD=""
+if [ "$DISCHARGE" = "wet" ]; then
+  WET_LOAD=$(cd "$REPO_ROOT" && LNK_LOAD=loadall Rscript -e '
+suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
+conn <- lnk_db_conn(dbname = "fwapg", host = "localhost", port = 5432L,
+                    user = "postgres", password = "postgres")
+res <- lnk_preflight_discharge(conn, lnk_config(commandArgs(TRUE)[1]),
+                               quiet = TRUE)
+if (res$ok) cat(link:::.lnk_discharge_wet_load_id(res$comment))' \
+    "$CONFIG" 2>/dev/null || true)
+  case "$WET_LOAD" in
+    "") echo "FATAL: --config=$CONFIG reads wet's discharge and the dispatcher holds none."
+        echo "  LNK_LOAD=loadall Rscript data-raw/discharge_wet_load.R"
+        exit 1 ;;
+    *"'"*) echo "FATAL: the wet table comment holds a quote: $WET_LOAD"; exit 1 ;;
+  esac
+fi
+
 # --- run identity (link#262) ---
 # Minted ONCE, here, before anything forks. $TS is already the run's own
 # UTC stamp and is what every log file in this run is named after, so the uid
@@ -625,6 +656,24 @@ cat(if (is.null(v)) "" else v$model_version)
     echo "        be NULL on every row. Run: bash data-raw/snapshot_bcfp.sh --with-bcfp-views"
   fi
 
+  # --- gate: the config's discharge table on the dispatcher (link#331) -----
+  if (cd "$REPO_ROOT" && LNK_LOAD=loadall Rscript -e '
+suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
+conn <- lnk_db_conn(dbname = "fwapg", host = "localhost", port = 5432L,
+                    user = "postgres", password = "postgres")
+res <- lnk_preflight_discharge(conn, lnk_config(commandArgs(TRUE)[1]))
+q(status = if (res$ok) 0L else 1L)' "$CONFIG" 2>&1 | sed 's/^/    /'; exit "${PIPESTATUS[0]}"); then
+    echo "  ✓ discharge ($DISCHARGE) loaded on the dispatcher"
+  else
+    echo "  ✗ discharge ($DISCHARGE) not loaded on the dispatcher —"
+    if [ "$DISCHARGE" = "wet" ]; then
+      echo "    LNK_LOAD=loadall Rscript data-raw/discharge_wet_load.R"
+    else
+      echo "    fwapg's fwa_stream_networks_discharge is loaded by fwapg (load.sh)"
+    fi
+    fail=1
+  fi
+
   # --- gate: primitive vintage on the dispatcher --------------------------
   # The predicate lives in R (lnk_preflight_vintage) because "absent is not
   # fresh" and the NULL-timestamp branch are what testthat can prove and
@@ -949,7 +998,7 @@ if [ "$N_CY" -gt 0 ]; then
         exit 1
       fi
       scp -q "$REPO_ROOT/data-raw/cypher_prep.sh" "cypher@$IP:/tmp/cypher_prep.sh" \
-        && ssh "cypher@$IP" "CYPHER_PREP_BRANCH='$LINK_BRANCH' bash /tmp/cypher_prep.sh" ) > "$LOG_DIR/${TS}_prep_$WS.log" 2>&1 &
+        && ssh "cypher@$IP" "CYPHER_PREP_BRANCH='$LINK_BRANCH' CYPHER_PREP_DISCHARGE='$DISCHARGE' CYPHER_PREP_WET_LOAD='$WET_LOAD' bash /tmp/cypher_prep.sh" ) > "$LOG_DIR/${TS}_prep_$WS.log" 2>&1 &
   done
   wait
   # Grep the ANCHORED "=== READY" (cypher_prep.sh's last line), not

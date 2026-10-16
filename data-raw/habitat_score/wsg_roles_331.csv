@@ -1,0 +1,10 @@
+watershed_group_code,species_code,role
+REVL,BT,held_out
+ELKR,BT,held_out
+KOTR,BT,held_out
+UARL,BT,held_out
+MURR,BT,held_out
+UBTN,BT,held_out
+LHAF,BT,held_out
+PARS,BT,in_sample
+KOTL,BT,in_sample

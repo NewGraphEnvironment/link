@@ -224,7 +224,8 @@ test_that("the fill applies only where something reads discharge", {
   # Not applied anywhere: the raw relation, and no DB touched.
   expect_identical(
     link:::.lnk_hv_discharge_src("no-conn", "s", "ADMS", tuned),
-    link:::.lnk_discharge_sql(fill = FALSE))
+    link:::.lnk_discharge_sql(fill = FALSE,
+                              source = link:::.lnk_discharge_source(tuned)))
 })
 
 test_that("a group the discharge table does not cover is never filled", {
@@ -250,4 +251,92 @@ test_that("a group the discharge table does not cover is never filled", {
   got <- fill_of(conn, lf)
   expect_true(is.na(got$mad_m3s))
   expect_true(is.na(got$mad_m3s_source))
+})
+
+# -- the source (#331) ---------------------------------------------------------
+
+test_that("a bundle reads fwapg unless it names wet, and nothing else", {
+  expect_identical(link:::.lnk_discharge_source(list(pipeline = list())),
+                   "fwapg")
+  expect_identical(link:::.lnk_discharge_source(lnk_config("bcfishpass")),
+                   "fwapg")
+  # Only default_tuned reads wet (operator, 2026-10-15): every host that runs
+  # a wet bundle needs wet's table.
+  expect_identical(link:::.lnk_discharge_source(lnk_config("default")),
+                   "fwapg")
+  expect_identical(link:::.lnk_discharge_source(lnk_config("default_tuned")),
+                   "wet")
+  expect_identical(link:::.lnk_discharge_source(
+    list(name = "x", pipeline = list(discharge_source = "wet"))), "wet")
+  for (bad in list("WET", NA_character_, c("wet", "fwapg"), 1, "")) {
+    expect_error(link:::.lnk_discharge_source(
+      list(name = "x", pipeline = list(discharge_source = bad))),
+      "must be one of fwapg, wet")
+  }
+  expect_error(link:::.lnk_discharge_sql(source = "pcic"), "must be one of")
+  # A bundle naming an unknown source fails when it loads, not at prepare.
+  d <- withr::local_tempdir()
+  writeLines(c("name: badsrc", "extends: default",
+               "pipeline:", "  discharge_source: WET"),
+             file.path(d, "config.yaml"))
+  expect_error(lnk_config(d), "config 'badsrc': discharge_source must be")
+})
+
+test_that("wet is read through its annual pick, in fwapg's shape", {
+  expect_identical(link:::.lnk_discharge_tbl("wet"),
+                   "discharge.fwa_v1_segment_monthly")
+  expect_identical(link:::.lnk_discharge_tbl(),
+                   "whse_basemapping.fwa_stream_networks_discharge")
+  raw <- link:::.lnk_discharge_sql(source = "wet")
+  expect_match(raw, "nullif(q_m3s, 0) AS mad_m3s", fixed = TRUE)
+  expect_match(raw, "scenario = 'historical' AND month = 0 AND pick",
+               fixed = TRUE)
+  expect_false(grepl("fwa_stream_networks_discharge", raw, fixed = TRUE))
+  # The fill reads the same source in every lookup.
+  f <- link:::.lnk_discharge_sql("ADMS", fill = TRUE, source = "wet")
+  expect_false(grepl("fwa_stream_networks_discharge", f, fixed = TRUE))
+  expect_identical(
+    lengths(regmatches(f, gregexpr("fwa_v1_segment_monthly", f,
+                                   fixed = TRUE))), 5L)
+})
+
+test_that("an export log row from before the source was logged reads fwapg", {
+  expect_identical(link:::.lnk_export_discharge_source(NA), "fwapg")
+  expect_identical(link:::.lnk_export_discharge_source(NULL), "fwapg")
+  expect_identical(link:::.lnk_export_discharge_source("wet"), "wet")
+  expect_error(link:::.lnk_export_discharge_source("x"), "must be one of")
+})
+
+test_that("the join writes wet's annual pick for every line it carries", {
+  conn <- discharge_conn()
+  if (!DBI::dbExistsTable(conn, DBI::Id(schema = "discharge",
+                                        table = "fwa_v1_segment_monthly"))) {
+    testthat::skip("no wet discharge in this database")
+  }
+  s <- "zz_lnk_discharge_wet_probe"
+  DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", s))
+  DBI::dbExecute(conn, sprintf("CREATE SCHEMA %s", s))
+  withr::defer(DBI::dbExecute(conn, sprintf("DROP SCHEMA %s CASCADE", s)))
+  DBI::dbExecute(conn, sprintf(
+    "CREATE TABLE %s.streams AS
+     SELECT linear_feature_id, watershed_group_code, edge_type
+       FROM whse_basemapping.fwa_stream_networks_sp
+      WHERE watershed_group_code = 'ADMS'", s))
+  link:::.lnk_discharge_join(conn, paste0(s, ".streams"), "ADMS",
+                             source = "wet")
+  # Independent of the builder: the wet table read directly.
+  d <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT count(*) FILTER (WHERE t.mad_m3s IS DISTINCT FROM
+                                   nullif(w.q_m3s, 0)) AS off,
+            count(w.q_m3s) AS valued, count(*) AS n,
+            count(*) FILTER (WHERE t.mad_m3s IS NOT NULL
+                               AND t.mad_m3s_source IS DISTINCT FROM
+                                   'modelled') AS bad_source
+       FROM %s.streams t
+       LEFT JOIN discharge.fwa_v1_segment_monthly w
+         ON w.linear_feature_id = t.linear_feature_id
+        AND w.scenario = 'historical' AND w.month = 0 AND w.pick", s))
+  expect_equal(as.numeric(d$off), 0)
+  expect_equal(as.numeric(d$bad_source), 0)
+  expect_gt(as.numeric(d$valued), 0)
 })

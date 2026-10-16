@@ -30,7 +30,8 @@ with \code{path} (resolved absolute path) and optionally \code{source}
 dispatch ingest via \code{\link[crate:crt_ingest]{crate::crt_ingest()}})
 \item \code{pipeline} — named list of pipeline knobs
 (\code{apply_habitat_overlay}, \code{break_order}, \code{cluster},
-\code{spawn_connected}, \code{discharge_fill})
+\code{spawn_connected}, \code{discharge_fill}, \code{discharge_source}). A
+\code{discharge_source} other than \code{fwapg} or \code{wet} is an error at load.
 \item \code{provenance} — named list of per-file provenance metadata,
 keyed by file path relative to \code{dir}. Drift detection against
 these checksums lives in \code{\link[=lnk_config_verify]{lnk_config_verify()}}.

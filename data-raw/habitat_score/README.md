@@ -36,8 +36,9 @@ row (below).
 A species with no MAD range has no "current value" to walk out from: under `mad` it has no
 stream habitat at all. (That was true of BT, GR, KO and RB in `default` until #307 gave it
 width-converted ranges. #302's ladders are built on `--base=default` and step each
-`*_mad_max` to 9999, which now equals the base, so the build stops with "variant … equals
-default". They regenerate at v0.58.0, `8cb4822`, and not after.) So a MAD ladder starts with an **anchor**, a rung that steps from the
+`*_mad_max` to 9999, which now equals the base. From #307 to #331 the build stopped with
+"variant … equals default"; since #331 it drops that cell, below. They reproduce their
+committed bundles byte for byte only at v0.58.0, `8cb4822`.) So a MAD ladder starts with an **anchor**, a rung that steps from the
 `cw` base straight to `mad` at the tightest candidate. The score marks it
 `take (anchor: model change)`, reports its bands both ways (what `mad` keeps that `cw` drops,
 and the reverse) and decides nothing with them. The walk then scores the loosening rungs
@@ -87,6 +88,17 @@ under one fill state can score variants under the other, without a base rebuild.
 `--step=variants --prefix=score300_` on #300's working schemas, into new variant schemas
 (#300's are kept), with #300's `base_habitat_digest.csv` copied into `--out`. The diff
 against #300 is then the fill alone, on the same segmentation.
+
+**Discharge source, and a variant's own fill (#331).** Two optional columns,
+`discharge_source` (`fwapg` or `wet`) and `discharge_fill` (`TRUE` or `FALSE`), are
+written into a variant bundle's `pipeline:`. Empty inherits the base bundle's; the base row
+leaves both empty. The build rejoins `mad_m3s` from the variant's source and fill before
+it classifies, and `built.csv` records both (a row from before #331 read `fwapg`). So one
+segmentation scores both sources and both fill states.
+
+**A `set` cell the base already carries is dropped (#331)**, with a message. #302's rungs
+fix `*_mad_max = 9999`, which `default` has carried since #307, so before #331 the build
+stopped on them. A rung whose own `column` cell equals the base still stops the build.
 
 A second scoring run gets its own `--prefix`; its working networks are then
 `working_<prefix><wsg>` (#284's, under `score284_`, stay `working_score_<wsg>`).

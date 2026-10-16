@@ -1,0 +1,9 @@
+date: 2026-10-15 15:40 PDT
+link: 0.65.1 @ 4b021d79
+fresh installed: 0.39.0 @ e247ca19a7803982dc7e5f55dbbf377dfc85d007
+db: docker fwapg localhost:5432
+schema: fresh_default; 56 WSGs persisted
+discharge source: wet (discharge.fwa_v1_segment_monthly)
+discharge rows: 4532843 (4503352 with mad_m3s)
+discharge table comment: wet_db_load(): discharge/fwa/v1/segment_monthly, scenario historical last loaded from https://fresh-bc.s3.us-west-2.amazonaws.com/discharge/fwa/v1/manifest.json (built 2026-10-15T02:06:57Z, wet acb820f)
+bin: modelled channel_width within +/- 0.1 m; edges 1000/1100/2000/2300; outside waterbodies
