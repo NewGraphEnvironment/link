@@ -70,13 +70,13 @@ Every group is on `cw` today, so MAD ranges are inert in classification. Switchi
 - [x] Build A, the ladder, `variants_331.csv` (BT only): the `default` base on `cw`; the P10 → P05 → P02 ladders for spawn and rear on wet's values, with `discharge_source: wet`; roles from `wsg_roles_302.csv` (BT rows). Prefix `score331_`.
 - [x] Build B, `cw` against `mad`, `variants_331_model.csv`, on base `default_tuned` as #300 / #305 were (review O2): model-only BT variants on fwapg and on wet, fill as `default_tuned` sets it (on), plus fill off on wet only if the fill's reach measured in Phase 3 is material. Prefix `score331m_`. Build B runs after Phase 5 lands `default_tuned`'s wet values, so it tests the pair that ships (review O1).
 - [x] State the run decisions before launch (config, prefix, closure, species BT), then build detached. Score with #302's fixed rule and #300's size-adjusted comparison.
-- [ ] Write a "MAD on wet's discharge (#331)" section in `research/habitat_thresholds.md`:
+- [x] Write a "MAD on wet's discharge (#331)" section in `research/habitat_thresholds.md`:
   - whether BT's 0.078 moves;
   - `mad` vs `cw` on wet against #300 / #305's figures (BT rearing `cw`-only 0.19; −32 % stream rearing);
   - whether the #305 fill still matters on wet.
 
 ## Phase 5: Land the values
-- [ ] `default_tuned`: BT's re-tuned values (if they move), plus `discharge_source: wet`, documented in its `config.yaml`. `default` unchanged. Regenerate `rules.yaml` to a tempfile and diff it. Check that `cw` classification does not move: prepare once, then re-join `mad_m3s` from each source (`.lnk_discharge_join()`, as the harness's `run_variant()` does; classify alone reads what prepare wrote, so without the re-join both passes read one source — code-check round 3) and re-classify on the same schema, asserting `mad_m3s` differs between the passes (`habitat_thresholds_282/reclassify.R`'s method; two full runs differ by one segment through the PSCIS tie, review A2), compare per `linear_feature_id` (review A3).
+- [x] `default_tuned`: BT's re-tuned values (if they move), plus `discharge_source: wet`, documented in its `config.yaml`. `default` unchanged. Regenerate `rules.yaml` to a tempfile and diff it. Check that `cw` classification does not move: prepare once, then re-join `mad_m3s` from each source (`.lnk_discharge_join()`, as the harness's `run_variant()` does; classify alone reads what prepare wrote, so without the re-join both passes read one source — code-check round 3) and re-classify on the same schema, asserting `mad_m3s` differs between the passes (`habitat_thresholds_282/reclassify.R`'s method; two full runs differ by one segment through the PSCIS tie, review A2), compare per `linear_feature_id` (review A3).
 - [ ] NEWS: `default_tuned`'s `config_hash` changes, and new `default_tuned` builds export wet's `mad_m3s` / `*_ratio_mad` (review S5).
 - [x] File a follow-up for GR / RB / KO `default_tuned` MAD on wet (#343).
 
