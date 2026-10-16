@@ -20,7 +20,7 @@ Experimental package — breaking all the time and loving the learning curve. St
 - GR, KO and RB keep fwapg-fitted values: #343.
 
 **Facts not worth re-deriving:**
-- **wet's lower BT percentiles are coverage, not the source.** On locations both value, P10 is 0.075 (wet) / 0.076 (fwapg). wet adds nine Skeena groups fwapg carries no discharge for (BULK, MORR, KISP, …), on smaller water (P10 0.019), and 44 of 64 spawning-staged BT records are there. No held-out group is in the Skeena.
+- **wet's lower BT percentiles are coverage, not the source.** On locations both value, P10 is 0.075 (wet) / 0.076 (fwapg). wet adds nine Skeena groups fwapg carries no discharge for (BULK, MORR, KISP, …), on smaller water (P10 0.019), and 41 of the 58 spawning-staged BT locations the producer tests are there. No held-out group is in the Skeena.
 - **Score MAD ladders with `--floor=expected`.** `habitat_variants_score.R` defaults to `found`, and #302's floor of record is `expected`. The two differ on a band with under 10 locations found and 10 or more expected (#331's fwapg spawning P05 → P02: `keep` against `refuse`).
 - **`data-raw/discharge_wet_load.R` loads the annual pick only, and reloads when given `--force` or an `--expect-load` that differs from the table comment.** On a host holding wet's full load (every month and source: 102.8 M rows, 20 GB, 15.5 min) either one replaces it with the pick. Reload a full host with `wet::wet_db_load(conn, wet::wet_catalog())`.
 - **The fwapg DB volume filled during #331** (295 GB). 62 stale `working_<wsg>` / `zz311_*` schemas were dropped; every `score*` schema was kept. A full disk shows as `could not extend file` mid-build.

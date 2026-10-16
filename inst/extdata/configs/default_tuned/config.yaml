@@ -14,7 +14,8 @@ description: |
   link#305 it fills discharge on river-polygon main stems that have none
   (`pipeline: discharge_fill`), also read only by `mad` groups. From link#331
   it reads discharge from wet's published product (`pipeline:
-  discharge_source: wet`); its BT MAD minima were scored on it. Evidence, and
+  discharge_source: wet`); its BT rearing minimum was scored on it, and spawning
+  takes the same value (unscored). Evidence, and
   the values examined and kept, are in research/habitat_thresholds.md.
 
 extends: default

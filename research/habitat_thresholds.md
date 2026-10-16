@@ -1159,9 +1159,9 @@ table ([above](#literature)):
 `default_tuned` reads mean annual discharge from wet's published product
 (`discharge.fwa_v1_segment_monthly`, `historical`, `month = 0`, `pick`; 0 m³/s read as no
 value) instead of fwapg's `fwa_stream_networks_discharge` (`pipeline: discharge_source:
-wet`). `default` and `bcfishpass` stay on fwapg. wet gives an annual value to 4.53 M lines
-against fwapg's 2.72 M (3.15 M PCIC routed, 1.38 M from wet's water balance). BT's MAD
-minima were re-scored on it. **Nothing moves while every group is on `cw`**: on NATR, one
+wet`). `default` and `bcfishpass` stay on fwapg. wet gives an annual value to 4.50 M lines
+against fwapg's 2.00 M (rows 4.53 M and 2.72 M; wet's 29,491 zeros and fwapg's 713 k NULLs
+carry none). BT's rearing minimum was re-scored on it, and spawning takes the same value. **Nothing moves while every group is on `cw`**: on NATR, one
 prepare under `default_tuned` re-joined from each source changed `mad_m3s` on 189,092 of
 189,200 rows and no habitat flag (`data-raw/logs/discharge_wet_331/cw_unchanged_natr.csv`).
 
@@ -1169,7 +1169,7 @@ prepare under `default_tuned` re-joined from each source changed `mad_m3s` on 18
 
 | Species | Threshold | `default` | `default_tuned` before | `default_tuned` | How |
 |---|---|---|---|---|---|
-| BT | `spawn_mad_min` | 0.041 | 0.078 | **0.043** | any-stage P10 on wet; P10 → P05 refused on any-stage records |
+| BT | `spawn_mad_min` | 0.041 | 0.078 | **0.043** | the any-stage P10, as rearing (operator); unscored as a spawning rung |
 | BT | `rear_mad_min` | 0.021 | 0.078 | **0.043** | scored: P10 → P05 refused |
 
 GR, KO and RB keep #302's fwapg-fitted values; re-tuning them on wet is #343.
@@ -1194,9 +1194,9 @@ On the BT observation locations both sources value, they agree
   KISP 195, MSKE 69, USKE 32, KLUM 30, ZYMO 19, LSKE 8, LKEL 1). Their water is smaller,
   and they pull the pooled percentiles down: wet's calibration P10 is 0.044 against
   fwapg's 0.084 (on the 47 calibration groups both cover, wet's is 0.091).
-- **Spawning-staged records are mostly Skeena.** wet gives 58 spawning-staged BT
-  locations in the calibration groups (fwapg 17); 44 of the 64 accessible ones are Skeena
-  (MORR 23, BULK 12). Their P10 is 0.013. No held-out group is in the Skeena.
+- **Spawning-staged locations are mostly Skeena.** The producer tests 58 spawning-staged BT
+  locations on wet (fwapg 17), 41 of them in the Skeena (MORR and BULK hold most). Their
+  P10 is 0.013. No held-out group is in the Skeena.
 
 The values are PCIC-routed in the Skeena groups as in the held-out ones, so this is not
 wet's water balance.
@@ -1276,13 +1276,13 @@ reaches 5 km of #302's groups' edge 1250 (fwapg 506 km). `variants_331_model.csv
 
 **Reading it.**
 - **At the shipped values `mad` is the closer model for BT.** What only `cw` keeps is used
-  at under a fifth of the size-matched core rate, and what only `mad` keeps is used at or
-  above it. #305 (fwapg, 0.078) read "`cw`-only not habitat" with `mad`-only underpowered;
+  at under a fifth of the size-matched core rate. What only `mad` keeps is used above it
+  for rearing (1.64) and at 0.69 of it for spawning. #305 (fwapg, 0.078) read "`cw`-only not habitat" with `mad`-only underpowered;
   at 0.043 the `mad`-only band has power for the first time.
 - **The source barely matters at the same thresholds.** wet and fwapg differ by 1.5 points
   of rearing. What wet changes is the water with no value: `mad_null` in the `cw`-only
-  rearing band is 6 km (1 location) on wet against 71 km (10) on fwapg. The rest of the
-  band is below the minimum (3,091 km, 20 locations).
+  rearing band is 6 km (1 location) on wet against 71 km (10) on fwapg. Of the rest,
+  3,091 km (20 locations) is below the minimum and 12 km (1) inside the range.
 - **The cost falls from about a third to about a fifth:** #305 measured −32 % BT rearing at
   0.078 on fwapg (base 13,526 km at that HEAD); here −19.8 % at 0.043 on wet. Most of the
   change is the lower minimum, not the source.
