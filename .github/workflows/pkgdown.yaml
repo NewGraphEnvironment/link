@@ -16,6 +16,7 @@ permissions: read-all
 jobs:
   pkgdown:
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     # The job runs on pull requests too, so the build and the leak gate below
     # are verified before merge rather than after. Deploying is still refused
     # on pull requests -- that condition lives on the deploy step itself, which
