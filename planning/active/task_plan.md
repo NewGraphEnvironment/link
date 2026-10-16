@@ -68,7 +68,7 @@ Every group is on `cw` today, so MAD ranges are inert in classification. Switchi
 ## Phase 4: Re-score BT on wet's discharge
 - [x] Commit Phases 1–3 first: the harness refuses a dirty tree, and nothing in the repo is edited while a build runs (review O3).
 - [x] Build A, the ladder, `variants_331.csv` (BT only): the `default` base on `cw`; the P10 → P05 → P02 ladders for spawn and rear on wet's values, with `discharge_source: wet`; roles from `wsg_roles_302.csv` (BT rows). Prefix `score331_`.
-- [ ] Build B, `cw` against `mad`, `variants_331_model.csv`, on base `default_tuned` as #300 / #305 were (review O2): model-only BT variants on fwapg and on wet, fill as `default_tuned` sets it (on), plus fill off on wet only if the fill's reach measured in Phase 3 is material. Prefix `score331m_`. Build B runs after Phase 5 lands `default_tuned`'s wet values, so it tests the pair that ships (review O1).
+- [x] Build B, `cw` against `mad`, `variants_331_model.csv`, on base `default_tuned` as #300 / #305 were (review O2): model-only BT variants on fwapg and on wet, fill as `default_tuned` sets it (on), plus fill off on wet only if the fill's reach measured in Phase 3 is material. Prefix `score331m_`. Build B runs after Phase 5 lands `default_tuned`'s wet values, so it tests the pair that ships (review O1).
 - [x] State the run decisions before launch (config, prefix, closure, species BT), then build detached. Score with #302's fixed rule and #300's size-adjusted comparison.
 - [ ] Write a "MAD on wet's discharge (#331)" section in `research/habitat_thresholds.md`:
   - whether BT's 0.078 moves;

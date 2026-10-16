@@ -1,0 +1,16 @@
+date: 2026-10-16 08:00 PDT
+link: 0.65.1 @ deefda33 (at launch)
+fresh: 0.39.0 @ e247ca19a7803982dc7e5f55dbbf377dfc85d007
+db: docker fwapg localhost:5432
+base: default_tuned
+variants: data-raw/habitat_score/variants_331_model.csv (md5 a55514a14666519416dba7abd453794e): default_tuned,bt_mad_wet,bt_mad_fwapg
+roles: data-raw/habitat_score/wsg_roles_331.csv (md5 87c12a5916b1ad2079099fbd8e09e232)
+built default_tuned: thresholds sha256 4c225d100976; link 5bd9b325; 9 WSGs, 2026-10-16 07:23:03 PDT to 2026-10-16 07:34:33 PDT
+built bt_mad_wet: thresholds sha256 4c225d100976; link 5bd9b325; 9 WSGs, 2026-10-16 07:35:13 PDT to 2026-10-16 07:44:05 PDT
+built bt_mad_fwapg: thresholds sha256 4c225d100976; link 5bd9b325; 9 WSGs, 2026-10-16 07:44:33 PDT to 2026-10-16 07:53:36 PDT
+focal: REVL,ELKR,KOTR,UARL,MURR,UBTN,LHAF,PARS,KOTL; species: BT; buffers: 0,100 m
+rule: n_band >= 10 and density_ratio >= 0.5 on held-out WSGs; floor of record: expected
+model-only rule (link#300): expected >= 10 and found / expected >= 0.5, expected per stream-order class (1, 2, 3, 4+; merged upward until the core holds 10); held-out WSGs, stage any
+pooling: default_tuned species_pooling.csv (sha256 9c42964e0469): 9 WSG x species pairs pooled (BT<-DV)
+bcfishobs.observations rows: 375962
+absences: none (LNK_KNOWLEDGE_DIR unset)
