@@ -27,9 +27,9 @@ provenance on 5, and every calibration drops the groups it does not cover.
   - `parity_crosssection.R` takes `LNK_SCHEMA`, writes an annotated CSV and fails on a group it has no rows for (B3)
 - [x] Re-pack at equal host speeds (`--host-speeds=1,1,1,1`): the 34-group run measured cloud hosts at or above m1's
       rate, not 0.45 (A1)
-- [ ] Commit and push; `study_area_run.sh --preflight-only --cy-workspaces=job1,job2,job3 --config=default
+- [x] Commit and push; `study_area_run.sh --preflight-only --cy-workspaces=job1,job2,job3 --config=default
       --schema=fresh_default` passes every gate, run with `/opt/homebrew/bin/bash` (A-3)
-- [ ] Record the `fresh.streams_vw_bcfp` row count (4,272,365 / 188 groups) before the refresh, and again after (A4)
+- [ ] Record the `fresh.streams_vw_bcfp` row count (4,272,365 / 188 groups, recorded 2026-10-16) before the refresh, and again after (A4)
 - [ ] Pilot at HEAD on m1 + job1 into a scratch schema: m1 `--focal=KAKC`, job1 `--focal=TSEA` (`default`-only groups,
       so it exercises the B1 fix, cloud-host prep at 0.66 and 11-species consolidate). It takes `--refresh-primitives`,
       so the vintage gate passes, and it checks free disk on the cloud host (A5)

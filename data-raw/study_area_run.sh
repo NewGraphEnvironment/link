@@ -200,6 +200,15 @@ for arg in "$@"; do
   esac
 done
 
+# --config and --schema are interpolated into the cypher ssh command strings
+# inside '...', like --run-label: refuse anything that could close the quote
+# (link#246 code-check).
+for v in "$CONFIG" "$SCHEMA_OVERRIDE"; do
+  case "$v" in
+    *[!A-Za-z0-9_]*) echo "FATAL: --config= / --schema= accept only A-Z a-z 0-9 _ (got '$v')" >&2; exit 1 ;;
+  esac
+done
+
 # --preflight-only needs no --focal set: it exits before the buckets are
 # resolved, and demanding them would make the cheap dry check as awkward as
 # the real thing.

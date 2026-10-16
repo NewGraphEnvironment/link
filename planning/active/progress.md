@@ -12,3 +12,7 @@
   fixed before any spend (B1 bucket config, B2 label charset, B3 tunnel-free parity). Host speeds measured from
   `fresh.log` (`20260901_234743`): m1 0.219, job1 0.113, job2 0.220 min per 1k source segments, so re-packed at equal
   speeds: 76 / 50 / 55 / 60 groups, about 1.21 M source segments per host
+- Preflight-only (`--cy-workspaces=job1,job2,job3 --config=default --schema=fresh_default`) at `0ae73a79`: every
+  local gate green, cloud-host gates NOT CHECKED (no hosts). bcfp pin `v0.7.15-50-g620dbe4`, fwapg `f9718cb`,
+  bcfishobs `08630cf`, fresh `e247ca1`. Log: `data-raw/logs/provincial_246/preflight_1.log`
+- `/code-check branch` round 1 spawned 21:29 UTC

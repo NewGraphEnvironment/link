@@ -44,7 +44,8 @@ conn <- lnk_db_conn(dbname = "fwapg", host = "localhost", port = 5432L,
                     user = "postgres", password = "postgres")
 on.exit(try(DBI::dbDisconnect(conn), silent = TRUE), add = TRUE)
 
-schema      <- Sys.getenv("LNK_SCHEMA", "fresh")
+schema      <- Sys.getenv("LNK_SCHEMA")
+if (!nzchar(schema)) schema <- "fresh"
 args        <- commandArgs(trailingOnly = TRUE)
 wsgs        <- if (length(args)) toupper(args) else c("FINA", "PARS", "PCEA", "LKEL")
 species     <- c("bt", "st", "co", "ch", "cm", "pk", "sk", "wct")
