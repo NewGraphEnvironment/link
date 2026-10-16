@@ -1,0 +1,29 @@
+21:27:50 validating default (score331_default), buffer 0 m
+21:28:04 validating default (score331_default), buffer 100 m
+21:28:18 validating bt_rear_wet_p10 (score331_bt_rear_wet_p10), buffer 0 m
+21:28:32 validating bt_rear_wet_p10 (score331_bt_rear_wet_p10), buffer 100 m
+21:28:45 validating bt_rear_wet_p05 (score331_bt_rear_wet_p05), buffer 0 m
+21:28:59 validating bt_rear_wet_p05 (score331_bt_rear_wet_p05), buffer 100 m
+21:29:12 validating bt_rear_wet_p02 (score331_bt_rear_wet_p02), buffer 0 m
+21:29:26 validating bt_rear_wet_p02 (score331_bt_rear_wet_p02), buffer 100 m
+21:29:39 validating bt_spawn_wet_p10 (score331_bt_spawn_wet_p10), buffer 0 m
+21:29:53 validating bt_spawn_wet_p10 (score331_bt_spawn_wet_p10), buffer 100 m
+21:30:06 validating bt_spawn_wet_p05 (score331_bt_spawn_wet_p05), buffer 0 m
+21:30:20 validating bt_spawn_wet_p05 (score331_bt_spawn_wet_p05), buffer 100 m
+21:30:33 validating bt_spawn_wet_p02 (score331_bt_spawn_wet_p02), buffer 0 m
+21:30:47 validating bt_spawn_wet_p02 (score331_bt_spawn_wet_p02), buffer 100 m
+21:31:00 validating bt_rear_fwapg_p10 (score331_bt_rear_fwapg_p10), buffer 0 m
+21:31:15 validating bt_rear_fwapg_p10 (score331_bt_rear_fwapg_p10), buffer 100 m
+21:31:29 validating bt_rear_fwapg_p05 (score331_bt_rear_fwapg_p05), buffer 0 m
+21:31:44 validating bt_rear_fwapg_p05 (score331_bt_rear_fwapg_p05), buffer 100 m
+21:31:57 validating bt_rear_fwapg_p02 (score331_bt_rear_fwapg_p02), buffer 0 m
+21:32:12 validating bt_rear_fwapg_p02 (score331_bt_rear_fwapg_p02), buffer 100 m
+21:32:26 validating bt_spawn_fwapg_p10 (score331_bt_spawn_fwapg_p10), buffer 0 m
+21:32:41 validating bt_spawn_fwapg_p10 (score331_bt_spawn_fwapg_p10), buffer 100 m
+21:32:54 validating bt_spawn_fwapg_p05 (score331_bt_spawn_fwapg_p05), buffer 0 m
+21:33:09 validating bt_spawn_fwapg_p05 (score331_bt_spawn_fwapg_p05), buffer 100 m
+21:33:22 validating bt_spawn_fwapg_p02 (score331_bt_spawn_fwapg_p02), buffer 0 m
+21:33:38 validating bt_spawn_fwapg_p02 (score331_bt_spawn_fwapg_p02), buffer 100 m
+habitat moved against the step direction (km): bt_rear_fwapg_p02 0.887, bt_rear_fwapg_p05 12.91, bt_rear_wet_p02 1.448, bt_rear_wet_p05 2.704, bt_spawn_fwapg_p02 0, bt_spawn_fwapg_p05 0, bt_spawn_wet_p02 0, bt_spawn_wet_p05 0
+21:39:40 wrote data-raw/logs/habitat_score_331
+exit 0

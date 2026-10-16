@@ -1,0 +1,7 @@
+"species_code","column","role","class","km","n","expected","ratio_elevation_adjusted"
+"BT","spawn_mad_min","held_out","bt_spawn_wet_p02",2740.74346096995,4,336.183020327526,0.0118982808712439
+"BT","spawn_mad_min","in_sample","bt_spawn_wet_p02",312.285727048457,0,31.7517341854285,0
+"BT","spawn_mad_min","held_out","bt_spawn_wet_p05",1448.46889385444,4,178.407742909095,0.0224205515678663
+"BT","spawn_mad_min","in_sample","bt_spawn_wet_p05",311.539678086221,1,31.4044800300418,0.0318425905808149
+"BT","spawn_mad_min","held_out","bt_spawn_wet_p10 removed",21.9917357012479,1,3.3831910511737,0.295578932692281
+"BT","spawn_mad_min","in_sample","bt_spawn_wet_p10 removed",9.4863509465534,1,0.988481821812985,1.01165239252037

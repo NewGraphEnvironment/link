@@ -1,0 +1,11 @@
+21:39:46 validating default (score331_default), buffer 0 m
+21:40:02 validating default (score331_default), buffer 100 m
+21:40:15 validating bt_spawn_wet_p10 (score331_bt_spawn_wet_p10), buffer 0 m
+21:40:30 validating bt_spawn_wet_p10 (score331_bt_spawn_wet_p10), buffer 100 m
+21:40:43 validating bt_spawn_wet_p05 (score331_bt_spawn_wet_p05), buffer 0 m
+21:40:57 validating bt_spawn_wet_p05 (score331_bt_spawn_wet_p05), buffer 100 m
+21:41:10 validating bt_spawn_wet_p02 (score331_bt_spawn_wet_p02), buffer 0 m
+21:41:25 validating bt_spawn_wet_p02 (score331_bt_spawn_wet_p02), buffer 100 m
+habitat moved against the step direction (km): bt_spawn_wet_p02 0, bt_spawn_wet_p05 0
+21:42:28 wrote data-raw/logs/habitat_score_331_spawn_any
+exit 0
