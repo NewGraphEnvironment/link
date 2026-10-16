@@ -19,3 +19,8 @@
 - `/code-check branch`: 4 rounds (1 clean + 2 hardening; 2: 2 findings; 3: 2 real defects; 4: clean, by enumeration
   of every skip / aggregate in the changed files). No round found a defect inside a previous fix. Fixes in the three
   "Code-check round N fixes" commits; mutation tests proved the parity presence guard and the all-NULL host checks fire
+- Pilot `20261016_215933-663675b0` (m1 KAKC closure LSTR,STIR,MSTR,KAKC + job1 TSEA closure LPET,TSEA, into
+  `fresh_pilot246`, `--refresh-primitives`): 21:59 → 22:27 UTC, exit 0, 6/6 modelled, recomputed, consolidated.
+  `study_area_verify.sql` and `verify_extra.sql` both PASS (`data-raw/logs/provincial_246/pilot_verify*.log`).
+  bcfp view after refresh 4,272,394 rows / 188 groups (was 4,272,365). Compare errors for KAKC, LPET, TSEA are the
+  expected RB/GR-only groups (no bcfp reference)

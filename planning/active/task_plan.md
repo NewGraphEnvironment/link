@@ -29,8 +29,8 @@ provenance on 5, and every calibration drops the groups it does not cover.
       rate, not 0.45 (A1)
 - [x] Commit and push; `study_area_run.sh --preflight-only --cy-workspaces=job1,job2,job3 --config=default
       --schema=fresh_default` passes every gate, run with `/opt/homebrew/bin/bash` (A-3)
-- [ ] Record the `fresh.streams_vw_bcfp` row count (4,272,365 / 188 groups, recorded 2026-10-16) before the refresh, and again after (A4)
-- [ ] Pilot at HEAD on m1 + job1 into a scratch schema: m1 `--focal=KAKC`, job1 `--focal=TSEA` (`default`-only groups,
+- [x] Record the `fresh.streams_vw_bcfp` row count (4,272,365 / 188 groups, recorded 2026-10-16) before the refresh, and again after (A4)
+- [x] Pilot at HEAD on m1 + job1 into a scratch schema: m1 `--focal=KAKC`, job1 `--focal=TSEA` (`default`-only groups,
       so it exercises the B1 fix, cloud-host prep at 0.66 and 11-species consolidate). It takes `--refresh-primitives`,
       so the vintage gate passes, and it checks free disk on the cloud host (A5)
 - [ ] Optional: drop the orphan `working_*` / `zz_lnk_mc_scratch_*` debris with `state_clean.sh --schemas=` scoped to

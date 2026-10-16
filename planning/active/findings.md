@@ -164,6 +164,19 @@ dispatcher's load can be up to 7 days old, so an upstream change in that window 
 main run itself, so the loads are minutes apart. The lasting fix belongs with #276: compare `source_artifact` across
 hosts in `preflight_hosts()`.
 
+## Pilot (2026-10-16)
+
+- Rates (min per 1k source segments): m1 0.086 over 84,296 segments (4 groups), job1 0.175 over 19,814 (2 groups).
+  That reverses the September 34-group run (m1 0.219, cypher 0.113 / 0.220). Equal packing is the minimax choice:
+  if cloud hosts are 2× slower, makespan is ~3.5 h on the cloud hosts; if faster, ~4.4 h on m1. The 0.45 split's
+  worst case was ~7.5 h.
+- FWA identity across hosts: m1's exact `count(*)` is 386,025 lakes and 375,178 wetlands, exactly the cloud host's
+  logged values. m1's own logged values (386,429 / 374,560) are stale `reltuples`. Streams: m1 exact 4,907,441, cloud
+  4,898,813 (an estimate on an 866k-page table). That is consistent with one FWA load, but streams are not proven
+  exactly.
+- The cloud host (`s-8vcpu-32gb-amd`) has a 400 GB disk, against ~110 GB needed for FWA + working schemas + persist
+  at ~1.21 M segments.
+
 ## Errors Encountered
 
 | Error | Resolution |
