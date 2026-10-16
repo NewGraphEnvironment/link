@@ -76,7 +76,7 @@ Every group is on `cw` today, so MAD ranges are inert in classification. Switchi
   - whether the #305 fill still matters on wet.
 
 ## Phase 5: Land the values
-- [ ] `default_tuned`: BT's re-tuned values (if they move), plus `discharge_source: wet`, documented in its `config.yaml`. `default` unchanged. Regenerate `rules.yaml` to a tempfile and diff it. Check that `cw` classification does not move: prepare once and re-classify on the same schema under both sources (`habitat_thresholds_282/reclassify.R`'s method; two full runs differ by one segment through the PSCIS tie, review A2), compare per `linear_feature_id` (review A3).
+- [ ] `default_tuned`: BT's re-tuned values (if they move), plus `discharge_source: wet`, documented in its `config.yaml`. `default` unchanged. Regenerate `rules.yaml` to a tempfile and diff it. Check that `cw` classification does not move: prepare once, then re-join `mad_m3s` from each source (`.lnk_discharge_join()`, as the harness's `run_variant()` does; classify alone reads what prepare wrote, so without the re-join both passes read one source — code-check round 3) and re-classify on the same schema, asserting `mad_m3s` differs between the passes (`habitat_thresholds_282/reclassify.R`'s method; two full runs differ by one segment through the PSCIS tie, review A2), compare per `linear_feature_id` (review A3).
 - [ ] NEWS: `default_tuned`'s `config_hash` changes, and new `default_tuned` builds export wet's `mad_m3s` / `*_ratio_mad` (review S5).
 - [ ] File a follow-up for GR / RB / KO `default_tuned` MAD on wet.
 

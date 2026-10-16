@@ -105,6 +105,19 @@ if [ "$NO_CYPHERS" -eq 1 ]; then
   CY_WORKSPACES=""
 fi
 
+# Hosts dispatched here are prepared for fwapg's discharge only (link#331): a
+# config reading wet needs wet's table and one load on every host, which
+# study_area_run.sh checks. Resolved from the checkout, not the installed link.
+DISCHARGE=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && Rscript -e '
+suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
+cat(link:::.lnk_discharge_source(lnk_config(commandArgs(TRUE)[1])))' \
+  "$CONFIG" 2>/dev/null || true)
+if [ "$DISCHARGE" != "fwapg" ]; then
+  echo "FATAL: --config=$CONFIG reads discharge from '${DISCHARGE:-unknown}';" >&2
+  echo "  run it with data-raw/study_area_run.sh, which loads wet on every host." >&2
+  exit 1
+fi
+
 EXTRA_ARGS="--config=$CONFIG"
 [ -n "$SCHEMA" ]            && EXTRA_ARGS="$EXTRA_ARGS --schema=$SCHEMA"
 [ -n "$RDS_DIR" ]           && EXTRA_ARGS="$EXTRA_ARGS --rds-dir=$RDS_DIR"
