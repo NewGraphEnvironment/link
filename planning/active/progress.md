@@ -16,3 +16,6 @@
   local gate green, cloud-host gates NOT CHECKED (no hosts). bcfp pin `v0.7.15-50-g620dbe4`, fwapg `f9718cb`,
   bcfishobs `08630cf`, fresh `e247ca1`. Log: `data-raw/logs/provincial_246/preflight_1.log`
 - `/code-check branch` round 1 spawned 21:29 UTC
+- `/code-check branch`: 4 rounds (1 clean + 2 hardening; 2: 2 findings; 3: 2 real defects; 4: clean, by enumeration
+  of every skip / aggregate in the changed files). No round found a defect inside a previous fix. Fixes in the three
+  "Code-check round N fixes" commits; mutation tests proved the parity presence guard and the all-NULL host checks fire
