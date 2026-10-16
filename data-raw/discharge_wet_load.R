@@ -70,8 +70,10 @@ if (!after$ok) quit(status = 1L)
 if (!is.na(expect) && !identical(held(after), expect)) {
   message("FAIL this host holds a different wet load from the dispatcher:\n",
           "  here:       ", held(after), "\n  dispatcher: ", expect, "\n",
-          "Reload the dispatcher (data-raw/discharge_wet_load.R --force) ",
-          "so every host classifies on the same discharge.")
+          "Every host must classify on the same discharge. Reload the ",
+          "dispatcher from the published build with ",
+          "wet::wet_db_load(conn, wet::wet_catalog()) (every month and ",
+          "source); --force here would keep only the annual pick.")
   quit(status = 1L)
 }
 cat("discharge_wet_load: complete\n")

@@ -289,6 +289,9 @@ res <- lnk_preflight_discharge(conn, lnk_config(commandArgs(TRUE)[1]),
 if (res$ok) cat(link:::.lnk_discharge_wet_load_id(res$comment))' \
     "$CONFIG" 2>/dev/null || true)
   case "$WET_LOAD" in
+    "") echo "FATAL: --config=$CONFIG reads wet's discharge and the dispatcher holds none."
+        echo "  LNK_LOAD=loadall Rscript data-raw/discharge_wet_load.R"
+        exit 1 ;;
     *"'"*) echo "FATAL: the wet table comment holds a quote: $WET_LOAD"; exit 1 ;;
   esac
 fi

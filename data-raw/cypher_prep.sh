@@ -268,6 +268,12 @@ rm -f "$TMP_SNAP_LOG"
 # wet's discharge, for a config that reads it (link#331). One pin: the wet
 # entry in link's DESCRIPTION Remotes. Same tempfile + exit-check pattern.
 if [ "${CYPHER_PREP_DISCHARGE:-fwapg}" = "wet" ]; then
+  # Without the dispatcher's load there is nothing to hold this host to, and
+  # it would load whatever is published now.
+  if [ -z "${CYPHER_PREP_WET_LOAD:-}" ]; then
+    echo "FATAL: CYPHER_PREP_DISCHARGE=wet needs CYPHER_PREP_WET_LOAD (the dispatcher's load)" >&2
+    exit 1
+  fi
   WET_REF=$(awk '/^Remotes:/{r=1;next} r && /^[^ ]/{r=0} r' ../DESCRIPTION \
     | tr -d ' ,' | grep '^NewGraphEnvironment/wet@' || true)
   if [ -z "$WET_REF" ]; then
