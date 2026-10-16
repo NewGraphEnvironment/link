@@ -279,6 +279,9 @@ Redistributed bcfishpass data carries its own license: see
 - [`lnk_points_snap()`](https://newgraphenvironment.github.io/link/reference/lnk_points_snap.md)
   : Snap a Postgres table of points to the FWA stream network
 
+- [`lnk_preflight_discharge()`](https://newgraphenvironment.github.io/link/reference/lnk_preflight_discharge.md)
+  : Is the discharge a config reads loaded in this database?
+
 - [`lnk_preflight_fresh()`](https://newgraphenvironment.github.io/link/reference/lnk_preflight_fresh.md)
   : Does the installed 'fresh' provide what the pipeline calls?
 

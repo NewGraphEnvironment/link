@@ -288,14 +288,16 @@ the one the group classified on: the model `cfg`'s
 `parameters_habitat_method.csv` gives the WSG, resolved as
 [`lnk_pipeline_classify()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_classify.md)
 resolves it (an unlisted group is `cw`). On `cw` it is the channel
-width; on `mad` it is the mean annual discharge `mad_m3s`, joined from
-`whse_basemapping.fwa_stream_networks_discharge` on `linear_feature_id`
-because the persist does not carry it. When `cfg` fills discharge
-(`cfg$pipeline$discharge_fill`), it is filled as prepare filled it: edge
-1250 lines with no value take one along the network (`mad_m3s_source`
-says which), and a `mad` group logged with the other fill state is an
-error. The `width` labels below mean that size on either model; `model`
-and `mad_m3s` split them:
+width; on `mad` it is the mean annual discharge `mad_m3s`, joined on
+`linear_feature_id` from the discharge source `cfg` reads
+(`cfg$pipeline$discharge_source`: fwapg's
+`whse_basemapping.fwa_stream_networks_discharge` by default, or wet's
+annual pick) because the persist does not carry it. When `cfg` fills
+discharge (`cfg$pipeline$discharge_fill`), it is filled as prepare
+filled it: edge 1250 lines with no value take one along the network
+(`mad_m3s_source` says which), and a `mad` group logged with the other
+fill state is an error. The `width` labels below mean that size on
+either model; `model` and `mad_m3s` split them:
 
 - `NA` — captured; `no_segment` — the location attaches to no segment;
 

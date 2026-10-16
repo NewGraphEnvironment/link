@@ -116,6 +116,7 @@ fallback is why `unknown` should be unreachable in practice.
 
 Other preflight:
 [`lnk_fanout_judge()`](https://newgraphenvironment.github.io/link/reference/lnk_fanout_judge.md),
+[`lnk_preflight_discharge()`](https://newgraphenvironment.github.io/link/reference/lnk_preflight_discharge.md),
 [`lnk_preflight_fresh()`](https://newgraphenvironment.github.io/link/reference/lnk_preflight_fresh.md),
 [`lnk_preflight_parity()`](https://newgraphenvironment.github.io/link/reference/lnk_preflight_parity.md),
 [`lnk_preflight_stamp()`](https://newgraphenvironment.github.io/link/reference/lnk_preflight_stamp.md)

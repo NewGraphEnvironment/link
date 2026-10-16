@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.65.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.66.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,24 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.66.0" id="link-0660">link 0.66.0<a class="anchor" aria-label="anchor" href="#link-0660"></a></h2>
+<p><strong>A bundle chooses where mean annual discharge is read from, and <code>default_tuned</code> now reads wet’s published product, with BT’s MAD minima re-set on it</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/331" class="external-link">#331</a>).</p>
+<ul><li>
+<strong><code>pipeline: discharge_source: fwapg | wet</code>.</strong> <code>fwapg</code> (the default, and what <code>default</code> and <code>bcfishpass</code> keep) reads <code>whse_basemapping.fwa_stream_networks_discharge</code>. <code>wet</code> reads the annual pick of wet’s <code>discharge.fwa_v1_segment_monthly</code> (<code>historical</code>, month 0), with 0 m³/s read as no value. wet values 4.50 M lines against fwapg’s 2.00 M. The fwapg SQL is unchanged.</li>
+<li>
+<strong>Recorded everywhere the fill is:</strong> <code>&lt;schema&gt;.log.discharge_source</code> per WSG (a row from before reads <code>fwapg</code>); the validator warns when the log and the bundle disagree for a group the bundle reads discharge in; the export manifest names each WSG’s source, plus a <code>discharge.wet_load</code> block naming the wet build it read; a wet run’s <code>log_input</code> carries wet’s table and its comment.</li>
+<li>
+<strong>New export <code><a href="../reference/lnk_preflight_discharge.html">lnk_preflight_discharge()</a></code>.</strong> Prepare stops with the load command when a bundle’s source table is missing. <code>data-raw/discharge_wet_load.R</code> loads the annual pick of wet’s table, and skips when the host already holds the expected build (<code>--expect-load</code>). <code>study_area_run.sh</code> checks the dispatcher holds a wet load and has each cypher load the same one (<code>cypher_prep.sh</code>, <code>CYPHER_PREP_WET_LOAD</code>); <code>wsgs_run_pipeline.sh</code> and <code>wsgs_dispatch.sh</code> refuse a wet config and point to it. Suggests <code>wet (&gt;= 0.4.7)</code>.</li>
+<li>
+<strong><code>default_tuned</code>: BT <code>spawn_mad_min</code> and <code>rear_mad_min</code> 0.078 → 0.043</strong> on wet’s discharge. Rearing was scored on held-out groups; spawning takes the same any-stage percentile, because the held-out groups hold too few spawning-staged locations to score it (3 in the core). Its <code>config_hash</code> changes. A <code>default_tuned</code> build now exports wet’s <code>mad_m3s</code> and <code>*_ratio_mad</code>. <strong>No habitat flag moves while every group is on <code>cw</code></strong> (NATR: 0 of 189,200 rows). GR, KO and RB keep their fwapg-fitted values: <a href="https://github.com/NewGraphEnvironment/link/issues/343" class="external-link">#343</a>.</li>
+<li>
+<strong>At these values <code>mad</code> is the closer model for BT:</strong> on held-out groups the water only <code>cw</code> keeps is used at 0.18 (rearing) and 0.14 (spawning) of the size-matched rate, and the water only <code>mad</code> keeps at 1.64 and 0.69. <code>mad</code> keeps 19.8 % less BT rearing than <code>cw</code> (<a href="https://github.com/NewGraphEnvironment/link/issues/305" class="external-link">#305</a>: 32 % at 0.078 on fwapg).</li>
+<li>
+<strong>The values moved because wet covers nine Skeena groups fwapg does not, not because the sources disagree.</strong> On locations both value, they agree (P10 0.075 / 0.076). Write-up: <code>research/habitat_thresholds.md</code>, “MAD on wet’s discharge (<a href="https://github.com/NewGraphEnvironment/link/issues/331" class="external-link">#331</a>)”.</li>
+<li>
+<strong>Scoring harness:</strong> a variant may set <code>discharge_source</code> and <code>discharge_fill</code> (written into its bundle, recorded in <code>built.csv</code>); a <code>set</code> cell the base already carries is dropped, so <a href="https://github.com/NewGraphEnvironment/link/issues/302" class="external-link">#302</a>’s ladders build at HEAD again. <code>query_habitat_thresholds_mad.R</code> and <code>query_width_mad_equivalent.R</code> take <code>--discharge-source</code>.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.65.1" id="link-0651">link 0.65.1<a class="anchor" aria-label="anchor" href="#link-0651"></a></h2>
 <p><strong>The README, DESCRIPTION, CITATION.cff and package help describe link as a tool for developing, testing and communicating intrinsic habitat models</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/338" class="external-link">#338</a>). The point of it is flexibility: every rule and threshold is a row in a config.</p>

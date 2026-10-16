@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.65.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.66.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -592,6 +592,17 @@ Never the receiving river downstream. <code>mad_m3s_source</code> names the tier
 <li>
 <strong>Recorded state.</strong> The applied state is logged per WSG (<code>&lt;schema&gt;.log.discharge_fill</code>). The validator refuses a WSG logged with another state than its <code>cfg</code> applies, and the variants harness carries the state in <code>built.csv</code>.</li>
 </ul><code>data-raw/logs/discharge_fill_305/</code>, research “<code>cw</code> against <code>mad</code>”.</li>
+<li>
+<strong>Where discharge is read from is a bundle setting, <code>discharge_source</code></strong> (#331). <code>fwapg</code> (the default, and what every run before #331 read) is <code>whse_basemapping.fwa_stream_networks_discharge</code>. <code>wet</code> is the annual pick of wet’s published <code>discharge.fwa_v1_segment_monthly</code> (<code>scenario = 'historical'</code>, <code>month = 0</code>, <code>pick</code>), which values about 4.5 M lines against fwapg’s 2.0 M (rows 4.53 M and 2.72 M) (PCIC’s routed model where it has one, wet’s water balance elsewhere). Load it into a database once with <code>wet::wet_db_load(conn, wet::wet_catalog())</code> before a run reads it.
+<ul><li>
+<strong>One relation.</strong> <code>.lnk_discharge_rel(source)</code> has fwapg’s shape (<code>linear_feature_id, watershed_group_code, mad_m3s</code>), and prepare, the fill, the validator, the export and the variants harness all read through it.</li>
+<li>
+<strong>Recorded state.</strong> It is logged per WSG (<code>&lt;schema&gt;.log.discharge_source</code>; NULL on an older row, which read fwapg). The validator warns about a WSG whose logged source differs from its <code>cfg</code> where <code>cfg</code> reads discharge (a warning, because the MAD producer measures wet at observations on <code>cw</code> builds through the validator), and the export’s manifest names the source per WSG.</li>
+<li>
+<strong>Every host that runs a wet config needs wet’s table</strong>, <code>cw</code> groups included, because prepare joins discharge for every group; prepare stops with the load command when it is missing. <code>lnk_preflight_discharge(conn, cfg)</code> checks a database. <code>data-raw/discharge_wet_load.R</code> loads the annual pick only (<code>months = 0, pick_only = TRUE</code>, about 4.5 M rows) and skips a host that already has it. <code>study_area_run.sh</code> gates the dispatcher on the config’s source and passes it to <code>cypher_prep.sh</code> (<code>CYPHER_PREP_DISCHARGE=wet</code>), which installs wet at its DESCRIPTION pin and loads it after the snapshot.</li>
+<li>
+<strong>Which load a build read.</strong> wet’s loader writes its manifest URL, build time and commit into the table’s comment; <code>log_input.table_comment</code> copies it at run open, and a wet run adds wet’s table to its fingerprinted inputs. The export manifest’s <code>discharge.wet_load</code> sets the logged loads beside the exporting database’s and says whether they match (by build, ignoring wet’s <code>; subset</code> suffix). wet’s table is not a vintage-gate primitive: it is a published, versioned dataset, and a host running an fwapg config must not need it.</li>
+</ul></li>
 <li>
 <strong><code><a href="reference/lnk_habitat_validate.html">lnk_habitat_validate()</a></code> scores each group on its own model</strong> (#299), from the <code>cfg</code> it is handed, resolved by fresh’s <code>.frs_habitat_models()</code> (one rule for classify and validator). A <code>mad</code> group’s predicates and size relaxation read <code>mad_m3s</code>, joined from the discharge table on <code>linear_feature_id</code> (filled when <code>cfg</code> fills, scoped to the scored lines); reason labels are shared with <code>cw</code> and the <code>model</code> / <code>mad_m3s</code> columns split them, plus <code>no_mad_threshold</code> for a species with no MAD range. To score a run made with a swapped method table, swap it on the same <code>cfg</code> object (<code>cfg$files$parameters_habitat_method$path</code>) before validating: <code>lnk_pipeline_classify(method_csv =)</code> is invisible to the validator.</li>
 <li>

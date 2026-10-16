@@ -23,7 +23,7 @@ false-positive check."><meta property="og:image" content="https://newgraphenviro
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.65.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.66.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -314,9 +314,10 @@ the size each moved to the stage's minimum. The size is the one the group
 classified on: the model <code>cfg</code>'s <code>parameters_habitat_method.csv</code> gives
 the WSG, resolved as <code><a href="lnk_pipeline_classify.html">lnk_pipeline_classify()</a></code> resolves it (an unlisted
 group is <code>cw</code>). On <code>cw</code> it is the channel width; on <code>mad</code> it is the mean
-annual discharge <code>mad_m3s</code>, joined from
-<code>whse_basemapping.fwa_stream_networks_discharge</code> on <code>linear_feature_id</code>
-because the persist does not carry it. When <code>cfg</code> fills discharge
+annual discharge <code>mad_m3s</code>, joined on <code>linear_feature_id</code> from the
+discharge source <code>cfg</code> reads (<code>cfg$pipeline$discharge_source</code>: fwapg's
+<code>whse_basemapping.fwa_stream_networks_discharge</code> by default, or wet's
+annual pick) because the persist does not carry it. When <code>cfg</code> fills discharge
 (<code>cfg$pipeline$discharge_fill</code>), it is filled as prepare filled it: edge
 1250 lines with no value take one along the network (<code>mad_m3s_source</code>
 says which), and a <code>mad</code> group logged with the other fill state is an

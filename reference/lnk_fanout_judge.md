@@ -111,6 +111,7 @@ Evaluated in order, so the first that applies wins:
 [`lnk_preflight_parity()`](https://newgraphenvironment.github.io/link/reference/lnk_preflight_parity.md)
 
 Other preflight:
+[`lnk_preflight_discharge()`](https://newgraphenvironment.github.io/link/reference/lnk_preflight_discharge.md),
 [`lnk_preflight_fresh()`](https://newgraphenvironment.github.io/link/reference/lnk_preflight_fresh.md),
 [`lnk_preflight_parity()`](https://newgraphenvironment.github.io/link/reference/lnk_preflight_parity.md),
 [`lnk_preflight_stamp()`](https://newgraphenvironment.github.io/link/reference/lnk_preflight_stamp.md),
