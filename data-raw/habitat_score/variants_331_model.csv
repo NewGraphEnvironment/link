@@ -1,0 +1,4 @@
+variant,species_code,column,value,flag,obs_stage,step_from,equals_bundle,model,set,discharge_source,discharge_fill
+default_tuned,,,,,,,default_tuned,cw,,,
+bt_mad_wet,BT,,,,,default_tuned,,mad,,wet,
+bt_mad_fwapg,BT,,,,,default_tuned,,mad,,fwapg,

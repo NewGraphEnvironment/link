@@ -12,7 +12,9 @@ description: |
   minima (link#307); these are stricter for BT, GR and KO and looser for RB.
   They move no output while every group is on `cw`. From
   link#305 it fills discharge on river-polygon main stems that have none
-  (`pipeline: discharge_fill`), also read only by `mad` groups. Evidence, and
+  (`pipeline: discharge_fill`), also read only by `mad` groups. From link#331
+  it reads discharge from wet's published product (`pipeline:
+  discharge_source: wet`); its BT MAD minima were scored on it. Evidence, and
   the values examined and kept, are in research/habitat_thresholds.md.
 
 extends: default
@@ -32,12 +34,22 @@ pipeline:
   # without it those reaches fail every MAD test. Absent means false
   # (default, bcfishpass). Logged per WSG in <schema>.log.discharge_fill.
   discharge_fill: true
+  # discharge_source — where mean annual discharge is read from (link#331):
+  # wet's annual pick of discharge.fwa_v1_segment_monthly (historical,
+  # month 0, pick; 0 m3/s read as no value), not fwapg's
+  # fwa_stream_networks_discharge, which `default` and `bcfishpass` keep.
+  # BT's MAD minima: see research/habitat_thresholds.md, "MAD on wet's
+  # discharge (#331)". GR, RB and KO's were fitted to fwapg's (link#302) and
+  # are not yet re-tuned on wet. Every host that runs this
+  # bundle needs wet's table: data-raw/discharge_wet_load.R. Logged per WSG in
+  # <schema>.log.discharge_source.
+  discharge_source: wet
 
 provenance:
   parameters_habitat_thresholds.csv:
-    source: link (hand-tuned from configs/default/parameters_habitat_thresholds.csv; link#284, link#302)
+    source: link (hand-tuned from configs/default/parameters_habitat_thresholds.csv; link#284, link#302, link#331)
     upstream_sha: 7f12d99115b7d20302d5ed043188cb870f90f83b
     upstream_version: fresh@v0.33.0
-    synced: '2026-10-02'
-    checksum: sha256:247a7088101cb3538c8a88f19d130cd4db3137aa0fcc6fa661656b29b284ab3e
+    synced: '2026-10-15'
+    checksum: sha256:d07c03522f7840acd08c5e39cb14800d9a25f0655eb66298697410ac9860e538
     shape_checksum: sha256:8de9bc1fcc2c703176a57d8a982bd26da1c49a885af3053f00078003a7e9283f

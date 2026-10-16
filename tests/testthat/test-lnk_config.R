@@ -348,14 +348,15 @@ test_that("default_tuned differs from default only in the #284 and #302 cells", 
   }))
   diffs <- diffs[order(diffs$species_code, diffs$column), ]
   rownames(diffs) <- NULL
-  # #302: observed MAD minima, against default's width-converted ones (#307).
+  # #302: observed MAD minima (BT re-scored on wet, #331), against default's
+  # width-converted ones (#307).
   # Both bundles leave the maxima open, so only the minima differ.
   mad <- data.frame(
     species_code = c(rep("BT", 2), rep("GR", 2), "KO", rep("RB", 2)),
     column = c("rear_mad_min", "spawn_mad_min", "rear_mad_min", "spawn_mad_min",
                "spawn_mad_min", "rear_mad_min", "spawn_mad_min"),
     default = c(0.021, 0.041, 0.021, 0.2, 0.041, 0.021, 0.041),
-    tuned = c(0.078, 0.078, 0.97, 0.96, 0.57, 0.019, 0.011))
+    tuned = c(0.043, 0.012, 0.97, 0.96, 0.57, 0.019, 0.011))
   want <- rbind(data.frame(species_code = "BT", column = "rear_gradient_max",
                            default = 0.1049, tuned = 0.1349), mad)
   want <- want[order(want$species_code, want$column), ]

@@ -224,7 +224,8 @@ test_that("the fill applies only where something reads discharge", {
   # Not applied anywhere: the raw relation, and no DB touched.
   expect_identical(
     link:::.lnk_hv_discharge_src("no-conn", "s", "ADMS", tuned),
-    link:::.lnk_discharge_sql(fill = FALSE))
+    link:::.lnk_discharge_sql(fill = FALSE,
+                              source = link:::.lnk_discharge_source(tuned)))
 })
 
 test_that("a group the discharge table does not cover is never filled", {
@@ -259,6 +260,12 @@ test_that("a bundle reads fwapg unless it names wet, and nothing else", {
                    "fwapg")
   expect_identical(link:::.lnk_discharge_source(lnk_config("bcfishpass")),
                    "fwapg")
+  # Only default_tuned reads wet (operator, 2026-10-15): every host that runs
+  # a wet bundle needs wet's table.
+  expect_identical(link:::.lnk_discharge_source(lnk_config("default")),
+                   "fwapg")
+  expect_identical(link:::.lnk_discharge_source(lnk_config("default_tuned")),
+                   "wet")
   expect_identical(link:::.lnk_discharge_source(
     list(name = "x", pipeline = list(discharge_source = "wet"))), "wet")
   for (bad in list("WET", NA_character_, c("wet", "fwapg"), 1, "")) {
