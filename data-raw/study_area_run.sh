@@ -356,6 +356,7 @@ CYPHERS_UP=0
 KEPT_N=0
 KEPT_CAUSE_N=0
 RECOMPUTE_RAN=0
+CONSOLIDATING=0
 # The lib declares every map the trap reads (CY_IP and CY_BUCKET included,
 # filled further down), so it is sourced here, at the top level, before the
 # trap exists.
@@ -1338,6 +1339,12 @@ if [ "$N_CY" -gt 0 ]; then
     # "consolidated" when nothing was.
     echo "  ✗ no cypher reported any WSG — nothing to consolidate"
   else
+    # CONSOLIDATING marks consolidate as a write in flight against every source
+    # host (link#347): a driver killed here runs its EXIT trap while this
+    # subshell keeps copying and deleting from the hosts, so nothing measured
+    # there in the trap is settled. Cleared as soon as the subshell returns.
+    CONSOLIDATING=1
+    crc=0
     ( cd "$REPO_ROOT" && Rscript -e "
 suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
 source('data-raw/schema_consolidate.R')
@@ -1345,7 +1352,9 @@ res <- schema_consolidate(schema = '$SCHEMA', sources = $SRC_R, backup = TRUE)
 print(res)
 ok <- all(vapply(res\$sources, function(s) isTRUE(s\$ok), logical(1)))
 quit(status = if (ok) 0 else 1)
-" ) > "$LOG_DIR/${TS}_consolidate.log" 2>&1 \
+" ) > "$LOG_DIR/${TS}_consolidate.log" 2>&1 || crc=$?
+    CONSOLIDATING=0
+    [ "$crc" = "0" ] \
       || { echo "  ✗ consolidate failed; see $LOG_DIR/${TS}_consolidate.log — cyphers KEPT"; exit 1; }
     echo "  ✓ consolidated $n_src/$N_CY cypher(s) (see $LOG_DIR/${TS}_consolidate.log)"
   fi

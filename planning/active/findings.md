@@ -138,3 +138,18 @@ Mutants m16 (always settled), m17 (recompute always ran), m18 (baseline ignored)
 3. Latent: the baseline read only `streams`; `lnk_persist_init` drops a drifted table one at a time and could keep stale `streams_mapping_code`. Fix: baseline = streams ∪ streams_mapping_code.
 
 Mutants m21 (status before wait), m22 (no self-read), m23 (pre-existing group can be partial), m24 (baseline without mapping code): each caught. Tests 116 pass.
+
+## /code-check round 5 (review-round5.md) and the terminating enumeration
+
+Round 5 re-walked 27 of round 4's rows and added 16 (43; 22 by running). The three round-4 fixes hold. Two findings, fixed:
+1. Settledness on a new path: a driver killed during consolidate (a foreground subshell) runs its EXIT trap while `schema_consolidate` keeps copying and deleting from the hosts, so the trap's record said `measured = yes` for groups about to leave the host. Fix: `CONSOLIDATING` set around the subshell and read by `.hosts_settled`; the banner says which write was in flight.
+2. Label: groups made unknown by the before-dispatch rule were explained as "mapping-code rows, no baseline". Fix: `.hosts_doubt_why` names the rule from the baseline state (each state has exactly one rule feeding CY_DOUBT).
+
+Mutants m25 (consolidate ignored), m26 (cause always "no baseline"): caught. Tests 120 pass.
+
+**Why the loop ends here (enumeration, not a quiet round).** Every defect from round 2 on is one mechanism: a label on observed rows needs provenance and settledness. Both candidate sets are now enumerated and covered:
+- **Settledness: every process that writes to a cypher after dispatch.** `grep` of `ssh|cypher@|schema_consolidate|cypher_prep|scp` in study_area_run.sh: preflight stamps (:772, :856, read), the auto-install stage (:834) and prep (:1006, :1005), all before dispatch while no host is held; the dispatch session (:1080, guarded by `host_wait`); `schema_consolidate` (:1344, guarded by `CONSOLIDATING`). Two writers, both guarded, both with a kill-mid-write test.
+- **Provenance: every source of rows on a cypher.** Its image (recorded by `host_baseline`, streams ∪ streams_mapping_code, tested) and this run (DB log row, log `done`, mapping-code rows on a group with no baseline rows). With no baseline, mapping-code rows count as unknown.
+- **Labels:** round 5's label table walked every echo/printf in hosts_kept_report, host_release, host_split, host_baseline and the driver's kept/INCOMPLETE blocks; the one wrong label is fixed.
+
+Mutation total: 26 mutants, all caught.

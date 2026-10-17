@@ -636,7 +636,7 @@ test_that("mapping-code rows from the image do not count as finished", {
     "host_release a AAAA"
   ), cyphers = "a")
   expect_match(r$out, "PRE=AAAA STATE=known", fixed = TRUE)
-  expect_match(r$out, "streams rows before dispatch (from its image) for: AAAA", fixed = TRUE)
+  expect_match(r$out, "rows before dispatch (from its image) for: AAAA", fixed = TRUE)
   # Nothing this run finished it, and it had rows before: unknown provenance,
   # which holds the host and is never called partial.
   expect_match(r$out, "unknown provenance", fixed = TRUE)
@@ -747,4 +747,42 @@ test_that("the baseline counts an image's mapping-code rows too", {
     'echo "PRE=${CY_PRE[a]}"'
   ), cyphers = "a")
   expect_match(r$out, "PRE=AAAA", fixed = TRUE)
+})
+
+test_that("a driver killed during consolidate sees every source host unsettled", {
+  skip_if_no_hosts_lib()
+  w <- hosts_world()
+  put(w, "ssh_ip-a.out", db_answer("AAAA"))
+  put(w, "ssh_ip-a_streams.out", db_answer("AAAA"))
+  put(w, "ssh_ip-a_mc.out", db_answer("AAAA"))
+  r <- run_hosts(w, c(
+    "CY_HOLD[a]=1; CY_BUCKET[a]=AAAA; CY_PRE_STATE[a]=known",
+    "host_account a ip-a /nonexistent AAAA > /dev/null || true",
+    "trap burn_cyphers EXIT",
+    "( sleep 1; kill -TERM $$ ) &",
+    "CONSOLIDATING=1",
+    "sleep 30",
+    "CONSOLIDATING=0"
+  ), cyphers = "a")
+  k <- kept_tsv(w)
+  expect_equal(k$groups_measured, "unsettled")
+  expect_match(r$out, "consolidate was still running against it", fixed = TRUE)
+})
+
+test_that("an unknown group's reason names the rule that made it unknown", {
+  skip_if_no_hosts_lib()
+  w <- hosts_world()
+  put(w, "ssh_ip-a.out", db_answer(character(0)))
+  put(w, "ssh_ip-a_streams.out", db_answer("AAAA"))
+  put(w, "ssh_ip-a_mc.out", db_answer(character(0)))
+  r <- run_hosts(w, c(
+    "CY_HOLD[a]=1; CY_PRE_STATE[a]=known; CY_PRE[a]=AAAA",
+    "host_account a ip-a /nonexistent AAAA > /dev/null || true",
+    "host_release a AAAA", "burn_cyphers"
+  ), cyphers = "a")
+  k <- kept_tsv(w)
+  expect_match(k$reason, "rows from before dispatch, no finish signal of this run",
+    fixed = TRUE
+  )
+  expect_false(grepl("no baseline", r$out, fixed = TRUE))
 })

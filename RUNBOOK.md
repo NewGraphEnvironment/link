@@ -1239,11 +1239,13 @@ in `data-raw/study_area_hosts.sh`:
   not this run's, and such a group with no finish signal of this run is
   `groups_unknown`, never partial. With no baseline, mapping-code rows count
   as `groups_unknown` too. Unknown groups hold the host and are never
-  recovered. A host whose session has not ended 0 is **unsettled**, and so is
-  the one the driver was waiting on when killed (`host_wait` records the
-  status only once `wait` returns): the EXIT trap runs while the ssh session
-  keeps building, so unfinished groups are "not finished when probed", never
-  "partial". A report from the trap reads the host's log row and run log
+  recovered. After dispatch the driver writes to a cypher in exactly two
+  ways, the dispatch ssh session and `schema_consolidate` (which copies, then
+  deletes from the source). A killed driver runs its EXIT trap while either
+  keeps going, so a host is **unsettled** unless its session ended 0
+  (`host_wait` records the status only once `wait` returns) and consolidate
+  is not in flight (`CONSOLIDATING`). An unsettled host's groups are "not
+  finished when probed", never "partial", and the record says to re-measure. A report from the trap reads the host's log row and run log
   itself when accounting never ran.
 - **A held host is kept on every exit path**, abort included, and so is a host
   whose burn did not complete. Each is a row in `<TS>_kept_hosts.tsv`

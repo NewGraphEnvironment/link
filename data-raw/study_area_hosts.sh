@@ -34,7 +34,8 @@
 #   ACC_STATE ACC_FINISHED ACC_DONE_LOG ACC_SKIP (assoc, keyed by host key)
 #   CY_HOLD CY_BURNED CY_UNCONS CY_PARTIAL CY_WHY CY_PRE CY_PRE_STATE
 #   (assoc, keyed by workspace)
-# Read with a default: RECOMPUTE_RAN (1 once the driver's recompute pool ran).
+# Read with a default: RECOMPUTE_RAN (1 once the driver's recompute pool ran),
+# CONSOLIDATING (1 while schema_consolidate is running against the hosts).
 #   CYPHERS_UP KEPT_N KEPT_CAUSE_N
 # Every map is declared below, ONCE, so a caller cannot forget one: under
 # `set -u` an undeclared map kills the EXIT trap and leaks the droplets. Source
@@ -141,7 +142,7 @@ host_baseline() {
     CY_PRE[$ws]=$(.hosts_union "$(printf '%s\n' "$pre" | .hosts_csv)" \
       "$(printf '%s\n' "$mc" | .hosts_csv)")
     [ -z "${CY_PRE[$ws]}" ] || \
-      echo "  NOTE: cy[$ws]: streams rows before dispatch (from its image) for: ${CY_PRE[$ws]}"
+      echo "  NOTE: cy[$ws]: rows before dispatch (from its image) for: ${CY_PRE[$ws]}"
   else
     CY_PRE_STATE[$ws]=unknown
     CY_PRE[$ws]=""
@@ -162,11 +163,33 @@ host_wait() {
   return "$rc"
 }
 
-# .hosts_settled <ws>: the host's dispatch session ended with status 0, so its
-# rows no longer change. Unset (still running, or the run stopped before the
-# wait) is not settled: a killed driver runs its EXIT trap while the ssh
-# session it started keeps building on the host.
-.hosts_settled() { [ "${CY_RUN_RC[$1]:-}" = "0" ]; }
+# .hosts_settled <ws>: nothing the driver started is still writing to the
+# host, so its rows no longer change. After dispatch the driver writes to a
+# cypher in exactly two ways: the dispatch ssh session and schema_consolidate
+# (which copies and then deletes from the source). A killed driver runs its
+# EXIT trap while either keeps going, so the host is settled only when its
+# session ended with status 0 (unset: still running, or the run stopped
+# before the wait) and consolidate is not in flight.
+.hosts_settled() {
+  [ "${CONSOLIDATING:-0}" != "1" ] && [ "${CY_RUN_RC[$1]:-}" = "0" ]
+}
+.hosts_unsettled_why() {
+  if [ "${CONSOLIDATING:-0}" = "1" ]; then
+    echo "consolidate was still running against it"
+  else
+    echo "its dispatch session had not ended 0"
+  fi
+}
+
+# .hosts_doubt_why <ws>: why its unknown groups are unknown. CY_DOUBT comes
+# from exactly one rule per baseline state, so the state names the cause.
+.hosts_doubt_why() {
+  if [ "${CY_PRE_STATE[$1]:-unknown}" = "known" ]; then
+    echo "rows from before dispatch, no finish signal of this run"
+  else
+    echo "mapping-code rows, no baseline taken"
+  fi
+}
 
 # host_split <ws> <csv>: measure what is left on a cypher for these groups and
 # split it. CY_UNCONS = recoverable: left, and finished there by any signal
@@ -317,7 +340,7 @@ host_release() {
   elif [ -n "${CY_UNCONS[$ws]}" ]; then
     CY_WHY[$ws]="finished groups left after consolidate"
   elif [ -n "${CY_DOUBT[$ws]}" ]; then
-    CY_WHY[$ws]="mapping-code rows of unknown provenance left (no baseline): ${CY_DOUBT[$ws]}"
+    CY_WHY[$ws]="groups of unknown provenance left ($(.hosts_doubt_why "$ws")): ${CY_DOUBT[$ws]}"
   else
     CY_HOLD[$ws]=0
     echo "  ✓ cy[$ws]: no finished group left on the host after consolidate — may be burned"
@@ -477,13 +500,13 @@ hosts_kept_report() {
       "cd $CYPHER_DIR && ./cypher_down.sh --workspace $ws" >> "$tsv"
     echo "  cy[$ws] ($(host_droplet_name "$ws")): $(.hosts_keep_reason "$ws")"
     [ "$measured" = "no" ] || [ -z "${CY_DOUBT[$ws]:-}" ] || \
-      echo "    unknown provenance (mapping-code rows, no baseline; check before consolidating): ${CY_DOUBT[$ws]}"
+      echo "    unknown provenance ($(.hosts_doubt_why "$ws"); check before consolidating): ${CY_DOUBT[$ws]}"
     if [ "$measured" = "yes" ]; then
       echo "    finished, still on the host: ${CY_UNCONS[$ws]:-nothing}"
       [ -z "${CY_PARTIAL[$ws]:-}" ] || \
         echo "    partial, do NOT consolidate: ${CY_PARTIAL[$ws]}"
     elif [ "$measured" = "unsettled" ]; then
-      echo "    its session had not ended 0, so this may still change:"
+      echo "    $(.hosts_unsettled_why "$ws"), so this may still change:"
       echo "    finished when probed: ${CY_UNCONS[$ws]:-nothing}"
       [ -z "${CY_PARTIAL[$ws]:-}" ] || \
         echo "    NOT finished when probed (may still be building): ${CY_PARTIAL[$ws]}"
@@ -494,7 +517,8 @@ hosts_kept_report() {
   done
   echo "  To recover: get each host's address (ip_command). Consolidate ONLY the"
   echo "  groups column, and only where groups_measured = yes; where it says"
-  echo "  unsettled, wait until nothing runs there and re-measure; where it says"
+  echo "  unsettled, wait until nothing runs there (the remote loop, and"
+  echo "  schema_consolidate on this machine) and re-measure; where it says"
   echo "  no, find out what is left first. Never groups_partial. schema_consolidate"
   echo "  DELETEs its bucket on the dispatcher before it copies, so a group the"
   echo "  host no longer holds, or holds only in part, loses the dispatcher's copy."
