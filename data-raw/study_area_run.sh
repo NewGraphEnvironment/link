@@ -355,6 +355,7 @@ source "$REPO_ROOT/data-raw/study_area_hosts.sh"
 CYPHERS_UP=0
 KEPT_N=0
 KEPT_CAUSE_N=0
+RECOMPUTE_RAN=0
 # The lib declares every map the trap reads (CY_IP and CY_BUCKET included,
 # filled further down), so it is sourced here, at the top level, before the
 # trap exists.
@@ -1049,6 +1050,9 @@ echo "=== run buckets (DS-first) ==="
   done ) > "$LOG_DIR/${TS}_run_local.log" 2>&1 &
 LOCAL_PID=$!
 declare -A CY_PID
+# Baseline before any write (link#347): which of each cypher's bucket already
+# have streams rows from its image, so rows found later can be told apart.
+for WS in "${CY_WS_ARR[@]}"; do host_baseline "$WS"; done
 for WS in "${CY_WS_ARR[@]}"; do
   # HELD from here on: from its first write, this host may hold the only copy
   # of finished groups. Released only by host_release after consolidate
@@ -1509,6 +1513,9 @@ if [ "$RECOMPUTE_FAIL" = "0" ]; then
   # lets recompute_parity.sh shuffle deliberately for its invariance pass.
   ALL_WSGS=$(recompute_order "$ALL_WSGS" | paste -sd, -)
   run_recompute_pool "$RECOMPUTE_JOBS"
+  # Read by the kept-hosts report: whether a recovery must recompute only the
+  # kept groups and those upstream, or every group of the run (link#347).
+  RECOMPUTE_RAN=1
 
   # Never `cat "$RC_DIR"/*` — ARG_MAX at provincial scope. `find -exec ... +`
   # also exits 0 on zero matches, leaving an EMPTY tsv rather than aborting;
@@ -1569,8 +1576,13 @@ if [ "${RUN_INCOMPLETE:-0}" != "0" ] || [ "${RECOMPUTE_FAIL:-0}" != "0" ] \
     echo "  Consolidate only each host's groups column, and only where"
     echo "  groups_measured = yes; never groups_partial (consolidating a group the"
     echo "  host no longer holds, or holds in part, deletes the dispatcher's copy)."
-    echo "  The recompute above ran WITHOUT those groups, so recompute each one and"
-    echo "  each run group upstream of it afterwards. Then burn the host."
+    if [ "${RECOMPUTE_RAN:-0}" = "1" ]; then
+      echo "  The recompute above ran WITHOUT those groups, so recompute each one and"
+      echo "  each run group upstream of it afterwards. Then burn the host."
+    else
+      echo "  The recompute did not run, so recompute every group of the run"
+      echo "  afterwards. Then burn the host."
+    fi
     echo "  Hosts, reasons and commands: $LOG_DIR/${TS}_kept_hosts.tsv"
   fi
   if [ "${RUN_INCOMPLETE:-0}" != "0" ]; then

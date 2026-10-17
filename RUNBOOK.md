@@ -1224,14 +1224,22 @@ in `data-raw/study_area_hosts.sh`:
   no sentinels means **unknown**, never "nothing".
 - **A cypher is held from dispatch.** It is released only when its dispatch
   session exited 0 and, **after** consolidate, its database holds no
-  **finished** group: one with `<persist>.streams` rows left that also
+  **finished** group: one with `<persist>.streams` rows left that this run
   finished there by any signal (database, log `done`, or
-  `streams_mapping_code` rows, which only the final persist writes).
-  `schema_consolidate` deletes what it copied from the source, so what is left
-  was not consolidated: measured, not assumed. A group with `streams` rows and
-  no other signal is **partial** (it failed after the pre-persist,
-  `R/lnk_pipeline_run.R:240`); it does not hold the host and is never
-  consolidated.
+  `streams_mapping_code` rows, which within a run only the final persist
+  writes). `schema_consolidate` deletes what it copied from the source, so
+  what is left was not consolidated: measured, not assumed. A group with
+  `streams` rows and no other signal is **partial** (it failed after the
+  pre-persist, `R/lnk_pipeline_run.R:240`); it does not hold the host and is
+  never consolidated.
+- **Provenance and settledness are checked, not assumed.** A cypher spins from
+  a warm image and `lnk_persist_init` keeps rows, so before dispatch the
+  driver records which of each bucket already have `streams` rows
+  (`host_baseline`); their mapping-code rows are not this run's. With no
+  baseline, mapping-code rows hold the host as `groups_unknown` and are never
+  recovered. A host whose session has not ended 0 is **unsettled**: a killed
+  driver runs its EXIT trap while the ssh session keeps building, so its
+  unfinished groups are "not finished when probed", never "partial".
 - **A held host is kept on every exit path**, abort included, and so is a host
   whose burn did not complete. Each is a row in `<TS>_kept_hosts.tsv`
   (reason, run_uid, schema, groups, whether those groups were measured, the
@@ -1247,14 +1255,17 @@ in `data-raw/study_area_hosts.sh`:
 To recover a kept host: run its `ip_command`, consolidate its `groups` with
 `schema_consolidate(schema = <schema>, sources = list(list(host =
 "cypher@<ip>", via = "docker", bucket = c(...))))`, then run its
-`burn_command`. **Only `groups`, never `groups_partial`, and only where
-`groups_measured` is `yes`**: `groups` is then the finished work still on the
-host. `schema_consolidate` deletes its bucket on the dispatcher before it
+`burn_command`. **Only `groups`, never `groups_partial` or
+`groups_unknown`, and only where `groups_measured` is `yes`**: `groups` is
+then the finished work still on the host. `unsettled` means wait until
+nothing runs there and re-measure. `schema_consolidate` deletes its bucket on the dispatcher before it
 copies, so consolidating a group the host no longer holds (already
 consolidated, then deleted from the source), or holds only in part, loses the
-dispatcher's copy. Where it says `no`, find out what is left first. The run's
-recompute ran without the kept groups, so after consolidating recompute each
-one and each run group upstream of it (`wsg_recompute_one.R`). A missing
+dispatcher's copy. Where it says `no`, find out what is left first. If the
+run's recompute ran, it ran without the kept groups: recompute each one and
+each run group upstream of it (`wsg_recompute_one.R`). If it did not run
+(consolidate failed, coverage FATAL), recompute every group of the run; the
+banner says which. A missing
 `<schema>.streams` or `streams_mapping_code` on a host reads as unknown, not
 empty: every dispatched cypher has both. Tests: `tests/testthat/test-study_area_hosts.R` runs the lib
 in bash with stubbed ssh, psql, tofu and doctl.

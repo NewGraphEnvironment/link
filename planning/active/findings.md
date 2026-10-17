@@ -119,3 +119,13 @@ Mutants m10 (strict ignored), m11 (report not measured), m12 (cause hidden by th
 3. Found while fixing: the test prologue did not declare the new `CY_PARTIAL`, and `set -u` killed the run — the hazard the plan review named (O1), caused by keeping the map list in two places. The lib now declares every map once, at source time; driver and test no longer list them.
 
 Mutants m13 (all leftovers recoverable), m14 (no mapping-code signal), m15 (lib missing one declaration): each caught. Tests 93 pass. Live: `host_complete local ADMS,ZZZZ` → ADMS; missing schema → unknown.
+
+## /code-check round 3 (review-round3.md) — mechanism and enumeration
+
+Mechanism (reviewer, tested): the code turns an observation (rows on host H at time T) into a cause ("finished", "partial: a failed build", "the recompute ran without these"), and each label holds only under **provenance** (this run wrote those rows) and **settledness** (nothing changes after T; the dispatcher step named actually ran), which nothing checked. The reviewer walked 21 places where a set of groups or a host state drives an action (table in review-round3.md); three were unsafe:
+
+1. Inside round 2's fix: on an unsettled host (EXIT trap; session exit ≠ 0) groups still building were labelled "partial, do NOT consolidate". Reproduced here: a bash script killed while it `wait`s runs its EXIT trap and its background child keeps running. Fix: `.hosts_settled` (session ended 0); otherwise `groups_measured = unsettled`, "NOT finished when probed (may still be building)", re-measure.
+2. The banner said the recompute ran without the kept groups on paths where it never ran (consolidate failure :1348, coverage FATAL :1395, both before the pool at :1511). Fix: `RECOMPUTE_RAN`; otherwise "recompute every group of the run".
+3. Latent: mapping-code rows read as this run's, but a warm image can carry them and `lnk_persist_init` keeps rows. Fix: `host_baseline` before dispatch records which bucket groups already have streams rows; their mapping-code rows do not count. With no baseline, mapping-code rows hold the host as `groups_unknown` and are never recovered (first cut dropped them as a signal, which would have released the host; mutant m19 survived that cut and the rule was tightened).
+
+Mutants m16 (always settled), m17 (recompute always ran), m18 (baseline ignored), m19 (unknown baseline still counts mapping code), m20 (unknown-provenance rows do not hold): each caught. Tests 108 pass. Live: `host_baseline` against local `fresh_default` for ADMS,ZZZZ → ADMS, known.

@@ -358,8 +358,9 @@ test_that("a dispatch session that exited non-zero keeps the host", {
   # nothing is left, not list AAAA: consolidating AAAA again would delete the
   # dispatcher's copy first and copy nothing back.
   expect_equal(k$groups, "")
-  expect_equal(k$groups_measured, "yes")
-  expect_match(r$out, "still on the host: nothing", fixed = TRUE)
+  # A dropped session may still be building there, so it is not settled.
+  expect_equal(k$groups_measured, "unsettled")
+  expect_match(r$out, "finished when probed: nothing", fixed = TRUE)
 })
 
 test_that("a missing streams table after consolidate is unknown, not empty", {
@@ -571,7 +572,7 @@ test_that("mapping-code rows mark a group finished when run_uid and log both fai
   put(w, "ssh_ip-a_streams.out", db_answer("AAAA"))
   put(w, "ssh_ip-a_mc.out", db_answer("AAAA"))
   r <- run_hosts(w, c(
-    "CY_HOLD[a]=1",
+    "CY_HOLD[a]=1; CY_PRE_STATE[a]=known",
     "host_account a ip-a /nonexistent AAAA > /dev/null || true",
     "host_release a AAAA", "burn_cyphers"
   ), cyphers = "a")
@@ -581,23 +582,75 @@ test_that("mapping-code rows mark a group finished when run_uid and log both fai
   expect_equal(k$groups_partial, "")
 })
 
-test_that("an aborted run's report separates finished from partial groups", {
+test_that("an aborted run's report says its groups may still be building", {
+  # A killed driver runs its EXIT trap while the ssh session it started keeps
+  # building on the host, so nothing unfinished there may be called partial.
   skip_if_no_hosts_lib()
   w <- hosts_world()
   put(w, "ssh_ip-a_streams.out", db_answer(c("AAAA", "BBBB")))
   put(w, "ssh_ip-a_mc.out", db_answer("AAAA"))
   r <- run_hosts(w, c(
     "trap burn_cyphers EXIT",
-    "CY_HOLD[a]=1; CY_BUCKET[a]=AAAA,BBBB",
+    "CY_HOLD[a]=1; CY_BUCKET[a]=AAAA,BBBB; CY_PRE_STATE[a]=known; unset 'CY_RUN_RC[a]'",
     "exit 1"
   ), cyphers = "a")
   expect_length(burn_calls(w), 0L)
   k <- kept_tsv(w)
   expect_equal(k$groups, "AAAA")
   expect_equal(k$groups_partial, "BBBB")
+  expect_equal(k$groups_measured, "unsettled")
+  expect_match(r$out, "NOT finished when probed (may still be building): BBBB", fixed = TRUE)
+  expect_false(grepl("partial, do NOT consolidate", r$out, fixed = TRUE))
+  # The recompute never ran on this path.
+  expect_match(r$out, "recompute did NOT run", fixed = TRUE)
+})
+
+test_that("a settled host's report names partial groups, and the recompute that ran", {
+  skip_if_no_hosts_lib()
+  w <- hosts_world()
+  put(w, "ssh_ip-a_streams.out", db_answer(c("AAAA", "BBBB")))
+  put(w, "ssh_ip-a_mc.out", db_answer("AAAA"))
+  r <- run_hosts(w, c(
+    "CY_HOLD[a]=1; CY_BUCKET[a]=AAAA,BBBB; CY_PRE_STATE[a]=known; RECOMPUTE_RAN=1",
+    "burn_cyphers"
+  ), cyphers = "a")
+  k <- kept_tsv(w)
   expect_equal(k$groups_measured, "yes")
   expect_match(r$out, "partial, do NOT consolidate: BBBB", fixed = TRUE)
+  expect_match(r$out, "recompute ran WITHOUT these groups", fixed = TRUE)
   expect_match(r$out, "wsg_recompute_one.R", fixed = TRUE)
+})
+
+test_that("mapping-code rows from the image do not count as finished", {
+  skip_if_no_hosts_lib()
+  w <- hosts_world()
+  # Before dispatch the host already holds AAAA (warm image).
+  put(w, "ssh_ip-a_streams.out", db_answer("AAAA"))
+  put(w, "ssh_ip-a_mc.out", db_answer("AAAA"))
+  put(w, "ssh_ip-a.out", db_answer(character(0)))
+  r <- run_hosts(w, c(
+    "CY_BUCKET[a]=AAAA; host_baseline a",
+    'echo "PRE=${CY_PRE[a]} STATE=${CY_PRE_STATE[a]}"',
+    "CY_HOLD[a]=1",
+    "host_account a ip-a /nonexistent AAAA > /dev/null || true",
+    "host_release a AAAA"
+  ), cyphers = "a")
+  expect_match(r$out, "PRE=AAAA STATE=known", fixed = TRUE)
+  expect_match(r$out, "streams rows before dispatch (from its image) for: AAAA", fixed = TRUE)
+  # Nothing this run finished it, so it is partial, and the host is released.
+  expect_match(r$out, "partial groups left there", fixed = TRUE)
+})
+
+test_that("with no baseline, mapping-code rows are not a finish signal", {
+  skip_if_no_hosts_lib()
+  w <- hosts_world()
+  put(w, "ssh_ip-a.out", db_answer(character(0)))
+  r <- run_hosts(w, c(
+    "CY_BUCKET[a]=AAAA; host_baseline a", # no _streams fixture: probe fails
+    'echo "STATE=${CY_PRE_STATE[a]}"'
+  ), cyphers = "a")
+  expect_match(r$out, "STATE=unknown", fixed = TRUE)
+  expect_match(r$out, "mapping-code rows will not count as finished", fixed = TRUE)
 })
 
 test_that("a missing mapping-code table is unknown, not partial", {
@@ -613,4 +666,23 @@ test_that("a missing mapping-code table is unknown, not partial", {
   ), cyphers = "a")
   expect_length(burn_calls(w), 0L)
   expect_match(kept_tsv(w)$reason, "did not answer after consolidate", fixed = TRUE)
+})
+
+test_that("with no baseline, mapping-code rows hold the host but are not recovered", {
+  skip_if_no_hosts_lib()
+  w <- hosts_world()
+  put(w, "ssh_ip-a.out", db_answer(character(0)))
+  put(w, "ssh_ip-a_streams.out", db_answer("AAAA"))
+  put(w, "ssh_ip-a_mc.out", db_answer("AAAA"))
+  r <- run_hosts(w, c(
+    "CY_HOLD[a]=1; CY_PRE_STATE[a]=unknown",
+    "host_account a ip-a /nonexistent AAAA > /dev/null || true",
+    "host_release a AAAA", "burn_cyphers"
+  ), cyphers = "a")
+  expect_length(burn_calls(w), 0L)
+  k <- kept_tsv(w)
+  expect_match(k$reason, "unknown provenance", fixed = TRUE)
+  expect_equal(k$groups, "")
+  expect_equal(k$groups_partial, "")
+  expect_equal(k$groups_unknown, "AAAA")
 })
