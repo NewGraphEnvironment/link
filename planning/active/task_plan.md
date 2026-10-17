@@ -34,20 +34,20 @@ Measured while planning:
 Operator calls (plan gate): add the newline; **keep any host that may hold unconsolidated work, on abort too**, with accounting loud enough that a kept host cannot go unnoticed.
 
 ## Phase 1: Tests first (red)
-- [ ] `tests/testthat/test-study_area_hosts.R`: runs `bash` on the new lib with PATH stubs for `ssh`, `psql`, `tofu`, `doctl` and a mock `cypher_down.sh` in a temp `CYPHER_DIR` that records its calls; `skip_if_not()` when `data-raw/` is absent (R CMD check), `skip_if` no bash >= 4.
-- [ ] Case: a host log with every `done` marker mid-line, DB fixture holding every group → host reported complete.
-- [ ] Case: `SKIP` mid-line is accounted for and not put in the consolidate bucket.
-- [ ] Case: DB finished set larger than what consolidate took → that host is not burned (mock never called for it), the other host is; kept-hosts file names it.
-- [ ] Case: probe fails (ssh error / no end sentinel) → state `unknown`, never "complete", host kept.
-- [ ] Case: abort after dispatch (trap path) keeps every holding host; abort before dispatch burns all, as today.
-- [ ] Confirm red on main's logic; record the mutation (restore the anchored match → mid-line fixture fails) in findings.
+- [x] `tests/testthat/test-study_area_hosts.R`: runs `bash` on the new lib with PATH stubs for `ssh`, `psql`, `tofu`, `doctl` and a mock `cypher_down.sh` in a temp `CYPHER_DIR` that records its calls; `skip_if_not()` when `data-raw/` is absent (R CMD check), `skip_if` no bash >= 4.
+- [x] Case: a host log with every `done` marker mid-line, DB fixture holding every group → host reported complete.
+- [x] Case: `SKIP` mid-line is accounted for and not put in the consolidate bucket.
+- [x] Case: DB finished set larger than what consolidate took → that host is not burned (mock never called for it), the other host is; kept-hosts file names it.
+- [x] Case: probe fails (ssh error / no end sentinel) → state `unknown`, never "complete", host kept.
+- [x] Case: abort after dispatch (trap path) keeps every holding host; abort before dispatch burns all, as today.
+- [x] Confirm red on main's logic; record the mutation (restore the anchored match → mid-line fixture fails) in findings.
 
 ## Phase 2: Host-accounting lib
-- [ ] New sourceable `data-raw/study_area_hosts.sh` (no top-level side effects; globals named in its header):
+- [x] New sourceable `data-raw/study_area_hosts.sh` (no top-level side effects; globals named in its header):
   - `host_finished <label> <ip|local>`: `SELECT DISTINCT watershed_group_code FROM <schema>.log WHERE run_uid = '<uid>' AND date_end IS NOT NULL`, output framed by begin/end sentinels so a failed ssh/psql is `unknown`, not "none" (Tailscale/ssh exit status not trusted).
   - `host_log_reported <logfile>`: unanchored `[wsg_run_one] <WSG> … done|SKIP` parse; diagnosis plus the SKIP set only.
   - `burn_cyphers` moved here: burns only hosts with `CY_HOLD[$WS]=0`; for each kept host writes a row to `${TS}_kept_hosts.tsv` (host, reason, finished n, consolidated n, burn command) and prints a banner with the `cypher_down.sh --workspace <ws>` command. `--keep-cyphers` still keeps all.
-- [ ] Phase 1 tests green.
+- [x] Phase 1 tests green.
 
 ## Phase 3: Wire the driver
 - [ ] `study_area_run.sh` sources the lib; `CY_HOLD[$WS]=1` set immediately before the bucket dispatch.

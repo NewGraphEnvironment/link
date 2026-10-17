@@ -39,3 +39,25 @@ They were saved only because the operator paused the driver (`kill -STOP`) befor
 
 | Error | Resolution |
 |-------|------------|
+
+## Facts measured in plan mode (2026-10-17)
+
+- "Finished" is a `<schema>.log` row with the run's `run_uid` and `date_end` NOT NULL. The issue says `date_completed`; no such column. `date_end` is set by `.lnk_log_run_finish()` after persist (`R/lnk_pipeline_run.R:322`).
+- A SKIP group (`wsg_run_one.R:56`) writes no log row, so its only signal is the log text. It holds nothing to consolidate.
+- Probe over the live DB (local, `fresh_default`, run_uid `20261017_004619-3f4c713b`): 241 finished, the run's group count. psql 18.3 locally, 17.5 in `fresh-db`; both support `\if` / `\gset`.
+- Droplet name per workspace: `cypher` for `default`, else `cypher-<ws with _ -> ->` (rtj `env/do/dev/cypher/main.tf:25-26`).
+- Pre-existing: `CYPHERS_UP=1` is set only after every `tofu output droplet_ip` succeeds, so a failed spin of one workspace exits with the others' droplets unburned.
+
+## Mutation table (Phase 1-2)
+
+Each mutant run with `LNK_TEST_HOSTS_LIB=<copy>`; the real lib untouched.
+
+| mutant | change | tests failing |
+|---|---|---|
+| m1 | anchor `host_log_reported`'s grep at `^` | 2 (mid-line fixture vs anchored match; mid-line SKIP) |
+| m2 | `host_finished` ignores the sentinels | 2 (unknown never complete; unknown keeps host) |
+| m3 | `host_release` ignores unconsolidated groups | 1 (host with unconsolidated group not burned) |
+| m4 | `burn_cyphers` ignores `CY_HOLD` | 3 |
+| m5 | count finished from the log with main's anchored `sed` (the issue's "restore the anchored match") | 5, including "every done marker mid-line is complete" |
+
+Order note: the lib was written before the tests first ran, so "red first" was shown by mutation (m5 is main's counting rule), not by a run on main.
