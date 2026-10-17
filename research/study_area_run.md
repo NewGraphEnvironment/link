@@ -60,7 +60,7 @@ cyphers in order. Dispatcher-only (no cyphers): omit `--cy-workspaces`, pass one
    reuses persisted streams/habitat/barriers) + `lnk_mapping_code`. Measured at
    241 groups: median 2.0 min per group (quartiles 1.1 / 3.2, longest 16 min),
    597 min summed, 154 min at `-j4` (2026-10-17, `_recompute.log`); the
-   ~10 s/WSG this step once quoted was a 34-group figure.
+   ~10 s/WSG this step once quoted was FINA alone (#205, below), not a run.
    Because it is cheap, every run WSG is re-settled — bucketing is a speed
    knob, not a correctness lever (link#205).
 8. **Compare** all run WSGs tunnel-free (`study_area_compare.R`) → CSV.
@@ -229,7 +229,7 @@ cloud hosts, `--refresh-primitives`, link `ee21eb13`. Both verifiers pass at
 | recompute, 241 groups, `-j4` | 154 min | ~1 h |
 | wall clock, launch to exit | 8 h 48 m (including a ~30 min pause to recover work) | ~6 h |
 | cloud hosts | 3 × ~6 h ≈ $4.50 at $0.25/h | ~$3 |
-| database growth | 221 → 275 GB; `fresh_default` 11 → 48 GB, 11.39 M segments | ~+65 GB |
+| database growth | 221 → 275 GB; `fresh_default` 7.3 → 31 GB (14 tables + 17 indexes), 11.39 M segments | ~+65 GB on m1, ~21 GB of it persist |
 
 - **Equal packing was right.** The 34-group run had measured cloud hosts at or
   above m1's rate, against the 0.45 the generator assumed; at equal speeds the
@@ -244,11 +244,13 @@ cloud hosts, `--refresh-primitives`, link `ee21eb13`. Both verifiers pass at
   present species with no barrier). One failed group would have skipped the
   recompute for all of them (#348). The operator paused the driver, the 18 were
   consolidated by hand, KITR and UPET re-ran on m1 under the same run_uid, and
-  the driver resumed. So the run carries two link SHAs: 239 groups `ee21eb13`,
-  2 groups `a17e9177`.
+  the driver resumed. So the run carries more than one link SHA: in `log`, 239
+  groups `ee21eb13` and 2 `a17e9177`; in `log_recompute`, all 241 `a17e9177`,
+  and UPET again at `eb93f343` after its RB mapping codes were found empty
+  (`91a968ab`).
 - **Parity at the same code** (`20261017_093603-31ab6242`, `bcfishpass` on the
-  closure of ADMS, BULK, BABL and ELKR, 17 groups): `parity_crosssection.R`
-  48/50 within tolerance; BULK SK over and parked (fresh#190).
+  closure of ADMS, BULK, BABL and ELKR, 17 groups built): `parity_crosssection.R`
+  on the four, 48/50 within tolerance; BULK SK over and parked (fresh#190).
 
 ## Operational facts from the first real multi-host run (2026-08-31, 34 WSGs)
 

@@ -221,7 +221,7 @@ range was 3.5–4.4 h; the makespan was 4.6 h.
 which differs from it only by the two fixes. `link_dirty` is false on every row. fwapg `f9718cb`, bcfishobs
 `08630cf` and the bcfp pin `v0.7.15-50-g620dbe4` are the same on every row.
 
-**Recompute:** 241/241, 06:56–09:30 UTC, 154 min at `-j4`. The plan's ~1 h estimate (August's ~10 s per group,
+**Recompute:** 241/241, 06:56–09:30 UTC, 154 min at `-j4`. The plan's ~1 h estimate (FINA's single-group ~10 s, #205,
 serial) was low by about 2.5×. Per group (`_recompute.log`): median 2.00 min, quartiles 1.13 / 3.18, longest
 16.24 min, 597 min summed (/ 4 = 149, against 154 wall). The "median 0.68 min" the driver prints before the recompute
 is its default for groups with no recorded time, from earlier runs, not a measurement of this one (review round 5).
@@ -230,11 +230,28 @@ is its default for groups with no recorded time, from earlier runs, not a measur
 `verify_extra.sql` PASS, one config_hash `sha256:7e9dffa4…`, loader versions and snapshot row counts agreeing across
 the four hosts, every group's newest row from this run (`run_verify*.log`). FWA rows remain probes, as A-4 states.
 
-**Size:** the database grew 221 → 275 GB (+54 GB); `fresh_default` 11 → 48 GB, 11,388,157 segments. The volume holds
+**Size:** the database grew 221 → 275 GB (+54 GB); `fresh_default` 7.3 → 31 GB (14 GB tables, 17 GB indexes), 11,388,157 segments, against the plan's ~21 GB persist growth. (A first figure of 11 → 48 GB summed `pg_total_relation_size()` over indexes too, counting each twice; round 6.) The volume holds
 312 G of 590 G. Cloud hosts were up about 6 h each: about $4.50 at $0.25 per host-hour (`research/study_area_run.md`).
 
 **Compare:** 677 mapping-code rows across 217 of 241 groups; the 24 without a row are the `default`-only groups,
 which share no species with the bcfishpass reference (each logs `no shared mapping_code_<sp> columns`).
+
+## Code-check rounds 5–6 (2026-10-17)
+
+- **Round 6 found a defect inside the UPET fix.** `a17e9177` made `access_rb` an integer but left
+  `has_barriers_rb_dnstr` NA, which the mapping code reads as no data, so UPET RB shipped with `mapping_code_rb` ""
+  on all 5,103 segments, while access was 1 or 2 and RB had 325 spawning / 3,352 rearing segments. Fixed in
+  `91a968ab`: zero barrier rows mean FALSE when the species is known present (NA stays for "nothing says it is").
+  UPET recomputed under the run_uid: 5,103 / 5,103 RB codes; both verifiers PASS again (`run_verify*_2.log`).
+  - A first re-run stamped `link_dirty` TRUE (round 6's findings file was uncommitted); a clean re-run at `eb93f343`
+    follows it. `study_area_verify.sql` does not check `log_recompute.link_dirty`.
+- **The run replaced builds an earlier decision had kept.** The 2026-10-12 status recorded the operator keeping
+  August KOTL, LARL and SLOC builds because published floodplains items came from them; the plan's "no stale rows can
+  survive" overwrote them and DUNC's 2026-10-12 build without naming that. The driver's pre-consolidate dump still
+  holds them (link 0.45.1 / 0.63.1, per round 6's `pg_restore -l`); it was moved out of `/tmp` to a machine-local
+  backup directory. Question for the operator: does any floodplains item need them restored?
+- Prose corrected from round 6: size 31 GB not 48 (index double count); ~10 s per group was FINA alone; parity scored
+  the four focal groups of a 17-group build; "missed", not "lost", 18 groups; `log_recompute` stamps `a17e9177`.
 
 ## Parity (2026-10-17)
 
