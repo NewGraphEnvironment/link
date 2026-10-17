@@ -13,7 +13,7 @@
 ## Citation
 
 Source:
-[`inst/CITATION`](https://github.com/NewGraphEnvironment/link/blob/v0.66.1/inst/CITATION)
+[`inst/CITATION`](https://github.com/NewGraphEnvironment/link/blob/main/inst/CITATION)
 
 Irvine A (2026). *link: Develop, Test and Communicate Intrinsic Habitat
 and Connectivity Models for the BC Freshwater Atlas Stream Network*. New
