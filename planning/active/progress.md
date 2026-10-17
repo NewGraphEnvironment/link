@@ -24,3 +24,21 @@
   `study_area_verify.sql` and `verify_extra.sql` both PASS (`data-raw/logs/provincial_246/pilot_verify*.log`).
   bcfp view after refresh 4,272,394 rows / 188 groups (was 4,272,365). Compare errors for KAKC, LPET, TSEA are the
   expected RB/GR-only groups (no bcfp reference)
+- **Decision set for the main run** (stated before launch, from the approved plan): config `default`; schema
+  `fresh_default`; 241 groups as four `--focal=` strings from `research/study_areas.md` (79 / 51 / 55 / 61 focal,
+  closing to 76 / 50 / 55 / 60, the species-less HAYR KCHL SHEK SAHT CHUK dropped); species from `default` ×
+  presence per group; `--refresh-primitives`; `--recompute-jobs` left at 4; `dams` and mapping code as the driver
+  runs them; label `provincial-241-default-246`
+
+## Session 2026-10-17
+
+- Colima at 600 GiB (operator), `fresh-db` healthy, 307 G free
+- Main run `20261017_004619-3f4c713b` launched 00:46 UTC; modelling 01:05–05:42; the driver counted 18 finished
+  groups as missing and two failed (KITR, UPET). Driver paused by the operator before its burn; the 18 consolidated
+  by hand; KITR and UPET fixed (`a17e9177`) and re-run on m1 under the same run_uid; driver resumed; recompute
+  241/241; exit 09:34 UTC. Both verifiers PASS. Filed #347 (completeness from log text) and #348 (one failure skips
+  the recompute)
+- Parity `20261017_093603-31ab6242` (17-group closure, `fresh_parity246`): cross-section PASS 48/50; 5 UNEXPLAINED
+  at the taxonomy's 2 %
+- Logs committed `d08f3320`, with host addresses redacted from `pilot.log`, which the EXIT redaction misses
+- Next: Phase 5 (research write-up, CLAUDE.md status, #346 note), `/code-check branch`, archive, PR

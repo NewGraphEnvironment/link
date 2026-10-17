@@ -177,7 +177,81 @@ hosts in `preflight_hosts()`.
 - The cloud host (`s-8vcpu-32gb-amd`) has a 400 GB disk, against ~110 GB needed for FWA + working schemas + persist
   at ~1.21 M segments.
 
+## The run (2026-10-17)
+
+run_uid `20261017_004619-3f4c713b`, label `provincial-241-default-246`, launched 00:46 UTC 2026-10-17, driver exit
+09:34 UTC (8 h 48 m). Logs: `data-raw/logs/provincial_246/run*`, `data-raw/logs/study_area_run/20261017_004619_*`.
+
+**Modelling** (`fresh_default.log`, `date_start` → `date_end`):
+
+| host | groups | span | minutes |
+|---|---|---|---|
+| job1 | 49 (+ KITR failed) | 01:05–03:56 | 171 |
+| job2 | 55 | 01:05–04:33 | 207 |
+| job3 | 59 (+ UPET failed) | 01:05–05:42 | 277 |
+| m1 | 76 | 01:05–04:50 | ~225 |
+| m1, re-run at `a17e9177` | KITR, UPET | 06:40–06:49 | 8.4 |
+
+Equal packing was right in direction: the slowest cloud host (277 min) finished 52 min after m1. The pilot's minimax
+range was 3.5–4.4 h; the makespan was 4.6 h.
+
+**What went wrong, and what was done:**
+1. **The driver counted 18 finished groups as missing** (2 on job1, 12 on job2, 4 on job3). `bucket_done()` matches
+   `^\[wsg_run_one\] … done` at the start of a line, and an R warning flushed without a newline put the marker
+   mid-line (`8: In st_read.DBIObject(…) :[wsg_run_one] FIRE done in 4.6 min`). The driver consolidates only what
+   it counted and burns the hosts right after, which would have destroyed the 18 groups' only copy.
+   - Each of the 18 was on its host with one `log` row for the run_uid and its `streams` rows (queried on the hosts).
+   - The operator paused the driver (`kill -STOP`; auto mode refused it as "Interfere With Workloads"). The 18 were
+     consolidated with the driver's own `schema_consolidate()` call (`_consolidate_recover18.log`, ok on all three
+     sources), then the driver resumed. Filed as #347.
+2. **KITR** (job1) failed at persist: `duplicate key … barriers_pkey (203838, KITR)`. The xref row for PSCIS 203838
+   sets both `modelled_crossing_id` and `linear_feature_id`, so both insert branches emitted it. Two of the xref's
+   3,657 rows have that shape; the other, ATNA 203324, modelled without a duplicate in this run (why is not checked).
+   Fixed: one row per `stream_crossing_id`, Branch A first, as bcfishpass's `ON CONFLICT DO NOTHING` keeps it.
+3. **UPET** (job3) failed at persist: `column "access_rb" is of type integer but expression is of type boolean`.
+   RB is present in UPET with no barrier in the AOI, so `has_barriers_rb_dnstr` is all NA ("no data", which the
+   mapping code reads) and `ifelse(NA, …)` returns logical. Fixed: a present species with no barrier is accessible
+   (1, or 2 where observed upstream). The mutation test fails with the line removed.
+   - Only groups that would have failed are affected: any group with this case failed the integer insert before.
+4. **One failed group would have skipped the recompute for all** (#348). The coverage gate `exit 1`s before the
+   recompute, so resuming with KITR and UPET missing would have left 239 groups unrecomputed. Re-running them before
+   resuming is what avoided it.
+
+**Provenance consequence:** one run_uid, two link SHAs. 239 groups stamp `ee21eb13`; KITR and UPET stamp `a17e9177`,
+which differs from it only by the two fixes. `link_dirty` is false on every row. fwapg `f9718cb`, bcfishobs
+`08630cf` and the bcfp pin `v0.7.15-50-g620dbe4` are the same on every row.
+
+**Recompute:** 241/241, 06:56–09:30 UTC, 154 min at `-j4`. The plan's ~1 h estimate (August's ~10 s per group,
+serial) was low by about 2.5×; the median job here took 0.68 min and the longest groups several minutes.
+
+**Verification:** `study_area_verify.sql` PASS ("241 WSG(s), all modelled, recomputed, segmented and provenanced");
+`verify_extra.sql` PASS, one config_hash `sha256:7e9dffa4…`, loader versions and snapshot row counts agreeing across
+the four hosts, every group's newest row from this run (`run_verify*.log`). FWA rows remain probes, as A-4 states.
+
+**Size:** the database grew 221 → 275 GB (+54 GB); `fresh_default` 11 → 48 GB, 11,388,157 segments. The volume holds
+312 G of 590 G. Cloud hosts were up about 6 h each, about $2.80 at August's rate.
+
+**Compare:** 677 mapping-code rows across 217 of 241 groups; the 24 without a row are the `default`-only groups,
+which share no species with the bcfishpass reference (each logs `no shared mapping_code_<sp> columns`).
+
+## Parity (2026-10-17)
+
+run_uid `20261017_093603-31ab6242`, `bcfishpass` into `fresh_parity246`, dispatcher only: the closure of ADMS, BULK,
+BABL and ELKR is 17 groups, all modelled, recomputed 17/17, compared 17/17 with no silent errors (#167).
+`parity_crosssection.R ADMS BULK BABL ELKR` against `fresh.streams_vw_bcfp`:
+
+- accessible 17/17 within 1 % (max 0.07 %); spawning 16/17 and rearing 15/16 within 5 %. Over: BULK SK +11.0 %
+  spawning, +7.4 % rearing, both parked (fresh#190). **PASS**, 48/50.
+- Annotated at the taxonomy's 2 % (`parity_annotated.csv`): 44 WITHIN_TOLERANCE, 1 class C (BULK SK spawning,
+  `sk-lake-clustering-divergence`), 5 UNEXPLAINED: BULK SK rearing +7.39, BABL ST rearing −2.05, BABL CH rearing
+  −2.44, ELKR WCT spawning +3.33, ELKR WCT rearing +2.50. Not diagnosed here; segmentation (#324) is the first
+  suspect for the 2–3 % rows, unmeasured.
+
 ## Errors Encountered
 
 | Error | Resolution |
 |-------|------------|
+| Completeness check counted 18 finished groups as missing | Paused the driver, consolidated them by hand, resumed (#347) |
+| KITR `barriers_pkey` duplicate | One row per PSCIS id in the xref insert (`a17e9177`) |
+| UPET `access_rb` boolean into integer | Present species with no barrier is accessible (`a17e9177`) |
+| `kill -STOP` refused by auto mode | Operator ran it |
