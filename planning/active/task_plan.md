@@ -69,9 +69,10 @@ provenance on 5, and every calibration drops the groups it does not cover.
 - [x] Commit the run logs under one campaign prefix, `data-raw/logs/provincial_246/`
 
 ### Phase 5 — Record
-- [ ] Revise `research/study_area_run.md` in place with every host's stamp, and the rates against the estimate
-- [ ] CLAUDE.md status: `fresh_default` is one provenanced build, which retires the "not one build" fact
-- [ ] #346 part 1 is satisfied, so note it there; the PR closes #246
+- [x] Revise `research/study_area_run.md` in place with every host's stamp, and the rates against the estimate
+- [x] CLAUDE.md status: `fresh_default` is one provenanced build, which retires the "not one build" fact
+- [x] #346 part 1 is satisfied, so note it there; the PR closes #246
+- [x] #276: the post-#265 finding and a pre-spend `source_artifact` gate added to its body
 
 ## Validation
 

@@ -229,7 +229,7 @@ serial) was low by about 2.5×; the median job here took 0.68 min and the longes
 the four hosts, every group's newest row from this run (`run_verify*.log`). FWA rows remain probes, as A-4 states.
 
 **Size:** the database grew 221 → 275 GB (+54 GB); `fresh_default` 11 → 48 GB, 11,388,157 segments. The volume holds
-312 G of 590 G. Cloud hosts were up about 6 h each, about $2.80 at August's rate.
+312 G of 590 G. Cloud hosts were up about 6 h each: about $4.50 at $0.25 per host-hour (`research/study_area_run.md`).
 
 **Compare:** 677 mapping-code rows across 217 of 241 groups; the 24 without a row are the `default`-only groups,
 which share no species with the bcfishpass reference (each logs `no shared mapping_code_<sp> columns`).

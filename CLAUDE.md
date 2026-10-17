@@ -11,6 +11,18 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
+## Status (2026-10-17) — `fresh_default` is one provenanced `default` build of all 241 groups (#246)
+
+**run_uid `20261017_004619-3f4c713b` built every `default`-modelable group (241) into `fresh_default` on m1 and three cloud hosts.** `study_area_verify.sql` and `data-raw/logs/provincial_246/verify_extra.sql` pass at `expected_n=241`, with one config_hash, one fwapg / bcfishobs / bcfp pin, and every group's newest log row from this run. `fresh` is unchanged; `bcfishpass` parity at the same code passes 48/50 on the closure of ADMS, BULK, BABL and ELKR (scratch `fresh_parity246`). Record: `research/study_area_run.md`, "The province-wide `default` run".
+
+**Facts not worth re-deriving:**
+- **One run_uid, two link SHAs.** 239 groups stamp `ee21eb13`; KITR and UPET stamp `a17e9177`, the fix for the two bugs that failed them, re-run on m1 under the same run_uid.
+- **The driver reads completeness from log text, and it lost 18 finished groups that way** (#347): an R warning put the `done` marker mid-line, the driver consolidated only what it counted, and its burn would have destroyed the rest. Until #347 lands, compare each host's `<schema>.log` for the run_uid with what consolidate took *before* the burn; `kill -STOP` on the driver holds the burn (auto mode refuses it, so the operator runs it).
+- **One failed group skips the recompute for every group** (#348): the coverage gate exits before it.
+- **The recompute takes 154 min at 241 groups and `-j4`** (median 0.68 min per group), not the ~1 h the plan assumed.
+- **A present species with no barrier in a group is accessible** (`access_<sp>` 1 or 2) while `has_barriers_<sp>_dnstr` stays NA, which the mapping code reads as no data.
+- **`fresh_default` is 48 GB** (11.39 M segments); the fwapg volume is 600 GiB with 253 G free after the run.
+
 ## Status (2026-10-16) — `default_tuned` reads wet's discharge; BT's MAD minima 0.043 / 0.043 (#331)
 
 **A bundle picks its discharge with `pipeline: discharge_source: fwapg | wet`.** `default_tuned` reads wet's `discharge.fwa_v1_segment_monthly` (annual pick, 0 read as no value); `default` and `bcfishpass` stay on fwapg. Logged per WSG in `<schema>.log.discharge_source`, named per group in the export manifest (`discharge.source`, with `discharge.wet_load` naming the wet build when a group read wet), checked by `lnk_preflight_discharge()`. Mechanics: RUNBOOK §7. Write-up: `research/habitat_thresholds.md`, "MAD on wet's discharge (#331)".
@@ -73,7 +85,7 @@ Experimental package — breaking all the time and loving the learning curve. St
 **DUNC is in `fresh_default` under `default` (link 0.63.1, fresh 0.39.0), for the floodplains Columbia region. Its neighbours KOTL, LARL and SLOC are August builds (link 0.45.1, fresh 0.33.0).** The operator chose a HEAD build over rebuilding all four, because those three groups' published floodplains items come from the August build. Evidence: `data-raw/logs/dunc_default_328/`.
 
 **Facts not worth re-deriving:**
-- **`fresh_default` is not one build.** Of its 56 groups, only PINE, KOTL, LARL, SLOC (August) and DUNC have log rows. The rest predate the log tables (#127). 49 of the 56 have under 1.5 segments per FWA line, which is pre-#223 segmentation. CHWK is at 1.54, and only PARS, PINE and the four Columbia groups are dense, at 2.6 or more (2026-10-12). Read `<schema>.log` per group before comparing flags across groups.
+- **Superseded 2026-10-17 (#246): `fresh_default` is now one build of 241 groups.** What this said then: **`fresh_default` was not one build.** Of its 56 groups, only PINE, KOTL, LARL, SLOC (August) and DUNC have log rows. The rest predate the log tables (#127). 49 of the 56 have under 1.5 segments per FWA line, which is pre-#223 segmentation. CHWK is at 1.54, and only PARS, PINE and the four Columbia groups are dense, at 2.6 or more (2026-10-12). Read `<schema>.log` per group before comparing flags across groups.
 - **`fwapg_sha` is the local fwapg checkout's HEAD, not an FWA data version.** It moves on unrelated fwapg commits. Compare `<schema>.log_input` fingerprints to tell whether two builds read the same FWA data.
 - **A single-WSG build of `default` needs `LNK_SCHEMA=fresh_default`.** `default`'s YAML schema is `fresh`. A direct `wsg_run_one.R` run logs `run_uid` NULL, because `study_area_run.sh` sets it per dispatch.
 - **Groups missing from `fresh.streams_access` / `fresh.log` are stale, not broken.** They last ran before v0.40.0 or #127 (59 and 39 of 98 groups have them).
