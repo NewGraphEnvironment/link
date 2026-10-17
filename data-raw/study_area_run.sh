@@ -93,6 +93,14 @@
 
 set -euo pipefail
 
+# declare -A (the per-host maps below) needs bash 4+; macOS /bin/bash is 3.2 and
+# would die at the first map, after the refresh and pre-flight already ran
+# (link#246). Launch with Homebrew bash.
+if [ "${BASH_VERSINFO[0]}" -lt 4 ]; then
+  echo "FATAL: bash ${BASH_VERSION} is too old; run with bash >= 4 (e.g. /opt/homebrew/bin/bash)" >&2
+  exit 1
+fi
+
 # --- args ---
 CY_WS=""
 CONFIG="bcfishpass"
@@ -189,6 +197,15 @@ for arg in "$@"; do
                            exit 1 ;;
                        esac ;;
     *) echo "unknown arg: $arg" >&2; exit 1 ;;
+  esac
+done
+
+# --config and --schema are interpolated into the cypher ssh command strings
+# inside '...', like --run-label: refuse anything that could close the quote
+# (link#246 code-check).
+for v in "$CONFIG" "$SCHEMA_OVERRIDE"; do
+  case "$v" in
+    *[!A-Za-z0-9_]*) echo "FATAL: --config= / --schema= accept only A-Z a-z 0-9 _ (got '$v')" >&2; exit 1 ;;
   esac
 done
 
@@ -910,13 +927,16 @@ fi
 
 # --- resolve drainage-closed DS-first buckets ---
 echo "=== resolve drainage-closed DS-first buckets ==="
-DISP_BUCKET=$(cd "$REPO_ROOT" && Rscript data-raw/study_area_wsgs.R "${FOCAL_ARR[0]}")
+# The run's config and the source tree, not the defaults: study_area_wsgs.R
+# defaults to bcfishpass's species filter and library(link) is whatever is
+# installed, which silently dropped default's KO/RB/GR-only groups (link#246).
+DISP_BUCKET=$(cd "$REPO_ROOT" && LNK_LOAD=loadall Rscript data-raw/study_area_wsgs.R "${FOCAL_ARR[0]}" "$CONFIG")
 DISP_BUCKET=$(echo "$DISP_BUCKET" | tr -d '[:space:]')
 echo "  dispatcher (focal=${FOCAL_ARR[0]}): $DISP_BUCKET"
 declare -A CY_BUCKET
 for i in "${!CY_WS_ARR[@]}"; do
   WS="${CY_WS_ARR[$i]}"
-  B=$(cd "$REPO_ROOT" && Rscript data-raw/study_area_wsgs.R "${FOCAL_ARR[$((i+1))]}")
+  B=$(cd "$REPO_ROOT" && LNK_LOAD=loadall Rscript data-raw/study_area_wsgs.R "${FOCAL_ARR[$((i+1))]}" "$CONFIG")
   CY_BUCKET[$WS]=$(echo "$B" | tr -d '[:space:]')
   echo "  cy[$WS] (focal=${FOCAL_ARR[$((i+1))]}): ${CY_BUCKET[$WS]}"
 done
@@ -998,7 +1018,7 @@ if [ "$N_CY" -gt 0 ]; then
         exit 1
       fi
       scp -q "$REPO_ROOT/data-raw/cypher_prep.sh" "cypher@$IP:/tmp/cypher_prep.sh" \
-        && ssh "cypher@$IP" "CYPHER_PREP_BRANCH='$LINK_BRANCH' CYPHER_PREP_DISCHARGE='$DISCHARGE' CYPHER_PREP_WET_LOAD='$WET_LOAD' bash /tmp/cypher_prep.sh" ) > "$LOG_DIR/${TS}_prep_$WS.log" 2>&1 &
+        && ssh "cypher@$IP" "CYPHER_PREP_BRANCH='$LINK_BRANCH' CYPHER_PREP_DISCHARGE='$DISCHARGE' CYPHER_PREP_WET_LOAD='$WET_LOAD' CYPHER_PREP_CONFIG='$CONFIG' CYPHER_PREP_SCHEMA='$SCHEMA' bash /tmp/cypher_prep.sh" ) > "$LOG_DIR/${TS}_prep_$WS.log" 2>&1 &
   done
   wait
   # Grep the ANCHORED "=== READY" (cypher_prep.sh's last line), not
@@ -1063,7 +1083,9 @@ for WS in "${CY_WS_ARR[@]}"; do
   # someone queries it. This is the same both-legs trap LNK_GUARD_DOWNSTREAM
   # hit in link#227, where the missed second leg made cyphers hard-fail and
   # silently skip WSGs.
-  ssh "cypher@$IP" "cd ~/Projects/repo/link && export LNK_SCHEMA='$SCHEMA' && export LNK_GUARD_DOWNSTREAM=warn && export FWAPG_GIT_SHA='${FWAPG_GIT_SHA:-}' && export BCFISHOBS_GIT_SHA='${BCFISHOBS_GIT_SHA:-}' && export LNK_RUN_UID='$RUN_UID' && export LNK_RUN_LABEL='$RUN_LABEL' && export LNK_BCFP_MODEL_VERSION='${LNK_BCFP_MODEL_VERSION:-}' && for w in $B_SPACE; do Rscript data-raw/wsg_run_one.R \$w '$CONFIG' || echo \"[WARN] cy WSG \$w failed\"; done" \
+  # Keepalives: this one session carries the host's whole bucket (hours); a
+  # silent link drop would kill the rest of it (link#246).
+  ssh -o ServerAliveInterval=60 -o ServerAliveCountMax=10 "cypher@$IP" "cd ~/Projects/repo/link && export LNK_SCHEMA='$SCHEMA' && export LNK_GUARD_DOWNSTREAM=warn && export FWAPG_GIT_SHA='${FWAPG_GIT_SHA:-}' && export BCFISHOBS_GIT_SHA='${BCFISHOBS_GIT_SHA:-}' && export LNK_RUN_UID='$RUN_UID' && export LNK_RUN_LABEL='$RUN_LABEL' && export LNK_BCFP_MODEL_VERSION='${LNK_BCFP_MODEL_VERSION:-}' && for w in $B_SPACE; do Rscript data-raw/wsg_run_one.R \$w '$CONFIG' || echo \"[WARN] cy WSG \$w failed\"; done" \
     > "$LOG_DIR/${TS}_run_$WS.log" 2>&1 &
   CY_PID[$WS]=$!
 done

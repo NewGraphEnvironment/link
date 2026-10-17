@@ -22,7 +22,17 @@
 # cases (fresh#190 BULK SK) and #189 residence species (link-absent) are allowlisted.
 #
 # Prereq: each WSG re-run through lnk_pipeline_run(mapping_code = TRUE) with the fix.
-# Usage: [LNK_LOAD=loadall] Rscript data-raw/parity_crosssection.R [WSG ...]
+# Usage: [LNK_LOAD=loadall] [LNK_SCHEMA=<persist>] [LNK_PARITY_OUT=<csv>] \
+#          Rscript data-raw/parity_crosssection.R [WSG ...]
+#   LNK_SCHEMA      link-side persist schema (default `fresh`), e.g. a scratch
+#                   schema for a parity build beside a province-wide run (link#246).
+#                   The bcfp side is always fresh.streams_vw_bcfp.
+#   LNK_CONFIG      the config the link side was built with (default
+#                   `bcfishpass`). A species link reports as absent is excused
+#                   only where that config does not model it in the group;
+#                   anywhere else it is a failure.
+#   LNK_PARITY_OUT  also write the sweep, annotated by lnk_parity_annotate()
+#                   against research/bcfp_divergence_taxonomy.yml, to this CSV.
 
 if (identical(Sys.getenv("LNK_LOAD"), "loadall")) {
   suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
@@ -38,6 +48,12 @@ conn <- lnk_db_conn(dbname = "fwapg", host = "localhost", port = 5432L,
                     user = "postgres", password = "postgres")
 on.exit(try(DBI::dbDisconnect(conn), silent = TRUE), add = TRUE)
 
+cfg_name    <- Sys.getenv("LNK_CONFIG")
+if (!nzchar(cfg_name)) cfg_name <- "bcfishpass"
+cfg         <- lnk_config(cfg_name)
+loaded      <- lnk_load_overrides(cfg)
+schema      <- Sys.getenv("LNK_SCHEMA")
+if (!nzchar(schema)) schema <- "fresh"
 args        <- commandArgs(trailingOnly = TRUE)
 wsgs        <- if (length(args)) toupper(args) else c("FINA", "PARS", "PCEA", "LKEL")
 species     <- c("bt", "st", "co", "ch", "cm", "pk", "sk", "wct")
@@ -83,9 +99,17 @@ num <- function(x) {
 # ---- 1. parity sweep ------------------------------------------------------
 rows <- list()
 absent <- character(0)
+missing <- character(0)
+no_link <- character(0)
 for (w in wsgs) {
-  lk <- lnk_rollup_wsg(conn, aoi = w, species = species, schema = "fresh")
+  lk <- lnk_rollup_wsg(conn, aoi = w, species = species, schema = schema)
+  # A group the link schema does not hold is a failure, not a row of zeros.
+  if (!nrow(lk)) {
+    no_link <- c(no_link, w)
+    next
+  }
   bc <- bcfp_rollup(w)
+  modelled <- tolower(lnk_pipeline_species(cfg, loaded, w))
   for (sp in species) {
     sp_up <- toupper(sp)
     lk_row <- lk[lk$species == sp_up, ]
@@ -95,7 +119,11 @@ for (w in wsgs) {
       lkv <- if (nrow(lk_row)) num(lk_row[[col_map[m]]]) else 0
       if (max(lkv, bcv) < present_min) next
       if (lkv < present_min && bcv >= present_min) {
-        absent <- c(absent, sprintf("%s %s %s (bcfp %.0f, link 0)", w, sp_up, m, bcv))
+        msg <- sprintf("%s %s %s (bcfp %.0f, link %.1f)", w, sp_up, m, bcv, lkv)
+        # Excused only where the config does not model the species here
+        # (presence). A modelled species at zero is a dropped table, a
+        # missing access row or a barrier bug, and must fail.
+        if (sp %in% modelled) missing <- c(missing, msg) else absent <- c(absent, msg)
         next
       }
       pct <- 100 * (lkv - bcv) / bcv
@@ -107,8 +135,28 @@ for (w in wsgs) {
     }
   }
 }
+if (length(no_link)) {
+  cat(sprintf("\nFAIL: %s has no rows for: %s\n", schema, paste(no_link, collapse = ", ")))
+}
+if (!length(rows)) {
+  cat("FAIL: no parity rows at all\n")
+  quit(status = 1)
+}
 tab <- do.call(rbind, rows)
-cat("\n============ accessible + spawn + rear parity (link vs bcfp, tunnel-free) ============\n")
+
+# The sweep as a parity rollup, annotated against the divergence taxonomy:
+# metric names (accessible / spawning / rearing) are the taxonomy's vocabulary.
+out_csv <- Sys.getenv("LNK_PARITY_OUT")
+if (nzchar(out_csv)) {
+  rollup <- data.frame(wsg = tab$wsg, species = tab$sp, habitat_type = tab$metric,
+                       link_value = tab$link, ref_value = tab$bcfp,
+                       diff_pct = tab$diff_pct)
+  ann <- lnk_parity_annotate(rollup, taxonomy = "research/bcfp_divergence_taxonomy.yml",
+                             to = out_csv)
+  cat(sprintf("\nannotated %d rows -> %s (%d UNEXPLAINED)\n", nrow(ann), out_csv,
+              sum(ann$class == "UNEXPLAINED", na.rm = TRUE)))
+}
+cat(sprintf("\n============ accessible + spawn + rear parity (link %s vs bcfp, tunnel-free) ============\n", schema))
 print(tab[, c("wsg", "sp", "metric", "link", "bcfp", "diff_pct", "ok")], row.names = FALSE)
 
 cat("\n==== summary by metric (accessible tol", tol_acc, "%, habitat tol", tol_hab, "%) ====\n")
@@ -126,8 +174,12 @@ for (m in c("accessible", "spawning", "rearing")) {
               max(abs(sub$diff_pct)), sum(sub$ok), nrow(sub), over))
 }
 if (length(absent)) {
-  cat("\n  link-absent (bcfp models species, link does not — #189 residence, excluded):\n")
+  cat(sprintf("\n  link-absent (bcfp models species, %s does not model it in the group; excluded):\n", cfg_name))
   for (a in absent) cat("   ", a, "\n")
+}
+if (length(missing)) {
+  cat(sprintf("\n  FAIL: %s models the species in the group and link reports none:\n", cfg_name))
+  for (a in missing) cat("   ", a, "\n")
 }
 
 # ---- 2. structural checks: canonical #223 evidence segment ----------------
@@ -136,19 +188,19 @@ if ("FINA" %in% wsgs) {
   cat("\n==== structural: FINA blk", frontier_blk, "BT frontier", frontier_m, "====\n")
   # no fresh.streams segment straddles the frontier (breaks round to integer 3835, as bcfp)
   span <- DBI::dbGetQuery(conn, sprintf(
-    "SELECT count(*)::int n FROM fresh.streams WHERE blue_line_key=%d AND watershed_group_code='FINA'
+    "SELECT count(*)::int n FROM %s.streams WHERE blue_line_key=%d AND watershed_group_code='FINA'
        AND downstream_route_measure < %f AND upstream_route_measure > %f",
-    frontier_blk, frontier_m - frontier_eps, frontier_m + frontier_eps))$n
+    schema, frontier_blk, frontier_m - frontier_eps, frontier_m + frontier_eps))$n
   # the segment starting at the frontier is BT-blocked; accessible BT reach tops out there
   seg <- DBI::dbGetQuery(conn, sprintf(
-    "SELECT a.access_bt FROM fresh.streams s JOIN fresh.streams_access a
+    "SELECT a.access_bt FROM %s.streams s JOIN %s.streams_access a
        ON s.id_segment=a.id_segment AND s.watershed_group_code=a.watershed_group_code
       WHERE s.blue_line_key=%d AND s.watershed_group_code='FINA'
-        AND abs(s.downstream_route_measure - %f) < %f", frontier_blk, frontier_m, frontier_eps))
+        AND abs(s.downstream_route_measure - %f) < %f", schema, schema, frontier_blk, frontier_m, frontier_eps))
   maxupm <- DBI::dbGetQuery(conn, sprintf(
-    "SELECT coalesce(max(s.upstream_route_measure),0) m FROM fresh.streams s JOIN fresh.streams_access a
+    "SELECT coalesce(max(s.upstream_route_measure),0) m FROM %s.streams s JOIN %s.streams_access a
        ON s.id_segment=a.id_segment AND s.watershed_group_code=a.watershed_group_code
-      WHERE s.blue_line_key=%d AND s.watershed_group_code='FINA' AND a.access_bt IN (1,2)", frontier_blk))$m
+      WHERE s.blue_line_key=%d AND s.watershed_group_code='FINA' AND a.access_bt IN (1,2)", schema, schema, frontier_blk))$m
   checks <- c(
     "no segment straddles the frontier"      = span == 0L,
     "segment at frontier is BT-blocked"      = nrow(seg) > 0L && isTRUE(all(seg$access_bt == 0L)),
@@ -164,7 +216,8 @@ acc_fail <- tab[tab$metric == "accessible" & !tab$ok, ]
 hab_fail <- tab[tab$metric != "accessible" & !tab$ok & !tab$parked, ]
 cat(sprintf("\nOVERALL: %d/%d parity pairs within tolerance (%d over: %d accessible, %d habitat non-parked)",
             sum(tab$ok), nrow(tab), sum(!tab$ok), nrow(acc_fail), nrow(hab_fail)))
-n_fail <- nrow(acc_fail) + nrow(hab_fail) + length(struct_fail)
+n_fail <- nrow(acc_fail) + nrow(hab_fail) + length(struct_fail) + length(no_link) +
+  length(missing)
 if (n_fail == 0L) {
   cat("  — PASS\n")
   quit(status = 0)

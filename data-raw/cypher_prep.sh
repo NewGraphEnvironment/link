@@ -316,7 +316,11 @@ suppressPackageStartupMessages({library(link); library(DBI); library(RPostgres)}
 conn <- DBI::dbConnect(RPostgres::Postgres(),
   host="localhost", port=5432, dbname="fwapg",
   user="postgres", password="postgres")
-cfg <- lnk_config("bcfishpass")
+# The run config and persist schema (study_area_run.sh passes both), so the
+# DDL repair lands on the schema the run writes. Hardcoding bcfishpass left a
+# --schema=fresh_default run creating its tables without force_recreate (link#246).
+cfg <- lnk_config(Sys.getenv("CYPHER_PREP_CONFIG", "bcfishpass"))
+if (nzchar(Sys.getenv("CYPHER_PREP_SCHEMA"))) cfg$pipeline$schema <- Sys.getenv("CYPHER_PREP_SCHEMA")
 loaded <- lnk_load_overrides(cfg)
 # Persist species set MUST match lnk_pipeline_run (R/lnk_pipeline_run.R:
 # `lnk_persist_init(conn, cfg, species = cfg$species)`). The wide per-

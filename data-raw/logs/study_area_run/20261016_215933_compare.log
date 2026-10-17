@@ -1,0 +1,15 @@
+[study_area_compare] KAKC ERROR: no shared mapping_code_<sp> columns to compare for KAKC (link: RB; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] LPET ERROR: no shared mapping_code_<sp> columns to compare for LPET (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] TSEA ERROR: no shared mapping_code_<sp> columns to compare for TSEA (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] 8 rows across 3/6 WSGs -> /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261016_215933_compare.csv
+# A tibble: 8 × 7
+  wsg   species total_segs match_pct n_diffs top_pattern       top_pattern_count
+* <chr> <chr>        <int>     <dbl>   <int> <chr>                         <int>
+1 LSTR  CH           20248      94.7    1065 "REAR;NONE | ACC…               475
+2 LSTR  CO           20248      94.8    1047 "REAR;NONE | ACC…               500
+3 LSTR  SK           20248      96.0     812 "ACCESS;NONE | "                453
+4 MSTR  BT           36151      94.6    1967 "ACCESS;NONE | R…               369
+5 MSTR  ST           36151      95.7    1545 "REAR;NONE | ACC…               553
+6 STIR  CH           15724      99.2     128 "REAR;NONE | ACC…                94
+7 STIR  CO           15724      99.2     130 "REAR;NONE | ACC…               102
+8 STIR  SK           15724      99.2     131 "ACCESS;NONE | S…                64

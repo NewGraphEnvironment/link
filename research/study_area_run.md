@@ -1,5 +1,9 @@
 # Study-area run (tunnel-free, M1-dispatch)
 
+**Verified:** 2026-10-17 (the province-wide section and the corrected lines) · **Issues:** #175, #246, #347, #348 ·
+**Produced by:** `data-raw/study_area_run.sh`; logs `data-raw/logs/provincial_246/`,
+`data-raw/logs/study_area_run/20261017_*`
+
 Lean alternative to the 5-host `provincial_run_runbook.md` for running
 **study-area** mapping_code parity.
 
@@ -47,10 +51,16 @@ cyphers in order. Dispatcher-only (no cyphers): omit `--cy-workspaces`, pass one
    `lnk_pipeline_run(mapping_code=TRUE)`), dispatcher local + cyphers via ssh,
    per-WSG **soft-fail**.
 5. **Consolidate** cyphers → dispatcher (`schema_consolidate.R`, shape-tolerant).
-6. **Burn** cyphers (then a trap-EXIT safety net).
+   Only the groups each host's log *reports* are consolidated, read from log
+   text; that missed 18 finished groups on 2026-10-17 (#347).
+6. **Burn** cyphers (then a trap-EXIT safety net). The burn does not check that
+   a host's work was consolidated (#347).
 7. **Post-consolidate recompute ALL run WSGs** on the dispatcher via
    `wsg_recompute_one.R` → [lnk_access()] `merge=TRUE` (cheap access-only,
-   reuses persisted streams/habitat/barriers; ~10s/WSG) + `lnk_mapping_code`.
+   reuses persisted streams/habitat/barriers) + `lnk_mapping_code`. Measured at
+   241 groups: median 2.0 min per group (quartiles 1.1 / 3.2, longest 16 min),
+   597 min summed, 154 min at `-j4` (2026-10-17, `_recompute.log`); the
+   ~10 s/WSG this step once quoted was FINA alone (#205, below), not a run.
    Because it is cheap, every run WSG is re-settled — bucketing is a speed
    knob, not a correctness lever (link#205).
 8. **Compare** all run WSGs tunnel-free (`study_area_compare.R`) → CSV.
@@ -205,6 +215,44 @@ consolidate, and every run WSG must have rows in the persist afterwards.
 Measured timings and the four defects that produced these numbers:
 `research/run_record_2026_08_31_cypher_pilots.md`.
 
+## The province-wide `default` run (2026-10-17, 241 groups)
+
+run_uid `20261017_004619-3f4c713b`, `default` into `fresh_default`, m1 + three
+cloud hosts, `--refresh-primitives`, link `ee21eb13`. Both verifiers pass at
+`expected_n=241`. The record of what happened is
+`planning/archive/2026-10-issue-246-provenanced-province-wide-default-run/`.
+
+| stage | measured | planned |
+|---|---|---|
+| modelling, per host | job1 171, job2 207, job3 277, m1 ~225 min | ~4.7 h each (August rates) |
+| consolidate | 46 min (3 hosts) | — |
+| recompute, 241 groups, `-j4` | 154 min | ~1 h |
+| wall clock, launch to exit | 8 h 48 m (including a ~30 min pause to recover work) | ~6 h |
+| cloud hosts | 3 × ~6 h ≈ $4.50 at $0.25/h | ~$3 |
+| database growth | 221 → 275 GB; `fresh_default` 7.3 → 31 GB (14 tables + 17 indexes), 11.39 M segments | ~+65 GB on m1, ~21 GB of it persist |
+
+- **Equal packing was right.** The 34-group run had measured cloud hosts at or
+  above m1's rate, against the 0.45 the generator assumed; at equal speeds the
+  slowest cloud host finished 52 min after m1.
+- **The recompute is now the long pole after modelling.** It scales with run
+  groups (above), at 2.0 min median per group at this scope. #274 (narrow the
+  set) and #250's `-j` are the levers.
+- **What went wrong:** the completeness check missed 18 finished groups whose
+  `done` marker an R warning had pushed mid-line (#347), and would have burned
+  their only copy. Two groups failed on bugs fixed in `a17e9177` (a duplicate
+  PSCIS row from an xref that sets both ids; a logical `access_<sp>` for a
+  present species with no barrier). One failed group would have skipped the
+  recompute for all of them (#348). The operator paused the driver, the 18 were
+  consolidated by hand, KITR and UPET re-ran on m1 under the same run_uid, and
+  the driver resumed. So the run carries more than one link SHA: in `log`, 239
+  groups `ee21eb13` and 2 `a17e9177`; in `log_recompute`, all 241 `a17e9177`,
+  and UPET again at `eb93f343` after its RB mapping codes were found empty
+  (`91a968ab`).
+- **Parity at the same code** (`20261017_093603-31ab6242`, `bcfishpass` on the
+  closure of ADMS, BULK, BABL and ELKR, 17 groups built): `parity_crosssection.R`
+  on the four, 48/50 within tolerance; BULK SK over, parked by the script
+  (fresh#190, closed and carried on as #130).
+
 ## Operational facts from the first real multi-host run (2026-08-31, 34 WSGs)
 
 Migrated from machine-local memory 2026-09-01 (soul#47). The 2026-05-25 gotchas
@@ -229,8 +277,9 @@ above still stand; these are additional and were learned on the field-scope run
   asserting it non-NULL everywhere is correct rather than a false failure, and
   `study_area_verify.sql` asserts exactly that. **Runs logged before v0.50.0
   still carry the NULLs** and are not retroactively fixable.
-- **`link_dirty` is currently always TRUE on the dispatcher, and it is FALSE** —
-  the run's own logs land in the tracked `data-raw/logs/`. #257.
+- **`link_dirty` excludes the run's own logs** (#257, closed). It was TRUE on
+  every dispatcher row before that, because the logs land in the tracked
+  `data-raw/logs/`; on 2026-10-17 it was FALSE on all 241 rows.
 - **Measured timing, 34 WSGs / 3 hosts, SECOND run 2026-09-01 (`20260901_234743`):
   133 min** — spin + prep + parity ~11, then modelling / consolidate / recompute +
   compare. 25 min faster than the 2026-08-31 run below on the same scope and host

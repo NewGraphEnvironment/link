@@ -237,3 +237,51 @@ test_that("remediated_dnstr_ind FALSE for segments with no remediations downstre
   # s1 present but R1 not in lookup (empty) -> remediated_dnstr_ind = FALSE
   expect_equal(out$remediated_dnstr_ind, c(FALSE, FALSE))
 })
+
+test_that("access_<sp> is integer 1 / 2 when a present species has no barrier in the AOI", {
+  # UPET RB, link#246: zero dnstr rows -> has_barriers_rb_dnstr all NA, and
+  # ifelse(NA, ...) returned a logical NA column that persist rejected.
+  local_mocked_bindings(
+    dbGetQuery = function(conn, sql, ...) mock_segments_aoi(c("s1", "s2")),
+    .package = "DBI"
+  )
+  local_mocked_bindings(
+    frs_network_features = function(conn, segments, features, ...) {
+      if (grepl("barriers_rb", features)) {
+        return(tibble::tibble(segmented_stream_id = character(0),
+                              feature_ids = list()))
+      }
+      tibble::tibble(segmented_stream_id = "s1", feature_ids = list("RB"))
+    },
+    .package = "fresh"
+  )
+
+  out <- lnk_pipeline_access(
+    conn = structure(list(), class = "DBIConnection"),
+    segments = "s.streams",
+    aoi = "UPET",
+    barriers_per_sp = list(rb = "s.barriers_rb"),
+    observations = "s.observations",
+    wsg_presence = list(rb = TRUE),
+    segment_id_col = "segmented_stream_id"
+  )
+  # Known present, so "no barrier downstream", not "no data": as NA the
+  # mapping code emitted "" for every UPET RB segment.
+  expect_identical(out$has_barriers_rb_dnstr, c(FALSE, FALSE))
+  expect_type(out$access_rb, "integer")
+  expect_equal(out$access_rb, c(2L, 1L))
+
+  # With no presence given, zero rows stays "no data" (bcfp's NULL
+  # column), and access is still an integer code.
+  out_np <- lnk_pipeline_access(
+    conn = structure(list(), class = "DBIConnection"),
+    segments = "s.streams",
+    aoi = "UPET",
+    barriers_per_sp = list(rb = "s.barriers_rb"),
+    observations = "s.observations",
+    segment_id_col = "segmented_stream_id"
+  )
+  expect_true(all(is.na(out_np$has_barriers_rb_dnstr)))
+  expect_type(out_np$access_rb, "integer")
+  expect_equal(out_np$access_rb, c(2L, 1L))
+})

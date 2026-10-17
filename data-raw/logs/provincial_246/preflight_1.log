@@ -1,0 +1,28 @@
+=== study_area_run 20261016_212924 ===
+  run_uid:      20261016_212924-5a104140
+  run_label:    <none>
+  config:       default
+  branch:       246-provenanced-province-wide-default-run (cyphers run this ref)
+  persist:      fresh_default
+  cyphers:      job1 job2 job3 (3)
+  log dir:      /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run
+  vintage max:  7 d
+  recompute -j: 4
+  MODE:         --preflight-only (no spend, no writes)
+=== pre-flight (local; pre-spend) ===
+  ✓ dispatcher fresh exports what the pipeline calls
+  ✓ origin/246-provenanced-province-wide-default-run is at HEAD
+  ✓ fwapg_sha f9718cb739d3 (exported to all hosts)
+  ✓ bcfishobs_sha 08630cf4ac14 (exported to all hosts)
+  ✓ fresh_sha e247ca19a780 (clean)
+  ✓ bcfp reference pinned at v0.7.15-50-g620dbe4 (exported to all hosts)
+    ok   discharge (fwapg) loaded: whse_basemapping.fwa_stream_networks_discharge
+  ✓ discharge (fwapg) loaded on the dispatcher
+    [preflight] primitive vintage (window 7 d) - OK, oldest 3.7 d (whse_fish.pscis_assessment_svw) [judged by load stamp: 4, statistics: 0, none: 0]
+  ✓ dispatcher primitives within 7 d
+  ✓ doctl token valid (DO API reachable)
+  ✓ tofu do_token valid (HTTP 200 /v2/account)
+  ✓ tofu s3 backend reachable
+  ✓ pre-flight clean (tunnel-free)
+=== --preflight-only: local gates passed; exiting before spin ===
+  NOT CHECKED (require live cyphers): host parity, cypher primitive vintage.

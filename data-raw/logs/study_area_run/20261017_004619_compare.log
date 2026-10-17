@@ -1,0 +1,40 @@
+[study_area_compare] ATLL ERROR: no shared mapping_code_<sp> columns to compare for ATLL (link: GR,RB; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] BRID ERROR: no shared mapping_code_<sp> columns to compare for BRID (link: RB; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] CRYL ERROR: no shared mapping_code_<sp> columns to compare for CRYL (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] GRNL ERROR: no shared mapping_code_<sp> columns to compare for GRNL (link: RB; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] KAHN ERROR: no shared mapping_code_<sp> columns to compare for KAHN (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] KUSR ERROR: no shared mapping_code_<sp> columns to compare for KUSR (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] LEUT ERROR: no shared mapping_code_<sp> columns to compare for LEUT (link: RB; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] LFRT ERROR: no shared mapping_code_<sp> columns to compare for LFRT (link: GR,RB; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] LKEC ERROR: no shared mapping_code_<sp> columns to compare for LKEC (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] LNRS ERROR: no shared mapping_code_<sp> columns to compare for LNRS (link: RB; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] LSIK ERROR: no shared mapping_code_<sp> columns to compare for LSIK (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] MFRT ERROR: no shared mapping_code_<sp> columns to compare for MFRT (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] MILL ERROR: no shared mapping_code_<sp> columns to compare for MILL (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] MURT ERROR: no shared mapping_code_<sp> columns to compare for MURT (link: RB; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] MUSK ERROR: no shared mapping_code_<sp> columns to compare for MUSK (link: RB; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] PITR ERROR: no shared mapping_code_<sp> columns to compare for PITR (link: RB; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] SAHD ERROR: no shared mapping_code_<sp> columns to compare for SAHD (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] TUTR ERROR: no shared mapping_code_<sp> columns to compare for TUTR (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] UFRT ERROR: no shared mapping_code_<sp> columns to compare for UFRT (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] UISR ERROR: no shared mapping_code_<sp> columns to compare for UISR (link: RB; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] UPET ERROR: no shared mapping_code_<sp> columns to compare for UPET (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] KAKC ERROR: no shared mapping_code_<sp> columns to compare for KAKC (link: RB; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] LPET ERROR: no shared mapping_code_<sp> columns to compare for LPET (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] TSEA ERROR: no shared mapping_code_<sp> columns to compare for TSEA (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+There were 35 warnings (use warnings() to see them)
+[study_area_compare] 677 rows across 217/241 WSGs -> /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261017_004619_compare.csv
+# A tibble: 677 × 7
+   wsg   species total_segs match_pct n_diffs top_pattern      top_pattern_count
+ * <chr> <chr>        <int>     <dbl>   <int> <chr>                        <int>
+ 1 LFRA  BT           27395      91.8    2261 "ACCESS;MODELLE…               262
+ 2 LFRA  CH           27395      93.7    1726 "REAR;DAM | ACC…               484
+ 3 LFRA  CM           27395      97.0     829 "ACCESS;MODELLE…               249
+ 4 LFRA  CO           27395      93.3    1840 "REAR;DAM | ACC…               557
+ 5 LFRA  PK           27395      97.0     834 "ACCESS;MODELLE…               249
+ 6 LFRA  SK           27395      94.9    1389 "SPAWN;DAM | AC…               298
+ 7 LFRA  ST           27395      93.2    1851 "REAR;DAM | ACC…               487
+ 8 SETN  BT           78822      96.7    2608 "REAR;DAM | ACC…               484
+ 9 SETN  CH           78822      94.2    4585 "SPAWN;DAM | "                1219
+10 SETN  CM           78822      94.8    4117 "ACCESS;DAM | "               1596
+# ℹ 667 more rows

@@ -1,0 +1,148 @@
+snapshot_bcfp: --force given; bypassing ledger skip-if-current guard.
+artifact_record: link 0.66.0 (source tree)
+NOTICE:  schema "provenance" already exists, skipping
+
+NOTICE:  relation "source_artifact" already exists, skipping
+
+NOTICE:  column "host" of relation "source_artifact" already exists, skipping
+
+NOTICE:  column "table_name" of relation "source_artifact" already exists, skipping
+
+NOTICE:  column "url" of relation "source_artifact" already exists, skipping
+
+NOTICE:  column "kind" of relation "source_artifact" already exists, skipping
+
+NOTICE:  column "version_id" of relation "source_artifact" already exists, skipping
+
+NOTICE:  column "etag" of relation "source_artifact" already exists, skipping
+
+NOTICE:  column "last_modified" of relation "source_artifact" already exists, skipping
+
+NOTICE:  column "n_rows" of relation "source_artifact" already exists, skipping
+
+NOTICE:  column "loaded_at" of relation "source_artifact" already exists, skipping
+
+NOTICE:  column "recorded_at" of relation "source_artifact" already exists, skipping
+
+NOTICE:  column "recorded_by" of relation "source_artifact" already exists, skipping
+
+NOTICE:  column "notes" of relation "source_artifact" already exists, skipping
+
+artifact_record: cleared 4 loader rows for host m1
+NOTICE:  schema "whse_fish" already exists, skipping
+CREATE SCHEMA
+NOTICE:  schema "cabd" already exists, skipping
+CREATE SCHEMA
+NOTICE:  schema "fresh" already exists, skipping
+CREATE SCHEMA
+NOTICE:  schema "bcfishobs" already exists, skipping
+CREATE SCHEMA
+DROP TABLE
+2026-10-16 14:59:38,488:INFO:bcdata.wfs: Total features requested: 19905
+2026-10-16 14:59:40,746:INFO:bcdata.wfs: https://openmaps.gov.bc.ca/geo/pub/wfs?service=WFS&version=2.0.0&request=GetFeature&typeName=WHSE_FISH.PSCIS_ASSESSMENT_SVW&outputFormat=json&SRSNAME=EPSG%3A3005&sortby=STREAM_CROSSING_ID&startIndex=0&count=10000
+2026-10-16 14:59:41,664:INFO:bcdata.database: Creating table whse_fish.pscis_assessment_svw
+2026-10-16 14:59:41,826:INFO:bcdata.bc2pg: Writing WHSE_FISH.PSCIS_ASSESSMENT_SVW to database as whse_fish.pscis_assessment_svw
+2026-10-16 14:59:43,824:INFO:bcdata.wfs: https://openmaps.gov.bc.ca/geo/pub/wfs?service=WFS&version=2.0.0&request=GetFeature&typeName=WHSE_FISH.PSCIS_ASSESSMENT_SVW&outputFormat=json&SRSNAME=EPSG%3A3005&sortby=STREAM_CROSSING_ID&startIndex=10000&count=9905
+2026-10-16 14:59:44,152:INFO:bcdata.bc2pg: Writing WHSE_FISH.PSCIS_ASSESSMENT_SVW to database as whse_fish.pscis_assessment_svw
+2026-10-16 14:59:44,515:INFO:bcdata.database: Logging download date to bcdata.log
+2026-10-16 14:59:44,520:INFO:bcdata.cli: Load of whse_fish.pscis_assessment_svw to whse_fish.pscis_assessment_svw in postgresql://postgres:postgres@localhost:5432/fwapg complete
+DROP TABLE
+2026-10-16 14:59:45,654:INFO:bcdata.wfs: Total features requested: 147
+2026-10-16 14:59:46,055:INFO:bcdata.wfs: https://openmaps.gov.bc.ca/geo/pub/wfs?service=WFS&version=2.0.0&request=GetFeature&typeName=WHSE_FISH.PSCIS_DESIGN_PROPOSAL_SVW&outputFormat=json&SRSNAME=EPSG%3A3005&count=147
+2026-10-16 14:59:46,657:INFO:bcdata.database: Creating table whse_fish.pscis_design_proposal_svw
+2026-10-16 14:59:46,706:INFO:bcdata.bc2pg: Writing WHSE_FISH.PSCIS_DESIGN_PROPOSAL_SVW to database as whse_fish.pscis_design_proposal_svw
+2026-10-16 14:59:46,736:INFO:bcdata.database: Logging download date to bcdata.log
+2026-10-16 14:59:46,739:INFO:bcdata.cli: Load of whse_fish.pscis_design_proposal_svw to whse_fish.pscis_design_proposal_svw in postgresql://postgres:postgres@localhost:5432/fwapg complete
+DROP TABLE
+2026-10-16 14:59:47,913:INFO:bcdata.wfs: Total features requested: 410
+2026-10-16 14:59:48,601:INFO:bcdata.wfs: https://openmaps.gov.bc.ca/geo/pub/wfs?service=WFS&version=2.0.0&request=GetFeature&typeName=WHSE_FISH.PSCIS_HABITAT_CONFIRMATION_SVW&outputFormat=json&SRSNAME=EPSG%3A3005&count=410
+2026-10-16 14:59:49,228:INFO:bcdata.database: Creating table whse_fish.pscis_habitat_confirmation_svw
+2026-10-16 14:59:49,281:INFO:bcdata.bc2pg: Writing WHSE_FISH.PSCIS_HABITAT_CONFIRMATION_SVW to database as whse_fish.pscis_habitat_confirmation_svw
+2026-10-16 14:59:49,331:INFO:bcdata.database: Logging download date to bcdata.log
+2026-10-16 14:59:49,334:INFO:bcdata.cli: Load of whse_fish.pscis_habitat_confirmation_svw to whse_fish.pscis_habitat_confirmation_svw in postgresql://postgres:postgres@localhost:5432/fwapg complete
+DROP TABLE
+2026-10-16 14:59:50,483:INFO:bcdata.wfs: Total features requested: 177
+2026-10-16 14:59:50,864:INFO:bcdata.wfs: https://openmaps.gov.bc.ca/geo/pub/wfs?service=WFS&version=2.0.0&request=GetFeature&typeName=WHSE_FISH.PSCIS_REMEDIATION_SVW&outputFormat=json&SRSNAME=EPSG%3A3005&count=177
+2026-10-16 14:59:51,502:INFO:bcdata.database: Creating table whse_fish.pscis_remediation_svw
+2026-10-16 14:59:51,554:INFO:bcdata.bc2pg: Writing WHSE_FISH.PSCIS_REMEDIATION_SVW to database as whse_fish.pscis_remediation_svw
+2026-10-16 14:59:51,585:INFO:bcdata.database: Logging download date to bcdata.log
+2026-10-16 14:59:51,588:INFO:bcdata.cli: Load of whse_fish.pscis_remediation_svw to whse_fish.pscis_remediation_svw in postgresql://postgres:postgres@localhost:5432/fwapg complete
+DROP TABLE
+CREATE TABLE
+artifact_record: link 0.66.0 (source tree)
+NOTICE:  schema "provenance" already exists, skipping
+
+NOTICE:  relation "source_artifact" already exists, skipping
+
+NOTICE:  column "host" of relation "source_artifact" already exists, skipping
+
+NOTICE:  column "table_name" of relation "source_artifact" already exists, skipping
+
+NOTICE:  column "url" of relation "source_artifact" already exists, skipping
+
+NOTICE:  column "kind" of relation "source_artifact" already exists, skipping
+
+NOTICE:  column "version_id" of relation "source_artifact" already exists, skipping
+
+NOTICE:  column "etag" of relation "source_artifact" already exists, skipping
+
+NOTICE:  column "last_modified" of relation "source_artifact" already exists, skipping
+
+NOTICE:  column "n_rows" of relation "source_artifact" already exists, skipping
+
+NOTICE:  column "loaded_at" of relation "source_artifact" already exists, skipping
+
+NOTICE:  column "recorded_at" of relation "source_artifact" already exists, skipping
+
+NOTICE:  column "recorded_by" of relation "source_artifact" already exists, skipping
+
+NOTICE:  column "notes" of relation "source_artifact" already exists, skipping
+
+                      table_name    version_id
+          bcfishobs.observations 1790057230537
+                       cabd.dams          <NA>
+ fresh.modelled_stream_crossings 1791925276485
+  whse_fish.pscis_assessment_svw          <NA>
+                               etag       last_modified n_rows
+   5210d24aece4d64f5981c1bfe444a15b 2026-09-22 06:07:10 375962
+                               <NA>                <NA>   2592
+ 22b237eda4234c3a14a3e275c0333cf3-6 2026-10-13 21:01:16 524578
+                               <NA>                <NA>  19905
+           loaded_at
+ 2026-10-16 22:00:21
+ 2026-10-16 21:59:54
+ 2026-10-16 22:00:08
+ 2026-10-16 21:59:51
+artifact_record: recorded 4 loader rows
+artifact_record: link 0.66.0 (source tree)
+NOTICE:  schema "provenance" already exists, skipping
+
+NOTICE:  relation "source_artifact" already exists, skipping
+
+NOTICE:  column "host" of relation "source_artifact" already exists, skipping
+
+NOTICE:  column "table_name" of relation "source_artifact" already exists, skipping
+
+NOTICE:  column "url" of relation "source_artifact" already exists, skipping
+
+NOTICE:  column "kind" of relation "source_artifact" already exists, skipping
+
+NOTICE:  column "version_id" of relation "source_artifact" already exists, skipping
+
+NOTICE:  column "etag" of relation "source_artifact" already exists, skipping
+
+NOTICE:  column "last_modified" of relation "source_artifact" already exists, skipping
+
+NOTICE:  column "n_rows" of relation "source_artifact" already exists, skipping
+
+NOTICE:  column "loaded_at" of relation "source_artifact" already exists, skipping
+
+NOTICE:  column "recorded_at" of relation "source_artifact" already exists, skipping
+
+NOTICE:  column "recorded_by" of relation "source_artifact" already exists, skipping
+
+NOTICE:  column "notes" of relation "source_artifact" already exists, skipping
+
+[artifact] probed 252 artifacts (0 without a version id)
+Stamped data-raw/logs/bcfp_baselines.csv with bcfp build v0.7.15-50-g620dbe4 (head_sha=620dbe4)
+snapshot_bcfp.sh: complete.

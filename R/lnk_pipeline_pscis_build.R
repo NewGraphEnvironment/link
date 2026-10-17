@@ -401,8 +401,25 @@
         current_barrier_result_code, current_pscis_status,
         geom_snapped
       )
+      -- One row per stream_crossing_id: an xref row may set BOTH
+      -- modelled_crossing_id and linear_feature_id (KITR 203838), and then
+      -- both branches emit it. Branch A is kept and Branch B fills in only
+      -- where A found nothing. bcfp runs both branches as one INSERT with
+      -- ON CONFLICT DO NOTHING and no branch precedence; the two agree
+      -- whenever the xref's modelled crossing lies on its linear_feature_id,
+      -- as it does for both such rows today (KITR 203838; ATNA 203324's
+      -- modelled crossing is absent, so only B emits). A duplicate here
+      -- becomes a duplicate barriers_pkey at persist (link#246).
+      SELECT DISTINCT ON (u.stream_crossing_id)
+        u.stream_crossing_id, u.modelled_crossing_id, u.linear_feature_id,
+        u.blue_line_key, u.downstream_route_measure, u.wscode_ltree,
+        u.localcode_ltree, u.watershed_group_code, u.distance_to_stream,
+        u.current_barrier_result_code, u.current_pscis_status,
+        u.geom_snapped
+      FROM (
       -- Branch A: xref via modelled_crossing_id
       SELECT
+        1 AS branch_rank,
         x.stream_crossing_id,
         x.modelled_crossing_id,
         m.linear_feature_id,
@@ -432,6 +449,7 @@
 
       -- Branch B: xref via linear_feature_id directly
       SELECT
+        2 AS branch_rank,
         x.stream_crossing_id,
         x.modelled_crossing_id,
         x.linear_feature_id,
@@ -454,7 +472,9 @@
       INNER JOIN %2$s p ON x.stream_crossing_id = p.stream_crossing_id
       LEFT JOIN %2$s a ON x.stream_crossing_id = a.stream_crossing_id
       WHERE x.linear_feature_id IS NOT NULL
-        AND s.watershed_group_code = %3$s;
+        AND s.watershed_group_code = %3$s
+      ) u
+      ORDER BY u.stream_crossing_id, u.branch_rank;
       ", s, pscis_table, .lnk_quote_literal(aoi), modelled_table) # nolint: indentation_linter, line_length_linter
     .lnk_db_execute(conn, sql_xref_insert)
 

@@ -1,0 +1,95 @@
+
+=== run under verification ===
+         run_uid          |       run_label       | n_attempted | n_completed | n_hosts |   bcfp_reference    | bcfp_pin_source |            started            |           finished            
+--------------------------+-----------------------+-------------+-------------+---------+---------------------+-----------------+-------------------------------+-------------------------------
+ 20261016_215933-663675b0 | pilot-241-default-246 |           6 |           6 |       2 | v0.7.15-50-g620dbe4 | env             | 2026-10-16 22:18:09.457981+00 | 2026-10-16 22:25:32.442168+00
+(1 row)
+
+ scope_assertion 
+-----------------
+ expected_n = 6
+(1 row)
+
+
+=== 1. Provenance per host ===
+    host     | n_wsg | has_link_sha | has_fresh_sha | has_fwapg_sha | has_bcfishobs_sha | has_bcfp_version | n_dirty | n_dirty_unknown |          first_done           |           last_done           
+-------------+-------+--------------+---------------+---------------+-------------------+------------------+---------+-----------------+-------------------------------+-------------------------------
+ cypher-job1 |     2 |            2 |             2 |             2 |                 2 |                2 |       0 |               0 | 2026-10-16 22:20:22.113528+00 | 2026-10-16 22:21:44.682407+00
+ m1          |     4 |            4 |             4 |             4 |                 4 |                4 |       0 |               0 | 2026-10-16 22:19:48.706996+00 | 2026-10-16 22:25:32.442168+00
+(2 rows)
+
+
+=== 1b. Provenance verdict (per host) ===
+    host     | verdict 
+-------------+---------
+ cypher-job1 | OK
+ m1          | OK
+(2 rows)
+
+
+=== 1c. Started but never finished (must be empty) ===
+ host | watershed_group_code | date_start 
+------+----------------------+------------
+(0 rows)
+
+
+=== 2. The distinct SHAs -- all hosts must agree ===
+                 link_sha                 |                fresh_sha                 |                fwapg_sha                 |              bcfishobs_sha               | bcfp_model_version  
+------------------------------------------+------------------------------------------+------------------------------------------+------------------------------------------+---------------------
+ 6036504c7e1bf326fc8388a1baf5bf604c5d3526 | e247ca19a7803982dc7e5f55dbbf377dfc85d007 | f9718cb739d376155641f484456eb2a93ce2f481 | 08630cf4ac14b2f17cc4d7058b127f3996f3fd8a | v0.7.15-50-g620dbe4
+(1 row)
+
+
+=== 2b. Inputs every host must agree on (must be one row) ===
+ n_distinct_input_sets | verdict 
+-----------------------+---------
+                     1 | OK
+(1 row)
+
+
+=== 3. Coverage: every WSG of this run has streams rows ===
+ wsg  | n_segments 
+------+------------
+ KAKC |      24364
+ LPET |       9549
+ LSTR |      42383
+ MSTR |      78567
+ STIR |      41587
+ TSEA |      10600
+(6 rows)
+
+
+=== 4. Modelled vs recomputed -- the difference, per WSG ===
+ wsg  | modelled | recomputed |          model_done           |        recompute_done         | state 
+------+----------+------------+-------------------------------+-------------------------------+-------
+ KAKC | t        | t          | 2026-10-16 22:25:32.442168+00 | 2026-10-16 22:26:46.790882+00 | ok
+ LPET | t        | t          | 2026-10-16 22:20:22.113528+00 | 2026-10-16 22:26:44.273773+00 | ok
+ LSTR | t        | t          | 2026-10-16 22:19:48.706996+00 | 2026-10-16 22:27:17.047081+00 | ok
+ MSTR | t        | t          | 2026-10-16 22:24:47.306272+00 | 2026-10-16 22:27:32.593023+00 | ok
+ STIR | t        | t          | 2026-10-16 22:21:35.081409+00 | 2026-10-16 22:27:31.478707+00 | ok
+ TSEA | t        | t          | 2026-10-16 22:21:44.682407+00 | 2026-10-16 22:26:50.530412+00 | ok
+(6 rows)
+
+
+=== 5. Whole-schema picture: the mixture this run leaves behind ===
+ wsg_in_streams 
+----------------
+              6
+(1 row)
+
+ wsg_with_any_log 
+------------------
+                6
+(1 row)
+
+ runs_ever_labelled 
+--------------------
+                  1
+(1 row)
+
+
+=== 6. ASSERTIONS (raise, so this script can actually fail) ===
+DO
+
+=== verify: OK ===
+NOTICE:  PASS: run 20261016_215933-663675b0 -- 6 WSG(s), all modelled, recomputed, segmented and provenanced

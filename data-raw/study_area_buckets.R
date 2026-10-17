@@ -361,9 +361,20 @@ if (do_write) {
   wr("Only Peace is FWCP. Calling all three \"the FWCP study areas\" was an error")
   wr("carried in several docs until 2026-08-31.")
   wr("")
-  wr("Note this file's focal set is **not** all of BC: 246 watershed groups exist,")
-  wr("217 are modelable, and the set below is the drainage closure of current")
-  wr("focal areas only.")
+  # Computed, not typed: the modelable count depends on the config's species
+  # (217 under `bcfishpass`, 241 under `default`, link#246).
+  n_all <- nrow(fresh::frs_wsg_outlets())
+  if (setequal(focal, fresh::frs_wsg_outlets()$watershed_group_code)) {
+    wr(sprintf("The focal set is all %d BC watershed groups; %d are modelable under",
+               n_all, length(flat)))
+    wr(sprintf("config `%s`.", config))
+  } else {
+    wr(sprintf("Note this file's focal set is **not** all of BC: %d watershed groups exist,",
+               n_all))
+    wr(sprintf("and the set below is the drainage closure of the focal groups, %d of",
+               length(flat)))
+    wr(sprintf("them modelable under config `%s`.", config))
+  }
   wr("")
   wr("## Why components, not study areas")
   wr("")
@@ -414,7 +425,14 @@ if (do_write) {
   for (h in seq_len(n_hosts)) {
     wr(sprintf("  --focal=%s \\", paste(sort(host_focal[[h]]), collapse = ",")))
   }
-  wr("  --config=bcfishpass")
+  # The config this split was derived for. Any config but bcfishpass also
+  # needs --schema= (the driver's guard); a pasted bcfishpass line would
+  # overwrite `fresh` (link#246).
+  if (identical(config, "bcfishpass")) {
+    wr("  --config=bcfishpass")
+  } else {
+    wr(sprintf("  --config=%s --schema=<persist schema>", config))
+  }
   wr("```")
   wr("")
   wr("## Downstream-first order per host")

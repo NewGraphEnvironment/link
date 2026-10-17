@@ -1,0 +1,85 @@
+=== study_area_run 20261016_215933 ===
+  run_uid:      20261016_215933-663675b0
+  run_label:    pilot-241-default-246
+  config:       default
+  branch:       246-provenanced-province-wide-default-run (cyphers run this ref)
+  persist:      fresh_pilot246
+  cyphers:      job1 (1)
+  log dir:      /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run
+  vintage max:  7 d
+  recompute -j: 4
+=== --refresh-primitives: snapshot_bcfp.sh --with-bcfp-views --force ===
+  ✓ primitives refreshed (see /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261016_215933_snapshot.log)
+=== pre-flight (local; pre-spend) ===
+  ✓ dispatcher fresh exports what the pipeline calls
+  ✓ origin/246-provenanced-province-wide-default-run is at HEAD
+  ✓ fwapg_sha f9718cb739d3 (exported to all hosts)
+  ✓ bcfishobs_sha 08630cf4ac14 (exported to all hosts)
+  ✓ fresh_sha e247ca19a780 (clean)
+  ✓ bcfp reference pinned at v0.7.15-50-g620dbe4 (exported to all hosts)
+    ok   discharge (fwapg) loaded: whse_basemapping.fwa_stream_networks_discharge
+  ✓ discharge (fwapg) loaded on the dispatcher
+    [preflight] primitive vintage (window 7 d) - OK, oldest 0.0 d (whse_fish.pscis_assessment_svw) [judged by load stamp: 4, statistics: 0, none: 0]
+  ✓ dispatcher primitives within 7 d
+  ✓ doctl token valid (DO API reachable)
+  ✓ tofu do_token valid (HTTP 200 /v2/account)
+  ✓ tofu s3 backend reachable
+  ✓ pre-flight clean (tunnel-free)
+=== resolve drainage-closed DS-first buckets ===
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+  dispatcher (focal=KAKC): LSTR,STIR,MSTR,KAKC
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
+  cy[job1] (focal=TSEA): LPET,TSEA
+=== spin cyphers: job1 ===
+  cy[job1] = <host>
+=== prep cyphers (cypher_prep.sh) ===
+  ✓ cyphers prepped
+=== pre-flight (hosts; post-prep, pre-write) ===
+[preflight] host parity - OK across 2 host(s): m1, cypher-job1
+  ✓ host parity clean (2 hosts)
+  ✓ cy[job1] primitives within 7 d
+=== run buckets (DS-first) ===
+  ✓ host runs finished (per-WSG soft-fail; gaps surface in compare)
+=== per-host completeness ===
+  ✓ dispatcher: 4/4 WSGs accounted for
+  ✓ cy[job1]: 2/2 WSGs accounted for
+=== consolidate cyphers -> dispatcher (fresh_pilot246) ===
+  ✓ consolidated 1/1 cypher(s) (see /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261016_215933_consolidate.log)
+=== BURN CYPHERS (trap EXIT) ===
+  cy[job1]: 0 tofu resources (expect 0)
+  ✓ doctl: no cypher droplets
+  ✓ burn clean
+=== verify WSG coverage in fresh_pilot246 ===
+  ✓ every run WSG has rows in fresh_pilot246.streams
+=== post-consolidate recompute (lnk_access, 6 WSGs, -j4) ===
+  ✓ log tables present in fresh_pilot246
+  ✓ barrier views built once for fresh_pilot246
+  ordering 57 known WSG time(s) longest-first (median 0.73 min for the rest)
+[fanout] recompute - OK: 6/6 job(s) succeeded
+  ✓ recompute: 6/6 WSGs
+=== compare (tunnel-free) ===
+  ✓ compare CSV: /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261016_215933_compare.csv
+=== summary ===
+  run WSGs: KAKC,LPET,LSTR,MSTR,STIR,TSEA
+  compare CSV: /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261016_215933_compare.csv
+[study_area_compare] KAKC ERROR: no shared mapping_code_<sp> columns to compare for KAKC (link: RB; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] LPET ERROR: no shared mapping_code_<sp> columns to compare for LPET (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] TSEA ERROR: no shared mapping_code_<sp> columns to compare for TSEA (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] 8 rows across 3/6 WSGs -> /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261016_215933_compare.csv
+# A tibble: 8 × 7
+  wsg   species total_segs match_pct n_diffs top_pattern       top_pattern_count
+* <chr> <chr>        <int>     <dbl>   <int> <chr>                         <int>
+1 LSTR  CH           20248      94.7    1065 "REAR;NONE | ACC…               475
+2 LSTR  CO           20248      94.8    1047 "REAR;NONE | ACC…               500
+3 LSTR  SK           20248      96.0     812 "ACCESS;NONE | "                453
+4 MSTR  BT           36151      94.6    1967 "ACCESS;NONE | R…               369
+5 MSTR  ST           36151      95.7    1545 "REAR;NONE | ACC…               553
+6 STIR  CH           15724      99.2     128 "REAR;NONE | ACC…                94
+7 STIR  CO           15724      99.2     130 "REAR;NONE | ACC…               102
+8 STIR  SK           15724      99.2     131 "ACCESS;NONE | S…                64
+=== study_area_run done ===
+  ✓ redacted host addresses in 15 log file(s)

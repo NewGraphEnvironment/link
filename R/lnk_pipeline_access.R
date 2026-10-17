@@ -242,7 +242,12 @@ lnk_pipeline_access <- function(
     if (is.null(dnstr_per_sp[[sp]])) {
       out[[paste0("has_barriers_", sp, "_dnstr")]] <- NA
     } else if (nrow(dnstr_per_sp[[sp]]) == 0L) {
-      out[[paste0("has_barriers_", sp, "_dnstr")]] <- NA
+      # Zero rows is "no data" only when nothing says the species is here.
+      # A species known present with no barrier in the AOI has none
+      # downstream (FALSE), so the mapping code keeps it: as NA it emitted
+      # "" for every UPET RB segment (link#246).
+      out[[paste0("has_barriers_", sp, "_dnstr")]] <-
+        if (isTRUE(wsg_presence[[sp]])) FALSE else NA
     } else {
       out[[paste0("has_barriers_", sp, "_dnstr")]] <-
         out[[segment_id_col]] %in% dnstr_per_sp[[sp]][[segment_id_col]]
@@ -361,6 +366,12 @@ lnk_pipeline_access <- function(
       } else {
         rep(FALSE, nrow(out))
       }
+      # `blocked` is still all NA when no presence was given and the
+      # species has no barrier in the AOI (above). Nothing blocks it, so it
+      # is accessible; `ifelse(NA, ...)` would return a logical NA column,
+      # which persist rejects against the integer `access_<sp>` (UPET RB,
+      # link#246).
+      blocked <- !is.na(blocked) & blocked
       ifelse(blocked, 0L, ifelse(observed, 2L, 1L))
     }
   }

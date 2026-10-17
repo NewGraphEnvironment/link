@@ -79,6 +79,12 @@ test_that(".lnk_pipeline_pscis_build emits the five-step SQL chain", {
   expect_match(sql, "UNION ALL")
   expect_match(sql, "x\\.modelled_crossing_id IS NOT NULL")
   expect_match(sql, "x\\.linear_feature_id IS NOT NULL")
+  # One row per PSCIS id, Branch A first: an xref row setting both ids
+  # emitted twice and broke barriers_pkey (KITR 203838, link#246).
+  expect_match(sql, "SELECT DISTINCT ON \\(u\\.stream_crossing_id\\)")
+  expect_match(sql, "1 AS branch_rank")
+  expect_match(sql, "2 AS branch_rank")
+  expect_match(sql, "ORDER BY u\\.stream_crossing_id, u\\.branch_rank")
 })
 
 test_that(".lnk_pipeline_pscis_build skips Step 5 when xref staging table absent", {
