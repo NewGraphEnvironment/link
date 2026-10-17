@@ -63,7 +63,9 @@ hosts_world <- function(env = parent.frame()) {
     sprintf('s="%s/stub/ssh_$host"', d),
     'printf "%s\\n" "$*" >> "$s.argv"',
     'in=$(cat); printf "%s\\n" "$in" >> "$s.stdin"',
-    'case "$in" in *".streams WHERE"*) f="${s}_streams.out" ;; *) f="$s.out" ;; esac',
+    'f="$s.out"',
+    'case "$in" in *".streams_mapping_code WHERE"*) f="${s}_mc.out" ;; esac',
+    'case "$in" in *".streams WHERE"*) f="${s}_streams.out" ;; esac',
     '[ -f "$f" ] && cat "$f"',
     '[ -f "$s.rc" ] && exit "$(cat "$s.rc")"',
     "exit 0"
@@ -125,8 +127,6 @@ run_hosts <- function(world, body, cyphers = c("a", "b"), keep = 0L,
   writeLines(c(
     "set -euo pipefail",
     sprintf("source %s", shQuote(hosts_lib())),
-    "declare -A CY_IP CY_BUCKET CY_RUN_RC CY_HOLD CY_BURNED CY_UNCONS CY_WHY",
-    "declare -A ACC_STATE ACC_FINISHED ACC_DONE_LOG ACC_SKIP",
     "SCHEMA=fresh_test; RUN_UID=T0-0000; TS=T0",
     sprintf(
       "LOG_DIR=%s; CYPHER_DIR=%s; CYPHER_TF=%s",
@@ -271,6 +271,7 @@ test_that("a host with streams rows left after consolidate is not burned", {
   put(w, "ssh_ip-a_streams.out", db_answer(character(0)))
   put(w, "ssh_ip-b.out", db_answer(c("PPPP", "QQQQ")))
   put(w, "ssh_ip-b_streams.out", db_answer("QQQQ")) # consolidate missed it
+  put(w, "ssh_ip-b_mc.out", db_answer("QQQQ"))
   r <- run_hosts(w, c(
     account_release(),
     "burn_cyphers",
@@ -278,7 +279,7 @@ test_that("a host with streams rows left after consolidate is not burned", {
     'echo "KEPT_N=$KEPT_N"'
   ))
   expect_equal(burn_calls(w), "--workspace a")
-  expect_match(r$out, "streams rows left after consolidate — KEEPING it (groups: QQQQ)",
+  expect_match(r$out, "finished groups left after consolidate — KEEPING it (groups: QQQQ)",
     fixed = TRUE
   )
   expect_match(r$out, "HOSTS KEPT (1)", fixed = TRUE)
@@ -328,6 +329,7 @@ test_that("a lost run_uid still consolidates and holds by the log", {
   writeLines(midline(c("AAAA", "BBBB")), log)
   put(w, "ssh_ip-a.out", db_answer(character(0)))
   put(w, "ssh_ip-a_streams.out", db_answer(c("AAAA", "BBBB")))
+  put(w, "ssh_ip-a_mc.out", db_answer(character(0)))
   r <- run_hosts(w, c(
     "CY_HOLD[a]=1",
     sprintf("host_account a ip-a %s AAAA,BBBB > /dev/null || true", shQuote(log)),
@@ -393,6 +395,7 @@ test_that("--keep-cyphers does not hide a host held for cause", {
   put(w, "ssh_ip-a_streams.out", db_answer(character(0)))
   put(w, "ssh_ip-b.out", db_answer("BBBB"))
   put(w, "ssh_ip-b_streams.out", db_answer("BBBB"))
+  put(w, "ssh_ip-b_mc.out", db_answer("BBBB"))
   r <- run_hosts(w, c(
     account_release(),
     "burn_cyphers",
@@ -404,7 +407,7 @@ test_that("--keep-cyphers does not hide a host held for cause", {
   expect_equal(k$reason[k$workspace == "a"], "--keep-cyphers")
   expect_equal(
     k$reason[k$workspace == "b"],
-    "streams rows left after consolidate; --keep-cyphers"
+    "finished groups left after consolidate; --keep-cyphers"
   )
 })
 
@@ -534,4 +537,80 @@ test_that("pre-flight fails on a cypher already up in this run's workspaces", {
   expect_false(grepl("web-1", r$out, fixed = TRUE))
   # The long-lived default droplet is not a run's host.
   expect_false(grepl("droplet cypher is up", r$out, fixed = TRUE))
+})
+
+test_that("a failed group's partial rows neither hold the host nor get recovered", {
+  # lnk_pipeline_run() pre-persists streams before access exists, so a group
+  # that fails after it leaves streams rows and no mapping-code rows.
+  skip_if_no_hosts_lib()
+  w <- hosts_world()
+  log <- file.path(w, "logs", "run_a.log")
+  writeLines(midline("AAAA"), log)
+  put(w, "ssh_ip-a.out", db_answer("AAAA"))
+  put(w, "ssh_ip-a_streams.out", db_answer("BBBB"))
+  put(w, "ssh_ip-a_mc.out", db_answer(character(0)))
+  r <- run_hosts(w, c(
+    "CY_HOLD[a]=1",
+    sprintf("host_account a ip-a %s AAAA,BBBB > /dev/null || true", shQuote(log)),
+    'echo "BUCKET=$(host_consolidate_bucket a)"',
+    "host_release a AAAA,BBBB", "burn_cyphers"
+  ), cyphers = "a")
+  expect_match(r$out, "BUCKET=AAAA", fixed = TRUE)
+  expect_equal(burn_calls(w), "--workspace a")
+  expect_match(r$out,
+    "partial groups left there (failed builds, not consolidated; rebuild them): BBBB",
+    fixed = TRUE
+  )
+  expect_null(kept_tsv(w))
+})
+
+test_that("mapping-code rows mark a group finished when run_uid and log both fail", {
+  skip_if_no_hosts_lib()
+  w <- hosts_world()
+  put(w, "ssh_ip-a.out", db_answer(character(0)))
+  put(w, "ssh_ip-a_streams.out", db_answer("AAAA"))
+  put(w, "ssh_ip-a_mc.out", db_answer("AAAA"))
+  r <- run_hosts(w, c(
+    "CY_HOLD[a]=1",
+    "host_account a ip-a /nonexistent AAAA > /dev/null || true",
+    "host_release a AAAA", "burn_cyphers"
+  ), cyphers = "a")
+  expect_length(burn_calls(w), 0L)
+  k <- kept_tsv(w)
+  expect_equal(k$groups, "AAAA")
+  expect_equal(k$groups_partial, "")
+})
+
+test_that("an aborted run's report separates finished from partial groups", {
+  skip_if_no_hosts_lib()
+  w <- hosts_world()
+  put(w, "ssh_ip-a_streams.out", db_answer(c("AAAA", "BBBB")))
+  put(w, "ssh_ip-a_mc.out", db_answer("AAAA"))
+  r <- run_hosts(w, c(
+    "trap burn_cyphers EXIT",
+    "CY_HOLD[a]=1; CY_BUCKET[a]=AAAA,BBBB",
+    "exit 1"
+  ), cyphers = "a")
+  expect_length(burn_calls(w), 0L)
+  k <- kept_tsv(w)
+  expect_equal(k$groups, "AAAA")
+  expect_equal(k$groups_partial, "BBBB")
+  expect_equal(k$groups_measured, "yes")
+  expect_match(r$out, "partial, do NOT consolidate: BBBB", fixed = TRUE)
+  expect_match(r$out, "wsg_recompute_one.R", fixed = TRUE)
+})
+
+test_that("a missing mapping-code table is unknown, not partial", {
+  skip_if_no_hosts_lib()
+  w <- hosts_world()
+  put(w, "ssh_ip-a.out", db_answer(character(0)))
+  put(w, "ssh_ip-a_streams.out", db_answer("AAAA"))
+  put(w, "ssh_ip-a_mc.out", c("__LNK_BEGIN__", "__LNK_NOTABLE__", "__LNK_END__"))
+  r <- run_hosts(w, c(
+    "CY_HOLD[a]=1",
+    "host_account a ip-a /nonexistent AAAA > /dev/null || true",
+    "host_release a AAAA", "burn_cyphers"
+  ), cyphers = "a")
+  expect_length(burn_calls(w), 0L)
+  expect_match(kept_tsv(w)$reason, "did not answer after consolidate", fixed = TRUE)
 })

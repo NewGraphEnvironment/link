@@ -1223,10 +1223,15 @@ in `data-raw/study_area_hosts.sh`:
   framed by sentinels, because ssh can exit 0 whatever the remote command did;
   no sentinels means **unknown**, never "nothing".
 - **A cypher is held from dispatch.** It is released only when its dispatch
-  session exited 0 and, **after** consolidate, its database has no
-  `<persist>.streams` rows left for any group it ran or finished.
+  session exited 0 and, **after** consolidate, its database holds no
+  **finished** group: one with `<persist>.streams` rows left that also
+  finished there by any signal (database, log `done`, or
+  `streams_mapping_code` rows, which only the final persist writes).
   `schema_consolidate` deletes what it copied from the source, so what is left
-  was not consolidated: measured, not assumed, and independent of `run_uid`.
+  was not consolidated: measured, not assumed. A group with `streams` rows and
+  no other signal is **partial** (it failed after the pre-persist,
+  `R/lnk_pipeline_run.R:240`); it does not hold the host and is never
+  consolidated.
 - **A held host is kept on every exit path**, abort included, and so is a host
   whose burn did not complete. Each is a row in `<TS>_kept_hosts.tsv`
   (reason, run_uid, schema, groups, whether those groups were measured, the
@@ -1242,13 +1247,16 @@ in `data-raw/study_area_hosts.sh`:
 To recover a kept host: run its `ip_command`, consolidate its `groups` with
 `schema_consolidate(schema = <schema>, sources = list(list(host =
 "cypher@<ip>", via = "docker", bucket = c(...))))`, then run its
-`burn_command`. **Only where `groups_measured` is `yes`**: `groups` is then
-what is still on the host. `schema_consolidate` deletes its bucket on the
-dispatcher before it copies, so consolidating a group the host no longer
-holds (it was already consolidated, then deleted from the source) loses the
-dispatcher's copy. Where it says `no`, find out what is left first. A missing
-`<schema>.streams` on a host reads as unknown, not empty: every dispatched
-cypher has the table. Tests: `tests/testthat/test-study_area_hosts.R` runs the lib
+`burn_command`. **Only `groups`, never `groups_partial`, and only where
+`groups_measured` is `yes`**: `groups` is then the finished work still on the
+host. `schema_consolidate` deletes its bucket on the dispatcher before it
+copies, so consolidating a group the host no longer holds (already
+consolidated, then deleted from the source), or holds only in part, loses the
+dispatcher's copy. Where it says `no`, find out what is left first. The run's
+recompute ran without the kept groups, so after consolidating recompute each
+one and each run group upstream of it (`wsg_recompute_one.R`). A missing
+`<schema>.streams` or `streams_mapping_code` on a host reads as unknown, not
+empty: every dispatched cypher has both. Tests: `tests/testthat/test-study_area_hosts.R` runs the lib
 in bash with stubbed ssh, psql, tofu and doctl.
 
 ### Host buckets are derived, not chosen

@@ -111,3 +111,11 @@ Three findings, all verified in code and fixed:
 3. Under `--keep-cyphers` a host held for cause showed only "--keep-cyphers" and the run could exit 0. The reason now carries the cause, and `KEPT_CAUSE_N` drives the exit status.
 
 Mutants m10 (strict ignored), m11 (report not measured), m12 (cause hidden by the flag): each caught. Tests 78 pass.
+
+## /code-check round 2 (review-round2.md) — a defect inside round 1's fix
+
+1. Round 1's measured `groups` counted every group with `streams` rows left as unconsolidated finished work. `lnk_pipeline_run()` pre-persists streams/habitat/barriers (R/lnk_pipeline_run.R:240) before access exists, so a group that failed after it leaves partial rows; the recover list then told the operator to consolidate it, replacing the dispatcher's whole copy with a broken one, and the host was never released. Fix: `host_split` divides what is left into recoverable (finished by DB, log done, or `streams_mapping_code` rows, which only the final persist writes, :315) and partial. Partial rows do not hold the host and are never in the recover list (`groups_partial`). The mapping-code signal also covers the double failure (run_uid lost and no log marker).
+2. Recovery stopped at consolidate + burn, but the run's recompute had already run without the kept groups. The banner, INCOMPLETE block and RUNBOOK now say to recompute each recovered group and each run group upstream of it.
+3. Found while fixing: the test prologue did not declare the new `CY_PARTIAL`, and `set -u` killed the run — the hazard the plan review named (O1), caused by keeping the map list in two places. The lib now declares every map once, at source time; driver and test no longer list them.
+
+Mutants m13 (all leftovers recoverable), m14 (no mapping-code signal), m15 (lib missing one declaration): each caught. Tests 93 pass. Live: `host_complete local ADMS,ZZZZ` → ADMS; missing schema → unknown.

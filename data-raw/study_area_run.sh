@@ -355,11 +355,9 @@ source "$REPO_ROOT/data-raw/study_area_hosts.sh"
 CYPHERS_UP=0
 KEPT_N=0
 KEPT_CAUSE_N=0
-# Every map the trap reads, declared here, before the trap exists: under
-# `set -u` an undeclared one kills the trap and leaks the droplets. CY_IP and
-# CY_BUCKET are filled further down; re-declaring them there is harmless.
-declare -A CY_IP CY_BUCKET CY_HOLD CY_BURNED CY_UNCONS CY_WHY CY_RUN_RC
-declare -A ACC_STATE ACC_FINISHED ACC_DONE_LOG ACC_SKIP
+# The lib declares every map the trap reads (CY_IP and CY_BUCKET included,
+# filled further down), so it is sourced here, at the top level, before the
+# trap exists.
 
 # Host addresses must not reach a public repo. The logs below are committed
 # deliberately as evidence (soul#129), but a worker's address is infrastructure
@@ -1568,10 +1566,12 @@ if [ "${RUN_INCOMPLETE:-0}" != "0" ] || [ "${RECOMPUTE_FAIL:-0}" != "0" ] \
   if [ "$HOSTS_KEPT" != "0" ]; then
     echo "  $KEPT_CAUSE_N cypher(s) were NOT burned for cause: each may hold groups"
     echo "  that are not on the dispatcher, and is still running and billed."
-    echo "  Consolidate only the groups still on each host (groups_measured = yes;"
-    echo "  consolidating one it no longer holds deletes the dispatcher's copy),"
-    echo "  then burn it. Hosts, reasons and commands:"
-    echo "    $LOG_DIR/${TS}_kept_hosts.tsv"
+    echo "  Consolidate only each host's groups column, and only where"
+    echo "  groups_measured = yes; never groups_partial (consolidating a group the"
+    echo "  host no longer holds, or holds in part, deletes the dispatcher's copy)."
+    echo "  The recompute above ran WITHOUT those groups, so recompute each one and"
+    echo "  each run group upstream of it afterwards. Then burn the host."
+    echo "  Hosts, reasons and commands: $LOG_DIR/${TS}_kept_hosts.tsv"
   fi
   if [ "${RUN_INCOMPLETE:-0}" != "0" ]; then
     echo "  At least one host did not account for its whole bucket; only the"
