@@ -35,7 +35,7 @@ In read.table(file = file, header = header, sep = sep, quote = quote,  :
   incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/cabd_blkey_xref.csv'
   cy[job1] (focal=TSEA): LPET,TSEA
 === spin cyphers: job1 ===
-  cy[job1] = 143.244.186.132
+  cy[job1] = <host>
 === prep cyphers (cypher_prep.sh) ===
   ✓ cyphers prepped
 === pre-flight (hosts; post-prep, pre-write) ===

@@ -1,0 +1,60 @@
+=== study_area_run 20261017_093603 ===
+  run_uid:      20261017_093603-31ab6242
+  run_label:    parity-4-bcfishpass-246
+  config:       bcfishpass
+  branch:       246-provenanced-province-wide-default-run (cyphers run this ref)
+  persist:      fresh_parity246
+  cyphers:      <none> (0)
+  log dir:      /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run
+  vintage max:  7 d
+  recompute -j: 4
+=== pre-flight (local; pre-spend) ===
+  ✓ dispatcher fresh exports what the pipeline calls
+  ✓ fwapg_sha f9718cb739d3 (exported to all hosts)
+  ✓ bcfishobs_sha 08630cf4ac14 (exported to all hosts)
+  ✓ fresh_sha e247ca19a780 (clean)
+  ✓ bcfp reference pinned at v0.7.15-50-g620dbe4 (exported to all hosts)
+    ok   discharge (fwapg) loaded: whse_basemapping.fwa_stream_networks_discharge
+  ✓ discharge (fwapg) loaded on the dispatcher
+    [preflight] primitive vintage (window 7 d) - OK, oldest 0.4 d (whse_fish.pscis_assessment_svw) [judged by load stamp: 4, statistics: 0, none: 0]
+  ✓ dispatcher primitives within 7 d
+  ✓ pre-flight clean (tunnel-free)
+=== resolve drainage-closed DS-first buckets ===
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '/Users/airvine/Projects/repo/link/inst/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
+  dispatcher (focal=ADMS,BULK,BABL,ELKR): LARL,LFRA,LSKE,HARR,KLUM,KOTL,BULL,FRCN,KISP,BULK,ELKR,MSKE,THOM,BABR,STHM,ADMS,BABL
+=== run buckets (DS-first) ===
+  ✓ host runs finished (per-WSG soft-fail; gaps surface in compare)
+=== per-host completeness ===
+  ✓ dispatcher: 17/17 WSGs accounted for
+=== verify WSG coverage in fresh_parity246 ===
+  ✓ every run WSG has rows in fresh_parity246.streams
+=== post-consolidate recompute (lnk_access, 17 WSGs, -j4) ===
+  ✓ log tables present in fresh_parity246
+  ✓ barrier views built once for fresh_parity246
+  ordering 241 known WSG time(s) longest-first (median 2.00 min for the rest)
+[fanout] recompute - OK: 17/17 job(s) succeeded
+  ✓ recompute: 17/17 WSGs
+=== compare (tunnel-free) ===
+  ✓ compare CSV: /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261017_093603_compare.csv
+=== summary ===
+  run WSGs: FRCN,LFRA,LSKE,KISP,BULK,MSKE,THOM,HARR,KLUM,STHM,ADMS,ELKR,KOTL,BABR,BABL,LARL,BULL
+  compare CSV: /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261017_093603_compare.csv
+[study_area_compare] 86 rows across 17/17 WSGs -> /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261017_093603_compare.csv
+# A tibble: 86 × 7
+   wsg   species total_segs match_pct n_diffs top_pattern      top_pattern_count
+ * <chr> <chr>        <int>     <dbl>   <int> <chr>                        <int>
+ 1 FRCN  BT           29341      99.5     146 REAR;NONE | ACC…                46
+ 2 FRCN  CH           29341      99.6     114 ACCESS;NONE | S…                89
+ 3 FRCN  CM           29341      99.9      29 ACCESS;NONE | S…                19
+ 4 FRCN  CO           29341      99.8      54 ACCESS;NONE | S…                32
+ 5 FRCN  PK           29341      99.9      40 ACCESS;NONE | S…                34
+ 6 FRCN  SK           29341      99.8      48 ACCESS;NONE | S…                42
+ 7 FRCN  ST           29341      99.7      86 REAR;NONE | ACC…                24
+ 8 LFRA  BT           27391      97.8     588 ACCESS;ASSESSED…               100
+ 9 LFRA  CH           27391      99.6     111 SPAWN;MODELLED …                29
+10 LFRA  CM           27391      99.5     140 ACCESS;NONE | S…                33
+# ℹ 76 more rows
+=== study_area_run done ===
+  ✓ redacted host addresses in 7 log file(s)
