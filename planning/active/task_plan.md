@@ -63,7 +63,7 @@ Revised after the plan review (`review-plan.md`): bucket = DB ∪ log done; rele
 - [x] `preflight_local`: list cypher droplets via doctl; fail when one sits in this run's `--cy-workspaces` (a host kept by an earlier run), warn for any other, naming each and its burn command. Droplet naming confirmed against rtj's cypher tofu first.
 
 ## Phase 5: Quieter logs
-- [ ] Add the final newline to `cabd_blkey_xref.csv` in `bcfishpass`, `default`, `default_extrabreaks`, `default_rearbreaks`; confirm `lnk_load_overrides(lnk_config("default"))` no longer warns. Note in NEWS that `config_hash` moves for all four bundles (accounting).
+- [x] Add the final newline to `cabd_blkey_xref.csv` in `bcfishpass`, `default`, `default_extrabreaks`, `default_rearbreaks`; confirm `lnk_load_overrides(lnk_config("default"))` no longer warns. Note in NEWS that `config_hash` moves for all four bundles (accounting).
 
 ## Phase 6: Live check, docs, follow-up
 - [ ] `host_finished local` against `fresh_default` for run_uid `20261017_004619-3f4c713b` returns 241.

@@ -89,3 +89,7 @@ A first m1 pattern did not apply (escaping) and scored 0; `cmp` flagged it UNCHA
 - `host_remaining local ADMS,ZZZZ`: `ADMS`. A schema that does not exist: known, 0 rows.
 - `study_area_run.sh --preflight-only --config=default --schema=fresh_default --cy-workspaces=job1,job2`: lib sourced, no unbound variables, doctl leg and droplet check pass (no cypher droplets up); fails only on the unpushed branch and dirty tree, as it should.
 - Not checked live: the ssh leg to a real cypher (needs a spin). The tests assert the ssh argv and stdin.
+
+## CSV newline (Phase 5)
+
+`lnk_load_overrides(lnk_config(<bundle>))` warned `incomplete final line` once per bundle before, 0 after. `config_hash` (first 12 hex) moves: bcfishpass c48ed74006b3 → ab24041706fe, default 7e9dffa4a5b8 → f505e76f5cfd, default_extrabreaks eb8ca82a1b4b → ff3ba0976103, default_rearbreaks 460282710911 → 38cfd720db23. Operator call: accounting, not a gate.
