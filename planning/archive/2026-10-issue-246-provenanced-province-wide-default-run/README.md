@@ -6,7 +6,7 @@ The run did not go cleanly, and the record keeps that.
 - The driver's completeness check reads log text. It missed 18 finished groups whose `done` marker an R warning had pushed mid-line, and was about to burn the hosts holding their only copy (#347). The operator paused the driver with `kill -STOP`, which auto mode refused to do. The 18 were consolidated by hand and the driver resumed.
 - KITR and UPET failed on two bugs, both fixed in `a17e9177` and re-run under the same run_uid. Had they stayed missing, the coverage gate would have skipped the recompute for every group (#348).
 - Code-check found that the UPET fix still left RB with no mapping codes (`91a968ab`).
-- Code-check also found that the run had silently replaced builds an earlier decision had kept: the August KOTL / LARL / SLOC and the 2026-10-12 DUNC builds. Their old copies survive in a machine-local dump.
+- Code-check also found that the run had silently replaced builds an earlier decision had kept: the August KOTL / LARL / SLOC and the 2026-10-12 DUNC builds. Their old copies survive in a machine-local dump. The operator confirmed no floodplains item needs them restored.
 
 Learned:
 - Count completion from the database, never from logs.
