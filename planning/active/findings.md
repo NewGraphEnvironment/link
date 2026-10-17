@@ -93,3 +93,12 @@ A first m1 pattern did not apply (escaping) and scored 0; `cmp` flagged it UNCHA
 ## CSV newline (Phase 5)
 
 `lnk_load_overrides(lnk_config(<bundle>))` warned `incomplete final line` once per bundle before, 0 after. `config_hash` (first 12 hex) moves: bcfishpass c48ed74006b3 → ab24041706fe, default 7e9dffa4a5b8 → f505e76f5cfd, default_extrabreaks eb8ca82a1b4b → ff3ba0976103, default_rearbreaks 460282710911 → 38cfd720db23. Operator call: accounting, not a gate.
+
+## Full suite (2026-10-17, at 5da51c9d)
+
+`devtools::test()`: FAIL 5 | WARN 1 | PASS 3058. `test-lnk_db_conn.R:10` and `test-lnk_wsg_resolve.R:143,154` need the `:63333` tunnel (connection refused). `test-lnk_pipeline_prepare.R:964-965` (golden dams, 8 expected, 7 found) fails the same on a clean `origin/main` worktree, as CLAUDE.md records. The new file: 66 pass; with the lib absent, 20 skip.
+
+## Follow-ups drafted, not filed
+
+- config_hash checks as accounting, not gates (operator, 2026-10-17).
+- consolidate deletes the destination's earlier `log` / `log_recompute` rows for every group in a bucket (schema_consolidate.R:279-286). Measured: DUNC, KOTL, LARL, SLOC, PINE, PARS each hold one `log` row, from run 20261017_004619-3f4c713b.

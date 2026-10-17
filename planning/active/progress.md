@@ -9,4 +9,6 @@
 - Plan review folded in (B1/G1 verified: soft date_end, consolidate deletes source rows); release now measured after consolidate
 - Phase 3-4: driver wired, droplet pre-flight in the lib; 66 tests pass; 9 mutants caught; live checks against local DB and preflight-only run (findings)
 - Phase 5: final newline on the four cabd_blkey_xref.csv copies; warning gone; config_hash moves per bundle (findings)
-- Next: full suite, Phase 6 docs
+- Full suite run (5 failures, none from this work; findings); test file lint-clean (styler + qualified testthat helpers)
+- Phase 6: RUNBOOK §8d "Which host may be burned", CLAUDE.md #246 fact updated, two follow-up issues drafted
+- Next: /code-check branch

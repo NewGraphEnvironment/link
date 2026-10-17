@@ -66,12 +66,12 @@ Revised after the plan review (`review-plan.md`): bucket = DB ∪ log done; rele
 - [x] Add the final newline to `cabd_blkey_xref.csv` in `bcfishpass`, `default`, `default_extrabreaks`, `default_rearbreaks`; confirm `lnk_load_overrides(lnk_config("default"))` no longer warns. Note in NEWS that `config_hash` moves for all four bundles (accounting).
 
 ## Phase 6: Live check, docs, follow-up
-- [ ] `host_finished local` against `fresh_default` for run_uid `20261017_004619-3f4c713b` returns 241.
-- [ ] RUNBOOK: driver completeness and burn rules (DB is the count, holds, kept-hosts TSV, preflight backstop). CLAUDE.md #246 status fact on #347 updated.
-- [ ] Draft (not file) a follow-up issue: config_hash checks that fail a run should record instead ("accounting, not a cage"), naming `verify_extra.sql` and reviewing `lnk_preflight_parity()`'s cross-host hash compare. Body shown for review.
+- [x] `host_finished local` against `fresh_default` for run_uid `20261017_004619-3f4c713b` returns 241.
+- [x] RUNBOOK: driver completeness and burn rules (DB is the count, holds, kept-hosts TSV, preflight backstop). CLAUDE.md #246 status fact on #347 updated.
+- [x] Draft (not file) a follow-up issue: config_hash checks that fail a run should record instead ("accounting, not a cage"), naming `verify_extra.sql` and reviewing `lnk_preflight_parity()`'s cross-host hash compare. Body shown for review.
 
 ## Validation
-- [ ] Tests pass (`devtools::test()`), lintr clean
+- [x] Tests pass (`devtools::test()`: 3058 pass, 5 fail, none in this work: 3 need the `:63333` tunnel, which is down; 2 are the golden dams count, which fails the same on clean main), lintr clean on the new test file
 - [ ] `/code-check branch` clean
 - [ ] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
