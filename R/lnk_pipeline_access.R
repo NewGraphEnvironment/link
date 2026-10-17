@@ -361,6 +361,12 @@ lnk_pipeline_access <- function(
       } else {
         rep(FALSE, nrow(out))
       }
+      # `blocked` is all NA when a present species has no barrier in the
+      # AOI (above: "no data" for the mapping code). Nothing blocks it, so
+      # it is accessible; `ifelse(NA, ...)` would return a logical NA
+      # column, which persist rejects against the integer `access_<sp>`
+      # (UPET RB, link#246 run 20261017_004619).
+      blocked <- !is.na(blocked) & blocked
       ifelse(blocked, 0L, ifelse(observed, 2L, 1L))
     }
   }
