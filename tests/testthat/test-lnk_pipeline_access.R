@@ -265,7 +265,23 @@ test_that("access_<sp> is integer 1 / 2 when a present species has no barrier in
     wsg_presence = list(rb = TRUE),
     segment_id_col = "segmented_stream_id"
   )
-  expect_true(all(is.na(out$has_barriers_rb_dnstr)))
+  # Known present, so "no barrier downstream", not "no data": as NA the
+  # mapping code emitted "" for every UPET RB segment.
+  expect_identical(out$has_barriers_rb_dnstr, c(FALSE, FALSE))
   expect_type(out$access_rb, "integer")
   expect_equal(out$access_rb, c(2L, 1L))
+
+  # With no presence given, zero rows stays "no data" (bcfp's NULL
+  # column), and access is still an integer code.
+  out_np <- lnk_pipeline_access(
+    conn = structure(list(), class = "DBIConnection"),
+    segments = "s.streams",
+    aoi = "UPET",
+    barriers_per_sp = list(rb = "s.barriers_rb"),
+    observations = "s.observations",
+    segment_id_col = "segmented_stream_id"
+  )
+  expect_true(all(is.na(out_np$has_barriers_rb_dnstr)))
+  expect_type(out_np$access_rb, "integer")
+  expect_equal(out_np$access_rb, c(2L, 1L))
 })
