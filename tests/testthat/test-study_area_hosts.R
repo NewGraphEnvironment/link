@@ -637,8 +637,10 @@ test_that("mapping-code rows from the image do not count as finished", {
   ), cyphers = "a")
   expect_match(r$out, "PRE=AAAA STATE=known", fixed = TRUE)
   expect_match(r$out, "streams rows before dispatch (from its image) for: AAAA", fixed = TRUE)
-  # Nothing this run finished it, so it is partial, and the host is released.
-  expect_match(r$out, "partial groups left there", fixed = TRUE)
+  # Nothing this run finished it, and it had rows before: unknown provenance,
+  # which holds the host and is never called partial.
+  expect_match(r$out, "unknown provenance", fixed = TRUE)
+  expect_false(grepl("partial groups left there", r$out, fixed = TRUE))
 })
 
 test_that("with no baseline, mapping-code rows are not a finish signal", {
@@ -685,4 +687,64 @@ test_that("with no baseline, mapping-code rows hold the host but are not recover
   expect_equal(k$groups, "")
   expect_equal(k$groups_partial, "")
   expect_equal(k$groups_unknown, "AAAA")
+})
+
+test_that("a driver killed while waiting on a host sees that host unsettled", {
+  skip_if_no_hosts_lib()
+  w <- hosts_world()
+  put(w, "ssh_ip-a_streams.out", db_answer("BBBB"))
+  put(w, "ssh_ip-a_mc.out", db_answer(character(0)))
+  r <- run_hosts(w, c(
+    "unset 'CY_RUN_RC[a]'; CY_HOLD[a]=1; CY_BUCKET[a]=BBBB; CY_PRE_STATE[a]=known",
+    "trap 'burn_cyphers; echo \"RC=[${CY_RUN_RC[a]:-unset}]\"' EXIT",
+    "sleep 30 & child=$!",
+    "( sleep 1; kill -TERM $$ ) &",
+    'host_wait a "$child"'
+  ), cyphers = "a")
+  expect_match(r$out, "RC=[unset]", fixed = TRUE)
+  expect_equal(kept_tsv(w)$groups_measured, "unsettled")
+  expect_false(grepl("partial, do NOT consolidate", r$out, fixed = TRUE))
+})
+
+test_that("host_wait records the session's own status", {
+  skip_if_no_hosts_lib()
+  w <- hosts_world()
+  r <- run_hosts(w, c(
+    "( exit 7 ) & p=$!",
+    'host_wait a "$p" || true',
+    "( exit 0 ) & q=$!",
+    'host_wait b "$q"',
+    'echo "A=${CY_RUN_RC[a]} B=${CY_RUN_RC[b]}"'
+  ))
+  expect_match(r$out, "A=7 B=0", fixed = TRUE)
+})
+
+test_that("a report from the trap reads this run's finish signals itself", {
+  # The trap can fire after a host's session ended 0 but before accounting:
+  # a group rebuilt over an image's rows must still read as finished.
+  skip_if_no_hosts_lib()
+  w <- hosts_world()
+  writeLines(midline("AAAA"), file.path(w, "logs", "T0_run_a.log"))
+  put(w, "ssh_ip-a.out", db_answer("AAAA"))
+  put(w, "ssh_ip-a_streams.out", db_answer(c("AAAA", "BBBB")))
+  put(w, "ssh_ip-a_mc.out", db_answer("AAAA"))
+  r <- run_hosts(w, c(
+    "CY_HOLD[a]=1; CY_BUCKET[a]=AAAA,BBBB; CY_PRE_STATE[a]=known; CY_PRE[a]=AAAA",
+    "burn_cyphers"
+  ), cyphers = "a")
+  k <- kept_tsv(w)
+  expect_equal(k$groups, "AAAA")
+  expect_equal(k$groups_partial, "BBBB")
+})
+
+test_that("the baseline counts an image's mapping-code rows too", {
+  skip_if_no_hosts_lib()
+  w <- hosts_world()
+  put(w, "ssh_ip-a_streams.out", db_answer(character(0)))
+  put(w, "ssh_ip-a_mc.out", db_answer("AAAA"))
+  r <- run_hosts(w, c(
+    "CY_BUCKET[a]=AAAA; host_baseline a",
+    'echo "PRE=${CY_PRE[a]}"'
+  ), cyphers = "a")
+  expect_match(r$out, "PRE=AAAA", fixed = TRUE)
 })

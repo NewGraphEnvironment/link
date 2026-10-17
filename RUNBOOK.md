@@ -1234,12 +1234,17 @@ in `data-raw/study_area_hosts.sh`:
   never consolidated.
 - **Provenance and settledness are checked, not assumed.** A cypher spins from
   a warm image and `lnk_persist_init` keeps rows, so before dispatch the
-  driver records which of each bucket already have `streams` rows
-  (`host_baseline`); their mapping-code rows are not this run's. With no
-  baseline, mapping-code rows hold the host as `groups_unknown` and are never
-  recovered. A host whose session has not ended 0 is **unsettled**: a killed
-  driver runs its EXIT trap while the ssh session keeps building, so its
-  unfinished groups are "not finished when probed", never "partial".
+  driver records which of each bucket already have `streams` or
+  `streams_mapping_code` rows (`host_baseline`); their mapping-code rows are
+  not this run's, and such a group with no finish signal of this run is
+  `groups_unknown`, never partial. With no baseline, mapping-code rows count
+  as `groups_unknown` too. Unknown groups hold the host and are never
+  recovered. A host whose session has not ended 0 is **unsettled**, and so is
+  the one the driver was waiting on when killed (`host_wait` records the
+  status only once `wait` returns): the EXIT trap runs while the ssh session
+  keeps building, so unfinished groups are "not finished when probed", never
+  "partial". A report from the trap reads the host's log row and run log
+  itself when accounting never ran.
 - **A held host is kept on every exit path**, abort included, and so is a host
   whose burn did not complete. Each is a row in `<TS>_kept_hosts.tsv`
   (reason, run_uid, schema, groups, whether those groups were measured, the

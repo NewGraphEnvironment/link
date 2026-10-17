@@ -129,3 +129,12 @@ Mechanism (reviewer, tested): the code turns an observation (rows on host H at t
 3. Latent: mapping-code rows read as this run's, but a warm image can carry them and `lnk_persist_init` keeps rows. Fix: `host_baseline` before dispatch records which bucket groups already have streams rows; their mapping-code rows do not count. With no baseline, mapping-code rows hold the host as `groups_unknown` and are never recovered (first cut dropped them as a signal, which would have released the host; mutant m19 survived that cut and the rule was tightened).
 
 Mutants m16 (always settled), m17 (recompute always ran), m18 (baseline ignored), m19 (unknown baseline still counts mapping code), m20 (unknown-provenance rows do not hold): each caught. Tests 108 pass. Live: `host_baseline` against local `fresh_default` for ADMS,ZZZZ → ADMS, known.
+
+## /code-check round 4 (review-round4.md) — the enumeration
+
+43 rows (round 3's 21 re-walked at HEAD, plus 22 for the round-3 fixes); 12 verified by running, 31 by reading. Three unsafe, all fixed:
+1. Inside round 3's fix: `CY_RUN_RC[$WS]=0` was assigned before `wait`, so a driver killed during the wait (the likeliest kill window) saw that host as settled and labelled its still-building groups partial. Fix: `host_wait` records the status only once wait returns; the test kills the script during the wait and checks the trap sees it unsettled.
+2. A report from the trap before accounting had no this-run finish signals, so a group rebuilt over an image's rows read as partial. Fix: `host_split` reads the host's log row and `${TS}_run_<ws>.log` itself when accounting never ran, and any group that had rows before dispatch with no this-run signal is `groups_unknown`, never partial.
+3. Latent: the baseline read only `streams`; `lnk_persist_init` drops a drifted table one at a time and could keep stale `streams_mapping_code`. Fix: baseline = streams ∪ streams_mapping_code.
+
+Mutants m21 (status before wait), m22 (no self-read), m23 (pre-existing group can be partial), m24 (baseline without mapping code): each caught. Tests 116 pass.

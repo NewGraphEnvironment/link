@@ -129,14 +129,17 @@ host_complete() {
 }
 
 # host_baseline <ws>: before dispatch, which of the host's bucket already have
-# streams rows (CY_PRE; CY_PRE_STATE known|unknown). A cypher spins from a
-# warm image and persist_init keeps rows, so rows found later are this run's
-# only if they were not there before. Never fails.
+# streams OR streams_mapping_code rows (CY_PRE; CY_PRE_STATE known|unknown). A
+# cypher spins from a warm image and persist_init keeps rows (it drops a table
+# only on column drift, one table at a time), so rows found later are this
+# run's only if they were not there before. Never fails.
 host_baseline() {
-  local ws="$1" pre
-  if pre=$(host_remaining "${CY_IP[$ws]:-}" "${CY_BUCKET[$ws]:-}"); then
+  local ws="$1" pre mc
+  if pre=$(host_remaining "${CY_IP[$ws]:-}" "${CY_BUCKET[$ws]:-}") && \
+     mc=$(host_complete "${CY_IP[$ws]:-}" "${CY_BUCKET[$ws]:-}"); then
     CY_PRE_STATE[$ws]=known
-    CY_PRE[$ws]=$(printf '%s\n' "$pre" | .hosts_csv)
+    CY_PRE[$ws]=$(.hosts_union "$(printf '%s\n' "$pre" | .hosts_csv)" \
+      "$(printf '%s\n' "$mc" | .hosts_csv)")
     [ -z "${CY_PRE[$ws]}" ] || \
       echo "  NOTE: cy[$ws]: streams rows before dispatch (from its image) for: ${CY_PRE[$ws]}"
   else
@@ -145,6 +148,18 @@ host_baseline() {
     echo "  WARN: cy[$ws]: could not read its streams before dispatch; mapping-code rows will not count as finished"
   fi
   return 0
+}
+
+# host_wait <ws> <pid>: wait for a cypher's dispatch session and record its
+# exit status in CY_RUN_RC, only once wait has returned. A driver killed during
+# the wait runs its EXIT trap with the session still building there; a status
+# assigned before the wait would read as settled in that trap. Returns the
+# session's status.
+host_wait() {
+  local rc=0
+  wait "$2" || rc=$?
+  CY_RUN_RC[$1]=$rc
+  return "$rc"
 }
 
 # .hosts_settled <ws>: the host's dispatch session ended with status 0, so its
@@ -162,8 +177,22 @@ host_baseline() {
 # one. On an unsettled host it may still be building. Returns 1, changing
 # nothing, when the host does not answer.
 host_split() {
-  local ws="$1" check="$2" left complete fin
+  local ws="$1" check="$2" left complete fin run_fin run_log db
   left=$(host_remaining "${CY_IP[$ws]:-}" "$check") || return 1
+  # This run's own finish signals. Read here when accounting has not run (a
+  # report from the EXIT trap): without them a group rebuilt over an image's
+  # rows would have no signal left once those rows are discounted.
+  if [ -n "${ACC_STATE[$ws]:-}" ]; then
+    run_fin="${ACC_FINISHED[$ws]:-}"
+    run_log="${ACC_DONE_LOG[$ws]:-}"
+  else
+    if db=$(host_finished "${CY_IP[$ws]:-}"); then
+      run_fin=$(printf '%s\n' "$db" | .hosts_csv)
+    else
+      run_fin=""
+    fi
+    run_log=$(host_log_reported "$LOG_DIR/${TS}_run_$ws.log" done | .hosts_csv)
+  fi
   left=$(printf '%s\n' "$left" | .hosts_csv)
   if [ -n "$left" ]; then
     complete=$(host_complete "${CY_IP[$ws]:-}" "$left") || return 1
@@ -183,8 +212,13 @@ host_split() {
     CY_DOUBT[$ws]=$complete
     complete=""
   fi
-  fin=$(.hosts_union "${ACC_FINISHED[$ws]:-}" "${ACC_DONE_LOG[$ws]:-}" "$complete")
+  fin=$(.hosts_union "$run_fin" "$run_log" "$complete")
   CY_UNCONS[$ws]=$(.hosts_inter "$left" "$fin")
+  # A group that had rows before dispatch and shows no finish signal of this
+  # run is of unknown provenance, never "partial": its rows may be this run's
+  # finished work whose signals were lost, or the image's.
+  CY_DOUBT[$ws]=$(.hosts_union "${CY_DOUBT[$ws]}" \
+    "$(.hosts_inter "$left" "${CY_PRE[$ws]:-}")")
   CY_DOUBT[$ws]=$(.hosts_minus "${CY_DOUBT[$ws]}" "$fin")
   CY_PARTIAL[$ws]=$(.hosts_minus "$(.hosts_minus "$left" "$fin")" "${CY_DOUBT[$ws]}")
   return 0

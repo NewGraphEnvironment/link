@@ -1088,12 +1088,9 @@ wait $LOCAL_PID || echo "  WARN: dispatcher run returned non-zero; see $LOG_DIR/
 for WS in "${CY_WS_ARR[@]}"; do
   # Recorded, not just warned: a session that dropped may have left its loop
   # running on the host, so host_release keeps any host whose session did
-  # not exit 0 (link#347).
-  CY_RUN_RC[$WS]=0
-  wait "${CY_PID[$WS]}" || {
-    CY_RUN_RC[$WS]=$?
-    echo "  WARN: cy[$WS] run returned non-zero; see $LOG_DIR/${TS}_run_$WS.log"
-  }
+  # not exit 0 (link#347). host_wait records it only once wait has returned.
+  host_wait "$WS" "${CY_PID[$WS]}" \
+    || echo "  WARN: cy[$WS] run returned non-zero; see $LOG_DIR/${TS}_run_$WS.log"
 done
 echo "  ✓ host runs finished (per-WSG soft-fail; gaps surface in compare)"
 
