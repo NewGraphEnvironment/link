@@ -50,15 +50,17 @@ Operator calls (plan gate): add the newline; **keep any host that may hold uncon
 - [x] Phase 1 tests green.
 
 ## Phase 3: Wire the driver
-- [ ] `study_area_run.sh` sources the lib; `CY_HOLD[$WS]=1` set immediately before the bucket dispatch.
-- [ ] Completeness: finished = DB set ∪ log SKIP set, for the dispatcher (local psql) and each cypher; a log/DB disagreement is printed as diagnosis, never used to decide.
-- [ ] Consolidate bucket = DB finished set; on `unknown` fall back to the log set and leave the host held.
-- [ ] After consolidate succeeds, clear `CY_HOLD` per host only when its probe succeeded and finished ⊆ consolidated; the explicit burn then burns cleared hosts only. Consolidate failure → `exit 1` → trap keeps every held host.
-- [ ] End of run: any kept host makes the run exit non-zero with its own `=== HOSTS KEPT ===` block (separate from RUN_INCOMPLETE / RECOMPUTE_FAIL), pointing at the TSV.
-- [ ] `bash -n`; `--preflight-only` run still passes (no spend).
+
+Revised after the plan review (`review-plan.md`): bucket = DB ∪ log done; release measured after consolidate (no `streams` rows left on the host for anything it ran or finished) and only when its session exited 0; hosts whose DB did not answer are left out of consolidate and kept; a failed burn stays listed.
+- [x] `study_area_run.sh` sources the lib; `CY_HOLD[$WS]=1` set immediately before the bucket dispatch.
+- [x] Completeness: finished = DB set ∪ log SKIP set, for the dispatcher (local psql) and each cypher; a log/DB disagreement is printed as diagnosis, never used to decide.
+- [x] Consolidate bucket = DB finished set; on `unknown` fall back to the log set and leave the host held.
+- [x] After consolidate succeeds, clear `CY_HOLD` per host only when its probe succeeded and finished ⊆ consolidated; the explicit burn then burns cleared hosts only. Consolidate failure → `exit 1` → trap keeps every held host.
+- [x] End of run: any kept host makes the run exit non-zero with its own `=== HOSTS KEPT ===` block (separate from RUN_INCOMPLETE / RECOMPUTE_FAIL), pointing at the TSV.
+- [x] `bash -n`; `--preflight-only` run still passes (no spend).
 
 ## Phase 4: Backstop so a kept host is noticed
-- [ ] `preflight_local`: list cypher droplets via doctl; fail when one sits in this run's `--cy-workspaces` (a host kept by an earlier run), warn for any other, naming each and its burn command. Droplet naming confirmed against rtj's cypher tofu first.
+- [x] `preflight_local`: list cypher droplets via doctl; fail when one sits in this run's `--cy-workspaces` (a host kept by an earlier run), warn for any other, naming each and its burn command. Droplet naming confirmed against rtj's cypher tofu first.
 
 ## Phase 5: Quieter logs
 - [ ] Add the final newline to `cabd_blkey_xref.csv` in `bcfishpass`, `default`, `default_extrabreaks`, `default_rearbreaks`; confirm `lnk_load_overrides(lnk_config("default"))` no longer warns. Note in NEWS that `config_hash` moves for all four bundles (accounting).

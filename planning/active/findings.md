@@ -61,3 +61,31 @@ Each mutant run with `LNK_TEST_HOSTS_LIB=<copy>`; the real lib untouched.
 | m5 | count finished from the log with main's anchored `sed` (the issue's "restore the anchored match") | 5, including "every done marker mid-line is complete" |
 
 Order note: the lib was written before the tests first ran, so "red first" was shown by mutation (m5 is main's counting rule), not by a run on main.
+
+## Plan review folded in (2026-10-17)
+
+`review-plan.md` holds the Plan agent's findings and their disposition. The release rule changed because of B1/G1, both verified in code: `.lnk_log_run_finish()` is soft (a persisted group can keep `date_end` NULL), and a lost `LNK_RUN_UID` leaves every row's `run_uid` NULL, so the DB finished set can undercount. Now: consolidate bucket = DB ∪ log done; a host is released only when its session exited 0 and, after consolidate, its DB has no `streams` rows for any group it ran or finished (consolidate deletes what it copied from the source, schema_consolidate.R:420-450). Hosts whose DB did not answer are left out of consolidate and kept. A failed burn is not marked burned; it is retried by the trap and listed as kept.
+
+## Mutation table (after the review)
+
+| mutant | change | tests failing |
+|---|---|---|
+| m1 | anchor `host_log_reported` at `^` | 5 |
+| m2 | `.hosts_query` ignores the sentinels | 3 |
+| m3 | `host_release` ignores streams rows left | 2 |
+| m4 | `burn_cyphers` ignores `CY_HOLD` | 6 |
+| m5 | count finished from the log with main's anchored `sed` (the issue's "restore the anchored match") | 9, including "every done marker mid-line is complete" |
+| m6 | consolidate bucket drops log done | 2 |
+| m7 | `host_release` ignores the session exit status | 1 |
+| m8 | a burn is marked done whatever tofu/doctl say | 2 |
+| m9 | release probe asks only about the bucket | 1 |
+
+A first m1 pattern did not apply (escaping) and scored 0; `cmp` flagged it UNCHANGED and it was rebuilt with a literal replace.
+
+## Live checks (2026-10-17, local fwapg)
+
+- `host_finished local`, `fresh_default`, run_uid `20261017_004619-3f4c713b`: 241.
+- The cypher route's remote half, `docker exec -i fresh-db psql`, run locally without ssh: both sentinels, 241 rows.
+- `host_remaining local ADMS,ZZZZ`: `ADMS`. A schema that does not exist: known, 0 rows.
+- `study_area_run.sh --preflight-only --config=default --schema=fresh_default --cy-workspaces=job1,job2`: lib sourced, no unbound variables, doctl leg and droplet check pass (no cypher droplets up); fails only on the unpushed branch and dirty tree, as it should.
+- Not checked live: the ssh leg to a real cypher (needs a spin). The tests assert the ssh argv and stdin.

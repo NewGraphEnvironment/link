@@ -33,7 +33,9 @@
 # order. Put the LARGEST area on the dispatcher (first --focal): it is the
 # fast, free local host, while cyphers are slower + paid — give them the
 # smaller areas so they finish + burn sooner. Cyphers burn right after
-# consolidate (minimise idle); a trap EXIT is the safety net.
+# consolidate (minimise idle); a trap EXIT is the safety net. A cypher that
+# may hold unconsolidated work is never burned, on any path: it is kept and
+# listed in <TS>_kept_hosts.tsv, and the run exits non-zero (link#347).
 #
 # Pre-flight gates (link#246) — two blocks, because they answer two
 # different questions:
@@ -49,7 +51,8 @@
 #                      burns via the EXIT trap.
 #
 # Post-conditions: every host must account for its whole bucket before
-# consolidate, and every run WSG must have rows in the persist afterwards.
+# consolidate (read from its database, not its log), and every run WSG must
+# have rows in the persist afterwards.
 #
 # Extra flags:
 #   --preflight-only        run the local gates and exit (no spend)
@@ -342,46 +345,17 @@ echo "  recompute -j: $RECOMPUTE_JOBS"
 [ -z "$PREFLIGHT_NOTE" ] || echo "  OVERRIDE:     vintage+parity downgraded to warnings — $PREFLIGHT_NOTE"
 
 # --- trap: burn cyphers on exit (safety net; explicit burn after consolidate) ---
+# burn_cyphers, host_account and the hold rules live in study_area_hosts.sh
+# (link#347), where tests can reach them. A cypher is HELD from the moment its
+# bucket is dispatched and released only when its database shows everything it
+# finished was consolidated; a held host is never burned, on any exit path,
+# and is listed in ${TS}_kept_hosts.tsv with the command that burns it.
+# shellcheck source=study_area_hosts.sh
+source "$REPO_ROOT/data-raw/study_area_hosts.sh"
 CYPHERS_UP=0
-burn_cyphers() {
-  local rc=$?
-  if [ "$CYPHERS_UP" = "0" ]; then return $rc; fi
-  if [ "$KEEP_CYPHERS" = "1" ]; then
-    echo "=== trap EXIT: --keep-cyphers; NOT burning (${CY_WS_ARR[*]}) ==="
-    return $rc
-  fi
-  echo "=== BURN CYPHERS (trap EXIT) ==="
-  ( cd "$CYPHER_DIR"
-    for WS in "${CY_WS_ARR[@]}"; do
-      ./cypher_down.sh --workspace "$WS" > "$LOG_DIR/${TS}_burn_$WS.log" 2>&1 &
-    done
-    wait )
-  local clean=1
-  for WS in "${CY_WS_ARR[@]}"; do
-    local n
-    # `|| n="?"` so a tofu hiccup (pipefail) can't abort the verification
-    # loop when burn_cyphers runs via the EXIT trap (set -e active there).
-    n=$(cd "$CYPHER_TF" && TF_WORKSPACE="$WS" tofu state list 2>/dev/null | wc -l | tr -d ' ') || n="?"
-    echo "  cy[$WS]: $n tofu resources (expect 0)"; [ "$n" = "0" ] || clean=0
-  done
-  # Three outcomes, not two. The old form piped doctl into grep, so a doctl
-  # failure produced no output, grep found no match, and a leaked droplet
-  # billing indefinitely was reported as "✓ no cypher droplets". Capture
-  # first, test the exit status, then test the value (link#246).
-  local dl
-  if dl=$(doctl compute droplet list --no-header 2>/dev/null); then
-    if printf '%s' "$dl" | grep -qi cypher; then
-      echo "  ✗ doctl still shows cypher droplets"; clean=0
-    else
-      echo "  ✓ doctl: no cypher droplets"
-    fi
-  else
-    echo "  ✗ could not query doctl — droplet state UNKNOWN, check manually"; clean=0
-  fi
-  [ "$clean" = "1" ] && echo "  ✓ burn clean" || echo "  ✗ BURN INCOMPLETE — investigate"
-  CYPHERS_UP=0
-  return $rc
-}
+KEPT_N=0
+declare -A CY_HOLD CY_BURNED CY_UNCONS CY_WHY CY_RUN_RC
+declare -A ACC_STATE ACC_FINISHED ACC_DONE_LOG ACC_SKIP
 
 # Host addresses must not reach a public repo. The logs below are committed
 # deliberately as evidence (soul#129), but a worker's address is infrastructure
@@ -713,8 +687,11 @@ q(status = if (res$ok) 0L else 1L)' "$CONFIG" 2>&1 | sed 's/^/    /'; exit "${PI
     # Leg 1 — doctl's own token. This DOES call the API; its weakness was
     # asserting only an exit status on a command whose healthy answer is an
     # empty list, so branch on status and never on the output.
-    if doctl compute droplet list --no-header >/dev/null 2>&1; then
+    local dl_names
+    if dl_names=$(doctl compute droplet list --no-header --format Name 2>/dev/null); then
       echo "  ✓ doctl token valid (DO API reachable)"
+      # A cypher already up is most likely one an earlier run KEPT (link#347).
+      hosts_preflight_droplets "$dl_names" || fail=1
     else
       echo "  ✗ doctl token invalid/expired — doctl auth init"
       fail=1
@@ -959,6 +936,12 @@ DUP=$( { echo "$DISP_BUCKET" | tr ',' '\n'
 declare -A CY_IP
 if [ "$N_CY" -gt 0 ]; then
   echo "=== spin cyphers: ${CY_WS_ARR[*]} ==="
+  # Up BEFORE the spin, not after every droplet_ip resolved: a FATAL on one
+  # workspace below used to exit with CYPHERS_UP=0, so the trap burned nothing
+  # and the droplets that DID spin were left billing (link#347). Nothing is
+  # held yet, so the trap burns every workspace; cypher_down on one that never
+  # spun is a no-op.
+  CYPHERS_UP=1
   ( cd "$CYPHER_DIR"
     for WS in "${CY_WS_ARR[@]}"; do
       ./cypher_up.sh --workspace "$WS" > "$LOG_DIR/${TS}_up_$WS.log" 2>&1 &
@@ -970,7 +953,6 @@ if [ "$N_CY" -gt 0 ]; then
     [ -n "$IP" ] || { echo "FATAL: empty droplet_ip for $WS"; exit 1; }
     CY_IP[$WS]="$IP"; echo "  cy[$WS] = $IP"
   done
-  CYPHERS_UP=1
 
   echo "=== prep cyphers (cypher_prep.sh) ==="
   for WS in "${CY_WS_ARR[@]}"; do
@@ -1066,6 +1048,10 @@ echo "=== run buckets (DS-first) ==="
 LOCAL_PID=$!
 declare -A CY_PID
 for WS in "${CY_WS_ARR[@]}"; do
+  # HELD from here on: from its first write, this host may hold the only copy
+  # of finished groups. Released only by host_release after consolidate
+  # (link#347); until then no exit path burns it.
+  CY_HOLD[$WS]=1
   IP="${CY_IP[$WS]}"; B_SPACE=$(echo "${CY_BUCKET[$WS]}" | tr ',' ' ')
   # FWAPG_GIT_SHA is resolved once on the dispatcher (preflight_local) and
   # handed to every host: cyphers have no ~/Projects/repo/fwapg, so without
@@ -1094,7 +1080,14 @@ done
 # other hosts' work.
 wait $LOCAL_PID || echo "  WARN: dispatcher run returned non-zero; see $LOG_DIR/${TS}_run_local.log"
 for WS in "${CY_WS_ARR[@]}"; do
-  wait "${CY_PID[$WS]}" || echo "  WARN: cy[$WS] run returned non-zero; see $LOG_DIR/${TS}_run_$WS.log"
+  # Recorded, not just warned: a session that dropped may have left its loop
+  # running on the host, so host_release keeps any host whose session did
+  # not exit 0 (link#347).
+  CY_RUN_RC[$WS]=0
+  wait "${CY_PID[$WS]}" || {
+    CY_RUN_RC[$WS]=$?
+    echo "  WARN: cy[$WS] run returned non-zero; see $LOG_DIR/${TS}_run_$WS.log"
+  }
 done
 echo "  ✓ host runs finished (per-WSG soft-fail; gaps surface in compare)"
 
@@ -1110,7 +1103,8 @@ echo "  ✓ host runs finished (per-WSG soft-fail; gaps surface in compare)"
 # which is the exact accident the soft-fail comment above exists to prevent.
 #
 # Instead, narrow each host's consolidate bucket to the WSGs it actually
-# reported. That also removes the reason the abort was here: schema_consolidate
+# finished, read from its database (link#347). That also removes the reason
+# the abort was here: schema_consolidate
 # DELETEs its bucket before COPYing, and a bucket containing only WSGs that are
 # about to be re-COPYed cannot delete anything it does not replace. The gap
 # then surfaces at the coverage post-condition after the burn, by which point
@@ -1284,45 +1278,29 @@ run_recompute_pool() {   # $1 = width
   for pid in $all_pids; do wait "$pid" 2>/dev/null || true; done
 }
 
-bucket_done() {   # $1 = logfile; prints the WSGs the host reported, one per line
-  # Matches the WSG code, not the surrounding prose, so a reworded cat() in
-  # wsg_run_one.R degrades to "this host reported nothing" — handled loudly
-  # below — rather than to a wrong set.
-  #
-  # The readability test is not decorative: `sed` on a missing file exits
-  # non-zero, which under `set -e` would abort into the EXIT trap and burn
-  # the cyphers that DID succeed. An unreadable log means "reported nothing".
-  [ -r "$1" ] || return 0
-  sed -nE 's/^\[wsg_run_one\] ([A-Z]{4}) .*(done|SKIP).*/\1/p' "$1" | sort -u
-}
-
-report_completeness() {   # $1 = label, $2 = logfile, $3 = expected csv
-  local exp_n got_n warn_n
-  exp_n=$(csv_count "$3")
-  # bucket_done's `sort -u` terminates its last line, so wc -l is right here;
-  # counted the same way as exp_n regardless, so the two cannot drift.
-  got_n=$(csv_count "$(bucket_done "$2" | paste -sd, -)")
-  warn_n=$(grep -c '^\[WARN\] ' "$2" 2>/dev/null) || warn_n=0
-  if [ "$got_n" = "$exp_n" ]; then
-    echo "  ✓ $1: $got_n/$exp_n WSGs accounted for"
-    return 0
-  fi
-  echo "  ✗ $1: only $got_n/$exp_n WSGs accounted for ($warn_n [WARN]) — see $2"
-  return 1
-}
-
-echo "=== per-host completeness ==="
+# What each host finished comes from its DATABASE (host_account, in
+# study_area_hosts.sh): <schema>.log rows for this run_uid with date_end set,
+# plus SKIP markers from the log, which write no row. The log text used to be
+# the count, anchored at line start, and an R warning flushed without a newline
+# hid 18 finished groups that way in run 20261017_004619-3f4c713b (link#347).
+# The log is still read, unanchored, and any disagreement is printed.
+echo "=== per-host completeness (database) ==="
 complete_fail=0
-report_completeness "dispatcher" "$LOG_DIR/${TS}_run_local.log" "$DISP_BUCKET" \
+host_account dispatcher local "$LOG_DIR/${TS}_run_local.log" "$DISP_BUCKET" \
   || complete_fail=1
 declare -A CY_BUCKET_DONE
 for WS in "${CY_WS_ARR[@]}"; do
-  report_completeness "cy[$WS]" "$LOG_DIR/${TS}_run_$WS.log" "${CY_BUCKET[$WS]}" \
+  host_account "$WS" "${CY_IP[$WS]}" "$LOG_DIR/${TS}_run_$WS.log" "${CY_BUCKET[$WS]}" \
     || complete_fail=1
-  CY_BUCKET_DONE[$WS]=$(bucket_done "$LOG_DIR/${TS}_run_$WS.log" | paste -sd, -)
+  # Database ∪ log done; empty for a host whose database did not answer,
+  # which is then left out of consolidate (it would sink the other hosts)
+  # and KEPT.
+  CY_BUCKET_DONE[$WS]=$(host_consolidate_bucket "$WS")
+  [ "${ACC_STATE[$WS]}" = "known" ] || \
+    echo "    cy[$WS]: left out of consolidate; the host will be KEPT"
 done
 [ "$complete_fail" = "0" ] || {
-  echo "  WARN: consolidating only the WSGs each host reported. The run will"
+  echo "  WARN: consolidating only the WSGs each host finished. The run will"
   echo "        finish so nothing already computed is lost, then exit non-zero."
 }
 
@@ -1342,7 +1320,7 @@ if [ "$N_CY" -gt 0 ]; then
     # schema_consolidate stop() and take the other hosts' work with it.
     bucket_r=$(csv_lines "${CY_BUCKET_DONE[$WS]:-}" | sed "s/.*/'&'/" | paste -sd, -)
     if [ -z "$bucket_r" ]; then
-      echo "  WARN: cy[$WS] reported no WSGs — skipping it in consolidate"
+      echo "  WARN: cy[$WS] has nothing to consolidate — skipping it"
       continue
     fi
     [ "$first" = "1" ] || SRC_R="$SRC_R, "
@@ -1365,12 +1343,23 @@ print(res)
 ok <- all(vapply(res\$sources, function(s) isTRUE(s\$ok), logical(1)))
 quit(status = if (ok) 0 else 1)
 " ) > "$LOG_DIR/${TS}_consolidate.log" 2>&1 \
-      || { echo "  ✗ consolidate failed; see $LOG_DIR/${TS}_consolidate.log"; exit 1; }
+      || { echo "  ✗ consolidate failed; see $LOG_DIR/${TS}_consolidate.log — cyphers KEPT"; exit 1; }
     echo "  ✓ consolidated $n_src/$N_CY cypher(s) (see $LOG_DIR/${TS}_consolidate.log)"
   fi
+
+  # Reached only when consolidate succeeded (or had nothing to take). A host
+  # is released only when its session exited 0 and its database answers that
+  # no streams rows are left for any group it ran or finished: consolidate
+  # deletes what it copied from the source, so what is left was not
+  # consolidated. Any other host stays HELD and the burn below skips it
+  # (link#347).
+  echo "=== release consolidated cyphers ==="
+  for WS in "${CY_WS_ARR[@]}"; do
+    host_release "$WS" "${CY_BUCKET[$WS]}"
+  done
 fi
 
-# --- burn cyphers now (work is consolidated; minimise idle) ---
+# --- burn cyphers now (released hosts only; minimise idle) ---
 burn_cyphers || true
 
 # WSG set across all hosts.
@@ -1563,11 +1552,24 @@ tail -40 "$LOG_DIR/${TS}_compare.log" || true
 # failure, which is the wrong diagnosis and sends the operator to the wrong
 # host. They are also different KINDS of failure: an incomplete bucket means
 # output is missing, an incomplete recompute means output is silently WRONG.
-if [ "${RUN_INCOMPLETE:-0}" != "0" ] || [ "${RECOMPUTE_FAIL:-0}" != "0" ]; then
+# A third cause (link#347): a cypher still up because it may hold work that
+# was not consolidated. --keep-cyphers is a choice, not a failure, so it does
+# not count; its hosts are still listed in ${TS}_kept_hosts.tsv.
+HOSTS_KEPT=0
+[ "${KEPT_N:-0}" -gt 0 ] && [ "$KEEP_CYPHERS" != "1" ] && HOSTS_KEPT=1
+if [ "${RUN_INCOMPLETE:-0}" != "0" ] || [ "${RECOMPUTE_FAIL:-0}" != "0" ] \
+   || [ "$HOSTS_KEPT" != "0" ]; then
   echo "=== study_area_run INCOMPLETE ==="
+  if [ "$HOSTS_KEPT" != "0" ]; then
+    echo "  $KEPT_N cypher(s) were NOT burned: each may hold finished groups that"
+    echo "  are not on the dispatcher. They are still running and billed. Copy"
+    echo "  their groups over (schema_consolidate.R, bucket = the groups finished"
+    echo "  there), then burn each. Hosts, reasons and commands:"
+    echo "    $LOG_DIR/${TS}_kept_hosts.tsv"
+  fi
   if [ "${RUN_INCOMPLETE:-0}" != "0" ]; then
     echo "  At least one host did not account for its whole bucket; only the"
-    echo "  WSGs it reported were consolidated. Artifacts above are valid for"
+    echo "  WSGs it finished were consolidated. Artifacts above are valid for"
     echo "  those WSGs. Re-run the missing ones before trusting the compare."
   fi
   if [ "${RECOMPUTE_FAIL:-0}" != "0" ]; then
