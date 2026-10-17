@@ -1,5 +1,32 @@
 # Changelog
 
+## link 0.66.1
+
+**`fresh_default` is one provenanced `default` build of all 241
+watershed groups `default` can model, and two pipeline bugs that failed
+groups in that run are fixed**
+([\#246](https://github.com/NewGraphEnvironment/link/issues/246)).
+
+- **PSCIS crossings matched through the xref keep one row.** An xref row
+  that sets both `modelled_crossing_id` and `linear_feature_id` was
+  emitted by both branches of the insert, and the duplicate broke
+  `barriers_pkey` at persist (KITR). Branch A is kept, Branch B fills in
+  only where A found nothing.
+- **A species present in a group with no barrier in it is accessible and
+  keeps its mapping code.** `access_<sp>` is 1 (or 2 where observed
+  upstream), and `has_barriers_<sp>_dnstr` is FALSE; it had come out
+  boolean (UPET failed at persist) and then NA, which blanked the
+  mapping code. A species with no presence information keeps NA (“no
+  data”).
+- **The run:** run_uid `20261017_004619-3f4c713b`, m1 plus three cloud
+  hosts; `study_area_verify.sql` and `verify_extra.sql` pass at 241;
+  `bcfishpass` parity on ADMS, BULK, BABL and ELKR 48/50. Measurements
+  and what went wrong: `research/study_area_run.md`, “The province-wide
+  `default` run”. Follow-ups
+  [\#347](https://github.com/NewGraphEnvironment/link/issues/347),
+  [\#348](https://github.com/NewGraphEnvironment/link/issues/348),
+  [\#351](https://github.com/NewGraphEnvironment/link/issues/351).
+
 ## link 0.66.0
 
 **A bundle chooses where mean annual discharge is read from, and
