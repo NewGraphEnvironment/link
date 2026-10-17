@@ -72,8 +72,8 @@ Revised after the plan review (`review-plan.md`): bucket = DB ∪ log done; rele
 
 ## Validation
 - [x] Tests pass (`devtools::test()`: 3058 pass, 5 fail, none in this work: 3 need the `:63333` tunnel, which is down; 2 are the golden dams count, which fails the same on clean main), lintr clean on the new test file
-- [ ] `/code-check branch` clean
-- [ ] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion
+- [x] `/code-check branch`: five rounds, 13 findings fixed, every round from 2 on found a defect inside the previous fix; ended by enumeration (the two post-dispatch writers to a cypher, the two sources of its rows, every printed label), not a quiet round. review-round1..5.md, findings.md
+- [x] PWF checkboxes match landed work
+- [x] `/planning-archive` on completion
 
 Out of scope: #348 (coverage gate exits before the recompute).
