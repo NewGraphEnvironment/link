@@ -58,7 +58,8 @@ cyphers in order. Dispatcher-only (no cyphers): omit `--cy-workspaces`, pass one
 7. **Post-consolidate recompute ALL run WSGs** on the dispatcher via
    `wsg_recompute_one.R` → [lnk_access()] `merge=TRUE` (cheap access-only,
    reuses persisted streams/habitat/barriers) + `lnk_mapping_code`. Measured at
-   241 groups: median 0.68 min per group, 154 min at `-j4` (2026-10-17); the
+   241 groups: median 2.0 min per group (quartiles 1.1 / 3.2, longest 16 min),
+   597 min summed, 154 min at `-j4` (2026-10-17, `_recompute.log`); the
    ~10 s/WSG this step once quoted was a 34-group figure.
    Because it is cheap, every run WSG is re-settled — bucketing is a speed
    knob, not a correctness lever (link#205).
@@ -234,7 +235,7 @@ cloud hosts, `--refresh-primitives`, link `ee21eb13`. Both verifiers pass at
   above m1's rate, against the 0.45 the generator assumed; at equal speeds the
   slowest cloud host finished 52 min after m1.
 - **The recompute is now the long pole after modelling.** It scales with run
-  groups (above), at 0.68 min median per group at this scope. #274 (narrow the
+  groups (above), at 2.0 min median per group at this scope. #274 (narrow the
   set) and #250's `-j` are the levers.
 - **What went wrong:** the completeness check missed 18 finished groups whose
   `done` marker an R warning had pushed mid-line (#347), and would have burned

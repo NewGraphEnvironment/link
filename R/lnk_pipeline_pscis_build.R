@@ -403,10 +403,13 @@
       )
       -- One row per stream_crossing_id: an xref row may set BOTH
       -- modelled_crossing_id and linear_feature_id (KITR 203838), and then
-      -- both branches emit it. bcfp keeps the first INSERT's row (ON
-      -- CONFLICT DO NOTHING), so Branch A wins; Branch B fills in only
-      -- where A found nothing. A duplicate here becomes a duplicate
-      -- barriers_pkey at persist (link#246 run 20261017_004619).
+      -- both branches emit it. Branch A is kept and Branch B fills in only
+      -- where A found nothing. bcfp runs both branches as one INSERT with
+      -- ON CONFLICT DO NOTHING and no branch precedence; the two agree
+      -- whenever the xref's modelled crossing lies on its linear_feature_id,
+      -- as it does for both such rows today (KITR 203838; ATNA 203324's
+      -- modelled crossing is absent, so only B emits). A duplicate here
+      -- becomes a duplicate barriers_pkey at persist (link#246).
       SELECT DISTINCT ON (u.stream_crossing_id)
         u.stream_crossing_id, u.modelled_crossing_id, u.linear_feature_id,
         u.blue_line_key, u.downstream_route_measure, u.wscode_ltree,

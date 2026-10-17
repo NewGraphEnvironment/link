@@ -18,8 +18,8 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Facts not worth re-deriving:**
 - **One run_uid, two link SHAs.** 239 groups stamp `ee21eb13`; KITR and UPET stamp `a17e9177`, the fix for the two bugs that failed them, re-run on m1 under the same run_uid.
 - **The driver reads completeness from log text, and it lost 18 finished groups that way** (#347): an R warning put the `done` marker mid-line, the driver consolidated only what it counted, and its burn would have destroyed the rest. Until #347 lands, compare each host's `<schema>.log` for the run_uid with what consolidate took *before* the burn; `kill -STOP` on the driver holds the burn (auto mode refuses it, so the operator runs it).
-- **One failed group skips the recompute for every group** (#348): the coverage gate exits before it.
-- **The recompute takes 154 min at 241 groups and `-j4`** (median 0.68 min per group), not the ~1 h the plan assumed.
+- **A failed group with no earlier rows skips the recompute for every group** (#348): the coverage gate exits before it. A failed group that still has an earlier run's rows passes the gate, and its stale rows go unnoticed there.
+- **The recompute takes 154 min at 241 groups and `-j4`** (median 2.0 min per group, longest 16 min), not the ~1 h the plan assumed.
 - **A present species with no barrier in a group is accessible** (`access_<sp>` 1 or 2) while `has_barriers_<sp>_dnstr` stays NA, which the mapping code reads as no data.
 - **`fresh_default` is 48 GB** (11.39 M segments); the fwapg volume is 600 GiB with 253 G free after the run.
 

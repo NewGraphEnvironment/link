@@ -207,7 +207,7 @@ range was 3.5–4.4 h; the makespan was 4.6 h.
 2. **KITR** (job1) failed at persist: `duplicate key … barriers_pkey (203838, KITR)`. The xref row for PSCIS 203838
    sets both `modelled_crossing_id` and `linear_feature_id`, so both insert branches emitted it. Two of the xref's
    3,657 rows have that shape; the other, ATNA 203324, modelled without a duplicate in this run (why is not checked).
-   Fixed: one row per `stream_crossing_id`, Branch A first, as bcfishpass's `ON CONFLICT DO NOTHING` keeps it.
+   Fixed: one row per `stream_crossing_id`, Branch A first. bcfishpass has no branch precedence (one INSERT, ON CONFLICT DO NOTHING); the two agree for both such rows today (review round 5).
 3. **UPET** (job3) failed at persist: `column "access_rb" is of type integer but expression is of type boolean`.
    RB is present in UPET with no barrier in the AOI, so `has_barriers_rb_dnstr` is all NA ("no data", which the
    mapping code reads) and `ifelse(NA, …)` returns logical. Fixed: a present species with no barrier is accessible
@@ -222,7 +222,9 @@ which differs from it only by the two fixes. `link_dirty` is false on every row.
 `08630cf` and the bcfp pin `v0.7.15-50-g620dbe4` are the same on every row.
 
 **Recompute:** 241/241, 06:56–09:30 UTC, 154 min at `-j4`. The plan's ~1 h estimate (August's ~10 s per group,
-serial) was low by about 2.5×; the median job here took 0.68 min and the longest groups several minutes.
+serial) was low by about 2.5×. Per group (`_recompute.log`): median 2.00 min, quartiles 1.13 / 3.18, longest
+16.24 min, 597 min summed (/ 4 = 149, against 154 wall). The "median 0.68 min" the driver prints before the recompute
+is its default for groups with no recorded time, from earlier runs, not a measurement of this one (review round 5).
 
 **Verification:** `study_area_verify.sql` PASS ("241 WSG(s), all modelled, recomputed, segmented and provenanced");
 `verify_extra.sql` PASS, one config_hash `sha256:7e9dffa4…`, loader versions and snapshot row counts agreeing across
