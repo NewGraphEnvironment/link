@@ -76,7 +76,11 @@ provenance on 5, and every calibration drops the groups it does not cover.
 
 ## Validation
 
-- [ ] Tests pass (no R code changes are planned; if any land, `devtools::test()`)
-- [ ] `/code-check` clean (each commit, or once over the branch with `/code-check branch`)
-- [ ] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion
+- [x] Tests: R code did land (`a17e9177`, `91a968ab`), so `devtools::test()` ran: 2,989 pass. 5 problems, none in a changed
+      file: 3 need the closed `:63333` tunnel (`test-lnk_db_conn.R:10`, `test-lnk_wsg_resolve.R:143`, `:154`), 2 are the golden
+      ADMS dams test that CLAUDE.md already says to re-pin (8 → 7 dams). The two fixes each have a restore-the-bug proof
+- [x] `/code-check branch`: rounds 1–4 before the run; 5–7 over the run's fixes and prose. Round 6 found a defect inside
+      the UPET fix (fixed `91a968ab`), so round 7 ended the loop by enumeration (26 code places, 61 prose claims; one
+      wrong claim fixed). Two latent defects outside the diff drafted as an issue
+- [x] PWF checkboxes match landed work
+- [x] `/planning-archive` on completion
