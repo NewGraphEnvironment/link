@@ -29,11 +29,11 @@
 #
 # Globals read (set by the driver, or by the test):
 #   SCHEMA RUN_UID TS LOG_DIR CYPHER_DIR CYPHER_TF KEEP_CYPHERS CYPHERS_UP
-#   CY_WS_ARR (array); CY_IP CY_RUN_RC (assoc, keyed by workspace)
+#   CY_WS_ARR (array); CY_IP CY_BUCKET CY_RUN_RC (assoc, keyed by workspace)
 # Globals written:
 #   ACC_STATE ACC_FINISHED ACC_DONE_LOG ACC_SKIP (assoc, keyed by host key)
 #   CY_HOLD CY_BURNED CY_UNCONS CY_WHY (assoc, keyed by workspace)
-#   CYPHERS_UP KEPT_N
+#   CYPHERS_UP KEPT_N KEPT_CAUSE_N
 # Every assoc array must be declared at the caller's TOP LEVEL before the
 # EXIT trap can fire: under `set -u` an undeclared one kills the trap, and a
 # `declare -A` inside a function is local to it.
@@ -41,20 +41,23 @@
 # Needs bash >= 4 (assoc arrays), as the driver does.
 
 # psql script: groups in <table> matching <condition>, framed by sentinels. A
-# persist with no such table yet holds no groups, and says so (begin and end
-# with nothing between) rather than erroring into "unknown".
+# missing table (or schema: to_regclass is NULL for both) prints
+# __LNK_NOTABLE__ instead of erroring, so the caller decides what it means.
 .hosts_wsg_sql() {   # $1 = table, $2 = SQL condition
   printf '%s\n' \
     '\echo __LNK_BEGIN__' \
     "SELECT to_regclass('${SCHEMA}.$1') IS NOT NULL AS lnk_has_table \\gset" \
     '\if :lnk_has_table' \
     "SELECT DISTINCT watershed_group_code FROM ${SCHEMA}.$1 WHERE $2 ORDER BY 1;" \
+    '\else' \
+    '\echo __LNK_NOTABLE__' \
     '\endif' \
     '\echo __LNK_END__'
 }
 
-# .hosts_query <local|ip> <table> <condition>: prints the groups, one per line.
-# Returns 0 when the database answered, 1 when it did not.
+# .hosts_query <local|ip> <table> <condition> [strict]: prints the groups, one
+# per line. Returns 0 when the database answered, 1 when it did not. With
+# strict=1 a missing table is "did not answer" too.
 #
 # Judged on the output, never on the exit status: ssh to a host on the tailnet
 # can exit 0 whatever the remote command returned, and an empty answer from a
@@ -63,7 +66,8 @@
 # but group codes between them, or it is unknown. The remote route is the one
 # schema_consolidate.R uses (docker exec into fresh-db).
 .hosts_query() {
-  local where="$1" out
+  local where="$1" strict="${4:-0}" out
+  [ -n "$where" ] || return 1
   if [ "$where" = "local" ]; then
     out=$(.hosts_wsg_sql "$2" "$3" | PGPASSWORD=postgres psql -h localhost -p 5432 \
       -U postgres -d fwapg -X -q -t -A -v ON_ERROR_STOP=1 2>/dev/null) || true
@@ -73,29 +77,36 @@
       'docker exec -i fresh-db psql -U postgres -d fwapg -X -q -t -A -v ON_ERROR_STOP=1' \
       2>/dev/null) || true
   fi
-  printf '%s\n' "$out" | awk '
+  printf '%s\n' "$out" | awk -v strict="$strict" '
     $0 == "__LNK_BEGIN__" { if (begun) bad = 1; begun = 1; next }
+    $0 == "__LNK_NOTABLE__" { if (!begun || ended) bad = 1; notable = 1; next }
     $0 == "__LNK_END__"   { if (!begun || ended) bad = 1; ended = 1; next }
     $0 == ""              { next }
     begun && !ended && $0 ~ /^[A-Z][A-Z][A-Z][A-Z]$/ { rows[++n] = $0; next }
     { bad = 1 }
     END {
       if (!begun || !ended || bad) exit 1
+      if (notable && strict == 1) exit 1
       for (i = 1; i <= n; i++) print rows[i]
     }'
 }
 
-# host_finished <local|ip>: groups whose log row for this run is closed.
+# host_finished <local|ip>: groups whose log row for this run is closed. A
+# persist with no log table yet has closed none (known, empty); the log's done
+# markers still reach the consolidate bucket.
 host_finished() {
   .hosts_query "$1" log "run_uid = '${RUN_UID}' AND date_end IS NOT NULL"
 }
 
 # host_remaining <local|ip> <csv>: which of these groups still have streams
-# rows on the host. Independent of run_uid and date_end.
+# rows on the host. Independent of run_uid and date_end. STRICT: every
+# dispatched cypher has <schema>.streams (cypher_prep runs lnk_persist_init),
+# so a missing table means the probe is pointed at the wrong database, schema
+# or container, and reading that as "nothing left" would burn the host.
 host_remaining() {
   local in
   in=$(.hosts_lines "$2" | sed "s/.*/'&'/" | paste -sd, -)
-  .hosts_query "$1" streams "watershed_group_code IN (${in:-NULL})"
+  .hosts_query "$1" streams "watershed_group_code IN (${in:-NULL})" 1
 }
 
 # host_log_reported <logfile> <done|SKIP>: groups the log text names with that
@@ -231,12 +242,22 @@ hosts_preflight_droplets() {
   return $rc
 }
 
-# Why a host is kept, for the TSV and the banner.
-.hosts_keep_reason() {
+# Why a host is kept, for the TSV and the banner; empty when the only reason
+# is --keep-cyphers. A cause is never hidden behind the flag.
+.hosts_keep_cause() {
   local ws="$1"
-  if [ "$KEEP_CYPHERS" = "1" ]; then echo "--keep-cyphers"; return; fi
   if [ -n "${CY_WHY[$ws]:-}" ]; then echo "${CY_WHY[$ws]}"; return; fi
+  [ "${CY_HOLD[$ws]:-0}" = "1" ] || return 0
   echo "run stopped before consolidate released it; may hold finished groups"
+}
+.hosts_keep_reason() {
+  local cause
+  cause=$(.hosts_keep_cause "$1")
+  if [ "$KEEP_CYPHERS" = "1" ]; then
+    echo "${cause:+$cause; }--keep-cyphers"
+  else
+    echo "$cause"
+  fi
 }
 
 # burn_cyphers: burn every cypher that is neither held nor already burned, and
@@ -299,28 +320,55 @@ burn_cyphers() {
 
 # hosts_kept_report <ws...>: write ${TS}_kept_hosts.tsv and print the banner.
 # Rewritten on every call, so the file states the current set; removed when
-# nothing is kept. No IP in it: redact_log_addresses rewrites every ${TS}_*
-# file, so it names the command that prints one. Sets KEPT_N.
+# nothing is kept. Sets KEPT_N, and KEPT_CAUSE_N for hosts kept for a reason
+# other than --keep-cyphers alone.
+#
+# `groups` is MEASURED where the host answers: what is still on it, for every
+# group it was asked to run, finished, or logged done. That matters for
+# recovery: schema_consolidate DELETEs the bucket on the dispatcher before it
+# copies, so consolidating a group the host no longer holds destroys the
+# dispatcher's copy. Where the host does not answer, `groups` is the
+# candidate set and `groups_measured` says no.
+#
+# No IP in the file: redact_log_addresses rewrites every ${TS}_* file, so it
+# names the command that prints one.
 hosts_kept_report() {
-  local tsv="$LOG_DIR/${TS}_kept_hosts.tsv" ws
+  local tsv="$LOG_DIR/${TS}_kept_hosts.tsv" ws check left measured
   KEPT_N=$#
+  KEPT_CAUSE_N=0
   if [ "$#" -eq 0 ]; then
     rm -f "$tsv"
     return 0
   fi
-  printf 'workspace\tdroplet\treason\trun_uid\tschema\tgroups\tip_command\tburn_command\n' > "$tsv"
+  printf 'workspace\tdroplet\treason\trun_uid\tschema\tgroups\tgroups_measured\tip_command\tburn_command\n' > "$tsv"
   echo "=== HOSTS KEPT ($#) — still running and billed ==="
   for ws in "$@"; do
-    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$ws" "$(host_droplet_name "$ws")" \
-      "$(.hosts_keep_reason "$ws")" "$RUN_UID" "$SCHEMA" "${CY_UNCONS[$ws]:-}" \
+    [ -z "$(.hosts_keep_cause "$ws")" ] || KEPT_CAUSE_N=$((KEPT_CAUSE_N + 1))
+    check=$(.hosts_union "${CY_BUCKET[$ws]:-}" "${ACC_FINISHED[$ws]:-}" \
+      "${ACC_DONE_LOG[$ws]:-}" "${CY_UNCONS[$ws]:-}")
+    if left=$(host_remaining "${CY_IP[$ws]:-}" "$check"); then
+      CY_UNCONS[$ws]=$(printf '%s\n' "$left" | .hosts_csv)
+      measured=yes
+    else
+      CY_UNCONS[$ws]="$check"
+      measured=no
+    fi
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$ws" "$(host_droplet_name "$ws")" \
+      "$(.hosts_keep_reason "$ws")" "$RUN_UID" "$SCHEMA" "${CY_UNCONS[$ws]}" "$measured" \
       "cd $CYPHER_TF && TF_WORKSPACE=$ws tofu output -raw droplet_ip" \
       "cd $CYPHER_DIR && ./cypher_down.sh --workspace $ws" >> "$tsv"
     echo "  cy[$ws] ($(host_droplet_name "$ws")): $(.hosts_keep_reason "$ws")"
-    [ -z "${CY_UNCONS[$ws]:-}" ] || echo "    groups: ${CY_UNCONS[$ws]}"
+    if [ "$measured" = "yes" ]; then
+      echo "    still on the host: ${CY_UNCONS[$ws]:-nothing}"
+    else
+      echo "    host did not answer; candidates (NOT measured): ${CY_UNCONS[$ws]:-none}"
+    fi
   done
-  echo "  To recover: get each host's address (ip_command), consolidate its groups"
-  echo "  with data-raw/schema_consolidate.R (schema = '$SCHEMA', one source"
-  echo "  list(host = 'cypher@<ip>', via = 'docker', bucket = <groups>)), then burn:"
+  echo "  To recover: get each host's address (ip_command). Consolidate ONLY groups"
+  echo "  still on the host (groups_measured = yes); where it says no, find out"
+  echo "  what is left first. schema_consolidate DELETEs its bucket on the"
+  echo "  dispatcher before it copies, so a group the host no longer holds would"
+  echo "  lose the dispatcher's copy. Then burn:"
   for ws in "$@"; do echo "    cd $CYPHER_DIR && ./cypher_down.sh --workspace $ws"; done
   echo "  Recorded in $tsv"
   return 0

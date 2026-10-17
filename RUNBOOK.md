@@ -1229,9 +1229,10 @@ in `data-raw/study_area_hosts.sh`:
   was not consolidated: measured, not assumed, and independent of `run_uid`.
 - **A held host is kept on every exit path**, abort included, and so is a host
   whose burn did not complete. Each is a row in `<TS>_kept_hosts.tsv`
-  (reason, run_uid, schema, groups, the command that prints its address, the
-  command that burns it), the banner prints from the EXIT trap, and the run
-  exits non-zero. `--keep-cyphers` keeps every host but is not a failure.
+  (reason, run_uid, schema, groups, whether those groups were measured, the
+  command that prints its address, the command that burns it), the banner
+  prints from the EXIT trap, and the run exits non-zero. `--keep-cyphers`
+  alone is not a failure; a host it keeps that is also held for cause is.
 - **A host whose database did not answer is left out of consolidate**: the
   same route would fail there and take the other hosts' consolidate with it.
 - **Pre-flight fails on a cypher already up in this run's workspaces**: that is
@@ -1241,7 +1242,13 @@ in `data-raw/study_area_hosts.sh`:
 To recover a kept host: run its `ip_command`, consolidate its `groups` with
 `schema_consolidate(schema = <schema>, sources = list(list(host =
 "cypher@<ip>", via = "docker", bucket = c(...))))`, then run its
-`burn_command`. Tests: `tests/testthat/test-study_area_hosts.R` runs the lib
+`burn_command`. **Only where `groups_measured` is `yes`**: `groups` is then
+what is still on the host. `schema_consolidate` deletes its bucket on the
+dispatcher before it copies, so consolidating a group the host no longer
+holds (it was already consolidated, then deleted from the source) loses the
+dispatcher's copy. Where it says `no`, find out what is left first. A missing
+`<schema>.streams` on a host reads as unknown, not empty: every dispatched
+cypher has the table. Tests: `tests/testthat/test-study_area_hosts.R` runs the lib
 in bash with stubbed ssh, psql, tofu and doctl.
 
 ### Host buckets are derived, not chosen

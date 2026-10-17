@@ -354,7 +354,11 @@ echo "  recompute -j: $RECOMPUTE_JOBS"
 source "$REPO_ROOT/data-raw/study_area_hosts.sh"
 CYPHERS_UP=0
 KEPT_N=0
-declare -A CY_HOLD CY_BURNED CY_UNCONS CY_WHY CY_RUN_RC
+KEPT_CAUSE_N=0
+# Every map the trap reads, declared here, before the trap exists: under
+# `set -u` an undeclared one kills the trap and leaks the droplets. CY_IP and
+# CY_BUCKET are filled further down; re-declaring them there is harmless.
+declare -A CY_IP CY_BUCKET CY_HOLD CY_BURNED CY_UNCONS CY_WHY CY_RUN_RC
 declare -A ACC_STATE ACC_FINISHED ACC_DONE_LOG ACC_SKIP
 
 # Host addresses must not reach a public repo. The logs below are committed
@@ -1553,18 +1557,20 @@ tail -40 "$LOG_DIR/${TS}_compare.log" || true
 # host. They are also different KINDS of failure: an incomplete bucket means
 # output is missing, an incomplete recompute means output is silently WRONG.
 # A third cause (link#347): a cypher still up because it may hold work that
-# was not consolidated. --keep-cyphers is a choice, not a failure, so it does
-# not count; its hosts are still listed in ${TS}_kept_hosts.tsv.
+# was not consolidated, or whose burn did not complete. --keep-cyphers alone is
+# a choice, not a failure; a host it keeps that is ALSO held for cause still
+# counts, so the flag cannot turn an unconsolidated host into an exit 0.
 HOSTS_KEPT=0
-[ "${KEPT_N:-0}" -gt 0 ] && [ "$KEEP_CYPHERS" != "1" ] && HOSTS_KEPT=1
+[ "${KEPT_CAUSE_N:-0}" -gt 0 ] && HOSTS_KEPT=1
 if [ "${RUN_INCOMPLETE:-0}" != "0" ] || [ "${RECOMPUTE_FAIL:-0}" != "0" ] \
    || [ "$HOSTS_KEPT" != "0" ]; then
   echo "=== study_area_run INCOMPLETE ==="
   if [ "$HOSTS_KEPT" != "0" ]; then
-    echo "  $KEPT_N cypher(s) were NOT burned: each may hold finished groups that"
-    echo "  are not on the dispatcher. They are still running and billed. Copy"
-    echo "  their groups over (schema_consolidate.R, bucket = the groups finished"
-    echo "  there), then burn each. Hosts, reasons and commands:"
+    echo "  $KEPT_CAUSE_N cypher(s) were NOT burned for cause: each may hold groups"
+    echo "  that are not on the dispatcher, and is still running and billed."
+    echo "  Consolidate only the groups still on each host (groups_measured = yes;"
+    echo "  consolidating one it no longer holds deletes the dispatcher's copy),"
+    echo "  then burn it. Hosts, reasons and commands:"
     echo "    $LOG_DIR/${TS}_kept_hosts.tsv"
   fi
   if [ "${RUN_INCOMPLETE:-0}" != "0" ]; then

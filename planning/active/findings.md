@@ -102,3 +102,12 @@ A first m1 pattern did not apply (escaping) and scored 0; `cmp` flagged it UNCHA
 
 - config_hash checks as accounting, not gates (operator, 2026-10-17).
 - consolidate deletes the destination's earlier `log` / `log_recompute` rows for every group in a bucket (schema_consolidate.R:279-286). Measured: DUNC, KOTL, LARL, SLOC, PINE, PARS each hold one `log` row, from run 20261017_004619-3f4c713b.
+
+## /code-check round 1 (review-round1.md)
+
+Three findings, all verified in code and fixed:
+1. `kept_hosts.tsv` `groups` listed what consolidate had already taken and deleted from the host, for every keep reason but "rows left"; the recovery text then said to consolidate them, and `schema_consolidate` DELETEs the dispatcher's bucket before it copies (schema_consolidate.R:283-287). Now the report measures what is still on each kept host (`groups_measured`), and the recovery text says to consolidate only measured groups.
+2. A missing `<schema>.streams` read as "nothing left" and released the host. Every dispatched cypher has it (cypher_prep.sh:334), so it is now unknown for `host_remaining`; a missing `log` stays "closed nothing".
+3. Under `--keep-cyphers` a host held for cause showed only "--keep-cyphers" and the run could exit 0. The reason now carries the cause, and `KEPT_CAUSE_N` drives the exit status.
+
+Mutants m10 (strict ignored), m11 (report not measured), m12 (cause hidden by the flag): each caught. Tests 78 pass.

@@ -113,7 +113,7 @@ kept_tsv <- function(world) {
   }
   utils::read.delim(p,
     quote = "", na.strings = character(),
-    comment.char = "", stringsAsFactors = FALSE
+    comment.char = "", stringsAsFactors = FALSE, colClasses = "character"
   )
 }
 
@@ -125,7 +125,7 @@ run_hosts <- function(world, body, cyphers = c("a", "b"), keep = 0L,
   writeLines(c(
     "set -euo pipefail",
     sprintf("source %s", shQuote(hosts_lib())),
-    "declare -A CY_IP CY_RUN_RC CY_HOLD CY_BURNED CY_UNCONS CY_WHY",
+    "declare -A CY_IP CY_BUCKET CY_RUN_RC CY_HOLD CY_BURNED CY_UNCONS CY_WHY",
     "declare -A ACC_STATE ACC_FINISHED ACC_DONE_LOG ACC_SKIP",
     "SCHEMA=fresh_test; RUN_UID=T0-0000; TS=T0",
     sprintf(
@@ -287,6 +287,7 @@ test_that("a host with streams rows left after consolidate is not burned", {
   expect_equal(k$workspace, "b")
   expect_equal(k$droplet, "cypher-b")
   expect_equal(k$groups, "QQQQ")
+  expect_equal(k$groups_measured, "yes")
   expect_equal(k$run_uid, "T0-0000")
   expect_equal(k$schema, "fresh_test")
   expect_match(k$ip_command, "TF_WORKSPACE=b tofu output -raw droplet_ip", fixed = TRUE)
@@ -349,7 +350,62 @@ test_that("a dispatch session that exited non-zero keeps the host", {
     "host_release a AAAA", "burn_cyphers"
   ), cyphers = "a")
   expect_length(burn_calls(w), 0L)
-  expect_match(kept_tsv(w)$reason, "dispatch session exited 255", fixed = TRUE)
+  k <- kept_tsv(w)
+  expect_match(k$reason, "dispatch session exited 255", fixed = TRUE)
+  # Its work WAS consolidated and deleted from the host. The file must say
+  # nothing is left, not list AAAA: consolidating AAAA again would delete the
+  # dispatcher's copy first and copy nothing back.
+  expect_equal(k$groups, "")
+  expect_equal(k$groups_measured, "yes")
+  expect_match(r$out, "still on the host: nothing", fixed = TRUE)
+})
+
+test_that("a missing streams table after consolidate is unknown, not empty", {
+  skip_if_no_hosts_lib()
+  w <- hosts_world()
+  put(w, "ssh_ip-a.out", db_answer("AAAA"))
+  put(w, "ssh_ip-a_streams.out", c("__LNK_BEGIN__", "__LNK_NOTABLE__", "__LNK_END__"))
+  r <- run_hosts(w, c(
+    "CY_HOLD[a]=1",
+    "host_account a ip-a /nonexistent AAAA > /dev/null || true",
+    "host_release a AAAA", "burn_cyphers"
+  ), cyphers = "a")
+  expect_length(burn_calls(w), 0L)
+  k <- kept_tsv(w)
+  expect_match(k$reason, "did not answer after consolidate", fixed = TRUE)
+  expect_equal(k$groups_measured, "no")
+})
+
+test_that("a missing log table is a host that has closed nothing", {
+  skip_if_no_hosts_lib()
+  w <- hosts_world()
+  put(w, "ssh_ip-a.out", c("__LNK_BEGIN__", "__LNK_NOTABLE__", "__LNK_END__"))
+  r <- run_hosts(w, c(
+    "host_finished ip-a && echo RC=0 || echo RC=$?"
+  ), cyphers = "a")
+  expect_equal(r$out, "RC=0")
+})
+
+test_that("--keep-cyphers does not hide a host held for cause", {
+  skip_if_no_hosts_lib()
+  w <- hosts_world()
+  put(w, "ssh_ip-a.out", db_answer("AAAA"))
+  put(w, "ssh_ip-a_streams.out", db_answer(character(0)))
+  put(w, "ssh_ip-b.out", db_answer("BBBB"))
+  put(w, "ssh_ip-b_streams.out", db_answer("BBBB"))
+  r <- run_hosts(w, c(
+    account_release(),
+    "burn_cyphers",
+    'echo "KEPT_N=$KEPT_N CAUSE=$KEPT_CAUSE_N"'
+  ), keep = 1L)
+  expect_length(burn_calls(w), 0L)
+  expect_match(r$out, "KEPT_N=2 CAUSE=1", fixed = TRUE)
+  k <- kept_tsv(w)
+  expect_equal(k$reason[k$workspace == "a"], "--keep-cyphers")
+  expect_equal(
+    k$reason[k$workspace == "b"],
+    "streams rows left after consolidate; --keep-cyphers"
+  )
 })
 
 test_that("an unknown finished set is left out of consolidate and keeps the host", {
