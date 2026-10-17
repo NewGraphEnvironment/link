@@ -248,8 +248,9 @@ which share no species with the bcfishpass reference (each logs `no shared mappi
 - **The run replaced builds an earlier decision had kept.** The 2026-10-12 status recorded the operator keeping
   August KOTL, LARL and SLOC builds because published floodplains items came from them; the plan's "no stale rows can
   survive" overwrote them and DUNC's 2026-10-12 build without naming that. The driver's pre-consolidate dump still
-  holds them (link 0.45.1 / 0.63.1, per round 6's `pg_restore -l`); it was moved out of `/tmp` to a machine-local
-  backup directory. Question for the operator: does any floodplains item need them restored?
+  holds them (link 0.45.1 / 0.63.1, per round 6's `pg_restore -l`); it was copied out of `/tmp` to a machine-local
+  backup directory (byte-identical). It was taken after m1 had rebuilt its 76 groups, so it holds the four job3
+  groups' old builds but not the pre-run state of m1's groups (round 7). Question for the operator: does any floodplains item need them restored?
 - Prose corrected from round 6: size 31 GB not 48 (index double count); ~10 s per group was FINA alone; parity scored
   the four focal groups of a 17-group build; "missed", not "lost", 18 groups; `log_recompute` stamps `a17e9177`.
 

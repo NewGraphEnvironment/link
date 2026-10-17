@@ -250,7 +250,8 @@ cloud hosts, `--refresh-primitives`, link `ee21eb13`. Both verifiers pass at
   (`91a968ab`).
 - **Parity at the same code** (`20261017_093603-31ab6242`, `bcfishpass` on the
   closure of ADMS, BULK, BABL and ELKR, 17 groups built): `parity_crosssection.R`
-  on the four, 48/50 within tolerance; BULK SK over and parked (fresh#190).
+  on the four, 48/50 within tolerance; BULK SK over, parked by the script
+  (fresh#190, closed and carried on as #130).
 
 ## Operational facts from the first real multi-host run (2026-08-31, 34 WSGs)
 
