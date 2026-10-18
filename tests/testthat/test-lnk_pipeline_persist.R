@@ -208,3 +208,32 @@ test_that("lnk_pipeline_persist skips barriers branch when staging table absent"
   expect_no_match(joined, "DELETE FROM fresh\\.barriers")
   expect_no_match(joined, "INSERT INTO fresh\\.barriers")
 })
+
+test_that("lnk_pipeline_persist never deletes from a log table (link#354)", {
+  # The log tables are history: a group's earlier builds must survive its next
+  # build. Every staging table reported present, so every DELETE branch runs.
+  captured <- character(0)
+  local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) {
+      captured <<- c(captured, sql); invisible(NULL)
+    }
+  )
+  with_mocked_bindings(
+    dbGetQuery = function(...) data.frame(x = 1L),
+    dbQuoteString = function(...) DBI::SQL("'x'"),
+    .package = "DBI",
+    {
+      cfg <- lnk_config("bcfishpass")
+      lnk_pipeline_persist(
+        structure(list(), class = "DBIConnection"),
+        aoi = "PARS", cfg = cfg, species = c("BT", "SK"))
+    }
+  )
+  deletes <- grep("^\\s*DELETE FROM", captured, value = TRUE)
+  # streams, one per species (2), barriers, barrier_overrides,
+  # streams_access, streams_mapping_code.
+  expect_length(deletes, 7L)
+  targets <- sub("^\\s*DELETE FROM (\\S+).*", "\\1", deletes)
+  expect_false(any(sub("^[^.]+\\.", "", targets) %in%
+                     names(.lnk_log_specs())))
+})
