@@ -161,7 +161,7 @@ git_sha <- tryCatch(system2("git", c("rev-parse", "--short", "HEAD"), stdout = T
                     error = function(e) NA_character_)
 logrow <- q(sprintf("SELECT run_id, date_end, link_version, link_sha, fresh_version, config_name
                      FROM %s.log WHERE watershed_group_code = %s
-                     ORDER BY date_end DESC LIMIT 1", schema, wsg_lit))
+                     ORDER BY date_end DESC NULLS LAST LIMIT 1", schema, wsg_lit))
 view_n <- q("SELECT count(*) AS n FROM fresh.streams_vw_bcfp")$n
 writeLines(c(
   sprintf("run: %s (UTC)", format(Sys.time(), "%Y-%m-%dT%H:%MZ", tz = "UTC")),

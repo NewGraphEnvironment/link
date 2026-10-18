@@ -6,7 +6,7 @@ Run `20261017_004619-3f4c713b`'s consolidate deleted each cloud-built group's ea
 `log_input` rows on the dispatcher. The driver's pre-consolidate backup
 (`/tmp/fresh_default_pre_consolidate_202610162242.dump`, machine-local, taken after m1's own
 groups and before the cloud hosts' were copied in) still held them. Against the current schema
-it had exactly **5 `log` rows and 60 `log_input` rows** whose primary key was gone, and an
+(an anti-join on each table's primary key) it had exactly **5 `log` rows and 60 `log_input` rows** whose primary key was gone, and an
 empty `log_recompute`:
 
 | group | run_id | built | link |
@@ -18,7 +18,9 @@ empty `log_recompute`:
 | SLOC | `m1-20260827T145652.093-c69f2d` | 2026-08-27 | 0.45.1 |
 
 PINE was not named in the issue; it was built on `cypher-job2` in the run and lost its August
-row the same way. PARS had no earlier row.
+row the same way. PARS had no earlier row. The later backup (`…_202610162328.dump`, taken
+before the hand consolidate of the 18 groups) has nothing missing in any of the three tables,
+so the 22:42 dump alone was complete.
 
 - `restore_log_rows.sql` → `restore_log_rows.out`: additive `INSERT … ON CONFLICT DO NOTHING`,
   `log` 241 → 246, `log_input` 2,892 → 2,952, 12 `log_input` rows per restored build.

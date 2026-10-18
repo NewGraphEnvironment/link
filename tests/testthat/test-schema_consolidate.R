@@ -35,11 +35,15 @@ test_that("consolidate_history_sql replaces by primary key, never by group", {
   sql <- e$consolidate_history_sql("s", "log_input",
     c("run_id", "watershed_group_code", "table_name", "row_count"),
     c("run_id", "table_name"), "/tmp/x.tsv")
-  joined <- paste(sql, collapse = "\n")
-  expect_match(joined, "CREATE TEMP TABLE consolidate_in ON COMMIT DROP AS SELECT run_id, watershed_group_code, table_name, row_count FROM s.log_input WITH NO DATA;", fixed = TRUE)
-  expect_match(joined, "\\copy consolidate_in (run_id, watershed_group_code, table_name, row_count) FROM '/tmp/x.tsv'", fixed = TRUE)
-  expect_match(joined, "DELETE FROM s.log_input d USING consolidate_in s WHERE (d.run_id, d.table_name) = (s.run_id, s.table_name);", fixed = TRUE)
-  expect_match(joined, "INSERT INTO s.log_input (run_id, watershed_group_code, table_name, row_count) SELECT run_id, watershed_group_code, table_name, row_count FROM consolidate_in;", fixed = TRUE)
+  cl <- "run_id, watershed_group_code, table_name, row_count"
+  expect_identical(sql, c(
+    paste0("CREATE TEMP TABLE consolidate_in ON COMMIT DROP AS SELECT ", cl,
+           " FROM s.log_input WITH NO DATA;"),
+    paste0("\\copy consolidate_in (", cl, ") FROM '/tmp/x.tsv'"),
+    paste0("DELETE FROM s.log_input d USING consolidate_in s",
+           " WHERE (d.run_id, d.table_name) = (s.run_id, s.table_name);"),
+    paste0("INSERT INTO s.log_input (", cl, ") SELECT ", cl,
+           " FROM consolidate_in;")))
   delete <- grep("^DELETE", sql, value = TRUE)
   expect_no_match(delete, "watershed_group_code")
 })
@@ -53,6 +57,46 @@ test_that("consolidate_history_sql refuses an unshared key or a quoted path", {
   expect_error(
     e$consolidate_history_sql("s", "log", "run_id", "run_id", "/tmp/it's.tsv"),
     "single quote")
+})
+
+test_that("the bucket DELETE reaches persist tables only", {
+  e <- source_consolidate()
+  sql <- e$consolidate_dest_delete_sql("s",
+    c("log", "log_input", "log_recompute", "streams", "streams_habitat_bt"),
+    c("ADMS", "BULK"))
+  expect_identical(sql, c(
+    "DELETE FROM s.streams WHERE watershed_group_code IN ('ADMS', 'BULK')",
+    "DELETE FROM s.streams_habitat_bt WHERE watershed_group_code IN ('ADMS', 'BULK')"))
+  expect_identical(e$consolidate_dest_delete_sql("s", "log", "ADMS"),
+                   character(0))
+})
+
+test_that("stage 2 loads a log table in one transaction, a persist table by COPY", {
+  e <- source_consolidate()
+  sqlf <- withr::local_tempfile(fileext = ".sql")
+  cmd <- e$consolidate_stage2_cmd("s", "log", c("run_id", "host"), "/tmp/x.tsv",
+                                  sqlf)
+  expect_match(cmd, "psql -X -v ON_ERROR_STOP=1 -1 -f ", fixed = TRUE)
+  expect_match(paste(readLines(sqlf), collapse = "\n"),
+               "WHERE (d.run_id) = (s.run_id);", fixed = TRUE)
+  sqlf2 <- withr::local_tempfile(fileext = ".sql")
+  cmd <- e$consolidate_stage2_cmd("s", "streams", c("id_segment", "geom"),
+                                  "/tmp/x.tsv", sqlf2)
+  expect_match(cmd, "psql -X -v ON_ERROR_STOP=1 -c \"COPY s.streams (id_segment, geom) FROM STDIN\" < ", fixed = TRUE)
+  expect_false(file.exists(sqlf2))
+})
+
+test_that("a group whose destination log is newer refuses the source", {
+  e <- source_consolidate()
+  dest <- data.frame(watershed_group_code = c("ADMS", "BULK", "DUNC", "KOTL"),
+                     newest = c(100, 200, 300, 400))
+  src <- data.frame(watershed_group_code = c("ADMS", "BULK", "DUNC", "NEWW"),
+                    newest = c(100, 250, 299, 1))
+  # ADMS same build, BULK older here: fine. DUNC newer here, KOTL logged here
+  # and not on the source: refused. NEWW has no row here: fine.
+  expect_identical(e$consolidate_newer_on_dest(dest, src), c("DUNC", "KOTL"))
+  expect_identical(
+    e$consolidate_newer_on_dest(dest[0, ], src), character(0))
 })
 
 test_that("the staged script keeps a group's earlier builds (live)", {
@@ -102,6 +146,8 @@ test_that("the staged script keeps a group's earlier builds (live)", {
     withr::with_envvar(env, suppressWarnings(
       system2(psql, args, stdout = TRUE, stderr = stderr)))
   }
+  cols_log <- c("run_id", "watershed_group_code", "date_start", "date_end")
+  cols_in <- c("run_id", "watershed_group_code", "table_name", "row_count")
   stage <- function(table, cols, pk, bad = FALSE) {
     tsv <- withr::local_tempfile(fileext = ".tsv")
     # stderr dropped: a NOTICE on it would land in the data file.
@@ -114,8 +160,18 @@ test_that("the staged script keeps a group's earlier builds (live)", {
     res <- run_psql(c("-X", "-1", "-v", "ON_ERROR_STOP=1", "-f", shQuote(sqlf)))
     attr(res, "status") %||% 0L
   }
-  cols_log <- c("run_id", "watershed_group_code", "date_start", "date_end")
-  cols_in <- c("run_id", "watershed_group_code", "table_name", "row_count")
+  # Without -1 the script fails closed: ON COMMIT DROP under autocommit drops
+  # the temp table before \copy, so nothing is deleted or added.
+  tsv0 <- withr::local_tempfile(fileext = ".tsv")
+  writeLines("Z\tADMS\t2026-01-01\t\\N", tsv0)
+  sql0 <- withr::local_tempfile(fileext = ".sql")
+  writeLines(e$consolidate_history_sql(dst, "log", cols_log, "run_id", tsv0),
+             sql0)
+  res0 <- run_psql(c("-X", "-v", "ON_ERROR_STOP=1", "-f", shQuote(sql0)))
+  expect_false(is.null(attr(res0, "status")))
+  expect_identical(
+    DBI::dbGetQuery(conn, sprintf("SELECT count(*)::int n FROM %s.log", dst))$n,
+    3L)
 
   # A malformed file fails the whole transaction: nothing is deleted.
   expect_false(identical(stage("log", cols_log, "run_id", bad = TRUE), 0L))

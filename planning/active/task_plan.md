@@ -41,9 +41,14 @@
   and `verify_extra.sql`; both pass; `lnk_log_read()` still returns this run's row per group
 - [x] CLAUDE.md #246 status: the four (five, with PINE) groups' earlier log rows restored
 
+## Phase 6: Plan-review fixes (`review-1.md`)
+- [x] Refuse a source whose group's destination log is newer (or absent on the source)
+- [x] Helpers for the DELETE list and stage-2 command, tested; `-X`; `-1` fails closed, tested
+- [x] `NULLS LAST` in two diagnostic readers; docstring; restore record; stale docs and banners
+
 ## Validation
 
-- [ ] Tests pass
+- [x] Tests pass — local `devtools::test()` only (data-raw is build-ignored and there is no R-CMD-check workflow): 3147 pass; 5 fail, all pre-existing (3 need the `:63333` tunnel, 2 are the golden ADMS dams pin 8 → 7 in CLAUDE.md). Touched files re-run after review fixes: 0 fail
 - [ ] `/code-check` clean (each commit, or once over the branch with `/code-check branch`)
 - [ ] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion

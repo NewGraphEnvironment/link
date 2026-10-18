@@ -1,10 +1,17 @@
 -- Restore the log rows run_uid 20261017_004619-3f4c713b's consolidate deleted
 -- from fresh_default (link#354). Source: the driver's pre-consolidate backup
 -- /tmp/fresh_default_pre_consolidate_202610162242.dump (machine-local), its
--- log / log_input / log_recompute data loaded into zz354_restore first:
+-- log / log_input / log_recompute data loaded into zz354_restore first. The
+-- scratch tables are `LIKE fresh_default.<t>`, so the `SELECT *` below is
+-- positional over identical column lists:
 --
+--   CREATE TABLE zz354_restore.<t> (LIKE fresh_default.<t>);
 --   pg_restore --data-only -t <t> -f <t>.sql <dump>
 --   sed 's/^COPY fresh_default\./COPY zz354_restore./' <t>.sql | psql
+--
+-- Before it ran, every one of the 5 log and 60 log_input rows was absent from
+-- fresh_default by primary key (an anti-join, README), so ON CONFLICT skipped
+-- nothing: the INSERT counts below are those numbers.
 --
 -- Additive: a row whose primary key is present is left alone, so re-running
 -- this changes nothing. Columns added since the dump take NULL.

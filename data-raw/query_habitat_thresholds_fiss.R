@@ -223,7 +223,7 @@ vintage <- dbGetQuery(conn, sprintf(
    FROM (SELECT DISTINCT ON (watershed_group_code) watershed_group_code, date_end, fresh_version,
                 fresh_sha
          FROM %s.log WHERE watershed_group_code = ANY($1)
-         ORDER BY watershed_group_code, date_end DESC) x", schema),
+         ORDER BY watershed_group_code, date_end DESC NULLS LAST) x", schema),
   params = list(paste0("{", paste(toupper(wsgs), collapse = ","), "}")))[[1]]
 dbDisconnect(conn)
 writeLines(c(

@@ -500,8 +500,9 @@ cols_log_input <- c(
 #' group copied home from another host keeps the rows of its earlier builds
 #' (link#354).
 #'
-#' Read by [.lnk_log_create_tables()] and by `schema_consolidate.R`, so the set
-#' of history tables is named here and nowhere else.
+#' Read by [.lnk_log_create_tables()] and by `schema_consolidate.R`, so the two
+#' agree on which tables are history. (`lnk_persist_init()`'s drift check keeps
+#' its own list of log tables.)
 #'
 #' @return A list of specs named by table.
 #' @noRd
