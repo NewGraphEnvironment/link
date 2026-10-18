@@ -37,7 +37,6 @@ Returned list keys match the entry keys in `cfg$files` exactly
 ``` r
 cfg <- lnk_config("bcfishpass")
 loaded <- lnk_load_overrides(cfg)
-#> Warning: incomplete final line found by readTableHeader on '/home/runner/work/_temp/Library/link/extdata/configs/bcfishpass/overrides/cabd_blkey_xref.csv'
 names(loaded)
 #>  [1] "parameters_fresh"                    
 #>  [2] "parameters_habitat_thresholds"       
