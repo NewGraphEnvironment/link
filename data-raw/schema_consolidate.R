@@ -31,11 +31,14 @@
 # COPY-streaming with `WHERE wsg IN (bucket)` at source eliminates the
 # over-fetch class entirely.
 #
-# The log tables are the exception to "replace the bucket" (link#354). They
-# carry `watershed_group_code`, so they are discovered and copied like the
-# rest, but they are history: a group's earlier builds must survive a later
-# build copied home from another host. Their rows are replaced by primary key
-# (`.lnk_log_specs()`), never deleted by group.
+# The log tables are the exception to "replace the bucket" (link#354). The
+# three that carry `watershed_group_code` (`log`, `log_input`,
+# `log_recompute`) are discovered and copied like the rest, but they are
+# history: a group's earlier builds must survive a later build copied home
+# from another host. On the destination their rows are replaced by primary
+# key (`.lnk_log_specs()`), never deleted by group; step 5 still clears them
+# from the source once copied. The config-snapshot log tables carry no
+# `watershed_group_code`, so they are never discovered and never travel.
 #
 # Cross-refs: rtj#94 (general orchestrator); link#112 (first usage);
 # link#180 (additive Step 0 unblocked by this source-filter fix).

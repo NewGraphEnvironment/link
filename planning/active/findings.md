@@ -57,6 +57,32 @@ Run on copies of the test and script under the scratchpad:
   expectations fail.
 - Every table treated as persist (`is_history` all FALSE): 3 split expectations fail.
 
+## Code-check: how the loop ended (enumeration, 2026-10-17)
+
+Round 1: one doc error (§8d / host banners said a group the host no longer holds is lost; the
+guard refuses it), fixed with a status check on the source log query. Round 2: clean. Round 3:
+two wording findings, one **inside round 1's fix** (the "is refused" sentence lacked the
+condition that the dispatcher holds a log row for the group; 59 of `fresh`'s 98 groups have
+persist rows and no log row).
+
+Mechanism (round 3): prose that restates the guard or the history rule drops a condition the
+code has. Three conditions can be dropped: (a) only the three log tables with
+`watershed_group_code` are copied, the config-snapshot ones never travel; (b) "never deleted by
+group" holds on the destination, step 5 still clears the source; (c) the refusal needs a
+destination log row and a `log` table on both sides.
+
+Enumeration: every added line on the branch matching
+`refus|never delet|not .*delet|history|survive|by primary key|discovered|copied like|travel|keeps? (its|their)`
+(47 lines, plus CLAUDE.md's new status sentence). Seven dropped a condition and were fixed:
+`R/lnk_log.R` specs doc (a, b); consolidate header (a, b); RUNBOOK §6b (b); RUNBOOK §8d (c, and
+now names the unprotected pre-log case); `data-raw/README.md` (a, b, c); `study_area_hosts.sh`
+comment and banner (c); CLAUDE.md (a, b). The rest restate the destination DELETE, a test, or a
+helper's own scope, and hold as written.
+
+Accepted: over Tailscale SSH to a Mac, ssh exits 0 on a failed remote command, so the
+`source_log_query` stage could read as `dest_log_newer` there. Sources are Linux droplets, and
+the source is refused either way.
+
 ## Errors Encountered
 
 | Error | Resolution |

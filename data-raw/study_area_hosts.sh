@@ -467,7 +467,9 @@ burn_cyphers() {
 # recovery: schema_consolidate DELETEs the bucket on the dispatcher before it
 # copies, so consolidating a group the host holds only in part destroys the
 # dispatcher's copy of its persist rows (its log rows survive). One it no
-# longer holds at all has no log row there, so consolidate refuses it (#354). Where the host does not answer, `groups` is the
+# longer holds at all has no log row there, so consolidate refuses it when the
+# dispatcher has a log row for it; one with only pre-log rows on the
+# dispatcher is still deleted and not replaced (#354). Where the host does not answer, `groups` is the
 # candidate set and `groups_measured` says no.
 #
 # No IP in the file: redact_log_addresses rewrites every ${TS}_* file, so it
@@ -523,7 +525,8 @@ hosts_kept_report() {
   echo "  no, find out what is left first. Never groups_partial. schema_consolidate"
   echo "  DELETEs its bucket on the dispatcher before it copies, so a group the"
   echo "  host holds only in part loses the dispatcher's copy of its persist rows"
-  echo "  (one it no longer holds at all is refused, dest_log_newer)."
+  echo "  (one it no longer holds at all is refused, dest_log_newer, where the"
+  echo "  dispatcher has a log row for it; with pre-log rows only, it is lost)."
   if [ "${RECOMPUTE_RAN:-0}" = "1" ]; then
     echo "  The run's recompute ran WITHOUT these groups: after consolidating,"
     echo "  recompute each one and each run group upstream of it"

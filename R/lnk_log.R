@@ -495,10 +495,12 @@ cols_log_input <- c(
 #' The provenance tables: name, columns and primary key.
 #'
 #' These tables are history, not per-group state, and no primary key here
-#' includes `watershed_group_code`. `data-raw/schema_consolidate.R` replaces
-#' their rows by primary key and never deletes them by watershed group, so a
-#' group copied home from another host keeps the rows of its earlier builds
-#' (link#354).
+#' includes `watershed_group_code`. Of them, `data-raw/schema_consolidate.R`
+#' copies the three that carry `watershed_group_code` (`log`, `log_input`,
+#' `log_recompute`; the config-snapshot tables never leave a host). It
+#' replaces their rows on the destination by primary key and never deletes
+#' them there by watershed group, so a group copied home from another host
+#' keeps the rows of its earlier builds (link#354).
 #'
 #' Read by [.lnk_log_create_tables()] and by `schema_consolidate.R`, so the two
 #' agree on which tables are history. (`lnk_persist_init()`'s drift check keeps
