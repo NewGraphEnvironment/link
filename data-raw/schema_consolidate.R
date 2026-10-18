@@ -416,8 +416,18 @@ schema_consolidate <- function(schema,
         sprintf("PGHOST=localhost PGPORT=5432 PGDATABASE=%s PGUSER=%s PGPASSWORD=postgres psql -X -t -A -c \"%s\"",
                 pg_db, pg_user, newest_sql)
       }
-      src_newest_raw <- system(sprintf("ssh '%s' '%s'", src$host,
-        gsub("'", "'\\''", src_newest_inner, fixed = TRUE)), intern = TRUE)
+      src_newest_raw <- suppressWarnings(system(sprintf("ssh '%s' '%s'",
+        src$host, gsub("'", "'\\''", src_newest_inner, fixed = TRUE)),
+        intern = TRUE))
+      # A failed query would read as "no log rows on the source" and refuse
+      # under the wrong reason; name it instead.
+      if (!is.null(attr(src_newest_raw, "status"))) {
+        log(src$host, " -> ERROR: could not read the source's log (exit ",
+            attr(src_newest_raw, "status"), ") — nothing deleted or copied")
+        results[[src$host]] <- list(ok = FALSE, stage = "source_log_query",
+                                     rc = attr(src_newest_raw, "status"))
+        next
+      }
       src_newest_raw <- strsplit(src_newest_raw[nzchar(src_newest_raw)], "|",
                                  fixed = TRUE)
       src_newest <- data.frame(

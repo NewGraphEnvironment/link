@@ -1272,15 +1272,15 @@ To recover a kept host: run its `ip_command`, consolidate its `groups` with
 `groups_unknown`, and only where `groups_measured` is `yes`**: `groups` is
 then the finished work still on the host. `unsettled` means wait until
 nothing runs there and re-measure. `schema_consolidate` deletes its bucket on the dispatcher before it
-copies, so consolidating a group the host no longer holds (already
-consolidated, then deleted from the source), or holds only in part, loses the
-dispatcher's copy of its persist rows. Its log rows survive (link#354), and
-consolidate refuses a source outright (`stage = "dest_log_newer"`, nothing
+copies, so consolidating a group the host holds only in part loses the
+dispatcher's copy of its persist rows (its log rows survive, link#354).
+Consolidate refuses a source outright (`stage = "dest_log_newer"`, nothing
 deleted) when a group's newest log row on the dispatcher is newer than the
 source's, or the source has none: the persist tables carry no run id, so that
-newest row is what says which build they hold. A group re-run on the
-dispatcher during recovery is therefore never overwritten by the kept host's
-older build. Where it says `no`, find out what is left first. If the
+newest row is what says which build they hold. So a group the host no longer
+holds at all (already consolidated, then deleted from the source, log rows
+included) is refused rather than lost, and a group re-run on the dispatcher
+during recovery is never overwritten by the kept host's older build. Where it says `no`, find out what is left first. If the
 run's recompute ran, it ran without the kept groups: recompute each one and
 each run group upstream of it (`wsg_recompute_one.R`). If it did not run
 (consolidate failed, coverage FATAL), recompute every group of the run; the
