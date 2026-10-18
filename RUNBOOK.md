@@ -1199,12 +1199,83 @@ what stops `=== READY (install stage only; ...)` satisfying a full-prep check.
 produced nothing therefore does not merely fail to add rows — it **removes** the
 rows already there for those WSGs and returns `ok = TRUE`. So:
 
-- before consolidate, every host must account for its whole bucket
-  (`[wsg_run_one] … done|SKIP` lines counted against the bucket size);
+- before consolidate, every host must account for its whole bucket, read from
+  its **database**: `<schema>.log` rows for the run_uid with `date_end` set,
+  plus `SKIP` markers from the log, which write no row (link#347);
 - after consolidate, every run WSG must have rows in `<persist>.streams`.
 
 The second is detection rather than prevention, and it is the one that would
 have caught link#246 on day one regardless of cause.
+
+### Which host may be burned (link#347)
+
+The count used to be `[wsg_run_one] … done` lines, anchored at line start. R
+writes warnings into the same stream, and one flushed without a newline put the
+marker mid-line (`… :[wsg_run_one] FIRE done in 4.6 min`), so run
+`20261017_004619-3f4c713b` hid 18 finished groups, consolidated only what it
+counted, and would have burned the hosts holding the rest. The rules now, all
+in `data-raw/study_area_hosts.sh`:
+
+- **The database counts, the log only adds.** consolidate takes database ∪ log
+  `done`. The log cannot be the count (mid-line markers), and the database
+  alone can undercount: `.lnk_log_run_finish()` is a soft UPDATE after persist,
+  and a lost `LNK_RUN_UID` leaves every row's `run_uid` NULL. Both probes are
+  framed by sentinels, because ssh can exit 0 whatever the remote command did;
+  no sentinels means **unknown**, never "nothing".
+- **A cypher is held from dispatch.** It is released only when its dispatch
+  session exited 0 and, **after** consolidate, its database holds no
+  **finished** group: one with `<persist>.streams` rows left that this run
+  finished there by any signal (database, log `done`, or
+  `streams_mapping_code` rows, which within a run only the final persist
+  writes). `schema_consolidate` deletes what it copied from the source, so
+  what is left was not consolidated: measured, not assumed. A group with
+  `streams` rows and no other signal is **partial** (it failed after the
+  pre-persist, `R/lnk_pipeline_run.R:240`); it does not hold the host and is
+  never consolidated.
+- **Provenance and settledness are checked, not assumed.** A cypher spins from
+  a warm image and `lnk_persist_init` keeps rows, so before dispatch the
+  driver records which of each bucket already have `streams` or
+  `streams_mapping_code` rows (`host_baseline`); their mapping-code rows are
+  not this run's, and such a group with no finish signal of this run is
+  `groups_unknown`, never partial. With no baseline, mapping-code rows count
+  as `groups_unknown` too. Unknown groups hold the host and are never
+  recovered. After dispatch the driver writes to a cypher in exactly two
+  ways, the dispatch ssh session and `schema_consolidate` (which copies, then
+  deletes from the source). A killed driver runs its EXIT trap while either
+  keeps going, so a host is **unsettled** unless its session ended 0
+  (`host_wait` records the status only once `wait` returns) and consolidate
+  is not in flight (`CONSOLIDATING`). An unsettled host's groups are "not
+  finished when probed", never "partial", and the record says to re-measure. A report from the trap reads the host's log row and run log
+  itself when accounting never ran.
+- **A held host is kept on every exit path**, abort included, and so is a host
+  whose burn did not complete. Each is a row in `<TS>_kept_hosts.tsv`
+  (reason, run_uid, schema, groups, whether those groups were measured, the
+  command that prints its address, the command that burns it), the banner
+  prints from the EXIT trap, and the run exits non-zero. `--keep-cyphers`
+  alone is not a failure; a host it keeps that is also held for cause is.
+- **A host whose database did not answer is left out of consolidate**: the
+  same route would fail there and take the other hosts' consolidate with it.
+- **Pre-flight fails on a cypher already up in this run's workspaces**: that is
+  most likely a host an earlier run kept, and `cypher_up` would adopt it.
+  Others warn, except the long-lived default `cypher`.
+
+To recover a kept host: run its `ip_command`, consolidate its `groups` with
+`schema_consolidate(schema = <schema>, sources = list(list(host =
+"cypher@<ip>", via = "docker", bucket = c(...))))`, then run its
+`burn_command`. **Only `groups`, never `groups_partial` or
+`groups_unknown`, and only where `groups_measured` is `yes`**: `groups` is
+then the finished work still on the host. `unsettled` means wait until
+nothing runs there and re-measure. `schema_consolidate` deletes its bucket on the dispatcher before it
+copies, so consolidating a group the host no longer holds (already
+consolidated, then deleted from the source), or holds only in part, loses the
+dispatcher's copy. Where it says `no`, find out what is left first. If the
+run's recompute ran, it ran without the kept groups: recompute each one and
+each run group upstream of it (`wsg_recompute_one.R`). If it did not run
+(consolidate failed, coverage FATAL), recompute every group of the run; the
+banner says which. A missing
+`<schema>.streams` or `streams_mapping_code` on a host reads as unknown, not
+empty: every dispatched cypher has both. Tests: `tests/testthat/test-study_area_hosts.R` runs the lib
+in bash with stubbed ssh, psql, tofu and doctl.
 
 ### Host buckets are derived, not chosen
 
