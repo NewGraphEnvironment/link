@@ -28,8 +28,8 @@ pins it. The rows #246 had lost were restored from the driver's pre-consolidate 
   (tunnel `:63333` down ×3, golden ADMS dams 8 → 7 ×2).
 - Review: a plan review, then three `/code-check` rounds. Round 3 found a defect inside round 1's
   fix, and the loop ended by enumerating the 47 added lines that restate the rule (7 fixed;
-  `findings.md`). Wrong turn kept: the background test wrapper reported done while R was still
-  running, so the wait was redone on the PID.
+  `findings.md`). Wrong turn kept: mid-run the suite was read as finished, from a timestamp that was my own
+  appended `date -u`; `ps` showed R still running, and the wait was redone on the PID.
 
 ## Evidence
 

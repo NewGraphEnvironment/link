@@ -9,5 +9,5 @@
 - Phases 1–3 (`0a1f8534`, `79a247e0`): `.lnk_log_specs()`; consolidate DELETEs persist tables only and replaces log rows by primary key in one transaction per table. Correction to the plan: full PK, not a `run_key` (findings). Restore-the-bug: both mutations go red.
 - Phase 4 (`7d85b244`): RUNBOOK. NEWS left to `/gh-pr-merge` (this repo writes NEWS in the release commit).
 - Phase 5: restored 5 `log` + 60 `log_input` rows into `fresh_default` from the 22:42 pre-consolidate dump (PINE was a fifth loss); both verify scripts pass at 241; `lnk_log_read()` newest is this run for all 241.
-- Full suite (local): 3147 pass, 5 pre-existing failures (tunnel down ×3, ADMS dams pin ×2). The background wrapper reported done while R was still running; waited on the PID instead.
+- Full suite (local): 3147 pass, 5 pre-existing failures (tunnel down ×3, ADMS dams pin ×2). Mid-run I read the suite as finished: the second timestamp in its output was the `date -u` appended to my own `cat`, not the job's. `ps` showed R still running, so the wait was redone on the PID. (Corrected 2026-10-18; this line first blamed the wrapper.)
 - Plan review arrived after Phase 5 (`review-1.md`); fixes landed as Phase 6. Mutations 3–5 (DELETE list unsplit, `-1` dropped, newer-guard off) all go red.
