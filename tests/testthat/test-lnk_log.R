@@ -1239,3 +1239,25 @@ test_that(".lnk_config_hash does not depend on the host's collation locale", {
   skip_if(is.na(h_en), "en_US.UTF-8 collation not available on this host")
   expect_identical(h_c, h_en)
 })
+
+test_that(".lnk_log_specs names every table .lnk_log_create_tables builds", {
+  # One list, read by the DDL and by schema_consolidate.R (link#354): a log
+  # table missing from it would be consolidated as a persist table, and its
+  # history deleted by group.
+  sql <- capture_ddl(.lnk_log_create_tables(NULL, "s"))
+  built <- sub("^CREATE TABLE IF NOT EXISTS s\\.(\\w+) .*", "\\1",
+               grep("^CREATE TABLE IF NOT EXISTS", sql, value = TRUE))
+  expect_setequal(names(.lnk_log_specs()), built)
+  expect_identical(names(.lnk_log_specs()),
+                   unname(vapply(.lnk_log_specs(), `[[`, character(1), "table")))
+})
+
+test_that("no log table's primary key includes watershed_group_code", {
+  # What lets schema_consolidate.R replace log rows by key and keep a group's
+  # earlier builds: one key value is one build, not one group (link#354).
+  for (s in .lnk_log_specs()) {
+    expect_true(length(s$pk) > 0L && all(s$pk %in% names(s$cols)),
+                info = s$table)
+    expect_false("watershed_group_code" %in% s$pk, info = s$table)
+  }
+})

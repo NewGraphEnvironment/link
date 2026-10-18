@@ -22,7 +22,9 @@ LNK_LOAD=loadall LNK_SCHEMA=fresh_default LNK_RUN_LABEL=dunc_default_328 \
 
 ## Results
 
-All 19 checks pass.
+All 19 checks pass (2026-10-12). `verify.R` is a dated record, not a regression test: after
+#246 rebuilt DUNC its `link_sha` check fails, and since #354 restored DUNC's 2026-10-12 log row
+beside #246's, its `exactly one fresh_default.log row` check fails too (2 rows).
 - **Coverage.** `fresh_default.streams` holds 63,067 DUNC segments. Each of `streams_habitat_bt` / `_wct` / `_rb`, `streams_access` and `streams_mapping_code` has one row per segment, on the full PK.
 - **Network.** Order ≥ 2 is 3,493.0 km, the same as raw FWA and `fresh.streams`. `fresh` has 26,827 segments, from its pre-#223 build in the 2026-05-13 trifecta provincial run (link 0.36.0, `data-raw/logs/202605132248_trifecta_provincial_m1.txt`).
 - **Log row.** `fresh_default.log` records config `default`, the config hash, link / fresh versions and SHAs, `fwapg_sha`, `schema_persist` and `date_end`.

@@ -31,8 +31,131 @@
 # COPY-streaming with `WHERE wsg IN (bucket)` at source eliminates the
 # over-fetch class entirely.
 #
+# The log tables are the exception to "replace the bucket" (link#354). The
+# three that carry `watershed_group_code` (`log`, `log_input`,
+# `log_recompute`) are discovered and copied like the rest, but they are
+# history: a group's earlier builds must survive a later build copied home
+# from another host. On the destination their rows are replaced by primary
+# key (`.lnk_log_specs()`), never deleted by group; step 5 still clears them
+# from the source once copied. The config-snapshot log tables carry no
+# `watershed_group_code`, so they are never discovered and never travel.
+#
 # Cross-refs: rtj#94 (general orchestrator); link#112 (first usage);
 # link#180 (additive Step 0 unblocked by this source-filter fix).
+
+#' Split discovered tables into persist tables and log (history) tables.
+#'
+#' Persist tables hold one group's current build and are replaced per group.
+#' Log tables are those `.lnk_log_specs()` names (link#354).
+#'
+#' @param wgc_tables Character. Tables discovered on both sides.
+#' @param specs The log table specs, named by table.
+#' @return `list(persist = , history = )`, each in `wgc_tables` order.
+consolidate_tables_split <- function(wgc_tables,
+                                     specs = link:::.lnk_log_specs()) {
+  is_history <- wgc_tables %in% names(specs)
+  list(persist = wgc_tables[!is_history], history = wgc_tables[is_history])
+}
+
+#' psql script that adds a log table's inbound rows without touching history.
+#'
+#' Run with `psql -1 -v ON_ERROR_STOP=1 -f`, so it is one transaction: the
+#' rows are staged in a temp table, the destination rows that share a primary
+#' key with an inbound row are deleted (the same build copied again, e.g. a
+#' consolidate re-run, or a log row whose `date_end` was set later), and the
+#' inbound rows are inserted. Every other row stays, whatever its group
+#' (link#354).
+#'
+#' @param schema,table Destination table.
+#' @param cols Character. The shared columns, in the order of `path`'s fields.
+#' @param pk Character. The table's primary key columns; all must be in `cols`.
+#' @param path Path of the COPY text-format file to load.
+#' @return Character vector, one line per statement.
+consolidate_history_sql <- function(schema, table, cols, pk, path) {
+  missing_pk <- setdiff(pk, cols)
+  if (length(missing_pk) > 0L) {
+    stop("consolidate_history_sql: primary key column(s) ",
+         paste(missing_pk, collapse = ", "), " of ", schema, ".", table,
+         " are not shared by source and destination", call. = FALSE)
+  }
+  if (grepl("'", path, fixed = TRUE)) {
+    stop("consolidate_history_sql: path contains a single quote: ", path,
+         call. = FALSE)
+  }
+  col_list <- paste(cols, collapse = ", ")
+  key_d <- paste0("d.", pk, collapse = ", ")
+  key_s <- paste0("s.", pk, collapse = ", ")
+  c(
+    sprintf("CREATE TEMP TABLE consolidate_in ON COMMIT DROP AS SELECT %s FROM %s.%s WITH NO DATA;",
+            col_list, schema, table),
+    sprintf("\\copy consolidate_in (%s) FROM '%s'", col_list, path),
+    sprintf("DELETE FROM %s.%s d USING consolidate_in s WHERE (%s) = (%s);",
+            schema, table, key_d, key_s),
+    sprintf("INSERT INTO %s.%s (%s) SELECT %s FROM consolidate_in;",
+            schema, table, col_list, col_list)
+  )
+}
+
+#' DELETE statements that clear a bucket from the destination's persist tables.
+#'
+#' Log tables are never in the list (link#354): their rows are history.
+#'
+#' @param schema Character. Destination schema.
+#' @param wgc_tables Character. Tables discovered on both sides.
+#' @param bucket Character. The source's watershed groups.
+#' @return Character vector, one DELETE per persist table.
+consolidate_dest_delete_sql <- function(schema, wgc_tables, bucket) {
+  persist <- consolidate_tables_split(wgc_tables)$persist
+  wsg_list_sql <- paste0("'", bucket, "'", collapse = ", ")
+  sprintf("DELETE FROM %s.%s WHERE watershed_group_code IN (%s)",
+          schema, persist, wsg_list_sql)
+}
+
+#' Shell command that loads one table's COPY file into the destination.
+#'
+#' A persist table is a plain `COPY FROM STDIN`. A log table writes
+#' [consolidate_history_sql()] to `sql_path` and runs it with `psql -1`, one
+#' transaction (link#354). Dropping `-1` fails closed rather than open: under
+#' autocommit `ON COMMIT DROP` removes the temp table before `\copy` runs.
+#' `-X` keeps a `~/.psqlrc` out of both.
+#'
+#' @param schema,table Destination table.
+#' @param cols Character. The shared columns, in the order of `tsv`'s fields.
+#' @param tsv Path of the COPY text-format file.
+#' @param sql_path Path the log-table script is written to.
+#' @param specs The log table specs, named by table.
+#' @return The command, a single string.
+consolidate_stage2_cmd <- function(schema, table, cols, tsv, sql_path,
+                                   specs = link:::.lnk_log_specs()) {
+  psql <- "PGHOST=localhost PGPORT=5432 PGDATABASE=fwapg PGUSER=postgres PGPASSWORD=postgres psql -X -v ON_ERROR_STOP=1"
+  if (table %in% names(specs)) {
+    writeLines(consolidate_history_sql(schema, table, cols,
+                                       specs[[table]]$pk, tsv), sql_path)
+    return(sprintf("%s -1 -f %s", psql, shQuote(sql_path)))
+  }
+  sprintf("%s -c \"COPY %s.%s (%s) FROM STDIN\" < %s", psql, schema, table,
+          paste(cols, collapse = ", "), shQuote(tsv))
+}
+
+#' Groups whose newest log row on the destination is not the source's.
+#'
+#' The persist tables carry no run id: a group's newest `log` row is what says
+#' which build they hold. Consolidating a group whose destination log is newer
+#' than the source's (or whose source has no log row) would put an older
+#' build in the persist tables under a log that names a newer one, so the
+#' source is refused (link#354). Before #354 the bucket DELETE removed the
+#' destination's log rows, which hid the mismatch.
+#'
+#' @param dest,src Data frames of `watershed_group_code` and `newest` (epoch
+#'   seconds of the group's latest `date_start`), one row per group with a
+#'   log row on that side.
+#' @return Character vector of groups, sorted.
+consolidate_newer_on_dest <- function(dest, src) {
+  m <- merge(dest, src, by = "watershed_group_code", all.x = TRUE,
+             suffixes = c("_dest", "_src"))
+  sort(m$watershed_group_code[is.na(m$newest_src) |
+                                m$newest_dest > m$newest_src])
+}
 
 #' Consolidate a Postgres schema from N remote hosts onto local fwapg.
 #'
@@ -276,14 +399,71 @@ schema_consolidate <- function(schema,
     }
 
     # 3.5. Bucket-aware destination cleanup. DELETE the bucket's WSGs
-    # from every destination table BEFORE the COPY-INSERTs so PK
-    # constraints don't fire on the inbound rows.
+    # from every destination PERSIST table BEFORE the COPY-INSERTs so PK
+    # constraints don't fire on the inbound rows. Log tables are left out:
+    # their rows are history, replaced by primary key in step 4 (link#354).
+    split_tables <- consolidate_tables_split(wgc_tables)
+    log_specs <- link:::.lnk_log_specs()
+    # Checked before anything is deleted: never overwrite a group's persist
+    # rows with a build older than the one its log already names.
+    if ("log" %in% split_tables$history) {
+      newest_sql <- sprintf(paste(
+        "SELECT watershed_group_code, extract(epoch FROM max(date_start))",
+        "AS newest FROM %s.log WHERE watershed_group_code IN (%s) GROUP BY 1"),
+        schema, wsg_list_sql)
+      dest_newest <- DBI::dbGetQuery(dest_conn, newest_sql)
+      src_newest_inner <- if (via == "docker") {
+        sprintf("docker exec %s psql -X -U %s -d %s -t -A -c \"%s\"",
+                container, pg_user, pg_db, newest_sql)
+      } else {
+        sprintf("PGHOST=localhost PGPORT=5432 PGDATABASE=%s PGUSER=%s PGPASSWORD=postgres psql -X -t -A -c \"%s\"",
+                pg_db, pg_user, newest_sql)
+      }
+      src_newest_raw <- suppressWarnings(system(sprintf("ssh '%s' '%s'",
+        src$host, gsub("'", "'\\''", src_newest_inner, fixed = TRUE)),
+        intern = TRUE))
+      # A failed query would read as "no log rows on the source" and refuse
+      # under the wrong reason; name it instead.
+      if (!is.null(attr(src_newest_raw, "status"))) {
+        log(src$host, " -> ERROR: could not read the source's log (exit ",
+            attr(src_newest_raw, "status"), ") — nothing deleted or copied")
+        results[[src$host]] <- list(ok = FALSE, stage = "source_log_query",
+                                     rc = attr(src_newest_raw, "status"))
+        next
+      }
+      src_newest_raw <- strsplit(src_newest_raw[nzchar(src_newest_raw)], "|",
+                                 fixed = TRUE)
+      src_newest <- data.frame(
+        watershed_group_code = vapply(src_newest_raw, `[`, character(1), 1L),
+        newest = as.numeric(vapply(src_newest_raw, `[`, character(1), 2L)))
+      dest_newest$newest <- as.numeric(dest_newest$newest)
+      newer <- consolidate_newer_on_dest(dest_newest, src_newest)
+      if (length(newer) > 0L) {
+        log(src$host, " -> ERROR: the destination's newest log row is not ",
+            "this source's for ", paste(newer, collapse = ", "),
+            " (newer here, or none on the source) — nothing deleted or copied")
+        results[[src$host]] <- list(ok = FALSE, stage = "dest_log_newer",
+                                     rc = -1L, groups = newer)
+        next
+      }
+    }
+    # Checked before anything is deleted: a log table whose key is not shared
+    # cannot be replaced by key, and failing at its COPY would leave this
+    # bucket's persist rows already deleted here.
+    pk_unshared <- Filter(function(t) !all(log_specs[[t]]$pk %in% shared_cols[[t]]),
+                          split_tables$history)
+    if (length(pk_unshared) > 0L) {
+      log(src$host, " -> ERROR: primary key not shared on log table(s) ",
+          paste(pk_unshared, collapse = ", "), " — nothing deleted or copied")
+      results[[src$host]] <- list(ok = FALSE, stage = "log_pk_unshared",
+                                   rc = -1L, table = pk_unshared[[1]])
+      next
+    }
     log(src$host, " -> DELETE bucket (", length(src$bucket),
-        " WSGs) from ", length(wgc_tables), " tables")
-    for (t in wgc_tables) {
-      DBI::dbExecute(dest_conn, sprintf(
-        "DELETE FROM %s.%s WHERE watershed_group_code IN (%s)",
-        schema, t, wsg_list_sql))
+        " WSGs) from ", length(split_tables$persist), " tables; ",
+        length(split_tables$history), " log tables keep their history")
+    for (del in consolidate_dest_delete_sql(schema, wgc_tables, src$bucket)) {
+      DBI::dbExecute(dest_conn, del)
     }
 
     # 3.6. Snapshot pre-restore total row count across the schema. The
@@ -358,13 +538,15 @@ schema_consolidate <- function(schema,
       }
       # Stage 2: local temp file -> destination COPY FROM STDIN. Same
       # explicit shared-column list as the source SELECT so the transfer
-      # is by-name (shape-tolerant), not positional.
-      dest_sql <- sprintf("COPY %s.%s (%s) FROM STDIN", schema, t, col_list)
-      stage2 <- sprintf(
-        "PGHOST=localhost PGPORT=5432 PGDATABASE=fwapg PGUSER=postgres PGPASSWORD=postgres psql -v ON_ERROR_STOP=1 -c \"%s\" < %s",
-        dest_sql, shQuote(tmpf))
+      # is by-name (shape-tolerant), not positional. A log table goes
+      # through a one-transaction staged replace by primary key instead, so
+      # its earlier rows for the bucket survive (link#354).
+      sqlf <- tempfile(pattern = sprintf("consolidate_%s_", t),
+                       fileext = ".sql")
+      stage2 <- consolidate_stage2_cmd(schema, t, shared_cols[[t]], tmpf, sqlf,
+                                       log_specs)
       rc_dest <- system(stage2)
-      unlink(tmpf)
+      unlink(c(tmpf, sqlf))
       if (rc_dest != 0L) {
         log(src$host, " -> WARN: dest_copy failed on table '", t,
             "' (continuing)")

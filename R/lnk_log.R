@@ -492,19 +492,23 @@ cols_log_input <- c(
 }
 
 
-#' Create the provenance tables. Idempotent.
+#' The provenance tables: name, columns and primary key.
 #'
-#' Called from [lnk_persist_init()] so a standalone init produces a complete
-#' schema, and again from the run-start path so a run never fails for want of
-#' a table.
+#' These tables are history, not per-group state, and no primary key here
+#' includes `watershed_group_code`. Of them, `data-raw/schema_consolidate.R`
+#' copies the three that carry `watershed_group_code` (`log`, `log_input`,
+#' `log_recompute`; the config-snapshot tables never leave a host). It
+#' replaces their rows on the destination by primary key and never deletes
+#' them there by watershed group, so a group copied home from another host
+#' keeps the rows of its earlier builds (link#354).
 #'
+#' Read by [.lnk_log_create_tables()] and by `schema_consolidate.R`, so the two
+#' agree on which tables are history. (`lnk_persist_init()`'s drift check keeps
+#' its own list of log tables.)
+#'
+#' @return A list of specs named by table.
 #' @noRd
-.lnk_log_create_tables <- function(conn, schema) {
-  # The log is opened BEFORE lnk_persist_init runs (the open row must predate
-  # any write, so wsg_upstream reflects the state the run started from), so on
-  # a brand-new persist schema nothing has created it yet.
-  .lnk_db_execute(conn, sprintf("CREATE SCHEMA IF NOT EXISTS %s", schema))
-
+.lnk_log_specs <- function() {
   specs <- list(
     list(table = "log", cols = cols_log, pk = "run_id"),
     list(table = "log_recompute", cols = cols_log_recompute,
@@ -519,6 +523,25 @@ cols_log_input <- c(
     list(table = "log_dimensions", cols = .lnk_cols_log_dimensions(),
          pk = c("config_hash", "species"))
   )
+  names(specs) <- vapply(specs, `[[`, character(1), "table")
+  specs
+}
+
+
+#' Create the provenance tables. Idempotent.
+#'
+#' Called from [lnk_persist_init()] so a standalone init produces a complete
+#' schema, and again from the run-start path so a run never fails for want of
+#' a table.
+#'
+#' @noRd
+.lnk_log_create_tables <- function(conn, schema) {
+  # The log is opened BEFORE lnk_persist_init runs (the open row must predate
+  # any write, so wsg_upstream reflects the state the run started from), so on
+  # a brand-new persist schema nothing has created it yet.
+  .lnk_db_execute(conn, sprintf("CREATE SCHEMA IF NOT EXISTS %s", schema))
+
+  specs <- .lnk_log_specs()
 
   for (s in specs) {
     .lnk_db_execute(conn, sprintf(

@@ -1386,10 +1386,11 @@ COMPARE_CSV="$LOG_DIR/${TS}_compare.csv"
 # leak spend, and BEFORE the recompute so a partial result is never painted
 # as complete.
 #
-# Necessary because schema_consolidate DELETEs the destination bucket
-# (schema_consolidate.R:272-276) and then COPYs (:313-316). A source that
+# Necessary because schema_consolidate DELETEs the destination bucket from
+# every persist table (its step 3.5) and then COPYs (step 4). A source that
 # produced nothing therefore removes the destination's prior rows for those
-# WSGs and still returns ok = TRUE.
+# WSGs and still returns ok = TRUE. The log tables keep their rows (#354), so
+# this check reads streams, never the log.
 echo "=== verify WSG coverage in $SCHEMA ==="
 if MISSING=$(PGPASSWORD=postgres psql -h localhost -p 5432 -U postgres -d fwapg -t -A -c "
   WITH expect(w) AS (SELECT unnest(string_to_array('$ALL_WSGS', ',')))

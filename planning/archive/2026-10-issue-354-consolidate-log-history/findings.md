@@ -1,0 +1,90 @@
+# Findings — schema_consolidate deletes the destination's log history for every group it copies (#354)
+
+## Issue context
+
+**If done:** a group's earlier builds stay in `<schema>.log` on the dispatcher after a multi-host run. **If never:** every cloud-built group keeps only its newest log row, and what it was built from before is lost (it happened to DUNC, KOTL, LARL and SLOC in #246).
+
+## Problem
+
+`schema_consolidate()` deletes the destination's rows for a source's bucket from every table with a `watershed_group_code` column before it copies (`data-raw/schema_consolidate.R:279-286`). `<schema>.log` and `<schema>.log_recompute` have that column, so a group consolidated from a cypher loses every earlier run's log row on the dispatcher.
+
+Measured 2026-10-17 in `fresh_default`: DUNC, KOTL, LARL and SLOC each hold one `log` row, from run `20261017_004619-3f4c713b`. Before that run they held the August (KOTL, LARL, SLOC) and 2026-10-12 (DUNC) rows. PINE and PARS also hold one row each; whether their earlier rows went the same way depends on which host built them in that run, which was not checked.
+
+The persist tables are rightly replaced per group. The log tables are history, and losing them means the record of what a group was built from before is gone.
+
+## Proposal
+
+- Leave the log tables (`log`, `log_recompute`, `log_input` and the other `log_*` tables keyed by run) out of the destination DELETE, and copy their rows additively; `run_id` is already a unique key.
+- Check the same for `lnk_pipeline_persist()` on the dispatcher path.
+
+
+## Exploration (plan mode, 2026-10-17)
+
+`schema_consolidate()` deletes the destination's bucket rows from every BASE TABLE with a
+`watershed_group_code` column before it COPYs (`data-raw/schema_consolidate.R:279-286`).
+`log`, `log_recompute` and `log_input` carry that column (so consolidate discovers them), so
+each cloud-built group keeps only the source's rows and loses the dispatcher's history.
+
+Measured during exploration (2026-10-17, local fwapg):
+- `fresh_default.log`: all 241 groups hold exactly 1 row. `fresh.log` holds 2–4 rows for 20
+  groups, so the readers (`lnk_log_read()` DISTINCT ON newest, `study_area_verify.sql` keyed
+  on `run_uid`) already cope with history.
+- PKs: persist tables all include `watershed_group_code`; the log tables do not
+  (`log` run_id, `log_input` (run_id, table_name), `log_recompute` recompute_id).
+- `/tmp/fresh_default_pre_consolidate_202610162242.dump` still holds the lost rows: `log` for
+  DUNC (2026-10-12), KOTL/LARL/SLOC (2026-08-27), **PINE (2026-08-06)** — so PINE lost one too
+  (built on cypher-job2); PARS had none. 60 `log_input` rows, 0 `log_recompute`.
+- `lnk_pipeline_persist()` (dispatcher path) DELETEs only from named persist tables
+  (streams, habitat, barriers, barrier_overrides, streams_access, streams_mapping_code), never
+  a log table. Issue's second bullet: no change, pin it with a test.
+- RUNBOOK §6c "Known exposure" (a second consolidate wipes `log_recompute`) is this bug.
+
+Operator decision (plan gate): restore the lost rows from the dump.
+
+## Primary key, not a run key (Phase 2, 2026-10-17)
+
+The plan named a `run_key` (run_id / recompute_id) to replace a build's rows wholly. Replacing
+by the full primary key instead deletes only destination rows that an inbound row rewrites, so
+a destination `log_input` row the source no longer sends (e.g. one with a NULL group code,
+which the bucket SELECT cannot see) is never lost. Measured: 0 NULL-group `log_input` rows in
+`fresh_default` (of 2,892) and `fresh` (of 715), so the two rules agree on today's data; the
+PK rule needs no new field, since `.lnk_log_specs()` already carries `pk`.
+
+## Restore-the-bug (Phase 3)
+
+Run on copies of the test and script under the scratchpad:
+- DELETE by group (`d.watershed_group_code = s.watershed_group_code`): 2 unit + 3 live
+  expectations fail.
+- Every table treated as persist (`is_history` all FALSE): 3 split expectations fail.
+
+## Code-check: how the loop ended (enumeration, 2026-10-17)
+
+Round 1: one doc error (§8d / host banners said a group the host no longer holds is lost; the
+guard refuses it), fixed with a status check on the source log query. Round 2: clean. Round 3:
+two wording findings, one **inside round 1's fix** (the "is refused" sentence lacked the
+condition that the dispatcher holds a log row for the group; 59 of `fresh`'s 98 groups have
+persist rows and no log row).
+
+Mechanism (round 3): prose that restates the guard or the history rule drops a condition the
+code has. Three conditions can be dropped: (a) only the three log tables with
+`watershed_group_code` are copied, the config-snapshot ones never travel; (b) "never deleted by
+group" holds on the destination, step 5 still clears the source; (c) the refusal needs a
+destination log row and a `log` table on both sides.
+
+Enumeration: every added line on the branch matching
+`refus|never delet|not .*delet|history|survive|by primary key|discovered|copied like|travel|keeps? (its|their)`
+(47 lines, plus CLAUDE.md's new status sentence). Seven dropped a condition and were fixed:
+`R/lnk_log.R` specs doc (a, b); consolidate header (a, b); RUNBOOK §6b (b); RUNBOOK §8d (c, and
+now names the unprotected pre-log case); `data-raw/README.md` (a, b, c); `study_area_hosts.sh`
+comment and banner (c); CLAUDE.md (a, b). The rest restate the destination DELETE, a test, or a
+helper's own scope, and hold as written.
+
+Accepted: over Tailscale SSH to a Mac, ssh exits 0 on a failed remote command, so the
+`source_log_query` stage could read as `dest_log_newer` there. Sources are Linux droplets, and
+the source is refused either way.
+
+## Errors Encountered
+
+| Error | Resolution |
+|-------|------------|
+| `Already disconnected` warning in the live test | `skip_if_no_db()` defers its own disconnect; dropped the test's `on.exit` |
