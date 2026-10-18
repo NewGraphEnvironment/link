@@ -41,7 +41,24 @@ Measured during exploration (2026-10-17, local fwapg):
 
 Operator decision (plan gate): restore the lost rows from the dump.
 
+## Primary key, not a run key (Phase 2, 2026-10-17)
+
+The plan named a `run_key` (run_id / recompute_id) to replace a build's rows wholly. Replacing
+by the full primary key instead deletes only destination rows that an inbound row rewrites, so
+a destination `log_input` row the source no longer sends (e.g. one with a NULL group code,
+which the bucket SELECT cannot see) is never lost. Measured: 0 NULL-group `log_input` rows in
+`fresh_default` (of 2,892) and `fresh` (of 715), so the two rules agree on today's data; the
+PK rule needs no new field, since `.lnk_log_specs()` already carries `pk`.
+
+## Restore-the-bug (Phase 3)
+
+Run on copies of the test and script under the scratchpad:
+- DELETE by group (`d.watershed_group_code = s.watershed_group_code`): 2 unit + 3 live
+  expectations fail.
+- Every table treated as persist (`is_history` all FALSE): 3 split expectations fail.
+
 ## Errors Encountered
 
 | Error | Resolution |
 |-------|------------|
+| `Already disconnected` warning in the live test | `skip_if_no_db()` defers its own disconnect; dropped the test's `on.exit` |
