@@ -28,9 +28,9 @@
   `study_area_run.sh:1389-1392` line refs)
 
 ## Phase 4: Docs
-- [ ] RUNBOOK §6c: replace "Known exposure" with the history rule; §6c note at ~507 and §8d
+- [x] RUNBOOK §6c: replace "Known exposure" with the history rule; §6c note at ~507 and §8d
   recovery passage (~1268) say the log history survives a re-consolidate
-- [ ] NEWS entry (version bump left to `/gh-pr-merge`)
+- [ ] NEWS entry — deferred to `/gh-pr-merge`: in this repo NEWS is written by the release commit (`bf1521d3`), not on the branch
 
 ## Phase 5: Restore the lost rows (operator: yes)
 - [ ] Extract `log` + `log_input` rows for DUNC, KOTL, LARL, SLOC, PINE from the 22:42 dump

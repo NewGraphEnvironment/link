@@ -504,8 +504,13 @@ EXCEPT SELECT watershed_group_code FROM <persist>.log;
     persist schema). This table is what is loaded here, read by runs into
     every schema, and `state_clean.sh` drops `fresh` but not `provenance`, so
     loader rows that cannot be re-created (link#270's FWA rows) survive it.
-- `log` and `log_input` carry `watershed_group_code` so `schema_consolidate.R`
-  auto-discovers them; `log_parameters_fresh` / `log_parameters_habitat_thresholds` /
+- `log`, `log_input` and `log_recompute` carry `watershed_group_code` so
+  `schema_consolidate.R` auto-discovers them. They are history, not per-group
+  state: consolidate replaces their rows by primary key (one key is one build)
+  and never deletes them by group, so a group copied home from a cloud host
+  keeps its earlier builds' rows (link#354; before it, every cloud-built group
+  kept only its newest row). The set is `.lnk_log_specs()`, read by the DDL
+  and by consolidate. `log_parameters_fresh` / `log_parameters_habitat_thresholds` /
   `log_dimensions` deliberately
   do not (they key on `config_hash`), so **they do not yet travel between
   hosts** — follow-up PR.
@@ -586,10 +591,10 @@ and their rows would be indistinguishable from a real post-consolidate
 recompute — so the verify script's model-vs-recompute check would pass on
 benchmark noise.
 
-**Known exposure:** `schema_consolidate.R` DELETEs its bucket from every
-discovered table before COPYing. `log_recompute` is populated *after*
-consolidate, so a second or resumed consolidate over the same bucket will wipe
-those rows. Re-run the recompute if that happens.
+**A second or resumed consolidate keeps these rows.** `log_recompute` is
+populated *after* consolidate, and consolidate leaves the log tables out of its
+bucket DELETE: their rows are replaced by primary key, in one transaction per
+table (link#354). Before #354 a re-consolidate over the same bucket wiped them.
 
 ### The bcfp reference pin, tunnel-free
 
@@ -1194,10 +1199,11 @@ what stops `=== READY (install stage only; ...)` satisfying a full-prep check.
 
 ### Two post-conditions, and why they are not optional
 
-`schema_consolidate` DELETEs the destination bucket
-(`schema_consolidate.R:272-276`) and *then* COPYs (`:313-316`). A host that
-produced nothing therefore does not merely fail to add rows — it **removes** the
-rows already there for those WSGs and returns `ok = TRUE`. So:
+`schema_consolidate` DELETEs the destination bucket from every persist table
+(its step 3.5) and *then* COPYs (step 4). A host that produced nothing
+therefore does not merely fail to add rows — it **removes** the rows already
+there for those WSGs and returns `ok = TRUE`. (The log tables are left out of
+that DELETE, so a group's log history survives it; link#354.) So:
 
 - before consolidate, every host must account for its whole bucket, read from
   its **database**: `<schema>.log` rows for the run_uid with `date_end` set,
@@ -1268,7 +1274,7 @@ then the finished work still on the host. `unsettled` means wait until
 nothing runs there and re-measure. `schema_consolidate` deletes its bucket on the dispatcher before it
 copies, so consolidating a group the host no longer holds (already
 consolidated, then deleted from the source), or holds only in part, loses the
-dispatcher's copy. Where it says `no`, find out what is left first. If the
+dispatcher's copy of its persist rows. Its log rows survive (link#354). Where it says `no`, find out what is left first. If the
 run's recompute ran, it ran without the kept groups: recompute each one and
 each run group upstream of it (`wsg_recompute_one.R`). If it did not run
 (consolidate failed, coverage FATAL), recompute every group of the run; the
