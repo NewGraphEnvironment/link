@@ -33,13 +33,13 @@
 - [ ] NEWS entry — deferred to `/gh-pr-merge`: in this repo NEWS is written by the release commit (`bf1521d3`), not on the branch
 
 ## Phase 5: Restore the lost rows (operator: yes)
-- [ ] Extract `log` + `log_input` rows for DUNC, KOTL, LARL, SLOC, PINE from the 22:42 dump
+- [x] Extract `log` + `log_input` rows for DUNC, KOTL, LARL, SLOC, PINE from the 22:42 dump
   into a scratch schema (`pg_restore --data-only -t` into a copy), INSERT … ON CONFLICT DO
   NOTHING into `fresh_default`; counts before/after recorded in
   `data-raw/logs/consolidate_history_354/`
-- [ ] Re-run `study_area_verify.sql -v run_uid=20261017_004619-3f4c713b -v expected_n=241`
+- [x] Re-run `study_area_verify.sql -v run_uid=20261017_004619-3f4c713b -v expected_n=241`
   and `verify_extra.sql`; both pass; `lnk_log_read()` still returns this run's row per group
-- [ ] CLAUDE.md #246 status: the four (five, with PINE) groups' earlier log rows restored
+- [x] CLAUDE.md #246 status: the four (five, with PINE) groups' earlier log rows restored
 
 ## Validation
 
