@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.66.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.66.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,16 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.66.2" id="link-0662">link 0.66.2<a class="anchor" aria-label="anchor" href="#link-0662"></a></h2>
+<p><strong><code>study_area_run.sh</code> counts each host’s finished groups from its database, and never burns a cloud host that may still hold unconsolidated work</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/347" class="external-link">#347</a>).</p>
+<ul><li>
+<strong>Finished is a <code>&lt;schema&gt;.log</code> row for the run_uid with <code>date_end</code> set</strong>, read over consolidate’s own route and framed by sentinels, so a host that does not answer is unknown, never “nothing”. The log’s <code>done</code> markers, now matched anywhere on a line, only add to it. In <a href="https://github.com/NewGraphEnvironment/link/issues/246" class="external-link">#246</a> a marker pushed mid-line by an R warning hid 18 finished groups.</li>
+<li>
+<strong>A cypher is held from dispatch, on every exit path including abort.</strong> It is released only when its session ended 0, consolidate is not running, and its database holds no finished group after consolidate. What a kept host still holds is split into finished, partial and unknown groups. Kept hosts are written to <code>&lt;TS&gt;_kept_hosts.tsv</code> along with the commands to recover and burn each, and the run exits non-zero. Pre-flight fails on a droplet left up in this run’s workspaces. The rules are in RUNBOOK §8d, “Which host may be burned”; the host-accounting code is in <code>data-raw/study_area_hosts.sh</code>.</li>
+<li>
+<strong><code>cabd_blkey_xref.csv</code> ends with a newline in all four bundles</strong>, so no group’s log carries the <code>incomplete final line</code> warning. Each bundle’s <code>config_hash</code> moves; that is provenance, not a change in behaviour.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.66.1" id="link-0661">link 0.66.1<a class="anchor" aria-label="anchor" href="#link-0661"></a></h2>
 <p><strong><code>fresh_default</code> is one provenanced <code>default</code> build of all 241 watershed groups <code>default</code> can model, and two pipeline bugs that failed groups in that run are fixed</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/246" class="external-link">#246</a>).</p>
