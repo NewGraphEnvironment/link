@@ -49,6 +49,6 @@
 ## Validation
 
 - [x] Tests pass — local `devtools::test()` only (data-raw is build-ignored and there is no R-CMD-check workflow): 3147 pass; 5 fail, all pre-existing (3 need the `:63333` tunnel, 2 are the golden ADMS dams pin 8 → 7 in CLAUDE.md). Touched files re-run after review fixes: 0 fail
-- [ ] `/code-check` clean (each commit, or once over the branch with `/code-check branch`)
-- [ ] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion
+- [x] `/code-check branch` — 3 rounds (1 doc finding; clean; 2 wording findings, one inside round 1's fix), ended by enumerating the 47 restating lines (findings.md)
+- [x] PWF checkboxes match landed work
+- [x] `/planning-archive` on completion
