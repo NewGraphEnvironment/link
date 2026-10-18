@@ -9,7 +9,7 @@ type: software
 license: MIT
 title: 'link: Develop, Test and Communicate Intrinsic Habitat and Connectivity Models
   for the BC Freshwater Atlas Stream Network'
-version: 0.66.1
+version: 0.66.2
 abstract: 'Tools for developing, testing and communicating intrinsic habitat models
   on stream networks: where each fish species could spawn and rear, and which of that
   habitat fish can reach. Current models rate habitat from stream gradient, channel
@@ -33,8 +33,8 @@ preferred-citation:
     email: al@newgraphenvironment.com
     orcid: https://orcid.org/0000-0002-3495-2128
     affiliation: New Graph Environment Ltd.
-  version: 0.66.1
-  date-released: '2026-10-17'
+  version: 0.66.2
+  date-released: '2026-10-18'
   url: https://newgraphenvironment.github.io/link/
   repository-code: https://github.com/NewGraphEnvironment/link
   license: MIT
@@ -43,7 +43,7 @@ preferred-citation:
     name: New Graph Environment Ltd.
 repository-code: https://github.com/NewGraphEnvironment/link
 url: https://newgraphenvironment.github.io/link/
-date-released: '2026-10-17'
+date-released: '2026-10-18'
 contact:
 - family-names: Irvine
   given-names: Allan
