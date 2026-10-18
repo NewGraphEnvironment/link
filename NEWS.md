@@ -1,3 +1,11 @@
+# link 0.66.2
+
+**`study_area_run.sh` counts each host's finished groups from its database, and never burns a cloud host that may still hold unconsolidated work** ([#347](https://github.com/NewGraphEnvironment/link/issues/347)).
+
+- **Finished is a `<schema>.log` row for the run_uid with `date_end` set**, read over consolidate's own route and framed by sentinels, so a host that does not answer is unknown, never "nothing". The log's `done` markers, now matched anywhere on a line, only add to it. In #246 a marker pushed mid-line by an R warning hid 18 finished groups.
+- **A cypher is held from dispatch, on every exit path including abort.** It is released only when its session ended 0, consolidate is not running, and its database holds no finished group after consolidate. What a kept host still holds is split into finished, partial and unknown groups. Kept hosts are written to `<TS>_kept_hosts.tsv` along with the commands to recover and burn each, and the run exits non-zero. Pre-flight fails on a droplet left up in this run's workspaces. The rules are in RUNBOOK §8d, "Which host may be burned"; the host-accounting code is in `data-raw/study_area_hosts.sh`.
+- **`cabd_blkey_xref.csv` ends with a newline in all four bundles**, so no group's log carries the `incomplete final line` warning. Each bundle's `config_hash` moves; that is provenance, not a change in behaviour.
+
 # link 0.66.1
 
 **`fresh_default` is one provenanced `default` build of all 241 watershed groups `default` can model, and two pipeline bugs that failed groups in that run are fixed** ([#246](https://github.com/NewGraphEnvironment/link/issues/246)).
