@@ -1,3 +1,11 @@
+# link 0.66.3
+
+**`schema_consolidate.R` keeps the log history of every group it copies, and `fresh_default` has the rows #246 lost back** ([#354](https://github.com/NewGraphEnvironment/link/issues/354)).
+
+- **The bucket DELETE reaches persist tables only.** `log`, `log_input` and `log_recompute` are loaded in one transaction per table, replacing a row only where an inbound row has its primary key, so a group's earlier builds survive a build copied home from a cloud host, and a re-consolidate changes nothing. The log tables are named once, in `.lnk_log_specs()`.
+- **A source is refused before anything is deleted** when a group has a log row on the dispatcher and the source's newest is older or missing (`dest_log_newer`), when the source's log cannot be read, or when a log table's key is not shared. The persist tables carry no run id, so a group's newest log row is what names the build they hold. A group with persist rows and no log row is not covered (RUNBOOK §8d).
+- **Restored:** the earlier `log` rows of DUNC, KOTL, LARL, SLOC and PINE, and their 60 `log_input` rows, from the run's pre-consolidate dump. `study_area_verify.sql` and `verify_extra.sql` still pass at 241 (`data-raw/logs/consolidate_history_354/`).
+
 # link 0.66.2
 
 **`study_area_run.sh` counts each host's finished groups from its database, and never burns a cloud host that may still hold unconsolidated work** ([#347](https://github.com/NewGraphEnvironment/link/issues/347)).
