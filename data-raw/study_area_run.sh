@@ -668,7 +668,7 @@ if [ "$RECOMPUTE_ONLY" = "1" ]; then
   fi
   # The run's run_wsgs.tsv and its log rows, or --wsgs= (link#358).
   run_expected_recompute_only "$WSGS_ARG" || exit 1
-  run_finish "$RO_EXPECT" ""
+  run_finish "$RO_EXPECT" "" "$RO_EXCLUDED"
   exit 0
 fi
 
@@ -1529,6 +1529,9 @@ run_expected_from_hosts
 # A host that did not account for its whole bucket. Coverage can only add to
 # it: a group with no rows from this run sets it too (link#348).
 RUN_INCOMPLETE="$complete_fail"
+# A source consolidate refused or failed on is an incomplete run whatever the
+# coverage classes say (link#358).
+[ -z "${CONS_FAILED:-}" ] || RUN_INCOMPLETE=1
 
 # Coverage, recompute over the groups this run built, compare, report. Exits
 # non-zero on an incomplete run. Bare call: see study_area_finish.sh.

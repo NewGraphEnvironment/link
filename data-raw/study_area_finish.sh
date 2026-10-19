@@ -46,19 +46,23 @@ declare -A CY_BUCKET_DONE
 #                markers and each cypher's consolidated bucket (database ∪
 #                log done), which is what consolidate took. They only add. A
 #                cypher whose consolidate failed (CY_CONS_FAIL) adds nothing:
-#                consolidate did not take its bucket (link#358).
+#                consolidate did not take its bucket (link#358). It still
+#                finished those groups, so they are never RUN_SKIP: they stay
+#                expected, and coverage classes them not_consolidated.
 run_expected_from_hosts() {
-  local ws all skip
+  local ws all skip finished
   all="${DISP_BUCKET:-}"
   skip="${ACC_SKIP[dispatcher]:-}"
   RUN_SIGNALS=$(.hosts_union "${ACC_FINISHED[dispatcher]:-}" "${ACC_DONE_LOG[dispatcher]:-}")
+  finished="$RUN_SIGNALS"
   for ws in "${CY_WS_ARR[@]}"; do
     all=$(.hosts_union "$all" "${CY_BUCKET[$ws]:-}")
     skip=$(.hosts_union "$skip" "${ACC_SKIP[$ws]:-}")
+    finished=$(.hosts_union "$finished" "${CY_BUCKET_DONE[$ws]:-}")
     [ -n "${CY_CONS_FAIL[$ws]:-}" ] || \
       RUN_SIGNALS=$(.hosts_union "$RUN_SIGNALS" "${CY_BUCKET_DONE[$ws]:-}")
   done
-  RUN_SKIP=$(.hosts_minus "$skip" "$RUN_SIGNALS")
+  RUN_SKIP=$(.hosts_minus "$skip" "$finished")
   RUN_EXPECT=$(.hosts_minus "$all" "$RUN_SKIP")
   [ -z "$RUN_SKIP" ] || \
     echo "  WARN: SKIPped by a host (no modelled species) though its bucket expected them; not expected to have rows: $RUN_SKIP"
@@ -259,11 +263,18 @@ run_expected_from_log() {
 # prefix is its TS) together with every group holding a log row for the
 # run_uid, so a group that failed on a cloud host, or before its first log
 # row, is still named (link#358). A run from before #358 has no such file and
-# falls back to the log alone. Returns 1, saying why, when the log cannot be
-# read, when the file is not this run's (fatal only without --wsgs=), or when
-# the set is empty. Prints only; never exits.
+# falls back to the log alone. Without --wsgs=, RO_EXCLUDED holds the groups
+# the run's own <TS>_coverage.tsv classed not_consolidated: their host's
+# consolidate failed, possibly after the DELETE, so the dispatcher may hold
+# part of a bucket under a closed log row, and nothing here can tell whether
+# the kept host was settled since. They stay out of the recompute until
+# --wsgs= names them, which is the operator's word that they were. Returns 1,
+# saying why, when the log cannot be read, when the file is not this run's
+# (fatal only without --wsgs=), or when the set is empty. Prints only; never
+# exits.
 run_expected_recompute_only() {
-  local wsgs="${1:-}" logged file from_file="" rc=0 left
+  local wsgs="${1:-}" logged file from_file="" rc=0 left cov
+  RO_EXCLUDED=""
   logged=$(run_expected_from_log) || { echo "FATAL: could not read $SCHEMA.log"; return 1; }
   file="$LOG_DIR/${RUN_UID%-*}_run_wsgs.tsv"
   from_file=$(run_expected_from_file "$file") || rc=$?
@@ -299,16 +310,27 @@ run_expected_recompute_only() {
   [ -n "$RO_EXPECT" ] || {
     echo "FATAL: no group recorded for run_uid $RUN_UID, and no --wsgs=: nothing to recompute"
     return 1; }
+  cov="$LOG_DIR/${RUN_UID%-*}_coverage.tsv"
+  if [ -z "$wsgs" ] && [ -f "$cov" ]; then
+    RO_EXCLUDED=$(awk -F'\t' '$2 == "not_consolidated" && $1 ~ /^[A-Z][A-Z][A-Z][A-Z]$/ { print $1 }' "$cov" \
+      | .hosts_csv) || { echo "FATAL: could not read $cov"; return 1; }
+    RO_EXCLUDED=$(.hosts_inter "$RO_EXCLUDED" "$RO_EXPECT")
+    [ -z "$RO_EXCLUDED" ] || {
+      echo "  WARN: the run could not consolidate these from their host; kept out of the recompute"
+      echo "        until settled per its kept_hosts.tsv and named with --wsgs=: $RO_EXCLUDED"; }
+  fi
   return 0
 }
 
 # run_finish <expected csv> [signals csv] [excluded csv]: coverage, recompute,
 # compare and the final report. The excluded groups are a failed consolidate
-# source's (consolidate_outcomes): never recomputed, named as not consolidated. EXITS the shell on an incomplete or failed run, as the driver
+# source's (consolidate_outcomes): never recomputed, named as not consolidated,
+# and part of the run's groups even when the host finished one outside its
+# bucket. EXITS the shell on an incomplete or failed run, as the driver
 # always has, and returns 0 only for a complete one. Call it bare: under
 # `set -e`, a function called in an `if` or `||` runs with errexit off.
 run_finish() {
-  RUN_WSGS=$(.hosts_union "${1:-}")
+  RUN_WSGS=$(.hosts_union "${1:-}" "${3:-}")
   local signals="${2:-}" excluded="${3:-}" w
   COMPARE_CSV="$LOG_DIR/${TS}_compare.csv"
   COMPARE_FAIL=0

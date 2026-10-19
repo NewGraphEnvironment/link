@@ -18,3 +18,11 @@
   names the failed stage. Driver carries on only when every source has a recorded outcome and one
   failed; otherwise the old exit. Added a test that runs the driver's own R writer against the reader.
 - Phase 4: RUNBOOK §8d (five classes, the run_wsgs file, consolidate carry-on); mutation table in findings; structural driver-wiring test.
+- Code-check round 1 (`review-round1.md`): 2 fragile findings, both fixed. (1) a failed host's finished
+  group SKIPped elsewhere left the expected set (reproduced); `RUN_SKIP` now subtracts every finished
+  group, and `CONS_FAILED` sets `RUN_INCOMPLETE`. (2) a bare `--recompute-only` now keeps the run's
+  `not_consolidated` groups out until `--wsgs=` names them. Also: excluded groups join `RUN_WSGS`.
+  Each fix mutation-checked. Five new lints fixed (test file back to main's 2).
+- Full suite: 3293 pass, 3 fail, 0 skip. Failures pre-existing and untouched by the branch: two
+  `lnk_wsg_resolve` closure tests need the :63333 tunnel (down), and the golden ADMS dams pin
+  (CLAUDE.md: `cabd.dams` gives 7, the test pins 8).

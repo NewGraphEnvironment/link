@@ -1299,7 +1299,11 @@ recompute whatever the dispatcher's log says, because a failure after the
 DELETE can leave log rows copied and `streams` not. The other hosts' groups are
 recomputed and compared, and the run exits non-zero. Only when the outcomes are
 missing for some source (R died) does the driver exit right after consolidate,
-as before, with the `--recompute-only` recovery printed.
+as before, with the `--recompute-only` recovery printed. A bare
+`--recompute-only` reads that run's `<TS>_coverage.tsv` and keeps its
+`not_consolidated` groups out of the recompute, because nothing on the
+dispatcher says whether the kept host was settled since; `--wsgs=` naming them
+is the operator's word that it was.
 
 Two things it does not do. It takes no lock, so do not run it while another
 driver on the same schema can resume: a driver paused with `kill -STOP`, as in
