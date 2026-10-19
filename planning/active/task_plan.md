@@ -20,9 +20,9 @@ Design: `/Users/airvine/.claude/plans/quiet-hopping-umbrella.md` (approved 2026-
 - [x] Test: the driver refuses `--run-uid` alone, `--recompute-only` alone, a malformed uid, and `--recompute-only --focal=…` (all exit before any Rscript)
 
 ## Phase 2: `data-raw/study_area_finish.sh` + driver wiring
-- [ ] Write the lib (`run_coverage`, `run_expected_from_log`, `run_finish`) and move the tail into `run_finish` with the changes above
-- [ ] Driver: new flags and validation, move the pool function block above the pre-flight, add the `--recompute-only` branch, normal path calls `run_finish`; update the header usage and "Post-conditions" comment
-- [ ] `bash -n` both scripts; Phase 1 tests pass; `pool_probe.sh data-raw/study_area_run.sh` still passes (the extraction still works)
+- [x] Write the lib (`run_coverage`, `run_expected_from_log`, `run_finish`) and move the tail into `run_finish` with the changes above
+- [x] Driver: new flags and validation, move the pool function block above the pre-flight, add the `--recompute-only` branch, normal path calls `run_finish`; update the header usage and "Post-conditions" comment
+- [x] `bash -n` both scripts; Phase 1 tests pass; `pool_probe.sh data-raw/study_area_run.sh` still passes (the extraction still works)
 
 ## Phase 3: Docs
 - [ ] RUNBOOK §8d: the coverage classes, recompute over this run's finished groups, `--recompute-only --run-uid` recovery (replace the "coverage FATAL" wording at ~`:1291`)

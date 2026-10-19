@@ -52,7 +52,9 @@
 #
 # Post-conditions: every host must account for its whole bucket before
 # consolidate (read from its database, not its log), and every run WSG must
-# have rows in the persist afterwards.
+# have rows from a build this run finished in the persist afterwards. A group
+# that does not is named and the run exits non-zero, but the recompute and the
+# compare still run over the rest (link#348; data-raw/study_area_finish.sh).
 #
 # Extra flags:
 #   --preflight-only        run the local gates and exit (no spend)
@@ -77,6 +79,15 @@
 #   --preflight-note="why"  downgrade ONLY vintage + parity to warnings,
 #                           and only with a written reason. There is no
 #                           global bypass on purpose.
+#   --recompute-only --run-uid=<uid> [--wsgs=A,B]
+#                           finish an existing run on the dispatcher: coverage
+#                           for that run_uid, the recompute over every group
+#                           with rows from a finished build of it, the compare
+#                           and the report. No droplet, no pre-flight. For a
+#                           run whose missing groups were re-modelled by hand
+#                           under the same run_uid (link#348). Without --wsgs=
+#                           the expected groups are those with a log row for
+#                           the run_uid on the dispatcher.
 #
 # Run identity (link#262). Three levels, and only the middle one is new:
 #
@@ -132,6 +143,14 @@ RECOMPUTE_JOBS=4
 # at the recompute, so `set -u` cannot bite on any earlier exit path.
 RECOMPUTE_FAIL=0
 RECOMPUTE_FAIL_STAGE=""
+# Set when a run group has no rows from a build this run finished, or a host
+# did not account for its bucket (link#348). Read by the final report.
+RUN_INCOMPLETE=0
+# --recompute-only finishes an EXISTING run: its run_uid, and optionally the
+# run's groups (link#348).
+RECOMPUTE_ONLY=0
+RUN_UID_ARG=""
+WSGS_ARG=""
 FOCAL_ARR=()
 for arg in "$@"; do
   case "$arg" in
@@ -144,6 +163,15 @@ for arg in "$@"; do
     --preflight-only)  PREFLIGHT_ONLY=1 ;;
     --refresh-primitives) REFRESH_PRIMITIVES=1 ;;
     --auto-install)    AUTO_INSTALL=1 ;;
+    --recompute-only)  RECOMPUTE_ONLY=1 ;;
+    # Interpolated into SQL (the coverage and log queries), so the format the
+    # driver mints is the only one accepted.
+    --run-uid=*)       RUN_UID_ARG="${arg#--run-uid=}"
+                       [[ "$RUN_UID_ARG" =~ ^[0-9]{8}_[0-9]{6}-[0-9a-f]{8}$ ]] \
+                         || { echo "FATAL: --run-uid= must look like 20261017_004619-3f4c713b (got '$RUN_UID_ARG')" >&2; exit 1; } ;;
+    --wsgs=*)          WSGS_ARG="${arg#--wsgs=}"
+                       [[ "$WSGS_ARG" =~ ^[A-Z]{4}(,[A-Z]{4})*$ ]] \
+                         || { echo "FATAL: --wsgs= takes comma-separated four-letter group codes (got '$WSGS_ARG')" >&2; exit 1; } ;;
     --prep-ssh-wait=*) PREP_SSH_WAIT_S="${arg#--prep-ssh-wait=}"
                        case "$PREP_SSH_WAIT_S" in
                          ''|*[!0-9]*) echo "FATAL: --prep-ssh-wait= needs a positive integer (got '$PREP_SSH_WAIT_S')" >&2; exit 1 ;;
@@ -203,6 +231,25 @@ for arg in "$@"; do
   esac
 done
 
+# --recompute-only finishes one existing run on the dispatcher, so it needs
+# that run's uid and takes nothing that dispatches. --run-uid and --wsgs
+# without it would be silently ignored, so they are refused instead.
+if [ "$RECOMPUTE_ONLY" = "1" ]; then
+  [ -n "$RUN_UID_ARG" ] || {
+    echo "FATAL: --recompute-only needs --run-uid=<uid> of the run to finish" >&2; exit 1; }
+  if [ "${#FOCAL_ARR[@]}" -gt 0 ] || [ -n "$CY_WS" ] || [ "$PREFLIGHT_ONLY" = "1" ] \
+     || [ "$REFRESH_PRIMITIVES" = "1" ] || [ "$AUTO_INSTALL" = "1" ]; then
+    echo "FATAL: --recompute-only takes no --focal, --cy-workspaces, --preflight-only," >&2
+    echo "  --refresh-primitives or --auto-install: it dispatches nothing." >&2
+    exit 1
+  fi
+else
+  [ -z "$RUN_UID_ARG" ] || {
+    echo "FATAL: --run-uid= is for --recompute-only; a run mints its own" >&2; exit 1; }
+  [ -z "$WSGS_ARG" ] || {
+    echo "FATAL: --wsgs= is for --recompute-only; a run's groups come from --focal" >&2; exit 1; }
+fi
+
 # --config and --schema are interpolated into the cypher ssh command strings
 # inside '...', like --run-label: refuse anything that could close the quote
 # (link#246 code-check).
@@ -215,7 +262,7 @@ done
 # --preflight-only needs no --focal set: it exits before the buckets are
 # resolved, and demanding them would make the cheap dry check as awkward as
 # the real thing.
-if [ "$PREFLIGHT_ONLY" = "0" ]; then
+if [ "$PREFLIGHT_ONLY" = "0" ] && [ "$RECOMPUTE_ONLY" = "0" ]; then
   IFS=',' read -ra CY_WS_ARR <<< "$CY_WS"
   [ -n "$CY_WS" ] || CY_WS_ARR=()
   N_CY=${#CY_WS_ARR[@]}
@@ -327,7 +374,13 @@ fi
 #
 # $RANDOM is fine for that job (collision avoidance within a second, not
 # secrecy). Padded to a fixed width so the ids sort and eyeball consistently.
-RUN_UID="${TS}-$(printf '%04x%04x' "$RANDOM" "$RANDOM")"
+# --recompute-only takes the uid of the run it finishes, so its recompute rows
+# land under that run (link#348).
+if [ "$RECOMPUTE_ONLY" = "1" ]; then
+  RUN_UID="$RUN_UID_ARG"
+else
+  RUN_UID="${TS}-$(printf '%04x%04x' "$RANDOM" "$RANDOM")"
+fi
 export LNK_RUN_UID="$RUN_UID"
 export LNK_RUN_LABEL="$RUN_LABEL"
 
@@ -342,6 +395,7 @@ echo "  log dir:      $LOG_DIR"
 echo "  vintage max:  ${VINTAGE_MAX_DAYS} d"
 echo "  recompute -j: $RECOMPUTE_JOBS"
 [ "$PREFLIGHT_ONLY" = "0" ] || echo "  MODE:         --preflight-only (no spend, no writes)"
+[ "$RECOMPUTE_ONLY" = "0" ] || echo "  MODE:         --recompute-only (finish run_uid $RUN_UID; no spend)"
 [ -z "$PREFLIGHT_NOTE" ] || echo "  OVERRIDE:     vintage+parity downgraded to warnings — $PREFLIGHT_NOTE"
 
 # --- trap: burn cyphers on exit (safety net; explicit burn after consolidate) ---
@@ -352,6 +406,9 @@ echo "  recompute -j: $RECOMPUTE_JOBS"
 # and is listed in ${TS}_kept_hosts.tsv with the command that burns it.
 # shellcheck source=study_area_hosts.sh
 source "$REPO_ROOT/data-raw/study_area_hosts.sh"
+# Coverage, recompute, compare and the final report (link#348).
+# shellcheck source=study_area_finish.sh
+source "$REPO_ROOT/data-raw/study_area_finish.sh"
 CYPHERS_UP=0
 KEPT_N=0
 KEPT_CAUSE_N=0
@@ -397,6 +454,205 @@ on_exit() {
   return $rc
 }
 trap on_exit EXIT
+
+# Split a CSV into lines, dropping blanks. `sed` deleting every line still
+# exits 0, where `grep -v '^$'` exits 1 — and under `set -euo pipefail` that
+# aborts the script from inside a plain assignment. That trap has now bitten
+# this diff twice (cypher_prep's ~/.Renviron filter, then the consolidate
+# bucket builder below), so the safe form lives in one helper rather than
+# being remembered at each call site.
+#
+# `printf '%s\n'`, not `printf '%s'`: without the trailing newline `wc -l`
+# counts separators rather than items and reports one fewer than there is, so
+# a host that completed its whole bucket would be reported incomplete. The
+# empty case still yields 0, because sed drops the resulting blank line.
+csv_lines() { printf '%s\n' "${1:-}" | tr ',' '\n' | sed '/^[[:space:]]*$/d'; }
+csv_count() { csv_lines "${1:-}" | wc -l | tr -d ' '; }
+
+# --- post-consolidate recompute pool (link#250) ----------------------------
+# recompute_one runs ONE WSG and never returns non-zero: the pool must not be
+# able to abort under `set -e`, and the exit status is carried by the .rc file
+# rather than by this function's return.
+#
+# One log per job, not a shared fd. Parallel appends to one file interleave
+# mid-record once a record exceeds the stdio buffer (~64 KB), which a full R
+# traceback comfortably does.
+#
+# The .rc file holds the finished TSV ROW, not a bare number, so collection is
+# one `find -exec cat` with no basename loop. It is also written LAST, so a
+# job killed partway leaves no row and is judged "never reported" rather than
+# silently counted as fine.
+recompute_one() {   # $1 = WSG
+  local w="$1" rc=0
+  ( cd "$REPO_ROOT"
+    LNK_LOAD=loadall LNK_VIEWS_PREBUILT=1 \
+      Rscript data-raw/wsg_recompute_one.R "$w" "$CONFIG"
+  ) > "$RC_DIR/$w.log" 2>&1 || rc=$?
+  [ "$rc" = "0" ] || echo "[WARN] recompute WSG $w failed (rc=$rc; continuing)" \
+    >> "$RC_DIR/$w.log"
+  printf '%s\t%s\n' "$w" "$rc" > "$RC_DIR/$w.rc"
+  return 0
+}
+
+# Order the pool's work list LONGEST-FIRST from previously recorded times.
+#
+# A pool's makespan is bounded below by its slowest single job, so a long job
+# that starts last extends the whole phase. Measured 2026-09-01: CHWK is 226 s
+# against 11 s for SALR, and one WSG was 74% of a four-WSG set. LPT is already
+# this repo's answer for packing components onto hosts (study_area_buckets.R,
+# wsgs_dispatch.sh); this is the same rule one level down, inside one host.
+#
+# Ordered on prior RECOMPUTE times, never on segment count. Segments are a
+# reasonable proxy for modelling work (R^2 0.64 over 104 WSGs) and a bad one
+# here: SALR has 20% MORE segments than CHWK and finishes 20x faster, so a
+# segment ordering would actively run the cheap job first.
+#
+# Times come from previous runs' committed ${TS}_recompute.log files, newest
+# wins. A WSG with no recorded time gets the MEDIAN of those that have one --
+# the same rule study_area_buckets.R uses for a WSG missing from the network
+# table, so an unknown never sorts as free.
+#
+# With NO prior times at all this returns the input order and SAYS SO. The
+# ops-hardening record (planning/archive/2026-05-ops-hardening-20260514) has
+# the precedent: an LPT fallback that silently degraded to a naive split and
+# ignored host speeds went unnoticed across a 217-WSG run.
+recompute_order() {   # $1 = csv of WSGs -> prints WSGs, longest-first
+  local wsgs="$1" tf med n
+  tf=$(mktemp "${TMPDIR:-/tmp}/lnk_rc_times.XXXXXX") || { csv_lines "$wsgs"; return 0; }
+  # sort -r on TS-prefixed names is newest-first; awk keeps the first sighting
+  # of each WSG, so a later run's time wins.
+  find "$LOG_DIR" -maxdepth 1 -name '*_recompute.log' -type f 2>/dev/null \
+    | sort -r \
+    | while IFS= read -r f; do
+        sed -nE 's/^\[wsg_recompute_one\] ([A-Z]{4}) recomputed in ([0-9.]+) min.*/\1 \2/p' "$f"
+      done | awk '!seen[$1]++' > "$tf"
+  n=$(wc -l < "$tf" | tr -d ' ')
+  if [ "${n:-0}" -eq 0 ]; then
+    echo "  note: no prior recompute times in $LOG_DIR — running in input order" >&2
+    rm -f "$tf"; csv_lines "$wsgs"; return 0
+  fi
+  med=$(cut -d' ' -f2 "$tf" | sort -n \
+        | awk '{a[NR]=$1} END{print (NR%2) ? a[(NR+1)/2] : (a[NR/2]+a[NR/2+1])/2}')
+  echo "  ordering ${n} known WSG time(s) longest-first (median ${med} min for the rest)" >&2
+  csv_lines "$wsgs" \
+    | awk -v tf="$tf" -v med="$med" '
+        BEGIN { while ((getline l < tf) > 0) { split(l, a, " "); t[a[1]] = a[2] } }
+        { printf "%s %s\n", ($1 in t ? t[$1] : med), $1 }' \
+    | sort -k1,1nr -k2,2 \
+    | cut -d' ' -f2
+  rm -f "$tf"
+}
+
+# Bounded-width pool. `wait -n` is bash 4.3+ and /bin/bash on macOS is 3.2.57,
+# so a free slot is found by polling liveness with `kill -0` and reaping the
+# finished child with `wait <pid>` (which returns immediately for a child that
+# has already exited). We deliberately do NOT read the rc from `wait`: the .rc
+# file is the single source of truth, which also means the evidence survives a
+# killed dispatcher.
+run_recompute_pool() {   # $1 = width
+  local width="$1" slot pid w all_pids=""
+  local SLOT_PID
+  # Width must be a positive integer or this HANGS rather than failing:
+  # `seq 0 -1` is empty, so the slot scan never runs, `break 2` is
+  # unreachable, and the outer `while :; sleep 1` spins forever.
+  # --recompute-jobs validates its own input, but recompute_parity.sh and
+  # recompute_sweep.sh pass a width straight through, so the guard belongs
+  # HERE where all three callers meet it.
+  #
+  # SHAPE FIRST, then value. `[ abc -lt 1 ]` exits 2 ("integer expression
+  # expected") rather than returning true, so a numeric-only guard treats a
+  # non-numeric width as "condition false", falls through, and hangs -- which
+  # is the exact failure it was written to prevent. Measured: 0 and -1 were
+  # refused while abc and 2x still hung.
+  case "${width:-}" in
+    ''|*[!0-9]*)
+      echo "FATAL: run_recompute_pool needs a positive integer width (got '${width:-}')" >&2
+      return 1 ;;
+  esac
+  # NORMALISE THE BASE ONCE, before anything consumes it. `test` and `case`
+  # read base 10; `$(( ))` reads a leading zero as OCTAL. So "08" passes both
+  # validators and then dies in `$((width - 1))` with "value too great for
+  # base" -> empty seq -> the same hang; and "010" quietly becomes 8, giving
+  # a pool two slots narrower than the operator asked for and than the banner
+  # reports. Three rounds of this bug were three predicates disagreeing about
+  # the grammar; one normalisation ends the class.
+  width=$((10#$width))
+  # Upper bound HERE, not only on the CLI flag. `10#` wraps silently on
+  # overflow -- 10#99999999999999999999 is 7766279631452241919, which passes
+  # the shape check and the >= 1 test and then sends `seq` off for the rest of
+  # the afternoon. --recompute-jobs is saved by its own <= 16, but
+  # recompute_parity.sh and recompute_sweep.sh pass an operator width straight
+  # through, and this function is what all three callers meet.
+  if [ "$width" -lt 1 ] || [ "$width" -gt 64 ]; then
+    echo "FATAL: run_recompute_pool needs 1 <= width <= 64 (got '$width')" >&2
+    return 1
+  fi
+  # Pre-seed every slot. Referencing an unset array element under `set -u` is
+  # an unbound-variable error on bash 3.2.
+  SLOT_PID=()
+  for slot in $(seq 0 $((width - 1))); do SLOT_PID[$slot]=0; done
+
+  for w in $(csv_lines "$ALL_WSGS"); do
+    while :; do
+      for slot in $(seq 0 $((width - 1))); do
+        pid=${SLOT_PID[$slot]}
+        [ "$pid" = "0" ] && break 2
+        if ! kill -0 "$pid" 2>/dev/null; then
+          wait "$pid" 2>/dev/null || true
+          SLOT_PID[$slot]=0
+          break 2
+        fi
+      done
+      sleep 1
+    done
+    recompute_one "$w" &
+    SLOT_PID[$slot]=$!
+    all_pids="$all_pids ${SLOT_PID[$slot]}"
+  done
+  # Drain the last partial wave, waiting on OUR children only.
+  #
+  # A bare `wait` waits for every background job in the calling shell, not
+  # just the ones this pool started -- so it silently couples the pool to
+  # whatever else the caller has backgrounded, and hangs outright if any of
+  # those is long-lived. Measured 2026-09-01: a 2-second sampler loop
+  # backgrounded by data-raw/recompute_sweep.sh wedged the pool indefinitely,
+  # with every job already finished and nothing to show for it.
+  #
+  # An empty WSG list means zero iterations and no pids -- that emptiness is
+  # NOT judged here, it is judged in R by lnk_fanout_judge(), where the
+  # branch can be tested.
+  for pid in $all_pids; do wait "$pid" 2>/dev/null || true; done
+}
+
+# --- --recompute-only: finish a run whose gaps were filled by hand (link#348)
+# A run that ends with groups missing names them; once each is re-modelled
+# under the same run_uid (LNK_RUN_UID=<uid> ... wsg_run_one.R), this runs the
+# rest of a run's tail and nothing else: coverage for that run_uid, the
+# recompute over every group with rows from a finished build of it, the
+# compare and the report. No droplet, no pre-flight (the recompute reads only
+# the persisted tables), no consolidate.
+if [ "$RECOMPUTE_ONLY" = "1" ]; then
+  echo "=== --recompute-only: run_uid $RUN_UID ==="
+  echo "  pre-flight, dispatch and consolidate SKIPPED: this reads only the"
+  echo "  persisted tables in $SCHEMA, and spins up nothing."
+  pg_isready -h localhost -p 5432 >/dev/null 2>&1 \
+    || { echo "FATAL: local fwapg down (:5432)"; exit 1; }
+  if [ -n "$WSGS_ARG" ]; then
+    RO_EXPECT=$(csv_lines "$WSGS_ARG" | sort -u | paste -sd, -)
+    echo "  expected WSGs: $(csv_count "$RO_EXPECT"), from --wsgs="
+  else
+    RO_EXPECT=$(run_expected_from_log) \
+      || { echo "FATAL: could not read $SCHEMA.log"; exit 1; }
+    echo "  expected WSGs: the $(csv_count "$RO_EXPECT") with a $SCHEMA.log row for this run_uid."
+    echo "  A group that failed on a cloud host and was not re-run here has no row"
+    echo "  here; pass the run's groups with --wsgs= to have it named."
+  fi
+  [ -n "$RO_EXPECT" ] || {
+    echo "FATAL: no $SCHEMA.log row for run_uid $RUN_UID, and no --wsgs=: nothing to recompute"
+    exit 1; }
+  run_finish "$RO_EXPECT" ""
+  exit 0
+fi
 
 # --- pre-flight, local: everything answerable before a droplet exists ------
 #
@@ -1113,174 +1369,6 @@ echo "  ✓ host runs finished (per-WSG soft-fail; gaps surface in compare)"
 # about to be re-COPYed cannot delete anything it does not replace. The gap
 # then surfaces at the coverage post-condition after the burn, by which point
 # the successful work is safely on the dispatcher.
-# Split a CSV into lines, dropping blanks. `sed` deleting every line still
-# exits 0, where `grep -v '^$'` exits 1 — and under `set -euo pipefail` that
-# aborts the script from inside a plain assignment. That trap has now bitten
-# this diff twice (cypher_prep's ~/.Renviron filter, then the consolidate
-# bucket builder below), so the safe form lives in one helper rather than
-# being remembered at each call site.
-#
-# `printf '%s\n'`, not `printf '%s'`: without the trailing newline `wc -l`
-# counts separators rather than items and reports one fewer than there is, so
-# a host that completed its whole bucket would be reported incomplete. The
-# empty case still yields 0, because sed drops the resulting blank line.
-csv_lines() { printf '%s\n' "${1:-}" | tr ',' '\n' | sed '/^[[:space:]]*$/d'; }
-csv_count() { csv_lines "${1:-}" | wc -l | tr -d ' '; }
-
-# --- post-consolidate recompute pool (link#250) ----------------------------
-# recompute_one runs ONE WSG and never returns non-zero: the pool must not be
-# able to abort under `set -e`, and the exit status is carried by the .rc file
-# rather than by this function's return.
-#
-# One log per job, not a shared fd. Parallel appends to one file interleave
-# mid-record once a record exceeds the stdio buffer (~64 KB), which a full R
-# traceback comfortably does.
-#
-# The .rc file holds the finished TSV ROW, not a bare number, so collection is
-# one `find -exec cat` with no basename loop. It is also written LAST, so a
-# job killed partway leaves no row and is judged "never reported" rather than
-# silently counted as fine.
-recompute_one() {   # $1 = WSG
-  local w="$1" rc=0
-  ( cd "$REPO_ROOT"
-    LNK_LOAD=loadall LNK_VIEWS_PREBUILT=1 \
-      Rscript data-raw/wsg_recompute_one.R "$w" "$CONFIG"
-  ) > "$RC_DIR/$w.log" 2>&1 || rc=$?
-  [ "$rc" = "0" ] || echo "[WARN] recompute WSG $w failed (rc=$rc; continuing)" \
-    >> "$RC_DIR/$w.log"
-  printf '%s\t%s\n' "$w" "$rc" > "$RC_DIR/$w.rc"
-  return 0
-}
-
-# Order the pool's work list LONGEST-FIRST from previously recorded times.
-#
-# A pool's makespan is bounded below by its slowest single job, so a long job
-# that starts last extends the whole phase. Measured 2026-09-01: CHWK is 226 s
-# against 11 s for SALR, and one WSG was 74% of a four-WSG set. LPT is already
-# this repo's answer for packing components onto hosts (study_area_buckets.R,
-# wsgs_dispatch.sh); this is the same rule one level down, inside one host.
-#
-# Ordered on prior RECOMPUTE times, never on segment count. Segments are a
-# reasonable proxy for modelling work (R^2 0.64 over 104 WSGs) and a bad one
-# here: SALR has 20% MORE segments than CHWK and finishes 20x faster, so a
-# segment ordering would actively run the cheap job first.
-#
-# Times come from previous runs' committed ${TS}_recompute.log files, newest
-# wins. A WSG with no recorded time gets the MEDIAN of those that have one --
-# the same rule study_area_buckets.R uses for a WSG missing from the network
-# table, so an unknown never sorts as free.
-#
-# With NO prior times at all this returns the input order and SAYS SO. The
-# ops-hardening record (planning/archive/2026-05-ops-hardening-20260514) has
-# the precedent: an LPT fallback that silently degraded to a naive split and
-# ignored host speeds went unnoticed across a 217-WSG run.
-recompute_order() {   # $1 = csv of WSGs -> prints WSGs, longest-first
-  local wsgs="$1" tf med n
-  tf=$(mktemp "${TMPDIR:-/tmp}/lnk_rc_times.XXXXXX") || { csv_lines "$wsgs"; return 0; }
-  # sort -r on TS-prefixed names is newest-first; awk keeps the first sighting
-  # of each WSG, so a later run's time wins.
-  find "$LOG_DIR" -maxdepth 1 -name '*_recompute.log' -type f 2>/dev/null \
-    | sort -r \
-    | while IFS= read -r f; do
-        sed -nE 's/^\[wsg_recompute_one\] ([A-Z]{4}) recomputed in ([0-9.]+) min.*/\1 \2/p' "$f"
-      done | awk '!seen[$1]++' > "$tf"
-  n=$(wc -l < "$tf" | tr -d ' ')
-  if [ "${n:-0}" -eq 0 ]; then
-    echo "  note: no prior recompute times in $LOG_DIR — running in input order" >&2
-    rm -f "$tf"; csv_lines "$wsgs"; return 0
-  fi
-  med=$(cut -d' ' -f2 "$tf" | sort -n \
-        | awk '{a[NR]=$1} END{print (NR%2) ? a[(NR+1)/2] : (a[NR/2]+a[NR/2+1])/2}')
-  echo "  ordering ${n} known WSG time(s) longest-first (median ${med} min for the rest)" >&2
-  csv_lines "$wsgs" \
-    | awk -v tf="$tf" -v med="$med" '
-        BEGIN { while ((getline l < tf) > 0) { split(l, a, " "); t[a[1]] = a[2] } }
-        { printf "%s %s\n", ($1 in t ? t[$1] : med), $1 }' \
-    | sort -k1,1nr -k2,2 \
-    | cut -d' ' -f2
-  rm -f "$tf"
-}
-
-# Bounded-width pool. `wait -n` is bash 4.3+ and /bin/bash on macOS is 3.2.57,
-# so a free slot is found by polling liveness with `kill -0` and reaping the
-# finished child with `wait <pid>` (which returns immediately for a child that
-# has already exited). We deliberately do NOT read the rc from `wait`: the .rc
-# file is the single source of truth, which also means the evidence survives a
-# killed dispatcher.
-run_recompute_pool() {   # $1 = width
-  local width="$1" slot pid w all_pids=""
-  local SLOT_PID
-  # Width must be a positive integer or this HANGS rather than failing:
-  # `seq 0 -1` is empty, so the slot scan never runs, `break 2` is
-  # unreachable, and the outer `while :; sleep 1` spins forever.
-  # --recompute-jobs validates its own input, but recompute_parity.sh and
-  # recompute_sweep.sh pass a width straight through, so the guard belongs
-  # HERE where all three callers meet it.
-  #
-  # SHAPE FIRST, then value. `[ abc -lt 1 ]` exits 2 ("integer expression
-  # expected") rather than returning true, so a numeric-only guard treats a
-  # non-numeric width as "condition false", falls through, and hangs -- which
-  # is the exact failure it was written to prevent. Measured: 0 and -1 were
-  # refused while abc and 2x still hung.
-  case "${width:-}" in
-    ''|*[!0-9]*)
-      echo "FATAL: run_recompute_pool needs a positive integer width (got '${width:-}')" >&2
-      return 1 ;;
-  esac
-  # NORMALISE THE BASE ONCE, before anything consumes it. `test` and `case`
-  # read base 10; `$(( ))` reads a leading zero as OCTAL. So "08" passes both
-  # validators and then dies in `$((width - 1))` with "value too great for
-  # base" -> empty seq -> the same hang; and "010" quietly becomes 8, giving
-  # a pool two slots narrower than the operator asked for and than the banner
-  # reports. Three rounds of this bug were three predicates disagreeing about
-  # the grammar; one normalisation ends the class.
-  width=$((10#$width))
-  # Upper bound HERE, not only on the CLI flag. `10#` wraps silently on
-  # overflow -- 10#99999999999999999999 is 7766279631452241919, which passes
-  # the shape check and the >= 1 test and then sends `seq` off for the rest of
-  # the afternoon. --recompute-jobs is saved by its own <= 16, but
-  # recompute_parity.sh and recompute_sweep.sh pass an operator width straight
-  # through, and this function is what all three callers meet.
-  if [ "$width" -lt 1 ] || [ "$width" -gt 64 ]; then
-    echo "FATAL: run_recompute_pool needs 1 <= width <= 64 (got '$width')" >&2
-    return 1
-  fi
-  # Pre-seed every slot. Referencing an unset array element under `set -u` is
-  # an unbound-variable error on bash 3.2.
-  SLOT_PID=()
-  for slot in $(seq 0 $((width - 1))); do SLOT_PID[$slot]=0; done
-
-  for w in $(csv_lines "$ALL_WSGS"); do
-    while :; do
-      for slot in $(seq 0 $((width - 1))); do
-        pid=${SLOT_PID[$slot]}
-        [ "$pid" = "0" ] && break 2
-        if ! kill -0 "$pid" 2>/dev/null; then
-          wait "$pid" 2>/dev/null || true
-          SLOT_PID[$slot]=0
-          break 2
-        fi
-      done
-      sleep 1
-    done
-    recompute_one "$w" &
-    SLOT_PID[$slot]=$!
-    all_pids="$all_pids ${SLOT_PID[$slot]}"
-  done
-  # Drain the last partial wave, waiting on OUR children only.
-  #
-  # A bare `wait` waits for every background job in the calling shell, not
-  # just the ones this pool started -- so it silently couples the pool to
-  # whatever else the caller has backgrounded, and hangs outright if any of
-  # those is long-lived. Measured 2026-09-01: a 2-second sampler loop
-  # backgrounded by data-raw/recompute_sweep.sh wedged the pool indefinitely,
-  # with every job already finished and nothing to show for it.
-  #
-  # An empty WSG list means zero iterations and no pids -- that emptiness is
-  # NOT judged here, it is judged in R by lnk_fanout_judge(), where the
-  # branch can be tested.
-  for pid in $all_pids; do wait "$pid" 2>/dev/null || true; done
-}
 
 # What each host finished comes from its DATABASE (host_account, in
 # study_area_hosts.sh): <schema>.log rows for this run_uid with date_end set,
@@ -1374,248 +1462,27 @@ fi
 # --- burn cyphers now (released hosts only; minimise idle) ---
 burn_cyphers || true
 
-# WSG set across all hosts.
-ALL_WSGS=$( { echo "$DISP_BUCKET" | tr ',' '\n'
+# The run's groups: every host's bucket, less the groups a host SKIPped (no
+# modelled species: wsg_run_one.R writes no row for them, so they cannot have
+# any). Finished signals beyond the dispatcher's log rows for this run_uid:
+# its own `done` markers, and each cypher's consolidated bucket (database ∪
+# log done), which is what consolidate took. They only add (run_coverage).
+RUN_SKIP="${ACC_SKIP[dispatcher]:-}"
+RUN_SIGNALS=$(.hosts_union "${ACC_FINISHED[dispatcher]:-}" "${ACC_DONE_LOG[dispatcher]:-}")
+for WS in "${CY_WS_ARR[@]}"; do
+  RUN_SKIP=$(.hosts_union "$RUN_SKIP" "${ACC_SKIP[$WS]:-}")
+  RUN_SIGNALS=$(.hosts_union "$RUN_SIGNALS" "${CY_BUCKET_DONE[$WS]:-}")
+done
+RUN_WSGS=$( { echo "$DISP_BUCKET" | tr ',' '\n'
   for WS in "${CY_WS_ARR[@]}"; do echo "${CY_BUCKET[$WS]}" | tr ',' '\n'; done
 } | sed '/^[[:space:]]*$/d' | sort -u | paste -sd, - )
-COMPARE_CSV="$LOG_DIR/${TS}_compare.csv"
+RUN_WSGS=$(.hosts_minus "$RUN_WSGS" "$RUN_SKIP")
+[ -z "$RUN_SKIP" ] || echo "  note: SKIPped (no modelled species), so not expected to have rows: $RUN_SKIP"
 
-# --- coverage post-condition (link#246) ------------------------------------
-# Detection rather than prevention: this fires whatever the cause, including
-# causes nobody has thought of yet. Placed AFTER the burn so a failure cannot
-# leak spend, and BEFORE the recompute so a partial result is never painted
-# as complete.
-#
-# Necessary because schema_consolidate DELETEs the destination bucket from
-# every persist table (its step 3.5) and then COPYs (step 4). A source that
-# produced nothing therefore removes the destination's prior rows for those
-# WSGs and still returns ok = TRUE. The log tables keep their rows (#354), so
-# this check reads streams, never the log.
-echo "=== verify WSG coverage in $SCHEMA ==="
-if MISSING=$(PGPASSWORD=postgres psql -h localhost -p 5432 -U postgres -d fwapg -t -A -c "
-  WITH expect(w) AS (SELECT unnest(string_to_array('$ALL_WSGS', ',')))
-  SELECT coalesce(string_agg(e.w, ',' ORDER BY e.w), '')
-  FROM expect e
-  LEFT JOIN (SELECT DISTINCT watershed_group_code w FROM ${SCHEMA}.streams) g
-    ON g.w = e.w
-  WHERE g.w IS NULL")
-then
-  # coalesce(...,'') so zero missing returns an empty string rather than
-  # NULL — and the empty string is only trusted on this success branch.
-  [ -z "$MISSING" ] || {
-    echo "FATAL: consolidate left $SCHEMA with no rows for: $MISSING"; exit 1; }
-  echo "  ✓ every run WSG has rows in $SCHEMA.streams"
-else
-  echo "FATAL: could not verify WSG coverage in $SCHEMA"; exit 1
-fi
-
-# This check asks "are there rows", NOT "are they from this run". The persist
-# accumulates across runs and consolidate's DELETE is bucket-scoped, so a WSG
-# that was excluded from a narrowed bucket keeps its PREVIOUS run's rows and
-# passes here. It is a guard against consolidate destroying data, not a
-# substitute for the completeness accounting — an earlier revision of this
-# script leaned on it as the backstop for an incomplete run, and it cannot
-# carry that. `$RUN_INCOMPLETE` is what carries it, at the very end.
+# A host that did not account for its whole bucket. Coverage can only add to
+# it: a group with no rows from this run sets it too (link#348).
 RUN_INCOMPLETE="$complete_fail"
-if [ "$RUN_INCOMPLETE" != "0" ]; then
-  echo "  NOTE: some WSGs were excluded from consolidate this run; any rows"
-  echo "        they show above are from an EARLIER run, not this one."
-fi
 
-# --- post-consolidate recompute: settle cross-WSG access (link#205) ---
-# Drainage-closed + DS-first per-host is NOT sufficient: a WSG's downstream
-# barriers can be cross-bucket or arrive late in DS-first order, so its access
-# (hence token1/token2) is computed against an incomplete barrier set.
-# Caught 2026-05-25: FINA 75% / PARA 69% per-host -> both 99% only after
-# re-modelling on the full consolidated barrier set. The recompute is the
-# correctness guarantee REGARDLESS of bucketing. We use lnk_access(merge=TRUE)
-# — the cheap access-only recompute that reuses the persisted streams /
-# habitat / barriers / barrier_overrides (link#205, ~10 s/WSG vs ~1.5 min for
-# a full pipeline rebuild). Because it is cheap, we recompute ALL run WSGs
-# unconditionally rather than threshold-filtering by parity — bucketing is
-# now a speed knob, not a correctness lever.
-#
-# Parallel since link#250. Two things previously made the serial loop
-# mandatory, and both are now gone:
-#
-#   1. lnk_access() rebuilt the SCHEMA-scoped barrier views on every call --
-#      38 DDL statements against names every sibling WSG reads. CREATE OR
-#      REPLACE VIEW takes an AccessExclusiveLock, and a QUEUED exclusive
-#      request blocks every AccessShareLock behind it, so one job's DDL would
-#      stall every sibling's read until lock_timeout killed someone. The build
-#      is now hoisted below and each job runs LNK_VIEWS_PREBUILT=1. Everything
-#      else a job touches is WSG-scoped (zz_lnk_streams_<wsg>,
-#      zz_lnk_access_scratch_<wsg>, zz_lnk_mc_scratch_<wsg>) or row-scoped
-#      (UPDATE ... WHERE watershed_group_code; DELETE+INSERT in a transaction).
-#
-#   2. A failed WSG was invisible. `|| echo` sat INSIDE the loop, so the
-#      subshell always exited 0 and the success line below was unconditional;
-#      RUN_INCOMPLETE is assigned BEFORE this block and nothing after raised
-#      it. A run in which every recompute failed exited 0 and wrote a compare
-#      CSV. The .rc files + lnk_fanout_judge() are what fix that.
-RECOMPUTE_LOG="$LOG_DIR/${TS}_recompute.log"
-RC_DIR="$LOG_DIR/${TS}_recompute.d"
-RC_TSV="$LOG_DIR/${TS}_recompute.tsv"
-N_RECOMPUTE=$(csv_count "$ALL_WSGS")
-
-echo "=== post-consolidate recompute (lnk_access, ${N_RECOMPUTE} WSGs, -j${RECOMPUTE_JOBS}) ==="
-
-# Ensure the log tables exist ONCE, single-threaded, before any job starts
-# (link#262). wsg_recompute_one.R deliberately refuses to run DDL — it runs
-# inside this pool, and schema DDL belongs at init, not in N concurrent jobs.
-# That leaves one edge case with the worst possible timing: if every focal WSG
-# on the dispatcher species-skips (wsg_run_one.R exits 0 without calling
-# lnk_pipeline_run), nothing ever creates log_recompute, and the pool would
-# then hard-stop on all N WSGs — at the end of a paid multi-host run, after
-# consolidate. One idempotent call here removes the class for nothing.
-if ( cd "$REPO_ROOT" && LNK_LOAD=loadall Rscript -e '
-suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
-cfg <- lnk_config(commandArgs(TRUE)[1])
-s <- Sys.getenv("LNK_SCHEMA"); if (nzchar(s)) cfg$pipeline$schema <- s
-conn <- lnk_db_conn(dbname = "fwapg", host = "localhost", port = 5432L,
-                    user = "postgres", password = "postgres")
-on.exit(try(DBI::dbDisconnect(conn), silent = TRUE), add = TRUE)
-link:::.lnk_log_create_tables(conn, cfg$pipeline$schema)
-' "$CONFIG" ) > "$LOG_DIR/${TS}_recompute_logtables.log" 2>&1; then
-  echo "  ✓ log tables present in $SCHEMA"
-else
-  echo "  ✗ could not ensure log tables; see $LOG_DIR/${TS}_recompute_logtables.log"
-  echo "    the recompute would fail per-WSG on a missing log_recompute"
-  RECOMPUTE_FAIL=1
-  # Its OWN stage token. Reusing "views" made the final gate print "the barrier
-  # views could not be built" and point at ${TS}_recompute_views.log -- a file
-  # the views step never wrote, because it is gated on RECOMPUTE_FAIL=0 and
-  # never ran. Two prep steps, two names, two pieces of evidence.
-  RECOMPUTE_FAIL_STAGE="logtables"
-fi
-
-# Build the barrier views ONCE, single-threaded, before any job starts.
-# Nested rather than `[ "$RECOMPUTE_FAIL" = "0" ] && ( build )`: with the
-# short-circuit form, an already-failed log-table step would fall into this
-# else and report "barrier view build failed", naming a log file that was
-# never written. Two prep steps, two diagnoses.
-if [ "$RECOMPUTE_FAIL" = "0" ]; then
-  if ( cd "$REPO_ROOT" && LNK_LOAD=loadall \
-         Rscript data-raw/barriers_views_build.R "$CONFIG" ) \
-       > "$LOG_DIR/${TS}_recompute_views.log" 2>&1; then
-    echo "  ✓ barrier views built once for $SCHEMA"
-  else
-    # Deliberately NOT falling back to per-WSG builds. At -j>1 that is exactly
-    # the race the hoist removes, and it would turn one loud pre-build failure
-    # into N quiet lock_timeouts attributed to individual WSGs.
-    echo "  ✗ barrier view build failed; see $LOG_DIR/${TS}_recompute_views.log"
-    echo "    skipping the recompute — the run will exit non-zero"
-    RECOMPUTE_FAIL=1
-    # Which stage failed decides which evidence exists. The pool never ran, so
-    # RECOMPUTE_LOG and RC_TSV were never created -- naming them at the final
-    # gate would send the operator to two absent files.
-    RECOMPUTE_FAIL_STAGE="views"
-  fi
-fi
-
-if [ "$RECOMPUTE_FAIL" = "0" ]; then
-  rm -rf "$RC_DIR"; mkdir -p "$RC_DIR"
-  # Longest-first. Ordering is the CALLER's business -- run_recompute_pool
-  # consumes ALL_WSGS as given, which keeps it testable by pool_probe.sh and
-  # lets recompute_parity.sh shuffle deliberately for its invariance pass.
-  ALL_WSGS=$(recompute_order "$ALL_WSGS" | paste -sd, -)
-  run_recompute_pool "$RECOMPUTE_JOBS"
-  # Read by the kept-hosts report: whether a recovery must recompute only the
-  # kept groups and those upstream, or every group of the run (link#347).
-  RECOMPUTE_RAN=1
-
-  # Never `cat "$RC_DIR"/*` — ARG_MAX at provincial scope. `find -exec ... +`
-  # also exits 0 on zero matches, leaving an EMPTY tsv rather than aborting;
-  # that empty case is a real branch and is judged in R, not here.
-  : > "$RC_TSV"
-  find "$RC_DIR" -maxdepth 1 -name '*.rc'  -exec cat {} + >> "$RC_TSV"
-  : > "$RECOMPUTE_LOG"
-  find "$RC_DIR" -maxdepth 1 -name '*.log' -exec cat {} + >> "$RECOMPUTE_LOG"
-
-  if ( cd "$REPO_ROOT" && LNK_LOAD=loadall \
-         Rscript data-raw/fanout_judge.R "$RC_TSV" "$ALL_WSGS" recompute ); then
-    echo "  ✓ recompute: ${N_RECOMPUTE}/${N_RECOMPUTE} WSGs"
-    rm -rf "$RC_DIR"
-  else
-    echo "  ✗ recompute incomplete; see $RECOMPUTE_LOG and $RC_DIR/"
-    RECOMPUTE_FAIL_STAGE="pool"
-    # Per-job logs KEPT on failure: the concatenation is the artifact, the
-    # per-job files are what you actually grep.
-    RECOMPUTE_FAIL=1
-  fi
-fi
-
-# --- compare (tunnel-free) -> CSV ---
-echo "=== compare (tunnel-free) ==="
-( cd "$REPO_ROOT" && LNK_LOAD=loadall Rscript data-raw/study_area_compare.R \
-    "$COMPARE_CSV" "$ALL_WSGS" "$CONFIG" ) > "$LOG_DIR/${TS}_compare.log" 2>&1 \
-  || { echo "  ✗ compare failed; see $LOG_DIR/${TS}_compare.log"; exit 1; }
-echo "  ✓ compare CSV: $COMPARE_CSV"
-
-# --- report ---
-echo "=== summary ==="
-echo "  run WSGs: $ALL_WSGS"
-echo "  compare CSV: $COMPARE_CSV"
-tail -40 "$LOG_DIR/${TS}_compare.log" || true
-
-# An incomplete run must not exit 0. The failure is reported HERE rather than
-# at the point of detection so that everything already computed is
-# consolidated, recomputed, compared and written out first — the operator gets
-# the artifacts AND an accurate exit status, instead of one at the cost of the
-# other. A caller that only checks the exit code still learns the truth.
-# Two independent causes, reported separately. Merging them into one flag
-# would print "some host did not account for its bucket" over a recompute
-# failure, which is the wrong diagnosis and sends the operator to the wrong
-# host. They are also different KINDS of failure: an incomplete bucket means
-# output is missing, an incomplete recompute means output is silently WRONG.
-# A third cause (link#347): a cypher still up because it may hold work that
-# was not consolidated, or whose burn did not complete. --keep-cyphers alone is
-# a choice, not a failure; a host it keeps that is ALSO held for cause still
-# counts, so the flag cannot turn an unconsolidated host into an exit 0.
-HOSTS_KEPT=0
-[ "${KEPT_CAUSE_N:-0}" -gt 0 ] && HOSTS_KEPT=1
-if [ "${RUN_INCOMPLETE:-0}" != "0" ] || [ "${RECOMPUTE_FAIL:-0}" != "0" ] \
-   || [ "$HOSTS_KEPT" != "0" ]; then
-  echo "=== study_area_run INCOMPLETE ==="
-  if [ "$HOSTS_KEPT" != "0" ]; then
-    echo "  $KEPT_CAUSE_N cypher(s) were NOT burned for cause: each may hold groups"
-    echo "  that are not on the dispatcher, and is still running and billed."
-    echo "  Consolidate only each host's groups column, and only where"
-    echo "  groups_measured = yes; never groups_partial (consolidating a group the"
-    echo "  host no longer holds, or holds in part, deletes the dispatcher's copy)."
-    if [ "${RECOMPUTE_RAN:-0}" = "1" ]; then
-      echo "  The recompute above ran WITHOUT those groups, so recompute each one and"
-      echo "  each run group upstream of it afterwards. Then burn the host."
-    else
-      echo "  The recompute did not run, so recompute every group of the run"
-      echo "  afterwards. Then burn the host."
-    fi
-    echo "  Hosts, reasons and commands: $LOG_DIR/${TS}_kept_hosts.tsv"
-  fi
-  if [ "${RUN_INCOMPLETE:-0}" != "0" ]; then
-    echo "  At least one host did not account for its whole bucket; only the"
-    echo "  WSGs it finished were consolidated. Artifacts above are valid for"
-    echo "  those WSGs. Re-run the missing ones before trusting the compare."
-  fi
-  if [ "${RECOMPUTE_FAIL:-0}" != "0" ]; then
-    echo "  The post-consolidate recompute did not complete for every WSG."
-    echo "  Those WSGs' streams_access / streams_mapping_code still hold their"
-    echo "  PRE-consolidate values, so cross-WSG access — hence token1/token2"
-    echo "  and ;DAM — is WRONG for them. This is bad output, not missing"
-    echo "  output: the compare CSV above will look complete."
-    if [ "${RECOMPUTE_FAIL_STAGE:-pool}" = "logtables" ]; then
-      echo "  The provenance log tables could not be created, so NO WSG was"
-      echo "  recomputed. See $LOG_DIR/${TS}_recompute_logtables.log."
-    elif [ "${RECOMPUTE_FAIL_STAGE:-pool}" = "views" ]; then
-      echo "  The barrier views could not be built, so NO WSG was recomputed."
-      echo "  See $LOG_DIR/${TS}_recompute_views.log."
-    else
-      echo "  See $RECOMPUTE_LOG (and ${RC_TSV} for per-WSG exit status)."
-    fi
-    echo "  Re-run just those, no full run needed:"
-    echo "    LNK_SCHEMA=$SCHEMA LNK_LOAD=loadall \\"
-    echo "      Rscript data-raw/wsg_recompute_one.R <WSG> $CONFIG"
-  fi
-  exit 1
-fi
-echo "=== study_area_run done ==="
+# Coverage, recompute over the groups this run built, compare, report. Exits
+# non-zero on an incomplete run. Bare call: see study_area_finish.sh.
+run_finish "$RUN_WSGS" "$RUN_SIGNALS"
