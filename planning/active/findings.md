@@ -28,7 +28,7 @@ New sourced lib **`data-raw/study_area_finish.sh`** (sourced after `study_area_h
   - **Missing groups never exit.** They set `RUN_INCOMPLETE=1`, and the report names each by class.
   - **An empty `COV_RECOMPUTE` skips the recompute and the compare**, and the run prints why ("no run group has rows from a build this run finished").
   - The report gives the recovery command: `LNK_RUN_UID=<uid> LNK_SCHEMA=… Rscript data-raw/wsg_run_one.R <WSG> <config>`, then `study_area_run.sh --recompute-only --run-uid=<uid> …`.
-  - It returns the status, and the driver `exit`s with it.
+  - It exits 1 on an incomplete run, as the tail always did, so it is called bare (revised in build: a function called under `if` or `||` runs with errexit off).
 
 Driver changes (`study_area_run.sh`):
 - Flags:
@@ -40,6 +40,16 @@ Driver changes (`study_area_run.sh`):
 - The pool function block moves above the pre-flight. Right after the trap, `--recompute-only` checks `pg_isready`, takes its expected set (`--wsgs=`, or else `run_expected_from_log`), and calls `run_finish "$expected" ""`. It skips the pre-flight, dispatch and consolidate, and says why: it reads persisted tables only. Zero expected groups means a non-zero exit naming the run_uid.
 - Normal path: `RUN_WSGS` = union of buckets minus every host's SKIP set. Signals = dispatcher `ACC_FINISHED ∪ ACC_DONE_LOG` ∪ each cypher's `CY_BUCKET_DONE`. Then `run_finish "$RUN_WSGS" "$signals"`.
 
+
+## Plan review (2026-10-19)
+
+Triage table in `review-plan.md`. Probes before acting:
+- `fresh_default.log` for run `20261017_004619-3f4c713b` names one config (`default`), so the config check passes there and refuses `bcfishpass`.
+- 241 groups have a newest log row that is closed and from that run, so the newest-row rule changes nothing for #246 (live `run_coverage`: 241/241, 0 missing).
+
+## Suite baseline
+
+`devtools::test()` on this branch: 3195 pass, 2 failed and 2 errors in `test-lnk_pipeline_prepare.R` (golden dams pin, known stale per CLAUDE.md: 8 pinned, `cabd.dams` gives 7) and `test-lnk_wsg_resolve.R` (closure). No `R/` file changed on this branch and neither file reads `data-raw/`.
 
 ## Errors Encountered
 

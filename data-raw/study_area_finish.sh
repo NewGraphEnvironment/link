@@ -2,7 +2,8 @@
 # dispatcher: which groups have rows from this run, the post-consolidate
 # recompute over those, the compare, and the final report (link#348). Sourced
 # by study_area_run.sh after study_area_hosts.sh, and by
-# tests/testthat/test-study_area_finish.R. Sourcing defines functions only.
+# tests/testthat/test-study_area_finish.R. Sourcing defines functions and
+# declares CY_BUCKET_DONE (re-declaring keeps its contents), nothing else.
 #
 # The rule (link#348): one failed group does not cost the others their
 # recompute. Coverage used to `exit 1` on the first run group with no
@@ -18,23 +19,80 @@
 #
 # Globals read: SCHEMA RUN_UID CONFIG TS LOG_DIR REPO_ROOT RECOMPUTE_JOBS
 #   RUN_INCOMPLETE RECOMPUTE_FAIL RECOMPUTE_FAIL_STAGE (initialised by the
-#   driver); with a default: KEPT_CAUSE_N RECOMPUTE_ONLY
+#   driver); with a default: KEPT_CAUSE_N RUN_LABEL; run_expected_from_hosts
+#   also reads DISP_BUCKET CY_WS_ARR CY_BUCKET CY_BUCKET_DONE ACC_FINISHED
+#   ACC_DONE_LOG ACC_SKIP
 # Functions read: .hosts_query host_finished .hosts_* (study_area_hosts.sh);
 #   csv_count recompute_order run_recompute_pool (study_area_run.sh)
 # Globals written: COV_STATE COV_RECOMPUTE COV_NOROWS COV_STALE COV_LOST
-#   COV_MISSING RUN_WSGS ALL_WSGS COMPARE_CSV RUN_INCOMPLETE RECOMPUTE_FAIL
-#   RECOMPUTE_FAIL_STAGE RECOMPUTE_RAN
+#   COV_MISSING RUN_WSGS ALL_WSGS COMPARE_CSV COMPARE_FAIL RUN_INCOMPLETE
+#   RECOMPUTE_FAIL RECOMPUTE_FAIL_STAGE RECOMPUTE_RAN; run_expected_from_hosts
+#   writes RUN_EXPECT RUN_SIGNALS RUN_SKIP
 #
 # Needs bash >= 4, as the driver does.
+
+declare -A CY_BUCKET_DONE
+
+# run_expected_from_hosts: what a full run expects, and what it already knows
+# finished, from the per-host accounting (study_area_hosts.sh). Sets:
+#   RUN_EXPECT   every host's bucket, less RUN_SKIP;
+#   RUN_SKIP     groups a host SKIPped (no modelled species: wsg_run_one.R
+#                writes no row for them) and no host finished. Buckets come
+#                from the same species filter, so one here means a host's
+#                config or overrides disagree with the dispatcher's: a WARN;
+#   RUN_SIGNALS  finish signals beyond the dispatcher's log rows: its `done`
+#                markers and each cypher's consolidated bucket (database ∪
+#                log done), which is what consolidate took. They only add.
+run_expected_from_hosts() {
+  local ws all skip
+  all="${DISP_BUCKET:-}"
+  skip="${ACC_SKIP[dispatcher]:-}"
+  RUN_SIGNALS=$(.hosts_union "${ACC_FINISHED[dispatcher]:-}" "${ACC_DONE_LOG[dispatcher]:-}")
+  for ws in "${CY_WS_ARR[@]}"; do
+    all=$(.hosts_union "$all" "${CY_BUCKET[$ws]:-}")
+    skip=$(.hosts_union "$skip" "${ACC_SKIP[$ws]:-}")
+    RUN_SIGNALS=$(.hosts_union "$RUN_SIGNALS" "${CY_BUCKET_DONE[$ws]:-}")
+  done
+  RUN_SKIP=$(.hosts_minus "$skip" "$RUN_SIGNALS")
+  RUN_EXPECT=$(.hosts_minus "$all" "$RUN_SKIP")
+  [ -z "$RUN_SKIP" ] || \
+    echo "  WARN: SKIPped by a host (no modelled species) though its bucket expected them; not expected to have rows: $RUN_SKIP"
+  return 0
+}
+
+# run_config_check: the run's log rows on the dispatcher name exactly one
+# config, and it is $CONFIG. --recompute-only with a forgotten --config would
+# otherwise recompute every group under another bundle and stamp the rows with
+# the run's uid. Returns 1, saying why, otherwise.
+run_config_check() {
+  local out
+  out=$(PGPASSWORD=postgres psql -h localhost -p 5432 -U postgres -d fwapg \
+    -X -q -t -A -v ON_ERROR_STOP=1 -c "
+    SELECT coalesce(string_agg(DISTINCT coalesce(config_name, '<none>'), ','
+                               ORDER BY coalesce(config_name, '<none>')), '')
+    FROM ${SCHEMA}.log WHERE run_uid = '${RUN_UID}'" 2>/dev/null) || {
+    echo "  ✗ could not read config_name from $SCHEMA.log"; return 1; }
+  if [ "$out" = "$CONFIG" ]; then
+    echo "  ✓ run_uid $RUN_UID was built with --config=$CONFIG"
+    return 0
+  fi
+  echo "  ✗ run_uid $RUN_UID was built with config '${out:-<no log rows>}', not --config=$CONFIG"
+  return 1
+}
 
 # run_coverage <expected csv> [signals csv]: split the expected groups by what
 # the dispatcher's database holds for this run.
 #
-#   COV_RECOMPUTE  rows in <schema>.streams, and finished this run: a log row
-#                  for RUN_UID with date_end set, or a signal the driver
-#                  passes (a host's `done` marker, a consolidated bucket).
-#                  The log's date_end is a soft UPDATE that can fail
-#                  (.lnk_log_run_finish), so signals only ever add.
+#   COV_RECOMPUTE  rows in <schema>.streams, and finished this run: the
+#                  group's NEWEST log row (max date_start, the rule
+#                  schema_consolidate.R uses for which build the persist rows
+#                  hold) is RUN_UID's and has date_end set, or the driver
+#                  passes a signal (a host's `done` marker, a consolidated
+#                  bucket). The log's date_end is a soft UPDATE that can fail
+#                  (.lnk_log_run_finish), so signals only ever add. Newest,
+#                  not any: a group a later run rebuilt, or a hand re-run under
+#                  this uid that failed after its pre-persist, holds rows that
+#                  are not this run's finished build.
 #   COV_NOROWS     no rows at all.
 #   COV_STALE      rows, but no finish signal of this run: an earlier run's
 #                  rows, or this run's pre-persist of a build that then failed.
@@ -52,7 +110,10 @@ run_coverage() {
   in=$(.hosts_lines "$expected" | sed "s/.*/'&'/" | paste -sd, -)
   rows=$(.hosts_query local streams "watershed_group_code IN (${in:-NULL})" 1) \
     || return 1
-  closed=$(host_finished local) || return 1
+  closed=$(.hosts_query local log "run_uid = '${RUN_UID}' AND date_end IS NOT NULL
+    AND (watershed_group_code, date_start) IN (
+      SELECT watershed_group_code, max(date_start) FROM ${SCHEMA}.log
+      GROUP BY watershed_group_code)") || return 1
   COV_STATE=known
   rows=$(printf '%s\n' "$rows" | .hosts_csv)
   fin=$(.hosts_union "$(printf '%s\n' "$closed" | .hosts_csv)" "$signals")
@@ -86,8 +147,9 @@ run_expected_from_log() {
 # `set -e`, a function called in an `if` or `||` runs with errexit off.
 run_finish() {
   RUN_WSGS=$(.hosts_union "${1:-}")
-  local signals="${2:-}"
+  local signals="${2:-}" w
   COMPARE_CSV="$LOG_DIR/${TS}_compare.csv"
+  COMPARE_FAIL=0
 
   # --- coverage post-condition (link#246, link#348) -------------------------
   # Detection rather than prevention: this fires whatever the cause. In a full
@@ -106,6 +168,16 @@ run_finish() {
   if ! run_coverage "$RUN_WSGS" "$signals"; then
     echo "FATAL: could not verify WSG coverage in $SCHEMA"; exit 1
   fi
+  # One row per run group and its class: the compare CSV covers only the
+  # first class, so this is what says what it leaves out.
+  {
+    printf 'wsg\tclass\n'
+    for w in $(.hosts_lines "$COV_RECOMPUTE"); do printf '%s\trecompute\n' "$w"; done
+    for w in $(.hosts_lines "$COV_NOROWS"); do printf '%s\tno_rows\n' "$w"; done
+    for w in $(.hosts_lines "$COV_STALE"); do printf '%s\tnot_this_run\n' "$w"; done
+    for w in $(.hosts_lines "$COV_LOST"); do printf '%s\tlost_at_consolidate\n' "$w"; done
+  } > "$LOG_DIR/${TS}_coverage.tsv"
+  echo "  classes: $LOG_DIR/${TS}_coverage.tsv"
   if [ -n "$COV_MISSING" ]; then
     RUN_INCOMPLETE=1
     echo "  NOTE: recomputing only the $(.hosts_n "$COV_RECOMPUTE") WSGs above; the rest keep"
@@ -251,20 +323,24 @@ link:::.lnk_log_create_tables(conn, cfg$pipeline$schema)
 
 # --- compare (tunnel-free) -> CSV ---
 # Over the recomputed groups only: a group this run did not build has nothing
-# of this run's to compare (link#348).
+# of this run's to compare (link#348). A failure no longer exits here: it
+# would hide the report, which names the groups that are missing.
 run_finish_compare() {
   echo "=== compare (tunnel-free) ==="
-  ( cd "$REPO_ROOT" && LNK_LOAD=loadall Rscript data-raw/study_area_compare.R \
-      "$COMPARE_CSV" "$ALL_WSGS" "$CONFIG" ) > "$LOG_DIR/${TS}_compare.log" 2>&1 \
-    || { echo "  ✗ compare failed; see $LOG_DIR/${TS}_compare.log"; exit 1; }
-  echo "  ✓ compare CSV: $COMPARE_CSV"
+  if ( cd "$REPO_ROOT" && LNK_LOAD=loadall Rscript data-raw/study_area_compare.R \
+      "$COMPARE_CSV" "$ALL_WSGS" "$CONFIG" ) > "$LOG_DIR/${TS}_compare.log" 2>&1; then
+    echo "  ✓ compare CSV: $COMPARE_CSV"
+  else
+    echo "  ✗ compare failed; see $LOG_DIR/${TS}_compare.log"
+    COMPARE_FAIL=1
+  fi
 }
 
 run_finish_report() {
   echo "=== summary ==="
   echo "  run WSGs:        ${RUN_WSGS:-<none>}"
   echo "  recomputed WSGs: ${ALL_WSGS:-<none>}"
-  if [ -n "$ALL_WSGS" ]; then
+  if [ -n "$ALL_WSGS" ] && [ "${COMPARE_FAIL:-0}" = "0" ]; then
     echo "  compare CSV: $COMPARE_CSV"
     tail -40 "$LOG_DIR/${TS}_compare.log" || true
   fi
@@ -286,7 +362,7 @@ run_finish_report() {
   local hosts_kept=0
   [ "${KEPT_CAUSE_N:-0}" -gt 0 ] && hosts_kept=1
   if [ "${RUN_INCOMPLETE:-0}" != "0" ] || [ "${RECOMPUTE_FAIL:-0}" != "0" ] \
-     || [ "$hosts_kept" != "0" ]; then
+     || [ "$hosts_kept" != "0" ] || [ "${COMPARE_FAIL:-0}" != "0" ]; then
     echo "=== study_area_run INCOMPLETE ==="
     if [ "$hosts_kept" != "0" ]; then
       echo "  $KEPT_CAUSE_N cypher(s) were NOT burned for cause: each may hold groups"
@@ -301,6 +377,9 @@ run_finish_report() {
         echo "  The recompute did not run, so recompute every group of the run"
         echo "  afterwards. Then burn the host."
       fi
+      echo "  Every group of the run, once consolidated:"
+      echo "    bash data-raw/study_area_run.sh --recompute-only --run-uid=$RUN_UID \\"
+      echo "      --config=$CONFIG --schema=$SCHEMA"
       echo "  Hosts, reasons and commands: $LOG_DIR/${TS}_kept_hosts.tsv"
     fi
     if [ "${RUN_INCOMPLETE:-0}" != "0" ]; then
@@ -313,7 +392,11 @@ run_finish_report() {
         echo "  The recompute above ran without them. Re-model each under this run_uid,"
         echo "  then recompute the whole run (every group, since a re-modelled group's"
         echo "  barriers change access upstream of it):"
-        echo "    LNK_RUN_UID=$RUN_UID LNK_SCHEMA=$SCHEMA LNK_LOAD=loadall \\"
+        # warn, as the driver runs it: a group whose downstream neighbour is
+        # missing too would otherwise stop at the guard (error by default),
+        # and the recompute re-runs it in error mode once all are back.
+        echo "    LNK_RUN_UID=$RUN_UID ${RUN_LABEL:+LNK_RUN_LABEL=$RUN_LABEL }LNK_SCHEMA=$SCHEMA \\"
+        echo "      LNK_GUARD_DOWNSTREAM=warn LNK_LOAD=loadall \\"
         echo "      Rscript data-raw/wsg_run_one.R <WSG> $CONFIG"
         echo "    bash data-raw/study_area_run.sh --recompute-only --run-uid=$RUN_UID \\"
         echo "      --config=$CONFIG --schema=$SCHEMA --wsgs=$RUN_WSGS"
@@ -322,6 +405,12 @@ run_finish_report() {
         echo "  WSGs it finished were consolidated. Artifacts above are valid for"
         echo "  those WSGs. Re-run the missing ones before trusting the compare."
       fi
+    fi
+    if [ "${COMPARE_FAIL:-0}" != "0" ]; then
+      echo "  The compare failed (see $LOG_DIR/${TS}_compare.log); the recompute"
+      echo "  above stands. Re-run it alone:"
+      echo "    LNK_SCHEMA=$SCHEMA LNK_LOAD=loadall Rscript data-raw/study_area_compare.R \\"
+      echo "      $COMPARE_CSV ${ALL_WSGS:-<WSGs>} $CONFIG"
     fi
     if [ "${RECOMPUTE_FAIL:-0}" != "0" ]; then
       echo "  The post-consolidate recompute did not complete for every WSG."

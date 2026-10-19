@@ -15,7 +15,7 @@ Design: `/Users/airvine/.claude/plans/quiet-hopping-umbrella.md` (approved 2026-
 - [x] Test: a `done` signal admits a group with rows and no closed row
 - [x] Test: a missing `streams` table is unknown (non-zero), never "all missing"
 - [x] Test: `run_expected_from_log` returns AAAA, BBBB, CCCC, EEEE
-- [x] Test (acceptance 1): `run_finish` with one missing group calls the stubbed pool and compare with exactly the recompute set, returns 1, and names the missing group
+- [x] Test (acceptance 1): `run_finish` with one missing group runs the real pool (an Rscript stub records calls) and the compare over exactly the recompute set, exits 1, and names the missing group. The lib-level test stands in for the driver, whose `LOG_DIR` is under the repo.
 - [x] Test (acceptance 2): zero groups with rows: the pool and compare are not called, it returns 1, and it says why
 - [x] Test: the driver refuses `--run-uid` alone, `--recompute-only` alone, a malformed uid, and `--recompute-only --focal=…` (all exit before any Rscript)
 
@@ -33,6 +33,8 @@ Design: `/Users/airvine/.claude/plans/quiet-hopping-umbrella.md` (approved 2026-
 - [x] Mutation: restore `exit 1` on missing in a copy of the lib (`LNK_TEST_FINISH_LIB`), and confirm acceptance test 1 goes red
 - [x] Live, read-only: `run_coverage` against `fresh_default` for run_uid `20261017_004619-3f4c713b` with the 241 groups gives 241 recompute and 0 missing (no recompute run)
 - [ ] `devtools::test()` full suite, `lintr` on the new test file
+- [x] Plan review (`review-plan.md`) folded in: config check, newest-row rule, compare failure reaches the report, `run_expected_from_hosts` (tested), coverage TSV, discharge skipped in recompute-only, recovery text, `--wsgs=` subset warning
+- [x] Extra mutants: dropping the newest-row term, and the empty-set skip, each turn their test red
 
 ## Validation
 

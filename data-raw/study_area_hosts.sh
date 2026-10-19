@@ -534,7 +534,9 @@ hosts_kept_report() {
     echo "  The run's recompute did NOT run: after consolidating, recompute EVERY"
     echo "  group of the run, not only these"
   fi
-  echo "  (LNK_SCHEMA=$SCHEMA LNK_LOAD=loadall Rscript data-raw/wsg_recompute_one.R <WSG> <config>)."
+  echo "  (every group: bash data-raw/study_area_run.sh --recompute-only"
+  echo "   --run-uid=$RUN_UID --config=<config> --schema=$SCHEMA; one group:"
+  echo "   LNK_SCHEMA=$SCHEMA LNK_LOAD=loadall Rscript data-raw/wsg_recompute_one.R <WSG> <config>)."
   echo "  Then burn:"
   for ws in "$@"; do echo "    cd $CYPHER_DIR && ./cypher_down.sh --workspace $ws"; done
   echo "  Recorded in $tsv"

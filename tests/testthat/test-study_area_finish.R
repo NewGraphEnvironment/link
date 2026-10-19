@@ -36,7 +36,9 @@ finish_uid <- "20261018_000000-0000abcd"
 # A scratch persist schema: the log tables, and a streams table holding only
 # what coverage reads. AAAA and BBBB finished this run; CCCC opened a log row
 # this run and failed; DDDD holds an earlier run's rows; EEEE finished this
-# run and its rows are gone (lost at consolidate).
+# run and its rows are gone (lost at consolidate); HHHH finished this run and
+# a later run rebuilt it; IIII finished this run, then a hand re-run under the
+# same uid failed after its pre-persist.
 finish_fixture <- function(conn, env = parent.frame(), streams = TRUE) {
   psql <- Sys.which("psql")
   testthat::skip_if(!nzchar(psql), "psql not on PATH")
@@ -52,20 +54,30 @@ finish_fixture <- function(conn, env = parent.frame(), streams = TRUE) {
     DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", sc)),
     envir = env
   )
-  DBI::dbExecute(conn, sprintf(
-    "INSERT INTO %s.log (run_id, watershed_group_code, date_start, date_end, run_uid)
-     VALUES ('a', 'AAAA', '2026-10-18', '2026-10-18', '%s'),
-            ('b', 'BBBB', '2026-10-18', '2026-10-18', '%s'),
-            ('c', 'CCCC', '2026-10-18', NULL,         '%s'),
-            ('d', 'DDDD', '2026-08-01', '2026-08-01', '20260801_000000-00000000'),
-            ('e', 'EEEE', '2026-10-18', '2026-10-18', '%s')",
-    sc, finish_uid, finish_uid, finish_uid, finish_uid))
+  u <- finish_uid
+  later <- "20261101_000000-0000beef"
+  sql_log <- sprintf(paste(
+    "INSERT INTO %s.log",
+    "(run_id, watershed_group_code, date_start, date_end, run_uid, config_name)",
+    "VALUES ('a', 'AAAA', '2026-10-18', '2026-10-18', '%s', 'default'),",
+    "('b', 'BBBB', '2026-10-18', '2026-10-18', '%s', 'default'),",
+    "('c', 'CCCC', '2026-10-18', NULL, '%s', 'default'),",
+    "('d', 'DDDD', '2026-08-01', '2026-08-01', '20260801_000000-00000000', 'default'),",
+    "('e', 'EEEE', '2026-10-18', '2026-10-18', '%s', 'default'),",
+    "('h1', 'HHHH', '2026-10-18', '2026-10-18', '%s', 'default'),",
+    "('h2', 'HHHH', '2026-11-01', '2026-11-01', '%s', 'default'),",
+    "('i1', 'IIII', '2026-10-18', '2026-10-18', '%s', 'default'),",
+    "('i2', 'IIII', '2026-10-19', NULL, '%s', 'default')"
+  ), sc, u, u, u, u, u, later, u, u)
+  DBI::dbExecute(conn, sql_log)
   if (streams) {
     DBI::dbExecute(conn, sprintf(
-      "CREATE TABLE %s.streams (watershed_group_code varchar(4) NOT NULL)", sc))
-    DBI::dbExecute(conn, sprintf(
-      "INSERT INTO %s.streams VALUES ('AAAA'), ('AAAA'), ('BBBB'), ('DDDD'), ('FFFF')",
-      sc))
+      "CREATE TABLE %s.streams (watershed_group_code varchar(4) NOT NULL)", sc
+    ))
+    DBI::dbExecute(conn, sprintf(paste(
+      "INSERT INTO %s.streams VALUES",
+      "('AAAA'), ('AAAA'), ('BBBB'), ('DDDD'), ('FFFF'), ('HHHH'), ('IIII')"
+    ), sc))
   }
   sc
 }
@@ -133,13 +145,15 @@ test_that("coverage splits the run's groups by what this run built", {
   conn <- skip_if_no_db()
   sc <- finish_fixture(conn)
   w <- finish_world()
-  r <- run_finish_sh(w, sc, cov_body("AAAA,BBBB,CCCC,DDDD,EEEE,GGGG"))
+  r <- run_finish_sh(w, sc, cov_body("AAAA,BBBB,CCCC,DDDD,EEEE,GGGG,HHHH,IIII"))
   expect_equal(r$status, 0L, info = r$out)
   expect_identical(printed(r, "REC"), "AAAA,BBBB")
   expect_identical(printed(r, "NOROWS"), "CCCC,GGGG")
-  expect_identical(printed(r, "STALE"), "DDDD")
+  # A group's NEWEST log row decides: HHHH was rebuilt by a later run, and
+  # IIII's newest build under this uid never closed.
+  expect_identical(printed(r, "STALE"), "DDDD,HHHH,IIII")
   expect_identical(printed(r, "LOST"), "EEEE")
-  expect_identical(printed(r, "MISSING"), "CCCC,DDDD,EEEE,GGGG")
+  expect_identical(printed(r, "MISSING"), "CCCC,DDDD,EEEE,GGGG,HHHH,IIII")
   # FFFF has rows and is not a run group: it is in no class.
   expect_false(grepl("FFFF", r$out))
 })
@@ -175,7 +189,7 @@ test_that("--recompute-only's expected set is every group with a log row for the
   w <- finish_world()
   r <- run_finish_sh(w, sc, "echo \"EXP=$(run_expected_from_log)\"")
   expect_equal(r$status, 0L, info = r$out)
-  expect_identical(printed(r, "EXP"), "AAAA,BBBB,CCCC,EEEE")
+  expect_identical(printed(r, "EXP"), "AAAA,BBBB,CCCC,EEEE,HHHH,IIII")
 })
 
 test_that("one missing group: the rest are recomputed and compared, and the run exits non-zero naming it", {
@@ -196,7 +210,63 @@ test_that("one missing group: the rest are recomputed and compared, and the run 
   expect_match(compare, " AAAA,BBBB default$")
   expect_match(r$out, "were NOT recomputed or compared: CCCC", fixed = TRUE)
   expect_match(r$out, "--recompute-only --run-uid=20261018_000000-0000abcd", fixed = TRUE)
+  expect_match(r$out, "LNK_GUARD_DOWNSTREAM=warn", fixed = TRUE)
   expect_match(r$out, "study_area_run INCOMPLETE", fixed = TRUE)
+  cov <- utils::read.delim(file.path(w, "logs", "T0_coverage.tsv"), colClasses = "character")
+  expect_identical(cov$class[order(cov$wsg)], c("recompute", "recompute", "no_rows"))
+})
+
+test_that("a failed compare still reaches the report, which names the missing groups", {
+  skip_if_no_finish_lib()
+  conn <- skip_if_no_db()
+  sc <- finish_fixture(conn)
+  w <- finish_world()
+  writeLines(c(
+    "#!/bin/sh", sprintf('echo "$*" >> "%s/rscript_calls"', w),
+    'case "$*" in *study_area_compare*) exit 1 ;; esac', "exit 0"
+  ), file.path(w, "bin", "Rscript"))
+  r <- run_finish_sh(w, sc, "run_finish AAAA,BBBB,CCCC ''")
+  expect_equal(r$status, 1L, info = r$out)
+  expect_match(r$out, "compare failed", fixed = TRUE)
+  expect_match(r$out, "were NOT recomputed or compared: CCCC", fixed = TRUE)
+})
+
+test_that("--recompute-only refuses a config the run was not built with", {
+  skip_if_no_finish_lib()
+  conn <- skip_if_no_db()
+  sc <- finish_fixture(conn)
+  w <- finish_world()
+  ok <- run_finish_sh(w, sc, "run_config_check")
+  expect_equal(ok$status, 0L, info = ok$out)
+  bad <- run_finish_sh(w, sc, "CONFIG=bcfishpass; run_config_check")
+  expect_equal(bad$status, 1L)
+  expect_match(bad$out, "built with config 'default', not --config=bcfishpass", fixed = TRUE)
+  DBI::dbExecute(conn, sprintf(
+    "UPDATE %s.log SET config_name = 'default_tuned' WHERE run_id = 'b'", sc
+  ))
+  mixed <- run_finish_sh(w, sc, "run_config_check")
+  expect_equal(mixed$status, 1L)
+  expect_match(mixed$out, "'default,default_tuned'", fixed = TRUE)
+})
+
+test_that("a full run expects every bucket less SKIPs no host finished, with every host's signals", {
+  skip_if_no_finish_lib()
+  w <- finish_world()
+  r <- run_finish_sh(w, "unused", c(
+    "DISP_BUCKET=AAAA,BBBB,SSSS; CY_WS_ARR=(a b)",
+    "CY_BUCKET[a]=CCCC,DDDD; CY_BUCKET[b]=EEEE,TTTT",
+    "ACC_FINISHED[dispatcher]=AAAA; ACC_DONE_LOG[dispatcher]=BBBB",
+    "ACC_SKIP[dispatcher]=SSSS; ACC_SKIP[a]=EEEE; ACC_SKIP[b]=TTTT",
+    "CY_BUCKET_DONE[a]=CCCC; CY_BUCKET_DONE[b]=EEEE",
+    "run_expected_from_hosts",
+    "echo \"EXP=$RUN_EXPECT\"; echo \"SIG=$RUN_SIGNALS\"; echo \"SKIP=$RUN_SKIP\""
+  ))
+  expect_equal(r$status, 0L, info = r$out)
+  # EEEE was SKIPped by a, which does not run it, and finished by b: kept.
+  expect_identical(printed(r, "EXP"), "AAAA,BBBB,CCCC,DDDD,EEEE")
+  expect_identical(printed(r, "SIG"), "AAAA,BBBB,CCCC,EEEE")
+  expect_identical(printed(r, "SKIP"), "SSSS,TTTT")
+  expect_match(r$out, "WARN: SKIPped by a host", fixed = TRUE)
 })
 
 test_that("no group with rows from this run: no recompute, no compare, and it says why", {

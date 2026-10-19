@@ -335,6 +335,11 @@ export LNK_SCHEMA="$SCHEMA"
 # Where the config reads discharge (link#331): every host needs that table,
 # because prepare joins discharge for every group. The dispatcher's gate
 # checks its own database; cypher_prep loads wet's on each cypher.
+# --recompute-only models nothing and reads no discharge (wsg_recompute_one.R),
+# so it resolves neither and cannot be stopped by them (link#348).
+DISCHARGE=""
+WET_LOAD=""
+if [ "$RECOMPUTE_ONLY" = "0" ]; then
 DISCHARGE=$(cd "$REPO_ROOT" && LNK_LOAD=loadall Rscript -e '
 suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
 cat(link:::.lnk_discharge_source(lnk_config(commandArgs(TRUE)[1])))' "$CONFIG" 2>/dev/null || true)
@@ -345,7 +350,6 @@ esac
 # The wet load the dispatcher holds; every cypher must hold the same one
 # (cypher_prep.sh), or hosts classify on different discharge. Empty when the
 # dispatcher has none, which its discharge gate then fails.
-WET_LOAD=""
 if [ "$DISCHARGE" = "wet" ]; then
   WET_LOAD=$(cd "$REPO_ROOT" && LNK_LOAD=loadall Rscript -e '
 suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
@@ -361,6 +365,7 @@ if (res$ok) cat(link:::.lnk_discharge_wet_load_id(res$comment))' \
         exit 1 ;;
     *"'"*) echo "FATAL: the wet table comment holds a quote: $WET_LOAD"; exit 1 ;;
   esac
+fi
 fi
 
 # --- run identity (link#262) ---
@@ -637,12 +642,24 @@ if [ "$RECOMPUTE_ONLY" = "1" ]; then
   echo "  persisted tables in $SCHEMA, and spins up nothing."
   pg_isready -h localhost -p 5432 >/dev/null 2>&1 \
     || { echo "FATAL: local fwapg down (:5432)"; exit 1; }
+  # The compare reads the local bcfp snapshot, as in a full run.
+  [ "$(PGPASSWORD=postgres psql -h localhost -p 5432 -U postgres -d fwapg -t -A -c \
+      "SELECT 1 FROM information_schema.tables WHERE table_schema='fresh' AND table_name='streams_vw_bcfp'" 2>/dev/null || true)" = "1" ] \
+    || { echo "FATAL: fresh.streams_vw_bcfp missing (run snapshot_bcfp.sh --with-bcfp-views)"; exit 1; }
+  run_config_check || { echo "FATAL: refusing to recompute run_uid $RUN_UID under another config"; exit 1; }
+  RO_LOGGED=$(run_expected_from_log) \
+    || { echo "FATAL: could not read $SCHEMA.log"; exit 1; }
   if [ -n "$WSGS_ARG" ]; then
     RO_EXPECT=$(csv_lines "$WSGS_ARG" | sort -u | paste -sd, -)
     echo "  expected WSGs: $(csv_count "$RO_EXPECT"), from --wsgs="
+    # A subset leaves the groups upstream of a re-modelled one on access
+    # computed before its barriers changed.
+    RO_LEFT=$(.hosts_minus "$RO_LOGGED" "$RO_EXPECT")
+    [ -z "$RO_LEFT" ] || {
+      echo "  WARN: --wsgs= leaves out $(csv_count "$RO_LEFT") group(s) with log rows for this run_uid;"
+      echo "        those upstream of a re-modelled group keep stale access: $RO_LEFT"; }
   else
-    RO_EXPECT=$(run_expected_from_log) \
-      || { echo "FATAL: could not read $SCHEMA.log"; exit 1; }
+    RO_EXPECT="$RO_LOGGED"
     echo "  expected WSGs: the $(csv_count "$RO_EXPECT") with a $SCHEMA.log row for this run_uid."
     echo "  A group that failed on a cloud host and was not re-run here has no row"
     echo "  here; pass the run's groups with --wsgs= to have it named."
@@ -1443,7 +1460,11 @@ quit(status = if (ok) 0 else 1)
 " ) > "$LOG_DIR/${TS}_consolidate.log" 2>&1 || crc=$?
     CONSOLIDATING=0
     [ "$crc" = "0" ] \
-      || { echo "  ✗ consolidate failed; see $LOG_DIR/${TS}_consolidate.log — cyphers KEPT"; exit 1; }
+      || { echo "  ✗ consolidate failed; see $LOG_DIR/${TS}_consolidate.log — cyphers KEPT"
+           echo "    No group was recomputed. Once the hosts' groups are consolidated:"
+           echo "      bash data-raw/study_area_run.sh --recompute-only --run-uid=$RUN_UID \\"
+           echo "        --config=$CONFIG --schema=$SCHEMA"
+           exit 1; }
     echo "  ✓ consolidated $n_src/$N_CY cypher(s) (see $LOG_DIR/${TS}_consolidate.log)"
   fi
 
@@ -1462,22 +1483,9 @@ fi
 # --- burn cyphers now (released hosts only; minimise idle) ---
 burn_cyphers || true
 
-# The run's groups: every host's bucket, less the groups a host SKIPped (no
-# modelled species: wsg_run_one.R writes no row for them, so they cannot have
-# any). Finished signals beyond the dispatcher's log rows for this run_uid:
-# its own `done` markers, and each cypher's consolidated bucket (database ∪
-# log done), which is what consolidate took. They only add (run_coverage).
-RUN_SKIP="${ACC_SKIP[dispatcher]:-}"
-RUN_SIGNALS=$(.hosts_union "${ACC_FINISHED[dispatcher]:-}" "${ACC_DONE_LOG[dispatcher]:-}")
-for WS in "${CY_WS_ARR[@]}"; do
-  RUN_SKIP=$(.hosts_union "$RUN_SKIP" "${ACC_SKIP[$WS]:-}")
-  RUN_SIGNALS=$(.hosts_union "$RUN_SIGNALS" "${CY_BUCKET_DONE[$WS]:-}")
-done
-RUN_WSGS=$( { echo "$DISP_BUCKET" | tr ',' '\n'
-  for WS in "${CY_WS_ARR[@]}"; do echo "${CY_BUCKET[$WS]}" | tr ',' '\n'; done
-} | sed '/^[[:space:]]*$/d' | sort -u | paste -sd, - )
-RUN_WSGS=$(.hosts_minus "$RUN_WSGS" "$RUN_SKIP")
-[ -z "$RUN_SKIP" ] || echo "  note: SKIPped (no modelled species), so not expected to have rows: $RUN_SKIP"
+# The run's groups, less SKIPs, and the finish signals the per-host accounting
+# already holds (run_expected_from_hosts, study_area_finish.sh).
+run_expected_from_hosts
 
 # A host that did not account for its whole bucket. Coverage can only add to
 # it: a group with no rows from this run sets it too (link#348).
@@ -1485,4 +1493,4 @@ RUN_INCOMPLETE="$complete_fail"
 
 # Coverage, recompute over the groups this run built, compare, report. Exits
 # non-zero on an incomplete run. Bare call: see study_area_finish.sh.
-run_finish "$RUN_WSGS" "$RUN_SIGNALS"
+run_finish "$RUN_EXPECT" "$RUN_SIGNALS"
