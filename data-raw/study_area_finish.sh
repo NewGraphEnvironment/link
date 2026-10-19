@@ -19,7 +19,7 @@
 #
 # Globals read: SCHEMA RUN_UID CONFIG TS LOG_DIR REPO_ROOT RECOMPUTE_JOBS
 #   RUN_INCOMPLETE RECOMPUTE_FAIL RECOMPUTE_FAIL_STAGE (initialised by the
-#   driver); with a default: KEPT_CAUSE_N RUN_LABEL; run_expected_from_hosts
+#   driver); with a default: KEPT_CAUSE_N RUN_LABEL KEPT_TSV_GROUPS; run_expected_from_hosts
 #   also reads DISP_BUCKET CY_WS_ARR CY_BUCKET CY_BUCKET_DONE ACC_FINISHED
 #   ACC_DONE_LOG ACC_SKIP
 # Functions read: .hosts_query host_finished .hosts_* (study_area_hosts.sh);
@@ -402,6 +402,9 @@ run_finish_report() {
             held=$(.hosts_union "$held" "${CY_BUCKET[$ws]:-}")
           fi
         done
+        # --recompute-only has no hosts of its own; it reads the groups an
+        # earlier session's kept_hosts.tsv listed for this run_uid.
+        held=$(.hosts_union "$held" "${KEPT_TSV_GROUPS:-}")
         on_kept=$(.hosts_inter "$COV_MISSING" "$held")
         remodel=$(.hosts_minus "$COV_MISSING" "$held")
         if [ -n "$on_kept" ]; then

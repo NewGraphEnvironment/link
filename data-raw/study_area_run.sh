@@ -650,10 +650,16 @@ if [ "$RECOMPUTE_ONLY" = "1" ]; then
   # A host kept by the run may still hold groups to consolidate; this run
   # cannot see its state, only the file that recorded it.
   RO_KEPT=$(grep -l -F "$RUN_UID" "$LOG_DIR"/*_kept_hosts.tsv 2>/dev/null || true)
-  [ -z "$RO_KEPT" ] || {
+  KEPT_TSV_GROUPS=""
+  if [ -n "$RO_KEPT" ]; then
     echo "  WARN: hosts were kept for this run_uid; settle their groups per these"
     echo "        files first, and re-model only what is still missing:"
-    printf '        %s\n' $RO_KEPT; }
+    printf '        %s\n' $RO_KEPT
+    # groups, groups_partial, groups_unknown of this run's rows: the report
+    # lists those apart from the groups to re-model.
+    KEPT_TSV_GROUPS=$(awk -F'\t' -v u="$RUN_UID" '$4 == u { print $6 "," $7 "," $8 }' \
+      $RO_KEPT | .hosts_csv)
+  fi
   RO_LOGGED=$(run_expected_from_log) \
     || { echo "FATAL: could not read $SCHEMA.log"; exit 1; }
   if [ -n "$WSGS_ARG" ]; then
@@ -1468,12 +1474,11 @@ quit(status = if (ok) 0 else 1)
     CONSOLIDATING=0
     [ "$crc" = "0" ] \
       || { echo "  ✗ consolidate failed; see $LOG_DIR/${TS}_consolidate.log — cyphers KEPT"
-           cf_wsgs="$DISP_BUCKET"
-           for WS in "${CY_WS_ARR[@]}"; do cf_wsgs=$(.hosts_union "$cf_wsgs" "${CY_BUCKET[$WS]}"); done
+           run_expected_from_hosts
            echo "    No group was recomputed. Once the hosts' groups are consolidated:"
            echo "      bash data-raw/study_area_run.sh --recompute-only --run-uid=$RUN_UID \\"
            echo "        --config=$CONFIG --schema=$SCHEMA${RUN_LABEL:+ --run-label=$RUN_LABEL} \\"
-           echo "        --wsgs=$cf_wsgs"
+           echo "        --wsgs=$RUN_EXPECT"
            exit 1; }
     echo "  ✓ consolidated $n_src/$N_CY cypher(s) (see $LOG_DIR/${TS}_consolidate.log)"
   fi

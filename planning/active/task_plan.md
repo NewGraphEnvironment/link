@@ -32,13 +32,13 @@ Design: `/Users/airvine/.claude/plans/quiet-hopping-umbrella.md` (approved 2026-
 ## Phase 4: Verification
 - [x] Mutation: restore `exit 1` on missing in a copy of the lib (`LNK_TEST_FINISH_LIB`), and confirm acceptance test 1 goes red
 - [x] Live, read-only: `run_coverage` against `fresh_default` for run_uid `20261017_004619-3f4c713b` with the 241 groups gives 241 recompute and 0 missing (no recompute run)
-- [ ] `devtools::test()` full suite, `lintr` on the new test file
+- [x] `devtools::test()` full suite (3195 pass; 4 pre-existing failures in prepare golden dams and wsg_resolve closure, no R/ change on this branch), `lintr` on the new test file (only the package-wide object_usage baseline for setup.R helpers)
 - [x] Plan review (`review-plan.md`) folded in: config check, newest-row rule, compare failure reaches the report, `run_expected_from_hosts` (tested), coverage TSV, discharge skipped in recompute-only, recovery text, `--wsgs=` subset warning
 - [x] Extra mutants: dropping the newest-row term, and the empty-set skip, each turn their test red
 
 ## Validation
 
-- [ ] Tests pass
-- [ ] `/code-check` clean (each commit, or once over the branch with `/code-check branch`)
-- [ ] PWF checkboxes match landed work
+- [x] Tests pass
+- [x] `/code-check` clean (each commit, or once over the branch with `/code-check branch`)
+- [x] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion

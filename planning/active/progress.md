@@ -15,3 +15,9 @@
 - Plan review folded in (`review-plan.md`): run_config_check, newest-row rule, compare failure falls through to the report, run_expected_from_hosts (SKIP minus signals, WARN), `<TS>_coverage.tsv`, discharge skipped in recompute-only, recovery text with LNK_GUARD_DOWNSTREAM=warn, kept-host text points at --recompute-only, consolidate-failure banner prints the recovery
 - Tests 56/56 (11 tests); hosts 120/120; mutants m_exit / m_newest / m_noskip each red; pool_probe PASS=37; live probe on fresh_default 241/241 with the newest rule, config check refuses bcfishpass
 - `hosts_bash()` now lives in `tests/testthat/setup.R` beside `skip_if_no_db()` (helper-bash.R dropped)
+- `/code-check branch`, 4 rounds (findings in `review-round1..4.md`):
+  - R1: 3 fragile (kept-host groups told to re-model; --run-label missing; soft-failed date_end) — fixed / documented
+  - R2: 1 fragile inside R1's fix (held set from the whole bucket) — fixed
+  - R3: 1 bug + 4 fragile inside R2's fix; mechanism named (advice derived from a set without the qualifier that gives it meaning); 25-row enumeration — root fix: the report defers to kept_hosts.tsv; --wsgs on every command; run uid/label on the one-group recompute; accounting-vs-coverage message
+  - R4: terminating enumeration, 37 rows; 2 fragile (recompute-only ignored the kept TSVs it had read; consolidate banner's --wsgs kept SKIPs) — fixed and tested. Every row now agrees; loop ended by enumeration.
+- Tests after: finish 70 pass, hosts 120 pass; pool_probe PASS=37

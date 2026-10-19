@@ -237,6 +237,20 @@ test_that("a missing group in a kept host's bucket defers to kept_hosts.tsv, the
   expect_match(r$out, "--run-label=prov-246 --wsgs=", fixed = TRUE)
 })
 
+test_that("--recompute-only lists the groups an earlier kept_hosts.tsv names apart", {
+  skip_if_no_finish_lib()
+  conn <- skip_if_no_db()
+  sc <- finish_fixture(conn)
+  w <- finish_world()
+  r <- run_finish_sh(w, sc, c(
+    "CY_WS_ARR=(); KEPT_TSV_GROUPS=CCCC",
+    "run_finish AAAA,CCCC,GGGG ''"
+  ))
+  expect_equal(r$status, 1L, info = r$out)
+  expect_match(r$out, "re-model only what is still missing: CCCC", fixed = TRUE)
+  expect_match(r$out, "Re-model each of these under this run_uid: GGGG", fixed = TRUE)
+})
+
 test_that("a failed compare still reaches the report, which names the missing groups", {
   skip_if_no_finish_lib()
   conn <- skip_if_no_db()
