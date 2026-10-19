@@ -1224,7 +1224,7 @@ It also asked only whether rows existed, so a failed group holding an earlier
 run's rows passed and was recomputed as this run's.
 
 Now `run_coverage` (`data-raw/study_area_finish.sh`) splits the run's groups
-(every bucket, less SKIPs) into four classes, read on the dispatcher after
+(every bucket, less SKIPs) into five classes, read on the dispatcher after
 consolidate:
 
 | class | rows in `streams` | finished this run | what happens |
@@ -1233,6 +1233,7 @@ consolidate:
 | no rows | no | no | named at the end |
 | earlier or partial | yes | no | named; its rows are left as they are |
 | lost at consolidate | no | yes | named |
+| not consolidated | any | any | named; its host's consolidate failed (below) |
 
 "Finished this run" means the group's **newest** `<schema>.log` row (max
 `date_start`, the rule `schema_consolidate.R` uses for which build a group's
@@ -1260,10 +1261,16 @@ bash data-raw/study_area_run.sh --recompute-only --run-uid=<uid> \
 `--recompute-only` runs the driver's tail and nothing else: no droplet, no
 pre-flight, no consolidate. It recomputes every group of the run, not just
 the re-modelled ones, because a re-modelled group's barriers change access
-upstream of it. Without `--wsgs=`, the expected set is the groups with any log row
-for the run_uid on the dispatcher. A group that failed on a cloud host and was
-never re-run here has no such row, so only `--wsgs=` gets it named. A
-`--wsgs=` that leaves out logged groups warns. It refuses a `--config` other
+upstream of it. Without `--wsgs=`, the expected set is the groups the run
+recorded in `<TS>_run_wsgs.tsv` (`wsg`, `host`, `skip`, `run_uid`; a run_uid's
+prefix is its `TS`), together with any group holding a log row for the run_uid
+on the dispatcher (link#358). The driver writes that file as soon as the buckets
+resolve, before any spend, and rewrites it after the per-host accounting with
+each host's SKIPs, so a group that failed on a cloud host, or before its first
+log row, is still named. A run from before #358 has no file and falls back to
+the log alone, where such a group has no row and only `--wsgs=` gets it named.
+A file that names another run_uid stops a bare `--recompute-only`. A
+`--wsgs=` that leaves out the run's groups warns. It refuses a `--config` other
 than the one the run's log rows name, since a forgotten `--config` would
 recompute every group under `bcfishpass` and stamp the rows with the run's
 uid. It skips the discharge resolution as well as the pre-flight, but still
@@ -1278,6 +1285,21 @@ defers to `kept_hosts.tsv`: settle it there first (consolidate only `groups`
 where `groups_measured` is `yes`, never `groups_partial`), and re-model only
 what is still missing. `--recompute-only` warns when a `kept_hosts.tsv` names
 the run_uid.
+
+**A consolidate that refuses one source does not stop the run** (link#358).
+`schema_consolidate` loops past a source it refuses (`dest_log_newer`, which one
+group can trigger, and the other checks made before anything is deleted) or
+fails on mid-copy, so the other sources' groups are on the dispatcher. The
+driver writes one outcome per source to `<TS>_consolidate.tsv`, and when every
+source has one, carries on: the failed host keeps its finished groups (a source
+is deleted from only after all of it copied), so `host_release` keeps it, with
+`consolidate failed at stage <stage>` as the reason in `kept_hosts.tsv`. Its
+bucket adds no finish signal and is classed **not consolidated**, out of the
+recompute whatever the dispatcher's log says, because a failure after the
+DELETE can leave log rows copied and `streams` not. The other hosts' groups are
+recomputed and compared, and the run exits non-zero. Only when the outcomes are
+missing for some source (R died) does the driver exit right after consolidate,
+as before, with the `--recompute-only` recovery printed.
 
 Two things it does not do. It takes no lock, so do not run it while another
 driver on the same schema can resume: a driver paused with `kill -STOP`, as in
@@ -1362,8 +1384,8 @@ older build. A group with persist rows but **no** log row on the dispatcher
 no longer holds it, not replaced. Where it says `no`, find out what is left first. If the
 run's recompute ran, it ran without the kept groups: recompute each one and
 each run group upstream of it (`wsg_recompute_one.R`). If it did not run
-(consolidate failed, or no run group had rows from this run), recompute every
-group of the run; the banner says which. A missing
+(consolidate recorded no outcome for some source, or no run group had rows
+from this run), recompute every group of the run; the banner says which. A missing
 `<schema>.streams` or `streams_mapping_code` on a host reads as unknown, not
 empty: every dispatched cypher has both. Tests: `tests/testthat/test-study_area_hosts.R` runs the lib
 in bash with stubbed ssh, psql, tofu and doctl.

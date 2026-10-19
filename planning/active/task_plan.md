@@ -55,9 +55,9 @@
       so `CY_UNCONS` still fills the groups column).
 
 ## Phase 4: Docs
-- [ ] RUNBOOK §8d "A missing group costs only itself": the run_wsgs file, what
+- [x] RUNBOOK §8d "A missing group costs only itself": the run_wsgs file, what
       `--recompute-only` reads, and the consolidate-failure path. Driver header lines 53-57.
-- [ ] Mutation check: restore each defect (no file write; signals kept for a failed host;
+- [x] Mutation check: restore each defect (no file write; signals kept for a failed host;
       the old `exit 1`) against the new tests and record which test goes red in `findings.md`.
 
 ## Validation

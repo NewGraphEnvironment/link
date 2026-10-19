@@ -17,3 +17,4 @@
   `not_consolidated` class; `run_expected_from_hosts` drops a failed host's signals; `host_release`
   names the failed stage. Driver carries on only when every source has a recorded outcome and one
   failed; otherwise the old exit. Added a test that runs the driver's own R writer against the reader.
+- Phase 4: RUNBOOK §8d (five classes, the run_wsgs file, consolidate carry-on); mutation table in findings; structural driver-wiring test.

@@ -77,3 +77,23 @@ groups are left on it, as before; `CY_CONS_FAIL` changes the reason to `consolid
 <X>; finished groups left on the host`. A failed source with nothing left (e.g. `copy_empty`) has
 nothing to lose, and #347's rule is that the measured state decides a burn. The run still exits
 non-zero through the `not_consolidated` class. Tested both ways in `test-study_area_hosts.R`.
+
+## Mutation check (Phase 4, 2026-10-18)
+
+Each defect restored in a scratch copy of the lib (`LNK_TEST_FINISH_LIB` / `LNK_TEST_HOSTS_LIB`),
+the tests run against it:
+
+| mutant | test that goes red |
+|---|---|
+| `run_wsgs_write` writes no cypher rows | run_wsgs_write records every host's bucket … |
+| a failed host's `CY_BUCKET_DONE` kept in `RUN_SIGNALS` | consolidate_outcomes names a refused source … |
+| `run_coverage` ignores the excluded set | a refused source's groups are not recomputed … |
+| `--recompute-only` does not read the file | both `--recompute-only` tests |
+| `run_expected_from_file` ignores `skip` | run_expected_from_file reads the run's groups less SKIPs … |
+| `host_release` loses the failed-stage reason | a host whose consolidate failed keeps it … |
+
+The driver's own carry-on path (`study_area_run.sh`, consolidate step) needs cloud hosts and is
+executed by no test. A structural test pins its wiring (first `run_wsgs_write` before the spin, the
+rewrite after accounting, `run_finish … "${CONS_EXCLUDED:-}"`, the guarded `elif`), and its patterns
+were checked to miss a mutant driver. The R writer in that step is executed by a test, against a
+fake `schema_consolidate` result, and read back by `consolidate_outcomes`.

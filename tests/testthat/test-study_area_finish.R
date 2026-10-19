@@ -620,3 +620,22 @@ test_that("the driver's consolidate outcome writer is what consolidate_outcomes 
   expect_identical(printed(r, "EXCL"), "CCCC,DDDD")
   expect_match(r$out, "not this host's for: CCCC,DDDD", fixed = TRUE)
 })
+
+test_that("the driver records the run's groups before any spend and hands run_finish the excluded set", {
+  # Structural: the full-run path needs cloud hosts, so no test executes it.
+  # These pin the wiring the lib tests above rely on (link#358).
+  skip_if_no_finish_lib()
+  drv <- readLines(finish_driver())
+  first_write <- grep('^run_wsgs_write "\\$RUN_WSGS_TSV"$', drv)
+  spin <- grep('=== spin cyphers', drv, fixed = TRUE)
+  accounting <- grep('=== per-host completeness (database) ===', drv, fixed = TRUE)
+  expect_length(first_write, 1L)
+  expect_lt(first_write, spin[1])
+  rewrite <- grep('^run_wsgs_write "\\$RUN_WSGS_TSV" \\\\$', drv)
+  expect_length(rewrite, 1L)
+  expect_gt(rewrite, accounting)
+  expect_length(grep('^run_finish "\\$RUN_EXPECT" "\\$RUN_SIGNALS" "\\$\\{CONS_EXCLUDED:-\\}"$', drv), 1L)
+  expect_length(grep('elif consolidate_outcomes "$CONS_TSV" && [ -n "$CONS_FAILED" ]; then',
+                     drv, fixed = TRUE), 1L)
+  expect_length(grep("run_expected_recompute_only \"$WSGS_ARG\" || exit 1", drv, fixed = TRUE), 1L)
+})
