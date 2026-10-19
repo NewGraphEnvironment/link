@@ -30,6 +30,8 @@
 # Globals read (set by the driver, or by the test):
 #   SCHEMA RUN_UID TS LOG_DIR CYPHER_DIR CYPHER_TF KEEP_CYPHERS CYPHERS_UP
 #   CY_WS_ARR (array); CY_IP CY_BUCKET CY_RUN_RC (assoc, keyed by workspace)
+#   CY_CONS_FAIL (assoc: the stage at which consolidate failed for a source,
+#   set by consolidate_outcomes in study_area_finish.sh, link#358)
 # Globals written:
 #   ACC_STATE ACC_FINISHED ACC_DONE_LOG ACC_SKIP (assoc, keyed by host key)
 #   CY_HOLD CY_BURNED CY_UNCONS CY_PARTIAL CY_WHY CY_PRE CY_PRE_STATE
@@ -46,7 +48,7 @@
 # Needs bash >= 4 (assoc arrays), as the driver does.
 
 declare -A CY_IP CY_BUCKET CY_RUN_RC CY_HOLD CY_BURNED CY_UNCONS CY_PARTIAL CY_WHY
-declare -A CY_PRE CY_PRE_STATE CY_DOUBT
+declare -A CY_PRE CY_PRE_STATE CY_DOUBT CY_CONS_FAIL
 declare -A ACC_STATE ACC_FINISHED ACC_DONE_LOG ACC_SKIP
 
 # psql script: groups in <table> matching <condition>, framed by sentinels. A
@@ -323,12 +325,15 @@ host_consolidate_bucket() {
   fi
 }
 
-# host_release <ws> <expected csv>: call only after consolidate returned
-# success. Releases the hold only when the dispatch session exited 0 and the
-# host's database answers that no FINISHED group is left on it (host_split).
-# Partial groups left there do not hold it: they are failed builds, already
-# reported missing, and must not be consolidated. Anything else keeps it,
-# with the reason in CY_WHY.
+# host_release <ws> <expected csv>: call only once consolidate has returned
+# and recorded an outcome for every source (a refused or failed source is
+# carried past since link#358, and CY_CONS_FAIL names its stage). Releases the
+# hold only when the dispatch session exited 0 and the host's database answers
+# that no FINISHED group is left on it (host_split): a source consolidate did
+# not take keeps its groups, because consolidate deletes from a source only
+# after copying all of it. Partial groups left there do not hold it: they are
+# failed builds, already reported missing, and must not be consolidated.
+# Anything else keeps it, with the reason in CY_WHY.
 host_release() {
   local ws="$1" expected="$2"
   if [ "${ACC_STATE[$ws]:-unknown}" != "known" ]; then
@@ -337,6 +342,8 @@ host_release() {
     CY_WHY[$ws]="dispatch session exited ${CY_RUN_RC[$ws]:-?}; groups may still be running there"
   elif ! host_split "$ws" "$(.hosts_union "$expected" "${CY_UNCONS[$ws]:-}")"; then
     CY_WHY[$ws]="database did not answer after consolidate"
+  elif [ -n "${CY_UNCONS[$ws]}" ] && [ -n "${CY_CONS_FAIL[$ws]:-}" ]; then
+    CY_WHY[$ws]="consolidate failed at stage ${CY_CONS_FAIL[$ws]}; finished groups left on the host"
   elif [ -n "${CY_UNCONS[$ws]}" ]; then
     CY_WHY[$ws]="finished groups left after consolidate"
   elif [ -n "${CY_DOUBT[$ws]}" ]; then

@@ -55,6 +55,9 @@
 # have rows from a build this run finished in the persist afterwards. A group
 # that does not is named and the run exits non-zero, but the recompute and the
 # compare still run over the rest (link#348; data-raw/study_area_finish.sh).
+# A consolidate that refuses one source carries on the same way: that host is
+# kept and its groups are named (link#358). The run's groups are written to
+# <TS>_run_wsgs.tsv before any spend, which --recompute-only reads.
 #
 # Extra flags:
 #   --preflight-only        run the local gates and exit (no spend)
@@ -86,8 +89,11 @@
 #                           and the report. No droplet, no pre-flight. For a
 #                           run whose missing groups were re-modelled by hand
 #                           under the same run_uid (link#348). Without --wsgs=
-#                           the expected groups are those with a log row for
-#                           the run_uid on the dispatcher.
+#                           the expected groups are those the run recorded in
+#                           <TS>_run_wsgs.tsv when its buckets resolved, and
+#                           any with a log row for the run_uid on the
+#                           dispatcher (the log alone for a run before
+#                           link#358).
 #
 # Run identity (link#262). Three levels, and only the middle one is new:
 #
@@ -660,27 +666,9 @@ if [ "$RECOMPUTE_ONLY" = "1" ]; then
     KEPT_TSV_GROUPS=$(awk -F'\t' -v u="$RUN_UID" '$4 == u { print $6 "," $7 "," $8 }' \
       $RO_KEPT | .hosts_csv)
   fi
-  RO_LOGGED=$(run_expected_from_log) \
-    || { echo "FATAL: could not read $SCHEMA.log"; exit 1; }
-  if [ -n "$WSGS_ARG" ]; then
-    RO_EXPECT=$(csv_lines "$WSGS_ARG" | sort -u | paste -sd, -)
-    echo "  expected WSGs: $(csv_count "$RO_EXPECT"), from --wsgs="
-    # A subset leaves the groups upstream of a re-modelled one on access
-    # computed before its barriers changed.
-    RO_LEFT=$(.hosts_minus "$RO_LOGGED" "$RO_EXPECT")
-    [ -z "$RO_LEFT" ] || {
-      echo "  WARN: --wsgs= leaves out $(csv_count "$RO_LEFT") group(s) with log rows for this run_uid;"
-      echo "        those upstream of a re-modelled group keep stale access: $RO_LEFT"; }
-  else
-    RO_EXPECT="$RO_LOGGED"
-    echo "  expected WSGs: the $(csv_count "$RO_EXPECT") with a $SCHEMA.log row for this run_uid."
-    echo "  A group that failed on a cloud host and was not re-run here has no row"
-    echo "  here; pass the run's groups with --wsgs= to have it named."
-  fi
-  [ -n "$RO_EXPECT" ] || {
-    echo "FATAL: no $SCHEMA.log row for run_uid $RUN_UID, and no --wsgs=: nothing to recompute"
-    exit 1; }
-  run_finish "$RO_EXPECT" ""
+  # The run's run_wsgs.tsv and its log rows, or --wsgs= (link#358).
+  run_expected_recompute_only "$WSGS_ARG" || exit 1
+  run_finish "$RO_EXPECT" "" "$RO_EXCLUDED"
   exit 0
 fi
 
@@ -1222,6 +1210,15 @@ DUP=$( { echo "$DISP_BUCKET" | tr ',' '\n'
 } | sed '/^[[:space:]]*$/d' | sort | uniq -d | paste -sd, - )
 [ -z "$DUP" ] || echo "  WARN: buckets overlap on: $DUP (computed on multiple hosts; consolidate last-writer-wins)"
 
+# Recorded before any spend (link#358): a run that stops before its tail must
+# still say which groups it was running. A group that fails on a cypher, or
+# before its first log row, leaves no <schema>.log row on the dispatcher, so
+# without this file --recompute-only could not name it. Rewritten after the
+# per-host accounting with each host's SKIPs.
+RUN_WSGS_TSV="$LOG_DIR/${TS}_run_wsgs.tsv"
+run_wsgs_write "$RUN_WSGS_TSV"
+echo "  run groups: $RUN_WSGS_TSV"
+
 # --- spin + prep cyphers ---
 declare -A CY_IP
 if [ "$N_CY" -gt 0 ]; then
@@ -1425,6 +1422,9 @@ done
   echo "  WARN: consolidating only the WSGs each host finished. The run will"
   echo "        finish so nothing already computed is lost, then exit non-zero."
 }
+# Each host's SKIPs, now known. Never fatal here: hosts are held.
+run_wsgs_write "$RUN_WSGS_TSV" \
+  || echo "  WARN: could not rewrite $RUN_WSGS_TSV with SKIPs; it still lists every group"
 
 # --- consolidate cyphers -> dispatcher ---
 if [ "$N_CY" -gt 0 ]; then
@@ -1461,33 +1461,69 @@ if [ "$N_CY" -gt 0 ]; then
     # host (link#347): a driver killed here runs its EXIT trap while this
     # subshell keeps copying and deleting from the hosts, so nothing measured
     # there in the trap is settled. Cleared as soon as the subshell returns.
+    # Before the copy, every source in_flight (link#358): a consolidate that
+    # dies mid-copy leaves this record saying so, and --recompute-only keeps
+    # those groups out. Rewritten below once each source has an outcome. A
+    # record that cannot be written stops here; the hosts are held.
+    CONS_STATE="$LOG_DIR/${TS}_consolidate_state.tsv"
+    consolidate_state_write "$CONS_STATE" in_flight \
+      || { echo "FATAL: could not write $CONS_STATE; not consolidating"; exit 1; }
     CONSOLIDATING=1
     crc=0
+    # One outcome row per source (link#358), read by consolidate_outcomes.
+    # Removed first, so a run that dies before writing it is never read as
+    # having recorded one.
+    CONS_TSV="$LOG_DIR/${TS}_consolidate.tsv"
+    rm -f "$CONS_TSV"
     ( cd "$REPO_ROOT" && Rscript -e "
 suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
 source('data-raw/schema_consolidate.R')
 res <- schema_consolidate(schema = '$SCHEMA', sources = $SRC_R, backup = TRUE)
 print(res)
+out <- do.call(rbind, lapply(names(res\$sources), function(h) {
+  s <- res\$sources[[h]]
+  data.frame(host = h, ok = isTRUE(s\$ok),
+             stage = if (is.null(s\$stage)) NA_character_ else as.character(s\$stage),
+             groups = paste(s\$groups, collapse = ','), stringsAsFactors = FALSE)
+}))
+if (!is.null(out)) utils::write.table(out, '$CONS_TSV', sep = '\\t', quote = FALSE,
+                                      row.names = FALSE, na = '')
 ok <- all(vapply(res\$sources, function(s) isTRUE(s\$ok), logical(1)))
 quit(status = if (ok) 0 else 1)
 " ) > "$LOG_DIR/${TS}_consolidate.log" 2>&1 || crc=$?
     CONSOLIDATING=0
-    [ "$crc" = "0" ] \
-      || { echo "  ✗ consolidate failed; see $LOG_DIR/${TS}_consolidate.log — cyphers KEPT"
-           run_expected_from_hosts
-           echo "    No group was recomputed. Once the hosts' groups are consolidated:"
-           echo "      bash data-raw/study_area_run.sh --recompute-only --run-uid=$RUN_UID \\"
-           echo "        --config=$CONFIG --schema=$SCHEMA${RUN_LABEL:+ --run-label=$RUN_LABEL} \\"
-           echo "        --wsgs=$RUN_EXPECT"
-           exit 1; }
-    echo "  ✓ consolidated $n_src/$N_CY cypher(s) (see $LOG_DIR/${TS}_consolidate.log)"
+    if [ "$crc" = "0" ]; then
+      echo "  ✓ consolidated $n_src/$N_CY cypher(s) (see $LOG_DIR/${TS}_consolidate.log)"
+      consolidate_state_write "$CONS_STATE" ok \
+        || echo "  WARN: could not mark $CONS_STATE ok; a --recompute-only will keep its groups out"
+    elif consolidate_outcomes "$CONS_TSV" && [ -n "$CONS_FAILED" ]; then
+      # A source refused or failed; the others landed (link#358). Carry on:
+      # the refused host keeps its groups and is kept below, its groups are
+      # kept out of the recompute, and the run exits non-zero naming them.
+      echo "  ✗ consolidate failed for: $CONS_FAILED (see $LOG_DIR/${TS}_consolidate.log)"
+      echo "    carrying on with the cypher(s) that consolidated; the run will exit non-zero"
+      consolidate_state_write "$CONS_STATE" ok \
+        || echo "  WARN: could not record outcomes in $CONS_STATE; every source stays in_flight there"
+    else
+      # $CONS_STATE keeps every source in_flight.
+      # Nothing says which sources landed (or R failed after recording every
+      # source ok), so nothing after this can be judged.
+      echo "  ✗ consolidate failed; see $LOG_DIR/${TS}_consolidate.log — cyphers KEPT"
+      run_expected_from_hosts
+      echo "    No group was recomputed. Once the hosts' groups are consolidated:"
+      echo "      bash data-raw/study_area_run.sh --recompute-only --run-uid=$RUN_UID \\"
+      echo "        --config=$CONFIG --schema=$SCHEMA${RUN_LABEL:+ --run-label=$RUN_LABEL} \\"
+      echo "        --wsgs=$RUN_EXPECT"
+      exit 1
+    fi
   fi
 
-  # Reached only when consolidate succeeded (or had nothing to take). A host
-  # is released only when its session exited 0 and its database answers that
-  # no streams rows are left for any group it ran or finished: consolidate
-  # deletes what it copied from the source, so what is left was not
-  # consolidated. Any other host stays HELD and the burn below skips it
+  # Reached when consolidate recorded an outcome for every source, whether or
+  # not each succeeded (link#358), or had nothing to take. A host is released
+  # only when its session exited 0 and its database answers that no streams
+  # rows are left for any group it ran or finished: consolidate deletes what it
+  # copied from the source, and only after copying all of it, so what is left
+  # was not consolidated. Any other host stays HELD and the burn below skips it
   # (link#347).
   echo "=== release consolidated cyphers ==="
   for WS in "${CY_WS_ARR[@]}"; do
@@ -1505,7 +1541,10 @@ run_expected_from_hosts
 # A host that did not account for its whole bucket. Coverage can only add to
 # it: a group with no rows from this run sets it too (link#348).
 RUN_INCOMPLETE="$complete_fail"
+# A source consolidate refused or failed on is an incomplete run whatever the
+# coverage classes say (link#358).
+[ -z "${CONS_FAILED:-}" ] || RUN_INCOMPLETE=1
 
 # Coverage, recompute over the groups this run built, compare, report. Exits
 # non-zero on an incomplete run. Bare call: see study_area_finish.sh.
-run_finish "$RUN_EXPECT" "$RUN_SIGNALS"
+run_finish "$RUN_EXPECT" "$RUN_SIGNALS" "${CONS_EXCLUDED:-}"

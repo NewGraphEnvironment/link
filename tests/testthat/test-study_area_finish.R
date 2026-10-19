@@ -368,3 +368,395 @@ test_that("the driver refuses --run-uid / --wsgs without --recompute-only, and d
   expect_equal(r$status, 1L)
   expect_match(r$out, "--wsgs= takes comma-separated", fixed = TRUE)
 })
+
+# --- the run's groups, recorded when the buckets resolve (link#358) ---------
+
+test_that("run_wsgs_write records every host's bucket, then each host's SKIPs once accounted", {
+  skip_if_no_finish_lib()
+  w <- finish_world()
+  tsv <- file.path(w, "logs", "T0_run_wsgs.tsv")
+  set_buckets <- c(
+    "DISP_BUCKET=AAAA,SSSS; CY_WS_ARR=(job1 job2)",
+    "CY_BUCKET[job1]=CCCC,DDDD; CY_BUCKET[job2]=DDDD,EEEE"
+  )
+  r <- run_finish_sh(w, "unused", c(set_buckets, sprintf("run_wsgs_write %s", shQuote(tsv))))
+  expect_equal(r$status, 0L, info = r$out)
+  x <- utils::read.delim(tsv, colClasses = "character")
+  expect_identical(names(x), c("wsg", "host", "skip", "run_uid"))
+  # DDDD is in two buckets: one row per host, as dispatched.
+  expect_identical(paste(x$host, x$wsg), c(
+    "dispatcher AAAA", "dispatcher SSSS", "job1 CCCC", "job1 DDDD", "job2 DDDD", "job2 EEEE"
+  ))
+  expect_true(all(x$skip == "unknown"))
+  expect_true(all(x$run_uid == finish_uid))
+
+  # After accounting: a host's SKIPs are yes, the rest no; a host whose
+  # accounting never ran stays unknown.
+  r <- run_finish_sh(w, "unused", c(
+    set_buckets,
+    "ACC_SKIP[dispatcher]=SSSS; ACC_SKIP[job1]=''",
+    sprintf("run_wsgs_write %s", shQuote(tsv))
+  ))
+  expect_equal(r$status, 0L, info = r$out)
+  x <- utils::read.delim(tsv, colClasses = "character")
+  expect_identical(x$skip, c("no", "yes", "no", "no", "unknown", "unknown"))
+})
+
+test_that("run_expected_from_file reads the run's groups less SKIPs, and refuses another run's file", {
+  skip_if_no_finish_lib()
+  w <- finish_world()
+  tsv <- file.path(w, "logs", "T0_run_wsgs.tsv")
+  rows <- function(uid = finish_uid, first = "AAAA") {
+    c(
+      "wsg\thost\tskip\trun_uid",
+      sprintf("%s\tdispatcher\tno\t%s", first, uid),
+      sprintf("SSSS\tdispatcher\tyes\t%s", uid),
+      sprintf("DDDD\tjob1\tunknown\t%s", uid),
+      sprintf("DDDD\tjob2\tyes\t%s", uid),
+      sprintf("TTTT\tjob2\tyes\t%s", uid)
+    )
+  }
+  read_it <- function() {
+    run_finish_sh(w, "unused", sprintf(
+      "rc=0; EXP=$(run_expected_from_file %s) || rc=$?; echo \"EXP=$EXP\"; echo \"RC=$rc\"",
+      shQuote(tsv)
+    ))
+  }
+  writeLines(rows(), tsv)
+  r <- read_it()
+  # SSSS and TTTT were SKIPped wherever they ran; DDDD was not, by job1.
+  expect_identical(printed(r, "EXP"), "AAAA,DDDD")
+  expect_match(r$out, "RC=0", fixed = TRUE)
+
+  writeLines(rows(uid = "20261101_000000-0000beef"), tsv)
+  r <- read_it()
+  expect_match(r$out, "RC=1", fixed = TRUE)
+  expect_match(r$out, "another run_uid", fixed = TRUE)
+
+  # A value that is not a group code never reaches the SQL coverage builds.
+  writeLines(rows(first = "AA'A"), tsv)
+  expect_match(read_it()$out, "RC=1", fixed = TRUE)
+
+  writeLines(c("wsg\thost", "AAAA\tdispatcher"), tsv)
+  expect_match(read_it()$out, "RC=1", fixed = TRUE)
+
+  unlink(tsv)
+  r <- read_it()
+  expect_match(r$out, "RC=2", fixed = TRUE)
+  expect_identical(printed(r, "EXP"), "")
+})
+
+ro_file <- function(w) file.path(w, "logs", "20261018_000000_run_wsgs.tsv")
+
+test_that("--recompute-only names a group that failed on a cloud host, from the run's run_wsgs.tsv", {
+  skip_if_no_finish_lib()
+  conn <- skip_if_no_db()
+  sc <- finish_fixture(conn)
+  w <- finish_world()
+  # GGGG ran on job1 and failed there: no log row on the dispatcher, no rows.
+  writeLines(c(
+    "wsg\thost\tskip\trun_uid",
+    sprintf("AAAA\tdispatcher\tno\t%s", finish_uid),
+    sprintf("BBBB\tdispatcher\tno\t%s", finish_uid),
+    sprintf("GGGG\tjob1\tunknown\t%s", finish_uid)
+  ), ro_file(w))
+  r <- run_finish_sh(w, sc, c(
+    "run_expected_recompute_only ''; echo \"EXP=$RO_EXPECT\"",
+    "run_finish \"$RO_EXPECT\" ''"
+  ))
+  expect_equal(r$status, 1L, info = r$out)
+  # The file, and every group with a log row for the run (nothing dropped).
+  expect_identical(printed(r, "EXP"), "AAAA,BBBB,CCCC,EEEE,GGGG,HHHH,IIII")
+  expect_match(r$out, "the 3 in ", fixed = TRUE)
+  expect_match(r$out, "4 more with a", fixed = TRUE)
+  expect_match(r$out, "no rows:                         CCCC,GGGG", fixed = TRUE)
+  expect_match(r$out, "Re-model each of these under this run_uid: CCCC,EEEE,GGGG,HHHH,IIII",
+               fixed = TRUE)
+})
+
+test_that("--recompute-only falls back to the log for a run with no run_wsgs.tsv, and --wsgs= wins", {
+  skip_if_no_finish_lib()
+  conn <- skip_if_no_db()
+  sc <- finish_fixture(conn)
+  w <- finish_world()
+  r <- run_finish_sh(w, sc, "run_expected_recompute_only ''; echo \"EXP=$RO_EXPECT\"")
+  expect_equal(r$status, 0L, info = r$out)
+  expect_identical(printed(r, "EXP"), "AAAA,BBBB,CCCC,EEEE,HHHH,IIII")
+  expect_match(r$out, "pass the run's groups with --wsgs=", fixed = TRUE)
+
+  writeLines(c("wsg\thost\tskip\trun_uid",
+               sprintf("GGGG\tjob1\tno\t%s", finish_uid)), ro_file(w))
+  r <- run_finish_sh(w, sc, "run_expected_recompute_only AAAA,BBBB; echo \"EXP=$RO_EXPECT\"")
+  expect_equal(r$status, 0L, info = r$out)
+  expect_identical(printed(r, "EXP"), "AAAA,BBBB")
+  # Left out: the log's other groups and the file's GGGG.
+  expect_match(r$out, "leave(s)? out 5 group", info = r$out)
+  expect_match(r$out, "CCCC,EEEE,GGGG,HHHH,IIII", fixed = TRUE)
+
+  # Another run's file stops a bare --recompute-only, and only warns beside --wsgs=.
+  writeLines(c("wsg\thost\tskip\trun_uid",
+               "GGGG\tjob1\tno\t20261101_000000-0000beef"), ro_file(w))
+  r <- run_finish_sh(w, sc, "run_expected_recompute_only ''")
+  expect_equal(r$status, 1L, info = r$out)
+  expect_match(r$out, "FATAL", fixed = TRUE)
+  r <- run_finish_sh(w, sc, "run_expected_recompute_only AAAA; echo \"EXP=$RO_EXPECT\"")
+  expect_equal(r$status, 0L, info = r$out)
+  expect_identical(printed(r, "EXP"), "AAAA")
+})
+
+# --- a consolidate that refuses one source (link#358) -----------------------
+
+cons_tsv <- function(w, rows) {
+  p <- file.path(w, "logs", "T0_consolidate.tsv")
+  writeLines(c("host\tok\tstage\tgroups", rows), p)
+  p
+}
+
+cons_setup <- c(
+  "CY_WS_ARR=(a b c); CY_IP[a]=ip-a; CY_IP[b]=ip-b; CY_IP[c]=ip-c",
+  "CY_BUCKET[a]=CCCC,DDDD; CY_BUCKET[b]=EEEE; CY_BUCKET[c]=FFFF",
+  # c reported nothing, so it was never a source.
+  "CY_BUCKET_DONE[a]=CCCC,DDDD; CY_BUCKET_DONE[b]=EEEE; CY_BUCKET_DONE[c]=''"
+)
+
+test_that("consolidate_outcomes names a refused source and keeps its groups out of the signals", {
+  skip_if_no_finish_lib()
+  w <- finish_world()
+  p <- cons_tsv(w, c("cypher@ip-a\tFALSE\tdest_log_newer\tDDDD",
+                     "cypher@ip-b\tTRUE\tcomplete\t"))
+  r <- run_finish_sh(w, "unused", c(
+    cons_setup,
+    sprintf("consolidate_outcomes %s", shQuote(p)),
+    "echo \"FAILED=$CONS_FAILED\"; echo \"EXCL=$CONS_EXCLUDED\"; echo \"STAGE=${CY_CONS_FAIL[a]}\"",
+    "echo \"BSTAGE=${CY_CONS_FAIL[b]:-none}\"",
+    # DDDD was SKIPped by the dispatcher and finished by a: it stays expected.
+    "DISP_BUCKET=AAAA,DDDD; ACC_FINISHED[dispatcher]=AAAA; ACC_SKIP[dispatcher]=DDDD",
+    "run_expected_from_hosts; echo \"SIG=$RUN_SIGNALS\"; echo \"EXP=$RUN_EXPECT\""
+  ))
+  expect_equal(r$status, 0L, info = r$out)
+  expect_match(r$out, "FAILED=a\n", fixed = TRUE)
+  expect_identical(printed(r, "EXCL"), "CCCC,DDDD")
+  expect_match(r$out, "STAGE=dest_log_newer", fixed = TRUE)
+  expect_match(r$out, "BSTAGE=none", fixed = TRUE)
+  expect_match(r$out, "cy[a]: consolidate failed at stage dest_log_newer", fixed = TRUE)
+  expect_match(r$out, "DDDD", fixed = TRUE)
+  # The refused host's bucket is no finish signal; it is still expected.
+  expect_identical(printed(r, "SIG"), "AAAA,EEEE")
+  expect_identical(printed(r, "EXP"), "AAAA,CCCC,DDDD,EEEE,FFFF")
+})
+
+test_that("consolidate_outcomes refuses a record that does not account for every source", {
+  skip_if_no_finish_lib()
+  w <- finish_world()
+  p <- cons_tsv(w, "cypher@ip-a\tFALSE\tdest_copy\t")
+  r <- run_finish_sh(w, "unused", c(
+    cons_setup,
+    sprintf("rc=0; consolidate_outcomes %s || rc=$?; echo \"RC=$rc\"", shQuote(p))
+  ))
+  expect_match(r$out, "RC=1", fixed = TRUE)
+  expect_match(r$out, "cy[b]", fixed = TRUE)
+  r <- run_finish_sh(w, "unused", c(
+    cons_setup,
+    "rc=0; consolidate_outcomes /nonexistent/T0_consolidate.tsv || rc=$?; echo \"RC=$rc\""
+  ))
+  expect_match(r$out, "RC=1", fixed = TRUE)
+})
+
+test_that("a refused source's groups are not recomputed; the others are, and the run exits non-zero", {
+  skip_if_no_finish_lib()
+  conn <- skip_if_no_db()
+  sc <- finish_fixture(conn)
+  w <- finish_world()
+  # BBBB came from host a, whose consolidate was refused; its rows here, and
+  # its closed log row, belong to some other copy. AAAA came from elsewhere.
+  r <- run_finish_sh(w, sc, c(
+    "CY_WS_ARR=(a); CY_BUCKET[a]=BBBB; CY_HOLD[a]=1",
+    "run_finish AAAA,BBBB '' BBBB"
+  ))
+  expect_equal(r$status, 1L, info = r$out)
+  calls <- rscript_calls(w)
+  recomputed <- sub("^data-raw/wsg_recompute_one\\.R ([A-Z]{4}) default$", "\\1",
+                    grep("wsg_recompute_one", calls, value = TRUE))
+  expect_identical(recomputed, "AAAA")
+  expect_match(grep("study_area_compare", calls, value = TRUE), " AAAA default$")
+  expect_match(r$out, "not consolidated (its host's consolidate failed): BBBB", fixed = TRUE)
+  expect_match(r$out, "re-model only what is still missing: BBBB", fixed = TRUE)
+  cov <- utils::read.delim(file.path(w, "logs", "T0_coverage.tsv"), colClasses = "character")
+  expect_identical(cov$class[order(cov$wsg)], c("recompute", "not_consolidated"))
+})
+
+test_that("the driver's consolidate outcome writer is what consolidate_outcomes reads", {
+  # The R snippet in study_area_run.sh, run as the driver's shell expands it,
+  # with schema_consolidate replaced by a result of the shape it returns.
+  skip_if_no_finish_lib()
+  rscript <- Sys.which("Rscript")
+  testthat::skip_if(!nzchar(rscript), "Rscript not on PATH")
+  w <- finish_world()
+  drv <- readLines(finish_driver())
+  i <- grep('^    \\( cd "\\$REPO_ROOT" && Rscript -e "$', drv)
+  i <- i[grepl("schema_consolidate", drv[i + 3L])]
+  j <- grep('^" \\) > "\\$LOG_DIR/\\$\\{TS\\}_consolidate\\.log"', drv)
+  expect_length(i, 1L)
+  expect_length(j, 1L)
+  body <- drv[(i + 1L):(j - 1L)]
+  body <- body[!grepl("load_all|^source\\(", body)]
+  fake <- paste0(
+    "res <- list(sources = list(",
+    "'cypher@ip-a' = list(ok = FALSE, stage = 'dest_log_newer', rc = -1L, groups = c('CCCC', 'DDDD')),",
+    "'cypher@ip-b' = list(ok = TRUE, stage = 'complete')))"
+  )
+  body[grepl("^res <- schema_consolidate", body)] <- fake
+  expect_true(any(body == fake))
+  script <- file.path(w, "writer.sh")
+  writeLines(c(
+    sprintf("CONS_TSV=%s", shQuote(file.path(w, "logs", "T0_consolidate.tsv"))),
+    "SCHEMA=x; SRC_R='list()'",
+    paste0("R_BODY=\"", paste(body, collapse = "\n"), "\""),
+    sprintf("%s -e \"$R_BODY\" > /dev/null; echo \"WRC=$?\"", shQuote(rscript))
+  ), script)
+  out <- suppressWarnings(system2(hosts_bash(), script, stdout = TRUE, stderr = TRUE))
+  expect_match(paste(out, collapse = "\n"), "WRC=1", fixed = TRUE)
+  r <- run_finish_sh(w, "unused", c(
+    cons_setup,
+    sprintf("consolidate_outcomes %s; echo \"FAILED=$CONS_FAILED\"; echo \"EXCL=$CONS_EXCLUDED\"",
+            shQuote(file.path(w, "logs", "T0_consolidate.tsv")))
+  ))
+  expect_equal(r$status, 0L, info = r$out)
+  expect_match(r$out, "FAILED=a\n", fixed = TRUE)
+  expect_identical(printed(r, "EXCL"), "CCCC,DDDD")
+  expect_match(r$out, "not this host's for: CCCC,DDDD", fixed = TRUE)
+})
+
+test_that("the driver records the run's groups before any spend and hands run_finish the excluded set", {
+  # Structural: the full-run path needs cloud hosts, so no test executes it.
+  # These pin the wiring the lib tests above rely on (link#358).
+  skip_if_no_finish_lib()
+  drv <- readLines(finish_driver())
+  first_write <- grep('^run_wsgs_write "\\$RUN_WSGS_TSV"$', drv)
+  spin <- grep("=== spin cyphers", drv, fixed = TRUE)
+  accounting <- grep("=== per-host completeness (database) ===", drv, fixed = TRUE)
+  expect_length(first_write, 1L)
+  expect_lt(first_write, spin[1])
+  rewrite <- grep('^run_wsgs_write "\\$RUN_WSGS_TSV" \\\\$', drv)
+  expect_length(rewrite, 1L)
+  expect_gt(rewrite, accounting)
+  expect_length(grep('^run_finish "\\$RUN_EXPECT" "\\$RUN_SIGNALS" "\\$\\{CONS_EXCLUDED:-\\}"$', drv), 1L)
+  expect_length(grep('elif consolidate_outcomes "$CONS_TSV" && [ -n "$CONS_FAILED" ]; then',
+                     drv, fixed = TRUE), 1L)
+  expect_length(grep("run_expected_recompute_only \"$WSGS_ARG\" || exit 1", drv, fixed = TRUE), 1L)
+  expect_length(grep("  run_finish \"$RO_EXPECT\" \"\" \"$RO_EXCLUDED\"", drv, fixed = TRUE), 1L)
+  expect_length(grep("[ -z \"${CONS_FAILED:-}\" ] || RUN_INCOMPLETE=1", drv, fixed = TRUE), 1L)
+  # The state record goes in_flight before the copy, and is rewritten only
+  # once outcomes are known.
+  inflight <- grep('consolidate_state_write "$CONS_STATE" in_flight', drv, fixed = TRUE)
+  copy <- grep("res <- schema_consolidate(", drv, fixed = TRUE)
+  expect_length(inflight, 1L)
+  expect_lt(inflight, copy)
+  expect_length(grep('consolidate_state_write "$CONS_STATE" ok', drv, fixed = TRUE), 2L)
+})
+
+state_file <- function(w) file.path(w, "logs", "20261018_000000_consolidate_state.tsv")
+
+test_that("consolidate_state_write records in_flight before, then ok or the failed stage", {
+  skip_if_no_finish_lib()
+  w <- finish_world()
+  p <- state_file(w)
+  r <- run_finish_sh(w, "unused", c(
+    cons_setup,
+    sprintf("consolidate_state_write %s in_flight; cp %s %s.before", shQuote(p), shQuote(p), shQuote(p)),
+    "CY_CONS_FAIL[a]=dest_copy",
+    sprintf("consolidate_state_write %s ok", shQuote(p))
+  ))
+  expect_equal(r$status, 0L, info = r$out)
+  before <- utils::read.delim(paste0(p, ".before"), colClasses = "character")
+  expect_identical(names(before), c("wsg", "workspace", "state", "run_uid"))
+  # c reported nothing, so it was never a source and has no rows.
+  expect_identical(paste(before$workspace, before$wsg, before$state),
+                   c("a CCCC in_flight", "a DDDD in_flight", "b EEEE in_flight"))
+  after <- utils::read.delim(p, colClasses = "character")
+  expect_identical(after$state, c("failed:dest_copy", "failed:dest_copy", "ok"))
+  expect_true(all(after$run_uid == finish_uid))
+})
+
+test_that("--recompute-only keeps every group not consolidated ok out until --wsgs= names them", {
+  skip_if_no_finish_lib()
+  conn <- skip_if_no_db()
+  sc <- finish_fixture(conn)
+  w <- finish_world()
+  # BBBB's host failed; ZZZZ's never finished (R died mid-copy); ZZZZ is in
+  # no other record, so only the union names it.
+  writeLines(c("wsg\tworkspace\tstate\trun_uid",
+               sprintf("AAAA\tb\tok\t%s", finish_uid),
+               sprintf("BBBB\ta\tfailed:dest_copy\t%s", finish_uid),
+               sprintf("ZZZZ\tc\tin_flight\t%s", finish_uid)), state_file(w))
+  r <- run_finish_sh(w, sc, c(
+    "run_expected_recompute_only ''; echo \"EXCL=$RO_EXCLUDED\"; echo \"EXP=$RO_EXPECT\"",
+    "run_finish \"$RO_EXPECT\" '' \"$RO_EXCLUDED\""
+  ))
+  expect_equal(r$status, 1L, info = r$out)
+  expect_identical(printed(r, "EXCL"), "BBBB,ZZZZ")
+  expect_match(printed(r, "EXP"), "ZZZZ", fixed = TRUE)
+  recomputed <- sub("^data-raw/wsg_recompute_one\\.R ([A-Z]{4}) default$", "\\1",
+                    grep("wsg_recompute_one", rscript_calls(w), value = TRUE))
+  expect_false(any(c("BBBB", "ZZZZ") %in% recomputed))
+  expect_true("AAAA" %in% recomputed)
+  expect_match(r$out, "not consolidated:                BBBB,ZZZZ", fixed = TRUE)
+
+  r <- run_finish_sh(w, sc, "run_expected_recompute_only AAAA,BBBB; echo \"EXCL=$RO_EXCLUDED\"")
+  expect_equal(r$status, 0L, info = r$out)
+  expect_identical(printed(r, "EXCL"), "")
+
+  # Another run's record stops a bare --recompute-only.
+  writeLines(c("wsg\tworkspace\tstate\trun_uid", "BBBB\ta\tok\t20261101_000000-0000beef"),
+             state_file(w))
+  r <- run_finish_sh(w, sc, "run_expected_recompute_only ''")
+  expect_equal(r$status, 1L, info = r$out)
+  expect_match(r$out, "not this run's consolidate record", fixed = TRUE)
+
+  # No record: the run never reached consolidate; nothing is excluded.
+  unlink(state_file(w))
+  r <- run_finish_sh(w, sc, "run_expected_recompute_only ''; echo \"EXCL=$RO_EXCLUDED\"")
+  expect_equal(r$status, 0L, info = r$out)
+  expect_identical(printed(r, "EXCL"), "")
+})
+
+test_that("a failed host's finished group outside its bucket is still classed not_consolidated", {
+  skip_if_no_finish_lib()
+  conn <- skip_if_no_db()
+  sc <- finish_fixture(conn)
+  w <- finish_world()
+  r <- run_finish_sh(w, sc, "run_finish AAAA '' BBBB")
+  expect_equal(r$status, 1L, info = r$out)
+  expect_match(r$out, "not consolidated (its host's consolidate failed): BBBB", fixed = TRUE)
+})
+
+test_that("a kept host's group finished outside its bucket is settled there, not re-modelled", {
+  skip_if_no_finish_lib()
+  conn <- skip_if_no_db()
+  sc <- finish_fixture(conn)
+  w <- finish_world()
+  # ZZZZ: finished by a outside its bucket, still on the kept host
+  # (CY_UNCONS, which kept_hosts.tsv writes), and excluded with a's bucket.
+  r <- run_finish_sh(w, sc, c(
+    "CY_WS_ARR=(a); CY_BUCKET[a]=BBBB; CY_HOLD[a]=1; CY_UNCONS[a]=BBBB,ZZZZ",
+    "run_finish AAAA '' BBBB,ZZZZ"
+  ))
+  expect_equal(r$status, 1L, info = r$out)
+  expect_match(r$out, "re-model only what is still missing: BBBB,ZZZZ", fixed = TRUE)
+  expect_false(grepl("Re-model each of these under this run_uid", r$out, fixed = TRUE))
+})
+
+test_that("run_coverage classes an excluded group even when the expected set lacks it", {
+  skip_if_no_finish_lib()
+  conn <- skip_if_no_db()
+  sc <- finish_fixture(conn)
+  w <- finish_world()
+  r <- run_finish_sh(w, sc, c(
+    "run_coverage AAAA '' BBBB",
+    "echo \"REC=$COV_RECOMPUTE\"; echo \"UNCONS=$COV_UNCONS\"; echo \"MISSING=$COV_MISSING\""
+  ))
+  expect_equal(r$status, 0L, info = r$out)
+  expect_identical(printed(r, "REC"), "AAAA")
+  expect_identical(printed(r, "UNCONS"), "BBBB")
+  expect_identical(printed(r, "MISSING"), "BBBB")
+})

@@ -768,3 +768,26 @@ test_that("an unknown group's reason names the rule that made it unknown", {
   )
   expect_false(grepl("no baseline", r$out, fixed = TRUE))
 })
+
+test_that("a host whose consolidate failed keeps it, and says so, while its groups are left there", {
+  # link#358: the driver carries on after a refused source and calls
+  # host_release on every host. The measured state still decides.
+  skip_if_no_hosts_lib()
+  w <- hosts_world()
+  put(w, "ssh_ip-a.out", db_answer("AAAA"))
+  put(w, "ssh_ip-a_streams.out", db_answer(character(0)))
+  put(w, "ssh_ip-b.out", db_answer("BBBB"))
+  put(w, "ssh_ip-b_streams.out", db_answer("BBBB"))
+  put(w, "ssh_ip-b_mc.out", db_answer("BBBB"))
+  r <- run_hosts(w, c(
+    "CY_CONS_FAIL[a]=copy_empty; CY_CONS_FAIL[b]=dest_log_newer",
+    account_release(),
+    "burn_cyphers"
+  ))
+  # a failed too, but nothing it finished is left there: nothing to lose.
+  expect_equal(burn_calls(w), "--workspace a")
+  k <- kept_tsv(w)
+  expect_equal(k$workspace, "b")
+  expect_match(k$reason, "consolidate failed at stage dest_log_newer", fixed = TRUE)
+  expect_equal(k$groups, "BBBB")
+})
