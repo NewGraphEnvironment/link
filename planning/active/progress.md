@@ -31,3 +31,6 @@
   as "nothing failed"; now `<TS>_consolidate_state.tsv` is written `in_flight` before the copy and
   rewritten after outcomes, and `--recompute-only` excludes anything not `ok`. And the excluded set
   is unioned into the expected set, not intersected. Mutation-checked (3 mutants, 3 red).
+- Code-check round 3 (`review-round3.md`): mechanism + full enumeration; one fragile finding (report's
+  `held` set from `CY_BUCKET` only), fixed, plus the latent `inter` in `run_coverage`. Mutation-checked.
+  Loop ended on the enumeration: 3 rounds, 5 findings fixed, 0 open.

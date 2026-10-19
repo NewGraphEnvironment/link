@@ -97,3 +97,15 @@ executed by no test. A structural test pins its wiring (first `run_wsgs_write` b
 rewrite after accounting, `run_finish … "${CONS_EXCLUDED:-}"`, the guarded `elif`), and its patterns
 were checked to miss a mutant driver. The R writer in that step is executed by a test, against a
 fake `schema_consolidate` result, and read back by `consolidate_outcomes`.
+
+## Code-check mechanism (rounds 1-3)
+
+One fact, "which groups may not be safely on the dispatcher", was derived separately at each consumer
+from records covering different populations or written at different times. The recurring witness is a
+group a failed host finished **outside its bucket**: in `CY_BUCKET_DONE` / `CY_UNCONS`, in no
+`CY_BUCKET`, so any operand built from buckets (including `run_wsgs.tsv`) drops it. Round 3 enumerated
+every set combination in the diff (`review-round3.md`); the one live instance left was the report's
+`held` set, now the same union `hosts_kept_report` checks. `run_coverage` unions the excluded set
+rather than intersecting it. Remaining `CY_BUCKET[` consumers checked: `run_expected_from_hosts`
+(covered: excluded groups join `RUN_WSGS`), `host_release` (already unions `CY_UNCONS`), the
+dispatch/consolidate/release loops (bucket is the right population there).

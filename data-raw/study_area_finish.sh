@@ -261,7 +261,11 @@ run_coverage() {
   signals="${2:-}"
   COV_STATE=unknown
   COV_RECOMPUTE=""; COV_NOROWS=""; COV_STALE=""; COV_LOST=""; COV_UNCONS=""; COV_MISSING=""
-  excluded=$(.hosts_inter "${3:-}" "$expected")
+  # Every excluded group is expected: run_finish already adds them to
+  # RUN_WSGS, and an intersection here would drop one only the exclusion
+  # names (the round-2 shape, #358).
+  excluded=$(.hosts_union "${3:-}")
+  expected=$(.hosts_union "$expected" "$excluded")
   in=$(.hosts_lines "$expected" | sed "s/.*/'&'/" | paste -sd, -)
   rows=$(.hosts_query local streams "watershed_group_code IN (${in:-NULL})" 1) \
     || return 1
@@ -634,11 +638,15 @@ run_finish_report() {
         # knows, and it has written that to kept_hosts.tsv. So this names the
         # groups in a held host's bucket and defers to that file, rather than
         # re-deriving its advice from sets whose meaning depends on state it
-        # cannot see (code-check rounds 1-3, #348).
+        # cannot see (code-check rounds 1-3, #348). The groups are the same
+        # union hosts_kept_report checks, not the bucket alone: a host can
+        # finish a group outside its bucket, and a failed consolidate source
+        # puts that group in COV_MISSING (#358, code-check round 3).
         local ws held="" on_kept remodel
         for ws in ${CY_WS_ARR[@]+"${CY_WS_ARR[@]}"}; do
           if [ "${CY_HOLD[$ws]:-0}" = "1" ]; then
-            held=$(.hosts_union "$held" "${CY_BUCKET[$ws]:-}")
+            held=$(.hosts_union "$held" "${CY_BUCKET[$ws]:-}" "${ACC_FINISHED[$ws]:-}" \
+              "${ACC_DONE_LOG[$ws]:-}" "${CY_UNCONS[$ws]:-}")
           fi
         done
         # --recompute-only has no hosts of its own; it reads the groups an

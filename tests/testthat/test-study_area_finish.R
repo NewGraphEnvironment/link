@@ -729,3 +729,34 @@ test_that("a failed host's finished group outside its bucket is still classed no
   expect_equal(r$status, 1L, info = r$out)
   expect_match(r$out, "not consolidated (its host's consolidate failed): BBBB", fixed = TRUE)
 })
+
+test_that("a kept host's group finished outside its bucket is settled there, not re-modelled", {
+  skip_if_no_finish_lib()
+  conn <- skip_if_no_db()
+  sc <- finish_fixture(conn)
+  w <- finish_world()
+  # ZZZZ: finished by a outside its bucket, still on the kept host
+  # (CY_UNCONS, which kept_hosts.tsv writes), and excluded with a's bucket.
+  r <- run_finish_sh(w, sc, c(
+    "CY_WS_ARR=(a); CY_BUCKET[a]=BBBB; CY_HOLD[a]=1; CY_UNCONS[a]=BBBB,ZZZZ",
+    "run_finish AAAA '' BBBB,ZZZZ"
+  ))
+  expect_equal(r$status, 1L, info = r$out)
+  expect_match(r$out, "re-model only what is still missing: BBBB,ZZZZ", fixed = TRUE)
+  expect_false(grepl("Re-model each of these under this run_uid", r$out, fixed = TRUE))
+})
+
+test_that("run_coverage classes an excluded group even when the expected set lacks it", {
+  skip_if_no_finish_lib()
+  conn <- skip_if_no_db()
+  sc <- finish_fixture(conn)
+  w <- finish_world()
+  r <- run_finish_sh(w, sc, c(
+    "run_coverage AAAA '' BBBB",
+    "echo \"REC=$COV_RECOMPUTE\"; echo \"UNCONS=$COV_UNCONS\"; echo \"MISSING=$COV_MISSING\""
+  ))
+  expect_equal(r$status, 0L, info = r$out)
+  expect_identical(printed(r, "REC"), "AAAA")
+  expect_identical(printed(r, "UNCONS"), "BBBB")
+  expect_identical(printed(r, "MISSING"), "BBBB")
+})
