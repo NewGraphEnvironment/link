@@ -1222,6 +1222,15 @@ DUP=$( { echo "$DISP_BUCKET" | tr ',' '\n'
 } | sed '/^[[:space:]]*$/d' | sort | uniq -d | paste -sd, - )
 [ -z "$DUP" ] || echo "  WARN: buckets overlap on: $DUP (computed on multiple hosts; consolidate last-writer-wins)"
 
+# Recorded before any spend (link#358): a run that stops before its tail must
+# still say which groups it was running. A group that fails on a cypher, or
+# before its first log row, leaves no <schema>.log row on the dispatcher, so
+# without this file --recompute-only could not name it. Rewritten after the
+# per-host accounting with each host's SKIPs.
+RUN_WSGS_TSV="$LOG_DIR/${TS}_run_wsgs.tsv"
+run_wsgs_write "$RUN_WSGS_TSV"
+echo "  run groups: $RUN_WSGS_TSV"
+
 # --- spin + prep cyphers ---
 declare -A CY_IP
 if [ "$N_CY" -gt 0 ]; then
@@ -1425,6 +1434,9 @@ done
   echo "  WARN: consolidating only the WSGs each host finished. The run will"
   echo "        finish so nothing already computed is lost, then exit non-zero."
 }
+# Each host's SKIPs, now known. Never fatal here: hosts are held.
+run_wsgs_write "$RUN_WSGS_TSV" \
+  || echo "  WARN: could not rewrite $RUN_WSGS_TSV with SKIPs; it still lists every group"
 
 # --- consolidate cyphers -> dispatcher ---
 if [ "$N_CY" -gt 0 ]; then

@@ -6,3 +6,6 @@
 - Created branch `358-study-area-run-sh-a-run-that-stops-befor` off main
 - Scaffolded PWF baseline from issue #358 with approved phases
 - Next: start Phase 1
+- Phase 1: `run_wsgs_write` / `run_expected_from_file` in `study_area_finish.sh`, written by
+  the driver after the buckets resolve and again after per-host accounting. Tests red first
+  (`command not found`), then green.

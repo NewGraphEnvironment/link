@@ -21,7 +21,8 @@
 #   RUN_INCOMPLETE RECOMPUTE_FAIL RECOMPUTE_FAIL_STAGE (initialised by the
 #   driver); with a default: KEPT_CAUSE_N RUN_LABEL KEPT_TSV_GROUPS; run_expected_from_hosts
 #   also reads DISP_BUCKET CY_WS_ARR CY_BUCKET CY_BUCKET_DONE ACC_FINISHED
-#   ACC_DONE_LOG ACC_SKIP
+#   ACC_DONE_LOG ACC_SKIP; run_wsgs_write reads DISP_BUCKET CY_WS_ARR
+#   CY_BUCKET ACC_SKIP
 # Functions read: .hosts_query host_finished .hosts_* (study_area_hosts.sh);
 #   csv_count recompute_order run_recompute_pool (study_area_run.sh)
 # Globals written: COV_STATE COV_RECOMPUTE COV_NOROWS COV_STALE COV_LOST
@@ -58,6 +59,60 @@ run_expected_from_hosts() {
   [ -z "$RUN_SKIP" ] || \
     echo "  WARN: SKIPped by a host (no modelled species) though its bucket expected them; not expected to have rows: $RUN_SKIP"
   return 0
+}
+
+# run_wsgs_write <path>: the run's groups, one row per group and host it was
+# dispatched to (wsg, host, skip, run_uid), so a run that stops before its
+# tail still says what it was running (link#358). The driver writes it as soon
+# as the buckets resolve, with skip `unknown`, and again after the per-host
+# accounting, with `yes` / `no` for each host whose accounting ran (ACC_SKIP
+# set for that key). `--recompute-only` reads it back through
+# run_expected_from_file. Written to a temp file and moved, so a driver killed
+# mid-write leaves the previous copy whole.
+run_wsgs_write() {
+  local path="$1" ws w
+  {
+    printf 'wsg\thost\tskip\trun_uid\n'
+    for w in $(.hosts_lines "${DISP_BUCKET:-}"); do
+      printf '%s\t%s\t%s\t%s\n' "$w" dispatcher "$(.run_wsgs_skip dispatcher "$w")" "$RUN_UID"
+    done
+    for ws in ${CY_WS_ARR[@]+"${CY_WS_ARR[@]}"}; do
+      for w in $(.hosts_lines "${CY_BUCKET[$ws]:-}"); do
+        printf '%s\t%s\t%s\t%s\n' "$w" "$ws" "$(.run_wsgs_skip "$ws" "$w")" "$RUN_UID"
+      done
+    done
+  } > "$path.tmp" && mv "$path.tmp" "$path"
+}
+
+# .run_wsgs_skip <host key> <wsg>: yes / no once that host's accounting ran,
+# unknown before. `case`, not `grep -q`: under pipefail an early-exiting grep
+# can SIGPIPE its writer and turn a match into "no".
+.run_wsgs_skip() {
+  if [ -z "${ACC_SKIP[$1]+x}" ]; then
+    echo unknown
+  else
+    case ",${ACC_SKIP[$1]}," in *",$2,"*) echo yes ;; *) echo no ;; esac
+  fi
+}
+
+# run_expected_from_file <path>: the groups a run_wsgs.tsv names, less those
+# SKIPped on every host that ran them, as CSV on stdout. Returns 2 when the
+# file does not exist (a run before link#358), and 1, saying why on stderr,
+# when its header is not run_wsgs_write's, a row names another run_uid, or a
+# group is not a four-letter code (the codes reach SQL in run_coverage).
+run_expected_from_file() {
+  local path="$1" hdr out
+  [ -f "$path" ] || return 2
+  IFS= read -r hdr < "$path" || hdr=""
+  [ "$hdr" = "$(printf 'wsg\thost\tskip\trun_uid')" ] || {
+    echo "  ✗ $path: not a run_wsgs.tsv (header '$hdr')" >&2; return 1; }
+  out=$(awk -F'\t' -v u="$RUN_UID" '
+    NR == 1 { next }
+    $4 != u { print "  ✗ " FILENAME ": row " NR " names another run_uid (" $4 ")" > "/dev/stderr"; bad = 1 }
+    $1 !~ /^[A-Z][A-Z][A-Z][A-Z]$/ { print "  ✗ " FILENAME ": row " NR " is not a group code (" $1 ")" > "/dev/stderr"; bad = 1 }
+    $3 != "yes" { keep[$1] = 1 }
+    END { if (bad) exit 1; for (k in keep) print k }' "$path") || return 1
+  printf '%s\n' "$out" | .hosts_csv
 }
 
 # run_config_check: the run's log rows on the dispatcher name exactly one

@@ -11,14 +11,14 @@
 - **A consolidate failure still exits before coverage.** If one source is refused (`dest_log_newer`, which a single group can trigger), the driver exits after consolidate, before the coverage step and the recompute. That is the same failure class as #348. Since #348 the banner prints the `--recompute-only` recovery, but the groups that were consolidated are not recomputed in that run.
 
 ## Phase 1: Record the run's groups (`<TS>_run_wsgs.tsv`)
-- [ ] Tests first in `tests/testthat/test-study_area_finish.R`: `run_wsgs_write` writes one
+- [x] Tests first in `tests/testthat/test-study_area_finish.R`: `run_wsgs_write` writes one
       row per bucket member and host (dispatcher + each cypher, overlap kept), `skip`
       `unknown` before accounting and `yes` for an `ACC_SKIP` group after;
       `run_expected_from_file` returns the unique groups less `skip = yes`, refuses (rc 1) a
       file whose `run_uid` column is not `RUN_UID`, and returns rc 2 for an absent file.
-- [ ] `run_wsgs_write <path>` and `run_expected_from_file <path>` in
+- [x] `run_wsgs_write <path>` and `run_expected_from_file <path>` in
       `data-raw/study_area_finish.sh` (header's globals lists updated).
-- [ ] Driver: call `run_wsgs_write` right after the overlap check (`study_area_run.sh:1223`),
+- [x] Driver: call `run_wsgs_write` right after the overlap check (`study_area_run.sh:1223`),
       before any spin, and again after per-host accounting (`:1427`) to fill `skip`.
 
 ## Phase 2: `--recompute-only` reads the file

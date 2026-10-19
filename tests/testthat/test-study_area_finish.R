@@ -368,3 +368,75 @@ test_that("the driver refuses --run-uid / --wsgs without --recompute-only, and d
   expect_equal(r$status, 1L)
   expect_match(r$out, "--wsgs= takes comma-separated", fixed = TRUE)
 })
+
+# --- the run's groups, recorded when the buckets resolve (link#358) ---------
+
+test_that("run_wsgs_write records every host's bucket, then each host's SKIPs once accounted", {
+  skip_if_no_finish_lib()
+  w <- finish_world()
+  tsv <- file.path(w, "logs", "T0_run_wsgs.tsv")
+  set_buckets <- c(
+    "DISP_BUCKET=AAAA,SSSS; CY_WS_ARR=(job1 job2)",
+    "CY_BUCKET[job1]=CCCC,DDDD; CY_BUCKET[job2]=DDDD,EEEE"
+  )
+  r <- run_finish_sh(w, "unused", c(set_buckets, sprintf("run_wsgs_write %s", shQuote(tsv))))
+  expect_equal(r$status, 0L, info = r$out)
+  x <- utils::read.delim(tsv, colClasses = "character")
+  expect_identical(names(x), c("wsg", "host", "skip", "run_uid"))
+  # DDDD is in two buckets: one row per host, as dispatched.
+  expect_identical(paste(x$host, x$wsg), c(
+    "dispatcher AAAA", "dispatcher SSSS", "job1 CCCC", "job1 DDDD", "job2 DDDD", "job2 EEEE"
+  ))
+  expect_true(all(x$skip == "unknown"))
+  expect_true(all(x$run_uid == finish_uid))
+
+  # After accounting: a host's SKIPs are yes, the rest no; a host whose
+  # accounting never ran stays unknown.
+  r <- run_finish_sh(w, "unused", c(
+    set_buckets,
+    "ACC_SKIP[dispatcher]=SSSS; ACC_SKIP[job1]=''",
+    sprintf("run_wsgs_write %s", shQuote(tsv))
+  ))
+  expect_equal(r$status, 0L, info = r$out)
+  x <- utils::read.delim(tsv, colClasses = "character")
+  expect_identical(x$skip, c("no", "yes", "no", "no", "unknown", "unknown"))
+})
+
+test_that("run_expected_from_file reads the run's groups less SKIPs, and refuses another run's file", {
+  skip_if_no_finish_lib()
+  w <- finish_world()
+  tsv <- file.path(w, "logs", "T0_run_wsgs.tsv")
+  rows <- function(uid = finish_uid, first = "AAAA") c(
+    "wsg\thost\tskip\trun_uid",
+    sprintf("%s\tdispatcher\tno\t%s", first, uid),
+    sprintf("SSSS\tdispatcher\tyes\t%s", uid),
+    sprintf("DDDD\tjob1\tunknown\t%s", uid),
+    sprintf("DDDD\tjob2\tyes\t%s", uid),
+    sprintf("TTTT\tjob2\tyes\t%s", uid)
+  )
+  read_it <- function() run_finish_sh(w, "unused", sprintf(
+    "rc=0; EXP=$(run_expected_from_file %s) || rc=$?; echo \"EXP=$EXP\"; echo \"RC=$rc\"",
+    shQuote(tsv)))
+  writeLines(rows(), tsv)
+  r <- read_it()
+  # SSSS and TTTT were SKIPped wherever they ran; DDDD was not, by job1.
+  expect_identical(printed(r, "EXP"), "AAAA,DDDD")
+  expect_match(r$out, "RC=0", fixed = TRUE)
+
+  writeLines(rows(uid = "20261101_000000-0000beef"), tsv)
+  r <- read_it()
+  expect_match(r$out, "RC=1", fixed = TRUE)
+  expect_match(r$out, "another run_uid", fixed = TRUE)
+
+  # A value that is not a group code never reaches the SQL coverage builds.
+  writeLines(rows(first = "AA'A"), tsv)
+  expect_match(read_it()$out, "RC=1", fixed = TRUE)
+
+  writeLines(c("wsg\thost", "AAAA\tdispatcher"), tsv)
+  expect_match(read_it()$out, "RC=1", fixed = TRUE)
+
+  unlink(tsv)
+  r <- read_it()
+  expect_match(r$out, "RC=2", fixed = TRUE)
+  expect_identical(printed(r, "EXP"), "")
+})
