@@ -242,7 +242,9 @@ cloud hosts, `--refresh-primitives`, link `ee21eb13`. Both verifiers pass at
   their only copy. Two groups failed on bugs fixed in `a17e9177` (a duplicate
   PSCIS row from an xref that sets both ids; a logical `access_<sp>` for a
   present species with no barrier). One failed group would have skipped the
-  recompute for all of them (#348). The operator paused the driver, the 18 were
+  recompute for all of them (#348; since fixed: coverage now recomputes the
+  groups the run built and names the rest, and `--recompute-only
+  --run-uid=` finishes the run once those are re-modelled, RUNBOOK §8d). The operator paused the driver, the 18 were
   consolidated by hand, KITR and UPET re-ran on m1 under the same run_uid, and
   the driver resumed. So the run carries more than one link SHA: in `log`, 239
   groups `ee21eb13` and 2 `a17e9177`; in `log_recompute`, all 241 `a17e9177`,

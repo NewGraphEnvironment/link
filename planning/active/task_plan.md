@@ -25,13 +25,13 @@ Design: `/Users/airvine/.claude/plans/quiet-hopping-umbrella.md` (approved 2026-
 - [x] `bash -n` both scripts; Phase 1 tests pass; `pool_probe.sh data-raw/study_area_run.sh` still passes (the extraction still works)
 
 ## Phase 3: Docs
-- [ ] RUNBOOK §8d: the coverage classes, recompute over this run's finished groups, `--recompute-only --run-uid` recovery (replace the "coverage FATAL" wording at ~`:1291`)
-- [ ] `CLAUDE.md` #246 status fact on #348: state the new behaviour
-- [ ] `research/study_area_run.md`: one line where the run's recovery is described, if it names the coverage exit
+- [x] RUNBOOK §8d: the coverage classes, recompute over this run's finished groups, `--recompute-only --run-uid` recovery (replace the "coverage FATAL" wording at ~`:1291`)
+- [x] `CLAUDE.md` #246 status fact on #348: state the new behaviour
+- [x] `research/study_area_run.md`: one line where the run's recovery is described, if it names the coverage exit
 
 ## Phase 4: Verification
-- [ ] Mutation: restore `exit 1` on missing in a copy of the lib (`LNK_TEST_FINISH_LIB`), and confirm acceptance test 1 goes red
-- [ ] Live, read-only: `run_coverage` against `fresh_default` for run_uid `20261017_004619-3f4c713b` with the 241 groups gives 241 recompute and 0 missing (no recompute run)
+- [x] Mutation: restore `exit 1` on missing in a copy of the lib (`LNK_TEST_FINISH_LIB`), and confirm acceptance test 1 goes red
+- [x] Live, read-only: `run_coverage` against `fresh_default` for run_uid `20261017_004619-3f4c713b` with the 241 groups gives 241 recompute and 0 missing (no recompute run)
 - [ ] `devtools::test()` full suite, `lintr` on the new test file
 
 ## Validation
