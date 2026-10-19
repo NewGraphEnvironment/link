@@ -696,13 +696,15 @@ regressions judgement below reads.
   link's `streams_access`** (what mapping_code and `lnk_rollup_wsg()`'s
   `accessible_km` read). The export carries both because they disagree, for
   two reasons:
-  - **The segment that starts at a barrier.** `accessible` counts it, link's
-    access table puts the barrier downstream of it. Measured 2026-10-14 on DUNC
-    BT, never recomputed: 229 segments (85 km) flagged accessible with a BT
-    barrier downstream, 228 of them starting exactly at a BT-blocking barrier.
-    Across the pilot's 150 config × species × group rows, every row has some;
-    the flag runs 4,292 km over `accessible_km` in all. The convention
-    question is #336.
+  - **Different barrier sets near gradient barriers.** Measured on DUNC BT
+    (2026-10-14, and the same on the 241-group build, 2026-10-19): 229 segments
+    (85 km) flagged accessible with `access_bt` 0, 228 of them starting within
+    5 mm of a BT-blocking gradient barrier in `<schema>.barriers`, never exactly
+    on it. fresh's access predicate blocks a segment at a break
+    (`b.downstream_route_measure <= s.downstream_route_measure`), so this is not
+    a boundary convention: fresh's breaks table holds no BT-blocking break there.
+    Across the pilot's 150 config × species × group rows the flag runs 4,292 km
+    over `accessible_km`. Which barrier set is right is #336, part of #349.
   - **The cross-group recompute** (`wsg_recompute_one.R`,
     `lnk_access(merge = TRUE)`) rewrites `streams_access`, never
     `streams_habitat_<sp>`, so a barrier in another group that arrived after
