@@ -31,26 +31,26 @@
 - [x] Driver header (`:82-90`) and the block's comment say the file is read first.
 
 ## Phase 3: Carry on after a consolidate failure
-- [ ] Tests first: `consolidate_outcomes <tsv>` with one refused source (`dest_log_newer`)
+- [x] Tests first: `consolidate_outcomes <tsv>` with one refused source (`dest_log_newer`)
       and one ok source → `CONS_FAILED` names the refused workspace, its bucket is in
       `CONS_EXCLUDED`, the ok host's signals survive; a TSV missing a source → rc 1.
       `run_finish` with an excluded set recomputes and compares only the other host's
       groups, writes `not_consolidated` rows to `coverage.tsv`, and exits 1 (acceptance 2,
       lib level). In `test-study_area_hosts.R`: `host_release` on a host whose consolidate
       failed keeps it with reason `consolidate refused (dest_log_newer)` and its groups.
-- [ ] The R snippet at `study_area_run.sh:1466-1473` writes `${TS}_consolidate.tsv`
+- [x] The R snippet at `study_area_run.sh:1466-1473` writes `${TS}_consolidate.tsv`
       (`host ok stage groups`) from `res$sources` before `quit()`.
-- [ ] `consolidate_outcomes` (finish lib): maps `cypher@<ip>` back to the workspace via
+- [x] `consolidate_outcomes` (finish lib): maps `cypher@<ip>` back to the workspace via
       `CY_IP`, sets `CY_CONS_FAIL[ws]=<stage>`, `CONS_EXCLUDED`, and drops a failed host's
       `CY_BUCKET_DONE` so it never reaches `RUN_SIGNALS`.
-- [ ] `run_finish`/`run_coverage` take the excluded set as a third argument: removed from
+- [x] `run_finish`/`run_coverage` take the excluded set as a third argument: removed from
       every other class, added to `COV_MISSING` as `COV_UNCONS`, printed and written as
       `not_consolidated`. The report's existing kept-host branch then defers those groups to
       `kept_hosts.tsv`.
-- [ ] Driver: on `crc != 0`, if `consolidate_outcomes` accounts for every source, print each
+- [x] Driver: on `crc != 0`, if `consolidate_outcomes` accounts for every source, print each
       failed host, stage and groups, set `RUN_INCOMPLETE=1`, and carry on to release, burn and
       `run_finish`; otherwise keep today's exit and banner.
-- [ ] `host_release` (`study_area_hosts.sh:332`): comment no longer says "only after
+- [x] `host_release` (`study_area_hosts.sh:332`): comment no longer says "only after
       success"; a host with `CY_CONS_FAIL` set is kept with that reason (after `host_split`,
       so `CY_UNCONS` still fills the groups column).
 

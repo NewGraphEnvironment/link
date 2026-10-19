@@ -498,3 +498,125 @@ test_that("--recompute-only falls back to the log for a run with no run_wsgs.tsv
   expect_equal(r$status, 0L, info = r$out)
   expect_identical(printed(r, "EXP"), "AAAA")
 })
+
+# --- a consolidate that refuses one source (link#358) -----------------------
+
+cons_tsv <- function(w, rows) {
+  p <- file.path(w, "logs", "T0_consolidate.tsv")
+  writeLines(c("host\tok\tstage\tgroups", rows), p)
+  p
+}
+
+cons_setup <- c(
+  "CY_WS_ARR=(a b c); CY_IP[a]=ip-a; CY_IP[b]=ip-b; CY_IP[c]=ip-c",
+  "CY_BUCKET[a]=CCCC,DDDD; CY_BUCKET[b]=EEEE; CY_BUCKET[c]=FFFF",
+  # c reported nothing, so it was never a source.
+  "CY_BUCKET_DONE[a]=CCCC,DDDD; CY_BUCKET_DONE[b]=EEEE; CY_BUCKET_DONE[c]=''"
+)
+
+test_that("consolidate_outcomes names a refused source and keeps its groups out of the signals", {
+  skip_if_no_finish_lib()
+  w <- finish_world()
+  p <- cons_tsv(w, c("cypher@ip-a\tFALSE\tdest_log_newer\tDDDD",
+                     "cypher@ip-b\tTRUE\tcomplete\t"))
+  r <- run_finish_sh(w, "unused", c(
+    cons_setup,
+    sprintf("consolidate_outcomes %s", shQuote(p)),
+    "echo \"FAILED=$CONS_FAILED\"; echo \"EXCL=$CONS_EXCLUDED\"; echo \"STAGE=${CY_CONS_FAIL[a]}\"",
+    "echo \"BSTAGE=${CY_CONS_FAIL[b]:-none}\"",
+    "DISP_BUCKET=AAAA; ACC_FINISHED[dispatcher]=AAAA",
+    "run_expected_from_hosts; echo \"SIG=$RUN_SIGNALS\"; echo \"EXP=$RUN_EXPECT\""
+  ))
+  expect_equal(r$status, 0L, info = r$out)
+  expect_match(r$out, "FAILED=a\n", fixed = TRUE)
+  expect_identical(printed(r, "EXCL"), "CCCC,DDDD")
+  expect_match(r$out, "STAGE=dest_log_newer", fixed = TRUE)
+  expect_match(r$out, "BSTAGE=none", fixed = TRUE)
+  expect_match(r$out, "cy[a]: consolidate failed at stage dest_log_newer", fixed = TRUE)
+  expect_match(r$out, "DDDD", fixed = TRUE)
+  # The refused host's bucket is no finish signal; it is still expected.
+  expect_identical(printed(r, "SIG"), "AAAA,EEEE")
+  expect_identical(printed(r, "EXP"), "AAAA,CCCC,DDDD,EEEE,FFFF")
+})
+
+test_that("consolidate_outcomes refuses a record that does not account for every source", {
+  skip_if_no_finish_lib()
+  w <- finish_world()
+  p <- cons_tsv(w, "cypher@ip-a\tFALSE\tdest_copy\t")
+  r <- run_finish_sh(w, "unused", c(
+    cons_setup,
+    sprintf("rc=0; consolidate_outcomes %s || rc=$?; echo \"RC=$rc\"", shQuote(p))
+  ))
+  expect_match(r$out, "RC=1", fixed = TRUE)
+  expect_match(r$out, "cy[b]", fixed = TRUE)
+  r <- run_finish_sh(w, "unused", c(
+    cons_setup,
+    "rc=0; consolidate_outcomes /nonexistent/T0_consolidate.tsv || rc=$?; echo \"RC=$rc\""
+  ))
+  expect_match(r$out, "RC=1", fixed = TRUE)
+})
+
+test_that("a refused source's groups are not recomputed; the others are, and the run exits non-zero", {
+  skip_if_no_finish_lib()
+  conn <- skip_if_no_db()
+  sc <- finish_fixture(conn)
+  w <- finish_world()
+  # BBBB came from host a, whose consolidate was refused; its rows here, and
+  # its closed log row, belong to some other copy. AAAA came from elsewhere.
+  r <- run_finish_sh(w, sc, c(
+    "CY_WS_ARR=(a); CY_BUCKET[a]=BBBB; CY_HOLD[a]=1",
+    "run_finish AAAA,BBBB '' BBBB"
+  ))
+  expect_equal(r$status, 1L, info = r$out)
+  calls <- rscript_calls(w)
+  recomputed <- sub("^data-raw/wsg_recompute_one\\.R ([A-Z]{4}) default$", "\\1",
+                    grep("wsg_recompute_one", calls, value = TRUE))
+  expect_identical(recomputed, "AAAA")
+  expect_match(grep("study_area_compare", calls, value = TRUE), " AAAA default$")
+  expect_match(r$out, "not consolidated (its host's consolidate failed): BBBB", fixed = TRUE)
+  expect_match(r$out, "re-model only what is still missing: BBBB", fixed = TRUE)
+  cov <- utils::read.delim(file.path(w, "logs", "T0_coverage.tsv"), colClasses = "character")
+  expect_identical(cov$class[order(cov$wsg)], c("recompute", "not_consolidated"))
+})
+
+test_that("the driver's consolidate outcome writer is what consolidate_outcomes reads", {
+  # The R snippet in study_area_run.sh, run as the driver's shell expands it,
+  # with schema_consolidate replaced by a result of the shape it returns.
+  skip_if_no_finish_lib()
+  rscript <- Sys.which("Rscript")
+  testthat::skip_if(!nzchar(rscript), "Rscript not on PATH")
+  w <- finish_world()
+  drv <- readLines(finish_driver())
+  i <- grep('^    \\( cd "\\$REPO_ROOT" && Rscript -e "$', drv)
+  i <- i[grepl("schema_consolidate", drv[i + 3L])]
+  j <- grep('^" \\) > "\\$LOG_DIR/\\$\\{TS\\}_consolidate\\.log"', drv)
+  expect_length(i, 1L)
+  expect_length(j, 1L)
+  body <- drv[(i + 1L):(j - 1L)]
+  body <- body[!grepl("load_all|^source\\(", body)]
+  fake <- paste0(
+    "res <- list(sources = list(",
+    "'cypher@ip-a' = list(ok = FALSE, stage = 'dest_log_newer', rc = -1L, groups = c('CCCC', 'DDDD')),",
+    "'cypher@ip-b' = list(ok = TRUE, stage = 'complete')))"
+  )
+  body[grepl("^res <- schema_consolidate", body)] <- fake
+  expect_true(any(body == fake))
+  script <- file.path(w, "writer.sh")
+  writeLines(c(
+    sprintf("CONS_TSV=%s", shQuote(file.path(w, "logs", "T0_consolidate.tsv"))),
+    "SCHEMA=x; SRC_R='list()'",
+    paste0("R_BODY=\"", paste(body, collapse = "\n"), "\""),
+    sprintf("%s -e \"$R_BODY\" > /dev/null; echo \"WRC=$?\"", shQuote(rscript))
+  ), script)
+  out <- suppressWarnings(system2(hosts_bash(), script, stdout = TRUE, stderr = TRUE))
+  expect_match(paste(out, collapse = "\n"), "WRC=1", fixed = TRUE)
+  r <- run_finish_sh(w, "unused", c(
+    cons_setup,
+    sprintf("consolidate_outcomes %s; echo \"FAILED=$CONS_FAILED\"; echo \"EXCL=$CONS_EXCLUDED\"",
+            shQuote(file.path(w, "logs", "T0_consolidate.tsv")))
+  ))
+  expect_equal(r$status, 0L, info = r$out)
+  expect_match(r$out, "FAILED=a\n", fixed = TRUE)
+  expect_identical(printed(r, "EXCL"), "CCCC,DDDD")
+  expect_match(r$out, "not this host's for: CCCC,DDDD", fixed = TRUE)
+})

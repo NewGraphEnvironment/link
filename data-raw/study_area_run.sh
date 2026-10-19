@@ -55,6 +55,9 @@
 # have rows from a build this run finished in the persist afterwards. A group
 # that does not is named and the run exits non-zero, but the recompute and the
 # compare still run over the rest (link#348; data-raw/study_area_finish.sh).
+# A consolidate that refuses one source carries on the same way: that host is
+# kept and its groups are named (link#358). The run's groups are written to
+# <TS>_run_wsgs.tsv before any spend, which --recompute-only reads.
 #
 # Extra flags:
 #   --preflight-only        run the local gates and exit (no spend)
@@ -1460,31 +1463,55 @@ if [ "$N_CY" -gt 0 ]; then
     # there in the trap is settled. Cleared as soon as the subshell returns.
     CONSOLIDATING=1
     crc=0
+    # One outcome row per source (link#358), read by consolidate_outcomes.
+    # Removed first, so a run that dies before writing it is never read as
+    # having recorded one.
+    CONS_TSV="$LOG_DIR/${TS}_consolidate.tsv"
+    rm -f "$CONS_TSV"
     ( cd "$REPO_ROOT" && Rscript -e "
 suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
 source('data-raw/schema_consolidate.R')
 res <- schema_consolidate(schema = '$SCHEMA', sources = $SRC_R, backup = TRUE)
 print(res)
+out <- do.call(rbind, lapply(names(res\$sources), function(h) {
+  s <- res\$sources[[h]]
+  data.frame(host = h, ok = isTRUE(s\$ok),
+             stage = if (is.null(s\$stage)) NA_character_ else as.character(s\$stage),
+             groups = paste(s\$groups, collapse = ','), stringsAsFactors = FALSE)
+}))
+if (!is.null(out)) utils::write.table(out, '$CONS_TSV', sep = '\\t', quote = FALSE,
+                                      row.names = FALSE, na = '')
 ok <- all(vapply(res\$sources, function(s) isTRUE(s\$ok), logical(1)))
 quit(status = if (ok) 0 else 1)
 " ) > "$LOG_DIR/${TS}_consolidate.log" 2>&1 || crc=$?
     CONSOLIDATING=0
-    [ "$crc" = "0" ] \
-      || { echo "  ✗ consolidate failed; see $LOG_DIR/${TS}_consolidate.log — cyphers KEPT"
-           run_expected_from_hosts
-           echo "    No group was recomputed. Once the hosts' groups are consolidated:"
-           echo "      bash data-raw/study_area_run.sh --recompute-only --run-uid=$RUN_UID \\"
-           echo "        --config=$CONFIG --schema=$SCHEMA${RUN_LABEL:+ --run-label=$RUN_LABEL} \\"
-           echo "        --wsgs=$RUN_EXPECT"
-           exit 1; }
-    echo "  ✓ consolidated $n_src/$N_CY cypher(s) (see $LOG_DIR/${TS}_consolidate.log)"
+    if [ "$crc" = "0" ]; then
+      echo "  ✓ consolidated $n_src/$N_CY cypher(s) (see $LOG_DIR/${TS}_consolidate.log)"
+    elif consolidate_outcomes "$CONS_TSV" && [ -n "$CONS_FAILED" ]; then
+      # A source refused or failed; the others landed (link#358). Carry on:
+      # the refused host keeps its groups and is kept below, its groups are
+      # kept out of the recompute, and the run exits non-zero naming them.
+      echo "  ✗ consolidate failed for: $CONS_FAILED (see $LOG_DIR/${TS}_consolidate.log)"
+      echo "    carrying on with the cypher(s) that consolidated; the run will exit non-zero"
+    else
+      # Nothing says which sources landed (or R failed after recording every
+      # source ok), so nothing after this can be judged.
+      echo "  ✗ consolidate failed; see $LOG_DIR/${TS}_consolidate.log — cyphers KEPT"
+      run_expected_from_hosts
+      echo "    No group was recomputed. Once the hosts' groups are consolidated:"
+      echo "      bash data-raw/study_area_run.sh --recompute-only --run-uid=$RUN_UID \\"
+      echo "        --config=$CONFIG --schema=$SCHEMA${RUN_LABEL:+ --run-label=$RUN_LABEL} \\"
+      echo "        --wsgs=$RUN_EXPECT"
+      exit 1
+    fi
   fi
 
-  # Reached only when consolidate succeeded (or had nothing to take). A host
-  # is released only when its session exited 0 and its database answers that
-  # no streams rows are left for any group it ran or finished: consolidate
-  # deletes what it copied from the source, so what is left was not
-  # consolidated. Any other host stays HELD and the burn below skips it
+  # Reached when consolidate recorded an outcome for every source, whether or
+  # not each succeeded (link#358), or had nothing to take. A host is released
+  # only when its session exited 0 and its database answers that no streams
+  # rows are left for any group it ran or finished: consolidate deletes what it
+  # copied from the source, and only after copying all of it, so what is left
+  # was not consolidated. Any other host stays HELD and the burn below skips it
   # (link#347).
   echo "=== release consolidated cyphers ==="
   for WS in "${CY_WS_ARR[@]}"; do
@@ -1505,4 +1532,4 @@ RUN_INCOMPLETE="$complete_fail"
 
 # Coverage, recompute over the groups this run built, compare, report. Exits
 # non-zero on an incomplete run. Bare call: see study_area_finish.sh.
-run_finish "$RUN_EXPECT" "$RUN_SIGNALS"
+run_finish "$RUN_EXPECT" "$RUN_SIGNALS" "${CONS_EXCLUDED:-}"

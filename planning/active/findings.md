@@ -69,3 +69,11 @@ Decisions taken (mechanism, stated rather than asked):
 
 | Error | Resolution |
 |-------|------------|
+
+## Correction to the plan (Phase 3)
+
+The plan said `host_release` keeps a host whose consolidate failed. It keeps it only while finished
+groups are left on it, as before; `CY_CONS_FAIL` changes the reason to `consolidate failed at stage
+<X>; finished groups left on the host`. A failed source with nothing left (e.g. `copy_empty`) has
+nothing to lose, and #347's rule is that the measured state decides a burn. The run still exits
+non-zero through the `not_consolidated` class. Tested both ways in `test-study_area_hosts.R`.
