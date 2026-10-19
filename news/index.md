@@ -1,5 +1,35 @@
 # Changelog
 
+## link 0.66.4
+
+**In `study_area_run.sh`, one failed group no longer costs every other
+group its post-consolidate recompute, and `--recompute-only` finishes a
+run once its gaps are re-modelled**
+([\#348](https://github.com/NewGraphEnvironment/link/issues/348)).
+
+- **Coverage splits the run’s groups instead of exiting.** Groups fall
+  into four classes, read on the dispatcher after consolidate and
+  written to `<TS>_coverage.tsv`:
+  - rows from a build this run finished, meaning the group’s newest
+    `<schema>.log` row is the run_uid’s and closed;
+  - no rows;
+  - an earlier run’s or partial rows;
+  - lost at consolidate.
+
+  The recompute and the compare run over the first class only. Any other
+  class makes the run exit non-zero, with the groups named and the
+  recovery commands given. If the first class is empty, neither runs and
+  the report says why.
+- **`--recompute-only --run-uid=<uid> [--wsgs=]`** runs only the end of
+  a run: no droplet, pre-flight or consolidate. It refuses a `--config`
+  that the run’s log rows do not name. Read on `fresh_default`, run
+  `20261017_004619-3f4c713b` puts all 241 groups in the recompute class.
+- **The code lives in `data-raw/study_area_finish.sh`.** It is tested on
+  a scratch schema in `tests/testthat/test-study_area_finish.R`.
+  Mechanics: RUNBOOK §8d, “A missing group costs only itself”.
+  Follow-up:
+  [\#358](https://github.com/NewGraphEnvironment/link/issues/358).
+
 ## link 0.66.3
 
 **`schema_consolidate.R` keeps the log history of every group it copies,
