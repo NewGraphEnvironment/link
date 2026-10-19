@@ -5,19 +5,19 @@ In `study_area_run.sh`, one failed group skips the post-consolidate recompute fo
 Design: `/Users/airvine/.claude/plans/quiet-hopping-umbrella.md` (approved 2026-10-18), summarised in findings.md.
 
 ## Phase 1: Tests first (fixture schema, failing)
-- [ ] Move `hosts_bash()` to `tests/testthat/helper-bash.R`, so both shell-lib test files share it; `test-study_area_hosts.R` still passes
-- [ ] `tests/testthat/test-study_area_finish.R`: build a scratch schema with `skip_if_no_db()` + `.lnk_log_create_tables()` + a minimal `streams`. Groups:
+- [x] Move `hosts_bash()` to `tests/testthat/helper-bash.R`, so both shell-lib test files share it; `test-study_area_hosts.R` still passes
+- [x] `tests/testthat/test-study_area_finish.R`: build a scratch schema with `skip_if_no_db()` + `.lnk_log_create_tables()` + a minimal `streams`. Groups:
   - AAAA, BBBB closed this run, with rows;
   - CCCC open row this run, no rows;
   - DDDD rows plus another run's row;
   - EEEE closed this run, no rows.
-- [ ] Test: `run_coverage` splits into recompute / norows / stale / lost exactly
-- [ ] Test: a `done` signal admits a group with rows and no closed row
-- [ ] Test: a missing `streams` table is unknown (non-zero), never "all missing"
-- [ ] Test: `run_expected_from_log` returns AAAA, BBBB, CCCC, EEEE
-- [ ] Test (acceptance 1): `run_finish` with one missing group calls the stubbed pool and compare with exactly the recompute set, returns 1, and names the missing group
-- [ ] Test (acceptance 2): zero groups with rows: the pool and compare are not called, it returns 1, and it says why
-- [ ] Test: the driver refuses `--run-uid` alone, `--recompute-only` alone, a malformed uid, and `--recompute-only --focal=…` (all exit before any Rscript)
+- [x] Test: `run_coverage` splits into recompute / norows / stale / lost exactly
+- [x] Test: a `done` signal admits a group with rows and no closed row
+- [x] Test: a missing `streams` table is unknown (non-zero), never "all missing"
+- [x] Test: `run_expected_from_log` returns AAAA, BBBB, CCCC, EEEE
+- [x] Test (acceptance 1): `run_finish` with one missing group calls the stubbed pool and compare with exactly the recompute set, returns 1, and names the missing group
+- [x] Test (acceptance 2): zero groups with rows: the pool and compare are not called, it returns 1, and it says why
+- [x] Test: the driver refuses `--run-uid` alone, `--recompute-only` alone, a malformed uid, and `--recompute-only --focal=…` (all exit before any Rscript)
 
 ## Phase 2: `data-raw/study_area_finish.sh` + driver wiring
 - [ ] Write the lib (`run_coverage`, `run_expected_from_log`, `run_finish`) and move the tail into `run_finish` with the changes above
