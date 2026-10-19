@@ -1,3 +1,11 @@
+# link 0.66.5
+
+**`study_area_run.sh` records which groups a run was running, and a refused consolidate source no longer stops the run** ([#358](https://github.com/NewGraphEnvironment/link/issues/358)).
+
+- **`<TS>_run_wsgs.tsv` names every group and host before any spend**, and is rewritten after per-host accounting with each host's SKIPs. A bare `--recompute-only --run-uid=<uid>` reads it together with the dispatcher's log rows, so a group that failed on a cloud host, or before its first log row, is named. A run from before this change falls back to the log alone; `--wsgs=` still wins.
+- **A refused or failed source costs only its own groups.** When every source has a recorded outcome (`<TS>_consolidate.tsv`), the run carries on to coverage, the recompute and the compare with the hosts that consolidated. The failed host's groups are a new coverage class, `not_consolidated`, kept out of the recompute; the host is kept while finished groups remain on it; the run exits non-zero naming them. If R died without recording outcomes, the run still exits after consolidate.
+- **A crash mid-copy fails closed.** `<TS>_consolidate_state.tsv` lists each source's groups `in_flight` before the copy and `ok` or `failed:<stage>` after it. A later bare `--recompute-only` keeps any group not `ok` out of the recompute until `--wsgs=` names it. Mechanics: RUNBOOK §8d, "A missing group costs only itself".
+
 # link 0.66.4
 
 **In `study_area_run.sh`, one failed group no longer costs every other group its post-consolidate recompute, and `--recompute-only` finishes a run once its gaps are re-modelled** ([#348](https://github.com/NewGraphEnvironment/link/issues/348)).
