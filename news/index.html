@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.66.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.66.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,16 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.66.5" id="link-0665">link 0.66.5<a class="anchor" aria-label="anchor" href="#link-0665"></a></h2>
+<p><strong><code>study_area_run.sh</code> records which groups a run was running, and a refused consolidate source no longer stops the run</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/358" class="external-link">#358</a>).</p>
+<ul><li>
+<strong><code>&lt;TS&gt;_run_wsgs.tsv</code> names every group and host before any spend</strong>, and is rewritten after per-host accounting with each host’s SKIPs. A bare <code>--recompute-only --run-uid=&lt;uid&gt;</code> reads it together with the dispatcher’s log rows, so a group that failed on a cloud host, or before its first log row, is named. A run from before this change falls back to the log alone; <code>--wsgs=</code> still wins.</li>
+<li>
+<strong>A refused or failed source costs only its own groups.</strong> When every source has a recorded outcome (<code>&lt;TS&gt;_consolidate.tsv</code>), the run carries on to coverage, the recompute and the compare with the hosts that consolidated. The failed host’s groups are a new coverage class, <code>not_consolidated</code>, kept out of the recompute; the host is kept while finished groups remain on it; the run exits non-zero naming them. If R died without recording outcomes, the run still exits after consolidate.</li>
+<li>
+<strong>A crash mid-copy fails closed.</strong> <code>&lt;TS&gt;_consolidate_state.tsv</code> lists each source’s groups <code>in_flight</code> before the copy and <code>ok</code> or <code>failed:&lt;stage&gt;</code> after it. A later bare <code>--recompute-only</code> keeps any group not <code>ok</code> out of the recompute until <code>--wsgs=</code> names it. Mechanics: RUNBOOK §8d, “A missing group costs only itself”.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.66.4" id="link-0664">link 0.66.4<a class="anchor" aria-label="anchor" href="#link-0664"></a></h2>
 <p><strong>In <code>study_area_run.sh</code>, one failed group no longer costs every other group its post-consolidate recompute, and <code>--recompute-only</code> finishes a run once its gaps are re-modelled</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/348" class="external-link">#348</a>).</p>
