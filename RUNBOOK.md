@@ -1377,11 +1377,88 @@ it; link#354.) So:
   from its **database**: `<schema>.log` rows for the run_uid with
   `date_end` set, plus `SKIP` markers from the log, which write no row
   (link#347);
-- after consolidate, every run WSG must have rows in
-  `<persist>.streams`.
+- after consolidate, every run WSG must have rows in `<persist>.streams`
+  from a build **this run finished**.
 
 The second is detection rather than prevention, and it is the one that
 would have caught link#246 on day one regardless of cause.
+
+### A missing group costs only itself (link#348)
+
+The coverage check used to `exit 1` on the first run group with no rows,
+before the recompute. One failed group then left every other group’s
+access computed against an incomplete barrier set, with no recompute
+rows at all. It also asked only whether rows existed, so a failed group
+holding an earlier run’s rows passed and was recomputed as this run’s.
+
+Now `run_coverage` (`data-raw/study_area_finish.sh`) splits the run’s
+groups (every bucket, less SKIPs) into four classes, read on the
+dispatcher after consolidate:
+
+| class | rows in `streams` | finished this run | what happens |
+|----|----|----|----|
+| recompute | yes | yes | recomputed and compared |
+| no rows | no | no | named at the end |
+| earlier or partial | yes | no | named; its rows are left as they are |
+| lost at consolidate | no | yes | named |
+
+“Finished this run” means the group’s **newest** `<schema>.log` row (max
+`date_start`, the rule `schema_consolidate.R` uses for which build a
+group’s persist rows hold) is the run_uid’s and has `date_end` set.
+Consolidate copies a group’s log rows home (link#354), and the driver
+adds the dispatcher’s `done` markers and each cypher’s consolidated
+bucket. A failed build leaves its row open (`.lnk_log_run_fail` sets
+only `notes`), and its pre-persist can leave `streams` rows, so rows
+alone do not make a group “this run’s”. “Newest” matters for a
+`--recompute-only` days later: a group a later run rebuilt, or a hand
+re-run under the same uid that failed after its pre-persist, has a
+closed row for the uid that no longer names its rows. The classes are
+written to `<TS>_coverage.tsv`, beside the compare CSV, which covers the
+first class only. The recompute and the compare run over the first class
+only. If that class is empty, neither runs and the report says why. Any
+other class makes the run exit non-zero, and the report names the groups
+and the recovery:
+
+``` bash
+LNK_RUN_UID=<uid> [LNK_RUN_LABEL=<label>] LNK_SCHEMA=<schema> \
+  LNK_GUARD_DOWNSTREAM=warn LNK_LOAD=loadall \
+  Rscript data-raw/wsg_run_one.R <WSG> <config>          # each missing group
+bash data-raw/study_area_run.sh --recompute-only --run-uid=<uid> \
+  --config=<config> --schema=<schema> [--run-label=<label>] [--wsgs=<the run's groups>]
+```
+
+`--recompute-only` runs the driver’s tail and nothing else: no droplet,
+no pre-flight, no consolidate. It recomputes every group of the run, not
+just the re-modelled ones, because a re-modelled group’s barriers change
+access upstream of it. Without `--wsgs=`, the expected set is the groups
+with any log row for the run_uid on the dispatcher. A group that failed
+on a cloud host and was never re-run here has no such row, so only
+`--wsgs=` gets it named. A `--wsgs=` that leaves out logged groups
+warns. It refuses a `--config` other than the one the run’s log rows
+name, since a forgotten `--config` would recompute every group under
+`bcfishpass` and stamp the rows with the run’s uid. It skips the
+discharge resolution as well as the pre-flight, but still checks for
+`fresh.streams_vw_bcfp`, which the compare reads.
+
+It also cannot rescue a group whose build finished but whose `date_end`
+UPDATE failed (`.lnk_log_run_finish` is soft). A full run counts that
+group through its `done` marker, but `--recompute-only` has only the
+log, so it reports the group as “earlier or partial” every time.
+Re-model it. A missing group in a kept host’s bucket is listed apart in
+the report, which defers to `kept_hosts.tsv`: settle it there first
+(consolidate only `groups` where `groups_measured` is `yes`, never
+`groups_partial`), and re-model only what is still missing.
+`--recompute-only` warns when a `kept_hosts.tsv` names the run_uid.
+
+Two things it does not do. It takes no lock, so do not run it while
+another driver on the same schema can resume: a driver paused with
+`kill -STOP`, as in \#347’s recovery, would run a second barrier-view
+build and pool on the schema. And `study_area_verify.sql` stays red for
+a group whose failed attempt left an open log row **on the dispatcher**.
+That row is never closed, so verify reports the group as started and
+never finished, even after the re-run succeeds. In \#246 the open rows
+were on the cloud hosts, so it did not show. Tests:
+`tests/testthat/test-study_area_finish.R`, on a scratch schema.
 
 ### Which host may be burned (link#347)
 
@@ -1465,10 +1542,10 @@ log tables, link#127: 59 of `fresh`’s 98 groups, 0 in `fresh_default`,
 holds it, not replaced. Where it says `no`, find out what is left first.
 If the run’s recompute ran, it ran without the kept groups: recompute
 each one and each run group upstream of it (`wsg_recompute_one.R`). If
-it did not run (consolidate failed, coverage FATAL), recompute every
-group of the run; the banner says which. A missing `<schema>.streams` or
-`streams_mapping_code` on a host reads as unknown, not empty: every
-dispatched cypher has both. Tests:
+it did not run (consolidate failed, or no run group had rows from this
+run), recompute every group of the run; the banner says which. A missing
+`<schema>.streams` or `streams_mapping_code` on a host reads as unknown,
+not empty: every dispatched cypher has both. Tests:
 `tests/testthat/test-study_area_hosts.R` runs the lib in bash with
 stubbed ssh, psql, tofu and doctl.
 
