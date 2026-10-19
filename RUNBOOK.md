@@ -1250,7 +1250,8 @@ that class is empty, neither runs and the report says why. Any other class
 makes the run exit non-zero, and the report names the groups and the recovery:
 
 ```bash
-LNK_RUN_UID=<uid> LNK_SCHEMA=<schema> LNK_LOAD=loadall \
+LNK_RUN_UID=<uid> [LNK_RUN_LABEL=<label>] LNK_SCHEMA=<schema> \
+  LNK_GUARD_DOWNSTREAM=warn LNK_LOAD=loadall \
   Rscript data-raw/wsg_run_one.R <WSG> <config>          # each missing group
 bash data-raw/study_area_run.sh --recompute-only --run-uid=<uid> \
   --config=<config> --schema=<schema> [--run-label=<label>] [--wsgs=<the run's groups>]
@@ -1272,11 +1273,11 @@ It also cannot rescue a group whose build finished but whose `date_end`
 UPDATE failed (`.lnk_log_run_finish` is soft). A full run counts that group
 through its `done` marker, but `--recompute-only` has only the log, so it
 reports the group as "earlier or partial" every time. Re-model it.
-A missing group that a kept host still holds finished, or that the host could not be
-measured for (`groups` in `kept_hosts.tsv`), is listed apart in the report:
-consolidate it from the host, do not re-model it. One of unknown provenance
-(`groups_unknown`) is listed as "check first". A partial build there is
-re-modelled like any other missing group.
+A missing group in a kept host's bucket is listed apart in the report, which
+defers to `kept_hosts.tsv`: settle it there first (consolidate only `groups`
+where `groups_measured` is `yes`, never `groups_partial`), and re-model only
+what is still missing. `--recompute-only` warns when a `kept_hosts.tsv` names
+the run_uid.
 
 Two things it does not do. It takes no lock, so do not run it while another
 driver on the same schema can resume: a driver paused with `kill -STOP`, as in

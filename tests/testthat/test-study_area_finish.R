@@ -216,24 +216,23 @@ test_that("one missing group: the rest are recomputed and compared, and the run 
   expect_identical(cov$class[order(cov$wsg)], c("recompute", "recompute", "no_rows"))
 })
 
-test_that("a kept host's finished groups are consolidated, its partial ones re-modelled", {
+test_that("a missing group in a kept host's bucket defers to kept_hosts.tsv, the rest are re-modelled", {
   skip_if_no_finish_lib()
   conn <- skip_if_no_db()
   sc <- finish_fixture(conn)
   w <- finish_world()
-  # Host a is held: CCCC finished there, DDDD a partial build, EEEE unknown.
-  # Host b was released, so its stale CY_UNCONS (from accounting) is ignored.
+  # Host a is held: whatever its measured state, its groups are settled per
+  # kept_hosts.tsv first. Host b was released, so its bucket is re-modelled.
   r <- run_finish_sh(w, sc, c(
-    "CY_WS_ARR=(a b); CY_BUCKET[a]=CCCC,DDDD,EEEE; CY_HOLD[a]=1",
-    "CY_UNCONS[a]=CCCC; CY_PARTIAL[a]=DDDD; CY_DOUBT[a]=EEEE",
-    "CY_BUCKET[b]=GGGG; CY_HOLD[b]=0; CY_UNCONS[b]=GGGG",
+    "CY_WS_ARR=(a b); CY_BUCKET[a]=CCCC,DDDD; CY_HOLD[a]=1",
+    "CY_BUCKET[b]=GGGG; CY_HOLD[b]=0",
     "RUN_LABEL=prov-246",
-    "run_finish AAAA,CCCC,DDDD,EEEE,GGGG ''"
+    "run_finish AAAA,CCCC,DDDD,GGGG ''"
   ))
   expect_equal(r$status, 1L, info = r$out)
-  expect_match(r$out, "do NOT re-model them: CCCC\n", info = r$out)
-  expect_match(r$out, "consolidating or re-modelling: EEEE", fixed = TRUE)
-  expect_match(r$out, "Re-model each of these under this run_uid: DDDD,GGGG", fixed = TRUE)
+  expect_match(r$out, "re-model only what is still missing: CCCC,DDDD", fixed = TRUE)
+  expect_match(r$out, "Re-model each of these under this run_uid: GGGG", fixed = TRUE)
+  expect_false(grepl("do NOT re-model", r$out, fixed = TRUE))
   expect_match(r$out, "LNK_RUN_LABEL=prov-246", fixed = TRUE)
   expect_match(r$out, "--run-label=prov-246 --wsgs=", fixed = TRUE)
 })
@@ -250,6 +249,7 @@ test_that("a failed compare still reaches the report, which names the missing gr
   r <- run_finish_sh(w, sc, "run_finish AAAA,BBBB,CCCC ''")
   expect_equal(r$status, 1L, info = r$out)
   expect_match(r$out, "compare failed", fixed = TRUE)
+  expect_match(r$out, "LNK_RUN_UID=20261018_000000-0000abcd", fixed = TRUE)
   expect_match(r$out, "were NOT recomputed or compared: CCCC", fixed = TRUE)
 })
 
@@ -303,6 +303,18 @@ test_that("no group with rows from this run: no recompute, no compare, and it sa
   expect_match(r$out, "No run group has rows from a build this run finished", fixed = TRUE)
   expect_match(r$out, "no rows:                         CCCC", fixed = TRUE)
   expect_match(r$out, "an earlier run's or partial rows: DDDD", fixed = TRUE)
+})
+
+test_that("accounting short but coverage complete says so, and names no group to re-run", {
+  skip_if_no_finish_lib()
+  conn <- skip_if_no_db()
+  sc <- finish_fixture(conn)
+  w <- finish_world()
+  r <- run_finish_sh(w, sc, "RUN_INCOMPLETE=1; run_finish AAAA,BBBB ''")
+  expect_equal(r$status, 1L, info = r$out)
+  expect_match(r$out, "did not cover its whole bucket", fixed = TRUE)
+  expect_match(r$out, "recompute and the\n  compare above cover them all", info = r$out)
+  expect_length(grep("wsg_recompute_one", rscript_calls(w)), 2L)
 })
 
 test_that("a complete run recomputes every group and exits 0", {

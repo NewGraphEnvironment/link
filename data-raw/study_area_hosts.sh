@@ -535,8 +535,9 @@ hosts_kept_report() {
     echo "  group of the run, not only these"
   fi
   echo "  (every group: bash data-raw/study_area_run.sh --recompute-only"
-  echo "   --run-uid=$RUN_UID --config=<config> --schema=$SCHEMA${RUN_LABEL:+ --run-label=$RUN_LABEL}; one group:"
-  echo "   LNK_SCHEMA=$SCHEMA LNK_LOAD=loadall Rscript data-raw/wsg_recompute_one.R <WSG> <config>)."
+  echo "   --run-uid=$RUN_UID --config=<config> --schema=$SCHEMA${RUN_LABEL:+ --run-label=$RUN_LABEL}"
+  echo "   --wsgs=<the run's groups>; one group: LNK_RUN_UID=$RUN_UID ${RUN_LABEL:+LNK_RUN_LABEL=$RUN_LABEL }LNK_SCHEMA=$SCHEMA"
+  echo "   LNK_LOAD=loadall Rscript data-raw/wsg_recompute_one.R <WSG> <config>)."
   echo "  Then burn:"
   for ws in "$@"; do echo "    cd $CYPHER_DIR && ./cypher_down.sh --workspace $ws"; done
   echo "  Recorded in $tsv"

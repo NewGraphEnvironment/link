@@ -647,6 +647,13 @@ if [ "$RECOMPUTE_ONLY" = "1" ]; then
       "SELECT 1 FROM information_schema.tables WHERE table_schema='fresh' AND table_name='streams_vw_bcfp'" 2>/dev/null || true)" = "1" ] \
     || { echo "FATAL: fresh.streams_vw_bcfp missing (run snapshot_bcfp.sh --with-bcfp-views)"; exit 1; }
   run_config_check || { echo "FATAL: refusing to recompute run_uid $RUN_UID under another config"; exit 1; }
+  # A host kept by the run may still hold groups to consolidate; this run
+  # cannot see its state, only the file that recorded it.
+  RO_KEPT=$(grep -l -F "$RUN_UID" "$LOG_DIR"/*_kept_hosts.tsv 2>/dev/null || true)
+  [ -z "$RO_KEPT" ] || {
+    echo "  WARN: hosts were kept for this run_uid; settle their groups per these"
+    echo "        files first, and re-model only what is still missing:"
+    printf '        %s\n' $RO_KEPT; }
   RO_LOGGED=$(run_expected_from_log) \
     || { echo "FATAL: could not read $SCHEMA.log"; exit 1; }
   if [ -n "$WSGS_ARG" ]; then
@@ -1461,9 +1468,12 @@ quit(status = if (ok) 0 else 1)
     CONSOLIDATING=0
     [ "$crc" = "0" ] \
       || { echo "  ✗ consolidate failed; see $LOG_DIR/${TS}_consolidate.log — cyphers KEPT"
+           cf_wsgs="$DISP_BUCKET"
+           for WS in "${CY_WS_ARR[@]}"; do cf_wsgs=$(.hosts_union "$cf_wsgs" "${CY_BUCKET[$WS]}"); done
            echo "    No group was recomputed. Once the hosts' groups are consolidated:"
            echo "      bash data-raw/study_area_run.sh --recompute-only --run-uid=$RUN_UID \\"
-           echo "        --config=$CONFIG --schema=$SCHEMA${RUN_LABEL:+ --run-label=$RUN_LABEL}"
+           echo "        --config=$CONFIG --schema=$SCHEMA${RUN_LABEL:+ --run-label=$RUN_LABEL} \\"
+           echo "        --wsgs=$cf_wsgs"
            exit 1; }
     echo "  ✓ consolidated $n_src/$N_CY cypher(s) (see $LOG_DIR/${TS}_consolidate.log)"
   fi
