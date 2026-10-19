@@ -196,6 +196,55 @@ run_expected_from_log() {
   printf '%s\n' "$out" | .hosts_csv
 }
 
+# run_expected_recompute_only [--wsgs= csv]: the expected set of a
+# --recompute-only, in RO_EXPECT. --wsgs= wins, with a WARN naming the run's
+# groups it leaves out. Otherwise the run's own <TS>_run_wsgs.tsv (a run_uid's
+# prefix is its TS) together with every group holding a log row for the
+# run_uid, so a group that failed on a cloud host, or before its first log
+# row, is still named (link#358). A run from before #358 has no such file and
+# falls back to the log alone. Returns 1, saying why, when the log cannot be
+# read, when the file is not this run's (fatal only without --wsgs=), or when
+# the set is empty. Prints only; never exits.
+run_expected_recompute_only() {
+  local wsgs="${1:-}" logged file from_file="" rc=0 left
+  logged=$(run_expected_from_log) || { echo "FATAL: could not read $SCHEMA.log"; return 1; }
+  file="$LOG_DIR/${RUN_UID%-*}_run_wsgs.tsv"
+  from_file=$(run_expected_from_file "$file") || rc=$?
+  if [ "$rc" != "0" ] && [ "$rc" != "2" ]; then
+    if [ -z "$wsgs" ]; then
+      echo "FATAL: $file is not this run's record of its groups (above); pass --wsgs="
+      return 1
+    fi
+    echo "  WARN: ignoring $file (above); --wsgs= gives the groups"
+    from_file=""
+  fi
+  if [ -n "$wsgs" ]; then
+    RO_EXPECT=$(.hosts_union "$wsgs")
+    echo "  expected WSGs: $(.hosts_n "$RO_EXPECT"), from --wsgs="
+    # A subset leaves the groups upstream of a re-modelled one on access
+    # computed before its barriers changed.
+    left=$(.hosts_minus "$(.hosts_union "$logged" "$from_file")" "$RO_EXPECT")
+    [ -z "$left" ] || {
+      echo "  WARN: --wsgs= leaves out $(.hosts_n "$left") group(s) of this run_uid (log rows or run_wsgs.tsv);"
+      echo "        those upstream of a re-modelled group keep stale access: $left"; }
+  elif [ "$rc" = "0" ]; then
+    RO_EXPECT=$(.hosts_union "$from_file" "$logged")
+    echo "  expected WSGs: $(.hosts_n "$RO_EXPECT"): the $(.hosts_n "$from_file") in $file"
+    left=$(.hosts_minus "$logged" "$from_file")
+    [ -z "$left" ] || \
+      echo "    and $(.hosts_n "$left") more with a $SCHEMA.log row for this run_uid: $left"
+  else
+    RO_EXPECT="$logged"
+    echo "  expected WSGs: the $(.hosts_n "$RO_EXPECT") with a $SCHEMA.log row for this run_uid"
+    echo "  (no $file: a run before link#358). A group that failed on a cloud host"
+    echo "  and was not re-run here has no row here; pass the run's groups with --wsgs= to have it named."
+  fi
+  [ -n "$RO_EXPECT" ] || {
+    echo "FATAL: no group recorded for run_uid $RUN_UID, and no --wsgs=: nothing to recompute"
+    return 1; }
+  return 0
+}
+
 # run_finish <expected csv> [signals csv]: coverage, recompute, compare and the
 # final report. EXITS the shell on an incomplete or failed run, as the driver
 # always has, and returns 0 only for a complete one. Call it bare: under

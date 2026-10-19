@@ -22,13 +22,13 @@
       before any spin, and again after per-host accounting (`:1427`) to fill `skip`.
 
 ## Phase 2: `--recompute-only` reads the file
-- [ ] Tests first: a fixture `T0_run_wsgs.tsv` naming GGGG on host `job1` with no log row →
+- [x] Tests first: a fixture `T0_run_wsgs.tsv` naming GGGG on host `job1` with no log row →
       the expected set includes GGGG, and `run_finish` names it under "no rows" (acceptance 1);
       no file → log only, with the "pass --wsgs=" note; `--wsgs=` still wins over both.
-- [ ] Move the expected-set resolution out of the driver block (`:663-682`) into
+- [x] Move the expected-set resolution out of the driver block (`:663-682`) into
       `run_expected_recompute_only` in `study_area_finish.sh` (sets `RO_EXPECT`, prints the
       source of each part: file, log, or `--wsgs=`), so it is testable; the driver calls it.
-- [ ] Driver header (`:82-90`) and the block's comment say the file is read first.
+- [x] Driver header (`:82-90`) and the block's comment say the file is read first.
 
 ## Phase 3: Carry on after a consolidate failure
 - [ ] Tests first: `consolidate_outcomes <tsv>` with one refused source (`dest_log_newer`)

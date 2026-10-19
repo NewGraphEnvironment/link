@@ -440,3 +440,61 @@ test_that("run_expected_from_file reads the run's groups less SKIPs, and refuses
   expect_match(r$out, "RC=2", fixed = TRUE)
   expect_identical(printed(r, "EXP"), "")
 })
+
+ro_file <- function(w) file.path(w, "logs", "20261018_000000_run_wsgs.tsv")
+
+test_that("--recompute-only names a group that failed on a cloud host, from the run's run_wsgs.tsv", {
+  skip_if_no_finish_lib()
+  conn <- skip_if_no_db()
+  sc <- finish_fixture(conn)
+  w <- finish_world()
+  # GGGG ran on job1 and failed there: no log row on the dispatcher, no rows.
+  writeLines(c(
+    "wsg\thost\tskip\trun_uid",
+    sprintf("AAAA\tdispatcher\tno\t%s", finish_uid),
+    sprintf("BBBB\tdispatcher\tno\t%s", finish_uid),
+    sprintf("GGGG\tjob1\tunknown\t%s", finish_uid)
+  ), ro_file(w))
+  r <- run_finish_sh(w, sc, c(
+    "run_expected_recompute_only ''; echo \"EXP=$RO_EXPECT\"",
+    "run_finish \"$RO_EXPECT\" ''"
+  ))
+  expect_equal(r$status, 1L, info = r$out)
+  # The file, and every group with a log row for the run (nothing dropped).
+  expect_identical(printed(r, "EXP"), "AAAA,BBBB,CCCC,EEEE,GGGG,HHHH,IIII")
+  expect_match(r$out, "the 3 in ", fixed = TRUE)
+  expect_match(r$out, "4 more with a", fixed = TRUE)
+  expect_match(r$out, "no rows:                         CCCC,GGGG", fixed = TRUE)
+  expect_match(r$out, "Re-model each of these under this run_uid: CCCC,EEEE,GGGG,HHHH,IIII",
+               fixed = TRUE)
+})
+
+test_that("--recompute-only falls back to the log for a run with no run_wsgs.tsv, and --wsgs= wins", {
+  skip_if_no_finish_lib()
+  conn <- skip_if_no_db()
+  sc <- finish_fixture(conn)
+  w <- finish_world()
+  r <- run_finish_sh(w, sc, "run_expected_recompute_only ''; echo \"EXP=$RO_EXPECT\"")
+  expect_equal(r$status, 0L, info = r$out)
+  expect_identical(printed(r, "EXP"), "AAAA,BBBB,CCCC,EEEE,HHHH,IIII")
+  expect_match(r$out, "pass the run's groups with --wsgs=", fixed = TRUE)
+
+  writeLines(c("wsg\thost\tskip\trun_uid",
+               sprintf("GGGG\tjob1\tno\t%s", finish_uid)), ro_file(w))
+  r <- run_finish_sh(w, sc, "run_expected_recompute_only AAAA,BBBB; echo \"EXP=$RO_EXPECT\"")
+  expect_equal(r$status, 0L, info = r$out)
+  expect_identical(printed(r, "EXP"), "AAAA,BBBB")
+  # Left out: the log's other groups and the file's GGGG.
+  expect_match(r$out, "leave(s)? out 5 group", info = r$out)
+  expect_match(r$out, "CCCC,EEEE,GGGG,HHHH,IIII", fixed = TRUE)
+
+  # Another run's file stops a bare --recompute-only, and only warns beside --wsgs=.
+  writeLines(c("wsg\thost\tskip\trun_uid",
+               "GGGG\tjob1\tno\t20261101_000000-0000beef"), ro_file(w))
+  r <- run_finish_sh(w, sc, "run_expected_recompute_only ''")
+  expect_equal(r$status, 1L, info = r$out)
+  expect_match(r$out, "FATAL", fixed = TRUE)
+  r <- run_finish_sh(w, sc, "run_expected_recompute_only AAAA; echo \"EXP=$RO_EXPECT\"")
+  expect_equal(r$status, 0L, info = r$out)
+  expect_identical(printed(r, "EXP"), "AAAA")
+})

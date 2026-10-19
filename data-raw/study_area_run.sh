@@ -86,8 +86,11 @@
 #                           and the report. No droplet, no pre-flight. For a
 #                           run whose missing groups were re-modelled by hand
 #                           under the same run_uid (link#348). Without --wsgs=
-#                           the expected groups are those with a log row for
-#                           the run_uid on the dispatcher.
+#                           the expected groups are those the run recorded in
+#                           <TS>_run_wsgs.tsv when its buckets resolved, and
+#                           any with a log row for the run_uid on the
+#                           dispatcher (the log alone for a run before
+#                           link#358).
 #
 # Run identity (link#262). Three levels, and only the middle one is new:
 #
@@ -660,26 +663,8 @@ if [ "$RECOMPUTE_ONLY" = "1" ]; then
     KEPT_TSV_GROUPS=$(awk -F'\t' -v u="$RUN_UID" '$4 == u { print $6 "," $7 "," $8 }' \
       $RO_KEPT | .hosts_csv)
   fi
-  RO_LOGGED=$(run_expected_from_log) \
-    || { echo "FATAL: could not read $SCHEMA.log"; exit 1; }
-  if [ -n "$WSGS_ARG" ]; then
-    RO_EXPECT=$(csv_lines "$WSGS_ARG" | sort -u | paste -sd, -)
-    echo "  expected WSGs: $(csv_count "$RO_EXPECT"), from --wsgs="
-    # A subset leaves the groups upstream of a re-modelled one on access
-    # computed before its barriers changed.
-    RO_LEFT=$(.hosts_minus "$RO_LOGGED" "$RO_EXPECT")
-    [ -z "$RO_LEFT" ] || {
-      echo "  WARN: --wsgs= leaves out $(csv_count "$RO_LEFT") group(s) with log rows for this run_uid;"
-      echo "        those upstream of a re-modelled group keep stale access: $RO_LEFT"; }
-  else
-    RO_EXPECT="$RO_LOGGED"
-    echo "  expected WSGs: the $(csv_count "$RO_EXPECT") with a $SCHEMA.log row for this run_uid."
-    echo "  A group that failed on a cloud host and was not re-run here has no row"
-    echo "  here; pass the run's groups with --wsgs= to have it named."
-  fi
-  [ -n "$RO_EXPECT" ] || {
-    echo "FATAL: no $SCHEMA.log row for run_uid $RUN_UID, and no --wsgs=: nothing to recompute"
-    exit 1; }
+  # The run's run_wsgs.tsv and its log rows, or --wsgs= (link#358).
+  run_expected_recompute_only "$WSGS_ARG" || exit 1
   run_finish "$RO_EXPECT" ""
   exit 0
 fi
