@@ -1463,7 +1463,7 @@ quit(status = if (ok) 0 else 1)
       || { echo "  ✗ consolidate failed; see $LOG_DIR/${TS}_consolidate.log — cyphers KEPT"
            echo "    No group was recomputed. Once the hosts' groups are consolidated:"
            echo "      bash data-raw/study_area_run.sh --recompute-only --run-uid=$RUN_UID \\"
-           echo "        --config=$CONFIG --schema=$SCHEMA"
+           echo "        --config=$CONFIG --schema=$SCHEMA${RUN_LABEL:+ --run-label=$RUN_LABEL}"
            exit 1; }
     echo "  ✓ consolidated $n_src/$N_CY cypher(s) (see $LOG_DIR/${TS}_consolidate.log)"
   fi

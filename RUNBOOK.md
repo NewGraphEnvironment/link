@@ -1253,7 +1253,7 @@ makes the run exit non-zero, and the report names the groups and the recovery:
 LNK_RUN_UID=<uid> LNK_SCHEMA=<schema> LNK_LOAD=loadall \
   Rscript data-raw/wsg_run_one.R <WSG> <config>          # each missing group
 bash data-raw/study_area_run.sh --recompute-only --run-uid=<uid> \
-  --config=<config> --schema=<schema> [--wsgs=<the run's groups>]
+  --config=<config> --schema=<schema> [--run-label=<label>] [--wsgs=<the run's groups>]
 ```
 
 `--recompute-only` runs the driver's tail and nothing else: no droplet, no
@@ -1267,6 +1267,13 @@ than the one the run's log rows name, since a forgotten `--config` would
 recompute every group under `bcfishpass` and stamp the rows with the run's
 uid. It skips the discharge resolution as well as the pre-flight, but still
 checks for `fresh.streams_vw_bcfp`, which the compare reads.
+
+It also cannot rescue a group whose build finished but whose `date_end`
+UPDATE failed (`.lnk_log_run_finish` is soft). A full run counts that group
+through its `done` marker, but `--recompute-only` has only the log, so it
+reports the group as "earlier or partial" every time. Re-model it.
+A group in a kept host's bucket is listed apart from the others in the
+report: consolidate it from the host, do not re-model it.
 
 Two things it does not do. It takes no lock, so do not run it while another
 driver on the same schema can resume: a driver paused with `kill -STOP`, as in

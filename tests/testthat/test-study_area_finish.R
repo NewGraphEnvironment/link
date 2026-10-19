@@ -216,6 +216,23 @@ test_that("one missing group: the rest are recomputed and compared, and the run 
   expect_identical(cov$class[order(cov$wsg)], c("recompute", "recompute", "no_rows"))
 })
 
+test_that("a missing group in a kept host's bucket is consolidated, not re-modelled", {
+  skip_if_no_finish_lib()
+  conn <- skip_if_no_db()
+  sc <- finish_fixture(conn)
+  w <- finish_world()
+  r <- run_finish_sh(w, sc, c(
+    "CY_WS_ARR=(a b); CY_BUCKET[a]=CCCC; CY_HOLD[a]=1; CY_BUCKET[b]=GGGG; CY_HOLD[b]=0",
+    "RUN_LABEL=prov-246",
+    "run_finish AAAA,CCCC,GGGG ''"
+  ))
+  expect_equal(r$status, 1L, info = r$out)
+  expect_match(r$out, "do NOT re-model them: CCCC", fixed = TRUE)
+  expect_match(r$out, "Re-model each of these under this run_uid: GGGG", fixed = TRUE)
+  expect_match(r$out, "LNK_RUN_LABEL=prov-246", fixed = TRUE)
+  expect_match(r$out, "--run-label=prov-246 --wsgs=", fixed = TRUE)
+})
+
 test_that("a failed compare still reaches the report, which names the missing groups", {
   skip_if_no_finish_lib()
   conn <- skip_if_no_db()

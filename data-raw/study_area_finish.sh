@@ -379,7 +379,7 @@ run_finish_report() {
       fi
       echo "  Every group of the run, once consolidated:"
       echo "    bash data-raw/study_area_run.sh --recompute-only --run-uid=$RUN_UID \\"
-      echo "      --config=$CONFIG --schema=$SCHEMA"
+      echo "      --config=$CONFIG --schema=$SCHEMA${RUN_LABEL:+ --run-label=$RUN_LABEL}"
       echo "  Hosts, reasons and commands: $LOG_DIR/${TS}_kept_hosts.tsv"
     fi
     if [ "${RUN_INCOMPLETE:-0}" != "0" ]; then
@@ -389,17 +389,34 @@ run_finish_report() {
         [ -z "${COV_NOROWS:-}" ] || echo "    no rows:                         $COV_NOROWS"
         [ -z "${COV_STALE:-}" ]  || echo "    an earlier run's or partial rows: $COV_STALE"
         [ -z "${COV_LOST:-}" ]   || echo "    lost at consolidate:             $COV_LOST"
-        echo "  The recompute above ran without them. Re-model each under this run_uid,"
-        echo "  then recompute the whole run (every group, since a re-modelled group's"
+        # A held cypher's bucket may be finished work that was never
+        # consolidated (its database did not answer, say): that is recovered by
+        # consolidating from the host, per kept_hosts.tsv, not by re-modelling.
+        local ws held="" held_missing remodel
+        for ws in ${CY_WS_ARR[@]+"${CY_WS_ARR[@]}"}; do
+          if [ "${CY_HOLD[$ws]:-0}" = "1" ]; then
+            held=$(.hosts_union "$held" "${CY_BUCKET[$ws]:-}")
+          fi
+        done
+        held_missing=$(.hosts_inter "$COV_MISSING" "$held")
+        remodel=$(.hosts_minus "$COV_MISSING" "$held")
+        if [ -n "$held_missing" ]; then
+          echo "  In a kept host's bucket: consolidate these from the host"
+          echo "  (${TS}_kept_hosts.tsv), do NOT re-model them: $held_missing"
+        fi
+        if [ -n "$remodel" ]; then
+          echo "  Re-model each of these under this run_uid: $remodel"
+          # warn, as the driver runs it: a group whose downstream neighbour is
+          # missing too would otherwise stop at the guard (error by default),
+          # and the recompute re-runs it in error mode once all are back.
+          echo "    LNK_RUN_UID=$RUN_UID ${RUN_LABEL:+LNK_RUN_LABEL=$RUN_LABEL }LNK_SCHEMA=$SCHEMA \\"
+          echo "      LNK_GUARD_DOWNSTREAM=warn LNK_LOAD=loadall \\"
+          echo "      Rscript data-raw/wsg_run_one.R <WSG> $CONFIG"
+        fi
+        echo "  Then recompute the whole run (every group: a re-modelled group's"
         echo "  barriers change access upstream of it):"
-        # warn, as the driver runs it: a group whose downstream neighbour is
-        # missing too would otherwise stop at the guard (error by default),
-        # and the recompute re-runs it in error mode once all are back.
-        echo "    LNK_RUN_UID=$RUN_UID ${RUN_LABEL:+LNK_RUN_LABEL=$RUN_LABEL }LNK_SCHEMA=$SCHEMA \\"
-        echo "      LNK_GUARD_DOWNSTREAM=warn LNK_LOAD=loadall \\"
-        echo "      Rscript data-raw/wsg_run_one.R <WSG> $CONFIG"
         echo "    bash data-raw/study_area_run.sh --recompute-only --run-uid=$RUN_UID \\"
-        echo "      --config=$CONFIG --schema=$SCHEMA --wsgs=$RUN_WSGS"
+        echo "      --config=$CONFIG --schema=$SCHEMA${RUN_LABEL:+ --run-label=$RUN_LABEL} --wsgs=$RUN_WSGS"
       else
         echo "  At least one host did not account for its whole bucket; only the"
         echo "  WSGs it finished were consolidated. Artifacts above are valid for"
