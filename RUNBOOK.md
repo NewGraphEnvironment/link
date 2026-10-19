@@ -1272,8 +1272,11 @@ It also cannot rescue a group whose build finished but whose `date_end`
 UPDATE failed (`.lnk_log_run_finish` is soft). A full run counts that group
 through its `done` marker, but `--recompute-only` has only the log, so it
 reports the group as "earlier or partial" every time. Re-model it.
-A group in a kept host's bucket is listed apart from the others in the
-report: consolidate it from the host, do not re-model it.
+A missing group that a kept host still holds finished, or that the host could not be
+measured for (`groups` in `kept_hosts.tsv`), is listed apart in the report:
+consolidate it from the host, do not re-model it. One of unknown provenance
+(`groups_unknown`) is listed as "check first". A partial build there is
+re-modelled like any other missing group.
 
 Two things it does not do. It takes no lock, so do not run it while another
 driver on the same schema can resume: a driver paused with `kill -STOP`, as in

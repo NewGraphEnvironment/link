@@ -389,20 +389,29 @@ run_finish_report() {
         [ -z "${COV_NOROWS:-}" ] || echo "    no rows:                         $COV_NOROWS"
         [ -z "${COV_STALE:-}" ]  || echo "    an earlier run's or partial rows: $COV_STALE"
         [ -z "${COV_LOST:-}" ]   || echo "    lost at consolidate:             $COV_LOST"
-        # A held cypher's bucket may be finished work that was never
-        # consolidated (its database did not answer, say): that is recovered by
-        # consolidating from the host, per kept_hosts.tsv, not by re-modelling.
-        local ws held="" held_missing remodel
+        # A held cypher may hold finished work that was never consolidated
+        # (its database did not answer at accounting, say). That is recovered by
+        # consolidating from the host, not by re-modelling, so the report uses
+        # the sets hosts_kept_report measured just before this: CY_UNCONS
+        # (finished there, or the unmeasured candidates), CY_DOUBT (unknown
+        # provenance). CY_PARTIAL, a failed build there, is re-modelled.
+        local ws held_fin="" held_doubt="" consolidate doubt remodel
         for ws in ${CY_WS_ARR[@]+"${CY_WS_ARR[@]}"}; do
           if [ "${CY_HOLD[$ws]:-0}" = "1" ]; then
-            held=$(.hosts_union "$held" "${CY_BUCKET[$ws]:-}")
+            held_fin=$(.hosts_union "$held_fin" "${CY_UNCONS[$ws]:-}")
+            held_doubt=$(.hosts_union "$held_doubt" "${CY_DOUBT[$ws]:-}")
           fi
         done
-        held_missing=$(.hosts_inter "$COV_MISSING" "$held")
-        remodel=$(.hosts_minus "$COV_MISSING" "$held")
-        if [ -n "$held_missing" ]; then
-          echo "  In a kept host's bucket: consolidate these from the host"
-          echo "  (${TS}_kept_hosts.tsv), do NOT re-model them: $held_missing"
+        consolidate=$(.hosts_inter "$COV_MISSING" "$held_fin")
+        doubt=$(.hosts_minus "$(.hosts_inter "$COV_MISSING" "$held_doubt")" "$consolidate")
+        remodel=$(.hosts_minus "$(.hosts_minus "$COV_MISSING" "$consolidate")" "$doubt")
+        if [ -n "$consolidate" ]; then
+          echo "  On a kept host, finished or not yet measured: consolidate these from"
+          echo "  the host (${TS}_kept_hosts.tsv), do NOT re-model them: $consolidate"
+        fi
+        if [ -n "$doubt" ]; then
+          echo "  On a kept host, unknown provenance: check them there before"
+          echo "  consolidating or re-modelling: $doubt"
         fi
         if [ -n "$remodel" ]; then
           echo "  Re-model each of these under this run_uid: $remodel"

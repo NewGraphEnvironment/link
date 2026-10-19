@@ -216,19 +216,24 @@ test_that("one missing group: the rest are recomputed and compared, and the run 
   expect_identical(cov$class[order(cov$wsg)], c("recompute", "recompute", "no_rows"))
 })
 
-test_that("a missing group in a kept host's bucket is consolidated, not re-modelled", {
+test_that("a kept host's finished groups are consolidated, its partial ones re-modelled", {
   skip_if_no_finish_lib()
   conn <- skip_if_no_db()
   sc <- finish_fixture(conn)
   w <- finish_world()
+  # Host a is held: CCCC finished there, DDDD a partial build, EEEE unknown.
+  # Host b was released, so its stale CY_UNCONS (from accounting) is ignored.
   r <- run_finish_sh(w, sc, c(
-    "CY_WS_ARR=(a b); CY_BUCKET[a]=CCCC; CY_HOLD[a]=1; CY_BUCKET[b]=GGGG; CY_HOLD[b]=0",
+    "CY_WS_ARR=(a b); CY_BUCKET[a]=CCCC,DDDD,EEEE; CY_HOLD[a]=1",
+    "CY_UNCONS[a]=CCCC; CY_PARTIAL[a]=DDDD; CY_DOUBT[a]=EEEE",
+    "CY_BUCKET[b]=GGGG; CY_HOLD[b]=0; CY_UNCONS[b]=GGGG",
     "RUN_LABEL=prov-246",
-    "run_finish AAAA,CCCC,GGGG ''"
+    "run_finish AAAA,CCCC,DDDD,EEEE,GGGG ''"
   ))
   expect_equal(r$status, 1L, info = r$out)
-  expect_match(r$out, "do NOT re-model them: CCCC", fixed = TRUE)
-  expect_match(r$out, "Re-model each of these under this run_uid: GGGG", fixed = TRUE)
+  expect_match(r$out, "do NOT re-model them: CCCC\n", info = r$out)
+  expect_match(r$out, "consolidating or re-modelling: EEEE", fixed = TRUE)
+  expect_match(r$out, "Re-model each of these under this run_uid: DDDD,GGGG", fixed = TRUE)
   expect_match(r$out, "LNK_RUN_LABEL=prov-246", fixed = TRUE)
   expect_match(r$out, "--run-label=prov-246 --wsgs=", fixed = TRUE)
 })
