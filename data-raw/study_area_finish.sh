@@ -29,7 +29,9 @@
 #   COV_UNCONS COV_MISSING RUN_WSGS ALL_WSGS COMPARE_CSV COMPARE_FAIL RUN_INCOMPLETE
 #   RECOMPUTE_FAIL RECOMPUTE_FAIL_STAGE RECOMPUTE_RAN; run_expected_from_hosts
 #   writes RUN_EXPECT RUN_SIGNALS RUN_SKIP; consolidate_outcomes writes
-#   CONS_FAILED CONS_EXCLUDED CY_CONS_FAIL (declared in study_area_hosts.sh)
+#   CONS_FAILED CONS_EXCLUDED CY_CONS_FAIL (declared in study_area_hosts.sh);
+#   consolidate_state_write reads CY_WS_ARR CY_BUCKET_DONE CY_CONS_FAIL;
+#   run_expected_recompute_only writes RO_EXPECT RO_EXCLUDED
 #
 # Needs bash >= 4, as the driver does.
 
@@ -166,6 +168,49 @@ consolidate_outcomes() {
   return 0
 }
 
+# consolidate_state_write <path> <state>: one row per group consolidate is
+# asked to take (wsg, workspace, state, run_uid), so a --recompute-only knows
+# which groups may sit half-copied on the dispatcher (link#358). The driver
+# writes it BEFORE consolidate with state `in_flight` and rewrites it once
+# every source has an outcome, with `ok`, or `failed:<stage>` for a source in
+# CY_CONS_FAIL. If consolidate dies with no outcomes, the `in_flight` rows
+# stay, so the record fails closed: absence of a failure is never inferred
+# from a file that was written only after the risky step. Temp file + mv.
+consolidate_state_write() {
+  local path="$1" state="$2" ws w st
+  {
+    printf 'wsg\tworkspace\tstate\trun_uid\n'
+    for ws in ${CY_WS_ARR[@]+"${CY_WS_ARR[@]}"}; do
+      st="$state"
+      [ -z "${CY_CONS_FAIL[$ws]:-}" ] || st="failed:${CY_CONS_FAIL[$ws]}"
+      for w in $(.hosts_lines "${CY_BUCKET_DONE[$ws]:-}"); do
+        printf '%s\t%s\t%s\t%s\n' "$w" "$ws" "$st" "$RUN_UID"
+      done
+    done
+  } > "$path.tmp" && mv "$path.tmp" "$path"
+}
+
+# run_unconsolidated_from_state <path>: the groups a consolidate state record
+# names in any state but `ok`, as CSV. Returns 2 when the file does not exist
+# (the run never reached consolidate, had no cyphers, or predates #358: in each
+# case consolidate wrote nothing to the dispatcher), and 1, saying why on
+# stderr, for a bad header, another run_uid, or a value that is not a group
+# code.
+run_unconsolidated_from_state() {
+  local path="$1" hdr out
+  [ -f "$path" ] || return 2
+  IFS= read -r hdr < "$path" || hdr=""
+  [ "$hdr" = "$(printf 'wsg\tworkspace\tstate\trun_uid')" ] || {
+    echo "  ✗ $path: not a consolidate state record (header '$hdr')" >&2; return 1; }
+  out=$(awk -F'\t' -v u="$RUN_UID" '
+    NR == 1 { next }
+    $4 != u { print "  ✗ " FILENAME ": row " NR " names another run_uid (" $4 ")" > "/dev/stderr"; bad = 1 }
+    $1 !~ /^[A-Z][A-Z][A-Z][A-Z]$/ { print "  ✗ " FILENAME ": row " NR " is not a group code (" $1 ")" > "/dev/stderr"; bad = 1 }
+    $3 != "ok" { print $1 }
+    END { if (bad) exit 1 }' "$path") || return 1
+  printf '%s\n' "$out" | .hosts_csv
+}
+
 # run_config_check: the run's log rows on the dispatcher name exactly one
 # config, and it is $CONFIG. --recompute-only with a forgotten --config would
 # otherwise recompute every group under another bundle and stamp the rows with
@@ -263,17 +308,17 @@ run_expected_from_log() {
 # prefix is its TS) together with every group holding a log row for the
 # run_uid, so a group that failed on a cloud host, or before its first log
 # row, is still named (link#358). A run from before #358 has no such file and
-# falls back to the log alone. Without --wsgs=, RO_EXCLUDED holds the groups
-# the run's own <TS>_coverage.tsv classed not_consolidated: their host's
-# consolidate failed, possibly after the DELETE, so the dispatcher may hold
-# part of a bucket under a closed log row, and nothing here can tell whether
-# the kept host was settled since. They stay out of the recompute until
-# --wsgs= names them, which is the operator's word that they were. Returns 1,
-# saying why, when the log cannot be read, when the file is not this run's
-# (fatal only without --wsgs=), or when the set is empty. Prints only; never
-# exits.
+# falls back to the log alone. Without --wsgs=, RO_EXCLUDED holds every group
+# the run's <TS>_consolidate_state.tsv names in a state other than `ok`: its
+# host's consolidate failed or never finished, possibly after the DELETE, so
+# the dispatcher may hold part of a bucket under a closed log row, and nothing
+# here can tell whether the kept host was settled since. They are expected
+# (named), but kept out of the recompute until --wsgs= names them, which is
+# the operator's word that they were. Returns 1, saying why, when the log
+# cannot be read, when either file is not this run's (fatal only without
+# --wsgs=), or when the set is empty. Prints only; never exits.
 run_expected_recompute_only() {
-  local wsgs="${1:-}" logged file from_file="" rc=0 left cov
+  local wsgs="${1:-}" logged file from_file="" rc=0 left state
   RO_EXCLUDED=""
   logged=$(run_expected_from_log) || { echo "FATAL: could not read $SCHEMA.log"; return 1; }
   file="$LOG_DIR/${RUN_UID%-*}_run_wsgs.tsv"
@@ -310,15 +355,23 @@ run_expected_recompute_only() {
   [ -n "$RO_EXPECT" ] || {
     echo "FATAL: no group recorded for run_uid $RUN_UID, and no --wsgs=: nothing to recompute"
     return 1; }
-  cov="$LOG_DIR/${RUN_UID%-*}_coverage.tsv"
-  if [ -z "$wsgs" ] && [ -f "$cov" ]; then
-    RO_EXCLUDED=$(awk -F'\t' '$2 == "not_consolidated" && $1 ~ /^[A-Z][A-Z][A-Z][A-Z]$/ { print $1 }' "$cov" \
-      | .hosts_csv) || { echo "FATAL: could not read $cov"; return 1; }
-    RO_EXCLUDED=$(.hosts_inter "$RO_EXCLUDED" "$RO_EXPECT")
-    [ -z "$RO_EXCLUDED" ] || {
-      echo "  WARN: the run could not consolidate these from their host; kept out of the recompute"
-      echo "        until settled per its kept_hosts.tsv and named with --wsgs=: $RO_EXCLUDED"; }
-  fi
+  [ -z "$wsgs" ] || return 0
+  state="$LOG_DIR/${RUN_UID%-*}_consolidate_state.tsv"
+  rc=0
+  RO_EXCLUDED=$(run_unconsolidated_from_state "$state") || rc=$?
+  case "$rc" in
+    0) ;;
+    2) RO_EXCLUDED="" ;;
+    *) echo "FATAL: $state is not this run's consolidate record (above); pass --wsgs="
+       RO_EXCLUDED=""; return 1 ;;
+  esac
+  # A union: a failed host can have finished a group outside its bucket,
+  # which neither the log nor run_wsgs.tsv then names.
+  RO_EXPECT=$(.hosts_union "$RO_EXPECT" "$RO_EXCLUDED")
+  [ -z "$RO_EXCLUDED" ] || {
+    echo "  WARN: the run did not consolidate these from their host (failed, or never finished);"
+    echo "        kept out of the recompute until settled per its kept_hosts.tsv and named"
+    echo "        with --wsgs=: $RO_EXCLUDED"; }
   return 0
 }
 

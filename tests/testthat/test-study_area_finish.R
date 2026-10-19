@@ -646,28 +646,76 @@ test_that("the driver records the run's groups before any spend and hands run_fi
   expect_length(grep("run_expected_recompute_only \"$WSGS_ARG\" || exit 1", drv, fixed = TRUE), 1L)
   expect_length(grep("  run_finish \"$RO_EXPECT\" \"\" \"$RO_EXCLUDED\"", drv, fixed = TRUE), 1L)
   expect_length(grep("[ -z \"${CONS_FAILED:-}\" ] || RUN_INCOMPLETE=1", drv, fixed = TRUE), 1L)
+  # The state record goes in_flight before the copy, and is rewritten only
+  # once outcomes are known.
+  inflight <- grep('consolidate_state_write "$CONS_STATE" in_flight', drv, fixed = TRUE)
+  copy <- grep("res <- schema_consolidate(", drv, fixed = TRUE)
+  expect_length(inflight, 1L)
+  expect_lt(inflight, copy)
+  expect_length(grep('consolidate_state_write "$CONS_STATE" ok', drv, fixed = TRUE), 2L)
 })
 
-test_that("--recompute-only keeps the run's not_consolidated groups out until --wsgs= names them", {
+state_file <- function(w) file.path(w, "logs", "20261018_000000_consolidate_state.tsv")
+
+test_that("consolidate_state_write records in_flight before, then ok or the failed stage", {
+  skip_if_no_finish_lib()
+  w <- finish_world()
+  p <- state_file(w)
+  r <- run_finish_sh(w, "unused", c(
+    cons_setup,
+    sprintf("consolidate_state_write %s in_flight; cp %s %s.before", shQuote(p), shQuote(p), shQuote(p)),
+    "CY_CONS_FAIL[a]=dest_copy",
+    sprintf("consolidate_state_write %s ok", shQuote(p))
+  ))
+  expect_equal(r$status, 0L, info = r$out)
+  before <- utils::read.delim(paste0(p, ".before"), colClasses = "character")
+  expect_identical(names(before), c("wsg", "workspace", "state", "run_uid"))
+  # c reported nothing, so it was never a source and has no rows.
+  expect_identical(paste(before$workspace, before$wsg, before$state),
+                   c("a CCCC in_flight", "a DDDD in_flight", "b EEEE in_flight"))
+  after <- utils::read.delim(p, colClasses = "character")
+  expect_identical(after$state, c("failed:dest_copy", "failed:dest_copy", "ok"))
+  expect_true(all(after$run_uid == finish_uid))
+})
+
+test_that("--recompute-only keeps every group not consolidated ok out until --wsgs= names them", {
   skip_if_no_finish_lib()
   conn <- skip_if_no_db()
   sc <- finish_fixture(conn)
   w <- finish_world()
-  writeLines(c("wsg\tclass", "AAAA\trecompute", "BBBB\tnot_consolidated"),
-             file.path(w, "logs", "20261018_000000_coverage.tsv"))
+  # BBBB's host failed; ZZZZ's never finished (R died mid-copy); ZZZZ is in
+  # no other record, so only the union names it.
+  writeLines(c("wsg\tworkspace\tstate\trun_uid",
+               sprintf("AAAA\tb\tok\t%s", finish_uid),
+               sprintf("BBBB\ta\tfailed:dest_copy\t%s", finish_uid),
+               sprintf("ZZZZ\tc\tin_flight\t%s", finish_uid)), state_file(w))
   r <- run_finish_sh(w, sc, c(
-    "run_expected_recompute_only ''; echo \"EXCL=$RO_EXCLUDED\"",
+    "run_expected_recompute_only ''; echo \"EXCL=$RO_EXCLUDED\"; echo \"EXP=$RO_EXPECT\"",
     "run_finish \"$RO_EXPECT\" '' \"$RO_EXCLUDED\""
   ))
   expect_equal(r$status, 1L, info = r$out)
-  expect_identical(printed(r, "EXCL"), "BBBB")
+  expect_identical(printed(r, "EXCL"), "BBBB,ZZZZ")
+  expect_match(printed(r, "EXP"), "ZZZZ", fixed = TRUE)
   recomputed <- sub("^data-raw/wsg_recompute_one\\.R ([A-Z]{4}) default$", "\\1",
                     grep("wsg_recompute_one", rscript_calls(w), value = TRUE))
-  expect_false("BBBB" %in% recomputed)
+  expect_false(any(c("BBBB", "ZZZZ") %in% recomputed))
   expect_true("AAAA" %in% recomputed)
-  expect_match(r$out, "not consolidated:                BBBB", fixed = TRUE)
+  expect_match(r$out, "not consolidated:                BBBB,ZZZZ", fixed = TRUE)
 
   r <- run_finish_sh(w, sc, "run_expected_recompute_only AAAA,BBBB; echo \"EXCL=$RO_EXCLUDED\"")
+  expect_equal(r$status, 0L, info = r$out)
+  expect_identical(printed(r, "EXCL"), "")
+
+  # Another run's record stops a bare --recompute-only.
+  writeLines(c("wsg\tworkspace\tstate\trun_uid", "BBBB\ta\tok\t20261101_000000-0000beef"),
+             state_file(w))
+  r <- run_finish_sh(w, sc, "run_expected_recompute_only ''")
+  expect_equal(r$status, 1L, info = r$out)
+  expect_match(r$out, "not this run's consolidate record", fixed = TRUE)
+
+  # No record: the run never reached consolidate; nothing is excluded.
+  unlink(state_file(w))
+  r <- run_finish_sh(w, sc, "run_expected_recompute_only ''; echo \"EXCL=$RO_EXCLUDED\"")
   expect_equal(r$status, 0L, info = r$out)
   expect_identical(printed(r, "EXCL"), "")
 })

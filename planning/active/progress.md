@@ -26,3 +26,8 @@
 - Full suite: 3293 pass, 3 fail, 0 skip. Failures pre-existing and untouched by the branch: two
   `lnk_wsg_resolve` closure tests need the :63333 tunnel (down), and the golden ADMS dams pin
   (CLAUDE.md: `cabd.dams` gives 7, the test pins 8).
+- Code-check round 2 (`review-round2.md`): 2 fragile findings, both inside round 1's fix, both fixed.
+  The exclusion read `coverage.tsv`, written only after the risky step, so an R crash mid-copy read
+  as "nothing failed"; now `<TS>_consolidate_state.tsv` is written `in_flight` before the copy and
+  rewritten after outcomes, and `--recompute-only` excludes anything not `ok`. And the excluded set
+  is unioned into the expected set, not intersected. Mutation-checked (3 mutants, 3 red).

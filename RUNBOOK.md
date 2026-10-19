@@ -1299,11 +1299,17 @@ recompute whatever the dispatcher's log says, because a failure after the
 DELETE can leave log rows copied and `streams` not. The other hosts' groups are
 recomputed and compared, and the run exits non-zero. Only when the outcomes are
 missing for some source (R died) does the driver exit right after consolidate,
-as before, with the `--recompute-only` recovery printed. A bare
-`--recompute-only` reads that run's `<TS>_coverage.tsv` and keeps its
-`not_consolidated` groups out of the recompute, because nothing on the
-dispatcher says whether the kept host was settled since; `--wsgs=` naming them
-is the operator's word that it was.
+as before, with the `--recompute-only` recovery printed.
+
+Before the copy the driver writes `<TS>_consolidate_state.tsv` (`wsg`,
+`workspace`, `state`, `run_uid`) with every source's bucket `in_flight`, and
+rewrites it once each source has an outcome (`ok`, or `failed:<stage>`). A
+consolidate that dies mid-copy leaves the `in_flight` rows, so the record never
+reads as "nothing failed". A bare `--recompute-only` names every group in a
+state other than `ok` and keeps it out of the recompute, because nothing on the
+dispatcher says whether its kept host was settled since; `--wsgs=` naming them
+is the operator's word that it was. No record means the run never reached
+consolidate, so consolidate wrote nothing to the dispatcher.
 
 Two things it does not do. It takes no lock, so do not run it while another
 driver on the same schema can resume: a driver paused with `kill -STOP`, as in

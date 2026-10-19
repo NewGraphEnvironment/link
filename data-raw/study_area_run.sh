@@ -1461,6 +1461,13 @@ if [ "$N_CY" -gt 0 ]; then
     # host (link#347): a driver killed here runs its EXIT trap while this
     # subshell keeps copying and deleting from the hosts, so nothing measured
     # there in the trap is settled. Cleared as soon as the subshell returns.
+    # Before the copy, every source in_flight (link#358): a consolidate that
+    # dies mid-copy leaves this record saying so, and --recompute-only keeps
+    # those groups out. Rewritten below once each source has an outcome. A
+    # record that cannot be written stops here; the hosts are held.
+    CONS_STATE="$LOG_DIR/${TS}_consolidate_state.tsv"
+    consolidate_state_write "$CONS_STATE" in_flight \
+      || { echo "FATAL: could not write $CONS_STATE; not consolidating"; exit 1; }
     CONSOLIDATING=1
     crc=0
     # One outcome row per source (link#358), read by consolidate_outcomes.
@@ -1487,13 +1494,18 @@ quit(status = if (ok) 0 else 1)
     CONSOLIDATING=0
     if [ "$crc" = "0" ]; then
       echo "  ✓ consolidated $n_src/$N_CY cypher(s) (see $LOG_DIR/${TS}_consolidate.log)"
+      consolidate_state_write "$CONS_STATE" ok \
+        || echo "  WARN: could not mark $CONS_STATE ok; a --recompute-only will keep its groups out"
     elif consolidate_outcomes "$CONS_TSV" && [ -n "$CONS_FAILED" ]; then
       # A source refused or failed; the others landed (link#358). Carry on:
       # the refused host keeps its groups and is kept below, its groups are
       # kept out of the recompute, and the run exits non-zero naming them.
       echo "  ✗ consolidate failed for: $CONS_FAILED (see $LOG_DIR/${TS}_consolidate.log)"
       echo "    carrying on with the cypher(s) that consolidated; the run will exit non-zero"
+      consolidate_state_write "$CONS_STATE" ok \
+        || echo "  WARN: could not record outcomes in $CONS_STATE; every source stays in_flight there"
     else
+      # $CONS_STATE keeps every source in_flight.
       # Nothing says which sources landed (or R failed after recording every
       # source ok), so nothing after this can be judged.
       echo "  ✗ consolidate failed; see $LOG_DIR/${TS}_consolidate.log — cyphers KEPT"
