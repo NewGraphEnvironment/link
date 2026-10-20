@@ -133,7 +133,7 @@ LNK_LOAD=loadall LNK_SCHEMA=<scratch> LNK_CONFIG=bcfishpass LNK_PARITY_OUT=<dir>
 ```
 
 Keep the reference fixed across the two runs being compared (do not pass `--refresh-primitives`),
-or a move cannot be put down to code. `moves.R` compares two builds of the closure. Then revise
+or a move cannot be put down to code. `moves.R` compares two builds of the closure, so the previous build's schema is kept until the next re-score (today `fresh_parity362`, and `fresh_parity246` before it). Then revise
 this file: the table, what moved, the run line under the heading.
 
 ## History

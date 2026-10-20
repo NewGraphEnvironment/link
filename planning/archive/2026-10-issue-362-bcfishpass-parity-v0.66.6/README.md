@@ -39,6 +39,6 @@ The current record is `research/bcfishpass_parity.md`.
 
 ## Owed
 
-- Operator: drop `fresh_parity246` and/or `fresh_parity362` (3.9 GB each) once the record is merged
+- Keep `fresh_parity246` and `fresh_parity362` (3.9 GB each) until the next parity run, then drop the older (operator, 2026-10-20: they may come in handy, and a re-score diffs against the previous build)
 
 Closed by: PR for #362
