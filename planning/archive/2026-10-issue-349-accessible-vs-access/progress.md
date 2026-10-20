@@ -58,3 +58,9 @@ says to resume.
   schema notes; `research/access_columns.md` + README row; CLAUDE.md status (and the 2026-10-14
   #336 fact corrected after a row-level check: fresh's breaks hold the barriers, rounded); #349 and
   #336 bodies edited; fresh tolerance follow-up drafted, not filed.
+- Code-check: round 1 (2 findings), round 2 (5, one inside round 1's fix), round 3 (3; the
+  documented fresh_default order would have lost habitat for good), then an enumeration of the
+  round-3 mechanism over 18 files. Fixes in `0cdeb9bd`, `b8d777cb`, `6e421e7e`, `b1d1ec7a`.
+  `recompute_parity.sh` on `fresh_349`: PASSED. Verify negative test: 13 / 13.
+- Next: archive, open the PR. Owed after merge: settle `fresh_default` (re-model first), re-score
+  parity, file the fresh tolerance issue after body review.

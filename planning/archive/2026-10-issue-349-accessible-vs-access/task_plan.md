@@ -195,7 +195,10 @@ UPDATE fails softly on a schema that predates them.
       `accessible_km` and the habitat km move by exactly what the gate and the lifts report;
       DUNC BT spawning / rearing km move *toward* bcfishpass. (UPCE added; `lnk_compare_rollup()`
       not run, tunnel down: DUNC BT compared with the local `fresh.streams_vw_bcfp` instead.)
-- [ ] Suite: `devtools::test()`, `lintr::lint_package()`; `/code-check branch`.
+- [x] Suite: `devtools::test()` 3,419 pass; 2 fail (golden dams pin, pre-existing) and 2 error
+      (`test-lnk_wsg_resolve.R`, needs the `:63333` tunnel, down). `lintr`: no new lints but
+      `sprintf(` indentation in each file's idiom, and the object_usage hits of a stale install.
+      `/code-check branch`: 3 rounds plus an enumeration (below).
 
 ## Phase 5: Docs and issues
 - [x] RUNBOOK §3: "accessible is settled from streams_access" (the four mechanisms, the gate,
@@ -215,17 +218,19 @@ UPDATE fails softly on a schema that predates them.
       link's rounding, so A/A′ are right at classify time (`draft_issue_fresh_tolerance.md`).
 
 ## Owed at the end (reported, done after merge)
-- [ ] Provincial `--recompute-only` re-gate of `fresh_default` (decision 4) — operator's call.
+- [ ] Settle `fresh_default` (decision 4) — operator's call. **Re-model first, then gate**
+      (code-check round 3): the order in decision 4 above would lose habitat for good.
 - [ ] Re-score the 48/50 bcfishpass parity baseline (ADMS, BULK, BABL, ELKR) after that
       re-gate.
-- [ ] File the fresh-tolerance follow-up after body review; note the duplicate-persisted
+- [ ] File the fresh-tolerance follow-up after body review (`draft_issue_fresh_tolerance.md`); note the duplicate-persisted
       barrier rows (1,863) as a candidate issue.
 
 ## Validation
-- [ ] Tests pass
-- [ ] `/code-check branch` clean
-- [ ] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion
+- [x] Tests pass (except the pre-existing / tunnel-bound four, above)
+- [x] `/code-check branch`: R1 2 findings, R2 5 (one inside R1's fix), R3 3; ended on the
+      enumeration in findings.md
+- [x] PWF checkboxes match landed work
+- [x] `/planning-archive` on completion
 
 How each change is proved: Phase 1's classes sum to the issue's totals per species; Phase 2's
 fixture test goes red with the UPDATE stubbed out and the verify SQL's negative test fires;
