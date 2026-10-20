@@ -3,7 +3,7 @@
 2 BABL 45789 11547752 45789 11547752
 3 BULK 87641 14642214 87641 14642214
 4 ELKR 83359 12486918 83359 12486918
-segments in one build only: 15 (ADMS, BULK, ELKR)
+segments in one build only: 39 on 8 lines (ADMS, BULK, ELKR)
 override positions: 4740 before, 4750 after; 10 added, 0 lost
   wsg species total_segs_20261017 match_pct_20261017 n_diffs_20261017
  ADMS      CH               15748              99.90               15
@@ -120,10 +120,7 @@ override positions: 4740 before, 4750 after; 10 added, 0 lost
              -1.33           -1.34
               0.08            0.05
   wsg species       cause accessible_km spawning_lost_km spawning_gained_km
- ADMS      BT       other            NA            0.009              0.049
  ADMS      CO gate_settle            NA            0.011                 NA
- ADMS      CO       other            NA            0.009              0.049
- ADMS      CH       other            NA               NA                 NA
  ADMS      SK gate_settle            NA            0.011                 NA
  BULK      BT gate_settle            NA               NA                 NA
  BULK      CO gate_settle            NA            0.002                 NA
@@ -133,10 +130,7 @@ override positions: 4740 before, 4750 after; 10 added, 0 lost
  ELKR      BT gate_settle            NA               NA                 NA
  ELKR     WCT gate_settle            NA            0.022                 NA
  rearing_lost_km rearing_gained_km n_segments
-              NA                NA          2
            0.043                NA          3
-           0.009             0.049          2
-              NA             0.168          1
               NA                NA          1
            0.269                NA          2
            0.002                NA          1

@@ -27,8 +27,9 @@ scratch `fresh_parity362` and scored against the same reference as the 2026-10-1
 | `parity_crosssection.log`, `.exit`, `parity_annotated.csv` | the score: 48/50, PASS |
 | `moves.R`, `moves.log` | the comparison with 2026-10-17 |
 | `pair_moves.csv` | every scored pair, before and after |
-| `segment_diff.csv` | segments whose access, spawning or rearing changed, by cause, km |
-| `resegmented.csv` | segments in one build only: breaks at modelled crossings that moved (#277) |
+| `segment_diff.csv` | segments both builds share whose access, spawning or rearing changed, by cause, km |
+| `resegmented.csv` | segments in one build only (no segment in the other with the same start and length): breaks at modelled crossings that moved (#277) |
+| `resegmented_habitat.csv` | habitat km on the lines holding those segments, per build |
 | `override_diff.csv` | barrier-override positions added or lost, across all holding groups |
 | `mapping_code_moves.csv` | the driver's 17-group mapping_code compare, before and after |
 | `turn_bt.txt` | why TURN BT was not scored |

@@ -16,8 +16,9 @@ spawning and rearing within 5 %). The two pairs over are BULK SK spawning (+10.9
 fresh#190). Accessible km sits
 within 0.07 % on all 17 pairs.
 
-Each cell is link km / bcfishpass km, link's difference, and in brackets link's change in km
-since 2026-10-17 where there is one. Rearing leaves lake connection lines out on both sides.
+Each cell is link km / bcfishpass km, link's difference, and in brackets the change in link's
+km since 2026-10-17 where there is one. That is the difference of two totals each rounded to
+0.1 km, so a bracket can read 0.1 for a move of 0.01 km; the exact amounts are below. Rearing leaves lake connection lines out on both sides.
 
 | Group | Species | Accessible | Spawning | Rearing |
 |---|---|---|---|---|
@@ -59,27 +60,34 @@ observations over every group.
 - **Accessible: no change** on any pair. Province-wide counting can only add lifts. It added
   10 override positions in the closure and removed none: BT and WCT at five positions on the
   Columbia (blue_line_key 356570372), held by LARL. None reaches a scored pair.
-- **The gate: the BT rearing it was predicted to remove, and a little more.** BT rearing −0.3 km
-  in BULK, −0.3 in BABL and −0.6 in ELKR (0.269, 0.325, 0.633 km in the segment diff), as
-  `access_columns.md` predicted from the 2026-10-17 build. It also removes 0.002–0.043 km of spawning or
-  rearing from ten other pairs, which rounds to −0.1 km in four of them. Every one of these
-  is a segment whose access did not change and is 0, with its habitat now cleared.
-- **ADMS CH +0.1 km spawning, +0.2 km rearing: not #349.** Two builds over the same inputs put a
-  modelled-crossing break on blue_line_key 356333200 at 1,446 m and 1,349 m. The 1,349 m break
-  cuts an 88 m piece at gradient 0.0441, under CH's spawning maximum, where the old 167.5 m piece
-  was at 0.0483. That piece spawns, and the rearing around it now connects to spawning. Seven
-  modelled-crossing breaks moved this way in ADMS, BULK and ELKR. This is the run-to-run
-  reproducibility defect #277, which now carries this measurement.
+- **The gate: as predicted.** BT rearing −0.269 km in BULK, −0.325 in BABL and −0.633 in ELKR,
+  the 0.3 / 0.3 / 0.6 km `access_columns.md` predicted from the 2026-10-17 build. It also
+  removes 0.002–0.043 km of spawning or rearing from ten other pairs. The prediction's
+  "0 km of spawning" was these, read at 0.1 km. Each is a segment whose access did not change and
+  is 0, with its habitat now cleared, and on the segments both builds share these are the only
+  changes (`segment_diff.csv`).
+- **ADMS CH +0.088 km spawning, +0.167 km rearing: not #349.** Two builds over the same inputs
+  break 8 lines in ADMS, BULK and ELKR at different places (39 segments in one build only,
+  `resegmented.csv`). Seven of the moved breaks are modelled crossings persisted as barriers,
+  9–97 m apart; the eighth, at modelled crossing 101833 (161 m on ADMS blue_line_key 356271598),
+  breaks only the 2026-10-17 build and is a barrier in neither. On blue_line_key 356333200 the
+  break sits at 1,349 m, not 1,446 m, and cuts an 88 m piece at gradient 0.0441, under CH's
+  spawning maximum, where the old 167.5 m piece was at 0.0483. That piece spawns, and the
+  167.5 m from 1,269 m to 1,437 m now rears; that line had no CH rearing before. Over the 8
+  lines, CH gains exactly that, and BT spawning, CO spawning and CO rearing each lose 0.006 km (`resegmented_habitat.csv`). This is
+  the run-to-run reproducibility defect #277, which now carries this measurement.
 - **Annotation classes:** unchanged on all 50 pairs.
 
 Evidence: `pair_moves.csv` (every pair, before and after), `segment_diff.csv` (changed
-segments by cause), `override_diff.csv`, `resegmented.csv`, all in `data-raw/logs/parity_0.66.6/`.
+segments both builds share, by cause), `resegmented.csv` and `resegmented_habitat.csv`,
+`override_diff.csv`, all in `data-raw/logs/parity_0.66.6/`.
 The expected result was written down before scoring (`expected.txt`).
 
 **mapping_code agreement** over all 17 groups (the run's compare) moved on 51 of 86 group ×
-species rows, by −0.06 to +0.05 points. It is confounded by two changes that move mapping codes
-and not km (the gate, and 91a968ab's `has_barriers_<sp>_dnstr` for a present species with no
-barrier), and is not diagnosed (`mapping_code_moves.csv`).
+species rows, by −0.06 to +0.05 points. Three things move it at once: the gate,
+91a968ab's `has_barriers_<sp>_dnstr` for a present species with no barrier (mapping codes only),
+and the moved breaks above (the segment count differs on 50 of the 86 rows, in 10 of the 17
+groups). It is not diagnosed (`mapping_code_moves.csv`).
 
 ## What is not yet explained
 

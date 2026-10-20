@@ -5,13 +5,15 @@
 #   2. segment_diff.csv per (WSG, species): segments on one segmentation whose access,
 #                       spawning or rearing differ, in km, classed by what changed
 #                       (rearing here is the raw flag, lake connection lines included)
+#      resegmented_habitat.csv habitat km on the lines holding those segments, per build
 #   3. override_diff.csv barrier-override positions added or lost, across all holders
 #   4. mapping_code_moves.csv the driver's 17-group mapping_code compare, before / after
 #
 # LNK_COMPARE_NEW names the new run's compare CSV under data-raw/logs/study_area_run/.
 # Segments are matched on (watershed_group_code, blue_line_key, downstream_route_measure),
-# unique within a persist schema. Segments in one build only (a moved break, #277) are
-# written to resegmented.csv and left out of the segment diff.
+# unique within a persist schema, and must have the same length (within 1 mm). Segments
+# in one build only (a moved break, #277) are written to resegmented.csv and left out of
+# the segment diff.
 # Run from the repo root:
 #   LNK_COMPARE_NEW=<TS>_compare.csv Rscript data-raw/logs/parity_0.66.6/moves.R
 suppressPackageStartupMessages({
@@ -41,8 +43,9 @@ seg_n <- function(s) dbGetQuery(conn, sprintf(
 n_old <- seg_n("fresh_parity246")
 n_new <- seg_n("fresh_parity362")
 print(merge(n_old, n_new, by = "wsg", suffixes = c("_246", "_362")))
-# Segments present in one build only (a break that moved). The segment diff below
-# joins on the segments both builds share, so these are reported here, not there.
+# Segments present in one build only (a break that moved): no segment in the other
+# build with the same start and the same length (within 1 mm). The segment diff below
+# joins only on segments both builds share, so these are reported here, not there.
 reseg <- dbGetQuery(conn, sprintf("
   WITH o AS (SELECT watershed_group_code AS wsg, blue_line_key, downstream_route_measure, length_metre
                FROM fresh_parity246.streams WHERE watershed_group_code IN (%1$s)),
@@ -50,15 +53,38 @@ reseg <- dbGetQuery(conn, sprintf("
                FROM fresh_parity362.streams WHERE watershed_group_code IN (%1$s))
   SELECT 'only_246' AS side, o.* FROM o
    WHERE NOT EXISTS (SELECT 1 FROM n WHERE n.wsg = o.wsg AND n.blue_line_key = o.blue_line_key
-                     AND n.downstream_route_measure = o.downstream_route_measure)
+                     AND n.downstream_route_measure = o.downstream_route_measure
+                     AND abs(n.length_metre - o.length_metre) < 0.001)
   UNION ALL
   SELECT 'only_362', n.* FROM n
    WHERE NOT EXISTS (SELECT 1 FROM o WHERE o.wsg = n.wsg AND o.blue_line_key = n.blue_line_key
-                     AND o.downstream_route_measure = n.downstream_route_measure)
+                     AND o.downstream_route_measure = n.downstream_route_measure
+                     AND abs(o.length_metre - n.length_metre) < 0.001)
   ORDER BY 2, 3, 4, 1", paste0("'", wsgs, "'", collapse = ",")))
 write.csv(reseg, file.path(dir_out, "resegmented.csv"), row.names = FALSE)
-cat(sprintf("segments in one build only: %d (%s)\n", nrow(reseg),
+cat(sprintf("segments in one build only: %d on %d lines (%s)\n", nrow(reseg),
+            nrow(unique(reseg[, c("wsg", "blue_line_key")])),
             paste(unique(reseg$wsg), collapse = ", ")))
+# Habitat km on those lines, per build: the part of a pair's move the segment diff
+# cannot see. Lines, not segments, so the two builds sum over the same stretch.
+reseg_lines <- unique(reseg[, c("wsg", "blue_line_key")])
+sp_all <- unique(tolower(new$species))
+reseg_hab <- do.call(rbind, lapply(c("fresh_parity246", "fresh_parity362"), function(s) {
+  do.call(rbind, lapply(sp_all, function(sp) {
+    d <- dbGetQuery(conn, sprintf(
+      "SELECT s.watershed_group_code AS wsg,
+              round(sum(s.length_metre) FILTER (WHERE h.spawning)::numeric / 1000, 3) AS spawning_km,
+              round(sum(s.length_metre) FILTER (WHERE h.rearing)::numeric / 1000, 3) AS rearing_km
+         FROM %1$s.streams s
+         JOIN %1$s.streams_habitat_%2$s h USING (id_segment, watershed_group_code)
+        WHERE (s.watershed_group_code, s.blue_line_key) IN (%3$s)
+        GROUP BY 1", s, sp,
+      paste(sprintf("('%s', %d)", reseg_lines$wsg, reseg_lines$blue_line_key), collapse = ", ")))
+    if (nrow(d) == 0) return(NULL)
+    cbind(schema = s, species = toupper(sp), d)
+  }))
+}))
+write.csv(reseg_hab, file.path(dir_out, "resegmented_habitat.csv"), row.names = FALSE, na = "0")
 
 sp_pairs <- unique(new[, c("wsg", "species")])
 diffs <- do.call(rbind, lapply(seq_len(nrow(sp_pairs)), function(i) {
@@ -73,7 +99,7 @@ diffs <- do.call(rbind, lapply(seq_len(nrow(sp_pairs)), function(i) {
         LEFT JOIN fresh_parity246.streams_habitat_%1$s h USING (id_segment, watershed_group_code)
        WHERE s.watershed_group_code = '%2$s'),
     n AS (
-      SELECT s.blue_line_key, s.downstream_route_measure,
+      SELECT s.blue_line_key, s.downstream_route_measure, s.length_metre,
              a.access_%1$s AS acc, h.spawning, h.rearing
         FROM fresh_parity362.streams s
         JOIN fresh_parity362.streams_access a USING (id_segment, watershed_group_code)
@@ -89,10 +115,12 @@ diffs <- do.call(rbind, lapply(seq_len(nrow(sp_pairs)), function(i) {
       round(sum(o.length_metre) FILTER (WHERE coalesce(o.rearing, false) AND NOT coalesce(n.rearing, false))::numeric / 1000, 3) AS rearing_lost_km,
       round(sum(o.length_metre) FILTER (WHERE coalesce(n.rearing, false) AND NOT coalesce(o.rearing, false))::numeric / 1000, 3) AS rearing_gained_km,
       count(*) AS n_segments
-      FROM o JOIN n USING (blue_line_key, downstream_route_measure)
-     WHERE o.acc IS DISTINCT FROM n.acc
+      FROM o JOIN n ON n.blue_line_key = o.blue_line_key
+                   AND n.downstream_route_measure = o.downstream_route_measure
+                   AND abs(n.length_metre - o.length_metre) < 0.001
+     WHERE (o.acc IS DISTINCT FROM n.acc
         OR coalesce(o.spawning, false) <> coalesce(n.spawning, false)
-        OR coalesce(o.rearing, false) <> coalesce(n.rearing, false)
+        OR coalesce(o.rearing, false) <> coalesce(n.rearing, false))
      GROUP BY 1 ORDER BY 1", sp, w)
   d <- dbGetQuery(conn, q)
   if (nrow(d) == 0) return(NULL)

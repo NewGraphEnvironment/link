@@ -45,22 +45,28 @@ Against `expected.txt`, written before scoring:
 | rearing | BT −0.3 BULK, −0.3 BABL, −0.6 ELKR | exactly those (gate: 0.269 / 0.325 / 0.633 km); BABL CO −0.1, ELKR WCT −0.1 (gate, 0.030 / 0.041 km); ADMS CH +0.2 (#277) |
 
 - **Gate settle** accounts for every move but ADMS CH (`segment_diff.csv`, cause `gate_settle`:
-  access unchanged and 0, habitat cleared). The expectation's "0 km of spawning" was 0 at the
+  access unchanged and 0, habitat cleared; after code-check round 1 the diff joins only segments
+  with the same start and length, and the gate rows are then the only changes there). The expectation's "0 km of spawning" was 0 at the
   0.1 km reporting precision; the gate removes 0.002–0.030 km of spawning per pair.
 - **ADMS CH (+0.1 spawning, +0.2 rearing) is #277, not #349.** A `MODELLED_CROSSINGS` barrier on
   blue_line_key 356333200 sits at 1,349 m, not 1,446 m. The new break cuts an 88 m piece at
   gradient 0.0441 that passes CH spawning where the old 167.5 m piece (0.0483) did not, and the
-  rearing cluster connects (that line's CH rearing 4,025.5 → 4,193.0 m). Crossing code changed
+  reach rears: that line's CH rearing 0 → 167.5 m (an earlier draft gave 4,025.5 → 4,193.0 m,
+  summed over four lines; corrected on code-check round 1). Crossing code changed
   only in a comment between the builds (`9a35cc7b`), inputs are one load, and the break-source
-  observations stay AOI-scoped. 15 segments on 8 lines (ADMS, BULK, ELKR) differ; 7 moved breaks
-  are persisted `MODELLED_CROSSINGS` barriers, 9–97 m apart (`resegmented.csv`). Added to #277's
+  observations stay AOI-scoped. 39 segments on 8 lines (ADMS, BULK, ELKR) are in one build only;
+  7 moved breaks are persisted `MODELLED_CROSSINGS` barriers, 9–97 m apart, and the eighth line
+  loses a break at modelled crossing 101833 that is a barrier in neither build
+  (`resegmented.csv`). On those lines CH gains 0.088 km spawning and 0.167 km rearing
+  (`resegmented_habitat.csv`). Added to #277's
   body as a measured instance; no new issue.
 - **Lifts:** 10 override positions added, 0 lost (`override_diff.csv`): BT and WCT at five
   positions on blue_line_key 356570372 (the Columbia, 1,468–1,602 km), held by LARL. Accessible km
   in the four scored groups did not move, so none reaches a scored pair. Lifts can only be added
   under province-wide counting (review finding 1).
 - **mapping_code** (`mapping_code_moves.csv`, all 17 groups): 51 of 86 rows move, by −0.06 to
-  +0.05 points of match_pct; confounded by 91a968ab and the gate, not diagnosed.
+  +0.05 points of match_pct; confounded by the gate, 91a968ab and the moved breaks (segment count
+  differs on 50 of 86 rows, 10 of 17 groups); not diagnosed.
 
 ## TURN BT (2026-10-20)
 
