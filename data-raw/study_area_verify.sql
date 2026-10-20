@@ -372,6 +372,10 @@ DECLARE
   n_prov   int;
   n_pin    int;
   n_fresh  int;
+  n_sp     int;
+  n_unset  int  := 0;
+  n_lift   int;
+  v_sp     text;
   bad      text;
 BEGIN
   EXECUTE format(
@@ -393,7 +397,9 @@ BEGIN
 
   -- Modelled but not recomputed. THE check link#262 exists for: these WSGs'
   -- streams_access and streams_mapping_code still hold pre-consolidate values,
-  -- so cross-WSG access -- hence token1/token2 and ;DAM -- is wrong for them.
+  -- so cross-WSG access -- hence token1/token2 and ;DAM -- is wrong for them,
+  -- and their habitat was never settled on access (the model leg runs with
+  -- LNK_HABITAT_GATE=0, link#349).
   -- Bad output, not missing output: every other check on this page passes.
   EXECUTE format(
     'SELECT count(*), coalesce(string_agg(wsg, '','' ORDER BY wsg), '''')
@@ -499,6 +505,69 @@ BEGIN
       v_run, n_prov;
   END IF;
 
+  -- Habitat settled on access (link#349). Every streams_habitat_<sp> row of
+  -- the run's groups with `accessible` TRUE must have access_<sp> <> 0: the
+  -- recompute's lnk_habitat_gate() blanks the habitat flags wherever link's
+  -- province-wide access blocks the species. A row here is habitat a consumer
+  -- reading streams_access would call inaccessible.
+  bad := '';
+  FOR v_sp IN
+    SELECT substr(t.table_name, 17)
+      FROM information_schema.tables t
+     WHERE t.table_schema = v_sch
+       AND t.table_name ~ '^streams_habitat_[a-z]+$'
+       AND t.table_type = 'BASE TABLE'
+       AND EXISTS (SELECT 1 FROM information_schema.columns c
+                    WHERE c.table_schema = v_sch AND c.table_name = 'streams_access'
+                      AND c.column_name = 'access_' || substr(t.table_name, 17))
+     ORDER BY 1
+  LOOP
+    EXECUTE format(
+      'SELECT count(*) FROM %I.%I h
+         JOIN %I.streams_access a USING (id_segment, watershed_group_code)
+        WHERE h.accessible AND a.%I = 0
+          AND h.watershed_group_code IN
+              (SELECT watershed_group_code FROM %I.log WHERE run_uid = $1)',
+      v_sch, 'streams_habitat_' || v_sp, v_sch, 'access_' || v_sp, v_sch)
+      INTO n_sp USING v_run;
+    IF n_sp > 0 THEN
+      n_unset := n_unset + n_sp;
+      bad := concat_ws(', ', nullif(bad, ''), upper(v_sp) || ' ' || n_sp);
+    END IF;
+  END LOOP;
+  IF n_unset > 0 THEN
+    RAISE EXCEPTION
+      'run %: % segment(s) are accessible in streams_habitat_<sp> where streams_access.access_<sp> = 0 (%). The habitat was not settled on access (link#349): re-run the recompute, LNK_SCHEMA=% LNK_LOAD=loadall Rscript data-raw/wsg_recompute_one.R <WSG> <config>',
+      v_run, n_unset, bad, v_sch;
+  END IF;
+
+  -- Habitat the settle cannot give back (link#349). The gate is one-way: a
+  -- recompute that lifts a segment (access_<sp> 0 -> 1/2) whose habitat an
+  -- earlier gate blanked leaves it FALSE, and the invariant above passes on
+  -- exactly that state. Each group's NEWEST finished recompute of the run is
+  -- read, so a re-model followed by another recompute clears it. Skipped on a
+  -- schema whose log_recompute predates the column (nothing there gated).
+  IF EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_schema = v_sch AND table_name = 'log_recompute'
+                AND column_name = 'habitat_gate_lifted') THEN
+    EXECUTE format(
+      $q$SELECT coalesce(sum(habitat_gate_lifted), 0),
+                coalesce(string_agg(watershed_group_code || ' ' || habitat_gate_lifted,
+                                    ', ' ORDER BY watershed_group_code), '')
+           FROM (SELECT DISTINCT ON (watershed_group_code)
+                        watershed_group_code, habitat_gate_lifted
+                   FROM %I.log_recompute
+                  WHERE run_uid = $1 AND date_end IS NOT NULL
+                  ORDER BY watershed_group_code, date_start DESC) r
+          WHERE habitat_gate_lifted > 0$q$,
+      v_sch) INTO n_lift, bad USING v_run;
+    IF n_lift > 0 THEN
+      RAISE EXCEPTION
+        'run %: % segment(s) were lifted by the recompute after the habitat gate had blanked them, so their habitat is missing (%). Re-model those groups under this run_uid with LNK_HABITAT_GATE=0, then re-run the recompute (link#349).',
+        v_run, n_lift, bad;
+    END IF;
+  END IF;
+
   -- The bcfp pin, with the sanctioned-unpinned escape.
   EXECUTE format(
     'SELECT count(*) FROM %I.log WHERE run_uid = $1 AND bcfp_model_version IS NULL',
@@ -516,7 +585,7 @@ BEGIN
     RAISE NOTICE 'PASS (UNPINNED): run % -- % WSG(s), all modelled, recomputed and segmented. % row(s) carry NO bcfp reference, accepted by -v unpinned_ok=. Their parity numbers cannot be traced to a reference build.',
       v_run, n_model, n_pin;
   ELSE
-    RAISE NOTICE 'PASS: run % -- % WSG(s), all modelled, recomputed, segmented and provenanced',
+    RAISE NOTICE 'PASS: run % -- % WSG(s), all modelled, recomputed, settled, segmented and provenanced',
       v_run, n_model;
   END IF;
 END $$;

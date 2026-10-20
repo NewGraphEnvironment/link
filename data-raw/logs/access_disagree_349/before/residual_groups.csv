@@ -1,0 +1,5 @@
+"species","watershed_group_code","n_segments","km","n_spawning","n_rearing","n_lake_rearing","n_wetland_rearing","km_spawning","km_rearing"
+"bt","DUNC",1,0.136,0,1,0,0,NA,0.136
+"gr","UPCE",1,0.507,1,1,0,0,0.507,0.507
+"rb","DUNC",1,0.136,0,1,0,0,NA,0.136
+"wct","DUNC",1,0.136,0,1,0,0,NA,0.136

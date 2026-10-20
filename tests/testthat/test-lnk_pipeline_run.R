@@ -206,6 +206,9 @@ test_that("lnk_pipeline_run composes phases in expected order", {
   m_access <- function(conn, ...) {
     calls <<- c(calls, "access"); invisible(conn)
   }
+  m_gate <- function(conn, ...) {
+    calls <<- c(calls, "habitat_gate"); NULL
+  }
   m_exec <- function(conn, sql) {
     if (grepl("DROP", sql)) calls <<- c(calls, "exec_drop")
     1L
@@ -239,6 +242,7 @@ test_that("lnk_pipeline_run composes phases in expected order", {
     lnk_presence = m_presence,
     lnk_barriers_views = m_views,
     lnk_pipeline_access = m_access,
+    lnk_habitat_gate = m_gate,
     {
       with_mocked_bindings(
         dbExecute = m_exec,
@@ -259,8 +263,9 @@ test_that("lnk_pipeline_run composes phases in expected order", {
   # defensive drop, modelling phases, species resolution, persist_init,
   # barriers_unify, then the always-on access phase (link#218):
   # presence -> pre-persist -> barriers_views -> access, then the final
-  # persist, and the run-log closed LAST. mapping_code = FALSE here, so
-  # the token assembly (lnk_mapping_code) does NOT run.
+  # persist, the habitat gate on the persisted tables (link#349), and the
+  # run-log closed LAST. mapping_code = FALSE here, so the token assembly
+  # does NOT run.
   expected_order <- c(
     "log_start",
     "exec_drop",
@@ -268,12 +273,39 @@ test_that("lnk_pipeline_run composes phases in expected order", {
     "species",
     "persist_init", "barriers_unify",
     "presence", "persist", "barriers_views", "access",
-    "persist",
+    "persist", "habitat_gate",
     "log_finish"
   )
   expect_equal(calls, expected_order)
   # Returns conn invisibly
   expect_s3_class(result, "DBIConnection")
+})
+
+test_that("habitat_gate = FALSE skips the gate; it must be one TRUE or FALSE", {
+  gated <- 0L
+  m_noop <- function(...) invisible(NULL)
+  run <- function(habitat_gate) {
+    with_mocked_bindings(
+      lnk_pipeline_setup = m_noop, lnk_pipeline_load = m_noop,
+      lnk_pipeline_prepare = m_noop, lnk_pipeline_crossings = m_noop,
+      lnk_pipeline_break = m_noop, lnk_pipeline_classify = m_noop,
+      lnk_pipeline_connect = m_noop,
+      lnk_pipeline_species = function(...) "BT",
+      lnk_persist_init = m_noop, lnk_barriers_unify = m_noop,
+      lnk_pipeline_persist = m_noop, lnk_presence = m_noop,
+      lnk_barriers_views = m_noop, lnk_pipeline_access = m_noop,
+      lnk_habitat_gate = function(...) { gated <<- gated + 1L; NULL },
+      with_mocked_bindings(dbExecute = function(...) 1L, .package = "DBI",
+        lnk_pipeline_run(conn = mock_conn(), aoi = "ADMS", cfg = mock_cfg(),
+                         loaded = mock_loaded(), cleanup_working = FALSE,
+                         log = FALSE, habitat_gate = habitat_gate)))
+  }
+  run(FALSE)
+  expect_equal(gated, 0L)
+  run(TRUE)
+  expect_equal(gated, 1L)
+  expect_error(run(NA))
+  expect_error(run(c(TRUE, TRUE)))
 })
 
 test_that("lnk_pipeline_run passes NULL conn_tunnel when dams = FALSE", {
@@ -301,6 +333,7 @@ test_that("lnk_pipeline_run passes NULL conn_tunnel when dams = FALSE", {
     lnk_presence = m_noop,
     lnk_barriers_views = m_noop,
     lnk_pipeline_access = m_noop,
+    lnk_habitat_gate = m_noop,
     {
       with_mocked_bindings(
         dbExecute = m_exec,
@@ -343,6 +376,7 @@ test_that("lnk_pipeline_run drops working schema when cleanup_working = TRUE", {
     lnk_presence = m_noop,
     lnk_barriers_views = m_noop,
     lnk_pipeline_access = m_noop,
+    lnk_habitat_gate = m_noop,
     {
       with_mocked_bindings(
         dbExecute = m_exec,
@@ -393,7 +427,8 @@ test_that("lnk_pipeline_run builds access for both mapping_code values, gates ln
       lnk_presence = m_noop,
       lnk_barriers_views = m_noop,
       lnk_pipeline_access = m_access,
-      lnk_mapping_code = m_mapping,
+      lnk_habitat_gate = m_noop,
+      .lnk_mapping_code_persist = m_mapping,
       {
         with_mocked_bindings(
           dbExecute = m_exec,

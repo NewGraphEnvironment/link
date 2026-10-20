@@ -100,7 +100,12 @@ canonical:
     - name: accessible
       type: logical
       required: true
-      notes: Accessible to the species.
+      notes: >
+        Accessible to the species, as the habitat classification decided it
+        and then settled on link's access table (lnk_habitat_gate()): FALSE
+        wherever has_barriers_dnstr is TRUE. Not settled: a build from before
+        link#349, and a dispatch's group whose post-consolidate recompute
+        never ran (its model leg runs with the gate off).
     - name: spawning
       type: logical
       required: true
@@ -124,12 +129,13 @@ canonical:
         A barrier to the species lies downstream, from link's access table
         (<schema>.streams_access.has_barriers_<sp>_dnstr), which is what
         mapping_code and lnk_rollup_wsg()'s accessible_km read and what the
-        cross-group recompute rewrites. accessible is fresh's classification
-        flag, and the two disagree: on the segment that starts at a barrier
-        (accessible counts it as above nothing, link as above the barrier;
-        DUNC BT, 228 of 229 disagreeing segments), and wherever a barrier in
-        another group arrived after classification. NA where the build wrote
-        no streams_access.
+        cross-group recompute rewrites. It is the authoritative access answer:
+        the build settles accessible, spawning and rearing on it (link#349;
+        known-habitat rows keep spawning and rearing),
+        so a settled build has no row with accessible TRUE and this TRUE. The
+        reverse remains possible on a few segments per species (the
+        classification blocked a segment link calls accessible). NA where the
+        build wrote no streams_access.
     - name: accessible_ratio_gradient
       type: double
       required: true

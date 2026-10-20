@@ -664,8 +664,12 @@ run_finish_report() {
           # warn, as the driver runs it: a group whose downstream neighbour is
           # missing too would otherwise stop at the guard (error by default),
           # and the recompute re-runs it in error mode once all are back.
+          # LNK_HABITAT_GATE=0, as the driver runs it too (link#349): the gate
+          # is one-way, and a group re-modelled before its missing downstream
+          # neighbour would be settled on that neighbour's stale barriers; the
+          # recompute below settles every group on final access.
           echo "    LNK_RUN_UID=$RUN_UID ${RUN_LABEL:+LNK_RUN_LABEL=$RUN_LABEL }LNK_SCHEMA=$SCHEMA \\"
-          echo "      LNK_GUARD_DOWNSTREAM=warn LNK_LOAD=loadall \\"
+          echo "      LNK_GUARD_DOWNSTREAM=warn LNK_HABITAT_GATE=0 LNK_LOAD=loadall \\"
           echo "      Rscript data-raw/wsg_run_one.R <WSG> $CONFIG"
         fi
         echo "  Then recompute the whole run (every group: a re-modelled group's"
@@ -692,7 +696,8 @@ run_finish_report() {
       echo "  The post-consolidate recompute did not complete for every WSG."
       echo "  Those WSGs' streams_access / streams_mapping_code still hold their"
       echo "  PRE-consolidate values, so cross-WSG access — hence token1/token2"
-      echo "  and ;DAM — is WRONG for them. This is bad output, not missing"
+      echo "  and ;DAM — is WRONG for them, and their habitat was never settled"
+      echo "  on access (the model leg runs ungated). This is bad output, not missing"
       echo "  output: the compare CSV above will look complete."
       if [ "${RECOMPUTE_FAIL_STAGE:-pool}" = "logtables" ]; then
         echo "  The provenance log tables could not be created, so NO WSG was"

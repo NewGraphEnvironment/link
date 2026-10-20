@@ -332,7 +332,8 @@
 #' Finished recomputes of each group after its build.
 #'
 #' The cross-group recompute rewrites `streams_access`, which is where
-#' `has_barriers_dnstr` comes from, so it is part of what the export reads.
+#' `has_barriers_dnstr` comes from, and since link#349 settles the habitat flags
+#' on it, so it is part of what the export reads.
 #' @return `<schema>.log_recompute` rows, or NULL where the table is absent.
 #' @noRd
 .lnk_export_recompute <- function(conn, schema, runs) {

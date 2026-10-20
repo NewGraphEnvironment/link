@@ -50,6 +50,7 @@ lnk_pipeline_species(cfg, loaded, "ADMS")
 }
 \seealso{
 Other pipeline: 
+\code{\link{lnk_habitat_gate}()},
 \code{\link{lnk_pipeline_access}()},
 \code{\link{lnk_pipeline_break}()},
 \code{\link{lnk_pipeline_classify}()},

@@ -1,0 +1,66 @@
+# Progress — streams_habitat_<sp>.accessible disagrees with streams_access.access_<sp> (#349)
+
+## Session 2026-10-19
+
+- Plan-mode exploration: read #336 and #351, traced `.lnk_pipeline_classify_build_breaks()`,
+  fresh's `accessible` CTE and override anti-join, `lnk_barriers_views()`,
+  `lnk_pipeline_access()` / `frs_network_features()`, `.lnk_pipeline_prep_observations()`,
+  `lnk_barrier_overrides()`, `lnk_pipeline_run()`'s phase order; five read-only probes on
+  `fresh_default` (findings.md). Four mechanisms found: metre rounding at classify, link's
+  ltree/1 m near-equal rule, AOI-filtered breaks vs province-wide access view, and
+  observation lifts counted from the barrier's own group only.
+- Gate decisions taken by the operator (task_plan.md "Decided at the gate"): streams_access
+  authoritative with a persist-side settle step; RB observation rule + province-wide
+  observation counting ("an oversight, nothing to debate"); verification on DUNC + CARP in
+  scratch `fresh_349`; the `fresh_default` re-gate owed after merge.
+- Design review by a Plan agent (22 findings, `review-plan.md`), run in plan mode on the
+  design draft before the plan was final; the load-bearing findings were verified against
+  the code and folded into task_plan.md. Not re-run on the final plan.
+- Phases approved by the operator as **parked**.
+- Created branch `349-streams-habitat-sp-accessible-disagrees` off main.
+- Scaffolded PWF baseline from issue #349 with the approved phases.
+- Next: parked 2026-10-19; resume with the command below, then "start Phase 1".
+
+### Resume
+
+```bash
+cd ~/Projects/repo/link && git fetch -q origin && git checkout 349-streams-habitat-sp-accessible-disagrees && git pull --ff-only && git merge origin/main
+```
+
+The parked approval covered the baseline only; the run-to-PR mandate starts when the operator
+says to resume.
+
+## Session 2026-10-19 (evening, Vancouver) — run to PR
+
+- Resumed on the operator's "Complete all phases of 349 to PR".
+- Phase 1: `data-raw/access_disagree_349.R` written and run province-wide (4.0 min). Classes sum
+  to the issue's totals for every species. A / A′ ≈ halves; B is every whole-group case (RB,
+  KO, GR and BT TURN); residual is small, RB's is ELKR's Flathead. Corrected the plan's KO
+  location claim (findings.md). bcfishpass scope pinned at `@620dbe4`.
+- Phase 2: `lnk_habitat_gate()` (tests first; the DB test goes red with the UPDATE stubbed out,
+  3 failures). `n_lifted_settled` needs the access from before a recompute, so the gate takes
+  `table_access_prior`; `wsg_recompute_one.R` and `habitat_variants_build.R` snapshot it.
+  `lnk_pipeline_run()` gates after the second persist and builds mapping codes from persist
+  through `.lnk_mapping_code_persist()`, now shared with the recompute. Log columns
+  `habitat_gate_{n,km,lifted,species}` on `log` and `log_recompute`, written in a second soft
+  statement. `study_area_verify.sql` asserts no `accessible AND access_<sp> = 0` row; the
+  negative test's new case 6d fires, 12 / 12 cases right on `fresh_default`'s run. Note:
+  verify on `fresh_default` itself now fails until decision 4's re-gate runs.
+- Phase 3: `<schema>.observations_province` (every group's records, each by its own group's
+  presence, minus exclusions; GiST on the ltrees) feeds `lnk_barrier_overrides()`; the AOI table
+  still feeds breaks and access code 2. `default`'s RB row gains BT's resident rule (threshold 1,
+  RB). Timed on DUNC / CARP: no cost. Config checksum updated; audit clean.
+- Phase 4: verification build in scratch `fresh_349` (UPCE, CARP, DUNC; UPCE added because it
+  holds the Peace rows). After the recompute, forward disagreement 0 for every species; no lift
+  lost; CARP KO / RB and UPCE RB open; rollups move by exactly the reported km. Code-check round 1
+  (2 findings) arrived during the build; fixes held until it finished so its log rows stayed clean.
+- Round-1 fixes committed (`0cdeb9bd`). Phase 5: RUNBOOK §1 diagram, §3, §5, §6c, §6d; export
+  schema notes; `research/access_columns.md` + README row; CLAUDE.md status (and the 2026-10-14
+  #336 fact corrected after a row-level check: fresh's breaks hold the barriers, rounded); #349 and
+  #336 bodies edited; fresh tolerance follow-up drafted, not filed.
+- Code-check: round 1 (2 findings), round 2 (5, one inside round 1's fix), round 3 (3; the
+  documented fresh_default order would have lost habitat for good), then an enumeration of the
+  round-3 mechanism over 18 files. Fixes in `0cdeb9bd`, `b8d777cb`, `6e421e7e`, `b1d1ec7a`.
+  `recompute_parity.sh` on `fresh_349`: PASSED. Verify negative test: 13 / 13.
+- Next: archive, open the PR. Owed after merge: settle `fresh_default` (re-model first), re-score
+  parity, file the fresh tolerance issue after body review.

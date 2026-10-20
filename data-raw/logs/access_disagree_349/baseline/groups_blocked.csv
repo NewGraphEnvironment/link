@@ -1,0 +1,6 @@
+"species","watershed_group_code","n_accessible","n_segments","km","km_spawning","km_rearing","barrier_source","blue_line_key","downstream_route_measure","fwa_wsg","persisted_wsgs","obs_upstream_all","obs_upstream_province","obs_upstream_in_holding_group","rule_threshold"
+"ko","CARP",14033,14033,3703.926,63.885,359.991,"GRADIENT",359572348,1684183,"UPCE","FINA;LPCE;PCEA;UPCE",244,17,0,5
+"ko","CARP",14033,14033,3703.926,63.885,359.991,"GRADIENT",359572348,1706109.9,"UPCE","FINA;LPCE;PCEA;UPCE",172,17,0,5
+"ko","CARP",14033,14033,3703.926,63.885,359.991,"GRADIENT",359572348,1706197.2,"UPCE","FINA;LPCE;PCEA;UPCE",172,17,0,5
+"rb","CARP",17591,17591,4420.444,502.378,1554.935,"GRADIENT",359572348,1684183,"UPCE","FINA;LPCE;PCEA;UPCE",3266,3266,290,1
+"rb","CARP",17591,17591,4420.444,502.378,1554.935,"GRADIENT",359572348,1706109.9,"UPCE","FINA;LPCE;PCEA;UPCE",2976,2976,158,1

@@ -74,6 +74,14 @@ echo "  out:      $OUT_DIR"
 wsg_sql_list() { csv_lines "$WSGS" | sed "s/.*/'&'/" | paste -sd, -; }
 IN_LIST="$(wsg_sql_list)"
 
+# The recompute settles streams_habitat_<sp> too since link#349 (the habitat
+# gate, one-way), so a pass that does not restore them would start pass C from
+# pass A's settled habitat and the digest would not see what the gate wrote.
+HAB_TABLES="$("${PSQL[@]}" -At -c "SELECT table_name FROM information_schema.tables
+  WHERE table_schema = '$SCHEMA' AND table_type = 'BASE TABLE'
+    AND table_name ~ '^streams_habitat_[a-z]+\$' ORDER BY 1")"
+[ -n "$HAB_TABLES" ] || { echo "FATAL: no streams_habitat_<sp> tables in $SCHEMA" >&2; exit 1; }
+
 snapshot() {
   "${PSQL[@]}" -q -v ON_ERROR_STOP=1 <<SQL
 DROP SCHEMA IF EXISTS $BAK CASCADE;
@@ -84,6 +92,10 @@ CREATE TABLE $BAK.streams_access AS
 CREATE TABLE $BAK.streams_mapping_code AS
   SELECT * FROM $SCHEMA.streams_mapping_code
    WHERE watershed_group_code IN ($IN_LIST);
+$(for t in $HAB_TABLES; do
+    printf 'CREATE TABLE %s.%s AS SELECT * FROM %s.%s WHERE watershed_group_code IN (%s);\n' \
+      "$BAK" "$t" "$SCHEMA" "$t" "$IN_LIST"
+  done)
 SQL
 }
 
@@ -97,6 +109,10 @@ DELETE FROM $SCHEMA.streams_access       WHERE watershed_group_code IN ($IN_LIST
 INSERT INTO $SCHEMA.streams_access       SELECT * FROM $BAK.streams_access;
 DELETE FROM $SCHEMA.streams_mapping_code WHERE watershed_group_code IN ($IN_LIST);
 INSERT INTO $SCHEMA.streams_mapping_code SELECT * FROM $BAK.streams_mapping_code;
+$(for t in $HAB_TABLES; do
+    printf 'DELETE FROM %s.%s WHERE watershed_group_code IN (%s);\nINSERT INTO %s.%s SELECT * FROM %s.%s;\n' \
+      "$SCHEMA" "$t" "$IN_LIST" "$SCHEMA" "$t" "$BAK" "$t"
+  done)
 COMMIT;
 SQL
 }
@@ -158,6 +174,12 @@ echo "--- pass C: parallel (-j$WIDTH), shuffled ($SHUF), from snapshot"
 SEC_C=$(run_pass C "$SHUF" "$WIDTH")
 digest "$OUT_DIR/${TS}_C.csv"
 
+# Leave the schema as it was found. The passes run with LNK_LOG=0, and the
+# recompute's habitat gate is one-way (link#349): without this a benchmark on
+# an unsettled schema would settle its habitat with no log row saying so.
+echo "--- restoring pre-state"
+restore
+
 echo
 echo "=== timing ==="
 printf '  A serial   (-j1)        %4d s\n' "$SEC_A"
@@ -195,16 +217,25 @@ fi
 # alone, and a threshold of N_WSG still clears. That is the same
 # "three identical empty results reported as a pass" this guard exists to
 # prevent, surviving at half strength.
+#
+# Since link#349 the digest also covers each streams_habitat_<sp>, which holds
+# rows only for the species a group models. Their share of the expected count
+# is read from the pre-state snapshot, not from the digest it checks.
 N_ROWS=$(($(wc -l < "$OUT_DIR/${TS}_A.csv") - 1))
-N_EXPECT=$((2 * N_WSG))
+N_HAB=0
+for t in $HAB_TABLES; do
+  n=$("${PSQL[@]}" -At -c "SELECT count(DISTINCT watershed_group_code) FROM $BAK.$t")
+  N_HAB=$((N_HAB + n))
+done
+N_EXPECT=$((2 * N_WSG + N_HAB))
 if [ "$N_ROWS" -ne "$N_EXPECT" ]; then
-  echo "  FAIL digest covers $N_ROWS row(s), expected $N_EXPECT (2 tables x $N_WSG WSGs)"
+  echo "  FAIL digest covers $N_ROWS row(s), expected $N_EXPECT (2 tables x $N_WSG WSGs + $N_HAB habitat)"
   echo "       missing (table, WSG) pairs — the comparison is weaker than it looks:"
   awk -F, 'NR>1{seen[$1"|"$2]=1} END{for(k in seen) print "         have " k}' \
     "$OUT_DIR/${TS}_A.csv" | sort
   FAILED=1
 else
-  echo "  ok   digest covers $N_ROWS table-WSG row(s) (2 x $N_WSG)"
+  echo "  ok   digest covers $N_ROWS table-WSG row(s) (2 x $N_WSG + $N_HAB habitat)"
 fi
 
 "${PSQL[@]}" -q -c "DROP SCHEMA IF EXISTS $BAK CASCADE;"

@@ -20,6 +20,7 @@ renamed.
 | [`bcfp_view_column_coding.md`](bcfp_view_column_coding.md) | `streams_vw_bcfp` column coding and the parity predicates |
 | [`bcfp_compare_mapping_code.md`](bcfp_compare_mapping_code.md) | mapping_code comparison: enrich + score |
 | [`bcfp_divergence_taxonomy.yml`](bcfp_divergence_taxonomy.yml) | Taxonomy that `lnk_parity_annotate()` tags divergences with |
+| [`access_columns.md`](access_columns.md) | Which column says a segment is accessible: fresh's `accessible` against link's `access_<sp>`, the four mechanisms that split them, and the settle that makes the habitat flags follow link (#349) |
 | [`accessible_km_divergence.md`](accessible_km_divergence.md) | `accessible_km` divergence for high-threshold species ([figure](blk359209845_bt_accessible_km.png)) |
 | [`default_vs_bcfishpass.md`](default_vs_bcfishpass.md) | The `default` config vs bcfishpass, per WSG, incl. the reverted gradient floor |
 | [`dimensions_audit.md`](dimensions_audit.md) | Audit of the bcfishpass bundle's `dimensions.csv` |

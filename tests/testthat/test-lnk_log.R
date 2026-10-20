@@ -449,6 +449,49 @@ test_that(".lnk_log_run_finish sets date_end and species", {
   expect_match(sql, "WHERE run_id = 'rid-1'")
 })
 
+gate_result <- function(lifted = c(3L, NA)) {
+  data.frame(
+    species = rep(c("BT", "RB"), each = 5),
+    flag = rep(c("accessible", "spawning", "rearing", "lake_rearing",
+                 "wetland_rearing"), 2),
+    n_segments = c(10L, 1L, 2L, 0L, 0L, 0L, 0L, 0L, 0L, 0L),
+    km = c(4.5, 0.1, 0.2, 0, 0, 0, 0, 0, 0, 0),
+    n_lifted_settled = rep(lifted, each = 5))
+}
+
+test_that("run_finish logs the habitat gate in a second statement (#349)", {
+  cfg <- lnk_config("default")
+  sql <- capture_write(.lnk_log_run_finish(fake_conn(), cfg, "rid-1",
+    species = c("BT", "RB"), habitat_gate = gate_result()))
+  expect_length(sql, 2L)
+  expect_match(sql[1], "SET date_end = now\\(\\)")
+  expect_no_match(sql[1], "habitat_gate")
+  expect_match(sql[2], "habitat_gate_n = 10")
+  expect_match(sql[2], "habitat_gate_km = 4.5")
+  expect_match(sql[2], "habitat_gate_lifted = 3")
+  expect_match(sql[2], "habitat_gate_species = ARRAY\\['BT'\\]::text\\[\\]")
+  expect_match(sql[2], "WHERE run_id = 'rid-1'")
+
+  none <- capture_write(.lnk_log_run_finish(fake_conn(), cfg, "rid-1",
+    habitat_gate = gate_result(lifted = c(NA, NA))))
+  expect_match(none[2], "habitat_gate_lifted = NULL")
+})
+
+test_that("a failed gate statement warns and leaves the closed row closed", {
+  cfg <- lnk_config("default")
+  n <- 0L
+  testthat::local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) {
+      n <<- n + 1L
+      if (grepl("habitat_gate", sql)) stop("column habitat_gate_n does not exist")
+      invisible(conn)
+    })
+  expect_warning(out <- .lnk_log_recompute_finish(fake_conn(), cfg, "rid-1",
+                   "BT", habitat_gate = gate_result()), "habitat gate")
+  expect_true(out)
+  expect_equal(n, 2L)
+})
+
 test_that(".lnk_log_run_fail sets notes and never touches date_end", {
   cfg <- lnk_config("default")
   sql <- capture_write(.lnk_log_run_fail(fake_conn(), cfg, "rid-1"))

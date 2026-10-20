@@ -1,0 +1,9 @@
+"watershed_group_code","scope","natural_barriers","secs_overrides","secs_prep_observations_both_tables","species_code","n_overrides"
+"DUNC","observations",47534,27.6,3.9,"BT",96
+"DUNC","observations",47534,27.6,3.9,"RB",25
+"DUNC","observations",47534,27.6,3.9,"WCT",98
+"DUNC","observations_province",47534,18.6,3.9,"BT",96
+"DUNC","observations_province",47534,18.6,3.9,"RB",25
+"DUNC","observations_province",47534,18.6,3.9,"WCT",98
+"CARP","observations",3599,18,3.9,"RB",4
+"CARP","observations_province",3599,17.5,3.9,"RB",4

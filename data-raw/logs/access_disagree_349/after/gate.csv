@@ -1,0 +1,7 @@
+"log_table","watershed_group_code","date_end","link_sha","link_dirty","habitat_gate_n","habitat_gate_km","habitat_gate_lifted","habitat_gate_species"
+"log","CARP",2026-10-20 04:14:48.017599,"ca4a58ef59bc1ee8486024f8159f44c0c08d5f72",FALSE,NA,NA,NA,NA
+"log","DUNC",2026-10-20 04:18:06.81438,"ca4a58ef59bc1ee8486024f8159f44c0c08d5f72",FALSE,NA,NA,NA,NA
+"log","UPCE",2026-10-20 04:12:49.338064,"ca4a58ef59bc1ee8486024f8159f44c0c08d5f72",FALSE,NA,NA,NA,NA
+"log_recompute","CARP",2026-10-20 04:22:47.950834,"ca4a58ef59bc1ee8486024f8159f44c0c08d5f72",FALSE,77,9.661,0,"{BT,KO,RB}"
+"log_recompute","DUNC",2026-10-20 04:24:24.349369,"ca4a58ef59bc1ee8486024f8159f44c0c08d5f72",FALSE,694,249.857,0,"{BT,RB,WCT}"
+"log_recompute","UPCE",2026-10-20 04:22:01.521332,"ca4a58ef59bc1ee8486024f8159f44c0c08d5f72",FALSE,396,51.595,0,"{BT,GR,RB}"

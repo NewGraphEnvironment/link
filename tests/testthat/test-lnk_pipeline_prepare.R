@@ -606,7 +606,8 @@ test_that(".lnk_pipeline_prep_overrides passes control when manifest declares it
     lnk_barrier_overrides = function(conn, ...) {
       captured[["args"]] <<- list(...)
       invisible(NULL)
-    }
+    },
+    .lnk_db_execute = function(conn, sql) invisible(NULL)
   )
 
   .lnk_pipeline_prep_overrides("mock-conn", loaded = loaded_stub,
@@ -632,7 +633,8 @@ test_that(".lnk_pipeline_prep_overrides passes control = NULL when manifest omit
     lnk_barrier_overrides = function(conn, ...) {
       captured[["args"]] <<- list(...)
       invisible(NULL)
-    }
+    },
+    .lnk_db_execute = function(conn, sql) invisible(NULL)
   )
 
   .lnk_pipeline_prep_overrides("mock-conn", loaded = loaded_stub,
@@ -665,7 +667,8 @@ test_that(".lnk_pipeline_prep_overrides passes habitat when manifest declares it
     lnk_barrier_overrides = function(conn, ...) {
       captured[["args"]] <<- list(...)
       invisible(NULL)
-    }
+    },
+    .lnk_db_execute = function(conn, sql) invisible(NULL)
   )
 
   .lnk_pipeline_prep_overrides("mock-conn", loaded = loaded_stub,
@@ -692,7 +695,8 @@ test_that(".lnk_pipeline_prep_overrides passes habitat = NULL when manifest omit
     lnk_barrier_overrides = function(conn, ...) {
       captured[["args"]] <<- list(...)
       invisible(NULL)
-    }
+    },
+    .lnk_db_execute = function(conn, sql) invisible(NULL)
   )
 
   .lnk_pipeline_prep_overrides("mock-conn", loaded = loaded_stub,
@@ -1067,4 +1071,129 @@ test_that(".lnk_dams_edit_values_sql quotes literals and survives empty CSVs", {
       expect_match(v$upd, "NULL::integer", fixed = TRUE)
     }
   )
+})
+
+
+# -- province-wide observations for barrier lifts (link#349) -----------------
+
+test_that("prep_observations builds observations_province from every group's presence", {
+  captured <- character(0)
+  local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) {
+      captured <<- c(captured, sql); invisible(NULL)
+    }
+  )
+  loaded <- list(
+    wsg_species_presence = data.frame(
+      watershed_group_code = c("UPCE", "PARS", "XXXX"),
+      bt = c("t", "t", "f"), ch = "f", cm = "f", co = "f", ct = "f",
+      dv = "f", ko = c("f", "t", "f"), pk = "f", rb = c("t", "t", "f"),
+      sk = "f", st = "f", wct = "f",
+      stringsAsFactors = FALSE),
+    observation_exclusions = data.frame(
+      observation_key = c("aaa", "bbb"), data_error = c(TRUE, FALSE),
+      release_exclude = c(FALSE, FALSE), stringsAsFactors = FALSE))
+  .lnk_pipeline_prep_observations("mock", aoi = "UPCE", loaded = loaded,
+    schema = "w_upce", observations = "bcfishobs.observations")
+
+  prov <- grep("CREATE TABLE w_upce\\.observations_province AS", captured,
+               value = TRUE)
+  expect_length(prov, 1L)
+  # Each record kept by its OWN group's presence: PARS's KO counts toward a
+  # barrier in UPCE, where KO is absent; nothing from XXXX, which has none.
+  expect_match(prov, "('UPCE', 'BT')", fixed = TRUE)
+  expect_match(prov, "('PARS', 'KO')", fixed = TRUE)
+  expect_no_match(prov, "('UPCE', 'KO')", fixed = TRUE)
+  expect_no_match(prov, "XXXX", fixed = TRUE)
+  expect_match(prov, "p.watershed_group_code = o.watershed_group_code",
+               fixed = TRUE)
+  expect_match(prov, "p.species_code = o.species_code", fixed = TRUE)
+  expect_no_match(prov, "o.watershed_group_code = 'UPCE'", fixed = TRUE)
+  expect_match(prov, "observation_key NOT IN ('aaa')", fixed = TRUE)
+  expect_true(any(grepl("observations_province USING gist (wscode)", captured,
+                        fixed = TRUE)))
+  # The AOI table is unchanged: this group's own observations only.
+  aoi <- grep("CREATE TABLE w_upce\\.observations AS", captured, value = TRUE)
+  expect_match(aoi, "o.watershed_group_code = 'UPCE'", fixed = TRUE)
+})
+
+test_that("prep_overrides counts lifts over observations_province, then drops it", {
+  captured <- list()
+  sent <- character(0)
+  local_mocked_bindings(
+    lnk_barrier_overrides = function(conn, ...) {
+      captured[["args"]] <<- list(...)
+      sent <<- c(sent, "overrides")
+      invisible(NULL)
+    },
+    .lnk_db_execute = function(conn, sql) { sent <<- c(sent, sql); invisible(NULL) }
+  )
+  .lnk_pipeline_prep_overrides("mock-conn",
+    loaded = list(parameters_fresh = data.frame(species_code = "BT")),
+    schema = "working_bulk")
+  expect_equal(captured$args$observations, "working_bulk.observations_province")
+  # Dropped after the count, never before it: a kept working schema must not
+  # hold a province-wide copy per group.
+  expect_equal(sent, c("overrides",
+    "DROP TABLE IF EXISTS working_bulk.observations_province"))
+})
+
+test_that("study_area_run.sh models with the gate off on both legs (#349)", {
+  # The gate is one-way; a dispatch's recompute settles on final access. The
+  # cloud leg is an ssh string, so an export on the local leg alone would not
+  # reach it (the LNK_GUARD_DOWNSTREAM trap, #227).
+  f <- testthat::test_path("..", "..", "data-raw", "study_area_run.sh")
+  skip_if_not(file.exists(f), "data-raw is not shipped with the package")
+  src <- readLines(f)
+  local_leg <- grep("Rscript data-raw/wsg_run_one.R \"\\$w\"", src) - 1L
+  expect_length(local_leg, 1L)
+  expect_match(src[local_leg], "LNK_HABITAT_GATE=0", fixed = TRUE)
+  ssh_leg <- grep("ssh .*wsg_run_one.R", src, value = TRUE)
+  expect_length(ssh_leg, 1L)
+  expect_match(ssh_leg, "export LNK_HABITAT_GATE=0 &&", fixed = TRUE)
+})
+
+test_that("the province table lifts a barrier the AOI table cannot (DB)", {
+  skip_if_no_db()
+  conn <- lnk_db_conn(dbname = "fwapg", host = "localhost", port = 5432L,
+                      user = "postgres", password = "postgres")
+  withr::defer(DBI::dbDisconnect(conn))
+  s <- "zz_lnk_obs_scope_probe"
+  DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", s))
+  DBI::dbExecute(conn, sprintf("CREATE SCHEMA %s", s))
+  withr::defer(try(DBI::dbExecute(conn, sprintf("DROP SCHEMA %s CASCADE", s)),
+                   silent = TRUE))
+
+  # One barrier on line 1 at 100 m, held by group AAAA. One RB observation
+  # 5 km upstream on the same line, recorded in group BBBB.
+  DBI::dbExecute(conn, sprintf(
+    "CREATE TABLE %s.natural_barriers AS
+     SELECT 1 AS blue_line_key, 100::double precision AS downstream_route_measure,
+            'blocked'::text AS label, '100'::ltree AS wscode_ltree,
+            '100'::ltree AS localcode_ltree", s))
+  obs <- "SELECT 'k1'::text AS observation_key, 'RB'::text AS species_code,
+                 %s::text AS watershed_group_code, 1 AS blue_line_key,
+                 5000::double precision AS downstream_route_measure,
+                 '100'::ltree AS wscode, '100'::ltree AS localcode,
+                 '2001-06-01'::date AS observation_date"
+  DBI::dbExecute(conn, sprintf("CREATE TABLE %s.obs_province AS %s", s,
+                               sprintf(obs, "'BBBB'")))
+  DBI::dbExecute(conn, sprintf("CREATE TABLE %s.obs_aoi AS %s WHERE FALSE", s,
+                               sprintf(obs, "'BBBB'")))
+
+  params <- lnk_load_overrides(lnk_config("default"))$parameters_fresh
+  rb <- params[params$species_code == "RB", , drop = FALSE]
+  lift <- function(obs_table) {
+    to <- paste0(s, ".ov_", sub(".*\\.", "", obs_table))
+    lnk_barrier_overrides(conn, barriers = paste0(s, ".natural_barriers"),
+                          observations = obs_table, params = rb, to = to,
+                          verbose = FALSE)
+    DBI::dbGetQuery(conn, sprintf("SELECT * FROM %s", to))
+  }
+  # default's RB rule (one RB observation, no date floor) lifts it with the
+  # province table, and cannot with the AOI's own observations.
+  got <- lift(paste0(s, ".obs_province"))
+  expect_equal(nrow(got), 1L)
+  expect_equal(got$species_code, "RB")
+  expect_equal(nrow(lift(paste0(s, ".obs_aoi"))), 0L)
 })

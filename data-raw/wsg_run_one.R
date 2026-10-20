@@ -81,9 +81,16 @@ guard <- tryCatch(
   })
 
 t0 <- Sys.time()
+# LNK_HABITAT_GATE=0 leaves fresh's classify-time habitat flags unsettled,
+# to measure what the gate does (link#349); anything else settles them.
+gate_env <- Sys.getenv("LNK_HABITAT_GATE", "1")
+if (!gate_env %in% c("0", "1")) {
+  stop("LNK_HABITAT_GATE must be 0 or 1 (got '", gate_env, "')", call. = FALSE)
+}
 lnk_pipeline_run(conn, aoi = wsg, cfg = cfg, loaded = loaded,
                  schema = paste0("working_", tolower(wsg)),
                  mapping_code = TRUE, cleanup_working = FALSE,
+                 habitat_gate = identical(gate_env, "1"),
                  notes = guard$note)
 cat(sprintf("[wsg_run_one] %s done in %.1f min (persist=%s)\n",
             wsg, as.numeric(difftime(Sys.time(), t0, units = "mins")),

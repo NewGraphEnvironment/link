@@ -13,6 +13,7 @@ lnk_pipeline_run(
   dams = TRUE,
   cleanup_working = TRUE,
   mapping_code = FALSE,
+  habitat_gate = TRUE,
   log = TRUE,
   run_uid = Sys.getenv("LNK_RUN_UID", NA_character_),
   run_label = Sys.getenv("LNK_RUN_LABEL", NA_character_),
@@ -43,7 +44,7 @@ runs from local \code{cabd.dams}. Pass \code{FALSE} to skip dams entirely.}
 debug / manual inspection.}
 
 \item{mapping_code}{Logical. Gates only the mapping_code \strong{token
-assembly} (phase 10b) — when \code{TRUE}, \code{\link[=lnk_mapping_code]{lnk_mapping_code()}} runs and
+assembly} (phase 13) — when \code{TRUE}, \code{\link[=lnk_mapping_code]{lnk_mapping_code()}} runs and
 \verb{<persist_schema>.streams_mapping_code} is produced for the WSG,
 consumed downstream by \code{data-raw/build_species_views.R --bcfp} (QGIS
 bcfp-shape symbology). Default \code{FALSE}. \strong{\code{streams_access} is built
@@ -52,6 +53,11 @@ access is foundational, not mapping_code-specific. Methodology shift
 from pre-#187 compare_wsg: access uses link's own per-species
 barriers (via \code{blocks_species} predicate on \verb{<schema>.barriers}),
 not bcfp's tunnel-staged tables.}
+
+\item{habitat_gate}{Logical. When \code{TRUE} (default), settle the persisted
+habitat flags on \code{streams_access} with \code{\link[=lnk_habitat_gate]{lnk_habitat_gate()}} (phase 12,
+link#349). \code{FALSE} keeps fresh's classify-time flags, for measuring what
+the gate changes; the log row's \verb{habitat_gate_*} columns stay NULL.}
 
 \item{log}{Logical. When \code{TRUE} (default), record run provenance into
 \verb{<persist_schema>.log} and its companion tables (link#127) — which
@@ -78,7 +84,8 @@ to the \code{LNK_RUN_LABEL} env var so orchestrators can set it once.}
 }
 \value{
 \code{conn}, invisibly. Side effects are the writes into
-\verb{<persist_schema>.streams}, \verb{streams_habitat_<sp>}, and \code{barriers}.
+\verb{<persist_schema>.streams}, \verb{streams_habitat_<sp>} (settled on
+\code{streams_access}), \code{streams_access} and \code{barriers}.
 }
 \description{
 Modelling-only umbrella: chains the \verb{lnk_pipeline_*} phases and the
@@ -121,12 +128,15 @@ link-canonical per-species views over \verb{<persist_schema>.barriers}),
 and \code{\link[=lnk_pipeline_access]{lnk_pipeline_access()}} (writes working \code{streams_access}). Access
 is foundational — mapping_code depends on it — so it builds regardless
 of \code{mapping_code}. See link#187, #196.
-10b. \emph{Optional} mapping_code token assembly — gated by \code{mapping_code = TRUE}.
-\code{\link[=lnk_mapping_code]{lnk_mapping_code()}} consumes \code{streams_access} + \code{streams_habitat}
-and writes working \code{streams_mapping_code}.
 \item \code{\link[=lnk_pipeline_persist]{lnk_pipeline_persist()}} — copy per-WSG streams + per-species
-habitat + barriers + streams_access (+ optional streams_mapping_code)
-into \verb{<persist_schema>} (idempotent DELETE-WHERE-WSG + INSERT).
+habitat + barriers + streams_access into \verb{<persist_schema>}
+(idempotent DELETE-WHERE-WSG + INSERT).
+\item \code{\link[=lnk_habitat_gate]{lnk_habitat_gate()}} — settle the persisted habitat flags on
+\code{streams_access}: where \verb{access_<sp>} is 0, \code{accessible}, \code{spawning},
+\code{rearing}, \code{lake_rearing} and \code{wetland_rearing} go FALSE (link#349).
+\item \emph{Optional} mapping_code token assembly — gated by \code{mapping_code = TRUE}.
+\code{\link[=lnk_mapping_code]{lnk_mapping_code()}} reads the persisted \code{streams_access} and the
+settled habitat, and writes \verb{<persist_schema>.streams_mapping_code}.
 }
 }
 }
@@ -151,6 +161,7 @@ DBI::dbGetQuery(conn,
 \code{\link[=lnk_pipeline_setup]{lnk_pipeline_setup()}}, \code{\link[=lnk_pipeline_persist]{lnk_pipeline_persist()}}
 
 Other pipeline: 
+\code{\link{lnk_habitat_gate}()},
 \code{\link{lnk_pipeline_access}()},
 \code{\link{lnk_pipeline_break}()},
 \code{\link{lnk_pipeline_classify}()},

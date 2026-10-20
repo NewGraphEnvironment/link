@@ -97,6 +97,7 @@ DBI::dbDisconnect(conn)
 }
 \seealso{
 Other pipeline: 
+\code{\link{lnk_habitat_gate}()},
 \code{\link{lnk_pipeline_access}()},
 \code{\link{lnk_pipeline_classify}()},
 \code{\link{lnk_pipeline_connect}()},

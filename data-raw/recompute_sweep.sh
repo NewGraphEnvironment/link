@@ -11,6 +11,11 @@
 # data-raw/recompute_parity.sh), so every width after the first operates on
 # identical input and the comparison is fair.
 #
+# Each pass is a real recompute, so it also settles streams_habitat_<sp> on
+# access (link#349, one-way), with LNK_LOG=0 below leaving no log_recompute
+# row to say so. Run it on a schema you would recompute anyway, or a scratch
+# copy; recompute_parity.sh restores its pre-state, this does not.
+#
 # Reports peak backend count and peak parallel-worker count sampled from
 # pg_stat_activity DURING each pass, because the scarce resource is not what
 # it looks like from the host: the work is server-side, and a single recompute

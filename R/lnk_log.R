@@ -336,6 +336,14 @@ cols_log <- c(
   bcfp_model_run_id      = "integer",
   bcfp_model_version     = "text",
   bcfp_pin_source        = "text",
+  # What lnk_habitat_gate() settled for this group (#349): segments and km
+  # whose `accessible` it set FALSE (all species), the species it changed, and
+  # how many segments a recompute lifted while their habitat stayed FALSE (a
+  # re-model restores those). NULL on a row from before the gate existed.
+  habitat_gate_n         = "integer",
+  habitat_gate_km        = "double precision",
+  habitat_gate_lifted    = "integer",
+  habitat_gate_species   = "text[]",
   notes                  = "text"
 )
 
@@ -384,6 +392,14 @@ cols_log_recompute <- c(
   schema_persist         = "text",
   species                = "text[]",
   views_prebuilt         = "boolean",
+  # What lnk_habitat_gate() settled for this group (#349): segments and km
+  # whose `accessible` it set FALSE (all species), the species it changed, and
+  # how many segments a recompute lifted while their habitat stayed FALSE (a
+  # re-model restores those). NULL on a row from before the gate existed.
+  habitat_gate_n         = "integer",
+  habitat_gate_km        = "double precision",
+  habitat_gate_lifted    = "integer",
+  habitat_gate_species   = "text[]",
   notes                  = "text"
 )
 
@@ -595,7 +611,8 @@ cols_log_input <- c(
 #'   one row per [lnk_pipeline_run()] call. `"recompute"` reads
 #'   `<schema>.log_recompute`, one row per `wsg_recompute_one.R` invocation —
 #'   the post-consolidate pass that rewrites `streams_access` and
-#'   `streams_mapping_code`, which is the output that ships.
+#'   `streams_mapping_code` and settles `streams_habitat_<sp>` on the new
+#'   access (link#349), which is the output that ships.
 #' @return A tibble, newest first.
 #' @family compare
 #' @export
@@ -1029,16 +1046,50 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
 
 #' Close a run-log row on success. Soft.
 #' @noRd
-.lnk_log_run_finish <- function(conn, cfg, run_id, species = character(0)) {
-  tryCatch({
+.lnk_log_run_finish <- function(conn, cfg, run_id, species = character(0),
+                                habitat_gate = NULL) {
+  ok <- tryCatch({
     schema <- .lnk_table_names(cfg)$schema
     .lnk_db_execute(conn, sprintf(
       "UPDATE %s.log SET date_end = now(), species = %s WHERE run_id = %s",
       schema, .lnk_log_arr(conn, species),
       DBI::dbQuoteLiteral(conn, run_id)))
-    invisible(TRUE)
+    TRUE
   }, error = function(e) {
     warning("run log not finalized: ", conditionMessage(e), call. = FALSE)
+    FALSE
+  })
+  if (ok && !is.null(habitat_gate)) {
+    .lnk_log_habitat_gate(conn, cfg, "log", "run_id", run_id, habitat_gate)
+  }
+  invisible(ok)
+}
+
+
+#' Record what lnk_habitat_gate() settled on a log row. Soft.
+#'
+#' A second statement, after the one that closes the row, so a schema whose
+#' log predates these columns still gets its `date_end` (#349).
+#' @noRd
+.lnk_log_habitat_gate <- function(conn, cfg, table, id_col, id, habitat_gate) {
+  tryCatch({
+    schema <- .lnk_table_names(cfg)$schema
+    g <- habitat_gate[habitat_gate$flag == "accessible", , drop = FALSE]
+    lifted <- vapply(split(habitat_gate$n_lifted_settled, habitat_gate$species),
+                     function(v) v[1], integer(1))
+    lifted_sql <- if (all(is.na(lifted))) "NULL" else
+      as.character(sum(lifted, na.rm = TRUE))
+    changed <- unique(habitat_gate$species[habitat_gate$n_segments > 0L])
+    .lnk_db_execute(conn, sprintf(
+      "UPDATE %s.%s SET habitat_gate_n = %d, habitat_gate_km = %s,
+              habitat_gate_lifted = %s, habitat_gate_species = %s
+        WHERE %s = %s",
+      schema, table, as.integer(sum(g$n_segments)),
+      format(round(sum(g$km), 3), scientific = FALSE), lifted_sql,
+      .lnk_log_arr(conn, sort(changed)), id_col, DBI::dbQuoteLiteral(conn, id)))
+    invisible(TRUE)
+  }, error = function(e) {
+    warning("habitat gate counts not logged: ", conditionMessage(e), call. = FALSE)
     invisible(FALSE)
   })
 }
@@ -1305,19 +1356,25 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
 #' Close a recompute-log row on success. Soft.
 #' @noRd
 .lnk_log_recompute_finish <- function(conn, cfg, recompute_id,
-                                      species = character(0)) {
-  tryCatch({
+                                      species = character(0),
+                                      habitat_gate = NULL) {
+  ok <- tryCatch({
     schema <- .lnk_table_names(cfg)$schema
     .lnk_db_execute(conn, sprintf(
       "UPDATE %s.log_recompute SET date_end = now(), species = %s
         WHERE recompute_id = %s",
       schema, .lnk_log_arr(conn, species),
       DBI::dbQuoteLiteral(conn, recompute_id)))
-    invisible(TRUE)
+    TRUE
   }, error = function(e) {
     warning("recompute log not finalized: ", conditionMessage(e), call. = FALSE)
-    invisible(FALSE)
+    FALSE
   })
+  if (ok && !is.null(habitat_gate)) {
+    .lnk_log_habitat_gate(conn, cfg, "log_recompute", "recompute_id",
+                          recompute_id, habitat_gate)
+  }
+  invisible(ok)
 }
 
 

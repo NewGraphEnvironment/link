@@ -1325,10 +1325,16 @@ fi
 # and trip the trap-burn before consolidate — that lost a whole run + the
 # cyphers' data on 2026-05-25 (one species-less WSG -> exit 1 -> FATAL -> burn).
 # Missing WSGs surface as gaps in the final compare, not as data loss.
+#
+# LNK_HABITAT_GATE=0 on BOTH legs (link#349): the habitat gate is one-way, and a
+# group modelled here reads other hosts' barriers and overrides as this host
+# holds them, possibly a previous run's. Gating then would blank habitat the
+# post-consolidate recompute lifts, for good. The recompute (wsg_recompute_one.R)
+# always follows a dispatch and settles every group on final access.
 echo "=== run buckets (DS-first) ==="
 ( cd "$REPO_ROOT"
   for w in $(echo "$DISP_BUCKET" | tr ',' ' '); do
-    LNK_LOAD=loadall LNK_GUARD_DOWNSTREAM=warn \
+    LNK_LOAD=loadall LNK_GUARD_DOWNSTREAM=warn LNK_HABITAT_GATE=0 \
       Rscript data-raw/wsg_run_one.R "$w" "$CONFIG" \
       || echo "[WARN] dispatcher WSG $w failed (continuing)"
   done ) > "$LOG_DIR/${TS}_run_local.log" 2>&1 &
@@ -1361,7 +1367,7 @@ for WS in "${CY_WS_ARR[@]}"; do
   # silently skip WSGs.
   # Keepalives: this one session carries the host's whole bucket (hours); a
   # silent link drop would kill the rest of it (link#246).
-  ssh -o ServerAliveInterval=60 -o ServerAliveCountMax=10 "cypher@$IP" "cd ~/Projects/repo/link && export LNK_SCHEMA='$SCHEMA' && export LNK_GUARD_DOWNSTREAM=warn && export FWAPG_GIT_SHA='${FWAPG_GIT_SHA:-}' && export BCFISHOBS_GIT_SHA='${BCFISHOBS_GIT_SHA:-}' && export LNK_RUN_UID='$RUN_UID' && export LNK_RUN_LABEL='$RUN_LABEL' && export LNK_BCFP_MODEL_VERSION='${LNK_BCFP_MODEL_VERSION:-}' && for w in $B_SPACE; do Rscript data-raw/wsg_run_one.R \$w '$CONFIG' || echo \"[WARN] cy WSG \$w failed\"; done" \
+  ssh -o ServerAliveInterval=60 -o ServerAliveCountMax=10 "cypher@$IP" "cd ~/Projects/repo/link && export LNK_SCHEMA='$SCHEMA' && export LNK_GUARD_DOWNSTREAM=warn && export LNK_HABITAT_GATE=0 && export FWAPG_GIT_SHA='${FWAPG_GIT_SHA:-}' && export BCFISHOBS_GIT_SHA='${BCFISHOBS_GIT_SHA:-}' && export LNK_RUN_UID='$RUN_UID' && export LNK_RUN_LABEL='$RUN_LABEL' && export LNK_BCFP_MODEL_VERSION='${LNK_BCFP_MODEL_VERSION:-}' && for w in $B_SPACE; do Rscript data-raw/wsg_run_one.R \$w '$CONFIG' || echo \"[WARN] cy WSG \$w failed\"; done" \
     > "$LOG_DIR/${TS}_run_$WS.log" 2>&1 &
   CY_PID[$WS]=$!
 done

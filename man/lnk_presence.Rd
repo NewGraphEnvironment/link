@@ -80,6 +80,7 @@ pres$is_present("cm")                  # FALSE (only literal cm column matters)
 }
 \seealso{
 Other pipeline: 
+\code{\link{lnk_habitat_gate}()},
 \code{\link{lnk_pipeline_access}()},
 \code{\link{lnk_pipeline_break}()},
 \code{\link{lnk_pipeline_classify}()},

@@ -35,7 +35,8 @@ that was re-run within the same dispatch.}
 one row per \code{\link[=lnk_pipeline_run]{lnk_pipeline_run()}} call. \code{"recompute"} reads
 \verb{<schema>.log_recompute}, one row per \code{wsg_recompute_one.R} invocation —
 the post-consolidate pass that rewrites \code{streams_access} and
-\code{streams_mapping_code}, which is the output that ships.}
+\code{streams_mapping_code} and settles \verb{streams_habitat_<sp>} on the new
+access (link#349), which is the output that ships.}
 }
 \value{
 A tibble, newest first.

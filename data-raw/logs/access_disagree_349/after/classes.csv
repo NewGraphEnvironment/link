@@ -1,0 +1,6 @@
+"species","direction","class","n_segments","km","n_spawning","n_rearing","n_lake_rearing","n_wetland_rearing","km_spawning","km_rearing","share_of_accessible"
+"bt","reverse","R_other",7,1.638,0,0,0,0,NA,NA,0.00014
+"gr","reverse","R_other",2,0.572,0,0,0,0,NA,NA,0.00017
+"ko","reverse","R_other",1,0.035,0,0,0,0,NA,NA,7e-05
+"rb","reverse","R_other",7,1.638,0,0,0,0,NA,NA,0.00014
+"wct","reverse","R_other",2,1.018,0,0,0,0,NA,NA,0.00033

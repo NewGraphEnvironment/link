@@ -121,10 +121,11 @@ host_remaining() {
 }
 
 # host_complete <local|ip> <csv>: which of these groups have
-# streams_mapping_code rows on the host. Only lnk_pipeline_run()'s FINAL
-# persist writes it; the pre-persist (R/lnk_pipeline_run.R:240) writes
-# streams, habitat and barriers before access exists. So a group with streams
-# rows and no mapping-code rows did not finish there. Strict, as for streams.
+# streams_mapping_code rows on the host. lnk_pipeline_run() writes them last,
+# after its final persist and the habitat gate (.lnk_mapping_code_persist(),
+# link#349); the pre-persist writes streams, habitat and barriers before access
+# exists. So a group with streams rows and no mapping-code rows did not finish
+# there. Strict, as for streams.
 host_complete() {
   local in
   in=$(.hosts_lines "$2" | sed "s/.*/'&'/" | paste -sd, -)
