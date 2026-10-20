@@ -2,7 +2,7 @@
 
 **Verified:** 2026-10-20 · **Issues:** #349 (and #336, its DUNC BT instance) · **Produced by:**
 `data-raw/access_disagree_349.R`, `data-raw/overrides_scope_time_349.R`, log prefix
-`data-raw/logs/access_disagree_349/` · **Archive:** `planning/archive/2026-10-issue-349-accessible-vs-access/ (after merge)`
+`data-raw/logs/access_disagree_349/` · **Archive:** `planning/archive/2026-10-issue-349-accessible-vs-access/`
 
 A link build carries two answers to "is this segment accessible to <sp>":
 
