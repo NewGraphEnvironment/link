@@ -133,7 +133,7 @@ UPDATE fails softly on a schema that predates them.
       group (the mechanism-C evidence), and the km of spawning / rearing at stake.
 - [x] Read `model_access_bt.sql` at a pinned bcfishpass ref (read-only `gh api`) and record
       the observation scope it counts over, in `findings.md`.
-- [ ] Commit `classes.csv`, `groups_blocked.csv`, `summary.md` with an environment stamp
+- [x] Commit `classes.csv`, `groups_blocked.csv`, `summary.md` with an environment stamp
       (link SHA, fresh version, run_uid); put the table in the #349 body.
 
 ## Phase 2: `lnk_habitat_gate()` — the settle step
@@ -198,19 +198,21 @@ UPDATE fails softly on a schema that predates them.
 - [ ] Suite: `devtools::test()`, `lintr::lint_package()`; `/code-check branch`.
 
 ## Phase 5: Docs and issues
-- [ ] RUNBOOK §3: "accessible is settled from streams_access" (the four mechanisms, the gate,
+- [x] RUNBOOK §3: "accessible is settled from streams_access" (the four mechanisms, the gate,
       where it runs, the lossy rule and its counter); §5: observation lifts count
       province-wide; §6c: the recompute settles habitat; §6d: replace the "different barrier
       sets" paragraph; `inst/extdata/schemas/habitat_fwa_v1_segment.yaml:123-132` and
-      `R/lnk_scenario_export.R` roxygen on the two columns.
-- [ ] `research/access_columns.md` (new topic file, provenance line, cites the log prefix);
+      `R/lnk_scenario_export.R` roxygen on the two columns (its exported docs never described
+      them; the `.lnk_export_recompute()` note now says the recompute settles habitat).
+- [x] `research/access_columns.md` (new topic file, provenance line, cites the log prefix);
       `research/README.md` row. Which existing schemas stay unsettled (`fresh_default`,
       `fresh`, `score284_*`) and what restores them.
-- [ ] CLAUDE.md status block; NEWS.
-- [ ] Edit the #349 and #336 bodies (findings are the spec; #336's "fresh's breaks table
+- [x] CLAUDE.md status block (and the 2026-10-14 fact corrected). NEWS: written by
+      `/gh-pr-merge` with the version bump (this repo's release commits carry NEWS).
+- [x] Edit the #349 and #336 bodies (findings are the spec; #336's "fresh's breaks table
       lacks those barriers" becomes "holds them at rounded positions"); PR closes #336.
-- [ ] Draft (for body review, not filed) the follow-up: fresh `tolerance_m` + dropping
-      link's rounding, so A/A′ are right at classify time.
+- [x] Draft (for body review, not filed) the follow-up: fresh `tolerance_m` + dropping
+      link's rounding, so A/A′ are right at classify time (`draft_issue_fresh_tolerance.md`).
 
 ## Owed at the end (reported, done after merge)
 - [ ] Provincial `--recompute-only` re-gate of `fresh_default` (decision 4) — operator's call.

@@ -203,6 +203,14 @@ through one of those groups' runs. Builds UPCE 3.6, CARP 1.9, DUNC 3.3 min; reco
   barely: #336's 85 km are accessible km, almost none of it habitat. The tunnel was down, so
   `lnk_compare_rollup()` was not run; the local view is the same reference parity uses.
 
+### Fresh's breaks table holds the barriers, rounded (row-level, `working_dunc` of the build)
+
+DUNC's BT-blocking gradient barriers within 1 cm of a segment start: `working_dunc.streams_breaks`
+holds 6,506 of the 6,507 at or above the start, and 588 of the 592 below it, at
+`round(downstream_route_measure)` (at the raw position: 5,891 and 1). So A / A′ are one barrier set
+read through two predicates, as the plan said from the code, not two barrier sets as #336's body
+says.
+
 ## Code-check round 1 (2026-10-20)
 
 Two real findings, both fixed in the commit after this one:

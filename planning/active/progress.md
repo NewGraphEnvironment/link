@@ -54,3 +54,7 @@ says to resume.
   holds the Peace rows). After the recompute, forward disagreement 0 for every species; no lift
   lost; CARP KO / RB and UPCE RB open; rollups move by exactly the reported km. Code-check round 1
   (2 findings) arrived during the build; fixes held until it finished so its log rows stayed clean.
+- Round-1 fixes committed (`0cdeb9bd`). Phase 5: RUNBOOK §1 diagram, §3, §5, §6c, §6d; export
+  schema notes; `research/access_columns.md` + README row; CLAUDE.md status (and the 2026-10-14
+  #336 fact corrected after a row-level check: fresh's breaks hold the barriers, rounded); #349 and
+  #336 bodies edited; fresh tolerance follow-up drafted, not filed.

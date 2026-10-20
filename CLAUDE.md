@@ -11,6 +11,19 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
+## Status (2026-10-20) — habitat flags settled on `streams_access`; lifts counted province-wide (#349)
+
+**`streams_access.access_<sp>` is the authoritative access answer, and `lnk_habitat_gate()` makes the persisted habitat flags follow it**: where `access_<sp>` = 0, `accessible` / `spawning` / `rearing` / `lake_rearing` / `wetland_rearing` go FALSE (known-habitat overlay rows keep spawning / rearing). It runs in `lnk_pipeline_run()` after the second persist, in `wsg_recompute_one.R` after `lnk_access(merge = TRUE)`, and in `habitat_variants_build.R`; `study_area_verify.sql` asserts the invariant. Barrier lifts now count every group's observations (`<schema>.observations_province`), and `default`'s RB row has BT's resident rule. Mechanics: RUNBOOK §3 and §5. Write-up: `research/access_columns.md`; evidence `data-raw/logs/access_disagree_349/`.
+
+**Facts not worth re-deriving:**
+- **Four mechanisms split the two columns** (`fresh_default`, 241 groups): metre-rounded breaks (A) and the 0–5 mm near-equal case (A′), each ≈ 0.25–1 % of accessible per species; barriers in another group, invisible to fresh's AOI-filtered breaks (B: RB 457,912, KO 55,498, BT 33,739, GR 20,319 segments); and lifts counted inside one group only (C), which is why B's barriers stayed un-lifted. bcfishpass counts lifts over every group's records (`smnorris/bcfishpass@620dbe4`).
+- **`fresh_default` is not settled.** Its verify now fails on the new invariant until `study_area_finish.sh --recompute-only --run-uid=20261017_004619-3f4c713b` re-gates it (operator's call); the new RB / KO / BT lifts behind shared barriers need a re-model of the groups holding them.
+- **The gate is one-way.** A later recompute that lifts a settled segment cannot restore its habitat; it is counted (`habitat_gate_lifted`). So `study_area_run.sh` models with `LNK_HABITAT_GATE=0` on both legs and lets the recompute settle; a single-group `wsg_run_one.R` gates at model time.
+- **A barrier on a line several groups share is persisted under each** (the Peace rows: FINA, LPCE, PCEA, UPCE). A lift reaches a group only through a run of a group holding the barrier, so the #349 verification rebuilt UPCE with CARP and DUNC.
+- **Most KO records upstream of the Peace rows sit in groups the presence table lists without KO** (PCEA 63, FINA 27, FINL 22, …); by each record's own presence 17 count, which clears KO's threshold of 5.
+- **Verified on scratch `fresh_349`** (UPCE, CARP, DUNC): forward disagreement 0 after the recompute; no lift lost; CARP KO 3,695 km and RB 4,420 km open; the rollups move by exactly those km. DUNC BT habitat barely moves (#336's 85 km are accessible km, not habitat).
+- **Not done here:** a fresh-side tolerance on its same-line test and override match, which would fix A / A′ at classify time (drafted, not filed).
+
 ## Status (2026-10-17) — `fresh_default` is one provenanced `default` build of all 241 groups (#246)
 
 **run_uid `20261017_004619-3f4c713b` built every `default`-modelable group (241) into `fresh_default` on m1 and three cloud hosts.** `study_area_verify.sql` and `data-raw/logs/provincial_246/verify_extra.sql` pass at `expected_n=241`, with one config_hash, one fwapg / bcfishobs / bcfp pin, and every group's newest log row from this run. `fresh` is unchanged; `bcfishpass` parity at the same code passes 48/50 on ADMS, BULK, BABL and ELKR (their 17-group closure built into scratch `fresh_parity246`, the four scored). Record: `research/study_area_run.md`, "The province-wide `default` run".
@@ -57,7 +70,7 @@ Experimental package — breaking all the time and loving the learning curve. St
 **`lnk_scenario_export()` → `manifest.json` → `lnk_catalog()` → `lnk_db_load()`, on wet#7's pattern; driver `data-raw/habitat_publish.R` (BUILD, then `LNK_PUBLISH=1`).** Mechanics: RUNBOOK §6d. PUBLISH to `s3://fresh-bc/habitat/fwa/v1/` (private) has not been run.
 
 **Facts not worth re-deriving:**
-- **`accessible` (fresh's flag) and `streams_access.has_barriers_<sp>_dnstr` are built from different barrier sets.** DUNC BT: 228 of 229 disagreeing segments start within 5 mm of a BT-blocking gradient barrier in `<schema>.barriers`, never exactly on it; fresh's predicate (`<=`) would block a segment at a break, so its breaks table lacks those barriers. Not a boundary convention, as first written (corrected 2026-10-19). 4,292 km across the pilot's 150 config × species × group rows. The export ships both; #336, part of #349.
+- **Superseded 2026-10-20 (#349): the habitat flags are settled on `streams_access`.** What this said, corrected: DUNC BT's 228 of 229 disagreeing segments start within 5 mm of a BT-blocking gradient barrier that fresh's breaks table holds, at a metre-rounded position that lands above the segment's start, or 0–5 mm above the start where fresh's exact `<=` misses it even unrounded; the 2026-10-19 reading that the breaks table lacks them was wrong too (classes: `data-raw/logs/access_disagree_349/`). #336, closed by #349.
 - **Only builds after #282 logged thresholds.** In local `fresh_default` that is DUNC alone, and `fresh` has no `log_parameters_habitat_thresholds` table, so exported spawning / rearing ratios are NA there (`thresholds_logged` in the manifest).
 - **`(blue_line_key, downstream_route_measure)` is unique within a persist schema across groups** (0 duplicates in 1.83 M / 3.80 M segments), so it is the loaded table's key with `config, species`.
 - **Provenance is keyed per finished build, never per dispatch.** A dispatch's log rows grow as its groups close and depend on which schemas an export reads.
