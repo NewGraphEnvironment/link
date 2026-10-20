@@ -1,5 +1,15 @@
 # Changelog
 
+## link 0.66.7
+
+- **`citation("link")` carries the package’s Zenodo concept DOI**, which
+  resolves to every archived release. It is read from a new `Config/DOI`
+  field in `DESCRIPTION`, so `inst/CITATION` holds no package-specific
+  literal.
+- `RUNBOOK.md` names fresh#258 as the fresh-side tolerance follow-up,
+  and words `default`’s RB observation rule as shaped like BT’s (one RB
+  record, only RB counting for RB, no date floor).
+
 ## link 0.66.6
 
 **The persisted habitat flags follow `streams_access`, and barrier lifts
