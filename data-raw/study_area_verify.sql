@@ -374,6 +374,7 @@ DECLARE
   n_fresh  int;
   n_sp     int;
   n_unset  int  := 0;
+  n_lift   int;
   v_sp     text;
   bad      text;
 BEGIN
@@ -536,6 +537,33 @@ BEGIN
     RAISE EXCEPTION
       'run %: % segment(s) are accessible in streams_habitat_<sp> where streams_access.access_<sp> = 0 (%). The habitat was not settled on access (link#349): re-run the recompute, LNK_SCHEMA=% LNK_LOAD=loadall Rscript data-raw/wsg_recompute_one.R <WSG> <config>',
       v_run, n_unset, bad, v_sch;
+  END IF;
+
+  -- Habitat the settle cannot give back (link#349). The gate is one-way: a
+  -- recompute that lifts a segment (access_<sp> 0 -> 1/2) whose habitat an
+  -- earlier gate blanked leaves it FALSE, and the invariant above passes on
+  -- exactly that state. Each group's NEWEST finished recompute of the run is
+  -- read, so a re-model followed by another recompute clears it. Skipped on a
+  -- schema whose log_recompute predates the column (nothing there gated).
+  IF EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_schema = v_sch AND table_name = 'log_recompute'
+                AND column_name = 'habitat_gate_lifted') THEN
+    EXECUTE format(
+      $q$SELECT coalesce(sum(habitat_gate_lifted), 0),
+                coalesce(string_agg(watershed_group_code || ' ' || habitat_gate_lifted,
+                                    ', ' ORDER BY watershed_group_code), '')
+           FROM (SELECT DISTINCT ON (watershed_group_code)
+                        watershed_group_code, habitat_gate_lifted
+                   FROM %I.log_recompute
+                  WHERE run_uid = $1 AND date_end IS NOT NULL
+                  ORDER BY watershed_group_code, date_start DESC) r
+          WHERE habitat_gate_lifted > 0$q$,
+      v_sch) INTO n_lift, bad USING v_run;
+    IF n_lift > 0 THEN
+      RAISE EXCEPTION
+        'run %: % segment(s) were lifted by the recompute after the habitat gate had blanked them, so their habitat is missing (%). Re-model those groups under this run_uid with LNK_HABITAT_GATE=0, then re-run the recompute (link#349).',
+        v_run, n_lift, bad;
+    END IF;
   END IF;
 
   -- The bcfp pin, with the sanctioned-unpinned escape.

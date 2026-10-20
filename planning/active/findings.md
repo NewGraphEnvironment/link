@@ -249,6 +249,27 @@ recompute re-settles on the same barriers) and the legacy `wsg_pipeline_run.R` /
 path (no recompute) gate at model time on access that nothing later lifts; `wsg_vignette_data.R`
 prints a string, and `verify_build_349.sh` and a 2026-10 log script set their own.
 
+## Code-check round 3 (2026-10-20)
+
+Mechanism (the reviewer's): the recompute used to be repeatable, a pass that repaired whatever model
+time got wrong; the gate makes its habitat write one-way, and code and docs that assumed the old
+contract agree with the new one only by accident. Three findings, all real, all fixed:
+1. **The documented order for settling `fresh_default` lost habitat for good** (the plan's decision 4
+   order): a recompute-only re-gate settles on today's access, and a later re-model of the
+   barrier-holding groups lifts segments (CARP KO, the 27 RB groups) whose habitat is already
+   blanked. CLAUDE.md, RUNBOOK §3, the research file, the #349 body and the PR now say: re-model
+   first, then gate. And the reader that would have noticed was missing: `study_area_verify.sql` now
+   fails when a group's newest finished recompute of the run reports `habitat_gate_lifted` > 0
+   (negative case 6e; 13 / 13 cases right on `fresh_default`'s run).
+2. `recompute_parity.sh` / `recompute_checksum.sql` listed what the recompute writes by hand and
+   missed the habitat tables: they now snapshot, restore and digest every `streams_habitat_<sp>`,
+   restore the pre-state at the end (the passes run `LNK_LOG=0`, so a benchmark must not settle a
+   schema unrecorded), and the coverage guard counts the habitat (table, group) pairs from the
+   snapshot. Run on `fresh_349` UPCE + CARP: A == B, A == C, 10 rows (2 × 2 + 6 habitat), PASSED
+   (`data-raw/logs/recompute_parity/20261020_045953_*`).
+3. "Any build at or after #349 is settled" was false for a dispatch group whose recompute never ran
+   (its model leg is gate-off): research file and export schema notes corrected.
+
 ## Errors Encountered
 
 | Error | Resolution |

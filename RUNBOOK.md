@@ -192,9 +192,12 @@ run group holds `accessible AND access_<sp> = 0`.
   missing groups. A single-group `wsg_run_one.R` gates at model time; so does the legacy
   `wsgs_dispatch.sh` path (`lnk_compare_wsg()`), which runs no recompute and settles on the access
   it ships.
-- **Schemas built before it are unsettled** until their recompute re-runs
+- **Schemas built before it are unsettled.** A recompute settles one
   (`bash data-raw/study_area_run.sh --recompute-only --run-uid=<uid> --config=<config>
-  --schema=<schema>`, §8d); the RB / KO lifts need a re-model.
+  --schema=<schema>`, §8d), but re-model first, then gate: a re-gate settles on today's access, and
+  a later re-model of a barrier-holding group (the province-wide lifts, the RB rule) lifts segments
+  upstream whose habitat the re-gate already blanked; only re-modelling each of those groups restores
+  it. `study_area_verify.sql` fails on such a group (the newest recompute's `habitat_gate_lifted`).
 - A and A′ could be fixed at classify time with a tolerance on fresh's predicate and its override
   match plus dropping link's rounding in prepare and classify together (drafted follow-up). The gate
   stays either way: B cannot be seen at classify time on a multi-host run.

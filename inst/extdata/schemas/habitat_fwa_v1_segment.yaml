@@ -103,8 +103,9 @@ canonical:
       notes: >
         Accessible to the species, as the habitat classification decided it
         and then settled on link's access table (lnk_habitat_gate()): FALSE
-        wherever has_barriers_dnstr is TRUE. A build from before link#349,
-        or one whose recompute has not re-run since, was not settled.
+        wherever has_barriers_dnstr is TRUE. Not settled: a build from before
+        link#349, and a dispatch's group whose post-consolidate recompute
+        never ran (its model leg runs with the gate off).
     - name: spawning
       type: logical
       required: true

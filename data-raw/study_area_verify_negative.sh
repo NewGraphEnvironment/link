@@ -16,6 +16,7 @@
 #   4b.  ... plus -v unpinned_ok=<why> -> expect PASS
 #   4c.  ... plus a whitespace reason  -> expect FAIL
 #   6d. one habitat row un-settled    -> expect FAIL (link#349)
+#   6e. newest recompute lifted a settled segment -> expect FAIL (link#349)
 #
 # Nothing durable is mutated: every case runs against a SCRATCH SCHEMA holding a
 # copy of the run's rows, so the real persist is never touched at all. Not a
@@ -374,6 +375,34 @@ else
      FROM ${SCRATCH}.streams_access a
     WHERE a.id_segment = h.id_segment AND a.watershed_group_code = h.watershed_group_code
       AND a.access_${GATE_SP} = 0" >/dev/null
+fi
+
+# --- 6e. the newest recompute reports lifted-but-settled segments: FAIL -----
+# A log_recompute from before #349 has no habitat_gate_lifted column; the
+# scratch copy gets it here (NULL, which passes), so the case can always run.
+"${PSQL[@]}" -c "ALTER TABLE ${SCRATCH}.log_recompute
+                   ADD COLUMN IF NOT EXISTS habitat_gate_lifted integer" >/dev/null
+LIFT_WSG=$("${PSQL[@]}" -c "SELECT watershed_group_code FROM ${SCRATCH}.log_recompute
+                             WHERE date_end IS NOT NULL ORDER BY watershed_group_code LIMIT 1")
+if [ -z "$LIFT_WSG" ]; then
+  echo "  ⊘ 6e. SKIPPED: run $RUN_UID has no finished recompute row."
+  echo "       Absence reported as absence -- this is NOT a pass."
+  fails=$((fails + 1))
+else
+  "${PSQL[@]}" -c "UPDATE ${SCRATCH}.log_recompute SET habitat_gate_lifted = 3
+     WHERE recompute_id = (SELECT recompute_id FROM ${SCRATCH}.log_recompute
+                            WHERE watershed_group_code = '${LIFT_WSG}' AND date_end IS NOT NULL
+                            ORDER BY date_start DESC LIMIT 1)" >/dev/null
+  if run_verify -v expected_n="$N_WSG"; then
+    echo "  ✗ 6e. ${LIFT_WSG} lifted 3      -> PASSED, but should have FAILED."
+    echo "       The lifted-after-settle assertion is not firing."
+    show_verify
+    fails=$((fails + 1))
+  else
+    echo "  ✓ 6e. ${LIFT_WSG} lifted 3      -> FAIL (as expected)"
+  fi
+  "${PSQL[@]}" -c "UPDATE ${SCRATCH}.log_recompute SET habitat_gate_lifted = NULL
+                    WHERE watershed_group_code = '${LIFT_WSG}'" >/dev/null
 fi
 
 # The healthy case again, LAST. Cases 2/4/5/6 each mutate the scratch schema

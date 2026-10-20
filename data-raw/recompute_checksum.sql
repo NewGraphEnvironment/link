@@ -1,5 +1,7 @@
 -- recompute_checksum.sql — deterministic per-WSG digest of everything the
--- post-consolidate recompute writes (link#250).
+-- post-consolidate recompute writes (link#250): streams_access,
+-- streams_mapping_code and, since link#349 (the habitat gate), every
+-- streams_habitat_<sp>.
 --
 -- Used by data-raw/recompute_parity.sh to prove that running the recompute
 -- N-wide produces byte-identical output to running it serially. Sibling of
@@ -78,7 +80,13 @@ FROM (
                         FROM %I.%I) s
                GROUP BY s.watershed_group_code$f$,
            t.tbl, c.cols, :'schema', t.tbl) AS q
-    FROM (VALUES (1, 'streams_access'), (2, 'streams_mapping_code'))
+    FROM (SELECT * FROM (VALUES (1, 'streams_access'), (2, 'streams_mapping_code'))
+                          AS v(ord, tbl)
+          UNION ALL
+          SELECT 2 + row_number() OVER (ORDER BY table_name), table_name::text
+            FROM information_schema.tables
+           WHERE table_schema = :'schema' AND table_type = 'BASE TABLE'
+             AND table_name ~ '^streams_habitat_[a-z]+$')
            AS t(ord, tbl)
     CROSS JOIN LATERAL (
       SELECT string_agg(quote_ident(column_name), ', ' ORDER BY column_name)

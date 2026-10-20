@@ -114,9 +114,12 @@ the Peace rows that block CARP.
 
 ## Which schemas are settled
 
-- Any build or recompute at or after the #349 merge.
+- A build whose last write since #349 was a gate: a model run with the gate on (a single-group
+  `wsg_run_one.R`), or a recompute. A dispatch's model leg runs with the gate off, so a group of a
+  run that was never recomputed (failed, not consolidated, or the recompute never ran) is not settled.
 - **Not** `fresh_default`, `fresh`, `score284_*` or any variant schema built before it.
   `bash data-raw/study_area_run.sh --recompute-only --run-uid=<uid> --config=<config>
-  --schema=<schema>` settles a provenanced run without a
-  re-model (decision 4 of #349, the operator's call); the RB / KO / BT lifts behind shared
-  barriers need a re-model of the groups that hold those barriers.
+  --schema=<schema>` settles a provenanced run without a re-model (decision 4 of #349, the
+  operator's call). **Re-model first, then gate:** the RB / KO / BT lifts behind shared barriers
+  arrive only with a re-model of the groups that hold those barriers, and a re-gate run before it
+  blanks habitat those lifts later open, which then needs a re-model of every group upstream.
