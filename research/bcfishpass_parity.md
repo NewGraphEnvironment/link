@@ -66,15 +66,17 @@ observations over every group.
   "0 km of spawning" was these, read at 0.1 km. Each is a segment whose access did not change and
   is 0, with its habitat now cleared, and on the segments both builds share these are the only
   changes (`segment_diff.csv`).
-- **ADMS CH +0.088 km spawning, +0.167 km rearing: not #349.** Two builds over the same inputs
-  break 8 lines in ADMS, BULK and ELKR at different places (39 segments in one build only,
-  `resegmented.csv`). Seven of the moved breaks are modelled crossings persisted as barriers,
-  9–97 m apart; the eighth, at modelled crossing 101833 (161 m on ADMS blue_line_key 356271598),
-  breaks only the 2026-10-17 build and is a barrier in neither. On blue_line_key 356333200 the
-  break sits at 1,349 m, not 1,446 m, and cuts an 88 m piece at gradient 0.0441, under CH's
-  spawning maximum, where the old 167.5 m piece was at 0.0483. That piece spawns, and the
-  167.5 m from 1,269 m to 1,437 m now rears; that line had no CH rearing before. Over the 8
-  lines, CH gains exactly that, and BT spawning, CO spawning and CO rearing each lose 0.006 km (`resegmented_habitat.csv`). This is
+- **ADMS CH +0.088 km spawning, +0.167 km rearing: not #349.** In the four scored groups, two
+  builds over the same inputs break 8 lines in ADMS, BULK and ELKR at different places
+  (39 segments in one build only, `resegmented.csv`). On each of the 8, a PSCIS crossing has two
+  modelled crossings on one `linear_feature_id` to match to, and the two builds match it to
+  different ones. That is the PSCIS-to-modelled pick in `R/lnk_pipeline_pscis_build.R`, whose
+  last tiebreak, `linear_feature_id`, cannot separate two candidates on one feature. On
+  blue_line_key 356333200 the break sits at 1,349 m (modelled crossing 100122), not 1,446 m
+  (101854), and cuts an 88 m piece at gradient 0.0441, under CH's spawning maximum, where the
+  old 167.5 m piece was at 0.0483. That piece spawns, and the 167.5 m from 1,269 m to 1,437 m now
+  rears; that line had no CH rearing before. Over the 8 lines, CH gains exactly that, and BT
+  spawning, CO spawning and CO rearing each lose 0.006 km (`resegmented_habitat.csv`). This is
   the run-to-run reproducibility defect #277, which now carries this measurement.
 - **Annotation classes:** unchanged on all 50 pairs.
 
@@ -86,8 +88,9 @@ The expected result was written down before scoring (`expected.txt`).
 **mapping_code agreement** over all 17 groups (the run's compare) moved on 51 of 86 group ×
 species rows, by −0.06 to +0.05 points. Three things move it at once: the gate,
 91a968ab's `has_barriers_<sp>_dnstr` for a present species with no barrier (mapping codes only),
-and the moved breaks above (the segment count differs on 50 of the 86 rows, in 10 of the 17
-groups). It is not diagnosed (`mapping_code_moves.csv`).
+and breaks that differ between the builds (the segment count differs on 50 of the 86 rows, in
+10 of the 17 groups; the tie above in the three scored groups that have one, the other seven
+not examined). It is not diagnosed (`mapping_code_moves.csv`).
 
 ## What is not yet explained
 

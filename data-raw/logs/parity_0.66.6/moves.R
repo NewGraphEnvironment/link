@@ -69,7 +69,7 @@ cat(sprintf("segments in one build only: %d on %d lines (%s)\n", nrow(reseg),
 # cannot see. Lines, not segments, so the two builds sum over the same stretch.
 reseg_lines <- unique(reseg[, c("wsg", "blue_line_key")])
 sp_all <- unique(tolower(new$species))
-reseg_hab <- do.call(rbind, lapply(c("fresh_parity246", "fresh_parity362"), function(s) {
+reseg_hab <- if (nrow(reseg_lines) == 0) NULL else do.call(rbind, lapply(c("fresh_parity246", "fresh_parity362"), function(s) {
   do.call(rbind, lapply(sp_all, function(sp) {
     d <- dbGetQuery(conn, sprintf(
       "SELECT s.watershed_group_code AS wsg,
@@ -84,6 +84,10 @@ reseg_hab <- do.call(rbind, lapply(c("fresh_parity246", "fresh_parity362"), func
     cbind(schema = s, species = toupper(sp), d)
   }))
 }))
+if (is.null(reseg_hab)) {
+  reseg_hab <- data.frame(schema = character(), species = character(), wsg = character(),
+                          spawning_km = numeric(), rearing_km = numeric())
+}
 write.csv(reseg_hab, file.path(dir_out, "resegmented_habitat.csv"), row.names = FALSE, na = "0")
 
 sp_pairs <- unique(new[, c("wsg", "species")])

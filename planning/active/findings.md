@@ -58,7 +58,11 @@ Against `expected.txt`, written before scoring:
   7 moved breaks are persisted `MODELLED_CROSSINGS` barriers, 9–97 m apart, and the eighth line
   loses a break at modelled crossing 101833 that is a barrier in neither build
   (`resegmented.csv`). On those lines CH gains 0.088 km spawning and 0.167 km rearing
-  (`resegmented_habitat.csv`). Added to #277's
+  (`resegmented_habitat.csv`). Code-check round 2: on all 8 lines a PSCIS crossing has two
+  modelled crossings on one `linear_feature_id`, and the builds match it to different ones (the
+  tie in `R/lnk_pipeline_pscis_build.R`'s pick, already named in CLAUDE.md's 2026-09-25 status);
+  the 101833 line is the same tie. Scope: the four scored groups; `streams` counts also differ
+  in BULL, KISP, KOTL, LARL, LFRA and LSKE, not examined. Added to #277's
   body as a measured instance; no new issue.
 - **Lifts:** 10 override positions added, 0 lost (`override_diff.csv`): BT and WCT at five
   positions on blue_line_key 356570372 (the Columbia, 1,468–1,602 km), held by LARL. Accessible km
