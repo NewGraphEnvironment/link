@@ -233,8 +233,9 @@ on `log` / `log_recompute` (`habitat_gate_{n,km,lifted,species}`), and
   newest recompute’s `habitat_gate_lifted`).
 - A and A′ could be fixed at classify time with a tolerance on fresh’s
   predicate and its override match plus dropping link’s rounding in
-  prepare and classify together (drafted follow-up). The gate stays
-  either way: B cannot be seen at classify time on a multi-host run.
+  prepare and classify together (NewGraphEnvironment/fresh#258). The
+  gate stays either way: B cannot be seen at classify time on a
+  multi-host run.
 
 ------------------------------------------------------------------------
 
@@ -455,8 +456,9 @@ presence, minus exclusions, GiST on the ltrees) and
 counts over it. `<schema>.observations` stays AOI-scoped for the
 observation break source and access code 2. Cost: ~4 s per group to
 build both tables, no change to the override step (DUNC, CARP).
-`default`’s RB row gained BT’s resident rule (one RB record, no date
-floor); before it RB had no rule and nothing lifted for it.
+`default`’s RB row gained a rule shaped like BT’s (one RB record, only
+RB counting for RB, no date floor); before it RB had no rule and nothing
+lifted for it.
 
 ## 6. Gotchas that have cost real time
 
