@@ -5,9 +5,11 @@
 - Plan-mode exploration — phases approved by user (parked)
 - Created branch `259-validate-comp-weight-against-measured-mo` off main
 - Scaffolded PWF baseline from issue #259 with approved phases
-- Plan review spawned 23:18 UTC (the harness backgrounded it); its findings go to
-  `planning/active/review-plan.md` and are folded into `task_plan.md` in a follow-up commit.
-  If that file is absent on resume, the review never delivered: re-run it before Phase 1.
+- Plan review spawned 23:18 UTC, delivered 23:25 UTC: `planning/active/review-plan.md`, folded
+  into `task_plan.md` in the follow-up commit. One blocker (B1: `default`'s `pipeline.schema` is
+  `fresh`, so `--schema=` is required and the commands carry `--schema=fresh_default`), one
+  acceptance gap (A1: per-option out-of-sample scoring on the October run is possible now and
+  is a Phase 3 task), and the rest as task edits; all cited issue numbers checked with `gh`.
 - Next: parked 2026-10-20; resume with the command below, then "start Phase 1"
 
 ### Resume
