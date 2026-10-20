@@ -421,7 +421,7 @@ while every group is on `cw`.**
   UARL); `habitat_change.csv`.
 - **Elevation confounds gradient.** Core BT rearing thins 24.6 → 10.2 per 100 km from
   the low to the high third, and steep bands sit high. Weights instead of cutoffs went
-  to knowledge#28, the biology first.
+  to a separate biology issue, the biology first.
 - **The n ≥ 10 floor on locations *found* cannot refuse a band fish avoid.** A floor on
   locations *expected* at the core rate can. Both readings are in `verdict.csv`; they
   agreed here, and the choice is open.
@@ -527,7 +527,7 @@ untouched, and everything is **unscored** until #283's validator exists. Produce
 - River polygons with NULL width fail the river rule's `channel_width [0, 9999]` (a
   `BETWEEN`), so they drop out of habitat. There is an unfiled draft in the #284 archive.
 - FISS data-submission site data (width, gradient, effort, no-fish-captured) is parsed by
-  the private `knowledge` repo. Commit aggregates only here, because link is public.
+  a private repo. Commit aggregates only here, because link is public.
   `average_gradient_percent` there holds proportions.
 - About a third of CH observation locations in `fresh_default` are lower Fraser / coastal
   Skeena (ocean-type runs), so the WSG set is not "interior only".
@@ -621,14 +621,14 @@ not an absent one, and **#264 removed both the tolerance and the need for it**
 — `fresh_sha` now resolves on every host. Rows logged before v0.50.0 keep the
 NULLs.
 
-**link is PUBLIC; rtj is PRIVATE; NewGraphEnvironment is a personal account** —
+**link is PUBLIC; the infrastructure repo is PRIVATE; NewGraphEnvironment is a personal account** —
 no org policy backstops visibility. 33 host addresses across 101 tracked files
 were redacted (`7b83578`), the run now redacts its own logs from the EXIT trap
 (`7701ffc`), and `RUNBOOK.md` lost an ssh host alias and credential dates
 (`fb07ae8`). None of it was a credential; the cleanup is about how the repo reads
 and about link's own rule that infra identity stays in machine-local memory.
-Boundary proposal + preserved details: **rtj#257**; the pure-infra issue moved to
-**rtj#256**. Open: **#257** (`link_dirty` is `t` on every dispatcher row and is
+Boundary proposal + preserved details are in the infrastructure repo, as is the
+pure-infra issue. Open: **#257** (`link_dirty` is `t` on every dispatcher row and is
 false — the run's own logs dirty the tree).
 
 ## Status (2026-08-31) — v0.47.2 shipped (#246 Phases 1-2; orchestration proven on a real cypher)
@@ -659,7 +659,7 @@ segments (**2.23x**), recompute 0.0112, persisted/source ratio ~3.5.
 2. **Only Peace is FWCP.** Fraser and Skeena are **HCTF** (provincial). "The 3
    FWCP study areas" was wrong and propagated into several docs.
 3. **Field scope != model scope.** A GIS project's `watershed_groups`
-   (`rtj/.../project.yml`) is where crews collected; the reporting repo's
+   (in its `project.yml`) is where crews collected; the reporting repo's
    `wsg_code` is what is modelled. Peace is 8 vs 16.
 
 ### Scope, honestly
@@ -682,7 +682,7 @@ by #265). #250 and #257 closed; #262 closed by v0.49.0.
 
 **The old derivation was also wrong, and the missing table was masking it.** `nlevel(wscode_ltree) ASC` picks the shallowest code appearing *anywhere* in a group — including polygon slivers. MORR (Morice) clips a 2-segment, 0 km, order-1 piece of the Bulkley-coded line `400.431358` next to 1,236 segments and 275 km of the order-8 Morice line, so the Bulkley appeared to drain through the Morice. Province-wide: 62/246 groups had over-shallow outlets, 167 distinct outlets for 246 groups, and the 14-group Fraser cluster (all wscode `100`) fell through to an **alphabetical** tiebreak that put LFRA seventh — breaking the DS-first guarantee cross-WSG `;DAM` depends on. **Correct rule: filter to the group's max stream order FIRST, then shallowest code, then lowest measure.** A single ltree can never order two groups on one stem; the 4-arg ltree-only `fwa_downstream` returns FALSE for `UFRA → LFRA`.
 
-**Closures are now tighter** — `PARS + BULK` gives 9 WSGs, not 15 (drops LKEL, MSKE, USKE, LBTN, MORR, FINA, all correctly). Study-area buckets built before and after are **not comparable**; earlier runs were over-inclusive rather than short, so their results stand. **Gotchas:** `lnk_db_conn()` lands on the tunnel (`:63333`, `bcfishpass`), while `data-raw/study_area_wsgs.R` hardcodes docker `fwapg` (`:5432`) — two databases, different load states (#222); docker `fwapg`'s `fwa_watershed_groups_poly` has NULL code columns, so derive from `fwa_stream_networks_sp`, which is populated in both. **#227 re-scoped** to just the single-WSG downstream-state guard — its body carries a three-tier design (auto-pass via a 2.4 s `cabd.dams` spatial check, fail loud, override recorded in the #127 run log) and is buildable now the closure is correct.
+**Closures are now tighter** — `PARS + BULK` gives 9 WSGs, not 15 (drops LKEL, MSKE, USKE, LBTN, MORR, FINA, all correctly). Study-area buckets built before and after are **not comparable**; earlier runs were over-inclusive rather than short, so their results stand. **Gotchas:** `lnk_db_conn()` lands on whatever `PG_*_SHARE` names (here the `bcfishpass` reference DB), while `data-raw/study_area_wsgs.R` hardcodes a local docker `fwapg` — two databases, different load states (#222); docker `fwapg`'s `fwa_watershed_groups_poly` has NULL code columns, so derive from `fwa_stream_networks_sp`, which is populated in both. **#227 re-scoped** to just the single-WSG downstream-state guard — its body carries a three-tier design (auto-pass via a 2.4 s `cabd.dams` spatial check, fail loud, override recorded in the #127 run log) and is buildable now the closure is correct.
 
 ## Status (2026-08-28) — v0.46.0 shipped (#227 downstream-state guard)
 
@@ -692,13 +692,13 @@ The guard applies link's filters by **sharing** the pipeline's SQL: the `cabd` /
 
 ## Status (2026-07-11) — #231 closed misdirected; #232 opened (crossings parity)
 
-**Key correction (do NOT re-rabbit-hole):** the pipeline builds `<schema>.crossings` **from DB primitives** (`lnk_pipeline_crossings` → `.lnk_crossings_union`: PSCIS + `fresh.modelled_stream_crossings` + CABD), **not** from `crossings.csv`. The CSV read at `lnk_pipeline_load.R:100` is **vestigial** — the union drops + rebuilds the table before break/classify/mapping_code touch it. So #231 ("consume weekly crossings.csv; repoint pipeline off fresh") was **closed as misdirected**; lessons in `planning/archive/2026-07-issue-231-crossings-from-primitives/README.md`. Freshness lever = `data-raw/snapshot_bcfp.sh` reloading the primitives into the **`fwapg`** DB (last load ~2026-05-26; `lnk_db_conn()` defaults to a `bcfishpass` DB that LACKS them). Opened **#232** — confirm link's built crossings ≈ bcfp's complete `crossings_vw` (the parity reference). Aside: `crossings.csv` was published to `s3://newgraph` (db_newgraph#15, smnorris PR #57) before we realized the models don't consume it — **db_newgraph#16** tracks reconsidering that dump.
+**Key correction (do NOT re-rabbit-hole):** the pipeline builds `<schema>.crossings` **from DB primitives** (`lnk_pipeline_crossings` → `.lnk_crossings_union`: PSCIS + `fresh.modelled_stream_crossings` + CABD), **not** from `crossings.csv`. The CSV read at `lnk_pipeline_load.R:100` is **vestigial** — the union drops + rebuilds the table before break/classify/mapping_code touch it. So #231 ("consume weekly crossings.csv; repoint pipeline off fresh") was **closed as misdirected**; lessons in `planning/archive/2026-07-issue-231-crossings-from-primitives/README.md`. Freshness lever = `data-raw/snapshot_bcfp.sh` reloading the primitives into the **`fwapg`** DB (last load ~2026-05-26; `lnk_db_conn()` defaults to a `bcfishpass` DB that LACKS them). Opened **#232** — confirm link's built crossings ≈ bcfp's complete `crossings_vw` (the parity reference). Aside: `crossings.csv` was published to `s3://newgraph` before we realized the models don't consume it — **db_newgraph#16** tracks reconsidering that dump.
 
 ## Status (2026-07-31) — v0.44.3 shipped (#233 config dictionaries + ownership boundary)
 
 Both config CSVs now have data dictionaries: `configs/dictionary_dimensions.csv` (renamed from `dimensions_columns.csv`) and the new `configs/dictionary_parameters_fresh.csv` (19 rows — type, group, `owner`, `consumed_by`, default, description). **The point was not documentation, it was stopping the re-derivation:** the fresh↔link `parameters_fresh` column-ownership split had been settled long ago by [fresh#129](https://github.com/NewGraphEnvironment/fresh/issues/129) (fresh 0.12.7 *removed* `observation_*` — "fish passage interpretation belongs in link, not the network engine") but was only findable by archaeology through two repos' planning archives, so it kept getting re-worked from scratch. It is now the `owner` column — **14 fresh-owned engine params, 5 link-owned `observation_*`** — read by `audit_configs.R` §3b instead of a hardcoded `grepl("^observation_", ...)`, and written up in [`RUNBOOK.md`](RUNBOOK.md) §7 "Who owns which `parameters_fresh` column". Adding a link-owned column is now a dictionary edit, not a regex edit.
 
-**Two findings from machine-verifying every `consumed_by` file:line (24/24) rather than inferring them:** link never reads the nine `cluster_*` columns at all — it only passes the frame through (`lnk_pipeline_connect.R:107`) to fresh's `.frs_run_connectivity()`; and **`rear_gradient_min` is read by no code in either package** (recorded as unused, not dropped — fresh owns that schema). **Gotcha worth knowing:** the bundles carry *different* column subsets — bcfishpass `dimensions.csv` has 30 columns to the three `default*` bundles' 32 — so any dictionary/coverage check must assert against the **union**, never a single bundle. Guarded in two layers because `data-raw/` is `.Rbuildignore`d and never runs for an installed package: `tests/testthat/test-dictionaries.R` (+23, the CI-side guard) and the audit's coverage / reverse-consistency / missing-dictionary flags (negative-tested — dropping one row exits 1). Also removed `audit_configs.R`'s hardcoded `setwd("/Users/airvine/...")`: the script now derives its repo root from its own location and resolves paths via `repo_path()`, so it runs from any cwd and mutates none. Open follow-ups unchanged: **#224**, **#225**, **#227** (the `public.wsg_outlet` builder — its absence is the one standing test failure, `test-lnk_wsg_resolve.R:138`).
+**Two findings from machine-verifying every `consumed_by` file:line (24/24) rather than inferring them:** link never reads the nine `cluster_*` columns at all — it only passes the frame through (`lnk_pipeline_connect.R:107`) to fresh's `.frs_run_connectivity()`; and **`rear_gradient_min` is read by no code in either package** (recorded as unused, not dropped — fresh owns that schema). **Gotcha worth knowing:** the bundles carry *different* column subsets — bcfishpass `dimensions.csv` has 30 columns to the three `default*` bundles' 32 — so any dictionary/coverage check must assert against the **union**, never a single bundle. Guarded in two layers because `data-raw/` is `.Rbuildignore`d and never runs for an installed package: `tests/testthat/test-dictionaries.R` (+23, the CI-side guard) and the audit's coverage / reverse-consistency / missing-dictionary flags (negative-tested — dropping one row exits 1). Also removed `audit_configs.R`'s hardcoded `setwd()` to a home-directory path: the script now derives its repo root from its own location and resolves paths via `repo_path()`, so it runs from any cwd and mutates none. Open follow-ups unchanged: **#224**, **#225**, **#227** (the `public.wsg_outlet` builder — its absence is the one standing test failure, `test-lnk_wsg_resolve.R:138`).
 
 ## Status (2026-07-04) — v0.44.1 shipped (#226 vignette accessible_km)
 
@@ -712,13 +712,13 @@ The 2026-05-25 handoff below (#175 study-area parity) is **complete/superseded**
 
 ## Status (2026-05-25) — ACTIVE HANDOFF (#175 study-area mapping_code parity)
 
-**Picking up? Read [`planning/active/task_plan.md`](planning/active/task_plan.md) + [`progress.md`](planning/active/progress.md), then [`research/study_area_run.md`](research/study_area_run.md) and [`RUNBOOK.md`](RUNBOOK.md).** Branch `175-promote-with-mapping-code-flag-to-stand` (pushed, `34b0cd3`). Built a lean tunnel-free, M1-dispatch study-area parity runner (`data-raw/study_area_run.sh` + `study_area_wsgs.R` / `wsg_run_one.R` / `study_area_compare.R`); ran all 3 study areas (50 WSGs) — **authoritative parity median 99.66%** ([`research/provincial_parity_2026_05_25.md`](research/provincial_parity_2026_05_25.md)).
+**Picking up? Read [`planning/active/task_plan.md`](planning/active/task_plan.md) + [`progress.md`](planning/active/progress.md), then [`research/study_area_run.md`](research/study_area_run.md) and [`RUNBOOK.md`](RUNBOOK.md).** Branch `175-promote-with-mapping-code-flag-to-stand` (pushed, `34b0cd3`). Built a lean tunnel-free, single-dispatcher study-area parity runner (`data-raw/study_area_run.sh` + `study_area_wsgs.R` / `wsg_run_one.R` / `study_area_compare.R`); ran all 3 study areas (50 WSGs) — **authoritative parity median 99.66%** ([`research/provincial_parity_2026_05_25.md`](research/provincial_parity_2026_05_25.md)).
 
 **THE key finding:** per-segment mapping_code parity needs a **post-consolidate recompute** — drainage-closed + DS-first per-host is NOT sufficient (downstream barriers can be cross-bucket / late-in-order; FINA 75%→99% only after re-modelling on the full consolidated barrier set). The recompute is the correctness guarantee; bucketing is just a speed knob. **Next: build #205** (cheap access-only recompute reusing persisted streams/habitat — the current full-pipeline recompute is ~2× on diverged WSGs), then one clean driver-automated run, then annotate the genuine divergences (UNRS reservoir, SETN salmon) + ship. Filed #204 (persist shape-drift) + #205 (cheap recompute). Do NOT start over — the methodology is solved.
 
 ## Status (2026-05-19)
 
-Tour-prep complete. Pipeline + comparison are decoupled (#168), the orchestrator runs autonomously (#172), and the QGIS bcfp-shape symbology path is tunnel-free (#187). M1 takes over cypher dispatch during the user's Europe trip.
+Tour-prep complete. Pipeline + comparison are decoupled (#168), the orchestrator runs autonomously (#172), and the QGIS bcfp-shape symbology path is tunnel-free (#187). One local dispatcher drives the cypher workers unattended.
 
 Recent shipped work (v0.36 → v0.40):
 
@@ -727,7 +727,7 @@ Recent shipped work (v0.36 → v0.40):
 - **v0.38.0** (#172) — Provincial-run autonomy + 8-script noun_verb rename. `wsgs_run_pipeline.sh` / `wsgs_dispatch.sh` / `wsgs_run_host.R` accept `--wsgs=`, `--config=`, `--schema=`, `--no-cyphers`, `--force`. Single-command provincial dispatch.
 - **v0.38.1** (#178 Tier 1) — Single-cypher integration test for the autonomous wrapper. Validated cypher spin → prep → dispatch → consolidate → burn cycle. Row-level verification proved consolidate is byte-exact.
 - **v0.39.0** (#180, #185) — Additive multi-host runs + bucket-filtered COPY-streaming in `schema_consolidate.R`. `--reset-schema` opt-in; default is additive. Per-source `wgc_tables` enumeration (#185 fix to silent partial-copy bug when source's table set is a subset of destination's).
-- **v0.39.1** (#182) — Fail loud on transient cypher prep failures. `data-raw/cypher_prep.sh` replace `set -e` with `set -euo pipefail`; wrap three `| tail -N` pipelines with tempfile + exit-check pattern. Sibling fix to rtj#163 covering cypher orchestration scripts.
+- **v0.39.1** (#182) — Fail loud on transient cypher prep failures. `data-raw/cypher_prep.sh` replace `set -e` with `set -euo pipefail`; wrap three `| tail -N` pipelines with tempfile + exit-check pattern. Sibling fix to one in the infrastructure repo covering cypher orchestration scripts.
 - **v0.40.0** (#187) — Mapping_code tunnel decouple + portable `lnk_mapping_code()` build + `<type>_<role>` rename sweep. Persist `streams_access` + `streams_mapping_code` + `streams_habitat_long_vw` view. `lnk_pipeline_run(mapping_code = TRUE)` builds tunnel-free; access semantics now use link's own per-species barriers (via `blocks_species` predicate from #152). BC: param rename `with_mapping_code` → `mapping_code`, `<role>_species` → `species_<role>`; CLI `--with-mapping-code` → `--mapping-code`. Deprecation shims for one release; removal v0.41.0.
 
 Open follow-ups: #189 (data-drive species residence from `dimensions.csv` — sea-run cutthroat, Dolly Varden); #175 (`lnk_compare_mapping_code` as own family member — unblocked by #187); #176 (`lnk_compare_wsg` → `lnk_compare_run` rename); #177 (persist family reshape); #183 (sibling-host parity hook).
@@ -768,24 +768,24 @@ Uses `PG_*_SHARE` env vars (Docker fwapg) with fallback to standard `PG*` vars. 
 conn <- lnk_db_conn()  # reads PG_DB_SHARE, PG_HOST_SHARE, etc.
 ```
 
-**Local docker fwapg (dev / parity work).** `lnk_db_conn()` with no args reads `PG_*_SHARE`, which on some machines points at the (intermittent) `:63333` bcfp tunnel — the wrong DB for the `fresh.*` persist. For local-docker work pass explicit args: `lnk_db_conn(dbname="fwapg", host="localhost", port=5432L, user="postgres", password="postgres")`. Bring it up from `~/Projects/repo/fresh/docker/` with `docker compose up -d db`. `:5432` holds the local `fresh.*` persist + `working_<wsg>` schemas + `fresh.streams_vw_bcfp`; `:63333` is the bcfp tunnel (`bcfishpass.*`, no `fresh.*`).
+**Local docker fwapg (dev / parity work).** `lnk_db_conn()` with no args reads `PG_*_SHARE`, which may point at the bcfp reference DB — the wrong DB for the `fresh.*` persist. For local-docker work pass explicit args: `lnk_db_conn(dbname="fwapg", host="localhost", port=5432L, user="postgres", password="postgres")`. Bring it up from fresh's `docker/` directory with `docker compose up -d db`. The local DB holds the local `fresh.*` persist + `working_<wsg>` schemas + `fresh.streams_vw_bcfp`; the bcfp reference DB holds `bcfishpass.*`, no `fresh.*`.
 
 **Join persisted `fresh.*` on the full PK** `(id_segment, watershed_group_code)` — `id_segment` is NOT globally unique across WSGs in the consolidated persist, so a bare `id_segment` join fans out cartesian (#203). Length lives on `streams`, not `streams_access` / `streams_habitat_<sp>`.
 
-## bcfishpass tunnel rebuild cadence
+## bcfishpass reference rebuild cadence
 
-The tunnel-side `bcfishpass.*` schema (used as the comparison reference in `compare_bcfishpass_wsg.R`) **rebuilds weekly on Tuesdays around 19:00–23:00 PDT**, fired by `smnorris/db_newgraph`'s scheduled GHA workflow. Query the cadence + version with:
+The reference DB's `bcfishpass.*` schema (used as the comparison reference in `compare_bcfishpass_wsg.R`) **rebuilds weekly on Tuesdays around 19:00–23:00 PDT**, fired by an upstream scheduled GHA workflow. Query the cadence + version with:
 
 ```sql
--- localhost:63333 / dbname=bcfishpass / user=newgraph
+-- on the bcfishpass reference DB (dbname=bcfishpass)
 SELECT model_run_id, date_completed, model_version
 FROM bcfishpass.log
 ORDER BY model_run_id DESC LIMIT 5;
 ```
 
-`model_version` format `<tag>-<commits>-g<short-sha>` (e.g. `v0.7.14-113-ga7373af`) — the trailing SHA is the exact `smnorris/bcfishpass` commit Simon's rebuild used. That SHA is the deterministic ref for matching link's bundle CSVs to the tunnel's input state — required for apples-to-apples comparison.
+`model_version` format `<tag>-<commits>-g<short-sha>` (e.g. `v0.7.14-113-ga7373af`) — the trailing SHA is the exact `smnorris/bcfishpass` commit Simon's rebuild used. That SHA is the deterministic ref for matching link's bundle CSVs to the reference DB's input state — required for apples-to-apples comparison.
 
-CSV-sync workflow goal: bundle CSVs in `inst/extdata/configs/bcfishpass/overrides/` should match the tunnel's last-rebuild SHA. Drift between the two means comparison numbers shift for input reasons, not methodology reasons. See the [csv-sync rewrite plan in memory](project_csv_sync_rewrite.md).
+CSV-sync workflow goal: bundle CSVs in `inst/extdata/configs/bcfishpass/overrides/` should match the reference DB's last-rebuild SHA. Drift between the two means comparison numbers shift for input reasons, not methodology reasons. See the [csv-sync rewrite plan in memory](project_csv_sync_rewrite.md).
 
 ### Pin upstream versions in issue/PR bodies
 
@@ -975,7 +975,7 @@ Relates to NewGraphEnvironment/sred#24 — crossing connectivity interpretation 
 ## Working Conventions
 
 Operating rules learned on this repo. Migrated from machine-local Claude memory
-so they travel to every machine (soul#47 recipe).
+so they travel to every machine.
 
 ### Surface design decisions before writing code
 
@@ -1081,9 +1081,9 @@ With consistent prefix naming, drop the manual `reference:` section and let pkgd
 
 ### fresh tests itself against link's compare script
 
-Both repos are local on the same machine, same Docker DB and tunnel. fresh can run link's compare script directly — we are not the middleman.
+Both repos can sit on one machine against the same databases. fresh can run link's compare script directly — we are not the middleman.
 
-**How to apply:** A fresh issue should say `Rscript ~/Projects/repo/link/data-raw/compare_bcfishpass.R BULK` with target numbers, not "we'll test and report back". fresh installs link via `devtools::install_local()` and verifies before pushing.
+**How to apply:** A fresh issue should say `Rscript <link checkout>/data-raw/compare_bcfishpass.R BULK` with target numbers, not "we'll test and report back". fresh installs link via `devtools::install_local()` and verifies before pushing.
 
 ### Infrastructure identity stays out of this repo
 
@@ -1091,7 +1091,7 @@ Host aliases, addresses, ssh key names and similar belong in machine-local
 memory, not in link. Migrate the *behaviour* — which port, which failure mode,
 what to do when a host key rotates — and leave the identity behind.
 
-**Why:** link is **PUBLIC**, rtj is **PRIVATE**, and NewGraphEnvironment is a
+**Why:** link is **PUBLIC**, the infrastructure repo is **PRIVATE**, and NewGraphEnvironment is a
 personal account — no org-level visibility policy backstops anything. 33 host
 addresses across 101 tracked files were scrubbed on 2026-08-31 (`7b83578`), and
 the run now redacts its own logs from the EXIT trap (`7701ffc`). None of it was
@@ -1103,7 +1103,7 @@ lives, not about any single string being harmful.
 its ~140 mentions here are legitimate workflow documentation and only the
 **ssh-host-alias** uses are misplaced. Same word, two meanings: do not blanket-
 `sed` it. History still carries what was scrubbed; that is deliberate, and
-current state is what matters. Boundary write-up: rtj#257.
+current state is what matters. The boundary write-up is in the infrastructure repo.
 
 **When auditing for this, prove the search can match before trusting an empty
 result.** A repo-wide audit run with `\b` (which BSD grep does not reliably
@@ -1136,7 +1136,7 @@ in a script is not a decision that has been made; it is one that was skipped.
 The two persist schemas are **not interchangeable**: TABR sits in both at 14,652
 vs 12,948 segments. Explicitly not wanted: a standing "always use X" rule — the
 ask is awareness per run, not a fixed answer. Fix tracked in #278, the fleet
-sweep in soul#178, and the bug class is now a row in soul's `code-check.md`.
+sweep in soul, and the bug class is now a row in soul's `code-check.md`.
 
 <!-- BEGIN SOUL CONVENTIONS — DO NOT EDIT BELOW THIS LINE -->
 
