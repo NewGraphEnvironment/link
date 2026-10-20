@@ -606,7 +606,8 @@ test_that(".lnk_pipeline_prep_overrides passes control when manifest declares it
     lnk_barrier_overrides = function(conn, ...) {
       captured[["args"]] <<- list(...)
       invisible(NULL)
-    }
+    },
+    .lnk_db_execute = function(conn, sql) invisible(NULL)
   )
 
   .lnk_pipeline_prep_overrides("mock-conn", loaded = loaded_stub,
@@ -632,7 +633,8 @@ test_that(".lnk_pipeline_prep_overrides passes control = NULL when manifest omit
     lnk_barrier_overrides = function(conn, ...) {
       captured[["args"]] <<- list(...)
       invisible(NULL)
-    }
+    },
+    .lnk_db_execute = function(conn, sql) invisible(NULL)
   )
 
   .lnk_pipeline_prep_overrides("mock-conn", loaded = loaded_stub,
@@ -665,7 +667,8 @@ test_that(".lnk_pipeline_prep_overrides passes habitat when manifest declares it
     lnk_barrier_overrides = function(conn, ...) {
       captured[["args"]] <<- list(...)
       invisible(NULL)
-    }
+    },
+    .lnk_db_execute = function(conn, sql) invisible(NULL)
   )
 
   .lnk_pipeline_prep_overrides("mock-conn", loaded = loaded_stub,
@@ -692,7 +695,8 @@ test_that(".lnk_pipeline_prep_overrides passes habitat = NULL when manifest omit
     lnk_barrier_overrides = function(conn, ...) {
       captured[["args"]] <<- list(...)
       invisible(NULL)
-    }
+    },
+    .lnk_db_execute = function(conn, sql) invisible(NULL)
   )
 
   .lnk_pipeline_prep_overrides("mock-conn", loaded = loaded_stub,
@@ -1113,18 +1117,40 @@ test_that("prep_observations builds observations_province from every group's pre
   expect_match(aoi, "o.watershed_group_code = 'UPCE'", fixed = TRUE)
 })
 
-test_that("prep_overrides counts lifts over observations_province", {
+test_that("prep_overrides counts lifts over observations_province, then drops it", {
   captured <- list()
+  sent <- character(0)
   local_mocked_bindings(
     lnk_barrier_overrides = function(conn, ...) {
       captured[["args"]] <<- list(...)
+      sent <<- c(sent, "overrides")
       invisible(NULL)
-    }
+    },
+    .lnk_db_execute = function(conn, sql) { sent <<- c(sent, sql); invisible(NULL) }
   )
   .lnk_pipeline_prep_overrides("mock-conn",
     loaded = list(parameters_fresh = data.frame(species_code = "BT")),
     schema = "working_bulk")
   expect_equal(captured$args$observations, "working_bulk.observations_province")
+  # Dropped after the count, never before it: a kept working schema must not
+  # hold a province-wide copy per group.
+  expect_equal(sent, c("overrides",
+    "DROP TABLE IF EXISTS working_bulk.observations_province"))
+})
+
+test_that("study_area_run.sh models with the gate off on both legs (#349)", {
+  # The gate is one-way; a dispatch's recompute settles on final access. The
+  # cloud leg is an ssh string, so an export on the local leg alone would not
+  # reach it (the LNK_GUARD_DOWNSTREAM trap, #227).
+  f <- testthat::test_path("..", "..", "data-raw", "study_area_run.sh")
+  skip_if_not(file.exists(f), "data-raw is not shipped with the package")
+  src <- readLines(f)
+  local_leg <- grep("Rscript data-raw/wsg_run_one.R \"\\$w\"", src) - 1L
+  expect_length(local_leg, 1L)
+  expect_match(src[local_leg], "LNK_HABITAT_GATE=0", fixed = TRUE)
+  ssh_leg <- grep("ssh .*wsg_run_one.R", src, value = TRUE)
+  expect_length(ssh_leg, 1L)
+  expect_match(ssh_leg, "export LNK_HABITAT_GATE=0 &&", fixed = TRUE)
 })
 
 test_that("the province table lifts a barrier the AOI table cannot (DB)", {

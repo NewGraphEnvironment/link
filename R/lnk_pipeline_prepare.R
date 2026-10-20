@@ -581,6 +581,11 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
     to = paste0(schema, ".barrier_overrides"),
     verbose = FALSE)
 
+  # Its only reader is the call above. Dropped so a kept working schema (every
+  # wsg_run_one.R run keeps one) does not hold its own ~200 MB province copy.
+  .lnk_db_execute(conn, sprintf(
+    "DROP TABLE IF EXISTS %s.observations_province", schema))
+
   invisible(NULL)
 }
 
