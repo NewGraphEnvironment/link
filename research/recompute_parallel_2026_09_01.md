@@ -226,3 +226,11 @@ bash data-raw/recompute_sweep.sh  "LKEL,CHES,SALR,LSAL,LPCE,TABR,MFRA,CHWK" bcfi
 PGOPTIONS='-c max_parallel_workers_per_gather=0' SWEEP_WARM=0 \
   bash data-raw/recompute_sweep.sh "LKEL,CHWK,CHES,SALR" bcfishpass 1 4
 ```
+
+## Eight workers on 241-scale groups (2026-10-20)
+
+`-j8` is 1.43x `-j4` on 53 mid-sized groups of `fresh_default` (2,027 s to 1,416 s;
+`data-raw/logs/recompute_width_20261020/`), so the 154-min recompute of the 241-group run would be
+about 108 min. A mid-pass sample held 6 busy backends on the database VM's 6 CPUs, so past 4
+workers the database looks like the limit: a second machine running workers against the
+dispatcher's database would likely add little unless the VM gets more CPUs. Unprofiled.
