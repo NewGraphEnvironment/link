@@ -13,6 +13,7 @@ renamed.
 
 | File | Covers |
 |---|---|
+| [`bcfishpass_parity.md`](bcfishpass_parity.md) | **The current parity record**: link's `bcfishpass` config against bcfishpass, km per group and species, what moved since the last score and why; revised in place by each parity run (#362) |
 | [`bcfishpass_methodology.md`](bcfishpass_methodology.md) | bcfishpass methodology, the canonical reference |
 | [`bcfishpass_comparison.md`](bcfishpass_comparison.md) | How link's output is compared with bcfishpass |
 | [`bcfp_table_map.md`](bcfp_table_map.md) | bcfp ↔ link table relationships |
@@ -46,6 +47,8 @@ renamed.
 | [`recompute_parallel_2026_09_01.md`](recompute_parallel_2026_09_01.md) | Parallelising the post-consolidate recompute |
 
 ## Run records (dated; kept for their evidence)
+
+The parity files here are the history of [`bcfishpass_parity.md`](bcfishpass_parity.md), which holds the current result.
 
 | File | Covers |
 |---|---|

@@ -1,0 +1,10 @@
+"wsg","species","cause","accessible_km","spawning_lost_km","spawning_gained_km","rearing_lost_km","rearing_gained_km","n_segments"
+"ADMS","CO","gate_settle",0,0.011,0,0.043,0,3
+"ADMS","SK","gate_settle",0,0.011,0,0,0,1
+"BULK","BT","gate_settle",0,0,0,0.269,0,2
+"BULK","CO","gate_settle",0,0.002,0,0.002,0,1
+"BULK","PK","gate_settle",0,0.002,0,0,0,1
+"BABL","BT","gate_settle",0,0,0,0.325,0,2
+"BABL","CO","gate_settle",0,0.03,0,0.03,0,1
+"ELKR","BT","gate_settle",0,0,0,0.633,0,2
+"ELKR","WCT","gate_settle",0,0.022,0,0.041,0,2
