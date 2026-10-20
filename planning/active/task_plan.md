@@ -58,7 +58,7 @@
 
 ## Phase 3: TURN BT
 
-- [ ] Record the tunnel and local evidence (0 TURN / UKEC rows in bcfishpass run 143; `groups_blocked.csv` intersection) in `data-raw/logs/parity_0.66.6/turn_bt.txt`
+- [x] Record the tunnel and local evidence (0 TURN / UKEC rows in bcfishpass run 143; `groups_blocked.csv` intersection) in `data-raw/logs/parity_0.66.6/turn_bt.txt`
 
 ## Phase 4: One parity record
 

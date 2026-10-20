@@ -1,0 +1,31 @@
+# TURN BT under the bcfishpass config: why it was not scored (#362)
+# Recorded 2026-10-20T17:18:10Z. Read-only queries.
+
+## bcfishpass over the tunnel (localhost:63333, db bcfishpass)
+-- select model_run_id, date_completed, model_version from bcfishpass.log order by model_run_id desc limit 1;
+143|2026-10-13 19:35:21.708541|v0.7.15-50-g620dbe43
+-- select count(*) from bcfishpass.streams[_vw] where watershed_group_code in ('TURN','UKEC');
+TURN/UKEC rows in bcfishpass.streams: 0
+TURN/UKEC rows in bcfishpass.streams_vw: 0
+groups in bcfishpass.streams: 188
+
+## local reference (localhost:5432, fwapg, fresh.streams_vw_bcfp, loaded 2026-10-17 00:55 UTC)
+TURN/UKEC rows: 0
+groups: 188
+
+## Other candidates: data-raw/logs/access_disagree_349/groups_blocked.csv (mechanism B, built under default)
+rows by species:
+
+bt gr ko rb 
+ 1  7  9 61 
+
+rows for a species the bcfishpass config models:
+ species watershed_group_code      km fwa_wsg obs_upstream_province
+      bt                 TURN 6491.12    UKEC                    69
+ obs_upstream_in_holding_group rule_threshold
+                             0              1
+
+Conclusion: bcfishpass does not model TURN or UKEC (no streams rows in run 143),
+so TURN BT has no bcfishpass value to score against. It is the only mechanism-B row for a
+species the bcfishpass config models, so no other group in that list can show province-wide
+lift counting against bcfishpass. Caveat: the list was built under default's presence and thresholds.
