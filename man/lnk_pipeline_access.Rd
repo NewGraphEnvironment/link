@@ -113,6 +113,7 @@ Access integer codes per species (mirroring bcfp):
 }
 \seealso{
 Other pipeline: 
+\code{\link{lnk_habitat_gate}()},
 \code{\link{lnk_pipeline_break}()},
 \code{\link{lnk_pipeline_classify}()},
 \code{\link{lnk_pipeline_connect}()},

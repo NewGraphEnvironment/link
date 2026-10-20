@@ -206,3 +206,70 @@ lnk_mapping_code <- function(
     species_anadromous = species_anadromous,
     species_spawn_only = species_spawn_only)
 }
+
+
+#' Rebuild one group's persisted mapping codes from persisted access + habitat
+#'
+#' The persist-side build shared by [lnk_pipeline_run()] (after the habitat
+#' gate, link#349) and the post-consolidate recompute
+#' (`data-raw/wsg_recompute_one.R`): [lnk_mapping_code()] over
+#' `<schema>.streams_access` and `<schema>.streams_habitat_long_vw` into a
+#' scratch table, then one transaction that replaces the group's rows in
+#' `<schema>.streams_mapping_code` (watershed group joined from `streams`).
+#' Reading persist, not the working tables, is what puts SPAWN / REAR tokens on
+#' the settled flags.
+#'
+#' Species with no bcfishpass residence class (GR, KO, RB in `default`) are
+#' coded as residents until link#189 data-drives residence.
+#'
+#' @param schema Persist schema.
+#' @param species Active species for `aoi`.
+#' @param presence An `lnk_presence` object for `aoi`.
+#' @noRd
+.lnk_mapping_code_persist <- function(conn, schema, aoi, species, presence) {
+  sp_set <- tolower(species)
+  sp_resident   <- union(intersect(sp_set, c("bt", "wct")),
+                         setdiff(sp_set, c("bt", "wct", "ch", "cm", "co", "pk",
+                                           "sk", "st")))
+  sp_anadromous <- intersect(sp_set, c("ch", "cm", "co", "pk", "sk", "st"))
+  sp_spawn_only <- intersect(sp_set, c("cm", "pk"))
+
+  mc_name    <- paste0("zz_lnk_mc_scratch_", tolower(aoi))
+  mc_scratch <- paste0(schema, ".", mc_name)
+  on.exit(try(.lnk_db_execute(conn, sprintf("DROP TABLE IF EXISTS %s", mc_scratch)),
+              silent = TRUE), add = TRUE)
+
+  lnk_mapping_code(conn,
+    table_access  = paste0(schema, ".streams_access"),
+    table_habitat = paste0(schema, ".streams_habitat_long_vw"),
+    table_streams = paste0(schema, ".streams"),
+    aoi           = aoi,
+    table_to      = mc_scratch,
+    presence      = presence,
+    species_resident   = sp_resident,
+    species_anadromous = sp_anadromous,
+    species_spawn_only = sp_spawn_only)
+
+  mc_cols <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT column_name FROM information_schema.columns
+     WHERE table_schema = %s AND table_name = %s AND column_name <> 'id_segment'
+     ORDER BY ordinal_position",
+    DBI::dbQuoteString(conn, schema), DBI::dbQuoteString(conn, mc_name)))$column_name
+  ins_cols <- paste(c("id_segment", "watershed_group_code", mc_cols), collapse = ", ")
+  sel_cols <- paste(c("m.id_segment", "s.watershed_group_code",
+                      paste0("m.", mc_cols)), collapse = ", ")
+  aoi_lit <- DBI::dbQuoteLiteral(conn, aoi)
+  # Atomic DELETE + INSERT: a failed INSERT must not leave the group's rows
+  # deleted (FINA lost its mapping codes that way on 2026-05-25, #203).
+  DBI::dbWithTransaction(conn, {
+    .lnk_db_execute(conn, sprintf(
+      "DELETE FROM %s.streams_mapping_code WHERE watershed_group_code = %s",
+      schema, aoi_lit))
+    .lnk_db_execute(conn, sprintf(
+      "INSERT INTO %s.streams_mapping_code (%s)
+       SELECT %s FROM %s m JOIN %s.streams s USING (id_segment)
+       WHERE s.watershed_group_code = %s",
+      schema, ins_cols, sel_cols, mc_scratch, schema, aoi_lit))
+  })
+  invisible(conn)
+}

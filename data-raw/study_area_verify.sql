@@ -372,6 +372,9 @@ DECLARE
   n_prov   int;
   n_pin    int;
   n_fresh  int;
+  n_sp     int;
+  n_unset  int  := 0;
+  v_sp     text;
   bad      text;
 BEGIN
   EXECUTE format(
@@ -499,6 +502,42 @@ BEGIN
       v_run, n_prov;
   END IF;
 
+  -- Habitat settled on access (link#349). Every streams_habitat_<sp> row of
+  -- the run's groups with `accessible` TRUE must have access_<sp> <> 0: the
+  -- recompute's lnk_habitat_gate() blanks the habitat flags wherever link's
+  -- province-wide access blocks the species. A row here is habitat a consumer
+  -- reading streams_access would call inaccessible.
+  bad := '';
+  FOR v_sp IN
+    SELECT substr(t.table_name, 17)
+      FROM information_schema.tables t
+     WHERE t.table_schema = v_sch
+       AND t.table_name ~ '^streams_habitat_[a-z]+$'
+       AND t.table_type = 'BASE TABLE'
+       AND EXISTS (SELECT 1 FROM information_schema.columns c
+                    WHERE c.table_schema = v_sch AND c.table_name = 'streams_access'
+                      AND c.column_name = 'access_' || substr(t.table_name, 17))
+     ORDER BY 1
+  LOOP
+    EXECUTE format(
+      'SELECT count(*) FROM %I.%I h
+         JOIN %I.streams_access a USING (id_segment, watershed_group_code)
+        WHERE h.accessible AND a.%I = 0
+          AND h.watershed_group_code IN
+              (SELECT watershed_group_code FROM %I.log WHERE run_uid = $1)',
+      v_sch, 'streams_habitat_' || v_sp, v_sch, 'access_' || v_sp, v_sch)
+      INTO n_sp USING v_run;
+    IF n_sp > 0 THEN
+      n_unset := n_unset + n_sp;
+      bad := concat_ws(', ', nullif(bad, ''), upper(v_sp) || ' ' || n_sp);
+    END IF;
+  END LOOP;
+  IF n_unset > 0 THEN
+    RAISE EXCEPTION
+      'run %: % segment(s) are accessible in streams_habitat_<sp> where streams_access.access_<sp> = 0 (%). The habitat was not settled on access (link#349): re-run the recompute, LNK_SCHEMA=% LNK_LOAD=loadall Rscript data-raw/wsg_recompute_one.R <WSG> <config>',
+      v_run, n_unset, bad, v_sch;
+  END IF;
+
   -- The bcfp pin, with the sanctioned-unpinned escape.
   EXECUTE format(
     'SELECT count(*) FROM %I.log WHERE run_uid = $1 AND bcfp_model_version IS NULL',
@@ -516,7 +555,7 @@ BEGIN
     RAISE NOTICE 'PASS (UNPINNED): run % -- % WSG(s), all modelled, recomputed and segmented. % row(s) carry NO bcfp reference, accepted by -v unpinned_ok=. Their parity numbers cannot be traced to a reference build.',
       v_run, n_model, n_pin;
   ELSE
-    RAISE NOTICE 'PASS: run % -- % WSG(s), all modelled, recomputed, segmented and provenanced',
+    RAISE NOTICE 'PASS: run % -- % WSG(s), all modelled, recomputed, settled, segmented and provenanced',
       v_run, n_model;
   END IF;
 END $$;

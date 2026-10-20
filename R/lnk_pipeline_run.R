@@ -40,12 +40,15 @@
 #'      and [lnk_pipeline_access()] (writes working `streams_access`). Access
 #'      is foundational — mapping_code depends on it — so it builds regardless
 #'      of `mapping_code`. See link#187, #196.
-#' 10b. *Optional* mapping_code token assembly — gated by `mapping_code = TRUE`.
-#'      [lnk_mapping_code()] consumes `streams_access` + `streams_habitat`
-#'      and writes working `streams_mapping_code`.
 #' 11. [lnk_pipeline_persist()] — copy per-WSG streams + per-species
-#'     habitat + barriers + streams_access (+ optional streams_mapping_code)
-#'     into `<persist_schema>` (idempotent DELETE-WHERE-WSG + INSERT).
+#'     habitat + barriers + streams_access into `<persist_schema>`
+#'     (idempotent DELETE-WHERE-WSG + INSERT).
+#' 12. [lnk_habitat_gate()] — settle the persisted habitat flags on
+#'     `streams_access`: where `access_<sp>` is 0, `accessible`, `spawning`,
+#'     `rearing`, `lake_rearing` and `wetland_rearing` go FALSE (link#349).
+#' 13. *Optional* mapping_code token assembly — gated by `mapping_code = TRUE`.
+#'     [lnk_mapping_code()] reads the persisted `streams_access` and the
+#'     settled habitat, and writes `<persist_schema>.streams_mapping_code`.
 #'
 #' @param conn DBI connection to the local pipeline database (typically
 #'   localhost fwapg).
@@ -63,7 +66,7 @@
 #'   `<schema>` working schema at the end. Pass `FALSE` for interactive
 #'   debug / manual inspection.
 #' @param mapping_code Logical. Gates only the mapping_code **token
-#'   assembly** (phase 10b) — when `TRUE`, [lnk_mapping_code()] runs and
+#'   assembly** (phase 13) — when `TRUE`, [lnk_mapping_code()] runs and
 #'   `<persist_schema>.streams_mapping_code` is produced for the WSG,
 #'   consumed downstream by `data-raw/build_species_views.R --bcfp` (QGIS
 #'   bcfp-shape symbology). Default `FALSE`. **`streams_access` is built
@@ -72,6 +75,10 @@
 #'   from pre-#187 compare_wsg: access uses link's own per-species
 #'   barriers (via `blocks_species` predicate on `<schema>.barriers`),
 #'   not bcfp's tunnel-staged tables.
+#' @param habitat_gate Logical. When `TRUE` (default), settle the persisted
+#'   habitat flags on `streams_access` with [lnk_habitat_gate()] (phase 12,
+#'   link#349). `FALSE` keeps fresh's classify-time flags, for measuring what
+#'   the gate changes; the log row's `habitat_gate_*` columns stay NULL.
 #' @param log Logical. When `TRUE` (default), record run provenance into
 #'   `<persist_schema>.log` and its companion tables (link#127) — which
 #'   config produced this network, what that config actually said, which
@@ -93,7 +100,8 @@
 #' @param notes Character. Free-form note stored on the run row.
 #'
 #' @return `conn`, invisibly. Side effects are the writes into
-#'   `<persist_schema>.streams`, `streams_habitat_<sp>`, and `barriers`.
+#'   `<persist_schema>.streams`, `streams_habitat_<sp>` (settled on
+#'   `streams_access`), `streams_access` and `barriers`.
 #'
 #' @examples
 #' \dontrun{
@@ -119,6 +127,7 @@ lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
                              dams = TRUE,
                              cleanup_working = TRUE,
                              mapping_code = FALSE,
+                             habitat_gate = TRUE,
                              log = TRUE,
                              run_uid = Sys.getenv("LNK_RUN_UID",
                                                   NA_character_),
@@ -140,6 +149,7 @@ lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
     is.logical(dams), length(dams) == 1L,
     is.logical(cleanup_working), length(cleanup_working) == 1L,
     is.logical(mapping_code), length(mapping_code) == 1L,
+    is.logical(habitat_gate), length(habitat_gate) == 1L, !is.na(habitat_gate),
     is.logical(log), length(log) == 1L
   )
 
@@ -223,7 +233,7 @@ lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
   # pre-#187 compare_wsg: ACCESS uses link's own per-species barriers (derived
   # from <schema>.barriers's `blocks_species` predicate via lnk_barriers_views)
   # instead of bcfp's barriers tables staged via the tunnel. See NEWS v0.40.0.
-  # Only the mapping_code token assembly (step 3) stays gated by `mapping_code`.
+  # Only the mapping_code token assembly (step 4) stays gated by `mapping_code`.
   pres <- lnk_presence(loaded$wsg_species_presence, aoi) # nolint: object_usage_linter
 
   # 0. Pre-persist current WSG's barriers + streams + habitat into
@@ -235,8 +245,7 @@ lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
   # cross-WSG visibility. Fix: persist current WSG's barriers FIRST,
   # so persist holds current + all previously-persisted WSGs by the
   # time the views are built. Second persist call below re-runs
-  # idempotently and adds streams_access (+ streams_mapping_code when
-  # mapping_code = TRUE). link#196.
+  # idempotently and adds streams_access. link#196.
   lnk_pipeline_persist(conn, aoi = aoi, cfg = cfg, # nolint: object_usage_linter
                        species = active_species, schema = schema)
 
@@ -281,39 +290,33 @@ lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
       remediations  = paste0(schema, ".barriers_remediations")),
     crossings_table = paste0(schema, ".crossings"))
 
-  # 3. Per-segment per-species mapping_code tokens — gated by `mapping_code`
-  # (link#218). Schema-aware wrapper over lnk_pipeline_mapping_code —
-  # delegates the pure data transform. Species pass-through: intersect bcfp
-  # residence defaults with active_species so mapping_code only computes for
-  # species the bundle actually models. Species in active_species but NOT in
-  # any bcfp residence category (e.g. GR/KO/RB in the default bundle) get
-  # assigned to species_resident by fallback — GR/KO/RB are all resident
-  # salmonids; treat as resident until link#189 data-drives this from
-  # dimensions.csv.
-  if (isTRUE(mapping_code)) {
-    sp_resident_bcfp   <- c("bt", "wct")
-    sp_anadromous_bcfp <- c("ch", "cm", "co", "pk", "sk", "st")
-    sp_spawn_only_bcfp <- c("cm", "pk")
-    sp_resident_active   <- intersect(sp_set, sp_resident_bcfp)
-    sp_anadromous_active <- intersect(sp_set, sp_anadromous_bcfp)
-    sp_unclassified      <- setdiff(sp_set, c(sp_resident_bcfp, sp_anadromous_bcfp))
-    sp_resident_active   <- union(sp_resident_active, sp_unclassified)
-    sp_spawn_only_active <- intersect(sp_set, sp_spawn_only_bcfp)
-
-    lnk_mapping_code(conn, # nolint: object_usage_linter
-      table_access  = paste0(schema, ".streams_access"),
-      table_habitat = paste0(schema, ".streams_habitat"),
-      table_streams = paste0(schema, ".streams"),
-      aoi           = aoi,
-      table_to      = paste0(schema, ".streams_mapping_code"),
-      presence      = pres,
-      species_resident   = sp_resident_active,
-      species_anadromous = sp_anadromous_active,
-      species_spawn_only = sp_spawn_only_active)
-  }
-
   lnk_pipeline_persist(conn, aoi = aoi, cfg = cfg, # nolint: object_usage_linter
                        species = active_species, schema = schema)
+
+  # 3. Settle the persisted habitat flags on link's access (link#349): where
+  # access_<sp> = 0, accessible / spawning / rearing / lake_rearing /
+  # wetland_rearing go FALSE (known-habitat overlay rows keep spawning and
+  # rearing). fresh's `accessible` was built from this group's own breaks
+  # only; access_<sp> is the province-wide answer, so the flags follow it.
+  tn <- .lnk_table_names(cfg)
+  gate <- NULL
+  if (isTRUE(habitat_gate)) {
+    gate <- lnk_habitat_gate(conn, aoi = aoi, # nolint: object_usage_linter
+      table_habitat = paste0(tn$schema, ".streams_habitat"),
+      table_access  = paste0(tn$schema, ".streams_access"),
+      table_streams = paste0(tn$schema, ".streams"),
+      species       = active_species,
+      overlay       = .lnk_habitat_gate_overlay(cfg, loaded))
+  }
+
+  # 4. Per-segment per-species mapping_code tokens, gated by `mapping_code`
+  # (link#218). Built from PERSIST, after the gate, the way the
+  # post-consolidate recompute builds them, so SPAWN / REAR tokens never ride
+  # on flags the gate blanked (link#349).
+  if (isTRUE(mapping_code)) {
+    .lnk_mapping_code_persist(conn, schema = tn$schema, aoi = aoi,
+                              species = active_species, presence = pres)
+  }
 
   if (isTRUE(cleanup_working)) {
     DBI::dbExecute(conn, sprintf("DROP SCHEMA %s CASCADE", schema))
@@ -321,7 +324,8 @@ lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
 
   if (!is.null(run_log)) {
     completed <- TRUE
-    .lnk_log_run_finish(conn, cfg, run_log$run_id, species = active_species)
+    .lnk_log_run_finish(conn, cfg, run_log$run_id, species = active_species,
+                        habitat_gate = gate)
   }
 
   invisible(conn)

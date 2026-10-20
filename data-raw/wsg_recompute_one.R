@@ -8,6 +8,8 @@
 #
 #   lnk_access(merge=TRUE)  -> surgically updates <persist>.streams_access
 #                              (cross-WSG flags; preserves remediated + obs)
+#   lnk_habitat_gate        -> settles <persist>.streams_habitat_<sp> on the
+#                              updated access (link#349)
 #   lnk_mapping_code        -> rebuilds mapping_code from the updated access,
 #                              written into <persist>.streams_mapping_code via
 #                              scratch + DELETE-WHERE-WSG + INSERT (JOIN streams
@@ -103,6 +105,9 @@ t0   <- Sys.time()
 .rc_start <- utils::getFromNamespace(".lnk_log_recompute_start", "link")
 .rc_finish <- utils::getFromNamespace(".lnk_log_recompute_finish", "link")
 .rc_fail <- utils::getFromNamespace(".lnk_log_recompute_fail", "link")
+.mc_persist <- utils::getFromNamespace(".lnk_mapping_code_persist", "link")
+.gate_overlay <- utils::getFromNamespace(".lnk_habitat_gate_overlay", "link")
+habitat_gate <- NULL
 
 rlog <- if (.rc_log) {
   .rc_start(conn, cfg = cfg, aoi = wsg, views_prebuilt = .lnk_views_prebuilt)
@@ -145,6 +150,19 @@ rc_fail_mark <- function(e) {
 # did, which is how `zz_lnk_mc_scratch_*` tables accumulated.
 recompute_wsg <- function() {
 
+# 0. The group's access as it stands, so the gate can count segments this
+# recompute lifts while their habitat stays settled FALSE (link#349).
+prior_name <- paste0("zz_lnk_access_prior_", tolower(wsg))
+prior      <- paste0(sch, ".", prior_name)
+on.exit(try(DBI::dbExecute(conn, sprintf("DROP TABLE IF EXISTS %s", prior)),
+            silent = TRUE), add = TRUE)
+DBI::dbExecute(conn, sprintf("DROP TABLE IF EXISTS %s", prior))
+DBI::dbExecute(conn, sprintf(
+  "CREATE TABLE %s AS SELECT id_segment, watershed_group_code, %s
+   FROM %s.streams_access WHERE watershed_group_code = %s",
+  prior, paste0("access_", tolower(active), collapse = ", "), sch,
+  DBI::dbQuoteLiteral(conn, wsg)))
+
 # 1. Surgically recompute streams_access (cross-WSG cols) in place.
 lnk_access(conn, cfg, aoi = wsg,
   table_streams  = paste0(sch, ".streams"),
@@ -153,54 +171,22 @@ lnk_access(conn, cfg, aoi = wsg,
   merge = TRUE, presence = pres, species = active,
   build_views = !.lnk_views_prebuilt)
 
-# 2. Rebuild mapping_code from the updated access -> scratch -> persist.
-sp_set <- tolower(active)
-sp_resident   <- union(intersect(sp_set, c("bt", "wct")),
-                       setdiff(sp_set, c("bt", "wct", "ch", "cm", "co", "pk", "sk", "st")))
-sp_anadromous <- intersect(sp_set, c("ch", "cm", "co", "pk", "sk", "st"))
-sp_spawn_only <- intersect(sp_set, c("cm", "pk"))
-
-mc_name    <- paste0("zz_lnk_mc_scratch_", tolower(wsg))
-mc_scratch <- paste0(sch, ".", mc_name)
-on.exit(try(DBI::dbExecute(conn, sprintf("DROP TABLE IF EXISTS %s", mc_scratch)),
-            silent = TRUE), add = TRUE)
-
-lnk_mapping_code(conn,
+# 2. Settle the persisted habitat flags on the recomputed access (link#349):
+# where access_<sp> = 0, accessible / spawning / rearing / lake_rearing /
+# wetland_rearing go FALSE; known-habitat overlay rows keep spawning and
+# rearing. One-way: a segment this lifts back is counted, and only a re-model
+# restores its habitat.
+habitat_gate <<- lnk_habitat_gate(conn, aoi = wsg,
+  table_habitat = paste0(sch, ".streams_habitat"),
   table_access  = paste0(sch, ".streams_access"),
-  table_habitat = paste0(sch, ".streams_habitat_long_vw"),
   table_streams = paste0(sch, ".streams"),
-  aoi           = wsg,
-  table_to      = mc_scratch,
-  presence      = pres,
-  species_resident   = sp_resident,
-  species_anadromous = sp_anadromous,
-  species_spawn_only = sp_spawn_only)
+  species = active,
+  overlay = .gate_overlay(cfg, loaded),
+  table_access_prior = prior)
 
-# Persist write: DELETE-WHERE-WSG + INSERT (JOIN streams for WSG), mirroring
-# lnk_pipeline_persist's mapping_code branch. Scratch has id_segment +
-# mapping_code_<sp> only; watershed_group_code comes from streams.
-mc_cols <- DBI::dbGetQuery(conn, sprintf(
-  "SELECT column_name FROM information_schema.columns
-   WHERE table_schema = %s AND table_name = %s AND column_name <> 'id_segment'
-   ORDER BY ordinal_position",
-  DBI::dbQuoteString(conn, sch), DBI::dbQuoteString(conn, mc_name)))$column_name
-ins_cols <- paste(c("id_segment", "watershed_group_code", mc_cols), collapse = ", ")
-sel_cols <- paste(c("m.id_segment", "s.watershed_group_code",
-                    paste0("m.", mc_cols)), collapse = ", ")
-wsg_lit  <- DBI::dbQuoteLiteral(conn, wsg)
-# Atomic DELETE+INSERT — without the transaction a failed INSERT (e.g. the #203
-# cartesian PK violation that caused FINA's mc data loss on 2026-05-25) would
-# leave the WSG's rows deleted but not re-inserted. Wrap so any failure rolls
-# back the DELETE. See soul/conventions/code-check.md Docker/Postgres.
-DBI::dbWithTransaction(conn, {
-  DBI::dbExecute(conn, sprintf(
-    "DELETE FROM %s.streams_mapping_code WHERE watershed_group_code = %s", sch, wsg_lit))
-  DBI::dbExecute(conn, sprintf(
-    "INSERT INTO %s.streams_mapping_code (%s)
-     SELECT %s FROM %s m JOIN %s.streams s USING (id_segment)
-     WHERE s.watershed_group_code = %s",
-    sch, ins_cols, sel_cols, mc_scratch, sch, wsg_lit))
-})
+# 3. Rebuild mapping_code from the updated access and settled habitat ->
+# scratch -> persist (one transaction; lnk_pipeline_run builds it the same way).
+.mc_persist(conn, schema = sch, aoi = wsg, species = active, presence = pres)
 
 # Post-condition (link#227). study_area_run.sh runs the per-WSG guard in
 # `warn` mode, because on a multi-host run a downstream group can legitimately
@@ -234,7 +220,15 @@ if (!ok) {
 
 # Closed only after the post-condition passes. `date_end` therefore means
 # "recomputed AND verified", which is what a reader of this table needs.
-if (.rc_log) .rc_finish(conn, cfg, rlog$recompute_id, species = active)
+if (.rc_log) .rc_finish(conn, cfg, rlog$recompute_id, species = active,
+                       habitat_gate = habitat_gate)
+if (!is.null(habitat_gate)) {
+  g <- habitat_gate[habitat_gate$flag == "accessible", ]
+  lifted <- sum(g$n_lifted_settled, na.rm = TRUE)
+  cat(sprintf("[wsg_recompute_one] %s habitat gate: %d segments (%.3f km) settled%s\n",
+              wsg, sum(g$n_segments), sum(g$km),
+              if (lifted > 0) sprintf("; %d lifted segments need a re-model", lifted) else ""))
+}
 try(DBI::dbDisconnect(conn), silent = TRUE)
 
 cat(sprintf("[wsg_recompute_one] %s recomputed in %.2f min (persist=%s)\n",

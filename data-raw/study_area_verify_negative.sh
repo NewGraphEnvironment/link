@@ -15,6 +15,7 @@
 #   4a. bcfp pin removed              -> expect FAIL
 #   4b.  ... plus -v unpinned_ok=<why> -> expect PASS
 #   4c.  ... plus a whitespace reason  -> expect FAIL
+#   6d. one habitat row un-settled    -> expect FAIL (link#349)
 #
 # Nothing durable is mutated: every case runs against a SCRATCH SCHEMA holding a
 # copy of the run's rows, so the real persist is never touched at all. Not a
@@ -98,6 +99,37 @@ SQL
 
 N_WSG=$("${PSQL[@]}" -c "SELECT count(DISTINCT watershed_group_code) FROM ${SCRATCH}.log")
 echo "  scratch schema $SCRATCH built: $N_WSG WSG(s)"
+
+# Habitat for the link#349 invariant: one species and one group of the run
+# with at least one access_<sp> = 0 row, copied SETTLED (accessible FALSE
+# wherever access_<sp> = 0), so case 1 holds and case 6d has a row to undo.
+# One group and one species keep the copy small; the assertion loops over
+# whatever habitat tables the schema holds.
+GATE_SP=""; GATE_WSG=""
+for t in $("${PSQL[@]}" -c "SELECT table_name FROM information_schema.tables
+             WHERE table_schema = '${SRC_SCHEMA}' AND table_type = 'BASE TABLE'
+               AND table_name ~ '^streams_habitat_[a-z]+$' ORDER BY 1"); do
+  sp="${t#streams_habitat_}"
+  w=$("${PSQL[@]}" -c "SELECT a.watershed_group_code FROM ${SRC_SCHEMA}.streams_access a
+        WHERE a.access_${sp} = 0 AND a.watershed_group_code IN
+              (SELECT watershed_group_code FROM ${SCRATCH}.log)
+        ORDER BY a.watershed_group_code LIMIT 1" 2>/dev/null || true)
+  if [ -n "$w" ]; then GATE_SP="$sp"; GATE_WSG="$w"; break; fi
+done
+if [ -n "$GATE_SP" ]; then
+  "${PSQL[@]}" >/dev/null <<SQL
+CREATE TABLE ${SCRATCH}.streams_access AS
+  SELECT id_segment, watershed_group_code, access_${GATE_SP}
+    FROM ${SRC_SCHEMA}.streams_access WHERE watershed_group_code = '${GATE_WSG}';
+CREATE TABLE ${SCRATCH}.streams_habitat_${GATE_SP} AS
+  SELECT h.id_segment, h.watershed_group_code,
+         (h.accessible AND a.access_${GATE_SP} IS DISTINCT FROM 0) AS accessible
+    FROM ${SRC_SCHEMA}.streams_habitat_${GATE_SP} h
+    JOIN ${SRC_SCHEMA}.streams_access a USING (id_segment, watershed_group_code)
+   WHERE h.watershed_group_code = '${GATE_WSG}';
+SQL
+  echo "  habitat copied settled: ${GATE_SP} in ${GATE_WSG}"
+fi
 
 # Output goes to a file rather than /dev/null, and is REPLAYED whenever a case
 # answers the wrong way. Discarding it entirely would leave "case 1 failed but
@@ -317,6 +349,31 @@ else
     WHERE s.run_uid = '${RUN_UID}'
       AND s.host = t.host
       AND s.watershed_group_code = t.watershed_group_code" >/dev/null
+fi
+
+# --- 6d. a habitat row accessible where access_<sp> = 0: must FAIL (#349) ---
+if [ -z "$GATE_SP" ]; then
+  echo "  ⊘ 6d. SKIPPED: no group of $RUN_UID has an access_<sp> = 0 row, so"
+  echo "       there is no habitat row to un-settle. Absence reported as"
+  echo "       absence -- this is NOT a pass."
+  fails=$((fails + 1))
+else
+  "${PSQL[@]}" -c "UPDATE ${SCRATCH}.streams_habitat_${GATE_SP} h SET accessible = TRUE
+     WHERE (h.id_segment, h.watershed_group_code) IN (
+       SELECT a.id_segment, a.watershed_group_code FROM ${SCRATCH}.streams_access a
+        WHERE a.access_${GATE_SP} = 0 ORDER BY a.id_segment LIMIT 1)" >/dev/null
+  if run_verify -v expected_n="$N_WSG"; then
+    echo "  ✗ 6d. ${GATE_SP} row un-settled -> PASSED, but should have FAILED."
+    echo "       The habitat-settled assertion is not firing."
+    show_verify
+    fails=$((fails + 1))
+  else
+    echo "  ✓ 6d. ${GATE_SP} row un-settled -> FAIL (as expected)"
+  fi
+  "${PSQL[@]}" -c "UPDATE ${SCRATCH}.streams_habitat_${GATE_SP} h SET accessible = FALSE
+     FROM ${SCRATCH}.streams_access a
+    WHERE a.id_segment = h.id_segment AND a.watershed_group_code = h.watershed_group_code
+      AND a.access_${GATE_SP} = 0" >/dev/null
 fi
 
 # The healthy case again, LAST. Cases 2/4/5/6 each mutate the scratch schema

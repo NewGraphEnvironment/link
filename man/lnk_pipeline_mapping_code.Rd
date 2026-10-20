@@ -128,6 +128,7 @@ an accessible no-habitat-no-intermittent segment yields \code{"ACCESS;NONE"}.
 }
 \seealso{
 Other pipeline: 
+\code{\link{lnk_habitat_gate}()},
 \code{\link{lnk_pipeline_access}()},
 \code{\link{lnk_pipeline_break}()},
 \code{\link{lnk_pipeline_classify}()},

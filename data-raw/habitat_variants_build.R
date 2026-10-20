@@ -562,8 +562,8 @@ run_base <- function() {
   }
   # Re-settle access on the focal WSGs against the whole closure, after every
   # base WSG, as the post-consolidate recompute does (wsg_recompute_one.R,
-  # whose timeouts and log_recompute row this repeats; its mapping_code step
-  # does not apply, since the base run builds none).
+  # whose timeouts, habitat gate and log_recompute row this repeats; its
+  # mapping_code step does not apply, since the base run builds none).
   dbExecute(conn, "SET statement_timeout = '600000'")
   dbExecute(conn, "SET lock_timeout = '60000'")
   rc <- list()
@@ -572,7 +572,12 @@ run_base <- function() {
     before <- digest_of(sch, "streams_access", w)
     rlog <- .lnk_log_recompute_start(conn, cfg = cfg_base, aoi = w,
                                      views_prebuilt = FALSE)
-    tryCatch({
+    prior <- paste0(sch, ".zz_lnk_access_prior_", tolower(w))
+    gate <- tryCatch({
+      dbExecute(conn, sprintf("DROP TABLE IF EXISTS %s", prior))
+      dbExecute(conn, sprintf(
+        "CREATE TABLE %s AS SELECT * FROM %s.streams_access
+          WHERE watershed_group_code = $1", prior, sch), params = list(w))
       lnk_access(conn, cfg_base, aoi = w,
                  table_streams = paste0(sch, ".streams"),
                  table_barriers = paste0(sch, ".barriers"),
@@ -580,15 +585,24 @@ run_base <- function() {
                  merge = TRUE,
                  presence = lnk_presence(loaded$wsg_species_presence, w),
                  species = active)
+      # Settle the persisted habitat on the recomputed access (link#349).
+      g <- lnk_habitat_gate(conn, aoi = w,
+                            table_habitat = paste0(sch, ".streams_habitat"),
+                            table_access = paste0(sch, ".streams_access"),
+                            table_streams = paste0(sch, ".streams"),
+                            species = active,
+                            overlay = .lnk_habitat_gate_overlay(cfg_base, loaded),
+                            table_access_prior = prior)
       lnk_wsg_downstream_check(conn, aoi = w, cfg = cfg_base,
                                loaded = loaded, on_fail = "error")
+      g
     }, error = function(e) {
       .lnk_log_recompute_fail(conn, cfg_base, rlog$recompute_id,
                               message = conditionMessage(e))
       stop(e)
-    })
+    }, finally = dbExecute(conn, sprintf("DROP TABLE IF EXISTS %s", prior)))
     .lnk_log_recompute_finish(conn, cfg_base, rlog$recompute_id,
-                              species = active)
+                              species = active, habitat_gate = gate)
     same <- identical(before, digest_of(sch, "streams_access", w))
     rc[[w]] <- data.frame(watershed_group_code = w, access_unchanged = same)
     say("recompute %s: streams_access %s", w,
@@ -701,6 +715,14 @@ run_variant <- function(v) {
       # (classify and connect never touch it), so the base's recomputed rows,
       # every species, replace it.
       copy_access(sch_base, sch, w)
+      # The variant's persisted habitat follows that access, as the base's
+      # does after its recompute (link#349).
+      lnk_habitat_gate(conn, aoi = w,
+                       table_habitat = paste0(sch, ".streams_habitat"),
+                       table_access = paste0(sch, ".streams_access"),
+                       table_streams = paste0(sch, ".streams"),
+                       species = sp,
+                       overlay = .lnk_habitat_gate_overlay(cfg, loaded))
     }
     for (tb in names(digest_sql)) {
       if (!identical(digest_of(sch, tb, w), digest_of(sch_base, tb, w))) {

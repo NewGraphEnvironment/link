@@ -37,3 +37,12 @@ says to resume.
   to the issue's totals for every species. A / A′ ≈ halves; B is every whole-group case (RB,
   KO, GR and BT TURN); residual is small, RB's is ELKR's Flathead. Corrected the plan's KO
   location claim (findings.md). bcfishpass scope pinned at `@620dbe4`.
+- Phase 2: `lnk_habitat_gate()` (tests first; the DB test goes red with the UPDATE stubbed out,
+  3 failures). `n_lifted_settled` needs the access from before a recompute, so the gate takes
+  `table_access_prior`; `wsg_recompute_one.R` and `habitat_variants_build.R` snapshot it.
+  `lnk_pipeline_run()` gates after the second persist and builds mapping codes from persist
+  through `.lnk_mapping_code_persist()`, now shared with the recompute. Log columns
+  `habitat_gate_{n,km,lifted,species}` on `log` and `log_recompute`, written in a second soft
+  statement. `study_area_verify.sql` asserts no `accessible AND access_<sp> = 0` row; the
+  negative test's new case 6d fires, 12 / 12 cases right on `fresh_default`'s run. Note:
+  verify on `fresh_default` itself now fails until decision 4's re-gate runs.

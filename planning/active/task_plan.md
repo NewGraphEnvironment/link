@@ -137,7 +137,7 @@ UPDATE fails softly on a schema that predates them.
       (link SHA, fresh version, run_uid); put the table in the #349 body.
 
 ## Phase 2: `lnk_habitat_gate()` — the settle step
-- [ ] Failing tests first (`tests/testthat/test-lnk_habitat_gate.R`): mocked-SQL shape test
+- [x] Failing tests first (`tests/testthat/test-lnk_habitat_gate.R`): mocked-SQL shape test
       (one UPDATE per species, the five flags, keyed on `(id_segment,
       watershed_group_code)`, `access_<sp> = 0` only, AOI-filtered, overlay rows exempt from
       the four habitat flags) plus a DB-backed fixture test on `test-lnk_access.R`'s pattern
@@ -145,22 +145,24 @@ UPDATE fails softly on a schema that predates them.
       FALSE; `access_bt = 1` and `-9` untouched; an overlay row keeps spawning; a settled row
       later lifted is counted as `n_lifted_settled`; the DB test fails with the UPDATE
       stubbed out.
-- [ ] `R/lnk_habitat_gate.R`: `lnk_habitat_gate(conn, aoi, table_habitat, table_access,
+- [x] `R/lnk_habitat_gate.R`: `lnk_habitat_gate(conn, aoi, table_habitat, table_access,
       table_streams, species, overlay = NULL)` (`table_<role>` args; `table_habitat` is the
       `<prefix>` of `<prefix>_<sp>`; `overlay` a canonical-shape tibble or table); returns
       `species, flag, n_segments, km, n_lifted_settled` (km from `streams.length_metre` on
       the full key, #203).
-- [ ] Wire into `lnk_pipeline_run()` after the second persist; move the mapping_code phase
+- [x] Wire into `lnk_pipeline_run()` after the second persist; move the mapping_code phase
       after it, reading persist (the recompute's shape); update `test-lnk_pipeline_run.R`'s
       pinned order. Wire into `wsg_recompute_one.R` between steps 1 and 2 and into
       `habitat_variants_build.R`'s recompute loop; `.lnk_log_recompute_finish()` /
       `.lnk_log_*` take the counts with defaults so existing callers run unchanged.
-- [ ] `cols_log` + `cols_log_recompute` gain `habitat_gate_n integer`, `habitat_gate_km
+- [x] `cols_log` + `cols_log_recompute` gain `habitat_gate_n integer`, `habitat_gate_km
       double precision`-compatible text, `habitat_gate_lifted integer`, `habitat_gate_species
       text[]` (existing types only); written in a second soft statement.
-- [ ] `study_area_verify.sql` gains the invariant per species: no row with `accessible AND
+- [x] `study_area_verify.sql` gains the invariant per species: no row with `accessible AND
       access_<sp> = 0` (and `study_area_verify_negative.sh` proves it fires).
-- [ ] `devtools::document()`, pkgdown reference check, NEWS entry.
+- [x] `devtools::document()`, pkgdown reference check (clean); NEWS entry in Phase 5.
+- [x] Added for Phase 4: `lnk_pipeline_run(habitat_gate = FALSE)` / `LNK_HABITAT_GATE=0` in
+      `wsg_run_one.R`, so the classify-time state can be measured before the settle.
 
 ## Phase 3: RB lift rule and province-wide observation counting
 - [ ] Failing test: `lnk_barrier_overrides()` given a province table lifts a barrier whose
