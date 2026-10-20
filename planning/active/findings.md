@@ -63,14 +63,14 @@ Against `expected.txt`, written before scoring:
   tie in `R/lnk_pipeline_pscis_build.R`'s pick, already named in CLAUDE.md's 2026-09-25 status);
   the 101833 line is the same tie. Scope: the four scored groups. Across all 17 groups, 349 segments on 75 lines in 12 groups
   are in one build only (`resegmented_closure.csv`, code-check round 3); the 67 lines outside the
-  scored groups were not examined.
-  body as a measured instance; no new issue.
+  scored groups were not examined. Added to #277's body as a measured instance; no new issue.
 - **Lifts:** 10 override positions added, 0 lost (`override_diff.csv`): BT and WCT at five
   positions on blue_line_key 356570372 (the Columbia, 1,468–1,602 km), held by LARL. Accessible km
   in the four scored groups did not move, so none reaches a scored pair. Lifts can only be added
   under province-wide counting (review finding 1).
 - **mapping_code** (`mapping_code_moves.csv`, all 17 groups): 51 of 86 rows move, by −0.06 to
-  +0.05 points of match_pct; moved by the gate and by lines the builds break differently (round 3: 91a968ab reaches none
+  +0.05 points of match_pct; moved by the gate and by lines the builds break differently, which also flips downstream-barrier
+  flags on shared segments of other lines (KOTL, HARR, LSKE; round 4) (round 3: 91a968ab reaches none
   of the 86 rows, all of which have barriers); not diagnosed.
 
 ## TURN BT (2026-10-20)

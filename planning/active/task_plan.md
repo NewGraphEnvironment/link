@@ -73,9 +73,9 @@
 
 ## Validation
 
-- [ ] Tests pass (no R code changes expected; run only if any `R/` file changes)
-- [ ] `/code-check` clean (each commit, or once over the branch with `/code-check branch`)
-- [ ] PWF checkboxes match landed work
+- [x] Tests pass (no R code changes expected; run only if any `R/` file changes): no `R/` file changed (`git diff --stat cefd4608...HEAD -- R/` empty), so not run
+- [x] `/code-check` clean (each commit, or once over the branch with `/code-check branch`): four rounds over the branch; round 3 enumerated every claim, round 4 enumerated the fix commit's; findings `review-round1..4.md`, all fixed
+- [x] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
 
 Verification: `study_area_verify.sql` passes at `expected_n=17` for the run_uid; the parity script

@@ -22,7 +22,10 @@ suppressPackageStartupMessages({
 })
 dir_out <- "data-raw/logs/parity_0.66.6"
 compare_new <- Sys.getenv("LNK_COMPARE_NEW")
-if (!nzchar(compare_new)) stop("set LNK_COMPARE_NEW to the new run's <TS>_compare.csv")
+if (!nzchar(compare_new) ||
+    !file.exists(file.path("data-raw/logs/study_area_run", compare_new))) {
+  stop("set LNK_COMPARE_NEW to the new run's <TS>_compare.csv under data-raw/logs/study_area_run/")
+}
 old <- read.csv("data-raw/logs/provincial_246/parity_annotated.csv")
 new <- read.csv(file.path(dir_out, "parity_annotated.csv"))
 key <- c("wsg", "species", "habitat_type")
@@ -170,7 +173,8 @@ cat(sprintf("override positions: %d before, %d after; %d added, %d lost\n",
 dbDisconnect(conn)
 
 # mapping_code agreement with bcfishpass over all 17 groups (the driver's compare).
-# Moved by the gate and by lines the two builds break differently (resegmented_closure.csv).
+# Moved by the gate and by lines the two builds break differently (resegmented_closure.csv),
+# which also changes downstream-barrier flags on segments of other lines.
 cmp_dir <- "data-raw/logs/study_area_run"
 c_old <- read.csv(file.path(cmp_dir, "20261017_093603_compare.csv"))
 c_new <- read.csv(file.path(cmp_dir, compare_new))

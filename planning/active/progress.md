@@ -14,3 +14,6 @@
   body gained the measurement. Logs and `moves.R` in `data-raw/logs/parity_0.66.6/`.
 - Phase 3: TURN BT not scorable (bcfishpass has no TURN / UKEC streams); evidence in `turn_bt.txt`.
 - Phase 4: `research/bcfishpass_parity.md` created; README, access_columns, study_area_run and CLAUDE.md point at it.
+- `/code-check branch`: four rounds. r1 6 findings (claims + a start-only segment join), r2 3 (the
+  crossing-pick tie as the mechanism, scope, empty `IN ()`), r3 enumeration with 3 wrong claims
+  + 1 guard, r4 enumeration of the r3 fix with 1 lost phrase, 1 extent, 1 guard. All fixed.
