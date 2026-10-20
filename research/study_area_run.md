@@ -237,14 +237,14 @@ cloud hosts, `--refresh-primitives`, link `ee21eb13`. Both verifiers pass at
 - **The recompute is now the long pole after modelling.** It scales with run
   groups (above), at 2.0 min median per group at this scope. #274 (narrow the
   set) and #250's `-j` are the levers.
-- **Hosts against wall clock (estimate, 2026-10-20, not measured).** From this run: modelling
-  about 880 host-minutes (171 + 207 + 277 + ~225), hosts at about one speed; consolidate 46 min
-  for three cloud hosts carrying ~3/4 of the groups, so assumed to grow with the cloud share
-  (~61 min for all); recompute 154 min, fixed on the dispatcher; spin and prep ~15 min. With k
-  cloud hosts: ~15 + 880/(k+1) + 61k/(k+1) + 154 min, i.e. k = 3 ~7.3 h, 5 ~6.1 h, 7 ~5.5 h,
-  11 ~5.0 h, never below ~4 h. Past about seven cloud hosts each adds under 15 min; the recompute
-  (#250, #274) is the larger lever. Unchecked before a bigger run: workspaces past job1-job3,
-  the account's droplet limit, dispatcher disk.
+- **Hosts against wall clock (2026-10-20, from this run's log rows).** Modelling is 873
+  host-minutes (`log`, newest row per group; longest group SETN 16.5 min), but a host takes whole
+  drainage components (`study_area_buckets.R`), and the Fraser component alone is 205 min (68
+  groups). So modelling cannot finish before ~205 min however many hosts: the other 668 min fill
+  it at four cloud hosts, and a fifth buys nothing. Recompute: 596 min summed, longest group
+  16.2 min, 154 min at `-j4` on the dispatcher (near-linear). The remaining levers are the
+  recompute (more workers, a second machine as a client of the dispatcher's database, #274's
+  smaller set) and splitting a component across hosts, which the closure rule forbids today.
 - **What went wrong:** the completeness check missed 18 finished groups whose
   `done` marker an R warning had pushed mid-line (#347), and would have burned
   their only copy. Two groups failed on bugs fixed in `a17e9177` (a duplicate
