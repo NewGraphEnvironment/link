@@ -13,3 +13,4 @@
 - Phase 2: scored 48/50 PASS; every move explained (gate settle, or #277 for ADMS CH); #277's
   body gained the measurement. Logs and `moves.R` in `data-raw/logs/parity_0.66.6/`.
 - Phase 3: TURN BT not scorable (bcfishpass has no TURN / UKEC streams); evidence in `turn_bt.txt`.
+- Phase 4: `research/bcfishpass_parity.md` created; README, access_columns, study_area_run and CLAUDE.md point at it.

@@ -62,10 +62,10 @@
 
 ## Phase 4: One parity record
 
-- [ ] Create `research/bcfishpass_parity.md`: provenance line; current result table (50 pairs); what moved since 2026-10-17 and why; the five annotated UNEXPLAINED rows carried forward; TURN; the dated files listed as history (not renamed)
-- [ ] `research/README.md`: list it first under "Methodology and parity" as the current parity record
-- [ ] `CLAUDE.md` status: replace the "parity was not run on this change" bullet with the result and a pointer; `research/study_area_run.md`'s parity bullet points at the new file
-- [ ] `research/access_columns.md` "What it should do to bcfishpass parity": add the measured result
+- [x] Create `research/bcfishpass_parity.md`: provenance line; current result table (50 pairs); what moved since 2026-10-17 and why; the five annotated UNEXPLAINED rows carried forward; TURN; the dated files listed as history (not renamed)
+- [x] `research/README.md`: list it first under "Methodology and parity" as the current parity record
+- [x] `CLAUDE.md` status: replace the "parity was not run on this change" bullet with the result and a pointer; `research/study_area_run.md`'s parity bullet points at the new file
+- [x] `research/access_columns.md` "What it should do to bcfishpass parity": add the measured result
 
 ## Owed at the end (reported, done after merge)
 

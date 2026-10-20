@@ -114,7 +114,13 @@ the Peace rows that block CARP.
 
 ## What it should do to bcfishpass parity
 
-Not measured on a build at this change. On `fresh_parity246` (the `bcfishpass`-config parity
+**Measured 2026-10-20 (#362): as predicted.** Re-built at v0.66.6 into `fresh_parity362` and
+scored against the same reference, the four groups stay at 48/50, accessible km does not move,
+and BT rearing falls by the 0.3 / 0.3 / 0.6 km below; the gate removes a further 0.002–0.043 km
+from ten pairs. TURN cannot be scored: bcfishpass does not model TURN or UKEC. Record:
+`bcfishpass_parity.md`.
+
+The prediction, as written before that build: on `fresh_parity246` (the `bcfishpass`-config parity
 build of 2026-10-17, before #349) the segments the gate would settle (`accessible` and
 `access_<sp>` = 0) carry 0 km of spawning in every scored pair and at most 0.6 km of rearing
 (BT: BULK 0.3, BABL 0.3, ELKR 0.6 km), against 300-3,000 km per pair; accessible km reads
