@@ -51,10 +51,10 @@
 
 ## Phase 2: Score and explain every move
 
-- [ ] `LNK_LOAD=loadall LNK_SCHEMA=fresh_parity362 LNK_CONFIG=bcfishpass LNK_PARITY_OUT=data-raw/logs/parity_0.66.6/parity_annotated.csv Rscript data-raw/parity_crosssection.R ADMS BULK BABL ELKR` → `parity_crosssection.log`
-- [ ] `pair_moves.csv`: every pair joined to `provincial_246/parity_annotated.csv` (link value, bcfp value, diff_pct before / after, km change)
-- [ ] For any pair moving beyond rounding (0.1 km): a segment diff `fresh_parity246` vs `fresh_parity362` on the full key, classed as gate settle (`access_<sp>` = 0) / lift change / other; the SQL committed beside the logs
-- [ ] An unexplained move is filed as an issue (body reviewed first), not left in prose
+- [x] `LNK_LOAD=loadall LNK_SCHEMA=fresh_parity362 LNK_CONFIG=bcfishpass LNK_PARITY_OUT=data-raw/logs/parity_0.66.6/parity_annotated.csv Rscript data-raw/parity_crosssection.R ADMS BULK BABL ELKR` → `parity_crosssection.log`
+- [x] `pair_moves.csv`: every pair joined to `provincial_246/parity_annotated.csv` (link value, bcfp value, diff_pct before / after, km change)
+- [x] For any pair moving beyond rounding (0.1 km): a segment diff `fresh_parity246` vs `fresh_parity362` on the full key, classed as gate settle (`access_<sp>` = 0) / lift change / other; the SQL committed beside the logs (`moves.R`, plus an override-position diff and the 17-group mapping_code compare, review findings 1 and 3; segments in one build only reported separately, `resegmented.csv`)
+- [x] An unexplained move is filed as an issue (body reviewed first), not left in prose: none unexplained; ADMS CH is a measured instance of #277, added to its body
 
 ## Phase 3: TURN BT
 

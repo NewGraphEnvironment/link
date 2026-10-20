@@ -1,0 +1,69 @@
+
+annotated 50 rows -> data-raw/logs/parity_0.66.6/parity_annotated.csv (5 UNEXPLAINED)
+
+============ accessible + spawn + rear parity (link fresh_parity362 vs bcfp, tunnel-free) ============
+  wsg  sp     metric   link   bcfp diff_pct    ok
+ ADMS  BT accessible 1230.4 1230.3     0.01  TRUE
+ ADMS  BT   spawning  367.0  361.7     1.45  TRUE
+ ADMS  BT    rearing  609.0  608.3     0.12  TRUE
+ ADMS  CO accessible  788.4  787.9     0.07  TRUE
+ ADMS  CO   spawning  312.3  311.0     0.42  TRUE
+ ADMS  CO    rearing  352.6  351.2     0.39  TRUE
+ ADMS  CH accessible  788.4  787.9     0.07  TRUE
+ ADMS  CH   spawning  278.1  277.6     0.19  TRUE
+ ADMS  CH    rearing  309.4  308.2     0.37  TRUE
+ ADMS  SK accessible  788.4  787.9     0.07  TRUE
+ ADMS  SK   spawning   86.6   85.7     1.09  TRUE
+ ADMS  SK    rearing   70.8   70.8     0.00  TRUE
+ BULK  BT accessible 7676.5 7676.4     0.00  TRUE
+ BULK  BT   spawning 1866.3 1848.0     0.99  TRUE
+ BULK  BT    rearing 3007.9 3048.6    -1.34  TRUE
+ BULK  ST accessible 6462.9 6462.7     0.00  TRUE
+ BULK  ST   spawning 1287.6 1279.9     0.60  TRUE
+ BULK  ST    rearing 2230.7 2241.9    -0.50  TRUE
+ BULK  CO accessible 5089.6 5088.0     0.03  TRUE
+ BULK  CO   spawning 1782.1 1768.3     0.78  TRUE
+ BULK  CO    rearing 2215.6 2217.3    -0.08  TRUE
+ BULK  CH accessible 5089.6 5088.0     0.03  TRUE
+ BULK  CH   spawning 1260.2 1252.0     0.66  TRUE
+ BULK  CH    rearing 1730.1 1738.2    -0.46  TRUE
+ BULK  PK accessible 5089.6 5088.0     0.03  TRUE
+ BULK  PK   spawning 1854.4 1850.0     0.24  TRUE
+ BULK  SK accessible 5089.6 5088.0     0.03  TRUE
+ BULK  SK   spawning   27.1   24.4    10.99 FALSE
+ BULK  SK    rearing   26.7   24.9     7.39 FALSE
+ BABL  BT accessible 6855.5 6855.4     0.00  TRUE
+ BABL  BT   spawning  899.1  890.1     1.01  TRUE
+ BABL  BT    rearing 2076.6 2107.3    -1.45  TRUE
+ BABL  ST accessible 5955.6 5955.6     0.00  TRUE
+ BABL  ST   spawning  352.6  349.3     0.93  TRUE
+ BABL  ST    rearing  897.8  916.6    -2.05  TRUE
+ BABL  CO accessible 5063.8 5063.6     0.00  TRUE
+ BABL  CO   spawning  810.9  805.1     0.71  TRUE
+ BABL  CO    rearing 1281.6 1287.0    -0.42  TRUE
+ BABL  CH accessible 5063.8 5063.6     0.00  TRUE
+ BABL  CH   spawning  352.1  348.8     0.93  TRUE
+ BABL  CH    rearing  695.5  713.0    -2.44  TRUE
+ BABL  SK accessible 5063.8 5063.6     0.00  TRUE
+ BABL  SK   spawning   57.2   56.3     1.65  TRUE
+ BABL  SK    rearing  299.9  299.9     0.00  TRUE
+ ELKR  BT accessible 4208.1 4207.2     0.02  TRUE
+ ELKR  BT   spawning 1526.6 1497.5     1.95  TRUE
+ ELKR  BT    rearing 2105.2 2104.1     0.05  TRUE
+ ELKR WCT accessible 3683.4 3685.2    -0.05  TRUE
+ ELKR WCT   spawning 1568.0 1517.6     3.33  TRUE
+ ELKR WCT    rearing 1900.9 1854.6     2.50  TRUE
+
+==== summary by metric (accessible tol 1 %, habitat tol 5 %) ====
+  accessible : 17 pairs / 4 WSGs / 7 species, max |diff|  0.07%, within-tol 17/17
+  spawning   : 17 pairs / 4 WSGs / 7 species, max |diff| 10.99%, within-tol 16/17  OVER: BULK/SK +11.0% (parked)
+  rearing    : 16 pairs / 4 WSGs / 6 species, max |diff|  7.39%, within-tol 15/16  OVER: BULK/SK +7.4% (parked)
+
+  link-absent (bcfp models species, bcfishpass does not model it in the group; excluded):
+    ADMS CM accessible (bcfp 788, link 0.0) 
+    ADMS PK accessible (bcfp 788, link 0.0) 
+    BULK CM accessible (bcfp 5088, link 0.0) 
+    BABL CM accessible (bcfp 5064, link 0.0) 
+    BABL PK accessible (bcfp 5064, link 0.0) 
+
+OVERALL: 48/50 parity pairs within tolerance (2 over: 0 accessible, 0 habitat non-parked)  — PASS

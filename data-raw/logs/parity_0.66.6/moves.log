@@ -1,0 +1,147 @@
+   wsg n_246    m_246 n_362    m_362
+1 ADMS 39424  5475778 39423  5475778
+2 BABL 45789 11547752 45789 11547752
+3 BULK 87641 14642214 87641 14642214
+4 ELKR 83359 12486918 83359 12486918
+segments in one build only: 15 (ADMS, BULK, ELKR)
+override positions: 4740 before, 4750 after; 10 added, 0 lost
+  wsg species total_segs_20261017 match_pct_20261017 n_diffs_20261017
+ ADMS      CH               15748              99.90               15
+ ADMS      CO               15748              99.75               39
+ ADMS      SK               15748              99.18              129
+ BABL      BT               32230              99.58              134
+ BABR      BT               28558              99.46              154
+ BABR      CO               28558              99.75               72
+ BABR      ST               28558              99.83               49
+ BULK      PK               42940              99.83               71
+ BULL      BT               20210              99.60               81
+ ELKR     WCT               38132              98.01              757
+ FRCN      BT               29341              99.50              146
+ FRCN      CH               29341              99.61              114
+ FRCN      CM               29341              99.90               29
+ FRCN      CO               29341              99.82               54
+ FRCN      PK               29341              99.86               40
+ FRCN      ST               29341              99.71               86
+ HARR      BT               17869              99.32              121
+ HARR      CH               17869              99.89               19
+ HARR      CO               17869              99.51               87
+ HARR      SK               17869              99.71               51
+ KLUM      BT               31575              99.53              149
+ KLUM      CH               31575              99.88               37
+ KLUM      CM               31575              99.97                9
+ KLUM      CO               31575              99.69               98
+ KLUM      ST               31575              99.81               60
+ KOTL      BT               38564              99.38              239
+ KOTL     WCT               38564              99.26              287
+ LARL      BT               34563              98.39              558
+ LARL     WCT               34563              99.08              317
+ LFRA      BT               27391              97.85              588
+ LFRA      CH               27391              99.59              111
+ LFRA      CM               27391              99.49              140
+ LFRA      CO               27391              98.03              540
+ LFRA      PK               27391              99.72               77
+ LFRA      SK               27391              99.43              155
+ LFRA      ST               27391              99.43              156
+ LSKE      BT               37789              99.44              211
+ LSKE      CH               37789              99.80               77
+ LSKE      CM               37789              99.70              114
+ LSKE      CO               37789              99.56              166
+ LSKE      ST               37789              99.79               79
+ MSKE      CH               29996              99.60              121
+ MSKE      CO               29996              99.55              134
+ MSKE      ST               29996              99.42              174
+ STHM      BT               20689              99.81               40
+ STHM      CH               20689              99.93               14
+ STHM      CO               20689              99.92               16
+ STHM      PK               20689              99.99                2
+ THOM      BT               24372              99.85               36
+ THOM      PK               24372              99.99                2
+ THOM      ST               24372              99.96                9
+ total_segs_0.66.6 match_pct_0.66.6 n_diffs_0.66.6 match_pct_change
+             15747            99.91             14             0.01
+             15747            99.77             36             0.02
+             15747            99.19            128             0.01
+             32230            99.59            132             0.01
+             28557            99.47            152             0.01
+             28557            99.76             68             0.01
+             28557            99.84             47             0.01
+             42940            99.84             70             0.01
+             20212            99.62             77             0.02
+             38130            98.02            754             0.01
+             29341            99.51            145             0.01
+             29341            99.62            112             0.01
+             29341            99.91             26             0.01
+             29341            99.83             51             0.01
+             29341            99.87             37             0.01
+             29341            99.72             83             0.01
+             17868            99.35            116             0.03
+             17868            99.90             18             0.01
+             17868            99.50             89            -0.01
+             17868            99.72             50             0.01
+             31574            99.54            145             0.01
+             31574            99.89             34             0.01
+             31574            99.98              7             0.01
+             31574            99.70             94             0.01
+             31574            99.82             57             0.01
+             38564            99.32            261            -0.06
+             38564            99.20            309            -0.06
+             34560            98.40            554             0.01
+             34560            99.09            316             0.01
+             27395            97.90            576             0.05
+             27395            99.61            108             0.02
+             27395            99.50            136             0.01
+             27395            98.05            535             0.02
+             27395            99.73             73             0.01
+             27395            99.44            153             0.01
+             27395            99.44            153             0.01
+             37790            99.46            205             0.02
+             37790            99.84             62             0.04
+             37790            99.71            110             0.01
+             37790            99.59            155             0.03
+             37790            99.81             73             0.02
+             29996            99.61            117             0.01
+             29996            99.57            129             0.02
+             29996            99.43            172             0.01
+             20689            99.85             32             0.04
+             20689            99.94             13             0.01
+             20689            99.93             15             0.01
+             20689           100.00              1             0.01
+             24372            99.88             30             0.03
+             24372           100.00              1             0.01
+             24372            99.97              8             0.01
+  wsg species habitat_type link_value_20261017 link_value_0.66.6 link_km_change
+ ADMS      CH      rearing               309.2             309.4            0.2
+ BABL      BT      rearing              2076.9            2076.6           -0.3
+ BULK      BT      rearing              3008.2            3007.9           -0.3
+ ELKR      BT      rearing              2105.8            2105.2           -0.6
+ diff_pct_20261017 diff_pct_0.66.6
+              0.31            0.37
+             -1.44           -1.45
+             -1.33           -1.34
+              0.08            0.05
+  wsg species       cause accessible_km spawning_lost_km spawning_gained_km
+ ADMS      BT       other            NA            0.009              0.049
+ ADMS      CO gate_settle            NA            0.011                 NA
+ ADMS      CO       other            NA            0.009              0.049
+ ADMS      CH       other            NA               NA                 NA
+ ADMS      SK gate_settle            NA            0.011                 NA
+ BULK      BT gate_settle            NA               NA                 NA
+ BULK      CO gate_settle            NA            0.002                 NA
+ BULK      PK gate_settle            NA            0.002                 NA
+ BABL      BT gate_settle            NA               NA                 NA
+ BABL      CO gate_settle            NA            0.030                 NA
+ ELKR      BT gate_settle            NA               NA                 NA
+ ELKR     WCT gate_settle            NA            0.022                 NA
+ rearing_lost_km rearing_gained_km n_segments
+              NA                NA          2
+           0.043                NA          3
+           0.009             0.049          2
+              NA             0.168          1
+              NA                NA          1
+           0.269                NA          2
+           0.002                NA          1
+              NA                NA          1
+           0.325                NA          2
+           0.030                NA          1
+           0.633                NA          2
+           0.041                NA          2
