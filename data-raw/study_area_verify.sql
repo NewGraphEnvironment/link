@@ -397,7 +397,9 @@ BEGIN
 
   -- Modelled but not recomputed. THE check link#262 exists for: these WSGs'
   -- streams_access and streams_mapping_code still hold pre-consolidate values,
-  -- so cross-WSG access -- hence token1/token2 and ;DAM -- is wrong for them.
+  -- so cross-WSG access -- hence token1/token2 and ;DAM -- is wrong for them,
+  -- and their habitat was never settled on access (the model leg runs with
+  -- LNK_HABITAT_GATE=0, link#349).
   -- Bad output, not missing output: every other check on this page passes.
   EXECUTE format(
     'SELECT count(*), coalesce(string_agg(wsg, '','' ORDER BY wsg), '''')

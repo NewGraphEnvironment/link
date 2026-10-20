@@ -270,6 +270,27 @@ contract agree with the new one only by accident. Three findings, all real, all 
 3. "Any build at or after #349 is settled" was false for a dispatch group whose recompute never ran
    (its model leg is gate-off): research file and export schema notes corrected.
 
+### Enumeration that ends the review loop (the round-3 mechanism)
+
+Candidate set: every file that names the recompute (`wsg_recompute_one`, `--recompute-only`,
+`lnk_access(… merge`) and every sentence listing what it writes, by grep over R/, data-raw/ (logs
+excluded), RUNBOOK.md, CLAUDE.md and research/: 18 files, 7 sentences.
+- New in this branch, consistent: `lnk_habitat_gate.R`, `lnk_mapping_code.R`, `wsg_recompute_one.R`,
+  `habitat_variants_build.R`, `research/access_columns.md`, CLAUDE.md.
+- Still true as written: `lnk_access.R` (merge mode reads persisted streams and habitat),
+  `lnk_wsg_downstream_check.R` (error-mode remedy), `barriers_views_build.R`, `study_area_run.sh`
+  and `study_area_hosts.sh` (invocation only; re-running the recompute is idempotent, parity A == B),
+  `lnk_compare_wsg.R:187`, `lnk_scenario_export.R:334` (updated in Phase 5).
+- Updated now: `lnk_log_read()`'s `phase` doc, `study_area_verify.sql`'s modelled-not-recomputed
+  comment, `study_area_finish.sh`'s recompute-failed echo, RUNBOOK §6c's first sentence (each now
+  says the recompute settles habitat, or that an unrecomputed group's habitat is unsettled), and
+  `recompute_sweep.sh`'s header (its passes settle habitat unlogged).
+- Fixed in round 3: `recompute_parity.sh`, `recompute_checksum.sql`, `study_area_verify.sql`.
+- Historical, dated, left as they were: `research/recompute_parallel_2026_09_01.md`,
+  `research/study_area_run.md`.
+Nothing in the set still asserts the recompute writes only access and mapping codes, or that a
+recompute repairs model-time habitat.
+
 ## Errors Encountered
 
 | Error | Resolution |

@@ -630,7 +630,7 @@ This is the same trap `LNK_GUARD_DOWNSTREAM` hit in §8c.
 ### `<schema>.log_recompute`
 
 `data-raw/wsg_recompute_one.R` rewrites `streams_access` and
-`streams_mapping_code` — **the values that ship** — and until #262 recorded
+`streams_mapping_code` and settles `streams_habitat_<sp>` (link#349) — **the values that ship** — and until #262 recorded
 nothing, so `log` said when a WSG was *modelled* and nothing about when its
 persisted access last *changed*.
 

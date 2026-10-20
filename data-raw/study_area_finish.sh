@@ -696,7 +696,8 @@ run_finish_report() {
       echo "  The post-consolidate recompute did not complete for every WSG."
       echo "  Those WSGs' streams_access / streams_mapping_code still hold their"
       echo "  PRE-consolidate values, so cross-WSG access — hence token1/token2"
-      echo "  and ;DAM — is WRONG for them. This is bad output, not missing"
+      echo "  and ;DAM — is WRONG for them, and their habitat was never settled"
+      echo "  on access (the model leg runs ungated). This is bad output, not missing"
       echo "  output: the compare CSV above will look complete."
       if [ "${RECOMPUTE_FAIL_STAGE:-pool}" = "logtables" ]; then
         echo "  The provenance log tables could not be created, so NO WSG was"

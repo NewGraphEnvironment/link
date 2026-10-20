@@ -611,7 +611,8 @@ cols_log_input <- c(
 #'   one row per [lnk_pipeline_run()] call. `"recompute"` reads
 #'   `<schema>.log_recompute`, one row per `wsg_recompute_one.R` invocation —
 #'   the post-consolidate pass that rewrites `streams_access` and
-#'   `streams_mapping_code`, which is the output that ships.
+#'   `streams_mapping_code` and settles `streams_habitat_<sp>` on the new
+#'   access (link#349), which is the output that ships.
 #' @return A tibble, newest first.
 #' @family compare
 #' @export
