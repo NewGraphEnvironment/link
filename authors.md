@@ -17,7 +17,7 @@ Source:
 
 Irvine A (2026). *link: Develop, Test and Communicate Intrinsic Habitat
 and Connectivity Models for the BC Freshwater Atlas Stream Network*. New
-Graph Environment Ltd. Version 0.66.5,
+Graph Environment Ltd. Version 0.66.6,
 <https://github.com/NewGraphEnvironment/link>.
 
     @Manual{link,
@@ -25,7 +25,7 @@ Graph Environment Ltd. Version 0.66.5,
       author = {Allan Irvine},
       organization = {New Graph Environment Ltd.},
       year = {2026},
-      version = {0.66.5},
-      note = {Version 0.66.5},
+      version = {0.66.6},
+      note = {Version 0.66.6},
       url = {https://github.com/NewGraphEnvironment/link},
     }

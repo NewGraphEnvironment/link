@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.66.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.66.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,18 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.66.6" id="link-0666">link 0.66.6<a class="anchor" aria-label="anchor" href="#link-0666"></a></h2>
+<p><strong>The persisted habitat flags follow <code>streams_access</code>, and barrier lifts count every group’s observations</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/349" class="external-link">#349</a>, <a href="https://github.com/NewGraphEnvironment/link/issues/336" class="external-link">#336</a>).</p>
+<ul><li>
+<strong><code><a href="../reference/lnk_habitat_gate.html">lnk_habitat_gate()</a></code></strong> (new): where <code>access_&lt;sp&gt;</code> = 0, <code>accessible</code>, <code>spawning</code>, <code>rearing</code>, <code>lake_rearing</code> and <code>wetland_rearing</code> go FALSE in the persisted <code>streams_habitat_&lt;sp&gt;</code>; rows <code>user_habitat_classification</code> marks keep spawning and rearing. It runs in <code><a href="../reference/lnk_pipeline_run.html">lnk_pipeline_run()</a></code> after the second persist (new argument <code>habitat_gate = TRUE</code>; mapping codes are now built from persist after it), and after <code>lnk_access(merge = TRUE)</code> in the recompute. Counts land on <code>log</code> / <code>log_recompute</code> (<code>habitat_gate_*</code>).</li>
+<li>
+<strong>The gate is one-way.</strong> A later recompute that lifts a settled segment cannot restore its habitat; it counts it (<code>habitat_gate_lifted</code>) and <code>study_area_verify.sql</code> fails on it. So <code>study_area_run.sh</code> models with <code>LNK_HABITAT_GATE=0</code> and lets the recompute settle every group. <code>study_area_verify.sql</code> also fails on any <code>accessible</code> segment whose <code>access_&lt;sp&gt;</code> is 0.</li>
+<li>
+<strong>Barrier lifts count observations from every group</strong> (<code>&lt;schema&gt;.observations_province</code>, each record kept by its own group’s species presence), as bcfishpass does. Each species’ rule (which species count, how many, from what date) is unchanged. <code>default</code>’s RB row gains an observation rule (one RB record, any date, no control veto), so <code>default</code>’s <code>config_hash</code> changes.</li>
+<li>
+<strong>Existing schemas are not settled until rebuilt.</strong> <code>fresh_default</code> fails the new verify check until a full re-model; re-model before re-gating, never the reverse (RUNBOOK §3). Write-up: <code>research/access_columns.md</code>.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.66.5" id="link-0665">link 0.66.5<a class="anchor" aria-label="anchor" href="#link-0665"></a></h2>
 <p><strong><code>study_area_run.sh</code> records which groups a run was running, and a refused consolidate source no longer stops the run</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/358" class="external-link">#358</a>).</p>
