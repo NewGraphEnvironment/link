@@ -76,6 +76,7 @@ sibling.
 ## See also
 
 Other pipeline:
+[`lnk_habitat_gate()`](https://newgraphenvironment.github.io/link/reference/lnk_habitat_gate.md),
 [`lnk_pipeline_access()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_access.md),
 [`lnk_pipeline_break()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_break.md),
 [`lnk_pipeline_classify()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_classify.md),

@@ -54,7 +54,8 @@ lnk_log_read(
   [`lnk_pipeline_run()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_run.md)
   call. `"recompute"` reads `<schema>.log_recompute`, one row per
   `wsg_recompute_one.R` invocation — the post-consolidate pass that
-  rewrites `streams_access` and `streams_mapping_code`, which is the
+  rewrites `streams_access` and `streams_mapping_code` and settles
+  `streams_habitat_<sp>` on the new access (link#349), which is the
   output that ships.
 
 ## Value

@@ -58,9 +58,9 @@ or AOI.
     per-WSG pipeline (lnk_pipeline_run, working schema working_<aoi>)
       setup → load → prepare → crossings → barriers_unify → break → classify
             → connect → species → persist_init → persist
-                                                      │
-       with mapping_code = TRUE, an extra phase runs before persist:
-            barriers_views → pipeline_access → mapping_code
+            → barriers_views → pipeline_access → persist (adds streams_access)
+            → habitat_gate (settles persisted habitat on access, link#349)
+            → mapping_code (with mapping_code = TRUE; read from persist)
                                                       │
                                                       ▼
        persist (province-wide <persist_schema>, e.g. fresh_default)
@@ -168,6 +168,73 @@ The output flag columns
 (`has_barriers_{anthropogenic,pscis,dams,remediations}_dnstr`,
 `dam_dnstr_ind`, `remediated_dnstr_ind`) MUST be persisted — see §6
 gotcha.
+
+### `accessible` is settled from `streams_access` (link#349)
+
+Two columns answer “is this segment accessible to ”, and they used to
+disagree: `streams_habitat_<sp>.accessible` is fresh’s, computed in
+`frs_habitat_classify()` and gating `spawning` / `rearing` /
+`lake_rearing` / `wetland_rearing` there; `streams_access.access_<sp>`
+(and `has_barriers_<sp>_dnstr`) is link’s, built by this section’s
+[`lnk_pipeline_access()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_access.md).
+**`access_<sp>` is authoritative.** On `fresh_default` (241 groups)
+fresh said accessible where link said blocked on 1.6–3.5 % of most
+species’ accessible segments, 17 % of RB’s and 90 % of KO’s, for four
+reasons (`data-raw/access_disagree_349.R`,
+`research/access_columns.md`):
+
+|  | mechanism | fixed by |
+|----|----|----|
+| A | fresh’s breaks are rounded to the metre (`.lnk_pipeline_classify_build_breaks()`); a gradient barrier mm below a segment start lands above it, and fresh’s `b.drm <= s.drm` misses it | the gate |
+| A′ | a barrier 0–5 mm *above* the start: link’s `fwa_downstream(…, 1)` blocks by the barrier’s ltree, fresh’s exact `<=` never | the gate |
+| B | fresh’s breaks are filtered to the group; a blocking barrier downstream in another group is invisible to it | the gate |
+| C | lifts counted only the group’s own observations (§5), so barriers on lines several groups share stayed un-lifted (the Peace dam faces for RB, KO, and BT above UKEC) | province-wide counting (§5), plus an RB rule in `default` |
+
+**The gate,
+[`lnk_habitat_gate()`](https://newgraphenvironment.github.io/link/reference/lnk_habitat_gate.md)**:
+where `access_<sp>` = 0, the five flags go FALSE on the **persist**
+per-species tables; rows `user_habitat_classification` marks keep
+`spawning` / `rearing` (known habitat, as `frs_habitat_overlay()` forces
+it), `accessible` still goes FALSE. It runs in
+[`lnk_pipeline_run()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_run.md)
+after the second persist (so mapping codes are built from persist after
+it), in `wsg_recompute_one.R` after `lnk_access(merge = TRUE)`, and in
+`habitat_variants_build.R`’s recompute and variant persists. Counts land
+on `log` / `log_recompute` (`habitat_gate_{n,km,lifted,species}`), and
+`study_area_verify.sql` raises if any run group holds
+`accessible AND access_<sp> = 0`.
+
+- **Never on the working tables.** `habitat_variants_build.R` digests
+  `working_<wsg>.streams_habitat` after a run and asserts classify +
+  connect reproduce it.
+- **One-way.** `lnk_access(merge = TRUE)` can lift a segment (0 → 1),
+  and the gate cannot give its habitat back: only a re-model of the
+  group does. The recompute snapshots access first and counts such
+  segments as `habitat_gate_lifted`; `wsg_recompute_one.R` prints “need
+  a re-model” when it is non-zero.
+- **On a dispatch the model leg does not gate.** `study_area_run.sh`
+  exports `LNK_HABITAT_GATE=0` on both legs
+  (`lnk_pipeline_run(habitat_gate = FALSE)`): a group modelled on one
+  host reads other hosts’ barriers and overrides as that host holds
+  them, possibly a previous run’s, and a one-way gate there would blank
+  habitat the recompute then lifts. The recompute settles every group on
+  final access, and so does the re-model command §8d prints for a run’s
+  missing groups. A single-group `wsg_run_one.R` gates at model time; so
+  does the legacy `wsgs_dispatch.sh` path
+  ([`lnk_compare_wsg()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_wsg.md)),
+  which runs no recompute and settles on the access it ships.
+- **Schemas built before it are unsettled.** A recompute settles one
+  (`bash data-raw/study_area_run.sh --recompute-only --run-uid=<uid> --config=<config> --schema=<schema>`,
+  §8d), but re-model first, then gate: a re-gate settles on today’s
+  access, and a later re-model of a barrier-holding group (the
+  province-wide lifts, the RB rule) lifts segments upstream whose
+  habitat the re-gate already blanked; only re-modelling each of those
+  groups restores it. `study_area_verify.sql` fails on such a group (the
+  newest recompute’s `habitat_gate_lifted`).
+- A and A′ could be fixed at classify time with a tolerance on fresh’s
+  predicate and its override match plus dropping link’s rounding in
+  prepare and classify together (drafted follow-up). The gate stays
+  either way: B cannot be seen at classify time on a multi-host run.
 
 ------------------------------------------------------------------------
 
@@ -371,6 +438,25 @@ allows — is the abstract-system direction. Not yet scoped; candidate
 issue.
 
 ------------------------------------------------------------------------
+
+### Observation lifts count province-wide (link#349)
+
+bcfishpass counts a barrier’s upstream observations over **every**
+group’s records (`bcfishpass.observations`, each kept by its own group’s
+presence; `smnorris/bcfishpass@620dbe4` `load_observations.sql` +
+`model_access_bt.sql`). link counted only the AOI’s
+(`<schema>.observations`), so a barrier on a line several groups share,
+persisted under each (the Peace rows sit under FINA, LPCE, PCEA and
+UPCE), was lifted only if one holding group had enough records *inside
+itself*. Since \#349 `.lnk_pipeline_prep_observations()` also builds
+`<schema>.observations_province` (every group’s records by its own
+presence, minus exclusions, GiST on the ltrees) and
+[`lnk_barrier_overrides()`](https://newgraphenvironment.github.io/link/reference/lnk_barrier_overrides.md)
+counts over it. `<schema>.observations` stays AOI-scoped for the
+observation break source and access code 2. Cost: ~4 s per group to
+build both tables, no change to the override step (DUNC, CARP).
+`default`’s RB row gained BT’s resident rule (one RB record, no date
+floor); before it RB had no rule and nothing lifted for it.
 
 ## 6. Gotchas that have cost real time
 
@@ -626,9 +712,10 @@ same trap `LNK_GUARD_DOWNSTREAM` hit in §8c.
 ### `<schema>.log_recompute`
 
 `data-raw/wsg_recompute_one.R` rewrites `streams_access` and
-`streams_mapping_code` — **the values that ship** — and until \#262
-recorded nothing, so `log` said when a WSG was *modelled* and nothing
-about when its persisted access last *changed*.
+`streams_mapping_code` and settles `streams_habitat_<sp>` (link#349) —
+**the values that ship** — and until \#262 recorded nothing, so `log`
+said when a WSG was *modelled* and nothing about when its persisted
+access last *changed*.
 
 Its own table, not a `phase` column on `log`, because a recompute row in
 `log` would win
@@ -661,6 +748,17 @@ populated *after* consolidate, and consolidate leaves the log tables out
 of its bucket DELETE: their rows are replaced by primary key, in one
 transaction per table (link#354). Before \#354 a re-consolidate over the
 same bucket wiped them.
+
+**The recompute also settles habitat (link#349).** Between
+`lnk_access(merge = TRUE)` and the mapping-code rebuild,
+`wsg_recompute_one.R` runs
+[`lnk_habitat_gate()`](https://newgraphenvironment.github.io/link/reference/lnk_habitat_gate.md)
+on the group’s persisted habitat (§3), after copying the group’s
+`access_<sp>` to `<persist>.zz_lnk_access_prior_<wsg>` so it can count
+segments the recompute lifted while their habitat stays FALSE. Mapping
+codes are then built by `.lnk_mapping_code_persist()`, the same helper
+[`lnk_pipeline_run()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_run.md)
+uses.
 
 ### The bcfp reference pin, tunnel-free
 
@@ -770,23 +868,13 @@ like:**
 - **`accessible` is fresh’s classification flag; `has_barriers_dnstr` is
   link’s `streams_access`** (what mapping_code and
   [`lnk_rollup_wsg()`](https://newgraphenvironment.github.io/link/reference/lnk_rollup_wsg.md)’s
-  `accessible_km` read). The export carries both because they disagree,
-  for two reasons:
-  - **Different barrier sets near gradient barriers.** Measured on DUNC
-    BT (2026-10-14, and the same on the 241-group build, 2026-10-19):
-    229 segments (85 km) flagged accessible with `access_bt` 0, 228 of
-    them starting within 5 mm of a BT-blocking gradient barrier in
-    `<schema>.barriers`, never exactly on it. fresh’s access predicate
-    blocks a segment at a break
-    (`b.downstream_route_measure <= s.downstream_route_measure`), so
-    this is not a boundary convention: fresh’s breaks table holds no
-    BT-blocking break there. Across the pilot’s 150 config × species ×
-    group rows the flag runs 4,292 km over `accessible_km`. Which
-    barrier set is right is \#336, part of \#349.
-  - **The cross-group recompute** (`wsg_recompute_one.R`,
-    `lnk_access(merge = TRUE)`) rewrites `streams_access`, never
-    `streams_habitat_<sp>`, so a barrier in another group that arrived
-    after classification shows only in `has_barriers_dnstr`.
+  `accessible_km` read). Since \#349 the build settles the habitat flags
+  on link’s access (§3), so in a settled build every `accessible` row
+  has `has_barriers_dnstr` FALSE; the reverse still occurs (fresh
+  blocked a segment link calls accessible: at most ~1,000 segments per
+  species province-wide). A build from before \#349, or one whose
+  recompute has not re-run since, holds the old disagreement
+  (`research/access_columns.md`).
 - **`mad_m3s`** is read at export from the table the run classified on,
   with the run’s logged `discharge_fill`. It agrees with the flags while
   that table is unchanged.
@@ -1425,7 +1513,7 @@ and the recovery:
 
 ``` bash
 LNK_RUN_UID=<uid> [LNK_RUN_LABEL=<label>] LNK_SCHEMA=<schema> \
-  LNK_GUARD_DOWNSTREAM=warn LNK_LOAD=loadall \
+  LNK_GUARD_DOWNSTREAM=warn LNK_HABITAT_GATE=0 LNK_LOAD=loadall \
   Rscript data-raw/wsg_run_one.R <WSG> <config>          # each missing group
 bash data-raw/study_area_run.sh --recompute-only --run-uid=<uid> \
   --config=<config> --schema=<schema> [--run-label=<label>] [--wsgs=<the run's groups>]

@@ -17,6 +17,7 @@ lnk_pipeline_run(
   dams = TRUE,
   cleanup_working = TRUE,
   mapping_code = FALSE,
+  habitat_gate = TRUE,
   log = TRUE,
   run_uid = Sys.getenv("LNK_RUN_UID", NA_character_),
   run_label = Sys.getenv("LNK_RUN_LABEL", NA_character_),
@@ -66,7 +67,7 @@ lnk_pipeline_run(
 
 - mapping_code:
 
-  Logical. Gates only the mapping_code **token assembly** (phase 10b) —
+  Logical. Gates only the mapping_code **token assembly** (phase 13) —
   when `TRUE`,
   [`lnk_mapping_code()`](https://newgraphenvironment.github.io/link/reference/lnk_mapping_code.md)
   runs and `<persist_schema>.streams_mapping_code` is produced for the
@@ -77,6 +78,15 @@ lnk_pipeline_run(
   from pre-#187 compare_wsg: access uses link's own per-species barriers
   (via `blocks_species` predicate on `<schema>.barriers`), not bcfp's
   tunnel-staged tables.
+
+- habitat_gate:
+
+  Logical. When `TRUE` (default), settle the persisted habitat flags on
+  `streams_access` with
+  [`lnk_habitat_gate()`](https://newgraphenvironment.github.io/link/reference/lnk_habitat_gate.md)
+  (phase 12, link#349). `FALSE` keeps fresh's classify-time flags, for
+  measuring what the gate changes; the log row's `habitat_gate_*`
+  columns stay NULL.
 
 - log:
 
@@ -114,7 +124,8 @@ lnk_pipeline_run(
 ## Value
 
 `conn`, invisibly. Side effects are the writes into
-`<persist_schema>.streams`, `streams_habitat_<sp>`, and `barriers`.
+`<persist_schema>.streams`, `streams_habitat_<sp>` (settled on
+`streams_access`), `streams_access` and `barriers`.
 
 ## Details
 
@@ -173,16 +184,23 @@ rather than the comparison RDS artifact.
     [`lnk_pipeline_access()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_access.md)
     (writes working `streams_access`). Access is foundational —
     mapping_code depends on it — so it builds regardless of
-    `mapping_code`. See link#187, \#196. 10b. *Optional* mapping_code
-    token assembly — gated by `mapping_code = TRUE`.
-    [`lnk_mapping_code()`](https://newgraphenvironment.github.io/link/reference/lnk_mapping_code.md)
-    consumes `streams_access` + `streams_habitat` and writes working
-    `streams_mapping_code`.
+    `mapping_code`. See link#187, \#196.
 
 11. [`lnk_pipeline_persist()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_persist.md)
     — copy per-WSG streams + per-species habitat + barriers +
-    streams_access (+ optional streams_mapping_code) into
-    `<persist_schema>` (idempotent DELETE-WHERE-WSG + INSERT).
+    streams_access into `<persist_schema>` (idempotent
+    DELETE-WHERE-WSG + INSERT).
+
+12. [`lnk_habitat_gate()`](https://newgraphenvironment.github.io/link/reference/lnk_habitat_gate.md)
+    — settle the persisted habitat flags on `streams_access`: where
+    `access_<sp>` is 0, `accessible`, `spawning`, `rearing`,
+    `lake_rearing` and `wetland_rearing` go FALSE (link#349).
+
+13. *Optional* mapping_code token assembly — gated by
+    `mapping_code = TRUE`.
+    [`lnk_mapping_code()`](https://newgraphenvironment.github.io/link/reference/lnk_mapping_code.md)
+    reads the persisted `streams_access` and the settled habitat, and
+    writes `<persist_schema>.streams_mapping_code`.
 
 ## See also
 
@@ -192,6 +210,7 @@ rather than the comparison RDS artifact.
 [`lnk_pipeline_persist()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_persist.md)
 
 Other pipeline:
+[`lnk_habitat_gate()`](https://newgraphenvironment.github.io/link/reference/lnk_habitat_gate.md),
 [`lnk_pipeline_access()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_access.md),
 [`lnk_pipeline_break()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_break.md),
 [`lnk_pipeline_classify()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_classify.md),

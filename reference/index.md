@@ -79,6 +79,9 @@
 - [`lnk_fanout_judge()`](https://newgraphenvironment.github.io/link/reference/lnk_fanout_judge.md)
   : Judge the outcome of a parallel fan-out
 
+- [`lnk_habitat_gate()`](https://newgraphenvironment.github.io/link/reference/lnk_habitat_gate.md)
+  : Settle persisted habitat flags on link's access
+
 - [`lnk_habitat_validate()`](https://newgraphenvironment.github.io/link/reference/lnk_habitat_validate.md)
   : Validate modelled habitat against fish observations
 
