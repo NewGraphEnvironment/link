@@ -8,18 +8,21 @@
 #      resegmented_habitat.csv habitat km on the lines holding those segments, per build
 #   3. override_diff.csv barrier-override positions added or lost, across all holders
 #   4. mapping_code_moves.csv the driver's 17-group mapping_code compare, before / after
+#   5. resegmented_closure.csv segments in one build only, per group, over all 17 groups
 #
 # LNK_COMPARE_NEW names the new run's compare CSV under data-raw/logs/study_area_run/.
 # Segments are matched on (watershed_group_code, blue_line_key, downstream_route_measure),
 # unique within a persist schema, and must have the same length (within 1 mm). Segments
-# in one build only (a moved break, #277) are written to resegmented.csv and left out of
-# the segment diff.
+# in one build only (the two builds break the line in different places, #277) are written
+# to resegmented.csv and left out of the segment diff.
 # Run from the repo root:
 #   LNK_COMPARE_NEW=<TS>_compare.csv Rscript data-raw/logs/parity_0.66.6/moves.R
 suppressPackageStartupMessages({
   library(DBI)
 })
 dir_out <- "data-raw/logs/parity_0.66.6"
+compare_new <- Sys.getenv("LNK_COMPARE_NEW")
+if (!nzchar(compare_new)) stop("set LNK_COMPARE_NEW to the new run's <TS>_compare.csv")
 old <- read.csv("data-raw/logs/provincial_246/parity_annotated.csv")
 new <- read.csv(file.path(dir_out, "parity_annotated.csv"))
 key <- c("wsg", "species", "habitat_type")
@@ -43,10 +46,11 @@ seg_n <- function(s) dbGetQuery(conn, sprintf(
 n_old <- seg_n("fresh_parity246")
 n_new <- seg_n("fresh_parity362")
 print(merge(n_old, n_new, by = "wsg", suffixes = c("_246", "_362")))
-# Segments present in one build only (a break that moved): no segment in the other
-# build with the same start and the same length (within 1 mm). The segment diff below
-# joins only on segments both builds share, so these are reported here, not there.
-reseg <- dbGetQuery(conn, sprintf("
+# Segments present in one build only (the builds break the line in different places):
+# no segment in the other build with the same start and the same length (within 1 mm).
+# The segment diff below joins only on segments both builds share, so these are reported
+# here, not there.
+reseg_in <- function(groups) dbGetQuery(conn, sprintf("
   WITH o AS (SELECT watershed_group_code AS wsg, blue_line_key, downstream_route_measure, length_metre
                FROM fresh_parity246.streams WHERE watershed_group_code IN (%1$s)),
        n AS (SELECT watershed_group_code AS wsg, blue_line_key, downstream_route_measure, length_metre
@@ -60,8 +64,24 @@ reseg <- dbGetQuery(conn, sprintf("
    WHERE NOT EXISTS (SELECT 1 FROM o WHERE o.wsg = n.wsg AND o.blue_line_key = n.blue_line_key
                      AND o.downstream_route_measure = n.downstream_route_measure
                      AND abs(o.length_metre - n.length_metre) < 0.001)
-  ORDER BY 2, 3, 4, 1", paste0("'", wsgs, "'", collapse = ",")))
+  ORDER BY 2, 3, 4, 1", paste0("'", groups, "'", collapse = ",")))
+reseg <- reseg_in(wsgs)
 write.csv(reseg, file.path(dir_out, "resegmented.csv"), row.names = FALSE)
+# The same over every group of the closure, summarised per group.
+closure <- dbGetQuery(conn,
+  "SELECT DISTINCT watershed_group_code AS wsg FROM fresh_parity362.streams ORDER BY 1")$wsg
+reseg_all <- reseg_in(closure)
+reseg_sum <- if (nrow(reseg_all) == 0) {
+  data.frame(wsg = character(), segments = integer(), lines = integer())
+} else {
+  data.frame(wsg = sort(unique(reseg_all$wsg)),
+             segments = as.integer(table(reseg_all$wsg)[sort(unique(reseg_all$wsg))]),
+             lines = as.integer(tapply(reseg_all$blue_line_key, reseg_all$wsg,
+                                       function(x) length(unique(x)))[sort(unique(reseg_all$wsg))]))
+}
+write.csv(reseg_sum, file.path(dir_out, "resegmented_closure.csv"), row.names = FALSE)
+cat(sprintf("closure: %d groups; segments in one build only: %d on %d lines in %d groups\n",
+            length(closure), nrow(reseg_all), sum(reseg_sum$lines), nrow(reseg_sum)))
 cat(sprintf("segments in one build only: %d on %d lines (%s)\n", nrow(reseg),
             nrow(unique(reseg[, c("wsg", "blue_line_key")])),
             paste(unique(reseg$wsg), collapse = ", ")))
@@ -150,11 +170,10 @@ cat(sprintf("override positions: %d before, %d after; %d added, %d lost\n",
 dbDisconnect(conn)
 
 # mapping_code agreement with bcfishpass over all 17 groups (the driver's compare).
-# Confounded by 91a968ab (has_barriers_<sp>_dnstr FALSE, not NA, for a present species
-# with no barrier), which changes mapping codes but not km.
+# Moved by the gate and by lines the two builds break differently (resegmented_closure.csv).
 cmp_dir <- "data-raw/logs/study_area_run"
 c_old <- read.csv(file.path(cmp_dir, "20261017_093603_compare.csv"))
-c_new <- read.csv(file.path(cmp_dir, Sys.getenv("LNK_COMPARE_NEW")))
+c_new <- read.csv(file.path(cmp_dir, compare_new))
 cm <- merge(c_old[, c("wsg", "species", "total_segs", "match_pct", "n_diffs")],
             c_new[, c("wsg", "species", "total_segs", "match_pct", "n_diffs")],
             by = c("wsg", "species"), all = TRUE, suffixes = c("_20261017", "_0.66.6"))

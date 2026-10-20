@@ -86,11 +86,11 @@ segments both builds share, by cause), `resegmented.csv` and `resegmented_habita
 The expected result was written down before scoring (`expected.txt`).
 
 **mapping_code agreement** over all 17 groups (the run's compare) moved on 51 of 86 group ×
-species rows, by −0.06 to +0.05 points. Three things move it at once: the gate,
-91a968ab's `has_barriers_<sp>_dnstr` for a present species with no barrier (mapping codes only),
-and breaks that differ between the builds (the segment count differs on 50 of the 86 rows, in
-10 of the 17 groups; the tie above in the three scored groups that have one, the other seven
-not examined). It is not diagnosed (`mapping_code_moves.csv`).
+species rows, by −0.06 to +0.05 points. Two things move it at once: the gate, and lines the two
+builds break in different places, which across the whole closure is 349 segments on 75 lines in
+12 of the 17 groups (`resegmented_closure.csv`). The tie above is confirmed on the 8 lines in the
+scored groups; the other 67 are not examined. 91a968ab does not reach it: it changes only a
+species with no barrier in a group, and every one of the 86 rows has barriers. It is not diagnosed (`mapping_code_moves.csv`).
 
 ## What is not yet explained
 

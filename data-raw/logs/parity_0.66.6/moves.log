@@ -3,6 +3,7 @@
 2 BABL 45789 11547752 45789 11547752
 3 BULK 87641 14642214 87641 14642214
 4 ELKR 83359 12486918 83359 12486918
+closure: 17 groups; segments in one build only: 349 on 75 lines in 12 groups
 segments in one build only: 39 on 8 lines (ADMS, BULK, ELKR)
 override positions: 4740 before, 4750 after; 10 added, 0 lost
   wsg species total_segs_20261017 match_pct_20261017 n_diffs_20261017
