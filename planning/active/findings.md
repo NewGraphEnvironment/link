@@ -172,6 +172,49 @@ checksum; the manifest's `checksum` (sha256 of the bytes, CRLF kept) and `synced
 after which the audit reports no findings. The audit's own `print()` errors with
 `invalid 'na.print' specification` when it has drift to print (pre-existing; seen only then).
 
+## Phase 4: verification build (2026-10-20, scratch `fresh_349`)
+
+`data-raw/logs/access_disagree_349/verify_build_349.sh`, link `ca4a58ef` (clean on every log row),
+fresh 0.39.0. UPCE added to the plan's DUNC + CARP: the Peace rows that block CARP are held by
+FINA, LPCE, PCEA and UPCE (FWA places them in UPCE), so the province-wide lift reaches CARP only
+through one of those groups' runs. Builds UPCE 3.6, CARP 1.9, DUNC 3.3 min; recomputes 1.3, 0.8,
+1.6 min.
+
+- **UPCE now lifts all three Peace rows for KO and RB** (`barrier_overrides`, UPCE rows); before,
+  none of the four holding groups did.
+- **Classify time (`before/`, gate off):** B is gone for CARP KO and RB (fresh_default `baseline/`:
+  13,982 and 17,578 segments). What remains is A / A′ only: BT 353, GR 172, KO 51, RB 355, WCT 236.
+  GR's 299 reverse rows in UPCE (`R_override_scope`, 60.5 km) are gone too: UPCE counts the records
+  that lifted those barriers in other groups' runs.
+- **After the recompute (`after/`): forward disagreement 0 for every species.** Reverse: BT 7,
+  GR 2, KO 1, RB 7, WCT 2 (`R_other`).
+- **Gate counts** (`log_recompute`): UPCE 396 segments / 51.6 km, CARP 77 / 9.7 km, DUNC 694 /
+  249.9 km of `accessible` set FALSE; `habitat_gate_lifted` 0. Model-time log rows NULL (gate off).
+- **No lift lost** (`access_transitions.csv`, joined on blue_line_key + measure, segmentation
+  identical): open → closed 0 for every group × species. Closed → open: CARP KO 13,982 segments /
+  3,694.8 km, CARP RB 17,584 / 4,419.7 km, UPCE RB 4,483 / 843.4 km, DUNC RB 27 / 4.6 km.
+- **Rollups** (`rollup.csv`): `accessible_km` moves by exactly those km (UPCE RB +843.37, DUNC RB
+  +4.56; CARP KO and RB from none to 3,695.04 and 4,421.15). Habitat km: UPCE RB +197.7 spawning,
+  +345.9 rearing (the Peace rows are in UPCE, so fresh blocked RB above them until they lifted); UPCE
+  GR +1.1 spawning, +22.9 rearing, +28.5 lake connection (the closed reverse rows); DUNC BT −0.01
+  spawning, −0.14 rearing; CARP KO and RB unchanged (fresh had classified them accessible already).
+- **DUNC BT against bcfishpass** (`bcfp_dunc_bt.csv`, `fresh.streams_vw_bcfp` codes 1/2): spawning
+  543.14 → 543.13 km (bcfishpass 538.41), rearing 1,017.24 → 1,017.09 (861.81). Toward bcfishpass,
+  barely: #336's 85 km are accessible km, almost none of it habitat. The tunnel was down, so
+  `lnk_compare_rollup()` was not run; the local view is the same reference parity uses.
+
+## Code-check round 1 (2026-10-20)
+
+Two real findings, both fixed in the commit after this one:
+1. **The model-time gate makes losses permanent on a multi-host run.** A group gated at model time
+   against another host's stale overrides loses habitat the post-consolidate recompute then lifts;
+   the gate is one-way. `study_area_run.sh` now exports `LNK_HABITAT_GATE=0` on both legs (the
+   recompute always follows there and settles on final access); a single-group `wsg_run_one.R`
+   still gates, as decided.
+2. **Every working schema kept its own province-wide observations copy** (~200 MB with indexes;
+   `wsg_run_one.R` keeps working schemas, 241 per run). The table is dropped once the overrides are
+   counted.
+
 ## Errors Encountered
 
 | Error | Resolution |

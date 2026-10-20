@@ -181,19 +181,20 @@ UPDATE fails softly on a schema that predates them.
       `default` fixture (the rule, not the scope).
 
 ## Phase 4: Verification build
-- [ ] Seed `fresh_349` (`lnk_persist_init()`, then copy `barriers` + `barrier_overrides`
+- [x] Seed `fresh_349` (`lnk_persist_init()`, then copy `barriers` + `barrier_overrides`
       from `fresh_default`); build DUNC and CARP under `default` with
       `LNK_SCHEMA=fresh_349` **with the settle disabled for the measurement**, run the Phase
       1 script (classify-time state), then recompute (which settles) and run it again.
-- [ ] After: forward-direction disagreement = 0 for both groups; per species what the gate
+- [x] After: forward-direction disagreement = 0 for both groups; per species what the gate
       removed and what the lifts restored (DUNC BT: #336's 85 km blocked in both columns;
       CARP RB and KO: the Peace rows lifted for both, both columns *accessible*); the
       reverse direction before/after; segments above an observation-lifted barrier
       unchanged (the mechanism-C regression check). All in
       `data-raw/logs/access_disagree_349/after/`.
-- [ ] `lnk_rollup_wsg()` and `lnk_compare_rollup()` on `fresh_349` for both groups:
+- [x] `lnk_rollup_wsg()` and `lnk_compare_rollup()` on `fresh_349` for both groups:
       `accessible_km` and the habitat km move by exactly what the gate and the lifts report;
-      DUNC BT spawning / rearing km move *toward* bcfishpass.
+      DUNC BT spawning / rearing km move *toward* bcfishpass. (UPCE added; `lnk_compare_rollup()`
+      not run, tunnel down: DUNC BT compared with the local `fresh.streams_vw_bcfp` instead.)
 - [ ] Suite: `devtools::test()`, `lintr::lint_package()`; `/code-check branch`.
 
 ## Phase 5: Docs and issues

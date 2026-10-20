@@ -50,3 +50,7 @@ says to resume.
   presence, minus exclusions; GiST on the ltrees) feeds `lnk_barrier_overrides()`; the AOI table
   still feeds breaks and access code 2. `default`'s RB row gains BT's resident rule (threshold 1,
   RB). Timed on DUNC / CARP: no cost. Config checksum updated; audit clean.
+- Phase 4: verification build in scratch `fresh_349` (UPCE, CARP, DUNC; UPCE added because it
+  holds the Peace rows). After the recompute, forward disagreement 0 for every species; no lift
+  lost; CARP KO / RB and UPCE RB open; rollups move by exactly the reported km. Code-check round 1
+  (2 findings) arrived during the build; fixes held until it finished so its log rows stayed clean.
