@@ -114,9 +114,9 @@ totals (the script asserts it): BT 48,728, CH 14,242, CO 12,717, GR 30,996, KO 5
 - **A and A′ are near-equal halves everywhere** (≈ 0.25–1 % of accessible per species). They are
   the classify-time half the fresh `tolerance_m` follow-up would fix; the gate fixes them in
   persist.
-- **B is every whole-group case.** RB: 25 groups behind the two Peace rows (UPCE), the
+- **B is every whole-group case.** RB: 27 groups (corrected by code-check round 2 from 25): 16 behind the two Peace rows (UPCE), the
   Columbia rows (REVL, LNRS), the Clearwater / Mahood rows (CLWR, MAHD). KO: NATR, PARS, CARP
-  behind the three Peace rows. GR: ELKR, TURN, BULL behind KOTL rows (1–3 GR records upstream,
+  behind the three Peace rows. GR: ELKR and BULL behind KOTL rows, TURN behind a UKEC falls (1–3 GR records upstream,
   threshold 5: GR is genuinely blocked there, so the gate's blanking is the intended outcome).
   **BT TURN** (6,491 km) is mechanism C for BT too: a UKEC barrier with 69 BT records upstream
   province-wide and 0 inside UKEC.
@@ -222,6 +222,32 @@ Two real findings, both fixed in the commit after this one:
 2. **Every working schema kept its own province-wide observations copy** (~200 MB with indexes;
    `wsg_run_one.R` keeps working schemas, 241 per run). The table is dropped once the overrides are
    counted.
+
+## Code-check round 2 (2026-10-20)
+
+Five findings, all real, all fixed:
+1. The re-gate command in CLAUDE.md, RUNBOOK §3 and the research file named `study_area_finish.sh`,
+   a sourced library that parses no arguments and exits 0 doing nothing (the plan's own error). It is
+   `bash data-raw/study_area_run.sh --recompute-only --run-uid=<uid> --config=default --schema=fresh_default`.
+2. **Inside round 1's fix:** the re-model command `study_area_finish.sh` prints for a run's missing
+   groups (and RUNBOOK §8d's copy) still gated at model time. Both now carry `LNK_HABITAT_GATE=0`,
+   pinned in `test-study_area_finish.R` (mutation: removing it fails the test).
+3. The legacy `wsgs_dispatch.sh` path models through `lnk_compare_wsg()`, which gates. It runs no
+   recompute, so it settles on the access it ships; documented in RUNBOOK §3 (accepted).
+4. research file: RB is blocked whole in 27 groups, not 25; GR TURN is behind a UKEC falls, not a KOTL row.
+5. `study_area_hosts.sh`'s `host_complete()` comment named the old mapping-code write.
+
+Plus: `.lnk_pipeline_prep_observations_province` renamed `.lnk_pipeline_prep_obs_province`
+(object_length lint). The remaining new indentation lints follow each file's `sprintf(` idiom.
+
+**Enumeration that ends the "gate at model time" class** (every call site of `lnk_pipeline_run()`,
+`wsg_run_one.R`, `wsg_pipeline_run.R` and `lnk_compare_wsg()`, by grep, 10 sites): the three followed
+by a dispatch recompute (both `study_area_run.sh` legs, the `study_area_finish.sh` remedy) run with
+the gate off; `wsg_run_one.R` standalone, `lnk_wsg_downstream_check()`'s printed remedy (single
+host, downstream first), `habitat_variants_build.R`'s base (one host, downstream first, its own
+recompute re-settles on the same barriers) and the legacy `wsg_pipeline_run.R` / `wsgs_run_host.R`
+path (no recompute) gate at model time on access that nothing later lifts; `wsg_vignette_data.R`
+prints a string, and `verify_build_349.sh` and a 2026-10 log script set their own.
 
 ## Errors Encountered
 

@@ -211,6 +211,8 @@ test_that("one missing group: the rest are recomputed and compared, and the run 
   expect_match(r$out, "were NOT recomputed or compared: CCCC", fixed = TRUE)
   expect_match(r$out, "--recompute-only --run-uid=20261018_000000-0000abcd", fixed = TRUE)
   expect_match(r$out, "LNK_GUARD_DOWNSTREAM=warn", fixed = TRUE)
+  # The re-model gates nothing; the recompute settles on final access (#349).
+  expect_match(r$out, "LNK_GUARD_DOWNSTREAM=warn LNK_HABITAT_GATE=0", fixed = TRUE)
   expect_match(r$out, "study_area_run INCOMPLETE", fixed = TRUE)
   cov <- utils::read.delim(file.path(w, "logs", "T0_coverage.tsv"), colClasses = "character")
   expect_identical(cov$class[order(cov$wsg)], c("recompute", "recompute", "no_rows"))

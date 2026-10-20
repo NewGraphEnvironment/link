@@ -188,9 +188,13 @@ run group holds `accessible AND access_<sp> = 0`.
   `LNK_HABITAT_GATE=0` on both legs (`lnk_pipeline_run(habitat_gate = FALSE)`): a group modelled on
   one host reads other hosts' barriers and overrides as that host holds them, possibly a previous
   run's, and a one-way gate there would blank habitat the recompute then lifts. The recompute
-  settles every group on final access. A single-group `wsg_run_one.R` gates at model time.
+  settles every group on final access, and so does the re-model command §8d prints for a run's
+  missing groups. A single-group `wsg_run_one.R` gates at model time; so does the legacy
+  `wsgs_dispatch.sh` path (`lnk_compare_wsg()`), which runs no recompute and settles on the access
+  it ships.
 - **Schemas built before it are unsettled** until their recompute re-runs
-  (`study_area_finish.sh --recompute-only --run-uid=<uid>`); the RB / KO lifts need a re-model.
+  (`bash data-raw/study_area_run.sh --recompute-only --run-uid=<uid> --config=<config>
+  --schema=<schema>`, §8d); the RB / KO lifts need a re-model.
 - A and A′ could be fixed at classify time with a tolerance on fresh's predicate and its override
   match plus dropping link's rounding in prepare and classify together (drafted follow-up). The gate
   stays either way: B cannot be seen at classify time on a multi-host run.
@@ -1308,7 +1312,7 @@ makes the run exit non-zero, and the report names the groups and the recovery:
 
 ```bash
 LNK_RUN_UID=<uid> [LNK_RUN_LABEL=<label>] LNK_SCHEMA=<schema> \
-  LNK_GUARD_DOWNSTREAM=warn LNK_LOAD=loadall \
+  LNK_GUARD_DOWNSTREAM=warn LNK_HABITAT_GATE=0 LNK_LOAD=loadall \
   Rscript data-raw/wsg_run_one.R <WSG> <config>          # each missing group
 bash data-raw/study_area_run.sh --recompute-only --run-uid=<uid> \
   --config=<config> --schema=<schema> [--run-label=<label>] [--wsgs=<the run's groups>]

@@ -664,8 +664,12 @@ run_finish_report() {
           # warn, as the driver runs it: a group whose downstream neighbour is
           # missing too would otherwise stop at the guard (error by default),
           # and the recompute re-runs it in error mode once all are back.
+          # LNK_HABITAT_GATE=0, as the driver runs it too (link#349): the gate
+          # is one-way, and a group re-modelled before its missing downstream
+          # neighbour would be settled on that neighbour's stale barriers; the
+          # recompute below settles every group on final access.
           echo "    LNK_RUN_UID=$RUN_UID ${RUN_LABEL:+LNK_RUN_LABEL=$RUN_LABEL }LNK_SCHEMA=$SCHEMA \\"
-          echo "      LNK_GUARD_DOWNSTREAM=warn LNK_LOAD=loadall \\"
+          echo "      LNK_GUARD_DOWNSTREAM=warn LNK_HABITAT_GATE=0 LNK_LOAD=loadall \\"
           echo "      Rscript data-raw/wsg_run_one.R <WSG> $CONFIG"
         fi
         echo "  Then recompute the whole run (every group: a re-modelled group's"

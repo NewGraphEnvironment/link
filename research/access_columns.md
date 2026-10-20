@@ -46,9 +46,10 @@ are in `classes.csv`, all A / A′ and residual.)
   `natural_barriers` is rounded too. A fresh-side tolerance is a drafted follow-up.
 - **B, cross-group barriers.** fresh's breaks are filtered to the group; link's view reads every
   group's persisted barriers. A blocking barrier downstream in another group is invisible to fresh.
-  Whole groups: RB in 25 (the Williston drainage behind two Peace rows; the upper Columbia behind
-  REVL and LNRS rows; the Clearwater), KO in NATR, PARS and CARP, GR in ELKR, TURN and BULL (KOTL
-  rows with 1–3 GR records upstream against a threshold of 5: genuinely blocked), BT in TURN.
+  Whole groups: RB in 27 (16 behind two Peace rows in UPCE, 4 behind REVL rows, 3 behind LNRS
+  rows, 3 behind CLWR falls, and TURN behind a UKEC falls), KO in NATR, PARS and CARP, GR in ELKR
+  and BULL (KOTL rows) and TURN (the UKEC falls), each with 1–3 GR records upstream against a
+  threshold of 5, so genuinely blocked, and BT in TURN (the UKEC falls).
   `groups_blocked.csv` lists each barrier.
 - **Residual.** Small everywhere; RB's 6,817 (A_other aside) are 6,623 in ELKR, the Flathead: a second drainage
   out of the group to a Columbia barrier in LARL, which the single-outlet test does not see.
@@ -115,6 +116,7 @@ the Peace rows that block CARP.
 
 - Any build or recompute at or after the #349 merge.
 - **Not** `fresh_default`, `fresh`, `score284_*` or any variant schema built before it.
-  `study_area_finish.sh --recompute-only --run-uid=<uid>` settles a provenanced run without a
+  `bash data-raw/study_area_run.sh --recompute-only --run-uid=<uid> --config=<config>
+  --schema=<schema>` settles a provenanced run without a
   re-model (decision 4 of #349, the operator's call); the RB / KO / BT lifts behind shared
   barriers need a re-model of the groups that hold those barriers.

@@ -315,7 +315,7 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
     }
   }
 
-  .lnk_pipeline_prep_observations_province(conn, loaded, schema, observations,
+  .lnk_pipeline_prep_obs_province(conn, loaded, schema, observations,
                                            excl_filter)
 
   .lnk_db_execute(conn, sprintf(
@@ -350,7 +350,7 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
 #' See [.lnk_pipeline_prep_observations()]. The presence pairs reach SQL as a
 #' `VALUES` list, so nothing is written but the table itself.
 #' @noRd
-.lnk_pipeline_prep_observations_province <- function(conn, loaded, schema,
+.lnk_pipeline_prep_obs_province <- function(conn, loaded, schema,
                                                      observations,
                                                      excl_filter = "") {
   to <- paste0(schema, ".observations_province")
