@@ -1,0 +1,60 @@
+=== study_area_run 20261020_171738 ===
+  run_uid:      20261020_171738-477072be
+  run_label:    parity-4-bcfishpass-362
+  config:       bcfishpass
+  branch:       362-re-score-bcfishpass-parity-at-v0-66-6-an (cyphers run this ref)
+  persist:      fresh_parity362
+  cyphers:      <none> (0)
+  log dir:      /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run
+  vintage max:  7 d
+  recompute -j: 8
+=== pre-flight (local; pre-spend) ===
+  ✓ dispatcher fresh exports what the pipeline calls
+  ✓ fwapg_sha 6d48dabf9a52 (exported to all hosts)
+  ✓ bcfishobs_sha 08630cf4ac14 (exported to all hosts)
+  ✓ fresh_sha e247ca19a780 (clean)
+  ✓ bcfp reference pinned at v0.7.15-50-g620dbe4 (exported to all hosts)
+    ok   discharge (fwapg) loaded: whse_basemapping.fwa_stream_networks_discharge
+  ✓ discharge (fwapg) loaded on the dispatcher
+    [preflight] primitive vintage (window 7 d) - OK, oldest 3.7 d (whse_fish.pscis_assessment_svw) [judged by load stamp: 4, statistics: 0, none: 0]
+  ✓ dispatcher primitives within 7 d
+  ✓ pre-flight clean (tunnel-free)
+=== resolve drainage-closed DS-first buckets ===
+  dispatcher (focal=ADMS,BULK,BABL,ELKR): LARL,LFRA,LSKE,HARR,KLUM,KOTL,BULL,FRCN,KISP,BULK,ELKR,MSKE,THOM,BABR,STHM,ADMS,BABL
+  run groups: /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261020_171738_run_wsgs.tsv
+=== run buckets (DS-first) ===
+  ✓ host runs finished (per-WSG soft-fail; gaps surface in compare)
+=== per-host completeness (database) ===
+  ✓ dispatcher: 17/17 WSGs accounted for (17 finished, 0 SKIP; database)
+=== verify WSG coverage in fresh_parity362 (run_uid 20261020_171738-477072be) ===
+  17/17 run WSGs have rows from a build this run finished
+  classes: /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261020_171738_coverage.tsv
+=== post-consolidate recompute (lnk_access, 17 WSGs, -j8) ===
+  ✓ log tables present in fresh_parity362
+  ✓ barrier views built once for fresh_parity362
+  ordering 241 known WSG time(s) longest-first (median 1.76 min for the rest)
+[fanout] recompute - OK: 17/17 job(s) succeeded
+  ✓ recompute: 17/17 WSGs
+=== compare (tunnel-free) ===
+  ✓ compare CSV: /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261020_171738_compare.csv
+=== summary ===
+  run WSGs:        ADMS,BABL,BABR,BULK,BULL,ELKR,FRCN,HARR,KISP,KLUM,KOTL,LARL,LFRA,LSKE,MSKE,STHM,THOM
+  recomputed WSGs: LFRA,FRCN,KISP,LSKE,KLUM,BULK,MSKE,THOM,HARR,ADMS,STHM,BABR,KOTL,LARL,BABL,ELKR,BULL
+  compare CSV: /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261020_171738_compare.csv
+[study_area_compare] 86 rows across 17/17 WSGs -> /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261020_171738_compare.csv
+# A tibble: 86 × 7
+   wsg   species total_segs match_pct n_diffs top_pattern      top_pattern_count
+ * <chr> <chr>        <int>     <dbl>   <int> <chr>                        <int>
+ 1 LFRA  BT           27395      97.9     576 ACCESS;ASSESSED…               100
+ 2 LFRA  CH           27395      99.6     108 SPAWN;MODELLED …                29
+ 3 LFRA  CM           27395      99.5     136 ACCESS;NONE | S…                33
+ 4 LFRA  CO           27395      98.0     535 ACCESS;DAM;INTE…               124
+ 5 LFRA  PK           27395      99.7      73 SPAWN;MODELLED …                22
+ 6 LFRA  SK           27395      99.4     153 ACCESS;NONE | S…                87
+ 7 LFRA  ST           27395      99.4     153 SPAWN;MODELLED …                29
+ 8 FRCN  BT           29341      99.5     145 REAR;NONE | ACC…                46
+ 9 FRCN  CH           29341      99.6     112 ACCESS;NONE | S…                89
+10 FRCN  CM           29341      99.9      26 ACCESS;NONE | S…                19
+# ℹ 76 more rows
+=== study_area_run done ===
+  ✓ redacted host addresses in 9 log file(s)

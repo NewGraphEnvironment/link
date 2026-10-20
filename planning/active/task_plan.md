@@ -24,8 +24,8 @@
   expires **Thu 2026-10-23 5:46 PM PDT**. Launch before then. After it, use
   `--preflight-note="same inputs as the 2026-10-17 baseline, #362"`, never a refresh (a refresh
   moves the inputs and the comparison stops isolating code).
-- **Cost.** The 2026-10-17 run took ~7 h on the dispatcher alone (start 09:36 UTC, compare CSV
-  16:32 UTC). `fresh_parity246` is 3.9 GB; the DB volume has 196 G free.
+- **Cost.** The 2026-10-17 model leg ran 09:36-10:30 UTC, about 1 h on the dispatcher alone
+  (`fresh_parity246.log`; corrected from "~7 h", which read a checkout's file mtimes, review finding 5). `fresh_parity246` is 3.9 GB; the DB volume has 196 G free.
 - Tools reused as they are: `data-raw/study_area_run.sh` (`--focal`, `--config`, `--schema`,
   `--run-label`; no `--cy-workspaces` = dispatcher only), `data-raw/parity_crosssection.R`
   (`LNK_SCHEMA`, `LNK_CONFIG`, `LNK_PARITY_OUT`), `data-raw/study_area_verify.sql`.
@@ -42,12 +42,12 @@
 
 ## Phase 1: Run the rebuild (`bcfishpass`, 17-group closure, v0.66.6)
 
-- [ ] Push the baseline branch; `bash data-raw/study_area_run.sh --preflight-only --config=bcfishpass --schema=fresh_parity362` clean
-- [ ] State the run decisions (config `bcfishpass`, schema `fresh_parity362`, closure = the same 17 groups, species from config × presence, no `--refresh-primitives`, `--recompute-jobs=8`) and launch detached:
+- [x] Push the baseline branch; `bash data-raw/study_area_run.sh --preflight-only --config=bcfishpass --schema=fresh_parity362` clean
+- [x] State the run decisions (config `bcfishpass`, schema `fresh_parity362`, closure = the same 17 groups, species from config × presence, no `--refresh-primitives`, `--recompute-jobs=8`) and launch detached:
       `bash data-raw/study_area_run.sh --focal=ADMS,BULK,BABL,ELKR --config=bcfishpass --schema=fresh_parity362 --run-label=parity-4-bcfishpass-362 --recompute-jobs=8`
-- [ ] Confirm the resolved closure equals 2026-10-17's 17 groups (log line `dispatcher (focal=…)`)
-- [ ] Wait on a marker only this run's end writes; then `study_area_verify.sql` with `-v run_uid=<uid> -v expected_n=17` against `fresh_parity362`
-- [ ] Copy the run's logs to `data-raw/logs/parity_0.66.6/` with a stamp header (run_uid, link SHA, fresh SHA, fwapg / bcfishobs SHAs, bcfp build + model_run_id)
+- [x] Confirm the resolved closure equals 2026-10-17's 17 groups (log line `dispatcher (focal=…)`)
+- [x] Wait on a marker only this run's end writes; then `study_area_verify.sql` with `-v schema=fresh_parity362 -v run_uid=<uid> -v expected_n=17` (the schema flag added on review finding 2): PASS
+- [x] Stamp the run in `data-raw/logs/parity_0.66.6/README.md` (run_uid, link SHA, fresh SHA, fwapg / bcfishobs SHAs, bcfp build + model_run_id), referencing the driver's `study_area_run/20261020_171738_*` logs rather than copying them (review finding 8)
 
 ## Phase 2: Score and explain every move
 

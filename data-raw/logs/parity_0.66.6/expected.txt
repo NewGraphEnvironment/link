@@ -1,0 +1,7 @@
+# Expected parity moves at v0.66.6 against 2026-10-17, written before scoring (2026-10-20T17:35:00Z).
+# Source: research/access_columns.md, "What it should do to bcfishpass parity" (measured on fresh_parity246).
+accessible km: 0.0 change on all 17 pairs (lifts can only be added; none found on a focal group's path)
+spawning km:   0.0 change on all 17 pairs (the segments the gate settles carry 0 km of spawning)
+rearing km:    BT about -0.3 (BULK), -0.3 (BABL), -0.6 (ELKR); every other pair under 0.1
+pass count:    48/50, BULK SK over and parked as before
+Any accessible move is then a lift change, and is diagnosed from override_diff.csv.
