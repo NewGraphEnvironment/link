@@ -1,3 +1,12 @@
+# link 0.66.6
+
+**The persisted habitat flags follow `streams_access`, and barrier lifts count every group's observations** ([#349](https://github.com/NewGraphEnvironment/link/issues/349), [#336](https://github.com/NewGraphEnvironment/link/issues/336)).
+
+- **`lnk_habitat_gate()`** (new): where `access_<sp>` = 0, `accessible`, `spawning`, `rearing`, `lake_rearing` and `wetland_rearing` go FALSE in the persisted `streams_habitat_<sp>`; rows `user_habitat_classification` marks keep spawning and rearing. It runs in `lnk_pipeline_run()` after the second persist (new argument `habitat_gate = TRUE`; mapping codes are now built from persist after it), and after `lnk_access(merge = TRUE)` in the recompute. Counts land on `log` / `log_recompute` (`habitat_gate_*`).
+- **The gate is one-way.** A later recompute that lifts a settled segment cannot restore its habitat; it counts it (`habitat_gate_lifted`) and `study_area_verify.sql` fails on it. So `study_area_run.sh` models with `LNK_HABITAT_GATE=0` and lets the recompute settle every group. `study_area_verify.sql` also fails on any `accessible` segment whose `access_<sp>` is 0.
+- **Barrier lifts count observations from every group** (`<schema>.observations_province`, each record kept by its own group's species presence), as bcfishpass does. Each species' rule (which species count, how many, from what date) is unchanged. `default`'s RB row gains an observation rule (one RB record, any date, no control veto), so `default`'s `config_hash` changes.
+- **Existing schemas are not settled until rebuilt.** `fresh_default` fails the new verify check until a full re-model; re-model before re-gating, never the reverse (RUNBOOK §3). Write-up: `research/access_columns.md`.
+
 # link 0.66.5
 
 **`study_area_run.sh` records which groups a run was running, and a refused consolidate source no longer stops the run** ([#358](https://github.com/NewGraphEnvironment/link/issues/358)).
