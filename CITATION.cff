@@ -4,12 +4,13 @@
 # ------------------------------------------------
  
 cff-version: 1.2.0
-message: 'To cite package "link" in publications use:'
+message: If you use link, please cite it by its DOI, 10.5281/zenodo.23264990.
 type: software
 license: MIT
 title: 'link: Develop, Test and Communicate Intrinsic Habitat and Connectivity Models
   for the BC Freshwater Atlas Stream Network'
 version: 0.66.6
+doi: 10.5281/zenodo.23264990
 abstract: 'Tools for developing, testing and communicating intrinsic habitat models
   on stream networks: where each fish species could spawn and rear, and which of that
   habitat fish can reach. Current models rate habitat from stream gradient, channel
@@ -38,6 +39,7 @@ preferred-citation:
   url: https://newgraphenvironment.github.io/link/
   repository-code: https://github.com/NewGraphEnvironment/link
   license: MIT
+  doi: 10.5281/zenodo.23264990
   type: software
   publisher:
     name: New Graph Environment Ltd.
