@@ -117,21 +117,21 @@ UPDATE fails softly on a schema that predates them.
    lifts need a re-model, so Peace RB/KO habitat appears province-wide on the next full run.
 
 ## Phase 1: Characterise province-wide by mechanism
-- [ ] `data-raw/access_disagree_349.R` → `data-raw/logs/access_disagree_349/`: per species in
+- [x] `data-raw/access_disagree_349.R` → `data-raw/logs/access_disagree_349/`: per species in
       `fresh_default`, split `accessible AND access_<sp> = 0` into **A/A′** (a species-blocking
       natural barrier within 1 m on the same `blue_line_key`, by offset sign and
       `round(barrier) > start`), **B** (the group has a species-blocking, un-lifted natural
       barrier on its downstream outlet path, found with `fwa_downstream()` from
       `fresh::frs_wsg_outlets()` the way `.lnk_dams_blocking_downstream()` finds dams), **C**
       (rest). Assert the classes sum to the per-species totals in the issue.
-- [ ] Same script: the reverse direction by class (incl. the province-vs-AOI override cause);
+- [x] Same script: the reverse direction by class (incl. the province-vs-AOI override cause);
       overlay rows among the `access = 0` set (what the exemption keeps); `lake_rearing`
       kept on a polygon whose connected spawning the settle would blank; #351 ruled out
       (no `-9`, no absent species among disagreeing rows).
-- [ ] `groups_blocked.csv`: per species × group at ≥ 99 %, the blocking barriers (source,
+- [x] `groups_blocked.csv`: per species × group at ≥ 99 %, the blocking barriers (source,
       line, measure, FWA group), observations upstream province-wide vs inside the holding
       group (the mechanism-C evidence), and the km of spawning / rearing at stake.
-- [ ] Read `model_access_bt.sql` at a pinned bcfishpass ref (read-only `gh api`) and record
+- [x] Read `model_access_bt.sql` at a pinned bcfishpass ref (read-only `gh api`) and record
       the observation scope it counts over, in `findings.md`.
 - [ ] Commit `classes.csv`, `groups_blocked.csv`, `summary.md` with an environment stamp
       (link SHA, fresh version, run_uid); put the table in the #349 body.

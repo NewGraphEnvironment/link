@@ -29,3 +29,11 @@ cd ~/Projects/repo/link && git fetch -q origin && git checkout 349-streams-habit
 
 The parked approval covered the baseline only; the run-to-PR mandate starts when the operator
 says to resume.
+
+## Session 2026-10-19 (evening, Vancouver) — run to PR
+
+- Resumed on the operator's "Complete all phases of 349 to PR".
+- Phase 1: `data-raw/access_disagree_349.R` written and run province-wide (4.0 min). Classes sum
+  to the issue's totals for every species. A / A′ ≈ halves; B is every whole-group case (RB,
+  KO, GR and BT TURN); residual is small, RB's is ELKR's Flathead. Corrected the plan's KO
+  location claim (findings.md). bcfishpass scope pinned at `@620dbe4`.

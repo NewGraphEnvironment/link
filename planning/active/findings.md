@@ -97,9 +97,72 @@ The override rows at 1,706,110 are `watershed_group_code` FINA and PCEA (UPCE wr
 - `inst/extdata/schemas/habitat_fwa_v1_segment.yaml:123-132` still carries #336's retracted boundary-convention story.
 - Reviewer's alternative for the dam faces, not taken: a `user_barriers_definite_control` row with `barrier_ind = f` prunes the row from `gradient_barriers_raw` (prepare `:360-368`) and so from `<persist>.barriers`.
 
+## Phase 1: province-wide, by mechanism (2026-10-20)
+
+`data-raw/access_disagree_349.R` on `fresh_default` (241 groups, run `20261017_004619-3f4c713b`);
+output `data-raw/logs/access_disagree_349/`. Every species' forward classes sum to the issue's
+totals (the script asserts it): BT 48,728, CH 14,242, CO 12,717, GR 30,996, KO 55,989, RB 481,275.
+
+| species | A (rounding) | A′ (ltree) | B (cross-group) | residual | reverse |
+|---|---|---|---|---|---|
+| BT | 6,999 | 7,636 | 33,739 | 269 (+85 A_other) | 1,035 |
+| CH | 6,695 | 7,339 | 0 | 138 (+70) | 710 |
+| GR | 4,999 | 5,423 | 20,319 | 201 (+54) | 752 |
+| KO | 213 | 270 | 55,498 | 6 (+2) | 0 |
+| RB | 7,840 | 8,608 | 457,912 | 6,817 (+98) | 759 |
+
+- **A and A′ are near-equal halves everywhere** (≈ 0.25–1 % of accessible per species). They are
+  the classify-time half the fresh `tolerance_m` follow-up would fix; the gate fixes them in
+  persist.
+- **B is every whole-group case.** RB: 25 groups behind the two Peace rows (UPCE), the
+  Columbia rows (REVL, LNRS), the Clearwater / Mahood rows (CLWR, MAHD). KO: NATR, PARS, CARP
+  behind the three Peace rows. GR: ELKR, TURN, BULL behind KOTL rows (1–3 GR records upstream,
+  threshold 5: GR is genuinely blocked there, so the gate's blanking is the intended outcome).
+  **BT TURN** (6,491 km) is mechanism C for BT too: a UKEC barrier with 69 BT records upstream
+  province-wide and 0 inside UKEC.
+- **The residual is small and mostly one case:** RB's 6,817 are 6,623 in ELKR, the Flathead, a
+  second drainage out of the group: an ELKR Flathead segment's blocking barrier is a GRADIENT
+  row on blue_line_key 356570104 at 723 m in LARL (on the Columbia), which the single-outlet
+  B test does not see. A per-segment cross-group test took over 10 min on ELKR alone and was
+  dropped; `residual_groups.csv` lists the residual by group instead.
+- **Reverse direction** (fresh blocks, link does not) is at most 1,035 segments per species.
+  `R_override_scope` (a barrier lifted only by another group's override row) is BT 169, GR 299,
+  WCT 2; the rest are `R_other`.
+- **Overlay exemption:** of the `access_<sp> = 0` rows with spawning, the user habitat
+  classification sets CH 189, CM 300, CO 788, PK 263, SK 153, ST 110 (of 284 / 455 / 976 / 395 /
+  197 / 181). These keep spawning under the gate. BT, GR, KO, RB, WCT: none.
+- **Lake rearing left without spawning:** 0 polygons for every species (`lake_polygons_lose_spawning`;
+  98 BT and 3,470 CO polygons sit within 10 km of blanked spawning, all keep other spawning).
+- **#351 ruled out:** no `-9` in any `access_<sp>`, and no disagreeing row in a group where the
+  species is absent.
+
+### Correction to "Measured in plan mode": where KO's records are
+
+The plan said KO's 172–244 records upstream of the Peace rows are "all in PARS / NATR / CARP
+where KO is present". They are not: post-1990, PCEA 63, FINA 27, FINL 22, PARS 12, FIRE 11,
+PARA 10, LOMI 8, TOOD 7, INGR 6, NATR 5, OSPK 1 above 1,706,110 m. `wsg_species_presence`
+marks KO present only in CARP, NATR and PARS, so counting each record against its own group's
+presence (bcfishpass's rule) admits 17 (PARS 12 + NATR 5). That still clears KO's threshold of 5,
+so the province-wide count lifts KO; the records in groups that list KO absent are a presence-table
+question, not this issue's.
+
+### bcfishpass's observation scope (Phase 1, pinned)
+
+`smnorris/bcfishpass@620dbe4` (main, 2026-10-19), `model/01_access/sql/load_observations.sql`:
+`bcfishpass.observations` holds every group's bcfishobs records, each kept when
+`array[o.species_code] && wsg_spp.species_codes` for **its own** `watershed_group_code`, minus
+`observation_exclusions`. `model_access_bt.sql` filters the barriers to `:'wsg'` and joins them to
+**all** of `bcfishpass.observations` with `fwa_upstream(..., false, 20)`. So bcfishpass counts lifts
+province-wide; link counted only the AOI's records. (bcfishpass matches the raw code, so a CCT record
+is not admitted by a CT presence; link admits CCT / ACT / CT/RB when CT is present, both tables.)
+
 ## Errors Encountered
 
 | Error | Resolution |
 |-------|------------|
 | `$TMPDIR` unset in the Bash tool: `/p1.sql: Read-only file system` | write probes to the session scratchpad directory |
 | `column o.wscode_ltree does not exist` | `bcfishobs.observations` names them `wscode` / `localcode` |
+| Phase 1 lake query ran 5+ min on CH (`ST_DWithin` between a CTE and all streams) | temp tables with GiST indexes on each side: whole province in 4 min |
+| `pg_cancel_backend` matched nothing: the query text starts with a newline | terminate by pid |
+| `sprintf("%d", <integer64>)` from `count(*)` | `as.integer()` first |
+| per-segment cross-group test for the residual: 10+ min on ELKR alone | dropped; `residual_groups.csv` plus one probe |
