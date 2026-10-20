@@ -199,7 +199,7 @@ run group holds `accessible AND access_<sp> = 0`.
   upstream whose habitat the re-gate already blanked; only re-modelling each of those groups restores
   it. `study_area_verify.sql` fails on such a group (the newest recompute's `habitat_gate_lifted`).
 - A and A′ could be fixed at classify time with a tolerance on fresh's predicate and its override
-  match plus dropping link's rounding in prepare and classify together (drafted follow-up). The gate
+  match plus dropping link's rounding in prepare and classify together (NewGraphEnvironment/fresh#258). The gate
   stays either way: B cannot be seen at classify time on a multi-host run.
 
 ---
@@ -400,8 +400,8 @@ enough records *inside itself*. Since #349 `.lnk_pipeline_prep_observations()` a
 `<schema>.observations_province` (every group's records by its own presence, minus exclusions,
 GiST on the ltrees) and `lnk_barrier_overrides()` counts over it. `<schema>.observations` stays
 AOI-scoped for the observation break source and access code 2. Cost: ~4 s per group to build
-both tables, no change to the override step (DUNC, CARP). `default`'s RB row gained BT's resident
-rule (one RB record, no date floor); before it RB had no rule and nothing lifted for it.
+both tables, no change to the override step (DUNC, CARP). `default`'s RB row gained a rule shaped like BT's
+(one RB record, only RB counting for RB, no date floor); before it RB had no rule and nothing lifted for it.
 
 ## 6. Gotchas that have cost real time
 

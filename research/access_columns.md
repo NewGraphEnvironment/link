@@ -43,7 +43,7 @@ are in `classes.csv`, all A / A′ and residual.)
   `fwa_downstream(…, tolerance = 1)` treats it as downstream through the barrier's ltree (the lower
   FWA feature's), fresh's exact `<=` never. Dropping the rounding alone would fix A, not A′, and
   would end every observation lift, because fresh matches overrides to breaks by exact `=` and
-  `natural_barriers` is rounded too. A fresh-side tolerance is a drafted follow-up.
+  `natural_barriers` is rounded too. A fresh-side tolerance is NewGraphEnvironment/fresh#258.
 - **B, cross-group barriers.** fresh's breaks are filtered to the group; link's view reads every
   group's persisted barriers. A blocking barrier downstream in another group is invisible to fresh.
   Whole groups: RB in 27 (16 behind two Peace rows in UPCE, 4 behind REVL rows, 3 behind LNRS
@@ -74,8 +74,8 @@ groups held enough records inside itself.
 - **KO:** above 1,706,110 m, post-1990, PCEA 63, FINA 27, FINL 22, PARS 12, FIRE 11 and six more
   groups; presence marks KO only in CARP, NATR and PARS, so by bcfishpass's rule 17 count
   (threshold 5). Most KO records upstream sit in groups the presence table lists without KO.
-- **RB** had no observation rule in `default` at all, so nothing lifted for it. It now has BT's
-  resident rule (one RB record, no date floor).
+- **RB** had no observation rule in `default` at all, so nothing lifted for it. It now has a rule shaped like BT.s:
+  one RB record (only RB records count for RB), no date floor, no control veto.
 
 Since #349 the lift counts over `<schema>.observations_province`. Building it costs ~4 s per
 group and the override step is no slower (DUNC 27.6 → 18.6 s, CARP 18.0 → 17.5 s;
@@ -111,6 +111,17 @@ the Peace rows that block CARP.
   and could not lift for RB before); UPCE GR +22.9 km rearing; DUNC BT −0.01 km spawning, −0.14 km
   rearing, toward bcfishpass (538.4 / 861.8 km) by very little: #336's 85 km are accessible km,
   almost none of it habitat.
+
+## What it should do to bcfishpass parity
+
+Not measured on a build at this change. On `fresh_parity246` (the `bcfishpass`-config parity
+build of 2026-10-17, before #349) the segments the gate would settle (`accessible` and
+`access_<sp>` = 0) carry 0 km of spawning in every scored pair and at most 0.6 km of rearing
+(BT: BULK 0.3, BABL 0.3, ELKR 0.6 km), against 300-3,000 km per pair; accessible km reads
+`streams_access` and already sits within 0.07 %. So parity on ADMS, BULK, BABL and ELKR checks
+for regression; it cannot show a gain. Province-wide lift counting matters only behind a barrier
+held in another group, which none of those groups has: TURN BT, behind a UKEC barrier with 69 BT
+records upstream and none inside UKEC, is the candidate that would show it under `bcfishpass`.
 
 ## Which schemas are settled
 
