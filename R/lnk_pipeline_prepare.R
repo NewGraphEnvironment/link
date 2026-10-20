@@ -278,6 +278,16 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
 #' bcfishobs records cutthroat as CT/CCT/ACT/CT/RB; when CT is in the
 #' WSG's species set, all four codes are admitted (matches bcfp's
 #' `species_code_remap` CTE).
+#'
+#' Also builds `<schema>.observations_province`: every group's observations,
+#' each kept when ITS OWN group's presence row admits the species, minus the
+#' same exclusions, indexed on the ltrees. That is the table bcfishpass counts
+#' barrier lifts over (`bcfishpass.observations`, joined to each barrier with
+#' `fwa_upstream()` in `model_access_*.sql`, `smnorris/bcfishpass@620dbe4`):
+#' a barrier on a line several groups share is lifted by observations upstream
+#' of it wherever they are, not only those inside the group that holds it
+#' (link#349). `<schema>.observations` stays AOI-scoped for the break source
+#' and for access code 2.
 #' @noRd
 .lnk_pipeline_prep_observations <- function(conn, aoi, loaded, schema,
                                             observations = "bcfishobs.observations") {
@@ -289,21 +299,6 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
          call. = FALSE)
   }
   sp <- .lnk_pipeline_break_obs_species(loaded, aoi)
-
-  .lnk_db_execute(conn, sprintf(
-    "DROP TABLE IF EXISTS %s.observations", schema))
-
-  if (length(sp) == 0) {
-    # No species marked present — empty table mirroring source schema
-    .lnk_db_execute(conn, sprintf(
-      "CREATE TABLE %s.observations AS
-       SELECT * FROM %s WHERE FALSE", schema, observations))
-    return(invisible(NULL))
-  }
-
-  sp_sql <- paste0(
-    vapply(sp, .lnk_quote_literal, character(1)),
-    collapse = ", ")
 
   excl_filter <- ""
   excl_df <- loaded$observation_exclusions
@@ -320,6 +315,24 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
     }
   }
 
+  .lnk_pipeline_prep_observations_province(conn, loaded, schema, observations,
+                                           excl_filter)
+
+  .lnk_db_execute(conn, sprintf(
+    "DROP TABLE IF EXISTS %s.observations", schema))
+
+  if (length(sp) == 0) {
+    # No species marked present — empty table mirroring source schema
+    .lnk_db_execute(conn, sprintf(
+      "CREATE TABLE %s.observations AS
+       SELECT * FROM %s WHERE FALSE", schema, observations))
+    return(invisible(NULL))
+  }
+
+  sp_sql <- paste0(
+    vapply(sp, .lnk_quote_literal, character(1)),
+    collapse = ", ")
+
   .lnk_db_execute(conn, sprintf(
     "CREATE TABLE %s.observations AS
      SELECT * FROM %s o
@@ -328,6 +341,45 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
        %s",
     schema, observations, .lnk_quote_literal(aoi), sp_sql, excl_filter))
 
+  invisible(NULL)
+}
+
+
+#' Province-wide observations, each filtered by its own group's presence
+#'
+#' See [.lnk_pipeline_prep_observations()]. The presence pairs reach SQL as a
+#' `VALUES` list, so nothing is written but the table itself.
+#' @noRd
+.lnk_pipeline_prep_observations_province <- function(conn, loaded, schema,
+                                                     observations,
+                                                     excl_filter = "") {
+  to <- paste0(schema, ".observations_province")
+  pres <- loaded$wsg_species_presence
+  pairs <- unlist(lapply(pres$watershed_group_code, function(w) {
+    sp <- .lnk_pipeline_break_obs_species(loaded, w)
+    if (length(sp) == 0L) return(character(0))
+    sprintf("(%s, %s)", .lnk_quote_literal(w),
+            vapply(sp, .lnk_quote_literal, character(1)))
+  }), use.names = FALSE)
+
+  .lnk_db_execute(conn, sprintf("DROP TABLE IF EXISTS %s", to))
+  if (length(pairs) == 0L) {
+    .lnk_db_execute(conn, sprintf(
+      "CREATE TABLE %s AS SELECT * FROM %s WHERE FALSE", to, observations))
+    return(invisible(NULL))
+  }
+  .lnk_db_execute(conn, sprintf(
+    "CREATE TABLE %s AS
+     SELECT o.* FROM %s o
+     JOIN (VALUES %s) p (watershed_group_code, species_code)
+       ON p.watershed_group_code = o.watershed_group_code
+      AND p.species_code = o.species_code
+     WHERE TRUE
+       %s",
+    to, observations, paste(pairs, collapse = ", "), excl_filter))
+  .lnk_db_execute(conn, sprintf("CREATE INDEX ON %s USING gist (wscode)", to))
+  .lnk_db_execute(conn, sprintf("CREATE INDEX ON %s USING gist (localcode)", to))
+  .lnk_db_execute(conn, sprintf("ANALYZE %s", to))
   invisible(NULL)
 }
 
@@ -514,13 +566,15 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
     NULL
   }
 
-  # Use <schema>.observations (filtered per-AOI by `prep_observations`)
-  # rather than raw bcfishobs.observations. Mirrors bcfishpass's
-  # bcfishpass.observations build (species-presence + exclusions
-  # already applied). See link#92.
+  # Use <schema>.observations_province (built by `prep_observations`): every
+  # group's observations, each filtered by its own group's species presence,
+  # minus the exclusions. Mirrors bcfishpass.observations, which bcfishpass
+  # counts lifts over province-wide (link#92 for the filters, link#349 for
+  # the scope: counting only the AOI's observations left a barrier on a line
+  # several groups share un-lifted when its observations sat in another group).
   lnk_barrier_overrides(conn,
     barriers = paste0(schema, ".natural_barriers"),
-    observations = paste0(schema, ".observations"),
+    observations = paste0(schema, ".observations_province"),
     habitat = habitat_arg,
     control = control_arg,
     params = loaded$parameters_fresh,

@@ -165,19 +165,19 @@ UPDATE fails softly on a schema that predates them.
       `wsg_run_one.R`, so the classify-time state can be measured before the settle.
 
 ## Phase 3: RB lift rule and province-wide observation counting
-- [ ] Failing test: `lnk_barrier_overrides()` given a province table lifts a barrier whose
+- [x] Failing test: `lnk_barrier_overrides()` given a province table lifts a barrier whose
       only upstream observations lie in another group (fixture); with the AOI table it does
       not.
-- [ ] `.lnk_pipeline_prep_observations()` also builds `<schema>.observations_province`
+- [x] `.lnk_pipeline_prep_observations()` also builds `<schema>.observations_province`
       (all groups; each row kept when its own group's presence row and the exclusions admit
-      it: `loaded$wsg_species_presence` written as a scratch table and joined);
+      it: the presence pairs reach SQL as a `VALUES` list, so nothing else is written);
       `.lnk_pipeline_prep_overrides()` passes it as `observations`.
-- [ ] Time the override step on DUNC and CARP before and after (`fwa_upstream` join of the
+- [x] Time the override step on DUNC and CARP before and after (`fwa_upstream` join of the
       group's natural barriers against province-wide observations); record in `findings.md`;
       if it is minutes per group, index the scratch table on the ltrees before judging.
-- [ ] Add the RB row to `configs/default/parameters_fresh.csv`; `data-raw/audit_configs.R`
+- [x] Add the RB row to `configs/default/parameters_fresh.csv`; `data-raw/audit_configs.R`
       and `test-dictionaries.R` pass; `config_hash` moves (noted in NEWS).
-- [ ] Test that an RB-blocking barrier with one RB observation upstream is lifted in a
+- [x] Test that an RB-blocking barrier with one RB observation upstream is lifted in a
       `default` fixture (the rule, not the scope).
 
 ## Phase 4: Verification build

@@ -156,6 +156,22 @@ question, not this issue's.
 province-wide; link counted only the AOI's records. (bcfishpass matches the raw code, so a CCT record
 is not admitted by a CT presence; link admits CCT / ACT / CT/RB when CT is present, both tables.)
 
+## Phase 3: what counting over province-wide observations costs (2026-10-20)
+
+`data-raw/overrides_scope_time_349.R` → `data-raw/logs/access_disagree_349/overrides_scope_time.csv`
+(m1, docker fwapg). Prep of both observation tables 3.9 s per group (the province table is built
+once per group, 376 k source rows, two GiST indexes). `lnk_barrier_overrides()` over the AOI table
+vs the province table: DUNC 27.6 s vs 18.6 s, CARP 18.0 s vs 17.5 s (the habitat-confirmation pass
+dominates; the GiST-indexed province table is no slower). Lift counts are identical in both groups
+(DUNC BT 96, RB 25, WCT 98; CARP RB 4): neither group's own barriers have records upstream in
+another group. The scope matters where a group holds a barrier on a line others drain through
+(UPCE, the Peace rows), which is why the Phase 4 build adds UPCE.
+
+`audit_configs.R` flagged the edited `parameters_fresh.csv` as byte drift against its recorded
+checksum; the manifest's `checksum` (sha256 of the bytes, CRLF kept) and `synced` date were updated,
+after which the audit reports no findings. The audit's own `print()` errors with
+`invalid 'na.print' specification` when it has drift to print (pre-existing; seen only then).
+
 ## Errors Encountered
 
 | Error | Resolution |

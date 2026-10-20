@@ -46,3 +46,7 @@ says to resume.
   statement. `study_area_verify.sql` asserts no `accessible AND access_<sp> = 0` row; the
   negative test's new case 6d fires, 12 / 12 cases right on `fresh_default`'s run. Note:
   verify on `fresh_default` itself now fails until decision 4's re-gate runs.
+- Phase 3: `<schema>.observations_province` (every group's records, each by its own group's
+  presence, minus exclusions; GiST on the ltrees) feeds `lnk_barrier_overrides()`; the AOI table
+  still feeds breaks and access code 2. `default`'s RB row gains BT's resident rule (threshold 1,
+  RB). Timed on DUNC / CARP: no cost. Config checksum updated; audit clean.
