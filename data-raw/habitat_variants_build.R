@@ -821,6 +821,14 @@ run_variant <- function(v) {
       # (classify and connect never touch it), so the base's recomputed rows,
       # every species, replace it.
       copy_access(sch_base, sch, w)
+      # Fresh statistics before the gate: its counts join the rows just
+      # inserted, and planned on stale statistics (the planner sees about one
+      # row for the group) one count ran for over 10 min where it takes 0.2 s
+      # (link#364 build, CLWR / SQAM / BULK).
+      for (tb in c("streams", "streams_access",
+                   paste0("streams_habitat_", tolower(sp)))) {
+        dbExecute(conn, sprintf("ANALYZE %s.%s", sch, tb))
+      }
       # The variant's persisted habitat follows that access, as the base's
       # does after its recompute (link#349).
       lnk_habitat_gate(conn, aoi = w,
