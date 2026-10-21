@@ -1,0 +1,28 @@
+date: 2026-10-21 15:46 PDT
+link: 0.66.7 @ b26d406f (at launch)
+fresh: 0.42.0 @ no recorded sha
+db: docker fwapg localhost:5432
+base: default
+variants: data-raw/habitat_score/variants_364.csv (md5 aa3da9d6f4a16a1ff9129609ed958236): default,ch_door_stream,ch_pair_both,ch_pair_wetland_flow,ch_pair_stream,ch_q3_discharge,ch_order5,co_door_stream,ch_w30,ch_w20,ch_w15,ch_w10,ch_d250,ch_d500,ch_d1000,ch_d2000
+roles: data-raw/habitat_score/wsg_roles_364.csv (md5 017f8047ef1eb8b2514969fe664d7da0)
+built default: thresholds sha256 8540de4438e7; link b26d406f; 5 WSGs, 2026-10-21 14:36:21 PDT to 2026-10-21 14:42:14 PDT
+built ch_door_stream: thresholds sha256 8540de4438e7; link b26d406f; 5 WSGs, 2026-10-21 14:42:28 PDT to 2026-10-21 14:43:52 PDT
+built ch_pair_both: thresholds sha256 53bc8c64b9c5; link b26d406f; 5 WSGs, 2026-10-21 14:44:37 PDT to 2026-10-21 14:48:02 PDT
+built ch_pair_wetland_flow: thresholds sha256 53bc8c64b9c5; link b26d406f; 5 WSGs, 2026-10-21 14:48:47 PDT to 2026-10-21 14:52:02 PDT
+built ch_pair_stream: thresholds sha256 53bc8c64b9c5; link b26d406f; 5 WSGs, 2026-10-21 14:52:46 PDT to 2026-10-21 14:56:10 PDT
+built ch_q3_discharge: thresholds sha256 604e26476850; link b26d406f; 5 WSGs, 2026-10-21 14:56:55 PDT to 2026-10-21 15:00:19 PDT
+built ch_order5: thresholds sha256 0618faf79bee; link b26d406f; 5 WSGs, 2026-10-21 15:01:03 PDT to 2026-10-21 15:04:26 PDT
+built co_door_stream: thresholds sha256 8540de4438e7; link b26d406f; 5 WSGs, 2026-10-21 15:04:39 PDT to 2026-10-21 15:05:59 PDT
+built ch_w30: thresholds sha256 75202c7ed4ef; link b26d406f; 5 WSGs, 2026-10-21 15:06:42 PDT to 2026-10-21 15:10:07 PDT
+built ch_w20: thresholds sha256 803b81c6df36; link b26d406f; 5 WSGs, 2026-10-21 15:10:51 PDT to 2026-10-21 15:14:16 PDT
+built ch_w15: thresholds sha256 df4abac6617d; link b26d406f; 5 WSGs, 2026-10-21 15:15:00 PDT to 2026-10-21 15:18:32 PDT
+built ch_w10: thresholds sha256 b121a679bfe7; link b26d406f; 5 WSGs, 2026-10-21 15:19:16 PDT to 2026-10-21 15:22:44 PDT
+built ch_d250: thresholds sha256 472ae09857d8; link b26d406f; 5 WSGs, 2026-10-21 15:23:24 PDT to 2026-10-21 15:26:26 PDT
+built ch_d500: thresholds sha256 c32432da545e; link b26d406f; 5 WSGs, 2026-10-21 15:27:08 PDT to 2026-10-21 15:30:24 PDT
+built ch_d1000: thresholds sha256 df4abac6617d; link b26d406f; 5 WSGs, 2026-10-21 15:31:09 PDT to 2026-10-21 15:34:35 PDT
+built ch_d2000: thresholds sha256 97209ff5fe0a; link b26d406f; 5 WSGs, 2026-10-21 15:35:24 PDT to 2026-10-21 15:39:25 PDT
+focal: ADMS,BULK,CHWK,CLWR,SQAM; species: CH,CO; buffers: 0,100 m
+rule: n_band >= 10 and density_ratio >= 0.5 on held-out WSGs; floor of record: expected
+pooling: default species_pooling.csv (sha256 9c42964e0469): 0 WSG x species pairs pooled (none)
+bcfishobs.observations rows: 375962
+absences: none (LNK_KNOWLEDGE_DIR unset)

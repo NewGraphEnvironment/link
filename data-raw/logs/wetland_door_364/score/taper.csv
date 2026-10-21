@@ -1,0 +1,17 @@
+"species_code","column","role","taper_class","km","n","per_100km","ratio_to_core"
+"CH","rear_river_channel_width_min","held_out","band ch_w10",53.079576168196,0,0,0
+"CH","rear_river_channel_width_min","held_out","band ch_w15",38.6725747499659,0,0,0
+"CH","rear_river_channel_width_min","held_out","band ch_w20",45.0269447402415,0,0,0
+"CH","rear_river_channel_width_min","held_out","band ch_w30 removed",29.1582688244815,0,0,0
+"CH","rear_river_channel_width_min","held_out","core (-Inf,0.02]",2682.57995504694,222,8.27561540457852,1.22822373719973
+"CH","rear_river_channel_width_min","held_out","core (0.02,0.05]",1080.76086534467,38,3.51604144991699,0.521832559712353
+"CH","rear_river_channel_width_min","held_out","core (0.05,0.08]",109.273985060548,1,0.915130897299945,0.135818961582824
+"CH","rear_river_channel_width_min","held_out","core (0.08, Inf]",1.01126025137378,0,0,0
+"CH","rear_river_distance_max","held_out","band ch_d1000",71.5963275458511,1,1.3967196842039,0.205940206135504
+"CH","rear_river_distance_max","held_out","band ch_d2000",87.1406559826809,1,1.14756997032332,0.169204170970071
+"CH","rear_river_distance_max","held_out","band ch_d250 removed",29.4092105141009,0,0,0
+"CH","rear_river_distance_max","held_out","band ch_d500",52.1430197800749,0,0,0
+"CH","rear_river_distance_max","held_out","core (-Inf,0.02]",2645.94760473464,221,8.35239517232104,1.23152412253244
+"CH","rear_river_distance_max","held_out","core (0.02,0.05]",1075.14096454209,38,3.53442025308602,0.521134801579684
+"CH","rear_river_distance_max","held_out","core (0.05,0.08]",111.486408339704,1,0.896970325703699,0.132254349861288
+"CH","rear_river_distance_max","held_out","core (0.08, Inf]",1.01126025137378,0,0,0

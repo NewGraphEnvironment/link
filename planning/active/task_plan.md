@@ -69,9 +69,9 @@
 
 ### Phase 4 — the harness learns structure; the CH / CO comparison, before `default` moves
 - [x] `habitat_variants_build.R` / `_score.R` per Decision 7; one-group tests (dims no-op equals base digest; `stream` does not; pair anchor taken by construction; `built.csv` refuses a rules/dimensions change)
-- [ ] `data-raw/habitat_score/variants_364.csv` (base `default`): `free`; `stream` no pair; `stream` + CH pair scopes `both` / `wetland_flow` / `stream`; width chain with D fixed; D chain with W fixed; one discharge variant with `discharge_fill=TRUE`; `stream_order` once #262 says what order; CO door only. Held-out per `wsg_roles_364.csv`, `--floor=expected`. Groups: ADMS, BULK + three CH/CO-present groups across Fraser, Thompson, coast, named in the README
-- [ ] `data-raw/logs/wetland_door_364/summarise.R`: 1050/1150 km per variant (kept by size / by river / dropped); km the #311 floor alone removed under `free`; km moved on stream edges by the pair; km the W polygon rule admits; river-polygon coverage per measure; capture + cost for CH and CO
-- [ ] bcfishpass side: ADMS + BULK `lnk_compare_rollup()` for CO, before (main's `rules.yaml`) vs after
+- [x] `data-raw/habitat_score/variants_364.csv` (base `default`): `free`; `stream` no pair; `stream` + CH pair scopes `both` / `wetland_flow` / `stream`; width chain with D fixed; D chain with W fixed; one discharge variant with `discharge_fill=TRUE`; `stream_order` once #262 says what order; CO door only. Held-out per `wsg_roles_364.csv`, `--floor=expected`. Groups: ADMS, BULK + three CH/CO-present groups across Fraser, Thompson, coast, named in the README
+- [x] `data-raw/logs/wetland_door_364/summarise.R`: 1050/1150 km per variant (kept by size / by river / dropped); km the #311 floor alone removed under `free`; km moved on stream edges by the pair; km the W polygon rule admits; river-polygon coverage per measure; capture + cost for CH and CO
+- [x] bcfishpass side: ADMS + BULK `lnk_compare_rollup()` for CO, before (main's `rules.yaml`) vs after
 - [ ] README with every table; `research/habitat_thresholds.md` section with `**Verified:** · **Issues:** · **Produced by:**`; issue body edited with the numbers
 
 ### Phase 5 — `default` takes the stream door; docs; PR

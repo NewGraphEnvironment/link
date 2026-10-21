@@ -1,0 +1,12 @@
+---
+date: 2026-10-21 15:39 PDT
+step: variants; focal: ADMS,BULK,CHWK,CLWR,SQAM; variants: default,ch_door_stream,ch_pair_both,ch_pair_wetland_flow,ch_pair_stream,ch_q3_discharge,ch_order5,co_door_stream,ch_w30,ch_w20,ch_w15,ch_w10,ch_d250,ch_d500,ch_d1000,ch_d2000
+link: 0.66.7 @ b26d406f (at launch)
+base: default
+variants: data-raw/habitat_score/variants_364.csv (md5 aa3da9d6f4a16a1ff9129609ed958236); roles: data-raw/habitat_score/wsg_roles_364.csv (md5 017f8047ef1eb8b2514969fe664d7da0)
+fresh: 0.42.0 @ no recorded sha
+db: docker fwapg localhost:5432
+base run_uid(s) in score364_default.log: none
+bcfishobs.observations rows: 375962
+thresholds sha256 (12): default=8540de4438e7, ch_door_stream=8540de4438e7, ch_pair_both=53bc8c64b9c5, ch_pair_wetland_flow=53bc8c64b9c5, ch_pair_stream=53bc8c64b9c5, ch_q3_discharge=604e26476850, ch_order5=0618faf79bee, co_door_stream=8540de4438e7, ch_w30=75202c7ed4ef, ch_w20=803b81c6df36, ch_w15=df4abac6617d, ch_w10=b121a679bfe7, ch_d250=472ae09857d8, ch_d500=c32432da545e, ch_d1000=df4abac6617d, ch_d2000=97209ff5fe0a
+

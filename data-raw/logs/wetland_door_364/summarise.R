@@ -88,6 +88,8 @@ for (k in seq_len(nrow(roles))) {
     kept_by_river_only_km = km(r$kept_river_km), dropped_km = km(r$dropped_km))
 
   floor_ha <- suppressWarnings(as.numeric(dims$rear_wetland_ha_min[dims$species == sp]))
+  # No floor (CO): every polygon is at or over it.
+  if (length(floor_ha) != 1L || is.na(floor_ha)) floor_ha <- 0
   r <- q(sprintf(
     "SELECT sum(s.length_metre) FILTER (WHERE s.waterbody_key IS NULL) AS no_polygon,
             sum(s.length_metre) FILTER (WHERE w.area_ha < %s) AS under_floor,

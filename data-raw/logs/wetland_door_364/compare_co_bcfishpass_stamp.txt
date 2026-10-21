@@ -1,0 +1,5 @@
+date_utc: 2026-10-21T19:37:17Z
+link: 0.66.7 @ 3e782f42; before rules from main
+fresh: 0.42.0
+bcfishpass reference: model_run_id 144, v0.7.15-50-g620dbe43
+groups: ADMS, BULK

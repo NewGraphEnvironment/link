@@ -1,0 +1,11 @@
+"watershed_group_code","species_code","free_km","kept_by_size_km","kept_by_river_only_km","dropped_km"
+"ADMS","CH",25.5,21.8,3.8,1
+"ADMS","CO",28.1,22.8,,5.3
+"BULK","CH",184.6,153.5,5.5,27.6
+"BULK","CO",227.8,176.6,,51.2
+"CHWK","CH",2.5,2.1,0.6,0.3
+"CHWK","CO",3.1,2.1,,0.9
+"CLWR","CH",20.2,19.1,1,0.6
+"CLWR","CO",24.7,21.4,,3.3
+"SQAM","CH",5.9,3.4,2.1,0.6
+"SQAM","CO",6.1,3.4,,2.7
