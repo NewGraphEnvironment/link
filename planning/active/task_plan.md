@@ -27,7 +27,7 @@
    the stale working table. Persist deletes per WSG and inserts when the table exists.
    `<schema>.log.near_river` holds the effective pairs per WSG, `.lnk_hv_check_log()` compares them,
    and the validator passes the persisted table as `near_river_table`.
-6. **Values.** `default`: `rear_wetland_flow = stream` for every rear_wetland=yes species,
+6. **Values.** *(Revised by the operator 2026-10-21 on Phase 4's evidence: CH `rear_near_river = wetland_flow`, not `both`; pair at 15 m / 3 m³/s / 1000 m.)* `default`: `rear_wetland_flow = stream` for every rear_wetland=yes species,
    `rear_near_river = both`. CH rear: measure `model`, distance 1000, discharge_min 3, width_min at
    the width whose median MAD is 3 m³/s (floored as #307), confirmed or moved by Phase 4's ladder.
    Every other cell, CO included, is NA until #346. `bcfishpass`: CO → `gradient`. `default` moves
@@ -42,11 +42,11 @@
 ## Plan
 
 ### Phase 0 — fresh: the measure and the inheritance (sibling repo; branch + PR, never its main)
-- [ ] `/planning-init fresh#263` in fresh, sequenced with fresh#262 (one PR or two; link pins the release carrying both)
-- [ ] #262: the size key is one of `discharge_min` / `channel_width_min` / `stream_order_min`; the walk reads the named column; `<to>_near_river` records measure + threshold; the predicate matches both; live check gains width and order references
-- [ ] Inheritance: `frs_params()` reads five columns per stage (`_measure` in `char_fields`), stops on a half pair (incl. `Inf`), warns on unknown `*_river_*`, stores `params[[sp]]$near_river$<stage>`; `.frs_rule_near_river()` resolves explicit → `false` → inherited-with-a-size-part for both `.frs_rule_to_sql()` and `.frs_near_river_specs()`; `frs_habitat_predicates()` passes the pair in `csv_thresholds_<stage>` under both models; loader coercion guarded by `is.list()`; `.frs_validate_near_river()` takes `false` (refused on L/W), refuses `true`; `frs_habitat_classify()` filters species by `params_fresh` before specs
-- [ ] Tests: the fresh#263 list (each measure + `model`; override; opt-out; no-op on `thresholds: false`; refusals; byte identity on NA columns; specs = effective pairs; no size part → no pair; R rule form; half pairs; yaml round trip)
-- [ ] NEWS, docs, PR, release tag
+- [x] `/planning-init fresh#263` in fresh, sequenced with fresh#262 (one PR or two; link pins the release carrying both)
+- [x] #262: the size key is one of `discharge_min` / `channel_width_min` / `stream_order_min`; the walk reads the named column; `<to>_near_river` records measure + threshold; the predicate matches both; live check gains width and order references
+- [x] Inheritance: `frs_params()` reads five columns per stage (`_measure` in `char_fields`), stops on a half pair (incl. `Inf`), warns on unknown `*_river_*`, stores `params[[sp]]$near_river$<stage>`; `.frs_rule_near_river()` resolves explicit → `false` → inherited-with-a-size-part for both `.frs_rule_to_sql()` and `.frs_near_river_specs()`; `frs_habitat_predicates()` passes the pair in `csv_thresholds_<stage>` under both models; loader coercion guarded by `is.list()`; `.frs_validate_near_river()` takes `false` (refused on L/W), refuses `true`; `frs_habitat_classify()` filters species by `params_fresh` before specs
+- [x] Tests: the fresh#263 list (each measure + `model`; override; opt-out; no-op on `thresholds: false`; refusals; byte identity on NA columns; specs = effective pairs; no size part → no pair; R rule form; half pairs; yaml round trip)
+- [x] NEWS, docs, PR ([fresh PR #264](https://github.com/NewGraphEnvironment/fresh/pull/264)); the v0.42.0 tag is made at merge (owed, below)
 
 ### Phase 1 — link pins it
 - [x] Install released fresh; `Imports: fresh (>= <ver>)` and `Remotes: NewGraphEnvironment/fresh@v<ver>`
@@ -72,15 +72,17 @@
 - [x] `data-raw/habitat_score/variants_364.csv` (base `default`): `free`; `stream` no pair; `stream` + CH pair scopes `both` / `wetland_flow` / `stream`; width chain with D fixed; D chain with W fixed; one discharge variant with `discharge_fill=TRUE`; `stream_order` once #262 says what order; CO door only. Held-out per `wsg_roles_364.csv`, `--floor=expected`. Groups: ADMS, BULK + three CH/CO-present groups across Fraser, Thompson, coast, named in the README
 - [x] `data-raw/logs/wetland_door_364/summarise.R`: 1050/1150 km per variant (kept by size / by river / dropped); km the #311 floor alone removed under `free`; km moved on stream edges by the pair; km the W polygon rule admits; river-polygon coverage per measure; capture + cost for CH and CO
 - [x] bcfishpass side: ADMS + BULK `lnk_compare_rollup()` for CO, before (main's `rules.yaml`) vs after
-- [ ] README with every table; `research/habitat_thresholds.md` section with `**Verified:** · **Issues:** · **Produced by:**`; issue body edited with the numbers
+- [x] README with every table; `research/habitat_thresholds.md` section with `**Verified:** · **Issues:** · **Produced by:**`; issue body edited with the numbers
 
 ### Phase 5 — `default` takes the stream door; docs; PR
-- [ ] `default/dimensions.csv`: `rear_wetland_flow = stream` for BT, CH, CO, ST, WCT, CT, DV, RB, `rear_near_river = both`; CH `rear_river_*` in `default` and `default_tuned` at the ladder's pick; rebuild rules, regen provenance, audit exit 0; test `frs_params()` on `default` yields `near_river$rear` for CH
-- [ ] RUNBOOK §7 (wetland-flow rule row, near-river columns, scope dimension, R opt-out), §6d (export), §6 (persisted table, log column)
-- [ ] NEWS; CLAUDE.md status (incl. `fresh_default` not validatable until re-modelled); research verdict line; `data-raw/README.md` + `data-raw/habitat_score/README.md` rows
+- [x] `default/dimensions.csv`: `rear_wetland_flow = stream` for BT, CH, CO, ST, WCT, CT, DV, RB, `rear_near_river = both`; CH `rear_river_*` in `default` and `default_tuned` at the ladder's pick; rebuild rules, regen provenance, audit exit 0; test `frs_params()` on `default` yields `near_river$rear` for CH
+- [x] RUNBOOK §7 (wetland-flow rule row, near-river columns, scope dimension, R opt-out), §6d (export), §6 (persisted table, log column)
+- [x] NEWS; CLAUDE.md status (incl. `fresh_default` not validatable until re-modelled); research verdict line; `data-raw/README.md` + `data-raw/habitat_score/README.md` rows
 - [ ] Draft the rule-table issue for review; `/code-check branch`; `/planning-archive`; `/gh-pr-push`
 
 ## Owed at the end (reported, done after merge)
+
+- [ ] Merge fresh PR #264 and tag v0.42.0, so link's `Remotes: NewGraphEnvironment/fresh@v0.42.0` resolves (link CI cannot install fresh until then)
 
 - [ ] Cyphers re-prepped for the new fresh pin before the next dispatch
 - [ ] Next provincial `default` run re-models every group (validator's log check otherwise refuses `fresh_default`)

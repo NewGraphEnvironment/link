@@ -392,8 +392,12 @@ test_that("a near_river pair reads discharge on a cw group only when measured by
   # the same file without the opt-outs reads it
   writeLines(c("CH:", "  rear:", "  - edge_types_explicit: [1000, 1100]"), y)
   expect_true(link:::.lnk_discharge_read_rules(opted))
-  # the log text names the pair; no pair is "", not NA
+  # the log text names the pair; no pair is "", not NA. `default` carries
+  # CH's pair (model: width under cw) since #364.
   expect_identical(link:::.lnk_near_river_logged(by_q, "ADMS"),
                    "discharge:3:1000")
-  expect_identical(link:::.lnk_near_river_logged(base, "ADMS"), "")
+  expect_identical(link:::.lnk_near_river_logged(base, "ADMS"),
+                   "channel_width:15:1000")
+  bcfp <- lnk_config("bcfishpass")
+  expect_identical(link:::.lnk_near_river_logged(bcfp, "ADMS"), "")
 })

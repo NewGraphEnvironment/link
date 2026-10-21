@@ -1,3 +1,16 @@
+# link 0.67.0
+
+**`default` rears a stretch that runs through a wetland only where it would rear as a stream: big enough, or close to a large river** ([#364](https://github.com/NewGraphEnvironment/link/issues/364)). Needs fresh 0.42.0.
+
+- **Two `dimensions.csv` columns.**
+  - `rear_wetland_flow` sets how FWA 1050 / 1150 lines rear: `stream` (the species' gradient, size and near-river thresholds), `gradient` (the rear gradient only) or `free` (no test, the earlier rule).
+  - `rear_near_river` sets which rear rules take the species' near-river pair.
+  - `default` takes `stream` for BT, CH, CO, ST, WCT, CT, DV and RB. The `bcfishpass` bundle gives CO `gradient`, as bcfishpass's coho SQL does. Every river-polygon rule now carries `near_river: false`.
+- **The near-river pair is a threshold.** `parameters_habitat_thresholds.csv` carries ten `<stage>_river_*` columns that fresh inherits. `default` gives CH rearing a river of at least 15 m modelled width under `cw` (3 m³/s under `mad`) within 1 km, on its through-wetland lines only (`rear_near_river = wetland_flow`). Every other species is NA until #346.
+- **Persisted, logged and validated.** `<schema>.streams_near_river` keeps the walked distances. `<schema>.log.near_river` records each group's pairs, and `lnk_habitat_validate()` scores against both. A schema built before this release has neither, so it cannot be validated under `default` until it is re-modelled (the next provincial run).
+- **The variants harness varies rules as well as thresholds.** It takes a `dims` column, structure variants scored against the base, near-river cells in `set`, and pair anchors. `built.csv` records each schema's rules and dimensions.
+- **Measured before `default` moved**, on five held-out groups (ADMS, BULK, CHWK, CLWR, SQAM; 291 CH locations). The door alone removes 43.1 km of CH rearing and no captured location. The pair on every stream rule would add 275.6 km where CH are found at 5 % of the core rate, so `default` limits it to through-wetland lines (operator, 2026-10-21). Under `bcfishpass`, CO rearing moves −0.2 km on ADMS and −1.5 km on BULK. Write-up: `research/habitat_thresholds.md`, "Through-wetland lines and the near-river test".
+
 # link 0.66.7
 
 - **`citation("link")` carries the package's Zenodo concept DOI**, which resolves to every archived release. It is read from a new `Config/DOI` field in `DESCRIPTION`, so `inst/CITATION` holds no package-specific literal.

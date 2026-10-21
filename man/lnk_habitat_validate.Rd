@@ -256,7 +256,12 @@ annual pick) because the persist does not carry it. When \code{cfg} fills discha
 (\code{cfg$pipeline$discharge_fill}), it is filled as prepare filled it: edge
 1250 lines with no value take one along the network (\code{mad_m3s_source}
 says which), and a \code{mad} group logged with the other fill state is an
-error. The \code{width} labels below mean
+error. A rule with a near_river pair (its own, or inherited from the
+thresholds CSV) is re-tested against the distances the build persisted
+in \verb{<schema>.streams_near_river}; a group logged with other pairs than
+\code{cfg} reads, or a schema built before link 0.67.0 when \code{cfg} reads one,
+is an error. A segment far from any river labels \code{fails_width} like any
+other size miss, never "no river near". The \code{width} labels below mean
 that size on either model; \code{model} and \code{mad_m3s} split them:
 \itemize{
 \item \code{NA} — captured; \code{no_segment} — the location attaches to no segment;

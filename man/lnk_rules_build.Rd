@@ -22,14 +22,26 @@ polygon segments), \code{notes}. \code{rear_lake_connected_distance_max} /
 wetland rearing bucket only where same-species spawning lies within
 that distance (\code{requires_connected: spawning} on its first rear L / W
 rule). The additive lake rule admits lake centrelines (FWA
-construction lines) with no channel-width test. See
-\code{configs/dictionary_dimensions.csv} for every column.}
+construction lines) with no channel-width test.
+\code{rear_wetland_flow} (\code{stream}, \code{gradient} or \code{free}; blank is \code{free})
+sets how flow through a wetland (FWA 1050 / 1150) rears: \code{stream}
+emits a rule that inherits the species' gradient, size and
+near-river thresholds as the stream rule does, \code{gradient} a rule with
+the rear gradient only, \code{free} a rule with no test. \code{rear_near_river}
+(\code{both}, \code{stream} or \code{wetland_flow}; blank is \code{both}) sets which rear
+rules take the species' near-river pair. The pair's numbers live in
+the thresholds CSV (\verb{<stage>_river_*}) and fresh inherits them; this
+function writes no numbers, only \code{near_river: false} on the rules
+outside the scope and on every river-polygon rule, because a river
+polygon is the river. See \code{configs/dictionary_dimensions.csv} for
+every column.}
 
 \item{to}{Path to write the output YAML.}
 
 \item{thresholds}{Path to the habitat thresholds CSV (from fresh).
-Used to look up \code{rear_lake_ha_min} per species. Default uses the
-copy shipped with fresh.}
+Used to look up \code{rear_lake_ha_min} per species, and
+\code{rear_gradient_max} for a \code{rear_wetland_flow = gradient} rule.
+Default uses the copy shipped with fresh.}
 
 \item{edge_types}{Character. How to express stream edge types in rules:
 \code{"categories"} (default) uses fresh categories (\code{stream}, \code{canal}).

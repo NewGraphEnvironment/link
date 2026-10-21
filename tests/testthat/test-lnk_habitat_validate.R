@@ -2,6 +2,20 @@
 # Closing parens sit on the last argument line, as in the other test files.
 # nolint start: indentation_linter
 
+# `default` as these fixtures were written for it: no near-river pair (#364).
+# Since 0.67.0 `default` gives CH one, which the validator would check the
+# fixture schemas (built with none) against.
+default_nopair <- function(env = parent.frame()) {
+  cfg <- lnk_config("default")
+  th <- utils::read.csv(cfg$files$parameters_habitat_thresholds$path,
+                        check.names = FALSE, stringsAsFactors = FALSE)
+  for (k in grep("_river_", names(th), value = TRUE)) th[[k]] <- NA
+  f <- withr::local_tempfile(fileext = ".csv", .local_envir = env)
+  utils::write.csv(th, f, row.names = FALSE)
+  cfg$files$parameters_habitat_thresholds$path <- f
+  cfg
+}
+
 test_that(".lnk_obs_stage reads spawning from activity and rearing from activity or juvenile stage", {
   st <- link:::.lnk_obs_stage(
     activity_code = c("SPL", "R", NA, "OBS", "S", "M"),
@@ -321,7 +335,7 @@ test_that(".lnk_hv_dedup merges records at one location and ORs their stages", {
 })
 
 test_that("lnk_habitat_validate validates its arguments before touching the DB", {
-  cfg <- lnk_config("default")
+  cfg <- default_nopair()
   conn <- structure(list(), class = c("PqConnection", "DBIConnection"))
   expect_error(lnk_habitat_validate(conn, "MORR", cfg, list(), "BT"),
                "schema")
@@ -438,7 +452,7 @@ validate_conn <- function(env = parent.frame()) {
 
 run_validate <- function(conn, s, aoi = c("AAAA", "BBBB"), ...) {
   lnk_habitat_validate(
-    conn, aoi = aoi, cfg = lnk_config("default"),
+    conn, aoi = aoi, cfg = default_nopair(),
     loaded = validate_loaded(), species = "BT", schema = s,
     observations = paste0(s, ".observations"), ...)
 }
@@ -585,7 +599,7 @@ test_that("observations can be a data frame from any source", {
   ld <- validate_loaded()
   ld$observation_exclusions <- NULL
   v <- lnk_habitat_validate(
-    conn, aoi = "AAAA", cfg = lnk_config("default"),
+    conn, aoi = "AAAA", cfg = default_nopair(),
     loaded = ld, species = "BT", schema = s,
     observations = mine, match_types = NULL, source_exclude = NULL)
   sm <- v$summary
@@ -609,7 +623,7 @@ test_that("a filter whose column the source lacks is an error, not a pass", {
   ld <- validate_loaded()
   ld$observation_exclusions <- NULL
   go <- function(obs = mine, loaded = ld, ...) lnk_habitat_validate(
-    conn, aoi = "AAAA", cfg = lnk_config("default"),
+    conn, aoi = "AAAA", cfg = default_nopair(),
     loaded = loaded, species = "BT", schema = s,
     observations = obs, ...)
   expect_error(go(source_exclude = NULL), "match_types = NULL")
@@ -631,7 +645,7 @@ test_that("source_exclude matches a literal prefix, not a LIKE pattern", {
   ld <- validate_loaded()
   ld$observation_exclusions <- NULL
   v <- lnk_habitat_validate(
-    conn, aoi = "AAAA", cfg = lnk_config("default"),
+    conn, aoi = "AAAA", cfg = default_nopair(),
     loaded = ld, species = "BT", schema = s,
     observations = mine, match_types = NULL, source_exclude = "50%")
   expect_identical(round(v$observations$m), 300)
@@ -647,7 +661,7 @@ test_that("codes are normalised on the observation side, and 0/1 flags read as s
   ld <- validate_loaded()
   ld$observation_exclusions <- NULL
   v <- lnk_habitat_validate(
-    conn, aoi = "AAAA", cfg = lnk_config("default"),
+    conn, aoi = "AAAA", cfg = default_nopair(),
     loaded = ld, species = "BT", schema = s,
     observations = mine, match_types = NULL, source_exclude = NULL)
   sm <- v$summary
@@ -786,7 +800,7 @@ run_validate_mad <- function(conn, s, method = "watershed_group_code,model\nAAAA
                              source = NULL) {
   csv <- withr::local_tempfile(fileext = ".csv", .local_envir = parent.frame())
   writeLines(method, csv)
-  cfg <- lnk_config("default")
+  cfg <- default_nopair()
   cfg$files$parameters_habitat_method <- list(path = csv)
   if (length(mad_none) > 0L) {
     # Species given no MAD range, as every bundle left BT before #307.
@@ -941,7 +955,7 @@ test_that("a mixed aoi fills only the groups the fill applies to (#305)", {
   conn <- validate_conn()
   s <- local_mad_fixture(conn)
   csv <- withr::local_tempfile(fileext = ".csv")
-  cfg <- lnk_config("default")
+  cfg <- default_nopair()
   cfg$pipeline$discharge_fill <- TRUE
   cfg$files$parameters_habitat_method <- list(path = csv)
   # Point AAAA's segment 1 at an edge 1250 line the fill reaches: absent from
@@ -994,7 +1008,7 @@ test_that("a mixed aoi fills only the groups the fill applies to (#305)", {
 # -- near_river pairs (#364) -------------------------------------------------
 
 near_cfg <- function(env = parent.frame()) {
-  cfg <- lnk_config("default")
+  cfg <- default_nopair()
   th <- utils::read.csv(cfg$files$parameters_habitat_thresholds$path,
                         check.names = FALSE, stringsAsFactors = FALSE)
   bt <- th$species_code == "BT"
@@ -1061,7 +1075,7 @@ test_that("a near_river bundle is scored against the persisted distances", {
   # a cfg with no pair ignores the table and needs no log value
   DBI::dbExecute(conn, sprintf("UPDATE %s.log SET near_river = ''", s))
   expect_no_error(lnk_habitat_validate(
-    conn, aoi = c("AAAA", "BBBB"), cfg = lnk_config("default"),
+    conn, aoi = c("AAAA", "BBBB"), cfg = default_nopair(),
     loaded = validate_loaded(), species = "BT", schema = s,
     observations = paste0(s, ".observations")))
 })

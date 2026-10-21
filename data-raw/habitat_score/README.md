@@ -1,7 +1,8 @@
 # habitat_score
 
 The inputs for scoring habitat-threshold variants against fish observations (#284 step 5,
-the MAD ranges of #302, and `cw` against `mad` in #300).
+the MAD ranges of #302, `cw` against `mad` in #300, and the through-wetland door and the
+near-river pair in #364).
 The rule and the reasoning behind it are in `research/habitat_thresholds.md`, under
 "Scoring design". Two scripts use these files:
 
@@ -29,7 +30,14 @@ row (below).
 | `step_from` | the neighbour nearer `default` in the ladder; the band is the difference between the two |
 | `equals_bundle` | a shipped bundle whose thresholds this variant must equal byte for byte (checked at build) |
 | `model` | optional (#302): `cw` (empty) or `mad`. A `mad` variant's bundle also carries a `parameters_habitat_method.csv` with every WSG holding a role for its species on `mad` |
-| `set` | optional (#302): further cells the variant fixes, `col=value;col=value`, held constant along a ladder (a MAD rung's open maximum; the spawning range a clustered rearing ladder needs) |
+| `set` | optional (#302): further cells the variant fixes, `col=value;col=value`, held constant along a ladder (a MAD rung's open maximum; the spawning range a clustered rearing ladder needs). `*_mad_*` and, from #364, `*_river_*` cells only |
+| `dims` | optional (#364): cells of the variant species' row in the base's `dimensions.csv`, `col=value;col=value`. The bundle carries its own `dimensions.csv` and a `rules.yaml` rebuilt from it, and `built.csv` records the sha of each. Held constant along a ladder, like `set` |
+
+### Structure variants and near-river ladders (#364)
+
+A row with an empty `column`, on `cw`, that is not the base changes the rules (`dims`) and/or fixes cells (`set`) without being a ladder step. It must step from the base, name its species, and leave `value`, `flag`, `obs_stage` and `equals_bundle` empty; no row may step from it, and one that changes nothing stops the build. The score compares it with the base in both flags: `structure_bands.csv` and `structure_bands_pooled.csv` give the `added` and `removed` bands against the habitat both keep, with the locations expected at the core's rate. A flag whose scored groups hold `user_habitat_classification` reaches for the species is skipped and named, since those reaches would sit in the core. Capture and cost are in `summary.csv`, `totals.csv` and `habitat_change.csv`, as for every variant.
+
+A near-river ladder's first step, where the base's cell is NA, is an anchor like a model change (`take (anchor: near-river pair)`), and its core leaves the base out. The inputs for #364 are `variants_364.csv` and `wsg_roles_364.csv`.
 
 ### MAD ladders (#302)
 

@@ -20,7 +20,7 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Allan Irvine \email{al@newgraphenvironment.com} (\href{https://orcid.org/0000-0002-3495-2128}{ORCID})
+\strong{Maintainer}: Allan Irvine \email{al@newgraphenvironment.com} (\href{https://orcid.org/0000-0002-3495-2128}{ORCID}) (New Graph Environment Ltd.)
 
 Other contributors:
 \itemize{
