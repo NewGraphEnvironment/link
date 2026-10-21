@@ -1,0 +1,17 @@
+variant,species_code,column,value,flag,obs_stage,step_from,equals_bundle,model,set,discharge_source,discharge_fill,dims
+default,,,,,,,default,cw,,,,
+ch_door_stream,CH,,,,,default,,cw,,,,rear_wetland_flow=stream
+ch_pair_both,CH,,,,,default,,cw,rear_river_measure=model;rear_river_channel_width_min=15;rear_river_discharge_min=3;rear_river_distance_max=1000,,,rear_wetland_flow=stream
+ch_pair_wetland_flow,CH,,,,,default,,cw,rear_river_measure=model;rear_river_channel_width_min=15;rear_river_discharge_min=3;rear_river_distance_max=1000,,,rear_wetland_flow=stream;rear_near_river=wetland_flow
+ch_pair_stream,CH,,,,,default,,cw,rear_river_measure=model;rear_river_channel_width_min=15;rear_river_discharge_min=3;rear_river_distance_max=1000,,,rear_wetland_flow=stream;rear_near_river=stream
+ch_q3_discharge,CH,,,,,default,,cw,rear_river_measure=discharge;rear_river_discharge_min=3;rear_river_distance_max=1000,,TRUE,rear_wetland_flow=stream
+ch_order5,CH,,,,,default,,cw,rear_river_measure=stream_order;rear_river_stream_order_min=5;rear_river_distance_max=1000,,,rear_wetland_flow=stream
+co_door_stream,CO,,,,,default,,cw,,,,rear_wetland_flow=stream
+ch_w30,CH,rear_river_channel_width_min,30,rearing,any,default,,cw,rear_river_measure=channel_width;rear_river_distance_max=1000,,,rear_wetland_flow=stream
+ch_w20,CH,rear_river_channel_width_min,20,rearing,any,ch_w30,,cw,rear_river_measure=channel_width;rear_river_distance_max=1000,,,rear_wetland_flow=stream
+ch_w15,CH,rear_river_channel_width_min,15,rearing,any,ch_w20,,cw,rear_river_measure=channel_width;rear_river_distance_max=1000,,,rear_wetland_flow=stream
+ch_w10,CH,rear_river_channel_width_min,10,rearing,any,ch_w15,,cw,rear_river_measure=channel_width;rear_river_distance_max=1000,,,rear_wetland_flow=stream
+ch_d250,CH,rear_river_distance_max,250,rearing,any,default,,cw,rear_river_measure=channel_width;rear_river_channel_width_min=15,,,rear_wetland_flow=stream
+ch_d500,CH,rear_river_distance_max,500,rearing,any,ch_d250,,cw,rear_river_measure=channel_width;rear_river_channel_width_min=15,,,rear_wetland_flow=stream
+ch_d1000,CH,rear_river_distance_max,1000,rearing,any,ch_d500,,cw,rear_river_measure=channel_width;rear_river_channel_width_min=15,,,rear_wetland_flow=stream
+ch_d2000,CH,rear_river_distance_max,2000,rearing,any,ch_d1000,,cw,rear_river_measure=channel_width;rear_river_channel_width_min=15,,,rear_wetland_flow=stream

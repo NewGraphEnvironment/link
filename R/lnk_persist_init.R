@@ -495,7 +495,8 @@ lnk_persist_init <- function(conn, cfg, species, force_recreate = FALSE) {
       c("id_segment", "watershed_group_code", "measure", "threshold",
         "distance_max"))))
   .lnk_db_execute(conn, sprintf(
-    "CREATE INDEX IF NOT EXISTS streams_near_river_wsg_idx ON %s.streams_near_river (watershed_group_code)",
+    paste("CREATE INDEX IF NOT EXISTS streams_near_river_wsg_idx",
+          "ON %s.streams_near_river (watershed_group_code)"),
     schema))
 
   # Long-form habitat view (link#187). UNION ALL across per-species

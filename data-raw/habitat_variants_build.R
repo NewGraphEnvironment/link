@@ -26,7 +26,12 @@
 # carries a parameters_habitat_method.csv putting every WSG with a role for
 # its species on `mad`; its working network must carry mad_m3s (#286). A
 # model-only variant (link#300: no `column`, `model` mad, stepping from the
-# base) changes no threshold cell, only the model.
+# base) changes no threshold cell, only the model. A variant with `dims`
+# (link#364, "col=value;col=value" cells of the variant species' row in the
+# base's dimensions.csv) carries its own dimensions.csv and a rules.yaml
+# rebuilt from it by lnk_rules_build(). A structure variant (no `column`, on
+# `cw`, stepping from the base, with `dims` and/or `set`) changes the rules or
+# fixes cells without being a ladder rung, and is scored against the base.
 #
 # Invariants, asserted (the run stops on the first failure):
 #   - every variant schema carries the same streams as the base schema, per
@@ -135,7 +140,9 @@ cols_variants <- c("variant", "species_code", "column", "value", "flag",
 # `discharge_source` and `discharge_fill` (link#331) are optional too: empty
 # inherits the base bundle's, a value is written into the variant bundle's
 # `pipeline:`, so one segmentation can score both sources and both fills.
-cols_optional <- c("model", "set", "discharge_source", "discharge_fill")
+# `dims` (link#364) is optional as well: empty changes no rule.
+cols_optional <- c("model", "set", "discharge_source", "discharge_fill",
+                   "dims")
 for (k in cols_optional) {
   if (!k %in% names(variants)) variants[[k]] <- NA_character_
 }
@@ -162,9 +169,11 @@ if (!all(is.na(unlist(variants[variants$variant == base_variant,
   stop("the base variant takes its discharge from --base; leave its ",
        "discharge_source and discharge_fill empty", call. = FALSE)
 }
-if (!is.na(variants$column[variants$variant == base_variant])) {
-  stop("the base variant changes no threshold: its column must be empty",
-       call. = FALSE)
+if (!is.na(variants$column[variants$variant == base_variant]) ||
+    !is.na(variants$set[variants$variant == base_variant]) ||
+    !is.na(variants$dims[variants$variant == base_variant])) {
+  stop("the base variant changes no threshold or rule: its column, set and ",
+       "dims must be empty", call. = FALSE)
 }
 if (!identical(variants$model[variants$variant == base_variant], "cw")) {
   stop("the base variant must be on the cw model", call. = FALSE)
@@ -193,15 +202,16 @@ parse_set <- function(x) {
   out
 }
 sets <- stats::setNames(lapply(variants$set, parse_set), variants$variant)
-# `set` may fix only MAD cells: a core is cut at default's gradient and width,
-# so a set cell on either would make a band differ from the core on an axis
-# the step is not about.
+dims_of <- stats::setNames(lapply(variants$dims, parse_set), variants$variant)
+# `set` may fix only MAD and near-river cells (link#364): a core is cut at
+# default's gradient and width, so a set cell on either would make a band
+# differ from the core on an axis the step is not about.
 local({
   bad <- vapply(variants$variant, function(v) {
-    !all(grepl("_mad_(min|max)$", names(sets[[v]])))
+    !all(grepl("_mad_(min|max)$|_river_", names(sets[[v]])))
   }, logical(1))
   if (any(bad)) {
-    stop("set may name only *_mad_min / *_mad_max cells: ",
+    stop("set may name only *_mad_min / *_mad_max / *_river_* cells: ",
          paste(variants$variant[bad], collapse = ", "), call. = FALSE)
   }
 })
@@ -209,22 +219,45 @@ local({
 # it is on `mad`, steps from the base, names its species, and carries no
 # value, flag or set (its bands are both flags, scored against the base).
 model_only <- variants$variant[is.na(variants$column) &
-                                 variants$variant != base_variant]
+                                 variants$variant != base_variant &
+                                 variants$model == "mad"]
+# A structure variant (link#364): no column, on cw, from the base, changing
+# the rules (`dims`) and / or fixing cells (`set`), scored against the base
+# as a model-only variant is, never a ladder rung.
+structure_only <- variants$variant[is.na(variants$column) &
+                                     variants$variant != base_variant &
+                                     variants$model == "cw"]
 local({
   r <- variants[variants$variant %in% model_only, ]
-  bad <- r$variant[r$model != "mad" | r$step_from != base_variant |
+  bad <- r$variant[r$step_from != base_variant |
                      is.na(r$species_code) | !is.na(r$value) |
                      !is.na(r$flag) | lengths(sets[r$variant]) > 0L |
+                     lengths(dims_of[r$variant]) > 0L |
                      !is.na(r$obs_stage) | !is.na(r$equals_bundle)]
   if (length(bad) > 0L) {
-    stop("a variant with no column must be model-only (on mad, stepping from ",
+    stop("a mad variant with no column must be model-only (stepping from ",
          base_variant, ", with a species and no value, flag, obs_stage, ",
-         "equals_bundle or set): ", paste(bad, collapse = ", "), call. = FALSE)
+         "equals_bundle, set or dims): ", paste(bad, collapse = ", "),
+         call. = FALSE)
   }
-  # Nothing steps from a model-only variant: it is not a ladder rung.
-  off <- variants$variant[variants$step_from %in% model_only]
+  r <- variants[variants$variant %in% structure_only, ]
+  bad <- r$variant[r$step_from != base_variant |
+                     is.na(r$species_code) | !is.na(r$value) |
+                     !is.na(r$flag) | !is.na(r$obs_stage) |
+                     !is.na(r$equals_bundle) |
+                     (lengths(sets[r$variant]) == 0L &
+                        lengths(dims_of[r$variant]) == 0L)]
+  if (length(bad) > 0L) {
+    stop("a cw variant with no column must be a structure variant (stepping ",
+         "from ", base_variant, ", with a species, dims or set, and no value, ",
+         "flag, obs_stage or equals_bundle): ", paste(bad, collapse = ", "),
+         call. = FALSE)
+  }
+  # Nothing steps from either: neither is a ladder rung.
+  off <- variants$variant[variants$step_from %in% c(model_only,
+                                                     structure_only)]
   if (length(off) > 0L) {
-    stop("no variant may step from a model-only variant: ",
+    stop("no variant may step from a model-only or structure variant: ",
          paste(off, collapse = ", "), call. = FALSE)
   }
 })
@@ -282,6 +315,15 @@ path_thr_base <- cfg_base$files$parameters_habitat_thresholds$path
 thr_base <- utils::read.csv(path_thr_base, colClasses = "character")
 meth_base <- utils::read.csv(cfg_base$files$parameters_habitat_method$path,
                                 colClasses = "character")
+dims_base <- utils::read.csv(cfg_base$dimensions, colClasses = "character",
+                             check.names = FALSE, na.strings = character(0))
+local({
+  bad <- setdiff(unlist(lapply(dims_of, names)), names(dims_base))
+  if (length(bad) > 0L) {
+    stop("dims names no column of ", base_bundle, "'s dimensions.csv: ",
+         paste(unique(bad), collapse = ", "), call. = FALSE)
+  }
+})
 # Write a thresholds table in the shipped CSVs' shape: header and text columns
 # quoted, numbers bare, NA bare. Proven on the base itself before any variant
 # is written, so a variant bundle differs from the base in its own cells only.
@@ -304,7 +346,7 @@ local({
 bundle_dir <- function(v) file.path(dir_out, "bundles", v)
 write_bundle <- function(r) {
   thr <- thr_base
-  is_model_only <- r$variant %in% model_only
+  is_model_only <- r$variant %in% c(model_only, structure_only)
   if (!is_model_only && !r$column %in% names(thr)) {
     stop("variant ", r$variant, ": no column ", r$column, call. = FALSE)
   }
@@ -313,7 +355,8 @@ write_bundle <- function(r) {
     stop("variant ", r$variant, ": species ", r$species_code,
          " not in ", base_bundle, "'s thresholds", call. = FALSE)
   }
-  # A model-only variant changes no cell (its `set` is empty, checked above).
+  # A model-only variant changes no cell (its `set` is empty, checked above);
+  # a structure variant only its `set` cells.
   cells <- if (is_model_only) sets[[r$variant]] else
     c(stats::setNames(r$value, r$column), sets[[r$variant]])
   if (anyDuplicated(names(cells)) || !all(names(cells) %in% names(thr))) {
@@ -337,6 +380,22 @@ write_bundle <- function(r) {
     cells <- cells[setdiff(names(cells), same)]
   }
   for (k in names(cells)) thr[[k]][i] <- cells[[k]]
+  # Dims (link#364): the cells that move, and a structure variant must move
+  # something, or it equals the base.
+  dc <- dims_of[[r$variant]]
+  j <- which(dims_base$species == r$species_code)
+  if (length(dc) > 0L && length(j) != 1L) {
+    stop("variant ", r$variant, ": species ", r$species_code, " not in ",
+         base_bundle, "'s dimensions.csv", call. = FALSE)
+  }
+  dc <- dc[vapply(names(dc), function(k) {
+    !identical(dims_base[[k]][j], dc[[k]])
+  }, logical(1))]
+  if (r$variant %in% structure_only && length(cells) == 0L &&
+      length(dc) == 0L) {
+    stop("variant ", r$variant, " equals ", base_bundle, ": its dims and set ",
+         "change nothing", call. = FALSE)
+  }
   n_diff <- sum(mapply(function(a, b) {
     sum(!((a == b) %in% TRUE) & !(is.na(a) & is.na(b)))
   }, thr, thr_base))
@@ -350,12 +409,30 @@ write_bundle <- function(r) {
   write_thresholds(thr, path_thr)
   files <- list(parameters_habitat_thresholds = list(
     path = "parameters_habitat_thresholds.csv"))
+  src_note <- sprintf("link (generated from configs/%s; %s row %s)",
+                      base_bundle, basename(path_variants), r$variant)
   # Its own entry, or the inherited one would verify the base's copy.
   prov <- list(parameters_habitat_thresholds.csv = list(
-    source = sprintf("link (generated from configs/%s; %s row %s)",
-                     base_bundle, basename(path_variants), r$variant),
+    source = src_note,
     checksum = paste0("sha256:", digest::digest(file = path_thr,
                                                 algo = "sha256"))))
+  own_rules <- length(dc) > 0L
+  if (own_rules) {
+    dims <- dims_base
+    for (k in names(dc)) dims[[k]][j] <- dc[[k]]
+    path_dims <- file.path(d, "dimensions.csv")
+    utils::write.csv(dims, path_dims, row.names = FALSE, na = "")
+    path_rules <- file.path(d, "rules.yaml")
+    suppressMessages(lnk_rules_build(path_dims, path_rules,
+                                     thresholds = path_thr,
+                                     edge_types = "explicit"))
+    for (f in c(path_dims, path_rules)) {
+      prov[[basename(f)]] <- list(
+        source = src_note,
+        checksum = paste0("sha256:", digest::digest(file = f,
+                                                    algo = "sha256")))
+    }
+  }
   if (identical(r$model, "mad")) {
     # Every WSG with a role for this species on `mad`, the rest as the base.
     path_meth <- file.path(d, "parameters_habitat_method.csv")
@@ -381,11 +458,15 @@ write_bundle <- function(r) {
     description = sprintf(paste(
       "Habitat-threshold scoring variant, generated by",
       "data-raw/habitat_variants_build.R from %s: `%s` on the %s model",
-      "with %s %s."), basename(path_variants), base_bundle, r$model,
+      "with %s %s%s."), basename(path_variants), base_bundle, r$model,
       r$species_code,
       if (length(cells) == 0L) "on the base's thresholds" else
-        paste(names(cells), cells, sep = " = ", collapse = ", ")),
+        paste(names(cells), cells, sep = " = ", collapse = ", "),
+      if (length(dc) == 0L) "" else
+        paste0("; dims ", paste(names(dc), dc, sep = " = ", collapse = ", "))),
     extends = base_bundle,
+    rules = if (own_rules) "rules.yaml",
+    dimensions = if (own_rules) "dimensions.csv",
     files = files,
     # Resolved and written, never inherited (link#331): the bundle extends
     # its base by name, so an inherited value would follow the base if it
@@ -406,6 +487,22 @@ write_bundle <- function(r) {
     file.path(d, "config.yaml"))
   cfg <- lnk_config(normalizePath(d))
   ver <- lnk_config_verify(cfg)
+  if (own_rules) {
+    # The bundle must resolve to its own rules and dimensions, verified
+    # against its own provenance entries, not the base's.
+    for (f in c("rules.yaml", "dimensions.csv")) {
+      vf <- ver[ver$file == f, ]
+      if (nrow(vf) != 1L || isTRUE(vf$byte_drift)) {
+        stop("variant ", r$variant, ": its ", f, " does not verify against ",
+             "its own provenance", call. = FALSE)
+      }
+    }
+    if (!identical(normalizePath(cfg$rules), normalizePath(path_rules)) ||
+        !identical(normalizePath(cfg$dimensions), normalizePath(path_dims))) {
+      stop("variant ", r$variant, ": its rules or dimensions did not resolve ",
+           "to the ones written for it", call. = FALSE)
+    }
+  }
   for (f in sub("$", ".csv", names(files))) {
     vf <- ver[ver$file == f, ]
     if (nrow(vf) != 1L || isTRUE(vf$byte_drift)) {
@@ -451,6 +548,11 @@ record_built <- function(v, w) {
     method_sha256 = digest::digest(
       file = cfgs[[v]]$files$parameters_habitat_method$path,
       algo = "sha256"),
+    # The rules and dimensions it classified with (link#364): its own when
+    # it carries dims, else the base's.
+    rules_sha256 = digest::digest(file = cfgs[[v]]$rules, algo = "sha256"),
+    dimensions_sha256 = digest::digest(file = cfgs[[v]]$dimensions,
+                                       algo = "sha256"),
     # The discharge the variant classified on (#305): run_variant() refills
     # the working streams to the fill the bundle applies to w before
     # classify.
@@ -476,6 +578,10 @@ record_built <- function(v, w) {
   # Nor, before link#331, a source column: those schemas read fwapg.
   if (!is.null(old) && !"discharge_source" %in% names(old)) {
     old$discharge_source <- "fwapg"
+  }
+  # Nor, before link#364, rules or dimensions shas: not recorded, so NA.
+  for (k in c("rules_sha256", "dimensions_sha256")) {
+    if (!is.null(old) && !k %in% names(old)) old[[k]] <- NA_character_
   }
   if (!is.null(old)) old <- old[names(row)]
   keep <- !(old$variant == v & old$watershed_group_code == w)

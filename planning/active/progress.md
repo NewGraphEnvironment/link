@@ -21,3 +21,13 @@
   - The validator scores CH: 11 locations, 0 post_predicate.
   - `default` filled and unfilled give the same habitat digest.
 - Width for 3 m3/s: 15 m (`data-raw/query_mad_width_equivalent.R`; the 15 m bin, n 600, median 3.29). The narrowest bin with n >= 100 whose median reaches 3 m3/s; a "stays above" rule read noise in the sparse bins over 20 m and gave 44 m.
+- Phase 4, harness. `habitat_variants_build.R` and `_score.R` learn three things.
+  - A `dims` column holds cells of the variant species' row in the base's `dimensions.csv`. The variant writes its own `dimensions.csv` and a rebuilt `rules.yaml`, both with provenance entries the verify loop reads.
+  - A structure row class: no column, on `cw`, from the base, with `dims` and/or `set`. It is scored against the base in `structure_bands*.csv` and kept out of ladders.
+  - `set` may name `*_river_*` cells. `built.csv` gains `rules_sha256` and `dimensions_sha256`, NA for older rows, which only a variant without dims may have. Ladders hold `dims` fixed like `set`. A near-river ladder's first step (base cell NA) is an anchor like a model change, and its core leaves the base out.
+  - The score's known-habitat guard now looks only at the scored groups: per flag for a structure row (a biased flag is skipped and named), per step for a ladder (still a stop). CH's reaches in the five groups are all spawning.
+- Pre-flight on SQAM, build 8.3 min:
+  - An inert `dims` change (`notes`) persists CH habitat identical to the base (md5 c8abbeb5…).
+  - The stream door moves 2.7 km out of CH rearing and 0.2 km in.
+  - `ch_w30` is taken as the pair anchor.
+  - The score refuses a bundle whose `rules.yaml` changed after the build.
