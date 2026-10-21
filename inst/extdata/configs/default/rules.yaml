@@ -28,6 +28,9 @@ BT:
     - 0.0
     - 9999.0
     near_river: false
+  - edge_types_explicit:
+    - 1050
+    - 1150
   - waterbody_type: W
     edge_types_explicit:
     - 1000
@@ -35,12 +38,6 @@ BT:
     wetland_ha_min: 1.0
     requires_connected: spawning
     connected_distance_max: 10000.0
-  - waterbody_type: W
-    edge_types_explicit:
-    - 1050
-    - 1150
-    thresholds: false
-    wetland_ha_min: 1.0
   - waterbody_type: L
     edge_types_explicit:
     - 1000
@@ -75,11 +72,15 @@ CH:
     - 1100
     - 2000
     - 2300
+    near_river: false
   - waterbody_type: R
     channel_width:
     - 0.0
     - 9999.0
     near_river: false
+  - edge_types_explicit:
+    - 1050
+    - 1150
   - waterbody_type: W
     edge_types_explicit:
     - 1000
@@ -87,12 +88,6 @@ CH:
     wetland_ha_min: 1.0
     requires_connected: spawning
     connected_distance_max: 10000.0
-  - waterbody_type: W
-    edge_types_explicit:
-    - 1050
-    - 1150
-    thresholds: false
-    wetland_ha_min: 1.0
   - waterbody_type: L
     edge_types_explicit:
     - 1000
@@ -149,7 +144,6 @@ CO:
   - edge_types_explicit:
     - 1050
     - 1150
-    thresholds: false
   - waterbody_type: W
     edge_types_explicit:
     - 1000
@@ -236,6 +230,9 @@ ST:
     - 0.0
     - 9999.0
     near_river: false
+  - edge_types_explicit:
+    - 1050
+    - 1150
   - waterbody_type: W
     edge_types_explicit:
     - 1000
@@ -243,12 +240,6 @@ ST:
     wetland_ha_min: 1.0
     requires_connected: spawning
     connected_distance_max: 10000.0
-  - waterbody_type: W
-    edge_types_explicit:
-    - 1050
-    - 1150
-    thresholds: false
-    wetland_ha_min: 1.0
   - waterbody_type: L
     edge_types_explicit:
     - 1000
@@ -288,6 +279,9 @@ WCT:
     - 0.0
     - 9999.0
     near_river: false
+  - edge_types_explicit:
+    - 1050
+    - 1150
   - waterbody_type: W
     edge_types_explicit:
     - 1000
@@ -295,12 +289,6 @@ WCT:
     wetland_ha_min: 1.0
     requires_connected: spawning
     connected_distance_max: 10000.0
-  - waterbody_type: W
-    edge_types_explicit:
-    - 1050
-    - 1150
-    thresholds: false
-    wetland_ha_min: 1.0
   - waterbody_type: L
     edge_types_explicit:
     - 1000
@@ -367,6 +355,9 @@ RB:
     - 0.0
     - 9999.0
     near_river: false
+  - edge_types_explicit:
+    - 1050
+    - 1150
   - waterbody_type: W
     edge_types_explicit:
     - 1000
@@ -374,12 +365,6 @@ RB:
     wetland_ha_min: 1.0
     requires_connected: spawning
     connected_distance_max: 10000.0
-  - waterbody_type: W
-    edge_types_explicit:
-    - 1050
-    - 1150
-    thresholds: false
-    wetland_ha_min: 1.0
   - waterbody_type: L
     edge_types_explicit:
     - 1000

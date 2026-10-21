@@ -956,15 +956,14 @@ test_that("default config rules.yaml has no 1050/1150/2100 in spawn or rear-stre
           info = sprintf("%s spawn rule contains forbidden code", sp))
       }
     }
-    # Rear-stream rule is the predicate-bearing rule. The dedicated
-    # wetland_rearing rule has `thresholds: false` and IS allowed to
-    # carry 1050/1150 (its sole purpose). Check only rules that act as
-    # predicates (no `thresholds: false`).
+    # The stream rule must not carry 1050/1150; the dedicated
+    # wetland-flow rule is exactly those two codes (its sole purpose), and
+    # since #364 it inherits thresholds (the stream door) in `default`.
     rear <- rules[[sp]]$rear %||% list()
     for (r in rear) {
       codes <- r[["edge_types_explicit"]]
-      thr <- r[["thresholds"]]
-      is_wetland_rule <- !is.null(thr) && isFALSE(thr)
+      is_wetland_rule <- !is.null(codes) &&
+        identical(sort(as.integer(codes)), c(1050L, 1150L))
       if (!is.null(codes) && !is_wetland_rule) {
         expect_true(length(intersect(as.integer(codes), forbidden)) == 0L,
           info = sprintf("%s rear stream-predicate rule contains forbidden code", sp))
@@ -1051,19 +1050,24 @@ test_that("default config rules.yaml retains 1050/1150 in dedicated wetland-rear
   rear <- rules$BT$rear
   wetland_rule <- NULL
   for (r in rear) {
-    if (!is.null(r[["edge_types_explicit"]]) &&
-        !is.null(r[["thresholds"]]) && isFALSE(r[["thresholds"]])) {
+    codes <- r[["edge_types_explicit"]]
+    if (!is.null(codes) &&
+        identical(sort(as.integer(codes)), c(1050L, 1150L))) {
       wetland_rule <- r
       break
     }
   }
   expect_false(is.null(wetland_rule),
                info = "BT rear should include dedicated wetland rule")
-  expect_setequal(as.integer(wetland_rule[["edge_types_explicit"]]),
-                  c(1050L, 1150L))
-  # BT declares rear_wetland_ha_min = 1, so the carve-out carries it (#311)
-  expect_identical(wetland_rule[["waterbody_type"]], "W")
-  expect_equal(wetland_rule[["wetland_ha_min"]], 1)
+  # Since #364 `default` rears these lines through the stream door: the rule
+  # inherits thresholds, is not W-typed and carries no floor, which stays on
+  # the W polygon rule (#311).
+  expect_null(wetland_rule[["thresholds"]])
+  expect_null(wetland_rule[["waterbody_type"]])
+  expect_null(wetland_rule[["wetland_ha_min"]])
+  w <- Filter(function(r) identical(r$waterbody_type, "W"), rear)
+  expect_length(w, 1L)
+  expect_equal(w[[1]][["wetland_ha_min"]], 1)
 })
 
 # -- Lake centrelines and connected lake / wetland rearing (#310) -------------
@@ -1436,4 +1440,29 @@ test_that("built rules load through fresh::frs_params()", {
       csv = file.path(cfgd, "parameters_habitat_thresholds.csv"),
       rules_yaml = file.path(cfgd, "rules.yaml")))
   }
+})
+
+test_that("default carries CH's near-river pair on its through-wetland lines only (#364)", {
+  cfg <- lnk_config("default")
+  p <- fresh::frs_params(
+    csv = cfg$files$parameters_habitat_thresholds$path, rules_yaml = cfg$rules)
+  expect_identical(p$CH$near_river$rear$measure, "model")
+  expect_equal(p$CH$near_river$rear$channel_width_min, 15)
+  expect_equal(p$CH$near_river$rear$discharge_min, 3)
+  expect_equal(p$CH$near_river$rear$distance_max, 1000)
+  # Every other species carries none.
+  others <- setdiff(names(p), "CH")
+  expect_true(all(vapply(p[others], function(x) {
+    is.null(x$near_river$rear) && is.null(x$near_river$spawn)
+  }, logical(1))))
+  # Only CH's 1050/1150 rule inherits it: its stream rule opts out.
+  rear <- yaml::read_yaml(cfg$rules)$CH$rear
+  flow <- Filter(is_flow_rule, rear)
+  expect_length(flow, 1L)
+  expect_null(flow[[1]]$near_river)
+  expect_null(flow[[1]]$thresholds)
+  expect_false(Filter(is_stream_rule, rear)[[1]]$near_river)
+  specs <- getFromNamespace(".frs_near_river_specs", "fresh")
+  expect_identical(specs(p, names(p), c("cw", "mad"))$measure,
+                   c("channel_width", "discharge"))
 })

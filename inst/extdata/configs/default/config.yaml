@@ -121,13 +121,13 @@ provenance:
     generated_from: dimensions.csv
     generated_by: lnk_rules_build
     generator_sha: 83dfe16951ab9fc59015db2eedffc9ef4fd78c23
-    checksum: sha256:8a850e4748072683a78440d08a19dc161df670a20497aa6c1905d45af0caf83b
+    checksum: sha256:00e1df5a7df1b66116cf8169b2434fa1cee88e84fff5391838a602144126ca6b
     shape_checksum: sha256:4fec0f2db7523d71ba7542e0d52217c91d9bab5b55d714b689f614380f5c2eb9
   dimensions.csv:
     source: link (hand-authored)
     upstream_sha: 8f1890564b9148573535a679f2e5563aebe74207
     synced: '2026-10-07'
-    checksum: sha256:631cc8f83c923dc65b4c40fb4ff075d67cab0bddc77cca82c63d1e278c669859
+    checksum: sha256:a6d590d2cbb0745228c0cf820d23a23bb42220ae58fe8d47c621bbbf7071dc45
     shape_checksum: sha256:0c628a9f8c4b8bb06c85a6dd3bddc891d2dda9000ed6926d9f597c17e5662946
   parameters_fresh.csv:
     source: link (hand-authored)
@@ -142,7 +142,7 @@ provenance:
     upstream_version: fresh@v0.33.0
     derived_from: NewGraphEnvironment/fresh@v0.33.0 inst/extdata/parameters_habitat_thresholds.csv, itself smnorris/bcfishpass@4699d0f parameters/example_newgraph/parameters_habitat_thresholds.csv (+ fresh#104 edge_types columns)
     synced: '2026-10-06'
-    checksum: sha256:8540de4438e7df260c2e5d834c68ea066af27729959f39d58d2dd7cb31989510
+    checksum: sha256:29afa9c2d7f3db263e5c2c1ccf05f319ac2e3f3b6485cf6f05904b96b81dcf40
     shape_checksum: sha256:b837e5dabbce8e69488a1523214bf111827682e4edf87526557231c377fa538e
   parameters_habitat_method.csv:
     source: link (frozen copy; not csv-synced, link#286). Moving a group to mad is a reviewed edit here
