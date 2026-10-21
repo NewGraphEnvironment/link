@@ -95,7 +95,7 @@ test_that("rear_lake=no emits no waterbody_type: L rule", {
 
 # -- Wetland rule emission (fresh#165 / fresh#166 dependency) -----------------
 
-test_that("rear_wetland=yes emits waterbody_type: W rule + edge_types wetland rule", {
+test_that("rear_wetland=yes emits waterbody_type: W rule + the 1050/1150 rule", {
   dims <- tibble::tribble(
     ~species, ~spawn_lake, ~spawn_stream, ~rear_lake, ~rear_lake_only,
     ~rear_no_fw, ~rear_stream, ~rear_wetland, ~rear_all_edges,
@@ -116,10 +116,15 @@ test_that("rear_wetland=yes emits waterbody_type: W rule + edge_types wetland ru
   expect_false(is.null(co_w))
   expect_equal(co_w$wetland_ha_min, 0.5)
 
-  # 2. edge_types: wetland rule still emitted (for the rearing km total)
-  edge_wetland <- vapply(co_rear,
-    function(r) identical(r$edge_types, "wetland"), logical(1))
-  expect_true(any(edge_wetland))
+  # 2. the 1050/1150 rule still emitted (for the rearing km total), as
+  # codes in categories mode too: fresh's `wetland` category is 1700
+  # shorelines (#364)
+  carve <- vapply(co_rear, function(r) {
+    identical(as.integer(r$edge_types_explicit), c(1050L, 1150L))
+  }, logical(1))
+  expect_true(any(carve))
+  expect_false(any(vapply(co_rear,
+    function(r) identical(r$edge_types, "wetland"), logical(1))))
 })
 
 test_that("rear_wetland=yes without ha_min column emits W rule without threshold", {
@@ -1226,4 +1231,209 @@ test_that("bcfishpass rules.yaml is unchanged by a rebuild", {
     grep("^# Generated:", readLines(f), value = TRUE, invert = TRUE)
   }
   expect_identical(body(out), body(file.path(dir, "rules.yaml")))
+})
+
+
+# -- Through-wetland door and near-river scope (#364) ------------------------
+
+door_dims <- function(flow = NA, scope = NA, sp = "CH", rear_wetland = "yes",
+                      rear_stream = "yes", all_edges = "no", ha_min = 1) {
+  d <- tibble::tibble(
+    species = sp, spawn_lake = "no", spawn_stream = "yes",
+    rear_lake = "no", rear_lake_only = "no", rear_no_fw = "no",
+    rear_stream = rear_stream, rear_wetland = rear_wetland,
+    rear_wetland_polygon = "yes", rear_all_edges = all_edges,
+    river_skip_cw_min = "yes", rear_stream_in_waterbody = "yes",
+    rear_wetland_ha_min = ha_min)
+  if (!is.na(flow)) d$rear_wetland_flow <- flow
+  if (!is.na(scope)) d$rear_near_river <- scope
+  d
+}
+
+build_door <- function(dims, edge_types = "explicit", thresholds = NULL) {
+  out <- withr::local_tempfile(fileext = ".yaml", .local_envir = parent.frame())
+  csv <- withr::local_tempfile(fileext = ".csv", .local_envir = parent.frame())
+  utils::write.csv(dims, csv, row.names = FALSE)
+  args <- list(csv, out, edge_types = edge_types)
+  if (!is.null(thresholds)) args$thresholds <- thresholds
+  suppressMessages(do.call(lnk_rules_build, args))
+  invisible(out)
+}
+
+is_flow_rule <- function(r) {
+  identical(as.integer(r$edge_types_explicit), c(1050L, 1150L))
+}
+is_stream_rule <- function(r) {
+  identical(as.integer(r$edge_types_explicit), c(1000L, 1100L, 2000L, 2300L))
+}
+
+test_that("rear_wetland_flow = stream emits an inheriting 1050/1150 rule", {
+  out <- build_door(door_dims("stream"))
+  rear <- get_rear_rules(out, "CH")
+  flow <- Filter(is_flow_rule, rear)
+  expect_length(flow, 1L)
+  # inherits: no thresholds: false, never W-typed, no floor
+  expect_identical(names(flow[[1]]), "edge_types_explicit")
+  # the floor stays on the W polygon rule only
+  w <- Filter(function(r) identical(r$waterbody_type, "W"), rear)
+  expect_length(w, 1L)
+  expect_equal(w[[1]]$wetland_ha_min, 1)
+  expect_setequal(as.integer(w[[1]]$edge_types_explicit), c(1000L, 1100L))
+})
+
+test_that("rear_wetland_flow = gradient emits the bundle's rear gradient", {
+  thr <- withr::local_tempfile(fileext = ".csv")
+  x <- utils::read.csv(system.file("extdata", "parameters_habitat_thresholds.csv",
+                                   package = "fresh"))
+  x$rear_gradient_max[x$species_code == "CH"] <- 0.0321
+  utils::write.csv(x, thr, row.names = FALSE)
+  out <- build_door(door_dims("gradient"), thresholds = thr)
+  flow <- Filter(is_flow_rule, get_rear_rules(out, "CH"))
+  expect_length(flow, 1L)
+  expect_false(flow[[1]]$thresholds)
+  expect_equal(flow[[1]]$gradient, c(0, 0.0321))
+  # floored like free: W-typed with the floor, after the polygon rule
+  expect_identical(flow[[1]]$waterbody_type, "W")
+  # an NA rear_gradient_max stops the build
+  x$rear_gradient_max[x$species_code == "CH"] <- NA
+  utils::write.csv(x, thr, row.names = FALSE)
+  expect_error(build_door(door_dims("gradient"), thresholds = thr),
+               "rear_gradient_max")
+})
+
+test_that("absent, blank or free reproduces the pre-#364 1050/1150 rule", {
+  for (flow in c(NA, "", "free")) {
+    out <- build_door(door_dims(flow))
+    flow_r <- Filter(is_flow_rule, get_rear_rules(out, "CH"))
+    expect_length(flow_r, 1L)
+    expect_false(flow_r[[1]]$thresholds, info = flow)
+    expect_null(flow_r[[1]]$near_river, info = flow)
+  }
+})
+
+test_that("each scope stamps near_river: false on exactly the rules outside it", {
+  stamped <- function(rules) {
+    vapply(rules, function(r) isFALSE(r$near_river), logical(1))
+  }
+  for (scope in c("both", "stream", "wetland_flow")) {
+    rear <- get_rear_rules(build_door(door_dims("stream", scope)), "CH")
+    st <- stamped(rear)
+    stream_i <- which(vapply(rear, is_stream_rule, logical(1)))
+    flow_i <- which(vapply(rear, is_flow_rule, logical(1)))
+    r_i <- which(vapply(rear, function(r) identical(r$waterbody_type, "R"),
+                        logical(1)))
+    lw_i <- which(vapply(rear, function(r) {
+      isTRUE(r$waterbody_type %in% c("L", "W"))
+    }, logical(1)))
+    expect_identical(st[stream_i], scope == "wetland_flow", info = scope)
+    expect_identical(st[flow_i], scope == "stream", info = scope)
+    expect_true(all(st[r_i]), info = scope)
+    expect_false(any(st[lw_i]), info = scope)
+    # no rule ever carries a mapping: the builder writes no numbers
+    expect_false(any(vapply(rear, function(r) is.list(r$near_river),
+                            logical(1))), info = scope)
+  }
+})
+
+test_that("the river-polygon rule is stamped on spawn and rear; spawn stream is not", {
+  out <- build_door(door_dims())
+  spawn <- yaml::read_yaml(out)$CH$spawn
+  r <- Filter(function(x) identical(x$waterbody_type, "R"), spawn)
+  expect_length(r, 1L)
+  expect_false(r[[1]]$near_river)
+  s <- Filter(is_stream_rule, spawn)
+  expect_null(s[[1]]$near_river)
+})
+
+test_that("no L/W or thresholds: false rule is ever stamped", {
+  for (flow in c("free", "gradient", "stream")) {
+    for (scope in c("both", "stream")) {
+      d <- door_dims(flow, scope)
+      d$rear_lake <- "yes"
+      rear <- get_rear_rules(build_door(d), "CH")
+      bad <- vapply(rear, function(r) {
+        !is.null(r$near_river) &&
+          (isTRUE(r$waterbody_type %in% c("L", "W")) || isFALSE(r$thresholds))
+      }, logical(1))
+      expect_false(any(bad), info = paste(flow, scope))
+    }
+  }
+})
+
+test_that("the all-edges rule counts as the stream rule for the scope", {
+  rear <- get_rear_rules(build_door(door_dims("stream", "wetland_flow",
+                                              all_edges = "yes")), "CH")
+  all_e <- Filter(function(r) is.null(r$edge_types_explicit) &&
+                    is.null(r$waterbody_type), rear)
+  expect_length(all_e, 1L)
+  expect_false(all_e[[1]]$near_river)
+  expect_no_error(build_door(door_dims("stream", "stream", rear_stream = "no",
+                                       all_edges = "yes")))
+})
+
+test_that("dead combinations and unknown values stop the build", {
+  expect_error(build_door(door_dims("stream", "wetland_flow",
+                                    rear_wetland = "no")),
+               "rear_wetland_flow = stream needs rear_wetland = yes")
+  expect_error(build_door(door_dims("free", "wetland_flow")),
+               "rear_near_river = wetland_flow needs")
+  expect_error(build_door(door_dims("gradient", "wetland_flow")),
+               "rear_near_river = wetland_flow needs")
+  expect_error(build_door(door_dims(NA, "stream", rear_stream = "no")),
+               "rear_near_river = stream needs rear_stream = yes")
+  expect_error(build_door(door_dims("door")), "rear_wetland_flow must be one of")
+  expect_error(build_door(door_dims(NA, "all")), "rear_near_river must be one of")
+})
+
+test_that("rules match the pre-#364 builder once the R stamps are removed", {
+  # Frozen from link 0.66.7's builder (fixtures/rules_build_0667). The
+  # stamps are the only difference in explicit mode; in categories mode the
+  # 1050/1150 rule's `edge_types: [wetland]` is also now codes.
+  fx <- test_path("fixtures", "rules_build_0667")
+  strip <- function(f) {
+    x <- readLines(f)
+    x[!grepl("^# Generated|^ +near_river: false$", x)]
+  }
+  for (b in c("default", "bcfishpass")) {
+    cfgd <- system.file("extdata", "configs", b, package = "link")
+    dims <- utils::read.csv(file.path(cfgd, "dimensions.csv"),
+                            stringsAsFactors = FALSE)
+    dims$rear_wetland_flow <- NULL
+    dims$rear_near_river <- NULL
+    for (m in c("explicit", "categories")) {
+      out <- build_door(dims, m,
+        thresholds = file.path(cfgd, "parameters_habitat_thresholds.csv"))
+      want <- strip(file.path(fx, sprintf("%s_%s.yaml", b, m)))
+      if (m == "categories") {
+        # The category line is either a rule's first key ("  - ") or a
+        # later one ("    "), and becomes the explicit codes in place.
+        at <- grep("^(  - |    )edge_types: wetland$", want)
+        expect_gt(length(at), 0)
+        want <- unlist(lapply(seq_along(want), function(i) {
+          if (!i %in% at) return(want[i])
+          c(sub("edge_types: wetland$", "edge_types_explicit:", want[i]),
+            "    - 1050", "    - 1150")
+        }))
+      }
+      expect_identical(strip(out), want, info = paste(b, m))
+    }
+  }
+})
+
+test_that("built rules load through fresh::frs_params()", {
+  for (flow in c("free", "gradient", "stream")) {
+    for (scope in c("both", "stream", "wetland_flow")) {
+      if (scope == "wetland_flow" && flow != "stream") next
+      out <- build_door(door_dims(flow, scope))
+      expect_no_error(fresh::frs_params(
+        csv = system.file("extdata", "parameters_habitat_thresholds.csv",
+                          package = "fresh"), rules_yaml = out))
+    }
+  }
+  for (b in c("default", "bcfishpass")) {
+    cfgd <- system.file("extdata", "configs", b, package = "link")
+    expect_no_error(fresh::frs_params(
+      csv = file.path(cfgd, "parameters_habitat_thresholds.csv"),
+      rules_yaml = file.path(cfgd, "rules.yaml")))
+  }
 })

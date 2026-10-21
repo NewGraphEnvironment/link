@@ -51,15 +51,15 @@
 ### Phase 1 — link pins it
 - [x] Install released fresh; `Imports: fresh (>= <ver>)` and `Remotes: NewGraphEnvironment/fresh@v<ver>`
 - [x] One commit: `.lnk_fresh_required_formals()` gains `frs_habitat_predicates = c("model", "near_river_table")`; `.lnk_fresh_required_internal()` gains `.frs_near_river_specs`; comments; `test-lnk_preflight_fresh.R` vectors
-- [x] Suite green before any other change (baseline)
+- [x] Suite on the new fresh before any other change: 3,415 expectations; the only failures (2) are the known stale golden dams pin
 
 ### Phase 2 — rules: dimensions, parameters, builder, bundles
-- [ ] `dictionary_dimensions.csv`: rows for `rear_wetland_flow`, `rear_near_river`; fix `rear_wetland_polygon` default_when_absent/description to `yes`
-- [ ] `dictionary_parameters_habitat_thresholds.csv`: ten `*_river_*` rows (owner fresh)
-- [ ] Columns: ten thresholds columns (NA) in `default`, `default_tuned`, `bcfishpass`; two dimension columns in `default` (`free` / `both` for now) and `bcfishpass` (CO `gradient`); frozen bundles untouched
-- [ ] `lnk_rules_build()`: read the two columns (absent → defaults; unknown → stop; dead combos → stop); emit per Decisions 2–3 via one `add_nr()` helper; carve-out explicit in both edge modes; no `*_river_*` read; roxygen
-- [ ] Tests in `test-lnk_rules_build.R` (explicit mode): `stream`, `gradient`, each scope value, R always stamped, no L/W ever carries the key, stops, absent columns byte-identical, built rules load through `fresh::frs_params()`
-- [ ] `build_rules.R`; diff (`bcfishpass` changes only CO's carve-out + R stamps; `default` only R stamps + date); `regen_provenance.R` derives repo root from its own location and covers `default_tuned`, run it; `audit_configs.R` exit 0; `test-dictionaries.R` green; update `.lnk_hv_stage_min()` comment
+- [x] `dictionary_dimensions.csv`: rows for `rear_wetland_flow`, `rear_near_river`; fix `rear_wetland_polygon` default_when_absent/description to `yes`
+- [x] `dictionary_parameters_habitat_thresholds.csv`: ten `*_river_*` rows (owner fresh)
+- [x] Columns: ten thresholds columns (NA) in `default`, `default_tuned`, `bcfishpass`; two dimension columns in `default` (`free` / `both` for now) and `bcfishpass` (CO `gradient`); frozen bundles untouched
+- [x] `lnk_rules_build()`: read the two columns (absent → defaults; unknown → stop; dead combos → stop); emit per Decisions 2–3 via one `add_nr()` helper; carve-out explicit in both edge modes; no `*_river_*` read; roxygen
+- [x] Tests in `test-lnk_rules_build.R` (explicit mode): `stream`, `gradient`, each scope value, R always stamped, no L/W ever carries the key, stops, absent columns byte-identical, built rules load through `fresh::frs_params()`
+- [x] `build_rules.R`; diff (`bcfishpass` changes only CO's carve-out + R stamps; `default` only R stamps + date); `regen_provenance.R` derives repo root from its own location and covers `default_tuned`, run it; `audit_configs.R` exit 0; `test-dictionaries.R` green; update `.lnk_hv_stage_min()` comment
 
 ### Phase 3 — the walk's inputs, the persisted table, the log, the validator
 - [ ] `.lnk_rules_read_mad()` → `.lnk_discharge_read_rules()` via fresh's resolver; rename call sites + `test-lnk_discharge.R`; tests: pair by discharge (reads), by width (does not), opt-out everywhere (does not), rule-level `mad:` (does)
