@@ -31,3 +31,4 @@
   - The stream door moves 2.7 km out of CH rearing and 0.2 km in.
   - `ch_w30` is taken as the pair anchor.
   - The score refuses a bundle whose `rules.yaml` changed after the build.
+- Phase 4 run decisions, 2026-10-21. Config `default`; schemas `score364_<variant>`; working `working_score364_<wsg>`. Focal groups ADMS, BULK, CHWK, CLWR, SQAM, all `held_out`: the pair's numbers came from province-wide work (#346) and the 15 m width from `fresh_default` province-wide, so none of these groups chose them. The closure is resolved by the harness and listed in `score/closure.txt`. Variants are CH and CO, from `data-raw/habitat_score/variants_364.csv`. Discharge is fwapg, filled only on `ch_q3_discharge`. Scored with `--floor=expected`.
