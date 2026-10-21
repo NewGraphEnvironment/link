@@ -366,6 +366,30 @@ lnk_rules_build <- function(csv,
       stop(sp, ": rear_near_river = stream needs rear_stream = yes or ",
            "rear_all_edges = yes", call. = FALSE)
     }
+    # No stream or wetland-flow rule is emitted at all under rear_no_fw or
+    # rear_lake_only, so a door or a narrowed scope there would say nothing.
+    if ((d$rear_no_fw || d$rear_lake_only) &&
+        (wetland_flow != "free" || nr_scope != "both")) {
+      stop(sp, ": rear_wetland_flow / rear_near_river need stream rearing; ",
+           "rear_no_fw or rear_lake_only emits no stream or 1050/1150 rule",
+           call. = FALSE)
+    }
+    # The `stream` scope must keep the pair off 1050/1150 lines, but fresh's
+    # `stream` category holds them, and the all-edges rule has no edge
+    # filter: either rule would carry the pair onto them. (`wetland_flow`
+    # works in both: those rules are stamped out, and the 1050/1150 rule
+    # still carries the pair, so the OR of the rules admits it there.)
+    if (nr_scope == "stream" && edge_types == "categories" && d$rear_stream &&
+        !(has_all_edges && isTRUE(d$rear_all_edges))) {
+      stop(sp, ": rear_near_river = stream needs edge_types = \"explicit\": ",
+           "the `stream` category includes 1050/1150", call. = FALSE)
+    }
+    if (nr_scope == "stream" && has_all_edges && isTRUE(d$rear_all_edges) &&
+        d$rear_wetland) {
+      stop(sp, ": rear_near_river = stream with rear_all_edges = yes would ",
+           "give the pair to 1050/1150 lines through the all-edges rule",
+           call. = FALSE)
+    }
 
     # Helper: opt a rule out of the near_river pair fresh would let it
     # inherit (fresh#263). Only on rules that inherit: fresh refuses the

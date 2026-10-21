@@ -37,7 +37,7 @@ row (below).
 
 A row with an empty `column`, on `cw`, that is not the base changes the rules (`dims`) and/or fixes cells (`set`) without being a ladder step. It must step from the base, name its species, and leave `value`, `flag`, `obs_stage` and `equals_bundle` empty; no row may step from it, and one that changes nothing stops the build. The score compares it with the base in both flags: `structure_bands.csv` and `structure_bands_pooled.csv` give the `added` and `removed` bands against the habitat both keep, with the locations expected at the core's rate. A flag whose scored groups hold `user_habitat_classification` reaches for the species is skipped and named, since those reaches would sit in the core. Capture and cost are in `summary.csv`, `totals.csv` and `habitat_change.csv`, as for every variant.
 
-A near-river ladder's first step, where the base's cell is NA, is an anchor like a model change (`take (anchor: near-river pair)`), and its core leaves the base out. The inputs for #364 are `variants_364.csv` and `wsg_roles_364.csv`.
+A near-river ladder's first step, where the base's cell is NA, is an anchor like a model change (`take (anchor: near-river pair)`), and its core leaves the base out. The inputs for #364 are `variants_364.csv` and `wsg_roles_364.csv`. They build only on `default` as it stood before #364 changed it (link `b26d406f`); afterwards the structure rows equal the base. A variant also gets its own `rules.yaml` when a threshold the builder bakes in moves (`rear_lake_ha_min`, or `rear_gradient_max` on a `gradient` door), so such a ladder classifies with the rules its value gives.
 
 ### MAD ladders (#302)
 

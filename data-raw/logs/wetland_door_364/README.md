@@ -100,3 +100,5 @@ Spawning is unchanged (ADMS 312.30, BULK 1,782.09).
 ## Run notes
 
 The first build attempt's variants slowed from 0.3 min a group in the pre-flight to 6 to 13 min. The habitat gate's count had been planned on statistics taken before the variant's rows were inserted; re-run by hand on fresh statistics, it takes 0.2 s. The harness now runs ANALYZE on the variant tables before the gate (`b26d406f`), and the variants step was re-run on the same base, with identical digests where it had already built. Variants step: 63.7 min.
+
+**Reproducing.** `variants_364.csv` builds on `default` as it stood before #364 moved it (link `b26d406f`). At or after `1ae0c34f`, `default` carries the stream door and CH's pair, so the structure rows equal the base and the build stops ("equals default"), as #302's ladders stop after #307.

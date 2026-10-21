@@ -214,14 +214,14 @@ lnk_pipeline_persist <- function(conn, aoi, cfg, species,
 
   # ----- streams_near_river (#364) -----
   # fresh's classify writes <schema>.streams_habitat_near_river when a rule
-  # has a near_river pair, and keeps it. The WSG's persisted rows are always
-  # deleted, so a rebuild with no pair leaves none behind; rows are copied
-  # only when the working table exists (lnk_pipeline_classify() drops a
-  # stale one before classify, so it is this build's).
+  # has a near_river pair, and keeps it (lnk_pipeline_classify() drops a
+  # stale one before classify, so it is this build's). The table has no
+  # species key, and classify walks only the pairs of the species it
+  # classified, so the WSG's rows are replaced pair by pair: a
+  # species-subset build keeps the other species' distances. A pair no build
+  # walks again is left as it was; no rule reads it, and the validator
+  # checks the logged pairs against cfg.
   near_table <- paste0(tn$schema, ".streams_near_river")
-  .lnk_db_execute(conn, sprintf(
-    "DELETE FROM %s WHERE watershed_group_code = %s",
-    near_table, aoi_lit))
   near_present <- nrow(DBI::dbGetQuery(conn, sprintf(
     "SELECT 1 FROM information_schema.tables
       WHERE table_schema = %s AND table_name = 'streams_habitat_near_river'
@@ -230,6 +230,13 @@ lnk_pipeline_persist <- function(conn, aoi, cfg, species,
   ))) > 0L
   if (near_present) {
     near_cols <- paste(names(cols_streams_near_river), collapse = ", ")
+    .lnk_db_execute(conn, sprintf(
+      "DELETE FROM %1$s p
+        WHERE p.watershed_group_code = %2$s
+          AND (p.measure, p.threshold, p.distance_max) IN (
+            SELECT DISTINCT measure, threshold, distance_max
+              FROM %3$s.streams_habitat_near_river)",
+      near_table, aoi_lit, schema))
     .lnk_db_execute(conn, sprintf(
       "INSERT INTO %s (%s)
        SELECT %s FROM %s.streams_habitat_near_river

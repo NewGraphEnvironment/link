@@ -401,3 +401,14 @@ test_that("a near_river pair reads discharge on a cw group only when measured by
   bcfp <- lnk_config("bcfishpass")
   expect_identical(link:::.lnk_near_river_logged(bcfp, "ADMS"), "")
 })
+
+test_that("the logged pair text sorts in byte order, whatever the locale", {
+  pairs <- data.frame(measure = "channel_width", threshold = c(1, 15),
+                      distance_max = 1000)
+  want <- "channel_width:15:1000;channel_width:1:1000"
+  expect_identical(withr::with_collate("C", link:::.lnk_near_river_text(pairs)),
+                   want)
+  expect_identical(withr::with_collate("en_US.UTF-8",
+                                       link:::.lnk_near_river_text(pairs)), want)
+})
+

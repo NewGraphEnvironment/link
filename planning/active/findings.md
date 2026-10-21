@@ -168,3 +168,16 @@ Verification is per phase above: Phase 0 by fresh's suite and the byte-identity 
 
 | Error | Resolution |
 |-------|------------|
+
+## Code-check, link branch (2026-10-21)
+
+Round 1 found six fragile issues and no live bug:
+- **Fixed:** the locale-dependent sort of the log's pair text (now `method = "radix"`).
+- **Fixed:** persist deleted every near-river row of a WSG, which loses other species' distances on a species-subset build. It now replaces rows pair by pair.
+- **Fixed:** three builder traps stop the build:
+  - `rear_near_river = stream` in categories mode, where fresh's `stream` category holds 1050/1150;
+  - `stream` scope with `rear_all_edges`;
+  - a door or narrowed scope on a `rear_no_fw` / `rear_lake_only` species.
+- **Fixed:** a variant gets its own rules when a baked threshold moves, not only when its `dims` do.
+- **Documented:** `variants_364.csv` builds only at the commits before `default` moved.
+- **Accepted:** the validator's log check reads each WSG's newest log row however that run ended. A run that fails after opening its row could leave pairs that differ from the persisted distances. This is the shape the `discharge_fill` and `discharge_source` checks already have; changing it means deciding, for all three, what a failed run's row means. Out of scope here.

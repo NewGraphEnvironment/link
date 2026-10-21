@@ -416,16 +416,22 @@ write_bundle <- function(r) {
     source = src_note,
     checksum = paste0("sha256:", digest::digest(file = path_thr,
                                                 algo = "sha256"))))
-  own_rules <- length(dc) > 0L
+  # Its own rules whenever they differ from the base's: when its dims move a
+  # cell, and also when a threshold the builder bakes into the rules moves
+  # (rear_lake_ha_min; rear_gradient_max on a `gradient` door), so a ladder on
+  # such a cell classifies with the rules its value gives.
+  dims <- dims_base
+  for (k in names(dc)) dims[[k]][j] <- dc[[k]]
+  path_dims <- file.path(d, "dimensions.csv")
+  path_rules <- file.path(d, "rules.yaml")
+  utils::write.csv(dims, path_dims, row.names = FALSE, na = "")
+  suppressMessages(lnk_rules_build(path_dims, path_rules,
+                                   thresholds = path_thr,
+                                   edge_types = "explicit"))
+  own_rules <- length(dc) > 0L ||
+    !identical(yaml::read_yaml(path_rules), yaml::read_yaml(cfg_base$rules))
+  if (!own_rules) unlink(c(path_dims, path_rules))
   if (own_rules) {
-    dims <- dims_base
-    for (k in names(dc)) dims[[k]][j] <- dc[[k]]
-    path_dims <- file.path(d, "dimensions.csv")
-    utils::write.csv(dims, path_dims, row.names = FALSE, na = "")
-    path_rules <- file.path(d, "rules.yaml")
-    suppressMessages(lnk_rules_build(path_dims, path_rules,
-                                     thresholds = path_thr,
-                                     edge_types = "explicit"))
     for (f in c(path_dims, path_rules)) {
       prov[[basename(f)]] <- list(
         source = src_note,

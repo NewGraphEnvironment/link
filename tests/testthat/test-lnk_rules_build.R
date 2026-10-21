@@ -1371,8 +1371,9 @@ test_that("the all-edges rule counts as the stream rule for the scope", {
                     is.null(r$waterbody_type), rear)
   expect_length(all_e, 1L)
   expect_false(all_e[[1]]$near_river)
-  expect_no_error(build_door(door_dims("stream", "stream", rear_stream = "no",
-                                       all_edges = "yes")))
+  # the stream scope with the all-edges rule would reach 1050/1150 (review)
+  expect_error(build_door(door_dims("stream", "stream", rear_stream = "no",
+                                    all_edges = "yes")), "rear_all_edges")
 })
 
 test_that("dead combinations and unknown values stop the build", {
@@ -1466,3 +1467,21 @@ test_that("default carries CH's near-river pair on its through-wetland lines onl
   expect_identical(specs(p, names(p), c("cw", "mad"))$measure,
                    c("channel_width", "discharge"))
 })
+
+test_that("a door or scope that cannot apply, or would leak the pair, stops (review)", {
+  d <- door_dims("stream")
+  d$rear_no_fw <- "yes"
+  expect_error(build_door(d), "rear_no_fw or rear_lake_only")
+  d <- door_dims(NA, "wetland_flow")
+  d$rear_lake_only <- "yes"
+  expect_error(build_door(d), "rear_no_fw or rear_lake_only|wetland_flow needs")
+  # categories: the `stream` category holds 1050/1150
+  expect_error(build_door(door_dims("stream", "stream"), edge_types = "categories"),
+               "needs edge_types")
+  expect_no_error(build_door(door_dims("stream", "wetland_flow"),
+                             edge_types = "categories"))
+  # all-edges with the stream scope would give 1050/1150 the pair
+  expect_error(build_door(door_dims("stream", "stream", all_edges = "yes")),
+               "rear_all_edges = yes would")
+})
+

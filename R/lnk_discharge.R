@@ -409,7 +409,7 @@
 
 #' A near_river pair set as one text value, for the run log
 #'
-#' `measure:threshold:distance_max`, sorted, joined with `;`; `""` when
+#' `measure:threshold:distance_max`, sorted in byte order, joined with `;`; `""` when
 #' there is none, so a logged "no pair" is distinct from a pre-#364 NULL.
 #' Numbers go through `format(digits = 15)` so the text round-trips.
 #' @noRd
@@ -418,7 +418,9 @@
   x <- sprintf("%s:%s:%s", pairs$measure,
                format(pairs$threshold, digits = 15, trim = TRUE),
                format(pairs$distance_max, digits = 15, trim = TRUE))
-  paste(sort(unique(x)), collapse = ";")
+  # radix: byte order on every host, whatever LC_COLLATE says, because the
+  # text is written on the build host and compared on the validating one.
+  paste(sort(unique(x), method = "radix"), collapse = ";")
 }
 
 #' The near_river pairs `cfg` resolves for watershed groups, as log text
