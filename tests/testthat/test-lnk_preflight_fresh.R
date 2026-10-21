@@ -57,11 +57,13 @@ test_that("a pre-0.35.0 frs_habitat_classify signature is caught (#286)", {
   ns$frs_habitat_predicates <- function(sp_params) NULL
   expect_identical(
     .lnk_fresh_missing_formals(ns, .lnk_fresh_required_formals()),
-    c("frs_habitat_classify(params_method)", "frs_habitat_predicates(model)"))
+    c("frs_habitat_classify(params_method)", "frs_habitat_predicates(model)",
+      "frs_habitat_predicates(near_river_table)"))
   # And a function that is absent altogether reports its arguments too.
   expect_identical(
     .lnk_fresh_missing_formals(new.env(), .lnk_fresh_required_formals()),
-    c("frs_habitat_classify(params_method)", "frs_habitat_predicates(model)"))
+    c("frs_habitat_classify(params_method)", "frs_habitat_predicates(model)",
+      "frs_habitat_predicates(near_river_table)"))
 })
 
 test_that("required formals name functions in the required export set", {

@@ -122,10 +122,13 @@ lnk_preflight_fresh <- function(required = .lnk_fresh_required(),
 # would fail with "unused argument" only once a WSG reached that phase.
 # R/lnk_pipeline_classify.R: params_method arrived in fresh 0.35.0 (#286);
 # R/lnk_habitat_validate.R: frs_habitat_predicates(model) in the same
-# release (#299).
+# release (#299), and frs_habitat_predicates(near_river_table) in 0.41.0
+# (fresh#259), which the validator passes the persisted near-river table
+# through (#364). 0.41.0 and 0.42.0 export the same formals; only the
+# Imports floor tells the inheriting release apart.
 .lnk_fresh_required_formals <- function() {
   list(frs_habitat_classify = "params_method",
-       frs_habitat_predicates = "model")
+       frs_habitat_predicates = c("model", "near_river_table"))
 }
 
 # "fn(arg)" for each required formal the namespace does not provide. A
@@ -154,9 +157,11 @@ lnk_preflight_fresh <- function(required = .lnk_fresh_required(),
 
 # Non-exported fresh objects link reaches via getFromNamespace():
 # .frs_run_connectivity in lnk_pipeline_connect(), .frs_habitat_models in
-# .lnk_wsg_model() (R/lnk_config.R, #299).
+# .lnk_wsg_model() (R/lnk_config.R, #299), .frs_near_river_specs in
+# .lnk_near_river_pairs() (R/lnk_discharge.R, #364): fresh's own resolver of
+# which near_river pairs a bundle's rules read, so link never re-derives it.
 .lnk_fresh_required_internal <- function() {
-  c(".frs_run_connectivity", ".frs_habitat_models")
+  c(".frs_run_connectivity", ".frs_habitat_models", ".frs_near_river_specs")
 }
 
 # Every `fresh::sym` / `fresh:::sym` reached from link's own namespace,

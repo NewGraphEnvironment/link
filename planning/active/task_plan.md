@@ -49,9 +49,9 @@
 - [ ] NEWS, docs, PR, release tag
 
 ### Phase 1 — link pins it
-- [ ] Install released fresh; `Imports: fresh (>= <ver>)` and `Remotes: NewGraphEnvironment/fresh@v<ver>`
-- [ ] One commit: `.lnk_fresh_required_formals()` gains `frs_habitat_predicates = c("model", "near_river_table")`; `.lnk_fresh_required_internal()` gains `.frs_near_river_specs`; comments; `test-lnk_preflight_fresh.R` vectors
-- [ ] Suite green before any other change (baseline)
+- [x] Install released fresh; `Imports: fresh (>= <ver>)` and `Remotes: NewGraphEnvironment/fresh@v<ver>`
+- [x] One commit: `.lnk_fresh_required_formals()` gains `frs_habitat_predicates = c("model", "near_river_table")`; `.lnk_fresh_required_internal()` gains `.frs_near_river_specs`; comments; `test-lnk_preflight_fresh.R` vectors
+- [x] Suite green before any other change (baseline)
 
 ### Phase 2 — rules: dimensions, parameters, builder, bundles
 - [ ] `dictionary_dimensions.csv`: rows for `rear_wetland_flow`, `rear_near_river`; fix `rear_wetland_polygon` default_when_absent/description to `yes`
