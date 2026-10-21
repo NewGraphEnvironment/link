@@ -1,0 +1,4 @@
+date_utc: 2026-10-21T19:14:15Z
+link: 0.66.7 @ de3e672ef07b0dff6b65b4839ab391c92ccca1a0
+fresh: 0.42.0
+args: mad=3 schema=fresh_default source=fwapg widths=2..60 min_n=100

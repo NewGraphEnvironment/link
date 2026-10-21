@@ -330,6 +330,13 @@ cols_log <- c(
   # `fwapg` or `wet` (.lnk_discharge_source). NULL on a row from before it
   # was logged, which read fwapg. The validator checks it against its cfg.
   discharge_source       = "text",
+  # The near_river pairs this WSG's rules read (#364), from fresh's
+  # resolver under the group's size model (.lnk_near_river_logged):
+  # `measure:threshold:distance_max`, sorted, `;`-joined; "" when none.
+  # NULL on a row from before it was logged. The validator checks it
+  # against its cfg, because the persisted streams_near_river holds only
+  # the pairs this build walked.
+  near_river             = "text",
   schema_persist         = "text",
   species                = "text[]",
   wsg_upstream           = "text[]",
@@ -997,8 +1004,8 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
             "fresh_version", "fresh_sha", "fresh_dirty", "fresh_sha_source",
             "crate_version", "fwapg_sha", "bcfishobs_sha",
             "arg_dams", "arg_mapping_code", "arg_cleanup_working",
-            "discharge_fill", "discharge_source", "schema_persist",
-            "wsg_upstream",
+            "discharge_fill", "discharge_source", "near_river",
+            "schema_persist", "wsg_upstream",
             "bcfp_model_run_id", "bcfp_model_version", "bcfp_pin_source",
             "notes")
 
@@ -1027,6 +1034,7 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
     .lnk_log_lit(conn, cleanup_working),
     .lnk_log_lit(conn, .lnk_discharge_fill_applied(cfg, aoi)),
     .lnk_log_lit(conn, .lnk_discharge_source(cfg)),
+    .lnk_log_lit(conn, .lnk_near_river_logged(cfg, aoi)),
     .lnk_log_lit(conn, schema),
     .lnk_log_arr(conn, upstream),
     .lnk_log_lit(conn, if (is.null(bcfp)) NA else bcfp$model_run_id),

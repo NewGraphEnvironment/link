@@ -1,0 +1,9 @@
+link 0.66.7, fresh 0.42.0, group ADMS, persist zz364_verify
+test bundle near_river: channel_width:15:1000
+pipeline: 2.3 min
+persisted streams_near_river:         measure threshold distance_max    n | 1 channel_width        15         1000 5849
+log.near_river: channel_width:15:1000
+CH rearing km:   wetland_flow rear_km rear_km_by_river_only | 1        FALSE   581.7                 121.4 | 2         TRUE    25.6                   3.8
+validate CH: 11 locations, 0 post_predicate misses
+default classify, filled vs unfilled discharge: identical (01d394bde087dc2c10ea922fcf7b1f15 / 01d394bde087dc2c10ea922fcf7b1f15)
+default classify left no working near-river table: TRUE

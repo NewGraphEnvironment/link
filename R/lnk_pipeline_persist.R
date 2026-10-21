@@ -212,5 +212,30 @@ lnk_pipeline_persist <- function(conn, aoi, cfg, species,
       schema, schema, aoi_lit))
   }
 
+  # ----- streams_near_river (#364) -----
+  # fresh's classify writes <schema>.streams_habitat_near_river when a rule
+  # has a near_river pair, and keeps it. The WSG's persisted rows are always
+  # deleted, so a rebuild with no pair leaves none behind; rows are copied
+  # only when the working table exists (lnk_pipeline_classify() drops a
+  # stale one before classify, so it is this build's).
+  near_table <- paste0(tn$schema, ".streams_near_river")
+  .lnk_db_execute(conn, sprintf(
+    "DELETE FROM %s WHERE watershed_group_code = %s",
+    near_table, aoi_lit))
+  near_present <- nrow(DBI::dbGetQuery(conn, sprintf(
+    "SELECT 1 FROM information_schema.tables
+      WHERE table_schema = %s AND table_name = 'streams_habitat_near_river'
+      LIMIT 1;",
+    DBI::dbQuoteString(conn, schema)
+  ))) > 0L
+  if (near_present) {
+    near_cols <- paste(names(cols_streams_near_river), collapse = ", ")
+    .lnk_db_execute(conn, sprintf(
+      "INSERT INTO %s (%s)
+       SELECT %s FROM %s.streams_habitat_near_river
+       WHERE watershed_group_code = %s",
+      near_table, near_cols, near_cols, schema, aoi_lit))
+  }
+
   invisible(conn)
 }

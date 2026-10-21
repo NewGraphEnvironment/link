@@ -69,9 +69,14 @@ test_that("lnk_pipeline_persist counts: 2 streams ops + 2 ops per species", {
     }
   )
 
-  # 2 (streams DELETE+INSERT) + 2 * 3 (per-species DELETE+INSERT) = 8
-  # (barriers branch skipped — probe returned absent)
-  expect_equal(length(captured), 8L)
+  # 2 (streams DELETE+INSERT) + 2 * 3 (per-species DELETE+INSERT) + 1
+  # (streams_near_river DELETE, always; its INSERT skipped with the working
+  # table absent, #364) = 9 (barriers branch skipped — probe returned absent)
+  expect_equal(length(captured), 9L)
+  expect_true(any(grepl("DELETE FROM fresh.streams_near_river", captured,
+                        fixed = TRUE)))
+  expect_false(any(grepl("INSERT INTO fresh.streams_near_river", captured,
+                         fixed = TRUE)))
 })
 
 test_that("lnk_pipeline_persist input validation", {
@@ -231,8 +236,11 @@ test_that("lnk_pipeline_persist never deletes from a log table (link#354)", {
   )
   deletes <- grep("^\\s*DELETE FROM", captured, value = TRUE)
   # streams, one per species (2), barriers, barrier_overrides,
-  # streams_access, streams_mapping_code.
-  expect_length(deletes, 7L)
+  # streams_access, streams_mapping_code, streams_near_river (#364).
+  expect_length(deletes, 8L)
+  # every probe answered present, so the near-river rows are copied too
+  expect_true(any(grepl("INSERT INTO fresh.streams_near_river", captured,
+                        fixed = TRUE)))
   targets <- sub("^\\s*DELETE FROM (\\S+).*", "\\1", deletes)
   expect_false(any(sub("^[^.]+\\.", "", targets) %in%
                      names(.lnk_log_specs())))

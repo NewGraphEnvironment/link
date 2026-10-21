@@ -64,7 +64,9 @@ test_that(".lnk_pipeline_classify_build_breaks unions all four sources", {
 # Stops at frs_params and reports the csv it was handed, so nothing touches a DB.
 capture_th_csv_classify <- function(cfg, ...) {
   local_mocked_bindings(
-    .lnk_pipeline_classify_build_breaks = function(...) invisible(NULL)
+    .lnk_pipeline_classify_build_breaks = function(...) invisible(NULL),
+    # the stale near-river drop before classify (#364)
+    .lnk_db_execute = function(...) invisible(NULL)
   )
   local_mocked_bindings(
     frs_params = function(csv = NULL, ...) stop("csv=", csv, call. = FALSE),
@@ -110,7 +112,9 @@ test_that("lnk_pipeline_classify: an explicit thresholds_csv wins over the bundl
 # Stops at frs_habitat_classify and returns the params_method it was handed.
 capture_method_classify <- function(cfg, ...) {
   local_mocked_bindings(
-    .lnk_pipeline_classify_build_breaks = function(...) invisible(NULL)
+    .lnk_pipeline_classify_build_breaks = function(...) invisible(NULL),
+    # the stale near-river drop before classify (#364)
+    .lnk_db_execute = function(...) invisible(NULL)
   )
   got <- NULL
   local_mocked_bindings(
@@ -196,7 +200,9 @@ bypass_calls <- function(model) {
   csv <- withr::local_tempfile(fileext = ".csv")
   writeLines(c("watershed_group_code,model", paste0("BULK,", model)), csv)
   local_mocked_bindings(
-    .lnk_pipeline_classify_build_breaks = function(...) invisible(NULL)
+    .lnk_pipeline_classify_build_breaks = function(...) invisible(NULL),
+    # the stale near-river drop before classify (#364)
+    .lnk_db_execute = function(...) invisible(NULL)
   )
   called <- character(0)
   bypass_rule <- list(channel_width_min_bypass =
