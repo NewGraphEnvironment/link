@@ -23,7 +23,7 @@ false-positive check."><meta property="og:image" content="https://newgraphenviro
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.66.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.67.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -321,7 +321,12 @@ annual pick) because the persist does not carry it. When <code>cfg</code> fills 
 (<code>cfg$pipeline$discharge_fill</code>), it is filled as prepare filled it: edge
 1250 lines with no value take one along the network (<code>mad_m3s_source</code>
 says which), and a <code>mad</code> group logged with the other fill state is an
-error. The <code>width</code> labels below mean
+error. A rule with a near_river pair (its own, or inherited from the
+thresholds CSV) is re-tested against the distances the build persisted
+in <code>&lt;schema&gt;.streams_near_river</code>; a group logged with other pairs than
+<code>cfg</code> reads, or a schema built before link 0.67.0 when <code>cfg</code> reads one,
+is an error. A segment far from any river labels <code>fails_width</code> like any
+other size miss, never "no river near". The <code>width</code> labels below mean
 that size on either model; <code>model</code> and <code>mad_m3s</code> split them:</p><ul><li><p><code>NA</code> — captured; <code>no_segment</code> — the location attaches to no segment;</p></li>
 <li><p><code>not_accessible</code> — the segment's <code>access_&lt;sp&gt;</code> is not 1 or 2;</p></li>
 <li><p><code>fails_gradient</code> / <code>fails_width</code> / <code>width_null</code> — passes once that one

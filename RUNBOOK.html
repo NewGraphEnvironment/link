@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.66.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.67.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -313,7 +313,7 @@ mc_barrier (from barrier_sources flags, resident vs anadromous differ slightly):
 </tr></thead><tbody><tr><td><code>&lt;persist&gt;.log</code></td>
 <td>one row per run</td>
 <td>
-<code>date_start</code> / <code>date_end</code>, <code>config_hash</code>, <code>config_drift</code>, link/fresh version + SHA + dirty flag, <code>fwapg_sha</code>, run args, <code>species[]</code>, <code>wsg_upstream[]</code>, bcfp baseline</td>
+<code>date_start</code> / <code>date_end</code>, <code>config_hash</code>, <code>config_drift</code>, link/fresh version + SHA + dirty flag, <code>fwapg_sha</code>, run args, <code>discharge_fill</code>, <code>discharge_source</code>, <code>near_river</code> (the pairs, #364), <code>species[]</code>, <code>wsg_upstream[]</code>, bcfp baseline</td>
 </tr><tr><td><code>&lt;persist&gt;.log_parameters_fresh</code></td>
 <td><code>(config_hash, species_code)</code></td>
 <td>
@@ -465,6 +465,8 @@ The bucket is versioned but cannot be listed (<code>?versions</code> is AccessDe
 <li>
 <strong><code>accessible</code> is fresh’s classification flag; <code>has_barriers_dnstr</code> is link’s <code>streams_access</code></strong> (what mapping_code and <code><a href="reference/lnk_rollup_wsg.html">lnk_rollup_wsg()</a></code>’s <code>accessible_km</code> read). Since #349 the build settles the habitat flags on link’s access (§3), so in a settled build every <code>accessible</code> row has <code>has_barriers_dnstr</code> FALSE; the reverse still occurs (fresh blocked a segment link calls accessible: at most ~1,000 segments per species province-wide). A build from before #349, or one whose recompute has not re-run since, holds the old disagreement (<code>research/access_columns.md</code>).</li>
 <li>
+<strong>The near-river pair is not exported</strong> (#364): a consumer sees the flags it produced, not the walked distances in <code>streams_near_river</code>. Carrying them would change the export’s contract.</li>
+<li>
 <strong><code>mad_m3s</code></strong> is read at export from the table the run classified on, with the run’s logged <code>discharge_fill</code>. It agrees with the flags while that table is unchanged.</li>
 <li>
 <strong>Ratios</strong> are against the thresholds the run <em>logged</em> at its <code>config_hash</code>. Builds before #282 logged none, so their spawning/rearing ratios are NA and <code>thresholds_logged</code> says so (2026-10-14: only DUNC in <code>fresh_default</code>; <code>fresh</code> has no thresholds log table at all). They compare with the CSV thresholds, not the rule that fired (river polygons spawn on any width), and no upper bound is in any ratio.</li>
@@ -500,6 +502,17 @@ The bucket is versioned but cannot be listed (<code>?versions</code> is AccessDe
 <code>configs/&lt;name&gt;/parameters_habitat_thresholds.csv</code> (#282) → <code>.lnk_habitat_thresholds_csv()</code> → <code><a href="https://newgraphenvironment.github.io/fresh/reference/frs_params.html" class="external-link">fresh::frs_params()</a></code>
 </td>
 <td>numbers the <code>rules.yaml</code> rules inherit when they set none of their own</td>
+</tr><tr><td>Through-wetland rearing (FWA 1050/1150) and the near-river scope</td>
+<td>
+<code>dimensions.csv</code> → <code>rear_wetland_flow</code>, <code>rear_near_river</code> → <code><a href="reference/lnk_rules_build.html">lnk_rules_build()</a></code>
+</td>
+<td>the 1050/1150 rule’s shape; <code>near_river: false</code> stamps (always on river-polygon rules)</td>
+</tr><tr><td>The near-river pair (a river of at least a size within a distance downstream)</td>
+<td>
+<code>parameters_habitat_thresholds.csv</code> → <code>&lt;stage&gt;_river_*</code> (#364, fresh#263) → <code><a href="https://newgraphenvironment.github.io/fresh/reference/frs_params.html" class="external-link">fresh::frs_params()</a></code>
+</td>
+<td>inherited by every rule with a size test that is not stamped out; walked into <code>streams_near_river</code>
+</td>
 </tr><tr><td>Species residence (resident/anadromous/spawn-only)</td>
 <td>
 <strong>hardcoded</strong> defaults in <code><a href="reference/lnk_pipeline_mapping_code.html">lnk_pipeline_mapping_code()</a></code>
@@ -639,6 +652,41 @@ Never the receiving river downstream. <code>mad_m3s_source</code> names the tier
 <li>
 <strong>Connectivity reads no size model.</strong> <code>.frs_run_connectivity</code> takes no <code>params_method</code>; its one width test (<code>.frs_connected_waterbody</code>, <code>spawn_connected_cw_min</code>) is 0 for SK/KO in every bundle, so it is inert.</li>
 </ul><hr></div>
+<div class="section level3">
+<h3 id="through-wetland-lines-and-the-near-river-pair-364">Through-wetland lines and the near-river pair (#364)<a class="anchor" aria-label="anchor" href="#through-wetland-lines-and-the-near-river-pair-364"></a></h3>
+<p>Two rule decisions moved into the data, and one number set moved into the thresholds.</p>
+<ul><li>
+<strong><code>rear_wetland_flow</code> (dimensions.csv) says how FWA 1050 / 1150 lines rear.</strong>
+<ul><li>
+<code>stream</code> emits a rule that inherits the species’ rear gradient, size and near-river pair exactly as the stream rule does: no <code>thresholds: false</code>, no W type, no wetland floor. <code>default</code> uses it for every <code>rear_wetland = yes</code> species.</li>
+<li>
+<code>gradient</code> emits <code>thresholds: false</code> plus <code>gradient: [0, rear_gradient_max]</code> from the bundle’s thresholds row, which is bcfishpass’s coho rule. The <code>bcfishpass</code> bundle uses it for CO.</li>
+<li>
+<code>free</code>, or blank, emits <code>thresholds: false</code> with no test, as before #364.</li>
+<li>The rule is emitted as <code>edge_types_explicit: [1050, 1150]</code> in both edge modes, because fresh’s <code>wetland</code> category is 1700 shorelines.</li>
+<li>The wetland floor (<code>rear_wetland_ha_min</code>) stays on the W polygon rule only.</li>
+</ul></li>
+<li>
+<strong>The near-river pair is a threshold</strong> (fresh ≥ 0.42.0, fresh#263). Ten columns, <code>&lt;stage&gt;_river_{measure, discharge_min, channel_width_min, stream_order_min, distance_max}</code>, in <code>parameters_habitat_thresholds.csv</code>.
+<ul><li>fresh inherits the stage’s pair on every rule that inherits thresholds and has a size test, and walks the network for it into <code>&lt;working&gt;.streams_habitat_near_river</code>.</li>
+<li>
+<code>measure</code> is <code>model</code> when blank: channel width under <code>cw</code>, discharge under <code>mad</code>. Under <code>model</code> both <code>_channel_width_min</code> and <code>_discharge_min</code> must be set.</li>
+<li>A rule opts out with <code>near_river: false</code>. <code><a href="reference/lnk_rules_build.html">lnk_rules_build()</a></code> writes no numbers, only those opt-outs.</li>
+</ul></li>
+<li>
+<strong><code>rear_near_river</code> (dimensions.csv) is the pair’s scope</strong>: <code>both</code> (the stream or all-edges rule and the 1050/1150 rule), <code>stream</code>, or <code>wetland_flow</code>. <code>default</code> gives CH <code>wetland_flow</code>, with the pair model / 15 m / 3 m³/s within 1,000 m: the operator’s call on 2026-10-21, after <code>both</code> added 275.6 km of CH rearing on five held-out groups where CH are found at 5 % of the core rate (<code>data-raw/logs/wetland_door_364/</code>). Every other species’ pair is NA.
+<ul><li>The builder stamps <code>near_river: false</code> on the inheriting rear rules outside the scope, and always on the river-polygon rule (spawn and rear), because a river polygon is the river.</li>
+<li>The spawn stream rule always takes the spawn pair.</li>
+<li>Never on an L / W rule (fresh refuses the key there) or a <code>thresholds: false</code> rule (where it is a no-op).</li>
+<li>A combination that can emit nothing stops the build: <code>wetland_flow</code> without the stream door, or <code>stream</code> with no stream rule.</li>
+</ul></li>
+<li>
+<strong>What reads discharge.</strong> <code>.lnk_discharge_read_rules()</code> asks fresh’s resolver (<code>.frs_near_river_specs()</code>, through <code>.lnk_near_river_pairs()</code>) whether any pair measures by discharge under <code>cw</code>, or any rule carries <code>mad:</code>. Under <code>model</code> a <code>cw</code> group measures rivers by channel width, which fwapg carries on every river-polygon row, so <code>default</code> needs no discharge fill for its pairs.</li>
+<li>
+<strong>Persisted and logged.</strong> <code>&lt;schema&gt;.streams_near_river</code> keeps the walked distances, keyed by segment and pair. <code>&lt;schema&gt;.log.near_river</code> records each WSG’s pairs as <code>measure:threshold:distance_max</code>, <code>;</code>-joined, <code>""</code> for none. The validator re-tests near-river predicates against the persisted table. It refuses a schema with no table when cfg reads a pair, and a log whose pairs differ. So a schema built before #364 cannot be validated under a bundle with a pair until it is re-modelled.</li>
+<li>
+<strong>The frozen bundles</strong> (<code>default_extrabreaks</code>, <code>default_rearbreaks</code>) carry no near-river columns. <code>audit_configs.R</code> reads that as no pair, not a stale copy, and compares their rules with the inert <code>near_river: false</code> removed.</li>
+</ul></div>
 </div>
 <div class="section level2">
 <h2 id="id_8b-drainage-closure-never-hand-roll-it-from-ltree">8b. Drainage closure: never hand-roll it from ltree<a class="anchor" aria-label="anchor" href="#id_8b-drainage-closure-never-hand-roll-it-from-ltree"></a></h2>

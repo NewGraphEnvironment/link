@@ -11,7 +11,7 @@ of truth; the YAML is the derived artifact."><meta property="og:image" content="
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.66.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.67.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -71,8 +71,19 @@ polygon segments), <code>notes</code>. <code>rear_lake_connected_distance_max</c
 wetland rearing bucket only where same-species spawning lies within
 that distance (<code>requires_connected: spawning</code> on its first rear L / W
 rule). The additive lake rule admits lake centrelines (FWA
-construction lines) with no channel-width test. See
-<code>configs/dictionary_dimensions.csv</code> for every column.</p></dd>
+construction lines) with no channel-width test.
+<code>rear_wetland_flow</code> (<code>stream</code>, <code>gradient</code> or <code>free</code>; blank is <code>free</code>)
+sets how flow through a wetland (FWA 1050 / 1150) rears: <code>stream</code>
+emits a rule that inherits the species' gradient, size and
+near-river thresholds as the stream rule does, <code>gradient</code> a rule with
+the rear gradient only, <code>free</code> a rule with no test. <code>rear_near_river</code>
+(<code>both</code>, <code>stream</code> or <code>wetland_flow</code>; blank is <code>both</code>) sets which rear
+rules take the species' near-river pair. The pair's numbers live in
+the thresholds CSV (<code>&lt;stage&gt;_river_*</code>) and fresh inherits them; this
+function writes no numbers, only <code>near_river: false</code> on the rules
+outside the scope and on every river-polygon rule, because a river
+polygon is the river. See <code>configs/dictionary_dimensions.csv</code> for
+every column.</p></dd>
 
 
 <dt id="arg-to">to<a class="anchor" aria-label="anchor" href="#arg-to"></a></dt>
@@ -81,8 +92,9 @@ construction lines) with no channel-width test. See
 
 <dt id="arg-thresholds">thresholds<a class="anchor" aria-label="anchor" href="#arg-thresholds"></a></dt>
 <dd><p>Path to the habitat thresholds CSV (from fresh).
-Used to look up <code>rear_lake_ha_min</code> per species. Default uses the
-copy shipped with fresh.</p></dd>
+Used to look up <code>rear_lake_ha_min</code> per species, and
+<code>rear_gradient_max</code> for a <code>rear_wetland_flow = gradient</code> rule.
+Default uses the copy shipped with fresh.</p></dd>
 
 
 <dt id="arg-edge-types">edge_types<a class="anchor" aria-label="anchor" href="#arg-edge-types"></a></dt>

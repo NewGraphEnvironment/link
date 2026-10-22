@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.66.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.67.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,27 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.67.0" id="link-0670">link 0.67.0<a class="anchor" aria-label="anchor" href="#link-0670"></a></h2>
+<p><strong><code>default</code> rears a stretch that runs through a wetland only where it would rear as a stream: big enough, or close to a large river</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/364" class="external-link">#364</a>). Needs fresh 0.42.0.</p>
+<ul><li>
+<strong>Two <code>dimensions.csv</code> columns.</strong>
+<ul><li>
+<code>rear_wetland_flow</code> sets how FWA 1050 / 1150 lines rear: <code>stream</code> (the species’ gradient, size and near-river thresholds), <code>gradient</code> (the rear gradient only) or <code>free</code> (no test, the earlier rule).</li>
+<li>
+<code>rear_near_river</code> sets which rear rules take the species’ near-river pair.</li>
+<li>
+<code>default</code> takes <code>stream</code> for BT, CH, CO, ST, WCT, CT, DV and RB. The <code>bcfishpass</code> bundle gives CO <code>gradient</code>, as bcfishpass’s coho SQL does. Every river-polygon rule now carries <code>near_river: false</code>.</li>
+</ul></li>
+<li>
+<strong>The near-river pair is a threshold.</strong> <code>parameters_habitat_thresholds.csv</code> carries ten <code>&lt;stage&gt;_river_*</code> columns that fresh inherits. <code>default</code> gives CH rearing a river of at least 15 m modelled width under <code>cw</code> (3 m³/s under <code>mad</code>) within 1 km, on its through-wetland lines only (<code>rear_near_river = wetland_flow</code>). Every other species is NA until <a href="https://github.com/NewGraphEnvironment/link/issues/346" class="external-link">#346</a>.</li>
+<li>
+<strong>Persisted, logged and validated.</strong> <code>&lt;schema&gt;.streams_near_river</code> keeps the walked distances. <code>&lt;schema&gt;.log.near_river</code> records each group’s pairs, and <code><a href="../reference/lnk_habitat_validate.html">lnk_habitat_validate()</a></code> scores against both. A schema built before this release has neither, so it cannot be validated under <code>default</code> until it is re-modelled (the next provincial run).</li>
+<li>
+<strong>The variants harness varies rules as well as thresholds.</strong> It takes a <code>dims</code> column, structure variants scored against the base, near-river cells in <code>set</code>, and pair anchors. <code>built.csv</code> records each schema’s rules and dimensions.</li>
+<li>
+<strong>Measured before <code>default</code> moved</strong>, on five held-out groups (ADMS, BULK, CHWK, CLWR, SQAM; 291 CH locations). The door alone removes 43.1 km of CH rearing and no captured location. The pair on every stream rule would add 275.6 km where CH are found at 5 % of the core rate, so <code>default</code> limits it to through-wetland lines (operator, 2026-10-21). Under <code>bcfishpass</code>, CO rearing moves −0.2 km on ADMS and −1.5 km on BULK. Write-up: <code>research/habitat_thresholds.md</code>, “Through-wetland lines and the near-river test”.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.66.7" id="link-0667">link 0.66.7<a class="anchor" aria-label="anchor" href="#link-0667"></a></h2>
 <ul><li>

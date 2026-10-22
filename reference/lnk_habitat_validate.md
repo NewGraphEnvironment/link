@@ -296,8 +296,14 @@ annual pick) because the persist does not carry it. When `cfg` fills
 discharge (`cfg$pipeline$discharge_fill`), it is filled as prepare
 filled it: edge 1250 lines with no value take one along the network
 (`mad_m3s_source` says which), and a `mad` group logged with the other
-fill state is an error. The `width` labels below mean that size on
-either model; `model` and `mad_m3s` split them:
+fill state is an error. A rule with a near_river pair (its own, or
+inherited from the thresholds CSV) is re-tested against the distances
+the build persisted in `<schema>.streams_near_river`; a group logged
+with other pairs than `cfg` reads, or a schema built before link 0.67.0
+when `cfg` reads one, is an error. A segment far from any river labels
+`fails_width` like any other size miss, never "no river near". The
+`width` labels below mean that size on either model; `model` and
+`mad_m3s` split them:
 
 - `NA` — captured; `no_segment` — the location attaches to no segment;
 

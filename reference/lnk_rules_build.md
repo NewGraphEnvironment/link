@@ -31,8 +31,18 @@ lnk_rules_build(
   wetland rearing bucket only where same-species spawning lies within
   that distance (`requires_connected: spawning` on its first rear L / W
   rule). The additive lake rule admits lake centrelines (FWA
-  construction lines) with no channel-width test. See
-  `configs/dictionary_dimensions.csv` for every column.
+  construction lines) with no channel-width test. `rear_wetland_flow`
+  (`stream`, `gradient` or `free`; blank is `free`) sets how flow
+  through a wetland (FWA 1050 / 1150) rears: `stream` emits a rule that
+  inherits the species' gradient, size and near-river thresholds as the
+  stream rule does, `gradient` a rule with the rear gradient only,
+  `free` a rule with no test. `rear_near_river` (`both`, `stream` or
+  `wetland_flow`; blank is `both`) sets which rear rules take the
+  species' near-river pair. The pair's numbers live in the thresholds
+  CSV (`<stage>_river_*`) and fresh inherits them; this function writes
+  no numbers, only `near_river: false` on the rules outside the scope
+  and on every river-polygon rule, because a river polygon is the river.
+  See `configs/dictionary_dimensions.csv` for every column.
 
 - to:
 
@@ -41,8 +51,9 @@ lnk_rules_build(
 - thresholds:
 
   Path to the habitat thresholds CSV (from fresh). Used to look up
-  `rear_lake_ha_min` per species. Default uses the copy shipped with
-  fresh.
+  `rear_lake_ha_min` per species, and `rear_gradient_max` for a
+  `rear_wetland_flow = gradient` rule. Default uses the copy shipped
+  with fresh.
 
 - edge_types:
 
