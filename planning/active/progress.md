@@ -53,7 +53,7 @@ Left, in order:
 1. `/code-check branch` rounds 2 and 3 at least. Round 2 reviews `3692a509`'s fixes first; the brief is the round 1 shape plus that fix diff. Round 1 found a defect pattern (inert or leaking combinations), so end on a clean round, or on an enumeration of the builder's dims combinations against what fresh compiles.
 2. Re-run the full suite after any fixes (`NOT_CRAN=true`; expect only the 2 golden dams failures).
 3. `/planning-archive`; the archive README carries `data-raw/logs/wetland_door_364/README.md`'s headline numbers. Keep `rule_table_issue_draft.md` for body review, unfiled.
-4. `/gh-pr-push` with the drafted body (`Closes #364`; note fresh PR #264 must merge and be tagged first).
+4. `/gh-pr-push` with the drafted body (`planning/active/pr_body_draft.md`) (`Closes #364`; note fresh PR #264 must merge and be tagged first).
 
 ### Resume
 
