@@ -320,13 +320,16 @@ for (v in variants$variant) {
          schema_of(v), " was built from", call. = FALSE)
   }
   # The rules and dimensions it classified with (link#364). A built.csv from
-  # before them records none (NA), which is right only for a variant with no
-  # dims of its own, built on the base's rules.
+  # before them records none (NA), which is right only for a bundle whose
+  # rules and dimensions resolve to the base's own files: a variant can carry
+  # its own rules with no dims (a baked threshold moved).
   for (k in c("rules", "dimensions")) {
     col <- paste0(k, "_sha256")
     got <- if (col %in% names(b)) b[[col]] else rep(NA_character_, nrow(b))
     want <- digest::digest(file = cfgs[[v]][[k]], algo = "sha256")
-    ok <- got %in% want | (is.na(got) & is.na(variants$dims[variants$variant == v]))
+    on_base <- identical(normalizePath(cfgs[[v]][[k]]),
+                         normalizePath(cfgs[[base_variant]][[k]]))
+    ok <- got %in% want | (is.na(got) & on_base)
     if (!all(ok)) {
       stop("the ", k, " for ", v, " are not the ones every scored WSG of ",
            schema_of(v), " was built from", call. = FALSE)

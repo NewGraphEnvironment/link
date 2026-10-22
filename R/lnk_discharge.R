@@ -397,12 +397,15 @@
 #' @param cfg An `lnk_config`.
 #' @param models Character, `"cw"` and / or `"mad"`.
 #' @param params Optional, `.lnk_frs_params(cfg)` already read.
+#' @param species Optional, the species to resolve for; default every
+#'   species of `cfg`.
 #' @return A data frame of `measure`, `threshold`, `distance_max`, one row
 #'   per distinct pair; zero rows when no rule reads one.
 #' @noRd
-.lnk_near_river_pairs <- function(cfg, models = "cw", params = NULL) {
+.lnk_near_river_pairs <- function(cfg, models = "cw", params = NULL,
+                                  species = NULL) {
   if (is.null(params)) params <- .lnk_frs_params(cfg)
-  species <- cfg[["species"]] %||% names(params)
+  species <- species %||% cfg[["species"]] %||% names(params)
   specs <- utils::getFromNamespace(".frs_near_river_specs", "fresh")
   specs(params, intersect(species, names(params)), unique(models))
 }

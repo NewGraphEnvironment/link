@@ -249,3 +249,43 @@ test_that("lnk_pipeline_persist never deletes from a log table (link#354)", {
   expect_false(any(sub("^[^.]+\\.", "", targets) %in%
                      names(.lnk_log_specs())))
 })
+
+test_that("a pair that found no river still clears the group's earlier rows (#364 review)", {
+  captured <- character(0)
+  local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) {
+      captured <<- c(captured, sql); invisible(NULL)
+    }
+  )
+  # The working near-river table is absent (as when the walk found nothing
+  # and classify kept none), but default's CH rules read a pair.
+  m <- mock_dbi_no_barriers()
+  with_mocked_bindings(
+    dbGetQuery = m$dbGetQuery, dbQuoteString = m$dbQuoteString,
+    .package = "DBI",
+    {
+      lnk_pipeline_persist(structure(list(), class = "DBIConnection"),
+                           aoi = "ADMS", cfg = lnk_config("default"),
+                           species = c("CH", "BT"))
+    }
+  )
+  del <- grep("DELETE FROM fresh.streams_near_river", captured,
+              value = TRUE, fixed = TRUE)
+  expect_length(del, 1L)
+  expect_match(del, "('channel_width', 15::double precision, 1000::double precision)",
+               fixed = TRUE)
+  expect_false(any(grepl("INSERT INTO fresh.streams_near_river",
+                         captured, fixed = TRUE)))
+  # A species with no pair clears nothing.
+  captured <- character(0)
+  with_mocked_bindings(
+    dbGetQuery = m$dbGetQuery, dbQuoteString = m$dbQuoteString,
+    .package = "DBI",
+    {
+      lnk_pipeline_persist(structure(list(), class = "DBIConnection"),
+                           aoi = "ADMS", cfg = lnk_config("default"),
+                           species = "BT")
+    }
+  )
+  expect_false(any(grepl("streams_near_river", captured, fixed = TRUE)))
+})

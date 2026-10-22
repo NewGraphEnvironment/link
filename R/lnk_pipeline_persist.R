@@ -218,9 +218,12 @@ lnk_pipeline_persist <- function(conn, aoi, cfg, species,
   # stale one before classify, so it is this build's). The table has no
   # species key, and classify walks only the pairs of the species it
   # classified, so the WSG's rows are replaced pair by pair: a
-  # species-subset build keeps the other species' distances. A pair no build
-  # walks again is left as it was; no rule reads it, and the validator
-  # checks the logged pairs against cfg.
+  # species-subset build keeps the other species' distances. The pairs
+  # replaced are the ones these species' rules read under the WSG's model
+  # (fresh's resolver), not only those the walk returned rows for: a pair
+  # that found no river here must still clear the rows an earlier build
+  # left, which a re-model may have keyed to other segments. Pairs the walk
+  # holds are added too (a classify given another method table).
   near_table <- paste0(tn$schema, ".streams_near_river")
   near_present <- nrow(DBI::dbGetQuery(conn, sprintf(
     "SELECT 1 FROM information_schema.tables
@@ -228,15 +231,31 @@ lnk_pipeline_persist <- function(conn, aoi, cfg, species,
       LIMIT 1;",
     DBI::dbQuoteString(conn, schema)
   ))) > 0L
-  if (near_present) {
-    near_cols <- paste(names(cols_streams_near_river), collapse = ", ")
+  meth <- suppressMessages(.lnk_habitat_method_csv(cfg))
+  near_pairs <- .lnk_near_river_pairs(
+    cfg, .lnk_wsg_model(.lnk_habitat_method_read(meth), aoi),
+    species = species)
+  near_vals <- if (nrow(near_pairs) > 0L) {
+    paste(sprintf("(%s, %s::double precision, %s::double precision)",
+                  vapply(near_pairs$measure, .lnk_quote_literal, ""),
+                  format(near_pairs$threshold, digits = 15),
+                  format(near_pairs$distance_max, digits = 15)),
+          collapse = ", ")
+  }
+  near_sets <- c(
+    if (!is.null(near_vals)) sprintf("SELECT * FROM (VALUES %s) v", near_vals),
+    if (near_present) sprintf(
+      "SELECT DISTINCT measure, threshold, distance_max
+         FROM %s.streams_habitat_near_river", schema))
+  if (length(near_sets) > 0L) {
     .lnk_db_execute(conn, sprintf(
       "DELETE FROM %1$s p
         WHERE p.watershed_group_code = %2$s
-          AND (p.measure, p.threshold, p.distance_max) IN (
-            SELECT DISTINCT measure, threshold, distance_max
-              FROM %3$s.streams_habitat_near_river)",
-      near_table, aoi_lit, schema))
+          AND (p.measure, p.threshold, p.distance_max) IN (%3$s)",
+      near_table, aoi_lit, paste(near_sets, collapse = " UNION ")))
+  }
+  if (near_present) {
+    near_cols <- paste(names(cols_streams_near_river), collapse = ", ")
     .lnk_db_execute(conn, sprintf(
       "INSERT INTO %s (%s)
        SELECT %s FROM %s.streams_habitat_near_river

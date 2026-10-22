@@ -181,3 +181,24 @@ Round 1 found six fragile issues and no live bug:
 - **Fixed:** a variant gets its own rules when a baked threshold moves, not only when its `dims` do.
 - **Documented:** `variants_364.csv` builds only at the commits before `default` moved.
 - **Accepted:** the validator's log check reads each WSG's newest log row however that run ended. A run that fails after opening its row could leave pairs that differ from the persisted distances. This is the shape the `discharge_fill` and `discharge_source` checks already have; changing it means deciding, for all three, what a failed run's row means. Out of scope here.
+
+Round 2 found two defects, both inside round 1's fixes:
+- **Persist's delete:** its pair set came from the rows the walk returned. A pair that found no river in a group left the earlier build's rows, which a re-model may have keyed to other segments. Fixed: the delete covers the pairs fresh's resolver gives for the persisted species under the group's model, together with any pair the walk holds.
+- **The score's sha check:** it accepted a missing rules or dimensions sha whenever a variant had no `dims`. Fixed: it is accepted only when the bundle's file is the base's own.
+
+**Mechanism:** a set an action works on was taken from a stand-in (rows produced, a column being empty) instead of from what defines it. **Enumeration**, every place the branch derives which pairs, or which rules or dimensions, a step acts on, and its source after the fixes:
+
+| # | where | set | source |
+|---|---|---|---|
+| 1 | fresh classify (the walk) | pairs walked | resolver: classified species × models applied |
+| 2 | `lnk_pipeline_persist()` delete | pairs replaced | resolver: persisted species × the group's model, ∪ the walk's rows |
+| 3 | `.lnk_near_river_logged()` (log) | pairs logged | resolver: cfg's species × the group's model |
+| 4 | `.lnk_hv_check_log()` / `.lnk_hv_check_schema()` | pairs expected | the same function as #3, so it cannot drift from the log |
+| 5 | `.lnk_discharge_read_rules()` | does the bundle read discharge | resolver under `cw`, plus a rule-level `mad:` |
+| 6 | harness `write_bundle()` | does a variant get its own rules | rules rebuilt from its dims and thresholds, compared with the base's |
+| 7 | harness `record_built()` | rules / dimensions shas | digests of the files the bundle resolves to |
+| 8 | score sha check | is NA acceptable | the bundle's file is the base's file |
+| 9 | score dims check | does the bundle hold its dims | the bundle's own `dimensions.csv` |
+| 10 | `audit_configs.R` | may stamps be ignored | the bundle's thresholds have no near-river column, so no rule can inherit a pair |
+
+#3 and #1 differ by design: the log names a pair for a cfg species absent from a group, which the walk skips. Nothing reads such a pair there (the species has no habitat rows), and the validator compares #3 with #4, the same function. Every row now reads the set's own source.
