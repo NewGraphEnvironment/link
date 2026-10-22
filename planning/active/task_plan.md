@@ -22,11 +22,11 @@
 - [x] Audit every `DISTINCT ON` / `ORDER BY` on the crossings path (`lnk_pipeline_pscis_build.R`, `lnk_crossings_union.R`, the dam prep): list each one and whether it ends on a unique key; fix any that can change output, and note the rest in findings
 
 ## Phase 2 — #244: the US dam placeholders as barriers in `default`
-- [ ] Add the pipeline knob to `default/config.yaml` with a comment saying why it differs from bcfishpass; the `usa` CTE writes `passability_status_code = 1` when it is on
-- [ ] `lnk_wsg_downstream_check()` includes the placeholders under the same knob, and its documentation says so
-- [ ] Tests: dam-prep SQL for both knob states (off is byte-identical to today); the guard's filter with the knob on
-- [ ] #345: find which ADMS dam left `cabd.dams`, confirm it is upstream data, and re-pin the golden test on dam IDs with the CABD row count and load date in its comment
-- [ ] Query which groups hold the five placeholders and which segments would take `DAM`; record it in findings
+- [x] Add the pipeline knob to `default/config.yaml` with a comment saying why it differs from bcfishpass; the `usa` CTE writes `passability_status_code = 1` when it is on
+- [x] `lnk_wsg_downstream_check()` includes the placeholders under the same knob, and its documentation says so
+- [x] Tests: dam-prep SQL for both knob states (off is byte-identical to today); the guard's filter with the knob on
+- [x] #345: find which ADMS dam left `cabd.dams`, confirm it is upstream data, and re-pin the golden test on dam IDs with the CABD row count and load date in its comment
+- [x] Query which groups hold the five placeholders and which segments would take `DAM`; record it in findings
 
 ## Phase 3 — Verify on real groups
 - [ ] Two full builds of ADMS from the same inputs into two scratch schemas; diff segment by segment, matching start and length: expect 0 differences (#277). Do the same for ELKR, which also had the tie in #362

@@ -202,3 +202,36 @@ test_that("guard probe agrees with prep_dams on what blocks (anti-drift)", {
   # Every dam the guard flags in KOTL must be one prep_dams would model.
   expect_true(all(from_guard %in% from_pipeline))
 })
+
+
+test_that("the guard sees the cabd_additions dams only when they are barriers", {
+  # Shared SQL, so the guard and prep_dams agree on the placeholders too
+  # (link#367). KOTL drains down the Columbia past LARL's border placeholder.
+  conn <- skip_if_no_db()
+  cfg <- lnk_config("default")
+  loaded <- lnk_load_overrides(cfg)
+  schema <- "working_guard_usa"
+  DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", schema))
+  DBI::dbExecute(conn, sprintf("CREATE SCHEMA %s", schema))
+  withr::defer(
+    try(DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", schema)),
+        silent = TRUE))
+
+  outlets <- fresh::frs_wsg_outlets()
+  on <- .lnk_dams_blocking_downstream(conn, "KOTL", loaded, outlets,
+                                      additions = TRUE)
+  off <- .lnk_dams_blocking_downstream(conn, "KOTL", loaded, outlets)
+  usa_on <- on$dam_id[grepl("^12000", on$dam_id)]
+  expect_identical(usa_on, "1200000005")
+  expect_false(any(grepl("^12000", off$dam_id)))
+  # Everything else is the same probe.
+  expect_identical(sort(setdiff(on$dam_id, usa_on)), sort(off$dam_id))
+
+  # And the id the guard reports is the one prep_dams persists.
+  .lnk_pipeline_prep_dams(conn, conn_tunnel = conn, aoi = "LARL",
+                          schema = schema, loaded = loaded, cfg = cfg)
+  from_pipeline <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT dam_id FROM %s.dams WHERE passability_status_code IN (1, 2)",
+    schema))$dam_id
+  expect_true(usa_on %in% from_pipeline)
+})

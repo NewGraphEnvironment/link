@@ -63,6 +63,24 @@ Measured with `.lnk_pipeline_pscis_build()` into a scratch schema on the local f
 | Dam snap (`.lnk_dams_matched_sql()`) | inner `ORDER BY <-> LIMIT 1` | A dam equidistant from two segments at a shared node could take either `linear_feature_id`; the measure on the blue line is the same either way. Left, noted. |
 | Dam prep `usa` CTE | `row_number() OVER ()` | Placeholder `dam_id`s can swap between runs. Harmless while they are dropped; fixed in Phase 2, where they become barriers. |
 
+## Phase 2: the cabd_additions placeholders (link#244), measured 2026-10-22
+
+- **Where they sit** (all on mainstems, `blue_line_key = watershed_key`), with ids now numbered by `(blue_line_key, downstream_route_measure)`:
+
+  | dam_id | name | line | group |
+  |---|---|---|---|
+  | 1200000001 | Grand Coulee | Little Sheep Creek | LARL |
+  | 1200000002 | Grand Coulee | Big Sheep Creek | LARL |
+  | 1200000003 | Ross | Skagit River | SKGT |
+  | 1200000004 | Grand Coulee | Kettle River | KETL |
+  | 1200000005 | Grand Coulee | Columbia River (border) | LARL |
+
+  Before this change the ids came from `row_number() OVER ()`, so they could swap between runs; harmless while the rows were dropped, not once they are barriers.
+- **bcfishpass does the same as link's `bcfishpass` bundle** (`smnorris/bcfishpass@f8db4b9` local clone): `load_dams.sql` inserts the placeholders with `passability_status_code` NULL, and `load_crossings.sql` builds dam crossings from `bcfishpass.dams_vw` inner-joined to `cabd.dams` on `cabd_id`, which holds no placeholder. So they never reach crossings there either. Its comment ("create placeholders on BC streams … and add those to bcfishpass.dams") suggests they were meant to count; owed: a draft note, not posted.
+- **Under `default` after this change**, prep gives the three LARL placeholders, KETL's and SKGT's `passability_status_code` 1; under `bcfishpass`, NULL as before.
+- **Segments that may take `DAM`** (from `fresh_default`, built 2026-10-17): mapping codes whose second token is `NONE` in the three groups that hold placeholders: KETL RB 6,743 and WCT 5,430; LARL BT 1,131, RB 1,097, WCT 1,055; SKGT BT and RB 2,070 each. `NONE` means no anthropogenic barrier downstream; which of these the placeholders reach is Phase 3's measurement. Upstream of the Columbia border placeholder, BT codes with no anthropogenic token are rare outside LARL (KOTL 76, BULL 26, KHOR 17, KOTR 15, UARL 12 segments), because Keenleyside, Brilliant and the other BC dams come first.
+- **#345:** a current `cabd.dams` (2,592 rows, load 2026-10-17) gives ADMS 7 dams. The bcfishpass reference DB's `bcfishpass.dams` holds the same 7 ids for ADMS, so the eighth left CABD upstream; neither database still holds it, so it cannot be named. The golden test now pins the 7 ids.
+
 ## Errors Encountered
 
 | Error | Resolution |

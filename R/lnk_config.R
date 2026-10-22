@@ -388,5 +388,10 @@ print.lnk_config <- function(x, ...) {
     .lnk_discharge_source_check(pipeline$discharge_source,
                                 paste0("config '", name, "'"))
   }
+  v <- pipeline$cabd_additions_barriers
+  if (!is.null(v) && !(is.logical(v) && length(v) == 1L && !is.na(v))) {
+    stop("config '", name, "': pipeline: cabd_additions_barriers must be ",
+         "true or false", call. = FALSE)
+  }
   pipeline
 }
