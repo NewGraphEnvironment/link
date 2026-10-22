@@ -16,10 +16,10 @@
 - The golden dams test (`tests/testthat/test-lnk_pipeline_prepare.R`) pins ADMS at 8; a current `cabd.dams` gives 7 (#345).
 
 ## Phase 1 — #277: a deterministic crossing pick
-- [ ] Move the pick's `order_by` into one internal constant used by `.lnk_pipeline_pscis_build()`, and end it on `modelled_xing_dist ASC, modelled_crossing_id ASC NULLS LAST`
-- [ ] Measure province-wide that `(stream_crossing_id, linear_feature_id, modelled_crossing_id)` is unique among rows passing the pick filter; if not, extend the key until it is, and record the query in findings
-- [ ] Test: the existing mock test asserts the full `order_by`; a DB test (`skip_if_no_db()`) builds a synthetic tie, inserts it in two row orders, and asserts one pick
-- [ ] Audit every `DISTINCT ON` / `ORDER BY` on the crossings path (`lnk_pipeline_pscis_build.R`, `lnk_crossings_union.R`, the dam prep): list each one and whether it ends on a unique key; fix any that can change output, and note the rest in findings
+- [x] Move the pick's `order_by` into one internal constant used by `.lnk_pipeline_pscis_build()`, and end it on `modelled_xing_dist ASC, modelled_crossing_id ASC NULLS LAST`
+- [x] Measure province-wide that `(stream_crossing_id, linear_feature_id, modelled_crossing_id)` is unique among rows passing the pick filter; if not, extend the key until it is, and record the query in findings
+- [x] Test: the existing mock test asserts the full `order_by`; a DB test (`skip_if_no_db()`) builds a synthetic tie, inserts it in two row orders, and asserts one pick
+- [x] Audit every `DISTINCT ON` / `ORDER BY` on the crossings path (`lnk_pipeline_pscis_build.R`, `lnk_crossings_union.R`, the dam prep): list each one and whether it ends on a unique key; fix any that can change output, and note the rest in findings
 
 ## Phase 2 — #244: the US dam placeholders as barriers in `default`
 - [ ] Add the pipeline knob to `default/config.yaml` with a comment saying why it differs from bcfishpass; the `usa` CTE writes `passability_status_code = 1` when it is on

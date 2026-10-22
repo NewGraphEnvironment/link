@@ -261,21 +261,14 @@
   #   - order_by: name_score DESC, weighted_distance ASC
   #     (weighted_distance: 90% of distance_to_stream when a modelled match
   #      was found within 100m; full distance otherwise)
+  # then the tie-breaks in `.lnk_pscis_pick_order` (link#277).
   fresh::frs_candidates_pick(
     conn,
     table_in   = paste0(s, ".pscis_streams_150m"),
     table_to   = paste0(s, ".pscis_picked"),
     col_key    = "stream_crossing_id",
     exp_filter = "name_score != -100 AND width_order_score != -100 AND multiple_match_ind IS NULL",
-    order_by = c(
-      "name_score DESC",
-      paste0(
-        "CASE WHEN modelled_xing_dist_instream IS NOT NULL ",
-        "THEN distance_to_stream - (distance_to_stream * 0.1) ",
-        "ELSE distance_to_stream END ASC"
-      ),
-      "linear_feature_id ASC"  # deterministic tiebreak when scores + distance tie
-    )
+    order_by = .lnk_pscis_pick_order
   )
 
   # Step 4b: filter the picked PSCIS to AOI. After per-PSCIS dedup, each
@@ -313,7 +306,8 @@
       LEFT JOIN %2$s a ON c.stream_crossing_id = a.stream_crossing_id
       ORDER BY cid, p.distance_to_stream ASC,
                a.assessment_date DESC NULLS LAST,
-               p.modelled_crossing_id ASC NULLS LAST
+               p.modelled_crossing_id ASC NULLS LAST,
+               p.stream_crossing_id ASC
     )
     DELETE FROM %1$s.pscis
     WHERE stream_crossing_id NOT IN (SELECT stream_crossing_id FROM de_duped);
@@ -489,3 +483,23 @@
 
   invisible(conn)
 }
+
+# ORDER BY for Step 4's per-PSCIS pick, after `DISTINCT ON
+# (stream_crossing_id)`. The first two terms are bcfp's 04_pscis.sql. The
+# rest break its ties, which bcfp leaves to encounter order (link#277): a
+# PSCIS x stream candidate joins every modelled crossing within 100 m on
+# its blue line, so two candidates can share score, distance and
+# linear_feature_id and differ only in the modelled crossing. The closest
+# one wins, then the lowest id. Rows still tied after that share every
+# column the pick passes on except `modelled_xing_dist`, which is equal too.
+.lnk_pscis_pick_order <- c(
+  "name_score DESC",
+  paste0(
+    "CASE WHEN modelled_xing_dist_instream IS NOT NULL ",
+    "THEN distance_to_stream - (distance_to_stream * 0.1) ",
+    "ELSE distance_to_stream END ASC"
+  ),
+  "linear_feature_id ASC",
+  "modelled_xing_dist ASC",
+  "modelled_crossing_id ASC NULLS LAST"
+)

@@ -37,6 +37,32 @@ Construction lines (1200 / 1400) inside wetlands reach no rear rule in `default`
 Relates to #361, #277, #244, #316, #345, #364.
 
 
+## Phase 1: the PSCIS pick (link#277), measured 2026-10-22
+
+Measured with `.lnk_pipeline_pscis_build()` into a scratch schema on the local fwapg (primitive load 2026-10-17). Step 2 builds `pscis_streams_150m` province-wide whatever the AOI, so these counts are province-wide. Script: a scratchpad copy of the queries below, rerunnable by building the table and querying it.
+
+- `pscis_stream_candidates`: 37,992 rows, 37,992 distinct `(stream_crossing_id, linear_feature_id)`, so each PSCIS x stream pair is one candidate.
+- Rows passing the pick filter: 33,611, of which 13,481 have no modelled crossing.
+- **Under the old order** (`name_score DESC, weighted distance, linear_feature_id`), 1,618 PSCIS crossings had more than one row tied at the top:
+  - 931 tied between two or more different modelled crossings: the #277 case, which changes which modelled crossing the PSCIS covers, and so which one stays a separate modelled barrier.
+  - 673 tied between rows with no modelled crossing (rows the B-side dedup nulled and the close-enough reset let back in). These differ only in `modelled_xing_dist`.
+- **Under the new order**, 116 groups of rows share the whole key (`stream_crossing_id, linear_feature_id, modelled_crossing_id, modelled_xing_dist`), and none of them differ in any column except `geom_snapped`, which comes from the shared candidate. So the pick is deterministic in what it passes on.
+- Mutation check: with the old three-term order, the synthetic tie in the new DB test picks 101854 in one row order and 100122 in the other; with the new order, 100122 both times.
+
+### Audit of orderings on the crossings path
+
+| where | ordering | verdict |
+|---|---|---|
+| `lnk_points_snap()` (Step 1) | `ORDER BY s.geom <-> pt LIMIT k` | Ties only at the k-th boundary decide which segments become candidates. Left: a second sort key would cost the KNN index scan, and ties at the boundary are not what #362 measured. |
+| Step 3 B-side `to_retain` | `modelled_crossing_id, modelled_xing_dist, stream_crossing_id` | Rows still tied share the retained `stream_crossing_id`, so the UPDATE is the same. Deterministic. |
+| Step 4 pick | `.lnk_pscis_pick_order` | Fixed (above). |
+| Step 4c DBSCAN dedup | `cid, distance_to_stream, assessment_date DESC, modelled_crossing_id` | Could tie between two PSCIS with equal distance and date and the same (or no) modelled crossing, and then pick either id. Fixed: ends on `p.stream_crossing_id ASC`. |
+| Step 4d `(blue_line_key, downstream_route_measure)` dedup | ends `stream_crossing_id ASC` | Deterministic. |
+| Step 5 xref branches | `u.stream_crossing_id, u.branch_rank` | One row per branch per PSCIS. Deterministic. |
+| `.lnk_crossings_union()` | no ordering | Nothing picked. |
+| Dam snap (`.lnk_dams_matched_sql()`) | inner `ORDER BY <-> LIMIT 1` | A dam equidistant from two segments at a shared node could take either `linear_feature_id`; the measure on the blue line is the same either way. Left, noted. |
+| Dam prep `usa` CTE | `row_number() OVER ()` | Placeholder `dam_id`s can swap between runs. Harmless while they are dropped; fixed in Phase 2, where they become barriers. |
+
 ## Errors Encountered
 
 | Error | Resolution |
