@@ -1063,6 +1063,8 @@ Never position link or fresh as superseding or replacing bcfishpass. It is the s
 
 **How to apply:** "validates against", not "replaces". "builds on the foundation of", not "improves on". "community-maintained override CSVs", not "our data". Frame methodology differences (wetland rearing, intermittent streams) as *our biological defaults*, not corrections. The bcfishpass comparison is a validation step, not the package's goal.
 
+**In link's descriptions** (DESCRIPTION Title / Description, the README opening, which the company website copies), bcfishpass gets one real acknowledgement, in the README's "Data and methods it builds on" section: the method link follows, the community correction data it reads, and the `bcfishpass` config for checking against. Descriptions elsewhere do not name it. Connectivity modelling is a core function of link and is always named in them (operator, 2026-10-14, link#338).
+
 ### Never write into smnorris/* without explicit approval
 
 No comments, issues, PRs or any write action in an upstream repo unless the user approves that specific action.
