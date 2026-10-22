@@ -457,6 +457,8 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
 #' @noRd
 .lnk_hv_check_log <- function(conn, schema, aoi, cfg) {
   if (!DBI::dbExistsTable(conn, DBI::Id(schema = schema, table = "log"))) {
+    # No log at all: built before #127, so it walked no near_river pair.
+    .lnk_hv_check_near_river_logged(schema, cfg, aoi, rep("", length(aoi)))
     return(character(0))
   }
   log_cols <- names(DBI::dbGetQuery(conn, sprintf(
@@ -500,21 +502,13 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
   # walked none, which is right only where cfg reads none. A pair walked at
   # other numbers would read as `(size OR FALSE)` with no error, so any
   # difference stops.
-  want_nr <- vapply(lg$watershed_group_code, function(w) {
-    .lnk_near_river_logged(cfg, w)
-  }, character(1))
-  logged_nr <- ifelse(is.na(lg$near_river), "", lg$near_river)
-  nr_off <- logged_nr != want_nr
-  if (any(nr_off)) {
-    stop(schema, ".log records near_river pairs other than cfg '", cfg$name,
-         "' reads (logged / cfg; a missing log value is from a build ",
-         "before link 0.67.0, which walked none): ",
-         paste(sprintf("%s (%s / %s)", lg$watershed_group_code[nr_off],
-                       ifelse(nzchar(logged_nr[nr_off]), logged_nr[nr_off], "none"),
-                       ifelse(nzchar(want_nr[nr_off]), want_nr[nr_off], "none")),
-               collapse = ", "),
-         ". Rebuild those groups under this cfg.", call. = FALSE)
-  }
+  # Over every group scored, not only those with a log row: a group with
+  # none was built before its log, so it walked no pair, like a NULL value.
+  logged_nr <- stats::setNames(rep("", length(aoi)), aoi)
+  hit <- lg$watershed_group_code %in% aoi
+  logged_nr[lg$watershed_group_code[hit]] <-
+    ifelse(is.na(lg$near_river[hit]), "", lg$near_river[hit])
+  .lnk_hv_check_near_river_logged(schema, cfg, aoi, unname(logged_nr))
   logged_src <- ifelse(is.na(lg$discharge_source), "fwapg",
                        lg$discharge_source)
   # Only where cfg reads discharge: elsewhere the source moves no flag.
@@ -529,6 +523,29 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
             call. = FALSE)
   }
   lg$watershed_group_code
+}
+
+#' Stop when the near_river pairs logged for groups differ from cfg's
+#'
+#' A pair walked at other numbers, or not walked at all, would read as
+#' `(size OR FALSE)` with no error, so any difference stops (#364). `logged`
+#' is the logged text per group of `aoi`, `""` where the build walked none
+#' (no value, no row, or no log table).
+#' @noRd
+.lnk_hv_check_near_river_logged <- function(schema, cfg, aoi, logged) {
+  want <- vapply(aoi, function(w) .lnk_near_river_logged(cfg, w), character(1))
+  off <- logged != want
+  if (any(off)) {
+    stop(schema, ".log records near_river pairs other than cfg '", cfg$name,
+         "' reads (logged / cfg; a group with no log value or row is from a ",
+         "build before link 0.67.0, which walked none): ",
+         paste(sprintf("%s (%s / %s)", aoi[off],
+                       ifelse(nzchar(logged[off]), logged[off], "none"),
+                       ifelse(nzchar(want[off]), want[off], "none")),
+               collapse = ", "),
+         ". Rebuild those groups under this cfg.", call. = FALSE)
+  }
+  invisible(NULL)
 }
 
 #' The discharge relation the validator reads, once per call

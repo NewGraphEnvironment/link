@@ -1062,6 +1062,13 @@ test_that("a near_river bundle is scored against the persisted distances", {
   expect_error(go(), "AAAA \\(discharge:3:1000 / channel_width:20:1000\\)")
   DBI::dbExecute(conn, sprintf(
     "UPDATE %s.log SET near_river = 'channel_width:20:1000'", s))
+  # A group with no log row walked nothing, like a NULL value (round 3).
+  DBI::dbExecute(conn, sprintf(
+    "DELETE FROM %s.log WHERE watershed_group_code = 'BBBB'", s))
+  expect_error(go(), "BBBB \\(none / channel_width:20:1000\\)")
+  DBI::dbExecute(conn, sprintf(
+    "INSERT INTO %s.log VALUES ('BBBB', 'default', '2026-01-01',
+       'channel_width:20:1000')", s))
   # o10 sits on segment 5, which has no width: it fails the size test, so
   # its rear predicate is FALSE until a persisted distance puts it near a
   # river, and then TRUE: the validator reads the build's own walk.

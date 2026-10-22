@@ -202,3 +202,19 @@ Round 2 found two defects, both inside round 1's fixes:
 | 10 | `audit_configs.R` | may stamps be ignored | the bundle's thresholds have no near-river column, so no rule can inherit a pair |
 
 #3 and #1 differ by design: the log names a pair for a cfg species absent from a group, which the walk skips. Nothing reads such a pair there (the species has no habitat rows), and the validator compares #3 with #4, the same function. Every row now reads the set's own source.
+
+Round 3 found the same mechanism twice more, once inside round 2's fix:
+- **Persist's delete re-derived its set instead of reading the source.** It formatted pair numbers with link's formatter, where fresh stores them with `.frs_sql_num()` (`%.10g`), so a pair number past 10 significant digits would not match its own rows. It also resolved under the group's current model only. Fixed: it formats with fresh's `.frs_sql_num()` (now a required internal in the preflight) and clears the pairs of both size models. Over-clearing is harmless, because the walk is species-agnostic and a pair no rule reads is read by nothing.
+- **The validator's log check covered only groups with a log row.** A group with no row, or a schema with no log table, walked nothing, yet passed silently. Fixed: every scored group counts, and a missing row or table reads as no pair walked.
+
+**The enumeration, revised.** Row 2 now formats with fresh's formatter and resolves under both models. Rows added:
+
+| # | where | set | source |
+|---|---|---|---|
+| 11 | `.lnk_hv_check_log()` | groups whose pairs are checked | every group of `aoi`; a missing row or log table counts as no pair |
+| 12 | `.lnk_hv_check_schema()` | does the schema hold distances | the table exists. Which groups' rows are right is #11's job: a group logged with a pair whose walk found no river legitimately has no rows. |
+| 13 | `lnk_pipeline_persist()` VALUES | the text of a pair's numbers | fresh's `.frs_sql_num()`, the formatter fresh stores and matches them with |
+
+Row 5's `mad:` half scans every bundle species, while its pair half scans `cfg$species`. The worst case is a needless fill, which moves no flag.
+
+**Where it ends.** Every row now reads its set from the code that defines it: fresh's resolver, fresh's formatter, the files a bundle resolves to, or `aoi` itself. None reconstructs one from a stand-in. The loop ends on this enumeration, after three rounds (2, 2 and 2 findings; rounds 2 and 3 inside the previous fixes).

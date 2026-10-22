@@ -159,9 +159,12 @@ lnk_preflight_fresh <- function(required = .lnk_fresh_required(),
 # .frs_run_connectivity in lnk_pipeline_connect(), .frs_habitat_models in
 # .lnk_wsg_model() (R/lnk_config.R, #299), .frs_near_river_specs in
 # .lnk_near_river_pairs() (R/lnk_discharge.R, #364): fresh's own resolver of
-# which near_river pairs a bundle's rules read, so link never re-derives it.
+# which near_river pairs a bundle's rules read, so link never re-derives it;
+# .frs_sql_num in lnk_pipeline_persist(), the formatter fresh stores a pair's
+# numbers with (#364).
 .lnk_fresh_required_internal <- function() {
-  c(".frs_run_connectivity", ".frs_habitat_models", ".frs_near_river_specs")
+  c(".frs_run_connectivity", ".frs_habitat_models", ".frs_near_river_specs",
+    ".frs_sql_num")
 }
 
 # Every `fresh::sym` / `fresh:::sym` reached from link's own namespace,

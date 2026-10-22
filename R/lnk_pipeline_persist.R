@@ -219,11 +219,15 @@ lnk_pipeline_persist <- function(conn, aoi, cfg, species,
   # species key, and classify walks only the pairs of the species it
   # classified, so the WSG's rows are replaced pair by pair: a
   # species-subset build keeps the other species' distances. The pairs
-  # replaced are the ones these species' rules read under the WSG's model
-  # (fresh's resolver), not only those the walk returned rows for: a pair
-  # that found no river here must still clear the rows an earlier build
-  # left, which a re-model may have keyed to other segments. Pairs the walk
-  # holds are added too (a classify given another method table).
+  # replaced are every one these species' rules read under either size
+  # model (fresh's resolver), not only those the walk returned rows for: a
+  # pair that found no river here must still clear the rows an earlier build
+  # left, which a re-model may have keyed to other segments, and a group
+  # that changed model must clear the other model's pairs. Pairs the walk
+  # holds are added too (a classify given another thresholds or method
+  # table). Clearing a pair nothing walked this time is harmless: the walk
+  # is species-agnostic, so a pair another species also reads comes back
+  # from the working rows, and a pair no rule reads is read by nothing.
   near_table <- paste0(tn$schema, ".streams_near_river")
   near_present <- nrow(DBI::dbGetQuery(conn, sprintf(
     "SELECT 1 FROM information_schema.tables
@@ -231,15 +235,16 @@ lnk_pipeline_persist <- function(conn, aoi, cfg, species,
       LIMIT 1;",
     DBI::dbQuoteString(conn, schema)
   ))) > 0L
-  meth <- suppressMessages(.lnk_habitat_method_csv(cfg))
-  near_pairs <- .lnk_near_river_pairs(
-    cfg, .lnk_wsg_model(.lnk_habitat_method_read(meth), aoi),
-    species = species)
+  near_pairs <- .lnk_near_river_pairs(cfg, c("cw", "mad"), species = species)
+  # fresh stores both numbers through its own formatter (.frs_sql_num(),
+  # "%.10g"), and the predicate matches them as that text; the same
+  # formatter here makes each comparison a literal against itself.
+  sql_num <- utils::getFromNamespace(".frs_sql_num", "fresh")
   near_vals <- if (nrow(near_pairs) > 0L) {
     paste(sprintf("(%s, %s::double precision, %s::double precision)",
                   vapply(near_pairs$measure, .lnk_quote_literal, ""),
-                  format(near_pairs$threshold, digits = 15),
-                  format(near_pairs$distance_max, digits = 15)),
+                  vapply(near_pairs$threshold, sql_num, ""),
+                  vapply(near_pairs$distance_max, sql_num, "")),
           collapse = ", ")
   }
   near_sets <- c(

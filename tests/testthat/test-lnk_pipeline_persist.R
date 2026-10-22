@@ -289,3 +289,33 @@ test_that("a pair that found no river still clears the group's earlier rows (#36
   )
   expect_false(any(grepl("streams_near_river", captured, fixed = TRUE)))
 })
+
+test_that("the delete writes a pair's numbers as fresh stores them (round 3)", {
+  captured <- character(0)
+  local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) {
+      captured <<- c(captured, sql); invisible(NULL)
+    }
+  )
+  cfg <- lnk_config("default")
+  th <- utils::read.csv(cfg$files$parameters_habitat_thresholds$path,
+                        check.names = FALSE, stringsAsFactors = FALSE)
+  th$rear_river_channel_width_min[th$species_code == "CH"] <- 15.0412345678912
+  f <- withr::local_tempfile(fileext = ".csv")
+  utils::write.csv(th, f, row.names = FALSE)
+  cfg$files$parameters_habitat_thresholds$path <- f
+  m <- mock_dbi_no_barriers()
+  with_mocked_bindings(
+    dbGetQuery = m$dbGetQuery, dbQuoteString = m$dbQuoteString,
+    .package = "DBI",
+    lnk_pipeline_persist(structure(list(), class = "DBIConnection"),
+                         aoi = "ADMS", cfg = cfg, species = "CH"))
+  del <- grep("DELETE FROM fresh.streams_near_river", captured, value = TRUE,
+              fixed = TRUE)
+  sql_num <- utils::getFromNamespace(".frs_sql_num", "fresh")
+  expect_match(del, sprintf("('channel_width', %s::double precision",
+                            sql_num(15.0412345678912)), fixed = TRUE)
+  # both models' pairs: width under cw, discharge under mad
+  expect_match(del, "('discharge', 3::double precision", fixed = TRUE)
+})
+
