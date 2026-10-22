@@ -844,7 +844,7 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
     .lnk_db_execute(conn, sprintf(
       "DROP TABLE IF EXISTS %s.%s", schema, key))
     DBI::dbWriteTable(conn, DBI::Id(schema = schema, table = key),
-      loaded[[key]], overwrite = TRUE)
+      .lnk_cabd_additions_rows(loaded[[key]], key), overwrite = TRUE)
   }
 
   # 2. Pull `cabd.dams` from tunnel (raw upstream — NOT bcfp's processed output).

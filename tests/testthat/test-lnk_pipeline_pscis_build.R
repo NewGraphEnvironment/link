@@ -50,6 +50,12 @@ test_that(".lnk_pipeline_pscis_build emits the five-step SQL chain", {
   expect_match(sql,
                "SET multiple_match_ind = NULL\\s+WHERE multiple_match_ind IS TRUE")
 
+  # Step 3b: one modelled crossing per PSCIS per stream, nearest instream
+  # (bcfp's `nearest` UPDATE, link#367), with an id tie-break.
+  expect_match(sql, "WITH nearest AS")
+  expect_match(sql, "SELECT DISTINCT ON \\(stream_crossing_id, blue_line_key\\)")
+  expect_match(sql, "modelled_xing_dist_instream ASC, modelled_crossing_id ASC")
+
   # Step 4: frs_candidates_pick called once.
   mockery::expect_called(m_pick, 1)
   pick_args <- mockery::mock_args(m_pick)[[1]]

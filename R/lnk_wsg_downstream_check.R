@@ -96,7 +96,7 @@
          (c.blue_line_key IS NULL)
          OR (c.blue_line_key = str.blue_line_key)
        )
-     ORDER BY str.geom <-> c.geom
+     ORDER BY str.geom <-> c.geom, str.linear_feature_id
      LIMIT 1
    ) str
    WHERE ST_Distance(str.geom, c.geom) <= 65
@@ -112,22 +112,31 @@
 #' above, so the pipeline and the guard number and filter them the same way.
 #'
 #' @param additions_ref SQL table reference or `(SELECT … FROM (VALUES …))`
-#'   subquery exposing `feature_type`, `name`, `blue_line_key` and
+#'   subquery exposing `csv_row` (the row's position in the CSV),
+#'   `feature_type`, `name`, `barrier_ind`, `blue_line_key` and
 #'   `downstream_route_measure`.
-#' @param barrier Logical. `TRUE` gives the placeholders
-#'   `passability_status_code` 1 (`BARRIER` in [.lnk_crossings_union()]);
-#'   `FALSE` gives NULL, which no consumer reads as a barrier. bcfishpass
-#'   does the latter (`load_dams.sql` writes NULL, and `load_crossings.sql`
-#'   inner-joins `cabd.dams`, which holds no placeholder), so `FALSE` is
-#'   the parity behaviour. See `.lnk_cabd_additions_barriers()`.
+#' @param barrier Logical. `TRUE` gives each placeholder whose `barrier_ind`
+#'   is true `passability_status_code` 1 (`BARRIER` in
+#'   [.lnk_crossings_union()]); `FALSE` gives every placeholder NULL, which no
+#'   consumer reads as a barrier. bcfishpass does the latter (`load_dams.sql`
+#'   writes NULL, and `load_crossings.sql` inner-joins `cabd.dams`, which
+#'   holds no placeholder), so `FALSE` is the parity behaviour. See
+#'   `.lnk_cabd_additions_barriers()`.
 #' @noRd
 .lnk_dams_usa_sql <- function(additions_ref, barrier = FALSE) {
   stopifnot(is.logical(barrier), length(barrier) == 1L, !is.na(barrier))
-  # Numbered in a fixed order: the ids become barrier ids when `barrier` is
-  # TRUE, and the guard looks them up in the persisted barriers (link#367).
+  # Numbered in CSV order, as bcfp's `row_number() over()` over the loaded
+  # table numbers them, but stated rather than left to the scan: the ids
+  # become barrier ids when `barrier` is TRUE, and the guard looks them up
+  # in the persisted barriers (link#367).
+  psc <- if (barrier) {
+    "CASE WHEN lower(a.barrier_ind::text) IN ('t', 'true', '1')
+          THEN 1 END::integer"
+  } else {
+    "NULL::integer"
+  }
   sprintf(
-    "SELECT (row_number() OVER (ORDER BY a.blue_line_key,
-                                          a.downstream_route_measure)
+    "SELECT (row_number() OVER (ORDER BY a.csv_row)
              + 1200000000)::text AS dam_id,
             s.linear_feature_id,
             a.blue_line_key,
@@ -153,7 +162,21 @@
       AND ROUND(a.downstream_route_measure::numeric)
             <  ROUND(s.upstream_route_measure::numeric)
      WHERE a.feature_type = 'dams'",
-    additions_ref, if (barrier) "1::integer" else "NULL::integer")
+    additions_ref, psc)
+}
+
+
+#' `cabd_additions` with its CSV row position as `csv_row`
+#'
+#' The placeholders are numbered in CSV order; the pipeline stages this
+#' frame and the guard inlines it, so both number from the same column.
+#' Other keys pass through.
+#' @noRd
+.lnk_cabd_additions_rows <- function(df, key = "cabd_additions") {
+  if (identical(key, "cabd_additions") && is.data.frame(df)) {
+    df$csv_row <- seq_len(nrow(df))
+  }
+  df
 }
 
 
@@ -199,7 +222,7 @@
   }
 
   build <- function(key, cols, casts, coercers) {
-    df <- loaded[[key]]
+    df <- .lnk_cabd_additions_rows(loaded[[key]], key)
     if (is.null(df) || nrow(df) == 0L || !all(cols %in% names(df))) {
       row <- paste(sprintf("NULL::%s", casts), collapse = ", ")
       return(sprintf("(SELECT * FROM (VALUES (%s)) AS v(%s))",
@@ -231,10 +254,11 @@
                  c("cabd_id", "passability_status_code"),
                  c("text", "integer"), list(lit, int_lit)),
     add  = build("cabd_additions",
-                 c("feature_type", "name", "blue_line_key",
-                   "downstream_route_measure"),
-                 c("text", "text", "integer", "double precision"),
-                 list(lit, lit, int_lit, num_lit))
+                 c("csv_row", "feature_type", "name", "barrier_ind",
+                   "blue_line_key", "downstream_route_measure"),
+                 c("integer", "text", "text", "text", "integer",
+                   "double precision"),
+                 list(int_lit, lit, lit, lit, int_lit, num_lit))
   )
 }
 

@@ -28,13 +28,26 @@
 - [x] #345: find which ADMS dam left `cabd.dams`, confirm it is upstream data, and re-pin the golden test on dam IDs with the CABD row count and load date in its comment
 - [x] Query which groups hold the five placeholders and which segments would take `DAM`; record it in findings
 
-## Phase 3 — Verify on real groups
-- [ ] Two full builds of ADMS from the same inputs into two scratch schemas; diff segment by segment, matching start and length: expect 0 differences (#277). Do the same for ELKR, which also had the tie in #362
-- [ ] Build the groups holding placeholders (from Phase 2) under `default` into a scratch schema, recompute, and diff mapping codes against `fresh_default` (same 2026-10-17 primitive load): expect changes only to `DAM` tokens on segments with no other anthropogenic barrier downstream
+## Corrections from the plan review (2026-10-22, folded in after Phases 1-2)
+
+The Plan review (`planning/active/review-plan.md`) disproved part of the plan; corrected without a new gate, because each follows the function's stated contract of mirroring bcfp or the plan's own acceptance:
+- [x] **The tie came from a missing bcfp step**, not from bcfp tying the same way: bcfp's `02_pscis_streams_150m.sql` keeps one modelled crossing per PSCIS per blue line (nearest instream) before the pick, and link skipped it. Ported as Step 3b with an id tie-break. This moves picks toward bcfp's (ADMS-wide test: 656 PSCIS change modelled crossing, 56 change stream), so bcfishpass parity can move; the parity re-score after the provincial run (#361) measures it. The gate's tie-break terms stay as the last resort.
+- [x] Barrier ids numbered in a stated order (`lnk_barriers_unify()`: gradient, falls, user-definite, subsurface), and both KNN snaps end on `linear_feature_id`
+- [x] Placeholders numbered in CSV order (bcfp's ids, stated), and a placeholder is a barrier only where its `barrier_ind` is true
+- [x] The `config.yaml` comment states the `DAM` change per flavour (resident: next anthropogenic barrier; anadromous: any dam downstream unless remediated)
+- [x] The persisted-`fresh.barriers` psc-NULL test removed: `default` also persists to `fresh` by default, and the new prep test covers both knob states
+- [ ] Not taken: `default_extrabreaks` / `default_rearbreaks` are `extends: ~` experiment bundles and stay off the knob
+
+## Phase 3 — Verify on real groups (revised after review: isolate each change)
+- [ ] Reproducibility (#277): ADMS and ELKR built twice at branch HEAD (`fresh_367a`, `fresh_367b`); `streams`, `barriers` and habitat identical, matching segments on start and length. Plus the in-process evidence already measured: main's code gave 464 different picks between two builds minutes apart, the branch 0
+- [ ] Effect of the pick change: ADMS, ELKR and NATR at main (`fresh_367m`, frozen worktree) against branch (`fresh_367a`): segments, accessible / spawning / rearing km per species
+- [ ] #244 isolated: LARL, KETL and SKGT with the knob on (`fresh_367a`) and off (`fresh_367c`, a scratch bundle extending `default`), both recomputed; expect identical segments, access and habitat, and mapping codes that differ only to `DAM`, per flavour
+- [ ] Upstream groups (Columbia above the border, Kettle, Skagit) are predicted from the placeholder positions, not rebuilt; the provincial run is their measurement
 - [ ] Record the results with their environment stamp in `data-raw/logs/provincial_prep_367/`
 
 ## Phase 4 — Docs and release
-- [ ] NEWS, RUNBOOK (dams and the crossings pick), and the `CLAUDE.md` status
+- [ ] NEWS, RUNBOOK (dams and the crossings pick), and the `CLAUDE.md` status, including the stale "Full-run digests are not reproducible on main" note
+- [ ] RUNBOOK and #361: with the knob on, the guard fails for groups upstream of a placeholder until KETL, LARL and SKGT are re-persisted at v0.68.0, so the existing `fresh_default` fails `wsg_recompute_one.R`'s error-mode check for them
 - [ ] Edit the bodies of #277, #244 and #345 to what was found and done
 - [ ] `devtools::test()`, `devtools::check()`, `lintr::lint_package()`
 - [ ] Bump DESCRIPTION to 0.68.0 as the last commit

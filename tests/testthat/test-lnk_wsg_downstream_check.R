@@ -222,7 +222,7 @@ test_that("the guard sees the cabd_additions dams only when they are barriers", 
                                       additions = TRUE)
   off <- .lnk_dams_blocking_downstream(conn, "KOTL", loaded, outlets)
   usa_on <- on$dam_id[grepl("^12000", on$dam_id)]
-  expect_identical(usa_on, "1200000005")
+  expect_identical(usa_on, "1200000002")  # CSV row 2, the Columbia at the border
   expect_false(any(grepl("^12000", off$dam_id)))
   # Everything else is the same probe.
   expect_identical(sort(setdiff(on$dam_id, usa_on)), sort(off$dam_id))

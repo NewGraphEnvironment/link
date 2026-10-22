@@ -81,6 +81,23 @@ Measured with `.lnk_pipeline_pscis_build()` into a scratch schema on the local f
 - **Segments that may take `DAM`** (from `fresh_default`, built 2026-10-17): mapping codes whose second token is `NONE` in the three groups that hold placeholders: KETL RB 6,743 and WCT 5,430; LARL BT 1,131, RB 1,097, WCT 1,055; SKGT BT and RB 2,070 each. `NONE` means no anthropogenic barrier downstream; which of these the placeholders reach is Phase 3's measurement. Upstream of the Columbia border placeholder, BT codes with no anthropogenic token are rare outside LARL (KOTL 76, BULL 26, KHOR 17, KOTR 15, UARL 12 segments), because Keenleyside, Brilliant and the other BC dams come first.
 - **#345:** a current `cabd.dams` (2,592 rows, load 2026-10-17) gives ADMS 7 dams. The bcfishpass reference DB's `bcfishpass.dams` holds the same 7 ids for ADMS, so the eighth left CABD upstream; neither database still holds it, so it cannot be named. The golden test now pins the 7 ids.
 
+## After the plan review: the missing bcfp step and the repeat-build evidence (2026-10-22)
+
+- **bcfp keeps one modelled crossing per PSCIS per blue line** (`02_pscis_streams_150m.sql`, the `nearest` UPDATE after the close-enough reset); link skipped it. Ported as Step 3b.
+- **Repeat builds of the pick** (`.lnk_pipeline_pscis_build()` for ADMS, which builds the candidate table province-wide; 17,377 PSCIS picked), main from a frozen worktree against the branch, each twice, minutes apart:
+
+  | comparison | different modelled crossing | different stream / measure |
+  |---|---|---|
+  | main vs main | 464 | 0 |
+  | branch vs branch | 0 | 0 |
+  | main vs branch | 656 | 56 |
+
+  So main's pick was not reproducible within one session over unchanged inputs, and the branch is. The 56 stream changes come from Step 3b: a non-nearest modelled match no longer gets the 0.9 distance weighting, as in bcfp.
+- **Census after the change:** no PSCIS has a top-ranked tie whose rows differ in any column the pick passes on. Non-null rows: 15,019, distinct keys 14,995; the 24 extra rows are exact duplicates from the `fwa_rivers_poly` LEFT JOIN (several polygons per `waterbody_key`), which bcfp's query has too.
+- **Source keys:** `fresh.modelled_stream_crossings` 524,578 rows and ids; `whse_fish.pscis_assessment_svw` 19,905 rows and ids.
+- **Snap timing** with `linear_feature_id` added after the KNN distance: 1.6-1.8 s for the province-wide snap and build, main and branch alike.
+- **Placeholder ids in CSV order:** 1200000001 Kettle (KETL), 1200000002 Columbia at the border (LARL), 1200000003 Big Sheep, 1200000004 Little Sheep (LARL), 1200000005 Ross (SKGT). The Phase 2 table above lists the position-ordered ids, now replaced.
+
 ## Errors Encountered
 
 | Error | Resolution |

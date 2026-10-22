@@ -988,27 +988,6 @@ test_that(".lnk_pipeline_prep_dams output is stable (golden, pre-refactor)", {
   expect_false(any(is.na(got$blue_line_key)))
 })
 
-test_that("the bcfishpass bundle keeps the cabd_additions dams off the barriers", {
-  # bcfishpass writes the placeholders with a NULL passability code and never
-  # makes them crossings, and the bcfishpass bundle keeps that for parity: the
-  # `usa` CTE gives NULL unless `pipeline: cabd_additions_barriers` is set,
-  # and the barrier_status CASE in .lnk_crossings_union has no NULL arm.
-  # `default` sets the knob (link#244, link#367).
-  conn <- skip_if_no_db()
-  cfg <- lnk_config("bcfishpass")
-  tn <- .lnk_table_names(cfg)
-  present <- DBI::dbGetQuery(conn, sprintf(
-    "SELECT 1 FROM information_schema.tables
-      WHERE table_schema = %s AND table_name = 'barriers' LIMIT 1",
-    DBI::dbQuoteLiteral(conn, tn$schema)))
-  skip_if(nrow(present) == 0L, "persist barriers table absent")
-  n <- DBI::dbGetQuery(conn, sprintf(
-    "SELECT count(*) AS n FROM %s.barriers WHERE id_barrier ~ '^12000'",
-    tn$schema))$n
-  expect_identical(as.integer(n), 0L)
-})
-
-
 # --- Phase 1 (#227): shared SQL builders --------------------------------
 
 test_that(".lnk_dams_matched_sql keeps the snap semantics intact", {
@@ -1215,11 +1194,14 @@ test_that(".lnk_dams_usa_sql gives the placeholders a code only as barriers", {
   off <- .lnk_dams_usa_sql("A")
   on <- .lnk_dams_usa_sql("A", barrier = TRUE)
   expect_match(off, "NULL::integer AS passability_status_code", fixed = TRUE)
-  expect_match(on, "1::integer AS passability_status_code", fixed = TRUE)
-  expect_identical(sub("1::integer", "NULL::integer", on, fixed = TRUE), off)
-  # Numbered in a fixed order: the ids become barrier ids, and the guard looks
-  # them up in the persisted barriers.
-  expect_match(off, "row_number() OVER (ORDER BY a.blue_line_key,", fixed = TRUE)
+  # Only rows the CSV marks as barriers get a code.
+  expect_match(on, "CASE WHEN lower(a.barrier_ind::text) IN ('t', 'true', '1')",
+               fixed = TRUE)
+  expect_false(grepl("barrier_ind", off, fixed = TRUE))
+  # Numbered in CSV order, stated: the ids become barrier ids, and the guard
+  # looks them up in the persisted barriers.
+  expect_match(off, "row_number() OVER (ORDER BY a.csv_row)", fixed = TRUE)
+  expect_match(on, "row_number() OVER (ORDER BY a.csv_row)", fixed = TRUE)
   expect_match(off, "FROM A a", fixed = TRUE)
   expect_match(off, "WHERE a.feature_type = 'dams'", fixed = TRUE)
   expect_error(.lnk_dams_usa_sql("A", barrier = NA))
@@ -1260,10 +1242,17 @@ test_that("prep_dams makes the placeholders barriers under default only", {
       "SELECT dam_id, passability_status_code AS psc FROM %s.dams
         WHERE dam_id LIKE '12000%%' ORDER BY dam_id", schema))
   })
-  # LARL holds three of the five placeholders: Columbia, Big and Little Sheep
-  # creeks, numbered by (blue_line_key, measure) across all five.
-  expect_identical(got[[1]]$dam_id, c("1200000001", "1200000002", "1200000005"))
+  # LARL holds three of the five placeholders, CSV rows 2-4 (Columbia, Big
+  # and Little Sheep creeks); row 1 is the Kettle (KETL), row 5 Ross (SKGT).
+  expect_identical(got[[1]]$dam_id, c("1200000002", "1200000003", "1200000004"))
   expect_identical(got[[2]]$dam_id, got[[1]]$dam_id)
   expect_true(all(is.na(got[[1]]$psc)))
   expect_true(all(got[[2]]$psc == 1L))
+})
+
+test_that(".lnk_cabd_additions_rows numbers cabd_additions only", {
+  df <- data.frame(name = c("a", "b", "c"))
+  expect_identical(.lnk_cabd_additions_rows(df)$csv_row, 1:3)
+  expect_identical(.lnk_cabd_additions_rows(df, "cabd_exclusions"), df)
+  expect_null(.lnk_cabd_additions_rows(NULL))
 })

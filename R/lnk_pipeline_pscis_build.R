@@ -252,6 +252,40 @@
     WHERE multiple_match_ind IS TRUE AND distance_to_stream < 50;", s) # nolint: indentation_linter, line_length_linter
   .lnk_db_execute(conn, sql_close_enough_reset)
 
+  # Step 3b: one modelled crossing per PSCIS per stream. Mirrors bcfp
+  # 02_pscis_streams_150m.sql's `nearest` UPDATE ("force PSCIS crossings to
+  # only match to a single modelled crossing on given stream"), which link
+  # had skipped (link#367): a PSCIS x stream candidate joins every modelled
+  # crossing within 100 m on its blue line, and without this step two of
+  # them could tie at the pick and fall to encounter order (link#277).
+  # The nearest instream wins, as in bcfp; `modelled_crossing_id` breaks
+  # bcfp's remaining tie. The losers keep their candidate row with no
+  # modelled crossing, so they take the full (unweighted) distance at the
+  # pick. `(stream_crossing_id, linear_feature_id, modelled_crossing_id)`
+  # identifies a row with a modelled crossing (measured, link#367).
+  sql_nearest <- sprintf("
+    WITH nearest AS (
+      SELECT DISTINCT ON (stream_crossing_id, blue_line_key)
+        stream_crossing_id, blue_line_key, linear_feature_id,
+        modelled_crossing_id
+      FROM %1$s.pscis_streams_150m
+      WHERE modelled_crossing_id IS NOT NULL
+      ORDER BY stream_crossing_id, blue_line_key,
+               modelled_xing_dist_instream ASC, modelled_crossing_id ASC,
+               linear_feature_id ASC
+    )
+    UPDATE %1$s.pscis_streams_150m a
+    SET modelled_crossing_id = NULL,
+        modelled_xing_dist_instream = NULL,
+        modelled_crossing_type = NULL
+    FROM nearest n
+    WHERE a.stream_crossing_id = n.stream_crossing_id
+      AND a.blue_line_key = n.blue_line_key
+      AND a.modelled_crossing_id IS NOT NULL
+      AND (a.linear_feature_id, a.modelled_crossing_id)
+          IS DISTINCT FROM (n.linear_feature_id, n.modelled_crossing_id);", s) # nolint: indentation_linter, line_length_linter
+  .lnk_db_execute(conn, sql_nearest)
+
   # =====================================================================
   # Step 4: per-PSCIS pick via fresh::frs_candidates_pick
   # =====================================================================
@@ -485,13 +519,12 @@
 }
 
 # ORDER BY for Step 4's per-PSCIS pick, after `DISTINCT ON
-# (stream_crossing_id)`. The first two terms are bcfp's 04_pscis.sql. The
-# rest break its ties, which bcfp leaves to encounter order (link#277): a
-# PSCIS x stream candidate joins every modelled crossing within 100 m on
-# its blue line, so two candidates can share score, distance and
-# linear_feature_id and differ only in the modelled crossing. The closest
-# one wins, then the lowest id. Rows still tied after that share every
-# column the pick passes on except `modelled_xing_dist`, which is equal too.
+# (stream_crossing_id)`. The first two terms are bcfp's 04_pscis.sql; the
+# rest break the ties bcfp leaves to encounter order (link#277). After Step
+# 3b a PSCIS keeps at most one modelled crossing per blue line, so the
+# remaining ties are between rows with none (the ones Steps 3 and 3b
+# cleared), which differ only in `modelled_xing_dist`. Rows still tied after
+# the last term share every column the pick passes on (measured, link#367).
 .lnk_pscis_pick_order <- c(
   "name_score DESC",
   paste0(

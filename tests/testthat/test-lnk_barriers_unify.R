@@ -186,3 +186,13 @@ test_that("lnk_barriers_unify validates argument shapes", {
   expect_error(lnk_barriers_unify(conn, "PARS", cfg, list()),
                "loaded\\$parameters_fresh")
 })
+
+test_that("every barrier id is numbered in a stated order (link#367)", {
+  # row_number() OVER () numbers rows in scan order, so two builds from the
+  # same inputs could give a barrier different ids (link#277).
+  src <- paste(deparse(lnk_barriers_unify), collapse = "\n")
+  expect_false(grepl("row_number() OVER ()", src, fixed = TRUE))
+  expect_identical(
+    lengths(regmatches(src, gregexpr("row_number() OVER (", src, fixed = TRUE))),
+    4L)
+})
