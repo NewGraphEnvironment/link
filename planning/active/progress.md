@@ -42,3 +42,19 @@
 - Decision 6's `rear_near_river = both` is contradicted by these groups. It goes to the operator before Phase 5 moves `default`'s pair.
 - Operator decision, 2026-10-21, on Phase 4's evidence: the pair on wetland lines only. `default` takes `rear_wetland_flow = stream` for BT, CH, CO, ST, WCT, CT, DV and RB, and CH `rear_near_river = wetland_flow`. CH's pair is model / 15 m / 3 m³/s / 1000 m in `default` and `default_tuned`. The rules diff is as intended: six species' 1050/1150 rule becomes the inheriting stream door (CT and DV have no thresholds row), and CH's stream rule gains `near_river: false`. Provenance shows 0 drift in all three bundles, and the audit exits 0.
 - Phase 5 docs: RUNBOOK §7 (new section and two table rows), §6b (log columns), §6d (the pair is not exported); NEWS 0.67.0; CLAUDE.md status; the research section and header; README rows. Tests updated for `default`'s pair: the validator fixtures use `default_nopair()`, the pre-#364 shape they were built for.
+- Code-check round 1: six fragile findings; four fixed (`3692a509`), one documented, one accepted. Full suite before the fixes: 3,726 expectations, 2 failures (the stale golden dams pin only). The persist, discharge and builder tests pass after the fixes.
+- Round 2's reviewer stopped on the account's spend limit (HTTP 429) before writing anything; no findings exist for it.
+
+### Parked 2026-10-21 (operator: park until credits allow)
+
+State: Phases 0–5 done and committed; fresh PR #264 open (not merged; v0.42.0 not tagged). The link branch is pushed, with no PR yet.
+
+Left, in order:
+1. `/code-check branch` rounds 2 and 3 at least. Round 2 reviews `3692a509`'s fixes first; the brief is the round 1 shape plus that fix diff. Round 1 found a defect pattern (inert or leaking combinations), so end on a clean round, or on an enumeration of the builder's dims combinations against what fresh compiles.
+2. Re-run the full suite after any fixes (`NOT_CRAN=true`; expect only the 2 golden dams failures).
+3. `/planning-archive`; the archive README carries `data-raw/logs/wetland_door_364/README.md`'s headline numbers. Keep `rule_table_issue_draft.md` for body review, unfiled.
+4. `/gh-pr-push` with the drafted body (`Closes #364`; note fresh PR #264 must merge and be tagged first).
+
+### Resume
+
+    cd /Users/airvine/Projects/repo/link && git fetch -q origin && git checkout 364-through-wetland-stretches-use-the-stream && git pull --ff-only && git merge origin/main
