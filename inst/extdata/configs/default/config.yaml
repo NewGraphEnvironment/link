@@ -121,14 +121,14 @@ provenance:
     generated_from: dimensions.csv
     generated_by: lnk_rules_build
     generator_sha: 83dfe16951ab9fc59015db2eedffc9ef4fd78c23
-    checksum: sha256:dfdb660279b92c6bab5d3307dec6323d4ea3e61f577a575427b56f13132b151a
+    checksum: sha256:00e1df5a7df1b66116cf8169b2434fa1cee88e84fff5391838a602144126ca6b
     shape_checksum: sha256:4fec0f2db7523d71ba7542e0d52217c91d9bab5b55d714b689f614380f5c2eb9
   dimensions.csv:
     source: link (hand-authored)
     upstream_sha: 8f1890564b9148573535a679f2e5563aebe74207
     synced: '2026-10-07'
-    checksum: sha256:9ee3cd6840f38169fe358f03bf82e7c5b8c17d6c770208420decf553ea1f8726
-    shape_checksum: sha256:708913db6806860af9a0b6778d4aa797d2ca033f65f2fe22deda5ef0af344fa2
+    checksum: sha256:a6d590d2cbb0745228c0cf820d23a23bb42220ae58fe8d47c621bbbf7071dc45
+    shape_checksum: sha256:0c628a9f8c4b8bb06c85a6dd3bddc891d2dda9000ed6926d9f597c17e5662946
   parameters_fresh.csv:
     source: link (hand-authored)
     upstream_sha: 8f1890564b9148573535a679f2e5563aebe74207
@@ -142,8 +142,8 @@ provenance:
     upstream_version: fresh@v0.33.0
     derived_from: NewGraphEnvironment/fresh@v0.33.0 inst/extdata/parameters_habitat_thresholds.csv, itself smnorris/bcfishpass@4699d0f parameters/example_newgraph/parameters_habitat_thresholds.csv (+ fresh#104 edge_types columns)
     synced: '2026-10-06'
-    checksum: sha256:b397dda166684e9a036c289f085d936c1490b07b8b0e27144c8c740dc6add665
-    shape_checksum: sha256:8de9bc1fcc2c703176a57d8a982bd26da1c49a885af3053f00078003a7e9283f
+    checksum: sha256:29afa9c2d7f3db263e5c2c1ccf05f319ac2e3f3b6485cf6f05904b96b81dcf40
+    shape_checksum: sha256:b837e5dabbce8e69488a1523214bf111827682e4edf87526557231c377fa538e
   parameters_habitat_method.csv:
     source: link (frozen copy; not csv-synced, link#286). Moving a group to mad is a reviewed edit here
     derived_from: smnorris/bcfishpass@1fae4ea parameters/example_newgraph/parameters_habitat_method.csv

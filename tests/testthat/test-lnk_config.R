@@ -445,7 +445,12 @@ test_that("a tuned threshold reaches frs_params; bcfishpass stays put", {
     csv = .lnk_habitat_thresholds_csv(lnk_config("default")))
   expect_equal(p_tuned$CH$rear_gradient_max, 0.0321)
   expect_equal(p_default$CH$rear_gradient_max, 0.0549)
-  expect_equal(p_tuned$BT, p_default$BT)
+  # The tuned copy is written with na = "", so a blank near-river measure
+  # reads "" where default's reads NA; fresh takes both as unset (#364).
+  raw_measure <- c("spawn_river_measure", "rear_river_measure")
+  expect_identical(p_tuned$BT$near_river, p_default$BT$near_river)
+  expect_equal(p_tuned$BT[setdiff(names(p_tuned$BT), raw_measure)],
+               p_default$BT[setdiff(names(p_default$BT), raw_measure)])
 
   expect_identical(lnk_config_verify(lnk_config("bcfishpass")), bcfp_before)
 })

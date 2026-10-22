@@ -1,5 +1,5 @@
 # Generated from parameters_habitat_dimensions.csv
-# Generated: 2026-10-07
+# Generated: 2026-10-21
 # Edge types: explicit
 #
 # DO NOT EDIT — edit the CSV and re-run lnk_rules_build()
@@ -16,6 +16,7 @@ BT:
     channel_width:
     - 0.0
     - 9999.0
+    near_river: false
   rear:
   - edge_types_explicit:
     - 1000
@@ -26,6 +27,7 @@ BT:
     channel_width:
     - 0.0
     - 9999.0
+    near_river: false
   - waterbody_type: W
     edge_types_explicit:
     - 1000
@@ -66,6 +68,7 @@ CH:
     channel_width:
     - 0.0
     - 9999.0
+    near_river: false
   rear:
   - edge_types_explicit:
     - 1000
@@ -76,6 +79,7 @@ CH:
     channel_width:
     - 0.0
     - 9999.0
+    near_river: false
   - waterbody_type: W
     edge_types_explicit:
     - 1000
@@ -116,6 +120,7 @@ CM:
     channel_width:
     - 0.0
     - 9999.0
+    near_river: false
   rear: []
 CO:
   spawn:
@@ -129,6 +134,7 @@ CO:
     channel_width:
     - 0.0
     - 9999.0
+    near_river: false
   rear:
   - edge_types_explicit:
     - 1000
@@ -139,6 +145,7 @@ CO:
     channel_width:
     - 0.0
     - 9999.0
+    near_river: false
   - edge_types_explicit:
     - 1050
     - 1150
@@ -175,6 +182,7 @@ PK:
     channel_width:
     - 0.0
     - 9999.0
+    near_river: false
   rear: []
 SK:
   spawn:
@@ -192,6 +200,7 @@ SK:
     - 9999.0
     requires_connected: rearing
     connected_distance_max: 3000.0
+    near_river: false
   rear:
   - waterbody_type: L
     lake_ha_min: 200.0
@@ -214,6 +223,7 @@ ST:
     channel_width:
     - 0.0
     - 9999.0
+    near_river: false
   rear:
   - edge_types_explicit:
     - 1000
@@ -224,6 +234,7 @@ ST:
     channel_width:
     - 0.0
     - 9999.0
+    near_river: false
   - waterbody_type: W
     edge_types_explicit:
     - 1000
@@ -264,6 +275,7 @@ WCT:
     channel_width:
     - 0.0
     - 9999.0
+    near_river: false
   rear:
   - edge_types_explicit:
     - 1000
@@ -274,6 +286,7 @@ WCT:
     channel_width:
     - 0.0
     - 9999.0
+    near_river: false
   - waterbody_type: W
     edge_types_explicit:
     - 1000
@@ -318,6 +331,7 @@ KO:
     - 9999.0
     requires_connected: rearing
     connected_distance_max: 3000.0
+    near_river: false
   rear:
   - waterbody_type: L
     lake_ha_min: 200.0
@@ -340,6 +354,7 @@ RB:
     channel_width:
     - 0.0
     - 9999.0
+    near_river: false
   rear:
   - edge_types_explicit:
     - 1000
@@ -350,6 +365,7 @@ RB:
     channel_width:
     - 0.0
     - 9999.0
+    near_river: false
   - waterbody_type: W
     edge_types_explicit:
     - 1000
@@ -390,6 +406,7 @@ GR:
     channel_width:
     - 0.0
     - 9999.0
+    near_river: false
   rear:
   - edge_types_explicit:
     - 1000
@@ -400,6 +417,7 @@ GR:
     channel_width:
     - 0.0
     - 9999.0
+    near_river: false
   - waterbody_type: L
     edge_types_explicit:
     - 1000

@@ -129,7 +129,12 @@
 #' (`cfg$pipeline$discharge_fill`), it is filled as prepare filled it: edge
 #' 1250 lines with no value take one along the network (`mad_m3s_source`
 #' says which), and a `mad` group logged with the other fill state is an
-#' error. The `width` labels below mean
+#' error. A rule with a near_river pair (its own, or inherited from the
+#' thresholds CSV) is re-tested against the distances the build persisted
+#' in `<schema>.streams_near_river`; a group logged with other pairs than
+#' `cfg` reads, or a schema built before link 0.67.0 when `cfg` reads one,
+#' is an error. A segment far from any river labels `fails_width` like any
+#' other size miss, never "no river near". The `width` labels below mean
 #' that size on either model; `model` and `mad_m3s` split them:
 #' - `NA` — captured; `no_segment` — the location attaches to no segment;
 #' - `not_accessible` — the segment's `access_<sp>` is not 1 or 2;
@@ -303,7 +308,10 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
   species <- unique(toupper(species))
   species_obs <- .lnk_hv_species_obs(species_obs)
 
-  .lnk_hv_check_schema(conn, schema, aoi, species)
+  # The near-river distances the build walked (#364): persisted beside the
+  # flags, passed to every predicate so a near_river rule reads them.
+  near_tbl <- .lnk_hv_check_schema(conn, schema, aoi, species,
+                                   near_river = .lnk_near_river_logged(cfg, aoi))
   # The model each group classified on, from the bundle's method table and
   # by classify's own rule.
   method_csv <- .lnk_habitat_method_csv(cfg)
@@ -326,7 +334,7 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
                      match_types, source_exclude, buffer_m, models, disch)
   obs <- .lnk_hv_dedup(obs)
   obs <- .lnk_hv_predicates(conn, schema, obs, cfg, loaded, species, models,
-                            disch)
+                            disch, near_river_table = near_tbl)
   obs <- .lnk_hv_reasons(obs)
 
   cost <- do.call(rbind, lapply(aoi, function(w) {
@@ -363,7 +371,8 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
 
 #' Fail loud on WSGs or species the schema cannot score.
 #' @noRd
-.lnk_hv_check_schema <- function(conn, schema, aoi, species) {
+.lnk_hv_check_schema <- function(conn, schema, aoi, species,
+                                 near_river = "") {
   aoi_arr <- paste0("{", paste(aoi, collapse = ","), "}")
   have <- DBI::dbGetQuery(conn, sprintf(
     "SELECT 'streams' AS tbl, watershed_group_code
@@ -393,7 +402,17 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
       stop(schema, ".", tbl, " does not exist", call. = FALSE)
     }
   }
-  invisible(NULL)
+  # A bundle whose rules read a near_river pair is scored against the
+  # distances the build persisted (#364); a schema built before them has
+  # none, and its near_river predicates could not be re-tested.
+  has_near <- DBI::dbExistsTable(conn, DBI::Id(schema = schema,
+                                               table = "streams_near_river"))
+  if (nzchar(near_river) && !has_near) {
+    stop(schema, " has no streams_near_river table, but cfg's rules read ",
+         "near_river pairs (", near_river, "): rebuild the groups with ",
+         "link >= 0.67.0", call. = FALSE)
+  }
+  if (has_near) paste0(schema, ".streams_near_river") else NULL
 }
 
 #' Fail loud when a mad group cannot be scored: its discharge is joined on
@@ -438,21 +457,25 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
 #' @noRd
 .lnk_hv_check_log <- function(conn, schema, aoi, cfg) {
   if (!DBI::dbExistsTable(conn, DBI::Id(schema = schema, table = "log"))) {
+    # No log at all: built before #127, so it walked no near_river pair.
+    .lnk_hv_check_near_river_logged(schema, cfg, aoi, rep("", length(aoi)))
     return(character(0))
   }
   log_cols <- names(DBI::dbGetQuery(conn, sprintf(
     "SELECT * FROM %s.log LIMIT 0", schema)))
   has_fill <- "discharge_fill" %in% log_cols
   has_source <- "discharge_source" %in% log_cols
+  has_near <- "near_river" %in% log_cols
   lg <- DBI::dbGetQuery(conn, sprintf(
     "SELECT DISTINCT ON (watershed_group_code)
             watershed_group_code, config_name, %s AS discharge_fill,
-            %s AS discharge_source
+            %s AS discharge_source, %s AS near_river
        FROM %s.log
       WHERE watershed_group_code = ANY($1)
       ORDER BY watershed_group_code, date_start DESC",
     if (has_fill) "discharge_fill" else "NULL::boolean",
-    if (has_source) "discharge_source" else "NULL::text", schema),
+    if (has_source) "discharge_source" else "NULL::text",
+    if (has_near) "near_river" else "NULL::text", schema),
     params = list(paste0("{", paste(aoi, collapse = ","), "}")))
   bad <- lg[!is.na(lg$config_name) & lg$config_name != cfg$name, ,
             drop = FALSE]
@@ -475,6 +498,17 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
                        ifelse(want[off], "on", "off")), collapse = ", "),
          call. = FALSE)
   }
+  # The near_river pairs (#364): a row from before they were logged (NULL)
+  # walked none, which is right only where cfg reads none. A pair walked at
+  # other numbers would read as `(size OR FALSE)` with no error, so any
+  # difference stops.
+  # Over every group scored, not only those with a log row: a group with
+  # none was built before its log, so it walked no pair, like a NULL value.
+  logged_nr <- stats::setNames(rep("", length(aoi)), aoi)
+  hit <- lg$watershed_group_code %in% aoi
+  logged_nr[lg$watershed_group_code[hit]] <-
+    ifelse(is.na(lg$near_river[hit]), "", lg$near_river[hit])
+  .lnk_hv_check_near_river_logged(schema, cfg, aoi, unname(logged_nr))
   logged_src <- ifelse(is.na(lg$discharge_source), "fwapg",
                        lg$discharge_source)
   # Only where cfg reads discharge: elsewhere the source moves no flag.
@@ -489,6 +523,29 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
             call. = FALSE)
   }
   lg$watershed_group_code
+}
+
+#' Stop when the near_river pairs logged for groups differ from cfg's
+#'
+#' A pair walked at other numbers, or not walked at all, would read as
+#' `(size OR FALSE)` with no error, so any difference stops (#364). `logged`
+#' is the logged text per group of `aoi`, `""` where the build walked none
+#' (no value, no row, or no log table).
+#' @noRd
+.lnk_hv_check_near_river_logged <- function(schema, cfg, aoi, logged) {
+  want <- vapply(aoi, function(w) .lnk_near_river_logged(cfg, w), character(1))
+  off <- logged != want
+  if (any(off)) {
+    stop(schema, ".log records near_river pairs other than cfg '", cfg$name,
+         "' reads (logged / cfg; a group with no log value or row is from a ",
+         "build before link 0.67.0, which walked none): ",
+         paste(sprintf("%s (%s / %s)", aoi[off],
+                       ifelse(nzchar(logged[off]), logged[off], "none"),
+                       ifelse(nzchar(want[off]), want[off], "none")),
+               collapse = ", "),
+         ". Rebuild those groups under this cfg.", call. = FALSE)
+  }
+  invisible(NULL)
 }
 
 #' The discharge relation the validator reads, once per call
@@ -961,9 +1018,12 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
 #' `ranges$<stage>$channel_width` (cw) or `ranges$<stage>$mad_m3s` (mad)
 #' minimums both predicates inherit; a species with no MAD range gets 0,
 #' which relaxes nothing because its mad predicate has no size test to
-#' relax. No bundled rules.yaml sets a rule-level gradient or `mad`, and the
-#' rule-level `channel_width: [0, 9999]` on river polygons (dropped under
-#' mad) contains every minimum.
+#' relax. No bundled rules.yaml sets a rule-level `mad`, and the rule-level
+#' `channel_width: [0, 9999]` on river polygons (dropped under mad) contains
+#' every minimum. One rule-level gradient exists: the bcfishpass bundle's
+#' coho 1050/1150 rule (`rear_wetland_flow = gradient`, #364) carries
+#' `gradient: [0, rear_gradient_max]`, the same bound the species' rear
+#' rules inherit, so relaxing gradient to 0 here relaxes that rule too.
 #' @noRd
 .lnk_hv_stage_min <- function(spp, model = "cw") {
   rng <- spp$params_sp$ranges
@@ -1017,14 +1077,15 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
 #' MAD range, or fresh writes no size test for the stage at all (see
 #' `.lnk_hv_mad_missing()`).
 #' @noRd
-.lnk_hv_stage_exprs <- function(spp, model = "cw") {
+.lnk_hv_stage_exprs <- function(spp, model = "cw", near_river_table = NULL) {
   size_col <- .lnk_hv_size_col(model)
   stage_pred <- function(pr) {
     list(spawn = pr$spawn,
          rear = sprintf("(%s) OR (%s) OR (%s)", pr$rear, pr$lake_rear,
                         pr$wetland_rear))
   }
-  sp_pred <- stage_pred(fresh::frs_habitat_predicates(spp, model = model))
+  sp_pred <- stage_pred(fresh::frs_habitat_predicates(spp, model = model,
+    near_river_table = near_river_table))
   mins <- .lnk_hv_stage_min(spp, model)
   no_range <- vapply(c("spawn", "rear"), function(st) {
     model == "mad" && .lnk_hv_mad_missing(spp$params_sp, st)
@@ -1036,7 +1097,8 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
     for (st in names(no_range)[no_range]) {
       open$params_sp$ranges[[st]][["mad_m3s"]] <- c(0, 0)
     }
-    open_pred <- stage_pred(fresh::frs_habitat_predicates(open, model = model))
+    open_pred <- stage_pred(fresh::frs_habitat_predicates(open, model = model,
+      near_river_table = near_river_table))
   }
   unlist(lapply(c("spawn", "rear"), function(st) {
     g <- mins[[st]][["gradient"]]
@@ -1068,7 +1130,8 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
 #' `.lnk_hv_stage_exprs()`.
 #' @noRd
 .lnk_hv_predicates <- function(conn, schema, obs, cfg, loaded, species,
-                               models, disch = .lnk_discharge_sql()) {
+                               models, disch = .lnk_discharge_sql(),
+                               near_river_table = NULL) {
   cols <- paste0("pred_", rep(c("spawn", "rear"), each = 6L),
                  c("", "_g", "_w", "_gw", "_nomad", "_nomad_g"))
   for (cl in cols) obs[[cl]] <- rep(NA, nrow(obs))
@@ -1098,7 +1161,7 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
     sp <- combos$species_code[j]
     model <- combos$model[j]
     spp <- .lnk_hv_sp_params(params, loaded$parameters_fresh, sp)
-    exprs <- .lnk_hv_stage_exprs(spp, model)
+    exprs <- .lnk_hv_stage_exprs(spp, model, near_river_table)
     # A rule-level `mad:` reaches s.mad_m3s on a cw group too.
     src <- if (any(grepl("\\bs\\.mad_m3s\\b", exprs, perl = TRUE))) {
       # Every piece of a broken FWA line carries its line's discharge, as on

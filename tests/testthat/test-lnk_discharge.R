@@ -195,16 +195,19 @@ test_that("the fill applies only where something reads discharge", {
   # No shipped rules set a rule-level `mad`; a custom one does, in any YAML
   # style fresh parses (round-3 review: flow style beat a text grep).
   tuned0 <- lnk_config("default_tuned")
-  expect_false(link:::.lnk_rules_read_mad(tuned0))
+  expect_false(link:::.lnk_discharge_read_rules(tuned0))
   txt <- readLines(tuned0$rules)
   i <- grep("^  - waterbody_type: R$", txt)[1]
-  expect_identical(txt[i + 1:3], c("    channel_width:", "    - 0.0", "    - 9999.0"))
+  # the river-polygon rule: channel_width [0, 9999] and the #364 opt-out
+  expect_identical(txt[i + 1:4], c("    channel_width:", "    - 0.0", "    - 9999.0",
+                                   "    near_river: false"))
   y <- withr::local_tempfile(fileext = ".yaml")
-  writeLines(c(txt[seq_len(i - 1)], "  - {waterbody_type: R, mad: [0.5, 9999]}",
-               txt[-seq_len(i + 3)]), y)
+  writeLines(c(txt[seq_len(i - 1)],
+               "  - {waterbody_type: R, mad: [0.5, 9999], near_river: false}",
+               txt[-seq_len(i + 4)]), y)
   flow <- tuned0
   flow$rules <- y
-  expect_true(link:::.lnk_rules_read_mad(flow))
+  expect_true(link:::.lnk_discharge_read_rules(flow))
   # ...and a filling bundle then fills even an all-cw group.
   expect_true(link:::.lnk_discharge_fill_applied(flow, "ADMS"))
 
@@ -340,3 +343,72 @@ test_that("the join writes wet's annual pick for every line it carries", {
   expect_equal(as.numeric(d$bad_source), 0)
   expect_gt(as.numeric(d$valued), 0)
 })
+
+
+test_that("a near_river pair reads discharge on a cw group only when measured by discharge (#364)", {
+  base <- lnk_config("default")
+  thr_in <- link:::.lnk_habitat_thresholds_csv(base)
+  with_cells <- function(cells, rules = NULL) {
+    x <- utils::read.csv(thr_in, stringsAsFactors = FALSE)
+    for (k in names(cells)) x[[k]][x$species_code == "CH"] <- cells[[k]]
+    f <- withr::local_tempfile(fileext = ".csv", .local_envir = parent.frame())
+    utils::write.csv(x, f, row.names = FALSE)
+    cfg <- base
+    cfg$files$parameters_habitat_thresholds$path <- f
+    if (!is.null(rules)) cfg$rules <- rules
+    cfg
+  }
+  expect_false(link:::.lnk_discharge_read_rules(base))
+  # by discharge: read
+  by_q <- with_cells(list(rear_river_measure = "discharge",
+                          rear_river_discharge_min = 3,
+                          rear_river_distance_max = 1000))
+  expect_identical(link:::.lnk_near_river_pairs(by_q, "cw")$measure, "discharge")
+  expect_true(link:::.lnk_discharge_read_rules(by_q))
+  expect_true(link:::.lnk_discharge_read_each(by_q, "ADMS"))
+  # by width, and by model (width under cw): not read
+  by_w <- with_cells(list(rear_river_measure = "channel_width",
+                          rear_river_channel_width_min = 20,
+                          rear_river_distance_max = 1000))
+  expect_false(link:::.lnk_discharge_read_rules(by_w))
+  by_m <- with_cells(list(rear_river_channel_width_min = 20,
+                          rear_river_discharge_min = 3,
+                          rear_river_distance_max = 1000))
+  expect_identical(link:::.lnk_near_river_pairs(by_m, "cw")$measure,
+                   "channel_width")
+  expect_identical(link:::.lnk_near_river_pairs(by_m, "mad")$measure,
+                   "discharge")
+  expect_false(link:::.lnk_discharge_read_rules(by_m))
+  # a discharge pair every rule opts out of: not read
+  y <- withr::local_tempfile(fileext = ".yaml")
+  writeLines(c("CH:", "  rear:", "  - edge_types_explicit: [1000, 1100]",
+               "    near_river: false", "  - waterbody_type: R",
+               "    channel_width: [0.0, 9999.0]", "    near_river: false"), y)
+  opted <- with_cells(list(rear_river_measure = "discharge",
+                           rear_river_discharge_min = 3,
+                           rear_river_distance_max = 1000), rules = y)
+  expect_identical(nrow(link:::.lnk_near_river_pairs(opted, c("cw", "mad"))), 0L)
+  expect_false(link:::.lnk_discharge_read_rules(opted))
+  # the same file without the opt-outs reads it
+  writeLines(c("CH:", "  rear:", "  - edge_types_explicit: [1000, 1100]"), y)
+  expect_true(link:::.lnk_discharge_read_rules(opted))
+  # the log text names the pair; no pair is "", not NA. `default` carries
+  # CH's pair (model: width under cw) since #364.
+  expect_identical(link:::.lnk_near_river_logged(by_q, "ADMS"),
+                   "discharge:3:1000")
+  expect_identical(link:::.lnk_near_river_logged(base, "ADMS"),
+                   "channel_width:15:1000")
+  bcfp <- lnk_config("bcfishpass")
+  expect_identical(link:::.lnk_near_river_logged(bcfp, "ADMS"), "")
+})
+
+test_that("the logged pair text sorts in byte order, whatever the locale", {
+  pairs <- data.frame(measure = "channel_width", threshold = c(1, 15),
+                      distance_max = 1000)
+  want <- "channel_width:15:1000;channel_width:1:1000"
+  expect_identical(withr::with_collate("C", link:::.lnk_near_river_text(pairs)),
+                   want)
+  expect_identical(withr::with_collate("en_US.UTF-8",
+                                       link:::.lnk_near_river_text(pairs)), want)
+})
+

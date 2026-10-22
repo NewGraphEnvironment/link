@@ -2,6 +2,20 @@
 # Closing parens sit on the last argument line, as in the other test files.
 # nolint start: indentation_linter
 
+# `default` as these fixtures were written for it: no near-river pair (#364).
+# Since 0.67.0 `default` gives CH one, which the validator would check the
+# fixture schemas (built with none) against.
+default_nopair <- function(env = parent.frame()) {
+  cfg <- lnk_config("default")
+  th <- utils::read.csv(cfg$files$parameters_habitat_thresholds$path,
+                        check.names = FALSE, stringsAsFactors = FALSE)
+  for (k in grep("_river_", names(th), value = TRUE)) th[[k]] <- NA
+  f <- withr::local_tempfile(fileext = ".csv", .local_envir = env)
+  utils::write.csv(th, f, row.names = FALSE)
+  cfg$files$parameters_habitat_thresholds$path <- f
+  cfg
+}
+
 test_that(".lnk_obs_stage reads spawning from activity and rearing from activity or juvenile stage", {
   st <- link:::.lnk_obs_stage(
     activity_code = c("SPL", "R", NA, "OBS", "S", "M"),
@@ -196,20 +210,36 @@ test_that("mad predicate expressions wrap exactly what classify embeds (#299)", 
   }
 })
 
-test_that("no bundled rules set a rule-level gradient or mad window", {
-  # Relaxation moves the size to the stage's CSV minimum; a rule-level
-  # window with a higher floor would turn size misses into rule_excludes.
+test_that("no bundled rule sets a mad window or a gradient floor above the stage's", {
+  # Relaxation moves the size and the gradient to the stage's CSV minimum; a
+  # rule-level window with a higher floor would turn misses into
+  # rule_excludes. No rule carries `mad`. The one rule-level gradient, the
+  # bcfishpass coho 1050/1150 rule (#364), is [0, rear_gradient_max]: its
+  # floor is rear's own 0, so relaxing to 0 relaxes it too.
   files <- list.files(system.file("extdata", "configs", package = "link"),
                       pattern = "^rules\\.yaml$", recursive = TRUE,
                       full.names = TRUE)
   expect_gt(length(files), 0L)
-  key <- function(k) sprintf("^\\s*(-\\s*)?(%s):", k)
+  n_gradient <- 0L
   for (f in files) {
-    y <- readLines(f)
-    # The pattern can match: rule-level channel_width is the same shape.
-    expect_true(any(grepl(key("channel_width"), y)), info = f)
-    expect_false(any(grepl(key("gradient|mad"), y)), info = f)
+    y <- yaml::read_yaml(f)
+    for (sp in names(y)) {
+      for (st in c("spawn", "rear")) {
+        for (r in y[[sp]][[st]]) {
+          expect_null(r[["mad"]], info = paste(f, sp, st))
+          g <- r[["gradient"]]
+          if (is.null(g)) next
+          n_gradient <- n_gradient + 1L
+          expect_identical(st, "rear", info = paste(f, sp))
+          expect_equal(as.numeric(unlist(g))[1], 0, info = paste(f, sp))
+        }
+      }
+    }
+    # rule-level channel_width (the river-polygon rule) is still present
+    expect_true(any(grepl("^\\s*(-\\s*)?channel_width:", readLines(f))),
+                info = f)
   }
+  expect_identical(n_gradient, 1L)
 })
 
 test_that("a species with no MAD range gets a missing-threshold test on mad only (#299)", {
@@ -305,7 +335,7 @@ test_that(".lnk_hv_dedup merges records at one location and ORs their stages", {
 })
 
 test_that("lnk_habitat_validate validates its arguments before touching the DB", {
-  cfg <- lnk_config("default")
+  cfg <- default_nopair()
   conn <- structure(list(), class = c("PqConnection", "DBIConnection"))
   expect_error(lnk_habitat_validate(conn, "MORR", cfg, list(), "BT"),
                "schema")
@@ -422,7 +452,7 @@ validate_conn <- function(env = parent.frame()) {
 
 run_validate <- function(conn, s, aoi = c("AAAA", "BBBB"), ...) {
   lnk_habitat_validate(
-    conn, aoi = aoi, cfg = lnk_config("default"),
+    conn, aoi = aoi, cfg = default_nopair(),
     loaded = validate_loaded(), species = "BT", schema = s,
     observations = paste0(s, ".observations"), ...)
 }
@@ -569,7 +599,7 @@ test_that("observations can be a data frame from any source", {
   ld <- validate_loaded()
   ld$observation_exclusions <- NULL
   v <- lnk_habitat_validate(
-    conn, aoi = "AAAA", cfg = lnk_config("default"),
+    conn, aoi = "AAAA", cfg = default_nopair(),
     loaded = ld, species = "BT", schema = s,
     observations = mine, match_types = NULL, source_exclude = NULL)
   sm <- v$summary
@@ -593,7 +623,7 @@ test_that("a filter whose column the source lacks is an error, not a pass", {
   ld <- validate_loaded()
   ld$observation_exclusions <- NULL
   go <- function(obs = mine, loaded = ld, ...) lnk_habitat_validate(
-    conn, aoi = "AAAA", cfg = lnk_config("default"),
+    conn, aoi = "AAAA", cfg = default_nopair(),
     loaded = loaded, species = "BT", schema = s,
     observations = obs, ...)
   expect_error(go(source_exclude = NULL), "match_types = NULL")
@@ -615,7 +645,7 @@ test_that("source_exclude matches a literal prefix, not a LIKE pattern", {
   ld <- validate_loaded()
   ld$observation_exclusions <- NULL
   v <- lnk_habitat_validate(
-    conn, aoi = "AAAA", cfg = lnk_config("default"),
+    conn, aoi = "AAAA", cfg = default_nopair(),
     loaded = ld, species = "BT", schema = s,
     observations = mine, match_types = NULL, source_exclude = "50%")
   expect_identical(round(v$observations$m), 300)
@@ -631,7 +661,7 @@ test_that("codes are normalised on the observation side, and 0/1 flags read as s
   ld <- validate_loaded()
   ld$observation_exclusions <- NULL
   v <- lnk_habitat_validate(
-    conn, aoi = "AAAA", cfg = lnk_config("default"),
+    conn, aoi = "AAAA", cfg = default_nopair(),
     loaded = ld, species = "BT", schema = s,
     observations = mine, match_types = NULL, source_exclude = NULL)
   sm <- v$summary
@@ -770,7 +800,7 @@ run_validate_mad <- function(conn, s, method = "watershed_group_code,model\nAAAA
                              source = NULL) {
   csv <- withr::local_tempfile(fileext = ".csv", .local_envir = parent.frame())
   writeLines(method, csv)
-  cfg <- lnk_config("default")
+  cfg <- default_nopair()
   cfg$files$parameters_habitat_method <- list(path = csv)
   if (length(mad_none) > 0L) {
     # Species given no MAD range, as every bundle left BT before #307.
@@ -925,7 +955,7 @@ test_that("a mixed aoi fills only the groups the fill applies to (#305)", {
   conn <- validate_conn()
   s <- local_mad_fixture(conn)
   csv <- withr::local_tempfile(fileext = ".csv")
-  cfg <- lnk_config("default")
+  cfg <- default_nopair()
   cfg$pipeline$discharge_fill <- TRUE
   cfg$files$parameters_habitat_method <- list(path = csv)
   # Point AAAA's segment 1 at an edge 1250 line the fill reaches: absent from
@@ -974,3 +1004,85 @@ test_that("a mixed aoi fills only the groups the fill applies to (#305)", {
   expect_identical(nrow(read_lf()), 0L)
 })
 # nolint end: indentation_linter
+
+# -- near_river pairs (#364) -------------------------------------------------
+
+near_cfg <- function(env = parent.frame()) {
+  cfg <- default_nopair()
+  th <- utils::read.csv(cfg$files$parameters_habitat_thresholds$path,
+                        check.names = FALSE, stringsAsFactors = FALSE)
+  bt <- th$species_code == "BT"
+  th$rear_river_measure[bt] <- "channel_width"
+  th$rear_river_channel_width_min[bt] <- 20
+  th$rear_river_distance_max[bt] <- 1000
+  f <- withr::local_tempfile(fileext = ".csv", .local_envir = env)
+  utils::write.csv(th, f, row.names = FALSE)
+  cfg$files$parameters_habitat_thresholds$path <- f
+  cfg
+}
+
+test_that(".lnk_hv_relax leaves a compiled near_river EXISTS alone", {
+  p <- paste0("(s.gradient BETWEEN 0 AND 0.05 AND (s.channel_width BETWEEN 1.5 ",
+              "AND 9999 OR EXISTS (SELECT 1 FROM x.streams_near_river n WHERE ",
+              "n.id_segment = s.id_segment AND n.watershed_group_code = ",
+              "s.watershed_group_code AND n.measure = 'channel_width' AND ",
+              "n.threshold = 20 AND n.distance_max = 1000 AND n.dist_m <= 1000)))")
+  r <- link:::.lnk_hv_relax(p, gradient = 0, size = 0)
+  ex <- function(x) sub("^.*(EXISTS \\(.*\\))\\)\\)$", "\\1", x)
+  expect_identical(ex(r), ex(p))
+  expect_false(grepl("s.gradient|s.channel_width", r))
+})
+
+test_that("a near_river bundle is scored against the persisted distances", {
+  conn <- validate_conn()
+  s <- local_validate_fixture(conn)
+  cfg <- near_cfg()
+  expect_identical(link:::.lnk_near_river_logged(cfg, "AAAA"),
+                   "channel_width:20:1000")
+  go <- function() lnk_habitat_validate(
+    conn, aoi = c("AAAA", "BBBB"), cfg = cfg, loaded = validate_loaded(),
+    species = "BT", schema = s, observations = paste0(s, ".observations"))
+  # a schema built before #364 has no persisted distances
+  expect_error(go(), "has no streams_near_river table.*link >= 0.67.0")
+  DBI::dbExecute(conn, sprintf(
+    "CREATE TABLE %s.streams_near_river (id_segment integer,
+       watershed_group_code varchar(4), measure text, threshold double precision,
+       distance_max double precision, dist_m double precision)", s))
+  # a log from before the column, or with other pairs, is refused
+  DBI::dbExecute(conn, sprintf(
+    "CREATE TABLE %s.log (watershed_group_code text, config_name text,
+                         date_start timestamptz)", s))
+  DBI::dbExecute(conn, sprintf(
+    "INSERT INTO %s.log VALUES ('AAAA', 'default', '2026-01-01'),
+                               ('BBBB', 'default', '2026-01-01')", s))
+  expect_error(go(), "near_river pairs other than.*AAAA \\(none / channel_width:20:1000\\)")
+  DBI::dbExecute(conn, sprintf("ALTER TABLE %s.log ADD COLUMN near_river text", s))
+  DBI::dbExecute(conn, sprintf(
+    "UPDATE %s.log SET near_river = 'discharge:3:1000'", s))
+  expect_error(go(), "AAAA \\(discharge:3:1000 / channel_width:20:1000\\)")
+  DBI::dbExecute(conn, sprintf(
+    "UPDATE %s.log SET near_river = 'channel_width:20:1000'", s))
+  # A group with no log row walked nothing, like a NULL value (round 3).
+  DBI::dbExecute(conn, sprintf(
+    "DELETE FROM %s.log WHERE watershed_group_code = 'BBBB'", s))
+  expect_error(go(), "BBBB \\(none / channel_width:20:1000\\)")
+  DBI::dbExecute(conn, sprintf(
+    "INSERT INTO %s.log VALUES ('BBBB', 'default', '2026-01-01',
+       'channel_width:20:1000')", s))
+  # o10 sits on segment 5, which has no width: it fails the size test, so
+  # its rear predicate is FALSE until a persisted distance puts it near a
+  # river, and then TRUE: the validator reads the build's own walk.
+  before <- go()$observations
+  expect_false(before$pred_rear[before$observation_key == "o10"])
+  DBI::dbExecute(conn, sprintf(
+    "INSERT INTO %s.streams_near_river VALUES
+       (5, 'AAAA', 'channel_width', 20, 1000, 250)", s))
+  after <- go()$observations
+  expect_true(after$pred_rear[after$observation_key == "o10"])
+  # a cfg with no pair ignores the table and needs no log value
+  DBI::dbExecute(conn, sprintf("UPDATE %s.log SET near_river = ''", s))
+  expect_no_error(lnk_habitat_validate(
+    conn, aoi = c("AAAA", "BBBB"), cfg = default_nopair(),
+    loaded = validate_loaded(), species = "BT", schema = s,
+    observations = paste0(s, ".observations")))
+})

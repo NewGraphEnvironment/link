@@ -11,6 +11,18 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
+## Status (2026-10-21) — through-wetland lines rear through the stream door; the near-river pair is a threshold (#364)
+
+**`default` rears FWA 1050 / 1150 lines only where they would rear as a stream** (`rear_wetland_flow = stream` for BT, CH, CO, ST, WCT, CT, DV, RB), and **CH's near-river pair** (a river of at least 15 m modelled width, or 3 m³/s under `mad`, within 1 km) **applies to those lines only** (`rear_near_river = wetland_flow`). The pair lives in `parameters_habitat_thresholds.csv` (`<stage>_river_*`, fresh 0.42.0, fresh#262 / fresh#263); `lnk_rules_build()` writes no numbers, only `near_river: false` stamps, always on river-polygon rules. The `bcfishpass` bundle gives CO `rear_wetland_flow = gradient`. Mechanics: RUNBOOK §7, "Through-wetland lines and the near-river pair". Evidence: `data-raw/logs/wetland_door_364/`; write-up `research/habitat_thresholds.md`.
+
+**Facts not worth re-deriving:**
+- **The pair on every stream rule was refused, so `default` scopes it to wetland lines** (operator, 2026-10-21). On ADMS, BULK, CHWK, CLWR and SQAM, scope `both` added 275.6 km of CH rearing with 1 location against 19.5 expected; `wetland_flow` added 4.3 km. The door alone removes 43.1 km and no captured location.
+- **On `cw` the door keeps most through-wetland CH rearing** (83 to 95 % in four groups), because CH's size test there is a 1.5 m width. The issue's 10,197 → 2,338 km used #346's 0.75 m³/s floor, which `default` does not carry.
+- **`fresh_default` (and every schema built before link 0.67.0) cannot be validated under `default`:** it has no `streams_near_river` and no `log.near_river`, and the validator refuses both. The next provincial run re-models it.
+- **fresh 0.42.0 must be merged and tagged** (fresh PR #264) before `Remotes: NewGraphEnvironment/fresh@v0.42.0` resolves; cyphers need re-prepping for the pin (`lnk_preflight_fresh()` asserts `frs_habitat_predicates(near_river_table)`).
+- **The variants harness varies rules** (`dims`, structure rows, pair anchors) and ANALYZEs a variant's tables before the habitat gate: unanalyzed, one gate count ran over 10 min where it takes 0.2 s.
+- **3 m³/s converts to 15 m** (`data-raw/query_mad_width_equivalent.R`), the narrowest well-populated width bin whose median fwapg discharge reaches it; wider bins are sparse and noisy.
+
 ## Status (2026-10-20) — habitat flags settled on `streams_access`; lifts counted province-wide (#349)
 
 **`streams_access.access_<sp>` is the authoritative access answer, and `lnk_habitat_gate()` makes the persisted habitat flags follow it**: where `access_<sp>` = 0, `accessible` / `spawning` / `rearing` / `lake_rearing` / `wetland_rearing` go FALSE (known-habitat overlay rows keep spawning / rearing). It runs in `lnk_pipeline_run()` after the second persist, in `wsg_recompute_one.R` after `lnk_access(merge = TRUE)`, and in `habitat_variants_build.R`; `study_area_verify.sql` asserts the invariant. Barrier lifts now count every group's observations (`<schema>.observations_province`), and `default`'s RB row has a rule shaped like BT's (one RB record, only RB counting, any date, no veto). Shipped as v0.66.6. Mechanics: RUNBOOK §3 and §5. Write-up: `research/access_columns.md`; evidence `data-raw/logs/access_disagree_349/`.

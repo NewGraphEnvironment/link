@@ -70,8 +70,11 @@ test_that("lnk_pipeline_persist counts: 2 streams ops + 2 ops per species", {
   )
 
   # 2 (streams DELETE+INSERT) + 2 * 3 (per-species DELETE+INSERT) = 8
-  # (barriers branch skipped — probe returned absent)
+  # (barriers branch skipped — probe returned absent; so is
+  # streams_near_river, whose rows are replaced pair by pair only when the
+  # working table exists, #364)
   expect_equal(length(captured), 8L)
+  expect_false(any(grepl("streams_near_river", captured, fixed = TRUE)))
 })
 
 test_that("lnk_pipeline_persist input validation", {
@@ -231,9 +234,88 @@ test_that("lnk_pipeline_persist never deletes from a log table (link#354)", {
   )
   deletes <- grep("^\\s*DELETE FROM", captured, value = TRUE)
   # streams, one per species (2), barriers, barrier_overrides,
-  # streams_access, streams_mapping_code.
-  expect_length(deletes, 7L)
+  # streams_access, streams_mapping_code, streams_near_river (#364).
+  expect_length(deletes, 8L)
+  # every probe answered present, so the near-river rows are replaced, pair
+  # by pair: a species-subset build keeps the other species' distances
+  expect_true(any(grepl("INSERT INTO fresh.streams_near_river", captured,
+                        fixed = TRUE)))
+  del <- grep("DELETE FROM fresh.streams_near_river", captured, value = TRUE,
+              fixed = TRUE)
+  expect_length(del, 1L)
+  expect_match(del, "(p.measure, p.threshold, p.distance_max) IN (",
+               fixed = TRUE)
   targets <- sub("^\\s*DELETE FROM (\\S+).*", "\\1", deletes)
   expect_false(any(sub("^[^.]+\\.", "", targets) %in%
                      names(.lnk_log_specs())))
 })
+
+test_that("a pair that found no river still clears the group's earlier rows (#364 review)", {
+  captured <- character(0)
+  local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) {
+      captured <<- c(captured, sql); invisible(NULL)
+    }
+  )
+  # The working near-river table is absent (as when the walk found nothing
+  # and classify kept none), but default's CH rules read a pair.
+  m <- mock_dbi_no_barriers()
+  with_mocked_bindings(
+    dbGetQuery = m$dbGetQuery, dbQuoteString = m$dbQuoteString,
+    .package = "DBI",
+    {
+      lnk_pipeline_persist(structure(list(), class = "DBIConnection"),
+                           aoi = "ADMS", cfg = lnk_config("default"),
+                           species = c("CH", "BT"))
+    }
+  )
+  del <- grep("DELETE FROM fresh.streams_near_river", captured,
+              value = TRUE, fixed = TRUE)
+  expect_length(del, 1L)
+  expect_match(del, "('channel_width', 15::double precision, 1000::double precision)",
+               fixed = TRUE)
+  expect_false(any(grepl("INSERT INTO fresh.streams_near_river",
+                         captured, fixed = TRUE)))
+  # A species with no pair clears nothing.
+  captured <- character(0)
+  with_mocked_bindings(
+    dbGetQuery = m$dbGetQuery, dbQuoteString = m$dbQuoteString,
+    .package = "DBI",
+    {
+      lnk_pipeline_persist(structure(list(), class = "DBIConnection"),
+                           aoi = "ADMS", cfg = lnk_config("default"),
+                           species = "BT")
+    }
+  )
+  expect_false(any(grepl("streams_near_river", captured, fixed = TRUE)))
+})
+
+test_that("the delete writes a pair's numbers as fresh stores them (round 3)", {
+  captured <- character(0)
+  local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) {
+      captured <<- c(captured, sql); invisible(NULL)
+    }
+  )
+  cfg <- lnk_config("default")
+  th <- utils::read.csv(cfg$files$parameters_habitat_thresholds$path,
+                        check.names = FALSE, stringsAsFactors = FALSE)
+  th$rear_river_channel_width_min[th$species_code == "CH"] <- 15.0412345678912
+  f <- withr::local_tempfile(fileext = ".csv")
+  utils::write.csv(th, f, row.names = FALSE)
+  cfg$files$parameters_habitat_thresholds$path <- f
+  m <- mock_dbi_no_barriers()
+  with_mocked_bindings(
+    dbGetQuery = m$dbGetQuery, dbQuoteString = m$dbQuoteString,
+    .package = "DBI",
+    lnk_pipeline_persist(structure(list(), class = "DBIConnection"),
+                         aoi = "ADMS", cfg = cfg, species = "CH"))
+  del <- grep("DELETE FROM fresh.streams_near_river", captured, value = TRUE,
+              fixed = TRUE)
+  sql_num <- utils::getFromNamespace(".frs_sql_num", "fresh")
+  expect_match(del, sprintf("('channel_width', %s::double precision",
+                            sql_num(15.0412345678912)), fixed = TRUE)
+  # both models' pairs: width under cw, discharge under mad
+  expect_match(del, "('discharge', 3::double precision", fixed = TRUE)
+})
+

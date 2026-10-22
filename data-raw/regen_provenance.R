@@ -1,19 +1,41 @@
 #!/usr/bin/env Rscript
 # Regenerate stale config artifacts:
-# 1. rules.yaml in both bundles via lnk_rules_build()
-# 2. provenance:checksum + shape_checksum in both config.yaml for the
-#    drifted files (rules.yaml, dimensions.csv, parameters_fresh.csv,
-#    overrides/wsg_species_presence.csv).
+# 1. rules.yaml in the bcfishpass and default bundles via lnk_rules_build()
+# 2. provenance:checksum + shape_checksum in the bcfishpass, default and
+#    default_tuned config.yaml for the files that can drift (rules.yaml,
+#    dimensions.csv, parameters_fresh.csv, parameters_habitat_thresholds.csv,
+#    overrides/wsg_species_presence.csv). default_tuned is thin
+#    (extends: default) and holds only its own thresholds CSV; a key a
+#    bundle does not hold is reported and skipped.
 #
 # Algorithm matches R/lnk_config_verify.R::.lnk_shape_fingerprint and
 # the byte-checksum digest::digest(file=...) call there.
+#
+# Usage: Rscript data-raw/regen_provenance.R  (from any directory)
 
 suppressPackageStartupMessages({
   library(digest)
 })
 
-setwd("/Users/airvine/Projects/repo/link")
-devtools::load_all(quiet = TRUE)
+# The repo root from this script's own location, as data-raw/audit_configs.R
+# does; every path below is relative to it.
+script_path <- local({
+  hit <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
+  if (length(hit) > 0) return(sub("^--file=", "", hit[1]))
+  for (i in seq_len(sys.nframe())) {
+    of <- sys.frames()[[i]]$ofile
+    if (!is.null(of)) return(of)
+  }
+  NULL
+})
+if (is.null(script_path)) {
+  stop("Cannot resolve this script's location. Run it as:\n",
+       "  Rscript data-raw/regen_provenance.R", call. = FALSE)
+}
+repo_root <- normalizePath(file.path(dirname(script_path), ".."),
+                           mustWork = TRUE)
+setwd(repo_root)
+devtools::load_all(repo_root, quiet = TRUE)
 
 byte_csum <- function(p) paste0("sha256:", digest::digest(file = p, algo = "sha256"))
 
@@ -82,17 +104,18 @@ drifted_files <- c(
   "rules.yaml",
   "dimensions.csv",
   "parameters_fresh.csv",
+  "parameters_habitat_thresholds.csv",
   "overrides/wsg_species_presence.csv"
 )
 
-for (b in c("bcfishpass", "default")) {
+for (b in c("bcfishpass", "default", "default_tuned")) {
   cfg_path <- sprintf("inst/extdata/configs/%s/config.yaml", b)
   cat(sprintf("\n[provenance] %s\n", cfg_path))
   update_provenance(cfg_path, drifted_files)
 }
 
 cat("\n[verify] re-running lnk_config_verify on each bundle\n")
-for (b in c("bcfishpass", "default")) {
+for (b in c("bcfishpass", "default", "default_tuned")) {
   # Force re-load to pick up updated config.yaml
   cfg <- lnk_config(b)
   v <- lnk_config_verify(cfg)

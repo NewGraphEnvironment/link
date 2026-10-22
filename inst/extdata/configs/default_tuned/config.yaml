@@ -53,5 +53,5 @@ provenance:
     upstream_sha: 7f12d99115b7d20302d5ed043188cb870f90f83b
     upstream_version: fresh@v0.33.0
     synced: '2026-10-15'
-    checksum: sha256:4c225d1009765ac3a2f3da3ce3c247ee34d62d37f5fdd0de4b346fc5ae8745c4
-    shape_checksum: sha256:8de9bc1fcc2c703176a57d8a982bd26da1c49a885af3053f00078003a7e9283f
+    checksum: sha256:2ead4a3436ee0691bb8f311f01bd24da29e7ce30045b199130e81e08033943bb
+    shape_checksum: sha256:b837e5dabbce8e69488a1523214bf111827682e4edf87526557231c377fa538e

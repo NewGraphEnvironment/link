@@ -94,7 +94,30 @@ for (b in basename(list.dirs(repo_path("inst/extdata/configs"), recursive = FALS
   lnk_rules_build(dim_csv, tf, edge_types = "explicit",
                   thresholds = suppressMessages(.lnk_habitat_thresholds_csv(cfg_b)))
 
-  identical_yaml <- identical(yaml::read_yaml(tf), yaml::read_yaml(rules_committed))
+  regen <- yaml::read_yaml(tf)
+  committed <- yaml::read_yaml(rules_committed)
+  # A bundle whose thresholds carry none of the near-river columns (#364)
+  # gives no rule a pair to inherit, so `near_river: false` is inert there:
+  # the frozen bundles keep the rules they were built with, and are compared
+  # with the stamp removed. Any bundle that carries the columns is compared
+  # as built, stamps included.
+  th_cols_b <- names(utils::read.csv(
+    suppressMessages(.lnk_habitat_thresholds_csv(cfg_b)), nrows = 1,
+    check.names = FALSE))
+  if (!any(grepl("_river_", th_cols_b))) {
+    unstamp <- function(x) lapply(x, function(sp) lapply(sp, function(stage) {
+      if (!is.list(stage) || !is.null(names(stage))) return(stage)
+      lapply(stage, function(r) {
+        if (is.list(r) && isFALSE(r[["near_river"]])) r[["near_river"]] <- NULL
+        r
+      })
+    }))
+    if (!identical(regen, committed) && identical(unstamp(regen), committed)) {
+      cat("    (differs only by near_river: false, inert without near-river columns)\n")
+    }
+    regen <- unstamp(regen)
+  }
+  identical_yaml <- identical(regen, committed)
   identical_text <- identical(readLines(tf), readLines(rules_committed))
   cat(sprintf("  %-12s  identical(structure)=%s  identical(bytes)=%s\n",
               b, identical_yaml, identical_text))
@@ -287,6 +310,15 @@ if (!file.exists(dict_th_path)) {
     }
     cols_b <- names(utils::read.csv(th_csv, check.names = FALSE, nrows = 1))
     stale <- setdiff(cols_th_fresh, cols_b)
+    # The ten near-river columns (#364, fresh#263) are the one set fresh
+    # reads as NA when absent (no pair), so a bundle carrying none of them
+    # is not stale: the frozen bundles predate them on purpose. Carrying
+    # some but not all is a half-edited copy, and still flags.
+    river <- grep("_river_", cols_th_fresh, value = TRUE)
+    if (length(river) > 0 && !any(river %in% cols_b)) {
+      stale <- setdiff(stale, river)
+      cat("    near-river columns absent (fresh reads them as NA: no pair)\n")
+    }
     undocumented <- setdiff(cols_b, dict_th$column)
     if (length(stale) > 0) {
       flag(sprintf("3c %s", b),

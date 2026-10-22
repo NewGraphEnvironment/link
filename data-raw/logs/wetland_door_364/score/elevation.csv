@@ -1,0 +1,31 @@
+"species_code","column","role","class","elev_class","km","n","per_100km","core_per_100km","ratio_to_core"
+"CH","rear_river_channel_width_min","held_out","ch_w10","low",7.1128451761596,0,0,13.2026053949432,0
+"CH","rear_river_channel_width_min","held_out","ch_w10","mid",22.9137767672096,0,0,5.95743763223015,0
+"CH","rear_river_channel_width_min","held_out","ch_w10","high",23.0529542248267,0,0,0.85324258313374,0
+"CH","rear_river_channel_width_min","held_out","ch_w15","low",2.16328785740116,0,0,13.2026053949432,0
+"CH","rear_river_channel_width_min","held_out","ch_w15","mid",23.1279953056197,0,0,5.95743763223015,0
+"CH","rear_river_channel_width_min","held_out","ch_w15","high",13.3812915869451,0,0,0.85324258313374,0
+"CH","rear_river_channel_width_min","held_out","ch_w20","low",4.77070204849647,0,0,13.2026053949432,0
+"CH","rear_river_channel_width_min","held_out","ch_w20","mid",18.4847801920717,0,0,5.95743763223015,0
+"CH","rear_river_channel_width_min","held_out","ch_w20","high",21.7714624996734,0,0,0.85324258313374,0
+"CH","rear_river_channel_width_min","held_out","ch_w30 removed","low",4.28791599353699,0,0,13.2026053949432,0
+"CH","rear_river_channel_width_min","held_out","ch_w30 removed","mid",5.80938993016549,0,0,5.95743763223015,0
+"CH","rear_river_channel_width_min","held_out","ch_w30 removed","high",19.0609629007791,0,0,0.85324258313374,0
+"CH","rear_river_channel_width_min","held_out","core","low",1325.49595148112,175,13.2026053949432,13.2026053949432,1
+"CH","rear_river_channel_width_min","held_out","core","mid",1258.93051056455,75,5.95743763223015,5.95743763223015,1
+"CH","rear_river_channel_width_min","held_out","core","high",1289.19960365783,11,0.85324258313374,0.85324258313374,1
+"CH","rear_river_distance_max","held_out","ch_d1000","low",38.4364005155905,1,2.6017004365286,13.5227836312195,0.192393852292523
+"CH","rear_river_distance_max","held_out","ch_d1000","mid",20.9205377595316,0,0,5.84943358996815,0
+"CH","rear_river_distance_max","held_out","ch_d1000","high",12.2393892707289,0,0,0.783269335981858,0
+"CH","rear_river_distance_max","held_out","ch_d2000","low",42.1685258474963,1,2.37143694236912,13.5227836312195,0.175366034615408
+"CH","rear_river_distance_max","held_out","ch_d2000","mid",26.1175563345457,0,0,5.84943358996815,0
+"CH","rear_river_distance_max","held_out","ch_d2000","high",18.8545738006389,0,0,0.783269335981858,0
+"CH","rear_river_distance_max","held_out","ch_d250 removed","low",4.19618617067575,0,0,13.5227836312195,0
+"CH","rear_river_distance_max","held_out","ch_d250 removed","mid",6.7069701990967,0,0,5.84943358996815,0
+"CH","rear_river_distance_max","held_out","ch_d250 removed","high",18.5060541443285,0,0,0.783269335981858,0
+"CH","rear_river_distance_max","held_out","ch_d500","low",18.2251290324891,0,0,13.5227836312195,0
+"CH","rear_river_distance_max","held_out","ch_d500","mid",20.7151852080965,0,0,5.84943358996815,0
+"CH","rear_river_distance_max","held_out","ch_d500","high",13.2027055394892,0,0,0.783269335981858,0
+"CH","rear_river_distance_max","held_out","core","low",1308.90210793114,177,13.5227836312195,13.5227836312195,1
+"CH","rear_river_distance_max","held_out","core","mid",1247.98408046201,73,5.84943358996815,5.84943358996815,1
+"CH","rear_river_distance_max","held_out","core","high",1276.70004947463,10,0.783269335981858,0.783269335981858,1

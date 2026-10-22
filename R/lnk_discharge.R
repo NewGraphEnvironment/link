@@ -291,9 +291,11 @@
 
 #' Whether classification reads discharge in any of these watershed groups
 #'
-#' `cfg`'s method table puts one on `mad`, or the rules carry a rule-level
-#' `mad:`. Where it does not, neither the fill nor the source can move a
-#' habitat flag, so the validator's log checks skip those groups.
+#' `cfg`'s method table puts one on `mad`, or the rules read discharge on
+#' a `cw` group too: a rule-level `mad:`, or a near_river pair measured by
+#' discharge (`.lnk_discharge_read_rules()`). Where none does, neither the
+#' fill nor the source can move a habitat flag, so the validator's log
+#' checks skip those groups.
 #' @noRd
 .lnk_discharge_read <- function(cfg, aoi) {
   any(.lnk_discharge_read_each(cfg, aoi))
@@ -304,7 +306,7 @@
 #' @noRd
 .lnk_discharge_read_each <- function(cfg, aoi) {
   if (length(aoi) == 0L) return(logical(0))
-  if (.lnk_rules_read_mad(cfg)) return(rep(TRUE, length(aoi)))
+  if (.lnk_discharge_read_rules(cfg)) return(rep(TRUE, length(aoi)))
   meth <- suppressMessages(.lnk_habitat_method_csv(cfg))
   .lnk_wsg_model(.lnk_habitat_method_read(meth), aoi) == "mad"
 }
@@ -347,22 +349,91 @@
   invisible(NULL)
 }
 
-#' Whether a bundle's rules carry a rule-level `mad` range
+#' Whether a bundle's rules read discharge on a `cw` group
 #'
-#' A rule-level `mad:` reaches `s.mad_m3s` on a `cw` group too. Read from the
-#' rules as fresh parses them (`fresh::frs_params()`), not from the YAML text,
-#' so a flow-style or quoted key counts exactly when fresh applies it.
+#' True when a rule carries a rule-level `mad:` (which reaches `s.mad_m3s`
+#' under either model), or when any near_river pair a species of `cfg`
+#' would walk under `cw` measures by discharge (an explicit `discharge`
+#' measure; `model` resolves to channel width under `cw`). The pairs come
+#' from fresh's own resolver (`.lnk_near_river_pairs()`), so a
+#' `near_river: false` never counts and link never re-derives inheritance.
+#' A `mad` group reads discharge through the method table anyway.
+#' Read from the rules as fresh parses them (`fresh::frs_params()`), not
+#' from the YAML text, so a flow-style or quoted key counts exactly when
+#' fresh applies it. Bundle-level: every caller passes `cfg` only, and a
+#' needless fill where a species is absent moves no flag.
 #' @noRd
-.lnk_rules_read_mad <- function(cfg) {
-  params <- suppressMessages(fresh::frs_params(
-    csv = .lnk_habitat_thresholds_csv(cfg), rules_yaml = cfg$rules))
+.lnk_discharge_read_rules <- function(cfg) {
+  params <- .lnk_frs_params(cfg)
   # names(), not `$` or `[[`: `$` partial-matches and `[[` errors on an
   # atomic element.
-  any(vapply(params, function(sp) {
+  mad_rule <- any(vapply(params, function(sp) {
     if (!is.list(sp) || !is.list(sp$rules)) return(FALSE)
     any(vapply(sp$rules, function(stage) {
       any(vapply(stage, function(r) is.list(r) && "mad" %in% names(r),
                  logical(1)))
     }, logical(1)))
   }, logical(1)))
+  mad_rule || any(.lnk_near_river_pairs(cfg, "cw", params)$measure ==
+                    "discharge")
+}
+
+#' fresh's parameters for a bundle: its thresholds CSV and its rules
+#' @noRd
+.lnk_frs_params <- function(cfg) {
+  suppressMessages(fresh::frs_params(
+    csv = .lnk_habitat_thresholds_csv(cfg), rules_yaml = cfg$rules))
+}
+
+#' The near_river pairs a bundle's rules read, from fresh's resolver
+#'
+#' `fresh:::.frs_near_river_specs()`, the function `frs_habitat_classify()`
+#' collects its walks with: each rule's own mapping, or the pair it
+#' inherits from the thresholds CSV when it has a size test, never a
+#' `near_river: false`. Species are `cfg$species` (all of the bundle's
+#' when unset); `models` the size models to resolve under (`model`
+#' measures by width under `cw` and discharge under `mad`).
+#'
+#' @param cfg An `lnk_config`.
+#' @param models Character, `"cw"` and / or `"mad"`.
+#' @param params Optional, `.lnk_frs_params(cfg)` already read.
+#' @param species Optional, the species to resolve for; default every
+#'   species of `cfg`.
+#' @return A data frame of `measure`, `threshold`, `distance_max`, one row
+#'   per distinct pair; zero rows when no rule reads one.
+#' @noRd
+.lnk_near_river_pairs <- function(cfg, models = "cw", params = NULL,
+                                  species = NULL) {
+  if (is.null(params)) params <- .lnk_frs_params(cfg)
+  species <- species %||% cfg[["species"]] %||% names(params)
+  specs <- utils::getFromNamespace(".frs_near_river_specs", "fresh")
+  specs(params, intersect(species, names(params)), unique(models))
+}
+
+#' A near_river pair set as one text value, for the run log
+#'
+#' `measure:threshold:distance_max`, sorted in byte order, joined with `;`; `""` when
+#' there is none, so a logged "no pair" is distinct from a pre-#364 NULL.
+#' Numbers go through `format(digits = 15)` so the text round-trips.
+#' @noRd
+.lnk_near_river_text <- function(pairs) {
+  if (is.null(pairs) || nrow(pairs) == 0) return("")
+  x <- sprintf("%s:%s:%s", pairs$measure,
+               format(pairs$threshold, digits = 15, trim = TRUE),
+               format(pairs$distance_max, digits = 15, trim = TRUE))
+  # radix: byte order on every host, whatever LC_COLLATE says, because the
+  # text is written on the build host and compared on the validating one.
+  paste(sort(unique(x), method = "radix"), collapse = ";")
+}
+
+#' The near_river pairs `cfg` resolves for watershed groups, as log text
+#'
+#' Under the size model each group is on in `cfg`'s method table; one
+#' text value for the set of groups.
+#' @noRd
+.lnk_near_river_logged <- function(cfg, aoi) {
+  meth <- suppressMessages(.lnk_habitat_method_csv(cfg))
+  models <- unique(.lnk_wsg_model(.lnk_habitat_method_read(meth), aoi))
+  if (length(models) == 0) models <- "cw"
+  .lnk_near_river_text(.lnk_near_river_pairs(cfg, models))
 }

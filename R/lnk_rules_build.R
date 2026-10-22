@@ -13,12 +13,24 @@
 #'   wetland rearing bucket only where same-species spawning lies within
 #'   that distance (`requires_connected: spawning` on its first rear L / W
 #'   rule). The additive lake rule admits lake centrelines (FWA
-#'   construction lines) with no channel-width test. See
-#'   `configs/dictionary_dimensions.csv` for every column.
+#'   construction lines) with no channel-width test.
+#'   `rear_wetland_flow` (`stream`, `gradient` or `free`; blank is `free`)
+#'   sets how flow through a wetland (FWA 1050 / 1150) rears: `stream`
+#'   emits a rule that inherits the species' gradient, size and
+#'   near-river thresholds as the stream rule does, `gradient` a rule with
+#'   the rear gradient only, `free` a rule with no test. `rear_near_river`
+#'   (`both`, `stream` or `wetland_flow`; blank is `both`) sets which rear
+#'   rules take the species' near-river pair. The pair's numbers live in
+#'   the thresholds CSV (`<stage>_river_*`) and fresh inherits them; this
+#'   function writes no numbers, only `near_river: false` on the rules
+#'   outside the scope and on every river-polygon rule, because a river
+#'   polygon is the river. See `configs/dictionary_dimensions.csv` for
+#'   every column.
 #' @param to Path to write the output YAML.
 #' @param thresholds Path to the habitat thresholds CSV (from fresh).
-#'   Used to look up `rear_lake_ha_min` per species. Default uses the
-#'   copy shipped with fresh.
+#'   Used to look up `rear_lake_ha_min` per species, and
+#'   `rear_gradient_max` for a `rear_wetland_flow = gradient` rule.
+#'   Default uses the copy shipped with fresh.
 #' @param edge_types Character. How to express stream edge types in rules:
 #'   `"categories"` (default) uses fresh categories (`stream`, `canal`).
 #'   `"explicit"` uses integer FWA edge_type codes (`1000, 1100, 2000, 2300`).
@@ -206,6 +218,29 @@ lnk_rules_build <- function(csv,
       tolower(trimws(dimensions$rear_wetland_area_only)) == "yes"
   }
 
+  # How FWA edge types 1050 / 1150 (flow through a wetland) rear, and which
+  # rear rules take the species' near_river pair (#364). The pair's numbers
+  # live in the thresholds CSV and fresh inherits them (fresh#263); the
+  # builder only stamps `near_river: false` on rules outside the scope.
+  read_choice <- function(col, allowed, default) {
+    if (!col %in% names(dimensions)) return(rep(default, nrow(dimensions)))
+    v <- tolower(trimws(as.character(dimensions[[col]])))
+    v[is.na(v) | !nzchar(v)] <- default
+    bad <- !v %in% allowed
+    if (any(bad)) {
+      stop(col, " must be one of ", paste(allowed, collapse = ", "),
+           " or blank; got '", paste(unique(v[bad]), collapse = "', '"),
+           "' for ", paste(dimensions$species[bad], collapse = ", "),
+           call. = FALSE)
+    }
+    v
+  }
+  rear_wetland_flow_all <- read_choice("rear_wetland_flow",
+                                       c("stream", "gradient", "free"), "free")
+  rear_near_river_all <- read_choice("rear_near_river",
+                                     c("both", "stream", "wetland_flow"),
+                                     "both")
+
   # --- Edge type helpers ---
   stream_edges <- if (edge_types == "categories") {
     list(edge_types = c("stream", "canal"))
@@ -311,11 +346,67 @@ lnk_rules_build <- function(csv,
     rear_lao <- if (has_rlao) d$rear_lake_area_only    else NA
     rear_wao <- if (has_rwao) d$rear_wetland_area_only else NA
 
+    # Through-wetland door and near-river scope (#364). A choice that can
+    # emit nothing is a mistake in the CSV, so it stops.
+    wetland_flow <- rear_wetland_flow_all[i]
+    nr_scope <- rear_near_river_all[i]
+    has_stream_rear <- d$rear_stream || (has_all_edges && isTRUE(d$rear_all_edges))
+    if (wetland_flow != "free" && !d$rear_wetland) {
+      stop(sp, ": rear_wetland_flow = ", wetland_flow, " needs ",
+           "rear_wetland = yes (no 1050 / 1150 rule is emitted)",
+           call. = FALSE)
+    }
+    if (nr_scope == "wetland_flow" &&
+        (!d$rear_wetland || wetland_flow != "stream")) {
+      stop(sp, ": rear_near_river = wetland_flow needs rear_wetland = yes ",
+           "and rear_wetland_flow = stream (only then does the 1050 / 1150 ",
+           "rule inherit a pair)", call. = FALSE)
+    }
+    if (nr_scope == "stream" && !has_stream_rear) {
+      stop(sp, ": rear_near_river = stream needs rear_stream = yes or ",
+           "rear_all_edges = yes", call. = FALSE)
+    }
+    # No stream or wetland-flow rule is emitted at all under rear_no_fw or
+    # rear_lake_only, so a door or a narrowed scope there would say nothing.
+    if ((d$rear_no_fw || d$rear_lake_only) &&
+        (wetland_flow != "free" || nr_scope != "both")) {
+      stop(sp, ": rear_wetland_flow / rear_near_river need stream rearing; ",
+           "rear_no_fw or rear_lake_only emits no stream or 1050/1150 rule",
+           call. = FALSE)
+    }
+    # The `stream` scope must keep the pair off 1050/1150 lines, but fresh's
+    # `stream` category holds them, and the all-edges rule has no edge
+    # filter: either rule would carry the pair onto them. (`wetland_flow`
+    # works in both: those rules are stamped out, and the 1050/1150 rule
+    # still carries the pair, so the OR of the rules admits it there.)
+    if (nr_scope == "stream" && edge_types == "categories" && d$rear_stream &&
+        !(has_all_edges && isTRUE(d$rear_all_edges))) {
+      stop(sp, ": rear_near_river = stream needs edge_types = \"explicit\": ",
+           "the `stream` category includes 1050/1150", call. = FALSE)
+    }
+    if (nr_scope == "stream" && has_all_edges && isTRUE(d$rear_all_edges) &&
+        d$rear_wetland) {
+      stop(sp, ": rear_near_river = stream with rear_all_edges = yes would ",
+           "give the pair to 1050/1150 lines through the all-edges rule",
+           call. = FALSE)
+    }
+
+    # Helper: opt a rule out of the near_river pair fresh would let it
+    # inherit (fresh#263). Only on rules that inherit: fresh refuses the
+    # key on waterbody_type L / W rules, and on a thresholds: false rule it
+    # is a no-op, so neither is ever stamped.
+    add_nr <- function(rule) {
+      rule$near_river <- FALSE
+      rule
+    }
+
     # --- Spawning ---
     if (d$spawn_stream) {
       spawn_rules[[length(spawn_rules) + 1]] <-
         add_rc(add_iw(stream_edges, spawn_iw), spawn_rc, spawn_cdm)
-      spawn_rules[[length(spawn_rules) + 1]] <- add_rc(river_rule, spawn_rc, spawn_cdm)
+      # A river polygon is the river: its rule never takes a pair (#364).
+      spawn_rules[[length(spawn_rules) + 1]] <-
+        add_nr(add_rc(river_rule, spawn_rc, spawn_cdm))
     }
     if (d$spawn_lake) {
       spawn_rules[[length(spawn_rules) + 1]] <- add_rc(
@@ -383,25 +474,42 @@ lnk_rules_build <- function(csv,
       if (has_all_edges && d$rear_all_edges) {
         rule <- list()
         if (!is.null(soe_bypass)) rule$channel_width_min_bypass <- soe_bypass
+        if (nr_scope == "wetland_flow") rule <- add_nr(rule)
         rear_rules[[length(rear_rules) + 1]] <- rule
       } else if (d$rear_stream) {
         stream_rule <- add_iw(stream_edges, rear_iw)
         if (!is.null(soe_bypass)) stream_rule$channel_width_min_bypass <- soe_bypass
+        if (nr_scope == "wetland_flow") stream_rule <- add_nr(stream_rule)
         rear_rules[[length(rear_rules) + 1]] <- stream_rule
         river_rule_r <- river_rule
         if (!is.null(soe_bypass)) river_rule_r$channel_width_min_bypass <- soe_bypass
-        rear_rules[[length(rear_rules) + 1]] <- river_rule_r
+        rear_rules[[length(rear_rules) + 1]] <- add_nr(river_rule_r)
       }
       if (d$rear_wetland) {
         rwhm <- resolve_ha_min(
           if (has_rwhm) d$rear_wetland_ha_min else NULL,
           NA_real_)
-        # Edge-type rule: include wetland-flow streams / shoreline segments
-        # in the `rearing` flag (rearing km total).
-        carve_rule <- if (edge_types == "categories") {
-          list(edge_types = c("wetland"), thresholds = FALSE)
-        } else {
-          list(edge_types_explicit = c(1050L, 1150L), thresholds = FALSE)
+        # Edge-type rule for flow through a wetland (FWA 1050 / 1150), in
+        # `rearing` km. Codes in both edge modes: fresh's `wetland`
+        # category is 1700 shorelines, and `stream` already holds
+        # 1050 / 1150 (#364). How it rears is rear_wetland_flow:
+        #   free     no test (thresholds: false), the pre-#364 rule;
+        #   gradient the species' rear gradient only, no size test
+        #            (bcfishpass's coho rule);
+        #   stream   the stream door: it inherits gradient, size and the
+        #            near_river pair exactly as the stream rule does.
+        carve_rule <- list(edge_types_explicit = c(1050L, 1150L))
+        if (wetland_flow != "stream") carve_rule$thresholds <- FALSE
+        if (wetland_flow == "gradient") {
+          g <- suppressWarnings(as.numeric(th$rear_gradient_max))
+          if (length(g) != 1L || is.na(g)) {
+            stop(sp, ": rear_wetland_flow = gradient needs a ",
+                 "rear_gradient_max in the thresholds CSV", call. = FALSE)
+          }
+          carve_rule$gradient <- c(0, g)
+        }
+        if (wetland_flow == "stream" && nr_scope == "stream") {
+          carve_rule <- add_nr(carve_rule)
         }
         # Waterbody rule: sets the separate `wetland_rearing` flag in
         # fresh.streams_habitat so polygon-area rollups (ha) can be
@@ -419,7 +527,9 @@ lnk_rules_build <- function(csv,
         # would stop meaning "no W rule". The type also drops the few 1050
         # lines with no waterbody_key (40 province-wide, 2026-10-07).
         # Unfloored, the carve-out keeps its place.
-        carve_floored <- !is.na(rwhm) && emit_polygon
+        # The stream door has no floor: it tests the line as a stream, and
+        # the floor stays on the W polygon rule (#364).
+        carve_floored <- !is.na(rwhm) && emit_polygon && wetland_flow != "stream"
         if (!carve_floored) {
           rear_rules[[length(rear_rules) + 1]] <- carve_rule
         }

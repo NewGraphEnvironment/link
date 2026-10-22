@@ -1,0 +1,9 @@
+"species_code","column","role","class","km","n","expected","ratio_elevation_adjusted"
+"CH","rear_river_distance_max","held_out","ch_d1000",71.596327545851,1,6.51727162332934,0.153438441390164
+"CH","rear_river_distance_max","held_out","ch_d2000",87.1406559826809,1,7.37776971895406,0.135542316728987
+"CH","rear_river_distance_max","held_out","ch_d250 removed",29.4092105141009,0,1.10471319173148,0
+"CH","rear_river_distance_max","held_out","ch_d500",52.1430197800748,0,3.77967851137138,0
+"CH","rear_river_channel_width_min","held_out","ch_w10",53.079576168196,0,2.50085246317311,0
+"CH","rear_river_channel_width_min","held_out","ch_w15",38.6725747499659,0,1.77762113327992,0
+"CH","rear_river_channel_width_min","held_out","ch_w20",45.0269447402415,0,1.91683960644717,0
+"CH","rear_river_channel_width_min","held_out","ch_w30 removed",29.1582688244815,0,1.07484366242079,0

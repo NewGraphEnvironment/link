@@ -219,6 +219,7 @@ Read persistent state, emit comparisons / methodology evidence.
 
 | Script | Purpose |
 |--------|---------|
+| `query_mad_width_equivalent.R` | The modelled channel width at which streams in a persist schema reach a mean annual discharge: the reverse of `query_width_mad_equivalent.R` (#364; 3 m³/s → 15 m). Writes `mad_width_*` to `--out` (default `data-raw/logs/wetland_door_364/`). |
 | `query_schema_delta.R` | Compares per-species spawn / rear km between two persistent fresh schemas. Province-wide totals + per-WSG breakdowns + shift breadth. Replaces inline `Rscript -e '…'` SQL — schema-vs-schema deltas are versioned now. Args: `<baseline_schema> <experiment_schema> [species_csv]`. |
 | `compare_adms.R` | One-shot ADMS-only comparison (legacy single-WSG diagnostic). Superseded by `compare_bcfishpass_wsg.R` for parametric reuse. |
 

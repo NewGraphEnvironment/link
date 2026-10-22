@@ -172,6 +172,26 @@ cols_barrier_overrides <- c(
   watershed_group_code     = "varchar(4) NOT NULL"
 )
 
+#' Column shape for the persisted near-river distances (#364).
+#'
+#' `<persist_schema>.streams_near_river` mirrors the table fresh's
+#' `frs_habitat_classify()` writes to `<working>.streams_habitat_near_river`
+#' when a rule has a near_river pair (fresh 0.42.0): one row per segment that
+#' found a river within the pair's distance, per pair. Persisted so the
+#' validator re-tests the near_river predicates against the distances the
+#' build used, rather than walking again. One named vector drives the DDL
+#' ([lnk_persist_init()]) and the INSERT projection
+#' ([lnk_pipeline_persist()]).
+#' @noRd
+cols_streams_near_river <- c(
+  id_segment           = "integer NOT NULL",
+  watershed_group_code = "varchar(4) NOT NULL",
+  measure              = "text NOT NULL",
+  threshold            = "double precision NOT NULL",
+  distance_max         = "double precision NOT NULL",
+  dist_m               = "double precision"
+)
+
 #' Validate that an existing target table doesn't carry stale DDL
 #' (unexpected `GENERATED ALWAYS` columns).
 #'
@@ -334,6 +354,9 @@ lnk_persist_init <- function(conn, cfg, species, force_recreate = FALSE) {
   .lnk_validate_persist_table(conn, schema = schema,
                               table = "streams_mapping_code",
                               force_recreate = force_recreate)
+  .lnk_validate_persist_table(conn, schema = schema,
+                              table = "streams_near_river",
+                              force_recreate = force_recreate)
   for (tbl in c("log", "log_input", "log_parameters_fresh",
                 "log_parameters_habitat_thresholds", "log_dimensions")) {
     .lnk_validate_persist_table(conn, schema = schema, table = tbl,
@@ -460,6 +483,20 @@ lnk_persist_init <- function(conn, cfg, species, force_recreate = FALSE) {
     schema, .lnk_cols_clause(cols_streams_mapping_code, pk)))
   .lnk_db_execute(conn, sprintf(
     "CREATE INDEX IF NOT EXISTS streams_mapping_code_wsg_idx ON %s.streams_mapping_code (watershed_group_code)",
+    schema))
+
+  # Near-river distances (#364), for every schema: a build with no
+  # near_river pair persists no rows, which the validator reads as "no
+  # pair walked". Keyed per pair, as fresh's walk writes one row per
+  # segment per (measure, threshold, distance_max).
+  .lnk_db_execute(conn, sprintf(
+    "CREATE TABLE IF NOT EXISTS %s.streams_near_river (\n  %s\n)",
+    schema, .lnk_cols_clause(cols_streams_near_river,
+      c("id_segment", "watershed_group_code", "measure", "threshold",
+        "distance_max"))))
+  .lnk_db_execute(conn, sprintf(
+    paste("CREATE INDEX IF NOT EXISTS streams_near_river_wsg_idx",
+          "ON %s.streams_near_river (watershed_group_code)"),
     schema))
 
   # Long-form habitat view (link#187). UNION ALL across per-species

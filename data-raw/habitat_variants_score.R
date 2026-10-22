@@ -119,7 +119,7 @@ variants <- utils::read.csv(path_variants, colClasses = "character",
 roles <- utils::read.csv(path_roles, colClasses = "character")
 # `model` and `set` are optional (link#302), as habitat_variants_build.R reads
 # them: an empty model is `cw`, an empty set changes nothing.
-for (k in c("model", "set")) {
+for (k in c("model", "set", "dims")) {
   if (!k %in% names(variants)) variants[[k]] <- NA_character_
 }
 variants$model[is.na(variants$model)] <- "cw"
@@ -138,22 +138,37 @@ if (!identical(variants$equals_bundle[variants$variant == base_variant],
 }
 # Model-only variants (link#300): no column, on mad, from the base.
 model_only <- variants$variant[is.na(variants$column) &
-                                 variants$variant != base_variant]
+                                 variants$variant != base_variant &
+                                 variants$model == "mad"]
+# Structure variants (link#364): no column, on cw, from the base, with dims
+# and / or set; scored against the base, never a ladder rung.
+structure_only <- variants$variant[is.na(variants$column) &
+                                     variants$variant != base_variant &
+                                     variants$model == "cw"]
 local({
   r <- variants[variants$variant %in% model_only, ]
-  bad <- r$variant[r$model != "mad" | r$step_from != base_variant |
+  bad <- r$variant[r$step_from != base_variant |
                      is.na(r$species_code) | !is.na(r$value) |
-                     !is.na(r$flag) | !is.na(r$set) | !is.na(r$obs_stage) |
-                     !is.na(r$equals_bundle)]
+                     !is.na(r$flag) | !is.na(r$set) | !is.na(r$dims) |
+                     !is.na(r$obs_stage) | !is.na(r$equals_bundle)]
   if (length(bad) > 0L) {
-    stop("a variant with no column must be model-only (on mad, stepping from ",
+    stop("a mad variant with no column must be model-only (stepping from ",
          base_variant, ", with a species and no value, flag, obs_stage, ",
-         "equals_bundle or set): ", paste(bad, collapse = ", "), call. = FALSE)
+         "equals_bundle, set or dims): ", paste(bad, collapse = ", "),
+         call. = FALSE)
   }
-  # Nothing steps from a model-only variant: it is not a ladder rung.
-  off <- variants$variant[variants$step_from %in% model_only]
+  r <- variants[variants$variant %in% structure_only, ]
+  bad <- r$variant[r$step_from != base_variant | is.na(r$species_code) |
+                     !is.na(r$value) | !is.na(r$flag) | !is.na(r$obs_stage) |
+                     !is.na(r$equals_bundle) | (is.na(r$set) & is.na(r$dims))]
+  if (length(bad) > 0L) {
+    stop("a cw variant with no column must be a structure variant: ",
+         paste(bad, collapse = ", "), call. = FALSE)
+  }
+  # Nothing steps from either: neither is a ladder rung.
+  off <- variants$variant[variants$step_from %in% c(model_only, structure_only)]
   if (length(off) > 0L) {
-    stop("no variant may step from a model-only variant: ",
+    stop("no variant may step from a model-only or structure variant: ",
          paste(off, collapse = ", "), call. = FALSE)
   }
 })
@@ -168,17 +183,20 @@ parse_set <- function(x) {
   kv <- strsplit(trimws(strsplit(x, ";", fixed = TRUE)[[1]]), "=", fixed = TRUE)
   stats::setNames(trimws(vapply(kv, `[`, "", 2L)), trimws(vapply(kv, `[`, "", 1L)))
 }
-# A ladder holds its `set` cells fixed, so a band is the step's own cell
-# only: every step but an anchor carries exactly its step_from's set.
+# A ladder holds its `set` cells and its `dims` fixed, so a band is the
+# step's own cell only: every step but an anchor carries exactly its
+# step_from's set and dims.
 local({
   for (v in variants$variant[!is.na(variants$column)]) {
     f <- variants$step_from[variants$variant == v]
     if (identical(f, base_variant) || model_of(v) != model_of(f)) next
-    a <- parse_set(variants$set[variants$variant == v])
-    b <- parse_set(variants$set[variants$variant == f])
-    if (!identical(a[order(names(a))], b[order(names(b))])) {
-      stop("step ", v, " changes its set cells from ", f,
-           ": a ladder holds them fixed", call. = FALSE)
+    for (k in c("set", "dims")) {
+      a <- parse_set(variants[[k]][variants$variant == v])
+      b <- parse_set(variants[[k]][variants$variant == f])
+      if (!identical(a[order(names(a))], b[order(names(b))])) {
+        stop("step ", v, " changes its ", k, " from ", f,
+             ": a ladder holds them fixed", call. = FALSE)
+      }
     }
   }
 })
@@ -301,6 +319,22 @@ for (v in variants$variant) {
     stop("the method table for ", v, " is not the one every scored WSG of ",
          schema_of(v), " was built from", call. = FALSE)
   }
+  # The rules and dimensions it classified with (link#364). A built.csv from
+  # before them records none (NA), which is right only for a bundle whose
+  # rules and dimensions resolve to the base's own files: a variant can carry
+  # its own rules with no dims (a baked threshold moved).
+  for (k in c("rules", "dimensions")) {
+    col <- paste0(k, "_sha256")
+    got <- if (col %in% names(b)) b[[col]] else rep(NA_character_, nrow(b))
+    want <- digest::digest(file = cfgs[[v]][[k]], algo = "sha256")
+    on_base <- identical(normalizePath(cfgs[[v]][[k]]),
+                         normalizePath(cfgs[[base_variant]][[k]]))
+    ok <- got %in% want | (is.na(got) & on_base)
+    if (!all(ok)) {
+      stop("the ", k, " for ", v, " are not the ones every scored WSG of ",
+           schema_of(v), " was built from", call. = FALSE)
+    }
+  }
   # The discharge a variant was classified on (#305): built.csv records the
   # fill per variant x WSG, and a row from before the fill was recorded was
   # built on the raw table. The bundle's own knob is not what classify read:
@@ -335,10 +369,29 @@ for (v in variants$variant) {
   n_diff <- sum(mapply(function(a, b) {
     sum(!((a == b) %in% TRUE) & !(is.na(a) & is.na(b)))
   }, thr, thr_now))
-  if (v %in% model_only) {
-    if (n_diff != 0L) {
-      stop("model-only bundle ", v, " differs from ", base_bundle, " in ",
-           n_diff, " threshold cells, not 0", call. = FALSE)
+  # dims (link#364): the bundle's own dimensions.csv holds each one.
+  dv <- parse_set(r$dims)
+  if (length(dv) > 0L) {
+    dims_v <- utils::read.csv(cfgs[[v]]$dimensions, colClasses = "character",
+                              check.names = FALSE, na.strings = character(0))
+    ok <- vapply(names(dv), function(k) {
+      identical(dims_v[[k]][dims_v$species == r$species_code], dv[[k]])
+    }, logical(1))
+    if (!all(ok)) {
+      stop("bundle ", v, "'s dimensions.csv does not hold its dims: ",
+           paste(names(dv)[!ok], collapse = ", "), call. = FALSE)
+    }
+  }
+  if (v %in% c(model_only, structure_only)) {
+    set_v <- parse_set(r$set)
+    i_now <- thr_now$species_code == r$species_code
+    n_moved <- sum(vapply(names(set_v), function(k) {
+      !identical(thr_now[[k]][i_now], set_v[[k]])
+    }, logical(1)))
+    if (n_diff != n_moved) {
+      stop(if (v %in% model_only) "model-only" else "structure", " bundle ",
+           v, " differs from ", base_bundle, " in ", n_diff,
+           " threshold cells, not ", n_moved, call. = FALSE)
     }
     next
   }
@@ -843,6 +896,65 @@ if (length(model_only) > 0L) {
                    row.names = FALSE, na = "")
 }
 
+# -- structure variants (link#364) ---------------------------------------------------------
+# A structure variant changes the rules (dims) or fixes cells (set) without
+# being a ladder rung. Per flag and stage its `added` band is the habitat only
+# it keeps, its `removed` band the habitat only the base keeps, and the core
+# what both keep; read against the core as a step's bands are. Capture and
+# cost are in summary.csv, totals.csv and habitat_change.csv with every
+# variant's.
+if (length(structure_only) > 0L) {
+  uhc <- loaded$user_habitat_classification
+  sb <- list()
+  for (v in structure_only) {
+    sp <- variants$species_code[variants$variant == v]
+    w_sp <- intersect(focal, roles$watershed_group_code[roles$species_code == sp])
+    if (length(w_sp) == 0L) {
+      say("%s: no focal WSG for %s, not compared", v, sp)
+      next
+    }
+    for (fl in c("spawning", "rearing")) {
+      # A user_habitat_classification reach is that flag's habitat under
+      # every variant, so it would sit in the core. Only the scored groups'
+      # reaches can bias it, so a flag is skipped (and named) when one of
+      # them holds such a reach, rather than the whole species.
+      if (!is.null(uhc) && any(uhc$species_code == sp &
+                               uhc$watershed_group_code %in% w_sp &
+                               uhc[[fl]] %in% 1)) {
+        say(paste("%s %s: user_habitat_classification reaches in %s would",
+                  "sit in the core, not compared"), v, fl,
+            paste(w_sp, collapse = ","))
+        next
+      }
+      for (st in stages) {
+        b <- lnk_habitat_validate_band(
+          conn, aoi = w_sp, species = sp, flag = fl,
+          schema = schema_of(v), schema_ref = schema_of(base_variant),
+          observations = obs_base, stage = st,
+          schema_core = schema_of(c(base_variant, v)))
+        sb[[length(sb) + 1L]] <- cbind(data.frame(variant = v), b)
+      }
+    }
+  }
+  if (length(sb) > 0L) {
+    sb <- do.call(rbind, sb)
+    sb$role <- roles$role[match(paste(sb$watershed_group_code, sb$species_code),
+                                paste(roles$watershed_group_code,
+                                      roles$species_code))]
+    utils::write.csv(sb, file.path(dir_out, "structure_bands.csv"),
+                     row.names = FALSE, na = "")
+    key_sb <- c("variant", "species_code", "flag", "stage", "role", "direction")
+    sp_pool <- stats::aggregate(sb[c("band_km", "n_band", "core_km", "n_core")],
+                                sb[key_sb], sum)
+    sp_pool <- cbind(sp_pool, .lnk_hvb_density(sp_pool$n_band, sp_pool$band_km,
+                                               sp_pool$n_core, sp_pool$core_km))
+    sp_pool$n_expected <- sp_pool$density_core * sp_pool$band_km
+    sp_pool <- sp_pool[do.call(order, sp_pool[key_sb]), ]
+    utils::write.csv(sp_pool, file.path(dir_out, "structure_bands_pooled.csv"),
+                     row.names = FALSE, na = "")
+  }
+}
+
 if (sum(!is.na(variants$column)) == 0L) {
   # Model-only variants and no ladder: nothing below applies.
   write_stamp()
@@ -870,6 +982,12 @@ steps$value_from <- mapply(value_of, steps$step_from, steps$species_code,
 # threshold step: it is taken by construction, its bands are reported both
 # ways, and the walk starts beyond it.
 steps$model_step <- model_of(steps$variant) != model_of(steps$step_from)
+# A near-river pair ladder's first step (link#364) is an anchor the same way:
+# the base has no pair (its cell is NA), so the step adds a rule rather than
+# moving a threshold. Taken by construction, its bands reported both ways,
+# the walk starting beyond it; `model_step` names both kinds of anchor.
+steps$pair_anchor <- grepl("_river_", steps$column) & is.na(steps$value_from)
+steps$model_step <- steps$model_step | steps$pair_anchor
 # A model change is a ladder's first step or nothing: mid-ladder it would be
 # force-taken and would put a rung of another model in the core.
 if (any(steps$model_step & steps$step_from != base_variant)) {
@@ -893,7 +1011,11 @@ ladder_of <- function(sp, column) {
 core_of <- function(sp, column) {
   l <- ladder_of(sp, column)
   rungs <- l[-1L]
-  if (any(model_of(rungs) != "cw")) rungs else l
+  # A near-river ladder's rungs carry a pair (and their dims) the base does
+  # not, so its core leaves the base out too (link#364).
+  if (any(model_of(rungs) != "cw") ||
+      any(steps$pair_anchor[steps$variant %in% rungs]) ||
+      any(!is.na(variants$dims[variants$variant %in% rungs]))) rungs else l
 }
 # Every step past an anchor reads the same species, column, flag and stage as
 # its step_from, or value_from is NA and the step drops out of the walk.
@@ -918,7 +1040,10 @@ local({
 uhc <- loaded$user_habitat_classification
 if (!is.null(uhc)) {
   for (k in seq_len(nrow(steps))) {
+    # Only the scored groups' reaches can sit in the core (link#364).
     hit <- uhc$species_code == steps$species_code[k] &
+      uhc$watershed_group_code %in%
+        roles$watershed_group_code[roles$species_code == steps$species_code[k]] &
       uhc[[steps$flag[k]]] %in% 1
     if (any(hit)) {
       stop(sum(hit), " user_habitat_classification ", steps$flag[k],
@@ -1015,7 +1140,9 @@ rule$decision <- ifelse(
   ifelse((rule$step_direction == "added") == rule$band_is_habitat,
          "take", "refuse"))
 is_anchor <- rule$variant %in% steps$variant[steps$model_step]
-rule$decision[is_anchor] <- "take (anchor: model change)"
+rule$decision[is_anchor] <- ifelse(
+  rule$variant[is_anchor] %in% steps$variant[steps$pair_anchor],
+  "take (anchor: near-river pair)", "take (anchor: model change)")
 # Beside the rule, not in it: the same floor on the locations the band would
 # hold at the core's rate (core density x band km), which is set by the band's
 # length before any fish are counted. The rule's floor on the locations
@@ -1027,7 +1154,7 @@ band_is_dense <- !is.na(rule$density_ratio) & rule$density_ratio >= ratio_min
 rule$decision_expected_floor <- ifelse(
   is.na(rule$n_expected) | rule$n_expected < n_min, "keep (expected < 10)",
   ifelse((rule$step_direction == "added") == band_is_dense, "take", "refuse"))
-rule$decision_expected_floor[is_anchor] <- "take (anchor: model change)"
+rule$decision_expected_floor[is_anchor] <- rule$decision[is_anchor]
 # Walk each ladder out from default once, to its last step, and write that
 # one outcome on every row of the ladder. A ladder is the chain from default
 # to a tip (a variant no other variant steps from); a ladder that branches at

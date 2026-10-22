@@ -110,6 +110,12 @@ lnk_pipeline_classify <- function(conn, aoi, cfg, loaded, schema,
     csv = thresholds_csv,
     rules_yaml = cfg$rules)
 
+  # fresh keeps <to>_near_river and only replaces the groups it walks, so a
+  # table left by an earlier build (another bundle, other pairs, or fresh
+  # 0.41.0's shape) would otherwise reach persist as this build's (#364).
+  .lnk_db_execute(conn, sprintf(
+    "DROP TABLE IF EXISTS %s.streams_habitat_near_river", schema))
+
   fresh::frs_habitat_classify(conn,
     table = paste0(schema, ".streams"),
     to = paste0(schema, ".streams_habitat"),
