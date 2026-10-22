@@ -4157,54 +4157,66 @@ A README tells a stranger what a package is, why it is worth their time, and how
 *Index only: each rule's heading and first sentence. The full text is soul's `conventions/readme.md`; read it before writing or reviewing code in its area.*
 
 ### Open with what the package is and why it is valuable, not with a list of features
-Open with one to three sentences on what the package is, what data it works on, and why that is valuable, with the restoration planning, implementation or monitoring decision it informs where there is one.
+Open with one to three sentences on what the package is, what data it works on, and why that is valuable, naming the restoration decision it informs where there is one.
 
 ### Write the tagline, the description field, the GitHub About and the opening together
-Change the README tagline, the DESCRIPTION `Title` (or a Python package's pyproject `description`) and the GitHub About text together so they say the same thing, and keep the DESCRIPTION `Description` and the README opening in step with each other.
+Change the README tagline, the DESCRIPTION `Title` (or pyproject `description`) and the GitHub About text together so they say the same thing, and keep the `Description` field and the README opening in step.
 
 ### Show a little code and its real output, a figure of real output, or both
-Show the package working instead of listing what it can do: a figure of real output where the output is spatial or visual, a short example with the output it really prints, or both.
+Show the package working instead of listing what it can do: a figure of real output where it is spatial or visual, a short example with its real printed output, or both.
 
 ### Describe nothing that is not fully built
 Leave out every capability that has not shipped, including partly built ones and those framed as a target, a next iteration or a roadmap; add each one when it ships.
 
 ### Check each claim against the code path a run takes
-Before a README sentence is published, find the code path a real run takes for it, and check that every "every", "each", "both" or plural holds for every member of the set it names.
+Before publishing a README sentence, find the code path a real run takes for it, and check that each "every", "each", "both" or plural holds for every member of its set.
 
 ### Sections run in a fixed order
 Order a README as: name, hex sticker, a lifecycle badge while unstable, and tagline; the opening; the figure; Installation; the example; Learn more; Ecosystem; Data and methods it builds on; Citation, License and NOTICE.
 
 ### State development status with a lifecycle badge, not a warning in the prose
-Mark an unstable installable package with a lifecycle badge under the title, and after the install command say that functions change between releases, link NEWS, and show how to pin a release.
+Mark an unstable installable package with a lifecycle badge under the title, and after the install command say that functions change between releases, link NEWS, and show how to pin one.
 
 ### A README figure of output is made by committed code
 Make every README figure of the package's output from a committed script that runs on real data, check it at its published width, give it alt text and a short caption saying what it shows, and style a map through gq.
 
 ### Leave out what another file already keeps
-Leave out roadmaps, changelogs, function tables, version strings in prose, counts of published things, and internal hosts or private repos, because each is kept somewhere else and goes stale in a README.
+Leave out roadmaps, changelogs, function tables, version strings in prose, counts of published things, and internal hosts or private repos, because each is kept elsewhere and goes stale in a README.
 
 # Writing for the Reader
-A vignette or a report is written for someone who wants to use what it describes, so it answers their questions in their order and carries nothing that served only its authors.
+A vignette or report answers its reader's questions in their order and carries nothing that served only its authors.
 
 *Index only: each rule's heading and first sentence. The full text is soul's `conventions/writing.md`; read it before writing or reviewing code in its area.*
 
 ### Headings are the reader's questions, in the order they ask them
-Make each heading a question the reader brings, in the order they ask it, within whatever sections a report template fixes; in a data product's article, limits and validation go last.
+Make each heading a question the reader brings, in their order, within any sections a report template fixes; in a data product's article, limits and validation go last.
+
+### Open with the answer
+State the finding, with its numbers, in a sentence or two before any method, so a reader who stops there has the right answer.
 
 ### Define a term in its own place, before it is used
-Give a term the article depends on its own short section, ahead of its first use, with its rule, why it exists, and how many cases fall each way.
+Give a term the article depends on its own short section before its first use, with its rule, why it exists, and how many cases fall each way.
 
-### A figure must say something a sentence can't
-Keep a figure only when a sentence cannot carry its point; otherwise keep the sentence and drop the figure.
+### Prefer a plain phrase to a term
+Name a quantity by what it does for the reader ("the score; lower is better"), and keep a term only if the article reuses it, giving it its own place.
+
+### A figure or table must say something a sentence can't
+Keep a figure only when a sentence cannot carry its point, and a table only when its rows are parallel items compared on shared columns; otherwise write the sentence.
 
 ### Cut what serves the authors
-Remove what the authors needed and the reader does not: parity with superseded products, paths to internal research, and the history of how a decision was reached.
+Remove what the authors needed and the reader does not: parity with superseded products, paths to internal research, and how a decision was reached.
 
 ### State a weakness as what the product does, not what the reader should do
-Describe each of the product's weaknesses in one sentence about what it does, and attach no advice on working around it beyond the product's own rule.
+Describe each weakness in one sentence about what the product does, with no advice on working around it beyond the product's own rule.
 
 ### State each claim by the code's definition
-Describe a set the code defines by that definition, never by its most familiar member or by a nearby proxy, because the sentence, and any guard written for it, then covers the proxy, not the set.
+Describe a set the code defines by that definition, never by its best-known member or a nearby proxy, or the sentence and its guard cover the proxy, not the set.
+
+### When explaining a decision, list every check and the way it points
+Count the checks from the data, not the conclusion, give each its direction, and call a choice the evidence did not make a decision.
+
+### Name, link and cite the software
+Set a software name in code font, link its first mention and say what it is, and end an article with a "Software and citation" section.
 
 ### Measure the simplification
-Report word and line counts before and after a rewrite, against what was forecast, and name what set the floor.
+Report word and line counts before and after a rewrite, against the forecast, and name what set the floor.
