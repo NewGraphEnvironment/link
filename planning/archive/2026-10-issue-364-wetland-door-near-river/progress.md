@@ -58,3 +58,8 @@ Left, in order:
 ### Resume
 
     cd /Users/airvine/Projects/repo/link && git fetch -q origin && git checkout 364-through-wetland-stretches-use-the-stream && git pull --ff-only && git merge origin/main
+
+## Session 2026-10-22
+
+- Resumed from the park. Code-check round 2: two findings inside round 1's fixes, fixed (`7bf11106`). Round 3: two findings of the same mechanism, one inside round 2's fix, fixed (`370b648f`). The loop ends on the enumeration in findings.md (13 rows, each set read from its source).
+- Full suite: 3,742 expectations, 2 failures (the stale golden dams pin only), 0 errors, 6 skips.

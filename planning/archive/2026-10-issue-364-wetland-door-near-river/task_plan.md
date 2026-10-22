@@ -78,7 +78,7 @@
 - [x] `default/dimensions.csv`: `rear_wetland_flow = stream` for BT, CH, CO, ST, WCT, CT, DV, RB, `rear_near_river = both`; CH `rear_river_*` in `default` and `default_tuned` at the ladder's pick; rebuild rules, regen provenance, audit exit 0; test `frs_params()` on `default` yields `near_river$rear` for CH
 - [x] RUNBOOK §7 (wetland-flow rule row, near-river columns, scope dimension, R opt-out), §6d (export), §6 (persisted table, log column)
 - [x] NEWS; CLAUDE.md status (incl. `fresh_default` not validatable until re-modelled); research verdict line; `data-raw/README.md` + `data-raw/habitat_score/README.md` rows
-- [ ] Draft the rule-table issue for review; `/code-check branch`; `/planning-archive`; `/gh-pr-push`
+- [x] Draft the rule-table issue for review (`rule_table_issue_draft.md`, unfiled); `/code-check branch` (3 rounds, ended on the enumeration in findings.md); `/planning-archive`; `/gh-pr-push`
 
 ## Owed at the end (reported, done after merge)
 
@@ -93,10 +93,10 @@
 
 ## Validation
 
-- [ ] Tests pass (`devtools::test()` on the new fresh), `lintr`, `devtools::document()`, `pkgdown::check_pkgdown()`
-- [ ] `/code-check` clean (once over the branch)
-- [ ] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion
+- [x] Tests pass (`devtools::test()` on the new fresh), `lintr`, `devtools::document()`, `pkgdown::check_pkgdown()`
+- [x] `/code-check` clean (once over the branch)
+- [x] PWF checkboxes match landed work
+- [x] `/planning-archive` on completion
 
 Verification per phase. Phase 0 uses fresh's suite and the byte-identity test, and Phase 1 the
 suite. Phase 2 uses byte diffs of the regenerated and frozen `rules.yaml` files plus the audit's exit
