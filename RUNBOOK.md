@@ -434,6 +434,10 @@ AOI-scoped for the observation break source and access code 2. Cost: ~4 s per gr
 both tables, no change to the override step (DUNC, CARP). `default`'s RB row gained a rule shaped like BT's
 (one RB record, only RB counting for RB, no date floor); before it RB had no rule and nothing lifted for it.
 
+The count is of distinct records (`count(DISTINCT o.observation_key)`, link#367):
+`natural_barriers` can hold one position twice (a point where two FWA segments overlap, or
+a falls and a gradient barrier that round to one metre), and each copy joins the same records.
+
 ## 6. Gotchas that have cost real time
 
 - **Persist column changes are a matched pair.** Adding a column to
