@@ -1,0 +1,8 @@
+name: default_knob_off_367
+description: >
+  Scratch bundle for link#367 Phase 3: default with the cabd_additions
+  placeholders left off the barriers, to isolate that change.
+extends: default
+pipeline:
+  schema: fresh_367c
+  cabd_additions_barriers: false

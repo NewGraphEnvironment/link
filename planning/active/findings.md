@@ -98,7 +98,16 @@ Measured with `.lnk_pipeline_pscis_build()` into a scratch schema on the local f
 - **Snap timing** with `linear_feature_id` added after the KNN distance: 1.6-1.8 s for the province-wide snap and build, main and branch alike.
 - **Placeholder ids in CSV order:** 1200000001 Kettle (KETL), 1200000002 Columbia at the border (LARL), 1200000003 Big Sheep, 1200000004 Little Sheep (LARL), 1200000005 Ross (SKGT). The Phase 2 table above lists the position-ordered ids, now replaced.
 
+## Phase 3: verification on real groups (2026-10-23)
+
+Record: `data-raw/logs/provincial_prep_367/` (README there).
+- **Reproducible:** ADMS and ELKR built twice at the branch are identical in every persisted table, barriers included.
+- **The placeholders as barriers** (LARL, KETL, SKGT, recomputed): segments and habitat identical; per-species access and `has_barriers_<sp>_dnstr` identical (0 segments differ); the five placeholder rows are the only barrier difference; 19,065 mapping codes change, all `NONE` to `DAM` in the second token: KETL RB 6,778 and WCT 5,358; LARL BT 1,000, RB 1,038, WCT 978; SKGT BT 1,931, RB 1,982.
+- **Main against branch** (ADMS, ELKR, NATR): accessible km identical; at most 0.094 km of spawning or rearing per species moves (ADMS CH spawning +0.088, rearing -0.009; ELKR GR +0.027; NATR GR rearing +0.094), from 1-2 extra segments per group.
+- **Harness defect, not a code one:** a race on `CREATE SCHEMA IF NOT EXISTS` between the two lanes failed the first LARL build. Rebuilt; recomputes re-run in order.
+
 ## Errors Encountered
 
 | Error | Resolution |
 |-------|------------|
+| `duplicate key value violates unique constraint "pg_namespace_nspname_index"` from two concurrent `CREATE SCHEMA IF NOT EXISTS` | Harness race between lanes; rebuild the group, and recompute in order once every group exists |

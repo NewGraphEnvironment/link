@@ -39,11 +39,11 @@ The Plan review (`planning/active/review-plan.md`) disproved part of the plan; c
 - [ ] Not taken: `default_extrabreaks` / `default_rearbreaks` are `extends: ~` experiment bundles and stay off the knob
 
 ## Phase 3 — Verify on real groups (revised after review: isolate each change)
-- [ ] Reproducibility (#277): ADMS and ELKR built twice at branch HEAD (`fresh_367a`, `fresh_367b`); `streams`, `barriers` and habitat identical, matching segments on start and length. Plus the in-process evidence already measured: main's code gave 464 different picks between two builds minutes apart, the branch 0
-- [ ] Effect of the pick change: ADMS, ELKR and NATR at main (`fresh_367m`, frozen worktree) against branch (`fresh_367a`): segments, accessible / spawning / rearing km per species
-- [ ] #244 isolated: LARL, KETL and SKGT with the knob on (`fresh_367a`) and off (`fresh_367c`, a scratch bundle extending `default`), both recomputed; expect identical segments, access and habitat, and mapping codes that differ only to `DAM`, per flavour
-- [ ] Upstream groups (Columbia above the border, Kettle, Skagit) are predicted from the placeholder positions, not rebuilt; the provincial run is their measurement
-- [ ] Record the results with their environment stamp in `data-raw/logs/provincial_prep_367/`
+- [x] Reproducibility (#277): ADMS and ELKR built twice at branch HEAD (`fresh_367a`, `fresh_367b`); `streams`, `barriers` and habitat identical, matching segments on start and length. Plus the in-process evidence already measured: main's code gave 464 different picks between two builds minutes apart, the branch 0
+- [x] Effect of the pick change: ADMS, ELKR and NATR at main (`fresh_367m`, frozen worktree) against branch (`fresh_367a`): segments, accessible / spawning / rearing km per species
+- [x] #244 isolated: LARL, KETL and SKGT with the knob on (`fresh_367a`) and off (`fresh_367c`, a scratch bundle extending `default`), both recomputed; expect identical segments, access and habitat, and mapping codes that differ only to `DAM`, per flavour
+- [x] Upstream groups (Columbia above the border, Kettle, Skagit) are predicted from the placeholder positions, not rebuilt; the provincial run is their measurement
+- [x] Record the results with their environment stamp in `data-raw/logs/provincial_prep_367/`
 
 ## Phase 4 — Docs and release
 - [ ] NEWS, RUNBOOK (dams and the crossings pick), and the `CLAUDE.md` status, including the stale "Full-run digests are not reproducible on main" note
