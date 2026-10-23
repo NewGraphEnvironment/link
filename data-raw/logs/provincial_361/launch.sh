@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # launch.sh — the provincial `default` run for link#361, exactly as launched.
-# Decisions: planning/active/task_plan.md "Decided at the gate". Buckets from
+# Decisions: planning/archive/2026-10-issue-361-provincial-run-split-components/task_plan.md "Decided at the gate". Buckets from
 # buckets_default.md (measured minutes, equal speeds): first --focal is the
 # dispatcher, the rest job1, job2, job3 in order. Run DETACHED, from a clean
 # tree on the pushed branch, with bash >= 4 (the script re-execs the driver under
