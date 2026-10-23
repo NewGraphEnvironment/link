@@ -88,3 +88,39 @@
 - Records: `data-raw/logs/provincial_361/README.md`, `data-raw/logs/README.md` campaign rows, NEWS 0.68.1 entry.
   `habitat_validate.R` accepts `fresh_default` under `default` (ADMS; run without `--out`, which rewrote the
   #283 directory: restored from HEAD, lesson in findings).
+
+### Resume (written 2026-10-23 22:05 UTC for a session that may not be this one)
+
+Branch `361-provincial-run-can-a-drainage-component`, pushed through `120cc9fd`. Phases 1–4a and most of 6 are
+done and committed; what is left, in order:
+
+1. **Parity re-score (Phase 5).** A run is in flight FROM THE WORKTREE `~/Projects/repo/link-wt361` (checkout of
+   `1d00c04c`; run_uid `20261023_215312-16fb3aae`, label `parity-4-bcfishpass-361`, schema `fresh_parity361`,
+   launched 21:53 UTC; wrapper log `data-raw/logs/parity_0.68.0/run.log` in THIS repo). Check it from its
+   artifacts, never from a waiter: `grep -E '=== study_area_run (done|INCOMPLETE)' data-raw/logs/parity_0.68.0/run.log`;
+   its driver files are under the worktree's `data-raw/logs/study_area_run/20261023_215312_*` (copy them here).
+   Then, from this repo (DB is local docker fwapg, `docker exec -i <db> psql -U postgres -d fwapg`):
+   - verify: `study_area_verify.sql -v schema=fresh_parity361 -v run_uid=20261023_215312-16fb3aae -v expected_n=17`
+     → `data-raw/logs/parity_0.68.0/run_verify.log`;
+   - score: `LNK_LOAD=loadall LNK_SCHEMA=fresh_parity361 LNK_CONFIG=bcfishpass LNK_PARITY_OUT=data-raw/logs/parity_0.68.0/parity_annotated.csv Rscript data-raw/parity_crosssection.R ADMS BULK BABL ELKR`
+     → log to `parity_crosssection.log`; compare with `expected.txt` (48/50; CO ADMS −0.22 km, CO BULK −1.45 km rearing);
+   - moves: `LNK_COMPARE_NEW=20261023_215312_compare.csv Rscript data-raw/logs/parity_0.68.0/moves.R > data-raw/logs/parity_0.68.0/moves.log`
+     (old schema `fresh_parity362`, new `fresh_parity361`; the file first needs the new compare CSV copied into
+     `data-raw/logs/study_area_run/`);
+   - write `data-raw/logs/parity_0.68.0/README.md` on the pattern of `parity_0.66.6/README.md`; revise
+     `research/bcfishpass_parity.md` (table, what moved, the run line); drop scratch `fresh_parity246`, keep `fresh_parity362`.
+   - Do NOT edit this repo while a run models from it (the first parity attempt stamped 16 rows `link_dirty`;
+     `run_dirty_tree.log`). Runs from the worktree are safe to edit around.
+2. **Issue bodies**: apply `planning/active/drafts/issue_361_body.md` (`gh issue edit 361 --body-file`), ticking the
+   parity line once scored; tick #364's open line "The next provincial `default` run re-models every group"; add a
+   one-line "Done: run 20261023_074321 at 0.68.0" to #367. Then tick the Phase 6 box.
+3. **Validation**: `devtools::test()` + `lintr::lint_package()` (a run was started 21:59 UTC; if no result is
+   recorded in progress.md, run again); `/code-check branch` (three-round floor; reviewers in a copy of the tree);
+   fixes as follow-up commits; `DESCRIPTION` to 0.68.1 as the last commit (NEWS already says 0.68.1).
+4. `/planning-archive`, then `/gh-pr-push`. PR body ends with the Claude Code line and the session URL (see git log).
+5. Clean-up to name in the final report, not to do: drop `fresh_361a/b/c` and the worktree
+   (`git worktree remove ~/Projects/repo/link-wt361`) after merge; `fresh_default_20261017` is the operator's call;
+   `job4` workspace in the infra repo if a 5-host run is wanted.
+
+For the operator's review (not filed): `planning/active/drafts/followup_issues_timeout_pretest.md` (two issues).
+Withdrawn: the fresh near-river-walk issue (premise disproved; see findings). Already filed/closed: #369, #170.
