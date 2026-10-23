@@ -1,0 +1,115 @@
+# 2026-10-23T21:52:35Z study_area_verify.sql -v schema=fresh_parity361 -v run_uid=20261023_203809-1222132d -v expected_n=17 ; link 30c0f9ac
+
+=== run under verification ===
+         run_uid          |        run_label        | n_attempted | n_completed | n_hosts |   bcfp_reference    | bcfp_pin_source |            started            |           finished            
+--------------------------+-------------------------+-------------+-------------+---------+---------------------+-----------------+-------------------------------+-------------------------------
+ 20261023_203809-1222132d | parity-4-bcfishpass-361 |          17 |          17 |       1 | v0.7.15-50-g620dbe4 | env             | 2026-10-23 20:38:45.466462+00 | 2026-10-23 21:46:01.461125+00
+(1 row)
+
+ scope_assertion 
+-----------------
+ expected_n = 17
+(1 row)
+
+
+=== 1. Provenance per host ===
+ host | n_wsg | has_link_sha | has_fresh_sha | has_fwapg_sha | has_bcfishobs_sha | has_bcfp_version | n_dirty | n_dirty_unknown |          first_done           |           last_done           
+------+-------+--------------+---------------+---------------+-------------------+------------------+---------+-----------------+-------------------------------+-------------------------------
+ m1   |    17 |           17 |            17 |            17 |                17 |               17 |      16 |               0 | 2026-10-23 20:41:54.981362+00 | 2026-10-23 21:46:01.461125+00
+(1 row)
+
+
+=== 1b. Provenance verdict (per host) ===
+ host |                          verdict                          
+------+-----------------------------------------------------------
+ m1   | FAIL: link_dirty set -- tracked code differed from origin
+(1 row)
+
+
+=== 1c. Started but never finished (must be empty, or every row superseded) ===
+ host | watershed_group_code | date_start | notes | superseded 
+------+----------------------+------------+-------+------------
+(0 rows)
+
+
+=== 2. The distinct SHAs -- all hosts must agree ===
+                 link_sha                 |                fresh_sha                 |                fwapg_sha                 |              bcfishobs_sha               | bcfp_model_version  
+------------------------------------------+------------------------------------------+------------------------------------------+------------------------------------------+---------------------
+ 9f72331313b70c64ddc820dcc464838015deb901 | e9793047cc8f8efffb9aec8e6c21b3103d82920b | 6d48dabf9a52f713d127ea96139bae9479e60eaf | 08630cf4ac14b2f17cc4d7058b127f3996f3fd8a | v0.7.15-50-g620dbe4
+(1 row)
+
+
+=== 2b. Inputs every host must agree on (must be one row) ===
+ n_distinct_input_sets | verdict 
+-----------------------+---------
+                     1 | OK
+(1 row)
+
+
+=== 3. Coverage: every WSG of this run has streams rows ===
+ wsg  | n_segments 
+------+------------
+ ADMS |      39425
+ BABL |      45790
+ BABR |      56983
+ BULK |      87640
+ BULL |      44833
+ ELKR |      83357
+ FRCN |      77158
+ HARR |      44114
+ KISP |      76519
+ KLUM |      73908
+ KOTL |     109951
+ LARL |      91093
+ LFRA |      58209
+ LSKE |      77496
+ MSKE |      84222
+ STHM |      40671
+ THOM |      62146
+(17 rows)
+
+
+=== 4. Modelled vs recomputed -- the difference, per WSG ===
+ wsg  | modelled | recomputed |          model_done           |        recompute_done         | state 
+------+----------+------------+-------------------------------+-------------------------------+-------
+ ADMS | t        | t          | 2026-10-23 21:43:12.356784+00 | 2026-10-23 21:49:02.208054+00 | ok
+ BABL | t        | t          | 2026-10-23 21:46:01.461125+00 | 2026-10-23 21:49:21.912167+00 | ok
+ BABR | t        | t          | 2026-10-23 21:38:12.95191+00  | 2026-10-23 21:49:07.720178+00 | ok
+ BULK | t        | t          | 2026-10-23 21:24:22.681414+00 | 2026-10-23 21:47:31.787293+00 | ok
+ BULL | t        | t          | 2026-10-23 21:09:50.987128+00 | 2026-10-23 21:49:21.723869+00 | ok
+ ELKR | t        | t          | 2026-10-23 21:28:03.964089+00 | 2026-10-23 21:49:12.1177+00   | ok
+ FRCN | t        | t          | 2026-10-23 21:15:00.984774+00 | 2026-10-23 21:49:34.502587+00 | ok
+ HARR | t        | t          | 2026-10-23 20:57:20.414445+00 | 2026-10-23 21:48:59.780992+00 | ok
+ KISP | t        | t          | 2026-10-23 21:19:10.014183+00 | 2026-10-23 21:48:37.156832+00 | ok
+ KLUM | t        | t          | 2026-10-23 21:02:13.168337+00 | 2026-10-23 21:48:00.623419+00 | ok
+ KOTL | t        | t          | 2026-10-23 21:07:01.127879+00 | 2026-10-23 21:48:46.154014+00 | ok
+ LARL | t        | t          | 2026-10-23 20:41:54.981362+00 | 2026-10-23 21:49:24.343557+00 | ok
+ LFRA | t        | t          | 2026-10-23 20:47:04.925466+00 | 2026-10-23 21:49:07.253607+00 | ok
+ LSKE | t        | t          | 2026-10-23 20:52:54.730964+00 | 2026-10-23 21:48:18.635463+00 | ok
+ MSKE | t        | t          | 2026-10-23 21:31:50.332523+00 | 2026-10-23 21:47:58.425009+00 | ok
+ STHM | t        | t          | 2026-10-23 21:40:23.300701+00 | 2026-10-23 21:48:43.770621+00 | ok
+ THOM | t        | t          | 2026-10-23 21:35:24.139221+00 | 2026-10-23 21:47:46.012401+00 | ok
+(17 rows)
+
+
+=== 5. Whole-schema picture: the mixture this run leaves behind ===
+ wsg_in_streams 
+----------------
+             17
+(1 row)
+
+ wsg_with_any_log 
+------------------
+               17
+(1 row)
+
+ runs_ever_labelled 
+--------------------
+                  1
+(1 row)
+
+
+=== 6. ASSERTIONS (raise, so this script can actually fail) ===
+psql:<stdin>:621: ERROR:  run 20261023_203809-1222132d: 16 row(s) missing link_sha, fwapg_sha or bcfishobs_sha, or flagged link_dirty or fresh_dirty
+CONTEXT:  PL/pgSQL function inline_code_block line 121 at RAISE
+exit=3

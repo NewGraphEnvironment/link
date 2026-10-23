@@ -1,0 +1,15 @@
+[study_area_compare] 86 rows across 17/17 WSGs -> /Users/airvine/Projects/repo/link-wt361/data-raw/logs/study_area_run/20261023_215312_compare.csv
+# A tibble: 86 × 7
+   wsg   species total_segs match_pct n_diffs top_pattern      top_pattern_count
+ * <chr> <chr>        <int>     <dbl>   <int> <chr>                        <int>
+ 1 LFRA  BT           27405      97.8     595 ACCESS;ASSESSED…               100
+ 2 LFRA  CH           27405      99.5     125 SPAWN;MODELLED …                29
+ 3 LFRA  CM           27405      99.5     148 ACCESS;NONE | S…                29
+ 4 LFRA  CO           27405      98       547 ACCESS;DAM;INTE…               124
+ 5 LFRA  PK           27405      99.7      89 SPAWN;MODELLED …                26
+ 6 LFRA  SK           27405      99.4     170 ACCESS;NONE | S…                87
+ 7 LFRA  ST           27405      99.4     171 SPAWN;MODELLED …                29
+ 8 FRCN  BT           29343      99.5     145 REAR;NONE | ACC…                46
+ 9 FRCN  CH           29343      99.6     112 ACCESS;NONE | S…                89
+10 FRCN  CM           29343      99.9      26 ACCESS;NONE | S…                19
+# ℹ 76 more rows

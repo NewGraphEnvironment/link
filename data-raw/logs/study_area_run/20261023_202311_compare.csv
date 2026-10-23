@@ -1,0 +1,4 @@
+"wsg","species","total_segs","match_pct","n_diffs","top_pattern","top_pattern_count"
+"OKAN","BT",32204,89.9,3251,"ACCESS;MODELLED;INTERMITTENT | ",668
+"OKAN","CH",32204,92.07,2555,"REAR;DAM | ACCESS;DAM",903
+"OKAN","SK",32204,93.02,2249,"SPAWN;DAM | ACCESS;DAM",660

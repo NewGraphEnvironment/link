@@ -1,0 +1,13 @@
+streams,joined,1476338
+streams,length_metre_rows_differing,104047
+streams,length_metre_max_abs_m,1.9728929601114942e-10
+streams,geom_rows_differing,1265
+streams,geom_max_hausdorff_m,2.3283064365386963e-10
+barriers,joined,1000112
+barriers,position_rows_differing,62
+barriers,position_max_abs_m,3.732523623511952e-09
+barriers,ids_only_in_split,0
+gate_blanked,MILL_gr,5
+gate_blanked,LPCE_bt,69
+gate_blanked,LPCE_gr,100
+gate_blanked,LPCE_rb,69

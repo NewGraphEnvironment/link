@@ -9,11 +9,19 @@
 # Stdout: one line — comma-separated WSG codes (DS-first). Used by
 # `data-raw/study_area_run.sh` to seed per-host buckets.
 #
-# Usage: [LNK_LOAD=loadall] Rscript study_area_wsgs.R <FOCAL1,FOCAL2,...> [config]
+# --exact (link#361): no closure. The list is taken as given, in its given
+# order, less the groups the config's species presence drops
+# (`lnk_wsg_resolve(expand = FALSE)`). For a `study_area_buckets.R --atom=group`
+# split, where each host's list is already the exact downstream-first set the
+# driver should model, through `study_area_run.sh --buckets-exact`.
+#
+# Usage: [LNK_LOAD=loadall] Rscript study_area_wsgs.R [--exact] <FOCAL1,FOCAL2,...> [config]
 
 args <- commandArgs(trailingOnly = TRUE)
+exact <- "--exact" %in% args
+args <- args[args != "--exact"]
 if (length(args) < 1L || !nzchar(args[1])) {
-  stop("usage: study_area_wsgs.R <FOCAL1,FOCAL2,...> [config]", call. = FALSE)
+  stop("usage: study_area_wsgs.R [--exact] <FOCAL1,FOCAL2,...> [config]", call. = FALSE)
 }
 focal  <- toupper(strsplit(args[1], ",")[[1]])
 focal  <- focal[nzchar(focal)]
@@ -37,7 +45,7 @@ on.exit(try(DBI::dbDisconnect(conn), silent = TRUE), add = TRUE)
 
 cfg    <- lnk_config(config)
 loaded <- lnk_load_overrides(cfg)
-keep   <- lnk_wsg_resolve(cfg, loaded, wsgs = focal, conn = conn)
+keep   <- lnk_wsg_resolve(cfg, loaded, wsgs = focal, expand = !exact, conn = conn)
 
 if (length(keep) == 0L) {
   stop("no modelable WSGs after species-presence filter", call. = FALSE)

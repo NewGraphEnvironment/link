@@ -1582,6 +1582,31 @@ writes `research/study_areas.md`. Overlapping closures would make consolidate
 last-writer-wins on the shared WSGs, so the script **asserts** disjointness.
 Never partition by `wscode_ltree` root — see §8b.
 
+**The atom can be a single group (link#361).** The component rule was
+written for access at model time. Since link#175 the post-consolidate
+recompute settles access, mapping code and (link#349) the gated habitat
+flags from every group's persisted barriers, and the driver models both legs
+with `LNK_GUARD_DOWNSTREAM=warn` and `LNK_HABITAT_GATE=0`. The split test of
+2026-10-23 modelled the Peace's 26 groups on two hosts in the worst order
+and found nothing the order can reach that differs from the one-host build
+(`data-raw/logs/provincial_361/split_verdict.md`: the 55 of 442 differing
+digests are cross-host arithmetic of at most 3.7e-9 m and the test's own 26-group scope). So
+`study_area_buckets.R --atom=group` packs single modelable groups, which lets
+modelling finish before the largest component would (the Fraser: 205 of 873
+host-minutes on the 2026-10-17 minutes, 231 of 1,077 on 2026-10-23's), and prints the makespan under both atoms. Its `--focal=`
+strings are each host's exact list in the global downstream-first order, and
+the run takes them with `study_area_run.sh --buckets-exact`
+(`study_area_wsgs.R --exact`: no closure expansion, the species filter only,
+order kept). In exact mode an overlap between hosts' lists is fatal, the
+banner says `buckets: exact`, and `<TS>_run_wsgs.tsv` carries
+`bucket_mode`. Keep component atoms when fewer guard warnings at open matter
+more than minutes; at four hosts the two atoms tie on this run's minutes, and
+group atoms pay from five hosts on. Two cautions from the test: a build is
+byte-identical on one host and differs by up to 3.7e-9 m across architectures, so
+"identical across hosts" is a digest after rounding; and a recompute over a
+subset of groups differs from the full one wherever a group holds lines
+coded to another basin or with barriers below it in a group outside the subset (NATR's two Fraser-coded segments; TOOD's two with barriers below them in FROG, LKEC, UKEC and ULRD).
+
 ---
 
 ## 8. Fast verification recipes

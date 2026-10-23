@@ -1,8 +1,8 @@
 # Parity with bcfishpass
 
-**Verified:** 2026-10-20 · **Issues:** #362 (this record), #349, #277, #279 · **Produced by:**
-`data-raw/parity_crosssection.R`, `data-raw/logs/parity_0.66.6/moves.R`, log prefix
-`data-raw/logs/parity_0.66.6/` · **Run:** `20261020_171738-477072be`, link 0.66.6 (`6e5cc837`)
+**Verified:** 2026-10-23 · **Issues:** #361 (this record), #362, #364, #367, #349, #277, #279 · **Produced by:**
+`data-raw/parity_crosssection.R`, `data-raw/logs/parity_0.68.0/moves.R`, log prefix
+`data-raw/logs/parity_0.68.0/` · **Run:** `20261023_215312-16fb3aae`, link 0.68.0 (`1d00c04c`)
 
 How closely link's `bcfishpass` config reproduces bcfishpass's own output, in km of accessible,
 spawning and rearing stream per group and species. This file is the current record: a parity run
@@ -17,40 +17,52 @@ fresh#190). Accessible km sits
 within 0.07 % on all 17 pairs.
 
 Each cell is link km / bcfishpass km, link's difference, and in brackets the change in link's
-km since 2026-10-17 where there is one. That is the difference of two totals each rounded to
+km since the v0.66.6 build of 2026-10-20 where there is one. That is the difference of two totals each rounded to
 0.1 km, so a bracket can read 0.1 for a move of 0.01 km; the exact amounts are below. Rearing leaves lake connection lines out on both sides.
 
 | Group | Species | Accessible | Spawning | Rearing |
 |---|---|---|---|---|
 | ADMS | BT | 1230.4 / 1230.3, +0.01 % | 367.0 / 361.7, +1.45 % | 609.0 / 608.3, +0.12 % |
-| ADMS | CO | 788.4 / 787.9, +0.07 % | 312.3 / 311.0, +0.42 % | 352.6 / 351.2, +0.39 % |
-| ADMS | CH | 788.4 / 787.9, +0.07 % | 278.1 / 277.6, +0.19 % (+0.1) | 309.4 / 308.2, +0.37 % (+0.2) |
-| ADMS | SK | 788.4 / 787.9, +0.07 % | 86.6 / 85.7, +1.09 % (-0.1) | 70.8 / 70.8, +0.00 % |
-| BULK | BT | 7676.5 / 7676.4, +0.00 % | 1866.3 / 1848.0, +0.99 % | 3007.9 / 3048.6, -1.34 % (-0.3) |
+| ADMS | CO | 788.4 / 787.9, +0.07 % | 312.3 / 311.0, +0.42 % | 352.3 / 351.2, +0.32 % (-0.3) |
+| ADMS | CH | 788.4 / 787.9, +0.07 % | 278.1 / 277.6, +0.19 % | 309.4 / 308.2, +0.37 % |
+| ADMS | SK | 788.4 / 787.9, +0.07 % | 86.6 / 85.7, +1.09 % | 70.8 / 70.8, +0.00 % |
+| BULK | BT | 7676.5 / 7676.4, +0.00 % | 1866.3 / 1848.0, +0.99 % | 3007.9 / 3048.6, -1.34 % |
 | BULK | ST | 6462.9 / 6462.7, +0.00 % | 1287.6 / 1279.9, +0.60 % | 2230.7 / 2241.9, -0.50 % |
-| BULK | CO | 5089.6 / 5088.0, +0.03 % | 1782.1 / 1768.3, +0.78 % | 2215.6 / 2217.3, -0.08 % |
+| BULK | CO | 5089.6 / 5088.0, +0.03 % | 1782.1 / 1768.3, +0.78 % | 2214.3 / 2217.6, -0.14 % (-1.3) |
 | BULK | CH | 5089.6 / 5088.0, +0.03 % | 1260.2 / 1252.0, +0.66 % | 1730.1 / 1738.2, -0.46 % |
 | BULK | PK | 5089.6 / 5088.0, +0.03 % | 1854.4 / 1850.0, +0.24 % | — |
 | BULK | SK | 5089.6 / 5088.0, +0.03 % | 27.1 / 24.4, +10.99 % | 26.7 / 24.9, +7.39 % |
-| BABL | BT | 6855.5 / 6855.4, +0.00 % | 899.1 / 890.1, +1.01 % | 2076.6 / 2107.3, -1.45 % (-0.3) |
+| BABL | BT | 6855.5 / 6855.4, +0.00 % | 899.1 / 890.1, +1.01 % | 2076.6 / 2107.3, -1.45 % |
 | BABL | ST | 5955.6 / 5955.6, +0.00 % | 352.6 / 349.3, +0.93 % | 897.8 / 916.6, -2.05 % |
-| BABL | CO | 5063.8 / 5063.6, +0.00 % | 810.9 / 805.1, +0.71 % | 1281.6 / 1287.0, -0.42 % (-0.1) |
+| BABL | CO | 5063.8 / 5063.6, +0.00 % | 810.9 / 805.1, +0.71 % | 1280.2 / 1287.0, -0.53 % (-1.4) |
 | BABL | CH | 5063.8 / 5063.6, +0.00 % | 352.1 / 348.8, +0.93 % | 695.5 / 713.0, -2.44 % |
 | BABL | SK | 5063.8 / 5063.6, +0.00 % | 57.2 / 56.3, +1.65 % | 299.9 / 299.9, +0.00 % |
-| ELKR | BT | 4208.1 / 4207.2, +0.02 % | 1526.6 / 1497.5, +1.95 % | 2105.2 / 2104.1, +0.05 % (-0.6) |
-| ELKR | WCT | 3683.4 / 3685.2, -0.05 % | 1568.0 / 1517.6, +3.33 % (-0.1) | 1900.9 / 1854.6, +2.50 % (-0.1) |
+| ELKR | BT | 4208.1 / 4207.2, +0.02 % | 1526.6 / 1497.5, +1.95 % | 2105.2 / 2104.1, +0.05 % |
+| ELKR | WCT | 3683.4 / 3685.2, -0.05 % | 1568.0 / 1517.6, +3.33 % | 1900.9 / 1854.6, +2.50 % |
 
 Pink has no freshwater rearing. Five pairs bcfishpass reports and the `bcfishpass` config does not
 model in that group are left out: CM and PK accessible in ADMS and BABL, CM in BULK.
 
 **The build.** The drainage closure of the four groups is 17 groups, all modelled under
-`bcfishpass` into a scratch schema (`fresh_parity362`), recomputed and verified by
+`bcfishpass` into a scratch schema (`fresh_parity361`), recomputed and verified by
 `study_area_verify.sql`. The reference is the local copy of bcfishpass's `streams_vw`
-(`fresh.streams_vw_bcfp`), loaded 2026-10-17 00:55 UTC from bcfishpass `v0.7.15-50-g620dbe4`
-(model_run_id 143, completed 2026-10-14). The full stamp is in
-`data-raw/logs/parity_0.66.6/README.md`.
+(`fresh.streams_vw_bcfp`), reloaded 2026-10-23 00:52 UTC from bcfishpass `v0.7.15-50-g620dbe4`
+(the same upstream commit as before). The full stamp is in
+`data-raw/logs/parity_0.68.0/README.md`.
 
-## What moved since 2026-10-17, and why
+## What moved at v0.68.0 (2026-10-23, #361)
+
+The v0.66.6 score (run `20261020_171738-477072be`, `fresh_parity362`) was 48/50; so is this one. Inputs were
+not held equal: the provincial run of 2026-10-23 refreshed the primitives and reloaded the reference views, so
+`pair_moves.csv` carries the reference's change beside link's. Three pairs moved, all CO rearing and all
+link-side: ADMS −0.3 km (predicted −0.22), BULK −1.3 (predicted −1.45; the reference also moved +0.3) and
+BABL −1.4 (predicted under 0.1: a miss). All three are #364's CO gradient test on through-wetland lines under
+the `bcfishpass` bundle: the shared segments whose CO rearing changed are 52 FWA edge 1050 lines (2.1 km) and 5
+main-stem lines (1.2 km) whose rearing cluster lost its connection with them. #364 measured ADMS and BULK only;
+the BABL prediction was an extrapolation. The #367 PSCIS pick moved no pair by 0.1 km, and no barrier override
+was added or lost. Evidence: `data-raw/logs/parity_0.68.0/` (its README tabulates the three moves).
+
+## What moved at v0.66.6 (2026-10-20, #362), and why
 
 The 2026-10-17 score (run `20261017_093603-31ab6242`, link `a17e9177`, `fresh_parity246`) was
 48/50 on the same pairs against the same reference, over the same primitive load. Between the two,
@@ -133,7 +145,7 @@ LNK_LOAD=loadall LNK_SCHEMA=<scratch> LNK_CONFIG=bcfishpass LNK_PARITY_OUT=<dir>
 ```
 
 Keep the reference fixed across the two runs being compared (do not pass `--refresh-primitives`),
-or a move cannot be put down to code. `moves.R` compares two builds of the closure, so the previous build's schema is kept until the next re-score (today `fresh_parity362`, and `fresh_parity246` before it). Then revise
+or a move cannot be put down to code. `moves.R` compares two builds of the closure, so the previous build's schema is kept until the next re-score (today `fresh_parity361`, and `fresh_parity362` before it). Then revise
 this file: the table, what moved, the run line under the heading.
 
 ## History
@@ -142,6 +154,8 @@ Earlier results, kept as written and cited by path elsewhere:
 
 | File | What it scored |
 |---|---|
+| `data-raw/logs/parity_0.68.0/` | 2026-10-23, link `1d00c04c` (0.68.0), the four groups: 48/50 (the table above) |
+| `data-raw/logs/parity_0.66.6/` | 2026-10-20, link `6e5cc837` (0.66.6), the four groups: 48/50 |
 | `data-raw/logs/provincial_246/` | 2026-10-17, link `a17e9177`, the four groups: 48/50 (the baseline above) |
 | [`parity_accessible_habitat_2026_07_03.md`](parity_accessible_habitat_2026_07_03.md) | 2026-07-03, accessible + spawning + rearing on 11 groups after #221 / #223 |
 | [`provincial_parity_2026_05_25.md`](provincial_parity_2026_05_25.md) | 2026-05-25, per-segment mapping_code on 50 study-area groups |

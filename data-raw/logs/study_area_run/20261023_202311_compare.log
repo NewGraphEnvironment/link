@@ -1,0 +1,7 @@
+[study_area_compare] 3 rows across 1/1 WSGs -> /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261023_202311_compare.csv
+# A tibble: 3 × 7
+  wsg   species total_segs match_pct n_diffs top_pattern       top_pattern_count
+* <chr> <chr>        <int>     <dbl>   <int> <chr>                         <int>
+1 OKAN  BT           32204      89.9    3251 "ACCESS;MODELLED…               668
+2 OKAN  CH           32204      92.1    2555 "REAR;DAM | ACCE…               903
+3 OKAN  SK           32204      93.0    2249 "SPAWN;DAM | ACC…               660

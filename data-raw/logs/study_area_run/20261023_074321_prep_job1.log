@@ -1,0 +1,109 @@
+From https://github.com/NewGraphEnvironment/link
+   11e9c222..5f8f9f1d  main       -> origin/main
+ * [new branch]        138-lnk-pipeline-crossings-build-slim-fresh- -> origin/138-lnk-pipeline-crossings-build-slim-fresh-
+ * [new branch]        152-unified-persist-schema-barriers -> origin/152-unified-persist-schema-barriers
+ * [new branch]        162-lnk-compare-wsg-annotated-csv -> origin/162-lnk-compare-wsg-annotated-csv
+ * [new branch]        221-per-wsg-habitat-access-km-rollup -> origin/221-per-wsg-habitat-access-km-rollup
+ * [new branch]        259-validate-comp-weight-against-measured-mo -> origin/259-validate-comp-weight-against-measured-mo
+ * [new branch]        284-research-calibrate-ch-and-bt-gradient-a -> origin/284-research-calibrate-ch-and-bt-gradient-a
+ * [new branch]        361-provincial-run-can-a-drainage-component -> origin/361-provincial-run-can-a-drainage-component
+   ff85787a..08afb75f  gh-pages   -> origin/gh-pages
+ * [new tag]           v0.30.0    -> v0.30.0
+ * [new tag]           v0.30.1    -> v0.30.1
+ * [new tag]           v0.30.2    -> v0.30.2
+ * [new tag]           v0.31.0    -> v0.31.0
+ * [new tag]           v0.31.1    -> v0.31.1
+ * [new tag]           v0.32.0    -> v0.32.0
+ * [new tag]           v0.32.1    -> v0.32.1
+ * [new tag]           v0.33.0    -> v0.33.0
+ * [new tag]           v0.34.0    -> v0.34.0
+ * [new tag]           v0.35.0    -> v0.35.0
+ * [new tag]           v0.35.1    -> v0.35.1
+ * [new tag]           v0.36.0    -> v0.36.0
+ * [new tag]           v0.36.1    -> v0.36.1
+ * [new tag]           v0.37.0    -> v0.37.0
+ * [new tag]           v0.38.0    -> v0.38.0
+ * [new tag]           v0.38.1    -> v0.38.1
+ * [new tag]           v0.39.0    -> v0.39.0
+ * [new tag]           v0.39.1    -> v0.39.1
+ * [new tag]           v0.40.0    -> v0.40.0
+ * [new tag]           v0.40.1    -> v0.40.1
+ * [new tag]           v0.40.2    -> v0.40.2
+ * [new tag]           v0.40.3    -> v0.40.3
+ * [new tag]           v0.40.4    -> v0.40.4
+ * [new tag]           v0.40.5    -> v0.40.5
+ * [new tag]           v0.41.0    -> v0.41.0
+ * [new tag]           v0.41.1    -> v0.41.1
+ * [new tag]           v0.41.2    -> v0.41.2
+ * [new tag]           v0.41.3    -> v0.41.3
+ * [new tag]           v0.41.4    -> v0.41.4
+ * [new tag]           v0.42.0    -> v0.42.0
+ * [new tag]           v0.43.0    -> v0.43.0
+ * [new tag]           v0.44.0    -> v0.44.0
+ * [new tag]           v0.44.1    -> v0.44.1
+ * [new tag]           v0.44.2    -> v0.44.2
+ * [new tag]           v0.44.3    -> v0.44.3
+ * [new tag]           v0.45.0    -> v0.45.0
+ * [new tag]           v0.45.1    -> v0.45.1
+ * [new tag]           v0.45.2    -> v0.45.2
+ * [new tag]           v0.45.3    -> v0.45.3
+ * [new tag]           v0.46.0    -> v0.46.0
+ * [new tag]           v0.47.0    -> v0.47.0
+ * [new tag]           v0.47.1    -> v0.47.1
+ * [new tag]           v0.47.2    -> v0.47.2
+ * [new tag]           v0.48.0    -> v0.48.0
+ * [new tag]           v0.49.0    -> v0.49.0
+ * [new tag]           v0.50.0    -> v0.50.0
+ * [new tag]           v0.51.0    -> v0.51.0
+ * [new tag]           v0.51.1    -> v0.51.1
+ * [new tag]           v0.52.0    -> v0.52.0
+ * [new tag]           v0.53.0    -> v0.53.0
+ * [new tag]           v0.54.0    -> v0.54.0
+ * [new tag]           v0.55.0    -> v0.55.0
+ * [new tag]           v0.56.0    -> v0.56.0
+ * [new tag]           v0.57.0    -> v0.57.0
+ * [new tag]           v0.57.1    -> v0.57.1
+ * [new tag]           v0.58.0    -> v0.58.0
+ * [new tag]           v0.59.0    -> v0.59.0
+ * [new tag]           v0.60.0    -> v0.60.0
+ * [new tag]           v0.61.0    -> v0.61.0
+ * [new tag]           v0.62.0    -> v0.62.0
+ * [new tag]           v0.63.0    -> v0.63.0
+ * [new tag]           v0.63.1    -> v0.63.1
+ * [new tag]           v0.64.0    -> v0.64.0
+ * [new tag]           v0.65.0    -> v0.65.0
+ * [new tag]           v0.65.1    -> v0.65.1
+ * [new tag]           v0.66.0    -> v0.66.0
+ * [new tag]           v0.66.1    -> v0.66.1
+ * [new tag]           v0.66.2    -> v0.66.2
+ * [new tag]           v0.66.3    -> v0.66.3
+ * [new tag]           v0.66.4    -> v0.66.4
+ * [new tag]           v0.66.5    -> v0.66.5
+ * [new tag]           v0.66.6    -> v0.66.6
+ * [new tag]           v0.66.7    -> v0.66.7
+ * [new tag]           v0.67.0    -> v0.67.0
+ * [new tag]           v0.68.0    -> v0.68.0
+branch '361-provincial-run-can-a-drainage-component' set up to track 'origin/361-provincial-run-can-a-drainage-component'.
+HEAD is now at 1d00c04c launch.sh: re-exec the driver under the launching bash, not a bare `bash` (#361)
+✔ Built link 0.68.0 (12s)
+✔ Installed link 0.68.0 (local) (201ms)
+✔ 1 pkg + 55 deps: kept 40, upd 3, added 1, dld 4 (NA B) [53.4s]
+=== provenance: link_sha=1d00c04cc5b2 dirty=false fresh_sha=e9793047cc8f
+[preflight] fresh 0.42.0 (floor 0.42.0) - OK, all required symbols present
+=== link: 0.68.0 fresh: 0.42.0
+NOTICE:  column "notes" of relation "source_artifact" already exists, skipping
+
+[artifact] probed 252 artifacts (0 without a version id)
+Stamped data-raw/logs/bcfp_baselines.csv with bcfp build v0.7.15-50-g620dbe4 (head_sha=620dbe4)
+snapshot_bcfp.sh: complete.
+
+NOTICE:  column "rear_wetland_ha_min" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_lake_connected_distance_max" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_wetland_connected_distance_max" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "notes" of relation "log_dimensions" already exists, skipping
+
+=== lnk_persist_init done
+=== READY

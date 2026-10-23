@@ -17,6 +17,8 @@
 #   4c.  ... plus a whitespace reason  -> expect FAIL
 #   6d. one habitat row un-settled    -> expect FAIL (link#349)
 #   6e. newest recompute lifted a settled segment -> expect FAIL (link#349)
+#   6f. an open log row a later finished row supersedes -> expect PASS (link#348 path)
+#   6g. an open log row nothing supersedes          -> expect FAIL
 #
 # Nothing durable is mutated: every case runs against a SCRATCH SCHEMA holding a
 # copy of the run's rows, so the real persist is never touched at all. Not a
@@ -403,6 +405,53 @@ else
   fi
   "${PSQL[@]}" -c "UPDATE ${SCRATCH}.log_recompute SET habitat_gate_lifted = NULL
                     WHERE watershed_group_code = '${LIFT_WSG}'" >/dev/null
+fi
+
+# --- 6f/6g. an open modelling row (date_end NULL), superseded or not ----------
+# A failed attempt keeps its row open (.lnk_log_run_fail()). The link#348 path
+# re-models the group under the same run_uid, so the run carries the open row
+# beside the finished one: that must PASS (6f). An open row that no later row
+# finished is a group the run never built: that must FAIL (6g). 2026-10-23's
+# OKAN is the case that found the first one being read as the second.
+OPEN_WSG=$("${PSQL[@]}" -c "SELECT watershed_group_code FROM ${SCRATCH}.log
+                             WHERE date_end IS NOT NULL
+                             ORDER BY watershed_group_code DESC LIMIT 1")
+if [ -z "$OPEN_WSG" ]; then
+  echo "  ⊘ 6f/6g. SKIPPED: no finished log row to shadow."
+  fails=$((fails + 1))
+else
+  # One session: the temp copy is edited, then inserted, so no row of the
+  # scratch log is ever targeted by position.
+  "${PSQL[@]}" >/dev/null <<SQL
+CREATE TEMP TABLE neg6f AS
+  SELECT * FROM ${SCRATCH}.log WHERE watershed_group_code = '${OPEN_WSG}'
+     AND date_end IS NOT NULL ORDER BY date_start DESC LIMIT 1;
+UPDATE neg6f SET run_id = run_id || '-neg6f', date_start = date_start - interval '1 hour',
+       date_end = NULL, notes = 'run failed or interrupted (negative test)';
+INSERT INTO ${SCRATCH}.log SELECT * FROM neg6f;
+SQL
+  if run_verify -v expected_n="$N_WSG"; then
+    echo "  ✓ 6f. $OPEN_WSG open row, superseded -> PASS (as expected)"
+  else
+    echo "  ✗ 6f. $OPEN_WSG open row, superseded -> FAILED, but should have passed."
+    echo "       A failed attempt re-modelled under the run_uid (link#348) is read as unfinished."
+    show_verify
+    fails=$((fails + 1))
+  fi
+  "${PSQL[@]}" >/dev/null -c "DELETE FROM ${SCRATCH}.log WHERE run_id LIKE '%-neg6f'"
+  "${PSQL[@]}" >/dev/null -c "UPDATE ${SCRATCH}.log SET date_end = NULL
+      WHERE watershed_group_code = '${OPEN_WSG}'"
+  if run_verify -v expected_n="$N_WSG"; then
+    echo "  ✗ 6g. $OPEN_WSG open row, not superseded -> PASSED, but should have FAILED."
+    echo "       The never-finished assertion is not firing."
+    show_verify
+    fails=$((fails + 1))
+  else
+    echo "  ✓ 6g. $OPEN_WSG open row, not superseded -> FAIL (as expected)"
+  fi
+  "${PSQL[@]}" >/dev/null -c "DELETE FROM ${SCRATCH}.log WHERE watershed_group_code = '${OPEN_WSG}';
+     INSERT INTO ${SCRATCH}.log SELECT * FROM ${SRC_SCHEMA}.log
+      WHERE run_uid = '${RUN_UID}' AND watershed_group_code = '${OPEN_WSG}'"
 fi
 
 # The healthy case again, LAST. Cases 2/4/5/6 each mutate the scratch schema
