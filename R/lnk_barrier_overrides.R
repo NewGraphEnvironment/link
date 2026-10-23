@@ -189,6 +189,10 @@ lnk_barrier_overrides <- function(conn,
         ""
       }
 
+      # count(DISTINCT): natural_barriers can hold one position twice (a
+      # point in a segment overlap, or a falls and a gradient barrier that
+      # round together), and each copy joins the same observations, so a
+      # plain count would credit a record once per copy (link#367).
       sql <- sprintf(
         "INSERT INTO %s (blue_line_key, downstream_route_measure, species_code)
          SELECT b.blue_line_key, b.downstream_route_measure, '%s'
@@ -206,7 +210,7 @@ lnk_barrier_overrides <- function(conn,
          %s
          %s
          GROUP BY b.blue_line_key, b.downstream_route_measure
-         HAVING count(o.observation_key) >= %d
+         HAVING count(DISTINCT o.observation_key) >= %d
          ON CONFLICT DO NOTHING",
         to, sp,
         barriers, observations, buffer_m,

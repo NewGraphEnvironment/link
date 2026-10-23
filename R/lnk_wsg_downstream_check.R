@@ -128,7 +128,9 @@
   # Numbered in CSV order, as bcfp's `row_number() over()` over the loaded
   # table numbers them, but stated rather than left to the scan: the ids
   # become barrier ids when `barrier` is TRUE, and the guard looks them up
-  # in the persisted barriers (link#367).
+  # in the persisted barriers (link#367). The rounded range join can match a
+  # measure at a segment boundary twice (617 such boundaries province-wide;
+  # none under a current row), so the order ends on the segment.
   psc <- if (barrier) {
     "CASE WHEN lower(a.barrier_ind::text) IN ('t', 'true', '1')
           THEN 1 END::integer"
@@ -136,7 +138,7 @@
     "NULL::integer"
   }
   sprintf(
-    "SELECT (row_number() OVER (ORDER BY a.csv_row)
+    "SELECT (row_number() OVER (ORDER BY a.csv_row, s.linear_feature_id)
              + 1200000000)::text AS dam_id,
             s.linear_feature_id,
             a.blue_line_key,

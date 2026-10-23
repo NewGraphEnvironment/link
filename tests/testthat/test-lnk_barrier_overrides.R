@@ -94,6 +94,38 @@ test_that("lnk_barrier_overrides omits ctrl_filter when control is NULL", {
   expect_no_match(joined, "c\\.barrier_ind::boolean")
 })
 
+test_that("observation counts are distinct, so a repeated barrier position counts each record once", {
+  # natural_barriers can hold one position twice (link#367); each copy joins
+  # the same observations, and a plain count would credit a record per copy.
+  captured <- character(0)
+  local_mocked_bindings(
+    dbExecute = function(conn, sql, ...) {
+      captured <<- c(captured, sql)
+      1L
+    },
+    dbGetQuery = function(conn, sql, ...) {
+      if (grepl("information_schema.columns", sql)) {
+        return(data.frame(
+          column_name = c("blue_line_key", "wscode_ltree", "localcode_ltree"),
+          stringsAsFactors = FALSE))
+      }
+      if (grepl("SELECT count", sql, ignore.case = TRUE)) {
+        return(data.frame(count = 0L))
+      }
+      data.frame()
+    },
+    .package = "DBI"
+  )
+  lnk_barrier_overrides(
+    conn = "mock", barriers = "working.natural_barriers",
+    observations = "bcfishobs.observations", control = NULL,
+    params = .stub_params(), to = "working.barrier_overrides", verbose = FALSE
+  )
+  joined <- paste(captured, collapse = "\n")
+  expect_match(joined, "HAVING count(DISTINCT o.observation_key) >=", fixed = TRUE)
+  expect_no_match(joined, "HAVING count(o.observation_key)", fixed = TRUE)
+})
+
 test_that("habitat override path is NOT gated by control (bcfishpass parity)", {
   # bcfishpass's hab_upstr CTE has no control join. Expert-confirmed
   # habitat is higher-trust than observations; the control table does not

@@ -142,6 +142,25 @@ Round 3 found an instance the grep could not see: `.lnk_pipeline_prep_gradient()
 | `ON CONFLICT DO NOTHING`, range joins keeping every match, DBSCAN with minpoints 1 | per round 3 | set semantics, no pick |
 | R-side `[1]`, `order()`, `duplicated()` on query results | per round 3 | keyed on unique ids, except `anth[1]` in `lnk_pipeline_access.R`, which reads fresh's `frs_network_features` array order (out of scope, noted) |
 
+### Round 4: the joins that repeat a position, and every reader of their rows (terminal)
+
+Round 4 found the mechanism once more, inside a branch fix: `.lnk_dams_usa_sql()` numbered placeholders by `csv_row` over a rounded range join that can match a measure at a segment boundary twice (617 such boundaries province-wide; no current row sits on one). Fixed: the order ends on `s.linear_feature_id` (the five ids are unchanged; the DB tests pin them). And one reader the "pick" framing missed: `lnk_barrier_overrides()` counted observations with `count(o.observation_key)` over `natural_barriers`, which holds a repeated position once per copy. Fixed: `count(DISTINCT ...)`. Round 4 measured, over 3,223 repeated positions in 158 local `working_*` schemas, 9 position-group rows whose count doubled (at most 2 records counted as 4) and no lift that changes.
+
+So the candidate set is enumerated from the join side: every measure-range join to `fwa_stream_networks_sp` in `R/` (`grep -niE "<=? *(round\()?s2?\.upstream_route_measure" R/*.R`, 14 sites), and what reads its rows:
+
+| site | rows read by | verdict |
+|---|---|---|
+| `lnk_pipeline_prepare.R` gradient enrich (`UPDATE`) | one row per point | picks the lower segment by name (round 3) |
+| `lnk_pipeline_prepare.R` `natural_barriers` (gradient, falls) | `lnk_barrier_overrides()` count, its only reader | distinct count (round 4) |
+| `lnk_pipeline_prepare.R:659` per-model break sets | `frs_break_apply` | set of positions, no pick |
+| `lnk_pipeline_classify.R` `streams_breaks` (4 unions) | fresh classify | set of breaks; a repeated position carries both localcodes, no pick |
+| `lnk_barriers_unify.R` falls, user-definite | numbered ids | end on `linear_feature_id` (round 2) |
+| `.lnk_dams_usa_sql()` | numbered ids | end on `linear_feature_id` (round 4) |
+| `lnk_barrier_overrides.R:248` habitat path | `SELECT DISTINCT` | set |
+| `lnk_habitat_validate.R:890`, `:1289` | `LIMIT 1`, exact start first then measure DESC | named pick |
+
+Every reader either keeps the set or names its pick. The loop ends on this enumeration.
+
 ## Errors Encountered
 
 | Error | Resolution |

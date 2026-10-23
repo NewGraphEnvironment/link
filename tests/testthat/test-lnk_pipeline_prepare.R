@@ -1205,8 +1205,8 @@ test_that(".lnk_dams_usa_sql gives the placeholders a code only as barriers", {
   expect_false(grepl("barrier_ind", off, fixed = TRUE))
   # Numbered in CSV order, stated: the ids become barrier ids, and the guard
   # looks them up in the persisted barriers.
-  expect_match(off, "row_number() OVER (ORDER BY a.csv_row)", fixed = TRUE)
-  expect_match(on, "row_number() OVER (ORDER BY a.csv_row)", fixed = TRUE)
+  expect_match(off, "row_number() OVER (ORDER BY a.csv_row, s.linear_feature_id)", fixed = TRUE)
+  expect_match(on, "row_number() OVER (ORDER BY a.csv_row, s.linear_feature_id)", fixed = TRUE)
   expect_match(off, "FROM A a", fixed = TRUE)
   expect_match(off, "WHERE a.feature_type = 'dams'", fixed = TRUE)
   expect_error(.lnk_dams_usa_sql("A", barrier = NA))
