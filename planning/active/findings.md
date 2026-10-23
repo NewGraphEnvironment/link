@@ -125,11 +125,11 @@ Round 2 found a defect inside a fix (falls ids ordered on position alone, while 
 | Step 4 pick | `.lnk_pscis_pick_order` | no output-changing tie left (census) |
 | Step 4c DBSCAN dedup | ..., `stream_crossing_id` | yes (fixed) |
 | Step 4d blk/measure dedup | ..., `stream_crossing_id` | yes |
-| Step 5 xref branches | PSCIS, `branch_rank` | one row per branch per PSCIS: the xref CSV is one row per PSCIS |
+| Step 5 xref branches | PSCIS, `branch_rank` | one row per branch per PSCIS: the xref CSV is one row per PSCIS (3,657 rows, 3,657 ids, both bundles) |
 | `lnk_discharge.R` fill laterals | measure, `linear_feature_id` | yes |
 | `lnk_habitat_validate.R:885`, `:1286` snap laterals | exact-start first, then measure DESC | yes within a blue line and group |
 | `lnk_match.R` 1:1 dedup | id, distance | **no**: ties at equal distance fell to row order. Not on the pipeline path (no caller in `R/` or `data-raw/`); fixed anyway: ends on the other side's id |
-| `lnk_log.R:682`, `lnk_scenario_export.R:273`, `lnk_habitat_validate.R:470` latest log row | group, `date_start` DESC (export adds `run_id`) | log rows of one group differ in `date_start` by construction |
+| `lnk_log.R:682`, `lnk_scenario_export.R:273`, `lnk_habitat_validate.R:470` latest log row | group, `date_start` DESC (export adds `run_id`) | measured: no group in `fresh_default.log` has two rows with one `date_start`; not guaranteed, and outside the build's output |
 
 ## Errors Encountered
 
