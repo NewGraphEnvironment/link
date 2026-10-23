@@ -21,7 +21,9 @@ should be traceable to a file here.
 | `study_area_run/<TS>_compare.{log,csv}` | `study_area_compare.R` | bcfishpass parity |
 | `study_area_run/<TS>_burn_<ws>.log` | `cypher_down.sh` | teardown + verification |
 | `bcfp_baselines.csv` | `snapshot_bcfp.sh` | which upstream bcfp build each host loaded |
-| `provincial_*/`, `methodology_delta/` | earlier orchestrators | historical runs |
+| `provincial_<issue>/` | a provincial run's hand-kept records (`provincial_246/`, `provincial_361/`, each with its README) | the launch, the wrapper log, the verifiers, the campaign's harness and verdicts |
+| `parity_<version>/` | the bcfishpass parity re-score at that link version | the prediction written before the score, the annotated cross-section, `moves.R` and its log |
+| `methodology_delta/`, older `provincial_*/` | earlier orchestrators | historical runs |
 
 `<TS>` is UTC `YYYYMMDD_HHMMSS` and is shared by every file from one run, so a
 single run's artifacts sort together.

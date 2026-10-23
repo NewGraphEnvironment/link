@@ -152,10 +152,14 @@ Harness `data-raw/logs/provincial_361/split_test.sh` + `split_compare.R`, from t
       drainage-closed assertion is skipped. On the 246 at this run's minutes (1,077 host-min):
       4 hosts 270 vs 270, 5 hosts 216 vs 231 (`provincial_361/buckets_group{4,5}.md`); `--write`
       and a bad `--atom` refuse.
-- [ ] `data-raw/study_area_wsgs.R --exact`: `lnk_wsg_resolve(expand = FALSE)`, input order kept;
+- [x] `data-raw/study_area_wsgs.R --exact`: `lnk_wsg_resolve(expand = FALSE)`, input order kept;
       `study_area_run.sh --buckets-exact` uses it for every `--focal=` list, keeps the overlap
       check (now fatal in exact mode: a group on two hosts is operator error, not a closure
-      property) and records the mode in the banner and `run_wsgs.tsv`.
+      property) and records the mode in the banner and `run_wsgs.tsv`. Proved: `--exact NATR,OKAN,TAKL`
+      keeps the order and `--exact BASH,NATR` drops BASH; `--buckets-exact --focal=OKAN,OKAN` exits 1
+      with `FATAL: --buckets-exact lists overlap on: OKAN` before anything is dispatched;
+      `--preflight-only --buckets-exact` passes and prints `buckets: exact`; `--recompute-only` refuses
+      the flag; `run_wsgs.tsv` gains `bucket_mode` (tests 296/296).
 - [x] Header comments in `study_area_buckets.R` and `study_area_run.sh`, RUNBOOK §8d "Host
       buckets are derived, not chosen", and `research/study_area_run.md` "Hosts against wall
       clock" say when each atom applies and why. (The research entry sits in the 2026-10-23 run's

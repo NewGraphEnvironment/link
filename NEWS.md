@@ -1,3 +1,14 @@
+# link 0.68.1
+
+**The province-wide `default` run is built at 0.68.0, and a drainage component can be split across hosts** ([#361](https://github.com/NewGraphEnvironment/link/issues/361)). Driver and verifier changes only; no modelling code moved.
+
+- **`fresh_default` is one `default` build of all 241 groups at 0.68.0 on fresh 0.42.0** (run `20261023_074321-24d85e8c`, 2026-10-23; the 2026-10-17 build is kept as `fresh_default_20261017`). The re-model #364 and #367 owed is done, and `lnk_habitat_validate()` accepts the schema under `default` again.
+- **Hosts can take single groups.** The Peace's 26 groups modelled on two hosts in the worst order, consolidated and recomputed, digest identical to the one-host build in everything the modelling order can reach (`data-raw/logs/provincial_361/split_verdict.md`), so `study_area_buckets.R --atom=group` packs single modelable groups and prints the makespan under both atoms; `study_area_wsgs.R --exact` resolves a list as given; `study_area_run.sh --buckets-exact` takes those lists, makes an overlap fatal and records `bucket_mode` in `<TS>_run_wsgs.tsv`. At four hosts the atoms tie on this run's minutes; group atoms pay from five.
+- **`study_area_buckets.R --minutes-schema=<schema>`** weights each group by its measured modelling minutes, and `--host-speeds` defaults to equal (the 2026-10-17 run measured the cloud hosts at the dispatcher's rate).
+- **`study_area_verify.sql` passes a run that took the #348 path.** A failed attempt keeps its log row open by design; the verifier now notes an open row a later finished row of the same group supersedes and raises only on one nothing supersedes (negative cases 6f and 6g).
+- **Two cautions measured on the way.** A build is byte-identical on one host and differs at 1e-10 m across architectures (lengths, geometry, snapped barrier positions), so "identical across hosts" is a digest after rounding. And one m1 group sat over four hours in a single statement that re-runs in 59 s on the same table; the driver bounds no statement, which is drafted as a follow-up with a scoped pre-run gate.
+- Evidence: `data-raw/logs/provincial_361/`; record: `research/study_area_run.md`.
+
 # link 0.68.0
 
 **Two builds from the same inputs give the same output, and `default` sees the dams outside BC** ([#367](https://github.com/NewGraphEnvironment/link/issues/367): [#277](https://github.com/NewGraphEnvironment/link/issues/277), [#244](https://github.com/NewGraphEnvironment/link/issues/244), [#345](https://github.com/NewGraphEnvironment/link/issues/345)). The release the next provincial `default` run is built at.

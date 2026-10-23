@@ -85,3 +85,6 @@
   reader accepts both headers), RUNBOOK §8d and the research record. Driver tests 296/296.
 - Parity run `20261023_203809` had 16 of 17 rows `link_dirty` (edits to the main repo during the run, my
   slip); schema dropped, re-run `20261023_215312-16fb3aae` launched 21:53 UTC from the worktree at `1d00c04c`.
+- Records: `data-raw/logs/provincial_361/README.md`, `data-raw/logs/README.md` campaign rows, NEWS 0.68.1 entry.
+  `habitat_validate.R` accepts `fresh_default` under `default` (ADMS; run without `--out`, which rewrote the
+  #283 directory: restored from HEAD, lesson in findings).
