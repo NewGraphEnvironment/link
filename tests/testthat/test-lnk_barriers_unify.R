@@ -192,7 +192,6 @@ test_that("every barrier id is numbered in a stated order (link#367)", {
   # same inputs could give a barrier different ids (link#277).
   src <- paste(deparse(lnk_barriers_unify), collapse = "\n")
   expect_false(grepl("row_number() OVER ()", src, fixed = TRUE))
-  expect_identical(
-    lengths(regmatches(src, gregexpr("row_number() OVER (", src, fixed = TRUE))),
-    4L)
+  n_numbered <- lengths(regmatches(src, gregexpr("row_number() OVER (", src, fixed = TRUE)))
+  expect_identical(n_numbered, 4L)
 })
