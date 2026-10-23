@@ -119,9 +119,14 @@ access view just ignores the anthropogenic rows.
 **The dams outside BC (link#367).** `cabd_additions.csv` places Grand
 Coulee / Chief Joseph (Columbia at the border, Kettle, Big and Little
 Sheep creeks) and Ross (Skagit) on the BC lines they block. bcfishpass
-loads them with a NULL passability code and never makes them crossings
-(its `load_crossings.sql` inner-joins `cabd.dams`), so the `bcfishpass`
-bundle does the same. `default` sets
+at `620dbe4` loads them with a NULL passability code and does not make
+them crossings (its `load_crossings.sql` inner-joins `cabd.dams`), so
+the `bcfishpass` bundle does the same. That is an upstream regression:
+from July 2023 they had their own `BARRIER` crossings insert, which
+stopped matching in v0.7.7 when they moved to `cabd_additions.csv`
+(NewGraphEnvironment/bcfishpass#15). Flip the bundle once upstream
+restores them; a restored insert must not reuse the `1200000000` offset,
+which `user_crossings_misc` also uses. `default` sets
 `pipeline: cabd_additions_barriers`, which gives each placeholder whose
 `barrier_ind` is true code 1, so it becomes an anthropogenic barrier.
 They are numbered `1200000001`-`5` in CSV order (`.lnk_dams_usa_sql()`,
