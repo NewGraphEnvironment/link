@@ -231,8 +231,10 @@ lnk_match <- function(conn,
       " SELECT DISTINCT ON (id_b) * FROM (",
       " SELECT DISTINCT ON (id_a) * FROM (",
       all_matches,
-      " ) raw ORDER BY id_a, distance_m",
-      " ) best_a ORDER BY id_b, distance_m"
+      # Ties at one distance end on the other side's id, so a match never
+      # depends on row order (link#367).
+      " ) raw ORDER BY id_a, distance_m, id_b",
+      " ) best_a ORDER BY id_b, distance_m, id_a"
     )
 
     n_matched <- .lnk_db_execute(conn, sql)

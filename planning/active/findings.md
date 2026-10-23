@@ -106,6 +106,31 @@ Record: `data-raw/logs/provincial_prep_367/` (README there).
 - **Main against branch** (ADMS, ELKR, NATR): accessible km identical; at most 0.094 km of spawning or rearing per species moves (ADMS CH spawning +0.088, rearing -0.009; ELKR GR +0.027; NATR GR rearing +0.094), from 1-2 extra segments per group.
 - **Harness defect, not a code one:** a race on `CREATE SCHEMA IF NOT EXISTS` between the two lanes failed the first LARL build. Rebuilt; recomputes re-run in order.
 
+## Enumeration: every ordering construct in `R/` (code-check, after round 2, 2026-10-23)
+
+Round 2 found a defect inside a fix (falls ids ordered on position alone, while a falls point in a segment overlap joins two segments), so the loop ends on an enumeration. Mechanism: **an ordering that names a row's position but not its identity, after a join that can repeat a position.** Candidate set: every `row_number()`, `DISTINCT ON` and `ORDER BY ... LIMIT` in `R/` (`grep -nE "row_number\(\)|DISTINCT ON|LIMIT [0-9%]" R/*.R`, 58 hits). Existence probes (`SELECT 1 ... LIMIT 1`, `LIMIT 0`, the skip-scan in `utils.R`) shape no output and are left out; the rest:
+
+| where | ends on | unique? |
+|---|---|---|
+| `lnk_barriers_unify.R` gradient ids | blk, measure, label | yes: no repeated position province-wide (`fresh_default`, 241 groups) |
+| `lnk_barriers_unify.R` falls ids | blk, measure, joined `linear_feature_id` | yes (fixed round 2; USIK's repeat differs in `linear_feature_id`; the other 2 repeats are identical rows) |
+| `lnk_barriers_unify.R` user-definite ids | blk, measure, joined `linear_feature_id` | yes (same join shape as falls) |
+| `lnk_barriers_unify.R` subsurface ids | blk, measure | yes: no join, no repeated position |
+| `lnk_pipeline_prepare.R:776`, `lnk_pipeline_break.R:238` `id_segment` | blk, measure | yes: one segment per position within a group |
+| `.lnk_dams_matched_sql()` inner snap / outer `DISTINCT ON (dam_id)` | distance, `linear_feature_id` / dam_id, distance, `linear_feature_id` | yes (fixed) |
+| `.lnk_dams_usa_sql()` ids | `csv_row` | yes |
+| `lnk_points_snap()` KNN | distance, `linear_feature_id` | yes (fixed) |
+| `lnk_pipeline_pscis_build.R` B-side retain | modelled id, distance, `stream_crossing_id` | rows still tied share the retained PSCIS, so the UPDATE is the same |
+| Step 3b `nearest` | PSCIS, blk, instream distance, modelled id, `linear_feature_id` | yes up to the rivers-polygon copies, which are identical rows |
+| Step 4 pick | `.lnk_pscis_pick_order` | no output-changing tie left (census) |
+| Step 4c DBSCAN dedup | ..., `stream_crossing_id` | yes (fixed) |
+| Step 4d blk/measure dedup | ..., `stream_crossing_id` | yes |
+| Step 5 xref branches | PSCIS, `branch_rank` | one row per branch per PSCIS: the xref CSV is one row per PSCIS |
+| `lnk_discharge.R` fill laterals | measure, `linear_feature_id` | yes |
+| `lnk_habitat_validate.R:885`, `:1286` snap laterals | exact-start first, then measure DESC | yes within a blue line and group |
+| `lnk_match.R` 1:1 dedup | id, distance | **no**: ties at equal distance fell to row order. Not on the pipeline path (no caller in `R/` or `data-raw/`); fixed anyway: ends on the other side's id |
+| `lnk_log.R:682`, `lnk_scenario_export.R:273`, `lnk_habitat_validate.R:470` latest log row | group, `date_start` DESC (export adds `run_id`) | log rows of one group differ in `date_start` by construction |
+
 ## Errors Encountered
 
 | Error | Resolution |
