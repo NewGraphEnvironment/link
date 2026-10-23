@@ -11,6 +11,18 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
+## Status (2026-10-23) — builds reproducible; `default` sees the dams outside BC (#367)
+
+**link 0.68.0 is the release the next provincial `default` run (#361) is built at.** Two pre-run fixes: the PSCIS pick ports bcfishpass's nearest-modelled-crossing-per-stream step that link had skipped (#277), and `default` sets `pipeline: cabd_additions_barriers`, so the five `cabd_additions` placeholders (Grand Coulee / Chief Joseph, Ross) become barriers (#244). Mechanics: RUNBOOK §2a, §2b and §8c. Evidence: `data-raw/logs/provincial_prep_367/`.
+
+**Facts not worth re-deriving:**
+- **At 0.67.0, two builds of the pick minutes apart picked a different modelled crossing for 464 PSCIS crossings; at 0.68.0, none.** ADMS and ELKR built twice are identical in every persisted table, barriers included, since barrier ids are numbered by position too.
+- **The pick change moves toward bcfishpass, and bcfishpass parity can move with it.** ADMS-wide, 656 PSCIS change modelled crossing and 56 change stream against 0.67.0; on ADMS, ELKR and NATR accessible km are unchanged and no species moves more than 0.094 km of spawning or rearing. The parity re-score after the provincial run measures the rest.
+- **bcfishpass never makes the placeholders crossings either** (`load_crossings.sql` inner-joins `cabd.dams`), so the `bcfishpass` bundle keeps them off; that is parity, not a link bug.
+- **The placeholders move only `DAM` tokens:** segments, habitat and per-species access identical; 19,065 mapping codes in LARL, KETL and SKGT go `NONE` to `DAM`. Upstream groups whose next anthropogenic barrier is a placeholder move too.
+- **Under `default`, the guard fails for groups upstream of a placeholder until KETL, LARL and SKGT are persisted at 0.68.0.** So `fresh_default` (built 2026-10-17) fails `wsg_recompute_one.R`'s error-mode check for those groups until the provincial run re-models it.
+- **#316 was measured and left out:** 15,484 km of construction lines lie in wetlands, 97 % with no width; at most 156 km would become BT rearing (comment on #316).
+
 ## Status (2026-10-21) — through-wetland lines rear through the stream door; the near-river pair is a threshold (#364)
 
 **`default` rears FWA 1050 / 1150 lines only where they would rear as a stream** (`rear_wetland_flow = stream` for BT, CH, CO, ST, WCT, CT, DV, RB), and **CH's near-river pair** (a river of at least 15 m modelled width, or 3 m³/s under `mad`, within 1 km) **applies to those lines only** (`rear_near_river = wetland_flow`). The pair lives in `parameters_habitat_thresholds.csv` (`<stage>_river_*`, fresh 0.42.0, fresh#262 / fresh#263); `lnk_rules_build()` writes no numbers, only `near_river: false` stamps, always on river-polygon rules. The `bcfishpass` bundle gives CO `rear_wetland_flow = gradient`. Mechanics: RUNBOOK §7, "Through-wetland lines and the near-river pair". Evidence: `data-raw/logs/wetland_door_364/`; write-up `research/habitat_thresholds.md`.
@@ -488,12 +500,11 @@ Inherited provenance resolved against the child dir (every inherited file
 absolute path (host-dependent), ignored the parent's `config.yaml`, and a depth-3
 chain did not load. All fixed; hashes of non-extends bundles are unchanged.
 
-**Full-run digests are not reproducible on main.** Two identical ADMS runs differ
-by one segment: the PSCIS→modelled crossing pick ties when two modelled
-candidates share a `linear_feature_id` (`R/lnk_pipeline_pscis_build.R:264-279`).
-To compare two code versions, prepare once and re-run classify/connect on the
-same schema (`data-raw/logs/habitat_thresholds_282/reclassify.R`). Issue drafted,
-awaiting body review.
+**Superseded 2026-10-23 (#367, link 0.68.0): full builds are reproducible.** What
+this said then: two identical ADMS runs differed by one segment, because the
+PSCIS→modelled crossing pick tied when two modelled candidates shared a
+`linear_feature_id`. Since 0.68.0 ADMS and ELKR built twice are identical in every
+persisted table; see the 2026-10-23 status.
 
 ## Status (2026-09-26, late) — observation pooling is data (#290); #284 step 5 unparked
 

@@ -1,3 +1,13 @@
+# link 0.68.0
+
+**Two builds from the same inputs give the same output, and `default` sees the dams outside BC** ([#367](https://github.com/NewGraphEnvironment/link/issues/367): [#277](https://github.com/NewGraphEnvironment/link/issues/277), [#244](https://github.com/NewGraphEnvironment/link/issues/244), [#345](https://github.com/NewGraphEnvironment/link/issues/345)). The release the next provincial `default` run is built at.
+
+- **The PSCIS pick is reproducible.** bcfishpass keeps only the nearest instream modelled crossing per PSCIS crossing per stream before the pick; link had skipped that step, so two modelled crossings on one feature tied and the pick fell to row order (at 0.67.0, two builds minutes apart picked a different modelled crossing for 464 PSCIS crossings). The step is ported, with tie-breaks on the modelled crossing's id. Picks move toward bcfishpass's: on ADMS, ELKR and NATR accessible km are unchanged and spawning or rearing moves by at most 0.094 km per species.
+- **Barrier ids are stable.** Gradient, falls, user-definite and subsurface barriers are numbered by position, and both nearest-stream snaps break ties on `linear_feature_id`. ADMS and ELKR built twice are identical in every persisted table.
+- **`default` treats the `cabd_additions` dams as barriers** (`pipeline: cabd_additions_barriers`; Grand Coulee / Chief Joseph and Ross, where `barrier_ind` is true). Dams never block access, so this moves only the `DAM` mapping-code token: 19,065 segments in LARL, KETL and SKGT, all `NONE` to `DAM`, and segments upstream in other groups by the same rule. The `bcfishpass` bundle keeps bcfishpass's behaviour. The downstream guard probes them through the same SQL, so under `default` a group upstream of one fails the guard until KETL, LARL and SKGT are re-modelled at this release.
+- The golden dams test pins ADMS's 7 dam ids; the eighth of the old pin left CABD upstream.
+- Evidence: `data-raw/logs/provincial_prep_367/`.
+
 # link 0.67.0
 
 **`default` rears a stretch that runs through a wetland only where it would rear as a stream: big enough, or close to a large river** ([#364](https://github.com/NewGraphEnvironment/link/issues/364)). Needs fresh 0.42.0.
