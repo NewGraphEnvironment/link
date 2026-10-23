@@ -235,3 +235,27 @@ test_that("the guard sees the cabd_additions dams only when they are barriers", 
     schema))$dam_id
   expect_true(usa_on %in% from_pipeline)
 })
+
+test_that("lnk_wsg_downstream_check passes the bundle's knob to the probe", {
+  # The probe's default (additions = FALSE) is bcfishpass's behaviour, so a
+  # caller that dropped the argument would pass every group upstream of a
+  # placeholder under `default` (link#367 review).
+  seen <- logical()
+  local_mocked_bindings(
+    .lnk_require_fwa_downstream = function(conn) invisible(TRUE),
+    .lnk_dams_blocking_downstream = function(conn, aoi, loaded, outlets,
+                                             additions = FALSE) {
+      seen <<- c(seen, additions)
+      data.frame(dam_id = character(0), dam_name_en = character(0),
+                 watershed_group_code = character(0),
+                 passability_status_code = integer(0))
+    },
+    lnk_wsg_resolve = function(...) "KOTL"
+  )
+  for (nm in c("default", "bcfishpass")) {
+    r <- lnk_wsg_downstream_check(fake_conn(), "KOTL", lnk_config(nm), list(),
+                                  outlets = stub_outlets())
+    expect_identical(r$status, "pass")
+  }
+  expect_identical(seen, c(TRUE, FALSE))
+})

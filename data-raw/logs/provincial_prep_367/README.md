@@ -10,4 +10,5 @@ The run's first LARL build into `fresh_367a` failed on a harness race (both lane
 | `knob_tables.csv` | LARL, KETL, SKGT with the placeholders as barriers or not: `streams` and every `streams_habitat_<sp>` identical; `barriers`, `streams_access` (dam flags only) and `streams_mapping_code` differ |
 | `knob_barrier_rows.csv` | the only barrier rows that differ: the five placeholders, 1200000001-5 |
 | `knob_mapping_code_changes.csv` | 19,065 segments change mapping code, every one only in the second token, `NONE` to `DAM` (BT, RB, WCT; no anadromous species is present in the three groups) |
+| `pick_repeat.md` | the pick built twice at main and twice at the branch: 464 differing picks at main, 0 at the branch; duplicate barrier positions province-wide |
 | `main_vs_branch_km.csv` | ADMS, ELKR, NATR at main and branch: +1, +1, +2 segments; accessible km identical; spawning and rearing move by at most 0.094 km per species (ADMS CH spawning +0.088, NATR GR rearing +0.094) |

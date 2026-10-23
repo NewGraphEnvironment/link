@@ -140,7 +140,9 @@ tables).
 
 **Barrier ids are positional and stated.** Each source in `lnk_barriers_unify()`
 numbers its rows by `(blue_line_key, downstream_route_measure)` (gradient also by
-label), never `row_number() OVER ()`, so two builds from the same inputs give
+label; falls and user-definite also by the joined `linear_feature_id`, because a
+point in the ~1 mm overlap of two FWA segments joins both, as one USIK falls
+does), never `row_number() OVER ()`, so two builds from the same inputs give
 every barrier the same id (link#367; verified on ADMS and ELKR).
 
 **The PSCIS pick (`.lnk_pipeline_pscis_build()`).** A PSCIS x stream candidate

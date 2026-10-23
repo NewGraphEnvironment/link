@@ -1256,3 +1256,29 @@ test_that(".lnk_cabd_additions_rows numbers cabd_additions only", {
   expect_identical(.lnk_cabd_additions_rows(df, "cabd_exclusions"), df)
   expect_null(.lnk_cabd_additions_rows(NULL))
 })
+
+test_that("lnk_pipeline_prepare passes cfg to prep_dams", {
+  # prep_dams reads the knob from cfg; with cfg NULL it falls back to
+  # bcfishpass's behaviour, so a dropped argument would leave `default`'s
+  # placeholders off the barriers with every other test green (link#367).
+  seen <- NULL
+  noop <- function(...) invisible(NULL)
+  local_mocked_bindings(
+    .lnk_pipeline_prep_load_aux = noop,
+    .lnk_pipeline_prep_observations = noop,
+    .lnk_pipeline_prep_gradient = noop,
+    .lnk_pipeline_prep_natural = noop,
+    .lnk_pipeline_prep_overrides = noop,
+    .lnk_pipeline_prep_minimal = noop,
+    .lnk_pipeline_prep_network = noop,
+    .lnk_discharge_fill_applied = function(...) FALSE,
+    .lnk_pipeline_prep_dams = function(conn, conn_tunnel, aoi, schema, loaded,
+                                       cfg = NULL) {
+      seen <<- .lnk_cabd_additions_barriers(cfg)
+      invisible(NULL)
+    }
+  )
+  lnk_pipeline_prepare(fake_conn(), "LARL", lnk_config("default"), list(),
+                       schema = "w_larl")
+  expect_true(seen)
+})

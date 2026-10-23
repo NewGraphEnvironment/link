@@ -194,4 +194,11 @@ test_that("every barrier id is numbered in a stated order (link#367)", {
   expect_false(grepl("row_number() OVER ()", src, fixed = TRUE))
   n_numbered <- lengths(regmatches(src, gregexpr("row_number() OVER (", src, fixed = TRUE)))
   expect_identical(n_numbered, 4L)
+  # Falls and user-definite rows join FWA segments, and a point in the ~1 mm
+  # overlap between two segments joins both, so their order ends on the
+  # joined linear_feature_id.
+  # deparse() writes a string's newlines as a literal backslash-n.
+  flat <- gsub("(\\\\n|\\s)+", " ", src)
+  expect_match(flat, "f.downstream_route_measure, s.linear_feature_id", fixed = TRUE)
+  expect_match(flat, "d.downstream_route_measure, s.linear_feature_id", fixed = TRUE)
 })
