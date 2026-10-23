@@ -61,18 +61,18 @@ The same issue owns the next provincial `default` run (the re-model #364 and #36
 ## Phase 1: Pack hosts on measured minutes (before the run)
 
 `data-raw/study_area_buckets.R`:
-- [ ] New `--minutes-schema=<schema>`: weight each modelable group by its newest finished `log` row
+- [x] New `--minutes-schema=<schema>`: weight each modelable group by its newest finished `log` row
       (`extract(epoch from date_end - date_start)/60`, `date_end IS NOT NULL`, newest `date_start`
       per group), median for a group with no row, and print how many took the median. Without the
       flag, the segment-count weights stay, and the report says which weighting was used.
-- [ ] `--host-speeds` default becomes equal (`1,1,…`), with the 2026-10-17 measurement in the
+- [x] `--host-speeds` default becomes equal (`1,1,…`), with the 2026-10-17 measurement in the
       comment replacing the 2026-08-31 pilot's 0.45. The report prints each host's estimated
       minutes, not only a share.
-- [ ] Generate the run's split: `LNK_LOAD=loadall Rscript data-raw/study_area_buckets.R
+- [x] Generate the run's split: `LNK_LOAD=loadall Rscript data-raw/study_area_buckets.R
       --config=default --hosts=4 --minutes-schema=fresh_default --focal=<all 246>
       > data-raw/logs/provincial_361/buckets_default.md` (stderr beside it). Record the estimated
       makespan against the component floor (Fraser 205 min).
-- [ ] Commit; push the branch (cyphers pull it).
+- [x] Commit; push the branch (cyphers pull it).
 
 ## Phase 2: The provincial `default` run (operator-attended, ~7 h wall, ~$5 cloud)
 

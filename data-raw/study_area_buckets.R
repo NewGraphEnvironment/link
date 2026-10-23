@@ -26,11 +26,16 @@
 #
 # Usage:
 #   [LNK_LOAD=loadall] Rscript data-raw/study_area_buckets.R \
-#     [--hosts=4] [--config=bcfishpass] [--focal=A,B,C] [--write]
+#     [--hosts=4] [--config=bcfishpass] [--focal=A,B,C] \
+#     [--minutes-schema=<persist schema>] [--host-speeds=1,1,1,1] [--write]
 #
-#   --hosts=N   number of hosts to pack onto (default 4: dispatcher + 3)
-#   --focal=    override the focal set (default: the baked-in 96)
-#   --write     rewrite research/study_areas.md from this run's output
+#   --hosts=N            number of hosts to pack onto (default 4: dispatcher + 3)
+#   --focal=             override the focal set (default: the baked-in 96)
+#   --minutes-schema=S   weight each group by its measured modelling minutes,
+#                        from the newest finished row per group in S.log
+#                        (link#361). Without it, by stream-segment count.
+#   --host-speeds=       relative throughput per host, dispatcher first
+#   --write              rewrite research/study_areas.md from this run's output
 #
 # Stdout is the report. Nothing is written unless --write is passed.
 
@@ -42,19 +47,27 @@ arg_val <- function(flag, default) {
 }
 n_hosts <- as.integer(arg_val("--hosts", "4"))
 config  <- arg_val("--config", "bcfishpass")
+minutes_schema <- arg_val("--minutes-schema", "")
 do_write <- "--write" %in% args
+if (nzchar(minutes_schema) && !grepl("^[A-Za-z_][A-Za-z0-9_]*$", minutes_schema)) {
+  stop("--minutes-schema must be a bare schema name, got '", minutes_schema, "'",
+       call. = FALSE)
+}
 if (is.na(n_hosts) || n_hosts < 1L) {
   stop("--hosts must be a positive integer", call. = FALSE)
 }
 
-# Relative throughput per host, dispatcher first. Default from the measured
-# dispatcher:cypher ratio of 2.23x (link#246 pilot, 2026-08-31) — 1 / 2.23 =
-# 0.45. Override with --host-speeds=1,0.45,0.45 when the fleet differs.
+# Relative throughput per host, dispatcher first. Default EQUAL. The 2026-08-31
+# pilot measured cloud hosts at 0.45x the dispatcher on one WSG, and that was
+# the default until link#361; the 241-group run of 2026-10-17 measured them at
+# about the dispatcher's rate over whole buckets (`research/study_area_run.md`,
+# "Equal packing was right"). Override with --host-speeds=1,0.45,0.45 when a
+# fleet is known to differ.
 speeds_arg <- arg_val("--host-speeds", "")
 host_speeds <- if (nzchar(speeds_arg)) {
   as.numeric(trimws(strsplit(speeds_arg, ",")[[1]]))
 } else {
-  c(1, rep(0.45, max(0L, n_hosts - 1L)))
+  rep(1, n_hosts)
 }
 if (length(host_speeds) != n_hosts || anyNA(host_speeds) ||
     any(host_speeds <= 0)) {
@@ -178,20 +191,50 @@ if (length(dup)) {
 }
 
 # --- 4. weights ------------------------------------------------------------
-# Stream-segment count per WSG is a far better proxy for modelling work than
-# a WSG count, and it is one query. Groups absent from the network table get
-# the median rather than zero, so an unknown never packs as free.
-w <- DBI::dbGetQuery(conn,
-  "SELECT watershed_group_code AS wsg, count(*)::numeric AS n
-     FROM whse_basemapping.fwa_stream_networks_sp GROUP BY 1")
-wmap <- stats::setNames(w$n, w$wsg)
-med <- stats::median(w$n)
+# Two weightings, and the report says which one was used.
+#
+# Measured minutes (--minutes-schema, link#361): each group's newest finished
+# `log` row, `date_end - date_start`. Segment count explains modelling time
+# only loosely (R^2 0.64 over 104 WSGs, study_area_run.sh's recompute_order
+# note), and it is what packed the 2026-10-17 run at 165 / 205 / 272 / 231
+# host-minutes against an even 218.
+#
+# Segment count otherwise: one query, no prior run needed. Either way a group
+# with no value takes the median rather than zero, so an unknown never packs
+# as free, and the count of such groups is printed.
+if (nzchar(minutes_schema)) {
+  w <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT DISTINCT ON (watershed_group_code)
+            watershed_group_code AS wsg,
+            extract(epoch FROM (date_end - date_start)) / 60 AS n
+       FROM %s.log
+      WHERE date_end IS NOT NULL AND date_start IS NOT NULL
+      ORDER BY watershed_group_code, date_start DESC", minutes_schema))
+  if (!nrow(w)) {
+    stop("--minutes-schema=", minutes_schema, ": no finished log rows",
+         call. = FALSE)
+  }
+  weight_unit <- "min"
+  weight_desc <- sprintf("measured modelling minutes (newest finished row per group in %s.log)",
+                         minutes_schema)
+} else {
+  w <- DBI::dbGetQuery(conn,
+    "SELECT watershed_group_code AS wsg, count(*)::numeric AS n
+       FROM whse_basemapping.fwa_stream_networks_sp GROUP BY 1")
+  weight_unit <- "segments"
+  weight_desc <- "stream-segment count (fwa_stream_networks_sp)"
+}
+wmap <- stats::setNames(as.numeric(w$n), w$wsg)
+med <- stats::median(wmap)
 weight_of <- function(wsgs) {
   v <- wmap[wsgs]
   v[is.na(v)] <- med
   sum(v)
 }
 comp_weight <- vapply(resolved, weight_of, numeric(1))
+n_unweighted <- sum(!flat %in% names(wmap))
+message(sprintf("weights: %s; %d of %d groups have no value and take the median (%.3g %s)",
+                weight_desc, n_unweighted, length(flat), med, weight_unit))
 
 # --- 5. greedy LPT pack, speed-aware ---------------------------------------
 # The hosts are NOT interchangeable. Measured 2026-08-31 on identical work,
@@ -203,7 +246,7 @@ comp_weight <- vapply(resolved, weight_of, numeric(1))
 #
 # So each component goes to the host that would COMPLETE it earliest, which is
 # LPT for heterogeneous machines. Load is accumulated in dispatcher-equivalent
-# minutes, not segments.
+# weight units (minutes under --minutes-schema), not raw segments.
 #
 # There is deliberately no relabelling step any more. The previous version
 # packed into anonymous equal-speed bins and then renamed them by descending
@@ -211,8 +254,8 @@ comp_weight <- vapply(resolved, weight_of, numeric(1))
 # because host 1 IS the dispatcher and cannot be swapped for a cypher. The
 # fast host now ends up with more work on its own, because it finishes sooner.
 ord <- order(-comp_weight)
-load_h <- rep(0, n_hosts)          # dispatcher-equivalent minutes
-seg_h  <- rep(0, n_hosts)          # raw segments, for the report
+load_h <- rep(0, n_hosts)          # dispatcher-equivalent weight (minutes if measured)
+seg_h  <- rep(0, n_hosts)          # raw weight, for the report
 assign_h <- integer(length(resolved))
 for (i in ord) {
   finish <- load_h + comp_weight[i] / host_speeds
@@ -295,16 +338,28 @@ for (i in seq_along(components)) {
 }
 
 cat("\n## Host buckets\n\n")
-cat("| host | speed | components | focal | modelable | segments | est. share |\n")
-cat("|---|---|---|---|---|---|---|\n")
+cat(sprintf("Weights: %s. %d of %d groups took the median.\n\n",
+            weight_desc, n_unweighted, length(flat)))
+cat(sprintf("| host | speed | components | focal | modelable | %s | est. load | est. share |\n",
+            weight_unit))
+cat("|---|---|---|---|---|---|---|---|\n")
 for (h in seq_len(n_hosts)) {
-  cat(sprintf("| %s | %.2fx | %d | %d | %d | %s | %.2f |\n", host_label(h),
+  cat(sprintf("| %s | %.2fx | %d | %d | %d | %s | %s | %.2f |\n", host_label(h),
               host_speeds[h], sum(assign_h == h), length(host_focal[[h]]),
-              length(host_wsgs[[h]]), format(seg_h[h], big.mark = ","),
+              length(host_wsgs[[h]]), format(round(seg_h[h]), big.mark = ","),
+              format(round(load_h[h]), big.mark = ","),
               load_h[h] / max(load_h)))
 }
-cat(sprintf("\nmakespan is set by %s; balance = %.0f%% (100%% = every host finishes together)\n",
-            host_label(which.max(load_h)), 100 * mean(load_h) / max(load_h)))
+cat(sprintf("\nmakespan is set by %s at %s %s of load; balance = %.0f%% (100%% = every host finishes together)\n",
+            host_label(which.max(load_h)), format(round(max(load_h)), big.mark = ","),
+            if (weight_unit == "min") "dispatcher-equivalent min" else "weight units",
+            100 * mean(load_h) / max(load_h)))
+if (weight_unit == "min") {
+  cat(sprintf("largest component is %s %s; an even split of the %s total over %d hosts would be %s\n",
+              format(round(max(comp_weight)), big.mark = ","), weight_unit,
+              format(round(sum(comp_weight)), big.mark = ","), n_hosts,
+              format(round(sum(comp_weight) / sum(host_speeds)), big.mark = ",")))
+}
 cat(sprintf("\ntotal modelable: %d | dropped by species presence: %d\n",
             length(flat),
             length(unique(unlist(closures))) - length(flat)))
@@ -393,12 +448,14 @@ if (do_write) {
   wr("")
   wr("## Host buckets")
   wr("")
-  wr("| host | speed | components | focal | modelable | segments | est. share |")
+  wr(sprintf("Weights: %s.", weight_desc))
+  wr("")
+  wr(sprintf("| host | speed | components | focal | modelable | %s | est. share |", weight_unit))
   wr("|---|---|---|---|---|---|---|")
   for (h in seq_len(n_hosts)) {
     wr(sprintf("| %s | %.2fx | %d | %d | %d | %s | %.2f |", host_label(h),
                host_speeds[h], sum(assign_h == h), length(host_focal[[h]]),
-               length(host_wsgs[[h]]), format(seg_h[h], big.mark = ","),
+               length(host_wsgs[[h]]), format(round(seg_h[h]), big.mark = ","),
                load_h[h] / max(load_h)))
   }
   wr("")
@@ -406,11 +463,11 @@ if (do_write) {
              length(focal), length(components), length(flat)))
   wr("")
   wr("Components are indivisible, so the packing is a greedy LPT over")
-  wr("component weights, not over WSGs. Weight is stream-segment count from")
-  wr("`fwa_stream_networks_sp`, which tracks modelling work far better than a")
-  wr("WSG count does — a one-WSG component can outweigh a three-WSG one. The")
-  wr("dispatcher is relabelled to whichever host draws the heaviest load,")
-  wr("since it is the free, fast local machine while the cyphers are paid.")
+  wr("component weights, not over WSGs. Weight is measured modelling minutes")
+  wr("when `--minutes-schema=` names a persist schema with log rows, else")
+  wr("stream-segment count from `fwa_stream_networks_sp` — a one-WSG component")
+  wr("can outweigh a three-WSG one. Each component goes to the host that would")
+  wr("finish it earliest at the given `--host-speeds` (equal by default).")
   wr("")
   wr("The component decomposition is a property of the drainage network and is")
   wr("stable; the host assignment is only as stable as the weights, so expect")
