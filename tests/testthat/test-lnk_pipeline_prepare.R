@@ -89,6 +89,11 @@ test_that(".lnk_pipeline_prep_gradient quotes aoi safely in the streams_blk quer
   expect_match(joined, "watershed_group_code = 'BULK'")
   expect_match(joined, "edge_type != 6010")
   expect_match(joined, "ADD COLUMN IF NOT EXISTS wscode_ltree ltree")
+  # A point in a segment overlap matches two segments; the lower one is
+  # named, not left to the UPDATE's join order (link#367).
+  expect_match(joined, "SELECT DISTINCT ON (g2.ctid)", fixed = TRUE)
+  expect_match(joined, "ORDER BY g2.ctid, s.downstream_route_measure, s.linear_feature_id",
+               fixed = TRUE)
   expect_no_match(joined, "DELETE FROM w.gradient_barriers_raw")
 })
 

@@ -425,14 +425,26 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
        ADD COLUMN IF NOT EXISTS wscode_ltree ltree,
        ADD COLUMN IF NOT EXISTS localcode_ltree ltree",
     schema))
+  # A point in the ~1 mm overlap of two FWA segments matches both, and an
+  # UPDATE ... FROM keeps whichever join row it meets first. Pick the lower
+  # segment by name (link#367): 3,513 gradient positions province-wide match
+  # two, 1,530 of them with different localcodes, and the lower one is what
+  # every build so far happened to take.
   .lnk_db_execute(conn, sprintf(
     "UPDATE %s.gradient_barriers_raw g
-     SET wscode_ltree = s.wscode_ltree, localcode_ltree = s.localcode_ltree
-     FROM whse_basemapping.fwa_stream_networks_sp s
-     WHERE g.blue_line_key = s.blue_line_key
-       AND g.downstream_route_measure >= s.downstream_route_measure
-       AND g.downstream_route_measure < s.upstream_route_measure",
-    schema))
+     SET wscode_ltree = m.wscode_ltree, localcode_ltree = m.localcode_ltree
+     FROM (
+       SELECT DISTINCT ON (g2.ctid) g2.ctid AS row_ctid,
+              s.wscode_ltree, s.localcode_ltree
+       FROM %s.gradient_barriers_raw g2
+       JOIN whse_basemapping.fwa_stream_networks_sp s
+         ON g2.blue_line_key = s.blue_line_key
+        AND g2.downstream_route_measure >= s.downstream_route_measure
+        AND g2.downstream_route_measure < s.upstream_route_measure
+       ORDER BY g2.ctid, s.downstream_route_measure, s.linear_feature_id
+     ) m
+     WHERE g.ctid = m.row_ctid",
+    schema, schema))
 
   invisible(NULL)
 }

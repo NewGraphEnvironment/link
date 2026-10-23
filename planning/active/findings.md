@@ -131,6 +131,17 @@ Round 2 found a defect inside a fix (falls ids ordered on position alone, while 
 | `lnk_match.R` 1:1 dedup | id, distance | **no**: ties at equal distance fell to row order. Not on the pipeline path (no caller in `R/` or `data-raw/`); fixed anyway: ends on the other side's id |
 | `lnk_log.R:682`, `lnk_scenario_export.R:273`, `lnk_habitat_validate.R:470` latest log row | group, `date_start` DESC (export adds `run_id`) | measured: no group in `fresh_default.log` has two rows with one `date_start`; not guaranteed, and outside the build's output |
 
+### Round 3: the candidate set chosen by property, not syntax
+
+Round 3 found an instance the grep could not see: `.lnk_pipeline_prep_gradient()`'s `UPDATE gradient_barriers_raw ... FROM fwa_stream_networks_sp` keeps one of two joined segments when a gradient point lies in a segment overlap (3,513 positions province-wide in `fresh_default`, 1,530 with different localcodes; every one took the lower segment so far). Fixed: the lower segment is picked by name (`DISTINCT ON (ctid) ... ORDER BY ctid, downstream_route_measure, linear_feature_id`); on ADMS, BULK and ELKR the new statement gives the same codes as the old on all 141,810 positions. The property is **any statement that keeps one of several joined rows without naming which**, so the set also covers:
+
+| construct | sites in `R/` | verdict |
+|---|---|---|
+| `UPDATE ... FROM` | 10 (counted by parsing every `UPDATE ... SET ... FROM`) | `lnk_access.R:240` joins on the segment key; `pscis_fixes` (1,387 rows, 1,387 ids) and the discharge source (one row per `linear_feature_id`, measured on ADMS / BULK / NATR with and without fill) are unique on their keys; the two id-numbering sites join on `ctid`; the rest set constants. Only the gradient site was a pick (fixed) |
+| ordered aggregates | 1 (`lnk_habitat_validate_band.R:256`, `string_agg`) | ordered (`ORDER BY` inside the aggregate) |
+| `ON CONFLICT DO NOTHING`, range joins keeping every match, DBSCAN with minpoints 1 | per round 3 | set semantics, no pick |
+| R-side `[1]`, `order()`, `duplicated()` on query results | per round 3 | keyed on unique ids, except `anth[1]` in `lnk_pipeline_access.R`, which reads fresh's `frs_network_features` array order (out of scope, noted) |
+
 ## Errors Encountered
 
 | Error | Resolution |
