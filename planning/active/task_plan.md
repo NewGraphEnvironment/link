@@ -166,7 +166,7 @@ Harness `data-raw/logs/provincial_361/split_test.sh` + `split_compare.R`, from t
 
 ## Phase 4b: Keep the component rule (if not identical)
 
-- [ ] Write the differing input into RUNBOOK §8d and `research/study_area_run.md`, with the
+- [x] Not taken: the verdict was Phase 4a. (Was: write the differing input into RUNBOOK §8d) and `research/study_area_run.md`, with the
       digest table; file nothing new unless the difference is a defect (then an issue, drafted
       for review first). `study_area_run.sh` and the buckets script keep component mode; the
       measured-minute weighting from Phase 1 stays.
@@ -196,8 +196,9 @@ Harness `data-raw/logs/provincial_361/split_test.sh` + `split_compare.R`, from t
       `NEWS.md` entry for the driver changes (0.68.1); `data-raw/logs/provincial_361/README.md`
       indexing the evidence; `data-raw/logs/README.md` rows for `provincial_<issue>/` and
       `parity_<version>/`.
-- [ ] Issue #361 body: tick the "Before the run" list, record the verdict and the run_uid; #364
-      and #367 bodies: the owed re-model is done. (Drafted; applied once the parity score is in.)
+- [x] Issue #361 body: tick the "Before the run" list, record the verdict and the run_uid; #364
+      and #367 bodies: the owed re-model is done. Applied 2026-10-23 23:00 UTC (#361 all boxes ticked plus a
+      Result section; #364 its last open box; #367, closed, a "Re-model done" line).
 - [x] `lnk_habitat_validate()` no longer refuses `fresh_default` under `default`: run
       `data-raw/habitat_validate.R --bundles=default:fresh_default --wsgs=ADMS` once as the check.
       Passed 21:56 UTC (both buffers); run without `--out=`, which rewrote `habitat_validate_283/`
@@ -222,7 +223,8 @@ Harness `data-raw/logs/provincial_361/split_test.sh` + `split_compare.R`, from t
 - [x] `/code-check branch` clean (three-round floor; the harness and driver hunks are shell). Four rounds;
       no code defect; 9 doc/evidence quantities corrected; closed by enumeration (round 4b's table, every
       quantity matched to an artifact). `planning/active/review-round{1,2,3,4b}.md`.
-- [ ] PWF checkboxes match landed work
+- [x] PWF checkboxes match landed work (every phase box ticked or reworded to what ran; the two Owed items
+      carry to the archive README)
 - [ ] `/planning-archive` on completion, then `/gh-pr-push`
 
 How each change is proved:
