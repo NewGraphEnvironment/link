@@ -36,7 +36,7 @@ The Plan review (`planning/active/review-plan.md`) disproved part of the plan; c
 - [x] Placeholders numbered in CSV order (bcfp's ids, stated), and a placeholder is a barrier only where its `barrier_ind` is true
 - [x] The `config.yaml` comment states the `DAM` change per flavour (resident: next anthropogenic barrier; anadromous: any dam downstream unless remediated)
 - [x] The persisted-`fresh.barriers` psc-NULL test removed: `default` also persists to `fresh` by default, and the new prep test covers both knob states
-- [ ] Not taken: `default_extrabreaks` / `default_rearbreaks` are `extends: ~` experiment bundles and stay off the knob
+- [x] Decided, not taken: `default_extrabreaks` / `default_rearbreaks` are `extends: ~` experiment bundles and stay off the knob
 
 ## Phase 3 — Verify on real groups (revised after review: isolate each change)
 - [x] Reproducibility (#277): ADMS and ELKR built twice at branch HEAD (`fresh_367a`, `fresh_367b`); `streams`, `barriers` and habitat identical, matching segments on start and length. Plus the in-process evidence already measured: main's code gave 464 different picks between two builds minutes apart, the branch 0
@@ -61,7 +61,7 @@ The Plan review (`planning/active/review-plan.md`) disproved part of the plan; c
 
 - [x] Tests pass (final: 968 tests, 3,800 expectations, 0 failed)
 - [x] `/code-check branch`: four rounds; rounds 2 and 4 found defects inside earlier fixes, so the loop ended on the enumeration in findings.md (every ordering construct, `UPDATE ... FROM` and measure-range join in `R/` and its readers), not on a clean round
-- [ ] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion
+- [x] PWF checkboxes match landed work
+- [x] `/planning-archive` on completion
 
 Verification: Phase 3 (two same-input builds of ADMS and ELKR diff to 0 segments; placeholder groups' mapping codes differ from `fresh_default` only in `DAM` tokens), plus the unit and DB tests in Phases 1-2.
