@@ -1,0 +1,42 @@
+=== study_area_run 20261023_202311 ===
+  run_uid:      20261023_074321-24d85e8c
+  run_label:    provincial-241-default-361
+  config:       default
+  branch:       361-provincial-run-can-a-drainage-component (cyphers run this ref)
+  persist:      fresh_default
+  cyphers:      <none> (0)
+  log dir:      /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run
+  vintage max:  7 d
+  recompute -j: 4
+  MODE:         --recompute-only (finish run_uid 20261023_074321-24d85e8c; no spend)
+=== --recompute-only: run_uid 20261023_074321-24d85e8c ===
+  pre-flight, dispatch and consolidate SKIPPED: this reads only the
+  persisted tables in fresh_default, and spins up nothing.
+  ✓ run_uid 20261023_074321-24d85e8c was built with --config=default
+  expected WSGs: 1, from --wsgs=
+  WARN: --wsgs= leaves out 240 group(s) of this run_uid (log rows or run_wsgs.tsv);
+        those upstream of a re-modelled group keep stale access: ADMS,ALBN,ATLL,ATNA,BABL,BABR,BARR,BBAR,BEAV,BELA,BIGC,BLAR,BLUR,BONP,BOWR,BRID,BRKS,BULK,BULL,CAMB,CANO,CARP,CARR,CHES,CHIL,CHIR,CHWK,CLAY,CLRH,CLWR,COAL,COLR,COMX,COTR,COWN,CRKD,CRYL,DEAD,DEAL,DEAR,DOGC,DRIR,DUNC,DUNE,ELKR,EUCH,EUCL,FINA,FINL,FIRE,FONT,FOXR,FRAN,FRCN,FROG,GATA,GLAR,GOLD,GRAI,GRNL,GUIC,HARR,HERR,HOLB,HOMA,HORS,INGR,INKR,ISKR,JENR,JERV,KAHN,KAKC,KEEC,KETL,KHOR,KHTZ,KINR,KISK,KISP,KITL,KITR,KLAR,KLIN,KLUM,KNIG,KOTL,KOTR,KSHR,KTSU,KUMR,KUSR,LARL,LBIR,LBTN,LCHL,LCHR,LDEN,LEUT,LFRA,LFRT,LHAF,LIAR,LILL,LISR,LKEC,LKEL,LMUS,LNAR,LNIC,LNRS,LNTH,LOMI,LPCE,LPET,LPRO,LRAN,LRDO,LSAL,LSIK,LSKE,LSTR,LTRE,MAHD,MBNK,MCGR,MDEA,MESC,MESI,MFRA,MFRT,MIDR,MILL,MMUS,MORI,MORK,MORR,MPRO,MSKE,MSTR,MURR,MURT,MUSK,NAHR,NAKR,NARC,NASC,NASR,NATR,NAZR,NBNK,NECL,NECR,NEVI,NICL,NIEL,NIMP,OSPK,OWIK,PARA,PARK,PARS,PCEA,PINE,PITR,PORI,QUES,REVL,SAHD,SAJR,SALM,SALR,SANJ,SETN,SEYM,SHER,SHUL,SIML,SKGT,SLOC,SMAR,SMOK,SPAT,SQAM,STHM,STIR,STUL,STUR,SUST,SWIR,TABR,TAHR,TAHS,TAKL,TASR,TATR,TAYR,TESR,THOM,TOAD,TOBA,TOOD,TSAY,TSEA,TSIT,TURN,TUTR,TUYR,TWAC,UARL,UBIR,UBTN,UCHR,UDEN,UEUT,UFRA,UFRT,UHAF,UISR,UJER,UKEC,ULRD,UMUS,UNAR,UNRS,UNTH,UNUR,UOMI,UPCE,UPET,UPRO,USHU,USIK,USKE,USTK,UTRE,VICT,WILL,WORC,ZYMO
+=== verify WSG coverage in fresh_default (run_uid 20261023_074321-24d85e8c) ===
+  1/1 run WSGs have rows from a build this run finished
+  classes: /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261023_202311_coverage.tsv
+=== post-consolidate recompute (lnk_access, 1 WSGs, -j4) ===
+  ✓ log tables present in fresh_default
+  ✓ barrier views built once for fresh_default
+  ordering 241 known WSG time(s) longest-first (median 2.63 min for the rest)
+[fanout] recompute - OK: 1/1 job(s) succeeded
+  ✓ recompute: 1/1 WSGs
+=== compare (tunnel-free) ===
+  ✓ compare CSV: /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261023_202311_compare.csv
+=== summary ===
+  run WSGs:        OKAN
+  recomputed WSGs: OKAN
+  compare CSV: /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261023_202311_compare.csv
+[study_area_compare] 3 rows across 1/1 WSGs -> /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261023_202311_compare.csv
+# A tibble: 3 × 7
+  wsg   species total_segs match_pct n_diffs top_pattern       top_pattern_count
+* <chr> <chr>        <int>     <dbl>   <int> <chr>                         <int>
+1 OKAN  BT           32204      89.9    3251 "ACCESS;MODELLED…               668
+2 OKAN  CH           32204      92.1    2555 "REAR;DAM | ACCE…               903
+3 OKAN  SK           32204      93.0    2249 "SPAWN;DAM | ACC…               660
+=== study_area_run done ===
+  ✓ redacted host addresses in 7 log file(s)

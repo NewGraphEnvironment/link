@@ -84,19 +84,29 @@ The same issue owns the next provincial `default` run (the re-model #364 and #36
       after checking no process holds it (`pg_stat_activity`) and disk (`df` on the colima
       volume: 174 G free, not the ~253 G the plan assumed). Done 2026-10-23 07:41 UTC, after the
       other session's two jobs exited at 07:40 UTC; no backend held the schema.
-- [ ] Launch detached (`nohup … & disown`, never a tool-managed background process) with the
+- [x] Launch detached (`nohup … & disown`, never a tool-managed background process) with the
       four `--focal=` lines from `buckets_default.md`, `--config=default --schema=fresh_default
       --run-label=provincial-241-default-361 --recompute-jobs=8 --refresh-primitives`.
       Cyphers are re-prepped on spin by `cypher_prep.sh` (installs link + fresh from the
       DESCRIPTION pin and asserts `lnk_preflight_fresh()`); the host-parity gate confirms it
-      before any write. Nothing in the repo is touched while it runs.
-- [ ] Watch it against the clock (`date -u`; `data-raw/progress_check.sh`; each host's database
+      before any write. Nothing in the repo is touched while it runs. Launched 07:43:21 UTC
+      2026-10-23, run_uid `20261023_074321-24d85e8c` (attempt 1 at 07:42:33 refused by bash 3.2,
+      no spend; `launch.sh` fixed in `1d00c04c`).
+- [x] Watch it against the clock (`date -u`; `data-raw/progress_check.sh`; each host's database
       count, never log text). On a failed group: `--recompute-only --run-uid=<uid>` after the
-      re-model, per RUNBOOK §8d.
-- [ ] Verify: `study_area_verify.sql` and `data-raw/logs/provincial_246/verify_extra.sql` with
+      re-model, per RUNBOOK §8d. Cloud legs 249 / 264 / 259 min wall; m1 560 min wall for 306 of
+      modelling: KTSU 65.4 min and OKAN stalled 4 h in one statement, cancelled 13:30 UTC under an
+      operator-approved 30 min role statement timeout (reset after the run). OKAN re-modelled under
+      the run_uid (7.6 min) and finished with `--recompute-only --wsgs=OKAN` (no group drains through it).
+- [x] Verify: `study_area_verify.sql` and `data-raw/logs/provincial_246/verify_extra.sql` with
       `-v schema=fresh_default -v run_uid=<uid> -v expected_n=241`; one link SHA in `log` and
-      `log_recompute`; the `kept_hosts.tsv` empty; cyphers burned.
-- [ ] Copy the wrapper logs to `data-raw/logs/provincial_361/` (`run.log`, `run_verify*.log`).
+      `log_recompute`; the `kept_hosts.tsv` empty; cyphers burned. Both pass at 241 (`run_verify.log`,
+      `run_verify_extra.log`); `1d00c04c` on all 241 + 241 rows, `link_dirty` f; no `kept_hosts.tsv`;
+      cyphers burned (0 tofu resources each). The verifier was patched so OKAN's failed attempt, superseded
+      by its finished row, is a NOTICE (negative cases 6f/6g; `verify_negative.log` 17/17).
+- [x] Copy the wrapper logs to `data-raw/logs/provincial_361/` (`run.log`, `run_verify*.log`), plus
+      `run_attempt1_bash32.log`, `okan_remodel.log`, `okan_recompute.log`, `verify_negative.log`;
+      addresses redacted by hand (the driver's trap covers only `study_area_run/<TS>_*`).
 
 ## Phase 3: The split test (m1, after the run, ~2 h)
 

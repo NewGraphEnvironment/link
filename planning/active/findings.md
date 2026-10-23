@@ -65,3 +65,57 @@ Relates to #246, #274, #364.
 
 | Error | Resolution |
 |-------|------------|
+
+## The run (2026-10-23, run_uid `20261023_074321-24d85e8c`)
+
+| stage | UTC | minutes |
+|---|---|---|
+| snapshot, spin, prep, host parity | 07:43–08:02 | 19 |
+| modelling, cloud (job1 / job2 / job3) | 08:02–12:12 / 12:27 / 12:22 | 249 / 264 / 259 wall; 247 / 260 / 257 modelling |
+| modelling, m1 (73 of 74) | 08:02–17:23 | 560 wall; 306 modelling; OKAN stall 09:19–13:30 |
+| consolidate (167 groups) | 17:24–18:06 | 42 |
+| burn, coverage | 18:06 | <1 |
+| recompute, 240 groups, `-j8` | 18:06–19:57 | 110 (longest LFRA 22.7, FRCN 17.9, SETN 16.5) |
+| compare | 19:57–20:02 | 5 |
+| OKAN re-model, then `--recompute-only --wsgs=OKAN` | 20:15–20:22, 20:23–20:25 | 7.6, 3 |
+
+Phase 1's packing estimated about 218 min per host; the cloud hosts ran 13–19 % over it and m1, net of KTSU's
+excess and the stall, about 10 % over. Cloud idle after each leg: 5.1 / 4.8 / 5.0 h (→ #369). Provenance: 241
+`log` rows and 241 `log_recompute` rows at link `1d00c04c`, `link_dirty` f, fresh `e9793047`, one config_hash;
+OKAN also keeps its failed row (date_end NULL, "run failed or interrupted").
+
+### The KTSU / OKAN stall
+
+- KTSU 08:07–09:13 UTC (65.4 min; 1.3 on 2026-10-17). OKAN 09:19 UTC → cancelled 13:30 inside
+  `CREATE TEMP TABLE pg_temp.frs_near_river_walk AS …` (fresh 0.42.0 `.frs_near_river_walk_sql()`, cw 15 m /
+  1000 m), three parallel workers attached at the cancel.
+- Re-run after the run on the working tables the run left (`walk_<wsg>_explain_analyze.out`, scratch): HOLB 2.7 s
+  (229,774 origin × main-stem pairs), KTSU 3.0 s (220,649), OKAN 58.9 s (3,228,956 pairs; 6,597 origins kept).
+  The plan shape equals the EXPLAIN taken during the run: the planner estimates 44 rows; a nested loop over
+  main-stem rows with a BitmapAnd of the geom GiST and the wscode GiST / blk indexes (`FWA_Downstream` is
+  `LANGUAGE sql IMMUTABLE`, so it inlines and the ltree index is used); the per-row EXISTS on `blk_drm`; the
+  polygon subplan 2,181 loops. The indexes exist at walk time (`.frs_index_working()` runs before
+  `frs_near_river()` in `frs_habitat_classify()`).
+- Pair counts do not order the cost: LFRA (about 105 M bbox pairs) ran 6.6 min; KTSU (7 M) 65 min.
+- Context: both ran in the first 5.5 h after `--refresh-primitives` reloaded the primitives (07:43–08:02), while
+  another session's jobs read `fresh_default_20261017`; the 54 m1 groups after 13:30 ran at the 2026-10-17 pace
+  with that session still running. PG log 09:00–13:40: autovacuum "skipping vacuum of streams — lock not available"
+  at 10:26 and 10:52, nothing else. Mechanism not identified; not reproducible in isolation. No fresh issue filed.
+- OKAN's re-model under the same code took 7.6 min (2.8 on 2026-10-17), with the walk inside it.
+
+### The verifier and a failed-then-finished group
+
+`.lnk_log_run_fail()` leaves `date_end` NULL on purpose (three states: finished; failed with notes; killed with
+nothing). `study_area_verify.sql` raised on any open row of the run_uid, so a run that took the #348 path (fail,
+re-model by hand under the run_uid, `--recompute-only`) could never pass. 2026-10-17 did not meet it because KITR
+and UPET failed before their log rows opened. Patched 2026-10-23: open rows a later finished row supersedes are
+a NOTICE; the rest still raise; negative cases 6f and 6g prove both.
+
+## Errors Encountered
+
+| Error | Resolution |
+|-------|------------|
+| `bash 3.2.57 is too old` from `launch.sh` under nohup | `exec "$BASH" …` re-execs the driver under the launching bash (`1d00c04c`) |
+| OKAN: one statement ran > 4 h; the driver bounds no statement | role `statement_timeout = '30min'` + `pg_cancel_backend` (operator-approved), reset after the run; driver-side bound drafted as a follow-up |
+| `pgrep -f 'wsg_run_one.R OKAN'` found no process | Rscript's argv is `--file=… --args OKAN`; match `wsg_run_one[.]R --args OKAN` |
+| `study_area_verify.sql`: "1 modelling row(s) started and never finished" with every group finished | the failed attempt's open row; verifier now distinguishes superseded from unfinished |

@@ -1,0 +1,646 @@
+NOTICE:  schema "fresh_default" already exists, skipping
+
+NOTICE:  relation "log" already exists, skipping
+
+NOTICE:  column "run_id" of relation "log" already exists, skipping
+
+NOTICE:  column "watershed_group_code" of relation "log" already exists, skipping
+
+NOTICE:  column "date_start" of relation "log" already exists, skipping
+
+NOTICE:  column "date_end" of relation "log" already exists, skipping
+
+NOTICE:  column "run_uid" of relation "log" already exists, skipping
+
+NOTICE:  column "run_label" of relation "log" already exists, skipping
+
+NOTICE:  column "host" of relation "log" already exists, skipping
+
+NOTICE:  column "config_name" of relation "log" already exists, skipping
+
+NOTICE:  column "config_hash" of relation "log" already exists, skipping
+
+NOTICE:  column "config_drift" of relation "log" already exists, skipping
+
+NOTICE:  column "link_version" of relation "log" already exists, skipping
+
+NOTICE:  column "link_sha" of relation "log" already exists, skipping
+
+NOTICE:  column "link_dirty" of relation "log" already exists, skipping
+
+NOTICE:  column "fresh_version" of relation "log" already exists, skipping
+
+NOTICE:  column "fresh_sha" of relation "log" already exists, skipping
+
+NOTICE:  column "fresh_dirty" of relation "log" already exists, skipping
+
+NOTICE:  column "fresh_sha_source" of relation "log" already exists, skipping
+
+NOTICE:  column "crate_version" of relation "log" already exists, skipping
+
+NOTICE:  column "fwapg_sha" of relation "log" already exists, skipping
+
+NOTICE:  column "bcfishobs_sha" of relation "log" already exists, skipping
+
+NOTICE:  column "arg_dams" of relation "log" already exists, skipping
+
+NOTICE:  column "arg_mapping_code" of relation "log" already exists, skipping
+
+NOTICE:  column "arg_cleanup_working" of relation "log" already exists, skipping
+
+NOTICE:  column "discharge_fill" of relation "log" already exists, skipping
+
+NOTICE:  column "discharge_source" of relation "log" already exists, skipping
+
+NOTICE:  column "near_river" of relation "log" already exists, skipping
+
+NOTICE:  column "schema_persist" of relation "log" already exists, skipping
+
+NOTICE:  column "species" of relation "log" already exists, skipping
+
+NOTICE:  column "wsg_upstream" of relation "log" already exists, skipping
+
+NOTICE:  column "bcfp_model_run_id" of relation "log" already exists, skipping
+
+NOTICE:  column "bcfp_model_version" of relation "log" already exists, skipping
+
+NOTICE:  column "bcfp_pin_source" of relation "log" already exists, skipping
+
+NOTICE:  column "habitat_gate_n" of relation "log" already exists, skipping
+
+NOTICE:  column "habitat_gate_km" of relation "log" already exists, skipping
+
+NOTICE:  column "habitat_gate_lifted" of relation "log" already exists, skipping
+
+NOTICE:  column "habitat_gate_species" of relation "log" already exists, skipping
+
+NOTICE:  column "notes" of relation "log" already exists, skipping
+
+NOTICE:  relation "log_recompute" already exists, skipping
+
+NOTICE:  column "recompute_id" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "watershed_group_code" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "date_start" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "date_end" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "run_uid" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "run_label" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "host" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "config_name" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "config_hash" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "link_version" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "link_sha" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "link_dirty" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "fresh_version" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "fresh_sha" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "fresh_dirty" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "fresh_sha_source" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "crate_version" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "fwapg_sha" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "bcfishobs_sha" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "schema_persist" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "species" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "views_prebuilt" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "habitat_gate_n" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "habitat_gate_km" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "habitat_gate_lifted" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "habitat_gate_species" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "notes" of relation "log_recompute" already exists, skipping
+
+NOTICE:  relation "log_input" already exists, skipping
+
+NOTICE:  column "run_id" of relation "log_input" already exists, skipping
+
+NOTICE:  column "watershed_group_code" of relation "log_input" already exists, skipping
+
+NOTICE:  column "table_name" of relation "log_input" already exists, skipping
+
+NOTICE:  column "row_count" of relation "log_input" already exists, skipping
+
+NOTICE:  column "row_count_estimated" of relation "log_input" already exists, skipping
+
+NOTICE:  column "size_bytes" of relation "log_input" already exists, skipping
+
+NOTICE:  column "last_analyze" of relation "log_input" already exists, skipping
+
+NOTICE:  column "source" of relation "log_input" already exists, skipping
+
+NOTICE:  column "source_at" of relation "log_input" already exists, skipping
+
+NOTICE:  column "artifact_url" of relation "log_input" already exists, skipping
+
+NOTICE:  column "artifact_kind" of relation "log_input" already exists, skipping
+
+NOTICE:  column "artifact_version_id" of relation "log_input" already exists, skipping
+
+NOTICE:  column "artifact_etag" of relation "log_input" already exists, skipping
+
+NOTICE:  column "artifact_last_modified" of relation "log_input" already exists, skipping
+
+NOTICE:  column "artifact_loaded_at" of relation "log_input" already exists, skipping
+
+NOTICE:  column "artifact_recorded_by" of relation "log_input" already exists, skipping
+
+NOTICE:  column "table_comment" of relation "log_input" already exists, skipping
+
+NOTICE:  relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "config_hash" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "species_code" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "access_gradient_max" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "spawn_gradient_min" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "rear_gradient_min" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "cluster_rearing" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "cluster_direction" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "cluster_bridge_gradient" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "cluster_bridge_distance" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "cluster_confluence_m" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "cluster_spawning" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "cluster_spawn_direction" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "cluster_spawn_bridge_gradient" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "cluster_spawn_bridge_distance" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "cluster_spawn_confluence_m" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "observation_threshold" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "observation_date_min" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "observation_buffer_m" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "observation_species" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "observation_control_apply" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "config_hash" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "species_code" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "spawn_gradient_max" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "spawn_channel_width_min" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "spawn_channel_width_max" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "spawn_mad_min" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "spawn_mad_max" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_gradient_max" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_channel_width_min" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_channel_width_max" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_mad_min" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_mad_max" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_lake_ha_min" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "spawn_edge_types" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_edge_types" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "spawn_river_measure" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "spawn_river_discharge_min" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "spawn_river_channel_width_min" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "spawn_river_stream_order_min" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "spawn_river_distance_max" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_river_measure" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_river_discharge_min" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_river_channel_width_min" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_river_stream_order_min" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_river_distance_max" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "config_hash" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "species" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "spawn_lake" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "spawn_stream" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "spawn_stream_in_waterbody" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_lake" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_lake_only" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_lake_area_only" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_no_fw" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_stream" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_stream_in_waterbody" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_wetland" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_wetland_polygon" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_wetland_area_only" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_wetland_flow" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_near_river" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_all_edges" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "river_skip_cw_min" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_stream_order_bypass" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_stream_order_parent_min" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_stream_order_child_min" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_stream_order_child_max" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_stream_order_distance_max" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "spawn_requires_connected" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "spawn_connected_distance_max" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "spawn_connected_direction" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "spawn_connected_gradient_max" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "spawn_connected_cw_min" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "spawn_connected_edge_types" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "spawn_connected_lake_adjacent" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_requires_connected" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_connected_distance_max" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_lake_ha_min" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_wetland_ha_min" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_lake_connected_distance_max" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_wetland_connected_distance_max" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "notes" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  relation "log_wsg_date_idx" already exists, skipping
+
+NOTICE:  relation "log_config_idx" already exists, skipping
+
+NOTICE:  relation "log_input_rn_idx" already exists, skipping
+
+NOTICE:  relation "log_run_uid_idx" already exists, skipping
+
+NOTICE:  relation "log_rc_run_uid_idx" already exists, skipping
+
+NOTICE:  relation "log_rc_wsg_date_idx" already exists, skipping
+
+[10:23:11] backup local fresh_default -> /tmp/fresh_default_pre_consolidate_202610231023.dump (provenance.source_artifact is not in it: after restoring, re-run snapshot_bcfp.sh --force so the load records match the tables)
+[10:24:48] cypher@<host> -> DELETE bucket (57 WSGs) from 17 tables; 3 log tables keep their history
+[10:24:49] cypher@<host> -> COPY (bucket-filtered) for 20 tables
+COPY 6938
+COPY 2027430
+CREATE TABLE AS
+COPY 57
+DELETE 0
+INSERT 0 57
+CREATE TABLE AS
+COPY 684
+DELETE 0
+INSERT 0 684
+CREATE TABLE AS
+COPY 0
+DELETE 0
+INSERT 0 0
+COPY 2942589
+COPY 2942589
+COPY 2136228
+COPY 1129087
+COPY 785041
+COPY 1192029
+COPY 1686787
+COPY 164137
+COPY 785041
+COPY 2892000
+COPY 805492
+COPY 1156365
+COPY 0
+COPY 2942589
+COPY 165088
+[10:37:31] cypher@<host> -> DELETE bucket from source (post-COPY cleanup)
+DELETE 6938
+DELETE 2027430
+DELETE 57
+DELETE 684
+DELETE 0
+DELETE 2942589
+DELETE 2942589
+DELETE 2136228
+DELETE 1129087
+DELETE 785041
+DELETE 1192029
+DELETE 1686787
+DELETE 164137
+DELETE 785041
+DELETE 2892000
+DELETE 805492
+DELETE 1156365
+DELETE 0
+DELETE 2942589
+DELETE 165088
+[10:38:08] cypher@<host> -> DELETE bucket (68 WSGs) from 17 tables; 3 log tables keep their history
+[10:38:09] cypher@<host> -> COPY (bucket-filtered) for 20 tables
+COPY 4761
+COPY 2126549
+CREATE TABLE AS
+COPY 68
+DELETE 0
+INSERT 0 68
+CREATE TABLE AS
+COPY 816
+DELETE 0
+INSERT 0 816
+CREATE TABLE AS
+COPY 0
+DELETE 0
+INSERT 0 0
+COPY 3260139
+COPY 3260139
+COPY 1933304
+COPY 890274
+COPY 630252
+COPY 719512
+COPY 2243768
+COPY 0
+COPY 417088
+COPY 2287859
+COPY 715947
+COPY 723414
+COPY 102101
+COPY 3260139
+COPY 137535
+[10:52:05] cypher@<host> -> DELETE bucket from source (post-COPY cleanup)
+DELETE 4761
+DELETE 2126549
+DELETE 68
+DELETE 816
+DELETE 0
+DELETE 3260139
+DELETE 3260139
+DELETE 1933304
+DELETE 890274
+DELETE 630252
+DELETE 719512
+DELETE 2243768
+DELETE 0
+DELETE 417088
+DELETE 2287859
+DELETE 715947
+DELETE 723414
+DELETE 102101
+DELETE 3260139
+DELETE 137535
+[10:52:42] cypher@<host> -> DELETE bucket (42 WSGs) from 17 tables; 3 log tables keep their history
+[10:52:44] cypher@<host> -> COPY (bucket-filtered) for 20 tables
+COPY 16962
+COPY 1876376
+CREATE TABLE AS
+COPY 42
+DELETE 0
+INSERT 0 42
+CREATE TABLE AS
+COPY 504
+DELETE 0
+INSERT 0 504
+CREATE TABLE AS
+COPY 0
+DELETE 0
+INSERT 0 0
+COPY 2510948
+COPY 2510948
+COPY 2082011
+COPY 1365757
+COPY 907441
+COPY 1398051
+COPY 283990
+COPY 109951
+COPY 814439
+COPY 2493133
+COPY 1156011
+COPY 1380236
+COPY 986495
+COPY 2510948
+COPY 197114
+[11:05:35] cypher@<host> -> DELETE bucket from source (post-COPY cleanup)
+DELETE 16962
+DELETE 1876376
+DELETE 42
+DELETE 504
+DELETE 0
+DELETE 2510948
+DELETE 2510948
+DELETE 2082011
+DELETE 1365757
+DELETE 907441
+DELETE 1398051
+DELETE 283990
+DELETE 109951
+DELETE 814439
+DELETE 2493133
+DELETE 1156011
+DELETE 1380236
+DELETE 986495
+DELETE 2510948
+DELETE 197114
+[11:06:08] verify destination tables in schema 'fresh_default'
+                                 tbl     rows
+1                  barrier_overrides    42504
+2                           barriers  7692405
+3                                log      241
+4                     log_dimensions       13
+5                          log_input     2892
+6               log_parameters_fresh       13
+7  log_parameters_habitat_thresholds       11
+8                      log_recompute        0
+9                            streams 11319212
+10                    streams_access 11319212
+11                streams_habitat_bt  8338004
+12                streams_habitat_ch  5688824
+13                streams_habitat_cm  2913907
+14                streams_habitat_co  4919351
+15                streams_habitat_gr  4214545
+16                streams_habitat_ko   274088
+17                streams_habitat_pk  3054738
+18                streams_habitat_rb 10262055
+19                streams_habitat_sk  4090041
+20                streams_habitat_st  4142720
+21               streams_habitat_wct  1190140
+22              streams_mapping_code 11319212
+23                streams_near_river   804801
+$sources
+$sources$`cypher@<host>`
+$sources$`cypher@<host>`$ok
+[1] TRUE
+
+$sources$`cypher@<host>`$stage
+[1] "complete"
+
+$sources$`cypher@<host>`$pre_rows
+[1] 22513699
+
+$sources$`cypher@<host>`$post_rows
+[1] 46273870
+
+$sources$`cypher@<host>`$copied
+ [1] "barrier_overrides"    "barriers"             "log"                 
+ [4] "log_input"            "log_recompute"        "streams"             
+ [7] "streams_access"       "streams_habitat_bt"   "streams_habitat_ch"  
+[10] "streams_habitat_cm"   "streams_habitat_co"   "streams_habitat_gr"  
+[13] "streams_habitat_ko"   "streams_habitat_pk"   "streams_habitat_rb"  
+[16] "streams_habitat_sk"   "streams_habitat_st"   "streams_habitat_wct" 
+[19] "streams_mapping_code" "streams_near_river"  
+
+$sources$`cypher@<host>`$errored
+character(0)
+
+$sources$`cypher@<host>`$skipped_source_only
+character(0)
+
+$sources$`cypher@<host>`$skipped_dest_only
+character(0)
+
+
+$sources$`cypher@<host>`
+$sources$`cypher@<host>`$ok
+[1] TRUE
+
+$sources$`cypher@<host>`$stage
+[1] "complete"
+
+$sources$`cypher@<host>`$pre_rows
+[1] 46273870
+
+$sources$`cypher@<host>`$post_rows
+[1] 68987535
+
+$sources$`cypher@<host>`$copied
+ [1] "barrier_overrides"    "barriers"             "log"                 
+ [4] "log_input"            "log_recompute"        "streams"             
+ [7] "streams_access"       "streams_habitat_bt"   "streams_habitat_ch"  
+[10] "streams_habitat_cm"   "streams_habitat_co"   "streams_habitat_gr"  
+[13] "streams_habitat_ko"   "streams_habitat_pk"   "streams_habitat_rb"  
+[16] "streams_habitat_sk"   "streams_habitat_st"   "streams_habitat_wct" 
+[19] "streams_mapping_code" "streams_near_river"  
+
+$sources$`cypher@<host>`$errored
+character(0)
+
+$sources$`cypher@<host>`$skipped_source_only
+character(0)
+
+$sources$`cypher@<host>`$skipped_dest_only
+character(0)
+
+
+$sources$`cypher@<host>`
+$sources$`cypher@<host>`$ok
+[1] TRUE
+
+$sources$`cypher@<host>`$stage
+[1] "complete"
+
+$sources$`cypher@<host>`$pre_rows
+[1] 68987535
+
+$sources$`cypher@<host>`$post_rows
+[1] 91588892
+
+$sources$`cypher@<host>`$copied
+ [1] "barrier_overrides"    "barriers"             "log"                 
+ [4] "log_input"            "log_recompute"        "streams"             
+ [7] "streams_access"       "streams_habitat_bt"   "streams_habitat_ch"  
+[10] "streams_habitat_cm"   "streams_habitat_co"   "streams_habitat_gr"  
+[13] "streams_habitat_ko"   "streams_habitat_pk"   "streams_habitat_rb"  
+[16] "streams_habitat_sk"   "streams_habitat_st"   "streams_habitat_wct" 
+[19] "streams_mapping_code" "streams_near_river"  
+
+$sources$`cypher@<host>`$errored
+character(0)
+
+$sources$`cypher@<host>`$skipped_source_only
+character(0)
+
+$sources$`cypher@<host>`$skipped_dest_only
+character(0)
+
+
+
+$tables
+ [1] "barrier_overrides"                 "barriers"                         
+ [3] "log"                               "log_dimensions"                   
+ [5] "log_input"                         "log_parameters_fresh"             
+ [7] "log_parameters_habitat_thresholds" "log_recompute"                    
+ [9] "streams"                           "streams_access"                   
+[11] "streams_habitat_bt"                "streams_habitat_ch"               
+[13] "streams_habitat_cm"                "streams_habitat_co"               
+[15] "streams_habitat_gr"                "streams_habitat_ko"               
+[17] "streams_habitat_pk"                "streams_habitat_rb"               
+[19] "streams_habitat_sk"                "streams_habitat_st"               
+[21] "streams_habitat_wct"               "streams_mapping_code"             
+[23] "streams_near_river"               
+

@@ -1,0 +1,137 @@
+=== study_area_run 20261023_074321 ===
+  run_uid:      20261023_074321-24d85e8c
+  run_label:    provincial-241-default-361
+  config:       default
+  branch:       361-provincial-run-can-a-drainage-component (cyphers run this ref)
+  persist:      fresh_default
+  cyphers:      job1 job2 job3 (3)
+  log dir:      /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run
+  vintage max:  7 d
+  recompute -j: 8
+=== --refresh-primitives: snapshot_bcfp.sh --with-bcfp-views --force ===
+  ✓ primitives refreshed (see /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261023_074321_snapshot.log)
+=== pre-flight (local; pre-spend) ===
+  ✓ dispatcher fresh exports what the pipeline calls
+  ✓ origin/361-provincial-run-can-a-drainage-component is at HEAD
+  ✓ fwapg_sha 6d48dabf9a52 (exported to all hosts)
+  ✓ bcfishobs_sha 08630cf4ac14 (exported to all hosts)
+  ✓ fresh_sha e9793047cc8f (clean)
+  ✓ bcfp reference pinned at v0.7.15-50-g620dbe4 (exported to all hosts)
+    ok   discharge (fwapg) loaded: whse_basemapping.fwa_stream_networks_discharge
+  ✓ discharge (fwapg) loaded on the dispatcher
+    [preflight] primitive vintage (window 7 d) - OK, oldest 0.0 d (whse_fish.pscis_assessment_svw) [judged by load stamp: 4, statistics: 0, none: 0]
+  ✓ dispatcher primitives within 7 d
+  ✓ doctl token valid (DO API reachable)
+  ✓ tofu do_token valid (HTTP 200 /v2/account)
+  ✓ tofu s3 backend reachable
+  ✓ pre-flight clean (tunnel-free)
+=== resolve drainage-closed DS-first buckets ===
+  dispatcher (focal=ADMS,BBAR,BIGC,BLAR,BONP,BOWR,BRID,CARR,CHES,CHIL,CHIR,CHWK,CLWR,COTR,DEAD,DOGC,DRIR,EUCH,EUCL,FRAN,FRCN,GRNL,GUIC,HARR,HERR,HOLB,HORS,KHTZ,KTSU,LCHL,LCHR,LEUT,LFRA,LILL,LNIC,LNRS,LNTH,LSAL,LTRE,MAHD,MCGR,MFRA,MIDR,MORK,MURT,MUSK,NARC,NAZR,NECR,NICL,OKAN,QUES,SAJR,SALR,SETN,SEYM,SHUL,STHM,STUL,STUR,TABR,TAKL,TASR,THOM,TWAC,UCHR,UEUT,UFRA,UNRS,UNTH,UNUR,USHU,UTRE,WILL): HOLB,KHTZ,KTSU,LFRA,OKAN,SEYM,UNUR,HARR,CHWK,FRCN,LILL,SETN,THOM,BBAR,BONP,DEAD,LNIC,LNTH,STHM,ADMS,CLWR,DOGC,GRNL,GUIC,NICL,SHUL,UNTH,MAHD,MFRA,MURT,USHU,BRID,LCHR,TWAC,BIGC,CHIR,NARC,SAJR,UCHR,COTR,QUES,TASR,BLAR,CARR,HORS,TABR,EUCH,EUCL,LCHL,LSAL,MORK,NAZR,WILL,BOWR,CHIL,MCGR,MUSK,NECR,SALR,STUR,UFRA,CHES,FRAN,HERR,STUL,LNRS,LTRE,LEUT,UTRE,MIDR,UEUT,UNRS,TAKL,DRIR
+  cy[job1] (focal=CAMB,CARP,COMX,COWN,CRKD,FINA,FINL,FIRE,FOXR,GRAI,INGR,INKR,KINR,KISK,KITL,LBIR,LBTN,LHAF,LNAR,LOMI,LPCE,LPET,LRDO,MBNK,MESI,MILL,MORI,MURR,NAHR,NAKR,NASC,NASR,NATR,NBNK,OSPK,OWIK,PARA,PARS,PCEA,PINE,SAHD,SHER,SIML,SQAM,TAHS,TAYR,TOOD,TSAY,TSEA,UBIR,UBTN,UHAF,UNAR,UOMI,UPCE,UPET,WORC): CAMB,COMX,COWN,GRAI,INKR,LNAR,LPCE,LPET,LRDO,MBNK,MORI,NASC,NBNK,OWIK,SIML,SQAM,TAHS,TSAY,WORC,KISK,KITL,LBTN,MURR,NAHR,NAKR,NASR,PINE,SHER,TSEA,UPCE,KINR,LBIR,LHAF,PCEA,SAHD,UBTN,UNAR,MILL,PARA,TAYR,UBIR,UHAF,UPET,CARP,FINA,NATR,PARS,CRKD,FINL,INGR,LOMI,MESI,OSPK,TOOD,UOMI,FIRE,FOXR
+lnk_wsg_resolve: dropped 5 species-less closure WSG(s): HAYR, KCHL, SHEK, SAHT, CHUK
+  cy[job2] (focal=ALBN,ATLL,BARR,BEAV,BLUR,CHUK,COAL,CRYL,DEAL,DEAR,DUNE,FONT,FROG,GATA,GLAR,HAYR,ISKR,JENR,KAHN,KAKC,KCHL,KETL,KITR,KLAR,KLIN,KNIG,KSHR,KUMR,KUSR,LDEN,LFRT,LIAR,LISR,LKEC,LMUS,LPRO,LRAN,LSIK,LSTR,MDEA,MESC,MFRT,MMUS,MPRO,MSTR,NECL,PITR,PORI,SAHT,SALM,SHEK,SPAT,STIR,SWIR,TAHR,TATR,TESR,TOAD,TSIT,TURN,TUTR,TUYR,UDEN,UFRT,UISR,UJER,UKEC,ULRD,UMUS,UPRO,USIK,USTK,VICT): ALBN,DUNE,KETL,KITR,KLIN,KNIG,KSHR,KUMR,KUSR,LDEN,LSTR,NECL,PORI,SALM,TATR,TESR,TSIT,VICT,BEAV,GLAR,JENR,LFRT,LISR,STIR,SWIR,TUTR,UDEN,ATLL,BARR,ISKR,LIAR,MESC,MFRT,MSTR,TAHR,TOAD,TUYR,UJER,COAL,KAKC,KLAR,LMUS,PITR,UFRT,UISR,USTK,FONT,LPRO,LSIK,MMUS,SPAT,ULRD,DEAR,KAHN,LKEC,LRAN,MPRO,UMUS,USIK,BLUR,MDEA,UKEC,UPRO,CRYL,DEAL,FROG,TURN,GATA
+  cy[job3] (focal=ATNA,BABL,BABR,BELA,BRKS,BULK,BULL,CANO,CLAY,CLRH,COLR,DUNC,ELKR,GOLD,HOMA,JERV,KEEC,KHOR,KISP,KLUM,KOTL,KOTR,LARL,LKEL,LSKE,MORR,MSKE,NEVI,NIEL,NIMP,PARK,REVL,SANJ,SKGT,SLOC,SMAR,SMOK,SUST,TOBA,UARL,USKE,ZYMO): BELA,BRKS,CLAY,GOLD,HOMA,JERV,KEEC,LARL,LSKE,NEVI,NIEL,NIMP,PARK,SANJ,SKGT,SMOK,TOBA,ATNA,KLUM,KOTL,LKEL,SLOC,UARL,BULL,DUNC,KISP,REVL,ZYMO,BULK,CLRH,ELKR,MSKE,SMAR,BABR,CANO,KOTR,MORR,SUST,USKE,BABL,KHOR,COLR
+  run groups: /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261023_074321_run_wsgs.tsv
+=== spin cyphers: job1 job2 job3 ===
+  cy[job1] = <host>
+  cy[job2] = <host>
+  cy[job3] = <host>
+=== prep cyphers (cypher_prep.sh) ===
+  ✓ cyphers prepped
+=== pre-flight (hosts; post-prep, pre-write) ===
+[preflight] host parity - OK across 4 host(s): m1, cypher-job1, cypher-job2, cypher-job3
+  ✓ host parity clean (4 hosts)
+  ✓ cy[job1] primitives within 7 d
+  ✓ cy[job2] primitives within 7 d
+  ✓ cy[job3] primitives within 7 d
+=== run buckets (DS-first) ===
+  ✓ host runs finished (per-WSG soft-fail; gaps surface in compare)
+=== per-host completeness (database) ===
+  ✗ dispatcher: only 73/74 WSGs accounted for; not finished: OKAN (see /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261023_074321_run_local.log)
+  ✓ cy[job1]: 57/57 WSGs accounted for (57 finished, 0 SKIP; database)
+  ✓ cy[job2]: 68/68 WSGs accounted for (68 finished, 0 SKIP; database)
+  ✓ cy[job3]: 42/42 WSGs accounted for (42 finished, 0 SKIP; database)
+  WARN: consolidating only the WSGs each host finished. The run will
+        finish so nothing already computed is lost, then exit non-zero.
+=== consolidate cyphers -> dispatcher (fresh_default) ===
+  ✓ consolidated 3/3 cypher(s) (see /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261023_074321_consolidate.log)
+=== release consolidated cyphers ===
+  ✓ cy[job1]: no finished group left on the host after consolidate — may be burned
+  ✓ cy[job2]: no finished group left on the host after consolidate — may be burned
+  ✓ cy[job3]: no finished group left on the host after consolidate — may be burned
+=== BURN CYPHERS: job1 job2 job3 ===
+  cy[job1]: 0 tofu resources (expect 0)
+  cy[job2]: 0 tofu resources (expect 0)
+  cy[job3]: 0 tofu resources (expect 0)
+  ✓ burn clean
+=== verify WSG coverage in fresh_default (run_uid 20261023_074321-24d85e8c) ===
+  240/241 run WSGs have rows from a build this run finished
+  ✗ no rows in fresh_default.streams: OKAN
+  classes: /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261023_074321_coverage.tsv
+  NOTE: recomputing only the 240 WSGs above; the rest keep
+        whatever rows they hold, and the run will exit non-zero.
+=== post-consolidate recompute (lnk_access, 240 WSGs, -j8) ===
+  ✓ log tables present in fresh_default
+  ✓ barrier views built once for fresh_default
+  ordering 241 known WSG time(s) longest-first (median 1.79 min for the rest)
+[fanout] recompute - OK: 240/240 job(s) succeeded
+  ✓ recompute: 240/240 WSGs
+=== compare (tunnel-free) ===
+  ✓ compare CSV: /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261023_074321_compare.csv
+=== summary ===
+  run WSGs:        ADMS,ALBN,ATLL,ATNA,BABL,BABR,BARR,BBAR,BEAV,BELA,BIGC,BLAR,BLUR,BONP,BOWR,BRID,BRKS,BULK,BULL,CAMB,CANO,CARP,CARR,CHES,CHIL,CHIR,CHWK,CLAY,CLRH,CLWR,COAL,COLR,COMX,COTR,COWN,CRKD,CRYL,DEAD,DEAL,DEAR,DOGC,DRIR,DUNC,DUNE,ELKR,EUCH,EUCL,FINA,FINL,FIRE,FONT,FOXR,FRAN,FRCN,FROG,GATA,GLAR,GOLD,GRAI,GRNL,GUIC,HARR,HERR,HOLB,HOMA,HORS,INGR,INKR,ISKR,JENR,JERV,KAHN,KAKC,KEEC,KETL,KHOR,KHTZ,KINR,KISK,KISP,KITL,KITR,KLAR,KLIN,KLUM,KNIG,KOTL,KOTR,KSHR,KTSU,KUMR,KUSR,LARL,LBIR,LBTN,LCHL,LCHR,LDEN,LEUT,LFRA,LFRT,LHAF,LIAR,LILL,LISR,LKEC,LKEL,LMUS,LNAR,LNIC,LNRS,LNTH,LOMI,LPCE,LPET,LPRO,LRAN,LRDO,LSAL,LSIK,LSKE,LSTR,LTRE,MAHD,MBNK,MCGR,MDEA,MESC,MESI,MFRA,MFRT,MIDR,MILL,MMUS,MORI,MORK,MORR,MPRO,MSKE,MSTR,MURR,MURT,MUSK,NAHR,NAKR,NARC,NASC,NASR,NATR,NAZR,NBNK,NECL,NECR,NEVI,NICL,NIEL,NIMP,OKAN,OSPK,OWIK,PARA,PARK,PARS,PCEA,PINE,PITR,PORI,QUES,REVL,SAHD,SAJR,SALM,SALR,SANJ,SETN,SEYM,SHER,SHUL,SIML,SKGT,SLOC,SMAR,SMOK,SPAT,SQAM,STHM,STIR,STUL,STUR,SUST,SWIR,TABR,TAHR,TAHS,TAKL,TASR,TATR,TAYR,TESR,THOM,TOAD,TOBA,TOOD,TSAY,TSEA,TSIT,TURN,TUTR,TUYR,TWAC,UARL,UBIR,UBTN,UCHR,UDEN,UEUT,UFRA,UFRT,UHAF,UISR,UJER,UKEC,ULRD,UMUS,UNAR,UNRS,UNTH,UNUR,UOMI,UPCE,UPET,UPRO,USHU,USIK,USKE,USTK,UTRE,VICT,WILL,WORC,ZYMO
+  recomputed WSGs: SETN,CHWK,LILL,INKR,LISR,SQAM,OWIK,SHUL,USHU,LNAR,KITR,TOBA,LNTH,KITL,BARR,HOMA,KNIG,MORR,QUES,KLIN,SUST,USKE,LNIC,BONP,KSHR,NIEL,VICT,UNTH,NIMP,TAKL,GRAI,KHTZ,BBAR,JERV,PARS,SANJ,NAKR,LFRA,COMX,MORK,ATNA,NASC,BRKS,ALBN,TSIT,UFRA,CARR,CLWR,MSTR,NECL,CLAY,CAMB,COTR,FRAN,FRCN,MORI,STIR,TATR,SALM,TSAY,SEYM,TOOD,LDEN,BELA,SHER,LIAR,WORC,GOLD,KUMR,UDEN,NATR,BOWR,LBIR,DEAD,NASR,KISP,DOGC,LRDO,MURR,PARK,FINA,TAHS,ZYMO,LSTR,FINL,HORS,PCEA,NEVI,COWN,LSKE,UNAR,DUNC,NARC,NBNK,UMUS,UPRO,NECR,CLRH,SMOK,FOXR,KLAR,DRIR,UARL,CHIR,SPAT,TASR,KHOR,MAHD,KOTR,SMAR,KINR,KLUM,FROG,COLR,FIRE,INGR,UHAF,USIK,LHAF,REVL,GATA,MSKE,KETL,UBIR,MCGR,SLOC,LMUS,LKEL,MDEA,OSPK,SKGT,TABR,ATLL,BULK,COAL,THOM,DUNE,KTSU,USTK,HARR,ULRD,HERR,TAHR,LOMI,WILL,GUIC,TUTR,LCHR,MMUS,STUL,SWIR,TOAD,MIDR,MESI,UKEC,HOLB,UOMI,LCHL,NAHR,SIML,STUR,UPCE,TESR,LTRE,PARA,TURN,UCHR,BEAV,DEAL,MPRO,SAJR,LRAN,PORI,NICL,TWAC,ADMS,CHES,KUSR,LBTN,PINE,UNUR,GLAR,STHM,EUCL,UBTN,JENR,TAYR,MESC,BLAR,BLUR,CARP,TUYR,MFRA,ISKR,CANO,UJER,KISK,LKEC,NAZR,LPRO,UNRS,UTRE,UEUT,BABR,DEAR,FONT,LPCE,KOTL,UPET,LFRT,CRYL,LARL,UISR,BABL,EUCH,CHIL,CRKD,MURT,MFRT,LSAL,SALR,ELKR,LSIK,UFRT,KAHN,BULL,BIGC,MILL,KEEC,MBNK,PITR,LPET,SAHD,TSEA,GRNL,BRID,KAKC,LNRS,LEUT,MUSK
+  compare CSV: /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261023_074321_compare.csv
+[study_area_compare] ATLL ERROR: no shared mapping_code_<sp> columns to compare for ATLL (link: GR,RB; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] TUTR ERROR: no shared mapping_code_<sp> columns to compare for TUTR (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] KUSR ERROR: no shared mapping_code_<sp> columns to compare for KUSR (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] LKEC ERROR: no shared mapping_code_<sp> columns to compare for LKEC (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] UPET ERROR: no shared mapping_code_<sp> columns to compare for UPET (link: GR,RB; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] LFRT ERROR: no shared mapping_code_<sp> columns to compare for LFRT (link: GR,RB; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] CRYL ERROR: no shared mapping_code_<sp> columns to compare for CRYL (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] UISR ERROR: no shared mapping_code_<sp> columns to compare for UISR (link: RB; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] MURT ERROR: no shared mapping_code_<sp> columns to compare for MURT (link: RB; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] MFRT ERROR: no shared mapping_code_<sp> columns to compare for MFRT (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] LSIK ERROR: no shared mapping_code_<sp> columns to compare for LSIK (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] UFRT ERROR: no shared mapping_code_<sp> columns to compare for UFRT (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] KAHN ERROR: no shared mapping_code_<sp> columns to compare for KAHN (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] MILL ERROR: no shared mapping_code_<sp> columns to compare for MILL (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] PITR ERROR: no shared mapping_code_<sp> columns to compare for PITR (link: RB; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] LPET ERROR: no shared mapping_code_<sp> columns to compare for LPET (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] SAHD ERROR: no shared mapping_code_<sp> columns to compare for SAHD (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] TSEA ERROR: no shared mapping_code_<sp> columns to compare for TSEA (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] GRNL ERROR: no shared mapping_code_<sp> columns to compare for GRNL (link: RB; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] BRID ERROR: no shared mapping_code_<sp> columns to compare for BRID (link: RB; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] KAKC ERROR: no shared mapping_code_<sp> columns to compare for KAKC (link: RB; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] LNRS ERROR: no shared mapping_code_<sp> columns to compare for LNRS (link: RB; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] LEUT ERROR: no shared mapping_code_<sp> columns to compare for LEUT (link: RB; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] MUSK ERROR: no shared mapping_code_<sp> columns to compare for MUSK (link: RB; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+There were 35 warnings (use warnings() to see them)
+[study_area_compare] 674 rows across 216/240 WSGs -> /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261023_074321_compare.csv
+# A tibble: 674 × 7
+   wsg   species total_segs match_pct n_diffs top_pattern      top_pattern_count
+ * <chr> <chr>        <int>     <dbl>   <int> <chr>                        <int>
+ 1 SETN  BT           78823      96.8    2549 "REAR;DAM | ACC…               480
+ 2 SETN  CH           78823      94.2    4587 "SPAWN;DAM | "                1219
+ 3 SETN  CM           78823      94.8    4114 "ACCESS;DAM | "               1596
+ 4 SETN  CO           78823      94.2    4608 "SPAWN;DAM | "                1408
+ 5 SETN  PK           78823      94.8    4114 "ACCESS;DAM | "               1596
+ 6 SETN  SK           78823      94.7    4213 "ACCESS;DAM | "               1638
+ 7 SETN  ST           78823      92.8    5662 "ACCESS;DAM;INT…              1365
+ 8 CHWK  BT            8841      96.0     358 "REAR;NONE | AC…                85
+ 9 CHWK  CH            8841      96.3     324 "REAR;NONE | AC…               193
+10 CHWK  CM            8841      98.7     118 "ACCESS;NONE | "                44
+# ℹ 664 more rows
+=== study_area_run INCOMPLETE ===
+  These run WSGs have no rows from a build this run finished, so they
+  were NOT recomputed or compared: OKAN
+    no rows:                         OKAN
+  Re-model each of these under this run_uid: OKAN
+    LNK_RUN_UID=20261023_074321-24d85e8c LNK_RUN_LABEL=provincial-241-default-361 LNK_SCHEMA=fresh_default \
+      LNK_GUARD_DOWNSTREAM=warn LNK_HABITAT_GATE=0 LNK_LOAD=loadall \
+      Rscript data-raw/wsg_run_one.R <WSG> default
+  Then recompute the whole run (every group: a re-modelled group's
+  barriers change access upstream of it):
+    bash data-raw/study_area_run.sh --recompute-only --run-uid=20261023_074321-24d85e8c \
+      --config=default --schema=fresh_default --run-label=provincial-241-default-361 --wsgs=ADMS,ALBN,ATLL,ATNA,BABL,BABR,BARR,BBAR,BEAV,BELA,BIGC,BLAR,BLUR,BONP,BOWR,BRID,BRKS,BULK,BULL,CAMB,CANO,CARP,CARR,CHES,CHIL,CHIR,CHWK,CLAY,CLRH,CLWR,COAL,COLR,COMX,COTR,COWN,CRKD,CRYL,DEAD,DEAL,DEAR,DOGC,DRIR,DUNC,DUNE,ELKR,EUCH,EUCL,FINA,FINL,FIRE,FONT,FOXR,FRAN,FRCN,FROG,GATA,GLAR,GOLD,GRAI,GRNL,GUIC,HARR,HERR,HOLB,HOMA,HORS,INGR,INKR,ISKR,JENR,JERV,KAHN,KAKC,KEEC,KETL,KHOR,KHTZ,KINR,KISK,KISP,KITL,KITR,KLAR,KLIN,KLUM,KNIG,KOTL,KOTR,KSHR,KTSU,KUMR,KUSR,LARL,LBIR,LBTN,LCHL,LCHR,LDEN,LEUT,LFRA,LFRT,LHAF,LIAR,LILL,LISR,LKEC,LKEL,LMUS,LNAR,LNIC,LNRS,LNTH,LOMI,LPCE,LPET,LPRO,LRAN,LRDO,LSAL,LSIK,LSKE,LSTR,LTRE,MAHD,MBNK,MCGR,MDEA,MESC,MESI,MFRA,MFRT,MIDR,MILL,MMUS,MORI,MORK,MORR,MPRO,MSKE,MSTR,MURR,MURT,MUSK,NAHR,NAKR,NARC,NASC,NASR,NATR,NAZR,NBNK,NECL,NECR,NEVI,NICL,NIEL,NIMP,OKAN,OSPK,OWIK,PARA,PARK,PARS,PCEA,PINE,PITR,PORI,QUES,REVL,SAHD,SAJR,SALM,SALR,SANJ,SETN,SEYM,SHER,SHUL,SIML,SKGT,SLOC,SMAR,SMOK,SPAT,SQAM,STHM,STIR,STUL,STUR,SUST,SWIR,TABR,TAHR,TAHS,TAKL,TASR,TATR,TAYR,TESR,THOM,TOAD,TOBA,TOOD,TSAY,TSEA,TSIT,TURN,TUTR,TUYR,TWAC,UARL,UBIR,UBTN,UCHR,UDEN,UEUT,UFRA,UFRT,UHAF,UISR,UJER,UKEC,ULRD,UMUS,UNAR,UNRS,UNTH,UNUR,UOMI,UPCE,UPET,UPRO,USHU,USIK,USKE,USTK,UTRE,VICT,WILL,WORC,ZYMO
+  ✓ redacted host addresses in 27 log file(s)

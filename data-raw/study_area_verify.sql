@@ -259,11 +259,22 @@ SELECT host,
  ORDER BY host;
 
 \echo ''
-\echo '=== 1c. Started but never finished (must be empty) ==='
-SELECT host, watershed_group_code, date_start
-  FROM :schema.log
- WHERE run_uid = :'run_uid' AND date_end IS NULL
- ORDER BY host, watershed_group_code;
+\echo '=== 1c. Started but never finished (must be empty, or every row superseded) ==='
+-- A failed attempt keeps its row open on purpose (.lnk_log_run_fail(): date_end
+-- NULL + notes is "R error or interrupt", NULL + NULL is "nothing ran"). A
+-- group re-modelled under the same run_uid after it failed (link#348's path,
+-- the one the driver prints) carries that open row beside its finished one;
+-- `superseded` is TRUE when a finished row of the same group and run_uid
+-- started later. Only an open row nothing superseded is a failure.
+SELECT o.host, o.watershed_group_code, o.date_start, left(o.notes, 60) AS notes,
+       EXISTS (SELECT 1 FROM :schema.log f
+                WHERE f.run_uid = o.run_uid
+                  AND f.watershed_group_code = o.watershed_group_code
+                  AND f.date_end IS NOT NULL
+                  AND f.date_start > o.date_start) AS superseded
+  FROM :schema.log o
+ WHERE o.run_uid = :'run_uid' AND o.date_end IS NULL
+ ORDER BY o.host, o.watershed_group_code;
 
 \echo ''
 \echo '=== 2. The distinct SHAs -- all hosts must agree ==='
@@ -416,12 +427,31 @@ BEGIN
       v_run, n_gap, bad, v_sch;
   END IF;
 
+  -- An open row (date_end NULL) is a failed or killed attempt. One that a later
+  -- finished row of the same group and run_uid supersedes is the link#348 path
+  -- (fail, re-model by hand under the run_uid, --recompute-only) and is noted;
+  -- one nothing supersedes is a group the run never finished (see 1c).
   EXECUTE format(
-    'SELECT count(*) FROM %I.log WHERE run_uid = $1 AND date_end IS NULL',
-    v_sch) INTO n_open USING v_run;
+    'SELECT count(*), string_agg(o.watershed_group_code, '','' ORDER BY o.watershed_group_code)
+       FROM %I.log o
+      WHERE o.run_uid = $1 AND o.date_end IS NULL
+        AND NOT EXISTS (SELECT 1 FROM %I.log f
+                         WHERE f.run_uid = o.run_uid
+                           AND f.watershed_group_code = o.watershed_group_code
+                           AND f.date_end IS NOT NULL
+                           AND f.date_start > o.date_start)',
+    v_sch, v_sch) INTO n_open, bad USING v_run;
   IF n_open > 0 THEN
-    RAISE EXCEPTION 'run %: % modelling row(s) started and never finished',
-      v_run, n_open;
+    RAISE EXCEPTION 'run %: % modelling row(s) started and never finished, and no later row of the run finished the group: %. Re-model each under this run_uid, then --recompute-only (link#348).',
+      v_run, n_open, bad;
+  END IF;
+  EXECUTE format(
+    'SELECT count(*), string_agg(o.watershed_group_code, '','' ORDER BY o.watershed_group_code)
+       FROM %I.log o
+      WHERE o.run_uid = $1 AND o.date_end IS NULL',
+    v_sch) INTO n_open, bad USING v_run;
+  IF n_open > 0 THEN
+    RAISE NOTICE 'NOTE: % failed attempt(s) superseded by a finished row of the same run_uid: %', n_open, bad;
   END IF;
 
   EXECUTE format(
