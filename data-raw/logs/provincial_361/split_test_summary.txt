@@ -1,0 +1,69 @@
+schemas: fresh_361a (split, recomputed) vs fresh_default (reference); 26 groups x 17 tables = 442 digests
+identical: 387 of 442; differing: 55
+tables only in fresh_361a: none; only in fresh_default: none
+control (fresh_default_20261017, another link version, LPCE streams_access): differs, as it must
+differing (wsg table n_a n_ref):
+  LPCE barriers 5519 5519
+  LPCE streams 13697 13697
+  KISK barriers 6099 6099
+  KISK streams 18527 18527
+  LBTN barriers 7924 7924
+  LBTN streams 29869 29869
+  MURR barriers 56224 56224
+  MURR streams 79176 79176
+  PINE barriers 84207 84207
+  PINE streams 113312 113312
+  UPCE barriers 30434 30434
+  UPCE streams 46623 46623
+  LHAF streams 58900 58900
+  PCEA barriers 85004 85004
+  PCEA streams 106079 106079
+  UBTN barriers 8422 8422
+  UBTN streams 26991 26991
+  MILL barriers 1564 1564
+  MILL streams 8952 8952
+  PARA barriers 25678 25678
+  PARA streams 36926 36926
+  UHAF streams 71366 71366
+  CARP streams 19298 19298
+  FINA streams 70329 70329
+  NATR barriers 20271 20271
+  NATR streams 47302 47302
+  NATR streams_access 47302 47302
+  NATR streams_habitat_bt 47302 47302
+  NATR streams_habitat_gr 47302 47302
+  NATR streams_habitat_ko 47302 47302
+  NATR streams_habitat_rb 47302 47302
+  NATR streams_mapping_code 47302 47302
+  PARS streams 97537 97537
+  CRKD barriers 8891 8891
+  CRKD streams 25331 25331
+  FINL streams 96219 96219
+  INGR barriers 55690 55690
+  INGR streams 73469 73469
+  LOMI barriers 37159 37159
+  LOMI streams 50231 50231
+  MESI streams 42929 42929
+  OSPK barriers 47324 47324
+  OSPK streams 60736 60736
+  TOOD barriers 70229 70229
+  TOOD streams 97296 97296
+  TOOD streams_access 97296 97296
+  TOOD streams_habitat_bt 97296 97296
+  TOOD streams_habitat_gr 97296 97296
+  TOOD streams_habitat_rb 97296 97296
+  TOOD streams_mapping_code 97296 97296
+  UOMI barriers 31728 31728
+  UOMI streams 44543 44543
+  FIRE barriers 44718 44718
+  FIRE streams 68747 68747
+  FOXR streams 71953 71953
+column diff of streams_access NATR: /Users/airvine/Projects/repo/link-wt361/data-raw/logs/provincial_361/split_test_diff_streams_access_NATR.csv
+  access_bt: 2
+  access_gr: 2
+  access_ko: 2
+  access_rb: 2
+  has_barriers_bt_dnstr: 2
+  has_barriers_gr_dnstr: 2
+  has_barriers_ko_dnstr: 2
+  has_barriers_rb_dnstr: 2

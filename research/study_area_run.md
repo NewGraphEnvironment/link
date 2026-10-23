@@ -215,6 +215,59 @@ consolidate, and every run WSG must have rows in the persist afterwards.
 Measured timings and the four defects that produced these numbers:
 `research/run_record_2026_08_31_cypher_pilots.md`.
 
+## The province-wide `default` run (2026-10-23, 241 groups; #361)
+
+run_uid `20261023_074321-24d85e8c`, `default` into `fresh_default` (the 2026-10-17 build renamed
+`fresh_default_20261017` and kept as the control), m1 + three cloud hosts packed on measured minutes
+at equal speeds (`study_area_buckets.R --minutes-schema=`, #361 Phase 1), `--refresh-primitives`,
+`--recompute-jobs=8`, link `1d00c04c` (0.68.0) on fresh `e9793047` (0.42.0). Both verifiers pass at
+`expected_n=241`; one link SHA in `log` (241 rows) and `log_recompute` (241). Evidence:
+`data-raw/logs/provincial_361/`; the record of what happened, `planning/archive/2026-10-issue-361-*/`.
+
+| stage | measured | planned (Phase 1 packing) |
+|---|---|---|
+| modelling, per host | job1 247, job2 260, job3 257 min of modelling (249 / 264 / 259 wall); m1 306 min of modelling in 560 wall | ~218 each |
+| consolidate | 42 min (3 hosts, 167 groups) | — |
+| recompute, 240 groups, `-j8` | 110 min (median 1.8 min per group; LFRA 22.7, FRCN 17.9, SETN 16.5) | ~108 |
+| OKAN re-model + `--recompute-only --wsgs=OKAN` | 7.6 + 3 min, after the driver exited | — |
+| wall clock, launch to driver exit | 12 h 21 m (07:43 → 20:04 UTC), of which ~4 h 10 m was one stalled group | ~7 h |
+| cloud hosts | 3 × ~10.4 h (spin 07:45 → burn 18:06 UTC) ≈ $7.80 at $0.25/h; about 17 host-hours of it idle after the legs finished | ~$5 |
+| `fresh_default` | 29 GB (14 GB tables, 15 GB indexes), 11.39 M segments; database 386 GB | — |
+
+- **Packing on measured minutes was close.** The cloud hosts ran 13 to 19 % over the estimate and m1,
+  net of KTSU's excess and the stall, about 10 % over; the 2026-10-17 run's spread was 165 to 272 min.
+- **Two m1 groups stalled, and the stall does not reproduce.** KTSU took 65.4 min (1.3 on 2026-10-17)
+  and OKAN sat from 09:19 UTC in one statement, fresh 0.42.0's near-river walk
+  (`CREATE TEMP TABLE pg_temp.frs_near_river_walk AS …`), until the operator cancelled it at 13:30 under
+  a 30 min role statement timeout (reset after the run). OKAN failed as a named group (#348), the other
+  54 m1 groups ran at the 2026-10-17 pace, and OKAN was re-modelled under the run_uid afterwards (7.6
+  min; no BC group drains through it, so the finish recomputed OKAN alone). Re-run after the run on the
+  working tables the run left, the same walk takes 59 s on OKAN (3.2 M origin × main-stem pairs) and 3 s
+  on KTSU, with the plan the EXPLAIN during the run showed. Both ran in the first 5.5 h after the
+  primitives reload while another session's jobs read the control schema; nothing in the server log
+  names a cause. The driver bounds no statement, which is the gap: a per-statement timeout in the driver
+  and a scoped pre-run gate are drafted as follow-ups.
+- **Idle cloud time is the cost to cut.** The legs finished by 12:27 UTC and the hosts waited for m1
+  until 17:23, then for the consolidate (#369: consolidate each host when its own leg finishes, then
+  burn it; S3 transit, #170, costed and closed as superseded).
+- **A failed attempt re-modelled under the same run_uid keeps its open log row** (`date_end` NULL,
+  `.lnk_log_run_fail()`'s three-state signal), and `study_area_verify.sql` read it as "started and
+  never finished". It now notes an open row a later finished row supersedes and raises only on one
+  nothing supersedes; negative cases 6f and 6g prove both directions.
+- **Hosts against wall clock, revisited: a component can be split across hosts.** The Peace's 26
+  groups modelled on two "hosts" in the worst order (each host's list upstream-first, half of every
+  group's downstream groups on the other host), consolidated and recomputed, digest identical to the
+  run's own build in everything the order can reach. Of 442 per-group per-table digests, 387 are
+  identical and the 55 that differ are cross-host arithmetic (the reference Peace was built on an
+  amd64 cloud host, the split on m1: `length_metre`, geometry and 62 barrier positions differ by at
+  most 3.7e-9 m, ids and row sets the same) or the test's 26-group scope (two NATR segments on a
+  Fraser-coded line whose downstream barriers are TAKL's). The same two groups rebuilt on m1 alone
+  are byte-identical to the split build in every model-time table. So the recompute is the
+  guarantee, as #175 found for mapping code, and a run may pack single groups onto hosts
+  (`study_area_buckets.R --atom=group`, below); the component rule's only remaining value is fewer
+  guard warnings at open. Evidence: `data-raw/logs/provincial_361/split_verdict.md`. A caution the
+  test surfaced: "identical across hosts" holds after rounding, not byte for byte.
+
 ## The province-wide `default` run (2026-10-17, 241 groups)
 
 run_uid `20261017_004619-3f4c713b`, `default` into `fresh_default`, m1 + three

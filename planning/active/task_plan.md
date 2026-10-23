@@ -111,25 +111,34 @@ The same issue owns the next provincial `default` run (the re-model #364 and #36
 ## Phase 3: The split test (m1, after the run, ~2 h)
 
 Harness `data-raw/logs/provincial_361/split_test.sh` + `split_compare.R`, from the #367 pair:
-- [ ] Peace's 26 groups in DS-first order from `study_area_wsgs.R <the 26> default`; interleave
+- [x] Peace's 26 groups in DS-first order from `study_area_wsgs.R <the 26> default`; interleave
       odd/even positions onto two "hosts" (scratch schemas `fresh_361a`, `fresh_361b`), and
       **reverse** each host's list so upstream groups run first. Model with `LNK_SCHEMA`,
       `LNK_GUARD_DOWNSTREAM=warn`, `LNK_HABITAT_GATE=0`, one `LNK_RUN_UID`, same link SHA as the
       run, two lanes (one per schema). Count the guard's warnings per group: evidence the order
       was bad.
-- [ ] "Consolidate" b → a as the real one does for persist tables: per table with
+- [x] "Consolidate" b → a as the real one does for persist tables: per table with
       `watershed_group_code`, `DELETE … WHERE group IN (b's bucket)` then `INSERT … SELECT`
       (log tables by primary key, as `schema_consolidate.R` does since #354).
-- [ ] Recompute all 26 in `fresh_361a`: `barriers_views_build.R` once, then
+- [x] Recompute all 26 in `fresh_361a`: `barriers_views_build.R` once, then
       `wsg_recompute_one.R` per group (`LNK_VIEWS_PREBUILT=1`), which runs the downstream guard
       in **error** mode and the habitat gate. A guard failure here is a finding, not a retry.
-- [ ] Digest every persisted table per group (`streams`, `barriers` with and without id,
+- [x] Digest every persisted table per group (`streams`, `barriers` with and without id,
       `barrier_overrides`, `streams_access`, `streams_mapping_code`, every `streams_habitat_<sp>`;
       log tables excluded) in `fresh_361a` against `fresh_default` → `split_test.csv`.
-- [ ] Verdict, one of two:
+- [x] Verdict, one of two:
   - identical on every table and group → Phase 4a;
   - not → name the differing table, groups and columns (a segment-level diff on the first
     differing table), which says what the component rule protects → Phase 4b.
+
+  **Verdict: Phase 4a.** 387 of 442 digests identical; the 55 differing are all cross-host
+  arithmetic (≤ 3.7e-9 m in `length_metre`, geometry and 62 barrier positions; the reference Peace
+  was built on a cloud host, the split on m1) or the test's 26-group scope (NATR: 2 segments on a
+  Fraser-coded line whose downstream barriers are TAKL's). MILL and LPCE rebuilt on m1 alone are
+  identical to the split build in every model-time table; the habitat rows that differ are the
+  gate's. `data-raw/logs/provincial_361/split_verdict.md`. Boxes above: run 20:33–21:32 UTC from a
+  worktree at `1d00c04c` (the branch had moved on); guard warned on 18 of 26 at open, passed on all
+  26 in the recompute.
 
 ## Phase 4a: Group-level packing for province-wide runs (if identical)
 

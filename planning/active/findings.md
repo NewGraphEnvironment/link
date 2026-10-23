@@ -119,3 +119,32 @@ a NOTICE; the rest still raise; negative cases 6f and 6g prove both.
 | OKAN: one statement ran > 4 h; the driver bounds no statement | role `statement_timeout = '30min'` + `pg_cancel_backend` (operator-approved), reset after the run; driver-side bound drafted as a follow-up |
 | `pgrep -f 'wsg_run_one.R OKAN'` found no process | Rscript's argv is `--file=… --args OKAN`; match `wsg_run_one[.]R --args OKAN` |
 | `study_area_verify.sql`: "1 modelling row(s) started and never finished" with every group finished | the failed attempt's open row; verifier now distinguishes superseded from unfinished |
+
+## The split test (Phase 3): nothing the order of modelling can reach differs
+
+Harness `data-raw/logs/provincial_361/split_test.sh` + `split_compare.R`, run 20:33–21:32 UTC 2026-10-23 from a
+worktree at `1d00c04c` (`split_stamp.txt`). Peace's 26 groups, DS-first order from `study_area_wsgs.R`, odd
+positions reversed onto `fresh_361a`, even reversed onto `fresh_361b`; the guard warned at open on 18 of 26
+(`split_guard_warnings.tsv`: PCEA's and UPCE's dams unmodelled downstream); B consolidated into A; barrier views
+built once; all 26 recomputed with the guard in error mode (0 failures) and the habitat gate. Reference:
+`fresh_default`'s Peace groups, built on one cloud host DS-first and recomputed over all 241 groups.
+
+Digests (`split_test.csv`, `split_test_summary.txt`): 442 (26 groups × 17 tables), 387 identical, 55 differing;
+the control (`fresh_default_20261017`, another link version) differs, as it must. Every one of the 55 is explained
+(`split_verdict.md`):
+
+| class | where | size |
+|---|---|---|
+| cross-host arithmetic | `streams.length_metre` on 104,047 of 1,476,338 segments; 1,265 geometries; `barriers.downstream_route_measure` + `geom` on 62 of 1,000,112 rows (ids identical) | ≤ 2.0e-10 m length, ≤ 2.3e-10 m Hausdorff, ≤ 3.7e-9 m position |
+| the test's scope | NATR `streams_access`, 4 `streams_habitat_<sp>`, `streams_mapping_code`: 2 segments (0.1 km) of a Fraser-coded (100.*) line inside NATR, whose downstream barriers (TAKL falls and gradient) are outside the 26-group scratch schema; in `fresh_default` the recompute saw TAKL | 2 of 47,302 segments |
+| the order | nothing | — |
+
+The reference Peace was built on `cypher-job1` (amd64); the split on m1 (arm64). MILL and LPCE rebuilt on m1
+alone into `fresh_361c` (`hostcheck_build_*.log`) are identical to the split build in `streams`, `barriers`,
+`barrier_overrides`, `streams_near_river` and every `streams_habitat_<sp>` except the rows the recompute's
+habitat gate blanked in `fresh_361a` (5 / 69 / 100 / 69 rows, every one with `access_<sp> = 0` there).
+
+So the component rule protects nothing the recompute does not settle, and Phase 4a follows. Two facts fall out:
+a build is byte-identical on one host and differs at 1e-10 m across architectures, so "identical" across hosts
+is a digest after rounding, not of bytes; and a scratch-schema recompute of a subset of groups can differ from
+the full one wherever a group holds lines coded to another basin (NATR: 2 segments on a 100.* line).

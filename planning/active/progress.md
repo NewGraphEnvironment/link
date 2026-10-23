@@ -64,3 +64,19 @@
 - Filed #369 (consolidate each cloud host when its leg finishes, then burn it); closed #170 as superseded (operator).
 - Next: Phase 3 split test. `split_test.sh` requires HEAD's short SHA to equal the reference's `link_sha`
   (`1d00c04c`): run it from a checkout of that commit, or relax the check to the reference SHA being an ancestor.
+
+## Session 2026-10-23 (split test)
+
+- Split test ran 20:33–21:32 UTC from a worktree at `1d00c04c` (`~/Projects/repo/link-wt361`; the
+  harness demands HEAD = the reference's link SHA and a clean tree, and the branch had moved on).
+  Two lanes, 13 groups each, worst order; the guard warned on 18 of 26 at open (`split_guard_warnings.tsv`),
+  the recompute's error-mode guard passed on all 26. Digests: 387 of 442 identical, 55 differing
+  (`split_test_summary.txt`).
+- Every difference traced (`split_verdict.md`): cross-host arithmetic at ≤ 4e-9 m (`length_metre`
+  on 104,047 segments, 1,265 geometries, 62 barrier positions; the reference Peace was built on a
+  cloud host, the split on m1), and NATR's `streams_access` / habitat / mapping code on 2 segments
+  (0.1 km) of Fraser-coded line whose downstream barriers are in TAKL, outside the 26-group scope.
+  MILL and LPCE rebuilt on m1 alone (`fresh_361c`) are identical to the split build in every
+  model-time table; the habitat rows that differ are exactly the gate's. Nothing is attributable to
+  the order. Verdict: Phase 4a.
+- Scratch schemas `fresh_361a`, `fresh_361b`, `fresh_361c` kept until the PR; the worktree too.

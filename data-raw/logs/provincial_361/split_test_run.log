@@ -1,0 +1,146 @@
+2026-10-23T20:33:53Z stamp written; A=[FIRE TOOD MESI INGR CRKD NATR CARP PARA UBTN LHAF PINE LBTN LPCE] B=[FOXR UOMI OSPK LOMI FINL PARS FINA UHAF MILL PCEA UPCE MURR KISK]
+2026-10-23T20:36:54Z build fresh_361b FOXR exit 0
+2026-10-23T20:37:25Z build fresh_361a FIRE exit 0
+2026-10-23T20:39:38Z build fresh_361b UOMI exit 0
+2026-10-23T20:40:55Z build fresh_361a TOOD exit 0
+2026-10-23T20:42:03Z build fresh_361b OSPK exit 0
+2026-10-23T20:43:55Z build fresh_361a MESI exit 0
+2026-10-23T20:44:43Z build fresh_361b LOMI exit 0
+2026-10-23T20:47:25Z build fresh_361a INGR exit 0
+2026-10-23T20:48:16Z build fresh_361b FINL exit 0
+2026-10-23T20:49:43Z build fresh_361a CRKD exit 0
+2026-10-23T20:53:15Z build fresh_361a NATR exit 0
+2026-10-23T20:54:18Z build fresh_361b PARS exit 0
+2026-10-23T20:55:39Z build fresh_361a CARP exit 0
+2026-10-23T20:57:53Z build fresh_361a PARA exit 0
+2026-10-23T20:58:03Z build fresh_361b FINA exit 0
+2026-10-23T21:00:27Z build fresh_361a UBTN exit 0
+2026-10-23T21:01:45Z build fresh_361b UHAF exit 0
+2026-10-23T21:02:49Z build fresh_361b MILL exit 0
+2026-10-23T21:04:35Z build fresh_361a LHAF exit 0
+2026-10-23T21:06:51Z build fresh_361b PCEA exit 0
+2026-10-23T21:10:26Z build fresh_361b UPCE exit 0
+2026-10-23T21:11:11Z build fresh_361a PINE exit 0
+2026-10-23T21:13:43Z build fresh_361a LBTN exit 0
+2026-10-23T21:14:14Z build fresh_361b MURR exit 0
+2026-10-23T21:15:44Z build fresh_361a LPCE exit 0
+2026-10-23T21:16:11Z build fresh_361b KISK exit 0
+2026-10-23T21:16:11Z both lanes built
+2026-10-23T21:16:12Z consolidated barrier_overrides: 398 rows
+2026-10-23T21:16:38Z consolidated barriers: 593148 rows
+2026-10-23T21:16:38Z consolidated log: 13 rows
+2026-10-23T21:16:38Z consolidated log_input: 156 rows
+2026-10-23T21:16:38Z consolidated log_recompute: 0 rows
+2026-10-23T21:17:10Z consolidated streams: 822271 rows
+2026-10-23T21:17:13Z consolidated streams_access: 822271 rows
+2026-10-23T21:17:15Z consolidated streams_habitat_bt: 813319 rows
+2026-10-23T21:17:16Z consolidated streams_habitat_ch: 0 rows
+2026-10-23T21:17:16Z consolidated streams_habitat_cm: 0 rows
+2026-10-23T21:17:16Z consolidated streams_habitat_co: 0 rows
+2026-10-23T21:17:18Z consolidated streams_habitat_gr: 822271 rows
+2026-10-23T21:17:19Z consolidated streams_habitat_ko: 97537 rows
+2026-10-23T21:17:19Z consolidated streams_habitat_pk: 0 rows
+2026-10-23T21:17:21Z consolidated streams_habitat_rb: 813319 rows
+2026-10-23T21:17:21Z consolidated streams_habitat_sk: 0 rows
+2026-10-23T21:17:21Z consolidated streams_habitat_st: 0 rows
+2026-10-23T21:17:21Z consolidated streams_habitat_wct: 0 rows
+2026-10-23T21:17:24Z consolidated streams_mapping_code: 822271 rows
+2026-10-23T21:17:24Z consolidated streams_near_river: 0 rows
+2026-10-23T21:18:38Z recompute LPCE exit 0
+2026-10-23T21:18:49Z recompute KISK exit 0
+2026-10-23T21:19:01Z recompute LBTN exit 0
+2026-10-23T21:19:40Z recompute MURR exit 0
+2026-10-23T21:20:17Z recompute PINE exit 0
+2026-10-23T21:20:41Z recompute UPCE exit 0
+2026-10-23T21:21:06Z recompute LHAF exit 0
+2026-10-23T21:21:52Z recompute PCEA exit 0
+2026-10-23T21:22:03Z recompute UBTN exit 0
+2026-10-23T21:22:08Z recompute MILL exit 0
+2026-10-23T21:22:39Z recompute PARA exit 0
+2026-10-23T21:23:07Z recompute UHAF exit 0
+2026-10-23T21:23:18Z recompute CARP exit 0
+2026-10-23T21:24:06Z recompute FINA exit 0
+2026-10-23T21:24:48Z recompute NATR exit 0
+2026-10-23T21:26:07Z recompute PARS exit 0
+2026-10-23T21:26:15Z recompute CRKD exit 0
+2026-10-23T21:26:58Z recompute FINL exit 0
+2026-10-23T21:27:33Z recompute INGR exit 0
+2026-10-23T21:27:59Z recompute LOMI exit 0
+2026-10-23T21:28:22Z recompute MESI exit 0
+2026-10-23T21:28:56Z recompute OSPK exit 0
+2026-10-23T21:29:45Z recompute TOOD exit 0
+2026-10-23T21:30:09Z recompute UOMI exit 0
+2026-10-23T21:30:39Z recompute FIRE exit 0
+2026-10-23T21:31:18Z recompute FOXR exit 0
+2026-10-23T21:31:18Z guard warned on 18 groups at model time (guard_warnings.tsv)
+2026-10-23T21:32:15Z split_compare.R exit 0
+schemas: fresh_361a (split, recomputed) vs fresh_default (reference); 26 groups x 17 tables = 442 digests
+identical: 387 of 442; differing: 55
+tables only in fresh_361a: none; only in fresh_default: none
+control (fresh_default_20261017, another link version, LPCE streams_access): differs, as it must
+differing (wsg table n_a n_ref):
+  LPCE barriers 5519 5519
+  LPCE streams 13697 13697
+  KISK barriers 6099 6099
+  KISK streams 18527 18527
+  LBTN barriers 7924 7924
+  LBTN streams 29869 29869
+  MURR barriers 56224 56224
+  MURR streams 79176 79176
+  PINE barriers 84207 84207
+  PINE streams 113312 113312
+  UPCE barriers 30434 30434
+  UPCE streams 46623 46623
+  LHAF streams 58900 58900
+  PCEA barriers 85004 85004
+  PCEA streams 106079 106079
+  UBTN barriers 8422 8422
+  UBTN streams 26991 26991
+  MILL barriers 1564 1564
+  MILL streams 8952 8952
+  PARA barriers 25678 25678
+  PARA streams 36926 36926
+  UHAF streams 71366 71366
+  CARP streams 19298 19298
+  FINA streams 70329 70329
+  NATR barriers 20271 20271
+  NATR streams 47302 47302
+  NATR streams_access 47302 47302
+  NATR streams_habitat_bt 47302 47302
+  NATR streams_habitat_gr 47302 47302
+  NATR streams_habitat_ko 47302 47302
+  NATR streams_habitat_rb 47302 47302
+  NATR streams_mapping_code 47302 47302
+  PARS streams 97537 97537
+  CRKD barriers 8891 8891
+  CRKD streams 25331 25331
+  FINL streams 96219 96219
+  INGR barriers 55690 55690
+  INGR streams 73469 73469
+  LOMI barriers 37159 37159
+  LOMI streams 50231 50231
+  MESI streams 42929 42929
+  OSPK barriers 47324 47324
+  OSPK streams 60736 60736
+  TOOD barriers 70229 70229
+  TOOD streams 97296 97296
+  TOOD streams_access 97296 97296
+  TOOD streams_habitat_bt 97296 97296
+  TOOD streams_habitat_gr 97296 97296
+  TOOD streams_habitat_rb 97296 97296
+  TOOD streams_mapping_code 97296 97296
+  UOMI barriers 31728 31728
+  UOMI streams 44543 44543
+  FIRE barriers 44718 44718
+  FIRE streams 68747 68747
+  FOXR streams 71953 71953
+column diff of streams_access NATR: /Users/airvine/Projects/repo/link-wt361/data-raw/logs/provincial_361/split_test_diff_streams_access_NATR.csv
+  access_bt: 2
+  access_gr: 2
+  access_ko: 2
+  access_rb: 2
+  has_barriers_bt_dnstr: 2
+  has_barriers_gr_dnstr: 2
+  has_barriers_ko_dnstr: 2
+  has_barriers_rb_dnstr: 2
+2026-10-23T21:32:15Z ALLDONE
