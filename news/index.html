@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.67.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.68.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,21 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.68.0" id="link-0680">link 0.68.0<a class="anchor" aria-label="anchor" href="#link-0680"></a></h2>
+<p><strong>Two builds from the same inputs give the same output, and <code>default</code> sees the dams outside BC</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/367" class="external-link">#367</a>: <a href="https://github.com/NewGraphEnvironment/link/issues/277" class="external-link">#277</a>, <a href="https://github.com/NewGraphEnvironment/link/issues/244" class="external-link">#244</a>, <a href="https://github.com/NewGraphEnvironment/link/issues/345" class="external-link">#345</a>). The release the next provincial <code>default</code> run is built at.</p>
+<ul><li>
+<strong>The PSCIS pick is reproducible.</strong> bcfishpass keeps only the nearest instream modelled crossing per PSCIS crossing per stream before the pick; link had skipped that step, so two modelled crossings on one feature tied and the pick fell to row order (at 0.67.0, two builds minutes apart picked a different modelled crossing for 464 PSCIS crossings). The step is ported, with tie-breaks on the modelled crossing’s id. Picks move toward bcfishpass’s: on ADMS, ELKR and NATR accessible km are unchanged and spawning or rearing moves by at most 0.094 km per species.</li>
+<li>
+<strong>Barrier ids are stable.</strong> Gradient, falls, user-definite and subsurface barriers are numbered by position, and both nearest-stream snaps break ties on <code>linear_feature_id</code>. ADMS and ELKR built twice are identical in every persisted table.</li>
+<li>
+<strong><code>default</code> treats the <code>cabd_additions</code> dams as barriers</strong> (<code>pipeline: cabd_additions_barriers</code>; Grand Coulee / Chief Joseph and Ross, where <code>barrier_ind</code> is true). Dams never block access, so this moves only the <code>DAM</code> mapping-code token: 19,065 segments in LARL, KETL and SKGT, all <code>NONE</code> to <code>DAM</code>, and segments upstream in other groups by the same rule. The <code>bcfishpass</code> bundle keeps bcfishpass’s behaviour. The downstream guard probes them through the same SQL, so under <code>default</code> a group upstream of one fails the guard until KETL, LARL and SKGT are re-modelled at this release.</li>
+<li>
+<strong>Barrier lifts count each observation once.</strong> <code>natural_barriers</code> can hold one position twice (a point where two FWA segments overlap), and the lift count credited a record once per copy. It is now a distinct count; no lift changes in the 158 groups checked.</li>
+<li>A gradient barrier where two FWA segments overlap takes the lower segment’s codes by name, as every build so far did by chance.</li>
+<li>The golden dams test pins ADMS’s 7 dam ids; the eighth of the old pin left CABD upstream.</li>
+<li>Evidence: <code>data-raw/logs/provincial_prep_367/</code>.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.67.0" id="link-0670">link 0.67.0<a class="anchor" aria-label="anchor" href="#link-0670"></a></h2>
 <p><strong><code>default</code> rears a stretch that runs through a wetland only where it would rear as a stream: big enough, or close to a large river</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/364" class="external-link">#364</a>). Needs fresh 0.42.0.</p>

@@ -116,6 +116,21 @@ sources only
 `_access` view gets the per-species gradient threshold for free); the
 access view just ignores the anthropogenic rows.
 
+**The dams outside BC (link#367).** `cabd_additions.csv` places Grand
+Coulee / Chief Joseph (Columbia at the border, Kettle, Big and Little
+Sheep creeks) and Ross (Skagit) on the BC lines they block. bcfishpass
+loads them with a NULL passability code and never makes them crossings
+(its `load_crossings.sql` inner-joins `cabd.dams`), so the `bcfishpass`
+bundle does the same. `default` sets
+`pipeline: cabd_additions_barriers`, which gives each placeholder whose
+`barrier_ind` is true code 1, so it becomes an anthropogenic barrier.
+They are numbered `1200000001`-`5` in CSV order (`.lnk_dams_usa_sql()`,
+shared with the guard, §8c). Like every dam they never block access;
+they move the `DAM` token above them (LARL, KETL, SKGT: 19,065 segments,
+all `NONE` to `DAM`; `data-raw/logs/provincial_prep_367/`) and, by the
+same rule, in the groups upstream whose next anthropogenic barrier they
+are.
+
 Remediations (PASSABLE) are **not** in `blocks_species`. They flow
 separately via `<schema>.barriers_remediations` for the sequence-aware
 `remediated_dnstr_ind`.
@@ -133,6 +148,28 @@ filtered `WHERE '<SP>' = ANY(blocks_species)`. Because it reads persist
 (province-wide), it sees **cross-WSG** barriers — this is the link#152
 fix (PARS drains through dams in PCEA/UPCE; those dams are only visible
 via persist, never in PARS-local tables).
+
+**Barrier ids are positional and stated.** Each source in
+[`lnk_barriers_unify()`](https://newgraphenvironment.github.io/link/reference/lnk_barriers_unify.md)
+numbers its rows by `(blue_line_key, downstream_route_measure)`
+(gradient also by label; falls and user-definite also by the joined
+`linear_feature_id`, because a point in the ~1 mm overlap of two FWA
+segments joins both, as one USIK falls does), never
+`row_number() OVER ()`, so two builds from the same inputs give every
+barrier the same id (link#367; verified on ADMS and ELKR).
+
+**The PSCIS pick (`.lnk_pipeline_pscis_build()`).** A PSCIS x stream
+candidate joins every modelled crossing within 100 m on its blue line.
+bcfishpass then keeps only the nearest instream one per PSCIS per blue
+line, before the pick; link had skipped that step, and the pick fell to
+encounter order between two modelled crossings on one feature (link#277:
+two builds at main, minutes apart, picked a different modelled crossing
+for 464 PSCIS). Step 3b ports it, with `modelled_crossing_id` breaking
+its tie, and the pick’s order (`.lnk_pscis_pick_order`) ends on
+`linear_feature_id, modelled_xing_dist, modelled_crossing_id`. Both KNN
+snaps
+([`lnk_points_snap()`](https://newgraphenvironment.github.io/link/reference/lnk_points_snap.md),
+the dam snap) end on `linear_feature_id`.
 
 `barriers_<sp>_min` was a **break-spec** (gradient + falls;
 minimal-reduced until \#223, every position since; how this compares
@@ -459,6 +496,11 @@ build both tables, no change to the override step (DUNC, CARP).
 `default`’s RB row gained a rule shaped like BT’s (one RB record, only
 RB counting for RB, no date floor); before it RB had no rule and nothing
 lifted for it.
+
+The count is of distinct records (`count(DISTINCT o.observation_key)`,
+link#367): `natural_barriers` can hold one position twice (a point where
+two FWA segments overlap, or a falls and a gradient barrier that round
+to one metre), and each copy joins the same records.
 
 ## 6. Gotchas that have cost real time
 
@@ -1434,7 +1476,16 @@ segment are exactly those below the outlet. ~0.5 s.
 `.lnk_pipeline_prep_dams`, all mirrored by the guard:
 `passability_status_code IN (1,2)`; a real `linear_feature_id` join; and
 `blue_line_key = watershed_key` (mainstem only). The psc filter is why
-the `cabd_additions` US placeholders never appear — they carry NULL.
+the `cabd_additions` US placeholders never appear under the `bcfishpass`
+bundle — they carry NULL. Under `default`
+(`pipeline: cabd_additions_barriers`) they are barriers, and the guard
+probes them through the same `.lnk_dams_usa_sql()` as
+`.lnk_pipeline_prep_dams()` (link#367). **So under `default` a group
+upstream of one (the BC Columbia above the border, the Kettle, the
+Skagit) fails the guard until KETL, LARL and SKGT are persisted at link
+0.68.0 or later**: a schema built before then holds no placeholder
+barriers, and `wsg_recompute_one.R`’s error-mode check refuses those
+groups until they are re-modelled.
 
 **Persistence is checked per DAM, not per WSG** — `.lnk_wsg_persisted()`
 cannot tell a group persisted with `dams = FALSE`, which would pass a
