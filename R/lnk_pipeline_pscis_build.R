@@ -261,8 +261,11 @@
   # The nearest instream wins, as in bcfp; `modelled_crossing_id` breaks
   # bcfp's remaining tie. The losers keep their candidate row with no
   # modelled crossing, so they take the full (unweighted) distance at the
-  # pick. `(stream_crossing_id, linear_feature_id, modelled_crossing_id)`
-  # identifies a row with a modelled crossing (measured, link#367).
+  # pick. Rows that share `(stream_crossing_id, linear_feature_id,
+  # modelled_crossing_id)` are exact copies from Step 2's join to
+  # `fwa_rivers_poly` (one per polygon of a waterbody_key); this keeps every
+  # copy of the winner where bcfp keeps one, which changes no pick (measured
+  # on the province-wide table, link#367).
   sql_nearest <- sprintf("
     WITH nearest AS (
       SELECT DISTINCT ON (stream_crossing_id, blue_line_key)
