@@ -51,10 +51,11 @@ The same issue owns the next provincial `default` run (the re-model #364 and #36
 | decision | choice | alternative refused |
 |---|---|---|
 | today's `fresh_default` | `ALTER SCHEMA fresh_default RENAME TO fresh_default_20261017` before launch; keep for a before/after diff; drop later | build over it |
-| primitives | keep the 2026-10-17 load, `--vintage-max-days=10` (the #367 evidence and `fresh_parity362` are on it; `bcfishpass_parity.md`: do not refresh between compared runs) | `--refresh-primitives` |
+| primitives | **revised 2026-10-23 (operator): `--refresh-primitives`.** The first choice (keep the 10-17 load, `--vintage-max-days=10`) is not achievable on a multi-host run: `cypher_prep.sh` runs `snapshot_bcfp.sh`, which pulls PSCIS and CABD with no version handle and bchamp objects at their current version (`modelled_stream_crossings` moved on 2026-10-20, version `1792530487154`), so the hosts would model on different inputs and `verify_extra.sql` would fail. Every host takes one load at launch, as on 2026-10-17; the parity re-score runs on that load and its moves include input moves, named by `log_input` and `override_diff.csv`. | dispatcher-only on the 10-17 load (~17 h) |
 | hosts | 3 cloud hosts (`job1,job2,job3`) + m1, launch now; component packing on measured minutes | create `job4` in the infra repo first |
 | split test | after the run, on m1; the run's own Peace build (one host, DS-first) is the reference | before the run |
 | config / schema / closure / species | `default` → `fresh_default`; all 246 focal → 241 modelable (as 2026-10-17); species from `default` × presence; `dams` and `mapping_code` on (driver defaults); recompute `-j8` (1.43× over 4, #349 status) | — |
+| other session | another session's jobs (`knowledge` repo `0320-tune-run.R`, `0330-compare.R`) read `fresh_default` live and share the database VM: wait for both to exit, then rename and launch (operator, 2026-10-23); nothing is done to their processes | stop them; launch into a temporary schema |
 | run from | the feature branch, tree clean, pushed (cyphers pull the ref); link stays 0.68.0 (only `data-raw/` changes before the launch) | main |
 | `default`'s parameters | unchanged for this run. Every recent knob already carries a measured `default` decision (#364 door on wetland lines, #367 placeholders on, #310 10 km, #307 MAD ranges, all groups on `cw`); calibrated values stay in `default_tuned`, the staging bundle, and promoting one is its own scored decision for which this run is the baseline (#346). The only default that moves is the driver's host-speed assumption (Phase 1). | fold a `default_tuned` value into `default` before the run |
 
@@ -76,15 +77,16 @@ The same issue owns the next provincial `default` run (the re-model #364 and #36
 
 ## Phase 2: The provincial `default` run (operator-attended, ~7 h wall, ~$5 cloud)
 
-- [ ] Pre-flight without spend: `bash data-raw/study_area_run.sh --preflight-only
-      --cy-workspaces=job1,job2,job3 --config=default --schema=fresh_default --vintage-max-days=10`.
+- [x] Pre-flight without spend: `bash data-raw/study_area_run.sh --preflight-only
+      --cy-workspaces=job1,job2,job3 --config=default --schema=fresh_default` (passed on 2026-10-23 04:43 UTC, `/opt/homebrew/bin/bash`).
       Tree clean on the pushed branch; `lnk_preflight_fresh()` passes locally (fresh 0.42.0).
-- [ ] Rename the old schema (`ALTER SCHEMA fresh_default RENAME TO fresh_default_20261017`),
+- [x] Rename the old schema (`ALTER SCHEMA fresh_default RENAME TO fresh_default_20261017`),
       after checking no process holds it (`pg_stat_activity`) and disk (`df` on the colima
-      volume: ~253 G free).
+      volume: 174 G free, not the ~253 G the plan assumed). Done 2026-10-23 07:41 UTC, after the
+      other session's two jobs exited at 07:40 UTC; no backend held the schema.
 - [ ] Launch detached (`nohup … & disown`, never a tool-managed background process) with the
       four `--focal=` lines from `buckets_default.md`, `--config=default --schema=fresh_default
-      --run-label=provincial-241-default-361 --recompute-jobs=8 --vintage-max-days=10`.
+      --run-label=provincial-241-default-361 --recompute-jobs=8 --refresh-primitives`.
       Cyphers are re-prepped on spin by `cypher_prep.sh` (installs link + fresh from the
       DESCRIPTION pin and asserts `lnk_preflight_fresh()`); the host-parity gate confirms it
       before any write. Nothing in the repo is touched while it runs.
@@ -145,8 +147,8 @@ Harness `data-raw/logs/provincial_361/split_test.sh` + `split_compare.R`, from t
 ## Phase 5: bcfishpass parity re-score (m1, ~1 h)
 
 - [ ] `bash data-raw/study_area_run.sh --focal=ADMS,BULK,BABL,ELKR --config=bcfishpass
-      --schema=fresh_parity361 --run-label=parity-4-bcfishpass-361 --recompute-jobs=8
-      --vintage-max-days=10`; verify at `expected_n=17`.
+      --schema=fresh_parity361 --run-label=parity-4-bcfishpass-361 --recompute-jobs=8`
+      (no refresh: the run's load, within 7 days); verify at `expected_n=17`.
 - [ ] `LNK_LOAD=loadall LNK_SCHEMA=fresh_parity361 LNK_CONFIG=bcfishpass
       LNK_PARITY_OUT=data-raw/logs/parity_0.68.0/parity_annotated.csv
       Rscript data-raw/parity_crosssection.R ADMS BULK BABL ELKR`; write `expected.txt` first

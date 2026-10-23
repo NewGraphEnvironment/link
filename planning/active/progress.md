@@ -23,3 +23,11 @@
   replaced, GNU tail is first on PATH here) and `split_compare.R` (ADMS vs itself: 16/16 identical,
   control differs; `fresh_default` vs `fresh_parity362`: differing branch lists columns).
   `launch.sh` holds the run command (4 focal lines, 246 groups).
+
+## Session 2026-10-23 (launch)
+
+- Gate revision recorded: `--refresh-primitives` (not `--vintage-max-days=10`), wait for the other
+  session's two R jobs (`0320-tune-run.R`, `0330-compare.R`) before the rename.
+- Pre-flight passed 04:43 UTC; both jobs exited 07:40 UTC; `fresh_default` renamed to
+  `fresh_default_20261017` 07:41 UTC (no holders in `pg_stat_activity`; 174 G free).
+- Next: launch `data-raw/logs/provincial_361/launch.sh` detached; monitor from the databases.
