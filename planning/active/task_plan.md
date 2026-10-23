@@ -50,7 +50,7 @@ The Plan review (`planning/active/review-plan.md`) disproved part of the plan; c
 - [x] RUNBOOK (done; #361 owed after merge): with the knob on, the guard fails for groups upstream of a placeholder until KETL, LARL and SKGT are re-persisted at v0.68.0, so the existing `fresh_default` fails `wsg_recompute_one.R`'s error-mode check for them
 - [x] Edit the bodies of #277, #244 and #345 to what was found and done
 - [x] `devtools::test()` (964 tests, 3,788 expectations, 0 failed), `devtools::check()` (0 errors; 3 warnings and 3 notes, all present on main: non-ASCII counts per file unchanged), `lintr::lint_package()` (no new lints beyond file-style indentation and the stale-install object_usage false positive)
-- [ ] Bump DESCRIPTION to 0.68.0 as the last commit
+- [x] Bump DESCRIPTION to 0.68.0 as the last commit
 
 ## Owed at the end (reported, done after merge)
 - [ ] Tag v0.68.0 (`/gh-pr-merge`, on your word)
@@ -59,8 +59,8 @@ The Plan review (`planning/active/review-plan.md`) disproved part of the plan; c
 
 ## Validation
 
-- [ ] Tests pass
-- [ ] `/code-check` clean (once over the branch with `/code-check branch`)
+- [x] Tests pass (final: 968 tests, 3,800 expectations, 0 failed)
+- [x] `/code-check branch`: four rounds; rounds 2 and 4 found defects inside earlier fixes, so the loop ended on the enumeration in findings.md (every ordering construct, `UPDATE ... FROM` and measure-range join in `R/` and its readers), not on a clean round
 - [ ] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
 
