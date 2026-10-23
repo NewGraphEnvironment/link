@@ -188,16 +188,20 @@ Harness `data-raw/logs/provincial_361/split_test.sh` + `split_compare.R`, from t
 
 ## Phase 6: Records
 
-- [ ] `research/study_area_run.md`: a section for this run (table as for 2026-10-17: per-host
+- [x] `research/study_area_run.md`: a section for this run (table as for 2026-10-17: per-host
       minutes against the Phase 1 estimate, consolidate, recompute at `-j8`, wall clock, cost,
-      schema size) and the split verdict under "Hosts against wall clock".
-- [ ] `CLAUDE.md` status block (what the run is, the split answer, facts not worth re-deriving);
-      `NEWS.md` entry for the driver changes; `data-raw/logs/provincial_361/README.md` indexing the
-      evidence; `data-raw/logs/README.md` row.
+      schema size) and the split verdict under "Hosts against wall clock" (the verdict sits in the
+      new section's last bullet, which revisits that heading).
+- [x] `CLAUDE.md` status block (what the run is, the split answer, facts not worth re-deriving);
+      `NEWS.md` entry for the driver changes (0.68.1); `data-raw/logs/provincial_361/README.md`
+      indexing the evidence; `data-raw/logs/README.md` rows for `provincial_<issue>/` and
+      `parity_<version>/`.
 - [ ] Issue #361 body: tick the "Before the run" list, record the verdict and the run_uid; #364
-      and #367 bodies: the owed re-model is done.
-- [ ] `lnk_habitat_validate()` no longer refuses `fresh_default` under `default`: run
+      and #367 bodies: the owed re-model is done. (Drafted; applied once the parity score is in.)
+- [x] `lnk_habitat_validate()` no longer refuses `fresh_default` under `default`: run
       `data-raw/habitat_validate.R --bundles=default:fresh_default --wsgs=ADMS` once as the check.
+      Passed 21:56 UTC (both buffers); run without `--out=`, which rewrote `habitat_validate_283/`
+      (restored from HEAD; lesson in findings).
 
 ## Owed at the end (reported, done after merge)
 
