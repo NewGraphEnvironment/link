@@ -46,9 +46,9 @@ repo it modelled from was edited mid-run (`link_dirty`).
 - Drop `fresh_default_20261017` once no before/after diff needs it (operator's call).
 - A `job4` tofu workspace in the infra repo, if a 5-host run is wanted; group-level packing is
   worth ~30 min there and more beyond (measured: 216 against 231 min at five hosts).
-- Drop the scratch schemas `fresh_361a`, `fresh_361b`, `fresh_361c` and remove the worktree
-  `~/Projects/repo/link-wt361` after the merge.
-- Two follow-up issues drafted for the operator's review, not filed: a per-statement timeout in the driver, and a
-  scoped pre-run gate (`drafts/followup_issues_timeout_pretest.md`).
+- Done 2026-10-23: scratch schemas `fresh_361a`, `fresh_361b`, `fresh_361c` dropped and the worktree
+  `~/Projects/repo/link-wt361` removed (evidence committed under `data-raw/logs/provincial_361/`).
+  `fresh_default_20261017` stays: the knowledge repo's active work reads it.
+- Follow-ups filed 2026-10-23: #371 (bound each modelling statement) and #372 (a scoped pre-run gate).
 
 Closed by: PR (see `git log`), branch `361-provincial-run-can-a-drainage-component`
