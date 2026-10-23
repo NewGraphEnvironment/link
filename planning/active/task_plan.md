@@ -1,0 +1,202 @@
+# Task: Provincial run: can a drainage component be split across hosts now that the recompute settles access? (#361)
+
+`study_area_buckets.R` packs whole drainage components onto hosts (union-find over per-group `frs_wsg_drainage()` closures), and each host models its component downstream-first. On run `20261017_004619-3f4c713b` (241 groups, `fresh_default`):
+
+| | host-minutes |
+|---|---|
+| modelling, all groups | 873 |
+| Fraser component (68 groups) | 205 |
+| next largest (Peace, 26 groups) | 107 |
+| slowest single group (SETN) | 16.5 |
+
+So the dispatcher's Fraser bucket sets the floor, and four cloud hosts already fill the other 668 min under it (`research/study_area_run.md`, "Hosts against wall clock").
+
+The rule was written for two reasons (`study_area_buckets.R` header):
+1. Cross-group `;DAM` and access need downstream groups' barriers persisted first.
+2. Overlapping closures would model a group on two hosts, and consolidate would keep whichever finished last.
+
+## Context
+
+`study_area_buckets.R` packs whole drainage components onto hosts, so a province-wide run's
+modelling cannot finish before its largest component (the Fraser, 205 of 873 host-minutes).
+The rule was written for cross-group `;DAM` / access (reason 1) and against two hosts modelling
+one group (reason 2). Since #175 the post-consolidate recompute settles access, mapping code and
+(since #349) the habitat flags from every group's persisted barriers, and the run already models
+with `LNK_GUARD_DOWNSTREAM=warn` and `LNK_HABITAT_GATE=0`, so the rule may protect nothing.
+That is untested; in particular `lnk_access(merge = TRUE)` keeps a prior `access_<sp> = 2`.
+
+The same issue owns the next provincial `default` run (the re-model #364 and #367 owe, at link
+0.68.0 on fresh 0.42.0) and the bcfishpass parity re-score after it.
+
+**What exploration changed about the issue's framing (put to the operator at the gate, 2026-10-22):**
+
+- Only three cypher tofu workspaces exist (`job1`–`job3`). At 4 hosts, 873 host-minutes is 218 min
+  each, above the Fraser's 205, so splitting the Fraser gains nothing on *this* run. The last run's
+  hosts took 165 / 205 / 272 / 231 min (`fresh_default.log`, newest row per group) against an ideal
+  ~218, because the generator weighted by segment count with cloud hosts at 0.45× m1's speed, and
+  the 2026-10-17 run measured them at about m1's rate. The gain available now is **packing on
+  measured minutes with equal speeds** (~272 → ~230 min). Splitting pays at 5+ hosts.
+- Model-time inputs that could depend on order, as read: `<working>.observations` is AOI-scoped
+  from `bcfishobs.observations` (`R/lnk_pipeline_prepare.R:292`), and `observations_province` is
+  rebuilt from the primitive each run, so the kept `2` should not differ by order. Measured, not
+  assumed: that is the test.
+- `lnk_wsg_resolve(expand = FALSE)` already keeps input order after the species filter
+  (`R/lnk_wsg_resolve.R:113`), which is what an exact per-host list needs.
+- `data-raw/logs/provincial_prep_367/run.sh` (two lanes, a lock per group, `LNK_SCHEMA` scratch
+  schemas) and `compare.R` (per-group per-table digests, geometry as EWKB, barriers with and
+  without id) are the harness to reuse for the split test.
+
+## Decided at the gate (operator, 2026-10-22)
+
+| decision | choice | alternative refused |
+|---|---|---|
+| today's `fresh_default` | `ALTER SCHEMA fresh_default RENAME TO fresh_default_20261017` before launch; keep for a before/after diff; drop later | build over it |
+| primitives | keep the 2026-10-17 load, `--vintage-max-days=10` (the #367 evidence and `fresh_parity362` are on it; `bcfishpass_parity.md`: do not refresh between compared runs) | `--refresh-primitives` |
+| hosts | 3 cloud hosts (`job1,job2,job3`) + m1, launch now; component packing on measured minutes | create `job4` in the infra repo first |
+| split test | after the run, on m1; the run's own Peace build (one host, DS-first) is the reference | before the run |
+| config / schema / closure / species | `default` → `fresh_default`; all 246 focal → 241 modelable (as 2026-10-17); species from `default` × presence; `dams` and `mapping_code` on (driver defaults); recompute `-j8` (1.43× over 4, #349 status) | — |
+| run from | the feature branch, tree clean, pushed (cyphers pull the ref); link stays 0.68.0 (only `data-raw/` changes before the launch) | main |
+| `default`'s parameters | unchanged for this run. Every recent knob already carries a measured `default` decision (#364 door on wetland lines, #367 placeholders on, #310 10 km, #307 MAD ranges, all groups on `cw`); calibrated values stay in `default_tuned`, the staging bundle, and promoting one is its own scored decision for which this run is the baseline (#346). The only default that moves is the driver's host-speed assumption (Phase 1). | fold a `default_tuned` value into `default` before the run |
+
+## Phase 1: Pack hosts on measured minutes (before the run)
+
+`data-raw/study_area_buckets.R`:
+- [ ] New `--minutes-schema=<schema>`: weight each modelable group by its newest finished `log` row
+      (`extract(epoch from date_end - date_start)/60`, `date_end IS NOT NULL`, newest `date_start`
+      per group), median for a group with no row, and print how many took the median. Without the
+      flag, the segment-count weights stay, and the report says which weighting was used.
+- [ ] `--host-speeds` default becomes equal (`1,1,…`), with the 2026-10-17 measurement in the
+      comment replacing the 2026-08-31 pilot's 0.45. The report prints each host's estimated
+      minutes, not only a share.
+- [ ] Generate the run's split: `LNK_LOAD=loadall Rscript data-raw/study_area_buckets.R
+      --config=default --hosts=4 --minutes-schema=fresh_default --focal=<all 246>
+      > data-raw/logs/provincial_361/buckets_default.md` (stderr beside it). Record the estimated
+      makespan against the component floor (Fraser 205 min).
+- [ ] Commit; push the branch (cyphers pull it).
+
+## Phase 2: The provincial `default` run (operator-attended, ~7 h wall, ~$5 cloud)
+
+- [ ] Pre-flight without spend: `bash data-raw/study_area_run.sh --preflight-only
+      --cy-workspaces=job1,job2,job3 --config=default --schema=fresh_default --vintage-max-days=10`.
+      Tree clean on the pushed branch; `lnk_preflight_fresh()` passes locally (fresh 0.42.0).
+- [ ] Rename the old schema (`ALTER SCHEMA fresh_default RENAME TO fresh_default_20261017`),
+      after checking no process holds it (`pg_stat_activity`) and disk (`df` on the colima
+      volume: ~253 G free).
+- [ ] Launch detached (`nohup … & disown`, never a tool-managed background process) with the
+      four `--focal=` lines from `buckets_default.md`, `--config=default --schema=fresh_default
+      --run-label=provincial-241-default-361 --recompute-jobs=8 --vintage-max-days=10`.
+      Cyphers are re-prepped on spin by `cypher_prep.sh` (installs link + fresh from the
+      DESCRIPTION pin and asserts `lnk_preflight_fresh()`); the host-parity gate confirms it
+      before any write. Nothing in the repo is touched while it runs.
+- [ ] Watch it against the clock (`date -u`; `data-raw/progress_check.sh`; each host's database
+      count, never log text). On a failed group: `--recompute-only --run-uid=<uid>` after the
+      re-model, per RUNBOOK §8d.
+- [ ] Verify: `study_area_verify.sql` and `data-raw/logs/provincial_246/verify_extra.sql` with
+      `-v schema=fresh_default -v run_uid=<uid> -v expected_n=241`; one link SHA in `log` and
+      `log_recompute`; the `kept_hosts.tsv` empty; cyphers burned.
+- [ ] Copy the wrapper logs to `data-raw/logs/provincial_361/` (`run.log`, `run_verify*.log`).
+
+## Phase 3: The split test (m1, after the run, ~2 h)
+
+Harness `data-raw/logs/provincial_361/split_test.sh` + `split_compare.R`, from the #367 pair:
+- [ ] Peace's 26 groups in DS-first order from `study_area_wsgs.R <the 26> default`; interleave
+      odd/even positions onto two "hosts" (scratch schemas `fresh_361a`, `fresh_361b`), and
+      **reverse** each host's list so upstream groups run first. Model with `LNK_SCHEMA`,
+      `LNK_GUARD_DOWNSTREAM=warn`, `LNK_HABITAT_GATE=0`, one `LNK_RUN_UID`, same link SHA as the
+      run, two lanes (one per schema). Count the guard's warnings per group: evidence the order
+      was bad.
+- [ ] "Consolidate" b → a as the real one does for persist tables: per table with
+      `watershed_group_code`, `DELETE … WHERE group IN (b's bucket)` then `INSERT … SELECT`
+      (log tables by primary key, as `schema_consolidate.R` does since #354).
+- [ ] Recompute all 26 in `fresh_361a`: `barriers_views_build.R` once, then
+      `wsg_recompute_one.R` per group (`LNK_VIEWS_PREBUILT=1`), which runs the downstream guard
+      in **error** mode and the habitat gate. A guard failure here is a finding, not a retry.
+- [ ] Digest every persisted table per group (`streams`, `barriers` with and without id,
+      `barrier_overrides`, `streams_access`, `streams_mapping_code`, every `streams_habitat_<sp>`;
+      log tables excluded) in `fresh_361a` against `fresh_default` → `split_test.csv`.
+- [ ] Verdict, one of two:
+  - identical on every table and group → Phase 4a;
+  - not → name the differing table, groups and columns (a segment-level diff on the first
+    differing table), which says what the component rule protects → Phase 4b.
+
+## Phase 4a: Group-level packing for province-wide runs (if identical)
+
+- [ ] `study_area_buckets.R --atom=group`: LPT over single modelable groups (measured minutes),
+      each host's list ordered by the global DS-first order (cheap, fewer guard warnings); the
+      drainage-closed and within-host DS-first assertions are skipped in this mode and the report
+      says the recompute is the guarantee, citing `provincial_361/split_test.csv`. Default stays
+      `--atom=component`; `--write` refuses `--atom=group` (`research/study_areas.md` describes
+      components). The report prints the makespan under both atoms for the same hosts.
+- [ ] `data-raw/study_area_wsgs.R --exact`: `lnk_wsg_resolve(expand = FALSE)`, input order kept;
+      `study_area_run.sh --buckets-exact` uses it for every `--focal=` list, keeps the overlap
+      check (now fatal in exact mode: a group on two hosts is operator error, not a closure
+      property) and records the mode in the banner and `run_wsgs.tsv`.
+- [ ] Header comments in `study_area_buckets.R` and `study_area_run.sh`, RUNBOOK §8d "Host
+      buckets are derived, not chosen", and `research/study_area_run.md` "Hosts against wall
+      clock" say when each atom applies and why.
+
+## Phase 4b: Keep the component rule (if not identical)
+
+- [ ] Write the differing input into RUNBOOK §8d and `research/study_area_run.md`, with the
+      digest table; file nothing new unless the difference is a defect (then an issue, drafted
+      for review first). `study_area_run.sh` and the buckets script keep component mode; the
+      measured-minute weighting from Phase 1 stays.
+
+## Phase 5: bcfishpass parity re-score (m1, ~1 h)
+
+- [ ] `bash data-raw/study_area_run.sh --focal=ADMS,BULK,BABL,ELKR --config=bcfishpass
+      --schema=fresh_parity361 --run-label=parity-4-bcfishpass-361 --recompute-jobs=8
+      --vintage-max-days=10`; verify at `expected_n=17`.
+- [ ] `LNK_LOAD=loadall LNK_SCHEMA=fresh_parity361 LNK_CONFIG=bcfishpass
+      LNK_PARITY_OUT=data-raw/logs/parity_0.68.0/parity_annotated.csv
+      Rscript data-raw/parity_crosssection.R ADMS BULK BABL ELKR`; write `expected.txt` first
+      (the #367 prediction: CO −0.22 km ADMS, −1.45 km BULK; 656 PSCIS picks move province-wide).
+- [ ] `moves.R` (copied from `parity_0.66.6/`, schemas `fresh_parity362` → `fresh_parity361`),
+      matching segments on start **and** length. Revise `research/bcfishpass_parity.md` (table,
+      what moved, the run line). Drop `fresh_parity246`; keep `fresh_parity362` as the previous
+      build.
+
+## Phase 6: Records
+
+- [ ] `research/study_area_run.md`: a section for this run (table as for 2026-10-17: per-host
+      minutes against the Phase 1 estimate, consolidate, recompute at `-j8`, wall clock, cost,
+      schema size) and the split verdict under "Hosts against wall clock".
+- [ ] `CLAUDE.md` status block (what the run is, the split answer, facts not worth re-deriving);
+      `NEWS.md` entry for the driver changes; `data-raw/logs/provincial_361/README.md` indexing the
+      evidence; `data-raw/logs/README.md` row.
+- [ ] Issue #361 body: tick the "Before the run" list, record the verdict and the run_uid; #364
+      and #367 bodies: the owed re-model is done.
+- [ ] `lnk_habitat_validate()` no longer refuses `fresh_default` under `default`: run
+      `data-raw/habitat_validate.R --bundles=default:fresh_default --wsgs=ADMS` once as the check.
+
+## Owed at the end (reported, done after merge)
+
+- [ ] Drop `fresh_default_20261017` once no before/after diff needs it (operator's call).
+- [ ] A `job4` tofu workspace in the infra repo, if a 5-host run is wanted; group-level packing is
+      worth ~30 min there and more beyond.
+
+## Validation
+
+- [ ] Tests pass (`devtools::test()`; `tests/testthat/test-study_area_hosts.R` and
+      `test-study_area_finish.R` cover the driver's sourced parts; new `--exact` / `--atom` paths
+      get a test where a function exists to test, else the generated report is the evidence)
+- [ ] `lintr::lint_package()` clean on changed R
+- [ ] `/code-check branch` clean (three-round floor; the harness and driver hunks are shell)
+- [ ] PWF checkboxes match landed work
+- [ ] `/planning-archive` on completion, then `/gh-pr-push`
+
+How each change is proved:
+- Phase 1: the report's per-host minutes sum to the measured 873 ± rounding, the makespan is
+  under the 2026-10-17 run's 272, and `--hosts=4` without `--minutes-schema` reproduces today's
+  segment-weighted answer.
+- Phase 2: both verifiers pass at 241; one `config_hash`; every group's newest `log` row from
+  this run_uid; `log_recompute` rows for all 241 at `-j8`.
+- Phase 3: `split_test.csv` has a row per (group, table) for 26 groups; the guard warned on the
+  split build (so the order was bad) and passed in the recompute; a deliberate check that the
+  compare can fail (digest `fresh_361a` against `fresh_default_20261017` for one group: must
+  differ, since the link version differs).
+- Phase 4a: `--atom=group` on the 246 prints a makespan near 873 / hosts; `--buckets-exact`
+  with an overlapping pair refuses; `--preflight-only` passes with exact lists.
+- Phase 5: 17 groups verified; `parity_annotated.csv` scored; every move in `pair_moves.csv`
+  explained in `moves.log`.
+
