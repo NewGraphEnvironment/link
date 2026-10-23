@@ -131,3 +131,7 @@ Withdrawn: the fresh near-river-walk issue (premise disproved; see findings). Al
   `head -6` truncation (140 rows in four groups). Closed by enumeration: round 4b's per-quantity table, with the
   previously underivable join and gate counts now committed (`split_column_joins.csv`, `split_tood_probe.csv`,
   `split_test_diff_streams_access_TOOD.csv`), every quantity matches its artifact.
+- Phase 5 done: parity 48/50 at 0.68.0 (`20261023_215312-16fb3aae`, `fresh_parity361`); CO rearing moved in ADMS
+  (−0.3) and BULK (−1.3) as predicted and in BABL (−1.4) against a prediction of under 0.1, all the #364
+  wetland-line rule; `data-raw/logs/parity_0.68.0/README.md`, `research/bcfishpass_parity.md` revised;
+  `fresh_parity246` dropped (operator's 2026-10-20 rule).

@@ -173,17 +173,18 @@ Harness `data-raw/logs/provincial_361/split_test.sh` + `split_compare.R`, from t
 
 ## Phase 5: bcfishpass parity re-score (m1, ~1 h)
 
-- [ ] `bash data-raw/study_area_run.sh --focal=ADMS,BULK,BABL,ELKR --config=bcfishpass
+- [x] `bash data-raw/study_area_run.sh --focal=ADMS,BULK,BABL,ELKR --config=bcfishpass
       --schema=fresh_parity361 --run-label=parity-4-bcfishpass-361 --recompute-jobs=8`
-      (no refresh: the run's load, within 7 days); verify at `expected_n=17`.
-- [ ] `LNK_LOAD=loadall LNK_SCHEMA=fresh_parity361 LNK_CONFIG=bcfishpass
-      LNK_PARITY_OUT=data-raw/logs/parity_0.68.0/parity_annotated.csv
-      Rscript data-raw/parity_crosssection.R ADMS BULK BABL ELKR`; write `expected.txt` first
-      (the #367 prediction: CO −0.22 km ADMS, −1.45 km BULK; 656 PSCIS picks move province-wide).
-- [ ] `moves.R` (copied from `parity_0.66.6/`, schemas `fresh_parity362` → `fresh_parity361`),
+      (no refresh: the run's load, within 7 days); verify at `expected_n=17`. Run `20261023_215312-16fb3aae` from the worktree at `1d00c04c`, PASS at 17
+      (a first run from the main tree was discarded: 16 rows `link_dirty`).
+- [x] `LNK_LOAD=loadall LNK_SCHEMA=fresh_parity361 LNK_CONFIG=bcfishpass
+ PSCIS picks move province-wide). 48/50, PASS, as predicted.
+- [x] `moves.R` (copied from `parity_0.66.6/`, schemas `fresh_parity362` → `fresh_parity361`),
       matching segments on start **and** length. Revise `research/bcfishpass_parity.md` (table,
       what moved, the run line). Drop `fresh_parity246`; keep `fresh_parity362` as the previous
-      build.
+      build. Three pairs moved, all CO rearing on through-wetland lines (#364): ADMS −0.3, BULK −1.3 as
+      predicted, BABL −1.4 where "under 0.1" was predicted without a measurement. Research record revised;
+      `fresh_parity246` dropped.
 
 ## Phase 6: Records
 
@@ -218,7 +219,9 @@ Harness `data-raw/logs/provincial_361/split_test.sh` + `split_compare.R`, from t
       refusals recorded in Phase 4a.
 - [x] `lintr::lint_package()` clean on changed R: 5 lints, all pre-existing in test files outside
       this branch's hunks (`hosts_bash` from `setup.R`, one indentation in `test-schema_consolidate.R`).
-- [ ] `/code-check branch` clean (three-round floor; the harness and driver hunks are shell)
+- [x] `/code-check branch` clean (three-round floor; the harness and driver hunks are shell). Four rounds;
+      no code defect; 9 doc/evidence quantities corrected; closed by enumeration (round 4b's table, every
+      quantity matched to an artifact). `planning/active/review-round{1,2,3,4b}.md`.
 - [ ] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion, then `/gh-pr-push`
 
