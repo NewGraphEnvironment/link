@@ -207,7 +207,9 @@ lnk_barriers_unify <- function(conn, aoi, cfg, loaded,
   # via FWA_LocateAlong + Force2D for cross-source uniformity.
   sql_gradient <- sprintf("
     SELECT
-      ('GRADIENT-' || row_number() OVER ()::text)::text AS id_barrier,
+      ('GRADIENT-' || row_number() OVER (
+        ORDER BY blue_line_key, downstream_route_measure, label)::text)::text
+                                        AS id_barrier,
       %1$s::varchar(4)                  AS watershed_group_code,
       'GRADIENT'::text                  AS barrier_source,
       label                             AS barrier_subtype,
@@ -224,12 +226,17 @@ lnk_barriers_unify <- function(conn, aoi, cfg, loaded,
     aoi_lit, gradient_case, schema)  # nolint: indentation_linter
 
   # Source 3: falls. id_barrier = 4_000_000_000 + row_number().
+  # Ordered on the joined linear_feature_id too: a falls point in the ~1 mm
+  # overlap between two FWA segments joins both (USIK, link#367).
   # falls staging table from fresh's bundled CSV has blue_line_key +
   # downstream_route_measure + watershed_group_code only — JOIN to FWA
   # for ltrees + length to compute integer drm.
   sql_falls <- sprintf("
     SELECT
-      ('FALLS-' || row_number() OVER ()::text)::text AS id_barrier,
+      ('FALLS-' || row_number() OVER (
+        ORDER BY f.blue_line_key, f.downstream_route_measure,
+                 s.linear_feature_id)::text)::text
+                                        AS id_barrier,
       f.watershed_group_code,
       'FALLS'::text                     AS barrier_source,
       'falls'::text                     AS barrier_subtype,
@@ -264,7 +271,10 @@ lnk_barriers_unify <- function(conn, aoi, cfg, loaded,
   # *all* user added features, even those below observations"). link#200.
   sql_user_definite <- sprintf("
     SELECT
-      ('USER_DEFINITE-' || row_number() OVER ()::text)::text AS id_barrier,
+      ('USER_DEFINITE-' || row_number() OVER (
+        ORDER BY d.blue_line_key, d.downstream_route_measure,
+                 s.linear_feature_id)::text)::text
+                                        AS id_barrier,
       %1$s::varchar(4)                  AS watershed_group_code,
       'USER_DEFINITE'::text             AS barrier_source,
       'user_definite'::text             AS barrier_subtype,
@@ -289,7 +299,9 @@ lnk_barriers_unify <- function(conn, aoi, cfg, loaded,
   if (has_subsurface) {
     sql_subsurface <- sprintf("
       SELECT
-        ('SUBSURFACE-' || row_number() OVER ()::text)::text AS id_barrier,
+        ('SUBSURFACE-' || row_number() OVER (
+          ORDER BY blue_line_key, downstream_route_measure)::text)::text
+                                          AS id_barrier,
         %1$s::varchar(4)                AS watershed_group_code,
         'SUBSURFACE_FLOW'::text         AS barrier_source,
         'subsurface_flow'::text         AS barrier_subtype,

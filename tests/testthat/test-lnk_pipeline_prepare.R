@@ -89,6 +89,11 @@ test_that(".lnk_pipeline_prep_gradient quotes aoi safely in the streams_blk quer
   expect_match(joined, "watershed_group_code = 'BULK'")
   expect_match(joined, "edge_type != 6010")
   expect_match(joined, "ADD COLUMN IF NOT EXISTS wscode_ltree ltree")
+  # A point in a segment overlap matches two segments; the lower one is
+  # named, not left to the UPDATE's join order (link#367).
+  expect_match(joined, "SELECT DISTINCT ON (g2.ctid)", fixed = TRUE)
+  expect_match(joined, "ORDER BY g2.ctid, s.downstream_route_measure, s.linear_feature_id",
+               fixed = TRUE)
   expect_no_match(joined, "DELETE FROM w.gradient_barriers_raw")
 })
 
@@ -960,13 +965,24 @@ test_that(".lnk_pipeline_prep_dams output is stable (golden, pre-refactor)", {
   blocking <- got[got$passability_status_code %in% c(1L, 2L), ]
   expect_gt(nrow(blocking), 0L)
 
-  # Pinned counts (captured 2026-08-28 pre-refactor against docker fwapg,
-  # cabd.dams 2594 rows). Not expect_snapshot(): snapshots skip on CRAN, which
-  # would make the regression net silently absent in exactly the run that
-  # matters. If cabd.dams is refreshed upstream these may legitimately move —
-  # re-pin deliberately rather than loosening the assertion.
-  expect_identical(nrow(got), 8L)
-  expect_identical(nrow(blocking), 8L)
+  # Pinned dam ids, re-pinned 2026-10-22 against docker fwapg with cabd.dams
+  # at 2,592 rows (load of 2026-10-17; link#345). The 2026-08-28 pin was 8
+  # dams at 2,594 rows; the bcfishpass reference's own bcfishpass.dams holds
+  # these same 7 for ADMS, so the eighth left CABD upstream. Ids, not a
+  # count, so the next CABD change names what moved. Not expect_snapshot():
+  # snapshots skip on CRAN, which would make the regression net silently
+  # absent in exactly the run that matters. Re-pin deliberately rather than
+  # loosening the assertion.
+  expect_identical(got$dam_id, c(
+    "2e2f177c-3643-40a1-862b-efab63d6d0c8",
+    "30931810-86cc-4e9e-96d8-a6d8df138bd4",
+    "5e806d7e-6ef9-4db0-b122-40425035d13e",
+    "841a71fd-89e0-4d9d-a486-7dcca3b8443a",
+    "9b0ee2e6-1e55-4f97-bd9a-a7c950dd7baf",
+    "b48ea884-cab3-478d-863d-5033dbcf0bea",
+    "fc6931e8-ded6-42a2-bd0b-1a5b4b72d0e4"
+  ))
+  expect_identical(nrow(blocking), nrow(got))
   expect_true(all(got$passability_status_code == 1L))
 
   # dam_id uniqueness encodes DISTINCT ON (c.dam_id) — one row per dam even
@@ -976,28 +992,6 @@ test_that(".lnk_pipeline_prep_dams output is stable (golden, pre-refactor)", {
   # Every dam snapped to a real blue line; the 65 m filter drops the rest.
   expect_false(any(is.na(got$blue_line_key)))
 })
-
-test_that(".lnk_pipeline_prep_dams applies the cabd_additions psc-NULL rule", {
-  # The `usa` CTE hardcodes NULL::integer AS passability_status_code, and the
-  # barrier_status CASE in .lnk_crossings_union has no NULL arm — so the US
-  # placeholder dams (Grand Coulee, Chief Joseph) are structurally incapable of
-  # becoming barriers despite barrier_ind = t in cabd_additions.csv. The link#227
-  # guard must mirror this or it demands an override for the whole Columbia.
-  # Tracked as a latent bug in its own issue; pinned here so a fix is deliberate.
-  conn <- skip_if_no_db()
-  cfg <- lnk_config("bcfishpass")
-  tn <- .lnk_table_names(cfg)
-  present <- DBI::dbGetQuery(conn, sprintf(
-    "SELECT 1 FROM information_schema.tables
-      WHERE table_schema = %s AND table_name = 'barriers' LIMIT 1",
-    DBI::dbQuoteLiteral(conn, tn$schema)))
-  skip_if(nrow(present) == 0L, "persist barriers table absent")
-  n <- DBI::dbGetQuery(conn, sprintf(
-    "SELECT count(*) AS n FROM %s.barriers WHERE id_barrier ~ '^12000'",
-    tn$schema))$n
-  expect_identical(as.integer(n), 0L)
-})
-
 
 # --- Phase 1 (#227): shared SQL builders --------------------------------
 
@@ -1196,4 +1190,100 @@ test_that("the province table lifts a barrier the AOI table cannot (DB)", {
   expect_equal(nrow(got), 1L)
   expect_equal(got$species_code, "RB")
   expect_equal(nrow(lift(paste0(s, ".obs_aoi"))), 0L)
+})
+
+
+# --- cabd_additions placeholders (link#244, link#367) -----------------------
+
+test_that(".lnk_dams_usa_sql gives the placeholders a code only as barriers", {
+  off <- .lnk_dams_usa_sql("A")
+  on <- .lnk_dams_usa_sql("A", barrier = TRUE)
+  expect_match(off, "NULL::integer AS passability_status_code", fixed = TRUE)
+  # Only rows the CSV marks as barriers get a code.
+  expect_match(on, "CASE WHEN lower(a.barrier_ind::text) IN ('t', 'true', '1')",
+               fixed = TRUE)
+  expect_false(grepl("barrier_ind", off, fixed = TRUE))
+  # Numbered in CSV order, stated: the ids become barrier ids, and the guard
+  # looks them up in the persisted barriers.
+  expect_match(off, "row_number() OVER (ORDER BY a.csv_row, s.linear_feature_id)", fixed = TRUE)
+  expect_match(on, "row_number() OVER (ORDER BY a.csv_row, s.linear_feature_id)", fixed = TRUE)
+  expect_match(off, "FROM A a", fixed = TRUE)
+  expect_match(off, "WHERE a.feature_type = 'dams'", fixed = TRUE)
+  expect_error(.lnk_dams_usa_sql("A", barrier = NA))
+})
+
+test_that("default sets cabd_additions_barriers; bcfishpass leaves it off", {
+  expect_true(.lnk_cabd_additions_barriers(lnk_config("default")))
+  expect_true(.lnk_cabd_additions_barriers(lnk_config("default_tuned")))
+  expect_false(.lnk_cabd_additions_barriers(lnk_config("bcfishpass")))
+  expect_false(.lnk_cabd_additions_barriers(NULL))
+})
+
+test_that("a non-logical cabd_additions_barriers fails at config load", {
+  expect_error(.lnk_config_pipeline_check(list(cabd_additions_barriers = "yes"), "x"),
+               "cabd_additions_barriers must be true or false")
+  expect_error(.lnk_config_pipeline_check(list(cabd_additions_barriers = NA), "x"),
+               "cabd_additions_barriers must be true or false")
+  expect_identical(
+    .lnk_config_pipeline_check(list(cabd_additions_barriers = TRUE), "x"),
+    list(cabd_additions_barriers = TRUE))
+})
+
+test_that("prep_dams makes the placeholders barriers under default only", {
+  conn <- skip_if_no_db()
+  schema <- "working_usa_dams"
+  DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", schema))
+  DBI::dbExecute(conn, sprintf("CREATE SCHEMA %s", schema))
+  withr::defer(
+    try(DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", schema)),
+        silent = TRUE))
+
+  got <- lapply(c("bcfishpass", "default"), function(nm) {
+    cfg <- lnk_config(nm)
+    .lnk_pipeline_prep_dams(conn, conn_tunnel = conn, aoi = "LARL",
+                            schema = schema, loaded = lnk_load_overrides(cfg),
+                            cfg = cfg)
+    DBI::dbGetQuery(conn, sprintf(
+      "SELECT dam_id, passability_status_code AS psc FROM %s.dams
+        WHERE dam_id LIKE '12000%%' ORDER BY dam_id", schema))
+  })
+  # LARL holds three of the five placeholders, CSV rows 2-4 (Columbia, Big
+  # and Little Sheep creeks); row 1 is the Kettle (KETL), row 5 Ross (SKGT).
+  expect_identical(got[[1]]$dam_id, c("1200000002", "1200000003", "1200000004"))
+  expect_identical(got[[2]]$dam_id, got[[1]]$dam_id)
+  expect_true(all(is.na(got[[1]]$psc)))
+  expect_true(all(got[[2]]$psc == 1L))
+})
+
+test_that(".lnk_cabd_additions_rows numbers cabd_additions only", {
+  df <- data.frame(name = c("a", "b", "c"))
+  expect_identical(.lnk_cabd_additions_rows(df)$csv_row, 1:3)
+  expect_identical(.lnk_cabd_additions_rows(df, "cabd_exclusions"), df)
+  expect_null(.lnk_cabd_additions_rows(NULL))
+})
+
+test_that("lnk_pipeline_prepare passes cfg to prep_dams", {
+  # prep_dams reads the knob from cfg; with cfg NULL it falls back to
+  # bcfishpass's behaviour, so a dropped argument would leave `default`'s
+  # placeholders off the barriers with every other test green (link#367).
+  seen <- NULL
+  noop <- function(...) invisible(NULL)
+  local_mocked_bindings(
+    .lnk_pipeline_prep_load_aux = noop,
+    .lnk_pipeline_prep_observations = noop,
+    .lnk_pipeline_prep_gradient = noop,
+    .lnk_pipeline_prep_natural = noop,
+    .lnk_pipeline_prep_overrides = noop,
+    .lnk_pipeline_prep_minimal = noop,
+    .lnk_pipeline_prep_network = noop,
+    .lnk_discharge_fill_applied = function(...) FALSE,
+    .lnk_pipeline_prep_dams = function(conn, conn_tunnel, aoi, schema, loaded,
+                                       cfg = NULL) {
+      seen <<- .lnk_cabd_additions_barriers(cfg)
+      invisible(NULL)
+    }
+  )
+  lnk_pipeline_prepare(fake_conn(), "LARL", lnk_config("default"), list(),
+                       schema = "w_larl")
+  expect_true(seen)
 })

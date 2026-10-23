@@ -96,11 +96,101 @@
          (c.blue_line_key IS NULL)
          OR (c.blue_line_key = str.blue_line_key)
        )
-     ORDER BY str.geom <-> c.geom
+     ORDER BY str.geom <-> c.geom, str.linear_feature_id
      LIMIT 1
    ) str
    WHERE ST_Distance(str.geom, c.geom) <= 65
    ORDER BY c.dam_id, ST_Distance(str.geom, c.geom), str.linear_feature_id"
+}
+
+
+#' The `usa` CTE body: the `cabd_additions` dam placeholders.
+#'
+#' bcfishpass places dams outside BC (Grand Coulee / Chief Joseph, Ross) on the
+#' BC lines they block, as rows of `cabd_additions.csv`. Each is located on the
+#' FWA line by its own measure, not snapped. Shared, like the two builders
+#' above, so the pipeline and the guard number and filter them the same way.
+#'
+#' @param additions_ref SQL table reference or `(SELECT … FROM (VALUES …))`
+#'   subquery exposing `csv_row` (the row's position in the CSV),
+#'   `feature_type`, `name`, `barrier_ind`, `blue_line_key` and
+#'   `downstream_route_measure`.
+#' @param barrier Logical. `TRUE` gives each placeholder whose `barrier_ind`
+#'   is true `passability_status_code` 1 (`BARRIER` in
+#'   [.lnk_crossings_union()]); `FALSE` gives every placeholder NULL, which no
+#'   consumer reads as a barrier. bcfishpass does the latter (`load_dams.sql`
+#'   writes NULL, and `load_crossings.sql` inner-joins `cabd.dams`, which
+#'   holds no placeholder), so `FALSE` is the parity behaviour. See
+#'   `.lnk_cabd_additions_barriers()`.
+#' @noRd
+.lnk_dams_usa_sql <- function(additions_ref, barrier = FALSE) {
+  stopifnot(is.logical(barrier), length(barrier) == 1L, !is.na(barrier))
+  # Numbered in CSV order, as bcfp's `row_number() over()` over the loaded
+  # table numbers them, but stated rather than left to the scan: the ids
+  # become barrier ids when `barrier` is TRUE, and the guard looks them up
+  # in the persisted barriers (link#367). The rounded range join can match a
+  # measure at a segment boundary twice (617 such boundaries province-wide;
+  # none under a current row), so the order ends on the segment.
+  psc <- if (barrier) {
+    "CASE WHEN lower(a.barrier_ind::text) IN ('t', 'true', '1')
+          THEN 1 END::integer"
+  } else {
+    "NULL::integer"
+  }
+  sprintf(
+    "SELECT (row_number() OVER (ORDER BY a.csv_row, s.linear_feature_id)
+             + 1200000000)::text AS dam_id,
+            s.linear_feature_id,
+            a.blue_line_key,
+            a.downstream_route_measure,
+            s.wscode_ltree,
+            s.localcode_ltree,
+            0::double precision AS distance_to_stream,
+            s.watershed_group_code,
+            a.name AS dam_name_en,
+            NULL::double precision AS height_m,
+            NULL::text AS owner,
+            NULL::text AS dam_use,
+            NULL::text AS operating_status,
+            %2$s AS passability_status_code,
+            ((ST_Dump(ST_Force2D(
+              ST_LocateAlong(s.geom, a.downstream_route_measure)
+            ))).geom)::geometry(Point, 3005) AS geom
+     FROM %1$s a
+     INNER JOIN whse_basemapping.fwa_stream_networks_sp s
+       ON a.blue_line_key = s.blue_line_key
+      AND ROUND(a.downstream_route_measure::numeric)
+            >= ROUND(s.downstream_route_measure::numeric)
+      AND ROUND(a.downstream_route_measure::numeric)
+            <  ROUND(s.upstream_route_measure::numeric)
+     WHERE a.feature_type = 'dams'",
+    additions_ref, psc)
+}
+
+
+#' `cabd_additions` with its CSV row position as `csv_row`
+#'
+#' The placeholders are numbered in CSV order; the pipeline stages this
+#' frame and the guard inlines it, so both number from the same column.
+#' Other keys pass through.
+#' @noRd
+.lnk_cabd_additions_rows <- function(df, key = "cabd_additions") {
+  if (identical(key, "cabd_additions") && is.data.frame(df)) {
+    df$csv_row <- seq_len(nrow(df))
+  }
+  df
+}
+
+
+#' Whether a bundle treats the `cabd_additions` dams as barriers
+#'
+#' `cfg$pipeline$cabd_additions_barriers`. Absent means `FALSE`, bcfishpass's
+#' behaviour, which the `bcfishpass` bundle keeps; `default` sets it (#244,
+#' link#367). Dams never block access, so it moves the `DAM` token of the
+#' mapping codes below the placeholders, not accessible km.
+#' @noRd
+.lnk_cabd_additions_barriers <- function(cfg) {
+  isTRUE(cfg$pipeline$cabd_additions_barriers)
 }
 
 
@@ -114,7 +204,8 @@
 #' JOIN shape survives (a bare `VALUES` with no rows is a syntax error, and an
 #' untyped NULL makes Postgres reject the join predicate).
 #'
-#' @return named list of SQL strings: `excl`, `xref`, `upd`.
+#' @return named list of SQL strings: `excl`, `xref`, `upd`, and `add` (the
+#'   `cabd_additions` rows, for `.lnk_dams_usa_sql()`).
 #' @noRd
 .lnk_dams_edit_values_sql <- function(conn, loaded) {
   lit <- function(x) {
@@ -127,9 +218,13 @@
     x <- suppressWarnings(as.integer(x))
     if (is.na(x)) "NULL" else as.character(x)
   }
+  num_lit <- function(x) {
+    x <- suppressWarnings(as.numeric(x))
+    if (is.na(x)) "NULL" else format(x, digits = 15, scientific = FALSE)
+  }
 
   build <- function(key, cols, casts, coercers) {
-    df <- loaded[[key]]
+    df <- .lnk_cabd_additions_rows(loaded[[key]], key)
     if (is.null(df) || nrow(df) == 0L || !all(cols %in% names(df))) {
       row <- paste(sprintf("NULL::%s", casts), collapse = ", ")
       return(sprintf("(SELECT * FROM (VALUES (%s)) AS v(%s))",
@@ -159,7 +254,13 @@
                  c("text", "integer"), list(lit, int_lit)),
     upd  = build("cabd_passability_status_updates",
                  c("cabd_id", "passability_status_code"),
-                 c("text", "integer"), list(lit, int_lit))
+                 c("text", "integer"), list(lit, int_lit)),
+    add  = build("cabd_additions",
+                 c("csv_row", "feature_type", "name", "barrier_ind",
+                   "blue_line_key", "downstream_route_measure"),
+                 c("integer", "text", "text", "text", "integer",
+                   "double precision"),
+                 list(int_lit, lit, lit, lit, int_lit, num_lit))
   )
 }
 
@@ -175,8 +276,10 @@
 #' `.lnk_pipeline_prep_dams` and decide what actually becomes a barrier:
 #'
 #'   1. `passability_status_code IN (1, 2)` — the BARRIER/POTENTIAL arms of the
-#'      CASE in [.lnk_crossings_union()]. NULL is not blocking, which is why the
-#'      `cabd_additions` US placeholders never appear.
+#'      CASE in [.lnk_crossings_union()]. NULL is not blocking, so the
+#'      `cabd_additions` US placeholders appear only under a bundle that sets
+#'      `pipeline: cabd_additions_barriers` (`additions = TRUE`), as they
+#'      become barriers only there.
 #'   2. a real `linear_feature_id` join to the FWA network.
 #'   3. `blue_line_key = watershed_key` — mainstem only.
 #'
@@ -186,7 +289,8 @@
 #' @return data.frame: `dam_id`, `dam_name_en`, `watershed_group_code`,
 #'   `passability_status_code`.
 #' @noRd
-.lnk_dams_blocking_downstream <- function(conn, aoi, loaded, outlets) {
+.lnk_dams_blocking_downstream <- function(conn, aoi, loaded, outlets,
+                                          additions = FALSE) {
   o <- outlets[outlets$watershed_group_code == aoi, , drop = FALSE]
   if (nrow(o) == 0L) {
     stop("no outlet for watershed group '", aoi,
@@ -200,10 +304,24 @@
      ),
      matched AS (
        %2$s
+     ),
+     usa AS (
+       %8$s
+     ),
+     candidates AS (
+       SELECT dam_id, dam_name_en, watershed_group_code,
+              passability_status_code, linear_feature_id, blue_line_key,
+              downstream_route_measure, wscode_ltree, localcode_ltree
+         FROM matched
+       UNION ALL
+       SELECT dam_id, dam_name_en, watershed_group_code,
+              passability_status_code, linear_feature_id, blue_line_key,
+              downstream_route_measure, wscode_ltree, localcode_ltree
+         FROM usa
      )
      SELECT m.dam_id, m.dam_name_en, m.watershed_group_code,
             m.passability_status_code
-       FROM matched m
+       FROM candidates m
        JOIN whse_basemapping.fwa_stream_networks_sp s
          ON s.linear_feature_id = m.linear_feature_id
       WHERE m.passability_status_code IN (1, 2)
@@ -225,7 +343,8 @@
     DBI::dbQuoteLiteral(conn, aoi),
     o$blue_line_key[1], o$downstream_route_measure[1],
     DBI::dbQuoteLiteral(conn, o$wscode_ltree[1]),
-    DBI::dbQuoteLiteral(conn, o$localcode_ltree[1]))
+    DBI::dbQuoteLiteral(conn, o$localcode_ltree[1]),
+    .lnk_dams_usa_sql(v$add, barrier = additions))
 
   DBI::dbGetQuery(conn, sql)
 }
@@ -367,7 +486,9 @@ lnk_wsg_downstream_check <- function(conn, aoi, cfg, loaded,
 
   .lnk_require_fwa_downstream(conn)
 
-  dams <- .lnk_dams_blocking_downstream(conn, aoi, loaded, outlets)
+  dams <- .lnk_dams_blocking_downstream(
+    conn, aoi, loaded, outlets,
+    additions = .lnk_cabd_additions_barriers(cfg))
 
   # A dam in a species-less WSG is never persisted as a barrier, so demanding
   # it would be an unfixable false alarm. lnk_wsg_resolve() species-filters.

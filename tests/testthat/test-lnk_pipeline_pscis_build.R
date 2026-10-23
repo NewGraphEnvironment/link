@@ -50,6 +50,12 @@ test_that(".lnk_pipeline_pscis_build emits the five-step SQL chain", {
   expect_match(sql,
                "SET multiple_match_ind = NULL\\s+WHERE multiple_match_ind IS TRUE")
 
+  # Step 3b: one modelled crossing per PSCIS per stream, nearest instream
+  # (bcfp's `nearest` UPDATE, link#367), with an id tie-break.
+  expect_match(sql, "WITH nearest AS")
+  expect_match(sql, "SELECT DISTINCT ON \\(stream_crossing_id, blue_line_key\\)")
+  expect_match(sql, "modelled_xing_dist_instream ASC, modelled_crossing_id ASC")
+
   # Step 4: frs_candidates_pick called once.
   mockery::expect_called(m_pick, 1)
   pick_args <- mockery::mock_args(m_pick)[[1]]
@@ -58,7 +64,7 @@ test_that(".lnk_pipeline_pscis_build emits the five-step SQL chain", {
   expect_equal(pick_args$col_key,   "stream_crossing_id")
   expect_match(pick_args$exp_filter,
                "name_score != -100 AND width_order_score != -100")
-  expect_true(any(grepl("name_score DESC", pick_args$order_by)))
+  expect_identical(pick_args$order_by, link:::.lnk_pscis_pick_order)
 
   # Step 4b: AOI filter → <schema>.pscis.
   expect_match(sql, "CREATE TABLE working_adms\\.pscis AS")
@@ -67,6 +73,9 @@ test_that(".lnk_pipeline_pscis_build emits the five-step SQL chain", {
   # Step 4c: DBSCAN 5m cluster dedup.
   expect_match(sql, "ST_ClusterDBSCAN\\(geom_snapped, 5, 1\\)")
   expect_match(sql, "DISTINCT ON \\(cid\\)")
+  # Ends on the PSCIS id, so two crossings tied on distance, date and
+  # modelled crossing do not fall to encounter order (link#277).
+  expect_match(sql, "p\\.modelled_crossing_id ASC NULLS LAST,\\s+p\\.stream_crossing_id ASC")
 
   # Step 4d: UNIQUE(blk,drm) dedup.
   expect_match(sql,
@@ -172,4 +181,53 @@ test_that(".lnk_pipeline_pscis_build validates argument shapes", {
                                                 snap_tolerance = -1))
   expect_error(link:::.lnk_pipeline_pscis_build(conn, "ADMS", "s",
                                                 snap_num_features = 0))
+})
+
+test_that("the PSCIS pick ends on a key that breaks every output-changing tie", {
+  ob <- link:::.lnk_pscis_pick_order
+  # bcfp's two terms first, then the tie-breaks, in order (link#277).
+  expect_identical(ob[[1]], "name_score DESC")
+  expect_identical(utils::tail(ob, 3), c(
+    "linear_feature_id ASC",
+    "modelled_xing_dist ASC",
+    "modelled_crossing_id ASC NULLS LAST"
+  ))
+})
+
+test_that("the PSCIS pick gives one answer whatever the row order (link#277)", {
+  conn <- skip_if_no_db()
+  withr::defer(DBI::dbExecute(conn, "DROP SCHEMA IF EXISTS zz_test_pick277 CASCADE"))
+  DBI::dbExecute(conn, "DROP SCHEMA IF EXISTS zz_test_pick277 CASCADE")
+  DBI::dbExecute(conn, "CREATE SCHEMA zz_test_pick277")
+
+  # One PSCIS candidate on one linear feature, joined to two modelled
+  # crossings: the shape of #362's ADMS 356333200 tie. Score and weighted
+  # distance are equal; only the modelled crossing differs.
+  cand <- data.frame(
+    stream_crossing_id = 1L,
+    linear_feature_id = 700276704,
+    distance_to_stream = 12,
+    name_score = 0L,
+    width_order_score = 0L,
+    multiple_match_ind = NA,
+    modelled_crossing_id = c(101854L, 100122L),
+    modelled_xing_dist = c(40, 25),
+    modelled_xing_dist_instream = c(40, 25)
+  )
+  picks <- vapply(list(cand, cand[2:1, ]), function(d) {
+    DBI::dbWriteTable(conn, DBI::Id(schema = "zz_test_pick277", table = "cand"),
+                      d, overwrite = TRUE)
+    fresh::frs_candidates_pick(
+      conn,
+      table_in = "zz_test_pick277.cand",
+      table_to = "zz_test_pick277.picked",
+      col_key = "stream_crossing_id",
+      exp_filter = "name_score != -100 AND width_order_score != -100 AND multiple_match_ind IS NULL",
+      order_by = link:::.lnk_pscis_pick_order
+    )
+    got <- DBI::dbGetQuery(conn, "SELECT modelled_crossing_id FROM zz_test_pick277.picked")
+    got$modelled_crossing_id
+  }, integer(1))
+  # The closest modelled crossing wins in both row orders.
+  expect_identical(picks, c(100122L, 100122L))
 })

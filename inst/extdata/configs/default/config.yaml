@@ -110,6 +110,17 @@ pipeline:
   - barriers_definite
   - habitat_endpoints
   - crossings
+  # cabd_additions_barriers — the dams cabd_additions.csv places on BC lines
+  # for dams outside BC (Grand Coulee / Chief Joseph on the Columbia, the
+  # Kettle and the Sheep creeks; Ross on the Skagit) count as barriers where
+  # the row's barrier_ind is true. Segments above one take the `DAM`
+  # mapping-code token: for resident species where it is the next
+  # anthropogenic barrier downstream, for anadromous species wherever no
+  # remediated crossing comes first. Dams never block access, so accessible
+  # km do not move. bcfishpass loads these rows but never makes them
+  # crossings, so absent means false and the bcfishpass bundle keeps that
+  # (link#244, link#367). Also read by lnk_wsg_downstream_check().
+  cabd_additions_barriers: true
   cluster:
     three_phase: yes
   spawn_connected:

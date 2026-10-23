@@ -127,7 +127,7 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
   .lnk_pipeline_prep_network(conn, aoi, schema,
                              fill = .lnk_discharge_fill_applied(cfg, aoi),
                              source = .lnk_discharge_source(cfg))
-  .lnk_pipeline_prep_dams(conn, conn_tunnel, aoi, schema, loaded)
+  .lnk_pipeline_prep_dams(conn, conn_tunnel, aoi, schema, loaded, cfg)
 
   invisible(conn)
 }
@@ -425,14 +425,26 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
        ADD COLUMN IF NOT EXISTS wscode_ltree ltree,
        ADD COLUMN IF NOT EXISTS localcode_ltree ltree",
     schema))
+  # A point in the ~1 mm overlap of two FWA segments matches both, and an
+  # UPDATE ... FROM keeps whichever join row it meets first. Pick the lower
+  # segment by name (link#367): 3,513 gradient positions province-wide match
+  # two, 1,530 of them with different localcodes, and the lower one is what
+  # every build so far happened to take.
   .lnk_db_execute(conn, sprintf(
     "UPDATE %s.gradient_barriers_raw g
-     SET wscode_ltree = s.wscode_ltree, localcode_ltree = s.localcode_ltree
-     FROM whse_basemapping.fwa_stream_networks_sp s
-     WHERE g.blue_line_key = s.blue_line_key
-       AND g.downstream_route_measure >= s.downstream_route_measure
-       AND g.downstream_route_measure < s.upstream_route_measure",
-    schema))
+     SET wscode_ltree = m.wscode_ltree, localcode_ltree = m.localcode_ltree
+     FROM (
+       SELECT DISTINCT ON (g2.ctid) g2.ctid AS row_ctid,
+              s.wscode_ltree, s.localcode_ltree
+       FROM %s.gradient_barriers_raw g2
+       JOIN whse_basemapping.fwa_stream_networks_sp s
+         ON g2.blue_line_key = s.blue_line_key
+        AND g2.downstream_route_measure >= s.downstream_route_measure
+        AND g2.downstream_route_measure < s.upstream_route_measure
+       ORDER BY g2.ctid, s.downstream_route_measure, s.linear_feature_id
+     ) m
+     WHERE g.ctid = m.row_ctid",
+    schema, schema))
 
   invisible(NULL)
 }
@@ -818,7 +830,8 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
 #' Short-circuits when `conn_tunnel` is NULL — drops any existing
 #' `<schema>.dams` and returns. Zero-cost opt-out.
 #' @noRd
-.lnk_pipeline_prep_dams <- function(conn, conn_tunnel, aoi, schema, loaded) {
+.lnk_pipeline_prep_dams <- function(conn, conn_tunnel, aoi, schema, loaded,
+                                    cfg = NULL) {
   if (is.null(conn_tunnel)) {
     .lnk_db_execute(conn, sprintf(
       "DROP TABLE IF EXISTS %s.dams", schema))
@@ -843,7 +856,7 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
     .lnk_db_execute(conn, sprintf(
       "DROP TABLE IF EXISTS %s.%s", schema, key))
     DBI::dbWriteTable(conn, DBI::Id(schema = schema, table = key),
-      loaded[[key]], overwrite = TRUE)
+      .lnk_cabd_additions_rows(loaded[[key]], key), overwrite = TRUE)
   }
 
   # 2. Pull `cabd.dams` from tunnel (raw upstream — NOT bcfp's processed output).
@@ -869,10 +882,12 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
   #    - UNION ALL with cabd_additions where feature_type='dams' (US placeholders)
   .lnk_db_execute(conn, sprintf(
     "DROP TABLE IF EXISTS %1$s.dams", schema))
-  # The `cabd` and `matched` CTE bodies are shared verbatim with the link#227
-  # downstream guard (`R/lnk_wsg_downstream_check.R`). A guard that snapped or
-  # filtered differently would flag dams this pipeline treats as passable, so
-  # the SQL is defined once and parameterized on its source rather than copied.
+  # The `cabd`, `matched` and `usa` CTE bodies are shared verbatim with the
+  # link#227 downstream guard (`R/lnk_wsg_downstream_check.R`). A guard that
+  # snapped or filtered differently would flag dams this pipeline treats as
+  # passable, so the SQL is defined once and parameterized on its source
+  # rather than copied. `usa` holds the cabd_additions placeholders, barriers
+  # only under `pipeline: cabd_additions_barriers` (link#367).
   .lnk_db_execute(conn, sprintf(
     "CREATE TABLE %1$s.dams AS
      WITH cabd AS (
@@ -898,31 +913,7 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
        FROM matched m
      ),
      usa AS (
-       SELECT (row_number() OVER () + 1200000000)::text AS dam_id,
-              s.linear_feature_id,
-              a.blue_line_key,
-              a.downstream_route_measure,
-              s.wscode_ltree,
-              s.localcode_ltree,
-              0::double precision AS distance_to_stream,
-              s.watershed_group_code,
-              a.name AS dam_name_en,
-              NULL::double precision AS height_m,
-              NULL::text AS owner,
-              NULL::text AS dam_use,
-              NULL::text AS operating_status,
-              NULL::integer AS passability_status_code,
-              ((ST_Dump(ST_Force2D(
-                ST_LocateAlong(s.geom, a.downstream_route_measure)
-              ))).geom)::geometry(Point, 3005) AS geom
-       FROM %1$s.cabd_additions a
-       INNER JOIN whse_basemapping.fwa_stream_networks_sp s
-         ON a.blue_line_key = s.blue_line_key
-        AND ROUND(a.downstream_route_measure::numeric)
-              >= ROUND(s.downstream_route_measure::numeric)
-        AND ROUND(a.downstream_route_measure::numeric)
-              <  ROUND(s.upstream_route_measure::numeric)
-       WHERE a.feature_type = 'dams'
+       %4$s
      )
      SELECT * FROM placed
      UNION ALL
@@ -937,7 +928,9 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
       excl_ref = sprintf("%s.cabd_exclusions", schema),
       xref_ref = sprintf("%s.cabd_blkey_xref", schema),
       upd_ref  = sprintf("%s.cabd_passability_status_updates", schema)),
-    .lnk_dams_matched_sql()))
+    .lnk_dams_matched_sql(),
+    .lnk_dams_usa_sql(sprintf("%s.cabd_additions", schema),
+                      barrier = .lnk_cabd_additions_barriers(cfg))))
 
   # 4. Filter the local <schema>.dams to the AOI (per-WSG locality).
   .lnk_db_execute(conn, sprintf(

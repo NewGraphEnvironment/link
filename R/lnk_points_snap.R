@@ -184,7 +184,7 @@ lnk_points_snap <- function(conn, table_in, table_out,
       FROM whse_basemapping.fwa_stream_networks_sp s
       WHERE ST_DWithin(s.geom, %s, %f)
         AND %s
-      ORDER BY s.geom <-> %s
+      ORDER BY s.geom <-> %s, s.linear_feature_id
       LIMIT %d
     ) snap;",
     table_out,
