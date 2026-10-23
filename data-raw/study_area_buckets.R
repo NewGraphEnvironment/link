@@ -24,18 +24,42 @@
 # wsgs_dispatch.sh uses, with a component rather than a single WSG as the
 # indivisible atom.
 #
+# The atom (link#361): a component, or a single group.
+#
+#   The component rule was written for cross-WSG `;DAM` and access at MODEL
+#   time. Since link#175 the post-consolidate recompute settles access, mapping
+#   code and (link#349) the gated habitat flags from every group's persisted
+#   barriers, and the driver models both legs with LNK_GUARD_DOWNSTREAM=warn
+#   and LNK_HABITAT_GATE=0. The split test of 2026-10-23 modelled the Peace's
+#   26 groups on two hosts in the worst order and found nothing the order can
+#   reach that differs from the one-host build
+#   (data-raw/logs/provincial_361/split_verdict.md). So `--atom=group` packs
+#   single modelable groups, which lets the modelling finish before the
+#   largest component would (the Fraser: 205 of 873 host-minutes). Each host's
+#   list keeps the global downstream-first order, so a group still follows
+#   whatever downstream of it the same host holds and the guard warns less;
+#   the recompute is the guarantee either way. The drainage-closed assertion
+#   is skipped in group mode (a host's list is not a closure by design); the
+#   within-host order assertion still runs. The report prints the makespan
+#   under both atoms. `--write` refuses `--atom=group`: research/study_areas.md
+#   describes the components. A group-atom split needs `study_area_run.sh
+#   --buckets-exact`, which resolves each `--focal=` list exactly instead of
+#   expanding it to its closure.
+#
 # Usage:
 #   [LNK_LOAD=loadall] Rscript data-raw/study_area_buckets.R \
-#     [--hosts=4] [--config=bcfishpass] [--focal=A,B,C] \
+#     [--hosts=4] [--config=bcfishpass] [--focal=A,B,C] [--atom=component|group] \
 #     [--minutes-schema=<persist schema>] [--host-speeds=1,1,1,1] [--write]
 #
 #   --hosts=N            number of hosts to pack onto (default 4: dispatcher + 3)
 #   --focal=             override the focal set (default: the baked-in 96)
+#   --atom=              what is packed whole: `component` (default) or `group`
 #   --minutes-schema=S   weight each group by its measured modelling minutes,
 #                        from the newest finished row per group in S.log
 #                        (link#361). Without it, by stream-segment count.
 #   --host-speeds=       relative throughput per host, dispatcher first
 #   --write              rewrite research/study_areas.md from this run's output
+#                        (component atoms only)
 #
 # Stdout is the report. Nothing is written unless --write is passed.
 
@@ -48,7 +72,16 @@ arg_val <- function(flag, default) {
 n_hosts <- as.integer(arg_val("--hosts", "4"))
 config  <- arg_val("--config", "bcfishpass")
 minutes_schema <- arg_val("--minutes-schema", "")
+atom <- arg_val("--atom", "component")
 do_write <- "--write" %in% args
+if (!atom %in% c("component", "group")) {
+  stop("--atom must be component or group, got '", atom, "'", call. = FALSE)
+}
+if (do_write && atom == "group") {
+  stop("--write describes the drainage-independent components (research/study_areas.md); ",
+       "run --atom=group without --write and keep its report with the run's logs",
+       call. = FALSE)
+}
 if (nzchar(minutes_schema) && !grepl("^[A-Za-z_][A-Za-z0-9_]*$", minutes_schema)) {
   stop("--minutes-schema must be a bare schema name, got '", minutes_schema, "'",
        call. = FALSE)
@@ -253,24 +286,53 @@ message(sprintf("weights: %s; %d of %d groups have no value and take the median 
 # load so host 1 held the most — which is meaningless once the hosts differ,
 # because host 1 IS the dispatcher and cannot be swapped for a cypher. The
 # fast host now ends up with more work on its own, because it finishes sooner.
-ord <- order(-comp_weight)
-load_h <- rep(0, n_hosts)          # dispatcher-equivalent weight (minutes if measured)
-seg_h  <- rep(0, n_hosts)          # raw weight, for the report
-assign_h <- integer(length(resolved))
-for (i in ord) {
-  finish <- load_h + comp_weight[i] / host_speeds
-  pick <- which.min(finish)
-  assign_h[i] <- pick
-  load_h[pick] <- finish[pick]
-  seg_h[pick] <- seg_h[pick] + comp_weight[i]
+#
+# One packer for both atoms (link#361): `pack()` takes the atoms' weights and
+# returns each atom's host and each host's load. The component packing is
+# always computed, so the report can print the makespan under both atoms for
+# the same hosts; the group packing only when --atom=group.
+pack <- function(weights) {
+  load_h <- rep(0, n_hosts)        # dispatcher-equivalent weight (minutes if measured)
+  seg_h  <- rep(0, n_hosts)        # raw weight, for the report
+  assign_h <- integer(length(weights))
+  for (i in order(-weights)) {
+    finish <- load_h + weights[i] / host_speeds
+    pick <- which.min(finish)
+    assign_h[i] <- pick
+    load_h[pick] <- finish[pick]
+    seg_h[pick] <- seg_h[pick] + weights[i]
+  }
+  list(assign = assign_h, load = load_h, seg = seg_h)
 }
+comp_pack <- pack(comp_weight)
 
-host_focal <- lapply(seq_len(n_hosts), function(h) {
-  unlist(components[assign_h == h], use.names = FALSE)
-})
-host_wsgs <- lapply(seq_len(n_hosts), function(h) {
-  unlist(resolved[assign_h == h], use.names = FALSE)
-})
+# The global downstream-first order: each component's resolved list is
+# DS-first and the components are drainage-independent, so their
+# concatenation is DS-first over the whole run. Group mode filters it per
+# host, so a host still models a group after whatever downstream of it the
+# same host holds.
+global_order <- unlist(resolved, use.names = FALSE)
+
+if (atom == "component") {
+  assign_h <- comp_pack$assign; load_h <- comp_pack$load; seg_h <- comp_pack$seg
+  host_focal <- lapply(seq_len(n_hosts), function(h) {
+    unlist(components[assign_h == h], use.names = FALSE)
+  })
+  host_wsgs <- lapply(seq_len(n_hosts), function(h) {
+    unlist(resolved[assign_h == h], use.names = FALSE)
+  })
+} else {
+  group_weight <- vapply(global_order, weight_of, numeric(1))
+  group_pack <- pack(group_weight)
+  assign_h <- comp_pack$assign     # the Components table still names each component's host under component atoms
+  load_h <- group_pack$load; seg_h <- group_pack$seg
+  host_wsgs <- lapply(seq_len(n_hosts), function(h) {
+    global_order[group_pack$assign == h]
+  })
+  # Under group atoms the `--focal=` string IS the host's list: the driver
+  # takes it exactly (--buckets-exact), with no closure expansion.
+  host_focal <- host_wsgs
+}
 
 # --- assert the property the whole partition exists to provide -------------
 # Each host's bucket must be drainage-CLOSED: for every WSG it models, every
@@ -281,15 +343,23 @@ host_wsgs <- lapply(seq_len(n_hosts), function(h) {
 # It does follow from packing whole components whose closures are disjoint —
 # but "follows by construction" is a claim, and a cheap one to check against
 # the closures already in hand. Asserted rather than reasoned about.
-for (h in seq_len(n_hosts)) {
-  if (!length(host_focal[[h]])) next
-  need <- intersect(unique(unlist(closures[host_focal[[h]]])), flat)
-  miss <- setdiff(need, host_wsgs[[h]])
-  if (length(miss)) {
-    stop(sprintf(
-      "host %d bucket is not drainage-closed - missing %s. A WSG would be modelled before its downstream barriers exist.",
-      h, paste(sort(miss), collapse = ", ")), call. = FALSE)
+#
+# Skipped under group atoms: a host's list is not a closure by design, and the
+# post-consolidate recompute settles what the closure used to protect
+# (data-raw/logs/provincial_361/split_verdict.md).
+if (atom == "component") {
+  for (h in seq_len(n_hosts)) {
+    if (!length(host_focal[[h]])) next
+    need <- intersect(unique(unlist(closures[host_focal[[h]]])), flat)
+    miss <- setdiff(need, host_wsgs[[h]])
+    if (length(miss)) {
+      stop(sprintf(
+        "host %d bucket is not drainage-closed - missing %s. A WSG would be modelled before its downstream barriers exist.",
+        h, paste(sort(miss), collapse = ", ")), call. = FALSE)
+    }
   }
+} else {
+  message("group atoms: the drainage-closed assertion is skipped; the recompute settles access")
 }
 
 # And the DS-first order has to hold WITHIN each host: a WSG must appear
@@ -340,20 +410,29 @@ for (i in seq_along(components)) {
 cat("\n## Host buckets\n\n")
 cat(sprintf("Weights: %s. %d of %d groups took the median.\n\n",
             weight_desc, n_unweighted, length(flat)))
-cat(sprintf("| host | speed | components | focal | modelable | %s | est. load | est. share |\n",
+cat(sprintf("Atom: %s.%s\n\n", atom,
+            if (atom == "group") " Single modelable groups, each host's list in the global downstream-first order; the post-consolidate recompute settles access (data-raw/logs/provincial_361/split_verdict.md)." else ""))
+cat(sprintf("| host | speed | atoms | focal | modelable | %s | est. load | est. share |\n",
             weight_unit))
 cat("|---|---|---|---|---|---|---|---|\n")
 for (h in seq_len(n_hosts)) {
+  n_atoms <- if (atom == "component") sum(assign_h == h) else length(host_wsgs[[h]])
   cat(sprintf("| %s | %.2fx | %d | %d | %d | %s | %s | %.2f |\n", host_label(h),
-              host_speeds[h], sum(assign_h == h), length(host_focal[[h]]),
+              host_speeds[h], n_atoms, length(host_focal[[h]]),
               length(host_wsgs[[h]]), format(round(seg_h[h]), big.mark = ","),
               format(round(load_h[h]), big.mark = ","),
               load_h[h] / max(load_h)))
 }
+unit_label <- if (weight_unit == "min") "dispatcher-equivalent min" else "weight units"
 cat(sprintf("\nmakespan is set by %s at %s %s of load; balance = %.0f%% (100%% = every host finishes together)\n",
             host_label(which.max(load_h)), format(round(max(load_h)), big.mark = ","),
-            if (weight_unit == "min") "dispatcher-equivalent min" else "weight units",
-            100 * mean(load_h) / max(load_h)))
+            unit_label, 100 * mean(load_h) / max(load_h)))
+# Both atoms for the same hosts, so the gain from splitting components is a
+# number in the report rather than a claim (link#361).
+cat(sprintf("makespan under component atoms: %s %s; under group atoms: %s %s\n",
+            format(round(max(comp_pack$load)), big.mark = ","), unit_label,
+            format(round(max(pack(vapply(global_order, weight_of, numeric(1)))$load)), big.mark = ","),
+            unit_label))
 if (weight_unit == "min") {
   cat(sprintf("largest component is %s %s; an even split of the %s total over %d hosts would be %s\n",
               format(round(max(comp_weight)), big.mark = ","), weight_unit,
@@ -365,9 +444,17 @@ cat(sprintf("\ntotal modelable: %d | dropped by species presence: %d\n",
             length(unique(unlist(closures))) - length(flat)))
 
 cat("\n## --focal= strings\n\n")
+if (atom == "group") {
+  cat("Exact lists (downstream-first), one per host: run with `--buckets-exact`, which resolves\n")
+  cat("each list as given instead of expanding it to its drainage closure.\n\n")
+}
 cat("```\n")
+if (atom == "group") cat("  --buckets-exact \\\n")
 for (h in seq_len(n_hosts)) {
-  cat(sprintf("  --focal=%s \\\n", paste(sort(host_focal[[h]]), collapse = ",")))
+  # Component atoms: the focal groups, sorted (the driver expands them).
+  # Group atoms: the host's exact list, in its downstream-first order.
+  f <- if (atom == "component") sort(host_focal[[h]]) else host_focal[[h]]
+  cat(sprintf("  --focal=%s \\\n", paste(f, collapse = ",")))
 }
 cat("```\n")
 

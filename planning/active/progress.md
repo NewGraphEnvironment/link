@@ -80,3 +80,8 @@
   model-time table; the habitat rows that differ are exactly the gate's. Nothing is attributable to
   the order. Verdict: Phase 4a.
 - Scratch schemas `fresh_361a`, `fresh_361b`, `fresh_361c` kept until the PR; the worktree too.
+- Phase 4a landed: `--atom=group` (both makespans in the report; 4 hosts 270 = 270, 5 hosts 216 < 231),
+  `study_area_wsgs.R --exact`, `study_area_run.sh --buckets-exact` (+ `bucket_mode` column in `run_wsgs.tsv`,
+  reader accepts both headers), RUNBOOK §8d and the research record. Driver tests 296/296.
+- Parity run `20261023_203809` had 16 of 17 rows `link_dirty` (edits to the main repo during the run, my
+  slip); schema dropped, re-run `20261023_215312-16fb3aae` launched 21:53 UTC from the worktree at `1d00c04c`.

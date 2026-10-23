@@ -24,9 +24,20 @@
 #     --focal=<dispatcher focal csv> \
 #     --focal=<cy1 focal csv> \
 #     --focal=<cy2 focal csv> \
-#     [--config=bcfishpass] [--schema=<persist-schema>] [--keep-cyphers]
+#     [--config=bcfishpass] [--schema=<persist-schema>] [--keep-cyphers] \
+#     [--buckets-exact]
 #
 #   bash data-raw/study_area_run.sh --preflight-only    # gates only, no spend
+#
+# --buckets-exact (link#361): each --focal= list is the host's EXACT bucket, in
+# the order given, less what the config's species presence drops
+# (study_area_wsgs.R --exact); no closure expansion. For a split from
+# `study_area_buckets.R --atom=group`, which packs single groups because the
+# post-consolidate recompute settles access, mapping code and the gated
+# habitat flags whatever host modelled which group (the split test of
+# 2026-10-23, data-raw/logs/provincial_361/split_verdict.md). An overlap
+# between hosts' lists is FATAL in this mode: it is operator error, not a
+# closure property. Without the flag the closure buckets below apply.
 #
 # The number of --focal flags MUST equal 1 (dispatcher) + N cyphers, in
 # order: first --focal -> dispatcher, the rest -> cyphers in --cy-workspaces
@@ -157,10 +168,13 @@ RUN_INCOMPLETE=0
 RECOMPUTE_ONLY=0
 RUN_UID_ARG=""
 WSGS_ARG=""
+# --buckets-exact: each --focal= list is taken as the host's bucket (link#361).
+BUCKETS_EXACT=0
 FOCAL_ARR=()
 for arg in "$@"; do
   case "$arg" in
     --cy-workspaces=*) CY_WS="${arg#--cy-workspaces=}" ;;
+    --buckets-exact)   BUCKETS_EXACT=1 ;;
     --config=*)        CONFIG="${arg#--config=}" ;;
     --schema=*)        SCHEMA_OVERRIDE="${arg#--schema=}"
                        [ -n "$SCHEMA_OVERRIDE" ] || { echo "FATAL: --schema= requires a non-empty value" >&2; exit 1; } ;;
@@ -244,9 +258,9 @@ if [ "$RECOMPUTE_ONLY" = "1" ]; then
   [ -n "$RUN_UID_ARG" ] || {
     echo "FATAL: --recompute-only needs --run-uid=<uid> of the run to finish" >&2; exit 1; }
   if [ "${#FOCAL_ARR[@]}" -gt 0 ] || [ -n "$CY_WS" ] || [ "$PREFLIGHT_ONLY" = "1" ] \
-     || [ "$REFRESH_PRIMITIVES" = "1" ] || [ "$AUTO_INSTALL" = "1" ]; then
+     || [ "$REFRESH_PRIMITIVES" = "1" ] || [ "$AUTO_INSTALL" = "1" ] || [ "$BUCKETS_EXACT" = "1" ]; then
     echo "FATAL: --recompute-only takes no --focal, --cy-workspaces, --preflight-only," >&2
-    echo "  --refresh-primitives or --auto-install: it dispatches nothing." >&2
+    echo "  --refresh-primitives, --auto-install or --buckets-exact: it dispatches nothing." >&2
     exit 1
   fi
 else
@@ -405,6 +419,8 @@ echo "  cyphers:      ${CY_WS_ARR[*]:-<none>} ($N_CY)"
 echo "  log dir:      $LOG_DIR"
 echo "  vintage max:  ${VINTAGE_MAX_DAYS} d"
 echo "  recompute -j: $RECOMPUTE_JOBS"
+[ "$BUCKETS_EXACT" = "0" ] && echo "  buckets:      closure (each --focal= expanded to its drainage closure, DS-first)" \
+                            || echo "  buckets:      exact (--buckets-exact; each --focal= list as given; the recompute settles access)"
 [ "$PREFLIGHT_ONLY" = "0" ] || echo "  MODE:         --preflight-only (no spend, no writes)"
 [ "$RECOMPUTE_ONLY" = "0" ] || echo "  MODE:         --recompute-only (finish run_uid $RUN_UID; no spend)"
 [ -z "$PREFLIGHT_NOTE" ] || echo "  OVERRIDE:     vintage+parity downgraded to warnings — $PREFLIGHT_NOTE"
@@ -1181,25 +1197,38 @@ if [ "$PREFLIGHT_ONLY" = "1" ]; then
 fi
 
 # --- resolve drainage-closed DS-first buckets ---
-echo "=== resolve drainage-closed DS-first buckets ==="
+# Two modes (link#361). Closure (default): each --focal= list is expanded to
+# its drainage closure, DS-first. Exact (--buckets-exact): each list is the
+# host's bucket as given, in its order, less the species-less groups; what a
+# `study_area_buckets.R --atom=group` split prints. The recompute settles
+# access either way; the closure is a speed and guard-noise knob, not a
+# correctness lever (RUNBOOK §8d).
+if [ "$BUCKETS_EXACT" = "1" ]; then
+  BUCKET_MODE=exact; WSGS_FLAG=(--exact)
+  echo "=== resolve exact buckets (--buckets-exact; order as given, species filter only) ==="
+else
+  BUCKET_MODE=closure; WSGS_FLAG=()
+  echo "=== resolve drainage-closed DS-first buckets ==="
+fi
 # The run's config and the source tree, not the defaults: study_area_wsgs.R
 # defaults to bcfishpass's species filter and library(link) is whatever is
 # installed, which silently dropped default's KO/RB/GR-only groups (link#246).
-DISP_BUCKET=$(cd "$REPO_ROOT" && LNK_LOAD=loadall Rscript data-raw/study_area_wsgs.R "${FOCAL_ARR[0]}" "$CONFIG")
+DISP_BUCKET=$(cd "$REPO_ROOT" && LNK_LOAD=loadall Rscript data-raw/study_area_wsgs.R ${WSGS_FLAG[@]+"${WSGS_FLAG[@]}"} "${FOCAL_ARR[0]}" "$CONFIG")
 DISP_BUCKET=$(echo "$DISP_BUCKET" | tr -d '[:space:]')
 echo "  dispatcher (focal=${FOCAL_ARR[0]}): $DISP_BUCKET"
 declare -A CY_BUCKET
 for i in "${!CY_WS_ARR[@]}"; do
   WS="${CY_WS_ARR[$i]}"
-  B=$(cd "$REPO_ROOT" && LNK_LOAD=loadall Rscript data-raw/study_area_wsgs.R "${FOCAL_ARR[$((i+1))]}" "$CONFIG")
+  B=$(cd "$REPO_ROOT" && LNK_LOAD=loadall Rscript data-raw/study_area_wsgs.R ${WSGS_FLAG[@]+"${WSGS_FLAG[@]}"} "${FOCAL_ARR[$((i+1))]}" "$CONFIG")
   CY_BUCKET[$WS]=$(echo "$B" | tr -d '[:space:]')
   echo "  cy[$WS] (focal=${FOCAL_ARR[$((i+1))]}): ${CY_BUCKET[$WS]}"
 done
 
-# Non-fatal: warn if buckets overlap. A WSG in two hosts' closures is
-# computed on both and consolidate is last-writer-wins. Harmless when focal
-# sets are drainage-independent (Peace/Fraser/Skeena are distinct roots), but
-# surface an accidental overlap so it's visible rather than silent.
+# Overlap: a WSG in two hosts' buckets is computed on both and consolidate is
+# last-writer-wins. In closure mode it is a WARN (two closures can legitimately
+# share a group when the focal sets are not drainage-independent); in exact
+# mode it is FATAL, because the operator wrote the lists and a group on two of
+# them is a mistake, not a closure property (link#361).
 # sed, not `grep -v '^$'`: grep exits 1 when it selects nothing, which under
 # `set -euo pipefail` aborts a plain assignment. Both instances here are
 # provably unreachable today (study_area_wsgs.R stop()s on an empty resolve,
@@ -1208,7 +1237,13 @@ done
 DUP=$( { echo "$DISP_BUCKET" | tr ',' '\n'
   for WS in "${CY_WS_ARR[@]}"; do echo "${CY_BUCKET[$WS]}" | tr ',' '\n'; done
 } | sed '/^[[:space:]]*$/d' | sort | uniq -d | paste -sd, - )
-[ -z "$DUP" ] || echo "  WARN: buckets overlap on: $DUP (computed on multiple hosts; consolidate last-writer-wins)"
+if [ -n "$DUP" ]; then
+  if [ "$BUCKETS_EXACT" = "1" ]; then
+    echo "FATAL: --buckets-exact lists overlap on: $DUP (a group on two hosts; fix the --focal= lists)" >&2
+    exit 1
+  fi
+  echo "  WARN: buckets overlap on: $DUP (computed on multiple hosts; consolidate last-writer-wins)"
+fi
 
 # Recorded before any spend (link#358): a run that stops before its tail must
 # still say which groups it was running. A group that fails on a cypher, or

@@ -142,19 +142,24 @@ Harness `data-raw/logs/provincial_361/split_test.sh` + `split_compare.R`, from t
 
 ## Phase 4a: Group-level packing for province-wide runs (if identical)
 
-- [ ] `study_area_buckets.R --atom=group`: LPT over single modelable groups (measured minutes),
+- [x] `study_area_buckets.R --atom=group`: LPT over single modelable groups (measured minutes),
       each host's list ordered by the global DS-first order (cheap, fewer guard warnings); the
       drainage-closed and within-host DS-first assertions are skipped in this mode and the report
       says the recompute is the guarantee, citing `provincial_361/split_test.csv`. Default stays
       `--atom=component`; `--write` refuses `--atom=group` (`research/study_areas.md` describes
       components). The report prints the makespan under both atoms for the same hosts.
+      Done: the within-host order check is kept (it holds by construction and is cheap); only the
+      drainage-closed assertion is skipped. On the 246 at this run's minutes (1,077 host-min):
+      4 hosts 270 vs 270, 5 hosts 216 vs 231 (`provincial_361/buckets_group{4,5}.md`); `--write`
+      and a bad `--atom` refuse.
 - [ ] `data-raw/study_area_wsgs.R --exact`: `lnk_wsg_resolve(expand = FALSE)`, input order kept;
       `study_area_run.sh --buckets-exact` uses it for every `--focal=` list, keeps the overlap
       check (now fatal in exact mode: a group on two hosts is operator error, not a closure
       property) and records the mode in the banner and `run_wsgs.tsv`.
-- [ ] Header comments in `study_area_buckets.R` and `study_area_run.sh`, RUNBOOK §8d "Host
+- [x] Header comments in `study_area_buckets.R` and `study_area_run.sh`, RUNBOOK §8d "Host
       buckets are derived, not chosen", and `research/study_area_run.md` "Hosts against wall
-      clock" say when each atom applies and why.
+      clock" say when each atom applies and why. (The research entry sits in the 2026-10-23 run's
+      section, which revisits "Hosts against wall clock".)
 
 ## Phase 4b: Keep the component rule (if not identical)
 

@@ -81,14 +81,17 @@ run_expected_from_hosts() {
 # mid-write leaves the previous copy whole.
 run_wsgs_write() {
   local path="$1" ws w
+  # bucket_mode (link#361): closure (each --focal= expanded to its drainage
+  # closure) or exact (--buckets-exact). The same for every row of a run.
+  local mode="${BUCKET_MODE:-closure}"
   {
-    printf 'wsg\thost\tskip\trun_uid\n'
+    printf 'wsg\thost\tskip\trun_uid\tbucket_mode\n'
     for w in $(.hosts_lines "${DISP_BUCKET:-}"); do
-      printf '%s\t%s\t%s\t%s\n' "$w" dispatcher "$(.run_wsgs_skip dispatcher "$w")" "$RUN_UID"
+      printf '%s\t%s\t%s\t%s\t%s\n' "$w" dispatcher "$(.run_wsgs_skip dispatcher "$w")" "$RUN_UID" "$mode"
     done
     for ws in ${CY_WS_ARR[@]+"${CY_WS_ARR[@]}"}; do
       for w in $(.hosts_lines "${CY_BUCKET[$ws]:-}"); do
-        printf '%s\t%s\t%s\t%s\n' "$w" "$ws" "$(.run_wsgs_skip "$ws" "$w")" "$RUN_UID"
+        printf '%s\t%s\t%s\t%s\t%s\n' "$w" "$ws" "$(.run_wsgs_skip "$ws" "$w")" "$RUN_UID" "$mode"
       done
     done
   } > "$path.tmp" && mv "$path.tmp" "$path"
@@ -114,8 +117,12 @@ run_expected_from_file() {
   local path="$1" hdr out
   [ -f "$path" ] || return 2
   IFS= read -r hdr < "$path" || hdr=""
-  [ "$hdr" = "$(printf 'wsg\thost\tskip\trun_uid')" ] || {
-    echo "  ✗ $path: not a run_wsgs.tsv (header '$hdr')" >&2; return 1; }
+  # Two headers: the four columns of link#358, and bucket_mode appended by
+  # link#361. Both carry wsg, host, skip, run_uid in the same positions.
+  case "$hdr" in
+    "$(printf 'wsg\thost\tskip\trun_uid')"|"$(printf 'wsg\thost\tskip\trun_uid\tbucket_mode')") ;;
+    *) echo "  ✗ $path: not a run_wsgs.tsv (header '$hdr')" >&2; return 1 ;;
+  esac
   out=$(awk -F'\t' -v u="$RUN_UID" '
     NR == 1 { next }
     $4 != u { print "  ✗ " FILENAME ": row " NR " names another run_uid (" $4 ")" > "/dev/stderr"; bad = 1 }

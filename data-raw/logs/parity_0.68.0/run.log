@@ -1,0 +1,25 @@
+=== study_area_run 20261023_215312 ===
+  run_uid:      20261023_215312-16fb3aae
+  run_label:    parity-4-bcfishpass-361
+  config:       bcfishpass
+  branch:        (cyphers run this ref)
+  persist:      fresh_parity361
+  cyphers:      <none> (0)
+  log dir:      /Users/airvine/Projects/repo/link-wt361/data-raw/logs/study_area_run
+  vintage max:  7 d
+  recompute -j: 8
+=== pre-flight (local; pre-spend) ===
+  ✓ dispatcher fresh exports what the pipeline calls
+  ✓ fwapg_sha 6d48dabf9a52 (exported to all hosts)
+  ✓ bcfishobs_sha 08630cf4ac14 (exported to all hosts)
+  ✓ fresh_sha e9793047cc8f (clean)
+  ✓ bcfp reference pinned at v0.7.15-50-g620dbe4 (exported to all hosts)
+    ok   discharge (fwapg) loaded: whse_basemapping.fwa_stream_networks_discharge
+  ✓ discharge (fwapg) loaded on the dispatcher
+    [preflight] primitive vintage (window 7 d) - OK, oldest 0.6 d (whse_fish.pscis_assessment_svw) [judged by load stamp: 4, statistics: 0, none: 0]
+  ✓ dispatcher primitives within 7 d
+  ✓ pre-flight clean (tunnel-free)
+=== resolve drainage-closed DS-first buckets ===
+  dispatcher (focal=ADMS,BULK,BABL,ELKR): LARL,LFRA,LSKE,HARR,KLUM,KOTL,BULL,FRCN,KISP,BULK,ELKR,MSKE,THOM,BABR,STHM,ADMS,BABL
+  run groups: /Users/airvine/Projects/repo/link-wt361/data-raw/logs/study_area_run/20261023_215312_run_wsgs.tsv
+=== run buckets (DS-first) ===

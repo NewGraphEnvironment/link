@@ -148,3 +148,19 @@ So the component rule protects nothing the recompute does not settle, and Phase 
 a build is byte-identical on one host and differs at 1e-10 m across architectures, so "identical" across hosts
 is a digest after rounding, not of bytes; and a scratch-schema recompute of a subset of groups can differ from
 the full one wherever a group holds lines coded to another basin (NATR: 2 segments on a 100.* line).
+
+## Phase 4a: group atoms, and what they buy
+
+`study_area_buckets.R --atom=group` on the 246 focal groups at this run's minutes (`--minutes-schema=fresh_default`,
+newest finished row per group, so KTSU's 65 min is in; 1,077 host-minutes; largest component 231): four hosts
+270 min under either atom; five hosts 216 under group atoms against 231 under components
+(`data-raw/logs/provincial_361/buckets_group{4,5}.md`). The gain is bounded by the largest component only once
+hosts outnumber the big components, as the plan said; at four hosts the even split (269) already exceeds the
+Fraser. `study_area_wsgs.R --exact` keeps input order and still drops species-less groups (BASH); the driver's
+`--buckets-exact` prints `buckets: exact` in the banner, records `bucket_mode` in `run_wsgs.tsv` (reader accepts
+both headers; 296 tests pass), refuses an overlap, and is refused by `--recompute-only`.
+
+| Error | Resolution |
+|-------|------------|
+| Parity run `20261023_203809`: 16 of 17 log rows `link_dirty` t | I edited the main repo (research, driver scripts) while the run modelled from it; the split test ran from a worktree and I treated the parity run as isolated too. Schema dropped; re-run from the worktree at `1d00c04c` (`run_dirty_tree.log` kept) |
+| `DROP SCHEMA fresh_parity361 CASCADE` dropped `working_<wsg>.barriers_*_unified` views | the parity run's working schemas reuse `working_<wsg>` names and their barrier views point at the persist schema; views only, the working tables stay |

@@ -384,13 +384,19 @@ test_that("run_wsgs_write records every host's bucket, then each host's SKIPs on
   r <- run_finish_sh(w, "unused", c(set_buckets, sprintf("run_wsgs_write %s", shQuote(tsv))))
   expect_equal(r$status, 0L, info = r$out)
   x <- utils::read.delim(tsv, colClasses = "character")
-  expect_identical(names(x), c("wsg", "host", "skip", "run_uid"))
+  expect_identical(names(x), c("wsg", "host", "skip", "run_uid", "bucket_mode"))
   # DDDD is in two buckets: one row per host, as dispatched.
   expect_identical(paste(x$host, x$wsg), c(
     "dispatcher AAAA", "dispatcher SSSS", "job1 CCCC", "job1 DDDD", "job2 DDDD", "job2 EEEE"
   ))
   expect_true(all(x$skip == "unknown"))
   expect_true(all(x$run_uid == finish_uid))
+  # The bucket mode (link#361) defaults to closure and follows BUCKET_MODE.
+  expect_true(all(x$bucket_mode == "closure"))
+  r <- run_finish_sh(w, "unused", c(set_buckets, "BUCKET_MODE=exact",
+                                    sprintf("run_wsgs_write %s", shQuote(tsv))))
+  expect_equal(r$status, 0L, info = r$out)
+  expect_true(all(utils::read.delim(tsv, colClasses = "character")$bucket_mode == "exact"))
 
   # After accounting: a host's SKIPs are yes, the rest no; a host whose
   # accounting never ran stays unknown.
@@ -427,6 +433,12 @@ test_that("run_expected_from_file reads the run's groups less SKIPs, and refuses
   writeLines(rows(), tsv)
   r <- read_it()
   # SSSS and TTTT were SKIPped wherever they ran; DDDD was not, by job1.
+  expect_identical(printed(r, "EXP"), "AAAA,DDDD")
+  expect_match(r$out, "RC=0", fixed = TRUE)
+
+  # The five-column file link#361 writes (bucket_mode appended) reads the same.
+  writeLines(c(paste0(rows()[1], "\tbucket_mode"), paste0(rows()[-1], "\texact")), tsv)
+  r <- read_it()
   expect_identical(printed(r, "EXP"), "AAAA,DDDD")
   expect_match(r$out, "RC=0", fixed = TRUE)
 

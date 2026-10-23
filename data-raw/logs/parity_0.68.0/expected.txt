@@ -1,0 +1,21 @@
+# Expected parity moves at link 0.68.0 (fresh 0.42.0) against the v0.66.6 score of 2026-10-20 (#362),
+# written before scoring (2026-10-23T20:36:48Z).
+# Code moves, from measurements that held every input equal:
+#   data-raw/logs/wetland_door_364/compare_co_bcfishpass.csv  CO under the `bcfishpass` bundle, which #364
+#     gave rear_wetland_flow = gradient on its 1050/1150 rule (built on reference run 144);
+#   data-raw/logs/provincial_prep_367/  the PSCIS pick (#277): 656 of 17,377 PSCIS change modelled crossing
+#     and 56 change stream against 0.67.0, province-wide; on ADMS, ELKR and NATR accessible km unchanged and
+#     no species moves more than 0.094 km of spawning or rearing (under `default`);
+#   #244's placeholders stay off in the `bcfishpass` bundle, so they move nothing here.
+accessible km: within 0.1 on all 17 pairs (a PSCIS crossing moving between modelled crossings on one
+               stream does not change access; crossings mark barriers, never block)
+spawning km:   under 0.1 on every pair
+rearing km:    CO ADMS 352.55 -> 352.33 (-0.22); CO BULK 2215.57 -> 2214.12 (-1.45); every other pair,
+               including BABL CO and the 8 lines the 0.66.6 pick tie touched, under 0.1
+pass count:    48/50, BULK SK over and parked as before (#130)
+# Inputs are NOT held equal this time: the provincial run of 2026-10-23 refreshed the primitives (PSCIS,
+# CABD, modelled crossings at their 2026-10-20 store version, bcfishobs) and reloaded the bcfishpass
+# reference views, so ref_value can move as well as link_value. moves.R reports both sides
+# (ref_km_change beside link_km_change) instead of asserting a fixed reference; an input move is diagnosed
+# from override_diff.csv, resegmented*.csv and `log_input` artifact versions, and the reference's build from
+# data-raw/logs/bcfp_baselines.csv (the snapshot's stamp row).

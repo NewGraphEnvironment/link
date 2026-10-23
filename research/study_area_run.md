@@ -264,9 +264,13 @@ at equal speeds (`study_area_buckets.R --minutes-schema=`, #361 Phase 1), `--ref
   Fraser-coded line whose downstream barriers are TAKL's). The same two groups rebuilt on m1 alone
   are byte-identical to the split build in every model-time table. So the recompute is the
   guarantee, as #175 found for mapping code, and a run may pack single groups onto hosts
-  (`study_area_buckets.R --atom=group`, below); the component rule's only remaining value is fewer
-  guard warnings at open. Evidence: `data-raw/logs/provincial_361/split_verdict.md`. A caution the
-  test surfaced: "identical across hosts" holds after rounding, not byte for byte.
+  (`study_area_buckets.R --atom=group`, taken by `study_area_run.sh --buckets-exact`); the
+  component rule's only remaining value is fewer guard warnings at open. On this run's minutes
+  (1,077 host-minutes, KTSU's 65 included; largest component 231) the two atoms tie at four hosts,
+  270 min each, and group atoms pay from five: 216 against 231
+  (`data-raw/logs/provincial_361/buckets_group{4,5}.md`). Evidence:
+  `data-raw/logs/provincial_361/split_verdict.md`. A caution the test surfaced: "identical across
+  hosts" holds after rounding, not byte for byte.
 
 ## The province-wide `default` run (2026-10-17, 241 groups)
 
