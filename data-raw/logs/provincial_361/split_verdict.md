@@ -14,7 +14,7 @@ recomputed in A with the downstream guard in error mode (0 failures) and the hab
 `split_test.csv`: 442 = 26 groups × 17 tables; 387 identical, 55 differing (`split_test_summary.txt`).
 Every differing digest is one of two classes; none is the order.
 
-### 1. Cross-host arithmetic (49 digests: `streams` in 20 groups, `barriers` in 29)
+### 1. Cross-host arithmetic (44 digests: `streams` in 26 groups, `barriers` in 18)
 
 Per-column join of the split build on the reference (same `id_segment` / `id_barrier`):
 
@@ -34,7 +34,7 @@ single `wsg_run_one.R` runs, no recompute) digest identical to the split build (
 recompute's habitat gate blanked in `fresh_361a`: MILL GR 5 rows, LPCE BT 69, GR 100, RB 69, every one with
 `access_<sp> = 0` in `fresh_361a.streams_access`.
 
-### 2. The test's scope (6 digests: NATR `streams_access`, `streams_habitat_{bt,gr,ko,rb}`, `streams_mapping_code`)
+### 2. The test's scope (11 digests: NATR `streams_access`, `streams_habitat_{bt,gr,ko,rb}`, `streams_mapping_code`; TOOD `streams_access`, `streams_habitat_{bt,gr,rb}`, `streams_mapping_code`)
 
 Two NATR segments (`id_segment` 1 and 2, `blue_line_key` 356248829, 0.1 km, edge 1050) carry a Fraser code
 (`100.567134.…`); NATR's other 47,300 segments are `200.*`. Their downstream barriers are TAKL's falls and
@@ -42,6 +42,12 @@ gradient barriers (`fwa_downstream` from segment 1 over each schema's `barriers`
 absent from the 26-group scratch schema. So the reference has `access_<sp> = 0` and
 `has_barriers_<sp>_dnstr = TRUE` on them, the split `1` / `FALSE`, and the habitat gate and mapping code follow
 (`split_test_diff_streams_access_NATR.csv`). A recompute over every group sees TAKL; the real run's does.
+
+Two TOOD segments (`id_segment` 77049 and 77050, `blue_line_key` 359529171, 45 m) are the same case: their
+downstream barriers are FROG's gradient barriers (`fwa_downstream` from segment 77049: six FROG rows in
+`fresh_default.barriers`, none in the 26-group schema), so the reference has `access_<sp> = 0` and the split `1`,
+and the three habitat tables and the mapping code follow. FROG is outside the Peace list the harness modelled.
+Class counts: 26 + 18 + 6 + 5 = 55, from `split_test.csv` (`awk -F, '$5=="FALSE"'` by table).
 
 ## Verdict
 
@@ -53,10 +59,10 @@ follows.
 Two cautions for anyone reading digests across hosts:
 
 - "Identical across hosts" holds after rounding, not byte for byte: `length_metre`, geometry and snapped
-  barrier positions differ at 1e-10 to 1e-9 m between an amd64 and an arm64 build of the same code and inputs.
+  barrier positions differ by up to 3.7e-9 m between an amd64 and an arm64 build of the same code and inputs.
   On one host the build is byte-identical (#367's reproducibility result, and `fresh_361c` here).
 - A scratch recompute over a subset of groups differs from the full one wherever a group holds lines coded to
-  another basin; the component closure does not include them either (NATR's two segments drain to the Fraser).
+  another basin; the component closure does not include them either (NATR's two segments drain to the Fraser; TOOD's two have FROG's barriers below them).
 
 ## Commands
 

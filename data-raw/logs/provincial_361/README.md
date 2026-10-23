@@ -20,7 +20,7 @@ files here were written by hand or by the harness, and redacted by hand.
 | `run.log`, `run.started` | the driver's stdout for the run (launch 07:43:21 UTC, exit 20:04 UTC, INCOMPLETE on OKAN by design) |
 | `okan_remodel.log`, `okan_recompute.log` (+ `.started`) | OKAN re-modelled under the run_uid after the driver exited (7.6 min), then `--recompute-only --wsgs=OKAN` (no BC group drains through OKAN) |
 | `run_verify.log`, `run_verify_extra.log` | `study_area_verify.sql` and `provincial_246/verify_extra.sql` at `expected_n=241`: PASS, with OKAN's failed attempt noted as superseded |
-| `verify_negative.log` | `study_area_verify_negative.sh` on this run: 17 of 17 cases, including the new 6f / 6g (an open log row superseded, or not) |
+| `verify_negative.log` | `study_area_verify_negative.sh` on this run: 15 of 15 cases, including the new 6f / 6g (an open log row superseded, or not) |
 
 What happened on m1: KTSU took 65.4 min (1.3 on 2026-10-17) and OKAN sat from 09:19 UTC in one
 statement, fresh's near-river walk, until the operator cancelled it at 13:30 under a 30 min role
@@ -39,7 +39,7 @@ idled until the consolidate at 17:24: link#369.
 | `split_test.csv`, `split_test_summary.txt`, `split_compare.log` | 442 digests, 387 identical, 55 differing; the control schema differs as it must |
 | `split_test_diff_streams_access_NATR.csv` | the one access difference: 2 segments, every `access_<sp>` and `has_barriers_<sp>_dnstr` column |
 | `hostcheck_build_MILL.log`, `hostcheck_build_LPCE.log` | the same-host control: MILL and LPCE rebuilt on m1 alone into `fresh_361c` |
-| `split_verdict.md` | every differing digest traced: cross-host arithmetic at ≤ 3.7e-9 m (the reference Peace was built on an amd64 cloud host), or the test's 26-group scope (NATR's two Fraser-coded segments, whose downstream barriers are TAKL's). Nothing attributable to the order. **Verdict: a component can be split across hosts.** |
+| `split_verdict.md` | every differing digest traced: cross-host arithmetic at ≤ 3.7e-9 m (the reference Peace was built on an amd64 cloud host), or the test's 26-group scope (NATR's two Fraser-coded segments and TOOD's two, whose downstream barriers are TAKL's and FROG's). Nothing attributable to the order. **Verdict: a component can be split across hosts.** |
 
 ## Group atoms (Phase 4a)
 

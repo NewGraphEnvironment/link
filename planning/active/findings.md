@@ -145,9 +145,9 @@ alone into `fresh_361c` (`hostcheck_build_*.log`) are identical to the split bui
 habitat gate blanked in `fresh_361a` (5 / 69 / 100 / 69 rows, every one with `access_<sp> = 0` there).
 
 So the component rule protects nothing the recompute does not settle, and Phase 4a follows. Two facts fall out:
-a build is byte-identical on one host and differs at 1e-10 m across architectures, so "identical" across hosts
+a build is byte-identical on one host and differs by up to 3.7e-9 m across architectures, so "identical" across hosts
 is a digest after rounding, not of bytes; and a scratch-schema recompute of a subset of groups can differ from
-the full one wherever a group holds lines coded to another basin (NATR: 2 segments on a 100.* line).
+the full one wherever a group holds lines coded to another basin (NATR: 2 segments on a 100.* line; TOOD: 2 segments with FROG's barriers below them; 11 digests in all).
 
 ## Phase 4a: group atoms, and what they buy
 

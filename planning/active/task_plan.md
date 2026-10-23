@@ -103,7 +103,7 @@ The same issue owns the next provincial `default` run (the re-model #364 and #36
       `log_recompute`; the `kept_hosts.tsv` empty; cyphers burned. Both pass at 241 (`run_verify.log`,
       `run_verify_extra.log`); `1d00c04c` on all 241 + 241 rows, `link_dirty` f; no `kept_hosts.tsv`;
       cyphers burned (0 tofu resources each). The verifier was patched so OKAN's failed attempt, superseded
-      by its finished row, is a NOTICE (negative cases 6f/6g; `verify_negative.log` 17/17).
+      by its finished row, is a NOTICE (negative cases 6f/6g; `verify_negative.log` 15/15).
 - [x] Copy the wrapper logs to `data-raw/logs/provincial_361/` (`run.log`, `run_verify*.log`), plus
       `run_attempt1_bash32.log`, `okan_remodel.log`, `okan_recompute.log`, `verify_negative.log`;
       addresses redacted by hand (the driver's trap covers only `study_area_run/<TS>_*`).
@@ -134,9 +134,8 @@ Harness `data-raw/logs/provincial_361/split_test.sh` + `split_compare.R`, from t
   **Verdict: Phase 4a.** 387 of 442 digests identical; the 55 differing are all cross-host
   arithmetic (≤ 3.7e-9 m in `length_metre`, geometry and 62 barrier positions; the reference Peace
   was built on a cloud host, the split on m1) or the test's 26-group scope (NATR: 2 segments on a
-  Fraser-coded line whose downstream barriers are TAKL's). MILL and LPCE rebuilt on m1 alone are
-  identical to the split build in every model-time table; the habitat rows that differ are the
-  gate's. `data-raw/logs/provincial_361/split_verdict.md`. Boxes above: run 20:33–21:32 UTC from a
+  Fraser-coded line, TOOD: 2 with FROG's barriers below them; 11 digests). MILL and LPCE rebuilt on m1 alone are
+  identical to the split build in every model-time table but the gate-blanked habitat rows. `data-raw/logs/provincial_361/split_verdict.md`. Boxes above: run 20:33–21:32 UTC from a
   worktree at `1d00c04c` (the branch had moved on); guard warned on 18 of 26 at open, passed on all
   26 in the recompute.
 
@@ -211,10 +210,14 @@ Harness `data-raw/logs/provincial_361/split_test.sh` + `split_compare.R`, from t
 
 ## Validation
 
-- [ ] Tests pass (`devtools::test()`; `tests/testthat/test-study_area_hosts.R` and
+- [x] Tests pass (`devtools::test()`; `tests/testthat/test-study_area_hosts.R` and
       `test-study_area_finish.R` cover the driver's sourced parts; new `--exact` / `--atom` paths
-      get a test where a function exists to test, else the generated report is the evidence)
-- [ ] `lintr::lint_package()` clean on changed R
+      get a test where a function exists to test, else the generated report is the evidence).
+      3805 pass, 0 fail, 0 skip (22:06 UTC 2026-10-23); `run_wsgs.tsv`'s `bucket_mode` has tests;
+      `--exact`, `--atom=group` and `--buckets-exact` are proved by the generated reports and the
+      refusals recorded in Phase 4a.
+- [x] `lintr::lint_package()` clean on changed R: 5 lints, all pre-existing in test files outside
+      this branch's hunks (`hosts_bash` from `setup.R`, one indentation in `test-schema_consolidate.R`).
 - [ ] `/code-check branch` clean (three-round floor; the harness and driver hunks are shell)
 - [ ] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion, then `/gh-pr-push`

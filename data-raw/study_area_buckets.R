@@ -35,7 +35,8 @@
 #   reach that differs from the one-host build
 #   (data-raw/logs/provincial_361/split_verdict.md). So `--atom=group` packs
 #   single modelable groups, which lets the modelling finish before the
-#   largest component would (the Fraser: 205 of 873 host-minutes). Each host's
+#   largest component would (the Fraser: 205 of 873 host-minutes on the 2026-10-17
+#   minutes, 231 of 1,077 on 2026-10-23's). Each host's
 #   list keeps the global downstream-first order, so a group still follows
 #   whatever downstream of it the same host holds and the guard warns less;
 #   the recompute is the guarantee either way. The drainage-closed assertion

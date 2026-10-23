@@ -228,7 +228,7 @@ at equal speeds (`study_area_buckets.R --minutes-schema=`, #361 Phase 1), `--ref
 |---|---|---|
 | modelling, per host | job1 247, job2 260, job3 257 min of modelling (249 / 264 / 259 wall); m1 306 min of modelling in 560 wall | ~218 each |
 | consolidate | 42 min (3 hosts, 167 groups) | — |
-| recompute, 240 groups, `-j8` | 110 min (median 1.8 min per group; LFRA 22.7, FRCN 17.9, SETN 16.5) | ~108 |
+| recompute, 240 groups, `-j8` | 110 min (median 2.7 min per group, 839 min summed; LFRA 22.7, FRCN 17.9, SETN 16.5) | ~108 |
 | OKAN re-model + `--recompute-only --wsgs=OKAN` | 7.6 + 3 min, after the driver exited | — |
 | wall clock, launch to driver exit | 12 h 21 m (07:43 → 20:04 UTC), of which ~4 h 10 m was one stalled group | ~7 h |
 | cloud hosts | 3 × ~10.4 h (spin 07:45 → burn 18:06 UTC) ≈ $7.80 at $0.25/h; about 17 host-hours of it idle after the legs finished | ~$5 |
@@ -261,8 +261,10 @@ at equal speeds (`study_area_buckets.R --minutes-schema=`, #361 Phase 1), `--ref
   identical and the 55 that differ are cross-host arithmetic (the reference Peace was built on an
   amd64 cloud host, the split on m1: `length_metre`, geometry and 62 barrier positions differ by at
   most 3.7e-9 m, ids and row sets the same) or the test's 26-group scope (two NATR segments on a
-  Fraser-coded line whose downstream barriers are TAKL's). The same two groups rebuilt on m1 alone
-  are byte-identical to the split build in every model-time table. So the recompute is the
+  Fraser-coded line and two TOOD segments, whose downstream barriers are TAKL's and FROG's, groups outside
+  the scratch schema; 11 digests). The same two groups rebuilt on m1 alone
+  digest identical to the split build in every model-time table, except the habitat rows the recompute's
+  gate blanked. So the recompute is the
   guarantee, as #175 found for mapping code, and a run may pack single groups onto hosts
   (`study_area_buckets.R --atom=group`, taken by `study_area_run.sh --buckets-exact`); the
   component rule's only remaining value is fewer guard warnings at open. On this run's minutes
