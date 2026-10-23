@@ -1239,7 +1239,7 @@ DUP=$( { echo "$DISP_BUCKET" | tr ',' '\n'
 } | sed '/^[[:space:]]*$/d' | sort | uniq -d | paste -sd, - )
 if [ -n "$DUP" ]; then
   if [ "$BUCKETS_EXACT" = "1" ]; then
-    echo "FATAL: --buckets-exact lists overlap on: $DUP (a group on two hosts; fix the --focal= lists)" >&2
+    echo "FATAL: --buckets-exact lists overlap on: $DUP (a group listed twice, on two hosts or within one; fix the --focal= lists)" >&2
     exit 1
   fi
   echo "  WARN: buckets overlap on: $DUP (computed on multiple hosts; consolidate last-writer-wins)"

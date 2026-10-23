@@ -221,7 +221,7 @@ run_uid `20261023_074321-24d85e8c`, `default` into `fresh_default` (the 2026-10-
 `fresh_default_20261017` and kept as the control), m1 + three cloud hosts packed on measured minutes
 at equal speeds (`study_area_buckets.R --minutes-schema=`, #361 Phase 1), `--refresh-primitives`,
 `--recompute-jobs=8`, link `1d00c04c` (0.68.0) on fresh `e9793047` (0.42.0). Both verifiers pass at
-`expected_n=241`; one link SHA in `log` (241 rows) and `log_recompute` (241). Evidence:
+`expected_n=241`; one link SHA in `log` (242 rows: 241 groups, OKAN twice) and `log_recompute` (241). Evidence:
 `data-raw/logs/provincial_361/`; the record of what happened, `planning/archive/2026-10-issue-361-*/`.
 
 | stage | measured | planned (Phase 1 packing) |
