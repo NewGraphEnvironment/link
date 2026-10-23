@@ -43,10 +43,12 @@ absent from the 26-group scratch schema. So the reference has `access_<sp> = 0` 
 `has_barriers_<sp>_dnstr = TRUE` on them, the split `1` / `FALSE`, and the habitat gate and mapping code follow
 (`split_test_diff_streams_access_NATR.csv`). A recompute over every group sees TAKL; the real run's does.
 
-Two TOOD segments (`id_segment` 77049 and 77050, `blue_line_key` 359529171, 45 m) are the same case: their
-downstream barriers are FROG's gradient barriers (`fwa_downstream` from segment 77049: six FROG rows in
-`fresh_default.barriers`, none in the 26-group schema), so the reference has `access_<sp> = 0` and the split `1`,
-and the three habitat tables and the mapping code follow. FROG is outside the Peace list the harness modelled.
+Two TOOD segments (`id_segment` 77049 and 77050, `blue_line_key` 359529171, 44.8 m) are the same case: their
+downstream natural barriers are gradient barriers in FROG, LKEC, UKEC and ULRD (`fwa_downstream` from segment
+77049: 140 rows in `fresh_default.barriers`, FROG 77 and 21 each in the other three; 0 in the 26-group schema;
+`split_tood_probe.csv`). So the reference has `access_<sp> = 0` where the split has `1` (BT and RB on both
+segments, GR on one; `split_test_diff_streams_access_TOOD.csv`), and the three habitat tables and the mapping
+code follow. None of the four groups is in the Peace list the harness modelled.
 Class counts: 26 + 18 + 6 + 5 = 55, from `split_test.csv` (`awk -F, '$5=="FALSE"'` by table).
 
 ## Verdict
@@ -62,7 +64,7 @@ Two cautions for anyone reading digests across hosts:
   barrier positions differ by up to 3.7e-9 m between an amd64 and an arm64 build of the same code and inputs.
   On one host the build is byte-identical (#367's reproducibility result, and `fresh_361c` here).
 - A scratch recompute over a subset of groups differs from the full one wherever a group holds lines coded to
-  another basin; the component closure does not include them either (NATR's two segments drain to the Fraser; TOOD's two have FROG's barriers below them).
+  another basin; the component closure does not include them either (NATR's two segments drain to the Fraser; TOOD's two have barriers below them in FROG, LKEC, UKEC and ULRD).
 
 ## Commands
 
@@ -75,4 +77,6 @@ LNK_LOAD=loadall LNK_SCHEMA=fresh_361c LNK_GUARD_DOWNSTREAM=warn LNK_HABITAT_GAT
 ```
 
 Per-column joins and the `fwa_downstream` probe were run with psql against the three schemas; the numbers
-above are their outputs (2026-10-23 21:35–21:45 UTC).
+above are their outputs (the join counts, deltas and gate-blanked rows re-derived in one query at 22:50 UTC:
+`split_column_joins.csv`) (2026-10-23 21:35–21:45 UTC; the TOOD probe 22:38 and 22:47 UTC, its outputs committed
+as `split_test_diff_streams_access_TOOD.csv` and `split_tood_probe.csv`).

@@ -134,7 +134,7 @@ Harness `data-raw/logs/provincial_361/split_test.sh` + `split_compare.R`, from t
   **Verdict: Phase 4a.** 387 of 442 digests identical; the 55 differing are all cross-host
   arithmetic (≤ 3.7e-9 m in `length_metre`, geometry and 62 barrier positions; the reference Peace
   was built on a cloud host, the split on m1) or the test's 26-group scope (NATR: 2 segments on a
-  Fraser-coded line, TOOD: 2 with FROG's barriers below them; 11 digests). MILL and LPCE rebuilt on m1 alone are
+  Fraser-coded line, TOOD: 2 with barriers below them in FROG, LKEC, UKEC and ULRD; 11 digests). MILL and LPCE rebuilt on m1 alone are
   identical to the split build in every model-time table but the gate-blanked habitat rows. `data-raw/logs/provincial_361/split_verdict.md`. Boxes above: run 20:33–21:32 UTC from a
   worktree at `1d00c04c` (the branch had moved on); guard warned on 18 of 26 at open, passed on all
   26 in the recompute.

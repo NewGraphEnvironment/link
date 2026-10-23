@@ -1605,7 +1605,7 @@ group atoms pay from five hosts on. Two cautions from the test: a build is
 byte-identical on one host and differs by up to 3.7e-9 m across architectures, so
 "identical across hosts" is a digest after rounding; and a recompute over a
 subset of groups differs from the full one wherever a group holds lines
-coded to another basin or with barriers below it in a group outside the subset (NATR's two Fraser-coded segments; TOOD's two below FROG's barriers).
+coded to another basin or with barriers below it in a group outside the subset (NATR's two Fraser-coded segments; TOOD's two with barriers below them in FROG, LKEC, UKEC and ULRD).
 
 ---
 

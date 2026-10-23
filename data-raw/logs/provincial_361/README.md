@@ -37,9 +37,11 @@ idled until the consolidate at 17:24: link#369.
 | `split_stamp.txt`, `split_status.txt`, `split_test_run.log`, `split_test.started` | provenance and the timeline (20:33–21:32 UTC; run from a worktree at `1d00c04c`, the reference's SHA) |
 | `split_guard_warnings.tsv` | the downstream guard's warnings at open: 18 of 26 groups, the evidence the order was bad |
 | `split_test.csv`, `split_test_summary.txt`, `split_compare.log` | 442 digests, 387 identical, 55 differing; the control schema differs as it must |
-| `split_test_diff_streams_access_NATR.csv` | the one access difference: 2 segments, every `access_<sp>` and `has_barriers_<sp>_dnstr` column |
+| `split_test_diff_streams_access_NATR.csv`, `split_test_diff_streams_access_TOOD.csv` | the two access differences, per column: NATR 2 segments, TOOD 2 |
+| `split_tood_probe.csv` | TOOD's two segments and the 140 natural barriers downstream of them in `fresh_default` (FROG, LKEC, UKEC, ULRD), none in the scratch schema |
+| `split_column_joins.csv` | the per-column join of the split build on the reference: rows joined, rows differing and the largest difference for `streams` lengths and geometry and `barriers` positions; the gate-blanked habitat rows in MILL and LPCE |
 | `hostcheck_build_MILL.log`, `hostcheck_build_LPCE.log` | the same-host control: MILL and LPCE rebuilt on m1 alone into `fresh_361c` |
-| `split_verdict.md` | every differing digest traced: cross-host arithmetic at ≤ 3.7e-9 m (the reference Peace was built on an amd64 cloud host), or the test's 26-group scope (NATR's two Fraser-coded segments and TOOD's two, whose downstream barriers are TAKL's and FROG's). Nothing attributable to the order. **Verdict: a component can be split across hosts.** |
+| `split_verdict.md` | every differing digest traced: cross-host arithmetic at ≤ 3.7e-9 m (the reference Peace was built on an amd64 cloud host), or the test's 26-group scope (NATR's two Fraser-coded segments and TOOD's two, whose downstream barriers are TAKL's and FROG's, LKEC's, UKEC's and ULRD's). Nothing attributable to the order. **Verdict: a component can be split across hosts.** |
 
 ## Group atoms (Phase 4a)
 

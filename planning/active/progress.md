@@ -124,3 +124,10 @@ done and committed; what is left, in order:
 
 For the operator's review (not filed): `planning/active/drafts/followup_issues_timeout_pretest.md` (two issues).
 Withdrawn: the fresh near-river-walk issue (premise disproved; see findings). Already filed/closed: #369, #170.
+- Code check (branch): round 1 Clean; round 2 one stale count; round 3 five restated quantities, chief among them
+  TOOD's five access-class digests the verdict had not traced (two segments whose downstream barriers are in
+  FROG, LKEC, UKEC and ULRD; the verdict stands, 11 scope digests); round 4 (first spawn died on the Fable rate
+  limit, re-run as 4b on Opus) three loose ends inside round 3's fix, plus the probe showed "six FROG rows" was a
+  `head -6` truncation (140 rows in four groups). Closed by enumeration: round 4b's per-quantity table, with the
+  previously underivable join and gate counts now committed (`split_column_joins.csv`, `split_tood_probe.csv`,
+  `split_test_diff_streams_access_TOOD.csv`), every quantity matches its artifact.
