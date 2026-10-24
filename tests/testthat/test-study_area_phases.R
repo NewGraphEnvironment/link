@@ -254,8 +254,10 @@ test_that("each model and prep leg re-raises its own exit status after writing i
   drv_path <- testthat::test_path("..", "..", "data-raw", "study_area_run.sh")
   testthat::skip_if_not(file.exists(drv_path), "data-raw/study_area_run.sh absent")
   drv <- readLines(drv_path)
-  # Two model legs (the local one and the ssh one), one prep leg.
-  expect_length(grep("|| mrc=$?", drv, fixed = TRUE), 2L)
+  # Two model legs (the local one and the ssh one), one prep leg. The ssh leg
+  # reads its status twice: ssh's, then its end marker's (link#376).
+  expect_length(grep("|| mrc=$?", drv, fixed = TRUE), 3L)
+  expect_length(grep('remote_leg_status "$mrc" "$LOG_DIR/${TS}_run_$WS.log"', drv, fixed = TRUE), 1L)
   # Each wrapper sends its own output to its leg's log, never the driver's
   # stdout, which it would otherwise hold open for the whole leg.
   expect_length(grep('^  exit "\\$mrc" \\) >> "\\$LOG_DIR/\\$\\{TS\\}_run_[^"]+\\.log" 2>&1 &$', drv), 2L)

@@ -500,6 +500,10 @@ source "$REPO_ROOT/data-raw/study_area_phases.sh"
 # Each cypher consolidated and burned when its own leg ends (link#369).
 # shellcheck source=study_area_legs.sh
 source "$REPO_ROOT/data-raw/study_area_legs.sh"
+# Remote commands judged by what they print, never by ssh's exit status
+# (link#376).
+# shellcheck source=study_area_remote.sh
+source "$REPO_ROOT/data-raw/study_area_remote.sh"
 PHASES_TSV=""
 if [ "$PREFLIGHT_ONLY" = "0" ]; then
   phases_init "$LOG_DIR/${TS}_phases.tsv"
@@ -1137,11 +1141,14 @@ collect_stamps() {   # $1 = destination tsv
   [ -n "$out" ] || { echo "  ✗ dispatcher returned an empty stamp"; return 1; }
   printf '%s\n' "$out" >> "$tsv"
   for ws in "${CY_WS_ARR[@]}"; do
-    if ! out=$(ssh -o BatchMode=yes -o ConnectTimeout=15 "${HOST_SSH[$ws]}" \
-        "cd ~/Projects/repo/link && export FWAPG_GIT_SHA='${FWAPG_GIT_SHA:-}' && export BCFISHOBS_GIT_SHA='${BCFISHOBS_GIT_SHA:-}' && Rscript data-raw/host_stamp.R '$CONFIG'" 2>/dev/null); then
+    # Judged by the status the remote shell prints (remote_run, link#376).
+    if ! remote_run "${HOST_SSH[$ws]}" \
+        "cd $(.remote_dir "$ws") && export FWAPG_GIT_SHA='${FWAPG_GIT_SHA:-}' && export BCFISHOBS_GIT_SHA='${BCFISHOBS_GIT_SHA:-}' && Rscript data-raw/host_stamp.R '$CONFIG'" \
+        "$tsv.$ws.out" /dev/null; then
       echo "  ✗ cy[$ws] stamp failed (ssh or Rscript) — treated as a FAILURE, not a skip"
       return 1
     fi
+    out=$(remote_out "$tsv.$ws.out"); rm -f "$tsv.$ws.out"
     [ -n "$out" ] || { echo "  ✗ cy[$ws] returned an empty stamp"; return 1; }
     printf '%s\n' "$out" >> "$tsv"
   done
@@ -1199,10 +1206,16 @@ preflight_hosts() {
     # re-runs the fresh export assertion — then re-check exactly once.
     echo "  → --auto-install: reinstalling on cyphers and re-checking once"
     for ws in "${CY_WS_ARR[@]}"; do
-      ssh "${HOST_SSH[$ws]}" \
-        "CYPHER_PREP_BRANCH='$LINK_BRANCH' CYPHER_PREP_STAGE=install bash /tmp/cypher_prep.sh" \
-        >> "$LOG_DIR/${TS}_autoinstall.log" 2>&1 \
-        || { echo "  ✗ cy[$ws] reinstall failed; see $LOG_DIR/${TS}_autoinstall.log"; fail=1; }
+      # Judged per host on its status and its install-stage READY line
+      # (link#376), not on ssh's exit status.
+      if remote_run "${HOST_SSH[$ws]}" \
+           "CYPHER_PREP_BRANCH='$LINK_BRANCH' CYPHER_PREP_STAGE=install bash /tmp/cypher_prep.sh" \
+           "$LOG_DIR/${TS}_autoinstall_$ws.log" \
+         && grep -q '^=== READY (install stage only' "$LOG_DIR/${TS}_autoinstall_$ws.log"; then
+        :
+      else
+        echo "  ✗ cy[$ws] reinstall failed; see $LOG_DIR/${TS}_autoinstall_$ws.log"; fail=1
+      fi
     done
     if [ "$fail" = "0" ] && collect_stamps "$tsv" && judge_stamps "$tsv"; then
       echo "  ✓ host parity clean after reinstall"
@@ -1221,15 +1234,17 @@ preflight_hosts() {
   # snapshot_bcfp.sh, and this verifies the primitives actually landed
   # rather than trusting the prep sentinel.
   for ws in "${CY_WS_ARR[@]}"; do
-    if ssh -o BatchMode=yes -o ConnectTimeout=15 "${HOST_SSH[$ws]}" \
-         "cd ~/Projects/repo/link && Rscript data-raw/host_vintage.R '$VINTAGE_MAX_DAYS'" \
-         >> "$LOG_DIR/${TS}_vintage.log" 2>&1; then
+    # One log per host, judged by the status the remote shell prints
+    # (link#376): ssh's exit status can be 0 whatever host_vintage.R returned.
+    if remote_run "${HOST_SSH[$ws]}" \
+         "cd $(.remote_dir "$ws") && Rscript data-raw/host_vintage.R '$VINTAGE_MAX_DAYS'" \
+         "$LOG_DIR/${TS}_vintage_$ws.log"; then
       echo "  ✓ cy[$ws] primitives within ${VINTAGE_MAX_DAYS} d"
     else
       if [ -n "$PREFLIGHT_NOTE" ]; then
         echo "  WARN: cy[$ws] primitives stale — proceeding on --preflight-note"
       else
-        echo "  ✗ cy[$ws] primitives stale/absent — see $LOG_DIR/${TS}_vintage.log"
+        echo "  ✗ cy[$ws] primitives stale/absent — see $LOG_DIR/${TS}_vintage_$ws.log"
         fail=1
       fi
     fi
@@ -1593,8 +1608,12 @@ for WS in "${CY_WS_ARR[@]}"; do
   # silent link drop would kill the rest of it (link#246).
   phase_begin model "$WS"
   ( mrc=0
-  ssh -o ServerAliveInterval=60 -o ServerAliveCountMax=10 "${HOST_SSH[$WS]}" "cd ~/Projects/repo/link && export LNK_SCHEMA='$SCHEMA' && export LNK_GUARD_DOWNSTREAM=warn && export LNK_HABITAT_GATE=0 && export PGOPTIONS='-c statement_timeout=${STATEMENT_TIMEOUT_MIN}min' && export LNK_STATEMENT_TIMEOUT_MIN='$STATEMENT_TIMEOUT_MIN' && export FWAPG_GIT_SHA='${FWAPG_GIT_SHA:-}' && export BCFISHOBS_GIT_SHA='${BCFISHOBS_GIT_SHA:-}' && export LNK_RUN_UID='$RUN_UID' && export LNK_RUN_LABEL='$RUN_LABEL' && export LNK_BCFP_MODEL_VERSION='${LNK_BCFP_MODEL_VERSION:-}' && for w in $B_SPACE; do Rscript data-raw/wsg_run_one.R \$w '$CONFIG' || echo \"[WARN] cy WSG \$w failed\"; done" \
+  ssh -o ServerAliveInterval=60 -o ServerAliveCountMax=10 "${HOST_SSH[$WS]}" \
+    "$(remote_leg_cmd "$WS" "$B_SPACE")" \
     > "$LOG_DIR/${TS}_run_$WS.log" 2>&1 || mrc=$?
+  # The leg ended only if its loop printed its end marker (link#376): ssh can
+  # exit 0 whatever happened there. Feeds HOST_RUN_RC, so release stays strict.
+  remote_leg_status "$mrc" "$LOG_DIR/${TS}_run_$WS.log" && mrc=0 || mrc=$?
   phase_end model "$WS" "$(csv_count "${HOST_BUCKET[$WS]}")" \
     "$([ "$mrc" = "0" ] && echo ok || echo failed)" quiet
   exit "$mrc" ) >> "$LOG_DIR/${TS}_run_$WS.log" 2>&1 &

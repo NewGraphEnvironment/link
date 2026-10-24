@@ -857,12 +857,18 @@ test_that("the driver bounds a statement on both modelling legs and refuses a ba
   legs <- drv[from:to]
   legs <- legs[!grepl("^[[:space:]]*#", legs)]
   bound <- "statement_timeout=${STATEMENT_TIMEOUT_MIN}min"
-  expect_length(grep(bound, legs, fixed = TRUE), 2L)
+  # The local leg sets it here; the ssh leg's command is built by
+  # remote_leg_cmd (study_area_remote.sh, link#376), which the driver calls.
+  expect_length(grep(bound, legs, fixed = TRUE), 1L)
+  expect_length(grep("LNK_STATEMENT_TIMEOUT_MIN=", legs, fixed = TRUE), 1L)
+  expect_length(grep('"$(remote_leg_cmd "$WS" "$B_SPACE")"', legs, fixed = TRUE), 1L)
+  remote <- readLines(testthat::test_path("..", "..", "data-raw", "study_area_remote.sh"))
+  leg_fn <- remote[grep("^remote_leg_cmd\\(\\) \\{", remote):length(remote)]
+  leg_fn <- leg_fn[seq_len(which(leg_fn == "}")[1])]
   # ... and the minutes it asked for, which wsg_run_one.R checks it got.
-  expect_length(grep("LNK_STATEMENT_TIMEOUT_MIN=", legs, fixed = TRUE), 2L)
-  expect_length(grep("export LNK_STATEMENT_TIMEOUT_MIN='$STATEMENT_TIMEOUT_MIN'", legs, fixed = TRUE), 1L)
+  expect_length(grep("export LNK_STATEMENT_TIMEOUT_MIN='$STATEMENT_TIMEOUT_MIN'", leg_fn, fixed = TRUE), 1L)
   expect_length(grep("TEST HOOK:    LNK_TEST_STALL_WSG", drv, fixed = TRUE), 1L)
-  expect_length(grep(paste0("export PGOPTIONS='-c ", bound, "'"), legs, fixed = TRUE), 1L)
+  expect_length(grep(paste0("export PGOPTIONS='-c ", bound, "'"), leg_fn, fixed = TRUE), 1L)
   rc_from <- grep("^recompute_one\\(\\) \\{", drv)
   rc_to <- rc_from + which(drv[-seq_len(rc_from)] == "}")[1]
   expect_length(rc_from, 1L)
