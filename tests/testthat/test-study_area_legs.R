@@ -134,10 +134,12 @@ when <- function(df, what, who) df$t[df$what == what & df$who == who]
 test_that("a host that ends early is consolidated and burned while a longer leg still models", {
   skip_if_no_legs_lib()
   w <- legs_world()
-  legs_host(w, "a", "AAAA"); legs_host(w, "b", "BBBB")
+  legs_host(w, "a", "AAAA")
+  legs_host(w, "b", "BBBB")
   r <- run_legs(w, "legs_wait", legs = c(a = 0.5, b = 5), disp = 3)
   expect_equal(r$status, 0L, info = r$out)
-  ev <- events(w, "events"); burns <- events(w, "burn_times")
+  ev <- events(w, "events")
+  burns <- events(w, "burn_times")
   expect_equal(sort(burns$who), c("a", "b"))
   # The point of #369: a is gone before either longer leg has ended.
   expect_lt(when(burns, "--workspace", "a"), when(ev, "leg_end", "dispatcher"))
@@ -176,14 +178,16 @@ test_that("a cypher whose bucket overlaps the dispatcher's waits for the dispatc
   r <- run_legs(w, "legs_wait", legs = c(a = 0.3), disp = 2, disp_bucket = "AAAA,ZZZZ")
   expect_equal(r$status, 0L, info = r$out)
   expect_match(r$out, "overlaps the dispatcher's (AAAA)", fixed = TRUE)
-  ev <- events(w, "events"); cons <- events(w, "cons_calls")
+  ev <- events(w, "events")
+  cons <- events(w, "cons_calls")
   expect_gt(when(cons, "start", "ip-a"), when(ev, "leg_end", "dispatcher"))
 })
 
 test_that("a refused source is kept and listed with its burn command; the other host is burned", {
   skip_if_no_legs_lib()
   w <- legs_world()
-  legs_host(w, "a", "AAAA"); legs_host(w, "b", "BBBB")
+  legs_host(w, "a", "AAAA")
+  legs_host(w, "b", "BBBB")
   put(w, "cons_ip-b.mode", "refuse:dest_log_newer")
   r <- run_legs(w, c("legs_wait", 'echo "FAILED=[$CONS_FAILED] EXCL=[$CONS_EXCLUDED]"'),
                 legs = c(a = 0.3, b = 0.6), disp = 0.1)
@@ -203,7 +207,8 @@ test_that("a consolidate with no outcome keeps its host and its groups in_flight
   skip_if_no_legs_lib()
   for (mode in c("die", "ok_exit1")) {
     w <- legs_world()
-    legs_host(w, "a", "AAAA"); legs_host(w, "b", "BBBB")
+    legs_host(w, "a", "AAAA")
+    legs_host(w, "b", "BBBB")
     put(w, "cons_ip-a.mode", mode)
     r <- run_legs(w, c("legs_wait", 'echo "FAILED=[$CONS_FAILED] EXCL=[$CONS_EXCLUDED] HOLD=[${CY_HOLD[a]}]"'),
                   legs = c(a = 0.3, b = 0.6), disp = 0.1)
@@ -222,9 +227,11 @@ test_that("a consolidate with no outcome keeps its host and its groups in_flight
 test_that("a burn mid-run lists no host that is still modelling", {
   skip_if_no_legs_lib()
   w <- legs_world()
-  legs_host(w, "a", "AAAA"); legs_host(w, "b", "BBBB")
+  legs_host(w, "a", "AAAA")
+  legs_host(w, "b", "BBBB")
   put(w, "cons_ip-a.mode", "refuse:dest_log_newer")
-  logs <- shQuote(file.path(w, "logs")); st <- shQuote(file.path(w, "stub"))
+  logs <- shQuote(file.path(w, "logs"))
+  st <- shQuote(file.path(w, "stub"))
   # b's leg copies what the run had written by the time it ends.
   tail_b <- sprintf("cp %s/T0_kept_hosts.tsv %s/kept_mid.tsv; cp %s/T0_consolidate_state.tsv %s/state_mid.tsv",
                     logs, st, logs, st)
@@ -241,7 +248,8 @@ test_that("a burn mid-run lists no host that is still modelling", {
 test_that("a driver killed during one host's copy sees that host unsettled", {
   skip_if_no_legs_lib()
   w <- legs_world()
-  legs_host(w, "a", "AAAA"); legs_host(w, "b", "BBBB")
+  legs_host(w, "a", "AAAA")
+  legs_host(w, "b", "BBBB")
   put(w, "cons_ip-a.sleep", "6")
   r <- run_legs(w, c("trap 'burn_cyphers' EXIT", "( sleep 2; kill -TERM $$ ) &", "legs_wait"),
                 legs = c(a = 0.2, b = 20), disp = 0.1)
@@ -268,9 +276,11 @@ test_that("a leg pid wait cannot report ends that leg, not the driver", {
 test_that("a host deferred behind the dispatcher is not reported kept mid-run", {
   skip_if_no_legs_lib()
   w <- legs_world()
-  legs_host(w, "a", "AAAA"); legs_host(w, "b", "BBBB")
+  legs_host(w, "a", "AAAA")
+  legs_host(w, "b", "BBBB")
   put(w, "cons_ip-b.mode", "refuse:dest_log_newer")
-  logs <- shQuote(file.path(w, "logs")); st <- shQuote(file.path(w, "stub"))
+  logs <- shQuote(file.path(w, "logs"))
+  st <- shQuote(file.path(w, "stub"))
   tail_d <- sprintf("cp %s/T0_kept_hosts.tsv %s/kept_mid.tsv", logs, st)
   r <- run_legs(w, "legs_wait", legs = c(a = 0.2, b = 0.5), disp = 3,
                 disp_bucket = "AAAA,ZZZZ", leg_tail = list(dispatcher = tail_d))
@@ -310,7 +320,8 @@ test_that("the consolidate program is what consolidate_outcomes reads", {
   prog <- readLines(file.path(w, "prog.R"))
   expect_true(any(grepl("backup = FALSE, verify = FALSE", prog, fixed = TRUE)))
   prog <- prog[!grepl("load_all|^source\\(", prog)]
-  fake <- "res <- list(sources = list('cypher@ip-a' = list(ok = FALSE, stage = 'dest_log_newer', rc = -1L, groups = c('CCCC', 'DDDD'))))"
+  fake <- paste0("res <- list(sources = list('cypher@ip-a' = list(ok = FALSE, ",
+                 "stage = 'dest_log_newer', rc = -1L, groups = c('CCCC', 'DDDD'))))")
   i <- grepl("^res <- schema_consolidate", prog)
   expect_equal(sum(i), 1L)
   prog[i] <- fake
@@ -318,7 +329,8 @@ test_that("the consolidate program is what consolidate_outcomes reads", {
   rc <- suppressWarnings(system2(rscript, file.path(w, "prog.R"), stdout = FALSE, stderr = FALSE))
   expect_equal(rc, 1L)
   r <- run_legs(w, c("CY_BUCKET_DONE[a]=CCCC,DDDD",
-                     sprintf("consolidate_outcomes %s a; echo \"FAILED=$CONS_FAILED STAGE=${CY_CONS_FAIL[a]}\"", shQuote(tsv))),
+                     sprintf("consolidate_outcomes %s a", shQuote(tsv)),
+                     'echo "FAILED=$CONS_FAILED STAGE=${CY_CONS_FAIL[a]}"'),
                 legs = c(a = 0), disp = 0)
   expect_match(r$out, "FAILED=a STAGE=dest_log_newer", fixed = TRUE)
 })

@@ -222,7 +222,8 @@ test_that("the bucket count ignores another group's delete (live)", {
   DBI::dbExecute(conn, sprintf("CREATE SCHEMA %s", sc))
   DBI::dbExecute(conn, sprintf("CREATE TABLE %s.t (watershed_group_code text)", sc))
   DBI::dbExecute(conn, sprintf(
-    "INSERT INTO %s.t SELECT 'ADMS' FROM generate_series(1, 3) UNION ALL SELECT 'OKAN' FROM generate_series(1, 50)", sc))
+    paste("INSERT INTO %s.t SELECT 'ADMS' FROM generate_series(1, 3)",
+          "UNION ALL SELECT 'OKAN' FROM generate_series(1, 50)"), sc))
   sql <- e$consolidate_bucket_count_sql(sc, "t", "ADMS")
   pre <- as.numeric(DBI::dbGetQuery(conn, sql)$n)
   # The dispatcher replaces its own group meanwhile: a whole-table count

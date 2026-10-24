@@ -209,7 +209,8 @@ test_that("an index or column that already exists is not re-issued", {
   captured <- character(0)
   local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) {
-      captured <<- c(captured, sql); invisible(NULL)
+      captured <<- c(captured, sql)
+      invisible(NULL)
     }
   )
   expect_false(.lnk_index_create("c", have = "a_idx", "a_idx", "s.t (x)"))
