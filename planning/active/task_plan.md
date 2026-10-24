@@ -103,9 +103,10 @@ What exploration found that shapes the design:
 
 ## Phase 4: docs
 
-- [ ] RUNBOOK §8d: what `<TS>_phases.tsv` holds and how to read a tracker row off it.
-- [ ] Driver header: `<TS>_phases.tsv` in the file list.
-- [ ] NEWS entry; CLAUDE.md status; #377's #375 line filled with what this run measured.
+- [x] RUNBOOK §8d: what `<TS>_phases.tsv` holds and how to read a tracker row off it.
+- [x] Driver header: `<TS>_phases.tsv` in the file list.
+- [ ] CLAUDE.md status; #377's #375 line filled with what this run measured. NEWS is written
+      by `/gh-pr-merge` at release, as for 0.68.2.
 
 ## Owed at the end (reported, done after merge)
 

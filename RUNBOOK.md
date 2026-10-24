@@ -1553,6 +1553,69 @@ error, which the path above already handles.
   minute, and the run carries on. The banner prints a `TEST HOOK:` line
   whenever the variable is set. Evidence: `data-raw/logs/statement_timeout_371/`.
 
+### Where a run's time went: `<TS>_phases.tsv` (link#375)
+
+Every speed number before this was rebuilt by hand from log tables, console
+logs and `date_end` columns. Now the driver writes one row per phase per host
+as the phase ends (`data-raw/study_area_phases.sh`), so a speed change is
+measured off a file, run after run (#377).
+
+| column | holds |
+|---|---|
+| `run_uid` | the run's uid; under `--recompute-only`, the uid of the run it finishes |
+| `phase` | below |
+| `host` | `dispatcher` or a cypher workspace; blank for a run-wide phase |
+| `start_utc`, `end_utc` | ISO 8601, UTC |
+| `minutes` | end − start, one decimal |
+| `groups` | groups the phase covered; blank where it covers none |
+| `status` | `ok`, `failed` (errored, or left groups out), `skipped` (blank times) |
+
+- **The phases, in run order:**
+  - `prep`, run-wide: driver start to dispatch. It holds `refresh`, every
+    cypher's prep, both pre-flights and the bucket resolve.
+  - `prep`, per cypher: from the spin to the end of its own prep. `ok` needs
+    exit 0 and the `=== READY` line the gate reads.
+  - `refresh`: `snapshot_bcfp.sh` under `--refresh-primitives`; otherwise skipped.
+  - `model`, per host: the leg, written by the leg's own subshell when its loop
+    ends. The driver waits on the legs one after another, so the moment a wait
+    returns is not when that leg ended. The status is the session's exit, which
+    is 0 even when every group failed (each group soft-fails); `account` says
+    whether the hosts finished.
+  - `account`: per-host completeness from each database. `failed` when a host did
+    not account for its bucket.
+  - `consolidate`: the copy and the release that reads each source again;
+    skipped with no cyphers.
+  - `burn`: the explicit burn, not the EXIT trap's. `failed` when a host it was
+    free to burn is still up. A held host is the kept-hosts report's to name.
+  - `coverage`: `failed` when a run group has no rows from this run.
+  - `views`: the log-table step and `barriers_views_build.R`.
+  - `recompute`: the pool, ordering and judge included; skipped when `views` failed.
+  - `compare`.
+  - The tail is skipped when no group has rows.
+- **Rows overlap, so never sum them.** The run-wide `prep` holds `refresh` and
+  every cypher's prep, and the model legs run side by side. The summary prints
+  the **critical path**, which is the first start to the last end, and the
+  longest model leg.
+- **A row per tracker cell.** "Longest leg" is the longest `model` row.
+  "Consolidate on the critical path" is the `consolidate` row, since it waits on
+  every leg. "Recompute" is the `recompute` row. "Critical path" is the
+  summary's line. The phases.tsv sits beside the run's other `<TS>_*` logs.
+- **A run that dies** keeps the rows it finished. The EXIT trap closes the phase
+  it died in as `failed` and prints the table once. A kill does not stop a
+  running leg, so that leg later writes its own row too. For one phase, host and
+  start, the later row is the leg's real end. A phase a leg had already closed
+  is not closed again. The file has every phase only on a run that reached its
+  summary: a coverage FATAL, for one, leaves no tail rows.
+- **`--recompute-only` writes its own `<its TS>_phases.tsv`**, with a `prep` row
+  for its preamble and then the tail. Its critical path covers that pass only.
+  A path running from the original run through a hand re-model hours later
+  would mean nothing.
+- **`--preflight-only` writes no file.**
+- **Times come from one `date -u` call each, which prints both ISO and epoch.**
+  `date` is GNU on some hosts and BSD on others, so nothing parses a date with
+  it, and the report parses ISO in perl. A `date` that fails costs only that
+  row's times.
+
 ### Which host may be burned (link#347)
 
 The count used to be `[wsg_run_one] … done` lines, anchored at line start. R

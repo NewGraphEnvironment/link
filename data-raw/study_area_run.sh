@@ -70,6 +70,10 @@
 # kept and its groups are named (link#358). The run's groups are written to
 # <TS>_run_wsgs.tsv before any spend, which --recompute-only reads.
 #
+# Each phase's start and end per host goes to <TS>_phases.tsv as it ends, and
+# the summary prints the table and the critical path (link#375; RUNBOOK §8d,
+# "Where a run's time went").
+#
 # Extra flags:
 #   --preflight-only        run the local gates and exit (no spend)
 #   --refresh-primitives    snapshot_bcfp.sh --force first (default off)
