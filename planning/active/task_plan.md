@@ -90,16 +90,16 @@ What exploration found that shapes the design:
 
 ## Phase 3: dispatcher-only acceptance run
 
-- [ ] From a worktree (never this repo mid-run), into scratch `fresh_375`:
+- [x] From a worktree (never this repo mid-run), into scratch `fresh_375`:
       `bash data-raw/study_area_run.sh --buckets-exact --focal=NBNK,EUCH --config=default
       --schema=fresh_375`, console teed to a file. NBNK and EUCH pass the downstream guard
       on an empty schema and carry reference species (#371's run 2).
-- [ ] Check: one row per phase; `model` end within a minute of `max(log.date_end)` for the
+- [x] Check: one row per phase; `model` end within a minute of `max(log.date_end)` for the
       run_uid; `recompute` brackets `log_recompute`'s rows; console `[phase]` lines match
       the TSV; skipped rows for `refresh`, `consolidate`, `burn`.
-- [ ] A `--recompute-only --run-uid=<that uid>` pass writes its own file with the tail rows.
-- [ ] A killed run (SIGTERM during `model`) leaves a `failed` row for it.
-- [ ] Evidence to `data-raw/logs/phases_375/` with a README; drop `fresh_375`.
+- [x] A `--recompute-only --run-uid=<that uid>` pass writes its own file with the tail rows.
+- [x] A killed run (SIGTERM during `model`) leaves a `failed` row for it.
+- [x] Evidence to `data-raw/logs/phases_375/` with a README; drop `fresh_375`.
 
 ## Phase 4: docs
 

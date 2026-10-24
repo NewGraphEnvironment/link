@@ -1,0 +1,80 @@
+=== study_area_run 20261024_033035 ===
+  run_uid:      20261024_033035-1ecf477d
+  run_label:    <none>
+  config:       default
+  branch:        (cyphers run this ref)
+  persist:      fresh_375
+  cyphers:      <none> (0)
+  log dir:      ~/Projects/repo/link_wt375/data-raw/logs/study_area_run
+  vintage max:  7 d
+  recompute -j: 4
+  statement:    30 min per modelling statement (PGOPTIONS, both legs); recompute 10 min (wsg_recompute_one.R)
+  buckets:      exact (--buckets-exact; each --focal= list as given; the recompute settles access)
+  phases:       ~/Projects/repo/link_wt375/data-raw/logs/study_area_run/20261024_033035_phases.tsv
+  [phase] refresh skipped
+=== pre-flight (local; pre-spend) ===
+  ✓ dispatcher fresh exports what the pipeline calls
+  ✓ fwapg_sha 6d48dabf9a52 (exported to all hosts)
+  ✓ bcfishobs_sha 08630cf4ac14 (exported to all hosts)
+  ✓ fresh_sha e9793047cc8f (clean)
+  ✓ bcfp reference pinned at v0.7.15-50-g620dbe4 (exported to all hosts)
+    ok   discharge (fwapg) loaded: whse_basemapping.fwa_stream_networks_discharge
+  ✓ discharge (fwapg) loaded on the dispatcher
+    [preflight] primitive vintage (window 7 d) - OK, oldest 0.8 d (whse_fish.pscis_assessment_svw) [judged by load stamp: 4, statistics: 0, none: 0]
+  ✓ dispatcher primitives within 7 d
+  ✓ pre-flight clean (tunnel-free)
+=== resolve exact buckets (--buckets-exact; order as given, species filter only) ===
+  dispatcher (focal=NBNK,EUCH): NBNK,EUCH
+  run groups: ~/Projects/repo/link_wt375/data-raw/logs/study_area_run/20261024_033035_run_wsgs.tsv
+  [phase] prep ok 2026-10-24T03:30:35Z -> 2026-10-24T03:30:43Z (0.1 min, 2 groups)
+=== run buckets (DS-first) ===
+  [phase] model dispatcher ok 2026-10-24T03:30:43Z -> 2026-10-24T03:32:21Z (1.6 min, 2 groups)
+  ✓ host runs finished (per-WSG soft-fail; gaps surface in compare)
+=== per-host completeness (database) ===
+  ✓ dispatcher: 2/2 WSGs accounted for (2 finished, 0 SKIP; database)
+  [phase] account ok 2026-10-24T03:32:21Z -> 2026-10-24T03:32:22Z (0.0 min, 2 groups)
+  [phase] consolidate skipped
+  [phase] burn skipped
+=== verify WSG coverage in fresh_375 (run_uid 20261024_033035-1ecf477d) ===
+  2/2 run WSGs have rows from a build this run finished
+  classes: ~/Projects/repo/link_wt375/data-raw/logs/study_area_run/20261024_033035_coverage.tsv
+  [phase] coverage ok 2026-10-24T03:32:22Z -> 2026-10-24T03:32:22Z (0.0 min, 2 groups)
+=== post-consolidate recompute (lnk_access, 2 WSGs, -j4) ===
+  ✓ log tables present in fresh_375
+  ✓ barrier views built once for fresh_375
+  [phase] views ok 2026-10-24T03:32:22Z -> 2026-10-24T03:32:24Z (0.0 min)
+  ordering 241 known WSG time(s) longest-first (median 2.43 min for the rest)
+[fanout] recompute - OK: 2/2 job(s) succeeded
+  ✓ recompute: 2/2 WSGs
+  [phase] recompute ok 2026-10-24T03:32:24Z -> 2026-10-24T03:32:36Z (0.2 min, 2 groups)
+=== compare (tunnel-free) ===
+  ✓ compare CSV: ~/Projects/repo/link_wt375/data-raw/logs/study_area_run/20261024_033035_compare.csv
+  [phase] compare ok 2026-10-24T03:32:36Z -> 2026-10-24T03:32:45Z (0.1 min, 2 groups)
+=== summary ===
+  phases (~/Projects/repo/link_wt375/data-raw/logs/study_area_run/20261024_033035_phases.tsv):
+    phase       host       start_utc            end_utc              minutes groups status
+    refresh                                                                         skipped
+    prep                   2026-10-24T03:30:35Z 2026-10-24T03:30:43Z     0.1      2 ok
+    model       dispatcher 2026-10-24T03:30:43Z 2026-10-24T03:32:21Z     1.6      2 ok
+    account                2026-10-24T03:32:21Z 2026-10-24T03:32:22Z     0.0      2 ok
+    consolidate                                                                     skipped
+    burn                                                                            skipped
+    coverage               2026-10-24T03:32:22Z 2026-10-24T03:32:22Z     0.0      2 ok
+    views                  2026-10-24T03:32:22Z 2026-10-24T03:32:24Z     0.0        ok
+    recompute              2026-10-24T03:32:24Z 2026-10-24T03:32:36Z     0.2      2 ok
+    compare                2026-10-24T03:32:36Z 2026-10-24T03:32:45Z     0.1      2 ok
+  critical path: 2.2 min (first start to last end)
+  longest model leg: 1.6 min (dispatcher)
+  run WSGs:        EUCH,NBNK
+  recomputed WSGs: NBNK,EUCH
+  compare CSV: ~/Projects/repo/link_wt375/data-raw/logs/study_area_run/20261024_033035_compare.csv
+[study_area_compare] 3 rows across 2/2 WSGs -> ~/Projects/repo/link_wt375/data-raw/logs/study_area_run/20261024_033035_compare.csv
+# A tibble: 3 × 7
+  wsg   species total_segs match_pct n_diffs top_pattern       top_pattern_count
+* <chr> <chr>        <int>     <dbl>   <int> <chr>                         <int>
+1 NBNK  CO            3895      64.6    1377 "REAR;NONE | ACC…               828
+2 NBNK  SK            3895      86.6     520 "ACCESS;NONE | "                483
+3 EUCH  CH            7644      72.6    2092 "REAR;MODELLED |…               687
+=== study_area_run done ===
+  ✓ redacted host addresses in 10 log file(s)
+DRIVER_RC=0
