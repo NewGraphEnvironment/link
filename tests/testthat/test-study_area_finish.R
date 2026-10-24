@@ -900,4 +900,17 @@ test_that("the printed re-model carries the bound the run's groups reported", {
   expect_equal(r$status, 1L, info = r$out)
   expect_match(r$out, "PGOPTIONS='-c statement_timeout=2h'", fixed = TRUE)
   expect_match(r$out, "raise it for CCCC", fixed = TRUE)
+  # The printed command is one command a shell parses, with the bound on it.
+  out <- strsplit(r$out, "\n")[[1]]
+  i <- grep("^    PGOPTIONS='", out)
+  j <- grep("Rscript data-raw/wsg_run_one.R <WSG>", out, fixed = TRUE)
+  expect_length(i, 1L)
+  expect_length(j, 1L)
+  cmd <- sub("<WSG>", "CCCC", out[i:j], fixed = TRUE)
+  f <- file.path(w, "remodel.sh")
+  writeLines(cmd, f)
+  chk <- suppressWarnings(system2(hosts_bash(), c("-n", shQuote(f)), stdout = TRUE, stderr = TRUE))
+  expect_null(attr(chk, "status"), info = paste(c(cmd, chk), collapse = "\n"))
+  # One command: every line but the last continues it.
+  expect_true(all(grepl("\\\\$", cmd[-length(cmd)])), info = paste(cmd, collapse = "\n"))
 })

@@ -719,8 +719,10 @@ run_finish_report() {
           # The run's own bound, read from its logs, so a --recompute-only
           # session (which takes no --statement-timeout) prints it too. A group
           # that timed out may need it raised.
+          # The note goes above the command: inside its backslash-continued
+          # lines it would break the paste (code-check round 2).
+          [ -z "$TIMED_OUT" ] || echo "    The bound below is the run's; raise it for $TIMED_OUT if the statement is genuinely slow:"
           echo "    PGOPTIONS='-c statement_timeout=${RUN_BOUND:-${STATEMENT_TIMEOUT_MIN:-30}min}' \\"
-          [ -z "$TIMED_OUT" ] || echo "      (the bound the run used; raise it for $TIMED_OUT if the statement is genuinely slow)"
           echo "    LNK_RUN_UID=$RUN_UID ${RUN_LABEL:+LNK_RUN_LABEL=$RUN_LABEL }LNK_SCHEMA=$SCHEMA \\"
           echo "      LNK_GUARD_DOWNSTREAM=warn LNK_HABITAT_GATE=0 LNK_LOAD=loadall \\"
           echo "      Rscript data-raw/wsg_run_one.R <WSG> $CONFIG"
