@@ -66,18 +66,20 @@
 - [x] Update the driver header (burn on each leg's end, the backup timing and why, `--keep-cyphers` = consolidate on finish without burning) and the bash ≥ 5.1 check.
 
 ## Phase 5: Live check on little groups (operator's ask)
-- [ ] **Run A:** dispatcher plus job1 and job2, from a worktree. Config `default`, scratch schema `fresh_smoke369`, `--buckets-exact`. Pick small groups from the 2026-10-23 minutes so that job1 ends first, job2 second and the dispatcher last. State the decisions, launch, and poll against a deadline.
-- [ ] Check Run A:
+- [x] **Run A:** dispatcher plus job1 and job2, from a worktree. Config `default`, scratch schema `fresh_smoke369`, `--buckets-exact`. Pick small groups from the 2026-10-23 minutes so that job1 ends first, job2 second and the dispatcher last. State the decisions, launch, and poll against a deadline.
+- [x] Check Run A (all held except the verifiers: Run A failed on `link_sha` NULL from the worktree, fixed; they pass on Run C):
   - each cypher's burn ends before the dispatcher's model row ends (AC2);
   - `consolidate_state.tsv` has `ok` rows with `state_utc` inside the dispatcher's model window;
   - there is no `kept_hosts.tsv`;
   - `study_area_verify.sql -v schema=fresh_smoke369 -v expected_n=<N> -v run_uid=<uid>` and `data-raw/logs/provincial_246/verify_extra.sql` pass (AC3);
   - the overlapping dispatcher groups' minutes are compared with their 2026-10-23 minutes.
-- [ ] **Run B (negative):** one cypher in its own schema `fresh_smoke369b` (G11), with a future-dated log row for one of its groups seeded. Expect `dest_log_newer`, the host kept with a `kept_hosts.tsv` row and burn command, and a non-zero exit. Then burn it by its listed command and confirm doctl shows it gone.
-- [ ] Evidence goes in `data-raw/logs/consolidate_on_finish_369/`, with a README. Both scratch schemas are kept until merge and dropped on the operator's word.
+- [x] **Run B (negative):** one cypher in its own schema `fresh_smoke369b` (G11), with a future-dated log row for one of its groups seeded. Expect `dest_log_newer`, the host kept with a `kept_hosts.tsv` row and burn command, and a non-zero exit. Then burn it by its listed command and confirm doctl shows it gone.
+- [x] Evidence goes in `data-raw/logs/consolidate_on_finish_369/`, with a README. Both scratch schemas are kept until merge and dropped on the operator's word.
+
+- [x] **Run C** (added after Run A's provenance defect): Run A again at the final code into `fresh_smoke369` over Run A's builds; `study_area_verify.sql` PASS at `expected_n=18`, `verify_extra.sql` clean.
 
 ## Phase 6: Docs and release
-- [ ] RUNBOOK §8d: "Which host may be burned" (per-host consolidate and burn, `CONSOLIDATING` per host, the outcome-less rule, deferred overlaps, half-copied groups and what the recompute settles; A2) and "Where a run's time went" (per-host rows, `backup`, the consolidate tail). The backup timing and its real use (log history and pre-run rollback; A3).
+- [x] RUNBOOK §8d: "Which host may be burned" (per-host consolidate and burn, `CONSOLIDATING` per host, the outcome-less rule, deferred overlaps, half-copied groups and what the recompute settles; A2) and "Where a run's time went" (per-host rows, `backup`, the consolidate tail). The backup timing and its real use (log history and pre-run rollback; A3).
 - [ ] CLAUDE.md status, NEWS, and the version bump as the last commit.
 
 ## Owed at the end (reported, done after merge)

@@ -1,0 +1,134 @@
+NOTICE:  schema "fresh_smoke369" already exists, skipping
+
+NOTICE:  relation "log" already exists, skipping
+
+NOTICE:  relation "log_recompute" already exists, skipping
+
+NOTICE:  relation "log_input" already exists, skipping
+
+NOTICE:  relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  relation "log_dimensions" already exists, skipping
+
+[01:28:25] cypher@<host> -> DELETE bucket (1 WSGs) from 17 tables; 3 log tables keep their history
+[01:28:25] cypher@<host> -> COPY (bucket-filtered) for 20 tables
+COPY 18
+[01:28:26] cypher@<host> -> barrier_overrides copied in 1.0 s
+COPY 423
+[01:28:27] cypher@<host> -> barriers copied in 1.2 s
+CREATE TABLE AS
+COPY 1
+DELETE 0
+INSERT 0 1
+[01:28:28] cypher@<host> -> log copied in 1.0 s
+CREATE TABLE AS
+COPY 12
+DELETE 0
+INSERT 0 12
+[01:28:29] cypher@<host> -> log_input copied in 1.0 s
+CREATE TABLE AS
+COPY 0
+DELETE 0
+INSERT 0 0
+[01:28:30] cypher@<host> -> log_recompute copied in 1.0 s
+COPY 4214
+[01:28:32] cypher@<host> -> streams copied in 1.6 s
+COPY 4214
+[01:28:33] cypher@<host> -> streams_access copied in 1.1 s
+COPY 0
+[01:28:34] cypher@<host> -> streams_habitat_bt copied in 0.9 s
+COPY 0
+[01:28:35] cypher@<host> -> streams_habitat_ch copied in 0.9 s
+COPY 0
+[01:28:35] cypher@<host> -> streams_habitat_cm copied in 0.9 s
+COPY 4214
+[01:28:36] cypher@<host> -> streams_habitat_co copied in 1.1 s
+COPY 0
+[01:28:37] cypher@<host> -> streams_habitat_gr copied in 1.0 s
+COPY 0
+[01:28:38] cypher@<host> -> streams_habitat_ko copied in 0.9 s
+COPY 0
+[01:28:39] cypher@<host> -> streams_habitat_pk copied in 1.0 s
+COPY 0
+[01:28:40] cypher@<host> -> streams_habitat_rb copied in 1.1 s
+COPY 4214
+[01:28:42] cypher@<host> -> streams_habitat_sk copied in 1.1 s
+COPY 0
+[01:28:42] cypher@<host> -> streams_habitat_st copied in 1.0 s
+COPY 0
+[01:28:43] cypher@<host> -> streams_habitat_wct copied in 1.0 s
+COPY 4214
+[01:28:45] cypher@<host> -> streams_mapping_code copied in 1.2 s
+COPY 0
+[01:28:46] cypher@<host> -> streams_near_river copied in 0.9 s
+[01:28:46] cypher@<host> -> DELETE bucket from source (post-COPY cleanup)
+DELETE 18
+DELETE 423
+DELETE 1
+DELETE 12
+DELETE 0
+DELETE 4214
+DELETE 4214
+DELETE 0
+DELETE 0
+DELETE 0
+DELETE 4214
+DELETE 0
+DELETE 0
+DELETE 0
+DELETE 0
+DELETE 4214
+DELETE 0
+DELETE 0
+DELETE 4214
+DELETE 0
+$sources
+$sources$`cypher@<host>`
+$sources$`cypher@<host>`$ok
+[1] TRUE
+
+$sources$`cypher@<host>`$stage
+[1] "complete"
+
+$sources$`cypher@<host>`$pre_rows
+[1] 14
+
+$sources$`cypher@<host>`$post_rows
+[1] 21538
+
+$sources$`cypher@<host>`$copied
+ [1] "barrier_overrides"    "barriers"             "log"                 
+ [4] "log_input"            "log_recompute"        "streams"             
+ [7] "streams_access"       "streams_habitat_bt"   "streams_habitat_ch"  
+[10] "streams_habitat_cm"   "streams_habitat_co"   "streams_habitat_gr"  
+[13] "streams_habitat_ko"   "streams_habitat_pk"   "streams_habitat_rb"  
+[16] "streams_habitat_sk"   "streams_habitat_st"   "streams_habitat_wct" 
+[19] "streams_mapping_code" "streams_near_river"  
+
+$sources$`cypher@<host>`$errored
+character(0)
+
+$sources$`cypher@<host>`$skipped_source_only
+character(0)
+
+$sources$`cypher@<host>`$skipped_dest_only
+character(0)
+
+
+
+$tables
+ [1] "barrier_overrides"                 "barriers"                         
+ [3] "log"                               "log_dimensions"                   
+ [5] "log_input"                         "log_parameters_fresh"             
+ [7] "log_parameters_habitat_thresholds" "log_recompute"                    
+ [9] "streams"                           "streams_access"                   
+[11] "streams_habitat_bt"                "streams_habitat_ch"               
+[13] "streams_habitat_cm"                "streams_habitat_co"               
+[15] "streams_habitat_gr"                "streams_habitat_ko"               
+[17] "streams_habitat_pk"                "streams_habitat_rb"               
+[19] "streams_habitat_sk"                "streams_habitat_st"               
+[21] "streams_habitat_wct"               "streams_mapping_code"             
+[23] "streams_near_river"               
+
