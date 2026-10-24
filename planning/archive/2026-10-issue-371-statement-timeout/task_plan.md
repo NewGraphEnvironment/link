@@ -61,7 +61,7 @@ On 2026-10-23 (`20261023_074321-24d85e8c`) OKAN sat in one statement (fresh's ne
 - [x] Tests pass (`devtools::test()`: 979, 0 failed, at 21451cc8; the finish file re-run 33/33 after each code-check fix), lint: no new lint on added lines
 - [x] `/code-check branch`: 3 rounds; R1 2 findings, R2 1 inside R1's fix, R3 1 inside R1's fix plus a mechanism enumeration (18 members, all hold after the fix), which ended the loop
 - [x] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion
+- [x] `/planning-archive` on completion
 
 **How each change is proved:**
 - **`PGOPTIONS` reaches RPostgres.** Run `PGOPTIONS='-c statement_timeout=1234' Rscript -e` with `lnk_db_conn()` and `SHOW statement_timeout`, and expect `1234ms`. Then repeat without it as the control.
