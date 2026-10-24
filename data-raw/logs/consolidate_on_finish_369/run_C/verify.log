@@ -1,0 +1,121 @@
+
+=== run under verification ===
+         run_uid          |  run_label  | n_attempted | n_completed | n_hosts |   bcfp_reference    | bcfp_pin_source |            started            |           finished            
+--------------------------+-------------+-------------+-------------+---------+---------------------+-----------------+-------------------------------+-------------------------------
+ 20261024_081550-2f4228dd | smoke-369-C |          18 |          18 |       3 | v0.7.15-50-g620dbe4 | env             | 2026-10-24 08:26:05.308843+00 | 2026-10-24 09:03:43.055283+00
+(1 row)
+
+ scope_assertion 
+-----------------
+ expected_n = 18
+(1 row)
+
+
+=== 1. Provenance per host ===
+    host     | n_wsg | has_link_sha | has_fresh_sha | has_fwapg_sha | has_bcfishobs_sha | has_bcfp_version | n_dirty | n_dirty_unknown |          first_done           |           last_done           
+-------------+-------+--------------+---------------+---------------+-------------------+------------------+---------+-----------------+-------------------------------+-------------------------------
+ cypher-job1 |     1 |            1 |             1 |             1 |                 1 |                1 |       0 |               0 | 2026-10-24 08:28:16.786941+00 | 2026-10-24 08:28:16.786941+00
+ cypher-job2 |     5 |            5 |             5 |             5 |                 5 |                5 |       0 |               0 | 2026-10-24 08:28:20.635483+00 | 2026-10-24 08:34:03.982147+00
+ m1          |    12 |           12 |            12 |            12 |                12 |               12 |       0 |               0 | 2026-10-24 08:27:13.696384+00 | 2026-10-24 09:03:43.055283+00
+(3 rows)
+
+
+=== 1b. Provenance verdict (per host) ===
+    host     | verdict 
+-------------+---------
+ cypher-job1 | OK
+ cypher-job2 | OK
+ m1          | OK
+(3 rows)
+
+
+=== 1c. Started but never finished (must be empty, or every row superseded) ===
+ host | watershed_group_code | date_start | notes | superseded 
+------+----------------------+------------+-------+------------
+(0 rows)
+
+
+=== 2. The distinct SHAs -- all hosts must agree ===
+                 link_sha                 |                fresh_sha                 |                fwapg_sha                 |              bcfishobs_sha               | bcfp_model_version  
+------------------------------------------+------------------------------------------+------------------------------------------+------------------------------------------+---------------------
+ 6d7832026bb1908cc3022456368cf9d909ca6005 | e9793047cc8f8efffb9aec8e6c21b3103d82920b | d6e45c2b83467fdd061070a3ccb1b04dcff82765 | 08630cf4ac14b2f17cc4d7058b127f3996f3fd8a | v0.7.15-50-g620dbe4
+(1 row)
+
+
+=== 2b. Inputs every host must agree on (must be one row) ===
+ n_distinct_input_sets | verdict 
+-----------------------+---------
+                     1 | OK
+(1 row)
+
+
+=== 3. Coverage: every WSG of this run has streams rows ===
+ wsg  | n_segments 
+------+------------
+ CHES |      11886
+ EUCH |       8137
+ EUCL |      15146
+ KAKC |      24364
+ KEEC |      17815
+ LNRS |      13788
+ LSAL |      11609
+ MBNK |      10219
+ MIDR |      15545
+ MUSK |       8228
+ NBNK |       4214
+ PITR |      35580
+ SAHD |       7055
+ SALR |      11392
+ TSEA |      10600
+ UPET |       5103
+ UTRE |      11305
+ VICT |       4841
+(18 rows)
+
+
+=== 4. Modelled vs recomputed -- the difference, per WSG ===
+ wsg  | modelled | recomputed |          model_done           |        recompute_done         | state 
+------+----------+------------+-------------------------------+-------------------------------+-------
+ CHES | t        | t          | 2026-10-24 08:34:31.334263+00 | 2026-10-24 09:03:58.351541+00 | ok
+ EUCH | t        | t          | 2026-10-24 08:58:13.53469+00  | 2026-10-24 09:04:26.496843+00 | ok
+ EUCL | t        | t          | 2026-10-24 09:00:29.418847+00 | 2026-10-24 09:03:57.541995+00 | ok
+ KAKC | t        | t          | 2026-10-24 08:31:15.042561+00 | 2026-10-24 09:04:15.383134+00 | ok
+ KEEC | t        | t          | 2026-10-24 08:29:40.29664+00  | 2026-10-24 09:04:19.070331+00 | ok
+ LNRS | t        | t          | 2026-10-24 08:28:21.122223+00 | 2026-10-24 09:04:24.020335+00 | ok
+ LSAL | t        | t          | 2026-10-24 08:29:47.534745+00 | 2026-10-24 09:04:26.862726+00 | ok
+ MBNK | t        | t          | 2026-10-24 08:28:20.635483+00 | 2026-10-24 09:04:18.827184+00 | ok
+ MIDR | t        | t          | 2026-10-24 08:36:11.185877+00 | 2026-10-24 09:04:01.041713+00 | ok
+ MUSK | t        | t          | 2026-10-24 08:27:13.696384+00 | 2026-10-24 09:04:30.794713+00 | ok
+ NBNK | t        | t          | 2026-10-24 08:28:16.786941+00 | 2026-10-24 09:04:16.627083+00 | ok
+ PITR | t        | t          | 2026-10-24 08:32:48.941903+00 | 2026-10-24 09:04:12.637368+00 | ok
+ SAHD | t        | t          | 2026-10-24 09:01:40.142163+00 | 2026-10-24 09:04:29.107507+00 | ok
+ SALR | t        | t          | 2026-10-24 08:32:50.190131+00 | 2026-10-24 09:04:23.242659+00 | ok
+ TSEA | t        | t          | 2026-10-24 09:02:45.952624+00 | 2026-10-24 09:04:30.033121+00 | ok
+ UPET | t        | t          | 2026-10-24 09:03:43.055283+00 | 2026-10-24 09:03:54.336225+00 | ok
+ UTRE | t        | t          | 2026-10-24 08:31:11.798864+00 | 2026-10-24 09:04:11.117419+00 | ok
+ VICT | t        | t          | 2026-10-24 08:34:03.982147+00 | 2026-10-24 09:04:09.229376+00 | ok
+(18 rows)
+
+
+=== 5. Whole-schema picture: the mixture this run leaves behind ===
+ wsg_in_streams 
+----------------
+             18
+(1 row)
+
+ wsg_with_any_log 
+------------------
+               18
+(1 row)
+
+ runs_ever_labelled 
+--------------------
+                  2
+(1 row)
+
+
+=== 6. ASSERTIONS (raise, so this script can actually fail) ===
+psql:data-raw/study_area_verify.sql:621: NOTICE:  PASS: run 20261024_081550-2f4228dd -- 18 WSG(s), all modelled, recomputed, settled, segmented and provenanced
+DO
+
+=== verify: OK ===

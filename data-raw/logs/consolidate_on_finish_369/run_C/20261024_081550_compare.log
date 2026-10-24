@@ -1,0 +1,22 @@
+[study_area_compare] UPET ERROR: no shared mapping_code_<sp> columns to compare for UPET (link: GR,RB; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] PITR ERROR: no shared mapping_code_<sp> columns to compare for PITR (link: RB; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] KAKC ERROR: no shared mapping_code_<sp> columns to compare for KAKC (link: RB; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] LNRS ERROR: no shared mapping_code_<sp> columns to compare for LNRS (link: RB; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] SAHD ERROR: no shared mapping_code_<sp> columns to compare for SAHD (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] TSEA ERROR: no shared mapping_code_<sp> columns to compare for TSEA (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] MUSK ERROR: no shared mapping_code_<sp> columns to compare for MUSK (link: RB; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] 21 rows across 11/18 WSGs -> /Users/airvine/Projects/repo/link-369-run/data-raw/logs/study_area_run/20261024_081550_compare.csv
+# A tibble: 21 × 7
+   wsg   species total_segs match_pct n_diffs top_pattern      top_pattern_count
+ * <chr> <chr>        <int>     <dbl>   <int> <chr>                        <int>
+ 1 MIDR  BT            9565      94.7     507 "ACCESS;NONE;IN…                77
+ 2 MIDR  CH            9565      95.0     477 "REAR;NONE | AC…               115
+ 3 MIDR  SK            9565      96.7     313 "ACCESS;NONE | …                89
+ 4 CHES  BT            9276      41.9    5386 "ACCESS;MODELLE…              1316
+ 5 CHES  CH            9276      93.5     599 "REAR;NONE | AC…               275
+ 6 CHES  SK            9276      98.4     149 "ACCESS;NONE | "                49
+ 7 EUCL  BT           12853      84.5    1987 "REAR;NONE;INTE…               349
+ 8 EUCL  CH           12853      86.8    1691 "REAR;NONE | AC…               718
+ 9 VICT  CH            3562      94.1     210 "ACCESS;MODELLE…                41
+10 VICT  CM            3562      95.6     158 "ACCESS;MODELLE…                36
+# ℹ 11 more rows

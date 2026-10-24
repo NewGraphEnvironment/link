@@ -31,7 +31,7 @@ finish_driver <- function() {
 skip_if_no_finish_lib <- function() {
   testthat::skip_if_not(file.exists(finish_lib()), "data-raw/study_area_finish.sh absent")
   if (!nzchar(hosts_bash())) {
-    testthat::fail("no bash >= 4 found; the study_area_finish.sh tests cannot run")
+    testthat::fail("no bash >= 5.1 found; the study_area_finish.sh tests cannot run")
   }
 }
 
@@ -642,74 +642,41 @@ test_that("a refused source's groups are not recomputed; the others are, and the
   expect_identical(cov$class[order(cov$wsg)], c("recompute", "not_consolidated"))
 })
 
-test_that("the driver's consolidate outcome writer is what consolidate_outcomes reads", {
-  # The R snippet in study_area_run.sh, run as the driver's shell expands it,
-  # with schema_consolidate replaced by a result of the shape it returns.
-  skip_if_no_finish_lib()
-  rscript <- Sys.which("Rscript")
-  testthat::skip_if(!nzchar(rscript), "Rscript not on PATH")
-  w <- finish_world()
-  drv <- readLines(finish_driver())
-  i <- grep('^    \\( cd "\\$REPO_ROOT" && Rscript -e "$', drv)
-  i <- i[grepl("schema_consolidate", drv[i + 3L])]
-  j <- grep('^" \\) > "\\$LOG_DIR/\\$\\{TS\\}_consolidate\\.log"', drv)
-  expect_length(i, 1L)
-  expect_length(j, 1L)
-  body <- drv[(i + 1L):(j - 1L)]
-  body <- body[!grepl("load_all|^source\\(", body)]
-  fake <- paste0(
-    "res <- list(sources = list(",
-    "'cypher@ip-a' = list(ok = FALSE, stage = 'dest_log_newer', rc = -1L, groups = c('CCCC', 'DDDD')),",
-    "'cypher@ip-b' = list(ok = TRUE, stage = 'complete')))"
-  )
-  body[grepl("^res <- schema_consolidate", body)] <- fake
-  expect_true(any(body == fake))
-  script <- file.path(w, "writer.sh")
-  writeLines(c(
-    sprintf("CONS_TSV=%s", shQuote(file.path(w, "logs", "T0_consolidate.tsv"))),
-    "SCHEMA=x; SRC_R='list()'",
-    paste0("R_BODY=\"", paste(body, collapse = "\n"), "\""),
-    sprintf("%s -e \"$R_BODY\" > /dev/null; echo \"WRC=$?\"", shQuote(rscript))
-  ), script)
-  out <- suppressWarnings(system2(hosts_bash(), script, stdout = TRUE, stderr = TRUE))
-  expect_match(paste(out, collapse = "\n"), "WRC=1", fixed = TRUE)
-  r <- run_finish_sh(w, "unused", c(
-    cons_setup,
-    sprintf("consolidate_outcomes %s; echo \"FAILED=$CONS_FAILED\"; echo \"EXCL=$CONS_EXCLUDED\"",
-            shQuote(file.path(w, "logs", "T0_consolidate.tsv")))
-  ))
-  expect_equal(r$status, 0L, info = r$out)
-  expect_match(r$out, "FAILED=a\n", fixed = TRUE)
-  expect_identical(printed(r, "EXCL"), "CCCC,DDDD")
-  expect_match(r$out, "not this host's for: CCCC,DDDD", fixed = TRUE)
-})
+# The consolidate program's outcome writer is pinned in test-study_area_legs.R
+# ("the consolidate program is what consolidate_outcomes reads"): since
+# link#369 it lives in study_area_legs.sh, one call per host.
 
 test_that("the driver records the run's groups before any spend and hands run_finish the excluded set", {
   # Structural: the full-run path needs cloud hosts, so no test executes it.
-  # These pin the wiring the lib tests above rely on (link#358).
+  # These pin the wiring the lib tests above rely on (link#358, link#369).
   skip_if_no_finish_lib()
   drv <- readLines(finish_driver())
+  legs <- readLines(normalizePath(testthat::test_path("..", "..", "data-raw", "study_area_legs.sh")))
   first_write <- grep('^run_wsgs_write "\\$RUN_WSGS_TSV"$', drv)
   spin <- grep("=== spin cyphers", drv, fixed = TRUE)
-  accounting <- grep("=== per-host completeness (database) ===", drv, fixed = TRUE)
+  accounting <- grep("=== dispatcher completeness (database) ===", drv, fixed = TRUE)
   expect_length(first_write, 1L)
   expect_lt(first_write, spin[1])
   rewrite <- grep('^run_wsgs_write "\\$RUN_WSGS_TSV" \\\\$', drv)
   expect_length(rewrite, 1L)
   expect_gt(rewrite, accounting)
+  # Each host's SKIPs are recorded as soon as it is accounted.
+  expect_length(grep('  run_wsgs_write "$RUN_WSGS_TSV" \\', legs, fixed = TRUE), 1L)
   expect_length(grep('^run_finish "\\$RUN_EXPECT" "\\$RUN_SIGNALS" "\\$\\{CONS_EXCLUDED:-\\}"$', drv), 1L)
-  expect_length(grep('elif consolidate_outcomes "$CONS_TSV" && [ -n "$CONS_FAILED" ]; then',
-                     drv, fixed = TRUE), 1L)
+  expect_length(grep('  elif consolidate_outcomes "$tsv" "$ws" && [ -n "${CY_CONS_FAIL[$ws]:-}" ]; then',
+                     legs, fixed = TRUE), 1L)
   expect_length(grep("run_expected_recompute_only \"$WSGS_ARG\" || exit 1", drv, fixed = TRUE), 1L)
   expect_length(grep("  run_finish \"$RO_EXPECT\" \"\" \"$RO_EXCLUDED\"", drv, fixed = TRUE), 1L)
   expect_length(grep("[ -z \"${CONS_FAILED:-}\" ] || RUN_INCOMPLETE=1", drv, fixed = TRUE), 1L)
-  # The state record goes in_flight before the copy, and is rewritten only
-  # once outcomes are known.
-  inflight <- grep('consolidate_state_write "$CONS_STATE" in_flight', drv, fixed = TRUE)
-  copy <- grep("res <- schema_consolidate(", drv, fixed = TRUE)
-  expect_length(inflight, 1L)
-  expect_lt(inflight, copy)
-  expect_length(grep('consolidate_state_write "$CONS_STATE" ok', drv, fixed = TRUE), 2L)
+  # The state record goes in_flight before the copy, and is rewritten once
+  # the copy has an outcome.
+  writes <- grep('consolidate_state_write "$CONS_STATE"', legs, fixed = TRUE)
+  copy <- grep(".legs_consolidate_r \"$src\" \"$tsv\"", legs, fixed = TRUE)
+  expect_length(writes, 2L)
+  expect_length(copy, 1L)
+  expect_lt(writes[1], copy)
+  expect_gt(writes[2], copy)
+  expect_match(legs[writes[1] - 2L], "CY_CONS_STATE[$ws]=in_flight", fixed = TRUE)
 })
 
 state_file <- function(w) file.path(w, "logs", "20261018_000000_consolidate_state.tsv")
@@ -726,7 +693,7 @@ test_that("consolidate_state_write records in_flight before, then ok or the fail
   ))
   expect_equal(r$status, 0L, info = r$out)
   before <- utils::read.delim(paste0(p, ".before"), colClasses = "character")
-  expect_identical(names(before), c("wsg", "workspace", "state", "run_uid"))
+  expect_identical(names(before), c("wsg", "workspace", "state", "run_uid", "state_utc"))
   # c reported nothing, so it was never a source and has no rows.
   expect_identical(paste(before$workspace, before$wsg, before$state),
                    c("a CCCC in_flight", "a DDDD in_flight", "b EEEE in_flight"))

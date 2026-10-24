@@ -1,0 +1,62 @@
+   set_config   |        set_config        | set_config 
+----------------+--------------------------+------------
+ fresh_smoke369 | 20261024_081550-2f4228dd | 18
+(1 row)
+
+psql:data-raw/logs/provincial_246/verify_extra.sql:114: NOTICE:  verify_extra PASS: 18 groups, config_hash sha256:379e1651b53b29f2a9af886b47eecf48f13ea53378a5d0e7c9cf42105e78bb04, run_uid 20261024_081550-2f4228dd
+DO
+    host     |                     table_name                     | artifact_recorded_by | artifact_version_id | n_rows | row_count_min | row_count_max 
+-------------+----------------------------------------------------+----------------------+---------------------+--------+---------------+---------------
+ cypher-job1 | bcfishobs.observations                             | loader               | 1790057230537       |      1 |        375962 |        375962
+ cypher-job2 | bcfishobs.observations                             | loader               | 1790057230537       |      5 |        375962 |        375962
+ m1          | bcfishobs.observations                             | loader               | 1790057230537       |     12 |        375962 |        375962
+ cypher-job1 | cabd.dams                                          | loader               |                     |      1 |          2592 |          2592
+ cypher-job2 | cabd.dams                                          | loader               |                     |      5 |          2592 |          2592
+ m1          | cabd.dams                                          | loader               |                     |     12 |          2592 |          2592
+ cypher-job1 | fresh.modelled_stream_crossings                    | loader               | 1792530487154       |      1 |        524579 |        524579
+ cypher-job2 | fresh.modelled_stream_crossings                    | loader               | 1792530487154       |      5 |        524579 |        524579
+ m1          | fresh.modelled_stream_crossings                    | loader               | 1792530487154       |     12 |        524579 |        524579
+ cypher-job1 | whse_basemapping.fwa_lakes_poly                    | probe                | 1776306159523       |      1 |        386025 |        386025
+ cypher-job2 | whse_basemapping.fwa_lakes_poly                    | probe                | 1776306159523       |      5 |        386025 |        386025
+ m1          | whse_basemapping.fwa_lakes_poly                    | probe                | 1776306159523       |     12 |        386429 |        386429
+ cypher-job1 | whse_basemapping.fwa_obstructions_sp               | probe                | 1776306166790       |      1 |         32541 |         32541
+ cypher-job2 | whse_basemapping.fwa_obstructions_sp               | probe                | 1776306166790       |      5 |         32541 |         32541
+ m1          | whse_basemapping.fwa_obstructions_sp               | probe                | 1776306166790       |     12 |         32541 |         32541
+ cypher-job1 | whse_basemapping.fwa_rivers_poly                   | probe                | 1776306167722       |      1 |         37083 |         37083
+ cypher-job2 | whse_basemapping.fwa_rivers_poly                   | probe                | 1776306167722       |      5 |         37083 |         37083
+ m1          | whse_basemapping.fwa_rivers_poly                   | probe                | 1776306167722       |     12 |         37083 |         37083
+ cypher-job1 | whse_basemapping.fwa_stream_networks_channel_width | probe                | 1768525131162       |      1 |       4907429 |       4907429
+ cypher-job2 | whse_basemapping.fwa_stream_networks_channel_width | probe                | 1768525131162       |      5 |       4907429 |       4907429
+ m1          | whse_basemapping.fwa_stream_networks_channel_width | probe                | 1768525131162       |     12 |       4907429 |       4907429
+ cypher-job1 | whse_basemapping.fwa_stream_networks_discharge     | probe                | 1768521748856       |      1 |       2716652 |       2716652
+ cypher-job2 | whse_basemapping.fwa_stream_networks_discharge     | probe                | 1768521748856       |      5 |       2716652 |       2716652
+ m1          | whse_basemapping.fwa_stream_networks_discharge     | probe                | 1768521748856       |     12 |       2716652 |       2716652
+ cypher-job1 | whse_basemapping.fwa_stream_networks_order_parent  | probe                |                     |      1 |       1509493 |       1509493
+ cypher-job2 | whse_basemapping.fwa_stream_networks_order_parent  | probe                |                     |      5 |       1509493 |       1509493
+ m1          | whse_basemapping.fwa_stream_networks_order_parent  | probe                |                     |     12 |       1509493 |       1509493
+ cypher-job1 | whse_basemapping.fwa_stream_networks_sp            | probe                | 1776306179739       |      1 |       4898813 |       4898813
+ cypher-job2 | whse_basemapping.fwa_stream_networks_sp            | probe                | 1776306187080       |      1 |       4898813 |       4898813
+ cypher-job2 | whse_basemapping.fwa_stream_networks_sp            | probe                | 1776306172927       |      1 |       4898813 |       4898813
+ cypher-job2 | whse_basemapping.fwa_stream_networks_sp            | probe                | 1776306173043       |      1 |       4898813 |       4898813
+ cypher-job2 | whse_basemapping.fwa_stream_networks_sp            | probe                | 1776306177780       |      1 |       4898813 |       4898813
+ cypher-job2 | whse_basemapping.fwa_stream_networks_sp            | probe                | 1776306181028       |      1 |       4898813 |       4898813
+ m1          | whse_basemapping.fwa_stream_networks_sp            | probe                | 1776306181215       |      1 |       4907804 |       4907804
+ m1          | whse_basemapping.fwa_stream_networks_sp            | probe                | 1776306170705       |      1 |       4907804 |       4907804
+ m1          | whse_basemapping.fwa_stream_networks_sp            | probe                | 1776306186684       |      1 |       4907804 |       4907804
+ m1          | whse_basemapping.fwa_stream_networks_sp            | probe                | 1776306170611       |      1 |       4907804 |       4907804
+ m1          | whse_basemapping.fwa_stream_networks_sp            | probe                | 1776306184189       |      1 |       4907804 |       4907804
+ m1          | whse_basemapping.fwa_stream_networks_sp            | probe                | 1776306181439       |      1 |       4907804 |       4907804
+ m1          | whse_basemapping.fwa_stream_networks_sp            | probe                | 1776306178029       |      1 |       4907804 |       4907804
+ m1          | whse_basemapping.fwa_stream_networks_sp            | probe                | 1776306176955       |      1 |       4907804 |       4907804
+ m1          | whse_basemapping.fwa_stream_networks_sp            | probe                | 1776306177440       |      1 |       4907804 |       4907804
+ m1          | whse_basemapping.fwa_stream_networks_sp            | probe                | 1776306169046       |      1 |       4907804 |       4907804
+ m1          | whse_basemapping.fwa_stream_networks_sp            | probe                | 1776306179146       |      1 |       4907804 |       4907804
+ m1          | whse_basemapping.fwa_stream_networks_sp            | probe                | 1776306187012       |      1 |       4907804 |       4907804
+ cypher-job1 | whse_basemapping.fwa_wetlands_poly                 | probe                | 1776306203731       |      1 |        375178 |        375178
+ cypher-job2 | whse_basemapping.fwa_wetlands_poly                 | probe                | 1776306203731       |      5 |        375178 |        375178
+ m1          | whse_basemapping.fwa_wetlands_poly                 | probe                | 1776306203731       |     12 |        374560 |        374560
+ cypher-job1 | whse_fish.pscis_assessment_svw                     | loader               |                     |      1 |         19905 |         19905
+ cypher-job2 | whse_fish.pscis_assessment_svw                     | loader               |                     |      5 |         19905 |         19905
+ m1          | whse_fish.pscis_assessment_svw                     | loader               |                     |     12 |         19905 |         19905
+(51 rows)
+

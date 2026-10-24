@@ -1,0 +1,2 @@
+workspace	droplet	reason	run_uid	schema	groups	groups_partial	groups_unknown	groups_measured	ip_command	burn_command
+job1	cypher-job1	consolidate failed at stage dest_log_newer; finished groups left on the host	20261024_075836-321a58e2	fresh_smoke369b	LPET,MILL			yes	cd /Users/airvine/Projects/repo/rtj/env/do/dev/cypher && TF_WORKSPACE=job1 tofu output -raw droplet_ip	cd /Users/airvine/Projects/repo/rtj/scripts/cypher && ./cypher_down.sh --workspace job1

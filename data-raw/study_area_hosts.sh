@@ -37,7 +37,9 @@
 #   CY_HOLD CY_BURNED CY_UNCONS CY_PARTIAL CY_WHY CY_PRE CY_PRE_STATE
 #   (assoc, keyed by workspace)
 # Read with a default: RECOMPUTE_RAN (1 once the driver's recompute pool ran),
-# CONSOLIDATING (1 while schema_consolidate is running against the hosts).
+# CONSOLIDATING (the workspace schema_consolidate is copying from, empty
+# otherwise; one host at a time since link#369), CY_LEG_DONE (assoc: 1 once a
+# host's leg has ended, read by `burn_cyphers ended`).
 #   CYPHERS_UP KEPT_N KEPT_CAUSE_N
 # Every map is declared below, ONCE, so a caller cannot forget one: under
 # `set -u` an undeclared map kills the EXIT trap and leaks the droplets. Source
@@ -48,7 +50,7 @@
 # Needs bash >= 4 (assoc arrays), as the driver does.
 
 declare -A CY_IP CY_BUCKET CY_RUN_RC CY_HOLD CY_BURNED CY_UNCONS CY_PARTIAL CY_WHY
-declare -A CY_PRE CY_PRE_STATE CY_DOUBT CY_CONS_FAIL
+declare -A CY_PRE CY_PRE_STATE CY_DOUBT CY_CONS_FAIL CY_LEG_DONE CY_CONS_STATE CY_BUCKET_DONE
 declare -A ACC_STATE ACC_FINISHED ACC_DONE_LOG ACC_SKIP
 
 # psql script: groups in <table> matching <condition>, framed by sentinels. A
@@ -172,12 +174,13 @@ host_wait() {
 # (which copies and then deletes from the source). A killed driver runs its
 # EXIT trap while either keeps going, so the host is settled only when its
 # session ended with status 0 (unset: still running, or the run stopped
-# before the wait) and consolidate is not in flight.
+# before the wait) and consolidate is not in flight against it. Consolidate
+# copies one host at a time (link#369), so CONSOLIDATING names that host.
 .hosts_settled() {
-  [ "${CONSOLIDATING:-0}" != "1" ] && [ "${CY_RUN_RC[$1]:-}" = "0" ]
+  [ "${CONSOLIDATING:-}" != "$1" ] && [ "${CY_RUN_RC[$1]:-}" = "0" ]
 }
 .hosts_unsettled_why() {
-  if [ "${CONSOLIDATING:-0}" = "1" ]; then
+  if [ -n "${CONSOLIDATING:-}" ] && [ "${CONSOLIDATING:-}" = "$1" ]; then
     echo "consolidate was still running against it"
   else
     echo "its dispatch session had not ended 0"
@@ -286,6 +289,18 @@ host_account() {
     fin=""
   fi
   ACC_FINISHED[$key]=$(printf '%s\n' "$fin" | .hosts_csv)
+  # Since link#369 the dispatcher is accounted after the cyphers' consolidates,
+  # which copy their log rows here, so its log also names their groups. Those
+  # are not the dispatcher's finished work: leave out every group a consolidate
+  # was attempted for, unless the dispatcher's own bucket has it.
+  if [ "$key" = "dispatcher" ]; then
+    local ws copied=""
+    for ws in ${CY_WS_ARR[@]+"${CY_WS_ARR[@]}"}; do
+      [ -n "${CY_CONS_STATE[$ws]:-}" ] || continue
+      copied=$(.hosts_union "$copied" "${CY_BUCKET_DONE[$ws]:-}")
+    done
+    ACC_FINISHED[$key]=$(.hosts_minus "${ACC_FINISHED[$key]}" "$(.hosts_minus "$copied" "$expected")")
+  fi
   ACC_SKIP[$key]=$(host_log_reported "$log" SKIP | .hosts_csv)
   ACC_DONE_LOG[$key]=$(host_log_reported "$log" done | .hosts_csv)
   [ "$key" = "dispatcher" ] || \
@@ -407,15 +422,19 @@ hosts_preflight_droplets() {
   fi
 }
 
-# burn_cyphers: burn every cypher that is neither held nor already burned, and
-# record every other one. Idempotent; runs explicitly after consolidate and
-# again from the EXIT trap. The caller's status is passed through.
+# burn_cyphers [ended]: burn every cypher that is neither held nor already
+# burned, and record every other one. Idempotent; runs after each host's
+# consolidate and again from the EXIT trap. The caller's status is passed
+# through. With `ended`, hosts whose leg has not ended (CY_LEG_DONE) are left
+# out entirely: a burn after one host's consolidate must not list a host that
+# is still modelling as kept (link#369). The trap passes nothing: every host.
 burn_cyphers() {
   local rc=$?
   [ "${CYPHERS_UP:-0}" = "1" ] || return $rc
-  local ws burn=() keep=() clean=1 n dl name doctl_ok why
+  local scope="${1:-all}" ws burn=() keep=() clean=1 n dl name doctl_ok why
   for ws in "${CY_WS_ARR[@]}"; do
     [ "${CY_BURNED[$ws]:-0}" = "1" ] && continue
+    [ "$scope" != "ended" ] || [ "${CY_LEG_DONE[$ws]:-0}" = "1" ] || continue
     if [ "$KEEP_CYPHERS" = "1" ] || [ "${CY_HOLD[$ws]:-0}" = "1" ]; then
       keep+=("$ws")
     else

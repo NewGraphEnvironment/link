@@ -1,0 +1,196 @@
+=== study_area_run 20261024_075836 ===
+  run_uid:      20261024_075836-321a58e2
+  run_label:    smoke-369-B
+  config:       default
+  branch:       369-run (cyphers run this ref)
+  persist:      fresh_smoke369b
+  cyphers:      job1 (1)
+  log dir:      /Users/airvine/Projects/repo/link-369-run/data-raw/logs/study_area_run
+  vintage max:  7 d
+  recompute -j: 4
+  statement:    30 min per modelling statement (PGOPTIONS, both legs); recompute 10 min (wsg_recompute_one.R)
+  buckets:      exact (--buckets-exact; each --focal= list as given; the recompute settles access)
+  phases:       /Users/airvine/Projects/repo/link-369-run/data-raw/logs/study_area_run/20261024_075836_phases.tsv
+  [phase] refresh skipped
+=== pre-flight (local; pre-spend) ===
+  ✓ dispatcher fresh exports what the pipeline calls
+  ✓ origin/369-run is at HEAD
+  ✓ fwapg_sha d6e45c2b8346 (exported to all hosts)
+  ✓ bcfishobs_sha 08630cf4ac14 (exported to all hosts)
+  ✓ fresh_sha e9793047cc8f (clean)
+  ✓ bcfp reference pinned at v0.7.15-50-g620dbe4 (exported to all hosts)
+    ok   discharge (fwapg) loaded: whse_basemapping.fwa_stream_networks_discharge
+  ✓ discharge (fwapg) loaded on the dispatcher
+    [preflight] primitive vintage (window 7 d) - OK, oldest 1.0 d (whse_fish.pscis_assessment_svw) [judged by load stamp: 4, statistics: 0, none: 0]
+  ✓ dispatcher primitives within 7 d
+  ✓ doctl token valid (DO API reachable)
+  ✓ tofu do_token valid (HTTP 200 /v2/account)
+  ✓ tofu s3 backend reachable
+  ✓ pre-flight clean (tunnel-free)
+=== resolve exact buckets (--buckets-exact; order as given, species filter only) ===
+  dispatcher (focal=LNRS): LNRS
+  cy[job1] (focal=MILL,LPET): MILL,LPET
+  run groups: /Users/airvine/Projects/repo/link-369-run/data-raw/logs/study_area_run/20261024_075836_run_wsgs.tsv
+=== dispatcher persist (fresh_smoke369b): init, then backup in the background ===
+  ✓ fresh_smoke369b initialised (see /Users/airvine/Projects/repo/link-369-run/data-raw/logs/study_area_run/20261024_075836_persist_init.log)
+  backup -> /tmp/fresh_smoke369b_pre_run_20261024_075836.dump (see /Users/airvine/Projects/repo/link-369-run/data-raw/logs/study_area_run/20261024_075836_backup.log)
+=== spin cyphers: job1 ===
+  cy[job1] = <host>
+=== prep cyphers (cypher_prep.sh) ===
+  [phase] prep job1 ok 2026-10-24T07:59:01Z -> 2026-10-24T08:07:18Z (8.3 min)
+  ✓ cyphers prepped
+=== pre-flight (hosts; post-prep, pre-write) ===
+[preflight] host parity - OK across 2 host(s): m1, cypher-job1
+  ✓ host parity clean (2 hosts)
+  ✓ cy[job1] primitives within 7 d
+  [phase] backup ok 2026-10-24T07:59:01Z -> 2026-10-24T07:59:03Z (0.0 min)
+  ✓ pre-run backup taken (see /Users/airvine/Projects/repo/link-369-run/data-raw/logs/study_area_run/20261024_075836_backup.log)
+  [phase] prep ok 2026-10-24T07:58:36Z -> 2026-10-24T08:07:25Z (8.8 min, 3 groups)
+=== run buckets (DS-first) ===
+=== legs: each cypher is consolidated and burned when its own leg ends ===
+  [phase] model dispatcher ok 2026-10-24T08:07:25Z -> 2026-10-24T08:08:44Z (1.3 min, 1 groups)
+  [phase] model job1 ok 2026-10-24T08:07:27Z -> 2026-10-24T08:10:33Z (3.1 min, 2 groups)
+=== cy[job1]: leg ended (exit 0); account, consolidate, burn ===
+  ✓ cy[job1]: 2/2 WSGs accounted for (2 finished, 0 SKIP; database)
+  [phase] account job1 ok 2026-10-24T08:10:33Z -> 2026-10-24T08:10:35Z (0.0 min, 2 groups)
+  consolidating cy[job1]: 2 groups (see /Users/airvine/Projects/repo/link-369-run/data-raw/logs/study_area_run/20261024_075836_consolidate_job1.log)
+  ✗ cy[job1]: consolidate failed at stage dest_log_newer; its bucket is not consolidated: LPET,MILL
+    the dispatcher's newest log row is not this host's for: MILL (nothing was deleted or copied)
+    see /Users/airvine/Projects/repo/link-369-run/data-raw/logs/study_area_run/20261024_075836_consolidate_job1.log
+  ✗ cy[job1]: consolidate failed at stage dest_log_newer; finished groups left on the host — KEEPING it (groups: LPET,MILL)
+  [phase] consolidate job1 failed 2026-10-24T08:10:35Z -> 2026-10-24T08:10:44Z (0.1 min, 2 groups)
+=== HOSTS KEPT (1) — still running and billed ===
+  cy[job1] (cypher-job1): consolidate failed at stage dest_log_newer; finished groups left on the host
+    finished, still on the host: LPET,MILL
+  To recover: get each host's address (ip_command). Consolidate ONLY the
+  groups column, and only where groups_measured = yes; where it says
+  unsettled, wait until nothing runs there (the remote loop, and
+  schema_consolidate on this machine) and re-measure; where it says
+  no, find out what is left first. Never groups_partial. schema_consolidate
+  DELETEs its bucket on the dispatcher before it copies, so a group the
+  host holds only in part loses the dispatcher's copy of its persist rows
+  (one it no longer holds at all is refused, dest_log_newer, where the
+  dispatcher has a log row for it; with pre-log rows only, it is lost).
+  The run's recompute did NOT run: after consolidating, recompute EVERY
+  group of the run, not only these
+  (every group: bash data-raw/study_area_run.sh --recompute-only
+   --run-uid=20261024_075836-321a58e2 --config=<config> --schema=fresh_smoke369b --run-label=smoke-369-B
+   --wsgs=<the run's groups>; one group: LNK_RUN_UID=20261024_075836-321a58e2 LNK_RUN_LABEL=smoke-369-B LNK_SCHEMA=fresh_smoke369b
+   LNK_LOAD=loadall Rscript data-raw/wsg_recompute_one.R <WSG> <config>).
+  Then burn:
+    cd /Users/airvine/Projects/repo/rtj/scripts/cypher && ./cypher_down.sh --workspace job1
+  Recorded in /Users/airvine/Projects/repo/link-369-run/data-raw/logs/study_area_run/20261024_075836_kept_hosts.tsv
+  [phase] burn job1 ok 2026-10-24T08:10:44Z -> 2026-10-24T08:10:46Z (0.0 min)
+  ✓ host runs finished (per-WSG soft-fail; gaps surface in compare)
+=== dispatcher completeness (database) ===
+  ✓ dispatcher: 1/1 WSGs accounted for (1 finished, 0 SKIP; database)
+  [phase] account dispatcher ok 2026-10-24T08:10:46Z -> 2026-10-24T08:10:46Z (0.0 min, 1 groups)
+=== HOSTS KEPT (1) — still running and billed ===
+  cy[job1] (cypher-job1): consolidate failed at stage dest_log_newer; finished groups left on the host
+    finished, still on the host: LPET,MILL
+  To recover: get each host's address (ip_command). Consolidate ONLY the
+  groups column, and only where groups_measured = yes; where it says
+  unsettled, wait until nothing runs there (the remote loop, and
+  schema_consolidate on this machine) and re-measure; where it says
+  no, find out what is left first. Never groups_partial. schema_consolidate
+  DELETEs its bucket on the dispatcher before it copies, so a group the
+  host holds only in part loses the dispatcher's copy of its persist rows
+  (one it no longer holds at all is refused, dest_log_newer, where the
+  dispatcher has a log row for it; with pre-log rows only, it is lost).
+  The run's recompute did NOT run: after consolidating, recompute EVERY
+  group of the run, not only these
+  (every group: bash data-raw/study_area_run.sh --recompute-only
+   --run-uid=20261024_075836-321a58e2 --config=<config> --schema=fresh_smoke369b --run-label=smoke-369-B
+   --wsgs=<the run's groups>; one group: LNK_RUN_UID=20261024_075836-321a58e2 LNK_RUN_LABEL=smoke-369-B LNK_SCHEMA=fresh_smoke369b
+   LNK_LOAD=loadall Rscript data-raw/wsg_recompute_one.R <WSG> <config>).
+  Then burn:
+    cd /Users/airvine/Projects/repo/rtj/scripts/cypher && ./cypher_down.sh --workspace job1
+  Recorded in /Users/airvine/Projects/repo/link-369-run/data-raw/logs/study_area_run/20261024_075836_kept_hosts.tsv
+=== verify WSG coverage in fresh_smoke369b (run_uid 20261024_075836-321a58e2) ===
+  1/3 run WSGs have rows from a build this run finished
+  ✗ not consolidated (its host's consolidate failed): LPET,MILL
+  classes: /Users/airvine/Projects/repo/link-369-run/data-raw/logs/study_area_run/20261024_075836_coverage.tsv
+  NOTE: recomputing only the 1 WSGs above; the rest keep
+        whatever rows they hold, and the run will exit non-zero.
+  [phase] coverage failed 2026-10-24T08:10:48Z -> 2026-10-24T08:10:48Z (0.0 min, 3 groups)
+=== post-consolidate recompute (lnk_access, 1 WSGs, -j4) ===
+  ✓ log tables present in fresh_smoke369b
+  ✓ barrier views built once for fresh_smoke369b
+  [phase] views ok 2026-10-24T08:10:48Z -> 2026-10-24T08:10:54Z (0.1 min)
+  ordering 241 known WSG time(s) longest-first (median 2.37 min for the rest)
+[fanout] recompute - OK: 1/1 job(s) succeeded
+  ✓ recompute: 1/1 WSGs
+  [phase] recompute ok 2026-10-24T08:10:54Z -> 2026-10-24T08:11:01Z (0.1 min, 1 groups)
+=== compare (tunnel-free) ===
+  ✗ compare failed; see /Users/airvine/Projects/repo/link-369-run/data-raw/logs/study_area_run/20261024_075836_compare.log
+  [phase] compare failed 2026-10-24T08:11:01Z -> 2026-10-24T08:11:03Z (0.0 min, 1 groups)
+=== summary ===
+  phases (/Users/airvine/Projects/repo/link-369-run/data-raw/logs/study_area_run/20261024_075836_phases.tsv):
+    phase       host       start_utc            end_utc              minutes groups status
+    refresh                                                                         skipped
+    backup                 2026-10-24T07:59:01Z 2026-10-24T07:59:03Z     0.0        ok
+    prep        job1       2026-10-24T07:59:01Z 2026-10-24T08:07:18Z     8.3        ok
+    prep                   2026-10-24T07:58:36Z 2026-10-24T08:07:25Z     8.8      3 ok
+    model       dispatcher 2026-10-24T08:07:25Z 2026-10-24T08:08:44Z     1.3      1 ok
+    model       job1       2026-10-24T08:07:27Z 2026-10-24T08:10:33Z     3.1      2 ok
+    account     job1       2026-10-24T08:10:33Z 2026-10-24T08:10:35Z     0.0      2 ok
+    consolidate job1       2026-10-24T08:10:35Z 2026-10-24T08:10:44Z     0.1      2 failed
+    burn        job1       2026-10-24T08:10:44Z 2026-10-24T08:10:46Z     0.0        ok
+    account     dispatcher 2026-10-24T08:10:46Z 2026-10-24T08:10:46Z     0.0      1 ok
+    coverage               2026-10-24T08:10:48Z 2026-10-24T08:10:48Z     0.0      3 failed
+    views                  2026-10-24T08:10:48Z 2026-10-24T08:10:54Z     0.1        ok
+    recompute              2026-10-24T08:10:54Z 2026-10-24T08:11:01Z     0.1      1 ok
+    compare                2026-10-24T08:11:01Z 2026-10-24T08:11:03Z     0.0      1 failed
+  critical path: 12.4 min (first start to last end)
+  longest model leg: 3.1 min (job1)
+  consolidate tail: 0.2 min (last consolidate end past the last model end)
+  run WSGs:        LNRS,LPET,MILL
+  recomputed WSGs: LNRS
+=== study_area_run INCOMPLETE ===
+  1 cypher(s) were NOT burned for cause: each may hold groups
+  that are not on the dispatcher, and is still running and billed.
+  Consolidate only each host's groups column, and only where
+  groups_measured = yes; never groups_partial (consolidating a group the
+  host no longer holds, or holds in part, deletes the dispatcher's copy).
+  The recompute above ran WITHOUT those groups, so recompute each one and
+  each run group upstream of it afterwards. Then burn the host.
+  Every group of the run, once consolidated:
+    bash data-raw/study_area_run.sh --recompute-only --run-uid=20261024_075836-321a58e2 \
+      --config=default --schema=fresh_smoke369b --run-label=smoke-369-B --wsgs=LNRS,LPET,MILL
+  Hosts, reasons and commands: /Users/airvine/Projects/repo/link-369-run/data-raw/logs/study_area_run/20261024_075836_kept_hosts.tsv
+  These run WSGs have no rows from a build this run finished, so they
+  were NOT recomputed or compared: LPET,MILL
+    not consolidated:                LPET,MILL
+  In a kept host's bucket: settle these per 20261024_075836_kept_hosts.tsv first
+  (consolidate only its groups column where groups_measured = yes, never
+  groups_partial), and re-model only what is still missing: LPET,MILL
+  Then recompute the whole run (every group: a re-modelled group's
+  barriers change access upstream of it):
+    bash data-raw/study_area_run.sh --recompute-only --run-uid=20261024_075836-321a58e2 \
+      --config=default --schema=fresh_smoke369b --run-label=smoke-369-B --wsgs=LNRS,LPET,MILL
+  The compare failed (see /Users/airvine/Projects/repo/link-369-run/data-raw/logs/study_area_run/20261024_075836_compare.log); the recompute
+  above stands. Re-run it alone:
+    LNK_SCHEMA=fresh_smoke369b LNK_LOAD=loadall Rscript data-raw/study_area_compare.R \
+      /Users/airvine/Projects/repo/link-369-run/data-raw/logs/study_area_run/20261024_075836_compare.csv LNRS default
+=== HOSTS KEPT (1) — still running and billed ===
+  cy[job1] (cypher-job1): consolidate failed at stage dest_log_newer; finished groups left on the host
+    finished, still on the host: LPET,MILL
+  To recover: get each host's address (ip_command). Consolidate ONLY the
+  groups column, and only where groups_measured = yes; where it says
+  unsettled, wait until nothing runs there (the remote loop, and
+  schema_consolidate on this machine) and re-measure; where it says
+  no, find out what is left first. Never groups_partial. schema_consolidate
+  DELETEs its bucket on the dispatcher before it copies, so a group the
+  host holds only in part loses the dispatcher's copy of its persist rows
+  (one it no longer holds at all is refused, dest_log_newer, where the
+  dispatcher has a log row for it; with pre-log rows only, it is lost).
+  The run's recompute ran WITHOUT these groups: after consolidating,
+  recompute each one and each run group upstream of it
+  (every group: bash data-raw/study_area_run.sh --recompute-only
+   --run-uid=20261024_075836-321a58e2 --config=<config> --schema=fresh_smoke369b --run-label=smoke-369-B
+   --wsgs=<the run's groups>; one group: LNK_RUN_UID=20261024_075836-321a58e2 LNK_RUN_LABEL=smoke-369-B LNK_SCHEMA=fresh_smoke369b
+   LNK_LOAD=loadall Rscript data-raw/wsg_recompute_one.R <WSG> <config>).
+  Then burn:
+    cd /Users/airvine/Projects/repo/rtj/scripts/cypher && ./cypher_down.sh --workspace job1
+  Recorded in /Users/airvine/Projects/repo/link-369-run/data-raw/logs/study_area_run/20261024_075836_kept_hosts.tsv
+  ✓ redacted host addresses in 21 log file(s)

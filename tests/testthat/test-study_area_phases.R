@@ -18,7 +18,7 @@ phases_lib <- function() {
 skip_if_no_phases_lib <- function() {
   testthat::skip_if_not(file.exists(phases_lib()), "data-raw/study_area_phases.sh absent")
   if (!nzchar(hosts_bash())) {
-    testthat::fail("no bash >= 4 found; the study_area_phases.sh tests cannot run")
+    testthat::fail("no bash >= 5.1 found; the study_area_phases.sh tests cannot run")
   }
 }
 
@@ -161,6 +161,21 @@ test_that("the report gives the critical path from first start to last end", {
   expect_true(any(grepl("longest model leg: 2.0 min (b)", r$out, fixed = TRUE)))
 })
 
+test_that("the report gives the consolidate tail past the last model leg (link#369)", {
+  skip_if_no_phases_lib()
+  # Each date call is a minute: model a 00:01-00:02, consolidate a
+  # 00:03-00:04, model b 00:05-00:06, consolidate b 00:07-00:08. The tail is
+  # the last consolidate's end past the last model end: 2.0 min.
+  r <- run_phases(c(
+    "phase_begin model a", "phase_end model a 1 ok quiet",
+    "phase_begin consolidate a", "phase_end consolidate a 1 ok quiet",
+    "phase_begin model b", "phase_end model b 1 ok quiet",
+    "phase_begin consolidate b", "phase_end consolidate b 1 ok quiet",
+    "phases_report"
+  ))
+  expect_true(any(grepl("consolidate tail: 2.0 min", r$out, fixed = TRUE)))
+})
+
 test_that("a report with nothing timed prints no critical path", {
   skip_if_no_phases_lib()
   r <- run_phases(c("phase_skip refresh", "phases_report"))
@@ -245,17 +260,22 @@ test_that("each model and prep leg re-raises its own exit status after writing i
   # stdout, which it would otherwise hold open for the whole leg.
   expect_length(grep('^  exit "\\$mrc" \\) >> "\\$LOG_DIR/\\$\\{TS\\}_run_[^"]+\\.log" 2>&1 &$', drv), 2L)
   # errexit is off on the left of `||`, so the local leg's cd must fail by hand.
-  expect_length(grep('  ( cd "$REPO_ROOT" || exit 1', drv, fixed = TRUE), 1L)
+  expect_length(grep('^  \\( cd "\\$REPO_ROOT" \\|\\| exit 1$', drv), 1L)
+  # The backup's subshell, likewise (link#369).
+  expect_length(grep('^    \\( cd "\\$REPO_ROOT" \\|\\| exit 1$', drv), 1L)
   expect_length(grep("|| prc=$?", drv, fixed = TRUE), 1L)
   expect_length(grep('exit "$prc" ) >> "$LOG_DIR/${TS}_prep_$WS.log" 2>&1 &', drv, fixed = TRUE), 1L)
-  # quiet in a subshell, then forgotten and printed by the parent after its wait.
-  expect_length(grep("echo failed)\" quiet", drv, fixed = TRUE), 2L)
+  # quiet in a subshell (the two model legs and the backup, link#369), then
+  # forgotten and printed by the parent after its wait.
+  expect_length(grep("echo failed)\" quiet", drv, fixed = TRUE), 3L)
   expect_length(grep('phase_end prep "$WS" "" "$pst" quiet', drv, fixed = TRUE), 1L)
-  w_local <- grep("^wait \\$LOCAL_PID", drv)
-  expect_length(w_local, 1L)
-  expect_match(drv[w_local + 1L], "phase_forget model dispatcher; phase_print model dispatcher",
-               fixed = TRUE)
-  expect_length(grep('phase_forget model "$WS"; phase_print model "$WS"', drv, fixed = TRUE), 1L)
+  expect_length(grep("phase_forget backup; phase_print backup", drv, fixed = TRUE), 1L)
+  # The legs are waited on by legs_wait (study_area_legs.sh), which forgets
+  # and prints each leg's row as it returns.
+  expect_length(grep("^legs_wait$", drv), 1L)
+  legs <- readLines(testthat::test_path("..", "..", "data-raw", "study_area_legs.sh"))
+  expect_length(grep("phase_forget model dispatcher; phase_print model dispatcher", legs, fixed = TRUE), 1L)
+  expect_length(grep('phase_forget model "$ws"; phase_print model "$ws"', legs, fixed = TRUE), 1L)
   # The trap closes open phases before the burn, and cannot be stopped by it.
   t <- grep("^on_exit\\(\\) \\{", drv)
   body <- drv[t:(t + which(drv[-seq_len(t)] == "}")[1])]

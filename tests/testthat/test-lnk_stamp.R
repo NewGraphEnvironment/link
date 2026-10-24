@@ -141,3 +141,94 @@ test_that("lnk_stamp db slot is NULL when db_snapshot = FALSE even with conn", {
   s <- lnk_stamp(cfg, conn = conn, aoi = "ADMS", db_snapshot = FALSE)
   expect_null(s$db)
 })
+
+# -- HEAD of a worktree, and of a packed ref (link#369) ----------------------
+
+test_that(".lnk_read_git_head resolves a worktree's branch in the common dir", {
+  d <- withr::local_tempdir()
+  common <- file.path(d, "repo", ".git")
+  wt_git <- file.path(common, "worktrees", "wt")
+  dir.create(file.path(common, "refs", "heads"), recursive = TRUE)
+  dir.create(wt_git, recursive = TRUE)
+  sha <- "8d0a18220000000000000000000000000000abcd"
+  writeLines(sha, file.path(common, "refs", "heads", "369-run"))
+  writeLines("ref: refs/heads/369-run", file.path(wt_git, "HEAD"))
+  writeLines("../..", file.path(wt_git, "commondir"))
+  wt <- file.path(d, "wt")
+  dir.create(wt)
+  writeLines(paste0("gitdir: ", wt_git), file.path(wt, ".git"))
+  expect_identical(.lnk_read_git_head(file.path(wt, ".git")), sha)
+})
+
+test_that(".lnk_read_git_head reads a branch that lives only in packed-refs", {
+  d <- withr::local_tempdir()
+  git <- file.path(d, ".git")
+  dir.create(git)
+  writeLines("ref: refs/heads/main", file.path(git, "HEAD"))
+  writeLines(c("# pack-refs with: peeled fully-peeled sorted",
+               "1111111111111111111111111111111111111111 refs/heads/main-old",
+               "2222222222222222222222222222222222222222 refs/heads/main",
+               "^3333333333333333333333333333333333333333"),
+             file.path(git, "packed-refs"))
+  expect_identical(.lnk_read_git_head(git), "2222222222222222222222222222222222222222")
+})
+
+test_that(".lnk_read_git_head reads this checkout's HEAD as git does", {
+  root <- normalizePath(testthat::test_path("..", ".."))
+  skip_if_not(file.exists(file.path(root, ".git")), "not a git checkout")
+  git <- Sys.which("git")
+  skip_if(!nzchar(git), "git not on PATH")
+  want <- system2(git, c("-C", shQuote(root), "rev-parse", "HEAD"), stdout = TRUE)
+  expect_identical(.lnk_read_git_head(file.path(root, ".git")), want)
+})
+
+test_that(".lnk_read_git_head resolves a relative gitdir pointer from the .git file, not the working dir", {
+  d <- withr::local_tempdir()
+  common <- file.path(d, "repo", ".git")
+  wt_git <- file.path(common, "worktrees", "wt")
+  dir.create(file.path(common, "refs", "heads"), recursive = TRUE)
+  dir.create(wt_git, recursive = TRUE)
+  sha <- "4444444444444444444444444444444444444444"
+  writeLines(sha, file.path(common, "refs", "heads", "b"))
+  writeLines("ref: refs/heads/b", file.path(wt_git, "HEAD"))
+  writeLines("../..", file.path(wt_git, "commondir"))
+  wt <- file.path(d, "wt")
+  dir.create(wt)
+  writeLines("gitdir: ../repo/.git/worktrees/wt", file.path(wt, ".git"))
+  withr::local_dir(withr::local_tempdir())
+  expect_identical(.lnk_read_git_head(file.path(wt, ".git")), sha)
+})
+
+test_that(".lnk_read_git_head reads a detached HEAD and a loose ref in a plain .git", {
+  d <- withr::local_tempdir()
+  git <- file.path(d, ".git")
+  dir.create(file.path(git, "refs", "heads"), recursive = TRUE)
+  writeLines("5555555555555555555555555555555555555555", file.path(git, "HEAD"))
+  expect_identical(.lnk_read_git_head(git), "5555555555555555555555555555555555555555")
+  writeLines("ref: refs/heads/m", file.path(git, "HEAD"))
+  writeLines("6666666666666666666666666666666666666666", file.path(git, "refs", "heads", "m"))
+  expect_identical(.lnk_read_git_head(git), "6666666666666666666666666666666666666666")
+  # A branch with no ref anywhere (an unborn branch) has no SHA.
+  writeLines("ref: refs/heads/none", file.path(git, "HEAD"))
+  expect_null(.lnk_read_git_head(git))
+})
+
+test_that(".lnk_read_git_head reads a worktree's branch packed in the common dir", {
+  # With the tests above, every input the reader takes: a plain .git or a
+  # pointer (absolute, relative); HEAD detached, a loose ref (own dir, common
+  # dir), a packed ref (own dir, common dir), or no ref at all.
+  d <- withr::local_tempdir()
+  common <- file.path(d, "repo", ".git")
+  wt_git <- file.path(common, "worktrees", "wt")
+  dir.create(wt_git, recursive = TRUE)
+  writeLines(c("# pack-refs with: peeled fully-peeled sorted",
+               "7777777777777777777777777777777777777777 refs/heads/b"),
+             file.path(common, "packed-refs"))
+  writeLines("ref: refs/heads/b", file.path(wt_git, "HEAD"))
+  writeLines("../..", file.path(wt_git, "commondir"))
+  wt <- file.path(d, "wt")
+  dir.create(wt)
+  writeLines(paste0("gitdir: ", wt_git), file.path(wt, ".git"))
+  expect_identical(.lnk_read_git_head(file.path(wt, ".git")),
+                   "7777777777777777777777777777777777777777")
+})

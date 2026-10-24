@@ -1,0 +1,17 @@
+[1] 0
+[1] 0
+NOTICE:  table "zz_lnk_access_prior_lnrs" does not exist, skipping
+
+NOTICE:  table "zz_lnk_streams_lnrs" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] LNRS habitat gate: 10 segments (0.280 km) settled
+[wsg_recompute_one] LNRS recomputed in 0.05 min (persist=fresh_smoke369b)

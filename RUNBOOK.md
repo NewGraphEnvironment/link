@@ -1576,30 +1576,36 @@ measured off a file, run after run (#377).
   - `prep`, per cypher: from the spin to the end of its own prep. `ok` needs
     exit 0 and the `=== READY` line the gate reads.
   - `refresh`: `snapshot_bcfp.sh` under `--refresh-primitives`; otherwise skipped.
+  - `backup`, run-wide: the run's one `pg_dump` of the persist schema, in the
+    background through spin and prep (link#369). No row on a dispatcher-only run.
   - `model`, per host: the leg, written by the leg's own subshell when its loop
-    ends. The driver waits on the legs one after another, so the moment a wait
-    returns is not when that leg ended. The status is the session's exit, which
-    is 0 even when every group failed (each group soft-fails); `account` says
-    whether the hosts finished.
-  - `account`: per-host completeness from each database. `failed` when a host did
+    ends. The status is the session's exit, which is 0 even when every group
+    failed (each group soft-fails); `account` says whether the hosts finished.
+  - `account`, per host: completeness from each database, a cypher's as soon as
+    its leg ends, the dispatcher's after every leg. `failed` when the host did
     not account for its bucket.
-  - `consolidate`: the copy and the release that reads each source again;
-    skipped with no cyphers.
-  - `burn`: the explicit burn, not the EXIT trap's. `failed` when a host it was
-    free to burn is still up. A held host is the kept-hosts report's to name.
+  - `consolidate`, per cypher: its copy and the release that reads it again,
+    as soon as its leg ends (link#369). `failed` when it copied nothing or its
+    consolidate failed; skipped with no cyphers.
+  - `burn`, per cypher: the burn right after its release, not the EXIT trap's.
+    `failed` when the host was free to burn and is still up. A held host is the
+    kept-hosts report's to name.
   - `coverage`: `failed` when a run group has no rows from this run.
   - `views`: the log-table step and `barriers_views_build.R`.
   - `recompute`: the pool, ordering and judge included; skipped when `views` failed.
   - `compare`.
   - The tail is skipped when no group has rows.
-- **Rows overlap, so never sum them.** The run-wide `prep` holds `refresh` and
-  every cypher's prep, and the model legs run side by side. The summary prints
-  the **critical path**, which is the first start to the last end, and the
-  longest model leg.
+- **Rows overlap, so never sum them.** The run-wide `prep` holds `refresh`,
+  `backup` and every cypher's prep, the model legs run side by side, and a
+  cypher's consolidate overlaps the legs still modelling. The summary prints
+  the **critical path**, which is the first start to the last end, the longest
+  model leg, and the **consolidate tail**: how far the last consolidate ran past
+  the last model leg's end, 0 when every copy overlapped a leg still modelling.
 - **A row per tracker cell.** "Longest leg" is the longest `model` row.
-  "Consolidate on the critical path" is the `consolidate` row, since it waits on
-  every leg. "Recompute" is the `recompute` row. "Critical path" is the
-  summary's line. The phases.tsv sits beside the run's other `<TS>_*` logs.
+  "Consolidate on the critical path" is the summary's consolidate tail (before
+  link#369 it was the one `consolidate` row, which waited on every leg).
+  "Recompute" is the `recompute` row. "Critical path" is the summary's line.
+  The phases.tsv sits beside the run's other `<TS>_*` logs.
 - **A run that dies** keeps the rows it finished. The EXIT trap closes the phase
   it died in as `failed` and prints the table once. A kill does not stop a
   running leg, so that leg later writes its own row too. For one phase, host and
@@ -1618,6 +1624,72 @@ measured off a file, run after run (#377).
   `date` is GNU on some hosts and BSD on others, so nothing parses a date with
   it, and the report parses ISO in perl. A `date` that fails costs only that
   row's times.
+
+### Each cloud host is consolidated when its own leg ends (link#369)
+
+Until #369 the driver waited for every leg, consolidated every cypher in one
+`schema_consolidate()` call and then burned them, so a cypher that finished
+early sat idle and billed, holding the only copy of its groups: about 3
+host-hours on 2026-10-17 and about 20 on 2026-10-23. Now `legs_wait`
+(`data-raw/study_area_legs.sh`) takes the legs in the order they end, and for
+each cypher accounts it, consolidates that one source, releases it and burns
+it while the other legs keep modelling. `--keep-cyphers` consolidates each host
+the same way and burns none.
+
+- **One consolidate at a time, in the main shell**, in the order the legs end:
+  the hold, burn and outcome maps live there. `CONSOLIDATING` names the host
+  being copied, so a driver killed mid-copy reads that host as unsettled and
+  the others as their own state says. `wait -n -p` (bash ≥ 5.1, the driver's
+  floor since #369) returns an already-returned job again, so each pid leaves
+  the pending list once returned.
+- **A bucket that overlaps the dispatcher's waits for the dispatcher leg.**
+  Closure mode only warns on an overlap, and copying a group the dispatcher is
+  still writing would race its delete and insert. Exact mode refuses overlaps.
+- **A burn mid-run considers only hosts whose leg has ended** (`burn_cyphers
+  ended`), so `<TS>_kept_hosts.tsv` and its banner never list a host still
+  modelling. The EXIT trap considers every host.
+- **A consolidate that ends with no outcome for its host** (R died, or failed
+  after recording `ok`) keeps the host held, leaves its groups `in_flight` in
+  `<TS>_consolidate_state.tsv` and out of the recompute, and the run carries on
+  and exits non-zero. Before #369 that exited the run, which would now leave
+  the other legs running unwatched. The host is not passed to `host_release`:
+  a consolidate that died after its source cleanup leaves nothing there, and
+  release would then burn it.
+- **Per-host records:** `<TS>_consolidate_<ws>.log` and `.tsv` (one outcome
+  row); `<TS>_consolidate_state.tsv` gains `state_utc`, the time each host's
+  state was written, and a host not yet consolidated has no rows. A
+  `--recompute-only` reads either header.
+- **Beside a dispatcher that is writing.** Three things changed so a copy and
+  the dispatcher's modelling can share the persist tables:
+  - `CREATE INDEX IF NOT EXISTS` and `ALTER TABLE … ADD COLUMN IF NOT EXISTS`
+    lock their table before finding the work done (both block behind a
+    `COPY`'s ROW EXCLUSIVE; the `ALTER` also behind `pg_dump`'s ACCESS SHARE),
+    and `lnk_persist_init()` issued them for every group. Existing indexes and
+    columns are now read from the catalog first and not re-issued.
+  - `schema_consolidate()` judges a copy on the bucket's rows, not whole
+    tables, which move with the dispatcher's own per-group replace.
+  - It refuses a source before anything is deleted when the destination lacks
+    one of link's core persist tables (`streams`, `barriers`, …; a missing
+    habitat table is still only a note: `dest_missing_tables`): into an uninitialised
+    schema it would copy only the log tables, report success and delete the
+    host's log rows. The driver initialises the dispatcher's persist before
+    dispatch so this does not arise.
+  - A dispatcher group can still read a cypher group mid-copy, some tables
+    copied and some not. The recompute settles access, mapping code and the
+    gated flags whatever it read; the downstream guard's warnings and
+    `log.wsg_upstream` now depend on timing.
+- **The backup is taken once, before any leg writes.** It used to be taken
+  inside the one consolidate, after the dispatcher had rebuilt its groups, so
+  #354 could restore only log rows from it. Now the driver initialises the
+  dispatcher's persist, then dumps it (`schema_consolidate_backup()`, which
+  stops when `pg_dump` fails) in the background through spin and prep, and
+  dispatches no leg until it has succeeded; a failure exits before any host is
+  held, so the trap burns them. A running `pg_dump` beside the dispatcher
+  would stall each group's log-table `ALTER` for the whole dump (7.6 min for
+  `fresh_default`'s 241 groups, 2026-10-24). Its use is the earlier builds' log
+  history (#354) and a rollback of the whole schema to before the run: the
+  recompute rebuilds access and mapping code, not the persisted groups.
+  Dispatcher-only runs take none, as before.
 
 ### Which host may be burned (link#347)
 
@@ -1655,8 +1727,9 @@ in `data-raw/study_area_hosts.sh`:
   ways, the dispatch ssh session and `schema_consolidate` (which copies, then
   deletes from the source). A killed driver runs its EXIT trap while either
   keeps going, so a host is **unsettled** unless its session ended 0
-  (`host_wait` records the status only once `wait` returns) and consolidate
-  is not in flight (`CONSOLIDATING`). An unsettled host's groups are "not
+  (`legs_wait` and `host_wait` record the status only once `wait` returns) and
+  consolidate is not in flight against it (`CONSOLIDATING` names the host
+  being copied, link#369). An unsettled host's groups are "not
   finished when probed", never "partial", and the record says to re-measure. A report from the trap reads the host's log row and run log
   itself when accounting never ran.
 - **A held host is kept on every exit path**, abort included, and so is a host
@@ -1692,12 +1765,16 @@ older build. A group with persist rows but **no** log row on the dispatcher
 `fresh_default`, 2026-10-17) is not protected: it is deleted and, if the host
 no longer holds it, not replaced. Where it says `no`, find out what is left first. If the
 run's recompute ran, it ran without the kept groups: recompute each one and
-each run group upstream of it (`wsg_recompute_one.R`). If it did not run
-(consolidate recorded no outcome for some source, or no run group had rows
-from this run), recompute every group of the run; the banner says which. A missing
+each run group upstream of it (`wsg_recompute_one.R`). If it did not run (no
+run group had rows from this run), recompute every group of the run; the
+banner says which. A host whose consolidate recorded no outcome keeps its
+groups `in_flight` and out of the recompute (link#369): check what reached the
+dispatcher before consolidating them again. A missing
 `<schema>.streams` or `streams_mapping_code` on a host reads as unknown, not
 empty: every dispatched cypher has both. Tests: `tests/testthat/test-study_area_hosts.R` runs the lib
-in bash with stubbed ssh, psql, tofu and doctl.
+in bash with stubbed ssh, psql, tofu and doctl, and
+`tests/testthat/test-study_area_legs.R` runs `legs_wait` over real background
+legs of different lengths with a stub consolidate.
 
 ### Host buckets are derived, not chosen
 

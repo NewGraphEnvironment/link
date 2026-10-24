@@ -11,9 +11,11 @@
 #
 #   run_uid  phase  host  start_utc  end_utc  minutes  groups  status
 #
-#   phase    prep refresh model account consolidate burn coverage views
-#            recompute compare (RUNBOOK §8d says what each one covers)
-#   host     dispatcher or a cypher workspace; blank for a run-wide phase
+#   phase    prep refresh backup model account consolidate burn coverage
+#            views recompute compare (RUNBOOK §8d says what each one covers)
+#   host     dispatcher or a cypher workspace; blank for a run-wide phase.
+#            account, consolidate and burn are per host since link#369: each
+#            cypher's run as soon as its own leg ends
 #   minutes  end - start, one decimal, from the epochs taken with the times
 #   groups   groups the phase covered; blank where it covers none
 #   status   ok (finished, covering all it was given), failed (it errored, or
@@ -148,7 +150,9 @@ phases_close_open() {
 }
 
 # phases_report: the table, then the run's critical path (first start to last
-# end) and its longest model leg. Skipped rows have no times and add nothing.
+# end), its longest model leg, and the consolidate tail: how long the last
+# consolidate ran past the last model leg's end (link#369; 0 when every copy
+# overlapped a leg still modelling). Skipped rows have no times and add nothing.
 phases_report() {
   [ -n "${PHASES_TSV:-}" ] && [ -f "$PHASES_TSV" ] || return 0
   PHASES_REPORTED=1
@@ -164,10 +168,16 @@ phases_report() {
     $lo = $s if !defined $lo || $s < $lo;
     $hi = $e if !defined $hi || $e > $hi;
     if ($F[1] eq "model" && (!defined $leg || $e - $s > $leg)) { $leg = $e - $s; $who = $F[2] }
+    $mend = $e if $F[1] eq "model" && (!defined $mend || $e > $mend);
+    $cend = $e if $F[1] eq "consolidate" && (!defined $cend || $e > $cend);
     END {
       exit unless defined $lo;
       printf "  critical path: %.1f min (first start to last end)\n", ($hi - $lo) / 60;
       printf "  longest model leg: %.1f min (%s)\n", $leg / 60, $who if defined $leg;
+      if (defined $mend && defined $cend) {
+        my $tail = $cend - $mend; $tail = 0 if $tail < 0;
+        printf "  consolidate tail: %.1f min (last consolidate end past the last model end)\n", $tail / 60;
+      }
     }' "$PHASES_TSV" 2>/dev/null || true
   return 0
 }
