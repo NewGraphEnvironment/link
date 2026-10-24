@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.68.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.68.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,19 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.68.4" id="link-0684">link 0.68.4<a class="anchor" aria-label="anchor" href="#link-0684"></a></h2>
+<p><strong>Each cloud host is consolidated and burned as soon as its own leg ends</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/369" class="external-link">#369</a>), while the other legs keep modelling. Before this, every host waited for the slowest leg and one consolidate of all of them.</p>
+<ul><li>
+<strong><code>study_area_run.sh</code> finishes each cypher as its leg ends</strong> (<code>data-raw/study_area_legs.sh</code>: account, consolidate that one source, release, burn). The dispatcher’s persist is initialised and backed up once, before any leg writes; the dump runs in the background through spin and prep. A host whose bucket overlaps the dispatcher’s waits for the dispatcher leg, and a consolidate with no outcome keeps its host and its groups <code>in_flight</code>. The driver now needs bash 5.1 or later.</li>
+<li>
+<strong><code><a href="../reference/lnk_persist_init.html">lnk_persist_init()</a></code> and the log-table setup skip <code>CREATE INDEX IF NOT EXISTS</code> / <code>ADD COLUMN IF NOT EXISTS</code> when the catalog already has the index or column.</strong> Both no-ops take their table lock before finding the work done, so each group’s init waited behind a running consolidate <code>COPY</code>.</li>
+<li>
+<strong><code>schema_consolidate()</code> judges a copy on the bucket’s rows</strong>, refuses a destination without link’s core persist tables before deleting anything, logs each table’s copy time, and backs up through <code>schema_consolidate_backup()</code>, which stops when <code>pg_dump</code> fails.</li>
+<li>
+<strong>A dispatcher run from a git worktree no longer logs <code>link_sha</code> NULL.</strong> <code>.lnk_read_git_head()</code> now resolves the common dir, <code>packed-refs</code> and relative <code>gitdir:</code> pointers.</li>
+<li>Three small runs on real droplets: both cyphers burned 6.5 and 12.8 min before the dispatcher leg ended, a refused host was kept with its burn command, and both verifiers pass. The provincial-scale measurement is still owed (<a href="https://github.com/NewGraphEnvironment/link/issues/369" class="external-link">#369</a> stays open for it). Mechanics: RUNBOOK §8d, “Each cloud host is consolidated when its own leg ends”. Evidence: <code>data-raw/logs/consolidate_on_finish_369/</code>.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.68.3" id="link-0683">link 0.68.3<a class="anchor" aria-label="anchor" href="#link-0683"></a></h2>
 <p><strong>A run records when each phase started and ended, per host</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/375" class="external-link">#375</a>). Driver changes only; no modelling code moved.</p>
