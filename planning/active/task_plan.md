@@ -20,12 +20,17 @@ A provincial run's modelling phase is bounded by its longest leg, so more hosts 
 - Worker keys are positional (`worker1..N`); the ssh target never reaches a committed file (redacted from `${TS}_*` logs like addresses).
 - The exit-status rule applies to **every remote host**, cyphers included: strictly stricter, one code path.
 
+## Plan revised after the Plan review (2026-10-24)
+
+`review-plan.md` holds the review. Four blockers changed the phases below: no kept report on a workers-only run (B1), workers in the burn list (B2), a `~/.Renviron` pin beats any export over ssh, measured (B3), and target validation including a target that reaches the dispatcher's own database (B4). So the Q2 answer above is corrected: link can be stale on a worker through a `LINK_GIT_SHA` pin, and the worker gate refuses that, as the dispatcher's does for fresh. Worker prep is a separate script, because `cypher_prep.sh` installs, reloads shared primitives and recreates the persist.
+
 ## Phase 1: Measure the worker (no code)
-Needs the worker's ssh target from you on approval (kept out of the repo).
-- [ ] Confirm ssh exit status: `ssh <w> 'exit 3'; echo $?` (Tailscale to macOS expected 0)
-- [ ] PATH of a non-interactive command: `which Rscript git docker psql bash` and `bash --version` (driver legs need bash only on the dispatcher; check anyway)
-- [ ] DB route: docker `fresh-db` (as cyphers) or host psql; fwapg loaded, primitives' load stamps (`host_vintage.R`), discharge table for the run's config
-- [ ] Installed fresh vs DESCRIPTION pin; whether `LINK_GIT_SHA`/`FRESH_GIT_SHA` in its `~/.Renviron` would override load_all's sha (`.lnk_pkg_git_sha`)
+Needs the worker's ssh target from the operator (kept out of the repo).
+- [ ] ssh exit status (`ssh <w> 'exit 3'; echo $?`), stdout byte-exact and stderr separate (`printf 'a\tb\n' | od -c`), no PTY, BatchMode and ACL check-mode prompts, scp
+- [ ] Non-interactive shell, PATH (`Rscript git docker psql bash`), bash version, `~/.Rprofile` output on stdout
+- [ ] DB route (docker `fresh-db` or host psql), fwapg loaded, primitives' load stamps (`host_vintage.R`), discharge for the run's config, `system_identifier` differs from the dispatcher's
+- [ ] Installed fresh vs the pin; `~/.Renviron` keys (`LINK_GIT_*`, `FRESH_GIT_*`, `LNK_HOST_ALIAS`); pkgload installed; `load_all()` refuses a fresh below the floor
+- [ ] Whether a dropped ssh session kills the remote loop
 - [ ] Record findings (no identity) in `findings.md`; adjust Phases 3–4 if a route differs
 
 ## Phase 2: Rename any-remote-host maps (behaviour-neutral)
@@ -34,31 +39,36 @@ Needs the worker's ssh target from you on approval (kept out of the repo).
 - [x] Suites pass with identical counts (hosts 38/125, legs 14/68, finish 34/229, phases 16/61); commit alone
 
 ## Phase 3: The exit-status rule (tests first)
-- [ ] Tests: stub ssh that exits 0 while the remote command failed — consolidate must not copy a partial table or delete from the source; a leg with no end sentinel reads as failed; a vintage probe with no pass sentinel fails
-- [ ] `schema_consolidate.R`: one helper runs every remote command with an rc trailer on stderr (`…; echo __LNK_RC__=$? >&2`) and judges by it: enumeration, columns, newest-log, per-table COPY (stage 1), source cleanup
-- [ ] Leg ssh strings end with an `__LNK_LEG_END__` echo; the leg wrapper's status is non-zero when ssh failed or the sentinel is absent (feeds `HOST_RUN_RC`, so release stays strict)
-- [ ] Vintage probe, `--auto-install` and the reachability probe judged on printed sentinels; stamps already judged on output (verify)
-- [ ] `.hosts_query` and consolidate sources take a per-host ssh target (`HOST_SSH`) instead of `cypher@$ip`
+- [x] `schema_consolidate.R`: `consolidate_remote()` runs every remote command with an rc trailer on stderr, captured per call, and judges by it (tables, columns, newest-log, stage-1 COPY, source cleanup); tests with a stub ssh that exits 0 whatever ran, plus a structural guard that no raw `ssh '` call is left
+- [x] Per-table copy check: stage 2's `COPY n` equals stage 1's line count for a persist table, or the source is not deleted
+- [ ] `HOST_SSH` per host (`cypher@$IP` for cyphers) and `HOST_VIA`; `.hosts_query`, `host_consolidate`, `consolidate_outcomes` and the `cypher@` test stubs move to it
+- [ ] Extract the leg launcher, stamp and vintage probes and auto-install into a lib the tests can source
+- [ ] Leg ssh strings end with an `__LNK_LEG_END__` echo matched unanchored; the wrapper's status is non-zero when ssh failed or the sentinel is absent (feeds `HOST_RUN_RC`); tests
+- [ ] Vintage, auto-install and reachability judged per host on printed sentinels, captured per call; stamps verified sound
 
 ## Phase 4: The worker kind in the driver (tests first)
-- [ ] Tests: `burn_cyphers` never burns a worker; kept report prints a worker row with no burn command; release of a worker deletes its partial groups only when settled; focal order dispatcher → workers → cyphers; target charset refused
-- [ ] Args: `--workers=` (charset-restricted), `HOST_KIND`/`HOST_SSH`, `--focal=` count = 1 + workers + cyphers; banner shows keys only; `redact_log_addresses` also replaces each target with `<workerN>`
-- [ ] Prep: reachability probe (sentinel), then `cypher_prep.sh` in worker mode (env knobs: clone at `~/Projects/repo/link_worker` if absent; load_all, no pak, no `~/.Renviron`; `lnk_persist_init` without `force_recreate`; same snapshot, wet-load and `=== READY` contract)
-- [ ] Gates: branch-pushed/clean-tree gates apply when any remote host exists; parity over every host; per-host vintage; prior-rows refusal for workers via `host_remaining`; `--auto-install` on a worker installs fresh at the `Remotes:` pin
-- [ ] Persist init + backup, legs (worker string: `cd ~/Projects/repo/link_worker && export LNK_LOAD=loadall …`, same exports as cyphers), `legs_wait`/`host_finish_leg`: account, consolidate, release; then drop partials instead of burn (`burn` phase row `skipped`)
-- [ ] Forward `LNK_TEST_STALL_WSG` over ssh when set (banner already warns), so a group can be made to fail on a remote host
+- [ ] Tests: workers-only run writes the kept report and exits non-zero when held (B1); a released worker is neither burned nor listed kept, and a pre-dispatch trap does not burn one (B2); target refusals (leading `-`, quotes, `local`, duplicates, workspaces named `worker<N>`/`dispatcher`); `consolidate_outcomes` with a worker host; partial drop excludes `DOUBT`, skips when `PRE` unknown; redaction of a target with regex metacharacters; `LNK_TEST_STALL_WSG` validated
+- [ ] Args: `--workers=`, `HOST_ARR` (workers then cyphers) and `CY_ARR`, `HOST_KIND`; `--focal=` count = 1 + workers + cyphers; `--recompute-only` refuses `--workers`; banner shows keys only; redaction replaces each target, word-bounded and quoted, with `<workerN>`
+- [ ] Every `N_CY` / `CYPHERS_UP` use decided: cypher-only (DO/tofu, droplets, spin, burn) vs any remote host (gates, persist init and backup, `preflight_hosts`, buckets, dispatch, kept report, tail branch)
+- [ ] Pre-spend worker checks in `preflight_local`: reachability, `system_identifier` distinct, prior rows (`streams`, `streams_mapping_code`, non-strict) refused naming the groups
+- [ ] `data-raw/worker_prep.sh`, piped over ssh: clone `~/Projects/repo/link_worker` if absent, fetch and reset (no stash); everything by load_all; fresh assertion; staleness refusal (`FRESH_GIT_SHA` pin vs RemoteSha, `LINK_GIT_SHA` ≠ HEAD); discharge and vintage checked, not reloaded; `lnk_persist_init` without `force_recreate`; `=== READY`
+- [ ] `--auto-install` on a worker installs fresh at the `Remotes:` pin, refusing when a `FRESH_GIT_SHA` pin would outlive it
+- [ ] Legs: worker string `cd ~/Projects/repo/link_worker && export LNK_LOAD=loadall …` with the cypher exports, and a HEAD check against the run's sha before each group; `host_finish_leg` for a worker: account, consolidate, release, then drop its partial groups' persist rows (settled, `PRE` known and empty, log rows kept, sentinel-judged; a failed drop fails closed), `burn` row `skipped`
+- [ ] Forward `LNK_TEST_STALL_WSG` (validated `^[A-Z]{4}$`) over ssh when set
 
 ## Phase 5: Packing with a worker
 - [ ] `study_area_buckets.R --workers=N`: labels `dispatcher, worker1.., job1..`, the printed command carries `--workers=<target>` placeholders and focal order; speeds stay `--host-speeds` (dispatcher first, then workers, then jobs)
-- [ ] Document how a worker's speed is measured: its group minutes from the Phase 6 run against the same groups' 2026-10-23 minutes
+- [ ] Document how a worker's speed is measured: mid-size groups' minutes by host (not `--minutes-schema`'s newest row, which mixes hosts)
 
 ## Phase 6: Live acceptance (two-host test)
-- [ ] Dispatcher + worker, `--buckets-exact`, scratch schema `fresh_worker376`, a few small groups each: models, consolidates, recomputes, exits 0; both verifiers pass at `expected_n`
-- [ ] Failure run: `LNK_TEST_STALL_WSG=<worker group> --statement-timeout=1`: group named, run exits non-zero, worker kept only if it holds finished work, with the worker's ssh returning 0
+- [ ] Live probes on the worker: `consolidate_remote` reads 3 from `exit 3` while ssh returned 0
+- [ ] Dispatcher + worker, `--buckets-exact`, scratch schema `fresh_worker376`, mid-size groups: models, consolidates, recomputes, exits 0; both verifiers pass at `expected_n`
+- [ ] Failure run: `LNK_TEST_STALL_WSG=<worker group> --statement-timeout=1` on groups whose longest statement is well under a minute; expected: worker released, no `kept_hosts.tsv`, the group in `no_rows`, exit 1
+- [ ] Kill the remote loop's shell mid-leg: no END sentinel, worker held and listed, run exits non-zero
 - [ ] Evidence to `data-raw/logs/worker_376/` (README indexes runs; launcher stdout redacted); drop `fresh_worker376` on both hosts after
 
 ## Phase 7: Docs
-- [ ] RUNBOOK §8d: "Persistent workers" (kind, prep, clone, no burn, partial drop) and the exit-status rule
+- [ ] RUNBOOK §8d: "Persistent workers" (kind, prep, clone, no burn, partial drop) and the exit-status rule; also the phases host column, "burn, per cypher", the recovery recipe's `cypher@<ip>`, the kept-hosts wording
 - [ ] Driver header usage + flags; CLAUDE.md status block; `research/study_area_run.md` hosts note
 
 ## Owed at the end (reported, done after merge)
