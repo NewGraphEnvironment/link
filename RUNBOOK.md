@@ -1810,15 +1810,18 @@ one `--focal=` list per worker after the dispatcher's and before the cyphers'
   config's discharge (and wet load, which must be the dispatcher's) is checked,
   and `lnk_persist_init()` runs without `force_recreate`. Vintage and parity
   are the host pre-flight's, as for a cypher.
-- **Pins in the worker's `~/.Renviron` are refused.** R reads `~/.Renviron`
-  after the environment, so a `FRESH_GIT_SHA` or `LINK_GIT_SHA` there beats
-  anything the driver exports (measured 2026-10-24) and would be stamped into
-  every row. Prep refuses a `FRESH_GIT_SHA` that is not the installed fresh's
-  `RemoteSha`, and a `LINK_GIT_SHA` that is not the clone's HEAD. Under
-  load_all link's sha comes from the clone's git, so only a pin can make it lie.
-  `--auto-install` on a worker installs fresh at DESCRIPTION's `Remotes:` pin
-  and re-checks once; it refuses while a `FRESH_GIT_SHA` pin is set, which
-  would outlive the install.
+- **What the worker sets for R is refused.** R reads `~/.Renviron` after the
+  environment, so a line there beats anything the driver exports (measured
+  2026-10-24), and an empty export does not clear it. Prep refuses every
+  variable the leg exports (`REMOTE_LEG_VARS`, held to `remote_leg_cmd`'s
+  exports by a test), every `LNK_*` (all link reads; `LNK_HOST_ALIAS`, which
+  only names the host, excepted), and the pins `LINK_GIT_SHA`,
+  `LINK_GIT_DIRTY`, `FWAPG_GIT_SHA`, `BCFISHOBS_GIT_SHA` and `PGOPTIONS`. A
+  `FRESH_GIT_SHA` must be the installed fresh's `RemoteSha`, and
+  `FRESH_GIT_DIRTY` may only be `false` beside it. Under load_all link's sha
+  comes from the clone's git. `--auto-install` on a worker installs fresh at
+  DESCRIPTION's `Remotes:` pin and re-checks once; it refuses while a
+  `FRESH_GIT_SHA` pin is set, which would outlive the install.
 - **The leg** is a cypher's (`remote_leg_cmd`, the same exports), run from the
   clone with `LNK_LOAD=loadall`. Before each group it checks the clone's HEAD
   against the run's commit, and runs no group once it has moved (a second
@@ -1839,8 +1842,11 @@ one `--focal=` list per worker after the dispatcher's and before the cyphers'
   too. Before link#376 consolidate copied them as well, putting a source's
   primitive rows over the dispatcher's for its bucket, and step 5 deleted them
   from the source: harmless on a cypher about to be burned, not on a worker.
-- **Redaction** covers the target, the host part of `user@host`, and the
-  HostName ssh resolves an alias to (`ssh -G`), since ssh's errors name those.
+- **Redaction** covers the target, the host part of `user@host`, the HostName
+  ssh resolves an alias to (`ssh -G`), and the name the worker gives itself
+  (`=== host` from prep, which its stamp row carries), including right after
+  `<user>@` (ssh's failure line). A held worker's leg can write ssh's closing
+  lines after the trap redacted its log: redact it again before committing.
 - **Held, it is kept and reported** like a cypher, with no droplet, address or
   burn command, also on a run with no cyphers (`WORKERS_UP`). `--keep-cyphers`
   keeps cloud hosts only.
