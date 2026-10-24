@@ -821,6 +821,67 @@ Never the receiving river downstream. <code>mad_m3s_source</code> names the tier
 <strong>Exercising it:</strong> <code>LNK_TEST_STALL_WSG=&lt;WSG&gt;</code> makes that group’s <code>wsg_run_one.R</code> run <code>SELECT pg_sleep(3600)</code> first. It works on the local leg only (it is not passed over ssh), and <code>wsg_run_one.R</code> refuses it when no bound is in effect. With <code>--statement-timeout=1</code> the group fails after a minute, and the run carries on. The banner prints a <code>TEST HOOK:</code> line whenever the variable is set. Evidence: <code>data-raw/logs/statement_timeout_371/</code>.</li>
 </ul></div>
 <div class="section level3">
+<h3 id="where-a-runs-time-went-ts_phasestsv-link375">Where a run’s time went: <code>&lt;TS&gt;_phases.tsv</code> (link#375)<a class="anchor" aria-label="anchor" href="#where-a-runs-time-went-ts_phasestsv-link375"></a></h3>
+<p>Every speed number before this was rebuilt by hand from log tables, console logs and <code>date_end</code> columns. Now the driver writes one row per phase per host as the phase ends (<code>data-raw/study_area_phases.sh</code>), so a speed change is measured off a file, run after run (#377).</p>
+<table class="table"><colgroup><col width="50%"><col width="50%"></colgroup><thead><tr><th>column</th>
+<th>holds</th>
+</tr></thead><tbody><tr><td><code>run_uid</code></td>
+<td>the run’s uid; under <code>--recompute-only</code>, the uid of the run it finishes</td>
+</tr><tr><td><code>phase</code></td>
+<td>below</td>
+</tr><tr><td><code>host</code></td>
+<td>
+<code>dispatcher</code> or a cypher workspace; blank for a run-wide phase</td>
+</tr><tr><td>
+<code>start_utc</code>, <code>end_utc</code>
+</td>
+<td>ISO 8601, UTC</td>
+</tr><tr><td><code>minutes</code></td>
+<td>end − start, one decimal</td>
+</tr><tr><td><code>groups</code></td>
+<td>groups the phase covered; blank where it covers none</td>
+</tr><tr><td><code>status</code></td>
+<td>
+<code>ok</code>, <code>failed</code> (errored, or left groups out), <code>skipped</code> (blank times)</td>
+</tr></tbody></table><ul><li>
+<strong>The phases, in run order:</strong>
+<ul><li>
+<code>prep</code>, run-wide: driver start to dispatch. It holds <code>refresh</code>, every cypher’s prep, both pre-flights and the bucket resolve.</li>
+<li>
+<code>prep</code>, per cypher: from the spin to the end of its own prep. <code>ok</code> needs exit 0 and the <code>=== READY</code> line the gate reads.</li>
+<li>
+<code>refresh</code>: <code>snapshot_bcfp.sh</code> under <code>--refresh-primitives</code>; otherwise skipped.</li>
+<li>
+<code>model</code>, per host: the leg, written by the leg’s own subshell when its loop ends. The driver waits on the legs one after another, so the moment a wait returns is not when that leg ended. The status is the session’s exit, which is 0 even when every group failed (each group soft-fails); <code>account</code> says whether the hosts finished.</li>
+<li>
+<code>account</code>: per-host completeness from each database. <code>failed</code> when a host did not account for its bucket.</li>
+<li>
+<code>consolidate</code>: the copy and the release that reads each source again; skipped with no cyphers.</li>
+<li>
+<code>burn</code>: the explicit burn, not the EXIT trap’s. <code>failed</code> when a host it was free to burn is still up. A held host is the kept-hosts report’s to name.</li>
+<li>
+<code>coverage</code>: <code>failed</code> when a run group has no rows from this run.</li>
+<li>
+<code>views</code>: the log-table step and <code>barriers_views_build.R</code>.</li>
+<li>
+<code>recompute</code>: the pool, ordering and judge included; skipped when <code>views</code> failed.</li>
+<li>
+<code>compare</code>.</li>
+<li>The tail is skipped when no group has rows.</li>
+</ul></li>
+<li>
+<strong>Rows overlap, so never sum them.</strong> The run-wide <code>prep</code> holds <code>refresh</code> and every cypher’s prep, and the model legs run side by side. The summary prints the <strong>critical path</strong>, which is the first start to the last end, and the longest model leg.</li>
+<li>
+<strong>A row per tracker cell.</strong> “Longest leg” is the longest <code>model</code> row. “Consolidate on the critical path” is the <code>consolidate</code> row, since it waits on every leg. “Recompute” is the <code>recompute</code> row. “Critical path” is the summary’s line. The phases.tsv sits beside the run’s other <code>&lt;TS&gt;_*</code> logs.</li>
+<li>
+<strong>A run that dies</strong> keeps the rows it finished. The EXIT trap closes the phase it died in as <code>failed</code> and prints the table once. A kill does not stop a running leg, so that leg later writes its own row too. For one phase, host and start, the later row is the leg’s real end. Each leg’s wrapper is a subshell of the driver and carries its command line, so <code>pkill -f study_area_run</code> kills the wrappers as well. Their legs (<code>wsg_run_one.R</code>, the ssh session) run on, but write no later row. A phase a leg had already closed is not closed again. The file has every phase only on a run that reached its summary: a coverage FATAL, for one, leaves no tail rows.</li>
+<li>
+<strong><code>--recompute-only</code> writes its own <code>&lt;its TS&gt;_phases.tsv</code></strong>, with a <code>prep</code> row for its preamble and then the tail. Its critical path covers that pass only. A path running from the original run through a hand re-model hours later would mean nothing.</li>
+<li><strong><code>--preflight-only</code> writes no file.</strong></li>
+<li>
+<strong>Times come from one <code>date -u</code> call each, which prints both ISO and epoch.</strong> <code>date</code> is GNU on some hosts and BSD on others, so nothing parses a date with it, and the report parses ISO in perl. A <code>date</code> that fails costs only that row’s times.</li>
+</ul></div>
+<div class="section level3">
 <h3 id="which-host-may-be-burned-link347">Which host may be burned (link#347)<a class="anchor" aria-label="anchor" href="#which-host-may-be-burned-link347"></a></h3>
 <p>The count used to be <code>[wsg_run_one] … done</code> lines, anchored at line start. R writes warnings into the same stream, and one flushed without a newline put the marker mid-line (<code>… :[wsg_run_one] FIRE done in 4.6 min</code>), so run <code>20261017_004619-3f4c713b</code> hid 18 finished groups, consolidated only what it counted, and would have burned the hosts holding the rest. The rules now, all in <code>data-raw/study_area_hosts.sh</code>:</p>
 <ul><li>
