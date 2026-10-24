@@ -1351,7 +1351,7 @@ if [ "$N_CY" -gt 0 ]; then
   for WS in "${CY_WS_ARR[@]}"; do
     IP="${CY_IP[$WS]}"
     # The outer subshell writes this host's prep row when its prep ends (quiet:
-    # its stdout is the driver's, but the rows print together after the wait).
+    # its stdout is the host's prep log; the parent prints the rows after the wait).
     # ok only on exit 0 AND the READY line the gate below reads.
     ( prc=0
     ( # Wait until the droplet accepts a connection AS THE cypher USER before
