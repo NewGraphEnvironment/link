@@ -11,6 +11,12 @@ afterwards. Another session was running a query on the database the whole time.
 | `--recompute-only --run-uid=20261024_033035-1ecf477d` | `driver_recompute_only.out`, `20261024_033312_phases.tsv` | its own file, under the finished run's uid: `prep` (its preamble), `coverage`, `views`, `recompute`, `compare`, all `ok`. Exit 0 |
 | killed run `20261024_033333-71471db8` (SIGTERM to the driver 22 s into `model`) | `driver_kill.out`, `20261024_033333_phases.tsv` | the EXIT trap wrote `model dispatcher failed` at 03:34:02 and printed the table; exit 143. The leg, which the kill does not stop, finished both groups and wrote its own `ok` row at 03:35:05 with the same start |
 
+After code review moved each leg wrapper's output to its leg's log (`ecf1c3fc`), the
+full run was repeated at that commit through `| tee`: `driver_run_ecf1c3fc.out`,
+`20261024_040127_phases.tsv` (run `20261024_040127-035d0f9d`). It gives the same rows,
+a critical path of 2.2 min and exit 0. The leg log holds both groups' `done` lines
+and nothing the wrapper wrote.
+
 ## The rows against the database's own times
 
 From `fresh_375.log` and `fresh_375.log_recompute` for the full run:
