@@ -19,15 +19,35 @@
 # stream, and one flushed without a newline puts the next line mid-line
 # (link#347).
 #
-# Globals read by remote_leg_cmd: SCHEMA CONFIG RUN_UID RUN_LABEL
+# A cloud host runs the link it pak-installed during prep, from
+# ~/Projects/repo/link. A persistent worker runs link by load_all from a clone
+# the driver owns, ~/Projects/repo/link_worker, so the link installed there for
+# every other session is never replaced, and the worker's own checkout is
+# never touched (link#376).
+#
+# Globals read by remote_leg_cmd: SCHEMA CONFIG RUN_UID RUN_LABEL RUN_SHA
 #   STATEMENT_TIMEOUT_MIN FWAPG_GIT_SHA BCFISHOBS_GIT_SHA LNK_BCFP_MODEL_VERSION
-#   HOST_SSH HOST_KIND (assoc, keyed by host)
+#   LNK_TEST_STALL_WSG HOST_KIND (assoc, keyed by host)
 #
 # Needs bash >= 4 (assoc arrays), as the driver does.
 
 # .remote_dir <host>: the link checkout a host's commands run from.
 .remote_dir() {
-  echo "~/Projects/repo/link"
+  if [ "${HOST_KIND[$1]:-cypher}" = "worker" ]; then
+    echo "~/Projects/repo/link_worker"
+  else
+    echo "~/Projects/repo/link"
+  fi
+}
+
+# .remote_cd <host>: what every R command there is preceded by: the checkout,
+# and on a worker the load_all switch every data-raw script reads.
+.remote_cd() {
+  if [ "${HOST_KIND[$1]:-cypher}" = "worker" ]; then
+    echo "cd $(.remote_dir "$1") && export LNK_LOAD=loadall"
+  else
+    echo "cd $(.remote_dir "$1")"
+  fi
 }
 
 # remote_run <ssh target> <command> <stdout file> [stderr file]: run the
@@ -62,9 +82,27 @@ remote_out() {
 # export in the driver's environment does not (link#227, link#262, link#371).
 # The loop soft-fails each group, and `__LNK_LEG_END__` is printed after it,
 # inside the braces the `cd` guards, so a failed `cd` prints no marker.
+#
+# On a worker every group runs load_all afresh from the clone, so a change to
+# the clone after the parity gate (another run's prep, a hand `git checkout`)
+# would change the code under later groups. Each group first checks the
+# clone's HEAD against the run's (RUN_SHA) and is not run when it moved.
+#
+# LNK_TEST_STALL_WSG (link#371's stall hook) crosses ssh only as a group code;
+# anything else returns 1 and prints nothing of it.
 remote_leg_cmd() {
-  local host="$1" groups="$2"
-  printf '%s' "cd $(.remote_dir "$host") && export LNK_SCHEMA='$SCHEMA' && export LNK_GUARD_DOWNSTREAM=warn && export LNK_HABITAT_GATE=0 && export PGOPTIONS='-c statement_timeout=${STATEMENT_TIMEOUT_MIN}min' && export LNK_STATEMENT_TIMEOUT_MIN='$STATEMENT_TIMEOUT_MIN' && export FWAPG_GIT_SHA='${FWAPG_GIT_SHA:-}' && export BCFISHOBS_GIT_SHA='${BCFISHOBS_GIT_SHA:-}' && export LNK_RUN_UID='$RUN_UID' && export LNK_RUN_LABEL='${RUN_LABEL:-}' && export LNK_BCFP_MODEL_VERSION='${LNK_BCFP_MODEL_VERSION:-}' && { for w in $groups; do Rscript data-raw/wsg_run_one.R \$w '$CONFIG' || echo \"[WARN] cy WSG \$w failed\"; done; echo __LNK_LEG_END__; }"
+  local host="$1" groups="$2" stall="" guard=""
+  if [ -n "${LNK_TEST_STALL_WSG:-}" ]; then
+    if ! printf '%s' "$LNK_TEST_STALL_WSG" | LC_ALL=C grep -qxE '[A-Z]{4}'; then
+      echo "FATAL: LNK_TEST_STALL_WSG must be one four-letter group code" >&2
+      return 1
+    fi
+    stall="export LNK_TEST_STALL_WSG='$LNK_TEST_STALL_WSG' && "
+  fi
+  if [ "${HOST_KIND[$host]:-cypher}" = "worker" ]; then
+    guard="[ \"\$(git rev-parse HEAD)\" = '${RUN_SHA:-}' ] || { echo \"[WARN] worker WSG \$w not run: HEAD moved off ${RUN_SHA:-}\"; continue; }; "
+  fi
+  printf '%s' "$(.remote_cd "$host") && ${stall}export LNK_SCHEMA='$SCHEMA' && export LNK_GUARD_DOWNSTREAM=warn && export LNK_HABITAT_GATE=0 && export PGOPTIONS='-c statement_timeout=${STATEMENT_TIMEOUT_MIN}min' && export LNK_STATEMENT_TIMEOUT_MIN='$STATEMENT_TIMEOUT_MIN' && export FWAPG_GIT_SHA='${FWAPG_GIT_SHA:-}' && export BCFISHOBS_GIT_SHA='${BCFISHOBS_GIT_SHA:-}' && export LNK_RUN_UID='$RUN_UID' && export LNK_RUN_LABEL='${RUN_LABEL:-}' && export LNK_BCFP_MODEL_VERSION='${LNK_BCFP_MODEL_VERSION:-}' && { for w in $groups; do ${guard}Rscript data-raw/wsg_run_one.R \$w '$CONFIG' || echo \"[WARN] cy WSG \$w failed\"; done; echo __LNK_LEG_END__; }"
 }
 
 # remote_leg_status <ssh status> <leg log>: 0 only when ssh exited 0 and the

@@ -41,3 +41,7 @@ A third kind of host: a **persistent worker**, reached over ssh, that the driver
 ## A timing-bound legs test (pre-existing)
 
 `test-study_area_legs.R` "a burn mid-run lists no host that is still modelling" gives host a's account and consolidate 3 s to finish before host b's leg copies the kept file. Under load (the Plan review running beside the suites) it failed twice in seven runs; 3/3 green on the branch and 3/3 at HEAD when idle. Not caused by this branch; noted, not widened into scope.
+
+## worker_prep.sh, run for real on the dispatcher (2026-10-24)
+
+Origin pointed at this repo, a temp clone, config `default`, scratch schema `lnk_test_wprep` (dropped after): exit 0, `=== link 0.68.4 at 1b4ef989…; fresh 0.42.0 at e9793047… (remote_sha)`, 24 tables initialised, `=== READY`. With `FRESH_GIT_SHA=deadbeef1234` exported it refuses ("pins deadbeef1234 but the installed fresh was built from e9793047"); with `LINK_GIT_SHA=deadbeef1234` it refuses ("resolves to deadbeef1234 (env), not the clone's HEAD"); with another origin it refuses ("not the driver's clone"). Under load_all, link's sha resolves from the checkout's git (`source = git`), never an installed `RemoteSha`, so only a pin can make it lie.

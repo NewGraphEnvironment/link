@@ -168,3 +168,63 @@ test_that("the leg command exports the run's identity and bound", {
     expect_match(r$out, s, fixed = TRUE)
   }
 })
+
+# -- A persistent worker (link#376) ------------------------------------------
+
+worker_globals <- c(
+  "SCHEMA=s; CONFIG=c; RUN_UID=u; RUN_LABEL=; STATEMENT_TIMEOUT_MIN=30; RUN_SHA=abc123",
+  "declare -A HOST_SSH HOST_KIND; HOST_SSH[worker1]=wk; HOST_KIND[worker1]=worker",
+  "HOST_SSH[a]=cypher@ip-a"
+)
+
+test_that("a worker runs from the driver's own clone, by load_all", {
+  skip_if_no_remote_lib()
+  w <- remote_world()
+  r <- run_remote(w, c(worker_globals,
+                       'echo "W=$(remote_leg_cmd worker1 AAAA)"',
+                       'echo "C=$(remote_leg_cmd a AAAA)"',
+                       'echo "WCD=$(.remote_cd worker1)"; echo "CCD=$(.remote_cd a)"'))
+  lines <- strsplit(r$out, "\n")[[1]]
+  wl <- sub("^W=", "", grep("^W=", lines, value = TRUE))
+  cl <- sub("^C=", "", grep("^C=", lines, value = TRUE))
+  expect_match(wl, "^cd ~/Projects/repo/link_worker && export LNK_LOAD=loadall && ")
+  expect_match(cl, "^cd ~/Projects/repo/link && export LNK_SCHEMA")
+  expect_no_match(cl, "LNK_LOAD", fixed = TRUE)
+  expect_match(r$out, "WCD=cd ~/Projects/repo/link_worker && export LNK_LOAD=loadall", fixed = TRUE)
+  expect_match(r$out, "CCD=cd ~/Projects/repo/link$")
+})
+
+test_that("a worker's leg runs no group once its clone's HEAD has moved", {
+  skip_if_no_remote_lib()
+  w <- remote_world()
+  r <- run_remote(w, c(worker_globals, "remote_leg_cmd worker1 'AAAA BBBB'"))
+  cmd <- r$out
+  expect_match(cmd, "[ \"$(git rev-parse HEAD)\" = 'abc123' ] || { echo \"[WARN] worker WSG $w not run: HEAD moved off abc123\"; continue; };",
+               fixed = TRUE)
+  # Run the loop part with a HEAD that is not the run's: no group runs.
+  d <- withr::local_tempdir()
+  system2("git", c("-C", d, "init", "-q"))
+  system2("git", c("-C", d, "-c", "user.email=t@t", "-c", "user.name=t",
+                   "commit", "-q", "--allow-empty", "-m", "x"))
+  loop <- sub("^.*&& \\{", "{", cmd)
+  loop <- gsub("Rscript data-raw/wsg_run_one.R $w 'c'", "echo RAN $w", loop, fixed = TRUE)
+  out <- suppressWarnings(system2("sh", c("-c", shQuote(paste("cd", shQuote(d), "&&", loop))),
+                                  stdout = TRUE, stderr = TRUE))
+  expect_false(any(grepl("^RAN", out)))
+  expect_length(grep("not run: HEAD moved", out, fixed = TRUE), 2L)
+  expect_true(any(grepl("__LNK_LEG_END__", out, fixed = TRUE)))
+})
+
+test_that("the stall hook crosses ssh only as one group code", {
+  skip_if_no_remote_lib()
+  w <- remote_world()
+  r <- run_remote(w, c(worker_globals, "LNK_TEST_STALL_WSG=ADMS",
+                       'remote_leg_cmd a AAAA'))
+  expect_match(r$out, "export LNK_TEST_STALL_WSG='ADMS' && ", fixed = TRUE)
+  r <- run_remote(w, c(worker_globals, 'remote_leg_cmd a AAAA'))
+  expect_no_match(r$out, "LNK_TEST_STALL_WSG", fixed = TRUE)
+  r <- run_remote(w, c(worker_globals, "LNK_TEST_STALL_WSG=\"A'; rm -rf x\"",
+                       'remote_leg_cmd a AAAA && echo RC=0 || echo RC=$?'))
+  expect_match(r$out, "RC=1", fixed = TRUE)
+  expect_no_match(r$out, "rm -rf", fixed = TRUE)
+})
