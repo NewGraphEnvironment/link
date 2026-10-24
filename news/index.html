@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.68.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.68.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,9 +32,17 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/v0.68.3/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.68.3" id="link-0683">link 0.68.3<a class="anchor" aria-label="anchor" href="#link-0683"></a></h2>
+<p><strong>A run records when each phase started and ended, per host</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/375" class="external-link">#375</a>). Driver changes only; no modelling code moved.</p>
+<ul><li>
+<strong><code>study_area_run.sh</code> writes <code>&lt;TS&gt;_phases.tsv</code></strong>, one row per phase per host as it ends: <code>run_uid phase host start_utc end_utc minutes groups status</code>, over prep, refresh, model, account, consolidate, burn, coverage, views, recompute and compare. A phase that did not run gets a <code>skipped</code> row with blank times, and the EXIT trap closes the phase a run died in as <code>failed</code>. The summary prints the table, the critical path (first start to last end) and the longest model leg; <code>--recompute-only</code> writes its own file under the run’s uid. Rows overlap, so never sum them.</li>
+<li>On a dispatcher-only run the <code>model</code> and <code>recompute</code> rows bracket the database’s own <code>log</code> and <code>log_recompute</code> times to the second. The provincial run that fills the speed tracker’s runs row (<a href="https://github.com/NewGraphEnvironment/link/issues/377" class="external-link">#377</a>) is still owed.</li>
+<li>Mechanics: RUNBOOK §8d, “Where a run’s time went”. Evidence: <code>data-raw/logs/phases_375/</code>.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.68.2" id="link-0682">link 0.68.2<a class="anchor" aria-label="anchor" href="#link-0682"></a></h2>
 <p><strong>A runaway modelling statement fails its own group</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/371" class="external-link">#371</a>). Driver changes, plus one internal helper; no modelling code moved.</p>
