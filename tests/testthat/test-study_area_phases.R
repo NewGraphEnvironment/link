@@ -242,6 +242,8 @@ test_that("each model and prep leg re-raises its own exit status after writing i
   # Two model legs (the local one and the ssh one), one prep leg.
   expect_length(grep("|| mrc=$?", drv, fixed = TRUE), 2L)
   expect_length(grep('^  exit "\\$mrc" \\) &$', drv), 2L)
+  # errexit is off on the left of `||`, so the local leg's cd must fail by hand.
+  expect_length(grep('  ( cd "$REPO_ROOT" || exit 1', drv, fixed = TRUE), 1L)
   expect_length(grep("|| prc=$?", drv, fixed = TRUE), 1L)
   expect_length(grep('exit "$prc" ) &', drv, fixed = TRUE), 1L)
   # quiet in a subshell, then forgotten and printed by the parent after its wait.

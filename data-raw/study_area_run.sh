@@ -1466,8 +1466,10 @@ RUN_N=$( { csv_lines "$DISP_BUCKET"
 phase_end prep "" "$RUN_N" ok
 echo "=== run buckets (DS-first) ==="
 phase_begin model dispatcher
+# `|| exit 1` on the cd: left of the `||` that catches its status, the leg runs with errexit
+# off, so a failed cd would otherwise model every group from the wrong directory.
 ( mrc=0
-  ( cd "$REPO_ROOT"
+  ( cd "$REPO_ROOT" || exit 1
   for w in $(echo "$DISP_BUCKET" | tr ',' ' '); do
     PGOPTIONS="${PGOPTIONS:+$PGOPTIONS }-c statement_timeout=${STATEMENT_TIMEOUT_MIN}min" \
     LNK_STATEMENT_TIMEOUT_MIN="$STATEMENT_TIMEOUT_MIN" \
