@@ -81,3 +81,29 @@ Both no-ops lock their table before they find the work done. `lnk_persist_init()
 ### How long a copy holds a table (2026-10-23 consolidate log)
 
 The per-source copy ran 12.7 min (job1, 57 groups), 13.9 min (job2, 68) and 12.9 min (job3, 42) for 20 tables each, then 0.5 min for the source cleanup; the log has no per-table times. The largest table is `streams` at 2.9 M rows for job1. So any one table's `COPY` held its lock for minutes, under the 30 min bound but long enough to stall a dispatcher group repeatedly; the fix above removes the wait rather than relying on the margin.
+
+## Run A — per-host consolidate and burn on real droplets (2026-10-24)
+
+run_uid `20261024_072631-73621c49`, branch `369-run` at `8d0a1822`, config `default`, scratch schema `fresh_smoke369`, `--buckets-exact`: dispatcher 12 groups, job1 NBNK, job2 MBNK, KEEC, KAKC, PITR, VICT. Evidence: `data-raw/logs/consolidate_on_finish_369/run_A/`.
+
+| host | model end (UTC) | consolidate | burn end | before dispatcher model end |
+|---|---|---|---|---|
+| job1 | 07:37:46 | 07:37:48–07:38:16 (0.5 min) | 07:38:45 | 12.8 min |
+| job2 | 07:43:32 | 07:43:34–07:44:26 (0.9 min) | 07:44:59 | 6.5 min |
+| dispatcher | 07:51:30 | — | — | — |
+
+- Each host was burned within about 1 min of its leg ending; `consolidate_state.tsv` rows are `ok` at 07:38:15 and 07:44:25, inside the dispatcher's model window (07:35:45–07:51:30); no `kept_hosts.tsv`; doctl shows no job droplet; recompute 18/18; consolidate tail 0.0 min; critical path 26.1 min.
+- **Overlap cost:** the four dispatcher groups that modelled during a copy ran 1.02–1.37× their 2026-10-23 minutes (median 1.11), the eight that did not 0.68–1.73× (median 1.19): no slowdown visible at this size (1- and 5-group copies). `run_A_overlap_minutes.tsv`. The provincial-scale measurement is owed.
+- **Two defects found, both fixed after Run A:**
+  - `study_area_verify.sql` failed: the 12 dispatcher rows had `link_sha` NULL. The dispatcher ran from a git worktree, and `.lnk_read_git_head()` looked for the branch ref beside the worktree's private HEAD instead of in the common dir (or `packed-refs`). Pre-existing, and it hits every worktree run CLAUDE.md recommends.
+  - The dispatcher, now accounted after the copies, read the six copied-in cypher groups in its own log as "finished outside its bucket". Harmless to the result (they were finished), misleading in the report.
+
+## Run B — a refused host is kept and listed (2026-10-24)
+
+run_uid `20261024_075836-321a58e2`, branch `369-run` at `a414d72b`, scratch schema `fresh_smoke369b` with a future-dated MILL log row seeded (`seed369b`). Dispatcher LNRS; job1 MILL, LPET. Evidence: `data-raw/logs/consolidate_on_finish_369/run_B/`.
+
+- job1's consolidate refused at `dest_log_newer` before deleting anything; the host was kept; `kept_hosts.tsv` names LPET, MILL (`groups_measured` yes) with the burn command; state `failed:dest_log_newer`; coverage named both `not_consolidated`; LNRS was still recomputed; the run ended INCOMPLETE.
+- The listed burn command was then run by hand (`run_B_manual_burn.log`); doctl shows no job droplet.
+- The dispatcher row now carries `link_sha a414d72b`, `link_dirty f`, from the worktree: the stamp fix holds.
+- The compare failed for a reason outside #369: LNRS models only RB, which the bcfishpass reference does not carry, so a run whose only compared group is LNRS has nothing to compare.
+- Host addresses: the driver's `${TS}_*` files held only `0.0.0.0` after its own redaction; the launcher's stdout and the manual-burn log are outside that glob and were redacted when copied.
