@@ -387,19 +387,13 @@ run_expected_recompute_only() {
   return 0
 }
 
-# run_finish <expected csv> [signals csv] [excluded csv]: coverage, recompute,
-# compare and the final report. The excluded groups are a failed consolidate
-# source's (consolidate_outcomes): never recomputed, named as not consolidated,
-# and part of the run's groups even when the host finished one outside its
-# bucket. EXITS the shell on an incomplete or failed run, as the driver
-# always has, and returns 0 only for a complete one. Call it bare: under
-# `set -e`, a function called in an `if` or `||` runs with errexit off.
 # run_timeouts <groups csv>: which of these groups had a modelling statement
 # cancelled by the statement bound (link#371), from the run's host logs. Each
 # group's wsg_run_one.R writes `[wsg_run_one] <WSG> TIMEOUT after <bound>:
 # <statement>`, and every host's output lands in $LOG_DIR/<ts>_run_<host>.log,
 # where <ts> is the run_uid's timestamp: TS in a full run, an earlier one under
-# --recompute-only. Only groups in the argument are named, so a group
+# --recompute-only. Matched unanchored: an R warning flushed without a newline
+# can put the marker mid-line (link#347). Only groups in the argument are named, so a group
 # re-modelled since its timeout is not. A group that hit it twice keeps its last
 # line. Sets:
 #   TIMED_OUT      the groups, sorted, comma-separated;
@@ -412,12 +406,19 @@ run_timeouts() {
   logs=$(find "$LOG_DIR" -maxdepth 1 -name "${RUN_UID%-*}_run_*.log" 2>/dev/null | sort) || logs=""
   [ -n "$logs" ] || return 0
   TIMEOUT_LINES=$(printf '%s\n' "$logs" | while IFS= read -r f; do cat "$f"; done \
-    | sed -nE 's/^\[wsg_run_one\] ([A-Z]{4}) TIMEOUT after ([^:]+): (.*)$/\1\t\2\t\3/p' \
+    | sed -nE 's/.*\[wsg_run_one\] ([A-Z]{4}) TIMEOUT after ([^:]+): (.*)$/\1\t\2\t\3/p' \
     | awk -F'\t' -v want=",$want," 'index(want, "," $1 ",") { last[$1] = $1 " (bound " $2 "): " $3 }
         END { for (w in last) print last[w] }' | LC_ALL=C sort)
   TIMED_OUT=$(printf '%s\n' "$TIMEOUT_LINES" | sed -nE 's/^([A-Z]{4}) .*/\1/p' | paste -sd, -)
 }
 
+# run_finish <expected csv> [signals csv] [excluded csv]: coverage, recompute,
+# compare and the final report. The excluded groups are a failed consolidate
+# source's (consolidate_outcomes): never recomputed, named as not consolidated,
+# and part of the run's groups even when the host finished one outside its
+# bucket. EXITS the shell on an incomplete or failed run, as the driver
+# always has, and returns 0 only for a complete one. Call it bare: under
+# `set -e`, a function called in an `if` or `||` runs with errexit off.
 run_finish() {
   RUN_WSGS=$(.hosts_union "${1:-}" "${3:-}")
   local signals="${2:-}" excluded="${3:-}" w
@@ -705,6 +706,9 @@ run_finish_report() {
           # is one-way, and a group re-modelled before its missing downstream
           # neighbour would be settled on that neighbour's stale barriers; the
           # recompute below settles every group on final access.
+          # Bounded as the driver bounds it (link#371): this re-model follows
+          # a failure, which may have been a runaway statement.
+          echo "    PGOPTIONS='-c statement_timeout=${STATEMENT_TIMEOUT_MIN:-30}min' \\"
           echo "    LNK_RUN_UID=$RUN_UID ${RUN_LABEL:+LNK_RUN_LABEL=$RUN_LABEL }LNK_SCHEMA=$SCHEMA \\"
           echo "      LNK_GUARD_DOWNSTREAM=warn LNK_HABITAT_GATE=0 LNK_LOAD=loadall \\"
           echo "      Rscript data-raw/wsg_run_one.R <WSG> $CONFIG"

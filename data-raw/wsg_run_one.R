@@ -19,7 +19,8 @@
 # Statement bound (link#371). study_area_run.sh sets
 # PGOPTIONS='-c statement_timeout=<N>min' on both modelling legs, so a statement
 # that runs past it is cancelled server-side and the group fails like any other
-# error. Each group prints the bound in effect (SHOW statement_timeout), and a
+# error. Each group prints the bound in effect (SHOW statement_timeout) and,
+# given LNK_STATEMENT_TIMEOUT_MIN, refuses to run on any other; a
 # cancelled statement is named on a `TIMEOUT` line the driver's report reads.
 #   LNK_TEST_STALL_WSG=<WSG>  -> that group runs SELECT pg_sleep(3600) first, to
 #                                exercise the bound; refused when none is set.
@@ -77,12 +78,40 @@ if (!guard_mode %in% c("error", "warn", "ignore")) {
        guard_mode, "') - a typo must not silently disable the guard",
        call. = FALSE)
 }
+# The statement bound in effect (link#371), checked against the one the driver
+# asked for when it says (LNK_STATEMENT_TIMEOUT_MIN, both legs): a leg whose
+# PGOPTIONS went missing then fails its first group instead of running unbound.
+# pg_settings gives milliseconds; SHOW's text normalises (60min reads 1h).
+bound <- DBI::dbGetQuery(conn, "SHOW statement_timeout")[[1]]
+bound_ms <- as.numeric(DBI::dbGetQuery(conn,
+  "SELECT setting FROM pg_settings WHERE name = 'statement_timeout'")[[1]])
+cat(sprintf("[wsg_run_one] %s statement_timeout=%s\n", wsg, bound))
+want_min <- Sys.getenv("LNK_STATEMENT_TIMEOUT_MIN")
+if (nzchar(want_min) && !identical(bound_ms, as.numeric(want_min) * 60000)) {
+  stop("LNK_STATEMENT_TIMEOUT_MIN=", want_min, " but this connection's ",
+       "statement_timeout is ", bound, ": PGOPTIONS did not reach it",
+       call. = FALSE)
+}
+# A calling handler, so the stack still holds the cancelled statement; the
+# error then carries on as before (non-zero exit, the log row left open).
+# Naming must never replace the error it names.
+name_timeout <- function(e) {
+  tryCatch({
+    s <- link:::.lnk_timeout_statement(e, sys.frames())
+    if (!is.null(s)) {
+      cat(sprintf("[wsg_run_one] %s TIMEOUT after %s: %s\n", wsg, bound, s))
+    }
+  }, error = function(err) NULL)
+}
+
 guard_note <- Sys.getenv("LNK_GUARD_DOWNSTREAM_NOTE", "")
 guard <- tryCatch(
-  lnk_wsg_downstream_check(
-    conn, aoi = wsg, cfg = cfg, loaded = loaded,
-    on_fail = guard_mode,
-    override = if (nzchar(guard_note)) guard_note else NA_character_),
+  withCallingHandlers(
+    lnk_wsg_downstream_check(
+      conn, aoi = wsg, cfg = cfg, loaded = loaded,
+      on_fail = guard_mode,
+      override = if (nzchar(guard_note)) guard_note else NA_character_),
+    error = name_timeout),
   error = function(e) {
     message(conditionMessage(e))
     quit(status = 1)
@@ -95,16 +124,12 @@ gate_env <- Sys.getenv("LNK_HABITAT_GATE", "1")
 if (!gate_env %in% c("0", "1")) {
   stop("LNK_HABITAT_GATE must be 0 or 1 (got '", gate_env, "')", call. = FALSE)
 }
-bound <- DBI::dbGetQuery(conn, "SHOW statement_timeout")[[1]]
-cat(sprintf("[wsg_run_one] %s statement_timeout=%s\n", wsg, bound))
 stall <- identical(Sys.getenv("LNK_TEST_STALL_WSG"), wsg)
-if (stall && identical(bound, "0")) {
+if (stall && bound_ms == 0) {
   stop("LNK_TEST_STALL_WSG=", wsg, " needs a statement bound (PGOPTIONS=",
        "'-c statement_timeout=<N>min'); without one it would sleep an hour",
        call. = FALSE)
 }
-# A calling handler, so the stack still holds the cancelled statement; the
-# error then carries on as before (non-zero exit, the log row left open).
 withCallingHandlers({
   if (stall) DBI::dbExecute(conn, "SELECT pg_sleep(3600) -- LNK_TEST_STALL_WSG")
   lnk_pipeline_run(conn, aoi = wsg, cfg = cfg, loaded = loaded,
@@ -112,12 +137,7 @@ withCallingHandlers({
                    mapping_code = TRUE, cleanup_working = FALSE,
                    habitat_gate = identical(gate_env, "1"),
                    notes = guard$note)
-}, error = function(e) {
-  s <- link:::.lnk_timeout_statement(e, sys.frames())
-  if (!is.null(s)) {
-    cat(sprintf("[wsg_run_one] %s TIMEOUT after %s: %s\n", wsg, bound, s))
-  }
-})
+}, error = name_timeout)
 cat(sprintf("[wsg_run_one] %s done in %.1f min (persist=%s)\n",
             wsg, as.numeric(difftime(Sys.time(), t0, units = "mins")),
             cfg$pipeline$schema))

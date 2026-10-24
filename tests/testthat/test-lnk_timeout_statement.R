@@ -36,6 +36,20 @@ test_that("any other error is not a timeout", {
   expect_null(probe("SELECT 1", msg = "canceling statement due to lock timeout"))
 })
 
+test_that("a re-thrown timeout is named from .lnk_db_execute()'s message", {
+  # dbWithTransaction() rolls back and re-stops, so the SQL frames are gone by
+  # the time an outer calling handler sees the error; the message keeps it.
+  found <- "<handler not reached>"
+  try(withCallingHandlers(
+    tryCatch({
+      stop("SQL execution failed:\n", timeout_msg, "\nStatement: SELECT pg_sleep(9) -- inner",
+           call. = FALSE)
+    }, error = function(e) stop(e)),
+    error = function(e) found <<- .lnk_timeout_statement(e, sys.frames())
+  ), silent = TRUE)
+  expect_identical(found, "SELECT pg_sleep(9) -- inner")
+})
+
 test_that("a timeout with no SQL on the stack still says it was a timeout", {
   e <- simpleError(timeout_msg)
   expect_identical(.lnk_timeout_statement(e, list(new.env())), "<statement not found>")
@@ -53,5 +67,20 @@ test_that("a real statement_timeout through RPostgres names the statement", {
   expect_s3_class(res, "try-error")
   expect_identical(found, "SELECT pg_sleep(5) -- link#371 probe")
   # The connection survives a cancel: the next statement runs.
+  expect_identical(DBI::dbGetQuery(conn, "SELECT 1 AS x")$x, 1L)
+})
+
+test_that("a real cancel inside dbWithTransaction() is named", {
+  # lnk_mapping_code() writes inside a transaction (link#371 review).
+  conn <- skip_if_no_db()
+  DBI::dbExecute(conn, "SET statement_timeout = '200ms'")
+  withr::defer(try(DBI::dbExecute(conn, "RESET statement_timeout"), silent = TRUE))
+  found <- "<handler not reached>"
+  res <- try(withCallingHandlers(
+    DBI::dbWithTransaction(conn, .lnk_db_execute(conn, "SELECT pg_sleep(5) -- in a transaction")),
+    error = function(e) found <<- .lnk_timeout_statement(e, sys.frames())
+  ), silent = TRUE)
+  expect_s3_class(res, "try-error")
+  expect_identical(found, "SELECT pg_sleep(5) -- in a transaction")
   expect_identical(DBI::dbGetQuery(conn, "SELECT 1 AS x")$x, 1L)
 })

@@ -792,7 +792,8 @@ test_that("run_timeouts names the missing groups whose statement hit the bound, 
     "[WARN] dispatcher WSG OKAN failed (continuing)",
     "[wsg_run_one] AAAA done in 1.0 min (persist=x)"
   ))
-  run_log(w, "job1", "[wsg_run_one] KTSU TIMEOUT after 30min: SELECT pg_sleep(3600)")
+  # Mid-line, as an R warning flushed without a newline leaves it (link#347).
+  run_log(w, "job1", "  Could not find a column.[wsg_run_one] KTSU TIMEOUT after 30min: SELECT pg_sleep(3600)")
   # Another run's log: never read.
   writeLines("[wsg_run_one] XXXX TIMEOUT after 30min: SELECT 1",
              file.path(w, "logs", "20261019_000000_run_local.log"))
@@ -818,6 +819,8 @@ test_that("the report names a missing group that timed out, and its statement", 
   r <- run_finish_sh(w, sc, "run_finish AAAA,BBBB,CCCC ''")
   expect_equal(r$status, 1L, info = r$out)
   expect_match(r$out, "statement bound hit:             CCCC", fixed = TRUE)
+  # The re-model it prints is bounded too.
+  expect_match(r$out, "PGOPTIONS='-c statement_timeout=30min'", fixed = TRUE)
   expect_match(r$out, "CCCC (bound 1min): SELECT pg_sleep(3600) -- LNK_TEST_STALL_WSG", fixed = TRUE)
 })
 
@@ -832,8 +835,13 @@ test_that("the driver bounds a statement on both modelling legs and refuses a ba
   expect_length(from, 1L)
   expect_length(to, 1L)
   legs <- drv[from:to]
+  legs <- legs[!grepl("^[[:space:]]*#", legs)]
   bound <- "statement_timeout=${STATEMENT_TIMEOUT_MIN}min"
   expect_length(grep(bound, legs, fixed = TRUE), 2L)
+  # ... and the minutes it asked for, which wsg_run_one.R checks it got.
+  expect_length(grep("LNK_STATEMENT_TIMEOUT_MIN=", legs, fixed = TRUE), 2L)
+  expect_length(grep("export LNK_STATEMENT_TIMEOUT_MIN='$STATEMENT_TIMEOUT_MIN'", legs, fixed = TRUE), 1L)
+  expect_length(grep("TEST HOOK:    LNK_TEST_STALL_WSG", drv, fixed = TRUE), 1L)
   expect_length(grep(paste0("export PGOPTIONS='-c ", bound, "'"), legs, fixed = TRUE), 1L)
   rc_from <- grep("^recompute_one\\(\\) \\{", drv)
   rc_to <- rc_from + which(drv[-seq_len(rc_from)] == "}")[1]
@@ -854,4 +862,17 @@ test_that("the driver bounds a statement on both modelling legs and refuses a ba
   r <- run_drv("--recompute-only", paste0("--run-uid=", finish_uid), "--statement-timeout=30")
   expect_equal(r$status, 1L)
   expect_match(r$out, "--recompute-only takes no", fixed = TRUE)
+})
+
+test_that("the TIMEOUT line wsg_run_one.R writes is the one run_timeouts reads", {
+  skip_if_no_finish_lib()
+  src <- readLines(testthat::test_path("..", "..", "data-raw", "wsg_run_one.R"))
+  fmt <- regmatches(src, regexpr('"\\[wsg_run_one\\] %s TIMEOUT after %s: %s\\\\n"', src))
+  expect_length(fmt, 1L)
+  line <- sprintf(eval(parse(text = fmt)), "OKAN", "30min", "CREATE TEMP TABLE t AS SELECT 1")
+  w <- finish_world()
+  run_log(w, "local", sub("\n$", "", line))
+  r <- run_finish_sh(w, "unused", "run_timeouts OKAN; printf '%s\\n' \"$TIMEOUT_LINES\"")
+  expect_equal(r$status, 0L, info = r$out)
+  expect_match(r$out, "OKAN (bound 30min): CREATE TEMP TABLE t AS SELECT 1", fixed = TRUE)
 })

@@ -19,7 +19,7 @@ On 2026-10-23 (`20261023_074321-24d85e8c`) OKAN sat in one statement (fresh's ne
 
 ## Decided at the gate (my recommendation; reject to change)
 
-1. **The mechanism is `PGOPTIONS='-c statement_timeout=<N>min'`,** as the issue proposes. It is prefixed to the local leg's command and exported in the ssh string, appended to any `PGOPTIONS` the operator already set. It is not exported driver-wide, so the recompute keeps its own 10-minute `SET`. That is the header's answer to "separate, larger bound, or none": the recompute keeps its existing 10 min per statement, which is tighter, not looser, and was not hit on 2026-10-23.
+1. **The mechanism is `PGOPTIONS='-c statement_timeout=<N>min'`,** as the issue proposes. It is prefixed to the local leg's command, appended to any `PGOPTIONS` the operator already set, and exported in the ssh string, where it replaces the dispatcher's (review A2). It is not exported driver-wide, so the recompute keeps its own 10-minute `SET`. That is the header's answer to "separate, larger bound, or none": the recompute keeps its existing 10 min per statement, which is tighter, not looser, and was not hit on 2026-10-23.
 2. **`--statement-timeout=<minutes>`, default 30.** It takes a positive integer (base-10 normalised, at most 1440) and refuses 0, so there is no unbounded mode. `--recompute-only` refuses it, as it refuses other dispatch flags.
 3. **The bound is checked, not assumed.** `wsg_run_one.R` prints `SHOW statement_timeout` per group, so every host's log shows the bound actually in effect. That catches the both-legs trap (#227, #262) on its first group.
 4. **Test hook `LNK_TEST_STALL_WSG=<WSG>`, on the local leg only.** `wsg_run_one.R` runs `SELECT pg_sleep(3600)` for that group before modelling. It refuses to do so unless a non-zero bound is in effect, so the hook can never hang a run.
@@ -33,7 +33,7 @@ On 2026-10-23 (`20261023_074321-24d85e8c`) OKAN sat in one statement (fresh's ne
   - Driver arg tests: `--statement-timeout=0`, `abc`, `010` (which normalises to 10) and `>1440` are refused; `--statement-timeout` with `--recompute-only` is refused; the banner line shows the bound.
 
 ## Phase 2: Name a timed-out statement (R side)
-- [x] `.lnk_timeout_statement(e, frames)` in `R/utils.R`. It returns `"<first line of SQL>"` when `e` is a statement-timeout cancel, and NULL otherwise. It walks frames innermost-first for a character `statement` or `sql`.
+- [x] `.lnk_timeout_statement(e, frames)` in `R/utils.R`. It returns the statement, whitespace-squished and cut to 160 characters (review A4), when `e` is a statement-timeout cancel, and NULL otherwise. It reads `.lnk_db_execute()`'s `Statement:` from the message first (review G1), then walks frames innermost-first for a character `statement` or `sql`.
 - [x] `data-raw/wsg_run_one.R`:
   - print `[wsg_run_one] <WSG> statement_timeout=<SHOW value>`;
   - wrap the stall hook and `lnk_pipeline_run()` in `withCallingHandlers(error=)`, which on a timeout prints `[wsg_run_one] <WSG> TIMEOUT after <bound>: <statement>` and then lets the error propagate (exit non-zero, the log row is left open as now);
@@ -47,12 +47,15 @@ On 2026-10-23 (`20261023_074321-24d85e8c`) OKAN sat in one statement (fresh's ne
   - document the flag and the recompute's bound in the header.
 - [x] `study_area_finish.sh`: `run_timeouts()` greps the run's host logs for `TIMEOUT` lines. `run_finish_report()` prints them under INCOMPLETE as "timed out (statement bound N min): GROUP — statement".
 
+## Review fold-in (Plan agent; planning/active/review-plan.md)
+- [x] G1 message-first naming, G2 unanchored, G3 bound checked per group, G5 bounded re-model, G6 guard in handler, G7 writer/reader test, G8 banner, A1/A2/A4 text
+
 ## Phase 4: Docs
 - [x] RUNBOOK §8d: a new subsection, "A runaway statement fails its group (link#371)". It covers the bound, the env var, why `PGOPTIONS` and not a role setting, the 30-min measurement, the recompute's own bound, how a timeout reads in the log and the summary, and the finish path.
 - [x] RUNBOOK §6 (~l.490): one line saying the modelling legs are now bounded too.
 
 ## Owed at the end (reported, done after merge)
-- [ ] A full provincial run at the default bound completes with no group timing out (acceptance criterion 2; it needs the next `default` run).
+- [ ] A full provincial run at the default bound completes with no group timing out (acceptance criterion 2; it needs the next `default` run). Checked as: no `statement bound hit` in the report, no `TIMEOUT` line in any `<TS>_run_*.log`, and every host's `statement_timeout=` lines read `30min` (review AC3).
 
 ## Validation
 - [ ] Tests pass (`devtools::test()`), lint is clean

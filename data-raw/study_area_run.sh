@@ -84,14 +84,18 @@
 #   --statement-timeout=N   minutes any one statement of a group's modelling
 #                           may run (default 30, 1..1440; link#371). Set as
 #                           PGOPTIONS='-c statement_timeout=<N>min' on BOTH
-#                           modelling legs, so it reaches every connection of
-#                           the run and nothing else (a role setting reaches
-#                           every session on the host and must be reset). A
+#                           modelling legs (appended to the operator's on the
+#                           local leg, replacing it in the ssh string), so it
+#                           reaches every connection of the run and nothing
+#                           else (a role setting reaches every session on the
+#                           host and must be reset). A
 #                           statement past it is cancelled server-side, the
 #                           group fails like any other, and the report names it
 #                           with the statement. Default from 2026-10-23: the
 #                           longest finished group took 16.3 min in total
-#                           (SETN), while OKAN sat 4 h in one statement. The
+#                           (SETN), while OKAN sat 4 h in one statement. Raise
+#                           it when a top group is placed on a cypher by hand:
+#                           cyphers ran up to 2.9x the dispatcher's time. The
 #                           recompute leg is not given this bound: it keeps its
 #                           own 10 min per statement and 1 min lock wait
 #                           (wsg_recompute_one.R's SET, which a PGOPTIONS would
@@ -452,6 +456,9 @@ echo "  log dir:      $LOG_DIR"
 echo "  vintage max:  ${VINTAGE_MAX_DAYS} d"
 echo "  recompute -j: $RECOMPUTE_JOBS"
 [ "$RECOMPUTE_ONLY" = "1" ] || echo "  statement:    ${STATEMENT_TIMEOUT_MIN} min per modelling statement (PGOPTIONS, both legs); recompute 10 min (wsg_recompute_one.R)"
+# The stall hook (link#371) rides the driver's environment onto the local leg,
+# so one left exported in the operator's shell would stall a real group.
+[ -z "${LNK_TEST_STALL_WSG:-}" ] || echo "  TEST HOOK:    LNK_TEST_STALL_WSG=$LNK_TEST_STALL_WSG (that group stalls until the statement bound cancels it)"
 [ "$BUCKETS_EXACT" = "0" ] && echo "  buckets:      closure (each --focal= expanded to its drainage closure, DS-first)" \
                             || echo "  buckets:      exact (--buckets-exact; each --focal= list as given; the recompute settles access)"
 [ "$PREFLIGHT_ONLY" = "0" ] || echo "  MODE:         --preflight-only (no spend, no writes)"
@@ -1400,15 +1407,17 @@ fi
 # post-consolidate recompute lifts, for good. The recompute (wsg_recompute_one.R)
 # always follows a dispatch and settles every group on final access.
 #
-# PGOPTIONS on BOTH legs too (link#371): the statement bound, prefixed to the
-# local leg (after any PGOPTIONS the operator set) and exported in the ssh
-# string. Not exported driver-wide, so the recompute keeps its own SET. Each
-# group prints the bound it got, so a leg that missed it shows on its first
-# group as statement_timeout=0.
+# PGOPTIONS on BOTH legs too (link#371): the statement bound. The local leg
+# appends it to any PGOPTIONS the operator set; the ssh string replaces it,
+# because the dispatcher's tuning is not the cyphers'. Not exported driver-wide,
+# so the recompute keeps its own SET. LNK_STATEMENT_TIMEOUT_MIN goes with it,
+# and wsg_run_one.R refuses to model on a connection whose bound differs, so a
+# leg that lost PGOPTIONS fails its first group rather than running unbound.
 echo "=== run buckets (DS-first) ==="
 ( cd "$REPO_ROOT"
   for w in $(echo "$DISP_BUCKET" | tr ',' ' '); do
     PGOPTIONS="${PGOPTIONS:+$PGOPTIONS }-c statement_timeout=${STATEMENT_TIMEOUT_MIN}min" \
+    LNK_STATEMENT_TIMEOUT_MIN="$STATEMENT_TIMEOUT_MIN" \
     LNK_LOAD=loadall LNK_GUARD_DOWNSTREAM=warn LNK_HABITAT_GATE=0 \
       Rscript data-raw/wsg_run_one.R "$w" "$CONFIG" \
       || echo "[WARN] dispatcher WSG $w failed (continuing)"
@@ -1442,7 +1451,7 @@ for WS in "${CY_WS_ARR[@]}"; do
   # silently skip WSGs.
   # Keepalives: this one session carries the host's whole bucket (hours); a
   # silent link drop would kill the rest of it (link#246).
-  ssh -o ServerAliveInterval=60 -o ServerAliveCountMax=10 "cypher@$IP" "cd ~/Projects/repo/link && export LNK_SCHEMA='$SCHEMA' && export LNK_GUARD_DOWNSTREAM=warn && export LNK_HABITAT_GATE=0 && export PGOPTIONS='-c statement_timeout=${STATEMENT_TIMEOUT_MIN}min' && export FWAPG_GIT_SHA='${FWAPG_GIT_SHA:-}' && export BCFISHOBS_GIT_SHA='${BCFISHOBS_GIT_SHA:-}' && export LNK_RUN_UID='$RUN_UID' && export LNK_RUN_LABEL='$RUN_LABEL' && export LNK_BCFP_MODEL_VERSION='${LNK_BCFP_MODEL_VERSION:-}' && for w in $B_SPACE; do Rscript data-raw/wsg_run_one.R \$w '$CONFIG' || echo \"[WARN] cy WSG \$w failed\"; done" \
+  ssh -o ServerAliveInterval=60 -o ServerAliveCountMax=10 "cypher@$IP" "cd ~/Projects/repo/link && export LNK_SCHEMA='$SCHEMA' && export LNK_GUARD_DOWNSTREAM=warn && export LNK_HABITAT_GATE=0 && export PGOPTIONS='-c statement_timeout=${STATEMENT_TIMEOUT_MIN}min' && export LNK_STATEMENT_TIMEOUT_MIN='$STATEMENT_TIMEOUT_MIN' && export FWAPG_GIT_SHA='${FWAPG_GIT_SHA:-}' && export BCFISHOBS_GIT_SHA='${BCFISHOBS_GIT_SHA:-}' && export LNK_RUN_UID='$RUN_UID' && export LNK_RUN_LABEL='$RUN_LABEL' && export LNK_BCFP_MODEL_VERSION='${LNK_BCFP_MODEL_VERSION:-}' && for w in $B_SPACE; do Rscript data-raw/wsg_run_one.R \$w '$CONFIG' || echo \"[WARN] cy WSG \$w failed\"; done" \
     > "$LOG_DIR/${TS}_run_$WS.log" 2>&1 &
   CY_PID[$WS]=$!
 done
