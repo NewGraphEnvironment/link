@@ -1,0 +1,104 @@
+SET
+                                                                                                                                                                                                                                                                                                                                                                                                           QUERY PLAN                                                                                                                                                                                                                                                                                                                                                                                                           
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ GroupAggregate  (cost=65333.61..65333.69 rows=1 width=25) (actual time=13296.541..58826.711 rows=6597 loops=1)
+   Group Key: walked.origin_id, walked.watershed_group_code
+   Buffers: shared hit=76173757 read=7952 dirtied=32, temp read=441528 written=441532
+   ->  Incremental Sort  (cost=65333.61..65333.65 rows=2 width=25) (actual time=13296.536..58821.671 rows=17593 loops=1)
+         Sort Key: walked.origin_id, walked.watershed_group_code
+         Presorted Key: walked.origin_id
+         Full-sort Groups: 528  Sort Method: quicksort  Average Memory: 26kB  Peak Memory: 26kB
+         Buffers: shared hit=76173757 read=7952 dirtied=32, temp read=441528 written=441532
+         ->  Subquery Scan on walked  (cost=60095.19..65333.60 rows=1 width=25) (actual time=13278.815..58817.021 rows=17593 loops=1)
+               Filter: ((NOT walked.cut) AND (walked.path_m <= '8801.639'::double precision) AND (walked.val >= '15'::double precision) AND (walked.edge_type <> ALL ('{1400,1450}'::integer[])) AND ((walked.origin_val IS NULL) OR (walked.origin_val < '15'::double precision)) AND ((walked.path_m - walked.connector_m) <= '1000'::double precision))
+               Rows Removed by Filter: 3211363
+               Buffers: shared hit=76173754 read=7952 dirtied=32, temp read=441528 written=441532
+               ->  WindowAgg  (cost=60095.19..65332.50 rows=44 width=108) (actual time=13275.172..58611.121 rows=3228956 loops=1)
+                     Buffers: shared hit=76173754 read=7952 dirtied=32, temp read=441528 written=441532
+                     ->  Incremental Sort  (cost=60095.19..64703.85 rows=44 width=546) (actual time=13275.159..52646.116 rows=3228956 loops=1)
+                           Sort Key: downstream.origin_id, downstream.wscode_ltree DESC, downstream.downstream_route_measure DESC, downstream.id_segment DESC
+                           Presorted Key: downstream.origin_id
+                           Full-sort Groups: 61143  Sort Method: quicksort  Average Memory: 93kB  Peak Memory: 97kB
+                           Pre-sorted Groups: 11478  Sort Method: quicksort  Average Memory: 83kB  Peak Memory: 85kB
+                           Buffers: shared hit=76173286 read=7952 dirtied=32, temp read=441528 written=441532
+                           ->  WindowAgg  (cost=59988.05..64701.87 rows=44 width=546) (actual time=13274.765..45537.338 rows=3228956 loops=1)
+                                 Buffers: shared hit=66970909 read=7952 dirtied=32, temp read=441528 written=441532
+                                 ->  Incremental Sort  (cost=59988.05..60610.70 rows=44 width=538) (actual time=13274.754..41240.242 rows=3228956 loops=1)
+                                       Sort Key: downstream.origin_id, downstream.waterbody_key, downstream.wscode_ltree DESC, downstream.downstream_route_measure DESC, downstream.id_segment DESC
+                                       Presorted Key: downstream.origin_id
+                                       Full-sort Groups: 61143  Sort Method: quicksort  Average Memory: 92kB  Peak Memory: 97kB
+                                       Pre-sorted Groups: 11478  Sort Method: quicksort  Average Memory: 82kB  Peak Memory: 84kB
+                                       Buffers: shared hit=66906295 read=7847 dirtied=32, temp read=441528 written=441532
+                                       ->  Subquery Scan on downstream  (cost=59973.60..60608.72 rows=44 width=538) (actual time=13274.025..32813.397 rows=3228956 loops=1)
+                                             Buffers: shared hit=55702888 read=7847 dirtied=32, temp read=441528 written=441532
+                                             ->  WindowAgg  (cost=59973.60..60608.28 rows=44 width=538) (actual time=13274.024..32486.845 rows=3228956 loops=1)
+                                                   Buffers: shared hit=55702888 read=7847 dirtied=32, temp read=441528 written=441532
+                                                   ->  Gather Merge  (cost=59973.60..59978.81 rows=44 width=1014) (actual time=13272.946..17274.300 rows=3228956 loops=1)
+                                                         Workers Planned: 3
+                                                         Workers Launched: 3
+                                                         Buffers: shared hit=38372090 read=6291 dirtied=32, temp read=441528 written=441532
+                                                         ->  Sort  (cost=58973.56..58973.60 rows=14 width=1014) (actual time=13210.966..13695.016 rows=807239 loops=4)
+                                                               Sort Key: streams.id_segment, t.wscode_ltree DESC, t.downstream_route_measure DESC, t.id_segment DESC
+                                                               Sort Method: external merge  Disk: 845464kB
+                                                               Buffers: shared hit=36027506 read=6291 dirtied=32, temp read=441528 written=441532
+                                                               Worker 0:  Sort Method: external merge  Disk: 900168kB
+                                                               Worker 1:  Sort Method: external merge  Disk: 883272kB
+                                                               Worker 2:  Sort Method: external merge  Disk: 903320kB
+                                                               ->  Nested Loop  (cost=24.35..58973.29 rows=14 width=1014) (actual time=12.105..9867.148 rows=807239 loops=4)
+                                                                     Buffers: shared hit=28243952 read=6291 dirtied=32
+                                                                     ->  Parallel Seq Scan on streams t  (cost=0.00..53994.40 rows=131 width=533) (actual time=8.963..25.378 rows=17186 loops=4)
+                                                                           Filter: (blue_line_key = watershed_key)
+                                                                           Rows Removed by Filter: 78
+                                                                           Buffers: shared hit=53668
+                                                                     ->  Bitmap Heap Scan on streams  (cost=24.35..38.00 rows=1 width=522) (actual time=0.364..0.567 rows=47 loops=68745)
+                                                                           Recheck Cond: ((blue_line_key = t.blue_line_key) OR (wscode_ltree <@ t.wscode_ltree))
+                                                                           Filter: ((localcode_ltree IS NOT NULL) AND ((channel_width IS NULL) OR (channel_width < '15'::double precision)) AND ((t.blue_line_key <> blue_line_key) OR (t.downstream_route_measure < downstream_route_measure)) AND (((blue_line_key = t.blue_line_key) AND (t.downstream_route_measure <= (downstream_route_measure - '0.001'::double precision))) OR ((wscode_ltree <@ t.wscode_ltree) AND ((subltree(localcode_ltree, 0, nlevel(t.localcode_ltree)) > t.localcode_ltree) OR ((t.wscode_ltree = t.localcode_ltree) AND (wscode_ltree <> t.wscode_ltree)) OR ((wscode_ltree = t.wscode_ltree) AND (blue_line_key <> t.blue_line_key) AND (localcode_ltree > t.localcode_ltree))))) AND st_dwithin(t.geom, geom, '8801.639'::double precision))
+                                                                           Rows Removed by Filter: 81
+                                                                           Heap Blocks: exact=500669
+                                                                           Buffers: shared hit=28190284 read=6291 dirtied=32
+                                                                           ->  BitmapAnd  (cost=24.35..24.35 rows=1 width=0) (actual time=0.338..0.338 rows=0 loops=68745)
+                                                                                 Buffers: shared hit=11024904 read=6031 dirtied=16
+                                                                                 ->  Bitmap Index Scan on streams_geom_gist_idx  (cost=0.00..1.47 rows=8 width=0) (actual time=0.173..0.173 rows=2608 loops=68745)
+                                                                                       Index Cond: (geom && st_expand(t.geom, '8801.639'::double precision))
+                                                                                       Buffers: shared hit=6833167 read=62
+                                                                                 ->  BitmapOr  (cost=22.63..22.63 rows=827 width=0) (actual time=0.155..0.155 rows=0 loops=68745)
+                                                                                       Buffers: shared hit=4191733 read=5969 dirtied=16
+                                                                                       ->  Bitmap Index Scan on streams_blk_idx  (cost=0.00..1.26 rows=18 width=0) (actual time=0.003..0.003 rows=31 loops=68745)
+                                                                                             Index Cond: (blue_line_key = t.blue_line_key)
+                                                                                             Buffers: shared hit=211501 read=356
+                                                                                       ->  Bitmap Index Scan on streams_wscode_gist_idx  (cost=0.00..21.37 rows=809 width=0) (actual time=0.150..0.150 rows=643 loops=68745)
+                                                                                             Index Cond: (wscode_ltree <@ t.wscode_ltree)
+                                                                                             Buffers: shared hit=3961202 read=5432
+                                                   SubPlan 2
+                                                     ->  Subquery Scan on r  (cost=0.42..14.03 rows=1 width=0) (actual time=0.004..0.004 rows=0 loops=3228956)
+                                                           Filter: (((r.blue_line_key <> streams.blue_line_key) OR (r.downstream_route_measure < streams.downstream_route_measure)) AND (((streams.blue_line_key = r.blue_line_key) AND (r.downstream_route_measure <= (streams.downstream_route_measure - '0.001'::double precision))) OR ((streams.wscode_ltree <@ r.wscode_ltree) AND ((subltree(streams.localcode_ltree, 0, nlevel(r.localcode_ltree)) > r.localcode_ltree) OR ((r.wscode_ltree = r.localcode_ltree) AND (streams.wscode_ltree <> r.wscode_ltree)) OR ((streams.wscode_ltree = r.wscode_ltree) AND (streams.blue_line_key <> r.blue_line_key) AND (streams.localcode_ltree > r.localcode_ltree))))) AND (NOT st_dwithin(r.geom, streams.geom, '8801.639'::double precision)))
+                                                           Rows Removed by Filter: 1
+                                                           Buffers: shared hit=17330638 read=1556
+                                                           ->  Limit  (cost=0.42..1.49 rows=1 width=505) (actual time=0.002..0.002 rows=1 loops=3228956)
+                                                                 Buffers: shared hit=12991410 read=1556
+                                                                 ->  Index Scan using streams_blk_drm_idx on streams r_1  (cost=0.42..6.85 rows=6 width=505) (actual time=0.002..0.002 rows=1 loops=3228956)
+                                                                       Index Cond: ((blue_line_key = t.blue_line_key) AND (downstream_route_measure > t.downstream_route_measure))
+                                                                       Buffers: shared hit=12991410 read=1556
+                                 SubPlan 1
+                                   ->  Aggregate  (cost=79.56..79.57 rows=1 width=8) (actual time=0.895..0.895 rows=1 loops=2181)
+                                         Buffers: shared hit=64458 read=105
+                                         ->  Append  (cost=0.29..11.42 rows=5 width=1593) (actual time=0.014..0.024 rows=1 loops=2181)
+                                               Buffers: shared hit=23981 read=38
+                                               ->  Index Scan using fwa_rivers_waterbody_key_idx on fwa_rivers_poly  (cost=0.29..2.51 rows=1 width=3831) (actual time=0.004..0.004 rows=0 loops=2181)
+                                                     Index Cond: (waterbody_key = downstream.waterbody_key)
+                                                     Buffers: shared hit=4864 read=7
+                                               ->  Index Scan using fwa_lakes_waterbody_key_idx on fwa_lakes_poly  (cost=0.42..2.64 rows=1 width=631) (actual time=0.006..0.007 rows=1 loops=2181)
+                                                     Index Cond: (waterbody_key = downstream.waterbody_key)
+                                                     Buffers: shared hit=8157 read=13
+                                               ->  Index Scan using fwa_mmdwbdy_waterbody_key_idx on fwa_manmade_waterbodies_poly  (cost=0.28..2.50 rows=1 width=459) (actual time=0.004..0.004 rows=0 loops=2181)
+                                                     Index Cond: (waterbody_key = downstream.waterbody_key)
+                                                     Buffers: shared hit=4371 read=3
+                                               ->  Index Scan using fwa_wetlands_waterbody_key_idx on fwa_wetlands_poly  (cost=0.42..3.75 rows=2 width=1521) (actual time=0.007..0.008 rows=0 loops=2181)
+                                                     Index Cond: (waterbody_key = downstream.waterbody_key)
+                                                     Buffers: shared hit=6589 read=15
+ Planning:
+   Buffers: shared hit=1338
+ Planning Time: 10.346 ms
+ Execution Time: 58907.466 ms
+(99 rows)
+

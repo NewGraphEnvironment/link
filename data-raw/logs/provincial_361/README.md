@@ -40,6 +40,7 @@ idled until the consolidate at 17:24: link#369.
 | `split_test_diff_streams_access_NATR.csv`, `split_test_diff_streams_access_TOOD.csv` | the two access differences, per column: NATR 2 segments, TOOD 2 |
 | `split_tood_probe.csv` | TOOD's two segments and the 140 natural barriers downstream of them in `fresh_default` (FROG, LKEC, UKEC, ULRD), none in the scratch schema |
 | `split_column_joins.csv` | the per-column join of the split build on the reference: rows joined, rows differing and the largest difference for `streams` lengths and geometry and `barriers` positions; the gate-blanked habitat rows in MILL and LPCE |
+| `stall_walk_{holb,ktsu,okan}_explain_analyze.{sql,out}`, `stall_walk_mk_explain.R` | the near-river walk re-run under `EXPLAIN ANALYZE` on the working tables the run left: HOLB 2.7 s, KTSU 3.0 s, OKAN 58.9 s (the statement that ran over four hours in the run) |
 | `hostcheck_build_MILL.log`, `hostcheck_build_LPCE.log` | the same-host control: MILL and LPCE rebuilt on m1 alone into `fresh_361c` |
 | `split_verdict.md` | every differing digest traced: cross-host arithmetic at ≤ 3.7e-9 m (the reference Peace was built on an amd64 cloud host), or the test's 26-group scope (NATR's two Fraser-coded segments and TOOD's two, whose downstream barriers are TAKL's and FROG's, LKEC's, UKEC's and ULRD's). Nothing attributable to the order. **Verdict: a component can be split across hosts.** |
 
