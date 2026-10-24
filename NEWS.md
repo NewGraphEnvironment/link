@@ -1,3 +1,13 @@
+# link 0.68.4
+
+**Each cloud host is consolidated and burned as soon as its own leg ends** ([#369](https://github.com/NewGraphEnvironment/link/issues/369)), while the other legs keep modelling. Before this, every host waited for the slowest leg and one consolidate of all of them.
+
+- **`study_area_run.sh` finishes each cypher as its leg ends** (`data-raw/study_area_legs.sh`: account, consolidate that one source, release, burn). The dispatcher's persist is initialised and backed up once, before any leg writes; the dump runs in the background through spin and prep. A host whose bucket overlaps the dispatcher's waits for the dispatcher leg, and a consolidate with no outcome keeps its host and its groups `in_flight`. The driver now needs bash 5.1 or later.
+- **`lnk_persist_init()` and the log-table setup skip `CREATE INDEX IF NOT EXISTS` / `ADD COLUMN IF NOT EXISTS` when the catalog already has the index or column.** Both no-ops take their table lock before finding the work done, so each group's init waited behind a running consolidate `COPY`.
+- **`schema_consolidate()` judges a copy on the bucket's rows**, refuses a destination without link's core persist tables before deleting anything, logs each table's copy time, and backs up through `schema_consolidate_backup()`, which stops when `pg_dump` fails.
+- **A dispatcher run from a git worktree no longer logs `link_sha` NULL.** `.lnk_read_git_head()` now resolves the common dir, `packed-refs` and relative `gitdir:` pointers.
+- Three small runs on real droplets: both cyphers burned 6.5 and 12.8 min before the dispatcher leg ended, a refused host was kept with its burn command, and both verifiers pass. The provincial-scale measurement is still owed (#369 stays open for it). Mechanics: RUNBOOK §8d, "Each cloud host is consolidated when its own leg ends". Evidence: `data-raw/logs/consolidate_on_finish_369/`.
+
 # link 0.68.3
 
 **A run records when each phase started and ended, per host** ([#375](https://github.com/NewGraphEnvironment/link/issues/375)). Driver changes only; no modelling code moved.
