@@ -1,5 +1,29 @@
 # Changelog
 
+## link 0.68.2
+
+**A runaway modelling statement fails its own group**
+([\#371](https://github.com/NewGraphEnvironment/link/issues/371)).
+Driver changes, plus one internal helper; no modelling code moved.
+
+- **`study_area_run.sh --statement-timeout=<minutes>`** (default 30, 1
+  to 1440) bounds every modelling statement, as
+  `PGOPTIONS='-c statement_timeout=<N>min'` on both legs, with
+  `LNK_STATEMENT_TIMEOUT_MIN` beside it. `wsg_run_one.R` prints each
+  group’s bound and refuses a connection whose bound differs, so a leg
+  that lost the setting fails its first group instead of running
+  unbound. The recompute keeps its own 10 min per statement. The default
+  comes from 2026-10-23, where the longest finished group took 16.3 min
+  in total (SETN).
+- **A cancelled statement is named.** `wsg_run_one.R` writes
+  `TIMEOUT after <bound>: <statement>`, from the stack in a calling
+  handler, or from `.lnk_db_execute()`’s `Statement:` when a transaction
+  re-threw the error. The INCOMPLETE summary lists the group under
+  `statement bound hit:` with a re-model command carrying the run’s
+  bound, and `LNK_TEST_STALL_WSG` stalls one group to exercise it.
+- Mechanics: RUNBOOK §8d, “A runaway statement fails its group”.
+  Evidence: `data-raw/logs/statement_timeout_371/`.
+
 ## link 0.68.1
 
 **The province-wide `default` run is built at 0.68.0, and a drainage

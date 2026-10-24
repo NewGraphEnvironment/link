@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.68.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.68.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,15 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.68.2" id="link-0682">link 0.68.2<a class="anchor" aria-label="anchor" href="#link-0682"></a></h2>
+<p><strong>A runaway modelling statement fails its own group</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/371" class="external-link">#371</a>). Driver changes, plus one internal helper; no modelling code moved.</p>
+<ul><li>
+<strong><code>study_area_run.sh --statement-timeout=&lt;minutes&gt;</code></strong> (default 30, 1 to 1440) bounds every modelling statement, as <code>PGOPTIONS='-c statement_timeout=&lt;N&gt;min'</code> on both legs, with <code>LNK_STATEMENT_TIMEOUT_MIN</code> beside it. <code>wsg_run_one.R</code> prints each group’s bound and refuses a connection whose bound differs, so a leg that lost the setting fails its first group instead of running unbound. The recompute keeps its own 10 min per statement. The default comes from 2026-10-23, where the longest finished group took 16.3 min in total (SETN).</li>
+<li>
+<strong>A cancelled statement is named.</strong> <code>wsg_run_one.R</code> writes <code>TIMEOUT after &lt;bound&gt;: &lt;statement&gt;</code>, from the stack in a calling handler, or from <code>.lnk_db_execute()</code>’s <code>Statement:</code> when a transaction re-threw the error. The INCOMPLETE summary lists the group under <code>statement bound hit:</code> with a re-model command carrying the run’s bound, and <code>LNK_TEST_STALL_WSG</code> stalls one group to exercise it.</li>
+<li>Mechanics: RUNBOOK §8d, “A runaway statement fails its group”. Evidence: <code>data-raw/logs/statement_timeout_371/</code>.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.68.1" id="link-0681">link 0.68.1<a class="anchor" aria-label="anchor" href="#link-0681"></a></h2>
 <p><strong>The province-wide <code>default</code> run is built at 0.68.0, and a drainage component can be split across hosts</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/361" class="external-link">#361</a>). Driver and verifier changes only; no modelling code moved.</p>
