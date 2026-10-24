@@ -29,7 +29,7 @@
 #
 # Globals read (set by the driver, or by the test):
 #   SCHEMA RUN_UID TS LOG_DIR CYPHER_DIR CYPHER_TF KEEP_CYPHERS CYPHERS_UP
-#   CY_WS_ARR (array); CY_IP HOST_SSH HOST_BUCKET HOST_RUN_RC (assoc, keyed by
+#   HOST_ARR (array); CY_IP HOST_SSH HOST_BUCKET HOST_RUN_RC (assoc, keyed by
 #   workspace; HOST_SSH is the ssh target, cypher@<ip> for a cloud host)
 #   HOST_CONS_FAIL (assoc: the stage at which consolidate failed for a source,
 #   set by consolidate_outcomes in study_area_finish.sh, link#358)
@@ -50,7 +50,7 @@
 #
 # Needs bash >= 4 (assoc arrays), as the driver does.
 
-declare -A CY_IP HOST_SSH HOST_BUCKET HOST_RUN_RC HOST_HOLD CY_BURNED HOST_UNCONS HOST_PARTIAL HOST_WHY
+declare -A CY_IP HOST_SSH HOST_KIND HOST_BUCKET HOST_RUN_RC HOST_HOLD CY_BURNED HOST_UNCONS HOST_PARTIAL HOST_WHY
 declare -A HOST_PRE HOST_PRE_STATE HOST_DOUBT HOST_CONS_FAIL HOST_LEG_DONE HOST_CONS_STATE HOST_BUCKET_DONE
 declare -A ACC_STATE ACC_FINISHED ACC_DONE_LOG ACC_SKIP
 
@@ -69,6 +69,22 @@ declare -A ACC_STATE ACC_FINISHED ACC_DONE_LOG ACC_SKIP
     '\echo __LNK_END__'
 }
 
+# .hosts_psql <local|ssh target>: run the psql script on stdin against that
+# host's database and print what it prints. Its exit status means nothing
+# (ssh can exit 0 whatever ran), so every caller frames its script with
+# sentinels and judges the output. The remote route is the one
+# schema_consolidate.R uses (docker exec into fresh-db).
+.hosts_psql() {
+  if [ "$1" = "local" ]; then
+    PGPASSWORD=postgres psql -h localhost -p 5432 -U postgres -d fwapg \
+      -X -q -t -A -v ON_ERROR_STOP=1 2>/dev/null
+  else
+    ssh -o ConnectTimeout=20 -o BatchMode=yes "$1" \
+      'docker exec -i fresh-db psql -U postgres -d fwapg -X -q -t -A -v ON_ERROR_STOP=1' \
+      2>/dev/null
+  fi
+}
+
 # .hosts_query <local|ssh target> <table> <condition> [strict]: prints the groups, one
 # per line. Returns 0 when the database answered, 1 when it did not. With
 # strict=1 a missing table is "did not answer" too.
@@ -82,15 +98,7 @@ declare -A ACC_STATE ACC_FINISHED ACC_DONE_LOG ACC_SKIP
 .hosts_query() {
   local where="$1" strict="${4:-0}" out
   [ -n "$where" ] || return 1
-  if [ "$where" = "local" ]; then
-    out=$(.hosts_wsg_sql "$2" "$3" | PGPASSWORD=postgres psql -h localhost -p 5432 \
-      -U postgres -d fwapg -X -q -t -A -v ON_ERROR_STOP=1 2>/dev/null) || true
-  else
-    out=$(.hosts_wsg_sql "$2" "$3" | ssh -o ConnectTimeout=20 -o BatchMode=yes \
-      "$where" \
-      'docker exec -i fresh-db psql -U postgres -d fwapg -X -q -t -A -v ON_ERROR_STOP=1' \
-      2>/dev/null) || true
-  fi
+  out=$(.hosts_wsg_sql "$2" "$3" | .hosts_psql "$where") || true
   printf '%s\n' "$out" | awk -v strict="$strict" '
     $0 == "__LNK_BEGIN__" { if (begun) bad = 1; begun = 1; next }
     $0 == "__LNK_NOTABLE__" { if (!begun || ended) bad = 1; notable = 1; next }
@@ -148,11 +156,11 @@ host_baseline() {
     HOST_PRE[$ws]=$(.hosts_union "$(printf '%s\n' "$pre" | .hosts_csv)" \
       "$(printf '%s\n' "$mc" | .hosts_csv)")
     [ -z "${HOST_PRE[$ws]}" ] || \
-      echo "  NOTE: cy[$ws]: rows before dispatch (from its image) for: ${HOST_PRE[$ws]}"
+      echo "  NOTE: $(.hosts_label "$ws"): rows before dispatch (from its image) for: ${HOST_PRE[$ws]}"
   else
     HOST_PRE_STATE[$ws]=unknown
     HOST_PRE[$ws]=""
-    echo "  WARN: cy[$ws]: could not read its streams before dispatch; mapping-code rows will not count as finished"
+    echo "  WARN: $(.hosts_label "$ws"): could not read its streams before dispatch; mapping-code rows will not count as finished"
   fi
   return 0
 }
@@ -282,7 +290,7 @@ host_log_reported() {
 host_account() {
   local key="$1" where="$2" log="$3" expected="$4" label fin
   local acc missing extra hidden phantom exp_n acc_n
-  if [ "$key" = "dispatcher" ]; then label="dispatcher"; else label="cy[$key]"; fi
+  if [ "$key" = "dispatcher" ]; then label="dispatcher"; else label=$(.hosts_label "$key"); fi
   if fin=$(host_finished "$where"); then
     ACC_STATE[$key]=known
   else
@@ -296,7 +304,7 @@ host_account() {
   # was attempted for, unless the dispatcher's own bucket has it.
   if [ "$key" = "dispatcher" ]; then
     local ws copied=""
-    for ws in ${CY_WS_ARR[@]+"${CY_WS_ARR[@]}"}; do
+    for ws in ${HOST_ARR[@]+"${HOST_ARR[@]}"}; do
       [ -n "${HOST_CONS_STATE[$ws]:-}" ] || continue
       copied=$(.hosts_union "$copied" "${HOST_BUCKET_DONE[$ws]:-}")
     done
@@ -367,17 +375,67 @@ host_release() {
     HOST_WHY[$ws]="groups of unknown provenance left ($(.hosts_doubt_why "$ws")): ${HOST_DOUBT[$ws]}"
   else
     HOST_HOLD[$ws]=0
-    echo "  ✓ cy[$ws]: no finished group left on the host after consolidate — may be burned"
+    if .hosts_is_worker "$ws"; then
+      echo "  ✓ $(.hosts_label "$ws"): no finished group left on the host after consolidate — may be released"
+    else
+      echo "  ✓ cy[$ws]: no finished group left on the host after consolidate — may be burned"
+    fi
     [ -z "${HOST_PARTIAL[$ws]}" ] || \
-      echo "    note: cy[$ws]: partial groups left there (failed builds, not consolidated; rebuild them): ${HOST_PARTIAL[$ws]}"
+      echo "    note: $(.hosts_label "$ws"): partial groups left there (failed builds, not consolidated; rebuild them): ${HOST_PARTIAL[$ws]}"
     return 0
   fi
-  echo "  ✗ cy[$ws]: ${HOST_WHY[$ws]} — KEEPING it${HOST_UNCONS[$ws]:+ (groups: ${HOST_UNCONS[$ws]})}"
+  echo "  ✗ $(.hosts_label "$ws"): ${HOST_WHY[$ws]} — KEEPING it${HOST_UNCONS[$ws]:+ (groups: ${HOST_UNCONS[$ws]})}"
   return 0
 }
 
-# Droplet name for a tofu workspace (rtj env/do/dev/cypher/main.tf:25-26).
+# A host's kind (link#376): `cypher` (a cloud host the driver spins and
+# burns; the default, so a map left unset reads as before) or `worker` (a
+# persistent machine reached by its own ssh target, never spun or burned).
+.hosts_kind() { echo "${HOST_KIND[$1]:-cypher}"; }
+.hosts_is_worker() { [ "${HOST_KIND[$1]:-cypher}" = "worker" ]; }
+# How a host is named in the driver's output: cy[<workspace>] for a cloud
+# host, its key (worker1, ...) for a worker. Never a worker's ssh target,
+# which is the operator's infrastructure, not evidence.
+.hosts_label() {
+  if .hosts_is_worker "$1"; then echo "$1"; else echo "cy[$1]"; fi
+}
+
+# host_drop_partials <ws>: on a RELEASED worker, delete its partial groups
+# (HOST_PARTIAL: failed builds whose pre-persist left rows, never consolidated)
+# from every persist table, so the next run's prior-rows check finds the
+# worker clean (link#376). Log tables keep their rows: a partial group's open
+# log row is the only record of its failure. Only where nothing could be
+# another build's: the host is settled and its baseline was known and empty.
+# A cloud host is burned instead, so it is never touched here. Judged on the
+# sentinels framing the script; a drop that did not finish returns 1, and the
+# rows left make the next run's prep refuse the worker, so it fails closed.
+host_drop_partials() {
+  local ws="$1" arr out
+  .hosts_is_worker "$ws" || return 0
+  [ "${HOST_HOLD[$ws]:-1}" = "0" ] || return 0
+  [ -n "${HOST_PARTIAL[$ws]:-}" ] || return 0
+  if ! .hosts_settled "$ws" || [ "${HOST_PRE_STATE[$ws]:-unknown}" != "known" ] \
+     || [ -n "${HOST_PRE[$ws]:-}" ]; then
+    echo "    note: $(.hosts_label "$ws"): not dropping its partial groups (${HOST_PARTIAL[$ws]}): its rows before dispatch were not known empty, or it is not settled; the next run refuses it until they are gone"
+    return 0
+  fi
+  arr="{${HOST_PARTIAL[$ws]}}"
+  out=$(printf '%s\n' \
+    '\echo __LNK_BEGIN__' \
+    "SELECT format('DELETE FROM %I.%I WHERE watershed_group_code = ANY (%L::text[])', c.table_schema, c.table_name, '$arr') FROM information_schema.columns c JOIN information_schema.tables t USING (table_schema, table_name) WHERE c.table_schema = '${SCHEMA}' AND c.column_name = 'watershed_group_code' AND t.table_type = 'BASE TABLE' AND c.table_name !~ '^log(_|\$)' ORDER BY c.table_name \\gexec" \
+    '\echo __LNK_END__' | .hosts_psql "${HOST_SSH[$ws]:-}") || true
+  if printf '%s\n' "$out" | awk '$0 == "__LNK_BEGIN__" { b = 1 } $0 == "__LNK_END__" && b { e = 1 } END { exit !e }'; then
+    echo "    $(.hosts_label "$ws"): dropped partial groups ${HOST_PARTIAL[$ws]} from its persist tables (log rows kept)"
+    return 0
+  fi
+  echo "  WARN: $(.hosts_label "$ws"): the drop of partial groups ${HOST_PARTIAL[$ws]} did not finish; the next run refuses this worker until they are gone"
+  return 1
+}
+
+# Droplet name for a tofu workspace (rtj env/do/dev/cypher/main.tf:25-26); a
+# worker has none.
 host_droplet_name() {
+  if .hosts_is_worker "$1"; then echo "-"; return; fi
   if [ "$1" = "default" ]; then echo "cypher"; else echo "cypher-${1//_/-}"; fi
 }
 
@@ -416,7 +474,7 @@ hosts_preflight_droplets() {
 .hosts_keep_reason() {
   local cause
   cause=$(.hosts_keep_cause "$1")
-  if [ "$KEEP_CYPHERS" = "1" ]; then
+  if [ "$KEEP_CYPHERS" = "1" ] && ! .hosts_is_worker "$1"; then
     echo "${cause:+$cause; }--keep-cyphers"
   else
     echo "$cause"
@@ -429,13 +487,24 @@ hosts_preflight_droplets() {
 # through. With `ended`, hosts whose leg has not ended (HOST_LEG_DONE) are left
 # out entirely: a burn after one host's consolidate must not list a host that
 # is still modelling as kept (link#369). The trap passes nothing: every host.
+#
+# A worker (link#376) is never burned. Held, it is listed as kept, like a
+# cloud host; released, or never dispatched, it is neither. So this also runs
+# on a run with workers and no cyphers (WORKERS_UP), or a held worker would
+# go unreported. --keep-cyphers keeps cloud hosts only.
 burn_cyphers() {
   local rc=$?
-  [ "${CYPHERS_UP:-0}" = "1" ] || return $rc
+  [ "${CYPHERS_UP:-0}" = "1" ] || [ "${WORKERS_UP:-0}" = "1" ] || return $rc
   local scope="${1:-all}" ws burn=() keep=() clean=1 n dl name doctl_ok why
-  for ws in "${CY_WS_ARR[@]}"; do
+  for ws in ${HOST_ARR[@]+"${HOST_ARR[@]}"}; do
     [ "${CY_BURNED[$ws]:-0}" = "1" ] && continue
     [ "$scope" != "ended" ] || [ "${HOST_LEG_DONE[$ws]:-0}" = "1" ] || continue
+    if .hosts_is_worker "$ws"; then
+      [ "${HOST_HOLD[$ws]:-0}" = "1" ] && keep+=("$ws")
+      continue
+    fi
+    # A cloud host is burned only once its spin started (CYPHERS_UP).
+    [ "${CYPHERS_UP:-0}" = "1" ] || continue
     if [ "$KEEP_CYPHERS" = "1" ] || [ "${HOST_HOLD[$ws]:-0}" = "1" ]; then
       keep+=("$ws")
     else
@@ -503,7 +572,7 @@ burn_cyphers() {
 # No IP in the file: redact_log_addresses rewrites every ${TS}_* file, so it
 # names the command that prints one.
 hosts_kept_report() {
-  local tsv="$LOG_DIR/${TS}_kept_hosts.tsv" ws check measured
+  local tsv="$LOG_DIR/${TS}_kept_hosts.tsv" ws check measured ipc bc n_cy=0
   KEPT_N=$#
   KEPT_CAUSE_N=0
   if [ "$#" -eq 0 ]; then
@@ -511,7 +580,12 @@ hosts_kept_report() {
     return 0
   fi
   printf 'workspace\tdroplet\treason\trun_uid\tschema\tgroups\tgroups_partial\tgroups_unknown\tgroups_measured\tip_command\tburn_command\n' > "$tsv"
-  echo "=== HOSTS KEPT ($#) — still running and billed ==="
+  for ws in "$@"; do .hosts_is_worker "$ws" || n_cy=$((n_cy + 1)); done
+  if [ "$n_cy" -gt 0 ]; then
+    echo "=== HOSTS KEPT ($#) — still running and billed ==="
+  else
+    echo "=== HOSTS KEPT ($#) — holding this run's groups ==="
+  fi
   for ws in "$@"; do
     [ -z "$(.hosts_keep_cause "$ws")" ] || KEPT_CAUSE_N=$((KEPT_CAUSE_N + 1))
     check=$(.hosts_union "${HOST_BUCKET[$ws]:-}" "${ACC_FINISHED[$ws]:-}" \
@@ -524,12 +598,20 @@ hosts_kept_report() {
       HOST_DOUBT[$ws]=""
       measured=no
     fi
+    # A worker's target is the operator's own and never written here: the
+    # file is committed as evidence (link#376).
+    if .hosts_is_worker "$ws"; then
+      ipc="the --workers= target given for $ws"
+      bc="none (persistent worker; nothing to burn)"
+    else
+      ipc="cd $CYPHER_TF && TF_WORKSPACE=$ws tofu output -raw droplet_ip"
+      bc="cd $CYPHER_DIR && ./cypher_down.sh --workspace $ws"
+    fi
     printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$ws" "$(host_droplet_name "$ws")" \
       "$(.hosts_keep_reason "$ws")" "$RUN_UID" "$SCHEMA" "${HOST_UNCONS[$ws]}" \
       "${HOST_PARTIAL[$ws]:-}" "${HOST_DOUBT[$ws]:-}" "$measured" \
-      "cd $CYPHER_TF && TF_WORKSPACE=$ws tofu output -raw droplet_ip" \
-      "cd $CYPHER_DIR && ./cypher_down.sh --workspace $ws" >> "$tsv"
-    echo "  cy[$ws] ($(host_droplet_name "$ws")): $(.hosts_keep_reason "$ws")"
+      "$ipc" "$bc" >> "$tsv"
+    echo "  $(.hosts_label "$ws") ($(host_droplet_name "$ws")): $(.hosts_keep_reason "$ws")"
     [ "$measured" = "no" ] || [ -z "${HOST_DOUBT[$ws]:-}" ] || \
       echo "    unknown provenance ($(.hosts_doubt_why "$ws"); check before consolidating): ${HOST_DOUBT[$ws]}"
     if [ "$measured" = "yes" ]; then
@@ -546,7 +628,8 @@ hosts_kept_report() {
       echo "    host did not answer; candidates (NOT measured): ${HOST_UNCONS[$ws]:-none}"
     fi
   done
-  echo "  To recover: get each host's address (ip_command). Consolidate ONLY the"
+  echo "  To recover: get each host's address (ip_command; a worker's is its"
+  echo "  --workers= target). Consolidate ONLY the"
   echo "  groups column, and only where groups_measured = yes; where it says"
   echo "  unsettled, wait until nothing runs there (the remote loop, and"
   echo "  schema_consolidate on this machine) and re-measure; where it says"
@@ -566,8 +649,14 @@ hosts_kept_report() {
   echo "   --run-uid=$RUN_UID --config=<config> --schema=$SCHEMA${RUN_LABEL:+ --run-label=$RUN_LABEL}"
   echo "   --wsgs=<the run's groups>; one group: LNK_RUN_UID=$RUN_UID ${RUN_LABEL:+LNK_RUN_LABEL=$RUN_LABEL }LNK_SCHEMA=$SCHEMA"
   echo "   LNK_LOAD=loadall Rscript data-raw/wsg_recompute_one.R <WSG> <config>)."
-  echo "  Then burn:"
-  for ws in "$@"; do echo "    cd $CYPHER_DIR && ./cypher_down.sh --workspace $ws"; done
+  if [ "$n_cy" -gt 0 ]; then
+    echo "  Then burn:"
+    for ws in "$@"; do
+      .hosts_is_worker "$ws" || echo "    cd $CYPHER_DIR && ./cypher_down.sh --workspace $ws"
+    done
+  fi
+  [ "$n_cy" = "$#" ] || \
+    echo "  A worker is not burned: once its groups are consolidated it is left as it is."
   echo "  Recorded in $tsv"
   return 0
 }

@@ -231,7 +231,7 @@ test_that("a missing group in a kept host's bucket defers to kept_hosts.tsv, the
   # Host a is held: whatever its measured state, its groups are settled per
   # kept_hosts.tsv first. Host b was released, so its bucket is re-modelled.
   r <- run_finish_sh(w, sc, c(
-    "CY_WS_ARR=(a b); HOST_BUCKET[a]=CCCC,DDDD; HOST_HOLD[a]=1",
+    "HOST_ARR=(a b); HOST_BUCKET[a]=CCCC,DDDD; HOST_HOLD[a]=1",
     "HOST_BUCKET[b]=GGGG; HOST_HOLD[b]=0",
     "RUN_LABEL=prov-246",
     "run_finish AAAA,CCCC,DDDD,GGGG ''"
@@ -250,7 +250,7 @@ test_that("--recompute-only lists the groups an earlier kept_hosts.tsv names apa
   sc <- finish_fixture(conn)
   w <- finish_world()
   r <- run_finish_sh(w, sc, c(
-    "CY_WS_ARR=(); KEPT_TSV_GROUPS=CCCC",
+    "HOST_ARR=(); KEPT_TSV_GROUPS=CCCC",
     "run_finish AAAA,CCCC,GGGG ''"
   ))
   expect_equal(r$status, 1L, info = r$out)
@@ -296,7 +296,7 @@ test_that("a full run expects every bucket less SKIPs no host finished, with eve
   skip_if_no_finish_lib()
   w <- finish_world()
   r <- run_finish_sh(w, "unused", c(
-    "DISP_BUCKET=AAAA,BBBB,SSSS; CY_WS_ARR=(a b)",
+    "DISP_BUCKET=AAAA,BBBB,SSSS; HOST_ARR=(a b)",
     "HOST_BUCKET[a]=CCCC,DDDD; HOST_BUCKET[b]=EEEE,TTTT",
     "ACC_FINISHED[dispatcher]=AAAA; ACC_DONE_LOG[dispatcher]=BBBB",
     "ACC_SKIP[dispatcher]=SSSS; ACC_SKIP[a]=EEEE; ACC_SKIP[b]=TTTT",
@@ -421,7 +421,7 @@ test_that("run_wsgs_write records every host's bucket, then each host's SKIPs on
   w <- finish_world()
   tsv <- file.path(w, "logs", "T0_run_wsgs.tsv")
   set_buckets <- c(
-    "DISP_BUCKET=AAAA,SSSS; CY_WS_ARR=(job1 job2)",
+    "DISP_BUCKET=AAAA,SSSS; HOST_ARR=(job1 job2)",
     "HOST_BUCKET[job1]=CCCC,DDDD; HOST_BUCKET[job2]=DDDD,EEEE"
   )
   r <- run_finish_sh(w, "unused", c(set_buckets, sprintf("run_wsgs_write %s", shQuote(tsv))))
@@ -570,7 +570,7 @@ cons_tsv <- function(w, rows) {
 }
 
 cons_setup <- c(
-  "CY_WS_ARR=(a b c); CY_IP[a]=ip-a; CY_IP[b]=ip-b; CY_IP[c]=ip-c; HOST_SSH[a]=cypher@ip-a; HOST_SSH[b]=cypher@ip-b; HOST_SSH[c]=cypher@ip-c",
+  "HOST_ARR=(a b c); CY_IP[a]=ip-a; CY_IP[b]=ip-b; CY_IP[c]=ip-c; HOST_SSH[a]=cypher@ip-a; HOST_SSH[b]=cypher@ip-b; HOST_SSH[c]=cypher@ip-c",
   "HOST_BUCKET[a]=CCCC,DDDD; HOST_BUCKET[b]=EEEE; HOST_BUCKET[c]=FFFF",
   # c reported nothing, so it was never a source.
   "HOST_BUCKET_DONE[a]=CCCC,DDDD; HOST_BUCKET_DONE[b]=EEEE; HOST_BUCKET_DONE[c]=''"
@@ -627,7 +627,7 @@ test_that("a refused source's groups are not recomputed; the others are, and the
   # BBBB came from host a, whose consolidate was refused; its rows here, and
   # its closed log row, belong to some other copy. AAAA came from elsewhere.
   r <- run_finish_sh(w, sc, c(
-    "CY_WS_ARR=(a); HOST_BUCKET[a]=BBBB; HOST_HOLD[a]=1",
+    "HOST_ARR=(a); HOST_BUCKET[a]=BBBB; HOST_HOLD[a]=1",
     "run_finish AAAA,BBBB '' BBBB"
   ))
   expect_equal(r$status, 1L, info = r$out)
@@ -762,7 +762,7 @@ test_that("a kept host's group finished outside its bucket is settled there, not
   # ZZZZ: finished by a outside its bucket, still on the kept host
   # (HOST_UNCONS, which kept_hosts.tsv writes), and excluded with a's bucket.
   r <- run_finish_sh(w, sc, c(
-    "CY_WS_ARR=(a); HOST_BUCKET[a]=BBBB; HOST_HOLD[a]=1; HOST_UNCONS[a]=BBBB,ZZZZ",
+    "HOST_ARR=(a); HOST_BUCKET[a]=BBBB; HOST_HOLD[a]=1; HOST_UNCONS[a]=BBBB,ZZZZ",
     "run_finish AAAA '' BBBB,ZZZZ"
   ))
   expect_equal(r$status, 1L, info = r$out)

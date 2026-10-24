@@ -20,8 +20,8 @@
 # Globals read: SCHEMA RUN_UID CONFIG TS LOG_DIR REPO_ROOT RECOMPUTE_JOBS
 #   RUN_INCOMPLETE RECOMPUTE_FAIL RECOMPUTE_FAIL_STAGE (initialised by the
 #   driver); with a default: KEPT_CAUSE_N RUN_LABEL KEPT_TSV_GROUPS; run_expected_from_hosts
-#   also reads DISP_BUCKET CY_WS_ARR HOST_BUCKET HOST_BUCKET_DONE ACC_FINISHED
-#   ACC_DONE_LOG ACC_SKIP; run_wsgs_write reads DISP_BUCKET CY_WS_ARR
+#   also reads DISP_BUCKET HOST_ARR HOST_BUCKET HOST_BUCKET_DONE ACC_FINISHED
+#   ACC_DONE_LOG ACC_SKIP; run_wsgs_write reads DISP_BUCKET HOST_ARR
 #   HOST_BUCKET ACC_SKIP
 # Functions read: .hosts_query host_finished .hosts_* (study_area_hosts.sh);
 #   csv_count recompute_order run_recompute_pool (study_area_run.sh);
@@ -32,7 +32,7 @@
 #   RECOMPUTE_FAIL RECOMPUTE_FAIL_STAGE RECOMPUTE_RAN; run_expected_from_hosts
 #   writes RUN_EXPECT RUN_SIGNALS RUN_SKIP; consolidate_outcomes writes
 #   CONS_FAILED CONS_EXCLUDED HOST_CONS_FAIL (declared in study_area_hosts.sh);
-#   consolidate_state_write reads CY_WS_ARR HOST_BUCKET_DONE HOST_CONS_FAIL
+#   consolidate_state_write reads HOST_ARR HOST_BUCKET_DONE HOST_CONS_FAIL
 #   HOST_CONS_STATE HOST_CONS_UTC;
 #   run_expected_recompute_only writes RO_EXPECT RO_EXCLUDED; run_timeouts
 #   writes TIMED_OUT TIMEOUT_LINES RUN_BOUND
@@ -61,7 +61,7 @@ run_expected_from_hosts() {
   skip="${ACC_SKIP[dispatcher]:-}"
   RUN_SIGNALS=$(.hosts_union "${ACC_FINISHED[dispatcher]:-}" "${ACC_DONE_LOG[dispatcher]:-}")
   finished="$RUN_SIGNALS"
-  for ws in "${CY_WS_ARR[@]}"; do
+  for ws in "${HOST_ARR[@]}"; do
     all=$(.hosts_union "$all" "${HOST_BUCKET[$ws]:-}")
     skip=$(.hosts_union "$skip" "${ACC_SKIP[$ws]:-}")
     finished=$(.hosts_union "$finished" "${HOST_BUCKET_DONE[$ws]:-}")
@@ -93,7 +93,7 @@ run_wsgs_write() {
     for w in $(.hosts_lines "${DISP_BUCKET:-}"); do
       printf '%s\t%s\t%s\t%s\t%s\n' "$w" dispatcher "$(.run_wsgs_skip dispatcher "$w")" "$RUN_UID" "$mode"
     done
-    for ws in ${CY_WS_ARR[@]+"${CY_WS_ARR[@]}"}; do
+    for ws in ${HOST_ARR[@]+"${HOST_ARR[@]}"}; do
       for w in $(.hosts_lines "${HOST_BUCKET[$ws]:-}"); do
         printf '%s\t%s\t%s\t%s\t%s\n' "$w" "$ws" "$(.run_wsgs_skip "$ws" "$w")" "$RUN_UID" "$mode"
       done
@@ -160,12 +160,12 @@ consolidate_outcomes() {
   local tsv="$1" only="${2:-}" ws row ok stage groups missing=""
   [ -n "$only" ] || { CONS_FAILED=""; CONS_EXCLUDED=""; }
   [ -r "$tsv" ] || { echo "  ✗ no consolidate outcomes at $tsv"; return 1; }
-  for ws in ${CY_WS_ARR[@]+"${CY_WS_ARR[@]}"}; do
+  for ws in ${HOST_ARR[@]+"${HOST_ARR[@]}"}; do
     [ -z "$only" ] || [ "$ws" = "$only" ] || continue
     [ -n "${HOST_BUCKET_DONE[$ws]:-}" ] || continue
     row=$(awk -F'\t' -v h="${HOST_SSH[$ws]:-}" 'NR > 1 && $1 == h { print; exit }' "$tsv")
     if [ -z "$row" ]; then
-      missing="$missing cy[$ws]"
+      missing="$missing $(.hosts_label "$ws")"
       continue
     fi
     IFS=$'\t' read -r _ ok stage groups <<< "$row"
@@ -173,7 +173,7 @@ consolidate_outcomes() {
     HOST_CONS_FAIL[$ws]="${stage:-unknown}"
     CONS_FAILED="${CONS_FAILED:+$CONS_FAILED }$ws"
     CONS_EXCLUDED=$(.hosts_union "$CONS_EXCLUDED" "${HOST_BUCKET_DONE[$ws]}")
-    echo "  ✗ cy[$ws]: consolidate failed at stage ${HOST_CONS_FAIL[$ws]}; its bucket is not consolidated: ${HOST_BUCKET_DONE[$ws]}"
+    echo "  ✗ $(.hosts_label "$ws"): consolidate failed at stage ${HOST_CONS_FAIL[$ws]}; its bucket is not consolidated: ${HOST_BUCKET_DONE[$ws]}"
     [ "${HOST_CONS_FAIL[$ws]}" != "dest_log_newer" ] || \
       echo "    the dispatcher's newest log row is not this host's for: ${groups:-?} (nothing was deleted or copied)"
   done
@@ -203,7 +203,7 @@ consolidate_state_write() {
   local path="$1" state="${2:-}" ws w st
   {
     printf 'wsg\tworkspace\tstate\trun_uid\tstate_utc\n'
-    for ws in ${CY_WS_ARR[@]+"${CY_WS_ARR[@]}"}; do
+    for ws in ${HOST_ARR[@]+"${HOST_ARR[@]}"}; do
       st="${state:-${HOST_CONS_STATE[$ws]:-}}"
       [ -n "$st" ] || continue
       [ -z "${HOST_CONS_FAIL[$ws]:-}" ] || [ "${HOST_CONS_FAIL[$ws]}" = "no_outcome" ] \
@@ -726,7 +726,7 @@ run_finish_report() {
         # finish a group outside its bucket, and a failed consolidate source
         # puts that group in COV_MISSING (#358, code-check round 3).
         local ws held="" on_kept remodel
-        for ws in ${CY_WS_ARR[@]+"${CY_WS_ARR[@]}"}; do
+        for ws in ${HOST_ARR[@]+"${HOST_ARR[@]}"}; do
           if [ "${HOST_HOLD[$ws]:-0}" = "1" ]; then
             held=$(.hosts_union "$held" "${HOST_BUCKET[$ws]:-}" "${ACC_FINISHED[$ws]:-}" \
               "${ACC_DONE_LOG[$ws]:-}" "${HOST_UNCONS[$ws]:-}")

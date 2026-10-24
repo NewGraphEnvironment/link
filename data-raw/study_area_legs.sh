@@ -29,7 +29,7 @@
 #   5. A burn mid-run considers only hosts whose leg has ended, so a host
 #      still modelling is never reported as kept. The EXIT trap considers all.
 #
-# Globals read: SCHEMA TS LOG_DIR REPO_ROOT LOCAL_PID DISP_BUCKET CY_WS_ARR
+# Globals read: SCHEMA TS LOG_DIR REPO_ROOT LOCAL_PID DISP_BUCKET HOST_ARR
 #   HOST_SSH HOST_BUCKET CONS_STATE RUN_WSGS_TSV KEEP_CYPHERS; CONSOLIDATE_RSCRIPT
 #   (default Rscript)
 # Globals written: HOST_LEG_PID (set by the driver at dispatch) HOST_LEG_DONE
@@ -82,7 +82,7 @@ EOF
   CONS_FAILED="${CONS_FAILED:+$CONS_FAILED }$ws"
   CONS_EXCLUDED=$(.hosts_union "${CONS_EXCLUDED:-}" "${HOST_BUCKET_DONE[$ws]:-}")
   HOST_WHY[$ws]="consolidate ended with no outcome ($2); its groups may be half-copied on the dispatcher"
-  echo "  ✗ cy[$ws]: $2 — KEEPING it; its groups stay in_flight and out of the recompute: ${HOST_BUCKET_DONE[$ws]:-none}"
+  echo "  ✗ $(.hosts_label "$ws"): $2 — KEEPING it; its groups stay in_flight and out of the recompute: ${HOST_BUCKET_DONE[$ws]:-none}"
 }
 
 # host_consolidate <ws>: copy one cypher's finished groups to the dispatcher.
@@ -104,12 +104,12 @@ host_consolidate() {
     HOST_CONS_STATE[$ws]=""
     CONS_FAILED="${CONS_FAILED:+$CONS_FAILED }$ws"
     CONS_EXCLUDED=$(.hosts_union "${CONS_EXCLUDED:-}" "${HOST_BUCKET_DONE[$ws]:-}")
-    echo "  ✗ cy[$ws]: could not write $CONS_STATE; not consolidating it (its groups stay on the host)"
+    echo "  ✗ $(.hosts_label "$ws"): could not write $CONS_STATE; not consolidating it (its groups stay on the host)"
     return 0
   fi
   # Removed first, so an outcome left from an earlier attempt is never read.
   rm -f "$tsv"
-  echo "  consolidating cy[$ws]: $(.hosts_n "${HOST_BUCKET_DONE[$ws]}") groups (see $log)"
+  echo "  consolidating $(.hosts_label "$ws"): $(.hosts_n "${HOST_BUCKET_DONE[$ws]}") groups (see $log)"
   CONSOLIDATING="$ws"
   ( cd "$REPO_ROOT" || exit 1
     "${CONSOLIDATE_RSCRIPT:-Rscript}" -e "$(.legs_consolidate_r "$src" "$tsv")" ) \
@@ -118,7 +118,7 @@ host_consolidate() {
   HOST_CONS_UTC[$ws]=$(.legs_now) || HOST_CONS_UTC[$ws]=""
   if [ "$crc" = "0" ]; then
     HOST_CONS_STATE[$ws]=ok
-    echo "  ✓ cy[$ws]: consolidated"
+    echo "  ✓ $(.hosts_label "$ws"): consolidated"
   elif consolidate_outcomes "$tsv" "$ws" && [ -n "${HOST_CONS_FAIL[$ws]:-}" ]; then
     # A refused or failed source with a recorded stage (link#358): its groups
     # are not consolidated, and host_release keeps it while they are there.
@@ -129,7 +129,7 @@ host_consolidate() {
     .legs_no_outcome "$ws" "consolidate exited $crc with no outcome it can be judged on"
   fi
   consolidate_state_write "$CONS_STATE" \
-    || echo "  WARN: could not record cy[$ws]'s outcome in $CONS_STATE; its groups stay in_flight there"
+    || echo "  WARN: could not record $(.hosts_label "$ws")'s outcome in $CONS_STATE; its groups stay in_flight there"
   return 0
 }
 
@@ -142,7 +142,7 @@ host_finish_leg() {
   # ended: a host deferred behind the dispatcher (rule 3) is not yet the
   # kept-hosts report's to name.
   HOST_LEG_DONE[$ws]=1
-  echo "=== cy[$ws]: leg ended (exit ${HOST_RUN_RC[$ws]:-?}); account, consolidate, burn ==="
+  echo "=== $(.hosts_label "$ws"): leg ended (exit ${HOST_RUN_RC[$ws]:-?}); account, consolidate, $(.hosts_is_worker "$ws" && echo release || echo burn) ==="
   phase_begin account "$ws"
   st=ok
   host_account "$ws" "${HOST_SSH[$ws]:-}" "$LOG_DIR/${TS}_run_$ws.log" "${HOST_BUCKET[$ws]}" \
@@ -152,10 +152,10 @@ host_finish_leg() {
   # stays HELD.
   HOST_BUCKET_DONE[$ws]=$(host_consolidate_bucket "$ws")
   [ "${ACC_STATE[$ws]:-unknown}" = "known" ] || \
-    echo "    cy[$ws]: left out of consolidate; the host will be KEPT"
+    echo "    $(.hosts_label "$ws"): left out of consolidate; the host will be KEPT"
   # This host's SKIPs, now known (link#358). Never fatal: the host is held.
   run_wsgs_write "$RUN_WSGS_TSV" \
-    || echo "  WARN: could not rewrite $RUN_WSGS_TSV with cy[$ws]'s SKIPs"
+    || echo "  WARN: could not rewrite $RUN_WSGS_TSV with $(.hosts_label "$ws")'s SKIPs"
   phase_end account "$ws" "$(.hosts_n "${HOST_BUCKET[$ws]:-}")" "$st"
 
   phase_begin consolidate "$ws"
@@ -163,7 +163,7 @@ host_finish_leg() {
   if [ "$n" = "0" ]; then
     # Nothing finished there to copy. It still goes through release, which
     # keeps it only for a reason it can measure (link#347).
-    echo "  WARN: cy[$ws] has nothing to consolidate — skipping the copy"
+    echo "  WARN: $(.hosts_label "$ws") has nothing to consolidate — skipping the copy"
     st=failed
   else
     host_consolidate "$ws"
@@ -175,9 +175,19 @@ host_finish_leg() {
   # outcome (rule 4).
   if [ "${HOST_NO_OUTCOME[$ws]:-0}" != "1" ]; then
     host_release "$ws" "${HOST_BUCKET[$ws]}"
+    # A released worker keeps nothing of this run's but its log rows
+    # (link#376): consolidate deleted what it copied, this drops the rest.
+    host_drop_partials "$ws" || true
   fi
   phase_end consolidate "$ws" "$n" "$st"
 
+  # A worker is never burned (link#376): its burn row is skipped, and the
+  # call below still writes the kept report, which names it while held.
+  if .hosts_is_worker "$ws"; then
+    burn_cyphers ended || true
+    phase_skip burn "$ws"
+    return 0
+  fi
   phase_begin burn "$ws"
   burn_cyphers ended || true
   # burn_cyphers returns its caller's status, not its own (link#375): the row
@@ -205,7 +215,7 @@ legs_wait() {
   local -a pending=() deferred=()
   local -A ws_of=()
   pending+=("$LOCAL_PID"); ws_of[$LOCAL_PID]=dispatcher
-  for ws in ${CY_WS_ARR[@]+"${CY_WS_ARR[@]}"}; do
+  for ws in ${HOST_ARR[@]+"${HOST_ARR[@]}"}; do
     pid="${HOST_LEG_PID[$ws]:-}"
     [ -n "$pid" ] || continue
     pending+=("$pid"); ws_of[$pid]="$ws"
@@ -237,10 +247,10 @@ legs_wait() {
     # dropped may have left its loop running on the host, so host_release
     # keeps a host whose session did not exit 0.
     HOST_RUN_RC[$ws]=$rc
-    [ "$rc" = "0" ] || echo "  WARN: cy[$ws] run returned $rc; see $LOG_DIR/${TS}_run_$ws.log"
+    [ "$rc" = "0" ] || echo "  WARN: $(.hosts_label "$ws") run returned $rc; see $LOG_DIR/${TS}_run_$ws.log"
     phase_forget model "$ws"; phase_print model "$ws"
     if [ "$disp_done" = "0" ] && [ -n "$(.legs_overlap "$ws")" ]; then
-      echo "  cy[$ws]: its bucket overlaps the dispatcher's ($(.legs_overlap "$ws")); consolidating it once the dispatcher leg ends"
+      echo "  $(.hosts_label "$ws"): its bucket overlaps the dispatcher's ($(.legs_overlap "$ws")); consolidating it once the dispatcher leg ends"
       deferred+=("$ws")
       continue
     fi

@@ -14,17 +14,21 @@ hosts_world <- function(env = parent.frame()) {
     writeLines(c("#!/bin/sh", body), p)
     Sys.chmod(p, "755")
   }
-  # ssh: the host is the cypher@ argument. Records argv and stdin, so a test
-  # can assert the remote route, and answers from that host's fixture: the
-  # `_streams` one for a streams query, the plain one for a log query.
+  # ssh: the host is the first argument that is not an option, less any
+  # `user@` (a cloud host's cypher@<ip>, or a worker's own target). Records
+  # argv and stdin, so a test can assert the remote route, and answers from
+  # that host's fixture: the `_streams` one for a streams query, the plain one
+  # for a log query.
   stub("ssh", c(
-    'host=""; for a in "$@"; do case "$a" in cypher@*) host="${a#cypher@}" ;; esac; done',
+    paste0('host=""; skip=0; for a in "$@"; do if [ "$skip" = 1 ]; then skip=0; continue; fi; ',
+           'case "$a" in -o) skip=1 ;; -*) ;; *) [ -n "$host" ] || host="${a#*@}" ;; esac; done'),
     sprintf('s="%s/stub/ssh_$host"', d),
     'printf "%s\\n" "$*" >> "$s.argv"',
     'in=$(cat); printf "%s\\n" "$in" >> "$s.stdin"',
     'f="$s.out"',
     'case "$in" in *".streams_mapping_code WHERE"*) f="${s}_mc.out" ;; esac',
     'case "$in" in *".streams WHERE"*) f="${s}_streams.out" ;; esac',
+    'case "$in" in *"gexec"*) f="${s}_drop.out" ;; esac',
     '[ -f "$f" ] && cat "$f"',
     '[ -f "$s.rc" ] && exit "$(cat "$s.rc")"',
     "exit 0"

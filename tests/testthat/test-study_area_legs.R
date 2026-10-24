@@ -104,7 +104,7 @@ run_legs <- function(world, body, legs = c(a = 1), disp = 2, buckets = NULL,
     'CONS_STATE="$LOG_DIR/T0_consolidate_state.tsv"; RUN_WSGS_TSV="$LOG_DIR/T0_run_wsgs.tsv"',
     'phases_init "$LOG_DIR/T0_phases.tsv"',
     sprintf("DISP_BUCKET=%s", disp_bucket),
-    sprintf("CY_WS_ARR=(%s)", paste(cy, collapse = " ")),
+    sprintf("HOST_ARR=(%s)", paste(cy, collapse = " ")),
     sprintf('CY_IP[%s]="ip-%s"; HOST_SSH[%s]="cypher@ip-%s"; HOST_HOLD[%s]=1; HOST_BUCKET[%s]=%s; HOST_PRE_STATE[%s]=known',
             cy, cy, cy, cy, cy, cy, buckets[cy], cy),
     leg("dispatcher", disp), "LOCAL_PID=$!",
@@ -370,4 +370,25 @@ test_that("the dispatcher's accounting does not claim the groups copied in from 
   expect_equal(r$status, 0L, info = r$out)
   expect_match(r$out, "FIN=[ZZZZ]", fixed = TRUE)
   expect_false(grepl("outside its bucket", r$out, fixed = TRUE))
+})
+
+# -- A persistent worker beside a cloud host (link#376) ----------------------
+
+test_that("a worker's leg is consolidated and released, never burned", {
+  skip_if_no_legs_lib()
+  w <- legs_world()
+  legs_host(w, "a", "AAAA")
+  legs_host(w, "b", "BBBB")
+  r <- run_legs(w, c("HOST_KIND[b]=worker; WORKERS_UP=1", "legs_wait"),
+                legs = c(a = 0.3, b = 0.6), disp = 0.1)
+  expect_equal(r$status, 0L, info = r$out)
+  expect_identical(burn_calls(w), "--workspace a")
+  expect_null(kept_tsv(w))
+  expect_match(r$out, "b: no finished group left on the host after consolidate — may be released",
+               fixed = TRUE)
+  expect_match(r$out, "=== b: leg ended (exit 0); account, consolidate, release ===", fixed = TRUE)
+  ph <- utils::read.delim(file.path(w, "logs", "T0_phases.tsv"), colClasses = "character")
+  expect_identical(ph$status[ph$phase == "burn" & ph$host == "b"], "skipped")
+  expect_identical(ph$status[ph$phase == "consolidate" & ph$host == "b"], "ok")
+  expect_identical(ph$status[ph$phase == "burn" & ph$host == "a"], "ok")
 })

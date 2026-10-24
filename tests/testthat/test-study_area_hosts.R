@@ -40,8 +40,9 @@ run_hosts <- function(world, body, cyphers = c("a", "b"), keep = 0L,
       shQuote(file.path(world, "tf"))
     ),
     sprintf("KEEP_CYPHERS=%d; CYPHERS_UP=%d", keep, cyphers_up),
-    sprintf("CY_WS_ARR=(%s)", paste(cyphers, collapse = " ")),
-    'for ws in "${CY_WS_ARR[@]}"; do CY_IP[$ws]="ip-$ws"; HOST_SSH[$ws]="cypher@ip-$ws"; HOST_RUN_RC[$ws]=0; done',
+    sprintf("HOST_ARR=(%s); CY_WS_ARR=(%s)", paste(cyphers, collapse = " "),
+            paste(cyphers, collapse = " ")),
+    'for ws in "${HOST_ARR[@]}"; do CY_IP[$ws]="ip-$ws"; HOST_SSH[$ws]="cypher@ip-$ws"; HOST_RUN_RC[$ws]=0; done',
     body
   ), script)
   out <- withr::with_envvar(
@@ -721,4 +722,188 @@ test_that("a host whose consolidate failed keeps it, and says so, while its grou
   expect_equal(k$workspace, "b")
   expect_match(k$reason, "consolidate failed at stage dest_log_newer", fixed = TRUE)
   expect_equal(k$groups, "BBBB")
+})
+
+# -- Persistent workers (link#376) -------------------------------------------
+# A worker is reached by its own ssh target and is never spun or burned. It is
+# held from dispatch like a cloud host, and a held worker is reported kept
+# whether or not the run spun any cyphers.
+
+# Worker `worker1` at target `wk` beside the run's cyphers, if any.
+worker_setup <- function(held = 1L) {
+  c(
+    "HOST_ARR+=(worker1); HOST_KIND[worker1]=worker; HOST_SSH[worker1]=wk",
+    "HOST_RUN_RC[worker1]=0; HOST_BUCKET[worker1]=WWWW; WORKERS_UP=1",
+    if (!is.na(held)) sprintf("HOST_HOLD[worker1]=%d", held)
+  )
+}
+
+test_that("a held worker is reported kept on a run with no cyphers", {
+  skip_if_no_hosts_lib()
+  w <- hosts_world()
+  put(w, "ssh_wk.out", db_answer("WWWW"))
+  put(w, "ssh_wk_streams.out", db_answer("WWWW")) # consolidate missed it
+  put(w, "ssh_wk_mc.out", db_answer("WWWW"))
+  r <- run_hosts(w, c(
+    worker_setup(),
+    "host_account worker1 wk /nonexistent WWWW > /dev/null || true",
+    "host_release worker1 WWWW",
+    "burn_cyphers",
+    'echo "KEPT_N=$KEPT_N CAUSE=$KEPT_CAUSE_N"'
+  ), cyphers = character(0), cyphers_up = 0L)
+  expect_length(burn_calls(w), 0L)
+  expect_match(r$out, "KEPT_N=1 CAUSE=1", fixed = TRUE)
+  k <- kept_tsv(w)
+  expect_identical(k$workspace, "worker1")
+  expect_identical(k$droplet, "-")
+  expect_identical(k$groups, "WWWW")
+  expect_match(k$burn_command, "^none")
+  # Its target is the operator's; no address and no tofu command for it.
+  expect_no_match(k$ip_command, "tofu", fixed = TRUE)
+  expect_no_match(paste(readLines(file.path(w, "logs", "T0_kept_hosts.tsv")), collapse = "\n"),
+                  "\\bwk\\b")
+  expect_no_match(r$out, "cypher_down.sh --workspace worker1", fixed = TRUE)
+})
+
+test_that("a released worker is neither burned nor listed as kept", {
+  skip_if_no_hosts_lib()
+  w <- hosts_world()
+  put(w, "ssh_wk.out", db_answer("WWWW"))
+  put(w, "ssh_wk_streams.out", db_answer(character(0)))
+  r <- run_hosts(w, c(
+    worker_setup(),
+    "host_account worker1 wk /nonexistent WWWW > /dev/null || true",
+    "host_release worker1 WWWW",
+    "burn_cyphers", "burn_cyphers",
+    'echo "KEPT_N=$KEPT_N HOLD=${HOST_HOLD[worker1]} BURNED=${CY_BURNED[worker1]:-unset}"'
+  ), cyphers = character(0), cyphers_up = 0L, keep = 1L)
+  expect_length(burn_calls(w), 0L)
+  expect_null(kept_tsv(w))
+  # --keep-cyphers is about cloud hosts; it does not keep a worker.
+  expect_match(r$out, "KEPT_N=0 HOLD=0 BURNED=unset", fixed = TRUE)
+  expect_match(r$out, "may be released", fixed = TRUE)
+})
+
+test_that("the trap before dispatch burns the cyphers and leaves a worker alone", {
+  skip_if_no_hosts_lib()
+  w <- hosts_world()
+  r <- run_hosts(w, c(worker_setup(held = NA), "burn_cyphers"), cyphers = "b")
+  expect_identical(burn_calls(w), "--workspace b")
+  expect_null(kept_tsv(w))
+})
+
+test_that("beside cyphers, only the cyphers are burned and a held worker is kept", {
+  skip_if_no_hosts_lib()
+  w <- hosts_world()
+  r <- run_hosts(w, c(worker_setup(), "burn_cyphers"), cyphers = "b")
+  expect_identical(burn_calls(w), "--workspace b")
+  k <- kept_tsv(w)
+  expect_identical(k$workspace, "worker1")
+  expect_match(k$reason, "run stopped before consolidate released it", fixed = TRUE)
+})
+
+# A released worker's partial groups (failed builds whose pre-persist left
+# rows) are dropped from its persist tables, so the next run's prior-rows
+# check finds it clean. Its log rows stay: the open row is the only record of
+# the failure.
+drop_setup <- function(pre_state = "known", pre = "") {
+  c(
+    worker_setup(),
+    sprintf("HOST_PRE_STATE[worker1]=%s; HOST_PRE[worker1]=%s", pre_state, pre),
+    "host_account worker1 wk /nonexistent WWWW,PPPP > /dev/null || true",
+    "host_release worker1 WWWW,PPPP",
+    "host_drop_partials worker1 && echo DROP_RC=0 || echo DROP_RC=$?"
+  )
+}
+
+test_that("a released worker's partial groups are dropped from its persist tables only", {
+  skip_if_no_hosts_lib()
+  w <- hosts_world()
+  put(w, "ssh_wk.out", db_answer("WWWW"))
+  put(w, "ssh_wk_streams.out", db_answer("PPPP"))
+  put(w, "ssh_wk_mc.out", db_answer(character(0)))
+  put(w, "ssh_wk_drop.out", c("__LNK_BEGIN__", "DELETE 4", "DELETE 2", "__LNK_END__"))
+  r <- run_hosts(w, drop_setup(), cyphers = character(0), cyphers_up = 0L)
+  expect_match(r$out, "DROP_RC=0", fixed = TRUE)
+  expect_match(r$out, "dropped partial groups PPPP", fixed = TRUE)
+  stdin <- paste(readLines(file.path(w, "stub", "ssh_wk.stdin")), collapse = "\n")
+  expect_match(stdin, "{PPPP}", fixed = TRUE)
+  expect_match(stdin, "!~ '^log(_|$)'", fixed = TRUE)
+  expect_match(stdin, "table_schema = 'fresh_test'", fixed = TRUE)
+  # The drop names the partial group only, never one it finished.
+  drop <- grep("gexec", strsplit(stdin, "\n")[[1]], value = TRUE, fixed = TRUE)
+  expect_length(drop, 1L)
+  expect_no_match(drop, "WWWW", fixed = TRUE)
+})
+
+test_that("partial groups are not dropped where the worker's rows predate the run", {
+  skip_if_no_hosts_lib()
+  w <- hosts_world()
+  put(w, "ssh_wk.out", db_answer("WWWW"))
+  put(w, "ssh_wk_streams.out", db_answer("PPPP"))
+  put(w, "ssh_wk_mc.out", db_answer(character(0)))
+  for (st in list(c("unknown", ""), c("known", "QQQQ"))) {
+    unlink(file.path(w, "stub", "ssh_wk.stdin"))
+    r <- run_hosts(w, drop_setup(st[1], st[2]), cyphers = character(0), cyphers_up = 0L)
+    expect_match(r$out, "DROP_RC=0", fixed = TRUE)
+    expect_match(r$out, "not dropping", fixed = TRUE)
+    stdin <- paste(readLines(file.path(w, "stub", "ssh_wk.stdin")), collapse = "\n")
+    expect_no_match(stdin, "gexec", fixed = TRUE)
+  }
+})
+
+test_that("a drop the worker did not finish says it fails closed", {
+  skip_if_no_hosts_lib()
+  w <- hosts_world()
+  put(w, "ssh_wk.out", db_answer("WWWW"))
+  put(w, "ssh_wk_streams.out", db_answer("PPPP"))
+  put(w, "ssh_wk_mc.out", db_answer(character(0)))
+  put(w, "ssh_wk_drop.out", c("__LNK_BEGIN__", "DELETE 4"))  # stopped mid-way
+  r <- run_hosts(w, drop_setup(), cyphers = character(0), cyphers_up = 0L)
+  expect_match(r$out, "DROP_RC=1", fixed = TRUE)
+  expect_match(r$out, "next run refuses", fixed = TRUE)
+})
+
+test_that("a cloud host's partial groups are never dropped (it is burned)", {
+  skip_if_no_hosts_lib()
+  w <- hosts_world()
+  r <- run_hosts(w, c("HOST_HOLD[a]=0; HOST_PARTIAL[a]=PPPP",
+                      "host_drop_partials a && echo DROP_RC=0"), cyphers = "a")
+  expect_match(r$out, "DROP_RC=0", fixed = TRUE)
+  expect_false(file.exists(file.path(w, "stub", "ssh_ip-a.stdin")))
+})
+
+test_that("the partial drop's SQL deletes persist rows and keeps log rows (live)", {
+  skip_if_no_hosts_lib()
+  conn <- skip_if_no_db()
+  info <- DBI::dbGetInfo(conn)
+  skip_if(!identical(as.character(info$port), "5432") ||
+            !info$host %in% c("localhost", "127.0.0.1"),
+          "not the local docker fwapg the lib's local route reads")
+  skip_if(!nzchar(Sys.which("psql")), "psql not on PATH")
+  sc <- paste0("lnk_test_drop_", Sys.getpid())
+  DBI::dbExecute(conn, "SET client_min_messages TO warning")
+  DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", sc))
+  withr::defer(DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", sc)))
+  DBI::dbExecute(conn, sprintf("CREATE SCHEMA %s", sc))
+  for (t in c("streams", "streams_habitat_bt", "log", "log_input")) {
+    DBI::dbExecute(conn, sprintf("CREATE TABLE %s.%s (watershed_group_code text)", sc, t))
+    DBI::dbExecute(conn, sprintf("INSERT INTO %s.%s VALUES ('PPPP'), ('WWWW')", sc, t))
+  }
+  w <- hosts_world()
+  unlink(file.path(w, "bin", "psql")) # the real psql, through the local route
+  r <- run_hosts(w, c(
+    sprintf("SCHEMA=%s", sc),
+    "HOST_ARR=(worker1); HOST_KIND[worker1]=worker; HOST_SSH[worker1]=local",
+    "HOST_RUN_RC[worker1]=0; HOST_HOLD[worker1]=0; HOST_PARTIAL[worker1]=PPPP",
+    "HOST_PRE_STATE[worker1]=known; HOST_PRE[worker1]=",
+    "host_drop_partials worker1 && echo DROP_RC=0 || echo DROP_RC=$?"
+  ), cyphers = character(0), cyphers_up = 0L)
+  expect_match(r$out, "DROP_RC=0", fixed = TRUE)
+  left <- function(t) DBI::dbGetQuery(conn, sprintf(
+    "SELECT watershed_group_code FROM %s.%s ORDER BY 1", sc, t))$watershed_group_code
+  expect_identical(left("streams"), "WWWW")
+  expect_identical(left("streams_habitat_bt"), "WWWW")
+  expect_identical(left("log"), c("PPPP", "WWWW"))
+  expect_identical(left("log_input"), c("PPPP", "WWWW"))
 })
