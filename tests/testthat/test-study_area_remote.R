@@ -113,18 +113,21 @@ test_that("a leg that reached the end of its loop says so, and only then", {
   # Ended: the marker, even mid-line after a warning flushed without a newline.
   writeLines(c("[wsg_run_one] AAAA done", "Warning message:__LNK_LEG_END__"), log)
   r <- run_remote(w, sprintf(
-    "remote_leg_status 0 %s && echo RC=0 || echo RC=$?", shQuote(log)))
+    "remote_leg_status 0 %s && echo RC=0 || echo RC=$?", shQuote(log)
+  ))
   expect_match(r$out, "RC=0", fixed = TRUE)
   # ssh exited 0, but the loop never reached its end (killed, or the session
   # dropped on a server that reports 0 regardless).
   writeLines("[wsg_run_one] AAAA done", log)
   r <- run_remote(w, sprintf(
-    "remote_leg_status 0 %s && echo RC=0 || echo RC=$?", shQuote(log)))
+    "remote_leg_status 0 %s && echo RC=0 || echo RC=$?", shQuote(log)
+  ))
   expect_match(r$out, "RC=1", fixed = TRUE)
   # ssh's own failure wins.
   writeLines("__LNK_LEG_END__", log)
   r <- run_remote(w, sprintf(
-    "remote_leg_status 255 %s && echo RC=0 || echo RC=$?", shQuote(log)))
+    "remote_leg_status 255 %s && echo RC=0 || echo RC=$?", shQuote(log)
+  ))
   expect_match(r$out, "RC=255", fixed = TRUE)
   # An unreadable log is not an ended leg.
   r <- run_remote(w, "remote_leg_status 0 /nonexistent && echo RC=0 || echo RC=$?")
@@ -145,9 +148,8 @@ test_that("the leg command prints its end marker only after the loop, and not af
   expect_match(cmd, "&& { for w in AAAA BBBB; do ", fixed = TRUE)
   expect_match(cmd, "; done; echo __LNK_LEG_END__; }$")
   # Run it with a cd that fails: no marker.
-  out <- suppressWarnings(system2("sh", c("-c", shQuote(sub("cd ~/Projects/repo/link",
-                                            "cd /nonexistent_lnk_dir", cmd, fixed = TRUE))),
-                 stdout = TRUE, stderr = TRUE))
+  bad_cd <- sub("cd ~/Projects/repo/link", "cd /nonexistent_lnk_dir", cmd, fixed = TRUE)
+  out <- suppressWarnings(system2("sh", c("-c", shQuote(bad_cd)), stdout = TRUE, stderr = TRUE))
   expect_false(any(grepl("__LNK_LEG_END__", out, fixed = TRUE)))
 })
 
@@ -160,13 +162,15 @@ test_that("the leg command exports the run's identity and bound", {
     "declare -A HOST_SSH HOST_KIND; HOST_SSH[a]=cypher@ip-a",
     'remote_leg_cmd a "AAAA"'
   ))
-  for (s in c("export LNK_SCHEMA='fresh_x'", "export LNK_GUARD_DOWNSTREAM=warn",
-              "export LNK_HABITAT_GATE=0",
-              "export PGOPTIONS='-c statement_timeout=45min'",
-              "export LNK_STATEMENT_TIMEOUT_MIN='45'", "export FWAPG_GIT_SHA='f1'",
-              "export BCFISHOBS_GIT_SHA='b1'", "export LNK_RUN_UID='T0-1'",
-              "export LNK_RUN_LABEL='lab'", "export LNK_BCFP_MODEL_VERSION='v1'",
-              "Rscript data-raw/wsg_run_one.R $w 'default'")) {
+  for (s in c(
+    "export LNK_SCHEMA='fresh_x'", "export LNK_GUARD_DOWNSTREAM=warn",
+    "export LNK_HABITAT_GATE=0",
+    "export PGOPTIONS='-c statement_timeout=45min'",
+    "export LNK_STATEMENT_TIMEOUT_MIN='45'", "export FWAPG_GIT_SHA='f1'",
+    "export BCFISHOBS_GIT_SHA='b1'", "export LNK_RUN_UID='T0-1'",
+    "export LNK_RUN_LABEL='lab'", "export LNK_BCFP_MODEL_VERSION='v1'",
+    "Rscript data-raw/wsg_run_one.R $w 'default'"
+  )) {
     expect_match(r$out, s, fixed = TRUE)
   }
 })
@@ -182,10 +186,12 @@ worker_globals <- c(
 test_that("a worker runs from the driver's own clone, by load_all", {
   skip_if_no_remote_lib()
   w <- remote_world()
-  r <- run_remote(w, c(worker_globals,
-                       'echo "W=$(remote_leg_cmd worker1 AAAA)"',
-                       'echo "C=$(remote_leg_cmd a AAAA)"',
-                       'echo "WCD=$(.remote_cd worker1)"; echo "CCD=$(.remote_cd a)"'))
+  r <- run_remote(w, c(
+    worker_globals,
+    'echo "W=$(remote_leg_cmd worker1 AAAA)"',
+    'echo "C=$(remote_leg_cmd a AAAA)"',
+    'echo "WCD=$(.remote_cd worker1)"; echo "CCD=$(.remote_cd a)"'
+  ))
   lines <- strsplit(r$out, "\n")[[1]]
   wl <- sub("^W=", "", grep("^W=", lines, value = TRUE))
   cl <- sub("^C=", "", grep("^C=", lines, value = TRUE))
@@ -201,17 +207,22 @@ test_that("a worker's leg runs no group once its clone's HEAD has moved", {
   w <- remote_world()
   r <- run_remote(w, c(worker_globals, "remote_leg_cmd worker1 'AAAA BBBB'"))
   cmd <- r$out
-  expect_match(cmd, "[ \"$(git rev-parse HEAD)\" = 'abc123' ] || { echo \"[WARN] worker WSG $w not run: HEAD moved off abc123\"; continue; };",
-               fixed = TRUE)
+  expect_match(cmd, paste0("[ \"$(git rev-parse HEAD)\" = 'abc123' ] || ",
+                           "{ echo \"[WARN] worker WSG $w not run: HEAD moved off abc123\"; continue; };"),
+    fixed = TRUE
+  )
   # Run the loop part with a HEAD that is not the run's: no group runs.
   d <- withr::local_tempdir()
   system2("git", c("-C", d, "init", "-q"))
-  system2("git", c("-C", d, "-c", "user.email=t@t", "-c", "user.name=t",
-                   "commit", "-q", "--allow-empty", "-m", "x"))
+  system2("git", c(
+    "-C", d, "-c", "user.email=t@t", "-c", "user.name=t",
+    "commit", "-q", "--allow-empty", "-m", "x"
+  ))
   loop <- sub("^.*&& \\{", "{", cmd)
   loop <- gsub("Rscript data-raw/wsg_run_one.R $w 'c'", "echo RAN $w", loop, fixed = TRUE)
   out <- suppressWarnings(system2("sh", c("-c", shQuote(paste("cd", shQuote(d), "&&", loop))),
-                                  stdout = TRUE, stderr = TRUE))
+    stdout = TRUE, stderr = TRUE
+  ))
   expect_false(any(grepl("^RAN", out)))
   expect_length(grep("not run: HEAD moved", out, fixed = TRUE), 2L)
   expect_true(any(grepl("__LNK_LEG_END__", out, fixed = TRUE)))
@@ -220,14 +231,18 @@ test_that("a worker's leg runs no group once its clone's HEAD has moved", {
 test_that("the stall hook crosses ssh only as one group code", {
   skip_if_no_remote_lib()
   w <- remote_world()
-  r <- run_remote(w, c(worker_globals, "LNK_TEST_STALL_WSG=ADMS",
-                       'remote_leg_cmd a AAAA'))
+  r <- run_remote(w, c(
+    worker_globals, "LNK_TEST_STALL_WSG=ADMS",
+    "remote_leg_cmd a AAAA"
+  ))
   expect_match(r$out, "export LNK_TEST_STALL_WSG='ADMS' && ", fixed = TRUE)
-  r <- run_remote(w, c(worker_globals, 'remote_leg_cmd a AAAA'))
+  r <- run_remote(w, c(worker_globals, "remote_leg_cmd a AAAA"))
   expect_no_match(r$out, "LNK_TEST_STALL_WSG", fixed = TRUE)
   for (bad in c("\"A'; rm -rf x\"", "$'ABCD\\n'\"'\"'; rm -rf x'")) {
-    r <- run_remote(w, c(worker_globals, paste0("LNK_TEST_STALL_WSG=", bad),
-                         'remote_leg_cmd a AAAA && echo RC=0 || echo RC=$?'))
+    r <- run_remote(w, c(
+      worker_globals, paste0("LNK_TEST_STALL_WSG=", bad),
+      "remote_leg_cmd a AAAA && echo RC=0 || echo RC=$?"
+    ))
     expect_match(r$out, "RC=1", fixed = TRUE, info = bad)
     expect_no_match(r$out, "rm -rf", fixed = TRUE)
   }
@@ -239,17 +254,27 @@ test_that("worker prep's environment carries the run, and refuses an origin it c
   r <- run_remote(w, c(
     "LINK_BRANCH=b; CONFIG=default; SCHEMA=fresh_x; WET_LOAD=",
     "ORIGIN_URL=https://github.com/NewGraphEnvironment/link.git",
-    'worker_prep_env worker1'))
+    "worker_prep_env worker1"
+  ))
   expect_identical(r$out, paste(
     "WORKER_PREP_BRANCH='b' WORKER_PREP_ORIGIN='https://github.com/NewGraphEnvironment/link.git'",
     "WORKER_PREP_CONFIG='default' WORKER_PREP_SCHEMA='fresh_x' WORKER_PREP_WET_LOAD=''",
-    "WORKER_PREP_LEG_VARS='LNK_LOAD LNK_TEST_STALL_WSG LNK_SCHEMA LNK_GUARD_DOWNSTREAM LNK_HABITAT_GATE PGOPTIONS LNK_STATEMENT_TIMEOUT_MIN FWAPG_GIT_SHA BCFISHOBS_GIT_SHA LNK_RUN_UID LNK_RUN_LABEL LNK_BCFP_MODEL_VERSION'"))
-  r <- run_remote(w, c("ORIGIN_URL=\"https://x/y'z\"",
-                       'worker_prep_env worker1 && echo RC=0 || echo RC=$?'))
+    paste0(
+      "WORKER_PREP_LEG_VARS='LNK_LOAD LNK_TEST_STALL_WSG LNK_SCHEMA LNK_GUARD_DOWNSTREAM ",
+      "LNK_HABITAT_GATE PGOPTIONS LNK_STATEMENT_TIMEOUT_MIN FWAPG_GIT_SHA BCFISHOBS_GIT_SHA ",
+      "LNK_RUN_UID LNK_RUN_LABEL LNK_BCFP_MODEL_VERSION'"
+    )
+  ))
+  r <- run_remote(w, c(
+    "ORIGIN_URL=\"https://x/y'z\"",
+    "worker_prep_env worker1 && echo RC=0 || echo RC=$?"
+  ))
   expect_match(r$out, "RC=1", fixed = TRUE)
   # A token in the URL would reach the worker's ps, its clone and the log.
-  r <- run_remote(w, c("ORIGIN_URL=https://u:tok@github.com/NewGraphEnvironment/link.git",
-                       'worker_prep_env worker1 && echo RC=0 || echo RC=$?'))
+  r <- run_remote(w, c(
+    "ORIGIN_URL=https://u:tok@github.com/NewGraphEnvironment/link.git",
+    "worker_prep_env worker1 && echo RC=0 || echo RC=$?"
+  ))
   expect_match(r$out, "RC=1", fixed = TRUE)
   expect_match(r$out, "carries credentials", fixed = TRUE)
 })
@@ -258,16 +283,20 @@ test_that("a worker's target is redacted whole and literally", {
   skip_if_no_remote_lib()
   w <- remote_world()
   f <- file.path(w, "T0_run_worker1.log")
-  writeLines(c("ssh: connect to host m4.tail-x.ts.net port 22: refused",
-               "m4.tail-x.ts.netX and am4.tail-x.ts.net stay; m4xtail-x.ts.net stays",
-               "user@m4.tail-x.ts.net:22"), f)
+  writeLines(c(
+    "ssh: connect to host m4.tail-x.ts.net port 22: refused",
+    "m4.tail-x.ts.netX and am4.tail-x.ts.net stay; m4xtail-x.ts.net stays",
+    "user@m4.tail-x.ts.net:22"
+  ), f)
   run_remote(w, c(
     "WK_TARGETS=(m4.tail-x.ts.net user@m4.tail-x.ts.net); WK_KEYS=(worker1 worker2)",
-    sprintf("remote_redact_targets %s", shQuote(f))))
+    sprintf("remote_redact_targets %s", shQuote(f))
+  ))
   expect_identical(readLines(f), c(
     "ssh: connect to host <worker1> port 22: refused",
     "m4.tail-x.ts.netX and am4.tail-x.ts.net stay; m4xtail-x.ts.net stays",
-    "<worker2>:22"))
+    "<worker2>:22"
+  ))
 })
 
 test_that("what ssh writes for a target is redacted too: its host part and its HostName", {
@@ -276,29 +305,35 @@ test_that("what ssh writes for a target is redacted too: its host part and its H
   # An alias from ssh's config, which ssh's errors name by its HostName.
   writeLines(c("user airvine", "hostname box.tail-y.ts.net", "port 22"), file.path(w, "G_wk"))
   f <- file.path(w, "T0_reach_worker1.log")
-  writeLines(c("ssh: connect to host box.tail-y.ts.net port 22: timed out",
-               "ssh: Could not resolve hostname host9.example: nodename nor servname",
-               "wk and ops@host9.example",
-               # ssh's own failure line for an unauthorised key.
-               "airvine@box.tail-y.ts.net: Permission denied (publickey)."), f)
+  writeLines(c(
+    "ssh: connect to host box.tail-y.ts.net port 22: timed out",
+    "ssh: Could not resolve hostname host9.example: nodename nor servname",
+    "wk and ops@host9.example",
+    # ssh's own failure line for an unauthorised key.
+    "airvine@box.tail-y.ts.net: Permission denied (publickey)."
+  ), f)
   run_remote(w, c(
     "WK_TARGETS=(wk ops@host9.example); WK_KEYS=(worker1 worker2)",
-    sprintf("remote_redact_targets %s", shQuote(f))))
+    sprintf("remote_redact_targets %s", shQuote(f))
+  ))
   expect_identical(readLines(f), c(
     "ssh: connect to host <worker1> port 22: timed out",
     "ssh: Could not resolve hostname <worker2>: nodename nor servname",
     "<worker1> and <worker2>",
-    "airvine@<worker1>: Permission denied (publickey)."))
+    "airvine@<worker1>: Permission denied (publickey)."
+  ))
 })
 
 # -- The driver's own refusals, before anything runs (link#376) ---------------
 
 run_driver <- function(...) {
   drv <- normalizePath(testthat::test_path("..", "..", "data-raw", "study_area_run.sh"),
-                       mustWork = FALSE)
+    mustWork = FALSE
+  )
   testthat::skip_if_not(file.exists(drv), "data-raw/study_area_run.sh absent")
   out <- suppressWarnings(system2(hosts_bash(), c(shQuote(drv), ...),
-                                  stdout = TRUE, stderr = TRUE))
+    stdout = TRUE, stderr = TRUE
+  ))
   list(out = paste(out, collapse = "\n"), status = attr(out, "status") %||% 0L)
 }
 
@@ -323,7 +358,8 @@ test_that("the driver counts one --focal per worker, and refuses workers when fi
   r <- run_driver("--workers=wk", "--cy-workspaces=job1", "--focal=A", "--focal=B")
   expect_equal(r$status, 1L)
   expect_match(r$out, "need exactly 3 --focal flags (1 dispatcher + 1 workers + 1 cyphers, in that order); got 2",
-               fixed = TRUE)
+    fixed = TRUE
+  )
   r <- run_driver("--recompute-only", "--run-uid=20261024_000000-abcd1234", "--workers=wk")
   expect_equal(r$status, 1L)
   expect_match(r$out, "--recompute-only takes no --focal, --cy-workspaces, --workers", fixed = TRUE)
@@ -332,8 +368,10 @@ test_that("the driver counts one --focal per worker, and refuses workers when fi
 test_that("the driver refuses a stall hook that is not one group code", {
   skip_if_no_remote_lib()
   for (bad in c("AB; rm", "ABCD\n'$(id)'")) {
-    r <- withr::with_envvar(c(LNK_TEST_STALL_WSG = bad),
-                            run_driver("--workers=wk", "--focal=A", "--focal=B"))
+    r <- withr::with_envvar(
+      c(LNK_TEST_STALL_WSG = bad),
+      run_driver("--workers=wk", "--focal=A", "--focal=B")
+    )
     expect_equal(r$status, 1L, info = bad)
     expect_match(r$out, "LNK_TEST_STALL_WSG must be one four-letter group code", fixed = TRUE)
   }
@@ -347,15 +385,17 @@ test_that("the driver refuses a branch name a remote command could not carry", {
   expect_length(at, 1L)
   near <- lines[at + 1:8]
   # Only when a remote host is sent it, and on the whole value.
-  expect_true(any(grepl('if [ "$N_HOSTS" -gt 0 ] && ! [[ "$LINK_BRANCH" =~ ^[A-Za-z0-9._/-]+$ ]]; then',
-                        near, fixed = TRUE)))
+  want <- 'if [ "$N_HOSTS" -gt 0 ] && ! [[ "$LINK_BRANCH" =~ ^[A-Za-z0-9._/-]+$ ]]; then'
+  expect_true(any(grepl(want, near, fixed = TRUE)))
 })
 
 test_that("worker prep checks every variable a worker's leg exports", {
   skip_if_no_remote_lib()
   w <- remote_world()
-  r <- run_remote(w, c(worker_globals, "LNK_TEST_STALL_WSG=ADMS",
-                       'echo "VARS=$REMOTE_LEG_VARS"', "remote_leg_cmd worker1 AAAA"))
+  r <- run_remote(w, c(
+    worker_globals, "LNK_TEST_STALL_WSG=ADMS",
+    'echo "VARS=$REMOTE_LEG_VARS"', "remote_leg_cmd worker1 AAAA"
+  ))
   vars <- strsplit(sub("^VARS=", "", strsplit(r$out, "\n")[[1]][1]), " ")[[1]]
   exported <- unique(regmatches(r$out, gregexpr("export [A-Z_]+=", r$out))[[1]])
   exported <- sub("=$", "", sub("^export ", "", exported))
@@ -372,6 +412,7 @@ test_that("how a worker names itself is redacted beside its target", {
     "WK_TARGETS=(wk wk2); WK_KEYS=(worker1 worker2)",
     "remote_redact_add worker1 Workers-Mac-mini", "remote_redact_add worker1 ''",
     "remote_redact_add worker1 Workers-Mac-mini",
-    sprintf("remote_redact_targets %s", shQuote(f))))
+    sprintf("remote_redact_targets %s", shQuote(f))
+  ))
   expect_identical(readLines(f), c("<worker1>\tabc\tdef", "<worker2>\tghi"))
 })

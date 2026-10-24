@@ -1142,7 +1142,11 @@ test_that("study_area_run.sh models with the gate off on both legs (#349)", {
   local_leg <- grep("Rscript data-raw/wsg_run_one.R \"\\$w\"", src) - 1L
   expect_length(local_leg, 1L)
   expect_match(src[local_leg], "LNK_HABITAT_GATE=0", fixed = TRUE)
-  ssh_leg <- grep("ssh .*wsg_run_one.R", src, value = TRUE)
+  # The ssh leg's command is built by remote_leg_cmd (study_area_remote.sh,
+  # link#376), which the driver's ssh call uses.
+  expect_length(grep('"$(remote_leg_cmd "$WS" "$B_SPACE")"', src, fixed = TRUE), 1L)
+  remote <- readLines(testthat::test_path("..", "..", "data-raw", "study_area_remote.sh"))
+  ssh_leg <- grep("wsg_run_one.R", remote, value = TRUE)
   expect_length(ssh_leg, 1L)
   expect_match(ssh_leg, "export LNK_HABITAT_GATE=0 &&", fixed = TRUE)
 })

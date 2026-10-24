@@ -75,9 +75,9 @@ Needs the worker's ssh target from the operator (kept out of the repo).
 - [ ] Acceptance 2: a provincial run with a worker has a longest leg within 10 % of its packing estimate (next provincial `default` run; fills #377's runs row)
 
 ## Validation
-- [ ] Tests pass (`devtools::test()`; the four study_area suites in particular)
-- [ ] `lintr::lint_package()` clean
-- [ ] `/code-check branch` clean (three-round floor)
+- [x] Tests pass (`devtools::test()`: 1070 tests, 2 failures in `test-lnk_pipeline_prepare.R`, a structural pin on the ssh leg string, repointed at `study_area_remote.sh`; then all affected suites green)
+- [x] `lintr::lint_package()`: no new lints in files this branch created or in its test edits, beyond `hosts_bash` object-usage warnings main carries in the same pattern; three indentation and one semicolon lint in `schema_consolidate.R` and its test follow that file's existing style (main: 2,793)
+- [x] `/code-check branch`: four rounds (3, 3, 6, 4 findings; all fixed but one half-wrong claim), ended by enumeration after round 4 found a defect inside round 3's fix (findings.md)
 - [ ] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
 

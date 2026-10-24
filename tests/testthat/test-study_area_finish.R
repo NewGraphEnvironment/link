@@ -570,7 +570,8 @@ cons_tsv <- function(w, rows) {
 }
 
 cons_setup <- c(
-  "HOST_ARR=(a b c); CY_IP[a]=ip-a; CY_IP[b]=ip-b; CY_IP[c]=ip-c; HOST_SSH[a]=cypher@ip-a; HOST_SSH[b]=cypher@ip-b; HOST_SSH[c]=cypher@ip-c",
+  paste("HOST_ARR=(a b c); CY_IP[a]=ip-a; CY_IP[b]=ip-b; CY_IP[c]=ip-c;",
+        "HOST_SSH[a]=cypher@ip-a; HOST_SSH[b]=cypher@ip-b; HOST_SSH[c]=cypher@ip-c"),
   "HOST_BUCKET[a]=CCCC,DDDD; HOST_BUCKET[b]=EEEE; HOST_BUCKET[c]=FFFF",
   # c reported nothing, so it was never a source.
   "HOST_BUCKET_DONE[a]=CCCC,DDDD; HOST_BUCKET_DONE[b]=EEEE; HOST_BUCKET_DONE[c]=''"

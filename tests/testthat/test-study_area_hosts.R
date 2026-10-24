@@ -903,8 +903,10 @@ test_that("the partial drop's SQL deletes persist rows and keeps log rows (live)
     "host_drop_partials worker1 && echo DROP_RC=0 || echo DROP_RC=$?"
   ), cyphers = character(0), cyphers_up = 0L)
   expect_match(r$out, "DROP_RC=0", fixed = TRUE)
-  left <- function(t) DBI::dbGetQuery(conn, sprintf(
-    "SELECT watershed_group_code FROM %s.%s ORDER BY 1", sc, t))$watershed_group_code
+  left <- function(t) {
+    sql <- sprintf("SELECT watershed_group_code FROM %s.%s ORDER BY 1", sc, t)
+    DBI::dbGetQuery(conn, sql)$watershed_group_code
+  }
   expect_identical(left("streams"), "WWWW")
   expect_identical(left("streams_habitat_bt"), "WWWW")
   expect_identical(left("log"), c("PPPP", "WWWW"))
@@ -931,13 +933,13 @@ test_that("a database's identity is read only from one framed answer", {
   skip_if_no_hosts_lib()
   w <- hosts_world()
   put(w, "ssh_wk.out", c("__LNK_BEGIN__", "7312345678901234567", "__LNK_END__"))
-  r <- run_hosts(w, 'host_db_id wk && echo RC=0 || echo RC=$?', cyphers = character(0))
+  r <- run_hosts(w, "host_db_id wk && echo RC=0 || echo RC=$?", cyphers = character(0))
   expect_match(r$out, "7312345678901234567\nRC=0", fixed = TRUE)
   for (bad in list(character(0), c("__LNK_BEGIN__", "731"),
                    c("__LNK_BEGIN__", "ERROR: x", "__LNK_END__"),
                    c("__LNK_BEGIN__", "1", "2", "__LNK_END__"))) {
     put(w, "ssh_wk.out", bad)
-    r <- run_hosts(w, 'host_db_id wk && echo RC=0 || echo RC=$?', cyphers = character(0))
+    r <- run_hosts(w, "host_db_id wk && echo RC=0 || echo RC=$?", cyphers = character(0))
     expect_match(r$out, "RC=1", fixed = TRUE)
   }
 })
