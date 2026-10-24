@@ -32,3 +32,4 @@ Each row is written as its phase ends, so a run that dies still leaves the phase
 
 | Error | Resolution |
 |-------|------------|
+| `${#PHASE_OPEN[@]}` on a never-filled assoc array is "unbound variable" under `set -u` (bash 5.3); `for k in "${!PHASE_OPEN[@]}"` is fine | Tests count by loop; the lib only loops |

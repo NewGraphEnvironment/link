@@ -50,17 +50,17 @@ What exploration found that shapes the design:
 
 ## Phase 1: the lib and its tests
 
-- [ ] `data-raw/study_area_phases.sh`: `phase_begin <phase> [host]`, `phase_end <phase>
+- [x] `data-raw/study_area_phases.sh`: `phase_begin <phase> [host]`, `phase_end <phase>
       [host] <groups> <status>`, `phase_skip <phase> [host]`, `phase_row` (one `printf >>`
       line, under PIPE_BUF, so parallel legs can append), `phases_report` (prints the table
       and the critical path: first start to last end, in minutes), the open-phase record
       `on_exit` reads. Header written once by `phases_init`. Globals documented like
       `study_area_finish.sh`'s header.
-- [ ] `tests/testthat/test-study_area_phases.R`, same harness as `test-study_area_hosts.R`
+- [x] `tests/testthat/test-study_area_phases.R`, same harness as `test-study_area_hosts.R`
       (bash ≥ 4, skip when the lib is absent): header once; one row per end; blank times on
       skip; `minutes` right; two parallel writers leave whole rows; report's critical path
       over a fixture; skipped rows ignored; an open phase closed `failed`.
-- [ ] Restore-the-bug check: a mutant (e.g. critical path from first *end*) turns a test red.
+- [x] Restore-the-bug check: a mutant (e.g. critical path from first *end*) turns a test red.
 
 ## Phase 2: wire the driver
 
