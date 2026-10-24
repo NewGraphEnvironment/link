@@ -238,10 +238,11 @@ test_that("a destination missing link's persist tables refuses the source", {
   # An image's leftovers seen in every 2026 consolidate log: not link's.
   leftovers <- c("streams_bt", "streams_ch", "streams_habitat", "streams_v2")
   expect_identical(e$consolidate_missing_persist(leftovers), character(0))
+  # A habitat table for a species outside the run's config is a leftover too.
   expect_identical(
-    e$consolidate_missing_persist(c("streams", "streams_habitat_bt", "streams_v2",
+    e$consolidate_missing_persist(c("streams", "streams_habitat_ko", "streams_v2",
                                     "barriers", "streams_mapping_code")),
-    c("streams", "streams_habitat_bt", "barriers", "streams_mapping_code"))
+    c("streams", "barriers", "streams_mapping_code"))
 })
 
 test_that("a backup that fails stops, and one that works names its file (live)", {

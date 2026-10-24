@@ -50,7 +50,7 @@
 # Needs bash >= 4 (assoc arrays), as the driver does.
 
 declare -A CY_IP CY_BUCKET CY_RUN_RC CY_HOLD CY_BURNED CY_UNCONS CY_PARTIAL CY_WHY
-declare -A CY_PRE CY_PRE_STATE CY_DOUBT CY_CONS_FAIL CY_LEG_DONE
+declare -A CY_PRE CY_PRE_STATE CY_DOUBT CY_CONS_FAIL CY_LEG_DONE CY_CONS_STATE CY_BUCKET_DONE
 declare -A ACC_STATE ACC_FINISHED ACC_DONE_LOG ACC_SKIP
 
 # psql script: groups in <table> matching <condition>, framed by sentinels. A
@@ -289,6 +289,18 @@ host_account() {
     fin=""
   fi
   ACC_FINISHED[$key]=$(printf '%s\n' "$fin" | .hosts_csv)
+  # Since link#369 the dispatcher is accounted after the cyphers' consolidates,
+  # which copy their log rows here, so its log also names their groups. Those
+  # are not the dispatcher's finished work: leave out every group a consolidate
+  # was attempted for, unless the dispatcher's own bucket has it.
+  if [ "$key" = "dispatcher" ]; then
+    local ws copied=""
+    for ws in ${CY_WS_ARR[@]+"${CY_WS_ARR[@]}"}; do
+      [ -n "${CY_CONS_STATE[$ws]:-}" ] || continue
+      copied=$(.hosts_union "$copied" "${CY_BUCKET_DONE[$ws]:-}")
+    done
+    ACC_FINISHED[$key]=$(.hosts_minus "${ACC_FINISHED[$key]}" "$(.hosts_minus "$copied" "$expected")")
+  fi
   ACC_SKIP[$key]=$(host_log_reported "$log" SKIP | .hosts_csv)
   ACC_DONE_LOG[$key]=$(host_log_reported "$log" done | .hosts_csv)
   [ "$key" = "dispatcher" ] || \

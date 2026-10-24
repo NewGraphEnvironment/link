@@ -161,15 +161,18 @@ consolidate_bucket_count_sql <- function(schema, tables, bucket) {
 #' A destination missing one of these was not initialised: the dispatcher's
 #' groups create them when they persist, and a host consolidated before that
 #' would copy only the log tables, report success, and delete its log rows at
-#' the source (link#369). Tables of other shapes (an image's leftovers, such
-#' as `streams_bt` or `streams_v2`) are not link's and are skipped, as before.
+#' the source (link#369). Only the tables every species set has: a
+#' `streams_habitat_<sp>` the destination lacks can be a species outside the
+#' run's config, left on a host by an earlier build, so it is skipped with a
+#' note as before. Tables of other shapes (an image's leftovers, such as
+#' `streams_bt` or `streams_v2`) are not link's and are skipped too.
 #'
 #' @param tables Character. Tables only the source has.
 #' @return The persist tables among them.
 consolidate_missing_persist <- function(tables) {
-  pat <- paste0("^(streams|barriers|barrier_overrides|streams_access|",
-                "streams_mapping_code|streams_near_river|streams_habitat_[a-z]+)$")
-  tables[grepl(pat, tables)]
+  core <- c("streams", "barriers", "barrier_overrides", "streams_access",
+            "streams_mapping_code", "streams_near_river")
+  tables[tables %in% core]
 }
 
 #' pg_dump the destination schema before anything is copied into it.

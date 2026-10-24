@@ -504,26 +504,47 @@ format.lnk_stamp <- function(x, type = c("markdown", "text"), ...) {
 .lnk_read_git_head <- function(git_path) {
   # `git_path` can be a directory (.git/) or a file (worktree pointer).
   if (file.info(git_path)$isdir) {
-    head_file <- file.path(git_path, "HEAD")
+    gitdir <- git_path
   } else {
     # gitdir pointer file ("gitdir: /path/to/.git/worktrees/foo")
     pointer <- readLines(git_path, warn = FALSE, n = 1)
     if (length(pointer) == 0L) return(NULL)
     gitdir <- sub("^gitdir:\\s*", "", pointer)
-    head_file <- file.path(gitdir, "HEAD")
   }
+  head_file <- file.path(gitdir, "HEAD")
   if (!file.exists(head_file)) return(NULL)
   head <- readLines(head_file, warn = FALSE, n = 1)
   if (length(head) == 0L) return(NULL)
-  if (grepl("^ref:", head)) {
-    ref <- sub("^ref:\\s*", "", head)
-    ref_file <- file.path(dirname(head_file), ref)
-    if (!file.exists(ref_file)) return(NULL)
-    sha <- readLines(ref_file, warn = FALSE, n = 1)
-    if (length(sha) == 0L) return(NULL)
-    return(sha)
+  if (!grepl("^ref:", head)) return(head)
+  ref <- sub("^ref:\\s*", "", head)
+  # A worktree's own git dir holds its HEAD, but branch refs live in the
+  # common dir its `commondir` file names, loose or in `packed-refs`. Reading
+  # the ref beside the worktree's HEAD found nothing, so a dispatcher run from
+  # a worktree logged link_sha NULL (link#369, Run A).
+  dirs <- gitdir
+  common <- file.path(gitdir, "commondir")
+  if (file.exists(common)) {
+    cd <- readLines(common, warn = FALSE, n = 1)
+    if (length(cd) == 1L && nzchar(cd)) {
+      dirs <- c(dirs, if (grepl("^/", cd)) cd else file.path(gitdir, cd))
+    }
   }
-  head
+  for (d in dirs) {
+    ref_file <- file.path(d, ref)
+    if (file.exists(ref_file)) {
+      sha <- readLines(ref_file, warn = FALSE, n = 1)
+      if (length(sha) == 1L && nzchar(sha)) return(sha)
+    }
+  }
+  for (d in dirs) {
+    packed <- file.path(d, "packed-refs")
+    if (!file.exists(packed)) next
+    lines <- readLines(packed, warn = FALSE)
+    hit <- lines[endsWith(lines, paste0(" ", ref)) & !startsWith(lines, "#") &
+                   !startsWith(lines, "^")]
+    if (length(hit) >= 1L) return(sub(" .*$", "", hit[[1]]))
+  }
+  NULL
 }
 
 .lnk_db_count <- function(conn, qualified_table) {

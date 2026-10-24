@@ -1669,7 +1669,8 @@ the same way and burns none.
   - `schema_consolidate()` judges a copy on the bucket's rows, not whole
     tables, which move with the dispatcher's own per-group replace.
   - It refuses a source before anything is deleted when the destination lacks
-    one of link's persist tables (`dest_missing_tables`): into an uninitialised
+    one of link's core persist tables (`streams`, `barriers`, …; a missing
+    habitat table is still only a note: `dest_missing_tables`): into an uninitialised
     schema it would copy only the log tables, report success and delete the
     host's log rows. The driver initialises the dispatcher's persist before
     dispatch so this does not arise.

@@ -343,3 +343,19 @@ test_that("a dispatcher-only run waits for its one leg and consolidates nothing"
   expect_match(r$out, "DISP_RC=[0]", fixed = TRUE)
   expect_false(file.exists(file.path(w, "stub", "cons_calls")))
 })
+
+test_that("the dispatcher's accounting does not claim the groups copied in from a cypher", {
+  # Run A (2026-10-24): accounted after the copies, the dispatcher's log named
+  # the cyphers' groups, read as its own finished groups outside its bucket.
+  skip_if_no_legs_lib()
+  w <- legs_world()
+  legs_host(w, "a", "AAAA")
+  put(w, "psql_local.out", db_answer(c("AAAA", "ZZZZ")))
+  r <- run_legs(w, c("legs_wait",
+                     'host_account dispatcher local /nonexistent "$DISP_BUCKET"',
+                     'echo "FIN=[${ACC_FINISHED[dispatcher]}]"'),
+                legs = c(a = 0.2), disp = 0.5)
+  expect_equal(r$status, 0L, info = r$out)
+  expect_match(r$out, "FIN=[ZZZZ]", fixed = TRUE)
+  expect_false(grepl("outside its bucket", r$out, fixed = TRUE))
+})
