@@ -511,7 +511,7 @@ KEPT_N=0
 KEPT_CAUSE_N=0
 RECOMPUTE_RAN=0
 CONSOLIDATING=0
-# The lib declares every map the trap reads (CY_IP and CY_BUCKET included,
+# The lib declares every map the trap reads (CY_IP and HOST_BUCKET included,
 # filled further down), so it is sourced here, at the top level, before the
 # trap exists.
 
@@ -1297,12 +1297,12 @@ fi
 DISP_BUCKET=$(cd "$REPO_ROOT" && LNK_LOAD=loadall Rscript data-raw/study_area_wsgs.R ${WSGS_FLAG[@]+"${WSGS_FLAG[@]}"} "${FOCAL_ARR[0]}" "$CONFIG")
 DISP_BUCKET=$(echo "$DISP_BUCKET" | tr -d '[:space:]')
 echo "  dispatcher (focal=${FOCAL_ARR[0]}): $DISP_BUCKET"
-declare -A CY_BUCKET
+declare -A HOST_BUCKET
 for i in "${!CY_WS_ARR[@]}"; do
   WS="${CY_WS_ARR[$i]}"
   B=$(cd "$REPO_ROOT" && LNK_LOAD=loadall Rscript data-raw/study_area_wsgs.R ${WSGS_FLAG[@]+"${WSGS_FLAG[@]}"} "${FOCAL_ARR[$((i+1))]}" "$CONFIG")
-  CY_BUCKET[$WS]=$(echo "$B" | tr -d '[:space:]')
-  echo "  cy[$WS] (focal=${FOCAL_ARR[$((i+1))]}): ${CY_BUCKET[$WS]}"
+  HOST_BUCKET[$WS]=$(echo "$B" | tr -d '[:space:]')
+  echo "  cy[$WS] (focal=${FOCAL_ARR[$((i+1))]}): ${HOST_BUCKET[$WS]}"
 done
 
 # Overlap: a WSG in two hosts' buckets is computed on both and consolidate is
@@ -1316,7 +1316,7 @@ done
 # so a bucket cannot be blank), but the unsafe form has already caused two
 # real aborts in this script and is exactly what gets copied next.
 DUP=$( { echo "$DISP_BUCKET" | tr ',' '\n'
-  for WS in "${CY_WS_ARR[@]}"; do echo "${CY_BUCKET[$WS]}" | tr ',' '\n'; done
+  for WS in "${CY_WS_ARR[@]}"; do echo "${HOST_BUCKET[$WS]}" | tr ',' '\n'; done
 } | sed '/^[[:space:]]*$/d' | sort | uniq -d | paste -sd, - )
 if [ -n "$DUP" ]; then
   if [ "$BUCKETS_EXACT" = "1" ]; then
@@ -1535,7 +1535,7 @@ fi
 # leg ended, after the driver was killed. Appending is safe: the inner `>`
 # truncates before either writes, and an O_APPEND fd writes at the end.
 RUN_N=$( { csv_lines "$DISP_BUCKET"
-  for WS in "${CY_WS_ARR[@]}"; do csv_lines "${CY_BUCKET[$WS]}"; done
+  for WS in "${CY_WS_ARR[@]}"; do csv_lines "${HOST_BUCKET[$WS]}"; done
 } | sort -u | wc -l | tr -d ' ')
 # No leg is dispatched until the backup has succeeded (link#369). A failure
 # exits before any host is held, so the trap burns them.
@@ -1571,8 +1571,8 @@ for WS in "${CY_WS_ARR[@]}"; do
   # HELD from here on: from its first write, this host may hold the only copy
   # of finished groups. Released only by host_release after consolidate
   # (link#347); until then no exit path burns it.
-  CY_HOLD[$WS]=1
-  IP="${CY_IP[$WS]}"; B_SPACE=$(echo "${CY_BUCKET[$WS]}" | tr ',' ' ')
+  HOST_HOLD[$WS]=1
+  IP="${CY_IP[$WS]}"; B_SPACE=$(echo "${HOST_BUCKET[$WS]}" | tr ',' ' ')
   # FWAPG_GIT_SHA is resolved once on the dispatcher (preflight_local) and
   # handed to every host: cyphers have no ~/Projects/repo/fwapg, so without
   # it .lnk_fwapg_sha() returns NA and every cypher row lands with a NULL
@@ -1595,10 +1595,10 @@ for WS in "${CY_WS_ARR[@]}"; do
   ( mrc=0
   ssh -o ServerAliveInterval=60 -o ServerAliveCountMax=10 "cypher@$IP" "cd ~/Projects/repo/link && export LNK_SCHEMA='$SCHEMA' && export LNK_GUARD_DOWNSTREAM=warn && export LNK_HABITAT_GATE=0 && export PGOPTIONS='-c statement_timeout=${STATEMENT_TIMEOUT_MIN}min' && export LNK_STATEMENT_TIMEOUT_MIN='$STATEMENT_TIMEOUT_MIN' && export FWAPG_GIT_SHA='${FWAPG_GIT_SHA:-}' && export BCFISHOBS_GIT_SHA='${BCFISHOBS_GIT_SHA:-}' && export LNK_RUN_UID='$RUN_UID' && export LNK_RUN_LABEL='$RUN_LABEL' && export LNK_BCFP_MODEL_VERSION='${LNK_BCFP_MODEL_VERSION:-}' && for w in $B_SPACE; do Rscript data-raw/wsg_run_one.R \$w '$CONFIG' || echo \"[WARN] cy WSG \$w failed\"; done" \
     > "$LOG_DIR/${TS}_run_$WS.log" 2>&1 || mrc=$?
-  phase_end model "$WS" "$(csv_count "${CY_BUCKET[$WS]}")" \
+  phase_end model "$WS" "$(csv_count "${HOST_BUCKET[$WS]}")" \
     "$([ "$mrc" = "0" ] && echo ok || echo failed)" quiet
   exit "$mrc" ) >> "$LOG_DIR/${TS}_run_$WS.log" 2>&1 &
-  CY_LEG_PID[$WS]=$!
+  HOST_LEG_PID[$WS]=$!
 done
 # --- each leg as it ends (link#369) ---------------------------------------
 # A non-zero host exit (e.g. ssh dropped) is logged, NOT fatal: whatever each

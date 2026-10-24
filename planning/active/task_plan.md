@@ -29,9 +29,9 @@ Needs the worker's ssh target from you on approval (kept out of the repo).
 - [ ] Record findings (no identity) in `findings.md`; adjust Phases 3–4 if a route differs
 
 ## Phase 2: Rename any-remote-host maps (behaviour-neutral)
-- [ ] Record the four study_area suites' pass counts at HEAD
-- [ ] `CY_WS_ARR`→`HOST_ARR`, `CY_BUCKET`→`HOST_BUCKET`, `CY_HOLD`, `CY_RUN_RC`, `CY_CONS_*`, `CY_BUCKET_DONE`, `CY_UNCONS`, `CY_PARTIAL`, `CY_DOUBT`, `CY_PRE*`, `CY_WHY`, `CY_LEG_*`, `CY_NO_OUTCOME` → `HOST_*` across `study_area_{run,hosts,legs,finish}.sh` and their tests; keep `CY_IP`, `CY_BURNED`, `CY_WS`
-- [ ] Suites pass with identical counts; commit alone
+- [x] Record the four study_area suites' pass counts at HEAD
+- [x] `CY_WS_ARR`→`HOST_ARR` (deferred to Phase 4, which splits the list by kind), `CY_BUCKET`→`HOST_BUCKET`, `CY_HOLD`, `CY_RUN_RC`, `CY_CONS_*`, `CY_BUCKET_DONE`, `CY_UNCONS`, `CY_PARTIAL`, `CY_DOUBT`, `CY_PRE*`, `CY_WHY`, `CY_LEG_*`, `CY_NO_OUTCOME` → `HOST_*` across `study_area_{run,hosts,legs,finish}.sh` and their tests; keep `CY_IP`, `CY_BURNED`, `CY_WS`
+- [x] Suites pass with identical counts (hosts 38/125, legs 14/68, finish 34/229, phases 16/61); commit alone
 
 ## Phase 3: The exit-status rule (tests first)
 - [ ] Tests: stub ssh that exits 0 while the remote command failed — consolidate must not copy a partial table or delete from the source; a leg with no end sentinel reads as failed; a vintage probe with no pass sentinel fails

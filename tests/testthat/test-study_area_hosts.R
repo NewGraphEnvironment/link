@@ -41,7 +41,7 @@ run_hosts <- function(world, body, cyphers = c("a", "b"), keep = 0L,
     ),
     sprintf("KEEP_CYPHERS=%d; CYPHERS_UP=%d", keep, cyphers_up),
     sprintf("CY_WS_ARR=(%s)", paste(cyphers, collapse = " ")),
-    'for ws in "${CY_WS_ARR[@]}"; do CY_IP[$ws]="ip-$ws"; CY_RUN_RC[$ws]=0; done',
+    'for ws in "${CY_WS_ARR[@]}"; do CY_IP[$ws]="ip-$ws"; HOST_RUN_RC[$ws]=0; done',
     body
   ), script)
   out <- withr::with_envvar(
@@ -164,7 +164,7 @@ test_that("a persist with no log table yet has finished nothing, knowably", {
 # Account for, then release, cyphers a and b after a (mock) consolidate.
 account_release <- function(bucket = "") {
   c(
-    "for ws in a b; do CY_HOLD[$ws]=1;",
+    "for ws in a b; do HOST_HOLD[$ws]=1;",
     sprintf('host_account $ws ip-$ws /nonexistent "%s" > /dev/null || true; done', bucket),
     sprintf('for ws in a b; do host_release $ws "%s"; done', bucket)
   )
@@ -210,7 +210,7 @@ test_that("the release probe asks about every group the host ran or finished", {
   put(w, "ssh_ip-a.out", db_answer(c("DBFN")))
   put(w, "ssh_ip-a_streams.out", db_answer(character(0)))
   r <- run_hosts(w, c(
-    "CY_HOLD[a]=1",
+    "HOST_HOLD[a]=1",
     sprintf(
       "host_account a ip-a %s BUCK > /dev/null || true",
       shQuote(file.path(w, "logs", "run_a.log"))
@@ -237,7 +237,7 @@ test_that("a lost run_uid still consolidates and holds by the log", {
   put(w, "ssh_ip-a_streams.out", db_answer(c("AAAA", "BBBB")))
   put(w, "ssh_ip-a_mc.out", db_answer(character(0)))
   r <- run_hosts(w, c(
-    "CY_HOLD[a]=1",
+    "HOST_HOLD[a]=1",
     sprintf("host_account a ip-a %s AAAA,BBBB > /dev/null || true", shQuote(log)),
     'echo "BUCKET=$(host_consolidate_bucket a)"',
     "host_release a AAAA,BBBB", "burn_cyphers"
@@ -253,7 +253,7 @@ test_that("a dispatch session that exited non-zero keeps the host", {
   put(w, "ssh_ip-a.out", db_answer("AAAA"))
   put(w, "ssh_ip-a_streams.out", db_answer(character(0)))
   r <- run_hosts(w, c(
-    "CY_HOLD[a]=1; CY_RUN_RC[a]=255",
+    "HOST_HOLD[a]=1; HOST_RUN_RC[a]=255",
     "host_account a ip-a /nonexistent AAAA > /dev/null || true",
     "host_release a AAAA", "burn_cyphers"
   ), cyphers = "a")
@@ -275,7 +275,7 @@ test_that("a missing streams table after consolidate is unknown, not empty", {
   put(w, "ssh_ip-a.out", db_answer("AAAA"))
   put(w, "ssh_ip-a_streams.out", c("__LNK_BEGIN__", "__LNK_NOTABLE__", "__LNK_END__"))
   r <- run_hosts(w, c(
-    "CY_HOLD[a]=1",
+    "HOST_HOLD[a]=1",
     "host_account a ip-a /nonexistent AAAA > /dev/null || true",
     "host_release a AAAA", "burn_cyphers"
   ), cyphers = "a")
@@ -324,7 +324,7 @@ test_that("an unknown finished set is left out of consolidate and keeps the host
   writeLines(midline("AAAA"), file.path(w, "logs", "run_a.log"))
   put(w, "ssh_ip-a.out", character(0))
   r <- run_hosts(w, c(
-    "CY_HOLD[a]=1",
+    "HOST_HOLD[a]=1",
     sprintf(
       "host_account a ip-a %s AAAA > /dev/null || true",
       shQuote(file.path(w, "logs", "run_a.log"))
@@ -345,7 +345,7 @@ test_that("a database that stops answering after consolidate keeps the host", {
   put(w, "ssh_ip-a.out", db_answer("AAAA"))
   # no _streams fixture: the release probe gets nothing back
   r <- run_hosts(w, c(
-    "CY_HOLD[a]=1",
+    "HOST_HOLD[a]=1",
     "host_account a ip-a /nonexistent AAAA > /dev/null || true",
     "host_release a AAAA", "burn_cyphers"
   ), cyphers = "a")
@@ -386,7 +386,7 @@ test_that("an abort after dispatch keeps every held host", {
   w <- hosts_world()
   r <- run_hosts(w, c(
     "trap burn_cyphers EXIT",
-    "for ws in a b; do CY_HOLD[$ws]=1; done",
+    "for ws in a b; do HOST_HOLD[$ws]=1; done",
     "exit 3"
   ))
   expect_equal(r$status, 3L)
@@ -457,7 +457,7 @@ test_that("a failed group's partial rows neither hold the host nor get recovered
   put(w, "ssh_ip-a_streams.out", db_answer("BBBB"))
   put(w, "ssh_ip-a_mc.out", db_answer(character(0)))
   r <- run_hosts(w, c(
-    "CY_HOLD[a]=1",
+    "HOST_HOLD[a]=1",
     sprintf("host_account a ip-a %s AAAA,BBBB > /dev/null || true", shQuote(log)),
     'echo "BUCKET=$(host_consolidate_bucket a)"',
     "host_release a AAAA,BBBB", "burn_cyphers"
@@ -478,7 +478,7 @@ test_that("mapping-code rows mark a group finished when run_uid and log both fai
   put(w, "ssh_ip-a_streams.out", db_answer("AAAA"))
   put(w, "ssh_ip-a_mc.out", db_answer("AAAA"))
   r <- run_hosts(w, c(
-    "CY_HOLD[a]=1; CY_PRE_STATE[a]=known",
+    "HOST_HOLD[a]=1; HOST_PRE_STATE[a]=known",
     "host_account a ip-a /nonexistent AAAA > /dev/null || true",
     "host_release a AAAA", "burn_cyphers"
   ), cyphers = "a")
@@ -497,7 +497,7 @@ test_that("an aborted run's report says its groups may still be building", {
   put(w, "ssh_ip-a_mc.out", db_answer("AAAA"))
   r <- run_hosts(w, c(
     "trap burn_cyphers EXIT",
-    "CY_HOLD[a]=1; CY_BUCKET[a]=AAAA,BBBB; CY_PRE_STATE[a]=known; unset 'CY_RUN_RC[a]'",
+    "HOST_HOLD[a]=1; HOST_BUCKET[a]=AAAA,BBBB; HOST_PRE_STATE[a]=known; unset 'HOST_RUN_RC[a]'",
     "exit 1"
   ), cyphers = "a")
   expect_length(burn_calls(w), 0L)
@@ -517,7 +517,7 @@ test_that("a settled host's report names partial groups, and the recompute that 
   put(w, "ssh_ip-a_streams.out", db_answer(c("AAAA", "BBBB")))
   put(w, "ssh_ip-a_mc.out", db_answer("AAAA"))
   r <- run_hosts(w, c(
-    "CY_HOLD[a]=1; CY_BUCKET[a]=AAAA,BBBB; CY_PRE_STATE[a]=known; RECOMPUTE_RAN=1",
+    "HOST_HOLD[a]=1; HOST_BUCKET[a]=AAAA,BBBB; HOST_PRE_STATE[a]=known; RECOMPUTE_RAN=1",
     "burn_cyphers"
   ), cyphers = "a")
   k <- kept_tsv(w)
@@ -535,9 +535,9 @@ test_that("mapping-code rows from the image do not count as finished", {
   put(w, "ssh_ip-a_mc.out", db_answer("AAAA"))
   put(w, "ssh_ip-a.out", db_answer(character(0)))
   r <- run_hosts(w, c(
-    "CY_BUCKET[a]=AAAA; host_baseline a",
-    'echo "PRE=${CY_PRE[a]} STATE=${CY_PRE_STATE[a]}"',
-    "CY_HOLD[a]=1",
+    "HOST_BUCKET[a]=AAAA; host_baseline a",
+    'echo "PRE=${HOST_PRE[a]} STATE=${HOST_PRE_STATE[a]}"',
+    "HOST_HOLD[a]=1",
     "host_account a ip-a /nonexistent AAAA > /dev/null || true",
     "host_release a AAAA"
   ), cyphers = "a")
@@ -554,8 +554,8 @@ test_that("with no baseline, mapping-code rows are not a finish signal", {
   w <- hosts_world()
   put(w, "ssh_ip-a.out", db_answer(character(0)))
   r <- run_hosts(w, c(
-    "CY_BUCKET[a]=AAAA; host_baseline a", # no _streams fixture: probe fails
-    'echo "STATE=${CY_PRE_STATE[a]}"'
+    "HOST_BUCKET[a]=AAAA; host_baseline a", # no _streams fixture: probe fails
+    'echo "STATE=${HOST_PRE_STATE[a]}"'
   ), cyphers = "a")
   expect_match(r$out, "STATE=unknown", fixed = TRUE)
   expect_match(r$out, "mapping-code rows will not count as finished", fixed = TRUE)
@@ -568,7 +568,7 @@ test_that("a missing mapping-code table is unknown, not partial", {
   put(w, "ssh_ip-a_streams.out", db_answer("AAAA"))
   put(w, "ssh_ip-a_mc.out", c("__LNK_BEGIN__", "__LNK_NOTABLE__", "__LNK_END__"))
   r <- run_hosts(w, c(
-    "CY_HOLD[a]=1",
+    "HOST_HOLD[a]=1",
     "host_account a ip-a /nonexistent AAAA > /dev/null || true",
     "host_release a AAAA", "burn_cyphers"
   ), cyphers = "a")
@@ -583,7 +583,7 @@ test_that("with no baseline, mapping-code rows hold the host but are not recover
   put(w, "ssh_ip-a_streams.out", db_answer("AAAA"))
   put(w, "ssh_ip-a_mc.out", db_answer("AAAA"))
   r <- run_hosts(w, c(
-    "CY_HOLD[a]=1; CY_PRE_STATE[a]=unknown",
+    "HOST_HOLD[a]=1; HOST_PRE_STATE[a]=unknown",
     "host_account a ip-a /nonexistent AAAA > /dev/null || true",
     "host_release a AAAA", "burn_cyphers"
   ), cyphers = "a")
@@ -601,8 +601,8 @@ test_that("a driver killed while waiting on a host sees that host unsettled", {
   put(w, "ssh_ip-a_streams.out", db_answer("BBBB"))
   put(w, "ssh_ip-a_mc.out", db_answer(character(0)))
   r <- run_hosts(w, c(
-    "unset 'CY_RUN_RC[a]'; CY_HOLD[a]=1; CY_BUCKET[a]=BBBB; CY_PRE_STATE[a]=known",
-    "trap 'burn_cyphers; echo \"RC=[${CY_RUN_RC[a]:-unset}]\"' EXIT",
+    "unset 'HOST_RUN_RC[a]'; HOST_HOLD[a]=1; HOST_BUCKET[a]=BBBB; HOST_PRE_STATE[a]=known",
+    "trap 'burn_cyphers; echo \"RC=[${HOST_RUN_RC[a]:-unset}]\"' EXIT",
     "sleep 30 & child=$!",
     "( sleep 1; kill -TERM $$ ) &",
     'host_wait a "$child"'
@@ -620,7 +620,7 @@ test_that("host_wait records the session's own status", {
     'host_wait a "$p" || true',
     "( exit 0 ) & q=$!",
     'host_wait b "$q"',
-    'echo "A=${CY_RUN_RC[a]} B=${CY_RUN_RC[b]}"'
+    'echo "A=${HOST_RUN_RC[a]} B=${HOST_RUN_RC[b]}"'
   ))
   expect_match(r$out, "A=7 B=0", fixed = TRUE)
 })
@@ -635,7 +635,7 @@ test_that("a report from the trap reads this run's finish signals itself", {
   put(w, "ssh_ip-a_streams.out", db_answer(c("AAAA", "BBBB")))
   put(w, "ssh_ip-a_mc.out", db_answer("AAAA"))
   r <- run_hosts(w, c(
-    "CY_HOLD[a]=1; CY_BUCKET[a]=AAAA,BBBB; CY_PRE_STATE[a]=known; CY_PRE[a]=AAAA",
+    "HOST_HOLD[a]=1; HOST_BUCKET[a]=AAAA,BBBB; HOST_PRE_STATE[a]=known; HOST_PRE[a]=AAAA",
     "burn_cyphers"
   ), cyphers = "a")
   k <- kept_tsv(w)
@@ -649,8 +649,8 @@ test_that("the baseline counts an image's mapping-code rows too", {
   put(w, "ssh_ip-a_streams.out", db_answer(character(0)))
   put(w, "ssh_ip-a_mc.out", db_answer("AAAA"))
   r <- run_hosts(w, c(
-    "CY_BUCKET[a]=AAAA; host_baseline a",
-    'echo "PRE=${CY_PRE[a]}"'
+    "HOST_BUCKET[a]=AAAA; host_baseline a",
+    'echo "PRE=${HOST_PRE[a]}"'
   ), cyphers = "a")
   expect_match(r$out, "PRE=AAAA", fixed = TRUE)
 })
@@ -666,8 +666,8 @@ test_that("a driver killed during one host's consolidate sees that host unsettle
     put(w, sprintf("ssh_ip-%s_mc.out", h), db_answer(toupper(strrep(h, 4))))
   }
   r <- run_hosts(w, c(
-    "CY_HOLD[a]=1; CY_BUCKET[a]=AAAA; CY_PRE_STATE[a]=known",
-    "CY_HOLD[b]=1; CY_BUCKET[b]=BBBB; CY_PRE_STATE[b]=known",
+    "HOST_HOLD[a]=1; HOST_BUCKET[a]=AAAA; HOST_PRE_STATE[a]=known",
+    "HOST_HOLD[b]=1; HOST_BUCKET[b]=BBBB; HOST_PRE_STATE[b]=known",
     "host_account a ip-a /nonexistent AAAA > /dev/null || true",
     "host_account b ip-b /nonexistent BBBB > /dev/null || true",
     "trap burn_cyphers EXIT",
@@ -689,7 +689,7 @@ test_that("an unknown group's reason names the rule that made it unknown", {
   put(w, "ssh_ip-a_streams.out", db_answer("AAAA"))
   put(w, "ssh_ip-a_mc.out", db_answer(character(0)))
   r <- run_hosts(w, c(
-    "CY_HOLD[a]=1; CY_PRE_STATE[a]=known; CY_PRE[a]=AAAA",
+    "HOST_HOLD[a]=1; HOST_PRE_STATE[a]=known; HOST_PRE[a]=AAAA",
     "host_account a ip-a /nonexistent AAAA > /dev/null || true",
     "host_release a AAAA", "burn_cyphers"
   ), cyphers = "a")
@@ -711,7 +711,7 @@ test_that("a host whose consolidate failed keeps it, and says so, while its grou
   put(w, "ssh_ip-b_streams.out", db_answer("BBBB"))
   put(w, "ssh_ip-b_mc.out", db_answer("BBBB"))
   r <- run_hosts(w, c(
-    "CY_CONS_FAIL[a]=copy_empty; CY_CONS_FAIL[b]=dest_log_newer",
+    "HOST_CONS_FAIL[a]=copy_empty; HOST_CONS_FAIL[b]=dest_log_newer",
     account_release(),
     "burn_cyphers"
   ))
