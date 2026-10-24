@@ -11,6 +11,16 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
+## Status (2026-10-24, late) — a run records each phase's start and end per host (#375)
+
+**`study_area_run.sh` writes `<TS>_phases.tsv`** (`data-raw/study_area_phases.sh`): one row per phase per host as it ends (`run_uid phase host start_utc end_utc minutes groups status`). The phases are prep, refresh, model, account, consolidate, burn, coverage, views, recompute and compare. A phase that did not run gets a `skipped` row with blank times. The summary prints the table, the critical path (first start to last end) and the longest model leg. `--recompute-only` writes its own file under the run's uid. Mechanics: RUNBOOK §8d, "Where a run's time went". Evidence: `data-raw/logs/phases_375/`.
+
+**Facts not worth re-deriving:**
+- **Each model and prep leg writes its own row** from an outer `( … ) >> <leg log> 2>&1 &` wrapper and re-raises its exit status, which `host_wait` reads. The legs are waited on in turn, so a wait's return is not a leg's end. Wrapping code like this changes the context it runs in, and review found two cases: errexit is off on the left of `|| mrc=$?` (so the local leg's `cd` needs `|| exit 1`), and a wrapper left on the driver's stdout holds a `| tee` open for the whole leg.
+- **Rows overlap; never sum them.** The run-wide `prep` holds refresh and every cypher's prep. A killed driver closes the open phase `failed` from the EXIT trap, and a leg that outlives it writes a later row with the same start, which wins. `pkill -f study_area_run` reaches the wrappers too.
+- **`burn_cyphers` returns its caller's `$?`, not its own result,** so the burn row reads `CY_BURNED` / `CY_HOLD` instead.
+- **Owed:** acceptance criterion 2. The next provincial run's `phases.tsv` gets committed with its evidence, and it fills #377's runs row. That run is also the first to exercise the cypher wrappers, and a structural test pins them until then.
+
 ## Status (2026-10-24) — a runaway modelling statement fails its own group (#371)
 
 **`study_area_run.sh --statement-timeout=<minutes>` (default 30) bounds every modelling statement** through `PGOPTIONS='-c statement_timeout=<N>min'` on both legs, with `LNK_STATEMENT_TIMEOUT_MIN` beside it, and `wsg_run_one.R` refuses a connection whose bound differs. A cancelled statement is named on a `TIMEOUT` line and under `statement bound hit:` in the INCOMPLETE summary, and the printed re-model carries the run's bound. The recompute keeps its own 10 min `SET`. Mechanics: RUNBOOK §8d, "A runaway statement fails its group". Evidence: `data-raw/logs/statement_timeout_371/`.
