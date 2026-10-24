@@ -29,3 +29,5 @@ data-raw/logs/study_area_run/*_recompute.d/
 data-raw/logs/recompute_parity/*.d/
 data-raw/logs/recompute_parity/*.samples
 data-raw/logs/recompute_parity/*.d.tsv
+tests/testthat/_problems/
+tests/testthat/testthat-problems.rds

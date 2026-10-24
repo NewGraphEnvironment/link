@@ -75,18 +75,19 @@ capture_write <- function(expr, probe_rows = 0L, query_result = NULL) {
 
 # Shared by the tests that run data-raw/ bash libs (test-study_area_hosts.R,
 # test-study_area_finish.R).
-# The libs need bash >= 4 (assoc arrays); macOS /bin/bash is 3.2.
+# The libs need bash >= 5.1 (assoc arrays, and `wait -n -p` since link#369);
+# macOS /bin/bash is 3.2.
 hosts_bash <- function() {
   cands <- unique(c(
     "/opt/homebrew/bin/bash", "/usr/local/bin/bash",
     unname(Sys.which("bash"))
   ))
   for (b in cands[nzchar(cands) & file.exists(cands)]) {
-    v <- suppressWarnings(system2(b, c("-c", shQuote("echo ${BASH_VERSINFO[0]}")),
+    v <- suppressWarnings(system2(b, c("-c", shQuote("echo ${BASH_VERSINFO[0]} ${BASH_VERSINFO[1]}")),
       stdout = TRUE, stderr = FALSE
     ))
-    n <- suppressWarnings(as.integer(v))
-    if (length(n) == 1L && !is.na(n) && n >= 4L) {
+    n <- suppressWarnings(as.integer(strsplit(v[1] %||% "", " ")[[1]]))
+    if (length(n) == 2L && !anyNA(n) && (n[1] > 5L || (n[1] == 5L && n[2] >= 1L))) {
       return(b)
     }
   }

@@ -43,10 +43,18 @@
 # order: first --focal -> dispatcher, the rest -> cyphers in --cy-workspaces
 # order. Put the LARGEST area on the dispatcher (first --focal): it is the
 # fast, free local host, while cyphers are slower + paid — give them the
-# smaller areas so they finish + burn sooner. Cyphers burn right after
-# consolidate (minimise idle); a trap EXIT is the safety net. A cypher that
-# may hold unconsolidated work is never burned, on any path: it is kept and
-# listed in <TS>_kept_hosts.tsv, and the run exits non-zero (link#347).
+# smaller areas so they finish + burn sooner. Each cypher is accounted,
+# consolidated and burned as soon as its own leg ends, while the other legs
+# keep modelling (link#369; data-raw/study_area_legs.sh); a trap EXIT is the
+# safety net. A cypher that may hold unconsolidated work is never burned, on
+# any path: it is kept and listed in <TS>_kept_hosts.tsv, and the run exits
+# non-zero (link#347). --keep-cyphers consolidates each host when its leg
+# ends and burns none.
+#
+# The run's one backup of the persist schema is taken before any leg writes,
+# in the background through spin and prep, after the dispatcher's persist is
+# initialised; no leg is dispatched until it has succeeded (link#369). A
+# pg_dump running beside the dispatcher would stall its groups' log-table DDL.
 #
 # Pre-flight gates (link#246) — two blocks, because they answer two
 # different questions:
@@ -61,7 +69,7 @@
 #                      run earlier — the hosts do not exist yet. A failure
 #                      burns via the EXIT trap.
 #
-# Post-conditions: every host must account for its whole bucket before
+# Post-conditions: every host must account for its whole bucket before its
 # consolidate (read from its database, not its log), and every run WSG must
 # have rows from a build this run finished in the persist afterwards. A group
 # that does not is named and the run exits non-zero, but the recompute and the
@@ -150,11 +158,12 @@ set -euo pipefail
 # The run-wide prep phase starts here, before its file can exist (link#375).
 PHASE_RUN_START=$(date -u '+%Y-%m-%dT%H:%M:%SZ %s')
 
-# declare -A (the per-host maps below) needs bash 4+; macOS /bin/bash is 3.2 and
-# would die at the first map, after the refresh and pre-flight already ran
-# (link#246). Launch with Homebrew bash.
-if [ "${BASH_VERSINFO[0]}" -lt 4 ]; then
-  echo "FATAL: bash ${BASH_VERSION} is too old; run with bash >= 4 (e.g. /opt/homebrew/bin/bash)" >&2
+# declare -A (the per-host maps below) needs bash 4+, and waiting on the legs
+# in the order they end needs `wait -n -p`, bash 5.1+ (link#369). macOS
+# /bin/bash is 3.2 and would die at the first map, after the refresh and
+# pre-flight already ran (link#246). Launch with Homebrew bash.
+if [ "${BASH_VERSINFO[0]}" -lt 5 ] || { [ "${BASH_VERSINFO[0]}" -eq 5 ] && [ "${BASH_VERSINFO[1]}" -lt 1 ]; }; then
+  echo "FATAL: bash ${BASH_VERSION} is too old; run with bash >= 5.1 (e.g. /opt/homebrew/bin/bash)" >&2
   exit 1
 fi
 
@@ -488,6 +497,9 @@ source "$REPO_ROOT/data-raw/study_area_finish.sh"
 # its own file, under the run_uid it finishes, with the tail's rows only.
 # shellcheck source=study_area_phases.sh
 source "$REPO_ROOT/data-raw/study_area_phases.sh"
+# Each cypher consolidated and burned when its own leg ends (link#369).
+# shellcheck source=study_area_legs.sh
+source "$REPO_ROOT/data-raw/study_area_legs.sh"
 PHASES_TSV=""
 if [ "$PREFLIGHT_ONLY" = "0" ]; then
   phases_init "$LOG_DIR/${TS}_phases.tsv"
@@ -1323,6 +1335,61 @@ RUN_WSGS_TSV="$LOG_DIR/${TS}_run_wsgs.tsv"
 run_wsgs_write "$RUN_WSGS_TSV"
 echo "  run groups: $RUN_WSGS_TSV"
 
+# --- the dispatcher's persist, and the run's one backup (link#369) ---------
+# Each cypher is consolidated as soon as its own leg ends, possibly before the
+# dispatcher's first group has created the persist tables. Consolidate copies
+# the tables both sides have, so into a new schema it would copy only the log
+# tables, report success and delete the host's log rows. So the dispatcher's
+# persist is initialised here, as cypher_prep.sh does on each cypher, with the
+# same species set (cfg$species, as lnk_pipeline_run does), never
+# force_recreate: this schema holds every earlier build.
+#
+# Then the backup, ONCE per run (it used to be taken inside the one
+# consolidate, after the dispatcher had already rebuilt its groups; #354 could
+# restore only log rows from it). Taken now, before any leg writes, it is the
+# pre-run schema with nothing writing to it: a running pg_dump would stall
+# every dispatcher group's log-table ALTER. It runs in the background through
+# spin and prep (7.6 min for fresh_default's 241 groups on 2026-10-24), and
+# no leg is dispatched until it has succeeded. Its use is the earlier builds'
+# log history (#354) and a rollback of the whole schema to before the run; the
+# recompute rebuilds access and mapping code, not the persisted groups.
+# Dispatcher-only runs consolidate nothing and take none, as before.
+BACKUP_RC_FILE=""
+if [ "$N_CY" -gt 0 ]; then
+  echo "=== dispatcher persist ($SCHEMA): init, then backup in the background ==="
+  ( cd "$REPO_ROOT" && Rscript -e "
+suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
+conn <- DBI::dbConnect(RPostgres::Postgres(), host = 'localhost', port = 5432L,
+  dbname = 'fwapg', user = 'postgres', password = 'postgres')
+cfg <- lnk_config('$CONFIG')
+cfg\$pipeline\$schema <- '$SCHEMA'
+species <- if (!is.null(cfg\$species)) cfg\$species else
+  unique(lnk_load_overrides(cfg)\$parameters_fresh\$species_code)
+lnk_persist_init(conn, cfg, species)
+cat('=== persist init done\\n')
+" ) > "$LOG_DIR/${TS}_persist_init.log" 2>&1 \
+    && grep -qx "=== persist init done" "$LOG_DIR/${TS}_persist_init.log" \
+    || { echo "FATAL: could not initialise $SCHEMA on the dispatcher; see $LOG_DIR/${TS}_persist_init.log"; exit 1; }
+  echo "  ✓ $SCHEMA initialised (see $LOG_DIR/${TS}_persist_init.log)"
+  # The outcome goes to a file, read before dispatch: the rc of a background
+  # job is not something a later bare `wait` must be trusted to keep.
+  BACKUP_RC_FILE="$LOG_DIR/${TS}_backup.rc"
+  rm -f "$BACKUP_RC_FILE"
+  phase_begin backup
+  ( brc=0
+    ( cd "$REPO_ROOT" || exit 1
+      Rscript -e "
+suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
+source('data-raw/schema_consolidate.R')
+schema_consolidate_backup('$SCHEMA', '/tmp/${SCHEMA}_pre_run_${TS}.dump')
+" ) > "$LOG_DIR/${TS}_backup.log" 2>&1 || brc=$?
+    echo "$brc" > "$BACKUP_RC_FILE"
+    phase_end backup "" "" "$([ "$brc" = "0" ] && echo ok || echo failed)" quiet
+    exit "$brc" ) >> "$LOG_DIR/${TS}_backup.log" 2>&1 &
+  BACKUP_PID=$!
+  echo "  backup -> /tmp/${SCHEMA}_pre_run_${TS}.dump (see $LOG_DIR/${TS}_backup.log)"
+fi
+
 # --- spin + prep cyphers ---
 declare -A CY_IP
 if [ "$N_CY" -gt 0 ]; then
@@ -1348,6 +1415,7 @@ if [ "$N_CY" -gt 0 ]; then
   done
 
   echo "=== prep cyphers (cypher_prep.sh) ==="
+  PREP_PIDS=()
   for WS in "${CY_WS_ARR[@]}"; do
     IP="${CY_IP[$WS]}"
     # The outer subshell writes this host's prep row when its prep ends (quiet:
@@ -1402,8 +1470,10 @@ if [ "$N_CY" -gt 0 ]; then
       [ "$prc" = "0" ] && grep -qx "=== READY" "$LOG_DIR/${TS}_prep_$WS.log" 2>/dev/null && pst=ok
       phase_end prep "$WS" "" "$pst" quiet
       exit "$prc" ) >> "$LOG_DIR/${TS}_prep_$WS.log" 2>&1 &
+    PREP_PIDS+=($!)
   done
-  wait
+  # The prep legs only: a bare `wait` would also wait for the backup.
+  for pid in "${PREP_PIDS[@]}"; do wait "$pid" || true; done
   for WS in "${CY_WS_ARR[@]}"; do phase_forget prep "$WS"; phase_print prep "$WS"; done
   # Grep the ANCHORED "=== READY" (cypher_prep.sh's last line), not
   # "snapshot_bcfp.sh: complete" (link#246). The old sentinel was wrong in
@@ -1467,6 +1537,15 @@ fi
 RUN_N=$( { csv_lines "$DISP_BUCKET"
   for WS in "${CY_WS_ARR[@]}"; do csv_lines "${CY_BUCKET[$WS]}"; done
 } | sort -u | wc -l | tr -d ' ')
+# No leg is dispatched until the backup has succeeded (link#369). A failure
+# exits before any host is held, so the trap burns them.
+if [ -n "$BACKUP_RC_FILE" ]; then
+  wait "$BACKUP_PID" || true
+  phase_forget backup; phase_print backup
+  [ "$(cat "$BACKUP_RC_FILE" 2>/dev/null)" = "0" ] \
+    || { echo "FATAL: the pre-run backup of $SCHEMA failed; see $LOG_DIR/${TS}_backup.log. Nothing dispatched."; exit 1; }
+  echo "  ✓ pre-run backup taken (see $LOG_DIR/${TS}_backup.log)"
+fi
 phase_end prep "" "$RUN_N" ok
 echo "=== run buckets (DS-first) ==="
 phase_begin model dispatcher
@@ -1485,7 +1564,6 @@ phase_begin model dispatcher
     "$([ "$mrc" = "0" ] && echo ok || echo failed)" quiet
   exit "$mrc" ) >> "$LOG_DIR/${TS}_run_local.log" 2>&1 &
 LOCAL_PID=$!
-declare -A CY_PID
 # Baseline before any write (link#347): which of each cypher's bucket already
 # have streams rows from its image, so rows found later can be told apart.
 for WS in "${CY_WS_ARR[@]}"; do host_baseline "$WS"; done
@@ -1520,204 +1598,54 @@ for WS in "${CY_WS_ARR[@]}"; do
   phase_end model "$WS" "$(csv_count "${CY_BUCKET[$WS]}")" \
     "$([ "$mrc" = "0" ] && echo ok || echo failed)" quiet
   exit "$mrc" ) >> "$LOG_DIR/${TS}_run_$WS.log" 2>&1 &
-  CY_PID[$WS]=$!
+  CY_LEG_PID[$WS]=$!
 done
-# A non-zero host exit (e.g. ssh dropped) is logged, NOT fatal — we still
-# consolidate whatever each host persisted so a late failure can't lose the
-# other hosts' work.
-wait $LOCAL_PID || echo "  WARN: dispatcher run returned non-zero; see $LOG_DIR/${TS}_run_local.log"
-phase_forget model dispatcher; phase_print model dispatcher
-for WS in "${CY_WS_ARR[@]}"; do
-  # Recorded, not just warned: a session that dropped may have left its loop
-  # running on the host, so host_release keeps any host whose session did
-  # not exit 0 (link#347). host_wait records it only once wait has returned.
-  host_wait "$WS" "${CY_PID[$WS]}" \
-    || echo "  WARN: cy[$WS] run returned non-zero; see $LOG_DIR/${TS}_run_$WS.log"
-  phase_forget model "$WS"; phase_print model "$WS"
-done
+# --- each leg as it ends (link#369) ---------------------------------------
+# A non-zero host exit (e.g. ssh dropped) is logged, NOT fatal: whatever each
+# host persisted is still consolidated, so a late failure can't lose the other
+# hosts' work.
+#
+# Each cypher is accounted, consolidated, released and burned as soon as its
+# own leg ends, while the other legs keep modelling (study_area_legs.sh). Until
+# #369 every host waited for the slowest leg and one consolidate of all of
+# them: about 3 host-hours idle on 2026-10-17 and about 20 on 2026-10-23.
+#
+# Completeness is read per host BEFORE its consolidate (link#246), from its
+# DATABASE, not its log (link#347), and never aborts: one bad group on one host
+# must not trip the trap and burn the groups that did succeed. Each host's
+# consolidate takes only the groups it reports finished, so its DELETE on the
+# dispatcher cannot remove anything it does not replace; a gap surfaces at the
+# coverage post-condition, once the successful work is safely here.
+COMPLETE_FAIL=0
+CONS_FAILED=""
+CONS_EXCLUDED=""
+CONS_STATE="$LOG_DIR/${TS}_consolidate_state.tsv"
+if [ "$N_CY" -gt 0 ]; then
+  echo "=== legs: each cypher is consolidated and burned when its own leg ends ==="
+fi
+legs_wait
 echo "  ✓ host runs finished (per-WSG soft-fail; gaps surface in compare)"
 
-# --- completeness accounting, per host, BEFORE consolidate (link#246) ------
-# The per-WSG soft-fail above is deliberate, but it means "0 of 28 succeeded"
-# and "28 of 28 succeeded" produce the same exit status. That is exactly the
-# 2026-05 failure: every WSG on every cypher errored, the hosts exited 0, and
-# nothing said so until the compare.
-#
-# It must NOT abort here, though. An abort at this point runs with
-# CYPHERS_UP=1, so the EXIT trap burns the cyphers and destroys the WSGs that
-# *did* succeed — one bad WSG on one host throwing away the whole paid run,
-# which is the exact accident the soft-fail comment above exists to prevent.
-#
-# Instead, narrow each host's consolidate bucket to the WSGs it actually
-# finished, read from its database (link#347). That also removes the reason
-# the abort was here: schema_consolidate
-# DELETEs its bucket before COPYing, and a bucket containing only WSGs that are
-# about to be re-COPYed cannot delete anything it does not replace. The gap
-# then surfaces at the coverage post-condition after the burn, by which point
-# the successful work is safely on the dispatcher.
-
-# What each host finished comes from its DATABASE (host_account, in
-# study_area_hosts.sh): <schema>.log rows for this run_uid with date_end set,
-# plus SKIP markers from the log, which write no row. The log text used to be
-# the count, anchored at line start, and an R warning flushed without a newline
-# hid 18 finished groups that way in run 20261017_004619-3f4c713b (link#347).
-# The log is still read, unanchored, and any disagreement is printed.
-echo "=== per-host completeness (database) ==="
-phase_begin account
-complete_fail=0
+echo "=== dispatcher completeness (database) ==="
+phase_begin account dispatcher
+ast=ok
 host_account dispatcher local "$LOG_DIR/${TS}_run_local.log" "$DISP_BUCKET" \
-  || complete_fail=1
-declare -A CY_BUCKET_DONE
-for WS in "${CY_WS_ARR[@]}"; do
-  host_account "$WS" "${CY_IP[$WS]}" "$LOG_DIR/${TS}_run_$WS.log" "${CY_BUCKET[$WS]}" \
-    || complete_fail=1
-  # Database ∪ log done; empty for a host whose database did not answer,
-  # which is then left out of consolidate (it would sink the other hosts)
-  # and KEPT.
-  CY_BUCKET_DONE[$WS]=$(host_consolidate_bucket "$WS")
-  [ "${ACC_STATE[$WS]}" = "known" ] || \
-    echo "    cy[$WS]: left out of consolidate; the host will be KEPT"
-done
-[ "$complete_fail" = "0" ] || {
-  echo "  WARN: consolidating only the WSGs each host finished. The run will"
-  echo "        finish so nothing already computed is lost, then exit non-zero."
-}
+  || { ast=failed; COMPLETE_FAIL=1; }
 # Each host's SKIPs, now known. Never fatal here: hosts are held.
 run_wsgs_write "$RUN_WSGS_TSV" \
   || echo "  WARN: could not rewrite $RUN_WSGS_TSV with SKIPs; it still lists every group"
-phase_end account "" "$RUN_N" "$([ "$complete_fail" = "0" ] && echo ok || echo failed)"
+phase_end account dispatcher "$(csv_count "$DISP_BUCKET")" "$ast"
+[ "$COMPLETE_FAIL" = "0" ] || {
+  echo "  WARN: consolidated only the WSGs each host finished. The run will"
+  echo "        finish so nothing already computed is lost, then exit non-zero."
+}
 
-# --- consolidate cyphers -> dispatcher ---
 if [ "$N_CY" -gt 0 ]; then
-  echo "=== consolidate cyphers -> dispatcher ($SCHEMA) ==="
-  # The copy and the release below, which reads each source again (link#375).
-  phase_begin consolidate
-  SRC_R="list("
-  first=1
-  n_src=0
-  cons_n=0
-  for WS in "${CY_WS_ARR[@]}"; do
-    IP="${CY_IP[$WS]}"
-    # The bucket is what the host REPORTED, not what it was asked to do.
-    # schema_consolidate DELETEs its bucket before COPYing, so a bucket
-    # holding only WSGs that are about to be re-COPYed cannot delete
-    # anything it does not replace. A host that reported nothing is skipped
-    # entirely rather than handed an empty bucket — an empty one would make
-    # schema_consolidate stop() and take the other hosts' work with it.
-    bucket_r=$(csv_lines "${CY_BUCKET_DONE[$WS]:-}" | sed "s/.*/'&'/" | paste -sd, -)
-    if [ -z "$bucket_r" ]; then
-      echo "  WARN: cy[$WS] has nothing to consolidate — skipping it"
-      continue
-    fi
-    [ "$first" = "1" ] || SRC_R="$SRC_R, "
-    SRC_R="$SRC_R list(host = 'cypher@$IP', via = 'docker', bucket = c($bucket_r))"
-    first=0
-    n_src=$((n_src + 1))
-    cons_n=$((cons_n + $(csv_count "${CY_BUCKET_DONE[$WS]:-}")))
-  done
-  SRC_R="$SRC_R)"
-  if [ "$n_src" -eq 0 ]; then
-    # Zero sources gets its own branch: `list()` would make
-    # schema_consolidate a no-op that returns cleanly, which reads as
-    # "consolidated" when nothing was.
-    echo "  ✗ no cypher reported any WSG — nothing to consolidate"
-    cons_st=failed
-  else
-    # CONSOLIDATING marks consolidate as a write in flight against every source
-    # host (link#347): a driver killed here runs its EXIT trap while this
-    # subshell keeps copying and deleting from the hosts, so nothing measured
-    # there in the trap is settled. Cleared as soon as the subshell returns.
-    # Before the copy, every source in_flight (link#358): a consolidate that
-    # dies mid-copy leaves this record saying so, and --recompute-only keeps
-    # those groups out. Rewritten below once each source has an outcome. A
-    # record that cannot be written stops here; the hosts are held.
-    CONS_STATE="$LOG_DIR/${TS}_consolidate_state.tsv"
-    consolidate_state_write "$CONS_STATE" in_flight \
-      || { echo "FATAL: could not write $CONS_STATE; not consolidating"; exit 1; }
-    CONSOLIDATING=1
-    crc=0
-    # One outcome row per source (link#358), read by consolidate_outcomes.
-    # Removed first, so a run that dies before writing it is never read as
-    # having recorded one.
-    CONS_TSV="$LOG_DIR/${TS}_consolidate.tsv"
-    rm -f "$CONS_TSV"
-    ( cd "$REPO_ROOT" && Rscript -e "
-suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
-source('data-raw/schema_consolidate.R')
-res <- schema_consolidate(schema = '$SCHEMA', sources = $SRC_R, backup = TRUE)
-print(res)
-out <- do.call(rbind, lapply(names(res\$sources), function(h) {
-  s <- res\$sources[[h]]
-  data.frame(host = h, ok = isTRUE(s\$ok),
-             stage = if (is.null(s\$stage)) NA_character_ else as.character(s\$stage),
-             groups = paste(s\$groups, collapse = ','), stringsAsFactors = FALSE)
-}))
-if (!is.null(out)) utils::write.table(out, '$CONS_TSV', sep = '\\t', quote = FALSE,
-                                      row.names = FALSE, na = '')
-ok <- all(vapply(res\$sources, function(s) isTRUE(s\$ok), logical(1)))
-quit(status = if (ok) 0 else 1)
-" ) > "$LOG_DIR/${TS}_consolidate.log" 2>&1 || crc=$?
-    CONSOLIDATING=0
-    cons_st=failed
-    if [ "$crc" = "0" ]; then
-      cons_st=ok
-      echo "  ✓ consolidated $n_src/$N_CY cypher(s) (see $LOG_DIR/${TS}_consolidate.log)"
-      consolidate_state_write "$CONS_STATE" ok \
-        || echo "  WARN: could not mark $CONS_STATE ok; a --recompute-only will keep its groups out"
-    elif consolidate_outcomes "$CONS_TSV" && [ -n "$CONS_FAILED" ]; then
-      # A source refused or failed; the others landed (link#358). Carry on:
-      # the refused host keeps its groups and is kept below, its groups are
-      # kept out of the recompute, and the run exits non-zero naming them.
-      echo "  ✗ consolidate failed for: $CONS_FAILED (see $LOG_DIR/${TS}_consolidate.log)"
-      echo "    carrying on with the cypher(s) that consolidated; the run will exit non-zero"
-      consolidate_state_write "$CONS_STATE" ok \
-        || echo "  WARN: could not record outcomes in $CONS_STATE; every source stays in_flight there"
-    else
-      # $CONS_STATE keeps every source in_flight.
-      # Nothing says which sources landed (or R failed after recording every
-      # source ok), so nothing after this can be judged.
-      echo "  ✗ consolidate failed; see $LOG_DIR/${TS}_consolidate.log — cyphers KEPT"
-      run_expected_from_hosts
-      echo "    No group was recomputed. Once the hosts' groups are consolidated:"
-      echo "      bash data-raw/study_area_run.sh --recompute-only --run-uid=$RUN_UID \\"
-      echo "        --config=$CONFIG --schema=$SCHEMA${RUN_LABEL:+ --run-label=$RUN_LABEL} \\"
-      echo "        --wsgs=$RUN_EXPECT"
-      phase_end consolidate "" "$cons_n" failed
-      exit 1
-    fi
-  fi
-
-  # Reached when consolidate recorded an outcome for every source, whether or
-  # not each succeeded (link#358), or had nothing to take. A host is released
-  # only when its session exited 0 and its database answers that no streams
-  # rows are left for any group it ran or finished: consolidate deletes what it
-  # copied from the source, and only after copying all of it, so what is left
-  # was not consolidated. Any other host stays HELD and the burn below skips it
-  # (link#347).
-  echo "=== release consolidated cyphers ==="
-  for WS in "${CY_WS_ARR[@]}"; do
-    host_release "$WS" "${CY_BUCKET[$WS]}"
-  done
-  phase_end consolidate "" "$cons_n" "$cons_st"
+  # Every leg has ended and every host was finished as it did; this burns
+  # nothing new and writes the final kept-hosts record.
+  burn_cyphers || true
 else
   phase_skip consolidate
-fi
-
-# --- burn cyphers now (released hosts only; minimise idle) ---
-# Timed here, not in the EXIT trap's burn, which runs after the run's last row.
-if [ "$N_CY" -gt 0 ]; then
-  phase_begin burn
-  burn_cyphers || true
-  # burn_cyphers returns its caller's status, not its own, so the row reads
-  # what it left: failed when a host it was free to burn is not burned. A host
-  # it held, or --keep-cyphers kept, is the kept-hosts report's to name.
-  bst=ok
-  for WS in "${CY_WS_ARR[@]}"; do
-    [ "$KEEP_CYPHERS" = "1" ] || [ "${CY_HOLD[$WS]:-0}" = "1" ] \
-      || [ "${CY_BURNED[$WS]:-0}" = "1" ] || bst=failed
-  done
-  phase_end burn "" "" "$bst"
-else
   phase_skip burn
 fi
 
@@ -1727,7 +1655,7 @@ run_expected_from_hosts
 
 # A host that did not account for its whole bucket. Coverage can only add to
 # it: a group with no rows from this run sets it too (link#348).
-RUN_INCOMPLETE="$complete_fail"
+RUN_INCOMPLETE="$COMPLETE_FAIL"
 # A source consolidate refused or failed on is an incomplete run whatever the
 # coverage classes say (link#358).
 [ -z "${CONS_FAILED:-}" ] || RUN_INCOMPLETE=1

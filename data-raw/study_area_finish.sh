@@ -32,13 +32,14 @@
 #   RECOMPUTE_FAIL RECOMPUTE_FAIL_STAGE RECOMPUTE_RAN; run_expected_from_hosts
 #   writes RUN_EXPECT RUN_SIGNALS RUN_SKIP; consolidate_outcomes writes
 #   CONS_FAILED CONS_EXCLUDED CY_CONS_FAIL (declared in study_area_hosts.sh);
-#   consolidate_state_write reads CY_WS_ARR CY_BUCKET_DONE CY_CONS_FAIL;
+#   consolidate_state_write reads CY_WS_ARR CY_BUCKET_DONE CY_CONS_FAIL
+#   CY_CONS_STATE CY_CONS_UTC;
 #   run_expected_recompute_only writes RO_EXPECT RO_EXCLUDED; run_timeouts
 #   writes TIMED_OUT TIMEOUT_LINES RUN_BOUND
 #
 # Needs bash >= 4, as the driver does.
 
-declare -A CY_BUCKET_DONE
+declare -A CY_BUCKET_DONE CY_CONS_STATE CY_CONS_UTC
 
 # run_expected_from_hosts: what a full run expects, and what it already knows
 # finished, from the per-host accounting (study_area_hosts.sh). Sets:
@@ -151,11 +152,16 @@ run_expected_from_file() {
 # others), matched to its row by host (cypher@<ip>). Returns 1, naming what is
 # missing, when the file is absent or a source has no row: then nothing says
 # which hosts landed, and the caller must not carry on.
+#
+# With a workspace, reads that one source and adds to CONS_FAILED and
+# CONS_EXCLUDED rather than resetting them: the driver consolidates each host
+# when its own leg ends, one call per host (link#369).
 consolidate_outcomes() {
-  local tsv="$1" ws row ok stage groups missing=""
-  CONS_FAILED=""; CONS_EXCLUDED=""
+  local tsv="$1" only="${2:-}" ws row ok stage groups missing=""
+  [ -n "$only" ] || { CONS_FAILED=""; CONS_EXCLUDED=""; }
   [ -r "$tsv" ] || { echo "  ✗ no consolidate outcomes at $tsv"; return 1; }
   for ws in ${CY_WS_ARR[@]+"${CY_WS_ARR[@]}"}; do
+    [ -z "$only" ] || [ "$ws" = "$only" ] || continue
     [ -n "${CY_BUCKET_DONE[$ws]:-}" ] || continue
     row=$(awk -F'\t' -v h="cypher@${CY_IP[$ws]:-}" 'NR > 1 && $1 == h { print; exit }' "$tsv")
     if [ -z "$row" ]; then
@@ -178,23 +184,32 @@ consolidate_outcomes() {
   return 0
 }
 
-# consolidate_state_write <path> <state>: one row per group consolidate is
-# asked to take (wsg, workspace, state, run_uid), so a --recompute-only knows
-# which groups may sit half-copied on the dispatcher (link#358). The driver
-# writes it BEFORE consolidate with state `in_flight` and rewrites it once
-# every source has an outcome, with `ok`, or `failed:<stage>` for a source in
-# CY_CONS_FAIL. If consolidate dies with no outcomes, the `in_flight` rows
-# stay, so the record fails closed: absence of a failure is never inferred
-# from a file that was written only after the risky step. Temp file + mv.
+# consolidate_state_write <path> [state]: one row per group consolidate is
+# asked to take (wsg, workspace, state, run_uid, state_utc), so a
+# --recompute-only knows which groups may sit half-copied on the dispatcher
+# (link#358). Written `in_flight` BEFORE a copy and rewritten once it has an
+# outcome, with `ok`, or `failed:<stage>` for a source in CY_CONS_FAIL. If a
+# consolidate dies with no outcome, its `in_flight` rows stay, so the record
+# fails closed: absence of a failure is never inferred from a file that was
+# written only after the risky step. Temp file + mv.
+#
+# Without <state>, each host's own state (CY_CONS_STATE, and CY_CONS_UTC for
+# state_utc): the driver consolidates each host when its own leg ends
+# (link#369), so hosts sit in different states, and a host not yet
+# consolidated has no rows. A host whose consolidate ended with no outcome
+# (CY_CONS_FAIL no_outcome) stays in_flight. With <state>, every source in it,
+# as before.
 consolidate_state_write() {
-  local path="$1" state="$2" ws w st
+  local path="$1" state="${2:-}" ws w st
   {
-    printf 'wsg\tworkspace\tstate\trun_uid\n'
+    printf 'wsg\tworkspace\tstate\trun_uid\tstate_utc\n'
     for ws in ${CY_WS_ARR[@]+"${CY_WS_ARR[@]}"}; do
-      st="$state"
-      [ -z "${CY_CONS_FAIL[$ws]:-}" ] || st="failed:${CY_CONS_FAIL[$ws]}"
+      st="${state:-${CY_CONS_STATE[$ws]:-}}"
+      [ -n "$st" ] || continue
+      [ -z "${CY_CONS_FAIL[$ws]:-}" ] || [ "${CY_CONS_FAIL[$ws]}" = "no_outcome" ] \
+        || st="failed:${CY_CONS_FAIL[$ws]}"
       for w in $(.hosts_lines "${CY_BUCKET_DONE[$ws]:-}"); do
-        printf '%s\t%s\t%s\t%s\n' "$w" "$ws" "$st" "$RUN_UID"
+        printf '%s\t%s\t%s\t%s\t%s\n' "$w" "$ws" "$st" "$RUN_UID" "${CY_CONS_UTC[$ws]:-}"
       done
     done
   } > "$path.tmp" && mv "$path.tmp" "$path"
@@ -210,8 +225,11 @@ run_unconsolidated_from_state() {
   local path="$1" hdr out
   [ -f "$path" ] || return 2
   IFS= read -r hdr < "$path" || hdr=""
-  [ "$hdr" = "$(printf 'wsg\tworkspace\tstate\trun_uid')" ] || {
-    echo "  ✗ $path: not a consolidate state record (header '$hdr')" >&2; return 1; }
+  # Two headers: link#358's four columns, and state_utc appended by link#369.
+  case "$hdr" in
+    "$(printf 'wsg\tworkspace\tstate\trun_uid')"|"$(printf 'wsg\tworkspace\tstate\trun_uid\tstate_utc')") ;;
+    *) echo "  ✗ $path: not a consolidate state record (header '$hdr')" >&2; return 1 ;;
+  esac
   out=$(awk -F'\t' -v u="$RUN_UID" '
     NR == 1 { next }
     $4 != u { print "  ✗ " FILENAME ": row " NR " names another run_uid (" $4 ")" > "/dev/stderr"; bad = 1 }

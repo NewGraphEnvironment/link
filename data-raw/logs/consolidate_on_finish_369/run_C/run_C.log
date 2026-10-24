@@ -1,0 +1,150 @@
+=== study_area_run 20261024_081550 ===
+  run_uid:      20261024_081550-2f4228dd
+  run_label:    smoke-369-C
+  config:       default
+  branch:       369-run (cyphers run this ref)
+  persist:      fresh_smoke369
+  cyphers:      job1 job2 (2)
+  log dir:      /Users/airvine/Projects/repo/link-369-run/data-raw/logs/study_area_run
+  vintage max:  7 d
+  recompute -j: 4
+  statement:    30 min per modelling statement (PGOPTIONS, both legs); recompute 10 min (wsg_recompute_one.R)
+  buckets:      exact (--buckets-exact; each --focal= list as given; the recompute settles access)
+  phases:       /Users/airvine/Projects/repo/link-369-run/data-raw/logs/study_area_run/20261024_081550_phases.tsv
+  [phase] refresh skipped
+=== pre-flight (local; pre-spend) ===
+  ✓ dispatcher fresh exports what the pipeline calls
+  ✓ origin/369-run is at HEAD
+  ✓ fwapg_sha d6e45c2b8346 (exported to all hosts)
+  ✓ bcfishobs_sha 08630cf4ac14 (exported to all hosts)
+  ✓ fresh_sha e9793047cc8f (clean)
+  ✓ bcfp reference pinned at v0.7.15-50-g620dbe4 (exported to all hosts)
+    ok   discharge (fwapg) loaded: whse_basemapping.fwa_stream_networks_discharge
+  ✓ discharge (fwapg) loaded on the dispatcher
+    [preflight] primitive vintage (window 7 d) - OK, oldest 1.0 d (whse_fish.pscis_assessment_svw) [judged by load stamp: 4, statistics: 0, none: 0]
+  ✓ dispatcher primitives within 7 d
+  ✓ doctl token valid (DO API reachable)
+  ✓ tofu do_token valid (HTTP 200 /v2/account)
+  ✓ tofu s3 backend reachable
+  ✓ pre-flight clean (tunnel-free)
+=== resolve exact buckets (--buckets-exact; order as given, species filter only) ===
+  dispatcher (focal=MUSK,LNRS,LSAL,UTRE,SALR,CHES,MIDR,EUCH,EUCL,SAHD,TSEA,UPET): MUSK,LNRS,LSAL,UTRE,SALR,CHES,MIDR,EUCH,EUCL,SAHD,TSEA,UPET
+  cy[job1] (focal=NBNK): NBNK
+  cy[job2] (focal=MBNK,KEEC,KAKC,PITR,VICT): MBNK,KEEC,KAKC,PITR,VICT
+  run groups: /Users/airvine/Projects/repo/link-369-run/data-raw/logs/study_area_run/20261024_081550_run_wsgs.tsv
+=== dispatcher persist (fresh_smoke369): init, then backup in the background ===
+  ✓ fresh_smoke369 initialised (see /Users/airvine/Projects/repo/link-369-run/data-raw/logs/study_area_run/20261024_081550_persist_init.log)
+  backup -> /tmp/fresh_smoke369_pre_run_20261024_081550.dump (see /Users/airvine/Projects/repo/link-369-run/data-raw/logs/study_area_run/20261024_081550_backup.log)
+=== spin cyphers: job1 job2 ===
+  cy[job1] = <host>
+  cy[job2] = <host>
+=== prep cyphers (cypher_prep.sh) ===
+  [phase] prep job1 ok 2026-10-24T08:16:21Z -> 2026-10-24T08:25:45Z (9.4 min)
+  [phase] prep job2 ok 2026-10-24T08:16:21Z -> 2026-10-24T08:25:33Z (9.2 min)
+  ✓ cyphers prepped
+=== pre-flight (hosts; post-prep, pre-write) ===
+[preflight] host parity - OK across 3 host(s): m1, cypher-job1, cypher-job2
+  ✓ host parity clean (3 hosts)
+  ✓ cy[job1] primitives within 7 d
+  ✓ cy[job2] primitives within 7 d
+  [phase] backup ok 2026-10-24T08:16:21Z -> 2026-10-24T08:16:36Z (0.2 min)
+  ✓ pre-run backup taken (see /Users/airvine/Projects/repo/link-369-run/data-raw/logs/study_area_run/20261024_081550_backup.log)
+  [phase] prep ok 2026-10-24T08:15:50Z -> 2026-10-24T08:25:59Z (10.2 min, 18 groups)
+=== run buckets (DS-first) ===
+=== legs: each cypher is consolidated and burned when its own leg ends ===
+  [phase] model job1 ok 2026-10-24T08:26:04Z -> 2026-10-24T08:28:16Z (2.2 min, 1 groups)
+=== cy[job1]: leg ended (exit 0); account, consolidate, burn ===
+  ✓ cy[job1]: 1/1 WSGs accounted for (1 finished, 0 SKIP; database)
+  [phase] account job1 ok 2026-10-24T08:28:16Z -> 2026-10-24T08:28:18Z (0.0 min, 1 groups)
+  consolidating cy[job1]: 1 groups (see /Users/airvine/Projects/repo/link-369-run/data-raw/logs/study_area_run/20261024_081550_consolidate_job1.log)
+  ✓ cy[job1]: consolidated
+  ✓ cy[job1]: no finished group left on the host after consolidate — may be burned
+  [phase] consolidate job1 ok 2026-10-24T08:28:18Z -> 2026-10-24T08:28:48Z (0.5 min, 1 groups)
+=== BURN CYPHERS: job1 ===
+  cy[job1]: 0 tofu resources (expect 0)
+  ✓ burn clean
+  [phase] burn job1 ok 2026-10-24T08:28:48Z -> 2026-10-24T08:29:16Z (0.5 min)
+  [phase] model job2 ok 2026-10-24T08:26:04Z -> 2026-10-24T08:34:04Z (8.0 min, 5 groups)
+=== cy[job2]: leg ended (exit 0); account, consolidate, burn ===
+  ✓ cy[job2]: 5/5 WSGs accounted for (5 finished, 0 SKIP; database)
+  [phase] account job2 ok 2026-10-24T08:34:04Z -> 2026-10-24T08:34:07Z (0.1 min, 5 groups)
+  consolidating cy[job2]: 5 groups (see /Users/airvine/Projects/repo/link-369-run/data-raw/logs/study_area_run/20261024_081550_consolidate_job2.log)
+  ✓ cy[job2]: consolidated
+  ✓ cy[job2]: no finished group left on the host after consolidate — may be burned
+  [phase] consolidate job2 ok 2026-10-24T08:34:07Z -> 2026-10-24T08:34:59Z (0.9 min, 5 groups)
+=== BURN CYPHERS: job2 ===
+  cy[job2]: 0 tofu resources (expect 0)
+  ✓ burn clean
+  [phase] burn job2 ok 2026-10-24T08:34:59Z -> 2026-10-24T08:35:43Z (0.7 min)
+  [phase] model dispatcher ok 2026-10-24T08:25:59Z -> 2026-10-24T09:03:43Z (37.7 min, 12 groups)
+  ✓ host runs finished (per-WSG soft-fail; gaps surface in compare)
+=== dispatcher completeness (database) ===
+  ✓ dispatcher: 12/12 WSGs accounted for (12 finished, 0 SKIP; database)
+  [phase] account dispatcher ok 2026-10-24T09:03:43Z -> 2026-10-24T09:03:43Z (0.0 min, 12 groups)
+=== verify WSG coverage in fresh_smoke369 (run_uid 20261024_081550-2f4228dd) ===
+  18/18 run WSGs have rows from a build this run finished
+  classes: /Users/airvine/Projects/repo/link-369-run/data-raw/logs/study_area_run/20261024_081550_coverage.tsv
+  [phase] coverage ok 2026-10-24T09:03:43Z -> 2026-10-24T09:03:43Z (0.0 min, 18 groups)
+=== post-consolidate recompute (lnk_access, 18 WSGs, -j4) ===
+  ✓ log tables present in fresh_smoke369
+  ✓ barrier views built once for fresh_smoke369
+  [phase] views ok 2026-10-24T09:03:43Z -> 2026-10-24T09:03:47Z (0.1 min)
+  ordering 241 known WSG time(s) longest-first (median 2.37 min for the rest)
+[fanout] recompute - OK: 18/18 job(s) succeeded
+  ✓ recompute: 18/18 WSGs
+  [phase] recompute ok 2026-10-24T09:03:47Z -> 2026-10-24T09:04:31Z (0.7 min, 18 groups)
+=== compare (tunnel-free) ===
+  ✓ compare CSV: /Users/airvine/Projects/repo/link-369-run/data-raw/logs/study_area_run/20261024_081550_compare.csv
+  [phase] compare ok 2026-10-24T09:04:32Z -> 2026-10-24T09:04:49Z (0.3 min, 18 groups)
+=== summary ===
+  phases (/Users/airvine/Projects/repo/link-369-run/data-raw/logs/study_area_run/20261024_081550_phases.tsv):
+    phase       host       start_utc            end_utc              minutes groups status
+    refresh                                                                         skipped
+    backup                 2026-10-24T08:16:21Z 2026-10-24T08:16:36Z     0.2        ok
+    prep        job2       2026-10-24T08:16:21Z 2026-10-24T08:25:33Z     9.2        ok
+    prep        job1       2026-10-24T08:16:21Z 2026-10-24T08:25:45Z     9.4        ok
+    prep                   2026-10-24T08:15:50Z 2026-10-24T08:25:59Z    10.2     18 ok
+    model       job1       2026-10-24T08:26:04Z 2026-10-24T08:28:16Z     2.2      1 ok
+    account     job1       2026-10-24T08:28:16Z 2026-10-24T08:28:18Z     0.0      1 ok
+    consolidate job1       2026-10-24T08:28:18Z 2026-10-24T08:28:48Z     0.5      1 ok
+    burn        job1       2026-10-24T08:28:48Z 2026-10-24T08:29:16Z     0.5        ok
+    model       job2       2026-10-24T08:26:04Z 2026-10-24T08:34:04Z     8.0      5 ok
+    account     job2       2026-10-24T08:34:04Z 2026-10-24T08:34:07Z     0.1      5 ok
+    consolidate job2       2026-10-24T08:34:07Z 2026-10-24T08:34:59Z     0.9      5 ok
+    burn        job2       2026-10-24T08:34:59Z 2026-10-24T08:35:43Z     0.7        ok
+    model       dispatcher 2026-10-24T08:25:59Z 2026-10-24T09:03:43Z    37.7     12 ok
+    account     dispatcher 2026-10-24T09:03:43Z 2026-10-24T09:03:43Z     0.0     12 ok
+    coverage               2026-10-24T09:03:43Z 2026-10-24T09:03:43Z     0.0     18 ok
+    views                  2026-10-24T09:03:43Z 2026-10-24T09:03:47Z     0.1        ok
+    recompute              2026-10-24T09:03:47Z 2026-10-24T09:04:31Z     0.7     18 ok
+    compare                2026-10-24T09:04:32Z 2026-10-24T09:04:49Z     0.3     18 ok
+  critical path: 49.0 min (first start to last end)
+  longest model leg: 37.7 min (dispatcher)
+  consolidate tail: 0.0 min (last consolidate end past the last model end)
+  run WSGs:        CHES,EUCH,EUCL,KAKC,KEEC,LNRS,LSAL,MBNK,MIDR,MUSK,NBNK,PITR,SAHD,SALR,TSEA,UPET,UTRE,VICT
+  recomputed WSGs: UPET,MIDR,CHES,EUCL,VICT,UTRE,PITR,KAKC,NBNK,KEEC,MBNK,SALR,LNRS,LSAL,EUCH,SAHD,TSEA,MUSK
+  compare CSV: /Users/airvine/Projects/repo/link-369-run/data-raw/logs/study_area_run/20261024_081550_compare.csv
+[study_area_compare] UPET ERROR: no shared mapping_code_<sp> columns to compare for UPET (link: GR,RB; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] PITR ERROR: no shared mapping_code_<sp> columns to compare for PITR (link: RB; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] KAKC ERROR: no shared mapping_code_<sp> columns to compare for KAKC (link: RB; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] LNRS ERROR: no shared mapping_code_<sp> columns to compare for LNRS (link: RB; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] SAHD ERROR: no shared mapping_code_<sp> columns to compare for SAHD (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] TSEA ERROR: no shared mapping_code_<sp> columns to compare for TSEA (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] MUSK ERROR: no shared mapping_code_<sp> columns to compare for MUSK (link: RB; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] 21 rows across 11/18 WSGs -> /Users/airvine/Projects/repo/link-369-run/data-raw/logs/study_area_run/20261024_081550_compare.csv
+# A tibble: 21 × 7
+   wsg   species total_segs match_pct n_diffs top_pattern      top_pattern_count
+ * <chr> <chr>        <int>     <dbl>   <int> <chr>                        <int>
+ 1 MIDR  BT            9565      94.7     507 "ACCESS;NONE;IN…                77
+ 2 MIDR  CH            9565      95.0     477 "REAR;NONE | AC…               115
+ 3 MIDR  SK            9565      96.7     313 "ACCESS;NONE | …                89
+ 4 CHES  BT            9276      41.9    5386 "ACCESS;MODELLE…              1316
+ 5 CHES  CH            9276      93.5     599 "REAR;NONE | AC…               275
+ 6 CHES  SK            9276      98.4     149 "ACCESS;NONE | "                49
+ 7 EUCL  BT           12853      84.5    1987 "REAR;NONE;INTE…               349
+ 8 EUCL  CH           12853      86.8    1691 "REAR;NONE | AC…               718
+ 9 VICT  CH            3562      94.1     210 "ACCESS;MODELLE…                41
+10 VICT  CM            3562      95.6     158 "ACCESS;MODELLE…                36
+# ℹ 11 more rows
+=== study_area_run done ===
+  ✓ redacted host addresses in 28 log file(s)
