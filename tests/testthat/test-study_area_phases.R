@@ -212,7 +212,7 @@ test_that("a date that fails costs the row its times, never the run", {
   skip_if_no_phases_lib()
   r <- run_phases(c(
     "phase_begin model dispatcher",
-    'date() { return 1; }',
+    "date() { return 1; }",
     "phase_end model dispatcher 2 ok",
     "phase_begin views", "phase_end views '' '' ok",
     "echo survived"
