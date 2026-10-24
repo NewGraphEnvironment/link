@@ -1,0 +1,41 @@
+=== study_area_run 20261024_013025 ===
+  run_uid:      20261024_012623-309b2f46
+  run_label:    371-e2e
+  config:       default
+  branch:       371-study-area-run-sh-bound-each-modelling-s (cyphers run this ref)
+  persist:      fresh_371
+  cyphers:      <none> (0)
+  log dir:      /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run
+  vintage max:  7 d
+  recompute -j: 4
+  buckets:      closure (each --focal= expanded to its drainage closure, DS-first)
+  MODE:         --recompute-only (finish run_uid 20261024_012623-309b2f46; no spend)
+=== --recompute-only: run_uid 20261024_012623-309b2f46 ===
+  pre-flight, dispatch and consolidate SKIPPED: this reads only the
+  persisted tables in fresh_371, and spins up nothing.
+  ✓ run_uid 20261024_012623-309b2f46 was built with --config=default
+  expected WSGs: 2: the 2 in /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261024_012623_run_wsgs.tsv
+=== verify WSG coverage in fresh_371 (run_uid 20261024_012623-309b2f46) ===
+  2/2 run WSGs have rows from a build this run finished
+  classes: /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261024_013025_coverage.tsv
+=== post-consolidate recompute (lnk_access, 2 WSGs, -j4) ===
+  ✓ log tables present in fresh_371
+  ✓ barrier views built once for fresh_371
+  ordering 241 known WSG time(s) longest-first (median 2.39 min for the rest)
+[fanout] recompute - OK: 2/2 job(s) succeeded
+  ✓ recompute: 2/2 WSGs
+=== compare (tunnel-free) ===
+  ✓ compare CSV: /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261024_013025_compare.csv
+=== summary ===
+  run WSGs:        EUCH,NBNK
+  recomputed WSGs: EUCH,NBNK
+  compare CSV: /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261024_013025_compare.csv
+[study_area_compare] 3 rows across 2/2 WSGs -> /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261024_013025_compare.csv
+# A tibble: 3 × 7
+  wsg   species total_segs match_pct n_diffs top_pattern       top_pattern_count
+* <chr> <chr>        <int>     <dbl>   <int> <chr>                         <int>
+1 EUCH  CH            7644      72.6    2092 "REAR;MODELLED |…               687
+2 NBNK  CO            3895      64.6    1377 "REAR;NONE | ACC…               828
+3 NBNK  SK            3895      86.6     520 "ACCESS;NONE | "                483
+=== study_area_run done ===
+  ✓ redacted host addresses in 7 log file(s)

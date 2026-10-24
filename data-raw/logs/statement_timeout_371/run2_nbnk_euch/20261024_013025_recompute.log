@@ -1,0 +1,38 @@
+[1] 0
+[1] 0
+NOTICE:  table "zz_lnk_access_prior_euch" does not exist, skipping
+
+NOTICE:  table "zz_lnk_streams_euch" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] EUCH habitat gate: 12 segments (1.807 km) settled
+[wsg_recompute_one] EUCH recomputed in 0.16 min (persist=fresh_371)
+[1] 0
+[1] 0
+NOTICE:  table "zz_lnk_access_prior_nbnk" does not exist, skipping
+
+NOTICE:  table "zz_lnk_streams_nbnk" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] NBNK habitat gate: 0 segments (0.000 km) settled
+[wsg_recompute_one] NBNK recomputed in 0.02 min (persist=fresh_371)

@@ -1,0 +1,48 @@
+=== study_area_run 20261024_011931 ===
+  run_uid:      20261024_011513-4e796a4c
+  run_label:    371-e2e
+  config:       default
+  branch:       371-study-area-run-sh-bound-each-modelling-s (cyphers run this ref)
+  persist:      fresh_371
+  cyphers:      <none> (0)
+  log dir:      /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run
+  vintage max:  7 d
+  recompute -j: 4
+  buckets:      closure (each --focal= expanded to its drainage closure, DS-first)
+  MODE:         --recompute-only (finish run_uid 20261024_011513-4e796a4c; no spend)
+=== --recompute-only: run_uid 20261024_011513-4e796a4c ===
+  pre-flight, dispatch and consolidate SKIPPED: this reads only the
+  persisted tables in fresh_371, and spins up nothing.
+  ✓ run_uid 20261024_011513-4e796a4c was built with --config=default
+  expected WSGs: 2: the 2 in /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261024_011513_run_wsgs.tsv
+=== verify WSG coverage in fresh_371 (run_uid 20261024_011513-4e796a4c) ===
+  2/2 run WSGs have rows from a build this run finished
+  classes: /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261024_011931_coverage.tsv
+=== post-consolidate recompute (lnk_access, 2 WSGs, -j4) ===
+  ✓ log tables present in fresh_371
+  ✓ barrier views built once for fresh_371
+  ordering 241 known WSG time(s) longest-first (median 2.43 min for the rest)
+[fanout] recompute - FAILED (partial): 1/2 job(s) succeeded
+  1 job(s) exited non-zero: LEUT(rc=1)
+  ✗ recompute incomplete; see /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261024_011931_recompute.log and /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261024_011931_recompute.d/
+=== compare (tunnel-free) ===
+  ✗ compare failed; see /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261024_011931_compare.log
+=== summary ===
+  run WSGs:        LEUT,MUSK
+  recomputed WSGs: LEUT,MUSK
+=== study_area_run INCOMPLETE ===
+  The compare failed (see /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261024_011931_compare.log); the recompute
+  above stands. Re-run it alone:
+    LNK_SCHEMA=fresh_371 LNK_LOAD=loadall Rscript data-raw/study_area_compare.R \
+      /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261024_011931_compare.csv LEUT,MUSK default
+  The post-consolidate recompute did not complete for every WSG.
+  Those WSGs' streams_access / streams_mapping_code still hold their
+  PRE-consolidate values, so cross-WSG access — hence token1/token2
+  and ;DAM — is WRONG for them, and their habitat was never settled
+  on access (the model leg runs ungated). This is bad output, not missing
+  output: the compare CSV above will look complete.
+  See /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261024_011931_recompute.log (and /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261024_011931_recompute.tsv for per-WSG exit status).
+  Re-run just those, no full run needed:
+    LNK_RUN_UID=20261024_011513-4e796a4c LNK_RUN_LABEL=371-e2e LNK_SCHEMA=fresh_371 \
+      LNK_LOAD=loadall Rscript data-raw/wsg_recompute_one.R <WSG> default
+  ✓ redacted host addresses in 10 log file(s)

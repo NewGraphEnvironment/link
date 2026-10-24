@@ -1,0 +1,6 @@
+[study_area_compare] 2 rows across 1/1 WSGs -> /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261024_012623_compare.csv
+# A tibble: 2 × 7
+  wsg   species total_segs match_pct n_diffs top_pattern       top_pattern_count
+* <chr> <chr>        <int>     <dbl>   <int> <chr>                         <int>
+1 NBNK  CO            3895      64.6    1377 "REAR;NONE | ACC…               828
+2 NBNK  SK            3895      86.6     520 "ACCESS;NONE | "                483

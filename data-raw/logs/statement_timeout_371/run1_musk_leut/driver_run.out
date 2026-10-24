@@ -1,0 +1,69 @@
+=== study_area_run 20261024_011513 ===
+  run_uid:      20261024_011513-4e796a4c
+  run_label:    371-e2e
+  config:       default
+  branch:       371-study-area-run-sh-bound-each-modelling-s (cyphers run this ref)
+  persist:      fresh_371
+  cyphers:      <none> (0)
+  log dir:      /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run
+  vintage max:  7 d
+  recompute -j: 4
+  statement:    2 min per modelling statement (PGOPTIONS, both legs); recompute 10 min (wsg_recompute_one.R)
+  buckets:      exact (--buckets-exact; each --focal= list as given; the recompute settles access)
+=== pre-flight (local; pre-spend) ===
+  ✓ dispatcher fresh exports what the pipeline calls
+  ✓ fwapg_sha 6d48dabf9a52 (exported to all hosts)
+  ✓ bcfishobs_sha 08630cf4ac14 (exported to all hosts)
+  ✓ fresh_sha e9793047cc8f (clean)
+  ✓ bcfp reference pinned at v0.7.15-50-g620dbe4 (exported to all hosts)
+    ok   discharge (fwapg) loaded: whse_basemapping.fwa_stream_networks_discharge
+  ✓ discharge (fwapg) loaded on the dispatcher
+    [preflight] primitive vintage (window 7 d) - OK, oldest 0.7 d (whse_fish.pscis_assessment_svw) [judged by load stamp: 4, statistics: 0, none: 0]
+  ✓ dispatcher primitives within 7 d
+  ✓ pre-flight clean (tunnel-free)
+=== resolve exact buckets (--buckets-exact; order as given, species filter only) ===
+  dispatcher (focal=MUSK,LEUT): MUSK,LEUT
+  run groups: /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261024_011513_run_wsgs.tsv
+=== run buckets (DS-first) ===
+  ✓ host runs finished (per-WSG soft-fail; gaps surface in compare)
+=== per-host completeness (database) ===
+  ✗ dispatcher: only 1/2 WSGs accounted for; not finished: LEUT (see /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261024_011513_run_local.log)
+  WARN: consolidating only the WSGs each host finished. The run will
+        finish so nothing already computed is lost, then exit non-zero.
+=== verify WSG coverage in fresh_371 (run_uid 20261024_011513-4e796a4c) ===
+  1/2 run WSGs have rows from a build this run finished
+  ✗ no rows in fresh_371.streams: LEUT
+  classes: /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261024_011513_coverage.tsv
+  NOTE: recomputing only the 1 WSGs above; the rest keep
+        whatever rows they hold, and the run will exit non-zero.
+=== post-consolidate recompute (lnk_access, 1 WSGs, -j4) ===
+  ✓ log tables present in fresh_371
+  ✓ barrier views built once for fresh_371
+  ordering 241 known WSG time(s) longest-first (median 2.43 min for the rest)
+[fanout] recompute - OK: 1/1 job(s) succeeded
+  ✓ recompute: 1/1 WSGs
+=== compare (tunnel-free) ===
+  ✗ compare failed; see /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261024_011513_compare.log
+=== summary ===
+  run WSGs:        LEUT,MUSK
+  recomputed WSGs: MUSK
+=== study_area_run INCOMPLETE ===
+  These run WSGs have no rows from a build this run finished, so they
+  were NOT recomputed or compared: LEUT
+    no rows:                         LEUT
+    statement bound hit:             LEUT
+      LEUT (bound 2min): SELECT pg_sleep(3600) -- LNK_TEST_STALL_WSG
+  Re-model each of these under this run_uid: LEUT
+    LNK_RUN_UID=20261024_011513-4e796a4c LNK_RUN_LABEL=371-e2e LNK_SCHEMA=fresh_371 \
+      LNK_GUARD_DOWNSTREAM=warn LNK_HABITAT_GATE=0 LNK_LOAD=loadall \
+      Rscript data-raw/wsg_run_one.R <WSG> default
+  Then recompute the whole run (every group: a re-modelled group's
+  barriers change access upstream of it):
+    bash data-raw/study_area_run.sh --recompute-only --run-uid=20261024_011513-4e796a4c \
+      --config=default --schema=fresh_371 --run-label=371-e2e --wsgs=LEUT,MUSK
+  The compare failed (see /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261024_011513_compare.log); the recompute
+  above stands. Re-run it alone:
+    LNK_SCHEMA=fresh_371 LNK_LOAD=loadall Rscript data-raw/study_area_compare.R \
+      /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261024_011513_compare.csv MUSK default
+  ✓ redacted host addresses in 8 log file(s)
+EXIT=1
