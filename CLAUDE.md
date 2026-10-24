@@ -11,6 +11,16 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
+## Status (2026-10-24) — a runaway modelling statement fails its own group (#371)
+
+**`study_area_run.sh --statement-timeout=<minutes>` (default 30) bounds every modelling statement** through `PGOPTIONS='-c statement_timeout=<N>min'` on both legs, with `LNK_STATEMENT_TIMEOUT_MIN` beside it, and `wsg_run_one.R` refuses a connection whose bound differs. A cancelled statement is named on a `TIMEOUT` line and under `statement bound hit:` in the INCOMPLETE summary, and the printed re-model carries the run's bound. The recompute keeps its own 10 min `SET`. Mechanics: RUNBOOK §8d, "A runaway statement fails its group". Evidence: `data-raw/logs/statement_timeout_371/`.
+
+**Facts not worth re-deriving:**
+- **fresh's bare `dbExecute` leaves the SQL out of a cancel's error.** A calling handler finds it in DBI's frames (`statement`), and `dbWithTransaction()` re-throws without them, so `.lnk_timeout_statement()` reads `.lnk_db_execute()`'s `Statement:` first.
+- **`SHOW statement_timeout` normalises the unit (60min reads `1h`),** so compare `pg_settings.setting` in ms, and accept only a value with its unit: Postgres reads a bare `30` as 30 ms.
+- **Parse host logs with `LC_ALL=C` and never fatally:** macOS `sed` aborts on a byte cut mid-glyph in a UTF-8 locale, and under the driver's `set -e` that ended the report.
+- **Owed:** acceptance criterion 2 (a full run at the default bound with no group timing out) waits for the next provincial `default` run.
+
 ## Status (2026-10-23, late) — `fresh_default` rebuilt at 0.68.0; a drainage component can be split across hosts (#361)
 
 **run_uid `20261023_074321-24d85e8c` built all 241 `default` groups into `fresh_default` on m1 and three cloud hosts at link `1d00c04c` (0.68.0) on fresh `e9793047` (0.42.0), with `--refresh-primitives` and `--recompute-jobs=8`; the 2026-10-17 build is kept as `fresh_default_20261017`.** Both verifiers pass at `expected_n=241`. The split test modelled the Peace's 26 groups on two hosts in the worst order and found nothing the order can reach that differs from the one-host build, so `study_area_buckets.R --atom=group` and `study_area_run.sh --buckets-exact` exist. Record: `research/study_area_run.md`, "The province-wide `default` run (2026-10-23)"; evidence `data-raw/logs/provincial_361/` (its README indexes it); mechanics RUNBOOK §8d, "The atom can be a single group".
