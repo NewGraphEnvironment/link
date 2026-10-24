@@ -19,6 +19,10 @@ finish_hosts_lib <- function() {
   normalizePath(testthat::test_path("..", "..", "data-raw", "study_area_hosts.sh"),
                 mustWork = FALSE)
 }
+finish_phases_lib <- function() {
+  normalizePath(testthat::test_path("..", "..", "data-raw", "study_area_phases.sh"),
+                mustWork = FALSE)
+}
 finish_driver <- function() {
   normalizePath(testthat::test_path("..", "..", "data-raw", "study_area_run.sh"),
                 mustWork = FALSE)
@@ -107,6 +111,7 @@ run_finish_sh <- function(world, schema, body) {
     "set -euo pipefail",
     sprintf("source %s", shQuote(finish_hosts_lib())),
     sprintf("source %s", shQuote(finish_lib())),
+    sprintf("source %s", shQuote(finish_phases_lib())),
     sprintf("eval \"$(sed -n '/^csv_lines() {/p' %s)\"", drv),
     sprintf("eval \"$(sed -n '/^csv_count() {/p' %s)\"", drv),
     sprintf("eval \"$(awk '/^recompute_one\\(\\)/,/^}/' %s)\"", drv),
@@ -342,6 +347,44 @@ test_that("a complete run recomputes every group and exits 0", {
   expect_equal(r$status, 0L, info = r$out)
   expect_match(r$out, "study_area_run done", fixed = TRUE)
   expect_length(grep("wsg_recompute_one", rscript_calls(w)), 2L)
+})
+
+phase_rows <- function(w) {
+  utils::read.delim(file.path(w, "logs", "T0_phases.tsv"), colClasses = "character",
+                    quote = "", na.strings = character(), comment.char = "")
+}
+
+test_that("a complete run writes its tail's phase rows and prints them before the end (link#375)", {
+  skip_if_no_finish_lib()
+  conn <- skip_if_no_db()
+  sc <- finish_fixture(conn)
+  w <- finish_world()
+  r <- run_finish_sh(w, sc, c('phases_init "$LOG_DIR/T0_phases.tsv"', "run_finish AAAA,BBBB ''"))
+  expect_equal(r$status, 0L, info = r$out)
+  p <- phase_rows(w)
+  expect_equal(p$phase, c("coverage", "views", "recompute", "compare"))
+  expect_true(all(p$status == "ok"))
+  expect_true(all(p$run_uid == finish_uid))
+  expect_equal(p$groups, c("2", "", "2", "2"))
+  expect_true(all(nzchar(p$start_utc) & nzchar(p$end_utc)))
+  expect_match(r$out, "critical path: [0-9.]+ min")
+  expect_lt(regexpr("critical path", r$out), regexpr("study_area_run done", r$out))
+})
+
+test_that("no group with rows from this run: coverage failed, the rest skipped, report before the exit (link#375)", {
+  skip_if_no_finish_lib()
+  conn <- skip_if_no_db()
+  sc <- finish_fixture(conn)
+  w <- finish_world()
+  r <- run_finish_sh(w, sc, c('phases_init "$LOG_DIR/T0_phases.tsv"', "run_finish CCCC,DDDD ''"))
+  expect_equal(r$status, 1L, info = r$out)
+  p <- phase_rows(w)
+  expect_equal(p$phase, c("coverage", "views", "recompute", "compare"))
+  expect_equal(p$status, c("failed", "skipped", "skipped", "skipped"))
+  expect_equal(p$start_utc[2:4], c("", "", ""))
+  expect_match(r$out, "phases (", fixed = TRUE)
+  expect_lt(regexpr("phases (", r$out, fixed = TRUE),
+            regexpr("study_area_run INCOMPLETE", r$out, fixed = TRUE))
 })
 
 test_that("the driver refuses --run-uid / --wsgs without --recompute-only, and dispatch flags with it", {

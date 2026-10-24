@@ -1,0 +1,5 @@
+run_uid	phase	host	start_utc	end_utc	minutes	groups	status
+20261024_033333-71471db8	refresh						skipped
+20261024_033333-71471db8	prep		2026-10-24T03:33:33Z	2026-10-24T03:33:40Z	0.1	2	ok
+20261024_033333-71471db8	model	dispatcher	2026-10-24T03:33:40Z	2026-10-24T03:34:02Z	0.4		failed
+20261024_033333-71471db8	model	dispatcher	2026-10-24T03:33:40Z	2026-10-24T03:35:05Z	1.4	2	ok

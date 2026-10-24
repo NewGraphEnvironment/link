@@ -24,7 +24,9 @@
 #   ACC_DONE_LOG ACC_SKIP; run_wsgs_write reads DISP_BUCKET CY_WS_ARR
 #   CY_BUCKET ACC_SKIP
 # Functions read: .hosts_query host_finished .hosts_* (study_area_hosts.sh);
-#   csv_count recompute_order run_recompute_pool (study_area_run.sh)
+#   csv_count recompute_order run_recompute_pool (study_area_run.sh);
+#   phase_begin phase_end phase_skip phases_report (study_area_phases.sh),
+#   which write the coverage, views, recompute and compare rows (link#375)
 # Globals written: COV_STATE COV_RECOMPUTE COV_NOROWS COV_STALE COV_LOST
 #   COV_UNCONS COV_MISSING RUN_WSGS ALL_WSGS COMPARE_CSV COMPARE_FAIL RUN_INCOMPLETE
 #   RECOMPUTE_FAIL RECOMPUTE_FAIL_STAGE RECOMPUTE_RAN; run_expected_from_hosts
@@ -449,6 +451,7 @@ run_finish() {
   # A gap no longer exits here (link#348): it would take every other group's
   # recompute with it. It is named at the end, with an exit status to match.
   echo "=== verify WSG coverage in $SCHEMA (run_uid $RUN_UID) ==="
+  phase_begin coverage
   if ! run_coverage "$RUN_WSGS" "$signals" "$excluded"; then
     echo "FATAL: could not verify WSG coverage in $SCHEMA"; exit 1
   fi
@@ -468,12 +471,14 @@ run_finish() {
     echo "  NOTE: recomputing only the $(.hosts_n "$COV_RECOMPUTE") WSGs above; the rest keep"
     echo "        whatever rows they hold, and the run will exit non-zero."
   fi
+  phase_end coverage "" "$(.hosts_n "$RUN_WSGS")" "$([ -z "$COV_MISSING" ] && echo ok || echo failed)"
   ALL_WSGS="$COV_RECOMPUTE"
 
   if [ -z "$ALL_WSGS" ]; then
     echo "=== post-consolidate recompute: SKIPPED ==="
     echo "  No run group has rows from a build this run finished, so there is"
     echo "  nothing the recompute could settle and nothing valid to compare."
+    phase_skip views; phase_skip recompute; phase_skip compare
   else
     run_finish_recompute
     run_finish_compare
@@ -519,6 +524,8 @@ run_finish_recompute() {
   N_RECOMPUTE=$(csv_count "$ALL_WSGS")
 
   echo "=== post-consolidate recompute (lnk_access, ${N_RECOMPUTE} WSGs, -j${RECOMPUTE_JOBS}) ==="
+  # views: the two single-threaded steps before the pool (link#375).
+  phase_begin views
 
   # Ensure the log tables exist ONCE, single-threaded, before any job starts
   # (link#262). wsg_recompute_one.R deliberately refuses to run DDL — it runs
@@ -573,7 +580,10 @@ link:::.lnk_log_create_tables(conn, cfg$pipeline$schema)
     fi
   fi
 
+  phase_end views "" "" "$([ "$RECOMPUTE_FAIL" = "0" ] && echo ok || echo failed)"
+
   if [ "$RECOMPUTE_FAIL" = "0" ]; then
+    phase_begin recompute
     rm -rf "$RC_DIR"; mkdir -p "$RC_DIR"
     # Longest-first. Ordering is the CALLER's business -- run_recompute_pool
     # consumes ALL_WSGS as given, which keeps it testable by pool_probe.sh and
@@ -603,6 +613,9 @@ link:::.lnk_log_create_tables(conn, cfg$pipeline$schema)
       # per-job files are what you actually grep.
       RECOMPUTE_FAIL=1
     fi
+    phase_end recompute "" "$N_RECOMPUTE" "$([ "$RECOMPUTE_FAIL" = "0" ] && echo ok || echo failed)"
+  else
+    phase_skip recompute
   fi
 }
 
@@ -612,6 +625,7 @@ link:::.lnk_log_create_tables(conn, cfg$pipeline$schema)
 # would hide the report, which names the groups that are missing.
 run_finish_compare() {
   echo "=== compare (tunnel-free) ==="
+  phase_begin compare
   if ( cd "$REPO_ROOT" && LNK_LOAD=loadall Rscript data-raw/study_area_compare.R \
       "$COMPARE_CSV" "$ALL_WSGS" "$CONFIG" ) > "$LOG_DIR/${TS}_compare.log" 2>&1; then
     echo "  ✓ compare CSV: $COMPARE_CSV"
@@ -619,10 +633,13 @@ run_finish_compare() {
     echo "  ✗ compare failed; see $LOG_DIR/${TS}_compare.log"
     COMPARE_FAIL=1
   fi
+  phase_end compare "" "$(csv_count "$ALL_WSGS")" "$([ "$COMPARE_FAIL" = "0" ] && echo ok || echo failed)"
 }
 
 run_finish_report() {
   echo "=== summary ==="
+  # Before the INCOMPLETE branch below, which exits (link#375).
+  phases_report
   echo "  run WSGs:        ${RUN_WSGS:-<none>}"
   echo "  recomputed WSGs: ${ALL_WSGS:-<none>}"
   if [ -n "$ALL_WSGS" ] && [ "${COMPARE_FAIL:-0}" = "0" ]; then

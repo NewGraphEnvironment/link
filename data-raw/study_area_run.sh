@@ -70,6 +70,10 @@
 # kept and its groups are named (link#358). The run's groups are written to
 # <TS>_run_wsgs.tsv before any spend, which --recompute-only reads.
 #
+# Each phase's start and end per host goes to <TS>_phases.tsv as it ends, and
+# the summary prints the table and the critical path (link#375; RUNBOOK §8d,
+# "Where a run's time went").
+#
 # Extra flags:
 #   --preflight-only        run the local gates and exit (no spend)
 #   --refresh-primitives    snapshot_bcfp.sh --force first (default off)
@@ -142,6 +146,9 @@
 # with nothing to say so.
 
 set -euo pipefail
+
+# The run-wide prep phase starts here, before its file can exist (link#375).
+PHASE_RUN_START=$(date -u '+%Y-%m-%dT%H:%M:%SZ %s')
 
 # declare -A (the per-host maps below) needs bash 4+; macOS /bin/bash is 3.2 and
 # would die at the first map, after the refresh and pre-flight already ran
@@ -476,6 +483,17 @@ source "$REPO_ROOT/data-raw/study_area_hosts.sh"
 # Coverage, recompute, compare and the final report (link#348).
 # shellcheck source=study_area_finish.sh
 source "$REPO_ROOT/data-raw/study_area_finish.sh"
+# Each phase's start and end per host, to ${TS}_phases.tsv (link#375). Not on
+# --preflight-only, which runs nothing a row would time. --recompute-only writes
+# its own file, under the run_uid it finishes, with the tail's rows only.
+# shellcheck source=study_area_phases.sh
+source "$REPO_ROOT/data-raw/study_area_phases.sh"
+PHASES_TSV=""
+if [ "$PREFLIGHT_ONLY" = "0" ]; then
+  phases_init "$LOG_DIR/${TS}_phases.tsv"
+  echo "  phases:       $PHASES_TSV"
+  phase_begin prep "" "$PHASE_RUN_START"
+fi
 CYPHERS_UP=0
 KEPT_N=0
 KEPT_CAUSE_N=0
@@ -516,6 +534,12 @@ redact_log_addresses() {
 
 on_exit() {
   local rc=$?
+  # The phase the run died in, and any other still open (link#375), and the
+  # table once, for a run that exits before its summary. First, so the end is
+  # the moment of exit, not after the trap's burn; `|| true` so nothing here
+  # can stop the burn below.
+  phases_close_open || true
+  [ "${PHASES_REPORTED:-0}" = "1" ] || phases_report || true
   burn_cyphers || rc=$?
   redact_log_addresses
   return $rc
@@ -724,6 +748,7 @@ if [ "$RECOMPUTE_ONLY" = "1" ]; then
   fi
   # The run's run_wsgs.tsv and its log rows, or --wsgs= (link#358).
   run_expected_recompute_only "$WSGS_ARG" || exit 1
+  phase_end prep "" "$(.hosts_n "$RO_EXPECT")" ok
   run_finish "$RO_EXPECT" "" "$RO_EXCLUDED"
   exit 0
 fi
@@ -1206,12 +1231,16 @@ preflight_hosts() {
 # orchestration is worse than stopping with the exact remediation printed.
 if [ "$REFRESH_PRIMITIVES" = "1" ]; then
   echo "=== --refresh-primitives: snapshot_bcfp.sh --with-bcfp-views --force ==="
+  phase_begin refresh
   ( cd "$REPO_ROOT" && PGUSER=postgres PGPASSWORD=postgres PGHOST=localhost \
       PGPORT=5432 PGDATABASE=fwapg \
       bash data-raw/snapshot_bcfp.sh --with-bcfp-views --force ) \
     > "$LOG_DIR/${TS}_snapshot.log" 2>&1 \
     || { echo "FATAL: snapshot_bcfp.sh failed; see $LOG_DIR/${TS}_snapshot.log"; exit 1; }
   echo "  ✓ primitives refreshed (see $LOG_DIR/${TS}_snapshot.log)"
+  phase_end refresh "" "" ok
+else
+  phase_skip refresh
 fi
 
 preflight_local || { echo "FATAL: pre-flight failed; aborting before spend"; exit 1; }
@@ -1304,6 +1333,8 @@ if [ "$N_CY" -gt 0 ]; then
   # held yet, so the trap burns every workspace; cypher_down on one that never
   # spun is a no-op.
   CYPHERS_UP=1
+  # Each host's prep phase runs from the spin to its own prep's end (link#375).
+  for WS in "${CY_WS_ARR[@]}"; do phase_begin prep "$WS"; done
   ( cd "$CYPHER_DIR"
     for WS in "${CY_WS_ARR[@]}"; do
       ./cypher_up.sh --workspace "$WS" > "$LOG_DIR/${TS}_up_$WS.log" 2>&1 &
@@ -1319,6 +1350,10 @@ if [ "$N_CY" -gt 0 ]; then
   echo "=== prep cyphers (cypher_prep.sh) ==="
   for WS in "${CY_WS_ARR[@]}"; do
     IP="${CY_IP[$WS]}"
+    # The outer subshell writes this host's prep row when its prep ends (quiet:
+    # its stdout is the host's prep log; the parent prints the rows after the wait).
+    # ok only on exit 0 AND the READY line the gate below reads.
+    ( prc=0
     ( # Wait until the droplet accepts a connection AS THE cypher USER before
       # scp. `cypher_up` reporting "ready" is not sufficient: it polls for
       # /var/lib/cloud/cypher-provisioned, which is baked into the snapshot
@@ -1362,9 +1397,14 @@ if [ "$N_CY" -gt 0 ]; then
         exit 1
       fi
       scp -q "$REPO_ROOT/data-raw/cypher_prep.sh" "cypher@$IP:/tmp/cypher_prep.sh" \
-        && ssh "cypher@$IP" "CYPHER_PREP_BRANCH='$LINK_BRANCH' CYPHER_PREP_DISCHARGE='$DISCHARGE' CYPHER_PREP_WET_LOAD='$WET_LOAD' CYPHER_PREP_CONFIG='$CONFIG' CYPHER_PREP_SCHEMA='$SCHEMA' bash /tmp/cypher_prep.sh" ) > "$LOG_DIR/${TS}_prep_$WS.log" 2>&1 &
+        && ssh "cypher@$IP" "CYPHER_PREP_BRANCH='$LINK_BRANCH' CYPHER_PREP_DISCHARGE='$DISCHARGE' CYPHER_PREP_WET_LOAD='$WET_LOAD' CYPHER_PREP_CONFIG='$CONFIG' CYPHER_PREP_SCHEMA='$SCHEMA' bash /tmp/cypher_prep.sh" ) > "$LOG_DIR/${TS}_prep_$WS.log" 2>&1 || prc=$?
+      pst=failed
+      [ "$prc" = "0" ] && grep -qx "=== READY" "$LOG_DIR/${TS}_prep_$WS.log" 2>/dev/null && pst=ok
+      phase_end prep "$WS" "" "$pst" quiet
+      exit "$prc" ) >> "$LOG_DIR/${TS}_prep_$WS.log" 2>&1 &
   done
   wait
+  for WS in "${CY_WS_ARR[@]}"; do phase_forget prep "$WS"; phase_print prep "$WS"; done
   # Grep the ANCHORED "=== READY" (cypher_prep.sh's last line), not
   # "snapshot_bcfp.sh: complete" (link#246). The old sentinel was wrong in
   # both directions:
@@ -1413,15 +1453,37 @@ fi
 # so the recompute keeps its own SET. LNK_STATEMENT_TIMEOUT_MIN goes with it,
 # and wsg_run_one.R refuses to model on a connection whose bound differs, so a
 # leg that lost PGOPTIONS fails its first group rather than running unbound.
+#
+# Each leg writes its own model row from an outer subshell when its loop ends
+# (link#375): the legs are waited on one after another below, so the moment a
+# wait returns is not when its leg ended. The status is the leg's exit status;
+# a group that failed inside it is the accounting's to name. The parent forgets
+# the phase once the wait returns, so a driver killed mid-leg closes it failed,
+# and a leg that outlives the driver then writes its own row as well. Each
+# wrapper's own output goes to its leg's log, as the leg's did before: holding
+# the driver's stdout would keep a reader of it (a `| tee`) open until the last
+# leg ended, after the driver was killed. Appending is safe: the inner `>`
+# truncates before either writes, and an O_APPEND fd writes at the end.
+RUN_N=$( { csv_lines "$DISP_BUCKET"
+  for WS in "${CY_WS_ARR[@]}"; do csv_lines "${CY_BUCKET[$WS]}"; done
+} | sort -u | wc -l | tr -d ' ')
+phase_end prep "" "$RUN_N" ok
 echo "=== run buckets (DS-first) ==="
-( cd "$REPO_ROOT"
+phase_begin model dispatcher
+# `|| exit 1` on the cd: left of the `||` that catches its status, the leg runs with errexit
+# off, so a failed cd would otherwise model every group from the wrong directory.
+( mrc=0
+  ( cd "$REPO_ROOT" || exit 1
   for w in $(echo "$DISP_BUCKET" | tr ',' ' '); do
     PGOPTIONS="${PGOPTIONS:+$PGOPTIONS }-c statement_timeout=${STATEMENT_TIMEOUT_MIN}min" \
     LNK_STATEMENT_TIMEOUT_MIN="$STATEMENT_TIMEOUT_MIN" \
     LNK_LOAD=loadall LNK_GUARD_DOWNSTREAM=warn LNK_HABITAT_GATE=0 \
       Rscript data-raw/wsg_run_one.R "$w" "$CONFIG" \
       || echo "[WARN] dispatcher WSG $w failed (continuing)"
-  done ) > "$LOG_DIR/${TS}_run_local.log" 2>&1 &
+  done ) > "$LOG_DIR/${TS}_run_local.log" 2>&1 || mrc=$?
+  phase_end model dispatcher "$(csv_count "$DISP_BUCKET")" \
+    "$([ "$mrc" = "0" ] && echo ok || echo failed)" quiet
+  exit "$mrc" ) >> "$LOG_DIR/${TS}_run_local.log" 2>&1 &
 LOCAL_PID=$!
 declare -A CY_PID
 # Baseline before any write (link#347): which of each cypher's bucket already
@@ -1451,20 +1513,27 @@ for WS in "${CY_WS_ARR[@]}"; do
   # silently skip WSGs.
   # Keepalives: this one session carries the host's whole bucket (hours); a
   # silent link drop would kill the rest of it (link#246).
+  phase_begin model "$WS"
+  ( mrc=0
   ssh -o ServerAliveInterval=60 -o ServerAliveCountMax=10 "cypher@$IP" "cd ~/Projects/repo/link && export LNK_SCHEMA='$SCHEMA' && export LNK_GUARD_DOWNSTREAM=warn && export LNK_HABITAT_GATE=0 && export PGOPTIONS='-c statement_timeout=${STATEMENT_TIMEOUT_MIN}min' && export LNK_STATEMENT_TIMEOUT_MIN='$STATEMENT_TIMEOUT_MIN' && export FWAPG_GIT_SHA='${FWAPG_GIT_SHA:-}' && export BCFISHOBS_GIT_SHA='${BCFISHOBS_GIT_SHA:-}' && export LNK_RUN_UID='$RUN_UID' && export LNK_RUN_LABEL='$RUN_LABEL' && export LNK_BCFP_MODEL_VERSION='${LNK_BCFP_MODEL_VERSION:-}' && for w in $B_SPACE; do Rscript data-raw/wsg_run_one.R \$w '$CONFIG' || echo \"[WARN] cy WSG \$w failed\"; done" \
-    > "$LOG_DIR/${TS}_run_$WS.log" 2>&1 &
+    > "$LOG_DIR/${TS}_run_$WS.log" 2>&1 || mrc=$?
+  phase_end model "$WS" "$(csv_count "${CY_BUCKET[$WS]}")" \
+    "$([ "$mrc" = "0" ] && echo ok || echo failed)" quiet
+  exit "$mrc" ) >> "$LOG_DIR/${TS}_run_$WS.log" 2>&1 &
   CY_PID[$WS]=$!
 done
 # A non-zero host exit (e.g. ssh dropped) is logged, NOT fatal — we still
 # consolidate whatever each host persisted so a late failure can't lose the
 # other hosts' work.
 wait $LOCAL_PID || echo "  WARN: dispatcher run returned non-zero; see $LOG_DIR/${TS}_run_local.log"
+phase_forget model dispatcher; phase_print model dispatcher
 for WS in "${CY_WS_ARR[@]}"; do
   # Recorded, not just warned: a session that dropped may have left its loop
   # running on the host, so host_release keeps any host whose session did
   # not exit 0 (link#347). host_wait records it only once wait has returned.
   host_wait "$WS" "${CY_PID[$WS]}" \
     || echo "  WARN: cy[$WS] run returned non-zero; see $LOG_DIR/${TS}_run_$WS.log"
+  phase_forget model "$WS"; phase_print model "$WS"
 done
 echo "  ✓ host runs finished (per-WSG soft-fail; gaps surface in compare)"
 
@@ -1494,6 +1563,7 @@ echo "  ✓ host runs finished (per-WSG soft-fail; gaps surface in compare)"
 # hid 18 finished groups that way in run 20261017_004619-3f4c713b (link#347).
 # The log is still read, unanchored, and any disagreement is printed.
 echo "=== per-host completeness (database) ==="
+phase_begin account
 complete_fail=0
 host_account dispatcher local "$LOG_DIR/${TS}_run_local.log" "$DISP_BUCKET" \
   || complete_fail=1
@@ -1515,13 +1585,17 @@ done
 # Each host's SKIPs, now known. Never fatal here: hosts are held.
 run_wsgs_write "$RUN_WSGS_TSV" \
   || echo "  WARN: could not rewrite $RUN_WSGS_TSV with SKIPs; it still lists every group"
+phase_end account "" "$RUN_N" "$([ "$complete_fail" = "0" ] && echo ok || echo failed)"
 
 # --- consolidate cyphers -> dispatcher ---
 if [ "$N_CY" -gt 0 ]; then
   echo "=== consolidate cyphers -> dispatcher ($SCHEMA) ==="
+  # The copy and the release below, which reads each source again (link#375).
+  phase_begin consolidate
   SRC_R="list("
   first=1
   n_src=0
+  cons_n=0
   for WS in "${CY_WS_ARR[@]}"; do
     IP="${CY_IP[$WS]}"
     # The bucket is what the host REPORTED, not what it was asked to do.
@@ -1539,6 +1613,7 @@ if [ "$N_CY" -gt 0 ]; then
     SRC_R="$SRC_R list(host = 'cypher@$IP', via = 'docker', bucket = c($bucket_r))"
     first=0
     n_src=$((n_src + 1))
+    cons_n=$((cons_n + $(csv_count "${CY_BUCKET_DONE[$WS]:-}")))
   done
   SRC_R="$SRC_R)"
   if [ "$n_src" -eq 0 ]; then
@@ -1546,6 +1621,7 @@ if [ "$N_CY" -gt 0 ]; then
     # schema_consolidate a no-op that returns cleanly, which reads as
     # "consolidated" when nothing was.
     echo "  ✗ no cypher reported any WSG — nothing to consolidate"
+    cons_st=failed
   else
     # CONSOLIDATING marks consolidate as a write in flight against every source
     # host (link#347): a driver killed here runs its EXIT trap while this
@@ -1582,7 +1658,9 @@ ok <- all(vapply(res\$sources, function(s) isTRUE(s\$ok), logical(1)))
 quit(status = if (ok) 0 else 1)
 " ) > "$LOG_DIR/${TS}_consolidate.log" 2>&1 || crc=$?
     CONSOLIDATING=0
+    cons_st=failed
     if [ "$crc" = "0" ]; then
+      cons_st=ok
       echo "  ✓ consolidated $n_src/$N_CY cypher(s) (see $LOG_DIR/${TS}_consolidate.log)"
       consolidate_state_write "$CONS_STATE" ok \
         || echo "  WARN: could not mark $CONS_STATE ok; a --recompute-only will keep its groups out"
@@ -1604,6 +1682,7 @@ quit(status = if (ok) 0 else 1)
       echo "      bash data-raw/study_area_run.sh --recompute-only --run-uid=$RUN_UID \\"
       echo "        --config=$CONFIG --schema=$SCHEMA${RUN_LABEL:+ --run-label=$RUN_LABEL} \\"
       echo "        --wsgs=$RUN_EXPECT"
+      phase_end consolidate "" "$cons_n" failed
       exit 1
     fi
   fi
@@ -1619,10 +1698,28 @@ quit(status = if (ok) 0 else 1)
   for WS in "${CY_WS_ARR[@]}"; do
     host_release "$WS" "${CY_BUCKET[$WS]}"
   done
+  phase_end consolidate "" "$cons_n" "$cons_st"
+else
+  phase_skip consolidate
 fi
 
 # --- burn cyphers now (released hosts only; minimise idle) ---
-burn_cyphers || true
+# Timed here, not in the EXIT trap's burn, which runs after the run's last row.
+if [ "$N_CY" -gt 0 ]; then
+  phase_begin burn
+  burn_cyphers || true
+  # burn_cyphers returns its caller's status, not its own, so the row reads
+  # what it left: failed when a host it was free to burn is not burned. A host
+  # it held, or --keep-cyphers kept, is the kept-hosts report's to name.
+  bst=ok
+  for WS in "${CY_WS_ARR[@]}"; do
+    [ "$KEEP_CYPHERS" = "1" ] || [ "${CY_HOLD[$WS]:-0}" = "1" ] \
+      || [ "${CY_BURNED[$WS]:-0}" = "1" ] || bst=failed
+  done
+  phase_end burn "" "" "$bst"
+else
+  phase_skip burn
+fi
 
 # The run's groups, less SKIPs, and the finish signals the per-host accounting
 # already holds (run_expected_from_hosts, study_area_finish.sh).
