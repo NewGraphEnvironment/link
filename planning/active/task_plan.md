@@ -40,12 +40,12 @@ On 2026-10-23 (`20261023_074321-24d85e8c`) OKAN sat in one statement (fresh's ne
   - add the `LNK_TEST_STALL_WSG` hook with its refusal guard.
 
 ## Phase 3: The driver
-- [ ] `study_area_run.sh`:
+- [x] `study_area_run.sh`:
   - parse `--statement-timeout=` and validate it;
   - add `PGOPTIONS` on the local leg and inside the ssh string;
   - add a banner line (`statement:    30 min per modelling statement (PGOPTIONS, both legs); recompute 10 min (wsg_recompute_one.R)`);
   - document the flag and the recompute's bound in the header.
-- [ ] `study_area_finish.sh`: `run_timeouts()` greps the run's host logs for `TIMEOUT` lines. `run_finish_report()` prints them under INCOMPLETE as "timed out (statement bound N min): GROUP — statement".
+- [x] `study_area_finish.sh`: `run_timeouts()` greps the run's host logs for `TIMEOUT` lines. `run_finish_report()` prints them under INCOMPLETE as "timed out (statement bound N min): GROUP — statement".
 
 ## Phase 4: Docs
 - [ ] RUNBOOK §8d: a new subsection, "A runaway statement fails its group (link#371)". It covers the bound, the env var, why `PGOPTIONS` and not a role setting, the 30-min measurement, the recompute's own bound, how a timeout reads in the log and the summary, and the finish path.

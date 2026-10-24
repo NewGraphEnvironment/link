@@ -31,7 +31,8 @@
 #   writes RUN_EXPECT RUN_SIGNALS RUN_SKIP; consolidate_outcomes writes
 #   CONS_FAILED CONS_EXCLUDED CY_CONS_FAIL (declared in study_area_hosts.sh);
 #   consolidate_state_write reads CY_WS_ARR CY_BUCKET_DONE CY_CONS_FAIL;
-#   run_expected_recompute_only writes RO_EXPECT RO_EXCLUDED
+#   run_expected_recompute_only writes RO_EXPECT RO_EXCLUDED; run_timeouts
+#   writes TIMED_OUT TIMEOUT_LINES
 #
 # Needs bash >= 4, as the driver does.
 
@@ -393,6 +394,30 @@ run_expected_recompute_only() {
 # bucket. EXITS the shell on an incomplete or failed run, as the driver
 # always has, and returns 0 only for a complete one. Call it bare: under
 # `set -e`, a function called in an `if` or `||` runs with errexit off.
+# run_timeouts <groups csv>: which of these groups had a modelling statement
+# cancelled by the statement bound (link#371), from the run's host logs. Each
+# group's wsg_run_one.R writes `[wsg_run_one] <WSG> TIMEOUT after <bound>:
+# <statement>`, and every host's output lands in $LOG_DIR/<ts>_run_<host>.log,
+# where <ts> is the run_uid's timestamp: TS in a full run, an earlier one under
+# --recompute-only. Only groups in the argument are named, so a group
+# re-modelled since its timeout is not. A group that hit it twice keeps its last
+# line. Sets:
+#   TIMED_OUT      the groups, sorted, comma-separated;
+#   TIMEOUT_LINES  one `<WSG> (bound <bound>): <statement>` line per group.
+run_timeouts() {
+  local want="${1:-}" logs
+  TIMED_OUT=""; TIMEOUT_LINES=""
+  [ -n "$want" ] || return 0
+  # Never fatal: this only adds a line to the report, under the driver's set -e.
+  logs=$(find "$LOG_DIR" -maxdepth 1 -name "${RUN_UID%-*}_run_*.log" 2>/dev/null | sort) || logs=""
+  [ -n "$logs" ] || return 0
+  TIMEOUT_LINES=$(printf '%s\n' "$logs" | while IFS= read -r f; do cat "$f"; done \
+    | sed -nE 's/^\[wsg_run_one\] ([A-Z]{4}) TIMEOUT after ([^:]+): (.*)$/\1\t\2\t\3/p' \
+    | awk -F'\t' -v want=",$want," 'index(want, "," $1 ",") { last[$1] = $1 " (bound " $2 "): " $3 }
+        END { for (w in last) print last[w] }' | LC_ALL=C sort)
+  TIMED_OUT=$(printf '%s\n' "$TIMEOUT_LINES" | sed -nE 's/^([A-Z]{4}) .*/\1/p' | paste -sd, -)
+}
+
 run_finish() {
   RUN_WSGS=$(.hosts_union "${1:-}" "${3:-}")
   local signals="${2:-}" excluded="${3:-}" w
@@ -639,6 +664,11 @@ run_finish_report() {
         [ -z "${COV_STALE:-}" ]  || echo "    an earlier run's or partial rows: $COV_STALE"
         [ -z "${COV_LOST:-}" ]   || echo "    lost at consolidate:             $COV_LOST"
         [ -z "${COV_UNCONS:-}" ] || echo "    not consolidated:                $COV_UNCONS"
+        run_timeouts "$COV_MISSING"
+        if [ -n "$TIMED_OUT" ]; then
+          echo "    statement bound hit:             $TIMED_OUT"
+          printf '%s\n' "$TIMEOUT_LINES" | sed 's/^/      /'
+        fi
         # A held cypher may hold this run's finished work, unconsolidated. What
         # to do with each of its groups depends on whether the host could be
         # measured and whether it was settled, which only hosts_kept_report
