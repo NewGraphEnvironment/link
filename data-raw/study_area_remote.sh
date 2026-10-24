@@ -162,6 +162,20 @@ remote_redact_init() {
   WK_REDACT_READY=1
 }
 
+# remote_redact_add <key> <name>: one more name to redact for a worker, such
+# as how it names itself in what it writes (worker_prep.sh prints it).
+remote_redact_add() {
+  local m names=() keys=() i order
+  [ -n "${2:-}" ] || return 0
+  [ "${WK_REDACT_READY:-0}" = "1" ] || remote_redact_init
+  for m in ${WK_REDACT[@]+"${WK_REDACT[@]}"}; do [ "$m" = "$2" ] && return 0; done
+  WK_REDACT+=("$2"); WK_REDACT_KEY+=("$1")
+  order=$(for i in "${!WK_REDACT[@]}"; do
+    printf '%s %s\n' "${#WK_REDACT[$i]}" "$i"; done | sort -rn | awk '{ print $2 }')
+  for i in $order; do names+=("${WK_REDACT[$i]}"); keys+=("${WK_REDACT_KEY[$i]}"); done
+  WK_REDACT=("${names[@]}"); WK_REDACT_KEY=("${keys[@]}")
+}
+
 # remote_redact_targets <file>: replace each worker's names (remote_redact_init)
 # in the file with `<workerN>`. A worker's target is the operator's
 # infrastructure and a run's logs are committed as evidence. Matched whole

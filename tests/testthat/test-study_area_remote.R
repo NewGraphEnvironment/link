@@ -362,3 +362,16 @@ test_that("worker prep checks every variable a worker's leg exports", {
   expect_gt(length(exported), 8L)
   expect_setequal(vars, exported)
 })
+
+test_that("how a worker names itself is redacted beside its target", {
+  skip_if_no_remote_lib()
+  w <- remote_world()
+  f <- file.path(w, "T0_stamps.tsv")
+  writeLines(c("Workers-Mac-mini\tabc\tdef", "wk2\tghi"), f)
+  run_remote(w, c(
+    "WK_TARGETS=(wk wk2); WK_KEYS=(worker1 worker2)",
+    "remote_redact_add worker1 Workers-Mac-mini", "remote_redact_add worker1 ''",
+    "remote_redact_add worker1 Workers-Mac-mini",
+    sprintf("remote_redact_targets %s", shQuote(f))))
+  expect_identical(readLines(f), c("<worker1>\tabc\tdef", "<worker2>\tghi"))
+})

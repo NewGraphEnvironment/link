@@ -660,8 +660,12 @@ on_exit() {
   # A worker's prep still running (the run died during the cyphers' spin)
   # would keep writing ssh's output into its log after the redaction below
   # (link#376): stop it first. Its remote side may finish; it holds nothing.
-  local pid
+  # Only pids still this shell's jobs: the list is cleared once the preps are
+  # waited on, and a reaped pid may since be another session's process.
+  local pid live
+  live=" $(jobs -p | tr '\n' ' ') "
   for pid in ${WK_PREP_PIDS[@]+"${WK_PREP_PIDS[@]}"}; do
+    case "$live" in *" $pid "*) ;; *) continue ;; esac
     pkill -P "$pid" 2>/dev/null || true
     kill "$pid" 2>/dev/null || true
     wait "$pid" 2>/dev/null || true
@@ -1739,7 +1743,14 @@ if [ "$N_CY" -gt 0 ]; then
 fi
 if [ "$N_WK" -gt 0 ]; then
   for pid in "${WK_PREP_PIDS[@]}"; do wait "$pid" || true; done
+  # Waited on: nothing for the trap to stop, and their pids may be reused.
+  WK_PREP_PIDS=()
   for WS in "${WK_KEYS[@]}"; do phase_forget prep "$WS"; phase_print prep "$WS"; done
+  # How each worker names itself (worker_prep.sh's `=== host` line) is
+  # redacted from the run's logs too: its stamp row carries it.
+  for WS in "${WK_KEYS[@]}"; do
+    remote_redact_add "$WS" "$(LC_ALL=C sed -n 's/^=== host //p' "$LOG_DIR/${TS}_prep_$WS.log" 2>/dev/null | head -1)"
+  done
   for WS in "${WK_KEYS[@]}"; do
     grep -qx "=== READY" "$LOG_DIR/${TS}_prep_$WS.log" 2>/dev/null \
       || { echo "FATAL: $WS prep failed; see $LOG_DIR/${TS}_prep_$WS.log"; exit 1; }

@@ -89,3 +89,13 @@ test_that("the fresh install refuses a FRESH_GIT_SHA pin, and an unknown stage i
   expect_equal(r$status, 1L)
   expect_match(r$out, "must be 'all' or 'install-fresh'", fixed = TRUE)
 })
+
+test_that("the script parses under macOS's bash 3.2, as a worker runs it", {
+  skip_if_not(file.exists(worker_prep_script()), "data-raw/worker_prep.sh absent")
+  skip_if_not(file.exists("/bin/bash"), "no /bin/bash")
+  # An apostrophe in a comment inside its single-quoted R programs ends the
+  # quote; this has happened three times while writing it.
+  out <- suppressWarnings(system2("/bin/bash", c("-n", shQuote(worker_prep_script())),
+                                  stdout = TRUE, stderr = TRUE))
+  expect_null(attr(out, "status"), label = paste(out, collapse = "\n"))
+})

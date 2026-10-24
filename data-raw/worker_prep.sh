@@ -108,15 +108,30 @@ if (!is.na(remote) && !identical(remote, st$sha)) {
        substr(remote, 1, 12), ". Remove FRESH_GIT_SHA (and FRESH_GIT_DIRTY) from this ",
        "worker\x27s ~/.Renviron; a pin there wins over anything the driver exports.")
 }
-# Prep exports none of the variables of the leg, so any R sees came from the
+# Prep exports none of the variables below, so any R sees came from the
 # worker itself (its ~/.Renviron, or its shell): R reads ~/.Renviron after
-# the environment, so it would beat the export of the leg too.
+# the environment, so a line there beats the export of the leg too, and an
+# empty export does not clear it. Refused: every variable the leg exports,
+# every LNK_ variable (all link reads; LNK_HOST_ALIAS only names the host),
+# and the provenance pins. FRESH_GIT_SHA is checked against the build below.
 leg_vars <- strsplit(Sys.getenv("WORKER_PREP_LEG_VARS"), " ", fixed = TRUE)[[1]]
-set_here <- leg_vars[nzchar(Sys.getenv(leg_vars))]
+all_env <- names(Sys.getenv())
+refused <- unique(c(leg_vars, grep("^LNK_", all_env, value = TRUE),
+                    "LINK_GIT_SHA", "LINK_GIT_DIRTY", "FWAPG_GIT_SHA",
+                    "BCFISHOBS_GIT_SHA", "PGOPTIONS"))
+refused <- setdiff(refused, "LNK_HOST_ALIAS")
+set_here <- refused[nzchar(Sys.getenv(refused))]
 if (length(set_here)) {
-  fail("this worker sets ", paste(set_here, collapse = ", "), " for R (its ~/.Renviron or ",
+  fail("this worker sets ", paste(sort(set_here), collapse = ", "), " for R (its ~/.Renviron or ",
        "its shell). A ~/.Renviron line beats what the run exports for its legs; ",
        "remove them there.")
+}
+fdirty <- Sys.getenv("FRESH_GIT_DIRTY")
+if (nzchar(fdirty) && !(tolower(fdirty) %in% c("false", "0", "no", "f") &&
+                         !is.na(remote) && identical(Sys.getenv("FRESH_GIT_SHA"), remote))) {
+  fail("FRESH_GIT_DIRTY=", fdirty, " is set on this worker without a FRESH_GIT_SHA that is ",
+       "the installed build; it would be stamped over the real state. Remove it from ",
+       "~/.Renviron.")
 }
 head <- system("git rev-parse HEAD", intern = TRUE)
 lk <- link:::.lnk_pkg_git_state("link")
@@ -124,6 +139,9 @@ if (!identical(lk$sha, head)) {
   fail("link_sha resolves to ", lk$sha, " (", lk$source, "), not the clone\x27s HEAD ", head,
        ". Remove LINK_GIT_SHA (and LINK_GIT_DIRTY) from this worker\x27s ~/.Renviron.")
 }
+# How this worker names itself in what it writes (stamps, log.host): the
+# driver adds it to what it redacts from the logs of the run.
+cat("=== host ", link:::.lnk_host(), "\n", sep = "")
 cat("=== link ", as.character(utils::packageVersion("link")), " at ", substr(head, 1, 12),
     "; fresh ", as.character(utils::packageVersion("fresh")), " at ", substr(st$sha, 1, 12),
     " (", st$source, ")\n", sep = "")

@@ -87,3 +87,11 @@ Round 3's mechanism: the worker reuses cloud-host code that assumes the host is 
 | the origin URL sent to it | a token in userinfo | refused |
 | its exit statuses | 0 whatever ran | the remote-status rule (RUNBOOK §8d) |
 | a prep still writing when the driver dies | unredacted lines after the trap redacts | the trap stops worker prep pids before redacting |
+
+## Code-check round 4: the terminal enumerations
+
+Round 4 found a defect inside round 3's fix (the EXIT trap signalled every pid in `WK_PREP_PIDS`, never cleared, so a pid reused hours later by another session could be killed with its children) and widened round 3's two rows. Fixed, then enumerated:
+
+- **Every pid the branch signals or waits on:** the trap's loop (now only pids `jobs -p` still lists, and the list is cleared once the preps are waited on) and the prep wait (pids started just above). Nothing else on the branch calls `kill`, `pkill` or `wait <pid>`.
+- **Every environment variable link's R reads** (grep of `Sys.getenv("…")` over `R/` and the leg's scripts, plus the `<PKG>_GIT_SHA` / `_DIRTY` names built by `paste0`): every `LNK_*` refused at worker prep except `LNK_HOST_ALIAS` (names the host; the vintage stamps key on it); `LINK_GIT_SHA`, `LINK_GIT_DIRTY`, `FWAPG_GIT_SHA`, `BCFISHOBS_GIT_SHA`, `PGOPTIONS` refused; `FRESH_GIT_SHA` must equal the installed `RemoteSha`; `FRESH_GIT_DIRTY` only `false` beside a matching `FRESH_GIT_SHA`; `FWAPG_DIR` / `BCFISHOBS_DIR` are not read while the leg exports the shas; `PG*` and `PG_*_SHARE` are not read by the leg, whose scripts connect with explicit arguments. Live refusals checked for `LNK_BCFP_MODEL_RUN_ID`, `LINK_GIT_DIRTY` and a bare `FRESH_GIT_DIRTY`.
+- **Names a worker writes about itself:** worker prep prints `=== host <.lnk_host()>`, which the driver adds to what it redacts (the stamps row carries it). A held worker's leg may write ssh's end-of-session lines after the trap's redaction: the kept-hosts banner says to redact that log again before committing it.

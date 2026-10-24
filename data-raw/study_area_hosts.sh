@@ -679,8 +679,12 @@ hosts_kept_report() {
       .hosts_is_worker "$ws" || echo "    cd $CYPHER_DIR && ./cypher_down.sh --workspace $ws"
     done
   fi
-  [ "$n_cy" = "$#" ] || \
+  [ "$n_cy" = "$#" ] || {
     echo "  A worker is not burned: once its groups are consolidated it is left as it is."
+    echo "  A held worker's leg may still be writing its run log after this run's"
+    echo "  redaction: redact that log again before committing it"
+    echo "  (remote_redact_targets, data-raw/study_area_remote.sh)."
+  }
   echo "  Recorded in $tsv"
   return 0
 }
