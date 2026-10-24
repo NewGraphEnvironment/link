@@ -8,3 +8,4 @@
 - Operator, 2026-10-24: run all phases, launch the cyphers without waiting, poll so a hung run is caught
 - Next: start Phase 1
 - Phase 1: lock experiment shows both no-op DDLs (index, log column) block behind a COPY's lock, and the ALTER behind pg_dump's; fixed in `lnk_persist_init()` / `.lnk_log_create_tables()` with catalog reads, tested live. pg_dump of fresh_default: 7.6 min.
+- Plan review folded in (planning/active/review-plan.md): 4 blockers (absent schema at backup, log-only copy, closure overlap race, wait -n re-return) plus gaps, dispositions recorded

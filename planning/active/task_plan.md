@@ -28,42 +28,56 @@
 - [x] If the `CREATE INDEX IF NOT EXISTS` check blocks: `lnk_persist_init()` checks `to_regclass()` for the index before issuing it, with a test. If it does not block, record why no change is needed.
 
 ## Phase 2: `schema_consolidate()` safe beside a writing dispatcher
-- [ ] Judge `copy_empty` on the bucket's rows (`WHERE watershed_group_code IN (bucket)`), through a SQL builder with its own test in `test-schema_consolidate.R`.
-- [ ] Extract `schema_consolidate_backup(schema)`. `schema_consolidate(backup = TRUE)` calls it, so existing callers are unchanged, and the driver calls it on its own.
+- [ ] Judge `copy_empty` on the bucket's rows (`WHERE watershed_group_code IN (bucket)`), through a SQL builder with its own test in `test-schema_consolidate.R` (review G7).
+- [ ] Refuse a source, before anything is deleted, when a table only the source has is a persist table (review B2).
+- [ ] Log each table's copy seconds (review A1); a `verify = FALSE` argument skips the final whole-schema count print (G7).
+- [ ] Extract `schema_consolidate_backup(schema)`, which checks pg_dump's exit code and the dump's size (B1). `schema_consolidate(backup = TRUE)` calls it, so existing callers are unchanged, and the driver calls it on its own.
 
-## Phase 3: Per-host consolidate in the libs (tests first)
+## Phase 3: Per-host consolidate in a new lib, `data-raw/study_area_legs.sh` (tests first)
 - [ ] `CONSOLIDATING` holds the workspace being copied, or nothing. `.hosts_settled <ws>` and `.hosts_unsettled_why` judge only that host as mid-copy.
 - [ ] `consolidate_outcomes <tsv> <ws>` reads one source's row and accumulates `CONS_FAILED` and `CONS_EXCLUDED` across calls.
-- [ ] `consolidate_state_write` writes every host from per-host `CY_CONS_STATE` / `CY_CONS_UTC` (`in_flight`, `ok`, `failed:<stage>`) with `state_utc`. `run_unconsolidated_from_state` reads both headers.
-- [ ] New `host_finish_leg <ws>` in `study_area_hosts.sh`: account, then consolidate one source (Rscript, `backup = FALSE`), then outcomes, state, `host_release` and `burn_cyphers`, with per-host `account`, `consolidate` and `burn` phase rows. An empty bucket is skipped and the host kept. An outcome-less failure works as decided above.
-- [ ] New `legs_wait`: waits with `wait -n -p` over the dispatcher's and the cyphers' PIDs, calls `host_finish_leg` for each cypher as it ends, and records the dispatcher's end. Raise `hosts_bash()` in the tests to 5.1.
-- [ ] Tests:
-  - per-host step with a stub `Rscript` writing outcomes;
-  - **negative:** a refused source (`dest_log_newer`) gives a `kept_hosts.tsv` row with the burn command, and the other host is still burned;
+- [ ] `consolidate_state_write` writes every host from per-host `CY_CONS_STATE` / `CY_CONS_UTC`, with `state_utc` appended as the fifth column. `run_unconsolidated_from_state` reads both headers. An outcome-less failure stays `in_flight` (review G2, S2).
+- [ ] `burn_cyphers` considers only hosts whose leg ended (`CY_LEG_DONE`) until every leg has ended, so a mid-run burn never reports a modelling host as kept. The trap considers all (G1).
+- [ ] `host_finish_leg <ws>`, in the main shell:
+  - account, accumulating `complete_fail`, then `run_wsgs_write`;
+  - write the state `in_flight`, then consolidate one source (Rscript, `backup = FALSE`, `verify = FALSE`, per-host log and outcome files), then outcomes, state, `host_release` and `burn_cyphers`;
+  - per-host `account`, `consolidate` and `burn` phase rows;
+  - an empty bucket skips the copy but still goes through release (O3);
+  - an outcome-less failure sets `CY_CONS_FAIL=no_outcome`, is added to `CONS_FAILED` and `CONS_EXCLUDED`, gets no release, and the run carries on;
+  - every exit becomes carry-on (G2–G5).
+- [ ] `legs_wait`: a pending list over `wait -n -p` (B4). A cypher whose finished set overlaps the dispatcher's bucket waits in a deferred queue until the dispatcher leg ends (B3). Declare the maps at the top level (G8). `hosts_bash()` is raised to 5.1 with a minor-version check (G10).
+- [ ] Tests (the helper sources the hosts, finish, phases and legs libs):
+  - the per-host step with a stub `Rscript`;
+  - **negative:** a refused source gives a `kept_hosts.tsv` row with the burn command, and the other host is still burned;
   - an outcome-less failure;
-  - **a real race:** fake legs of 1 s and 6 s, where the mock `cypher_down.sh` must have burned the short one before the long one ends;
-  - a trap during host a's copy sees a unsettled and b settled;
+  - **a real race:** legs of 1 s and 6 s, where the short one is burned before the long one ends;
+  - two legs ending during one copy, and the dispatcher ending first, with exactly one consolidate per host;
+  - a deferred overlap;
+  - a trap mid-copy sees that host unsettled and the other settled;
+  - a mid-run burn does not list a modelling host;
   - an old-header state file is still read.
+  - Update test-study_area_hosts.R:734-750 and test-study_area_finish.R:646 and :687-713 (G9).
 
 ## Phase 4: Wire the driver
-- [ ] Order: launch the cypher legs, then the backup (`schema_consolidate_backup`, failure fatal before the dispatcher writes anything; the cyphers stay held), then the dispatcher leg, then `legs_wait`, then the dispatcher's `host_account` and `run_wsgs_write`. Remove the single consolidate and burn blocks.
-- [ ] Phase rows: check that `phases_report` and the critical path handle per-host `consolidate` / `burn` rows, plus a run-wide `backup` row (a new phase name in the phases lib and `test-study_area_phases.R`).
-- [ ] Update the structural tests: the driver R snippet in `test-study_area_finish.R:646`, and the drv checks in `test-study_area_phases.R`. Then `bash -n` and shellcheck if installed.
-- [ ] Update the driver header (burn on each leg's end, the backup timing and why, `--keep-cyphers` = consolidate on finish without burning), and the bash ≥ 5.1 check.
+- [ ] Before the spin: `lnk_persist_init` the dispatcher's schema (`cfg$species`, no force_recreate; B1, B2), then the backup in the background through spin and prep. The dispatcher leg waits for it, and a failure is fatal before any dispatch (O1). Only when cyphers are in the run (A4).
+- [ ] Then launch the cypher legs and the dispatcher leg, then `legs_wait`, then the dispatcher's `host_account` and a final `burn_cyphers`. Remove the single consolidate and burn blocks.
+- [ ] Phase rows: a `backup` phase name in the phases lib, per-host `consolidate` / `burn` rows, and `phases_report` printing the consolidate tail (last consolidate end minus last model end; AC1), with `test-study_area_phases.R`.
+- [ ] Update the structural tests, then `bash -n` and shellcheck if installed.
+- [ ] Update the driver header (burn on each leg's end, the backup timing and why, `--keep-cyphers` = consolidate on finish without burning) and the bash ≥ 5.1 check.
 
 ## Phase 5: Live check on little groups (operator's ask)
-- [ ] **Run A:** dispatcher plus job1 and job2, from a worktree. Config `default`, scratch schema `fresh_smoke369`, `--buckets-exact`. Pick small groups from the 2026-10-23 minutes so that job1 ends first, job2 second and the dispatcher last. State the decisions, then launch.
+- [ ] **Run A:** dispatcher plus job1 and job2, from a worktree. Config `default`, scratch schema `fresh_smoke369`, `--buckets-exact`. Pick small groups from the 2026-10-23 minutes so that job1 ends first, job2 second and the dispatcher last. State the decisions, launch, and poll against a deadline.
 - [ ] Check Run A:
-  - each cypher is burned within minutes of its leg's end (`phases.tsv`, doctl);
-  - `consolidate_state.tsv` has `ok` rows whose `state_utc` falls inside the dispatcher's model window;
+  - each cypher's burn ends before the dispatcher's model row ends (AC2);
+  - `consolidate_state.tsv` has `ok` rows with `state_utc` inside the dispatcher's model window;
   - there is no `kept_hosts.tsv`;
-  - `study_area_verify.sql -v schema=fresh_smoke369 -v expected_n=<N>` and `verify_extra.sql` pass;
-  - the overlapping dispatcher groups' minutes are compared with the same groups' 2026-10-23 minutes.
-- [ ] **Run B (negative):** one cypher, with a future-dated log row for one of its groups seeded in `fresh_smoke369`. Expect `dest_log_newer`, the host kept with a `kept_hosts.tsv` row and burn command, and a non-zero exit. Then burn it by its listed command and confirm doctl shows it gone.
-- [ ] Evidence goes in `data-raw/logs/consolidate_on_finish_369/`, with a README. `fresh_smoke369` is kept until merge and dropped on the operator's word.
+  - `study_area_verify.sql -v schema=fresh_smoke369 -v expected_n=<N> -v run_uid=<uid>` and `data-raw/logs/provincial_246/verify_extra.sql` pass (AC3);
+  - the overlapping dispatcher groups' minutes are compared with their 2026-10-23 minutes.
+- [ ] **Run B (negative):** one cypher in its own schema `fresh_smoke369b` (G11), with a future-dated log row for one of its groups seeded. Expect `dest_log_newer`, the host kept with a `kept_hosts.tsv` row and burn command, and a non-zero exit. Then burn it by its listed command and confirm doctl shows it gone.
+- [ ] Evidence goes in `data-raw/logs/consolidate_on_finish_369/`, with a README. Both scratch schemas are kept until merge and dropped on the operator's word.
 
 ## Phase 6: Docs and release
-- [ ] RUNBOOK §8d: "Which host may be burned" (per-host consolidate and burn, `CONSOLIDATING` per host, the outcome-less rule) and "Where a run's time went" (the per-host rows and `backup`). Also the backup timing and the reason.
+- [ ] RUNBOOK §8d: "Which host may be burned" (per-host consolidate and burn, `CONSOLIDATING` per host, the outcome-less rule, deferred overlaps, half-copied groups and what the recompute settles; A2) and "Where a run's time went" (per-host rows, `backup`, the consolidate tail). The backup timing and its real use (log history and pre-run rollback; A3).
 - [ ] CLAUDE.md status, NEWS, and the version bump as the last commit.
 
 ## Owed at the end (reported, done after merge)
