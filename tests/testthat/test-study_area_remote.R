@@ -225,10 +225,12 @@ test_that("the stall hook crosses ssh only as one group code", {
   expect_match(r$out, "export LNK_TEST_STALL_WSG='ADMS' && ", fixed = TRUE)
   r <- run_remote(w, c(worker_globals, 'remote_leg_cmd a AAAA'))
   expect_no_match(r$out, "LNK_TEST_STALL_WSG", fixed = TRUE)
-  r <- run_remote(w, c(worker_globals, "LNK_TEST_STALL_WSG=\"A'; rm -rf x\"",
-                       'remote_leg_cmd a AAAA && echo RC=0 || echo RC=$?'))
-  expect_match(r$out, "RC=1", fixed = TRUE)
-  expect_no_match(r$out, "rm -rf", fixed = TRUE)
+  for (bad in c("\"A'; rm -rf x\"", "$'ABCD\\n'\"'\"'; rm -rf x'")) {
+    r <- run_remote(w, c(worker_globals, paste0("LNK_TEST_STALL_WSG=", bad),
+                         'remote_leg_cmd a AAAA && echo RC=0 || echo RC=$?'))
+    expect_match(r$out, "RC=1", fixed = TRUE, info = bad)
+    expect_no_match(r$out, "rm -rf", fixed = TRUE)
+  }
 })
 
 test_that("worker prep's environment carries the run, and refuses an origin it cannot quote", {
@@ -293,7 +295,8 @@ run_driver <- function(...) {
 
 test_that("the driver refuses a worker target it cannot pass safely", {
   skip_if_no_remote_lib()
-  for (bad in c("-oProxyCommand=x", "local", "a'b", "a b", "a;b", "")) {
+  # An embedded newline whose first line fits: a line-wise check passes it.
+  for (bad in c("-oProxyCommand=x", "local", "a'b", "a b", "a;b", "", "good\nx'; touch y; '")) {
     r <- run_driver(shQuote(paste0("--workers=", bad, ",ok")), "--focal=A", "--focal=B", "--focal=C")
     expect_equal(r$status, 1L, info = bad)
     expect_match(r$out, "--workers= takes ssh targets", fixed = TRUE, info = bad)
@@ -319,10 +322,12 @@ test_that("the driver counts one --focal per worker, and refuses workers when fi
 
 test_that("the driver refuses a stall hook that is not one group code", {
   skip_if_no_remote_lib()
-  r <- withr::with_envvar(c(LNK_TEST_STALL_WSG = "AB; rm"),
-                          run_driver("--workers=wk", "--focal=A", "--focal=B"))
-  expect_equal(r$status, 1L)
-  expect_match(r$out, "LNK_TEST_STALL_WSG must be one four-letter group code", fixed = TRUE)
+  for (bad in c("AB; rm", "ABCD\n'$(id)'")) {
+    r <- withr::with_envvar(c(LNK_TEST_STALL_WSG = bad),
+                            run_driver("--workers=wk", "--focal=A", "--focal=B"))
+    expect_equal(r$status, 1L, info = bad)
+    expect_match(r$out, "LNK_TEST_STALL_WSG must be one four-letter group code", fixed = TRUE)
+  }
 })
 
 test_that("the driver refuses a branch name a remote command could not carry", {
@@ -331,5 +336,8 @@ test_that("the driver refuses a branch name a remote command could not carry", {
   lines <- readLines(drv)
   at <- grep('^LINK_BRANCH="\\$\\(git -C "\\$REPO_ROOT" branch --show-current\\)"$', lines)
   expect_length(at, 1L)
-  expect_true(any(grepl("*[!A-Za-z0-9._/-]*) echo \"FATAL: the branch name", lines[at + 1:8], fixed = TRUE)))
+  near <- lines[at + 1:8]
+  # Only when a remote host is sent it, and on the whole value.
+  expect_true(any(grepl('if [ "$N_HOSTS" -gt 0 ] && ! [[ "$LINK_BRANCH" =~ ^[A-Za-z0-9._/-]+$ ]]; then',
+                        near, fixed = TRUE)))
 })

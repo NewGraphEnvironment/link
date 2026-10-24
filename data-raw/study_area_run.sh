@@ -357,6 +357,9 @@ done
 # --preflight-only needs no --focal set: it exits before the buckets are
 # resolved, and demanding them would make the cheap dry check as awkward as
 # the real thing.
+case "$CY_WS" in
+  *$'\n'*) echo "FATAL: --cy-workspaces= holds a newline" >&2; exit 1 ;;
+esac
 IFS=',' read -ra CY_WS_ARR <<< "$CY_WS"
 [ -n "$CY_WS" ] || CY_WS_ARR=()
 N_CY=${#CY_WS_ARR[@]}
@@ -367,13 +370,19 @@ N_CY=${#CY_WS_ARR[@]}
 # would model and consolidate one database as two hosts. Each worker is keyed
 # worker1..N in the order given: the key, never the target, is what the logs,
 # phases.tsv and kept-hosts record (the target is infrastructure identity).
+# `read` stops at a newline, which would silently drop every target after it.
+case "$WORKERS_ARG" in
+  *$'\n'*) echo "FATAL: --workers= takes ssh targets of A-Z a-z 0-9 . _ @ - (not starting with -, not 'local'); it holds a newline" >&2; exit 1 ;;
+esac
 IFS=',' read -ra WK_TARGETS <<< "$WORKERS_ARG"
 [ -n "$WORKERS_ARG" ] || WK_TARGETS=()
 N_WK=${#WK_TARGETS[@]}
 WK_KEYS=()
 for i in "${!WK_TARGETS[@]}"; do
   t="${WK_TARGETS[$i]}"
-  if ! printf '%s' "$t" | LC_ALL=C grep -qxE '[A-Za-z0-9][A-Za-z0-9._@-]*' || [ "$t" = "local" ]; then
+  # [[ =~ ]] anchors on the whole value; grep -x would pass one with an
+  # embedded newline whose first line fits (code-check round 2).
+  if ! [[ "$t" =~ ^[A-Za-z0-9][A-Za-z0-9._@-]*$ ]] || [ "$t" = "local" ]; then
     echo "FATAL: --workers= takes ssh targets of A-Z a-z 0-9 . _ @ - (not starting with -, not 'local'); worker $((i + 1)) is not one" >&2
     exit 1
   fi
@@ -384,7 +393,7 @@ for i in "${!WK_TARGETS[@]}"; do
   WK_KEYS+=("worker$((i + 1))")
 done
 for ws in ${CY_WS_ARR[@]+"${CY_WS_ARR[@]}"}; do
-  if printf '%s' "$ws" | LC_ALL=C grep -qxE 'worker[0-9]+|dispatcher'; then
+  if [[ "$ws" =~ ^(worker[0-9]+|dispatcher)$ ]]; then
     echo "FATAL: --cy-workspaces= may not name '$ws', which keys a worker or the dispatcher" >&2
     exit 1
   fi
@@ -402,7 +411,7 @@ if [ "$PREFLIGHT_ONLY" = "0" ] && [ "$RECOMPUTE_ONLY" = "0" ]; then
 fi
 # The stall hook (link#371) reaches remote legs too (link#376), so it is
 # checked here, before anything runs, as well as where it is used.
-if [ -n "${LNK_TEST_STALL_WSG:-}" ] && ! printf '%s' "$LNK_TEST_STALL_WSG" | LC_ALL=C grep -qxE '[A-Z]{4}'; then
+if [ -n "${LNK_TEST_STALL_WSG:-}" ] && ! [[ "$LNK_TEST_STALL_WSG" =~ ^[A-Z]{4}$ ]]; then
   echo "FATAL: LNK_TEST_STALL_WSG must be one four-letter group code" >&2
   exit 1
 fi
@@ -437,9 +446,11 @@ LINK_BRANCH="$(git -C "$REPO_ROOT" branch --show-current)"
 # Git allows quotes, `$` and backticks in a branch name, and the branch is
 # pasted into remote command strings (cypher_prep, worker_prep): refuse what
 # could close a quote (link#376).
-case "$LINK_BRANCH" in
-  *[!A-Za-z0-9._/-]*) echo "FATAL: the branch name holds a character the remote command strings cannot carry" >&2; exit 1 ;;
-esac
+# Only where a remote host is sent it: a dispatcher-only run passes it nowhere.
+if [ "$N_HOSTS" -gt 0 ] && ! [[ "$LINK_BRANCH" =~ ^[A-Za-z0-9._/-]+$ ]]; then
+  echo "FATAL: the branch name holds a character the remote command strings cannot carry" >&2
+  exit 1
+fi
 # The commit every host must model: a worker's leg checks its clone's HEAD
 # against it before each group (link#376).
 RUN_SHA="$(git -C "$REPO_ROOT" rev-parse HEAD)"
@@ -474,6 +485,10 @@ else
   # The name-based guard above is the real one and covers every config.
 fi
 [ -n "$SCHEMA" ] || { echo "FATAL: could not resolve persist schema for --config=$CONFIG"; exit 1; }
+# A schema taken from the config's YAML was not seen by the --schema= check,
+# and it reaches the remote command strings too (link#376).
+[[ "$SCHEMA" =~ ^[A-Za-z0-9_]+$ ]] \
+  || { echo "FATAL: the persist schema of --config=$CONFIG is not a bare name" >&2; exit 1; }
 export LNK_SCHEMA="$SCHEMA"
 
 # Where the config reads discharge (link#331): every host needs that table,

@@ -93,7 +93,8 @@ remote_out() {
 remote_leg_cmd() {
   local host="$1" groups="$2" stall="" guard=""
   if [ -n "${LNK_TEST_STALL_WSG:-}" ]; then
-    if ! printf '%s' "$LNK_TEST_STALL_WSG" | LC_ALL=C grep -qxE '[A-Z]{4}'; then
+    # Whole value: grep -x would pass one with an embedded newline.
+    if ! [[ "$LNK_TEST_STALL_WSG" =~ ^[A-Z]{4}$ ]]; then
       echo "FATAL: LNK_TEST_STALL_WSG must be one four-letter group code" >&2
       return 1
     fi
@@ -106,9 +107,10 @@ remote_leg_cmd() {
 }
 
 # worker_prep_env <host>: the environment worker_prep.sh reads, as words to
-# put before `bash -s` in the remote command (link#376). Every value is one
-# the driver already refused quotes in (branch, config, schema, wet load), or
-# the origin URL, checked here.
+# put before `bash -s` in the remote command (link#376). The driver refuses
+# a quote in each before any remote host is reached (the branch, --config,
+# the persist schema however it was resolved, the wet load); the origin URL
+# is checked here.
 worker_prep_env() {
   case "${ORIGIN_URL:-}" in
     ""|*[!A-Za-z0-9._:/@~+-]*)
@@ -125,14 +127,16 @@ worker_prep_env() {
 # driver after its arguments are parsed; remote_redact_targets runs it when
 # nothing has.
 remote_redact_init() {
-  local i t n r
+  local i t n r m seen
   WK_REDACT=(); WK_REDACT_KEY=()
   for i in ${WK_TARGETS[@]+"${!WK_TARGETS[@]}"}; do
     t="${WK_TARGETS[$i]}"
     r=$(ssh -G "$t" 2>/dev/null | awk '$1 == "hostname" { print $2; exit }') || r=""
     for n in "$t" "${t#*@}" "$r"; do
       [ -n "$n" ] || continue
-      printf '%s\n' ${WK_REDACT[@]+"${WK_REDACT[@]}"} | LC_ALL=C grep -qxF -- "$n" && continue
+      seen=0
+      for m in ${WK_REDACT[@]+"${WK_REDACT[@]}"}; do [ "$m" = "$n" ] && seen=1; done
+      [ "$seen" = 1 ] && continue
       WK_REDACT+=("$n"); WK_REDACT_KEY+=("${WK_KEYS[$i]}")
     done
   done

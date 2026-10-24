@@ -45,3 +45,25 @@ A third kind of host: a **persistent worker**, reached over ssh, that the driver
 ## worker_prep.sh, run for real on the dispatcher (2026-10-24)
 
 Origin pointed at this repo, a temp clone, config `default`, scratch schema `lnk_test_wprep` (dropped after): exit 0, `=== link 0.68.4 at 1b4ef989…; fresh 0.42.0 at e9793047… (remote_sha)`, 24 tables initialised, `=== READY`. With `FRESH_GIT_SHA=deadbeef1234` exported it refuses ("pins deadbeef1234 but the installed fresh was built from e9793047"); with `LINK_GIT_SHA=deadbeef1234` it refuses ("resolves to deadbeef1234 (env), not the clone's HEAD"); with another origin it refuses ("not the driver's clone"). Under load_all, link's sha resolves from the checkout's git (`source = git`), never an installed `RemoteSha`, so only a pin can make it lie.
+
+## Code-check round 2: values pasted into remote strings, enumerated
+
+Round 2 found the target and stall-hook checks newline-blind (`grep -qx` passes a value whose first line fits; a target with `\n'; touch …` passed, verified), and the round-1 branch check running where no remote host is sent it. Mechanism: a value checked by a line-wise tool, or by a check that does not see every source of the value. So every value the branch pastes into a remote command string, SQL or R source, and its check:
+
+| value | reaches | check |
+|---|---|---|
+| `--workers=` targets | ssh argv, consolidate R source, `sh -c` | newline refused before `read`; `[[ =~ ^…$ ]]` charset; not `local`; no duplicates |
+| `--cy-workspaces=` | key collision check | newline refused before `read` (charset pre-existing, unchanged) |
+| `LINK_BRANCH` | cypher and worker prep strings | `[[ =~ ^[A-Za-z0-9._/-]+$ ]]`, when any remote host |
+| `--config=`, `--schema=` | every remote string | `case *[!A-Za-z0-9_]*` (pre-existing, whole value) |
+| schema from the config's YAML | every remote string, drop SQL | `[[ =~ ^[A-Za-z0-9_]+$ ]]` (new) |
+| `--run-label=` | leg string | `case` glob (pre-existing, whole value) |
+| `WET_LOAD` | prep strings, single-quoted | refused when it holds `'` (pre-existing) |
+| `ORIGIN_URL` | worker prep string | `case` glob, whole value |
+| `LNK_TEST_STALL_WSG` | leg string | `[[ =~ ^[A-Z]{4}$ ]]` in driver and lib |
+| `RUN_UID`, `RUN_SHA`, `FWAPG_GIT_SHA`, `BCFISHOBS_GIT_SHA` | leg string | generated (timestamp+hex, `git rev-parse`) |
+| `STATEMENT_TIMEOUT_MIN` | leg string | integer range (pre-existing) |
+| `HOST_PARTIAL` groups | drop SQL array literal | `.hosts_query` passes only `^[A-Z]{4}$` lines |
+| bucket groups | leg loop | `study_area_wsgs.R` output (pre-existing) |
+
+The remaining `grep -qx` calls on the branch read log files line by line (`=== READY`, `=== persist init done`), which is the intended semantics.
