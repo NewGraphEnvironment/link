@@ -434,6 +434,12 @@ CYPHER_TF="$HOME/Projects/repo/rtj/env/do/dev/cypher"
 # dispatcher's current branch. The branch MUST be pushed to origin first —
 # cypher_prep does `git fetch origin && git reset --hard origin/$BRANCH`.
 LINK_BRANCH="$(git -C "$REPO_ROOT" branch --show-current)"
+# Git allows quotes, `$` and backticks in a branch name, and the branch is
+# pasted into remote command strings (cypher_prep, worker_prep): refuse what
+# could close a quote (link#376).
+case "$LINK_BRANCH" in
+  *[!A-Za-z0-9._/-]*) echo "FATAL: the branch name holds a character the remote command strings cannot carry" >&2; exit 1 ;;
+esac
 # The commit every host must model: a worker's leg checks its clone's HEAD
 # against it before each group (link#376).
 RUN_SHA="$(git -C "$REPO_ROOT" rev-parse HEAD)"
@@ -583,6 +589,8 @@ for i in "${!WK_KEYS[@]}"; do
   HOST_KIND[${WK_KEYS[$i]}]=worker
   HOST_SSH[${WK_KEYS[$i]}]="${WK_TARGETS[$i]}"
 done
+# What to redact from the run's logs for each worker (link#376).
+remote_redact_init
 KEPT_N=0
 KEPT_CAUSE_N=0
 RECOMPUTE_RAN=0

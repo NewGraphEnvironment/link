@@ -33,6 +33,8 @@ remote_world <- function(exit_with = 0L, run = TRUE, env = parent.frame()) {
   writeLines(c(
     "#!/bin/sh",
     sprintf('printf "%%s\\n" "$*" >> "%s/argv"', d),
+    # `ssh -G <target>` reads the config: answer from G_<target> if present.
+    sprintf('[ "$1" = "-G" ] && { [ -f "%s/G_$2" ] && cat "%s/G_$2"; exit 0; }', d, d),
     'for a in "$@"; do last="$a"; done',
     if (run) 'sh -c "$last"' else ":",
     sprintf("exit %d", exit_with)
@@ -260,6 +262,24 @@ test_that("a worker's target is redacted whole and literally", {
     "<worker2>:22"))
 })
 
+test_that("what ssh writes for a target is redacted too: its host part and its HostName", {
+  skip_if_no_remote_lib()
+  w <- remote_world()
+  # An alias from ssh's config, which ssh's errors name by its HostName.
+  writeLines(c("user airvine", "hostname box.tail-y.ts.net", "port 22"), file.path(w, "G_wk"))
+  f <- file.path(w, "T0_reach_worker1.log")
+  writeLines(c("ssh: connect to host box.tail-y.ts.net port 22: timed out",
+               "ssh: Could not resolve hostname host9.example: nodename nor servname",
+               "wk and ops@host9.example"), f)
+  run_remote(w, c(
+    "WK_TARGETS=(wk ops@host9.example); WK_KEYS=(worker1 worker2)",
+    sprintf("remote_redact_targets %s", shQuote(f))))
+  expect_identical(readLines(f), c(
+    "ssh: connect to host <worker1> port 22: timed out",
+    "ssh: Could not resolve hostname <worker2>: nodename nor servname",
+    "<worker1> and <worker2>"))
+})
+
 # -- The driver's own refusals, before anything runs (link#376) ---------------
 
 run_driver <- function(...) {
@@ -303,4 +323,13 @@ test_that("the driver refuses a stall hook that is not one group code", {
                           run_driver("--workers=wk", "--focal=A", "--focal=B"))
   expect_equal(r$status, 1L)
   expect_match(r$out, "LNK_TEST_STALL_WSG must be one four-letter group code", fixed = TRUE)
+})
+
+test_that("the driver refuses a branch name a remote command could not carry", {
+  skip_if_no_remote_lib()
+  drv <- normalizePath(testthat::test_path("..", "..", "data-raw", "study_area_run.sh"), mustWork = FALSE)
+  lines <- readLines(drv)
+  at <- grep('^LINK_BRANCH="\\$\\(git -C "\\$REPO_ROOT" branch --show-current\\)"$', lines)
+  expect_length(at, 1L)
+  expect_true(any(grepl("*[!A-Za-z0-9._/-]*) echo \"FATAL: the branch name", lines[at + 1:8], fixed = TRUE)))
 })

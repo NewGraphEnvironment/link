@@ -357,3 +357,17 @@ test_that("a persist table's load is checked against what was sent", {
   expect_match(body, "consolidate_copy_count(dest_out)", fixed = TRUE)
   expect_match(body, "copy_count", fixed = TRUE)
 })
+
+test_that("consolidate takes link's tables only, never a schema's primitives", {
+  e <- source_consolidate()
+  # What `fresh` held on 2026-10-24: persist, log, primitives and reference.
+  fresh <- c("barrier_overrides", "barriers", "crossings_vw_bcfp", "log",
+             "log_input", "log_recompute", "modelled_stream_crossings", "streams",
+             "streams_access", "streams_habitat_bt", "streams_habitat_ch",
+             "streams_mapping_code", "streams_vw_bcfp", "streams_habitat",
+             "streams_v2")
+  expect_identical(e$consolidate_link_tables(fresh), c(
+    "barrier_overrides", "barriers", "log", "log_input", "log_recompute",
+    "streams", "streams_access", "streams_habitat_bt", "streams_habitat_ch",
+    "streams_mapping_code"))
+})

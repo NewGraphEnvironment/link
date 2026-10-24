@@ -229,9 +229,32 @@ consolidate_bucket_count_sql <- function(schema, tables, bucket) {
 #' @param tables Character. Tables only the source has.
 #' @return The persist tables among them.
 consolidate_missing_persist <- function(tables) {
-  core <- c("streams", "barriers", "barrier_overrides", "streams_access",
-            "streams_mapping_code", "streams_near_river")
-  tables[tables %in% core]
+  tables[tables %in% consolidate_persist_core]
+}
+
+#' link's persist tables every species set has. host_drop_partials in
+#' data-raw/study_area_hosts.sh names the same set; a test holds them equal.
+consolidate_persist_core <- c("streams", "barriers", "barrier_overrides",
+                              "streams_access", "streams_mapping_code",
+                              "streams_near_river")
+
+#' The tables consolidate may copy and delete: link's own.
+#'
+#' Its persist tables (the core above and `streams_habitat_<sp>`) and its log
+#' tables. A persist schema can hold others with a `watershed_group_code`
+#' column: in `fresh`, the bcfishpass config's schema, the snapshot primitives
+#' (`modelled_stream_crossings`) and the bcfp reference (`streams_vw_bcfp`,
+#' `crossings_vw_bcfp`) sit beside the persist tables. Copying those would put
+#' a source's primitives over the destination's, and step 5 would delete them
+#' from the source, which on a persistent worker is a database other sessions
+#' read (link#376).
+#'
+#' @param tables Character. Discovered tables.
+#' @param specs The log table specs, named by table.
+#' @return The subset of `tables` that is link's, in its order.
+consolidate_link_tables <- function(tables, specs = link:::.lnk_log_specs()) {
+  tables[tables %in% c(consolidate_persist_core, names(specs)) |
+           grepl("^streams_habitat_[a-z]+$", tables)]
 }
 
 #' pg_dump the destination schema before anything is copied into it.
@@ -456,6 +479,17 @@ schema_consolidate <- function(schema,
                                    rc = -1L)
       next
     }
+    # link's tables only (consolidate_link_tables, link#376): never the
+    # schema's primitives or reference tables.
+    not_links <- setdiff(union(src_wgc, dest_wgc),
+                         consolidate_link_tables(union(src_wgc, dest_wgc)))
+    if (length(not_links) > 0L) {
+      log(src$host, " -> NOTE: leaving ", length(not_links),
+          " tables that are not link's persist or log tables: ",
+          paste(not_links, collapse = ", "))
+    }
+    src_wgc <- consolidate_link_tables(src_wgc)
+    dest_wgc <- consolidate_link_tables(dest_wgc)
     wgc_tables <- intersect(src_wgc, dest_wgc)
     skipped_source_only <- setdiff(src_wgc, dest_wgc)
     skipped_dest_only <- setdiff(dest_wgc, src_wgc)

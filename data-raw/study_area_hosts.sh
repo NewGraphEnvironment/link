@@ -419,13 +419,20 @@ host_db_id() {
 
 # host_drop_partials <ws>: on a RELEASED worker, delete its partial groups
 # (HOST_PARTIAL: failed builds whose pre-persist left rows, never consolidated)
-# from every persist table, so the next run's prior-rows check finds the
+# from link's persist tables, so the next run's prior-rows check finds the
 # worker clean (link#376). Log tables keep their rows: a partial group's open
 # log row is the only record of its failure. Only where nothing could be
 # another build's: the host is settled and its baseline was known and empty.
 # A cloud host is burned instead, so it is never touched here. Judged on the
 # sentinels framing the script; a drop that did not finish returns 1, and the
 # rows left make the next run's prep refuse the worker, so it fails closed.
+# link's persist tables every species set has: the drop reaches these and
+# streams_habitat_<sp>, never a log table and never anything else in the
+# schema (in `fresh`, the snapshot primitives and the bcfp reference sit
+# beside them, link#376). consolidate_persist_core in schema_consolidate.R is
+# the same set; a test holds them equal.
+_HOSTS_PERSIST_CORE="streams barriers barrier_overrides streams_access streams_mapping_code streams_near_river"
+_HOSTS_PERSIST_CORE_SQL=$(printf "'%s'," $_HOSTS_PERSIST_CORE); _HOSTS_PERSIST_CORE_SQL=${_HOSTS_PERSIST_CORE_SQL%,}
 host_drop_partials() {
   local ws="$1" arr out
   .hosts_is_worker "$ws" || return 0
@@ -439,7 +446,7 @@ host_drop_partials() {
   arr="{${HOST_PARTIAL[$ws]}}"
   out=$(printf '%s\n' \
     '\echo __LNK_BEGIN__' \
-    "SELECT format('DELETE FROM %I.%I WHERE watershed_group_code = ANY (%L::text[])', c.table_schema, c.table_name, '$arr') FROM information_schema.columns c JOIN information_schema.tables t USING (table_schema, table_name) WHERE c.table_schema = '${SCHEMA}' AND c.column_name = 'watershed_group_code' AND t.table_type = 'BASE TABLE' AND c.table_name !~ '^log(_|\$)' ORDER BY c.table_name \\gexec" \
+    "SELECT format('DELETE FROM %I.%I WHERE watershed_group_code = ANY (%L::text[])', c.table_schema, c.table_name, '$arr') FROM information_schema.columns c JOIN information_schema.tables t USING (table_schema, table_name) WHERE c.table_schema = '${SCHEMA}' AND c.column_name = 'watershed_group_code' AND t.table_type = 'BASE TABLE' AND (c.table_name IN ($_HOSTS_PERSIST_CORE_SQL) OR c.table_name ~ '^streams_habitat_[a-z]+\$') ORDER BY c.table_name \\gexec" \
     '\echo __LNK_END__' | .hosts_psql "${HOST_SSH[$ws]:-}") || true
   if printf '%s\n' "$out" | awk '$0 == "__LNK_BEGIN__" { b = 1 } $0 == "__LNK_END__" && b { e = 1 } END { exit !e }'; then
     echo "    $(.hosts_label "$ws"): dropped partial groups ${HOST_PARTIAL[$ws]} from its persist tables (log rows kept)"

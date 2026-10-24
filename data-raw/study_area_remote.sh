@@ -117,16 +117,46 @@ worker_prep_env() {
   printf '%s' "WORKER_PREP_BRANCH='${LINK_BRANCH:-}' WORKER_PREP_ORIGIN='$ORIGIN_URL' WORKER_PREP_CONFIG='${CONFIG:-}' WORKER_PREP_SCHEMA='${SCHEMA:-}' WORKER_PREP_WET_LOAD='${WET_LOAD:-}'"
 }
 
-# remote_redact_targets <file>: replace each worker's ssh target in the file
-# with `<workerN>` (WK_TARGETS / WK_KEYS). The target is the operator's
+# remote_redact_init: the names to redact for each worker, longest first,
+# into WK_REDACT (name) and WK_REDACT_KEY (its worker key). ssh writes more
+# than the target itself into a log: for `user@host` its errors name the host
+# alone, and for an alias from ssh's config they name the HostName it resolves
+# to. `ssh -G` reads that from the config without connecting. Run once, by the
+# driver after its arguments are parsed; remote_redact_targets runs it when
+# nothing has.
+remote_redact_init() {
+  local i t n r
+  WK_REDACT=(); WK_REDACT_KEY=()
+  for i in ${WK_TARGETS[@]+"${!WK_TARGETS[@]}"}; do
+    t="${WK_TARGETS[$i]}"
+    r=$(ssh -G "$t" 2>/dev/null | awk '$1 == "hostname" { print $2; exit }') || r=""
+    for n in "$t" "${t#*@}" "$r"; do
+      [ -n "$n" ] || continue
+      printf '%s\n' ${WK_REDACT[@]+"${WK_REDACT[@]}"} | LC_ALL=C grep -qxF -- "$n" && continue
+      WK_REDACT+=("$n"); WK_REDACT_KEY+=("${WK_KEYS[$i]}")
+    done
+  done
+  # Longest first, so a target is replaced before its host part.
+  local order
+  order=$(for i in ${WK_REDACT[@]+"${!WK_REDACT[@]}"}; do
+    printf '%s %s\n' "${#WK_REDACT[$i]}" "$i"; done | sort -rn | awk '{ print $2 }')
+  local names=() keys=()
+  for i in $order; do names+=("${WK_REDACT[$i]}"); keys+=("${WK_REDACT_KEY[$i]}"); done
+  WK_REDACT=(${names[@]+"${names[@]}"}); WK_REDACT_KEY=(${keys[@]+"${keys[@]}"})
+  WK_REDACT_READY=1
+}
+
+# remote_redact_targets <file>: replace each worker's names (remote_redact_init)
+# in the file with `<workerN>`. A worker's target is the operator's
 # infrastructure and a run's logs are committed as evidence. Matched whole
-# (not inside a longer name) and literally: a target holds `.`, `@` and `-`.
+# (not inside a longer name) and literally: a name holds `.`, `@` and `-`.
 # Never fails.
 remote_redact_targets() {
   local i
   [ -f "$1" ] || return 0
-  for i in ${WK_TARGETS[@]+"${!WK_TARGETS[@]}"}; do
-    LNK_TGT="${WK_TARGETS[$i]}" LNK_REP="<${WK_KEYS[$i]}>" perl -i -pe \
+  [ "${WK_REDACT_READY:-0}" = "1" ] || remote_redact_init
+  for i in ${WK_REDACT[@]+"${!WK_REDACT[@]}"}; do
+    LNK_TGT="${WK_REDACT[$i]}" LNK_REP="<${WK_REDACT_KEY[$i]}>" perl -i -pe \
       's/(?<![A-Za-z0-9._@-])\Q$ENV{LNK_TGT}\E(?![A-Za-z0-9._@-])/$ENV{LNK_REP}/g' \
       "$1" 2>/dev/null || true
   done

@@ -828,7 +828,7 @@ test_that("a released worker's partial groups are dropped from its persist table
   expect_match(r$out, "dropped partial groups PPPP", fixed = TRUE)
   stdin <- paste(readLines(file.path(w, "stub", "ssh_wk.stdin")), collapse = "\n")
   expect_match(stdin, "{PPPP}", fixed = TRUE)
-  expect_match(stdin, "!~ '^log(_|$)'", fixed = TRUE)
+  expect_match(stdin, "c.table_name ~ '^streams_habitat_[a-z]+$'", fixed = TRUE)
   expect_match(stdin, "table_schema = 'fresh_test'", fixed = TRUE)
   # The drop names the partial group only, never one it finished.
   drop <- grep("gexec", strsplit(stdin, "\n")[[1]], value = TRUE, fixed = TRUE)
@@ -886,7 +886,10 @@ test_that("the partial drop's SQL deletes persist rows and keeps log rows (live)
   DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", sc))
   withr::defer(DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", sc)))
   DBI::dbExecute(conn, sprintf("CREATE SCHEMA %s", sc))
-  for (t in c("streams", "streams_habitat_bt", "log", "log_input")) {
+  # The schema's primitives and the bcfp reference sit beside the persist
+  # tables in `fresh` and must survive (link#376).
+  for (t in c("streams", "streams_habitat_bt", "log", "log_input",
+              "modelled_stream_crossings", "streams_vw_bcfp", "streams_habitat")) {
     DBI::dbExecute(conn, sprintf("CREATE TABLE %s.%s (watershed_group_code text)", sc, t))
     DBI::dbExecute(conn, sprintf("INSERT INTO %s.%s VALUES ('PPPP'), ('WWWW')", sc, t))
   }
@@ -906,6 +909,22 @@ test_that("the partial drop's SQL deletes persist rows and keeps log rows (live)
   expect_identical(left("streams_habitat_bt"), "WWWW")
   expect_identical(left("log"), c("PPPP", "WWWW"))
   expect_identical(left("log_input"), c("PPPP", "WWWW"))
+  expect_identical(left("modelled_stream_crossings"), c("PPPP", "WWWW"))
+  expect_identical(left("streams_vw_bcfp"), c("PPPP", "WWWW"))
+  expect_identical(left("streams_habitat"), c("PPPP", "WWWW"))
+})
+
+test_that("the partial drop and consolidate name the same persist tables", {
+  skip_if_no_hosts_lib()
+  script <- testthat::test_path("..", "..", "data-raw", "schema_consolidate.R")
+  skip_if_not(file.exists(script), "data-raw/schema_consolidate.R absent")
+  e <- new.env(parent = globalenv())
+  sys.source(script, envir = e)
+  lib <- readLines(hosts_lib())
+  line <- grep("^_HOSTS_PERSIST_CORE=", lib, value = TRUE)
+  expect_length(line, 1L)
+  bash_core <- strsplit(sub('^_HOSTS_PERSIST_CORE="([^"]*)"$', "\\1", line), " ")[[1]]
+  expect_setequal(bash_core, e$consolidate_persist_core)
 })
 
 test_that("a database's identity is read only from one framed answer", {

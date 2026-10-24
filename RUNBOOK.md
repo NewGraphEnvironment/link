@@ -1832,6 +1832,15 @@ one `--focal=` list per worker after the dispatcher's and before the cyphers'
   The drop runs only on a settled worker whose rows before dispatch were known
   and empty, never on unknown-provenance groups. A drop that does not finish
   leaves rows, and the next run refuses the worker: it fails closed.
+- **Consolidate and the drop touch link's tables only** (`consolidate_link_tables()`:
+  the persist tables and the log tables). A persist schema can hold others: in
+  `fresh` the snapshot primitives (`modelled_stream_crossings`) and the bcfp
+  reference (`streams_vw_bcfp`, `crossings_vw_bcfp`) carry `watershed_group_code`
+  too. Before link#376 consolidate copied them as well, putting a source's
+  primitive rows over the dispatcher's for its bucket, and step 5 deleted them
+  from the source: harmless on a cypher about to be burned, not on a worker.
+- **Redaction** covers the target, the host part of `user@host`, and the
+  HostName ssh resolves an alias to (`ssh -G`), since ssh's errors name those.
 - **Held, it is kept and reported** like a cypher, with no droplet, address or
   burn command, also on a run with no cyphers (`WORKERS_UP`). `--keep-cyphers`
   keeps cloud hosts only.
