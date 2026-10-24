@@ -290,6 +290,12 @@ cloud hosts, `--refresh-primitives`, link `ee21eb13`. Both verifiers pass at
 | cloud hosts | 3 × ~6 h ≈ $4.50 at $0.25/h | ~$3 |
 | database growth | 221 → 275 GB; `fresh_default` 7.3 → 31 GB (14 tables + 17 indexes), 11.39 M segments | ~+65 GB on m1, ~21 GB of it persist |
 
+- **A fifth host need not be a cloud host (link#376).** Group atoms pay from five hosts (above),
+  and only three cloud workspaces exist, so `study_area_run.sh --workers=<ssh target>` adds a
+  persistent machine as a host: prepped by `worker_prep.sh` from a clone the driver owns, modelled
+  by load_all, consolidated and released when its leg ends, never burned. Its speed in
+  `study_area_buckets.R --workers=N --host-speeds=` is measured on mid-size groups against the
+  dispatcher's minutes on the same groups, by host. Mechanics: RUNBOOK §8d, "Persistent workers".
 - **Equal packing was right.** The 34-group run had measured cloud hosts at or
   above m1's rate, against the 0.45 the generator assumed; at equal speeds the
   slowest cloud host finished 52 min after m1.

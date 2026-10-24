@@ -8,9 +8,17 @@
 # 3-WSG smoke validated (link#175).
 #
 # Host model: the local machine is the dispatcher (M1) and the consolidate
-# destination; cyphers are the remote workers. No M4, no `ssh m1`, no bcfp
-# tunnel (`:63333`/PG_PASS_SHARE) — the compare reference is the LOCAL bcfp
+# destination. Two kinds of remote host model beside it: cyphers, cloud hosts
+# the driver spins, preps and burns, and persistent workers (--workers=,
+# link#376), machines that exist and stay up, prepped by worker_prep.sh,
+# consolidated and released but never burned. No bcfp tunnel
+# (`:63333`/PG_PASS_SHARE) — the compare reference is the LOCAL bcfp
 # snapshot fresh.streams_vw_bcfp (snapshot_bcfp.sh --with-bcfp-views).
+#
+# Every remote status is read from what the remote shell prints, never from
+# ssh's exit status: some ssh servers (Tailscale SSH to macOS) exit 0
+# whatever the remote command returned (link#376; data-raw/study_area_remote.sh,
+# RUNBOOK §8d, "A remote status is what the remote shell prints").
 #
 # Cross-WSG `;DAM` correctness WITHOUT a post-consolidate recompute: each
 # host gets a DRAINAGE-CLOSED bucket (focal WSGs + every WSG they drain
@@ -20,8 +28,10 @@
 #
 # Usage:
 #   bash data-raw/study_area_run.sh \
+#     [--workers=<ssh target>,...] \
 #     --cy-workspaces=job1,job2 \
 #     --focal=<dispatcher focal csv> \
+#     [--focal=<worker1 focal csv> ...] \
 #     --focal=<cy1 focal csv> \
 #     --focal=<cy2 focal csv> \
 #     [--config=bcfishpass] [--schema=<persist-schema>] [--keep-cyphers] \
@@ -39,9 +49,9 @@
 # between hosts' lists is FATAL in this mode: it is operator error, not a
 # closure property. Without the flag the closure buckets below apply.
 #
-# The number of --focal flags MUST equal 1 (dispatcher) + N cyphers, in
-# order: first --focal -> dispatcher, the rest -> cyphers in --cy-workspaces
-# order. Put the LARGEST area on the dispatcher (first --focal): it is the
+# The number of --focal flags MUST equal 1 (dispatcher) + N workers + N
+# cyphers, in order: first --focal -> dispatcher, then the workers in
+# --workers order, then the cyphers in --cy-workspaces order. Put the LARGEST area on the dispatcher (first --focal): it is the
 # fast, free local host, while cyphers are slower + paid — give them the
 # smaller areas so they finish + burn sooner. Each cypher is accounted,
 # consolidated and burned as soon as its own leg ends, while the other legs
@@ -83,10 +93,20 @@
 # "Where a run's time went").
 #
 # Extra flags:
+#   --workers=<target>,...  persistent workers (link#376), each an ssh target
+#                           the operator owns (A-Z a-z 0-9 . _ @ -), keyed
+#                           worker1..N in that order; the key, never the
+#                           target, reaches the logs. Each must answer and hold
+#                           its own database, and its --schema must hold no
+#                           rows for its bucket. Modelled from a clone the
+#                           driver owns (~/Projects/repo/link_worker) by
+#                           load_all; never burned (RUNBOOK §8d, "Persistent
+#                           workers").
 #   --preflight-only        run the local gates and exit (no spend)
 #   --refresh-primitives    snapshot_bcfp.sh --force first (default off)
 #   --auto-install          on a parity mismatch, re-run the cyphers'
-#                           install stage and re-check once
+#                           install stage (a worker: install fresh at the
+#                           DESCRIPTION pin) and re-check once
 #   --vintage-max-days=N    primitive staleness window (default 7)
 #   --recompute-jobs=N      width of the post-consolidate recompute pool
 #                           (default 4, max 16). The recompute was >50% of

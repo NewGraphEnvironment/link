@@ -58,7 +58,7 @@ Needs the worker's ssh target from the operator (kept out of the repo).
 
 ## Phase 5: Packing with a worker
 - [x] `study_area_buckets.R --workers=N`: labels `dispatcher, worker1.., job1..`, the printed command carries `--workers=<target>` placeholders and focal order; speeds stay `--host-speeds` (dispatcher first, then workers, then jobs)
-- [ ] Document how a worker's speed is measured: mid-size groups' minutes by host (not `--minutes-schema`'s newest row, which mixes hosts)
+- [x] Document how a worker's speed is measured: mid-size groups' minutes by host (not `--minutes-schema`'s newest row, which mixes hosts)
 
 ## Phase 6: Live acceptance (two-host test)
 - [ ] Live probes on the worker: `consolidate_remote` reads 3 from `exit 3` while ssh returned 0
@@ -68,8 +68,8 @@ Needs the worker's ssh target from the operator (kept out of the repo).
 - [ ] Evidence to `data-raw/logs/worker_376/` (README indexes runs; launcher stdout redacted); drop `fresh_worker376` on both hosts after
 
 ## Phase 7: Docs
-- [ ] RUNBOOK §8d: "Persistent workers" (kind, prep, clone, no burn, partial drop) and the exit-status rule; also the phases host column, "burn, per cypher", the recovery recipe's `cypher@<ip>`, the kept-hosts wording
-- [ ] Driver header usage + flags; CLAUDE.md status block; `research/study_area_run.md` hosts note
+- [x] RUNBOOK §8d: "Persistent workers" (kind, prep, clone, no burn, partial drop) and the exit-status rule; also the phases host column, "burn, per cypher", the recovery recipe's `cypher@<ip>`, the kept-hosts wording
+- [x] Driver header usage + flags; CLAUDE.md status block; `research/study_area_run.md` hosts note
 
 ## Owed at the end (reported, done after merge)
 - [ ] Acceptance 2: a provincial run with a worker has a longest leg within 10 % of its packing estimate (next provincial `default` run; fills #377's runs row)

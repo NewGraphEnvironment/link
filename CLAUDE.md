@@ -11,6 +11,17 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
+## Status (2026-10-24, late night) — persistent workers beside the dispatcher and the cloud hosts (#376)
+
+**`study_area_run.sh --workers=<ssh target>,...` adds hosts the driver neither spins nor burns**, keyed `worker1..N`, their `--focal=` lists after the dispatcher's and before the cyphers'. Each must answer over ssh and hold its own database (`system_identifier`), and its schema must hold no rows for its bucket, before any spend. `data-raw/worker_prep.sh` (piped over ssh) resets a clone the driver owns (`~/Projects/repo/link_worker`); the leg runs link by load_all from it. After its leg a worker is accounted, consolidated and released, and its partial groups are dropped from its persist tables (log rows kept). **Every remote status is now read from what the remote shell prints, for cyphers too** (`data-raw/study_area_remote.sh`, `consolidate_remote()`), because Tailscale SSH to macOS exits 0 whatever ran. Mechanics: RUNBOOK §8d, "Persistent workers" and "A remote status is what the remote shell prints".
+
+**Facts not worth re-deriving:**
+- **Consolidate could delete a source it had not copied.** On an ssh that exits 0 regardless, a per-table COPY that died part-way loaded its partial file, and while the bucket's total still rose, step 5 deleted the source. Now each remote call reads a stderr trailer, and a persist table's `COPY n` must equal the lines sent.
+- **A `~/.Renviron` pin beats any export over ssh** (measured: a user Renviron line wins over the environment, and a cwd `.Renviron` replaces `~/.Renviron`). So worker prep refuses a `FRESH_GIT_SHA` that is not the installed fresh's `RemoteSha` and a `LINK_GIT_SHA` that is not the clone's HEAD. Under load_all link's sha comes from the clone's git.
+- **The CY_* maps keyed by any remote host are HOST_*** (`HOST_BUCKET`, `HOST_HOLD`, …); `CY_IP`, `CY_BURNED`, `CY_WS_ARR` stay cypher-only. `HOST_ARR` is workers then cyphers; `HOST_KIND` says which; `HOST_SSH` is each host's ssh target (`cypher@<ip>` for a cloud host).
+- **A timing-bound legs test** ("a burn mid-run lists no host that is still modelling") gives a host's consolidate 3 s; it failed twice in seven runs under load, never idle. Pre-existing.
+- **Owed:** the live two-host acceptance on a real worker (Phase 6 of #376), and acceptance 2 (a provincial run with a worker, longest leg within 10 % of its packing estimate; #377's runs row).
+
 ## Status (2026-10-24, night) — each cloud host is consolidated and burned when its own leg ends (#369)
 
 **`study_area_run.sh` finishes each cypher as its leg ends** (`data-raw/study_area_legs.sh`: `legs_wait` over `wait -n -p`, then account, consolidate that one source, release, burn), while the other legs keep modelling. The dispatcher's persist is initialised and backed up once before any leg (the dump runs through spin and prep). The driver needs bash ≥ 5.1. Mechanics: RUNBOOK §8d, "Each cloud host is consolidated when its own leg ends". Evidence: `data-raw/logs/consolidate_on_finish_369/` (its README indexes three runs).
