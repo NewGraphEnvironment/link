@@ -17,23 +17,38 @@
 #   minutes  end - start, one decimal, from the epochs taken with the times
 #   groups   groups the phase covered; blank where it covers none
 #   status   ok (finished, covering all it was given), failed (it errored, or
-#            left groups out), skipped (it did not run: blank times)
+#            left groups out), skipped (it did not run: blank times). model is
+#            the exception: its status is the leg's session exit, which is 0
+#            even when every group in it failed (each group soft-fails); the
+#            account row says whether the hosts finished their buckets.
+#
+# Rows overlap: the run-wide prep holds refresh and every cypher's prep, and
+# the model legs run side by side. So the critical path is first start to last
+# end, never a sum of rows. A driver killed mid-leg closes that leg failed, and
+# the leg, which the kill does not stop, writes its own row when it ends: for
+# one phase, host and start, the later row is the leg's real end.
 #
 # Times come from one `date -u` call each, which prints the ISO time and the
 # epoch together: `date` is GNU on some hosts and BSD on others, so nothing
 # here parses a date with it. The report parses ISO with perl, as the driver's
 # redaction already relies on it.
 #
-# A row is one printf to a file opened for append, well under PIPE_BUF, so the
-# model legs, which end in parallel subshells, can each write their own.
+# A row is one printf builtin call, which bash flushes as a single write() of
+# well under 4 KB to a local file opened O_APPEND, so the model legs, which end
+# in parallel subshells on the dispatcher (an ssh leg's row is written here too),
+# can each write their own without interleaving.
 #
 # Globals read: PHASES_TSV (unset or empty: every function is a no-op, which is
 #   how --preflight-only writes nothing) RUN_UID
-# Globals written: PHASE_OPEN (key "<phase>|<host>", value "<iso> <epoch>")
+# Globals written: PHASE_OPEN (key "<phase>|<host>", value "<iso> <epoch>"),
+#   PHASES_REPORTED (set once phases_report has printed)
 #
 # Needs bash >= 4, as the driver does.
 
-declare -A PHASE_OPEN
+# Assigned, not just declared: ${#PHASE_OPEN[@]} on a never-assigned map is
+# "unbound variable" under set -u.
+declare -A PHASE_OPEN=()
+PHASES_REPORTED=0
 
 .phase_now() { date -u '+%Y-%m-%dT%H:%M:%SZ %s'; }
 
@@ -50,7 +65,9 @@ phases_init() {
 phase_begin() {
   [ -n "${PHASES_TSV:-}" ] || return 0
   local now="${3:-}"
-  [ -n "$now" ] || now=$(.phase_now)
+  # A date that fails costs this row its start, never the run.
+  [ -n "$now" ] || now=$(.phase_now) || now=""
+  [ -n "$now" ] || now=" "
   PHASE_OPEN["$1|${2:-}"]="$now"
 }
 
@@ -65,15 +82,16 @@ phase_forget() { unset 'PHASE_OPEN['"$1|${2:-}"']'; }
 phase_end() {
   [ -n "${PHASES_TSV:-}" ] || return 0
   local key="$1|${2:-}" start end s_iso s_ep e_iso e_ep min
-  start="${PHASE_OPEN[$key]:-}"
-  end=$(.phase_now)
+  start="${PHASE_OPEN[$key]:- }"
+  end=$(.phase_now) || end=" "
+  [ -n "$end" ] || end=" "
   e_iso="${end% *}"; e_ep="${end#* }"
-  if [ -n "$start" ]; then
-    s_iso="${start% *}"; s_ep="${start#* }"
-    min=$(awk -v s="$s_ep" -v e="$e_ep" 'BEGIN { printf "%.1f", (e - s) / 60 }')
-  else
-    # Ended without a begin: the row keeps its end, and says nothing it cannot.
-    s_iso=""; min=""
+  # Ended without a begin, or a date failed: the row says nothing it cannot.
+  s_iso="${start% *}"; s_ep="${start#* }"
+  min=""
+  if [ -n "$s_ep" ] && [ -n "$e_ep" ]; then
+    min=$(LC_ALL=C awk -v s="$s_ep" -v e="$e_ep" 'BEGIN { printf "%.1f", (e - s) / 60 }') \
+      || min=""
   fi
   printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "${RUN_UID:-}" "$1" "${2:-}" \
     "$s_iso" "$e_iso" "$min" "${3:-}" "$4" >> "$PHASES_TSV" 2>/dev/null \
@@ -109,11 +127,21 @@ phase_print() {
 }
 
 # phases_close_open: every phase still open, closed failed. For the EXIT trap:
-# the phase a run died in is the one its file would otherwise leave out.
+# the phase a run died in is the one its file would otherwise leave out. A phase
+# a subshell already closed (a leg that ended while the driver waited on an
+# earlier one) has its row, with the start the parent holds, and is left alone.
 phases_close_open() {
   [ -n "${PHASES_TSV:-}" ] || return 0
-  local key
+  [ "${#PHASE_OPEN[@]}" -gt 0 ] || return 0
+  local key s
   for key in "${!PHASE_OPEN[@]}"; do
+    s="${PHASE_OPEN[$key]% *}"
+    if [ -n "$s" ] && [ -f "$PHASES_TSV" ] && awk -F'\t' -v p="${key%%|*}" \
+         -v h="${key#*|}" -v s="$s" '$2 == p && $3 == h && $4 == s { f = 1 }
+         END { exit !f }' "$PHASES_TSV" 2>/dev/null; then
+      unset 'PHASE_OPEN['"$key"']'
+      continue
+    fi
     phase_end "${key%%|*}" "${key#*|}" "" failed
   done
   return 0
@@ -123,6 +151,7 @@ phases_close_open() {
 # end) and its longest model leg. Skipped rows have no times and add nothing.
 phases_report() {
   [ -n "${PHASES_TSV:-}" ] && [ -f "$PHASES_TSV" ] || return 0
+  PHASES_REPORTED=1
   echo "  phases ($PHASES_TSV):"
   awk -F'\t' '{ printf "    %-11s %-10s %-20s %-20s %7s %6s %s\n", $2, $3, $4, $5, $6, $7, $8 }' \
     "$PHASES_TSV" 2>/dev/null || true

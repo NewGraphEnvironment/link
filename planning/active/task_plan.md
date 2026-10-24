@@ -43,10 +43,14 @@ What exploration found that shapes the design:
    `run_uid phase host start_utc end_utc minutes groups status`.
 4. **`--recompute-only` writes its own `<its TS>_phases.tsv`** with the finished run's
    `run_uid` in every row (as the issue says), and its summary prints its own rows only:
-   a critical path spanning a hand re-model hours later would mislead.
+   a critical path spanning a hand re-model hours later would mislead. Its rows are a
+   `prep` (its own preamble; plan review S1) and the tail.
 5. **A phase in flight when the driver exits writes a `failed` row from the EXIT trap**
    (`on_exit`), so a run that dies leaves the phase it died in, not just those it finished.
    `model` status is the leg's exit status; failed groups stay named where they are today.
+   A phase a subshell already wrote is not closed again (review B2), and the trap prints
+   the table once for a run that exits before its summary (review G4). The file's shape
+   is guaranteed only for runs that reach the report (review S3).
 
 ## Phase 1: the lib and its tests
 
@@ -64,22 +68,25 @@ What exploration found that shapes the design:
 
 ## Phase 2: wire the driver
 
-- [ ] Source the lib beside the other two; `phases_init "$LOG_DIR/${TS}_phases.tsv"` after
+- [x] Source the lib beside the other two; `phases_init "$LOG_DIR/${TS}_phases.tsv"` after
       run identity (`:445`); `on_exit` closes an open phase `failed`.
-- [ ] Run-wide `prep` begins at driver start, ends at dispatch; `refresh` around
+- [x] Run-wide `prep` begins at driver start, ends at dispatch; `refresh` around
       `snapshot_bcfp.sh`; per-cypher `prep` rows from inside each prep subshell
       (`:1324-1361`), status from its exit.
-- [ ] `model`: the local loop subshell and each ssh leg write their own row when the loop
+- [x] `model`: the local loop subshell and each ssh leg write their own row when the loop
       ends (`:1418-1457`), groups = bucket size.
-- [ ] `account`, `consolidate`, `burn` (explicit call only, not the trap's) around their
-      blocks; skipped rows when `N_CY=0`.
-- [ ] `study_area_finish.sh`: `coverage`, `views`, `recompute`, `compare` in `run_finish` /
+- [x] `account`, `consolidate`, `burn` (explicit call only, not the trap's) around their
+      blocks; `consolidate` / `burn` skipped when `N_CY=0` (`account` runs for the
+      dispatcher too). The burn row reads what the burn left, not its return (review B1).
+- [x] Plan review folded in (`review-plan.md`): B1, B2, G1–G5, O1–O3, A3, S1, X2. A1/A2
+      go to the RUNBOOK in Phase 4; X1/X3 shape Phase 3.
+- [x] `study_area_finish.sh`: `coverage`, `views`, `recompute`, `compare` in `run_finish` /
       `run_finish_recompute` / `run_finish_compare`, statuses from the existing fail flags;
       `phases_report` called at the top of `run_finish_report`, before its `exit 1`.
-- [ ] `--recompute-only` path: `phases_init` with its own TS; tail rows under the
+- [x] `--recompute-only` path: `phases_init` with its own TS; tail rows under the
       finished run's uid.
-- [ ] Each `phase_end` prints `  [phase] <name> <host> <status> <start>→<end> (<min> min)`.
-- [ ] Existing tests (`test-study_area_finish.R`, `test-study_area_hosts.R`) pass; `bash -n`.
+- [x] Each `phase_end` prints `  [phase] <name> <host> <status> <start>→<end> (<min> min)`.
+- [x] Existing tests (`test-study_area_finish.R`, `test-study_area_hosts.R`) pass; `bash -n`.
 
 ## Phase 3: dispatcher-only acceptance run
 

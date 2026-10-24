@@ -192,3 +192,69 @@ test_that("a row that cannot be written warns and does not stop the run", {
   expect_true("survived" %in% r$out)
   expect_true(any(grepl("WARN: could not write the model row", r$out, fixed = TRUE)))
 })
+
+test_that("closing open phases leaves alone one a subshell already wrote", {
+  skip_if_no_phases_lib()
+  # The driver waits on legs one after another, so a leg can end and write its
+  # row while the parent still holds it open. A kill then must not add a second,
+  # failed row for it; a leg with no row yet is closed failed.
+  r <- run_phases(c(
+    "phase_begin model dispatcher", "phase_begin model job2",
+    "( phase_end model job2 3 ok quiet ) & wait",
+    "phases_close_open"
+  ))
+  expect_equal(nrow(r$rows), 2L)
+  expect_equal(r$rows$status[r$rows$host == "job2"], "ok")
+  expect_equal(r$rows$status[r$rows$host == "dispatcher"], "failed")
+})
+
+test_that("a date that fails costs the row its times, never the run", {
+  skip_if_no_phases_lib()
+  r <- run_phases(c(
+    "phase_begin model dispatcher",
+    'date() { return 1; }',
+    "phase_end model dispatcher 2 ok",
+    "phase_begin views", "phase_end views '' '' ok",
+    "echo survived"
+  ))
+  expect_null(r$status)
+  expect_true("survived" %in% r$out)
+  expect_equal(r$rows$start_utc, c("2026-10-24T00:01:00Z", ""))
+  expect_equal(r$rows$end_utc, c("", ""))
+  expect_equal(r$rows$minutes, c("", ""))
+  expect_equal(r$rows$status, c("ok", "ok"))
+})
+
+test_that("phases_report marks itself printed, so the EXIT trap does not print it twice", {
+  skip_if_no_phases_lib()
+  r <- run_phases(c('echo "before=$PHASES_REPORTED"', "phases_report",
+                    'echo "after=$PHASES_REPORTED"'))
+  expect_true(all(c("before=0", "after=1") %in% r$out))
+})
+
+# The driver's wrappers, which the dispatcher-only acceptance run cannot reach
+# for a cypher. The exit status each one re-raises is what host_wait records,
+# and so what decides whether a host may be burned (link#347).
+test_that("each model and prep leg re-raises its own exit status after writing its row", {
+  drv_path <- testthat::test_path("..", "..", "data-raw", "study_area_run.sh")
+  testthat::skip_if_not(file.exists(drv_path), "data-raw/study_area_run.sh absent")
+  drv <- readLines(drv_path)
+  # Two model legs (the local one and the ssh one), one prep leg.
+  expect_length(grep("|| mrc=$?", drv, fixed = TRUE), 2L)
+  expect_length(grep('^  exit "\\$mrc" \\) &$', drv), 2L)
+  expect_length(grep("|| prc=$?", drv, fixed = TRUE), 1L)
+  expect_length(grep('exit "$prc" ) &', drv, fixed = TRUE), 1L)
+  # quiet in a subshell, then forgotten and printed by the parent after its wait.
+  expect_length(grep("echo failed)\" quiet", drv, fixed = TRUE), 2L)
+  expect_length(grep('phase_end prep "$WS" "" "$pst" quiet', drv, fixed = TRUE), 1L)
+  w_local <- grep("^wait \\$LOCAL_PID", drv)
+  expect_length(w_local, 1L)
+  expect_match(drv[w_local + 1L], "phase_forget model dispatcher; phase_print model dispatcher",
+               fixed = TRUE)
+  expect_length(grep('phase_forget model "$WS"; phase_print model "$WS"', drv, fixed = TRUE), 1L)
+  # The trap closes open phases before the burn, and cannot be stopped by it.
+  t <- grep("^on_exit\\(\\) \\{", drv)
+  body <- drv[t:(t + which(drv[-seq_len(t)] == "}")[1])]
+  expect_lt(grep("phases_close_open || true", body, fixed = TRUE),
+            grep("burn_cyphers || rc=$?", body, fixed = TRUE))
+})
