@@ -1540,8 +1540,9 @@ error, which the path above already handles.
 - **What the summary shows:** the group is in the "no rows" (or "earlier or
   partial") class, and under it `statement bound hit:` lists each such group
   with its statement (`run_timeouts`, read from the run_uid's
-  `<ts>_run_*.log`, matched mid-line as well). Recover as above: the printed
-  re-model carries the run's `PGOPTIONS` bound, then `--recompute-only`. A group still timing out on a re-model is a real
+  `<ts>_run_*.log`, matched mid-line and byte-wise). Recover as above: the
+  printed re-model carries the bound the run's groups reported (read from those
+  logs, so a `--recompute-only` session prints it too), then `--recompute-only`. A group still timing out on a re-model is a real
   slow statement: re-model it with a larger `PGOPTIONS` bound by hand, and look
   at `pg_stat_activity` while it runs.
 - **Exercising it:** `LNK_TEST_STALL_WSG=<WSG>` makes that group's

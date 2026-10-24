@@ -32,7 +32,7 @@
 #   CONS_FAILED CONS_EXCLUDED CY_CONS_FAIL (declared in study_area_hosts.sh);
 #   consolidate_state_write reads CY_WS_ARR CY_BUCKET_DONE CY_CONS_FAIL;
 #   run_expected_recompute_only writes RO_EXPECT RO_EXCLUDED; run_timeouts
-#   writes TIMED_OUT TIMEOUT_LINES
+#   writes TIMED_OUT TIMEOUT_LINES RUN_BOUND
 #
 # Needs bash >= 4, as the driver does.
 
@@ -389,27 +389,35 @@ run_expected_recompute_only() {
 
 # run_timeouts <groups csv>: which of these groups had a modelling statement
 # cancelled by the statement bound (link#371), from the run's host logs. Each
-# group's wsg_run_one.R writes `[wsg_run_one] <WSG> TIMEOUT after <bound>:
-# <statement>`, and every host's output lands in $LOG_DIR/<ts>_run_<host>.log,
-# where <ts> is the run_uid's timestamp: TS in a full run, an earlier one under
-# --recompute-only. Matched unanchored: an R warning flushed without a newline
-# can put the marker mid-line (link#347). Only groups in the argument are named, so a group
-# re-modelled since its timeout is not. A group that hit it twice keeps its last
-# line. Sets:
+# group's wsg_run_one.R writes `[wsg_run_one] <WSG> statement_timeout=<bound>`
+# and, when cancelled, `[wsg_run_one] <WSG> TIMEOUT after <bound>: <statement>`;
+# every host's output lands in $LOG_DIR/<ts>_run_<host>.log, where <ts> is the
+# run_uid's timestamp: TS in a full run, an earlier one under --recompute-only.
+# Matched unanchored, since an R warning flushed without a newline can put the
+# marker mid-line (link#347), and byte-wise (LC_ALL=C): a log cut mid-glyph by
+# a dropped session holds bytes macOS sed refuses in a UTF-8 locale. Never
+# fatal, under the driver's set -e: it only adds lines to the report. Only
+# groups in the argument are named, so a group re-modelled since its timeout is
+# not; a group that hit it twice keeps its last line. Sets:
 #   TIMED_OUT      the groups, sorted, comma-separated;
-#   TIMEOUT_LINES  one `<WSG> (bound <bound>): <statement>` line per group.
+#   TIMEOUT_LINES  one `<WSG> (bound <bound>): <statement>` line per group;
+#   RUN_BOUND      the run's bound as its groups reported it (Postgres text, which
+#                  PGOPTIONS accepts back: 30min, 2h), or "" when no log says.
 run_timeouts() {
   local want="${1:-}" logs
-  TIMED_OUT=""; TIMEOUT_LINES=""
-  [ -n "$want" ] || return 0
-  # Never fatal: this only adds a line to the report, under the driver's set -e.
+  TIMED_OUT=""; TIMEOUT_LINES=""; RUN_BOUND=""
   logs=$(find "$LOG_DIR" -maxdepth 1 -name "${RUN_UID%-*}_run_*.log" 2>/dev/null | sort) || logs=""
   [ -n "$logs" ] || return 0
-  TIMEOUT_LINES=$(printf '%s\n' "$logs" | while IFS= read -r f; do cat "$f"; done \
-    | sed -nE 's/.*\[wsg_run_one\] ([A-Z]{4}) TIMEOUT after ([^:]+): (.*)$/\1\t\2\t\3/p' \
-    | awk -F'\t' -v want=",$want," 'index(want, "," $1 ",") { last[$1] = $1 " (bound " $2 "): " $3 }
-        END { for (w in last) print last[w] }' | LC_ALL=C sort)
-  TIMED_OUT=$(printf '%s\n' "$TIMEOUT_LINES" | sed -nE 's/^([A-Z]{4}) .*/\1/p' | paste -sd, -)
+  RUN_BOUND=$(printf '%s\n' "$logs" | while IFS= read -r f; do cat "$f" 2>/dev/null || true; done \
+    | LC_ALL=C sed -nE 's/.*\[wsg_run_one\] [A-Z]{4} statement_timeout=([0-9][0-9a-z]*).*/\1/p' \
+    | LC_ALL=C awk '$0 != "0" { b = $0 } END { print b }') || RUN_BOUND=""
+  [ -n "$want" ] || return 0
+  TIMEOUT_LINES=$(printf '%s\n' "$logs" | while IFS= read -r f; do cat "$f" 2>/dev/null || true; done \
+    | LC_ALL=C sed -nE 's/.*\[wsg_run_one\] ([A-Z]{4}) TIMEOUT after ([^:]+): (.*)$/\1\t\2\t\3/p' \
+    | LC_ALL=C awk -F'\t' -v want=",$want," 'index(want, "," $1 ",") { last[$1] = $1 " (bound " $2 "): " $3 }
+        END { for (w in last) print last[w] }' | LC_ALL=C sort) || TIMEOUT_LINES=""
+  TIMED_OUT=$(printf '%s\n' "$TIMEOUT_LINES" | LC_ALL=C sed -nE 's/^([A-Z]{4}) .*/\1/p' | paste -sd, -) \
+    || TIMED_OUT=""
 }
 
 # run_finish <expected csv> [signals csv] [excluded csv]: coverage, recompute,
@@ -708,7 +716,11 @@ run_finish_report() {
           # recompute below settles every group on final access.
           # Bounded as the driver bounds it (link#371): this re-model follows
           # a failure, which may have been a runaway statement.
-          echo "    PGOPTIONS='-c statement_timeout=${STATEMENT_TIMEOUT_MIN:-30}min' \\"
+          # The run's own bound, read from its logs, so a --recompute-only
+          # session (which takes no --statement-timeout) prints it too. A group
+          # that timed out may need it raised.
+          echo "    PGOPTIONS='-c statement_timeout=${RUN_BOUND:-${STATEMENT_TIMEOUT_MIN:-30}min}' \\"
+          [ -z "$TIMED_OUT" ] || echo "      (the bound the run used; raise it for $TIMED_OUT if the statement is genuinely slow)"
           echo "    LNK_RUN_UID=$RUN_UID ${RUN_LABEL:+LNK_RUN_LABEL=$RUN_LABEL }LNK_SCHEMA=$SCHEMA \\"
           echo "      LNK_GUARD_DOWNSTREAM=warn LNK_HABITAT_GATE=0 LNK_LOAD=loadall \\"
           echo "      Rscript data-raw/wsg_run_one.R <WSG> $CONFIG"
