@@ -252,6 +252,36 @@ test_that("a driver killed during one host's copy sees that host unsettled", {
   expect_length(burn_calls(w), 0L)
 })
 
+test_that("a leg pid wait cannot report ends that leg, not the driver", {
+  # wait -n -p unsets its variable on 127 (no listed pid is a child), which
+  # under set -u killed the driver mid-legs (code-check round 1).
+  skip_if_no_legs_lib()
+  w <- legs_world()
+  legs_host(w, "b", "BBBB")
+  r <- run_legs(w, c("CY_LEG_PID[a]=1", "legs_wait", 'echo "DONE RC_A=${CY_RUN_RC[a]}"'),
+                legs = c(a = 0.1, b = 0.5), disp = 0.2)
+  expect_equal(r$status, 0L, info = r$out)
+  expect_match(r$out, "DONE RC_A=127", fixed = TRUE)
+  expect_identical(burn_calls(w), "--workspace b")
+})
+
+test_that("a host deferred behind the dispatcher is not reported kept mid-run", {
+  skip_if_no_legs_lib()
+  w <- legs_world()
+  legs_host(w, "a", "AAAA"); legs_host(w, "b", "BBBB")
+  put(w, "cons_ip-b.mode", "refuse:dest_log_newer")
+  logs <- shQuote(file.path(w, "logs")); st <- shQuote(file.path(w, "stub"))
+  tail_d <- sprintf("cp %s/T0_kept_hosts.tsv %s/kept_mid.tsv", logs, st)
+  r <- run_legs(w, "legs_wait", legs = c(a = 0.2, b = 0.5), disp = 3,
+                disp_bucket = "AAAA,ZZZZ", leg_tail = list(dispatcher = tail_d))
+  expect_equal(r$status, 0L, info = r$out)
+  # While the dispatcher modelled, only b (refused, finished) was kept; a
+  # waited its turn and was then consolidated and burned.
+  mid <- utils::read.delim(file.path(w, "stub", "kept_mid.tsv"), colClasses = "character")
+  expect_identical(mid$workspace, "b")
+  expect_identical(burn_calls(w), "--workspace a")
+})
+
 test_that("a host whose database did not answer is not consolidated and is kept", {
   skip_if_no_legs_lib()
   w <- legs_world()

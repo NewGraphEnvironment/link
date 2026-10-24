@@ -138,6 +138,10 @@ host_consolidate() {
 # a pipe, so its maps survive; every step inside handles its own failure.
 host_finish_leg() {
   local ws="$1" st n
+  # From here a mid-run burn considers this host (rule 5). Not when its leg
+  # ended: a host deferred behind the dispatcher (rule 3) is not yet the
+  # kept-hosts report's to name.
+  CY_LEG_DONE[$ws]=1
   echo "=== cy[$ws]: leg ended (exit ${CY_RUN_RC[$ws]:-?}); account, consolidate, burn ==="
   phase_begin account "$ws"
   st=ok
@@ -209,7 +213,9 @@ legs_wait() {
   while [ "${#pending[@]}" -gt 0 ]; do
     who=""; rc=0
     wait -n -p who "${pending[@]}" || rc=$?
-    if [ -z "$who" ]; then
+    # wait UNSETS who when it reports no job (127: no listed pid is a child;
+    # >128: a trapped signal), so a bare $who would end the driver under set -u.
+    if [ -z "${who:-}" ]; then
       who="${pending[0]}"; rc=0
       wait "$who" || rc=$?
     fi
@@ -231,7 +237,6 @@ legs_wait() {
     # dropped may have left its loop running on the host, so host_release
     # keeps a host whose session did not exit 0.
     CY_RUN_RC[$ws]=$rc
-    CY_LEG_DONE[$ws]=1
     [ "$rc" = "0" ] || echo "  WARN: cy[$ws] run returned $rc; see $LOG_DIR/${TS}_run_$ws.log"
     phase_forget model "$ws"; phase_print model "$ws"
     if [ "$disp_done" = "0" ] && [ -n "$(.legs_overlap "$ws")" ]; then
