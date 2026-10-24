@@ -1426,6 +1426,7 @@ that class is empty, neither runs and the report says why. Any other class
 makes the run exit non-zero, and the report names the groups and the recovery:
 
 ```bash
+PGOPTIONS='-c statement_timeout=<the run bound, e.g. 30min>' \
 LNK_RUN_UID=<uid> [LNK_RUN_LABEL=<label>] LNK_SCHEMA=<schema> \
   LNK_GUARD_DOWNSTREAM=warn LNK_HABITAT_GATE=0 LNK_LOAD=loadall \
   Rscript data-raw/wsg_run_one.R <WSG> <config>          # each missing group

@@ -403,13 +403,15 @@ run_expected_recompute_only() {
 #   TIMEOUT_LINES  one `<WSG> (bound <bound>): <statement>` line per group;
 #   RUN_BOUND      the run's bound as its groups reported it (Postgres text, which
 #                  PGOPTIONS accepts back: 30min, 2h), or "" when no log says.
+#                  Only a whole value with its unit counts: a line cut after
+#                  `=30` would print a 30 ms bound (code-check round 3).
 run_timeouts() {
   local want="${1:-}" logs
   TIMED_OUT=""; TIMEOUT_LINES=""; RUN_BOUND=""
   logs=$(find "$LOG_DIR" -maxdepth 1 -name "${RUN_UID%-*}_run_*.log" 2>/dev/null | sort) || logs=""
   [ -n "$logs" ] || return 0
   RUN_BOUND=$(printf '%s\n' "$logs" | while IFS= read -r f; do cat "$f" 2>/dev/null || true; done \
-    | LC_ALL=C sed -nE 's/.*\[wsg_run_one\] [A-Z]{4} statement_timeout=([0-9][0-9a-z]*).*/\1/p' \
+    | LC_ALL=C sed -nE 's/.*\[wsg_run_one\] [A-Z]{4} statement_timeout=([0-9]+(ms|s|min|h|d))([^0-9a-z].*)?$/\1/p' \
     | LC_ALL=C awk '$0 != "0" { b = $0 } END { print b }') || RUN_BOUND=""
   [ -n "$want" ] || return 0
   TIMEOUT_LINES=$(printf '%s\n' "$logs" | while IFS= read -r f; do cat "$f" 2>/dev/null || true; done \

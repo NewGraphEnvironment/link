@@ -790,7 +790,10 @@ test_that("run_timeouts names the missing groups whose statement hit the bound, 
     "[wsg_run_one] OKAN statement_timeout=30min",
     "[wsg_run_one] OKAN TIMEOUT after 30min: CREATE TEMP TABLE pg_temp.frs_near_river_walk AS SELECT 1",
     "[WARN] dispatcher WSG OKAN failed (continuing)",
-    "[wsg_run_one] AAAA done in 1.0 min (persist=x)"
+    "[wsg_run_one] AAAA done in 1.0 min (persist=x)",
+    # Cut after the digits (the last line read): a bare 30 is 30 ms to
+    # Postgres, so it must not become the run's bound.
+    "[wsg_run_one] BBBB statement_timeout=30"
   ))
   # Mid-line, as an R warning flushed without a newline leaves it (link#347).
   run_log(w, "job1", "  Could not find a column.[wsg_run_one] KTSU TIMEOUT after 30min: SELECT pg_sleep(3600)")
