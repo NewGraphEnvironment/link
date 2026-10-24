@@ -28,3 +28,8 @@ The same statement on the same working tables, re-run after the run, took 59 s (
 
 
 
+
+## Test notes (Phase 1)
+
+- The driver tests drop the plan's `010` case: the bound is only ever interpolated into a string (`${N}min`), never into `$(( ))`, so a leading zero cannot change its value; it is still normalised for the banner.
+- Under `--recompute-only` the run's host logs carry the run_uid's timestamp (`${RUN_UID%-*}`), not the session's TS, so `run_timeouts()` reads those and reports only groups still missing; a group re-modelled since then is no longer named.

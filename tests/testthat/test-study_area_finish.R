@@ -774,3 +774,84 @@ test_that("run_coverage classes an excluded group even when the expected set lac
   expect_identical(printed(r, "UNCONS"), "BBBB")
   expect_identical(printed(r, "MISSING"), "BBBB")
 })
+
+# --- a group whose statement hit the bound (link#371) -----------------------
+
+# The run's host logs are named for the run_uid's timestamp, which is TS in a
+# full run and an earlier TS under --recompute-only.
+run_log <- function(w, host, lines) {
+  writeLines(lines, file.path(w, "logs", sprintf("20261018_000000_run_%s.log", host)))
+}
+
+test_that("run_timeouts names the missing groups whose statement hit the bound, from every host's log", {
+  skip_if_no_finish_lib()
+  w <- finish_world()
+  run_log(w, "local", c(
+    "[wsg_run_one] OKAN statement_timeout=30min",
+    "[wsg_run_one] OKAN TIMEOUT after 30min: CREATE TEMP TABLE pg_temp.frs_near_river_walk AS SELECT 1",
+    "[WARN] dispatcher WSG OKAN failed (continuing)",
+    "[wsg_run_one] AAAA done in 1.0 min (persist=x)"
+  ))
+  run_log(w, "job1", "[wsg_run_one] KTSU TIMEOUT after 30min: SELECT pg_sleep(3600)")
+  # Another run's log: never read.
+  writeLines("[wsg_run_one] XXXX TIMEOUT after 30min: SELECT 1",
+             file.path(w, "logs", "20261019_000000_run_local.log"))
+  r <- run_finish_sh(w, "unused", c(
+    "run_timeouts OKAN,KTSU,AAAA,XXXX; echo \"TO=$TIMED_OUT\"; printf '%s\\n' \"$TIMEOUT_LINES\"",
+    "run_timeouts AAAA; echo \"NONE=[$TIMED_OUT][$TIMEOUT_LINES]\""
+  ))
+  expect_equal(r$status, 0L, info = r$out)
+  expect_identical(printed(r, "TO"), "KTSU,OKAN")
+  expect_match(r$out, "OKAN (bound 30min): CREATE TEMP TABLE pg_temp.frs_near_river_walk AS SELECT 1",
+               fixed = TRUE)
+  expect_match(r$out, "KTSU (bound 30min): SELECT pg_sleep(3600)", fixed = TRUE)
+  expect_match(r$out, "NONE=[][]", fixed = TRUE)
+  expect_false(grepl("XXXX (bound", r$out, fixed = TRUE))
+})
+
+test_that("the report names a missing group that timed out, and its statement", {
+  skip_if_no_finish_lib()
+  conn <- skip_if_no_db()
+  sc <- finish_fixture(conn)
+  w <- finish_world()
+  run_log(w, "local", "[wsg_run_one] CCCC TIMEOUT after 1min: SELECT pg_sleep(3600) -- LNK_TEST_STALL_WSG")
+  r <- run_finish_sh(w, sc, "run_finish AAAA,BBBB,CCCC ''")
+  expect_equal(r$status, 1L, info = r$out)
+  expect_match(r$out, "statement bound hit:             CCCC", fixed = TRUE)
+  expect_match(r$out, "CCCC (bound 1min): SELECT pg_sleep(3600) -- LNK_TEST_STALL_WSG", fixed = TRUE)
+})
+
+test_that("the driver bounds a statement on both modelling legs and refuses a bad bound", {
+  skip_if_no_finish_lib()
+  drv <- readLines(finish_driver())
+  # Structural: the legs need hosts to run. Between the run-buckets banner and
+  # the wait, the bound is set once on the local leg and once in the ssh
+  # string; the recompute leg is left to wsg_recompute_one.R's own SET.
+  from <- grep("=== run buckets (DS-first) ===", drv, fixed = TRUE)
+  to <- grep("host runs finished (per-WSG soft-fail", drv, fixed = TRUE)
+  expect_length(from, 1L)
+  expect_length(to, 1L)
+  legs <- drv[from:to]
+  bound <- "statement_timeout=${STATEMENT_TIMEOUT_MIN}min"
+  expect_length(grep(bound, legs, fixed = TRUE), 2L)
+  expect_length(grep(paste0("export PGOPTIONS='-c ", bound, "'"), legs, fixed = TRUE), 1L)
+  rc_from <- grep("^recompute_one\\(\\) \\{", drv)
+  rc_to <- rc_from + which(drv[-seq_len(rc_from)] == "}")[1]
+  expect_length(rc_from, 1L)
+  expect_length(grep("PGOPTIONS", drv[rc_from:rc_to], fixed = TRUE), 0L)
+  expect_length(grep("echo \"  statement:", drv, fixed = TRUE), 1L)
+
+  run_drv <- function(...) {
+    out <- suppressWarnings(system2(hosts_bash(), c(shQuote(finish_driver()), ...),
+                                    stdout = TRUE, stderr = TRUE))
+    list(out = paste(out, collapse = "\n"), status = attr(out, "status") %||% 0L)
+  }
+  for (bad in c("0", "00", "abc", "", "-5", "1441", "1.5")) {
+    r <- run_drv(paste0("--statement-timeout=", bad))
+    expect_equal(r$status, 1L, info = bad)
+    expect_match(r$out, "--statement-timeout", fixed = TRUE, info = bad)
+  }
+  r <- run_drv("--recompute-only", paste0("--run-uid=", finish_uid), "--statement-timeout=30")
+  expect_equal(r$status, 1L)
+  expect_match(r$out, "--recompute-only takes no", fixed = TRUE)
+})

@@ -25,10 +25,10 @@ On 2026-10-23 (`20261023_074321-24d85e8c`) OKAN sat in one statement (fresh's ne
 4. **Test hook `LNK_TEST_STALL_WSG=<WSG>`, on the local leg only.** `wsg_run_one.R` runs `SELECT pg_sleep(3600)` for that group before modelling. It refuses to do so unless a non-zero bound is in effect, so the hook can never hang a run.
 
 ## Phase 1: Tests first
-- [ ] `tests/testthat/test-lnk_timeout_statement.R`:
+- [x] `tests/testthat/test-lnk_timeout_statement.R`:
   - a frame-walk unit test: a nested function that holds `statement` / `sql` raises a timeout-shaped error, and the helper returns the first non-blank line, trimmed and capped. A non-timeout error returns NULL.
   - a live test (skip without local fwapg): `SET statement_timeout='200ms'` and `pg_sleep(2)` through `DBI::dbExecute`, and the helper names `SELECT pg_sleep`.
-- [ ] `test-study_area_finish.R`:
+- [x] `test-study_area_finish.R`:
   - `run_timeouts()` names the groups and statements from fake `${TS}_run_*.log` files (dispatcher and cypher formats), and prints nothing when none timed out.
   - Driver arg tests: `--statement-timeout=0`, `abc`, `010` (which normalises to 10) and `>1440` are refused; `--statement-timeout` with `--recompute-only` is refused; the banner line shows the bound.
 
