@@ -196,3 +196,78 @@ test_that("lnk_persist_init is silent when existing table has no GENERATED colum
     )
   )
 })
+
+
+# -- No lock for DDL that is already done (link#369) -------------------------
+# The driver consolidates a cloud host while the dispatcher models, so a
+# consolidate's COPY can hold a write on a persist table when the next group's
+# lnk_persist_init runs. CREATE INDEX IF NOT EXISTS and ALTER TABLE ADD COLUMN
+# IF NOT EXISTS lock their table before they find the work done, so the no-op
+# waited for that write.
+
+test_that("an index or column that already exists is not re-issued", {
+  captured <- character(0)
+  local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) {
+      captured <<- c(captured, sql); invisible(NULL)
+    }
+  )
+  expect_false(.lnk_index_create("c", have = "a_idx", "a_idx", "s.t (x)"))
+  expect_true(.lnk_index_create("c", have = "a_idx", "b_idx", "s.t (y)"))
+  expect_identical(captured, "CREATE INDEX IF NOT EXISTS b_idx ON s.t (y)")
+
+  captured <- character(0)
+  .lnk_log_align_columns("c", "s", "log", c(a = "text", b = "integer NOT NULL"),
+                         have = "a")
+  expect_identical(captured, "ALTER TABLE s.log ADD COLUMN IF NOT EXISTS b integer")
+})
+
+test_that("an unreadable catalog names nothing, so every statement is issued", {
+  local_mocked_bindings(
+    dbGetQuery = function(conn, statement, ...) stop("no catalog"),
+    .package = "DBI"
+  )
+  expect_identical(.lnk_schema_indexes("c", "s"), character(0))
+  expect_identical(nrow(.lnk_schema_columns("c", "s")), 0L)
+})
+
+test_that("an up-to-date persist schema waits on no other session's write (#369)", {
+  conn <- skip_if_no_db()
+  info <- DBI::dbGetInfo(conn)
+  skip_if_not(identical(info$host, "localhost") && identical(info$dbname, "fwapg"),
+              "needs the local docker fwapg")
+  schema <- paste0("zz_test369_", Sys.getpid())
+  cfg <- lnk_config("default")
+  cfg$pipeline$schema <- schema
+  sp <- c("BT", "CH")
+  withr::defer(DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", schema)))
+  suppressMessages(lnk_persist_init(conn, cfg, species = sp))
+
+  # A second session holds what a consolidate's COPY holds, on every table it
+  # writes.
+  holder <- DBI::dbConnect(RPostgres::Postgres(), dbname = "fwapg",
+    host = "localhost", port = 5432L, user = "postgres", password = "postgres")
+  withr::defer(DBI::dbDisconnect(holder))
+  tbls <- c("streams", paste0("streams_habitat_", tolower(sp)), "barriers",
+            "barrier_overrides", "streams_access", "streams_mapping_code",
+            "streams_near_river", "log", "log_input", "log_recompute")
+  DBI::dbExecute(holder, "BEGIN")
+  for (t in tbls) {
+    DBI::dbExecute(holder, sprintf("LOCK TABLE %s.%s IN ROW EXCLUSIVE MODE", schema, t))
+  }
+  withr::defer(DBI::dbExecute(holder, "ROLLBACK"), priority = "first")
+  DBI::dbExecute(conn, "SET lock_timeout = '2s'")
+  withr::defer(DBI::dbExecute(conn, "RESET lock_timeout"), priority = "first")
+
+  expect_no_error(suppressMessages(lnk_persist_init(conn, cfg, species = sp)))
+
+  # The premise: with the catalog reads disabled, the same init waits on the
+  # held write and times out. Without it the expectation above is vacuous.
+  local_mocked_bindings(
+    .lnk_schema_indexes = function(conn, schema) character(0),
+    .lnk_schema_columns = function(conn, schema)
+      data.frame(table_name = character(0), column_name = character(0))
+  )
+  expect_error(suppressMessages(lnk_persist_init(conn, cfg, species = sp)),
+               "lock timeout")
+})

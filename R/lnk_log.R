@@ -491,6 +491,26 @@ cols_log_input <- c(
 }
 
 
+#' Columns that already exist in a schema's tables.
+#'
+#' From `information_schema.columns`, which locks no table. A read that fails
+#' or returns nothing names no column (see [.lnk_log_align_columns()]).
+#'
+#' @return Data frame of `table_name`, `column_name` (zero rows when unknown).
+#' @noRd
+.lnk_schema_columns <- function(conn, schema) {
+  none <- data.frame(table_name = character(0), column_name = character(0))
+  out <- tryCatch(DBI::dbGetQuery(conn, sprintf(paste(
+    "SELECT table_name, column_name FROM information_schema.columns",
+    "WHERE table_schema = '%s'"), schema)), error = function(e) NULL)
+  if (!is.data.frame(out) || !all(c("table_name", "column_name") %in% names(out))) {
+    return(none)
+  }
+  data.frame(table_name = as.character(out$table_name),
+             column_name = as.character(out$column_name))
+}
+
+
 #' Bring an existing log table up to the expected column set.
 #'
 #' `CREATE TABLE IF NOT EXISTS` is a no-op against a table that already exists,
@@ -499,12 +519,18 @@ cols_log_input <- c(
 #' parameter would be silently never logged, reintroducing the exact
 #' silent-drift failure this issue exists to prevent.
 #'
-#' `ADD COLUMN IF NOT EXISTS` is Postgres-native and idempotent, so this is
-#' cheap to run on every init.
+#' `ADD COLUMN IF NOT EXISTS` is Postgres-native and idempotent, but it takes
+#' an ACCESS EXCLUSIVE lock before it finds the column there, so it waits for
+#' any open transaction on the table: a consolidate's copy, which the driver
+#' runs while the dispatcher models (link#369), or a `pg_dump`. Columns already
+#' present (`have`, the table's column names, from
+#' [.lnk_schema_columns()]) are skipped, so a table that is up to date takes no
+#' lock. With `have` empty every column is issued, as before.
 #'
 #' @noRd
-.lnk_log_align_columns <- function(conn, schema, table, cols) {
-  for (nm in names(cols)) {
+.lnk_log_align_columns <- function(conn, schema, table, cols,
+                                   have = character(0)) {
+  for (nm in setdiff(names(cols), have)) {
     # Drop NOT NULL when back-filling: an existing table may already hold rows.
     type <- sub("\\s+NOT NULL$", "", cols[[nm]])
     .lnk_db_execute(conn, sprintf(
@@ -565,12 +591,16 @@ cols_log_input <- c(
   .lnk_db_execute(conn, sprintf("CREATE SCHEMA IF NOT EXISTS %s", schema))
 
   specs <- .lnk_log_specs()
+  # Read once, from the catalog, which locks no table (link#369).
+  have_cols <- .lnk_schema_columns(conn, schema)
+  have_idx <- .lnk_schema_indexes(conn, schema)
 
   for (s in specs) {
     .lnk_db_execute(conn, sprintf(
       "CREATE TABLE IF NOT EXISTS %s.%s (\n  %s\n)",
       schema, s$table, .lnk_cols_clause(s$cols, s$pk)))
-    .lnk_log_align_columns(conn, schema, s$table, s$cols)
+    .lnk_log_align_columns(conn, schema, s$table, s$cols,
+                           have = have_cols$column_name[have_cols$table_name == s$table])
   }
 
   idx <- c(
@@ -582,8 +612,8 @@ cols_log_input <- c(
     log_rc_wsg_date = "log_recompute (watershed_group_code, date_start DESC)"
   )
   for (nm in names(idx)) {
-    .lnk_db_execute(conn, sprintf(
-      "CREATE INDEX IF NOT EXISTS %s_idx ON %s.%s", nm, schema, idx[[nm]]))
+    .lnk_index_create(conn, have_idx, paste0(nm, "_idx"),
+      sprintf("%s.%s", schema, idx[[nm]]))
   }
 
   invisible(conn)

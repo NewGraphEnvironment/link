@@ -22,10 +22,10 @@
   - `consolidate_state.tsv` gains a `state_utc` column, and the old 4-column header is still read.
 
 ## Phase 1: Measure before building
-- [ ] Lock experiment on local docker fwapg in a scratch schema: with one session holding an open `COPY` transaction into a table, does a second session's `CREATE INDEX IF NOT EXISTS` (index already present) block? Does `ALTER TABLE … ADD COLUMN IF NOT EXISTS` block? Repeat both against a running `pg_dump`. Record in findings.md.
-- [ ] Time `pg_dump -Fc --schema=fresh_default` (to the scratchpad, deleted afterwards): the minutes the backup adds to the dispatcher leg.
-- [ ] From `data-raw/logs/provincial_361/`, read each source's copy minutes and its longest single-table `COPY` out of the 2026-10-23 consolidate log, and compare them with the 30 min bound.
-- [ ] If the `CREATE INDEX IF NOT EXISTS` check blocks: `lnk_persist_init()` checks `to_regclass()` for the index before issuing it, with a test. If it does not block, record why no change is needed.
+- [x] Lock experiment on local docker fwapg in a scratch schema: with one session holding an open `COPY` transaction into a table, does a second session's `CREATE INDEX IF NOT EXISTS` (index already present) block? Does `ALTER TABLE … ADD COLUMN IF NOT EXISTS` block? Repeat both against a running `pg_dump`. Record in findings.md.
+- [x] Time `pg_dump -Fc --schema=fresh_default` (to the scratchpad, deleted afterwards): the minutes the backup adds to the dispatcher leg.
+- [x] From `data-raw/logs/provincial_361/`, read each source's copy minutes and its longest single-table `COPY` out of the 2026-10-23 consolidate log, and compare them with the 30 min bound.
+- [x] If the `CREATE INDEX IF NOT EXISTS` check blocks: `lnk_persist_init()` checks `to_regclass()` for the index before issuing it, with a test. If it does not block, record why no change is needed.
 
 ## Phase 2: `schema_consolidate()` safe beside a writing dispatcher
 - [ ] Judge `copy_empty` on the bucket's rows (`WHERE watershed_group_code IN (bucket)`), through a SQL builder with its own test in `test-schema_consolidate.R`.

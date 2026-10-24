@@ -56,3 +56,28 @@ Nothing new is needed on the hosts: consolidate already streams `COPY` over ssh 
 
 | Error | Resolution |
 |-------|------------|
+
+## Phase 1 measurements (2026-10-24)
+
+### Lock experiment (local docker fwapg, PostgreSQL 17.5, scratch schema; lock_timeout 3 s)
+
+| holder's lock | probe | result |
+|---|---|---|
+| ROW EXCLUSIVE (a `COPY` in flight) | `CREATE INDEX IF NOT EXISTS`, index present | **blocked** |
+| ROW EXCLUSIVE | `ALTER TABLE … ADD COLUMN IF NOT EXISTS`, column present | **blocked** |
+| ROW EXCLUSIVE | `DELETE` + `INSERT` of one group (persist's replace) | passes |
+| ACCESS SHARE (`pg_dump`) | `CREATE INDEX IF NOT EXISTS`, index present | passes |
+| ACCESS SHARE | `ALTER TABLE … ADD COLUMN IF NOT EXISTS`, column present | **blocked** |
+| ACCESS SHARE | `DELETE` + `INSERT` | passes |
+
+Both no-ops lock their table before they find the work done. `lnk_persist_init()` runs once per group on the dispatcher and issued 8 index statements on the persist tables plus, through `.lnk_log_create_tables()`, an `ALTER` per log column and 6 log indexes. So a dispatcher group starting while a consolidate copied into `streams` waited for that table's `COPY` to commit, and the wait counts toward the 30 min statement bound. A `pg_dump` taken while the dispatcher models would stall each group's log `ALTER` for the whole dump. Script: scratchpad `lock369.sh` (not committed; the test below is the durable form).
+
+**Fix:** existing index names come from `pg_indexes` and existing columns from `information_schema.columns`, read once per call; neither locks a user table. An index or column already there is not issued. An unreadable or empty catalog names nothing, so everything is issued with `IF NOT EXISTS`, as before. Tested live (`test-lnk_persist_init.R`, "an up-to-date persist schema waits on no other session's write"): a second session holds ROW EXCLUSIVE on every persist and log table, and a second `lnk_persist_init()` completes under `lock_timeout = 2s`. With the catalog reads mocked away, the same call fails with `lock timeout`.
+
+### The backup's cost
+
+`pg_dump -Fc --schema=fresh_default` (241 groups, 14 GB of tables): **457 s (7.6 min), 4.6 GB**, on m1 with nothing else running. That is what taking the backup before the dispatcher leg adds to the dispatcher leg. The 2026-10-23 run's dump at consolidate time took about 1.6 min for 1.06 GB (`/tmp/fresh_default_pre_consolidate_202610231023.dump`), when the dispatcher's groups alone were in it.
+
+### How long a copy holds a table (2026-10-23 consolidate log)
+
+The per-source copy ran 12.7 min (job1, 57 groups), 13.9 min (job2, 68) and 12.9 min (job3, 42) for 20 tables each, then 0.5 min for the source cleanup; the log has no per-table times. The largest table is `streams` at 2.9 M rows for job1. So any one table's `COPY` held its lock for minutes, under the 30 min bound but long enough to stall a dispatcher group repeatedly; the fix above removes the wait rather than relying on the margin.

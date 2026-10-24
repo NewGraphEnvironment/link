@@ -266,6 +266,40 @@ cols_streams_near_river <- c(
 }
 
 
+#' Names of the indexes that already exist in a schema.
+#'
+#' Read from the `pg_indexes` catalog view, which locks no table.
+#' `CREATE INDEX IF NOT EXISTS` does: it takes a SHARE lock on its table
+#' before it finds the index there, so on a table another session is
+#' writing (a consolidate's `COPY`, which the driver now runs while the
+#' dispatcher models, link#369) the no-op waits for that write to commit,
+#' and the wait counts toward the statement bound. A read that fails or
+#' returns nothing names no index, so every index is issued with
+#' `IF NOT EXISTS`, as before.
+#'
+#' @return Character vector of index names.
+#' @noRd
+.lnk_schema_indexes <- function(conn, schema) {
+  out <- tryCatch(DBI::dbGetQuery(conn, sprintf(
+    "SELECT indexname FROM pg_indexes WHERE schemaname = '%s'", schema)),
+    error = function(e) NULL)
+  if (!is.data.frame(out) || !"indexname" %in% names(out)) return(character(0))
+  as.character(out$indexname)
+}
+
+
+#' Create an index unless `have` (from [.lnk_schema_indexes()]) names it.
+#'
+#' @param on The `ON` clause: table and column spec.
+#' @return `TRUE` invisibly when the statement was issued.
+#' @noRd
+.lnk_index_create <- function(conn, have, name, on) {
+  if (name %in% have) return(invisible(FALSE))
+  .lnk_db_execute(conn, sprintf("CREATE INDEX IF NOT EXISTS %s ON %s", name, on))
+  invisible(TRUE)
+}
+
+
 #' Initialize persistent province-wide habitat tables
 #'
 #' Creates `<schema>.streams` and `<schema>.streams_habitat_<sp>` (one
@@ -363,6 +397,10 @@ lnk_persist_init <- function(conn, cfg, species, force_recreate = FALSE) {
                                 force_recreate = force_recreate)
   }
 
+  # Read once: an index that exists is not re-issued, so it takes no lock
+  # on a table another session is writing (link#369).
+  have_idx <- .lnk_schema_indexes(conn, schema)
+
   # Persistent streams.
   .lnk_db_execute(conn, sprintf(
     "CREATE TABLE IF NOT EXISTS %s.streams (\n  %s\n)",
@@ -386,9 +424,8 @@ lnk_persist_init <- function(conn, cfg, species, force_recreate = FALSE) {
     streams_localcode_btree_idx = "(localcode_ltree)"
   )
   for (idx_name in names(idx_specs)) {
-    .lnk_db_execute(conn, sprintf(
-      "CREATE INDEX IF NOT EXISTS %s ON %s.streams %s",
-      idx_name, schema, idx_specs[[idx_name]]))
+    .lnk_index_create(conn, have_idx, idx_name,
+      sprintf("%s.streams %s", schema, idx_specs[[idx_name]]))
   }
 
   # Per-species habitat tables (wide-per-species, bcfp pattern).
@@ -397,9 +434,9 @@ lnk_persist_init <- function(conn, cfg, species, force_recreate = FALSE) {
     .lnk_db_execute(conn, sprintf(
       "CREATE TABLE IF NOT EXISTS %s (\n  %s\n)",
       sp_table, .lnk_cols_clause(cols_habitat, pk)))
-    .lnk_db_execute(conn, sprintf(
-      "CREATE INDEX IF NOT EXISTS streams_habitat_%s_wsg_idx ON %s (watershed_group_code)",
-      tolower(sp), sp_table))
+    .lnk_index_create(conn, have_idx,
+      sprintf("streams_habitat_%s_wsg_idx", tolower(sp)),
+      sprintf("%s (watershed_group_code)", sp_table))
   }
 
   # Unified province-wide barriers table (link#152). Primary key on
@@ -433,9 +470,8 @@ lnk_persist_init <- function(conn, cfg, species, force_recreate = FALSE) {
     barriers_localcode_btree_idx = "(localcode_ltree)"
   )
   for (idx_name in names(barriers_idx_specs)) {
-    .lnk_db_execute(conn, sprintf(
-      "CREATE INDEX IF NOT EXISTS %s ON %s.barriers %s",
-      idx_name, schema, barriers_idx_specs[[idx_name]]))
+    .lnk_index_create(conn, have_idx, idx_name,
+      sprintf("%s.barriers %s", schema, barriers_idx_specs[[idx_name]]))
   }
 
   # Province-wide barrier-overrides table (link#200). The per-(segment x
@@ -452,12 +488,10 @@ lnk_persist_init <- function(conn, cfg, species, force_recreate = FALSE) {
   .lnk_db_execute(conn, sprintf(
     "CREATE TABLE IF NOT EXISTS %s.barrier_overrides (\n  %s\n)",
     schema, .lnk_cols_clause(cols_barrier_overrides, barrier_overrides_pk)))
-  .lnk_db_execute(conn, sprintf(
-    "CREATE INDEX IF NOT EXISTS barrier_overrides_wsg_idx ON %s.barrier_overrides (watershed_group_code)",
-    schema))
-  .lnk_db_execute(conn, sprintf(
-    "CREATE INDEX IF NOT EXISTS barrier_overrides_blk_drm_idx ON %s.barrier_overrides (blue_line_key, downstream_route_measure)",
-    schema))
+  .lnk_index_create(conn, have_idx, "barrier_overrides_wsg_idx",
+    sprintf("%s.barrier_overrides (watershed_group_code)", schema))
+  .lnk_index_create(conn, have_idx, "barrier_overrides_blk_drm_idx",
+    sprintf("%s.barrier_overrides (blue_line_key, downstream_route_measure)", schema))
 
   # Per-segment per-species access table (link#187). Wide shape (one
   # row per segment, all species columns inline) — matches the QGIS-
@@ -469,9 +503,8 @@ lnk_persist_init <- function(conn, cfg, species, force_recreate = FALSE) {
   .lnk_db_execute(conn, sprintf(
     "CREATE TABLE IF NOT EXISTS %s.streams_access (\n  %s\n)",
     schema, .lnk_cols_clause(cols_streams_access, pk)))
-  .lnk_db_execute(conn, sprintf(
-    "CREATE INDEX IF NOT EXISTS streams_access_wsg_idx ON %s.streams_access (watershed_group_code)",
-    schema))
+  .lnk_index_create(conn, have_idx, "streams_access_wsg_idx",
+    sprintf("%s.streams_access (watershed_group_code)", schema))
 
   # Per-segment per-species mapping_code table (link#187). Same wide
   # shape. Consumed by `data-raw/build_species_views.R --bcfp` to build
@@ -481,9 +514,8 @@ lnk_persist_init <- function(conn, cfg, species, force_recreate = FALSE) {
   .lnk_db_execute(conn, sprintf(
     "CREATE TABLE IF NOT EXISTS %s.streams_mapping_code (\n  %s\n)",
     schema, .lnk_cols_clause(cols_streams_mapping_code, pk)))
-  .lnk_db_execute(conn, sprintf(
-    "CREATE INDEX IF NOT EXISTS streams_mapping_code_wsg_idx ON %s.streams_mapping_code (watershed_group_code)",
-    schema))
+  .lnk_index_create(conn, have_idx, "streams_mapping_code_wsg_idx",
+    sprintf("%s.streams_mapping_code (watershed_group_code)", schema))
 
   # Near-river distances (#364), for every schema: a build with no
   # near_river pair persists no rows, which the validator reads as "no
@@ -494,10 +526,8 @@ lnk_persist_init <- function(conn, cfg, species, force_recreate = FALSE) {
     schema, .lnk_cols_clause(cols_streams_near_river,
       c("id_segment", "watershed_group_code", "measure", "threshold",
         "distance_max"))))
-  .lnk_db_execute(conn, sprintf(
-    paste("CREATE INDEX IF NOT EXISTS streams_near_river_wsg_idx",
-          "ON %s.streams_near_river (watershed_group_code)"),
-    schema))
+  .lnk_index_create(conn, have_idx, "streams_near_river_wsg_idx",
+    sprintf("%s.streams_near_river (watershed_group_code)", schema))
 
   # Long-form habitat view (link#187). UNION ALL across per-species
   # `streams_habitat_<sp>` tables — emits (id_segment, watershed_group_code,
