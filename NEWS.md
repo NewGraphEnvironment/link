@@ -1,3 +1,11 @@
+# link 0.68.3
+
+**A run records when each phase started and ended, per host** ([#375](https://github.com/NewGraphEnvironment/link/issues/375)). Driver changes only; no modelling code moved.
+
+- **`study_area_run.sh` writes `<TS>_phases.tsv`**, one row per phase per host as it ends: `run_uid phase host start_utc end_utc minutes groups status`, over prep, refresh, model, account, consolidate, burn, coverage, views, recompute and compare. A phase that did not run gets a `skipped` row with blank times, and the EXIT trap closes the phase a run died in as `failed`. The summary prints the table, the critical path (first start to last end) and the longest model leg; `--recompute-only` writes its own file under the run's uid. Rows overlap, so never sum them.
+- On a dispatcher-only run the `model` and `recompute` rows bracket the database's own `log` and `log_recompute` times to the second. The provincial run that fills the speed tracker's runs row ([#377](https://github.com/NewGraphEnvironment/link/issues/377)) is still owed.
+- Mechanics: RUNBOOK §8d, "Where a run's time went". Evidence: `data-raw/logs/phases_375/`.
+
 # link 0.68.2
 
 **A runaway modelling statement fails its own group** ([#371](https://github.com/NewGraphEnvironment/link/issues/371)). Driver changes, plus one internal helper; no modelling code moved.
