@@ -58,9 +58,9 @@ On 2026-10-23 (`20261023_074321-24d85e8c`) OKAN sat in one statement (fresh's ne
 - [ ] A full provincial run at the default bound completes with no group timing out (acceptance criterion 2; it needs the next `default` run). Checked as: no `statement bound hit` in the report, no `TIMEOUT` line in any `<TS>_run_*.log`, and every host's `statement_timeout=` lines read `30min` (review AC3).
 
 ## Validation
-- [ ] Tests pass (`devtools::test()`), lint is clean
-- [ ] `/code-check` clean (once over the branch with `/code-check branch`)
-- [ ] PWF checkboxes match landed work
+- [x] Tests pass (`devtools::test()`: 979, 0 failed, at 21451cc8; the finish file re-run 33/33 after each code-check fix), lint: no new lint on added lines
+- [x] `/code-check branch`: 3 rounds; R1 2 findings, R2 1 inside R1's fix, R3 1 inside R1's fix plus a mechanism enumeration (18 members, all hold after the fix), which ended the loop
+- [x] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
 
 **How each change is proved:**

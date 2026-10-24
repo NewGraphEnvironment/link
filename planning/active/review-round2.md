@@ -1,0 +1,23 @@
+# Code-check round 2 — link#371 statement bound
+
+## Checklist read
+
+- **code-check.md** (37 H3): read the prose of all 14 `## Mechanisms` H3s (A guard that fails toward pass; A fixture that cannot reach the failure mode; A proxy is not the property; Verification that reads its own output; A guard's scope, escape hatches, and remedies; A fix lands in one of two callers that share a harness; Restore the bug and prove the guard fires; A shared working tree; A wrapper's exit is not the work; Zero-length, empty, and unset; The probe is broken before the world is; Written data outlives the fix; Serialization loses meaning silently; One fact derived twice), table rows skipped. 23 not read in full (index lines only).
+- **code-check-shell.md** (67 H3): read BSD vs GNU sed/grep portability; Reading a file line-by-line drops the last line; Empty arrays under `set -u`; Quoting; `for x in $(cmd | grep … || true)` hides a failing `cmd`; macOS `/usr/bin/awk` aborts on a byte slice; `grep -c` prints the count and exits 1; A value validated with one numeric grammar; psql does not interpolate `:'var'`; Over Tailscale SSH `ssh` exits 0; awk `==` compares version strings as numbers. 56 not read in full.
+- **code-check-r.md** (111 H3): read `tryCatch()` nests its handlers; Do not abort inside a handler for a warning raised from C++; `on.exit()` at a script's top level never fires; A `data-raw/` script must load the source tree; Tests that silently do not run; testthat counts an uncaught error under `error`; A `skip_if_not()` skips only its own block; `system2(stdout = TRUE)` warns; `tryCatch(warning = )` DISCARDS the value. 102 not read in full.
+- **code-check-spatial.md** (93 H3): none apply (no spatial code in the diff); 93 not read in full.
+
+## Findings
+
+- **[severity: bug]** `data-raw/study_area_finish.sh:722-723` — the round-1 fix put the note `(the bound the run used; raise it for $TIMED_OUT …)` on its own line **inside** the backslash-continued re-model command. The `PGOPTIONS=… \` line continues onto it, so whenever a group timed out (`TIMED_OUT` non-empty, the case this feature exists for) the printed recovery command is not valid shell. Proved in a scratch file holding the block exactly as printed: `bash -n` gives `syntax error near unexpected token '('`, rc 2, at the parenthetical line; pasting it runs nothing. The test `the printed re-model carries the bound the run's groups reported` asserts `raise it for CCCC` is printed, so it pins the broken output rather than catching it. Fix: print the note before the `PGOPTIONS=` line (or after the `Rscript` line), not between continuation lines. Do not turn it into a `# …` comment in place: after `PGOPTIONS='…' \` a comment line ends the command, and the following `LNK_RUN_UID=… Rscript …` lines would then run as a separate command **without** the bound.
+
+No other issues found. Checked and clean:
+- Round-1 fix 1: `LC_ALL=C` on every regex `sed`/`awk` in `run_timeouts`, `|| VAR=""` on each assignment; the display `sed 's/^/      /'` at line 679 is not `LC_ALL=C`, but `/usr/bin/sed` in a UTF-8 locale passes invalid bytes through that expression (measured, rc 0), so it cannot abort the report.
+- macOS `/usr/bin/sed` (15.6.1) emits a tab for `\t` in the replacement; `paste -sd, -` on empty input yields `""` after `$()` with both BSD and GNU paste.
+- `RUN_BOUND`: `run_timeouts` is called in the same block, before line 722; `${RUN_BOUND:-${STATEMENT_TIMEOUT_MIN:-30}min}` is `set -u` safe; `0` lines filtered; SHOW's units (`ms`, `s`, `min`, `h`, `d`) all match `[0-9][0-9a-z]*` and are accepted back by PGOPTIONS.
+- `${RUN_UID%-*}` equals `TS` in a full run (the uid is always minted from `TS`; `--run-uid` is only taken under `--recompute-only`); the only `<ts>_run_*` non-log file is `_run_wsgs.tsv`, excluded by `.log`.
+- `COV_MISSING` is the union of no-rows, stale, lost and unconsolidated, so a timed-out group with an earlier run's rows is still named.
+- `host_log_reported` greps `[wsg_run_one] [A-Z]{4} done|SKIP`; the new `statement_timeout=` and `TIMEOUT after` lines cannot match it.
+- `lnk_db_conn()` passes no `options=` to `dbConnect`, so libpq's `PGOPTIONS` reaches the connection; the check against `pg_settings` (ms) is numeric and exact.
+- `--statement-timeout` validation: shape, 9-digit cap, `10#`, >0, <=1440, in that order.
+- Calling-handler naming: the handler returns rather than aborting (cpp11/Rcpp destructors have run before `Rf_errorcall`); an inner `try`/`tryCatch` that swallows a cancel is reached first, so no false TIMEOUT line; `.lnk_db_execute()`'s re-thrown `Statement:` path and the frame walk both resolve to the cancelled SQL.
