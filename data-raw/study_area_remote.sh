@@ -105,6 +105,34 @@ remote_leg_cmd() {
   printf '%s' "$(.remote_cd "$host") && ${stall}export LNK_SCHEMA='$SCHEMA' && export LNK_GUARD_DOWNSTREAM=warn && export LNK_HABITAT_GATE=0 && export PGOPTIONS='-c statement_timeout=${STATEMENT_TIMEOUT_MIN}min' && export LNK_STATEMENT_TIMEOUT_MIN='$STATEMENT_TIMEOUT_MIN' && export FWAPG_GIT_SHA='${FWAPG_GIT_SHA:-}' && export BCFISHOBS_GIT_SHA='${BCFISHOBS_GIT_SHA:-}' && export LNK_RUN_UID='$RUN_UID' && export LNK_RUN_LABEL='${RUN_LABEL:-}' && export LNK_BCFP_MODEL_VERSION='${LNK_BCFP_MODEL_VERSION:-}' && { for w in $groups; do ${guard}Rscript data-raw/wsg_run_one.R \$w '$CONFIG' || echo \"[WARN] cy WSG \$w failed\"; done; echo __LNK_LEG_END__; }"
 }
 
+# worker_prep_env <host>: the environment worker_prep.sh reads, as words to
+# put before `bash -s` in the remote command (link#376). Every value is one
+# the driver already refused quotes in (branch, config, schema, wet load), or
+# the origin URL, checked here.
+worker_prep_env() {
+  case "${ORIGIN_URL:-}" in
+    ""|*[!A-Za-z0-9._:/@~+-]*)
+      echo "FATAL: the origin URL cannot be passed to a worker" >&2; return 1 ;;
+  esac
+  printf '%s' "WORKER_PREP_BRANCH='${LINK_BRANCH:-}' WORKER_PREP_ORIGIN='$ORIGIN_URL' WORKER_PREP_CONFIG='${CONFIG:-}' WORKER_PREP_SCHEMA='${SCHEMA:-}' WORKER_PREP_WET_LOAD='${WET_LOAD:-}'"
+}
+
+# remote_redact_targets <file>: replace each worker's ssh target in the file
+# with `<workerN>` (WK_TARGETS / WK_KEYS). The target is the operator's
+# infrastructure and a run's logs are committed as evidence. Matched whole
+# (not inside a longer name) and literally: a target holds `.`, `@` and `-`.
+# Never fails.
+remote_redact_targets() {
+  local i
+  [ -f "$1" ] || return 0
+  for i in ${WK_TARGETS[@]+"${!WK_TARGETS[@]}"}; do
+    LNK_TGT="${WK_TARGETS[$i]}" LNK_REP="<${WK_KEYS[$i]}>" perl -i -pe \
+      's/(?<![A-Za-z0-9._@-])\Q$ENV{LNK_TGT}\E(?![A-Za-z0-9._@-])/$ENV{LNK_REP}/g' \
+      "$1" 2>/dev/null || true
+  done
+  return 0
+}
+
 # remote_leg_status <ssh status> <leg log>: 0 only when ssh exited 0 and the
 # log holds the end marker; ssh's status when it is non-zero; 1 otherwise.
 remote_leg_status() {

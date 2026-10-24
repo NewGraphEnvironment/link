@@ -228,3 +228,79 @@ test_that("the stall hook crosses ssh only as one group code", {
   expect_match(r$out, "RC=1", fixed = TRUE)
   expect_no_match(r$out, "rm -rf", fixed = TRUE)
 })
+
+test_that("worker prep's environment carries the run, and refuses an origin it cannot quote", {
+  skip_if_no_remote_lib()
+  w <- remote_world()
+  r <- run_remote(w, c(
+    "LINK_BRANCH=b; CONFIG=default; SCHEMA=fresh_x; WET_LOAD=",
+    "ORIGIN_URL=https://github.com/NewGraphEnvironment/link.git",
+    'worker_prep_env worker1'))
+  expect_identical(r$out, paste(
+    "WORKER_PREP_BRANCH='b' WORKER_PREP_ORIGIN='https://github.com/NewGraphEnvironment/link.git'",
+    "WORKER_PREP_CONFIG='default' WORKER_PREP_SCHEMA='fresh_x' WORKER_PREP_WET_LOAD=''"))
+  r <- run_remote(w, c("ORIGIN_URL=\"https://x/y'z\"",
+                       'worker_prep_env worker1 && echo RC=0 || echo RC=$?'))
+  expect_match(r$out, "RC=1", fixed = TRUE)
+})
+
+test_that("a worker's target is redacted whole and literally", {
+  skip_if_no_remote_lib()
+  w <- remote_world()
+  f <- file.path(w, "T0_run_worker1.log")
+  writeLines(c("ssh: connect to host m4.tail-x.ts.net port 22: refused",
+               "m4.tail-x.ts.netX and am4.tail-x.ts.net stay; m4xtail-x.ts.net stays",
+               "user@m4.tail-x.ts.net:22"), f)
+  run_remote(w, c(
+    "WK_TARGETS=(m4.tail-x.ts.net user@m4.tail-x.ts.net); WK_KEYS=(worker1 worker2)",
+    sprintf("remote_redact_targets %s", shQuote(f))))
+  expect_identical(readLines(f), c(
+    "ssh: connect to host <worker1> port 22: refused",
+    "m4.tail-x.ts.netX and am4.tail-x.ts.net stay; m4xtail-x.ts.net stays",
+    "<worker2>:22"))
+})
+
+# -- The driver's own refusals, before anything runs (link#376) ---------------
+
+run_driver <- function(...) {
+  drv <- normalizePath(testthat::test_path("..", "..", "data-raw", "study_area_run.sh"),
+                       mustWork = FALSE)
+  testthat::skip_if_not(file.exists(drv), "data-raw/study_area_run.sh absent")
+  out <- suppressWarnings(system2(hosts_bash(), c(shQuote(drv), ...),
+                                  stdout = TRUE, stderr = TRUE))
+  list(out = paste(out, collapse = "\n"), status = attr(out, "status") %||% 0L)
+}
+
+test_that("the driver refuses a worker target it cannot pass safely", {
+  skip_if_no_remote_lib()
+  for (bad in c("-oProxyCommand=x", "local", "a'b", "a b", "a;b", "")) {
+    r <- run_driver(shQuote(paste0("--workers=", bad, ",ok")), "--focal=A", "--focal=B", "--focal=C")
+    expect_equal(r$status, 1L, info = bad)
+    expect_match(r$out, "--workers= takes ssh targets", fixed = TRUE, info = bad)
+  }
+  r <- run_driver("--workers=wk,wk", "--focal=A", "--focal=B", "--focal=C")
+  expect_equal(r$status, 1L)
+  expect_match(r$out, "names worker 2 twice", fixed = TRUE)
+  r <- run_driver("--workers=wk", "--cy-workspaces=worker1", "--focal=A", "--focal=B", "--focal=C")
+  expect_equal(r$status, 1L)
+  expect_match(r$out, "may not name 'worker1'", fixed = TRUE)
+})
+
+test_that("the driver counts one --focal per worker, and refuses workers when finishing a run", {
+  skip_if_no_remote_lib()
+  r <- run_driver("--workers=wk", "--cy-workspaces=job1", "--focal=A", "--focal=B")
+  expect_equal(r$status, 1L)
+  expect_match(r$out, "need exactly 3 --focal flags (1 dispatcher + 1 workers + 1 cyphers, in that order); got 2",
+               fixed = TRUE)
+  r <- run_driver("--recompute-only", "--run-uid=20261024_000000-abcd1234", "--workers=wk")
+  expect_equal(r$status, 1L)
+  expect_match(r$out, "--recompute-only takes no --focal, --cy-workspaces, --workers", fixed = TRUE)
+})
+
+test_that("the driver refuses a stall hook that is not one group code", {
+  skip_if_no_remote_lib()
+  r <- withr::with_envvar(c(LNK_TEST_STALL_WSG = "AB; rm"),
+                          run_driver("--workers=wk", "--focal=A", "--focal=B"))
+  expect_equal(r$status, 1L)
+  expect_match(r$out, "LNK_TEST_STALL_WSG must be one four-letter group code", fixed = TRUE)
+})

@@ -265,12 +265,13 @@ test_that("each model and prep leg re-raises its own exit status after writing i
   expect_length(grep('^  \\( cd "\\$REPO_ROOT" \\|\\| exit 1$', drv), 1L)
   # The backup's subshell, likewise (link#369).
   expect_length(grep('^    \\( cd "\\$REPO_ROOT" \\|\\| exit 1$', drv), 1L)
-  expect_length(grep("|| prc=$?", drv, fixed = TRUE), 1L)
-  expect_length(grep('exit "$prc" ) >> "$LOG_DIR/${TS}_prep_$WS.log" 2>&1 &', drv, fixed = TRUE), 1L)
+  # Two prep legs: the cyphers' and the workers' (link#376).
+  expect_length(grep("|| prc=$?", drv, fixed = TRUE), 2L)
+  expect_length(grep('exit "$prc" ) >> "$LOG_DIR/${TS}_prep_$WS.log" 2>&1 &', drv, fixed = TRUE), 2L)
   # quiet in a subshell (the two model legs and the backup, link#369), then
   # forgotten and printed by the parent after its wait.
   expect_length(grep("echo failed)\" quiet", drv, fixed = TRUE), 3L)
-  expect_length(grep('phase_end prep "$WS" "" "$pst" quiet', drv, fixed = TRUE), 1L)
+  expect_length(grep('phase_end prep "$WS" "" "$pst" quiet', drv, fixed = TRUE), 2L)
   expect_length(grep("phase_forget backup; phase_print backup", drv, fixed = TRUE), 1L)
   # The legs are waited on by legs_wait (study_area_legs.sh), which forgets
   # and prints each leg's row as it returns.

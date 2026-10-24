@@ -907,3 +907,18 @@ test_that("the partial drop's SQL deletes persist rows and keeps log rows (live)
   expect_identical(left("log"), c("PPPP", "WWWW"))
   expect_identical(left("log_input"), c("PPPP", "WWWW"))
 })
+
+test_that("a database's identity is read only from one framed answer", {
+  skip_if_no_hosts_lib()
+  w <- hosts_world()
+  put(w, "ssh_wk.out", c("__LNK_BEGIN__", "7312345678901234567", "__LNK_END__"))
+  r <- run_hosts(w, 'host_db_id wk && echo RC=0 || echo RC=$?', cyphers = character(0))
+  expect_match(r$out, "7312345678901234567\nRC=0", fixed = TRUE)
+  for (bad in list(character(0), c("__LNK_BEGIN__", "731"),
+                   c("__LNK_BEGIN__", "ERROR: x", "__LNK_END__"),
+                   c("__LNK_BEGIN__", "1", "2", "__LNK_END__"))) {
+    put(w, "ssh_wk.out", bad)
+    r <- run_hosts(w, 'host_db_id wk && echo RC=0 || echo RC=$?', cyphers = character(0))
+    expect_match(r$out, "RC=1", fixed = TRUE)
+  }
+})

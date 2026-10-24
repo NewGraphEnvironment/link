@@ -400,6 +400,23 @@ host_release() {
   if .hosts_is_worker "$1"; then echo "$1"; else echo "cy[$1]"; fi
 }
 
+# host_db_id <local|ssh target>: the database's system identifier, so the
+# driver can refuse a worker whose database is the dispatcher's or another
+# worker's (link#376). Framed by sentinels; returns 1 when it did not answer
+# with exactly one.
+host_db_id() {
+  local out
+  out=$(printf '%s\n' '\echo __LNK_BEGIN__' \
+    'SELECT system_identifier FROM pg_control_system();' \
+    '\echo __LNK_END__' | .hosts_psql "$1") || true
+  printf '%s\n' "$out" | awk '
+    $0 == "__LNK_BEGIN__" { b = 1; next }
+    $0 == "__LNK_END__"   { e = 1; next }
+    b && !e && /^[0-9]+$/ { id = $0; n++; next }
+    b && !e && $0 != ""   { bad = 1 }
+    END { if (!b || !e || bad || n != 1) exit 1; print id }'
+}
+
 # host_drop_partials <ws>: on a RELEASED worker, delete its partial groups
 # (HOST_PARTIAL: failed builds whose pre-persist left rows, never consolidated)
 # from every persist table, so the next run's prior-rows check finds the
