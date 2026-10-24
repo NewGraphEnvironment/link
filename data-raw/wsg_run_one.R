@@ -16,6 +16,14 @@
 # (what study_area_run.sh does on multi-host runs, where downstream groups are
 # legitimately mid-flight on another host).
 #
+# Statement bound (link#371). study_area_run.sh sets
+# PGOPTIONS='-c statement_timeout=<N>min' on both modelling legs, so a statement
+# that runs past it is cancelled server-side and the group fails like any other
+# error. Each group prints the bound in effect (SHOW statement_timeout), and a
+# cancelled statement is named on a `TIMEOUT` line the driver's report reads.
+#   LNK_TEST_STALL_WSG=<WSG>  -> that group runs SELECT pg_sleep(3600) first, to
+#                                exercise the bound; refused when none is set.
+#
 # Usage: [LNK_LOAD=loadall] Rscript wsg_run_one.R <WSG> [config]
 #   LNK_LOAD=loadall -> pkgload::load_all() (dispatcher dev checkout)
 #   default          -> library(link)       (pak-installed, e.g. cyphers)
@@ -87,11 +95,29 @@ gate_env <- Sys.getenv("LNK_HABITAT_GATE", "1")
 if (!gate_env %in% c("0", "1")) {
   stop("LNK_HABITAT_GATE must be 0 or 1 (got '", gate_env, "')", call. = FALSE)
 }
-lnk_pipeline_run(conn, aoi = wsg, cfg = cfg, loaded = loaded,
-                 schema = paste0("working_", tolower(wsg)),
-                 mapping_code = TRUE, cleanup_working = FALSE,
-                 habitat_gate = identical(gate_env, "1"),
-                 notes = guard$note)
+bound <- DBI::dbGetQuery(conn, "SHOW statement_timeout")[[1]]
+cat(sprintf("[wsg_run_one] %s statement_timeout=%s\n", wsg, bound))
+stall <- identical(Sys.getenv("LNK_TEST_STALL_WSG"), wsg)
+if (stall && identical(bound, "0")) {
+  stop("LNK_TEST_STALL_WSG=", wsg, " needs a statement bound (PGOPTIONS=",
+       "'-c statement_timeout=<N>min'); without one it would sleep an hour",
+       call. = FALSE)
+}
+# A calling handler, so the stack still holds the cancelled statement; the
+# error then carries on as before (non-zero exit, the log row left open).
+withCallingHandlers({
+  if (stall) DBI::dbExecute(conn, "SELECT pg_sleep(3600) -- LNK_TEST_STALL_WSG")
+  lnk_pipeline_run(conn, aoi = wsg, cfg = cfg, loaded = loaded,
+                   schema = paste0("working_", tolower(wsg)),
+                   mapping_code = TRUE, cleanup_working = FALSE,
+                   habitat_gate = identical(gate_env, "1"),
+                   notes = guard$note)
+}, error = function(e) {
+  s <- link:::.lnk_timeout_statement(e, sys.frames())
+  if (!is.null(s)) {
+    cat(sprintf("[wsg_run_one] %s TIMEOUT after %s: %s\n", wsg, bound, s))
+  }
+})
 cat(sprintf("[wsg_run_one] %s done in %.1f min (persist=%s)\n",
             wsg, as.numeric(difftime(Sys.time(), t0, units = "mins")),
             cfg$pipeline$schema))

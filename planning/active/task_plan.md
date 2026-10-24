@@ -33,8 +33,8 @@ On 2026-10-23 (`20261023_074321-24d85e8c`) OKAN sat in one statement (fresh's ne
   - Driver arg tests: `--statement-timeout=0`, `abc`, `010` (which normalises to 10) and `>1440` are refused; `--statement-timeout` with `--recompute-only` is refused; the banner line shows the bound.
 
 ## Phase 2: Name a timed-out statement (R side)
-- [ ] `.lnk_timeout_statement(e, frames)` in `R/utils.R`. It returns `"<first line of SQL>"` when `e` is a statement-timeout cancel, and NULL otherwise. It walks frames innermost-first for a character `statement` or `sql`.
-- [ ] `data-raw/wsg_run_one.R`:
+- [x] `.lnk_timeout_statement(e, frames)` in `R/utils.R`. It returns `"<first line of SQL>"` when `e` is a statement-timeout cancel, and NULL otherwise. It walks frames innermost-first for a character `statement` or `sql`.
+- [x] `data-raw/wsg_run_one.R`:
   - print `[wsg_run_one] <WSG> statement_timeout=<SHOW value>`;
   - wrap the stall hook and `lnk_pipeline_run()` in `withCallingHandlers(error=)`, which on a timeout prints `[wsg_run_one] <WSG> TIMEOUT after <bound>: <statement>` and then lets the error propagate (exit non-zero, the log row is left open as now);
   - add the `LNK_TEST_STALL_WSG` hook with its refusal guard.
