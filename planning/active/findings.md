@@ -1,0 +1,39 @@
+# Findings — study_area_run.sh: persistent worker hosts beside the dispatcher and the cloud hosts (#376)
+
+## Issue context
+
+## Problem
+
+A provincial run's modelling phase is bounded by its longest leg, so more hosts shorten it: with group atoms (#361), `data-raw/logs/provincial_361/buckets_group5.md` estimates five hosts at about 216 min against 270 for four. `study_area_run.sh` knows two kinds of host: the dispatcher, and cloud hosts it spins, preps and burns. A machine that already exists and stays up cannot take a bucket.
+
+## Proposal
+
+A third kind of host: a **persistent worker**, reached over ssh, that the driver neither spins nor burns. Given as `--workers=<ssh host>,...`, with one `--focal=` list per worker after the dispatcher's and before the cloud hosts'.
+
+- **Prep:** check out the run's branch, install link at that ref and confirm fresh's version, as `cypher_prep.sh` does on a fresh cloud host. The primitive-vintage and host-parity gates apply as for a cloud host (#276).
+- **Modelling leg:** the cloud host's ssh string and exports (`LNK_SCHEMA`, `LNK_GUARD_DOWNSTREAM=warn`, `LNK_HABITAT_GATE=0`, `PGOPTIONS` and `LNK_STATEMENT_TIMEOUT_MIN` (#371), `LNK_RUN_UID`, the git SHAs).
+- **Exit status:** some ssh servers return 0 whatever the remote command returned (Tailscale SSH to macOS does). For a worker, every ssh exit status the driver reads (the leg, the stamp and vintage probes, consolidate's `system()` calls) is replaced by what the remote prints, or by the worker's database, as #347 does for completeness.
+- **Consolidate:** a source like a cloud host (`schema_consolidate.R` reaches sources over ssh and `docker`); with #369, when its own leg finishes.
+- **After consolidate:** no burn. The worker's copy of the run's groups is dropped from its persist schema once consolidate has verified it, so the next run's `host_baseline` starts clean. Until then it is held (#347), reported, never burned.
+- **Packing:** `study_area_buckets.R --atom=group` takes the worker's measured speed.
+
+## Acceptance
+
+- A two-host test run (dispatcher + one worker, `--buckets-exact`, a scratch schema) models, consolidates and recomputes every group, and exits 0. A group made to fail on the worker is named and the run exits non-zero, also when the worker's ssh returns 0.
+- A provincial run with a worker has a longest leg within 10 % of its packing estimate.
+- RUNBOOK §8d documents the worker kind and the exit-status rule.
+
+## Related
+
+#361, #369, #371, #347, #276, #163 / #259.
+
+
+## Exploration (2026-10-24)
+
+- The driver's remote-host loops all iterate `CY_WS_ARR` and the `CY_*` maps (382 references, ~20 names, in `study_area_{run,hosts,legs,finish}.sh` and three test files).
+- `.hosts_query` already frames its answers with sentinels; it hardcodes `cypher@$where` and `docker exec -i fresh-db`.
+- `schema_consolidate.R` judges every remote call on `system()`'s rc. On an ssh that exits 0 whatever the remote did, a failed per-table COPY (stage 1) leaves an empty or partial file, stage 2 copies it, and if the bucket's total rows still rose, step 5 deletes the source: a data-loss path. `src_newest` reads only the `status` attribute, so a failed query reads as "no log rows" and refuses under the wrong reason.
+- The vintage probe in `preflight_hosts()` is judged on ssh's rc alone; the stamp probe also checks for empty output.
+- The model leg's status (`mrc`, then `CY_RUN_RC`) is ssh's rc; `host_release` requires 0.
+- `cypher_prep.sh` stashes and `git reset --hard`s `~/Projects/repo/link`, pak-installs link, rewrites `~/.Renviron`, and runs `lnk_persist_init(force_recreate = TRUE)`: none of these is safe on a persistent machine.
+- `study_area_buckets.R` already takes `--host-speeds`; its labels are `dispatcher (m1)` then `job<N>`.
