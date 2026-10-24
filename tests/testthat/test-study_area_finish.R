@@ -774,3 +774,146 @@ test_that("run_coverage classes an excluded group even when the expected set lac
   expect_identical(printed(r, "UNCONS"), "BBBB")
   expect_identical(printed(r, "MISSING"), "BBBB")
 })
+
+# --- a group whose statement hit the bound (link#371) -----------------------
+
+# The run's host logs are named for the run_uid's timestamp, which is TS in a
+# full run and an earlier TS under --recompute-only.
+run_log <- function(w, host, lines) {
+  writeLines(lines, file.path(w, "logs", sprintf("20261018_000000_run_%s.log", host)))
+}
+
+test_that("run_timeouts names the missing groups whose statement hit the bound, from every host's log", {
+  skip_if_no_finish_lib()
+  w <- finish_world()
+  run_log(w, "local", c(
+    "[wsg_run_one] OKAN statement_timeout=30min",
+    "[wsg_run_one] OKAN TIMEOUT after 30min: CREATE TEMP TABLE pg_temp.frs_near_river_walk AS SELECT 1",
+    "[WARN] dispatcher WSG OKAN failed (continuing)",
+    "[wsg_run_one] AAAA done in 1.0 min (persist=x)",
+    # Cut after the digits (the last line read): a bare 30 is 30 ms to
+    # Postgres, so it must not become the run's bound.
+    "[wsg_run_one] BBBB statement_timeout=30"
+  ))
+  # Mid-line, as an R warning flushed without a newline leaves it (link#347).
+  run_log(w, "job1", "  Could not find a column.[wsg_run_one] KTSU TIMEOUT after 30min: SELECT pg_sleep(3600)")
+  # A log cut mid-glyph (a dropped session): bytes macOS sed refuses in a
+  # UTF-8 locale, which under the driver's set -e would end the report.
+  writeBin(c(charToRaw("[wsg_run_one] KTSU statement_timeout=30min\n"), as.raw(c(0xe2, 0x9c)),
+             charToRaw("\n")), file.path(w, "logs", "20261018_000000_run_job2.log"))
+  # Another run's log: never read.
+  writeLines("[wsg_run_one] XXXX TIMEOUT after 30min: SELECT 1",
+             file.path(w, "logs", "20261019_000000_run_local.log"))
+  r <- run_finish_sh(w, "unused", c(
+    "run_timeouts OKAN,KTSU,AAAA,XXXX; echo \"TO=$TIMED_OUT\"; printf '%s\\n' \"$TIMEOUT_LINES\"",
+    "run_timeouts AAAA; echo \"NONE=[$TIMED_OUT][$TIMEOUT_LINES]\"; echo \"BOUND=[$RUN_BOUND]\"",
+    "echo REACHED_END"
+  ))
+  expect_equal(r$status, 0L, info = r$out)
+  expect_identical(printed(r, "TO"), "KTSU,OKAN")
+  expect_match(r$out, "OKAN (bound 30min): CREATE TEMP TABLE pg_temp.frs_near_river_walk AS SELECT 1",
+               fixed = TRUE)
+  expect_match(r$out, "KTSU (bound 30min): SELECT pg_sleep(3600)", fixed = TRUE)
+  expect_match(r$out, "NONE=[][]", fixed = TRUE)
+  expect_match(r$out, "BOUND=[30min]", fixed = TRUE)
+  expect_match(r$out, "REACHED_END", fixed = TRUE)
+  expect_false(grepl("XXXX (bound", r$out, fixed = TRUE))
+})
+
+test_that("the report names a missing group that timed out, and its statement", {
+  skip_if_no_finish_lib()
+  conn <- skip_if_no_db()
+  sc <- finish_fixture(conn)
+  w <- finish_world()
+  run_log(w, "local", "[wsg_run_one] CCCC TIMEOUT after 1min: SELECT pg_sleep(3600) -- LNK_TEST_STALL_WSG")
+  r <- run_finish_sh(w, sc, "run_finish AAAA,BBBB,CCCC ''")
+  expect_equal(r$status, 1L, info = r$out)
+  expect_match(r$out, "statement bound hit:             CCCC", fixed = TRUE)
+  # The re-model it prints is bounded too.
+  expect_match(r$out, "PGOPTIONS='-c statement_timeout=30min'", fixed = TRUE)
+  expect_match(r$out, "CCCC (bound 1min): SELECT pg_sleep(3600) -- LNK_TEST_STALL_WSG", fixed = TRUE)
+})
+
+test_that("the driver bounds a statement on both modelling legs and refuses a bad bound", {
+  skip_if_no_finish_lib()
+  drv <- readLines(finish_driver())
+  # Structural: the legs need hosts to run. Between the run-buckets banner and
+  # the wait, the bound is set once on the local leg and once in the ssh
+  # string; the recompute leg is left to wsg_recompute_one.R's own SET.
+  from <- grep("=== run buckets (DS-first) ===", drv, fixed = TRUE)
+  to <- grep("host runs finished (per-WSG soft-fail", drv, fixed = TRUE)
+  expect_length(from, 1L)
+  expect_length(to, 1L)
+  legs <- drv[from:to]
+  legs <- legs[!grepl("^[[:space:]]*#", legs)]
+  bound <- "statement_timeout=${STATEMENT_TIMEOUT_MIN}min"
+  expect_length(grep(bound, legs, fixed = TRUE), 2L)
+  # ... and the minutes it asked for, which wsg_run_one.R checks it got.
+  expect_length(grep("LNK_STATEMENT_TIMEOUT_MIN=", legs, fixed = TRUE), 2L)
+  expect_length(grep("export LNK_STATEMENT_TIMEOUT_MIN='$STATEMENT_TIMEOUT_MIN'", legs, fixed = TRUE), 1L)
+  expect_length(grep("TEST HOOK:    LNK_TEST_STALL_WSG", drv, fixed = TRUE), 1L)
+  expect_length(grep(paste0("export PGOPTIONS='-c ", bound, "'"), legs, fixed = TRUE), 1L)
+  rc_from <- grep("^recompute_one\\(\\) \\{", drv)
+  rc_to <- rc_from + which(drv[-seq_len(rc_from)] == "}")[1]
+  expect_length(rc_from, 1L)
+  expect_length(grep("PGOPTIONS", drv[rc_from:rc_to], fixed = TRUE), 0L)
+  expect_length(grep("echo \"  statement:", drv, fixed = TRUE), 1L)
+
+  run_drv <- function(...) {
+    out <- suppressWarnings(system2(hosts_bash(), c(shQuote(finish_driver()), ...),
+                                    stdout = TRUE, stderr = TRUE))
+    list(out = paste(out, collapse = "\n"), status = attr(out, "status") %||% 0L)
+  }
+  for (bad in c("0", "00", "abc", "", "-5", "1441", "1.5")) {
+    r <- run_drv(paste0("--statement-timeout=", bad))
+    expect_equal(r$status, 1L, info = bad)
+    expect_match(r$out, "--statement-timeout", fixed = TRUE, info = bad)
+  }
+  r <- run_drv("--recompute-only", paste0("--run-uid=", finish_uid), "--statement-timeout=30")
+  expect_equal(r$status, 1L)
+  expect_match(r$out, "--recompute-only takes no", fixed = TRUE)
+})
+
+test_that("the TIMEOUT line wsg_run_one.R writes is the one run_timeouts reads", {
+  skip_if_no_finish_lib()
+  src <- readLines(testthat::test_path("..", "..", "data-raw", "wsg_run_one.R"))
+  fmt <- regmatches(src, regexpr('"\\[wsg_run_one\\] %s TIMEOUT after %s: %s\\\\n"', src))
+  expect_length(fmt, 1L)
+  line <- sprintf(eval(parse(text = fmt)), "OKAN", "30min", "CREATE TEMP TABLE t AS SELECT 1")
+  w <- finish_world()
+  run_log(w, "local", sub("\n$", "", line))
+  r <- run_finish_sh(w, "unused", "run_timeouts OKAN; printf '%s\\n' \"$TIMEOUT_LINES\"")
+  expect_equal(r$status, 0L, info = r$out)
+  expect_match(r$out, "OKAN (bound 30min): CREATE TEMP TABLE t AS SELECT 1", fixed = TRUE)
+})
+
+test_that("the printed re-model carries the bound the run's groups reported", {
+  # --recompute-only takes no --statement-timeout, so the bound comes from the
+  # run's own logs (code-check round 1).
+  skip_if_no_finish_lib()
+  conn <- skip_if_no_db()
+  sc <- finish_fixture(conn)
+  w <- finish_world()
+  run_log(w, "local", c(
+    "[wsg_run_one] AAAA statement_timeout=2h",
+    "[wsg_run_one] CCCC statement_timeout=2h",
+    "[wsg_run_one] CCCC TIMEOUT after 2h: SELECT 1"
+  ))
+  r <- run_finish_sh(w, sc, "run_finish AAAA,BBBB,CCCC ''")
+  expect_equal(r$status, 1L, info = r$out)
+  expect_match(r$out, "PGOPTIONS='-c statement_timeout=2h'", fixed = TRUE)
+  expect_match(r$out, "raise it for CCCC", fixed = TRUE)
+  # The printed command is one command a shell parses, with the bound on it.
+  out <- strsplit(r$out, "\n")[[1]]
+  i <- grep("^    PGOPTIONS='", out)
+  j <- grep("Rscript data-raw/wsg_run_one.R <WSG>", out, fixed = TRUE)
+  expect_length(i, 1L)
+  expect_length(j, 1L)
+  cmd <- sub("<WSG>", "CCCC", out[i:j], fixed = TRUE)
+  f <- file.path(w, "remodel.sh")
+  writeLines(cmd, f)
+  chk <- suppressWarnings(system2(hosts_bash(), c("-n", shQuote(f)), stdout = TRUE, stderr = TRUE))
+  expect_null(attr(chk, "status"), info = paste(c(cmd, chk), collapse = "\n"))
+  # One command: every line but the last continues it.
+  expect_true(all(grepl("\\\\$", cmd[-length(cmd)])), info = paste(cmd, collapse = "\n"))
+})

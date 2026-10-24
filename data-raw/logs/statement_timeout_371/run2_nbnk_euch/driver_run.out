@@ -1,0 +1,74 @@
+=== study_area_run 20261024_012623 ===
+  run_uid:      20261024_012623-309b2f46
+  run_label:    371-e2e
+  config:       default
+  branch:       371-study-area-run-sh-bound-each-modelling-s (cyphers run this ref)
+  persist:      fresh_371
+  cyphers:      <none> (0)
+  log dir:      /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run
+  vintage max:  7 d
+  recompute -j: 4
+  statement:    2 min per modelling statement (PGOPTIONS, both legs); recompute 10 min (wsg_recompute_one.R)
+  TEST HOOK:    LNK_TEST_STALL_WSG=EUCH (that group stalls until the statement bound cancels it)
+  buckets:      exact (--buckets-exact; each --focal= list as given; the recompute settles access)
+=== pre-flight (local; pre-spend) ===
+  ✓ dispatcher fresh exports what the pipeline calls
+  ✓ fwapg_sha 6d48dabf9a52 (exported to all hosts)
+  ✓ bcfishobs_sha 08630cf4ac14 (exported to all hosts)
+  ✓ fresh_sha e9793047cc8f (clean)
+  ✓ bcfp reference pinned at v0.7.15-50-g620dbe4 (exported to all hosts)
+    ok   discharge (fwapg) loaded: whse_basemapping.fwa_stream_networks_discharge
+  ✓ discharge (fwapg) loaded on the dispatcher
+    [preflight] primitive vintage (window 7 d) - OK, oldest 0.7 d (whse_fish.pscis_assessment_svw) [judged by load stamp: 4, statistics: 0, none: 0]
+  ✓ dispatcher primitives within 7 d
+  ✓ pre-flight clean (tunnel-free)
+=== resolve exact buckets (--buckets-exact; order as given, species filter only) ===
+  dispatcher (focal=NBNK,EUCH): NBNK,EUCH
+  run groups: /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261024_012623_run_wsgs.tsv
+=== run buckets (DS-first) ===
+  ✓ host runs finished (per-WSG soft-fail; gaps surface in compare)
+=== per-host completeness (database) ===
+  ✗ dispatcher: only 1/2 WSGs accounted for; not finished: EUCH (see /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261024_012623_run_local.log)
+  WARN: consolidating only the WSGs each host finished. The run will
+        finish so nothing already computed is lost, then exit non-zero.
+=== verify WSG coverage in fresh_371 (run_uid 20261024_012623-309b2f46) ===
+  1/2 run WSGs have rows from a build this run finished
+  ✗ no rows in fresh_371.streams: EUCH
+  classes: /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261024_012623_coverage.tsv
+  NOTE: recomputing only the 1 WSGs above; the rest keep
+        whatever rows they hold, and the run will exit non-zero.
+=== post-consolidate recompute (lnk_access, 1 WSGs, -j4) ===
+  ✓ log tables present in fresh_371
+  ✓ barrier views built once for fresh_371
+  ordering 241 known WSG time(s) longest-first (median 2.43 min for the rest)
+[fanout] recompute - OK: 1/1 job(s) succeeded
+  ✓ recompute: 1/1 WSGs
+=== compare (tunnel-free) ===
+  ✓ compare CSV: /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261024_012623_compare.csv
+=== summary ===
+  run WSGs:        EUCH,NBNK
+  recomputed WSGs: NBNK
+  compare CSV: /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261024_012623_compare.csv
+[study_area_compare] 2 rows across 1/1 WSGs -> /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261024_012623_compare.csv
+# A tibble: 2 × 7
+  wsg   species total_segs match_pct n_diffs top_pattern       top_pattern_count
+* <chr> <chr>        <int>     <dbl>   <int> <chr>                         <int>
+1 NBNK  CO            3895      64.6    1377 "REAR;NONE | ACC…               828
+2 NBNK  SK            3895      86.6     520 "ACCESS;NONE | "                483
+=== study_area_run INCOMPLETE ===
+  These run WSGs have no rows from a build this run finished, so they
+  were NOT recomputed or compared: EUCH
+    no rows:                         EUCH
+    statement bound hit:             EUCH
+      EUCH (bound 2min): SELECT pg_sleep(3600) -- LNK_TEST_STALL_WSG
+  Re-model each of these under this run_uid: EUCH
+    PGOPTIONS='-c statement_timeout=2min' \
+    LNK_RUN_UID=20261024_012623-309b2f46 LNK_RUN_LABEL=371-e2e LNK_SCHEMA=fresh_371 \
+      LNK_GUARD_DOWNSTREAM=warn LNK_HABITAT_GATE=0 LNK_LOAD=loadall \
+      Rscript data-raw/wsg_run_one.R <WSG> default
+  Then recompute the whole run (every group: a re-modelled group's
+  barriers change access upstream of it):
+    bash data-raw/study_area_run.sh --recompute-only --run-uid=20261024_012623-309b2f46 \
+      --config=default --schema=fresh_371 --run-label=371-e2e --wsgs=EUCH,NBNK
+  ✓ redacted host addresses in 9 log file(s)
+EXIT=1

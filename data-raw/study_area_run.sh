@@ -81,6 +81,25 @@
 #                           run wall clock single-threaded (link#250). N=1
 #                           reproduces the serial path and is the control arm
 #                           of data-raw/recompute_parity.sh.
+#   --statement-timeout=N   minutes any one statement of a group's modelling
+#                           may run (default 30, 1..1440; link#371). Set as
+#                           PGOPTIONS='-c statement_timeout=<N>min' on BOTH
+#                           modelling legs (appended to the operator's on the
+#                           local leg, replacing it in the ssh string), so it
+#                           reaches every connection of the run and nothing
+#                           else (a role setting reaches every session on the
+#                           host and must be reset). A
+#                           statement past it is cancelled server-side, the
+#                           group fails like any other, and the report names it
+#                           with the statement. Default from 2026-10-23: the
+#                           longest finished group took 16.3 min in total
+#                           (SETN), while OKAN sat 4 h in one statement. Raise
+#                           it when a top group is placed on a cypher by hand:
+#                           cyphers ran up to 2.9x the dispatcher's time. The
+#                           recompute leg is not given this bound: it keeps its
+#                           own 10 min per statement and 1 min lock wait
+#                           (wsg_recompute_one.R's SET, which a PGOPTIONS would
+#                           not override anyway), not hit on 2026-10-23.
 #   --prep-ssh-wait=N       seconds to wait for a fresh droplet to accept a
 #                           connection as the `cypher` user (default 600).
 #                           cypher_up returns early on snapshot spins
@@ -156,6 +175,9 @@ PREP_SSH_WAIT_S=600
 # not connections (4 against a default max_connections of 100 is nothing).
 # 10-core dispatcher. Raise only on a measurement.
 RECOMPUTE_JOBS=4
+# Minutes one modelling statement may run before Postgres cancels it (link#371).
+STATEMENT_TIMEOUT_MIN=30
+STATEMENT_TIMEOUT_SET=0
 # Set when the recompute did not complete for every WSG. Initialised here, not
 # at the recompute, so `set -u` cannot bite on any earlier exit path.
 RECOMPUTE_FAIL=0
@@ -212,6 +234,18 @@ for arg in "$@"; do
                        # constraint, not the cores. Each job builds two GiST
                        # indexes, each taking its own maintenance_work_mem.
                        [ "$RECOMPUTE_JOBS" -le 16 ] || { echo "FATAL: --recompute-jobs must be <= 16" >&2; exit 1; } ;;
+    # Base-10 normalised like --recompute-jobs; 0 is Postgres's "no bound", so
+    # it is refused rather than offered as a way to switch the bound off.
+    --statement-timeout=*)
+                       STATEMENT_TIMEOUT_MIN="${arg#--statement-timeout=}"
+                       STATEMENT_TIMEOUT_SET=1
+                       case "$STATEMENT_TIMEOUT_MIN" in
+                         ''|*[!0-9]*) echo "FATAL: --statement-timeout= needs a whole number of minutes (got '$STATEMENT_TIMEOUT_MIN')" >&2; exit 1 ;;
+                       esac
+                       [ "${#STATEMENT_TIMEOUT_MIN}" -le 9 ] || { echo "FATAL: --statement-timeout must be <= 1440" >&2; exit 1; }
+                       STATEMENT_TIMEOUT_MIN=$((10#$STATEMENT_TIMEOUT_MIN))
+                       [ "$STATEMENT_TIMEOUT_MIN" -gt 0 ] || { echo "FATAL: --statement-timeout must be > 0 (there is no unbounded mode)" >&2; exit 1; }
+                       [ "$STATEMENT_TIMEOUT_MIN" -le 1440 ] || { echo "FATAL: --statement-timeout must be <= 1440" >&2; exit 1; } ;;
     --vintage-max-days=*)
                        VINTAGE_MAX_DAYS="${arg#--vintage-max-days=}"
                        case "$VINTAGE_MAX_DAYS" in
@@ -258,9 +292,11 @@ if [ "$RECOMPUTE_ONLY" = "1" ]; then
   [ -n "$RUN_UID_ARG" ] || {
     echo "FATAL: --recompute-only needs --run-uid=<uid> of the run to finish" >&2; exit 1; }
   if [ "${#FOCAL_ARR[@]}" -gt 0 ] || [ -n "$CY_WS" ] || [ "$PREFLIGHT_ONLY" = "1" ] \
-     || [ "$REFRESH_PRIMITIVES" = "1" ] || [ "$AUTO_INSTALL" = "1" ] || [ "$BUCKETS_EXACT" = "1" ]; then
+     || [ "$REFRESH_PRIMITIVES" = "1" ] || [ "$AUTO_INSTALL" = "1" ] || [ "$BUCKETS_EXACT" = "1" ] \
+     || [ "$STATEMENT_TIMEOUT_SET" = "1" ]; then
     echo "FATAL: --recompute-only takes no --focal, --cy-workspaces, --preflight-only," >&2
-    echo "  --refresh-primitives, --auto-install or --buckets-exact: it dispatches nothing." >&2
+    echo "  --refresh-primitives, --auto-install, --buckets-exact or --statement-timeout:" >&2
+    echo "  it dispatches nothing." >&2
     exit 1
   fi
 else
@@ -419,6 +455,10 @@ echo "  cyphers:      ${CY_WS_ARR[*]:-<none>} ($N_CY)"
 echo "  log dir:      $LOG_DIR"
 echo "  vintage max:  ${VINTAGE_MAX_DAYS} d"
 echo "  recompute -j: $RECOMPUTE_JOBS"
+[ "$RECOMPUTE_ONLY" = "1" ] || echo "  statement:    ${STATEMENT_TIMEOUT_MIN} min per modelling statement (PGOPTIONS, both legs); recompute 10 min (wsg_recompute_one.R)"
+# The stall hook (link#371) rides the driver's environment onto the local leg,
+# so one left exported in the operator's shell would stall a real group.
+[ -z "${LNK_TEST_STALL_WSG:-}" ] || echo "  TEST HOOK:    LNK_TEST_STALL_WSG=$LNK_TEST_STALL_WSG (that group stalls until the statement bound cancels it)"
 [ "$BUCKETS_EXACT" = "0" ] && echo "  buckets:      closure (each --focal= expanded to its drainage closure, DS-first)" \
                             || echo "  buckets:      exact (--buckets-exact; each --focal= list as given; the recompute settles access)"
 [ "$PREFLIGHT_ONLY" = "0" ] || echo "  MODE:         --preflight-only (no spend, no writes)"
@@ -1366,9 +1406,18 @@ fi
 # holds them, possibly a previous run's. Gating then would blank habitat the
 # post-consolidate recompute lifts, for good. The recompute (wsg_recompute_one.R)
 # always follows a dispatch and settles every group on final access.
+#
+# PGOPTIONS on BOTH legs too (link#371): the statement bound. The local leg
+# appends it to any PGOPTIONS the operator set; the ssh string replaces it,
+# because the dispatcher's tuning is not the cyphers'. Not exported driver-wide,
+# so the recompute keeps its own SET. LNK_STATEMENT_TIMEOUT_MIN goes with it,
+# and wsg_run_one.R refuses to model on a connection whose bound differs, so a
+# leg that lost PGOPTIONS fails its first group rather than running unbound.
 echo "=== run buckets (DS-first) ==="
 ( cd "$REPO_ROOT"
   for w in $(echo "$DISP_BUCKET" | tr ',' ' '); do
+    PGOPTIONS="${PGOPTIONS:+$PGOPTIONS }-c statement_timeout=${STATEMENT_TIMEOUT_MIN}min" \
+    LNK_STATEMENT_TIMEOUT_MIN="$STATEMENT_TIMEOUT_MIN" \
     LNK_LOAD=loadall LNK_GUARD_DOWNSTREAM=warn LNK_HABITAT_GATE=0 \
       Rscript data-raw/wsg_run_one.R "$w" "$CONFIG" \
       || echo "[WARN] dispatcher WSG $w failed (continuing)"
@@ -1402,7 +1451,7 @@ for WS in "${CY_WS_ARR[@]}"; do
   # silently skip WSGs.
   # Keepalives: this one session carries the host's whole bucket (hours); a
   # silent link drop would kill the rest of it (link#246).
-  ssh -o ServerAliveInterval=60 -o ServerAliveCountMax=10 "cypher@$IP" "cd ~/Projects/repo/link && export LNK_SCHEMA='$SCHEMA' && export LNK_GUARD_DOWNSTREAM=warn && export LNK_HABITAT_GATE=0 && export FWAPG_GIT_SHA='${FWAPG_GIT_SHA:-}' && export BCFISHOBS_GIT_SHA='${BCFISHOBS_GIT_SHA:-}' && export LNK_RUN_UID='$RUN_UID' && export LNK_RUN_LABEL='$RUN_LABEL' && export LNK_BCFP_MODEL_VERSION='${LNK_BCFP_MODEL_VERSION:-}' && for w in $B_SPACE; do Rscript data-raw/wsg_run_one.R \$w '$CONFIG' || echo \"[WARN] cy WSG \$w failed\"; done" \
+  ssh -o ServerAliveInterval=60 -o ServerAliveCountMax=10 "cypher@$IP" "cd ~/Projects/repo/link && export LNK_SCHEMA='$SCHEMA' && export LNK_GUARD_DOWNSTREAM=warn && export LNK_HABITAT_GATE=0 && export PGOPTIONS='-c statement_timeout=${STATEMENT_TIMEOUT_MIN}min' && export LNK_STATEMENT_TIMEOUT_MIN='$STATEMENT_TIMEOUT_MIN' && export FWAPG_GIT_SHA='${FWAPG_GIT_SHA:-}' && export BCFISHOBS_GIT_SHA='${BCFISHOBS_GIT_SHA:-}' && export LNK_RUN_UID='$RUN_UID' && export LNK_RUN_LABEL='$RUN_LABEL' && export LNK_BCFP_MODEL_VERSION='${LNK_BCFP_MODEL_VERSION:-}' && for w in $B_SPACE; do Rscript data-raw/wsg_run_one.R \$w '$CONFIG' || echo \"[WARN] cy WSG \$w failed\"; done" \
     > "$LOG_DIR/${TS}_run_$WS.log" 2>&1 &
   CY_PID[$WS]=$!
 done

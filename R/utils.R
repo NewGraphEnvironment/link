@@ -30,6 +30,49 @@
   )
 }
 
+#' The statement a `statement_timeout` cancelled, from a calling handler
+#'
+#' fresh executes SQL with a bare `DBI::dbExecute()`, so the cancel's error
+#' says only "canceling statement due to statement timeout" (link#371). In a
+#' `withCallingHandlers()` handler the stack has not unwound yet, and DBI's
+#' generics hold the SQL as `statement` (link's [.lnk_db_execute()] as `sql`),
+#' so walking `frames` innermost-first finds it. An error re-thrown on its way
+#' out (`DBI::dbWithTransaction()` rolls back and re-stops) has lost those
+#' frames, but one from [.lnk_db_execute()] carries `Statement: <sql>` in its
+#' message, which is read first.
+#'
+#' @param e The condition.
+#' @param frames `sys.frames()` taken inside the handler.
+#' @param width Characters kept of the whitespace-squished statement.
+#' @return NULL when `e` is not a statement-timeout cancel; otherwise the
+#'   statement, or `"<statement not found>"`.
+#' @noRd
+.lnk_timeout_statement <- function(e, frames, width = 160L) {
+  if (!grepl("statement timeout", conditionMessage(e), fixed = TRUE)) {
+    return(NULL)
+  }
+  squish <- function(v) {
+    s <- gsub("[[:space:]]+", " ", trimws(v))
+    if (nchar(s) > width) s <- paste0(substr(s, 1L, width - 3L), "...")
+    s
+  }
+  in_msg <- regmatches(conditionMessage(e),
+                       regexpr("Statement: .*", conditionMessage(e)))
+  if (length(in_msg) == 1L && nzchar(trimws(sub("^Statement: ", "", in_msg)))) {
+    return(squish(sub("^Statement: ", "", in_msg)))
+  }
+  for (f in rev(frames)) {
+    for (nm in c("statement", "sql")) {
+      # A binding may be an unforced promise; forcing it must not raise here.
+      v <- tryCatch(get0(nm, envir = f, inherits = FALSE), error = function(err) NULL)
+      if (is.character(v) && length(v) == 1L && !is.na(v) && nzchar(trimws(v))) {
+        return(squish(v))
+      }
+    }
+  }
+  "<statement not found>"
+}
+
 #' Check if a table exists (schema-aware)
 #' @noRd
 .lnk_table_exists <- function(conn, table) {
