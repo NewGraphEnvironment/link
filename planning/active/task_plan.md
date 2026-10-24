@@ -57,7 +57,7 @@ Needs the worker's ssh target from the operator (kept out of the repo).
 - [x] Forward `LNK_TEST_STALL_WSG` (validated `^[A-Z]{4}$`) over ssh when set
 
 ## Phase 5: Packing with a worker
-- [ ] `study_area_buckets.R --workers=N`: labels `dispatcher, worker1.., job1..`, the printed command carries `--workers=<target>` placeholders and focal order; speeds stay `--host-speeds` (dispatcher first, then workers, then jobs)
+- [x] `study_area_buckets.R --workers=N`: labels `dispatcher, worker1.., job1..`, the printed command carries `--workers=<target>` placeholders and focal order; speeds stay `--host-speeds` (dispatcher first, then workers, then jobs)
 - [ ] Document how a worker's speed is measured: mid-size groups' minutes by host (not `--minutes-schema`'s newest row, which mixes hosts)
 
 ## Phase 6: Live acceptance (two-host test)
