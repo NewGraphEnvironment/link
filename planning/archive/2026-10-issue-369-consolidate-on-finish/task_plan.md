@@ -80,7 +80,7 @@
 
 ## Phase 6: Docs and release
 - [x] RUNBOOK §8d: "Which host may be burned" (per-host consolidate and burn, `CONSOLIDATING` per host, the outcome-less rule, deferred overlaps, half-copied groups and what the recompute settles; A2) and "Where a run's time went" (per-host rows, `backup`, the consolidate tail). The backup timing and its real use (log history and pre-run rollback; A3).
-- [ ] CLAUDE.md status, NEWS, and the version bump as the last commit.
+- [x] CLAUDE.md status. NEWS and the version bump are left to `/gh-pr-merge`'s release bookkeeping, as for #375 (its "Release v0.68.3" commit followed the merge).
 
 ## Owed at the end (reported, done after merge)
 
@@ -88,10 +88,10 @@
 
 ## Validation
 
-- [ ] Tests pass (`devtools::test()`)
-- [ ] `/code-check` clean (once over the branch with `/code-check branch`)
-- [ ] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion
+- [x] Tests pass (`devtools::test()`: 4030 passed, 0 failed, 0 skipped, 2026-10-24)
+- [x] `/code-check` clean (once over the branch with `/code-check branch`): three rounds; round 3 found a defect inside an earlier fix, so the loop ended by enumeration (round 3's 16 reach points of the mechanism, and every input case of the HEAD reader pinned by a test)
+- [x] PWF checkboxes match landed work
+- [x] `/planning-archive` on completion
 
 Verification:
 - bash unit tests with stubs prove the per-host logic, the negative case and the race ordering.
