@@ -28,10 +28,10 @@
 - [x] If the `CREATE INDEX IF NOT EXISTS` check blocks: `lnk_persist_init()` checks `to_regclass()` for the index before issuing it, with a test. If it does not block, record why no change is needed.
 
 ## Phase 2: `schema_consolidate()` safe beside a writing dispatcher
-- [ ] Judge `copy_empty` on the bucket's rows (`WHERE watershed_group_code IN (bucket)`), through a SQL builder with its own test in `test-schema_consolidate.R` (review G7).
-- [ ] Refuse a source, before anything is deleted, when a table only the source has is a persist table (review B2).
-- [ ] Log each table's copy seconds (review A1); a `verify = FALSE` argument skips the final whole-schema count print (G7).
-- [ ] Extract `schema_consolidate_backup(schema)`, which checks pg_dump's exit code and the dump's size (B1). `schema_consolidate(backup = TRUE)` calls it, so existing callers are unchanged, and the driver calls it on its own.
+- [x] Judge `copy_empty` on the bucket's rows (`WHERE watershed_group_code IN (bucket)`), through a SQL builder with its own test in `test-schema_consolidate.R` (review G7).
+- [x] Refuse a source, before anything is deleted, when a table only the source has is a persist table (review B2).
+- [x] Log each table's copy seconds (review A1); a `verify = FALSE` argument skips the final whole-schema count print (G7).
+- [x] Extract `schema_consolidate_backup(schema)`, which checks pg_dump's exit code and the dump's size (B1). `schema_consolidate(backup = TRUE)` calls it, so existing callers are unchanged, and the driver calls it on its own.
 
 ## Phase 3: Per-host consolidate in a new lib, `data-raw/study_area_legs.sh` (tests first)
 - [ ] `CONSOLIDATING` holds the workspace being copied, or nothing. `.hosts_settled <ws>` and `.hosts_unsettled_why` judge only that host as mid-copy.

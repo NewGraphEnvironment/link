@@ -201,3 +201,68 @@ test_that("the staged script keeps a group's earlier builds (live)", {
     DBI::dbGetQuery(conn, sprintf("SELECT count(*)::int n FROM %s.log", dst))$n,
     4L)
 })
+
+# -- Beside a dispatcher that is writing (link#369) ------------------------
+
+test_that("the copy check counts the bucket's rows only", {
+  e <- source_consolidate()
+  sql <- e$consolidate_bucket_count_sql("s", c("streams", "log"), c("ADMS", "BULK"))
+  expect_identical(sql, paste0(
+    "SELECT ((SELECT count(*) FROM s.streams WHERE watershed_group_code IN ('ADMS', 'BULK'))",
+    " + (SELECT count(*) FROM s.log WHERE watershed_group_code IN ('ADMS', 'BULK')))::bigint AS n"))
+})
+
+test_that("the bucket count ignores another group's delete (live)", {
+  e <- source_consolidate()
+  conn <- skip_if_no_db()
+  sc <- paste0("lnk_test_consol_cnt_", Sys.getpid())
+  DBI::dbExecute(conn, "SET client_min_messages TO warning")
+  DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", sc))
+  withr::defer(DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", sc)))
+  DBI::dbExecute(conn, sprintf("CREATE SCHEMA %s", sc))
+  DBI::dbExecute(conn, sprintf("CREATE TABLE %s.t (watershed_group_code text)", sc))
+  DBI::dbExecute(conn, sprintf(
+    "INSERT INTO %s.t SELECT 'ADMS' FROM generate_series(1, 3) UNION ALL SELECT 'OKAN' FROM generate_series(1, 50)", sc))
+  sql <- e$consolidate_bucket_count_sql(sc, "t", "ADMS")
+  pre <- as.numeric(DBI::dbGetQuery(conn, sql)$n)
+  # The dispatcher replaces its own group meanwhile: a whole-table count
+  # would drop by 50 and fail a good copy of ADMS.
+  DBI::dbExecute(conn, sprintf("DELETE FROM %s.t WHERE watershed_group_code = 'OKAN'", sc))
+  DBI::dbExecute(conn, sprintf("INSERT INTO %s.t VALUES ('ADMS')", sc))
+  expect_identical(pre, 3)
+  expect_gt(as.numeric(DBI::dbGetQuery(conn, sql)$n), pre)
+})
+
+test_that("a destination missing link's persist tables refuses the source", {
+  e <- source_consolidate()
+  # An image's leftovers seen in every 2026 consolidate log: not link's.
+  leftovers <- c("streams_bt", "streams_ch", "streams_habitat", "streams_v2")
+  expect_identical(e$consolidate_missing_persist(leftovers), character(0))
+  expect_identical(
+    e$consolidate_missing_persist(c("streams", "streams_habitat_bt", "streams_v2",
+                                    "barriers", "streams_mapping_code")),
+    c("streams", "streams_habitat_bt", "barriers", "streams_mapping_code"))
+})
+
+test_that("a backup that fails stops, and one that works names its file (live)", {
+  e <- source_consolidate()
+  conn <- skip_if_no_db()
+  skip_if(!nzchar(Sys.which("pg_dump")), "pg_dump not on PATH")
+  info <- DBI::dbGetInfo(conn)
+  skip_if(!identical(as.character(info$port), "5432") ||
+            !info$host %in% c("localhost", "127.0.0.1"),
+          "not the local docker fwapg the dump reads")
+  d <- withr::local_tempdir()
+  absent <- paste0("lnk_test_absent_", Sys.getpid())
+  expect_error(suppressMessages(
+    e$schema_consolidate_backup(absent, file.path(d, "a.dump"))),
+    "pg_dump of lnk_test_absent_[0-9]+ failed")
+
+  sc <- paste0("lnk_test_consol_bak_", Sys.getpid())
+  DBI::dbExecute(conn, sprintf("CREATE SCHEMA %s", sc))
+  withr::defer(DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", sc)))
+  DBI::dbExecute(conn, sprintf("CREATE TABLE %s.t AS SELECT 1 AS x", sc))
+  p <- file.path(d, "b.dump")
+  expect_identical(suppressMessages(e$schema_consolidate_backup(sc, p)), p)
+  expect_gt(file.size(p), 0)
+})

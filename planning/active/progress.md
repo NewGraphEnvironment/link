@@ -9,3 +9,4 @@
 - Next: start Phase 1
 - Phase 1: lock experiment shows both no-op DDLs (index, log column) block behind a COPY's lock, and the ALTER behind pg_dump's; fixed in `lnk_persist_init()` / `.lnk_log_create_tables()` with catalog reads, tested live. pg_dump of fresh_default: 7.6 min.
 - Plan review folded in (planning/active/review-plan.md): 4 blockers (absent schema at backup, log-only copy, closure overlap race, wait -n re-return) plus gaps, dispositions recorded
+- Phase 2: bucket-scoped copy check, refuse a destination missing link's persist tables, per-table copy seconds, verify=FALSE, schema_consolidate_backup() that fails loud

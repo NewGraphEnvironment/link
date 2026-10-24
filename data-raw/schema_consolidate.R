@@ -137,6 +137,71 @@ consolidate_stage2_cmd <- function(schema, table, cols, tsv, sql_path,
           paste(cols, collapse = ", "), shQuote(tsv))
 }
 
+#' A count of a bucket's rows across tables, as one query.
+#'
+#' The copy is judged on the bucket's own rows, not on whole tables: the
+#' driver consolidates a host while the dispatcher models into the same tables
+#' (link#369), so a whole-table count moves with the dispatcher's own
+#' per-group delete and insert, and a good copy could read as empty.
+#'
+#' @param schema Character. Destination schema.
+#' @param tables Character. Tables to count.
+#' @param bucket Character. The source's watershed groups.
+#' @return A single SQL string returning one column, `n`.
+consolidate_bucket_count_sql <- function(schema, tables, bucket) {
+  wsg_list_sql <- paste0("'", bucket, "'", collapse = ", ")
+  parts <- sprintf(
+    "(SELECT count(*) FROM %s.%s WHERE watershed_group_code IN (%s))",
+    schema, tables, wsg_list_sql)
+  sprintf("SELECT (%s)::bigint AS n", paste(parts, collapse = " + "))
+}
+
+#' link's persist tables among those only the source has.
+#'
+#' A destination missing one of these was not initialised: the dispatcher's
+#' groups create them when they persist, and a host consolidated before that
+#' would copy only the log tables, report success, and delete its log rows at
+#' the source (link#369). Tables of other shapes (an image's leftovers, such
+#' as `streams_bt` or `streams_v2`) are not link's and are skipped, as before.
+#'
+#' @param tables Character. Tables only the source has.
+#' @return The persist tables among them.
+consolidate_missing_persist <- function(tables) {
+  pat <- paste0("^(streams|barriers|barrier_overrides|streams_access|",
+                "streams_mapping_code|streams_near_river|streams_habitat_[a-z]+)$")
+  tables[grepl(pat, tables)]
+}
+
+#' pg_dump the destination schema before anything is copied into it.
+#'
+#' Called once per run by the driver, before the dispatcher's leg writes
+#' (link#369), and by [schema_consolidate()] when `backup = TRUE`. Stops when
+#' pg_dump fails or leaves an empty file: a backup that silently did not
+#' happen is worse than none, because a restore would be attempted from it.
+#'
+#' @param schema Character. Destination schema.
+#' @param path Character. Dump path.
+#' @return `path`, invisibly.
+schema_consolidate_backup <- function(schema, path = sprintf(
+  "/tmp/%s_pre_consolidate_%s.dump", schema, format(Sys.time(), "%Y%m%d%H%M"))) {
+  message(sprintf("[%s] backup local %s -> %s (provenance.source_artifact is ",
+                  format(Sys.time(), "%H:%M:%S"), schema, path),
+          "not in it: after restoring, re-run snapshot_bcfp.sh --force so the ",
+          "load records match the tables)")
+  rc <- system(sprintf(
+    "PGHOST=localhost PGPORT=5432 PGDATABASE=fwapg PGUSER=postgres PGPASSWORD=postgres pg_dump --schema=%s -Fc -f %s",
+    schema, shQuote(path)), intern = FALSE)
+  size <- file.size(path)
+  if (rc != 0L || is.na(size) || size == 0) {
+    stop("schema_consolidate_backup: pg_dump of ", schema, " failed (exit ",
+         rc, ", ", if (is.na(size)) "no file" else paste(size, "bytes"),
+         ")", call. = FALSE)
+  }
+  message(sprintf("[%s] backup ok: %.1f MB", format(Sys.time(), "%H:%M:%S"),
+                  size / 1e6))
+  invisible(path)
+}
+
 #' Groups whose newest log row on the destination is not the source's.
 #'
 #' The persist tables carry no run id: a group's newest `log` row is what says
@@ -179,7 +244,9 @@ consolidate_newer_on_dest <- function(dest, src) {
 #'   }
 #' @param backup Logical. If TRUE (default), pg_dump local destination
 #'   before consolidating — rollback safety net. Saved to
-#'   `/tmp/<schema>_pre_consolidate_<TS>.dump`.
+#'   `/tmp/<schema>_pre_consolidate_<TS>.dump`. The driver passes FALSE and
+#'   takes the run's one backup itself, before its dispatcher leg writes
+#'   ([schema_consolidate_backup()], link#369).
 #' @param dest_conn DBI connection for verification queries. Default
 #'   `NULL` — function constructs a connection to local fwapg
 #'   (`localhost:5432/fwapg`, postgres/postgres) to match the COPY
@@ -192,6 +259,10 @@ consolidate_newer_on_dest <- function(dest, src) {
 #'   2026-05-15: 12 of 16 Peace WSGs lost because consolidate skipped
 #'   M1 + both cyphers).
 #' @param verbose Logical.
+#' @param verify Logical. If TRUE (default), print every destination
+#'   table's row count at the end. The driver passes FALSE for its per-host
+#'   calls: the counts are whole-table, slow on a full schema, and move while
+#'   the dispatcher models (link#369).
 #' @param keep_source Logical. When FALSE (default), drop the source
 #'   schema on each remote host after a successful COPY — workers
 #'   are one-shot ETL and the source copy is dead weight once consolidated.
@@ -205,7 +276,8 @@ schema_consolidate <- function(schema,
                                 backup = TRUE,
                                 dest_conn = NULL,
                                 verbose = TRUE,
-                                keep_source = FALSE) {
+                                keep_source = FALSE,
+                                verify = TRUE) {
   stopifnot(
     is.character(schema), length(schema) == 1L, nzchar(schema),
     is.list(sources), length(sources) > 0L
@@ -238,14 +310,8 @@ schema_consolidate <- function(schema,
 
   # 1. Backup destination (rollback safety net).
   if (backup) {
-    backup_path <- sprintf("/tmp/%s_pre_consolidate_%s.dump", schema, ts)
-    log("backup local ", schema, " -> ", backup_path,
-        " (provenance.source_artifact is not in it: after restoring, re-run",
-        " snapshot_bcfp.sh --force so the load records match the tables)")
-    cmd <- sprintf(
-      "PGHOST=localhost PGPORT=5432 PGDATABASE=fwapg PGUSER=postgres PGPASSWORD=postgres pg_dump --schema=%s -Fc -f %s",
-      schema, backup_path)
-    system(cmd, intern = FALSE)
+    schema_consolidate_backup(schema, sprintf(
+      "/tmp/%s_pre_consolidate_%s.dump", schema, ts))
   }
 
   results <- list()
@@ -341,6 +407,15 @@ schema_consolidate <- function(schema,
           "tables in '", schema, "'")
       results[[src$host]] <- list(ok = FALSE, stage = "no_table_overlap",
                                    rc = -1L)
+      next
+    }
+    dest_missing <- consolidate_missing_persist(skipped_source_only)
+    if (length(dest_missing) > 0L) {
+      log(src$host, " -> ERROR: the destination has no ",
+          paste(dest_missing, collapse = ", "), " (was the dispatcher's ",
+          "persist initialised?) — nothing deleted or copied")
+      results[[src$host]] <- list(ok = FALSE, stage = "dest_missing_tables",
+                                   rc = -1L, table = dest_missing[[1]])
       next
     }
 
@@ -466,17 +541,13 @@ schema_consolidate <- function(schema,
       DBI::dbExecute(dest_conn, del)
     }
 
-    # 3.6. Snapshot pre-restore total row count across the schema. The
-    # post-restore check requires `post_rows > pre_rows` (a strict
-    # increase). A non-zero check would falsely pass any iteration
-    # after the first source — the schema already has rows from prior
-    # iterations.
-    pre_rows <- 0L
-    for (t in wgc_tables) {
-      n <- DBI::dbGetQuery(dest_conn, sprintf(
-        "SELECT count(*)::bigint AS n FROM %s.%s", schema, t))$n
-      if (!is.na(n)) pre_rows <- pre_rows + as.numeric(n)
-    }
+    # 3.6. Snapshot the bucket's rows across the tables, after the DELETE
+    # (its persist rows are gone; its log rows keep their history). The
+    # post-copy check requires a strict increase. Bucket rows only, never
+    # whole tables: the dispatcher may be writing its own groups into the
+    # same tables while this runs (link#369).
+    count_sql <- consolidate_bucket_count_sql(schema, wgc_tables, src$bucket)
+    pre_rows <- as.numeric(DBI::dbGetQuery(dest_conn, count_sql)$n)
 
     # 4. Per-table COPY: bucket-filtered SELECT on source via SSH ->
     # local temp file -> COPY FROM STDIN on destination.
@@ -501,6 +572,7 @@ schema_consolidate <- function(schema,
     log(src$host, " -> COPY (bucket-filtered) for ", length(wgc_tables),
         " tables")
     for (t in wgc_tables) {
+      t_start <- Sys.time()
       col_list <- paste(shared_cols[[t]], collapse = ", ")
       src_sql <- sprintf(
         "COPY (SELECT %s FROM %s.%s WHERE watershed_group_code IN (%s)) TO STDOUT",
@@ -557,6 +629,8 @@ schema_consolidate <- function(schema,
         next
       }
       copied_tables <- c(copied_tables, t)
+      log(src$host, " -> ", t, " copied in ", sprintf("%.1f",
+          as.numeric(difftime(Sys.time(), t_start, units = "secs"))), " s")
     }
     if (length(errored_tables) > 0L) {
       log(src$host, " -> ERROR: ", length(errored_tables),
@@ -582,15 +656,8 @@ schema_consolidate <- function(schema,
     #
     # `count(*)` is the authoritative source (NOT
     # `pg_stat_user_tables.n_live_tup`, which lags the commit
-    # asynchronously). Strict increase against `pre_rows` snapshot
-    # so multi-source loops catch a bad source-N after source-1
-    # already populated the schema.
-    post_rows <- 0L
-    for (t in wgc_tables) {
-      n <- DBI::dbGetQuery(dest_conn, sprintf(
-        "SELECT count(*)::bigint AS n FROM %s.%s", schema, t))$n
-      if (!is.na(n)) post_rows <- post_rows + as.numeric(n)
-    }
+    # asynchronously), over this bucket's rows (3.6).
+    post_rows <- as.numeric(DBI::dbGetQuery(dest_conn, count_sql)$n)
     if (post_rows <= pre_rows) {
       log(src$host, " -> WARN: COPY pipeline rc=0 but row count did not ",
           "increase (", pre_rows, " -> ", post_rows, ") — flagging as failure")
@@ -657,11 +724,11 @@ schema_consolidate <- function(schema,
   }
 
   # 5. Verification: per-table row + WSG counts on destination.
-  log("verify destination tables in schema '", schema, "'")
   tables <- DBI::dbGetQuery(dest_conn, sprintf(
     "SELECT tablename FROM pg_tables WHERE schemaname = '%s' ORDER BY tablename",
     schema))$tablename
-  if (length(tables) > 0L) {
+  if (verify && length(tables) > 0L) {
+    log("verify destination tables in schema '", schema, "'")
     counts <- lapply(tables, function(t) {
       qry <- sprintf("SELECT '%s' AS tbl, count(*) AS rows FROM %s.%s",
         t, schema, t)
