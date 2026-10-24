@@ -77,6 +77,14 @@ remote_out() {
   LC_ALL=C sed -e 's/__LNK_RC__=[0-9][0-9]*$//' "$1" | LC_ALL=C sed '/^$/d'
 }
 
+# Every variable remote_leg_cmd exports, plus the one the leg runs under on a
+# worker. A worker's ~/.Renviron is read after the environment, so a line
+# there for any of these would beat the leg's export (link#376): another
+# schema, the habitat gate on, another run's provenance. worker_prep.sh
+# refuses a worker that sets one; a test holds this list to remote_leg_cmd's
+# exports.
+REMOTE_LEG_VARS="LNK_LOAD LNK_TEST_STALL_WSG LNK_SCHEMA LNK_GUARD_DOWNSTREAM LNK_HABITAT_GATE PGOPTIONS LNK_STATEMENT_TIMEOUT_MIN FWAPG_GIT_SHA BCFISHOBS_GIT_SHA LNK_RUN_UID LNK_RUN_LABEL LNK_BCFP_MODEL_VERSION"
+
 # remote_leg_cmd <host> <groups, space-separated>: the modelling leg's remote
 # command. Every export the leg needs crosses ssh in the command itself: an
 # export in the driver's environment does not (link#227, link#262, link#371).
@@ -115,8 +123,12 @@ worker_prep_env() {
   case "${ORIGIN_URL:-}" in
     ""|*[!A-Za-z0-9._:/@~+-]*)
       echo "FATAL: the origin URL cannot be passed to a worker" >&2; return 1 ;;
+    *://*@*)
+      # Userinfo (a token) would reach the worker's ps, its clone's config and
+      # the committed prep log.
+      echo "FATAL: the origin URL carries credentials; a worker clones a public URL" >&2; return 1 ;;
   esac
-  printf '%s' "WORKER_PREP_BRANCH='${LINK_BRANCH:-}' WORKER_PREP_ORIGIN='$ORIGIN_URL' WORKER_PREP_CONFIG='${CONFIG:-}' WORKER_PREP_SCHEMA='${SCHEMA:-}' WORKER_PREP_WET_LOAD='${WET_LOAD:-}'"
+  printf '%s' "WORKER_PREP_BRANCH='${LINK_BRANCH:-}' WORKER_PREP_ORIGIN='$ORIGIN_URL' WORKER_PREP_CONFIG='${CONFIG:-}' WORKER_PREP_SCHEMA='${SCHEMA:-}' WORKER_PREP_WET_LOAD='${WET_LOAD:-}' WORKER_PREP_LEG_VARS='$REMOTE_LEG_VARS'"
 }
 
 # remote_redact_init: the names to redact for each worker, longest first,
@@ -154,14 +166,16 @@ remote_redact_init() {
 # in the file with `<workerN>`. A worker's target is the operator's
 # infrastructure and a run's logs are committed as evidence. Matched whole
 # (not inside a longer name) and literally: a name holds `.`, `@` and `-`.
-# Never fails.
+# `@` may precede a match: ssh's own failure line is `<user>@<host>: ...`,
+# and the longest-first order already replaces a whole `user@host` target
+# before its host part. Never fails.
 remote_redact_targets() {
   local i
   [ -f "$1" ] || return 0
   [ "${WK_REDACT_READY:-0}" = "1" ] || remote_redact_init
   for i in ${WK_REDACT[@]+"${!WK_REDACT[@]}"}; do
     LNK_TGT="${WK_REDACT[$i]}" LNK_REP="<${WK_REDACT_KEY[$i]}>" perl -i -pe \
-      's/(?<![A-Za-z0-9._@-])\Q$ENV{LNK_TGT}\E(?![A-Za-z0-9._@-])/$ENV{LNK_REP}/g' \
+      's/(?<![A-Za-z0-9._-])\Q$ENV{LNK_TGT}\E(?![A-Za-z0-9._@-])/$ENV{LNK_REP}/g' \
       "$1" 2>/dev/null || true
   done
   return 0

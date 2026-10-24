@@ -242,10 +242,16 @@ test_that("worker prep's environment carries the run, and refuses an origin it c
     'worker_prep_env worker1'))
   expect_identical(r$out, paste(
     "WORKER_PREP_BRANCH='b' WORKER_PREP_ORIGIN='https://github.com/NewGraphEnvironment/link.git'",
-    "WORKER_PREP_CONFIG='default' WORKER_PREP_SCHEMA='fresh_x' WORKER_PREP_WET_LOAD=''"))
+    "WORKER_PREP_CONFIG='default' WORKER_PREP_SCHEMA='fresh_x' WORKER_PREP_WET_LOAD=''",
+    "WORKER_PREP_LEG_VARS='LNK_LOAD LNK_TEST_STALL_WSG LNK_SCHEMA LNK_GUARD_DOWNSTREAM LNK_HABITAT_GATE PGOPTIONS LNK_STATEMENT_TIMEOUT_MIN FWAPG_GIT_SHA BCFISHOBS_GIT_SHA LNK_RUN_UID LNK_RUN_LABEL LNK_BCFP_MODEL_VERSION'"))
   r <- run_remote(w, c("ORIGIN_URL=\"https://x/y'z\"",
                        'worker_prep_env worker1 && echo RC=0 || echo RC=$?'))
   expect_match(r$out, "RC=1", fixed = TRUE)
+  # A token in the URL would reach the worker's ps, its clone and the log.
+  r <- run_remote(w, c("ORIGIN_URL=https://u:tok@github.com/NewGraphEnvironment/link.git",
+                       'worker_prep_env worker1 && echo RC=0 || echo RC=$?'))
+  expect_match(r$out, "RC=1", fixed = TRUE)
+  expect_match(r$out, "carries credentials", fixed = TRUE)
 })
 
 test_that("a worker's target is redacted whole and literally", {
@@ -272,14 +278,17 @@ test_that("what ssh writes for a target is redacted too: its host part and its H
   f <- file.path(w, "T0_reach_worker1.log")
   writeLines(c("ssh: connect to host box.tail-y.ts.net port 22: timed out",
                "ssh: Could not resolve hostname host9.example: nodename nor servname",
-               "wk and ops@host9.example"), f)
+               "wk and ops@host9.example",
+               # ssh's own failure line for an unauthorised key.
+               "airvine@box.tail-y.ts.net: Permission denied (publickey)."), f)
   run_remote(w, c(
     "WK_TARGETS=(wk ops@host9.example); WK_KEYS=(worker1 worker2)",
     sprintf("remote_redact_targets %s", shQuote(f))))
   expect_identical(readLines(f), c(
     "ssh: connect to host <worker1> port 22: timed out",
     "ssh: Could not resolve hostname <worker2>: nodename nor servname",
-    "<worker1> and <worker2>"))
+    "<worker1> and <worker2>",
+    "airvine@<worker1>: Permission denied (publickey)."))
 })
 
 # -- The driver's own refusals, before anything runs (link#376) ---------------
@@ -340,4 +349,16 @@ test_that("the driver refuses a branch name a remote command could not carry", {
   # Only when a remote host is sent it, and on the whole value.
   expect_true(any(grepl('if [ "$N_HOSTS" -gt 0 ] && ! [[ "$LINK_BRANCH" =~ ^[A-Za-z0-9._/-]+$ ]]; then',
                         near, fixed = TRUE)))
+})
+
+test_that("worker prep checks every variable a worker's leg exports", {
+  skip_if_no_remote_lib()
+  w <- remote_world()
+  r <- run_remote(w, c(worker_globals, "LNK_TEST_STALL_WSG=ADMS",
+                       'echo "VARS=$REMOTE_LEG_VARS"', "remote_leg_cmd worker1 AAAA"))
+  vars <- strsplit(sub("^VARS=", "", strsplit(r$out, "\n")[[1]][1]), " ")[[1]]
+  exported <- unique(regmatches(r$out, gregexpr("export [A-Z_]+=", r$out))[[1]])
+  exported <- sub("=$", "", sub("^export ", "", exported))
+  expect_gt(length(exported), 8L)
+  expect_setequal(vars, exported)
 })

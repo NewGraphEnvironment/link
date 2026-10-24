@@ -657,6 +657,15 @@ on_exit() {
   phases_close_open || true
   [ "${PHASES_REPORTED:-0}" = "1" ] || phases_report || true
   burn_cyphers || rc=$?
+  # A worker's prep still running (the run died during the cyphers' spin)
+  # would keep writing ssh's output into its log after the redaction below
+  # (link#376): stop it first. Its remote side may finish; it holds nothing.
+  local pid
+  for pid in ${WK_PREP_PIDS[@]+"${WK_PREP_PIDS[@]}"}; do
+    pkill -P "$pid" 2>/dev/null || true
+    kill "$pid" 2>/dev/null || true
+    wait "$pid" 2>/dev/null || true
+  done
   redact_log_addresses
   return $rc
 }
@@ -1121,6 +1130,12 @@ cat(if (is.null(v)) "" else v$model_version)
     # how this column stayed empty for 37 rows without anyone noticing.
     echo "  WARN: no bcfp baseline row for this host — bcfp_model_version will"
     echo "        be NULL on every row. Run: bash data-raw/snapshot_bcfp.sh --with-bcfp-views"
+  fi
+  # It is pasted into every remote leg's command, from the ledger or from the
+  # operator's own environment: a whole-value check, as for --run-label.
+  if [ -n "${LNK_BCFP_MODEL_VERSION:-}" ] && ! [[ "$LNK_BCFP_MODEL_VERSION" =~ ^[A-Za-z0-9._+-]+$ ]]; then
+    echo "  ✗ the bcfp model version is not a plain version string; it cannot be sent to remote hosts"
+    fail=1
   fi
 
   # --- gate: the config's discharge table on the dispatcher (link#331) -----

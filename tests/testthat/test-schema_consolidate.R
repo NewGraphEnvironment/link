@@ -371,3 +371,25 @@ test_that("consolidate takes link's tables only, never a schema's primitives", {
     "streams", "streams_access", "streams_habitat_bt", "streams_habitat_ch",
     "streams_mapping_code"))
 })
+
+test_that("every table lnk_persist_init creates is one consolidate takes (live)", {
+  e <- source_consolidate()
+  conn <- skip_if_no_db()
+  sc <- paste0("lnk_test_consol_init_", Sys.getpid())
+  DBI::dbExecute(conn, "SET client_min_messages TO warning")
+  DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", sc))
+  withr::defer(DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", sc)))
+  cfg <- lnk_config("default")
+  cfg$pipeline$schema <- sc
+  suppressMessages(lnk_persist_init(conn, cfg, cfg$species))
+  link:::.lnk_log_create_tables(conn, sc)
+  made <- DBI::dbGetQuery(conn, sprintf(paste(
+    "SELECT c.table_name FROM information_schema.columns c",
+    "JOIN information_schema.tables t USING (table_schema, table_name)",
+    "WHERE c.table_schema = '%s' AND c.column_name = 'watershed_group_code'",
+    "AND t.table_type = 'BASE TABLE'"), sc))$table_name
+  expect_gt(length(made), 5L)
+  # A table link adds later that consolidate does not take would be left on
+  # a burned host: this fails first.
+  expect_setequal(e$consolidate_link_tables(made), made)
+})

@@ -49,6 +49,9 @@
 #                        the worker must hold the same one, or hosts classify
 #                        on different discharge (link#331)
 #   WORKER_PREP_STAGE    all (default) | install-fresh
+#   WORKER_PREP_LEG_VARS the variables the leg exports (REMOTE_LEG_VARS); one
+#                        the worker sets for R itself is refused, because its
+#                        ~/.Renviron would beat the leg's export
 #   WORKER_PREP_DIR      default ~/Projects/repo/link_worker
 
 set -euo pipefail
@@ -92,7 +95,7 @@ echo "=== worker clone at $(git rev-parse HEAD) ($BRANCH)"
 
 # --- 2-3. link by load_all; fresh asserted --------------------------------
 check_versions() {
-  Rscript -e '
+  WORKER_PREP_LEG_VARS="${WORKER_PREP_LEG_VARS:-}" Rscript -e '
 suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
 fail <- function(...) { cat("FATAL: ", ..., "\n", sep = ""); quit(status = 1) }
 res <- lnk_preflight_fresh(quiet = TRUE)
@@ -104,6 +107,16 @@ if (!is.na(remote) && !identical(remote, st$sha)) {
   fail("FRESH_GIT_SHA pins ", substr(st$sha, 1, 12), " but the installed fresh was built from ",
        substr(remote, 1, 12), ". Remove FRESH_GIT_SHA (and FRESH_GIT_DIRTY) from this ",
        "worker\x27s ~/.Renviron; a pin there wins over anything the driver exports.")
+}
+# Prep exports none of the variables of the leg, so any R sees came from the
+# worker itself (its ~/.Renviron, or its shell): R reads ~/.Renviron after
+# the environment, so it would beat the export of the leg too.
+leg_vars <- strsplit(Sys.getenv("WORKER_PREP_LEG_VARS"), " ", fixed = TRUE)[[1]]
+set_here <- leg_vars[nzchar(Sys.getenv(leg_vars))]
+if (length(set_here)) {
+  fail("this worker sets ", paste(set_here, collapse = ", "), " for R (its ~/.Renviron or ",
+       "its shell). A ~/.Renviron line beats what the run exports for its legs; ",
+       "remove them there.")
 }
 head <- system("git rev-parse HEAD", intern = TRUE)
 lk <- link:::.lnk_pkg_git_state("link")

@@ -67,3 +67,23 @@ Round 2 found the target and stall-hook checks newline-blind (`grep -qx` passes 
 | bucket groups | leg loop | `study_area_wsgs.R` output (pre-existing) |
 
 The remaining `grep -qx` calls on the branch read log files line by line (`=== READY`, `=== persist init done`), which is the intended semantics.
+
+## Code-check round 3: what a worker reads that the driver did not write, enumerated
+
+Round 3's mechanism: the worker reuses cloud-host code that assumes the host is the driver's alone, built fresh for the run and holding only what the run put there. On a persistent worker every input has a second source. Each source, and what guards it now:
+
+| source on the worker | what it could do | guard |
+|---|---|---|
+| `~/.Renviron` (or the shell's env, as R sees it) | beat the leg's exports (another schema, habitat gate on, wrong provenance), or pin shas | worker_prep refuses any of `REMOTE_LEG_VARS` set for R (list held equal to `remote_leg_cmd`'s exports by a test; live refusal 2026-10-24), and `FRESH_GIT_SHA`/`LINK_GIT_SHA` pins that are not the real build |
+| `~/.Rprofile` | output on stdout, changed options | measured in Phase 1; stamps and probes are judged on output |
+| its database's other schemas | the run writing into them | the leg's schema comes from the export, which nothing on the worker can now override; identity check refuses the dispatcher's own or a shared database |
+| rows already in the run's schema | read as this run's, then consolidated and deleted | prior-rows refusal before spend (`streams`, `streams_mapping_code`) |
+| tables in the schema that are not link's (primitives, bcfp reference) | copied over the dispatcher's, deleted at the source | `consolidate_link_tables()`; the drop's list held equal to it; a live test holds both to what `lnk_persist_init()` creates |
+| primitives and discharge | stale or another vintage | not reloaded; vintage gate (load stamps) and discharge (and wet load id) checked at prep |
+| the clone | another branch, local edits, another origin | origin must match; reset and clean every prep; HEAD checked before each group |
+| files left in /tmp | an older prep script | prep is piped over ssh, never copied |
+| other sessions | a git change in the clone mid-run; fresh reinstalled mid-run | HEAD check per group; fresh's mid-run reinstall is caught only after the run by `study_area_verify.sql` (accepted, noted) |
+| names ssh writes into logs | the target, `user@host`, the HostName an alias resolves to, `<user>@<host>:` | `remote_redact_init` (target, host part, `ssh -G` HostName), `@` allowed before a match |
+| the origin URL sent to it | a token in userinfo | refused |
+| its exit statuses | 0 whatever ran | the remote-status rule (RUNBOOK §8d) |
+| a prep still writing when the driver dies | unredacted lines after the trap redacts | the trap stops worker prep pids before redacting |
