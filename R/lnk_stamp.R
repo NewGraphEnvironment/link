@@ -510,6 +510,9 @@ format.lnk_stamp <- function(x, type = c("markdown", "text"), ...) {
     pointer <- readLines(git_path, warn = FALSE, n = 1)
     if (length(pointer) == 0L) return(NULL)
     gitdir <- sub("^gitdir:\\s*", "", pointer)
+    # A relative pointer (`git worktree add --relative-paths`, submodules) is
+    # relative to the directory holding the `.git` file, not R's working dir.
+    if (!grepl("^/", gitdir)) gitdir <- file.path(dirname(git_path), gitdir)
   }
   head_file <- file.path(gitdir, "HEAD")
   if (!file.exists(head_file)) return(NULL)
