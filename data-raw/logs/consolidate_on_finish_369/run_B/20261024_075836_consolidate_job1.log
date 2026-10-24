@@ -1,0 +1,45 @@
+NOTICE:  schema "fresh_smoke369b" already exists, skipping
+
+NOTICE:  relation "log" already exists, skipping
+
+NOTICE:  relation "log_recompute" already exists, skipping
+
+NOTICE:  relation "log_input" already exists, skipping
+
+NOTICE:  relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  relation "log_dimensions" already exists, skipping
+
+[01:10:42] cypher@<host> -> ERROR: the destination's newest log row is not this source's for MILL (newer here, or none on the source) — nothing deleted or copied
+$sources
+$sources$`cypher@<host>`
+$sources$`cypher@<host>`$ok
+[1] FALSE
+
+$sources$`cypher@<host>`$stage
+[1] "dest_log_newer"
+
+$sources$`cypher@<host>`$rc
+[1] -1
+
+$sources$`cypher@<host>`$groups
+[1] "MILL"
+
+
+
+$tables
+ [1] "barrier_overrides"                 "barriers"                         
+ [3] "log"                               "log_dimensions"                   
+ [5] "log_input"                         "log_parameters_fresh"             
+ [7] "log_parameters_habitat_thresholds" "log_recompute"                    
+ [9] "streams"                           "streams_access"                   
+[11] "streams_habitat_bt"                "streams_habitat_ch"               
+[13] "streams_habitat_cm"                "streams_habitat_co"               
+[15] "streams_habitat_gr"                "streams_habitat_ko"               
+[17] "streams_habitat_pk"                "streams_habitat_rb"               
+[19] "streams_habitat_sk"                "streams_habitat_st"               
+[21] "streams_habitat_wct"               "streams_mapping_code"             
+[23] "streams_near_river"               
+
