@@ -1603,7 +1603,10 @@ measured off a file, run after run (#377).
 - **A run that dies** keeps the rows it finished. The EXIT trap closes the phase
   it died in as `failed` and prints the table once. A kill does not stop a
   running leg, so that leg later writes its own row too. For one phase, host and
-  start, the later row is the leg's real end. A phase a leg had already closed
+  start, the later row is the leg's real end. Each leg's wrapper is a subshell of
+  the driver and carries its command line, so `pkill -f study_area_run` kills the
+  wrappers as well. Their legs (`wsg_run_one.R`, the ssh session) run on, but
+  write no later row. A phase a leg had already closed
   is not closed again. The file has every phase only on a run that reached its
   summary: a coverage FATAL, for one, leaves no tail rows.
 - **`--recompute-only` writes its own `<its TS>_phases.tsv`**, with a `prep` row

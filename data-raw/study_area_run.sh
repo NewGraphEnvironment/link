@@ -1401,7 +1401,7 @@ if [ "$N_CY" -gt 0 ]; then
       pst=failed
       [ "$prc" = "0" ] && grep -qx "=== READY" "$LOG_DIR/${TS}_prep_$WS.log" 2>/dev/null && pst=ok
       phase_end prep "$WS" "" "$pst" quiet
-      exit "$prc" ) &
+      exit "$prc" ) >> "$LOG_DIR/${TS}_prep_$WS.log" 2>&1 &
   done
   wait
   for WS in "${CY_WS_ARR[@]}"; do phase_forget prep "$WS"; phase_print prep "$WS"; done
@@ -1459,7 +1459,11 @@ fi
 # wait returns is not when its leg ended. The status is the leg's exit status;
 # a group that failed inside it is the accounting's to name. The parent forgets
 # the phase once the wait returns, so a driver killed mid-leg closes it failed,
-# and a leg that outlives the driver then writes its own row as well.
+# and a leg that outlives the driver then writes its own row as well. Each
+# wrapper's own output goes to its leg's log, as the leg's did before: holding
+# the driver's stdout would keep a reader of it (a `| tee`) open until the last
+# leg ended, after the driver was killed. Appending is safe: the inner `>`
+# truncates before either writes, and an O_APPEND fd writes at the end.
 RUN_N=$( { csv_lines "$DISP_BUCKET"
   for WS in "${CY_WS_ARR[@]}"; do csv_lines "${CY_BUCKET[$WS]}"; done
 } | sort -u | wc -l | tr -d ' ')
@@ -1479,7 +1483,7 @@ phase_begin model dispatcher
   done ) > "$LOG_DIR/${TS}_run_local.log" 2>&1 || mrc=$?
   phase_end model dispatcher "$(csv_count "$DISP_BUCKET")" \
     "$([ "$mrc" = "0" ] && echo ok || echo failed)" quiet
-  exit "$mrc" ) &
+  exit "$mrc" ) >> "$LOG_DIR/${TS}_run_local.log" 2>&1 &
 LOCAL_PID=$!
 declare -A CY_PID
 # Baseline before any write (link#347): which of each cypher's bucket already
@@ -1515,7 +1519,7 @@ for WS in "${CY_WS_ARR[@]}"; do
     > "$LOG_DIR/${TS}_run_$WS.log" 2>&1 || mrc=$?
   phase_end model "$WS" "$(csv_count "${CY_BUCKET[$WS]}")" \
     "$([ "$mrc" = "0" ] && echo ok || echo failed)" quiet
-  exit "$mrc" ) &
+  exit "$mrc" ) >> "$LOG_DIR/${TS}_run_$WS.log" 2>&1 &
   CY_PID[$WS]=$!
 done
 # A non-zero host exit (e.g. ssh dropped) is logged, NOT fatal — we still

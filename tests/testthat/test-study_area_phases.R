@@ -241,11 +241,13 @@ test_that("each model and prep leg re-raises its own exit status after writing i
   drv <- readLines(drv_path)
   # Two model legs (the local one and the ssh one), one prep leg.
   expect_length(grep("|| mrc=$?", drv, fixed = TRUE), 2L)
-  expect_length(grep('^  exit "\\$mrc" \\) &$', drv), 2L)
+  # Each wrapper sends its own output to its leg's log, never the driver's
+  # stdout, which it would otherwise hold open for the whole leg.
+  expect_length(grep('^  exit "\\$mrc" \\) >> "\\$LOG_DIR/\\$\\{TS\\}_run_[^"]+\\.log" 2>&1 &$', drv), 2L)
   # errexit is off on the left of `||`, so the local leg's cd must fail by hand.
   expect_length(grep('  ( cd "$REPO_ROOT" || exit 1', drv, fixed = TRUE), 1L)
   expect_length(grep("|| prc=$?", drv, fixed = TRUE), 1L)
-  expect_length(grep('exit "$prc" ) &', drv, fixed = TRUE), 1L)
+  expect_length(grep('exit "$prc" ) >> "$LOG_DIR/${TS}_prep_$WS.log" 2>&1 &', drv, fixed = TRUE), 1L)
   # quiet in a subshell, then forgotten and printed by the parent after its wait.
   expect_length(grep("echo failed)\" quiet", drv, fixed = TRUE), 2L)
   expect_length(grep('phase_end prep "$WS" "" "$pst" quiet', drv, fixed = TRUE), 1L)
