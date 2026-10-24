@@ -30,7 +30,7 @@
 #      still modelling is never reported as kept. The EXIT trap considers all.
 #
 # Globals read: SCHEMA TS LOG_DIR REPO_ROOT LOCAL_PID DISP_BUCKET CY_WS_ARR
-#   CY_IP HOST_BUCKET CONS_STATE RUN_WSGS_TSV KEEP_CYPHERS; CONSOLIDATE_RSCRIPT
+#   HOST_SSH HOST_BUCKET CONS_STATE RUN_WSGS_TSV KEEP_CYPHERS; CONSOLIDATE_RSCRIPT
 #   (default Rscript)
 # Globals written: HOST_LEG_PID (set by the driver at dispatch) HOST_LEG_DONE
 #   HOST_RUN_RC HOST_CONS_STATE HOST_CONS_UTC HOST_BUCKET_DONE HOST_CONS_FAIL HOST_NO_OUTCOME
@@ -91,7 +91,7 @@ EOF
 host_consolidate() {
   local ws="$1" bucket_r src log tsv crc=0
   bucket_r=$(.hosts_lines "${HOST_BUCKET_DONE[$ws]:-}" | sed "s/.*/'&'/" | paste -sd, -)
-  src="list(host = 'cypher@${CY_IP[$ws]}', via = 'docker', bucket = c($bucket_r))"
+  src="list(host = '${HOST_SSH[$ws]}', via = 'docker', bucket = c($bucket_r))"
   log="$LOG_DIR/${TS}_consolidate_${ws}.log"
   tsv="$LOG_DIR/${TS}_consolidate_${ws}.tsv"
   # in_flight BEFORE the copy (link#358): a driver that dies mid-copy leaves
@@ -145,7 +145,7 @@ host_finish_leg() {
   echo "=== cy[$ws]: leg ended (exit ${HOST_RUN_RC[$ws]:-?}); account, consolidate, burn ==="
   phase_begin account "$ws"
   st=ok
-  host_account "$ws" "${CY_IP[$ws]}" "$LOG_DIR/${TS}_run_$ws.log" "${HOST_BUCKET[$ws]}" \
+  host_account "$ws" "${HOST_SSH[$ws]:-}" "$LOG_DIR/${TS}_run_$ws.log" "${HOST_BUCKET[$ws]}" \
     || { st=failed; COMPLETE_FAIL=1; }
   # Database ∪ log done; empty for a host whose database did not answer, which
   # is then not consolidated (consolidate reads it over the same route) and

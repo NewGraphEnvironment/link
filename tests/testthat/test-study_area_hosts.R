@@ -41,7 +41,7 @@ run_hosts <- function(world, body, cyphers = c("a", "b"), keep = 0L,
     ),
     sprintf("KEEP_CYPHERS=%d; CYPHERS_UP=%d", keep, cyphers_up),
     sprintf("CY_WS_ARR=(%s)", paste(cyphers, collapse = " ")),
-    'for ws in "${CY_WS_ARR[@]}"; do CY_IP[$ws]="ip-$ws"; HOST_RUN_RC[$ws]=0; done',
+    'for ws in "${CY_WS_ARR[@]}"; do CY_IP[$ws]="ip-$ws"; HOST_SSH[$ws]="cypher@ip-$ws"; HOST_RUN_RC[$ws]=0; done',
     body
   ), script)
   out <- withr::with_envvar(
@@ -70,7 +70,7 @@ test_that("a host whose every done marker is mid-line is complete", {
   put(w, "ssh_ip-a.out", db_answer(c("FIRE", "KITR", "UPET")))
   r <- run_hosts(w, c(
     sprintf(
-      "host_account a ip-a %s FIRE,KITR,UPET && echo RC=0 || echo RC=$?",
+      "host_account a cypher@ip-a %s FIRE,KITR,UPET && echo RC=0 || echo RC=$?",
       shQuote(file.path(w, "logs", "run_a.log"))
     ),
     'echo "STATE=${ACC_STATE[a]} FIN=${ACC_FINISHED[a]}"'
@@ -108,7 +108,7 @@ test_that("a mid-line SKIP is accounted for and kept out of the bucket", {
   )
   put(w, "ssh_ip-a.out", db_answer("ADMS"))
   r <- run_hosts(w, c(
-    sprintf("host_account a ip-a %s ADMS,ZZZZ && echo RC=0 || echo RC=$?", shQuote(log)),
+    sprintf("host_account a cypher@ip-a %s ADMS,ZZZZ && echo RC=0 || echo RC=$?", shQuote(log)),
     'echo "FIN=${ACC_FINISHED[a]} SKIP=${ACC_SKIP[a]}"'
   ))
   expect_match(r$out, "RC=0")
@@ -123,7 +123,7 @@ test_that("a group not finished in the database is reported missing", {
   writeLines(sprintf("[wsg_run_one] %s done in 1 min", c("AAAA", "BBBB", "CCCC")), log)
   put(w, "ssh_ip-a.out", db_answer(c("AAAA", "BBBB")))
   r <- run_hosts(w, sprintf(
-    "host_account a ip-a %s AAAA,BBBB,CCCC && echo RC=0 || echo RC=$?", shQuote(log)
+    "host_account a cypher@ip-a %s AAAA,BBBB,CCCC && echo RC=0 || echo RC=$?", shQuote(log)
   ))
   expect_match(r$out, "RC=1")
   expect_match(r$out, "not finished: CCCC", fixed = TRUE)
@@ -142,7 +142,7 @@ test_that("a database that does not answer is unknown, never complete", {
     put(w, "ssh_ip-a.out", cases[[nm]])
     put(w, "ssh_ip-a.rc", "0") # ssh over the tailnet can exit 0 regardless
     r <- run_hosts(w, c(
-      "host_account a ip-a /nonexistent AAAA && echo RC=0 || echo RC=$?",
+      "host_account a cypher@ip-a /nonexistent AAAA && echo RC=0 || echo RC=$?",
       'echo "STATE=${ACC_STATE[a]} FIN=[${ACC_FINISHED[a]}]"'
     ))
     expect_match(r$out, "RC=1", info = nm)
@@ -155,7 +155,7 @@ test_that("a persist with no log table yet has finished nothing, knowably", {
   w <- hosts_world()
   put(w, "ssh_ip-a.out", db_answer(character(0)))
   r <- run_hosts(w, c(
-    "host_account a ip-a /nonexistent AAAA || true",
+    "host_account a cypher@ip-a /nonexistent AAAA || true",
     'echo "STATE=${ACC_STATE[a]}"'
   ))
   expect_match(r$out, "STATE=known", fixed = TRUE)
@@ -165,7 +165,7 @@ test_that("a persist with no log table yet has finished nothing, knowably", {
 account_release <- function(bucket = "") {
   c(
     "for ws in a b; do HOST_HOLD[$ws]=1;",
-    sprintf('host_account $ws ip-$ws /nonexistent "%s" > /dev/null || true; done', bucket),
+    sprintf('host_account $ws cypher@ip-$ws /nonexistent "%s" > /dev/null || true; done', bucket),
     sprintf('for ws in a b; do host_release $ws "%s"; done', bucket)
   )
 }
@@ -212,7 +212,7 @@ test_that("the release probe asks about every group the host ran or finished", {
   r <- run_hosts(w, c(
     "HOST_HOLD[a]=1",
     sprintf(
-      "host_account a ip-a %s BUCK > /dev/null || true",
+      "host_account a cypher@ip-a %s BUCK > /dev/null || true",
       shQuote(file.path(w, "logs", "run_a.log"))
     ),
     'echo "BUCKET=$(host_consolidate_bucket a)"',
@@ -238,7 +238,7 @@ test_that("a lost run_uid still consolidates and holds by the log", {
   put(w, "ssh_ip-a_mc.out", db_answer(character(0)))
   r <- run_hosts(w, c(
     "HOST_HOLD[a]=1",
-    sprintf("host_account a ip-a %s AAAA,BBBB > /dev/null || true", shQuote(log)),
+    sprintf("host_account a cypher@ip-a %s AAAA,BBBB > /dev/null || true", shQuote(log)),
     'echo "BUCKET=$(host_consolidate_bucket a)"',
     "host_release a AAAA,BBBB", "burn_cyphers"
   ), cyphers = "a")
@@ -254,7 +254,7 @@ test_that("a dispatch session that exited non-zero keeps the host", {
   put(w, "ssh_ip-a_streams.out", db_answer(character(0)))
   r <- run_hosts(w, c(
     "HOST_HOLD[a]=1; HOST_RUN_RC[a]=255",
-    "host_account a ip-a /nonexistent AAAA > /dev/null || true",
+    "host_account a cypher@ip-a /nonexistent AAAA > /dev/null || true",
     "host_release a AAAA", "burn_cyphers"
   ), cyphers = "a")
   expect_length(burn_calls(w), 0L)
@@ -276,7 +276,7 @@ test_that("a missing streams table after consolidate is unknown, not empty", {
   put(w, "ssh_ip-a_streams.out", c("__LNK_BEGIN__", "__LNK_NOTABLE__", "__LNK_END__"))
   r <- run_hosts(w, c(
     "HOST_HOLD[a]=1",
-    "host_account a ip-a /nonexistent AAAA > /dev/null || true",
+    "host_account a cypher@ip-a /nonexistent AAAA > /dev/null || true",
     "host_release a AAAA", "burn_cyphers"
   ), cyphers = "a")
   expect_length(burn_calls(w), 0L)
@@ -290,7 +290,7 @@ test_that("a missing log table is a host that has closed nothing", {
   w <- hosts_world()
   put(w, "ssh_ip-a.out", c("__LNK_BEGIN__", "__LNK_NOTABLE__", "__LNK_END__"))
   r <- run_hosts(w, c(
-    "host_finished ip-a && echo RC=0 || echo RC=$?"
+    "host_finished cypher@ip-a && echo RC=0 || echo RC=$?"
   ), cyphers = "a")
   expect_equal(r$out, "RC=0")
 })
@@ -326,7 +326,7 @@ test_that("an unknown finished set is left out of consolidate and keeps the host
   r <- run_hosts(w, c(
     "HOST_HOLD[a]=1",
     sprintf(
-      "host_account a ip-a %s AAAA > /dev/null || true",
+      "host_account a cypher@ip-a %s AAAA > /dev/null || true",
       shQuote(file.path(w, "logs", "run_a.log"))
     ),
     'echo "BUCKET=[$(host_consolidate_bucket a)]"',
@@ -346,7 +346,7 @@ test_that("a database that stops answering after consolidate keeps the host", {
   # no _streams fixture: the release probe gets nothing back
   r <- run_hosts(w, c(
     "HOST_HOLD[a]=1",
-    "host_account a ip-a /nonexistent AAAA > /dev/null || true",
+    "host_account a cypher@ip-a /nonexistent AAAA > /dev/null || true",
     "host_release a AAAA", "burn_cyphers"
   ), cyphers = "a")
   expect_length(burn_calls(w), 0L)
@@ -357,7 +357,7 @@ test_that("the probe goes through docker exec on the host and asks for this run"
   skip_if_no_hosts_lib()
   w <- hosts_world()
   put(w, "ssh_ip-a.out", db_answer("AAAA"))
-  run_hosts(w, "host_finished ip-a > /dev/null", cyphers = "a")
+  run_hosts(w, "host_finished cypher@ip-a > /dev/null", cyphers = "a")
   argv <- readLines(file.path(w, "stub", "ssh_ip-a.argv"))
   expect_match(argv, "cypher@ip-a docker exec -i fresh-db psql -U postgres -d fwapg",
     fixed = TRUE
@@ -458,7 +458,7 @@ test_that("a failed group's partial rows neither hold the host nor get recovered
   put(w, "ssh_ip-a_mc.out", db_answer(character(0)))
   r <- run_hosts(w, c(
     "HOST_HOLD[a]=1",
-    sprintf("host_account a ip-a %s AAAA,BBBB > /dev/null || true", shQuote(log)),
+    sprintf("host_account a cypher@ip-a %s AAAA,BBBB > /dev/null || true", shQuote(log)),
     'echo "BUCKET=$(host_consolidate_bucket a)"',
     "host_release a AAAA,BBBB", "burn_cyphers"
   ), cyphers = "a")
@@ -479,7 +479,7 @@ test_that("mapping-code rows mark a group finished when run_uid and log both fai
   put(w, "ssh_ip-a_mc.out", db_answer("AAAA"))
   r <- run_hosts(w, c(
     "HOST_HOLD[a]=1; HOST_PRE_STATE[a]=known",
-    "host_account a ip-a /nonexistent AAAA > /dev/null || true",
+    "host_account a cypher@ip-a /nonexistent AAAA > /dev/null || true",
     "host_release a AAAA", "burn_cyphers"
   ), cyphers = "a")
   expect_length(burn_calls(w), 0L)
@@ -538,7 +538,7 @@ test_that("mapping-code rows from the image do not count as finished", {
     "HOST_BUCKET[a]=AAAA; host_baseline a",
     'echo "PRE=${HOST_PRE[a]} STATE=${HOST_PRE_STATE[a]}"',
     "HOST_HOLD[a]=1",
-    "host_account a ip-a /nonexistent AAAA > /dev/null || true",
+    "host_account a cypher@ip-a /nonexistent AAAA > /dev/null || true",
     "host_release a AAAA"
   ), cyphers = "a")
   expect_match(r$out, "PRE=AAAA STATE=known", fixed = TRUE)
@@ -569,7 +569,7 @@ test_that("a missing mapping-code table is unknown, not partial", {
   put(w, "ssh_ip-a_mc.out", c("__LNK_BEGIN__", "__LNK_NOTABLE__", "__LNK_END__"))
   r <- run_hosts(w, c(
     "HOST_HOLD[a]=1",
-    "host_account a ip-a /nonexistent AAAA > /dev/null || true",
+    "host_account a cypher@ip-a /nonexistent AAAA > /dev/null || true",
     "host_release a AAAA", "burn_cyphers"
   ), cyphers = "a")
   expect_length(burn_calls(w), 0L)
@@ -584,7 +584,7 @@ test_that("with no baseline, mapping-code rows hold the host but are not recover
   put(w, "ssh_ip-a_mc.out", db_answer("AAAA"))
   r <- run_hosts(w, c(
     "HOST_HOLD[a]=1; HOST_PRE_STATE[a]=unknown",
-    "host_account a ip-a /nonexistent AAAA > /dev/null || true",
+    "host_account a cypher@ip-a /nonexistent AAAA > /dev/null || true",
     "host_release a AAAA", "burn_cyphers"
   ), cyphers = "a")
   expect_length(burn_calls(w), 0L)
@@ -668,8 +668,8 @@ test_that("a driver killed during one host's consolidate sees that host unsettle
   r <- run_hosts(w, c(
     "HOST_HOLD[a]=1; HOST_BUCKET[a]=AAAA; HOST_PRE_STATE[a]=known",
     "HOST_HOLD[b]=1; HOST_BUCKET[b]=BBBB; HOST_PRE_STATE[b]=known",
-    "host_account a ip-a /nonexistent AAAA > /dev/null || true",
-    "host_account b ip-b /nonexistent BBBB > /dev/null || true",
+    "host_account a cypher@ip-a /nonexistent AAAA > /dev/null || true",
+    "host_account b cypher@ip-b /nonexistent BBBB > /dev/null || true",
     "trap burn_cyphers EXIT",
     "( sleep 1; kill -TERM $$ ) &",
     "CONSOLIDATING=a",
@@ -690,7 +690,7 @@ test_that("an unknown group's reason names the rule that made it unknown", {
   put(w, "ssh_ip-a_mc.out", db_answer(character(0)))
   r <- run_hosts(w, c(
     "HOST_HOLD[a]=1; HOST_PRE_STATE[a]=known; HOST_PRE[a]=AAAA",
-    "host_account a ip-a /nonexistent AAAA > /dev/null || true",
+    "host_account a cypher@ip-a /nonexistent AAAA > /dev/null || true",
     "host_release a AAAA", "burn_cyphers"
   ), cyphers = "a")
   k <- kept_tsv(w)

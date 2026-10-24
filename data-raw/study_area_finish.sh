@@ -149,7 +149,7 @@ run_expected_from_file() {
 #                     the recompute whatever the dispatcher's log says: a failure
 #                     after the DELETE can leave log rows copied and streams not.
 # A source is a workspace with a non-empty HOST_BUCKET_DONE (the driver skips the
-# others), matched to its row by host (cypher@<ip>). Returns 1, naming what is
+# others), matched to its row by host (its ssh target, HOST_SSH). Returns 1, naming what is
 # missing, when the file is absent or a source has no row: then nothing says
 # which hosts landed, and the caller must not carry on.
 #
@@ -163,7 +163,7 @@ consolidate_outcomes() {
   for ws in ${CY_WS_ARR[@]+"${CY_WS_ARR[@]}"}; do
     [ -z "$only" ] || [ "$ws" = "$only" ] || continue
     [ -n "${HOST_BUCKET_DONE[$ws]:-}" ] || continue
-    row=$(awk -F'\t' -v h="cypher@${CY_IP[$ws]:-}" 'NR > 1 && $1 == h { print; exit }' "$tsv")
+    row=$(awk -F'\t' -v h="${HOST_SSH[$ws]:-}" 'NR > 1 && $1 == h { print; exit }' "$tsv")
     if [ -z "$row" ]; then
       missing="$missing cy[$ws]"
       continue

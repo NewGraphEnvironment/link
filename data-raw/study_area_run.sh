@@ -1137,7 +1137,7 @@ collect_stamps() {   # $1 = destination tsv
   [ -n "$out" ] || { echo "  ✗ dispatcher returned an empty stamp"; return 1; }
   printf '%s\n' "$out" >> "$tsv"
   for ws in "${CY_WS_ARR[@]}"; do
-    if ! out=$(ssh -o BatchMode=yes -o ConnectTimeout=15 "cypher@${CY_IP[$ws]}" \
+    if ! out=$(ssh -o BatchMode=yes -o ConnectTimeout=15 "${HOST_SSH[$ws]}" \
         "cd ~/Projects/repo/link && export FWAPG_GIT_SHA='${FWAPG_GIT_SHA:-}' && export BCFISHOBS_GIT_SHA='${BCFISHOBS_GIT_SHA:-}' && Rscript data-raw/host_stamp.R '$CONFIG'" 2>/dev/null); then
       echo "  ✗ cy[$ws] stamp failed (ssh or Rscript) — treated as a FAILURE, not a skip"
       return 1
@@ -1199,7 +1199,7 @@ preflight_hosts() {
     # re-runs the fresh export assertion — then re-check exactly once.
     echo "  → --auto-install: reinstalling on cyphers and re-checking once"
     for ws in "${CY_WS_ARR[@]}"; do
-      ssh "cypher@${CY_IP[$ws]}" \
+      ssh "${HOST_SSH[$ws]}" \
         "CYPHER_PREP_BRANCH='$LINK_BRANCH' CYPHER_PREP_STAGE=install bash /tmp/cypher_prep.sh" \
         >> "$LOG_DIR/${TS}_autoinstall.log" 2>&1 \
         || { echo "  ✗ cy[$ws] reinstall failed; see $LOG_DIR/${TS}_autoinstall.log"; fail=1; }
@@ -1221,7 +1221,7 @@ preflight_hosts() {
   # snapshot_bcfp.sh, and this verifies the primitives actually landed
   # rather than trusting the prep sentinel.
   for ws in "${CY_WS_ARR[@]}"; do
-    if ssh -o BatchMode=yes -o ConnectTimeout=15 "cypher@${CY_IP[$ws]}" \
+    if ssh -o BatchMode=yes -o ConnectTimeout=15 "${HOST_SSH[$ws]}" \
          "cd ~/Projects/repo/link && Rscript data-raw/host_vintage.R '$VINTAGE_MAX_DAYS'" \
          >> "$LOG_DIR/${TS}_vintage.log" 2>&1; then
       echo "  ✓ cy[$ws] primitives within ${VINTAGE_MAX_DAYS} d"
@@ -1411,7 +1411,7 @@ if [ "$N_CY" -gt 0 ]; then
     IP=$(cd "$CYPHER_TF" && TF_WORKSPACE="$WS" tofu output -raw droplet_ip 2>/dev/null) \
       || { echo "FATAL: tofu droplet_ip failed for $WS"; exit 1; }
     [ -n "$IP" ] || { echo "FATAL: empty droplet_ip for $WS"; exit 1; }
-    CY_IP[$WS]="$IP"; echo "  cy[$WS] = $IP"
+    CY_IP[$WS]="$IP"; HOST_SSH[$WS]="cypher@$IP"; echo "  cy[$WS] = $IP"
   done
 
   echo "=== prep cyphers (cypher_prep.sh) ==="
@@ -1572,7 +1572,7 @@ for WS in "${CY_WS_ARR[@]}"; do
   # of finished groups. Released only by host_release after consolidate
   # (link#347); until then no exit path burns it.
   HOST_HOLD[$WS]=1
-  IP="${CY_IP[$WS]}"; B_SPACE=$(echo "${HOST_BUCKET[$WS]}" | tr ',' ' ')
+  B_SPACE=$(echo "${HOST_BUCKET[$WS]}" | tr ',' ' ')
   # FWAPG_GIT_SHA is resolved once on the dispatcher (preflight_local) and
   # handed to every host: cyphers have no ~/Projects/repo/fwapg, so without
   # it .lnk_fwapg_sha() returns NA and every cypher row lands with a NULL
@@ -1593,7 +1593,7 @@ for WS in "${CY_WS_ARR[@]}"; do
   # silent link drop would kill the rest of it (link#246).
   phase_begin model "$WS"
   ( mrc=0
-  ssh -o ServerAliveInterval=60 -o ServerAliveCountMax=10 "cypher@$IP" "cd ~/Projects/repo/link && export LNK_SCHEMA='$SCHEMA' && export LNK_GUARD_DOWNSTREAM=warn && export LNK_HABITAT_GATE=0 && export PGOPTIONS='-c statement_timeout=${STATEMENT_TIMEOUT_MIN}min' && export LNK_STATEMENT_TIMEOUT_MIN='$STATEMENT_TIMEOUT_MIN' && export FWAPG_GIT_SHA='${FWAPG_GIT_SHA:-}' && export BCFISHOBS_GIT_SHA='${BCFISHOBS_GIT_SHA:-}' && export LNK_RUN_UID='$RUN_UID' && export LNK_RUN_LABEL='$RUN_LABEL' && export LNK_BCFP_MODEL_VERSION='${LNK_BCFP_MODEL_VERSION:-}' && for w in $B_SPACE; do Rscript data-raw/wsg_run_one.R \$w '$CONFIG' || echo \"[WARN] cy WSG \$w failed\"; done" \
+  ssh -o ServerAliveInterval=60 -o ServerAliveCountMax=10 "${HOST_SSH[$WS]}" "cd ~/Projects/repo/link && export LNK_SCHEMA='$SCHEMA' && export LNK_GUARD_DOWNSTREAM=warn && export LNK_HABITAT_GATE=0 && export PGOPTIONS='-c statement_timeout=${STATEMENT_TIMEOUT_MIN}min' && export LNK_STATEMENT_TIMEOUT_MIN='$STATEMENT_TIMEOUT_MIN' && export FWAPG_GIT_SHA='${FWAPG_GIT_SHA:-}' && export BCFISHOBS_GIT_SHA='${BCFISHOBS_GIT_SHA:-}' && export LNK_RUN_UID='$RUN_UID' && export LNK_RUN_LABEL='$RUN_LABEL' && export LNK_BCFP_MODEL_VERSION='${LNK_BCFP_MODEL_VERSION:-}' && for w in $B_SPACE; do Rscript data-raw/wsg_run_one.R \$w '$CONFIG' || echo \"[WARN] cy WSG \$w failed\"; done" \
     > "$LOG_DIR/${TS}_run_$WS.log" 2>&1 || mrc=$?
   phase_end model "$WS" "$(csv_count "${HOST_BUCKET[$WS]}")" \
     "$([ "$mrc" = "0" ] && echo ok || echo failed)" quiet

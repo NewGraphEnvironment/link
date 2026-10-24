@@ -41,7 +41,7 @@ Needs the worker's ssh target from the operator (kept out of the repo).
 ## Phase 3: The exit-status rule (tests first)
 - [x] `schema_consolidate.R`: `consolidate_remote()` runs every remote command with an rc trailer on stderr, captured per call, and judges by it (tables, columns, newest-log, stage-1 COPY, source cleanup); tests with a stub ssh that exits 0 whatever ran, plus a structural guard that no raw `ssh '` call is left
 - [x] Per-table copy check: stage 2's `COPY n` equals stage 1's line count for a persist table, or the source is not deleted
-- [ ] `HOST_SSH` per host (`cypher@$IP` for cyphers) and `HOST_VIA`; `.hosts_query`, `host_consolidate`, `consolidate_outcomes` and the `cypher@` test stubs move to it
+- [x] `HOST_SSH` per host (`cypher@$IP` for cyphers); `.hosts_query`, `host_consolidate`, `consolidate_outcomes`, the driver's stamp, vintage, auto-install and leg calls and the test fixtures move to it (`HOST_VIA` deferred to Phase 1's measurement of the worker's DB route)
 - [ ] Extract the leg launcher, stamp and vintage probes and auto-install into a lib the tests can source
 - [ ] Leg ssh strings end with an `__LNK_LEG_END__` echo matched unanchored; the wrapper's status is non-zero when ssh failed or the sentinel is absent (feeds `HOST_RUN_RC`); tests
 - [ ] Vintage, auto-install and reachability judged per host on printed sentinels, captured per call; stamps verified sound

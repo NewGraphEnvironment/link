@@ -29,7 +29,8 @@
 #
 # Globals read (set by the driver, or by the test):
 #   SCHEMA RUN_UID TS LOG_DIR CYPHER_DIR CYPHER_TF KEEP_CYPHERS CYPHERS_UP
-#   CY_WS_ARR (array); CY_IP HOST_BUCKET HOST_RUN_RC (assoc, keyed by workspace)
+#   CY_WS_ARR (array); CY_IP HOST_SSH HOST_BUCKET HOST_RUN_RC (assoc, keyed by
+#   workspace; HOST_SSH is the ssh target, cypher@<ip> for a cloud host)
 #   HOST_CONS_FAIL (assoc: the stage at which consolidate failed for a source,
 #   set by consolidate_outcomes in study_area_finish.sh, link#358)
 # Globals written:
@@ -49,7 +50,7 @@
 #
 # Needs bash >= 4 (assoc arrays), as the driver does.
 
-declare -A CY_IP HOST_BUCKET HOST_RUN_RC HOST_HOLD CY_BURNED HOST_UNCONS HOST_PARTIAL HOST_WHY
+declare -A CY_IP HOST_SSH HOST_BUCKET HOST_RUN_RC HOST_HOLD CY_BURNED HOST_UNCONS HOST_PARTIAL HOST_WHY
 declare -A HOST_PRE HOST_PRE_STATE HOST_DOUBT HOST_CONS_FAIL HOST_LEG_DONE HOST_CONS_STATE HOST_BUCKET_DONE
 declare -A ACC_STATE ACC_FINISHED ACC_DONE_LOG ACC_SKIP
 
@@ -68,7 +69,7 @@ declare -A ACC_STATE ACC_FINISHED ACC_DONE_LOG ACC_SKIP
     '\echo __LNK_END__'
 }
 
-# .hosts_query <local|ip> <table> <condition> [strict]: prints the groups, one
+# .hosts_query <local|ssh target> <table> <condition> [strict]: prints the groups, one
 # per line. Returns 0 when the database answered, 1 when it did not. With
 # strict=1 a missing table is "did not answer" too.
 #
@@ -86,7 +87,7 @@ declare -A ACC_STATE ACC_FINISHED ACC_DONE_LOG ACC_SKIP
       -U postgres -d fwapg -X -q -t -A -v ON_ERROR_STOP=1 2>/dev/null) || true
   else
     out=$(.hosts_wsg_sql "$2" "$3" | ssh -o ConnectTimeout=20 -o BatchMode=yes \
-      "cypher@$where" \
+      "$where" \
       'docker exec -i fresh-db psql -U postgres -d fwapg -X -q -t -A -v ON_ERROR_STOP=1' \
       2>/dev/null) || true
   fi
@@ -104,14 +105,14 @@ declare -A ACC_STATE ACC_FINISHED ACC_DONE_LOG ACC_SKIP
     }'
 }
 
-# host_finished <local|ip>: groups whose log row for this run is closed. A
+# host_finished <local|ssh target>: groups whose log row for this run is closed. A
 # persist with no log table yet has closed none (known, empty); the log's done
 # markers still reach the consolidate bucket.
 host_finished() {
   .hosts_query "$1" log "run_uid = '${RUN_UID}' AND date_end IS NOT NULL"
 }
 
-# host_remaining <local|ip> <csv>: which of these groups still have streams
+# host_remaining <local|ssh target> <csv>: which of these groups still have streams
 # rows on the host. Independent of run_uid and date_end. STRICT: every
 # dispatched cypher has <schema>.streams (cypher_prep runs lnk_persist_init),
 # so a missing table means the probe is pointed at the wrong database, schema
@@ -122,7 +123,7 @@ host_remaining() {
   .hosts_query "$1" streams "watershed_group_code IN (${in:-NULL})" 1
 }
 
-# host_complete <local|ip> <csv>: which of these groups have
+# host_complete <local|ssh target> <csv>: which of these groups have
 # streams_mapping_code rows on the host. lnk_pipeline_run() writes them last,
 # after its final persist and the habitat gate (.lnk_mapping_code_persist(),
 # link#349); the pre-persist writes streams, habitat and barriers before access
@@ -141,8 +142,8 @@ host_complete() {
 # run's only if they were not there before. Never fails.
 host_baseline() {
   local ws="$1" pre mc
-  if pre=$(host_remaining "${CY_IP[$ws]:-}" "${HOST_BUCKET[$ws]:-}") && \
-     mc=$(host_complete "${CY_IP[$ws]:-}" "${HOST_BUCKET[$ws]:-}"); then
+  if pre=$(host_remaining "${HOST_SSH[$ws]:-}" "${HOST_BUCKET[$ws]:-}") && \
+     mc=$(host_complete "${HOST_SSH[$ws]:-}" "${HOST_BUCKET[$ws]:-}"); then
     HOST_PRE_STATE[$ws]=known
     HOST_PRE[$ws]=$(.hosts_union "$(printf '%s\n' "$pre" | .hosts_csv)" \
       "$(printf '%s\n' "$mc" | .hosts_csv)")
@@ -207,7 +208,7 @@ host_wait() {
 # nothing, when the host does not answer.
 host_split() {
   local ws="$1" check="$2" left complete fin run_fin run_log db
-  left=$(host_remaining "${CY_IP[$ws]:-}" "$check") || return 1
+  left=$(host_remaining "${HOST_SSH[$ws]:-}" "$check") || return 1
   # This run's own finish signals. Read here when accounting has not run (a
   # report from the EXIT trap): without them a group rebuilt over an image's
   # rows would have no signal left once those rows are discounted.
@@ -215,7 +216,7 @@ host_split() {
     run_fin="${ACC_FINISHED[$ws]:-}"
     run_log="${ACC_DONE_LOG[$ws]:-}"
   else
-    if db=$(host_finished "${CY_IP[$ws]:-}"); then
+    if db=$(host_finished "${HOST_SSH[$ws]:-}"); then
       run_fin=$(printf '%s\n' "$db" | .hosts_csv)
     else
       run_fin=""
@@ -224,7 +225,7 @@ host_split() {
   fi
   left=$(printf '%s\n' "$left" | .hosts_csv)
   if [ -n "$left" ]; then
-    complete=$(host_complete "${CY_IP[$ws]:-}" "$left") || return 1
+    complete=$(host_complete "${HOST_SSH[$ws]:-}" "$left") || return 1
   else
     complete=""
   fi
@@ -272,7 +273,7 @@ host_log_reported() {
 .hosts_minus() { comm -23 <(.hosts_lines "$1") <(.hosts_lines "$2") | .hosts_csv; }
 .hosts_inter() { comm -12 <(.hosts_lines "$1") <(.hosts_lines "$2") | .hosts_csv; }
 
-# host_account <key> <local|ip> <logfile> <expected csv>
+# host_account <key> <local|ssh target> <logfile> <expected csv>
 # <key> is `dispatcher` or a cypher's workspace; ACC_* are keyed by it (plain
 # keys: a subscript holding brackets is fragile). Records the database's
 # finished set, the log's done and SKIP sets, prints one line, and returns 0

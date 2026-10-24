@@ -37,3 +37,7 @@ A third kind of host: a **persistent worker**, reached over ssh, that the driver
 - The model leg's status (`mrc`, then `CY_RUN_RC`) is ssh's rc; `host_release` requires 0.
 - `cypher_prep.sh` stashes and `git reset --hard`s `~/Projects/repo/link`, pak-installs link, rewrites `~/.Renviron`, and runs `lnk_persist_init(force_recreate = TRUE)`: none of these is safe on a persistent machine.
 - `study_area_buckets.R` already takes `--host-speeds`; its labels are `dispatcher (m1)` then `job<N>`.
+
+## A timing-bound legs test (pre-existing)
+
+`test-study_area_legs.R` "a burn mid-run lists no host that is still modelling" gives host a's account and consolidate 3 s to finish before host b's leg copies the kept file. Under load (the Plan review running beside the suites) it failed twice in seven runs; 3/3 green on the branch and 3/3 at HEAD when idle. Not caused by this branch; noted, not widened into scope.
