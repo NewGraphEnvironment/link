@@ -20,6 +20,7 @@ Experimental package — breaking all the time and loving the learning curve. St
 - **`SHOW statement_timeout` normalises the unit (60min reads `1h`),** so compare `pg_settings.setting` in ms, and accept only a value with its unit: Postgres reads a bare `30` as 30 ms.
 - **Parse host logs with `LC_ALL=C` and never fatally:** macOS `sed` aborts on a byte cut mid-glyph in a UTF-8 locale, and under the driver's `set -e` that ended the report.
 - **Owed:** acceptance criterion 2 (a full run at the default bound with no group timing out) waits for the next provincial `default` run.
+- **Provincial run speed is tracked on #377,** one change at a time: an ordered checklist, a measured line per item and a row per run. Every speed issue carries the `speed` label (`gh issue list --label speed`). Shipped as v0.68.2; the next item is #375, the driver recording each phase's times, which every later measurement reads. A machine-specific host plan stays in the private infrastructure repo, not here.
 
 ## Status (2026-10-23, late) — `fresh_default` rebuilt at 0.68.0; a drainage component can be split across hosts (#361)
 
