@@ -16,89 +16,13 @@ hosts_lib <- function() {
 }
 
 # Absent lib (R CMD check, installed tests) skips. A present lib with no
-# bash >= 4 FAILS: the driver needs bash >= 4 too, and nothing in CI runs
+# bash >= 5.1 FAILS: the driver needs bash >= 5.1 too, and nothing in CI runs
 # these, so a silent skip would read as coverage.
 skip_if_no_hosts_lib <- function() {
   testthat::skip_if_not(file.exists(hosts_lib()), "data-raw/study_area_hosts.sh absent")
   if (!nzchar(hosts_bash())) {
-    testthat::fail("no bash >= 4 found; the study_area_hosts.sh tests cannot run")
+    testthat::fail("no bash >= 5.1 found; the study_area_hosts.sh tests cannot run")
   }
-}
-
-# A scratch world: stub binaries, a mock cypher_down.sh, empty dirs for the
-# tofu workspace and the logs.
-hosts_world <- function(env = parent.frame()) {
-  d <- withr::local_tempdir(.local_envir = env)
-  for (sub in c("bin", "stub", "cypher", "tf", "logs")) {
-    dir.create(file.path(d, sub))
-  }
-  stub <- function(name, body) {
-    p <- file.path(d, "bin", name)
-    writeLines(c("#!/bin/sh", body), p)
-    Sys.chmod(p, "755")
-  }
-  # ssh: the host is the cypher@ argument. Records argv and stdin, so a test
-  # can assert the remote route, and answers from that host's fixture: the
-  # `_streams` one for a streams query, the plain one for a log query.
-  stub("ssh", c(
-    'host=""; for a in "$@"; do case "$a" in cypher@*) host="${a#cypher@}" ;; esac; done',
-    sprintf('s="%s/stub/ssh_$host"', d),
-    'printf "%s\\n" "$*" >> "$s.argv"',
-    'in=$(cat); printf "%s\\n" "$in" >> "$s.stdin"',
-    'f="$s.out"',
-    'case "$in" in *".streams_mapping_code WHERE"*) f="${s}_mc.out" ;; esac',
-    'case "$in" in *".streams WHERE"*) f="${s}_streams.out" ;; esac',
-    '[ -f "$f" ] && cat "$f"',
-    '[ -f "$s.rc" ] && exit "$(cat "$s.rc")"',
-    "exit 0"
-  ))
-  stub("psql", c(
-    "cat > /dev/null",
-    sprintf(
-      '[ -f "%s/stub/psql_local.out" ] && cat "%s/stub/psql_local.out"',
-      d, d
-    ),
-    "exit 0"
-  ))
-  # tofu: `state list` prints that workspace's fixture (none = destroyed).
-  stub("tofu", sprintf(
-    '[ -f "%s/stub/tofu_$TF_WORKSPACE.out" ] && cat "%s/stub/tofu_$TF_WORKSPACE.out"; exit 0',
-    d, d
-  ))
-  stub("doctl", sprintf(
-    '[ -f "%s/stub/doctl.out" ] && cat "%s/stub/doctl.out"; exit 0',
-    d, d
-  ))
-  down <- file.path(d, "cypher", "cypher_down.sh")
-  writeLines(
-    c("#!/bin/sh", sprintf('echo "$*" >> "%s/stub/burn_calls"', d)),
-    down
-  )
-  Sys.chmod(down, "755")
-  d
-}
-
-# What host_finished reads back from a host's database.
-db_answer <- function(wsgs) c("__LNK_BEGIN__", wsgs, "__LNK_END__")
-
-put <- function(world, name, lines) {
-  writeLines(lines, file.path(world, "stub", name))
-}
-
-burn_calls <- function(world) {
-  p <- file.path(world, "stub", "burn_calls")
-  if (file.exists(p)) readLines(p) else character(0)
-}
-
-kept_tsv <- function(world) {
-  p <- file.path(world, "logs", "T0_kept_hosts.tsv")
-  if (!file.exists(p)) {
-    return(NULL)
-  }
-  utils::read.delim(p,
-    quote = "", na.strings = character(),
-    comment.char = "", stringsAsFactors = FALSE, colClasses = "character"
-  )
 }
 
 # Run `body` after sourcing the lib with the driver's globals set. Returns the
@@ -731,23 +655,30 @@ test_that("the baseline counts an image's mapping-code rows too", {
   expect_match(r$out, "PRE=AAAA", fixed = TRUE)
 })
 
-test_that("a driver killed during consolidate sees every source host unsettled", {
+test_that("a driver killed during one host's consolidate sees that host unsettled, the other settled", {
+  # Consolidate copies one host at a time since link#369, so CONSOLIDATING
+  # names it; a host already done is measured as it stands.
   skip_if_no_hosts_lib()
   w <- hosts_world()
-  put(w, "ssh_ip-a.out", db_answer("AAAA"))
-  put(w, "ssh_ip-a_streams.out", db_answer("AAAA"))
-  put(w, "ssh_ip-a_mc.out", db_answer("AAAA"))
+  for (h in c("a", "b")) {
+    put(w, sprintf("ssh_ip-%s.out", h), db_answer(toupper(strrep(h, 4))))
+    put(w, sprintf("ssh_ip-%s_streams.out", h), db_answer(toupper(strrep(h, 4))))
+    put(w, sprintf("ssh_ip-%s_mc.out", h), db_answer(toupper(strrep(h, 4))))
+  }
   r <- run_hosts(w, c(
     "CY_HOLD[a]=1; CY_BUCKET[a]=AAAA; CY_PRE_STATE[a]=known",
+    "CY_HOLD[b]=1; CY_BUCKET[b]=BBBB; CY_PRE_STATE[b]=known",
     "host_account a ip-a /nonexistent AAAA > /dev/null || true",
+    "host_account b ip-b /nonexistent BBBB > /dev/null || true",
     "trap burn_cyphers EXIT",
     "( sleep 1; kill -TERM $$ ) &",
-    "CONSOLIDATING=1",
+    "CONSOLIDATING=a",
     "sleep 30",
-    "CONSOLIDATING=0"
-  ), cyphers = "a")
+    "CONSOLIDATING="
+  ))
   k <- kept_tsv(w)
-  expect_equal(k$groups_measured, "unsettled")
+  expect_identical(k$workspace, c("a", "b"))
+  expect_identical(k$groups_measured, c("unsettled", "yes"))
   expect_match(r$out, "consolidate was still running against it", fixed = TRUE)
 })
 

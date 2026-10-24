@@ -31,7 +31,7 @@ finish_driver <- function() {
 skip_if_no_finish_lib <- function() {
   testthat::skip_if_not(file.exists(finish_lib()), "data-raw/study_area_finish.sh absent")
   if (!nzchar(hosts_bash())) {
-    testthat::fail("no bash >= 4 found; the study_area_finish.sh tests cannot run")
+    testthat::fail("no bash >= 5.1 found; the study_area_finish.sh tests cannot run")
   }
 }
 
@@ -726,7 +726,7 @@ test_that("consolidate_state_write records in_flight before, then ok or the fail
   ))
   expect_equal(r$status, 0L, info = r$out)
   before <- utils::read.delim(paste0(p, ".before"), colClasses = "character")
-  expect_identical(names(before), c("wsg", "workspace", "state", "run_uid"))
+  expect_identical(names(before), c("wsg", "workspace", "state", "run_uid", "state_utc"))
   # c reported nothing, so it was never a source and has no rows.
   expect_identical(paste(before$workspace, before$wsg, before$state),
                    c("a CCCC in_flight", "a DDDD in_flight", "b EEEE in_flight"))

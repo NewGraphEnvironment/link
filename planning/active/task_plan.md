@@ -34,19 +34,19 @@
 - [x] Extract `schema_consolidate_backup(schema)`, which checks pg_dump's exit code and the dump's size (B1). `schema_consolidate(backup = TRUE)` calls it, so existing callers are unchanged, and the driver calls it on its own.
 
 ## Phase 3: Per-host consolidate in a new lib, `data-raw/study_area_legs.sh` (tests first)
-- [ ] `CONSOLIDATING` holds the workspace being copied, or nothing. `.hosts_settled <ws>` and `.hosts_unsettled_why` judge only that host as mid-copy.
-- [ ] `consolidate_outcomes <tsv> <ws>` reads one source's row and accumulates `CONS_FAILED` and `CONS_EXCLUDED` across calls.
-- [ ] `consolidate_state_write` writes every host from per-host `CY_CONS_STATE` / `CY_CONS_UTC`, with `state_utc` appended as the fifth column. `run_unconsolidated_from_state` reads both headers. An outcome-less failure stays `in_flight` (review G2, S2).
-- [ ] `burn_cyphers` considers only hosts whose leg ended (`CY_LEG_DONE`) until every leg has ended, so a mid-run burn never reports a modelling host as kept. The trap considers all (G1).
-- [ ] `host_finish_leg <ws>`, in the main shell:
+- [x] `CONSOLIDATING` holds the workspace being copied, or nothing. `.hosts_settled <ws>` and `.hosts_unsettled_why` judge only that host as mid-copy.
+- [x] `consolidate_outcomes <tsv> <ws>` reads one source's row and accumulates `CONS_FAILED` and `CONS_EXCLUDED` across calls.
+- [x] `consolidate_state_write` writes every host from per-host `CY_CONS_STATE` / `CY_CONS_UTC`, with `state_utc` appended as the fifth column. `run_unconsolidated_from_state` reads both headers. An outcome-less failure stays `in_flight` (review G2, S2).
+- [x] `burn_cyphers` considers only hosts whose leg ended (`CY_LEG_DONE`) until every leg has ended, so a mid-run burn never reports a modelling host as kept. The trap considers all (G1).
+- [x] `host_finish_leg <ws>`, in the main shell:
   - account, accumulating `complete_fail`, then `run_wsgs_write`;
   - write the state `in_flight`, then consolidate one source (Rscript, `backup = FALSE`, `verify = FALSE`, per-host log and outcome files), then outcomes, state, `host_release` and `burn_cyphers`;
   - per-host `account`, `consolidate` and `burn` phase rows;
   - an empty bucket skips the copy but still goes through release (O3);
   - an outcome-less failure sets `CY_CONS_FAIL=no_outcome`, is added to `CONS_FAILED` and `CONS_EXCLUDED`, gets no release, and the run carries on;
   - every exit becomes carry-on (G2–G5).
-- [ ] `legs_wait`: a pending list over `wait -n -p` (B4). A cypher whose finished set overlaps the dispatcher's bucket waits in a deferred queue until the dispatcher leg ends (B3). Declare the maps at the top level (G8). `hosts_bash()` is raised to 5.1 with a minor-version check (G10).
-- [ ] Tests (the helper sources the hosts, finish, phases and legs libs):
+- [x] `legs_wait`: a pending list over `wait -n -p` (B4). A cypher whose finished set overlaps the dispatcher's bucket waits in a deferred queue until the dispatcher leg ends (B3). Declare the maps at the top level (G8). `hosts_bash()` is raised to 5.1 with a minor-version check (G10).
+- [x] Tests (the helper sources the hosts, finish, phases and legs libs):
   - the per-host step with a stub `Rscript`;
   - **negative:** a refused source gives a `kept_hosts.tsv` row with the burn command, and the other host is still burned;
   - an outcome-less failure;

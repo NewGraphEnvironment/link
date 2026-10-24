@@ -18,7 +18,7 @@ phases_lib <- function() {
 skip_if_no_phases_lib <- function() {
   testthat::skip_if_not(file.exists(phases_lib()), "data-raw/study_area_phases.sh absent")
   if (!nzchar(hosts_bash())) {
-    testthat::fail("no bash >= 4 found; the study_area_phases.sh tests cannot run")
+    testthat::fail("no bash >= 5.1 found; the study_area_phases.sh tests cannot run")
   }
 }
 
