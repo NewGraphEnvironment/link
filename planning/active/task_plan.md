@@ -48,8 +48,8 @@ On 2026-10-23 (`20261023_074321-24d85e8c`) OKAN sat in one statement (fresh's ne
 - [x] `study_area_finish.sh`: `run_timeouts()` greps the run's host logs for `TIMEOUT` lines. `run_finish_report()` prints them under INCOMPLETE as "timed out (statement bound N min): GROUP — statement".
 
 ## Phase 4: Docs
-- [ ] RUNBOOK §8d: a new subsection, "A runaway statement fails its group (link#371)". It covers the bound, the env var, why `PGOPTIONS` and not a role setting, the 30-min measurement, the recompute's own bound, how a timeout reads in the log and the summary, and the finish path.
-- [ ] RUNBOOK §6 (~l.490): one line saying the modelling legs are now bounded too.
+- [x] RUNBOOK §8d: a new subsection, "A runaway statement fails its group (link#371)". It covers the bound, the env var, why `PGOPTIONS` and not a role setting, the 30-min measurement, the recompute's own bound, how a timeout reads in the log and the summary, and the finish path.
+- [x] RUNBOOK §6 (~l.490): one line saying the modelling legs are now bounded too.
 
 ## Owed at the end (reported, done after merge)
 - [ ] A full provincial run at the default bound completes with no group timing out (acceptance criterion 2; it needs the next `default` run).

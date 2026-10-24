@@ -491,7 +491,9 @@ a falls and a gradient barrier that round to one metre), and each copy joins the
   long-running DB op** (`SET statement_timeout = '600000'; SET lock_timeout =
   '60000'`) — a runaway cancels server-side instead of orphaning, and a
   blocked DROP VIEW fails fast instead of wedging. `data-raw/wsg_recompute_one.R`
-  sets these on its conn for exactly this reason.
+  sets these on its conn for exactly this reason. The modelling legs of
+  `study_area_run.sh` are bounded too, through `PGOPTIONS` (§8d, "A runaway
+  statement fails its group").
 - **AOI-scoping streams to a VIEW (not a real table) makes the planner pick
   the wrong join driver.** Caught 2026-05-25 (link#205): scoping
   `fresh.streams` to one WSG via `CREATE VIEW … WHERE wsg = 'FINA'` left
@@ -1492,6 +1494,52 @@ open log row **on the dispatcher**. That row is never closed, so verify reports
 the group as started and never finished, even after the re-run succeeds. In
 #246 the open rows were on the cloud hosts, so it did not show.
 Tests: `tests/testthat/test-study_area_finish.R`, on a scratch schema.
+
+### A runaway statement fails its group (link#371)
+
+On 2026-10-23 OKAN sat 4 h in one statement (fresh's near-river walk,
+`CREATE TEMP TABLE pg_temp.frs_near_river_walk AS …`), and the cloud hosts
+idled on it. The same statement on the same tables took 59 s afterwards, so
+the stall was neither the SQL nor the data. Nothing bounded a statement, and
+the operator found it in `pg_stat_activity`. Now each modelling statement is
+bounded, and one that runs past the bound fails its group like any other
+error, which the path above already handles.
+
+- **The bound:** `--statement-timeout=<minutes>`, default 30, 1 to 1440, with
+  no unbounded mode. The driver sets it as
+  `PGOPTIONS='-c statement_timeout=<N>min'` on **both** modelling legs: the
+  local leg (after any `PGOPTIONS` the operator set) and the ssh command string.
+  This is the both-legs rule `LNK_GUARD_DOWNSTREAM` and `LNK_RUN_UID` follow.
+  libpq reads `PGOPTIONS` at connect, so the bound reaches every connection of
+  the run and nothing else. The 2026-10-23 fix, `ALTER ROLE postgres SET
+  statement_timeout`, reached every session on the host and had to be reset.
+- **Why 30:** the longest group that finished on 2026-10-23 took 16.3 min in
+  total (SETN, then LNAR 13.8 and BULK 13.7; `fresh_default.log`), and no
+  statement outlasts its group.
+- **The recompute is not given it.** `wsg_recompute_one.R` keeps its own
+  `SET statement_timeout = 10 min` and `lock_timeout = 1 min` (§6). A session
+  `SET` overrides `PGOPTIONS` either way, and the driver does not export it
+  there.
+- **What a host log shows:** each group prints
+  `[wsg_run_one] <WSG> statement_timeout=30min`, so a leg that missed the bound
+  shows `0` on its first group. A cancelled statement prints
+  `[wsg_run_one] <WSG> TIMEOUT after 30min: <statement>`, the SQL taken from
+  the stack in a calling handler (`.lnk_timeout_statement()`; fresh's bare
+  `dbExecute` leaves it out of the error), then the usual
+  `[WARN] … failed (continuing)`. The log row stays open with notes, as for
+  any failed build.
+- **What the summary shows:** the group is in the "no rows" (or "earlier or
+  partial") class, and under it `statement bound hit:` lists each such group
+  with its statement (`run_timeouts`, read from the run_uid's
+  `<ts>_run_*.log`). Recover as above: re-model the group under the run_uid,
+  then `--recompute-only`. A group still timing out on a re-model is a real
+  slow statement: re-model it with a larger `PGOPTIONS` bound by hand, and look
+  at `pg_stat_activity` while it runs.
+- **Exercising it:** `LNK_TEST_STALL_WSG=<WSG>` makes that group's
+  `wsg_run_one.R` run `SELECT pg_sleep(3600)` first. It works on the local leg
+  only (it is not passed over ssh), and `wsg_run_one.R` refuses it when no
+  bound is in effect. With `--statement-timeout=1` the group fails after a
+  minute, and the run carries on.
 
 ### Which host may be burned (link#347)
 
