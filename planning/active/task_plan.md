@@ -59,11 +59,11 @@
   - Update test-study_area_hosts.R:734-750 and test-study_area_finish.R:646 and :687-713 (G9).
 
 ## Phase 4: Wire the driver
-- [ ] Before the spin: `lnk_persist_init` the dispatcher's schema (`cfg$species`, no force_recreate; B1, B2), then the backup in the background through spin and prep. The dispatcher leg waits for it, and a failure is fatal before any dispatch (O1). Only when cyphers are in the run (A4).
-- [ ] Then launch the cypher legs and the dispatcher leg, then `legs_wait`, then the dispatcher's `host_account` and a final `burn_cyphers`. Remove the single consolidate and burn blocks.
-- [ ] Phase rows: a `backup` phase name in the phases lib, per-host `consolidate` / `burn` rows, and `phases_report` printing the consolidate tail (last consolidate end minus last model end; AC1), with `test-study_area_phases.R`.
-- [ ] Update the structural tests, then `bash -n` and shellcheck if installed.
-- [ ] Update the driver header (burn on each leg's end, the backup timing and why, `--keep-cyphers` = consolidate on finish without burning) and the bash ≥ 5.1 check.
+- [x] Before the spin: `lnk_persist_init` the dispatcher's schema (`cfg$species`, no force_recreate; B1, B2), then the backup in the background through spin and prep. The dispatcher leg waits for it, and a failure is fatal before any dispatch (O1). Only when cyphers are in the run (A4).
+- [x] Then launch the cypher legs and the dispatcher leg, then `legs_wait`, then the dispatcher's `host_account` and a final `burn_cyphers`. Remove the single consolidate and burn blocks.
+- [x] Phase rows: a `backup` phase name in the phases lib, per-host `consolidate` / `burn` rows, and `phases_report` printing the consolidate tail (last consolidate end minus last model end; AC1), with `test-study_area_phases.R`.
+- [x] Update the structural tests, then `bash -n` and shellcheck if installed (shellcheck is not installed on m1; `bash -n` clean on all five scripts).
+- [x] Update the driver header (burn on each leg's end, the backup timing and why, `--keep-cyphers` = consolidate on finish without burning) and the bash ≥ 5.1 check.
 
 ## Phase 5: Live check on little groups (operator's ask)
 - [ ] **Run A:** dispatcher plus job1 and job2, from a worktree. Config `default`, scratch schema `fresh_smoke369`, `--buckets-exact`. Pick small groups from the 2026-10-23 minutes so that job1 ends first, job2 second and the dispatcher last. State the decisions, launch, and poll against a deadline.

@@ -303,3 +303,13 @@ test_that("a state record with link#358's four-column header is still read", {
                 legs = c(a = 0), disp = 0)
   expect_match(r$out, "U=[BBBB]", fixed = TRUE)
 })
+
+test_that("a dispatcher-only run waits for its one leg and consolidates nothing", {
+  skip_if_no_legs_lib()
+  w <- legs_world()
+  r <- run_legs(w, c("legs_wait", 'echo "DISP_RC=[$DISP_RC]"'),
+                legs = stats::setNames(numeric(0), character(0)), disp = 0.3)
+  expect_equal(r$status, 0L, info = r$out)
+  expect_match(r$out, "DISP_RC=[0]", fixed = TRUE)
+  expect_false(file.exists(file.path(w, "stub", "cons_calls")))
+})
