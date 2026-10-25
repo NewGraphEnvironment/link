@@ -1794,7 +1794,7 @@ speed change is measured off a file, run after run (#377).
 |----|----|
 | `run_uid` | the run’s uid; under `--recompute-only`, the uid of the run it finishes |
 | `phase` | below |
-| `host` | `dispatcher` or a cypher workspace; blank for a run-wide phase |
+| `host` | `dispatcher`, a cypher workspace or a worker’s key (`worker1`, …); blank for a run-wide phase |
 | `start_utc`, `end_utc` | ISO 8601, UTC |
 | `minutes` | end − start, one decimal |
 | `groups` | groups the phase covered; blank where it covers none |
@@ -1817,12 +1817,14 @@ speed change is measured off a file, run after run (#377).
   - `account`, per host: completeness from each database, a cypher’s as
     soon as its leg ends, the dispatcher’s after every leg. `failed`
     when the host did not account for its bucket.
-  - `consolidate`, per cypher: its copy and the release that reads it
-    again, as soon as its leg ends (link#369). `failed` when it copied
-    nothing or its consolidate failed; skipped with no cyphers.
+  - `consolidate`, per remote host: its copy and the release that reads
+    it again, as soon as its leg ends (link#369); for a worker, also the
+    drop of its partial groups (link#376). `failed` when it copied
+    nothing or its consolidate failed; skipped with no remote hosts.
   - `burn`, per cypher: the burn right after its release, not the EXIT
     trap’s. `failed` when the host was free to burn and is still up. A
-    held host is the kept-hosts report’s to name.
+    held host is the kept-hosts report’s to name. A worker’s row is
+    always `skipped`.
   - `coverage`: `failed` when a run group has no rows from this run.
   - `views`: the log-table step and `barriers_views_build.R`.
   - `recompute`: the pool, ordering and judge included; skipped when
@@ -1994,10 +1996,11 @@ rules now, all in `data-raw/study_area_hosts.sh`:
   that is most likely a host an earlier run kept, and `cypher_up` would
   adopt it. Others warn, except the long-lived default `cypher`.
 
-To recover a kept host: run its `ip_command`, consolidate its `groups`
-with
-`schema_consolidate(schema = <schema>, sources = list(list(host = "cypher@<ip>", via = "docker", bucket = c(...))))`,
-then run its `burn_command`. **Only `groups`, never `groups_partial` or
+To recover a kept host: run its `ip_command` (a worker’s is the
+`--workers=` target the operator gave), consolidate its `groups` with
+`schema_consolidate(schema = <schema>, sources = list(list(host = "cypher@<ip>", via = "docker", bucket = c(...))))`
+(a worker: `host = "<its target>"`), then run its `burn_command` (a
+worker has none). **Only `groups`, never `groups_partial` or
 `groups_unknown`, and only where `groups_measured` is `yes`**: `groups`
 is then the finished work still on the host. `unsettled` means wait
 until nothing runs there and re-measure. `schema_consolidate` deletes
@@ -2029,6 +2032,124 @@ dispatched cypher has both. Tests:
 stubbed ssh, psql, tofu and doctl, and
 `tests/testthat/test-study_area_legs.R` runs `legs_wait` over real
 background legs of different lengths with a stub consolidate.
+
+### Persistent workers (link#376)
+
+A third kind of host: a machine that already exists and stays up,
+reached over ssh, which the driver neither spins nor burns.
+`--workers=<ssh target>,...`, one `--focal=` list per worker after the
+dispatcher’s and before the cyphers’ (`study_area_buckets.R --workers=N`
+prints them in that order). Each is keyed `worker1..N` in the order
+given, and the key is all a log, `phases.tsv` or `kept_hosts.tsv`
+records: the target is the operator’s infrastructure, and
+`remote_redact_targets` replaces it with `<workerN>` in the run’s logs.
+
+- **What it must be.** A target of `A-Z a-z 0-9 . _ @ -`, not starting
+  with `-` (an ssh option), not `local` (the hosts lib’s name for the
+  dispatcher’s database), given once. Before any spend it must answer
+  over ssh and hold its own database:
+  `pg_control_system().system_identifier` differs from the dispatcher’s
+  and every other worker’s. A worker on the dispatcher’s own database
+  would model into the dispatcher’s persist, and consolidate would
+  delete a bucket there and copy it back from the same, now empty,
+  table. Once the buckets resolve, its schema must hold no `streams` or
+  `streams_mapping_code` rows for a group of its bucket. The driver only
+  reads them: they may be that machine’s own builds, so remove them
+  deliberately or give the run another `--schema=`.
+  `--preflight-only --workers=` runs the reach and identity checks.
+- **Prep** is `data-raw/worker_prep.sh`, piped over ssh, so no older
+  copy is left on a machine that stays up. It owns one clone,
+  `~/Projects/repo/link_worker`, cloned on first use and reset to
+  `origin/<run branch>` every prep, and never touches the worker’s own
+  checkout. link runs from it by load_all, so the link installed there
+  for every other session is never replaced. It installs nothing,
+  reloads no primitives or discharge and recreates no table: fresh is
+  asserted, the config’s discharge (and wet load, which must be the
+  dispatcher’s) is checked, and
+  [`lnk_persist_init()`](https://newgraphenvironment.github.io/link/reference/lnk_persist_init.md)
+  runs without `force_recreate`. Vintage and parity are the host
+  pre-flight’s, as for a cypher.
+- **What the worker sets for R is refused.** R reads `~/.Renviron` after
+  the environment, so a line there beats anything the driver exports
+  (measured 2026-10-24), and an empty export does not clear it. Prep
+  refuses every variable the leg exports (`REMOTE_LEG_VARS`, held to
+  `remote_leg_cmd`’s exports by a test), every `LNK_*` (all link reads;
+  `LNK_HOST_ALIAS`, which only names the host, excepted), and the pins
+  `LINK_GIT_SHA`, `LINK_GIT_DIRTY`, `FWAPG_GIT_SHA`, `BCFISHOBS_GIT_SHA`
+  and `PGOPTIONS`. A `FRESH_GIT_SHA` must be the installed fresh’s
+  `RemoteSha`, and `FRESH_GIT_DIRTY` may only be `false` beside it.
+  Under load_all link’s sha comes from the clone’s git. `--auto-install`
+  on a worker installs fresh at DESCRIPTION’s `Remotes:` pin and
+  re-checks once; it refuses while a `FRESH_GIT_SHA` pin is set, which
+  would outlive the install.
+- **Primitives and fresh are the operator’s to bring current, once,**
+  because both are shared with the machine’s other sessions. Measured on
+  the first worker (2026-10-25): fresh by `--auto-install` (or
+  `worker_prep.sh`’s `install-fresh` stage), and the snapshot by
+  `bash -lc 'cd ~/Projects/repo/link_worker/data-raw && export PGUSER=postgres PGPASSWORD=postgres PGHOST=localhost PGPORT=5432 PGDATABASE=fwapg LNK_LOAD=loadall && bash snapshot_bcfp.sh --with-bcfp-views --force'`
+  over ssh. A login shell, because a non-interactive ssh command on
+  macOS gets PATH `/usr/local/bin:/usr/bin:/bin`, without `psql`,
+  `ogr2ogr` or `bcdata`. The leg itself needs only `Rscript`, `git` and
+  `docker`, which resolve there. Evidence: `data-raw/logs/worker_376/`.
+- **The leg** is a cypher’s (`remote_leg_cmd`, the same exports), run
+  from the clone with `LNK_LOAD=loadall`. Before each group it checks
+  the clone’s HEAD against the run’s commit, and runs no group once it
+  has moved (a second run’s prep, a hand `git checkout`): each group
+  loads the code afresh.
+- **After its leg:** account, consolidate and release, as for a cypher
+  (`host_finish_leg`). Then no burn: consolidate already deleted what it
+  copied, and a released worker’s partial groups (failed builds whose
+  pre-persist left rows, `HOST_PARTIAL`) are dropped from its persist
+  tables (`host_drop_partials`), so the next run’s prior-rows check
+  finds it clean. Their log rows stay, because the open row is the only
+  record of the failure. The drop runs only on a settled worker whose
+  rows before dispatch were known and empty, never on unknown-provenance
+  groups. A drop that does not finish leaves rows, and the next run
+  refuses the worker: it fails closed.
+- **Consolidate and the drop touch link’s tables only**
+  (`consolidate_link_tables()`: the persist tables and the log tables).
+  A persist schema can hold others: in `fresh` the snapshot primitives
+  (`modelled_stream_crossings`) and the bcfp reference
+  (`streams_vw_bcfp`, `crossings_vw_bcfp`) carry `watershed_group_code`
+  too. Before link#376 consolidate copied them as well, putting a
+  source’s primitive rows over the dispatcher’s for its bucket, and step
+  5 deleted them from the source: harmless on a cypher about to be
+  burned, not on a worker.
+- **Redaction** covers the target, the host part of `user@host`, the
+  HostName ssh resolves an alias to (`ssh -G`), and the name the worker
+  gives itself (`=== host` from prep, which its stamp row carries),
+  including right after `<user>@` (ssh’s failure line). A held worker’s
+  leg can write ssh’s closing lines after the trap redacted its log:
+  redact it again before committing.
+- **Held, it is kept and reported** like a cypher, with no droplet,
+  address or burn command, also on a run with no cyphers (`WORKERS_UP`).
+  `--keep-cyphers` keeps cloud hosts only.
+- **Speed.** A worker’s `--host-speeds` value is measured: its minutes
+  per group against the dispatcher’s on the same mid-size groups, by
+  host (read `<schema>.log` by `host`; `--minutes-schema`’s newest row
+  per group mixes hosts, and small groups are dominated by per-group
+  overhead).
+
+### A remote status is what the remote shell prints (link#376)
+
+Some ssh servers exit 0 whatever the remote command returned; Tailscale
+SSH to macOS does. So no exit status the driver acts on is read from
+`ssh`. ssh’s own non-zero status (it could not connect, or the link
+dropped) still wins, and the rule holds for cyphers too, which loses
+nothing.
+
+| call | verdict from |
+|----|----|
+| stamp, vintage, auto-install, reachability (`remote_run`, `data-raw/study_area_remote.sh`) | `__LNK_RC__=<n>` printed after the command, run in a subshell so an `exit` still reaches it; none printed is 255 |
+| the modelling leg (`remote_leg_cmd`, `remote_leg_status`) | `__LNK_LEG_END__`, printed after the loop inside the braces its `cd` guards, matched anywhere on a line; absent, the leg failed and the host is not released |
+| every consolidate call (`consolidate_remote()`, `schema_consolidate.R`) | the same trailer on stderr, captured per call, so it stays out of a COPY’s data on stdout |
+| a persist table’s copy | psql’s `COPY n` must equal the lines sent, or the table is not copied and its source rows stay |
+| database probes, prior rows, identity, partial drop (`.hosts_psql`) | `__LNK_BEGIN__` / `__LNK_END__` framing, as since link#347 |
+
+Before link#376 a COPY that died part-way on such a host loaded its
+partial file, and with the bucket’s rows still rising, consolidate
+deleted the source. The bucket total cannot see one table landing short
+while the others land, which is why the per-table count exists.
 
 ### Host buckets are derived, not chosen
 
