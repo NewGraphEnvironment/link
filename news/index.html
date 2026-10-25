@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.68.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.68.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,9 +32,21 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/v0.68.5/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.68.5" id="link-0685">link 0.68.5<a class="anchor" aria-label="anchor" href="#link-0685"></a></h2>
+<p><strong><code>study_area_run.sh --workers=&lt;ssh target&gt;,...</code> adds persistent workers</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/376" class="external-link">#376</a>): machines that exist and stay up, modelled beside the dispatcher and the cloud hosts, consolidated and released when their own leg ends, and never burned.</p>
+<ul><li>
+<strong>Every remote status is read from what the remote shell prints, for cloud hosts as well.</strong> Tailscale SSH to macOS returns 0 whatever ran. <code>data-raw/study_area_remote.sh</code> and <code>consolidate_remote()</code> judge each probe, prep, leg and consolidate call on a printed trailer or end marker. This closes a data-loss path: a per-table COPY that died part-way was loaded, and while the bucket’s total still rose, the source was deleted. A persist table’s load must now also take as many rows as were sent.</li>
+<li>
+<strong>A worker is prepped by <code>data-raw/worker_prep.sh</code></strong>, piped over ssh, from a clone the driver owns (<code>~/Projects/repo/link_worker</code>). The leg runs link by load_all, so the worker’s own checkout and installed link are never touched. Before any spend, a worker must answer, hold its own database and hold no rows for its bucket. Prep refuses what the worker sets for R that would beat the run’s exports, because a <code>~/.Renviron</code> line wins over an exported variable.</li>
+<li>
+<strong>Consolidate and the worker’s partial drop take link’s own tables only</strong> (<code>consolidate_link_tables()</code>). In <code>fresh</code> they also reached the snapshot primitives and the bcfp reference.</li>
+<li>
+<code>study_area_buckets.R --workers=N</code> packs onto workers; the CY_* maps keyed by any remote host are now HOST_*. Mechanics: RUNBOOK §8d. Evidence: <code>data-raw/logs/worker_376/</code>, three runs on a real worker. The provincial-scale acceptance (<a href="https://github.com/NewGraphEnvironment/link/issues/377" class="external-link">#377</a>’s runs row) is owed.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.68.4" id="link-0684">link 0.68.4<a class="anchor" aria-label="anchor" href="#link-0684"></a></h2>
 <p><strong>Each cloud host is consolidated and burned as soon as its own leg ends</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/369" class="external-link">#369</a>), while the other legs keep modelling. Before this, every host waited for the slowest leg and one consolidate of all of them.</p>

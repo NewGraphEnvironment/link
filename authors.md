@@ -13,21 +13,21 @@
 ## Citation
 
 Source:
-[`inst/CITATION`](https://github.com/NewGraphEnvironment/link/blob/main/inst/CITATION)
+[`inst/CITATION`](https://github.com/NewGraphEnvironment/link/blob/v0.68.5/inst/CITATION)
 
 Irvine A (2026). *link: Develop, Test and Communicate Intrinsic Habitat
 and Connectivity Models for the BC Freshwater Atlas Stream Network*. New
 Graph Environment Ltd.
 [doi:10.5281/zenodo.23264990](https://doi.org/10.5281/zenodo.23264990).
-Version 0.68.4, <https://github.com/NewGraphEnvironment/link>.
+Version 0.68.5, <https://github.com/NewGraphEnvironment/link>.
 
     @Manual{link,
       title = {link: Develop, Test and Communicate Intrinsic Habitat and Connectivity Models for the BC Freshwater Atlas Stream Network},
       author = {Allan Irvine},
       organization = {New Graph Environment Ltd.},
       year = {2026},
-      version = {0.68.4},
-      note = {Version 0.68.4},
+      version = {0.68.5},
+      note = {Version 0.68.5},
       url = {https://github.com/NewGraphEnvironment/link},
       doi = {10.5281/zenodo.23264990},
     }
