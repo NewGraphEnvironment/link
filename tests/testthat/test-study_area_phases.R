@@ -254,8 +254,10 @@ test_that("each model and prep leg re-raises its own exit status after writing i
   drv_path <- testthat::test_path("..", "..", "data-raw", "study_area_run.sh")
   testthat::skip_if_not(file.exists(drv_path), "data-raw/study_area_run.sh absent")
   drv <- readLines(drv_path)
-  # Two model legs (the local one and the ssh one), one prep leg.
-  expect_length(grep("|| mrc=$?", drv, fixed = TRUE), 2L)
+  # Two model legs (the local one and the ssh one), one prep leg. The ssh leg
+  # reads its status twice: ssh's, then its end marker's (link#376).
+  expect_length(grep("|| mrc=$?", drv, fixed = TRUE), 3L)
+  expect_length(grep('remote_leg_status "$mrc" "$LOG_DIR/${TS}_run_$WS.log"', drv, fixed = TRUE), 1L)
   # Each wrapper sends its own output to its leg's log, never the driver's
   # stdout, which it would otherwise hold open for the whole leg.
   expect_length(grep('^  exit "\\$mrc" \\) >> "\\$LOG_DIR/\\$\\{TS\\}_run_[^"]+\\.log" 2>&1 &$', drv), 2L)
@@ -263,12 +265,13 @@ test_that("each model and prep leg re-raises its own exit status after writing i
   expect_length(grep('^  \\( cd "\\$REPO_ROOT" \\|\\| exit 1$', drv), 1L)
   # The backup's subshell, likewise (link#369).
   expect_length(grep('^    \\( cd "\\$REPO_ROOT" \\|\\| exit 1$', drv), 1L)
-  expect_length(grep("|| prc=$?", drv, fixed = TRUE), 1L)
-  expect_length(grep('exit "$prc" ) >> "$LOG_DIR/${TS}_prep_$WS.log" 2>&1 &', drv, fixed = TRUE), 1L)
+  # Two prep legs: the cyphers' and the workers' (link#376).
+  expect_length(grep("|| prc=$?", drv, fixed = TRUE), 2L)
+  expect_length(grep('exit "$prc" ) >> "$LOG_DIR/${TS}_prep_$WS.log" 2>&1 &', drv, fixed = TRUE), 2L)
   # quiet in a subshell (the two model legs and the backup, link#369), then
   # forgotten and printed by the parent after its wait.
   expect_length(grep("echo failed)\" quiet", drv, fixed = TRUE), 3L)
-  expect_length(grep('phase_end prep "$WS" "" "$pst" quiet', drv, fixed = TRUE), 1L)
+  expect_length(grep('phase_end prep "$WS" "" "$pst" quiet', drv, fixed = TRUE), 2L)
   expect_length(grep("phase_forget backup; phase_print backup", drv, fixed = TRUE), 1L)
   # The legs are waited on by legs_wait (study_area_legs.sh), which forgets
   # and prints each leg's row as it returns.

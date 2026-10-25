@@ -3,7 +3,7 @@
 # recompute over those, the compare, and the final report (link#348). Sourced
 # by study_area_run.sh after study_area_hosts.sh, and by
 # tests/testthat/test-study_area_finish.R. Sourcing defines functions and
-# declares CY_BUCKET_DONE (re-declaring keeps its contents), nothing else.
+# declares HOST_BUCKET_DONE (re-declaring keeps its contents), nothing else.
 #
 # The rule (link#348): one failed group does not cost the others their
 # recompute. Coverage used to `exit 1` on the first run group with no
@@ -20,9 +20,9 @@
 # Globals read: SCHEMA RUN_UID CONFIG TS LOG_DIR REPO_ROOT RECOMPUTE_JOBS
 #   RUN_INCOMPLETE RECOMPUTE_FAIL RECOMPUTE_FAIL_STAGE (initialised by the
 #   driver); with a default: KEPT_CAUSE_N RUN_LABEL KEPT_TSV_GROUPS; run_expected_from_hosts
-#   also reads DISP_BUCKET CY_WS_ARR CY_BUCKET CY_BUCKET_DONE ACC_FINISHED
-#   ACC_DONE_LOG ACC_SKIP; run_wsgs_write reads DISP_BUCKET CY_WS_ARR
-#   CY_BUCKET ACC_SKIP
+#   also reads DISP_BUCKET HOST_ARR HOST_BUCKET HOST_BUCKET_DONE ACC_FINISHED
+#   ACC_DONE_LOG ACC_SKIP; run_wsgs_write reads DISP_BUCKET HOST_ARR
+#   HOST_BUCKET ACC_SKIP
 # Functions read: .hosts_query host_finished .hosts_* (study_area_hosts.sh);
 #   csv_count recompute_order run_recompute_pool (study_area_run.sh);
 #   phase_begin phase_end phase_skip phases_report (study_area_phases.sh),
@@ -31,15 +31,15 @@
 #   COV_UNCONS COV_MISSING RUN_WSGS ALL_WSGS COMPARE_CSV COMPARE_FAIL RUN_INCOMPLETE
 #   RECOMPUTE_FAIL RECOMPUTE_FAIL_STAGE RECOMPUTE_RAN; run_expected_from_hosts
 #   writes RUN_EXPECT RUN_SIGNALS RUN_SKIP; consolidate_outcomes writes
-#   CONS_FAILED CONS_EXCLUDED CY_CONS_FAIL (declared in study_area_hosts.sh);
-#   consolidate_state_write reads CY_WS_ARR CY_BUCKET_DONE CY_CONS_FAIL
-#   CY_CONS_STATE CY_CONS_UTC;
+#   CONS_FAILED CONS_EXCLUDED HOST_CONS_FAIL (declared in study_area_hosts.sh);
+#   consolidate_state_write reads HOST_ARR HOST_BUCKET_DONE HOST_CONS_FAIL
+#   HOST_CONS_STATE HOST_CONS_UTC;
 #   run_expected_recompute_only writes RO_EXPECT RO_EXCLUDED; run_timeouts
 #   writes TIMED_OUT TIMEOUT_LINES RUN_BOUND
 #
 # Needs bash >= 4, as the driver does.
 
-declare -A CY_BUCKET_DONE CY_CONS_STATE CY_CONS_UTC
+declare -A HOST_BUCKET_DONE HOST_CONS_STATE HOST_CONS_UTC
 
 # run_expected_from_hosts: what a full run expects, and what it already knows
 # finished, from the per-host accounting (study_area_hosts.sh). Sets:
@@ -51,7 +51,7 @@ declare -A CY_BUCKET_DONE CY_CONS_STATE CY_CONS_UTC
 #   RUN_SIGNALS  finish signals beyond the dispatcher's log rows: its `done`
 #                markers and each cypher's consolidated bucket (database ∪
 #                log done), which is what consolidate took. They only add. A
-#                cypher whose consolidate failed (CY_CONS_FAIL) adds nothing:
+#                cypher whose consolidate failed (HOST_CONS_FAIL) adds nothing:
 #                consolidate did not take its bucket (link#358). It still
 #                finished those groups, so they are never RUN_SKIP: they stay
 #                expected, and coverage classes them not_consolidated.
@@ -61,12 +61,12 @@ run_expected_from_hosts() {
   skip="${ACC_SKIP[dispatcher]:-}"
   RUN_SIGNALS=$(.hosts_union "${ACC_FINISHED[dispatcher]:-}" "${ACC_DONE_LOG[dispatcher]:-}")
   finished="$RUN_SIGNALS"
-  for ws in "${CY_WS_ARR[@]}"; do
-    all=$(.hosts_union "$all" "${CY_BUCKET[$ws]:-}")
+  for ws in "${HOST_ARR[@]}"; do
+    all=$(.hosts_union "$all" "${HOST_BUCKET[$ws]:-}")
     skip=$(.hosts_union "$skip" "${ACC_SKIP[$ws]:-}")
-    finished=$(.hosts_union "$finished" "${CY_BUCKET_DONE[$ws]:-}")
-    [ -n "${CY_CONS_FAIL[$ws]:-}" ] || \
-      RUN_SIGNALS=$(.hosts_union "$RUN_SIGNALS" "${CY_BUCKET_DONE[$ws]:-}")
+    finished=$(.hosts_union "$finished" "${HOST_BUCKET_DONE[$ws]:-}")
+    [ -n "${HOST_CONS_FAIL[$ws]:-}" ] || \
+      RUN_SIGNALS=$(.hosts_union "$RUN_SIGNALS" "${HOST_BUCKET_DONE[$ws]:-}")
   done
   RUN_SKIP=$(.hosts_minus "$skip" "$finished")
   RUN_EXPECT=$(.hosts_minus "$all" "$RUN_SKIP")
@@ -93,8 +93,8 @@ run_wsgs_write() {
     for w in $(.hosts_lines "${DISP_BUCKET:-}"); do
       printf '%s\t%s\t%s\t%s\t%s\n' "$w" dispatcher "$(.run_wsgs_skip dispatcher "$w")" "$RUN_UID" "$mode"
     done
-    for ws in ${CY_WS_ARR[@]+"${CY_WS_ARR[@]}"}; do
-      for w in $(.hosts_lines "${CY_BUCKET[$ws]:-}"); do
+    for ws in ${HOST_ARR[@]+"${HOST_ARR[@]}"}; do
+      for w in $(.hosts_lines "${HOST_BUCKET[$ws]:-}"); do
         printf '%s\t%s\t%s\t%s\t%s\n' "$w" "$ws" "$(.run_wsgs_skip "$ws" "$w")" "$RUN_UID" "$mode"
       done
     done
@@ -142,14 +142,14 @@ run_expected_from_file() {
 # refuses or fails on, so the other sources ARE on the dispatcher; one refused
 # source (dest_log_newer, which a single group can trigger) used to end the run
 # before coverage and the recompute. For each source that is not ok:
-#   CY_CONS_FAIL[ws]  the stage, which host_release names when it keeps the host
+#   HOST_CONS_FAIL[ws]  the stage, which host_release names when it keeps the host
 #                     and run_expected_from_hosts reads to drop its signals;
 #   CONS_FAILED       the workspaces, space-separated;
 #   CONS_EXCLUDED     their consolidated buckets, which run_finish keeps out of
 #                     the recompute whatever the dispatcher's log says: a failure
 #                     after the DELETE can leave log rows copied and streams not.
-# A source is a workspace with a non-empty CY_BUCKET_DONE (the driver skips the
-# others), matched to its row by host (cypher@<ip>). Returns 1, naming what is
+# A source is a workspace with a non-empty HOST_BUCKET_DONE (the driver skips the
+# others), matched to its row by host (its ssh target, HOST_SSH). Returns 1, naming what is
 # missing, when the file is absent or a source has no row: then nothing says
 # which hosts landed, and the caller must not carry on.
 #
@@ -160,21 +160,21 @@ consolidate_outcomes() {
   local tsv="$1" only="${2:-}" ws row ok stage groups missing=""
   [ -n "$only" ] || { CONS_FAILED=""; CONS_EXCLUDED=""; }
   [ -r "$tsv" ] || { echo "  ✗ no consolidate outcomes at $tsv"; return 1; }
-  for ws in ${CY_WS_ARR[@]+"${CY_WS_ARR[@]}"}; do
+  for ws in ${HOST_ARR[@]+"${HOST_ARR[@]}"}; do
     [ -z "$only" ] || [ "$ws" = "$only" ] || continue
-    [ -n "${CY_BUCKET_DONE[$ws]:-}" ] || continue
-    row=$(awk -F'\t' -v h="cypher@${CY_IP[$ws]:-}" 'NR > 1 && $1 == h { print; exit }' "$tsv")
+    [ -n "${HOST_BUCKET_DONE[$ws]:-}" ] || continue
+    row=$(awk -F'\t' -v h="${HOST_SSH[$ws]:-}" 'NR > 1 && $1 == h { print; exit }' "$tsv")
     if [ -z "$row" ]; then
-      missing="$missing cy[$ws]"
+      missing="$missing $(.hosts_label "$ws")"
       continue
     fi
     IFS=$'\t' read -r _ ok stage groups <<< "$row"
     [ "$ok" = "TRUE" ] && continue
-    CY_CONS_FAIL[$ws]="${stage:-unknown}"
+    HOST_CONS_FAIL[$ws]="${stage:-unknown}"
     CONS_FAILED="${CONS_FAILED:+$CONS_FAILED }$ws"
-    CONS_EXCLUDED=$(.hosts_union "$CONS_EXCLUDED" "${CY_BUCKET_DONE[$ws]}")
-    echo "  ✗ cy[$ws]: consolidate failed at stage ${CY_CONS_FAIL[$ws]}; its bucket is not consolidated: ${CY_BUCKET_DONE[$ws]}"
-    [ "${CY_CONS_FAIL[$ws]}" != "dest_log_newer" ] || \
+    CONS_EXCLUDED=$(.hosts_union "$CONS_EXCLUDED" "${HOST_BUCKET_DONE[$ws]}")
+    echo "  ✗ $(.hosts_label "$ws"): consolidate failed at stage ${HOST_CONS_FAIL[$ws]}; its bucket is not consolidated: ${HOST_BUCKET_DONE[$ws]}"
+    [ "${HOST_CONS_FAIL[$ws]}" != "dest_log_newer" ] || \
       echo "    the dispatcher's newest log row is not this host's for: ${groups:-?} (nothing was deleted or copied)"
   done
   if [ -n "$missing" ]; then
@@ -188,28 +188,28 @@ consolidate_outcomes() {
 # asked to take (wsg, workspace, state, run_uid, state_utc), so a
 # --recompute-only knows which groups may sit half-copied on the dispatcher
 # (link#358). Written `in_flight` BEFORE a copy and rewritten once it has an
-# outcome, with `ok`, or `failed:<stage>` for a source in CY_CONS_FAIL. If a
+# outcome, with `ok`, or `failed:<stage>` for a source in HOST_CONS_FAIL. If a
 # consolidate dies with no outcome, its `in_flight` rows stay, so the record
 # fails closed: absence of a failure is never inferred from a file that was
 # written only after the risky step. Temp file + mv.
 #
-# Without <state>, each host's own state (CY_CONS_STATE, and CY_CONS_UTC for
+# Without <state>, each host's own state (HOST_CONS_STATE, and HOST_CONS_UTC for
 # state_utc): the driver consolidates each host when its own leg ends
 # (link#369), so hosts sit in different states, and a host not yet
 # consolidated has no rows. A host whose consolidate ended with no outcome
-# (CY_CONS_FAIL no_outcome) stays in_flight. With <state>, every source in it,
+# (HOST_CONS_FAIL no_outcome) stays in_flight. With <state>, every source in it,
 # as before.
 consolidate_state_write() {
   local path="$1" state="${2:-}" ws w st
   {
     printf 'wsg\tworkspace\tstate\trun_uid\tstate_utc\n'
-    for ws in ${CY_WS_ARR[@]+"${CY_WS_ARR[@]}"}; do
-      st="${state:-${CY_CONS_STATE[$ws]:-}}"
+    for ws in ${HOST_ARR[@]+"${HOST_ARR[@]}"}; do
+      st="${state:-${HOST_CONS_STATE[$ws]:-}}"
       [ -n "$st" ] || continue
-      [ -z "${CY_CONS_FAIL[$ws]:-}" ] || [ "${CY_CONS_FAIL[$ws]}" = "no_outcome" ] \
-        || st="failed:${CY_CONS_FAIL[$ws]}"
-      for w in $(.hosts_lines "${CY_BUCKET_DONE[$ws]:-}"); do
-        printf '%s\t%s\t%s\t%s\t%s\n' "$w" "$ws" "$st" "$RUN_UID" "${CY_CONS_UTC[$ws]:-}"
+      [ -z "${HOST_CONS_FAIL[$ws]:-}" ] || [ "${HOST_CONS_FAIL[$ws]}" = "no_outcome" ] \
+        || st="failed:${HOST_CONS_FAIL[$ws]}"
+      for w in $(.hosts_lines "${HOST_BUCKET_DONE[$ws]:-}"); do
+        printf '%s\t%s\t%s\t%s\t%s\n' "$w" "$ws" "$st" "$RUN_UID" "${HOST_CONS_UTC[$ws]:-}"
       done
     done
   } > "$path.tmp" && mv "$path.tmp" "$path"
@@ -726,10 +726,10 @@ run_finish_report() {
         # finish a group outside its bucket, and a failed consolidate source
         # puts that group in COV_MISSING (#358, code-check round 3).
         local ws held="" on_kept remodel
-        for ws in ${CY_WS_ARR[@]+"${CY_WS_ARR[@]}"}; do
-          if [ "${CY_HOLD[$ws]:-0}" = "1" ]; then
-            held=$(.hosts_union "$held" "${CY_BUCKET[$ws]:-}" "${ACC_FINISHED[$ws]:-}" \
-              "${ACC_DONE_LOG[$ws]:-}" "${CY_UNCONS[$ws]:-}")
+        for ws in ${HOST_ARR[@]+"${HOST_ARR[@]}"}; do
+          if [ "${HOST_HOLD[$ws]:-0}" = "1" ]; then
+            held=$(.hosts_union "$held" "${HOST_BUCKET[$ws]:-}" "${ACC_FINISHED[$ws]:-}" \
+              "${ACC_DONE_LOG[$ws]:-}" "${HOST_UNCONS[$ws]:-}")
           fi
         done
         # --recompute-only has no hosts of its own; it reads the groups an

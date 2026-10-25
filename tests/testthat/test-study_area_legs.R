@@ -104,11 +104,12 @@ run_legs <- function(world, body, legs = c(a = 1), disp = 2, buckets = NULL,
     'CONS_STATE="$LOG_DIR/T0_consolidate_state.tsv"; RUN_WSGS_TSV="$LOG_DIR/T0_run_wsgs.tsv"',
     'phases_init "$LOG_DIR/T0_phases.tsv"',
     sprintf("DISP_BUCKET=%s", disp_bucket),
-    sprintf("CY_WS_ARR=(%s)", paste(cy, collapse = " ")),
-    sprintf('CY_IP[%s]="ip-%s"; CY_HOLD[%s]=1; CY_BUCKET[%s]=%s; CY_PRE_STATE[%s]=known',
-            cy, cy, cy, cy, buckets[cy], cy),
+    sprintf("HOST_ARR=(%s)", paste(cy, collapse = " ")),
+    sprintf(paste0('CY_IP[%s]="ip-%s"; HOST_SSH[%s]="cypher@ip-%s"; HOST_HOLD[%s]=1; ',
+                   "HOST_BUCKET[%s]=%s; HOST_PRE_STATE[%s]=known"),
+            cy, cy, cy, cy, cy, cy, buckets[cy], cy),
     leg("dispatcher", disp), "LOCAL_PID=$!",
-    unlist(lapply(cy, function(h) c(leg(h, legs[[h]]), sprintf("CY_LEG_PID[%s]=$!", h)))),
+    unlist(lapply(cy, function(h) c(leg(h, legs[[h]]), sprintf("HOST_LEG_PID[%s]=$!", h)))),
     body
   ), script)
   out <- withr::with_envvar(
@@ -210,7 +211,7 @@ test_that("a consolidate with no outcome keeps its host and its groups in_flight
     legs_host(w, "a", "AAAA")
     legs_host(w, "b", "BBBB")
     put(w, "cons_ip-a.mode", mode)
-    r <- run_legs(w, c("legs_wait", 'echo "FAILED=[$CONS_FAILED] EXCL=[$CONS_EXCLUDED] HOLD=[${CY_HOLD[a]}]"'),
+    r <- run_legs(w, c("legs_wait", 'echo "FAILED=[$CONS_FAILED] EXCL=[$CONS_EXCLUDED] HOLD=[${HOST_HOLD[a]}]"'),
                   legs = c(a = 0.3, b = 0.6), disp = 0.1)
     expect_equal(r$status, 0L, info = r$out)
     # b, after a, is still consolidated and burned.
@@ -266,7 +267,7 @@ test_that("a leg pid wait cannot report ends that leg, not the driver", {
   skip_if_no_legs_lib()
   w <- legs_world()
   legs_host(w, "b", "BBBB")
-  r <- run_legs(w, c("CY_LEG_PID[a]=1", "legs_wait", 'echo "DONE RC_A=${CY_RUN_RC[a]}"'),
+  r <- run_legs(w, c("HOST_LEG_PID[a]=1", "legs_wait", 'echo "DONE RC_A=${HOST_RUN_RC[a]}"'),
                 legs = c(a = 0.1, b = 0.5), disp = 0.2)
   expect_equal(r$status, 0L, info = r$out)
   expect_match(r$out, "DONE RC_A=127", fixed = TRUE)
@@ -328,9 +329,9 @@ test_that("the consolidate program is what consolidate_outcomes reads", {
   writeLines(prog, file.path(w, "prog.R"))
   rc <- suppressWarnings(system2(rscript, file.path(w, "prog.R"), stdout = FALSE, stderr = FALSE))
   expect_equal(rc, 1L)
-  r <- run_legs(w, c("CY_BUCKET_DONE[a]=CCCC,DDDD",
+  r <- run_legs(w, c("HOST_BUCKET_DONE[a]=CCCC,DDDD",
                      sprintf("consolidate_outcomes %s a", shQuote(tsv)),
-                     'echo "FAILED=$CONS_FAILED STAGE=${CY_CONS_FAIL[a]}"'),
+                     'echo "FAILED=$CONS_FAILED STAGE=${HOST_CONS_FAIL[a]}"'),
                 legs = c(a = 0), disp = 0)
   expect_match(r$out, "FAILED=a STAGE=dest_log_newer", fixed = TRUE)
 })
@@ -370,4 +371,25 @@ test_that("the dispatcher's accounting does not claim the groups copied in from 
   expect_equal(r$status, 0L, info = r$out)
   expect_match(r$out, "FIN=[ZZZZ]", fixed = TRUE)
   expect_false(grepl("outside its bucket", r$out, fixed = TRUE))
+})
+
+# -- A persistent worker beside a cloud host (link#376) ----------------------
+
+test_that("a worker's leg is consolidated and released, never burned", {
+  skip_if_no_legs_lib()
+  w <- legs_world()
+  legs_host(w, "a", "AAAA")
+  legs_host(w, "b", "BBBB")
+  r <- run_legs(w, c("HOST_KIND[b]=worker; WORKERS_UP=1", "legs_wait"),
+                legs = c(a = 0.3, b = 0.6), disp = 0.1)
+  expect_equal(r$status, 0L, info = r$out)
+  expect_identical(burn_calls(w), "--workspace a")
+  expect_null(kept_tsv(w))
+  expect_match(r$out, "b: no finished group left on the host after consolidate — may be released",
+               fixed = TRUE)
+  expect_match(r$out, "=== b: leg ended (exit 0); account, consolidate, release ===", fixed = TRUE)
+  ph <- utils::read.delim(file.path(w, "logs", "T0_phases.tsv"), colClasses = "character")
+  expect_identical(ph$status[ph$phase == "burn" & ph$host == "b"], "skipped")
+  expect_identical(ph$status[ph$phase == "consolidate" & ph$host == "b"], "ok")
+  expect_identical(ph$status[ph$phase == "burn" & ph$host == "a"], "ok")
 })

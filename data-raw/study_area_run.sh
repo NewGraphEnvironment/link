@@ -8,9 +8,17 @@
 # 3-WSG smoke validated (link#175).
 #
 # Host model: the local machine is the dispatcher (M1) and the consolidate
-# destination; cyphers are the remote workers. No M4, no `ssh m1`, no bcfp
-# tunnel (`:63333`/PG_PASS_SHARE) — the compare reference is the LOCAL bcfp
+# destination. Two kinds of remote host model beside it: cyphers, cloud hosts
+# the driver spins, preps and burns, and persistent workers (--workers=,
+# link#376), machines that exist and stay up, prepped by worker_prep.sh,
+# consolidated and released but never burned. No bcfp tunnel
+# (`:63333`/PG_PASS_SHARE) — the compare reference is the LOCAL bcfp
 # snapshot fresh.streams_vw_bcfp (snapshot_bcfp.sh --with-bcfp-views).
+#
+# Every remote status is read from what the remote shell prints, never from
+# ssh's exit status: some ssh servers (Tailscale SSH to macOS) exit 0
+# whatever the remote command returned (link#376; data-raw/study_area_remote.sh,
+# RUNBOOK §8d, "A remote status is what the remote shell prints").
 #
 # Cross-WSG `;DAM` correctness WITHOUT a post-consolidate recompute: each
 # host gets a DRAINAGE-CLOSED bucket (focal WSGs + every WSG they drain
@@ -20,8 +28,10 @@
 #
 # Usage:
 #   bash data-raw/study_area_run.sh \
+#     [--workers=<ssh target>,...] \
 #     --cy-workspaces=job1,job2 \
 #     --focal=<dispatcher focal csv> \
+#     [--focal=<worker1 focal csv> ...] \
 #     --focal=<cy1 focal csv> \
 #     --focal=<cy2 focal csv> \
 #     [--config=bcfishpass] [--schema=<persist-schema>] [--keep-cyphers] \
@@ -39,9 +49,9 @@
 # between hosts' lists is FATAL in this mode: it is operator error, not a
 # closure property. Without the flag the closure buckets below apply.
 #
-# The number of --focal flags MUST equal 1 (dispatcher) + N cyphers, in
-# order: first --focal -> dispatcher, the rest -> cyphers in --cy-workspaces
-# order. Put the LARGEST area on the dispatcher (first --focal): it is the
+# The number of --focal flags MUST equal 1 (dispatcher) + N workers + N
+# cyphers, in order: first --focal -> dispatcher, then the workers in
+# --workers order, then the cyphers in --cy-workspaces order. Put the LARGEST area on the dispatcher (first --focal): it is the
 # fast, free local host, while cyphers are slower + paid — give them the
 # smaller areas so they finish + burn sooner. Each cypher is accounted,
 # consolidated and burned as soon as its own leg ends, while the other legs
@@ -83,10 +93,20 @@
 # "Where a run's time went").
 #
 # Extra flags:
+#   --workers=<target>,...  persistent workers (link#376), each an ssh target
+#                           the operator owns (A-Z a-z 0-9 . _ @ -), keyed
+#                           worker1..N in that order; the key, never the
+#                           target, reaches the logs. Each must answer and hold
+#                           its own database, and its --schema must hold no
+#                           rows for its bucket. Modelled from a clone the
+#                           driver owns (~/Projects/repo/link_worker) by
+#                           load_all; never burned (RUNBOOK §8d, "Persistent
+#                           workers").
 #   --preflight-only        run the local gates and exit (no spend)
 #   --refresh-primitives    snapshot_bcfp.sh --force first (default off)
 #   --auto-install          on a parity mismatch, re-run the cyphers'
-#                           install stage and re-check once
+#                           install stage (a worker: install fresh at the
+#                           DESCRIPTION pin) and re-check once
 #   --vintage-max-days=N    primitive staleness window (default 7)
 #   --recompute-jobs=N      width of the post-consolidate recompute pool
 #                           (default 4, max 16). The recompute was >50% of
@@ -208,10 +228,13 @@ RUN_UID_ARG=""
 WSGS_ARG=""
 # --buckets-exact: each --focal= list is taken as the host's bucket (link#361).
 BUCKETS_EXACT=0
+# --workers=: persistent hosts reached by their own ssh targets (link#376).
+WORKERS_ARG=""
 FOCAL_ARR=()
 for arg in "$@"; do
   case "$arg" in
     --cy-workspaces=*) CY_WS="${arg#--cy-workspaces=}" ;;
+    --workers=*)       WORKERS_ARG="${arg#--workers=}" ;;
     --buckets-exact)   BUCKETS_EXACT=1 ;;
     --config=*)        CONFIG="${arg#--config=}" ;;
     --schema=*)        SCHEMA_OVERRIDE="${arg#--schema=}"
@@ -307,10 +330,10 @@ done
 if [ "$RECOMPUTE_ONLY" = "1" ]; then
   [ -n "$RUN_UID_ARG" ] || {
     echo "FATAL: --recompute-only needs --run-uid=<uid> of the run to finish" >&2; exit 1; }
-  if [ "${#FOCAL_ARR[@]}" -gt 0 ] || [ -n "$CY_WS" ] || [ "$PREFLIGHT_ONLY" = "1" ] \
+  if [ "${#FOCAL_ARR[@]}" -gt 0 ] || [ -n "$CY_WS" ] || [ -n "$WORKERS_ARG" ] || [ "$PREFLIGHT_ONLY" = "1" ] \
      || [ "$REFRESH_PRIMITIVES" = "1" ] || [ "$AUTO_INSTALL" = "1" ] || [ "$BUCKETS_EXACT" = "1" ] \
      || [ "$STATEMENT_TIMEOUT_SET" = "1" ]; then
-    echo "FATAL: --recompute-only takes no --focal, --cy-workspaces, --preflight-only," >&2
+    echo "FATAL: --recompute-only takes no --focal, --cy-workspaces, --workers, --preflight-only," >&2
     echo "  --refresh-primitives, --auto-install, --buckets-exact or --statement-timeout:" >&2
     echo "  it dispatches nothing." >&2
     exit 1
@@ -334,20 +357,63 @@ done
 # --preflight-only needs no --focal set: it exits before the buckets are
 # resolved, and demanding them would make the cheap dry check as awkward as
 # the real thing.
-if [ "$PREFLIGHT_ONLY" = "0" ] && [ "$RECOMPUTE_ONLY" = "0" ]; then
-  IFS=',' read -ra CY_WS_ARR <<< "$CY_WS"
-  [ -n "$CY_WS" ] || CY_WS_ARR=()
-  N_CY=${#CY_WS_ARR[@]}
-  N_FOCAL=${#FOCAL_ARR[@]}
-  EXPECT=$((N_CY + 1))
-  if [ "$N_FOCAL" -ne "$EXPECT" ]; then
-    echo "FATAL: need exactly $EXPECT --focal flags (1 dispatcher + $N_CY cyphers); got $N_FOCAL" >&2
+case "$CY_WS" in
+  *$'\n'*) echo "FATAL: --cy-workspaces= holds a newline" >&2; exit 1 ;;
+esac
+IFS=',' read -ra CY_WS_ARR <<< "$CY_WS"
+[ -n "$CY_WS" ] || CY_WS_ARR=()
+N_CY=${#CY_WS_ARR[@]}
+# Persistent workers (link#376): each target is an ssh destination the
+# operator owns. It is pasted into ssh command lines and into R source, so the
+# charset is restricted; a leading `-` would be an ssh option, `local` is the
+# hosts lib's name for the dispatcher's own database, and a target given twice
+# would model and consolidate one database as two hosts. Each worker is keyed
+# worker1..N in the order given: the key, never the target, is what the logs,
+# phases.tsv and kept-hosts record (the target is infrastructure identity).
+# `read` stops at a newline, which would silently drop every target after it.
+case "$WORKERS_ARG" in
+  *$'\n'*) echo "FATAL: --workers= takes ssh targets of A-Z a-z 0-9 . _ @ - (not starting with -, not 'local'); it holds a newline" >&2; exit 1 ;;
+esac
+IFS=',' read -ra WK_TARGETS <<< "$WORKERS_ARG"
+[ -n "$WORKERS_ARG" ] || WK_TARGETS=()
+N_WK=${#WK_TARGETS[@]}
+WK_KEYS=()
+for i in "${!WK_TARGETS[@]}"; do
+  t="${WK_TARGETS[$i]}"
+  # [[ =~ ]] anchors on the whole value; grep -x would pass one with an
+  # embedded newline whose first line fits (code-check round 2).
+  if ! [[ "$t" =~ ^[A-Za-z0-9][A-Za-z0-9._@-]*$ ]] || [ "$t" = "local" ]; then
+    echo "FATAL: --workers= takes ssh targets of A-Z a-z 0-9 . _ @ - (not starting with -, not 'local'); worker $((i + 1)) is not one" >&2
     exit 1
   fi
-else
-  IFS=',' read -ra CY_WS_ARR <<< "$CY_WS"
-  [ -n "$CY_WS" ] || CY_WS_ARR=()
-  N_CY=${#CY_WS_ARR[@]}
+  for k in "${!WK_TARGETS[@]}"; do
+    [ "$k" -lt "$i" ] && [ "${WK_TARGETS[$k]}" = "$t" ] && {
+      echo "FATAL: --workers= names worker $((i + 1)) twice (as worker $((k + 1)) too)" >&2; exit 1; }
+  done
+  WK_KEYS+=("worker$((i + 1))")
+done
+for ws in ${CY_WS_ARR[@]+"${CY_WS_ARR[@]}"}; do
+  if [[ "$ws" =~ ^(worker[0-9]+|dispatcher)$ ]]; then
+    echo "FATAL: --cy-workspaces= may not name '$ws', which keys a worker or the dispatcher" >&2
+    exit 1
+  fi
+done
+# Every remote host, workers first: the --focal= lists follow this order.
+HOST_ARR=(${WK_KEYS[@]+"${WK_KEYS[@]}"} ${CY_WS_ARR[@]+"${CY_WS_ARR[@]}"})
+N_HOSTS=${#HOST_ARR[@]}
+if [ "$PREFLIGHT_ONLY" = "0" ] && [ "$RECOMPUTE_ONLY" = "0" ]; then
+  N_FOCAL=${#FOCAL_ARR[@]}
+  EXPECT=$((N_HOSTS + 1))
+  if [ "$N_FOCAL" -ne "$EXPECT" ]; then
+    echo "FATAL: need exactly $EXPECT --focal flags (1 dispatcher + $N_WK workers + $N_CY cyphers, in that order); got $N_FOCAL" >&2
+    exit 1
+  fi
+fi
+# The stall hook (link#371) reaches remote legs too (link#376), so it is
+# checked here, before anything runs, as well as where it is used.
+if [ -n "${LNK_TEST_STALL_WSG:-}" ] && ! [[ "$LNK_TEST_STALL_WSG" =~ ^[A-Z]{4}$ ]]; then
+  echo "FATAL: LNK_TEST_STALL_WSG must be one four-letter group code" >&2
+  exit 1
 fi
 
 # --- persist-schema guard (link#246) ---
@@ -377,6 +443,23 @@ CYPHER_TF="$HOME/Projects/repo/rtj/env/do/dev/cypher"
 # dispatcher's current branch. The branch MUST be pushed to origin first —
 # cypher_prep does `git fetch origin && git reset --hard origin/$BRANCH`.
 LINK_BRANCH="$(git -C "$REPO_ROOT" branch --show-current)"
+# Git allows quotes, `$` and backticks in a branch name, and the branch is
+# pasted into remote command strings (cypher_prep, worker_prep): refuse what
+# could close a quote (link#376).
+# Only where a remote host is sent it: a dispatcher-only run passes it nowhere.
+if [ "$N_HOSTS" -gt 0 ] && ! [[ "$LINK_BRANCH" =~ ^[A-Za-z0-9._/-]+$ ]]; then
+  echo "FATAL: the branch name holds a character the remote command strings cannot carry" >&2
+  exit 1
+fi
+# The commit every host must model: a worker's leg checks its clone's HEAD
+# against it before each group (link#376).
+RUN_SHA="$(git -C "$REPO_ROOT" rev-parse HEAD)"
+# Where a worker clones link from: origin, as https for GitHub (the repo is
+# public, and a worker may hold no key for it).
+ORIGIN_URL="$(git -C "$REPO_ROOT" remote get-url origin 2>/dev/null || true)"
+case "$ORIGIN_URL" in
+  git@github.com:*) ORIGIN_URL="https://github.com/${ORIGIN_URL#git@github.com:}" ;;
+esac
 
 # Resolve persist schema: --schema= overrides the config's YAML default
 # (e.g. for side-by-side bundle compares: --config=default --schema=fresh_default
@@ -402,6 +485,10 @@ else
   # The name-based guard above is the real one and covers every config.
 fi
 [ -n "$SCHEMA" ] || { echo "FATAL: could not resolve persist schema for --config=$CONFIG"; exit 1; }
+# A schema taken from the config's YAML was not seen by the --schema= check,
+# and it reaches the remote command strings too (link#376).
+[[ "$SCHEMA" =~ ^[A-Za-z0-9_]+$ ]] \
+  || { echo "FATAL: the persist schema of --config=$CONFIG is not a bare name" >&2; exit 1; }
 export LNK_SCHEMA="$SCHEMA"
 
 # Where the config reads discharge (link#331): every host needs that table,
@@ -468,6 +555,7 @@ echo "  config:       $CONFIG"
 echo "  branch:       $LINK_BRANCH (cyphers run this ref)"
 echo "  persist:      $SCHEMA"
 echo "  cyphers:      ${CY_WS_ARR[*]:-<none>} ($N_CY)"
+echo "  workers:      ${WK_KEYS[*]:-<none>} ($N_WK; persistent, never burned)"
 echo "  log dir:      $LOG_DIR"
 echo "  vintage max:  ${VINTAGE_MAX_DAYS} d"
 echo "  recompute -j: $RECOMPUTE_JOBS"
@@ -500,6 +588,10 @@ source "$REPO_ROOT/data-raw/study_area_phases.sh"
 # Each cypher consolidated and burned when its own leg ends (link#369).
 # shellcheck source=study_area_legs.sh
 source "$REPO_ROOT/data-raw/study_area_legs.sh"
+# Remote commands judged by what they print, never by ssh's exit status
+# (link#376).
+# shellcheck source=study_area_remote.sh
+source "$REPO_ROOT/data-raw/study_area_remote.sh"
 PHASES_TSV=""
 if [ "$PREFLIGHT_ONLY" = "0" ]; then
   phases_init "$LOG_DIR/${TS}_phases.tsv"
@@ -507,11 +599,18 @@ if [ "$PREFLIGHT_ONLY" = "0" ]; then
   phase_begin prep "" "$PHASE_RUN_START"
 fi
 CYPHERS_UP=0
+WORKERS_UP=0
+for i in "${!WK_KEYS[@]}"; do
+  HOST_KIND[${WK_KEYS[$i]}]=worker
+  HOST_SSH[${WK_KEYS[$i]}]="${WK_TARGETS[$i]}"
+done
+# What to redact from the run's logs for each worker (link#376).
+remote_redact_init
 KEPT_N=0
 KEPT_CAUSE_N=0
 RECOMPUTE_RAN=0
 CONSOLIDATING=0
-# The lib declares every map the trap reads (CY_IP and CY_BUCKET included,
+# The lib declares every map the trap reads (CY_IP and HOST_BUCKET included,
 # filled further down), so it is sourced here, at the top level, before the
 # trap exists.
 
@@ -540,6 +639,11 @@ redact_log_addresses() {
     perl -i -pe 's/(?<![\d.])(?!0\.0\.0\.0)(?!127\.0\.0\.1)(?!0\.0\.0\.9)(\d{1,3}\.){3}\d{1,3}(?![\d.])/<host>/g' \
       "$f" 2>/dev/null && n=$((n + 1))
   done
+  # And each worker's ssh target, replaced by its key (link#376).
+  for f in "$LOG_DIR"/"${TS:-}"_* "$LOG_DIR"/"${TS:-}"_*/*; do
+    [ -f "$f" ] || continue
+    remote_redact_targets "$f"
+  done
   [ "$n" -gt 0 ] && echo "  ✓ redacted host addresses in $n log file(s)"
   return 0
 }
@@ -553,6 +657,19 @@ on_exit() {
   phases_close_open || true
   [ "${PHASES_REPORTED:-0}" = "1" ] || phases_report || true
   burn_cyphers || rc=$?
+  # A worker's prep still running (the run died during the cyphers' spin)
+  # would keep writing ssh's output into its log after the redaction below
+  # (link#376): stop it first. Its remote side may finish; it holds nothing.
+  # Only pids still this shell's jobs: the list is cleared once the preps are
+  # waited on, and a reaped pid may since be another session's process.
+  local pid live
+  live=" $(jobs -p | tr '\n' ' ') "
+  for pid in ${WK_PREP_PIDS[@]+"${WK_PREP_PIDS[@]}"}; do
+    case "$live" in *" $pid "*) ;; *) continue ;; esac
+    pkill -P "$pid" 2>/dev/null || true
+    kill "$pid" 2>/dev/null || true
+    wait "$pid" 2>/dev/null || true
+  done
   redact_log_addresses
   return $rc
 }
@@ -819,8 +936,9 @@ quit(status = if (isTRUE(res$ok)) 0L else 1L)
   # --- gate: branch pushed + worktree clean (link#246) --------------------
   # Cyphers do `git fetch origin && git reset --hard origin/$BRANCH`
   # (cypher_prep.sh). Anything unpushed does not exist on them, and the host
-  # silently runs older driver scripts against a newer dispatcher.
-  if [ "$N_CY" -gt 0 ]; then
+  # silently runs older driver scripts against a newer dispatcher. A worker
+  # resets its clone the same way (worker_prep.sh, link#376).
+  if [ "$N_HOSTS" -gt 0 ]; then
     # Fetch FIRST: @{upstream} is a LOCAL ref, so without this the check
     # compares against a stale copy and is a false green. And a FAILED fetch
     # leaves exactly that stale ref, so it cannot be waved through with
@@ -868,8 +986,8 @@ quit(status = if (isTRUE(res$ok)) 0L else 1L)
   local dirty
   if dirty=$(git -C "$REPO_ROOT" status --porcelain -- ':(top,exclude)data-raw/logs' 2>/dev/null); then
     if [ -n "$dirty" ]; then
-      if [ "$N_CY" -gt 0 ]; then
-        echo "  ✗ dispatcher checkout dirty; cyphers reset to origin/$LINK_BRANCH and cannot see it"
+      if [ "$N_HOSTS" -gt 0 ]; then
+        echo "  ✗ dispatcher checkout dirty; remote hosts reset to origin/$LINK_BRANCH and cannot see it"
         fail=1
       else
         echo "  WARN: dispatcher checkout dirty — log.link_sha will not describe what ran"
@@ -1017,6 +1135,12 @@ cat(if (is.null(v)) "" else v$model_version)
     echo "  WARN: no bcfp baseline row for this host — bcfp_model_version will"
     echo "        be NULL on every row. Run: bash data-raw/snapshot_bcfp.sh --with-bcfp-views"
   fi
+  # It is pasted into every remote leg's command, from the ledger or from the
+  # operator's own environment: a whole-value check, as for --run-label.
+  if [ -n "${LNK_BCFP_MODEL_VERSION:-}" ] && ! [[ "$LNK_BCFP_MODEL_VERSION" =~ ^[A-Za-z0-9._+-]+$ ]]; then
+    echo "  ✗ the bcfp model version is not a plain version string; it cannot be sent to remote hosts"
+    fail=1
+  fi
 
   # --- gate: the config's discharge table on the dispatcher (link#331) -----
   if (cd "$REPO_ROOT" && LNK_LOAD=loadall Rscript -e '
@@ -1116,6 +1240,68 @@ q(status = if (res$ok) 0L else 1L)' "$CONFIG" 2>&1 | sed 's/^/    /'; exit "${PI
     fi
   fi
 
+  # --- gate: workers reachable, each its own database (link#376) ---------
+  if [ "$N_WK" -gt 0 ]; then
+    preflight_workers || fail=1
+  fi
+
+  return "$fail"
+}
+
+# preflight_workers: before any spend. Each worker answers over ssh (judged on
+# what it prints), and its database is neither the dispatcher's nor another
+# worker's: consolidate DELETEs a bucket on the dispatcher and then copies it
+# from the source, so a source that is the dispatcher's own database would copy
+# back nothing, and a leg there would model into the dispatcher's persist.
+preflight_workers() {
+  local fail=0 ws id seen="" mine
+  mine=$(host_db_id local) || { echo "  ✗ could not read the dispatcher's database identity"; return 1; }
+  for ws in "${WK_KEYS[@]}"; do
+    if ! remote_run "${HOST_SSH[$ws]}" "true" "$LOG_DIR/${TS}_reach_$ws.log"; then
+      echo "  ✗ $ws: did not answer over ssh (see $LOG_DIR/${TS}_reach_$ws.log)"
+      fail=1; continue
+    fi
+    if ! id=$(host_db_id "${HOST_SSH[$ws]}"); then
+      echo "  ✗ $ws: its database did not answer (docker exec fresh-db psql)"
+      fail=1; continue
+    fi
+    if [ "$id" = "$mine" ]; then
+      echo "  ✗ $ws: its database is the dispatcher's own; a worker must hold its own"
+      fail=1; continue
+    fi
+    case " $seen " in
+      *" $id "*) echo "  ✗ $ws: its database is another worker's"; fail=1; continue ;;
+    esac
+    seen="$seen $id"
+    echo "  ✓ $ws: answers, its own database"
+  done
+  return "$fail"
+}
+
+# preflight_worker_rows: once the buckets resolve, before any spend. A
+# worker's persist schema must hold no rows for a group of its bucket: the
+# run's accounting and release could not tell them from this run's, and
+# consolidate would copy and then delete them (link#376). Read, never
+# deleted here: they may be the worker's own builds.
+preflight_worker_rows() {
+  local fail=0 ws in st mc
+  for ws in ${WK_KEYS[@]+"${WK_KEYS[@]}"}; do
+    in=$(.hosts_lines "${HOST_BUCKET[$ws]:-}" | sed "s/.*/'&'/" | paste -sd, -)
+    if ! st=$(.hosts_query "${HOST_SSH[$ws]}" streams "watershed_group_code IN (${in:-NULL})") \
+       || ! mc=$(.hosts_query "${HOST_SSH[$ws]}" streams_mapping_code "watershed_group_code IN (${in:-NULL})"); then
+      echo "  ✗ $ws: could not read its $SCHEMA before dispatch"
+      fail=1; continue
+    fi
+    st=$(.hosts_union "$(printf '%s\n' "$st" | .hosts_csv)" "$(printf '%s\n' "$mc" | .hosts_csv)")
+    if [ -n "$st" ]; then
+      echo "  ✗ $ws: its $SCHEMA already holds rows for $st, which this run would model."
+      echo "    They may be that machine's own builds: consolidate or remove them deliberately,"
+      echo "    or give the run another --schema=."
+      fail=1
+    else
+      echo "  ✓ $ws: $SCHEMA holds no rows for its bucket"
+    fi
+  done
   return "$fail"
 }
 
@@ -1136,19 +1322,31 @@ collect_stamps() {   # $1 = destination tsv
   fi
   [ -n "$out" ] || { echo "  ✗ dispatcher returned an empty stamp"; return 1; }
   printf '%s\n' "$out" >> "$tsv"
-  for ws in "${CY_WS_ARR[@]}"; do
-    if ! out=$(ssh -o BatchMode=yes -o ConnectTimeout=15 "cypher@${CY_IP[$ws]}" \
-        "cd ~/Projects/repo/link && export FWAPG_GIT_SHA='${FWAPG_GIT_SHA:-}' && export BCFISHOBS_GIT_SHA='${BCFISHOBS_GIT_SHA:-}' && Rscript data-raw/host_stamp.R '$CONFIG'" 2>/dev/null); then
+  for ws in ${HOST_ARR[@]+"${HOST_ARR[@]}"}; do
+    # Judged by the status the remote shell prints (remote_run, link#376).
+    if ! remote_run "${HOST_SSH[$ws]}" \
+        "$(.remote_cd "$ws") && export FWAPG_GIT_SHA='${FWAPG_GIT_SHA:-}' && export BCFISHOBS_GIT_SHA='${BCFISHOBS_GIT_SHA:-}' && Rscript data-raw/host_stamp.R '$CONFIG'" \
+        "$tsv.$ws.out" /dev/null; then
       echo "  ✗ cy[$ws] stamp failed (ssh or Rscript) — treated as a FAILURE, not a skip"
       return 1
     fi
+    out=$(remote_out "$tsv.$ws.out"); rm -f "$tsv.$ws.out"
     [ -n "$out" ] || { echo "  ✗ cy[$ws] returned an empty stamp"; return 1; }
     printf '%s\n' "$out" >> "$tsv"
   done
   return 0
 }
 
+# judge_stamps prints lnk_preflight_parity's summary, which names each host by
+# its stamp, so its output goes through the worker redaction (link#376).
 judge_stamps() {     # $1 = tsv
+  local out rc=0
+  out=$(.judge_stamps_raw "$1" 2>&1) || rc=$?
+  printf '%s\n' "$out" | remote_redact_stream
+  return "$rc"
+}
+
+.judge_stamps_raw() {     # $1 = tsv
   (cd "$REPO_ROOT" && LNK_LOAD=loadall Rscript -e '
 a <- commandArgs(TRUE)
 suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
@@ -1183,26 +1381,44 @@ s <- utils::read.delim(a[1], header = FALSE, colClasses = "character",
 res <- lnk_preflight_parity(s, n_expected = as.integer(a[2]),
                             forbid_dirty = FALSE)
 quit(status = if (isTRUE(res$ok)) 0L else 1L)
-' "$1" "$((N_CY + 1))")
+' "$1" "$((N_HOSTS + 1))")
 }
 
 preflight_hosts() {
-  [ "$N_CY" -gt 0 ] || { echo "  ✓ host pre-flight: no cyphers, nothing to compare"; return 0; }
+  [ "$N_HOSTS" -gt 0 ] || { echo "  ✓ host pre-flight: no remote hosts, nothing to compare"; return 0; }
   echo "=== pre-flight (hosts; post-prep, pre-write) ==="
   local fail=0 ws
   local tsv="$LOG_DIR/${TS}_stamps.tsv"
 
   if collect_stamps "$tsv" && judge_stamps "$tsv"; then
-    echo "  ✓ host parity clean ($((N_CY + 1)) hosts)"
+    echo "  ✓ host parity clean ($((N_HOSTS + 1)) hosts)"
   elif [ "$AUTO_INSTALL" = "1" ]; then
     # Remediation, NOT a skip: re-run cypher_prep's install stage — which
     # re-runs the fresh export assertion — then re-check exactly once.
     echo "  → --auto-install: reinstalling on cyphers and re-checking once"
-    for ws in "${CY_WS_ARR[@]}"; do
-      ssh "cypher@${CY_IP[$ws]}" \
-        "CYPHER_PREP_BRANCH='$LINK_BRANCH' CYPHER_PREP_STAGE=install bash /tmp/cypher_prep.sh" \
-        >> "$LOG_DIR/${TS}_autoinstall.log" 2>&1 \
-        || { echo "  ✗ cy[$ws] reinstall failed; see $LOG_DIR/${TS}_autoinstall.log"; fail=1; }
+    for ws in ${HOST_ARR[@]+"${HOST_ARR[@]}"}; do
+      # Judged per host on its status and its install-stage READY line
+      # (link#376), not on ssh's exit status. A worker installs fresh only, at
+      # DESCRIPTION's pin (worker_prep.sh install-fresh).
+      if .hosts_is_worker "$ws"; then
+        if remote_run "${HOST_SSH[$ws]}" \
+             "$(worker_prep_env "$ws") WORKER_PREP_STAGE=install-fresh bash -s" \
+             "$LOG_DIR/${TS}_autoinstall_$ws.log" < "$REPO_ROOT/data-raw/worker_prep.sh" \
+           && grep -q '^=== READY (fresh install only)' "$LOG_DIR/${TS}_autoinstall_$ws.log"; then
+          :
+        else
+          echo "  ✗ $ws fresh install failed; see $LOG_DIR/${TS}_autoinstall_$ws.log"; fail=1
+        fi
+        continue
+      fi
+      if remote_run "${HOST_SSH[$ws]}" \
+           "CYPHER_PREP_BRANCH='$LINK_BRANCH' CYPHER_PREP_STAGE=install bash /tmp/cypher_prep.sh" \
+           "$LOG_DIR/${TS}_autoinstall_$ws.log" \
+         && grep -q '^=== READY (install stage only' "$LOG_DIR/${TS}_autoinstall_$ws.log"; then
+        :
+      else
+        echo "  ✗ cy[$ws] reinstall failed; see $LOG_DIR/${TS}_autoinstall_$ws.log"; fail=1
+      fi
     done
     if [ "$fail" = "0" ] && collect_stamps "$tsv" && judge_stamps "$tsv"; then
       echo "  ✓ host parity clean after reinstall"
@@ -1220,16 +1436,18 @@ preflight_hosts() {
   # Cypher primitive vintage. Not a formality: prep just ran
   # snapshot_bcfp.sh, and this verifies the primitives actually landed
   # rather than trusting the prep sentinel.
-  for ws in "${CY_WS_ARR[@]}"; do
-    if ssh -o BatchMode=yes -o ConnectTimeout=15 "cypher@${CY_IP[$ws]}" \
-         "cd ~/Projects/repo/link && Rscript data-raw/host_vintage.R '$VINTAGE_MAX_DAYS'" \
-         >> "$LOG_DIR/${TS}_vintage.log" 2>&1; then
+  for ws in ${HOST_ARR[@]+"${HOST_ARR[@]}"}; do
+    # One log per host, judged by the status the remote shell prints
+    # (link#376): ssh's exit status can be 0 whatever host_vintage.R returned.
+    if remote_run "${HOST_SSH[$ws]}" \
+         "$(.remote_cd "$ws") && Rscript data-raw/host_vintage.R '$VINTAGE_MAX_DAYS'" \
+         "$LOG_DIR/${TS}_vintage_$ws.log"; then
       echo "  ✓ cy[$ws] primitives within ${VINTAGE_MAX_DAYS} d"
     else
       if [ -n "$PREFLIGHT_NOTE" ]; then
         echo "  WARN: cy[$ws] primitives stale — proceeding on --preflight-note"
       else
-        echo "  ✗ cy[$ws] primitives stale/absent — see $LOG_DIR/${TS}_vintage.log"
+        echo "  ✗ cy[$ws] primitives stale/absent — see $LOG_DIR/${TS}_vintage_$ws.log"
         fail=1
       fi
     fi
@@ -1267,13 +1485,17 @@ if [ "$PREFLIGHT_ONLY" = "1" ]; then
   if [ "$N_CY" -eq 0 ]; then
     echo "  NOT CHECKED (no --cy-workspaces given, so no cypher gates ran):"
     echo "    - doctl credential, tofu do_token, tofu s3 backend"
-    echo "    - branch-pushed assertion"
+    [ "$N_WK" -gt 0 ] || echo "    - branch-pushed assertion"
     echo "    - host parity and cypher primitive vintage (need live cyphers)"
     echo "  For the full pre-spend set, pass the workspaces you intend to use:"
     echo "    bash data-raw/study_area_run.sh --preflight-only --cy-workspaces=job1,job2,job3"
   else
     echo "  NOT CHECKED (require live cyphers): host parity, cypher primitive vintage."
   fi
+  # Workers exist before prep, so they were reached and their databases told
+  # apart above (link#376); what needs their prep or the buckets was not.
+  [ "$N_WK" -eq 0 ] || \
+    echo "  NOT CHECKED (workers; need the buckets or their prep): prior rows in $SCHEMA, worker prep, parity, vintage."
   exit 0
 fi
 
@@ -1297,12 +1519,13 @@ fi
 DISP_BUCKET=$(cd "$REPO_ROOT" && LNK_LOAD=loadall Rscript data-raw/study_area_wsgs.R ${WSGS_FLAG[@]+"${WSGS_FLAG[@]}"} "${FOCAL_ARR[0]}" "$CONFIG")
 DISP_BUCKET=$(echo "$DISP_BUCKET" | tr -d '[:space:]')
 echo "  dispatcher (focal=${FOCAL_ARR[0]}): $DISP_BUCKET"
-declare -A CY_BUCKET
-for i in "${!CY_WS_ARR[@]}"; do
-  WS="${CY_WS_ARR[$i]}"
+declare -A HOST_BUCKET
+# Workers, then cyphers: the order of the --focal= lists (link#376).
+for i in "${!HOST_ARR[@]}"; do
+  WS="${HOST_ARR[$i]}"
   B=$(cd "$REPO_ROOT" && LNK_LOAD=loadall Rscript data-raw/study_area_wsgs.R ${WSGS_FLAG[@]+"${WSGS_FLAG[@]}"} "${FOCAL_ARR[$((i+1))]}" "$CONFIG")
-  CY_BUCKET[$WS]=$(echo "$B" | tr -d '[:space:]')
-  echo "  cy[$WS] (focal=${FOCAL_ARR[$((i+1))]}): ${CY_BUCKET[$WS]}"
+  HOST_BUCKET[$WS]=$(echo "$B" | tr -d '[:space:]')
+  echo "  $(.hosts_label "$WS") (focal=${FOCAL_ARR[$((i+1))]}): ${HOST_BUCKET[$WS]}"
 done
 
 # Overlap: a WSG in two hosts' buckets is computed on both and consolidate is
@@ -1316,7 +1539,7 @@ done
 # so a bucket cannot be blank), but the unsafe form has already caused two
 # real aborts in this script and is exactly what gets copied next.
 DUP=$( { echo "$DISP_BUCKET" | tr ',' '\n'
-  for WS in "${CY_WS_ARR[@]}"; do echo "${CY_BUCKET[$WS]}" | tr ',' '\n'; done
+  for WS in ${HOST_ARR[@]+"${HOST_ARR[@]}"}; do echo "${HOST_BUCKET[$WS]}" | tr ',' '\n'; done
 } | sed '/^[[:space:]]*$/d' | sort | uniq -d | paste -sd, - )
 if [ -n "$DUP" ]; then
   if [ "$BUCKETS_EXACT" = "1" ]; then
@@ -1331,6 +1554,13 @@ fi
 # before its first log row, leaves no <schema>.log row on the dispatcher, so
 # without this file --recompute-only could not name it. Rewritten after the
 # per-host accounting with each host's SKIPs.
+# A worker's schema must hold nothing for its bucket (link#376). Before any
+# spend, now that the buckets are known.
+if [ "$N_WK" -gt 0 ]; then
+  echo "=== workers: prior rows ==="
+  preflight_worker_rows \
+    || { echo "FATAL: a worker's $SCHEMA already holds rows for its bucket; aborting before spend"; exit 1; }
+fi
 RUN_WSGS_TSV="$LOG_DIR/${TS}_run_wsgs.tsv"
 run_wsgs_write "$RUN_WSGS_TSV"
 echo "  run groups: $RUN_WSGS_TSV"
@@ -1355,7 +1585,7 @@ echo "  run groups: $RUN_WSGS_TSV"
 # recompute rebuilds access and mapping code, not the persisted groups.
 # Dispatcher-only runs consolidate nothing and take none, as before.
 BACKUP_RC_FILE=""
-if [ "$N_CY" -gt 0 ]; then
+if [ "$N_HOSTS" -gt 0 ]; then
   echo "=== dispatcher persist ($SCHEMA): init, then backup in the background ==="
   ( cd "$REPO_ROOT" && Rscript -e "
 suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
@@ -1390,6 +1620,29 @@ schema_consolidate_backup('$SCHEMA', '/tmp/${SCHEMA}_pre_run_${TS}.dump')
   echo "  backup -> /tmp/${SCHEMA}_pre_run_${TS}.dump (see $LOG_DIR/${TS}_backup.log)"
 fi
 
+# --- prep workers (link#376), in the background beside the cyphers' spin ---
+# worker_prep.sh goes over ssh on stdin, so no older copy can be left behind
+# on a machine that stays up, and its status is the one the remote shell
+# prints (remote_run). ok needs that status 0 and the bare READY line.
+WK_PREP_PIDS=()
+if [ "$N_WK" -gt 0 ]; then
+  echo "=== prep workers (worker_prep.sh): ${WK_KEYS[*]} ==="
+  # A worker is never burned; this only lets the trap report one it holds.
+  WORKERS_UP=1
+  for WS in "${WK_KEYS[@]}"; do
+    phase_begin prep "$WS"
+    WENV=$(worker_prep_env "$WS") || exit 1
+    ( prc=0
+      remote_run "${HOST_SSH[$WS]}" "$WENV bash -s" "$LOG_DIR/${TS}_prep_$WS.log" \
+        < "$REPO_ROOT/data-raw/worker_prep.sh" || prc=$?
+      pst=failed
+      [ "$prc" = "0" ] && grep -qx "=== READY" "$LOG_DIR/${TS}_prep_$WS.log" 2>/dev/null && pst=ok
+      phase_end prep "$WS" "" "$pst" quiet
+      exit "$prc" ) >> "$LOG_DIR/${TS}_prep_$WS.log" 2>&1 &
+    WK_PREP_PIDS+=($!)
+  done
+fi
+
 # --- spin + prep cyphers ---
 declare -A CY_IP
 if [ "$N_CY" -gt 0 ]; then
@@ -1411,7 +1664,7 @@ if [ "$N_CY" -gt 0 ]; then
     IP=$(cd "$CYPHER_TF" && TF_WORKSPACE="$WS" tofu output -raw droplet_ip 2>/dev/null) \
       || { echo "FATAL: tofu droplet_ip failed for $WS"; exit 1; }
     [ -n "$IP" ] || { echo "FATAL: empty droplet_ip for $WS"; exit 1; }
-    CY_IP[$WS]="$IP"; echo "  cy[$WS] = $IP"
+    CY_IP[$WS]="$IP"; HOST_SSH[$WS]="cypher@$IP"; echo "  cy[$WS] = $IP"
   done
 
   echo "=== prep cyphers (cypher_prep.sh) ==="
@@ -1496,10 +1749,29 @@ if [ "$N_CY" -gt 0 ]; then
       || { echo "FATAL: cypher[$WS] prep failed; see $LOG_DIR/${TS}_prep_$WS.log"; exit 1; }
   done
   echo "  ✓ cyphers prepped"
+fi
+if [ "$N_WK" -gt 0 ]; then
+  for pid in "${WK_PREP_PIDS[@]}"; do wait "$pid" || true; done
+  # Waited on: nothing for the trap to stop, and their pids may be reused.
+  WK_PREP_PIDS=()
+  for WS in "${WK_KEYS[@]}"; do phase_forget prep "$WS"; phase_print prep "$WS"; done
+  # How each worker names itself (worker_prep.sh's `=== host` line) is
+  # redacted from the run's logs too: its stamp row carries it.
+  for WS in "${WK_KEYS[@]}"; do
+    remote_redact_add "$WS" "$(LC_ALL=C sed -n 's/^=== host //p' "$LOG_DIR/${TS}_prep_$WS.log" 2>/dev/null | head -1)"
+  done
+  for WS in "${WK_KEYS[@]}"; do
+    grep -qx "=== READY" "$LOG_DIR/${TS}_prep_$WS.log" 2>/dev/null \
+      || { echo "FATAL: $WS prep failed; see $LOG_DIR/${TS}_prep_$WS.log"; exit 1; }
+  done
+  echo "  ✓ workers prepped"
+fi
 
-  # Post-prep, pre-write. exit 1 here trips the EXIT trap, which burns the
-  # cyphers — the loss is bounded at spin + prep rather than a whole run of
-  # two mixed model versions landing in one schema.
+# Post-prep, pre-write. exit 1 here trips the EXIT trap, which burns the
+# cyphers (a worker is never burned, and holds nothing yet) — the loss is
+# bounded at spin + prep rather than a whole run of two mixed model versions
+# landing in one schema.
+if [ "$N_HOSTS" -gt 0 ]; then
   preflight_hosts \
     || { echo "FATAL: host pre-flight failed; aborting before any WSG writes"; exit 1; }
 fi
@@ -1535,7 +1807,7 @@ fi
 # leg ended, after the driver was killed. Appending is safe: the inner `>`
 # truncates before either writes, and an O_APPEND fd writes at the end.
 RUN_N=$( { csv_lines "$DISP_BUCKET"
-  for WS in "${CY_WS_ARR[@]}"; do csv_lines "${CY_BUCKET[$WS]}"; done
+  for WS in ${HOST_ARR[@]+"${HOST_ARR[@]}"}; do csv_lines "${HOST_BUCKET[$WS]}"; done
 } | sort -u | wc -l | tr -d ' ')
 # No leg is dispatched until the backup has succeeded (link#369). A failure
 # exits before any host is held, so the trap burns them.
@@ -1566,13 +1838,13 @@ phase_begin model dispatcher
 LOCAL_PID=$!
 # Baseline before any write (link#347): which of each cypher's bucket already
 # have streams rows from its image, so rows found later can be told apart.
-for WS in "${CY_WS_ARR[@]}"; do host_baseline "$WS"; done
-for WS in "${CY_WS_ARR[@]}"; do
+for WS in ${HOST_ARR[@]+"${HOST_ARR[@]}"}; do host_baseline "$WS"; done
+for WS in ${HOST_ARR[@]+"${HOST_ARR[@]}"}; do
   # HELD from here on: from its first write, this host may hold the only copy
   # of finished groups. Released only by host_release after consolidate
   # (link#347); until then no exit path burns it.
-  CY_HOLD[$WS]=1
-  IP="${CY_IP[$WS]}"; B_SPACE=$(echo "${CY_BUCKET[$WS]}" | tr ',' ' ')
+  HOST_HOLD[$WS]=1
+  B_SPACE=$(echo "${HOST_BUCKET[$WS]}" | tr ',' ' ')
   # FWAPG_GIT_SHA is resolved once on the dispatcher (preflight_local) and
   # handed to every host: cyphers have no ~/Projects/repo/fwapg, so without
   # it .lnk_fwapg_sha() returns NA and every cypher row lands with a NULL
@@ -1593,12 +1865,16 @@ for WS in "${CY_WS_ARR[@]}"; do
   # silent link drop would kill the rest of it (link#246).
   phase_begin model "$WS"
   ( mrc=0
-  ssh -o ServerAliveInterval=60 -o ServerAliveCountMax=10 "cypher@$IP" "cd ~/Projects/repo/link && export LNK_SCHEMA='$SCHEMA' && export LNK_GUARD_DOWNSTREAM=warn && export LNK_HABITAT_GATE=0 && export PGOPTIONS='-c statement_timeout=${STATEMENT_TIMEOUT_MIN}min' && export LNK_STATEMENT_TIMEOUT_MIN='$STATEMENT_TIMEOUT_MIN' && export FWAPG_GIT_SHA='${FWAPG_GIT_SHA:-}' && export BCFISHOBS_GIT_SHA='${BCFISHOBS_GIT_SHA:-}' && export LNK_RUN_UID='$RUN_UID' && export LNK_RUN_LABEL='$RUN_LABEL' && export LNK_BCFP_MODEL_VERSION='${LNK_BCFP_MODEL_VERSION:-}' && for w in $B_SPACE; do Rscript data-raw/wsg_run_one.R \$w '$CONFIG' || echo \"[WARN] cy WSG \$w failed\"; done" \
+  ssh -o ServerAliveInterval=60 -o ServerAliveCountMax=10 "${HOST_SSH[$WS]}" \
+    "$(remote_leg_cmd "$WS" "$B_SPACE")" \
     > "$LOG_DIR/${TS}_run_$WS.log" 2>&1 || mrc=$?
-  phase_end model "$WS" "$(csv_count "${CY_BUCKET[$WS]}")" \
+  # The leg ended only if its loop printed its end marker (link#376): ssh can
+  # exit 0 whatever happened there. Feeds HOST_RUN_RC, so release stays strict.
+  remote_leg_status "$mrc" "$LOG_DIR/${TS}_run_$WS.log" && mrc=0 || mrc=$?
+  phase_end model "$WS" "$(csv_count "${HOST_BUCKET[$WS]}")" \
     "$([ "$mrc" = "0" ] && echo ok || echo failed)" quiet
   exit "$mrc" ) >> "$LOG_DIR/${TS}_run_$WS.log" 2>&1 &
-  CY_LEG_PID[$WS]=$!
+  HOST_LEG_PID[$WS]=$!
 done
 # --- each leg as it ends (link#369) ---------------------------------------
 # A non-zero host exit (e.g. ssh dropped) is logged, NOT fatal: whatever each
@@ -1620,8 +1896,8 @@ COMPLETE_FAIL=0
 CONS_FAILED=""
 CONS_EXCLUDED=""
 CONS_STATE="$LOG_DIR/${TS}_consolidate_state.tsv"
-if [ "$N_CY" -gt 0 ]; then
-  echo "=== legs: each cypher is consolidated and burned when its own leg ends ==="
+if [ "$N_HOSTS" -gt 0 ]; then
+  echo "=== legs: each remote host is consolidated when its own leg ends (a cypher then burned, a worker released) ==="
 fi
 legs_wait
 echo "  ✓ host runs finished (per-WSG soft-fail; gaps surface in compare)"
@@ -1640,9 +1916,10 @@ phase_end account dispatcher "$(csv_count "$DISP_BUCKET")" "$ast"
   echo "        finish so nothing already computed is lost, then exit non-zero."
 }
 
-if [ "$N_CY" -gt 0 ]; then
+if [ "$N_HOSTS" -gt 0 ]; then
   # Every leg has ended and every host was finished as it did; this burns
-  # nothing new and writes the final kept-hosts record.
+  # nothing new and writes the final kept-hosts record, which names a held
+  # worker as well (link#376).
   burn_cyphers || true
 else
   phase_skip consolidate

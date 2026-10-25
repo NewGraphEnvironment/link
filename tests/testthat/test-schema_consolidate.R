@@ -268,3 +268,128 @@ test_that("a backup that fails stops, and one that works names its file (live)",
   expect_identical(suppressMessages(e$schema_consolidate_backup(sc, p)), p)
   expect_gt(file.size(p), 0)
 })
+
+# -- An ssh that exits 0 whatever the remote command returned (link#376) ----
+# Tailscale SSH to macOS does this. Every remote call goes through
+# consolidate_remote(), which reads the status the remote shell prints.
+
+# A stub ssh on PATH: runs the remote command (its last argument) locally,
+# then exits with `exit_with` whatever that command returned.
+stub_ssh <- function(env = parent.frame(), exit_with = 0L, run = TRUE) {
+  d <- withr::local_tempdir(.local_envir = env)
+  body <- if (run) "sh -c \"$last\"" else ":"
+  writeLines(c("#!/bin/sh", 'for a in "$@"; do last="$a"; done', body,
+               sprintf("exit %d", exit_with)), file.path(d, "ssh"))
+  Sys.chmod(file.path(d, "ssh"), "755")
+  withr::local_envvar(PATH = paste(d, Sys.getenv("PATH"), sep = ":"),
+                      .local_envir = env)
+  d
+}
+
+test_that("a failed remote command fails even when ssh exits 0", {
+  e <- source_consolidate()
+  stub_ssh()
+  r <- e$consolidate_remote("h", "echo partial; exit 3")
+  expect_identical(r$rc, 3L)
+  expect_identical(r$out, "partial")
+  r <- e$consolidate_remote("h", "echo 'A|1'; echo 'B|2'")
+  expect_identical(r$rc, 0L)
+  expect_identical(r$out, c("A|1", "B|2"))
+})
+
+test_that("a status the remote shell never printed is a failure", {
+  e <- source_consolidate()
+  # The session ran nothing it could report (dropped, or killed), and ssh
+  # still exited 0: no trailer is never read as success.
+  stub_ssh(run = FALSE)
+  expect_identical(e$consolidate_remote("h", "true")$rc, 255L)
+})
+
+test_that("ssh's own failure wins over anything printed", {
+  e <- source_consolidate()
+  stub_ssh(exit_with = 255L)
+  expect_identical(e$consolidate_remote("h", "true")$rc, 255L)
+})
+
+test_that("a copy to a file keeps the data clean of the trailer", {
+  e <- source_consolidate()
+  stub_ssh()
+  f <- withr::local_tempfile(fileext = ".tsv")
+  r <- e$consolidate_remote("h", "printf 'a\\tb\\n'; echo oops >&2; exit 2",
+                            stdout_path = f)
+  expect_identical(r$rc, 2L)
+  expect_identical(readLines(f), "a\tb")
+  expect_identical(r$err, "oops")
+  r <- e$consolidate_remote("h", "printf 'a\\tb\\n'", stdout_path = f)
+  expect_identical(r$rc, 0L)
+  expect_identical(readLines(f), "a\tb")
+})
+
+test_that("the remote command's own quotes survive the round trip", {
+  e <- source_consolidate()
+  stub_ssh()
+  r <- e$consolidate_remote("h", "printf '%s\\n' \"it's\" 'A','B'")
+  expect_identical(r$rc, 0L)
+  expect_identical(r$out, c("it's", "A,B"))
+})
+
+test_that("schema_consolidate reaches a source only through consolidate_remote", {
+  e <- source_consolidate()
+  body <- paste(deparse(body(e$schema_consolidate)), collapse = "\n")
+  # A raw ssh call there would trust ssh's exit status again.
+  expect_no_match(body, "ssh '", fixed = TRUE)
+  expect_match(body, "consolidate_remote(", fixed = TRUE)
+})
+
+test_that("a load is counted from psql's COPY tag, never assumed", {
+  e <- source_consolidate()
+  expect_identical(e$consolidate_copy_count("COPY 12"), 12L)
+  expect_identical(e$consolidate_copy_count("COPY 0"), 0L)
+  # No tag, or anything else: unknown, which never equals what was sent.
+  expect_identical(e$consolidate_copy_count(character()), NA_integer_)
+  expect_identical(e$consolidate_copy_count(c("COPY 1", "COPY 2")), NA_integer_)
+  expect_identical(e$consolidate_copy_count("ERROR: x"), NA_integer_)
+})
+
+test_that("a persist table's load is checked against what was sent", {
+  e <- source_consolidate()
+  body <- paste(deparse(body(e$schema_consolidate)), collapse = "\n")
+  expect_match(body, "consolidate_copy_count(dest_out)", fixed = TRUE)
+  expect_match(body, "copy_count", fixed = TRUE)
+})
+
+test_that("consolidate takes link's tables only, never a schema's primitives", {
+  e <- source_consolidate()
+  # What `fresh` held on 2026-10-24: persist, log, primitives and reference.
+  fresh <- c("barrier_overrides", "barriers", "crossings_vw_bcfp", "log",
+             "log_input", "log_recompute", "modelled_stream_crossings", "streams",
+             "streams_access", "streams_habitat_bt", "streams_habitat_ch",
+             "streams_mapping_code", "streams_vw_bcfp", "streams_habitat",
+             "streams_v2")
+  expect_identical(e$consolidate_link_tables(fresh), c(
+    "barrier_overrides", "barriers", "log", "log_input", "log_recompute",
+    "streams", "streams_access", "streams_habitat_bt", "streams_habitat_ch",
+    "streams_mapping_code"))
+})
+
+test_that("every table lnk_persist_init creates is one consolidate takes (live)", {
+  e <- source_consolidate()
+  conn <- skip_if_no_db()
+  sc <- paste0("lnk_test_consol_init_", Sys.getpid())
+  DBI::dbExecute(conn, "SET client_min_messages TO warning")
+  DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", sc))
+  withr::defer(DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", sc)))
+  cfg <- lnk_config("default")
+  cfg$pipeline$schema <- sc
+  suppressMessages(lnk_persist_init(conn, cfg, cfg$species))
+  link:::.lnk_log_create_tables(conn, sc)
+  made <- DBI::dbGetQuery(conn, sprintf(paste(
+    "SELECT c.table_name FROM information_schema.columns c",
+    "JOIN information_schema.tables t USING (table_schema, table_name)",
+    "WHERE c.table_schema = '%s' AND c.column_name = 'watershed_group_code'",
+    "AND t.table_type = 'BASE TABLE'"), sc))$table_name
+  expect_gt(length(made), 5L)
+  # A table link adds later that consolidate does not take would be left on
+  # a burned host: this fails first.
+  expect_setequal(e$consolidate_link_tables(made), made)
+})

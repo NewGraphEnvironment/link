@@ -231,8 +231,8 @@ test_that("a missing group in a kept host's bucket defers to kept_hosts.tsv, the
   # Host a is held: whatever its measured state, its groups are settled per
   # kept_hosts.tsv first. Host b was released, so its bucket is re-modelled.
   r <- run_finish_sh(w, sc, c(
-    "CY_WS_ARR=(a b); CY_BUCKET[a]=CCCC,DDDD; CY_HOLD[a]=1",
-    "CY_BUCKET[b]=GGGG; CY_HOLD[b]=0",
+    "HOST_ARR=(a b); HOST_BUCKET[a]=CCCC,DDDD; HOST_HOLD[a]=1",
+    "HOST_BUCKET[b]=GGGG; HOST_HOLD[b]=0",
     "RUN_LABEL=prov-246",
     "run_finish AAAA,CCCC,DDDD,GGGG ''"
   ))
@@ -250,7 +250,7 @@ test_that("--recompute-only lists the groups an earlier kept_hosts.tsv names apa
   sc <- finish_fixture(conn)
   w <- finish_world()
   r <- run_finish_sh(w, sc, c(
-    "CY_WS_ARR=(); KEPT_TSV_GROUPS=CCCC",
+    "HOST_ARR=(); KEPT_TSV_GROUPS=CCCC",
     "run_finish AAAA,CCCC,GGGG ''"
   ))
   expect_equal(r$status, 1L, info = r$out)
@@ -296,11 +296,11 @@ test_that("a full run expects every bucket less SKIPs no host finished, with eve
   skip_if_no_finish_lib()
   w <- finish_world()
   r <- run_finish_sh(w, "unused", c(
-    "DISP_BUCKET=AAAA,BBBB,SSSS; CY_WS_ARR=(a b)",
-    "CY_BUCKET[a]=CCCC,DDDD; CY_BUCKET[b]=EEEE,TTTT",
+    "DISP_BUCKET=AAAA,BBBB,SSSS; HOST_ARR=(a b)",
+    "HOST_BUCKET[a]=CCCC,DDDD; HOST_BUCKET[b]=EEEE,TTTT",
     "ACC_FINISHED[dispatcher]=AAAA; ACC_DONE_LOG[dispatcher]=BBBB",
     "ACC_SKIP[dispatcher]=SSSS; ACC_SKIP[a]=EEEE; ACC_SKIP[b]=TTTT",
-    "CY_BUCKET_DONE[a]=CCCC; CY_BUCKET_DONE[b]=EEEE",
+    "HOST_BUCKET_DONE[a]=CCCC; HOST_BUCKET_DONE[b]=EEEE",
     "run_expected_from_hosts",
     "echo \"EXP=$RUN_EXPECT\"; echo \"SIG=$RUN_SIGNALS\"; echo \"SKIP=$RUN_SKIP\""
   ))
@@ -421,8 +421,8 @@ test_that("run_wsgs_write records every host's bucket, then each host's SKIPs on
   w <- finish_world()
   tsv <- file.path(w, "logs", "T0_run_wsgs.tsv")
   set_buckets <- c(
-    "DISP_BUCKET=AAAA,SSSS; CY_WS_ARR=(job1 job2)",
-    "CY_BUCKET[job1]=CCCC,DDDD; CY_BUCKET[job2]=DDDD,EEEE"
+    "DISP_BUCKET=AAAA,SSSS; HOST_ARR=(job1 job2)",
+    "HOST_BUCKET[job1]=CCCC,DDDD; HOST_BUCKET[job2]=DDDD,EEEE"
   )
   r <- run_finish_sh(w, "unused", c(set_buckets, sprintf("run_wsgs_write %s", shQuote(tsv))))
   expect_equal(r$status, 0L, info = r$out)
@@ -570,10 +570,11 @@ cons_tsv <- function(w, rows) {
 }
 
 cons_setup <- c(
-  "CY_WS_ARR=(a b c); CY_IP[a]=ip-a; CY_IP[b]=ip-b; CY_IP[c]=ip-c",
-  "CY_BUCKET[a]=CCCC,DDDD; CY_BUCKET[b]=EEEE; CY_BUCKET[c]=FFFF",
+  paste("HOST_ARR=(a b c); CY_IP[a]=ip-a; CY_IP[b]=ip-b; CY_IP[c]=ip-c;",
+        "HOST_SSH[a]=cypher@ip-a; HOST_SSH[b]=cypher@ip-b; HOST_SSH[c]=cypher@ip-c"),
+  "HOST_BUCKET[a]=CCCC,DDDD; HOST_BUCKET[b]=EEEE; HOST_BUCKET[c]=FFFF",
   # c reported nothing, so it was never a source.
-  "CY_BUCKET_DONE[a]=CCCC,DDDD; CY_BUCKET_DONE[b]=EEEE; CY_BUCKET_DONE[c]=''"
+  "HOST_BUCKET_DONE[a]=CCCC,DDDD; HOST_BUCKET_DONE[b]=EEEE; HOST_BUCKET_DONE[c]=''"
 )
 
 test_that("consolidate_outcomes names a refused source and keeps its groups out of the signals", {
@@ -584,8 +585,8 @@ test_that("consolidate_outcomes names a refused source and keeps its groups out 
   r <- run_finish_sh(w, "unused", c(
     cons_setup,
     sprintf("consolidate_outcomes %s", shQuote(p)),
-    "echo \"FAILED=$CONS_FAILED\"; echo \"EXCL=$CONS_EXCLUDED\"; echo \"STAGE=${CY_CONS_FAIL[a]}\"",
-    "echo \"BSTAGE=${CY_CONS_FAIL[b]:-none}\"",
+    "echo \"FAILED=$CONS_FAILED\"; echo \"EXCL=$CONS_EXCLUDED\"; echo \"STAGE=${HOST_CONS_FAIL[a]}\"",
+    "echo \"BSTAGE=${HOST_CONS_FAIL[b]:-none}\"",
     # DDDD was SKIPped by the dispatcher and finished by a: it stays expected.
     "DISP_BUCKET=AAAA,DDDD; ACC_FINISHED[dispatcher]=AAAA; ACC_SKIP[dispatcher]=DDDD",
     "run_expected_from_hosts; echo \"SIG=$RUN_SIGNALS\"; echo \"EXP=$RUN_EXPECT\""
@@ -627,7 +628,7 @@ test_that("a refused source's groups are not recomputed; the others are, and the
   # BBBB came from host a, whose consolidate was refused; its rows here, and
   # its closed log row, belong to some other copy. AAAA came from elsewhere.
   r <- run_finish_sh(w, sc, c(
-    "CY_WS_ARR=(a); CY_BUCKET[a]=BBBB; CY_HOLD[a]=1",
+    "HOST_ARR=(a); HOST_BUCKET[a]=BBBB; HOST_HOLD[a]=1",
     "run_finish AAAA,BBBB '' BBBB"
   ))
   expect_equal(r$status, 1L, info = r$out)
@@ -663,7 +664,7 @@ test_that("the driver records the run's groups before any spend and hands run_fi
   # Each host's SKIPs are recorded as soon as it is accounted.
   expect_length(grep('  run_wsgs_write "$RUN_WSGS_TSV" \\', legs, fixed = TRUE), 1L)
   expect_length(grep('^run_finish "\\$RUN_EXPECT" "\\$RUN_SIGNALS" "\\$\\{CONS_EXCLUDED:-\\}"$', drv), 1L)
-  expect_length(grep('  elif consolidate_outcomes "$tsv" "$ws" && [ -n "${CY_CONS_FAIL[$ws]:-}" ]; then',
+  expect_length(grep('  elif consolidate_outcomes "$tsv" "$ws" && [ -n "${HOST_CONS_FAIL[$ws]:-}" ]; then',
                      legs, fixed = TRUE), 1L)
   expect_length(grep("run_expected_recompute_only \"$WSGS_ARG\" || exit 1", drv, fixed = TRUE), 1L)
   expect_length(grep("  run_finish \"$RO_EXPECT\" \"\" \"$RO_EXCLUDED\"", drv, fixed = TRUE), 1L)
@@ -676,7 +677,7 @@ test_that("the driver records the run's groups before any spend and hands run_fi
   expect_length(copy, 1L)
   expect_lt(writes[1], copy)
   expect_gt(writes[2], copy)
-  expect_match(legs[writes[1] - 2L], "CY_CONS_STATE[$ws]=in_flight", fixed = TRUE)
+  expect_match(legs[writes[1] - 2L], "HOST_CONS_STATE[$ws]=in_flight", fixed = TRUE)
 })
 
 state_file <- function(w) file.path(w, "logs", "20261018_000000_consolidate_state.tsv")
@@ -688,7 +689,7 @@ test_that("consolidate_state_write records in_flight before, then ok or the fail
   r <- run_finish_sh(w, "unused", c(
     cons_setup,
     sprintf("consolidate_state_write %s in_flight; cp %s %s.before", shQuote(p), shQuote(p), shQuote(p)),
-    "CY_CONS_FAIL[a]=dest_copy",
+    "HOST_CONS_FAIL[a]=dest_copy",
     sprintf("consolidate_state_write %s ok", shQuote(p))
   ))
   expect_equal(r$status, 0L, info = r$out)
@@ -760,9 +761,9 @@ test_that("a kept host's group finished outside its bucket is settled there, not
   sc <- finish_fixture(conn)
   w <- finish_world()
   # ZZZZ: finished by a outside its bucket, still on the kept host
-  # (CY_UNCONS, which kept_hosts.tsv writes), and excluded with a's bucket.
+  # (HOST_UNCONS, which kept_hosts.tsv writes), and excluded with a's bucket.
   r <- run_finish_sh(w, sc, c(
-    "CY_WS_ARR=(a); CY_BUCKET[a]=BBBB; CY_HOLD[a]=1; CY_UNCONS[a]=BBBB,ZZZZ",
+    "HOST_ARR=(a); HOST_BUCKET[a]=BBBB; HOST_HOLD[a]=1; HOST_UNCONS[a]=BBBB,ZZZZ",
     "run_finish AAAA '' BBBB,ZZZZ"
   ))
   expect_equal(r$status, 1L, info = r$out)
@@ -857,12 +858,18 @@ test_that("the driver bounds a statement on both modelling legs and refuses a ba
   legs <- drv[from:to]
   legs <- legs[!grepl("^[[:space:]]*#", legs)]
   bound <- "statement_timeout=${STATEMENT_TIMEOUT_MIN}min"
-  expect_length(grep(bound, legs, fixed = TRUE), 2L)
+  # The local leg sets it here; the ssh leg's command is built by
+  # remote_leg_cmd (study_area_remote.sh, link#376), which the driver calls.
+  expect_length(grep(bound, legs, fixed = TRUE), 1L)
+  expect_length(grep("LNK_STATEMENT_TIMEOUT_MIN=", legs, fixed = TRUE), 1L)
+  expect_length(grep('"$(remote_leg_cmd "$WS" "$B_SPACE")"', legs, fixed = TRUE), 1L)
+  remote <- readLines(testthat::test_path("..", "..", "data-raw", "study_area_remote.sh"))
+  leg_fn <- remote[grep("^remote_leg_cmd\\(\\) \\{", remote):length(remote)]
+  leg_fn <- leg_fn[seq_len(which(leg_fn == "}")[1])]
   # ... and the minutes it asked for, which wsg_run_one.R checks it got.
-  expect_length(grep("LNK_STATEMENT_TIMEOUT_MIN=", legs, fixed = TRUE), 2L)
-  expect_length(grep("export LNK_STATEMENT_TIMEOUT_MIN='$STATEMENT_TIMEOUT_MIN'", legs, fixed = TRUE), 1L)
+  expect_length(grep("export LNK_STATEMENT_TIMEOUT_MIN='$STATEMENT_TIMEOUT_MIN'", leg_fn, fixed = TRUE), 1L)
   expect_length(grep("TEST HOOK:    LNK_TEST_STALL_WSG", drv, fixed = TRUE), 1L)
-  expect_length(grep(paste0("export PGOPTIONS='-c ", bound, "'"), legs, fixed = TRUE), 1L)
+  expect_length(grep(paste0("export PGOPTIONS='-c ", bound, "'"), leg_fn, fixed = TRUE), 1L)
   rc_from <- grep("^recompute_one\\(\\) \\{", drv)
   rc_to <- rc_from + which(drv[-seq_len(rc_from)] == "}")[1]
   expect_length(rc_from, 1L)

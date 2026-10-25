@@ -137,6 +137,65 @@ consolidate_stage2_cmd <- function(schema, table, cols, tsv, sql_path,
           paste(cols, collapse = ", "), shQuote(tsv))
 }
 
+#' Run a command on a source host and judge it by the status it prints.
+#'
+#' Some ssh servers exit 0 whatever the remote command returned (Tailscale
+#' SSH to macOS does, link#376), so `ssh`'s own exit status cannot say whether
+#' a COPY finished. The remote shell prints the command's status as a trailer
+#' on stderr, which stays out of a COPY's data on stdout, and that trailer is
+#' the verdict. The command runs in a subshell, so an `exit` inside it still
+#' reaches the trailer. No trailer is a failure: a session that ran nothing it could
+#' report is never read as success. A non-zero `ssh` status (it could not
+#' connect, or the link dropped) wins over anything printed.
+#'
+#' @param host Character. The ssh target.
+#' @param inner Character. The command to run there.
+#' @param stdout_path Character or `NULL`. Where the command's stdout goes;
+#'   `NULL` returns it as `out`.
+#' @return `list(rc = , out = , err = )`: the status, stdout lines (empty
+#'   when `stdout_path` is given) and stderr lines less the trailer.
+consolidate_remote <- function(host, inner, stdout_path = NULL) {
+  err_path <- tempfile("consolidate_err_")
+  on.exit(unlink(err_path), add = TRUE)
+  remote <- paste0("(", inner, "); echo __LNK_RC__=$? >&2")
+  cmd <- sprintf("ssh '%s' '%s'", host,
+                 gsub("'", "'\\''", remote, fixed = TRUE))
+  if (is.null(stdout_path)) {
+    out <- suppressWarnings(system(
+      paste(cmd, "2>", shQuote(err_path)), intern = TRUE))
+    ssh_rc <- attr(out, "status") %||% 0L
+    attributes(out) <- NULL
+  } else {
+    ssh_rc <- system(paste(cmd, ">", shQuote(stdout_path), "2>",
+                           shQuote(err_path)))
+    out <- character()
+  }
+  err <- if (file.exists(err_path)) readLines(err_path, warn = FALSE) else character()
+  # Matched to the end of a line, not its start: stderr written without a
+  # final newline puts the trailer mid-line.
+  at <- regexpr("__LNK_RC__=[0-9]+$", err)
+  hit <- regmatches(err, at)
+  remote_rc <- if (length(hit)) {
+    as.integer(sub("__LNK_RC__=", "", hit[length(hit)], fixed = TRUE))
+  } else {
+    NA_integer_
+  }
+  err <- sub("__LNK_RC__=[0-9]+$", "", err)
+  err <- err[nzchar(err)]
+  rc <- if (ssh_rc != 0L) as.integer(ssh_rc) else if (is.na(remote_rc)) 255L else remote_rc
+  list(rc = rc, out = out, err = err)
+}
+
+#' The rows a `COPY ... FROM STDIN` took, from psql's command tag.
+#'
+#' @param out Character. psql's stdout for the load.
+#' @return Integer, or `NA` when no `COPY n` tag was printed.
+consolidate_copy_count <- function(out) {
+  tag <- grep("^COPY [0-9]+$", out, value = TRUE)
+  if (length(tag) != 1L) return(NA_integer_)
+  as.integer(sub("^COPY ", "", tag))
+}
+
 #' A count of a bucket's rows across tables, as one query.
 #'
 #' The copy is judged on the bucket's own rows, not on whole tables: the
@@ -170,9 +229,32 @@ consolidate_bucket_count_sql <- function(schema, tables, bucket) {
 #' @param tables Character. Tables only the source has.
 #' @return The persist tables among them.
 consolidate_missing_persist <- function(tables) {
-  core <- c("streams", "barriers", "barrier_overrides", "streams_access",
-            "streams_mapping_code", "streams_near_river")
-  tables[tables %in% core]
+  tables[tables %in% consolidate_persist_core]
+}
+
+#' link's persist tables every species set has. host_drop_partials in
+#' data-raw/study_area_hosts.sh names the same set; a test holds them equal.
+consolidate_persist_core <- c("streams", "barriers", "barrier_overrides",
+                              "streams_access", "streams_mapping_code",
+                              "streams_near_river")
+
+#' The tables consolidate may copy and delete: link's own.
+#'
+#' Its persist tables (the core above and `streams_habitat_<sp>`) and its log
+#' tables. A persist schema can hold others with a `watershed_group_code`
+#' column: in `fresh`, the bcfishpass config's schema, the snapshot primitives
+#' (`modelled_stream_crossings`) and the bcfp reference (`streams_vw_bcfp`,
+#' `crossings_vw_bcfp`) sit beside the persist tables. Copying those would put
+#' a source's primitives over the destination's, and step 5 would delete them
+#' from the source, which on a persistent worker is a database other sessions
+#' read (link#376).
+#'
+#' @param tables Character. Discovered tables.
+#' @param specs The log table specs, named by table.
+#' @return The subset of `tables` that is link's, in its order.
+consolidate_link_tables <- function(tables, specs = link:::.lnk_log_specs()) {
+  tables[tables %in% c(consolidate_persist_core, names(specs)) |
+           grepl("^streams_habitat_[a-z]+$", tables)]
 }
 
 #' pg_dump the destination schema before anything is copied into it.
@@ -371,8 +453,8 @@ schema_consolidate <- function(schema,
     }
     # Source enumeration via SSH + psql. Same query, same shape, just
     # tab-separated rows piped back over ssh. `\t` + `\a` for clean
-    # parse-as-lines. Quote-escape pattern matches the COPY shellouts
-    # below (single-quoted outer ssh arg; inner `'` -> `'\''`).
+    # parse-as-lines. Every remote call goes through consolidate_remote(),
+    # which quotes it and reads its status from what it prints.
     src_wgc_sql <- gsub("\n\\s+", " ", wgc_query)
     src_wgc_inner <- if (via == "docker") {
       sprintf("docker exec %s psql -U %s -d %s -t -A -c \"%s\"",
@@ -381,10 +463,15 @@ schema_consolidate <- function(schema,
       sprintf("PGHOST=localhost PGPORT=5432 PGDATABASE=%s PGUSER=%s PGPASSWORD=postgres psql -t -A -c \"%s\"",
               pg_db, pg_user, src_wgc_sql)
     }
-    src_wgc_inner_esc <- gsub("'", "'\\''", src_wgc_inner, fixed = TRUE)
-    src_wgc_raw <- system(sprintf("ssh '%s' '%s'", src$host, src_wgc_inner_esc),
-                          intern = TRUE)
-    src_wgc <- src_wgc_raw[nzchar(src_wgc_raw)]
+    src_wgc_res <- consolidate_remote(src$host, src_wgc_inner)
+    if (src_wgc_res$rc != 0L) {
+      log(src$host, " -> ERROR: could not list the source's tables (exit ",
+          src_wgc_res$rc, ") — nothing deleted or copied")
+      results[[src$host]] <- list(ok = FALSE, stage = "source_tables",
+                                   rc = src_wgc_res$rc)
+      next
+    }
+    src_wgc <- src_wgc_res$out[nzchar(src_wgc_res$out)]
     if (length(src_wgc) == 0L) {
       log(src$host, " -> ERROR: no tables with watershed_group_code in '",
           schema, "' on source (lnk_persist_init may not have run)")
@@ -392,6 +479,17 @@ schema_consolidate <- function(schema,
                                    rc = -1L)
       next
     }
+    # link's tables only (consolidate_link_tables, link#376): never the
+    # schema's primitives or reference tables.
+    not_links <- setdiff(union(src_wgc, dest_wgc),
+                         consolidate_link_tables(union(src_wgc, dest_wgc)))
+    if (length(not_links) > 0L) {
+      log(src$host, " -> NOTE: leaving ", length(not_links),
+          " tables that are not link's persist or log tables: ",
+          paste(not_links, collapse = ", "))
+    }
+    src_wgc <- consolidate_link_tables(src_wgc)
+    dest_wgc <- consolidate_link_tables(dest_wgc)
     wgc_tables <- intersect(src_wgc, dest_wgc)
     skipped_source_only <- setdiff(src_wgc, dest_wgc)
     skipped_dest_only <- setdiff(dest_wgc, src_wgc)
@@ -451,10 +549,15 @@ schema_consolidate <- function(schema,
       sprintf("PGHOST=localhost PGPORT=5432 PGDATABASE=%s PGUSER=%s PGPASSWORD=postgres psql -t -A -c \"%s\"",
               pg_db, pg_user, cols_sql)
     }
-    src_cols_inner_esc <- gsub("'", "'\\''", src_cols_inner, fixed = TRUE)
-    src_cols_raw <- system(sprintf("ssh '%s' '%s'", src$host, src_cols_inner_esc),
-                           intern = TRUE)
-    src_cols_raw <- src_cols_raw[nzchar(src_cols_raw)]
+    src_cols_res <- consolidate_remote(src$host, src_cols_inner)
+    if (src_cols_res$rc != 0L) {
+      log(src$host, " -> ERROR: could not read the source's columns (exit ",
+          src_cols_res$rc, ") — nothing deleted or copied")
+      results[[src$host]] <- list(ok = FALSE, stage = "source_columns",
+                                   rc = src_cols_res$rc)
+      next
+    }
+    src_cols_raw <- src_cols_res$out[nzchar(src_cols_res$out)]
     src_cols_split <- strsplit(src_cols_raw, "|", fixed = TRUE)
     src_cols <- split(
       vapply(src_cols_split, `[`, character(1), 2L),
@@ -497,20 +600,18 @@ schema_consolidate <- function(schema,
         sprintf("PGHOST=localhost PGPORT=5432 PGDATABASE=%s PGUSER=%s PGPASSWORD=postgres psql -X -t -A -c \"%s\"",
                 pg_db, pg_user, newest_sql)
       }
-      src_newest_raw <- suppressWarnings(system(sprintf("ssh '%s' '%s'",
-        src$host, gsub("'", "'\\''", src_newest_inner, fixed = TRUE)),
-        intern = TRUE))
+      src_newest_res <- consolidate_remote(src$host, src_newest_inner)
       # A failed query would read as "no log rows on the source" and refuse
       # under the wrong reason; name it instead.
-      if (!is.null(attr(src_newest_raw, "status"))) {
+      if (src_newest_res$rc != 0L) {
         log(src$host, " -> ERROR: could not read the source's log (exit ",
-            attr(src_newest_raw, "status"), ") — nothing deleted or copied")
+            src_newest_res$rc, ") — nothing deleted or copied")
         results[[src$host]] <- list(ok = FALSE, stage = "source_log_query",
-                                     rc = attr(src_newest_raw, "status"))
+                                     rc = src_newest_res$rc)
         next
       }
-      src_newest_raw <- strsplit(src_newest_raw[nzchar(src_newest_raw)], "|",
-                                 fixed = TRUE)
+      src_newest_raw <- strsplit(src_newest_res$out[nzchar(src_newest_res$out)],
+                                 "|", fixed = TRUE)
       src_newest <- data.frame(
         watershed_group_code = vapply(src_newest_raw, `[`, character(1), 1L),
         newest = as.numeric(vapply(src_newest_raw, `[`, character(1), 2L)))
@@ -587,23 +688,18 @@ schema_consolidate <- function(schema,
         sprintf("PGHOST=localhost PGPORT=5432 PGDATABASE=%s PGUSER=%s PGPASSWORD=postgres psql -c \"%s\"",
                 pg_db, pg_user, src_sql)
       }
-      # Stage 1: source -> local temp file. Outer ssh arg is SINGLE-
-      # quoted so the inner `psql -c "..."` double-quotes stay literal.
-      # BUT the SQL contains its own single quotes (WSG list literals
-      # like 'ADMS','BULK'), which bash's adjacent-quote concatenation
-      # strips inside a single-quoted outer wrapper. Workaround: escape
-      # each inner `'` to `'\''` (close-quote, escaped-quote, reopen-
-      # quote — the standard bash idiom for embedding ' in a '-quoted
-      # string).
-      src_inner_esc <- gsub("'", "'\\''", src_inner, fixed = TRUE)
+      # Stage 1: source -> local temp file, judged by the status the
+      # remote shell prints (consolidate_remote, link#376): on an ssh that
+      # exits 0 regardless, a COPY that died part-way would otherwise load
+      # its partial file and, with the bucket's rows still rising, let step
+      # 5 delete the source.
       tmpf <- tempfile(pattern = sprintf("consolidate_%s_", t),
                        fileext = ".tsv")
-      stage1 <- sprintf("ssh '%s' '%s' > %s",
-                        src$host, src_inner_esc, shQuote(tmpf))
-      rc_src <- system(stage1)
-      if (rc_src != 0L) {
+      src_copy <- consolidate_remote(src$host, src_inner, stdout_path = tmpf)
+      if (src_copy$rc != 0L) {
         log(src$host, " -> WARN: source_copy failed on table '", t,
-            "' (continuing)")
+            "' (exit ", src_copy$rc, "; continuing)",
+            if (length(src_copy$err)) paste0(": ", paste(src_copy$err, collapse = " | ")))
         errored_tables <- c(errored_tables, t)
         if (is.na(first_err_table)) {
           first_err_stage <- "source_copy"; first_err_table <- t
@@ -620,7 +716,15 @@ schema_consolidate <- function(schema,
                        fileext = ".sql")
       stage2 <- consolidate_stage2_cmd(schema, t, shared_cols[[t]], tmpf, sqlf,
                                        log_specs)
-      rc_dest <- system(stage2)
+      # A persist table's load is also counted (link#376): the rows the
+      # destination took must be the rows the source sent, one per line of
+      # COPY text, or the table is not copied and its source rows stay. The
+      # bucket total in 4.5 cannot see one table landing short while the
+      # others land.
+      sent <- as.integer(trimws(system(sprintf("wc -l < %s", shQuote(tmpf)),
+                                       intern = TRUE)))
+      dest_out <- suppressWarnings(system(stage2, intern = TRUE))
+      rc_dest <- attr(dest_out, "status") %||% 0L
       unlink(c(tmpf, sqlf))
       if (rc_dest != 0L) {
         log(src$host, " -> WARN: dest_copy failed on table '", t,
@@ -630,6 +734,18 @@ schema_consolidate <- function(schema,
           first_err_stage <- "dest_copy"; first_err_table <- t
         }
         next
+      }
+      if (!t %in% names(log_specs)) {
+        took <- consolidate_copy_count(dest_out)
+        if (!identical(took, sent)) {
+          log(src$host, " -> WARN: dest_copy on table '", t, "' took ",
+              took, " rows of ", sent, " sent (continuing)")
+          errored_tables <- c(errored_tables, t)
+          if (is.na(first_err_table)) {
+            first_err_stage <- "copy_count"; first_err_table <- t
+          }
+          next
+        }
       }
       copied_tables <- c(copied_tables, t)
       log(src$host, " -> ", t, " copied in ", sprintf("%.1f",
@@ -706,12 +822,9 @@ schema_consolidate <- function(schema,
         sprintf("PGHOST=localhost PGPORT=5432 PGDATABASE=%s PGUSER=%s PGPASSWORD=postgres psql -v ON_ERROR_STOP=1 -c \"%s\"",
                 pg_db, pg_user, delete_stmts)
       }
-      # Single-quoted outer ssh arg + escape inner single quotes via
-      # bash's `'\''` idiom (the cleanup_cmd's DELETE statements
-      # contain WSG-list single quotes that would otherwise leak out
-      # of the outer quoting).
-      cleanup_cmd_esc <- gsub("'", "'\\''", cleanup_cmd, fixed = TRUE)
-      drop_rc <- system(sprintf("ssh '%s' '%s'", src$host, cleanup_cmd_esc))
+      # A cleanup that failed only leaves rows on the source, which the
+      # driver's release measures again before it lets the host go.
+      drop_rc <- consolidate_remote(src$host, cleanup_cmd)$rc
       if (drop_rc != 0L) {
         log(src$host, " -> WARN: source DELETE returned rc=", drop_rc,
             " — COPY succeeded, source not cleaned, recoverable")

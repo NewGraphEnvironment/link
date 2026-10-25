@@ -1,0 +1,4 @@
+"wsg","species","total_segs","match_pct","n_diffs","top_pattern","top_pattern_count"
+"CHIR","BT",15922,88.06,1901,"ACCESS;MODELLED | ",417
+"CHIR","SK",15922,93.07,1104,"ACCESS;DAM | ",348
+"CHIR","ST",15922,85.07,2377,"REAR;NONE | ACCESS;NONE",898

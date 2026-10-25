@@ -11,6 +11,20 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
+## Status (2026-10-24, late night) — persistent workers beside the dispatcher and the cloud hosts (#376)
+
+**`study_area_run.sh --workers=<ssh target>,...` adds hosts the driver neither spins nor burns**, keyed `worker1..N`, their `--focal=` lists after the dispatcher's and before the cyphers'. Each must answer over ssh and hold its own database (`system_identifier`), and its schema must hold no rows for its bucket, before any spend. `data-raw/worker_prep.sh` (piped over ssh) resets a clone the driver owns (`~/Projects/repo/link_worker`); the leg runs link by load_all from it. After its leg a worker is accounted, consolidated and released, and its partial groups are dropped from its persist tables (log rows kept). **Every remote status is now read from what the remote shell prints, for cyphers too** (`data-raw/study_area_remote.sh`, `consolidate_remote()`), because Tailscale SSH to macOS exits 0 whatever ran. Mechanics: RUNBOOK §8d, "Persistent workers" and "A remote status is what the remote shell prints".
+
+**Facts not worth re-deriving:**
+- **Consolidate could delete a source it had not copied.** On an ssh that exits 0 regardless, a per-table COPY that died part-way loaded its partial file, and while the bucket's total still rose, step 5 deleted the source. Now each remote call reads a stderr trailer, and a persist table's `COPY n` must equal the lines sent.
+- **A `~/.Renviron` pin beats any export over ssh** (measured: a user Renviron line wins over the environment, and a cwd `.Renviron` replaces `~/.Renviron`). So worker prep refuses a `FRESH_GIT_SHA` that is not the installed fresh's `RemoteSha` and a `LINK_GIT_SHA` that is not the clone's HEAD. Under load_all link's sha comes from the clone's git.
+- **The CY_* maps keyed by any remote host are HOST_*** (`HOST_BUCKET`, `HOST_HOLD`, …); `CY_IP`, `CY_BURNED`, `CY_WS_ARR` stay cypher-only. `HOST_ARR` is workers then cyphers; `HOST_KIND` says which; `HOST_SSH` is each host's ssh target (`cypher@<ip>` for a cloud host).
+- **A timing-bound legs test** ("a burn mid-run lists no host that is still modelling") gives a host's consolidate 3 s; it failed twice in seven runs under load, never idle. Pre-existing.
+- **Run on a real worker, 2026-10-25** (`data-raw/logs/worker_376/`, its README indexes three runs): A models, consolidates, releases and recomputes six groups on the dispatcher and the worker, exit 0, both verifiers pass; B stalls a worker group under a 2 min bound, the group is named and the worker released, exit 1; C SIGKILLs the worker's loop mid-group, its ssh reports 0, the missing end marker holds the worker and lists it kept, exit 1.
+- **A worker's fresh and primitives are brought current by hand, once:** `--auto-install` for fresh, and `snapshot_bcfp.sh` under `bash -lc` (a non-interactive ssh PATH on macOS lacks `psql`, `ogr2ogr` and `bcdata`). RUNBOOK §8d.
+- **Another session's database load stalled the dispatcher again** in Runs B and C (`frs_near_river_walk` past 30 min where it takes under 2), with the worker unaffected.
+- **Owed:** acceptance 2 (a provincial run with a worker, longest leg within 10 % of its packing estimate; #377's runs row), and the worker's `--host-speeds` value from it. Whether a dropped ssh session (not a killed loop) ends the worker's loop is unmeasured.
+
 ## Status (2026-10-24, night) — each cloud host is consolidated and burned when its own leg ends (#369)
 
 **`study_area_run.sh` finishes each cypher as its leg ends** (`data-raw/study_area_legs.sh`: `legs_wait` over `wait -n -p`, then account, consolidate that one source, release, burn), while the other legs keep modelling. The dispatcher's persist is initialised and backed up once before any leg (the dump runs through spin and prep). The driver needs bash ≥ 5.1. Mechanics: RUNBOOK §8d, "Each cloud host is consolidated when its own leg ends". Evidence: `data-raw/logs/consolidate_on_finish_369/` (its README indexes three runs).
@@ -31,7 +45,7 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Facts not worth re-deriving:**
 - **Each model and prep leg writes its own row** from an outer `( … ) >> <leg log> 2>&1 &` wrapper and re-raises its exit status, which `host_wait` reads. The legs are waited on in turn, so a wait's return is not a leg's end. Wrapping code like this changes the context it runs in, and review found two cases: errexit is off on the left of `|| mrc=$?` (so the local leg's `cd` needs `|| exit 1`), and a wrapper left on the driver's stdout holds a `| tee` open for the whole leg.
 - **Rows overlap; never sum them.** The run-wide `prep` holds refresh and every cypher's prep. A killed driver closes the open phase `failed` from the EXIT trap, and a leg that outlives it writes a later row with the same start, which wins. `pkill -f study_area_run` reaches the wrappers too.
-- **`burn_cyphers` returns its caller's `$?`, not its own result,** so the burn row reads `CY_BURNED` / `CY_HOLD` instead.
+- **`burn_cyphers` returns its caller's `$?`, not its own result,** so the burn row reads `CY_BURNED` / `HOST_HOLD` instead.
 - **Owed:** acceptance criterion 2. The next provincial run's `phases.tsv` gets committed with its evidence, and it fills #377's runs row. That run is also the first to exercise the cypher wrappers, and a structural test pins them until then.
 
 ## Status (2026-10-24) — a runaway modelling statement fails its own group (#371)

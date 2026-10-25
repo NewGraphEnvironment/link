@@ -1,0 +1,15 @@
+[study_area_compare] 24 rows across 6/6 WSGs -> /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261025_141501_compare.csv
+# A tibble: 24 × 7
+   wsg   species total_segs match_pct n_diffs top_pattern      top_pattern_count
+ * <chr> <chr>        <int>     <dbl>   <int> <chr>                        <int>
+ 1 KHTZ  CH           24890      99.4     160 "REAR;NONE | AC…               121
+ 2 KHTZ  CM           24890      99.9      17 "ACCESS;NONE | "                10
+ 3 KHTZ  CO           24890      98.7     334 "REAR;NONE | AC…               271
+ 4 KHTZ  PK           24890      99.9      19 "ACCESS;NONE | "                10
+ 5 KHTZ  SK           24890      99.4     157 "ACCESS;NONE | …                85
+ 6 KHTZ  ST           24890      99.4     163 "REAR;NONE | AC…               112
+ 7 SEYM  CH           24482      97.2     679 "REAR;NONE | AC…               463
+ 8 SEYM  CM           24482      99.7      80 "ACCESS;NONE | "                34
+ 9 SEYM  CO           24482      94.2    1410 "REAR;NONE | AC…               909
+10 SEYM  PK           24482      99.7      77 "ACCESS;NONE | "                34
+# ℹ 14 more rows

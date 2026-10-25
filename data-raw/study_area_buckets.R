@@ -50,7 +50,8 @@
 # Usage:
 #   [LNK_LOAD=loadall] Rscript data-raw/study_area_buckets.R \
 #     [--hosts=4] [--config=bcfishpass] [--focal=A,B,C] [--atom=component|group] \
-#     [--minutes-schema=<persist schema>] [--host-speeds=1,1,1,1] [--write]
+#     [--minutes-schema=<persist schema>] [--host-speeds=1,1,1,1] [--workers=0]
+#     [--write]
 #
 #   --hosts=N            number of hosts to pack onto (default 4: dispatcher + 3)
 #   --focal=             override the focal set (default: the baked-in 96)
@@ -58,7 +59,14 @@
 #   --minutes-schema=S   weight each group by its measured modelling minutes,
 #                        from the newest finished row per group in S.log
 #                        (link#361). Without it, by stream-segment count.
-#   --host-speeds=       relative throughput per host, dispatcher first
+#   --host-speeds=       relative throughput per host, dispatcher first, then
+#                        workers, then cloud hosts
+#   --workers=N          how many of the hosts are persistent workers (link#376;
+#                        default 0). They are hosts 2..N+1, labelled worker1..N,
+#                        and the printed --focal= lists follow the driver's order:
+#                        dispatcher, workers, cloud hosts. A worker's speed is
+#                        measured, not assumed: its minutes per group against the
+#                        dispatcher's on the same groups (RUNBOOK section 8d).
 #   --write              rewrite research/study_areas.md from this run's output
 #                        (component atoms only)
 #
@@ -74,6 +82,7 @@ n_hosts <- as.integer(arg_val("--hosts", "4"))
 config  <- arg_val("--config", "bcfishpass")
 minutes_schema <- arg_val("--minutes-schema", "")
 atom <- arg_val("--atom", "component")
+n_workers <- suppressWarnings(as.integer(arg_val("--workers", "0")))
 do_write <- "--write" %in% args
 if (!atom %in% c("component", "group")) {
   stop("--atom must be component or group, got '", atom, "'", call. = FALSE)
@@ -89,6 +98,10 @@ if (nzchar(minutes_schema) && !grepl("^[A-Za-z_][A-Za-z0-9_]*$", minutes_schema)
 }
 if (is.na(n_hosts) || n_hosts < 1L) {
   stop("--hosts must be a positive integer", call. = FALSE)
+}
+if (is.na(n_workers) || n_workers < 0L || n_workers > n_hosts - 1L) {
+  stop("--workers must be a whole number from 0 to --hosts - 1 (the dispatcher ",
+       "is host 1)", call. = FALSE)
 }
 
 # Relative throughput per host, dispatcher first. Default EQUAL. The 2026-08-31
@@ -394,7 +407,21 @@ for (h in seq_len(n_hosts)) {
 }
 
 # --- 6. report -------------------------------------------------------------
-host_label <- function(h) if (h == 1L) "dispatcher (m1)" else sprintf("job%d", h - 1L)
+# Hosts in the driver's order: the dispatcher, then workers, then cloud hosts.
+host_label <- function(h) {
+  if (h == 1L) return("dispatcher (m1)")
+  if (h <= n_workers + 1L) return(sprintf("worker%d", h - 1L))
+  sprintf("job%d", h - 1L - n_workers)
+}
+n_jobs <- n_hosts - 1L - n_workers
+# The driver flags that name the hosts, in its order (a worker's ssh target is
+# the operator's to fill in).
+host_flags <- c(
+  if (n_workers > 0L) sprintf("--workers=%s", paste(sprintf("<worker%d target>", seq_len(n_workers)),
+                                                    collapse = ",")),
+  if (n_jobs > 0L) sprintf("--cy-workspaces=%s", paste(sprintf("job%d", seq_len(n_jobs)),
+                                                       collapse = ","))
+)
 
 cat("\n## Components\n\n")
 cat(sprintf("%d focal WSGs -> %d drainage-independent components\n\n",
@@ -450,6 +477,7 @@ if (atom == "group") {
   cat("each list as given instead of expanding it to its drainage closure.\n\n")
 }
 cat("```\n")
+for (f in host_flags) cat(sprintf("  %s \\\n", f))
 if (atom == "group") cat("  --buckets-exact \\\n")
 for (h in seq_len(n_hosts)) {
   # Component atoms: the focal groups, sorted (the driver expands them).
@@ -565,8 +593,7 @@ if (do_write) {
   wr("")
   wr("```")
   wr("bash data-raw/study_area_run.sh \\")
-  wr(sprintf("  --cy-workspaces=%s \\",
-             paste(sprintf("job%d", seq_len(n_hosts - 1L)), collapse = ",")))
+  for (f in host_flags) wr(sprintf("  %s \\", f))
   for (h in seq_len(n_hosts)) {
     wr(sprintf("  --focal=%s \\", paste(sort(host_focal[[h]]), collapse = ",")))
   }
