@@ -30,7 +30,7 @@ Needs the worker's ssh target from the operator (kept out of the repo).
 - [x] Non-interactive shell, PATH (`Rscript git docker psql bash`), bash version, `~/.Rprofile` output on stdout
 - [x] DB route (docker `fresh-db` or host psql), fwapg loaded, primitives' load stamps (`host_vintage.R`), discharge for the run's config, `system_identifier` differs from the dispatcher's
 - [x] Installed fresh vs the pin; `~/.Renviron` keys (`LINK_GIT_*`, `FRESH_GIT_*`, `LNK_HOST_ALIAS`); pkgload installed; `load_all()` refuses a fresh below the floor
-- [ ] Whether a dropped ssh session kills the remote loop (moved to Phase 6's killed-loop case)
+- [ ] Whether a dropped ssh session kills the remote loop: unmeasured (Run C killed the loop, not the session)
 - [x] Record findings (no identity) in `findings.md`; adjust Phases 3–4 if a route differs
 
 ## Phase 2: Rename any-remote-host maps (behaviour-neutral)
@@ -78,8 +78,8 @@ Needs the worker's ssh target from the operator (kept out of the repo).
 - [x] Tests pass (`devtools::test()`: 1070 tests, 2 failures in `test-lnk_pipeline_prepare.R`, a structural pin on the ssh leg string, repointed at `study_area_remote.sh`; then all affected suites green)
 - [x] `lintr::lint_package()`: no new lints in files this branch created or in its test edits, beyond `hosts_bash` object-usage warnings main carries in the same pattern; three indentation and one semicolon lint in `schema_consolidate.R` and its test follow that file's existing style (main: 2,793)
 - [x] `/code-check branch`: four rounds (3, 3, 6, 4 findings; all fixed but one half-wrong claim), ended by enumeration after round 4 found a defect inside round 3's fix (findings.md)
-- [ ] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion
+- [x] PWF checkboxes match landed work
+- [x] `/planning-archive` on completion
 
 Verification: each guard is proved by restoring the defect (ssh stub exits 0 on a failed COPY → test goes red without the trailer); the rename by identical suite counts; the worker path end to end by Phase 6 on real hosts, including the ssh-returns-0 case.
 
