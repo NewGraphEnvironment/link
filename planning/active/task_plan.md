@@ -61,11 +61,11 @@ Needs the worker's ssh target from the operator (kept out of the repo).
 - [x] Document how a worker's speed is measured: mid-size groups' minutes by host (not `--minutes-schema`'s newest row, which mixes hosts)
 
 ## Phase 6: Live acceptance (two-host test)
-- [ ] Live probes on the worker: `consolidate_remote` reads 3 from `exit 3` while ssh returned 0
-- [ ] Dispatcher + worker, `--buckets-exact`, scratch schema `fresh_worker376`, mid-size groups: models, consolidates, recomputes, exits 0; both verifiers pass at `expected_n`
-- [ ] Failure run: `LNK_TEST_STALL_WSG=<worker group> --statement-timeout=1` on groups whose longest statement is well under a minute; expected: worker released, no `kept_hosts.tsv`, the group in `no_rows`, exit 1
-- [ ] Kill the remote loop's shell mid-leg: no END sentinel, worker held and listed, run exits non-zero
-- [ ] Evidence to `data-raw/logs/worker_376/` (README indexes runs; launcher stdout redacted); drop `fresh_worker376` on both hosts after
+- [x] Live probes on the worker: `consolidate_remote` reads 3 from `exit 3` while ssh returned 0
+- [x] Dispatcher + worker, `--buckets-exact`, scratch schema `fresh_worker376`, mid-size groups: models, consolidates, recomputes, exits 0; both verifiers pass at `expected_n`
+- [x] Failure run: `LNK_TEST_STALL_WSG=<worker group> --statement-timeout=1` on groups whose longest statement is well under a minute; expected: worker released, no `kept_hosts.tsv`, the group in `no_rows`, exit 1
+- [x] Kill the remote loop's shell mid-leg: no END sentinel, worker held and listed, run exits non-zero
+- [x] Evidence to `data-raw/logs/worker_376/` (README indexes runs; launcher stdout redacted); drop `fresh_worker376` on both hosts after
 
 ## Phase 7: Docs
 - [x] RUNBOOK §8d: "Persistent workers" (kind, prep, clone, no burn, partial drop) and the exit-status rule; also the phases host column, "burn, per cypher", the recovery recipe's `cypher@<ip>`, the kept-hosts wording

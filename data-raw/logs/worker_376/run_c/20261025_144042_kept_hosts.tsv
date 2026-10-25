@@ -1,0 +1,2 @@
+workspace	droplet	reason	run_uid	schema	groups	groups_partial	groups_unknown	groups_measured	ip_command	burn_command
+worker1	-	dispatch session exited 1; groups may still be running there	20261025_144042-5c8409a5	fresh_worker376				unsettled	the --workers= target given for worker1	none (persistent worker; nothing to burn)

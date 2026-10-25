@@ -1,0 +1,13 @@
+[study_area_compare] 9 rows across 2/2 WSGs -> /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261025_142731_compare.csv
+# A tibble: 9 × 7
+  wsg   species total_segs match_pct n_diffs top_pattern       top_pattern_count
+* <chr> <chr>        <int>     <dbl>   <int> <chr>                         <int>
+1 NECR  BT           27699      90.7    2577 "REAR;MODELLED |…               350
+2 NECR  CH           27699      88.7    3133 "REAR;MODELLED |…               914
+3 NECR  CO           27699      85.9    3918 "REAR;MODELLED |…               808
+4 NECR  SK           27699      96.5     974 "SPAWN;MODELLED …               287
+5 SEYM  CH           24482      97.2     679 "REAR;NONE | ACC…               463
+6 SEYM  CM           24482      99.7      80 "ACCESS;NONE | "                 34
+7 SEYM  CO           24482      94.2    1410 "REAR;NONE | ACC…               909
+8 SEYM  PK           24482      99.7      77 "ACCESS;NONE | "                 34
+9 SEYM  ST           24482      96.4     870 "REAR;NONE | ACC…               565

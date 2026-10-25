@@ -1,0 +1,7 @@
+[study_area_compare] 3 rows across 1/1 WSGs -> /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261025_144042_compare.csv
+# A tibble: 3 × 7
+  wsg   species total_segs match_pct n_diffs top_pattern       top_pattern_count
+* <chr> <chr>        <int>     <dbl>   <int> <chr>                         <int>
+1 CHIR  BT           15922      88.1    1901 "ACCESS;MODELLED…               417
+2 CHIR  SK           15922      93.1    1104 "ACCESS;DAM | "                 348
+3 CHIR  ST           15922      85.1    2377 "REAR;NONE | ACC…               898

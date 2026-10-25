@@ -1822,6 +1822,17 @@ one `--focal=` list per worker after the dispatcher's and before the cyphers'
   comes from the clone's git. `--auto-install` on a worker installs fresh at
   DESCRIPTION's `Remotes:` pin and re-checks once; it refuses while a
   `FRESH_GIT_SHA` pin is set, which would outlive the install.
+- **Primitives and fresh are the operator's to bring current, once,** because
+  both are shared with the machine's other sessions. Measured on the first
+  worker (2026-10-25): fresh by `--auto-install` (or `worker_prep.sh`'s
+  `install-fresh` stage), and the snapshot by `bash -lc 'cd
+  ~/Projects/repo/link_worker/data-raw && export PGUSER=postgres
+  PGPASSWORD=postgres PGHOST=localhost PGPORT=5432 PGDATABASE=fwapg
+  LNK_LOAD=loadall && bash snapshot_bcfp.sh --with-bcfp-views --force'` over
+  ssh. A login shell, because a non-interactive ssh command on macOS gets PATH
+  `/usr/local/bin:/usr/bin:/bin`, without `psql`, `ogr2ogr` or `bcdata`. The leg
+  itself needs only `Rscript`, `git` and `docker`, which resolve there. Evidence:
+  `data-raw/logs/worker_376/`.
 - **The leg** is a cypher's (`remote_leg_cmd`, the same exports), run from the
   clone with `LNK_LOAD=loadall`. Before each group it checks the clone's HEAD
   against the run's commit, and runs no group once it has moved (a second

@@ -1,0 +1,7 @@
+wsg	host	skip	run_uid	bucket_mode
+CHIR	dispatcher	no	20261025_142731-1c7447ff	exact
+KHTZ	dispatcher	no	20261025_142731-1c7447ff	exact
+MAHD	dispatcher	no	20261025_142731-1c7447ff	exact
+HORS	worker1	no	20261025_142731-1c7447ff	exact
+NECR	worker1	no	20261025_142731-1c7447ff	exact
+SEYM	worker1	no	20261025_142731-1c7447ff	exact

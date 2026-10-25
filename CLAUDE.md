@@ -20,7 +20,10 @@ Experimental package — breaking all the time and loving the learning curve. St
 - **A `~/.Renviron` pin beats any export over ssh** (measured: a user Renviron line wins over the environment, and a cwd `.Renviron` replaces `~/.Renviron`). So worker prep refuses a `FRESH_GIT_SHA` that is not the installed fresh's `RemoteSha` and a `LINK_GIT_SHA` that is not the clone's HEAD. Under load_all link's sha comes from the clone's git.
 - **The CY_* maps keyed by any remote host are HOST_*** (`HOST_BUCKET`, `HOST_HOLD`, …); `CY_IP`, `CY_BURNED`, `CY_WS_ARR` stay cypher-only. `HOST_ARR` is workers then cyphers; `HOST_KIND` says which; `HOST_SSH` is each host's ssh target (`cypher@<ip>` for a cloud host).
 - **A timing-bound legs test** ("a burn mid-run lists no host that is still modelling") gives a host's consolidate 3 s; it failed twice in seven runs under load, never idle. Pre-existing.
-- **Owed:** the live two-host acceptance on a real worker (Phase 6 of #376), and acceptance 2 (a provincial run with a worker, longest leg within 10 % of its packing estimate; #377's runs row).
+- **Run on a real worker, 2026-10-25** (`data-raw/logs/worker_376/`, its README indexes three runs): A models, consolidates, releases and recomputes six groups on the dispatcher and the worker, exit 0, both verifiers pass; B stalls a worker group under a 2 min bound, the group is named and the worker released, exit 1; C SIGKILLs the worker's loop mid-group, its ssh reports 0, the missing end marker holds the worker and lists it kept, exit 1.
+- **A worker's fresh and primitives are brought current by hand, once:** `--auto-install` for fresh, and `snapshot_bcfp.sh` under `bash -lc` (a non-interactive ssh PATH on macOS lacks `psql`, `ogr2ogr` and `bcdata`). RUNBOOK §8d.
+- **Another session's database load stalled the dispatcher again** in Runs B and C (`frs_near_river_walk` past 30 min where it takes under 2), with the worker unaffected.
+- **Owed:** acceptance 2 (a provincial run with a worker, longest leg within 10 % of its packing estimate; #377's runs row), and the worker's `--host-speeds` value from it. Whether a dropped ssh session (not a killed loop) ends the worker's loop is unmeasured.
 
 ## Status (2026-10-24, night) — each cloud host is consolidated and burned when its own leg ends (#369)
 

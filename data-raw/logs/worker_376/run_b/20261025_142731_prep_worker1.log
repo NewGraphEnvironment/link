@@ -1,0 +1,56 @@
+=== worker clone at 003f221eb3ed24239753ca56dc910fc7d29abbde (376-study-area-run-sh-persistent-worker-host)
+=== host <worker1>
+=== link 0.68.4 at 003f221eb3ed; fresh 0.42.0 at e9793047cc8f (remote_sha)
+NOTICE:  schema "fresh_worker376" already exists, skipping
+
+NOTICE:  relation "streams" already exists, skipping
+
+NOTICE:  relation "streams_habitat_bt" already exists, skipping
+
+NOTICE:  relation "streams_habitat_ch" already exists, skipping
+
+NOTICE:  relation "streams_habitat_cm" already exists, skipping
+
+NOTICE:  relation "streams_habitat_co" already exists, skipping
+
+NOTICE:  relation "streams_habitat_pk" already exists, skipping
+
+NOTICE:  relation "streams_habitat_sk" already exists, skipping
+
+NOTICE:  relation "streams_habitat_st" already exists, skipping
+
+NOTICE:  relation "streams_habitat_wct" already exists, skipping
+
+NOTICE:  relation "streams_habitat_ko" already exists, skipping
+
+NOTICE:  relation "streams_habitat_rb" already exists, skipping
+
+NOTICE:  relation "streams_habitat_gr" already exists, skipping
+
+NOTICE:  relation "barriers" already exists, skipping
+
+NOTICE:  relation "barrier_overrides" already exists, skipping
+
+NOTICE:  relation "streams_access" already exists, skipping
+
+NOTICE:  relation "streams_mapping_code" already exists, skipping
+
+NOTICE:  relation "streams_near_river" already exists, skipping
+
+NOTICE:  schema "fresh_worker376" already exists, skipping
+
+NOTICE:  relation "log" already exists, skipping
+
+NOTICE:  relation "log_recompute" already exists, skipping
+
+NOTICE:  relation "log_input" already exists, skipping
+
+NOTICE:  relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  relation "log_dimensions" already exists, skipping
+
+=== persist fresh_worker376 initialised (not recreated)
+=== READY
+__LNK_RC__=0

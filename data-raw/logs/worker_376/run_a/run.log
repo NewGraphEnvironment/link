@@ -1,0 +1,118 @@
+=== study_area_run 20261025_141501 ===
+  run_uid:      20261025_141501-22012cb4
+  run_label:    worker376_a
+  config:       default
+  branch:       376-study-area-run-sh-persistent-worker-host (cyphers run this ref)
+  persist:      fresh_worker376
+  cyphers:      <none> (0)
+  workers:      worker1 (1; persistent, never burned)
+  log dir:      /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run
+  vintage max:  7 d
+  recompute -j: 4
+  statement:    30 min per modelling statement (PGOPTIONS, both legs); recompute 10 min (wsg_recompute_one.R)
+  buckets:      exact (--buckets-exact; each --focal= list as given; the recompute settles access)
+  phases:       /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261025_141501_phases.tsv
+  [phase] refresh skipped
+=== pre-flight (local; pre-spend) ===
+  ✓ dispatcher fresh exports what the pipeline calls
+  ✓ origin/376-study-area-run-sh-persistent-worker-host is at HEAD
+  ✓ fwapg_sha 1a2f338eea64 (exported to all hosts)
+  ✓ bcfishobs_sha 08630cf4ac14 (exported to all hosts)
+  ✓ fresh_sha e9793047cc8f (clean)
+  ✓ bcfp reference pinned at v0.7.15-50-g620dbe4 (exported to all hosts)
+    ok   discharge (fwapg) loaded: whse_basemapping.fwa_stream_networks_discharge
+  ✓ discharge (fwapg) loaded on the dispatcher
+    [preflight] primitive vintage (window 7 d) - OK, oldest 2.3 d (whse_fish.pscis_assessment_svw) [judged by load stamp: 4, statistics: 0, none: 0]
+  ✓ dispatcher primitives within 7 d
+  ✓ worker1: answers, its own database
+  ✓ pre-flight clean (tunnel-free)
+=== resolve exact buckets (--buckets-exact; order as given, species filter only) ===
+  dispatcher (focal=CHIR,KHTZ,MAHD): CHIR,KHTZ,MAHD
+  worker1 (focal=HORS,NECR,SEYM): HORS,NECR,SEYM
+=== workers: prior rows ===
+  ✓ worker1: fresh_worker376 holds no rows for its bucket
+  run groups: /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261025_141501_run_wsgs.tsv
+=== dispatcher persist (fresh_worker376): init, then backup in the background ===
+  ✓ fresh_worker376 initialised (see /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261025_141501_persist_init.log)
+  backup -> /tmp/fresh_worker376_pre_run_20261025_141501.dump (see /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261025_141501_backup.log)
+=== prep workers (worker_prep.sh): worker1 ===
+  [phase] prep worker1 ok 2026-10-25T14:15:14Z -> 2026-10-25T14:15:17Z (0.1 min)
+  ✓ workers prepped
+=== pre-flight (hosts; post-prep, pre-write) ===
+[preflight] host parity - OK across 2 host(s): m1, <worker1>
+  ✓ host parity clean (2 hosts)
+  ✓ cy[worker1] primitives within 7 d
+  [phase] backup ok 2026-10-25T14:15:14Z -> 2026-10-25T14:15:15Z (0.0 min)
+  ✓ pre-run backup taken (see /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261025_141501_backup.log)
+  [phase] prep ok 2026-10-25T14:15:01Z -> 2026-10-25T14:15:21Z (0.3 min, 6 groups)
+=== run buckets (DS-first) ===
+=== legs: each remote host is consolidated when its own leg ends (a cypher then burned, a worker released) ===
+  [phase] model dispatcher ok 2026-10-25T14:15:21Z -> 2026-10-25T14:20:39Z (5.3 min, 3 groups)
+  [phase] model worker1 ok 2026-10-25T14:15:22Z -> 2026-10-25T14:21:54Z (6.5 min, 3 groups)
+=== worker1: leg ended (exit 0); account, consolidate, release ===
+  ✓ worker1: 3/3 WSGs accounted for (3 finished, 0 SKIP; database)
+  [phase] account worker1 ok 2026-10-25T14:21:54Z -> 2026-10-25T14:21:55Z (0.0 min, 3 groups)
+  consolidating worker1: 3 groups (see /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261025_141501_consolidate_worker1.log)
+  ✓ worker1: consolidated
+  ✓ worker1: no finished group left on the host after consolidate — may be released
+  [phase] consolidate worker1 ok 2026-10-25T14:21:55Z -> 2026-10-25T14:23:48Z (1.9 min, 3 groups)
+  [phase] burn worker1 skipped
+  ✓ host runs finished (per-WSG soft-fail; gaps surface in compare)
+=== dispatcher completeness (database) ===
+  ✓ dispatcher: 3/3 WSGs accounted for (3 finished, 0 SKIP; database)
+  [phase] account dispatcher ok 2026-10-25T14:23:48Z -> 2026-10-25T14:23:48Z (0.0 min, 3 groups)
+=== verify WSG coverage in fresh_worker376 (run_uid 20261025_141501-22012cb4) ===
+  6/6 run WSGs have rows from a build this run finished
+  classes: /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261025_141501_coverage.tsv
+  [phase] coverage ok 2026-10-25T14:23:48Z -> 2026-10-25T14:23:48Z (0.0 min, 6 groups)
+=== post-consolidate recompute (lnk_access, 6 WSGs, -j4) ===
+  ✓ log tables present in fresh_worker376
+  ✓ barrier views built once for fresh_worker376
+  [phase] views ok 2026-10-25T14:23:48Z -> 2026-10-25T14:23:51Z (0.1 min)
+  ordering 241 known WSG time(s) longest-first (median 2.43 min for the rest)
+[fanout] recompute - OK: 6/6 job(s) succeeded
+  ✓ recompute: 6/6 WSGs
+  [phase] recompute ok 2026-10-25T14:23:51Z -> 2026-10-25T14:26:12Z (2.4 min, 6 groups)
+=== compare (tunnel-free) ===
+  ✓ compare CSV: /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261025_141501_compare.csv
+  [phase] compare ok 2026-10-25T14:26:12Z -> 2026-10-25T14:26:30Z (0.3 min, 6 groups)
+=== summary ===
+  phases (/Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261025_141501_phases.tsv):
+    phase       host       start_utc            end_utc              minutes groups status
+    refresh                                                                         skipped
+    backup                 2026-10-25T14:15:14Z 2026-10-25T14:15:15Z     0.0        ok
+    prep        worker1    2026-10-25T14:15:14Z 2026-10-25T14:15:17Z     0.1        ok
+    prep                   2026-10-25T14:15:01Z 2026-10-25T14:15:21Z     0.3      6 ok
+    model       dispatcher 2026-10-25T14:15:21Z 2026-10-25T14:20:39Z     5.3      3 ok
+    model       worker1    2026-10-25T14:15:22Z 2026-10-25T14:21:54Z     6.5      3 ok
+    account     worker1    2026-10-25T14:21:54Z 2026-10-25T14:21:55Z     0.0      3 ok
+    consolidate worker1    2026-10-25T14:21:55Z 2026-10-25T14:23:48Z     1.9      3 ok
+    burn        worker1                                                             skipped
+    account     dispatcher 2026-10-25T14:23:48Z 2026-10-25T14:23:48Z     0.0      3 ok
+    coverage               2026-10-25T14:23:48Z 2026-10-25T14:23:48Z     0.0      6 ok
+    views                  2026-10-25T14:23:48Z 2026-10-25T14:23:51Z     0.1        ok
+    recompute              2026-10-25T14:23:51Z 2026-10-25T14:26:12Z     2.4      6 ok
+    compare                2026-10-25T14:26:12Z 2026-10-25T14:26:30Z     0.3      6 ok
+  critical path: 11.5 min (first start to last end)
+  longest model leg: 6.5 min (worker1)
+  consolidate tail: 1.9 min (last consolidate end past the last model end)
+  run WSGs:        CHIR,HORS,KHTZ,MAHD,NECR,SEYM
+  recomputed WSGs: KHTZ,SEYM,HORS,NECR,MAHD,CHIR
+  compare CSV: /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261025_141501_compare.csv
+[study_area_compare] 24 rows across 6/6 WSGs -> /Users/airvine/Projects/repo/link/data-raw/logs/study_area_run/20261025_141501_compare.csv
+# A tibble: 24 × 7
+   wsg   species total_segs match_pct n_diffs top_pattern      top_pattern_count
+ * <chr> <chr>        <int>     <dbl>   <int> <chr>                        <int>
+ 1 KHTZ  CH           24890      99.4     160 "REAR;NONE | AC…               121
+ 2 KHTZ  CM           24890      99.9      17 "ACCESS;NONE | "                10
+ 3 KHTZ  CO           24890      98.7     334 "REAR;NONE | AC…               271
+ 4 KHTZ  PK           24890      99.9      19 "ACCESS;NONE | "                10
+ 5 KHTZ  SK           24890      99.4     157 "ACCESS;NONE | …                85
+ 6 KHTZ  ST           24890      99.4     163 "REAR;NONE | AC…               112
+ 7 SEYM  CH           24482      97.2     679 "REAR;NONE | AC…               463
+ 8 SEYM  CM           24482      99.7      80 "ACCESS;NONE | "                34
+ 9 SEYM  CO           24482      94.2    1410 "REAR;NONE | AC…               909
+10 SEYM  PK           24482      99.7      77 "ACCESS;NONE | "                34
+# ℹ 14 more rows
+=== study_area_run done ===
+  ✓ redacted host addresses in 21 log file(s)
