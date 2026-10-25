@@ -1337,7 +1337,16 @@ collect_stamps() {   # $1 = destination tsv
   return 0
 }
 
+# judge_stamps prints lnk_preflight_parity's summary, which names each host by
+# its stamp, so its output goes through the worker redaction (link#376).
 judge_stamps() {     # $1 = tsv
+  local out rc=0
+  out=$(.judge_stamps_raw "$1" 2>&1) || rc=$?
+  printf '%s\n' "$out" | remote_redact_stream
+  return "$rc"
+}
+
+.judge_stamps_raw() {     # $1 = tsv
   (cd "$REPO_ROOT" && LNK_LOAD=loadall Rscript -e '
 a <- commandArgs(TRUE)
 suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))

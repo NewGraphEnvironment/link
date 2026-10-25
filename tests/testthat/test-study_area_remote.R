@@ -416,3 +416,12 @@ test_that("how a worker names itself is redacted beside its target", {
   ))
   expect_identical(readLines(f), c("<worker1>\tabc\tdef", "<worker2>\tghi"))
 })
+
+test_that("what the driver prints about a worker is redacted too", {
+  skip_if_no_remote_lib()
+  w <- remote_world()
+  r <- run_remote(w, c(
+    "WK_TARGETS=(wk); WK_KEYS=(worker1); remote_redact_add worker1 Some-Mac",
+    "printf '%s\\n' '[preflight] host parity - OK across 2 host(s): m1, Some-Mac' | remote_redact_stream"))
+  expect_identical(r$out, "[preflight] host parity - OK across 2 host(s): m1, <worker1>")
+})

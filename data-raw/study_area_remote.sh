@@ -195,6 +195,20 @@ remote_redact_targets() {
   return 0
 }
 
+# remote_redact_stream: stdin to stdout with each worker's names redacted,
+# for what the driver prints rather than logs. Its stdout is the launcher's,
+# outside the run's own log files; lnk_preflight_parity's summary names each
+# host by its stamp (measured 2026-10-25 on the first worker run).
+remote_redact_stream() {
+  local f
+  f=$(mktemp "${TMPDIR:-/tmp}/lnk_redact.XXXXXX") || { cat; return 0; }
+  cat > "$f"
+  remote_redact_targets "$f"
+  cat "$f"
+  rm -f "$f"
+  return 0
+}
+
 # remote_leg_status <ssh status> <leg log>: 0 only when ssh exited 0 and the
 # log holds the end marker; ssh's status when it is non-zero; 1 otherwise.
 remote_leg_status() {
