@@ -26,12 +26,12 @@ A provincial run's modelling phase is bounded by its longest leg, so more hosts 
 
 ## Phase 1: Measure the worker (no code)
 Needs the worker's ssh target from the operator (kept out of the repo).
-- [ ] ssh exit status (`ssh <w> 'exit 3'; echo $?`), stdout byte-exact and stderr separate (`printf 'a\tb\n' | od -c`), no PTY, BatchMode and ACL check-mode prompts, scp
-- [ ] Non-interactive shell, PATH (`Rscript git docker psql bash`), bash version, `~/.Rprofile` output on stdout
-- [ ] DB route (docker `fresh-db` or host psql), fwapg loaded, primitives' load stamps (`host_vintage.R`), discharge for the run's config, `system_identifier` differs from the dispatcher's
-- [ ] Installed fresh vs the pin; `~/.Renviron` keys (`LINK_GIT_*`, `FRESH_GIT_*`, `LNK_HOST_ALIAS`); pkgload installed; `load_all()` refuses a fresh below the floor
-- [ ] Whether a dropped ssh session kills the remote loop
-- [ ] Record findings (no identity) in `findings.md`; adjust Phases 3–4 if a route differs
+- [x] ssh exit status (`ssh <w> 'exit 3'; echo $?`), stdout byte-exact and stderr separate (`printf 'a\tb\n' | od -c`), no PTY, BatchMode and ACL check-mode prompts, scp
+- [x] Non-interactive shell, PATH (`Rscript git docker psql bash`), bash version, `~/.Rprofile` output on stdout
+- [x] DB route (docker `fresh-db` or host psql), fwapg loaded, primitives' load stamps (`host_vintage.R`), discharge for the run's config, `system_identifier` differs from the dispatcher's
+- [x] Installed fresh vs the pin; `~/.Renviron` keys (`LINK_GIT_*`, `FRESH_GIT_*`, `LNK_HOST_ALIAS`); pkgload installed; `load_all()` refuses a fresh below the floor
+- [ ] Whether a dropped ssh session kills the remote loop (moved to Phase 6's killed-loop case)
+- [x] Record findings (no identity) in `findings.md`; adjust Phases 3–4 if a route differs
 
 ## Phase 2: Rename any-remote-host maps (behaviour-neutral)
 - [x] Record the four study_area suites' pass counts at HEAD

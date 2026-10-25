@@ -95,3 +95,16 @@ Round 4 found a defect inside round 3's fix (the EXIT trap signalled every pid i
 - **Every pid the branch signals or waits on:** the trap's loop (now only pids `jobs -p` still lists, and the list is cleared once the preps are waited on) and the prep wait (pids started just above). Nothing else on the branch calls `kill`, `pkill` or `wait <pid>`.
 - **Every environment variable link's R reads** (grep of `Sys.getenv("…")` over `R/` and the leg's scripts, plus the `<PKG>_GIT_SHA` / `_DIRTY` names built by `paste0`): every `LNK_*` refused at worker prep except `LNK_HOST_ALIAS` (names the host; the vintage stamps key on it); `LINK_GIT_SHA`, `LINK_GIT_DIRTY`, `FWAPG_GIT_SHA`, `BCFISHOBS_GIT_SHA`, `PGOPTIONS` refused; `FRESH_GIT_SHA` must equal the installed `RemoteSha`; `FRESH_GIT_DIRTY` only `false` beside a matching `FRESH_GIT_SHA`; `FWAPG_DIR` / `BCFISHOBS_DIR` are not read while the leg exports the shas; `PG*` and `PG_*_SHARE` are not read by the leg, whose scripts connect with explicit arguments. Live refusals checked for `LNK_BCFP_MODEL_RUN_ID`, `LINK_GIT_DIRTY` and a bare `FRESH_GIT_DIRTY`.
 - **Names a worker writes about itself:** worker prep prints `=== host <.lnk_host()>`, which the driver adds to what it redacts (the stamps row carries it). A held worker's leg may write ssh's end-of-session lines after the trap's redaction: the kept-hosts banner says to redact that log again before committing it.
+
+## Phase 1: the worker, measured (2026-10-25 05:16 UTC)
+
+The candidate worker (a macOS host on the tailnet; identity in the private infrastructure repo):
+
+- **ssh exits 0 for `exit 3`.** The premise of the remote-status rule, measured. `( exit 3 ); echo __LNK_RC__=$?` prints `__LNK_RC__=3`. stdout is byte-exact (`a \t b \n`), stderr separate, no PTY.
+- **Non-interactive shell:** `/bin/bash` 3.2.57, PATH `/usr/local/bin:/usr/bin:/bin`. `Rscript`, `docker` (`/usr/local/bin`), `git` (`/usr/bin`, works: 2.50.1), `perl` resolve; `psql` does not, which the probes never need (they `docker exec fresh-db psql`). R 4.5.2 prints nothing on startup. 330 GB free.
+- **Database:** `docker exec fresh-db psql` answers; `system_identifier` differs from the dispatcher's. It holds `fresh` and `fresh_default` (older builds) and no `provenance` schema, so the vintage gate reads it as unstamped. fwapg's discharge table and `fresh.modelled_stream_crossings` exist.
+- **`~/.Renviron`:** none of the refused keys (`LNK_*`, `LINK_GIT_*`, `FRESH_GIT_*`, `FWAPG_GIT_SHA`, `BCFISHOBS_GIT_SHA`, `PGOPTIONS`); 60 keys in all, values not read.
+- **R packages:** pkgload 1.5.0; **fresh 0.39.0** (RemoteSha `e247ca19`), below DESCRIPTION's floor `fresh (>= 0.42.0)`, so load_all refuses it and prep stops; wet 0.0.0.9000 (only a `wet`-discharge config needs it).
+- **Not yet measured:** whether a dropped ssh session kills the remote loop (Phase 6's killed-loop case).
+
+Two writes stand between the worker and Phase 6, both to state other sessions there share: fresh at the pin (`--auto-install`, pak, so it records `RemoteSha`), and a primitive snapshot that writes load stamps (`snapshot_bcfp.sh --with-bcfp-views --force`). Without the snapshot the run could only proceed on `--preflight-note`, modelling on primitives of unknown date that differ from the dispatcher's.
