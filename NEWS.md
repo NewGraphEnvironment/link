@@ -1,3 +1,12 @@
+# link 0.68.5
+
+**`study_area_run.sh --workers=<ssh target>,...` adds persistent workers** ([#376](https://github.com/NewGraphEnvironment/link/issues/376)): machines that exist and stay up, modelled beside the dispatcher and the cloud hosts, consolidated and released when their own leg ends, and never burned.
+
+- **Every remote status is read from what the remote shell prints, for cloud hosts as well.** Tailscale SSH to macOS returns 0 whatever ran. `data-raw/study_area_remote.sh` and `consolidate_remote()` judge each probe, prep, leg and consolidate call on a printed trailer or end marker. This closes a data-loss path: a per-table COPY that died part-way was loaded, and while the bucket's total still rose, the source was deleted. A persist table's load must now also take as many rows as were sent.
+- **A worker is prepped by `data-raw/worker_prep.sh`**, piped over ssh, from a clone the driver owns (`~/Projects/repo/link_worker`). The leg runs link by load_all, so the worker's own checkout and installed link are never touched. Before any spend, a worker must answer, hold its own database and hold no rows for its bucket. Prep refuses what the worker sets for R that would beat the run's exports, because a `~/.Renviron` line wins over an exported variable.
+- **Consolidate and the worker's partial drop take link's own tables only** (`consolidate_link_tables()`). In `fresh` they also reached the snapshot primitives and the bcfp reference.
+- `study_area_buckets.R --workers=N` packs onto workers; the CY_* maps keyed by any remote host are now HOST_*. Mechanics: RUNBOOK §8d. Evidence: `data-raw/logs/worker_376/`, three runs on a real worker. The provincial-scale acceptance (#377's runs row) is owed.
+
 # link 0.68.4
 
 **Each cloud host is consolidated and burned as soon as its own leg ends** ([#369](https://github.com/NewGraphEnvironment/link/issues/369)), while the other legs keep modelling. Before this, every host waited for the slowest leg and one consolidate of all of them.
