@@ -284,17 +284,17 @@ test_that("a worker's target is redacted whole and literally", {
   w <- remote_world()
   f <- file.path(w, "T0_run_worker1.log")
   writeLines(c(
-    "ssh: connect to host m4.tail-x.ts.net port 22: refused",
-    "m4.tail-x.ts.netX and am4.tail-x.ts.net stay; m4xtail-x.ts.net stays",
-    "user@m4.tail-x.ts.net:22"
+    "ssh: connect to host box1.tail-x.ts.net port 22: refused",
+    "box1.tail-x.ts.netX and abox1.tail-x.ts.net stay; box1xtail-x.ts.net stays",
+    "user@box1.tail-x.ts.net:22"
   ), f)
   run_remote(w, c(
-    "WK_TARGETS=(m4.tail-x.ts.net user@m4.tail-x.ts.net); WK_KEYS=(worker1 worker2)",
+    "WK_TARGETS=(box1.tail-x.ts.net user@box1.tail-x.ts.net); WK_KEYS=(worker1 worker2)",
     sprintf("remote_redact_targets %s", shQuote(f))
   ))
   expect_identical(readLines(f), c(
     "ssh: connect to host <worker1> port 22: refused",
-    "m4.tail-x.ts.netX and am4.tail-x.ts.net stay; m4xtail-x.ts.net stays",
+    "box1.tail-x.ts.netX and abox1.tail-x.ts.net stay; box1xtail-x.ts.net stays",
     "<worker2>:22"
   ))
 })
