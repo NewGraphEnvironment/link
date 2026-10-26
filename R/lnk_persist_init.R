@@ -324,14 +324,16 @@ cols_streams_near_river <- c(
 #'   view is absent or the catalog cannot be read.
 #' @noRd
 .lnk_view_state <- function(conn, schema, name) {
-  tryCatch(DBI::dbGetQuery(conn, sprintf(
+  sql <- sprintf(
     "SELECT d.description, pg_get_viewdef(c.oid) AS def FROM pg_catalog.pg_class c
      JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
      LEFT JOIN pg_catalog.pg_description d ON d.objoid = c.oid
        AND d.classoid = 'pg_catalog.pg_class'::regclass AND d.objsubid = 0
      WHERE n.nspname = %s AND c.relname = %s AND c.relkind = 'v'",
-    .lnk_quote_literal(schema), .lnk_quote_literal(name))),
-    error = function(e) data.frame(description = character(0), def = character(0)))
+    .lnk_quote_literal(schema), .lnk_quote_literal(name)
+  )
+  none <- data.frame(description = character(0), def = character(0))
+  tryCatch(DBI::dbGetQuery(conn, sql), error = function(e) none)
 }
 
 #' Create or replace a view only when its definition changed (link#374)
@@ -348,8 +350,9 @@ cols_streams_near_river <- c(
 #' @noRd
 .lnk_view_replace <- function(conn, schema, name, sql) {
   have <- .lnk_view_state(conn, schema, name)
-  if (nrow(have) == 1L && !is.na(have$description) &&
-      identical(have$description, .lnk_view_def_key(sql, have$def))) {
+  current <- nrow(have) == 1L && !is.na(have$description) &&
+    identical(have$description, .lnk_view_def_key(sql, have$def))
+  if (current) {
     return(invisible(FALSE))
   }
   .lnk_db_execute(conn, sql)

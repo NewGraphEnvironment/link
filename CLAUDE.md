@@ -11,6 +11,21 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
+## Status (2026-10-26, late) — each group is recomputed while the legs run, once what it reads has landed (#374)
+
+**`study_area_run.sh` now recomputes a group as soon as it and every group whose barrier rows its walk reads have landed on the dispatcher** (`data-raw/study_area_recompute.sh`, `recompute_scheduler`), not after the last leg and consolidate. `--recompute-at-end` keeps the old order. The dependency set is `recompute_deps.R`'s **line** rule (FWA only, ~80 s, during spin and prep, a dispatch gate), and `recompute_audit.R` fails a run in which any group started before a group it reads had landed (exit 1), or in which it cannot prove one did not (exit 2). Replayed on 2026-10-23 without its stalls, the recompute ends 36.7 min sooner at `-j8`, with its load on the dispatcher counted. On the dispatcher and the worker, ten groups built early and at the end match row for row. Mechanics: RUNBOOK §8d, "A group is recomputed once what it reads has landed". Evidence: `data-raw/logs/recompute_early_374/` (its README indexes it).
+
+**Facts not worth re-deriving:**
+- **The outlet closure is not what a recompute reads.** A watershed group is not one drainage (coastal groups hold many rivers, inland groups hold tributaries entering another group's main stem), so `frs_wsg_drainage()` misses readers in 150 of 241 groups. Gradient barriers are found along the whole of every line a group touches and persisted under its code (1,224 positions co-held, up to 13 groups), so a group owning no segment of a path can hold a row on it. The line rule (every group touching a line whose code is an ancestor of, or equal to, one of the group's) is complete by construction: median 9 readers per group.
+- **FWA's `999…` codes** (unassigned, construction lines) make every group an ancestor of every other; leave them out. No persisted segment carries one.
+- **A full-width recompute about doubles the dispatcher's modelling** (1.20x at `-j4`, 1.99x at `-j8`; the database saturates past about four jobs), and full width is still best: the pool is throughput-bound.
+- **`CREATE OR REPLACE VIEW` takes an AccessExclusiveLock even when nothing changes.** `lnk_persist_init()` replaced `streams_habitat_long_vw`, which every recompute reads, once per dispatcher group; it now replaces it only when the definition key in the view's comment changes.
+- **A recompute over only the line rule's groups digests identical to one over every group** (TOOD, NATR); over only the outlet closure, 2 segments differ in each: #361's two segments.
+- **`LNK_LOG=0` is refused in early mode:** the audit reads each job's `log_recompute` row. `recompute_sweep.sh` and `recompute_parity.sh` set it; unset it before a run.
+- **The scheduler checks for the final set every second, not every poll:** at a 30 s poll a small run's last groups waited 27 s, and early lost to `--recompute-at-end`.
+- **A kept host's recovery recomputes the groups that read it** (the `wsg` of `<TS>_recompute_deps.tsv` rows whose `dep` is kept), not "those upstream of it".
+- **Owed:** the provincial run's recompute tail and critical path (#377's runs row), against the replay's 60.6 min tail. Copies of one barrier held by several groups can disagree under group-filtered controls (2 rows today); a draft issue asks whether to fix it, which would let the narrower owner rule save ~11 more minutes.
+
 ## Status (2026-10-26) — the recompute's per-job `load_all()` measured and kept (#260)
 
 **The recompute job's prologue (R start, `load_all()`, connect, config, overrides) is at most 4.3 % of the 2026-10-23 pool's span, so the `LNK_LOAD` contract (12 `data-raw/` scripts) stays.** On the bench it is 1.63 s beside seven CPU-bound R loops (0.81 min of 110.3), and `library(link)` would save about 0.78 s per job. In the run, a slot sat a median 9.7 s between one job's end and the next job's start (4.7 min of the span), and the bench explains about 3 s of that. `wsg_recompute_one.R` now prints each job's prologue at `t0`, so the next provincial run measures it in place. #377's next item is #374. Evidence: `data-raw/logs/loadall_260/`.

@@ -1733,13 +1733,22 @@ behaviour; `--recompute-only` is unchanged.
   (`<TS>_recompute_final`): the groups found finished. The scheduler starts
   every one not yet started, ready or not (every leg and consolidate is over,
   and a group reading a failed group is recomputed as the pool always did),
-  drains, and returns. A scheduler that died leaves the groups it did not start
-  to the old pool. `<TS>_recompute_launched.tsv` records each start, `early` or
-  `final`.
-- **The audit** (`data-raw/recompute_audit.R`): every recomputed group's
-  `log_recompute.date_start` is after the landing of every group it reads.
-  `EARLY` fails the run with its own remedy: re-model those groups, then
-  recompute them, because the gate may have cleared habitat for good.
+  drains, and returns; it looks for the final set every second, not every
+  poll. A scheduler that died leaves the groups it did not start to the old
+  pool, after waiting for any job it left running (each launch records its
+  pid). `<TS>_recompute_launched.tsv` records each start, `early` or `final`.
+- **The audit** (`data-raw/recompute_audit.R`): no group started before a
+  group it reads had landed, each comparison on one clock. A dispatcher
+  dependency's `log.date_end` is compared with the group's earliest
+  `log_recompute.date_start` (both the database's). A remote dependency's
+  consolidate `state_utc` is compared with the group's launch in
+  `RC_DIR/launched.tsv` (both the driver's; the database runs in a VM whose
+  clock can drift). `EARLY` (exit 1) fails the run with its own remedy:
+  re-model those groups, then recompute them, because the gate may have
+  cleared habitat for good. A start or landing it cannot prove (exit 2) fails
+  the run too, never passes: a missing value is safe only where nothing ran,
+  or the fallback pool ran it after every landing. So `LNK_LOG=0` (which skips
+  `log_recompute`) is refused in early mode.
 - **Stopping.** The EXIT trap touches `<TS>_recompute_stop`: nothing new
   starts, running jobs finish, as a killed pool's always did. A scheduler whose
   driver is gone (SIGKILL) stops the same way.

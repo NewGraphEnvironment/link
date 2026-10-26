@@ -47,9 +47,10 @@
 args <- commandArgs(trailingOnly = TRUE)
 if (length(args) < 1L) {
   stop("usage: recompute_deps.R <out.tsv> [rule=line|owner|closure|all] [wsgs csv]",
-       call. = FALSE)
+    call. = FALSE
+  )
 }
-out  <- args[1]
+out <- args[1]
 rule <- if (length(args) >= 2L && nzchar(args[2])) args[2] else "line"
 if (!rule %in% c("line", "owner", "closure", "all")) {
   stop("rule must be line, owner, closure or all (got '", rule, "')", call. = FALSE)
@@ -62,10 +63,13 @@ wsgs <- if (length(args) >= 3L && nzchar(args[3])) {
 }
 
 suppressPackageStartupMessages({
-  library(DBI); library(RPostgres)
+  library(DBI)
+  library(RPostgres)
 })
-conn <- DBI::dbConnect(RPostgres::Postgres(), dbname = "fwapg", host = "localhost",
-                       port = 5432L, user = "postgres", password = "postgres")
+conn <- DBI::dbConnect(RPostgres::Postgres(),
+  dbname = "fwapg", host = "localhost",
+  port = 5432L, user = "postgres", password = "postgres"
+)
 
 deps_fwa <- function(conn) {
   t0 <- Sys.time()
@@ -120,10 +124,13 @@ deps_fwa <- function(conn) {
   # start every landed group at once.
   if (nrow(line) == 0L || nrow(owner) == 0L) {
     stop("recompute_deps: FWA gave no dependency pairs; refusing to write an empty map",
-         call. = FALSE)
+      call. = FALSE
+    )
   }
-  message(sprintf("[recompute_deps] FWA rules in %.1f s",
-                  as.numeric(difftime(Sys.time(), t0, units = "secs"))))
+  message(sprintf(
+    "[recompute_deps] FWA rules in %.1f s",
+    as.numeric(difftime(Sys.time(), t0, units = "secs"))
+  ))
   list(owner = owner, line = line)
 }
 
@@ -136,7 +143,9 @@ if ("closure" %in% rules) {
   groups <- if (is.null(wsgs)) fresh::frs_wsg_outlets()$watershed_group_code else wsgs
   res$closure <- do.call(rbind, lapply(groups, function(g) {
     d <- setdiff(fresh::frs_wsg_drainage(conn, g), g)
-    if (length(d) == 0L) return(NULL)
+    if (length(d) == 0L) {
+      return(NULL)
+    }
     data.frame(wsg = g, dep = d)
   }))
 }
@@ -144,7 +153,9 @@ DBI::dbDisconnect(conn)
 
 tab <- do.call(rbind, lapply(names(res), function(r) {
   x <- res[[r]]
-  if (is.null(x) || nrow(x) == 0L) return(NULL)
+  if (is.null(x) || nrow(x) == 0L) {
+    return(NULL)
+  }
   data.frame(wsg = x$wsg, rule = r, dep = x$dep)
 }))
 if (is.null(tab)) tab <- data.frame(wsg = character(), rule = character(), dep = character())
@@ -153,6 +164,8 @@ tab <- tab[order(tab$rule, tab$wsg, tab$dep), , drop = FALSE]
 utils::write.table(tab, out, sep = "\t", quote = FALSE, row.names = FALSE)
 for (r in rules) {
   n <- table(factor(tab$wsg[tab$rule == r]))
-  message(sprintf("[recompute_deps] %s: %d pairs over %d groups (median %s per group with any)",
-                  r, sum(tab$rule == r), length(n), stats::median(as.integer(n))))
+  message(sprintf(
+    "[recompute_deps] %s: %d pairs over %d groups (median %s per group with any)",
+    r, sum(tab$rule == r), length(n), stats::median(as.integer(n))
+  ))
 }
