@@ -16,3 +16,6 @@
 - RUNBOOK §8d subsection; kept-host recovery wording (S2) in RUNBOOK, `study_area_hosts.sh`, `study_area_finish.sh`.
 - Full suite: 4,286 pass, 0 fail (17:3x UTC).
 - Digest test TOOD (`digest_test.R`): line-rule-only build equals the all-groups build in every table (0 rows differ of 97,296); closure-only differs on 2 segments (access, mapping code, BT/RB habitat; GR 1): #361's two TOOD segments. NATR pending (after the worker run).
+- Run A (`20261026_174957-11297e26`, early, `fresh_374a`): dispatcher GLAR..KUSR + worker1 (m4) TESR, ATLL, TUYR; exit 0; GLAR/NAHR/SWIR landed 17:52-17:57 and waited for the worker's consolidate (18:00:02); BELA started 3 s after landing while the dispatcher modelled; audit 18 pairs, 0 early; no lock waits sampled; tail 0.8 min.
+- Run B (`20261026_180139-59d231d0`, `--recompute-at-end`, `fresh_374b`): exit 0; tail 0.65 min. a = b in all 13 tables (348,857 segments); planted one-row difference caught; both verifiers pass at expected_n=10.
+- Found: the scheduler acted on the final set only at its next 30 s poll (Run A's last groups waited 27 s), so early lost on this small run. Fixed (1 s wake on final/stop), test + mutant.

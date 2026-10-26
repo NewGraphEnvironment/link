@@ -1,0 +1,2 @@
+[10:50:14] backup local fresh_374a -> /tmp/fresh_374a_pre_run_20261026_174957.dump (provenance.source_artifact is not in it: after restoring, re-run snapshot_bcfp.sh --force so the load records match the tables)
+[10:50:15] backup ok: 0.1 MB

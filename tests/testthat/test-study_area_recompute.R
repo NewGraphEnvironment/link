@@ -446,3 +446,21 @@ test_that("the driver prepares, starts, stops and finishes the early recompute i
   fb <- fin[rf:(rf + which(fin[-seq_len(rf)] == "}")[1])]
   expect_length(grep('recompute_final_write "" || touch "$RC_STOP"', fb, fixed = TRUE), 1L)
 })
+
+test_that("the final set is acted on at once, not at the next poll", {
+  skip_if_no_rc_lib()
+  w <- hosts_world()
+  rc_wsgs(w, rows(wsg = "AAAA", host = "dispatcher", skip = "no"))
+  rc_deps(w, rows(wsg = character(), dep = character()))
+  put(w, "psql_local.out", db_answer(character(0)))
+  r <- rc_sched(w, c(
+    "RC_POLL=30",
+    "recompute_scheduler & sp=$!",
+    "sleep 2",
+    't0=$(date +%s); recompute_final_write "AAAA"',
+    'rc_wait "$sp"',
+    'echo "took=$(( $(date +%s) - t0 ))"'), job_sleep = 0)
+  took <- as.integer(sub("took=", "", regmatches(r$out, regexpr("took=[0-9]+", r$out))))
+  expect_lte(took, 5L)
+  expect_identical(rc_launched(w)$wsg, "AAAA")
+})

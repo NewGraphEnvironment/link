@@ -1,0 +1,214 @@
+[1] 0
+[1] 0
+[wsg_recompute_one] BELA prologue 1.28 s
+NOTICE:  table "zz_lnk_access_prior_bela" does not exist, skipping
+
+NOTICE:  table "zz_lnk_streams_bela" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+7: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+8: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+9: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+10: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] BELA habitat gate: 248 segments (34.257 km) settled
+[wsg_recompute_one] BELA recomputed in 0.48 min (persist=fresh_374b)
+[1] 0
+[1] 0
+[wsg_recompute_one] KUSR prologue 1.22 s
+NOTICE:  table "zz_lnk_access_prior_kusr" does not exist, skipping
+
+NOTICE:  table "zz_lnk_streams_kusr" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] KUSR habitat gate: 235 segments (38.522 km) settled
+[wsg_recompute_one] KUSR recomputed in 0.15 min (persist=fresh_374b)
+[1] 0
+[1] 0
+[wsg_recompute_one] GLAR prologue 1.28 s
+NOTICE:  table "zz_lnk_access_prior_glar" does not exist, skipping
+
+NOTICE:  table "zz_lnk_streams_glar" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] GLAR habitat gate: 76 segments (11.220 km) settled
+[wsg_recompute_one] GLAR recomputed in 0.13 min (persist=fresh_374b)
+[1] 0
+[1] 0
+[wsg_recompute_one] TESR prologue 1.28 s
+NOTICE:  table "zz_lnk_access_prior_tesr" does not exist, skipping
+
+NOTICE:  table "zz_lnk_streams_tesr" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] TESR habitat gate: 184 segments (39.041 km) settled
+[wsg_recompute_one] TESR recomputed in 0.18 min (persist=fresh_374b)
+[1] 0
+[1] 0
+[wsg_recompute_one] TUYR prologue 1.10 s
+NOTICE:  table "zz_lnk_access_prior_tuyr" does not exist, skipping
+
+NOTICE:  table "zz_lnk_streams_tuyr" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] TUYR habitat gate: 81 segments (15.065 km) settled
+[wsg_recompute_one] TUYR recomputed in 0.07 min (persist=fresh_374b)
+[1] 0
+[1] 0
+[wsg_recompute_one] ATLL prologue 1.28 s
+NOTICE:  table "zz_lnk_access_prior_atll" does not exist, skipping
+
+NOTICE:  table "zz_lnk_streams_atll" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] ATLL habitat gate: 622 segments (134.343 km) settled
+[wsg_recompute_one] ATLL recomputed in 0.30 min (persist=fresh_374b)
+[1] 0
+[1] 0
+[wsg_recompute_one] NAHR prologue 1.26 s
+NOTICE:  table "zz_lnk_access_prior_nahr" does not exist, skipping
+
+NOTICE:  table "zz_lnk_streams_nahr" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] NAHR habitat gate: 226 segments (47.304 km) settled
+[wsg_recompute_one] NAHR recomputed in 0.17 min (persist=fresh_374b)
+[1] 0
+[1] 0
+[wsg_recompute_one] UJER prologue 1.21 s
+NOTICE:  table "zz_lnk_access_prior_ujer" does not exist, skipping
+
+NOTICE:  table "zz_lnk_streams_ujer" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] UJER habitat gate: 86 segments (16.324 km) settled
+[wsg_recompute_one] UJER recomputed in 0.09 min (persist=fresh_374b)
+[1] 0
+[1] 0
+[wsg_recompute_one] JENR prologue 1.21 s
+NOTICE:  table "zz_lnk_access_prior_jenr" does not exist, skipping
+
+NOTICE:  table "zz_lnk_streams_jenr" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] JENR habitat gate: 116 segments (23.700 km) settled
+[wsg_recompute_one] JENR recomputed in 0.10 min (persist=fresh_374b)
+[1] 0
+[1] 0
+[wsg_recompute_one] SWIR prologue 1.22 s
+NOTICE:  table "zz_lnk_access_prior_swir" does not exist, skipping
+
+NOTICE:  table "zz_lnk_streams_swir" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] SWIR habitat gate: 197 segments (37.624 km) settled
+[wsg_recompute_one] SWIR recomputed in 0.13 min (persist=fresh_374b)

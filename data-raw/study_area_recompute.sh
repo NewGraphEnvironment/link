@@ -146,7 +146,7 @@ recompute_ready() {
 recompute_scheduler() {
   set +e
   local width="${RECOMPUTE_JOBS:-1}" poll="${RC_POLL:-30}" launched="" final="" have_final=0
-  local queue landed ready w pid line now ret
+  local queue landed ready w pid line now ret tick
   local -a pids=() alive=()
   mkdir -p "$RC_DIR" || return 1
   : >> "$RC_DIR/launched.tsv" || return 1
@@ -198,7 +198,17 @@ recompute_scheduler() {
        && [ -z "$(.hosts_minus "$final" "$launched")" ]; then
       return 0
     fi
-    sleep "$([ "$have_final" = "1" ] && echo 1 || echo "$poll")"
+    # One second at a time, so the final set or a stop is acted on at once
+    # rather than at the next poll (a 30 s poll held a run's last groups for
+    # 27 s, link#374's Run A).
+    if [ "$have_final" = "1" ]; then
+      sleep 1
+    else
+      for ((tick = 0; tick < poll; tick++)); do
+        [ -e "$RC_FINAL" ] || [ -e "$RC_STOP" ] && break
+        sleep 1
+      done
+    fi
   done
 }
 
