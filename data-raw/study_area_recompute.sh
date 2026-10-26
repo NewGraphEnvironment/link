@@ -149,7 +149,7 @@ recompute_ready() {
 recompute_scheduler() {
   set +e
   local width="${RECOMPUTE_JOBS:-1}" poll="${RC_POLL:-30}" launched="" final="" have_final=0
-  local queue landed ready w pid line now ret tick
+  local queue landed ready w pid line now ret tick order
   local -a pids=() alive=()
   mkdir -p "$RC_DIR" || return 1
   : >> "$RC_DIR/launched.tsv" || return 1
@@ -186,15 +186,27 @@ recompute_scheduler() {
       fi
     fi
     if [ -n "$queue" ] && [ "${#pids[@]}" -lt "$width" ]; then
-      for w in $(recompute_order "$queue" 2>/dev/null); do
+      # Ordering is a speed hint: if it prints nothing, take the queue as it
+      # is, or the final set would never drain and run_finish would wait for
+      # ever.
+      order=$(recompute_order "$queue" 2>/dev/null) || order=""
+      [ -n "$order" ] || order=$(.hosts_lines "$queue")
+      for w in $order; do
         [ "${#pids[@]}" -lt "$width" ] || break
         case "$w" in [A-Z][A-Z][A-Z][A-Z]) ;; *) continue ;; esac
         now=$(date -u '+%Y-%m-%dT%H:%M:%SZ %s')
         recompute_one "$w" &
         pids+=("$!")
         launched=$(.hosts_union "$launched" "$w")
-        printf '%s\t%s\t%s\t%s\n' "$w" "$now" "$([ "$have_final" = "1" ] && echo final || echo early)" \
-          "$!" >> "$RC_DIR/launched.tsv"
+        if ! printf '%s\t%s\t%s\t%s\n' "$w" "$now" "$([ "$have_final" = "1" ] && echo final || echo early)" \
+          "$!" >> "$RC_DIR/launched.tsv"; then
+          # A start the audit cannot see: start nothing more, and let the
+          # fallback (which waits on .rc files) and the audit (which refuses
+          # an unrecorded start) take it from here.
+          echo "[recompute_scheduler] could not record $w's launch; stopping" >&2
+          for pid in ${pids[@]+"${pids[@]}"}; do wait "$pid" 2>/dev/null; done
+          return 4
+        fi
       done
     fi
     if [ "$have_final" = "1" ] && [ "${#pids[@]}" -eq 0 ] \

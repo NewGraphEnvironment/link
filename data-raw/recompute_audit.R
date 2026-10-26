@@ -71,6 +71,7 @@ if (!all(c("wsg", "host", "skip") %in% names(wsgs))) stop("run_wsgs.tsv has no w
 deps <- deps[deps$rule == "line", ]
 # "<wsg>\t<iso> <epoch>\t<mode>\t<pid>": the first launch of each group.
 launch_ep <- tapply(as.numeric(sub("^.* ", "", launched$V2)), launched$V1, min)
+launched_early <- unique(launched$V1[launched$V3 == "early"])
 
 conn <- DBI::dbConnect(RPostgres::Postgres(), dbname = "fwapg", host = "localhost",
                        port = 5432L, user = "postgres", password = "postgres")
@@ -87,10 +88,14 @@ DBI::dbDisconnect(conn)
 run <- wsgs[wsgs$skip != "yes", c("wsg", "host")]
 land_disp <- stats::setNames(as.numeric(model$date_end), model$wsg)
 ok_state <- state[state$state == "ok" & state$run_uid == run_uid, ]
+# NA: no `ok` row, so it never landed. NaN: an `ok` row whose time does not
+# parse, so it landed (the scheduler acted on it) at a time the audit cannot
+# know, which is "cannot audit", never "never landed".
 land_remote <- function(w, h) {
   s <- ok_state$state_utc[ok_state$wsg == w & ok_state$workspace == h]
   if (length(s) == 0L) return(NA_real_)
-  as.numeric(as.POSIXct(s[1], format = "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"))
+  t <- as.numeric(as.POSIXct(s[1], format = "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"))
+  if (is.na(t)) NaN else t
 }
 rc_start <- stats::setNames(as.numeric(rc$date_start), rc$wsg)
 groups <- union(rc$wsg, names(launch_ep))
@@ -107,10 +112,19 @@ for (g in groups) {
       } else {
         landed <- land_remote(d, h); start <- unname(launch_ep[g]); clock <- "driver"
       }
-      verdict <- if (is.na(landed)) "dep_never_landed" else
+      # A missing value is never a pass unless something proves nothing ran
+      # early: a group the scheduler launched has a recorded start somewhere.
+      # A dependency that never landed is safe to have read only from the
+      # final set (or the fallback pool, or not at all): the scheduler starts
+      # nothing early until every dependency has landed, so an early start
+      # against one that never did is the readiness bug itself.
+      verdict <- if (is.nan(landed)) "landing_unparsed" else
+        if (is.na(landed) && g %in% launched_early) "EARLY" else
+        if (is.na(landed)) "dep_never_landed" else
         if (!is.na(start)) { if (start >= landed) "ok" else "EARLY" } else
-        if (!g %in% rc$wsg) "no_recompute_row" else
-        if (g %in% fallback) "after_final" else "start_unrecorded"
+        if (g %in% fallback) "after_final" else
+        if (!g %in% rc$wsg && !g %in% names(launch_ep)) "no_recompute_row" else
+        "start_unrecorded"
       rows[[length(rows) + 1L]] <- data.frame(
         wsg = g, dep = d, dep_host = h, clock = clock,
         recompute_start = start, dep_landed = landed, verdict = verdict)
@@ -140,10 +154,13 @@ if (n_early > 0L) {
   cat(sprintf("  EARLY: %s started before %s (%s) landed\n", e$wsg, e$dep, e$dep_host), sep = "")
   quit(status = 1)
 }
-# A start that should have been recorded and was not is not a pass.
-if (any(tab$verdict == "start_unrecorded")) {
-  u <- tab[tab$verdict == "start_unrecorded", ]
-  cat(sprintf("  cannot audit %s against %s (%s): no launch time recorded\n", u$wsg, u$dep, u$dep_host), sep = "")
+# A start or a landing that should have been recorded and was not is not a
+# pass.
+if (any(tab$verdict %in% c("start_unrecorded", "landing_unparsed"))) {
+  u <- tab[tab$verdict %in% c("start_unrecorded", "landing_unparsed"), ]
+  cat(sprintf("  cannot audit %s against %s (%s): %s\n", u$wsg, u$dep, u$dep_host,
+              ifelse(u$verdict == "landing_unparsed", "its landing time does not parse",
+                     "no start time recorded")), sep = "")
   quit(status = 2)
 }
 quit(status = 0)

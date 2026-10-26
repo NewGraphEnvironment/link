@@ -115,4 +115,7 @@ closure_differs <- any(out_tab$only_all[out_tab$variant == "closure"] > 0 |
 cat(sprintf("%s: line matches all: %s; closure differs: %s\n", g, line_ok, closure_differs))
 for (v in names(sets)) x(sprintf("DROP SCHEMA IF EXISTS fresh_374d_%s CASCADE", tolower(v)))
 DBI::dbDisconnect(conn)
-quit(status = if (line_ok) 0 else 1)
+# The negative control is part of the verdict: a group whose closure gives the
+# same answer as the line rule cannot tell the rules apart.
+if (!closure_differs) message(g, ": the closure gives the same result; this group discriminates nothing")
+quit(status = if (line_ok && closure_differs) 0 else 1)

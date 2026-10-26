@@ -1633,6 +1633,13 @@ fi
 # the dependency map (recompute_deps.R, line rule, from FWA alone) is computed
 # in the background through spin and prep; no leg is dispatched without it.
 RC_DEPS_PID=""
+# LNK_LOG=0 (recompute_sweep.sh, recompute_parity.sh) skips each job's
+# log_recompute row, which the early recompute's audit reads: refused rather
+# than inherited by the scheduler's jobs.
+if [ "$RECOMPUTE_EARLY" = "1" ] && [ "${LNK_LOG:-}" = "0" ]; then
+  echo "FATAL: LNK_LOG=0 is set; the early recompute's audit needs each job's log_recompute row (unset it, or --recompute-at-end)"
+  exit 1
+fi
 if [ "$RECOMPUTE_EARLY" = "1" ]; then
   echo "=== early recompute: log tables, barrier views, dependency map ==="
   phase_begin views

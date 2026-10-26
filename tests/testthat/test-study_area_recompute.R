@@ -481,3 +481,39 @@ test_that("the final set is acted on at once, not at the next poll", {
   expect_lte(took, 5L)
   expect_identical(rc_launched(w)$wsg, "AAAA")
 })
+
+test_that("a launch the scheduler cannot record stops it", {
+  skip_if_no_rc_lib()
+  w <- hosts_world()
+  rc_wsgs(w, rows(wsg = c("AAAA", "BBBB"), host = "dispatcher", skip = "no"))
+  rc_deps(w, rows(wsg = character(), dep = character()))
+  put(w, "psql_local.out", db_answer(character(0)))
+  f <- file.path(w, "logs", "T0_recompute.d", "launched.tsv")
+  withr::defer(if (file.exists(f)) Sys.chmod(f, "644"))
+  # Nothing is ready while the scheduler starts (it checks it can append);
+  # then the record turns read-only and both groups land.
+  r <- rc_sched(w, c(
+    "recompute_scheduler & sp=$!",
+    "sleep 2",
+    'chmod 444 "$RC_DIR/launched.tsv"',
+    "printf '__LNK_BEGIN__\\nAAAA\\nBBBB\\n__LNK_END__\\n' > \"$L/../stub/psql_local.out\"",
+    'src=0; rc_wait "$sp" || src=$?; echo "sched_rc=$src"'))
+  expect_match(r$out, "sched_rc=4", info = r$out)
+  expect_match(r$out, "could not record", info = r$out)
+})
+
+test_that("an ordering that prints nothing still drains the final set", {
+  skip_if_no_rc_lib()
+  w <- hosts_world()
+  rc_wsgs(w, rows(wsg = c("AAAA", "BBBB"), host = "dispatcher", skip = "no"))
+  rc_deps(w, rows(wsg = character(), dep = character()))
+  put(w, "psql_local.out", db_answer(character(0)))
+  r <- rc_sched(w, c(
+    "recompute_order() { return 1; }",
+    "recompute_scheduler & sp=$!",
+    "sleep 1",
+    'recompute_final_write "AAAA,BBBB"',
+    'src=0; rc_wait "$sp" || src=$?; echo "sched_rc=$src"'))
+  expect_match(r$out, "sched_rc=0", info = r$out)
+  expect_setequal(rc_launched(w)$wsg, c("AAAA", "BBBB"))
+})

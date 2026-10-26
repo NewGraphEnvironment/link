@@ -893,7 +893,7 @@ run_finish_report() {
     elif [ "${RC_AUDIT:-}" = "unread" ]; then
       echo "  Every group was recomputed, but whether any started before a group it"
       echo "  reads had landed could not be checked. See $LOG_DIR/${TS}_recompute_audit.log, then:"
-      echo "    Rscript data-raw/recompute_audit.R $SCHEMA $RUN_UID $RC_DEPS $RUN_WSGS_TSV $CONS_STATE $RC_DIR/launched.tsv"
+      echo "    Rscript data-raw/recompute_audit.R $SCHEMA $RUN_UID $RC_DEPS $RUN_WSGS_TSV $CONS_STATE $RC_DIR/launched.tsv '' $RC_DIR/fallback.txt"
     fi
     if [ "${RECOMPUTE_FAIL:-0}" != "0" ] && [ -n "${RECOMPUTE_FAIL_STAGE:-}" ]; then
       echo "  The post-consolidate recompute did not complete for every WSG."
