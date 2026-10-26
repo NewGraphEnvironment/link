@@ -24,13 +24,13 @@ Cut the wall clock of a provincial `default` run without changing its outputs, o
 
 ## Phase 1: Measure
 
-- [ ] Before each measurement, check the dispatcher is idle: `uptime`, plus `pg_stat_activity` for active non-idle backends. Record both. Another session's load has skewed runs before (CLAUDE.md, 2026-10-23 / 2026-10-25).
-- [ ] Write `data-raw/logs/loadall_260/measure.sh`, plus an R prologue script beside it. These time the job prologue stage by stage (`load_all`, `library(DBI/RPostgres)`, `lnk_config("default")`, `lnk_load_overrides()`) and `library(link)` for comparison, in three ways:
+- [x] Before each measurement, check the dispatcher is idle: `uptime`, plus `pg_stat_activity` for active non-idle backends. Record both. Another session's load has skewed runs before (CLAUDE.md, 2026-10-23 / 2026-10-25).
+- [x] Write `data-raw/logs/loadall_260/measure.sh`, plus an R prologue script beside it. These time the job prologue stage by stage (`load_all`, `library(DBI/RPostgres)`, `lnk_config("default")`, `lnk_load_overrides()`) and `library(link)` for comparison, in three ways:
   - N = 20 sequential runs, each a fresh `Rscript`, keeping the first (cold) run apart;
   - 8 concurrent runs × 3 waves, the `-j8` shape, to catch contention;
   - with the link SHA, R version and installed-link version stamped in the output header.
-- [ ] Write `data-raw/logs/loadall_260/shares.R`. It reads per-group minutes from `data-raw/logs/study_area_run/20261023_074321_recompute.log` and works out the prologue's share for SALR, the median group, CHWK and the whole phase: 240 × prologue / 8 against 110 min. It also accounts for the remaining 105 → 110 min gap: the tail of the slowest job and the pool's 1 s poll, not the prologue.
-- [ ] Commit the outputs (`timings.tsv`, `shares.txt`), redacted where needed: no host names.
+- [x] Write `data-raw/logs/loadall_260/shares.R`. It reads per-group minutes from `data-raw/logs/study_area_run/20261023_074321_recompute.log` and works out the prologue's share for SALR, the median group, CHWK and the whole phase: 240 × prologue / 8 against 110 min. It also accounts for the remaining 105 → 110 min gap, reported as the in-run upper bound on every untimed per-job cost, the prologue included (plan review B1). *Revised:* the span and summed work come from `fresh_default.log_recompute` (`span.sql`), and the shares use both the in-run minutes and #260's isolated 11 s / 226 s (A2). A third condition runs the prologue beside 7 CPU-busy R processes (A3); `review-plan.md` has every disposition.
+- [x] Commit the outputs (`timings.tsv`, `shares.txt`), redacted where needed: no host names.
 
 ## Phase 2: Record
 
@@ -40,7 +40,7 @@ Cut the wall clock of a provincial `default` run without changing its outputs, o
 
 ## Phase 3: Issues and status
 
-- [ ] Edit #260's body: add a Measured section, tick the acceptance boxes that hold, and give the decision, "not changed: X % of the phase".
+- [ ] Edit #260's body: add a Measured section, tick acceptance 1, mark 2 and 3 N/A (conditional on a change; review AC), fix its stale line reference, and give the decision, "not changed: X % of the phase".
 - [ ] Edit #377's body:
   - tick #376 with its measured line (Run A from `worker_376`; provincial numbers owed);
   - tick #260 with its measured line;
