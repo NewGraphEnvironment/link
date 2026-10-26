@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.68.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.68.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,18 +35,6 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
-    <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.68.6" id="link-0686">link 0.68.6<a class="anchor" aria-label="anchor" href="#link-0686"></a></h2>
-<p><strong>Each group is recomputed while the legs still run, once what it reads has landed</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/374" class="external-link">#374</a>). <code>study_area_run.sh</code> starts a group’s recompute as soon as it and every group whose barrier rows its walk reads are on the dispatcher, instead of in one pool after the last leg and consolidate.</p>
-<ul><li>
-<strong>The scheduler</strong> (<code>data-raw/study_area_recompute.sh</code>) runs beside the legs. The readers are <code>data-raw/recompute_deps.R</code>’s line rule, not the outlet closure <a href="https://github.com/NewGraphEnvironment/link/issues/374" class="external-link">#374</a> proposed: the closure misses them in 150 of 241 groups, because a watershed group is not one drainage and gradient barriers are persisted under every group touching a line. <code>--recompute-at-end</code> keeps the old order.</li>
-<li>
-<strong>A too-early recompute cannot be undone</strong> (the habitat gate only clears flags), so readiness fails closed. <code>data-raw/recompute_audit.R</code> is a run post-condition that compares each start with each landing on one clock. It fails on an early start, and on one it cannot prove. <code>LNK_LOG=0</code> is refused in early mode.</li>
-<li>
-<strong><code><a href="../reference/lnk_persist_init.html">lnk_persist_init()</a></code> replaces <code>streams_habitat_long_vw</code> only when its definition changed.</strong> The unconditional <code>CREATE OR REPLACE VIEW</code> took an exclusive lock, once per dispatcher group, on a view every recompute job reads.</li>
-<li>
-<strong>Measured.</strong> Replayed on 2026-10-23 without its stalls, with its load on the dispatcher counted (a full-width recompute doubles the dispatcher’s modelling time), the recompute ends 36.7 min sooner. On the dispatcher and a worker, ten groups built early and at the end match row for row. Mechanics: RUNBOOK §8d. Evidence: <code>data-raw/logs/recompute_early_374/</code>. The provincial measurement is still owed (<a href="https://github.com/NewGraphEnvironment/link/issues/374" class="external-link">#374</a> stays open for it).</li>
-</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.68.5" id="link-0685">link 0.68.5<a class="anchor" aria-label="anchor" href="#link-0685"></a></h2>
 <p><strong><code>study_area_run.sh --workers=&lt;ssh target&gt;,...</code> adds persistent workers</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/376" class="external-link">#376</a>): machines that exist and stay up, modelled beside the dispatcher and the cloud hosts, consolidated and released when their own leg ends, and never burned.</p>
