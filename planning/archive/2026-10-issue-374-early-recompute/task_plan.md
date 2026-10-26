@@ -54,7 +54,7 @@ Approved by the operator at plan approval, 2026-10-26.
 ## Phase 5: record and release
 
 - [x] RUNBOOK §8d: new subsection "A group is recomputed once what it reads is here (link#374)", covering the rule, readiness and locks. Reword the kept-host recovery text, which says "upstream of it", from the dependency rule (review S2).
-- [ ] File the control-asymmetry issue (review S1), after showing its body.
+- [ ] File the control-asymmetry issue (review S1), after showing its body. (Drafted; shown in the final report; filed only on the operator's word.)
 - [x] Write a CLAUDE.md status, `research/study_area_run.md`, and #377's measured line (the provincial numbers still owed; #377 edited once the PR exists).
 - [ ] NEWS and the version bump: by `/gh-pr-merge` at merge, as for #369, #375 and #376 (the `Release vX` commits land on main); the PR body carries the NEWS text.
 

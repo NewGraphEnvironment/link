@@ -8,7 +8,7 @@ Measured 2026-10-26 on the dispatcher (link at `374-…` branch, fresh 0.42.0), 
 
 ## What a group's recompute reads
 
-`wsg_recompute_one.R` walks downstream from the group's own segments through the persist schema's barrier views. Those views read **every** group's `barriers` and `barrier_overrides`, by position, not by group. So a group can be recomputed once it, and every group holding a row on its downstream path, has landed. The table of reads, writes and locks is in the PWF findings (`planning/archive/…-issue-374-…/findings.md`).
+`wsg_recompute_one.R` walks downstream from the group's own segments through the persist schema's barrier views. Those views read **every** group's `barriers` and `barrier_overrides`, by position, not by group. So a group can be recomputed once it, and every group holding a row on its downstream path, has landed. The table of reads, writes and locks is in the PWF findings (`planning/archive/2026-10-issue-374-early-recompute/findings.md`).
 
 `deps.tsv` (`data-raw/recompute_deps.R … all`) holds three candidate rules over FWA:
 
