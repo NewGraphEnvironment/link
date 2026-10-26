@@ -1,3 +1,12 @@
+# link 0.68.6
+
+**Each group is recomputed while the legs still run, once what it reads has landed** ([#374](https://github.com/NewGraphEnvironment/link/issues/374)). `study_area_run.sh` starts a group's recompute as soon as it and every group whose barrier rows its walk reads are on the dispatcher, instead of in one pool after the last leg and consolidate.
+
+- **The scheduler** (`data-raw/study_area_recompute.sh`) runs beside the legs. The readers are `data-raw/recompute_deps.R`'s line rule, not the outlet closure #374 proposed: the closure misses them in 150 of 241 groups, because a watershed group is not one drainage and gradient barriers are persisted under every group touching a line. `--recompute-at-end` keeps the old order.
+- **A too-early recompute cannot be undone** (the habitat gate only clears flags), so readiness fails closed. `data-raw/recompute_audit.R` is a run post-condition that compares each start with each landing on one clock. It fails on an early start, and on one it cannot prove. `LNK_LOG=0` is refused in early mode.
+- **`lnk_persist_init()` replaces `streams_habitat_long_vw` only when its definition changed.** The unconditional `CREATE OR REPLACE VIEW` took an exclusive lock, once per dispatcher group, on a view every recompute job reads.
+- **Measured.** Replayed on 2026-10-23 without its stalls, with its load on the dispatcher counted (a full-width recompute doubles the dispatcher's modelling time), the recompute ends 36.7 min sooner. On the dispatcher and a worker, ten groups built early and at the end match row for row. Mechanics: RUNBOOK §8d. Evidence: `data-raw/logs/recompute_early_374/`. The provincial measurement is still owed (#374 stays open for it).
+
 # link 0.68.5
 
 **`study_area_run.sh --workers=<ssh target>,...` adds persistent workers** ([#376](https://github.com/NewGraphEnvironment/link/issues/376)): machines that exist and stay up, modelled beside the dispatcher and the cloud hosts, consolidated and released when their own leg ends, and never burned.
