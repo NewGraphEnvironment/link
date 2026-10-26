@@ -34,9 +34,9 @@ Cut the wall clock of a provincial `default` run without changing its outputs, o
 
 ## Phase 2: Record
 
-- [ ] `data-raw/logs/loadall_260/README.md`: the question, the method, the numbers with units, the verdict, and what changed because of it (the contract stays).
-- [ ] Revise `research/recompute_parallel_2026_09_01.md`, "Where the remaining time actually is", candidate 1, in place, with the measured verdict and a pointer to the evidence. Note that the 13 scripts sharing `LNK_LOAD` now outnumber the three it names. The file keeps its name.
-- [ ] Check `research/README.md`'s row for that file still describes it.
+- [x] `data-raw/logs/loadall_260/README.md`: the question, the method, the numbers with units, the verdict, and what changed because of it (the contract stays).
+- [x] Revise `research/recompute_parallel_2026_09_01.md`, "Where the remaining time actually is", candidate 1, in place, with the measured verdict and a pointer to the evidence. Note that the 12 scripts (measured: `grep -l 'Sys.getenv("LNK_LOAD")' data-raw/*.R`) sharing `LNK_LOAD` now outnumber the three it names. The file keeps its name.
+- [x] Check `research/README.md`'s row for that file still describes it.
 
 ## Phase 3: Issues and status
 

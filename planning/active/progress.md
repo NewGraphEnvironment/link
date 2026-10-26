@@ -8,3 +8,4 @@
 - Next: start Phase 1
 - Plan review (Plan agent) returned 1 blocker, 2 gaps, 3 assumptions, acceptance notes: `review-plan.md`; all folded in.
 - Phase 1 done: `data-raw/logs/loadall_260/` (`prologue.R`, `measure.sh`, `span.sql`, `shares.R` and outputs). Busy-condition load_all prologue 1.63 s against library(link) 0.92 s; whole pool 0.81 min of a 110.3 min span (0.74 %); switching would save 0.35 min (0.32 %). Under the 5 % stop line: verdict holds.
+- Phase 2 done: evidence README, research candidate 1 revised in place (line ref :25-27 → :26-30), research/README row unchanged (still accurate). LNK_LOAD readers counted: 12, not the plan's 13.
