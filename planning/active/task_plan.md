@@ -40,12 +40,12 @@ Cut the wall clock of a provincial `default` run without changing its outputs, o
 
 ## Phase 3: Issues and status
 
-- [ ] Edit #260's body: add a Measured section, tick acceptance 1, mark 2 and 3 N/A (conditional on a change; review AC), fix its stale line reference, and give the decision, "not changed: X % of the phase".
-- [ ] Edit #377's body:
+- [x] Edit #260's body: add a Measured section, tick acceptance 1, mark 2 and 3 N/A (conditional on a change; review AC), fix its stale line reference, and give the decision, "not changed: X % of the phase".
+- [x] Edit #377's body:
   - tick #376 with its measured line (Run A from `worker_376`; provincial numbers owed);
   - tick #260 with its measured line;
   - leave #374 as the next item.
-- [ ] Add a short CLAUDE.md status entry with the verdict and the one fact not to re-derive (`t0` is after the prologue, so the logged minutes leave it out).
+- [x] Add a short CLAUDE.md status entry with the verdict and the one fact not to re-derive (`t0` is after the prologue, so the logged minutes leave it out).
 
 ## Owed at the end (reported, done after merge)
 
