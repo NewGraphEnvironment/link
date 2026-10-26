@@ -1,0 +1,10 @@
+[1] 0
+[1] 0
+[wsg_recompute_one] UDEN prologue 1.44 s
+NOTICE:  table "zz_lnk_access_prior_uden" does not exist, skipping
+
+NOTICE:  table "zz_lnk_streams_uden" does not exist, skipping
+
+There were 11 warnings (use warnings() to see them)
+[wsg_recompute_one] UDEN habitat gate: 0 segments (0.000 km) settled
+[wsg_recompute_one] UDEN recomputed in 4.19 min (persist=fresh_374r)

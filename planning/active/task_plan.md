@@ -32,19 +32,19 @@ Approved by the operator at plan approval, 2026-10-26.
 
 ## Phase 2: dependency map and readiness (pure, tested)
 
-- [ ] The driver runs `recompute_deps.R` (line rule, about 80 s) in the background during spin and prep, writing `${TS}_recompute_deps.tsv`; no leg is dispatched until it has succeeded (FATAL otherwise, like the backup).
+- [x] The driver runs `recompute_deps.R` (line rule, about 80 s) in the background during spin and prep, writing `${TS}_recompute_deps.tsv`; no leg is dispatched until it has succeeded (FATAL otherwise, like the backup).
 - [x] New sourced lib `data-raw/study_area_recompute.sh` with `recompute_landed` and `recompute_ready`. A group has landed when every host whose bucket holds it has landed it: on the dispatcher, its newest `log` row is this `RUN_UID`'s with `date_end` set; on a remote host, the `${TS}_consolidate_state.tsv` row is `ok`. A group outside the run, or a SKIP, has always landed. Ready = landed itself, every dependency landed, not yet launched. **Fails closed** (review A1: an early recompute that reads too little cannot be undone): an unreadable state file, a failed poll or an unknown host means not landed.
 - [x] `tests/testthat/test-study_area_recompute.R` with fixture state: overlapping buckets, a failed host, `in_flight` and `failed:*` consolidate rows, groups outside the run, SKIPs, a dispatcher group with an open log row, a failed poll. Each guard restored to its bug must go red.
 
 ## Phase 3: the scheduler in the driver
 
 - [ ] `lnk_persist_init()`: replace `streams_habitat_long_vw` only when absent or its species set differs (catalog first, as #369 did for indexes and columns), with a live test that a second init takes no lock on it (review B2).
-- [ ] In early mode, initialise the dispatcher persist on every run, not only with remote hosts (review G1); then the log tables, then `barriers_views_build.R`, then the backup (review G2). A failure is FATAL before dispatch. `--recompute-only` keeps its own build.
-- [ ] `recompute_scheduler`, a background process started before `legs_wait`: polls readiness every 30 s, launches ready groups longest-first (`recompute_order`) into `RECOMPUTE_JOBS` slots through `recompute_one` (`.rc` files as today). Its own error handling, not the driver's `set -e` (review G4); it exits when its parent has gone; on a final-set file (written tmp + mv) it launches the rest of that set, drains and exits.
-- [ ] `run_finish`: after coverage, write `COV_RECOMPUTE` as the final set, wait on the scheduler. If it died, run the groups of the final set with no `.rc` file in the existing pool. `run_finish_recompute` keeps the early `.rc` files and writes no second `views` row (review G3). `fanout_judge.R` over `COV_RECOMPUTE`; a group launched early but missing from it is named and the run exits non-zero.
-- [ ] The EXIT trap stops the scheduler launching and lets running jobs finish, as a killed pool does today (review G4). Phase rows: `views` before the legs; `recompute` from the first job's start to the last job's end, written by the scheduler as the legs write theirs (review G5).
-- [ ] Readiness audit as a run post-condition (review AC2): every recomputed group's `log_recompute.date_start` is after each dependency's landing (model `date_end`; consolidate `state_utc`).
-- [ ] `--recompute-at-end` flag, banner line, structural tests.
+- [x] In early mode, initialise the dispatcher persist on every run, not only with remote hosts (review G1); then the log tables, then `barriers_views_build.R`, then the backup (review G2). A failure is FATAL before dispatch. `--recompute-only` keeps its own build.
+- [x] `recompute_scheduler`, a background process started before `legs_wait`: polls readiness every 30 s, launches ready groups longest-first (`recompute_order`) into `RECOMPUTE_JOBS` slots through `recompute_one` (`.rc` files as today). Its own error handling, not the driver's `set -e` (review G4); it exits when its parent has gone; on a final-set file (written tmp + mv) it launches the rest of that set, drains and exits.
+- [x] `run_finish`: after coverage, write `COV_RECOMPUTE` as the final set, wait on the scheduler. If it died, run the groups of the final set with no `.rc` file in the existing pool. `run_finish_recompute` keeps the early `.rc` files and writes no second `views` row (review G3). `fanout_judge.R` over `COV_RECOMPUTE`; a group launched early but missing from it is named and the run exits non-zero.
+- [x] The EXIT trap stops the scheduler launching and lets running jobs finish, as a killed pool does today (review G4). Phase rows: `views` before the legs; `recompute` from the first job's start to the last job's end, written by the scheduler as the legs write theirs (review G5).
+- [x] Readiness audit as a run post-condition (review AC2): every recomputed group's `log_recompute.date_start` is after each dependency's landing (model `date_end`; consolidate `state_utc`).
+- [x] `--recompute-at-end` flag, banner line, structural tests.
 
 ## Phase 4: prove it on the dispatcher and the worker
 

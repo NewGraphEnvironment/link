@@ -113,3 +113,96 @@ recompute_ready() {
     }' | .hosts_csv
   [ "${PIPESTATUS[0]}" = "0" ]
 }
+
+# recompute_scheduler: run in the background beside the legs, as
+# `recompute_scheduler &`. Every RC_POLL seconds (default 30) it reads which
+# groups are ready and starts them, longest first (recompute_order), into
+# RECOMPUTE_JOBS slots through recompute_one, which writes each job's .log and
+# .rc into RC_DIR as the end-of-run pool does. Each launch appends
+# "<wsg>\t<iso> <epoch>\t<early|final>" to RC_DIR/launched.tsv.
+#
+# It ends three ways:
+#   final set   run_finish writes RC_FINAL (tmp + mv, so its existence means
+#               it is whole): one line, "FINAL <csv>", the groups coverage
+#               found finished this run. Every one not yet started starts,
+#               ready or not (every leg and consolidate is over), and the
+#               scheduler returns 0 once its jobs end.
+#   stop        RC_STOP exists (the driver's EXIT trap): nothing new starts;
+#               jobs already running finish, as a killed pool's always have.
+#               Returns 2.
+#   orphaned    RC_PARENT is gone (a driver killed with SIGKILL runs no
+#               trap): as stop, returning 3. Two drivers must never work one
+#               schema, so a scheduler never outlives the run it serves.
+#
+# Its own error handling, not the driver's: errexit is off in here, because
+# a poll that fails must cost one poll, never the scheduler. A poll that fails
+# starts nothing (recompute_landed / recompute_ready fail closed).
+#
+# Globals read: RC_DIR RC_DEPS RC_FINAL RC_STOP RC_PARENT RC_POLL
+#   RUN_WSGS_TSV CONS_STATE RECOMPUTE_JOBS (and what recompute_one,
+#   recompute_order and recompute_landed read)
+# Functions read: recompute_one recompute_order (study_area_run.sh)
+#   recompute_landed recompute_ready .hosts_minus .hosts_lines .hosts_csv
+recompute_scheduler() {
+  set +e
+  local width="${RECOMPUTE_JOBS:-1}" poll="${RC_POLL:-30}" launched="" final="" have_final=0
+  local queue landed ready w pid line now ret
+  local -a pids=() alive=()
+  mkdir -p "$RC_DIR" || return 1
+  : >> "$RC_DIR/launched.tsv" || return 1
+  while :; do
+    alive=()
+    for pid in ${pids[@]+"${pids[@]}"}; do
+      if kill -0 "$pid" 2>/dev/null; then alive+=("$pid"); else wait "$pid" 2>/dev/null; fi
+    done
+    pids=(${alive[@]+"${alive[@]}"})
+    ret=""
+    [ -e "$RC_STOP" ] && ret=2
+    [ -z "$ret" ] && ! kill -0 "$RC_PARENT" 2>/dev/null && ret=3
+    if [ -n "$ret" ]; then
+      for pid in ${pids[@]+"${pids[@]}"}; do wait "$pid" 2>/dev/null; done
+      return "$ret"
+    fi
+    if [ "$have_final" = "0" ] && [ -e "$RC_FINAL" ]; then
+      IFS= read -r line < "$RC_FINAL"
+      case "$line" in
+        "FINAL "*) final="${line#FINAL }"; have_final=1 ;;
+        *) echo "[recompute_scheduler] $RC_FINAL is not a final set ('$line'); stopping" >&2
+           for pid in ${pids[@]+"${pids[@]}"}; do wait "$pid" 2>/dev/null; done
+           return 1 ;;
+      esac
+    fi
+    if [ "$have_final" = "1" ]; then
+      queue=$(.hosts_minus "$final" "$launched")
+    else
+      landed=$(recompute_landed "$RUN_WSGS_TSV" "$CONS_STATE") || landed=""
+      queue=""
+      if [ -n "$landed" ]; then
+        ready=$(recompute_ready "$landed" "$RC_DEPS" "$launched" "$RUN_WSGS_TSV") || ready=""
+        queue="$ready"
+      fi
+    fi
+    if [ -n "$queue" ] && [ "${#pids[@]}" -lt "$width" ]; then
+      for w in $(recompute_order "$queue" 2>/dev/null); do
+        [ "${#pids[@]}" -lt "$width" ] || break
+        case "$w" in [A-Z][A-Z][A-Z][A-Z]) ;; *) continue ;; esac
+        now=$(date -u '+%Y-%m-%dT%H:%M:%SZ %s')
+        recompute_one "$w" &
+        pids+=("$!")
+        launched=$(.hosts_union "$launched" "$w")
+        printf '%s\t%s\t%s\n' "$w" "$now" "$([ "$have_final" = "1" ] && echo final || echo early)" \
+          >> "$RC_DIR/launched.tsv"
+      done
+    fi
+    if [ "$have_final" = "1" ] && [ "${#pids[@]}" -eq 0 ] \
+       && [ -z "$(.hosts_minus "$final" "$launched")" ]; then
+      return 0
+    fi
+    sleep "$([ "$have_final" = "1" ] && echo 1 || echo "$poll")"
+  done
+}
+
+# recompute_final_write <csv>: the final set, for the scheduler (tmp + mv).
+recompute_final_write() {
+  printf 'FINAL %s\n' "${1:-}" > "$RC_FINAL.tmp" && mv "$RC_FINAL.tmp" "$RC_FINAL"
+}

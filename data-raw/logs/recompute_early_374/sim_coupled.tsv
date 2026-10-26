@@ -1,0 +1,6 @@
+scenario	rule	w_legs	alpha	dispatcher_leg_end	last_consolidate	recompute_end	tail_after_last_landing	job_min_before_dispatcher_end	saving
+no_stalls_coupled	line	0	0.125	257.5	264.3	368.1	103.8	0	7
+no_stalls_coupled	line	1	0.125	262.2	264.3	367.2	102.9	43.3	7.9
+no_stalls_coupled	line	2	0.125	265.1	264.3	366	100.9	76.6	9.1
+no_stalls_coupled	line	4	0.125	271.2	264.3	361.3	90.1	161.3	13.8
+no_stalls_coupled	line	8	0.125	283.1	264.3	342.7	59.6	401.2	32.4

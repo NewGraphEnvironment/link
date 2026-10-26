@@ -493,6 +493,17 @@ run_finish() {
   ALL_WSGS="$COV_RECOMPUTE"
 
   if [ -z "$ALL_WSGS" ]; then
+    # An early scheduler is told there is nothing left and waited for. Any
+    # group it already started is not one coverage found finished.
+    if [ -n "${RC_SCHED_PID:-}" ]; then
+      recompute_final_write "" || touch "$RC_STOP" 2>/dev/null || true
+      wait "$RC_SCHED_PID" || true
+      RC_SCHED_PID=""
+      if [ -s "$RC_DIR/launched.tsv" ]; then
+        RUN_INCOMPLETE=1
+        echo "  ✗ recomputed early but not found finished by coverage: $(cut -f1 "$RC_DIR/launched.tsv" | .hosts_csv)"
+      fi
+    fi
     echo "=== post-consolidate recompute: SKIPPED ==="
     echo "  No run group has rows from a build this run finished, so there is"
     echo "  nothing the recompute could settle and nothing valid to compare."
@@ -504,47 +515,12 @@ run_finish() {
   run_finish_report
 }
 
-# --- post-consolidate recompute: settle cross-WSG access (link#205) ---
-# Drainage-closed + DS-first per-host is NOT sufficient: a WSG's downstream
-# barriers can be cross-bucket or arrive late in DS-first order, so its access
-# (hence token1/token2) is computed against an incomplete barrier set.
-# Caught 2026-05-25: FINA 75% / PARA 69% per-host -> both 99% only after
-# re-modelling on the full consolidated barrier set. The recompute is the
-# correctness guarantee REGARDLESS of bucketing. We use lnk_access(merge=TRUE)
-# — the cheap access-only recompute that reuses the persisted streams /
-# habitat / barriers / barrier_overrides (link#205, ~10 s/WSG vs ~1.5 min for
-# a full pipeline rebuild). Because it is cheap, we recompute ALL run WSGs
-# this run built unconditionally rather than threshold-filtering by parity —
-# bucketing is now a speed knob, not a correctness lever.
-#
-# Parallel since link#250. Two things previously made the serial loop
-# mandatory, and both are now gone:
-#
-#   1. lnk_access() rebuilt the SCHEMA-scoped barrier views on every call --
-#      38 DDL statements against names every sibling WSG reads. CREATE OR
-#      REPLACE VIEW takes an AccessExclusiveLock, and a QUEUED exclusive
-#      request blocks every AccessShareLock behind it, so one job's DDL would
-#      stall every sibling's read until lock_timeout killed someone. The build
-#      is now hoisted below and each job runs LNK_VIEWS_PREBUILT=1. Everything
-#      else a job touches is WSG-scoped (zz_lnk_streams_<wsg>,
-#      zz_lnk_access_scratch_<wsg>, zz_lnk_mc_scratch_<wsg>) or row-scoped
-#      (UPDATE ... WHERE watershed_group_code; DELETE+INSERT in a transaction).
-#
-#   2. A failed WSG was invisible. `|| echo` sat INSIDE the loop, so the
-#      subshell always exited 0 and the success line below was unconditional;
-#      RUN_INCOMPLETE is assigned BEFORE this block and nothing after raised
-#      it. A run in which every recompute failed exited 0 and wrote a compare
-#      CSV. The .rc files + lnk_fanout_judge() are what fix that.
-run_finish_recompute() {
-  RECOMPUTE_LOG="$LOG_DIR/${TS}_recompute.log"
-  RC_DIR="$LOG_DIR/${TS}_recompute.d"
-  RC_TSV="$LOG_DIR/${TS}_recompute.tsv"
-  N_RECOMPUTE=$(csv_count "$ALL_WSGS")
-
-  echo "=== post-consolidate recompute (lnk_access, ${N_RECOMPUTE} WSGs, -j${RECOMPUTE_JOBS}) ==="
-  # views: the two single-threaded steps before the pool (link#375).
-  phase_begin views
-
+# recompute_views_prep: the two single-threaded steps every recompute job
+# relies on, once: the log tables and the schema's barrier views. Run before
+# the pool at the end of a run, or before the legs when groups are recomputed
+# early (link#374), where a view rebuild later would take an exclusive lock
+# under running jobs. Sets RECOMPUTE_FAIL / RECOMPUTE_FAIL_STAGE on failure.
+recompute_views_prep() {
   # Ensure the log tables exist ONCE, single-threaded, before any job starts
   # (link#262). wsg_recompute_one.R deliberately refuses to run DDL — it runs
   # inside this pool, and schema DDL belongs at init, not in N concurrent jobs.
@@ -598,9 +574,59 @@ link:::.lnk_log_create_tables(conn, cfg$pipeline$schema)
     fi
   fi
 
-  phase_end views "" "" "$([ "$RECOMPUTE_FAIL" = "0" ] && echo ok || echo failed)"
+}
 
-  if [ "$RECOMPUTE_FAIL" = "0" ]; then
+# --- post-consolidate recompute: settle cross-WSG access (link#205) ---
+# Drainage-closed + DS-first per-host is NOT sufficient: a WSG's downstream
+# barriers can be cross-bucket or arrive late in DS-first order, so its access
+# (hence token1/token2) is computed against an incomplete barrier set.
+# Caught 2026-05-25: FINA 75% / PARA 69% per-host -> both 99% only after
+# re-modelling on the full consolidated barrier set. The recompute is the
+# correctness guarantee REGARDLESS of bucketing. We use lnk_access(merge=TRUE)
+# — the cheap access-only recompute that reuses the persisted streams /
+# habitat / barriers / barrier_overrides (link#205, ~10 s/WSG vs ~1.5 min for
+# a full pipeline rebuild). Because it is cheap, we recompute ALL run WSGs
+# this run built unconditionally rather than threshold-filtering by parity —
+# bucketing is now a speed knob, not a correctness lever.
+#
+# Parallel since link#250. Two things previously made the serial loop
+# mandatory, and both are now gone:
+#
+#   1. lnk_access() rebuilt the SCHEMA-scoped barrier views on every call --
+#      38 DDL statements against names every sibling WSG reads. CREATE OR
+#      REPLACE VIEW takes an AccessExclusiveLock, and a QUEUED exclusive
+#      request blocks every AccessShareLock behind it, so one job's DDL would
+#      stall every sibling's read until lock_timeout killed someone. The build
+#      is now hoisted below and each job runs LNK_VIEWS_PREBUILT=1. Everything
+#      else a job touches is WSG-scoped (zz_lnk_streams_<wsg>,
+#      zz_lnk_access_scratch_<wsg>, zz_lnk_mc_scratch_<wsg>) or row-scoped
+#      (UPDATE ... WHERE watershed_group_code; DELETE+INSERT in a transaction).
+#
+#   2. A failed WSG was invisible. `|| echo` sat INSIDE the loop, so the
+#      subshell always exited 0 and the success line below was unconditional;
+#      RUN_INCOMPLETE is assigned BEFORE this block and nothing after raised
+#      it. A run in which every recompute failed exited 0 and wrote a compare
+#      CSV. The .rc files + lnk_fanout_judge() are what fix that.
+run_finish_recompute() {
+  RECOMPUTE_LOG="$LOG_DIR/${TS}_recompute.log"
+  RC_DIR="$LOG_DIR/${TS}_recompute.d"
+  RC_TSV="$LOG_DIR/${TS}_recompute.tsv"
+  N_RECOMPUTE=$(csv_count "$ALL_WSGS")
+
+  echo "=== post-consolidate recompute (lnk_access, ${N_RECOMPUTE} WSGs, -j${RECOMPUTE_JOBS}) ==="
+  if [ -n "${RC_SCHED_PID:-}" ]; then
+    # The log tables and views were prepared before the legs, and the
+    # scheduler has been recomputing groups as they landed (link#374).
+    run_finish_recompute_early
+  else
+    # views: the two single-threaded steps before the pool (link#375).
+    phase_begin views
+    recompute_views_prep
+    phase_end views "" "" "$([ "$RECOMPUTE_FAIL" = "0" ] && echo ok || echo failed)"
+    if [ "$RECOMPUTE_FAIL" != "0" ]; then
+      phase_skip recompute
+      return 0
+    fi
     phase_begin recompute
     rm -rf "$RC_DIR"; mkdir -p "$RC_DIR"
     # Longest-first. Ordering is the CALLER's business -- run_recompute_pool
@@ -608,32 +634,82 @@ link:::.lnk_log_create_tables(conn, cfg$pipeline$schema)
     # lets recompute_parity.sh shuffle deliberately for its invariance pass.
     ALL_WSGS=$(recompute_order "$ALL_WSGS" | paste -sd, -)
     run_recompute_pool "$RECOMPUTE_JOBS"
-    # Read by the kept-hosts report: whether a recovery must recompute only the
-    # kept groups and those upstream, or every group of the run (link#347).
-    RECOMPUTE_RAN=1
+  fi
+  # Read by the kept-hosts report: whether a recovery must recompute only the
+  # kept groups and those upstream, or every group of the run (link#347).
+  RECOMPUTE_RAN=1
 
-    # Never `cat "$RC_DIR"/*` — ARG_MAX at provincial scope. `find -exec ... +`
-    # also exits 0 on zero matches, leaving an EMPTY tsv rather than aborting;
-    # that empty case is a real branch and is judged in R, not here.
-    : > "$RC_TSV"
-    find "$RC_DIR" -maxdepth 1 -name '*.rc'  -exec cat {} + >> "$RC_TSV"
-    : > "$RECOMPUTE_LOG"
-    find "$RC_DIR" -maxdepth 1 -name '*.log' -exec cat {} + >> "$RECOMPUTE_LOG"
+  # Never `cat "$RC_DIR"/*` — ARG_MAX at provincial scope. `find -exec ... +`
+  # also exits 0 on zero matches, leaving an EMPTY tsv rather than aborting;
+  # that empty case is a real branch and is judged in R, not here.
+  : > "$RC_TSV"
+  find "$RC_DIR" -maxdepth 1 -name '*.rc'  -exec cat {} + >> "$RC_TSV"
+  : > "$RECOMPUTE_LOG"
+  find "$RC_DIR" -maxdepth 1 -name '*.log' -exec cat {} + >> "$RECOMPUTE_LOG"
 
-    if ( cd "$REPO_ROOT" && LNK_LOAD=loadall \
-           Rscript data-raw/fanout_judge.R "$RC_TSV" "$ALL_WSGS" recompute ); then
-      echo "  ✓ recompute: ${N_RECOMPUTE}/${N_RECOMPUTE} WSGs"
-      rm -rf "$RC_DIR"
-    else
-      echo "  ✗ recompute incomplete; see $RECOMPUTE_LOG and $RC_DIR/"
-      RECOMPUTE_FAIL_STAGE="pool"
-      # Per-job logs KEPT on failure: the concatenation is the artifact, the
-      # per-job files are what you actually grep.
-      RECOMPUTE_FAIL=1
-    fi
-    phase_end recompute "" "$N_RECOMPUTE" "$([ "$RECOMPUTE_FAIL" = "0" ] && echo ok || echo failed)"
+  if ( cd "$REPO_ROOT" && LNK_LOAD=loadall \
+         Rscript data-raw/fanout_judge.R "$RC_TSV" "$ALL_WSGS" recompute ); then
+    echo "  ✓ recompute: ${N_RECOMPUTE}/${N_RECOMPUTE} WSGs"
+    rm -rf "$RC_DIR"
   else
-    phase_skip recompute
+    echo "  ✗ recompute incomplete; see $RECOMPUTE_LOG and $RC_DIR/"
+    RECOMPUTE_FAIL_STAGE="pool"
+    # Per-job logs KEPT on failure: the concatenation is the artifact, the
+    # per-job files are what you actually grep.
+    RECOMPUTE_FAIL=1
+  fi
+  # Early recompute (link#374): no group started before a group it reads had
+  # landed, checked from the records (recompute_audit.R). An unreadable audit
+  # fails closed: it is the only thing that says the early starts were right.
+  if [ "${RC_EARLY_RAN:-0}" = "1" ]; then
+    local arc=0
+    ( cd "$REPO_ROOT" && Rscript data-raw/recompute_audit.R "$SCHEMA" "$RUN_UID" \
+        "$RC_DEPS" "$RUN_WSGS_TSV" "$CONS_STATE" "$LOG_DIR/${TS}_recompute_audit.tsv" ) \
+      > "$LOG_DIR/${TS}_recompute_audit.log" 2>&1 || arc=$?
+    case "$arc" in
+      0) echo "  ✓ recompute audit: no group started before a group it reads had landed" ;;
+      # Its own verdict, beside the pool's stage: both can fail, and each
+      # has its own remedy.
+      1) echo "  ✗ recompute audit: a group started before a group it reads had landed; see $LOG_DIR/${TS}_recompute_audit.log"
+         RECOMPUTE_FAIL=1; RC_AUDIT="early" ;;
+      *) echo "  ✗ recompute audit could not run (exit $arc); see $LOG_DIR/${TS}_recompute_audit.log"
+         RECOMPUTE_FAIL=1; RC_AUDIT="unread" ;;
+    esac
+  fi
+  phase_end recompute "" "$N_RECOMPUTE" "$([ "$RECOMPUTE_FAIL" = "0" ] && echo ok || echo failed)"
+}
+
+# run_finish_recompute_early: the end of an early recompute (link#374). Hands
+# the scheduler the final set (the groups coverage found finished), which it
+# starts whether or not they read a group that never landed, as the end-of-run
+# pool always has; then waits for it. A scheduler that ended any other way
+# (stopped, orphaned, a bad final file) leaves the groups it did not start to
+# the pool here, so a dead scheduler costs time, never a group. The recompute
+# row starts at the first early launch.
+run_finish_recompute_early() {
+  local first src done_rc left saved n_early
+  first=$(awk -F'\t' 'NR == 1 { print $2; exit }' "$RC_DIR/launched.tsv" 2>/dev/null) || first=""
+  phase_begin recompute "" "$first"
+  recompute_final_write "$ALL_WSGS" \
+    || { echo "  WARN: could not write $RC_FINAL; stopping the scheduler"; touch "$RC_STOP" 2>/dev/null || true; }
+  src=0
+  wait "$RC_SCHED_PID" || src=$?
+  RC_SCHED_PID=""
+  RC_EARLY_RAN=1
+  # Kept beside the run's other records: the per-job directory goes on success.
+  cp "$RC_DIR/launched.tsv" "$LOG_DIR/${TS}_recompute_launched.tsv" 2>/dev/null || true
+  n_early=$(awk -F'\t' '$3 == "early"' "$RC_DIR/launched.tsv" 2>/dev/null | wc -l | tr -d ' ')
+  echo "  ${n_early:-0} of $N_RECOMPUTE group(s) recomputed while the legs ran (see $LOG_DIR/${TS}_recompute_scheduler.log)"
+  if [ "$src" != "0" ]; then
+    done_rc=$(find "$RC_DIR" -maxdepth 1 -name '*.rc' -exec cat {} + 2>/dev/null | cut -f1 | .hosts_csv)
+    left=$(.hosts_minus "$ALL_WSGS" "$done_rc")
+    echo "  WARN: the recompute scheduler ended with $src; recomputing the $(.hosts_n "$left") group(s) it did not start here"
+    if [ -n "$left" ]; then
+      saved="$ALL_WSGS"
+      ALL_WSGS=$(recompute_order "$left" | paste -sd, -)
+      run_recompute_pool "$RECOMPUTE_JOBS"
+      ALL_WSGS="$saved"
+    fi
   fi
 }
 
@@ -784,7 +860,21 @@ run_finish_report() {
       echo "    LNK_SCHEMA=$SCHEMA LNK_LOAD=loadall Rscript data-raw/study_area_compare.R \\"
       echo "      $COMPARE_CSV ${ALL_WSGS:-<WSGs>} $CONFIG"
     fi
-    if [ "${RECOMPUTE_FAIL:-0}" != "0" ]; then
+    # The early recompute's audit (link#374), then the pool's own failure, if
+    # any: RECOMPUTE_FAIL is set by either, RECOMPUTE_FAIL_STAGE only by the
+    # pool and its prep.
+    if [ "${RC_AUDIT:-}" = "early" ]; then
+      echo "  Every group was recomputed, but the groups named EARLY in"
+      echo "  $LOG_DIR/${TS}_recompute_audit.tsv were recomputed before a group they read had"
+      echo "  landed (link#374). Their habitat gate may have cleared flags for good, so"
+      echo "  RE-MODEL each of them (wsg_run_one.R, LNK_HABITAT_GATE=0, under this run_uid)"
+      echo "  and then recompute them; a recompute alone cannot restore what the gate cleared."
+    elif [ "${RC_AUDIT:-}" = "unread" ]; then
+      echo "  Every group was recomputed, but whether any started before a group it"
+      echo "  reads had landed could not be checked. See $LOG_DIR/${TS}_recompute_audit.log, then:"
+      echo "    Rscript data-raw/recompute_audit.R $SCHEMA $RUN_UID $RC_DEPS $RUN_WSGS_TSV $CONS_STATE"
+    fi
+    if [ "${RECOMPUTE_FAIL:-0}" != "0" ] && [ -n "${RECOMPUTE_FAIL_STAGE:-}" ]; then
       echo "  The post-consolidate recompute did not complete for every WSG."
       echo "  Those WSGs' streams_access / streams_mapping_code still hold their"
       echo "  PRE-consolidate values, so cross-WSG access — hence token1/token2"

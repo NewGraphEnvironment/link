@@ -1,0 +1,233 @@
+[wsg_run_one] NEVI statement_timeout=0
+NOTICE:  schema "fresh_374m" already exists, skipping
+
+NOTICE:  relation "log" already exists, skipping
+
+NOTICE:  relation "log_recompute" already exists, skipping
+
+NOTICE:  relation "log_input" already exists, skipping
+
+NOTICE:  relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  relation "log_dimensions" already exists, skipping
+
+NOTICE:  schema "fresh" already exists, skipping
+
+NOTICE:  table "barriers_definite" does not exist, skipping
+
+NOTICE:  table "barriers_definite_control" does not exist, skipping
+
+NOTICE:  table "observations_province" does not exist, skipping
+
+NOTICE:  table "observations" does not exist, skipping
+
+NOTICE:  table "streams_blk" does not exist, skipping
+
+NOTICE:  table "gradient_barriers_raw" does not exist, skipping
+
+NOTICE:  table "natural_barriers" does not exist, skipping
+
+NOTICE:  table "barrier_overrides" does not exist, skipping
+
+NOTICE:  table "barriers_bt" does not exist, skipping
+
+NOTICE:  table "barriers_ch" does not exist, skipping
+
+NOTICE:  table "barriers_cm" does not exist, skipping
+
+NOTICE:  table "barriers_co" does not exist, skipping
+
+NOTICE:  table "barriers_pk" does not exist, skipping
+
+NOTICE:  table "barriers_sk" does not exist, skipping
+
+NOTICE:  table "barriers_st" does not exist, skipping
+
+NOTICE:  table "barriers_wct" does not exist, skipping
+
+NOTICE:  table "barriers_ko" does not exist, skipping
+
+NOTICE:  table "barriers_rb" does not exist, skipping
+
+NOTICE:  table "barriers_gr" does not exist, skipping
+
+NOTICE:  table "gradient_barriers_minimal" does not exist, skipping
+
+NOTICE:  table "streams" does not exist, skipping
+
+NOTICE:  table "streams_habitat" does not exist, skipping
+
+NOTICE:  table "cabd_exclusions" does not exist, skipping
+
+NOTICE:  table "cabd_blkey_xref" does not exist, skipping
+
+NOTICE:  table "cabd_passability_status_updates" does not exist, skipping
+
+NOTICE:  table "cabd_additions" does not exist, skipping
+
+NOTICE:  table "cabd_dams_raw" does not exist, skipping
+
+NOTICE:  table "dams" does not exist, skipping
+
+NOTICE:  table "pscis_modelledcrossings_streams_xref" does not exist, skipping
+
+NOTICE:  table "pscis_stream_candidates" does not exist, skipping
+
+NOTICE:  table "pscis_streams_150m" does not exist, skipping
+
+NOTICE:  table "pscis_picked" does not exist, skipping
+
+NOTICE:  table "pscis" does not exist, skipping
+
+NOTICE:  table "crossings_lookup" does not exist, skipping
+
+NOTICE:  table "barriers_anthropogenic" does not exist, skipping
+
+NOTICE:  table "barriers_pscis" does not exist, skipping
+
+NOTICE:  table "barriers_dams" does not exist, skipping
+
+NOTICE:  table "barriers_remediations" does not exist, skipping
+
+NOTICE:  table "observations_breaks" does not exist, skipping
+
+NOTICE:  table "habitat_endpoints" does not exist, skipping
+
+NOTICE:  table "crossings_breaks" does not exist, skipping
+
+NOTICE:  table "streams_breaks" does not exist, skipping
+
+NOTICE:  table "streams_habitat_near_river" does not exist, skipping
+
+NOTICE:  relation "streams_id_segment_idx" already exists, skipping
+
+NOTICE:  table "streams_acc_015" does not exist, skipping
+
+NOTICE:  table "streams_acc_02" does not exist, skipping
+
+NOTICE:  table "streams_acc_025" does not exist, skipping
+
+NOTICE:  table "streams_acc_015_ovr_cm" does not exist, skipping
+
+NOTICE:  table "streams_acc_015_ovr_co" does not exist, skipping
+
+NOTICE:  table "streams_acc_015_ovr_pk" does not exist, skipping
+
+NOTICE:  table "streams_acc_015_ovr_sk" does not exist, skipping
+
+NOTICE:  table "streams_acc_02_ovr_st" does not exist, skipping
+
+NOTICE:  table "streams_acc_025_ovr_rb" does not exist, skipping
+
+NOTICE:  table "frs_clusters_co" does not exist, skipping
+
+NOTICE:  table "frs_clusters_sk" does not exist, skipping
+
+NOTICE:  table "frs_qual_spawn_sk" does not exist, skipping
+
+NOTICE:  table "frs_trace_lfid_sk" does not exist, skipping
+
+NOTICE:  table "frs_clusters_st" does not exist, skipping
+
+NOTICE:  table "frs_bkt_keys_co_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_co_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_co_lake_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_co_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_co_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_co_wetland_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_st_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_st_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_st_lake_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_st_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_st_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_st_wetland_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_rb_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_rb_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_rb_lake_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_rb_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_rb_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_rb_wetland_rearing" does not exist, skipping
+
+NOTICE:  schema "fresh_374m" already exists, skipping
+
+NOTICE:  relation "streams" already exists, skipping
+
+NOTICE:  relation "streams_habitat_bt" already exists, skipping
+
+NOTICE:  relation "streams_habitat_ch" already exists, skipping
+
+NOTICE:  relation "streams_habitat_cm" already exists, skipping
+
+NOTICE:  relation "streams_habitat_co" already exists, skipping
+
+NOTICE:  relation "streams_habitat_pk" already exists, skipping
+
+NOTICE:  relation "streams_habitat_sk" already exists, skipping
+
+NOTICE:  relation "streams_habitat_st" already exists, skipping
+
+NOTICE:  relation "streams_habitat_wct" already exists, skipping
+
+NOTICE:  relation "streams_habitat_ko" already exists, skipping
+
+NOTICE:  relation "streams_habitat_rb" already exists, skipping
+
+NOTICE:  relation "streams_habitat_gr" already exists, skipping
+
+NOTICE:  relation "barriers" already exists, skipping
+
+NOTICE:  relation "barrier_overrides" already exists, skipping
+
+NOTICE:  relation "streams_access" already exists, skipping
+
+NOTICE:  relation "streams_mapping_code" already exists, skipping
+
+NOTICE:  relation "streams_near_river" already exists, skipping
+
+NOTICE:  schema "fresh_374m" already exists, skipping
+
+NOTICE:  relation "log" already exists, skipping
+
+NOTICE:  relation "log_recompute" already exists, skipping
+
+NOTICE:  relation "log_input" already exists, skipping
+
+NOTICE:  relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  relation "log_dimensions" already exists, skipping
+
+NOTICE:  table "barriers" does not exist, skipping
+
+There were 11 warnings (use warnings() to see them)
+[wsg_run_one] NEVI done in 2.3 min (persist=fresh_374m)

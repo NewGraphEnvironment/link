@@ -224,3 +224,79 @@ utils::write.table(jobs, file.path(out_dir, "sim_jobs.tsv"), sep = "\t",
 cat(sprintf("minutes from the run's first model start (%s UTC); -j%d; job = log minutes + %.2f min gap\n",
             format(t_origin, tz = "UTC"), width, gap_min))
 print(res, row.names = FALSE)
+
+# --- coupled: the early pool slows the dispatcher leg (headroom.sh) ---------
+# headroom.sh measured the dispatcher's modelling about 2x slower beside a -j8
+# recompute, and the recompute jobs not slower. So in the no-stalls scenario,
+# replay the dispatcher leg in steps of dt minutes, advancing each group's
+# remaining minutes at 1 / (1 + alpha * k), k the recompute jobs running then
+# (alpha = 0.125 makes -j8 a 2x slowdown). The scheduler runs at most
+# `w_legs` jobs while the dispatcher leg is modelling, `width` after it.
+# Cloud consolidates are not slowed (they were not measured); a dispatcher
+# group lands when its slowed model ends.
+coupled <- function(rule, w_legs, alpha, dt = 0.05) {
+  cl <- land_cloud()
+  d <- mlog[!grepl("cypher", mlog$host), ]
+  d <- d[!duplicated(d$wsg), ]
+  dur <- as.numeric(difftime(d$date_end, d$date_start, units = "mins"))
+  dur[d$wsg == "KTSU"] <- 1.3
+  dur[d$wsg == "OKAN"] <- 7.6
+  st <- mins(d$date_start); en <- mins(d$date_end)
+  gap <- c(0, ifelse(is.na(en[-nrow(d)]), 0, pmax(0, st[-1] - en[-nrow(d)])))
+  groups <- union(intersect(names(job_min), c(d$wsg, names(cl$land))), "OKAN")
+  jm <- job_min; if (!"OKAN" %in% names(jm)) jm["OKAN"] <- stats::median(job_min)
+  dr <- deps[deps$rule == rule, ]
+  need <- lapply(stats::setNames(groups, groups), function(g) {
+    x <- c(g, dr$dep[dr$wsg == g]); x[x %in% c(d$wsg, names(cl$land))]
+  })
+  land <- c(stats::setNames(rep(NA_real_, nrow(d)), d$wsg), cl$land)
+  t <- st[1]; i <- 1L; left <- dur[1] ; idle <- 0
+  run_end <- numeric(); started <- character(); ends <- numeric()
+  disp_done <- FALSE; t_end_pool <- Inf; overlap <- 0
+  repeat {
+    k <- sum(run_end > t)
+    if (!disp_done) {
+      if (idle > 0) { idle <- idle - dt } else {
+        left <- left - dt / (1 + alpha * k)
+        overlap <- overlap + k * dt
+        if (left <= 0) {
+          land[d$wsg[i]] <- t
+          i <- i + 1L
+          if (i > nrow(d)) { disp_done <- TRUE; disp_end <- t } else { left <- dur[i]; idle <- gap[i] }
+        }
+      }
+    }
+    if (disp_done && is.infinite(t_end_pool)) {
+      t_end_pool <- max(disp_end, max(cl$cons_end)) + 0.8
+    }
+    w <- if (disp_done) width else w_legs
+    free <- w - sum(run_end > t)
+    if (free > 0) {
+      cand <- setdiff(groups, started)
+      ok <- vapply(cand, function(g) {
+        if (t >= t_end_pool) return(TRUE)
+        x <- land[need[[g]]]; !anyNA(x) && all(x <= t)
+      }, logical(1))
+      cand <- cand[ok]
+      if (length(cand)) {
+        cand <- cand[order(-jm[cand], cand)][seq_len(min(free, length(cand)))]
+        started <- c(started, cand); run_end <- c(run_end, t + jm[cand])
+      }
+    }
+    if (length(started) == length(groups) && disp_done) break
+    t <- t + dt
+  }
+  data.frame(scenario = "no_stalls_coupled", rule = rule, w_legs = w_legs, alpha = alpha,
+             dispatcher_leg_end = round(disp_end, 1), last_consolidate = round(max(cl$cons_end), 1),
+             recompute_end = round(max(run_end), 1),
+             tail_after_last_landing = round(max(run_end) - max(disp_end, max(cl$cons_end)), 1),
+             job_min_before_dispatcher_end = round(overlap, 1))
+}
+alphas <- as.numeric(strsplit(Sys.getenv("LNK_SIM_ALPHA", "0.125"), ",")[[1]])
+cp <- do.call(rbind, lapply(alphas, function(a) do.call(rbind, lapply(c(0L, 1L, 2L, 4L, 8L),
+  function(wl) coupled("line", wl, a)))))
+base_end <- res$recompute_end[res$scenario == "no_stalls" & res$rule == "end"]
+cp$saving <- round(base_end - cp$recompute_end, 1)
+utils::write.table(cp, file.path(out_dir, "sim_coupled.tsv"), sep = "\t", quote = FALSE, row.names = FALSE)
+cat("\ncoupled (no stalls, line rule; w_legs = jobs while the dispatcher models, then -j", width, "):\n", sep = "")
+print(cp, row.names = FALSE)
