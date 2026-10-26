@@ -11,3 +11,4 @@
 - Phase 2 done: evidence README, research candidate 1 revised in place (line ref :25-27 → :26-30), research/README row unchanged (still accurate). LNK_LOAD readers counted: 12, not the plan's 13.
 - Phase 3 done: #260 body (Measured section, acceptance 1 ticked, 2-3 N/A, stale refs noted) and #377 body (#376 and #260 ticked with measured lines) edited and read back; CLAUDE.md status added.
 - /code-check round 1: 4 findings (README verdict reason wrong; overrides note's numbers and mechanism wrong; unrecorded indexing claim; share phrasing), all confirmed by probe and fixed (#260 body phrasing too).
+- /code-check round 2: 2 findings — namespace count 19 → 17 in prologue order (inside round 1's fix), and the 'slowest job bounds the pool' reasoning surviving in README, research candidate 2 and #377's #261 line; all fixed.

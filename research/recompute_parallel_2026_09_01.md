@@ -174,7 +174,11 @@ Two candidates, both out of scope for #250 and both worth their own issue:
    walk is the cost, that is a fresh-side question about
    `frs_network_features` over a barrier-dense drainage, and it would speed up
    the serial path too — which is worth more than pool width, because the
-   makespan floor *is* the slowest WSG.
+   makespan floor *is* the slowest WSG. That floor held for the 4–8 group sets measured
+   here. At provincial scope it does not (2026-10-26, #260): the 2026-10-23
+   pool's 110.3 min span sits 5.7 min above its summed work over 8 slots
+   (104.6 min), against a longest job of 22.75 min, so the pool is bound by
+   throughput and CHWK alone reaches the span at one slot in eight.
 
 ## The bench is capped below the host — local numbers understate
 

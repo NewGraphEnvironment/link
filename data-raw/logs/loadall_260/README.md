@@ -63,8 +63,10 @@ a 110 min phase. Every job's prologue is on the pool's critical path, at a weigh
 slot in eight, because the span is set by the summed work over the slots (104.6 min),
 not by the longest job (22.75 min); that is the 240 × 1.63 s / 8 above. It is a real
 share only of a short group taken alone: 1.63 s on SALR's 11 s of work is 12.9 % of the
-job. The recompute's time is its work: the next levers are
-#374 (overlap it with the slowest leg) and #261 (CHWK).
+job. The recompute's time is its work, and the same one-slot-in-eight arithmetic holds
+for any single group: CHWK's 15.56 min is about 1.9 min of the span. So the next lever is
+#374 (overlap the recompute with the slowest leg); #261 pays only if CHWK's cause also
+slows other groups.
 
 ## Notes
 
@@ -73,8 +75,9 @@ job. The recompute's time is its work: the next levers are
   exists for that run (phases began with #375). `log_recompute` gives 110.3 min.
 - Compare the prologue totals, not the load stage alone. `load_all()` loads link's
   Imports inside its own stage, while `library(link)` defers them: its first
-  `lnk_load_overrides()` call loads 19 namespaces (crate, dplyr, readr, …) and takes
-  0.24 s, its second 0.05 s. So `lnk_load_overrides()` reads 0.24 / 0.30 / 0.33 s under
+  `lnk_load_overrides()` call, in the prologue's order, loads 17 namespaces (crate,
+  dplyr, readr, …; counted with `setdiff(loadedNamespaces(), before)` around the call)
+  and takes 0.24 s, its second 0.05 s. So `lnk_load_overrides()` reads 0.24 / 0.30 / 0.33 s under
   `library(link)` against 0.11 / 0.15 / 0.15 s under `load_all()` (sequence / 8 at once
   / beside 7 busy), and the load-stage column charges `load_all()` with namespace
   loading `library(link)` pays later. The totals and the 0.71 s saving are unaffected.
