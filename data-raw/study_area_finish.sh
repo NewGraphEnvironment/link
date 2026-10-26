@@ -768,7 +768,9 @@ run_finish_report() {
       echo "  host no longer holds, or holds in part, deletes the dispatcher's copy)."
       if [ "${RECOMPUTE_RAN:-0}" = "1" ]; then
         echo "  The recompute above ran WITHOUT those groups, so recompute each one and"
-        echo "  each run group upstream of it afterwards. Then burn the host."
+        echo "  each run group that reads it afterwards (the wsg of each row of"
+        echo "  ${RC_DEPS:-<TS>_recompute_deps.tsv} whose dep is one of them; without"
+        echo "  that file, every group of the run). Then burn the host."
       else
         echo "  The recompute did not run, so recompute every group of the run"
         echo "  afterwards. Then burn the host."

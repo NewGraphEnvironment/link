@@ -26,7 +26,7 @@ Approved by the operator at plan approval, 2026-10-26.
 - [x] `data-raw/recompute_deps.R`: three rules from FWA (outlet closure, segment owner, line-touch), compared over all groups. The closure misses dependencies in 150 of 241 groups; the line rule (complete by construction, review B1) contains the other two, 2,211 pairs, median 9 per group.
 - [ ] Digest test on scratch (review A2): re-model TOOD (and NATR) into `fresh_374d` with `LNK_HABITAT_GATE=0` over only its line-rule dependency rows, recompute it, and digest `streams_access`, `streams_mapping_code` and the gated habitat flags against the same build with every group present. Negative control: the same with only the closure rule's dependencies must differ (TOOD's FROG / LKEC / UKEC / ULRD are outside it, #361). Digests after rounding.
 - [x] `data-raw/recompute_schedule_sim.R`: 2026-10-23 replayed at `-j8`. Line rule: the recompute ends 89.4 min sooner as recorded and 38.1 min sooner with the stalls removed (tail after the last landing 72.6 min against 110.7).
-- [ ] Database headroom (moved here from Phase 4, review O2): the same dispatcher groups modelled alone, beside a `-j8` recompute, and alone again (`headroom.sh`). Weigh the slowdown against the saving.
+- [x] Database headroom (moved here from Phase 4, review O2): the same dispatcher groups modelled alone, beside a `-j8` recompute, and alone again (`headroom.sh`). Weigh the slowdown against the saving.
 - [ ] Residual check for the separate control-asymmetry issue (review S1): non-owner barrier and override rows no owner matches, indexed, with the groups whose paths cross them.
 - [ ] Evidence README in `data-raw/logs/recompute_early_374/`; edit #374's body (closure → line rule; acceptance restated as a tail). **Checkpoint (decision 1).**
 
@@ -38,7 +38,7 @@ Approved by the operator at plan approval, 2026-10-26.
 
 ## Phase 3: the scheduler in the driver
 
-- [ ] `lnk_persist_init()`: replace `streams_habitat_long_vw` only when absent or its species set differs (catalog first, as #369 did for indexes and columns), with a live test that a second init takes no lock on it (review B2).
+- [x] `lnk_persist_init()`: replace `streams_habitat_long_vw` only when absent or its species set differs (catalog first, as #369 did for indexes and columns), with a live test that a second init takes no lock on it (review B2).
 - [x] In early mode, initialise the dispatcher persist on every run, not only with remote hosts (review G1); then the log tables, then `barriers_views_build.R`, then the backup (review G2). A failure is FATAL before dispatch. `--recompute-only` keeps its own build.
 - [x] `recompute_scheduler`, a background process started before `legs_wait`: polls readiness every 30 s, launches ready groups longest-first (`recompute_order`) into `RECOMPUTE_JOBS` slots through `recompute_one` (`.rc` files as today). Its own error handling, not the driver's `set -e` (review G4); it exits when its parent has gone; on a final-set file (written tmp + mv) it launches the rest of that set, drains and exits.
 - [x] `run_finish`: after coverage, write `COV_RECOMPUTE` as the final set, wait on the scheduler. If it died, run the groups of the final set with no `.rc` file in the existing pool. `run_finish_recompute` keeps the early `.rc` files and writes no second `views` row (review G3). `fanout_judge.R` over `COV_RECOMPUTE`; a group launched early but missing from it is named and the run exits non-zero.
@@ -53,7 +53,7 @@ Approved by the operator at plan approval, 2026-10-26.
 
 ## Phase 5: record and release
 
-- [ ] RUNBOOK §8d: new subsection "A group is recomputed once what it reads is here (link#374)", covering the rule, readiness and locks. Reword the kept-host recovery text, which says "upstream of it", from the dependency rule (review S2).
+- [x] RUNBOOK §8d: new subsection "A group is recomputed once what it reads is here (link#374)", covering the rule, readiness and locks. Reword the kept-host recovery text, which says "upstream of it", from the dependency rule (review S2).
 - [ ] File the control-asymmetry issue (review S1), after showing its body.
 - [ ] Write a CLAUDE.md status, `research/study_area_run.md`, and #377's measured line (the provincial numbers still owed).
 - [ ] NEWS and the version bump as the final commit.

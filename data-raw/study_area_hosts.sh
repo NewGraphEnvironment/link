@@ -664,7 +664,9 @@ hosts_kept_report() {
   echo "  dispatcher has a log row for it; with pre-log rows only, it is lost)."
   if [ "${RECOMPUTE_RAN:-0}" = "1" ]; then
     echo "  The run's recompute ran WITHOUT these groups: after consolidating,"
-    echo "  recompute each one and each run group upstream of it"
+    echo "  recompute each one and each run group that reads it: the wsg column of"
+    echo "  ${RC_DEPS:-<TS>_recompute_deps.tsv} where dep is one of them (link#374;"
+    echo "  without that file, every group of the run)"
   else
     echo "  The run's recompute did NOT run: after consolidating, recompute EVERY"
     echo "  group of the run, not only these"

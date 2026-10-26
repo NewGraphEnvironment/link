@@ -299,6 +299,53 @@ cols_streams_near_river <- c(
   invisible(TRUE)
 }
 
+#' The definition key a view carries in its comment (link#374)
+#'
+#' @param sql The view's `CREATE OR REPLACE VIEW` statement.
+#' @return `"lnk_def:<md5 of sql>"`.
+#' @noRd
+.lnk_view_def_key <- function(sql) {
+  paste0("lnk_def:", digest::digest(sql, algo = "md5", serialize = FALSE))
+}
+
+#' A view's comment, read from the catalog, which locks no table
+#'
+#' @return The comment, `NA` for a view without one, or `character(0)` when
+#'   the view is absent or the catalog cannot be read.
+#' @noRd
+.lnk_view_comment <- function(conn, schema, name) {
+  tryCatch(DBI::dbGetQuery(conn, sprintf(
+    "SELECT d.description FROM pg_catalog.pg_class c
+     JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+     LEFT JOIN pg_catalog.pg_description d ON d.objoid = c.oid
+       AND d.classoid = 'pg_catalog.pg_class'::regclass AND d.objsubid = 0
+     WHERE n.nspname = %s AND c.relname = %s AND c.relkind = 'v'",
+    .lnk_quote_literal(schema), .lnk_quote_literal(name)))$description,
+    error = function(e) character(0))
+}
+
+#' Create or replace a view only when its definition changed (link#374)
+#'
+#' `CREATE OR REPLACE VIEW` takes an AccessExclusiveLock even when nothing
+#' changes, so it waits behind every reader of the view and every new reader
+#' waits behind it. The statement's md5 is kept in the view's comment, read
+#' from the catalog first; a view whose comment matches is left alone. An
+#' absent view, one without the comment, or an unreadable catalog issues the
+#' statement, as `.lnk_index_create()` does.
+#'
+#' @param sql The `CREATE OR REPLACE VIEW` statement.
+#' @return Invisibly, whether it was issued.
+#' @noRd
+.lnk_view_replace <- function(conn, schema, name, sql) {
+  key <- .lnk_view_def_key(sql)
+  have <- .lnk_view_comment(conn, schema, name)
+  if (length(have) == 1L && identical(have, key)) return(invisible(FALSE))
+  .lnk_db_execute(conn, sql)
+  .lnk_db_execute(conn, sprintf("COMMENT ON VIEW %s.%s IS %s", schema, name,
+                                .lnk_quote_literal(key)))
+  invisible(TRUE)
+}
+
 
 #' Initialize persistent province-wide habitat tables
 #'
@@ -539,7 +586,11 @@ lnk_persist_init <- function(conn, cfg, species, force_recreate = FALSE) {
     "SELECT id_segment, watershed_group_code, '%s'::text AS species_code, spawning, rearing FROM %s.streams_habitat_%s",
     tolower(sp), schema, tolower(sp)),
     character(1))
-  .lnk_db_execute(conn, sprintf(
+  # Replaced only when its definition changed (link#374): a recompute job
+  # reads this view, and CREATE OR REPLACE takes an exclusive lock on it, so an
+  # unconditional replace per dispatcher group queued behind running jobs and
+  # every new reader queued behind it.
+  .lnk_view_replace(conn, schema, "streams_habitat_long_vw", sprintf(
     "CREATE OR REPLACE VIEW %s.streams_habitat_long_vw AS\n%s",
     schema, paste(view_unions, collapse = "\nUNION ALL\n")))
 

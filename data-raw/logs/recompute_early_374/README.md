@@ -2,7 +2,7 @@
 
 **Question.** Can the post-consolidate recompute start group by group while the legs still run, instead of after the last leg and consolidate? If so, under which dependency rule, and how much critical path does that save once its load on the dispatcher's database is counted?
 
-**Answer.** Yes, under the **line** rule, at full width while the legs run. Replayed on `20261023_074321-24d85e8c` with the stalls removed, it ends the recompute 32.4 min sooner (38.1 min if its load on the dispatcher cost nothing). As the run was recorded, with the dispatcher leg 5 h past the cloud legs, it is 89.4 min sooner. The outlet closure #374 proposed is too narrow: it misses dependencies in 150 of 241 groups.
+**Answer.** Yes, under the **line** rule, at full width while the legs run. Replayed on `20261023_074321-24d85e8c` with the stalls removed, it ends the recompute 36.7 min sooner (38.1 min if its load on the dispatcher cost nothing). As the run was recorded, with the dispatcher leg 5 h past the cloud legs, it is 89.4 min sooner. The outlet closure #374 proposed is too narrow: it misses dependencies in 150 of 241 groups.
 
 Measured 2026-10-26 on the dispatcher (link at `374-…` branch, fresh 0.42.0), against `fresh_default` as the 2026-10-23 run left it. Times are UTC.
 
@@ -33,9 +33,9 @@ Measured 2026-10-26 on the dispatcher (link at `374-…` branch, fresh 0.42.0), 
 | recorded | end (today) | 670.8 | 110.4 | — |
 | recorded | line | 581.4 | 21.0 | 89.4 |
 | no stalls | end (today) | 375.1 | 110.7 | — |
+| no stalls | closure (too narrow) | 323.1 | 58.8 | 51.9 |
 | no stalls | line | 336.9 | 72.6 | 38.1 |
 | no stalls | owner | 326.1 | 61.7 | 49.0 |
-| no stalls | closure (too narrow) | 323.1 | 58.8 | 51.9 |
 
 "No stalls" is the honest case: KTSU at 1.3 min and OKAN at 7.6 min, their re-run times. The legs then end close together (dispatcher 253, last consolidate 264), most groups read something from the last host to land, and the pool is throughput-bound after it. The owner rule would buy 11 more minutes than the line rule: that is the price of the control asymmetry.
 
@@ -49,15 +49,17 @@ Measured 2026-10-26 on the dispatcher (link at `374-…` branch, fresh 0.42.0), 
 | SALM | 1.43 | 3.03 | 1.48 |
 | BOWR | 2.55 | 4.83 | 2.48 |
 
-The dispatcher's modelling runs about **2x slower** beside a full-width recompute (A1 and A2 agree, so it is not a warming cache). The recompute jobs themselves ran at their usual 3.0 to 4.8 min.
+At `-j4` (`headroom_j4/`) the same three groups took 6.16 min against 4.90 and 5.37 alone (1.20x); at `-j8`, 10.23 against 5.18 and 5.13 (1.99x). The dispatcher's modelling slows faster than linearly in the jobs beside it: the database saturates past about four. A1 and A2 agree in both, so it is not a warming cache. The recompute jobs themselves ran at their usual 3.0 to 4.8 min.
 
-The coupled simulation slows the replayed dispatcher leg by `1 / (1 + α·k)` while `k` jobs run, with α = 0.125 (2x at `-j8`). Stall-free, line rule:
+The coupled simulation slows the replayed dispatcher leg while `k` jobs run, and the dispatcher's groups land later accordingly. Stall-free, line rule, by the measured curve (extra time interpolated through (0, 0), (4, 0.20), (8, 0.99)), and by a linear α = 0.125 (2x at `-j8`, so too dear at narrow widths):
 
-| jobs while the dispatcher models | dispatcher leg ends | recompute ends | saving |
-|---|---|---|---|
-| 0 | 253.4 | 368.1 | 7.0 |
-| 4 | 271.2 | 361.3 | 13.8 |
-| 8 | 283.1 | 342.7 | **32.4** |
+| jobs while the dispatcher models | dispatcher leg ends | recompute ends | saving (measured curve) | saving (linear) |
+|---|---|---|---|---|
+| 0 | 253.4 | 364.0 | 11.1 | 11.1 |
+| 1 | 255.4 | 360.8 | 14.3 | 11.7 |
+| 2 | 256.6 | 358.5 | 16.6 | 12.9 |
+| 4 | 259.0 | 352.9 | 22.2 | 17.5 |
+| 8 | 277.8 | 338.4 | **36.7** | 35.9 |
 
 Full width is best despite the slowdown, because the pool is throughput-bound. So the scheduler keeps one width, `--recompute-jobs`.
 

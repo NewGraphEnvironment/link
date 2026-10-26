@@ -88,7 +88,17 @@ Beside it on the dispatcher:
 - The owner rule would buy 11 more minutes than the line rule in the balanced case: the price of the control asymmetry (review S1).
 - Not modelled: contention. The headroom benchmark measures it.
 
-## Errors Encountered
+## Phase 1 — headroom (2026-10-26)
+
+A-B-A on the dispatcher (`headroom.sh`): NEVI, SALM and BOWR modelled into scratch `fresh_374m` alone, beside a recompute looping over 16 groups in scratch `fresh_374r`, and alone again.
+
+| width | alone (A1 / A2, sum of 3) | beside it (B) | slowdown |
+|---|---|---|---|
+| `-j4` | 4.90 / 5.37 | 6.16 | 1.20x |
+| `-j8` | 5.18 / 5.13 | 10.23 | 1.99x |
+
+The database saturates past about four jobs; the recompute jobs ran at their usual minutes. Coupled into the stall-free replay by that curve, early recompute saves 11.1 / 14.3 / 16.6 / 22.2 / 36.7 min at 0 / 1 / 2 / 4 / 8 jobs while the dispatcher models (dispatcher leg 253.4 → 277.8 at `-j8`). One width (`--recompute-jobs`) throughout. A first version of the coupled replay lost up to one step per group boundary (~4 min over 74 groups); fixed by carrying each step's leftover.
+
 
 | Error | Resolution |
 |-------|------------|

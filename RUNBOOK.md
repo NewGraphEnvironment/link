@@ -1692,6 +1692,63 @@ the same way and burns none.
   recompute rebuilds access and mapping code, not the persisted groups.
   Dispatcher-only runs take none, as before.
 
+### A group is recomputed once what it reads has landed (link#374)
+
+Until #374 the recompute ran after the last leg and the last consolidate: 110
+min of `-j8` on the critical path on 2026-10-23. Now `recompute_scheduler`
+(`data-raw/study_area_recompute.sh`) runs in the background beside the legs and
+starts each group's `wsg_recompute_one.R` as soon as the group, and every group
+it reads, has **landed** on the dispatcher. `--recompute-at-end` keeps the old
+behaviour; `--recompute-only` is unchanged.
+
+- **What a group reads.** Its own rows, and the `barriers` and
+  `barrier_overrides` rows of every group holding one on its downstream path:
+  the persist schema's views read every group's rows, by position, not by
+  group. A watershed group is not one drainage, so the outlet closure
+  (`frs_wsg_drainage()`) misses readers in 150 of 241 groups; and gradient
+  barriers are found along the whole of every line a group touches and
+  persisted under its code, so a group that owns no segment of the path can
+  still hold a row on it. `data-raw/recompute_deps.R` writes the **line**
+  rule, complete by construction: every group touching any line whose code
+  is an ancestor of, or equal to, one of the group's codes (FWA only, about 80
+  s, in the background through spin and prep; no leg is dispatched without it).
+  FWA's unassigned `999…` codes are left out on both sides.
+- **Landed.** A dispatcher group: its newest `log` row is the run's and closed
+  (`date_end` is written last). A remote group: its host's row in
+  `<TS>_consolidate_state.tsv` is `ok` (written after the copy; `in_flight`
+  before, because a consolidate deletes and copies table by table, not in one
+  transaction). A SKIP, or a group outside the run, has landed. A group on two
+  hosts lands when both have landed it. **Readiness fails closed:** an early
+  recompute that reads too little cannot be undone (the habitat gate only
+  clears flags), so a failed poll, an unreadable file or a row of another run
+  starts nothing.
+- **Before the legs:** the persist init (every run now, not only with remote
+  hosts), the log tables and the barrier views, before the backup (its
+  `pg_dump` would make the view build wait). A view rebuild later would take
+  an exclusive lock under running jobs, so the end of the run does not rebuild
+  them. Each dispatcher group's `lnk_persist_init()` replaces
+  `streams_habitat_long_vw` only when its definition changed, for the same
+  reason.
+- **The end.** After coverage, `run_finish` writes the final set
+  (`<TS>_recompute_final`): the groups found finished. The scheduler starts
+  every one not yet started, ready or not (every leg and consolidate is over,
+  and a group reading a failed group is recomputed as the pool always did),
+  drains, and returns. A scheduler that died leaves the groups it did not start
+  to the old pool. `<TS>_recompute_launched.tsv` records each start, `early` or
+  `final`.
+- **The audit** (`data-raw/recompute_audit.R`): every recomputed group's
+  `log_recompute.date_start` is after the landing of every group it reads.
+  `EARLY` fails the run with its own remedy: re-model those groups, then
+  recompute them, because the gate may have cleared habitat for good.
+- **Stopping.** The EXIT trap touches `<TS>_recompute_stop`: nothing new
+  starts, running jobs finish, as a killed pool's always did. A scheduler whose
+  driver is gone (SIGKILL) stops the same way.
+- **Width.** One width, `--recompute-jobs`, while the legs run and after. A
+  full-width recompute roughly doubles the dispatcher's modelling time, and full
+  width is still best: replayed on 2026-10-23 without its stalls, it ends the
+  recompute 36.7 min sooner, against 22.2 at width 4 and 11.1 at none.
+  Evidence: `data-raw/logs/recompute_early_374/`.
+
 ### Which host may be burned (link#347)
 
 The count used to be `[wsg_run_one] … done` lines, anchored at line start. R
@@ -1767,7 +1824,10 @@ older build. A group with persist rows but **no** log row on the dispatcher
 `fresh_default`, 2026-10-17) is not protected: it is deleted and, if the host
 no longer holds it, not replaced. Where it says `no`, find out what is left first. If the
 run's recompute ran, it ran without the kept groups: recompute each one and
-each run group upstream of it (`wsg_recompute_one.R`). If it did not run (no
+each run group that reads it (`wsg_recompute_one.R`): the `wsg` of each row of
+`<TS>_recompute_deps.tsv` whose `dep` is a kept group, which is wider than
+"upstream of it", because a group reads every line on its path whole
+(link#374); without that file, every group of the run. If it did not run (no
 run group had rows from this run), recompute every group of the run; the
 banner says which. A host whose consolidate recorded no outcome keeps its
 groups `in_flight` and out of the recompute (link#369): check what reached the

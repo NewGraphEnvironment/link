@@ -230,7 +230,11 @@ print(res, row.names = FALSE)
 # recompute, and the recompute jobs not slower. So in the no-stalls scenario,
 # replay the dispatcher leg in steps of dt minutes, advancing each group's
 # remaining minutes at 1 / (1 + alpha * k), k the recompute jobs running then
-# (alpha = 0.125 makes -j8 a 2x slowdown). The scheduler runs at most
+# (alpha = 0.125 makes -j8 a 2x slowdown), or, with alpha = NA, by the
+# measured curve: extra time f(k) interpolated through (0, 0), (4, 0.20),
+# (8, 0.99) (headroom.sh at -j4 and -j8; the database saturates past about
+# four jobs, so a linear alpha overstates the cost of a narrow pool). The
+# scheduler runs at most
 # `w_legs` jobs while the dispatcher leg is modelling, `width` after it.
 # Cloud consolidates are not slowed (they were not measured); a dispatcher
 # group lands when its slowed model ends.
@@ -256,13 +260,23 @@ coupled <- function(rule, w_legs, alpha, dt = 0.05) {
   repeat {
     k <- sum(run_end > t)
     if (!disp_done) {
-      if (idle > 0) { idle <- idle - dt } else {
-        left <- left - dt / (1 + alpha * k)
-        overlap <- overlap + k * dt
-        if (left <= 0) {
-          land[d$wsg[i]] <- t
+      # A step's leftover time carries into the next group (or gap), so 74
+      # boundaries do not each lose part of a step.
+      step <- dt
+      while (!disp_done && step > 0) {
+        if (idle > 0) {
+          used <- min(idle, step); idle <- idle - used; step <- step - used
+          next
+        }
+        f <- if (is.na(alpha)) stats::approx(c(0, 4, 8, 16), c(0, 0.20, 0.99, 2.97), k)$y else alpha * k
+        cost <- left * (1 + f)
+        if (cost > step) {
+          left <- left - step / (1 + f); overlap <- overlap + k * step; step <- 0
+        } else {
+          overlap <- overlap + k * cost; step <- step - cost
+          land[d$wsg[i]] <- t + dt - step
           i <- i + 1L
-          if (i > nrow(d)) { disp_done <- TRUE; disp_end <- t } else { left <- dur[i]; idle <- gap[i] }
+          if (i > nrow(d)) { disp_done <- TRUE; disp_end <- t + dt - step } else { left <- dur[i]; idle <- gap[i] }
         }
       }
     }
@@ -292,7 +306,7 @@ coupled <- function(rule, w_legs, alpha, dt = 0.05) {
              tail_after_last_landing = round(max(run_end) - max(disp_end, max(cl$cons_end)), 1),
              job_min_before_dispatcher_end = round(overlap, 1))
 }
-alphas <- as.numeric(strsplit(Sys.getenv("LNK_SIM_ALPHA", "0.125"), ",")[[1]])
+alphas <- suppressWarnings(as.numeric(strsplit(Sys.getenv("LNK_SIM_ALPHA", "0.125,NA"), ",")[[1]]))
 cp <- do.call(rbind, lapply(alphas, function(a) do.call(rbind, lapply(c(0L, 1L, 2L, 4L, 8L),
   function(wl) coupled("line", wl, a)))))
 base_end <- res$recompute_end[res$scenario == "no_stalls" & res$rule == "end"]

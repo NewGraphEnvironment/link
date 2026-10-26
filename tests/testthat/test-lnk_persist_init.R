@@ -272,3 +272,59 @@ test_that("an up-to-date persist schema waits on no other session's write (#369)
   expect_error(suppressMessages(lnk_persist_init(conn, cfg, species = sp)),
                "lock timeout")
 })
+
+test_that("an up-to-date long-form habitat view is not replaced under its readers (#374)", {
+  conn <- skip_if_no_db()
+  info <- DBI::dbGetInfo(conn)
+  skip_if_not(identical(info$host, "localhost") && identical(info$dbname, "fwapg"),
+              "needs the local docker fwapg")
+  schema <- paste0("zz_test374_", Sys.getpid())
+  cfg <- lnk_config("default")
+  cfg$pipeline$schema <- schema
+  sp <- c("BT", "CH")
+  withr::defer(DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", schema)))
+  suppressMessages(lnk_persist_init(conn, cfg, species = sp))
+  key <- .lnk_view_comment(conn, schema, "streams_habitat_long_vw")
+  expect_match(key, "^lnk_def:[0-9a-f]{32}$")
+
+  # A second session reads the view, as a recompute job does mid-pool.
+  holder <- DBI::dbConnect(RPostgres::Postgres(), dbname = "fwapg",
+    host = "localhost", port = 5432L, user = "postgres", password = "postgres")
+  withr::defer(DBI::dbDisconnect(holder))
+  DBI::dbExecute(holder, "BEGIN")
+  DBI::dbGetQuery(holder, sprintf("SELECT count(*) FROM %s.streams_habitat_long_vw", schema))
+  withr::defer(DBI::dbExecute(holder, "ROLLBACK"), priority = "first")
+  DBI::dbExecute(conn, "SET lock_timeout = '2s'")
+  withr::defer(DBI::dbExecute(conn, "RESET lock_timeout"), priority = "first")
+
+  expect_no_error(suppressMessages(lnk_persist_init(conn, cfg, species = sp)))
+  expect_identical(.lnk_view_comment(conn, schema, "streams_habitat_long_vw"), key)
+
+  # The premise: with no key to compare, the same init replaces the view, waits
+  # on the reader and times out. Without it the expectation above is vacuous.
+  local_mocked_bindings(.lnk_view_comment = function(conn, schema, name) character(0))
+  expect_error(suppressMessages(lnk_persist_init(conn, cfg, species = sp)),
+               "lock timeout")
+})
+
+test_that("a changed species set replaces the long-form view", {
+  conn <- skip_if_no_db()
+  info <- DBI::dbGetInfo(conn)
+  skip_if_not(identical(info$host, "localhost") && identical(info$dbname, "fwapg"),
+              "needs the local docker fwapg")
+  schema <- paste0("zz_test374b_", Sys.getpid())
+  cfg <- lnk_config("default")
+  cfg$pipeline$schema <- schema
+  withr::defer(DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", schema)))
+  suppressMessages(lnk_persist_init(conn, cfg, species = "BT"))
+  k1 <- .lnk_view_comment(conn, schema, "streams_habitat_long_vw")
+  suppressMessages(lnk_persist_init(conn, cfg, species = c("BT", "CH")))
+  k2 <- .lnk_view_comment(conn, schema, "streams_habitat_long_vw")
+  expect_false(identical(k1, k2))
+  sp <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT DISTINCT species_code FROM %s.streams_habitat_long_vw", schema))
+  expect_identical(nrow(sp), 0L)
+  def <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT pg_get_viewdef('%s.streams_habitat_long_vw'::regclass) d", schema))$d
+  expect_match(def, "streams_habitat_ch")
+})
