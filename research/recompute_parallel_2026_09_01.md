@@ -2,6 +2,7 @@
 
 **2026-09-01, link#250, v0.48.0.** Dispatcher m1, local docker `fwapg`
 (Docker VM 6 CPUs of the host's 10), persist schema `fresh`.
+**Revised 2026-10-26 (#260):** "Where the remaining time actually is": its line reference, candidate 1 (measured) and candidate 2 (where its floor binds).
 
 ## The headline
 
@@ -149,7 +150,7 @@ that decides the answer.
 At `-j4` the database is active ~28% of the time, so the rest is R-side:
 `lnk_pipeline_access()` and `lnk_pipeline_mapping_code()` pull whole per-WSG
 tables into R and compute there, and every job additionally pays a full
-`pkgload::load_all()` of the source tree (`wsg_recompute_one.R:25-27`).
+`pkgload::load_all()` of the source tree (`wsg_recompute_one.R:26-30`).
 
 Two candidates, both out of scope for #250 and both worth their own issue:
 
@@ -162,16 +163,23 @@ Two candidates, both out of scope for #250 and both worth their own issue:
    rather than degrading silently. Ordered on recompute times and never on
    segments, which would put the cheap job first here.
 
-1. **Drop the per-job `load_all()`** — install once, run jobs under
-   `library(link)`. Changes the `LNK_LOAD` contract shared with
-   `wsg_run_one.R`, `host_vintage.R` and `host_stamp.R`, and CLAUDE.md's
-   "never touch the repo mid-run" rule exists because the dispatcher uses
-   `load_all()`.
+1. **Drop the per-job `load_all()` — MEASURED, NOT MATERIAL (2026-10-26, #260).**
+   The whole prologue before `t0` (R startup, `load_all()`, connect, config,
+   overrides) is 1.63 s per job on the bench beside seven CPU-bound R loops,
+   and `library(link)` would save about 0.78 s of it. In the 2026-10-23
+   provincial pool a slot sat a median 9.7 s between jobs, 4.7 min of the
+   110.3 min span, so the prologue is at most 4.3 % of it. The contract stays: `load_all()` is what makes
+   each job run the tree verified at pre-flight, and it is read by 12
+   `data-raw/` scripts. Evidence: `data-raw/logs/loadall_260/`.
 2. **Find out why CHWK is 20× SALR** at 80% of its size. If the downstream
    walk is the cost, that is a fresh-side question about
    `frs_network_features` over a barrier-dense drainage, and it would speed up
    the serial path too — which is worth more than pool width, because the
-   makespan floor *is* the slowest WSG.
+   makespan floor *is* the slowest WSG. That floor binds for the 4–8 group sets measured
+   here. At provincial scope it holds but does not bind (2026-10-26, #260): the 2026-10-23
+   pool's 110.3 min span sits 5.7 min above its summed work over 8 slots
+   (104.6 min), against a longest job of 22.75 min, so the pool is bound by
+   throughput and CHWK alone reaches the span at one slot in eight.
 
 ## The bench is capped below the host — local numbers understate
 

@@ -11,6 +11,14 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
+## Status (2026-10-26) — the recompute's per-job `load_all()` measured and kept (#260)
+
+**The recompute job's prologue (R start, `load_all()`, connect, config, overrides) is at most 4.3 % of the 2026-10-23 pool's span, so the `LNK_LOAD` contract (12 `data-raw/` scripts) stays.** On the bench it is 1.63 s beside seven CPU-bound R loops (0.81 min of 110.3), and `library(link)` would save about 0.78 s per job. In the run, a slot sat a median 9.7 s between one job's end and the next job's start (4.7 min of the span), and the bench explains about 3 s of that. `wsg_recompute_one.R` now prints each job's prologue at `t0`, so the next provincial run measures it in place. #377's next item is #374. Evidence: `data-raw/logs/loadall_260/`.
+
+**Facts not worth re-deriving:**
+- **A recompute job's logged minutes leave its prologue out:** `t0` and `log_recompute.date_start` are set after the load, connect, config and overrides (`wsg_recompute_one.R:62`). The pool's span minus its summed work over the slots (5.7 min at `-j8`) is everything outside `[date_start, date_end]`: 4.7 min of slot gaps and 1.0 min of tail (`gaps.sql`).
+- **The 2026-10-23 run has no `_phases.tsv`** (that began with #375); its 110 min recompute is first start to last end in `fresh_default.log_recompute` (`data-raw/logs/loadall_260/span.sql`).
+
 ## Status (2026-10-24, late night) — persistent workers beside the dispatcher and the cloud hosts (#376)
 
 **`study_area_run.sh --workers=<ssh target>,...` adds hosts the driver neither spins nor burns**, keyed `worker1..N`, their `--focal=` lists after the dispatcher's and before the cyphers'. Each must answer over ssh and hold its own database (`system_identifier`), and its schema must hold no rows for its bucket, before any spend. `data-raw/worker_prep.sh` (piped over ssh) resets a clone the driver owns (`~/Projects/repo/link_worker`); the leg runs link by load_all from it. After its leg a worker is accounted, consolidated and released, and its partial groups are dropped from its persist tables (log rows kept). **Every remote status is now read from what the remote shell prints, for cyphers too** (`data-raw/study_area_remote.sh`, `consolidate_remote()`), because Tailscale SSH to macOS exits 0 whatever ran. Mechanics: RUNBOOK §8d, "Persistent workers" and "A remote status is what the remote shell prints".

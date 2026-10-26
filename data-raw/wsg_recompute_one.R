@@ -60,6 +60,11 @@ if (length(active) == 0L) {
 pres <- lnk_presence(loaded$wsg_species_presence, wsg)
 sch  <- cfg$pipeline$schema
 t0   <- Sys.time()
+# The prologue above (R startup, load, connect, config, overrides) is outside
+# t0 and outside log_recompute's date_start, so time it here, in the pool, for
+# link#260: proc.time()'s elapsed counts from this R process's start.
+cat(sprintf("[wsg_recompute_one] %s prologue %.2f s\n", wsg,
+            proc.time()[["elapsed"]]))
 
 # LNK_VIEWS_PREBUILT=1 — study_area_run.sh built the barrier views ONCE
 # before fanning out (link#250, data-raw/barriers_views_build.R). Those views
