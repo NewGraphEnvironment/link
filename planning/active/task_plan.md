@@ -56,10 +56,11 @@ Cut the wall clock of a provincial `default` run without changing its outputs, o
 
 ## Validation
 
-- [ ] `measure.sh` and `shares.R` re-run and reproduce the committed numbers.
-- [ ] `/code-check branch` clean.
-- [ ] Both issue bodies read back after editing (`gh issue view`), with the checkboxes as intended.
-- [ ] PWF checkboxes match the landed work.
+- [x] `measure.sh` ran twice (the second adds the busy condition): sequence and 8-wide medians agreed to 0.01 s; `shares.R` and both SQL files re-run to identical outputs.
+- [x] `/code-check branch`: four rounds, every finding fixed; ended on round 4's enumeration of 72 claims (findings in `review-round{1..4}.md`).
+- [x] Tests: the two files that reference `wsg_recompute_one.R` pass (test-study_area_hosts 175, test-study_area_finish 230); no package code changed, so the full suite was not run.
+- [x] Both issue bodies read back after editing (`gh issue view`), with the checkboxes as intended.
+- [x] PWF checkboxes match the landed work.
 - [ ] `/planning-archive` on completion, then `/gh-pr-push`.
 
-How each claim is proved: the prologue cost is timed directly, never estimated. The share uses logged job minutes, which leave the prologue out (verified by reading where `t0` is set). The phase total comes from the run's own log.
+How each claim is proved: the prologue cost is timed directly, never estimated. The share uses logged job minutes, which leave the prologue out (verified by reading where `t0` is set). The span and summed work come from `fresh_default.log_recompute` (`span.sql`, `gaps.sql`).

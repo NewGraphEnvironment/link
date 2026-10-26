@@ -88,7 +88,7 @@ other groups.
 **Owed:** the in-run prologue. `wsg_recompute_one.R` now prints
 `[wsg_recompute_one] <WSG> prologue <s> s` at `t0` (`proc.time()`'s elapsed, from the R
 process's start), so the next provincial run's `<TS>_recompute.log` measures it in
-place, and says what the other 6 to 7 s of each gap are.
+place, and shows whether the prologue accounts for the other 6 to 7 s of each gap.
 
 ## Notes
 
@@ -99,7 +99,7 @@ place, and says what the other 6 to 7 s of each gap are.
   Imports inside its own stage, while `library(link)` defers them: its first
   `lnk_load_overrides()` call, in the prologue's order, loads 17 namespaces (crate,
   dplyr, readr, …; counted with `setdiff(loadedNamespaces(), before)` around the call)
-  and takes 0.24 s, its second 0.05 s. So `lnk_load_overrides()` reads 0.24 / 0.30 / 0.33 s under
+  and takes 0.24 s, its second 0.06 s. So `lnk_load_overrides()` reads 0.24 / 0.30 / 0.33 s under
   `library(link)` against 0.11 / 0.15 / 0.15 s under `load_all()` (sequence / 8 at once
   / beside 7 busy), and the load-stage column charges `load_all()` with namespace
   loading `library(link)` pays later. The totals and the 0.71 s saving are unaffected.
