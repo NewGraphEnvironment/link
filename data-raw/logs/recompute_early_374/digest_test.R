@@ -106,6 +106,8 @@ out_tab <- rbind(
 print(out_tab, row.names = FALSE)
 utils::write.table(out_tab, file.path(out, paste0(g, "_digest.tsv")), sep = "\t",
                    quote = FALSE, row.names = FALSE)
+acc <- out_tab[out_tab$table == "streams_access" & out_tab$variant == "line", ]
+if (nrow(acc) != 1L || acc$n_all == 0L) stop(g, ": no streams_access rows in the all variant; nothing was compared", call. = FALSE)
 line_ok <- all(out_tab$only_all[out_tab$variant == "line"] == 0 &
                out_tab$only_variant[out_tab$variant == "line"] == 0)
 closure_differs <- any(out_tab$only_all[out_tab$variant == "closure"] > 0 |

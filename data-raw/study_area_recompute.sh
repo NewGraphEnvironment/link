@@ -119,7 +119,10 @@ recompute_ready() {
 # groups are ready and starts them, longest first (recompute_order), into
 # RECOMPUTE_JOBS slots through recompute_one, which writes each job's .log and
 # .rc into RC_DIR as the end-of-run pool does. Each launch appends
-# "<wsg>\t<iso> <epoch>\t<early|final>" to RC_DIR/launched.tsv.
+# "<wsg>\t<iso> <epoch>\t<early|final>\t<pid>" to RC_DIR/launched.tsv: the
+# time is the driver's clock, as the consolidate record's is (the audit
+# compares them), and the pid lets a fallback wait for a job a dead scheduler
+# left running rather than start it twice.
 #
 # It ends three ways:
 #   final set   run_finish writes RC_FINAL (tmp + mv, so its existence means
@@ -190,8 +193,8 @@ recompute_scheduler() {
         recompute_one "$w" &
         pids+=("$!")
         launched=$(.hosts_union "$launched" "$w")
-        printf '%s\t%s\t%s\n' "$w" "$now" "$([ "$have_final" = "1" ] && echo final || echo early)" \
-          >> "$RC_DIR/launched.tsv"
+        printf '%s\t%s\t%s\t%s\n' "$w" "$now" "$([ "$have_final" = "1" ] && echo final || echo early)" \
+          "$!" >> "$RC_DIR/launched.tsv"
       done
     fi
     if [ "$have_final" = "1" ] && [ "${#pids[@]}" -eq 0 ] \

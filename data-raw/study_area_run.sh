@@ -1875,7 +1875,9 @@ fi
 if [ -n "$RC_DEPS_PID" ]; then
   drc=0; wait "$RC_DEPS_PID" || drc=$?
   RC_DEPS_PID=""
-  { [ "$drc" = "0" ] && IFS= read -r dhdr < "$RC_DEPS" && [ "$dhdr" = "$(printf 'wsg\trule\tdep')" ]; } \
+  # An empty map would make every landed group ready at once: refused.
+  { [ "$drc" = "0" ] && IFS= read -r dhdr < "$RC_DEPS" && [ "$dhdr" = "$(printf 'wsg\trule\tdep')" ] \
+      && [ "$(wc -l < "$RC_DEPS")" -gt 1 ]; } \
     || { echo "FATAL: the early recompute's dependency map failed (exit $drc); see $LOG_DIR/${TS}_recompute_deps.log. Nothing dispatched."; exit 1; }
   echo "  ✓ dependency map: $(($(wc -l < "$RC_DEPS") - 1)) pairs (see $LOG_DIR/${TS}_recompute_deps.log)"
 fi

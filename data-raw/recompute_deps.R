@@ -115,6 +115,13 @@ deps_fwa <- function(conn) {
     SELECT DISTINCT p.w AS wsg, t.w AS dep
     FROM rd_pathblk p JOIN (SELECT DISTINCT w, blk FROM rd_seg) t USING (blk)
     WHERE t.w <> p.w")
+  # Nothing from FWA is a broken source (an empty or unpopulated table), not
+  # a province with no dependencies: refused, because the scheduler would then
+  # start every landed group at once.
+  if (nrow(line) == 0L || nrow(owner) == 0L) {
+    stop("recompute_deps: FWA gave no dependency pairs; refusing to write an empty map",
+         call. = FALSE)
+  }
   message(sprintf("[recompute_deps] FWA rules in %.1f s",
                   as.numeric(difftime(Sys.time(), t0, units = "secs"))))
   list(owner = owner, line = line)

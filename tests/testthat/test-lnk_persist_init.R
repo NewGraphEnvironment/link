@@ -284,8 +284,8 @@ test_that("an up-to-date long-form habitat view is not replaced under its reader
   sp <- c("BT", "CH")
   withr::defer(DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", schema)))
   suppressMessages(lnk_persist_init(conn, cfg, species = sp))
-  key <- .lnk_view_comment(conn, schema, "streams_habitat_long_vw")
-  expect_match(key, "^lnk_def:[0-9a-f]{32}$")
+  key <- .lnk_view_state(conn, schema, "streams_habitat_long_vw")$description
+  expect_match(key, "^lnk_def:[0-9a-f]{32}:[0-9a-f]{32}$")
 
   # A second session reads the view, as a recompute job does mid-pool.
   holder <- DBI::dbConnect(RPostgres::Postgres(), dbname = "fwapg",
@@ -298,11 +298,12 @@ test_that("an up-to-date long-form habitat view is not replaced under its reader
   withr::defer(DBI::dbExecute(conn, "RESET lock_timeout"), priority = "first")
 
   expect_no_error(suppressMessages(lnk_persist_init(conn, cfg, species = sp)))
-  expect_identical(.lnk_view_comment(conn, schema, "streams_habitat_long_vw"), key)
+  expect_identical(.lnk_view_state(conn, schema, "streams_habitat_long_vw")$description, key)
 
   # The premise: with no key to compare, the same init replaces the view, waits
   # on the reader and times out. Without it the expectation above is vacuous.
-  local_mocked_bindings(.lnk_view_comment = function(conn, schema, name) character(0))
+  local_mocked_bindings(.lnk_view_state = function(conn, schema, name)
+    data.frame(description = character(0), def = character(0)))
   expect_error(suppressMessages(lnk_persist_init(conn, cfg, species = sp)),
                "lock timeout")
 })
@@ -317,14 +318,35 @@ test_that("a changed species set replaces the long-form view", {
   cfg$pipeline$schema <- schema
   withr::defer(DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", schema)))
   suppressMessages(lnk_persist_init(conn, cfg, species = "BT"))
-  k1 <- .lnk_view_comment(conn, schema, "streams_habitat_long_vw")
+  k1 <- .lnk_view_state(conn, schema, "streams_habitat_long_vw")$description
   suppressMessages(lnk_persist_init(conn, cfg, species = c("BT", "CH")))
-  k2 <- .lnk_view_comment(conn, schema, "streams_habitat_long_vw")
+  k2 <- .lnk_view_state(conn, schema, "streams_habitat_long_vw")$description
   expect_false(identical(k1, k2))
   sp <- DBI::dbGetQuery(conn, sprintf(
     "SELECT DISTINCT species_code FROM %s.streams_habitat_long_vw", schema))
   expect_identical(nrow(sp), 0L)
   def <- DBI::dbGetQuery(conn, sprintf(
     "SELECT pg_get_viewdef('%s.streams_habitat_long_vw'::regclass) d", schema))$d
+  expect_match(def, "streams_habitat_ch")
+})
+
+test_that("a replace by another writer that leaves the comment is noticed", {
+  conn <- skip_if_no_db()
+  info <- DBI::dbGetInfo(conn)
+  skip_if_not(identical(info$host, "localhost") && identical(info$dbname, "fwapg"),
+              "needs the local docker fwapg")
+  schema <- paste0("zz_test374c_", Sys.getpid())
+  cfg <- lnk_config("default")
+  cfg$pipeline$schema <- schema
+  withr::defer(DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", schema)))
+  suppressMessages(lnk_persist_init(conn, cfg, species = c("BT", "CH")))
+  # An older checkout replaces the view with one species; the comment stays.
+  DBI::dbExecute(conn, sprintf(
+    "CREATE OR REPLACE VIEW %1$s.streams_habitat_long_vw AS
+     SELECT id_segment, watershed_group_code, 'bt'::text AS species_code, spawning, rearing
+     FROM %1$s.streams_habitat_bt", schema))
+  expect_match(.lnk_view_state(conn, schema, "streams_habitat_long_vw")$description, "^lnk_def:")
+  suppressMessages(lnk_persist_init(conn, cfg, species = c("BT", "CH")))
+  def <- .lnk_view_state(conn, schema, "streams_habitat_long_vw")$def
   expect_match(def, "streams_habitat_ch")
 })

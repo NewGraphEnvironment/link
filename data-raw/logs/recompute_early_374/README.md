@@ -91,4 +91,4 @@ Ten groups, `--config=default --buckets-exact --recompute-jobs=4`, no cloud host
 - `deps.tsv`: the three rules (`data-raw/recompute_deps.R`).
 - `sim_summary.tsv`, `sim_jobs.tsv`, `sim_coupled.tsv`: the replay (`data-raw/recompute_schedule_sim.R`).
 - `headroom_setup.R`, `headroom.sh`, `headroom*/`, `headroom*.log`: the benchmark.
-- `digest_test.R`, `digest/`: whether a recompute over only the line rule's groups equals one over every group.
+- `digest_test.R`, `digest/`, `digest_{TOOD,NATR}.log`: whether a recompute over only the line rule's groups equals one over every group. TOOD (18 line-rule groups, 6 in its closure) and NATR (32 and 4): the line rule matches every group present in every table (0 rows differ of 97,296 and 47,302); the closure differs on 2 segments in each, the ones #361 traced to groups outside it.

@@ -664,7 +664,8 @@ run_finish_recompute() {
   if [ "${RC_EARLY_RAN:-0}" = "1" ]; then
     local arc=0
     ( cd "$REPO_ROOT" && Rscript data-raw/recompute_audit.R "$SCHEMA" "$RUN_UID" \
-        "$RC_DEPS" "$RUN_WSGS_TSV" "$CONS_STATE" "$LOG_DIR/${TS}_recompute_audit.tsv" ) \
+        "$RC_DEPS" "$RUN_WSGS_TSV" "$CONS_STATE" "$LOG_DIR/${TS}_recompute_launched.tsv" \
+        "$LOG_DIR/${TS}_recompute_audit.tsv" ) \
       > "$LOG_DIR/${TS}_recompute_audit.log" 2>&1 || arc=$?
     case "$arc" in
       0) echo "  ✓ recompute audit: no group started before a group it reads had landed" ;;
@@ -698,10 +699,21 @@ run_finish_recompute_early() {
   RC_EARLY_RAN=1
   # Kept beside the run's other records: the per-job directory goes on success.
   cp "$RC_DIR/launched.tsv" "$LOG_DIR/${TS}_recompute_launched.tsv" 2>/dev/null || true
-  n_early=$(awk -F'\t' '$3 == "early"' "$RC_DIR/launched.tsv" 2>/dev/null | wc -l | tr -d ' ')
+  # Guarded: launched.tsv is missing when the scheduler died at its first
+  # step, the case the fallback below is for, and errexit is on here.
+  n_early=$(awk -F'\t' '$3 == "early"' "$RC_DIR/launched.tsv" 2>/dev/null | wc -l | tr -d ' ') || n_early=0
   echo "  ${n_early:-0} of $N_RECOMPUTE group(s) recomputed while the legs ran (see $LOG_DIR/${TS}_recompute_scheduler.log)"
   if [ "$src" != "0" ]; then
-    done_rc=$(find "$RC_DIR" -maxdepth 1 -name '*.rc' -exec cat {} + 2>/dev/null | cut -f1 | .hosts_csv)
+    # A job the scheduler started may outlive it (it waits for its jobs on
+    # every path it takes itself, not when it is killed). Two jobs on one group
+    # collide on its scratch tables and both run the one-way gate, so wait for
+    # each launched job that has not reported before deciding what is left.
+    local w pid
+    while IFS=$'\t' read -r w _ _ pid; do
+      [ -n "${pid:-}" ] && [ ! -e "$RC_DIR/$w.rc" ] || continue
+      while kill -0 "$pid" 2>/dev/null; do sleep 5; done
+    done < <(cat "$RC_DIR/launched.tsv" 2>/dev/null || true)
+    done_rc=$(find "$RC_DIR" -maxdepth 1 -name '*.rc' -exec cat {} + 2>/dev/null | cut -f1 | .hosts_csv) || done_rc=""
     left=$(.hosts_minus "$ALL_WSGS" "$done_rc")
     echo "  WARN: the recompute scheduler ended with $src; recomputing the $(.hosts_n "$left") group(s) it did not start here"
     if [ -n "$left" ]; then
@@ -874,7 +886,7 @@ run_finish_report() {
     elif [ "${RC_AUDIT:-}" = "unread" ]; then
       echo "  Every group was recomputed, but whether any started before a group it"
       echo "  reads had landed could not be checked. See $LOG_DIR/${TS}_recompute_audit.log, then:"
-      echo "    Rscript data-raw/recompute_audit.R $SCHEMA $RUN_UID $RC_DEPS $RUN_WSGS_TSV $CONS_STATE"
+      echo "    Rscript data-raw/recompute_audit.R $SCHEMA $RUN_UID $RC_DEPS $RUN_WSGS_TSV $CONS_STATE $LOG_DIR/${TS}_recompute_launched.tsv"
     fi
     if [ "${RECOMPUTE_FAIL:-0}" != "0" ] && [ -n "${RECOMPUTE_FAIL_STAGE:-}" ]; then
       echo "  The post-consolidate recompute did not complete for every WSG."

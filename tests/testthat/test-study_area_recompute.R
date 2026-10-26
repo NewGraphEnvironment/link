@@ -256,8 +256,10 @@ rc_launched <- function(world) {
   if (!file.exists(p) || file.size(p) == 0) {
     return(data.frame(wsg = character(), mode = character()))
   }
-  x <- utils::read.delim(p, header = FALSE, col.names = c("wsg", "at", "mode"),
+  x <- utils::read.delim(p, header = FALSE, col.names = c("wsg", "at", "mode", "pid"),
                          colClasses = "character")
+  # Every launch records the pid of its job (the fallback waits on it).
+  expect_true(all(grepl("^[0-9]+$", x$pid)))
   x[, c("wsg", "mode")]
 }
 
@@ -437,10 +439,19 @@ test_that("the driver prepares, starts, stops and finishes the early recompute i
   expect_length(early, 1L)
   expect_true(all(c(views, wipe) > els[1]))
   expect_length(grep('Rscript data-raw/recompute_audit.R "$SCHEMA" "$RUN_UID"', rb, fixed = TRUE), 1L)
+  expect_length(grep('"$LOG_DIR/${TS}_recompute_launched.tsv"', rb, fixed = TRUE), 1L)
   e <- grep("^run_finish_recompute_early\\(\\) \\{", fin)
   eb <- fin[e:(e + which(fin[-seq_len(e)] == "}")[1])]
   expect_lt(grep('recompute_final_write "$ALL_WSGS"', eb, fixed = TRUE),
             grep('wait "$RC_SCHED_PID" || src=$?', eb, fixed = TRUE))
+  # A dead scheduler's still-running jobs are waited for before the fallback
+  # decides what is left, and every substitution there survives errexit.
+  expect_lt(grep('while kill -0 "$pid" 2>/dev/null; do sleep 5; done', eb, fixed = TRUE),
+            grep("done_rc=$(find", eb, fixed = TRUE))
+  expect_length(grep("| tr -d ' ') || n_early=0", eb, fixed = TRUE), 1L)
+  expect_length(grep('| cut -f1 | .hosts_csv) || done_rc=""', eb, fixed = TRUE), 1L)
+  # An empty dependency map is refused before dispatch.
+  expect_length(grep('&& [ "$(wc -l < "$RC_DEPS")" -gt 1 ]; }', drv, fixed = TRUE), 1L)
   # The empty-coverage branch releases the scheduler too.
   rf <- grep("^run_finish\\(\\) \\{", fin)
   fb <- fin[rf:(rf + which(fin[-seq_len(rf)] == "}")[1])]

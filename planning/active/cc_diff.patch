@@ -1,0 +1,2306 @@
+diff --git a/R/lnk_persist_init.R b/R/lnk_persist_init.R
+index 1eb0a002..99fd21f1 100644
+--- a/R/lnk_persist_init.R
++++ b/R/lnk_persist_init.R
+@@ -299,6 +299,53 @@ cols_streams_near_river <- c(
+   invisible(TRUE)
+ }
+ 
++#' The definition key a view carries in its comment (link#374)
++#'
++#' @param sql The view's `CREATE OR REPLACE VIEW` statement.
++#' @return `"lnk_def:<md5 of sql>"`.
++#' @noRd
++.lnk_view_def_key <- function(sql) {
++  paste0("lnk_def:", digest::digest(sql, algo = "md5", serialize = FALSE))
++}
++
++#' A view's comment, read from the catalog, which locks no table
++#'
++#' @return The comment, `NA` for a view without one, or `character(0)` when
++#'   the view is absent or the catalog cannot be read.
++#' @noRd
++.lnk_view_comment <- function(conn, schema, name) {
++  tryCatch(DBI::dbGetQuery(conn, sprintf(
++    "SELECT d.description FROM pg_catalog.pg_class c
++     JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
++     LEFT JOIN pg_catalog.pg_description d ON d.objoid = c.oid
++       AND d.classoid = 'pg_catalog.pg_class'::regclass AND d.objsubid = 0
++     WHERE n.nspname = %s AND c.relname = %s AND c.relkind = 'v'",
++    .lnk_quote_literal(schema), .lnk_quote_literal(name)))$description,
++    error = function(e) character(0))
++}
++
++#' Create or replace a view only when its definition changed (link#374)
++#'
++#' `CREATE OR REPLACE VIEW` takes an AccessExclusiveLock even when nothing
++#' changes, so it waits behind every reader of the view and every new reader
++#' waits behind it. The statement's md5 is kept in the view's comment, read
++#' from the catalog first; a view whose comment matches is left alone. An
++#' absent view, one without the comment, or an unreadable catalog issues the
++#' statement, as `.lnk_index_create()` does.
++#'
++#' @param sql The `CREATE OR REPLACE VIEW` statement.
++#' @return Invisibly, whether it was issued.
++#' @noRd
++.lnk_view_replace <- function(conn, schema, name, sql) {
++  key <- .lnk_view_def_key(sql)
++  have <- .lnk_view_comment(conn, schema, name)
++  if (length(have) == 1L && identical(have, key)) return(invisible(FALSE))
++  .lnk_db_execute(conn, sql)
++  .lnk_db_execute(conn, sprintf("COMMENT ON VIEW %s.%s IS %s", schema, name,
++                                .lnk_quote_literal(key)))
++  invisible(TRUE)
++}
++
+ 
+ #' Initialize persistent province-wide habitat tables
+ #'
+@@ -539,7 +586,11 @@ lnk_persist_init <- function(conn, cfg, species, force_recreate = FALSE) {
+     "SELECT id_segment, watershed_group_code, '%s'::text AS species_code, spawning, rearing FROM %s.streams_habitat_%s",
+     tolower(sp), schema, tolower(sp)),
+     character(1))
+-  .lnk_db_execute(conn, sprintf(
++  # Replaced only when its definition changed (link#374): a recompute job
++  # reads this view, and CREATE OR REPLACE takes an exclusive lock on it, so an
++  # unconditional replace per dispatcher group queued behind running jobs and
++  # every new reader queued behind it.
++  .lnk_view_replace(conn, schema, "streams_habitat_long_vw", sprintf(
+     "CREATE OR REPLACE VIEW %s.streams_habitat_long_vw AS\n%s",
+     schema, paste(view_unions, collapse = "\nUNION ALL\n")))
+ 
+diff --git a/RUNBOOK.md b/RUNBOOK.md
+index f5ed2b0a..d612151e 100644
+--- a/RUNBOOK.md
++++ b/RUNBOOK.md
+@@ -1692,6 +1692,63 @@ the same way and burns none.
+   recompute rebuilds access and mapping code, not the persisted groups.
+   Dispatcher-only runs take none, as before.
+ 
++### A group is recomputed once what it reads has landed (link#374)
++
++Until #374 the recompute ran after the last leg and the last consolidate: 110
++min of `-j8` on the critical path on 2026-10-23. Now `recompute_scheduler`
++(`data-raw/study_area_recompute.sh`) runs in the background beside the legs and
++starts each group's `wsg_recompute_one.R` as soon as the group, and every group
++it reads, has **landed** on the dispatcher. `--recompute-at-end` keeps the old
++behaviour; `--recompute-only` is unchanged.
++
++- **What a group reads.** Its own rows, and the `barriers` and
++  `barrier_overrides` rows of every group holding one on its downstream path:
++  the persist schema's views read every group's rows, by position, not by
++  group. A watershed group is not one drainage, so the outlet closure
++  (`frs_wsg_drainage()`) misses readers in 150 of 241 groups; and gradient
++  barriers are found along the whole of every line a group touches and
++  persisted under its code, so a group that owns no segment of the path can
++  still hold a row on it. `data-raw/recompute_deps.R` writes the **line**
++  rule, complete by construction: every group touching any line whose code
++  is an ancestor of, or equal to, one of the group's codes (FWA only, about 80
++  s, in the background through spin and prep; no leg is dispatched without it).
++  FWA's unassigned `999…` codes are left out on both sides.
++- **Landed.** A dispatcher group: its newest `log` row is the run's and closed
++  (`date_end` is written last). A remote group: its host's row in
++  `<TS>_consolidate_state.tsv` is `ok` (written after the copy; `in_flight`
++  before, because a consolidate deletes and copies table by table, not in one
++  transaction). A SKIP, or a group outside the run, has landed. A group on two
++  hosts lands when both have landed it. **Readiness fails closed:** an early
++  recompute that reads too little cannot be undone (the habitat gate only
++  clears flags), so a failed poll, an unreadable file or a row of another run
++  starts nothing.
++- **Before the legs:** the persist init (every run now, not only with remote
++  hosts), the log tables and the barrier views, before the backup (its
++  `pg_dump` would make the view build wait). A view rebuild later would take
++  an exclusive lock under running jobs, so the end of the run does not rebuild
++  them. Each dispatcher group's `lnk_persist_init()` replaces
++  `streams_habitat_long_vw` only when its definition changed, for the same
++  reason.
++- **The end.** After coverage, `run_finish` writes the final set
++  (`<TS>_recompute_final`): the groups found finished. The scheduler starts
++  every one not yet started, ready or not (every leg and consolidate is over,
++  and a group reading a failed group is recomputed as the pool always did),
++  drains, and returns. A scheduler that died leaves the groups it did not start
++  to the old pool. `<TS>_recompute_launched.tsv` records each start, `early` or
++  `final`.
++- **The audit** (`data-raw/recompute_audit.R`): every recomputed group's
++  `log_recompute.date_start` is after the landing of every group it reads.
++  `EARLY` fails the run with its own remedy: re-model those groups, then
++  recompute them, because the gate may have cleared habitat for good.
++- **Stopping.** The EXIT trap touches `<TS>_recompute_stop`: nothing new
++  starts, running jobs finish, as a killed pool's always did. A scheduler whose
++  driver is gone (SIGKILL) stops the same way.
++- **Width.** One width, `--recompute-jobs`, while the legs run and after. A
++  full-width recompute roughly doubles the dispatcher's modelling time, and full
++  width is still best: replayed on 2026-10-23 without its stalls, it ends the
++  recompute 36.7 min sooner, against 22.2 at width 4 and 11.1 at none.
++  Evidence: `data-raw/logs/recompute_early_374/`.
++
+ ### Which host may be burned (link#347)
+ 
+ The count used to be `[wsg_run_one] … done` lines, anchored at line start. R
+@@ -1767,7 +1824,10 @@ older build. A group with persist rows but **no** log row on the dispatcher
+ `fresh_default`, 2026-10-17) is not protected: it is deleted and, if the host
+ no longer holds it, not replaced. Where it says `no`, find out what is left first. If the
+ run's recompute ran, it ran without the kept groups: recompute each one and
+-each run group upstream of it (`wsg_recompute_one.R`). If it did not run (no
++each run group that reads it (`wsg_recompute_one.R`): the `wsg` of each row of
++`<TS>_recompute_deps.tsv` whose `dep` is a kept group, which is wider than
++"upstream of it", because a group reads every line on its path whole
++(link#374); without that file, every group of the run. If it did not run (no
+ run group had rows from this run), recompute every group of the run; the
+ banner says which. A host whose consolidate recorded no outcome keeps its
+ groups `in_flight` and out of the recompute (link#369): check what reached the
+diff --git a/data-raw/recompute_audit.R b/data-raw/recompute_audit.R
+new file mode 100644
+index 00000000..3ec31b2b
+--- /dev/null
++++ b/data-raw/recompute_audit.R
+@@ -0,0 +1,109 @@
++#!/usr/bin/env Rscript
++# recompute_audit.R — did any group's recompute start before a group it reads
++# had landed? (link#374). A post-condition on an early recompute: the
++# scheduler decides from what it polls, and this checks the outcome from the
++# records, so a readiness bug shows up as a failed run, not as a group whose
++# access was settled on a half-present path (the habitat gate cannot undo it).
++#
++# For every group with a closed log_recompute row for the run, and every
++# dependency of it (recompute_deps.R, line rule) that the run built:
++#   the dependency's landing   a dispatcher group: its log row's date_end for
++#                              the run; a remote group: its host's consolidate
++#                              state_utc when `ok` (written after the copy)
++#   the group's recompute      log_recompute.date_start (after the job's
++#                              prologue, so later than its launch)
++# A dependency that never landed (a failed group) is not checked: the final
++# set starts its dependants anyway, as the end-of-run pool always has. It is
++# counted in the report.
++#
++# Usage: Rscript data-raw/recompute_audit.R <schema> <run_uid> <deps.tsv>
++#          <run_wsgs.tsv> <consolidate_state.tsv> [out.tsv]
++# Exit 0 when nothing started early, 1 on any violation, 2 when it cannot
++# read what it needs (a missing state file means no remote host landed).
++
++args <- commandArgs(trailingOnly = TRUE)
++if (length(args) < 5L) {
++  stop("usage: recompute_audit.R <schema> <run_uid> <deps.tsv> <run_wsgs.tsv> <consolidate_state.tsv> [out.tsv]",
++       call. = FALSE)
++}
++schema <- args[1]; run_uid <- args[2]; deps_p <- args[3]; wsgs_p <- args[4]
++state_p <- args[5]; out_p <- if (length(args) >= 6L) args[6] else ""
++
++fail_read <- function(msg) {
++  message("[recompute_audit] cannot audit: ", msg)
++  quit(status = 2)
++}
++rd <- function(p) utils::read.delim(p, colClasses = "character", quote = "",
++                                    na.strings = character(), comment.char = "")
++deps <- tryCatch(rd(deps_p), error = function(e) fail_read(conditionMessage(e)))
++wsgs <- tryCatch(rd(wsgs_p), error = function(e) fail_read(conditionMessage(e)))
++state <- if (file.exists(state_p)) {
++  tryCatch(rd(state_p), error = function(e) fail_read(conditionMessage(e)))
++} else {
++  data.frame(wsg = character(), workspace = character(), state = character(),
++             run_uid = character(), state_utc = character())
++}
++if (!all(c("wsg", "rule", "dep") %in% names(deps))) fail_read("deps header")
++if (!all(c("wsg", "host", "skip") %in% names(wsgs))) fail_read("run_wsgs header")
++deps <- deps[deps$rule == "line", ]
++
++conn <- tryCatch(DBI::dbConnect(RPostgres::Postgres(), dbname = "fwapg", host = "localhost",
++                                port = 5432L, user = "postgres", password = "postgres"),
++                 error = function(e) fail_read(conditionMessage(e)))
++uid <- DBI::dbQuoteLiteral(conn, run_uid)
++q <- function(sql) tryCatch(DBI::dbGetQuery(conn, sql), error = function(e) fail_read(conditionMessage(e)))
++model <- q(sprintf(
++  "SELECT DISTINCT ON (watershed_group_code) watershed_group_code AS wsg, date_end
++   FROM %s.log WHERE run_uid = %s AND date_end IS NOT NULL
++   ORDER BY watershed_group_code, date_start DESC", schema, uid))
++rc <- q(sprintf(
++  "SELECT DISTINCT ON (watershed_group_code) watershed_group_code AS wsg, date_start
++   FROM %s.log_recompute WHERE run_uid = %s AND date_end IS NOT NULL
++   ORDER BY watershed_group_code, date_start", schema, uid))
++DBI::dbDisconnect(conn)
++
++# Landing of each (group, host) the run gave out; a group lands at the latest.
++run <- wsgs[wsgs$skip != "yes", c("wsg", "host")]
++land_one <- function(w, h) {
++  if (h == "dispatcher") {
++    t <- model$date_end[model$wsg == w]
++  } else {
++    s <- state$state_utc[state$wsg == w & state$workspace == h & state$state == "ok" &
++                           state$run_uid == run_uid]
++    t <- as.POSIXct(s, format = "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
++  }
++  if (length(t) == 0L || is.na(t[1])) NA else as.numeric(t[1])
++}
++run$landed <- mapply(land_one, run$wsg, run$host)
++landed <- tapply(run$landed, run$wsg, function(x) if (anyNA(x)) NA else max(x))
++
++rows <- list()
++for (i in seq_len(nrow(rc))) {
++  g <- rc$wsg[i]
++  start <- as.numeric(rc$date_start[i])
++  for (d in deps$dep[deps$wsg == g]) {
++    if (!d %in% names(landed)) next   # outside the run: landed already
++    rows[[length(rows) + 1L]] <- data.frame(
++      wsg = g, dep = d, recompute_start = start, dep_landed = unname(landed[d]))
++  }
++}
++tab <- if (length(rows)) do.call(rbind, rows) else
++  data.frame(wsg = character(), dep = character(), recompute_start = numeric(), dep_landed = numeric())
++tab$verdict <- ifelse(is.na(tab$dep_landed), "dep_never_landed",
++                      ifelse(tab$recompute_start >= tab$dep_landed, "ok", "EARLY"))
++if (nzchar(out_p)) {
++  o <- tab
++  o$recompute_start <- format(as.POSIXct(o$recompute_start, origin = "1970-01-01", tz = "UTC"), "%Y-%m-%dT%H:%M:%SZ")
++  o$dep_landed <- ifelse(is.na(tab$dep_landed), "",
++    format(as.POSIXct(tab$dep_landed, origin = "1970-01-01", tz = "UTC"), "%Y-%m-%dT%H:%M:%SZ"))
++  utils::write.table(o, out_p, sep = "\t", quote = FALSE, row.names = FALSE)
++}
++n_early <- sum(tab$verdict == "EARLY")
++cat(sprintf("[recompute_audit] %d recomputed groups, %d dependency pairs in the run: %d ok, %d whose dependency never landed, %d EARLY\n",
++            nrow(rc), nrow(tab), sum(tab$verdict == "ok"), sum(tab$verdict == "dep_never_landed"), n_early))
++if (n_early > 0L) {
++  e <- tab[tab$verdict == "EARLY", ]
++  cat(sprintf("  EARLY: %s started before %s landed\n", e$wsg, e$dep), sep = "")
++  quit(status = 1)
++}
++quit(status = 0)
+diff --git a/data-raw/recompute_deps.R b/data-raw/recompute_deps.R
+new file mode 100644
+index 00000000..682486ca
+--- /dev/null
++++ b/data-raw/recompute_deps.R
+@@ -0,0 +1,151 @@
++#!/usr/bin/env Rscript
++# recompute_deps.R — which groups a group's recompute reads (link#374).
++#
++# A group's post-consolidate recompute (wsg_recompute_one.R) walks DOWNSTREAM
++# from its own segments through the persist schema's barrier views, which read
++# every group's `barriers` and `barrier_overrides` by position, not by group.
++# So a group can be recomputed early only once every group holding a row on its
++# downstream path has landed on the dispatcher. This writes that set, three ways:
++#
++#   closure  fresh::frs_wsg_drainage(): the groups the group's OUTLET flows
++#            through. What #374 proposed. Too narrow: a group is not one
++#            drainage (coastal groups hold many rivers, inland groups hold
++#            tributaries that enter another group's main stem), so its own
++#            segments can drain through groups its outlet never reaches.
++#   owner    groups with a SEGMENT on the group's downstream path: for every
++#            line the group touches, the most downstream segment of each other
++#            group on each ancestor-or-equal line, kept when FWA's
++#            fwa_downstream() puts it below the group's lowest segment on that
++#            line. Complete only if every row is also held, identically, by
++#            the group that owns the segment it sits on: true of this build's
++#            data save a handful of rows (recompute_early_374/README.md), not
++#            by construction.
++#   line     groups touching ANY part of a line on the path: every blue line
++#            carrying a code that is an ancestor of, or equal to, one of the
++#            group's codes. Complete by construction, which is what the
++#            scheduler uses: gradient barriers are found along the whole of
++#            every line a group touches and persisted under its own code
++#            (R/lnk_pipeline_prepare.R, R/lnk_barriers_unify.R), an override
++#            is written at the group's own barrier positions, and every other
++#            barrier source is filtered to the group's own segments. An early
++#            recompute that reads too little cannot be undone (the habitat
++#            gate is one-way), so the rule errs wide.
++#
++# FWA's unassigned codes (`999…`, construction lines) are left out on both
++# sides: no persisted segment carries one, and `999` is never an ancestor of a
++# real code, so no walk starts from or reaches one through code ancestry.
++#
++# Reads FWA only (whse_basemapping.fwa_stream_networks_sp), never a persist
++# schema, so it answers the same before a run as after it.
++#
++# Usage: Rscript data-raw/recompute_deps.R <out.tsv> [rule=line] [wsgs csv]
++#   out.tsv   columns wsg, rule, dep (one row per pair; a group with no
++#             dependency has no row)
++#   rule      line (default), owner, closure, or all
++#   wsgs      restrict to these groups (default: every FWA group)
++
++args <- commandArgs(trailingOnly = TRUE)
++if (length(args) < 1L) {
++  stop("usage: recompute_deps.R <out.tsv> [rule=line|owner|closure|all] [wsgs csv]",
++       call. = FALSE)
++}
++out  <- args[1]
++rule <- if (length(args) >= 2L && nzchar(args[2])) args[2] else "line"
++if (!rule %in% c("line", "owner", "closure", "all")) {
++  stop("rule must be line, owner, closure or all (got '", rule, "')", call. = FALSE)
++}
++rules <- if (rule == "all") c("line", "owner", "closure") else rule
++wsgs <- if (length(args) >= 3L && nzchar(args[3])) {
++  toupper(strsplit(args[3], ",", fixed = TRUE)[[1]])
++} else {
++  NULL
++}
++
++suppressPackageStartupMessages({
++  library(DBI); library(RPostgres)
++})
++conn <- DBI::dbConnect(RPostgres::Postgres(), dbname = "fwapg", host = "localhost",
++                       port = 5432L, user = "postgres", password = "postgres")
++
++deps_fwa <- function(conn) {
++  t0 <- Sys.time()
++  DBI::dbExecute(conn, "DROP TABLE IF EXISTS pg_temp.rd_seg")
++  DBI::dbExecute(conn, "
++    CREATE TEMP TABLE rd_seg AS
++    SELECT watershed_group_code w, blue_line_key blk, wscode_ltree ws,
++           localcode_ltree loc, downstream_route_measure dm
++    FROM whse_basemapping.fwa_stream_networks_sp
++    WHERE watershed_group_code IS NOT NULL AND wscode_ltree IS NOT NULL
++      AND NOT wscode_ltree ~ '999.*'::lquery")
++  # One representative per (group, code): the group's most downstream segment.
++  # The owner rule needs a local code to place it; the line rule does not, so
++  # the 158,188 segments FWA leaves without one stay in rd_seg for the line
++  # rule (leaving them out there dropped 52 of its pairs).
++  DBI::dbExecute(conn, "DROP TABLE IF EXISTS pg_temp.rd_rep")
++  DBI::dbExecute(conn, "
++    CREATE TEMP TABLE rd_rep AS
++    SELECT DISTINCT ON (w, ws) w, ws, loc FROM rd_seg
++    WHERE loc IS NOT NULL ORDER BY w, ws, loc, dm")
++  DBI::dbExecute(conn, "CREATE INDEX ON rd_rep (ws)")
++  DBI::dbExecute(conn, "ANALYZE rd_rep")
++  # Every ancestor-or-equal code of each group's codes.
++  DBI::dbExecute(conn, "DROP TABLE IF EXISTS pg_temp.rd_anc")
++  DBI::dbExecute(conn, "
++    CREATE TEMP TABLE rd_anc AS
++    SELECT r.w, r.ws, r.loc, subpath(r.ws, 0, i) a
++    FROM rd_rep r, generate_series(1, nlevel(r.ws)) i")
++  owner <- DBI::dbGetQuery(conn, "
++    SELECT DISTINCT a.w AS wsg, r2.w AS dep
++    FROM rd_anc a JOIN rd_rep r2 ON r2.ws = a.a AND r2.w <> a.w
++    WHERE whse_basemapping.fwa_downstream(a.ws, a.loc, r2.ws, r2.loc)")
++  # Lines on the path, by blue_line_key, then every group touching them. The
++  # codes come from every segment, not only the representatives.
++  DBI::dbExecute(conn, "DROP TABLE IF EXISTS pg_temp.rd_anc_all")
++  DBI::dbExecute(conn, "
++    CREATE TEMP TABLE rd_anc_all AS
++    SELECT DISTINCT g.w, subpath(g.ws, 0, i) a
++    FROM (SELECT DISTINCT w, ws FROM rd_seg) g, generate_series(1, nlevel(g.ws)) i")
++  DBI::dbExecute(conn, "DROP TABLE IF EXISTS pg_temp.rd_pathblk")
++  DBI::dbExecute(conn, "
++    CREATE TEMP TABLE rd_pathblk AS
++    SELECT DISTINCT a.w, s.blk
++    FROM rd_anc_all a JOIN rd_seg s ON s.ws = a.a")
++  DBI::dbExecute(conn, "CREATE INDEX ON rd_pathblk (blk)")
++  line <- DBI::dbGetQuery(conn, "
++    SELECT DISTINCT p.w AS wsg, t.w AS dep
++    FROM rd_pathblk p JOIN (SELECT DISTINCT w, blk FROM rd_seg) t USING (blk)
++    WHERE t.w <> p.w")
++  message(sprintf("[recompute_deps] FWA rules in %.1f s",
++                  as.numeric(difftime(Sys.time(), t0, units = "secs"))))
++  list(owner = owner, line = line)
++}
++
++res <- list()
++if (any(c("line", "owner") %in% rules)) {
++  f <- deps_fwa(conn)
++  for (r in intersect(c("line", "owner"), rules)) res[[r]] <- f[[r]]
++}
++if ("closure" %in% rules) {
++  groups <- if (is.null(wsgs)) fresh::frs_wsg_outlets()$watershed_group_code else wsgs
++  res$closure <- do.call(rbind, lapply(groups, function(g) {
++    d <- setdiff(fresh::frs_wsg_drainage(conn, g), g)
++    if (length(d) == 0L) return(NULL)
++    data.frame(wsg = g, dep = d)
++  }))
++}
++DBI::dbDisconnect(conn)
++
++tab <- do.call(rbind, lapply(names(res), function(r) {
++  x <- res[[r]]
++  if (is.null(x) || nrow(x) == 0L) return(NULL)
++  data.frame(wsg = x$wsg, rule = r, dep = x$dep)
++}))
++if (is.null(tab)) tab <- data.frame(wsg = character(), rule = character(), dep = character())
++if (!is.null(wsgs)) tab <- tab[tab$wsg %in% wsgs, , drop = FALSE]
++tab <- tab[order(tab$rule, tab$wsg, tab$dep), , drop = FALSE]
++utils::write.table(tab, out, sep = "\t", quote = FALSE, row.names = FALSE)
++for (r in rules) {
++  n <- table(factor(tab$wsg[tab$rule == r]))
++  message(sprintf("[recompute_deps] %s: %d pairs over %d groups (median %s per group with any)",
++                  r, sum(tab$rule == r), length(n), stats::median(as.integer(n))))
++}
+diff --git a/data-raw/recompute_schedule_sim.R b/data-raw/recompute_schedule_sim.R
+new file mode 100644
+index 00000000..33ec4b49
+--- /dev/null
++++ b/data-raw/recompute_schedule_sim.R
+@@ -0,0 +1,316 @@
++#!/usr/bin/env Rscript
++# recompute_schedule_sim.R — would an early recompute shorten a provincial
++# run? (link#374). Replays one run's recorded times through two schedules:
++#
++#   end    #369's driver: each cloud host consolidated as its leg ends, then
++#          ONE pool over every group after the dispatcher leg and the last
++#          consolidate (plus the run's own gap to the first job).
++#   early  #374: a group's job may start once the group and every group it
++#          reads (recompute_deps.R, one rule per pass) have landed: a
++#          dispatcher group when its model row closes, a cloud group when its
++#          host's consolidate ends. Groups still not ready when the end
++#          schedule would have started its pool start then, as the final set.
++#
++# Both pools are -j<width> list schedules, longest job first among the jobs
++# ready at each free slot (recompute_order's rule, with the run's own times as
++# the oracle). A job costs its log_recompute minutes plus the median gap
++# between jobs on a slot (#260: 9.7 s), which the log leaves out.
++#
++# Two scenarios:
++#   recorded   the dispatcher leg as it ran (KTSU's 65 min stall included).
++#              OKAN's first attempt was cancelled and it was re-modelled and
++#              recomputed after the run (#348), so it is not in the pool and
++#              never lands; a group reading it waits for the final set.
++#   no_stalls  the dispatcher leg replayed in its recorded order with KTSU at
++#              1.3 min and OKAN at 7.6 min (their re-run times; CLAUDE.md
++#              2026-10-23), so OKAN lands and is recomputed.
++#
++# Not modelled: contention. A copy slowing the dispatcher leg (#369 measured
++# 1.11x against 1.19x, i.e. none) or concurrent recompute jobs slowing it,
++# which is what the headroom measurement is for. The report gives the
++# recompute job-minutes run before the dispatcher leg ends, so a slowdown can
++# be weighed against the saving.
++#
++# Usage: Rscript data-raw/recompute_schedule_sim.R <deps.tsv> <run_wsgs.tsv>
++#          <consolidate.log> <out_dir> [run_uid] [schema] [width]
++
++args <- commandArgs(trailingOnly = TRUE)
++if (length(args) < 4L) {
++  stop("usage: recompute_schedule_sim.R <deps.tsv> <run_wsgs.tsv> <consolidate.log> <out_dir> [run_uid] [schema] [width]",
++       call. = FALSE)
++}
++deps_path <- args[1]; wsgs_path <- args[2]; cons_path <- args[3]; out_dir <- args[4]
++run_uid <- if (length(args) >= 5L) args[5] else "20261023_074321-24d85e8c"
++schema  <- if (length(args) >= 6L) args[6] else "fresh_default"
++width   <- if (length(args) >= 7L) as.integer(args[7]) else 8L
++gap_min <- 9.7 / 60
++dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
++
++suppressPackageStartupMessages({
++  library(DBI); library(RPostgres)
++})
++conn <- DBI::dbConnect(RPostgres::Postgres(), dbname = "fwapg", host = "localhost",
++                       port = 5432L, user = "postgres", password = "postgres")
++q <- function(sql) DBI::dbGetQuery(conn, sql)
++uid <- DBI::dbQuoteLiteral(conn, run_uid)
++
++mlog <- q(sprintf(
++  "SELECT watershed_group_code AS wsg, host, date_start, date_end
++   FROM %s.log WHERE run_uid = %s ORDER BY date_start", schema, uid))
++rlog <- q(sprintf(
++  "SELECT watershed_group_code AS wsg, date_start, date_end
++   FROM %s.log_recompute WHERE run_uid = %s AND date_end IS NOT NULL
++   ORDER BY date_start", schema, uid))
++DBI::dbDisconnect(conn)
++
++hosts <- utils::read.delim(wsgs_path, stringsAsFactors = FALSE)
++hosts <- hosts[hosts$host != "host", c("wsg", "host")]
++deps  <- utils::read.delim(deps_path, stringsAsFactors = FALSE)
++
++t_origin <- min(mlog$date_start)
++mins <- function(t) as.numeric(difftime(t, t_origin, units = "mins"))
++
++# The pool's own jobs: the first recompute of each group in the run's pool
++# (OKAN's came hours later, by --recompute-only).
++pool_start_rec <- min(rlog$date_start)
++pool <- rlog[!duplicated(rlog$wsg), ]
++pool <- pool[mins(pool$date_start) < mins(pool_start_rec) + 240, ]
++job_min <- stats::setNames(
++  as.numeric(difftime(pool$date_end, pool$date_start, units = "mins")) + gap_min,
++  pool$wsg)
++
++# Cloud: each host's leg ends with its last group; its consolidate runs as it
++# ends, one at a time, for the minutes the run's consolidate log measured.
++cons <- readLines(cons_path)
++stamp <- function(pat) {
++  x <- regmatches(cons, regexpr("^\\[[0-9]{2}:[0-9]{2}:[0-9]{2}\\]", cons))[grepl(pat, cons)]
++  as.POSIXct(paste("2000-01-01", gsub("[][]", "", x)), tz = "UTC")
++}
++copy_min <- as.numeric(difftime(stamp("DELETE bucket from source"),
++                                stamp("DELETE bucket \\("), units = "mins"))
++bucket_n <- as.integer(sub(".*DELETE bucket \\(([0-9]+) WSGs.*", "\\1",
++                           cons[grepl("DELETE bucket \\(", cons)]))
++cloud_hosts <- sort(unique(hosts$host[hosts$host != "dispatcher"]))
++size <- table(hosts$host)[cloud_hosts]
++if (!setequal(as.integer(size), bucket_n)) {
++  stop("consolidate log bucket sizes (", paste(bucket_n, collapse = ","),
++       ") do not match run_wsgs.tsv (", paste(size, collapse = ","), ")", call. = FALSE)
++}
++copy_by_host <- stats::setNames(copy_min[match(as.integer(size), bucket_n)], cloud_hosts)
++
++land_cloud <- function() {
++  leg_end <- vapply(cloud_hosts, function(h) {
++    w <- hosts$wsg[hosts$host == h]
++    max(mins(mlog$date_end[mlog$wsg %in% w & grepl("cypher", mlog$host)]), na.rm = TRUE)
++  }, numeric(1))
++  t <- -Inf; done <- numeric()
++  for (h in names(sort(leg_end))) {
++    t <- max(t, leg_end[[h]]) + copy_by_host[[h]]
++    done[h] <- t
++  }
++  w <- hosts$wsg[hosts$host != "dispatcher"]
++  list(land = stats::setNames(done[hosts$host[hosts$host != "dispatcher"]], w),
++       leg_end = leg_end, cons_end = done)
++}
++
++land_dispatcher <- function(scenario) {
++  d <- mlog[!grepl("cypher", mlog$host), ]
++  if (scenario == "recorded") {
++    d <- d[!is.na(d$date_end) & mins(d$date_start) < mins(pool_start_rec), ]
++    return(stats::setNames(mins(d$date_end), d$wsg))
++  }
++  # no_stalls: the first attempt of each group, replayed in order with the
++  # recorded gaps, KTSU and OKAN at their re-run times.
++  d <- d[!duplicated(d$wsg), ]
++  dur <- as.numeric(difftime(d$date_end, d$date_start, units = "mins"))
++  dur[d$wsg == "KTSU"] <- 1.3
++  dur[d$wsg == "OKAN"] <- 7.6
++  st <- mins(d$date_start); en <- mins(d$date_end)
++  t <- st[1]; out <- numeric(nrow(d))
++  for (i in seq_len(nrow(d))) {
++    # The recorded idle time between groups; none after OKAN's open row,
++    # whose cancel time the log does not hold.
++    gap <- if (i == 1L || is.na(en[i - 1])) 0 else max(0, st[i] - en[i - 1])
++    t <- t + gap
++    out[i] <- t + dur[i]
++    t <- out[i]
++  }
++  stats::setNames(out, d$wsg)
++}
++
++schedule <- function(ready_at, dur, width) {
++  # ready_at: named minutes each job may start; list schedule, longest first.
++  free <- rep(-Inf, width)
++  left <- names(ready_at)
++  start <- end <- stats::setNames(numeric(length(left)), left)
++  while (length(left)) {
++    s <- which.min(free)
++    now <- max(free[s], min(ready_at[left]))
++    cand <- left[ready_at[left] <= now]
++    pick <- cand[order(-dur[cand], cand)][1]
++    start[pick] <- now; end[pick] <- now + dur[pick]
++    free[s] <- end[pick]
++    left <- setdiff(left, pick)
++  }
++  data.frame(wsg = names(start), start = start, end = end, row.names = NULL)
++}
++
++rows <- list(); jobs_out <- list()
++for (scenario in c("recorded", "no_stalls")) {
++  cl <- land_cloud()
++  ld <- land_dispatcher(scenario)
++  land <- c(ld, cl$land)
++  groups <- intersect(names(job_min), names(land))
++  if (scenario == "no_stalls" && "OKAN" %in% names(ld) && !"OKAN" %in% names(job_min)) {
++    # OKAN's recompute came later, by hand; give it the median job.
++    job_min["OKAN"] <- stats::median(job_min)
++    groups <- union(groups, "OKAN")
++  }
++  dur <- job_min[groups]
++  disp_end <- max(ld)
++  last_cons <- max(cl$cons_end)
++  # The run's own gap from its consolidate's end to its first recompute job
++  # (account, burn, coverage, views). That run consolidated after the
++  # dispatcher leg, all hosts in one go, so its consolidate ended at the
++  # recorded leg end plus the log's first-to-last stamp span.
++  rec_disp_end <- max(mins(mlog$date_end[!grepl("cypher", mlog$host) &
++    mins(mlog$date_start) < mins(pool_start_rec)]), na.rm = TRUE)
++  st_all <- regmatches(cons, regexpr("^\\[[0-9]{2}:[0-9]{2}:[0-9]{2}\\]", cons))
++  st_all <- as.POSIXct(paste("2000-01-01", gsub("[][]", "", st_all)), tz = "UTC")
++  cons_span <- as.numeric(difftime(max(st_all), min(st_all), units = "mins"))
++  overhead <- max(0, mins(pool_start_rec) - (rec_disp_end + cons_span))
++  t_end_pool <- max(disp_end, last_cons) + overhead
++  base <- schedule(stats::setNames(rep(t_end_pool, length(groups)), groups), dur, width)
++  last_land <- max(land[groups])
++  rows[[length(rows) + 1L]] <- data.frame(
++    scenario = scenario, rule = "end", groups = length(groups),
++    dispatcher_leg_end = disp_end, last_consolidate = last_cons,
++    pool_first_start = min(base$start), recompute_end = max(base$end),
++    tail_after_last_landing = max(base$end) - max(disp_end, last_cons),
++    job_min_before_dispatcher_end = 0, saving = 0)
++  jobs_out[[paste(scenario, "end")]] <- cbind(scenario = scenario, rule = "end", base)
++  for (r in unique(deps$rule)) {
++    dr <- deps[deps$rule == r, ]
++    ready <- vapply(groups, function(g) {
++      need <- c(g, dr$dep[dr$wsg == g])
++      need <- need[need %in% c(names(land), hosts$wsg, "OKAN")]
++      t <- land[need]
++      # A dependency in the run that never lands (OKAN, recorded) holds the
++      # group to the final set; one outside the run has landed already.
++      if (anyNA(t)) t_end_pool else max(c(t, -Inf))
++    }, numeric(1))
++    ready <- pmin(ready, t_end_pool)
++    sch <- schedule(ready, dur, width)
++    before <- sum(pmax(0, pmin(sch$end, disp_end) - sch$start))
++    rows[[length(rows) + 1L]] <- data.frame(
++      scenario = scenario, rule = r, groups = length(groups),
++      dispatcher_leg_end = disp_end, last_consolidate = last_cons,
++      pool_first_start = min(sch$start), recompute_end = max(sch$end),
++      tail_after_last_landing = max(sch$end) - max(disp_end, last_cons),
++      job_min_before_dispatcher_end = before,
++      saving = max(base$end) - max(sch$end))
++    jobs_out[[paste(scenario, r)]] <- cbind(scenario = scenario, rule = r, sch)
++  }
++}
++res <- do.call(rbind, rows)
++num <- vapply(res, is.numeric, logical(1))
++res[num] <- lapply(res[num], round, 1)
++utils::write.table(res, file.path(out_dir, "sim_summary.tsv"), sep = "\t",
++                   quote = FALSE, row.names = FALSE)
++jobs <- do.call(rbind, jobs_out)
++jobs$start <- round(jobs$start, 2); jobs$end <- round(jobs$end, 2)
++utils::write.table(jobs, file.path(out_dir, "sim_jobs.tsv"), sep = "\t",
++                   quote = FALSE, row.names = FALSE)
++cat(sprintf("minutes from the run's first model start (%s UTC); -j%d; job = log minutes + %.2f min gap\n",
++            format(t_origin, tz = "UTC"), width, gap_min))
++print(res, row.names = FALSE)
++
++# --- coupled: the early pool slows the dispatcher leg (headroom.sh) ---------
++# headroom.sh measured the dispatcher's modelling about 2x slower beside a -j8
++# recompute, and the recompute jobs not slower. So in the no-stalls scenario,
++# replay the dispatcher leg in steps of dt minutes, advancing each group's
++# remaining minutes at 1 / (1 + alpha * k), k the recompute jobs running then
++# (alpha = 0.125 makes -j8 a 2x slowdown), or, with alpha = NA, by the
++# measured curve: extra time f(k) interpolated through (0, 0), (4, 0.20),
++# (8, 0.99) (headroom.sh at -j4 and -j8; the database saturates past about
++# four jobs, so a linear alpha overstates the cost of a narrow pool). The
++# scheduler runs at most
++# `w_legs` jobs while the dispatcher leg is modelling, `width` after it.
++# Cloud consolidates are not slowed (they were not measured); a dispatcher
++# group lands when its slowed model ends.
++coupled <- function(rule, w_legs, alpha, dt = 0.05) {
++  cl <- land_cloud()
++  d <- mlog[!grepl("cypher", mlog$host), ]
++  d <- d[!duplicated(d$wsg), ]
++  dur <- as.numeric(difftime(d$date_end, d$date_start, units = "mins"))
++  dur[d$wsg == "KTSU"] <- 1.3
++  dur[d$wsg == "OKAN"] <- 7.6
++  st <- mins(d$date_start); en <- mins(d$date_end)
++  gap <- c(0, ifelse(is.na(en[-nrow(d)]), 0, pmax(0, st[-1] - en[-nrow(d)])))
++  groups <- union(intersect(names(job_min), c(d$wsg, names(cl$land))), "OKAN")
++  jm <- job_min; if (!"OKAN" %in% names(jm)) jm["OKAN"] <- stats::median(job_min)
++  dr <- deps[deps$rule == rule, ]
++  need <- lapply(stats::setNames(groups, groups), function(g) {
++    x <- c(g, dr$dep[dr$wsg == g]); x[x %in% c(d$wsg, names(cl$land))]
++  })
++  land <- c(stats::setNames(rep(NA_real_, nrow(d)), d$wsg), cl$land)
++  t <- st[1]; i <- 1L; left <- dur[1] ; idle <- 0
++  run_end <- numeric(); started <- character(); ends <- numeric()
++  disp_done <- FALSE; t_end_pool <- Inf; overlap <- 0
++  repeat {
++    k <- sum(run_end > t)
++    if (!disp_done) {
++      # A step's leftover time carries into the next group (or gap), so 74
++      # boundaries do not each lose part of a step.
++      step <- dt
++      while (!disp_done && step > 0) {
++        if (idle > 0) {
++          used <- min(idle, step); idle <- idle - used; step <- step - used
++          next
++        }
++        f <- if (is.na(alpha)) stats::approx(c(0, 4, 8, 16), c(0, 0.20, 0.99, 2.97), k)$y else alpha * k
++        cost <- left * (1 + f)
++        if (cost > step) {
++          left <- left - step / (1 + f); overlap <- overlap + k * step; step <- 0
++        } else {
++          overlap <- overlap + k * cost; step <- step - cost
++          land[d$wsg[i]] <- t + dt - step
++          i <- i + 1L
++          if (i > nrow(d)) { disp_done <- TRUE; disp_end <- t + dt - step } else { left <- dur[i]; idle <- gap[i] }
++        }
++      }
++    }
++    if (disp_done && is.infinite(t_end_pool)) {
++      t_end_pool <- max(disp_end, max(cl$cons_end)) + 0.8
++    }
++    w <- if (disp_done) width else w_legs
++    free <- w - sum(run_end > t)
++    if (free > 0) {
++      cand <- setdiff(groups, started)
++      ok <- vapply(cand, function(g) {
++        if (t >= t_end_pool) return(TRUE)
++        x <- land[need[[g]]]; !anyNA(x) && all(x <= t)
++      }, logical(1))
++      cand <- cand[ok]
++      if (length(cand)) {
++        cand <- cand[order(-jm[cand], cand)][seq_len(min(free, length(cand)))]
++        started <- c(started, cand); run_end <- c(run_end, t + jm[cand])
++      }
++    }
++    if (length(started) == length(groups) && disp_done) break
++    t <- t + dt
++  }
++  data.frame(scenario = "no_stalls_coupled", rule = rule, w_legs = w_legs, alpha = alpha,
++             dispatcher_leg_end = round(disp_end, 1), last_consolidate = round(max(cl$cons_end), 1),
++             recompute_end = round(max(run_end), 1),
++             tail_after_last_landing = round(max(run_end) - max(disp_end, max(cl$cons_end)), 1),
++             job_min_before_dispatcher_end = round(overlap, 1))
++}
++alphas <- suppressWarnings(as.numeric(strsplit(Sys.getenv("LNK_SIM_ALPHA", "0.125,NA"), ",")[[1]]))
++cp <- do.call(rbind, lapply(alphas, function(a) do.call(rbind, lapply(c(0L, 1L, 2L, 4L, 8L),
++  function(wl) coupled("line", wl, a)))))
++base_end <- res$recompute_end[res$scenario == "no_stalls" & res$rule == "end"]
++cp$saving <- round(base_end - cp$recompute_end, 1)
++utils::write.table(cp, file.path(out_dir, "sim_coupled.tsv"), sep = "\t", quote = FALSE, row.names = FALSE)
++cat("\ncoupled (no stalls, line rule; w_legs = jobs while the dispatcher models, then -j", width, "):\n", sep = "")
++print(cp, row.names = FALSE)
+diff --git a/data-raw/study_area_finish.sh b/data-raw/study_area_finish.sh
+index e233e6a2..d2d4fce7 100644
+--- a/data-raw/study_area_finish.sh
++++ b/data-raw/study_area_finish.sh
+@@ -493,6 +493,17 @@ run_finish() {
+   ALL_WSGS="$COV_RECOMPUTE"
+ 
+   if [ -z "$ALL_WSGS" ]; then
++    # An early scheduler is told there is nothing left and waited for. Any
++    # group it already started is not one coverage found finished.
++    if [ -n "${RC_SCHED_PID:-}" ]; then
++      recompute_final_write "" || touch "$RC_STOP" 2>/dev/null || true
++      wait "$RC_SCHED_PID" || true
++      RC_SCHED_PID=""
++      if [ -s "$RC_DIR/launched.tsv" ]; then
++        RUN_INCOMPLETE=1
++        echo "  ✗ recomputed early but not found finished by coverage: $(cut -f1 "$RC_DIR/launched.tsv" | .hosts_csv)"
++      fi
++    fi
+     echo "=== post-consolidate recompute: SKIPPED ==="
+     echo "  No run group has rows from a build this run finished, so there is"
+     echo "  nothing the recompute could settle and nothing valid to compare."
+@@ -504,47 +515,12 @@ run_finish() {
+   run_finish_report
+ }
+ 
+-# --- post-consolidate recompute: settle cross-WSG access (link#205) ---
+-# Drainage-closed + DS-first per-host is NOT sufficient: a WSG's downstream
+-# barriers can be cross-bucket or arrive late in DS-first order, so its access
+-# (hence token1/token2) is computed against an incomplete barrier set.
+-# Caught 2026-05-25: FINA 75% / PARA 69% per-host -> both 99% only after
+-# re-modelling on the full consolidated barrier set. The recompute is the
+-# correctness guarantee REGARDLESS of bucketing. We use lnk_access(merge=TRUE)
+-# — the cheap access-only recompute that reuses the persisted streams /
+-# habitat / barriers / barrier_overrides (link#205, ~10 s/WSG vs ~1.5 min for
+-# a full pipeline rebuild). Because it is cheap, we recompute ALL run WSGs
+-# this run built unconditionally rather than threshold-filtering by parity —
+-# bucketing is now a speed knob, not a correctness lever.
+-#
+-# Parallel since link#250. Two things previously made the serial loop
+-# mandatory, and both are now gone:
+-#
+-#   1. lnk_access() rebuilt the SCHEMA-scoped barrier views on every call --
+-#      38 DDL statements against names every sibling WSG reads. CREATE OR
+-#      REPLACE VIEW takes an AccessExclusiveLock, and a QUEUED exclusive
+-#      request blocks every AccessShareLock behind it, so one job's DDL would
+-#      stall every sibling's read until lock_timeout killed someone. The build
+-#      is now hoisted below and each job runs LNK_VIEWS_PREBUILT=1. Everything
+-#      else a job touches is WSG-scoped (zz_lnk_streams_<wsg>,
+-#      zz_lnk_access_scratch_<wsg>, zz_lnk_mc_scratch_<wsg>) or row-scoped
+-#      (UPDATE ... WHERE watershed_group_code; DELETE+INSERT in a transaction).
+-#
+-#   2. A failed WSG was invisible. `|| echo` sat INSIDE the loop, so the
+-#      subshell always exited 0 and the success line below was unconditional;
+-#      RUN_INCOMPLETE is assigned BEFORE this block and nothing after raised
+-#      it. A run in which every recompute failed exited 0 and wrote a compare
+-#      CSV. The .rc files + lnk_fanout_judge() are what fix that.
+-run_finish_recompute() {
+-  RECOMPUTE_LOG="$LOG_DIR/${TS}_recompute.log"
+-  RC_DIR="$LOG_DIR/${TS}_recompute.d"
+-  RC_TSV="$LOG_DIR/${TS}_recompute.tsv"
+-  N_RECOMPUTE=$(csv_count "$ALL_WSGS")
+-
+-  echo "=== post-consolidate recompute (lnk_access, ${N_RECOMPUTE} WSGs, -j${RECOMPUTE_JOBS}) ==="
+-  # views: the two single-threaded steps before the pool (link#375).
+-  phase_begin views
+-
++# recompute_views_prep: the two single-threaded steps every recompute job
++# relies on, once: the log tables and the schema's barrier views. Run before
++# the pool at the end of a run, or before the legs when groups are recomputed
++# early (link#374), where a view rebuild later would take an exclusive lock
++# under running jobs. Sets RECOMPUTE_FAIL / RECOMPUTE_FAIL_STAGE on failure.
++recompute_views_prep() {
+   # Ensure the log tables exist ONCE, single-threaded, before any job starts
+   # (link#262). wsg_recompute_one.R deliberately refuses to run DDL — it runs
+   # inside this pool, and schema DDL belongs at init, not in N concurrent jobs.
+@@ -598,9 +574,59 @@ link:::.lnk_log_create_tables(conn, cfg$pipeline$schema)
+     fi
+   fi
+ 
+-  phase_end views "" "" "$([ "$RECOMPUTE_FAIL" = "0" ] && echo ok || echo failed)"
++}
+ 
+-  if [ "$RECOMPUTE_FAIL" = "0" ]; then
++# --- post-consolidate recompute: settle cross-WSG access (link#205) ---
++# Drainage-closed + DS-first per-host is NOT sufficient: a WSG's downstream
++# barriers can be cross-bucket or arrive late in DS-first order, so its access
++# (hence token1/token2) is computed against an incomplete barrier set.
++# Caught 2026-05-25: FINA 75% / PARA 69% per-host -> both 99% only after
++# re-modelling on the full consolidated barrier set. The recompute is the
++# correctness guarantee REGARDLESS of bucketing. We use lnk_access(merge=TRUE)
++# — the cheap access-only recompute that reuses the persisted streams /
++# habitat / barriers / barrier_overrides (link#205, ~10 s/WSG vs ~1.5 min for
++# a full pipeline rebuild). Because it is cheap, we recompute ALL run WSGs
++# this run built unconditionally rather than threshold-filtering by parity —
++# bucketing is now a speed knob, not a correctness lever.
++#
++# Parallel since link#250. Two things previously made the serial loop
++# mandatory, and both are now gone:
++#
++#   1. lnk_access() rebuilt the SCHEMA-scoped barrier views on every call --
++#      38 DDL statements against names every sibling WSG reads. CREATE OR
++#      REPLACE VIEW takes an AccessExclusiveLock, and a QUEUED exclusive
++#      request blocks every AccessShareLock behind it, so one job's DDL would
++#      stall every sibling's read until lock_timeout killed someone. The build
++#      is now hoisted below and each job runs LNK_VIEWS_PREBUILT=1. Everything
++#      else a job touches is WSG-scoped (zz_lnk_streams_<wsg>,
++#      zz_lnk_access_scratch_<wsg>, zz_lnk_mc_scratch_<wsg>) or row-scoped
++#      (UPDATE ... WHERE watershed_group_code; DELETE+INSERT in a transaction).
++#
++#   2. A failed WSG was invisible. `|| echo` sat INSIDE the loop, so the
++#      subshell always exited 0 and the success line below was unconditional;
++#      RUN_INCOMPLETE is assigned BEFORE this block and nothing after raised
++#      it. A run in which every recompute failed exited 0 and wrote a compare
++#      CSV. The .rc files + lnk_fanout_judge() are what fix that.
++run_finish_recompute() {
++  RECOMPUTE_LOG="$LOG_DIR/${TS}_recompute.log"
++  RC_DIR="$LOG_DIR/${TS}_recompute.d"
++  RC_TSV="$LOG_DIR/${TS}_recompute.tsv"
++  N_RECOMPUTE=$(csv_count "$ALL_WSGS")
++
++  echo "=== post-consolidate recompute (lnk_access, ${N_RECOMPUTE} WSGs, -j${RECOMPUTE_JOBS}) ==="
++  if [ -n "${RC_SCHED_PID:-}" ]; then
++    # The log tables and views were prepared before the legs, and the
++    # scheduler has been recomputing groups as they landed (link#374).
++    run_finish_recompute_early
++  else
++    # views: the two single-threaded steps before the pool (link#375).
++    phase_begin views
++    recompute_views_prep
++    phase_end views "" "" "$([ "$RECOMPUTE_FAIL" = "0" ] && echo ok || echo failed)"
++    if [ "$RECOMPUTE_FAIL" != "0" ]; then
++      phase_skip recompute
++      return 0
++    fi
+     phase_begin recompute
+     rm -rf "$RC_DIR"; mkdir -p "$RC_DIR"
+     # Longest-first. Ordering is the CALLER's business -- run_recompute_pool
+@@ -608,32 +634,82 @@ link:::.lnk_log_create_tables(conn, cfg$pipeline$schema)
+     # lets recompute_parity.sh shuffle deliberately for its invariance pass.
+     ALL_WSGS=$(recompute_order "$ALL_WSGS" | paste -sd, -)
+     run_recompute_pool "$RECOMPUTE_JOBS"
+-    # Read by the kept-hosts report: whether a recovery must recompute only the
+-    # kept groups and those upstream, or every group of the run (link#347).
+-    RECOMPUTE_RAN=1
++  fi
++  # Read by the kept-hosts report: whether a recovery must recompute only the
++  # kept groups and those upstream, or every group of the run (link#347).
++  RECOMPUTE_RAN=1
+ 
+-    # Never `cat "$RC_DIR"/*` — ARG_MAX at provincial scope. `find -exec ... +`
+-    # also exits 0 on zero matches, leaving an EMPTY tsv rather than aborting;
+-    # that empty case is a real branch and is judged in R, not here.
+-    : > "$RC_TSV"
+-    find "$RC_DIR" -maxdepth 1 -name '*.rc'  -exec cat {} + >> "$RC_TSV"
+-    : > "$RECOMPUTE_LOG"
+-    find "$RC_DIR" -maxdepth 1 -name '*.log' -exec cat {} + >> "$RECOMPUTE_LOG"
++  # Never `cat "$RC_DIR"/*` — ARG_MAX at provincial scope. `find -exec ... +`
++  # also exits 0 on zero matches, leaving an EMPTY tsv rather than aborting;
++  # that empty case is a real branch and is judged in R, not here.
++  : > "$RC_TSV"
++  find "$RC_DIR" -maxdepth 1 -name '*.rc'  -exec cat {} + >> "$RC_TSV"
++  : > "$RECOMPUTE_LOG"
++  find "$RC_DIR" -maxdepth 1 -name '*.log' -exec cat {} + >> "$RECOMPUTE_LOG"
+ 
+-    if ( cd "$REPO_ROOT" && LNK_LOAD=loadall \
+-           Rscript data-raw/fanout_judge.R "$RC_TSV" "$ALL_WSGS" recompute ); then
+-      echo "  ✓ recompute: ${N_RECOMPUTE}/${N_RECOMPUTE} WSGs"
+-      rm -rf "$RC_DIR"
+-    else
+-      echo "  ✗ recompute incomplete; see $RECOMPUTE_LOG and $RC_DIR/"
+-      RECOMPUTE_FAIL_STAGE="pool"
+-      # Per-job logs KEPT on failure: the concatenation is the artifact, the
+-      # per-job files are what you actually grep.
+-      RECOMPUTE_FAIL=1
+-    fi
+-    phase_end recompute "" "$N_RECOMPUTE" "$([ "$RECOMPUTE_FAIL" = "0" ] && echo ok || echo failed)"
++  if ( cd "$REPO_ROOT" && LNK_LOAD=loadall \
++         Rscript data-raw/fanout_judge.R "$RC_TSV" "$ALL_WSGS" recompute ); then
++    echo "  ✓ recompute: ${N_RECOMPUTE}/${N_RECOMPUTE} WSGs"
++    rm -rf "$RC_DIR"
+   else
+-    phase_skip recompute
++    echo "  ✗ recompute incomplete; see $RECOMPUTE_LOG and $RC_DIR/"
++    RECOMPUTE_FAIL_STAGE="pool"
++    # Per-job logs KEPT on failure: the concatenation is the artifact, the
++    # per-job files are what you actually grep.
++    RECOMPUTE_FAIL=1
++  fi
++  # Early recompute (link#374): no group started before a group it reads had
++  # landed, checked from the records (recompute_audit.R). An unreadable audit
++  # fails closed: it is the only thing that says the early starts were right.
++  if [ "${RC_EARLY_RAN:-0}" = "1" ]; then
++    local arc=0
++    ( cd "$REPO_ROOT" && Rscript data-raw/recompute_audit.R "$SCHEMA" "$RUN_UID" \
++        "$RC_DEPS" "$RUN_WSGS_TSV" "$CONS_STATE" "$LOG_DIR/${TS}_recompute_audit.tsv" ) \
++      > "$LOG_DIR/${TS}_recompute_audit.log" 2>&1 || arc=$?
++    case "$arc" in
++      0) echo "  ✓ recompute audit: no group started before a group it reads had landed" ;;
++      # Its own verdict, beside the pool's stage: both can fail, and each
++      # has its own remedy.
++      1) echo "  ✗ recompute audit: a group started before a group it reads had landed; see $LOG_DIR/${TS}_recompute_audit.log"
++         RECOMPUTE_FAIL=1; RC_AUDIT="early" ;;
++      *) echo "  ✗ recompute audit could not run (exit $arc); see $LOG_DIR/${TS}_recompute_audit.log"
++         RECOMPUTE_FAIL=1; RC_AUDIT="unread" ;;
++    esac
++  fi
++  phase_end recompute "" "$N_RECOMPUTE" "$([ "$RECOMPUTE_FAIL" = "0" ] && echo ok || echo failed)"
++}
++
++# run_finish_recompute_early: the end of an early recompute (link#374). Hands
++# the scheduler the final set (the groups coverage found finished), which it
++# starts whether or not they read a group that never landed, as the end-of-run
++# pool always has; then waits for it. A scheduler that ended any other way
++# (stopped, orphaned, a bad final file) leaves the groups it did not start to
++# the pool here, so a dead scheduler costs time, never a group. The recompute
++# row starts at the first early launch.
++run_finish_recompute_early() {
++  local first src done_rc left saved n_early
++  first=$(awk -F'\t' 'NR == 1 { print $2; exit }' "$RC_DIR/launched.tsv" 2>/dev/null) || first=""
++  phase_begin recompute "" "$first"
++  recompute_final_write "$ALL_WSGS" \
++    || { echo "  WARN: could not write $RC_FINAL; stopping the scheduler"; touch "$RC_STOP" 2>/dev/null || true; }
++  src=0
++  wait "$RC_SCHED_PID" || src=$?
++  RC_SCHED_PID=""
++  RC_EARLY_RAN=1
++  # Kept beside the run's other records: the per-job directory goes on success.
++  cp "$RC_DIR/launched.tsv" "$LOG_DIR/${TS}_recompute_launched.tsv" 2>/dev/null || true
++  n_early=$(awk -F'\t' '$3 == "early"' "$RC_DIR/launched.tsv" 2>/dev/null | wc -l | tr -d ' ')
++  echo "  ${n_early:-0} of $N_RECOMPUTE group(s) recomputed while the legs ran (see $LOG_DIR/${TS}_recompute_scheduler.log)"
++  if [ "$src" != "0" ]; then
++    done_rc=$(find "$RC_DIR" -maxdepth 1 -name '*.rc' -exec cat {} + 2>/dev/null | cut -f1 | .hosts_csv)
++    left=$(.hosts_minus "$ALL_WSGS" "$done_rc")
++    echo "  WARN: the recompute scheduler ended with $src; recomputing the $(.hosts_n "$left") group(s) it did not start here"
++    if [ -n "$left" ]; then
++      saved="$ALL_WSGS"
++      ALL_WSGS=$(recompute_order "$left" | paste -sd, -)
++      run_recompute_pool "$RECOMPUTE_JOBS"
++      ALL_WSGS="$saved"
++    fi
+   fi
+ }
+ 
+@@ -692,7 +768,9 @@ run_finish_report() {
+       echo "  host no longer holds, or holds in part, deletes the dispatcher's copy)."
+       if [ "${RECOMPUTE_RAN:-0}" = "1" ]; then
+         echo "  The recompute above ran WITHOUT those groups, so recompute each one and"
+-        echo "  each run group upstream of it afterwards. Then burn the host."
++        echo "  each run group that reads it afterwards (the wsg of each row of"
++        echo "  ${RC_DEPS:-<TS>_recompute_deps.tsv} whose dep is one of them; without"
++        echo "  that file, every group of the run). Then burn the host."
+       else
+         echo "  The recompute did not run, so recompute every group of the run"
+         echo "  afterwards. Then burn the host."
+@@ -784,7 +862,21 @@ run_finish_report() {
+       echo "    LNK_SCHEMA=$SCHEMA LNK_LOAD=loadall Rscript data-raw/study_area_compare.R \\"
+       echo "      $COMPARE_CSV ${ALL_WSGS:-<WSGs>} $CONFIG"
+     fi
+-    if [ "${RECOMPUTE_FAIL:-0}" != "0" ]; then
++    # The early recompute's audit (link#374), then the pool's own failure, if
++    # any: RECOMPUTE_FAIL is set by either, RECOMPUTE_FAIL_STAGE only by the
++    # pool and its prep.
++    if [ "${RC_AUDIT:-}" = "early" ]; then
++      echo "  Every group was recomputed, but the groups named EARLY in"
++      echo "  $LOG_DIR/${TS}_recompute_audit.tsv were recomputed before a group they read had"
++      echo "  landed (link#374). Their habitat gate may have cleared flags for good, so"
++      echo "  RE-MODEL each of them (wsg_run_one.R, LNK_HABITAT_GATE=0, under this run_uid)"
++      echo "  and then recompute them; a recompute alone cannot restore what the gate cleared."
++    elif [ "${RC_AUDIT:-}" = "unread" ]; then
++      echo "  Every group was recomputed, but whether any started before a group it"
++      echo "  reads had landed could not be checked. See $LOG_DIR/${TS}_recompute_audit.log, then:"
++      echo "    Rscript data-raw/recompute_audit.R $SCHEMA $RUN_UID $RC_DEPS $RUN_WSGS_TSV $CONS_STATE"
++    fi
++    if [ "${RECOMPUTE_FAIL:-0}" != "0" ] && [ -n "${RECOMPUTE_FAIL_STAGE:-}" ]; then
+       echo "  The post-consolidate recompute did not complete for every WSG."
+       echo "  Those WSGs' streams_access / streams_mapping_code still hold their"
+       echo "  PRE-consolidate values, so cross-WSG access — hence token1/token2"
+diff --git a/data-raw/study_area_hosts.sh b/data-raw/study_area_hosts.sh
+index bfb44477..491db5e3 100644
+--- a/data-raw/study_area_hosts.sh
++++ b/data-raw/study_area_hosts.sh
+@@ -664,7 +664,9 @@ hosts_kept_report() {
+   echo "  dispatcher has a log row for it; with pre-log rows only, it is lost)."
+   if [ "${RECOMPUTE_RAN:-0}" = "1" ]; then
+     echo "  The run's recompute ran WITHOUT these groups: after consolidating,"
+-    echo "  recompute each one and each run group upstream of it"
++    echo "  recompute each one and each run group that reads it: the wsg column of"
++    echo "  ${RC_DEPS:-<TS>_recompute_deps.tsv} where dep is one of them (link#374;"
++    echo "  without that file, every group of the run)"
+   else
+     echo "  The run's recompute did NOT run: after consolidating, recompute EVERY"
+     echo "  group of the run, not only these"
+diff --git a/data-raw/study_area_recompute.sh b/data-raw/study_area_recompute.sh
+new file mode 100644
+index 00000000..ada2ef74
+--- /dev/null
++++ b/data-raw/study_area_recompute.sh
+@@ -0,0 +1,218 @@
++# data-raw/study_area_recompute.sh — which groups may be recomputed now
++# (link#374). Sourced by study_area_run.sh after study_area_hosts.sh, and by
++# tests/testthat/test-study_area_recompute.R. Sourcing defines functions,
++# nothing else.
++#
++# A group's recompute (wsg_recompute_one.R) reads its own rows and the
++# barrier and override rows of every group on its downstream path. Until
++# #374 it ran only after every leg and every consolidate. Now a group is
++# recomputed once it, and every group it reads, has LANDED on the dispatcher:
++#
++#   a dispatcher group   its newest <schema>.log row is this run's, closed
++#                        (date_end is written last, after every persist
++#                        write; the rule run_coverage uses);
++#   a remote group       its host's row in <TS>_consolidate_state.tsv is
++#                        `ok` (written after the copy; `in_flight` before);
++#   a SKIP, or a group   always landed: it has no rows this run writes.
++#   outside the run
++#
++# A group a run gives to several hosts lands when every one of them has
++# landed it. Which groups a group reads is <TS>_recompute_deps.tsv, the line
++# rule of recompute_deps.R (complete by construction).
++#
++# Everything here FAILS CLOSED. An early recompute that reads too little
++# cannot be undone (the habitat gate only clears flags), so an unreadable
++# file, a database that does not answer, or a row that does not parse means
++# "not landed" and the caller launches nothing new on that poll.
++#
++# Globals read: SCHEMA RUN_UID (through .hosts_query, study_area_hosts.sh)
++# Functions read: .hosts_query .hosts_csv .hosts_lines .hosts_minus
++
++# recompute_landed <run_wsgs.tsv> <consolidate_state.tsv>: the run's groups
++# that have landed, as CSV. Returns 1, printing nothing, when any input is
++# unknown. A state file that does not exist yet means no remote host has
++# landed anything, which is known.
++recompute_landed() {
++  local wsgs="$1" state="$2" disp hdr
++  [ -r "$wsgs" ] || return 1
++  IFS= read -r hdr < "$wsgs" || return 1
++  # Four columns since #358, bucket_mode appended by #361.
++  case "$hdr" in "$(printf 'wsg\thost\tskip\trun_uid')"|"$(printf 'wsg\thost\tskip\trun_uid\t')"*) ;; *) return 1 ;; esac
++  disp=$(.hosts_query local log "run_uid = '${RUN_UID}' AND date_end IS NOT NULL
++    AND (watershed_group_code, date_start) IN (
++      SELECT watershed_group_code, max(date_start) FROM ${SCHEMA}.log
++      GROUP BY watershed_group_code)" 1) || return 1
++  if [ -e "$state" ]; then
++    [ -r "$state" ] || return 1
++    IFS= read -r hdr < "$state" || return 1
++    [ "$hdr" = "$(printf 'wsg\tworkspace\tstate\trun_uid\tstate_utc')" ] || return 1
++  else
++    state=/dev/null
++  fi
++  printf '%s\n' "$disp" | LC_ALL=C awk -F'\t' -v uid="$RUN_UID" -v st="$state" -v ws="$wsgs" '
++    BEGIN {
++      while ((getline l < "/dev/stdin") > 0) if (l != "") closed[l] = 1
++      n = 0
++      while ((getline l < st) > 0) {
++        if (++n == 1) continue
++        split(l, f, "\t")
++        if (f[1] !~ /^[A-Z][A-Z][A-Z][A-Z]$/ || f[4] != uid) { bad = 1; continue }
++        if (f[3] == "ok") cons[f[1] SUBSEP f[2]] = 1
++      }
++      n = 0
++      while ((getline l < ws) > 0) {
++        if (++n == 1) continue
++        split(l, f, "\t")
++        w = f[1]; h = f[2]
++        if (w !~ /^[A-Z][A-Z][A-Z][A-Z]$/ || h == "" || f[4] != uid) { bad = 1; continue }
++        seen[w] = 1
++        if (f[3] == "yes") continue
++        if (h == "dispatcher") { if (!(w in closed)) out[w] = 1 }
++        else if (!((w SUBSEP h) in cons)) out[w] = 1
++      }
++      if (bad) exit 1
++      for (w in seen) if (!(w in out)) print w
++    }' | .hosts_csv
++  [ "${PIPESTATUS[1]}" = "0" ]
++}
++
++# recompute_ready <landed csv> <deps.tsv> <launched csv> <run_wsgs.tsv>: the
++# run's groups that are landed, not SKIPs, not launched, and whose every
++# dependency in the run is landed, as CSV. A dependency outside the run has
++# landed already. Returns 1, printing nothing, on an unreadable or malformed
++# dependency file or group list.
++recompute_ready() {
++  local landed="$1" deps="$2" launched="$3" wsgs="$4" hdr
++  [ -r "$deps" ] && [ -r "$wsgs" ] || return 1
++  IFS= read -r hdr < "$wsgs" || return 1
++  case "$hdr" in "$(printf 'wsg\thost\tskip\trun_uid')"|"$(printf 'wsg\thost\tskip\trun_uid\t')"*) ;; *) return 1 ;; esac
++  IFS= read -r hdr < "$deps" || return 1
++  [ "$hdr" = "$(printf 'wsg\trule\tdep')" ] || return 1
++  LC_ALL=C awk -F'\t' -v landed="$landed" -v launched="$launched" -v ws="$wsgs" -v dp="$deps" -v uid="$RUN_UID" '
++    BEGIN {
++      n = split(landed, a, ","); for (i = 1; i <= n; i++) if (a[i] != "") L[a[i]] = 1
++      n = split(launched, a, ","); for (i = 1; i <= n; i++) if (a[i] != "") D[a[i]] = 1
++      n = 0
++      while ((getline l < ws) > 0) {
++        if (++n == 1) continue
++        split(l, f, "\t")
++        if (f[1] !~ /^[A-Z][A-Z][A-Z][A-Z]$/ || f[4] != uid) { bad = 1; continue }
++        run[f[1]] = 1
++        if (f[3] == "yes") skip[f[1]] = 1
++      }
++      n = 0
++      while ((getline l < dp) > 0) {
++        if (++n == 1) continue
++        split(l, f, "\t")
++        if (f[1] !~ /^[A-Z][A-Z][A-Z][A-Z]$/ || f[3] !~ /^[A-Z][A-Z][A-Z][A-Z]$/) { bad = 1; continue }
++        if (f[2] != "line") continue
++        if ((f[3] in run) && !(f[3] in L) && !(f[3] in skip)) blocked[f[1]] = 1
++      }
++      if (bad) exit 1
++      for (w in run) if ((w in L) && !(w in skip) && !(w in D) && !(w in blocked)) print w
++    }' | .hosts_csv
++  [ "${PIPESTATUS[0]}" = "0" ]
++}
++
++# recompute_scheduler: run in the background beside the legs, as
++# `recompute_scheduler &`. Every RC_POLL seconds (default 30) it reads which
++# groups are ready and starts them, longest first (recompute_order), into
++# RECOMPUTE_JOBS slots through recompute_one, which writes each job's .log and
++# .rc into RC_DIR as the end-of-run pool does. Each launch appends
++# "<wsg>\t<iso> <epoch>\t<early|final>" to RC_DIR/launched.tsv.
++#
++# It ends three ways:
++#   final set   run_finish writes RC_FINAL (tmp + mv, so its existence means
++#               it is whole): one line, "FINAL <csv>", the groups coverage
++#               found finished this run. Every one not yet started starts,
++#               ready or not (every leg and consolidate is over), and the
++#               scheduler returns 0 once its jobs end.
++#   stop        RC_STOP exists (the driver's EXIT trap): nothing new starts;
++#               jobs already running finish, as a killed pool's always have.
++#               Returns 2.
++#   orphaned    RC_PARENT is gone (a driver killed with SIGKILL runs no
++#               trap): as stop, returning 3. Two drivers must never work one
++#               schema, so a scheduler never outlives the run it serves.
++#
++# Its own error handling, not the driver's: errexit is off in here, because
++# a poll that fails must cost one poll, never the scheduler. A poll that fails
++# starts nothing (recompute_landed / recompute_ready fail closed).
++#
++# Globals read: RC_DIR RC_DEPS RC_FINAL RC_STOP RC_PARENT RC_POLL
++#   RUN_WSGS_TSV CONS_STATE RECOMPUTE_JOBS (and what recompute_one,
++#   recompute_order and recompute_landed read)
++# Functions read: recompute_one recompute_order (study_area_run.sh)
++#   recompute_landed recompute_ready .hosts_minus .hosts_lines .hosts_csv
++recompute_scheduler() {
++  set +e
++  local width="${RECOMPUTE_JOBS:-1}" poll="${RC_POLL:-30}" launched="" final="" have_final=0
++  local queue landed ready w pid line now ret tick
++  local -a pids=() alive=()
++  mkdir -p "$RC_DIR" || return 1
++  : >> "$RC_DIR/launched.tsv" || return 1
++  while :; do
++    alive=()
++    for pid in ${pids[@]+"${pids[@]}"}; do
++      if kill -0 "$pid" 2>/dev/null; then alive+=("$pid"); else wait "$pid" 2>/dev/null; fi
++    done
++    pids=(${alive[@]+"${alive[@]}"})
++    ret=""
++    [ -e "$RC_STOP" ] && ret=2
++    [ -z "$ret" ] && ! kill -0 "$RC_PARENT" 2>/dev/null && ret=3
++    if [ -n "$ret" ]; then
++      for pid in ${pids[@]+"${pids[@]}"}; do wait "$pid" 2>/dev/null; done
++      return "$ret"
++    fi
++    if [ "$have_final" = "0" ] && [ -e "$RC_FINAL" ]; then
++      IFS= read -r line < "$RC_FINAL"
++      case "$line" in
++        "FINAL "*) final="${line#FINAL }"; have_final=1 ;;
++        *) echo "[recompute_scheduler] $RC_FINAL is not a final set ('$line'); stopping" >&2
++           for pid in ${pids[@]+"${pids[@]}"}; do wait "$pid" 2>/dev/null; done
++           return 1 ;;
++      esac
++    fi
++    if [ "$have_final" = "1" ]; then
++      queue=$(.hosts_minus "$final" "$launched")
++    else
++      landed=$(recompute_landed "$RUN_WSGS_TSV" "$CONS_STATE") || landed=""
++      queue=""
++      if [ -n "$landed" ]; then
++        ready=$(recompute_ready "$landed" "$RC_DEPS" "$launched" "$RUN_WSGS_TSV") || ready=""
++        queue="$ready"
++      fi
++    fi
++    if [ -n "$queue" ] && [ "${#pids[@]}" -lt "$width" ]; then
++      for w in $(recompute_order "$queue" 2>/dev/null); do
++        [ "${#pids[@]}" -lt "$width" ] || break
++        case "$w" in [A-Z][A-Z][A-Z][A-Z]) ;; *) continue ;; esac
++        now=$(date -u '+%Y-%m-%dT%H:%M:%SZ %s')
++        recompute_one "$w" &
++        pids+=("$!")
++        launched=$(.hosts_union "$launched" "$w")
++        printf '%s\t%s\t%s\n' "$w" "$now" "$([ "$have_final" = "1" ] && echo final || echo early)" \
++          >> "$RC_DIR/launched.tsv"
++      done
++    fi
++    if [ "$have_final" = "1" ] && [ "${#pids[@]}" -eq 0 ] \
++       && [ -z "$(.hosts_minus "$final" "$launched")" ]; then
++      return 0
++    fi
++    # One second at a time, so the final set or a stop is acted on at once
++    # rather than at the next poll (a 30 s poll held a run's last groups for
++    # 27 s, link#374's Run A).
++    if [ "$have_final" = "1" ]; then
++      sleep 1
++    else
++      for ((tick = 0; tick < poll; tick++)); do
++        [ -e "$RC_FINAL" ] || [ -e "$RC_STOP" ] && break
++        sleep 1
++      done
++    fi
++  done
++}
++
++# recompute_final_write <csv>: the final set, for the scheduler (tmp + mv).
++recompute_final_write() {
++  printf 'FINAL %s\n' "${1:-}" > "$RC_FINAL.tmp" && mv "$RC_FINAL.tmp" "$RC_FINAL"
++}
+diff --git a/data-raw/study_area_run.sh b/data-raw/study_area_run.sh
+index 6cf24319..41a06784 100755
+--- a/data-raw/study_area_run.sh
++++ b/data-raw/study_area_run.sh
+@@ -113,6 +113,12 @@
+ #                           run wall clock single-threaded (link#250). N=1
+ #                           reproduces the serial path and is the control arm
+ #                           of data-raw/recompute_parity.sh.
++#   --recompute-at-end      recompute every group after the last leg and
++#                           consolidate, as before link#374. By default each
++#                           group is recomputed while the legs still run, as
++#                           soon as it and every group whose barrier rows its
++#                           walk reads (recompute_deps.R, line rule) have
++#                           landed on the dispatcher (study_area_recompute.sh).
+ #   --statement-timeout=N   minutes any one statement of a group's modelling
+ #                           may run (default 30, 1..1440; link#371). Set as
+ #                           PGOPTIONS='-c statement_timeout=<N>min' on BOTH
+@@ -228,6 +234,8 @@ RUN_UID_ARG=""
+ WSGS_ARG=""
+ # --buckets-exact: each --focal= list is taken as the host's bucket (link#361).
+ BUCKETS_EXACT=0
++# --recompute-at-end: the pool after the last consolidate (link#374).
++RECOMPUTE_EARLY=1
+ # --workers=: persistent hosts reached by their own ssh targets (link#376).
+ WORKERS_ARG=""
+ FOCAL_ARR=()
+@@ -236,6 +244,7 @@ for arg in "$@"; do
+     --cy-workspaces=*) CY_WS="${arg#--cy-workspaces=}" ;;
+     --workers=*)       WORKERS_ARG="${arg#--workers=}" ;;
+     --buckets-exact)   BUCKETS_EXACT=1 ;;
++    --recompute-at-end) RECOMPUTE_EARLY=0 ;;
+     --config=*)        CONFIG="${arg#--config=}" ;;
+     --schema=*)        SCHEMA_OVERRIDE="${arg#--schema=}"
+                        [ -n "$SCHEMA_OVERRIDE" ] || { echo "FATAL: --schema= requires a non-empty value" >&2; exit 1; } ;;
+@@ -338,6 +347,8 @@ if [ "$RECOMPUTE_ONLY" = "1" ]; then
+     echo "  it dispatches nothing." >&2
+     exit 1
+   fi
++  # It recomputes after the fact by definition.
++  RECOMPUTE_EARLY=0
+ else
+   [ -z "$RUN_UID_ARG" ] || {
+     echo "FATAL: --run-uid= is for --recompute-only; a run mints its own" >&2; exit 1; }
+@@ -559,6 +570,9 @@ echo "  workers:      ${WK_KEYS[*]:-<none>} ($N_WK; persistent, never burned)"
+ echo "  log dir:      $LOG_DIR"
+ echo "  vintage max:  ${VINTAGE_MAX_DAYS} d"
+ echo "  recompute -j: $RECOMPUTE_JOBS"
++[ "$RECOMPUTE_ONLY" = "1" ] || { [ "$RECOMPUTE_EARLY" = "1" ] \
++  && echo "  recompute:    early (each group once it and every group it reads have landed; link#374)" \
++  || echo "  recompute:    at the end (--recompute-at-end: after the last leg and consolidate)"; }
+ [ "$RECOMPUTE_ONLY" = "1" ] || echo "  statement:    ${STATEMENT_TIMEOUT_MIN} min per modelling statement (PGOPTIONS, both legs); recompute 10 min (wsg_recompute_one.R)"
+ # The stall hook (link#371) rides the driver's environment onto the local leg,
+ # so one left exported in the operator's shell would stall a real group.
+@@ -588,6 +602,8 @@ source "$REPO_ROOT/data-raw/study_area_phases.sh"
+ # Each cypher consolidated and burned when its own leg ends (link#369).
+ # shellcheck source=study_area_legs.sh
+ source "$REPO_ROOT/data-raw/study_area_legs.sh"
++# recompute_landed, recompute_ready, recompute_scheduler (link#374).
++source "$REPO_ROOT/data-raw/study_area_recompute.sh"
+ # Remote commands judged by what they print, never by ssh's exit status
+ # (link#376).
+ # shellcheck source=study_area_remote.sh
+@@ -656,6 +672,9 @@ on_exit() {
+   # can stop the burn below.
+   phases_close_open || true
+   [ "${PHASES_REPORTED:-0}" = "1" ] || phases_report || true
++  # The early recompute (link#374) starts nothing more; jobs already running
++  # finish, as a killed pool's always have. The scheduler polls the file.
++  [ -z "${RC_SCHED_PID:-}" ] || touch "$RC_STOP" 2>/dev/null || true
+   burn_cyphers || rc=$?
+   # A worker's prep still running (the run died during the cyphers' spin)
+   # would keep writing ssh's output into its log after the redaction below
+@@ -1583,10 +1602,12 @@ echo "  run groups: $RUN_WSGS_TSV"
+ # no leg is dispatched until it has succeeded. Its use is the earlier builds'
+ # log history (#354) and a rollback of the whole schema to before the run; the
+ # recompute rebuilds access and mapping code, not the persisted groups.
+-# Dispatcher-only runs consolidate nothing and take none, as before.
++# Dispatcher-only runs consolidate nothing and take none, as before. With the
++# early recompute (link#374) every run initialises the persist here, because
++# the barrier views below are built over its tables before any leg writes.
+ BACKUP_RC_FILE=""
+-if [ "$N_HOSTS" -gt 0 ]; then
+-  echo "=== dispatcher persist ($SCHEMA): init, then backup in the background ==="
++if [ "$N_HOSTS" -gt 0 ] || [ "$RECOMPUTE_EARLY" = "1" ]; then
++  echo "=== dispatcher persist ($SCHEMA): init ==="
+   ( cd "$REPO_ROOT" && Rscript -e "
+ suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
+ conn <- DBI::dbConnect(RPostgres::Postgres(), host = 'localhost', port = 5432L,
+@@ -1601,6 +1622,38 @@ cat('=== persist init done\\n')
+     && grep -qx "=== persist init done" "$LOG_DIR/${TS}_persist_init.log" \
+     || { echo "FATAL: could not initialise $SCHEMA on the dispatcher; see $LOG_DIR/${TS}_persist_init.log"; exit 1; }
+   echo "  ✓ $SCHEMA initialised (see $LOG_DIR/${TS}_persist_init.log)"
++fi
++
++# --- the early recompute's prep (link#374) -----------------------------------
++# A group is recomputed while the legs still run, once it and every group whose
++# barrier rows its walk reads have landed here (study_area_recompute.sh). So
++# the log tables and the schema's barrier views are made now, once: a view
++# rebuild later takes an exclusive lock under running jobs, and before the
++# backup, whose pg_dump holds every table and would make the build wait. And
++# the dependency map (recompute_deps.R, line rule, from FWA alone) is computed
++# in the background through spin and prep; no leg is dispatched without it.
++RC_DEPS_PID=""
++if [ "$RECOMPUTE_EARLY" = "1" ]; then
++  echo "=== early recompute: log tables, barrier views, dependency map ==="
++  phase_begin views
++  recompute_views_prep
++  phase_end views "" "" "$([ "$RECOMPUTE_FAIL" = "0" ] && echo ok || echo failed)"
++  [ "$RECOMPUTE_FAIL" = "0" ] || {
++    echo "FATAL: the early recompute's prep failed (stage $RECOMPUTE_FAIL_STAGE); nothing dispatched"
++    echo "       (--recompute-at-end prepares at the end instead)"; exit 1; }
++  RC_DIR="$LOG_DIR/${TS}_recompute.d"
++  RC_DEPS="$LOG_DIR/${TS}_recompute_deps.tsv"
++  RC_FINAL="$LOG_DIR/${TS}_recompute_final"
++  RC_STOP="$LOG_DIR/${TS}_recompute_stop"
++  rm -f "$RC_FINAL" "$RC_STOP" "$RC_DEPS"
++  mkdir -p "$RC_DIR"
++  ( cd "$REPO_ROOT" || exit 1
++    Rscript data-raw/recompute_deps.R "$RC_DEPS" line ) > "$LOG_DIR/${TS}_recompute_deps.log" 2>&1 &
++  RC_DEPS_PID=$!
++fi
++
++if [ "$N_HOSTS" -gt 0 ]; then
++  echo "=== dispatcher persist ($SCHEMA): backup in the background ==="
+   # The outcome goes to a file, read before dispatch: the rc of a background
+   # job is not something a later bare `wait` must be trusted to keep.
+   BACKUP_RC_FILE="$LOG_DIR/${TS}_backup.rc"
+@@ -1818,6 +1871,14 @@ if [ -n "$BACKUP_RC_FILE" ]; then
+     || { echo "FATAL: the pre-run backup of $SCHEMA failed; see $LOG_DIR/${TS}_backup.log. Nothing dispatched."; exit 1; }
+   echo "  ✓ pre-run backup taken (see $LOG_DIR/${TS}_backup.log)"
+ fi
++# Nor until the early recompute's dependency map is whole (link#374).
++if [ -n "$RC_DEPS_PID" ]; then
++  drc=0; wait "$RC_DEPS_PID" || drc=$?
++  RC_DEPS_PID=""
++  { [ "$drc" = "0" ] && IFS= read -r dhdr < "$RC_DEPS" && [ "$dhdr" = "$(printf 'wsg\trule\tdep')" ]; } \
++    || { echo "FATAL: the early recompute's dependency map failed (exit $drc); see $LOG_DIR/${TS}_recompute_deps.log. Nothing dispatched."; exit 1; }
++  echo "  ✓ dependency map: $(($(wc -l < "$RC_DEPS") - 1)) pairs (see $LOG_DIR/${TS}_recompute_deps.log)"
++fi
+ phase_end prep "" "$RUN_N" ok
+ echo "=== run buckets (DS-first) ==="
+ phase_begin model dispatcher
+@@ -1899,6 +1960,18 @@ CONS_STATE="$LOG_DIR/${TS}_consolidate_state.tsv"
+ if [ "$N_HOSTS" -gt 0 ]; then
+   echo "=== legs: each remote host is consolidated when its own leg ends (a cypher then burned, a worker released) ==="
+ fi
++# --- the early recompute, beside the legs (link#374) -----------------------
++# Polls which groups have landed and recomputes each as soon as it and every
++# group it reads are here. run_finish hands it the final set and waits; the
++# EXIT trap stops it starting anything new. Started here, after CONS_STATE is
++# set: it is a subshell, and holds the variables it had when it forked.
++RC_SCHED_PID=""
++if [ "$RECOMPUTE_EARLY" = "1" ]; then
++  RC_PARENT=$$
++  recompute_scheduler > "$LOG_DIR/${TS}_recompute_scheduler.log" 2>&1 &
++  RC_SCHED_PID=$!
++  echo "  early recompute scheduler started (-j$RECOMPUTE_JOBS; see $LOG_DIR/${TS}_recompute_scheduler.log)"
++fi
+ legs_wait
+ echo "  ✓ host runs finished (per-WSG soft-fail; gaps surface in compare)"
+ 
+diff --git a/research/study_area_run.md b/research/study_area_run.md
+index 069d7475..5289f8f4 100644
+--- a/research/study_area_run.md
++++ b/research/study_area_run.md
+@@ -1,6 +1,6 @@
+ # Study-area run (tunnel-free, M1-dispatch)
+ 
+-**Verified:** 2026-10-17 (the province-wide section and the corrected lines) · **Issues:** #175, #246, #347, #348 ·
++**Verified:** 2026-10-26 (the early recompute, #374); 2026-10-17 (the province-wide section and the corrected lines) · **Issues:** #175, #246, #347, #348, #374 ·
+ **Produced by:** `data-raw/study_area_run.sh`; logs `data-raw/logs/provincial_246/`,
+ `data-raw/logs/study_area_run/20261017_*`
+ 
+@@ -97,6 +97,21 @@ non-obvious things had to be true for it to be cheap:
+    cartesian against persist because `id_segment` is per-WSG, not globally
+    unique (link#203).
+ 
++**Since link#374 (2026-10-26) the recompute does not wait for the whole run.**
++A group's recompute reads the barrier and override rows of every group holding
++one on its downstream path, and nothing else of anyone's. So each group is
++recomputed once it, and every such group, has landed on the dispatcher. That
++set is not the drainage closure: a watershed group is not one drainage, and
++gradient barriers are persisted under every group touching a line, so the
++outlet closure misses readers in 150 of 241 groups. The rule used
++(`recompute_deps.R`, line rule) is every group touching a line whose code is an
++ancestor of, or equal to, one of the group's. It is complete by construction
++(median 9 readers), and a recompute of TOOD over only those groups digests
++identical to one over every group (over only its closure: 2 segments differ).
++Replayed on 2026-10-23 without its stalls, with the measured load on the
++dispatcher (1.2x modelling at `-j4`, 2x at `-j8`), it ends the recompute 36.7
++min sooner at `-j8`. Evidence: `data-raw/logs/recompute_early_374/`.
++
+ ## Gotchas that cost real time (2026-05-25)
+ 
+ - **A per-WSG FATAL burns the cyphers with un-consolidated data.** A
+diff --git a/tests/testthat/test-lnk_persist_init.R b/tests/testthat/test-lnk_persist_init.R
+index 8029546b..1e1520a0 100644
+--- a/tests/testthat/test-lnk_persist_init.R
++++ b/tests/testthat/test-lnk_persist_init.R
+@@ -272,3 +272,59 @@ test_that("an up-to-date persist schema waits on no other session's write (#369)
+   expect_error(suppressMessages(lnk_persist_init(conn, cfg, species = sp)),
+                "lock timeout")
+ })
++
++test_that("an up-to-date long-form habitat view is not replaced under its readers (#374)", {
++  conn <- skip_if_no_db()
++  info <- DBI::dbGetInfo(conn)
++  skip_if_not(identical(info$host, "localhost") && identical(info$dbname, "fwapg"),
++              "needs the local docker fwapg")
++  schema <- paste0("zz_test374_", Sys.getpid())
++  cfg <- lnk_config("default")
++  cfg$pipeline$schema <- schema
++  sp <- c("BT", "CH")
++  withr::defer(DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", schema)))
++  suppressMessages(lnk_persist_init(conn, cfg, species = sp))
++  key <- .lnk_view_comment(conn, schema, "streams_habitat_long_vw")
++  expect_match(key, "^lnk_def:[0-9a-f]{32}$")
++
++  # A second session reads the view, as a recompute job does mid-pool.
++  holder <- DBI::dbConnect(RPostgres::Postgres(), dbname = "fwapg",
++    host = "localhost", port = 5432L, user = "postgres", password = "postgres")
++  withr::defer(DBI::dbDisconnect(holder))
++  DBI::dbExecute(holder, "BEGIN")
++  DBI::dbGetQuery(holder, sprintf("SELECT count(*) FROM %s.streams_habitat_long_vw", schema))
++  withr::defer(DBI::dbExecute(holder, "ROLLBACK"), priority = "first")
++  DBI::dbExecute(conn, "SET lock_timeout = '2s'")
++  withr::defer(DBI::dbExecute(conn, "RESET lock_timeout"), priority = "first")
++
++  expect_no_error(suppressMessages(lnk_persist_init(conn, cfg, species = sp)))
++  expect_identical(.lnk_view_comment(conn, schema, "streams_habitat_long_vw"), key)
++
++  # The premise: with no key to compare, the same init replaces the view, waits
++  # on the reader and times out. Without it the expectation above is vacuous.
++  local_mocked_bindings(.lnk_view_comment = function(conn, schema, name) character(0))
++  expect_error(suppressMessages(lnk_persist_init(conn, cfg, species = sp)),
++               "lock timeout")
++})
++
++test_that("a changed species set replaces the long-form view", {
++  conn <- skip_if_no_db()
++  info <- DBI::dbGetInfo(conn)
++  skip_if_not(identical(info$host, "localhost") && identical(info$dbname, "fwapg"),
++              "needs the local docker fwapg")
++  schema <- paste0("zz_test374b_", Sys.getpid())
++  cfg <- lnk_config("default")
++  cfg$pipeline$schema <- schema
++  withr::defer(DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", schema)))
++  suppressMessages(lnk_persist_init(conn, cfg, species = "BT"))
++  k1 <- .lnk_view_comment(conn, schema, "streams_habitat_long_vw")
++  suppressMessages(lnk_persist_init(conn, cfg, species = c("BT", "CH")))
++  k2 <- .lnk_view_comment(conn, schema, "streams_habitat_long_vw")
++  expect_false(identical(k1, k2))
++  sp <- DBI::dbGetQuery(conn, sprintf(
++    "SELECT DISTINCT species_code FROM %s.streams_habitat_long_vw", schema))
++  expect_identical(nrow(sp), 0L)
++  def <- DBI::dbGetQuery(conn, sprintf(
++    "SELECT pg_get_viewdef('%s.streams_habitat_long_vw'::regclass) d", schema))$d
++  expect_match(def, "streams_habitat_ch")
++})
+diff --git a/tests/testthat/test-study_area_phases.R b/tests/testthat/test-study_area_phases.R
+index a8f1f016..f3eea225 100644
+--- a/tests/testthat/test-study_area_phases.R
++++ b/tests/testthat/test-study_area_phases.R
+@@ -261,8 +261,9 @@ test_that("each model and prep leg re-raises its own exit status after writing i
+   # Each wrapper sends its own output to its leg's log, never the driver's
+   # stdout, which it would otherwise hold open for the whole leg.
+   expect_length(grep('^  exit "\\$mrc" \\) >> "\\$LOG_DIR/\\$\\{TS\\}_run_[^"]+\\.log" 2>&1 &$', drv), 2L)
+-  # errexit is off on the left of `||`, so the local leg's cd must fail by hand.
+-  expect_length(grep('^  \\( cd "\\$REPO_ROOT" \\|\\| exit 1$', drv), 1L)
++  # errexit is off on the left of `||`, so the local leg's cd must fail by hand,
++  # and so must the early recompute's dependency map, a background job (link#374).
++  expect_length(grep('^  \\( cd "\\$REPO_ROOT" \\|\\| exit 1$', drv), 2L)
+   # The backup's subshell, likewise (link#369).
+   expect_length(grep('^    \\( cd "\\$REPO_ROOT" \\|\\| exit 1$', drv), 1L)
+   # Two prep legs: the cyphers' and the workers' (link#376).
+diff --git a/tests/testthat/test-study_area_recompute.R b/tests/testthat/test-study_area_recompute.R
+new file mode 100644
+index 00000000..34f4ddc1
+--- /dev/null
++++ b/tests/testthat/test-study_area_recompute.R
+@@ -0,0 +1,466 @@
++# data-raw/study_area_recompute.sh: which groups may be recomputed while the
++# legs are still running (link#374). The lib is bash, so each test runs it in
++# a bash process against the stub world of helper-study_area_hosts.R, whose
++# `psql` answers every local query from stub/psql_local.out: here, the
++# dispatcher groups whose newest log row is this run's and closed.
++#
++# data-raw/ is .Rbuildignore'd, so under R CMD check the lib is absent and
++# these skip; devtools::test() from the source tree runs them.
++#
++# LNK_TEST_RECOMPUTE_LIB points the tests at a mutant copy of the lib
++# (proving they fail).
++
++rc_uid <- "20261026_000000-aaaaaaaa"
++
++rc_libs <- function() {
++  p <- vapply(c("study_area_hosts.sh", "study_area_recompute.sh"), function(f) {
++    normalizePath(testthat::test_path("..", "..", "data-raw", f), mustWork = FALSE)
++  }, character(1))
++  alt <- Sys.getenv("LNK_TEST_RECOMPUTE_LIB")
++  if (nzchar(alt)) p[["study_area_recompute.sh"]] <- normalizePath(alt, mustWork = FALSE)
++  p
++}
++
++skip_if_no_rc_lib <- function() {
++  testthat::skip_if_not(all(file.exists(rc_libs())), "data-raw/study_area_*.sh absent")
++  if (!nzchar(hosts_bash())) {
++    testthat::fail("no bash >= 5.1 found; the study_area_recompute.sh tests cannot run")
++  }
++}
++
++# A run's group list: one row per (group, host), as run_wsgs_write writes it.
++rc_wsgs <- function(world, rows, uid = rc_uid, header = NULL) {
++  hdr <- header %||% "wsg\thost\tskip\trun_uid\tbucket_mode"
++  writeLines(c(hdr, sprintf("%s\t%s\t%s\t%s\tclosure", rows$wsg, rows$host,
++                            rows$skip, uid)),
++             file.path(world, "logs", "T0_run_wsgs.tsv"))
++}
++
++rc_state <- function(world, rows, uid = rc_uid) {
++  writeLines(c("wsg\tworkspace\tstate\trun_uid\tstate_utc",
++               sprintf("%s\t%s\t%s\t%s\t2026-10-26T00:00:00Z", rows$wsg, rows$ws,
++                       rows$state, uid)),
++             file.path(world, "logs", "T0_consolidate_state.tsv"))
++}
++
++rc_deps <- function(world, pairs, rule = "line") {
++  writeLines(c("wsg\trule\tdep", sprintf("%s\t%s\t%s", pairs$wsg, rule, pairs$dep)),
++             file.path(world, "logs", "T0_recompute_deps.tsv"))
++}
++
++rc_run <- function(world, body) {
++  script <- file.path(world, "run.sh")
++  libs <- rc_libs()
++  writeLines(c(
++    "set -euo pipefail",
++    sprintf("source %s", shQuote(libs[["study_area_hosts.sh"]])),
++    sprintf("source %s", shQuote(libs[["study_area_recompute.sh"]])),
++    sprintf("SCHEMA=fresh_t; RUN_UID=%s; L=%s", rc_uid, shQuote(file.path(world, "logs"))),
++    body
++  ), script)
++  out <- withr::with_envvar(
++    c(PATH = paste(file.path(world, "bin"), Sys.getenv("PATH"), sep = ":")),
++    suppressWarnings(system2(hosts_bash(), script, stdout = TRUE, stderr = TRUE))
++  )
++  list(out = paste(out, collapse = "\n"), status = attr(out, "status") %||% 0L)
++}
++
++# landed=<csv> rc=<n> from recompute_landed over the world's files.
++rc_landed <- function(world) {
++  r <- rc_run(world, c(
++    'rc=0; x=$(recompute_landed "$L/T0_run_wsgs.tsv" "$L/T0_consolidate_state.tsv") || rc=$?',
++    'echo "landed=$x"; echo "rc=$rc"'))
++  list(landed = sub("^landed=", "", regmatches(r$out, regexpr("landed=[A-Z,]*", r$out))),
++       rc = sub("^rc=", "", regmatches(r$out, regexpr("rc=[0-9]+", r$out))),
++       out = r$out)
++}
++
++rc_ready <- function(world, landed, launched = "") {
++  r <- rc_run(world, c(
++    sprintf('rc=0; x=$(recompute_ready %s "$L/T0_recompute_deps.tsv" %s "$L/T0_run_wsgs.tsv") || rc=$?',
++            shQuote(landed), shQuote(launched)),
++    'echo "ready=$x"; echo "rc=$rc"'))
++  list(ready = sub("^ready=", "", regmatches(r$out, regexpr("ready=[A-Z,]*", r$out))),
++       rc = sub("^rc=", "", regmatches(r$out, regexpr("rc=[0-9]+", r$out))),
++       out = r$out)
++}
++
++rows <- function(...) data.frame(..., stringsAsFactors = FALSE)
++
++test_that("a dispatcher group lands when its newest log row is this run's and closed", {
++  skip_if_no_rc_lib()
++  w <- hosts_world()
++  rc_wsgs(w, rows(wsg = c("AAAA", "BBBB"), host = "dispatcher", skip = "unknown"))
++  put(w, "psql_local.out", db_answer("AAAA"))
++  r <- rc_landed(w)
++  expect_identical(r$rc, "0", info = r$out)
++  expect_identical(r$landed, "AAAA")
++})
++
++test_that("a remote group lands only when its host's consolidate row is ok", {
++  skip_if_no_rc_lib()
++  w <- hosts_world()
++  rc_wsgs(w, rows(wsg = c("AAAA", "BBBB", "CCCC", "DDDD"),
++                  host = c("job1", "job1", "job2", "job3"), skip = "unknown"))
++  put(w, "psql_local.out", db_answer(character(0)))
++  rc_state(w, rows(wsg = c("AAAA", "BBBB", "CCCC", "DDDD"),
++                   ws = c("job1", "job1", "job2", "job3"),
++                   state = c("ok", "ok", "in_flight", "failed:copy")))
++  r <- rc_landed(w)
++  expect_identical(r$rc, "0", info = r$out)
++  expect_identical(r$landed, "AAAA,BBBB")
++})
++
++test_that("no consolidate state file yet means no remote group has landed", {
++  skip_if_no_rc_lib()
++  w <- hosts_world()
++  rc_wsgs(w, rows(wsg = c("AAAA", "BBBB"), host = c("dispatcher", "job1"), skip = "unknown"))
++  put(w, "psql_local.out", db_answer("AAAA"))
++  r <- rc_landed(w)
++  expect_identical(r$rc, "0", info = r$out)
++  expect_identical(r$landed, "AAAA")
++})
++
++test_that("a group on two hosts lands only when both have landed it", {
++  skip_if_no_rc_lib()
++  w <- hosts_world()
++  rc_wsgs(w, rows(wsg = c("AAAA", "AAAA"), host = c("dispatcher", "job1"), skip = "unknown"))
++  put(w, "psql_local.out", db_answer("AAAA"))
++  r <- rc_landed(w)
++  expect_identical(r$landed, "", info = r$out)
++  rc_state(w, rows(wsg = "AAAA", ws = "job1", state = "ok"))
++  r <- rc_landed(w)
++  expect_identical(r$landed, "AAAA", info = r$out)
++})
++
++test_that("a SKIP lands without a log row", {
++  skip_if_no_rc_lib()
++  w <- hosts_world()
++  rc_wsgs(w, rows(wsg = c("AAAA", "BBBB"), host = "dispatcher", skip = c("yes", "no")))
++  put(w, "psql_local.out", db_answer(character(0)))
++  r <- rc_landed(w)
++  expect_identical(r$landed, "AAAA", info = r$out)
++})
++
++test_that("landing fails closed on an unknown answer", {
++  skip_if_no_rc_lib()
++  # A database that does not answer.
++  w <- hosts_world()
++  rc_wsgs(w, rows(wsg = "AAAA", host = "dispatcher", skip = "unknown"))
++  put(w, "psql_local.out", "psql: error: connection refused")
++  r <- rc_landed(w)
++  expect_identical(r$rc, "1", info = r$out)
++  expect_identical(r$landed, "")
++  # A state row from another run.
++  w <- hosts_world()
++  rc_wsgs(w, rows(wsg = "AAAA", host = "job1", skip = "unknown"))
++  put(w, "psql_local.out", db_answer(character(0)))
++  rc_state(w, rows(wsg = "AAAA", ws = "job1", state = "ok"), uid = "20260101_000000-bbbbbbbb")
++  r <- rc_landed(w)
++  expect_identical(r$rc, "1", info = r$out)
++  expect_identical(r$landed, "")
++  # A group list that is not run_wsgs_write's.
++  w <- hosts_world()
++  rc_wsgs(w, rows(wsg = "AAAA", host = "dispatcher", skip = "unknown"), header = "wsg\thost")
++  put(w, "psql_local.out", db_answer("AAAA"))
++  r <- rc_landed(w)
++  expect_identical(r$rc, "1", info = r$out)
++  # A group list row from another run.
++  w <- hosts_world()
++  rc_wsgs(w, rows(wsg = "AAAA", host = "dispatcher", skip = "unknown"), uid = "20260101_000000-bbbbbbbb")
++  put(w, "psql_local.out", db_answer("AAAA"))
++  r <- rc_landed(w)
++  expect_identical(r$rc, "1", info = r$out)
++  # An unreadable state file.
++  w <- hosts_world()
++  rc_wsgs(w, rows(wsg = "AAAA", host = "job1", skip = "unknown"))
++  put(w, "psql_local.out", db_answer(character(0)))
++  rc_state(w, rows(wsg = "AAAA", ws = "job1", state = "ok"))
++  Sys.chmod(file.path(w, "logs", "T0_consolidate_state.tsv"), "000")
++  r <- rc_landed(w)
++  Sys.chmod(file.path(w, "logs", "T0_consolidate_state.tsv"), "644")
++  expect_identical(r$rc, "1", info = r$out)
++})
++
++test_that("a group is ready only when every dependency in the run has landed", {
++  skip_if_no_rc_lib()
++  w <- hosts_world()
++  rc_wsgs(w, rows(wsg = c("AAAA", "BBBB", "CCCC", "DDDD"),
++                  host = c("dispatcher", "dispatcher", "job1", "job1"), skip = "no"))
++  # AAAA reads BBBB and ZZZZ (outside the run); BBBB reads CCCC; DDDD reads none.
++  rc_deps(w, rows(wsg = c("AAAA", "AAAA", "BBBB"), dep = c("BBBB", "ZZZZ", "CCCC")))
++  r <- rc_ready(w, "AAAA,BBBB,DDDD")
++  expect_identical(r$rc, "0", info = r$out)
++  # BBBB waits for CCCC; AAAA waits for BBBB's landing, which it has, so only
++  # AAAA and DDDD; BBBB is not ready (CCCC has not landed).
++  expect_identical(r$ready, "AAAA,DDDD")
++  r <- rc_ready(w, "AAAA,BBBB,CCCC,DDDD", launched = "AAAA,DDDD")
++  expect_identical(r$ready, "BBBB,CCCC")
++})
++
++test_that("only the line rule's rows count", {
++  skip_if_no_rc_lib()
++  w <- hosts_world()
++  rc_wsgs(w, rows(wsg = c("AAAA", "BBBB"), host = "dispatcher", skip = "no"))
++  writeLines(c("wsg\trule\tdep", "AAAA\tline\tBBBB", "BBBB\tclosure\tAAAA"),
++             file.path(w, "logs", "T0_recompute_deps.tsv"))
++  r <- rc_ready(w, "BBBB")
++  expect_identical(r$ready, "BBBB", info = r$out)
++})
++
++test_that("a SKIP is never launched and never holds a dependant", {
++  skip_if_no_rc_lib()
++  w <- hosts_world()
++  rc_wsgs(w, rows(wsg = c("AAAA", "BBBB"), host = "dispatcher", skip = c("no", "yes")))
++  rc_deps(w, rows(wsg = "AAAA", dep = "BBBB"))
++  r <- rc_ready(w, "AAAA")
++  expect_identical(r$ready, "AAAA", info = r$out)
++})
++
++test_that("readiness fails closed on a bad dependency file", {
++  skip_if_no_rc_lib()
++  w <- hosts_world()
++  rc_wsgs(w, rows(wsg = "AAAA", host = "dispatcher", skip = "no"))
++  writeLines(c("wsg\tdep", "AAAA\tBBBB"), file.path(w, "logs", "T0_recompute_deps.tsv"))
++  r <- rc_ready(w, "AAAA")
++  expect_identical(r$rc, "1", info = r$out)
++  expect_identical(r$ready, "")
++  rc_deps(w, rows(wsg = "AAAA", dep = "bad"))
++  r <- rc_ready(w, "AAAA")
++  expect_identical(r$rc, "1", info = r$out)
++  expect_identical(r$ready, "")
++  unlink(file.path(w, "logs", "T0_recompute_deps.tsv"))
++  r <- rc_ready(w, "AAAA")
++  expect_identical(r$rc, "1", info = r$out)
++})
++
++# --- recompute_scheduler -------------------------------------------------
++# A stub recompute_one records its start and end and writes the .rc row as the
++# driver's does; a stub recompute_order keeps the queue's order. RC_POLL=1.
++rc_sched <- function(world, body, jobs = 2L, job_sleep = 1) {
++  rc_run(world, c(
++    sprintf('RC_DIR="$L/T0_recompute.d"; RC_DEPS="$L/T0_recompute_deps.tsv"; RC_FINAL="$L/T0_recompute_final"; RC_STOP="$L/T0_recompute_stop"'),
++    'RUN_WSGS_TSV="$L/T0_run_wsgs.tsv"; CONS_STATE="$L/T0_consolidate_state.tsv"',
++    sprintf("RECOMPUTE_JOBS=%d; RC_POLL=1; RC_PARENT=$$", jobs),
++    sprintf(paste0("recompute_one() { echo \"start $1 $(date +%%s)\" >> \"$RC_DIR/calls\"; sleep %s; ",
++                   "printf '%%s\\t0\\n' \"$1\" > \"$RC_DIR/$1.rc\"; ",
++                   "echo \"end $1 $(date +%%s)\" >> \"$RC_DIR/calls\"; return 0; }"), job_sleep),
++    "recompute_order() { .hosts_lines \"$1\"; }",
++    # A scheduler that never ends fails its test instead of hanging it.
++    'rc_wait() { local p="$1" r=0; ( sleep 20; kill "$p" 2>/dev/null ) & local wd=$!; wait "$p" || r=$?; kill "$wd" 2>/dev/null; return "$r"; }',
++    body))
++}
++
++rc_launched <- function(world) {
++  p <- file.path(world, "logs", "T0_recompute.d", "launched.tsv")
++  if (!file.exists(p) || file.size(p) == 0) {
++    return(data.frame(wsg = character(), mode = character()))
++  }
++  x <- utils::read.delim(p, header = FALSE, col.names = c("wsg", "at", "mode"),
++                         colClasses = "character")
++  x[, c("wsg", "mode")]
++}
++
++test_that("the scheduler starts ready groups early, then the final set, then returns 0", {
++  skip_if_no_rc_lib()
++  w <- hosts_world()
++  rc_wsgs(w, rows(wsg = c("AAAA", "BBBB", "CCCC"), host = c("dispatcher", "dispatcher", "job1"),
++                  skip = "no"))
++  rc_deps(w, rows(wsg = "BBBB", dep = "CCCC"))
++  put(w, "psql_local.out", db_answer(c("AAAA", "BBBB")))
++  r <- rc_sched(w, c(
++    "recompute_scheduler & sp=$!",
++    "sleep 4",
++    'cp "$RC_DIR/launched.tsv" "$L/early.tsv"',
++    'recompute_final_write "AAAA,BBBB,CCCC"',
++    'src=0; rc_wait "$sp" || src=$?; echo "sched_rc=$src"'))
++  expect_match(r$out, "sched_rc=0", info = r$out)
++  early <- utils::read.delim(file.path(w, "logs", "early.tsv"), header = FALSE)
++  # BBBB reads CCCC, which has not landed: only AAAA starts early.
++  expect_identical(early$V1, "AAAA")
++  l <- rc_launched(w)
++  expect_identical(sort(l$wsg), c("AAAA", "BBBB", "CCCC"))
++  expect_identical(l$mode[l$wsg == "AAAA"], "early")
++  expect_identical(l$mode[l$wsg != "AAAA"], c("final", "final"))
++  expect_true(all(file.exists(file.path(w, "logs", "T0_recompute.d", paste0(l$wsg, ".rc")))))
++})
++
++test_that("the scheduler starts a group once its dependency's host is consolidated", {
++  skip_if_no_rc_lib()
++  w <- hosts_world()
++  rc_wsgs(w, rows(wsg = c("BBBB", "CCCC"), host = c("dispatcher", "job1"), skip = "no"))
++  rc_deps(w, rows(wsg = "BBBB", dep = "CCCC"))
++  put(w, "psql_local.out", db_answer("BBBB"))
++  r <- rc_sched(w, c(
++    "recompute_scheduler & sp=$!",
++    "sleep 3",
++    'n0=$(wc -l < "$RC_DIR/launched.tsv" | tr -d " "); echo "n_before=$n0"',
++    sprintf("printf 'wsg\\tworkspace\\tstate\\trun_uid\\tstate_utc\\nCCCC\\tjob1\\tok\\t%s\\tx\\n' > \"$CONS_STATE\"", rc_uid),
++    "sleep 4",
++    'recompute_final_write "BBBB,CCCC"',
++    'rc_wait "$sp"'))
++  expect_match(r$out, "n_before=0", info = r$out)
++  l <- rc_launched(w)
++  expect_identical(l$mode[l$wsg == "BBBB"], "early", info = r$out)
++  expect_identical(l$mode[l$wsg == "CCCC"], "early")
++})
++
++test_that("the scheduler never runs more jobs than slots", {
++  skip_if_no_rc_lib()
++  w <- hosts_world()
++  g <- c("AAAA", "BBBB", "CCCC", "DDDD", "EEEE")
++  rc_wsgs(w, rows(wsg = g, host = "dispatcher", skip = "no"))
++  rc_deps(w, rows(wsg = character(), dep = character()))
++  put(w, "psql_local.out", db_answer(g))
++  r <- rc_sched(w, c(
++    "recompute_scheduler & sp=$!",
++    "sleep 2",
++    sprintf('recompute_final_write "%s"', paste(g, collapse = ",")),
++    'rc_wait "$sp"'), jobs = 2L, job_sleep = 2)
++  calls <- readLines(file.path(w, "logs", "T0_recompute.d", "calls"))
++  ev <- do.call(rbind, strsplit(calls, " "))
++  t <- as.numeric(ev[, 3]); d <- ifelse(ev[, 1] == "start", 1, -1)
++  o <- order(t, d)   # an end at the same second frees its slot first
++  expect_lte(max(cumsum(d[o])), 2L)
++  expect_setequal(rc_launched(w)$wsg, g)
++})
++
++test_that("a stop file ends the scheduler without starting anything new", {
++  skip_if_no_rc_lib()
++  w <- hosts_world()
++  rc_wsgs(w, rows(wsg = c("AAAA", "BBBB"), host = "dispatcher", skip = "no"))
++  rc_deps(w, rows(wsg = character(), dep = character()))
++  put(w, "psql_local.out", db_answer(character(0)))
++  r <- rc_sched(w, c(
++    "recompute_scheduler & sp=$!",
++    "sleep 2",
++    'touch "$RC_STOP"',
++    'src=0; rc_wait "$sp" || src=$?; echo "sched_rc=$src"'))
++  expect_match(r$out, "sched_rc=2", info = r$out)
++  expect_identical(nrow(rc_launched(w)), 0L)
++})
++
++test_that("the scheduler ends when the driver that started it is gone", {
++  skip_if_no_rc_lib()
++  w <- hosts_world()
++  rc_wsgs(w, rows(wsg = "AAAA", host = "dispatcher", skip = "no"))
++  rc_deps(w, rows(wsg = character(), dep = character()))
++  put(w, "psql_local.out", db_answer(character(0)))
++  r <- rc_sched(w, c(
++    "sleep 30 & parent=$!",
++    "RC_PARENT=$parent",
++    "recompute_scheduler & sp=$!",
++    "sleep 2",
++    'kill "$parent"',
++    'src=0; rc_wait "$sp" || src=$?; echo "sched_rc=$src"'))
++  expect_match(r$out, "sched_rc=3", info = r$out)
++})
++
++test_that("a poll that fails starts nothing", {
++  skip_if_no_rc_lib()
++  w <- hosts_world()
++  rc_wsgs(w, rows(wsg = "AAAA", host = "dispatcher", skip = "no"))
++  rc_deps(w, rows(wsg = character(), dep = character()))
++  put(w, "psql_local.out", "psql: error: connection refused")
++  r <- rc_sched(w, c(
++    "recompute_scheduler & sp=$!",
++    "sleep 3",
++    'touch "$RC_STOP"',
++    'rc_wait "$sp" || true'))
++  expect_identical(nrow(rc_launched(w)), 0L, info = r$out)
++})
++
++test_that("the final set starts a group whose dependency never landed", {
++  skip_if_no_rc_lib()
++  w <- hosts_world()
++  # CCCC failed on job1: it never lands and is not in the final set. BBBB,
++  # which reads it, is recomputed anyway, as the end-of-run pool always has.
++  rc_wsgs(w, rows(wsg = c("AAAA", "BBBB", "CCCC"), host = c("dispatcher", "dispatcher", "job1"),
++                  skip = "no"))
++  rc_deps(w, rows(wsg = "BBBB", dep = "CCCC"))
++  put(w, "psql_local.out", db_answer(c("AAAA", "BBBB")))
++  r <- rc_sched(w, c(
++    "recompute_scheduler & sp=$!",
++    "sleep 2",
++    'recompute_final_write "AAAA,BBBB"',
++    'src=0; rc_wait "$sp" || src=$?; echo "sched_rc=$src"'))
++  expect_match(r$out, "sched_rc=0", info = r$out)
++  l <- rc_launched(w)
++  expect_setequal(l$wsg, c("AAAA", "BBBB"))
++  expect_identical(l$mode[l$wsg == "BBBB"], "final")
++})
++
++# --- the driver's wiring (structural) ---------------------------------------
++test_that("the driver prepares, starts, stops and finishes the early recompute in order", {
++  drv_path <- testthat::test_path("..", "..", "data-raw", "study_area_run.sh")
++  fin_path <- testthat::test_path("..", "..", "data-raw", "study_area_finish.sh")
++  testthat::skip_if_not(file.exists(drv_path) && file.exists(fin_path),
++                        "data-raw/study_area_*.sh absent")
++  drv <- readLines(drv_path)
++  fin <- readLines(fin_path)
++  line <- function(x, pat) {
++    i <- grep(pat, x, fixed = TRUE)
++    expect_length(i, 1L)
++    i[1]
++  }
++  # The flag, and --recompute-only turning it off.
++  line(drv, "--recompute-at-end) RECOMPUTE_EARLY=0 ;;")
++  line(drv, "  RECOMPUTE_EARLY=0")
++  # Prep before the backup (a running pg_dump would make the view build wait),
++  # the dependency map waited on before dispatch, the scheduler started after
++  # CONS_STATE is set (it is a subshell) and before legs_wait.
++  prep <- line(drv, "  recompute_views_prep")
++  backup <- line(drv, '  echo "=== dispatcher persist ($SCHEMA): backup in the background ==="')
++  expect_lt(prep, backup)
++  deps_wait <- line(drv, '  drc=0; wait "$RC_DEPS_PID" || drc=$?')
++  dispatch <- line(drv, 'echo "=== run buckets (DS-first) ==="')
++  expect_lt(deps_wait, dispatch)
++  cons <- grep('^CONS_STATE="\\$LOG_DIR/\\$\\{TS\\}_consolidate_state.tsv"$', drv)
++  sched <- line(drv, '  recompute_scheduler > "$LOG_DIR/${TS}_recompute_scheduler.log" 2>&1 &')
++  wait_legs <- grep("^legs_wait$", drv)
++  expect_length(cons, 1L)
++  expect_lt(cons, sched)
++  expect_lt(sched, wait_legs)
++  # The trap stops it starting anything new, before the burn.
++  t <- grep("^on_exit\\(\\) \\{", drv)
++  body <- drv[t:(t + which(drv[-seq_len(t)] == "}")[1])]
++  expect_lt(grep('[ -z "${RC_SCHED_PID:-}" ] || touch "$RC_STOP"', body, fixed = TRUE),
++            grep("burn_cyphers || rc=$?", body, fixed = TRUE))
++  # run_finish hands over the final set, never rebuilds the views or clears
++  # the per-job directory when the scheduler ran, and audits the early starts.
++  r <- grep("^run_finish_recompute\\(\\) \\{", fin)
++  rb <- fin[r:(r + which(fin[-seq_len(r)] == "}")[1])]
++  early <- grep("run_finish_recompute_early", rb, fixed = TRUE)
++  views <- grep("recompute_views_prep", rb, fixed = TRUE)
++  wipe <- grep('rm -rf "$RC_DIR"; mkdir -p "$RC_DIR"', rb, fixed = TRUE)
++  els <- grep("^  else$", rb)
++  expect_length(early, 1L)
++  expect_true(all(c(views, wipe) > els[1]))
++  expect_length(grep('Rscript data-raw/recompute_audit.R "$SCHEMA" "$RUN_UID"', rb, fixed = TRUE), 1L)
++  e <- grep("^run_finish_recompute_early\\(\\) \\{", fin)
++  eb <- fin[e:(e + which(fin[-seq_len(e)] == "}")[1])]
++  expect_lt(grep('recompute_final_write "$ALL_WSGS"', eb, fixed = TRUE),
++            grep('wait "$RC_SCHED_PID" || src=$?', eb, fixed = TRUE))
++  # The empty-coverage branch releases the scheduler too.
++  rf <- grep("^run_finish\\(\\) \\{", fin)
++  fb <- fin[rf:(rf + which(fin[-seq_len(rf)] == "}")[1])]
++  expect_length(grep('recompute_final_write "" || touch "$RC_STOP"', fb, fixed = TRUE), 1L)
++})
++
++test_that("the final set is acted on at once, not at the next poll", {
++  skip_if_no_rc_lib()
++  w <- hosts_world()
++  rc_wsgs(w, rows(wsg = "AAAA", host = "dispatcher", skip = "no"))
++  rc_deps(w, rows(wsg = character(), dep = character()))
++  put(w, "psql_local.out", db_answer(character(0)))
++  r <- rc_sched(w, c(
++    "RC_POLL=30",
++    "recompute_scheduler & sp=$!",
++    "sleep 2",
++    't0=$(date +%s); recompute_final_write "AAAA"',
++    'rc_wait "$sp"',
++    'echo "took=$(( $(date +%s) - t0 ))"'), job_sleep = 0)
++  took <- as.integer(sub("took=", "", regmatches(r$out, regexpr("took=[0-9]+", r$out))))
++  expect_lte(took, 5L)
++  expect_identical(rc_launched(w)$wsg, "AAAA")
++})
+diff --git a/data-raw/logs/recompute_early_374/ab_compare.R b/data-raw/logs/recompute_early_374/ab_compare.R
+new file mode 100644
+index 00000000..62b2d25b
+--- /dev/null
++++ b/data-raw/logs/recompute_early_374/ab_compare.R
+@@ -0,0 +1,51 @@
++#!/usr/bin/env Rscript
++# ab_compare.R — link#374: the same groups built twice, once with the early
++# recompute (schema a) and once with --recompute-at-end (schema b). Every
++# group's streams_access, streams_mapping_code and gated habitat flags must
++# match row for row. Floating columns are compared after rounding to 6
++# decimals; geometry is left out.
++#
++# Usage: Rscript ab_compare.R <schema a> <schema b> <groups csv> [out.tsv]
++args <- commandArgs(trailingOnly = TRUE)
++a <- args[1]; b <- args[2]
++groups <- toupper(strsplit(args[3], ",", fixed = TRUE)[[1]])
++out <- if (length(args) >= 4L) args[4] else ""
++conn <- DBI::dbConnect(RPostgres::Postgres(), dbname = "fwapg", host = "localhost",
++                       port = 5432L, user = "postgres", password = "postgres")
++q <- function(sql) DBI::dbGetQuery(conn, sql)
++lit <- function(v) paste(DBI::dbQuoteString(conn, v), collapse = ",")
++tabs <- q(sprintf("SELECT table_name FROM information_schema.tables
++  WHERE table_schema = %s AND table_type = 'BASE TABLE'
++    AND (table_name IN ('streams_access', 'streams_mapping_code')
++         OR table_name LIKE 'streams_habitat\\_%%')
++  ORDER BY 1", DBI::dbQuoteString(conn, a)))$table_name
++flags <- c("accessible", "spawning", "rearing", "lake_rearing", "wetland_rearing")
++res <- do.call(rbind, lapply(tabs, function(t) {
++  cols <- q(sprintf("SELECT column_name, data_type FROM information_schema.columns
++    WHERE table_schema = %s AND table_name = %s ORDER BY ordinal_position",
++    DBI::dbQuoteString(conn, a), DBI::dbQuoteString(conn, t)))
++  cols <- cols[cols$data_type != "USER-DEFINED", ]
++  if (grepl("^streams_habitat_", t)) {
++    cols <- cols[cols$column_name %in% c("id_segment", "watershed_group_code", flags), ]
++  }
++  sel <- ifelse(cols$data_type %in% c("double precision", "real", "numeric"),
++                sprintf("round(%s::numeric, 6) AS %s", cols$column_name, cols$column_name),
++                cols$column_name)
++  sel <- paste(sel, collapse = ", ")
++  w <- sprintf("watershed_group_code IN (%s)", lit(groups))
++  r <- q(sprintf(
++    "WITH x AS (SELECT %1$s FROM %2$s.%4$s WHERE %5$s),
++          y AS (SELECT %1$s FROM %3$s.%4$s WHERE %5$s)
++     SELECT (SELECT count(*) FROM x) n_a, (SELECT count(*) FROM y) n_b,
++            (SELECT count(*) FROM (SELECT * FROM x EXCEPT ALL SELECT * FROM y) d) only_a,
++            (SELECT count(*) FROM (SELECT * FROM y EXCEPT ALL SELECT * FROM x) d) only_b",
++    sel, a, b, t, w))
++  data.frame(table = t, r)
++}))
++DBI::dbDisconnect(conn)
++print(res, row.names = FALSE)
++if (nzchar(out)) utils::write.table(res, out, sep = "\t", quote = FALSE, row.names = FALSE)
++same <- all(res$n_a == res$n_b & res$only_a == 0 & res$only_b == 0)
++cat(sprintf("%s vs %s over %d groups: %s\n", a, b, length(groups),
++            if (same) "identical" else "DIFFERENT"))
++quit(status = if (same) 0 else 1)
+diff --git a/data-raw/logs/recompute_early_374/digest_test.R b/data-raw/logs/recompute_early_374/digest_test.R
+new file mode 100644
+index 00000000..58cb11d1
+--- /dev/null
++++ b/data-raw/logs/recompute_early_374/digest_test.R
+@@ -0,0 +1,116 @@
++#!/usr/bin/env Rscript
++# digest_test.R — link#374: is a group's recompute right when only its
++# dependency rule's groups are present? For one group G and each variant, a
++# scratch schema gets the `barriers` and `barrier_overrides` rows of:
++#
++#   all      every other group in the source schema (the full-run state)
++#   line     G's line-rule dependencies (recompute_deps.R; what the
++#            scheduler waits for)
++#   closure  G's outlet closure (#374's proposal; the negative control)
++#
++# then G is modelled into it as a run models it (LNK_HABITAT_GATE=0), and
++# recomputed as the driver recomputes it (wsg_recompute_one.R, LNK_LOG=0).
++# G's streams_access, streams_mapping_code and gated habitat flags are then
++# compared row by row with the `all` variant. `line` must match; `closure`
++# must not, for a group whose line dependencies reach outside its closure
++# (otherwise the test cannot tell the rules apart).
++#
++# Usage (repo root): Rscript data-raw/logs/recompute_early_374/digest_test.R \
++#   <WSG> <deps.tsv> <out dir> [source schema] [config]
++args   <- commandArgs(trailingOnly = TRUE)
++g      <- toupper(args[1]); deps_path <- args[2]; out <- args[3]
++src    <- if (length(args) >= 4L) args[4] else "fresh_default"
++config <- if (length(args) >= 5L) args[5] else "default"
++dir.create(out, showWarnings = FALSE, recursive = TRUE)
++
++suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
++conn <- DBI::dbConnect(RPostgres::Postgres(), dbname = "fwapg", host = "localhost",
++                       port = 5432L, user = "postgres", password = "postgres")
++q <- function(sql) DBI::dbGetQuery(conn, sql)
++x <- function(sql) DBI::dbExecute(conn, sql)
++lit <- function(v) paste(DBI::dbQuoteString(conn, v), collapse = ",")
++
++deps <- utils::read.delim(deps_path, stringsAsFactors = FALSE)
++sets <- list(
++  all     = setdiff(q(sprintf("SELECT DISTINCT watershed_group_code w FROM %s.barriers", src))$w, g),
++  line    = deps$dep[deps$rule == "line" & deps$wsg == g],
++  closure = deps$dep[deps$rule == "closure" & deps$wsg == g])
++cat(sprintf("%s: line %d groups, closure %d; line outside closure: %s\n", g,
++            length(sets$line), length(sets$closure),
++            paste(setdiff(sets$line, sets$closure), collapse = ",")))
++
++run <- function(env, script, log) {
++  rc <- system2("env", c(env, "Rscript", script, g, config), stdout = log, stderr = log)
++  if (!identical(as.integer(rc), 0L)) stop(script, " failed for ", g, "; see ", log, call. = FALSE)
++}
++
++cfg <- lnk_config(config)
++sp <- tolower(cfg$species)
++res <- list()
++for (v in names(sets)) {
++  s <- paste0("fresh_374d_", tolower(v))
++  t0 <- Sys.time()
++  x(sprintf("DROP SCHEMA IF EXISTS %s CASCADE", s))
++  cfg$pipeline$schema <- s
++  lnk_persist_init(conn, cfg, species = cfg$species)
++  for (tb in c("barriers", "barrier_overrides")) {
++    cols <- q(sprintf("SELECT column_name FROM information_schema.columns
++      WHERE table_schema = '%s' AND table_name = '%s' ORDER BY ordinal_position", s, tb))$column_name
++    if (length(sets[[v]])) {
++      x(sprintf("INSERT INTO %s.%s (%s) SELECT %s FROM %s.%s WHERE watershed_group_code IN (%s)",
++                s, tb, paste(cols, collapse = ","), paste(cols, collapse = ","), src, tb,
++                lit(sets[[v]])))
++    }
++    x(sprintf("ANALYZE %s.%s", s, tb))
++  }
++  run(c(paste0("LNK_SCHEMA=", s), "LNK_LOAD=loadall", "LNK_GUARD_DOWNSTREAM=warn",
++        "LNK_HABITAT_GATE=0"), "data-raw/wsg_run_one.R", file.path(out, paste0(g, "_", v, "_model.log")))
++  run(c(paste0("LNK_SCHEMA=", s), "LNK_LOAD=loadall", "LNK_LOG=0"),
++      "data-raw/wsg_recompute_one.R", file.path(out, paste0(g, "_", v, "_recompute.log")))
++  cat(sprintf("  %-8s built in %.1f min\n", v, as.numeric(difftime(Sys.time(), t0, units = "mins"))))
++}
++
++# Row-by-row comparison with `all`, per table, on the full key.
++cmp <- function(tb, cols) {
++  a <- "fresh_374d_all"
++  do.call(rbind, lapply(c("line", "closure"), function(v) {
++    b <- paste0("fresh_374d_", v)
++    have <- q(sprintf("SELECT 1 FROM information_schema.tables WHERE table_schema = '%s' AND table_name = '%s'", a, tb))
++    if (!nrow(have)) return(NULL)
++    if (is.null(cols)) {
++      cols <- setdiff(q(sprintf("SELECT column_name FROM information_schema.columns
++        WHERE table_schema = '%s' AND table_name = '%s'", a, tb))$column_name, "geom")
++    }
++    r <- q(sprintf(
++      "WITH x AS (SELECT %1$s FROM %2$s.%4$s WHERE watershed_group_code = '%5$s'),
++            y AS (SELECT %1$s FROM %3$s.%4$s WHERE watershed_group_code = '%5$s')
++       SELECT (SELECT count(*) FROM x) n_all, (SELECT count(*) FROM y) n_variant,
++              (SELECT count(*) FROM (SELECT * FROM x EXCEPT SELECT * FROM y) d) only_all,
++              (SELECT count(*) FROM (SELECT * FROM y EXCEPT SELECT * FROM x) d) only_variant",
++      paste(cols, collapse = ","), a, b, tb, g))
++    data.frame(wsg = g, table = tb, variant = v, r)
++  }))
++}
++flags <- c("id_segment", "watershed_group_code", "accessible", "spawning", "rearing",
++           "lake_rearing", "wetland_rearing")
++out_tab <- rbind(
++  cmp("streams_access", NULL),
++  cmp("streams_mapping_code", NULL),
++  do.call(rbind, lapply(sp, function(s) {
++    tb <- paste0("streams_habitat_", s)
++    have <- q(sprintf("SELECT column_name FROM information_schema.columns
++      WHERE table_schema = 'fresh_374d_all' AND table_name = '%s'", tb))$column_name
++    if (!length(have)) return(NULL)
++    cmp(tb, intersect(flags, have))
++  })))
++print(out_tab, row.names = FALSE)
++utils::write.table(out_tab, file.path(out, paste0(g, "_digest.tsv")), sep = "\t",
++                   quote = FALSE, row.names = FALSE)
++line_ok <- all(out_tab$only_all[out_tab$variant == "line"] == 0 &
++               out_tab$only_variant[out_tab$variant == "line"] == 0)
++closure_differs <- any(out_tab$only_all[out_tab$variant == "closure"] > 0 |
++                       out_tab$only_variant[out_tab$variant == "closure"] > 0)
++cat(sprintf("%s: line matches all: %s; closure differs: %s\n", g, line_ok, closure_differs))
++for (v in names(sets)) x(sprintf("DROP SCHEMA IF EXISTS fresh_374d_%s CASCADE", tolower(v)))
++DBI::dbDisconnect(conn)
++quit(status = if (line_ok) 0 else 1)
+diff --git a/data-raw/logs/recompute_early_374/headroom.sh b/data-raw/logs/recompute_early_374/headroom.sh
+new file mode 100644
+index 00000000..2ddbecc0
+--- /dev/null
++++ b/data-raw/logs/recompute_early_374/headroom.sh
+@@ -0,0 +1,54 @@
++#!/usr/bin/env bash
++# headroom.sh — link#374: does a -j8 recompute running beside the dispatcher's
++# modelling slow the modelling? A-B-A on one database: model the same groups
++# alone, then while a recompute pool runs, then alone again (so a cache that
++# warms between passes cannot read as contention).
++#
++# Model groups go to scratch <model schema>, recompute jobs to scratch
++# <recompute schema> (built by headroom_setup.R, views by
++# barriers_views_build.R) with LNK_LOG=0. Neither touches fresh_default.
++#
++# Usage (repo root): bash data-raw/logs/recompute_early_374/headroom.sh \
++#   <model schema> <model groups csv> <recompute schema> <recompute groups csv> <out dir> [width]
++set -euo pipefail
++MS="$1"; MG="$2"; RS="$3"; RG="$4"; OUT="$5"; W="${6:-8}"
++case "$MS$RS" in *fresh_default*) echo "refusing fresh_default" >&2; exit 1 ;; esac
++mkdir -p "$OUT/jobs"
++STOP="$OUT/STOP"; rm -f "$STOP"
++TSV="$OUT/headroom.tsv"
++printf 'pass\twsg\tstart_utc\tend_utc\tminutes\trc\n' > "$TSV"
++
++model_pass() {   # $1 = pass label
++  local w s e si ei rc
++  for w in $(printf '%s' "$MG" | tr ',' ' '); do
++    s=$(date -u +%s); si=$(date -u +%FT%TZ); rc=0
++    LNK_SCHEMA="$MS" LNK_LOAD=loadall LNK_GUARD_DOWNSTREAM=warn LNK_HABITAT_GATE=0 \
++      Rscript data-raw/wsg_run_one.R "$w" default > "$OUT/model_$1_$w.log" 2>&1 || rc=$?
++    e=$(date -u +%s); ei=$(date -u +%FT%TZ)
++    printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$1" "$w" "$si" "$ei" \
++      "$(awk -v a="$s" -v b="$e" 'BEGIN { printf "%.2f", (b - a) / 60 }')" "$rc" >> "$TSV"
++  done
++}
++
++echo "=== A1 alone $(date -u +%FT%TZ)"
++model_pass A1
++
++echo "=== B with a -j$W recompute $(date -u +%FT%TZ)"
++# Twenty passes over the recompute groups, more than B needs; each job checks
++# STOP before it starts, so the pool drains once B's modelling is done.
++for i in $(seq 1 20); do printf '%s\n' "$RG" | tr ',' '\n' | sed "s/\$/ $i/"; done \
++  | xargs -P "$W" -L 1 sh -c '
++      [ -f "$0" ] && exit 0
++      LNK_LOG=0 LNK_VIEWS_PREBUILT=1 LNK_LOAD=loadall LNK_SCHEMA="$1" \
++        Rscript data-raw/wsg_recompute_one.R "$3" default > "$2/jobs/$3_$4.log" 2>&1 || true
++    ' "$STOP" "$RS" "$OUT" &
++POOL=$!
++sleep 90
++model_pass B
++touch "$STOP"
++echo "  draining the pool $(date -u +%FT%TZ)"
++wait "$POOL" || true
++
++echo "=== A2 alone $(date -u +%FT%TZ)"
++model_pass A2
++echo "=== done $(date -u +%FT%TZ)"
+diff --git a/data-raw/logs/recompute_early_374/headroom_setup.R b/data-raw/logs/recompute_early_374/headroom_setup.R
+new file mode 100644
+index 00000000..8b141386
+--- /dev/null
++++ b/data-raw/logs/recompute_early_374/headroom_setup.R
+@@ -0,0 +1,52 @@
++#!/usr/bin/env Rscript
++# headroom_setup.R — link#374: a scratch schema the headroom benchmark can
++# recompute in without touching fresh_default. Holds the recompute groups'
++# persisted rows and EVERY group's barriers and barrier_overrides, so their
++# downstream walks see the whole province, as on a real run.
++#
++# Usage (repo root): Rscript data-raw/logs/recompute_early_374/headroom_setup.R \
++#                      <scratch schema> <groups csv> [source schema] [config]
++args <- commandArgs(trailingOnly = TRUE)
++dest   <- args[1]
++groups <- toupper(strsplit(args[2], ",", fixed = TRUE)[[1]])
++src    <- if (length(args) >= 3L) args[3] else "fresh_default"
++config <- if (length(args) >= 4L) args[4] else "default"
++stopifnot(grepl("^fresh_374", dest), dest != src)
++
++suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
++conn <- DBI::dbConnect(RPostgres::Postgres(), dbname = "fwapg", host = "localhost",
++                       port = 5432L, user = "postgres", password = "postgres")
++cfg <- lnk_config(config)
++cfg$pipeline$schema <- dest
++DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", dest))
++lnk_persist_init(conn, cfg, species = cfg$species)
++
++tabs <- DBI::dbGetQuery(conn, sprintf(
++  "SELECT c.table_name FROM information_schema.columns c
++   JOIN information_schema.tables t USING (table_schema, table_name)
++   WHERE c.table_schema = %s AND c.column_name = 'watershed_group_code'
++     AND t.table_type = 'BASE TABLE' AND c.table_name NOT LIKE 'log%%'
++   ORDER BY 1", DBI::dbQuoteString(conn, dest)))$table_name
++in_list <- paste(DBI::dbQuoteString(conn, groups), collapse = ",")
++for (t in tabs) {
++  have <- DBI::dbGetQuery(conn, sprintf(
++    "SELECT 1 FROM information_schema.tables WHERE table_schema = %s AND table_name = %s",
++    DBI::dbQuoteString(conn, src), DBI::dbQuoteString(conn, t)))
++  if (nrow(have) == 0L) next
++  cols <- intersect(
++    DBI::dbGetQuery(conn, sprintf("SELECT column_name FROM information_schema.columns
++      WHERE table_schema = %s AND table_name = %s ORDER BY ordinal_position",
++      DBI::dbQuoteString(conn, dest), DBI::dbQuoteString(conn, t)))$column_name,
++    DBI::dbGetQuery(conn, sprintf("SELECT column_name FROM information_schema.columns
++      WHERE table_schema = %s AND table_name = %s",
++      DBI::dbQuoteString(conn, src), DBI::dbQuoteString(conn, t)))$column_name)
++  where <- if (t %in% c("barriers", "barrier_overrides")) "" else
++    sprintf(" WHERE watershed_group_code IN (%s)", in_list)
++  n <- DBI::dbExecute(conn, sprintf("INSERT INTO %s.%s (%s) SELECT %s FROM %s.%s%s",
++    dest, t, paste(cols, collapse = ", "), paste(cols, collapse = ", "), src, t, where))
++  cat(sprintf("%-32s %9d rows\n", t, n))
++}
++DBI::dbExecute(conn, sprintf("ANALYZE %s.barriers", dest))
++DBI::dbExecute(conn, sprintf("ANALYZE %s.barrier_overrides", dest))
++DBI::dbDisconnect(conn)
++cat("=== headroom setup done\n")

@@ -21,3 +21,6 @@
 - Found: the scheduler acted on the final set only at its next 30 s poll (Run A's last groups waited 27 s), so early lost on this small run. Fixed (1 s wake on final/stop), test + mutant.
 - Run A2 (`20261026_181957-51c00c64`, early with the wake fix, `fresh_374c`): exit 0, final set started 1 s after the last landing, tail 0.5 min (B 0.65); identical to B; verifier passes.
 - `/code-check branch` round 1 spawned 18:20 UTC. NATR digest test started 18:3x UTC.
+- NATR digest: line rule matches all (47,302 segments), closure differs on 2 (the two Fraser-coded segments).
+- Code-check round 1 (18:20-18:32 UTC): 6 findings, all fixed — audit compares like clocks (launch epoch vs state_utc; DB vs DB) and audits open rows, any error exits 2; guarded substitutions in the early finish; the fallback waits on a dead scheduler's still-running jobs (launched.tsv now records pids); empty dependency map refused (script + driver); view key also hashes pg_get_viewdef (a replace by another writer is noticed; test + mutant); digest_test refuses a vacuous pass. Accepted: the simulation's match() on equal bucket sizes (one host per group in the replayed run).
+- Slip: edited digest_test.R while the NATR run of it was in flight; restored the committed bytes within seconds (the run was blocked in a subprocess) and re-applied after it exited.

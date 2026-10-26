@@ -301,48 +301,65 @@ cols_streams_near_river <- c(
 
 #' The definition key a view carries in its comment (link#374)
 #'
+#' Two digests: of the statement that made the view, and of the definition
+#' Postgres holds for it (`pg_get_viewdef()`). A comment survives a later
+#' `CREATE OR REPLACE VIEW`, so the second one is what notices a replace by
+#' another writer (an older checkout, a hand edit) that left the comment alone.
+#'
 #' @param sql The view's `CREATE OR REPLACE VIEW` statement.
-#' @return `"lnk_def:<md5 of sql>"`.
+#' @param def The view's definition as `pg_get_viewdef()` returns it.
+#' @return `"lnk_def:<md5 of sql>:<md5 of def>"`.
 #' @noRd
-.lnk_view_def_key <- function(sql) {
-  paste0("lnk_def:", digest::digest(sql, algo = "md5", serialize = FALSE))
+.lnk_view_def_key <- function(sql, def) {
+  md5 <- function(x) digest::digest(x, algo = "md5", serialize = FALSE)
+  paste0("lnk_def:", md5(sql), ":", md5(def))
 }
 
-#' A view's comment, read from the catalog, which locks no table
+#' A view's comment and definition, read from the catalog
 #'
-#' @return The comment, `NA` for a view without one, or `character(0)` when
-#'   the view is absent or the catalog cannot be read.
+#' `pg_get_viewdef()` reads the view's rewrite rule from the catalog and takes
+#' no lock that a reader's AccessShareLock would block.
+#'
+#' @return A one-row data frame (`description`, `def`), or zero rows when the
+#'   view is absent or the catalog cannot be read.
 #' @noRd
-.lnk_view_comment <- function(conn, schema, name) {
+.lnk_view_state <- function(conn, schema, name) {
   tryCatch(DBI::dbGetQuery(conn, sprintf(
-    "SELECT d.description FROM pg_catalog.pg_class c
+    "SELECT d.description, pg_get_viewdef(c.oid) AS def FROM pg_catalog.pg_class c
      JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
      LEFT JOIN pg_catalog.pg_description d ON d.objoid = c.oid
        AND d.classoid = 'pg_catalog.pg_class'::regclass AND d.objsubid = 0
      WHERE n.nspname = %s AND c.relname = %s AND c.relkind = 'v'",
-    .lnk_quote_literal(schema), .lnk_quote_literal(name)))$description,
-    error = function(e) character(0))
+    .lnk_quote_literal(schema), .lnk_quote_literal(name))),
+    error = function(e) data.frame(description = character(0), def = character(0)))
 }
 
 #' Create or replace a view only when its definition changed (link#374)
 #'
 #' `CREATE OR REPLACE VIEW` takes an AccessExclusiveLock even when nothing
 #' changes, so it waits behind every reader of the view and every new reader
-#' waits behind it. The statement's md5 is kept in the view's comment, read
-#' from the catalog first; a view whose comment matches is left alone. An
-#' absent view, one without the comment, or an unreadable catalog issues the
-#' statement, as `.lnk_index_create()` does.
+#' waits behind it. The view's comment carries [.lnk_view_def_key()]; a view
+#' whose comment matches both this statement and the definition it now holds
+#' is left alone. An absent view, a missing or stale comment, or an unreadable
+#' catalog issues the statement, as `.lnk_index_create()` does.
 #'
 #' @param sql The `CREATE OR REPLACE VIEW` statement.
 #' @return Invisibly, whether it was issued.
 #' @noRd
 .lnk_view_replace <- function(conn, schema, name, sql) {
-  key <- .lnk_view_def_key(sql)
-  have <- .lnk_view_comment(conn, schema, name)
-  if (length(have) == 1L && identical(have, key)) return(invisible(FALSE))
+  have <- .lnk_view_state(conn, schema, name)
+  if (nrow(have) == 1L && !is.na(have$description) &&
+      identical(have$description, .lnk_view_def_key(sql, have$def))) {
+    return(invisible(FALSE))
+  }
   .lnk_db_execute(conn, sql)
-  .lnk_db_execute(conn, sprintf("COMMENT ON VIEW %s.%s IS %s", schema, name,
-                                .lnk_quote_literal(key)))
+  # A definition that cannot be read back gets no key, so the next call
+  # replaces the view again: a lock taken once more, never a view skipped.
+  now <- .lnk_view_state(conn, schema, name)
+  if (nrow(now) == 1L && !is.na(now$def)) {
+    .lnk_db_execute(conn, sprintf("COMMENT ON VIEW %s.%s IS %s", schema, name,
+                                  .lnk_quote_literal(.lnk_view_def_key(sql, now$def))))
+  }
   invisible(TRUE)
 }
 
