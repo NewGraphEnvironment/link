@@ -1,8 +1,8 @@
 # loadall_260 — the recompute job prologue, measured
 
 Evidence for link#260 (tracked on #377), 2026-10-26, on the dispatcher (10 CPUs; local
-docker `fwapg` idle, no active client backend; macOS indexing about 1.3 cores
-throughout). link HEAD `c7e23509`, installed link 0.68.0, R 4.5.2 (`env.txt`).
+docker `fwapg` with no active client backend, and a 1-minute load average of 4.03 from
+other processes before the run). link HEAD `c7e23509`, installed link 0.68.0, R 4.5.2 (`env.txt`).
 
 ## The question
 
@@ -59,9 +59,11 @@ it.
 
 **Not material, and not changed.** The `LNK_LOAD` contract stays: `load_all()` is what
 guarantees each job runs the tree verified at pre-flight, and removing it buys 21 s of
-a 110 min phase. The prologue is a real share only of a short group in isolation (13 %
-of SALR's 11 s), and the pool runs groups in parallel, longest first, so short groups
-never sit on its critical path. The recompute's time is its work: the next levers are
+a 110 min phase. Every job's prologue is on the pool's critical path, at a weight of one
+slot in eight, because the span is set by the summed work over the slots (104.6 min),
+not by the longest job (22.75 min); that is the 240 × 1.63 s / 8 above. It is a real
+share only of a short group taken alone: 1.63 s on SALR's 11 s of work is 12.9 % of the
+job. The recompute's time is its work: the next levers are
 #374 (overlap it with the slowest leg) and #261 (CHWK).
 
 ## Notes
@@ -69,6 +71,10 @@ never sit on its critical path. The recompute's time is its work: the next lever
 - #260 cites the prologue at `wsg_recompute_one.R:24-28` (v0.48.0); it is now `:26-30`.
 - 110 min was a hand-built figure in `research/study_area_run.md`; no `_phases.tsv`
   exists for that run (phases began with #375). `log_recompute` gives 110.3 min.
-- `lnk_load_overrides()` reads 0.24 s under `library(link)` against 0.11 s under
-  `load_all()`, in every condition. That is the installed 0.68.0 against the source
-  tree, and it leaves the totals above unchanged in direction.
+- Compare the prologue totals, not the load stage alone. `load_all()` loads link's
+  Imports inside its own stage, while `library(link)` defers them: its first
+  `lnk_load_overrides()` call loads 19 namespaces (crate, dplyr, readr, …) and takes
+  0.24 s, its second 0.05 s. So `lnk_load_overrides()` reads 0.24 / 0.30 / 0.33 s under
+  `library(link)` against 0.11 / 0.15 / 0.15 s under `load_all()` (sequence / 8 at once
+  / beside 7 busy), and the load-stage column charges `load_all()` with namespace
+  loading `library(link)` pays later. The totals and the 0.71 s saving are unaffected.
