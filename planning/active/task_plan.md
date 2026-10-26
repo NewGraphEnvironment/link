@@ -48,8 +48,8 @@ Approved by the operator at plan approval, 2026-10-26.
 
 ## Phase 4: prove it on the dispatcher and the worker
 
-- [ ] A small run on the dispatcher plus the persistent worker (no cloud spend), early recompute on, into scratch `fresh_374a`, with dependencies forced to land after their dependants (on the slower host, or `LNK_TEST_STALL_WSG`; review AC1). Repeat with `--recompute-at-end` into `fresh_374b`. Sample `pg_stat_activity` lock waits and statement timeouts throughout (review A3).
-- [ ] Acceptance: per-group digests (after rounding) of `streams_access`, `streams_mapping_code` and the gated habitat flags match between a and b; the readiness audit and `study_area_verify.sql` pass on both; the recompute tail (last job end minus the later of the last leg and the last consolidate; review AC3) is shorter in a than in b.
+- [x] A small run on the dispatcher plus the persistent worker (no cloud spend), early recompute on, into scratch `fresh_374a`, with dependencies forced to land after their dependants (on the slower host, or `LNK_TEST_STALL_WSG`; review AC1). Repeat with `--recompute-at-end` into `fresh_374b`. Sample `pg_stat_activity` lock waits and statement timeouts throughout (review A3).
+- [x] Acceptance: per-group digests (after rounding) of `streams_access`, `streams_mapping_code` and the gated habitat flags match between a and b; the readiness audit and `study_area_verify.sql` pass on both; the recompute tail (last job end minus the later of the last leg and the last consolidate; review AC3) is shorter in a than in b.
 
 ## Phase 5: record and release
 

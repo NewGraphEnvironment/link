@@ -65,6 +65,20 @@ Full width is best despite the slowdown, because the pool is throughput-bound. S
 
 Not modelled: the consolidates' own slowdown (they share the database), and a five-host run's balance (#376). The provincial run that uses this measures both.
 
+## Runs on the dispatcher and the persistent worker
+
+Ten groups, `--config=default --buckets-exact --recompute-jobs=4`, no cloud host, each into its own scratch schema. The dispatcher modelled GLAR, SWIR, JENR, UJER, NAHR, BELA and KUSR; `worker1` modelled TESR, ATLL and TUYR. The groups were picked from `deps.tsv` so that the dispatcher's first five read a worker group, and so land minutes before they may start, while BELA and KUSR read nothing in the run.
+
+| run | run_uid | recompute | outcome | tail after the last landing |
+|---|---|---|---|---|
+| A | `20261026_174957-11297e26` (`run_a/`) | early | exit 0; audit 18 pairs, 0 early; no lock waits sampled (`run_a_waits.tsv`) | 0.8 min |
+| B | `20261026_180139-59d231d0` (`run_b/`) | `--recompute-at-end` | exit 0 | 0.65 min |
+| A2 | `20261026_181957-51c00c64` (`run_a2/`) | early, with the wake fix | exit 0; audit clean | 0.5 min |
+
+- **The ordering was exercised.** In A, GLAR landed at 17:52:39 and started at 18:00:05, 3 s after the worker's consolidate landed TESR and ATLL; NAHR and SWIR likewise. BELA started 3 s after it landed, while the dispatcher was still modelling KUSR. On a shared line the rule runs both ways: TESR reads the five dispatcher groups on the Teslin.
+- **Same outputs.** A, B and A2 match row for row in all 13 output tables (348,857 segments; `ab_compare*.tsv`, `ab_compare.R`). A planted one-row difference in B's mapping code was caught. `study_area_verify.sql` passes all three at `expected_n=10`. (Against `fresh_default` the ten groups also match: nothing since 0.68.0 changes model outputs, so it is no negative control.)
+- **A found a latency bug.** Its last groups waited 27 s for the scheduler's next 30 s poll to see the final set, so early lost to B on a run this small. The scheduler now sleeps a second at a time and wakes on the final set or a stop; A2 started the final set 1 s after the last landing.
+
 ## Wrong turns
 
 - An "inside its holder's drainage" test flagged 1.43 M rows as foreign. A group is not one drainage, so the outlet is the wrong reference point.

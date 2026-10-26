@@ -1,0 +1,12 @@
+NOTICE:  schema "pg_temp" does not exist, skipping
+
+NOTICE:  table "rd_rep" does not exist, skipping
+
+NOTICE:  table "rd_anc" does not exist, skipping
+
+NOTICE:  table "rd_anc_all" does not exist, skipping
+
+NOTICE:  table "rd_pathblk" does not exist, skipping
+
+[recompute_deps] FWA rules in 74.8 s
+[recompute_deps] line: 2211 pairs over 208 groups (median 9 per group with any)
