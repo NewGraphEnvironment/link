@@ -1,0 +1,10 @@
+[1] 0
+[1] 0
+[wsg_recompute_one] CAMB prologue 1.63 s
+NOTICE:  table "zz_lnk_access_prior_camb" does not exist, skipping
+
+NOTICE:  table "zz_lnk_streams_camb" does not exist, skipping
+
+There were 11 warnings (use warnings() to see them)
+[wsg_recompute_one] CAMB habitat gate: 0 segments (0.000 km) settled
+[wsg_recompute_one] CAMB recomputed in 4.80 min (persist=fresh_374r)

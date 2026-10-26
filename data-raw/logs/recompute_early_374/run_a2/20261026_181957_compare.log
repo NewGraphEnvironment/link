@@ -1,0 +1,22 @@
+[study_area_compare] ATLL ERROR: no shared mapping_code_<sp> columns to compare for ATLL (link: GR,RB; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] KUSR ERROR: no shared mapping_code_<sp> columns to compare for KUSR (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+Warning message:
+reference has 0 rows for TUYR — not modelled there; returning NA stats. 
+[study_area_compare] 14 rows across 8/10 WSGs -> /Users/airvine/Projects/repo/link_374run/data-raw/logs/study_area_run/20261026_181957_compare.csv
+# A tibble: 14 × 7
+   wsg   species total_segs match_pct n_diffs top_pattern      top_pattern_count
+ * <chr> <chr>        <int>     <dbl>   <int> <chr>                        <int>
+ 1 BELA  CH           15539      99.9      22 "ACCESS;NONE | "                 8
+ 2 BELA  CM           15539      99.9      19 "ACCESS;NONE | "                 8
+ 3 BELA  CO           15539      99.7      40 "REAR;NONE | AC…                11
+ 4 BELA  PK           15539      99.9      17 "ACCESS;NONE | "                 8
+ 5 BELA  SK           15539      99.6      59 "ACCESS;NONE | …                44
+ 6 BELA  ST           15539      99.7      40 "REAR;NONE | AC…                14
+ 7 GLAR  CH           14350      85.8    2032 "REAR;NONE | AC…              1269
+ 8 JENR  CH           11847      93.6     763 "REAR;NONE | AC…               566
+ 9 NAHR  CH           21349      90.0    2144 "REAR;NONE | AC…              1334
+10 SWIR  BT           18489      86.4    2517 "ACCESS;NONE | …               682
+11 SWIR  CH           18489      86.5    2493 "REAR;NONE | AC…              1022
+12 TESR  CH           18769      87.8    2286 "REAR;NONE | AC…              1566
+13 TUYR  BT               0      NA        NA  <NA>                           NA
+14 UJER  CH           14421      88.8    1618 "REAR;NONE | AC…              1252

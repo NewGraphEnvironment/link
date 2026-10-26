@@ -1,6 +1,6 @@
 # Study-area run (tunnel-free, M1-dispatch)
 
-**Verified:** 2026-10-17 (the province-wide section and the corrected lines) · **Issues:** #175, #246, #347, #348 ·
+**Verified:** 2026-10-26 (the early recompute, #374); 2026-10-17 (the province-wide section and the corrected lines) · **Issues:** #175, #246, #347, #348, #374 ·
 **Produced by:** `data-raw/study_area_run.sh`; logs `data-raw/logs/provincial_246/`,
 `data-raw/logs/study_area_run/20261017_*`
 
@@ -96,6 +96,21 @@ non-obvious things had to be true for it to be cheap:
    table has that column (persist) — the original `id_segment IN (…)` query is
    cartesian against persist because `id_segment` is per-WSG, not globally
    unique (link#203).
+
+**Since link#374 (2026-10-26) the recompute does not wait for the whole run.**
+A group's recompute reads the barrier and override rows of every group holding
+one on its downstream path, and nothing else of anyone's. So each group is
+recomputed once it, and every such group, has landed on the dispatcher. That
+set is not the drainage closure: a watershed group is not one drainage, and
+gradient barriers are persisted under every group touching a line, so the
+outlet closure misses readers in 150 of 241 groups. The rule used
+(`recompute_deps.R`, line rule) is every group touching a line whose code is an
+ancestor of, or equal to, one of the group's. It is complete by construction
+(median 9 readers), and a recompute of TOOD over only those groups digests
+identical to one over every group (over only its closure: 2 segments differ).
+Replayed on 2026-10-23 without its stalls, with the measured load on the
+dispatcher (1.2x modelling at `-j4`, 2x at `-j8`), it ends the recompute 36.7
+min sooner at `-j8`. Evidence: `data-raw/logs/recompute_early_374/`.
 
 ## Gotchas that cost real time (2026-05-25)
 

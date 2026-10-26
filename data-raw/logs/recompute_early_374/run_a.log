@@ -1,0 +1,131 @@
+=== study_area_run 20261026_174957 ===
+  run_uid:      20261026_174957-11297e26
+  run_label:    <none>
+  config:       default
+  branch:       374-run (cyphers run this ref)
+  persist:      fresh_374a
+  cyphers:      <none> (0)
+  workers:      worker1 (1; persistent, never burned)
+  log dir:      /Users/airvine/Projects/repo/link_374run/data-raw/logs/study_area_run
+  vintage max:  7 d
+  recompute -j: 4
+  recompute:    early (each group once it and every group it reads have landed; link#374)
+  statement:    30 min per modelling statement (PGOPTIONS, both legs); recompute 10 min (wsg_recompute_one.R)
+  buckets:      exact (--buckets-exact; each --focal= list as given; the recompute settles access)
+  phases:       /Users/airvine/Projects/repo/link_374run/data-raw/logs/study_area_run/20261026_174957_phases.tsv
+  [phase] refresh skipped
+=== pre-flight (local; pre-spend) ===
+  ✓ dispatcher fresh exports what the pipeline calls
+  ✓ origin/374-run is at HEAD
+  ✓ fwapg_sha 202bc8d46309 (exported to all hosts)
+  ✓ bcfishobs_sha 08630cf4ac14 (exported to all hosts)
+  ✓ fresh_sha e9793047cc8f (clean)
+  ✓ bcfp reference pinned at v0.7.15-50-g620dbe4 (exported to all hosts)
+    ok   discharge (fwapg) loaded: whse_basemapping.fwa_stream_networks_discharge
+  ✓ discharge (fwapg) loaded on the dispatcher
+    [preflight] primitive vintage (window 7 d) - OK, oldest 3.4 d (whse_fish.pscis_assessment_svw) [judged by load stamp: 4, statistics: 0, none: 0]
+  ✓ dispatcher primitives within 7 d
+  ✓ worker1: answers, its own database
+  ✓ pre-flight clean (tunnel-free)
+=== resolve exact buckets (--buckets-exact; order as given, species filter only) ===
+  dispatcher (focal=GLAR,SWIR,JENR,UJER,NAHR,BELA,KUSR): GLAR,SWIR,JENR,UJER,NAHR,BELA,KUSR
+  worker1 (focal=TESR,ATLL,TUYR): TESR,ATLL,TUYR
+=== workers: prior rows ===
+  ✓ worker1: fresh_374a holds no rows for its bucket
+  run groups: /Users/airvine/Projects/repo/link_374run/data-raw/logs/study_area_run/20261026_174957_run_wsgs.tsv
+=== dispatcher persist (fresh_374a): init ===
+  ✓ fresh_374a initialised (see /Users/airvine/Projects/repo/link_374run/data-raw/logs/study_area_run/20261026_174957_persist_init.log)
+=== early recompute: log tables, barrier views, dependency map ===
+  ✓ log tables present in fresh_374a
+  ✓ barrier views built once for fresh_374a
+  [phase] views ok 2026-10-26T17:50:11Z -> 2026-10-26T17:50:13Z (0.0 min)
+=== dispatcher persist (fresh_374a): backup in the background ===
+  backup -> /tmp/fresh_374a_pre_run_20261026_174957.dump (see /Users/airvine/Projects/repo/link_374run/data-raw/logs/study_area_run/20261026_174957_backup.log)
+=== prep workers (worker_prep.sh): worker1 ===
+  [phase] prep worker1 ok 2026-10-26T17:50:13Z -> 2026-10-26T17:50:18Z (0.1 min)
+  ✓ workers prepped
+=== pre-flight (hosts; post-prep, pre-write) ===
+[preflight] host parity - OK across 2 host(s): m1, <worker1>
+  ✓ host parity clean (2 hosts)
+  ✓ cy[worker1] primitives within 7 d
+  [phase] backup ok 2026-10-26T17:50:13Z -> 2026-10-26T17:50:15Z (0.0 min)
+  ✓ pre-run backup taken (see /Users/airvine/Projects/repo/link_374run/data-raw/logs/study_area_run/20261026_174957_backup.log)
+  ✓ dependency map: 2211 pairs (see /Users/airvine/Projects/repo/link_374run/data-raw/logs/study_area_run/20261026_174957_recompute_deps.log)
+  [phase] prep ok 2026-10-26T17:49:57Z -> 2026-10-26T17:51:30Z (1.6 min, 10 groups)
+=== run buckets (DS-first) ===
+=== legs: each remote host is consolidated when its own leg ends (a cypher then burned, a worker released) ===
+  early recompute scheduler started (-j4; see /Users/airvine/Projects/repo/link_374run/data-raw/logs/study_area_run/20261026_174957_recompute_scheduler.log)
+  [phase] model worker1 ok 2026-10-26T17:51:31Z -> 2026-10-26T17:57:18Z (5.8 min, 3 groups)
+=== worker1: leg ended (exit 0); account, consolidate, release ===
+  ✓ worker1: 3/3 WSGs accounted for (3 finished, 0 SKIP; database)
+  [phase] account worker1 ok 2026-10-26T17:57:18Z -> 2026-10-26T17:57:19Z (0.0 min, 3 groups)
+  consolidating worker1: 3 groups (see /Users/airvine/Projects/repo/link_374run/data-raw/logs/study_area_run/20261026_174957_consolidate_worker1.log)
+  ✓ worker1: consolidated
+  ✓ worker1: no finished group left on the host after consolidate — may be released
+  [phase] consolidate worker1 ok 2026-10-26T17:57:19Z -> 2026-10-26T18:00:03Z (2.7 min, 3 groups)
+  [phase] burn worker1 skipped
+  [phase] model dispatcher ok 2026-10-26T17:51:30Z -> 2026-10-26T18:00:08Z (8.6 min, 7 groups)
+  ✓ host runs finished (per-WSG soft-fail; gaps surface in compare)
+=== dispatcher completeness (database) ===
+  ✓ dispatcher: 7/7 WSGs accounted for (7 finished, 0 SKIP; database)
+  [phase] account dispatcher ok 2026-10-26T18:00:08Z -> 2026-10-26T18:00:08Z (0.0 min, 7 groups)
+=== verify WSG coverage in fresh_374a (run_uid 20261026_174957-11297e26) ===
+  10/10 run WSGs have rows from a build this run finished
+  classes: /Users/airvine/Projects/repo/link_374run/data-raw/logs/study_area_run/20261026_174957_coverage.tsv
+  [phase] coverage ok 2026-10-26T18:00:08Z -> 2026-10-26T18:00:08Z (0.0 min, 10 groups)
+=== post-consolidate recompute (lnk_access, 10 WSGs, -j4) ===
+  5 of 10 group(s) recomputed while the legs ran (see /Users/airvine/Projects/repo/link_374run/data-raw/logs/study_area_run/20261026_174957_recompute_scheduler.log)
+[fanout] recompute - OK: 10/10 job(s) succeeded
+  ✓ recompute: 10/10 WSGs
+  ✓ recompute audit: no group started before a group it reads had landed
+  [phase] recompute ok 2026-10-26T17:59:04Z -> 2026-10-26T18:00:57Z (1.9 min, 10 groups)
+=== compare (tunnel-free) ===
+  ✓ compare CSV: /Users/airvine/Projects/repo/link_374run/data-raw/logs/study_area_run/20261026_174957_compare.csv
+  [phase] compare ok 2026-10-26T18:00:57Z -> 2026-10-26T18:01:06Z (0.1 min, 10 groups)
+=== summary ===
+  phases (/Users/airvine/Projects/repo/link_374run/data-raw/logs/study_area_run/20261026_174957_phases.tsv):
+    phase       host       start_utc            end_utc              minutes groups status
+    refresh                                                                         skipped
+    views                  2026-10-26T17:50:11Z 2026-10-26T17:50:13Z     0.0        ok
+    backup                 2026-10-26T17:50:13Z 2026-10-26T17:50:15Z     0.0        ok
+    prep        worker1    2026-10-26T17:50:13Z 2026-10-26T17:50:18Z     0.1        ok
+    prep                   2026-10-26T17:49:57Z 2026-10-26T17:51:30Z     1.6     10 ok
+    model       worker1    2026-10-26T17:51:31Z 2026-10-26T17:57:18Z     5.8      3 ok
+    account     worker1    2026-10-26T17:57:18Z 2026-10-26T17:57:19Z     0.0      3 ok
+    consolidate worker1    2026-10-26T17:57:19Z 2026-10-26T18:00:03Z     2.7      3 ok
+    burn        worker1                                                             skipped
+    model       dispatcher 2026-10-26T17:51:30Z 2026-10-26T18:00:08Z     8.6      7 ok
+    account     dispatcher 2026-10-26T18:00:08Z 2026-10-26T18:00:08Z     0.0      7 ok
+    coverage               2026-10-26T18:00:08Z 2026-10-26T18:00:08Z     0.0     10 ok
+    recompute              2026-10-26T17:59:04Z 2026-10-26T18:00:57Z     1.9     10 ok
+    compare                2026-10-26T18:00:57Z 2026-10-26T18:01:06Z     0.1     10 ok
+  critical path: 11.2 min (first start to last end)
+  longest model leg: 8.6 min (dispatcher)
+  consolidate tail: 0.0 min (last consolidate end past the last model end)
+  run WSGs:        ATLL,BELA,GLAR,JENR,KUSR,NAHR,SWIR,TESR,TUYR,UJER
+  recomputed WSGs: ATLL,BELA,GLAR,JENR,KUSR,NAHR,SWIR,TESR,TUYR,UJER
+  compare CSV: /Users/airvine/Projects/repo/link_374run/data-raw/logs/study_area_run/20261026_174957_compare.csv
+[study_area_compare] ATLL ERROR: no shared mapping_code_<sp> columns to compare for ATLL (link: GR,RB; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] KUSR ERROR: no shared mapping_code_<sp> columns to compare for KUSR (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+Warning message:
+reference has 0 rows for TUYR — not modelled there; returning NA stats. 
+[study_area_compare] 14 rows across 8/10 WSGs -> /Users/airvine/Projects/repo/link_374run/data-raw/logs/study_area_run/20261026_174957_compare.csv
+# A tibble: 14 × 7
+   wsg   species total_segs match_pct n_diffs top_pattern      top_pattern_count
+ * <chr> <chr>        <int>     <dbl>   <int> <chr>                        <int>
+ 1 BELA  CH           15539      99.9      22 "ACCESS;NONE | "                 8
+ 2 BELA  CM           15539      99.9      19 "ACCESS;NONE | "                 8
+ 3 BELA  CO           15539      99.7      40 "REAR;NONE | AC…                11
+ 4 BELA  PK           15539      99.9      17 "ACCESS;NONE | "                 8
+ 5 BELA  SK           15539      99.6      59 "ACCESS;NONE | …                44
+ 6 BELA  ST           15539      99.7      40 "REAR;NONE | AC…                14
+ 7 GLAR  CH           14350      85.8    2032 "REAR;NONE | AC…              1269
+ 8 JENR  CH           11847      93.6     763 "REAR;NONE | AC…               566
+ 9 NAHR  CH           21349      90.0    2144 "REAR;NONE | AC…              1334
+10 SWIR  BT           18489      86.4    2517 "ACCESS;NONE | …               682
+11 SWIR  CH           18489      86.5    2493 "REAR;NONE | AC…              1022
+12 TESR  CH           18769      87.8    2286 "REAR;NONE | AC…              1566
+13 TUYR  BT               0      NA        NA  <NA>                           NA
+14 UJER  CH           14421      88.8    1618 "REAR;NONE | AC…              1252
+=== study_area_run done ===
+  ✓ redacted host addresses in 28 log file(s)

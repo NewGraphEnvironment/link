@@ -113,6 +113,12 @@
 #                           run wall clock single-threaded (link#250). N=1
 #                           reproduces the serial path and is the control arm
 #                           of data-raw/recompute_parity.sh.
+#   --recompute-at-end      recompute every group after the last leg and
+#                           consolidate, as before link#374. By default each
+#                           group is recomputed while the legs still run, as
+#                           soon as it and every group whose barrier rows its
+#                           walk reads (recompute_deps.R, line rule) have
+#                           landed on the dispatcher (study_area_recompute.sh).
 #   --statement-timeout=N   minutes any one statement of a group's modelling
 #                           may run (default 30, 1..1440; link#371). Set as
 #                           PGOPTIONS='-c statement_timeout=<N>min' on BOTH
@@ -228,6 +234,8 @@ RUN_UID_ARG=""
 WSGS_ARG=""
 # --buckets-exact: each --focal= list is taken as the host's bucket (link#361).
 BUCKETS_EXACT=0
+# --recompute-at-end: the pool after the last consolidate (link#374).
+RECOMPUTE_EARLY=1
 # --workers=: persistent hosts reached by their own ssh targets (link#376).
 WORKERS_ARG=""
 FOCAL_ARR=()
@@ -236,6 +244,7 @@ for arg in "$@"; do
     --cy-workspaces=*) CY_WS="${arg#--cy-workspaces=}" ;;
     --workers=*)       WORKERS_ARG="${arg#--workers=}" ;;
     --buckets-exact)   BUCKETS_EXACT=1 ;;
+    --recompute-at-end) RECOMPUTE_EARLY=0 ;;
     --config=*)        CONFIG="${arg#--config=}" ;;
     --schema=*)        SCHEMA_OVERRIDE="${arg#--schema=}"
                        [ -n "$SCHEMA_OVERRIDE" ] || { echo "FATAL: --schema= requires a non-empty value" >&2; exit 1; } ;;
@@ -338,6 +347,8 @@ if [ "$RECOMPUTE_ONLY" = "1" ]; then
     echo "  it dispatches nothing." >&2
     exit 1
   fi
+  # It recomputes after the fact by definition.
+  RECOMPUTE_EARLY=0
 else
   [ -z "$RUN_UID_ARG" ] || {
     echo "FATAL: --run-uid= is for --recompute-only; a run mints its own" >&2; exit 1; }
@@ -559,6 +570,9 @@ echo "  workers:      ${WK_KEYS[*]:-<none>} ($N_WK; persistent, never burned)"
 echo "  log dir:      $LOG_DIR"
 echo "  vintage max:  ${VINTAGE_MAX_DAYS} d"
 echo "  recompute -j: $RECOMPUTE_JOBS"
+[ "$RECOMPUTE_ONLY" = "1" ] || { [ "$RECOMPUTE_EARLY" = "1" ] \
+  && echo "  recompute:    early (each group once it and every group it reads have landed; link#374)" \
+  || echo "  recompute:    at the end (--recompute-at-end: after the last leg and consolidate)"; }
 [ "$RECOMPUTE_ONLY" = "1" ] || echo "  statement:    ${STATEMENT_TIMEOUT_MIN} min per modelling statement (PGOPTIONS, both legs); recompute 10 min (wsg_recompute_one.R)"
 # The stall hook (link#371) rides the driver's environment onto the local leg,
 # so one left exported in the operator's shell would stall a real group.
@@ -588,6 +602,8 @@ source "$REPO_ROOT/data-raw/study_area_phases.sh"
 # Each cypher consolidated and burned when its own leg ends (link#369).
 # shellcheck source=study_area_legs.sh
 source "$REPO_ROOT/data-raw/study_area_legs.sh"
+# recompute_landed, recompute_ready, recompute_scheduler (link#374).
+source "$REPO_ROOT/data-raw/study_area_recompute.sh"
 # Remote commands judged by what they print, never by ssh's exit status
 # (link#376).
 # shellcheck source=study_area_remote.sh
@@ -656,6 +672,9 @@ on_exit() {
   # can stop the burn below.
   phases_close_open || true
   [ "${PHASES_REPORTED:-0}" = "1" ] || phases_report || true
+  # The early recompute (link#374) starts nothing more; jobs already running
+  # finish, as a killed pool's always have. The scheduler polls the file.
+  [ -z "${RC_SCHED_PID:-}" ] || touch "$RC_STOP" 2>/dev/null || true
   burn_cyphers || rc=$?
   # A worker's prep still running (the run died during the cyphers' spin)
   # would keep writing ssh's output into its log after the redaction below
@@ -1583,10 +1602,12 @@ echo "  run groups: $RUN_WSGS_TSV"
 # no leg is dispatched until it has succeeded. Its use is the earlier builds'
 # log history (#354) and a rollback of the whole schema to before the run; the
 # recompute rebuilds access and mapping code, not the persisted groups.
-# Dispatcher-only runs consolidate nothing and take none, as before.
+# Dispatcher-only runs consolidate nothing and take none, as before. With the
+# early recompute (link#374) every run initialises the persist here, because
+# the barrier views below are built over its tables before any leg writes.
 BACKUP_RC_FILE=""
-if [ "$N_HOSTS" -gt 0 ]; then
-  echo "=== dispatcher persist ($SCHEMA): init, then backup in the background ==="
+if [ "$N_HOSTS" -gt 0 ] || [ "$RECOMPUTE_EARLY" = "1" ]; then
+  echo "=== dispatcher persist ($SCHEMA): init ==="
   ( cd "$REPO_ROOT" && Rscript -e "
 suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
 conn <- DBI::dbConnect(RPostgres::Postgres(), host = 'localhost', port = 5432L,
@@ -1601,6 +1622,45 @@ cat('=== persist init done\\n')
     && grep -qx "=== persist init done" "$LOG_DIR/${TS}_persist_init.log" \
     || { echo "FATAL: could not initialise $SCHEMA on the dispatcher; see $LOG_DIR/${TS}_persist_init.log"; exit 1; }
   echo "  ✓ $SCHEMA initialised (see $LOG_DIR/${TS}_persist_init.log)"
+fi
+
+# --- the early recompute's prep (link#374) -----------------------------------
+# A group is recomputed while the legs still run, once it and every group whose
+# barrier rows its walk reads have landed here (study_area_recompute.sh). So
+# the log tables and the schema's barrier views are made now, once: a view
+# rebuild later takes an exclusive lock under running jobs, and before the
+# backup, whose pg_dump holds every table and would make the build wait. And
+# the dependency map (recompute_deps.R, line rule, from FWA alone) is computed
+# in the background through spin and prep; no leg is dispatched without it.
+RC_DEPS_PID=""
+# LNK_LOG=0 (recompute_sweep.sh, recompute_parity.sh) skips each job's
+# log_recompute row, which the early recompute's audit reads: refused rather
+# than inherited by the scheduler's jobs.
+if [ "$RECOMPUTE_EARLY" = "1" ] && [ "${LNK_LOG:-}" = "0" ]; then
+  echo "FATAL: LNK_LOG=0 is set; the early recompute's audit needs each job's log_recompute row (unset it, or --recompute-at-end)"
+  exit 1
+fi
+if [ "$RECOMPUTE_EARLY" = "1" ]; then
+  echo "=== early recompute: log tables, barrier views, dependency map ==="
+  phase_begin views
+  recompute_views_prep
+  phase_end views "" "" "$([ "$RECOMPUTE_FAIL" = "0" ] && echo ok || echo failed)"
+  [ "$RECOMPUTE_FAIL" = "0" ] || {
+    echo "FATAL: the early recompute's prep failed (stage $RECOMPUTE_FAIL_STAGE); nothing dispatched"
+    echo "       (--recompute-at-end prepares at the end instead)"; exit 1; }
+  RC_DIR="$LOG_DIR/${TS}_recompute.d"
+  RC_DEPS="$LOG_DIR/${TS}_recompute_deps.tsv"
+  RC_FINAL="$LOG_DIR/${TS}_recompute_final"
+  RC_STOP="$LOG_DIR/${TS}_recompute_stop"
+  rm -f "$RC_FINAL" "$RC_STOP" "$RC_DEPS"
+  mkdir -p "$RC_DIR"
+  ( cd "$REPO_ROOT" || exit 1
+    Rscript data-raw/recompute_deps.R "$RC_DEPS" line ) > "$LOG_DIR/${TS}_recompute_deps.log" 2>&1 &
+  RC_DEPS_PID=$!
+fi
+
+if [ "$N_HOSTS" -gt 0 ]; then
+  echo "=== dispatcher persist ($SCHEMA): backup in the background ==="
   # The outcome goes to a file, read before dispatch: the rc of a background
   # job is not something a later bare `wait` must be trusted to keep.
   BACKUP_RC_FILE="$LOG_DIR/${TS}_backup.rc"
@@ -1818,6 +1878,16 @@ if [ -n "$BACKUP_RC_FILE" ]; then
     || { echo "FATAL: the pre-run backup of $SCHEMA failed; see $LOG_DIR/${TS}_backup.log. Nothing dispatched."; exit 1; }
   echo "  ✓ pre-run backup taken (see $LOG_DIR/${TS}_backup.log)"
 fi
+# Nor until the early recompute's dependency map is whole (link#374).
+if [ -n "$RC_DEPS_PID" ]; then
+  drc=0; wait "$RC_DEPS_PID" || drc=$?
+  RC_DEPS_PID=""
+  # An empty map would make every landed group ready at once: refused.
+  { [ "$drc" = "0" ] && IFS= read -r dhdr < "$RC_DEPS" && [ "$dhdr" = "$(printf 'wsg\trule\tdep')" ] \
+      && [ "$(wc -l < "$RC_DEPS")" -gt 1 ]; } \
+    || { echo "FATAL: the early recompute's dependency map failed (exit $drc); see $LOG_DIR/${TS}_recompute_deps.log. Nothing dispatched."; exit 1; }
+  echo "  ✓ dependency map: $(($(wc -l < "$RC_DEPS") - 1)) pairs (see $LOG_DIR/${TS}_recompute_deps.log)"
+fi
 phase_end prep "" "$RUN_N" ok
 echo "=== run buckets (DS-first) ==="
 phase_begin model dispatcher
@@ -1898,6 +1968,18 @@ CONS_EXCLUDED=""
 CONS_STATE="$LOG_DIR/${TS}_consolidate_state.tsv"
 if [ "$N_HOSTS" -gt 0 ]; then
   echo "=== legs: each remote host is consolidated when its own leg ends (a cypher then burned, a worker released) ==="
+fi
+# --- the early recompute, beside the legs (link#374) -----------------------
+# Polls which groups have landed and recomputes each as soon as it and every
+# group it reads are here. run_finish hands it the final set and waits; the
+# EXIT trap stops it starting anything new. Started here, after CONS_STATE is
+# set: it is a subshell, and holds the variables it had when it forked.
+RC_SCHED_PID=""
+if [ "$RECOMPUTE_EARLY" = "1" ]; then
+  RC_PARENT=$$
+  recompute_scheduler > "$LOG_DIR/${TS}_recompute_scheduler.log" 2>&1 &
+  RC_SCHED_PID=$!
+  echo "  early recompute scheduler started (-j$RECOMPUTE_JOBS; see $LOG_DIR/${TS}_recompute_scheduler.log)"
 fi
 legs_wait
 echo "  ✓ host runs finished (per-WSG soft-fail; gaps surface in compare)"

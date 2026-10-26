@@ -1,0 +1,11 @@
+wsg	host	skip	run_uid	bucket_mode
+BELA	dispatcher	no	20261026_180139-59d231d0	exact
+GLAR	dispatcher	no	20261026_180139-59d231d0	exact
+JENR	dispatcher	no	20261026_180139-59d231d0	exact
+KUSR	dispatcher	no	20261026_180139-59d231d0	exact
+NAHR	dispatcher	no	20261026_180139-59d231d0	exact
+SWIR	dispatcher	no	20261026_180139-59d231d0	exact
+UJER	dispatcher	no	20261026_180139-59d231d0	exact
+ATLL	worker1	no	20261026_180139-59d231d0	exact
+TESR	worker1	no	20261026_180139-59d231d0	exact
+TUYR	worker1	no	20261026_180139-59d231d0	exact
