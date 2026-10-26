@@ -647,10 +647,11 @@ run_finish_recompute() {
   : > "$RECOMPUTE_LOG"
   find "$RC_DIR" -maxdepth 1 -name '*.log' -exec cat {} + >> "$RECOMPUTE_LOG"
 
+  local judged=0
   if ( cd "$REPO_ROOT" && LNK_LOAD=loadall \
          Rscript data-raw/fanout_judge.R "$RC_TSV" "$ALL_WSGS" recompute ); then
     echo "  ✓ recompute: ${N_RECOMPUTE}/${N_RECOMPUTE} WSGs"
-    rm -rf "$RC_DIR"
+    judged=1
   else
     echo "  ✗ recompute incomplete; see $RECOMPUTE_LOG and $RC_DIR/"
     RECOMPUTE_FAIL_STAGE="pool"
@@ -664,8 +665,8 @@ run_finish_recompute() {
   if [ "${RC_EARLY_RAN:-0}" = "1" ]; then
     local arc=0
     ( cd "$REPO_ROOT" && Rscript data-raw/recompute_audit.R "$SCHEMA" "$RUN_UID" \
-        "$RC_DEPS" "$RUN_WSGS_TSV" "$CONS_STATE" "$LOG_DIR/${TS}_recompute_launched.tsv" \
-        "$LOG_DIR/${TS}_recompute_audit.tsv" ) \
+        "$RC_DEPS" "$RUN_WSGS_TSV" "$CONS_STATE" "$RC_DIR/launched.tsv" \
+        "$LOG_DIR/${TS}_recompute_audit.tsv" "$RC_DIR/fallback.txt" ) \
       > "$LOG_DIR/${TS}_recompute_audit.log" 2>&1 || arc=$?
     case "$arc" in
       0) echo "  ✓ recompute audit: no group started before a group it reads had landed" ;;
@@ -677,6 +678,9 @@ run_finish_recompute() {
          RECOMPUTE_FAIL=1; RC_AUDIT="unread" ;;
     esac
   fi
+  # The per-job directory goes only after the audit has read the scheduler's
+  # launch record in it, and only when everything passed.
+  if [ "$judged" = "1" ] && [ "$RECOMPUTE_FAIL" = "0" ]; then rm -rf "$RC_DIR"; fi
   phase_end recompute "" "$N_RECOMPUTE" "$([ "$RECOMPUTE_FAIL" = "0" ] && echo ok || echo failed)"
 }
 
@@ -717,6 +721,9 @@ run_finish_recompute_early() {
     left=$(.hosts_minus "$ALL_WSGS" "$done_rc")
     echo "  WARN: the recompute scheduler ended with $src; recomputing the $(.hosts_n "$left") group(s) it did not start here"
     if [ -n "$left" ]; then
+      # Recorded for the audit: these start after every landing, so they need
+      # no launch time from the scheduler.
+      .hosts_lines "$left" > "$RC_DIR/fallback.txt" || true
       saved="$ALL_WSGS"
       ALL_WSGS=$(recompute_order "$left" | paste -sd, -)
       run_recompute_pool "$RECOMPUTE_JOBS"
@@ -886,7 +893,7 @@ run_finish_report() {
     elif [ "${RC_AUDIT:-}" = "unread" ]; then
       echo "  Every group was recomputed, but whether any started before a group it"
       echo "  reads had landed could not be checked. See $LOG_DIR/${TS}_recompute_audit.log, then:"
-      echo "    Rscript data-raw/recompute_audit.R $SCHEMA $RUN_UID $RC_DEPS $RUN_WSGS_TSV $CONS_STATE $LOG_DIR/${TS}_recompute_launched.tsv"
+      echo "    Rscript data-raw/recompute_audit.R $SCHEMA $RUN_UID $RC_DEPS $RUN_WSGS_TSV $CONS_STATE $RC_DIR/launched.tsv"
     fi
     if [ "${RECOMPUTE_FAIL:-0}" != "0" ] && [ -n "${RECOMPUTE_FAIL_STAGE:-}" ]; then
       echo "  The post-consolidate recompute did not complete for every WSG."

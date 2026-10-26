@@ -45,6 +45,10 @@ res <- do.call(rbind, lapply(tabs, function(t) {
 DBI::dbDisconnect(conn)
 print(res, row.names = FALSE)
 if (nzchar(out)) utils::write.table(res, out, sep = "\t", quote = FALSE, row.names = FALSE)
+acc <- if (is.null(res)) NULL else res[res$table == "streams_access", ]
+if (is.null(acc) || nrow(acc) != 1L || acc$n_a == 0L) {
+  stop("nothing compared: no streams_access rows for these groups in ", a, call. = FALSE)
+}
 same <- all(res$n_a == res$n_b & res$only_a == 0 & res$only_b == 0)
 cat(sprintf("%s vs %s over %d groups: %s\n", a, b, length(groups),
             if (same) "identical" else "DIFFERENT"))

@@ -439,7 +439,13 @@ test_that("the driver prepares, starts, stops and finishes the early recompute i
   expect_length(early, 1L)
   expect_true(all(c(views, wipe) > els[1]))
   expect_length(grep('Rscript data-raw/recompute_audit.R "$SCHEMA" "$RUN_UID"', rb, fixed = TRUE), 1L)
-  expect_length(grep('"$LOG_DIR/${TS}_recompute_launched.tsv"', rb, fixed = TRUE), 1L)
+  # The audit reads the scheduler's own launch record, so the per-job
+  # directory goes only after it, and only when everything passed.
+  audit <- grep('Rscript data-raw/recompute_audit.R "$SCHEMA" "$RUN_UID"', rb, fixed = TRUE)
+  expect_length(grep('"$RC_DEPS" "$RUN_WSGS_TSV" "$CONS_STATE" "$RC_DIR/launched.tsv"', rb, fixed = TRUE), 1L)
+  rm_dir <- grep('then rm -rf "$RC_DIR"; fi', rb, fixed = TRUE)
+  expect_length(rm_dir, 1L)
+  expect_lt(audit, rm_dir)
   e <- grep("^run_finish_recompute_early\\(\\) \\{", fin)
   eb <- fin[e:(e + which(fin[-seq_len(e)] == "}")[1])]
   expect_lt(grep('recompute_final_write "$ALL_WSGS"', eb, fixed = TRUE),

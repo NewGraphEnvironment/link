@@ -19,13 +19,21 @@
 #                            clock. The database runs in a VM whose clock can
 #                            drift from the host's, so a cross-clock check would
 #                            report right starts EARLY or miss wrong ones.
+# A dependency built on the dispatcher AND a remote host (a closure-mode
+# overlap) is checked on its remote arm only: the dispatcher's log also holds
+# the remote host's copied rows (#354), on that host's clock, and an
+# overlapping host is consolidated only after the dispatcher leg ends
+# (study_area_legs.sh, rule 3), so the remote landing is the later one.
 # A dependency that never landed (a failed group) is not checked: the final
-# set starts its dependants anyway, as the end-of-run pool always has. A
-# remote dependency of a group the scheduler did not launch (the fallback
-# pool, after every landing) is not checked either. Both are counted.
+# set starts its dependants anyway, as the end-of-run pool always has. A group
+# with no start recorded is safe only when nothing ran (no log_recompute row:
+# its gate never committed) or the fallback pool started it (fallback.txt,
+# after every landing); any other missing start is "could not audit", never a
+# pass. All are counted.
 #
 # Usage: Rscript data-raw/recompute_audit.R <schema> <run_uid> <deps.tsv>
 #          <run_wsgs.tsv> <consolidate_state.tsv> <launched.tsv> [out.tsv]
+#          [fallback.txt]
 # Exit 0 when nothing started early, 1 on any violation, 2 when it cannot
 # audit (any error, a missing input; a missing state file means no remote host
 # landed, a missing launched file means the scheduler started nothing).
@@ -45,6 +53,8 @@ if (length(args) < 6L) {
 schema <- args[1]; run_uid <- args[2]; deps_p <- args[3]; wsgs_p <- args[4]
 state_p <- args[5]; launched_p <- args[6]
 out_p <- if (length(args) >= 7L) args[7] else ""
+fallback_p <- if (length(args) >= 8L) args[8] else ""
+fallback <- if (nzchar(fallback_p) && file.exists(fallback_p)) readLines(fallback_p) else character(0)
 
 rd <- function(p, header = TRUE) utils::read.delim(p, header = header, colClasses = "character",
                                                    quote = "", na.strings = character(),
@@ -91,14 +101,16 @@ for (g in groups) {
     hs <- run$host[run$wsg == d]
     if (length(hs) == 0L) next   # outside the run, or a SKIP: landed already
     for (h in hs) {
+      if (h == "dispatcher" && length(hs) > 1L) next
       if (h == "dispatcher") {
         landed <- unname(land_disp[d]); start <- unname(rc_start[g]); clock <- "database"
       } else {
         landed <- land_remote(d, h); start <- unname(launch_ep[g]); clock <- "driver"
       }
       verdict <- if (is.na(landed)) "dep_never_landed" else
-        if (is.na(start)) "start_unrecorded" else
-        if (start >= landed) "ok" else "EARLY"
+        if (!is.na(start)) { if (start >= landed) "ok" else "EARLY" } else
+        if (!g %in% rc$wsg) "no_recompute_row" else
+        if (g %in% fallback) "after_final" else "start_unrecorded"
       rows[[length(rows) + 1L]] <- data.frame(
         wsg = g, dep = d, dep_host = h, clock = clock,
         recompute_start = start, dep_landed = landed, verdict = verdict)
@@ -118,12 +130,20 @@ if (nzchar(out_p)) {
 }
 n_early <- sum(tab$verdict == "EARLY")
 cat(sprintf(paste0("[recompute_audit] %d recomputed groups, %d dependency pairs in the run: ",
-                   "%d ok, %d whose dependency never landed, %d with no recorded start, %d EARLY\n"),
+                   "%d ok, %d whose dependency never landed, %d started by the fallback pool, ",
+                   "%d with no recompute row, %d with no recorded start, %d EARLY\n"),
             length(groups), nrow(tab), sum(tab$verdict == "ok"),
-            sum(tab$verdict == "dep_never_landed"), sum(tab$verdict == "start_unrecorded"), n_early))
+            sum(tab$verdict == "dep_never_landed"), sum(tab$verdict == "after_final"),
+            sum(tab$verdict == "no_recompute_row"), sum(tab$verdict == "start_unrecorded"), n_early))
 if (n_early > 0L) {
   e <- tab[tab$verdict == "EARLY", ]
   cat(sprintf("  EARLY: %s started before %s (%s) landed\n", e$wsg, e$dep, e$dep_host), sep = "")
   quit(status = 1)
+}
+# A start that should have been recorded and was not is not a pass.
+if (any(tab$verdict == "start_unrecorded")) {
+  u <- tab[tab$verdict == "start_unrecorded", ]
+  cat(sprintf("  cannot audit %s against %s (%s): no launch time recorded\n", u$wsg, u$dep, u$dep_host), sep = "")
+  quit(status = 2)
 }
 quit(status = 0)
