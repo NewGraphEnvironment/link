@@ -22,35 +22,39 @@ Approved by the operator at plan approval, 2026-10-26.
 
 ## Phase 1: settle what a recompute reads and whether early recompute pays
 
-- [ ] Code reading: list every relation `wsg_recompute_one.R` reads and writes, and the lock each takes (`findings.md` table). Do the same for `schema_consolidate.R` and `lnk_pipeline_run()`'s persist writes.
-- [ ] `data-raw/recompute_deps.R`: for each group, list the groups whose stream segments lie on its flow path below any of its own segments (shared lines and slivers included), and compare with `frs_wsg_drainage()`'s closure over the 241 groups. Output a TSV and a count of groups whose dependencies go beyond the closure.
-- [ ] Digest test on a scratch schema (`fresh_374`): copy into it only the rows of three groups' dependency sets (a Peace shared-line group, a Fraser main-stem group, a Bulkley/MORR-sliver group), recompute each with `LNK_LOG=0`, and digest `streams_access`, `streams_mapping_code` and the gated habitat flags against `fresh_default`. Negative control: drop one dependency, and the digest must differ.
-- [ ] `data-raw/recompute_schedule_sim.R`: from 2026-10-23's dispatcher `log.date_end`, the leg end times, per-host consolidate minutes and `log_recompute` minutes, simulate the recompute end at `-j8` two ways: (a) today with #369 (pool after the last consolidate), (b) early scheduling under the Phase 1 rule. Simulate both as-run and with the stalls removed.
-- [ ] Evidence goes to `data-raw/logs/recompute_early_374/` with a README. **Checkpoint (decision 1).**
+- [x] Code reading: list every relation `wsg_recompute_one.R` reads and writes, and the lock each takes (`findings.md` table). Do the same for `schema_consolidate.R` and `lnk_pipeline_run()`'s persist writes. (Review B2: `lnk_persist_init()` replaces `streams_habitat_long_vw` per dispatcher group, which every recompute reads.)
+- [x] `data-raw/recompute_deps.R`: three rules from FWA (outlet closure, segment owner, line-touch), compared over all groups. The closure misses dependencies in 150 of 241 groups; the line rule (complete by construction, review B1) contains the other two, 2,211 pairs, median 9 per group.
+- [ ] Digest test on scratch (review A2): re-model TOOD (and NATR) into `fresh_374d` with `LNK_HABITAT_GATE=0` over only its line-rule dependency rows, recompute it, and digest `streams_access`, `streams_mapping_code` and the gated habitat flags against the same build with every group present. Negative control: the same with only the closure rule's dependencies must differ (TOOD's FROG / LKEC / UKEC / ULRD are outside it, #361). Digests after rounding.
+- [x] `data-raw/recompute_schedule_sim.R`: 2026-10-23 replayed at `-j8`. Line rule: the recompute ends 89.4 min sooner as recorded and 38.1 min sooner with the stalls removed (tail after the last landing 72.6 min against 110.7).
+- [ ] Database headroom (moved here from Phase 4, review O2): the same dispatcher groups modelled alone, beside a `-j8` recompute, and alone again (`headroom.sh`). Weigh the slowdown against the saving.
+- [ ] Residual check for the separate control-asymmetry issue (review S1): non-owner barrier and override rows no owner matches, indexed, with the groups whose paths cross them.
+- [ ] Evidence README in `data-raw/logs/recompute_early_374/`; edit #374's body (closure → line rule; acceptance restated as a tail). **Checkpoint (decision 1).**
 
 ## Phase 2: dependency map and readiness (pure, tested)
 
-- [ ] The driver writes `${TS}_recompute_deps.tsv` once at run start, before any spend (`recompute_deps.R`, timed).
-- [ ] New sourced lib `data-raw/study_area_recompute.sh` with `recompute_ready`. A group has landed when every host whose bucket holds it has landed it: on the dispatcher, its newest `log` row is this `RUN_UID`'s with `date_end` set; on a remote host, the `${TS}_consolidate_state.tsv` row is `ok`. A group outside the run has always landed. Ready = landed itself, every dependency landed, not yet launched.
-- [ ] `tests/testthat/test-study_area_recompute.R` with fixture state: overlapping buckets, a failed host, `in_flight` and `failed:*` consolidate rows, groups outside the run, a dispatcher group with an open log row.
+- [ ] The driver runs `recompute_deps.R` (line rule, about 80 s) in the background during spin and prep, writing `${TS}_recompute_deps.tsv`; no leg is dispatched until it has succeeded (FATAL otherwise, like the backup).
+- [x] New sourced lib `data-raw/study_area_recompute.sh` with `recompute_landed` and `recompute_ready`. A group has landed when every host whose bucket holds it has landed it: on the dispatcher, its newest `log` row is this `RUN_UID`'s with `date_end` set; on a remote host, the `${TS}_consolidate_state.tsv` row is `ok`. A group outside the run, or a SKIP, has always landed. Ready = landed itself, every dependency landed, not yet launched. **Fails closed** (review A1: an early recompute that reads too little cannot be undone): an unreadable state file, a failed poll or an unknown host means not landed.
+- [x] `tests/testthat/test-study_area_recompute.R` with fixture state: overlapping buckets, a failed host, `in_flight` and `failed:*` consolidate rows, groups outside the run, SKIPs, a dispatcher group with an open log row, a failed poll. Each guard restored to its bug must go red.
 
 ## Phase 3: the scheduler in the driver
 
-- [ ] Move the one-time log-table ensure and `barriers_views_build.R` to before the legs, right after the persist init. A view rebuild at the end would take an AccessExclusiveLock against jobs still running. `--recompute-only` keeps its own build.
-- [ ] `recompute_scheduler`, a background process started before `legs_wait`. It polls readiness every 30 s and launches ready groups longest-first (`recompute_order`) into `RECOMPUTE_JOBS` slots through the existing `recompute_one`, which writes `.rc` files as today. When a final-set file appears, it launches the rest of that set, drains, and exits.
-- [ ] `run_finish`: after coverage, write `COV_RECOMPUTE` as the final set, wait on the scheduler's pid, and run `fanout_judge.R` over `COV_RECOMPUTE`. A group launched early but missing from `COV_RECOMPUTE` is named and the run exits non-zero.
-- [ ] The EXIT trap kills the scheduler and its jobs. The `views` phase row moves to before the legs; the `recompute` row runs from the first job's start to the last job's end.
-- [ ] `--recompute-at-end` flag, banner line, and structural tests in `test-study_area_legs.R` / a new test file.
+- [ ] `lnk_persist_init()`: replace `streams_habitat_long_vw` only when absent or its species set differs (catalog first, as #369 did for indexes and columns), with a live test that a second init takes no lock on it (review B2).
+- [ ] In early mode, initialise the dispatcher persist on every run, not only with remote hosts (review G1); then the log tables, then `barriers_views_build.R`, then the backup (review G2). A failure is FATAL before dispatch. `--recompute-only` keeps its own build.
+- [ ] `recompute_scheduler`, a background process started before `legs_wait`: polls readiness every 30 s, launches ready groups longest-first (`recompute_order`) into `RECOMPUTE_JOBS` slots through `recompute_one` (`.rc` files as today). Its own error handling, not the driver's `set -e` (review G4); it exits when its parent has gone; on a final-set file (written tmp + mv) it launches the rest of that set, drains and exits.
+- [ ] `run_finish`: after coverage, write `COV_RECOMPUTE` as the final set, wait on the scheduler. If it died, run the groups of the final set with no `.rc` file in the existing pool. `run_finish_recompute` keeps the early `.rc` files and writes no second `views` row (review G3). `fanout_judge.R` over `COV_RECOMPUTE`; a group launched early but missing from it is named and the run exits non-zero.
+- [ ] The EXIT trap stops the scheduler launching and lets running jobs finish, as a killed pool does today (review G4). Phase rows: `views` before the legs; `recompute` from the first job's start to the last job's end, written by the scheduler as the legs write theirs (review G5).
+- [ ] Readiness audit as a run post-condition (review AC2): every recomputed group's `log_recompute.date_start` is after each dependency's landing (model `date_end`; consolidate `state_utc`).
+- [ ] `--recompute-at-end` flag, banner line, structural tests.
 
 ## Phase 4: prove it on the dispatcher and the worker
 
-- [ ] Database headroom: model 3–4 dispatcher groups into a scratch schema alone, then again while a `-j8` recompute runs over another scratch schema. Set the width used while legs are running from the result (a separate cap if the slowdown is material).
-- [ ] A small run on the dispatcher plus the persistent worker (no cloud spend): about 10 groups whose dependencies cross hosts, early recompute on, into scratch `fresh_374a`. Repeat with `--recompute-at-end` into `fresh_374b`. Sample `pg_stat_activity` lock waits throughout.
-- [ ] Acceptance on that run: the last recompute job ends within (longest single job) of the last consolidate; per-group digests of `streams_access`, `streams_mapping_code` and the gated habitat flags match between a and b; `study_area_verify.sql` passes on both.
+- [ ] A small run on the dispatcher plus the persistent worker (no cloud spend), early recompute on, into scratch `fresh_374a`, with dependencies forced to land after their dependants (on the slower host, or `LNK_TEST_STALL_WSG`; review AC1). Repeat with `--recompute-at-end` into `fresh_374b`. Sample `pg_stat_activity` lock waits and statement timeouts throughout (review A3).
+- [ ] Acceptance: per-group digests (after rounding) of `streams_access`, `streams_mapping_code` and the gated habitat flags match between a and b; the readiness audit and `study_area_verify.sql` pass on both; the recompute tail (last job end minus the later of the last leg and the last consolidate; review AC3) is shorter in a than in b.
 
 ## Phase 5: record and release
 
-- [ ] RUNBOOK §8d: new subsection "A group is recomputed once what it reads is here (link#374)", covering the rule, readiness and locks.
+- [ ] RUNBOOK §8d: new subsection "A group is recomputed once what it reads is here (link#374)", covering the rule, readiness and locks. Reword the kept-host recovery text, which says "upstream of it", from the dependency rule (review S2).
+- [ ] File the control-asymmetry issue (review S1), after showing its body.
 - [ ] Write a CLAUDE.md status, `research/study_area_run.md`, and #377's measured line (the provincial numbers still owed).
 - [ ] NEWS and the version bump as the final commit.
 
@@ -65,4 +69,4 @@ Approved by the operator at plan approval, 2026-10-26.
 - [ ] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
 
-How each change is proved: Phase 1 by the digest test with its negative control and the simulation; Phase 2 by fixture tests with each mutation restored (they must go red); Phase 3 by structural tests plus the Phase 4 run; acceptance by the a/b digests and `study_area_verify.sql` on both scratch schemas.
+How each change is proved: Phase 1 by the digest test with its negative control, the simulation and the A-B-A headroom benchmark; Phase 2 by fixture tests with each mutation restored (they must go red); Phase 3 by structural tests plus the Phase 4 run; acceptance by the a/b digests and `study_area_verify.sql` on both scratch schemas.
