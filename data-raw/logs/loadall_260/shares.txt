@@ -15,7 +15,7 @@ seq     0.18    0.74
 ## The 2026-10-23 pool (log_recompute, -j8)
 jobs 240, span 110.3 min, summed work 837.0 min, longest 22.75 min
 summed work / 8 = 104.6 min; span - that = 5.7 min
-untimed slot time per job, upper bound (prologue, R exit, poll, tail): 11.3 s
+untimed slot time per job, mean over jobs (prologue, stamp, exit, poll, tail): 11.3 s
 
 ## Prologue share (busy-condition load_all prologue = 1.63 s)
 denominator                    work_s    share

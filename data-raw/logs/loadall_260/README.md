@@ -29,44 +29,66 @@ price of changing the `LNK_LOAD` contract, which 12 `data-raw/` R scripts read?
 
 ## Measurement
 
+### On the bench
+
 | condition | prologue, `load_all` | prologue, `library(link)` | `load_all` stage alone |
 |---|---|---|---|
 | sequence | 1.10 s | 0.62 s | 0.74 s |
 | 8 at once | 1.44 s | 0.82 s | 0.94 s |
-| beside 7 busy | 1.63 s | 0.92 s | 1.08 s |
+| beside 7 CPU-bound R loops | 1.63 s | 0.92 s | 1.08 s |
 
-Against the busy figure, 1.63 s:
+Against the last figure, 1.63 s:
 
-| denominator | work | prologue share |
+| denominator | work | prologue share of the job |
 |---|---|---|
 | SALR, 2026-10-23 run | 43 s | 3.6 % |
 | median group, 2026-10-23 run | 159 s | 1.0 % |
 | CHWK, 2026-10-23 run | 934 s | 0.2 % |
 | SALR as #260 framed it (2026-09-01, `-j4`) | 11 s | 12.9 % |
 | CHWK as #260 framed it | 226 s | 0.7 % |
-| **the whole pool** | 240 × 1.63 s / 8 = **0.81 min** of a 110.3 min span | **0.74 %** |
+| the whole pool | 240 × 1.63 s / 8 = 0.81 min of a 110.3 min span | 0.74 % |
 
-Switching to `library(link)` would save 0.71 s per job: **0.35 min** of a provincial
-recompute (0.32 %).
+Switching to `library(link)` would save 0.71 s per job in the prologue, plus 0.06 s in
+the `lnk_stamp()` call that `.lnk_log_recompute_start()` makes before `date_start`
+(0.10 s under `load_all()`, which reads git; 0.04 s under `library(link)`): about
+0.78 s per job, 0.39 min of the span.
+
+### In the run
+
+The bench does not account for what the 2026-10-23 pool paid. `gaps.sql` pairs each
+job's `date_start` with the end that freed its slot: a slot sat a median **9.70 s**
+between one job's `date_end` and the next job's `date_start` (p10 7.67 s, p90 12.01 s,
+max 15.73 s; 232 gaps, 37.5 slot-minutes, `gaps.tsv`). That gap holds the next job's
+prologue and `lnk_stamp()`, the previous job's exit and the driver's slot poll (at most
+1 s). The bench explains about 3 s of it. The other 6 to 7 s are unmeasured: the
+prologue under the run's real contention (seven jobs and the database VM on 10 CPUs,
+not seven R loops) may be several times the bench, or something else sits there.
 
 The pool's span (110.3 min, first job's work start to last job's end) exceeds its
-summed work over 8 slots (104.6 min) by 5.7 min, which is at most 11.3 s of untimed
-slot time per job. That is the in-run upper bound on everything outside `t0` together:
-the prologue, R exit, the driver's 1 s slot poll and the tail. The prologue is 1.6 s of
-it.
+summed work over 8 slots (104.6 min) by 5.7 min: those gaps, 37.5 / 8 = 4.7 min, and
+the tail, 1.0 min. So the in-run bound on the prologue is **4.7 min, 4.3 % of the
+span**, with everything in the gaps charged to it.
 
 ## Verdict
 
-**Not material, and not changed.** The `LNK_LOAD` contract stays: `load_all()` is what
-guarantees each job runs the tree verified at pre-flight, and removing it buys 21 s of
-a 110 min phase. Every job's prologue is on the pool's critical path, at a weight of one
-slot in eight, because the span is set by the summed work over the slots (104.6 min),
-not by the longest job (22.75 min); that is the 240 × 1.63 s / 8 above. It is a real
-share only of a short group taken alone: 1.63 s on SALR's 11 s of work is 12.9 % of the
-job. The recompute's time is its work, and the same one-slot-in-eight arithmetic holds
-for any single group: CHWK's 15.56 min is about 1.9 min of the span. So the next lever is
-#374 (overlap the recompute with the slowest leg); #261 pays only if CHWK's cause also
-slows other groups.
+**Not material, and not changed.** At the in-run bound the whole prologue is 4.3 % of
+the recompute, and `library(link)` removes only part of it: the load stage, about
+0.78 s per job on the bench, or about 2 min (under 2 %) if the in-run prologue is five
+times the bench. The `LNK_LOAD` contract stays: `load_all()` is what makes each job run
+the tree verified at pre-flight.
+
+Every job's prologue is on the pool's critical path, at one slot in eight, because the
+span is set by the summed work over the slots (104.6 min), not by the longest job
+(22.75 min). It is a real share only of a short group taken alone: 1.63 s on SALR's
+11 s of work is 12.9 % of the job. The same one-slot-in-eight arithmetic holds for any
+single group: CHWK's 15.56 min is about 1.9 min of the span. So the next lever is #374
+(overlap the recompute with the slowest leg); #261 pays only if CHWK's cause also slows
+other groups.
+
+**Owed:** the in-run prologue. `wsg_recompute_one.R` now prints
+`[wsg_recompute_one] <WSG> prologue <s> s` at `t0` (`proc.time()`'s elapsed, from the R
+process's start), so the next provincial run's `<TS>_recompute.log` measures it in
+place, and says what the other 6 to 7 s of each gap are.
 
 ## Notes
 

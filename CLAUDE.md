@@ -13,10 +13,10 @@ Experimental package — breaking all the time and loving the learning curve. St
 
 ## Status (2026-10-26) — the recompute's per-job `load_all()` measured and kept (#260)
 
-**The whole job prologue of `wsg_recompute_one.R` is 1.63 s with seven slots computing beside it: 0.81 min of the 2026-10-23 pool's 110.3 min (0.74 %).** `library(link)` would save 0.35 min, so the `LNK_LOAD` contract (12 `data-raw/` scripts) stays. #377's next item is #374. Evidence: `data-raw/logs/loadall_260/`.
+**The recompute job's prologue (R start, `load_all()`, connect, config, overrides) is at most 4.3 % of the 2026-10-23 pool, so the `LNK_LOAD` contract (12 `data-raw/` scripts) stays.** On the bench it is 1.63 s beside seven CPU-bound R loops (0.81 min of 110.3), and `library(link)` would save about 0.78 s per job. In the run, a slot sat a median 9.7 s between one job's end and the next job's start (4.7 min of the span), and the bench explains about 3 s of that. `wsg_recompute_one.R` now prints each job's prologue at `t0`, so the next provincial run measures it in place. #377's next item is #374. Evidence: `data-raw/logs/loadall_260/`.
 
 **Facts not worth re-deriving:**
-- **A recompute job's logged minutes leave its prologue out:** `t0` and `log_recompute.date_start` are set after the load, connect, config and overrides (`wsg_recompute_one.R:62`). The pool's span minus its summed work over the slots (5.7 min at `-j8`) bounds everything untimed: at most 11.3 s per job.
+- **A recompute job's logged minutes leave its prologue out:** `t0` and `log_recompute.date_start` are set after the load, connect, config and overrides (`wsg_recompute_one.R:62`). The pool's span minus its summed work over the slots (5.7 min at `-j8`) is everything outside `[date_start, date_end]`: 4.7 min of slot gaps and 1.0 min of tail (`gaps.sql`).
 - **The 2026-10-23 run has no `_phases.tsv`** (that began with #375); its 110 min recompute is first start to last end in `fresh_default.log_recompute` (`data-raw/logs/loadall_260/span.sql`).
 
 ## Status (2026-10-24, late night) — persistent workers beside the dispatcher and the cloud hosts (#376)

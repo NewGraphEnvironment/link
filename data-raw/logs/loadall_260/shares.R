@@ -40,7 +40,7 @@ out <- c(
           sp$jobs, sp$span_min, sp$job_min_sum, sp$longest_min),
   sprintf("summed work / %d = %.1f min; span - that = %.1f min",
           width, sp$job_min_sum / width, sp$span_min - sp$job_min_sum / width),
-  sprintf("untimed slot time per job, upper bound (prologue, R exit, poll, tail): %.1f s",
+  sprintf("untimed slot time per job, mean over jobs (prologue, stamp, exit, poll, tail): %.1f s",
           gap_slot_s),
   "",
   "## Prologue share (busy-condition load_all prologue = %.2f s)" |> sprintf(p_busy),

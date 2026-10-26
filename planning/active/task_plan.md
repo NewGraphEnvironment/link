@@ -49,6 +49,8 @@ Cut the wall clock of a provincial `default` run without changing its outputs, o
 
 ## Owed at the end (reported, done after merge)
 
+- [ ] Next provincial run: read the `[wsg_recompute_one] <WSG> prologue <s> s` lines (added after code-check round 3) and account for the 9.7 s median slot gap; record on #377's runs row.
+
 - [ ] Close #260 with the PR (`Fixes #260`) if the verdict holds. #377 stays open.
 - [ ] #374 is the next tracker item and gets its own `/planning-init 374`.
 
