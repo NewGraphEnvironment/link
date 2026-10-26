@@ -14,3 +14,5 @@
 - Phase 3: driver wiring (`--recompute-at-end`, pre-leg prep before the backup, dependency map before dispatch, scheduler before `legs_wait`, trap stop, final set + fallback pool, `recompute_audit.R` with its own report branch). 124 tests pass; 6 scheduler mutants caught (one only after adding the failed-dependency test).
 - B2 fixed: `lnk_persist_init()` replaces `streams_habitat_long_vw` only when its definition key (md5 in the view comment) changes; live test holds a reader on the view (premise: forced replace times out). 60 persist_init tests pass.
 - RUNBOOK §8d subsection; kept-host recovery wording (S2) in RUNBOOK, `study_area_hosts.sh`, `study_area_finish.sh`.
+- Full suite: 4,286 pass, 0 fail (17:3x UTC).
+- Digest test TOOD (`digest_test.R`): line-rule-only build equals the all-groups build in every table (0 rows differ of 97,296); closure-only differs on 2 segments (access, mapping code, BT/RB habitat; GR 1): #361's two TOOD segments. NATR pending (after the worker run).

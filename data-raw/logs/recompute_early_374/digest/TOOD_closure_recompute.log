@@ -1,0 +1,22 @@
+[1] 0
+[1] 0
+[wsg_recompute_one] TOOD prologue 1.09 s
+NOTICE:  table "zz_lnk_access_prior_tood" does not exist, skipping
+
+NOTICE:  table "zz_lnk_streams_tood" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] TOOD habitat gate: 408 segments (76.224 km) settled
+[wsg_recompute_one] TOOD recomputed in 0.51 min (persist=fresh_374d_closure)
