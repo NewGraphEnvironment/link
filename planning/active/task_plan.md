@@ -23,7 +23,7 @@ Outcome: both configs break at the per-present-species post-lift set reduced to 
 ## Decided at the gate (2026-10-26, airvine)
 
 - **Verification runs on m4 locally** after `data-raw/snapshot_bcfp.sh` refreshes the primitives; re-model the measurement groups here.
-- **Scope item 3 (strict `>` spawning minimum) is deferred** to its own fresh + link follow-up issue, filed with the km it moves (PCEA 1.78, FINA 4.54, PARS 5.27).
+- **Scope item 3 (strict `>` spawning minimum) is dropped (operator, 2026-10-27).** Widths sit at two decimals in the 11 groups (next width above 2.0 is 2.01), so a bundle minimum 0.005 above bcfishpass's would reproduce `>` with no fresh change; the operator chose the unchanged thresholds over a nudged value. Recorded in `research/bcfp_segmentation_parity.md`.
 - **Per-config segmentation is accepted.** `default` (GR, KO at 0.15; RB frontiers) will break BT-only groups where `bcfishpass` will not. The PARS vignette's `id_segment` join (`data-raw/wsg_vignette_data.R:84-104`) is owed a separate fix; the guard there stays and will refuse until it is done.
 - **Presence rule for which species' sets break:** `lnk_presence()` with its group expansion, applied as `tolower(sp) %in% pres$present` while iterating `cfg$species` — so the species code that reaches the SQL stays the `parameters_fresh` code (`'BT'`), matching `barrier_overrides.species_code`. A lowercase literal would match no override and reduce the pre-lift set, #223's failure (review B1).
 - **`gradient_barriers_minimal` keeps its name.** It is minimal again; #225 (rename) closes as moot in the PR. The raw per-species `barriers_<sp>` table becomes the **post-lift** table and `barriers_<sp>_min` its reduction (RUNBOOK §2b's name); the diagnostics note at `lnk_barriers_views.R:165-167` is updated to say so.
@@ -83,16 +83,15 @@ Outcome: both configs break at the per-present-species post-lift set reduced to 
 
 ## Phase 5: close out
 
-- [ ] NEWS.md entry (#326; closes #225 as moot; names the owed provincial re-model and the two follow-ups)
+- [ ] NEWS.md entry (#326; closes #225 as moot; names the owed provincial re-model and the follow-up #390)
 - [x] `devtools::document()` (read what it prints), `devtools::test()`, `devtools::check()`, `lintr::lint_package()` against the HEAD baseline. Ran 2026-10-27: `document()` regenerated two Rd files the branch's roxygen had changed (`a1dd97ba`); `test()` 4,342 pass, 0 fail, 6 skipped (installed fresh carries no `RemoteSha`); `check()` 0 errors, 3 warnings and 4 notes, each also on main (non-ASCII in the same 13 files, Rd links, `presence` undocumented in two untouched files); lint on the changed files: two brace lints fixed (`88eb4443`), the rest indentation in the package's continuation style
-- [ ] File the two follow-up issues (bodies shown first): strict `>` spawning minimum (fresh + link); PARS vignette join off `id_segment` across configs
+- [x] File the follow-up issue (body shown first): PARS vignette join off `id_segment` across configs — #390, 2026-10-27. The strict `>` spawning issue was dropped (see the gate decisions).
 - [ ] `/planning-archive`, `/gh-pr-push`
 
 ## Owed at the end (reported, done after merge)
 
 - [ ] **The provincial re-model:** every persisted group re-segments (both `fresh` and `fresh_default`, all 241), then the post-consolidate recompute — the next provincial run (#377's runs row) at the release this lands in. Stated in Phase 4's README before any re-model; done after merge.
-- [ ] Vignette join fix (follow-up issue): `wsg_vignette_data.R` stops joining `fresh_default` tokens to `fresh` geometry on `id_segment`
-- [ ] Strict `>` spawning minimum (follow-up issue, fresh + link)
+- [ ] Vignette join fix (#390): `wsg_vignette_data.R` stops joining `fresh_default` tokens to `fresh` geometry on `id_segment`
 - [ ] `default`'s own order-1 position stays with #327
 
 ## Validation

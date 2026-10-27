@@ -99,7 +99,7 @@ FINA, PARS and LKEL, at link `21e0fea2` on fresh 0.43.0 (2026-10-27, round 2). E
 
   The segmentation movement of 71–85 km per BT-only group is gone. PARS's 8.1 km are order-1
   lines the direct-child test in `frs_order_child()` leaves out (fresh#158; 10.7 km fail it).
-  Before the exception it was −24.8 km. Link-only spawning is the deferred strict `>`.
+  Before the exception it was −24.8 km. Link-only spawning is fresh's `>=` at exactly the minimum, kept (below).
 - **Accessible segments that still hold a barrier more than 1 m inside them:** 27
   segment-species on 13 positions, BT 9. Each barrier is 1.07 to 1.43 m from its nearest break.
   This is #349's metre-rounded family (fresh#258). A first run also found barrier rows
@@ -284,9 +284,10 @@ the same cluster would explain it, but that is not shown, so it is not counted a
 
 Changed at #326's gate (2026-10-26): `default` breaks for its own present species (GR and KO
 at 15 %, RB), so the two configs no longer share one segmentation and the PARS vignette's
-`id_segment` join is owed a fix; the strict `>` spawning minimum is deferred to its own issue;
-the order-1 exception takes bcfishpass's width and gradient tests, but not yet its waterbody and
-edge-type filter for CH, CO, ST and WCT (an open decision on #326).
+`id_segment` join is owed a fix (#390); the strict `>` spawning minimum stays a known difference
+(decided 2026-10-27, below); the order-1 exception takes bcfishpass's width and gradient tests and
+not its waterbody and edge-type filter for CH, CO, ST and WCT (decided 2026-10-27: shipped without
+it; at most 2.7 km per species per group, `data-raw/logs/segmentation_326/order1_waterbody_filter*.log`).
 
 The `bcfishpass` config is there to match bcfishpass step by step wherever link can.
 
@@ -303,9 +304,13 @@ The `bcfishpass` config is there to match bcfishpass step by step wherever link 
   4 river-polygon, 19,184 NULL, 0 modelled), so in practice the exception admits order-1 lines
   only on a measured width. Whether `default` takes it, on measured widths only, is a separate
   decision.
-- **Spawning size minimum: the `bcfishpass` config takes bcfishpass's strict `>`; `default`
-  keeps `>=`** (a segment at exactly the minimum spawns). Recorded as an intentional departure in
-  `research/default_vs_bcfishpass.md`, §6.
+- **Spawning size minimum: both configs test `>=`; bcfishpass tests `>`**, so a segment at exactly
+  the minimum spawns in link and not in bcfishpass (BT at 2.0 m: PCEA 1.78, FINA 4.58, PARS 5.49 km
+  link-only). In the 11 persisted groups widths sit at two decimals (7,043 segments at exactly 2.0 m
+  and the next width above is 2.01; 2,549 at 4.0 m, next 4.01), so a bundle minimum 0.005 above
+  bcfishpass's would reproduce `>` with no fresh change. Decided 2026-10-27 (operator): not done; it
+  is parity only, and the bundle's thresholds stay bcfishpass's values. Recorded as an intentional
+  departure in `research/default_vs_bcfishpass.md`, §6.
 
 ## What #223 matched, and what it asserted
 
