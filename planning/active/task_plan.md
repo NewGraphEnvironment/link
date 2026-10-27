@@ -84,7 +84,7 @@ Outcome: both configs break at the per-present-species post-lift set reduced to 
 ## Phase 5: close out
 
 - [ ] NEWS.md entry (#326; closes #225 as moot; names the owed provincial re-model and the two follow-ups)
-- [ ] `devtools::document()` (read what it prints), `devtools::test()`, `devtools::check()`, `lintr::lint_package()` against the HEAD baseline
+- [x] `devtools::document()` (read what it prints), `devtools::test()`, `devtools::check()`, `lintr::lint_package()` against the HEAD baseline. Ran 2026-10-27: `document()` regenerated two Rd files the branch's roxygen had changed (`a1dd97ba`); `test()` 4,342 pass, 0 fail, 6 skipped (installed fresh carries no `RemoteSha`); `check()` 0 errors, 3 warnings and 4 notes, each also on main (non-ASCII in the same 13 files, Rd links, `presence` undocumented in two untouched files); lint on the changed files: two brace lints fixed (`88eb4443`), the rest indentation in the package's continuation style
 - [ ] File the two follow-up issues (bodies shown first): strict `>` spawning minimum (fresh + link); PARS vignette join off `id_segment` across configs
 - [ ] `/planning-archive`, `/gh-pr-push`
 
@@ -97,7 +97,7 @@ Outcome: both configs break at the per-present-species post-lift set reduced to 
 
 ## Validation
 
-- [ ] Tests pass (link and fresh)
+- [x] Tests pass (link 4,342 pass / 0 fail at `a1dd97ba`; fresh 1,864 pass / 0 fail / 2 skipped at `18b94fe`, 2026-10-27)
 - [ ] `/code-check` clean on each commit
 - [ ] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
