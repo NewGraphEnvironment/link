@@ -15,3 +15,4 @@
 - `predictors.R` gained the sample walk (`probe_us`, `probe_pre_us`); on the nine groups it predicts measured walk seconds at slope 1.00 (`predictors_subset.tsv`)
 - Gate decision 2 done: SALR and CHWK re-run from `../link_261_rerun` at `1d00c04c`, all digests unchanged; CHWK 617.6 s of which walks 589.4 s
 - Phase 2: `predictors.R` over 241 groups launched 23:01 UTC (frozen copy); `correlations.R` written, not yet run
+- Phase 2 done: `predictors.R` 241 groups; `correlations.R`: predicted walk seconds Spearman 0.982 against 10-23 minutes, #261's below-outlet count −0.08; prefilter would save 36–51 % of the pool's summed job time

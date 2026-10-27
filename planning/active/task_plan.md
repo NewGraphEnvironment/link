@@ -73,17 +73,17 @@ What exploration established (read-only):
 
 ## Phase 2: does the cause generalise? (all 241 groups)
 
-- [ ] `data-raw/logs/recompute_cost_261/predictors.R`: per group, from m1's `fresh_default` and FWA:
+- [x] `data-raw/logs/recompute_cost_261/predictors.R`: per group, from m1's `fresh_default` and FWA:
       segments; present species; barriers downstream of the group's outlet (`fresh::frs_wsg_outlets()`
       + measure-aware `fwa_downstream()`, as `lnk_wsg_downstream_check()` does: #261's own predictor);
       features of each walked table inside the group; and the Phase 1 mechanism's predictor (e.g. Σ
       downstream pairs) if it is cheaper than the walk itself, else on a stratified sample
-- [ ] Measured minutes per group from both runs' committed logs (`20261017_004619_recompute.log`,
+- [x] Measured minutes per group from both runs' committed logs (`20261017_004619_recompute.log`,
       `20261023_074321_recompute.log`); first check rank stability between them (Spearman), so noise
       from `-j4`/`-j8` contention is sized before any predictor is judged
-- [ ] Spearman and log-log fit of each predictor against minutes, segment count alongside as #261
+- [x] Spearman and log-log fit of each predictor against minutes, segment count alongside as #261
       asks; `correlations.tsv` and one figure; name the groups the best predictor misses
-- [ ] Verdict: #261's hypothesis confirmed or refuted, the mechanism named, and how many of the
+- [x] Verdict: #261's hypothesis confirmed or refuted, the mechanism named, and how many of the
       pool's minutes it accounts for beyond CHWK (the tracker's "pays only if" test)
 
 ## Phase 3: record and hand off

@@ -1,0 +1,24 @@
+predictor	run	n	spearman	loglog_slope	loglog_r2
+segments	m1023	240	0.605	0.715	0.383
+walks	m1023	240	0.856	2.851	0.742
+species_walked	m1023	240	0.856	1.708	0.759
+features_inside	m1023	240	0.881	0.465	0.745
+natural_inside	m1023	240	0.879	0.353	0.693
+crossings_inside	m1023	240	0.337	0.101	0.06
+features_below_outlet	m1023	240	-0.083	-0.03	0.001
+natural_below_outlet	m1023	240	-0.019	0.021	0
+in_range	m1023	240	0.664	0.295	0.508
+probe_us	m1023	240	0.577	1.423	0.379
+walk_s_pred	m1023	240	0.982	0.992	0.97
+segments	m1017	241	0.589	0.679	0.374
+walks	m1017	241	0.857	2.74	0.739
+species_walked	m1017	241	0.857	1.638	0.753
+features_inside	m1017	241	0.871	0.443	0.73
+natural_inside	m1017	241	0.869	0.335	0.676
+crossings_inside	m1017	241	0.333	0.096	0.058
+features_below_outlet	m1017	241	-0.1	-0.038	0.001
+natural_below_outlet	m1017	241	-0.01	0.042	0
+in_range	m1017	241	0.661	0.282	0.502
+probe_us	m1017	241	0.572	1.363	0.375
+walk_s_pred	m1017	241	0.981	0.954	0.966
+m1017 (other run)	m1023	240	0.993	NA	0.985
