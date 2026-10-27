@@ -86,7 +86,7 @@ Outcome: both configs break at the per-present-species post-lift set reduced to 
 - [x] NEWS.md entry (#326; closes #225 as moot; names the owed provincial re-model and the follow-up #390) — 0.69.0, 2026-10-27
 - [x] `devtools::document()` (read what it prints), `devtools::test()`, `devtools::check()`, `lintr::lint_package()` against the HEAD baseline. Ran 2026-10-27: `document()` regenerated two Rd files the branch's roxygen had changed (`a1dd97ba`); `test()` 4,342 pass, 0 fail, 6 skipped (installed fresh carries no `RemoteSha`); `check()` 0 errors, 3 warnings and 4 notes, each also on main (non-ASCII in the same 13 files, Rd links, `presence` undocumented in two untouched files); lint on the changed files: two brace lints fixed (`88eb4443`), the rest indentation in the package's continuation style
 - [x] File the follow-up issue (body shown first): PARS vignette join off `id_segment` across configs — #390, 2026-10-27. The strict `>` spawning issue was dropped (see the gate decisions).
-- [ ] `/planning-archive`, `/gh-pr-push`
+- [x] `/planning-archive` (2026-10-27); `/gh-pr-push` follows the archive commit
 
 ## Owed at the end (reported, done after merge)
 
@@ -99,7 +99,7 @@ Outcome: both configs break at the per-present-species post-lift set reduced to 
 - [x] Tests pass (link 4,342 pass / 0 fail at `a1dd97ba`; fresh 1,864 pass / 0 fail / 2 skipped at `18b94fe`, 2026-10-27)
 - [x] `/code-check` clean over the branch (four rounds, enumeration-terminated) plus one round over fresh's rename commit
 - [x] PWF checkboxes match landed work (checked 2026-10-27 before archive)
-- [ ] `/planning-archive` on completion
+- [x] `/planning-archive` on completion (2026-10-27)
 
 **How each change is proved:**
 - *Reduction correct:* FINA blk 359209845 BT frontier at 3,834.78 m survives (the exact case #223's pre-lift reduction lost); `accessible_km` 44/44 within 0.05 % — the reduction changes segmentation only, which holds per species because fresh's gate reads the full raw set and a pruned position always has a same-species barrier below it (never reduce the union); link still holds ≥ 99.9 % of bcfishpass's break positions within 1 m on the group's own streams.
