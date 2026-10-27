@@ -232,3 +232,74 @@ test_that("the stream-order rearing bypass is skipped for a mad group", {
   # bcfp applies it inside its channel-width branch only.
   expect_identical(bypass_calls("mad"), character(0))
 })
+
+# -- the order-1 exception's width and gradient bounds (#326) -----------------
+
+# Classify end to end with fresh mocked; returns the arguments
+# frs_order_child received.
+order_child_args <- function(bypass, rule = list(), rear_ranges) {
+  local_mocked_bindings(
+    .lnk_pipeline_classify_build_breaks = function(...) invisible(NULL),
+    .lnk_db_execute = function(...) invisible(NULL)
+  )
+  got <- NULL
+  rule$channel_width_min_bypass <- bypass
+  local_mocked_bindings(
+    frs_params = function(...) {
+      list(BT = list(rules = list(rear = list(rule)),
+                     ranges = list(rear = rear_ranges)))
+    },
+    frs_habitat_classify = function(...) invisible(NULL),
+    frs_order_child = function(...) {
+      got <<- list(...)
+      invisible(NULL)
+    },
+    .package = "fresh"
+  )
+  csv <- withr::local_tempfile(fileext = ".csv")
+  writeLines(c("watershed_group_code,model", "BULK,cw"), csv)
+  lnk_pipeline_classify("mock", aoi = "BULK", cfg = lnk_config("default"),
+                        loaded = list(), schema = "w_bulk", species = "BT",
+                        method_csv = csv)
+  got
+}
+
+ranges_bt <- list(gradient = c(0, 0.1049), channel_width = c(1.5, 9999))
+
+test_that("without width_known_below_min the bounds are not passed", {
+  got <- order_child_args(list(stream_order_parent_min = 5L),
+                          rear_ranges = ranges_bt)
+  expect_false("channel_width_lt" %in% names(got))
+  expect_false("gradient_max" %in% names(got))
+  expect_identical(got$parent_order_min, 5L)
+})
+
+test_that("width_known_below_min passes the thresholds' rearing bounds", {
+  got <- order_child_args(
+    list(stream_order_parent_min = 5L, width_known_below_min = TRUE),
+    rear_ranges = ranges_bt)
+  expect_identical(got$channel_width_lt, 1.5)
+  expect_identical(got$gradient_max, 0.1049)
+})
+
+test_that("a rule's own width and gradient ranges win over the thresholds", {
+  got <- order_child_args(
+    list(stream_order_parent_min = 5L, width_known_below_min = TRUE),
+    rule = list(channel_width = list(2L, 9999L), gradient = c(0, 0.08)),
+    rear_ranges = ranges_bt)
+  expect_identical(got$channel_width_lt, 2)
+  expect_identical(got$gradient_max, 0.08)
+})
+
+test_that("width_known_below_min with no width or gradient minimum errors", {
+  expect_error(
+    order_child_args(
+      list(stream_order_parent_min = 5L, width_known_below_min = TRUE),
+      rear_ranges = list(gradient = c(0, 0.1049))),
+    "BT: .*no rearing channel_width_min is set")
+  expect_error(
+    order_child_args(
+      list(stream_order_parent_min = 5L, width_known_below_min = TRUE),
+      rear_ranges = list(channel_width = c(1.5, 9999))),
+    "no rearing gradient_max is set")
+})

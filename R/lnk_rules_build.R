@@ -455,9 +455,13 @@ lnk_rules_build <- function(csv,
         pom    <- read_pos_int(if (has_sopm)  d$rear_stream_order_parent_min else NULL, 5L)
         cs_min <- read_pos_int(if (has_csmin) d$rear_stream_order_child_min  else NULL, 1L)
         cs_max <- read_pos_int(if (has_csmax) d$rear_stream_order_child_max  else NULL, 1L)
+        # width_known_below_min: admit only a known width below the
+        # minimum, inside the rearing gradient maximum, as bcfishpass's
+        # exception does (#326). Every bypass a bundle sets carries it.
         out <- list(stream_order_min = cs_min,
                     stream_order_max = cs_max,
-                    stream_order_parent_min = pom)
+                    stream_order_parent_min = pom,
+                    width_known_below_min = TRUE)
         if (has_sodm) {
           raw_dm <- d$rear_stream_order_distance_max
           if (!is.null(raw_dm) && !is.na(raw_dm) &&

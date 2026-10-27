@@ -127,9 +127,12 @@ lnk_preflight_fresh <- function(required = .lnk_fresh_required(),
 # (fresh#259), which the validator passes the persisted near-river table
 # through (#364). 0.41.0 and 0.42.0 export the same formals; only the
 # Imports floor tells the inheriting release apart.
+# R/lnk_pipeline_classify.R: frs_order_child(channel_width_lt, gradient_max),
+# passed when a rear rule's bypass sets width_known_below_min (#326).
 .lnk_fresh_required_formals <- function() {
   list(frs_habitat_classify = "params_method",
-       frs_habitat_predicates = c("model", "near_river_table"))
+       frs_habitat_predicates = c("model", "near_river_table"),
+       frs_order_child = c("channel_width_lt", "gradient_max"))
 }
 
 # "fn(arg)" for each required formal the namespace does not provide. A
