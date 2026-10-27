@@ -1,11 +1,11 @@
 # Where streams break: bcfishpass and link, step by step
 
-**Verified:** 2026-10-11 · **Issues:** #324 (from #319); history #29, #45, #96, #223, fresh#160 ·
+**Verified:** 2026-10-27 · **Issues:** #324 (from #319), #326; history #29, #45, #96, #223, fresh#160 ·
 **Produced by:** a read of `smnorris/bcfishpass@620dbe4` (`model/01_access/`,
 `.github/workflows/ng-prod.yaml`), `data-raw/habitat_diff_segments.R`,
 `data-raw/logs/rearing_diff_324/mechanism.R` and `breaks.R` → `data-raw/logs/rearing_diff_324/`,
-and the planning archives cited below · **Status:** the difference is explained; matching it is
-decided and tracked in #326
+`data-raw/breaks_diff.R` → `data-raw/logs/segmentation_326/`, and the planning archives cited
+below · **Status:** the difference is explained; #326 breaks where bcfishpass does
 
 ## How bcfishpass breaks streams
 
@@ -33,17 +33,31 @@ The five scripts differ, and each difference changes where streams break:
 
 ## How link breaks them today
 
-`.lnk_pipeline_prep_minimal()` (`R/lnk_pipeline_prepare.R`), then `lnk_pipeline_break()`:
+Since #326, `.lnk_pipeline_prep_minimal()` (`R/lnk_pipeline_prepare.R`), then `lnk_pipeline_break()`:
 
 1. **Lifts match bcfishpass's per script.** The bcfishpass bundle's `parameters_fresh.csv`
    carries each row of the table above: `observation_threshold`, `observation_date_min`,
    `observation_species`, `observation_control_apply`. The five salmon rows are identical, so
    per-species sets equal bcfishpass's pooled model. Built in #25, #44, #48, #88 and #90.
-2. **Groups: no filter.** A break set is built for every species in `cfg$species`, whatever is
-   present. bcfishpass filters per model (the "groups built in" column). link has no `ct_dv_rb`
-   model, so in those 14 groups it would miss that model's breaks.
-3. **No reduction.** Every position of every species' set breaks the network. bcfishpass keeps
-   only the downstream-most position after lifts.
+2. **Groups: by presence.** A break set is built for each species in `cfg$species` that
+   `lnk_presence()` finds present in the group, with the salmon and `ct_dv_rb` group
+   expansion. bcfishpass builds `ct_dv_rb` only in a fixed list of 14 groups; link has no such
+   model.
+3. **Reduction after the lifts.** Each species' set is gradient at its classes, falls and
+   (bcfishpass bundle) subsurface flow, minus that species' rows in the group's
+   `barrier_overrides`, plus every user-definite barrier. `fresh::frs_barriers_minimal()`
+   keeps the downstream-most position per flow path, per species, never on the union. Only
+   those positions, and the independent `falls`, `barriers_definite` and `subsurfaceflow`
+   sources, break the network.
+
+Two residuals are named, not fixed. **Cross-group lifts:** the reduction lifts by the group's
+own overrides, while the access view lifts by every group's persisted rows. So where another
+group lifts its copy of a shared barrier and this group does not, that position still prunes
+the frontier above it here. Reading the persisted table at prepare time made segmentation
+depend on host and run order, so it was refused (#326 review round 2). **Classify's scope:**
+classify's access gate reads the group's gradient barriers only, while the per-species sets
+span whole lines, so a frontier pruned by an out-of-group barrier is classify-accessible above
+it until `lnk_habitat_gate()` settles the persisted flags.
 
 ## Where they differ, and since when
 
@@ -54,6 +68,7 @@ The five scripts differ, and each difference changes where streams break:
 | 2026-05-03 (#45) | per-species derivation; presence filter deliberately **not** applied, to stay bit-identical with link's own previous build | the pre-#45 hardcoded models were already unfiltered, so link never filtered by presence |
 | 2026-07-03 (#223) | reduction dropped: every position breaks | fixed access (a reduction before lifts let a lifted mainstem barrier prune real tributary frontiers), but doubled segments: FINA 26k → 70k, PARS 48k → 97k, PCEA 34k → 106k, LKEL 3.4k → 7.4k |
 | 2026-10-11 (#324) | first direct comparison of break positions | link holds all but 1 of bcfishpass's 24,393 PCEA breaks, plus 68,118 extra |
+| 2026-10-27 (#326) | per present species, reduce the **post-lift** set | FINA: 28,650 segments against bcfishpass's 28,650, every one of 20,394 breaks held both ways (`data-raw/logs/segmentation_326/`) |
 
 Before #223, LKEL had 3,376 link segments against bcfishpass's 3,360 today. That is the
 segmentation match the earlier work achieved. #223 called its break set "matching bcfishpass,
@@ -211,7 +226,13 @@ the same cluster would explain it, but that is not shown, so it is not counted a
   segments too. That reads truer to the reach, but it is a choice, and it moves numbers against
   bcfishpass both ways.
 
-## Decided (2026-10-11, operator; not yet implemented)
+## Decided (2026-10-11, operator; implemented in #326 except where noted)
+
+Changed at #326's gate (2026-10-26): `default` breaks for its own present species (GR and KO
+at 15 %, RB), so the two configs no longer share one segmentation and the PARS vignette's
+`id_segment` join is owed a fix; the strict `>` spawning minimum is deferred to its own issue;
+the order-1 exception takes bcfishpass's width and gradient tests, but not yet its waterbody and
+edge-type filter for CH, CO, ST and WCT (an open decision on #326).
 
 The `bcfishpass` config is there to match bcfishpass step by step wherever link can.
 
