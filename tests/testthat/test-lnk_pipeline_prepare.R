@@ -479,12 +479,13 @@ test_that(".lnk_pipeline_prep_minimal does NOT add orphan branch when no low cla
 })
 
 test_that(".lnk_pipeline_prep_minimal honours custom classes vector", {
-  # BT @ 0.10 → classes ≥ 0.10 are 1000 + 1500.
-  custom <- c("0500" = 0.05, "0800" = 0.08, "1000" = 0.10, "1500" = 0.15)
-  log <- .run_prep_minimal("BT", 0.10, .pm_presence(bt = "t"), classes = custom)
+  # Break-only bins below every threshold plus a subset of the access bins.
+  # BT @ 0.20 → classes ≥ 0.20 present here are 2000 + 3000.
+  custom <- c("0500" = 0.05, "0800" = 0.08, "2000" = 0.20, "3000" = 0.30)
+  log <- .run_prep_minimal("BT", 0.20, .pm_presence(bt = "t"), classes = custom)
   bt <- .pm_sql(log)[grepl("CREATE TABLE w\\.barriers_bt AS", .pm_sql(log))]
   expect_length(bt, 1L)
-  expect_match(bt, "gradient_class IN \\(1000, 1500\\)")
+  expect_match(bt, "gradient_class IN \\(2000, 3000\\)")
 })
 
 test_that(".lnk_pipeline_prep_minimal lifts by the group's own overrides only", {
@@ -519,6 +520,23 @@ test_that(".lnk_pipeline_prep_minimal lifts by the group's own overrides only", 
   bt <- sql[grepl("CREATE TABLE w\\.barriers_bt AS", sql)]
   expect_length(gregexpr("barrier_overrides", bt)[[1]], 1L)
   expect_match(bt, "FROM w\\.barrier_overrides o")
+})
+
+test_that(".lnk_pipeline_prep_minimal refuses an access-level class unify cannot map", {
+  # 0.175 is above CH's 0.15 but not one of .lnk_classes_bcfp, so the access
+  # view would never see it as a barrier while it prunes frontiers here.
+  custom <- c("1500" = 0.15, "1750" = 0.175, "2000" = 0.20)
+  expect_error(
+    .run_prep_minimal("CH", 0.15, .pm_presence(ch = "t"), classes = custom),
+    "gradient class\\(es\\) 1750 are at or above CH's access_gradient_max")
+  # A class below every species' threshold is a break-only orphan: allowed.
+  ok <- c("0500" = 0.05, .lnk_classes_bcfp)
+  expect_silent(.run_prep_minimal("CH", 0.15, .pm_presence(ch = "t"), classes = ok))
+  # A bcfp id carrying a different value is refused too.
+  expect_error(
+    .run_prep_minimal("CH", 0.15, .pm_presence(ch = "t"),
+                      classes = c("1500" = 0.16, "2000" = 0.20)),
+    "1500 are at or above")
 })
 
 # -- prep_network SQL shape --------------------------------------------------

@@ -649,6 +649,25 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
     if (length(sp_amax) == 0L || is.na(sp_amax) || sp_amax <= 0) next
     classes_for_sp <- as.integer(names(classes)[classes >= sp_amax])
     if (length(classes_for_sp) == 0L) next
+    # lnk_barriers_unify() maps gradient classes to the species they block
+    # from .lnk_classes_bcfp alone, and the access view reads that map. A
+    # class at access level outside it would sit in this set, block nobody
+    # in the view, and prune the view's real frontiers above it (#326
+    # review round 3), so refuse it.
+    bcfp_ids <- as.integer(names(.lnk_classes_bcfp))
+    off <- classes_for_sp[!classes_for_sp %in% bcfp_ids |
+      !mapply(function(id, v) isTRUE(all.equal(unname(
+        .lnk_classes_bcfp[match(id, bcfp_ids)]), unname(v))),
+        classes_for_sp, classes[match(classes_for_sp, as.integer(names(classes)))])]
+    if (length(off) > 0L) {
+      stop(sprintf(paste0(
+        "gradient class(es) %s are at or above %s's access_gradient_max ",
+        "(%s) but are not among the access classes lnk_barriers_unify() ",
+        "maps to species (%s); a break-only class must sit below every ",
+        "species' access_gradient_max"),
+        paste(off, collapse = ", "), sp, sp_amax,
+        paste(names(.lnk_classes_bcfp), collapse = ", ")), call. = FALSE)
+    }
     sp_key <- tolower(sp)
     .lnk_validate_identifier(sp_key, sprintf("species code %s", sp))
     models[[sp_key]] <- list(code = sp, classes = classes_for_sp)
