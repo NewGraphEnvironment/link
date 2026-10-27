@@ -60,11 +60,11 @@ What exploration established (read-only):
 
 ## Phase 1: where the time goes (decompose CHWK against SALR)
 
-- [ ] `data-raw/logs/recompute_cost_261/walks.R`: for a group, build the TEMP segments table, then time
+- [x] `data-raw/logs/recompute_cost_261/walks.R`: for a group, build the TEMP segments table, then time
       each walk `lnk_access()` would run (per present species view, per source) with
       `EXPLAIN (ANALYZE, BUFFERS)` and record rows out (pairs), segments, and the plan's driver
       (which side is outer)
-- [ ] Run it on CHWK, SALR, LKEL, CHES (#261's four), the 2026-10-23 longest job, and two median groups;
+- [x] Run it on CHWK, SALR, LKEL, CHES (#261's four), the 2026-10-23 longest job, and two median groups;
       write `walks.tsv`
 - [ ] Gate decision 2: instrumented re-run of CHWK and SALR with per-step timing; digests before/after
       in `rerun_digest.tsv`; `steps.tsv` gives walk / gate / mapping-code / other seconds

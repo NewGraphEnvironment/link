@@ -82,6 +82,8 @@ Version pin: link@v0.48.0.
 
 | Error | Resolution |
 |-------|------------|
+| Range count with `OR bw.w @> g.lo` ran past 10 min (the OR defeats the index; 3,133 subqueries each summing millions of rows) | Running total per species (`sum(n) OVER (PARTITION BY sp ORDER BY w)`), two index lookups per range, ancestors by equality on `subpath()`. Killing `psql` left its backend running: cancelled with `pg_cancel_backend` |
+| `min(ltree)` does not exist | `DISTINCT ON (group) ORDER BY wscode_ltree` for lo and `DESC` for hi |
 
 ## Exploration, 2026-10-27
 
@@ -111,3 +113,14 @@ Review in `review-plan.md`. Dispositions:
 SALR drains Shuswap, South Thompson, Thompson, then the Fraser from Lytton to the sea, so the features below SALR's outlet include every feature below CHWK's outlet on the lower Fraser. If cost tracked features downstream of the outlet, SALR would cost at least CHWK. It costs 1/22 of CHWK, so #261's hypothesis in its literal form is expected to fail on this pair before any correlation.
 
 Phase 1's first plan (SALR) already points elsewhere: the planner drives every walk from the province-wide feature table (7.24 M rows for CH) and probes the group's segments once per feature. A walk's cost is then set by the feature table's size and by how many of the group's segments each probe returns before the filter: same blue line, or a stream whose code descends from the feature's.
+
+## Phase 1: the walks, measured (2026-10-27, m1, 20:32–21:31 UTC)
+
+Harness `data-raw/logs/recompute_cost_261/walks.R` over SALR CHWK LKEL CHES KOTR SPAT LSKE SETN LFRA, one session, `fresh_default` tuple writes 161,847,271 before and after. `walks.tsv`, one plan per walk in `plans/`. `others_active` is 0 through SPAT and 1 or 2 from LSKE's third walk on (another client's `fwa_watershedatmeasure()` calls), so the last three groups ran beside one other query.
+
+- **Every walk has the same plan, driven from the province.** Outer: an index scan of `fresh_default.barriers` on `barriers_source_idx` returning 7,240,975 rows for the CH view (3.48 M for BT/RB, 5.36 M for ST/WCT), with the override anti-join run 7.24 M times. Inner, once per feature: a `BitmapOr` of `blue_line_key = b.blue_line_key` and `wscode_ltree <@ b.wscode_ltree` on the group's TEMP segments. The outer side alone is ~6 s per CH walk in every group.
+- **The cost is the GiST probe, not the pairs.** The CH walk's `wscode_ltree` bitmap index scan takes 0.001 ms per loop in SALR and 0.009 ms in CHWK, over the same 7,240,975 loops: 7 s against 65 s. SETN's CH walk returns 4,829,028 pairs and LFRA's 1,171,394, and both take 157–163 s; CHWK's returns 161,974 pairs in 80 s and LKEL's 98,243 in 15 s.
+- **Walk seconds per group** (all walks; natural-barrier views in brackets): SALR 31.0 (29.7), CHES 62.5 (61.0), LKEL 91.0 (90.1), SPAT 100.3 (98.0), KOTR 98.6 (91.6), LSKE 473.1 (469.6), CHWK 551.4 (545.7), SETN 1,052.1 (1,042.5), LFRA 1,101.6 (1,090.1). Anthropogenic, PSCIS and dams walks are under 11 s each anywhere: their outer table is 0.5 M rows, not 7.2 M.
+- **The walks are most of the job:** 59–106 % of each group's 2026-10-23 logged minutes (CHWK 59 %, SALR 72 %; SETN 106 % because the harness ran beside another query there and the run's job did not). Uncontended server time against contended job time, so a share, not a decomposition.
+- **CHWK has 8 natural walks to SALR's 2,** and five of CHWK's (CH, CM, CO, PK, SK) return identical pair counts (161,974). Before overrides, the natural barrier set has three distinct shapes province-wide: CH = CM = CO = GR = KO = PK = SK (7,242,732 rows), BT = DV = RB (3,481,931), ST = WCT (5,361,260). Walk count multiplies the probe cost; it does not explain it (SALR's one CH walk costs 1/4 of CHWK's).
+- **Working hypothesis for the probe cost:** a feature's probe descends the group's GiST only where its code can have descendants inside the group's code range. CHWK owns segments of the Fraser main stem (lowest code `100`), so every Fraser-system feature descends; SALR's codes sit inside `100.591289`, so almost every probe stops at the root. The slowest groups in both runs (SETN, FRCN, LFRA, CHWK, LSKE, LILL) are main-stem owners. Being tested with a per-group count of features inside `[lo, hi]` plus ancestors of `lo` (scratch SQL, then `predictors.R`).
