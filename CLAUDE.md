@@ -11,6 +11,18 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
+## Status (2026-10-27, late) — a group's recompute cost is the walk's province-wide probe (#261)
+
+**#261's hypothesis is refuted: recompute cost does not track the barriers downstream of a group** (Spearman −0.08 over 240 groups). Each `fresh::frs_network_features()` walk drives from every feature in the province (7.24 M rows for CH) and probes the group's segments once per feature through its wscode GiST. That probe costs 9× more in CHWK than in SALR, and CHWK walks 8 natural views to SALR's 2. A per-group walk timing predicts the 2026-10-23 recompute minutes at Spearman 0.982, against 0.993 between two runs. No link code changed. Verdict: `research/recompute_cost.md`. Evidence: `data-raw/logs/recompute_cost_261/` (its README indexes it).
+
+**Facts not worth re-deriving:**
+- **The walks are the job:** CHWK re-run 617.6 s with walks 589.4 s; SALR 46.3 s with walks 28.2 s. Gate and mapping code are under 16 s in both, and the client side about 6 %. Both re-runs (from a worktree at `1d00c04c`) digest identical.
+- **A prefiltered walk returns the same features:** cutting the feature side to the group's blue lines and the ancestor-or-equal codes of its segments (btree lookups, `= ANY (ARRAY(...))`; `IN (SELECT ...)` still reads the whole table). 33 of 33 walks matched, 3.6× to 24.6× faster. Estimated 36 to 51 % of the recompute's summed work; CHWK is 1.9 % of it. A fresh issue is drafted, not filed.
+- **SETN is output-bound** (4.83 M pairs, a 539 MB sort spill) and gains 1.2×. link keeps only `has_barriers_<sp>_dnstr` from the natural arrays, so an existence test would remove that; not measured.
+- **The walk's `ORDER BY` ties for co-located features**, so their array order follows the plan. link reads only the anthropogenic array's first element (`dam_dnstr_ind`), which matched in all nine groups tried.
+- **CHWK and LFRA hold coastal codes (`970.…`) beside the Fraser main stem**, so a group's code range is not a cost predictor (SETN's is narrow and SETN is the slowest walk).
+- **Owed:** re-run `predictors.R` / `correlations.R` on the next provincial build; file the fresh issue once its body is approved.
+
 ## Status (2026-10-27) — streams break only where a present species' access changes (#326)
 
 **Both configs now break streams where bcfishpass does.** `.lnk_pipeline_prep_minimal()` builds each present species' barrier set after its lifts and reduces it to the downstream-most position per flow path, per species, never on the union. Only those positions and the independent falls, user-definite and subsurface sources break the network. The `bcfishpass` config takes bcfishpass's order-1 rearing exception (`rear_stream_order_bypass = yes` for BT, CH, CO, ST and WCT) through fresh 0.43.0's `frs_order_child(channel_width_max =, gradient_max =)`. `lnk_barriers_unify()` now persists every staged barrier row, including one `FWA_LocateAlong()` cannot place (`.lnk_sql_locate()`). Mechanics: RUNBOOK §2. Record: `research/bcfp_segmentation_parity.md`, "Measured since #326". Evidence: `data-raw/logs/segmentation_326/` (its README indexes it).

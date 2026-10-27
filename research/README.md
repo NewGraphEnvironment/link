@@ -45,6 +45,7 @@ renamed.
 | [`provincial_run_runbook.md`](provincial_run_runbook.md) | Provincial run runbook |
 | [`upstream_input_provenance.md`](upstream_input_provenance.md) | What pins fwapg, bcfishobs and bcfishpass inputs |
 | [`recompute_parallel_2026_09_01.md`](recompute_parallel_2026_09_01.md) | Parallelising the post-consolidate recompute |
+| [`recompute_cost.md`](recompute_cost.md) | What a group's recompute costs and why: the downstream walk's province-wide probe, not the barriers below the group (#261) |
 
 ## Run records (dated; kept for their evidence)
 

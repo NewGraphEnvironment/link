@@ -88,14 +88,14 @@ What exploration established (read-only):
 
 ## Phase 3: record and hand off
 
-- [ ] `data-raw/logs/recompute_cost_261/README.md`: question, method, stamps (link / fresh SHAs, run_uid,
+- [x] `data-raw/logs/recompute_cost_261/README.md`: question, method, stamps (link / fresh SHAs, run_uid,
       m1 load), measurement, evidence; keep the wrong turns
-- [ ] `research/recompute_cost.md` (new topic file; the dated `recompute_parallel_2026_09_01.md` is not
+- [x] `research/recompute_cost.md` (new topic file; the dated `recompute_parallel_2026_09_01.md` is not
       renamed): the durable verdict; `research/README.md` row if one exists
-- [ ] If the cause is in fresh: draft the fresh issue with the EXPLAIN output attached, shown in the final
+- [x] If the cause is in fresh: draft the fresh issue with the EXPLAIN output attached, shown in the final
       report, not filed. If it is in link: a follow-up link issue drafted the same way, with the expected
       saving in minutes
-- [ ] Edit #261's body with the verdict (acceptance boxes), fill #377's "Measured:" line for #261,
+- [x] Edit #261's body with the verdict (acceptance boxes), fill #377's "Measured:" line for #261,
       CLAUDE.md Status block, RUNBOOK §8d only if a mechanic changed
 - [ ] `/code-check branch`, `/planning-archive`, `/gh-pr-push`
 
