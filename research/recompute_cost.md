@@ -24,24 +24,27 @@ segments once per feature through a `BitmapOr` on `blue_line_key` and
 `wscode_ltree <@ b.wscode_ltree`. So each walk costs:
 
 - **the view's size**, about 6 s for a CH-sized view, the same in every group;
-- **the view's size times the per-probe cost of the group's wscode GiST**: 0.001 ms in
-  SALR and 0.009 ms in CHWK, up to 0.019 ms in LFRA. It is highest in groups that own
+- **the view's size times the per-feature cost of probing the group's segments** (the
+  CH walk's inner side over its 7.24 M features): 1.8 µs in SALR, 10.3 µs in CHWK, up to
+  21 µs in LFRA. It is highest in groups that own
   segments of a main stem, such as the Fraser (`100`) and the lower Skeena (`400`), and
   in groups with coastal codes beside them. The group's code range does not predict it:
   SETN's range is narrow and its probe is among the dearest;
 - **the output pairs**, which dominate only where many features sit inside the group
   above many segments (SETN: 4.83 M pairs, a 539 MB sort spill).
 
-CHWK costs about 20× SALR because its probe costs about 9× and it walks 8 natural views
-to SALR's 2.
+CHWK's natural walks cost 18× SALR's (546 against 30 s): each CH walk costs 4.1× SALR's
+(its probes 5.7×), and its eight natural views hold 4.5× the province-wide rows of SALR's
+two.
 
 ## What would fix it
 
 Cut the feature side to what `fwa_downstream()` can return, before the join: features
 on one of the group's blue lines, or whose wscode is an ancestor of, or equal to, a group
-segment's wscode. Both are btree lookups. Measured on nine groups, this returns the same
-features per segment in all 33 walks tried, and walks run 3.6× (SPAT) to 24.6× (CHWK)
-faster. SETN gains only 1.2×, because its cost is output. Over the 2026-10-23 pool
+segment's wscode. Both are index lookups on the feature table (the wscode arm through
+its GiST, the blue line through its btree). Measured on nine groups, this returns the same
+features per segment in all 32 walks tried, and a group's walks run 3.6× (SPAT) to 24.6×
+(CHWK) faster in total. SETN gains only 1.2×, because its cost is output. Over the 2026-10-23 pool
 (50,352 s of summed job time), it would save an estimated 18,221 to 25,534 s (36 to
 51 %). The saving is spread over every group, and CHWK is 1.9 % of the pool.
 

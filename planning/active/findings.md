@@ -163,3 +163,16 @@ Harness `data-raw/logs/recompute_cost_261/walks.R` over SALR CHWK LKEL CHES KOTR
 - **The pool (2026-10-23, 240 groups, `-j8`):** summed job time 50,352 s (839 min; span 110 min). Predicted walks 33,398 s (66 %, uncontended seconds against contended job seconds). The prefilter would leave 7,864 s (calibrated) to 15,177 s (the sample's upper bound), saving 18,221 to 25,534 s: 36 to 51 % of the summed job time, if contended walk time scales as uncontended does. The pool is throughput-bound (#374, #260), so that is roughly 40 to 55 min off a 110 min span at `-j8`, to be measured, not promised.
 - **It is not CHWK's problem:** CHWK is 934 s of 50,352 (1.9 %), and the ten costliest groups hold 17.8 % of predicted walk time. The probe costs every group: SALR's 2.9 s CH walk takes 16.4 s as sent. That is what passes #377's test (the cause also slows other groups).
 - **Verdict on #261:** refuted. Cost does not track barriers downstream of a group (0 below seven of the nine decomposed groups' outlets). It tracks the walk's province-wide probe: each walk drives from every feature in the province and probes the group's segments once per feature, at a per-probe cost set by the group's GiST, plus, in SETN-like groups, the output pairs. CHWK costs 20× SALR because its probe costs 9× (every Fraser-system feature descends its index: its segments sit on the Fraser main stem and coastal codes) and it walks 8 natural views to SALR's 2.
+
+## Corrections from code-check round 1 (2026-10-27)
+
+Review in `review-round1.md`; each was reproduced before it was fixed.
+
+- **The probe is 5.7×, not 9×.** 0.001 and 0.009 ms were per-loop node times rounded to three decimals. Unrounded, the CH walk's inner side (nested loop less outer scan) is 13.0 s in SALR and 74.4 s in CHWK: 1.8 against 10.3 µs per feature. LKEL 1.3, CHES 2.0, LSKE 8.4, SETN 19.7, LFRA 21.2 µs. What reconciles CHWK against SALR: each CH walk 4.1× (80.3 / 19.6 s) times 4.5× the province-wide rows walked (48.5 M against 10.7 M) ≈ 18×, the measured natural-walk ratio (545.7 / 29.7 s).
+- **32 walks, not 33,** in `walk_prefilter.tsv`; all 32 match per segment, 28 also in array order.
+- **The prefilter's wscode arm runs through `barriers_wscode_gist_idx` (GiST),** not a btree; the blue-line arm through `barriers_blk_drm_idx`.
+- **No client-side share can be read** from R-timed against server-timed walks: they come from different runs, and the same CHWK CH walk took 80.3, 86.2 and 93.7 s across the three scripts.
+- **The last 20 groups `predictors.R` probed (UKEC to ZYMO) ran beside 6 or 8 other backends** (another session's 8-way parallel query; the script checks only at its start). They carry 2,760 of 33,517 predicted walk seconds; Spearman 0.982 and R² 0.97 with or without them.
+- **LSKE shows no contention effect at all:** 67.6 to 69.2 s alone, 68.0 to 70.1 s beside one backend.
+- **SETN's 140,159 are the prefiltered walk's features,** 139,882 of them inside the group.
+- `rerun.R` now refuses to start while a backup from an earlier run exists (a second run would otherwise overwrite the only copy of the original rows).

@@ -45,9 +45,13 @@ group, walked by `fresh::frs_network_features()`.
   `correlations.tsv`, `misses.tsv`, `pool.tsv` and `minutes_vs_predictors.png`.
 
 Another session queried m1's database continuously from 20:51 UTC (one backend running
-watershed-area calls). Every row records `others_active`. In `walks.tsv`, LSKE's walks took 67.6 s with
-no other backend and 68.0 to 70.1 s beside one, so later scripts accept one other
-backend. `rerun.R` refuses if any other backend holds a lock in `fresh_default`.
+watershed-area calls). Every row records `others_active`. In `walks.tsv`, LSKE's CH-shaped
+walks took 67.6 to 69.2 s with no other backend and 68.0 to 70.1 s beside one, so that
+load did not show, and later scripts accept one other backend. `rerun.R` refuses if any
+other backend holds a lock in `fresh_default`. `predictors.R` checks only at its start:
+the last 20 groups it probed (UKEC to ZYMO, alphabetically last) ran beside 6 or 8 other
+backends, an 8-way parallel query from another session. They carry 2,760 of 33,517
+predicted walk seconds, and the correlations read the same without them.
 
 ## Measurement
 
@@ -60,22 +64,27 @@ backend. `rerun.R` refuses if any other backend holds a lock in `fresh_default`.
 | setup and UPDATE in `lnk_access()` | 3.8 s | 8.3 s |
 | habitat gate | 2.8 s | 8.0 s |
 | mapping code | 7.2 s | 7.5 s |
-| guard, prior copy, rest of `lnk_pipeline_access()` | 3.8 s | 4.1 s |
+| guard, prior copy, rest of `lnk_pipeline_access()` | 3.7 s | 4.1 s |
 | digests before and after | unchanged (4 tables) | unchanged (10 tables) |
 
-The steps sum to the wall clock within 0.3 s. CHWK's walks are 551.4 s on the server and
-589.4 s from R, so the client side (arrays sent and parsed) is about 6 %.
+The steps sum to within 0.5 s of the wall clock. The walks timed from R here and on the
+server in `walks.tsv` come from different runs under different load: the same CHWK CH walk
+took 80.3, 86.2 and 93.7 s across the three scripts. So the client side (arrays sent and
+parsed) is inside that spread, and these runs cannot separate it further.
 
 ### Why a walk costs what it does
 
 Every walk has one plan. The outer side reads the walked view province-wide (7.24 M rows
 for CH and its six identical-before-overrides species, 3.48 M for BT/DV/RB, 5.36 M for
 ST/WCT), about 6 s per CH walk. For each row it probes the group's segments with a
-`BitmapOr` on `blue_line_key` and `wscode_ltree <@ b.wscode_ltree`. The GiST probe costs
-0.001 ms per feature in SALR and 0.009 ms in CHWK over the same 7,240,975 loops (7 s
-against 65 s). The pairs returned do not set the cost: SETN's CH walk returns 4.83 M pairs
-and LFRA's 1.17 M, both in 157 to 163 s; CHWK returns 162 k in 80 s and LKEL 98 k in 15 s.
-CHWK walks 8 natural views and SALR 2.
+`BitmapOr` on `blue_line_key` and `wscode_ltree <@ b.wscode_ltree`. Over the same
+7,240,975 features, the inner side of the CH walk (the nested loop less its outer scan)
+takes 13.0 s in SALR and 74.4 s in CHWK: 1.8 against 10.3 µs per feature, 5.7×. LKEL's
+is 1.3 µs, LSKE's 8.4, SETN's 19.7 and LFRA's 21.2. The pairs returned do not set the
+cost: SETN's CH walk returns 4.83 M pairs and LFRA's 1.17 M, both in 157 to 163 s; CHWK
+returns 162 k in 80 s and LKEL 98 k in 15 s. So CHWK's CH walk costs 4.1× SALR's (80.3
+against 19.6 s), and its eight natural views hold 4.5× the province-wide rows of SALR's
+two: about 18×, which is the ratio of their natural walks (545.7 against 29.7 s).
 
 **Refuted on the way:** that a probe descends only where the feature's code falls in the
 group's code range. CHWK and LFRA hold coastal codes as well as the Fraser main stem
@@ -96,13 +105,13 @@ and SETN is the slowest walk.
 | SPAT | 76.6 | 21.1 | 3.6× |
 | SETN | 211.6 | 178.4 | 1.2× |
 
-One walk per barrier-set shape plus anthropogenic. All 33 walks return the same features
+One walk per barrier-set shape plus anthropogenic. All 32 walks return the same features
 per segment. In four (CHWK CH, BT, ST; CHES CH) the order inside some arrays differs:
 fresh's `ORDER BY` (wscode, localcode, measure) ties for co-located features, so that
 order is the plan's. link persists only `has_barriers_<sp>_dnstr` from the natural arrays.
 The anthropogenic arrays, whose first element `dam_dnstr_ind` reads, match in their own
-order in all nine. SETN is output-bound: 140,159 features inside the group match about 34
-segments each, 4.83 M pairs, and the sort spills 539 MB to disk.
+order in all nine. SETN is output-bound: its prefiltered CH walk keeps 140,159 features
+(139,882 of them inside the group), each matching about 34 segments, 4.83 M pairs, and the sort spills 539 MB to disk.
 
 ### All 241 groups
 
@@ -120,7 +129,7 @@ The sample walk predicts the nine measured groups' walk seconds at slope 1.00. A
 decomposed groups have no natural barrier and no crossing below their outlet.
 
 The pool on 2026-10-23: 50,352 s of summed job time (span 110 min at `-j8`). Predicted
-walks are 33,398 s of it (uncontended seconds beside contended ones). The prefilter would
+walks are 33,398 s of it (single-walk seconds, beside job seconds run eight at once). The prefilter would
 leave 7,864 s (calibrated on the nine) to 15,177 s (the sample's upper bound), a saving of
 18,221 to 25,534 s, 36 to 51 % of the summed time. CHWK is 934 s of the pool, and the ten
 costliest groups hold 17.8 % of predicted walk time.
@@ -136,5 +145,5 @@ unchanged); a fresh issue is drafted, not filed. No link code changed.
 
 - Re-run `predictors.R` and `correlations.R` on the next provincial build (#326's
   segmentation roughly halves segments).
-- The pool saving is an estimate from uncontended walks; the next run with a prefiltered
-  walk measures it.
+- The pool saving is an estimate from walks timed one at a time; the next run with a
+  prefiltered walk measures it.

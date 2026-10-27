@@ -71,6 +71,14 @@ digest <- function() {
     sch, t, DBI::dbQuoteLiteral(conn, wsg)))$d, character(1))
 }
 
+# A backup left by an earlier run (digest moved, or an error mid-run) holds the
+# only copy of the original rows; backing up again would overwrite it.
+left <- vapply(tables, function(t) !is.na(DBI::dbGetQuery(conn, sprintf(
+  "SELECT to_regclass('zz261_backup.%s_%s')::text AS r", t, tolower(wsg)))$r), logical(1))
+if (any(left)) {
+  stop("REFUSE: backup(s) from an earlier run still exist for ", wsg, ": ",
+       paste(tables[left], collapse = ", "), "; restore or drop them first", call. = FALSE)
+}
 d0 <- digest()
 DBI::dbExecute(conn, "CREATE SCHEMA IF NOT EXISTS zz261_backup")
 for (t in tables) {
