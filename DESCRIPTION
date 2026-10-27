@@ -30,7 +30,7 @@ Imports:
     crate (>= 0.0.2),
     DBI,
     digest,
-    fresh (>= 0.42.0),
+    fresh (>= 0.43.0),
     httr,
     jsonlite,
     RPostgres,
