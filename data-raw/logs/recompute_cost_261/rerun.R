@@ -36,7 +36,15 @@ busy <- DBI::dbGetQuery(conn,
   "SELECT count(*)::int AS n FROM pg_stat_activity
    WHERE datname = current_database() AND state <> 'idle'
      AND pid <> pg_backend_pid() AND backend_type = 'client backend'")$n
-if (busy > 0L) stop("REFUSE: ", busy, " other active client backend(s)", call. = FALSE)
+# A write needs nobody else in the schema; timing tolerates one other backend
+# (walk_prefilter.R gives the measurement).
+locked <- DBI::dbGetQuery(conn, sprintf(
+  "SELECT count(*)::int AS n FROM pg_locks l
+   JOIN pg_class c ON c.oid = l.relation
+   JOIN pg_namespace s ON s.oid = c.relnamespace
+   WHERE s.nspname = '%s' AND l.pid <> pg_backend_pid()", sch))$n
+if (locked > 0L) stop("REFUSE: another backend holds ", locked, " lock(s) in ", sch, call. = FALSE)
+if (busy > 1L) stop("REFUSE: ", busy, " other active client backends", call. = FALSE)
 
 head_sha <- system2("git", c("rev-parse", "HEAD"), stdout = TRUE)
 run_sha <- DBI::dbGetQuery(conn, sprintf(

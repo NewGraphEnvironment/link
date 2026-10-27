@@ -83,6 +83,8 @@ Version pin: link@v0.48.0.
 | Error | Resolution |
 |-------|------------|
 | Range count with `OR bw.w @> g.lo` ran past 10 min (the OR defeats the index; 3,133 subqueries each summing millions of rows) | Running total per species (`sum(n) OVER (PARTITION BY sp ORDER BY w)`), two index lookups per range, ancestors by equality on `subpath()`. Killing `psql` left its backend running: cancelled with `pg_cancel_backend` |
+| Prefilter as `IN (SELECT ...)` still read 7.24 M rows through `barriers_source_idx` (SALR CH 6.1 s) | `= ANY (ARRAY(SELECT ...))` lets the planner use the btree indexes on `wscode_ltree` and `blue_line_key` (2.9 s) |
+| Every quiet-wait loop refused: another session queries m1 continuously | Measured its cost (LSKE walks 67.6 s alone, 68.0–70.1 s beside it); experiments tolerate one other backend and record it per row; `rerun.R` refuses on any other lock in `fresh_default` |
 | `min(ltree)` does not exist | `DISTINCT ON (group) ORDER BY wscode_ltree` for lo and `DESC` for hi |
 
 ## Exploration, 2026-10-27
@@ -123,4 +125,29 @@ Harness `data-raw/logs/recompute_cost_261/walks.R` over SALR CHWK LKEL CHES KOTR
 - **Walk seconds per group** (all walks; natural-barrier views in brackets): SALR 31.0 (29.7), CHES 62.5 (61.0), LKEL 91.0 (90.1), SPAT 100.3 (98.0), KOTR 98.6 (91.6), LSKE 473.1 (469.6), CHWK 551.4 (545.7), SETN 1,052.1 (1,042.5), LFRA 1,101.6 (1,090.1). Anthropogenic, PSCIS and dams walks are under 11 s each anywhere: their outer table is 0.5 M rows, not 7.2 M.
 - **The walks are most of the job:** 59–106 % of each group's 2026-10-23 logged minutes (CHWK 59 %, SALR 72 %; SETN 106 % because the harness ran beside another query there and the run's job did not). Uncontended server time against contended job time, so a share, not a decomposition.
 - **CHWK has 8 natural walks to SALR's 2,** and five of CHWK's (CH, CM, CO, PK, SK) return identical pair counts (161,974). Before overrides, the natural barrier set has three distinct shapes province-wide: CH = CM = CO = GR = KO = PK = SK (7,242,732 rows), BT = DV = RB (3,481,931), ST = WCT (5,361,260). Walk count multiplies the probe cost; it does not explain it (SALR's one CH walk costs 1/4 of CHWK's).
-- **Working hypothesis for the probe cost:** a feature's probe descends the group's GiST only where its code can have descendants inside the group's code range. CHWK owns segments of the Fraser main stem (lowest code `100`), so every Fraser-system feature descends; SALR's codes sit inside `100.591289`, so almost every probe stops at the root. The slowest groups in both runs (SETN, FRCN, LFRA, CHWK, LSKE, LILL) are main-stem owners. Being tested with a per-group count of features inside `[lo, hi]` plus ancestors of `lo` (scratch SQL, then `predictors.R`).
+- **Refuted: the group's code range.** A probe should descend only where the feature's code can have descendants in `[lo, hi]` (`range_hypothesis.sql` / `.tsv`). CHWK and LFRA hold coastal codes too (`100` to `970.030628…`), so the range covers 7.17 M of 7.24 M CH features. SETN's range covers 0.75 M, yet SETN is the slowest walk. The range count says nothing about the probe.
+
+## Phase 1: a prefiltered walk, same features (2026-10-27, 22:07–22:39 UTC)
+
+`walk_prefilter.R` runs fresh's walk SQL as sent and the same SQL with the feature side cut to what `fwa_downstream()` can return: features on one of the group's blue lines (criterion 1) or whose wscode is an ancestor of, or equal to, a group segment's wscode (criterion 2, `wscode_a <@ wscode_b`). The cut uses the btree indexes on `barriers.wscode_ltree` and `barriers.blue_line_key` (`= ANY (ARRAY(...))`; a first try with `IN (SELECT ...)` still read all 7.24 M rows through the source index and took 6.1 s for SALR CH, kept in the errors table). One view per barrier-set shape plus anthropogenic, nine groups, one other backend active throughout (another session's area queries).
+
+- **Same features per segment in all 33 walks** (the digest with each array sorted). The digest in the arrays' own order differs in four (CHWK CH, BT, ST; CHES CH): features tied on the walk's `ORDER BY` (wscode, localcode, measure, all descending) come back in plan order. link persists only the natural arrays' `has_barriers_<sp>_dnstr` booleans, so no output moves. The anthropogenic arrays, whose `[1]` link reads for `dam_dnstr_ind`, match in their own order in all nine.
+- **Walk seconds, sent → prefiltered** (three natural shapes + anthropogenic): CHWK 219.0 → 8.9 (24.6×), LKEL 33.8 → 1.8 (18.8×), LFRA 357.3 → 38.7 (9.2×), LSKE 165.2 → 21.5 (7.7×), SALR 26.9 → 4.3 (6.3×), CHES 29.0 → 4.9 (5.9×), KOTR 69.3 → 18.4 (3.8×), SPAT 76.6 → 21.1 (3.6×), SETN 211.6 → 178.4 (1.2×).
+- **SETN is the other regime.** Its prefiltered CH walk keeps 140,159 features (inside the group), each matching about 34 segments: 4,829,028 pairs, sorted with a 539 MB spill to disk. That is output volume. It is intrinsic to building full arrays, and link only keeps whether each one is empty.
+- **So the walk's cost has two parts:** the province-wide probe (N view features × per-probe cost of the group's GiST), which the prefilter removes; and the pairs, which only a cheaper question removes (does any barrier lie downstream, rather than which).
+
+## Phase 2 check: the sample walk predicts the measured walks
+
+`predictors.R` times a walk of a fixed 200,000-feature sample of the CH view (no index, so it drives from the sample as the real walk drives from the view) against each group's TEMP segments: `probe_us`. Over the nine measured groups, `outer_rows_natural × probe_us` predicts their measured natural walk seconds with slope 1.00, Spearman 1, Pearson 0.997 on logs (`predictors_subset.tsv`). The same sample walk with the prefilter (`probe_pre_us`) fits SETN and LFRA (559 vs 558 s, 179 vs 149 s) but overstates small groups, because scanning the unindexed sample costs about 2.7 µs per row that the real, indexed prefilter does not pay. Measured over the nine (each shape's prefilter time given to every walk of that shape), natural walks go 3,518 → 1,053 s.
+
+- **#261's own predictor is 0 for seven of the nine groups:** no natural barrier and no crossing lies on the main-stem path below SALR, CHES, LKEL, LSKE, CHWK, SETN or LFRA (KOTR 16, SPAT 23). It cannot rank them.
+
+## Phase 1: the instrumented re-run (gate decision 2; 2026-10-27, 22:47–23:00 UTC)
+
+`rerun.R` from a worktree at `1d00c04c` (the commit that wrote both groups' rows), on m1's `fresh_default`, one other backend active (the same read-only area queries; the guard refuses any other lock in `fresh_default`). The worktree loads fresh 0.43.0 (`18d92ceb`); the run used 0.42.0 (`e9793047`), and the walk's SQL is the same in both.
+
+- **Both reproduce:** every digest unchanged, SALR 4 tables, CHWK 10 (`streams_access`, `streams_mapping_code`, eight `streams_habitat_<sp>`). Backups dropped; `zz261_backup` dropped (empty).
+- **SALR 46.3 s** (logged 0.72 min at `-j8`): walks 28.2, the rest of `lnk_pipeline_access()` 1.6, setup and UPDATE 3.8, gate 2.8, mapping code 7.2, guard 2.0, prior copy 0.2.
+- **CHWK 617.6 s** (logged 15.56 min at `-j8`, 9.26 at `-j4`): walks 589.4 (95 %), the rest of `lnk_pipeline_access()` 2.1, setup and UPDATE 8.3, gate 8.0, mapping code 7.5, guard 1.5, prior copy 0.5. Steps sum to 617.3 s of 617.6 s wall clock.
+- **Client share of the walks:** CHWK's R-timed walks 589.4 s against the harness's server-side 551.4 s, so about 38 s (6 %) is transfer and parsing of the arrays; SALR's R-timed 28.2 s is below its server-side 31.0 s (different moment, same order). The client side is not the cost.
+- **So CHWK's 13× over SALR in this re-run (617.6 / 46.3) is the walks**: 561 s more walk time, 13 s more everything else.

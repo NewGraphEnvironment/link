@@ -66,9 +66,9 @@ What exploration established (read-only):
       (which side is outer)
 - [x] Run it on CHWK, SALR, LKEL, CHES (#261's four), the 2026-10-23 longest job, and two median groups;
       write `walks.tsv`
-- [ ] Gate decision 2: instrumented re-run of CHWK and SALR with per-step timing; digests before/after
+- [x] Gate decision 2: instrumented re-run of CHWK and SALR with per-step timing; digests before/after
       in `rerun_digest.tsv`; `steps.tsv` gives walk / gate / mapping-code / other seconds
-- [ ] Read the result: which step and which walk carries CHWK's excess, and whether its pair count or its
+- [x] Read the result: which step and which walk carries CHWK's excess, and whether its pair count or its
       per-pair cost is what differs (plan shape, view evaluation, index use)
 
 ## Phase 2: does the cause generalise? (all 241 groups)

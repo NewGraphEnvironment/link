@@ -1,0 +1,38 @@
+[1] 0
+[1] 0
+[1] 0
+NOTICE:  table "streams_access_salr" does not exist, skipping
+
+NOTICE:  table "streams_mapping_code_salr" does not exist, skipping
+
+NOTICE:  table "streams_habitat_ch_salr" does not exist, skipping
+
+NOTICE:  table "streams_habitat_rb_salr" does not exist, skipping
+
+NOTICE:  table "zz_lnk_access_prior_salr" does not exist, skipping
+
+NOTICE:  table "zz_lnk_streams_salr" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[1] 0
+                              step      s  wsg
+1                       prior_copy  0.161 SALR
+2                       lnk_access 33.620 SALR
+3                     habitat_gate  2.844 SALR
+4                     mapping_code  7.223 SALR
+5                 downstream_guard  2.015 SALR
+6                 lnk_access:walks 28.237 SALR
+7 lnk_access:pipeline_access_other  1.551 SALR
+8      lnk_access:setup_and_update  3.832 SALR
+9                            total 46.299 SALR
+[rerun] SALR digests UNCHANGED across 4 tables; total 46.3 s
