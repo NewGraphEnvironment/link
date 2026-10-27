@@ -163,8 +163,10 @@ lnk_barriers_views <- function(conn, schema, cfg,
   # `barriers_<sp>_unified_id` so fresh::frs_network_features's
   # `feature_id_col = "<table>_id"` convention works unchanged.
   # `_unified` suffix avoids name collisions with the per-WSG
-  # `<schema>.barriers_<sp>` tables that .lnk_pipeline_prep_minimal
-  # builds for the break-time path (kept for working-schema diagnostics).
+  # `<schema>.barriers_<sp>` (post-lift) and `barriers_<sp>_min` (reduced)
+  # tables that .lnk_pipeline_prep_minimal builds from the same recipe as
+  # the access view below, for the break-time path (#326; both kept in the
+  # working schema for diagnostics).
   for (sp in species) {
     sp_lower <- tolower(sp)
     sp_lit <- .lnk_quote_literal(sp)

@@ -52,8 +52,8 @@ classification, tunnel-free, for any watershed group (WSG) or AOI.
 
 ```
 per-WSG pipeline (lnk_pipeline_run, working schema working_<aoi>)
-  setup → load → prepare → crossings → barriers_unify → break → classify
-        → connect → species → persist_init → persist
+  setup → load → prepare → crossings → break → classify → connect
+        → species → persist_init → barriers_unify → persist
         → barriers_views → pipeline_access → persist (adds streams_access)
         → habitat_gate (settles persisted habitat on access, link#349)
         → mapping_code (with mapping_code = TRUE; read from persist)
@@ -161,7 +161,7 @@ different modelled crossing for 464 PSCIS). Step 3b ports it, with
 modelled_crossing_id`. Both KNN snaps (`lnk_points_snap()`, the dam snap) end on
 `linear_feature_id`.
 
-`barriers_<sp>_min` was a **break-spec** (gradient + falls; minimal-reduced until #223, every position since; how this compares with bcfishpass is `research/bcfp_segmentation_parity.md`) — it
+`barriers_<sp>_min` is a **break-spec**: a present species' post-lift natural barriers (gradient at its classes, falls, opt-in subsurface flow, minus its overrides, plus user-definite) reduced to the downstream-most position per flow path, as bcfishpass breaks (#326). It was reduced before the lifts until #223, then held every position until #326; the raw post-lift table `barriers_<sp>` stays in the working schema for diagnostics, and how this compares with bcfishpass is `research/bcfp_segmentation_parity.md`. It
 has NO id column, so it **cannot** feed `frs_network_features` /
 `barriers_per_sp`. (Tried in #196; failed with `barriers_bt_min_id does not
 exist`.) `barriers_per_sp` mechanically requires the *feature view* shape.

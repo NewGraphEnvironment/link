@@ -111,7 +111,8 @@ lnk_preflight_fresh <- function(required = .lnk_fresh_required(),
 # (measured 2026-08-30: 21 distinct symbols mentioned, 12 genuinely called).
 # `.lnk_fresh_callsites()` below is the drift guard that keeps this honest.
 .lnk_fresh_required <- function() {
-  c("frs_break_apply", "frs_break_find", "frs_candidates_pick",
+  c("frs_barriers_minimal", "frs_break_apply", "frs_break_find",
+    "frs_candidates_pick",
     "frs_col_generate", "frs_col_join", "frs_habitat_classify",
     "frs_habitat_overlay", "frs_habitat_predicates", "frs_network_features",
     "frs_order_child",
