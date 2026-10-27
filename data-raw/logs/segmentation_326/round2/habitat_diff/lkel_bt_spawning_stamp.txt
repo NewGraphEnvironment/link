@@ -1,0 +1,5 @@
+run: 2026-10-27T08:46Z (UTC)
+script: data-raw/habitat_diff_segments.R LKEL bt fresh spawning @ link 0.68.6 (21e0fea2)
+db: local docker fwapg localhost:5432; fresh.streams_vw_bcfp rows 4272383
+fresh.log latest LKEL row: run_id=m4-20261027T074305.260-987360 date_end=2026-10-27 07:46:08.802815 link_version=0.68.6 link_sha=21e0fea23d18c70fb88f6c98ee05918a15e7f227 fresh_version=0.43.0 config_name=bcfishpass
+network km link 1115.38 bcfp 1115.38; spawning flag km link 144.67 bcfp 144.65
