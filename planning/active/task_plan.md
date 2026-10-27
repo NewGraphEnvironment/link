@@ -59,7 +59,7 @@ Outcome: both configs break at the per-present-species post-lift set reduced to 
 
 ## Phase 3: order-1 width exception in the `bcfishpass` config
 
-- [ ] *(formals guard and Imports floor done; the `Remotes` pin waits for the fresh v0.43.0 tag, since a pin naming an absent tag fails CI)* link: `DESCRIPTION` Imports floor `fresh (>= 0.43.0)` + `Remotes` pin `@v0.43.0`; `.lnk_fresh_required_formals()` adds the two `frs_order_child` formals; `pak::local_install()` here
+- [x] *(done 2026-10-27: fresh v0.43.0 tagged, `Remotes:` moved in `cbefd580`)* link: `DESCRIPTION` Imports floor `fresh (>= 0.43.0)` + `Remotes` pin `@v0.43.0`; `.lnk_fresh_required_formals()` adds the two `frs_order_child` formals; `pak::local_install()` here
 - [x] `lnk_rules_build.R:446-485` (derived: every bypass carries the key; dictionary row updated, no new column): the bypass block carries `width_known_below_min: true` (from a new dictionary-declared `dimensions.csv` column, or derived — decide at implementation; add the `configs/dictionary_dimensions.csv` row either way so `test-dictionaries.R` and `audit_configs.R` stay green)
 - [x] `R/lnk_pipeline_classify.R:165-198`: when the sub-key is set, resolve the width (carrying rule → thresholds → error) and `gradient_max`, pass both; `mad` groups still skip
 - [x] `inst/extdata/configs/bcfishpass/dimensions.csv`: `rear_stream_order_bypass = yes` for BT, CH, CO, ST, WCT (bcfishpass's five; not CM, PK, SK); `Rscript data-raw/build_rules.R`; `git diff inst/extdata/configs/bcfishpass/rules.yaml` shows the block on the stream and river rear rules of exactly those five species (nine rule objects — some species carry one) and nothing else; `default*` bundles untouched (#327 decides theirs)
@@ -83,7 +83,7 @@ Outcome: both configs break at the per-present-species post-lift set reduced to 
 
 ## Phase 5: close out
 
-- [ ] NEWS.md entry (#326; closes #225 as moot; names the owed provincial re-model and the follow-up #390)
+- [x] NEWS.md entry (#326; closes #225 as moot; names the owed provincial re-model and the follow-up #390) — 0.69.0, 2026-10-27
 - [x] `devtools::document()` (read what it prints), `devtools::test()`, `devtools::check()`, `lintr::lint_package()` against the HEAD baseline. Ran 2026-10-27: `document()` regenerated two Rd files the branch's roxygen had changed (`a1dd97ba`); `test()` 4,342 pass, 0 fail, 6 skipped (installed fresh carries no `RemoteSha`); `check()` 0 errors, 3 warnings and 4 notes, each also on main (non-ASCII in the same 13 files, Rd links, `presence` undocumented in two untouched files); lint on the changed files: two brace lints fixed (`88eb4443`), the rest indentation in the package's continuation style
 - [x] File the follow-up issue (body shown first): PARS vignette join off `id_segment` across configs — #390, 2026-10-27. The strict `>` spawning issue was dropped (see the gate decisions).
 - [ ] `/planning-archive`, `/gh-pr-push`
