@@ -73,6 +73,14 @@ Both worktrees use fresh 0.43.0 (`18b94fe`), installed from a git archive, so lo
 - **BT habitat is identical to round 1** in all four groups (`round2/habitat_diff/`).
 - **Geometry.** Rows that only the fallback locates got one fixed point in round 2, a defect `21e0fea2` carried (an uncorrelated subquery) and code-check round 4 fixed in `34da7d1a`. Access, breaks and habitat do not read `barriers.geom`, so no round-2 measurement moves. m4's dev schemas keep those points until the provincial re-model.
 
+## `default`, before against after
+
+`default_diff.sh` → `default_diff.csv` sums each species' flags in `zz326_default_pre` (main, `a34d5357`) and `fresh_default` (round 2, `21e0fea2`) on PCEA, FINA, PARS and LKEL. Rearing is the flag total, lake connection lines included on both sides. It replaces `default_diff.R`, whose `lnk_rollup_wsg()` calls spent over 10 minutes per group in the waterbody join; the SQL takes 7 seconds.
+
+- **Segments:** PCEA 106,079 → 39,566, FINA 70,329 → 30,136, PARS 97,537 → 46,341, LKEL 7,448 → 3,378.
+- **Accessible km** falls by 0.08 to 2.68 km per group and species, at most 0.094 % (PCEA GR). Both sides read the same barriers through the same view. The after side persists the barrier rows the unify fix keeps, and its segments end at fewer positions. Which of the two accounts for each km is not attributed here.
+- **Spawning** moves by at most 0.34 % (PCEA BT −3.15 km, RB −2.81 km). **Rearing** moves by at most 0.93 % (PCEA BT −26.36 km, RB −15.18 km; PARS BT −8.97 km, RB −8.12 km; FINA RB −8.06 km). GR and KO spawning and rearing are unchanged in every group, and so is every LKEL salmon flag. These rows were not attributed segment by segment; `data-raw/habitat_diff_segments.R` against the pre-change schema would do it.
+
 ## The order-1 exception's waterbody and edge filter, sized
 
 `frs_order_child()` (fresh 0.43.0) tests no waterbody or edge type, but bcfishpass's CH, CO, ST and WCT blocks do, in three forms that fresh's docs list. `order1_waterbody_filter.sql` counts `bcfishpass`-config rearing km on segments only the exception admits (order 1, parent order 5 or more, a direct child, known width below 1.5 m, gradient within the rearing maximum, accessible), and the km each form would turn away. These are upper bounds: a lake or wetland rule may admit some of the same segments.
