@@ -25,6 +25,22 @@
 - **Only BT's set was built.** FINA is BT-only, so `working_fina` holds `barriers_bt` and `barriers_bt_min` and no other species' table.
 - The census is `fina_breaks_preflight.csv` (`data-raw/breaks_diff.R FINA --suffix=_preflight`). A `<class>_NON_MINIMAL` row is a break that sits on a barrier position the reduction did not keep but that something else broke there, such as an FWA line start, an observation or a crossing. bcfishpass breaks at all of them too.
 
+## Pre-flight (Phase 3): PARS, bcfishpass config, cancelled
+
+`preflight_PARS_bcfishpass.log` holds the run, from the worktree at `1b69ad7c` on fresh `25dca92`. It started 02:28 UTC. The per-segment BT access walk (`frs_network_features` over the persisted `fresh.barriers`, 7.47 M rows) was still running after 1 h 58 min, while another session ran four CPU-bound `pcic` loads at once. It was cancelled at the 04:30 UTC deadline. The plan is the province-scale nested loop the walk always uses, and #326 does not change it: the walk reads persisted barriers, and PARS now has fewer segments. Planner statistics were current (`reltuples` 7,468,955 against a count of 7,468,927). It is the OKAN shape in CLAUDE.md. PARS is re-modelled in Phase 4 instead.
+
+## Phase 4: how the runs are laid out
+
+`run_phase4.sh` (driver log `phase4_driver.log`, per-run status `phase4_status.tsv`):
+
+1. It waits until no `pcic` query has run for five minutes, up to three hours.
+2. `default` BEFORE: PCEA, FINA, PARS and LKEL at main (`a34d5357`), into the scratch schema `zz326_default_pre`. m4's `fresh_default` holds pre-#223 builds, so it cannot serve as `default`'s before state.
+3. `default` AFTER: the same four groups at `ae1df6ff`, into `fresh_default`.
+4. `bcfishpass` AFTER: the 11 cross-section groups (LKEL BULK KISP USKE MORR PCEA FINA PARS LFRA KOTR ELKR) at `ae1df6ff`, into `fresh`. These run last, so each `working_<wsg>` holds the bcfishpass build that `breaks_diff.R` reads.
+5. It runs `wsg_recompute_one.R` with `merge = TRUE` over every group of each schema.
+
+Both worktrees use fresh 0.43.0 (`18b94fe`), installed from a git archive, so log rows carry no fresh `RemoteSha`. A failed group is retried once and named in the status file.
+
 ## Tools
 
 - `data-raw/breaks_diff.R <WSG> [--schema=] [--out=] [--suffix=]` is the break census, promoted from #324's `breaks.R`. It labels each link break `MINIMAL_<class>` when it sits in the group's reduced `gradient_barriers_minimal`, `<source>_NON_MINIMAL` when it sits on a barrier position the reduction dropped (so an independent break source, an FWA line start, an observation or a crossing put it there), `FWA_BASE_SEGMENT`, or `none`.
