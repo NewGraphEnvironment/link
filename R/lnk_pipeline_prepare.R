@@ -655,10 +655,11 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
     # in the view, and prune the view's real frontiers above it (#326
     # review round 3), so refuse it.
     bcfp_ids <- as.integer(names(.lnk_classes_bcfp))
-    off <- classes_for_sp[!classes_for_sp %in% bcfp_ids |
-      !mapply(function(id, v) isTRUE(all.equal(unname(
-        .lnk_classes_bcfp[match(id, bcfp_ids)]), unname(v))),
-        classes_for_sp, classes[match(classes_for_sp, as.integer(names(classes)))])]
+    sp_values <- classes[match(classes_for_sp, as.integer(names(classes)))]
+    same_value <- mapply(function(id, v) {
+      isTRUE(all.equal(unname(.lnk_classes_bcfp[match(id, bcfp_ids)]), unname(v)))
+    }, classes_for_sp, sp_values)
+    off <- classes_for_sp[!classes_for_sp %in% bcfp_ids | !same_value]
     if (length(off) > 0L) {
       stop(sprintf(paste0(
         "gradient class(es) %s are at or above %s's access_gradient_max ",
@@ -685,7 +686,9 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
                 downstream_route_measure::double precision,
                 wscode_ltree, localcode_ltree
          FROM %s.barriers_subsurfaceflow", schema)
-  } else ""
+  } else {
+    ""
+  }
 
   # Lift by this group's own barrier_overrides only, never by the persisted
   # province-wide table the access view reads: what that table holds at
