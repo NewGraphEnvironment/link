@@ -1,0 +1,5 @@
+LKEL BT: network km link 1115.4 | bcfp 1115.4 | pieces 1115.4 (coverage gap 0.0 m, tol 3 m)
+  rearing flag km link 221.1 | bcfp 221.1 | link-only 0.0 | bcfp-only 0.0 (gap 0.0 m)
+    class     km km_excl_lake_conn n_blk n_piece
+1    both 221.13            209.66    90     886
+2 neither 894.26            883.72   803    2489

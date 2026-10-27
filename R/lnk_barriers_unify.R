@@ -204,7 +204,7 @@ lnk_barriers_unify <- function(conn, aoi, cfg, loaded,
   # Source 2: gradient. id_barrier = 3_000_000_000 + row_number().
   # gradient_barriers_raw has no watershed_group_code column; the
   # entire table is per-AOI per lnk_pipeline_prepare. geom derived
-  # via FWA_LocateAlong + Force2D for cross-source uniformity.
+  # via .lnk_sql_locate() for cross-source uniformity.
   sql_gradient <- sprintf("
     SELECT
       ('GRADIENT-' || row_number() OVER (
@@ -221,9 +221,10 @@ lnk_barriers_unify <- function(conn, aoi, cfg, loaded,
       downstream_route_measure,
       wscode_ltree,
       localcode_ltree,
-      ST_Force2D(FWA_LocateAlong(blue_line_key, downstream_route_measure))::geometry(Point, 3005) AS geom
+      %4$s AS geom
     FROM %3$s.gradient_barriers_raw",
-    aoi_lit, gradient_case, schema)  # nolint: indentation_linter
+    aoi_lit, gradient_case, schema,
+    .lnk_sql_locate("blue_line_key", "downstream_route_measure"))  # nolint: indentation_linter
 
   # Source 3: falls. id_barrier = 4_000_000_000 + row_number().
   # Ordered on the joined linear_feature_id too: a falls point in the ~1 mm
@@ -248,14 +249,15 @@ lnk_barriers_unify <- function(conn, aoi, cfg, loaded,
       f.downstream_route_measure::double precision,
       s.wscode_ltree,
       s.localcode_ltree,
-      ST_Force2D(FWA_LocateAlong(f.blue_line_key, f.downstream_route_measure))::geometry(Point, 3005) AS geom
+      %4$s AS geom
     FROM %2$s.falls f
     JOIN whse_basemapping.fwa_stream_networks_sp s
       ON f.blue_line_key = s.blue_line_key
      AND f.downstream_route_measure >= s.downstream_route_measure
      AND f.downstream_route_measure <  s.upstream_route_measure
     WHERE f.watershed_group_code = %3$s",
-    all_species_arr, schema, aoi_lit)  # nolint: indentation_linter
+    all_species_arr, schema, aoi_lit,
+    .lnk_sql_locate("f.blue_line_key", "f.downstream_route_measure"))  # nolint: indentation_linter
 
   # Source 4: user-definite barriers. id_barrier = 'USER_DEFINITE-' ||
   # row_number(). <schema>.barriers_definite (built in lnk_pipeline_prepare
@@ -286,13 +288,14 @@ lnk_barriers_unify <- function(conn, aoi, cfg, loaded,
       d.downstream_route_measure::double precision,
       s.wscode_ltree,
       s.localcode_ltree,
-      ST_Force2D(FWA_LocateAlong(d.blue_line_key, d.downstream_route_measure))::geometry(Point, 3005) AS geom
+      %4$s AS geom
     FROM %3$s.barriers_definite d
     JOIN whse_basemapping.fwa_stream_networks_sp s
       ON d.blue_line_key = s.blue_line_key
      AND d.downstream_route_measure >= s.downstream_route_measure
      AND d.downstream_route_measure <  s.upstream_route_measure",
-    aoi_lit, all_species_arr, schema)  # nolint: indentation_linter
+    aoi_lit, all_species_arr, schema,
+    .lnk_sql_locate("d.blue_line_key", "d.downstream_route_measure"))  # nolint: indentation_linter
 
   union_parts <- c(sql_anth, sql_gradient, sql_falls, sql_user_definite)
 
@@ -313,9 +316,10 @@ lnk_barriers_unify <- function(conn, aoi, cfg, loaded,
         downstream_route_measure::double precision,
         wscode_ltree,
         localcode_ltree,
-        ST_Force2D(FWA_LocateAlong(blue_line_key, downstream_route_measure))::geometry(Point, 3005) AS geom
+        %4$s AS geom
       FROM %3$s.barriers_subsurfaceflow",
-      aoi_lit, all_species_arr, schema)  # nolint: indentation_linter
+      aoi_lit, all_species_arr, schema,
+      .lnk_sql_locate("blue_line_key", "downstream_route_measure"))  # nolint: indentation_linter
     union_parts <- c(union_parts, sql_subsurface)
   }
 
@@ -327,4 +331,33 @@ lnk_barriers_unify <- function(conn, aoi, cfg, loaded,
     schema, paste(union_parts, collapse = "\nUNION ALL\n")))
 
   invisible(conn)
+}
+
+
+#' SQL for a barrier's point that never drops the barrier's row
+#'
+#' `FWA_LocateAlong()` returns a set, and returns no row for a measure in
+#' the few-millimetre gap where an FWA segment's upstream measure misses
+#' the next segment's start. Called in a SELECT list it then drops the
+#' whole barrier, so the persisted table and the access view lose a
+#' position the per-species reduction keeps (#326: 4 to 9 per group).
+#' This scalar form keeps the row: where `FWA_LocateAlong()` gives no
+#' point, it interpolates on the line's segment nearest the measure.
+#' @param blk,measure SQL expressions for the blue line key and measure.
+#' @noRd
+.lnk_sql_locate <- function(blk, measure) {
+  sprintf(
+    "COALESCE(
+        (SELECT ST_Force2D(l.geom) FROM FWA_LocateAlong(%1$s, %2$s) l LIMIT 1),
+        (SELECT ST_Force2D(ST_LineInterpolatePoint(ST_GeometryN(n.geom, 1),
+                  greatest(0, least(1, (%2$s - n.downstream_route_measure) /
+                    nullif(n.upstream_route_measure - n.downstream_route_measure, 0)))))
+           FROM whse_basemapping.fwa_stream_networks_sp n
+          WHERE n.blue_line_key = %1$s
+          ORDER BY least(abs(%2$s - n.downstream_route_measure),
+                         abs(%2$s - n.upstream_route_measure)),
+                   n.linear_feature_id
+          LIMIT 1)
+      )::geometry(Point, 3005)",
+    blk, measure)
 }

@@ -1,0 +1,6 @@
+FINA BT: network km link 11733.1 | bcfp 11733.1 | pieces 11733.1 (coverage gap 0.0 m, tol 29 m)
+  spawning flag km link 1270.7 | bcfp 1266.1 | link-only 4.6 | bcfp-only 0.0 (gap 0.0 m)
+      class       km km_excl_lake_conn n_blk n_piece
+1      both  1266.10           1266.10   384    3180
+2 link_only     4.58              4.58     5      11
+3   neither 10462.44           9623.41  8250   25459

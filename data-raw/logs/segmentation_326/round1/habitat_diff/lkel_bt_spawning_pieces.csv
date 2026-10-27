@@ -1,0 +1,3 @@
+"blk","dm","um","len","class","id_segment","l_len","l_edge","l_wb","l_lake_conn","l_gradient","l_cw","l_cw_source","l_order","l_order_parent","l_spawn","l_rear","l_access","segmented_stream_id","b_dm","b_um","b_len","b_edge","b_wb","b_lake_conn","b_gradient","b_cw","b_order","b_order_parent","b_spawn","b_rearing_code","b_access"
+360446106,2198,2204.7912,6.7912,"link_only",567,6.7912,1000,"stream",FALSE,0,2,"FIELD_MEASURMENT",1,2,TRUE,TRUE,1,"360446106.2198000",2198,2204.7912,6.7912,1000,"stream",FALSE,0,2,1,2,FALSE,1,1
+360446106,2349,2360.4213,11.4213,"link_only",571,11.4213,1000,"stream",FALSE,0.0295,2,"FIELD_MEASURMENT",1,2,TRUE,TRUE,1,"360446106.2349000",2349,2360.4213,11.4213,1000,"stream",FALSE,0.0295,2,1,2,FALSE,1,1

@@ -150,6 +150,16 @@ point in the ~1 mm overlap of two FWA segments joins both, as one USIK falls
 does), never `row_number() OVER ()`, so two builds from the same inputs give
 every barrier the same id (link#367; verified on ADMS and ELKR).
 
+**Every staged barrier row is persisted, located or not.** `FWA_LocateAlong()` is
+set-returning and returns no row for a measure in the few-millimetre gap where an
+FWA segment's upstream measure misses the next segment's start, so called in a
+SELECT list it silently dropped the barrier (4 to 9 rows with a wscode per group
+in the #326 cross-section, plus rows past a line's last segment). The per-species
+reduction still kept such a position, so the barriers above it went unbroken while
+the access view, which lacked it, blocked them. Each source now takes its point
+from `.lnk_sql_locate()`, which falls back to interpolating on the line's nearest
+segment (#326).
+
 **The PSCIS pick (`.lnk_pipeline_pscis_build()`).** A PSCIS x stream candidate
 joins every modelled crossing within 100 m on its blue line. bcfishpass then keeps
 only the nearest instream one per PSCIS per blue line, before the pick; link had

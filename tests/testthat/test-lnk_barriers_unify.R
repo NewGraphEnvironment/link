@@ -202,3 +202,42 @@ test_that("every barrier id is numbered in a stated order (link#367)", {
   expect_match(flat, "f.downstream_route_measure, s.linear_feature_id", fixed = TRUE)
   expect_match(flat, "d.downstream_route_measure, s.linear_feature_id", fixed = TRUE)
 })
+
+test_that("no branch calls FWA_LocateAlong() in its SELECT list (#326)", {
+  captured <- character(0)
+  local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) {
+      captured <<- c(captured, sql); invisible(NULL)
+    }
+  )
+  with_mocked_bindings(
+    dbGetQuery = mockery::mock(data.frame(x = 1L)),  # subsurface present
+    dbQuoteString = mockery::mock(DBI::SQL("'working_pars'"), cycle = TRUE),
+    .package = "DBI",
+    lnk_barriers_unify(conn = structure(list(), class = "DBIConnection"),
+                       aoi = "PARS", cfg = cfg_fixture(),
+                       loaded = loaded_fixture(), schema = "working_pars")
+  )
+  sql <- paste(captured, collapse = "\n")
+  # A set-returning call in a SELECT list drops the row when it returns none.
+  expect_no_match(sql, "ST_Force2D\\(FWA_LocateAlong")
+  # Gradient, falls, user-definite and subsurface each locate through it.
+  expect_identical(lengths(regmatches(sql, gregexpr("FROM FWA_LocateAlong\\(", sql))), 4L)
+})
+
+test_that("a measure in FWA's segment gap still gets a point (#326)", {
+  conn <- skip_if_no_db()
+  # MORR blue line 360611439: segment 139051732 starts at 1153.6404 m and the
+  # one below ends short of it, so FWA_LocateAlong() gives no point at 1153.64.
+  gap <- DBI::dbGetQuery(conn,
+    "SELECT count(*)::int AS n FROM FWA_LocateAlong(360611439, 1153.64)")$n
+  skip_if(gap != 0L, "FWA here no longer has the gap this test needs")
+  pts <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT ST_AsText(%s) AS gap_pt, ST_AsText(%s) AS mid_pt,
+            ST_AsText(ST_Force2D((SELECT geom FROM FWA_LocateAlong(360611439, 1500)))) AS fwa_pt",
+    .lnk_sql_locate("360611439", "1153.64"),
+    .lnk_sql_locate("360611439", "1500")))
+  expect_match(pts$gap_pt, "^POINT\\(")
+  # Where FWA_LocateAlong() answers, the helper returns its point.
+  expect_identical(pts$mid_pt, pts$fwa_pt)
+})
