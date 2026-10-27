@@ -1096,6 +1096,16 @@ next dispatch.**
   the two models agree within about 5 % (NATR, ADMS; #307). Read `research/habitat_thresholds.md`
   before moving one. link also skips the stream-order rearing bypass
   (`frs_order_child`) for a `mad` group — bcfp applies it in its cw branch only.
+  On a `cw` group, a bypass rule carrying `width_known_below_min: true` (written by
+  `lnk_rules_build()`; the `bcfishpass` bundle sets `rear_stream_order_bypass = yes`
+  for BT, CH, CO, ST and WCT since #326) also passes `channel_width_lt` and
+  `gradient_max`, taken from that rule's range or else the species' rearing thresholds
+  (`.lnk_order_child_bounds()`, an error if either is missing). So only a known width
+  below the minimum within the rearing gradient qualifies, as bcfishpass tests it, and a
+  NULL width never does. Two differences remain, listed in `?fresh::frs_order_child`:
+  fresh keeps its direct-child test (`stream_order = stream_order_max`, fresh#158;
+  PARS BT 8.1 km), and applies no CH / CO / ST / WCT waterbody or edge filter (at most
+  2.7 km per species per group, `data-raw/logs/segmentation_326/`).
   fresh does not implement bcfp's `stream_order >= 8` spawning bypass.
 - **Discharge coverage is uneven.** A segment with NULL `mad_m3s` fails every mad
   test, so a `mad` group without coverage loses all of its stream habitat with no
