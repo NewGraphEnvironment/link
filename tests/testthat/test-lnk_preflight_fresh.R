@@ -62,7 +62,7 @@ test_that("a pre-0.35.0 frs_habitat_classify signature is caught (#286)", {
   expected <- c("frs_habitat_classify(params_method)",
                 "frs_habitat_predicates(model)",
                 "frs_habitat_predicates(near_river_table)",
-                "frs_order_child(channel_width_lt)",
+                "frs_order_child(channel_width_max)",
                 "frs_order_child(gradient_max)")
   expect_identical(
     .lnk_fresh_missing_formals(ns, .lnk_fresh_required_formals()), expected)

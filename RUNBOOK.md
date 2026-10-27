@@ -1098,11 +1098,12 @@ next dispatch.**
   (`frs_order_child`) for a `mad` group — bcfp applies it in its cw branch only.
   On a `cw` group, a bypass rule carrying `width_known_below_min: true` (written by
   `lnk_rules_build()`; the `bcfishpass` bundle sets `rear_stream_order_bypass = yes`
-  for BT, CH, CO, ST and WCT since #326) also passes `channel_width_lt` and
+  for BT, CH, CO, ST and WCT since #326) also passes `channel_width_max` and
   `gradient_max`, taken from that rule's range or else the species' rearing thresholds
   (`.lnk_order_child_bounds()`, an error if either is missing). So only a known width
-  below the minimum within the rearing gradient qualifies, as bcfishpass tests it, and a
-  NULL width never does. Two differences remain, listed in `?fresh::frs_order_child`:
+  at most the minimum within the rearing gradient qualifies, and a NULL width never does.
+  bcfishpass tests below the minimum; a line at exactly the minimum already rears through
+  the ordinary width test, so nothing moves (none in the 11 cross-section groups; `data-raw/logs/segmentation_326/order1_width_at_min.log`). Two differences remain, listed in `?fresh::frs_order_child`:
   fresh keeps its direct-child test (`stream_order = stream_order_max`, fresh#158;
   PARS BT 8.1 km), and applies no CH / CO / ST / WCT waterbody or edge filter (at most
   2.7 km per species per group, `data-raw/logs/segmentation_326/`).

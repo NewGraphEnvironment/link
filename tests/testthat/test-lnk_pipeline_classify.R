@@ -269,7 +269,7 @@ ranges_bt <- list(gradient = c(0, 0.1049), channel_width = c(1.5, 9999))
 test_that("without width_known_below_min the bounds are not passed", {
   got <- order_child_args(list(stream_order_parent_min = 5L),
                           rear_ranges = ranges_bt)
-  expect_false("channel_width_lt" %in% names(got))
+  expect_false("channel_width_max" %in% names(got))
   expect_false("gradient_max" %in% names(got))
   expect_identical(got$parent_order_min, 5L)
 })
@@ -278,7 +278,7 @@ test_that("width_known_below_min passes the thresholds' rearing bounds", {
   got <- order_child_args(
     list(stream_order_parent_min = 5L, width_known_below_min = TRUE),
     rear_ranges = ranges_bt)
-  expect_identical(got$channel_width_lt, 1.5)
+  expect_identical(got$channel_width_max, 1.5)
   expect_identical(got$gradient_max, 0.1049)
 })
 
@@ -287,7 +287,7 @@ test_that("a rule's own width and gradient ranges win over the thresholds", {
     list(stream_order_parent_min = 5L, width_known_below_min = TRUE),
     rule = list(channel_width = list(2L, 9999L), gradient = c(0, 0.08)),
     rear_ranges = ranges_bt)
-  expect_identical(got$channel_width_lt, 2)
+  expect_identical(got$channel_width_max, 2)
   expect_identical(got$gradient_max, 0.08)
 })
 

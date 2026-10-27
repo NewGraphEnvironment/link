@@ -88,6 +88,8 @@ Both worktrees use fresh 0.43.0 (`18b94fe`), installed from a git archive, so lo
 - **LFRA and KOTR** (`order1_waterbody_filter.log`): 0 km turned away. Only KOTR WCT (6.73 km) and LFRA ST (0.06 km) take the exception, and every one of those lines is a river polygon or an unpolygoned 1000 line.
 - **All 11 groups** (`order1_waterbody_filter_11.log`): at most 2.71 km per species per group (BULK CH, under the CH form). Elsewhere: KISP 0.19, MORR CH / CO 0.68, MORR ST 0.94, ELKR WCT 0.25. Round 2 parity has each of these group-species within tolerance.
 
+The width bound is inclusive (`channel_width_max`, `<=` the 1.5 m minimum), where bcfishpass tests below it. `order1_width_at_min.sh` counts the order-1 direct children at exactly 1.5 m in the 11 groups: 11 BT, 4 each CH, CO and ST, 5 WCT, and every one but a single ELKR BT line already rears; that line is accessible and not rearing, likely removed by BT's `cluster_rearing` after classify (not traced), which an order-child admission would not survive either. So `<=` moves nothing here (`order1_width_at_min.log`).
+
 So the `bcfishpass` config ships on fresh 0.43.0 without the filter, and the filter is a follow-up, not a blocker.
 
 ## The two named residuals, counted

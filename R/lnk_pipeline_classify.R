@@ -194,8 +194,9 @@ lnk_pipeline_classify <- function(conn, aoi, cfg, loaded, schema,
         distance_max = bypass[["distance_max"]],
         verbose = FALSE)
       # bcfishpass's exception sits inside the rest of its rearing test: a
-      # line qualifies only with a known width below the minimum and a
-      # gradient within the rearing maximum (#326).
+      # line qualifies only with a known width up to the minimum and a
+      # gradient within the rearing maximum (#326). bcfishpass tests below
+      # the minimum; a line at it already rears through the width test.
       if (isTRUE(bypass[["width_known_below_min"]])) {
         oc_args <- c(oc_args,
                      .lnk_order_child_bounds(params[[sp]], bypass_rule, sp))
@@ -228,7 +229,7 @@ lnk_pipeline_classify <- function(conn, aoi, cfg, loaded, schema,
       "the thresholds"), sp,
       paste(names(missing)[missing], collapse = " or ")), call. = FALSE)
   }
-  list(channel_width_lt = as.numeric(width),
+  list(channel_width_max = as.numeric(width),
        gradient_max = as.numeric(gradient))
 }
 
