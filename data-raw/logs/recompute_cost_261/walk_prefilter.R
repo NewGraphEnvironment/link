@@ -37,7 +37,8 @@ others <- function() DBI::dbGetQuery(conn,
    WHERE datname = current_database() AND state <> 'idle'
      AND pid <> pg_backend_pid() AND backend_type = 'client backend'")$n
 # One other backend is tolerated: the two forms run side by side under the same
-# load, and walks.R's LSKE walks took 67.6 s alone and 68.0-70.1 s beside one.
+# load, and walks.R's LSKE CH-shaped walks took 67.6-69.2 s alone and 68.0-70.1 s
+# beside one.
 if (others() > 1L) stop("REFUSE: more than one other active client backend", call. = FALSE)
 
 cfg <- lnk_config("default")

@@ -43,8 +43,8 @@ Cut the feature side to what `fwa_downstream()` can return, before the join: fea
 on one of the group's blue lines, or whose wscode is an ancestor of, or equal to, a group
 segment's wscode. Both are index lookups on the feature table (the wscode arm through
 its GiST, the blue line through its btree). Measured on nine groups, this returns the same
-features per segment in all 32 walks tried, and a group's walks run 3.6× (SPAT) to 24.6×
-(CHWK) faster in total. SETN gains only 1.2×, because its cost is output. Over the 2026-10-23 pool
+features per segment in all 32 walks tried, and in eight of them a group's walks run 3.6×
+(SPAT) to 24.6× (CHWK) faster in total. SETN gains only 1.2×, because its cost is output. Over the 2026-10-23 pool
 (50,352 s of summed job time), it would save an estimated 18,221 to 25,534 s (36 to
 51 %). The saving is spread over every group, and CHWK is 1.9 % of the pool.
 

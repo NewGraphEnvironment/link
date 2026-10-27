@@ -1,7 +1,7 @@
 -- link#261, refuted: does a walk cost track the province features whose code
 -- can have descendants in the group code range [lo, hi]? SETN (range 0.75 M)
--- is the slowest walk, CHWK and LFRA (range 7.2 M, codes 100 to 970) are not
--- slower than SETN. Run with psql from this directory against fwapg.
+-- walks about twice as long as CHWK (range 7.2 M, codes 100 to 970), and LFRA
+-- (range 7.2 M) only a little longer than SETN. Run with psql from this directory against fwapg.
 \timing on
 SELECT count(*) AS others FROM pg_stat_activity WHERE backend_type='client backend' AND state<>'idle' AND pid<>pg_backend_pid();
 CREATE TEMP TABLE bw AS

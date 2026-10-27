@@ -21,7 +21,8 @@ group, walked by `fresh::frs_network_features()`.
   into a session TEMP table with the same indexes, captures fresh's walk SQL by mocking
   `frs_db_query()`, and runs every walk the recompute runs (one per present species
   view, three sources) under `EXPLAIN (ANALYZE, BUFFERS)`. Nine groups: #261's four
-  (CHWK, SALR, LKEL, CHES), the slowest of 2026-10-23 (LFRA, SETN, LSKE) and two near the
+  (CHWK, SALR, LKEL, CHES), three of the five slowest of 2026-10-23 (LFRA, SETN, LSKE; FRCN, the second slowest, was not
+  decomposed, and CHWK is the fourth) and two near the
   median (KOTR, SPAT). Output `walks.tsv`, `plans/<WSG>_<table>.json`; `fresh_default`'s
   tuple write counters were 161,847,271 before and after.
 - `range_hypothesis.sql` / `.tsv` tested a first explanation of the probe cost and
@@ -89,7 +90,7 @@ two: about 18×, which is the ratio of their natural walks (545.7 against 29.7 s
 **Refuted on the way:** that a probe descends only where the feature's code falls in the
 group's code range. CHWK and LFRA hold coastal codes as well as the Fraser main stem
 (`100` to `970.…`), so their range covers 7.17 M of 7.24 M features; SETN's covers 0.75 M,
-and SETN is the slowest walk.
+and SETN's walks are the second dearest of the nine, after LFRA's.
 
 ### The same walk, prefiltered
 
@@ -130,8 +131,11 @@ decomposed groups have no natural barrier and no crossing below their outlet.
 
 The pool on 2026-10-23: 50,352 s of summed job time (span 110 min at `-j8`). Predicted
 walks are 33,398 s of it (single-walk seconds, beside job seconds run eight at once). The prefilter would
-leave 7,864 s (calibrated on the nine) to 15,177 s (the sample's upper bound), a saving of
-18,221 to 25,534 s, 36 to 51 % of the summed time. CHWK is 934 s of the pool, and the ten
+leave 7,864 s (calibrated on the nine) to 15,177 s (the sample's own estimate, which
+overstates the prefiltered walk except where the walk is output-bound: SETN measured 560 s
+against its 539), a saving of 18,221 to 25,534 s, 36 to 51 % of the summed time. The
+calibrated fit predicts below zero for 34 groups; each group's estimate is floored at 5 %
+of its sent walk (46 groups), and a floor anywhere from 0 to 20 % gives 7,769 to 9,128 s. CHWK is 934 s of the pool, and the ten
 costliest groups hold 17.8 % of predicted walk time.
 
 ## What changed because of it

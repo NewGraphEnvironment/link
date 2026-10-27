@@ -72,7 +72,8 @@ digest <- function() {
 }
 
 # A backup left by an earlier run (digest moved, or an error mid-run) holds the
-# only copy of the original rows; backing up again would overwrite it.
+# only copy of the original rows; backing up again would overwrite it. Added
+# after the 2026-10-27 runs (the lock check above was in place for them).
 left <- vapply(tables, function(t) !is.na(DBI::dbGetQuery(conn, sprintf(
   "SELECT to_regclass('zz261_backup.%s_%s')::text AS r", t, tolower(wsg)))$r), logical(1))
 if (any(left)) {

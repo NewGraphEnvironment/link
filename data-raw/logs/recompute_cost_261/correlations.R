@@ -25,9 +25,11 @@ m <- Reduce(function(a, b) merge(a, b, all = TRUE), lapply(names(logs), function
 stopifnot(!anyDuplicated(m$wsg))
 
 p <- read.delim(file.path(d, "predictors.tsv"))
-# Natural walks dominate (walks.tsv: the three sources are under 11 s a group);
+# Natural walks dominate (walks.tsv: the three sources take at most 11.5 s a group);
 # predicted from the sample walk, slope 1.00 against walks.tsv's nine groups.
 p$walk_s_pred <- p$outer_rows_natural * p$probe_us / 1e6
+# The sample's own prefilter estimate: it overstates the prefiltered walk (scanning the
+# unindexed sample), except where the walk is output-bound (SETN: 539 s, measured 560).
 p$walk_pre_s_upper <- p$outer_rows_natural * p$probe_pre_us / 1e6
 x <- merge(p, m, by = "wsg")
 
@@ -46,6 +48,8 @@ w$pre_s <- f$seconds[match(paste(w$wsg, w$shape), paste(f$wsg, f$shape))]
 meas <- aggregate(cbind(walk_s = exec_s, pre_s) ~ wsg, w, sum)
 cal <- merge(meas, x[, c("wsg", "outer_rows_natural", "walk_pre_s_upper", "walk_s_pred")])
 fit_pre <- lm(pre_s ~ outer_rows_natural + walk_pre_s_upper, cal)
+# Floored at 5 % of the sent walk: the fit goes below zero for small groups
+# (34 of 240); floors of 0 to 20 % move the pool total by -95 to +1,264 s.
 x$walk_pre_s_cal <- pmin(pmax(predict(fit_pre, x), 0.05 * x$walk_s_pred), x$walk_s_pred)
 
 preds <- c("segments", "walks", "species_walked", "features_inside", "natural_inside",
@@ -83,8 +87,8 @@ utils::write.table(miss, file.path(d, "misses.tsv"), sep = "\t",
                    row.names = FALSE, quote = FALSE)
 
 # The pool: summed job seconds against summed predicted walk seconds, and what
-# the prefilter would leave (a range: the sample-based estimate overstates the
-# prefiltered walk, the calibrated one is fitted on nine groups).
+# the prefilter would leave (a range: the sample's estimate, above, and the
+# calibrated one, fitted on nine groups).
 pool <- data.frame(
   run = "m1023", groups = nrow(y),
   job_s = round(sum(60 * y$m1023)),

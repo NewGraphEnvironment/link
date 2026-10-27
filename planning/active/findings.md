@@ -83,7 +83,7 @@ Version pin: link@v0.48.0.
 | Error | Resolution |
 |-------|------------|
 | Range count with `OR bw.w @> g.lo` ran past 10 min (the OR defeats the index; 3,133 subqueries each summing millions of rows) | Running total per species (`sum(n) OVER (PARTITION BY sp ORDER BY w)`), two index lookups per range, ancestors by equality on `subpath()`. Killing `psql` left its backend running: cancelled with `pg_cancel_backend` |
-| Prefilter as `IN (SELECT ...)` still read 7.24 M rows through `barriers_source_idx` (SALR CH 6.1 s) | `= ANY (ARRAY(SELECT ...))` lets the planner use the btree indexes on `wscode_ltree` and `blue_line_key` (2.9 s) |
+| Prefilter as `IN (SELECT ...)` still read 7.24 M rows through `barriers_source_idx` (SALR CH 6.1 s) | `= ANY (ARRAY(SELECT ...))` lets the planner use the indexes on `wscode_ltree` (GiST) and `blue_line_key` (btree) (2.9 s) |
 | Every quiet-wait loop refused: another session queries m1 continuously | Measured its cost (LSKE walks 67.6 s alone, 68.0–70.1 s beside it); experiments tolerate one other backend and record it per row; `rerun.R` refuses on any other lock in `fresh_default` |
 | `min(ltree)` does not exist | `DISTINCT ON (group) ORDER BY wscode_ltree` for lo and `DESC` for hi |
 
@@ -129,7 +129,7 @@ Harness `data-raw/logs/recompute_cost_261/walks.R` over SALR CHWK LKEL CHES KOTR
 
 ## Phase 1: a prefiltered walk, same features (2026-10-27, 22:07–22:39 UTC)
 
-`walk_prefilter.R` runs fresh's walk SQL as sent and the same SQL with the feature side cut to what `fwa_downstream()` can return: features on one of the group's blue lines (criterion 1) or whose wscode is an ancestor of, or equal to, a group segment's wscode (criterion 2, `wscode_a <@ wscode_b`). The cut uses the btree indexes on `barriers.wscode_ltree` and `barriers.blue_line_key` (`= ANY (ARRAY(...))`; a first try with `IN (SELECT ...)` still read all 7.24 M rows through the source index and took 6.1 s for SALR CH, kept in the errors table). One view per barrier-set shape plus anthropogenic, nine groups, one other backend active throughout (another session's area queries).
+`walk_prefilter.R` runs fresh's walk SQL as sent and the same SQL with the feature side cut to what `fwa_downstream()` can return: features on one of the group's blue lines (criterion 1) or whose wscode is an ancestor of, or equal to, a group segment's wscode (criterion 2, `wscode_a <@ wscode_b`). The cut uses the indexes on `barriers.wscode_ltree` (GiST, `barriers_wscode_gist_idx`) and `barriers.blue_line_key` (btree) (`= ANY (ARRAY(...))`; a first try with `IN (SELECT ...)` still read all 7.24 M rows through the source index and took 6.1 s for SALR CH, kept in the errors table). One view per barrier-set shape plus anthropogenic, nine groups, one other backend active throughout (another session's area queries).
 
 - **Same features per segment in all 33 walks** (the digest with each array sorted). The digest in the arrays' own order differs in four (CHWK CH, BT, ST; CHES CH): features tied on the walk's `ORDER BY` (wscode, localcode, measure, all descending) come back in plan order. link persists only the natural arrays' `has_barriers_<sp>_dnstr` booleans, so no output moves. The anthropogenic arrays, whose `[1]` link reads for `dam_dnstr_ind`, match in their own order in all nine.
 - **Walk seconds, sent → prefiltered** (three natural shapes + anthropogenic): CHWK 219.0 → 8.9 (24.6×), LKEL 33.8 → 1.8 (18.8×), LFRA 357.3 → 38.7 (9.2×), LSKE 165.2 → 21.5 (7.7×), SALR 26.9 → 4.3 (6.3×), CHES 29.0 → 4.9 (5.9×), KOTR 69.3 → 18.4 (3.8×), SPAT 76.6 → 21.1 (3.6×), SETN 211.6 → 178.4 (1.2×).
@@ -176,3 +176,7 @@ Review in `review-round1.md`; each was reproduced before it was fixed.
 - **LSKE shows no contention effect at all:** 67.6 to 69.2 s alone, 68.0 to 70.1 s beside one backend.
 - **SETN's 140,159 are the prefiltered walk's features,** 139,882 of them inside the group.
 - `rerun.R` now refuses to start while a backup from an earlier run exists (a second run would otherwise overwrite the only copy of the original rows).
+
+## Corrections from code-check round 2 (2026-10-27)
+
+Review in `review-round2.md`. LFRA, not SETN, has the slowest walks (CH 162.3 against 157.3 s); the decomposed groups are three of the 2026-10-23 five slowest (FRCN, second, was not decomposed); the prefilter's 3.6× to 24.6× covers eight groups, with SETN at 1.2×; the sample's prefilter estimate is not an upper bound where the walk is output-bound (SETN 539 against 560 s measured), and the calibrated estimate floors 46 groups at 5 % (floors 0 to 20 % give 7,769 to 9,128 s, so the 36 to 51 % stands). Two of these sat inside round 1's own fixes (the speed range, and the LSKE wording corrected in the README but not in `walk_prefilter.R`), so the loop ends on an enumeration of every quantified claim, not on a quiet round.
