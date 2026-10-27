@@ -619,9 +619,7 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
 #' species' post-lift set: gradient barriers at the species' classes, falls
 #' and (when `break_order` opts in) subsurface flow, minus that species'
 #' rows in `<schema>.barrier_overrides`, plus every user-definite barrier
-#' (never lifted); a row is lifted by `<schema>.barrier_overrides` or, when
-#' it exists, the persisted `<cfg$pipeline$schema>.barrier_overrides` the
-#' access view reads. `fresh::frs_barriers_minimal()` then keeps the
+#' (never lifted). `fresh::frs_barriers_minimal()` then keeps the
 #' downstream-most position per flow path in `<schema>.barriers_<sp>_min`.
 #' It is the same recipe as the persisted `barriers_<sp>_access` view
 #' (`lnk_barriers_views()`), built from the working tables.
@@ -670,33 +668,17 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
          FROM %s.barriers_subsurfaceflow", schema)
   } else ""
 
-  # Lift by every override the access view will read, not only this
-  # group's: the view anti-joins the persisted province-wide overrides, where
-  # another group's copy of a shared barrier can be lifted when this group's
-  # is not (group-filtered controls, an earlier observation vintage). A
-  # position lifted there and kept here would prune the frontier above it, and
-  # the segment straddling that frontier would read accessible above it. An
-  # extra lift only keeps an extra break, so the union is the safe side.
-  persist_ov <- NULL
-  persist_schema <- cfg$pipeline$schema
-  if (length(models) > 0L && is.character(persist_schema) &&
-      length(persist_schema) == 1L && nzchar(persist_schema) &&
-      !identical(persist_schema, schema)) {
-    .lnk_validate_identifier(persist_schema, "persist schema")
-    cand <- paste0(persist_schema, ".barrier_overrides")
-    if (.lnk_table_exists(conn, cand)) persist_ov <- cand
-  }
-
+  # Lift by this group's own barrier_overrides only, never by the persisted
+  # province-wide table the access view reads: what that table holds at
+  # prepare time depends on the host and on which groups have persisted so
+  # far, so reading it would make segmentation depend on run order, and this
+  # group's stale rows there would lift positions the current build does not
+  # (#326 review round 2). The cost is named: where another group lifts its
+  # copy of a shared barrier and this group does not (group-filtered
+  # controls), that position still prunes the frontier above it here.
   minimal_tbls <- character(0)
   for (model_name in names(models)) {
     m <- models[[model_name]]
-    persist_lift_sql <- if (is.null(persist_ov)) "" else sprintf(
-      "AND NOT EXISTS (
-           SELECT 1 FROM %s p
-           WHERE p.species_code = %s
-             AND p.blue_line_key = n.blue_line_key
-             AND abs(p.downstream_route_measure - n.downstream_route_measure) < 1
-         )", persist_ov, .lnk_quote_literal(m$code))
     class_filter <- paste(m$classes, collapse = ", ")
     model_tbl <- paste0(schema, ".barriers_", model_name)
     min_tbl <- paste0(model_tbl, "_min")
@@ -736,7 +718,6 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
              AND o.blue_line_key = n.blue_line_key
              AND abs(o.downstream_route_measure - n.downstream_route_measure) < 1
          )
-         %7$s
        UNION ALL
        SELECT d.blue_line_key,
               d.downstream_route_measure::double precision,
@@ -748,7 +729,7 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
          AND d.downstream_route_measure < s.upstream_route_measure
        WHERE s.wscode_ltree IS NOT NULL",
       model_tbl, schema, class_filter, .lnk_quote_literal(aoi),
-      subsurface_sql, .lnk_quote_literal(m$code), persist_lift_sql))
+      subsurface_sql, .lnk_quote_literal(m$code)))
 
     fresh::frs_barriers_minimal(conn, from = model_tbl, to = min_tbl)
     minimal_tbls <- c(minimal_tbls, min_tbl)
