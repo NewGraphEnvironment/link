@@ -69,9 +69,23 @@ Both worktrees use fresh 0.43.0 (`18b94fe`), installed from a git archive, so lo
 
 - **Segments and breaks are unchanged** from round 1, group by group (454 link-only, 40 bcfishpass-only). The fix changes which barrier rows persist, not where streams break.
 - **Unbroken frontiers: 57 → 27 segment-species, BT 18 → 9** (`round2/unbroken_frontiers.csv`; rows in `round2/unbroken_frontiers_rows.csv`). The 27 sit on 13 barrier positions, and at each the nearest break is 1.07 to 1.43 m away. For the four positions within 1.5 m of a line's start (PARS BT 1.30, PCEA BT 1.42, USKE CH / CO / SK 1.38, ELKR WCT 1.33), that break is the line's start. This is #349's metre-rounded break family (A), which predates #326 and is fresh#258's to fix.
-- **Parity: 120 of 122** (`round2/parity_crosssection.log`). The two over are BULK SK spawning and rearing (parked). ELKR is within tolerance on every metric (BT accessible −0.03 %, spawning +1.40 %, rearing −0.01 %). The FINA structural frontier passes.
+- **Parity: 120 of 122** (`round2/parity_crosssection.log`). The two over are BULK SK spawning and rearing (parked). ELKR is within tolerance on every metric (BT accessible −0.03 %, spawning +1.40 %, rearing −0.01 %). The FINA structural frontier passes. Re-annotated with the edited taxonomy, two rows are UNEXPLAINED and neither is new: ELKR WCT spawning is +2.72 % (+3.33 % in `research/bcfishpass_parity.md`), and BULK SK rearing is +7.39 %, the parked fresh#190 row.
 - **BT habitat is identical to round 1** in all four groups (`round2/habitat_diff/`).
 - **Geometry.** Rows that only the fallback locates got one fixed point in round 2, a defect `21e0fea2` carried (an uncorrelated subquery) and code-check round 4 fixed in `34da7d1a`. Access, breaks and habitat do not read `barriers.geom`, so no round-2 measurement moves. m4's dev schemas keep those points until the provincial re-model.
+
+## The order-1 exception's waterbody and edge filter, sized
+
+`frs_order_child()` (fresh 0.43.0) tests no waterbody or edge type, but bcfishpass's CH, CO, ST and WCT blocks do, in three forms that fresh's docs list. `order1_waterbody_filter.sql` counts `bcfishpass`-config rearing km on segments only the exception admits (order 1, parent order 5 or more, a direct child, known width below 1.5 m, gradient within the rearing maximum, accessible), and the km each form would turn away. These are upper bounds: a lake or wetland rule may admit some of the same segments.
+
+- **LFRA and KOTR** (`order1_waterbody_filter.log`): 0 km turned away. Only KOTR WCT (6.73 km) and LFRA ST (0.06 km) take the exception, and every one of those lines is a river polygon or an unpolygoned 1000 line.
+- **All 11 groups** (`order1_waterbody_filter_11.log`): at most 2.71 km per species per group (BULK CH, under the CH form). Elsewhere: KISP 0.19, MORR CH / CO 0.68, MORR ST 0.94, ELKR WCT 0.25. Round 2 parity has each of these group-species within tolerance.
+
+So the `bcfishpass` config ships on fresh 0.43.0 without the filter, and the filter is a follow-up, not a blocker.
+
+## The two named residuals, counted
+
+- **Classify scope** (`classify_scope_residual.sql`, `classify_scope_residual.csv`). This counts in-AOI positions the reduction pruned whose every pruner lies outside the AOI. For PCEA BT and for LFRA's BT, CH, CO and ST sets the count is 0, on the Peace and the Fraser main stems. PCEA's set holds no out-of-AOI position. LFRA's holds 8 to 23, and none of them is the only pruner of an in-AOI position.
+- **Cross-group lift** (`cross_group_lift.sql`, `cross_group_lift.log`). This counts barrier rows a re-modelled group holds that another group's override lifts and its own does not. The count is 0 over the 11 groups. 38 rows in them match another group's override, and in each the holder's own override lifts too. m4's `fresh.barrier_overrides` holds 12 groups' overrides, so the province-wide count (CLAUDE.md: 2 rows) waits for the provincial run.
 
 ## Tools
 

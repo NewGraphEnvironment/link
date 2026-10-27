@@ -1,0 +1,6 @@
+ wsg  | sp  | exc_rear_km | fail_ch_form_km | fail_st_form_km | fail_co_form_km | nowb_offedge_km |      mix      
+------+-----+-------------+-----------------+-----------------+-----------------+-----------------+---------------
+ KOTR | wct |        6.73 |                 |                 |                 |                 | -:1000 R:1450
+ LFRA | st  |        0.06 |                 |                 |                 |                 | -:1000
+(2 rows)
+

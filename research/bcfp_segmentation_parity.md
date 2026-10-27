@@ -57,7 +57,57 @@ the frontier above it here. Reading the persisted table at prepare time made seg
 depend on host and run order, so it was refused (#326 review round 2). **Classify's scope:**
 classify's access gate reads the group's gradient barriers only, while the per-species sets
 span whole lines, so a frontier pruned by an out-of-group barrier is classify-accessible above
-it until `lnk_habitat_gate()` settles the persisted flags.
+it until `lnk_habitat_gate()` settles the persisted flags. Measured on m4 (2026-10-27): both
+are 0. Classify scope was counted on PCEA BT and LFRA BT / CH / CO / ST; cross-group lifts over
+the 11 cross-section groups, where 38 rows carry another group's override and each holder lifts
+too. The province-wide cross-group count waits for the provincial run.
+
+## Measured since #326
+
+`bcfishpass` config into m4's `fresh` on the 11 cross-section groups, and `default` on PCEA,
+FINA, PARS and LKEL, at link `21e0fea2` on fresh 0.43.0 (2026-10-27, round 2). Evidence is
+`data-raw/logs/segmentation_326/` (its README).
+
+| Group | link segments | bcfishpass segments | link-only breaks | bcfishpass-only breaks |
+|---|---|---|---|---|
+| BULK | 42,989 | 42,965 | 28 | 7 |
+| ELKR | 38,245 | 38,214 | 33 | 4 |
+| FINA | 28,650 | 28,650 | 0 | 0 |
+| KISP | 30,873 | 30,852 | 22 | 1 |
+| KOTR | 37,674 | 37,610 | 61 | 3 |
+| LFRA | 27,612 | 27,442 | 158 | 2 |
+| LKEL | 3,374 | 3,360 | 14 | 0 |
+| MORR | 29,100 | 29,093 | 8 | 2 |
+| PARS | 43,776 | 43,655 | 114 | 6 |
+| PCEA | 37,972 | 37,957 | 15 | 0 |
+| USKE | 27,255 | 27,268 | 1 | 15 |
+
+- **The 454 link-only breaks have named sources:** falls 129, observations, crossings and habitat
+  endpoints 320, gradient 4, user-definite 1. Before #326, PCEA alone had 68,118.
+- **`default` segments drop 2.1 to 2.7-fold:** PCEA 106,079 → 39,566, FINA 70,329 → 30,136,
+  PARS 97,537 → 46,341, LKEL 7,448 → 3,378.
+- **Parity:** 120 of 122 pairs within tolerance, with accessible km 44 of 44 within 0.11 %. The
+  two pairs over are BULK SK (parked). #223's FINA frontier at 3,834.78 m holds.
+- **BT habitat, segment by segment:**
+
+  | Group | Rearing link-only / bcfishpass-only (km) | Spawning link-only (km) |
+  |---|---|---|
+  | FINA | 0 / 0.06 | 4.6 |
+  | PCEA | 0.1 / 1.2 | 1.8 |
+  | PARS | 0 / 8.1 | 5.5 |
+  | LKEL | 0 / 0 | 0 |
+
+  The segmentation movement of 71–85 km per BT-only group is gone. PARS's 8.1 km are order-1
+  lines the direct-child test in `frs_order_child()` leaves out (fresh#158; 10.7 km fail it).
+  Before the exception it was −24.8 km. Link-only spawning is the deferred strict `>`.
+- **Accessible segments that still hold a barrier more than 1 m inside them:** 27
+  segment-species on 13 positions, BT 9. Each barrier is 1.07 to 1.43 m from its nearest break.
+  This is #349's metre-rounded family (fresh#258). A first run also found barrier rows
+  `lnk_barriers_unify()` dropped when `FWA_LocateAlong()` returned no point for a measure in
+  FWA's millimetre segment gap. That was 11 of 18 BT cases, and it is fixed.
+- **The CH / CO / ST / WCT waterbody and edge filter** on the order-1 exception, which
+  `frs_order_child()` does not apply, would turn away at most 2.7 km per species per group
+  (BULK CH). In LFRA and KOTR it would turn away 0 km.
 
 ## Where they differ, and since when
 
@@ -207,7 +257,10 @@ the same cluster would explain it, but that is not shown, so it is not counted a
   - The taxonomy's `hors-class-stream-order-bypass` entry still calls this fresh-deferred.
     fresh#158 is closed and `lnk_rules_build()` supports the bypass; the bundle declines it.
     Whether it should is open. fresh's `frs_order_child()` has no width test, so taking it as
-    is would also rear the NULL-width lines bcfishpass leaves out.
+    is would also rear the NULL-width lines bcfishpass leaves out. *Since #326* the bundle takes
+    it (`yes` for BT, CH, CO, ST and WCT), with fresh 0.43.0's width and gradient tests, and
+    the taxonomy entry is retired. PCEA's connection lines now differ by 0 km and PARS's by
+    8.1 km ("Measured since #326").
 - **Access.** Three PCEA segments (1.8 km) whose downstream end is a subsurface-flow (1410) or
   falls barrier rear in link: its classify-time `accessible` is TRUE there, while
   `streams_access` and bcfishpass read 0. FINA, PARS and LKEL have under 1 km each. Cause not
