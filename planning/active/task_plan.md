@@ -36,7 +36,7 @@ Outcome: both configs break at the per-present-species post-lift set reduced to 
 - [x] `frs_order_child()`: new formals (width bound, `gradient_max`), SQL gains `AND s.channel_width IS NOT NULL AND s.channel_width < %s` and `AND s.gradient <= %s` when set; roxygen cites `load_habitat_linear_bt.sql:88-96`
 - [x] `frs_params` validator: `bypass_keys` gains `width_known_below_min` with a logical-scalar check (`R/frs_params.R:457-460`)
 - [x] Tests: mocked SQL-shape (formals absent → no clauses; present → both clauses with the values), plus a live `skip_if_no_db` case on one order-1 / parent ≥ 5 reach proving a NULL-width line and a steep (> `rear_gradient_max`) measured-width line are never admitted and a gentle measured-width line is
-- [ ] NEWS entry; `devtools::test()`, `check()`, `lint_package()`; PR; release v0.43.0 + tag
+- [x] NEWS entry; `devtools::test()`, `check()`, `lint_package()`; PR; release v0.43.0 + tag — fresh PR #270 merged `93750ba`, tag v0.43.0 at `18d92ce`, GitHub release published (2026-10-27)
 
 ## Phase 1: link — tests first (mocked via `.lnk_db_execute` capture; `tests/testthat/test-lnk_pipeline_prepare.R:278-516` rewritten — every existing `prep_minimal` fixture lacks `wsg_species_presence` and will error in `lnk_presence()`)
 
@@ -55,7 +55,7 @@ Outcome: both configs break at the per-present-species post-lift set reduced to 
 - [x] Rewrite the stale comments (lines 614-621, 664-673, the "matches bcfishpass … every gradient barrier" claim), the roxygen at `R/lnk_pipeline_prepare.R:18-21,70` and `R/lnk_pipeline_break.R:24`, the diagnostics note at `lnk_barriers_views.R:165-167`; RUNBOOK §2b row for `barriers_<sp>_min` (line 164) and §1's phase diagram (line 55 puts unify before break — it runs after connect, `lnk_pipeline_run.R:226`)
 - [x] `data-raw/snapshot_bcfp.sh` on m4 (not re-pulled: loaded 2026-10-25, 1.9 d old); `lnk_preflight_vintage()` passes at its default (needed by every live check from here on)
 - [x] Single-group pre-flight on FINA (bcfishpass config): `parity_crosssection.R`'s structural check — blk 359209845 BT frontier stays at 3,834.78 m (#223's case) — and FINA segment count lands near bcfishpass's (link today 70 k, bcfp ~20.4 k breaks); report as departures from bcfishpass, not raw numbers
-- [ ] `/code-check`; commit with checkbox flip
+- [x] `/code-check`; commit with checkbox flip — covered by `/code-check branch` (four rounds, `review-link-round1..4.md`)
 
 ## Phase 3: order-1 width exception in the `bcfishpass` config
 
@@ -64,8 +64,8 @@ Outcome: both configs break at the per-present-species post-lift set reduced to 
 - [x] `R/lnk_pipeline_classify.R:165-198`: when the sub-key is set, resolve the width (carrying rule → thresholds → error) and `gradient_max`, pass both; `mad` groups still skip
 - [x] `inst/extdata/configs/bcfishpass/dimensions.csv`: `rear_stream_order_bypass = yes` for BT, CH, CO, ST, WCT (bcfishpass's five; not CM, PK, SK); `Rscript data-raw/build_rules.R`; `git diff inst/extdata/configs/bcfishpass/rules.yaml` shows the block on the stream and river rear rules of exactly those five species (nine rule objects — some species carry one) and nothing else; `default*` bundles untouched (#327 decides theirs)
 - [x] **Decided 2026-10-27 (operator): ship without it, documented (`?fresh::frs_order_child`, RUNBOOK §7, CLAUDE.md status); #327 records why `default` needs no such filter.** Was: every CH, CO, ST and WCT rearing block carrying the exception also filters by waterbody and edge type, in three forms (`E` = 1000/1100/2000/2300): CH all blocks and WCT block 1 `R OR (no waterbody AND edge in E)`; ST all blocks and WCT blocks 2–3 `R OR no waterbody OR edge in E`; CO as ST with 1050/1150 in `E` plus a no-width wetland branch. BT has none. `frs_order_child()` tests no edge or waterbody type, so the bcfishpass config admits direct children these filters turn away (round 3, province-wide order-1 / parent ≥ 5 lines: 23,735 km fail CH's form; lake lines fail every form). Options: (a) fresh gains an edge/waterbody filter and link passes a per-species form (three forms, not one); (b) accept and annotate as a taxonomy residual. Measure per group in Phase 4 (link-only km on order-1 / parent ≥ 5 lines, by edge type and species)
-- [ ] Pre-flight on PARS (bcfishpass config): BT rearing moves by about −24.8 km on the 54 lines #324 named, 0 km on NULL-width lines, and **0 link-only km on order-1 / parent ≥ 5 lines** (the steep-line case `mechanism.R`'s `bypass` class cannot see, since it is `bcfp_only` only)
-- [ ] `/code-check`; commit
+- [x] *(measured in Phase 4, `round1/habitat_diff/`: PARS BT rearing link-only 0 km, bcfishpass-only 8.11 km, from −24.8)* Pre-flight on PARS (bcfishpass config): BT rearing moves by about −24.8 km on the 54 lines #324 named, 0 km on NULL-width lines, and **0 link-only km on order-1 / parent ≥ 5 lines** (the steep-line case `mechanism.R`'s `bypass` class cannot see, since it is `bcfp_only` only)
+- [x] `/code-check`; commit — covered by `/code-check branch` (four rounds)
 
 ## Phase 4: measure (m4, local docker; evidence under `data-raw/logs/segmentation_326/` with a README)
 
@@ -97,8 +97,8 @@ Outcome: both configs break at the per-present-species post-lift set reduced to 
 ## Validation
 
 - [x] Tests pass (link 4,342 pass / 0 fail at `a1dd97ba`; fresh 1,864 pass / 0 fail / 2 skipped at `18b94fe`, 2026-10-27)
-- [ ] `/code-check` clean on each commit
-- [ ] PWF checkboxes match landed work
+- [x] `/code-check` clean over the branch (four rounds, enumeration-terminated) plus one round over fresh's rename commit
+- [x] PWF checkboxes match landed work (checked 2026-10-27 before archive)
 - [ ] `/planning-archive` on completion
 
 **How each change is proved:**
