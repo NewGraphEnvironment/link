@@ -41,7 +41,7 @@ Imports:
     yaml
 Remotes:
     NewGraphEnvironment/crate,
-    NewGraphEnvironment/fresh@v0.42.0,
+    NewGraphEnvironment/fresh@v0.43.0,
     NewGraphEnvironment/gq,
     NewGraphEnvironment/wet@v0.4.7
 Suggests:
