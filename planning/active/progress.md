@@ -37,3 +37,10 @@ Approval on 2026-10-26 covered the baseline only. The run-to-PR mandate starts w
 - Next: `default_diff.R` rerun, the waterbody/edge filter sizing (LFRA, KOTR), research doc and taxonomy, the CLAUDE.md status, then Phase 5.
 - `default` before against after (`default_diff.sh`, 7 s; `default_diff.R`'s `lnk_rollup_wsg()` ran over 10 min per group in its waterbody join, so it was cancelled and replaced): accessible km moves at most 0.094 %, spawning 0.34 %, and rearing 0.93 % (PCEA BT −26.4 km); GR and KO habitat is unchanged. The habitat moves were not attributed segment by segment.
 - The two named residuals (classify scope, cross-group lift) both count 0. The order-1 waterbody/edge filter would turn away at most 2.7 km per species per group (0 in LFRA and KOTR). The research doc, taxonomy, CLAUDE.md status and RUNBOOK §7 are updated. Fixed two brace lints in prep_minimal; the remaining new lints are indentation in the package's existing style.
+
+## Session 2026-10-27 (decisions 2 and 6)
+- Decision 1 landed: fresh `7462772` (`channel_width_max`, inclusive) and link `c22408ee`; dictionary wording `1f65010b`.
+- Decision 2: fresh#269 filed (body approved); fresh branch renamed `269-frs-order-child-width-gradient`; NEWS closes it (`43ca870`). Code-check round 4 over the rename: clean (`review-fresh-round4.md`). Suite at tip 1,859 / 0 fail / 2 skip, identical at `18b94fe` in the same environment (the sweep's 1,864 was an earlier environment). fresh PR body drafted, awaiting approval.
+- Decision 6: `FWA_LocateAlong()` report filed on the fork as fwapg#45 (`upstream-draft`), not sent upstream. Cited in `research/bcfp_segmentation_parity.md` and the NEWS / PR drafts.
+- YAML key `width_known_below_min` kept (operator); its definition is the `rear_stream_order_bypass` row of `dictionary_dimensions.csv`.
+- Next: approval of the fresh PR body; decisions 3, 4, 5.

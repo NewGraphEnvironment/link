@@ -104,7 +104,8 @@ FINA, PARS and LKEL, at link `21e0fea2` on fresh 0.43.0 (2026-10-27, round 2). E
   segment-species on 13 positions, BT 9. Each barrier is 1.07 to 1.43 m from its nearest break.
   This is #349's metre-rounded family (fresh#258). A first run also found barrier rows
   `lnk_barriers_unify()` dropped when `FWA_LocateAlong()` returned no point for a measure in
-  FWA's millimetre segment gap. That was 11 of 18 BT cases, and it is fixed.
+  FWA's millimetre segment gap. That was 11 of 18 BT cases, and it is fixed. The report
+  for upstream is drafted on our fork (NewGraphEnvironment/fwapg#45, `upstream-draft`).
 - **The CH / CO / ST / WCT waterbody and edge filter** on the order-1 exception, which
   `frs_order_child()` does not apply, would turn away at most 2.7 km per species per group
   (BULK CH). In LFRA and KOTR it would turn away 0 km.
