@@ -104,10 +104,14 @@ lnk_pipeline_prepare(
   intentionally excluded here and consumed by later phases directly —
   bcfishpass parity.
 
-- Per-model barrier tables (gradient class-filtered + falls) unioned
-  into `gradient_barriers_minimal` — the FULL per-model position set
-  (NOT minimal-reduced, despite the legacy name), so streams break at
-  every frontier and per-segment access gating is correct (#223)
+- Per-species post-lift barrier tables, one per configured species
+  present in the AOI (gradient at the species' classes + falls + opt-in
+  subsurface flow, minus that species' overrides, plus user-definite),
+  each reduced to the downstream-most position per flow path and unioned
+  into `gradient_barriers_minimal`: streams break only where a present
+  species' access changes, as bcfishpass does (#326). The lift comes
+  before the reduction, so a lifted barrier never prunes a real frontier
+  above it (#223)
 
 - Base stream segments (`fresh.streams`) loaded from FWA with channel
   width, stream order parent, GENERATED gradient / measures / length
@@ -128,10 +132,13 @@ Writes to (under the caller's working schema unless noted):
 
 - `<schema>.barrier_overrides`
 
-- `<schema>.barriers_<model>` — per-model gradient + falls positions
+- `<schema>.barriers_<sp>` — a present species' post-lift positions
 
-- `<schema>.gradient_barriers_minimal` (union of per-model raw
-  positions)
+- `<schema>.barriers_<sp>_min` — the same, reduced to the
+  downstream-most per flow path
+
+- `<schema>.gradient_barriers_minimal` (union of the `_min` tables and
+  any orphan-class positions)
 
 - `fresh.streams` (base segments — not namespaced by AOI; fresh owns its
   output schema)

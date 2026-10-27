@@ -89,7 +89,7 @@ res <- lnk_preflight_fresh(quiet = TRUE)
 res$ok
 #> [1] TRUE
 res$version
-#> [1] "0.42.0"
+#> [1] "0.43.0"
 
 # A symbol fresh does not export fails, and is named in the report:
 bad <- lnk_preflight_fresh(required = "frs_not_a_real_export", quiet = TRUE)

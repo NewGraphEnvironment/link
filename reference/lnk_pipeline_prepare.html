@@ -11,7 +11,7 @@ classify, connect) consume:"><meta property="og:image" content="https://newgraph
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.68.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.69.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -136,10 +136,14 @@ enriched with <code>wscode_ltree</code> and <code>localcode_ltree</code> for
 <code><a href="lnk_barrier_overrides.html">lnk_barrier_overrides()</a></code> to compute the per-species skip list.
 User-definite barriers are intentionally excluded here and
 consumed by later phases directly — bcfishpass parity.</p></li>
-<li><p>Per-model barrier tables (gradient class-filtered + falls) unioned
-into <code>gradient_barriers_minimal</code> — the FULL per-model position set
-(NOT minimal-reduced, despite the legacy name), so streams break at
-every frontier and per-segment access gating is correct (#223)</p></li>
+<li><p>Per-species post-lift barrier tables, one per configured species
+present in the AOI (gradient at the species' classes + falls + opt-in
+subsurface flow, minus that species' overrides, plus user-definite),
+each reduced to the downstream-most position per flow path and
+unioned into <code>gradient_barriers_minimal</code>: streams break only where a
+present species' access changes, as bcfishpass does (#326). The lift
+comes before the reduction, so a lifted barrier never prunes a real
+frontier above it (#223)</p></li>
 <li><p>Base stream segments (<code>fresh.streams</code>) loaded from FWA with
 channel width, stream order parent, GENERATED gradient / measures
 / length columns, and a unique <code>id_segment</code></p></li>
@@ -151,8 +155,11 @@ channel width, stream order parent, GENERATED gradient / measures
 <li><p><code>&lt;schema&gt;.barriers_subsurfaceflow</code> (only when subsurfaceflow opted in
 via <code>cfg$pipeline$break_order</code>)</p></li>
 <li><p><code>&lt;schema&gt;.barrier_overrides</code></p></li>
-<li><p><code>&lt;schema&gt;.barriers_&lt;model&gt;</code> — per-model gradient + falls positions</p></li>
-<li><p><code>&lt;schema&gt;.gradient_barriers_minimal</code> (union of per-model raw positions)</p></li>
+<li><p><code>&lt;schema&gt;.barriers_&lt;sp&gt;</code> — a present species' post-lift positions</p></li>
+<li><p><code>&lt;schema&gt;.barriers_&lt;sp&gt;_min</code> — the same, reduced to the
+downstream-most per flow path</p></li>
+<li><p><code>&lt;schema&gt;.gradient_barriers_minimal</code> (union of the <code>_min</code> tables and
+any orphan-class positions)</p></li>
 <li><p><code>fresh.streams</code> (base segments — not namespaced by AOI; fresh
 owns its output schema)</p></li>
 <li><p><code>&lt;schema&gt;.dams</code> (only when <code>conn_tunnel</code> is supplied) — pulled
