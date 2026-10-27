@@ -17,8 +17,9 @@
 #     observation or a crossing;
 #   - FWA_BASE_SEGMENT: the start of a whole fwa_stream_networks_sp line;
 #   - none: an observation, crossing or habitat endpoint.
-# With no working schema (dropped), the MINIMAL / NON_MINIMAL split is skipped
-# and positions are labelled by barrier class alone, as #324's census did.
+# With no working schema (dropped), or one whose streams are another config's
+# build of the group, the MINIMAL / NON_MINIMAL split is skipped and positions
+# are labelled by barrier class alone, as #324's census did.
 #
 # Usage: Rscript data-raw/breaks_diff.R <WSG> [WSG ...]
 #          [--schema=fresh] [--out=data-raw/logs/segmentation_326]
@@ -48,10 +49,29 @@ for (w in wsgs) {
   stopifnot(grepl("^[A-Z]{4}$", w))
   lit <- DBI::dbQuoteLiteral(conn, w)
   working <- paste0("working_", tolower(w))
-  has_min <- nrow(DBI::dbGetQuery(conn, sprintf(
+  has_tbl <- function(t) nrow(DBI::dbGetQuery(conn, sprintf(
     "SELECT 1 FROM information_schema.tables
-     WHERE table_schema = %s AND table_name = 'gradient_barriers_minimal'",
-    DBI::dbQuoteLiteral(conn, working)))) > 0L
+     WHERE table_schema = %s AND table_name = %s",
+    DBI::dbQuoteLiteral(conn, working), DBI::dbQuoteLiteral(conn, t)))) > 0L
+  # Every config models into the same working_<wsg>, so the working tables
+  # belong to whichever config ran the group last. Trust its minimal set only
+  # when its streams are the persisted group's: same segment count and the
+  # same summed start measures.
+  has_min <- has_tbl("gradient_barriers_minimal") && has_tbl("streams")
+  if (has_min) {
+    fp <- function(tbl, where) DBI::dbGetQuery(conn, sprintf(
+      "SELECT count(*)::bigint AS n,
+              round(sum(downstream_route_measure)::numeric, 0) AS m
+       FROM %s %s", tbl, where))
+    same <- identical(fp(sprintf("%s.streams", working), ""),
+                      fp(sprintf("%s.streams", schema),
+                         sprintf("WHERE watershed_group_code = %s", lit)))
+    if (!same) {
+      message(sprintf("%s: %s.streams is not %s's build of the group; MINIMAL labels skipped",
+                      w, working, schema))
+      has_min <- FALSE
+    }
+  }
   for (t in c("lb", "bb", "br", "fb", "mn")) x(sprintf("DROP TABLE IF EXISTS pg_temp.%s", t))
   x(sprintf("CREATE TEMP TABLE lb AS SELECT blue_line_key blk, downstream_route_measure m
              FROM %s.streams WHERE watershed_group_code = %s AND downstream_route_measure > 0.5",

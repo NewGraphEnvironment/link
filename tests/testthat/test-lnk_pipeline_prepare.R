@@ -487,6 +487,50 @@ test_that(".lnk_pipeline_prep_minimal honours custom classes vector", {
   expect_match(bt, "gradient_class IN \\(1000, 1500\\)")
 })
 
+test_that(".lnk_pipeline_prep_minimal also lifts by the persisted overrides the view reads", {
+  # The access view anti-joins <persist>.barrier_overrides (every group's
+  # rows); the reduction must lift at least as much, or a position lifted in
+  # the view prunes a frontier the view treats as real (#326 review).
+  run <- function(exists, schema_cfg = "fresh") {
+    log <- list()
+    local_mocked_bindings(
+      .lnk_db_execute = function(conn, sql) {
+        log[[length(log) + 1L]] <<- sql
+        invisible(NULL)
+      },
+      .lnk_table_exists = function(conn, table) {
+        expect_identical(table, "fresh.barrier_overrides")
+        exists
+      }
+    )
+    local_mocked_bindings(frs_barriers_minimal = function(...) invisible(NULL),
+                          .package = "fresh")
+    cfg <- structure(list(species = "BT",
+                          pipeline = list(schema = schema_cfg)),
+                     class = "lnk_config")
+    loaded <- list(
+      parameters_fresh = data.frame(species_code = "BT",
+                                    access_gradient_max = 0.25),
+      wsg_species_presence = .pm_presence(bt = "t"))
+    .lnk_pipeline_prep_minimal("mock-conn", aoi = "BULK", cfg = cfg,
+      loaded = loaded, schema = "w")
+    sql <- unlist(log)
+    sql[grepl("CREATE TABLE w\\.barriers_bt AS", sql)]
+  }
+  bt <- run(TRUE)
+  expect_match(bt, "FROM w\\.barrier_overrides o")
+  expect_match(bt, "FROM fresh\\.barrier_overrides p")
+  expect_match(bt, "p\\.species_code = 'BT'")
+  expect_match(bt,
+    "abs\\(p\\.downstream_route_measure - n\\.downstream_route_measure\\) < 1")
+  # Both lifts sit before the definite barriers, which are never lifted.
+  expect_lt(regexpr("barrier_overrides p", bt), regexpr("barriers_definite d", bt))
+  # No persisted table yet (a first build): the working lift alone.
+  bt0 <- run(FALSE)
+  expect_no_match(bt0, "barrier_overrides p")
+  expect_match(bt0, "FROM w\\.barrier_overrides o")
+})
+
 # -- prep_network SQL shape --------------------------------------------------
 
 test_that(".lnk_pipeline_prep_network loads fresh.streams with FWA filters", {
