@@ -897,7 +897,7 @@ ORDER BY model_run_id DESC LIMIT 5;
 
 `model_version` format `<tag>-<commits>-g<short-sha>` (e.g. `v0.7.14-113-ga7373af`) — the trailing SHA is the exact `smnorris/bcfishpass` commit Simon's rebuild used. That SHA is the deterministic ref for matching link's bundle CSVs to the reference DB's input state — required for apples-to-apples comparison.
 
-CSV-sync workflow goal: bundle CSVs in `inst/extdata/configs/bcfishpass/overrides/` should match the reference DB's last-rebuild SHA. Drift between the two means comparison numbers shift for input reasons, not methodology reasons. See the [csv-sync rewrite plan in memory](project_csv_sync_rewrite.md).
+CSV-sync workflow goal: bundle CSVs in `inst/extdata/configs/bcfishpass/overrides/` should match the reference DB's last-rebuild SHA. Drift between the two means comparison numbers shift for input reasons, not methodology reasons. The sync is `data-raw/sync_bcfishpass_csvs.R`, run weekly by `.github/workflows/sync-bcfishpass-csvs.yml`.
 
 ### Pin upstream versions in issue/PR bodies
 
@@ -909,7 +909,7 @@ When an issue or PR body describes upstream behaviour (bcfp SQL, fresh primitive
 
 Without a version pin, "this behaviour exists upstream" claims rot — six-month-old issues end up describing code that no longer exists, and no one knows what was being compared against. Version-pinning makes the issue self-contained and reproducible.
 
-Note: `<owner>/<repo>@<sha>` references a commit; this does **not** trigger GitHub notifications to the referenced repo's participants (unlike `<owner>/<repo>#<n>` issue/PR references — see `feedback_no_cross_ref_external_issues.md` in memory).
+Note: `<owner>/<repo>@<sha>` references a commit; this does **not** trigger GitHub notifications to the referenced repo's participants, unlike an `<owner>/<repo>#<n>` issue/PR reference, which does. In our own issues and PRs, write an upstream `#<n>` reference in backticks.
 
 ## Exported Functions
 
