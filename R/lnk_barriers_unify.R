@@ -222,9 +222,9 @@ lnk_barriers_unify <- function(conn, aoi, cfg, loaded,
       wscode_ltree,
       localcode_ltree,
       %4$s AS geom
-    FROM %3$s.gradient_barriers_raw",
+    FROM %3$s.gradient_barriers_raw g",
     aoi_lit, gradient_case, schema,
-    .lnk_sql_locate("blue_line_key", "downstream_route_measure"))  # nolint: indentation_linter
+    .lnk_sql_locate("g.blue_line_key", "g.downstream_route_measure"))  # nolint: indentation_linter
 
   # Source 3: falls. id_barrier = 4_000_000_000 + row_number().
   # Ordered on the joined linear_feature_id too: a falls point in the ~1 mm
@@ -317,9 +317,9 @@ lnk_barriers_unify <- function(conn, aoi, cfg, loaded,
         wscode_ltree,
         localcode_ltree,
         %4$s AS geom
-      FROM %3$s.barriers_subsurfaceflow",
+      FROM %3$s.barriers_subsurfaceflow b",
       aoi_lit, all_species_arr, schema,
-      .lnk_sql_locate("blue_line_key", "downstream_route_measure"))  # nolint: indentation_linter
+      .lnk_sql_locate("b.blue_line_key", "b.downstream_route_measure"))  # nolint: indentation_linter
     union_parts <- c(union_parts, sql_subsurface)
   }
 
@@ -343,9 +343,16 @@ lnk_barriers_unify <- function(conn, aoi, cfg, loaded,
 #' position the per-species reduction keeps (#326: 4 to 9 per group).
 #' This scalar form keeps the row: where `FWA_LocateAlong()` gives no
 #' point, it interpolates on the line's segment nearest the measure.
-#' @param blk,measure SQL expressions for the blue line key and measure.
+#' @param blk,measure Alias-qualified columns (`g.blue_line_key`) or numeric
+#'   literals. A bare column name would bind to the fallback's own FWA table,
+#'   which has columns of the same names, so it is refused.
 #' @noRd
 .lnk_sql_locate <- function(blk, measure) {
+  ok <- grepl("^([a-z_][a-z0-9_]*\\.[a-z_][a-z0-9_]*|[0-9]+(\\.[0-9]+)?)$", c(blk, measure))
+  if (length(blk) != 1L || length(measure) != 1L || !all(ok)) {
+    stop(".lnk_sql_locate() takes alias-qualified columns or numbers, not: ",
+         paste(c(blk, measure)[!ok], collapse = ", "), call. = FALSE)
+  }
   sprintf(
     "COALESCE(
         (SELECT ST_Force2D(l.geom) FROM FWA_LocateAlong(%1$s, %2$s) l LIMIT 1),

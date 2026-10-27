@@ -240,4 +240,34 @@ test_that("a measure in FWA's segment gap still gets a point (#326)", {
   expect_match(pts$gap_pt, "^POINT\\(")
   # Where FWA_LocateAlong() answers, the helper returns its point.
   expect_identical(pts$mid_pt, pts$fwa_pt)
+
+  # Through columns named like FWA's own, as unify passes them: each gap
+  # point lands where its own line's segment ends, not on another line.
+  d <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT g.blue_line_key,
+            ST_Distance(%s, (SELECT ST_Force2D(ST_EndPoint(ST_GeometryN(s.geom, 1)))
+                               FROM whse_basemapping.fwa_stream_networks_sp s
+                              WHERE s.linear_feature_id = g.lfid)) AS dist
+       FROM (VALUES (360611439, 1153.64::double precision, 139051606),
+                    (360656798, 900.63::double precision, NULL::integer))
+            g(blue_line_key, downstream_route_measure, lfid)",
+    .lnk_sql_locate("g.blue_line_key", "g.downstream_route_measure")))
+  expect_lt(d$dist[d$blue_line_key == 360611439], 0.01)
+  # A second line in the same statement is located on its own line.
+  other <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT ST_Distance(%s, (SELECT ST_Force2D(ST_Collect(geom))
+                               FROM whse_basemapping.fwa_stream_networks_sp
+                              WHERE blue_line_key = 360656798)) AS dist
+       FROM (VALUES (360656798, 900.63::double precision)) g(blue_line_key, downstream_route_measure)",
+    .lnk_sql_locate("g.blue_line_key", "g.downstream_route_measure")))
+  expect_lt(other$dist, 0.01)
+})
+
+test_that(".lnk_sql_locate() refuses a bare column name (#326)", {
+  # A bare name binds to the fallback's own FWA table, whose columns share it.
+  expect_error(.lnk_sql_locate("blue_line_key", "downstream_route_measure"),
+               "alias-qualified")
+  expect_error(.lnk_sql_locate("g.blue_line_key", "downstream_route_measure"),
+               "downstream_route_measure")
+  expect_type(.lnk_sql_locate("g.blue_line_key", "1153.64"), "character")
 })
