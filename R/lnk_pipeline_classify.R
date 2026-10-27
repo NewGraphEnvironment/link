@@ -175,30 +175,62 @@ lnk_pipeline_classify <- function(conn, aoi, cfg, loaded, schema,
   for (sp in species_bypass) {
     rear_rules <- params[[sp]][["rules"]][["rear"]]
     bypass <- NULL
+    bypass_rule <- NULL
     for (rr in rear_rules) {
       if (!is.null(rr[["channel_width_min_bypass"]])) {
         bypass <- rr[["channel_width_min_bypass"]]
+        bypass_rule <- rr
         break
       }
     }
     if (!is.null(bypass)) {
-      pom    <- bypass[["stream_order_parent_min"]] %||% 5L
-      cs_min <- bypass[["stream_order_min"]]
-      cs_max <- bypass[["stream_order_max"]]
-      dmax   <- bypass[["distance_max"]]
-      fresh::frs_order_child(conn,
+      oc_args <- list(conn,
         table   = paste0(schema, ".streams"),
         habitat = paste0(schema, ".streams_habitat"),
         species = sp,
-        parent_order_min = pom,
-        child_order_min = cs_min,
-        child_order_max = cs_max,
-        distance_max = dmax,
+        parent_order_min = bypass[["stream_order_parent_min"]] %||% 5L,
+        child_order_min = bypass[["stream_order_min"]],
+        child_order_max = bypass[["stream_order_max"]],
+        distance_max = bypass[["distance_max"]],
         verbose = FALSE)
+      # bcfishpass's exception sits inside the rest of its rearing test: a
+      # line qualifies only with a known width up to the minimum and a
+      # gradient within the rearing maximum (#326). bcfishpass tests below
+      # the minimum; a line at it already rears through the width test.
+      if (isTRUE(bypass[["width_known_below_min"]])) {
+        oc_args <- c(oc_args,
+                     .lnk_order_child_bounds(params[[sp]], bypass_rule, sp))
+      }
+      do.call(fresh::frs_order_child, oc_args)
     }
   }
 
   invisible(conn)
+}
+
+
+#' Width and gradient bounds for the order-1 rearing exception
+#'
+#' The width minimum comes from the rule carrying the bypass when that rule
+#' sets its own `channel_width` range, else from the species' rearing
+#' thresholds; the gradient maximum likewise. Either missing is an error: a
+#' NULL bound would silently admit every direct child (#326).
+#' @noRd
+.lnk_order_child_bounds <- function(sp_params, rule, sp) {
+  rear <- sp_params[["ranges"]][["rear"]]
+  width <- rule[["channel_width"]][[1]] %||% rear[["channel_width"]][[1]]
+  gradient <- rule[["gradient"]][[2]] %||% rear[["gradient"]][[2]]
+  missing <- c(channel_width_min = is.null(width) || is.na(width),
+               gradient_max = is.null(gradient) || is.na(gradient))
+  if (any(missing)) {
+    stop(sprintf(paste0(
+      "%s: the rear rule's channel_width_min_bypass sets ",
+      "width_known_below_min, but no rearing %s is set on that rule or in ",
+      "the thresholds"), sp,
+      paste(names(missing)[missing], collapse = " or ")), call. = FALSE)
+  }
+  list(channel_width_max = as.numeric(width),
+       gradient_max = as.numeric(gradient))
 }
 
 

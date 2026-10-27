@@ -1,0 +1,8 @@
+# 2026-10-27T12:53:36Z link 2e4c7f59 fresh 7462772
+species	eq_not_rearing	eq_all	lt_rearing	eq_not_rearing_km
+bt	1	11	352	0.83
+ch	0	4	86	0
+co	0	4	86	0
+st	0	4	121	0
+wct	0	5	87	0
+# the one BT row (ELKR id_segment 20567, edge 1000, 1.5 m FIELD_MEASURMENT, gradient 0.0862, 0.83 km) is accessible and not rearing; BT has cluster_rearing on in this bundle, which runs after classify and is the likely remover (not traced)

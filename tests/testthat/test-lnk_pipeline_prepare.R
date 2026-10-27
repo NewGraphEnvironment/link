@@ -276,241 +276,267 @@ test_that(".lnk_pipeline_prep_natural honours barriers_definite_control on subsu
 })
 
 # -- prep_minimal structure --------------------------------------------------
+#
+# Each present species' post-lift barrier set is reduced to its downstream-
+# most position per flow path, and only those positions break the network
+# (#326; bcfishpass 01_model_access_natural.sh). The log interleaves SQL and
+# frs_barriers_minimal calls so ordering can be asserted.
 
-test_that(".lnk_pipeline_prep_minimal builds per-species tables from access_gradient_max", {
-  captured <- character(0)
-  local_mocked_bindings(
+.pm_presence <- function(aoi = "BULK", ...) {
+  row <- data.frame(watershed_group_code = aoi, bt = "", ch = "", cm = "",
+                    co = "", pk = "", sk = "", st = "", wct = "", notes = "",
+                    stringsAsFactors = FALSE)
+  for (nm in names(list(...))) row[[nm]] <- list(...)[[nm]]
+  row
+}
+
+.run_prep_minimal <- function(species, amax, presence, classes = .lnk_classes_bcfp,
+                              break_order = NULL, schema = "w") {
+  log <- list()
+  testthat::local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) {
-      captured <<- c(captured, sql)
-      invisible(NULL)
-    }
-  )
-  minimal_calls <- list()
-  local_mocked_bindings(
-    frs_barriers_minimal = function(conn, from, to, ...) {
-      minimal_calls[[length(minimal_calls) + 1]] <<-
-        list(from = from, to = to)
+      log[[length(log) + 1L]] <<- list(kind = "sql", sql = sql)
       invisible(NULL)
     },
-    .package = "fresh"
+    .env = parent.frame()
   )
-
-  cfg <- structure(
-    list(species = c("BT", "CH", "SK", "ST", "WCT")),
-    class = "lnk_config"
+  testthat::local_mocked_bindings(
+    frs_barriers_minimal = function(conn, from, to, ...) {
+      log[[length(log) + 1L]] <<- list(kind = "min", from = from, to = to)
+      invisible(NULL)
+    },
+    .package = "fresh",
+    .env = parent.frame()
   )
+  cfg <- structure(list(species = species,
+                        pipeline = list(break_order = break_order)),
+                   class = "lnk_config")
   loaded <- list(
-    parameters_fresh = data.frame(
-      species_code = c("BT", "CH", "SK", "ST", "WCT"),
-      access_gradient_max = c(0.25, 0.15, 0.15, 0.20, 0.20),
-      stringsAsFactors = FALSE
-    )
-  )
+    parameters_fresh = data.frame(species_code = species,
+                                  access_gradient_max = amax,
+                                  stringsAsFactors = FALSE),
+    wsg_species_presence = presence)
+  .lnk_pipeline_prep_minimal("mock-conn", aoi = presence$watershed_group_code[1],
+    cfg = cfg, loaded = loaded, schema = schema, classes = classes)
+  log
+}
 
-  .lnk_pipeline_prep_minimal("mock-conn", aoi = "BULK", cfg = cfg,
-    loaded = loaded, schema = "w_bulk")
+.pm_sql <- function(log) {
+  vapply(Filter(function(e) e$kind == "sql", log), `[[`, "", "sql")
+}
+.pm_min <- function(log) Filter(function(e) e$kind == "min", log)
+.pm_union <- function(log, schema = "w") {
+  s <- .pm_sql(log)
+  s[grepl(sprintf("CREATE TABLE %s\\.gradient_barriers_minimal", schema), s)]
+}
 
-  # Fix #223: raw per-species positions feed segmentation directly —
-  # frs_barriers_minimal is no longer called; each raw barriers_<sp> table
-  # enters the gradient_barriers_minimal union.
-  expect_length(minimal_calls, 0L)
-  union_sql <- captured[grepl(
-    "CREATE TABLE w_bulk\\.gradient_barriers_minimal", captured)]
+sp5 <- c("BT", "CH", "SK", "ST", "WCT")
+amax5 <- c(0.25, 0.15, 0.15, 0.20, 0.20)
+
+test_that(".lnk_pipeline_prep_minimal reduces only the species present in the group", {
+  log <- .run_prep_minimal(sp5, amax5, .pm_presence(bt = "t"))
+
+  sql <- .pm_sql(log)
+  expect_length(grep("CREATE TABLE w\\.barriers_[a-z]+ AS", sql), 1L)
+  expect_length(grep("CREATE TABLE w\\.barriers_bt AS", sql), 1L)
+
+  mins <- .pm_min(log)
+  expect_length(mins, 1L)
+  expect_identical(mins[[1]]$from, "w.barriers_bt")
+  expect_identical(mins[[1]]$to, "w.barriers_bt_min")
+
+  union_sql <- .pm_union(log)
   expect_length(union_sql, 1L)
-  for (tbl in c("barriers_bt", "barriers_ch", "barriers_sk",
-                "barriers_st", "barriers_wct")) {
-    expect_match(union_sql, sprintf("FROM w_bulk\\.%s\\b", tbl))
+  expect_match(union_sql, "FROM w\\.barriers_bt_min\\b")
+  # The raw post-lift table never breaks the network (#223 dropped the
+  # reduction; #326 restores it after the lifts).
+  expect_no_match(union_sql, "barriers_bt\\b")
+  expect_no_match(union_sql, "barriers_(ch|sk|st|wct)")
+})
+
+test_that(".lnk_pipeline_prep_minimal expands a group of present species", {
+  # ch present, sk empty: the salmon group puts sk (and cm, co, pk) in too;
+  # bt, st and wct stay out.
+  log <- .run_prep_minimal(sp5, amax5, .pm_presence(ch = "t"))
+  froms <- vapply(.pm_min(log), `[[`, "", "from")
+  expect_setequal(froms, c("w.barriers_ch", "w.barriers_sk"))
+  union_sql <- .pm_union(log)
+  expect_match(union_sql, "FROM w\\.barriers_ch_min\\b")
+  expect_match(union_sql, "FROM w\\.barriers_sk_min\\b")
+  expect_no_match(union_sql, "barriers_(bt|st|wct)")
+})
+
+test_that(".lnk_pipeline_prep_minimal with no species present writes the empty shape", {
+  log <- .run_prep_minimal(sp5, amax5, .pm_presence())
+  expect_length(.pm_min(log), 0L)
+  sql <- .pm_sql(log)
+  expect_length(grep("CREATE TABLE w\\.barriers_[a-z]+ AS", sql), 0L)
+  empty <- sql[grepl("CREATE TABLE w\\.gradient_barriers_minimal \\(", sql)]
+  expect_length(empty, 1L)
+  expect_match(empty, "blue_line_key bigint")
+})
+
+test_that(".lnk_pipeline_prep_minimal builds each table post-lift, with definite barriers inside", {
+  log <- .run_prep_minimal(sp5, amax5,
+    .pm_presence(bt = "t", ch = "t", st = "t", wct = "t"))
+  sql <- .pm_sql(log)
+  bt <- sql[grepl("CREATE TABLE w\\.barriers_bt AS", sql)]
+  expect_length(bt, 1L)
+
+  # The lift: the uppercase parameters_fresh code, as barrier_overrides
+  # stores it (a lowercase literal matches nothing and reduces the pre-lift
+  # set, #223's failure).
+  expect_match(bt, "FROM w\\.barrier_overrides o")
+  expect_match(bt, "o\\.species_code = 'BT'")
+  expect_no_match(bt, "species_code = 'bt'")
+  expect_match(bt,
+    "abs\\(o\\.downstream_route_measure - n\\.downstream_route_measure\\) < 1")
+  expect_match(bt, "o\\.blue_line_key = n\\.blue_line_key")
+  # Natural sources: gradient at the species' classes and falls.
+  expect_match(bt, "FROM w\\.gradient_barriers_raw")
+  expect_match(bt, "gradient_class IN \\(2500, 3000\\)")
+  expect_match(bt, "FROM w\\.falls f")
+  # Definite barriers are inside the table, after the lift (never lifted).
+  expect_match(bt, "FROM w\\.barriers_definite d")
+  definite_at <- regexpr("barriers_definite d", bt)
+  lift_at <- regexpr("barrier_overrides o", bt)
+  expect_gt(definite_at, lift_at)
+  # Rows the FWA join could not place neither prune nor are pruned.
+  expect_match(bt, "wscode_ltree IS NOT NULL")
+  # Raw measures: no rounding before the reduction.
+  expect_no_match(bt, "round\\(", ignore.case = TRUE)
+  # Subsurface flow only when break_order opts in.
+  expect_no_match(bt, "barriers_subsurfaceflow")
+
+  # Each species' own classes.
+  ch <- sql[grepl("CREATE TABLE w\\.barriers_ch AS", sql)]
+  expect_match(ch, "gradient_class IN \\(1500, 2000, 2500, 3000\\)")
+  expect_match(ch, "o\\.species_code = 'CH'")
+  st <- sql[grepl("CREATE TABLE w\\.barriers_st AS", sql)]
+  expect_match(st, "gradient_class IN \\(2000, 2500, 3000\\)")
+})
+
+test_that(".lnk_pipeline_prep_minimal includes subsurface flow when break_order has it", {
+  log <- .run_prep_minimal("BT", 0.25, .pm_presence(bt = "t"),
+    break_order = c("observations", "gradient_minimal", "subsurfaceflow"))
+  bt <- .pm_sql(log)[grepl("CREATE TABLE w\\.barriers_bt AS", .pm_sql(log))]
+  expect_match(bt, "FROM w\\.barriers_subsurfaceflow")
+  # Inside the lifted part, before the definite barriers.
+  expect_lt(regexpr("barriers_subsurfaceflow", bt),
+            regexpr("barrier_overrides o", bt))
+})
+
+test_that(".lnk_pipeline_prep_minimal reduces each table after building it and before the union", {
+  log <- .run_prep_minimal(sp5, amax5, .pm_presence(bt = "t", st = "t"))
+  kinds <- vapply(log, function(e) {
+    if (e$kind == "min") paste0("min:", e$from)
+    else if (grepl("CREATE TABLE w\\.barriers_bt AS", e$sql)) "create:w.barriers_bt"
+    else if (grepl("CREATE TABLE w\\.barriers_st AS", e$sql)) "create:w.barriers_st"
+    else if (grepl("CREATE TABLE w\\.gradient_barriers_minimal", e$sql)) "union"
+    else "other"
+  }, "")
+  for (sp in c("bt", "st")) {
+    expect_lt(match(paste0("create:w.barriers_", sp), kinds),
+              match(paste0("min:w.barriers_", sp), kinds))
+    expect_lt(match(paste0("min:w.barriers_", sp), kinds), match("union", kinds))
   }
-  expect_no_match(union_sql, "_min\\b")
-
-  # BT @ 0.25 → classes 2500, 3000 (only those ≥ 0.25)
-  bt_create <- captured[grepl("CREATE TABLE w_bulk\\.barriers_bt\\b", captured)]
-  expect_length(bt_create, 1L)
-  expect_match(bt_create, "gradient_class IN \\(2500, 3000\\)")
-
-  # CH @ 0.15 → 1500, 2000, 2500, 3000
-  ch_create <- captured[grepl("CREATE TABLE w_bulk\\.barriers_ch\\b", captured)]
-  expect_length(ch_create, 1L)
-  expect_match(ch_create, "gradient_class IN \\(1500, 2000, 2500, 3000\\)")
-
-  # ST @ 0.20 → 2000, 2500, 3000
-  st_create <- captured[grepl("CREATE TABLE w_bulk\\.barriers_st\\b", captured)]
-  expect_length(st_create, 1L)
-  expect_match(st_create, "gradient_class IN \\(2000, 2500, 3000\\)")
-
-  joined <- paste(captured, collapse = "\n")
-  expect_match(joined,
-    "CREATE TABLE w_bulk.gradient_barriers_minimal AS")
-  expect_match(joined, "UNION")
+  expect_length(.pm_min(log), 2L)
 })
 
 test_that(".lnk_pipeline_prep_minimal skips species with NA / zero access_gradient_max", {
-  captured <- character(0)
-  local_mocked_bindings(
-    .lnk_db_execute = function(conn, sql) {
-      captured <<- c(captured, sql)
-      invisible(NULL)
-    }
-  )
-  minimal_calls <- list()
-  local_mocked_bindings(
-    frs_barriers_minimal = function(conn, from, to, ...) {
-      minimal_calls[[length(minimal_calls) + 1]] <<-
-        list(from = from, to = to)
-      invisible(NULL)
-    },
-    .package = "fresh"
-  )
-
-  cfg <- structure(list(species = c("BT", "LK", "ZR")), class = "lnk_config")
-  loaded <- list(
-    parameters_fresh = data.frame(
-      species_code = c("BT", "LK", "ZR"),
-      # LK is lake-only (NA access threshold); ZR has zero.
-      access_gradient_max = c(0.25, NA, 0),
-      stringsAsFactors = FALSE
-    )
-  )
-
-  .lnk_pipeline_prep_minimal("mock-conn", aoi = "BULK", cfg = cfg,
-    loaded = loaded, schema = "w")
-
-  # BT yields a barrier table; LK + ZR skipped. Fix #223: raw positions feed
-  # segmentation, so frs_barriers_minimal is not called — BT's raw table enters
-  # the union, the skipped species do not.
-  expect_length(minimal_calls, 0L)
-  union_sql <- captured[grepl(
-    "CREATE TABLE w\\.gradient_barriers_minimal", captured)]
-  expect_length(union_sql, 1L)
-  expect_match(union_sql, "FROM w\\.barriers_bt\\b")
+  log <- .run_prep_minimal(c("BT", "LK", "ZR"), c(0.25, NA, 0),
+    data.frame(watershed_group_code = "BULK", bt = "t", lk = "t", zr = "t",
+               stringsAsFactors = FALSE))
+  froms <- vapply(.pm_min(log), `[[`, "", "from")
+  expect_identical(froms, "w.barriers_bt")
+  union_sql <- .pm_union(log)
   expect_no_match(union_sql, "barriers_lk")
   expect_no_match(union_sql, "barriers_zr")
 })
 
-test_that(".lnk_pipeline_prep_minimal adds orphan-class break source when low classes present", {
-  captured <- character(0)
-  local_mocked_bindings(
-    .lnk_db_execute = function(conn, sql) {
-      captured <<- c(captured, sql)
-      invisible(NULL)
-    }
-  )
-  minimal_calls <- list()
-  local_mocked_bindings(
-    frs_barriers_minimal = function(conn, from, to, ...) {
-      minimal_calls[[length(minimal_calls) + 1]] <<-
-        list(from = from, to = to)
-      invisible(NULL)
-    },
-    .package = "fresh"
-  )
-
-  cfg <- structure(list(species = c("BT", "CH")), class = "lnk_config")
-  loaded <- list(
-    parameters_fresh = data.frame(
-      species_code = c("BT", "CH"),
-      access_gradient_max = c(0.25, 0.15),
-      stringsAsFactors = FALSE
-    )
-  )
-
-  # Vector contains classes both at and below species access thresholds.
-  # Orphan: 0.05 < min(0.25, 0.15) = 0.15. So 0500 enters as orphan.
+test_that(".lnk_pipeline_prep_minimal adds the orphan classes unreduced", {
+  # Orphan: 0.05 < min(0.25, 0.15). Orphans are segmentation positions, not
+  # access barriers, so they are never reduced.
   custom <- c("0500" = 0.05, "1500" = 0.15, "2500" = 0.25)
-  .lnk_pipeline_prep_minimal("mock-conn", aoi = "BULK", cfg = cfg,
-    loaded = loaded, schema = "w", classes = custom)
-
-  # Fix #223: no per-species frs_barriers_minimal call — the raw barriers_bt/ch
-  # enter the union directly, exactly as the orphan set already does.
-  expect_length(minimal_calls, 0L)
-
-  # Orphan CREATE TABLE statement still emitted, filtering to class 500
-  orphan_create <- captured[grepl("CREATE TABLE w\\.barriers_orphan\\b", captured)]
-  expect_length(orphan_create, 1L)
-  expect_match(orphan_create, "gradient_class IN \\(500\\)")
-
-  # And barriers_orphan (not orphan_min) appears in the union for
-  # gradient_barriers_minimal.
-  union_sql <- captured[grepl("CREATE TABLE w\\.gradient_barriers_minimal", captured)]
-  expect_length(union_sql, 1L)
+  log <- .run_prep_minimal(c("BT", "CH"), c(0.25, 0.15),
+    .pm_presence(bt = "t", ch = "t"), classes = custom)
+  sql <- .pm_sql(log)
+  orphan <- sql[grepl("CREATE TABLE w\\.barriers_orphan\\b", sql)]
+  expect_length(orphan, 1L)
+  expect_match(orphan, "gradient_class IN \\(500\\)")
+  froms <- vapply(.pm_min(log), `[[`, "", "from")
+  expect_false("w.barriers_orphan" %in% froms)
+  union_sql <- .pm_union(log)
   expect_match(union_sql, "FROM w\\.barriers_orphan\\b")
-  expect_match(union_sql, "FROM w\\.barriers_bt\\b")
-  expect_match(union_sql, "FROM w\\.barriers_ch\\b")
+  expect_match(union_sql, "FROM w\\.barriers_bt_min\\b")
+  expect_match(union_sql, "FROM w\\.barriers_ch_min\\b")
 })
 
 test_that(".lnk_pipeline_prep_minimal does NOT add orphan branch when no low classes", {
-  captured <- character(0)
-  local_mocked_bindings(
-    .lnk_db_execute = function(conn, sql) {
-      captured <<- c(captured, sql)
-      invisible(NULL)
-    }
-  )
-  minimal_calls <- list()
-  local_mocked_bindings(
-    frs_barriers_minimal = function(conn, from, to, ...) {
-      minimal_calls[[length(minimal_calls) + 1]] <<-
-        list(from = from, to = to)
-      invisible(NULL)
-    },
-    .package = "fresh"
-  )
-
-  cfg <- structure(list(species = c("BT", "CH")), class = "lnk_config")
-  loaded <- list(
-    parameters_fresh = data.frame(
-      species_code = c("BT", "CH"),
-      access_gradient_max = c(0.25, 0.15),
-      stringsAsFactors = FALSE
-    )
-  )
-
-  # bcfp default vector — every class >= 0.15 (CH's threshold). No orphans.
-  .lnk_pipeline_prep_minimal("mock-conn", aoi = "BULK", cfg = cfg,
-    loaded = loaded, schema = "w", classes = .lnk_classes_bcfp)
-
-  # Fix #223: frs_barriers_minimal not called; the union carries the raw
-  # per-species tables and NO orphan table (no low classes here).
-  expect_length(minimal_calls, 0L)
-  union_sql <- captured[grepl(
-    "CREATE TABLE w\\.gradient_barriers_minimal", captured)]
-  expect_length(union_sql, 1L)
-  expect_match(union_sql, "FROM w\\.barriers_bt\\b")
-  expect_match(union_sql, "FROM w\\.barriers_ch\\b")
-  expect_no_match(union_sql, "barriers_orphan")
+  log <- .run_prep_minimal(c("BT", "CH"), c(0.25, 0.15),
+    .pm_presence(bt = "t", ch = "t"))
+  expect_no_match(.pm_union(log), "barriers_orphan")
 })
 
 test_that(".lnk_pipeline_prep_minimal honours custom classes vector", {
-  captured <- character(0)
+  # Break-only bins below every threshold plus a subset of the access bins.
+  # BT @ 0.20 → classes ≥ 0.20 present here are 2000 + 3000.
+  custom <- c("0500" = 0.05, "0800" = 0.08, "2000" = 0.20, "3000" = 0.30)
+  log <- .run_prep_minimal("BT", 0.20, .pm_presence(bt = "t"), classes = custom)
+  bt <- .pm_sql(log)[grepl("CREATE TABLE w\\.barriers_bt AS", .pm_sql(log))]
+  expect_length(bt, 1L)
+  expect_match(bt, "gradient_class IN \\(2000, 3000\\)")
+})
+
+test_that(".lnk_pipeline_prep_minimal lifts by the group's own overrides only", {
+  # Never the persisted province-wide table: its contents at prepare time
+  # depend on host and run order, and this group's stale rows there would
+  # lift positions the current build does not (#326 review round 2).
+  looked <- character(0)
+  log <- list()
   local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) {
-      captured <<- c(captured, sql)
+      log[[length(log) + 1L]] <<- sql
       invisible(NULL)
+    },
+    .lnk_table_exists = function(conn, table) {
+      looked <<- c(looked, table)
+      TRUE
     }
   )
-  local_mocked_bindings(
-    frs_barriers_minimal = function(...) invisible(NULL),
-    .package = "fresh"
-  )
-
-  cfg <- structure(list(species = "BT"), class = "lnk_config")
+  local_mocked_bindings(frs_barriers_minimal = function(...) invisible(NULL),
+                        .package = "fresh")
+  cfg <- structure(list(species = "BT", pipeline = list(schema = "fresh")),
+                   class = "lnk_config")
   loaded <- list(
-    parameters_fresh = data.frame(
-      species_code = "BT",
-      access_gradient_max = 0.10,
-      stringsAsFactors = FALSE
-    )
-  )
-
-  # Custom break vector at 0.05 / 0.08 / 0.10 / 0.15.
-  # BT @ 0.10 → classes ≥ 0.10 are 1000 + 1500.
-  custom <- c("0500" = 0.05, "0800" = 0.08, "1000" = 0.10, "1500" = 0.15)
+    parameters_fresh = data.frame(species_code = "BT",
+                                  access_gradient_max = 0.25),
+    wsg_species_presence = .pm_presence(bt = "t"))
   .lnk_pipeline_prep_minimal("mock-conn", aoi = "BULK", cfg = cfg,
-    loaded = loaded, schema = "w", classes = custom)
+    loaded = loaded, schema = "w")
+  sql <- unlist(log)
+  expect_length(looked, 0L)
+  expect_no_match(paste(sql, collapse = "\n"), "\\bfresh\\.")
+  bt <- sql[grepl("CREATE TABLE w\\.barriers_bt AS", sql)]
+  expect_length(gregexpr("barrier_overrides", bt)[[1]], 1L)
+  expect_match(bt, "FROM w\\.barrier_overrides o")
+})
 
-  bt_create <- captured[grepl("CREATE TABLE w\\.barriers_bt\\b", captured)]
-  expect_length(bt_create, 1L)
-  expect_match(bt_create, "gradient_class IN \\(1000, 1500\\)")
+test_that(".lnk_pipeline_prep_minimal refuses an access-level class unify cannot map", {
+  # 0.175 is above CH's 0.15 but not one of .lnk_classes_bcfp, so the access
+  # view would never see it as a barrier while it prunes frontiers here.
+  custom <- c("1500" = 0.15, "1750" = 0.175, "2000" = 0.20)
+  expect_error(
+    .run_prep_minimal("CH", 0.15, .pm_presence(ch = "t"), classes = custom),
+    "gradient class\\(es\\) 1750 are at or above CH's access_gradient_max")
+  # A class below every species' threshold is a break-only orphan: allowed.
+  ok <- c("0500" = 0.05, .lnk_classes_bcfp)
+  expect_silent(.run_prep_minimal("CH", 0.15, .pm_presence(ch = "t"), classes = ok))
+  # A bcfp id carrying a different value is refused too.
+  expect_error(
+    .run_prep_minimal("CH", 0.15, .pm_presence(ch = "t"),
+                      classes = c("1500" = 0.16, "2000" = 0.20)),
+    "1500 are at or above")
 })
 
 # -- prep_network SQL shape --------------------------------------------------

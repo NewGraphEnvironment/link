@@ -1,0 +1,5 @@
+run: 2026-10-27T07:17Z (UTC)
+script: data-raw/habitat_diff_segments.R PCEA bt fresh rearing @ link 0.68.6 (cd67d05b)
+db: local docker fwapg localhost:5432; fresh.streams_vw_bcfp rows 4272383
+fresh.log latest PCEA row: run_id=m4-20261027T063002.677-92abbc date_end=2026-10-27 06:32:57.644263 link_version=0.68.6 link_sha=ae1df6ff2659db8d29c1a4942ece2de5dabf58c0 fresh_version=0.43.0 config_name=bcfishpass
+network km link 14315.69 bcfp 14315.69; rearing flag km link 2000.22 bcfp 2001.37

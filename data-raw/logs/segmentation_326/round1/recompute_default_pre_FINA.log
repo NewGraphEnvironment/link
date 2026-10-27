@@ -1,0 +1,41 @@
+[1] 0
+[1] 0
+[wsg_recompute_one] FINA prologue 0.86 s
+NOTICE:  table "zz_lnk_access_prior_fina" does not exist, skipping
+
+NOTICE:  table "zz_lnk_streams_fina" does not exist, skipping
+
+[wsg_recompute_one] FAILED for FINA
+FINA BLOCKED (link#227) — 2 blocking dam(s) on FINA's downstream flow path have not been modelled yet.
+
+link computes accessibility by reading ALREADY-PERSISTED downstream barriers.
+Running FINA now would mark segments accessible that are in fact dammed off, and exit 0.
+
+  persist schema : zz326_default_pre
+  unmodelled blocking dams downstream of FINA:
+    UPCE  320902cd-48fc-40e5-8c0f-191086f332aa   Peace Canyon Dam (psc 1)
+    UPCE  957546a9-e6c7-46bf-947a-b17d8a818d71   Site C Dam (psc 1)
+  model these first, DS-first: LPCE, UPCE, PCEA, PARA
+
+Fix — pick one:
+  1. Model the downstream WSGs first:
+       for w in LPCE UPCE PCEA PARA; do Rscript data-raw/wsg_run_one.R $w <config>; done
+  2. Model FINA now and settle access after they land:
+       Rscript data-raw/wsg_recompute_one.R FINA <config>
+  3. Override, if those dams are known passable / remediated / irrelevant.
+     Recorded in the run log and surfaced by lnk_log_read():
+       LNK_GUARD_DOWNSTREAM_NOTE="..." Rscript data-raw/wsg_run_one.R FINA <config>
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.

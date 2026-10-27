@@ -1,0 +1,18 @@
+[1] 0
+[1] 0
+[wsg_recompute_one] PARS prologue 0.87 s
+NOTICE:  table "zz_lnk_access_prior_pars" does not exist, skipping
+
+NOTICE:  table "zz_lnk_streams_pars" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] PARS habitat gate: 0 segments (0.000 km) settled
+[wsg_recompute_one] PARS recomputed in 0.31 min (persist=fresh)

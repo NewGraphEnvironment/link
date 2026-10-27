@@ -1,11 +1,11 @@
 # Where streams break: bcfishpass and link, step by step
 
-**Verified:** 2026-10-11 · **Issues:** #324 (from #319); history #29, #45, #96, #223, fresh#160 ·
+**Verified:** 2026-10-27 · **Issues:** #324 (from #319), #326; history #29, #45, #96, #223, fresh#160 ·
 **Produced by:** a read of `smnorris/bcfishpass@620dbe4` (`model/01_access/`,
 `.github/workflows/ng-prod.yaml`), `data-raw/habitat_diff_segments.R`,
 `data-raw/logs/rearing_diff_324/mechanism.R` and `breaks.R` → `data-raw/logs/rearing_diff_324/`,
-and the planning archives cited below · **Status:** the difference is explained; matching it is
-decided and tracked in #326
+`data-raw/breaks_diff.R` → `data-raw/logs/segmentation_326/`, and the planning archives cited
+below · **Status:** the difference is explained; #326 breaks where bcfishpass does
 
 ## How bcfishpass breaks streams
 
@@ -33,17 +33,82 @@ The five scripts differ, and each difference changes where streams break:
 
 ## How link breaks them today
 
-`.lnk_pipeline_prep_minimal()` (`R/lnk_pipeline_prepare.R`), then `lnk_pipeline_break()`:
+Since #326, `.lnk_pipeline_prep_minimal()` (`R/lnk_pipeline_prepare.R`), then `lnk_pipeline_break()`:
 
 1. **Lifts match bcfishpass's per script.** The bcfishpass bundle's `parameters_fresh.csv`
    carries each row of the table above: `observation_threshold`, `observation_date_min`,
    `observation_species`, `observation_control_apply`. The five salmon rows are identical, so
    per-species sets equal bcfishpass's pooled model. Built in #25, #44, #48, #88 and #90.
-2. **Groups: no filter.** A break set is built for every species in `cfg$species`, whatever is
-   present. bcfishpass filters per model (the "groups built in" column). link has no `ct_dv_rb`
-   model, so in those 14 groups it would miss that model's breaks.
-3. **No reduction.** Every position of every species' set breaks the network. bcfishpass keeps
-   only the downstream-most position after lifts.
+2. **Groups: by presence.** A break set is built for each species in `cfg$species` that
+   `lnk_presence()` finds present in the group, with the salmon and `ct_dv_rb` group
+   expansion. bcfishpass builds `ct_dv_rb` only in a fixed list of 14 groups; link has no such
+   model.
+3. **Reduction after the lifts.** Each species' set is gradient at its classes, falls and
+   (bcfishpass bundle) subsurface flow, minus that species' rows in the group's
+   `barrier_overrides`, plus every user-definite barrier. `fresh::frs_barriers_minimal()`
+   keeps the downstream-most position per flow path, per species, never on the union. Only
+   those positions, and the independent `falls`, `barriers_definite` and `subsurfaceflow`
+   sources, break the network.
+
+Two residuals are named, not fixed. **Cross-group lifts:** the reduction lifts by the group's
+own overrides, while the access view lifts by every group's persisted rows. So where another
+group lifts its copy of a shared barrier and this group does not, that position still prunes
+the frontier above it here. Reading the persisted table at prepare time made segmentation
+depend on host and run order, so it was refused (#326 review round 2). **Classify's scope:**
+classify's access gate reads the group's gradient barriers only, while the per-species sets
+span whole lines, so a frontier pruned by an out-of-group barrier is classify-accessible above
+it until `lnk_habitat_gate()` settles the persisted flags. Measured on m4 (2026-10-27): both
+are 0. Classify scope was counted on PCEA BT and LFRA BT / CH / CO / ST; cross-group lifts over
+the 11 cross-section groups, where 38 rows carry another group's override and each holder lifts
+too. The province-wide cross-group count waits for the provincial run.
+
+## Measured since #326
+
+`bcfishpass` config into m4's `fresh` on the 11 cross-section groups, and `default` on PCEA,
+FINA, PARS and LKEL, at link `21e0fea2` on fresh 0.43.0 (2026-10-27, round 2). Evidence is
+`data-raw/logs/segmentation_326/` (its README).
+
+| Group | link segments | bcfishpass segments | link-only breaks | bcfishpass-only breaks |
+|---|---|---|---|---|
+| BULK | 42,989 | 42,965 | 28 | 7 |
+| ELKR | 38,245 | 38,214 | 33 | 4 |
+| FINA | 28,650 | 28,650 | 0 | 0 |
+| KISP | 30,873 | 30,852 | 22 | 1 |
+| KOTR | 37,674 | 37,610 | 61 | 3 |
+| LFRA | 27,612 | 27,442 | 158 | 2 |
+| LKEL | 3,374 | 3,360 | 14 | 0 |
+| MORR | 29,100 | 29,093 | 8 | 2 |
+| PARS | 43,776 | 43,655 | 114 | 6 |
+| PCEA | 37,972 | 37,957 | 15 | 0 |
+| USKE | 27,255 | 27,268 | 1 | 15 |
+
+- **The 454 link-only breaks have named sources:** falls 129, observations, crossings and habitat
+  endpoints 320, gradient 4, user-definite 1. Before #326, PCEA alone had 68,118.
+- **`default` segments drop 2.1 to 2.7-fold:** PCEA 106,079 → 39,566, FINA 70,329 → 30,136,
+  PARS 97,537 → 46,341, LKEL 7,448 → 3,378.
+- **Parity:** 120 of 122 pairs within tolerance, with accessible km 44 of 44 within 0.11 %. The
+  two pairs over are BULK SK (parked). #223's FINA frontier at 3,834.78 m holds.
+- **BT habitat, segment by segment:**
+
+  | Group | Rearing link-only / bcfishpass-only (km) | Spawning link-only (km) |
+  |---|---|---|
+  | FINA | 0 / 0.06 | 4.6 |
+  | PCEA | 0.1 / 1.2 | 1.8 |
+  | PARS | 0 / 8.1 | 5.5 |
+  | LKEL | 0 / 0 | 0 |
+
+  The segmentation movement of 71–85 km per BT-only group is gone. PARS's 8.1 km are order-1
+  lines the direct-child test in `frs_order_child()` leaves out (fresh#158; 10.7 km fail it).
+  Before the exception it was −24.8 km. Link-only spawning is fresh's `>=` at exactly the minimum, kept (below).
+- **Accessible segments that still hold a barrier more than 1 m inside them:** 27
+  segment-species on 13 positions, BT 9. Each barrier is 1.07 to 1.43 m from its nearest break.
+  This is #349's metre-rounded family (fresh#258). A first run also found barrier rows
+  `lnk_barriers_unify()` dropped when `FWA_LocateAlong()` returned no point for a measure in
+  FWA's millimetre segment gap. That was 11 of 18 BT cases, and it is fixed. The report
+  for upstream is drafted on our fork (NewGraphEnvironment/fwapg#45, `upstream-draft`).
+- **The CH / CO / ST / WCT waterbody and edge filter** on the order-1 exception, which
+  `frs_order_child()` does not apply, would turn away at most 2.7 km per species per group
+  (BULK CH). In LFRA and KOTR it would turn away 0 km.
 
 ## Where they differ, and since when
 
@@ -54,6 +119,7 @@ The five scripts differ, and each difference changes where streams break:
 | 2026-05-03 (#45) | per-species derivation; presence filter deliberately **not** applied, to stay bit-identical with link's own previous build | the pre-#45 hardcoded models were already unfiltered, so link never filtered by presence |
 | 2026-07-03 (#223) | reduction dropped: every position breaks | fixed access (a reduction before lifts let a lifted mainstem barrier prune real tributary frontiers), but doubled segments: FINA 26k → 70k, PARS 48k → 97k, PCEA 34k → 106k, LKEL 3.4k → 7.4k |
 | 2026-10-11 (#324) | first direct comparison of break positions | link holds all but 1 of bcfishpass's 24,393 PCEA breaks, plus 68,118 extra |
+| 2026-10-27 (#326) | per present species, reduce the **post-lift** set | FINA: 28,650 segments against bcfishpass's 28,650, every one of 20,394 breaks held both ways (`data-raw/logs/segmentation_326/`) |
 
 Before #223, LKEL had 3,376 link segments against bcfishpass's 3,360 today. That is the
 segmentation match the earlier work achieved. #223 called its break set "matching bcfishpass,
@@ -192,7 +258,10 @@ the same cluster would explain it, but that is not shown, so it is not counted a
   - The taxonomy's `hors-class-stream-order-bypass` entry still calls this fresh-deferred.
     fresh#158 is closed and `lnk_rules_build()` supports the bypass; the bundle declines it.
     Whether it should is open. fresh's `frs_order_child()` has no width test, so taking it as
-    is would also rear the NULL-width lines bcfishpass leaves out.
+    is would also rear the NULL-width lines bcfishpass leaves out. *Since #326* the bundle takes
+    it (`yes` for BT, CH, CO, ST and WCT), with fresh 0.43.0's width and gradient tests, and
+    the taxonomy entry is retired. PCEA's connection lines now differ by 0 km and PARS's by
+    8.1 km ("Measured since #326").
 - **Access.** Three PCEA segments (1.8 km) whose downstream end is a subsurface-flow (1410) or
   falls barrier rear in link: its classify-time `accessible` is TRUE there, while
   `streams_access` and bcfishpass read 0. FINA, PARS and LKEL have under 1 km each. Cause not
@@ -211,7 +280,14 @@ the same cluster would explain it, but that is not shown, so it is not counted a
   segments too. That reads truer to the reach, but it is a choice, and it moves numbers against
   bcfishpass both ways.
 
-## Decided (2026-10-11, operator; not yet implemented)
+## Decided (2026-10-11, operator; implemented in #326 except where noted)
+
+Changed at #326's gate (2026-10-26): `default` breaks for its own present species (GR and KO
+at 15 %, RB), so the two configs no longer share one segmentation and the PARS vignette's
+`id_segment` join is owed a fix (#390); the strict `>` spawning minimum stays a known difference
+(decided 2026-10-27, below); the order-1 exception takes bcfishpass's width and gradient tests and
+not its waterbody and edge-type filter for CH, CO, ST and WCT (decided 2026-10-27: shipped without
+it; at most 2.7 km per species per group, `data-raw/logs/segmentation_326/order1_waterbody_filter*.log`).
 
 The `bcfishpass` config is there to match bcfishpass step by step wherever link can.
 
@@ -228,9 +304,13 @@ The `bcfishpass` config is there to match bcfishpass step by step wherever link 
   4 river-polygon, 19,184 NULL, 0 modelled), so in practice the exception admits order-1 lines
   only on a measured width. Whether `default` takes it, on measured widths only, is a separate
   decision.
-- **Spawning size minimum: the `bcfishpass` config takes bcfishpass's strict `>`; `default`
-  keeps `>=`** (a segment at exactly the minimum spawns). Recorded as an intentional departure in
-  `research/default_vs_bcfishpass.md`, §6.
+- **Spawning size minimum: both configs test `>=`; bcfishpass tests `>`**, so a segment at exactly
+  the minimum spawns in link and not in bcfishpass (BT at 2.0 m: PCEA 1.78, FINA 4.58, PARS 5.49 km
+  link-only). In the 11 persisted groups widths sit at two decimals (7,043 segments at exactly 2.0 m
+  and the next width above is 2.01; 2,549 at 4.0 m, next 4.01), so a bundle minimum 0.005 above
+  bcfishpass's would reproduce `>` with no fresh change. Decided 2026-10-27 (operator): not done; it
+  is parity only, and the bundle's thresholds stay bcfishpass's values. Recorded as an intentional
+  departure in `research/default_vs_bcfishpass.md`, §6.
 
 ## What #223 matched, and what it asserted
 

@@ -1,0 +1,6 @@
+"blk","dm","um","len","class","id_segment","l_len","l_edge","l_wb","l_lake_conn","l_gradient","l_cw","l_cw_source","l_order","l_order_parent","l_spawn","l_rear","l_access","segmented_stream_id","b_dm","b_um","b_len","b_edge","b_wb","b_lake_conn","b_gradient","b_cw","b_order","b_order_parent","b_spawn","b_rearing_code","b_access"
+359480297,4125.3103,5044,918.6897,"bcfp_only",23295,918.6897,1000,"stream",FALSE,0.1,1,"FIELD_MEASURMENT",1,5,FALSE,FALSE,1,"359480297.4125310",4125.3103,5044,918.6897,1000,"stream",FALSE,0.1,1,1,5,FALSE,1,1
+359544210,465.7786,680.1072,214.3286,"bcfp_only",30811,214.3286,1050,"wetland",FALSE,0.0233,0.6,"FIELD_MEASURMENT",1,6,FALSE,FALSE,1,"359544210.465779",465.7786,680.1072,214.3286,1050,"wetland",FALSE,0.0233,0.6,1,6,FALSE,1,1
+359544210,680.1071,748,67.8929,"bcfp_only",30812,67.8929,1000,"stream",FALSE,0.0201,0.6,"FIELD_MEASURMENT",1,6,FALSE,FALSE,1,"359544210.680107",680.1071,748,67.8929,1000,"stream",FALSE,0.0201,0.6,1,6,FALSE,1,1
+359508131,3575.8673,3611.6633,35.796,"link_only",25933,35.796,1000,"stream",FALSE,0,2,"MODELLED",2,9,TRUE,TRUE,1,"359508131.3575867",3575.8673,3611.6633,35.796,1000,"stream",FALSE,0,2,2,9,FALSE,0,1
+359509111,680.2169,695.625,15.4081,"link_only",26075,15.4081,1000,"stream",FALSE,0,2,"MODELLED",2,3,TRUE,TRUE,1,"359509111.680217",680.2169,695.625,15.4081,1000,"stream",FALSE,0,2,2,3,FALSE,0,1

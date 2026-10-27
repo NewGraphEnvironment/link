@@ -15,10 +15,14 @@
 #'   `lnk_barrier_overrides()` to compute the per-species skip list.
 #'   User-definite barriers are intentionally excluded here and
 #'   consumed by later phases directly — bcfishpass parity.
-#' - Per-model barrier tables (gradient class-filtered + falls) unioned
-#'   into `gradient_barriers_minimal` — the FULL per-model position set
-#'   (NOT minimal-reduced, despite the legacy name), so streams break at
-#'   every frontier and per-segment access gating is correct (#223)
+#' - Per-species post-lift barrier tables, one per configured species
+#'   present in the AOI (gradient at the species' classes + falls + opt-in
+#'   subsurface flow, minus that species' overrides, plus user-definite),
+#'   each reduced to the downstream-most position per flow path and
+#'   unioned into `gradient_barriers_minimal`: streams break only where a
+#'   present species' access changes, as bcfishpass does (#326). The lift
+#'   comes before the reduction, so a lifted barrier never prunes a real
+#'   frontier above it (#223)
 #' - Base stream segments (`fresh.streams`) loaded from FWA with
 #'   channel width, stream order parent, GENERATED gradient / measures
 #'   / length columns, and a unique `id_segment`
@@ -32,8 +36,11 @@
 #'   - `<schema>.barriers_subsurfaceflow` (only when subsurfaceflow opted in
 #'     via `cfg$pipeline$break_order`)
 #'   - `<schema>.barrier_overrides`
-#'   - `<schema>.barriers_<model>` — per-model gradient + falls positions
-#'   - `<schema>.gradient_barriers_minimal` (union of per-model raw positions)
+#'   - `<schema>.barriers_<sp>` — a present species' post-lift positions
+#'   - `<schema>.barriers_<sp>_min` — the same, reduced to the
+#'     downstream-most per flow path
+#'   - `<schema>.gradient_barriers_minimal` (union of the `_min` tables and
+#'     any orphan-class positions)
 #'   - `fresh.streams` (base segments — not namespaced by AOI; fresh
 #'     owns its output schema)
 #'   - `<schema>.dams` (only when `conn_tunnel` is supplied) — pulled
@@ -602,27 +609,38 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
 }
 
 
-#' Per-model non-minimal barrier reduction + union
+#' Per-present-species post-lift barrier sets, reduced, as break positions
+#'
+#' Breaks the network only where a present species' access changes, as
+#' bcfishpass does (`01_model_access_natural.sh`: build each model's
+#' barriers after its lifts, delete the non-minimal ones, break there).
+#' For each species in `cfg$species` that `lnk_presence()` finds present in
+#' `aoi` (group expansion applied), `<schema>.barriers_<sp>` holds that
+#' species' post-lift set: gradient barriers at the species' classes, falls
+#' and (when `break_order` opts in) subsurface flow, minus that species'
+#' rows in `<schema>.barrier_overrides`, plus every user-definite barrier
+#' (never lifted). `fresh::frs_barriers_minimal()` then keeps the
+#' downstream-most position per flow path in `<schema>.barriers_<sp>_min`.
+#' It is the same recipe as the persisted `barriers_<sp>_access` view
+#' (`lnk_barriers_views()`), built from the working tables.
+#'
+#' Each species is reduced on its own table, never on the union: a pruned
+#' position always has a barrier of the same species below it, so access is
+#' unchanged (#326). #223 reduced the PRE-lift set, and a lifted main-stem
+#' barrier pruned real tributary frontiers; reducing after the lift is what
+#' keeps them.
 #' @noRd
 .lnk_pipeline_prep_minimal <- function(conn, aoi, cfg, loaded, schema,
                                        classes = .lnk_classes_bcfp) {
-  # Per-species gradient class filters derived from each species's
-  # access_gradient_max in loaded$parameters_fresh: a class is a barrier
-  # for species `s` when its value is >= s$access_gradient_max. Replaces
-  # the historical hardcoded per-model groupings — species sharing
-  # access_gradient_max produce identical filters, so the union into
-  # gradient_barriers_minimal is unchanged when parameters_fresh matches
-  # bcfishpass conventions.
-  # Species set is intentionally NOT filtered by WSG presence here.
-  # gradient_barriers_minimal is consumed as a network break source whose
-  # shape determines segment boundaries downstream — it must be stable
-  # across WSGs that share a config bundle, regardless of which species
-  # happen to be present in the AOI. Presence filtering applies per-
-  # species at classify/connect time, not at break-position time.
   params_fresh <- loaded$parameters_fresh
   species <- cfg$species %||% unique(params_fresh$species_code)
+  # Presence decides which sets break. The SQL keeps the parameters_fresh
+  # code (`'BT'`), which is what barrier_overrides.species_code holds;
+  # lnk_presence() reports lowercase.
+  pres <- lnk_presence(loaded$wsg_species_presence, aoi)
   models <- list()
   for (sp in species) {
+    if (!tolower(sp) %in% pres$present) next
     sp_amax <- params_fresh$access_gradient_max[
       params_fresh$species_code == sp]
     # Take first row defensively — duplicates in parameters_fresh would
@@ -631,52 +649,117 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
     if (length(sp_amax) == 0L || is.na(sp_amax) || sp_amax <= 0) next
     classes_for_sp <- as.integer(names(classes)[classes >= sp_amax])
     if (length(classes_for_sp) == 0L) next
+    # lnk_barriers_unify() maps gradient classes to the species they block
+    # from .lnk_classes_bcfp alone, and the access view reads that map. A
+    # class at access level outside it would sit in this set, block nobody
+    # in the view, and prune the view's real frontiers above it (#326
+    # review round 3), so refuse it.
+    bcfp_ids <- as.integer(names(.lnk_classes_bcfp))
+    sp_values <- classes[match(classes_for_sp, as.integer(names(classes)))]
+    same_value <- mapply(function(id, v) {
+      isTRUE(all.equal(unname(.lnk_classes_bcfp[match(id, bcfp_ids)]), unname(v)))
+    }, classes_for_sp, sp_values)
+    off <- classes_for_sp[!classes_for_sp %in% bcfp_ids | !same_value]
+    if (length(off) > 0L) {
+      stop(sprintf(paste0(
+        "gradient class(es) %s are at or above %s's access_gradient_max ",
+        "(%s) but are not among the access classes lnk_barriers_unify() ",
+        "maps to species (%s); a break-only class must sit below every ",
+        "species' access_gradient_max"),
+        paste(off, collapse = ", "), sp, sp_amax,
+        paste(names(.lnk_classes_bcfp), collapse = ", ")), call. = FALSE)
+    }
     sp_key <- tolower(sp)
     .lnk_validate_identifier(sp_key, sprintf("species code %s", sp))
-    models[[sp_key]] <- classes_for_sp
+    models[[sp_key]] <- list(code = sp, classes = classes_for_sp)
   }
 
+  # prep_natural builds barriers_subsurfaceflow only when break_order opts
+  # in; gate on the same test, not on the table existing (a kept working
+  # schema can hold one from an earlier run).
+  has_subsurface <- "subsurfaceflow" %in%
+    (cfg$pipeline$break_order %||% character())
+  subsurface_sql <- if (has_subsurface) {
+    sprintf(
+      "UNION ALL
+         SELECT blue_line_key,
+                downstream_route_measure::double precision,
+                wscode_ltree, localcode_ltree
+         FROM %s.barriers_subsurfaceflow", schema)
+  } else {
+    ""
+  }
+
+  # Lift by this group's own barrier_overrides only, never by the persisted
+  # province-wide table the access view reads: what that table holds at
+  # prepare time depends on the host and on which groups have persisted so
+  # far, so reading it would make segmentation depend on run order, and this
+  # group's stale rows there would lift positions the current build does not
+  # (#326 review round 2). The cost is named: where another group lifts its
+  # copy of a shared barrier and this group does not (group-filtered
+  # controls), that position still prunes the frontier above it here.
   minimal_tbls <- character(0)
   for (model_name in names(models)) {
-    class_filter <- paste(models[[model_name]], collapse = ", ")
+    m <- models[[model_name]]
+    class_filter <- paste(m$classes, collapse = ", ")
     model_tbl <- paste0(schema, ".barriers_", model_name)
+    min_tbl <- paste0(model_tbl, "_min")
 
-    # Build the per-model break set: gradient (class-filtered) + falls.
+    # Measures stay raw: the abs(...) < 1 anti-join already spans the gap to
+    # the overrides' rounded measures, and rounding here could only change
+    # which of two near-coincident positions survives.
     .lnk_db_execute(conn, sprintf("DROP TABLE IF EXISTS %s", model_tbl))
     .lnk_db_execute(conn, sprintf(
-      "CREATE TABLE %s AS
-       SELECT blue_line_key, downstream_route_measure,
-              wscode_ltree, localcode_ltree
-       FROM %s.gradient_barriers_raw
-       WHERE gradient_class IN (%s)
+      "CREATE TABLE %1$s AS
+       WITH n AS (
+         SELECT blue_line_key,
+                downstream_route_measure::double precision
+                  AS downstream_route_measure,
+                wscode_ltree, localcode_ltree
+         FROM %2$s.gradient_barriers_raw
+         WHERE gradient_class IN (%3$s)
+         UNION ALL
+         SELECT f.blue_line_key,
+                f.downstream_route_measure::double precision,
+                s.wscode_ltree, s.localcode_ltree
+         FROM %2$s.falls f
+         JOIN whse_basemapping.fwa_stream_networks_sp s
+           ON f.blue_line_key = s.blue_line_key
+           AND f.downstream_route_measure >= s.downstream_route_measure
+           AND f.downstream_route_measure < s.upstream_route_measure
+         WHERE s.watershed_group_code = %4$s
+         %5$s
+       )
+       SELECT n.blue_line_key, n.downstream_route_measure,
+              n.wscode_ltree, n.localcode_ltree
+       FROM n
+       WHERE n.wscode_ltree IS NOT NULL
+         AND NOT EXISTS (
+           SELECT 1 FROM %2$s.barrier_overrides o
+           WHERE o.species_code = %6$s
+             AND o.blue_line_key = n.blue_line_key
+             AND abs(o.downstream_route_measure - n.downstream_route_measure) < 1
+         )
        UNION ALL
-       SELECT f.blue_line_key, f.downstream_route_measure,
+       SELECT d.blue_line_key,
+              d.downstream_route_measure::double precision,
               s.wscode_ltree, s.localcode_ltree
-       FROM %s.falls f
+       FROM %2$s.barriers_definite d
        JOIN whse_basemapping.fwa_stream_networks_sp s
-         ON f.blue_line_key = s.blue_line_key
-         AND f.downstream_route_measure >= s.downstream_route_measure
-         AND f.downstream_route_measure < s.upstream_route_measure
-       WHERE s.watershed_group_code = %s",
-      model_tbl, schema, class_filter,
-      schema, .lnk_quote_literal(aoi)))
+         ON d.blue_line_key = s.blue_line_key
+         AND d.downstream_route_measure >= s.downstream_route_measure
+         AND d.downstream_route_measure < s.upstream_route_measure
+       WHERE s.wscode_ltree IS NOT NULL",
+      model_tbl, schema, class_filter, .lnk_quote_literal(aoi),
+      subsurface_sql, .lnk_quote_literal(m$code)))
 
-    # Feed the RAW per-model positions into the break network — every gradient /
-    # falls barrier must split the streams so the per-segment downstream-barrier
-    # access check (lnk_pipeline_access) can gate the reach ABOVE each frontier.
-    # Do NOT frs_barriers_minimal() here: minimal reduction keeps only the
-    # downstream-most position per flow path (correct for an access DECISION,
-    # wrong as a SEGMENTATION source — it strips the interior frontier so a single
-    # segment straddles the barrier and its whole reach is mislabelled accessible;
-    # #223). This mirrors the orphan-set treatment below and matches bcfishpass,
-    # which segments at every gradient barrier. Table name kept as
-    # gradient_barriers_minimal for now; a follow-up issue renames it.
-    minimal_tbls <- c(minimal_tbls, model_tbl)
+    fresh::frs_barriers_minimal(conn, from = model_tbl, to = min_tbl)
+    minimal_tbls <- c(minimal_tbls, min_tbl)
   }
 
-  # Orphan classes: thresholds in `classes` that fall below every species's
-  # access_gradient_max. No species would access-block on them, so the
-  # per-species loop above filters them out — but a caller passing a
+  # Orphan classes: thresholds in `classes` that fall below every configured
+  # species' access_gradient_max. No species would access-block on them, so
+  # the per-species loop above filters them out — but a caller passing a
   # vector with low values (e.g. spawn / rear ceilings) wants those
   # positions in the break network for segmentation precision. Add a
   # shared `barriers_orphan` table so they enter `gradient_barriers_minimal`.
@@ -684,12 +767,8 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
   # classify time (fresh::.frs_access_label_filter) rejects any
   # `gradient_NNNN` label whose value is below the species's threshold.
   #
-  # Critically — DO NOT run frs_barriers_minimal on the orphan set. Minimal
-  # reduction keeps only the most-downstream-most blocking position per
-  # flow path; that's correct semantics for ACCESS barriers, but orphans
-  # are segmentation positions only. We want every detected position to
-  # split the network, not just the downstream-most one. Use the raw set
-  # directly as the orphan break table.
+  # Never reduce the orphan set: orphans are segmentation positions only,
+  # so every detected position splits the network.
   sp_amax_all <- params_fresh$access_gradient_max[
     params_fresh$species_code %in% species]
   sp_amax_all <- sp_amax_all[!is.na(sp_amax_all) & sp_amax_all > 0]
@@ -711,10 +790,9 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
     }
   }
 
-  # Union all per-model + orphan minimal positions. Empty species set
-  # (no rows in wsg_species_presence, or all species skipped for NA /
-  # zero access_gradient_max) yields a structurally valid empty table
-  # so downstream phases still find the expected name.
+  # Union the reduced per-species tables and the orphans. No species
+  # present (or all skipped for NA / zero access_gradient_max) yields a
+  # structurally valid empty table so downstream phases find the name.
   .lnk_db_execute(conn, sprintf(
     "DROP TABLE IF EXISTS %s.gradient_barriers_minimal", schema))
   if (length(minimal_tbls) == 0L) {

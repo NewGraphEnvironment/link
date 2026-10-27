@@ -55,15 +55,21 @@ test_that("a pre-0.35.0 frs_habitat_classify signature is caught (#286)", {
     NULL
   }
   ns$frs_habitat_predicates <- function(sp_params) NULL
+  # fresh 0.42.0's frs_order_child, before the width and gradient bounds (#326)
+  ns$frs_order_child <- function(conn, table, habitat, species, label,
+                                 parent_order_min, child_order_min,
+                                 child_order_max, distance_max, verbose) NULL
+  expected <- c("frs_habitat_classify(params_method)",
+                "frs_habitat_predicates(model)",
+                "frs_habitat_predicates(near_river_table)",
+                "frs_order_child(channel_width_max)",
+                "frs_order_child(gradient_max)")
   expect_identical(
-    .lnk_fresh_missing_formals(ns, .lnk_fresh_required_formals()),
-    c("frs_habitat_classify(params_method)", "frs_habitat_predicates(model)",
-      "frs_habitat_predicates(near_river_table)"))
+    .lnk_fresh_missing_formals(ns, .lnk_fresh_required_formals()), expected)
   # And a function that is absent altogether reports its arguments too.
   expect_identical(
     .lnk_fresh_missing_formals(new.env(), .lnk_fresh_required_formals()),
-    c("frs_habitat_classify(params_method)", "frs_habitat_predicates(model)",
-      "frs_habitat_predicates(near_river_table)"))
+    expected)
 })
 
 test_that("required formals name functions in the required export set", {

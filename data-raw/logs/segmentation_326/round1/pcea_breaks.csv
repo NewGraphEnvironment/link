@@ -1,0 +1,16 @@
+"wsg","side","in_other","position","n"
+"PCEA","link",FALSE,"FALLS_NON_MINIMAL",14
+"PCEA","link",FALSE,"none (observation / crossing / endpoint)",1
+"PCEA","link",TRUE,"FWA_BASE_SEGMENT",15936
+"PCEA","link",TRUE,"MINIMAL_GRADIENT_25_30",4682
+"PCEA","link",TRUE,"none (observation / crossing / endpoint)",2352
+"PCEA","link",TRUE,"GRADIENT_15_NON_MINIMAL",499
+"PCEA","link",TRUE,"GRADIENT_20_NON_MINIMAL",392
+"PCEA","link",TRUE,"GRADIENT_25_30_NON_MINIMAL",375
+"PCEA","link",TRUE,"SUBSURFACE_FLOW_NON_MINIMAL",132
+"PCEA","link",TRUE,"MINIMAL_FALLS",10
+"PCEA","link",TRUE,"MINIMAL_SUBSURFACE_FLOW",10
+"PCEA","link",TRUE,"MINIMAL_GRADIENT_20",4
+"PCEA","link",TRUE,"MINIMAL_unclassed",1
+"PCEA","bcfp",TRUE,"all",24393
+"PCEA","bcfp",FALSE,"all",0

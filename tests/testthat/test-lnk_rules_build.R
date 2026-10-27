@@ -936,6 +936,30 @@ test_that("rear_stream_order_bypass=yes attaches channel_width_min_bypass to str
   expect_equal(stream_rule$channel_width_min_bypass$stream_order_min, 1)
   expect_equal(stream_rule$channel_width_min_bypass$stream_order_max, 1)
   expect_equal(stream_rule$channel_width_min_bypass$stream_order_parent_min, 5)
+  # bcfishpass's exception admits only a known width below the minimum
+  # (#326); the key rides on every rear rule that carries the bypass, the
+  # river-polygon rule as well as the stream rule.
+  carrying <- Filter(function(r) !is.null(r$channel_width_min_bypass), rear)
+  expect_length(carrying, 2L)
+  for (r in carrying) {
+    expect_identical(r$channel_width_min_bypass$width_known_below_min, TRUE)
+  }
+})
+
+test_that("rear_stream_order_bypass=no emits no bypass block on any rule", {
+  dims <- tibble::tribble(
+    ~species, ~spawn_lake, ~spawn_stream, ~rear_lake, ~rear_lake_only,
+    ~rear_no_fw, ~rear_stream, ~rear_wetland, ~rear_all_edges,
+    ~river_skip_cw_min, ~rear_stream_order_bypass,
+    "ST", "no", "yes", "no", "no", "no", "yes", "no", "no", "yes", "no"
+  )
+  out <- withr::local_tempfile(fileext = ".yaml")
+  csv <- withr::local_tempfile(fileext = ".csv")
+  utils::write.csv(dims, csv, row.names = FALSE)
+  lnk_rules_build(csv, out, edge_types = "categories")
+  rear <- yaml::read_yaml(out)$ST$rear
+  expect_true(all(vapply(rear, function(r) is.null(r$channel_width_min_bypass),
+                         logical(1))))
 })
 
 # -- shipped default config: regression guard against re-introducing
@@ -1405,6 +1429,9 @@ test_that("rules match the pre-#364 builder once the R stamps are removed", {
                             stringsAsFactors = FALSE)
     dims$rear_wetland_flow <- NULL
     dims$rear_near_river <- NULL
+    # The bcfishpass bundle takes the order-1 exception since #326; the
+    # fixture predates it, and the bypass block is covered on its own above.
+    dims$rear_stream_order_bypass <- "no"
     for (m in c("explicit", "categories")) {
       out <- build_door(dims, m,
         thresholds = file.path(cfgd, "parameters_habitat_thresholds.csv"))

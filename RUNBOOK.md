@@ -52,8 +52,8 @@ classification, tunnel-free, for any watershed group (WSG) or AOI.
 
 ```
 per-WSG pipeline (lnk_pipeline_run, working schema working_<aoi>)
-  setup → load → prepare → crossings → barriers_unify → break → classify
-        → connect → species → persist_init → persist
+  setup → load → prepare → crossings → break → classify → connect
+        → species → persist_init → barriers_unify → persist
         → barriers_views → pipeline_access → persist (adds streams_access)
         → habitat_gate (settles persisted habitat on access, link#349)
         → mapping_code (with mapping_code = TRUE; read from persist)
@@ -150,6 +150,19 @@ point in the ~1 mm overlap of two FWA segments joins both, as one USIK falls
 does), never `row_number() OVER ()`, so two builds from the same inputs give
 every barrier the same id (link#367; verified on ADMS and ELKR).
 
+**No staged gradient or subsurface row is lost to its point.** `FWA_LocateAlong()` is
+set-returning and returns no row for a measure in the few-millimetre gap where an
+FWA segment's upstream measure misses the next segment's start, so called in a
+SELECT list it silently dropped the barrier (4 to 9 rows with a wscode per group
+in the #326 cross-section, plus rows past a line's last segment). The per-species
+reduction still kept such a position, so the barriers above it went unbroken while
+the access view, which lacked it, blocked them. Each source now takes its point
+from `.lnk_sql_locate()`, which falls back to interpolating on the line's nearest
+segment and takes only alias-qualified columns (a bare `blue_line_key` binds to the
+fallback's own FWA table). Falls and user-definite rows still need an FWA segment
+containing their measure, to take its wscode, and the reduction joins them the same
+way, so a gap point is left out of both alike (none in the 12 groups checked, #326).
+
 **The PSCIS pick (`.lnk_pipeline_pscis_build()`).** A PSCIS x stream candidate
 joins every modelled crossing within 100 m on its blue line. bcfishpass then keeps
 only the nearest instream one per PSCIS per blue line, before the pick; link had
@@ -161,7 +174,7 @@ different modelled crossing for 464 PSCIS). Step 3b ports it, with
 modelled_crossing_id`. Both KNN snaps (`lnk_points_snap()`, the dam snap) end on
 `linear_feature_id`.
 
-`barriers_<sp>_min` was a **break-spec** (gradient + falls; minimal-reduced until #223, every position since; how this compares with bcfishpass is `research/bcfp_segmentation_parity.md`) — it
+`barriers_<sp>_min` is a **break-spec**: a present species' post-lift natural barriers (gradient at its classes, falls, opt-in subsurface flow, minus its overrides, plus user-definite) reduced to the downstream-most position per flow path, as bcfishpass breaks (#326). It was reduced before the lifts until #223, then held every position until #326; the raw post-lift table `barriers_<sp>` stays in the working schema for diagnostics, and how this compares with bcfishpass is `research/bcfp_segmentation_parity.md`. It
 has NO id column, so it **cannot** feed `frs_network_features` /
 `barriers_per_sp`. (Tried in #196; failed with `barriers_bt_min_id does not
 exist`.) `barriers_per_sp` mechanically requires the *feature view* shape.
@@ -1083,6 +1096,17 @@ next dispatch.**
   the two models agree within about 5 % (NATR, ADMS; #307). Read `research/habitat_thresholds.md`
   before moving one. link also skips the stream-order rearing bypass
   (`frs_order_child`) for a `mad` group — bcfp applies it in its cw branch only.
+  On a `cw` group, a bypass rule carrying `width_known_below_min: true` (written by
+  `lnk_rules_build()`; the `bcfishpass` bundle sets `rear_stream_order_bypass = yes`
+  for BT, CH, CO, ST and WCT since #326) also passes `channel_width_max` and
+  `gradient_max`, taken from that rule's range or else the species' rearing thresholds
+  (`.lnk_order_child_bounds()`, an error if either is missing). So only a known width
+  at most the minimum within the rearing gradient qualifies, and a NULL width never does.
+  bcfishpass tests below the minimum; a line at exactly the minimum already rears through
+  the ordinary width test, so nothing moves (none in the 11 cross-section groups; `data-raw/logs/segmentation_326/order1_width_at_min.log`). Two differences remain, listed in `?fresh::frs_order_child`:
+  fresh keeps its direct-child test (`stream_order = stream_order_max`, fresh#158;
+  PARS BT 8.1 km), and applies no CH / CO / ST / WCT waterbody or edge filter (at most
+  2.7 km per species per group, `data-raw/logs/segmentation_326/`).
   fresh does not implement bcfp's `stream_order >= 8` spawning bypass.
 - **Discharge coverage is uneven.** A segment with NULL `mad_m3s` fails every mad
   test, so a `mad` group without coverage loses all of its stream habitat with no

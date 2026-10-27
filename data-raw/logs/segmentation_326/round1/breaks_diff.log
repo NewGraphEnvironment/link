@@ -1,0 +1,224 @@
+NOTICE:  schema "pg_temp" does not exist, skipping
+
+NOTICE:  schema "pg_temp" does not exist, skipping
+
+NOTICE:  schema "pg_temp" does not exist, skipping
+
+NOTICE:  schema "pg_temp" does not exist, skipping
+
+NOTICE:  schema "pg_temp" does not exist, skipping
+
+
+LKEL (schema fresh, working minimal read)
+  wsg side in_other                                 position    n
+ LKEL link    FALSE none (observation / crossing / endpoint)    9
+ LKEL link    FALSE                        FALLS_NON_MINIMAL    5
+ LKEL link     TRUE                         FWA_BASE_SEGMENT 1306
+ LKEL link     TRUE none (observation / crossing / endpoint)  647
+ LKEL link     TRUE                   MINIMAL_GRADIENT_25_30  243
+ LKEL link     TRUE                      MINIMAL_GRADIENT_20  159
+ LKEL link     TRUE                      MINIMAL_GRADIENT_15  121
+ LKEL link     TRUE               GRADIENT_25_30_NON_MINIMAL   25
+ LKEL link     TRUE                  GRADIENT_20_NON_MINIMAL   18
+ LKEL link     TRUE                  GRADIENT_15_NON_MINIMAL   16
+ LKEL link     TRUE              SUBSURFACE_FLOW_NON_MINIMAL   11
+ LKEL link     TRUE                            MINIMAL_FALLS    4
+ LKEL link     TRUE                  MINIMAL_SUBSURFACE_FLOW    3
+ LKEL link     TRUE                        FALLS_NON_MINIMAL    1
+ LKEL bcfp     TRUE                                      all 2554
+ LKEL bcfp    FALSE                                      all    0
+
+BULK (schema fresh, working minimal read)
+  wsg side in_other                                 position     n
+ BULK link    FALSE                        FALLS_NON_MINIMAL    14
+ BULK link    FALSE none (observation / crossing / endpoint)    13
+ BULK link    FALSE                USER_DEFINITE_NON_MINIMAL     1
+ BULK link     TRUE                         FWA_BASE_SEGMENT 18977
+ BULK link     TRUE none (observation / crossing / endpoint)  6647
+ BULK link     TRUE                   MINIMAL_GRADIENT_25_30  2522
+ BULK link     TRUE                      MINIMAL_GRADIENT_20  2050
+ BULK link     TRUE                      MINIMAL_GRADIENT_15  1750
+ BULK link     TRUE               GRADIENT_25_30_NON_MINIMAL   264
+ BULK link     TRUE                  GRADIENT_15_NON_MINIMAL   247
+ BULK link     TRUE                  GRADIENT_20_NON_MINIMAL   160
+ BULK link     TRUE              SUBSURFACE_FLOW_NON_MINIMAL    73
+ BULK link     TRUE                USER_DEFINITE_NON_MINIMAL    44
+ BULK link     TRUE                    MINIMAL_USER_DEFINITE    40
+ BULK link     TRUE                            MINIMAL_FALLS    22
+ BULK link     TRUE                  MINIMAL_SUBSURFACE_FLOW    21
+ BULK link     TRUE                        MINIMAL_unclassed     2
+ BULK link     TRUE                        FALLS_NON_MINIMAL     1
+ BULK bcfp     TRUE                                      all 32817
+ BULK bcfp    FALSE                                      all     7
+
+KISP (schema fresh, working minimal read)
+  wsg side in_other                                 position     n
+ KISP link    FALSE none (observation / crossing / endpoint)    17
+ KISP link    FALSE                        FALLS_NON_MINIMAL     5
+ KISP link     TRUE                         FWA_BASE_SEGMENT 13829
+ KISP link     TRUE none (observation / crossing / endpoint)  3361
+ KISP link     TRUE                   MINIMAL_GRADIENT_25_30  2027
+ KISP link     TRUE                      MINIMAL_GRADIENT_20  1324
+ KISP link     TRUE                      MINIMAL_GRADIENT_15   964
+ KISP link     TRUE               GRADIENT_25_30_NON_MINIMAL   254
+ KISP link     TRUE                  GRADIENT_15_NON_MINIMAL   237
+ KISP link     TRUE                  GRADIENT_20_NON_MINIMAL   230
+ KISP link     TRUE              SUBSURFACE_FLOW_NON_MINIMAL    26
+ KISP link     TRUE                            MINIMAL_FALLS     6
+ KISP link     TRUE                  MINIMAL_SUBSURFACE_FLOW     2
+ KISP link     TRUE                        MINIMAL_unclassed     2
+ KISP bcfp     TRUE                                      all 22262
+ KISP bcfp    FALSE                                      all     1
+
+USKE (schema fresh, working minimal read)
+  wsg side in_other                                 position     n
+ USKE link    FALSE                        FALLS_NON_MINIMAL     1
+ USKE link     TRUE                         FWA_BASE_SEGMENT 13024
+ USKE link     TRUE                   MINIMAL_GRADIENT_25_30  2769
+ USKE link     TRUE                      MINIMAL_GRADIENT_20  1855
+ USKE link     TRUE                      MINIMAL_GRADIENT_15  1068
+ USKE link     TRUE                  GRADIENT_15_NON_MINIMAL   300
+ USKE link     TRUE               GRADIENT_25_30_NON_MINIMAL   244
+ USKE link     TRUE                  GRADIENT_20_NON_MINIMAL   212
+ USKE link     TRUE none (observation / crossing / endpoint)   190
+ USKE link     TRUE              SUBSURFACE_FLOW_NON_MINIMAL    22
+ USKE link     TRUE                  MINIMAL_SUBSURFACE_FLOW    10
+ USKE link     TRUE                            MINIMAL_FALLS     2
+ USKE link     TRUE                        MINIMAL_unclassed     1
+ USKE bcfp     TRUE                                      all 19696
+ USKE bcfp    FALSE                                      all    15
+
+MORR (schema fresh, working minimal read)
+  wsg side in_other                                 position     n
+ MORR link    FALSE                        FALLS_NON_MINIMAL     4
+ MORR link    FALSE none (observation / crossing / endpoint)     4
+ MORR link     TRUE                         FWA_BASE_SEGMENT 14512
+ MORR link     TRUE none (observation / crossing / endpoint)  2310
+ MORR link     TRUE                   MINIMAL_GRADIENT_25_30  1964
+ MORR link     TRUE                      MINIMAL_GRADIENT_20  1537
+ MORR link     TRUE                      MINIMAL_GRADIENT_15  1467
+ MORR link     TRUE                  GRADIENT_15_NON_MINIMAL   190
+ MORR link     TRUE               GRADIENT_25_30_NON_MINIMAL   181
+ MORR link     TRUE                  GRADIENT_20_NON_MINIMAL   121
+ MORR link     TRUE              SUBSURFACE_FLOW_NON_MINIMAL    36
+ MORR link     TRUE                            MINIMAL_FALLS    13
+ MORR link     TRUE                  MINIMAL_SUBSURFACE_FLOW     6
+ MORR link     TRUE                        MINIMAL_unclassed     3
+ MORR bcfp     TRUE                                      all 22339
+ MORR bcfp    FALSE                                      all     2
+
+PCEA (schema fresh, working minimal read)
+  wsg side in_other                                 position     n
+ PCEA link    FALSE                        FALLS_NON_MINIMAL    14
+ PCEA link    FALSE none (observation / crossing / endpoint)     1
+ PCEA link     TRUE                         FWA_BASE_SEGMENT 15936
+ PCEA link     TRUE                   MINIMAL_GRADIENT_25_30  4682
+ PCEA link     TRUE none (observation / crossing / endpoint)  2352
+ PCEA link     TRUE                  GRADIENT_15_NON_MINIMAL   499
+ PCEA link     TRUE                  GRADIENT_20_NON_MINIMAL   392
+ PCEA link     TRUE               GRADIENT_25_30_NON_MINIMAL   375
+ PCEA link     TRUE              SUBSURFACE_FLOW_NON_MINIMAL   132
+ PCEA link     TRUE                            MINIMAL_FALLS    10
+ PCEA link     TRUE                  MINIMAL_SUBSURFACE_FLOW    10
+ PCEA link     TRUE                      MINIMAL_GRADIENT_20     4
+ PCEA link     TRUE                        MINIMAL_unclassed     1
+ PCEA bcfp     TRUE                                      all 24393
+ PCEA bcfp    FALSE                                      all     0
+
+FINA (schema fresh, working minimal read)
+  wsg side in_other                                 position     n
+ FINA link     TRUE                         FWA_BASE_SEGMENT 13368
+ FINA link     TRUE none (observation / crossing / endpoint)  3361
+ FINA link     TRUE                   MINIMAL_GRADIENT_25_30  2745
+ FINA link     TRUE                  GRADIENT_15_NON_MINIMAL   295
+ FINA link     TRUE               GRADIENT_25_30_NON_MINIMAL   261
+ FINA link     TRUE                  GRADIENT_20_NON_MINIMAL   225
+ FINA link     TRUE              SUBSURFACE_FLOW_NON_MINIMAL   103
+ FINA link     TRUE                  MINIMAL_SUBSURFACE_FLOW    33
+ FINA link     TRUE                      MINIMAL_GRADIENT_15     3
+ FINA bcfp     TRUE                                      all 20394
+ FINA bcfp    FALSE                                      all     0
+
+PARS (schema fresh, working minimal read)
+  wsg side in_other                                 position     n
+ PARS link    FALSE none (observation / crossing / endpoint)    97
+ PARS link    FALSE                        FALLS_NON_MINIMAL    16
+ PARS link    FALSE                  GRADIENT_20_NON_MINIMAL     1
+ PARS link     TRUE                         FWA_BASE_SEGMENT 21239
+ PARS link     TRUE none (observation / crossing / endpoint)  4413
+ PARS link     TRUE                   MINIMAL_GRADIENT_25_30  4049
+ PARS link     TRUE                  GRADIENT_15_NON_MINIMAL   411
+ PARS link     TRUE                  GRADIENT_20_NON_MINIMAL   316
+ PARS link     TRUE               GRADIENT_25_30_NON_MINIMAL   219
+ PARS link     TRUE              SUBSURFACE_FLOW_NON_MINIMAL    49
+ PARS link     TRUE                            MINIMAL_FALLS    20
+ PARS link     TRUE                  MINIMAL_SUBSURFACE_FLOW    20
+ PARS link     TRUE                        FALLS_NON_MINIMAL     1
+ PARS link     TRUE                      MINIMAL_GRADIENT_15     1
+ PARS link     TRUE                      MINIMAL_GRADIENT_20     1
+ PARS link     TRUE                        MINIMAL_unclassed     1
+ PARS bcfp     TRUE                                      all 30727
+ PARS bcfp    FALSE                                      all     6
+
+LFRA (schema fresh, working minimal read)
+  wsg side in_other                                 position     n
+ LFRA link    FALSE none (observation / crossing / endpoint)   151
+ LFRA link    FALSE                        FALLS_NON_MINIMAL     6
+ LFRA link    FALSE                  GRADIENT_20_NON_MINIMAL     1
+ LFRA link     TRUE                         FWA_BASE_SEGMENT 10292
+ LFRA link     TRUE none (observation / crossing / endpoint)  7111
+ LFRA link     TRUE                   MINIMAL_GRADIENT_25_30  1268
+ LFRA link     TRUE               GRADIENT_25_30_NON_MINIMAL   569
+ LFRA link     TRUE                      MINIMAL_GRADIENT_20   534
+ LFRA link     TRUE                      MINIMAL_GRADIENT_15   495
+ LFRA link     TRUE                  GRADIENT_15_NON_MINIMAL   231
+ LFRA link     TRUE                  GRADIENT_20_NON_MINIMAL   229
+ LFRA link     TRUE              SUBSURFACE_FLOW_NON_MINIMAL   159
+ LFRA link     TRUE                  MINIMAL_SUBSURFACE_FLOW    53
+ LFRA link     TRUE                            MINIMAL_FALLS     7
+ LFRA link     TRUE                        FALLS_NON_MINIMAL     1
+ LFRA bcfp     TRUE                                      all 20935
+ LFRA bcfp    FALSE                                      all     2
+
+KOTR (schema fresh, working minimal read)
+  wsg side in_other                                 position     n
+ KOTR link    FALSE                        FALLS_NON_MINIMAL    42
+ KOTR link    FALSE none (observation / crossing / endpoint)    18
+ KOTR link    FALSE                  GRADIENT_15_NON_MINIMAL     1
+ KOTR link     TRUE                         FWA_BASE_SEGMENT 14627
+ KOTR link     TRUE none (observation / crossing / endpoint)  4661
+ KOTR link     TRUE                   MINIMAL_GRADIENT_25_30  2423
+ KOTR link     TRUE                      MINIMAL_GRADIENT_20  1878
+ KOTR link     TRUE               GRADIENT_25_30_NON_MINIMAL   572
+ KOTR link     TRUE                  GRADIENT_15_NON_MINIMAL   472
+ KOTR link     TRUE                  GRADIENT_20_NON_MINIMAL   313
+ KOTR link     TRUE              SUBSURFACE_FLOW_NON_MINIMAL   144
+ KOTR link     TRUE                            MINIMAL_FALLS    21
+ KOTR link     TRUE                  MINIMAL_SUBSURFACE_FLOW     6
+ KOTR link     TRUE                      MINIMAL_GRADIENT_15     5
+ KOTR link     TRUE                        FALLS_NON_MINIMAL     3
+ KOTR link     TRUE                        MINIMAL_unclassed     2
+ KOTR bcfp     TRUE                                      all 25121
+ KOTR bcfp    FALSE                                      all     3
+
+ELKR (schema fresh, working minimal read)
+  wsg side in_other                                 position     n
+ ELKR link    FALSE                        FALLS_NON_MINIMAL    22
+ ELKR link    FALSE none (observation / crossing / endpoint)    10
+ ELKR link    FALSE                  GRADIENT_15_NON_MINIMAL     1
+ ELKR link     TRUE                         FWA_BASE_SEGMENT 12529
+ ELKR link     TRUE none (observation / crossing / endpoint)  8404
+ ELKR link     TRUE                   MINIMAL_GRADIENT_25_30  3479
+ ELKR link     TRUE                      MINIMAL_GRADIENT_20  2735
+ ELKR link     TRUE                  GRADIENT_15_NON_MINIMAL   405
+ ELKR link     TRUE               GRADIENT_25_30_NON_MINIMAL   357
+ ELKR link     TRUE                  GRADIENT_20_NON_MINIMAL   213
+ ELKR link     TRUE              SUBSURFACE_FLOW_NON_MINIMAL   193
+ ELKR link     TRUE                  MINIMAL_SUBSURFACE_FLOW    21
+ ELKR link     TRUE                            MINIMAL_FALLS    18
+ ELKR link     TRUE                    MINIMAL_USER_DEFINITE     4
+ ELKR link     TRUE                USER_DEFINITE_NON_MINIMAL     2
+ ELKR link     TRUE                        FALLS_NON_MINIMAL     1
+ ELKR link     TRUE                        MINIMAL_unclassed     1
+ ELKR bcfp     TRUE                                      all 28360
+ ELKR bcfp    FALSE                                      all     4

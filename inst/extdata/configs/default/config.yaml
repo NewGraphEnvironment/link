@@ -87,6 +87,9 @@ pipeline:
   # rearing/spawning bounds, channel-class transitions) override here.
   # Setting this changes only break positions; per-species access
   # filtering still derives from parameters_fresh.csv$access_gradient_max.
+  # A class added here must sit below every species' access_gradient_max:
+  # prepare refuses one at access level that is not 1500/2000/2500/3000,
+  # because the access view would not see it as a barrier (#326).
   # gradient_classes:
   #   "1500": 0.15
   #   "2000": 0.20

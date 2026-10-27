@@ -1,0 +1,19 @@
+"wsg","side","in_other","position","n"
+"KOTR","link",FALSE,"FALLS_NON_MINIMAL",42
+"KOTR","link",FALSE,"none (observation / crossing / endpoint)",18
+"KOTR","link",FALSE,"GRADIENT_15_NON_MINIMAL",1
+"KOTR","link",TRUE,"FWA_BASE_SEGMENT",14627
+"KOTR","link",TRUE,"none (observation / crossing / endpoint)",4661
+"KOTR","link",TRUE,"MINIMAL_GRADIENT_25_30",2423
+"KOTR","link",TRUE,"MINIMAL_GRADIENT_20",1878
+"KOTR","link",TRUE,"GRADIENT_25_30_NON_MINIMAL",572
+"KOTR","link",TRUE,"GRADIENT_15_NON_MINIMAL",472
+"KOTR","link",TRUE,"GRADIENT_20_NON_MINIMAL",313
+"KOTR","link",TRUE,"SUBSURFACE_FLOW_NON_MINIMAL",144
+"KOTR","link",TRUE,"MINIMAL_FALLS",21
+"KOTR","link",TRUE,"MINIMAL_SUBSURFACE_FLOW",6
+"KOTR","link",TRUE,"MINIMAL_GRADIENT_15",5
+"KOTR","link",TRUE,"FALLS_NON_MINIMAL",3
+"KOTR","link",TRUE,"MINIMAL_unclassed",2
+"KOTR","bcfp",TRUE,"all",25121
+"KOTR","bcfp",FALSE,"all",3

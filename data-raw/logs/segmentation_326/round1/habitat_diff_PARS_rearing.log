@@ -1,0 +1,6 @@
+PARS BT: network km link 13867.5 | bcfp 13867.5 | pieces 13867.5 (coverage gap 0.0 m, tol 44 m)
+  rearing flag km link 2580.8 | bcfp 2588.9 | link-only 0.0 | bcfp-only 8.1 (gap 0.0 m)
+      class       km km_excl_lake_conn n_blk n_piece
+1 bcfp_only     8.11              8.11    18      47
+2      both  2580.80           2571.03   994    9681
+3   neither 11278.55          11191.45 12843   34055

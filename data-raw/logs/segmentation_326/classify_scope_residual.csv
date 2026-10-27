@@ -1,0 +1,6 @@
+tbl,n_all,n_out_aoi,n_pruned_in_aoi,pruned_only_out_aoi
+working_pcea.barriers_bt,40907,0,34359,0
+working_lfra.barriers_ch,37171,23,36199,0
+working_lfra.barriers_co,37171,23,36199,0
+working_lfra.barriers_st,29380,15,28355,0
+working_lfra.barriers_bt,20144,8,18568,0

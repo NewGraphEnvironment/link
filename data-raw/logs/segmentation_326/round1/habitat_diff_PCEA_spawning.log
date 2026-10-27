@@ -1,0 +1,6 @@
+PCEA BT: network km link 14315.7 | bcfp 14315.7 | pieces 14315.7 (coverage gap 0.0 m, tol 38 m)
+  spawning flag km link 920.3 | bcfp 918.5 | link-only 1.8 | bcfp-only 0.0 (gap 0.0 m)
+      class       km km_excl_lake_conn n_blk n_piece
+1      both   918.48            918.48   408    3343
+2 link_only     1.78              1.78     5       6
+3   neither 13395.43          12199.26 13552   34623

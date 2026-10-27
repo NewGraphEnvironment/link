@@ -1,0 +1,146 @@
+
+annotated 122 rows -> data-raw/logs/segmentation_326/parity_crosssection.csv (7 UNEXPLAINED)
+
+============ accessible + spawn + rear parity (link fresh vs bcfp, tunnel-free) ============
+  wsg  sp     metric   link   bcfp diff_pct    ok
+ LKEL  BT accessible  401.0  401.0     0.00  TRUE
+ LKEL  BT   spawning  144.7  144.7     0.01  TRUE
+ LKEL  BT    rearing  209.7  209.7     0.00  TRUE
+ LKEL  ST accessible  365.4  365.4     0.00  TRUE
+ LKEL  ST   spawning  108.0  108.1    -0.04  TRUE
+ LKEL  ST    rearing  156.8  155.3     0.96  TRUE
+ LKEL  CO accessible  328.2  328.2     0.00  TRUE
+ LKEL  CO   spawning  139.2  139.2     0.01  TRUE
+ LKEL  CO    rearing  168.2  166.4     1.06  TRUE
+ LKEL  CH accessible  328.2  328.2     0.00  TRUE
+ LKEL  CH   spawning  106.5  106.5    -0.04  TRUE
+ LKEL  CH    rearing  123.8  122.2     1.31  TRUE
+ LKEL  CM accessible  328.2  328.2     0.00  TRUE
+ LKEL  CM   spawning  142.3  142.3     0.00  TRUE
+ LKEL  PK accessible  328.2  328.2     0.00  TRUE
+ LKEL  PK   spawning  142.3  142.3     0.00  TRUE
+ BULK  BT accessible 7677.0 7676.4     0.01  TRUE
+ BULK  BT   spawning 1865.2 1848.0     0.94  TRUE
+ BULK  BT    rearing 3029.3 3048.6    -0.63  TRUE
+ BULK  ST accessible 6463.4 6462.7     0.01  TRUE
+ BULK  ST   spawning 1287.6 1279.9     0.60  TRUE
+ BULK  ST    rearing 2242.6 2241.9     0.03  TRUE
+ BULK  CO accessible 5090.1 5088.0     0.04  TRUE
+ BULK  CO   spawning 1782.1 1768.3     0.78  TRUE
+ BULK  CO    rearing 2226.1 2217.6     0.38  TRUE
+ BULK  CH accessible 5090.1 5088.0     0.04  TRUE
+ BULK  CH   spawning 1260.2 1252.0     0.66  TRUE
+ BULK  CH    rearing 1742.1 1738.2     0.22  TRUE
+ BULK  PK accessible 5090.1 5088.0     0.04  TRUE
+ BULK  PK   spawning 1854.4 1850.0     0.24  TRUE
+ BULK  SK accessible 5090.1 5088.0     0.04  TRUE
+ BULK  SK   spawning   27.1   24.4    10.99 FALSE
+ BULK  SK    rearing   26.7   24.9     7.39 FALSE
+ KISP  BT accessible 4475.4 4474.6     0.02  TRUE
+ KISP  BT   spawning 1255.7 1252.2     0.28  TRUE
+ KISP  BT    rearing 1921.6 1921.4     0.01  TRUE
+ KISP  ST accessible 3569.0 3568.2     0.02  TRUE
+ KISP  ST   spawning  903.4  902.6     0.09  TRUE
+ KISP  ST    rearing 1347.4 1347.4     0.00  TRUE
+ KISP  CO accessible 2786.7 2785.9     0.03  TRUE
+ KISP  CO   spawning 1110.8 1107.7     0.28  TRUE
+ KISP  CO    rearing 1272.3 1266.5     0.45  TRUE
+ KISP  CH accessible 2786.7 2785.9     0.03  TRUE
+ KISP  CH   spawning  860.5  859.8     0.07  TRUE
+ KISP  CH    rearing 1051.5 1049.7     0.18  TRUE
+ KISP  CM accessible 2786.7 2785.9     0.03  TRUE
+ KISP  CM   spawning 1162.7 1159.7     0.26  TRUE
+ KISP  PK accessible 2786.7 2785.9     0.03  TRUE
+ KISP  PK   spawning 1162.7 1159.7     0.26  TRUE
+ KISP  SK accessible 2786.7 2785.9     0.03  TRUE
+ KISP  SK   spawning    7.1    7.1     0.00  TRUE
+ KISP  SK    rearing   18.9   18.9     0.00  TRUE
+ USKE  BT accessible 3452.8 3451.9     0.02  TRUE
+ USKE  BT   spawning  871.4  871.5    -0.01  TRUE
+ USKE  BT    rearing 1438.0 1437.8     0.01  TRUE
+ USKE  ST accessible 2607.5 2606.6     0.04  TRUE
+ USKE  ST   spawning  634.2  634.2    -0.01  TRUE
+ USKE  ST    rearing  972.6  971.0     0.17  TRUE
+ USKE  CO accessible 1519.3 1518.3     0.06  TRUE
+ USKE  CO   spawning  615.9  616.0    -0.01  TRUE
+ USKE  CO    rearing  744.7  742.6     0.28  TRUE
+ USKE  CH accessible 1519.3 1518.3     0.06  TRUE
+ USKE  CH   spawning  498.8  498.8     0.00  TRUE
+ USKE  CH    rearing  593.4  592.1     0.21  TRUE
+ USKE  SK accessible 1519.3 1518.3     0.06  TRUE
+ MORR  BT accessible 4767.6 4764.9     0.06  TRUE
+ MORR  BT   spawning  951.3  947.1     0.45  TRUE
+ MORR  BT    rearing 1759.3 1765.9    -0.37  TRUE
+ MORR  ST accessible 4063.9 4061.0     0.07  TRUE
+ MORR  ST   spawning  649.3  648.2     0.17  TRUE
+ MORR  ST    rearing 1169.4 1173.7    -0.36  TRUE
+ MORR  CO accessible 3330.2 3327.4     0.09  TRUE
+ MORR  CO   spawning  916.0  911.4     0.51  TRUE
+ MORR  CO    rearing 1227.7 1224.8     0.23  TRUE
+ MORR  CH accessible 3330.2 3327.4     0.09  TRUE
+ MORR  CH   spawning  644.8  643.7     0.18  TRUE
+ MORR  CH    rearing  882.4  879.4     0.34  TRUE
+ MORR  PK accessible 3330.2 3327.4     0.09  TRUE
+ MORR  PK   spawning  966.4  965.5     0.09  TRUE
+ MORR  SK accessible 3330.2 3327.4     0.09  TRUE
+ MORR  SK   spawning   54.8   53.8     1.82  TRUE
+ MORR  SK    rearing  124.4  124.4     0.00  TRUE
+ PCEA  BT accessible 5003.6 5003.4     0.00  TRUE
+ PCEA  BT   spawning  920.3  918.5     0.19  TRUE
+ PCEA  BT    rearing 1624.3 1625.5    -0.07  TRUE
+ FINA  BT accessible 6084.0 6085.2    -0.02  TRUE
+ FINA  BT   spawning 1270.7 1266.1     0.36  TRUE
+ FINA  BT    rearing 2464.9 2464.9     0.00  TRUE
+ PARS  BT accessible 6824.9 6822.9     0.03  TRUE
+ PARS  BT   spawning 1673.4 1667.9     0.33  TRUE
+ PARS  BT    rearing 2571.0 2579.2    -0.31  TRUE
+ LFRA  BT accessible 3415.8 3415.8     0.00  TRUE
+ LFRA  BT   spawning 1281.4 1275.6     0.45  TRUE
+ LFRA  BT    rearing 1690.7 1692.6    -0.11  TRUE
+ LFRA  ST accessible 2928.0 2928.0     0.00  TRUE
+ LFRA  ST   spawning  827.1  825.7     0.16  TRUE
+ LFRA  ST    rearing 1293.1 1292.9     0.02  TRUE
+ LFRA  CO accessible 2754.1 2754.1     0.00  TRUE
+ LFRA  CO   spawning 1157.9 1152.0     0.51  TRUE
+ LFRA  CO    rearing 1281.9 1283.2    -0.10  TRUE
+ LFRA  CH accessible 2754.1 2754.1     0.00  TRUE
+ LFRA  CH   spawning  819.4  818.0     0.17  TRUE
+ LFRA  CH    rearing 1175.6 1176.0    -0.04  TRUE
+ LFRA  CM accessible 2754.1 2754.1     0.00  TRUE
+ LFRA  CM   spawning 1148.5 1147.7     0.07  TRUE
+ LFRA  PK accessible 2754.1 2754.1     0.00  TRUE
+ LFRA  PK   spawning 1148.5 1147.7     0.07  TRUE
+ LFRA  SK accessible 2754.1 2754.1     0.00  TRUE
+ LFRA  SK   spawning   83.0   82.9     0.16  TRUE
+ LFRA  SK    rearing   79.8   79.8     0.00  TRUE
+ KOTR  BT accessible 2533.9 2533.8     0.00  TRUE
+ KOTR  BT   spawning  889.6  889.6     0.00  TRUE
+ KOTR  BT    rearing 1295.4 1297.6    -0.17  TRUE
+ KOTR WCT accessible 2341.0 2340.5     0.02  TRUE
+ KOTR WCT   spawning  965.8  965.5     0.02  TRUE
+ KOTR WCT    rearing 1208.0 1212.7    -0.39  TRUE
+ ELKR  BT accessible 2906.6 4207.2   -30.91 FALSE
+ ELKR  BT   spawning 1033.9 1497.5   -30.96 FALSE
+ ELKR  BT    rearing 1441.9 2104.1   -31.47 FALSE
+ ELKR WCT accessible 2476.0 3685.2   -32.81 FALSE
+ ELKR WCT   spawning 1043.9 1517.6   -31.21 FALSE
+ ELKR WCT    rearing 1265.0 1854.6   -31.79 FALSE
+
+==== summary by metric (accessible tol 1 %, habitat tol 5 %) ====
+  accessible : 44 pairs / 11 WSGs / 8 species, max |diff| 32.81%, within-tol 42/44  OVER: ELKR/BT -30.9%; ELKR/WCT -32.8%
+  spawning   : 43 pairs / 11 WSGs / 8 species, max |diff| 31.21%, within-tol 40/43  OVER: BULK/SK +11.0% (parked); ELKR/BT -31.0%; ELKR/WCT -31.2%
+  rearing    : 35 pairs / 11 WSGs / 6 species, max |diff| 31.79%, within-tol 32/35  OVER: BULK/SK +7.4% (parked); ELKR/BT -31.5%; ELKR/WCT -31.8%
+
+  link-absent (bcfp models species, bcfishpass does not model it in the group; excluded):
+    LKEL SK accessible (bcfp 328, link 0.0) 
+    BULK CM accessible (bcfp 5088, link 0.0) 
+    USKE CM accessible (bcfp 1518, link 0.0) 
+    USKE PK accessible (bcfp 1518, link 0.0) 
+    MORR CM accessible (bcfp 3327, link 0.0) 
+
+==== structural: FINA blk 359209845 BT frontier 3834.78 ====
+  pass: no segment straddles the frontier
+  pass: segment at frontier is BT-blocked
+  pass: accessible BT reach tops at frontier
+
+OVERALL: 114/122 parity pairs within tolerance (8 over: 2 accessible, 4 habitat non-parked)  — 6 FAILURE(S)

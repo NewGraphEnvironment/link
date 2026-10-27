@@ -1,0 +1,18 @@
+[1] 0
+[1] 0
+[wsg_recompute_one] FINA prologue 0.92 s
+NOTICE:  table "zz_lnk_access_prior_fina" does not exist, skipping
+
+NOTICE:  table "zz_lnk_streams_fina" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] FINA habitat gate: 0 segments (0.000 km) settled
+[wsg_recompute_one] FINA recomputed in 0.27 min (persist=fresh)
