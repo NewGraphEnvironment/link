@@ -55,7 +55,7 @@ What exploration established (read-only):
 
 ## Phase 0: baseline and review
 
-- [ ] PWF baseline committed; Plan agent reviews `task_plan.md` against the issue and code (background,
+- [x] PWF baseline committed; Plan agent reviews `task_plan.md` against the issue and code (background,
       findings to `planning/active/review-plan.md`)
 
 ## Phase 1: where the time goes (decompose CHWK against SALR)
@@ -116,7 +116,7 @@ How each claim is proved:
 - Read-only harness: the schema's `pg_stat_user_tables` write counters for `fresh_default` do not move
   across a harness run (checked before and after).
 - Decomposition: the summed step times of the instrumented re-run land within 10 % of that run's wall
-  clock, and the walk times from the harness agree with the re-run's walk step.
+  clock; the harness's server-side walk times, against the re-run's R-timed walks, give the client share (plan review B2).
 - Idempotence: before/after digests identical for CHWK and SALR.
 - Correlation: reported for both runs, with the runs' own rank agreement as the noise ceiling.
 
