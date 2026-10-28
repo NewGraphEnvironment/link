@@ -130,11 +130,16 @@ for (s in st) {
                  xlab = "segments (thousands)", ylab = "minutes",
                  main = sprintf("%s (%s)", s, kind[[s]]),
                  ylim = c(0, max(d$minutes) * 1.05))
-  if (length(unique(d$n_segments)) > 2L) {
-    graphics::abline(stats::lm(minutes ~ I(n_segments / 1000), d), col = "grey50")
+  for (v in vars) {
+    dv <- d[d$variant == v, ]
+    if (length(unique(dv$n_segments)) > 2L) {
+      graphics::abline(stats::lm(minutes ~ I(n_segments / 1000), dv), col = "grey50",
+                       lty = match(v, vars))
+    }
   }
 }
 graphics::plot.new()
-graphics::legend("center", legend = vars, pch = pch, bty = "n")
+graphics::legend("center", legend = vars, pch = pch, lty = seq_along(vars),
+                 col = "grey50", bty = "n")
 invisible(grDevices::dev.off())
 cat("\nwrote steps.csv, split.csv, steps_vs_segments.png in", dir, "\n")
