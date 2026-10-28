@@ -92,6 +92,19 @@ Operator, 2026-10-23: "Provincial runs should prob be pretended with scoped test
 - [ ] A CLAUDE.md status entry with the facts not worth re-deriving, and the #377 runs-row note
 - [ ] NEWS and the version bump as the final commit
 
+
+## Folded in from the plan review (planning/active/review-plan.md)
+
+- [ ] B1: `pretest_record_check()` in pretest.R; a record holds while every file changed since its SHA maps to `none`
+- [ ] B2/A6: `--since` default is the oldest link_sha among the history's newest finished rows; the check requires since to cover them
+- [ ] B3: `--pretest-note` writes an `override` row
+- [ ] G1: pathspec R/, inst/extdata/, DESCRIPTION, data-raw entry points; coverage test over inst/extdata
+- [ ] G2: `unexercised` special input
+- [ ] G3: scratch tables LIKE the persist's
+- [ ] G6: wall-clock watchdog at the bound
+- [ ] G7: refuse during a live run
+- [ ] G8: `--minutes-schema`, `--minutes-exclude`
+
 ## Owed at the end (reported, done after merge)
 
 - [ ] At the next provincial run (#377's runs row), run the gate first. Record its picks and its minutes beside that run's own minutes for the same groups, which tests whether k = 3 is right
