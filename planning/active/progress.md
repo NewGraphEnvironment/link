@@ -14,3 +14,16 @@
 - Phase 3: base build launched 2026-10-28 19:09:47 UTC from worktree at `45b12b2e`
   (`build_base.log`); `launch_state.txt` holds the load and `pg_stat_activity` at launch
 - Phase 4 script `analyze.R` drafted and run on synthetic rows while the base builds
+
+## Session 2026-10-28 (continued, after the base build)
+
+- Base build exited 20:19:54 UTC (69.6 min; launched 19:09:47 UTC from the worktree at
+  `45b12b2e`): 17 `base_model` rows summing 67.1 min (KOTR 7.0 min longest, LPCE 1.7
+  shortest), 9 `base_recompute` rows summing 2.4 min, no Error line. No other backend on
+  the database at launch or at the base end; 1-minute load 2.2 to 4.2 through the run.
+- `analyze.R`: the last "done in" line per pass wins across `build_*.log` (REVL is re-run
+  by the full pass after the pre-flight and `variant_timing.csv` replaces its rows, so a
+  first-match lookup would have compared the full run's seconds with the pre-flight's total).
+- Pre-flight `--step=variants --only=bt_rear_wet_p10 --wsgs=REVL` launched 20:20:36 UTC
+  (`build_preflight_revl.log`).
+- Next: check the pre-flight's step sum against its total, then the full nine-group pass.

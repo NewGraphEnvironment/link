@@ -98,13 +98,15 @@
 ## Phase 3: build and measure
 - [x] Commit Phase 2 and push the branch before any build (`45b12b2e`, pushed): the dirty check covers the script,
       and the worktree checks the branch out (plan review)
-- [ ] At launch (done: `launch_state.txt`, no other backend, load 2.4) and at the end, a `pg_stat_activity` snapshot (other backends and their
+- [ ] At launch (done: `launch_state.txt`, no other backend, load 2.4), at the base end (done, none, load 2.2) and at the end, a `pg_stat_activity` snapshot (other backends and their
       `application_name`) into the README, beside the load average: the issue's "whether
       the run shared the database with anything else" (plan review)
-- [ ] `--step=base --variants=data-raw/habitat_score/variants_331.csv
+- [x] `--step=base --variants=data-raw/habitat_score/variants_331.csv
       --roles=data-raw/habitat_score/wsg_roles_331.csv --prefix=score404_
       --out=<abs>/data-raw/logs/variant_cost_404`, detached (`nohup … & disown`), from the
-      worktree; ~45 min base + recompute on #331's m1 numbers
+      worktree; ~45 min base + recompute on #331's m1 numbers (ran 19:09 to 20:19 UTC, 69.6 min: 17
+      `base_model` rows, 67.1 min summed, KOTR longest at 7.0; 9 `base_recompute` rows, 2.4 min;
+      no error)
 - [ ] Pre-flight: `--step=variants --only=bt_rear_wet_p10 --wsgs=REVL` (smallest focal);
       check the seven `in_total` seconds sum to the total line within 2 %
 - [ ] Full: `--step=variants --only=bt_rear_wet_p10` over the nine groups (the `default` pass

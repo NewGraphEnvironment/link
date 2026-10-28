@@ -48,7 +48,10 @@ done <- unlist(lapply(logs, function(f) {
 passes <- unique(data.frame(key = key, variant = steps$variant,
                             wsg = steps$watershed_group_code,
                             minutes = steps$pass_minutes))
-passes$logged <- done[passes$key]   # the last line for a pass wins (a re-run)
+# The last line for a pass wins (REVL is re-run by the full pass after the pre-flight,
+# and its timing rows are replaced), so drop earlier duplicates by name first.
+done <- done[!duplicated(names(done), fromLast = TRUE)]
+passes$logged <- done[passes$key]
 passes$residual <- passes$minutes - passes$logged
 bad <- passes[is.na(passes$logged) |
                 abs(passes$residual) > pmax(0.02 * passes$logged, 0.05 / 60), ]
