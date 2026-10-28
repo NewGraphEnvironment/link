@@ -103,6 +103,9 @@ pipeline:
   - subsurfaceflow
   - habitat_endpoints
   - crossings
+  # observation_breaks is left out, which means `all`: streams break at every
+  # fish observation position, as bcfishpass cuts. The default bundle sets
+  # `top_per_species` (link#396).
   cluster:
     three_phase: yes
   spawn_connected:

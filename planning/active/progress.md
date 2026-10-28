@@ -13,3 +13,9 @@
 ```bash
 cd /Users/airvine/Projects/repo/link && git fetch -q origin && git checkout 396-break-streams-at-a-fish-observation-only && git pull --ff-only && git merge origin/main
 ```
+
+## Session 2026-10-28 (resume)
+
+- Disk checked at the operator's ask: the fwapg data directory is a bind mount on the Mac's disk, 385 GB free against a 213 GB database; Phase 4 adds about 7 GB. No table removal proposed.
+- Phase 1: `build_obs.R` + four SQL files, outputs and `readers_code2.md` under `data-raw/logs/observation_breaks_396/` (`b5e4e0e4`)
+- Phase 2: knob `pipeline: observation_breaks` (`all` | `top_per_species`), checked at manifest load; builder; `default` sets `top_per_species` (inherited by `default_tuned`); roxygen; tests (56 pass in the file; shape and live tests red with the bug restored)
