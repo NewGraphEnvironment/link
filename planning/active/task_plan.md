@@ -94,9 +94,9 @@ are not "dispatcher-equivalent" once speeds differ. Phase 1 measures whether tha
 
 
 ## Validation
-- [ ] Tests pass (`devtools::test()`), lintr clean on touched files
-- [ ] `/code-check branch` clean (three-round floor)
-- [ ] PWF checkboxes match landed work
+- [x] Tests pass (`devtools::test()`: 4489 pass, 0 fail, 0 skip at `cad9548c`); lintr: new files clean except the repo's uppercase-constant style, the packer at 14 lints against main's 15
+- [x] `/code-check branch`: six rounds; rounds 2, 3 and 5 each found a defect inside the previous fix, and round 6's enumeration closed the two-source mechanism (its one data finding fixed in `cad9548c`)
+- [x] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion; PR closes #259 and #163
 
 Verification: Phase 1's out-of-sample numbers are the evidence for the weight/speed choice; the packer's
