@@ -51,7 +51,7 @@
 #   [LNK_LOAD=loadall] Rscript data-raw/study_area_buckets.R \
 #     [--hosts=4] [--config=bcfishpass] [--focal=A,B,C] [--atom=component|group] \
 #     [--minutes-schema=<persist schema>] [--host-speeds=1,1,1,1] [--workers=0]
-#     [--write]
+#     [--host-names=m4,cloud,cloud,cloud] [--speeds-state=<tsv>] [--plan-out=<tsv>] [--write]
 #
 #   --hosts=N            number of hosts to pack onto (default 4: dispatcher + 3)
 #   --focal=             override the focal set (default: the baked-in 96)
@@ -60,7 +60,16 @@
 #                        from the newest finished row per group in S.log
 #                        (link#361). Without it, by stream-segment count.
 #   --host-speeds=       relative throughput per host, dispatcher first, then
-#                        workers, then cloud hosts
+#                        workers, then cloud hosts. Wins over the learned state
+#   --host-names=        each host's name in the same order (default: this
+#                        machine's short name, worker1..N, `cloud` for each
+#                        cloud host). Aliases only: they key the committed
+#                        learned-speed state, so never an ssh target or address
+#   --speeds-state=      learned speeds (default data-raw/logs/host_speeds.tsv;
+#                        empty for none). A name it does not hold takes the
+#                        median of those it does. RUNBOOK section 8d
+#   --plan-out=          write one row per group (host, name, speed, weight) for
+#                        host_speeds_calibrate.R after the run (link#259)
 #   --workers=N          how many of the hosts are persistent workers (link#376;
 #                        default 0). They are hosts 2..N+1, labelled worker1..N,
 #                        and the printed --focal= lists follow the driver's order:
@@ -70,7 +79,7 @@
 #   --write              rewrite research/study_areas.md from this run's output
 #                        (component atoms only)
 #
-# Stdout is the report. Nothing is written unless --write is passed.
+# Stdout is the report. Nothing is written unless --write or --plan-out is passed.
 
 args <- commandArgs(trailingOnly = TRUE)
 arg_val <- function(flag, default) {
@@ -109,24 +118,46 @@ if (is.na(n_workers) || n_workers < 0L || n_workers > n_hosts - 1L) {
        "is host 1)", call. = FALSE)
 }
 
-# Relative throughput per host, dispatcher first. Default EQUAL. The 2026-08-31
-# pilot measured cloud hosts at 0.45x the dispatcher on one WSG, and that was
-# the default until link#361; the 241-group run of 2026-10-17 measured them at
-# about the dispatcher's rate over whole buckets (`research/study_area_run.md`,
-# "Equal packing was right"). Override with --host-speeds=1,0.45,0.45 when a
-# fleet is known to differ.
-speeds_arg <- arg_val("--host-speeds", "")
-host_speeds <- if (nzchar(speeds_arg)) {
-  as.numeric(trimws(strsplit(speeds_arg, ",")[[1]]))
+# Relative throughput per host, dispatcher first, and where each came from
+# (link#259): --host-speeds wins; else the learned state (--speeds-state,
+# default data-raw/logs/host_speeds.tsv, written by host_speeds_calibrate.R),
+# where a host the state does not hold takes the median of those it does;
+# else equal. Equal was the default from link#361 (the 241-group run of
+# 2026-10-17 measured cloud hosts at about the dispatcher's rate over whole
+# buckets, `research/study_area_run.md`, "Equal packing was right"), and the
+# state is seeded equal: 2026-10-23 could not tell the classes apart ("How
+# hosts are packed").
+#
+# A speed is keyed by host NAME (--host-names, the operator's aliases in the
+# driver's order), never by the driver's role key: the dispatcher moved from
+# m1 to m4. Every cloud host is the one class `cloud`.
+host_key <- function(h) {
+  if (h == 1L) return("dispatcher")
+  if (h <= n_workers + 1L) return(sprintf("worker%d", h - 1L))
+  sprintf("job%d", h - 1L - n_workers)
+}
+names_arg <- arg_val("--host-names", "")
+host_names <- if (nzchar(names_arg)) {
+  trimws(strsplit(names_arg, ",")[[1]])
 } else {
-  rep(1, n_hosts)
+  c(sub("\\..*$", "", Sys.info()[["nodename"]]),
+    if (n_workers > 0L) sprintf("worker%d", seq_len(n_workers)),
+    rep("cloud", n_hosts - 1L - n_workers))
 }
-if (length(host_speeds) != n_hosts || anyNA(host_speeds) ||
-    any(host_speeds <= 0)) {
-  stop("--host-speeds needs ", n_hosts,
-       " positive numbers (dispatcher first), got: ",
-       paste(host_speeds, collapse = ", "), call. = FALSE)
+if (length(host_names) != n_hosts) {
+  stop("--host-names needs ", n_hosts, " names (dispatcher, workers, cloud hosts), got ",
+       length(host_names), call. = FALSE)
 }
+host_names_check(host_names)
+state_path <- arg_val("--speeds-state", file.path(script_dir, "logs", "host_speeds.tsv"))
+speed_state <- speeds_state_read(state_path)
+speeds_arg <- arg_val("--host-speeds", "")
+speeds_cli <- if (nzchar(speeds_arg)) {
+  suppressWarnings(as.numeric(trimws(strsplit(speeds_arg, ",")[[1]])))
+}
+speeds <- speeds_resolve(host_names, cli = speeds_cli, state = speed_state)
+host_speeds <- speeds$speed
+plan_out <- arg_val("--plan-out", "")
 
 if (identical(Sys.getenv("LNK_LOAD"), "loadall")) {
   suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
@@ -265,7 +296,7 @@ if (length(dup)) {
 if (nzchar(minutes_schema)) {
   w <- DBI::dbGetQuery(conn, sprintf(
     "SELECT DISTINCT ON (watershed_group_code)
-            watershed_group_code AS wsg,
+            watershed_group_code AS wsg, host,
             extract(epoch FROM (date_end - date_start)) / 60 AS n
        FROM %s.log
       WHERE date_end IS NOT NULL AND date_start IS NOT NULL
@@ -274,8 +305,11 @@ if (nzchar(minutes_schema)) {
     stop("--minutes-schema=", minutes_schema, ": no finished log rows",
          call. = FALSE)
   }
+  # Dispatcher-equivalent: each group's minutes times the learned speed of the
+  # class that measured them (link#259; equal state, no change).
+  w$n <- weights_normalize(as.numeric(w$n), w$host, speed_state)
   weight_unit <- "min"
-  weight_desc <- sprintf("measured modelling minutes (newest finished row per group in %s.log)",
+  weight_desc <- sprintf("measured modelling minutes (newest finished row per group in %s.log, normalized by the learned speed of the host that measured them)",
                          minutes_schema)
 } else {
   w <- DBI::dbGetQuery(conn,
@@ -295,6 +329,13 @@ comp_weight <- vapply(resolved, weight_of, numeric(1))
 n_unweighted <- sum(!flat %in% names(wmap))
 message(sprintf("weights: %s; %d of %d groups have no value and take the median (%.3g %s)",
                 weight_desc, n_unweighted, length(flat), med, weight_unit))
+# Every group on the median is an unweighted split by another name: the
+# failure the median fill exists to prevent (link#259; 2026-05-14's "no timing
+# CSVs found; using deterministic split").
+if (n_unweighted == length(flat)) {
+  stop("none of the ", length(flat), " groups has a weight in ", weight_desc,
+       ": packing would be an unweighted split", call. = FALSE)
+}
 
 # --- 5. greedy LPT pack, speed-aware ---------------------------------------
 # The hosts are NOT interchangeable. Measured 2026-08-31 on identical work,
@@ -410,7 +451,7 @@ for (h in seq_len(n_hosts)) {
 # --- 6. report -------------------------------------------------------------
 # Hosts in the driver's order: the dispatcher, then workers, then cloud hosts.
 host_label <- function(h) {
-  if (h == 1L) return("dispatcher (m1)")
+  if (h == 1L) return(sprintf("dispatcher (%s)", host_names[1]))
   if (h <= n_workers + 1L) return(sprintf("worker%d", h - 1L))
   sprintf("job%d", h - 1L - n_workers)
 }
@@ -439,6 +480,8 @@ for (i in seq_along(components)) {
 cat("\n## Host buckets\n\n")
 cat(sprintf("Weights: %s. %d of %d groups took the median.\n\n",
             weight_desc, n_unweighted, length(flat)))
+cat(sprintf("Speeds: %s.\n\n", paste(sprintf("%s %s %.3f (%s)", vapply(seq_len(n_hosts), host_key, ""),
+                                          host_names, host_speeds, speeds$source), collapse = "; ")))
 cat(sprintf("Atom: %s.%s\n\n", atom,
             if (atom == "group") " Single modelable groups, each host's list in the global downstream-first order; the post-consolidate recompute settles access (data-raw/logs/provincial_361/split_verdict.md)." else ""))
 cat(sprintf("| host | speed | atoms | focal | modelable | %s | est. load | est. share |\n",
@@ -492,6 +535,29 @@ cat("\n## DS-first order per host\n\n")
 for (h in seq_len(n_hosts)) {
   cat(sprintf("- **%s** (%d): %s\n", host_label(h), length(host_wsgs[[h]]),
               paste(host_wsgs[[h]], collapse = ", ")))
+}
+
+# --- the plan: one row per group, for host_speeds_calibrate.R (link#259) -----
+# A host's predicted leg is the sum of its rows' weight over its speed. The
+# calibrator checks these groups against the run's <TS>_run_wsgs.tsv, so a
+# plan edited by hand after it was written is refused, not trusted.
+if (nzchar(plan_out)) {
+  g_host <- if (atom == "component") {
+    rep(assign_h, lengths(resolved))
+  } else {
+    group_pack$assign
+  }
+  g_wsg <- if (atom == "component") unlist(resolved, use.names = FALSE) else global_order
+  plan <- data.frame(
+    wsg = g_wsg,
+    host_key = vapply(g_host, host_key, character(1)),
+    name = host_names[g_host],
+    speed = host_speeds[g_host],
+    speed_source = speeds$source[g_host],
+    weight_unit = weight_unit,
+    weight = vapply(g_wsg, weight_of, numeric(1)))
+  utils::write.table(plan, plan_out, sep = "\t", quote = FALSE, row.names = FALSE, na = "")
+  message(sprintf("wrote the plan (%d groups, %s) to %s", nrow(plan), weight_unit, plan_out))
 }
 
 # --- 7. optionally rewrite the research doc --------------------------------

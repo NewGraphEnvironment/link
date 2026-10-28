@@ -59,13 +59,13 @@ are not "dispatcher-equivalent" once speeds differ. Phase 1 measures whether tha
       Restore-the-bug check on each guard
 
 ## Phase 3: The packer reads learned speeds and writes its plan
-- [ ] `study_area_buckets.R`: `--host-names=` in driver order (operator aliases; default: dispatcher =
+- [x] `study_area_buckets.R`: `--host-names=` in driver order (operator aliases; default: dispatcher =
       local short hostname, workers `worker1..N`, cloud hosts `cloud`); refuses a name with `@` or an
       address shape (review #10); speeds from the helper with each host's speed and source printed;
       measured-minute weights normalized by `log.host`'s class
-- [ ] `--plan-out=<tsv>`: one row per group (run order, wsg, host key, name, class, speed, speed
+- [x] `--plan-out=<tsv>`: one row per group (run order, wsg, host key, name, class, speed, speed
       source, weight unit, weight); a host's prediction is the sum of its rows' weight ÷ speed
-- [ ] Loud fallback pinned: a group with no weight takes the median and is counted (the rule since
+- [x] Loud fallback pinned: a group with no weight takes the median and is counted (the rule since
       v0.48.0); zero weighted groups refuses
 
 ## Phase 4: Calibrator, state and audit log
