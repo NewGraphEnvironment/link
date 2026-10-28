@@ -39,12 +39,13 @@ out <- tryCatch({
     list(ok = FALSE, why = sprintf("no gate record (%s.log_pretest does not exist)", schema))
   } else {
     records <- DBI::dbGetQuery(conn, sprintf("SELECT * FROM %s.log_pretest", schema))
-    hist <- if (reg("log")) DBI::dbGetQuery(conn, pretest_history_sql(schema, config)) else
-      data.frame(link_sha = character())
+    if (!reg("log")) stop(schema, ".log does not exist: no history to hold a gate to")
+    hist <- DBI::dbGetQuery(conn, pretest_history_sql(schema, config))
     chain <- pretest_config_chain(file.path(repo, "inst/extdata/configs"), config)
     map <- pretest_map_read(file.path(script_dir, "pretest_inputs.csv"))
     r <- pretest_record_check(records, config, head_sha, fresh_sha, hist$link_sha,
-                              repo, map, chain, reached = pretest_reach_repo(repo))
+                              hist$link_dirty, repo, map, chain,
+                              reached = pretest_reach_repo(repo))
     if (r$ok) {
       r$why <- sprintf("gate passed at %s (%s UTC), range from %s: %s", substr(r$record$link_sha, 1, 12),
                        format(r$record$run_at, "%Y-%m-%d %H:%M", tz = "UTC"),

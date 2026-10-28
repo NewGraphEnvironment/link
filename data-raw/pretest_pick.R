@@ -81,7 +81,7 @@ until_sha <- tryCatch(pretest_git(repo, c("rev-parse", "--verify", paste0(until,
                       error = function(e) refuse(conditionMessage(e)))
 # The record check holds a gate to covering every build the history holds;
 # say so now rather than after an hour of modelling.
-cover <- tryCatch(pretest_since_covers(repo, since_sha, built$link_sha),
+cover <- tryCatch(pretest_since_covers(repo, since_sha, built$link_sha, built$link_dirty),
                   error = function(e) refuse(conditionMessage(e)))
 if (nzchar(cover)) refuse(cover, "; a gate on this range cannot clear a run")
 
@@ -96,6 +96,14 @@ changed <- tryCatch(rbind(pretest_changed_link(repo, since_sha, until_sha, chain
                     error = function(e) refuse(conditionMessage(e)))
 map <- pretest_map_read(file.path(script_dir, "pretest_inputs.csv"))
 m <- pretest_match(changed, map, chain)
+# fresh's none rows hold only for the fresh they were judged at.
+fresh_none <- unique(m$hits$path[m$hits$repo == "fresh" & m$hits$input == "none"])
+if (length(fresh_none) && !identical(fresh_to, PRETEST_FRESH_JUDGED)) {
+  refuse("fresh ", fresh_to, " changed files mapped none (", paste(fresh_none, collapse = ", "),
+         "), but those rows were judged at ", PRETEST_FRESH_JUDGED,
+         ": re-run data-raw/logs/pretest_372/reach_fresh.R at ", fresh_to,
+         ", fix the rows, and move PRETEST_FRESH_JUDGED")
+}
 # A `none` file the modelling path now reaches is no longer off it.
 reached_none <- pretest_none_reached(m$hits, pretest_reach_repo(repo))
 if (length(reached_none)) {

@@ -38,11 +38,22 @@ PRETEST_SPECIAL <- c("any", "none", "unexercised")
 PRETEST_MAP_COLS <- c("repo", "pattern", "input", "why")
 PRETEST_VERDICTS <- c("pass", "failed", "bound", "no_row")
 
-# The functions wsg_run_one.R calls in link. The modelling path is everything
-# they reach.
+# The functions wsg_run_one.R calls in link must include these; the entries
+# themselves are read from the script (pretest_entries()), so a call added
+# there is on the path without anyone updating a list.
 PRETEST_ENTRIES <- c("lnk_db_conn", "lnk_config", "lnk_load_overrides",
                      "lnk_pipeline_species", "lnk_wsg_downstream_check",
                      "lnk_pipeline_run", ".lnk_timeout_statement")
+
+# The gate's own rules: what it reads to judge a change. A record is judged
+# by these at HEAD, so a change to any of them since the record voids it.
+PRETEST_RULES <- c("data-raw/pretest.R", "data-raw/pretest_inputs.csv", "data-raw/pretest/")
+
+# fresh's `none` rows were judged against fresh at this tag
+# (data-raw/logs/pretest_372/reach.md). A pick over a later fresh that
+# changed a file mapped `none` refuses until reach_fresh.R is re-run there
+# and this is moved.
+PRETEST_FRESH_JUDGED <- "v0.44.0"
 
 pretest_map_read <- function(path) {
   m <- utils::read.csv(path, stringsAsFactors = FALSE, na.strings = character(),
@@ -324,10 +335,35 @@ pretest_since_default <- function(history) {
   h$link_sha[order(h$date_start)][1]
 }
 
-# The link files the modelling path reaches, loading the source tree at `repo`.
+# The link functions a script calls: every function-call symbol in it, kept
+# when the namespace defines it. Must cover PRETEST_ENTRIES.
+pretest_entries <- function(script, ns) {
+  pd <- utils::getParseData(parse(script, keep.source = TRUE))
+  calls <- unique(pd$text[pd$token == "SYMBOL_FUNCTION_CALL"])
+  fns <- Filter(function(n) is.function(get(n, ns)), ls(ns, all.names = TRUE))
+  e <- intersect(calls, fns)
+  miss <- setdiff(PRETEST_ENTRIES, e)
+  if (length(miss)) {
+    stop(script, " no longer calls ", paste(miss, collapse = ", "),
+         ": re-check PRETEST_ENTRIES and the map's none rows", call. = FALSE)
+  }
+  e
+}
+
+# The link files the modelling path reaches, loading the source tree at
+# `repo`, from the calls in its wsg_run_one.R. A reach without the pipeline
+# itself means the walk saw nothing: an error, never an empty answer.
 pretest_reach_repo <- function(repo) {
   suppressPackageStartupMessages(pkgload::load_all(repo, quiet = TRUE, export_all = FALSE))
-  pretest_reach(asNamespace("link"), PRETEST_ENTRIES)
+  ns <- asNamespace("link")
+  if (is.null(attr(get("lnk_pipeline_run", ns), "srcref"))) {
+    stop("link loaded without srcrefs; the reach cannot be read", call. = FALSE)
+  }
+  r <- pretest_reach(ns, pretest_entries(file.path(repo, "data-raw", "wsg_run_one.R"), ns))
+  if (!all(c("lnk_pipeline_run.R", "lnk_pipeline_prepare.R") %in% r)) {
+    stop("the modelling path's reach is missing the pipeline (", length(r), " files)", call. = FALSE)
+  }
+  r
 }
 
 # Is `a` an ancestor of, or equal to, `b`? FALSE also when either is unknown
@@ -342,9 +378,13 @@ pretest_is_ancestor <- function(repo, a, b) {
 
 # The history SHAs a gate's range must start at or before: refuses with the
 # first one `since` does not reach.
-pretest_since_covers <- function(repo, since, history_shas) {
+pretest_since_covers <- function(repo, since, history_shas, history_dirty) {
+  stopifnot(length(history_dirty) == length(history_shas))
   if (anyNA(history_shas)) {
     return("history holds a build with no link_sha, which no range can be shown to cover")
+  }
+  if (any(is.na(history_dirty) | history_dirty)) {
+    return("history holds a build from a dirty tree, whose code is not its link_sha")
   }
   for (h in unique(history_shas)) {
     if (!pretest_is_ancestor(repo, since, h)) {
@@ -367,7 +407,7 @@ pretest_since_covers <- function(repo, since, history_shas) {
 #     change, which only a new gate can pick for).
 # Returns list(ok, why, record).
 pretest_record_check <- function(records, config, head_sha, fresh_sha, history_shas,
-                                 repo, map, chain, reached = NULL) {
+                                 history_dirty, repo, map, chain, reached = NULL) {
   no <- function(...) list(ok = FALSE, why = paste0(...), record = rec)
   rec <- NULL
   r <- records[records$config_name == config & records$verdict %in% c("pass", "fail"), , drop = FALSE]
@@ -380,10 +420,15 @@ pretest_record_check <- function(records, config, head_sha, fresh_sha, history_s
     return(no("the gate modelled fresh ", substr(rec$fresh_sha, 1, 12), ", installed is ",
               substr(fresh_sha, 1, 12)))
   }
-  cover <- pretest_since_covers(repo, rec$since_sha, history_shas)
+  if (!length(history_shas)) return(no("no history under config ", config, " to hold the gate's range to"))
+  cover <- pretest_since_covers(repo, rec$since_sha, history_shas, history_dirty)
   if (nzchar(cover)) return(no("the gate's ", cover))
   if (!pretest_is_ancestor(repo, rec$link_sha, head_sha)) {
     return(no("the gate modelled ", substr(rec$link_sha, 1, 12), ", not an ancestor of HEAD"))
+  }
+  rules <- pretest_git(repo, c("diff", "--name-only", rec$link_sha, head_sha, "--", PRETEST_RULES))
+  if (length(rules)) {
+    return(no("the gate's own rules changed since it ran: ", paste(rules, collapse = ", ")))
   }
   desc_pin <- function(ref) pretest_fresh_pin(pretest_git(repo, c("show", paste0(ref, ":DESCRIPTION"))))
   if (!identical(desc_pin(rec$link_sha), desc_pin(head_sha))) {

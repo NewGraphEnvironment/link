@@ -9,10 +9,17 @@
 #     [--since=<sha>] [--until=HEAD] [--per-input=2] [--k=3] [--floor-min=5] \
 #     [--statement-timeout=30] [--minutes-schema=<schema>] \
 #     [--minutes-exclude=KTSU,...] [--fresh-repo=<fresh checkout>] \
-#     [--out=<dir>] [--pick-only] [--only=<WSG>,...]
+#     [--out=<dir>] [--pick-only] [--only=<WSG>,...] [--allow-busy]
 #
 # --only=<WSG>,... models only those of the picks (a smoke test of the
 # machinery, or a re-check of one group); its record is never a pass.
+#
+# The bound is a time, so the gate refuses to start while any other client
+# session is active on the database (another session's load is what stalled
+# the near-river walk on 2026-10-23 and in #396). --allow-busy starts anyway
+# and says so in the record. While each group runs the watchdog samples the
+# other active sessions, and the verdict prints the most it saw beside the
+# group's minutes, so a breach under load is not read as a regression.
 #
 # What it does, in order:
 #   1. pretest_pick.R: the changed files (link since..until, fresh between the
@@ -47,7 +54,7 @@ fi
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CONFIG="" SCHEMA="" SINCE="" UNTIL="HEAD" PER_INPUT=2 K=3 FLOOR_MIN=5 STMT=30
-MINUTES_SCHEMA="" MINUTES_EXCLUDE="" FRESH_REPO="" OUT="" PICK_ONLY=0 ONLY=""
+MINUTES_SCHEMA="" MINUTES_EXCLUDE="" FRESH_REPO="" OUT="" PICK_ONLY=0 ONLY="" ALLOW_BUSY=0
 for arg in "$@"; do
   case "$arg" in
     --config=*)            CONFIG="${arg#*=}" ;;
@@ -64,6 +71,7 @@ for arg in "$@"; do
     --out=*)               OUT="${arg#*=}" ;;
     --pick-only)           PICK_ONLY=1 ;;
     --only=*)              ONLY="${arg#*=}" ;;
+    --allow-busy)          ALLOW_BUSY=1 ;;
     *) echo "REFUSED: unknown argument $arg" >&2; exit 2 ;;
   esac
 done
@@ -136,12 +144,25 @@ if [ -n "$ONLY" ]; then
   mv "$OUT/picks.tsv.only" "$OUT/picks.tsv"
 fi
 
-# A run or recompute in flight would share working_<wsg> and the database
-# with the gate: refuse rather than corrupt it or time against it.
-busy=$(psql_q -c "SELECT count(*) FROM pg_stat_activity
-                   WHERE pid <> pg_backend_pid() AND state <> 'idle'
-                     AND (query ILIKE '%${SCHEMA}.%' OR query ILIKE '%working\\_%')")
-[ "$busy" = 0 ] || { echo "REFUSED: $busy active session(s) on $SCHEMA or a working schema; a run looks live" >&2; exit 2; }
+# Other client sessions doing work: a run in flight would share
+# working_<wsg> with the gate, and any load makes its minutes meaningless.
+OTHERS_SQL="SELECT count(*) FROM pg_stat_activity
+             WHERE backend_type = 'client backend' AND pid <> pg_backend_pid()
+               AND state NOT IN ('idle') AND coalesce(application_name, '') NOT LIKE 'pretest\\_%'"
+live=$(psql_q -c "SELECT count(*) FROM pg_stat_activity WHERE pid <> pg_backend_pid() AND state <> 'idle'
+                   AND (query ILIKE '%${SCHEMA}.%' OR query ILIKE '%working\\_%')")
+[ "$live" = 0 ] || { echo "REFUSED: $live active session(s) on $SCHEMA or a working schema; a run looks live" >&2; exit 2; }
+busy=$(psql_q -c "$OTHERS_SQL")
+if [ "$busy" != 0 ]; then
+  psql_q -c "SELECT '  ' || pid || ' ' || coalesce(nullif(application_name, ''), '-') || ' ' || left(regexp_replace(query, '\\s+', ' ', 'g'), 80)
+               FROM pg_stat_activity WHERE backend_type = 'client backend' AND pid <> pg_backend_pid()
+                AND state NOT IN ('idle')" >&2 || true
+  if [ "$ALLOW_BUSY" = 0 ]; then
+    echo "REFUSED: $busy other active session(s); the bound is a time. Wait, or pass --allow-busy (recorded)" >&2
+    exit 2
+  fi
+  echo "  --allow-busy: starting beside $busy other active session(s)"
+fi
 
 if [ "${#PICKS[@]}" -gt 0 ]; then
   echo "=== scratch schema $SCRATCH (tables of $SCHEMA, no rows) ==="
@@ -199,7 +220,16 @@ for row in "${PICKS[@]}"; do
   pid=$!
   t0=$(date +%s)
   killed=0
+  others=0
+  n=0
   while kill -0 "$pid" 2>/dev/null; do
+    if [ $(( n % 15 )) = 0 ]; then
+      o=$(psql_q -c "$OTHERS_SQL" 2>/dev/null) || o=""
+      [[ "$o" =~ ^[0-9]+$ ]] || o=-1
+      [ "$o" -le "$others" ] || others=$o
+      [ "$o" -ge 0 ] || others=-1
+    fi
+    n=$((n + 1))
     if [ $(( $(date +%s) - t0 )) -ge "$bound_s" ]; then
       printf '  past %.1f min: killing %s\n' "$bound" "$wsg"
       kill "$pid" 2>/dev/null || true
@@ -213,12 +243,13 @@ for row in "${PICKS[@]}"; do
   rc=0
   wait "$pid" || rc=$?
   [ "$killed" = 0 ] || rc=124
-  printf '%s\t%s\n' "$wsg" "$rc" >> "$OUT/exits.tsv"
+  printf '%s\t%s\t%s\n' "$wsg" "$rc" "$others" >> "$OUT/exits.tsv"
   LC_ALL=C grep -aE "TIMEOUT|done in|Error" "$OUT/${wsg}.log" | tail -3 | sed 's/^/  /' || true
-  echo "  exit $rc after $(( $(date +%s) - t0 )) s"
+  echo "  exit $rc after $(( $(date +%s) - t0 )) s; other active sessions seen: up to $others"
 done
 
 notes=""
+[ "$ALLOW_BUSY" = 0 ] || [ "$busy" = 0 ] || notes="--allow-busy: started beside $busy other active session(s)"
 if [ -s "$OUT/unexercised.txt" ]; then
   notes="${notes:+$notes; }unexercised: $(paste -sd, "$OUT/unexercised.txt")"
 fi

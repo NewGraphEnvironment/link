@@ -41,10 +41,11 @@ for (s in c(schema, scratch)) {
 picks <- utils::read.delim(file.path(out, "picks.tsv"), stringsAsFactors = FALSE,
                            colClasses = c(wsg = "character"))
 exits <- if (nrow(picks)) {
-  utils::read.delim(file.path(out, "exits.tsv"), header = FALSE, col.names = c("wsg", "exit"),
-                    stringsAsFactors = FALSE, colClasses = c("character", "integer"))
+  utils::read.delim(file.path(out, "exits.tsv"), header = FALSE,
+                    col.names = c("wsg", "exit", "others"), stringsAsFactors = FALSE,
+                    colClasses = c("character", "integer", "integer"))
 } else {
-  data.frame(wsg = character(), exit = integer())
+  data.frame(wsg = character(), exit = integer(), others = integer())
 }
 range <- readLines(file.path(out, "range.txt"))
 
@@ -66,6 +67,7 @@ rows <- if (nrow(picks)) {
 }
 fin <- rows[!is.na(rows$minutes), , drop = FALSE]
 picks$exit <- exits$exit[match(picks$wsg, exits$wsg)]
+picks$others <- exits$others[match(picks$wsg, exits$wsg)]
 picks$run_minutes <- fin$minutes[match(picks$wsg, fin$wsg)]
 picks$verdict <- pretest_verdict(picks$exit, picks$run_minutes, picks$bound)
 
@@ -73,6 +75,12 @@ why <- character()
 if (!nrow(picks)) why <- c(why, "no changed file is on the modelling path")
 bad <- picks$wsg[picks$verdict != "pass"]
 if (length(bad)) why <- c(why, sprintf("%s %s", bad, picks$verdict[picks$verdict != "pass"]))
+loaded_g <- picks$wsg[!is.na(picks$others) & picks$others != 0L]
+if (length(loaded_g)) {
+  why <- c(why, sprintf("other sessions active while modelling %s (-1: could not tell)",
+                        paste(sprintf("%s (%d)", loaded_g, picks$others[!is.na(picks$others) & picks$others != 0L]),
+                              collapse = ", ")))
+}
 link_sha <- unique(stats::na.omit(rows$link_sha))
 fresh_sha <- unique(stats::na.omit(rows$fresh_sha))
 dirty <- any(is.na(rows$link_dirty) | rows$link_dirty)
@@ -80,6 +88,9 @@ if (nrow(picks)) {
   if (length(link_sha) != 1L) why <- c(why, sprintf("%d link SHAs in the scratch log", length(link_sha)))
   if (length(fresh_sha) != 1L) why <- c(why, sprintf("%d fresh SHAs in the scratch log", length(fresh_sha)))
   if (dirty) why <- c(why, "a scratch log row is link_dirty (or unknown)")
+  if (anyNA(rows$link_sha) || anyNA(rows$fresh_sha)) {
+    why <- c(why, "a scratch log row carries no link or fresh SHA")
+  }
   if (length(link_sha) == 1L && !identical(link_sha, range[2])) {
     why <- c(why, sprintf("modelled link %s is not the picked range's end %s",
                           substr(link_sha, 1, 12), substr(range[2], 1, 12)))
@@ -102,7 +113,8 @@ overall <- if (!nrow(picks)) {
   pretest_overall(picks$verdict)
 }
 groups_pass <- overall
-if (overall == "pass" && nrow(picks) && (length(link_sha) != 1L || length(fresh_sha) != 1L ||
+if (overall == "pass" && nrow(picks) && (anyNA(rows$link_sha) || anyNA(rows$fresh_sha) ||
+                                          length(link_sha) != 1L || length(fresh_sha) != 1L ||
                                           dirty || !identical(link_sha, range[2]))) {
   overall <- "fail"
 }
@@ -112,13 +124,14 @@ w <- function(...) cat(..., "\n", sep = "", file = md, append = TRUE)
 w("## Verdict")
 w("")
 if (nrow(picks)) {
-  w("| group | inputs | last minutes | bound | this run | exit | verdict |")
-  w("|---|---|---|---|---|---|---|")
+  w("| group | inputs | last minutes | bound | this run | exit | other sessions | verdict |")
+  w("|---|---|---|---|---|---|---|---|")
   for (i in seq_len(nrow(picks))) {
-    w(sprintf("| %s | %s | %.1f | %.1f | %s | %s | %s |", picks$wsg[i], picks$inputs[i],
+    w(sprintf("| %s | %s | %.1f | %.1f | %s | %s | %s | %s |", picks$wsg[i], picks$inputs[i],
               picks$minutes[i], picks$bound[i],
               if (is.na(picks$run_minutes[i])) "" else sprintf("%.1f", picks$run_minutes[i]),
-              if (is.na(picks$exit[i])) "" else picks$exit[i], picks$verdict[i]))
+              if (is.na(picks$exit[i])) "" else picks$exit[i],
+              if (is.na(picks$others[i])) "" else picks$others[i], picks$verdict[i]))
   }
   w("")
 }

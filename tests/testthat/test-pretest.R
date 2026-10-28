@@ -47,7 +47,11 @@ test_that("a file mapped none is not reached from wsg_run_one.R's entry points",
   ns <- asNamespace("link")
   skip_if(is.null(attr(get("lnk_pipeline_run", ns), "srcref")),
           "link loaded without srcrefs (not load_all)")
-  reached <- e$pretest_reach(ns, e$PRETEST_ENTRIES)
+  script <- testthat::test_path("..", "..", "data-raw", "wsg_run_one.R")
+  skip_if_not(file.exists(script), "data-raw/wsg_run_one.R absent")
+  entries <- e$pretest_entries(script, ns)
+  expect_true(all(e$PRETEST_ENTRIES %in% entries))
+  reached <- e$pretest_reach(ns, entries)
   # The walk must see the pipeline itself, or an empty result passes this test.
   expect_true(all(c("lnk_pipeline_run.R", "lnk_pipeline_prepare.R", "utils.R") %in% reached))
   changed <- data.frame(repo = "link", path = file.path("R", reached), stringsAsFactors = FALSE)
@@ -273,8 +277,8 @@ test_that("a gate record holds across commits that touch only none files", {
     x[names(list(...))] <- list(...)
     as.data.frame(x, stringsAsFactors = FALSE)
   }
-  chk <- function(records, head = bump, fresh = "f1", hist = run) {
-    e$pretest_record_check(records, "default", head, fresh, hist, r$dir, map, "default")
+  chk <- function(records, head = bump, fresh = "f1", hist = run, dirty = FALSE) {
+    e$pretest_record_check(records, "default", head, fresh, hist, dirty, r$dir, map, "default")
   }
   expect_true(chk(rec())$ok)
   expect_match(chk(rec()[0, ])$why, "no gate record")
@@ -282,6 +286,9 @@ test_that("a gate record holds across commits that touch only none files", {
   expect_match(chk(rec(link_dirty = TRUE))$why, "dirty")
   expect_match(chk(rec(), fresh = "f2")$why, "installed is")
   expect_match(chk(rec(since_sha = gated))$why, "range starts")
+  expect_match(chk(rec(), dirty = TRUE)$why, "dirty tree")
+  expect_match(chk(rec(), dirty = NA)$why, "dirty tree")
+  expect_match(chk(rec(), hist = character(), dirty = logical())$why, "no history under config")
   expect_match(chk(rec(config_name = "bcfishpass"))$why, "no gate record for config default")
   # a newer fail overrides an older pass
   both <- rbind(rec(), rec(run_at = as.POSIXct("2026-10-28 13:00", tz = "UTC"), verdict = "fail",
@@ -301,9 +308,13 @@ test_that("a gate record holds across commits that touch only none files", {
   # a fresh pin bump voids a record
   pin <- r$commit(list(DESCRIPTION = desc("3", fresh = "v0.45.0")), "pin fresh")
   expect_match(chk(rec(), head = pin, fresh = "f1")$why, "pins fresh v0.45.0, the gate ran at v0.44.0")
+  # the gate's own rules are read at HEAD, so a change to them voids a record
+  dir.create(file.path(r$dir, "data-raw"), showWarnings = FALSE)
+  rul <- r$commit(list("data-raw/pretest_inputs.csv" = "relabelled"), "rules")
+  expect_match(chk(rec(), head = rul)$why, "own rules changed since it ran: data-raw/pretest_inputs.csv")
   # a none file the modelling path now reaches counts as moved
   expect_true(chk(rec())$ok)
-  reach <- e$pretest_record_check(rec(), "default", bump, "f1", run, r$dir, map, "default",
+  reach <- e$pretest_record_check(rec(), "default", bump, "f1", run, FALSE, r$dir, map, "default",
                                   reached = c("a.R", "v.R"))
   expect_match(reach$why, "on the modelling path: R/v.R")
 })
@@ -320,9 +331,10 @@ test_that("fresh's changed files include inst/extdata, and git warnings never be
   withr::local_dir(r$dir)
   expect_error(e$pretest_git(r$dir, c("rev-parse", "--verify", "x; touch pwned")), "failed")
   expect_false(file.exists(file.path(r$dir, "pwned")))
-  expect_identical(e$pretest_since_covers(r$dir, a, b), "")
-  expect_match(e$pretest_since_covers(r$dir, b, a), "after history built at")
-  expect_match(e$pretest_since_covers(r$dir, a, c(b, NA)), "no link_sha")
+  expect_identical(e$pretest_since_covers(r$dir, a, b, FALSE), "")
+  expect_match(e$pretest_since_covers(r$dir, b, a, FALSE), "after history built at")
+  expect_match(e$pretest_since_covers(r$dir, a, c(b, NA), c(FALSE, FALSE)), "no link_sha")
+  expect_match(e$pretest_since_covers(r$dir, a, b, NA), "dirty tree")
 })
 
 test_that("the default --since is the earliest newest build, and dirty history refuses", {
@@ -373,6 +385,13 @@ test_that("pretest_check.R clears a run only on a passing record, and an overrid
   r <- check()
   expect_identical(r$status, 1L)
   expect_match(r$out, "log_pretest does not exist")
+  # history: one finished default build at HEAD
+  DBI::dbExecute(conn, sprintf(
+    "CREATE TABLE %s.log (watershed_group_code text, host text, link_sha text, link_dirty boolean,
+       date_start timestamptz, date_end timestamptz, config_name text)", schema))
+  DBI::dbExecute(conn, sprintf(
+    "INSERT INTO %s.log VALUES ('AAAA', 'm1', $1, false, now() - interval '5 min', now(), 'default')",
+    schema), params = list(head_sha))
 
   # The override row the driver writes on --pretest-note: recorded, never a gate.
   psql <- function(sql_file, ...) {
@@ -426,4 +445,16 @@ test_that("pretest_none_reached names a none file the path reaches, and only tha
                      stringsAsFactors = FALSE)
   expect_identical(e$pretest_none_reached(hits, c("a.R", "b.R", "c.R")), "R/a.R")
   expect_identical(e$pretest_none_reached(hits, NULL), character())
+})
+
+test_that("the entries are read from the script, and a dropped entry is an error", {
+  e <- pt_env()
+  ns <- new.env()
+  for (n in c(e$PRETEST_ENTRIES, "lnk_new")) assign(n, function() NULL, envir = ns)
+  f <- withr::local_tempfile(fileext = ".R")
+  writeLines(c(paste0(setdiff(e$PRETEST_ENTRIES, ".lnk_timeout_statement"), "()"),
+               "link:::.lnk_timeout_statement()", "lnk_new()", "print(1)"), f)
+  expect_setequal(e$pretest_entries(f, ns), c(e$PRETEST_ENTRIES, "lnk_new"))
+  writeLines("lnk_db_conn()", f)
+  expect_error(e$pretest_entries(f, ns), "no longer calls")
 })
