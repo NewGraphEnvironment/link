@@ -23,7 +23,7 @@ Experimental package — breaking all the time and loving the learning curve. St
 - **Against #331's 2026-10-15 log on m1** the same variant took 9.8 min over the nine groups (5.6 here) and the base 42.7 (67.1 here); #326 and #396 cut `default`'s segments two- to three-fold since, which is the axis the variant steps scale on, so the comparison says only that the variant pass has not grown.
 - **Another process loaded m4 through the variant builds** (1-minute load 2.1 to 6.3 at pass starts); each timing row carries it. UBTN's connect runs 2.4 to 3× its size peers in both passes (at loads 6.3 and 4.4), so that is the group, not the load.
 - **m4 had fresh 0.43.0 against the v0.44.0 pin**, and `load_all()` refuses it; installed from the tag (`RemoteSha 22034c1a` equals `git rev-parse v0.44.0^{commit}`).
-- **Owed:** the parallel-over-groups change itself (#377's list, no issue filed yet), and fresh#275's own province-wide record, which should describe the same calls.
+- **Owed:** the parallel-over-groups change itself (#406, on #377's list), and fresh#275's own province-wide record, which should describe the same calls.
 
 ## Status (2026-10-28) — `default` breaks streams at each species' top observation per line (#396)
 
