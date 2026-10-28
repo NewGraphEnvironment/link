@@ -133,8 +133,10 @@ test_that("calibration damps the observation, 0.7 old + 0.3 observed", {
 
 test_that("a drift common to every leg moves no factor", {
   e <- pk_env()
+  st <- data.frame(name = c("m1", "cloud"), factor = c(1, 0.8), last_updated = "d",
+                   n_runs = 1L, source_run_uid = "u")
   l <- legs_of(c("m1", "cloud", "cloud"), c(1, 0.8, 0.8), c(100, 90, 110), c(115, 103.5, 126.5))
-  out <- e$speeds_calibrate(l, run_uid = "u1", date_utc = "d")
+  out <- e$speeds_calibrate(l, st, run_uid = "u1", date_utc = "d")
   expect_equal(out$run_ratio, 1.15)
   expect_equal(out$history$new, out$history$old)
 })
@@ -228,4 +230,43 @@ test_that("per-group means do not converge (#163's feedback loop)", {
     e$speeds_calibrate(legs, state, paste0("r", r), "d")$state
   }
   expect_gt(abs(pk_simulate(e, 20, by_means) - 0.7), 0.3)
+})
+
+test_that("an update is damped toward the stored factor, not the speed the run was packed at", {
+  e <- pk_env()
+  # The state says 1 for both; the run was packed with --host-speeds at 0.45 for
+  # cloud. Both truly run at the same speed, so each leg took 100 min.
+  st <- data.frame(name = c("m1", "cloud"), factor = 1, last_updated = "d", n_runs = 1L,
+                   source_run_uid = "u")
+  l <- legs_of(c("m1", "cloud", "cloud"), c(1, 0.45, 0.45), c(100, 100 / 0.45, 100 / 0.45), 100)
+  out <- e$speeds_calibrate(l, st, run_uid = "u1", date_utc = "d")
+  h <- out$history
+  expect_equal(h$packed[h$name == "cloud"], 0.45)
+  expect_equal(h$old, c(1, 1))
+  # The observation is the packed speed over the correction, the same truth for
+  # both, so the two learned factors stay equal.
+  expect_equal(h$observed[h$name == "cloud"], h$observed[h$name == "m1"])
+  expect_equal(out$state$factor[1], out$state$factor[2])
+  expect_equal(h$new[h$name == "cloud"], 0.7 * 1 + 0.3 * h$observed[h$name == "cloud"])
+  # The clamp is against the stored factor too: twice 1, not twice 0.45.
+  l2 <- legs_of(c("m1", "cloud"), c(1, 0.45), c(100, 100), c(1000, 1))
+  h2 <- e$speeds_calibrate(l2, st, run_uid = "u2", date_utc = "d")$history
+  expect_equal(h2$new[h2$name == "cloud"], 2)
+})
+
+test_that("a driver role key is never learned, and still counts toward the run's ratio", {
+  e <- pk_env()
+  l <- legs_of(c("m4", "worker1", "cloud", "dispatcher"), 1, 100, c(100, 150, 100, 100))
+  out <- e$speeds_calibrate(l, run_uid = "u1", date_utc = "d")
+  expect_equal(sort(out$state$name), c("cloud", "m4"))
+  expect_equal(out$run_ratio, 450 / 400)
+  h <- out$history
+  expect_match(h$action[h$name == "worker1"], "^not learned: worker1 is a driver role key")
+  expect_match(h$action[h$name == "dispatcher"], "^not learned")
+  expect_true(is.na(h$new[h$name == "worker1"]))
+})
+
+test_that("host_class() drops a domain, so a logged node name meets its alias", {
+  e <- pk_env()
+  expect_equal(e$host_class(c("m4.local", "cypher-job1.example")), c("m4", "cloud"))
 })

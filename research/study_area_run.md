@@ -245,9 +245,9 @@ Scored out of sample, fitted on the 2026-10-17 run and tested on 2026-10-23's ac
 
 - **Measured minutes are the weight.** Segments put job3's leg 38 % short and job2's 5 % long, and so
   set the balance wrong by eight times as much as minutes do. With minutes, every leg is short by
-  11 to 20 %: the predicted makespan of 219 min against the 260 measured.
-- **That shortfall is drift, not host speed.** The same groups on the same class took 13 to 16 % longer
-  on 10-23 than on 10-17 (m1 1.130, cloud 1.159 by summed minutes; fresh 0.42.0 and link 0.68.0 lie
+  11 to 17 %: the predicted makespan of 219 min against the 260 measured.
+- **That shortfall is drift, not host speed.** The same groups on the same class took 13 to 16 % longer,
+  summed per class, on 10-23 than on 10-17 (m1 1.130, cloud 1.159; fresh 0.42.0 and link 0.68.0 lie
   between the runs). Packing balance only depends on ratios, so a run-wide drift costs the estimate,
   not the packing. The learned-speed calibration takes it out of each correction (RUNBOOK §8d,
   "Learned host speeds").

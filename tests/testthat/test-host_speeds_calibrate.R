@@ -133,3 +133,22 @@ test_that("the calibrator refuses what it cannot compare", {
   expect_false(r$status == 0L)
   expect_match(paste(r$out, collapse = "\n"), "no finished model rows")
 })
+
+test_that("an unnamed worker's leg is recorded but never learned", {
+  w <- cal_world()
+  p <- readLines(w$plan)
+  writeLines(sub("\tcloud\t", "\tworker1\t", p), w$plan)
+  r <- cal_run(w)
+  expect_equal(r$status, 0L, info = paste(r$out, collapse = "\n"))
+  h <- utils::read.delim(w$history)
+  expect_match(h$action[h$name == "worker1"], "^not learned")
+  expect_equal(utils::read.delim(w$state)$name, "m4")
+})
+
+test_that("a history with other columns is refused, not appended to", {
+  w <- cal_world()
+  writeLines(c("run_uid\tdate_utc\tname\told", "seed\td\tm1\t1"), w$history)
+  r <- cal_run(w)
+  expect_false(r$status == 0L)
+  expect_match(paste(r$out, collapse = "\n"), "appending would misalign")
+})

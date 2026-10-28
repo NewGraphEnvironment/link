@@ -23,14 +23,19 @@
 #     its speed; only groups that moved host carry evidence. Weights are
 #     normalized by the current estimate, so a mover is predicted with the
 #     estimated ratio and the estimate's error drives a damped correction.
-#   - Every group ran 13 to 16 % slower on 2026-10-23 than on 2026-10-17 on
-#     the same host. That drift is common to every leg, so each correction is
-#     divided by the run's pooled one, and the run-wide ratio is reported
-#     beside it rather than booked as any host's speed.
+#   - The same groups on the same class took 13 to 16 % longer, summed per
+#     class, on 2026-10-23 than on 2026-10-17. That drift is common to every
+#     leg, so each correction is divided by the run's pooled one, and the
+#     run-wide ratio is reported beside it rather than booked as any host's
+#     speed.
 
 PACK_STATE_COLS <- c("name", "factor", "last_updated", "n_runs", "source_run_uid")
-PACK_HISTORY_COLS <- c("run_uid", "date_utc", "name", "old", "correction", "observed",
+PACK_HISTORY_COLS <- c("run_uid", "date_utc", "name", "packed", "old", "correction", "observed",
                        "damped", "clamped", "new", "run_ratio", "action")
+# The driver's role keys. A speed learned under one would follow the role onto
+# whichever machine holds it next (the dispatcher moved from m1 to m4), so the
+# calibrator never learns one: a worker is learned only under an alias.
+PACK_ROLE_KEY <- "^(dispatcher|worker[0-9]+|job[0-9]+)$"
 PACK_DAMPING <- 0.3     # weight of the new observation (#163: 0.7 old + 0.3 observed)
 PACK_CLAMP <- c(0.5, 2) # a run moves a factor at most this far, as a multiple of old;
                         # at 0.3 damping only the upper bound can bind (#163's bounds)
@@ -54,8 +59,11 @@ pack <- function(weights, host_speeds) {
   list(assign = assign_h, load = load_h, seg = seg_h)
 }
 
-# The speed class a logged host name belongs to: every cloud host is `cloud`.
+# The speed class a logged host name belongs to: every cloud host is `cloud`,
+# and a name loses any domain (`x.local` logs as itself where LNK_HOST_ALIAS is
+# unset, and the packer's default name for it is `x`).
 host_class <- function(host) {
+  host <- sub("\\..*$", "", host)
   ifelse(grepl("^cypher-", host) | grepl("^job[0-9]+$", host), "cloud", host)
 }
 
@@ -127,9 +135,13 @@ weights_normalize <- function(minutes, host, state = NULL) {
 #         out)
 #
 # Per name: correction = (sum actual / sum projected) / run_ratio, where
-# run_ratio is the same over every leg not skipped; observed = speed /
-# correction; damped = 0.7 speed + 0.3 observed; new = damped clamped to
-# [0.5, 2] x speed. Returns the new state and the history rows.
+# run_ratio is the same over every leg not skipped. The observation is the
+# packed speed over the correction, so it does not depend on what the state
+# says: a run packed with --host-speeds, or from an older state, observes the
+# same truth. It is damped toward the STORED factor (old: the state's, or its
+# median for a name it lacks, or 1 with no state): new = 0.7 old + 0.3
+# observed, clamped to [0.5, 2] x old. A role key is never learned. Returns the
+# new state and the history rows.
 speeds_calibrate <- function(legs, state = NULL, run_uid, date_utc) {
   need <- c("name", "speed", "projected", "actual", "skip")
   if (!all(need %in% names(legs))) {
@@ -154,25 +166,33 @@ speeds_calibrate <- function(legs, state = NULL, run_uid, date_utc) {
     data.frame(name = character(), factor = numeric(), last_updated = character(),
                n_runs = integer(), source_run_uid = character())
   } else state
+  hist_row <- function(nm, packed, old, correction = NA, observed = NA, damped = NA,
+                       clamped = NA, new = NA, action) {
+    data.frame(run_uid = run_uid, date_utc = date_utc, name = nm, packed = packed, old = old,
+               correction = correction, observed = observed, damped = damped,
+               clamped = clamped, new = new, run_ratio = run_ratio, action = action)
+  }
   for (nm in unique(legs$name)) {
     l <- legs[legs$name == nm, ]
-    old <- l$speed[1]
+    packed <- l$speed[1]
+    old <- speeds_resolve(nm, state = state)$speed
     u <- l[is.na(l$skip), ]
     if (!nrow(u)) {
-      hist[[length(hist) + 1]] <- data.frame(
-        run_uid = run_uid, date_utc = date_utc, name = nm, old = old, correction = NA,
-        observed = NA, damped = NA, clamped = NA, new = NA, run_ratio = run_ratio,
-        action = paste0("skipped: ", paste(unique(l$skip), collapse = "; ")))
+      why <- paste0("skipped: ", paste(unique(l$skip), collapse = "; "))
+      hist[[length(hist) + 1]] <- hist_row(nm, packed, old, action = why)
       next
     }
     correction <- (sum(u$actual) / sum(u$projected)) / run_ratio
-    observed <- old / correction
+    observed <- packed / correction
+    if (grepl(PACK_ROLE_KEY, nm)) {
+      why <- paste0("not learned: ", nm, " is a driver role key; name the host in --host-names")
+      hist[[length(hist) + 1]] <- hist_row(nm, packed, old, correction, observed, action = why)
+      next
+    }
     damped <- (1 - PACK_DAMPING) * old + PACK_DAMPING * observed
     new <- min(max(damped, PACK_CLAMP[1] * old), PACK_CLAMP[2] * old)
-    hist[[length(hist) + 1]] <- data.frame(
-      run_uid = run_uid, date_utc = date_utc, name = nm, old = old,
-      correction = correction, observed = observed, damped = damped,
-      clamped = new != damped, new = new, run_ratio = run_ratio, action = "updated")
+    hist[[length(hist) + 1]] <- hist_row(nm, packed, old, correction, observed, damped,
+                                         clamped = new != damped, new = new, action = "updated")
     i <- match(nm, state_new$name)
     if (is.na(i)) {
       state_new[nrow(state_new) + 1, ] <- list(nm, new, date_utc, 1L, run_uid)

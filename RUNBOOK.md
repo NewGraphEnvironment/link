@@ -2021,7 +2021,8 @@ coded to another basin or with barriers below it in a group outside the subset (
 `study_area_buckets.R` predicts each host's model leg as the sum of its
 groups' weights over its speed. Measured minutes (`--minutes-schema=`) are the
 weight a provincial run packs on: scored out of sample on 2026-10-23, they
-set each leg's share of the mean leg within 3.6 points, segments 28.9
+set each leg's share of the mean leg within 3.6 points, segments 28.9, with
+KTSU's and OKAN's stalls left out (16.4 against 28.5 as logged)
 (`research/study_area_run.md`, "How hosts are packed").
 
 **Where a host's speed comes from, in order:**
@@ -2062,18 +2063,26 @@ Rscript data-raw/host_speeds_calibrate.R --plan=<the packer's --plan-out> \
   history records why.
 - **The arithmetic.** Per name, `correction = (Σ actual / Σ projected) /
   run_ratio`, where `run_ratio` is the same ratio over every leg not left out.
-  Then `observed = speed / correction`, `new = 0.7 · speed + 0.3 · observed`,
-  clamped to `[0.5, 2] × speed`; at this damping only the upper bound can
-  bind. Dividing by `run_ratio` takes out drift every leg shares: every group
-  ran 13 to 16 % slower on 2026-10-23 than on 2026-10-17 on the same host, and
-  without the division that drift would be booked as host slowness. The
+  Then `observed = packed / correction`, where `packed` is the speed the plan
+  packed the leg at, so the observation does not depend on the state. It is
+  damped toward the stored factor `old` (the state's, its median for a name it
+  lacks, 1 with no state): `new = 0.7 · old + 0.3 · observed`, clamped to
+  `[0.5, 2] × old`; at this damping only the upper bound can bind. So a run
+  packed with `--host-speeds`, or from an older state, informs the learned
+  factor without replacing it. Dividing by `run_ratio` takes out drift every
+  leg shares: the same groups on the same class took 13 to 16 % longer,
+  summed per class, on 2026-10-23 than on 2026-10-17, and without the
+  division that drift would be booked as host slowness.
+- **Role keys are never learned.** A leg whose name is `dispatcher`,
+  `workerN` or `jobN` counts toward `run_ratio` and is recorded `not learned`
+  in the history; `workerN` is the packer's default name for an unnamed worker. The
   run-wide ratio goes in the history beside each row.
 - **What it refuses.** A plan weighted in segments: a run must pack on
   `--minutes-schema` to be calibrated. A plan whose groups for a host differ
   from `<TS>_run_wsgs.tsv`. A phases file with no model row, which is what a
   `--recompute-only` pass writes. A run the history already holds.
 - **What it writes.** It rewrites `host_speeds.tsv` and appends to
-  `host_speeds_history.tsv` (`run_uid, date_utc, name, old, correction,
+  `host_speeds_history.tsv` (`run_uid, date_utc, name, packed, old, correction,
   observed, damped, clamped, new, run_ratio, action`). Commit both with the
   run's evidence.
 

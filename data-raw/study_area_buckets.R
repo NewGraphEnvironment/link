@@ -140,7 +140,9 @@ names_arg <- arg_val("--host-names", "")
 host_names <- if (nzchar(names_arg)) {
   trimws(strsplit(names_arg, ",")[[1]])
 } else {
-  c(sub("\\..*$", "", Sys.info()[["nodename"]]),
+  # The name this machine's own log rows carry (LNK_HOST_ALIAS, else its node
+  # name, .lnk_host()), so its measured minutes and its learned speed meet.
+  c(host_class(Sys.getenv("LNK_HOST_ALIAS", Sys.info()[["nodename"]])),
     if (n_workers > 0L) sprintf("worker%d", seq_len(n_workers)),
     rep("cloud", n_hosts - 1L - n_workers))
 }
@@ -149,6 +151,14 @@ if (length(host_names) != n_hosts) {
        length(host_names), call. = FALSE)
 }
 host_names_check(host_names)
+# Cloud hosts are the class `cloud` wherever a speed is looked up (host_class()
+# maps their log rows there), so a cloud host named anything else would be
+# learned under a name nothing normalizes by.
+n_cloud <- n_hosts - 1L - n_workers
+if (n_cloud > 0L && any(host_names[(n_workers + 2L):n_hosts] != "cloud")) {
+  stop("--host-names: every cloud host is named `cloud` (got: ",
+       paste(host_names[(n_workers + 2L):n_hosts], collapse = ", "), ")", call. = FALSE)
+}
 state_path <- arg_val("--speeds-state", file.path(script_dir, "logs", "host_speeds.tsv"))
 speed_state <- speeds_state_read(state_path)
 speeds_arg <- arg_val("--host-speeds", "")
@@ -283,9 +293,10 @@ if (length(dup)) {
 # host-minutes against an even 218.
 #
 # Measured minutes win out of sample (link#259, data-raw/logs/packing_259/):
-# fitted on 2026-10-17 and scored on 2026-10-23's legs, segments set a leg's
-# share of the mean leg up to 28.9 points wrong, minutes 3.6. Every leg ran 11
-# to 20 % over the minutes estimate because every group was slower on 10-23
+# fitted on 2026-10-17 and scored on 2026-10-23's legs with KTSU's and OKAN's
+# stalls left out, segments set a leg's share of the mean leg up to 28.9 points
+# wrong, minutes 3.6 (28.5 and 16.4 as logged). Every leg ran 11 to 17 % over
+# the minutes estimate because the same groups took 13 to 16 % longer on 10-23
 # (drift between builds), which costs the estimate, not the balance. Pack a
 # provincial run on --minutes-schema; research/study_area_run.md, "How hosts
 # are packed", has the table.
@@ -308,6 +319,14 @@ if (nzchar(minutes_schema)) {
   # Dispatcher-equivalent: each group's minutes times the learned speed of the
   # class that measured them (link#259; equal state, no change).
   w$n <- weights_normalize(as.numeric(w$n), w$host, speed_state)
+  # Which speed normalized whose minutes: a log host the state does not hold
+  # takes the median, and that is said here rather than silently.
+  if (!is.null(speed_state)) {
+    norm_src <- speeds_resolve(host_class(w$host), state = speed_state)
+    norm_tab <- table(paste0(host_class(w$host), " (", norm_src$source, ")"))
+    message("minutes normalized by: ",
+            paste(sprintf("%s %d groups", names(norm_tab), as.integer(norm_tab)), collapse = "; "))
+  }
   weight_unit <- "min"
   weight_desc <- sprintf(paste0("measured modelling minutes (newest finished row per group in %s.log, ",
                                 "normalized by the learned speed of the host that measured them)"),

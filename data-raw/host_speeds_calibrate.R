@@ -27,6 +27,10 @@
 #     `recompute`).
 #   - A host whose `account` row is not `ok` did not finish its bucket, so its
 #     leg is left out.
+#   - Each update is damped toward the factor the state holds, not the speed
+#     the run was packed at (a --host-speeds run informs the state without
+#     replacing it), and a driver role key (dispatcher, workerN, jobN) is
+#     never learned: name a worker in the packer's --host-names.
 #   - It refuses a plan whose groups for a host differ from what the run gave
 #     that host, a plan weighted in segments (no minutes to compare), a
 #     phases file with no model rows (a --recompute-only pass), and a run the
@@ -111,6 +115,10 @@ cov <- read_tsv(file.path(run_dir, paste0(ts, "_coverage.tsv")), "coverage")
 need_cols(cov, c("wsg", "class"), "coverage")
 if (file.exists(history_path)) {
   h0 <- read_tsv(history_path, "history")
+  if (!identical(names(h0), PACK_HISTORY_COLS)) {
+    stop(history_path, ": expected columns ", paste(PACK_HISTORY_COLS, collapse = ", "),
+         "; appending would misalign it", call. = FALSE)
+  }
   if (run_uid %in% h0$run_uid) {
     stop("the history already holds run ", run_uid, ": a run is calibrated once", call. = FALSE)
   }
@@ -169,11 +177,12 @@ for (i in seq_len(nrow(legs))) {
               if (is.na(l$skip)) sprintf("%.1f", l$actual) else "",
               if (is.na(l$skip)) "" else l$skip))
 }
-cat("\n| name | old | correction | observed | new | clamped | action |\n|---|---|---|---|---|---|---|\n")
+cat("\n| name | packed | old | correction | observed | new | clamped | action |\n|---|---|---|---|---|---|---|---|\n")
 h <- out$history
 for (i in seq_len(nrow(h))) {
   f <- function(x) if (is.na(x)) "" else sprintf("%.3f", x)
-  cat(sprintf("| %s | %s | %s | %s | %s | %s | %s |\n", h$name[i], f(h$old[i]), f(h$correction[i]),
+  cat(sprintf("| %s | %s | %s | %s | %s | %s | %s | %s |\n", h$name[i], f(h$packed[i]), f(h$old[i]),
+              f(h$correction[i]),
               f(h$observed[i]), f(h$new[i]), if (is.na(h$clamped[i])) "" else h$clamped[i],
               h$action[i]))
 }
@@ -185,7 +194,7 @@ if (dry_run) {
   st_out$factor <- sprintf("%.4f", st_out$factor)
   utils::write.table(st_out, state_path, sep = "\t", quote = FALSE, row.names = FALSE)
   hist_out <- h
-  num <- c("old", "correction", "observed", "damped", "new", "run_ratio")
+  num <- c("packed", "old", "correction", "observed", "damped", "new", "run_ratio")
   hist_out[num] <- lapply(hist_out[num], function(x) ifelse(is.na(x), "", sprintf("%.4f", x)))
   utils::write.table(hist_out, history_path, sep = "\t", quote = FALSE, row.names = FALSE,
                      na = "", append = file.exists(history_path),
