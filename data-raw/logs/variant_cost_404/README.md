@@ -53,11 +53,15 @@
 the worktree at `45b12b2e`, with no other backend on the database at any boundary
 (`pg_stat_activity`, client backends other than the build's own).
 
-| build | launched (UTC) | exited (UTC) | wall | host load (1 min) at launch |
+| build | launched (UTC) | exited (UTC) | the script's own "done in" | host load (1 min) at launch |
 |---|---|---|---|---|
 | `--step=base` (17 groups, then 9 recomputes) | 19:09:47 | 20:19:54 | 69.6 min | 2.4 |
 | pre-flight `--step=variants --only=bt_rear_wet_p10 --wsgs=REVL` | 20:20:36 | 20:21:46 | 0.8 min | 2.2 |
 | `--step=variants --only=bt_rear_wet_p10` (9 groups, `default` pass first) | 20:22:17 | 20:36:26 | 13.8 min | 2.1 |
+
+Exit times are a waiter's first reading after the process was gone (within 30 s); the
+script's total excludes R start-up and `load_all()`. The end-of-run snapshot in
+`launch_state.txt` was taken at 20:36:35.
 
 Another process loaded the host during the variant builds: the 1-minute load average each
 pass started at (`load_1min`) runs 2.1 to 6.3, highest at LHAF (6.3) and UBTN (6.3) in the
@@ -109,8 +113,9 @@ time for those nine groups (42.4 min): the base's cost is in what a variant does
 
 **Parallel bound** (`analyze.R`, longest-first greedy, from the serial numbers only): four
 jobs over groups would take one variant's pass from 5.6 min to 1.6 (longest group PARS 1.0),
-and the `default` pass from 6.8 to 1.8. On #331's 13-variant ladder that is about 13 × 4.0
-+ 5.0 = 57 min saved of about 88 serial (13 × (5.6 + 0.6 join) + 6.8 + 0.8).
+and the `default` pass from 6.8 to 1.8. On #331's ladder (12 rungs, 13 passes with the
+`default` one) that is about 12 × 4.0 + 5.0 = 53 min saved of about 82 serial
+(12 × (5.6 + 0.6 join) + 6.8 + 0.8).
 
 **Against the 2026-10-15 log (m1, link 0.65.1 / fresh 0.39.0, `habitat_score_331`),** the
 same variant on the same nine groups took 9.8 min (0.5 REVL to 2.4 PARS) against 5.6 here,
@@ -126,7 +131,7 @@ hold about a third. The per-variant cost is small beside the base (one pass is 8
 base model), but a ladder repeats it, so the one change this names for #377's
 iteration-speed list is running a variant's groups in parallel in
 `habitat_variants_build.R` (the loop over `wsgs_v` in `run_variant()`), expected to save
-about 4 min per variant over nine groups and about 57 min on a 13-variant ladder. Making
+about 4 min per variant over nine groups and about 53 min on #331's 12-rung ladder. Making
 anything faster is outside this issue.
 
 ## Evidence

@@ -38,6 +38,7 @@ steps$share <- steps$minutes / steps$pass_minutes
 
 # -- the sum of the steps is the total the build printed ------------------------------
 logs <- list.files(dir, pattern = "^build_.*\\.log$", full.names = TRUE)
+logs <- logs[order(file.info(logs)$mtime)]   # oldest first, whatever the names sort to
 done <- unlist(lapply(logs, function(f) {
   l <- grep("variant [^ ]+ [A-Z]{4} done in [0-9.]+ min", readLines(f, warn = FALSE),
             value = TRUE)
@@ -49,7 +50,8 @@ passes <- unique(data.frame(key = key, variant = steps$variant,
                             wsg = steps$watershed_group_code,
                             minutes = steps$pass_minutes))
 # The last line for a pass wins (REVL is re-run by the full pass after the pre-flight,
-# and its timing rows are replaced), so drop earlier duplicates by name first.
+# and its timing rows are replaced): logs are read oldest first, so drop earlier
+# duplicates by name.
 done <- done[!duplicated(names(done), fromLast = TRUE)]
 passes$logged <- done[passes$key]
 passes$residual <- passes$minutes - passes$logged

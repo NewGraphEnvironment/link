@@ -87,7 +87,7 @@
       the pair key would drop the base rows)
 - [x] One `say()` per group listing the step minutes, beside the total line
 - [x] Header comment and `data-raw/habitat_score/README.md` name the file
-- [x] `--step=bundles` runs at the branch. It stopped on main and the branch alike: the
+- [x] `--step=bundles` runs at the branch. It stopped on main and the branch alike (and so did every other `--step`: the self-check runs before the step branch; code-check round 1): the
       `write_thresholds()` self-check (`default`'s CSV byte for byte) failed because its quote
       list named `species_code` and `*_edge_types` and #364 added the text column
       `rear_river_measure` (`"model"`). Fixed by quoting every column holding a non-numeric
