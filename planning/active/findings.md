@@ -180,3 +180,17 @@ Review in `review-round1.md`; each was reproduced before it was fixed.
 ## Corrections from code-check round 2 (2026-10-27)
 
 Review in `review-round2.md`. LFRA, not SETN, has the slowest walks (CH 162.3 against 157.3 s); the decomposed groups are three of the 2026-10-23 five slowest (FRCN, second, was not decomposed); the prefilter's 3.6× to 24.6× covers eight groups, with SETN at 1.2×; the sample's prefilter estimate is not an upper bound where the walk is output-bound (SETN 539 against 560 s measured), and the calibrated estimate floors 46 groups at 5 % (floors 0 to 20 % give 7,769 to 9,128 s, so the 36 to 51 % stands). Two of these sat inside round 1's own fixes (the speed range, and the LSKE wording corrected in the README but not in `walk_prefilter.R`), so the loop ends on an enumeration of every quantified claim, not on a quiet round.
+
+## Round 3: the enumeration (2026-10-27)
+
+`review-round3.md` lists about 200 quantified or comparative claims across the README, `research/recompute_cost.md`, the CLAUDE.md block, the script comments, #261's verdict, #377's two lines, the PR draft and the fresh draft, each against a committed source: 186 OK. The rest, fixed:
+
+- **SETN against CHWK was compared across cache states.** From LSKE's ST walk (20:54 UTC) on, every natural walk in `walks.tsv` read 222 k to 301 k shared blocks from outside the cache. Under one load (`walk_prefilter.tsv`, as sent) SETN's walks cost 211.6 s against CHWK's 219.0, and SETN's CH walk took 101.0 s against 157.3 in `walks.tsv`. The code-range refutation stands (SETN's range 0.75 M against 7.17 M; sample probe 20.2 against 14.1 µs).
+- The contention paragraph now matches the rows (0, 1 or 2 others; 6 or 8 at the end of `predictors.tsv`; the re-runs do not record it; `walk_prefilter.R` also checks only at start).
+- The sort spill is 538,912 kB = 526 MiB, not 539 MB.
+- The outer scan is 5.5 to 8.4 s per CH walk, not "about 6 s in every group".
+- Both prefilter estimates are capped at the sent walk (uncapped sample estimate 15,245 s); the saving is spread across groups, not over every group (the caps give some groups zero).
+- `walk_prefilter_in_select.tsv` commits the `IN (SELECT …)` first try (SALR CH 6.12 s) that the claim rested on.
+- `correlations.R` stops if a walk has no prefilter row (`aggregate()`'s formula form would drop it).
+
+Mechanism (the reviewer's): a sentence that compresses a measurement (rounds, counts, ranks, says "every" or "did not show", sets two numbers side by side) was treated as a rewording of a checked number, and checked against the member in view rather than the whole set its words cover.

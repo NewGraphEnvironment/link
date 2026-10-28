@@ -18,8 +18,9 @@
 #   probe_us: microseconds per feature for a walk of a fixed 200,000-feature
 #     sample of the CH view (deterministic, md5-ordered), run through
 #     fresh::frs_network_features()'s own SQL against the group's TEMP segments
-#     built as lnk_access() builds them. The sample has no index, so the plan
-#     drives from it, as the real walk drives from the province-wide view.
+#     built as lnk_access() builds them. The sample has no index, so the plan can
+#     only drive from it, as the real walk drives from the province-wide view
+#     (its plan is not recorded).
 #     walks.R found this per-feature probe is what differs between groups.
 #   probe_pre_us: the same sample walk with the feature side prefiltered to
 #     features on the group's blue lines or on an ancestor-or-equal of a group

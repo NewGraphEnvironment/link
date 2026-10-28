@@ -1,0 +1,7 @@
+wsg	table	form	segments_out	seconds	d_order	d_set	others_active	measured_utc
+SALR	barriers_ch_access	prefilter	1343	6.12	09ff3c5432dcda98f7eb1cda55c6bc22	124ce29267bc8676d22c05c693b3182d	1	2026-10-27T22:08:05Z
+SALR	barriers_ch_access	sent	1343	16.732	09ff3c5432dcda98f7eb1cda55c6bc22	124ce29267bc8676d22c05c693b3182d	1	2026-10-27T22:08:22Z
+SALR	barriers_rb_access	prefilter	448	3.041	f8c4921e6dd3cc511d1280d0f53fab4e	39490a4a482529b243c763f9efd1e0f1	1	2026-10-27T22:08:29Z
+SALR	barriers_rb_access	sent	448	8.825	f8c4921e6dd3cc511d1280d0f53fab4e	39490a4a482529b243c763f9efd1e0f1	1	2026-10-27T22:08:39Z
+SALR	barriers_anthropogenic_unified	prefilter	6183	0.745	8c78e12e465ea90227fcb4e4b8f32979	1ce93d0bf1c5c958af276f952fa1fa51	1	2026-10-27T22:08:43Z
+SALR	barriers_anthropogenic_unified	sent	6183	1.019	8c78e12e465ea90227fcb4e4b8f32979	1ce93d0bf1c5c958af276f952fa1fa51	1	2026-10-27T22:08:44Z

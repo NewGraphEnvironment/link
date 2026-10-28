@@ -45,6 +45,8 @@ f <- f[f$form == "prefilter" & grepl("_access$", f$table), ]
 f$shape <- shape[sub("barriers_(.*)_access", "\\1", f$table)]
 f <- f[!duplicated(paste(f$wsg, f$shape), fromLast = TRUE), ]
 w$pre_s <- f$seconds[match(paste(w$wsg, w$shape), paste(f$wsg, f$shape))]
+# aggregate()'s formula form drops NA rows: a walk with no prefilter row would vanish.
+stopifnot(!anyNA(w$pre_s))
 meas <- aggregate(cbind(walk_s = exec_s, pre_s) ~ wsg, w, sum)
 cal <- merge(meas, x[, c("wsg", "outer_rows_natural", "walk_pre_s_upper", "walk_s_pred")])
 fit_pre <- lm(pre_s ~ outer_rows_natural + walk_pre_s_upper, cal)

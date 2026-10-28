@@ -23,15 +23,15 @@ holds every feature in the province (7.24 M rows for the CH view). It probes the
 segments once per feature through a `BitmapOr` on `blue_line_key` and
 `wscode_ltree <@ b.wscode_ltree`. So each walk costs:
 
-- **the view's size**, about 6 s for a CH-sized view, the same in every group;
+- **the view's size**, 5.5 to 8.4 s for a CH-sized view across the nine groups measured;
 - **the view's size times the per-feature cost of probing the group's segments** (the
   CH walk's inner side over its 7.24 M features): 1.8 µs in SALR, 10.3 µs in CHWK, up to
   21 µs in LFRA. It is highest in groups that own
   segments of a main stem, such as the Fraser (`100`) and the lower Skeena (`400`), and
   in groups with coastal codes beside them. The group's code range does not predict it:
-  SETN's range is narrow and its probe is among the dearest;
+  SETN's range is narrow, and its walks cost about what CHWK's do under the same load;
 - **the output pairs**, which dominate only where many features sit inside the group
-  above many segments (SETN: 4.83 M pairs, a 539 MB sort spill).
+  above many segments (SETN: 4.83 M pairs, a 526 MiB sort spill).
 
 CHWK's natural walks cost 18× SALR's (546 against 30 s): each CH walk costs 4.1× SALR's
 (its probes 5.7×), and its eight natural views hold 4.5× the province-wide rows of SALR's
@@ -46,7 +46,7 @@ its GiST, the blue line through its btree). Measured on nine groups, this return
 features per segment in all 32 walks tried, and in eight of them a group's walks run 3.6×
 (SPAT) to 24.6× (CHWK) faster in total. SETN gains only 1.2×, because its cost is output. Over the 2026-10-23 pool
 (50,352 s of summed job time), it would save an estimated 18,221 to 25,534 s (36 to
-51 %). The saving is spread over every group, and CHWK is 1.9 % of the pool.
+51 %). The saving is spread across groups (the ten costliest hold 18 % of walk time), and CHWK is 1.9 % of the pool.
 
 Two further levers, not measured: link keeps only whether a natural array is empty
 (`has_barriers_<sp>_dnstr`), so an existence test would remove SETN's pairs; and CH, CM,

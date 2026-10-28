@@ -37,6 +37,10 @@ group, walked by `fresh::frs_network_features()`.
   each step timed and the walks timed from R, with every table it writes digested before
   and after and backed up first. Output `steps_<WSG>.tsv`, `rerun_walks_<WSG>.tsv`,
   `rerun_digest_<WSG>.tsv`, `rerun_<WSG>.log`.
+- `walk_prefilter_in_select.tsv` is the first try at the prefilter, as `IN (SELECT …)`:
+  SALR's CH walk took 6.1 s, against 2.9 s for `= ANY (ARRAY(…))` (its plan read all
+  7.24 M rows through `barriers_source_idx`; that plan file was overwritten by the second
+  try).
 - `predictors.R` computes candidate predictors for all 241 groups, among them #261's
   (features downstream of the group's outlet, by the walk's own `fwa_downstream(…, true,
   1)`). It also times one walk of a fixed 200,000-feature sample of the CH view per group,
@@ -45,14 +49,20 @@ group, walked by `fresh::frs_network_features()`.
 - `correlations.R` reads those and both runs' recompute logs and writes
   `correlations.tsv`, `misses.tsv`, `pool.tsv` and `minutes_vs_predictors.png`.
 
-Another session queried m1's database continuously from 20:51 UTC (one backend running
-watershed-area calls). Every row records `others_active`. In `walks.tsv`, LSKE's CH-shaped
-walks took 67.6 to 69.2 s with no other backend and 68.0 to 70.1 s beside one, so that
-load did not show, and later scripts accept one other backend. `rerun.R` refuses if any
-other backend holds a lock in `fresh_default`. `predictors.R` checks only at its start:
-the last 20 groups it probed (UKEC to ZYMO, alphabetically last) ran beside 6 or 8 other
-backends, an 8-way parallel query from another session. They carry 2,760 of 33,517
-predicted walk seconds, and the correlations read the same without them.
+Other sessions used m1's database from 20:51 UTC, on and off: `others_active`, sampled
+after each statement in `walks.tsv`, `walk_prefilter.tsv` and `predictors.tsv` (the
+re-run outputs do not record it), reads 0, 1 or 2, and 6 or 8 at the end of
+`predictors.tsv`. `walk_prefilter.R` and `predictors.R` check only at their start and
+accept one other backend; `rerun.R` also refuses if any other backend holds a lock in
+`fresh_default`. In `walks.tsv`, LSKE's CH-shaped walks took 67.6 to 69.2 s with no other
+backend and 68.0 to 70.1 s beside one. The cache moved more than that load did: from
+LSKE's ST walk (20:54 UTC) on, every natural-barrier walk in `walks.tsv` read 222 k to
+301 k shared blocks from outside the buffer cache, where each one after SALR's first (184 k,
+the cold start) had read 0 or 1, so SETN and LFRA ran colder than the groups before them (SETN's CH walk took 157.3 s there and 101.0 s, as sent, in
+`walk_prefilter.tsv`). Compare groups within one script and one cache state.
+`predictors.R`'s last 20 groups (UKEC to ZYMO, alphabetically last) ran beside 6 or 8
+other backends, an 8-way parallel query from another session; they carry 2,760 of
+33,517 predicted walk seconds, and the correlations read the same without them.
 
 ## Measurement
 
@@ -77,11 +87,11 @@ parsed) is inside that spread, and these runs cannot separate it further.
 
 Every walk has one plan. The outer side reads the walked view province-wide (7.24 M rows
 for CH and its six identical-before-overrides species, 3.48 M for BT/DV/RB, 5.36 M for
-ST/WCT), about 6 s per CH walk. For each row it probes the group's segments with a
+ST/WCT), 5.5 to 8.4 s per CH walk across the nine groups. For each row it probes the group's segments with a
 `BitmapOr` on `blue_line_key` and `wscode_ltree <@ b.wscode_ltree`. Over the same
 7,240,975 features, the inner side of the CH walk (the nested loop less its outer scan)
 takes 13.0 s in SALR and 74.4 s in CHWK: 1.8 against 10.3 µs per feature, 5.7×. LKEL's
-is 1.3 µs, LSKE's 8.4, SETN's 19.7 and LFRA's 21.2. The pairs returned do not set the
+is 1.3 µs, LSKE's 8.4, SETN's 19.7 and LFRA's 21.2 (those two from the colder rows). The pairs returned do not set the
 cost: SETN's CH walk returns 4.83 M pairs and LFRA's 1.17 M, both in 157 to 163 s; CHWK
 returns 162 k in 80 s and LKEL 98 k in 15 s. So CHWK's CH walk costs 4.1× SALR's (80.3
 against 19.6 s), and its eight natural views hold 4.5× the province-wide rows of SALR's
@@ -90,7 +100,9 @@ two: about 18×, which is the ratio of their natural walks (545.7 against 29.7 s
 **Refuted on the way:** that a probe descends only where the feature's code falls in the
 group's code range. CHWK and LFRA hold coastal codes as well as the Fraser main stem
 (`100` to `970.…`), so their range covers 7.17 M of 7.24 M features; SETN's covers 0.75 M,
-and SETN's walks are the second dearest of the nine, after LFRA's.
+yet under the same load SETN's walks cost about what CHWK's do (`walk_prefilter.tsv`, as
+sent: 211.6 against 219.0 s), and its sample probe costs more (`predictors.tsv`: 20.2
+against 14.1 µs per feature).
 
 ### The same walk, prefiltered
 
@@ -112,7 +124,7 @@ fresh's `ORDER BY` (wscode, localcode, measure) ties for co-located features, so
 order is the plan's. link persists only `has_barriers_<sp>_dnstr` from the natural arrays.
 The anthropogenic arrays, whose first element `dam_dnstr_ind` reads, match in their own
 order in all nine. SETN is output-bound: its prefiltered CH walk keeps 140,159 features
-(139,882 of them inside the group), each matching about 34 segments, 4.83 M pairs, and the sort spills 539 MB to disk.
+(139,882 of them inside the group), each matching about 34 segments, 4.83 M pairs, and the sort spills 526 MiB to disk.
 
 ### All 241 groups
 
@@ -135,7 +147,8 @@ leave 7,864 s (calibrated on the nine) to 15,177 s (the sample's own estimate, w
 overstates the prefiltered walk except where the walk is output-bound: SETN measured 560 s
 against its 539), a saving of 18,221 to 25,534 s, 36 to 51 % of the summed time. The
 calibrated fit predicts below zero for 34 groups; each group's estimate is floored at 5 %
-of its sent walk (46 groups), and a floor anywhere from 0 to 20 % gives 7,769 to 9,128 s. CHWK is 934 s of the pool, and the ten
+of its sent walk (46 groups), and a floor anywhere from 0 to 20 % gives 7,769 to 9,128 s.
+Both estimates are capped at the group's sent walk (uncapped, the sample's is 15,245 s). CHWK is 934 s of the pool, and the ten
 costliest groups hold 17.8 % of predicted walk time.
 
 ## What changed because of it
