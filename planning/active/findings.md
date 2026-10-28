@@ -98,3 +98,10 @@ The province figure is on `default`'s presence filter (each record by its own gr
 |-------|------------|
 | 19 errors in `test-lnk_habitat_validate.R` during the full suite | A second run of the same file was started beside it; both use the fixture schema `zz_lnk_validate_probe`. Never run a live-DB test file beside the suite. The file alone passes 433 / 433. |
 | FISS absence sites cover none of the four planned groups (COTR, LNTH, PINE, UNTH, UPCE only) | UPCE added to the `default` builds for question 3 |
+
+## Code-check round 2: the premise of the tops (2026-10-28)
+
+- **A species' own top break never changes its own code.** fwapg's `fwa_upstream` with `include_equivalents` counts a same-line record upstream when `drm_b > drm_a` or `abs(drm_a - drm_b) <= tolerance` (1 m), against the segment's start. So the segment starting at the top reads 2, and a species turns to 1 at the first cut more than 1 m above its top. Kept tops serve as that cut for species recorded only below them. The reviewer's further claim (`top_per_species` equals no observation breaks) is wrong: with X at 100 and Y at 300, the 300 cut turns X to 1 above it, which no-breaks does not.
+- **The exact set** (per species, the lowest record of any species more than 1 m above its raw top) keeps every flip where `all` puts it and holds 3 to 31 % of positions, against 17 to 59 % for the tops (`exact_set.csv`). Not built; it goes back to the operator, recommended.
+- **Whole-segment flips next to a barrier:** a barrier 1 to 1.5 m above a removed observation cut. #349's metre-rounding class; `pre_post_diff.R` splits them out (`*_near_barrier`, 3 m window).
+- **`break_order` omission:** only `subsurfaceflow` is read off it for access; roxygen corrected.

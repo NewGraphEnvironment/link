@@ -118,11 +118,13 @@ pipeline:
   #   top_per_species  — on each stream line, each present species' farthest-
   #                      upstream observation
   # Only access_<sp> code 2 ("accessible, observed upstream", against 1)
-  # reads an observation break, and on one line it changes once per species,
-  # at that species' top observation. Every other position only shortens
+  # reads an observation break. A species turns from 2 to 1 at the first cut
+  # more than 1 m above its top observation, and the tops are those cuts for
+  # the species recorded below them. Every other position mostly shortens
   # segments: more segments to classify and recompute, and shorter-reach,
   # noisier gradients at the places fish were recorded. Barrier lifts count
-  # observations point against point and need no break (link#396).
+  # observations point against point and need no break (link#396; RUNBOOK
+  # §2c has where code 2 moves under this value).
   observation_breaks: top_per_species
   # cabd_additions_barriers — the dams cabd_additions.csv places on BC lines
   # for dams outside BC (Grand Coulee / Chief Joseph on the Columbia, the

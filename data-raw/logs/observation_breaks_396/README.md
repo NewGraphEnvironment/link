@@ -4,7 +4,7 @@
 
 - **What re-segments.** Under `default` (and `default_tuned`, which inherits it) streams break at fewer observation positions, so every persisted `default` group must re-model, all 241, then the post-consolidate recompute. That is the next provincial run at the release this lands in, done after merge, stacked on #326's owed re-model. The `bcfishpass` schema does not re-segment: its bundle leaves `observation_breaks` out, which means `all`.
 - **What is built here.** m4's local docker fwapg only, for measurement; these schemas are dev state and are published nowhere.
-  - `default` BEFORE at main (`43e34096`) into the scratch schema `zz396_default_pre`, and AFTER at the branch (`71ccc2ce`) into `zz396_default_post`: LKEL (sparse, salmon and residents), BULK (heavily surveyed, salmon and residents), UPCE, PARS (resident only), ELKR (the largest reduction, BT and WCT). Each from its own worktree.
+  - `default` BEFORE at main (`43e34096`) into the scratch schema `zz396_default_pre`, and AFTER at the branch (`71ccc2ce`; later commits change comments and docs only, which moves `config_hash` but not the build) into `zz396_default_post`: LKEL (sparse, salmon and residents), BULK (heavily surveyed, salmon and residents), UPCE, PARS (resident only), ELKR (the largest reduction, BT and WCT). Each from its own worktree.
   - UPCE is added for question 3 only. The FISS sites that give visits without fish cover COTR, LNTH, PINE, UNTH and UPCE, none of the other four, and UPCE holds the most (7,024 site rows). It drains below PARS, so it is built before PARS in both schemas.
   - `bcfishpass` AFTER at the branch into `fresh` for BULK and PARS, last, so `working_<wsg>` holds the build `breaks_diff.R` reads. It overwrites #326 round 2's rows for those two, so "unchanged" is judged against the committed `segmentation_326/round2/{bulk,pars}_breaks.csv` and the README counts (BULK 42,989, PARS 43,776 segments).
   - Groups run downstream-first, then `wsg_recompute_one.R` (always merge) per group and schema. Each group's BEFORE and AFTER run back to back.
@@ -22,6 +22,9 @@
 | `cuts.sql`, `cuts.csv` | question 1 before building: positions today against tops, and which positions cut a segment (1 m rule) |
 | `province.sql`, `province.csv` | the same ratio province-wide |
 | `code2_class.sql`, `code2_class.csv` | the one access change expected: pieces that go from code 1 to 2 |
-| `redundancy.sql`, `redundancy.csv` | question 5: tops made redundant by a tributary observation above them |
+| `redundancy.sql`, `redundancy.csv` | question 5 as the issue posed it: tops with the species also recorded up a tributary above (a moot premise, see the header) |
+| `exact_set.sql`, `exact_set.csv` | the break set that would keep code 2 exactly: per species, the lowest record more than 1 m above its top; not built |
+| `pre_post_diff.R`, `pre_post_diff.csv` | question 6: BEFORE against AFTER on measure-overlap pieces |
+| `bias.R`, `bias.csv`, `bias_fiss_note.txt` | question 3: segment length and gradient at sites with and without fish (aggregates only) |
 | `readers_code2.md` | question 4: who reads code 2 against 1 |
 | `run.sh`, `status.tsv`, `driver.log`, `<step>_<WSG>.log` | the builds |

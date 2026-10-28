@@ -1,3 +1,8 @@
+-- The issue's premise, kept for the record: code-check round 2 found that a
+-- species' own top never changes its own code (a record within 1 m of a
+-- segment's start counts as upstream of it), so this asks a moot question.
+-- The real redundancy in the tops is what exact_set.sql removes.
+--
 -- Question 5 (#396): a line's top observation of species X is redundant when
 -- X is also observed up a tributary that joins above it. The segment below the
 -- confluence then reads X = 2 without the top's break, so the break changes no

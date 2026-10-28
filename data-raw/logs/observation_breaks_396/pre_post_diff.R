@@ -16,6 +16,14 @@
 # a barrier or crossing within 1 m of a removed observation cut did not cut
 # before and cuts now, moving that boundary by up to 1 m (breaks are rounded to
 # the metre, so by 1 m). Pieces under 1.01 m are counted apart as `sliver_*`.
+# A whole segment can also change side next to a barrier: one whose raw measure
+# lies 1 to 1.5 m above an observation cut breaks 1 m above it, which did not
+# cut, so the segment above the observation read it as more than 1 m above its
+# start (open); now its break cuts and the segment above it reads blocked
+# (#349's metre-rounding class). A moved cut can also suppress or release the
+# next break above it. So blocked/open and has_barriers changes on longer
+# pieces are split by whether either side's segment starts within 3 m of a
+# persisted barrier of that species (`*_near_barrier`); `*_elsewhere` must be 0.
 # Habitat flags and mapping codes may move where merged pieces take a new
 # gradient.
 # Writes pre_post_diff.csv and stops if the overlap does not cover both sides.
@@ -85,6 +93,12 @@ for (wsg in wsgs) {
                 a.wetland_rearing AS wr_a, b.wetland_rearing AS wr_b,
                 EXISTS (SELECT 1 FROM tops t
                          WHERE t.blk = b.blk AND abs(t.m - b.dm) <= 1) AS b_at_top,
+                EXISTS (SELECT 1 FROM %6$s.barriers x
+                         WHERE x.blue_line_key = b.blk
+                           AND upper('%4$s') = ANY (x.blocks_species)
+                           AND (abs(x.downstream_route_measure - b.dm) <= 3
+                                OR abs(x.downstream_route_measure - a.dm) <= 3))
+                  AS near_barrier,
                 least(a.um, b.um) - greatest(a.dm, b.dm) AS len,
                 least(a.um, b.um) - greatest(a.dm, b.dm) < 1.01 AS sliver
            FROM a JOIN b
@@ -97,8 +111,10 @@ for (wsg in wsgs) {
               (SELECT count(*) FROM a) AS seg_pre,
               (SELECT count(*) FROM b) AS seg_post,
               bool_or(acc_a <> -9) AS present,
-              coalesce(sum(len) FILTER (WHERE acc_a = 0 AND acc_b IN (1, 2) AND NOT sliver), 0) / 1000 AS km_acc_0_to_open,
-              coalesce(sum(len) FILTER (WHERE acc_a IN (1, 2) AND acc_b = 0 AND NOT sliver), 0) / 1000 AS km_acc_open_to_0,
+              coalesce(sum(len) FILTER (WHERE acc_a = 0 AND acc_b IN (1, 2) AND NOT sliver AND near_barrier), 0) / 1000 AS km_acc_0_to_open_near_barrier,
+              coalesce(sum(len) FILTER (WHERE acc_a IN (1, 2) AND acc_b = 0 AND NOT sliver AND near_barrier), 0) / 1000 AS km_acc_open_to_0_near_barrier,
+              coalesce(sum(len) FILTER (WHERE acc_a = 0 AND acc_b IN (1, 2) AND NOT sliver AND NOT near_barrier), 0) / 1000 AS km_acc_0_to_open_elsewhere,
+              coalesce(sum(len) FILTER (WHERE acc_a IN (1, 2) AND acc_b = 0 AND NOT sliver AND NOT near_barrier), 0) / 1000 AS km_acc_open_to_0_elsewhere,
               coalesce(sum(len) FILTER (WHERE acc_a = 2 AND acc_b = 1), 0) / 1000 AS km_acc_2_to_1,
               coalesce(sum(len) FILTER (WHERE acc_a = 1 AND acc_b = 2 AND b_at_top), 0) / 1000 AS km_acc_1_to_2_at_top,
               coalesce(sum(len) FILTER (WHERE acc_a = 1 AND acc_b = 2 AND NOT b_at_top), 0) / 1000 AS km_acc_1_to_2_elsewhere,
@@ -108,7 +124,8 @@ for (wsg in wsgs) {
                 OR hb_a IS DISTINCT FROM hb_b)) AS n_sliver_access_change,
               coalesce(sum(len) FILTER (WHERE sliver AND (acc_a IS DISTINCT FROM acc_b
                 OR hb_a IS DISTINCT FROM hb_b)), 0) AS m_sliver_access_change,
-              coalesce(sum(len) FILTER (WHERE hb_a IS DISTINCT FROM hb_b AND NOT sliver), 0) / 1000 AS km_has_barriers_change,
+              coalesce(sum(len) FILTER (WHERE hb_a IS DISTINCT FROM hb_b AND NOT sliver AND near_barrier), 0) / 1000 AS km_has_barriers_change_near_barrier,
+              coalesce(sum(len) FILTER (WHERE hb_a IS DISTINCT FROM hb_b AND NOT sliver AND NOT near_barrier), 0) / 1000 AS km_has_barriers_change_elsewhere,
               coalesce(sum(len) FILTER (WHERE mc_a IS DISTINCT FROM mc_b), 0) / 1000 AS km_mapping_code_change,
               coalesce(sum(len) FILTER (WHERE ac_a <> ac_b), 0) / 1000 AS km_accessible_flag_change,
               coalesce(sum(len) FILTER (WHERE sp_a AND NOT sp_b), 0) / 1000 AS km_spawning_lost,
@@ -120,7 +137,7 @@ for (wsg in wsgs) {
               coalesce(sum(len) FILTER (WHERE sp_a), 0) / 1000 AS km_spawning_pre,
               coalesce(sum(len) FILTER (WHERE re_a), 0) / 1000 AS km_rearing_pre
          FROM pc",
-      side(pre, wsg, sp), side(post, wsg, sp), obs_tbl, sp, wsg))
+      side(pre, wsg, sp), side(post, wsg, sp), obs_tbl, sp, wsg, post))
     rows[[length(rows) + 1L]] <- r
   }
 }
@@ -136,8 +153,10 @@ if (any(bad)) {
 num <- vapply(d, is.numeric, logical(1))
 d[num] <- lapply(d[num], function(x) round(x, 3))
 utils::write.csv(d, file.path(out, "pre_post_diff.csv"), row.names = FALSE)
-print(d[, c("wsg", "sp", "seg_pre", "seg_post", "km_acc_0_to_open",
-            "km_acc_open_to_0", "km_acc_2_to_1", "km_acc_1_to_2_at_top",
+print(d[, c("wsg", "sp", "seg_pre", "seg_post",
+            "km_acc_0_to_open_near_barrier", "km_acc_open_to_0_near_barrier",
+            "km_acc_0_to_open_elsewhere", "km_acc_open_to_0_elsewhere",
+            "km_acc_2_to_1", "km_acc_1_to_2_at_top",
             "km_acc_1_to_2_elsewhere", "km_acc_other_change",
-            "km_has_barriers_change")])
+            "km_has_barriers_change_elsewhere", "n_sliver_access_change")])
 DBI::dbDisconnect(conn)

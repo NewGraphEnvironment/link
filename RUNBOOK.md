@@ -196,19 +196,27 @@ species is observed upstream") against code 1. The access walk
 (`lnk_pipeline_access()`, `frs_network_features(direction = "upstream",
 include_equivalents = TRUE)`) reads `<schema>.observations` itself, every record,
 not the breaks table, and a same-line record counts as upstream of a segment when its
-measure is above the segment's start or within 1 m of it. On one line "observed
-upstream" changes once per species, at its top record, so the tops are the only
-breaks code 2 needs. Lifts count observations point against point
+measure is above the segment's start or within 1 m of it. So code 2 is a property of
+a segment's start, and a species' own top break never changes its own code: the
+segment starting at the top still reads 2. Species X turns from 2 to 1 at the **first
+cut more than 1 m above its top**, whatever made that cut. Under `all` that is often
+another species' lower record; under `top_per_species` it is the next of the line's
+FWA ends, other break sources and other species' tops. A kept top matters as the place
+where species recorded only below it turn to 1. Lifts count observations point against point
 (`lnk_barrier_overrides()`), and the mapping code and habitat gate read
 `has_barriers_<sp>_dnstr` and `access = 0` against `> 0`; none needs a break.
 Nothing in link tells 2 from 1 (every reader is `IN (1, 2)`); bcfishpass's own
 `aw_linear_summary()` does, on its own tables (`data-raw/logs/observation_breaks_396/readers_code2.md`).
 
-**The access changes.** A segment that starts at species X's kept top and
-swallows a removed break above it reads X = 2 along its whole length, where the old
-piece above the removed break read 1, unless X is observed up a tributary above. That
-is 1 to 2, never 2 to 1. The recompute (`lnk_access()`) passes no observations and
-keeps a prior 2, so a recompute after a re-model keeps it.
+**The access changes.** Where a removed record lay more than 1 m above X's top and
+below the next kept cut, X's turn to 1 moves up to that cut: the segment starting at
+X's top swallows the removed break and reads X = 2 along its whole length, where the
+old piece above the removed break read 1, unless X is observed up a tributary above.
+That is 1 to 2, never 2 to 1. The recompute (`lnk_access()`) passes no observations
+and keeps a prior 2, so a recompute after a re-model keeps it. The break set that
+keeps code 2 exactly is smaller than the tops: per species, the lowest record of any
+species more than 1 m above its top (`data-raw/logs/observation_breaks_396/exact_set.sql`).
+It is not built; `research/observation_breaks.md` has the counts.
 
 **A boundary can also move by 1 m.** Observations are the first break source, and a
 later source cuts only more than 1 m from the current segment ends
@@ -218,6 +226,15 @@ cut did not cut, and the segment starting at the observation read it as downstre
 position, and the metre between the two positions changes side: between blocked and
 open, `has_barriers_<sp>_dnstr` and the mapping-code token with it. Breaks are
 rounded to the metre, so each such sliver is 1 m long.
+
+**And a whole segment can change side next to a barrier.** A barrier whose raw measure
+lies 1 to 1.5 m above an observation cut rounds to a break 1 m above it, which did not
+cut; the segment starting at the observation held the barrier more than 1 m above its
+start, so it read open (the metre-rounding defect of link#349, fresh#258). Once the
+observation stops breaking, the barrier's break cuts, and the segment above it reads
+blocked. That is open to blocked along a whole segment, and a cut that moves can
+suppress or release the next break above it in the same way. Each case lies within a few
+metres of a barrier; `pre_post_diff.R` counts them apart.
 
 **Omitting `observations` from `break_order`** removes its segmentation only: code 2
 is still computed, at the resolution of the segments left.
