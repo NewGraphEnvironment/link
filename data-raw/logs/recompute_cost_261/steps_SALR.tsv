@@ -1,0 +1,10 @@
+step	s	wsg
+prior_copy	0.161	SALR
+lnk_access	33.62	SALR
+habitat_gate	2.844	SALR
+mapping_code	7.223	SALR
+downstream_guard	2.01499999999999	SALR
+lnk_access:walks	28.237	SALR
+lnk_access:pipeline_access_other	1.55099999999999	SALR
+lnk_access:setup_and_update	3.83200000000001	SALR
+total	46.299	SALR

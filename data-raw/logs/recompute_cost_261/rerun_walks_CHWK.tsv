@@ -1,0 +1,12 @@
+table	s	rows	elements	wsg
+barriers_bt_access	42.157	10092	60414	CHWK
+barriers_ch_access	86.242	11301	161974	CHWK
+barriers_cm_access	86.535	11301	161974	CHWK
+barriers_co_access	90.024	11301	161974	CHWK
+barriers_pk_access	85.846	11301	161974	CHWK
+barriers_sk_access	85.145	11301	161974	CHWK
+barriers_st_access	66.283	10818	105561	CHWK
+barriers_rb_access	42.765	9580	54319	CHWK
+barriers_anthropogenic_unified	3.71699999999998	10349	25710	CHWK
+barriers_pscis_unified	0.289999999999964	94	146	CHWK
+barriers_dams_unified	0.34800000000007	1960	2652	CHWK
