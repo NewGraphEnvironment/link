@@ -146,6 +146,18 @@ if (anyNA(run_of) || length(run_sets) != length(plan_sets)) {
                       "calibrate against the plan the run used"), paste(odd, collapse = ", ")),
        call. = FALSE)
 }
+# Only the cloud role is remapped: the dispatcher and each worker keep their
+# key, and a cloud host maps to a cloud host. Otherwise a run that put the
+# dispatcher's list on a cloud host would learn each leg under the other
+# machine's name (code-check round 5, link#259).
+fixed_role <- "^(dispatcher|worker[0-9]+)$"
+bad_role <- names(run_of)[ifelse(grepl(fixed_role, names(run_of)), run_of != names(run_of),
+                                 grepl(fixed_role, run_of))]
+if (length(bad_role)) {
+  stop(sprintf(paste0("plan hosts %s ran in another role (%s): the run did not give each role ",
+                      "the list the packer gave it"), paste(bad_role, collapse = ", "),
+               paste(run_of[bad_role], collapse = ", ")), call. = FALSE)
+}
 plan$run_key <- unname(run_of[plan$host_key])
 
 # The state the update starts from, and the plan's weights re-normalized at it:
@@ -179,8 +191,7 @@ legs <- do.call(rbind, lapply(unique(plan$run_key), function(k) {
            if (length(foreign)) sprintf("groups measured by %s, which the state does not hold",
                                         paste(foreign, collapse = ", ")),
            if (p$name[1] %in% names(skip_reason)) skip_reason[[p$name[1]]],
-           if (k %in% names(skip_reason)) skip_reason[[k]],
-           if (p$host_key[1] %in% names(skip_reason)) skip_reason[[p$host_key[1]]])
+           if (k %in% names(skip_reason)) skip_reason[[k]])
   data.frame(host_key = k, name = p$name[1], speed = p$speed[1],
              projected = sum(p$weight[keep] / p$speed[keep]),
              actual = if (nrow(m)) as.numeric(difftime(m$end, m$start, units = "mins")) else NA,
@@ -190,16 +201,14 @@ legs <- do.call(rbind, lapply(unique(plan$run_key), function(k) {
 # A skipped leg needs no times; give it placeholders the arithmetic never reads.
 legs$projected[!is.na(legs$skip) & !(legs$projected > 0)] <- 1
 legs$actual[!is.na(legs$skip) & is.na(legs$actual)] <- 1
-unknown_skip <- setdiff(names(skip_reason), c(legs$name, legs$host_key, plan$host_key))
+unknown_skip <- setdiff(names(skip_reason), c(legs$name, legs$host_key))
 if (length(unknown_skip)) {
   stop("--skip names no host in the plan: ", paste(unknown_skip, collapse = ", "), call. = FALSE)
 }
 
-date_utc <- format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
-out <- speeds_calibrate(legs, state, run_uid = run_uid, date_utc = date_utc)
-
-cat(sprintf("run %s: %d legs, run-wide ratio (actual / projected) %.3f\n\n",
-            run_uid, nrow(legs), out$run_ratio))
+# The legs and why any is left out print first, so a run in which every leg is
+# left out still says why (code-check round 5, link#259).
+cat(sprintf("run %s: %d legs\n\n", run_uid, nrow(legs)))
 cat("| host | name | speed | groups | projected min | actual min | skipped |\n|---|---|---|---|---|---|---|\n")
 for (i in seq_len(nrow(legs))) {
   l <- legs[i, ]
@@ -208,6 +217,13 @@ for (i in seq_len(nrow(legs))) {
               if (is.na(l$skip)) sprintf("%.1f", l$actual) else "",
               if (is.na(l$skip)) "" else l$skip))
 }
+if (all(!is.na(legs$skip))) {
+  stop("every leg is left out (reasons above): nothing to calibrate", call. = FALSE)
+}
+
+date_utc <- format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+out <- speeds_calibrate(legs, state, run_uid = run_uid, date_utc = date_utc)
+cat(sprintf("\nrun-wide ratio (actual / projected at the stored speeds): %.3f\n", out$run_ratio))
 cat("\n| name | packed | old | correction | observed | new | clamped | action |\n|---|---|---|---|---|---|---|---|\n")
 h <- out$history
 for (i in seq_len(nrow(h))) {

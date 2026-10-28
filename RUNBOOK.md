@@ -2060,8 +2060,10 @@ Rscript data-raw/host_speeds_calibrate.R --plan=<the packer's --plan-out> \
   groups with no rows from this run (`<TS>_coverage.tsv` class other than
   `recompute`). A host whose `account` row is not `ok` is left out. So is a
   leg named by `--skip`, for a stall or another job on the machine: by name
-  (every leg of it) or by host key (`job2`, one cloud host). The history
-  records why.
+  (every leg of it) or by the run's host key (`job2`, one cloud host, as the
+  legs table shows it). The legs and their reasons print before anything is
+  learned, so a run in which every leg is left out still says why. The
+  history records why.
 - **The arithmetic.** Per name, `correction = (Σ actual / Σ projected) /
   run_ratio`, where `run_ratio` is the same ratio over every leg not left out.
   Each leg is first re-projected at the stored factor `old` (the state's, its
@@ -2087,9 +2089,11 @@ Rscript data-raw/host_speeds_calibrate.R --plan=<the packer's --plan-out> \
   host itself; otherwise its error would land in the hosts that are learned.
   Name each worker in `--host-names` by the alias its log rows carry
   (`LNK_HOST_ALIAS`), and the next calibration learns it.
-- **Plan hosts are matched to the run's by their groups,** not their keys: the
-  packer keys cloud hosts `job1..N` by position, and the driver by the
-  `--cy-workspaces` names, which a kept host can leave out of order.
+- **Cloud hosts are matched to the run's by their groups,** not their keys: the
+  packer keys them `job1..N` by position, and the driver by the
+  `--cy-workspaces` names, which a kept host can leave out of order. The
+  dispatcher and each worker keep their key, so a run that gave one role
+  another role's list is refused rather than learned under the wrong name.
   `--plan-out` needs `--host-names`, since the packer need not run on the
   dispatcher.
 - **What it refuses.** A plan weighted in segments: a run must pack on

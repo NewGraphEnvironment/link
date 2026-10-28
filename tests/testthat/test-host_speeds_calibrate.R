@@ -220,3 +220,48 @@ test_that("a leg holding a group measured by a class the state lacks is left out
   # m4's own groups were measured by m4, which the state holds: it is learned.
   expect_match(out, "\\| m4 \\| 1\\.000 \\| 1\\.000 \\|")
 })
+
+test_that("a run that swapped the dispatcher's and a cloud host's lists is refused", {
+  w <- cal_world()
+  rwf <- file.path(w$dir, "20261101_000000_run_wsgs.tsv")
+  rw <- readLines(rwf)
+  rw <- sub("\tdispatcher\t", "\tTMP\t", rw)
+  rw <- sub("\tjob1\t", "\tdispatcher\t", rw)
+  writeLines(sub("\tTMP\t", "\tjob1\t", rw), rwf)
+  r <- cal_run(w, "--dry-run")
+  expect_false(r$status == 0L)
+  expect_match(paste(r$out, collapse = "\n"), "ran in another role")
+})
+
+test_that("--skip names the run's host key, not the plan's", {
+  # Plan: job1 {C}, job2 {D}. Run: job3 {C}, job1 {D}. --skip=job1 means the
+  # run's job1, the host that ran D, and nothing else.
+  w <- cal_world(plan_host = c(A = "dispatcher", B = "dispatcher", C = "job1", D = "job2"))
+  rwf <- file.path(w$dir, "20261101_000000_run_wsgs.tsv")
+  rw <- readLines(rwf)
+  rw <- sub("^C\tjob1\t", "C\tjob3\t", rw)
+  writeLines(rw, rwf)
+  ph <- readLines(w$phases)
+  ph <- sub("\tjob1\t", "\tjob3\t", ph)
+  writeLines(c(ph, sprintf("%s\tmodel\tjob1\t2026-11-01T01:00:00Z\t2026-11-01T02:00:00Z\t\t\tok", cal_uid),
+               sprintf("%s\taccount\tjob1\t2026-11-01T02:00:00Z\t2026-11-01T02:00:00Z\t\t\tok", cal_uid)),
+             w$phases)
+  r <- cal_run(w, "--dry-run", "--skip=job1:stall")
+  expect_equal(r$status, 0L, info = paste(r$out, collapse = "\n"))
+  out <- paste(r$out, collapse = "\n")
+  expect_match(out, "| job1 | cloud | 1.000 | 1 |  |  | stall |", fixed = TRUE)
+  expect_match(out, "\\| job3 \\| cloud \\| 1\\.000 \\| 1 \\| 50\\.0 \\|")
+})
+
+test_that("a run in which every leg is left out still prints why", {
+  w <- cal_world()
+  writeLines(c(paste(c("name", "factor", "last_updated", "n_runs", "source_run_uid"), collapse = "\t"),
+               "m4\t1\td\t1\tu", "cloud\t1\td\t1\tu"), w$state)
+  p <- readLines(w$plan)
+  writeLines(sub("\t(m4|cloud)$", "\tm2", p), w$plan)
+  r <- cal_run(w, "--dry-run")
+  expect_false(r$status == 0L)
+  out <- paste(r$out, collapse = "\n")
+  expect_match(out, "groups measured by m2, which the state does not hold", fixed = TRUE)
+  expect_match(out, "every leg is left out (reasons above)", fixed = TRUE)
+})
