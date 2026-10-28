@@ -69,3 +69,25 @@ Related: #326 (gradient breaks), #283 (the validator), #294 (observation positio
 
 | Error | Resolution |
 |-------|------------|
+
+## Phase 1: the cut set, measured before building (2026-10-28, m4 local fwapg)
+
+Producers in `data-raw/logs/observation_breaks_396/`: `build_obs.R` builds `default`'s observation set with the pipeline's own `.lnk_pipeline_prep_observations()` (default presence, exclusions) into `zz396_cuts`; `cuts.sql`, `province.sql`, `code2_class.sql`, `redundancy.sql` read it. Outputs beside each (`*.csv`).
+
+**A position cuts only when it sits more than 1 m from both ends of the segment it lands in** (`fresh::frs_break_apply()`, fresh 0.43.0 `R/frs_break.R:620-622`), and observations are the first break source. So "removes no segment" means within 1 m of an FWA segment end, another source's position or a kept top, not "rounds to the same metre" (the plan's wording); the SQL uses the 1 m rule. The other sources come from `working_<wsg>`, which on m4 holds the `bcfishpass` build (PARS 43,776 segments, as in `fresh`), so the segment estimate is approximate; Phase 4 counts exactly.
+
+| group | observations | positions | tops | kept | positions cutting today | removed positions saving a segment |
+|---|---|---|---|---|---|---|
+| PARS | 1,018 | 593 | 244 | 41.1 % | 570 | 337 |
+| LKEL | 511 | 188 | 111 | 59.0 % | 156 | 66 |
+| BULK | 2,887 | 1,185 | 585 | 49.4 % | 1,081 | 550 |
+| ELKR | 3,563 | 1,923 | 431 | 22.4 % | 1,817 | 1,423 |
+| province | 232,773 | 63,282 | 28,729 | 45.4 % | | |
+
+The province figure is on `default`'s presence filter (each record by its own group), so it is lower than the exploration probe's unfiltered 81,264 → 40,159.
+
+**The 1 → 2 class is small** (`code2_class.csv`): pieces that read "not observed" before and "observed upstream" after, because a kept top's segment swallows a removed break above it and the species is not observed up any tributary above. PARS 0; LKEL 1 piece, 0.25 km (CO); BULK 17 pieces, 3.36 km over eight species; ELKR 16 pieces, 6.37 km (BT 2.29, CT 1.73, DV 2.35).
+
+**Question 5, tributary redundancy** (`redundancy.csv`): 34 / 19 / 103 / 86 species-tops (PARS / LKEL / BULK / ELKR) have the species observed up a tributary joining above them. Removing them would drop 25 / 8 / 68 / 71 more positions, 4 to 12 % of today's positions on top of the 41 to 78 % already removed. Not built: decision 4 leaves materiality to the operator, and this reads as a modest second step needing an upstream walk per build.
+
+**Question 4, readers** (`readers_code2.md`): nothing in link tells 2 from 1 (every reader is `IN (1, 2)`, `> 0` or `= 0`). QGIS styles and project files in the sibling repos read bcfishpass's text `model_access_<sp>`, not link's integer. bcfishpass's own `aw_linear_summary()` sums `access_<sp> = 2` km; it runs on bcfishpass's tables, and link's `bcfishpass` config keeps every observation break.
