@@ -60,6 +60,19 @@
 #     [--out=data-raw/logs/habitat_score_284] [--allow-dirty]
 #     [--base=default]         the base bundle; it must be the base row's
 #                              `equals_bundle`
+#     [--jobs=1]               groups of one variant's pass run at once
+#                              (1 to 16; 1 is the serial loop)
+#
+# Width (link#406): with --jobs above 1 a variant's groups run on a PSOCK
+# cluster started once for the variants step, each worker with its own
+# connection and the longest groups dispatched first. Variants still run one
+# after another (the base pass licenses the others), and only this process
+# writes built.csv and variant_timing.csv, once a variant's groups return. A
+# group that fails stops the build after the others return; every group whose
+# checks passed is recorded first. A build killed mid-variant has recorded
+# none of that variant's groups, though the schema may hold some of them, so
+# re-run the variant before scoring it. Workers outlive a killed build: stop
+# them with `pkill -f workRSOCK` before relaunching.
 #
 # Resumable: a base WSG whose streams_access is already in the base schema
 # (and, if focal, whose working schema survives) is not re-run. Variant passes
@@ -117,6 +130,12 @@ base_bundle <- opt("base", "default")
 if (!grepl("^[a-z][a-z0-9_]*$", base_bundle)) {
   stop("--base must name a shipped bundle", call. = FALSE)
 }
+# Groups of one variant's pass run at once (link#406); 1 is the serial loop.
+jobs <- opt("jobs", "1")
+if (!grepl("^[0-9]{1,2}$", jobs) || !as.integer(jobs) %in% 1:16) {
+  stop("--jobs must be a whole number from 1 to 16", call. = FALSE)
+}
+jobs <- as.integer(jobs)
 # The defaults are #284's committed run; another variants file must not build
 # into #284's schemas, working networks or logs.
 if (!identical(path_variants, file.path("data-raw", "habitat_score", "variants.csv")) &&
@@ -309,8 +328,10 @@ if (length(setdiff(focal, roles$watershed_group_code)) > 0L) {
 schema_of <- function(v) if (length(v) == 0L) character(0) else paste0(prefix, v)
 working_of <- function(w) paste0(working_prefix, tolower(w))
 
-conn <- lnk_db_conn(dbname = "fwapg", host = "localhost", port = 5432L,
-                    user = "postgres", password = "postgres")
+# One set of connection arguments, for this process and every worker.
+conn_args <- list(dbname = "fwapg", host = "localhost", port = 5432L,
+                  user = "postgres", password = "postgres")
+conn <- do.call(lnk_db_conn, conn_args)
 fs::dir_create(file.path(dir_out, "bundles"))
 
 # -- the base bundle, and one thin bundle per variant --------------------------------
@@ -557,7 +578,7 @@ cfgs[[base_variant]] <- cfg_base
 path_built <- file.path(dir_out, "built.csv")
 # One row per variant x WSG, replaced only for the pair just built, so a
 # build over a WSG subset cannot vouch for the WSGs it did not touch.
-record_built <- function(v, w) {
+record_built <- function(v, w, built_at = Sys.time()) {
   row <- data.frame(
     variant = v, watershed_group_code = w, schema = schema_of(v),
     thresholds_sha256 = digest::digest(
@@ -578,7 +599,7 @@ record_built <- function(v, w) {
     # and its source (#331): run_variant() rejoins from it.
     discharge_source = .lnk_discharge_source(cfgs[[v]]),
     link_head = head_sha, dirty = length(dirty) > 0L,
-    built_at = format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z"))
+    built_at = format(built_at, "%Y-%m-%d %H:%M:%S %Z"))
   old <- if (file.exists(path_built)) {
     utils::read.csv(path_built, colClasses = "character")
   } else {
@@ -651,14 +672,17 @@ n_segments_of <- function(wsg) {
     sch), params = list(wsg))$n
 }
 record_timing <- function(v, w, species, seconds, in_total, load,
-                          n_segments = n_segments_of(w)) {
+                          n_segments = n_segments_of(w), jobs = 1L,
+                          built_at = Sys.time()) {
   row <- data.frame(
     variant = v, watershed_group_code = w,
     species = if (is.null(species)) "all" else paste(species, collapse = ","),
     step = names(seconds), seconds = round(unname(seconds), 3),
     in_total = rep_len(in_total, length(seconds)),
     n_segments = n_segments, load_1min = load,
-    built_at = format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z"),
+    # The width the pass ran at (link#406); the base run is always serial.
+    jobs = jobs,
+    built_at = format(built_at, "%Y-%m-%d %H:%M:%S %Z"),
     link_head = head_sha,
     fresh_version = as.character(utils::packageVersion("fresh")))
   old <- if (file.exists(path_timing)) {
@@ -666,6 +690,9 @@ record_timing <- function(v, w, species, seconds, in_total, load,
   } else {
     NULL
   }
+  # A variant_timing.csv from before link#406 has no jobs column: every pass
+  # in it ran serially.
+  if (!is.null(old) && !"jobs" %in% names(old)) old$jobs <- "1"
   if (!is.null(old)) {
     old <- old[names(row)]
     keep <- !(old$variant == v & old$watershed_group_code == w &
@@ -824,45 +851,35 @@ copy_access <- function(from, to, wsg) {
   })
 }
 
-run_variant <- function(v) {
-  if (!identical(v, base_variant)) {
-    cfgs[[v]] <<- write_bundle(as.list(variants[variants$variant == v, ]))
-  }
-  cfg <- cfgs[[v]]
+# One group's pass of variant v (link#406: the body of what was run_variant()'s
+# loop). It runs in this process or on a cluster worker, so it reads only its
+# arguments and the helpers every worker is given (variant_helpers), and it
+# writes no file: it returns its step seconds, discharge-join seconds, load,
+# working digest and, on failure, the message, and the caller records them.
+# `want` is the base run's habitat digest for w (base pass only, else NA).
+variant_pass <- function(w, v, cfg, sp, want, is_mad, sch_base) {
   sch <- cfg$pipeline$schema
-  sch_base <- schema_of(base_variant)
-  base_digest <- utils::read.csv(path_base_digest, colClasses = "character")
-  sp_v <- variants$species_code[variants$variant == v]
-  # The base re-classifies every species (its digest is the whole table); a
-  # variant only its own, in the WSGs where that species has a role.
-  wsgs_v <- if (identical(v, base_variant)) focal else
-    intersect(focal, roles$watershed_group_code[roles$species_code == sp_v])
-  say("variant %s into %s (%s)", v, sch, paste(wsgs_v, collapse = ","))
-  # Sized to the whole bundle (link#194), as lnk_pipeline_run does. Once per
-  # variant, so its row has no group.
-  load <- load_1min()
-  t1 <- Sys.time()
-  lnk_persist_init(conn, cfg, species = cfg$species)
-  record_timing(v, "", NULL, c(persist_init = secs_since(t1)),
-                in_total = FALSE, load = load, n_segments = NA_integer_)
-  for (w in wsgs_v) {
+  out <- list(watershed_group_code = w, error = NA_character_, tm = c(),
+              s_join = NA_real_, load = NA_real_, digest = NA_character_,
+              finished = NULL)
+  tryCatch({
     if (!dbExistsTable(conn, Id(schema = working_of(w), table = "streams"))) {
       stop(working_of(w), " is gone: run --step=base first", call. = FALSE)
     }
     # The working streams carry the discharge of whichever bundle last
     # touched them; set it to this variant's fill (#305) and source (#331)
     # before classify, so a base built on one can score variants on another.
-    load <- load_1min()
+    out$load <- load_1min()
     t1 <- Sys.time()
     .lnk_discharge_join(conn, paste0(working_of(w), ".streams"), w,
                         fill = .lnk_discharge_fill_applied(cfg, w),
                         source = .lnk_discharge_source(cfg))
-    s_join <- secs_since(t1)
+    out$s_join <- secs_since(t1)
     # A `mad` variant classifies on the discharge prepare joined onto the
     # working streams (#286). A working schema built before that join, or a
     # WSG with no discharge, would classify every inheriting stream rule
     # FALSE and read as a threshold verdict.
-    if (identical(variants$model[variants$variant == v], "mad")) {
+    if (is_mad) {
       has_col <- nrow(dbGetQuery(conn,
         "SELECT 1 FROM information_schema.columns
           WHERE table_schema = $1 AND table_name = 'streams'
@@ -878,7 +895,6 @@ run_variant <- function(v) {
     # and their total on the "done in" line.
     t0 <- Sys.time()
     tm <- c()
-    sp <- if (identical(v, base_variant)) NULL else sp_v
     t1 <- Sys.time()
     lnk_pipeline_classify(conn, aoi = w, cfg = cfg, loaded = loaded,
                           schema = working_of(w), species = sp)
@@ -890,20 +906,14 @@ run_variant <- function(v) {
     t1 <- Sys.time()
     dg <- working_habitat_digest(w)
     tm["digest_working"] <- secs_since(t1)
-    if (identical(v, base_variant)) {
-      want <- base_digest$digest[base_digest$watershed_group_code == w]
-      if (length(want) != 1L) {
-        stop("no base habitat digest for ", w, " in ", path_base_digest,
-             ": run --step=base with this --out first", call. = FALSE)
-      }
-      if (!identical(dg, want)) {
-        stop("re-classifying ", w, " with ", base_bundle, "'s thresholds gave habitat ",
-             "digest ", dg, ", not the base run's ", want,
-             ": the re-classify path is not a pure threshold change",
-             call. = FALSE)
-      }
+    out$digest <- dg
+    if (!is.na(want) && !identical(dg, want)) {
+      stop("re-classifying ", w, " with ", base_bundle, "'s thresholds gave habitat ",
+           "digest ", dg, ", not the base run's ", want,
+           ": the re-classify path is not a pure threshold change",
+           call. = FALSE)
     }
-    if (!identical(v, base_variant)) {
+    if (!is.null(sp)) {
       t1 <- Sys.time()
       lnk_pipeline_persist(conn, aoi = w, cfg = cfg, species = sp,
                            schema = working_of(w))
@@ -942,15 +952,129 @@ run_variant <- function(v) {
       }
     }
     tm["digest_persist"] <- secs_since(t1)
-    total <- secs_since(t0)
-    record_built(v, w)
-    record_timing(v, w, sp, c(discharge_join = s_join, tm),
-                  in_total = c(FALSE, rep(TRUE, length(tm))), load = load)
+    out$tm <- tm
+    out$finished <- Sys.time()
     say("variant %s %s steps (min): %s", v, w,
         paste(sprintf("%s %.2f", names(tm), tm / 60), collapse = ", "))
-    say("variant %s %s done in %.1f min (habitat %s)", v, w, total / 60,
-        substr(dg, 1, 8))
+    say("variant %s %s done in %.1f min (habitat %s)", v, w,
+        secs_since(t0) / 60, substr(dg, 1, 8))
+  }, error = function(e) {
+    out$error <<- conditionMessage(e)
+    say("variant %s %s FAILED: %s", v, w, conditionMessage(e))
+  })
+  out
+}
+# The worker's call: `want` is the named vector of every group's base digest,
+# so one function and one set of arguments serve every group of a pass.
+variant_pass_lb <- function(w, want, ...) variant_pass(w, want = want[[w]], ...)
+# What a cluster worker needs to run variant_pass() (link#406): the helpers
+# it calls and the objects they read, besides its own `conn`.
+variant_helpers <- c("variant_pass", "variant_pass_lb", "working_prefix",
+                     "working_of",
+                     "digest_sql", "digest_of", "working_habitat_digest",
+                     "copy_access", "secs_since", "load_1min", "say",
+                     "base_bundle", "loaded")
+start_cluster <- function(n) {
+  say("variants: starting %d workers", n)
+  cl <- parallel::makeCluster(n, outfile = "")
+  ok <- FALSE
+  on.exit(if (!ok) parallel::stopCluster(cl))
+  parallel::clusterCall(cl, setwd, getwd())
+  parallel::clusterExport(cl, c(variant_helpers, "conn_args"))
+  parallel::clusterEvalQ(cl, {
+    suppressPackageStartupMessages({
+      pkgload::load_all(quiet = TRUE)
+      library(DBI)
+    })
+    conn <- do.call(lnk_db_conn, conn_args)
+    NULL
+  })
+  ok <- TRUE
+  cl
+}
+
+# The record of one group's pass: built.csv once its checks passed, and its
+# rows in variant_timing.csv, stamped when the group finished (a cluster's
+# results are recorded only once every group has returned).
+record_pass <- function(v, sp, r) {
+  record_built(v, r$watershed_group_code, built_at = r$finished)
+  record_timing(v, r$watershed_group_code, sp, c(discharge_join = r$s_join, r$tm),
+                in_total = c(FALSE, rep(TRUE, length(r$tm))), load = r$load,
+                jobs = jobs, built_at = r$finished)
+}
+
+run_variant <- function(v, cl = NULL) {
+  if (!identical(v, base_variant)) {
+    cfgs[[v]] <<- write_bundle(as.list(variants[variants$variant == v, ]))
   }
+  cfg <- cfgs[[v]]
+  sch <- cfg$pipeline$schema
+  sch_base <- schema_of(base_variant)
+  base_digest <- utils::read.csv(path_base_digest, colClasses = "character")
+  sp_v <- variants$species_code[variants$variant == v]
+  # The base re-classifies every species (its digest is the whole table); a
+  # variant only its own, in the WSGs where that species has a role.
+  is_base <- identical(v, base_variant)
+  wsgs_v <- if (is_base) focal else
+    intersect(focal, roles$watershed_group_code[roles$species_code == sp_v])
+  sp <- if (is_base) NULL else sp_v
+  # The base pass is checked against the base run's digest of each group.
+  want <- stats::setNames(rep(NA_character_, length(wsgs_v)), wsgs_v)
+  if (is_base) {
+    for (w in wsgs_v) {
+      d <- base_digest$digest[base_digest$watershed_group_code == w]
+      if (length(d) != 1L) {
+        stop("no base habitat digest for ", w, " in ", path_base_digest,
+             ": run --step=base with this --out first", call. = FALSE)
+      }
+      want[[w]] <- d
+    }
+  }
+  is_mad <- identical(variants$model[variants$variant == v], "mad")
+  say("variant %s into %s (%s)%s", v, sch, paste(wsgs_v, collapse = ","),
+      if (is.null(cl)) "" else sprintf(", %d jobs", length(cl)))
+  # Sized to the whole bundle (link#194), as lnk_pipeline_run does. Once per
+  # variant, so its row has no group.
+  load <- load_1min()
+  t1 <- Sys.time()
+  lnk_persist_init(conn, cfg, species = cfg$species)
+  record_timing(v, "", NULL, c(persist_init = secs_since(t1)),
+                in_total = FALSE, load = load, n_segments = NA_integer_,
+                jobs = jobs)
+  t_pass <- Sys.time()
+  if (is.null(cl)) {
+    # Serial: each group is recorded as it finishes, and the first failure
+    # stops the build.
+    for (w in wsgs_v) {
+      r <- variant_pass(w, v, cfg, sp, want[[w]], is_mad, sch_base)
+      if (!is.na(r$error)) stop(r$error, call. = FALSE)
+      record_pass(v, sp, r)
+    }
+  } else {
+    # Longest groups first, so the last to start is a short one.
+    n_seg <- vapply(wsgs_v, n_segments_of, integer(1))
+    ord <- wsgs_v[order(-n_seg, wsgs_v)]
+    res <- parallel::clusterApplyLB(cl, ord, variant_pass_lb, want = want,
+                                    v = v, cfg = cfg, sp = sp, is_mad = is_mad,
+                                    sch_base = sch_base)
+    names(res) <- ord
+    # Recorded in the order the serial loop records them.
+    res <- res[wsgs_v]
+    failed <- character(0)
+    for (w in wsgs_v) {
+      if (is.na(res[[w]]$error)) record_pass(v, sp, res[[w]]) else failed <- c(failed, w)
+    }
+    if (length(failed) > 0L) {
+      stop("variant ", v, " failed in ", paste(failed, collapse = ", "), ":\n",
+           paste(vapply(res[failed], `[[`, "", "error"), collapse = "\n"),
+           call. = FALSE)
+    }
+  }
+  # First dispatch to last return: the number a width is judged on (#406).
+  record_timing(v, "", sp, c(pass_wall = secs_since(t_pass)), in_total = FALSE,
+                load = load, n_segments = NA_integer_, jobs = jobs)
+  say("variant %s: %d groups in %.1f min at %d job%s", v, length(wsgs_v),
+      secs_since(t_pass) / 60, jobs, if (jobs == 1L) "" else "s")
 }
 
 # -- stamp ---------------------------------------------------------------------------------
@@ -1002,10 +1126,15 @@ if (identical(step, "bundles")) {
 }
 if (step %in% c("all", "base")) run_base()
 if (step %in% c("all", "variants")) {
-  # The base variant first: its digest check is what licenses the others.
-  for (v in run_variants) {
-    run_variant(v)
-  }
+  # Started after the base, so no worker holds a connection through it, and
+  # stopped however the variants end (on.exit() never fires at top level).
+  cl <- if (jobs > 1L) start_cluster(jobs) else NULL
+  tryCatch({
+    # The base variant first: its digest check is what licenses the others.
+    for (v in run_variants) {
+      run_variant(v, cl)
+    }
+  }, finally = if (!is.null(cl)) parallel::stopCluster(cl))
 }
 write_stamp()
 say("build %s done in %.1f min", step,

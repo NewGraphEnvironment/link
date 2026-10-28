@@ -30,3 +30,35 @@ Making classify, connect or persist themselves faster; parallelism inside a grou
 
 | Error | Resolution |
 |-------|------------|
+
+## Plan review (Plan agent, 2026-10-28)
+
+Ten findings, saved here in brief. The database side is safe to run concurrently: fresh's
+classify and connect name every scratch table from their `table`/`to` argument (the group's
+working schema) or put it in `pg_temp`; persist deletes by group, and the persist tables' keys
+include `watershed_group_code`, with no foreign keys or triggers.
+
+- Blocker 1, widths overwrite each other's timing in one `--out`: each width gets its own
+  `--out` (`j<N>/`).
+- Blocker 2, #404's `analyze.R` matches `built_at` to log lines: the new `analyze.R` parses
+  the "done in" lines directly, and worker lines keep that format. `built_at` now carries
+  the group's finish time from the worker.
+- Helpers on workers: the export list is explicit (`variant_helpers`), the master's `conn`
+  is never exported, and each worker opens its own after the exports.
+- A killed build records none of the variant's groups: stated in the header.
+- Comparator proof: `compare.R` also perturbs one digest and requires a failure.
+
+## `could not truncate file … Input/output error` is the mount, not the change
+
+The smoke run logged two of these Postgres warnings. The container log holds ten since
+2026-10-21 (21, 27 and 28 Oct, during serial runs too). The data directory is a Docker Desktop
+grpcfuse bind mount, 91 % used with 351 GB free. Postgres warns and completes the drop.
+
+## Smoke and mutation (scratch `--out`, `--wsgs=REVL,UBTN`, base `score404_*`)
+
+- `--jobs=2`: both passes completed, and the REVL digests equal #404's (`default`
+  `778f7c72`, `bt_rear_wet_p10` `15073c87`). `built.csv` and `variant_timing.csv` were
+  written in group order, with a `pass_wall` row per variant.
+- UBTN's base digest corrupted, `--jobs=2`: exit 1, the build names UBTN, `built.csv` holds
+  `default` REVL only, the variant pass never ran, and no worker was left running.
+- The same at `--jobs=1`: exit 1 at UBTN, with REVL recorded, as before the change.

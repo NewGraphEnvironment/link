@@ -40,24 +40,24 @@ The bound from the serial numbers (`analyze.R`, longest-first greedy): four jobs
 
 ## Phase 1: `--jobs` in the build script
 
-- [ ] Parse and validate `--jobs` (digits only, 1 to 16, default 1), and document it in the header
+- [x] Parse and validate `--jobs` (digits only, 1 to 16, default 1), and document it in the header
       usage block.
-- [ ] Move the body of `run_variant()`'s group loop into `variant_pass(v, w, cfg)`. It returns the
+- [x] Move the body of `run_variant()`'s group loop into `variant_pass(v, w, cfg)`. It returns the
       step seconds, discharge-join seconds, load, working digest and an error message. It writes
       no file. The master's loop calls it, then `record_built()` and `record_timing()`.
-- [ ] With `--jobs` above 1, start the cluster once before the variants loop and close it in a
+- [x] With `--jobs` above 1, start the cluster once before the variants loop and close it in a
       `tryCatch(finally =)`. `on.exit()` at a script's top level never fires. Set each worker's
       working directory, `load_all()`, connection, and the exported helpers and `loaded`.
       Export `cfgs[[v]]` per variant. Dispatch with `parallel::clusterApplyLB()` in descending
       segment count (longest first). Workers write progress lines to the log (`outfile = ""`),
       prefixed with the group.
-- [ ] `variant_timing.csv` gains a `jobs` column, backfilled to 1 on older rows as
+- [x] `variant_timing.csv` gains a `jobs` column, backfilled to 1 on older rows as
       `record_built()` backfills its columns. Each variant also gets one `pass_wall` row (group
       blank, `in_total` FALSE): first dispatch to last return, the number the speed-up is read
       from.
-- [ ] Keep the serial path behaviourally unchanged. At `--jobs=1` no cluster starts, and each
+- [x] Keep the serial path behaviourally unchanged. At `--jobs=1` no cluster starts, and each
       group is recorded as it finishes.
-- [ ] Update the header comment, and RUNBOOK if it describes the loop (grep for
+- [x] Update the header comment, and RUNBOOK if it describes the loop (grep for
       `habitat_variants_build`).
 
 ## Phase 2: measure on #331's nine groups (m4)
