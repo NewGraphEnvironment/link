@@ -233,7 +233,7 @@ test_that("every file under inst/extdata, DESCRIPTION and the run's data-raw scr
 })
 
 pt_git_repo <- function(e) {
-  skip_if(!nzchar(Sys.which("git")), "git absent")
+  testthat::skip_if(!nzchar(Sys.which("git")), "git absent")
   d <- withr::local_tempdir(.local_envir = parent.frame())
   g <- function(...) system2("git", c("-C", d, ...), stdout = TRUE, stderr = TRUE)
   g("init", "-q")
@@ -361,12 +361,12 @@ test_that("pretest_check.R clears a run only on a passing record, and an overrid
   expect_identical(r$status, 1L)
   expect_match(r$out, "no gate record for config default")
 
+  cols <- paste("run_at, config_name, link_sha, link_dirty, fresh_sha, since_sha, until_sha,",
+                "scratch, k, floor_min, per_input, groups, verdict, notes")
+  vals <- "$1, 'default', $2, false, $3, $2, $2, 's', 3, 5, 2, 'AAAA:pass', $4, NULL"
+  ins_sql <- sprintf("INSERT INTO %s.log_pretest (%s) VALUES (%s)", schema, cols, vals)
   ins <- function(verdict, fresh, at) {
-    DBI::dbExecute(conn, sprintf(
-      "INSERT INTO %s.log_pretest (run_at, config_name, link_sha, link_dirty, fresh_sha, since_sha,
-         until_sha, scratch, k, floor_min, per_input, groups, verdict, notes)
-       VALUES ($1, 'default', $2, false, $3, $2, $2, 's', 3, 5, 2, 'AAAA:pass', $4, NULL)", schema),
-      params = list(as.POSIXct(at, tz = "UTC"), head_sha, fresh, verdict))
+    DBI::dbExecute(conn, ins_sql, params = list(as.POSIXct(at, tz = "UTC"), head_sha, fresh, verdict))
   }
   ins("pass", "f1", "2026-10-28 10:00")
   r <- check()

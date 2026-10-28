@@ -234,10 +234,11 @@ pretest_statement_min <- function(bound, cap = 30) {
 # its finished row in the scratch log (NA when none).
 pretest_verdict <- function(exit, run_minutes, bound) {
   stopifnot(length(exit) == length(run_minutes), length(exit) == length(bound))
-  ifelse(!is.na(exit) & exit == 124L, "bound",
-  ifelse(is.na(exit) | exit != 0L, "failed",
-         ifelse(is.na(run_minutes), "no_row",
-                ifelse(run_minutes > bound, "bound", "pass"))))
+  v <- ifelse(is.na(exit) | exit != 0L, "failed",
+              ifelse(is.na(run_minutes), "no_row",
+                     ifelse(run_minutes > bound, "bound", "pass")))
+  v[!is.na(exit) & exit == 124L] <- "bound"
+  v
 }
 
 # The gate passes only when every group passed. No group is not a pass.
@@ -296,8 +297,9 @@ pretest_since_default <- function(history) {
   h <- history[!is.na(history$link_sha), , drop = FALSE]
   if (!nrow(h)) stop("no history row carries a link_sha; pass --since=", call. = FALSE)
   if (any(is.na(h$link_dirty) | h$link_dirty)) {
-    stop("history rows built from a dirty tree (", paste(h$wsg[is.na(h$link_dirty) | h$link_dirty],
-         collapse = ", "), "): their code is not a commit; pass --since=", call. = FALSE)
+    dirty <- h$wsg[is.na(h$link_dirty) | h$link_dirty]
+    stop("history rows built from a dirty tree (", paste(dirty, collapse = ", "),
+         "): their code is not a commit; pass --since=", call. = FALSE)
   }
   h$link_sha[order(h$date_start)][1]
 }

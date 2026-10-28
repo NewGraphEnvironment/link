@@ -1407,6 +1407,10 @@ WSG draining by two independent paths would be under-covered.
 
 ## 8d. Pre-flight gates on a multi-host run (link#246)
 
+**Before any provincial run, run the pre-run gate** (`data-raw/pretest_run.sh`,
+link#372, below). `preflight_local()` refuses a run that no passing gate record
+clears.
+
 A study-area run spends money and writes to a shared persist, so the gates in
 `study_area_run.sh` sit in **two** blocks answering two different questions.
 
@@ -1430,6 +1434,100 @@ downgrades *only* vintage and parity, and only with a written justification —
 the same position `lnk_wsg_downstream_check(override=)` takes. `--auto-install`
 is remediation, not a skip: it re-runs the cyphers' install stage (which re-runs
 the fresh assertion) and re-checks exactly once.
+
+### The pre-run gate (link#372)
+
+On 2026-10-23 the provincial run was the first contact between new code and
+OKAN and KTSU, and the dispatcher lost about five hours to them while three
+cloud hosts idled. A rule's cost is driven by an input the test groups did not
+carry, so the gate models the groups at the extreme of each input that the
+changed code drives, on the dispatcher, before anything is spent:
+
+```bash
+bash data-raw/pretest_run.sh --config=default --schema=fresh_default
+```
+
+(bash 5.1 or later, as the driver). It prints its decisions, then:
+
+- **What changed.** link's files under `R/`, `inst/extdata/` (the run's bundle
+  and what it `extends`; other bundles are left out), `DESCRIPTION` and the
+  run's `data-raw/` entry points, between `--since` and HEAD. fresh's `R/`
+  between the two `Remotes:` pins, read from the fresh checkout beside link
+  (`--fresh-repo=`). `--since` defaults to the link SHA of the earliest of the
+  groups' newest finished builds in `<schema>.log`: the last run, even where a
+  group was re-modelled by hand after it.
+- **Which input each file drives.** `data-raw/pretest_inputs.csv` (repo, path
+  regex, input, why). `{config}` in a pattern stands for any bundle in the
+  chain. Inputs are queries, `data-raw/pretest/<input>.sql`, each returning
+  `(watershed_group_code, value)` for every group: `near_river_conn` (fresh's
+  walk prefilter, the longest connector run), `segments`, `gradient`
+  (segments at 15 % or more), `observations`, `crossings` (PSCIS), `dams`
+  (CABD). Three special values: `any` (every pick runs it; alone, the fastest
+  group is picked), `none` (off the modelling path), `unexercised` (on the
+  run's path but not the gate's: the recompute, the consolidate, the habitat
+  gate). **A changed file the map does not name refuses the gate (exit 2):**
+  add a row naming what drives its cost. `test-pretest.R` checks that every
+  file in `R/`, `inst/extdata/` and the entry points has a row, and that no
+  `none` row names a file the static call graph from `wsg_run_one.R` reaches
+  (`pretest_reach()`, which also follows `getFromNamespace()` strings). fresh's
+  `none` rows were checked once at v0.44.0 (`data-raw/logs/pretest_372/reach.md`);
+  re-run `reach_fresh.R` there when a fresh release moves code between files.
+- **Which groups.** Each input's top `--per-input` groups (default 2) among
+  groups with a finished build in `<schema>.log`, ties by code; the union is
+  modelled, largest history first.
+- **The bound.** k (`--k`, 3) times the group's newest finished minutes in
+  `--minutes-schema` (default `--schema`), never under `--floor-min` (5). A
+  group in `--minutes-exclude` (a known stall, as KTSU's 65 min on 2026-10-23)
+  or with no row is bounded on the median. Each statement is bounded at
+  `min(--statement-timeout, ceil(bound))`, and a wall-clock watchdog kills the
+  group at its bound and terminates its backends by application name
+  (`pretest_<WSG>`), so a stall fails within the bound, not after it.
+- **Where.** A scratch schema, `fresh_pretest_<config>`, dropped and rebuilt
+  with the persist schema's tables (columns, defaults, indexes and primary keys
+  under their own names, no rows), so the run's DDL meets existing tables, not
+  fresh ones. Each pick runs through `wsg_run_one.R` as the dispatcher leg would
+  (`LNK_LOAD=loadall`, `LNK_GUARD_DOWNSTREAM=warn`, `LNK_HABITAT_GATE=0`). The
+  gate refuses a dirty checkout and refuses while any session is active on the
+  persist schema or a `working_` schema: a live run shares `working_<wsg>`.
+- **The verdict and the record.** Each group is `pass`, `failed` (non-zero
+  exit), `bound` (past its bound, or killed) or `no_row`. The gate passes only
+  when every group passes, on one clean link SHA equal to HEAD and one fresh
+  SHA, both read from the scratch log rows the picks wrote. One row goes to
+  `<schema>.log_pretest`; the report is `<out>/pretest.md` (default
+  `data-raw/logs/pretest/<UTC>_<config>/`). Exit 0 pass, 1 fail, 2 refused.
+  `--pick-only` stops after the pick and writes nothing to the database;
+  `--only=<WSG>,...` models a subset of the picks and its record is never a pass.
+
+**How the driver reads it.** `preflight_local()` runs `data-raw/pretest_check.R`
+(`pretest_record_check()`). The newest `pass` or `fail` row for the config
+decides, so a later fail voids an earlier pass. It clears the run when it
+passed on a clean tree, its fresh SHA is the installed one, its range starts at
+or before every link SHA the history was built at, and every file changed
+between the SHA it modelled and HEAD maps to `none`. A version bump or a
+CITATION commit therefore keeps the record; an edit to `R/` voids it.
+`--pretest-note="<why>"` runs without a record, prints an `OVERRIDE:` line,
+and writes an `override` row with the note and the run_uid
+(`data-raw/pretest_override.sql`; not on `--preflight-only`, which writes
+nothing). The check applies to every launch, dispatcher-only included;
+`--recompute-only` runs no pre-flight.
+
+**What it does not cover.**
+- Correctness and parity: the variants harness and `habitat_validate.R`.
+- The recompute and the consolidate, whose changed files it names as
+  unexercised; the recompute's cost is fresh's province-wide walk (#261).
+- Access cost across groups: the scratch `barriers` hold only the picks, where a
+  run's hold every group's.
+- An input nobody mapped. The map is a judgement per file, and inputs ignore the
+  config (under `bcfishpass` no rule asks for the near-river walk, so its picks
+  are spent). On 2026-10-23's groups: QUES is first on `near_river_conn` and
+  OKAN first on `dams` and third on `observations`, but KTSU ranks 119th or
+  lower on every input, so no input would have picked it.
+- A 2x slowdown: k = 3 is for stalls (KTSU ran 50x). QUES went 4.9 to 9.3 min
+  between 0.66 and 0.68 with the walk, inside its bound.
+- Primitives refreshed after the gate (`--refresh-primitives` runs before
+  `preflight_local()`, after the gate was taken).
+
+Evidence: `data-raw/logs/pretest_372/` (its README indexes it).
 
 ### The vintage gate reads load stamps (link#265, absorbing #247)
 
