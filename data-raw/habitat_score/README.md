@@ -117,3 +117,11 @@ The inputs for #302 are `variants_302.csv` and `wsg_roles_302.csv`.
 
 One row per WSG × species: `held_out` WSGs decide the rule; `in_sample` WSGs (among the
 WSGs the step-1 percentiles came from) are reported beside it.
+
+**Where a pass's time goes (#404).** The build writes `variant_timing.csv` into `--out`:
+seconds per step for every variant × WSG pass (classify, connect, the working digest,
+persist, the access copy and `ANALYZE`, the gate, the persisted digests), which sum to the
+minutes its "done in" line prints, plus the discharge join before the pass and the base
+run's model and recompute per WSG as rows outside that total (`in_total`). Each row carries
+the group's segment count and the 1-minute load average when the pass started. The score
+does not read it; `data-raw/logs/variant_cost_404/analyze.R` does.

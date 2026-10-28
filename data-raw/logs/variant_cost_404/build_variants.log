@@ -1,0 +1,1454 @@
+13:22:18 variant default into score404_default (REVL,ELKR,KOTR,UARL,MURR,UBTN,LHAF,PARS,KOTL)
+NOTICE:  schema "score404_default" already exists, skipping
+
+NOTICE:  relation "streams" already exists, skipping
+
+NOTICE:  relation "streams_habitat_bt" already exists, skipping
+
+NOTICE:  relation "streams_habitat_ch" already exists, skipping
+
+NOTICE:  relation "streams_habitat_cm" already exists, skipping
+
+NOTICE:  relation "streams_habitat_co" already exists, skipping
+
+NOTICE:  relation "streams_habitat_pk" already exists, skipping
+
+NOTICE:  relation "streams_habitat_sk" already exists, skipping
+
+NOTICE:  relation "streams_habitat_st" already exists, skipping
+
+NOTICE:  relation "streams_habitat_wct" already exists, skipping
+
+NOTICE:  relation "streams_habitat_ko" already exists, skipping
+
+NOTICE:  relation "streams_habitat_rb" already exists, skipping
+
+NOTICE:  relation "streams_habitat_gr" already exists, skipping
+
+NOTICE:  relation "barriers" already exists, skipping
+
+NOTICE:  relation "barrier_overrides" already exists, skipping
+
+NOTICE:  relation "streams_access" already exists, skipping
+
+NOTICE:  relation "streams_mapping_code" already exists, skipping
+
+NOTICE:  relation "streams_near_river" already exists, skipping
+
+NOTICE:  schema "score404_default" already exists, skipping
+
+NOTICE:  relation "log" already exists, skipping
+
+NOTICE:  relation "log_recompute" already exists, skipping
+
+NOTICE:  relation "log_input" already exists, skipping
+
+NOTICE:  relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "mad_m3s" of relation "streams" already exists, skipping
+
+NOTICE:  column "mad_m3s_source" of relation "streams" already exists, skipping
+
+NOTICE:  table "streams_habitat_near_river" does not exist, skipping
+
+NOTICE:  relation "streams_blk_idx" already exists, skipping
+
+NOTICE:  relation "streams_blk_drm_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_lfid_idx" already exists, skipping
+
+NOTICE:  relation "streams_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_id_segment_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat" already exists, skipping
+
+NOTICE:  table "streams_acc_02" does not exist, skipping
+
+NOTICE:  table "streams_acc_025" does not exist, skipping
+
+NOTICE:  table "streams_acc_025_ovr_bt" does not exist, skipping
+
+NOTICE:  table "streams_acc_02_ovr_wct" does not exist, skipping
+
+NOTICE:  table "streams_acc_025_ovr_rb" does not exist, skipping
+
+NOTICE:  relation "streams_habitat_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_id_segment_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_species_code_idx" already exists, skipping
+
+NOTICE:  schema "pg_temp" does not exist, skipping
+
+NOTICE:  table "frs_clusters_wct" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_wct_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_wct_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_wct_lake_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_wct_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_wct_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_wct_wetland_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_rb_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_rb_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_rb_lake_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_rb_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_rb_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_rb_wetland_rearing" does not exist, skipping
+
+13:22:37 variant default REVL steps (min): classify 0.16, connect 0.12, digest_working 0.00, digest_persist 0.00
+13:22:37 variant default REVL done in 0.3 min (habitat 778f7c72)
+NOTICE:  column "mad_m3s" of relation "streams" already exists, skipping
+
+NOTICE:  column "mad_m3s_source" of relation "streams" already exists, skipping
+
+NOTICE:  table "streams_habitat_near_river" does not exist, skipping
+
+NOTICE:  relation "streams_blk_idx" already exists, skipping
+
+NOTICE:  relation "streams_blk_drm_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_lfid_idx" already exists, skipping
+
+NOTICE:  relation "streams_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_id_segment_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat" already exists, skipping
+
+NOTICE:  table "streams_acc_015" does not exist, skipping
+
+NOTICE:  table "streams_acc_02" does not exist, skipping
+
+NOTICE:  table "streams_acc_025" does not exist, skipping
+
+NOTICE:  table "streams_acc_025_ovr_bt" does not exist, skipping
+
+NOTICE:  table "streams_acc_02_ovr_wct" does not exist, skipping
+
+NOTICE:  table "streams_acc_025_ovr_rb" does not exist, skipping
+
+NOTICE:  relation "streams_habitat_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_id_segment_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_species_code_idx" already exists, skipping
+
+NOTICE:  table "frs_clusters_bt" does not exist, skipping
+
+NOTICE:  table "frs_clusters_wct" does not exist, skipping
+
+NOTICE:  table "frs_clusters_gr" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_wct_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_wct_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_wct_lake_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_wct_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_wct_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_wct_wetland_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_rb_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_rb_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_rb_lake_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_rb_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_rb_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_rb_wetland_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_gr_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_gr_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_gr_lake_rearing" does not exist, skipping
+
+13:23:54 variant default ELKR steps (min): classify 0.53, connect 0.64, digest_working 0.00, digest_persist 0.00
+13:23:54 variant default ELKR done in 1.2 min (habitat c9fc8a78)
+NOTICE:  column "mad_m3s" of relation "streams" already exists, skipping
+
+NOTICE:  column "mad_m3s_source" of relation "streams" already exists, skipping
+
+NOTICE:  table "streams_habitat_near_river" does not exist, skipping
+
+NOTICE:  relation "streams_blk_idx" already exists, skipping
+
+NOTICE:  relation "streams_blk_drm_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_lfid_idx" already exists, skipping
+
+NOTICE:  relation "streams_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_id_segment_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat" already exists, skipping
+
+NOTICE:  table "streams_acc_02" does not exist, skipping
+
+NOTICE:  table "streams_acc_025" does not exist, skipping
+
+NOTICE:  table "streams_acc_025_ovr_bt" does not exist, skipping
+
+NOTICE:  table "streams_acc_02_ovr_wct" does not exist, skipping
+
+NOTICE:  table "streams_acc_025_ovr_rb" does not exist, skipping
+
+NOTICE:  relation "streams_habitat_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_id_segment_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_species_code_idx" already exists, skipping
+
+NOTICE:  table "frs_clusters_bt" does not exist, skipping
+
+NOTICE:  table "frs_clusters_wct" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_wct_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_wct_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_wct_lake_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_wct_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_wct_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_wct_wetland_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_rb_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_rb_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_rb_lake_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_rb_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_rb_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_rb_wetland_rearing" does not exist, skipping
+
+13:24:30 variant default KOTR steps (min): classify 0.25, connect 0.26, digest_working 0.00, digest_persist 0.00
+13:24:30 variant default KOTR done in 0.5 min (habitat af90b805)
+NOTICE:  column "mad_m3s" of relation "streams" already exists, skipping
+
+NOTICE:  column "mad_m3s_source" of relation "streams" already exists, skipping
+
+NOTICE:  table "streams_habitat_near_river" does not exist, skipping
+
+NOTICE:  relation "streams_blk_idx" already exists, skipping
+
+NOTICE:  relation "streams_blk_drm_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_lfid_idx" already exists, skipping
+
+NOTICE:  relation "streams_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_id_segment_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat" already exists, skipping
+
+NOTICE:  table "streams_acc_02" does not exist, skipping
+
+NOTICE:  table "streams_acc_025" does not exist, skipping
+
+NOTICE:  table "streams_acc_025_ovr_bt" does not exist, skipping
+
+NOTICE:  table "streams_acc_02_ovr_wct" does not exist, skipping
+
+NOTICE:  table "streams_acc_025_ovr_rb" does not exist, skipping
+
+NOTICE:  relation "streams_habitat_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_id_segment_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_species_code_idx" already exists, skipping
+
+NOTICE:  table "frs_clusters_bt" does not exist, skipping
+
+NOTICE:  table "frs_clusters_wct" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_wct_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_wct_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_wct_lake_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_wct_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_wct_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_wct_wetland_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_rb_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_rb_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_rb_lake_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_rb_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_rb_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_rb_wetland_rearing" does not exist, skipping
+
+13:24:55 variant default UARL steps (min): classify 0.18, connect 0.14, digest_working 0.00, digest_persist 0.00
+13:24:55 variant default UARL done in 0.3 min (habitat f07ed903)
+NOTICE:  column "mad_m3s" of relation "streams" already exists, skipping
+
+NOTICE:  column "mad_m3s_source" of relation "streams" already exists, skipping
+
+NOTICE:  table "streams_habitat_near_river" does not exist, skipping
+
+NOTICE:  relation "streams_blk_idx" already exists, skipping
+
+NOTICE:  relation "streams_blk_drm_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_lfid_idx" already exists, skipping
+
+NOTICE:  relation "streams_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_id_segment_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat" already exists, skipping
+
+NOTICE:  table "streams_acc_015" does not exist, skipping
+
+NOTICE:  table "streams_acc_025" does not exist, skipping
+
+NOTICE:  table "streams_acc_025_ovr_bt" does not exist, skipping
+
+NOTICE:  table "streams_acc_025_ovr_rb" does not exist, skipping
+
+NOTICE:  relation "streams_habitat_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_id_segment_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_species_code_idx" already exists, skipping
+
+NOTICE:  table "frs_clusters_bt" does not exist, skipping
+
+NOTICE:  table "frs_clusters_gr" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_rb_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_rb_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_rb_lake_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_rb_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_rb_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_rb_wetland_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_gr_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_gr_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_gr_lake_rearing" does not exist, skipping
+
+13:25:54 variant default MURR steps (min): classify 0.45, connect 0.43, digest_working 0.00, digest_persist 0.00
+13:25:54 variant default MURR done in 0.9 min (habitat 18883c3b)
+NOTICE:  column "mad_m3s" of relation "streams" already exists, skipping
+
+NOTICE:  column "mad_m3s_source" of relation "streams" already exists, skipping
+
+NOTICE:  table "streams_habitat_near_river" does not exist, skipping
+
+NOTICE:  relation "streams_blk_idx" already exists, skipping
+
+NOTICE:  relation "streams_blk_drm_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_lfid_idx" already exists, skipping
+
+NOTICE:  relation "streams_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_id_segment_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat" already exists, skipping
+
+NOTICE:  table "streams_acc_015" does not exist, skipping
+
+NOTICE:  table "streams_acc_025" does not exist, skipping
+
+NOTICE:  relation "streams_habitat_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_id_segment_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_species_code_idx" already exists, skipping
+
+NOTICE:  table "frs_clusters_bt" does not exist, skipping
+
+NOTICE:  table "frs_clusters_gr" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_rb_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_rb_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_rb_lake_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_rb_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_rb_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_rb_wetland_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_gr_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_gr_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_gr_lake_rearing" does not exist, skipping
+
+13:26:24 variant default UBTN steps (min): classify 0.09, connect 0.34, digest_working 0.00, digest_persist 0.00
+13:26:24 variant default UBTN done in 0.4 min (habitat 314d13b6)
+NOTICE:  column "mad_m3s" of relation "streams" already exists, skipping
+
+NOTICE:  column "mad_m3s_source" of relation "streams" already exists, skipping
+
+NOTICE:  table "streams_habitat_near_river" does not exist, skipping
+
+NOTICE:  relation "streams_blk_idx" already exists, skipping
+
+NOTICE:  relation "streams_blk_drm_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_lfid_idx" already exists, skipping
+
+NOTICE:  relation "streams_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_id_segment_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat" already exists, skipping
+
+NOTICE:  table "streams_acc_015" does not exist, skipping
+
+NOTICE:  table "streams_acc_025" does not exist, skipping
+
+NOTICE:  table "streams_acc_025_ovr_bt" does not exist, skipping
+
+NOTICE:  table "streams_acc_025_ovr_rb" does not exist, skipping
+
+NOTICE:  relation "streams_habitat_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_id_segment_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_species_code_idx" already exists, skipping
+
+NOTICE:  table "frs_clusters_bt" does not exist, skipping
+
+NOTICE:  table "frs_clusters_gr" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_rb_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_rb_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_rb_lake_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_rb_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_rb_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_rb_wetland_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_gr_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_gr_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_gr_lake_rearing" does not exist, skipping
+
+13:27:15 variant default LHAF steps (min): classify 0.33, connect 0.43, digest_working 0.00, digest_persist 0.00
+13:27:15 variant default LHAF done in 0.8 min (habitat e69c3a93)
+NOTICE:  column "mad_m3s" of relation "streams" already exists, skipping
+
+NOTICE:  column "mad_m3s_source" of relation "streams" already exists, skipping
+
+NOTICE:  table "streams_habitat_near_river" does not exist, skipping
+
+NOTICE:  relation "streams_blk_idx" already exists, skipping
+
+NOTICE:  relation "streams_blk_drm_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_lfid_idx" already exists, skipping
+
+NOTICE:  relation "streams_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_id_segment_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat" already exists, skipping
+
+NOTICE:  table "streams_acc_015" does not exist, skipping
+
+NOTICE:  table "streams_acc_025" does not exist, skipping
+
+NOTICE:  table "streams_acc_025_ovr_bt" does not exist, skipping
+
+NOTICE:  table "streams_acc_025_ovr_rb" does not exist, skipping
+
+NOTICE:  relation "streams_habitat_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_id_segment_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_species_code_idx" already exists, skipping
+
+NOTICE:  table "frs_clusters_bt" does not exist, skipping
+
+NOTICE:  table "frs_clusters_ko" does not exist, skipping
+
+NOTICE:  table "frs_qual_spawn_ko" does not exist, skipping
+
+NOTICE:  table "frs_trace_lfid_ko" does not exist, skipping
+
+NOTICE:  table "frs_clusters_gr" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_rb_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_rb_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_rb_lake_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_rb_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_rb_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_rb_wetland_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_gr_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_gr_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_gr_lake_rearing" does not exist, skipping
+
+13:28:50 variant default PARS steps (min): classify 0.70, connect 0.75, digest_working 0.00, digest_persist 0.00
+13:28:50 variant default PARS done in 1.5 min (habitat 4cc8cb98)
+NOTICE:  column "mad_m3s" of relation "streams" already exists, skipping
+
+NOTICE:  column "mad_m3s_source" of relation "streams" already exists, skipping
+
+NOTICE:  table "streams_habitat_near_river" does not exist, skipping
+
+NOTICE:  relation "streams_blk_idx" already exists, skipping
+
+NOTICE:  relation "streams_blk_drm_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_lfid_idx" already exists, skipping
+
+NOTICE:  relation "streams_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_id_segment_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat" already exists, skipping
+
+NOTICE:  table "streams_acc_015" does not exist, skipping
+
+NOTICE:  table "streams_acc_02" does not exist, skipping
+
+NOTICE:  table "streams_acc_025" does not exist, skipping
+
+NOTICE:  table "streams_acc_025_ovr_bt" does not exist, skipping
+
+NOTICE:  table "streams_acc_02_ovr_wct" does not exist, skipping
+
+NOTICE:  table "streams_acc_015_ovr_ko" does not exist, skipping
+
+NOTICE:  table "streams_acc_025_ovr_rb" does not exist, skipping
+
+NOTICE:  relation "streams_habitat_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_id_segment_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_species_code_idx" already exists, skipping
+
+NOTICE:  table "frs_clusters_bt" does not exist, skipping
+
+NOTICE:  table "frs_clusters_wct" does not exist, skipping
+
+NOTICE:  table "frs_clusters_ko" does not exist, skipping
+
+NOTICE:  table "frs_qual_spawn_ko" does not exist, skipping
+
+NOTICE:  table "frs_trace_lfid_ko" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_wct_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_wct_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_wct_lake_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_wct_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_wct_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_wct_wetland_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_rb_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_rb_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_rb_lake_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_rb_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_rb_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_rb_wetland_rearing" does not exist, skipping
+
+13:29:56 variant default KOTL steps (min): classify 0.63, connect 0.37, digest_working 0.00, digest_persist 0.00
+13:29:56 variant default KOTL done in 1.0 min (habitat 1afcd4fb)
+13:29:56 variant bt_rear_wet_p10: rear_mad_max, spawn_mad_max already 9999, 9999 in default, dropped from its set
+13:29:56 variant bt_rear_wet_p10 into score404_bt_rear_wet_p10 (REVL,ELKR,KOTR,UARL,MURR,UBTN,LHAF,PARS,KOTL)
+NOTICE:  schema "score404_bt_rear_wet_p10" already exists, skipping
+
+NOTICE:  relation "streams" already exists, skipping
+
+NOTICE:  relation "streams_habitat_bt" already exists, skipping
+
+NOTICE:  relation "streams_habitat_ch" already exists, skipping
+
+NOTICE:  relation "streams_habitat_cm" already exists, skipping
+
+NOTICE:  relation "streams_habitat_co" already exists, skipping
+
+NOTICE:  relation "streams_habitat_pk" already exists, skipping
+
+NOTICE:  relation "streams_habitat_sk" already exists, skipping
+
+NOTICE:  relation "streams_habitat_st" already exists, skipping
+
+NOTICE:  relation "streams_habitat_wct" already exists, skipping
+
+NOTICE:  relation "streams_habitat_ko" already exists, skipping
+
+NOTICE:  relation "streams_habitat_rb" already exists, skipping
+
+NOTICE:  relation "streams_habitat_gr" already exists, skipping
+
+NOTICE:  relation "barriers" already exists, skipping
+
+NOTICE:  relation "barrier_overrides" already exists, skipping
+
+NOTICE:  relation "streams_access" already exists, skipping
+
+NOTICE:  relation "streams_mapping_code" already exists, skipping
+
+NOTICE:  relation "streams_near_river" already exists, skipping
+
+NOTICE:  schema "score404_bt_rear_wet_p10" already exists, skipping
+
+NOTICE:  relation "log" already exists, skipping
+
+NOTICE:  relation "log_recompute" already exists, skipping
+
+NOTICE:  relation "log_input" already exists, skipping
+
+NOTICE:  relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "mad_m3s" of relation "streams" already exists, skipping
+
+NOTICE:  column "mad_m3s_source" of relation "streams" already exists, skipping
+
+NOTICE:  table "streams_habitat_near_river" does not exist, skipping
+
+NOTICE:  relation "streams_blk_idx" already exists, skipping
+
+NOTICE:  relation "streams_blk_drm_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_lfid_idx" already exists, skipping
+
+NOTICE:  relation "streams_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_id_segment_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat" already exists, skipping
+
+NOTICE:  table "streams_acc_025" does not exist, skipping
+
+NOTICE:  table "streams_acc_025_ovr_bt" does not exist, skipping
+
+NOTICE:  relation "streams_habitat_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_id_segment_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_species_code_idx" already exists, skipping
+
+NOTICE:  table "frs_clusters_bt" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_bt_wetland_rearing" does not exist, skipping
+
+13:30:17 variant bt_rear_wet_p10 REVL steps (min): classify 0.08, connect 0.06, digest_working 0.00, persist 0.17, copy_access_analyze 0.01, gate 0.00, digest_persist 0.00
+13:30:17 variant bt_rear_wet_p10 REVL done in 0.3 min (habitat 15073c87)
+NOTICE:  column "mad_m3s" of relation "streams" already exists, skipping
+
+NOTICE:  column "mad_m3s_source" of relation "streams" already exists, skipping
+
+NOTICE:  table "streams_habitat_near_river" does not exist, skipping
+
+NOTICE:  relation "streams_blk_idx" already exists, skipping
+
+NOTICE:  relation "streams_blk_drm_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_lfid_idx" already exists, skipping
+
+NOTICE:  relation "streams_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_id_segment_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat" already exists, skipping
+
+NOTICE:  table "streams_acc_025" does not exist, skipping
+
+NOTICE:  table "streams_acc_025_ovr_bt" does not exist, skipping
+
+NOTICE:  relation "streams_habitat_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_id_segment_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_species_code_idx" already exists, skipping
+
+NOTICE:  table "frs_clusters_bt" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_bt_wetland_rearing" does not exist, skipping
+
+13:31:10 variant bt_rear_wet_p10 ELKR steps (min): classify 0.33, connect 0.25, digest_working 0.00, persist 0.24, copy_access_analyze 0.01, gate 0.00, digest_persist 0.00
+13:31:10 variant bt_rear_wet_p10 ELKR done in 0.8 min (habitat 308edd34)
+NOTICE:  column "mad_m3s" of relation "streams" already exists, skipping
+
+NOTICE:  column "mad_m3s_source" of relation "streams" already exists, skipping
+
+NOTICE:  table "streams_habitat_near_river" does not exist, skipping
+
+NOTICE:  relation "streams_blk_idx" already exists, skipping
+
+NOTICE:  relation "streams_blk_drm_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_lfid_idx" already exists, skipping
+
+NOTICE:  relation "streams_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_id_segment_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat" already exists, skipping
+
+NOTICE:  table "streams_acc_025" does not exist, skipping
+
+NOTICE:  table "streams_acc_025_ovr_bt" does not exist, skipping
+
+NOTICE:  relation "streams_habitat_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_id_segment_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_species_code_idx" already exists, skipping
+
+NOTICE:  table "frs_clusters_bt" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_bt_wetland_rearing" does not exist, skipping
+
+13:31:38 variant bt_rear_wet_p10 KOTR steps (min): classify 0.14, connect 0.12, digest_working 0.00, persist 0.15, copy_access_analyze 0.01, gate 0.00, digest_persist 0.00
+13:31:38 variant bt_rear_wet_p10 KOTR done in 0.4 min (habitat 28efd077)
+NOTICE:  column "mad_m3s" of relation "streams" already exists, skipping
+
+NOTICE:  column "mad_m3s_source" of relation "streams" already exists, skipping
+
+NOTICE:  table "streams_habitat_near_river" does not exist, skipping
+
+NOTICE:  relation "streams_blk_idx" already exists, skipping
+
+NOTICE:  relation "streams_blk_drm_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_lfid_idx" already exists, skipping
+
+NOTICE:  relation "streams_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_id_segment_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat" already exists, skipping
+
+NOTICE:  table "streams_acc_025" does not exist, skipping
+
+NOTICE:  table "streams_acc_025_ovr_bt" does not exist, skipping
+
+NOTICE:  relation "streams_habitat_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_id_segment_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_species_code_idx" already exists, skipping
+
+NOTICE:  table "frs_clusters_bt" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_bt_wetland_rearing" does not exist, skipping
+
+13:32:02 variant bt_rear_wet_p10 UARL steps (min): classify 0.10, connect 0.07, digest_working 0.00, persist 0.18, copy_access_analyze 0.01, gate 0.00, digest_persist 0.00
+13:32:02 variant bt_rear_wet_p10 UARL done in 0.4 min (habitat fc7d3fc6)
+NOTICE:  column "mad_m3s" of relation "streams" already exists, skipping
+
+NOTICE:  column "mad_m3s_source" of relation "streams" already exists, skipping
+
+NOTICE:  table "streams_habitat_near_river" does not exist, skipping
+
+NOTICE:  relation "streams_blk_idx" already exists, skipping
+
+NOTICE:  relation "streams_blk_drm_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_lfid_idx" already exists, skipping
+
+NOTICE:  relation "streams_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_id_segment_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat" already exists, skipping
+
+NOTICE:  table "streams_acc_025" does not exist, skipping
+
+NOTICE:  table "streams_acc_025_ovr_bt" does not exist, skipping
+
+NOTICE:  relation "streams_habitat_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_id_segment_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_species_code_idx" already exists, skipping
+
+NOTICE:  table "frs_clusters_bt" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_bt_wetland_rearing" does not exist, skipping
+
+13:33:01 variant bt_rear_wet_p10 MURR steps (min): classify 0.28, connect 0.22, digest_working 0.00, persist 0.22, copy_access_analyze 0.01, gate 0.00, digest_persist 0.00
+13:33:01 variant bt_rear_wet_p10 MURR done in 0.7 min (habitat cc8070ab)
+NOTICE:  column "mad_m3s" of relation "streams" already exists, skipping
+
+NOTICE:  column "mad_m3s_source" of relation "streams" already exists, skipping
+
+NOTICE:  table "streams_habitat_near_river" does not exist, skipping
+
+NOTICE:  relation "streams_blk_idx" already exists, skipping
+
+NOTICE:  relation "streams_blk_drm_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_lfid_idx" already exists, skipping
+
+NOTICE:  relation "streams_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_id_segment_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat" already exists, skipping
+
+NOTICE:  table "streams_acc_025" does not exist, skipping
+
+NOTICE:  relation "streams_habitat_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_id_segment_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_species_code_idx" already exists, skipping
+
+NOTICE:  table "frs_clusters_bt" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_bt_wetland_rearing" does not exist, skipping
+
+13:33:21 variant bt_rear_wet_p10 UBTN steps (min): classify 0.05, connect 0.17, digest_working 0.00, persist 0.07, copy_access_analyze 0.01, gate 0.00, digest_persist 0.00
+13:33:21 variant bt_rear_wet_p10 UBTN done in 0.3 min (habitat 16c41678)
+NOTICE:  column "mad_m3s" of relation "streams" already exists, skipping
+
+NOTICE:  column "mad_m3s_source" of relation "streams" already exists, skipping
+
+NOTICE:  table "streams_habitat_near_river" does not exist, skipping
+
+NOTICE:  relation "streams_blk_idx" already exists, skipping
+
+NOTICE:  relation "streams_blk_drm_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_lfid_idx" already exists, skipping
+
+NOTICE:  relation "streams_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_id_segment_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat" already exists, skipping
+
+NOTICE:  table "streams_acc_025" does not exist, skipping
+
+NOTICE:  table "streams_acc_025_ovr_bt" does not exist, skipping
+
+NOTICE:  relation "streams_habitat_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_id_segment_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_species_code_idx" already exists, skipping
+
+NOTICE:  table "frs_clusters_bt" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_bt_wetland_rearing" does not exist, skipping
+
+13:33:59 variant bt_rear_wet_p10 LHAF steps (min): classify 0.20, connect 0.22, digest_working 0.00, persist 0.15, copy_access_analyze 0.01, gate 0.00, digest_persist 0.00
+13:33:59 variant bt_rear_wet_p10 LHAF done in 0.6 min (habitat 0743a16a)
+NOTICE:  column "mad_m3s" of relation "streams" already exists, skipping
+
+NOTICE:  column "mad_m3s_source" of relation "streams" already exists, skipping
+
+NOTICE:  table "streams_habitat_near_river" does not exist, skipping
+
+NOTICE:  relation "streams_blk_idx" already exists, skipping
+
+NOTICE:  relation "streams_blk_drm_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_lfid_idx" already exists, skipping
+
+NOTICE:  relation "streams_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_id_segment_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat" already exists, skipping
+
+NOTICE:  table "streams_acc_025" does not exist, skipping
+
+NOTICE:  table "streams_acc_025_ovr_bt" does not exist, skipping
+
+NOTICE:  relation "streams_habitat_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_id_segment_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_species_code_idx" already exists, skipping
+
+NOTICE:  table "frs_clusters_bt" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_bt_wetland_rearing" does not exist, skipping
+
+13:35:07 variant bt_rear_wet_p10 PARS steps (min): classify 0.46, connect 0.33, digest_working 0.00, persist 0.23, copy_access_analyze 0.02, gate 0.00, digest_persist 0.00
+13:35:07 variant bt_rear_wet_p10 PARS done in 1.0 min (habitat 55fe17f2)
+NOTICE:  column "mad_m3s" of relation "streams" already exists, skipping
+
+NOTICE:  column "mad_m3s_source" of relation "streams" already exists, skipping
+
+NOTICE:  table "streams_habitat_near_river" does not exist, skipping
+
+NOTICE:  relation "streams_blk_idx" already exists, skipping
+
+NOTICE:  relation "streams_blk_drm_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_wscode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_gist_idx" already exists, skipping
+
+NOTICE:  relation "streams_localcode_btree_idx" already exists, skipping
+
+NOTICE:  relation "streams_lfid_idx" already exists, skipping
+
+NOTICE:  relation "streams_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_id_segment_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat" already exists, skipping
+
+NOTICE:  table "streams_acc_025" does not exist, skipping
+
+NOTICE:  table "streams_acc_025_ovr_bt" does not exist, skipping
+
+NOTICE:  relation "streams_habitat_wsg_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_id_segment_idx" already exists, skipping
+
+NOTICE:  relation "streams_habitat_species_code_idx" already exists, skipping
+
+NOTICE:  table "frs_clusters_bt" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_bt_wetland_rearing" does not exist, skipping
+
+13:36:09 variant bt_rear_wet_p10 KOTL steps (min): classify 0.39, connect 0.30, digest_working 0.00, persist 0.28, copy_access_analyze 0.01, gate 0.00, digest_persist 0.00
+13:36:09 variant bt_rear_wet_p10 KOTL done in 1.0 min (habitat 374a88fa)
+13:36:09 build variants done in 13.8 min

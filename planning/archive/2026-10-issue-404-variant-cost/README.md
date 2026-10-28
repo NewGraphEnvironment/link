@@ -1,0 +1,13 @@
+## Outcome
+
+Split the single timer in `data-raw/habitat_variants_build.R`'s variant pass into its seven steps (classify, connect, the working-habitat digest, persist, the access copy with `ANALYZE`, the habitat gate, the persisted digests), written per variant × group to `<out>/variant_timing.csv` with the discharge join, `lnk_persist_init()` and the base run's model and recompute per group as rows outside the total. Built #331's 17-group closure fresh on m4 (no `score*` schema there) under fresh 0.44.0, then `bt_rear_wet_p10` over its nine groups, and analysed the rows with `data-raw/logs/variant_cost_404/analyze.R`. Found on the way that the build script stopped at load on `main` since #364 (`write_thresholds()` quoted columns by name and #364's text column broke its byte-for-byte self-check); it quotes every non-numeric column now. The review's three rounds turned on one mechanism, a join across files by an order that does not travel with them, and ended on an enumeration of the 18 cross-file joins. Nothing was made faster; the next change is named on #377.
+
+## Measurement
+
+One variant's pass over nine groups is 5.6 min on m4 (0.3 to 1.0 min per group): classify 36.5 %, connect 30.9 %, persist 30.3 %, the access copy and `ANALYZE` 1.6 %, gate 0.3 %, the two verification digests 0.4 % (1.4 s over nine groups). Model 67.7 / verification 0.4 / write 31.9 %. The `default` pass a variants run makes first (all species, four steps) is 6.8 min, half classify and half connect. The base modelled 17 groups in 67.1 min and recomputed nine in 2.4; one variant's pass is 8 % of the base model. Classify and connect scale with segment count (25,044 to 46,004), persist from a 0.1 min floor. Four jobs over groups would take a variant's pass from 5.6 to 1.6 min (about 53 min on #331's 12-rung ladder), which is the change named for #377's iteration-speed list; the digests are ruled out as a target. Against the 2026-10-15 m1 log the same variant took 9.8 min (5.6 here) and the base 42.7 (67.1 here), with #326 and #396 having cut the segment count since. A wrong turn kept: the first record attributed UBTN's connect excess to a load of 6.3 from another process, and review showed the group runs 2.4 to 3× its size peers in both passes at loads 4.4 and 6.3, so it is the group.
+
+## Evidence
+
+`data-raw/logs/variant_cost_404/` (its README is the record; `build_*.log`, `launch_state.txt`, `variant_timing.csv`, `analyze.R` and its outputs). Classify and connect minutes per group are posted on fresh#275.
+
+Closed by: branch `404-tuning-iterations-measure-where-a-thresh` (PR opened from it; see `git log --merges -- planning/archive/2026-10-issue-404-variant-cost`)
