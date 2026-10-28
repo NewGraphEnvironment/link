@@ -1,0 +1,5 @@
+step	wsg	start_utc	end_utc	exit	load_start	load_end
+default_post	ELKR	2026-10-28T08:50:50Z	2026-10-28T08:54:38Z	0	3.97	3.22
+default_pre	ELKR	2026-10-28T08:54:38Z	2026-10-28T08:58:33Z	0	3.22	5.18
+recompute_default_post	ELKR	2026-10-28T08:58:33Z	2026-10-28T08:58:48Z	1	5.18	4.58
+recompute_default_pre	ELKR	2026-10-28T08:58:48Z	2026-10-28T08:59:04Z	1	4.58	4.26

@@ -54,21 +54,21 @@ Two costs follow from cutting at every observation:
 - [ ] `/code-check` deferred to `/code-check branch`; committed
 
 ## Phase 4: Build and measure (questions 1, 2, 3, 6)
-- [ ] Run decision written first in `data-raw/logs/observation_breaks_396/README.md` (what re-segments, what is built here, primitives vintage, before state), as `segmentation_326/README.md` does
-- [ ] `run.sh`, a copy of `segmentation_326/run_phase4.sh` with the group lists changed (quiet-DB gate, `LNK_GUARD_DOWNSTREAM=warn` on the model step, retry once, status TSV with minutes): `default` BEFORE for the four groups at `main` into `zz396_default_pre` and AFTER at the branch into `zz396_default_post`, each from its own worktree on one pinned fresh with `lnk_preflight_vintage()` passing; `bcfishpass` AFTER for BULK and PARS into `fresh`; DS-first, then `wsg_recompute_one.R` (always merge) per schema, "failed only on the downstream-dam post-condition" named as the expected outcome and the pass rule; the expected failures listed in the README before the run
-- [ ] Question 1: segments before/after per group; `breaks_diff.R` census (the `none` class is the observation / crossing / endpoint breaks)
-- [ ] Question 2: model + recompute minutes before/after per group from the status TSV (same host, no other session loading the DB; stated)
-- [ ] Question 3: segment length and gradient against the FWA line's at observation sites (bcfishobs) and at FISS absence sites (`hv_fiss_absences()`), before/after, measure-overlap join; if `LNK_KNOWLEDGE_DIR` is unset, the absence side is reported as not measured; the validator's `share_spawning` / `share_rearing` per species before/after beside it
-- [ ] Question 6 (acceptance): per group, BEFORE → AFTER on measure-overlap pieces per `(watershed_group_code, blue_line_key)` as `habitat_diff_segments.R` builds them (never by `id_segment`, renumbered each round), comparing `access_<sp>` and `has_barriers_<sp>_dnstr` for every species: no 0 ↔ {1, 2}, no 2 → 1, and 1 → 2 only on AFTER segments starting within 1 m of a kept top of that species, with the count reported against Phase 1's `code2_class.sql`; `streams_mapping_code` and habitat flags diffed on the same pieces; any change in which streams are accessible is a defect and stops the phase
-- [ ] `bcfishpass` unchanged: BULK and PARS segment counts and `breaks_diff.R` census identical to the committed `segmentation_326/round2/*_breaks.csv` and README counts; parity re-scored on those two (`parity_crosssection.R`)
-- [ ] Validator counts: `lnk_habitat_validate()` on `default` before/after, `n_obs` and `n_unattached` per species identical
-- [ ] Evidence committed under `data-raw/logs/observation_breaks_396/` with its README indexing it
+- [x] Run decision written first in `data-raw/logs/observation_breaks_396/README.md` (what re-segments, what is built here, primitives vintage, before state), as `segmentation_326/README.md` does
+- [x] (UPCE added for question 3's FISS sites; each group's BEFORE and AFTER run back to back under another session's load; recompute not retried) `run.sh`, a copy of `segmentation_326/run_phase4.sh` with the group lists changed (quiet-DB gate, `LNK_GUARD_DOWNSTREAM=warn` on the model step, retry once, status TSV with minutes): `default` BEFORE for the four groups at `main` into `zz396_default_pre` and AFTER at the branch into `zz396_default_post`, each from its own worktree on one pinned fresh with `lnk_preflight_vintage()` passing; `bcfishpass` AFTER for BULK and PARS into `fresh`; DS-first, then `wsg_recompute_one.R` (always merge) per schema, "failed only on the downstream-dam post-condition" named as the expected outcome and the pass rule; the expected failures listed in the README before the run
+- [x] Question 1: segments before/after per group (the `breaks_diff.R` census run for the `bcfishpass` builds only: against bcfishpass's segmentation it says nothing about `default`'s observation breaks); `breaks_diff.R` census (the `none` class is the observation / crossing / endpoint breaks)
+- [x] Question 2 (plus an ELKR repeat, AFTER first): model + recompute minutes before/after per group from the status TSV (same host, no other session loading the DB; stated)
+- [x] Question 3 (FISS absences on UPCE only; validator shares for BT and CH, the driver's defaults): segment length and gradient against the FWA line's at observation sites (bcfishobs) and at FISS absence sites (`hv_fiss_absences()`), before/after, measure-overlap join; if `LNK_KNOWLEDGE_DIR` is unset, the absence side is reported as not measured; the validator's `share_spawning` / `share_rearing` per species before/after beside it
+- [x] Question 6 (acceptance, restated by code-check as the direction rule: `n_violation` 0 on every piece): per group, BEFORE → AFTER on measure-overlap pieces per `(watershed_group_code, blue_line_key)` as `habitat_diff_segments.R` builds them (never by `id_segment`, renumbered each round), comparing `access_<sp>` and `has_barriers_<sp>_dnstr` for every species: no 0 ↔ {1, 2}, no 2 → 1, and 1 → 2 only on AFTER segments starting within 1 m of a kept top of that species, with the count reported against Phase 1's `code2_class.sql`; `streams_mapping_code` and habitat flags diffed on the same pieces; any change in which streams are accessible is a defect and stops the phase
+- [x] `bcfishpass` unchanged: BULK and PARS segment counts and `breaks_diff.R` census identical to the committed `segmentation_326/round2/*_breaks.csv` and README counts; parity re-scored on those two (`parity_crosssection.R`)
+- [x] Validator counts: `lnk_habitat_validate()` on `default` before/after, `n_obs` and `n_unattached` per species identical
+- [x] Evidence committed under `data-raw/logs/observation_breaks_396/` with its README indexing it
 
 ## Phase 5: Record
-- [ ] `research/observation_breaks.md` (new topic file, provenance line, the six answers with numbers and producers) + a row in `research/README.md`; a pointer from `research/bcfp_segmentation_parity.md`'s break history
+- [x] `research/observation_breaks.md` (new topic file, provenance line, the six answers with numbers and producers) + a row in `research/README.md`; a pointer from `research/bcfp_segmentation_parity.md`'s break history
 - [x] RUNBOOK §2 (new §2c): observation breaks under each config, what reads code 2, the knob
 - [x] `inst/extdata/configs/default/README.md` lists no pipeline keys, so no row; `lnk_config()`'s roxygen, which does, names the knob
-- [ ] `/code-check branch`, PWF archive, PR
+- [ ] `/code-check branch` (rounds 1 to 5 run, a sixth on the written record), PWF archive, PR
 
 ## Owed at the end (reported, done after merge)
 - [ ] Every persisted `default` group re-segments again at the next provincial run (stacks on #326's owed re-model, #377's runs row); the `bcfishpass` schema does not
@@ -77,7 +77,7 @@ Two costs follow from cutting at every observation:
 - [ ] CLAUDE.md status entry (at archive / compact)
 
 ## Validation
-- [ ] Tests pass (`devtools::test()`)
+- [x] Tests pass (`devtools::test()`: 4,382 at `71ccc2ce` with the validator file's 19 collision errors, that file 433 / 433 alone at `a4d2247f`)
 - [ ] `/code-check` clean (each commit, or once over the branch with `/code-check branch`)
 - [ ] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion

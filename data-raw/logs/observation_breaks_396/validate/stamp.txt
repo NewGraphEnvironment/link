@@ -1,0 +1,10 @@
+date: 2026-10-28 02:00 PDT
+link: 0.69.1 @ eac13f2b
+fresh installed (builds the miss-reason predicates): 0.43.0 @ 18d92cebc806b1c70e7538aa0ee5f5e143bba366
+db: docker fwapg localhost:5432
+bundle default:zz396_default_pre — 5 WSGs scored; 5 with a run-log row (fresh 0.43.0, 2026-10-28 to 2026-10-28); the rest predate the log
+bundle default:zz396_default_post — 5 WSGs scored; 5 with a run-log row (fresh 0.43.0, 2026-10-28 to 2026-10-28); the rest predate the log
+species: CH,BT; buffers: 0 m
+pooling: default species_pooling.csv (sha256 9c42964e0469): 4 WSG x species pairs pooled (BT<-DV)
+bcfishobs.observations rows: 375962
+absences: none (LNK_KNOWLEDGE_DIR unset)

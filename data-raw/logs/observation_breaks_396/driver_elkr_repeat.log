@@ -1,0 +1,7 @@
+[run] 2026-10-28T08:45:50Z waiting for a quiet database
+[run] 2026-10-28T08:50:50Z gate passed (quiet minutes 5, waited 5 min)
+[run] 2026-10-28T08:54:38Z default_post ELKR exit=0 (try 1)
+[run] 2026-10-28T08:58:33Z default_pre ELKR exit=0 (try 1)
+[run] 2026-10-28T08:58:48Z recompute_default_post ELKR exit=1 (try 1)
+[run] 2026-10-28T08:59:04Z recompute_default_pre ELKR exit=1 (try 1)
+[run] 2026-10-28T08:59:04Z ELKR_REPEAT_DONE
