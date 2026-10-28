@@ -27,3 +27,9 @@
 - Pre-flight `--step=variants --only=bt_rear_wet_p10 --wsgs=REVL` launched 20:20:36 UTC
   (`build_preflight_revl.log`).
 - Next: check the pre-flight's step sum against its total, then the full nine-group pass.
+- Pre-flight exited 20:21:46 UTC: the variant's seven steps sum to 20.7 s and the `default`
+  pass's four to 17.8 s, each printed as 0.3 min. `analyze.R` ran clean on a copy of the
+  pre-flight data (its residual tolerance was `0.05 / 60` min, below the log's 0.1 min
+  print precision; now 0.05 min).
+- Full pass `--step=variants --only=bt_rear_wet_p10` launched 20:22:17 UTC
+  (`build_variants.log`), no other backend on the database.

@@ -107,8 +107,11 @@
       worktree; ~45 min base + recompute on #331's m1 numbers (ran 19:09 to 20:19 UTC, 69.6 min: 17
       `base_model` rows, 67.1 min summed, KOTR longest at 7.0; 9 `base_recompute` rows, 2.4 min;
       no error)
-- [ ] Pre-flight: `--step=variants --only=bt_rear_wet_p10 --wsgs=REVL` (smallest focal);
-      check the seven `in_total` seconds sum to the total line within 2 %
+- [x] Pre-flight: `--step=variants --only=bt_rear_wet_p10 --wsgs=REVL` (smallest focal);
+      check the seven `in_total` seconds sum to the total line within 2 % (20:20 to 20:21
+      UTC, `build_preflight_revl.log`: `default` 17.8 s and the variant 20.7 s against a
+      printed 0.3 min each, inside the 0.05 min print rounding; classify 5.1, connect 4.3,
+      persist 10.7 s, the two digests 0.1 s together)
 - [ ] Full: `--step=variants --only=bt_rear_wet_p10` over the nine groups (the `default` pass
       runs first); keep the build log in the campaign dir
 - [ ] Stamp: `stamp_build.txt` (the script writes it), plus host class, `-j` (serial, 1),

@@ -54,7 +54,7 @@ done <- done[!duplicated(names(done), fromLast = TRUE)]
 passes$logged <- done[passes$key]
 passes$residual <- passes$minutes - passes$logged
 bad <- passes[is.na(passes$logged) |
-                abs(passes$residual) > pmax(0.02 * passes$logged, 0.05 / 60), ]
+                abs(passes$residual) > pmax(0.02 * passes$logged, 0.05), ]  # 0.05: half the log's 0.1 min
 if (nrow(bad) > 0L) {
   print(bad)
   stop("steps do not sum to the logged total (2 %, or the log's 0.1 min rounding)")
