@@ -11,3 +11,6 @@
 - Phase 2: seven step timers + discharge_join, persist_init, base_model, base_recompute rows
   into `variant_timing.csv`; `write_thresholds()` quoting fixed (found by `--step=bundles`)
 - Plan review folded (`review-plan.md`)
+- Phase 3: base build launched 2026-10-28 19:09:47 UTC from worktree at `45b12b2e`
+  (`build_base.log`); `launch_state.txt` holds the load and `pg_stat_activity` at launch
+- Phase 4 script `analyze.R` drafted and run on synthetic rows while the base builds

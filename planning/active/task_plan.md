@@ -1,6 +1,7 @@
 # Task: Tuning iterations: measure where a threshold variant's time goes (seven steps, two of them verification) (#404)
 
 **If we do it:** we know which step makes a tuning loop slow before trying to speed it up, and the right change goes on #377's iteration-speed list. **If we never do:** speed work keeps landing on the access walk (NewGraphEnvironment/fresh#272, #394), which a tuning loop runs once per closure, while the cost paid on every variant goes unmeasured.
+
 ## What exploration found (shapes the phases)
 
 - **m4 cannot run the script today:** installed fresh is **0.43.0** (`RemoteSha 18d92ceb`),
@@ -95,9 +96,9 @@
       (main stops first); the real build's digest invariants are that check
 
 ## Phase 3: build and measure
-- [ ] Commit Phase 2 and push the branch before any build: the dirty check covers the script,
+- [x] Commit Phase 2 and push the branch before any build (`45b12b2e`, pushed): the dirty check covers the script,
       and the worktree checks the branch out (plan review)
-- [ ] At launch and at the end, a `pg_stat_activity` snapshot (other backends and their
+- [ ] At launch (done: `launch_state.txt`, no other backend, load 2.4) and at the end, a `pg_stat_activity` snapshot (other backends and their
       `application_name`) into the README, beside the load average: the issue's "whether
       the run shared the database with anything else" (plan review)
 - [ ] `--step=base --variants=data-raw/habitat_score/variants_331.csv
