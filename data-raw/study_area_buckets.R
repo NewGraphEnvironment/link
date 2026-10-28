@@ -68,6 +68,8 @@
 #   --speeds-state=      learned speeds (default data-raw/logs/host_speeds.tsv;
 #                        empty for none). A name it does not hold takes the
 #                        median of those it does. RUNBOOK section 8d
+#   --minutes-exclude=A,B  groups whose newest minutes are a known stall: they
+#                        take the median weight instead (link#259)
 #   --plan-out=          write one row per group (host, name, speed, weight) for
 #                        host_speeds_calibrate.R after the run (link#259)
 #   --workers=N          how many of the hosts are persistent workers (link#376;
@@ -90,6 +92,8 @@ arg_val <- function(flag, default) {
 n_hosts <- as.integer(arg_val("--hosts", "4"))
 config  <- arg_val("--config", "bcfishpass")
 minutes_schema <- arg_val("--minutes-schema", "")
+minutes_exclude <- toupper(trimws(strsplit(arg_val("--minutes-exclude", ""), ",")[[1]]))
+minutes_exclude <- minutes_exclude[nzchar(minutes_exclude)]
 atom <- arg_val("--atom", "component")
 n_workers <- suppressWarnings(as.integer(arg_val("--workers", "0")))
 do_write <- "--write" %in% args
@@ -105,6 +109,9 @@ if (do_write && atom == "group") {
   stop("--write describes the drainage-independent components (research/study_areas.md); ",
        "run --atom=group without --write and keep its report with the run's logs",
        call. = FALSE)
+}
+if (length(minutes_exclude) && (!nzchar(minutes_schema) || !all(grepl("^[A-Z]{4}$", minutes_exclude)))) {
+  stop("--minutes-exclude takes four-letter group codes and needs --minutes-schema", call. = FALSE)
 }
 if (nzchar(minutes_schema) && !grepl("^[A-Za-z_][A-Za-z0-9_]*$", minutes_schema)) {
   stop("--minutes-schema must be a bare schema name, got '", minutes_schema, "'",
@@ -333,6 +340,14 @@ if (nzchar(minutes_schema)) {
   if (!nrow(w)) {
     stop("--minutes-schema=", minutes_schema, ": no finished log rows",
          call. = FALSE)
+  }
+  # A group whose newest minutes are a known stall (KTSU's 65 min on 2026-10-23,
+  # 1.3 the week before) would weigh the plan and then teach the calibrator a
+  # leg 64 min fast (code-check round 6, link#259). Excluded, it takes the
+  # median like any group with no value, and the plan carries no minutes for it.
+  if (length(minutes_exclude)) {
+    message(sprintf("minutes excluded (median weight): %s", paste(minutes_exclude, collapse = ", ")))
+    w <- w[!w$wsg %in% minutes_exclude, ]
   }
   # Raw minutes and who measured them go into the plan, so the calibrator can
   # re-normalize at whatever state it reads (code-check round 3, link#259).

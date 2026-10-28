@@ -2089,6 +2089,11 @@ Rscript data-raw/host_speeds_calibrate.R --plan=<the packer's --plan-out> \
   host itself; otherwise its error would land in the hosts that are learned.
   Name each worker in `--host-names` by the alias its log rows carry
   (`LNK_HOST_ALIAS`), and the next calibration learns it.
+- **A group whose newest minutes are a stall** would weigh the plan wrong and
+  then teach the calibrator a leg as fast as the stall was long (KTSU: 65.4 min
+  on 2026-10-23, 1.3 the week before). Pack with `--minutes-exclude=KTSU,OKAN`
+  until a run re-measures them: an excluded group takes the median weight and
+  carries no minutes into the plan.
 - **Cloud hosts are matched to the run's by their groups,** not their keys: the
   packer keys them `job1..N` by position, and the driver by the
   `--cy-workspaces` names, which a kept host can leave out of order. The

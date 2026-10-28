@@ -86,7 +86,7 @@ are not "dispatcher-equivalent" once speeds differ. Phase 1 measures whether tha
       that a run must pack on `--minutes-schema` to be calibrated (review #11)
 
 ## Owed at the end (reported, done after merge)
-- [ ] On the next provincial run (#377's runs row): pack with `--plan-out`, run the calibrator, re-run
+- [ ] On the next provincial run (#377's runs row): pack with `--minutes-schema --host-names --minutes-exclude=KTSU,OKAN --plan-out`, run the calibrator, re-run
       `packing_259/fit.R` on post-#326 minutes, and close #163's acceptance (3 runs converging,
       idle time after the fastest cloud host < 10 min) over the runs that follow
 - [ ] fresh#272's release changes the dispatcher's speed (recompute beside its leg); the damping
