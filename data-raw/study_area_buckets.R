@@ -167,6 +167,13 @@ speeds_cli <- if (nzchar(speeds_arg)) {
 }
 speeds <- speeds_resolve(host_names, cli = speeds_cli, state = speed_state)
 host_speeds <- speeds$speed
+# One name, one speed: the calibrator learns per name and refuses a plan that
+# packed one name at two speeds, so refuse it here, before the run is paid for.
+per_name <- tapply(host_speeds, host_names, function(x) length(unique(x)))
+if (any(per_name > 1L)) {
+  stop("--host-speeds gives ", paste(names(per_name)[per_name > 1L], collapse = ", "),
+       " more than one speed; every cloud host is one class at one speed", call. = FALSE)
+}
 plan_out <- arg_val("--plan-out", "")
 
 if (identical(Sys.getenv("LNK_LOAD"), "loadall")) {
@@ -295,7 +302,7 @@ if (length(dup)) {
 # Measured minutes win out of sample (link#259, data-raw/logs/packing_259/):
 # fitted on 2026-10-17 and scored on 2026-10-23's legs with KTSU's and OKAN's
 # stalls left out, segments set a leg's share of the mean leg up to 28.9 points
-# wrong, minutes 3.6 (28.5 and 16.4 as logged). Every leg ran 11 to 17 % over
+# wrong, minutes 3.6 (28.5 and 16.4 as logged). Every leg ran 12 to 20 % over
 # the minutes estimate because the same groups took 13 to 16 % longer on 10-23
 # (drift between builds), which costs the estimate, not the balance. Pack a
 # provincial run on --minutes-schema; research/study_area_run.md, "How hosts

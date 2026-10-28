@@ -270,3 +270,20 @@ test_that("host_class() drops a domain, so a logged node name meets its alias", 
   e <- pk_env()
   expect_equal(e$host_class(c("m4.local", "cypher-job1.example")), c("m4", "cloud"))
 })
+
+test_that("the speed a run was packed at decides routing, never what is learned", {
+  e <- pk_env()
+  # Truth all equal and the state says so. A run packed cloud at 0.45 by hand,
+  # with m1 not in it: nothing may move, or the ratios against m1 break.
+  st <- data.frame(name = c("m1", "m4", "cloud"), factor = 1, last_updated = "d", n_runs = 1L,
+                   source_run_uid = "u")
+  l <- legs_of(c("m4", "cloud", "cloud", "cloud"), c(1, 0.45, 0.45, 0.45),
+               c(100, rep(100 / 0.45, 3)), 100)
+  out <- e$speeds_calibrate(l, st, run_uid = "u1", date_utc = "d")
+  expect_equal(out$state$factor, c(1, 1, 1))
+  # One usable name, packed at 1.5: the correction is 1 by construction, and
+  # the hand-typed speed must not leak into the state.
+  l2 <- legs_of(c("m4", "cloud"), c(1.5, 1), c(100 / 1.5, 100), 100, skip = c(NA, "stall"))
+  out2 <- e$speeds_calibrate(l2, st, run_uid = "u2", date_utc = "d")
+  expect_equal(out2$state$factor[out2$state$name == "m4"], 1)
+})

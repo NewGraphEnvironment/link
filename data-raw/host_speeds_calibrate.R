@@ -13,8 +13,9 @@
 #              host, the host's name and speed, and its weight in minutes
 #   --phases   the run's <TS>_phases.tsv; <TS>_run_wsgs.tsv and
 #              <TS>_coverage.tsv are read beside it
-#   --skip     leave a name's legs out, with the reason the history records
-#              (a stall, a host shared with another job). Repeatable
+#   --skip     leave legs out, with the reason the history records (a stall,
+#              a host shared with another job): by name (every leg of it) or
+#              by host key (job2, one cloud host). Repeatable
 #   --dry-run  print what would change and write nothing
 #
 # What it does (the arithmetic is speeds_calibrate() in study_area_packing.R):
@@ -148,7 +149,8 @@ legs <- do.call(rbind, lapply(unique(plan$host_key), function(k) {
            if (length(a) && a != "ok") paste("account", a),
            if (!length(a)) "no account row",
            if (!any(keep)) "no group finished",
-           if (p$name[1] %in% names(skip_reason)) skip_reason[[p$name[1]]])
+           if (p$name[1] %in% names(skip_reason)) skip_reason[[p$name[1]]],
+           if (k %in% names(skip_reason)) skip_reason[[k]])
   data.frame(host_key = k, name = p$name[1], speed = p$speed[1],
              projected = sum(p$weight[keep] / p$speed[keep]),
              actual = if (nrow(m)) as.numeric(difftime(m$end, m$start, units = "mins")) else NA,
@@ -158,7 +160,7 @@ legs <- do.call(rbind, lapply(unique(plan$host_key), function(k) {
 # A skipped leg needs no times; give it placeholders the arithmetic never reads.
 legs$projected[!is.na(legs$skip) & !(legs$projected > 0)] <- 1
 legs$actual[!is.na(legs$skip) & is.na(legs$actual)] <- 1
-unknown_skip <- setdiff(names(skip_reason), legs$name)
+unknown_skip <- setdiff(names(skip_reason), c(legs$name, legs$host_key))
 if (length(unknown_skip)) {
   stop("--skip names no host in the plan: ", paste(unknown_skip, collapse = ", "), call. = FALSE)
 }

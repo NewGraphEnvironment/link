@@ -37,8 +37,9 @@ PACK_HISTORY_COLS <- c("run_uid", "date_utc", "name", "packed", "old", "correcti
 # calibrator never learns one: a worker is learned only under an alias.
 PACK_ROLE_KEY <- "^(dispatcher|worker[0-9]+|job[0-9]+)$"
 PACK_DAMPING <- 0.3     # weight of the new observation (#163: 0.7 old + 0.3 observed)
-PACK_CLAMP <- c(0.5, 2) # a run moves a factor at most this far, as a multiple of old;
-                        # at 0.3 damping only the upper bound can bind (#163's bounds)
+# A run moves a factor at most this far, as a multiple of old; at 0.3 damping
+# only the upper bound can bind (#163's bounds).
+PACK_CLAMP <- c(0.5, 2)
 
 # Greedy LPT for unequal machines: each atom, largest first, goes to the host
 # that would finish it earliest. `load` is in weight units at speed 1 divided
@@ -134,13 +135,13 @@ weights_normalize <- function(minutes, host, state = NULL) {
 #         actual (the leg's model minutes), skip (NA, or the reason it is left
 #         out)
 #
-# Per name: correction = (sum actual / sum projected) / run_ratio, where
-# run_ratio is the same over every leg not skipped. The observation is the
-# packed speed over the correction, so it does not depend on what the state
-# says: a run packed with --host-speeds, or from an older state, observes the
-# same truth. It is damped toward the STORED factor (old: the state's, or its
-# median for a name it lacks, or 1 with no state): new = 0.7 old + 0.3
-# observed, clamped to [0.5, 2] x old. A role key is never learned. Returns the
+# Each leg is first re-projected at the STORED factor (old: the state's, its
+# median for a name it lacks, 1 with no state): projected_old = projected x
+# packed / old. Per name: correction = (sum actual / sum projected_old) /
+# run_ratio, where run_ratio is the same over every leg not skipped, and
+# observed = old / correction, new = 0.7 old + 0.3 observed, clamped to
+# [0.5, 2] x old. So the speed a run was packed at (--host-speeds, an older
+# state) decides only which groups a host got, never what is learned. A role key is never learned. Returns the
 # new state and the history rows.
 speeds_calibrate <- function(legs, state = NULL, run_uid, date_utc) {
   need <- c("name", "speed", "projected", "actual", "skip")
@@ -153,19 +154,27 @@ speeds_calibrate <- function(legs, state = NULL, run_uid, date_utc) {
     stop("one name packed at two speeds (", paste(names(spd)[spd > 1], collapse = ", "),
          "): a class shares one speed", call. = FALSE)
   }
-  if (anyNA(legs$projected) || anyNA(legs$actual) || any(legs$projected <= 0) ||
-      any(legs$actual <= 0)) {
+  times <- c(legs$projected, legs$actual)
+  if (anyNA(times) || any(times <= 0)) {
     stop("every leg needs a positive projected and actual time", call. = FALSE)
   }
+  # Re-project every leg at the stored speed (old), not the speed it was packed
+  # at: then the observation measures the host against the state, and a run
+  # packed with --host-speeds or from an older state moves nothing the truth
+  # does not (code-check round 2, link#259).
+  legs$old <- speeds_resolve(legs$name, state = state)$speed
+  legs$projected_old <- legs$projected * legs$speed / legs$old
   use <- legs[is.na(legs$skip), ]
   if (!nrow(use)) stop("every leg is skipped: nothing to calibrate", call. = FALSE)
-  run_ratio <- sum(use$actual) / sum(use$projected)
+  run_ratio <- sum(use$actual) / sum(use$projected_old)
 
   hist <- list()
   state_new <- if (is.null(state)) {
     data.frame(name = character(), factor = numeric(), last_updated = character(),
                n_runs = integer(), source_run_uid = character())
-  } else state
+  } else {
+    state
+  }
   hist_row <- function(nm, packed, old, correction = NA, observed = NA, damped = NA,
                        clamped = NA, new = NA, action) {
     data.frame(run_uid = run_uid, date_utc = date_utc, name = nm, packed = packed, old = old,
@@ -175,15 +184,15 @@ speeds_calibrate <- function(legs, state = NULL, run_uid, date_utc) {
   for (nm in unique(legs$name)) {
     l <- legs[legs$name == nm, ]
     packed <- l$speed[1]
-    old <- speeds_resolve(nm, state = state)$speed
+    old <- l$old[1]
     u <- l[is.na(l$skip), ]
     if (!nrow(u)) {
       why <- paste0("skipped: ", paste(unique(l$skip), collapse = "; "))
       hist[[length(hist) + 1]] <- hist_row(nm, packed, old, action = why)
       next
     }
-    correction <- (sum(u$actual) / sum(u$projected)) / run_ratio
-    observed <- packed / correction
+    correction <- (sum(u$actual) / sum(u$projected_old)) / run_ratio
+    observed <- old / correction
     if (grepl(PACK_ROLE_KEY, nm)) {
       why <- paste0("not learned: ", nm, " is a driver role key; name the host in --host-names")
       hist[[length(hist) + 1]] <- hist_row(nm, packed, old, correction, observed, action = why)

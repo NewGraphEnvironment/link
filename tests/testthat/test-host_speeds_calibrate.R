@@ -152,3 +152,19 @@ test_that("a history with other columns is refused, not appended to", {
   expect_false(r$status == 0L)
   expect_match(paste(r$out, collapse = "\n"), "appending would misalign")
 })
+
+test_that("--skip by host key leaves out one cloud host's leg", {
+  w <- cal_world(plan_host = c(A = "dispatcher", B = "dispatcher", C = "job1", D = "job2"))
+  # run_wsgs must agree with the plan: D on job2, and job2 needs a model row.
+  rw <- readLines(file.path(w$dir, "20261101_000000_run_wsgs.tsv"))
+  writeLines(sub("^D\tjob1\t", "D\tjob2\t", rw), file.path(w$dir, "20261101_000000_run_wsgs.tsv"))
+  ph <- readLines(w$phases)
+  writeLines(c(ph, sprintf("%s\tmodel\tjob2\t2026-11-01T01:00:00Z\t2026-11-01T09:00:00Z\t\t\tok", cal_uid),
+               sprintf("%s\taccount\tjob2\t2026-11-01T09:00:00Z\t2026-11-01T09:00:00Z\t\t\tok", cal_uid)),
+             w$phases)
+  r <- cal_run(w, "--dry-run", "--skip=job2:stall")
+  expect_equal(r$status, 0L, info = paste(r$out, collapse = "\n"))
+  out <- paste(r$out, collapse = "\n")
+  expect_match(out, "| job2 | cloud | 1.000 | 1 |  |  | stall |", fixed = TRUE)
+  expect_match(out, "\\| job1 \\| cloud \\| 1\\.000 \\| 1 \\| 50\\.0 \\|")
+})

@@ -2059,24 +2059,25 @@ Rscript data-raw/host_speeds_calibrate.R --plan=<the packer's --plan-out> \
   weight over the speed the plan packed at, less groups the host SKIPped and
   groups with no rows from this run (`<TS>_coverage.tsv` class other than
   `recompute`). A host whose `account` row is not `ok` is left out. So is a
-  host named by `--skip`, for a stall or another job on the machine; the
-  history records why.
+  leg named by `--skip`, for a stall or another job on the machine: by name
+  (every leg of it) or by host key (`job2`, one cloud host). The history
+  records why.
 - **The arithmetic.** Per name, `correction = (Σ actual / Σ projected) /
   run_ratio`, where `run_ratio` is the same ratio over every leg not left out.
-  Then `observed = packed / correction`, where `packed` is the speed the plan
-  packed the leg at, so the observation does not depend on the state. It is
-  damped toward the stored factor `old` (the state's, its median for a name it
-  lacks, 1 with no state): `new = 0.7 · old + 0.3 · observed`, clamped to
-  `[0.5, 2] × old`; at this damping only the upper bound can bind. So a run
-  packed with `--host-speeds`, or from an older state, informs the learned
-  factor without replacing it. Dividing by `run_ratio` takes out drift every
+  Each leg is first re-projected at the stored factor `old` (the state's, its
+  median for a name it lacks, 1 with no state), so `projected` above is taken
+  at `old`, not at the speed the plan packed it at. Then `observed = old /
+  correction` and `new = 0.7 · old + 0.3 · observed`, clamped to `[0.5, 2] ×
+  old`; at this damping only the upper bound can bind. So the speed a run was
+  packed at (`--host-speeds`, an older state) decides only which groups a host
+  got, never what is learned. Dividing by `run_ratio` takes out drift every
   leg shares: the same groups on the same class took 13 to 16 % longer,
   summed per class, on 2026-10-23 than on 2026-10-17, and without the
-  division that drift would be booked as host slowness.
+  division that drift would be booked as host slowness. The run-wide ratio
+  goes in the history beside each row.
 - **Role keys are never learned.** A leg whose name is `dispatcher`,
   `workerN` or `jobN` counts toward `run_ratio` and is recorded `not learned`
-  in the history; `workerN` is the packer's default name for an unnamed worker. The
-  run-wide ratio goes in the history beside each row.
+  in the history; `workerN` is the packer's default name for an unnamed worker.
 - **What it refuses.** A plan weighted in segments: a run must pack on
   `--minutes-schema` to be calibrated. A plan whose groups for a host differ
   from `<TS>_run_wsgs.tsv`. A phases file with no model row, which is what a
