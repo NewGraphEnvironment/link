@@ -47,13 +47,11 @@ PRETEST_ENTRIES <- c("lnk_db_conn", "lnk_config", "lnk_load_overrides",
 
 # The gate's own rules: what it reads to judge a change. A record is judged
 # by these at HEAD, so a change to any of them since the record voids it.
-PRETEST_RULES <- c("data-raw/pretest.R", "data-raw/pretest_inputs.csv", "data-raw/pretest/")
+PRETEST_RULES <- c("data-raw/pretest.R", "data-raw/pretest_inputs.csv", "data-raw/pretest/",
+                   "data-raw/pretest_pick.R", "data-raw/pretest_run.sh", "data-raw/pretest_verdict.R",
+                   "data-raw/pretest_check.R", "data-raw/pretest_override.sql",
+                   "data-raw/pretest_reach_fresh.R")
 
-# fresh's `none` rows were judged against fresh at this tag
-# (data-raw/logs/pretest_372/reach.md). A pick over a later fresh that
-# changed a file mapped `none` refuses until reach_fresh.R is re-run there
-# and this is moved.
-PRETEST_FRESH_JUDGED <- "v0.44.0"
 
 pretest_map_read <- function(path) {
   m <- utils::read.csv(path, stringsAsFactors = FALSE, na.strings = character(),
@@ -111,7 +109,8 @@ pretest_git <- function(dir, args) {
 # What a run reads from link besides R/: the package data, DESCRIPTION, and
 # the data-raw scripts a run executes.
 PRETEST_LINK_PATHS <- c("R/", "inst/extdata/", "DESCRIPTION", "data-raw/wsg_run_one.R",
-                        "data-raw/wsg_recompute_one.R", "data-raw/schema_consolidate.R")
+                        "data-raw/wsg_recompute_one.R", "data-raw/schema_consolidate.R",
+                        "data-raw/study_area_run.sh")
 
 # Files changed in link between two commits, under PRETEST_LINK_PATHS, less
 # the config bundles outside `chain` (another bundle's change cannot reach
@@ -267,7 +266,8 @@ pretest_overall <- function(verdicts) {
 # `ns` is a loaded namespace with srcrefs (pkgload::load_all). Calls built at
 # run time (do.call on a string, match.fun) are not seen, which is why a
 # reached file is evidence and an unreached file only a check.
-pretest_reach <- function(ns, entries) {
+pretest_reach <- function(ns, entries, what = c("files", "functions")) {
+  what <- match.arg(what)
   fns <- Filter(function(n) is.function(get(n, ns)), ls(ns, all.names = TRUE))
   calls <- lapply(fns, function(n) {
     f <- get(n, ns)
@@ -287,6 +287,7 @@ pretest_reach <- function(ns, entries) {
     seen <- c(seen, nw)
     q <- c(q, nw)
   }
+  if (what == "functions") return(sort(seen))
   files <- vapply(seen, function(n) {
     s <- attr(get(n, ns), "srcref")
     if (is.null(s)) NA_character_ else basename(attr(s, "srcfile")$filename)
@@ -298,9 +299,9 @@ pretest_reach <- function(ns, entries) {
 # code being checked (`reached`: basenames from pretest_reach()). The map's
 # `none` is a claim test-pretest.R checks; this checks it where the gate and
 # the driver run, so a call added into a `none` file voids that claim.
-pretest_none_reached <- function(hits, reached) {
+pretest_none_reached <- function(hits, reached, repo = "link") {
   if (is.null(reached) || !nrow(hits)) return(character())
-  r <- hits[hits$repo == "link" & grepl("^R/", hits$path), , drop = FALSE]
+  r <- hits[hits$repo == repo & grepl("^R/", hits$path), , drop = FALSE]
   only_none <- vapply(split(r$input, r$path), function(x) all(x == "none"), logical(1))
   p <- names(only_none)[only_none]
   p[basename(p) %in% reached]
@@ -366,6 +367,44 @@ pretest_reach_repo <- function(repo) {
   r
 }
 
+# The fresh files link's modelling path reaches, at the fresh in `fresh_dir`
+# (a checkout at the tag to judge): link's reach to the fresh functions it
+# calls (fresh::, fresh:::, getFromNamespace("<name>", "fresh")), then fresh's
+# graph from those. Loads both source trees.
+pretest_reach_fresh <- function(repo, fresh_dir) {
+  suppressPackageStartupMessages(pkgload::load_all(repo, quiet = TRUE))
+  ln <- asNamespace("link")
+  fns <- pretest_reach(ln, pretest_entries(file.path(repo, "data-raw", "wsg_run_one.R"), ln),
+                       what = "functions")
+  txt <- unlist(lapply(fns, function(n) deparse(body(get(n, ln)))))
+  direct <- sub("^fresh:::?", "", unlist(regmatches(txt, gregexpr("fresh:::?[.A-Za-z_][A-Za-z0-9_.]*", txt))))
+  by_name <- unlist(regmatches(txt, gregexpr("getFromNamespace\\(\"[.A-Za-z0-9_]+\", *\"fresh\"", txt)))
+  by_name <- sub("getFromNamespace\\(\"([^\"]+)\".*", "\\1", by_name)
+  calls <- unique(c(direct, by_name))
+  if (!length(calls)) stop("link's modelling path calls no fresh function: the walk saw nothing", call. = FALSE)
+  suppressPackageStartupMessages(pkgload::load_all(fresh_dir, quiet = TRUE, export_all = TRUE,
+                                                   attach = FALSE))
+  # The source tree may be a temporary worktree: leave nothing loaded from it.
+  on.exit(try(pkgload::unload("fresh", quiet = TRUE), silent = TRUE), add = TRUE)
+  fr <- asNamespace("fresh")
+  missing <- setdiff(calls, ls(fr, all.names = TRUE))
+  if (length(missing)) stop("fresh at ", fresh_dir, " lacks ", paste(missing, collapse = ", "), call. = FALSE)
+  r <- pretest_reach(fr, calls)
+  if (!"frs_habitat_classify.R" %in% r) {
+    stop("fresh's reach is missing frs_habitat_classify.R (", length(r), " files)", call. = FALSE)
+  }
+  r
+}
+
+# pretest_reach_fresh() at a tag of a fresh checkout, through a temporary
+# worktree that is removed afterwards, whatever happens.
+pretest_reach_fresh_at <- function(repo, fresh_repo, tag) {
+  wt <- tempfile("fresh_")
+  pretest_git(fresh_repo, c("worktree", "add", "--detach", wt, tag))
+  tryCatch(pretest_reach_fresh(repo, wt),
+           finally = try(pretest_git(fresh_repo, c("worktree", "remove", "--force", wt)), silent = TRUE))
+}
+
 # Is `a` an ancestor of, or equal to, `b`? FALSE also when either is unknown
 # to the repo; only exit 1 means "not an ancestor", anything else is an error.
 pretest_is_ancestor <- function(repo, a, b) {
@@ -376,9 +415,11 @@ pretest_is_ancestor <- function(repo, a, b) {
   stop("git merge-base --is-ancestor ", a, " ", b, " failed (", st, ")", call. = FALSE)
 }
 
-# The history SHAs a gate's range must start at or before: refuses with the
-# first one `since` does not reach.
-pretest_since_covers <- function(repo, since, history_shas, history_dirty) {
+# The history a gate's range must hold: every build at or after `since` and at
+# or before `end` (the code the gate picks for, or modelled), so its code is
+# in the diff. A build off that line (an unmerged branch, a squash-merged
+# one) is in no diff. Returns "" or the first reason it does not.
+pretest_since_covers <- function(repo, since, end, history_shas, history_dirty) {
   stopifnot(length(history_dirty) == length(history_shas))
   if (anyNA(history_shas)) {
     return("history holds a build with no link_sha, which no range can be shown to cover")
@@ -390,6 +431,10 @@ pretest_since_covers <- function(repo, since, history_shas, history_dirty) {
     if (!pretest_is_ancestor(repo, since, h)) {
       return(sprintf("the range starts at %s, after history built at %s", substr(since, 1, 12),
                      substr(h, 1, 12)))
+    }
+    if (!pretest_is_ancestor(repo, h, end)) {
+      return(sprintf("history built at %s is not on the line to %s, so its code is in no diff",
+                     substr(h, 1, 12), substr(end, 1, 12)))
     }
   }
   ""
@@ -421,7 +466,7 @@ pretest_record_check <- function(records, config, head_sha, fresh_sha, history_s
               substr(fresh_sha, 1, 12)))
   }
   if (!length(history_shas)) return(no("no history under config ", config, " to hold the gate's range to"))
-  cover <- pretest_since_covers(repo, rec$since_sha, history_shas, history_dirty)
+  cover <- pretest_since_covers(repo, rec$since_sha, rec$link_sha, history_shas, history_dirty)
   if (nzchar(cover)) return(no("the gate's ", cover))
   if (!pretest_is_ancestor(repo, rec$link_sha, head_sha)) {
     return(no("the gate modelled ", substr(rec$link_sha, 1, 12), ", not an ancestor of HEAD"))

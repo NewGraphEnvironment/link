@@ -81,9 +81,13 @@ until_sha <- tryCatch(pretest_git(repo, c("rev-parse", "--verify", paste0(until,
                       error = function(e) refuse(conditionMessage(e)))
 # The record check holds a gate to covering every build the history holds;
 # say so now rather than after an hour of modelling.
-cover <- tryCatch(pretest_since_covers(repo, since_sha, built$link_sha, built$link_dirty),
+cover <- tryCatch(pretest_since_covers(repo, since_sha, until_sha, built$link_sha, built$link_dirty),
                   error = function(e) refuse(conditionMessage(e)))
-if (nzchar(cover)) refuse(cover, "; a gate on this range cannot clear a run")
+# --pick-only explores a range and records nothing, so there it is a warning.
+if (nzchar(cover)) {
+  if (!"--pick-only" %in% args) refuse(cover, "; a gate on this range cannot clear a run")
+  message("WARN (pick only): ", cover, "; a gate on this range could not clear a run")
+}
 
 chain <- tryCatch(pretest_config_chain(file.path(repo, "inst/extdata/configs"), config),
                   error = function(e) refuse(conditionMessage(e)))
@@ -96,13 +100,26 @@ changed <- tryCatch(rbind(pretest_changed_link(repo, since_sha, until_sha, chain
                     error = function(e) refuse(conditionMessage(e)))
 map <- pretest_map_read(file.path(script_dir, "pretest_inputs.csv"))
 m <- pretest_match(changed, map, chain)
-# fresh's none rows hold only for the fresh they were judged at.
-fresh_none <- unique(m$hits$path[m$hits$repo == "fresh" & m$hits$input == "none"])
-if (length(fresh_none) && !identical(fresh_to, PRETEST_FRESH_JUDGED)) {
-  refuse("fresh ", fresh_to, " changed files mapped none (", paste(fresh_none, collapse = ", "),
-         "), but those rows were judged at ", PRETEST_FRESH_JUDGED,
-         ": re-run data-raw/logs/pretest_372/reach_fresh.R at ", fresh_to,
-         ", fix the rows, and move PRETEST_FRESH_JUDGED")
+# A file relabelled inside the range is judged by both labels: the map as it
+# stood at `since` adds its inputs (a relabel to none cannot hide an edit).
+old_map <- tryCatch(pretest_git(repo, c("show", paste0(since_sha, ":data-raw/pretest_inputs.csv"))),
+                    error = function(e) NULL)
+if (!is.null(old_map)) {
+  f <- tempfile(fileext = ".csv")
+  writeLines(old_map, f)
+  m_old <- pretest_match(changed, pretest_map_read(f), chain)
+  m$hits <- unique(rbind(m$hits, m_old$hits))
+}
+# fresh's none rows are checked the same way, at the fresh the range ends on,
+# walked from a temporary worktree of the fresh checkout.
+if (any(m$hits$repo == "fresh" & m$hits$input == "none")) {
+  fresh_reached <- tryCatch(pretest_reach_fresh_at(repo, fresh_repo, fresh_to),
+                            error = function(e) refuse("fresh's reach at ", fresh_to, ": ", conditionMessage(e)))
+  fresh_none <- pretest_none_reached(m$hits, fresh_reached, repo = "fresh")
+  if (length(fresh_none)) {
+    refuse("mapped none but reached in fresh ", fresh_to, ": ", paste(fresh_none, collapse = ", "),
+           "; give each the input that drives its cost")
+  }
 }
 # A `none` file the modelling path now reaches is no longer off it.
 reached_none <- pretest_none_reached(m$hits, pretest_reach_repo(repo))

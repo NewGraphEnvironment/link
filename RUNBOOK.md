@@ -1457,8 +1457,10 @@ bash data-raw/pretest_run.sh --config=default --schema=fresh_default
   checkout beside link (`--fresh-repo=`). `--since` defaults to the link SHA of
   the earliest of the groups' newest finished builds under `--config` in
   `<schema>.log`: the last run, even where a group was re-modelled by hand
-  after it. A range that does not start at or before every one of those builds
-  is refused before anything is modelled.
+  after it. A range must hold every one of those builds (start at or before
+  each, and each an ancestor of the range's end, so its code is in the diff);
+  one that does not is refused before anything is modelled (a warning under
+  `--pick-only`, which records nothing).
 - **Which input each file drives.** `data-raw/pretest_inputs.csv` (repo, path
   regex, input, why). `{config}` in a pattern stands for any bundle in the
   chain. Inputs are queries, `data-raw/pretest/<input>.sql`, each returning
@@ -1474,9 +1476,12 @@ bash data-raw/pretest_run.sh --config=default --schema=fresh_default
   `none` row names a file the static call graph from `wsg_run_one.R` reaches
   (`pretest_reach()`, which also follows `getFromNamespace()` strings); the
   pick and the driver's check walk the same graph at the code they see, so a
-  changed `none` file the path reaches is treated as on it. fresh's
-  `none` rows were checked once at v0.44.0 (`data-raw/logs/pretest_372/reach.md`);
-  re-run `reach_fresh.R` there when a fresh release moves code between files.
+  changed `none` file the path reaches is treated as on it. For fresh the pick
+  walks fresh's graph at the tag the range ends on, from a temporary worktree
+  of the fresh checkout, whenever the range changes a fresh file mapped `none`
+  (`data-raw/pretest_reach_fresh.R <fresh dir>` prints it); a test checks it at
+  the DESCRIPTION pin. A file relabelled inside the range is matched against
+  the map at both ends, so a relabel to `none` cannot hide its own edit.
 - **Which groups.** Each input's top `--per-input` groups (default 2) among
   groups with a finished build in `<schema>.log`, ties by code; the union is
   modelled, largest history first.
@@ -1492,8 +1497,15 @@ bash data-raw/pretest_run.sh --config=default --schema=fresh_default
   under their own names, no rows), so the run's DDL meets existing tables, not
   fresh ones. Each pick runs through `wsg_run_one.R` as the dispatcher leg would
   (`LNK_LOAD=loadall`, `LNK_GUARD_DOWNSTREAM=warn`, `LNK_HABITAT_GATE=0`). The
-  gate refuses a dirty checkout and refuses while any session is active on the
-  persist schema or a `working_` schema: a live run shares `working_<wsg>`.
+  gate refuses a dirty checkout, refuses while any session is active on the
+  persist schema or a `working_` schema (a live run shares `working_<wsg>`),
+  and, since the bound is a time, refuses to start beside any other active
+  client session unless `--allow-busy` (written to the record's notes). While a
+  group runs the watchdog samples the other sessions every 30 s, and the
+  verdict prints the most it saw beside the group's minutes: the first real
+  gate (2026-10-28) had TAKL and SAJR killed at their bounds while another
+  session ran six modelling workers on the same database, and SAJR had
+  modelled in 0.8 min alone an hour before.
 - **The verdict and the record.** Each group is `pass`, `failed` (non-zero
   exit), `bound` (past its bound, or killed) or `no_row`. The gate passes only
   when every group passes, on one clean link SHA equal to HEAD and one fresh
@@ -1509,8 +1521,9 @@ decides, so a later fail voids an earlier pass. It clears the run when it
 passed on a clean tree, its fresh SHA is the installed one (a gate that modelled
 nothing records the installed fresh too), its range starts at or before every
 link SHA the history was built at, DESCRIPTION pins the same fresh at its SHA
-and at HEAD, and every file changed between the SHA it modelled and HEAD maps
-to `none`. A version bump or a
+and at HEAD, the gate's own scripts and map (`PRETEST_RULES`) have not changed
+since, and every file changed between the SHA it modelled and HEAD maps to
+`none`. A version bump or a
 CITATION commit therefore keeps the record; an edit to `R/` voids it.
 `--pretest-note="<why>"` runs without a record, prints an `OVERRIDE:` line,
 and writes an `override` row with the note and the run_uid
@@ -1533,6 +1546,13 @@ nothing). The check applies to every launch, dispatcher-only included;
   between 0.66 and 0.68 with the walk, inside its bound.
 - Primitives refreshed after the gate (`--refresh-primitives` runs before
   `preflight_local()`, after the gate was taken).
+- Dependencies other than fresh: crate, DBI, RPostgres and yaml are on the
+  path, and their installed versions are not recorded.
+- A constant (not a function) defined in a `none` file and used on the path:
+  the call graph walks functions only (none today).
+- The driver's own environment for a group: `study_area_run.sh` is mapped
+  `unexercised`, so a change to it is named and voids a record, but the gate
+  models under its own copy of that environment.
 
 Evidence: `data-raw/logs/pretest_372/` (its README indexes it).
 

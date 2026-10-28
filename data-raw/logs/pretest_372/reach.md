@@ -13,8 +13,8 @@ are not seen.
 
 - **link:** `tests/testthat/test-pretest.R` re-runs the walk (`pretest_reach()`)
   every test run, so a `none` row on a reached file fails the suite.
-- **fresh:** checked once, here, with `reach_fresh.R <scratch dir>` against a
-  `git worktree` of fresh at `v0.44.0` in `<scratch dir>/fresh044`. A fresh
+- **fresh:** checked once, here, with the walk against a
+  `git worktree` of fresh at `v0.44.0` (now `data-raw/pretest_reach_fresh.R <dir>`, which the pick runs itself at the range's fresh tag; it gave the same sets at v0.42.0). A fresh
   release that moves a function between files needs this re-run before the
   map's fresh rows are trusted.
 

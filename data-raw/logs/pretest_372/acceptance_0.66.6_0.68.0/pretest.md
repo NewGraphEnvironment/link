@@ -4,10 +4,11 @@
 - link `8fe1ba509041..ff12a85eb2cd`; fresh `v0.39.0..v0.42.0`
 - per input 2 groups; bound 3 x last minutes in `fresh_default_20261017.log`, floor 5 min; statement bound <= 30 min
 
-## Changed files (35)
+## Changed files (36)
 
 | repo | file | inputs |
 |---|---|---|
+| fresh | `inst/extdata/parameters_habitat_thresholds.csv` | none |
 | fresh | `R/frs_break.R` | segments |
 | fresh | `R/frs_candidates_pick.R` | crossings |
 | fresh | `R/frs_feature_find.R` | none |

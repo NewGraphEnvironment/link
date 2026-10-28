@@ -117,6 +117,7 @@ pick_args=(--config="$CONFIG" --schema="$SCHEMA" --out="$OUT" --until="$UNTIL"
 [ -z "$SINCE" ] || pick_args+=(--since="$SINCE")
 [ -z "$MINUTES_EXCLUDE" ] || pick_args+=(--minutes-exclude="$MINUTES_EXCLUDE")
 [ -z "$FRESH_REPO" ] || pick_args+=(--fresh-repo="$FRESH_REPO")
+[ "$PICK_ONLY" = 0 ] || pick_args+=(--pick-only)
 prc=0
 (cd "$REPO_ROOT" && Rscript data-raw/pretest_pick.R "${pick_args[@]}") || prc=$?
 [ "$prc" = 0 ] || { echo "pick exited $prc"; exit "$prc"; }
@@ -146,9 +147,11 @@ fi
 
 # Other client sessions doing work: a run in flight would share
 # working_<wsg> with the gate, and any load makes its minutes meaningless.
+# At the start nothing is the gate's own, so another gate counts too; while a
+# group runs, only that group's own sessions are left out.
 OTHERS_SQL="SELECT count(*) FROM pg_stat_activity
              WHERE backend_type = 'client backend' AND pid <> pg_backend_pid()
-               AND state NOT IN ('idle') AND coalesce(application_name, '') NOT LIKE 'pretest\\_%'"
+               AND state NOT IN ('idle')"
 live=$(psql_q -c "SELECT count(*) FROM pg_stat_activity WHERE pid <> pg_backend_pid() AND state <> 'idle'
                    AND (query ILIKE '%${SCHEMA}.%' OR query ILIKE '%working\\_%')")
 [ "$live" = 0 ] || { echo "REFUSED: $live active session(s) on $SCHEMA or a working schema; a run looks live" >&2; exit 2; }
@@ -221,13 +224,16 @@ for row in "${PICKS[@]}"; do
   t0=$(date +%s)
   killed=0
   others=0
+  unknown=0
   n=0
   while kill -0 "$pid" 2>/dev/null; do
     if [ $(( n % 15 )) = 0 ]; then
-      o=$(psql_q -c "$OTHERS_SQL" 2>/dev/null) || o=""
-      [[ "$o" =~ ^[0-9]+$ ]] || o=-1
-      [ "$o" -le "$others" ] || others=$o
-      [ "$o" -ge 0 ] || others=-1
+      o=$(psql_q -c "$OTHERS_SQL AND coalesce(application_name, '') <> '${app}'" 2>/dev/null) || o=""
+      if [[ "$o" =~ ^[0-9]+$ ]]; then
+        [ "$o" -le "$others" ] || others=$o
+      else
+        unknown=1
+      fi
     fi
     n=$((n + 1))
     if [ $(( $(date +%s) - t0 )) -ge "$bound_s" ]; then
@@ -243,6 +249,8 @@ for row in "${PICKS[@]}"; do
   rc=0
   wait "$pid" || rc=$?
   [ "$killed" = 0 ] || rc=124
+  # -1: no sample could be read and none saw load.
+  [ "$unknown" = 0 ] || [ "$others" -gt 0 ] || others=-1
   printf '%s\t%s\t%s\n' "$wsg" "$rc" "$others" >> "$OUT/exits.tsv"
   LC_ALL=C grep -aE "TIMEOUT|done in|Error" "$OUT/${wsg}.log" | tail -3 | sed 's/^/  /' || true
   echo "  exit $rc after $(( $(date +%s) - t0 )) s; other active sessions seen: up to $others"

@@ -289,6 +289,12 @@ test_that("a gate record holds across commits that touch only none files", {
   expect_match(chk(rec(), dirty = TRUE)$why, "dirty tree")
   expect_match(chk(rec(), dirty = NA)$why, "dirty tree")
   expect_match(chk(rec(), hist = character(), dirty = logical())$why, "no history under config")
+  # history built on a branch the gated line never held: its code is in no diff
+  side <- system2("git", c("-C", r$dir, "rev-parse", "HEAD"), stdout = TRUE)
+  system2("git", c("-C", r$dir, "checkout", "-q", "-b", "side", run), stdout = TRUE, stderr = TRUE)
+  off <- r$commit(list("R/a.R" = "side edit"), "side")
+  system2("git", c("-C", r$dir, "checkout", "-q", side), stdout = TRUE, stderr = TRUE)
+  expect_match(chk(rec(), hist = c(run, off), dirty = c(FALSE, FALSE))$why, "not on the line")
   expect_match(chk(rec(config_name = "bcfishpass"))$why, "no gate record for config default")
   # a newer fail overrides an older pass
   both <- rbind(rec(), rec(run_at = as.POSIXct("2026-10-28 13:00", tz = "UTC"), verdict = "fail",
@@ -331,10 +337,12 @@ test_that("fresh's changed files include inst/extdata, and git warnings never be
   withr::local_dir(r$dir)
   expect_error(e$pretest_git(r$dir, c("rev-parse", "--verify", "x; touch pwned")), "failed")
   expect_false(file.exists(file.path(r$dir, "pwned")))
-  expect_identical(e$pretest_since_covers(r$dir, a, b, FALSE), "")
-  expect_match(e$pretest_since_covers(r$dir, b, a, FALSE), "after history built at")
-  expect_match(e$pretest_since_covers(r$dir, a, c(b, NA), c(FALSE, FALSE)), "no link_sha")
-  expect_match(e$pretest_since_covers(r$dir, a, b, NA), "dirty tree")
+  expect_identical(e$pretest_since_covers(r$dir, a, b, b, FALSE), "")
+  expect_match(e$pretest_since_covers(r$dir, b, b, a, FALSE), "after history built at")
+  expect_match(e$pretest_since_covers(r$dir, a, b, c(b, NA), c(FALSE, FALSE)), "no link_sha")
+  expect_match(e$pretest_since_covers(r$dir, a, b, b, NA), "dirty tree")
+  # history built past the end of the range is in no diff
+  expect_match(e$pretest_since_covers(r$dir, a, a, b, FALSE), "not on the line")
 })
 
 test_that("the default --since is the earliest newest build, and dirty history refuses", {
@@ -457,4 +465,24 @@ test_that("the entries are read from the script, and a dropped entry is an error
   expect_setequal(e$pretest_entries(f, ns), c(e$PRETEST_ENTRIES, "lnk_new"))
   writeLines("lnk_db_conn()", f)
   expect_error(e$pretest_entries(f, ns), "no longer calls")
+})
+
+test_that("no fresh file mapped none is reached at the fresh DESCRIPTION pins", {
+  e <- pt_env()
+  root <- normalizePath(testthat::test_path("..", ".."))
+  fresh_repo <- file.path(dirname(root), "fresh")
+  skip_if_not(dir.exists(file.path(fresh_repo, ".git")) || file.exists(file.path(fresh_repo, ".git")),
+              "no fresh checkout beside link")
+  pin <- e$pretest_fresh_pin(readLines(file.path(root, "DESCRIPTION")))
+  has_tag <- tryCatch({
+    e$pretest_git(fresh_repo, c("rev-parse", "--verify", paste0(pin, "^{commit}")))
+    TRUE
+  }, error = function(err) FALSE)
+  skip_if_not(has_tag, paste("fresh checkout lacks", pin))
+  reached <- e$pretest_reach_fresh_at(root, fresh_repo, pin)
+  expect_true(all(c("frs_near_river.R", "frs_habitat_classify.R") %in% reached))
+  map <- e$pretest_map_read(pt_map_path())
+  hits <- e$pretest_match(data.frame(repo = "fresh", path = file.path("R", reached),
+                                     stringsAsFactors = FALSE), map)$hits
+  expect_identical(e$pretest_none_reached(hits, reached, repo = "fresh"), character())
 })

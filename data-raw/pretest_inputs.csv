@@ -136,7 +136,7 @@ fresh,^R/frs_wetland_fetch\.R$,none,"not reached from link's modelling path at f
 fresh,^R/frs_wsg_species\.R$,none,"not reached from link's modelling path at fresh v0.44.0 (call graph, data-raw/logs/pretest_372/reach.md)"
 fresh,^R/zzz\.R$,none,"not reached from link's modelling path at fresh v0.44.0 (call graph, data-raw/logs/pretest_372/reach.md)"
 link,^R/lnk_habitat_gate\.R$,unexercised,"a run models with LNK_HABITAT_GATE=0 and settles in the recompute, which the gate does not run"
-link,^DESCRIPTION$,none,the fresh pin reaches the gate as fresh's own changed files; the rest is metadata
+link,^DESCRIPTION$,none,"the fresh pin is compared as fresh's own changed files and by the record check; other dependency versions (crate, DBI) are not recorded (RUNBOOK §8d)"
 link,^data-raw/wsg_run_one\.R$,any,the per-group entry point every pick runs
 link,^data-raw/wsg_recompute_one\.R$,unexercised,the post-consolidate recompute
 link,^data-raw/schema_consolidate\.R$,unexercised,copies cloud hosts' groups into the dispatcher's persist
@@ -152,3 +152,4 @@ fresh,^inst/extdata/edge_types\.csv$,segments,edge types frs_edge_types() resolv
 fresh,^inst/extdata/(parameters_fresh|parameters_habitat_method|parameters_habitat_thresholds|parameters_habitat_rules|wsg_species_presence)\.(csv|yaml)$,none,fallbacks for a call without a bundle; a link run passes its bundle's own
 fresh,^inst/extdata/(break_points|crossings|feature_codes|quotes)\.csv$,none,"examples and startup quotes, off link's modelling path"
 fresh,^inst/extdata/.*\.(rds|gpkg)$,none,fresh's example and test data
+link,^data-raw/study_area_run\.sh$,unexercised,the driver sets the environment every group models under; the gate keeps its own copy (pretest_run.sh)
