@@ -457,6 +457,26 @@ run_validate <- function(conn, s, aoi = c("AAAA", "BBBB"), ...) {
     observations = paste0(s, ".observations"), ...)
 }
 
+test_that("an observation inside a segment attaches to the segment holding it (#396)", {
+  # Under `observation_breaks: top_per_species` most observations no longer
+  # start a segment. o2 (DV) and o7 (BT) sit at 50 and 50.2 m, inside
+  # AAAA's segment 1 (0 to 100 m), with no segment starting within 1 m.
+  conn <- validate_conn()
+  s <- local_validate_fixture(conn)
+  v <- run_validate(conn, s)
+  obs <- v$observations
+  mid <- obs[obs$observation_key %in% c("o2", "o7"), ]
+  expect_identical(nrow(mid), 1L)
+  expect_identical(mid$id_segment, 1L)
+  expect_identical(mid$n_cand, 1L)
+  expect_identical(mid$seg_drm, 0)
+  # The only unattached location is o11, past the end of its line.
+  sm <- v$summary
+  a_any <- sm[sm$watershed_group_code == "AAAA" & sm$stage == "any", ]
+  expect_identical(a_any$n_unattached, 1L)
+  expect_identical(obs$observation_key[is.na(obs$id_segment)], "o11")
+})
+
 test_that("lnk_habitat_validate scores a fixture run on the full key", {
   conn <- validate_conn()
   s <- local_validate_fixture(conn)

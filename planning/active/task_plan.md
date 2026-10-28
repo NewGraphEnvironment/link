@@ -49,9 +49,9 @@ Two costs follow from cutting at every observation:
 - [ ] `/code-check` deferred to `/code-check branch` (operator, at resume); committed
 
 ## Phase 3: The validator reads a mid-segment observation
-- [ ] Confirm `.lnk_hv_attach()`'s containing-segment branch covers an observation that no longer starts a segment; add a test with a point inside a segment that asserts `id_segment`, `n_cand` and that `n_unattached` is 0
-- [ ] Roxygen "Which segment an observation is on" rewritten: the segment starting within 1 m, else the one containing the point; drop the 99 % claim (lines 43-44) and the "does not depend on segmentation" claim for the buffer (lines 53-55): the buffer enumerates segments by start and the attached segment's flags move with its gradient, so capture shares move with segmentation
-- [ ] `/code-check` + commit
+- [x] Confirm the attach step's containing-segment branch (`lnk_vd_att`, `R/lnk_habitat_validate.R`; there is no `.lnk_hv_attach()`) covers an observation that no longer starts a segment; add a test with a point inside a segment that asserts `id_segment`, `n_cand` and that `n_unattached` is 0
+- [x] Roxygen "Which segment an observation is on" rewritten: the segment starting within 1 m, else the one containing the point; drop the 99 % claim (lines 43-44) and the "does not depend on segmentation" claim for the buffer (lines 53-55): the buffer enumerates segments by start and the attached segment's flags move with its gradient, so capture shares move with segmentation
+- [ ] `/code-check` deferred to `/code-check branch`; committed
 
 ## Phase 4: Build and measure (questions 1, 2, 3, 6)
 - [ ] Run decision written first in `data-raw/logs/observation_breaks_396/README.md` (what re-segments, what is built here, primitives vintage, before state), as `segmentation_326/README.md` does

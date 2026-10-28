@@ -91,3 +91,10 @@ The province figure is on `default`'s presence filter (each record by its own gr
 **Question 5, tributary redundancy** (`redundancy.csv`): 34 / 19 / 103 / 86 species-tops (PARS / LKEL / BULK / ELKR) have the species observed up a tributary joining above them. Removing them would drop 25 / 8 / 68 / 71 more positions, 4 to 12 % of today's positions on top of the 41 to 78 % already removed. Not built: decision 4 leaves materiality to the operator, and this reads as a modest second step needing an upstream walk per build.
 
 **Question 4, readers** (`readers_code2.md`): nothing in link tells 2 from 1 (every reader is `IN (1, 2)`, `> 0` or `= 0`). QGIS styles and project files in the sibling repos read bcfishpass's text `model_access_<sp>`, not link's integer. bcfishpass's own `aw_linear_summary()` sums `access_<sp> = 2` km; it runs on bcfishpass's tables, and link's `bcfishpass` config keeps every observation break.
+
+## Errors Encountered (resume session)
+
+| Error | Resolution |
+|-------|------------|
+| 19 errors in `test-lnk_habitat_validate.R` during the full suite | A second run of the same file was started beside it; both use the fixture schema `zz_lnk_validate_probe`. Never run a live-DB test file beside the suite. The file alone passes 433 / 433. |
+| FISS absence sites cover none of the four planned groups (COTR, LNTH, PINE, UNTH, UPCE only) | UPCE added to the `default` builds for question 3 |

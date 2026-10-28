@@ -161,10 +161,13 @@ without \code{match_type} or \code{source}. Pass a subset to score held-out reco
 
 \section{Which segment an observation is on}{
 
-The pipeline breaks streams at observations, so most points sit on a
-segment boundary. The segment \strong{starting} within 1 m of the point (the
-upstream one) is used, else the one containing it. A location with no
-segment is counted in \code{n_unattached} and nowhere else. All joins between
+The segment \strong{starting} within 1 m of the point (the upstream one) is
+used, else the one containing it. Whether a point starts a segment
+depends on the bundle: under \code{pipeline: observation_breaks: all} (the
+\code{bcfishpass} bundle) streams break at every observation, so most points
+do; under \code{top_per_species} (the \code{default} bundle) only each species' top
+observation on a line breaks it, so most points sit inside a segment. A
+location with no segment is counted in \code{n_unattached} and nowhere else. All joins between
 \code{streams}, \code{streams_access} and \verb{streams_habitat_<sp>} are on the full key
 \verb{(id_segment, watershed_group_code)}: \code{id_segment} repeats across groups.
 
@@ -172,11 +175,15 @@ segment is counted in \code{n_unattached} and nowhere else. All joins between
 habitat starts within \code{buffer_m} metres \strong{upstream} along the same
 \code{blue_line_key} and WSG, because observation points often mark the
 downstream end of a sampled site. It follows the mainstem only (never a
-tributary), stops at the WSG boundary, and is measured along the stream,
-so it does not depend on segmentation. Accessibility is always the point's
-own segment. Near lakes the buffer reaches connector flow lines, which
-are rearing without any threshold test, so buffered rearing capture there
-says nothing about thresholds.
+tributary) and stops at the WSG boundary: it counts a segment whose start
+lies between the start of the point's own segment and \code{buffer_m} above
+the point, measured along the stream. Capture still moves with
+segmentation: where breaks merge segments, a segment's start and its
+gradient (so its spawning and rearing flags) change, and so do the point's
+own segment and which segments start within the buffer. Accessibility is
+always the point's own segment. Near lakes the buffer reaches connector
+flow lines, which are rearing without any threshold test, so buffered
+rearing capture there says nothing about thresholds.
 }
 
 \section{Reading the numbers}{
@@ -189,9 +196,9 @@ The spawning and rearing flags are gated by the pipeline's own
 \code{share_spawning} is not strictly a subset of \code{share_accessible}.
 \item \strong{Accessible capture is partly circular.} Observations are pipeline
 inputs: they lift barriers (\code{observation_threshold} in
-\code{parameters_fresh.csv}), they are break points, and where
-\code{apply_habitat_overlay} is on, \code{user_habitat_classification} forces
-habitat. Spawning and rearing capture is the score.
+\code{parameters_fresh.csv}), they break streams (every one, or each
+species' top per line under \code{pipeline: observation_breaks: top_per_species}), and where \code{apply_habitat_overlay} is on,
+\code{user_habitat_classification} forces habitat. Spawning and rearing capture is the score.
 \code{n_in_uhc_spawn} / \code{n_in_uhc_rear} count locations inside a
 \code{user_habitat_classification} reach confirming that habitat type for the
 species (indicator 1) anywhere in the window capture reads (the
