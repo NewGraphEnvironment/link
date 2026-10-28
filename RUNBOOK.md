@@ -212,16 +212,14 @@ Nothing in link tells 2 from 1 (every reader is `IN (1, 2)`); bcfishpass's own
 starts.** Both tests in the walk are monotone in the start: a record counts as upstream
 when its measure is at least start − 1, a barrier as downstream when at most start + 1,
 and a segment never spans a confluence (FWA ends cut in every build), so the tributary
-tests do not change within one. So when a break goes and a segment now starts lower,
+tests are constant within one: a tributary's records count for every segment of the
+feature below its mouth, whatever its start, and for no segment above. So when a break goes and a segment now starts lower,
 its upper part can only open or gain "observed upstream"; when a segment now starts
 higher, the reverse. Fewer observation breaks mostly move starts down:
 
 - **1 to 2 at a species' top**, the main change. Where a removed record's rounded
   position lay more than 1 m above X's raw top and below the next kept cut, the segment
   starting at X's top swallows it and reads X = 2 above it.
-- **1 to 2 below a tributary mouth.** A segment starting at a confluence where X is
-  recorded up the tributary reads X = 2; merged past a removed break, that 2 reaches
-  further up the line.
 - **Blocked to open,** where a merged segment's lower start puts a barrier more than
   1 m above it.
 

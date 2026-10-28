@@ -116,3 +116,9 @@ The province figure is on `default`'s presence filter (each record by its own gr
 
 - `near_removed` was tautological: every merged BEFORE segment starts at a removed position, so it excused any change on any merged segment. A merge below a tributary mouth also turns 1 → 2 with no 1 m rule at all.
 - **The control now is exact:** both builds give the walk the same inputs, so codes depend only on a segment's start, and both walk tests are monotone in it (record upstream when `m >= start - 1`, barrier downstream when `b <= start + 1`; segments never span a confluence). AFTER start lower ⇒ access only rises and `has_barriers` only goes true → false; higher ⇒ the reverse; same ⇒ no change. `pre_post_diff.R` counts violations (`n_violation`, must be 0).
+
+## Code-check round 5: the direction rule holds (2026-10-28)
+
+- Verified against fwapg, fresh and link: the barriers are located on FWA features before any break, lifts are point against point, the walk reads only the segment's start, and every ltree branch is constant within a feature. Access is `blocked ? 0 : observed ? 2 : 1`, and the merge keeps it monotone. So `n_violation` is an exact control.
+- Round 4's tributary-mouth case was impossible: FWA ends a feature at every confluence, and the segment starting at a confluence does not count the tributary (`wscode_b <@ localcode_a`). I accepted it without probing it against a sentence I had just written. Dropped from the RUNBOOK, research and `code2_class.sql`.
+- `pre_post_diff.R` now writes `n_violation` and stops when it is above 0.

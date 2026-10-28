@@ -15,8 +15,9 @@
 # has_barriers_<sp>_dnstr depend only on where its segment starts. Both of the
 # walk's tests are monotone in that start: a record counts as upstream when its
 # measure is at least start - 1 (fwa_upstream, include_equivalents, 1 m), a
-# barrier as downstream when at most start + 1 (fwa_downstream); across lines
-# the ltree tests take in more of the network the lower the start. So, with
+# barrier as downstream when at most start + 1 (fwa_downstream); the ltree
+# (other-line) tests are constant within a piece, since a segment never spans a
+# confluence and both segments of a piece lie in one FWA feature. So, with
 # 0 < 1 < 2:
 #   - AFTER start lower (b.dm < a.dm): access can only rise and has_barriers
 #     can only go true -> false;
@@ -155,15 +156,17 @@ if (any(bad)) {
 }
 num <- vapply(d, is.numeric, logical(1))
 d[num] <- lapply(d[num], function(x) round(x, 3))
-utils::write.csv(d, file.path(out, "pre_post_diff.csv"), row.names = FALSE)
 d$n_violation <- d$n_change_same_start + d$n_violation_lower_start +
   d$n_violation_higher_start
+utils::write.csv(d, file.path(out, "pre_post_diff.csv"), row.names = FALSE)
 print(d[, c("wsg", "sp", "seg_pre", "seg_post", "km_acc_0_to_open",
             "km_acc_open_to_0", "km_acc_2_to_1", "km_acc_1_to_2",
             "km_acc_1_to_2_at_top", "km_change_higher_start",
             "n_violation", "n_sliver_access_change")])
-if (any(d$n_violation > 0)) {
-  message("DEFECT: access or has_barriers moved against the direction its ",
-          "segment start moved; see n_violation in pre_post_diff.csv")
-}
 DBI::dbDisconnect(conn)
+if (any(d$n_violation > 0)) {
+  stop("DEFECT: access or has_barriers moved against the direction its ",
+       "segment start moved; see n_violation in pre_post_diff.csv",
+       call. = FALSE)
+}
+

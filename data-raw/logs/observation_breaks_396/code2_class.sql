@@ -2,8 +2,8 @@
 -- that starts at species X's kept top T and swallows a removed break R more
 -- than 1 m above X's raw top reads X = 2 ("observed upstream") along its whole
 -- length, where the BEFORE piece starting at R read 1. A pre-build estimate,
--- not a bound: it misses 1 -> 2 below a tributary mouth and the changes from
--- released breaks (RUNBOOK §2c), and it counts a piece where X is blocked in
+-- not a bound: it misses the changes from released breaks (RUNBOOK §2c), and
+-- it counts a piece where X is blocked in
 -- both builds, or where R never cut because it lay within 1 m of an FWA end.
 -- pre_post_diff.R measures the change after the builds.
 --
