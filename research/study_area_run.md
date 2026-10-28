@@ -1,7 +1,7 @@
 # Study-area run (tunnel-free, M1-dispatch)
 
-**Verified:** 2026-10-26 (the early recompute, #374); 2026-10-17 (the province-wide section and the corrected lines) · **Issues:** #175, #246, #347, #348, #374 ·
-**Produced by:** `data-raw/study_area_run.sh`; logs `data-raw/logs/provincial_246/`,
+**Verified:** 2026-10-28 (how hosts are packed, #259); 2026-10-26 (the early recompute, #374); 2026-10-17 (the province-wide section and the corrected lines) · **Issues:** #175, #246, #347, #348, #374, #259 ·
+**Produced by:** `data-raw/study_area_run.sh`; logs `data-raw/logs/provincial_246/`, `data-raw/logs/packing_259/`,
 `data-raw/logs/study_area_run/20261017_*`
 
 Lean alternative to the 5-host `provincial_run_runbook.md` for running
@@ -229,6 +229,41 @@ consolidate, and every run WSG must have rows in the persist afterwards.
 
 Measured timings and the four defects that produced these numbers:
 `research/run_record_2026_08_31_cypher_pilots.md`.
+
+## How hosts are packed (#259, 2026-10-28)
+
+`study_area_buckets.R` predicts each host's model leg as the sum of its groups' weights over its speed.
+Scored out of sample, fitted on the 2026-10-17 run and tested on 2026-10-23's actual buckets
+(`data-raw/logs/packing_259/fit.md`), with KTSU's 65 min stall and OKAN's left out:
+
+| weight | speed | largest error in a leg's share of the mean leg | predicted makespan (measured 260) |
+|---|---|---|---|
+| FWA segments × 10-17 rate | equal | 28.9 points | 273 |
+| 10-17 measured minutes | equal | 3.6 points | 219 |
+| 10-17 minutes, normalized by the measuring host | equal | 3.4 points | 228 |
+| 10-17 minutes | fitted on 10-17 legs (cloud 1.04 of m1) | 6.0 points | 214 |
+
+- **Measured minutes are the weight.** Segments put job3's leg 38 % short and job2's 5 % long, and so
+  set the balance wrong by eight times as much as minutes do. With minutes, every leg is short by
+  11 to 17 %: the predicted makespan of 219 min against the 260 measured.
+- **That shortfall is drift, not host speed.** The same groups on the same class took 13 to 16 % longer,
+  summed per class, on 10-23 than on 10-17 (m1 1.130, cloud 1.159; fresh 0.42.0 and link 0.68.0 lie
+  between the runs). Packing balance only depends on ratios, so a run-wide drift costs the estimate,
+  not the packing. The learned-speed calibration takes it out of each correction (RUNBOOK §8d,
+  "Learned host speeds").
+- **Equal speeds stay the default, and the learned state starts equal.** Only 10 of 239 groups moved
+  between m1 and the cloud hosts between the runs. A host packed on minutes it measured predicts
+  itself, so only groups that move carry evidence of speed. Calibrated on 10-23, the cloud class reads
+  0.964 of m1, close to the two classes' drift ratio (0.976). The few that moved read the other way
+  (m1 → cloud 1.436, cloud → m1 0.941, n = 7 and 3). So the data cannot tell the two classes apart.
+- **Normalizing measured minutes by the host that measured them** moves nothing at speeds near 1
+  (3.4 against 3.6 points). It is kept because a worker measured at half the dispatcher's rate would
+  otherwise hand its slowness to whichever host takes its groups next.
+- **These numbers were seen before any threshold was set**, so they rank the options. They do not
+  pass or fail them.
+- **#326 moves both weights.** It does not change FWA segments, but it cuts persisted segments 2.1 to
+  2.7-fold, so the minutes a group takes, and with them the minutes-per-segment rate, change with it.
+  The next provincial run re-fits both (`fit.R` on its rows).
 
 ## The province-wide `default` run (2026-10-23, 241 groups; #361)
 

@@ -934,3 +934,42 @@ test_that("the printed re-model carries the bound the run's groups reported", {
   # One command: every line but the last continues it.
   expect_true(all(grepl("\\\\$", cmd[-length(cmd)])), info = paste(cmd, collapse = "\n"))
 })
+
+test_that("the summary prints the host-speed calibration command after a modelled run (#259)", {
+  skip_if_no_finish_lib()
+  d <- withr::local_tempdir()
+  ph <- file.path(d, "T0_phases.tsv")
+  hdr <- "run_uid\tphase\thost\tstart_utc\tend_utc\tminutes\tgroups\tstatus"
+  run <- function(lines) {
+    writeLines(lines, ph)
+    script <- file.path(d, "hint.sh")
+    writeLines(c("set -euo pipefail",
+                 sprintf("source %s", shQuote(finish_hosts_lib())),
+                 sprintf("source %s", shQuote(finish_lib())),
+                 sprintf("PHASES_TSV=%s", shQuote(ph)),
+                 "run_calibrate_hint", "echo END"), script)
+    out <- suppressWarnings(system2(hosts_bash(), script, stdout = TRUE, stderr = TRUE))
+    list(out = paste(out, collapse = "\n"), status = attr(out, "status") %||% 0L)
+  }
+  r <- run(c(hdr, sprintf("%s\tmodel\tdispatcher\t2026-11-01T01:00:00Z\t2026-11-01T02:00:00Z\t60.0\t3\tok",
+                          finish_uid)))
+  expect_equal(r$status, 0L)
+  expect_match(r$out, "host_speeds_calibrate.R --plan=", fixed = TRUE)
+  expect_match(r$out, paste0("--phases=", ph), fixed = TRUE)
+  # A --recompute-only pass models nothing, so there is nothing to learn from.
+  r <- run(c(hdr, sprintf("%s\trecompute\t\t2026-11-01T01:00:00Z\t2026-11-01T02:00:00Z\t60.0\t3\tok",
+                          finish_uid)))
+  expect_equal(r$status, 0L)
+  expect_false(grepl("host_speeds_calibrate", r$out))
+  expect_match(r$out, "END")
+})
+
+test_that("run_finish_report prints the calibration hint before the INCOMPLETE branch", {
+  skip_if_no_finish_lib()
+  body <- readLines(finish_lib())
+  start <- grep("^run_finish_report\\(\\) \\{", body)
+  hint <- grep("^  run_calibrate_hint$", body)
+  incomplete <- grep("study_area_run INCOMPLETE", body)
+  expect_length(hint, 1)
+  expect_true(hint > start && hint < min(incomplete[incomplete > start]))
+})
