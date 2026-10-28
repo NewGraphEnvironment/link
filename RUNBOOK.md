@@ -208,33 +208,38 @@ where species recorded only below it turn to 1. Lifts count observations point a
 Nothing in link tells 2 from 1 (every reader is `IN (1, 2)`); bcfishpass's own
 `aw_linear_summary()` does, on its own tables (`data-raw/logs/observation_breaks_396/readers_code2.md`).
 
-**The access changes.** Where a removed record lay more than 1 m above X's top and
-below the next kept cut, X's turn to 1 moves up to that cut: the segment starting at
-X's top swallows the removed break and reads X = 2 along its whole length, where the
-old piece above the removed break read 1, unless X is observed up a tributary above.
-That is 1 to 2, never 2 to 1. The recompute (`lnk_access()`) passes no observations
-and keeps a prior 2, so a recompute after a re-model keeps it. The break set that
-keeps code 2 exactly is smaller than the tops: per species, the lowest record of any
-species more than 1 m above its top (`data-raw/logs/observation_breaks_396/exact_set.sql`).
-It is not built; `research/observation_breaks.md` has the counts.
+**The access changes.** The main one: where a removed record's rounded position lay
+more than 1 m above X's raw top and below the next kept cut, X's turn to 1 moves up to
+that cut. The segment starting at X's top swallows the removed break and reads X = 2
+along its whole length, where the old piece above the removed break read 1, unless X is
+observed up a tributary above. The recompute (`lnk_access()`) passes no observations and
+keeps a prior 2, so a recompute after a re-model keeps it.
 
-**A boundary can also move by 1 m.** Observations are the first break source, and a
-later source cuts only more than 1 m from the current segment ends
-(`fresh::frs_break_apply()`). So a barrier or crossing within 1 m of an observation
-cut did not cut, and the segment starting at the observation read it as downstream
-(1 m tolerance). Once that observation stops breaking, the barrier cuts at its own
-position, and the metre between the two positions changes side: between blocked and
-open, `has_barriers_<sp>_dnstr` and the mapping-code token with it. Breaks are
-rounded to the metre, so each such sliver is 1 m long.
+**Three 1 m rules stack near a removed break, and move the rest.** Breaks are rounded to
+the metre while the walk compares raw measures; a later source cuts only more than 1 m
+from the current segment ends (`fresh::frs_break_apply()`), and observations are the
+first source; and the walk reads a feature within 1 m of a segment start as upstream
+(records) or downstream (barriers). So while an observation cut stands, a barrier,
+crossing or other break within 1 m of it does not cut, and once it is removed that break
+cuts at its own position. That can:
 
-**And a whole segment can change side next to a barrier.** A barrier whose raw measure
-lies 1 to 1.5 m above an observation cut rounds to a break 1 m above it, which did not
-cut; the segment starting at the observation held the barrier more than 1 m above its
-start, so it read open (the metre-rounding defect of link#349, fresh#258). Once the
-observation stops breaking, the barrier's break cuts, and the segment above it reads
-blocked. That is open to blocked along a whole segment, and a cut that moves can
-suppress or release the next break above it in the same way. Each case lies within a few
-metres of a barrier; `pre_post_diff.R` counts them apart.
+- move a boundary by 1 m, so a 1 m sliver changes side between blocked and open, or
+  between 2 and 1, with `has_barriers_<sp>_dnstr` and the mapping-code token;
+- change a whole segment between blocked and open: a barrier whose raw measure lies 1 to
+  1.5 m above the observation cut breaks 1 m above it, which did not cut, so the segment
+  above the observation held it more than 1 m above its start and read open (the
+  metre-rounding defect of link#349, fresh#258); now it cuts and the segment above it
+  reads blocked;
+- change a whole segment from 2 to 1: a released break about 2 m above X's top turns X
+  to 1 there, where the removed record 1 m above the top had kept X at 2 up to the next
+  cut.
+
+Every one of these has a segment start within a few metres of a removed observation
+break; `data-raw/logs/observation_breaks_396/pre_post_diff.R` checks that nothing else
+moves. The set that would keep nearly every turn where `all` puts it is smaller than the
+tops: per species, the lowest record of any species more than 1 m above its raw top
+(`exact_set.sql`). It is near-exact, not exact (the same released breaks), and not built;
+`research/observation_breaks.md` has the counts.
 
 **Omitting `observations` from `break_order`** removes its segmentation only: code 2
 is still computed, at the resolution of the segments left.

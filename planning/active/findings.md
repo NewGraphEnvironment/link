@@ -76,7 +76,7 @@ Producers in `data-raw/logs/observation_breaks_396/`: `build_obs.R` builds `defa
 
 **A position cuts only when it sits more than 1 m from both ends of the segment it lands in** (`fresh::frs_break_apply()`, fresh 0.43.0 `R/frs_break.R:620-622`), and observations are the first break source. So "removes no segment" means within 1 m of an FWA segment end, another source's position or a kept top, not "rounds to the same metre" (the plan's wording); the SQL uses the 1 m rule. The other sources come from `working_<wsg>`, which on m4 holds the `bcfishpass` build (PARS 43,776 segments, as in `fresh`), so the segment estimate is approximate; Phase 4 counts exactly.
 
-| group | observations | positions | tops | kept | positions cutting today | removed positions saving a segment |
+| group | observations | positions | tops | kept | positions adding a segment today | removed positions saving a segment |
 |---|---|---|---|---|---|---|
 | PARS | 1,018 | 593 | 244 | 41.1 % | 570 | 337 |
 | LKEL | 511 | 188 | 111 | 59.0 % | 156 | 66 |
@@ -105,3 +105,9 @@ The province figure is on `default`'s presence filter (each record by its own gr
 - **The exact set** (per species, the lowest record of any species more than 1 m above its raw top) keeps every flip where `all` puts it and holds 3 to 31 % of positions, against 17 to 59 % for the tops (`exact_set.csv`). Not built; it goes back to the operator, recommended.
 - **Whole-segment flips next to a barrier:** a barrier 1 to 1.5 m above a removed observation cut. #349's metre-rounding class; `pre_post_diff.R` splits them out (`*_near_barrier`, 3 m window).
 - **`break_order` omission:** only `subsurfaceflow` is read off it for access; roxygen corrected.
+
+## Code-check round 3: the mechanism behind rounds 1 and 2 (2026-10-28)
+
+- **Shared assumption:** removing an observation break only deletes a boundary at the record's raw position. Three 1 m rules stack instead: metre rounding against raw measures in the walk, a later source cut only more than 1 m from the current ends (so a removed observation cut releases a later break within 1 m, or a moved cut suppresses one), and the walk's 1 m tolerance. Verified by hand on the reviewer's case (X raw top 500.2, Y non-top at 501.1, crossing at 502.3): `all` reads X = 2 on [501, 800], `top_per_species` X = 1 on [502, 800], so 2 → 1 on 298 m.
+- **Acceptance restated as one rule:** every access or `has_barriers` change is either 1 → 2 on a segment starting at that species' raw top (between raw_t − 1.5 and raw_t + 1), or has a segment start within 3 m of a removed observation position. Anything else is a defect (`pre_post_diff.R`, `km_change_elsewhere` must be 0). This replaces round 2's barrier-table window, which read crossings and lifted barriers too.
+- `code2_class.sql` now compares against the raw top; `exact_set.sql`'s claim narrowed to near-exact with an upper-bound count; `cuts.sql` columns renamed to what they count (values unchanged); `bcfishpass/config.yaml`'s `break_order` comment corrected. `code2_class.csv` is re-run after the builds, when the working schemas hold the runs' builds.

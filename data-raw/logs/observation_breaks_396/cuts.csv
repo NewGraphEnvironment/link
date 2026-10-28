@@ -1,4 +1,4 @@
-wsg,observations,positions,tops,pct_kept,positions_cutting,tops_cutting,tops_on_other_cut,removed,removed_saving_a_segment
+wsg,observations,positions,tops,pct_kept,positions_adding_a_segment,tops_adding_a_segment,tops_within_1m_of_other_cut,removed,removed_saving_a_segment
 PARS,1018,593,244,41.1,570,233,11,349,337
 LKEL,511,188,111,59.0,156,90,21,77,66
 BULK,2887,1185,585,49.4,1081,529,56,600,552

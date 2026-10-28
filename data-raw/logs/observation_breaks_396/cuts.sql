@@ -5,16 +5,19 @@
 --
 -- Reads `default`'s observation set (zz396_cuts.obs_<wsg>, build_obs.R).
 -- frs_break_apply() cuts a segment only where a break sits more than 1 m from
--- both of its ends, and observations are the first break source. So a position
--- "cuts" here when it is more than 1 m from every FWA segment end on its line
--- and every other break source's position (gradient_minimal, falls,
--- barriers_definite, habitat_endpoints, crossings). Those come from :wk, the
+-- both of its current ends, one source after another, and observations are
+-- the first source. So an observation position always cuts unless it is within
+-- 1 m of an FWA segment end; a later source within 1 m of it is the one that
+-- does not. A position "adds a segment" here when it is more than 1 m from
+-- every FWA segment end on its line and every other break source's position
+-- (gradient_minimal, falls, barriers_definite, habitat_endpoints, crossings):
+-- without it, nothing else would cut there. Those sources come from :wk, the
 -- working schema of the last build of the group on this host (the bcfishpass
--- config on m4), so the coincidence counts are an estimate; Phase 4 counts the
--- segments exactly. Observation positions are all tested in one
--- frs_break_apply() call against the segments' original ends, so two of them
--- 1 m apart both cut: dropping one saves a segment. A later source within 1 m
--- of a removed position cuts in its place, so that one saves nothing.
+-- config on m4), so the counts are an estimate; Phase 4 counts the segments
+-- exactly. Observation positions are all tested in one frs_break_apply() call
+-- against the segments' original ends, so two of them 1 m apart both cut:
+-- dropping one saves a segment. A later source within 1 m of a removed
+-- position cuts in its place, so that one saves nothing.
 WITH obs AS (
   SELECT blue_line_key AS blk, species_code AS sp,
          round(downstream_route_measure) AS m
@@ -54,9 +57,9 @@ SELECT :'wsg' AS wsg,
        count(*)                                                      AS positions,
        count(*) FILTER (WHERE kept)                                  AS tops,
        round(100.0 * count(*) FILTER (WHERE kept) / count(*), 1)     AS pct_kept,
-       count(*) FILTER (WHERE NOT near_other)                        AS positions_cutting,
-       count(*) FILTER (WHERE kept AND NOT near_other)               AS tops_cutting,
-       count(*) FILTER (WHERE kept AND near_other)                   AS tops_on_other_cut,
+       count(*) FILTER (WHERE NOT near_other)                        AS positions_adding_a_segment,
+       count(*) FILTER (WHERE kept AND NOT near_other)               AS tops_adding_a_segment,
+       count(*) FILTER (WHERE kept AND near_other)                   AS tops_within_1m_of_other_cut,
        count(*) FILTER (WHERE NOT kept)                              AS removed,
        count(*) FILTER (WHERE NOT kept AND NOT near_other)            AS removed_saving_a_segment
 FROM flag;

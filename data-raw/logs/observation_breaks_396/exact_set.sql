@@ -1,12 +1,17 @@
--- The break set that keeps access code 2 exactly as `all` gives it (#396,
--- code-check round 2). The walk reads a same-line observation as upstream of a
--- segment when it lies above the segment's start or within 1 m of it, so a
--- species' own top break never changes its own code: the segment starting at
--- the top still reads 2. Species X turns from 2 to 1 at the first cut more than
--- 1 m above its top T_X. Under `all` that is the lowest of the line's other
--- cuts and its observation positions above T_X + 1; so keeping, per species,
--- the lowest observation position (of any species) above T_X + 1 keeps every
--- flip where `all` puts it. Counted here against `all` and `top_per_species`.
+-- A smaller break set that keeps access code 2 nearly as `all` gives it
+-- (#396, code-check rounds 2 and 3). The walk reads a same-line observation as
+-- upstream of a segment when it lies above the segment's start or within 1 m
+-- of it, so a species' own top break never changes its own code: the segment
+-- starting at the top still reads 2. Species X turns from 2 to 1 at the first
+-- cut more than 1 m above its raw top raw_t. Keeping, per species, the lowest
+-- observation position (of any species) above raw_t + 1 keeps that turn where
+-- `all` puts it, except in three cases: a removed position that suppressed a
+-- later break within 1 m releases it (RUNBOOK §2c); a kept position within 1 m
+-- of an FWA end does not cut; and where an FWA end or another source's cut lies
+-- between the top and the kept position, the turn happens there and the
+-- position is not needed. So the count is an upper bound on what the rule needs,
+-- and the rule is near-exact, not exact. Counted against `all` and
+-- `top_per_species`.
 --
 --   psql -X -A -F, -v wsg=PARS -v obs=obs_pars \
 --     -f data-raw/logs/observation_breaks_396/exact_set.sql
