@@ -84,11 +84,11 @@ The bound from the serial numbers (`analyze.R`, longest-first greedy): four jobs
 
 ## Phase 3: record and release
 
-- [ ] README `## Measurement` and `## Evidence` sections. The verdict states the default width to
+- [x] README `## Measurement` and `## Evidence` sections. The verdict states the default width to
       recommend and the database ceiling, beside #374's.
 - [ ] Fill #406's line on #377 ("Measured: …"), and edit #406's body if the measurement changes
       what it says.
-- [ ] Add a CLAUDE.md Status entry. NEWS entry and patch version bump as the final commit.
+- [x] Add a CLAUDE.md Status entry. NEWS entry and patch version bump as the final commit.
 
 Approved by the operator 2026-10-28 ("go all phases to pr").
 
@@ -98,8 +98,8 @@ Approved by the operator 2026-10-28 ("go all phases to pr").
 
 ## Validation
 
-- [ ] Tests pass (`devtools::test()`; no package R code changes, so this is the regression check)
-- [ ] `/code-check` clean (once over the branch with `/code-check branch`)
+- [x] Tests pass (`devtools::test()`; no package R code changes, so this is the regression check)
+- [x] `/code-check` clean (once over the branch with `/code-check branch`)
 - [ ] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
 

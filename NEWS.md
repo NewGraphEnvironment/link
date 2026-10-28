@@ -1,3 +1,12 @@
+# link 0.69.4
+
+**The variants harness runs a variant's groups in parallel** ([#406](https://github.com/NewGraphEnvironment/link/issues/406)). `data-raw/habitat_variants_build.R --jobs=N` (1 to 16, default 1, which keeps the serial loop) runs each group's pass on a PSOCK cluster, one connection per worker, longest groups first. Variants still run one after another, and only the build process writes `built.csv` and `variant_timing.csv`.
+
+- **Measured on #331's nine groups on m4**, from #404's base: at `--jobs=4` a variant's pass takes 2.10 min against 6.23 serial and the `default` pass 3.02 against 8.06, so #331's 12-rung ladder drops from about 83 min to 28. All 45 digests are identical across widths 1, 2, 4 and 8. Eight jobs add only 10 to 13 %, because classify and connect contend in the database, as #374 found for the recompute.
+- **`variant_timing.csv`** gains a `jobs` column (older rows read 1) and a `pass_wall` row per variant, the wall minutes a width is judged on.
+- **A build at `--jobs` above 1 that is killed, or loses a worker, leaves the other workers and their database backends writing.** The log names their R and backend pids to stop before relaunching. `--wsgs` is now de-duplicated, so no two workers share a group.
+- Record: `data-raw/logs/variants_parallel_406/`.
+
 # link 0.69.3
 
 **Pins fresh at v0.44.0**, so a tuning-cost measurement names one fresh rather than whichever each host resolved ([#404](https://github.com/NewGraphEnvironment/link/issues/404), [#269](https://github.com/NewGraphEnvironment/link/issues/269)).

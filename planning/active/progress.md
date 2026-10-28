@@ -17,3 +17,6 @@
   digests identical. Four jobs: variant 6.23 to 2.10 min, `default` 8.06 to 3.02. Eight
   jobs add 10 to 13 %. The final code was smoke-tested after the run, with the pid log line,
   the empty variant, and persisted digests unchanged.
+- Tests: `devtools::test()` 4518 pass, 0 fail, 0 warn, 0 skip (22:34 UTC, after the run).
+- Phase 3: README measurement, CLAUDE.md status, NEWS, 0.69.4. The #377 line is filled once
+  the PR exists.
