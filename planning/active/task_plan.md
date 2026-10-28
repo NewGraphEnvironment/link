@@ -66,8 +66,8 @@ Two costs follow from cutting at every observation:
 
 ## Phase 5: Record
 - [ ] `research/observation_breaks.md` (new topic file, provenance line, the six answers with numbers and producers) + a row in `research/README.md`; a pointer from `research/bcfp_segmentation_parity.md`'s break history
-- [ ] RUNBOOK §2: observation breaks under each config, what reads code 2, the knob
-- [ ] `inst/extdata/configs/default/README.md` names the knob if the file lists pipeline keys
+- [x] RUNBOOK §2 (new §2c): observation breaks under each config, what reads code 2, the knob
+- [x] `inst/extdata/configs/default/README.md` lists no pipeline keys, so no row; `lnk_config()`'s roxygen, which does, names the knob
 - [ ] `/code-check branch`, PWF archive, PR
 
 ## Owed at the end (reported, done after merge)

@@ -179,6 +179,45 @@ has NO id column, so it **cannot** feed `frs_network_features` /
 `barriers_per_sp`. (Tried in #196; failed with `barriers_bt_min_id does not
 exist`.) `barriers_per_sp` mechanically requires the *feature view* shape.
 
+### 2c. Observation breaks: where a fish record cuts a stream (link#396)
+
+`observations` is the first break source (`lnk_pipeline_break()`), built by
+`.lnk_pipeline_break_obs()` from the AOI's filtered `<schema>.observations` into
+`<schema>.observations_breaks`. Which positions it holds is the bundle's
+`pipeline: observation_breaks:`, checked when the manifest loads:
+
+| value | positions | bundles |
+|---|---|---|
+| `all` (also when absent) | every observation, rounded to the metre, as bcfishpass cuts | `bcfishpass`, `default_extrabreaks`, `default_rearbreaks` |
+| `top_per_species` | on each `blue_line_key`, each species' farthest-upstream observation | `default`, and `default_tuned` by inheritance |
+
+**What reads an observation break.** Only `access_<sp>` code 2 ("accessible, and the
+species is observed upstream") against code 1. The access walk
+(`lnk_pipeline_access()`, `frs_network_features(direction = "upstream",
+include_equivalents = TRUE)`) reads `<schema>.observations` itself, every record,
+not the breaks table, and a same-line record counts as upstream of a segment when its
+measure is above the segment's start or within 1 m of it. On one line "observed
+upstream" changes once per species, at its top record, so the tops are the only
+breaks code 2 needs. Lifts count observations point against point
+(`lnk_barrier_overrides()`), and the mapping code and habitat gate read
+`has_barriers_<sp>_dnstr` and `access = 0` against `> 0`; none needs a break.
+Nothing in link tells 2 from 1 (every reader is `IN (1, 2)`); bcfishpass's own
+`aw_linear_summary()` does, on its own tables (`data-raw/logs/observation_breaks_396/readers_code2.md`).
+
+**The one access change.** A segment that starts at species X's kept top and
+swallows a removed break above it reads X = 2 along its whole length, where the old
+piece above the removed break read 1, unless X is observed up a tributary above. Only
+1 to 2, never 2 to 1, never between 0 and open. The recompute (`lnk_access()`) passes
+no observations and keeps a prior 2, so a recompute after a re-model keeps it.
+
+**Omitting `observations` from `break_order`** removes its segmentation only: code 2
+is still computed, at the resolution of the segments left.
+
+**The validator** attaches an observation to the segment starting within 1 m of it,
+else the one holding it, so it scores the same records whatever breaks a bundle
+takes. Capture shares still move with segmentation (merged segments take a new
+gradient).
+
 ---
 
 ## 3. Access: `lnk_pipeline_access()`

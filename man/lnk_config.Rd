@@ -29,9 +29,11 @@ with \code{path} (resolved absolute path) and optionally \code{source}
 (\code{"<source>/<file_name>"} — keys into crate's registry to
 dispatch ingest via \code{\link[crate:crt_ingest]{crate::crt_ingest()}})
 \item \code{pipeline} — named list of pipeline knobs
-(\code{apply_habitat_overlay}, \code{break_order}, \code{cluster},
-\code{spawn_connected}, \code{discharge_fill}, \code{discharge_source}). A
-\code{discharge_source} other than \code{fwapg} or \code{wet} is an error at load.
+(\code{apply_habitat_overlay}, \code{break_order}, \code{observation_breaks},
+\code{cluster}, \code{spawn_connected}, \code{discharge_fill}, \code{discharge_source}).
+A \code{discharge_source} other than \code{fwapg} or \code{wet}, or an
+\code{observation_breaks} other than \code{all} or \code{top_per_species}, is an
+error at load.
 \item \code{provenance} — named list of per-file provenance metadata,
 keyed by file path relative to \code{dir}. Drift detection against
 these checksums lives in \code{\link[=lnk_config_verify]{lnk_config_verify()}}.
