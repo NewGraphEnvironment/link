@@ -1,0 +1,54 @@
+=== pre-run gate (link#372) ===
+  config:          default
+  history schema:  fresh_default (minutes from fresh_default)
+  scratch schema:  fresh_pretest_default (dropped and rebuilt)
+  range:           <earliest newest build in fresh_default.log>..HEAD
+  bound:           3 x last minutes, floor 5 min; statements <= 30 min
+  out:             <worktree>/data-raw/logs/pretest_372/gate_1d00c04c
+--since from fresh_default.log: the earliest of the groups' newest builds, link 1d00c04cc5b2
+Changed and NOT exercised by the gate: link data-raw/schema_consolidate.R, link data-raw/wsg_recompute_one.R
+23 changed file(s), inputs: dams, gradient, near_river_conn, observations, segments
+  pick SETN  [gradient,segments]  last 16.3 min on m1, bound 48.8 min
+  pick QUES  [near_river_conn]  last 9.3 min on m1, bound 28.0 min
+  pick OKAN  [dams]  last 7.6 min on m1, bound 22.7 min
+  pick LFRA  [observations]  last 6.6 min on m1, bound 19.8 min
+  pick TOAD  [gradient,segments]  last 6.0 min on cypher-job2, bound 18.0 min
+  pick UPCE  [observations]  last 3.7 min on cypher-job1, bound 11.2 min
+  pick TAKL  [near_river_conn]  last 3.2 min on m1, bound 9.5 min
+  pick SAJR  [dams]  last 1.6 min on m1, bound 5.0 min
+=== scratch schema fresh_pretest_default (tables of fresh_default, no rows) ===
+  23 tables, 62 indexes
+=== SETN [gradient,segments] last 16.3 min on m1; bound 48.8 min, statements 30 min ===
+  [wsg_run_one] SETN done in 7.5 min (persist=fresh_pretest_default)
+  exit 0 after 456 s
+=== QUES [near_river_conn] last 9.3 min on m1; bound 28.0 min, statements 29 min ===
+  [wsg_run_one] QUES done in 4.3 min (persist=fresh_pretest_default)
+  exit 0 after 262 s
+=== OKAN [dams] last 7.6 min on m1; bound 22.7 min, statements 23 min ===
+  [wsg_run_one] OKAN done in 2.7 min (persist=fresh_pretest_default)
+  exit 0 after 164 s
+=== LFRA [observations] last 6.6 min on m1; bound 19.8 min, statements 20 min ===
+  [wsg_run_one] LFRA done in 4.4 min (persist=fresh_pretest_default)
+  exit 0 after 266 s
+=== TOAD [gradient,segments] last 6.0 min on cypher-job2; bound 18.0 min, statements 18 min ===
+  [wsg_run_one] TOAD done in 4.1 min (persist=fresh_pretest_default)
+  exit 0 after 250 s
+=== UPCE [observations] last 3.7 min on cypher-job1; bound 11.2 min, statements 12 min ===
+  [wsg_run_one] UPCE done in 2.3 min (persist=fresh_pretest_default)
+  exit 0 after 144 s
+=== TAKL [near_river_conn] last 3.2 min on m1; bound 9.5 min, statements 10 min ===
+  past 9.5 min: killing TAKL
+  exit 124 after 568 s
+=== SAJR [dams] last 1.6 min on m1; bound 5.0 min, statements 5 min ===
+  past 5.0 min: killing SAJR
+  exit 124 after 301 s
+  SETN pass    last  16.3  bound  48.8  this run 7.5
+  QUES pass    last   9.3  bound  28.0  this run 4.3
+  OKAN pass    last   7.6  bound  22.7  this run 2.7
+  LFRA pass    last   6.6  bound  19.8  this run 4.4
+  TOAD pass    last   6.0  bound  18.0  this run 4.1
+  UPCE pass    last   3.7  bound  11.2  this run 2.3
+  TAKL bound   last   3.2  bound   9.5  this run -
+  SAJR bound   last   1.6  bound   5.0  this run -
+GATE FAIL: TAKL bound; SAJR bound (recorded in fresh_default.log_pretest)
+report: <worktree>/data-raw/logs/pretest_372/gate_1d00c04c/pretest.md

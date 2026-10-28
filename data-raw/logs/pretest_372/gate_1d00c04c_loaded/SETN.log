@@ -1,0 +1,3 @@
+[wsg_run_one] SETN statement_timeout=30min
+There were 13 warnings (use warnings() to see them)
+[wsg_run_one] SETN done in 7.5 min (persist=fresh_pretest_default)
