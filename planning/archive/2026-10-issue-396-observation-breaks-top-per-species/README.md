@@ -1,6 +1,6 @@
 ## Outcome
 
-`default` now breaks streams at a fish observation only at each species' farthest-upstream record on each stream line (`pipeline: observation_breaks: top_per_species`); the `bcfishpass` bundle keeps every observation (`all`, the value when absent). The validator's docs were corrected for observations that no longer start a segment. The main thing learned overturns the issue's premise: the access walk counts a record within 1 m of a segment's start as upstream, so a species' own top break never changes its own code 2. A species turns to 1 at the first cut more than 1 m above its top, and kept tops serve as that cut for species recorded below them. A smaller, near-exact set exists and is not built. It goes back to the operator. Six code-check rounds also turned the acceptance into one exact rule. A segment's codes depend only on where it starts, and the walk's tests are monotone in that start, so access can move only in the direction a start moved. Record: `research/observation_breaks.md`; mechanics: RUNBOOK §2c.
+`default` now breaks streams at a fish observation only at each species' farthest-upstream record on each stream line (`pipeline: observation_breaks: top_per_species`); the `bcfishpass` bundle keeps every observation (`all`, the value when absent). The validator's docs were corrected for observations that no longer start a segment. The main thing learned overturns the issue's premise: the access walk counts a record within 1 m of a segment's start as upstream, so a species' own top break never changes its own code 2. A species turns to 1 at the first cut more than 1 m above its top, and kept tops serve as that cut for species recorded below them. A smaller, near-exact set exists and is not built. It went back to the operator, who dropped it on 2026-10-28 (#399). Six code-check rounds also turned the acceptance into one exact rule. A segment's codes depend only on where it starts, and the walk's tests are monotone in that start, so access can move only in the direction a start moved. Record: `research/observation_breaks.md`; mechanics: RUNBOOK §2c.
 
 ## Measurement
 
@@ -21,6 +21,6 @@ Wrong turns kept in `findings.md` and `review-round{1..6}.md`: the issue's "top 
 ## Owed
 
 - Every persisted `default` group re-segments again at the next provincial run (stacks on #326's owed re-model, #377's runs row); the `bcfishpass` schema does not
-- The operator's call: keep `top_per_species` or move `default` to the near-exact set (per species, the lowest record of any species more than 1 m above its raw top; `exact_set.csv`)
+- Known-vs-suspected fish under `default`: #398 to #403 (the near-exact set was dropped 2026-10-28; the tops are the breaks #399 needs)
 
 Closed by: PR (opened from this branch)

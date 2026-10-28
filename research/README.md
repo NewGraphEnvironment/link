@@ -18,7 +18,7 @@ renamed.
 | [`bcfishpass_comparison.md`](bcfishpass_comparison.md) | How link's output is compared with bcfishpass |
 | [`bcfp_table_map.md`](bcfp_table_map.md) | bcfp ↔ link table relationships |
 | [`bcfp_segmentation_parity.md`](bcfp_segmentation_parity.md) | Where streams break, bcfishpass and link step by step: bcfishpass's five access scripts, link's break set, how it drifted (#45, #223), why parity numbers missed it, and what it does to BT habitat (#324) |
-| [`observation_breaks.md`](observation_breaks.md) | Where a fish observation breaks a stream: `default`'s top per species per line against every record, what reads code 2, what moved, the sampling bias it removes, and a smaller near-exact set not yet built (#396) |
+| [`observation_breaks.md`](observation_breaks.md) | Where a fish observation breaks a stream: `default`'s top per species per line against every record, what reads code 2, what moved, the sampling bias it removes, and a smaller near-exact set, dropped (#396, #399) |
 | [`bcfp_view_column_coding.md`](bcfp_view_column_coding.md) | `streams_vw_bcfp` column coding and the parity predicates |
 | [`bcfp_compare_mapping_code.md`](bcfp_compare_mapping_code.md) | mapping_code comparison: enrich + score |
 | [`bcfp_divergence_taxonomy.yml`](bcfp_divergence_taxonomy.yml) | Taxonomy that `lnk_parity_annotate()` tags divergences with |

@@ -239,7 +239,8 @@ checks the direction rule on every piece: any change against the direction its s
 moved, or with the start unmoved, is a defect. The set that would keep nearly every turn
 to 1 where `all` puts it is smaller than the tops: per species, the lowest record of any
 species more than 1 m above its raw top (`exact_set.sql`). It is near-exact, not exact,
-and not built; `research/observation_breaks.md` has the counts.
+and dropped: the tops stay, because putting each species' boundary at its highest record
+(#399) needs exactly them. `research/observation_breaks.md` has the counts.
 
 **Omitting `observations` from `break_order`** removes its segmentation only: code 2
 is still computed, at the resolution of the segments left.

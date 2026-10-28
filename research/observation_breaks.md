@@ -1,6 +1,6 @@
 # Where a fish observation breaks a stream
 
-**Verified:** 2026-10-28 · **Issues:** #396 (from #326's break history; #283 the validator, #294 observation positions as threshold evidence) · **Produced by:** `data-raw/logs/observation_breaks_396/` (its README indexes it): `build_obs.R`, `cuts.sql`, `province.sql`, `code2_class.sql`, `redundancy.sql`, `run.sh`, `pre_post_diff.R`, `bias.R`, `data-raw/breaks_diff.R` · **Status:** `default` breaks at each species' top observation per line, measured on five groups; `bcfishpass` unchanged; a smaller near-exact set is the open choice
+**Verified:** 2026-10-28 · **Issues:** #396 (from #326's break history; #283 the validator, #294 observation positions as threshold evidence) · **Produced by:** `data-raw/logs/observation_breaks_396/` (its README indexes it): `build_obs.R`, `cuts.sql`, `province.sql`, `code2_class.sql`, `redundancy.sql`, `run.sh`, `pre_post_diff.R`, `bias.R`, `data-raw/breaks_diff.R` · **Status:** `default` breaks at each species' top observation per line, measured on five groups; `bcfishpass` unchanged; the smaller near-exact set below is dropped (2026-10-28, #399)
 
 ## The rule
 
@@ -24,6 +24,8 @@ species' top is where its own code changes; the code shows it is not (code-check
 verified against fwapg's `fwa_upstream`).
 
 ## A smaller set that keeps code 2 nearly as `all` does
+
+**Dropped (operator, 2026-10-28).** It only reproduces where `all` puts each turn, and `all` does not put it at the highest fish either: the walk counts a record at a segment's start as upstream of it. Putting each species' boundary at its highest record is #399, reading such a record as not upstream, and the tops are exactly the breaks that needs. Recorded here for the counts.
 
 Keeping, per species, the lowest record of any species more than 1 m above its raw top puts
 nearly every turn to 1 where `all` puts it, and it is smaller than the tops (`exact_set.sql`,
@@ -168,6 +170,6 @@ Question 6 checks the direction rule on every piece.
 
 - Every persisted `default` group re-segments again at the next provincial run, stacked on
   #326's owed re-model. The `bcfishpass` schema does not.
-- Whether `default` should keep the tops or move to the smaller near-exact set is the
-  operator's call. It keeps fewer record positions than the tops; what that does at fish
-  sites is unmeasured until it is built and `bias.R` re-run.
+- Known-vs-suspected fish under `default`, #398 to #403: #398 (CT aliases), #399 (a record at a
+  segment's start), #400 (what counts as known), #401 (every group's records), #402
+  (presence checked against the records), #403 (the rollup).
