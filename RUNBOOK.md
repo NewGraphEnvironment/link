@@ -2081,6 +2081,17 @@ Rscript data-raw/host_speeds_calibrate.R --plan=<the packer's --plan-out> \
 - **Role keys are never learned.** A leg whose name is `dispatcher`,
   `workerN` or `jobN` counts toward `run_ratio` and is recorded `not learned`
   in the history; `workerN` is the packer's default name for an unnamed worker.
+- **A group measured by a host the state does not know** (a worker never
+  learned under its alias, say) was weighted at the state's median, which says
+  nothing of its work. So a leg holding one is left out, unless the leg is that
+  host itself; otherwise its error would land in the hosts that are learned.
+  Name each worker in `--host-names` by the alias its log rows carry
+  (`LNK_HOST_ALIAS`), and the next calibration learns it.
+- **Plan hosts are matched to the run's by their groups,** not their keys: the
+  packer keys cloud hosts `job1..N` by position, and the driver by the
+  `--cy-workspaces` names, which a kept host can leave out of order.
+  `--plan-out` needs `--host-names`, since the packer need not run on the
+  dispatcher.
 - **What it refuses.** A plan weighted in segments: a run must pack on
   `--minutes-schema` to be calibrated. A plan whose groups for a host differ
   from `<TS>_run_wsgs.tsv`. A phases file with no model row, which is what a

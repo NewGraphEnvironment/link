@@ -178,6 +178,14 @@ if (any(per_name > 1L)) {
        " more than one speed; every cloud host is one class at one speed", call. = FALSE)
 }
 plan_out <- arg_val("--plan-out", "")
+# A plan teaches the calibrator each leg's speed under its name, so the names
+# must be the operator's, not this machine's guess: the packer need not run on
+# the dispatcher (code-check round 4, link#259).
+if (nzchar(plan_out) && !nzchar(names_arg)) {
+  stop("--plan-out needs --host-names (the dispatcher's, the workers' and `cloud` for each ",
+       "cloud host, in the driver's order): the calibrator learns each leg under its name",
+       call. = FALSE)
+}
 
 if (identical(Sys.getenv("LNK_LOAD"), "loadall")) {
   suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))

@@ -130,17 +130,23 @@ if (file.exists(history_path)) {
   }
 }
 
-# The groups the packer gave each host must be the groups the run gave it.
-for (k in union(unique(plan$host_key), unique(rw$host))) {
-  a <- sort(plan$wsg[plan$host_key == k])
-  b <- sort(rw$wsg[rw$host == k])
-  if (!identical(a, b)) {
-    stop(sprintf("host %s: the plan gives it %d groups and the run %d (%s): calibrate against the plan the run used",
-                 k, length(a), length(b),
-                 paste(utils::head(c(setdiff(a, b), setdiff(b, a)), 5), collapse = ", ")),
-         call. = FALSE)
-  }
+# Each plan host is the run host given the same groups. The keys usually agree,
+# but a cloud host's run key is its --cy-workspaces name, which need not be
+# job1..N in order (a kept host can leave a gap), so the groups decide; a host
+# whose groups match no run host means the run did not use this plan.
+group_sets <- function(keys, wsgs) {
+  vapply(split(wsgs, keys), function(x) paste(sort(x), collapse = ","), character(1))
 }
+plan_sets <- group_sets(plan$host_key, plan$wsg)
+run_sets <- group_sets(rw$host, rw$wsg)
+run_of <- stats::setNames(names(run_sets)[match(plan_sets, run_sets)], names(plan_sets))
+if (anyNA(run_of) || length(run_sets) != length(plan_sets)) {
+  odd <- c(names(run_of)[is.na(run_of)], setdiff(names(run_sets), run_of))
+  stop(sprintf(paste0("hosts %s: no run host was given the same groups as a plan host: ",
+                      "calibrate against the plan the run used"), paste(odd, collapse = ", ")),
+       call. = FALSE)
+}
+plan$run_key <- unname(run_of[plan$host_key])
 
 # The state the update starts from, and the plan's weights re-normalized at it:
 # the packer normalized each group's minutes at the state it read, which need
@@ -150,29 +156,41 @@ state <- speeds_state_read(state_path)
 plan$weight <- plan_weights_at(plan$weight, plan$minutes, plan$measured_by, state)
 
 # --- legs -------------------------------------------------------------------
+# A group measured by a class the state does not hold was weighted at the
+# state's median, which says nothing of its real work, so a leg that holds one
+# is left out: unless the leg is that class itself, whose own groups predict
+# themselves at any speed (code-check round 4, link#259). With no state at all
+# every weight and speed is the same equal guess, and nothing is left out.
+known <- if (is.null(state)) NULL else state$name
 modelled <- rw$wsg[rw$skip == "no"]
 finished <- cov$wsg[cov$class == "recompute"]
-legs <- do.call(rbind, lapply(unique(plan$host_key), function(k) {
-  p <- plan[plan$host_key == k, ]
+legs <- do.call(rbind, lapply(unique(plan$run_key), function(k) {
+  p <- plan[plan$run_key == k, ]
   keep <- p$wsg %in% modelled & p$wsg %in% finished
   m <- model[model$host == k, ]
   a <- account$status[account$host == k]
+  mb <- p$measured_by[keep]
+  foreign <- if (is.null(known)) character() else
+    unique(mb[!is.na(mb) & !mb %in% known & mb != p$name[1]])
   why <- c(if (!nrow(m)) "no model row",
            if (length(a) && a != "ok") paste("account", a),
            if (!length(a)) "no account row",
            if (!any(keep)) "no group finished",
+           if (length(foreign)) sprintf("groups measured by %s, which the state does not hold",
+                                        paste(foreign, collapse = ", ")),
            if (p$name[1] %in% names(skip_reason)) skip_reason[[p$name[1]]],
-           if (k %in% names(skip_reason)) skip_reason[[k]])
+           if (k %in% names(skip_reason)) skip_reason[[k]],
+           if (p$host_key[1] %in% names(skip_reason)) skip_reason[[p$host_key[1]]])
   data.frame(host_key = k, name = p$name[1], speed = p$speed[1],
              projected = sum(p$weight[keep] / p$speed[keep]),
              actual = if (nrow(m)) as.numeric(difftime(m$end, m$start, units = "mins")) else NA,
              groups = sum(keep),
-             skip = if (length(why)) paste(why, collapse = "; ") else NA)
+             skip = if (length(why)) paste(unique(why), collapse = "; ") else NA)
 }))
 # A skipped leg needs no times; give it placeholders the arithmetic never reads.
 legs$projected[!is.na(legs$skip) & !(legs$projected > 0)] <- 1
 legs$actual[!is.na(legs$skip) & is.na(legs$actual)] <- 1
-unknown_skip <- setdiff(names(skip_reason), c(legs$name, legs$host_key))
+unknown_skip <- setdiff(names(skip_reason), c(legs$name, legs$host_key, plan$host_key))
 if (length(unknown_skip)) {
   stop("--skip names no host in the plan: ", paste(unknown_skip, collapse = ", "), call. = FALSE)
 }

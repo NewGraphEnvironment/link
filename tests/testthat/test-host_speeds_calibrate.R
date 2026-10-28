@@ -128,7 +128,7 @@ test_that("the calibrator refuses what it cannot compare", {
   expect_match(paste(r$out, collapse = "\n"), "weighted in segments")
   r <- cal_run(cal_world(plan_host = c(A = "dispatcher", B = "job1", C = "job1", D = "job1")))
   expect_false(r$status == 0L)
-  expect_match(paste(r$out, collapse = "\n"), "the plan gives it")
+  expect_match(paste(r$out, collapse = "\n"), "no run host was given the same groups")
   r <- cal_run(cal_world(model_rows = character()))
   expect_false(r$status == 0L)
   expect_match(paste(r$out, collapse = "\n"), "no finished model rows")
@@ -190,4 +190,33 @@ test_that("a plan without raw minutes is refused", {
   r <- cal_run(w)
   expect_false(r$status == 0L)
   expect_match(paste(r$out, collapse = "\n"), "lacks columns: minutes, measured_by")
+})
+
+test_that("a plan host is matched to the run host given the same groups, whatever its key", {
+  # The packer keys cloud hosts job1..N by position; this run used workspace
+  # job3 for them (--cy-workspaces=job3, a kept job1 leaving a gap).
+  w <- cal_world()
+  for (f in c(file.path(w$dir, "20261101_000000_run_wsgs.tsv"), w$phases)) {
+    writeLines(gsub("\tjob1\t", "\tjob3\t", readLines(f)), f)
+  }
+  r <- cal_run(w, "--dry-run", "--skip=job3:stall on job3")
+  expect_equal(r$status, 0L, info = paste(r$out, collapse = "\n"))
+  expect_match(paste(r$out, collapse = "\n"), "| job3 | cloud | 1.000 | 2 |  |  | stall on job3 |",
+               fixed = TRUE)
+})
+
+test_that("a leg holding a group measured by a class the state lacks is left out", {
+  w <- cal_world()
+  writeLines(c(paste(c("name", "factor", "last_updated", "n_runs", "source_run_uid"), collapse = "\t"),
+               "m4\t1\td\t1\tu", "cloud\t1\td\t1\tu"), w$state)
+  # D, on job1 (cloud), was measured last run by a worker the state never
+  # learned (m2); C was measured by cloud itself.
+  p <- readLines(w$plan)
+  writeLines(sub("^(D\t.*)\tcloud$", "\\1\tm2", p), w$plan)
+  r <- cal_run(w, "--dry-run")
+  expect_equal(r$status, 0L, info = paste(r$out, collapse = "\n"))
+  out <- paste(r$out, collapse = "\n")
+  expect_match(out, "groups measured by m2, which the state does not hold", fixed = TRUE)
+  # m4's own groups were measured by m4, which the state holds: it is learned.
+  expect_match(out, "\\| m4 \\| 1\\.000 \\| 1\\.000 \\|")
 })
