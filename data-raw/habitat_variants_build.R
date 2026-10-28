@@ -41,6 +41,12 @@
 #     difference of its own;
 #   - a variant marked `equals_bundle` has exactly that bundle's thresholds.
 #
+# Where the time goes (link#404): <out>/variant_timing.csv holds seconds per
+# step for every pass (classify, connect, the working digest, persist, the
+# access copy and ANALYZE, the gate, the persisted digests), which sum to the
+# "done in" line, plus the discharge join before it and the base run's model
+# and recompute per WSG, outside that total.
+#
 #   Rscript data-raw/habitat_variants_build.R \
 #     [--variants=data-raw/habitat_score/variants.csv] \
 #     [--roles=data-raw/habitat_score/wsg_roles.csv] \
@@ -328,9 +334,15 @@ local({
 # quoted, numbers bare, NA bare. Proven on the base itself before any variant
 # is written, so a variant bundle differs from the base in its own cells only.
 write_thresholds <- function(thr, path) {
+  # Quote the columns the committed file quotes: those holding a value that
+  # is not a number (species_code, the edge-type lists, and since #364
+  # rear_river_measure). A name list went stale when #364 added a column
+  # (link#404), and the md5 check below is what catches that.
+  is_text <- vapply(thr, function(x) {
+    any(!is.na(x) & is.na(suppressWarnings(as.numeric(x))))
+  }, logical(1))
   utils::write.csv(thr, path, row.names = FALSE, na = "NA",
-                   quote = which(names(thr) == "species_code" |
-                                   grepl("_edge_types$", names(thr))))
+                   quote = which(is_text))
 }
 local({
   tmp <- tempfile(fileext = ".csv")
@@ -615,6 +627,54 @@ working_habitat_digest <- function(wsg) {
 path_base_digest <- file.path(dir_out, "base_habitat_digest.csv")
 path_recompute <- file.path(dir_out, "base_recompute.csv")
 
+# -- timing: where a pass's time goes (link#404) -----------------------------------------
+# One row per variant x WSG x step in variant_timing.csv. A variant pass's
+# seven steps (in_total TRUE) sum to the minutes its "done in" line prints;
+# the discharge join before it, and the base run's model and recompute per
+# WSG, are rows outside that total, for reference. Rows for the (variant,
+# WSG, step) just written replace earlier ones, as built.csv's do.
+path_timing <- file.path(dir_out, "variant_timing.csv")
+secs_since <- function(t) as.numeric(difftime(Sys.time(), t, units = "secs"))
+# The 1-minute load average when a pass starts: another session's load on
+# this host is the known cause of a slow step (observation_breaks_396).
+load_1min <- function() {
+  up <- tryCatch(system("uptime", intern = TRUE), error = function(e) "")
+  m <- regmatches(up, regexpr("load averages?: *[0-9.]+", up))
+  if (length(m) == 0L) return(NA_real_)
+  as.numeric(sub(".*: *", "", m))
+}
+n_segments_of <- function(wsg) {
+  sch <- schema_of(base_variant)
+  if (!dbExistsTable(conn, Id(schema = sch, table = "streams"))) return(NA_integer_)
+  dbGetQuery(conn, sprintf(
+    "SELECT count(*)::int AS n FROM %s.streams WHERE watershed_group_code = $1",
+    sch), params = list(wsg))$n
+}
+record_timing <- function(v, w, species, seconds, in_total, load,
+                          n_segments = n_segments_of(w)) {
+  row <- data.frame(
+    variant = v, watershed_group_code = w,
+    species = if (is.null(species)) "all" else paste(species, collapse = ","),
+    step = names(seconds), seconds = round(unname(seconds), 3),
+    in_total = rep_len(in_total, length(seconds)),
+    n_segments = n_segments, load_1min = load,
+    built_at = format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z"),
+    link_head = head_sha,
+    fresh_version = as.character(utils::packageVersion("fresh")))
+  old <- if (file.exists(path_timing)) {
+    utils::read.csv(path_timing, colClasses = "character")
+  } else {
+    NULL
+  }
+  if (!is.null(old)) {
+    old <- old[names(row)]
+    keep <- !(old$variant == v & old$watershed_group_code == w &
+                old$step %in% names(seconds))
+    old <- old[keep, , drop = FALSE]
+  }
+  utils::write.csv(rbind(old, row), path_timing, row.names = FALSE)
+}
+
 # -- base: the --base bundle over the closure, downstream first --------------------------
 run_base <- function() {
   closure <- lnk_wsg_resolve(cfg_base, loaded, wsgs = focal, expand = TRUE,
@@ -652,10 +712,13 @@ run_base <- function() {
     }
     guard <- lnk_wsg_downstream_check(conn, aoi = w, cfg = cfg_base,
                                       loaded = loaded, on_fail = "error")
+    load <- load_1min()
     t0 <- Sys.time()
     lnk_pipeline_run(conn, aoi = w, cfg = cfg_base, loaded = loaded,
                      schema = working_of(w), mapping_code = FALSE,
                      cleanup_working = !w %in% focal, notes = guard$note)
+    record_timing(base_variant, w, active, c(base_model = secs_since(t0)),
+                  in_total = FALSE, load = load)
     if (w %in% focal) {
       # Written per WSG, so a resumed run keeps the digests already taken.
       dg <- if (file.exists(path_base_digest)) {
@@ -682,6 +745,8 @@ run_base <- function() {
   for (w in focal) {
     active <- lnk_pipeline_species(cfg_base, loaded, w)
     before <- digest_of(sch, "streams_access", w)
+    load <- load_1min()
+    t0 <- Sys.time()
     rlog <- .lnk_log_recompute_start(conn, cfg = cfg_base, aoi = w,
                                      views_prebuilt = FALSE)
     prior <- paste0(sch, ".zz_lnk_access_prior_", tolower(w))
@@ -715,6 +780,8 @@ run_base <- function() {
     }, finally = dbExecute(conn, sprintf("DROP TABLE IF EXISTS %s", prior)))
     .lnk_log_recompute_finish(conn, cfg_base, rlog$recompute_id,
                               species = active, habitat_gate = gate)
+    record_timing(base_variant, w, active, c(base_recompute = secs_since(t0)),
+                  in_total = FALSE, load = load)
     same <- identical(before, digest_of(sch, "streams_access", w))
     rc[[w]] <- data.frame(watershed_group_code = w, access_unchanged = same)
     say("recompute %s: streams_access %s", w,
@@ -771,8 +838,13 @@ run_variant <- function(v) {
   wsgs_v <- if (identical(v, base_variant)) focal else
     intersect(focal, roles$watershed_group_code[roles$species_code == sp_v])
   say("variant %s into %s (%s)", v, sch, paste(wsgs_v, collapse = ","))
-  # Sized to the whole bundle (link#194), as lnk_pipeline_run does.
+  # Sized to the whole bundle (link#194), as lnk_pipeline_run does. Once per
+  # variant, so its row has no group.
+  load <- load_1min()
+  t1 <- Sys.time()
   lnk_persist_init(conn, cfg, species = cfg$species)
+  record_timing(v, "", NULL, c(persist_init = secs_since(t1)),
+                in_total = FALSE, load = load, n_segments = NA_integer_)
   for (w in wsgs_v) {
     if (!dbExistsTable(conn, Id(schema = working_of(w), table = "streams"))) {
       stop(working_of(w), " is gone: run --step=base first", call. = FALSE)
@@ -780,9 +852,12 @@ run_variant <- function(v) {
     # The working streams carry the discharge of whichever bundle last
     # touched them; set it to this variant's fill (#305) and source (#331)
     # before classify, so a base built on one can score variants on another.
+    load <- load_1min()
+    t1 <- Sys.time()
     .lnk_discharge_join(conn, paste0(working_of(w), ".streams"), w,
                         fill = .lnk_discharge_fill_applied(cfg, w),
                         source = .lnk_discharge_source(cfg))
+    s_join <- secs_since(t1)
     # A `mad` variant classifies on the discharge prepare joined onto the
     # working streams (#286). A working schema built before that join, or a
     # WSG with no discharge, would classify every inheriting stream rule
@@ -799,13 +874,22 @@ run_variant <- function(v) {
              "(--step=base) at this HEAD", call. = FALSE)
       }
     }
+    # The pass: seven steps, each timed into variant_timing.csv (link#404),
+    # and their total on the "done in" line.
     t0 <- Sys.time()
+    tm <- c()
     sp <- if (identical(v, base_variant)) NULL else sp_v
+    t1 <- Sys.time()
     lnk_pipeline_classify(conn, aoi = w, cfg = cfg, loaded = loaded,
                           schema = working_of(w), species = sp)
+    tm["classify"] <- secs_since(t1)
+    t1 <- Sys.time()
     lnk_pipeline_connect(conn, aoi = w, cfg = cfg, loaded = loaded,
                          schema = working_of(w), species = sp)
+    tm["connect"] <- secs_since(t1)
+    t1 <- Sys.time()
     dg <- working_habitat_digest(w)
+    tm["digest_working"] <- secs_since(t1)
     if (identical(v, base_variant)) {
       want <- base_digest$digest[base_digest$watershed_group_code == w]
       if (length(want) != 1L) {
@@ -820,12 +904,15 @@ run_variant <- function(v) {
       }
     }
     if (!identical(v, base_variant)) {
+      t1 <- Sys.time()
       lnk_pipeline_persist(conn, aoi = w, cfg = cfg, species = sp,
                            schema = working_of(w))
+      tm["persist"] <- secs_since(t1)
       # The persisted access is the working copy, for this species only, and
       # from before the base's recompute. Access reads no habitat threshold
       # (classify and connect never touch it), so the base's recomputed rows,
       # every species, replace it.
+      t1 <- Sys.time()
       copy_access(sch_base, sch, w)
       # Fresh statistics before the gate: its counts join the rows just
       # inserted, and planned on stale statistics (the planner sees about one
@@ -835,24 +922,34 @@ run_variant <- function(v) {
                    paste0("streams_habitat_", tolower(sp)))) {
         dbExecute(conn, sprintf("ANALYZE %s.%s", sch, tb))
       }
+      tm["copy_access_analyze"] <- secs_since(t1)
       # The variant's persisted habitat follows that access, as the base's
       # does after its recompute (link#349).
+      t1 <- Sys.time()
       lnk_habitat_gate(conn, aoi = w,
                        table_habitat = paste0(sch, ".streams_habitat"),
                        table_access = paste0(sch, ".streams_access"),
                        table_streams = paste0(sch, ".streams"),
                        species = sp,
                        overlay = .lnk_habitat_gate_overlay(cfg, loaded))
+      tm["gate"] <- secs_since(t1)
     }
+    t1 <- Sys.time()
     for (tb in names(digest_sql)) {
       if (!identical(digest_of(sch, tb, w), digest_of(sch_base, tb, w))) {
         stop(sch, ".", tb, " differs from ", sch_base, " in ", w,
              call. = FALSE)
       }
     }
+    tm["digest_persist"] <- secs_since(t1)
+    total <- secs_since(t0)
     record_built(v, w)
-    say("variant %s %s done in %.1f min (habitat %s)", v, w,
-        as.numeric(difftime(Sys.time(), t0, units = "mins")), substr(dg, 1, 8))
+    record_timing(v, w, sp, c(discharge_join = s_join, tm),
+                  in_total = c(FALSE, rep(TRUE, length(tm))), load = load)
+    say("variant %s %s steps (min): %s", v, w,
+        paste(sprintf("%s %.2f", names(tm), tm / 60), collapse = ", "))
+    say("variant %s %s done in %.1f min (habitat %s)", v, w, total / 60,
+        substr(dg, 1, 8))
   }
 }
 
