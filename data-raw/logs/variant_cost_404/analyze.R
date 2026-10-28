@@ -58,13 +58,14 @@ done <- do.call(rbind, lapply(logs, function(f) {
              secs = vapply(m, function(x) secs_of_day(x[2]), 1),
              logged = vapply(m, function(x) as.numeric(x[5]), 1))
 }))
-stamp <- tm$built_at[tm$in_total]
 passes <- unique(data.frame(key = key, variant = steps$variant,
                             wsg = steps$watershed_group_code,
                             minutes = steps$pass_minutes,
-                            secs = secs_of_day(sub("^\\S+ (\\S+) .*$", "\\1", stamp))))
+                            secs = secs_of_day(sub("^\\S+ (\\S+) .*$", "\\1", steps$built_at))))
 passes$logged <- vapply(seq_len(nrow(passes)), function(i) {
-  hit <- done[done$key == passes$key[i] & abs(done$secs - passes$secs[i]) <= 2, ]
+  d <- abs(done$secs - passes$secs[i])
+  d <- pmin(d, 86400 - d)   # a pass that straddles local midnight
+  hit <- done[done$key == passes$key[i] & d <= 2, ]
   if (nrow(hit) != 1L) NA_real_ else hit$logged
 }, 1)
 passes$residual <- passes$minutes - passes$logged

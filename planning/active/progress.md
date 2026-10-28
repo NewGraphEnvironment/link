@@ -41,3 +41,9 @@
   iteration-speed list; classify and connect minutes per group posted on fresh#275;
   `CLAUDE.md` status and `NEWS.md` bullet written; #404's acceptance boxes ticked.
 - Worktree removed. Next: tests, `/code-check branch`, archive, PR.
+- `/code-check branch`, three rounds. Round 1: ladder count (12 rungs, not 13), the
+  self-check stops every `--step`, the builds table's column, log order by name. Round 2
+  (inside round 1's fix): mtime order does not survive a clone, so the logged total is
+  matched on built_at's time of day; LHAF was not an outlier; NEWS wording. Round 3
+  (enumeration of 18 cross-file joins): positional `stamp` join and the midnight wrap in
+  analyze.R, and UBTN's connect excess is the group's, not the load's. All fixed.

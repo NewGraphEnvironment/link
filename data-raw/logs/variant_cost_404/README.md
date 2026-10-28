@@ -51,7 +51,8 @@
 
 `launch_state.txt` holds each boundary as it was taken. All three builds ran serially from
 the worktree at `45b12b2e`, with no other backend on the database at any boundary
-(`pg_stat_activity`, client backends other than the build's own).
+(`pg_stat_activity`, client backends other than the build's own; the launch snapshot's
+empty list has no `(end of list)` line, the three later ones do).
 
 | build | launched (UTC) | last log line (UTC) | the script's own "done in" | host load (1 min) at launch |
 |---|---|---|---|---|
@@ -101,9 +102,10 @@ pass costs 0.6 min per variant over the nine groups (0.8 for `default`), and
 **Steps scale with the group** (`steps_vs_segments.png`, 25,044 to 46,004 persisted segments):
 classify and connect rise about linearly with segment count in both passes, with the
 all-species pass about twice the one-species pass per segment; persist rises more slowly from
-a floor of about 0.1 min. The point furthest above the connect fit (UBTN, 0.17 min where
-REVL and UARL, of about its size, take 0.06 and 0.07) is a pass that started at a load of
-6.3 from another process.
+a floor of about 0.1 min. The point furthest above the connect fit is UBTN in both passes
+(0.17 min against 0.06 and 0.07 for REVL and UARL, of about its size, in the variant pass;
+0.34 against 0.12 and 0.14 in the `default` pass), at loads of 6.3 and 4.4, so the group,
+not the load, accounts for it.
 
 **Beside the base.** The base run modelled the 17-group closure in 67.1 min (`base_model`
 rows: 1.7 min for LPCE to 7.0 for KOTR; 2.9 to 7.0 for the nine focal groups) and recomputed

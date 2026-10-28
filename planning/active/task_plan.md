@@ -149,8 +149,8 @@
 ## Validation
 
 - [x] Tests pass (`devtools::test()`; the script has no tests, the pre-flight is its check): 4518 pass, 0 fail, 0 skip, 20:40 to 20:51 UTC
-- [ ] `/code-check` clean (once over the branch with `/code-check branch`)
-- [ ] PWF checkboxes match landed work
+- [x] `/code-check` clean (once over the branch with `/code-check branch`): three rounds (`review-round1..3.md`), 4 + 4 + 3 findings, all fixed, none a bug in a modelled path; round 3's enumeration of the 18 cross-file joins found two residues (both fixed) and nothing else above its source
+- [x] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
 
 Verification of each change: Phase 2 by the REVL pre-flight (step seconds sum to the total,
