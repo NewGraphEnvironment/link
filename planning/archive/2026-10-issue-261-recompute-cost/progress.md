@@ -17,3 +17,4 @@
 - Phase 2: `predictors.R` over 241 groups launched 23:01 UTC (frozen copy); `correlations.R` written, not yet run
 - Phase 2 done: `predictors.R` 241 groups; `correlations.R`: predicted walk seconds Spearman 0.982 against 10-23 minutes, #261's below-outlet count −0.08; prefilter would save 36–51 % of the pool's summed job time
 - Phase 3: README, `research/recompute_cost.md` (+ index row), fresh issue drafted (scratchpad, shown in the final report), #261 body edited with the verdict, #377 measured line filled and a follow-up item added, CLAUDE.md status; RUNBOOK unchanged (no mechanic moved)
+- Code-check: three rounds (review-round{1,2,3}.md), ended on round 3's enumeration; tests 4,354 / 0 / 0; merged origin/main (#392, workflows); archived

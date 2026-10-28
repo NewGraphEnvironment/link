@@ -97,7 +97,7 @@ What exploration established (read-only):
       saving in minutes
 - [x] Edit #261's body with the verdict (acceptance boxes), fill #377's "Measured:" line for #261,
       CLAUDE.md Status block, RUNBOOK §8d only if a mechanic changed
-- [ ] `/code-check branch`, `/planning-archive`, `/gh-pr-push`
+- [x] `/code-check branch` and `/planning-archive` (`/gh-pr-push` runs right after the archive commit)
 
 ## Owed at the end (reported, done after merge)
 
@@ -109,8 +109,8 @@ What exploration established (read-only):
 
 - [x] Tests pass (`devtools::test()` at `e4569c3e`: 4,354 passed, 0 failed, 0 errors; later commits touch only prose and `data-raw/`)
 - [x] `/code-check` clean (once over the branch with `/code-check branch`: three rounds, ended on round 3's enumeration of every quantified claim; `review-round{1,2,3}.md`)
-- [ ] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion
+- [x] PWF checkboxes match landed work
+- [x] `/planning-archive` on completion
 
 How each claim is proved:
 - Read-only harness: the schema's `pg_stat_user_tables` write counters for `fresh_default` do not move
