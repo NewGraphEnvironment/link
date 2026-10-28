@@ -1,0 +1,49 @@
+[1] 0
+[1] 0
+[wsg_recompute_one] ELKR prologue 0.95 s
+NOTICE:  table "zz_lnk_access_prior_elkr" does not exist, skipping
+
+NOTICE:  table "zz_lnk_streams_elkr" does not exist, skipping
+
+[wsg_recompute_one] FAILED for ELKR
+ELKR BLOCKED (link#227) — 8 blocking dam(s) on ELKR's downstream flow path have not been modelled yet.
+
+link computes accessibility by reading ALREADY-PERSISTED downstream barriers.
+Running ELKR now would mark segments accessible that are in fact dammed off, and exit 0.
+
+  persist schema : zz396_default_post
+  unmodelled blocking dams downstream of ELKR:
+    BULL  ce26c6fb-d226-4411-aa78-9c2851b929b9   (unnamed) (psc 1)
+    KOTL  1d905323-2558-493d-8481-8679dfe79b01   Brilliant Dam (psc 1)
+    KOTL  8745c255-2288-417c-96ef-6dbadf302ee5   Corra Linn Dam (psc 1)
+    KOTL  85d7371b-2d13-4749-ad55-a93bbefcbf40   Lower Bonnington Dam (psc 1)
+    KOTL  e9304187-0916-472d-88b4-de53d5c4076a   South Slocan Dam (psc 1)
+    KOTL  664978eb-9916-47cd-9e9b-c1094d55b5cd   South Slocan Generating Station (psc 1)
+    KOTL  7cf09664-f257-41e3-9db3-728e3b939b4e   Upper Bonnington Dam (psc 1)
+    LARL  1200000002                             Grand Coulee Dam (psc 1)
+  model these first, DS-first: LARL, KOTL, BULL
+
+Fix — pick one:
+  1. Model the downstream WSGs first:
+       for w in LARL KOTL BULL; do Rscript data-raw/wsg_run_one.R $w <config>; done
+  2. Model ELKR now and settle access after they land:
+       Rscript data-raw/wsg_recompute_one.R ELKR <config>
+  3. Override, if those dams are known passable / remediated / irrelevant.
+     Recorded in the run log and surfaced by lnk_log_read():
+       LNK_GUARD_DOWNSTREAM_NOTE="..." Rscript data-raw/wsg_run_one.R ELKR <config>
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+7: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.

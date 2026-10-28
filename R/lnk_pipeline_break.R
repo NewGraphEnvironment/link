@@ -15,12 +15,17 @@
 #'
 #' ## Break sources
 #'
-#' Valid entries for `cfg$pipeline$break_order`. Omit an entry to skip
-#' both segmentation and access-gating from that source.
+#' Valid entries for `cfg$pipeline$break_order`. Omitting an entry skips its
+#' segmentation. Only `subsurfaceflow` is also read off `break_order` for
+#' access: it is built and gates access only when listed. The other barrier
+#' sources still gate access through classify's breaks table and the access
+#' walk's barrier tables, and `access_<sp>` code 2 ("observed upstream") is
+#' still computed from `<schema>.observations` by [lnk_pipeline_access()], at
+#' the resolution of the segments that remain.
 #'
 #' | name | source table | role | classify label |
 #' |---|---|---|---|
-#' | `observations` | `<schema>.observations_breaks` | fish observations from `bcfishobs.observations`, WSG- and species-filtered, exclusions applied | (informational; not a barrier) |
+#' | `observations` | `<schema>.observations_breaks` | fish observations from `bcfishobs.observations`, WSG- and species-filtered, exclusions applied. `cfg$pipeline$observation_breaks` picks the positions: `all` (every one, what bcfishpass does; the value when absent) or `top_per_species` (on each `blue_line_key`, each species' farthest-upstream observation; the `default` bundle). Code 2 reads a record within 1 m of a segment's start as upstream of it, so a species turns from code 2 to 1 at the first cut more than 1 m above its top; a kept top is where species recorded only below it turn | (informational; not a barrier) |
 #' | `gradient_minimal` | `<schema>.gradient_barriers_minimal` | each present species' post-lift natural barriers (gradient at its classes, falls, opt-in subsurface flow, minus its overrides, plus user-definite), reduced to the downstream-most position per flow path (#326) | classify gates on the full `gradient_barriers_raw` set with `gradient_<NNNN>` labels |
 #' | `falls` | `<schema>.falls` | natural waterfalls from fresh's `inst/extdata/falls.csv` (read by [lnk_pipeline_prepare()]); each fall is its own barrier (NOT minimal-reduced) | `blocked` |
 #' | `barriers_definite` | `<schema>.barriers_definite` | `user_barriers_definite.csv` for the AOI | `blocked` |
@@ -34,7 +39,8 @@
 #'
 #' Writes to (under the caller's working schema unless noted):
 #'   - `<schema>.observations_breaks` — WSG- and species-filtered
-#'     observation positions, data-error exclusions applied
+#'     observation positions, data-error exclusions applied, reduced to each
+#'     species' top per line under `observation_breaks: top_per_species`
 #'   - `<schema>.habitat_endpoints` — both DRM and URM from the habitat
 #'     classification table (matches bcfishpass convention)
 #'   - `<schema>.crossings_breaks` — crossing positions
@@ -91,7 +97,8 @@ lnk_pipeline_break <- function(conn, aoi, cfg, loaded, schema,
          call. = FALSE)
   }
 
-  .lnk_pipeline_break_obs(conn, aoi, loaded, schema, observations)
+  .lnk_pipeline_break_obs(conn, aoi, loaded, schema, observations,
+                          mode = .lnk_observation_breaks(cfg))
   .lnk_pipeline_break_habitat_endpoints(conn, aoi, schema)
   .lnk_pipeline_break_crossings(conn, schema)
 
@@ -136,22 +143,72 @@ lnk_pipeline_break <- function(conn, aoi, cfg, loaded, schema,
 #' Build observations_breaks from the per-AOI filtered observations table
 #'
 #' Reads from `<schema>.observations`, materialized by
-#' `.lnk_pipeline_prep_observations()`. That helper already applies the
-#' WSG species-presence filter and the QA exclusions (mirrors bcfp's
-#' `bcfishpass.observations` build), so this step is now a simple
-#' `SELECT DISTINCT blue_line_key, drm` on the pre-filtered table.
+#' `.lnk_pipeline_prep_observations()`, which already applies the WSG
+#' species-presence filter and the QA exclusions (mirrors bcfp's
+#' `bcfishpass.observations` build).
+#'
+#' `mode` is the bundle's `pipeline: observation_breaks:` value
+#' (`.lnk_observation_breaks()`):
+#'
+#' - `"all"`: every observation position, as bcfishpass cuts.
+#' - `"top_per_species"`: on each `blue_line_key`, each species' farthest-
+#'   upstream observation (#396). The access walk reads `<schema>.observations`
+#'   itself, not this table, and counts a record within 1 m of a segment's
+#'   start as upstream of it, so each species turns from code 2 to 1 at the
+#'   first cut more than 1 m above its top; the tops are those cuts for the
+#'   species recorded below them.
+#'
+#' Positions are rounded to the metre either way; `round(max(m))` equals
+#' `max(round(m))`, so the tops are a subset of the `"all"` positions.
 #' @noRd
-.lnk_pipeline_break_obs <- function(conn, aoi, loaded, schema, observations) {
+.lnk_pipeline_break_obs <- function(conn, aoi, loaded, schema, observations,
+                                    mode = "all") {
+  .lnk_observation_breaks_check(mode)
   .lnk_db_execute(conn, sprintf(
     "DROP TABLE IF EXISTS %s.observations_breaks", schema))
-  .lnk_db_execute(conn, sprintf(
-    "CREATE TABLE %s.observations_breaks AS
-     SELECT DISTINCT blue_line_key,
-            round(downstream_route_measure) AS downstream_route_measure
-     FROM %s.observations",
-    schema, schema))
+  if (identical(mode, "top_per_species")) {
+    .lnk_db_execute(conn, sprintf(
+      "CREATE TABLE %s.observations_breaks AS
+       SELECT DISTINCT blue_line_key, downstream_route_measure
+       FROM (
+         SELECT blue_line_key,
+                round(max(downstream_route_measure)) AS downstream_route_measure
+         FROM %s.observations
+         GROUP BY blue_line_key, species_code
+       ) tops",
+      schema, schema))
+  } else {
+    .lnk_db_execute(conn, sprintf(
+      "CREATE TABLE %s.observations_breaks AS
+       SELECT DISTINCT blue_line_key,
+              round(downstream_route_measure) AS downstream_route_measure
+       FROM %s.observations",
+      schema, schema))
+  }
 
   invisible(NULL)
+}
+
+
+#' Which observation positions break streams
+#'
+#' A bundle's `pipeline: observation_breaks:`, `"all"` when absent (what
+#' bcfishpass does). See `.lnk_pipeline_break_obs()`.
+#' @noRd
+.lnk_observation_breaks <- function(cfg) {
+  v <- cfg$pipeline[["observation_breaks"]] %||% "all"
+  .lnk_observation_breaks_check(v, paste0("cfg '", cfg$name %||% "", "'"))
+}
+
+#' Validate an observation_breaks value
+#' @noRd
+.lnk_observation_breaks_check <- function(v, what = "observation_breaks") {
+  ok <- c("all", "top_per_species")
+  if (!is.character(v) || length(v) != 1L || is.na(v) || !v %in% ok) {
+    stop(what, ": observation_breaks must be one of ",
+         paste(ok, collapse = ", "), call. = FALSE)
+  }
+  v
 }
 
 

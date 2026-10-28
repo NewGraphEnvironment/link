@@ -98,6 +98,109 @@ test_that(".lnk_pipeline_break_obs reads from <schema>.observations (link#92)", 
   expect_no_match(joined, "observation_key NOT IN")
 })
 
+test_that(".lnk_pipeline_break_obs keeps each species' top per line under top_per_species (#396)", {
+  sql_for <- function(...) {
+    captured <- character(0)
+    local_mocked_bindings(
+      .lnk_db_execute = function(conn, sql) {
+        captured <<- c(captured, sql)
+        invisible(NULL)
+      }
+    )
+    .lnk_pipeline_break_obs("mock", aoi = "BULK", loaded = list(),
+                            schema = "w_bulk",
+                            observations = "bcfishobs.observations", ...)
+    paste(captured, collapse = "\n")
+  }
+  top <- sql_for(mode = "top_per_species")
+  expect_match(top, "GROUP BY blue_line_key, species_code", fixed = TRUE)
+  expect_match(top, "round(max(downstream_route_measure))", fixed = TRUE)
+  expect_match(top, "FROM w_bulk.observations\\b")
+  for (sql in list(sql_for(mode = "all"), sql_for())) {
+    expect_no_match(sql, "GROUP BY")
+    expect_match(sql, "SELECT DISTINCT blue_line_key", fixed = TRUE)
+  }
+  expect_error(sql_for(mode = "top"), "must be one of all, top_per_species")
+})
+
+test_that("lnk_pipeline_break builds observation breaks from the bundle's knob (#396)", {
+  mode_for <- function(cfg) {
+    got <- NULL
+    local_mocked_bindings(
+      .lnk_pipeline_break_obs = function(..., mode) got <<- mode,
+      .lnk_pipeline_break_habitat_endpoints = function(...) invisible(NULL),
+      .lnk_pipeline_break_crossings = function(...) invisible(NULL),
+      .lnk_pipeline_break_reassign_id = function(...) invisible(NULL)
+    )
+    local_mocked_bindings(frs_break_apply = function(...) invisible(NULL),
+                          .package = "fresh")
+    lnk_pipeline_break("mock", aoi = "BULK", cfg = cfg, loaded = list(),
+                       schema = "w_bulk")
+    got
+  }
+  expect_identical(mode_for(lnk_config("default")), "top_per_species")
+  expect_identical(mode_for(lnk_config("default_tuned")), "top_per_species")
+  expect_identical(mode_for(lnk_config("bcfishpass")), "all")
+  stub <- structure(list(name = "x", pipeline = list()),
+                    class = c("lnk_config", "list"))
+  expect_identical(mode_for(stub), "all")
+})
+
+test_that("a bad observation_breaks value fails when the manifest loads (#396)", {
+  for (bad in list("TOP_PER_SPECIES", NA_character_, c("all", "all"), 1, "")) {
+    pipeline <- list(observation_breaks = bad)
+    expect_error(link:::.lnk_config_pipeline_check(pipeline, "x"),
+                 "config 'x': observation_breaks must be one of all, top_per_species")
+  }
+  for (ok in c("all", "top_per_species")) {
+    got <- link:::.lnk_config_pipeline_check(list(observation_breaks = ok), "x")
+    expect_identical(got, list(observation_breaks = ok))
+  }
+  d <- withr::local_tempdir()
+  writeLines(c("name: badobs", "extends: default",
+               "pipeline:", "  observation_breaks: top"),
+             file.path(d, "config.yaml"))
+  expect_error(lnk_config(d), "config 'badobs': observation_breaks must be")
+})
+
+test_that("top_per_species keeps exactly each species' top on a line (live, #396)", {
+  skip_if_no_db()
+  conn <- lnk_db_conn(dbname = "fwapg", host = "localhost", port = 5432L,
+                      user = "postgres", password = "postgres")
+  withr::defer(DBI::dbDisconnect(conn))
+  s <- "zz_test_obs_breaks"
+  DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", s))
+  DBI::dbExecute(conn, sprintf("CREATE SCHEMA %s", s))
+  drop_sql <- sprintf("DROP SCHEMA IF EXISTS %s CASCADE", s)
+  withr::defer(DBI::dbExecute(conn, drop_sql))
+  # One line: BT at 100.4 and 520.6 (the lower one is not a top), CO at 300.2;
+  # a second line holding only a BT record at 50.
+  DBI::dbExecute(conn, sprintf(
+    "CREATE TABLE %s.observations AS
+     SELECT * FROM (VALUES
+       (1, 'BT', 100.4::double precision),
+       (1, 'BT', 520.6),
+       (1, 'CO', 300.2),
+       (2, 'BT', 50.0)
+     ) v(blue_line_key, species_code, downstream_route_measure)", s))
+  read_breaks <- function() {
+    DBI::dbGetQuery(conn, sprintf(
+      "SELECT blue_line_key, downstream_route_measure
+       FROM %s.observations_breaks
+       ORDER BY blue_line_key, downstream_route_measure", s))
+  }
+  .lnk_pipeline_break_obs(conn, "X", list(), s, "bcfishobs.observations",
+                          mode = "top_per_species")
+  got <- read_breaks()
+  expect_identical(as.integer(got$blue_line_key), c(1L, 1L, 2L))
+  expect_identical(as.numeric(got$downstream_route_measure), c(300, 521, 50))
+
+  .lnk_pipeline_break_obs(conn, "X", list(), s, "bcfishobs.observations",
+                          mode = "all")
+  expect_identical(as.numeric(read_breaks()$downstream_route_measure),
+                   c(100, 300, 521, 50))
+})
+
 # -- habitat endpoints -------------------------------------------------------
 
 test_that(".lnk_pipeline_break_habitat_endpoints creates empty table when habitat missing", {
