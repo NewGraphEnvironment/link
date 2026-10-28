@@ -145,3 +145,10 @@ link,^inst/extdata/configs/dictionary_[a-z_]+\.csv$,none,data dictionaries; no r
 link,^inst/extdata/(thresholds_default|crossings_example|overrides_example|parameters_habitat_dimensions)\.csv$,none,"package examples and lnk_thresholds() defaults, off the modelling path"
 link,^inst/extdata/parameters_habitat_rules\.yaml$,none,sample rules for fresh's fallback; a run reads its bundle's rules.yaml
 link,^inst/extdata/schemas/,none,the export schema (lnk_scenario_export)
+fresh,^inst/extdata/falls\.csv$,gradient,the falls link reads as natural barriers (lnk_pipeline_prepare)
+fresh,^inst/extdata/falls\.csv$,dams,the falls link reads as natural barriers (lnk_pipeline_prepare)
+fresh,^inst/extdata/wsg_outlet\.csv$,dams,outlets frs_wsg_drainage() walks for the downstream guard
+fresh,^inst/extdata/edge_types\.csv$,segments,edge types frs_edge_types() resolves for every rule
+fresh,^inst/extdata/(parameters_fresh|parameters_habitat_method|parameters_habitat_thresholds|parameters_habitat_rules|wsg_species_presence)\.(csv|yaml)$,none,fallbacks for a call without a bundle; a link run passes its bundle's own
+fresh,^inst/extdata/(break_points|crossings|feature_codes|quotes)\.csv$,none,"examples and startup quotes, off link's modelling path"
+fresh,^inst/extdata/.*\.(rds|gpkg)$,none,fresh's example and test data

@@ -81,14 +81,18 @@ pretest_config_chain <- function(configs_dir, name) {
 }
 
 # git, returning stdout; any non-zero exit is an error, never an empty result
-# (an empty diff would read as "nothing changed").
+# (an empty diff would read as "nothing changed"). system2() pastes its
+# arguments into a shell command, so each is quoted; stderr goes to a file, so
+# a git warning never becomes a line of output (a path, or half a SHA).
 pretest_git <- function(dir, args) {
-  out <- suppressWarnings(system2("git", c("-C", shQuote(dir), args),
-                                  stdout = TRUE, stderr = TRUE))
+  err <- tempfile()
+  on.exit(unlink(err))
+  out <- suppressWarnings(system2("git", shQuote(c("-C", dir, args)),
+                                  stdout = TRUE, stderr = err))
   st <- attr(out, "status")
   if (!is.null(st) && st != 0L) {
     stop("git ", paste(args, collapse = " "), " in ", dir, " failed: ",
-         paste(out, collapse = " "), call. = FALSE)
+         paste(c(out, readLines(err, warn = FALSE)), collapse = " "), call. = FALSE)
   }
   out
 }
@@ -121,8 +125,9 @@ pretest_fresh_pin <- function(desc_lines) {
   hit
 }
 
-# Files changed in fresh's R/ between two pins, read from a fresh checkout. A
-# pin the checkout does not hold is an error: fetch its tags first.
+# Files changed in fresh's R/ and inst/extdata/ (link reads falls.csv, and
+# frs_wsg_drainage() reads wsg_outlet.csv) between two pins, read from a fresh
+# checkout. A pin the checkout does not hold is an error: fetch its tags first.
 pretest_changed_fresh <- function(fresh_repo, from, to) {
   if (identical(from, to)) {
     return(data.frame(repo = character(), path = character(), stringsAsFactors = FALSE))
@@ -130,7 +135,7 @@ pretest_changed_fresh <- function(fresh_repo, from, to) {
   for (ref in c(from, to)) {
     pretest_git(fresh_repo, c("rev-parse", "--verify", "--quiet", paste0(ref, "^{commit}")))
   }
-  f <- pretest_git(fresh_repo, c("diff", "--name-only", from, to, "--", "R/"))
+  f <- pretest_git(fresh_repo, c("diff", "--name-only", from, to, "--", "R/", "inst/extdata/"))
   data.frame(repo = rep("fresh", length(f)), path = f, stringsAsFactors = FALSE)
 }
 
@@ -307,11 +312,23 @@ pretest_since_default <- function(history) {
 # Is `a` an ancestor of, or equal to, `b`? FALSE also when either is unknown
 # to the repo; only exit 1 means "not an ancestor", anything else is an error.
 pretest_is_ancestor <- function(repo, a, b) {
-  st <- suppressWarnings(system2("git", c("-C", shQuote(repo), "merge-base", "--is-ancestor", a, b),
+  st <- suppressWarnings(system2("git", shQuote(c("-C", repo, "merge-base", "--is-ancestor", a, b)),
                                  stdout = FALSE, stderr = FALSE))
   if (identical(as.integer(st), 0L)) return(TRUE)
   if (identical(as.integer(st), 1L)) return(FALSE)
   stop("git merge-base --is-ancestor ", a, " ", b, " failed (", st, ")", call. = FALSE)
+}
+
+# The history SHAs a gate's range must start at or before: refuses with the
+# first one `since` does not reach.
+pretest_since_covers <- function(repo, since, history_shas) {
+  for (h in unique(stats::na.omit(history_shas))) {
+    if (!pretest_is_ancestor(repo, since, h)) {
+      return(sprintf("the range starts at %s, after history built at %s", substr(since, 1, 12),
+                     substr(h, 1, 12)))
+    }
+  }
+  ""
 }
 
 # Does a gate record clear a run? `records` is <schema>.log_pretest; the
@@ -321,7 +338,9 @@ pretest_is_ancestor <- function(repo, a, b) {
 #   - its fresh is the installed fresh (when it modelled anything);
 #   - its range starts at or before every link SHA the history was built at,
 #     so the picks were chosen from everything since the last run;
-#   - every file changed between the SHA it modelled and HEAD maps to none.
+#   - every file changed between the SHA it modelled and HEAD maps to none,
+#     and DESCRIPTION pins the same fresh at both (a pin bump is fresh's
+#     change, which only a new gate can pick for).
 # Returns list(ok, why, record).
 pretest_record_check <- function(records, config, head_sha, fresh_sha, history_shas,
                                  repo, map, chain) {
@@ -336,14 +355,14 @@ pretest_record_check <- function(records, config, head_sha, fresh_sha, history_s
     return(no("the gate modelled fresh ", substr(rec$fresh_sha, 1, 12), ", installed is ",
               substr(fresh_sha, 1, 12)))
   }
-  for (h in unique(stats::na.omit(history_shas))) {
-    if (!pretest_is_ancestor(repo, rec$since_sha, h)) {
-      return(no("the gate's range starts at ", substr(rec$since_sha, 1, 12),
-                ", after history built at ", substr(h, 1, 12)))
-    }
-  }
+  cover <- pretest_since_covers(repo, rec$since_sha, history_shas)
+  if (nzchar(cover)) return(no("the gate's ", cover))
   if (!pretest_is_ancestor(repo, rec$link_sha, head_sha)) {
     return(no("the gate modelled ", substr(rec$link_sha, 1, 12), ", not an ancestor of HEAD"))
+  }
+  desc_pin <- function(ref) pretest_fresh_pin(pretest_git(repo, c("show", paste0(ref, ":DESCRIPTION"))))
+  if (!identical(desc_pin(rec$link_sha), desc_pin(head_sha))) {
+    return(no("DESCRIPTION pins fresh ", desc_pin(head_sha), ", the gate ran at ", desc_pin(rec$link_sha)))
   }
   ch <- pretest_changed_link(repo, rec$link_sha, head_sha, chain)
   m <- pretest_match(ch, map, chain)

@@ -197,7 +197,8 @@ test_that("changed files come from git, and a bad ref is an error, not an empty 
   expect_identical(sort(ch$path), c("R/a.R", "R/b.R", "inst/extdata/configs/default/rules.yaml"))
   expect_error(e$pretest_changed_link(d, "nope", "v2", chain = "default"), "failed")
   fr <- e$pretest_changed_fresh(d, "v1", "v2")
-  expect_identical(sort(fr$path), c("R/a.R", "R/b.R"))
+  expect_identical(sort(fr$path), c("R/a.R", "R/b.R", "inst/extdata/configs/bcfishpass/rules.yaml",
+                                    "inst/extdata/configs/default/rules.yaml"))
   expect_identical(unique(fr$repo), "fresh")
   expect_identical(nrow(e$pretest_changed_fresh(d, "v2", "v2")), 0L)
   expect_error(e$pretest_changed_fresh(d, "v0", "v2"), "failed")
@@ -254,9 +255,11 @@ pt_git_repo <- function(e) {
 test_that("a gate record holds across commits that touch only none files", {
   e <- pt_env()
   r <- pt_git_repo(e)
-  run <- r$commit(list("R/a.R" = "a", "R/v.R" = "v", DESCRIPTION = "1"), "last run")
+  desc <- function(v, fresh = "v0.44.0") c(paste("Version:", v), "Remotes:",
+                                            paste0("    NewGraphEnvironment/fresh@", fresh))
+  run <- r$commit(list("R/a.R" = "a", "R/v.R" = "v", DESCRIPTION = desc("1")), "last run")
   gated <- r$commit(list("R/a.R" = "a2"), "gated")
-  bump <- r$commit(list(DESCRIPTION = "2", "R/v.R" = "v2",
+  bump <- r$commit(list(DESCRIPTION = desc("2"), "R/v.R" = "v2",
                         "inst/extdata/configs/bcfishpass/rules.yaml" = "x"), "bump")
   map <- data.frame(repo = "link",
                     pattern = c("^R/a\\.R$", "^R/v\\.R$", "^DESCRIPTION$",
@@ -293,6 +296,24 @@ test_that("a gate record holds across commits that touch only none files", {
   unm <- r$commit(list("R/new.R" = "n"), "new file")
   expect_match(chk(rec(), head = unm)$why, "unmapped: R/new.R")
   expect_error(chk(rec(link_sha = "0000000000000000000000000000000000000000")), "failed")
+  # a fresh pin bump voids a record, even one that modelled nothing (fresh_sha NA)
+  pin <- r$commit(list(DESCRIPTION = desc("3", fresh = "v0.45.0")), "pin fresh")
+  expect_match(chk(rec(fresh_sha = NA_character_), head = pin)$why, "pins fresh v0.45.0, the gate ran at v0.44.0")
+  expect_match(chk(rec(), head = pin, fresh = "f1")$why, "pins fresh v0.45.0")
+})
+
+test_that("fresh's changed files include inst/extdata, and git warnings never become paths", {
+  e <- pt_env()
+  r <- pt_git_repo(e)
+  a <- r$commit(list("R/f.R" = "a", "inst/extdata/wsg_outlet.csv" = "x", "NEWS.md" = "1"), "one")
+  b <- r$commit(list("inst/extdata/wsg_outlet.csv" = "y", "NEWS.md" = "2"), "two")
+  fr <- e$pretest_changed_fresh(r$dir, a, b)
+  expect_identical(fr$path, "inst/extdata/wsg_outlet.csv")
+  expect_identical(e$pretest_git(r$dir, c("rev-parse", "--verify", paste0(b, "^{commit}"))), b)
+  expect_error(e$pretest_git(r$dir, c("rev-parse", "--verify", "x; touch pwned")), "failed")
+  expect_false(file.exists(file.path(r$dir, "pwned")))
+  expect_identical(e$pretest_since_covers(r$dir, a, c(b, NA)), "")
+  expect_match(e$pretest_since_covers(r$dir, b, a), "after history built at")
 })
 
 test_that("the default --since is the earliest newest build, and dirty history refuses", {
@@ -310,9 +331,9 @@ test_that("the default --since is the earliest newest build, and dirty history r
 test_that("changed link files leave out bundles outside the chain", {
   e <- pt_env()
   r <- pt_git_repo(e)
-  a <- r$commit(list("R/a.R" = "a", DESCRIPTION = "1"), "one")
+  a <- r$commit(list("R/a.R" = "a", DESCRIPTION = "Version: 1"), "one")
   b <- r$commit(list("inst/extdata/configs/bcfishpass/rules.yaml" = "x",
-                     "inst/extdata/configs/default/rules.yaml" = "y", DESCRIPTION = "2",
+                     "inst/extdata/configs/default/rules.yaml" = "y", DESCRIPTION = "Version: 2",
                      "NEWS.md" = "n"), "two")
   ch <- e$pretest_changed_link(r$dir, a, b, chain = "default")
   expect_identical(sort(ch$path), c("DESCRIPTION", "inst/extdata/configs/default/rules.yaml"))

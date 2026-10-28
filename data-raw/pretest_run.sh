@@ -180,6 +180,8 @@ fi
 : > "$OUT/exits.tsv"
 for row in "${PICKS[@]}"; do
   IFS=$'\t' read -r wsg inputs minutes host bound smin <<<"$row"
+  [[ "$wsg" =~ ^[A-Z]{4}$ && "$smin" =~ ^[0-9]+$ && "$bound" =~ ^[0-9.]+$ ]] \
+    || { echo "REFUSED: malformed row in picks.tsv: $row" >&2; exit 2; }
   bound_s=$(awk -v b="$bound" 'BEGIN { printf "%d", (b * 60 == int(b * 60)) ? b * 60 : int(b * 60) + 1 }')
   app="pretest_${wsg}"
   printf '=== %s [%s] last %.1f min on %s; bound %.1f min, statements %s min ===\n' \

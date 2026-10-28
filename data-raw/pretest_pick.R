@@ -79,6 +79,11 @@ since_sha <- tryCatch(pretest_git(repo, c("rev-parse", "--verify", paste0(since,
                       error = function(e) refuse(conditionMessage(e)))
 until_sha <- tryCatch(pretest_git(repo, c("rev-parse", "--verify", paste0(until, "^{commit}"))),
                       error = function(e) refuse(conditionMessage(e)))
+# The record check holds a gate to covering every build the history holds;
+# say so now rather than after an hour of modelling.
+cover <- tryCatch(pretest_since_covers(repo, since_sha, built$link_sha),
+                  error = function(e) refuse(conditionMessage(e)))
+if (nzchar(cover)) refuse(cover, "; a gate on this range cannot clear a run")
 
 chain <- tryCatch(pretest_config_chain(file.path(repo, "inst/extdata/configs"), config),
                   error = function(e) refuse(conditionMessage(e)))
@@ -185,8 +190,10 @@ if (!nrow(picks)) {
 
 groups <- pretest_groups(picks, history, k, floor_min)
 groups$statement_min <- pretest_statement_min(groups$bound, stmt_cap)
+# No empty field: bash's `IFS=$'\t' read` collapses consecutive tabs.
+groups$host[is.na(groups$host) | !nzchar(groups$host)] <- "unknown"
 utils::write.table(groups, file.path(out, "picks.tsv"), sep = "\t", quote = FALSE,
-                   row.names = FALSE, na = "")
+                   row.names = FALSE, na = "NA")
 w("## Picks")
 w("")
 w("| group | inputs | last minutes | measured on | bound (min) | statement bound (min) |")
