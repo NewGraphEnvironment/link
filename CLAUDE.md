@@ -11,6 +11,18 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
+## Status (2026-10-27, night) — hosts are packed on measured minutes, and host speeds are learned from each run's legs (#259, folding in #163)
+
+**Measured minutes stay the packing weight, now scored out of sample.** Fitted on 2026-10-17 and scored on 2026-10-23's buckets, minutes put each leg's share of the mean leg within 3.6 points, and FWA segments 28.9. `study_area_buckets.R` now reads host speeds from a learned state (`data-raw/logs/host_speeds.tsv`), behind `--host-speeds` and ahead of equal. It keys them by `--host-names` aliases, with every cloud host one `cloud` class, normalizes measured minutes by the host that measured them, and writes `--plan-out` (one row per group). After a run, `data-raw/host_speeds_calibrate.R` turns that plan and the run's `phases.tsv` into one damped, clamped update with an append-only history; the run's summary prints the command. Mechanics: RUNBOOK §8d, "Learned host speeds". Verdict: `research/study_area_run.md`, "How hosts are packed". Evidence: `data-raw/logs/packing_259/` (its README indexes it).
+
+**Facts not worth re-deriving:**
+- **The 11 to 20 % every leg ran over on 2026-10-23 is drift, not host speed.** The same groups on the same class took 13 to 16 % longer than on 2026-10-17. So each correction is divided by the run's pooled one, and the run-wide ratio goes in the history.
+- **A host packed on minutes it measured itself predicts its own leg whatever its speed.** Only groups that move host carry evidence, and 10 of 239 moved between the two runs, so the state is seeded equal (m1 1, cloud 1). A simulation (`test-study_area_packing.R`) shows whole-leg calibration converging on a true 0.7 ratio and #163's per-group means running away from it (0.13 to 0.15).
+- **A run is calibrated only if it packs on `--minutes-schema` and keeps the packer's `--plan-out`.** The calibrator refuses a segment-weighted plan and a plan whose groups differ from `<TS>_run_wsgs.tsv`.
+- **At 0.3 damping only the 2× upper clamp can bind;** 0.7 × old + 0.3 × a positive observation never falls below 0.5 × old.
+- **Names reach a committed file,** so both scripts refuse `@`, `:`, `/`, a dot or an address. A worker is learned only under an alias passed in `--host-names`; until then it takes the median.
+- **Owed:** at the next provincial run (#377's runs row), pack with `--minutes-schema` and `--plan-out`, run the calibrator, and re-run `packing_259/fit.R` on post-#326 minutes. #163's three-run acceptance is measured over the runs that follow. fresh#272's release changes the dispatcher's speed; the damping absorbs it.
+
 ## Status (2026-10-27, late) — a group's recompute cost is the walk's province-wide probe (#261)
 
 **#261's hypothesis is refuted: recompute cost does not track the barriers downstream of a group** (Spearman −0.08 over 240 groups). Each `fresh::frs_network_features()` walk drives from every feature in the province (7.24 M rows for CH) and probes the group's segments once per feature through its wscode GiST. That probe costs 10.3 µs per feature in CHWK against 1.8 in SALR, so CHWK's CH walk costs 4.1× SALR's, and CHWK's eight natural views hold 4.5× the rows of SALR's two: 18×. A per-group walk timing predicts the 2026-10-23 recompute minutes at Spearman 0.982, against 0.993 between two runs. No link code changed. Verdict: `research/recompute_cost.md`. Evidence: `data-raw/logs/recompute_cost_261/` (its README indexes it).
