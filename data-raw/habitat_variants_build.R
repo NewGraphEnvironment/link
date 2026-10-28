@@ -71,9 +71,12 @@
 # group that fails stops the build after the others return; every group whose
 # checks passed is recorded first. A build killed mid-variant has recorded
 # none of that variant's groups, though the schema may hold some of them, so
-# re-run the variant before scoring it. Workers outlive a killed build: the
-# log names their pids ("variants: workers <pids>"), so stop those before
-# relaunching. `pkill -f workRSOCK` would also stop other sessions' workers.
+# re-run the variant before scoring it. Workers outlive a killed build, and a
+# worker's database backend outlives the worker, still writing its group. The
+# log names both ("variants: workers <R pid>:<backend pid> ..."): before
+# relaunching, kill those R pids and pg_terminate_backend() those backends,
+# or confirm in pg_stat_activity that none is left. `pkill -f workRSOCK`
+# would also stop other sessions' workers.
 #
 # Resumable: a base WSG whose streams_access is already in the base schema
 # (and, if focal, whose working schema survives) is not re-run. Variant passes
@@ -992,8 +995,9 @@ start_cluster <- function(n) {
     conn <- do.call(lnk_db_conn, conn_args)
     NULL
   })
-  say("variants: workers %s", paste(unlist(parallel::clusterCall(cl, Sys.getpid)),
-                                     collapse = " "))
+  pids <- parallel::clusterEvalQ(cl, sprintf("%d:%d", Sys.getpid(),
+    DBI::dbGetQuery(conn, "SELECT pg_backend_pid()")[[1]]))
+  say("variants: workers %s", paste(unlist(pids), collapse = " "))
   ok <- TRUE
   cl
 }
@@ -1028,7 +1032,9 @@ run_variant <- function(v, cl = NULL) {
   if (is_base) {
     for (w in wsgs_v) {
       d <- base_digest$digest[base_digest$watershed_group_code == w]
-      if (length(d) != 1L) {
+      # NA means "no check" to variant_pass(), so a base digest that is NA
+      # (a working table with no rows) must not reach it.
+      if (length(d) != 1L || is.na(d)) {
         stop("no base habitat digest for ", w, " in ", path_base_digest,
              ": run --step=base with this --out first", call. = FALSE)
       }
