@@ -38,8 +38,8 @@ arg_val <- function(flag, default) {
   if (!length(hit)) return(default)
   sub(paste0("^", flag, "="), "", hit[1])
 }
-script_dir <- dirname(normalizePath(sub("^--file=", "",
-  grep("^--file=", commandArgs(FALSE), value = TRUE)[1]), mustWork = FALSE))
+script_file <- sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[1])
+script_dir <- dirname(normalizePath(script_file, mustWork = FALSE))
 source(file.path(script_dir, "study_area_packing.R"))
 
 plan_path <- arg_val("--plan", "")
@@ -118,7 +118,8 @@ if (file.exists(history_path)) {
 
 # The groups the packer gave each host must be the groups the run gave it.
 for (k in union(unique(plan$host_key), unique(rw$host))) {
-  a <- sort(plan$wsg[plan$host_key == k]); b <- sort(rw$wsg[rw$host == k])
+  a <- sort(plan$wsg[plan$host_key == k])
+  b <- sort(rw$wsg[rw$host == k])
   if (!identical(a, b)) {
     stop(sprintf("host %s: the plan gives it %d groups and the run %d (%s): calibrate against the plan the run used",
                  k, length(a), length(b),
@@ -135,12 +136,11 @@ legs <- do.call(rbind, lapply(unique(plan$host_key), function(k) {
   keep <- p$wsg %in% modelled & p$wsg %in% finished
   m <- model[model$host == k, ]
   a <- account$status[account$host == k]
-  why <- c(
-    if (!nrow(m)) "no model row",
-    if (length(a) && a != "ok") paste("account", a),
-    if (!length(a)) "no account row",
-    if (!any(keep)) "no group finished",
-    if (p$name[1] %in% names(skip_reason)) skip_reason[[p$name[1]]])
+  why <- c(if (!nrow(m)) "no model row",
+           if (length(a) && a != "ok") paste("account", a),
+           if (!length(a)) "no account row",
+           if (!any(keep)) "no group finished",
+           if (p$name[1] %in% names(skip_reason)) skip_reason[[p$name[1]]])
   data.frame(host_key = k, name = p$name[1], speed = p$speed[1],
              projected = sum(p$weight[keep] / p$speed[keep]),
              actual = if (nrow(m)) as.numeric(difftime(m$end, m$start, units = "mins")) else NA,

@@ -23,12 +23,11 @@ cal_world <- function(model_rows = NULL, account = c(dispatcher = "ok", job1 = "
   d <- tempfile("calrun")
   dir.create(d)
   ts <- "20261101_000000"
-  model_rows <- model_rows %||% c(
-    "model\tdispatcher\t2026-11-01T01:00:00Z\t2026-11-01T02:40:00Z",
-    "model\tjob1\t2026-11-01T01:00:00Z\t2026-11-01T03:05:00Z")
+  model_rows <- model_rows %||% c("model\tdispatcher\t2026-11-01T01:00:00Z\t2026-11-01T02:40:00Z",
+                                  "model\tjob1\t2026-11-01T01:00:00Z\t2026-11-01T03:05:00Z")
   # phase, host, start, end; then minutes and groups blank and the status.
-  acc <- sprintf("%s\t\t\t%s", sprintf("account\t%s\t2026-11-01T03:10:00Z\t2026-11-01T03:10:00Z",
-                                     names(account)), account)
+  acc <- sprintf("account\t%s\t2026-11-01T03:10:00Z\t2026-11-01T03:10:00Z\t\t\t%s",
+                 names(account), account)
   mod <- if (length(model_rows)) sprintf("%s\t\t\tok", model_rows)
   writeLines(c("run_uid\tphase\thost\tstart_utc\tend_utc\tminutes\tgroups\tstatus",
                paste0(cal_uid, "\t", c(mod, acc))),
@@ -50,11 +49,11 @@ cal_world <- function(model_rows = NULL, account = c(dispatcher = "ok", job1 = "
 }
 
 cal_run <- function(w, ...) {
-  out <- suppressWarnings(system2(
-    file.path(R.home("bin"), "Rscript"),
-    c(shQuote(cal_script()), shQuote(c(paste0("--plan=", w$plan), paste0("--phases=", w$phases),
-      paste0("--state=", w$state), paste0("--history=", w$history), ...))),
-    stdout = TRUE, stderr = TRUE))
+  argv <- c(paste0("--plan=", w$plan), paste0("--phases=", w$phases),
+            paste0("--state=", w$state), paste0("--history=", w$history), ...)
+  out <- suppressWarnings(system2(file.path(R.home("bin"), "Rscript"),
+                                  c(shQuote(cal_script()), shQuote(argv)),
+                                  stdout = TRUE, stderr = TRUE))
   list(out = out, status = attr(out, "status") %||% 0L)
 }
 
@@ -87,10 +86,10 @@ test_that("--dry-run writes nothing", {
 })
 
 test_that("the later of two model rows is the leg's end", {
-  w <- cal_world(model_rows = c(
-    "model\tdispatcher\t2026-11-01T01:00:00Z\t2026-11-01T02:40:00Z",
-    "model\tjob1\t2026-11-01T01:00:00Z\t2026-11-01T01:30:00Z",
-    "model\tjob1\t2026-11-01T01:00:00Z\t2026-11-01T03:05:00Z"))
+  rows <- c("model\tdispatcher\t2026-11-01T01:00:00Z\t2026-11-01T02:40:00Z",
+            "model\tjob1\t2026-11-01T01:00:00Z\t2026-11-01T01:30:00Z",
+            "model\tjob1\t2026-11-01T01:00:00Z\t2026-11-01T03:05:00Z")
+  w <- cal_world(model_rows = rows)
   r <- cal_run(w, "--dry-run")
   expect_equal(r$status, 0L, info = paste(r$out, collapse = "\n"))
   expect_match(paste(r$out, collapse = "\n"), "\\| job1 \\| cloud \\| 1.000 \\| 2 \\| 100.0 \\| 125.0 \\|")

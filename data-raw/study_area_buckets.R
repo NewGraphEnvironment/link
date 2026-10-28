@@ -95,8 +95,8 @@ n_workers <- suppressWarnings(as.integer(arg_val("--workers", "0")))
 do_write <- "--write" %in% args
 # pack(), host speeds and their learned state (link#259), shared with
 # host_speeds_calibrate.R and the tests.
-script_dir <- dirname(normalizePath(sub("^--file=", "",
-  grep("^--file=", commandArgs(FALSE), value = TRUE)[1]), mustWork = FALSE))
+script_file <- sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[1])
+script_dir <- dirname(normalizePath(script_file, mustWork = FALSE))
 source(file.path(script_dir, "study_area_packing.R"))
 if (!atom %in% c("component", "group")) {
   stop("--atom must be component or group, got '", atom, "'", call. = FALSE)
@@ -309,7 +309,8 @@ if (nzchar(minutes_schema)) {
   # class that measured them (link#259; equal state, no change).
   w$n <- weights_normalize(as.numeric(w$n), w$host, speed_state)
   weight_unit <- "min"
-  weight_desc <- sprintf("measured modelling minutes (newest finished row per group in %s.log, normalized by the learned speed of the host that measured them)",
+  weight_desc <- sprintf(paste0("measured modelling minutes (newest finished row per group in %s.log, ",
+                                "normalized by the learned speed of the host that measured them)"),
                          minutes_schema)
 } else {
   w <- DBI::dbGetQuery(conn,
@@ -480,8 +481,9 @@ for (i in seq_along(components)) {
 cat("\n## Host buckets\n\n")
 cat(sprintf("Weights: %s. %d of %d groups took the median.\n\n",
             weight_desc, n_unweighted, length(flat)))
-cat(sprintf("Speeds: %s.\n\n", paste(sprintf("%s %s %.3f (%s)", vapply(seq_len(n_hosts), host_key, ""),
-                                          host_names, host_speeds, speeds$source), collapse = "; ")))
+speed_lines <- sprintf("%s %s %.3f (%s)", vapply(seq_len(n_hosts), host_key, ""),
+                       host_names, host_speeds, speeds$source)
+cat(sprintf("Speeds: %s.\n\n", paste(speed_lines, collapse = "; ")))
 cat(sprintf("Atom: %s.%s\n\n", atom,
             if (atom == "group") " Single modelable groups, each host's list in the global downstream-first order; the post-consolidate recompute settles access (data-raw/logs/provincial_361/split_verdict.md)." else ""))
 cat(sprintf("| host | speed | atoms | focal | modelable | %s | est. load | est. share |\n",
@@ -548,14 +550,13 @@ if (nzchar(plan_out)) {
     group_pack$assign
   }
   g_wsg <- if (atom == "component") unlist(resolved, use.names = FALSE) else global_order
-  plan <- data.frame(
-    wsg = g_wsg,
-    host_key = vapply(g_host, host_key, character(1)),
-    name = host_names[g_host],
-    speed = host_speeds[g_host],
-    speed_source = speeds$source[g_host],
-    weight_unit = weight_unit,
-    weight = vapply(g_wsg, weight_of, numeric(1)))
+  plan <- data.frame(wsg = g_wsg,
+                     host_key = vapply(g_host, host_key, character(1)),
+                     name = host_names[g_host],
+                     speed = host_speeds[g_host],
+                     speed_source = speeds$source[g_host],
+                     weight_unit = weight_unit,
+                     weight = vapply(g_wsg, weight_of, numeric(1)))
   utils::write.table(plan, plan_out, sep = "\t", quote = FALSE, row.names = FALSE, na = "")
   message(sprintf("wrote the plan (%d groups, %s) to %s", nrow(plan), weight_unit, plan_out))
 }
