@@ -1137,6 +1137,7 @@ When changing a `configs/<name>/dimensions.csv` or any file that feeds `lnk_rule
 1. **Regenerate + diff rules.yaml before running anything.** `Rscript data-raw/build_rules.R` then `git diff inst/extdata/configs/<name>/rules.yaml`. Confirm the diff matches intent — e.g., toggling `spawn_lake=no` for SK should remove the `waterbody_type: L` rule under `SK.spawn`. Catching an unintended rule here costs seconds; catching it after a 20-min tar_make costs 20 min.
 2. **Pre-flight on one WSG, not five.** After reinstalling the package (`pak::local_install(upgrade = FALSE, ask = FALSE)` or equivalent), run the single-WSG workload (`link-tarmake-single <WSG>`) on the smallest WSG impacted by the change before the full `link-tarmake-5wsg`. ADMS is smallest, BULK largest per `workloads.csv` — pick whichever is small AND exercises the affected species. **Always report the pre-flight result framed as departures from bcfishpass reference, not just raw link numbers.** Small config changes (new threshold, edge-type tweak) should land within ~±20% of bcfp values; >50% departure is a flag; >100% or a 10× swing is "investigate before rerun" — bcfishpass is mature and its numbers are a reasonable sanity baseline. The four `sources` buckets from `§6` of the research doc are better signal than the scalar rollup delta — run them on the pre-flight WSG too.
 3. **DB-side sanity as shortcut.** When the fix's effect is measurable (e.g., "SK spawning km should drop because lake shoreline edges no longer count"), a direct query on `fresh.streams_habitat` grouped by `edge_type` can confirm direction of change in ~30s without any tar_make.
+4. **Copy the sample rules to fresh.** `data-raw/build_rules.R` also rewrites link's top-level sample, `inst/extdata/parameters_habitat_rules.yaml`, from the `default` bundle. fresh ships a copy at the same path, which `frs_habitat()` falls back to without a config, and fresh has no generator of its own. So after a change to `default`'s `dimensions.csv` or to `lnk_rules_build()`, copy the file into fresh on a branch there and release fresh. Nothing syncs it (fresh#185 was closed as not planned on 2026-05-05): on 2026-10-28 fresh's copy still read `Generated: 2026-04-28` against link's `2026-10-21`.
 
 ## SRED
 
@@ -1169,7 +1170,7 @@ When an issue claims data is missing relative to bcfishpass, run a count plus a 
 
 **Why:** link#102 (CABD waterfalls "completeness gap") dissolved in five minutes of `psql`: fresh's `falls.csv` per-WSG barrier counts are byte-identical to `bcfishpass.falls WHERE barrier_ind = true` across all 187 WSGs. The "missing famous falls" framing was wrong — those are mostly `barrier_ind = false` (fishways) or live in `cabd.dams`. A research-doc sentence had implied a divergence that didn't exist at row level.
 
-**How to apply:** Counts from both sides → diff at WSG level → row-level spot-check on one representative WSG → only then scope. Costs 5–10 minutes; has closed issues as not-a-bug and avoided multi-day PRs. Even when data does differ, the count diff sizes the work correctly.
+**How to apply:** Counts from both sides → diff at WSG level → row-level spot-check on one representative WSG → only then scope. Costs 5–10 minutes; has closed issues as not-a-bug and avoided multi-day PRs. Even when data does differ, the count diff sizes the work correctly. Compare falls on the barrier subset: `bcfishpass.falls` also holds passable rows (`barrier_ind = false`) that fresh's `falls.csv` leaves out, and counting them inflates the apparent gap about tenfold.
 
 ### Build abstract systems, not point solutions
 
@@ -1309,6 +1310,45 @@ The two persist schemas are **not interchangeable**: TABR sits in both at 14,652
 vs 12,948 segments. Explicitly not wanted: a standing "always use X" rule — the
 ask is awareness per run, not a fixed answer. Fix tracked in #278, the fleet
 sweep in soul, and the bug class is now a row in soul's `code-check.md`.
+
+### Groom inputs before the engine; never add a switch inside it
+
+Filter, join and clean a source table in link, then hand fresh a clean table. Do not add a conditional inside a generic fresh function to handle one source.
+
+**Why:** A −13 % regression came from applying `user_barriers_definite_control` at the wrong level. bcfishpass applies it when it builds each model's barrier table, not while it computes overrides, and grooming the input at that point was both simpler and correct.
+
+**How to apply:** Shape a CSV in the pipeline phase or driver that knows its source, and keep fresh functions ignorant of where their tables came from. It is the same boundary as fresh#129: interpretation belongs in link, the network engine in fresh. A fresh issue says what fresh needs to support; a link issue says what link does with it.
+
+### Add one input at a time, against a baseline
+
+When wiring a new correction CSV or break source, add it alone and compare against the run before it, then add the next.
+
+**Why:** The `user_barriers_definite_control` regression was caught at once because the baseline from the step before existed. Added together with another CSV, it could have come from either.
+
+**How to apply:** Keep the previous run, wire one input, re-run on one group or on a sub-basin AOI (`aoi = "wscode_ltree <@ '<code>'::ltree"`, much faster than a whole group), diff, then move on.
+
+### Naming: predicates read as a state, parameters noun first, names in full
+
+- A function that returns TRUE or FALSE is named in link's verb-last family with an adjective or a third-person verb (`baseline_current`, `inputs_match`), never Lisp's `_p` suffix. A `_p` predicate exported in #148 was renamed mid-PR when the user asked what it meant.
+- Parameters are noun first: `gradient_recompute`, not `recompute_gradient`.
+- Issues and docs write column and table names in full: `linear_feature_id`, not `LFID`.
+- Write "New Graph Environment" or "newgraph", not the acronym; a config is named for what it is (`default`, not `nge`).
+
+### Make a reviewer's copy with `git worktree`, never `cp -r`
+
+Give a `/code-check` reviewer, or any frozen copy, `git worktree add <path> <ref>` of fresh or link, never a `cp -r` of the checkout.
+
+**Why:** On 2026-10-27 two reviewer copies of fresh made with `cp -r` each carried `docker/postgres-data`, the local fwapg database's bind mount (207 and 227 GB, untracked and not ignored). They filled the disk, and a database directory copied while it runs is inconsistent anyway.
+
+**How to apply:** A worktree copies tracked files only, and both test suites reach the database over a connection, so it is enough for a reviewer that runs tests. Check `du -sh` of any copy before handing it over. The planning convention below offers `cp -r` for reviewer copies; in this repo this rule wins.
+
+### Never `pip install` into a shared Python
+
+Install Python tools (the `bcdata` CLI, for example) into an isolated environment: `uv venv` then `uv pip install`, `python3 -m venv`, or `pipx` for a command that belongs on PATH. Never into Homebrew's or the system's Python.
+
+**Why:** On 2026-05-08 a numpy / pandas ABI mismatch under `bcdata` was worked around by upgrading both in Homebrew's Python, which every other tool on the machine shares. The user's verdict: an ad hoc global install is never the fix.
+
+**How to apply:** An ABI or version conflict means a fresh environment with pinned versions, not an in-place upgrade. If unsure, stop and say what is broken.
 
 <!-- BEGIN SOUL CONVENTIONS — DO NOT EDIT BELOW THIS LINE -->
 
