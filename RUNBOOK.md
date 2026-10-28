@@ -205,7 +205,7 @@ FWA ends, other break sources and other species' tops. A kept top matters as the
 where species recorded only below it turn to 1. Lifts count observations point against point
 (`lnk_barrier_overrides()`), and the mapping code and habitat gate read
 `has_barriers_<sp>_dnstr` and `access = 0` against `> 0`; none needs a break.
-Nothing in link tells 2 from 1 (every reader is `IN (1, 2)`); bcfishpass's own
+Nothing in link tells 2 from 1 (every reader tests `IN (1, 2)`, `> 0` or `= 0`); bcfishpass's own
 `aw_linear_summary()` does, on its own tables (`data-raw/logs/observation_breaks_396/readers_code2.md`).
 
 **The access changes follow from one fact: a segment's codes depend only on where it

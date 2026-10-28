@@ -52,7 +52,8 @@ Since #326, `.lnk_pipeline_prep_minimal()` (`R/lnk_pipeline_prepare.R`), then `l
 4. **Observation breaks by bundle.** The `bcfishpass` bundle breaks at every observation, as
    bcfishpass does; `default` only at each species' top observation per line (#396,
    `pipeline: observation_breaks`). The `bcfishpass` builds of BULK and PARS were unchanged by
-   it, break for break. Record: `observation_breaks.md`.
+   it: the same segment counts, the same census of break classes, and every parity value equal
+   to #326's round 2. Record: `observation_breaks.md`.
 
 Two residuals are named, not fixed. **Cross-group lifts:** the reduction lifts by the group's
 own overrides, while the access view lifts by every group's persisted rows. So where another

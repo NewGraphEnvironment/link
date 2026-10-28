@@ -58,10 +58,11 @@ branch (`top_per_species`) into two scratch schemas (`run.sh`, `status.tsv`):
 | ELKR | 1,923 → 431 | 40,027 → 38,601 | −1,426 (−3.6 %) |
 
 Province-wide, `default`'s set keeps 28,876 of 63,282 positions (45.6 %), each group's tops
-taken as its build takes them (`province.csv`). Most removed positions sit on a segment some
-other break already makes, so segments fall by only 1 to 4 %; network km are identical. The
-pre-build count of removed positions that save a segment (`cuts.csv`) matched the builds
-exactly in the four groups it covered (UPCE was added later).
+taken as its build takes them (`province.csv`). Nearly every removed position did cut its
+own segment (86 to 97 % of them in the four groups `cuts.csv` covers), but observation
+positions are few beside a group's segments, so segments fall by only 0.7 to 3.6 %; network km
+are identical (`segments.csv`). The pre-build count of removed positions that save a segment
+(`cuts.csv`) matched the builds exactly in those four groups (UPCE was added later).
 
 ## How much faster (question 2)
 
@@ -77,10 +78,11 @@ to back on one host (`minutes.csv`, from `status.tsv`):
 | ELKR | 6.67 → 4.08 | 0.33 → 0.30 |
 
 Every pair ran BEFORE first. ELKR's took 39 % less AFTER, far more than its 3.6 % fewer
-segments explain. Run again AFTER first (`run_elkr_repeat.sh`), the pair took 3.80 and
-3.92 min, so the first gap was the cost of going first. Elsewhere the change is −4 to +6 %,
-inside run-to-run noise. With segments down 1 to 4 %, the reduced breaks buy accuracy, not
-speed. The BULK BEFORE build's first attempt stalled for 45 min in fresh's near-river walk and
+segments explain. Run again in reverse order (`run_elkr_repeat.sh`), the pair took 3.80 min
+AFTER and 3.92 min BEFORE, so the first BEFORE's 6.67 min did not reproduce; what slowed it
+is not known. Elsewhere the model minutes change by −4 to +6 %, and the recomputes, which take
+8 to 31 s, by at most 5 s. With segments down 0.7 to 3.6 %, the reduced breaks buy accuracy,
+not speed. The BULK BEFORE build's first attempt stalled for 45 min in fresh's near-river walk and
 was cancelled; its retry took 5.1 min (the shape CLAUDE.md records for OKAN), and the retry's
 minutes are used.
 
@@ -136,9 +138,9 @@ starts lower and only fall where it starts higher. That rule held on every piece
 groups (`n_violation` 0).
 
 - **No change between blocked and open, no `has_barriers` change, no 2 to 1, no sliver.**
-- **1 to 2: 6.1 km over 25 group-species, every metre on a segment starting at that species'
-  top.** BULK 2.72 km over seven species, ELKR 2.29 (BT), UPCE 0.87, LKEL 0.25 (CO), PARS 0.
-- **Habitat moves where merged pieces take a new gradient:** at most 12 km of spawning or
+- **1 to 2: 6.1 km in 11 of the 25 group-species, every metre on a segment starting at that
+  species' top.** BULK 2.72 km over seven species, ELKR 2.29 (BT), UPCE 0.87, LKEL 0.25 (CO), PARS 0.
+- **Habitat moves where merged pieces take a new gradient:** at most 12.2 km of spawning or
   rearing either way per group and species (ELKR GR rearing −11.7 / +12.2 km against
   1,092 km), and the mapping codes with it (up to 35.5 km, ELKR GR).
 
@@ -151,7 +153,8 @@ starts down: 1 to 2 above a species' top, where its segment swallows a removed b
 blocked to open. A segment never spans a confluence, so a tributary's records count the same
 for every segment of a feature in both builds. The pre-build estimate of the first
 (`code2_class.csv`, not a bound) matched the builds' 1 to 2 at a top exactly, for every
-species `default` computes access for; it also counts CT and DV, which have none.
+species `default` computes access for, in the four groups it covers (not UPCE); it also counts
+CT and DV, which have none.
 
 Some starts move up, because three 1 m rules stack near a removed break: breaks are rounded
 to the metre while the walk compares raw measures; a later break source cuts only more than

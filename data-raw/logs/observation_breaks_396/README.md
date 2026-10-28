@@ -28,6 +28,7 @@
 | `bias.R`, `bias.csv`, `bias_fiss_note.txt` | question 3: segment length and gradient at sites with and without fish (aggregates only) |
 | `readers_code2.md` | question 4: who reads code 2 against 1 |
 | `run.sh`, `status.tsv`, `driver.log`, `<step>_<WSG>.log` | the builds |
+| `segments.csv` | question 1 and the `bcfishpass` check: segments and network km per group in each schema after the run |
 | `minutes.csv` | question 2: paired model and recompute minutes from `status.tsv` (BULK BEFORE's stalled first attempt left out) |
 | `run_elkr_repeat.sh`, `status_elkr_repeat.tsv`, `driver_elkr_repeat.log`, `repeat_*_ELKR.log` | ELKR's pair again, AFTER first |
 | `elkr_digest.sql`, `elkr_digest_{before,after}.csv` | ELKR's persisted rows before and after the repeat: identical |

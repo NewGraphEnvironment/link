@@ -11,7 +11,7 @@
 ### Resume
 
 ```bash
-cd /Users/airvine/Projects/repo/link && git fetch -q origin && git checkout 396-break-streams-at-a-fish-observation-only && git pull --ff-only && git merge origin/main
+cd <link checkout> && git fetch -q origin && git checkout 396-break-streams-at-a-fish-observation-only && git pull --ff-only && git merge origin/main
 ```
 
 ## Session 2026-10-28 (resume)

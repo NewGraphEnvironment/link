@@ -1,0 +1,16 @@
+schema,watershed_group_code,segments,network_km
+zz396_default_pre,BULK,43107,14642.2
+zz396_default_pre,ELKR,40027,12486.9
+zz396_default_pre,LKEL,3378,1115.4
+zz396_default_pre,PARS,46341,13867.5
+zz396_default_pre,UPCE,24422,8433.5
+zz396_default_post,BULK,42555,14642.2
+zz396_default_post,ELKR,38601,12486.9
+zz396_default_post,LKEL,3312,1115.4
+zz396_default_post,PARS,46004,13867.5
+zz396_default_post,UPCE,23792,8433.5
+fresh,BULK,42989,14642.2
+fresh,ELKR,38245,12486.9
+fresh,LKEL,3374,1115.4
+fresh,PARS,43776,13867.5
+fresh,UPCE,25037,8433.5
