@@ -84,6 +84,11 @@ minutes_schema <- arg_val("--minutes-schema", "")
 atom <- arg_val("--atom", "component")
 n_workers <- suppressWarnings(as.integer(arg_val("--workers", "0")))
 do_write <- "--write" %in% args
+# pack(), host speeds and their learned state (link#259), shared with
+# host_speeds_calibrate.R and the tests.
+script_dir <- dirname(normalizePath(sub("^--file=", "",
+  grep("^--file=", commandArgs(FALSE), value = TRUE)[1]), mustWork = FALSE))
+source(file.path(script_dir, "study_area_packing.R"))
 if (!atom %in% c("component", "group")) {
   stop("--atom must be component or group, got '", atom, "'", call. = FALSE)
 }
@@ -309,24 +314,12 @@ message(sprintf("weights: %s; %d of %d groups have no value and take the median 
 # because host 1 IS the dispatcher and cannot be swapped for a cypher. The
 # fast host now ends up with more work on its own, because it finishes sooner.
 #
-# One packer for both atoms (link#361): `pack()` takes the atoms' weights and
-# returns each atom's host and each host's load. The component packing is
+# One packer for both atoms (link#361; data-raw/study_area_packing.R since #259):
+# `pack()` takes the atoms' weights and the hosts' speeds, and returns each
+# atom's host and each host's load. The component packing is
 # always computed, so the report can print the makespan under both atoms for
 # the same hosts; the group packing only when --atom=group.
-pack <- function(weights) {
-  load_h <- rep(0, n_hosts)        # dispatcher-equivalent weight (minutes if measured)
-  seg_h  <- rep(0, n_hosts)        # raw weight, for the report
-  assign_h <- integer(length(weights))
-  for (i in order(-weights)) {
-    finish <- load_h + weights[i] / host_speeds
-    pick <- which.min(finish)
-    assign_h[i] <- pick
-    load_h[pick] <- finish[pick]
-    seg_h[pick] <- seg_h[pick] + weights[i]
-  }
-  list(assign = assign_h, load = load_h, seg = seg_h)
-}
-comp_pack <- pack(comp_weight)
+comp_pack <- pack(comp_weight, host_speeds)
 
 # The global downstream-first order: each component's resolved list is
 # DS-first and the components are drainage-independent, so their
@@ -345,7 +338,7 @@ if (atom == "component") {
   })
 } else {
   group_weight <- vapply(global_order, weight_of, numeric(1))
-  group_pack <- pack(group_weight)
+  group_pack <- pack(group_weight, host_speeds)
   assign_h <- comp_pack$assign     # the Components table still names each component's host under component atoms
   load_h <- group_pack$load; seg_h <- group_pack$seg
   host_wsgs <- lapply(seq_len(n_hosts), function(h) {
@@ -467,7 +460,7 @@ cat(sprintf("\nmakespan is set by %s at %s %s of load; balance = %.0f%% (100%% =
 # number in the report rather than a claim (link#361).
 cat(sprintf("makespan under component atoms: %s %s; under group atoms: %s %s\n",
             format(round(max(comp_pack$load)), big.mark = ","), unit_label,
-            format(round(max(pack(vapply(global_order, weight_of, numeric(1)))$load)), big.mark = ","),
+            format(round(max(pack(vapply(global_order, weight_of, numeric(1)), host_speeds)$load)), big.mark = ","),
             unit_label))
 if (weight_unit == "min") {
   cat(sprintf("largest component is %s %s; an even split of the %s total over %d hosts would be %s\n",

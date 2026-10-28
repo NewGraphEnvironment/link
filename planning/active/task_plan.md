@@ -42,16 +42,16 @@ are not "dispatcher-equivalent" once speeds differ. Phase 1 measures whether tha
       weight (review #9) and that the numbers were seen before any threshold was set (review #12)
 
 ## Phase 2: Packing helpers, tested (pure functions, no DB)
-- [ ] New `data-raw/study_area_packing.R` (sourced by the packer, the calibrator and tests): `pack()`
+- [x] New `data-raw/study_area_packing.R` (sourced by the packer, the calibrator and tests): `pack()`
       moved out of the packer unchanged; `host_class()` (`cypher-*` → `cloud`); speed resolution
       (`--host-speeds` > state file > equal; a host missing from the state takes the median of known
       factors and its source says `median (no learned speed)`); weight normalization by the measuring
       host's class at the current state; the calibration step
-- [ ] Calibration math, #163's with speed as throughput (larger = faster, so inverted): per class
+- [x] Calibration math, #163's with speed as throughput (larger = faster, so inverted): per class
       `correction = Σ actual / Σ projected` over its legs, divided by the run's pooled correction
       (projected-weighted; review #2), `observed = old / correction`, `new = 0.7·old + 0.3·observed`,
       clamped to `[0.5·old, 2·old]`; the run-wide ratio returned for the history
-- [ ] `tests/testthat/test-study_area_packing.R` (skip when `data-raw/` is absent): golden `pack()` on
+- [x] `tests/testthat/test-study_area_packing.R` (skip when `data-raw/` is absent): golden `pack()` on
       Phase 1's exported weights at equal speeds (review #7); precedence; median fill and its source
       label; damping and clamping fire; class pooling; drift removed; a convergence simulation
       (true speeds unequal, iterate pack → measure → calibrate, factors approach the truth), and a
