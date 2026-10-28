@@ -1452,10 +1452,13 @@ bash data-raw/pretest_run.sh --config=default --schema=fresh_default
 - **What changed.** link's files under `R/`, `inst/extdata/` (the run's bundle
   and what it `extends`; other bundles are left out), `DESCRIPTION` and the
   run's `data-raw/` entry points, between `--since` and HEAD. fresh's `R/`
-  between the two `Remotes:` pins, read from the fresh checkout beside link
-  (`--fresh-repo=`). `--since` defaults to the link SHA of the earliest of the
-  groups' newest finished builds in `<schema>.log`: the last run, even where a
-  group was re-modelled by hand after it.
+  and `inst/extdata/` (link reads its `falls.csv`, the downstream guard its
+  `wsg_outlet.csv`) between the two `Remotes:` pins, read from the fresh
+  checkout beside link (`--fresh-repo=`). `--since` defaults to the link SHA of
+  the earliest of the groups' newest finished builds under `--config` in
+  `<schema>.log`: the last run, even where a group was re-modelled by hand
+  after it. A range that does not start at or before every one of those builds
+  is refused before anything is modelled.
 - **Which input each file drives.** `data-raw/pretest_inputs.csv` (repo, path
   regex, input, why). `{config}` in a pattern stands for any bundle in the
   chain. Inputs are queries, `data-raw/pretest/<input>.sql`, each returning
@@ -1469,7 +1472,9 @@ bash data-raw/pretest_run.sh --config=default --schema=fresh_default
   add a row naming what drives its cost. `test-pretest.R` checks that every
   file in `R/`, `inst/extdata/` and the entry points has a row, and that no
   `none` row names a file the static call graph from `wsg_run_one.R` reaches
-  (`pretest_reach()`, which also follows `getFromNamespace()` strings). fresh's
+  (`pretest_reach()`, which also follows `getFromNamespace()` strings); the
+  pick and the driver's check walk the same graph at the code they see, so a
+  changed `none` file the path reaches is treated as on it. fresh's
   `none` rows were checked once at v0.44.0 (`data-raw/logs/pretest_372/reach.md`);
   re-run `reach_fresh.R` there when a fresh release moves code between files.
 - **Which groups.** Each input's top `--per-input` groups (default 2) among
@@ -1501,9 +1506,11 @@ bash data-raw/pretest_run.sh --config=default --schema=fresh_default
 **How the driver reads it.** `preflight_local()` runs `data-raw/pretest_check.R`
 (`pretest_record_check()`). The newest `pass` or `fail` row for the config
 decides, so a later fail voids an earlier pass. It clears the run when it
-passed on a clean tree, its fresh SHA is the installed one, its range starts at
-or before every link SHA the history was built at, and every file changed
-between the SHA it modelled and HEAD maps to `none`. A version bump or a
+passed on a clean tree, its fresh SHA is the installed one (a gate that modelled
+nothing records the installed fresh too), its range starts at or before every
+link SHA the history was built at, DESCRIPTION pins the same fresh at its SHA
+and at HEAD, and every file changed between the SHA it modelled and HEAD maps
+to `none`. A version bump or a
 CITATION commit therefore keeps the record; an edit to `R/` voids it.
 `--pretest-note="<why>"` runs without a record, prints an `OVERRIDE:` line,
 and writes an `override` row with the note and the run_uid
