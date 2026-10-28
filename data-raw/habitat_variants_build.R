@@ -1057,7 +1057,9 @@ run_variant <- function(v, cl = NULL) {
                 in_total = FALSE, load = load, n_segments = NA_integer_,
                 jobs = jobs)
   t_pass <- Sys.time()
-  if (is.null(cl)) {
+  # A variant with no groups here takes the serial branch: clusterApplyLB()
+  # returns NULL, not an empty list, for no tasks.
+  if (is.null(cl) || length(wsgs_v) == 0L) {
     # Serial: each group is recorded as it finishes, and the first failure
     # stops the build.
     for (w in wsgs_v) {
