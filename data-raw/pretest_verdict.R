@@ -33,6 +33,7 @@ k <- as.numeric(arg_val("--k", "3"))
 floor_min <- as.numeric(arg_val("--floor-min", "5"))
 per_input <- as.integer(arg_val("--per-input", "2"))
 notes_in <- arg_val("--notes")
+subset <- "--subset" %in% args
 for (s in c(schema, scratch)) {
   if (!grepl("^[a-z_][a-z0-9_]*$", s)) stop("bad schema name '", s, "'", call. = FALSE)
 }
@@ -91,6 +92,7 @@ if (nrow(picks)) {
   fresh_sha <- NA_character_
 }
 overall <- if (!nrow(picks)) "pass" else pretest_overall(picks$verdict)
+groups_pass <- overall
 if (overall == "pass" && nrow(picks) && (length(link_sha) != 1L || length(fresh_sha) != 1L ||
                                           dirty || !identical(link_sha, range[2]))) {
   overall <- "fail"
@@ -110,6 +112,10 @@ if (nrow(picks)) {
               if (is.na(picks$exit[i])) "" else picks$exit[i], picks$verdict[i]))
   }
   w("")
+}
+if (subset) {
+  overall <- "fail"
+  why <- c(why, "a subset of the picks (--only), never a pass")
 }
 w(sprintf("**Gate: %s.**%s", toupper(overall),
           if (length(why)) paste0(" ", paste(why, collapse = "; "), ".") else ""))
@@ -157,4 +163,6 @@ for (i in seq_len(nrow(picks))) {
 }
 message(sprintf("GATE %s%s (recorded in %s.log_pretest)", toupper(overall),
                 if (length(why)) paste0(": ", paste(why, collapse = "; ")) else "", schema))
-quit(status = if (overall == "pass") 0L else 1L)
+# A subset run's record is a fail by construction; its exit says whether the
+# groups it modelled passed.
+quit(status = if ((if (subset) groups_pass else overall) == "pass") 0L else 1L)

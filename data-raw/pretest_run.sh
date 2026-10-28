@@ -9,7 +9,10 @@
 #     [--since=<sha>] [--until=HEAD] [--per-input=2] [--k=3] [--floor-min=5] \
 #     [--statement-timeout=30] [--minutes-schema=<schema>] \
 #     [--minutes-exclude=KTSU,...] [--fresh-repo=<fresh checkout>] \
-#     [--out=<dir>] [--pick-only]
+#     [--out=<dir>] [--pick-only] [--only=<WSG>,...]
+#
+# --only=<WSG>,... models only those of the picks (a smoke test of the
+# machinery, or a re-check of one group); its record is never a pass.
 #
 # What it does, in order:
 #   1. pretest_pick.R: the changed files (link since..until, fresh between the
@@ -44,7 +47,7 @@ fi
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CONFIG="" SCHEMA="" SINCE="" UNTIL="HEAD" PER_INPUT=2 K=3 FLOOR_MIN=5 STMT=30
-MINUTES_SCHEMA="" MINUTES_EXCLUDE="" FRESH_REPO="" OUT="" PICK_ONLY=0
+MINUTES_SCHEMA="" MINUTES_EXCLUDE="" FRESH_REPO="" OUT="" PICK_ONLY=0 ONLY=""
 for arg in "$@"; do
   case "$arg" in
     --config=*)            CONFIG="${arg#*=}" ;;
@@ -60,6 +63,7 @@ for arg in "$@"; do
     --fresh-repo=*)        FRESH_REPO="${arg#*=}" ;;
     --out=*)               OUT="${arg#*=}" ;;
     --pick-only)           PICK_ONLY=1 ;;
+    --only=*)              ONLY="${arg#*=}" ;;
     *) echo "REFUSED: unknown argument $arg" >&2; exit 2 ;;
   esac
 done
@@ -83,6 +87,7 @@ echo "  range:           ${SINCE:-<earliest newest build in $SCHEMA.log>}..$UNTI
 echo "  bound:           ${K} x last minutes, floor ${FLOOR_MIN} min; statements <= ${STMT} min"
 echo "  out:             $OUT"
 [ "$PICK_ONLY" = 1 ] && echo "  mode:            pick only (nothing modelled, nothing recorded)"
+[ -z "$ONLY" ] || echo "  SUBSET:          only $ONLY of the picks; the record cannot pass"
 [ -z "${LNK_TEST_STALL_WSG:-}" ] || echo "  TEST HOOK:       LNK_TEST_STALL_WSG=$LNK_TEST_STALL_WSG"
 
 if [ "$PICK_ONLY" = 0 ]; then
@@ -116,6 +121,17 @@ head_sha=$(git -C "$REPO_ROOT" rev-parse HEAD)
 
 # Picks as rows: wsg inputs minutes host bound statement_min
 mapfile -t PICKS < <(tail -n +2 "$OUT/picks.tsv")
+if [ -n "$ONLY" ]; then
+  [[ "$ONLY" =~ ^[A-Z]{4}(,[A-Z]{4})*$ ]] || { echo "REFUSED: --only takes group codes" >&2; exit 2; }
+  kept=()
+  for row in "${PICKS[@]}"; do
+    case ",$ONLY," in *",${row%%$'\t'*},"*) kept+=("$row") ;; esac
+  done
+  [ "${#kept[@]}" -gt 0 ] || { echo "REFUSED: none of --only=$ONLY was picked" >&2; exit 2; }
+  PICKS=("${kept[@]}")
+  { head -1 "$OUT/picks.tsv"; printf '%s\n' "${PICKS[@]}"; } > "$OUT/picks.tsv.only"
+  mv "$OUT/picks.tsv.only" "$OUT/picks.tsv"
+fi
 
 # A run or recompute in flight would share working_<wsg> and the database
 # with the gate: refuse rather than corrupt it or time against it.
@@ -196,12 +212,13 @@ for row in "${PICKS[@]}"; do
 done
 
 notes=""
+[ -z "$ONLY" ] || notes="subset run (--only=$ONLY), not a gate"
 if [ -s "$OUT/unexercised.txt" ]; then
-  notes="unexercised: $(paste -sd, "$OUT/unexercised.txt")"
+  notes="${notes:+$notes; }unexercised: $(paste -sd, "$OUT/unexercised.txt")"
 fi
 vrc=0
 (cd "$REPO_ROOT" && Rscript data-raw/pretest_verdict.R --out="$OUT" --schema="$SCHEMA" \
    --scratch="$SCRATCH" --config="$CONFIG" --k="$K" --floor-min="$FLOOR_MIN" \
-   --per-input="$PER_INPUT" --notes="$notes") || vrc=$?
+   --per-input="$PER_INPUT" --notes="$notes" ${ONLY:+--subset}) || vrc=$?
 echo "report: $OUT/pretest.md"
 exit "$vrc"
