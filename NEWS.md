@@ -1,3 +1,13 @@
+# link 0.69.2
+
+**`default` breaks streams at each species' highest fish observation on each line, not at every observation** ([#396](https://github.com/NewGraphEnvironment/link/issues/396)). Measured on LKEL, BULK, UPCE, PARS and ELKR built both ways: segments fall 0.7 to 3.6 % and minutes do not move, so the change buys accuracy, not speed. The bias in segment length at fish sites closes: at UPCE's FISS sites, the median segment at sites with fish against sites without was 98 m against 195 m, and is now 411 m against 385 m.
+
+- **`pipeline: observation_breaks:`** (new bundle key, checked at manifest load). `all` breaks at every observation, as bcfishpass does, and is the value when absent; the `bcfishpass` bundle keeps it. `top_per_species` breaks at each species' farthest-upstream record per `blue_line_key`; `default` sets it, and `default_tuned` inherits it.
+- **Access moves only the way a segment's start moved.** Checked on every piece in all five groups: 1 → 2 on 6.1 km, all at species' tops, and no change between blocked and open. `bcfishpass` builds of BULK and PARS are unchanged, and `lnk_habitat_validate()` scores the same records.
+- **`lnk_habitat_validate()`'s docs** now say an observation attaches to the segment starting within 1 m of it, else the one holding it, and a test pins the mid-segment case.
+- **A species' own top break never moves its own "observed upstream" boundary:** the access walk counts a record at a segment's start as upstream of it. Putting each boundary at the highest fish is [#399](https://github.com/NewGraphEnvironment/link/issues/399); known-vs-suspected fish is [#398](https://github.com/NewGraphEnvironment/link/issues/398) to [#403](https://github.com/NewGraphEnvironment/link/issues/403).
+- **Owed:** every persisted `default` group re-segments at the next provincial run, stacked on #326's owed re-model. Mechanics: RUNBOOK §2c. Record: `research/observation_breaks.md`. Evidence: `data-raw/logs/observation_breaks_396/`.
+
 # link 0.69.1
 
 **Hosts are packed on measured minutes, and host speeds are learned from each run's legs** ([#259](https://github.com/NewGraphEnvironment/link/issues/259), folding in [#163](https://github.com/NewGraphEnvironment/link/issues/163)). Scored out of sample, fitted on 2026-10-17 and tested on 2026-10-23's buckets with KTSU's and OKAN's stalls left out: measured minutes put each leg's share of the mean leg within 3.6 points, and FWA segments 28.9. Equal speeds did as well as fitted ones, so the learned state starts equal.
