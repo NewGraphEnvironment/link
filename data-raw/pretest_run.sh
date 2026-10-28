@@ -143,6 +143,7 @@ busy=$(psql_q -c "SELECT count(*) FROM pg_stat_activity
 if [ "${#PICKS[@]}" -gt 0 ]; then
   echo "=== scratch schema $SCRATCH (tables of $SCHEMA, no rows) ==="
   psql_q <<SQL
+SET client_min_messages = warning;
 DROP SCHEMA IF EXISTS ${SCRATCH} CASCADE;
 CREATE SCHEMA ${SCRATCH};
 DO \$\$
@@ -181,7 +182,8 @@ for row in "${PICKS[@]}"; do
   IFS=$'\t' read -r wsg inputs minutes host bound smin <<<"$row"
   bound_s=$(awk -v b="$bound" 'BEGIN { printf "%d", (b * 60 == int(b * 60)) ? b * 60 : int(b * 60) + 1 }')
   app="pretest_${wsg}"
-  echo "=== $wsg [$inputs] last ${minutes} min on $host; bound ${bound} min, statements ${smin} min ==="
+  printf '=== %s [%s] last %.1f min on %s; bound %.1f min, statements %s min ===\n' \
+    "$wsg" "$inputs" "$minutes" "$host" "$bound" "$smin"
   (
     cd "$REPO_ROOT"
     PGOPTIONS="${PGOPTIONS:-} -c statement_timeout=${smin}min" \
@@ -194,7 +196,7 @@ for row in "${PICKS[@]}"; do
   killed=0
   while kill -0 "$pid" 2>/dev/null; do
     if [ $(( $(date +%s) - t0 )) -ge "$bound_s" ]; then
-      echo "  past ${bound} min: killing $wsg"
+      printf '  past %.1f min: killing %s\n' "$bound" "$wsg"
       kill "$pid" 2>/dev/null || true
       # Killing R leaves its backend running; end it by its application name.
       psql_q -c "SELECT count(pg_terminate_backend(pid)) FROM pg_stat_activity WHERE application_name = '${app}'" >/dev/null || true

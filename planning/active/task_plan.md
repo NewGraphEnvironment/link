@@ -60,7 +60,7 @@ Operator, 2026-10-23: "Provincial runs should prob be pretended with scoped test
 
 ## Phase 3: the gate driver
 
-- [ ] `data-raw/pretest_run.sh --config= --schema= [--since=<sha>] [--until=HEAD] [--per-input=2] [--k=3] [--floor-min=5] [--statement-timeout=30] [--out=]`:
+- [x] `data-raw/pretest_run.sh --config= --schema= [--since=<sha>] [--until=HEAD] [--per-input=2] [--k=3] [--floor-min=5] [--statement-timeout=30] [--out=]`:
   - prints the run decisions first
   - `--since` defaults to the newest run_uid's `link_sha` in `<schema>.log`
   - refuses bash < 5.1
@@ -68,14 +68,14 @@ Operator, 2026-10-23: "Provincial runs should prob be pretended with scoped test
   - drops and recreates the scratch schema `fresh_pretest_<config>`, refusing any other name
   - models the picks one at a time through `wsg_run_one.R` (`LNK_LOAD=loadall`, `LNK_SCHEMA`, `LNK_GUARD_DOWNSTREAM=warn`, `LNK_HABITAT_GATE=0`, the per-group `PGOPTIONS` bound)
   - reads each group's minutes from the scratch schema's `log` and prints the verdict table
-- [ ] It writes one `<schema>.log_pretest` row per gate run: `run_at`, link_sha, `link_dirty`, fresh_sha, config, since, until, k, groups, verdict, notes. It creates the table if it is absent and leaves existing tables alone, with no DDL on the run's tables. Exit codes: 0 pass, 1 a group failed or breached its bound, 2 refused
-- [ ] `--pick-only`, which writes no record. A stall test: `LNK_TEST_STALL_WSG=<pick>` must end the gate with exit 1, naming the group within its bound
+- [x] It writes one `<schema>.log_pretest` row per gate run: `run_at`, link_sha, `link_dirty`, fresh_sha, config, since, until, k, groups, verdict, notes. It creates the table if it is absent and leaves existing tables alone, with no DDL on the run's tables. Exit codes: 0 pass, 1 a group failed or breached its bound, 2 refused
+- [x] `--pick-only`, which writes no record. A stall test: `LNK_TEST_STALL_WSG=<pick>` must end the gate with exit 1, naming the group within its bound
 
 ## Phase 4: enforcement in study_area_run.sh
 
-- [ ] `preflight_local()` reads `<schema>.log_pretest` and requires a passing row with HEAD's link SHA, `link_dirty` false, the run's config and the installed fresh SHA. Otherwise it is FATAL and names the gate command to run
-- [ ] `--pretest-note="<why>"`: an empty value is refused, the banner prints an `OVERRIDE:` line, and the note reaches `LNK_RUN_LABEL` or the log notes, as `--preflight-note` does. `--preflight-only` runs the check too
-- [ ] Test the check with a passing row, no row, a SHA mismatch, a dirty row and a note, against a scratch table. Restore each defect and watch the test fail
+- [x] `preflight_local()` reads `<schema>.log_pretest` and requires a passing row with HEAD's link SHA, `link_dirty` false, the run's config and the installed fresh SHA. Otherwise it is FATAL and names the gate command to run
+- [x] `--pretest-note="<why>"`: an empty value is refused, the banner prints an `OVERRIDE:` line, and the note reaches `LNK_RUN_LABEL` or the log notes, as `--preflight-note` does. `--preflight-only` runs the check too
+- [x] Test the check with a passing row, no row, a SHA mismatch, a dirty row and a note, against a scratch table. Restore each defect and watch the test fail
 
 ## Phase 5: acceptance runs and evidence
 
@@ -95,15 +95,15 @@ Operator, 2026-10-23: "Provincial runs should prob be pretended with scoped test
 
 ## Folded in from the plan review (planning/active/review-plan.md)
 
-- [ ] B1: `pretest_record_check()` in pretest.R; a record holds while every file changed since its SHA maps to `none`
-- [ ] B2/A6: `--since` default is the oldest link_sha among the history's newest finished rows; the check requires since to cover them
-- [ ] B3: `--pretest-note` writes an `override` row
-- [ ] G1: pathspec R/, inst/extdata/, DESCRIPTION, data-raw entry points; coverage test over inst/extdata
-- [ ] G2: `unexercised` special input
-- [ ] G3: scratch tables LIKE the persist's
-- [ ] G6: wall-clock watchdog at the bound
-- [ ] G7: refuse during a live run
-- [ ] G8: `--minutes-schema`, `--minutes-exclude`
+- [x] B1: `pretest_record_check()` in pretest.R; a record holds while every file changed since its SHA maps to `none`
+- [x] B2/A6: `--since` default is the oldest link_sha among the history's newest finished rows; the check requires since to cover them
+- [x] B3: `--pretest-note` writes an `override` row
+- [x] G1: pathspec R/, inst/extdata/, DESCRIPTION, data-raw entry points; coverage test over inst/extdata
+- [x] G2: `unexercised` special input
+- [x] G3: scratch tables LIKE the persist's
+- [x] G6: wall-clock watchdog at the bound
+- [x] G7: refuse during a live run
+- [x] G8: `--minutes-schema`, `--minutes-exclude`
 
 ## Owed at the end (reported, done after merge)
 
