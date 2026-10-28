@@ -317,3 +317,66 @@ test_that("changed link files leave out bundles outside the chain", {
   ch <- e$pretest_changed_link(r$dir, a, b, chain = "default")
   expect_identical(sort(ch$path), c("DESCRIPTION", "inst/extdata/configs/default/rules.yaml"))
 })
+
+test_that("pretest_check.R clears a run only on a passing record, and an override row is not one", {
+  conn <- skip_if_no_db()
+  info <- DBI::dbGetInfo(conn)
+  skip_if_not(identical(info$host, "localhost") && identical(info$dbname, "fwapg"),
+              "needs the local docker fwapg")
+  root <- normalizePath(testthat::test_path("..", ".."))
+  script <- file.path(root, "data-raw", "pretest_check.R")
+  skip_if_not(file.exists(script), "data-raw/pretest_check.R absent")
+  skip_if(!nzchar(Sys.which("psql")), "psql absent")
+  head_sha <- system2("git", c("-C", root, "rev-parse", "HEAD"), stdout = TRUE)
+  schema <- paste0("zz_test372_", Sys.getpid())
+  DBI::dbExecute(conn, sprintf("CREATE SCHEMA %s", schema))
+  withr::defer(DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", schema)))
+  check <- function(fresh = "f1") {
+    out <- suppressWarnings(system2("Rscript", c(shQuote(script), "--config=default",
+                                                 paste0("--schema=", schema),
+                                                 paste0("--head=", head_sha),
+                                                 paste0("--fresh-sha=", fresh)),
+                                    stdout = TRUE, stderr = TRUE))
+    list(status = if (is.null(attr(out, "status"))) 0L else attr(out, "status"),
+         out = paste(out, collapse = " "))
+  }
+  r <- check()
+  expect_identical(r$status, 1L)
+  expect_match(r$out, "log_pretest does not exist")
+
+  # The override row the driver writes on --pretest-note: recorded, never a gate.
+  psql <- function(sql_file, ...) {
+    v <- c(...)
+    system2("psql", c("-h", "localhost", "-U", "postgres", "-d", "fwapg", "-X", "-q",
+                      "-v", "ON_ERROR_STOP=1", as.vector(rbind("-v", shQuote(paste0(names(v), "=", v)))),
+                      "-f", shQuote(sql_file)),
+            env = "PGPASSWORD=postgres", stdout = TRUE, stderr = TRUE)
+  }
+  psql(file.path(root, "data-raw", "pretest_override.sql"), schema = schema, config = "default",
+       sha = head_sha, note = "it's urgent", uid = "20261028_000000-test")
+  n <- DBI::dbGetQuery(conn, sprintf("SELECT verdict, notes FROM %s.log_pretest", schema))
+  expect_identical(n$verdict, "override")
+  expect_identical(n$notes, "run_uid 20261028_000000-test: it's urgent")
+  r <- check()
+  expect_identical(r$status, 1L)
+  expect_match(r$out, "no gate record for config default")
+
+  ins <- function(verdict, fresh, at) {
+    DBI::dbExecute(conn, sprintf(
+      "INSERT INTO %s.log_pretest (run_at, config_name, link_sha, link_dirty, fresh_sha, since_sha,
+         until_sha, scratch, k, floor_min, per_input, groups, verdict, notes)
+       VALUES ($1, 'default', $2, false, $3, $2, $2, 's', 3, 5, 2, 'AAAA:pass', $4, NULL)", schema),
+      params = list(as.POSIXct(at, tz = "UTC"), head_sha, fresh, verdict))
+  }
+  ins("pass", "f1", "2026-10-28 10:00")
+  r <- check()
+  expect_identical(r$status, 0L)
+  expect_match(r$out, "gate passed at")
+  r <- check(fresh = "f2")
+  expect_identical(r$status, 1L)
+  expect_match(r$out, "installed is")
+  ins("fail", "f1", "2026-10-28 11:00")
+  r <- check()
+  expect_identical(r$status, 1L)
+  expect_match(r$out, "newest gate record failed")
+})

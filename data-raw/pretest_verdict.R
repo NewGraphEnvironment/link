@@ -141,7 +141,7 @@ if (!exists) {
        floor_min   double precision NOT NULL,
        per_input   integer NOT NULL,
        groups      text,
-       verdict     text NOT NULL CHECK (verdict IN ('pass', 'fail')),
+       verdict     text NOT NULL CHECK (verdict IN ('pass', 'fail', 'override')),
        notes       text)", schema)))
 }
 notes <- paste(c(why, if (nzchar(notes_in)) notes_in), collapse = "; ")
