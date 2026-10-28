@@ -11,6 +11,22 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
+## Status (2026-10-28) — `default` breaks streams at each species' top observation per line (#396)
+
+**`pipeline: observation_breaks: top_per_species` is `default`'s, and `all` (every observation, what bcfishpass does) is the value when absent, which the `bcfishpass` bundle keeps.** `.lnk_pipeline_break_obs()` builds `observations_breaks` from each species' farthest-upstream record per `blue_line_key`; the key is checked at manifest load. Measured on five groups built both ways on m4: segments fall 0.7 to 3.6 %, minutes do not move beyond noise, and the bias in segment length at fish sites closes (UPCE FISS fish / no-fish median segment 98 / 195 m before, 411 / 385 m after). Mechanics: RUNBOOK §2c. Record: `research/observation_breaks.md`. Evidence: `data-raw/logs/observation_breaks_396/` (its README indexes it).
+
+**Owed:** every persisted `default` group re-segments again at the next provincial run, stacked on #326's owed re-model; `fresh` does not. The operator's call on the smaller near-exact break set (below).
+
+**Facts not worth re-deriving:**
+- **A species' own top break never changes its own code 2.** The walk counts a same-line record upstream of a segment when `m >= start - 1`, so the segment starting at the top still reads 2; a species turns to 1 at the first cut more than 1 m above its raw top. A kept top matters as the place species recorded only below it turn. The issue chose the tops on the opposite premise.
+- **The near-exact set is smaller:** per species, the lowest record of any species more than 1 m above its raw top keeps nearly every turn where `all` puts it, at 3 to 31 % of positions against 17 to 59 % for the tops (`exact_set.csv`). Not built.
+- **A segment's codes depend only on its start, and both walk tests are monotone in it** (records upstream at `m >= start - 1`, barriers downstream at `b <= start + 1`; segments never span a confluence). So a piece's access can only rise where its segment now starts lower and only fall where it starts higher. `pre_post_diff.R` checks that on every piece (`n_violation` 0 in all five groups); 1 → 2 was 6.1 km in 11 group-species, all at species' tops.
+- **Removing an observation break can move a start up.** Observations are the first break source and a later one cuts only more than 1 m from the current ends, so a removed observation cut releases a later break within 1 m of it: 2 → 1 or open → blocked become possible near it (none occurred in the five groups).
+- **`bcfishpass` unchanged:** BULK and PARS break for break and every parity value equal to #326 round 2.
+- **The validator scores the same records** (`n_obs`, `n_unattached`, `n_accessible` identical); it already fell back to the segment holding a point.
+- **BULK's `default` model stalled once in fresh's near-river walk** (44.6 min, cancelled; the retry took 5.1 min), the OKAN shape again. ELKR's first BEFORE build took 6.67 min and did not reproduce (3.92 on a repeat in reverse order, AFTER 3.80); its cause is not known.
+- **FISS absence snapshots cover COTR, LNTH, PINE, UNTH and UPCE only** (`LNK_KNOWLEDGE_DIR`), so a bias measurement needs one of those groups.
+
 ## Status (2026-10-27, night) — hosts are packed on measured minutes, and host speeds are learned from each run's legs (#259, folding in #163)
 
 **Measured minutes stay the packing weight, now scored out of sample.** Fitted on 2026-10-17 and scored on 2026-10-23's buckets, with KTSU's and OKAN's stalls left out, minutes put each leg's share of the mean leg within 3.6 points, and FWA segments 28.9 (16.4 against 28.5 as logged). `study_area_buckets.R` now reads host speeds from a learned state (`data-raw/logs/host_speeds.tsv`), behind `--host-speeds` and ahead of equal. It keys them by `--host-names` aliases, with every cloud host one `cloud` class, normalizes measured minutes by the host that measured them, and writes `--plan-out` (one row per group). After a run, `data-raw/host_speeds_calibrate.R` turns that plan and the run's `phases.tsv` into one damped, clamped update with an append-only history; the run's summary prints the command. Mechanics: RUNBOOK §8d, "Learned host speeds". Verdict: `research/study_area_run.md`, "How hosts are packed". Evidence: `data-raw/logs/packing_259/` (its README indexes it).
