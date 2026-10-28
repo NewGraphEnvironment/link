@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.69.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.69.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,9 +32,24 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/v0.69.1/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.69.1" id="link-0691">link 0.69.1<a class="anchor" aria-label="anchor" href="#link-0691"></a></h2>
+<p><strong>Hosts are packed on measured minutes, and host speeds are learned from each run’s legs</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/259" class="external-link">#259</a>, folding in <a href="https://github.com/NewGraphEnvironment/link/issues/163" class="external-link">#163</a>). Scored out of sample, fitted on 2026-10-17 and tested on 2026-10-23’s buckets with KTSU’s and OKAN’s stalls left out: measured minutes put each leg’s share of the mean leg within 3.6 points, and FWA segments 28.9. Equal speeds did as well as fitted ones, so the learned state starts equal.</p>
+<ul><li>
+<strong><code>study_area_buckets.R</code></strong> reads host speeds from <code>data-raw/logs/host_speeds.tsv</code>, under <code>--host-speeds</code> and ahead of equal. Speeds are keyed by <code>--host-names</code> aliases, with every cloud host one <code>cloud</code> class. It normalizes measured minutes by the host that measured them. <code>--plan-out</code> writes one row per group (it needs <code>--host-names</code>), and <code>--minutes-exclude</code> keeps a stalled group’s minutes out.</li>
+<li>
+<strong><code>data-raw/host_speeds_calibrate.R</code></strong> (new) turns that plan and a run’s <code>phases.tsv</code> into one update, damped (0.7 old + 0.3 observed) and clamped, with an append-only history. The run’s summary prints the command.
+<ul><li>It reads whole legs, never per-group means: a simulation shows those run away from the true ratio, while whole legs converge.</li>
+<li>Each leg is re-projected at the stored factor, so the speed a run was packed at never leaks in.</li>
+<li>It divides out the run-wide drift. The same groups took 13 to 16 % longer on 2026-10-23 than on 2026-10-17, which is why every leg ran 12 to 20 % over.</li>
+<li>It never learns a driver role key, and it leaves out a leg holding a group measured by a host the state does not know.</li>
+</ul></li>
+<li>
+<strong>Owed:</strong> pack the next provincial run with <code>--minutes-schema --host-names --minutes-exclude=KTSU,OKAN --plan-out</code> and calibrate it; <a href="https://github.com/NewGraphEnvironment/link/issues/163" class="external-link">#163</a>’s three-run acceptance follows. Mechanics: RUNBOOK §8d, “Learned host speeds”. Record: <code>research/study_area_run.md</code>, “How hosts are packed”. Evidence: <code>data-raw/logs/packing_259/</code>.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.69.0" id="link-0690">link 0.69.0<a class="anchor" aria-label="anchor" href="#link-0690"></a></h2>
 <p><strong>Streams break only where a present species’ access changes, as bcfishpass breaks them</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/326" class="external-link">#326</a>). Every persisted group re-segments under both configs, so the next provincial run re-models all 241 groups in <code>fresh</code> and <code>fresh_default</code>. Until then, groups within one schema sit on different segmentations.</p>

@@ -1,5 +1,45 @@
 # Changelog
 
+## link 0.69.1
+
+**Hosts are packed on measured minutes, and host speeds are learned from
+each run’s legs**
+([\#259](https://github.com/NewGraphEnvironment/link/issues/259),
+folding in
+[\#163](https://github.com/NewGraphEnvironment/link/issues/163)). Scored
+out of sample, fitted on 2026-10-17 and tested on 2026-10-23’s buckets
+with KTSU’s and OKAN’s stalls left out: measured minutes put each leg’s
+share of the mean leg within 3.6 points, and FWA segments 28.9. Equal
+speeds did as well as fitted ones, so the learned state starts equal.
+
+- **`study_area_buckets.R`** reads host speeds from
+  `data-raw/logs/host_speeds.tsv`, under `--host-speeds` and ahead of
+  equal. Speeds are keyed by `--host-names` aliases, with every cloud
+  host one `cloud` class. It normalizes measured minutes by the host
+  that measured them. `--plan-out` writes one row per group (it needs
+  `--host-names`), and `--minutes-exclude` keeps a stalled group’s
+  minutes out.
+- **`data-raw/host_speeds_calibrate.R`** (new) turns that plan and a
+  run’s `phases.tsv` into one update, damped (0.7 old + 0.3 observed)
+  and clamped, with an append-only history. The run’s summary prints the
+  command.
+  - It reads whole legs, never per-group means: a simulation shows those
+    run away from the true ratio, while whole legs converge.
+  - Each leg is re-projected at the stored factor, so the speed a run
+    was packed at never leaks in.
+  - It divides out the run-wide drift. The same groups took 13 to 16 %
+    longer on 2026-10-23 than on 2026-10-17, which is why every leg ran
+    12 to 20 % over.
+  - It never learns a driver role key, and it leaves out a leg holding a
+    group measured by a host the state does not know.
+- **Owed:** pack the next provincial run with
+  `--minutes-schema --host-names --minutes-exclude=KTSU,OKAN --plan-out`
+  and calibrate it;
+  [\#163](https://github.com/NewGraphEnvironment/link/issues/163)’s
+  three-run acceptance follows. Mechanics: RUNBOOK §8d, “Learned host
+  speeds”. Record: `research/study_area_run.md`, “How hosts are packed”.
+  Evidence: `data-raw/logs/packing_259/`.
+
 ## link 0.69.0
 
 **Streams break only where a present species’ access changes, as
