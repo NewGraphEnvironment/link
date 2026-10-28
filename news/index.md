@@ -1,5 +1,26 @@
 # Changelog
 
+## link 0.69.3
+
+**Pins fresh at v0.44.0**, so a tuning-cost measurement names one fresh
+rather than whichever each host resolved
+([\#404](https://github.com/NewGraphEnvironment/link/issues/404),
+[\#269](https://github.com/NewGraphEnvironment/link/issues/269)).
+
+- **Output-neutral.** fresh v0.44.0 changes `R/frs_point_snap.R` (an
+  exact distance tie now breaks on the higher
+  `downstream_route_measure`, not the lowest `linear_feature_id`) and
+  adds `R/frs_migration_trial.R`. link calls neither: snapping goes
+  through its own
+  [`lnk_points_snap()`](https://newgraphenvironment.github.io/link/reference/lnk_points_snap.md),
+  and nothing in `R/` calls
+  [`fresh::frs_point_snap()`](https://newgraphenvironment.github.io/fresh/reference/frs_point_snap.html).
+  Verified against the `v0.43.0..v0.44.0` diff, which touches no other
+  file in `R/`.
+- **Adopting fresh’s tie rule in link is still owed** and is
+  [\#383](https://github.com/NewGraphEnvironment/link/issues/383), with
+  its own sweep and live tests; this bump does not start it.
+
 ## link 0.69.2
 
 **`default` breaks streams at each species’ highest fish observation on
