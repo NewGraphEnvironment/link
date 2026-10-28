@@ -749,10 +749,24 @@ run_finish_compare() {
   phase_end compare "" "$(csv_count "$ALL_WSGS")" "$([ "$COMPARE_FAIL" = "0" ] && echo ok || echo failed)"
 }
 
+# run_calibrate_hint: the command that learns host speeds from this run's legs
+# (link#259). Printed, never run: the operator decides whether a leg with a
+# stall is left out (--skip). Only where the phases file has a model row, so a
+# --recompute-only pass prints nothing; the plan is the packer's --plan-out,
+# which the driver does not know. RUNBOOK section 8d, "Learned host speeds".
+run_calibrate_hint() {
+  [ -n "${PHASES_TSV:-}" ] && [ -s "$PHASES_TSV" ] || return 0
+  awk -F'\t' '$2 == "model" { found = 1 } END { exit !found }' "$PHASES_TSV" || return 0
+  echo "  learn host speeds from this run's legs (a plan packed on --minutes-schema):"
+  echo "    Rscript data-raw/host_speeds_calibrate.R --plan=<study_area_buckets.R --plan-out> \\"
+  echo "      --phases=$PHASES_TSV [--skip=<name>:<reason>] [--dry-run]"
+}
+
 run_finish_report() {
   echo "=== summary ==="
   # Before the INCOMPLETE branch below, which exits (link#375).
   phases_report
+  run_calibrate_hint
   echo "  run WSGs:        ${RUN_WSGS:-<none>}"
   echo "  recomputed WSGs: ${ALL_WSGS:-<none>}"
   if [ -n "$ALL_WSGS" ] && [ "${COMPARE_FAIL:-0}" = "0" ]; then

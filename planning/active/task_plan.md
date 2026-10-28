@@ -69,20 +69,20 @@ are not "dispatcher-equivalent" once speeds differ. Phase 1 measures whether tha
       v0.48.0); zero weighted groups refuses
 
 ## Phase 4: Calibrator, state and audit log
-- [ ] `data-raw/host_speeds_calibrate.R --plan=<plan.tsv> --phases=<TS>_phases.tsv
+- [x] `data-raw/host_speeds_calibrate.R --plan=<plan.tsv> --phases=<TS>_phases.tsv
       [--skip=<name>:<reason>] [--dry-run]`: reads `<TS>_run_wsgs.tsv` and `<TS>_coverage.tsv` beside
       the phases file; refuses when a host's groups differ from the plan (review #4), a segment-unit
       plan (review #11), a phases file with no `model` rows (review #5); keeps the later `model` row
       per leg; drops groups not `recompute` in coverage from the projection; skips a host whose
       `account` row is not `ok` or that the operator names (review #3)
-- [ ] State `data-raw/logs/host_speeds.tsv` (name, factor, last_updated, n_runs, source_run_uid);
+- [x] State `data-raw/logs/host_speeds.tsv` (name, factor, last_updated, n_runs, source_run_uid);
       append-only `data-raw/logs/host_speeds_history.tsv` (run_uid, name, old, observed, damped,
       clamped, new, run_ratio, action incl. `skipped: <reason>`)
-- [ ] Seed the state **equal** (m1 1, cloud 1), history row citing `packing_259/fit.R` (review #1:
+- [x] Seed the state **equal** (m1 1, cloud 1), history row citing `packing_259/fit.R` (review #1:
       the 10-23 data cannot tell the classes apart)
-- [ ] `run_finish_report` (`study_area_finish.sh`) prints the calibrate command before the
+- [x] `run_finish_report` (`study_area_finish.sh`) prints the calibrate command before the
       INCOMPLETE branch; it runs nothing. Structural test in `test-study_area_finish.R` (review #8)
-- [ ] RUNBOOK §8d: how speeds are learned, where the state lives, the precedence, the name rule, and
+- [x] RUNBOOK §8d: how speeds are learned, where the state lives, the precedence, the name rule, and
       that a run must pack on `--minutes-schema` to be calibrated (review #11)
 
 ## Owed at the end (reported, done after merge)
