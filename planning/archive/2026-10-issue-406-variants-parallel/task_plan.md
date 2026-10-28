@@ -86,7 +86,7 @@ The bound from the serial numbers (`analyze.R`, longest-first greedy): four jobs
 
 - [x] README `## Measurement` and `## Evidence` sections. The verdict states the default width to
       recommend and the database ceiling, beside #374's.
-- [ ] Fill #406's line on #377 ("Measured: …"), and edit #406's body if the measurement changes
+- [x] Fill #406's line on #377 ("Measured: …"), and edit #406's body if the measurement changes
       what it says.
 - [x] Add a CLAUDE.md Status entry. NEWS entry and patch version bump as the final commit.
 
@@ -100,8 +100,8 @@ Approved by the operator 2026-10-28 ("go all phases to pr").
 
 - [x] Tests pass (`devtools::test()`; no package R code changes, so this is the regression check)
 - [x] `/code-check` clean (once over the branch with `/code-check branch`)
-- [ ] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion
+- [x] PWF checkboxes match landed work
+- [x] `/planning-archive` on completion
 
 Verification is the digest identity across widths 1, 2, 4 and 8 (Phase 2), the comparison's proven
 failure on a known-different pair, and `analyze.R`'s assertion that each pass's steps still sum to its

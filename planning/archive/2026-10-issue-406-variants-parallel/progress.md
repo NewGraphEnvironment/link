@@ -20,3 +20,5 @@
 - Tests: `devtools::test()` 4518 pass, 0 fail, 0 warn, 0 skip (22:34 UTC, after the run).
 - Phase 3: README measurement, CLAUDE.md status, NEWS, 0.69.4. The #377 line is filled once
   the PR exists.
+- #377's #406 line filled with the measurement (box left for the merge). #406's body still
+  reads correctly against the measurement, so it was not edited. Archived.
