@@ -48,7 +48,7 @@ false-positive check."><meta property="og:image" content="https://newgraphenviro
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Validate modelled habitat against fish observations</h1>
-      <small class="dont-index">Source: <a href="https://github.com/NewGraphEnvironment/link/blob/v0.69.1/R/lnk_habitat_validate.R" class="external-link"><code>R/lnk_habitat_validate.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/R/lnk_habitat_validate.R" class="external-link"><code>R/lnk_habitat_validate.R</code></a></small>
       <div class="d-none name"><code>lnk_habitat_validate.Rd</code></div>
     </div>
 
@@ -237,21 +237,28 @@ without <code>match_type</code> or <code>source</code>. Pass a subset to score h
     <h2 id="which-segment-an-observation-is-on">Which segment an observation is on<a class="anchor" aria-label="anchor" href="#which-segment-an-observation-is-on"></a></h2>
 
 
-<p>The pipeline breaks streams at observations, so most points sit on a
-segment boundary. The segment <strong>starting</strong> within 1 m of the point (the
-upstream one) is used, else the one containing it. A location with no
-segment is counted in <code>n_unattached</code> and nowhere else. All joins between
+<p>The segment <strong>starting</strong> within 1 m of the point (the upstream one) is
+used, else the one containing it. Whether a point starts a segment
+depends on the bundle: under <code>pipeline: observation_breaks: all</code> (the
+<code>bcfishpass</code> bundle) streams break at every observation, so most points
+do; under <code>top_per_species</code> (the <code>default</code> bundle) only each species' top
+observation on a line breaks it, so most points sit inside a segment. A
+location with no segment is counted in <code>n_unattached</code> and nowhere else. All joins between
 <code>streams</code>, <code>streams_access</code> and <code>streams_habitat_&lt;sp&gt;</code> are on the full key
 <code>(id_segment, watershed_group_code)</code>: <code>id_segment</code> repeats across groups.</p>
 <p><code>buffer_m &gt; 0</code> also counts an observation as captured when modelled
 habitat starts within <code>buffer_m</code> metres <strong>upstream</strong> along the same
 <code>blue_line_key</code> and WSG, because observation points often mark the
 downstream end of a sampled site. It follows the mainstem only (never a
-tributary), stops at the WSG boundary, and is measured along the stream,
-so it does not depend on segmentation. Accessibility is always the point's
-own segment. Near lakes the buffer reaches connector flow lines, which
-are rearing without any threshold test, so buffered rearing capture there
-says nothing about thresholds.</p>
+tributary) and stops at the WSG boundary: it counts a segment whose start
+lies between the start of the point's own segment and <code>buffer_m</code> above
+the point, measured along the stream. Capture still moves with
+segmentation: where breaks merge segments, a segment's start and its
+gradient (so its spawning and rearing flags) change, and so do the point's
+own segment and which segments start within the buffer. Accessibility is
+always the point's own segment. Near lakes the buffer reaches connector
+flow lines, which are rearing without any threshold test, so buffered
+rearing capture there says nothing about thresholds.</p>
     </div>
     <div class="section level2">
     <h2 id="reading-the-numbers">Reading the numbers<a class="anchor" aria-label="anchor" href="#reading-the-numbers"></a></h2>
@@ -264,9 +271,9 @@ The spawning and rearing flags are gated by the pipeline's own
 <code>share_spawning</code> is not strictly a subset of <code>share_accessible</code>.</p></li>
 <li><p><strong>Accessible capture is partly circular.</strong> Observations are pipeline
 inputs: they lift barriers (<code>observation_threshold</code> in
-<code>parameters_fresh.csv</code>), they are break points, and where
-<code>apply_habitat_overlay</code> is on, <code>user_habitat_classification</code> forces
-habitat. Spawning and rearing capture is the score.
+<code>parameters_fresh.csv</code>), they break streams (every one, or each
+species' top per line under <code>pipeline: observation_breaks: top_per_species</code>), and where <code>apply_habitat_overlay</code> is on,
+<code>user_habitat_classification</code> forces habitat. Spawning and rearing capture is the score.
 <code>n_in_uhc_spawn</code> / <code>n_in_uhc_rear</code> count locations inside a
 <code>user_habitat_classification</code> reach confirming that habitat type for the
 species (indicator 1) anywhere in the window capture reads (the

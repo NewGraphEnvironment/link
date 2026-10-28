@@ -194,23 +194,31 @@ records (by project, date or WSG).
 
 ## Which segment an observation is on
 
-The pipeline breaks streams at observations, so most points sit on a
-segment boundary. The segment **starting** within 1 m of the point (the
-upstream one) is used, else the one containing it. A location with no
-segment is counted in `n_unattached` and nowhere else. All joins between
-`streams`, `streams_access` and `streams_habitat_<sp>` are on the full
-key `(id_segment, watershed_group_code)`: `id_segment` repeats across
+The segment **starting** within 1 m of the point (the upstream one) is
+used, else the one containing it. Whether a point starts a segment
+depends on the bundle: under `pipeline: observation_breaks: all` (the
+`bcfishpass` bundle) streams break at every observation, so most points
+do; under `top_per_species` (the `default` bundle) only each species'
+top observation on a line breaks it, so most points sit inside a
+segment. A location with no segment is counted in `n_unattached` and
+nowhere else. All joins between `streams`, `streams_access` and
+`streams_habitat_<sp>` are on the full key
+`(id_segment, watershed_group_code)`: `id_segment` repeats across
 groups.
 
 `buffer_m > 0` also counts an observation as captured when modelled
 habitat starts within `buffer_m` metres **upstream** along the same
 `blue_line_key` and WSG, because observation points often mark the
 downstream end of a sampled site. It follows the mainstem only (never a
-tributary), stops at the WSG boundary, and is measured along the stream,
-so it does not depend on segmentation. Accessibility is always the
-point's own segment. Near lakes the buffer reaches connector flow lines,
-which are rearing without any threshold test, so buffered rearing
-capture there says nothing about thresholds.
+tributary) and stops at the WSG boundary: it counts a segment whose
+start lies between the start of the point's own segment and `buffer_m`
+above the point, measured along the stream. Capture still moves with
+segmentation: where breaks merge segments, a segment's start and its
+gradient (so its spawning and rearing flags) change, and so do the
+point's own segment and which segments start within the buffer.
+Accessibility is always the point's own segment. Near lakes the buffer
+reaches connector flow lines, which are rearing without any threshold
+test, so buffered rearing capture there says nothing about thresholds.
 
 ## Reading the numbers
 
@@ -224,7 +232,9 @@ capture there says nothing about thresholds.
 
 - **Accessible capture is partly circular.** Observations are pipeline
   inputs: they lift barriers (`observation_threshold` in
-  `parameters_fresh.csv`), they are break points, and where
+  `parameters_fresh.csv`), they break streams (every one, or each
+  species' top per line under
+  `pipeline: observation_breaks: top_per_species`), and where
   `apply_habitat_overlay` is on, `user_habitat_classification` forces
   habitat. Spawning and rearing capture is the score. `n_in_uhc_spawn` /
   `n_in_uhc_rear` count locations inside a `user_habitat_classification`

@@ -36,7 +36,7 @@ declarations, pipeline knobs, provenance — but no parsed data."><meta property
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Load a Pipeline Config Bundle (Manifest)</h1>
-      <small class="dont-index">Source: <a href="https://github.com/NewGraphEnvironment/link/blob/v0.69.1/R/lnk_config.R" class="external-link"><code>R/lnk_config.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/R/lnk_config.R" class="external-link"><code>R/lnk_config.R</code></a></small>
       <div class="d-none name"><code>lnk_config.Rd</code></div>
     </div>
 
@@ -78,9 +78,11 @@ with <code>path</code> (resolved absolute path) and optionally <code>source</cod
 (<code>"&lt;source&gt;/&lt;file_name&gt;"</code> — keys into crate's registry to
 dispatch ingest via <code><a href="https://newgraphenvironment.github.io/crate/reference/crt_ingest.html" class="external-link">crate::crt_ingest()</a></code>)</p></li>
 <li><p><code>pipeline</code> — named list of pipeline knobs
-(<code>apply_habitat_overlay</code>, <code>break_order</code>, <code>cluster</code>,
-<code>spawn_connected</code>, <code>discharge_fill</code>, <code>discharge_source</code>). A
-<code>discharge_source</code> other than <code>fwapg</code> or <code>wet</code> is an error at load.</p></li>
+(<code>apply_habitat_overlay</code>, <code>break_order</code>, <code>observation_breaks</code>,
+<code>cluster</code>, <code>spawn_connected</code>, <code>discharge_fill</code>, <code>discharge_source</code>).
+A <code>discharge_source</code> other than <code>fwapg</code> or <code>wet</code>, or an
+<code>observation_breaks</code> other than <code>all</code> or <code>top_per_species</code>, is an
+error at load.</p></li>
 <li><p><code>provenance</code> — named list of per-file provenance metadata,
 keyed by file path relative to <code>dir</code>. Drift detection against
 these checksums lives in <code><a href="lnk_config_verify.html">lnk_config_verify()</a></code>.</p></li>

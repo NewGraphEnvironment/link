@@ -204,6 +204,97 @@ schema for diagnostics, and how this compares with bcfishpass is
 \#196; failed with `barriers_bt_min_id does not exist`.)
 `barriers_per_sp` mechanically requires the *feature view* shape.
 
+### 2c. Observation breaks: where a fish record cuts a stream (link#396)
+
+`observations` is the first break source
+([`lnk_pipeline_break()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_break.md)),
+built by `.lnk_pipeline_break_obs()` from the AOI’s filtered
+`<schema>.observations` into `<schema>.observations_breaks`. Which
+positions it holds is the bundle’s `pipeline: observation_breaks:`,
+checked when the manifest loads:
+
+| value | positions | bundles |
+|----|----|----|
+| `all` (also when absent) | every observation, rounded to the metre, as bcfishpass cuts | `bcfishpass`, `default_extrabreaks`, `default_rearbreaks` |
+| `top_per_species` | on each `blue_line_key`, each species’ farthest-upstream observation | `default`, and `default_tuned` by inheritance |
+
+**What reads an observation break.** Only `access_<sp>` code 2
+(“accessible, and the species is observed upstream”) against code 1. The
+access walk
+([`lnk_pipeline_access()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_access.md),
+`frs_network_features(direction = "upstream", include_equivalents = TRUE)`)
+reads `<schema>.observations` itself, every record, not the breaks
+table, and a same-line record counts as upstream of a segment when its
+measure is above the segment’s start or within 1 m of it. So code 2 is a
+property of a segment’s start, and a species’ own top break never
+changes its own code: the segment starting at the top still reads 2.
+Species X turns from 2 to 1 at the **first cut more than 1 m above its
+top**, whatever made that cut. Under `all` that is often another
+species’ lower record; under `top_per_species` it is the next of the
+line’s FWA ends, other break sources and other species’ tops. A kept top
+matters as the place where species recorded only below it turn to 1.
+Lifts count observations point against point
+([`lnk_barrier_overrides()`](https://newgraphenvironment.github.io/link/reference/lnk_barrier_overrides.md)),
+and the mapping code and habitat gate read `has_barriers_<sp>_dnstr` and
+`access = 0` against `> 0`; none needs a break. Nothing in link tells 2
+from 1 (every reader tests `IN (1, 2)`, `> 0` or `= 0`); bcfishpass’s
+own `aw_linear_summary()` does, on its own tables
+(`data-raw/logs/observation_breaks_396/readers_code2.md`).
+
+**The access changes follow from one fact: a segment’s codes depend only
+on where it starts.** Both tests in the walk are monotone in the start:
+a record counts as upstream when its measure is at least start − 1, a
+barrier as downstream when at most start + 1, and a segment never spans
+a confluence (FWA ends cut in every build), so the tributary tests are
+constant within one: a tributary’s records count for every segment of
+the feature below its mouth, whatever its start, and for no segment
+above. So when a break goes and a segment now starts lower, its upper
+part can only open or gain “observed upstream”; when a segment now
+starts higher, the reverse. Fewer observation breaks mostly move starts
+down:
+
+- **1 to 2 at a species’ top**, the main change. Where a removed
+  record’s rounded position lay more than 1 m above X’s raw top and
+  below the next kept cut, the segment starting at X’s top swallows it
+  and reads X = 2 above it.
+- **Blocked to open,** where a merged segment’s lower start puts a
+  barrier more than 1 m above it.
+
+**Some starts move up, because the 1 m rules stack near a removed
+break.** Breaks are rounded to the metre while the walk compares raw
+measures, and a later source cuts only more than 1 m from the current
+segment ends
+([`fresh::frs_break_apply()`](https://newgraphenvironment.github.io/fresh/reference/frs_break_apply.html)),
+observations being the first source. So while an observation cut stands,
+a barrier, crossing or other break within 1 m of it does not cut; once
+the observation goes, that break cuts at its own position, up to about 2
+m higher. A start that rises can turn a 1 m sliver or a whole segment
+from open to blocked (a barrier 1 to 1.5 m above the observation cut:
+the metre-rounding defect of link#349, fresh#258) or from 2 to 1 (a
+released break about 2 m above X’s top).
+
+The recompute
+([`lnk_access()`](https://newgraphenvironment.github.io/link/reference/lnk_access.md))
+passes no observations and keeps a prior 2, so a recompute after a
+re-model keeps these.
+`data-raw/logs/observation_breaks_396/pre_post_diff.R` checks the
+direction rule on every piece: any change against the direction its
+start moved, or with the start unmoved, is a defect. The set that would
+keep nearly every turn to 1 where `all` puts it is smaller than the
+tops: per species, the lowest record of any species more than 1 m above
+its raw top (`exact_set.sql`). It is near-exact, not exact, and dropped:
+the tops stay, because putting each species’ boundary at its highest
+record (#399) needs exactly them. `research/observation_breaks.md` has
+the counts.
+
+**Omitting `observations` from `break_order`** removes its segmentation
+only: code 2 is still computed, at the resolution of the segments left.
+
+**The validator** attaches an observation to the segment starting within
+1 m of it, else the one holding it, so it scores the same records
+whatever breaks a bundle takes. Capture shares still move with
+segmentation (merged segments take a new gradient).
+
 ------------------------------------------------------------------------
 
 ## 3. Access: `lnk_pipeline_access()`
