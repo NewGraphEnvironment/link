@@ -11,7 +11,10 @@
 -- barriers_definite, habitat_endpoints, crossings). Those come from :wk, the
 -- working schema of the last build of the group on this host (the bcfishpass
 -- config on m4), so the coincidence counts are an estimate; Phase 4 counts the
--- segments exactly.
+-- segments exactly. Observation positions are all tested in one
+-- frs_break_apply() call against the segments' original ends, so two of them
+-- 1 m apart both cut: dropping one saves a segment. A later source within 1 m
+-- of a removed position cuts in its place, so that one saves nothing.
 WITH obs AS (
   SELECT blue_line_key AS blk, species_code AS sp,
          round(downstream_route_measure) AS m
@@ -43,9 +46,7 @@ flag AS (
   SELECT p.blk, p.m,
          (t.blk IS NOT NULL) AS kept,
          EXISTS (SELECT 1 FROM other o
-                 WHERE o.blk = p.blk AND abs(o.m - p.m) <= 1) AS near_other,
-         EXISTS (SELECT 1 FROM tops k
-                 WHERE k.blk = p.blk AND k.m <> p.m AND abs(k.m - p.m) <= 1) AS near_top
+                 WHERE o.blk = p.blk AND abs(o.m - p.m) <= 1) AS near_other
   FROM pos p LEFT JOIN tops t ON t.blk = p.blk AND t.m = p.m
 )
 SELECT :'wsg' AS wsg,
@@ -57,6 +58,5 @@ SELECT :'wsg' AS wsg,
        count(*) FILTER (WHERE kept AND NOT near_other)               AS tops_cutting,
        count(*) FILTER (WHERE kept AND near_other)                   AS tops_on_other_cut,
        count(*) FILTER (WHERE NOT kept)                              AS removed,
-       count(*) FILTER (WHERE NOT kept AND NOT near_other AND NOT near_top)
-                                                                     AS removed_saving_a_segment
+       count(*) FILTER (WHERE NOT kept AND NOT near_other)            AS removed_saving_a_segment
 FROM flag;

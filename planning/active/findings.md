@@ -80,11 +80,11 @@ Producers in `data-raw/logs/observation_breaks_396/`: `build_obs.R` builds `defa
 |---|---|---|---|---|---|---|
 | PARS | 1,018 | 593 | 244 | 41.1 % | 570 | 337 |
 | LKEL | 511 | 188 | 111 | 59.0 % | 156 | 66 |
-| BULK | 2,887 | 1,185 | 585 | 49.4 % | 1,081 | 550 |
-| ELKR | 3,563 | 1,923 | 431 | 22.4 % | 1,817 | 1,423 |
-| province | 232,773 | 63,282 | 28,729 | 45.4 % | | |
+| BULK | 2,887 | 1,185 | 585 | 49.4 % | 1,081 | 552 |
+| ELKR | 3,563 | 1,923 | 431 | 22.4 % | 1,817 | 1,426 |
+| province | 232,773 | 63,282 | 28,876 | 45.6 % | | |
 
-The province figure is on `default`'s presence filter (each record by its own group), so it is lower than the exploration probe's unfiltered 81,264 → 40,159.
+The province figure is on `default`'s presence filter (each record by its own group), with tops taken per group as each build takes them (review round 1), so it is lower than the exploration probe's unfiltered 81,264 → 40,159. Review round 1 also found the segment column undercounting: two observation positions 1 m apart both cut in one `frs_break_apply()` call, so a removed position near a kept top still saves a segment (BULK 550 → 552, ELKR 1,423 → 1,426).
 
 **The 1 → 2 class is small** (`code2_class.csv`): pieces that read "not observed" before and "observed upstream" after, because a kept top's segment swallows a removed break above it and the species is not observed up any tributary above. PARS 0; LKEL 1 piece, 0.25 km (CO); BULK 17 pieces, 3.36 km over eight species; ELKR 16 pieces, 6.37 km (BT 2.29, CT 1.73, DV 2.35).
 

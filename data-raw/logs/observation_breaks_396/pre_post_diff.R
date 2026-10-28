@@ -8,10 +8,16 @@
 # Each piece carries both sides' access_<sp>, has_barriers_<sp>_dnstr,
 # mapping_code_<sp> and habitat flags. Pieces under 1 cm are dropped: a
 # segment's upstream measure can overshoot the next one's start by up to
-# 3.93 mm within one side (FWA). Expected: no 0 <-> {1, 2}, no 2 -> 1, no
-# has_barriers change, and 1 -> 2 only on AFTER segments starting within 1 m of
-# a kept top of that species (zz396_cuts.obs_<wsg>, build_obs.R). Habitat flags
-# and mapping codes may move where merged pieces take a new gradient.
+# 3.93 mm within one side (FWA). Expected: no 2 -> 1 (slivers included); 1 -> 2 only on AFTER
+# segments starting within 1 m of a kept top of that species
+# (zz396_cuts.obs_<wsg>, build_obs.R); and no 0 <-> {1, 2} or has_barriers
+# change, except on boundary slivers. Observations are the first break source,
+# and a later source cuts only more than 1 m from the current segment ends, so
+# a barrier or crossing within 1 m of a removed observation cut did not cut
+# before and cuts now, moving that boundary by up to 1 m (breaks are rounded to
+# the metre, so by 1 m). Pieces under 1.01 m are counted apart as `sliver_*`.
+# Habitat flags and mapping codes may move where merged pieces take a new
+# gradient.
 # Writes pre_post_diff.csv and stops if the overlap does not cover both sides.
 pkgload::load_all(quiet = TRUE)
 conn <- lnk_db_conn(dbname = "fwapg", host = "localhost", port = 5432L,
@@ -79,7 +85,8 @@ for (wsg in wsgs) {
                 a.wetland_rearing AS wr_a, b.wetland_rearing AS wr_b,
                 EXISTS (SELECT 1 FROM tops t
                          WHERE t.blk = b.blk AND abs(t.m - b.dm) <= 1) AS b_at_top,
-                least(a.um, b.um) - greatest(a.dm, b.dm) AS len
+                least(a.um, b.um) - greatest(a.dm, b.dm) AS len,
+                least(a.um, b.um) - greatest(a.dm, b.dm) < 1.01 AS sliver
            FROM a JOIN b
              ON a.blk = b.blk AND a.dm < b.um AND b.dm < a.um
           WHERE least(a.um, b.um) - greatest(a.dm, b.dm) >= 0.01)
@@ -90,14 +97,18 @@ for (wsg in wsgs) {
               (SELECT count(*) FROM a) AS seg_pre,
               (SELECT count(*) FROM b) AS seg_post,
               bool_or(acc_a <> -9) AS present,
-              coalesce(sum(len) FILTER (WHERE acc_a = 0 AND acc_b IN (1, 2)), 0) / 1000 AS km_acc_0_to_open,
-              coalesce(sum(len) FILTER (WHERE acc_a IN (1, 2) AND acc_b = 0), 0) / 1000 AS km_acc_open_to_0,
+              coalesce(sum(len) FILTER (WHERE acc_a = 0 AND acc_b IN (1, 2) AND NOT sliver), 0) / 1000 AS km_acc_0_to_open,
+              coalesce(sum(len) FILTER (WHERE acc_a IN (1, 2) AND acc_b = 0 AND NOT sliver), 0) / 1000 AS km_acc_open_to_0,
               coalesce(sum(len) FILTER (WHERE acc_a = 2 AND acc_b = 1), 0) / 1000 AS km_acc_2_to_1,
               coalesce(sum(len) FILTER (WHERE acc_a = 1 AND acc_b = 2 AND b_at_top), 0) / 1000 AS km_acc_1_to_2_at_top,
               coalesce(sum(len) FILTER (WHERE acc_a = 1 AND acc_b = 2 AND NOT b_at_top), 0) / 1000 AS km_acc_1_to_2_elsewhere,
               coalesce(sum(len) FILTER (WHERE acc_a IS DISTINCT FROM acc_b
-                AND NOT (acc_a = 1 AND acc_b = 2)), 0) / 1000 AS km_acc_other_change,
-              coalesce(sum(len) FILTER (WHERE hb_a IS DISTINCT FROM hb_b), 0) / 1000 AS km_has_barriers_change,
+                AND NOT (acc_a = 1 AND acc_b = 2) AND NOT sliver), 0) / 1000 AS km_acc_other_change,
+              count(*) FILTER (WHERE sliver AND (acc_a IS DISTINCT FROM acc_b
+                OR hb_a IS DISTINCT FROM hb_b)) AS n_sliver_access_change,
+              coalesce(sum(len) FILTER (WHERE sliver AND (acc_a IS DISTINCT FROM acc_b
+                OR hb_a IS DISTINCT FROM hb_b)), 0) AS m_sliver_access_change,
+              coalesce(sum(len) FILTER (WHERE hb_a IS DISTINCT FROM hb_b AND NOT sliver), 0) / 1000 AS km_has_barriers_change,
               coalesce(sum(len) FILTER (WHERE mc_a IS DISTINCT FROM mc_b), 0) / 1000 AS km_mapping_code_change,
               coalesce(sum(len) FILTER (WHERE ac_a <> ac_b), 0) / 1000 AS km_accessible_flag_change,
               coalesce(sum(len) FILTER (WHERE sp_a AND NOT sp_b), 0) / 1000 AS km_spawning_lost,

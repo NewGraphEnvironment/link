@@ -204,11 +204,20 @@ breaks code 2 needs. Lifts count observations point against point
 Nothing in link tells 2 from 1 (every reader is `IN (1, 2)`); bcfishpass's own
 `aw_linear_summary()` does, on its own tables (`data-raw/logs/observation_breaks_396/readers_code2.md`).
 
-**The one access change.** A segment that starts at species X's kept top and
+**The access changes.** A segment that starts at species X's kept top and
 swallows a removed break above it reads X = 2 along its whole length, where the old
-piece above the removed break read 1, unless X is observed up a tributary above. Only
-1 to 2, never 2 to 1, never between 0 and open. The recompute (`lnk_access()`) passes
-no observations and keeps a prior 2, so a recompute after a re-model keeps it.
+piece above the removed break read 1, unless X is observed up a tributary above. That
+is 1 to 2, never 2 to 1. The recompute (`lnk_access()`) passes no observations and
+keeps a prior 2, so a recompute after a re-model keeps it.
+
+**A boundary can also move by 1 m.** Observations are the first break source, and a
+later source cuts only more than 1 m from the current segment ends
+(`fresh::frs_break_apply()`). So a barrier or crossing within 1 m of an observation
+cut did not cut, and the segment starting at the observation read it as downstream
+(1 m tolerance). Once that observation stops breaking, the barrier cuts at its own
+position, and the metre between the two positions changes side: between blocked and
+open, `has_barriers_<sp>_dnstr` and the mapping-code token with it. Breaks are
+rounded to the metre, so each such sliver is 1 m long.
 
 **Omitting `observations` from `break_order`** removes its segmentation only: code 2
 is still computed, at the resolution of the segments left.
