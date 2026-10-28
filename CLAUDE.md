@@ -11,6 +11,17 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
+## Status (2026-10-28, night) — a variant's groups run in parallel (#406)
+
+**`habitat_variants_build.R --jobs=N` (1 to 16, default 1) runs a variant's groups on a PSOCK cluster**, each worker with its own connection, longest groups first. Variants still run one after another, and only the build process writes `built.csv` and `variant_timing.csv`. Measured on #331's nine groups on m4 from #404's surviving base (`score404_*`): `--jobs=4` takes `bt_rear_wet_p10`'s pass from 6.23 to 2.10 min and the `default` pass from 8.06 to 3.02, with 45 of 45 digests identical across widths 1, 2, 4 and 8. On #331's 12-rung ladder that saves about 55 of 83 min. Use `--jobs=4`. Record: `data-raw/logs/variants_parallel_406/` (its README).
+
+**Facts not worth re-deriving:**
+- **Past four jobs the database stops paying, as #374 found for the recompute.** Eight jobs buy 10 to 13 % over four for 22 to 36 % more summed step minutes. Classify and connect contend (30 to 41 % more summed minutes at four jobs, 48 to 89 % at eight), and persist does not.
+- **`variant_timing.csv` has a `jobs` column and one `pass_wall` row per variant** (first dispatch to last return, discharge join included). Read a width's speed from `pass_wall`, never from summed steps, which grow with contention.
+- **A build at `--jobs` above 1 that ends other than "build … done" or "variant … failed in …" leaves workers and their Postgres backends writing groups after it exits**, and records none of that variant's groups. The log's `variants: workers <R pid>:<backend pid>` line names what to stop: kill those R pids and `pg_terminate_backend()` those backends before relaunching. `pkill -f workRSOCK` also kills other sessions' workers.
+- **`clusterApplyLB()` returns `NULL`, not a list, for no tasks**, so a variant with no groups in `--wsgs` takes the serial branch.
+- **Postgres's `could not truncate file … Input/output error` is the data directory's Docker Desktop bind mount**, logged ten times since 2026-10-21 during serial runs too; the drop completes.
+
 ## Status (2026-10-28, late) — where a threshold variant's pass spends its time (#404)
 
 **A variant's pass is 0.3 to 1.0 min per group on m4, and the two verification digests are 0.4 % of it.** `data-raw/habitat_variants_build.R` now times each of a pass's seven steps into `<out>/variant_timing.csv` (always on), with the discharge join, `lnk_persist_init()` and the base run's model and recompute per group as rows outside the total; `data-raw/logs/variant_cost_404/analyze.R` splits them. Measured on `bt_rear_wet_p10` over #331's nine groups (fresh 0.44.0, link `45b12b2e`, serial): classify 36.5 %, connect 30.9 %, persist 30.3 %, the access copy with `ANALYZE` 1.6 %, gate 0.3 %, the digests 0.4 %; model 67.7 / verification 0.4 / write 31.9. The `default` pass a variants run makes first (all species, four steps) is 6.8 min over the nine, half classify and half connect. The change named for #377's iteration-speed list is running a variant's groups in parallel (5.6 min to 1.6 at four jobs, about 53 min on #331's 12-rung ladder); nothing was made faster. Record: `data-raw/logs/variant_cost_404/` (its README). Classify and connect minutes per group are on fresh#275.
