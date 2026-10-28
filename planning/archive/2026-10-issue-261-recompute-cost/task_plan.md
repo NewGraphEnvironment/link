@@ -103,7 +103,7 @@ What exploration established (read-only):
 
 - [ ] Re-run `predictors.R` against the next provincial run (v0.69.0, #326 segmentation roughly halves
       segments), since every number here is on the pre-#326 build
-- [ ] File the drafted fresh / link follow-up once you approve its body
+- [x] File the drafted fresh / link follow-up once you approve its body (NewGraphEnvironment/fresh#272)
 
 ## Validation
 

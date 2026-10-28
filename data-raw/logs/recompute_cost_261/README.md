@@ -156,7 +156,7 @@ costliest groups hold 17.8 % of predicted walk time.
 #261's hypothesis is refuted, and the cost is not CHWK's alone: every group pays the
 province-wide probe. That passes #377's test for being worth fixing. The fix belongs in
 fresh's `frs_network_features()` (a feature-side prefilter that leaves its answer
-unchanged); a fresh issue is drafted, not filed. No link code changed.
+unchanged), raised as NewGraphEnvironment/fresh#272. No link code changed.
 
 ## Owed
 

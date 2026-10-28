@@ -17,11 +17,11 @@ Experimental package — breaking all the time and loving the learning curve. St
 
 **Facts not worth re-deriving:**
 - **The walks are the job:** CHWK re-run 617.6 s with walks 589.4 s; SALR 46.3 s with walks 28.2 s. Gate and mapping code are under 16 s in both. Both re-runs (from a worktree at `1d00c04c`) digest identical.
-- **A prefiltered walk returns the same features:** cutting the feature side to the group's blue lines and the ancestor-or-equal codes of its segments (index lookups, `= ANY (ARRAY(...))`; `IN (SELECT ...)` still reads the whole table). 32 of 32 walks matched; a group's walks ran 3.6× to 24.6× faster in total in eight groups, 1.2× in SETN. Estimated 36 to 51 % of the recompute's summed work; CHWK is 1.9 % of it. A fresh issue is drafted, not filed.
+- **A prefiltered walk returns the same features:** cutting the feature side to the group's blue lines and the ancestor-or-equal codes of its segments (index lookups, `= ANY (ARRAY(...))`; `IN (SELECT ...)` still reads the whole table). 32 of 32 walks matched; a group's walks ran 3.6× to 24.6× faster in total in eight groups, 1.2× in SETN. Estimated 36 to 51 % of the recompute's summed work; CHWK is 1.9 % of it. Raised as fresh#272, built from the group's own segments, not its outlet.
 - **SETN is output-bound** (4.83 M pairs, a 526 MiB sort spill) and gains 1.2×. link keeps only `has_barriers_<sp>_dnstr` from the natural arrays, so an existence test would remove that; not measured.
 - **The walk's `ORDER BY` ties for co-located features**, so their array order follows the plan. link reads only the anthropogenic array's first element (`dam_dnstr_ind`), which matched in all nine groups tried.
 - **CHWK and LFRA hold coastal codes (`970.…`) beside the Fraser main stem**, so a group's code range is not a cost predictor (SETN's is narrow, and under the same load its walks cost about what CHWK's do).
-- **Owed:** re-run `predictors.R` / `correlations.R` on the next provincial build; file the fresh issue once its body is approved.
+- **Owed:** re-run `predictors.R` / `correlations.R` on the next provincial build, and on fresh#272's release.
 
 ## Status (2026-10-27) — streams break only where a present species' access changes (#326)
 
