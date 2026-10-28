@@ -20,6 +20,28 @@ rather than whichever each host resolved
 - **Adopting fresh’s tie rule in link is still owed** and is
   [\#383](https://github.com/NewGraphEnvironment/link/issues/383), with
   its own sweep and live tests; this bump does not start it.
+- **The variants harness times each of a pass’s seven steps** into
+  `<out>/variant_timing.csv` (classify, connect, the working digest,
+  persist, the access copy with `ANALYZE`, the gate, the persisted
+  digests), with the discharge join,
+  [`lnk_persist_init()`](https://newgraphenvironment.github.io/link/reference/lnk_persist_init.md)
+  and the base run’s model and recompute per group as rows outside the
+  total. Measured on
+  [\#331](https://github.com/NewGraphEnvironment/link/issues/331)’s nine
+  groups on m4: a variant’s pass is 0.3 to 1.0 min per group, classify
+  36 %, connect 31 %, persist 30 % and the two verification digests 0.4
+  %, so the digests are ruled out as a target and the change named for
+  [\#377](https://github.com/NewGraphEnvironment/link/issues/377) is
+  running a variant’s groups in parallel (5.6 min to 1.6 over nine
+  groups at four jobs). The build runs again at all: its thresholds
+  self-check, ahead of every `--step`, had stopped on `main` since
+  [\#364](https://github.com/NewGraphEnvironment/link/issues/364)
+  because `write_thresholds()` quoted `species_code` and the edge-type
+  columns by name and
+  [\#364](https://github.com/NewGraphEnvironment/link/issues/364)’s text
+  column `rear_river_measure` broke the byte-for-byte comparison; it
+  quotes every non-numeric column now. Record:
+  `data-raw/logs/variant_cost_404/`.
 
 ## link 0.69.2
 
