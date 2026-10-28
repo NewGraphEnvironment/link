@@ -212,7 +212,6 @@ for row in "${PICKS[@]}"; do
 done
 
 notes=""
-[ -z "$ONLY" ] || notes="subset run (--only=$ONLY), not a gate"
 if [ -s "$OUT/unexercised.txt" ]; then
   notes="${notes:+$notes; }unexercised: $(paste -sd, "$OUT/unexercised.txt")"
 fi

@@ -127,7 +127,7 @@ exists <- nrow(DBI::dbGetQuery(conn, sprintf(
   "SELECT 1 FROM information_schema.tables WHERE table_schema = '%s' AND table_name = 'log_pretest'",
   schema))) > 0
 if (!exists) {
-  DBI::dbExecute(conn, sprintf(
+  invisible(DBI::dbExecute(conn, sprintf(
     "CREATE TABLE %s.log_pretest (
        run_at      timestamptz NOT NULL DEFAULT now(),
        config_name text NOT NULL,
@@ -142,10 +142,10 @@ if (!exists) {
        per_input   integer NOT NULL,
        groups      text,
        verdict     text NOT NULL CHECK (verdict IN ('pass', 'fail')),
-       notes       text)", schema))
+       notes       text)", schema)))
 }
 notes <- paste(c(why, if (nzchar(notes_in)) notes_in), collapse = "; ")
-DBI::dbExecute(conn, sprintf(
+invisible(DBI::dbExecute(conn, sprintf(
   "INSERT INTO %s.log_pretest (config_name, link_sha, link_dirty, fresh_sha, since_sha,
      until_sha, scratch, k, floor_min, per_input, groups, verdict, notes)
    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)", schema),
@@ -153,7 +153,7 @@ DBI::dbExecute(conn, sprintf(
                 if (length(fresh_sha) == 1L) fresh_sha else NA_character_,
                 range[1], range[2], scratch, k, floor_min, per_input,
                 paste(sprintf("%s:%s", picks$wsg, picks$verdict), collapse = ","),
-                overall, if (nzchar(notes)) notes else NA_character_))
+                overall, if (nzchar(notes)) notes else NA_character_)))
 DBI::dbDisconnect(conn)
 
 for (i in seq_len(nrow(picks))) {
