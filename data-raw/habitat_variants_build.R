@@ -68,15 +68,18 @@
 # connection and the longest groups dispatched first. Variants still run one
 # after another (the base pass licenses the others), and only this process
 # writes built.csv and variant_timing.csv, once a variant's groups return. A
-# group that fails stops the build after the others return; every group whose
-# checks passed is recorded first. A build killed mid-variant has recorded
-# none of that variant's groups, though the schema may hold some of them, so
-# re-run the variant before scoring it. Workers outlive a killed build, and a
-# worker's database backend outlives the worker, still writing its group. The
-# log names both ("variants: workers <R pid>:<backend pid> ..."): before
-# relaunching, kill those R pids and pg_terminate_backend() those backends,
-# or confirm in pg_stat_activity that none is left. `pkill -f workRSOCK`
-# would also stop other sessions' workers.
+# group whose code raises stops the build after the others return ("variant
+# ... failed in ..."); every group whose checks passed is recorded first.
+# Any other end of a variants build at --jobs above 1 (killed, or a worker
+# that died: "a worker died", R's "error reading from connection") records
+# none of that variant's groups, though the schema may hold some, and leaves
+# the other workers and their database backends writing their groups after
+# the build has exited. So before relaunching after any end but "build ...
+# done" or that stop, kill the R pids and pg_terminate_backend() the backends
+# the log names ("variants: workers <R pid>:<backend pid> ...", repeated by
+# the dead-worker error), or confirm in pg_stat_activity that none is left,
+# and re-run the variant before scoring it. `pkill -f workRSOCK` would also
+# stop other sessions' workers.
 #
 # Resumable: a base WSG whose streams_access is already in the base schema
 # (and, if focal, whose working schema survives) is not re-run. Variant passes
@@ -997,7 +1000,8 @@ start_cluster <- function(n) {
   })
   pids <- parallel::clusterEvalQ(cl, sprintf("%d:%d", Sys.getpid(),
     DBI::dbGetQuery(conn, "SELECT pg_backend_pid()")[[1]]))
-  say("variants: workers %s", paste(unlist(pids), collapse = " "))
+  attr(cl, "pids") <- paste(unlist(pids), collapse = " ")
+  say("variants: workers %s", attr(cl, "pids"))
   ok <- TRUE
   cl
 }
@@ -1065,9 +1069,18 @@ run_variant <- function(v, cl = NULL) {
     # Longest groups first, so the last to start is a short one.
     n_seg <- vapply(wsgs_v, n_segments_of, integer(1))
     ord <- wsgs_v[order(-n_seg, wsgs_v)]
-    res <- parallel::clusterApplyLB(cl, ord, variant_pass_lb, want = want,
-                                    v = v, cfg = cfg, sp = sp, is_mad = is_mad,
-                                    sch_base = sch_base)
+    # A group's own error comes back as a result; this catches a worker that
+    # died, whose siblings keep writing after the build exits (header).
+    res <- tryCatch(
+      parallel::clusterApplyLB(cl, ord, variant_pass_lb, want = want,
+                               v = v, cfg = cfg, sp = sp, is_mad = is_mad,
+                               sch_base = sch_base),
+      error = function(e) {
+        stop("variant ", v, ": a worker died (", conditionMessage(e), "). ",
+             "Nothing of this variant is recorded. Before relaunching, stop ",
+             "workers and backends (R pid:backend pid) ", attr(cl, "pids"),
+             call. = FALSE)
+      })
     names(res) <- ord
     # Recorded in the order the serial loop records them.
     res <- res[wsgs_v]

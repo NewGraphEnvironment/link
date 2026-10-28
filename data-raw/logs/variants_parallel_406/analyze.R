@@ -36,7 +36,9 @@ for (d in dirs) {
   s <- stats::aggregate(seconds ~ variant + watershed_group_code,
                         tm[tm$width == w & tm$in_total, ], sum)
   chk <- merge(done, s)
-  if (nrow(chk) != nrow(done) || any(abs(chk$seconds / 60 - chk$printed) > 0.051)) {
+  # Every pass with timing rows has a printed line, and every line its rows.
+  if (nrow(chk) != nrow(done) || nrow(chk) != nrow(s) ||
+      any(abs(chk$seconds / 60 - chk$printed) > 0.051)) {
     stop("steps do not sum to the printed minutes in ", d)
   }
 }
