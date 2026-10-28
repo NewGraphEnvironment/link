@@ -56,3 +56,9 @@ A pre-run gate, run on the dispatcher before `study_area_run.sh` spends anything
 
 | Error | Resolution |
 |-------|------------|
+
+## The modelling path, by call graph
+
+`data-raw/logs/pretest_372/reach.md`. link reaches fresh's internals through
+`getFromNamespace()` strings, which `codetools` does not see: the first fresh
+pass missed `frs_cluster.R` and `frs_habitat.R`. `pretest_reach()` follows them.

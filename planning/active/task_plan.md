@@ -38,14 +38,14 @@ Operator, 2026-10-23: "Provincial runs should prob be pretended with scoped test
 
 ## Phase 1: helper library, map, tests
 
-- [ ] `data-raw/pretest.R` (pure functions, sourced by the scripts and the tests):
+- [x] `data-raw/pretest.R` (pure functions, sourced by the scripts and the tests):
   - the changed files for link (`git diff --name-only <since>..<until> -- R/ inst/extdata/configs/<config>/`)
   - the changed files for fresh (the `Remotes:` pin at each end; `git -C <fresh repo> diff --name-only` between the tags; refuse when a tag is missing locally)
   - matching files to map rows, and reporting the unmatched ones
   - the bound per group
   - the verdict per group (`pass`, `failed`, `bound`, `no_row`)
-- [ ] `data-raw/pretest_inputs.csv` seeded for every file in link's `R/` and for the fresh files changed v0.39.0..v0.44.0. Inputs: `near_river_conn`, `segments`, `observations`, `crossings`, `dams`, `any`, `none`. The CSV's `why` column records each row's reasoning
-- [ ] `tests/testthat/test-pretest.R`:
+- [x] `data-raw/pretest_inputs.csv` seeded for every file in link's `R/` and for the fresh files changed v0.39.0..v0.44.0. Inputs: `near_river_conn`, `segments`, `observations`, `crossings`, `dams`, `any`, `none`. The CSV's `why` column records each row's reasoning
+- [x] `tests/testthat/test-pretest.R`:
   - every `R/` file matches a row
   - an unmapped file is reported
   - `any` and `none` behave as defined

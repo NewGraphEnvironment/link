@@ -1,0 +1,137 @@
+repo,pattern,input,why
+link,^R/link-package\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
+link,^R/lnk_artifact\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
+link,^R/lnk_baseline_read\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
+link,^R/lnk_config_verify\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
+link,^R/lnk_config\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
+link,^R/lnk_db_conn\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
+link,^R/lnk_inputs_verify\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
+link,^R/lnk_load_overrides\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
+link,^R/lnk_log\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
+link,^R/lnk_stamp\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
+link,^R/utils\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
+link,^R/lnk_pipeline_run\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
+link,^R/lnk_pipeline_setup\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
+link,^R/lnk_pipeline_species\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
+link,^R/lnk_presence\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
+link,^R/lnk_species_pooling\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
+link,^R/lnk_preflight_discharge\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
+link,^R/lnk_pipeline_break\.R$,segments,cost scales with the group's segments
+link,^R/lnk_pipeline_persist\.R$,segments,cost scales with the group's segments
+link,^R/lnk_persist_init\.R$,segments,cost scales with the group's segments
+link,^R/lnk_pipeline_access\.R$,segments,cost scales with the group's segments
+link,^R/lnk_pipeline_mapping_code\.R$,segments,cost scales with the group's segments
+link,^R/lnk_mapping_code\.R$,segments,cost scales with the group's segments
+link,^R/lnk_habitat_gate\.R$,segments,cost scales with the group's segments
+link,^R/lnk_barriers_views\.R$,segments,cost scales with the group's segments
+link,^R/lnk_discharge\.R$,segments,cost scales with the group's segments
+link,^R/lnk_pipeline_connect\.R$,segments,cost scales with the group's segments
+link,^R/lnk_pipeline_classify\.R$,segments,"classify runs fresh's habitat rules, whose near-river walk is sized by the longest connector run"
+link,^R/lnk_pipeline_classify\.R$,near_river_conn,"classify runs fresh's habitat rules, whose near-river walk is sized by the longest connector run"
+link,^R/lnk_pipeline_prepare\.R$,segments,"builds the base segments, the gradient barriers and their per-species reduction, the observation lifts and the dams"
+link,^R/lnk_pipeline_prepare\.R$,gradient,"builds the base segments, the gradient barriers and their per-species reduction, the observation lifts and the dams"
+link,^R/lnk_pipeline_prepare\.R$,observations,"builds the base segments, the gradient barriers and their per-species reduction, the observation lifts and the dams"
+link,^R/lnk_pipeline_prepare\.R$,dams,"builds the base segments, the gradient barriers and their per-species reduction, the observation lifts and the dams"
+link,^R/lnk_pipeline_break\.R$,observations,observations are the first break source
+link,^R/lnk_barrier_overrides\.R$,observations,counts observations upstream of each barrier
+link,^R/lnk_barriers_unify\.R$,gradient,stages and locates every barrier row
+link,^R/lnk_barriers_unify\.R$,dams,stages and locates every barrier row
+link,^R/lnk_barriers_emit\.R$,gradient,stages and locates every barrier row
+link,^R/lnk_barriers_emit\.R$,dams,stages and locates every barrier row
+link,^R/lnk_pipeline_crossings\.R$,crossings,"builds, matches and snaps the group's crossings"
+link,^R/lnk_crossings_union\.R$,crossings,"builds, matches and snaps the group's crossings"
+link,^R/lnk_crossings_apply_overrides\.R$,crossings,"builds, matches and snaps the group's crossings"
+link,^R/lnk_pipeline_load\.R$,crossings,"builds, matches and snaps the group's crossings"
+link,^R/lnk_pipeline_pscis_build\.R$,crossings,"builds, matches and snaps the group's crossings"
+link,^R/lnk_points_snap\.R$,crossings,"builds, matches and snaps the group's crossings"
+link,^R/lnk_override\.R$,crossings,"builds, matches and snaps the group's crossings"
+link,^R/lnk_wsg_downstream_check\.R$,dams,tests each dam below the group's outlet
+link,^R/lnk_wsg_resolve\.R$,dams,tests each dam below the group's outlet
+link,^R/lnk_access\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
+link,^R/lnk_aggregate\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
+link,^R/lnk_baseline_append\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
+link,^R/lnk_baseline_current\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
+link,^R/lnk_bucket_get\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
+link,^R/lnk_bucket_log\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
+link,^R/lnk_catalog\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
+link,^R/lnk_compare_mapping_code\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
+link,^R/lnk_compare_rollup\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
+link,^R/lnk_compare_wsg\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
+link,^R/lnk_db_load\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
+link,^R/lnk_fanout_judge\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
+link,^R/lnk_habitat_validate_band\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
+link,^R/lnk_habitat_validate\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
+link,^R/lnk_load\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
+link,^R/lnk_match\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
+link,^R/lnk_parity_annotate\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
+link,^R/lnk_preflight_fresh\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
+link,^R/lnk_preflight_parity\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
+link,^R/lnk_preflight_stamp\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
+link,^R/lnk_preflight_vintage\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
+link,^R/lnk_rollup_wsg\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
+link,^R/lnk_rules_build\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
+link,^R/lnk_scenario_export\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
+link,^R/lnk_score\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
+link,^R/lnk_source\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
+link,^R/lnk_thresholds\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
+link,^inst/extdata/configs/{config}/(rules\.yaml|dimensions\.csv|parameters_habitat_thresholds\.csv|parameters_habitat_method\.csv)$,segments,"habitat rules and thresholds, including the near-river pair"
+link,^inst/extdata/configs/{config}/(rules\.yaml|dimensions\.csv|parameters_habitat_thresholds\.csv|parameters_habitat_method\.csv)$,near_river_conn,"habitat rules and thresholds, including the near-river pair"
+link,^inst/extdata/configs/{config}/parameters_fresh\.csv$,segments,access thresholds and observation-lift parameters
+link,^inst/extdata/configs/{config}/parameters_fresh\.csv$,gradient,access thresholds and observation-lift parameters
+link,^inst/extdata/configs/{config}/parameters_fresh\.csv$,observations,access thresholds and observation-lift parameters
+link,^inst/extdata/configs/{config}/config\.yaml$,any,"pipeline knobs (break sources, observation breaks, dams, discharge)"
+link,^inst/extdata/configs/{config}/config\.yaml$,segments,"pipeline knobs (break sources, observation breaks, dams, discharge)"
+link,^inst/extdata/configs/{config}/config\.yaml$,observations,"pipeline knobs (break sources, observation breaks, dams, discharge)"
+link,^inst/extdata/configs/{config}/config\.yaml$,dams,"pipeline knobs (break sources, observation breaks, dams, discharge)"
+link,^inst/extdata/configs/{config}/(species_groups|species_pooling)\.csv$,observations,which observation species count
+link,^inst/extdata/configs/{config}/overrides/(user_modelled_crossing_fixes[_0-9]*|user_pscis_barrier_status|pscis_modelledcrossings_streams_xref|user_crossings_misc)\.csv$,crossings,crossing corrections
+link,^inst/extdata/configs/{config}/overrides/(cabd_[a-z_]+)\.csv$,dams,"dam additions, exclusions and passability"
+link,^inst/extdata/configs/{config}/overrides/(user_barriers_definite|user_barriers_definite_control|observation_exclusions)\.csv$,observations,barrier controls and observation exclusions
+link,^inst/extdata/configs/{config}/overrides/(user_barriers_definite|user_barriers_definite_control|observation_exclusions)\.csv$,gradient,barrier controls and observation exclusions
+link,^inst/extdata/configs/{config}/overrides/(user_habitat_classification|dfo_known_sockeye_lakes|wsg_species_presence|wcrp_watersheds)\.csv$,segments,habitat overlays and species presence
+link,^inst/extdata/configs/{config}/(.*/)?README\.md$,none,documentation
+fresh,^R/frs_near_river\.R$,near_river_conn,the near-river walk; its prefilter is distance_max plus the longest connector run
+fresh,^R/frs_habitat_classify\.R$,segments,habitat classification; calls the near-river walk when a rule asks
+fresh,^R/frs_habitat_classify\.R$,near_river_conn,habitat classification; calls the near-river walk when a rule asks
+fresh,^R/frs_habitat_predicates\.R$,segments,habitat classification; calls the near-river walk when a rule asks
+fresh,^R/frs_habitat_predicates\.R$,near_river_conn,habitat classification; calls the near-river walk when a rule asks
+fresh,^R/frs_habitat\.R$,segments,cost scales with the group's segments
+fresh,^R/frs_habitat_overlay\.R$,segments,cost scales with the group's segments
+fresh,^R/frs_cluster\.R$,segments,cost scales with the group's segments
+fresh,^R/frs_order_child\.R$,segments,cost scales with the group's segments
+fresh,^R/frs_edge_types\.R$,segments,cost scales with the group's segments
+fresh,^R/frs_params\.R$,segments,cost scales with the group's segments
+fresh,^R/frs_break\.R$,segments,cost scales with the group's segments
+fresh,^R/frs_network_features\.R$,segments,cost scales with the group's segments
+fresh,^R/frs_barriers_minimal\.R$,gradient,reduces barrier positions per flow path
+fresh,^R/frs_candidates_pick\.R$,crossings,picks a modelled crossing per PSCIS crossing
+fresh,^R/frs_wsg_drainage\.R$,dams,the drainage closure the downstream guard walks
+fresh,^R/(utils|frs_col_generate|frs_col_join|frs_db_query)\.R$,any,helpers every step calls
+fresh,^R/fresh-package\.R$,none,"not reached from link's modelling path at fresh v0.44.0 (call graph, data-raw/logs/pretest_372/reach.md)"
+fresh,^R/frs_aggregate\.R$,none,"not reached from link's modelling path at fresh v0.44.0 (call graph, data-raw/logs/pretest_372/reach.md)"
+fresh,^R/frs_categorize\.R$,none,"not reached from link's modelling path at fresh v0.44.0 (call graph, data-raw/logs/pretest_372/reach.md)"
+fresh,^R/frs_channel_width\.R$,none,"not reached from link's modelling path at fresh v0.44.0 (call graph, data-raw/logs/pretest_372/reach.md)"
+fresh,^R/frs_classify\.R$,none,"not reached from link's modelling path at fresh v0.44.0 (call graph, data-raw/logs/pretest_372/reach.md)"
+fresh,^R/frs_clip\.R$,none,"not reached from link's modelling path at fresh v0.44.0 (call graph, data-raw/logs/pretest_372/reach.md)"
+fresh,^R/frs_db_conn\.R$,none,"not reached from link's modelling path at fresh v0.44.0 (call graph, data-raw/logs/pretest_372/reach.md)"
+fresh,^R/frs_extract\.R$,none,"not reached from link's modelling path at fresh v0.44.0 (call graph, data-raw/logs/pretest_372/reach.md)"
+fresh,^R/frs_feature_find\.R$,none,"not reached from link's modelling path at fresh v0.44.0 (call graph, data-raw/logs/pretest_372/reach.md)"
+fresh,^R/frs_feature_index\.R$,none,"not reached from link's modelling path at fresh v0.44.0 (call graph, data-raw/logs/pretest_372/reach.md)"
+fresh,^R/frs_lake_fetch\.R$,none,"not reached from link's modelling path at fresh v0.44.0 (call graph, data-raw/logs/pretest_372/reach.md)"
+fresh,^R/frs_migration_trial\.R$,none,"not reached from link's modelling path at fresh v0.44.0 (call graph, data-raw/logs/pretest_372/reach.md)"
+fresh,^R/frs_network_downstream\.R$,none,"not reached from link's modelling path at fresh v0.44.0 (call graph, data-raw/logs/pretest_372/reach.md)"
+fresh,^R/frs_network_prune\.R$,none,"not reached from link's modelling path at fresh v0.44.0 (call graph, data-raw/logs/pretest_372/reach.md)"
+fresh,^R/frs_network_segment\.R$,none,"not reached from link's modelling path at fresh v0.44.0 (call graph, data-raw/logs/pretest_372/reach.md)"
+fresh,^R/frs_network_upstream\.R$,none,"not reached from link's modelling path at fresh v0.44.0 (call graph, data-raw/logs/pretest_372/reach.md)"
+fresh,^R/frs_network\.R$,none,"not reached from link's modelling path at fresh v0.44.0 (call graph, data-raw/logs/pretest_372/reach.md)"
+fresh,^R/frs_order_filter\.R$,none,"not reached from link's modelling path at fresh v0.44.0 (call graph, data-raw/logs/pretest_372/reach.md)"
+fresh,^R/frs_point_locate\.R$,none,"not reached from link's modelling path at fresh v0.44.0 (call graph, data-raw/logs/pretest_372/reach.md)"
+fresh,^R/frs_point_match\.R$,none,"not reached from link's modelling path at fresh v0.44.0 (call graph, data-raw/logs/pretest_372/reach.md)"
+fresh,^R/frs_point_snap\.R$,none,"not reached from link's modelling path at fresh v0.44.0 (call graph, data-raw/logs/pretest_372/reach.md)"
+fresh,^R/frs_stream_fetch\.R$,none,"not reached from link's modelling path at fresh v0.44.0 (call graph, data-raw/logs/pretest_372/reach.md)"
+fresh,^R/frs_waterbody_network\.R$,none,"not reached from link's modelling path at fresh v0.44.0 (call graph, data-raw/logs/pretest_372/reach.md)"
+fresh,^R/frs_watershed_at_measure\.R$,none,"not reached from link's modelling path at fresh v0.44.0 (call graph, data-raw/logs/pretest_372/reach.md)"
+fresh,^R/frs_watershed_split\.R$,none,"not reached from link's modelling path at fresh v0.44.0 (call graph, data-raw/logs/pretest_372/reach.md)"
+fresh,^R/frs_wetland_fetch\.R$,none,"not reached from link's modelling path at fresh v0.44.0 (call graph, data-raw/logs/pretest_372/reach.md)"
+fresh,^R/frs_wsg_species\.R$,none,"not reached from link's modelling path at fresh v0.44.0 (call graph, data-raw/logs/pretest_372/reach.md)"
+fresh,^R/zzz\.R$,none,"not reached from link's modelling path at fresh v0.44.0 (call graph, data-raw/logs/pretest_372/reach.md)"
