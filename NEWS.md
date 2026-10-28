@@ -1,12 +1,3 @@
-# link 0.70.0
-
-**A scoped pre-run gate: before a provincial run, model the groups that stress each input the code changed since the last one drives, and refuse the launch on a failure or a group past its bound** ([#372](https://github.com/NewGraphEnvironment/link/issues/372)). On 2026-10-23 the run was the first contact between new code and OKAN and KTSU, and the dispatcher lost about five hours while three cloud hosts idled.
-
-- **`data-raw/pretest_run.sh --config= --schema=`** reads the files changed since the last run in link and in fresh (between the two pins). It maps each to the inputs that drive its cost (`data-raw/pretest_inputs.csv`, one query per input in `data-raw/pretest/`: the near-river walk's connector run, segments, steep segments, observations, PSCIS crossings, dams), and models each input's top two groups into `fresh_pretest_<config>`. Each group is bounded at 3× its newest finished minutes (floor 5 min), with a wall-clock kill. An unmapped changed file refuses the gate; a file the map calls off the path is checked against the call graph.
-- **`study_area_run.sh` refuses a run no passing record clears** (`<schema>.log_pretest`, `data-raw/pretest_check.R`). A record holds while nothing on the modelling path, the fresh pin or the gate's own rules changed since the SHA it modelled, so a version bump keeps it and an `R/` edit voids it. `--pretest-note="<why>"` runs without one and records the reason.
-- **Measured:** the 0.66.6..0.68.0 range picks QUES for the walk and OKAN for dams. No input picks KTSU. The first real gate (1d00c04c to this branch) failed: TAKL and SAJR were killed at their bounds while another session ran six modelling workers on the database. So the gate now refuses to start beside any other active session (`--allow-busy` records an override) and prints the load beside each group's minutes.
-- **Owed:** a passing gate at this release, on a quiet database, before the next provincial run. Mechanics: RUNBOOK §8d, "The pre-run gate". Evidence: `data-raw/logs/pretest_372/`.
-
 # link 0.69.3
 
 **Pins fresh at v0.44.0**, so a tuning-cost measurement names one fresh rather than whichever each host resolved ([#404](https://github.com/NewGraphEnvironment/link/issues/404), [#269](https://github.com/NewGraphEnvironment/link/issues/269)).
