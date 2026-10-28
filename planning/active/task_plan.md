@@ -62,23 +62,23 @@ The bound from the serial numbers (`analyze.R`, longest-first greedy): four jobs
 
 ## Phase 2: measure on #331's nine groups (m4)
 
-- [ ] Run from a `git worktree` at the branch commit, so this checkout can take commits during the
+- [x] Run from a `git worktree` at the branch commit, so this checkout can take commits during the
       run. New `--out=data-raw/logs/variants_parallel_406/`, with #404's
       `base_habitat_digest.csv` and `closure.txt` copied in and the copy stated in the README.
       `--prefix=score404_`, `--variants=…variants_331.csv`, `--roles=…wsg_roles_331.csv`,
       `--only=bt_rear_wet_p10`.
-- [ ] Write the run decision into the README before the first build: host, load, fresh pin, widths,
+- [x] Write the run decision into the README before the first build: host, load, fresh pin, widths,
       the order of the runs.
-- [ ] `digest.R`: md5 per group of every persisted table of `score404_bt_rear_wet_p10`
+- [x] `digest.R`: md5 per group of every persisted table of `score404_bt_rear_wet_p10`
       (`streams`, `streams_access`, `streams_habitat_bt`) and of each working schema's
       `streams_habitat`, written to `digests_<jobs>.csv`.
-- [ ] Builds at `--jobs` 1, 2, 4 and 8 in turn, each followed by `digest.R`. Record the load and
+- [x] Builds at `--jobs` 1, 2, 4 and 8 in turn, each followed by `digest.R`. Record the load and
       the other backends at each launch (`launch_state.txt`, as #404 did).
-- [ ] `compare.R`: every digest identical across the four widths, and the `default` pass's digest
+- [x] `compare.R`: every digest identical across the four widths, and the `default` pass's digest
       check passed in every worker (or the build would have stopped). Prove the comparison can
       fail by pointing it once at `score404_default`'s BT habitat against the variant's, which
       must differ.
-- [ ] `analyze.R`: `pass_wall` per variant per width against #404's serial 5.6 / 6.8 min and its
+- [x] `analyze.R`: `pass_wall` per variant per width against #404's serial 5.6 / 6.8 min and its
       greedy bound of 1.6 / 1.8. Per-step seconds per width show what contends: classify and
       connect against persist and `ANALYZE`.
 
