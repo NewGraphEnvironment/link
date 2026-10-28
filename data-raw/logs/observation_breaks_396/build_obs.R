@@ -14,7 +14,7 @@ cfg <- lnk_config("default")
 loaded <- lnk_load_overrides(cfg)
 schema <- "zz396_cuts"
 DBI::dbExecute(conn, sprintf("CREATE SCHEMA IF NOT EXISTS %s", schema))
-for (wsg in c("PARS", "LKEL", "BULK", "ELKR")) {
+for (wsg in c("PARS", "LKEL", "BULK", "ELKR", "UPCE")) {
   link:::.lnk_pipeline_prep_observations(conn, wsg, loaded, schema)
   tbl <- paste0("obs_", tolower(wsg))
   DBI::dbExecute(conn, sprintf("DROP TABLE IF EXISTS %s.%s", schema, tbl))
