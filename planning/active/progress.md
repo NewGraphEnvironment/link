@@ -33,3 +33,11 @@
   print precision; now 0.05 min).
 - Full pass `--step=variants --only=bt_rear_wet_p10` launched 20:22:17 UTC
   (`build_variants.log`), no other backend on the database.
+- Full pass exited 20:36:26 UTC (13.8 min over nine groups, `default` then the variant;
+  145 timing rows). `analyze.R` on the real rows: variant pass 5.6 min over nine groups,
+  classify 36.5 / connect 30.9 / persist 30.3 / digests 0.4 %; `default` pass 6.8 min; four
+  jobs over groups 1.6 and 1.8 min. No step's median share reaches half, so no statement
+  depth. README filled (builds, measurement, verdict, evidence); verdict added to #377's
+  iteration-speed list; classify and connect minutes per group posted on fresh#275;
+  `CLAUDE.md` status and `NEWS.md` bullet written; #404's acceptance boxes ticked.
+- Worktree removed. Next: tests, `/code-check branch`, archive, PR.

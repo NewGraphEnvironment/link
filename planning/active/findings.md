@@ -99,3 +99,16 @@ into `task_plan.md`; the `write_bundle` self-check assumption was real (table ab
   annual pick built 2026-10-15T02:06:57Z (wet `acb820f`).
 - Two lints on the new script lines are the hanging-indent style the file carries 63 times
   already; left to match the file.
+
+## Measured (2026-10-28, m4, fresh 0.44.0, link 45b12b2e)
+
+- Base: 17 groups modelled in 67.1 min (LPCE 1.7 to KOTR 7.0), nine recomputes 2.4 min.
+- `bt_rear_wet_p10` over nine groups: 5.6 min; classify 2.04, connect 1.73, persist 1.69,
+  copy + ANALYZE 0.09, gate 0.02, the two digests 0.023 min (1.4 s). Model 67.7 /
+  verification 0.4 / write 31.9 %.
+- `default` pass (all species, four steps): 6.8 min; classify 3.31, connect 3.48.
+- Scaling: classify and connect linear in segment count (25,044 to 46,004); persist from a
+  0.1 min floor. UBTN and LHAF connect sit above the fit at a load of 6.3 from elsewhere.
+- Four jobs over groups: variant 5.6 → 1.6 min, `default` 6.8 → 1.8.
+- 2026-10-15 m1 log, same variant and groups: 9.8 min (variant), 12.0 (`default`), base 42.7.
+- REVL's pre-flight and full-pass digests are equal (`778f7c72`, `15073c87`).

@@ -98,7 +98,7 @@
 ## Phase 3: build and measure
 - [x] Commit Phase 2 and push the branch before any build (`45b12b2e`, pushed): the dirty check covers the script,
       and the worktree checks the branch out (plan review)
-- [ ] At launch (done: `launch_state.txt`, no other backend, load 2.4), at the base end (done, none, load 2.2) and at the end, a `pg_stat_activity` snapshot (other backends and their
+- [x] At launch (done: `launch_state.txt`, no other backend, load 2.4), at the base end (done, none, load 2.2) and at the end (done, none, load 3.7), a `pg_stat_activity` snapshot (other backends and their
       `application_name`) into the README, beside the load average: the issue's "whether
       the run shared the database with anything else" (plan review)
 - [x] `--step=base --variants=data-raw/habitat_score/variants_331.csv
@@ -112,36 +112,38 @@
       UTC, `build_preflight_revl.log`: `default` 17.8 s and the variant 20.7 s against a
       printed 0.3 min each, inside the 0.05 min print rounding; classify 5.1, connect 4.3,
       persist 10.7 s, the two digests 0.1 s together)
-- [ ] Full: `--step=variants --only=bt_rear_wet_p10` over the nine groups (the `default` pass
-      runs first); keep the build log in the campaign dir
-- [ ] Stamp: `stamp_build.txt` (the script writes it), plus host class, `-j` (serial, 1),
-      and the load average through the run in the README
+- [x] Full: `--step=variants --only=bt_rear_wet_p10` over the nine groups (the `default` pass
+      runs first); keep the build log in the campaign dir (20:22 to 20:36 UTC, 13.8 min,
+      `build_variants.log`; 145 timing rows, no error; REVL's digests equal the pre-flight's)
+- [x] Stamp: `stamp_build.txt` (the script writes it), plus host class, `-j` (serial, 1),
+      and the load average through the run in the README ("What happened during the builds")
 
 ## Phase 4: analysis
-- [ ] `data-raw/logs/variant_cost_404/analyze.R` → `steps.csv` (minutes per step per group,
+- [x] `data-raw/logs/variant_cost_404/analyze.R` → `steps.csv` (minutes per step per group,
       share of the pass), `split.csv` (model / verification / write share per group and
       pooled), `steps_vs_segments.png` (minutes against `n_segments`, one line per step, so a
       step that scales with the group is told from a fixed cost); it asserts the residual
       between the summed steps and the total line
-- [ ] The parallel bound from the serial numbers: sum of the nine groups' pass minutes / 4
-      against the longest group
-- [ ] Only if one step holds more than half the pass (gate decision 6): re-run that variant
+- [x] The parallel bound from the serial numbers: sum of the nine groups' pass minutes / 4
+      against the longest group (variant 5.6 → 1.6 min, longest PARS 1.0; `default` 6.8 → 1.8)
+- [x] Only if one step holds more than half the pass (gate decision 6) — not run: the median
+      share's largest step is classify at 0.35: re-run that variant
       on one group under `PGOPTIONS='-c log_min_duration_statement=0'`, take the statement
       durations from `docker logs fresh-db` filtered to the session's `pg_backend_pid()`
       (the log holds every session's statements; plan review), record them as
       `statements_<step>.csv`
 
 ## Phase 5: record and verdict
-- [ ] README: Measurement (numbers with units, the model / verification / write split, the
+- [x] README: Measurement (numbers with units, the model / verification / write split, the
       #331 comparison with its caveat) and Evidence (the dir's prefix), file table
-- [ ] Verdict, one of: steps 3 and 7 are a rounding error (say so, close on the issue's own
+- [x] Verdict (the named change, added to #377's list without an issue number: none is filed), one of: steps 3 and 7 are a rounding error (say so, close on the issue's own
       terms), or a named next change, added to #377's "Iteration speed" list with its
       expected saving (`gh issue edit 377 --body-file`)
-- [ ] fresh#275 gets the classify and cluster minutes per group as a comment (our repo), so
+- [x] fresh#275 gets the classify and cluster minutes (posted, comment 6480176510) per group as a comment (our repo), so
       its record describes the same calls; say that the rows wrap link's entry points
       (`frs_params()` + `frs_habitat_classify()`; `.frs_run_connectivity`, cluster plus the
       connected-waterbody pass, not `frs_cluster()` alone) (plan review)
-- [ ] `CLAUDE.md` Status entry (facts not worth re-deriving), `NEWS.md` line; tick #404's
+- [x] `CLAUDE.md` Status entry (facts not worth re-deriving), `NEWS.md` line; tick #404's
       acceptance boxes
 
 ## Validation
